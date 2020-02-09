@@ -29,7 +29,7 @@ using namespace tinyb;
 
 std::string BluetoothObject::get_java_class() const
 {
-   return std::string(JAVA_PACKAGE "/BluetoothObject");
+   return std::string(JAVA_DBUS_PACKAGE "/DBusObject");
 }
 
 std::string BluetoothObject::get_class_name() const
