@@ -1,6 +1,7 @@
 /*
- * Author: Petre Eftime <petre.p.eftime@intel.com>
- * Copyright (c) 2015 Intel Corporation.
+ * Author: Sven Gothel <sgothel@jausoft.com>
+ * Copyright (c) 2020 Gothel Software e.K.
+ * Copyright (c) 2020 ZAFENA AB
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -22,43 +23,12 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "BluetoothObject.hpp"
-#include <glib.h>
+#include "tinyb_hci/HCITypes.hpp"
 
-using namespace tinyb;
+#include "tinyb_hci_HCIObject.h"
 
-std::string BluetoothObject::get_java_class() const
-{
-   return std::string(JAVA_DBUS_PACKAGE "/DBusObject");
-}
+#include "JNIMem.hpp"
+#include "helper_base.hpp"
 
-std::string BluetoothObject::get_class_name() const
-{
-   return std::string("BluetoothObject");
-}
+using namespace tinyb_hci;
 
-std::string BluetoothObject::get_object_path() const
-{
-   return std::string();
-}
-
-BluetoothType BluetoothObject::get_bluetooth_type() const
-{
-   return BluetoothType::NONE;
-}
-
-BluetoothObject *BluetoothObject::clone() const
-{
-    return NULL;
-}
-
-bool BluetoothObject::operator==(const BluetoothObject &other) const
-{
-   return (this->get_bluetooth_type() == other.get_bluetooth_type())
-        && (this->get_object_path() == other.get_object_path());
-}
-
-bool BluetoothObject::operator!=(const BluetoothObject &other) const
-{
-   return !(*this == other);
-}
