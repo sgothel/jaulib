@@ -23,12 +23,31 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "direct_bt/HCITypes.hpp"
+#include "org_tinyb_BluetoothUtils.h"
 
-#include "tinyb_hci_HCIGattCharacteristic.h"
+#include <cstdint>
+#include <cinttypes>
 
-#include "JNIMem.hpp"
-#include "helper_base.hpp"
+#include <time.h>
 
-using namespace direct_bt;
+static const int64_t NanoPerMilli = 1000000L;
+static const int64_t MilliPerOne = 1000L;
+
+/**
+ * See <http://man7.org/linux/man-pages/man2/clock_gettime.2.html>
+ * <p>
+ * Regarding avoiding kernel via VDSO,
+ * see <http://man7.org/linux/man-pages/man7/vdso.7.html>,
+ * clock_gettime seems to be well supported at least on kernel >= 4.4.
+ * Only bfin and sh are missing, while ia64 seems to be complicated.
+ */
+jlong Java_org_tinyb_BluetoothUtils_getCurrentMilliseconds(JNIEnv *env, jclass clazz) {
+    (void)env;
+    (void)clazz;
+
+    struct timespec t;
+    clock_gettime(CLOCK_MONOTONIC, &t);
+    int64_t res = t.tv_sec * MilliPerOne + t.tv_nsec / NanoPerMilli;
+    return (jlong)res;
+}
 

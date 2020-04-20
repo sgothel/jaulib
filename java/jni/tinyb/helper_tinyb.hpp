@@ -2,6 +2,10 @@
  * Author: Andrei Vasiliu <andrei.vasiliu@intel.com>
  * Copyright (c) 2016 Intel Corporation.
  *
+ * Author: Sven Gothel <sgothel@jausoft.com>
+ * Copyright (c) 2020 Gothel Software e.K.
+ * Copyright (c) 2020 ZAFENA AB
+ *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
  * "Software"), to deal in the Software without restriction, including
@@ -22,65 +26,18 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "tinyb_dbus_DBusEvent.h"
+#pragma once
 
-jobject Java_tinyb_dbus_DBusEvent_getType(JNIEnv *env, jobject obj)
-{
-    (void)env;
-    (void)obj;
+#include "helper_base.hpp"
+#include "tinyb/BluetoothObject.hpp"
+#include "tinyb/BluetoothException.hpp"
 
-    return NULL;
-}
+namespace tinyb {
 
-jstring Java_tinyb_dbus_DBusEvent_getName(JNIEnv *env, jobject obj)
-{
-    (void)env;
-    (void)obj;
+    jclass search_class(JNIEnv *env, BluetoothObject &object);
+    BluetoothType from_int_to_btype(int type);
+    TransportType from_int_to_transport_type(int type);
 
-    return NULL;
-}
+    void raise_java_bluetooth_exception(JNIEnv *env, BluetoothException &e);
 
-jstring Java_tinyb_dbus_DBusEvent_getIdentifier(JNIEnv *env, jobject obj)
-{
-    (void)env;
-    (void)obj;
-
-    return NULL;
-}
-
-jboolean Java_tinyb_dbus_DBusEvent_executeCallback(JNIEnv *env, jobject obj)
-{
-    (void)env;
-    (void)obj;
-
-    return JNI_FALSE;
-}
-
-jboolean Java_tinyb_dbus_DBusEvent_hasCallback(JNIEnv *env, jobject obj)
-{
-    (void)env;
-    (void)obj;
-
-    return JNI_FALSE;
-}
-
-void Java_tinyb_dbus_DBusEvent_init(JNIEnv *env, jobject obj, jobject type, jstring name,
-                                jstring identifier, jobject parent, jobject callback,
-                                jobject arg_data)
-{
-    (void)env;
-    (void)obj;
-    (void)type;
-    (void)name;
-    (void)identifier;
-    (void)parent;
-    (void)callback;
-    (void)arg_data;
-}
-
-void Java_tinyb_dbus_DBusEvent_delete(JNIEnv *env, jobject obj)
-{
-    (void)env;
-    (void)obj;
-}
-
+} // namespace tinyb

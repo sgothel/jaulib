@@ -23,12 +23,43 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "direct_bt/HCITypes.hpp"
+#include <jni.h>
+#include <memory>
+#include <stdexcept>
+#include <vector>
 
-#include "tinyb_hci_HCIObject.h"
-
-#include "JNIMem.hpp"
-#include "helper_base.hpp"
+#include "helper_dbt.hpp"
 
 using namespace direct_bt;
+
+jclass direct_bt::search_class(JNIEnv *env, JavaUplink &object)
+{
+    return search_class(env, object.get_java_class().c_str());
+}
+
+#if 0
+
+jobject direct_bt::convert_vector_to_jobject(JNIEnv *env, std::vector<std::shared_ptr<JavaUplink>>& array)
+{
+    unsigned int array_size = array.size();
+
+    jmethodID arraylist_add;
+    jobject result = get_new_arraylist(env, array_size, &arraylist_add);
+
+    if (0 == array_size) {
+        return result;
+    }
+
+    for (unsigned int i = 0; i < array_size; ++i) {
+        std::shared_ptr<JavaUplink> elem = array.at(i);
+        std::shared_ptr<JNIGlobalRef> objref = elem->getJavaObject();
+        if ( nullptr == objref ) {
+            throw InternalError("JavaUplink element of array has no valid java-object: "+elem->toString(), E_FILE_LINE);
+        }
+        env->CallBooleanMethod(result, arraylist_add, objref->get());
+    }
+    return result;
+}
+
+#endif
 
