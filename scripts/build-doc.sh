@@ -14,9 +14,12 @@ if [ ! -e $JAVA_HOME ] ; then
     exit 1
 fi
 
+CPU_COUNT=`getconf _NPROCESSORS_ONLN`
+
 buildit() {
     echo rootdir $rootdir
     echo logfile $logfile
+    echo CPU_COUNT $CPU_COUNT
 
     cd $rootdir
     rm -rf dist-$archabi
@@ -24,11 +27,10 @@ buildit() {
     rm -rf build-$archabi
     mkdir -p build-$archabi
     cd build-$archabi
-    # cmake -DCMAKE_INSTALL_PREFIX=$rootdir/dist-$archabi -DBUILDJAVA=ON -DBUILDEXAMPLES=ON -DBUILD_TESTING=ON ..
-    cmake -DCMAKE_INSTALL_PREFIX=$rootdir/dist-$archabi -DBUILDJAVA=ON -DBUILDEXAMPLES=ON -DBUILD_TESTING=ON -DDEBUG=ON ..
-    # cmake -DCMAKE_INSTALL_PREFIX=$rootdir/dist-$archabi -DSKIP_TINYB=ON -DBUILDJAVA=ON -DBUILDEXAMPLES=ON -DBUILD_TESTING=ON -DDEBUG=ON ..
-    #make install test
-    make doc
+    # CLANG_ARGS="-DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++"
+    # cmake $CLANG_ARGS -DCMAKE_INSTALL_PREFIX=$rootdir/dist-$archabi -DBUILDJAVA=ON -DBUILDEXAMPLES=ON -DBUILD_TESTING=ON -DDEBUG=ON ..
+    cmake $CLANG_ARGS -DCMAKE_INSTALL_PREFIX=$rootdir/dist-$archabi -DBUILD_TESTING=ON ..
+    make -j $CPU_COUNT install test doc
     if [ $? -eq 0 ] ; then
         echo "BUILD SUCCESS $bname $archabi"
         cd $rootdir
