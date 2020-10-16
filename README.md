@@ -1,5 +1,5 @@
-Jau C++ - C++ Support Library inclusive Java JNI Binding
-==========================================================
+Jau C++ Support Library inclusive Java JNI Binding
+==================================================
 
 Git Repository
 ==============

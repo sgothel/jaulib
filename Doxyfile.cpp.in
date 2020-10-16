@@ -44,7 +44,7 @@ PROJECT_NUMBER         = @jaucpp_VERSION_STRING@
 # for a project that appears at the top of each page and should give viewer a
 # quick idea about the purpose of the project. Keep the description short.
 
-PROJECT_BRIEF          = "Jau C++ - C++ Support Library inclusive Java JNI Binding."
+PROJECT_BRIEF          = "Jau C++ Support Library inclusive Java JNI Binding."
 
 # With the PROJECT_LOGO tag one can specify a logo or an icon that is included
 # in the documentation. The maximum height of the logo should not exceed 55
@@ -760,6 +760,7 @@ WARN_LOGFILE           =
 
 INPUT                  = @CMAKE_CURRENT_SOURCE_DIR@/include/ \
                          @CMAKE_CURRENT_SOURCE_DIR@/src/ \
+                         @CMAKE_CURRENT_SOURCE_DIR@/java/jni \
                          @CMAKE_CURRENT_SOURCE_DIR@/README.md \
                          @CMAKE_CURRENT_SOURCE_DIR@/test/
 
