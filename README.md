@@ -9,7 +9,7 @@ Goals
 ============
 This project aims to provide general C++ collections, algorithms and utilizies inclusive utilizities for a Java JNI binding.
 
-This project was extracted from [Direct-BT](https://jausoft.com/cgit/direct_bt.git/) to enable general use and enforce better encapsulation.
+This project was extracted from [Direct-BT](https://jausoft.com/cgit/direct_bt.git/about/) to enable general use and enforce better encapsulation.
 
 API Documentation
 ============
