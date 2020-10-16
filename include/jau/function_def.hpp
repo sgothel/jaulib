@@ -361,13 +361,13 @@ namespace jau {
     };
 
     template<typename R, typename C, typename... A>
-    inline FunctionDef<R, A...>
+    inline jau::FunctionDef<R, A...>
     bindMemberFunc(C *base, R(C::*mfunc)(A...)) noexcept {
         return FunctionDef<R, A...>( new ClassInvocationFunc<R, C, A...>(base, mfunc) );
     }
 
     template<typename R, typename... A>
-    inline FunctionDef<R, A...>
+    inline jau::FunctionDef<R, A...>
     bindPlainFunc(R(*func)(A...)) noexcept {
         return FunctionDef<R, A...>( new PlainInvocationFunc<R, A...>(func) );
     }
@@ -380,7 +380,7 @@ namespace jau {
      * </p>
      */
     template<typename R, typename I, typename... A>
-    inline FunctionDef<R, A...>
+    inline jau::FunctionDef<R, A...>
     bindCaptureFunc(const I& data, R(*func)(I&, A...), bool dataIsIdentity=true) noexcept {
         return FunctionDef<R, A...>( new CaptureInvocationFunc<R, I, A...>(data, func, dataIsIdentity) );
     }
@@ -392,18 +392,18 @@ namespace jau {
      * </p>
      */
     template<typename R, typename I, typename... A>
-    inline FunctionDef<R, A...>
+    inline jau::FunctionDef<R, A...>
     bindCaptureFunc(I&& data, R(*func)(I&, A...), bool dataIsIdentity=true) noexcept {
         return FunctionDef<R, A...>( new CaptureInvocationFunc<R, I, A...>(std::move(data), func, dataIsIdentity) );
     }
 
     template<typename R, typename... A>
-    inline FunctionDef<R, A...>
+    inline jau::FunctionDef<R, A...>
     bindStdFunc(uint64_t id, std::function<R(A...)> func) noexcept {
         return FunctionDef<R, A...>( new StdInvocationFunc<R, A...>(id, func) );
     }
     template<typename R, typename... A>
-    inline FunctionDef<R, A...>
+    inline jau::FunctionDef<R, A...>
     bindStdFunc(uint64_t id) noexcept {
         return FunctionDef<R, A...>( new StdInvocationFunc<R, A...>(id) );
     }

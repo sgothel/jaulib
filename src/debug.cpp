@@ -67,9 +67,9 @@ std::string jau::get_backtrace(int skip_frames) noexcept {
                 out.append(real_name);
                 free( real_name );
             }
-            snprintf(cstr, sizeof(cstr), " + 0x%lx @ ip 0x%lx, sp 0x%lx", (uint64_t)offset, (uint64_t)ip, (uint64_t)sp);
+            snprintf(cstr, sizeof(cstr), " + 0x%lx @ ip %p, sp %p", (unsigned long)offset, (void*)ip, (void*)sp);
         } else {
-            snprintf(cstr, sizeof(cstr), "ip 0x%lx, sp 0x%lx, get_proc_name error 0x%x", (uint64_t)ip, (uint64_t)sp, res);
+            snprintf(cstr, sizeof(cstr), "ip %p, sp %p, get_proc_name error 0x%x", (void*)ip, (void*)sp, (unsigned)res);
         }
         out.append(cstr);
         out.append("\n");
