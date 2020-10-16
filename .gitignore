@@ -1,0 +1,25 @@
+build*/
+dist*/
+
+# Object files
+*.o
+*.lib
+*.so
+*.so.*
+*.lo
+*.la
+*.pyc
+*.class
+
+# Temp files
+*.swp
+*.swo
+*~
+
+# Eclipse files
+#.cproject
+#.project
+
+# Archive files
+*.jar
+/Debug/
