@@ -5,7 +5,7 @@ FIND_PACKAGE (Threads REQUIRED)
 
 # for all
 set (CC_FLAGS_WARNING "-Wall -Wextra -Werror")
-set (GCC_FLAGS_WARNING "-Wall -Wextra -Wformat=2 -Wformat-security -Werror")
+set (GCC_FLAGS_WARNING "-Wall -Wextra -Wformat=2 -Wformat-overflow=2 -Wformat-nonliteral -Wformat-security -Wformat-signedness -Wformat-y2k -Wnull-dereference -Winit-self -Werror")
 
 # debug only
 set (GCC_FLAGS_STACK "-fstack-protector-strong -fstack-check")
