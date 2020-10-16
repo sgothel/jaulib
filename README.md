@@ -39,7 +39,7 @@ under *jaucpp/src/* into your build recipe.
 This library's build recipe are functional though, 
 but currently only intended to support unit testing and to produce a Doxygen API doc.
 
-The project requires CMake 3.1+ for building and a Java JDK >= 11.
+The project requires CMake 3.13+ for building and a Java JDK >= 11.
 
 Installing build dependencies on Debian (10 or 11):
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}

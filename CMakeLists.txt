@@ -1,5 +1,5 @@
-cmake_minimum_required (VERSION 3.0.0 FATAL_ERROR)
-project (jaucpp)
+cmake_minimum_required (VERSION 3.13.0 FATAL_ERROR)
+project (jaucpp LANGUAGES C CXX)
 
 FIND_PACKAGE (Threads REQUIRED)
 
