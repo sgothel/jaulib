@@ -101,5 +101,9 @@ Changes
 
 **1.0.0**
 
+* First stable release (TODO)
+
+**0.1.0**
+
 * Extraction from Direct-BT
 
