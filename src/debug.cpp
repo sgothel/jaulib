@@ -78,7 +78,7 @@ std::string jau::get_backtrace(int skip_frames) noexcept {
 }
 
 void jau::print_backtrace(int skip_frames) noexcept {
-    fprintf(stderr, get_backtrace(skip_frames).c_str());
+    fprintf(stderr, "%s", get_backtrace(skip_frames).c_str());
     fflush(stderr);
 }
 
