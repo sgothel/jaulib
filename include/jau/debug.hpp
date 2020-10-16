@@ -62,10 +62,10 @@ namespace jau {
     void DBG_PRINT_impl(const char * format, ...) noexcept;
 
     /** Use for environment-variable environment::DEBUG conditional debug messages, prefix '[elapsed_time] Debug: '. */
-    #define DBG_PRINT(...) { if( jau::environment::get().DEBUG ) { jau::DBG_PRINT_impl(__VA_ARGS__); } }
+    #define DBG_PRINT(...) { if( jau::environment::get().debug ) { jau::DBG_PRINT_impl(__VA_ARGS__); } }
 
     /** Use for environment-variable environment::DEBUG_JNI conditional debug messages, prefix '[elapsed_time] Debug: '. */
-    #define DBG_JNI_PRINT(...) { if( jau::environment::get().DEBUG_JNI ) { jau::DBG_PRINT_impl(__VA_ARGS__); } }
+    #define DBG_JNI_PRINT(...) { if( jau::environment::get().debug_jni ) { jau::DBG_PRINT_impl(__VA_ARGS__); } }
 
     void WORDY_PRINT_impl(const char * format, ...) noexcept;
 
@@ -75,7 +75,7 @@ namespace jau {
      * 'Wordy' is the shorter English form of the Latin word 'verbosus', from which the word 'verbosity' is sourced.
      * </p>
      */
-    #define WORDY_PRINT(...) { if( jau::environment::get().VERBOSE ) { jau::WORDY_PRINT_impl(__VA_ARGS__); } }
+    #define WORDY_PRINT(...) { if( jau::environment::get().verbose ) { jau::WORDY_PRINT_impl(__VA_ARGS__); } }
 
 
     #define PERF_TS_T0_BASE()  const uint64_t _t0 = jau::getCurrentMilliseconds()

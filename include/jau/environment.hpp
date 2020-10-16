@@ -45,7 +45,7 @@ namespace jau {
      * merely to tag all environment settings by inheritance and hence documentation.
      * <p>
      * See main environment {@link environment} and
-     * {@link environment::getExplodingProperties(const std::string & prefixDomain)}.
+     * {@link environment::getExplodingProperties(const std::string & prefix_domain)}.
      * </p>
      */
     class root_environment {
@@ -57,12 +57,16 @@ namespace jau {
      */
     class environment : public root_environment {
         private:
-            environment() noexcept;
+            const std::string root_prefix_domain;
 
-            static bool debug;
+            environment(const std::string & root_prefix_domain) noexcept;
 
-            static void envSet(std::string prefixDomain, std::string basepair) noexcept;
-            static void envExplodeProperties(std::string prefixDomain, std::string list) noexcept;
+            static bool local_debug;
+
+            static void envSet(std::string prefix_domain, std::string basepair) noexcept;
+            static void envExplodeProperties(std::string prefix_domain, std::string list) noexcept;
+
+            static bool getExplodingPropertiesImpl(const std::string & root_prefix_domain, const std::string & prefix_domain) noexcept;
 
         public:
             /**
@@ -147,14 +151,14 @@ namespace jau {
                                               const uint32_t min_allowed=0, const uint32_t max_allowed=UINT32_MAX) noexcept;
 
             /**
-             * Fetches exploding variable-name (prefixDomain) values.
+             * Fetches exploding variable-name (prefix_domain) values.
              * <p>
              * Implementation uses {@link #getProperty(const std::string & name)}
              * and hence attempts to also find a Unix conform name,
              * e.g. 'direct_bt_debug' if ''direct_bt.debug' wasn't found.
              * </p>
              * <p>
-             * If the value of a prefixDomain is neither 'true' or 'false',
+             * If the value of a prefix_domain is neither 'true' or 'false',
              * it is treated as a list of sub-variable names including their optional value separated by comma ','.
              * <p>
              * If the value is not given for the sub-variable name, a boolean "true" will be used per default.
@@ -187,21 +191,40 @@ namespace jau {
              * </p>
              * <p>
              * Each sub-variable name/value pair will be trimmed and if not zero-length
-             * appended to the prefixDomain with a dot '.'.</br>
+             * appended to the prefix_domain with a dot '.'.</br>
              *
              * Each new variable name will be set in the environment with value 'true'.</br>
              *
-             * The prefixDomain will also be set to the new value 'true', hence gets overwritten.</br>
-             *
-             * This is supported for DEBUG 'direct_bt.debug' and VERBOSE 'direct_bt.verbose', per default.
+             * The prefix_domain will also be set to the new value 'true', hence gets overwritten.
+             * </p>
+             * <p>
+             * This is automatically performed for environment::debug root_prefix_domain+".debug",
+             * and environment::verbose root_prefix_domain+'.verbose',
+             * e.g: 'direct_bt.debug' and verbose 'direct_bt.verbose'.
              * </p>
              *
-             * @param prefixDomain
+             * @param prefix_domain the queried prefix domain, e.g. "direct_bt.debug" or "direct_bt.verbose" etc.
              * @return
              */
-            static bool getExplodingProperties(const std::string & prefixDomain) noexcept;
+            static bool getExplodingProperties(const std::string & prefix_domain) noexcept {
+                return getExplodingPropertiesImpl("", prefix_domain);
+            }
 
-            static environment& get() noexcept {
+            /**
+             * Static singleton initialization of this project's environment
+             * with the given global root prefix_domain.
+             * <p>
+             * The root prefix_domain defines the value for environment::debug, environment::debug_jni and environment::verbose.
+             * </p>
+             * <p>
+             * The resulting singleton instance will be constructed only once.
+             * </p>
+             * @param root_prefix_domain the project's global singleton root prefix_domain, e.g. "direct_bt".
+             *        Default value to "jau", only intended for subsequent queries.
+             *        Initial call shall utilize the actual project's root_prefix_domain!
+             * @return the static singleton instance.
+             */
+            static environment& get(const std::string root_prefix_domain="jau") noexcept {
                 /**
                  * Thread safe starting with C++11 6.7:
                  *
@@ -212,40 +235,49 @@ namespace jau {
                  *
                  * Avoiding non-working double checked locking.
                  */
-                static environment e;
+                static environment e(root_prefix_domain);
                 return e;
             }
 
             /**
+             * Returns the project's global singleton root prefix_domain, used at first call of
+             * environment::get(const std::string root_prefix_domain).
+             */
+            const std::string & getRootPrefixDomain() const noexcept { return root_prefix_domain; }
+
+            /**
              * Debug logging enabled or disabled.
              * <p>
-             * Environment variable 'direct_bt.debug', boolean, default 'false'.
+             * Environment variable depending on the root prefix_domain, e.g. for "direct_bt" this is 'direct_bt.debug', boolean, default 'false',
+             * see get(const std::string & root_prefix_domain).
              * </p>
              * <p>
              * Implementation uses {@link #getProperty(const std::string & name)}
              * </p>
              * <p>
              * Exploding variable-name values are implemented here,
-             * see {@link #getExplodingProperties(const std::string & prefixDomain)}.
+             * see {@link #getExplodingProperties(const std::string & prefix_domain)}.
              * </p>
              */
-            const bool DEBUG;
+            const bool debug;
 
             /**
              * JNI Debug logging enabled or disabled.
              * <p>
-             * Environment variable 'direct_bt.debug.jni', boolean, default 'false'.
+             * Environment variable depending on the root prefix_domain, e.g. for "direct_bt" this is 'direct_bt.debug.jni', boolean, default 'false',
+             * see get(const std::string & root_prefix_domain).
              * </p>
              * <p>
              * Implementation uses getBooleanProperty().
              * </p>
              */
-            const bool DEBUG_JNI;
+            const bool debug_jni;
 
             /**
              * Verbose info logging enabled or disabled.
              * <p>
-             * Environment variable 'direct_bt.verbose', boolean, default 'false'.
+             * Environment variable depending on the root prefix_domain, e.g. for "direct_bt" this is 'direct_bt.verbose', boolean, default 'false',
+             * see get(const std::string & root_prefix_domain).
              * </p>
              * <p>
              * Implementation uses {@link #getProperty(const std::string & name)}
@@ -255,10 +287,10 @@ namespace jau {
              * </p>
              * <p>
              * Exploding variable-name values are implemented here,
-             * see {@link #getExplodingProperties(const std::string & prefixDomain)}.
+             * see {@link #getExplodingProperties(const std::string & prefix_domain)}.
              * </p>
              */
-            const bool VERBOSE;
+            const bool verbose;
     };
 
 } // namespace jau

@@ -38,7 +38,7 @@ using namespace jau;
 
 const uint64_t environment::startupTimeMilliseconds = jau::getCurrentMilliseconds();
 
-bool environment::debug = false;
+bool environment::local_debug = false;
 
 static const std::string s_true("true");
 static const std::string s_false("false");
@@ -46,7 +46,7 @@ static const std::string s_false("false");
 std::string environment::getProperty(const std::string & name) noexcept {
     const char * value = getenv(name.c_str());
     if( nullptr != value ) {
-        COND_PRINT(debug, "env::getProperty0 '%s': '%s'", name.c_str(), value);
+        COND_PRINT(local_debug, "env::getProperty0 '%s': '%s'", name.c_str(), value);
         return std::string( value );
     }
     if( std::string::npos != name.find('.', 0) ) {
@@ -55,12 +55,12 @@ std::string environment::getProperty(const std::string & name) noexcept {
         std::replace( alt_name.begin(), alt_name.end(), '.', '_');
         value = getenv(alt_name.c_str());
         if( nullptr != value ) {
-            COND_PRINT(debug, "env::getProperty0 '%s' -> '%s': '%s'", name.c_str(), alt_name.c_str(), value);
+            COND_PRINT(local_debug, "env::getProperty0 '%s' -> '%s': '%s'", name.c_str(), alt_name.c_str(), value);
             return std::string( value );
         }
-        COND_PRINT(debug, "env::getProperty0 '%s' -> '%s': NOT FOUND", name.c_str(), alt_name.c_str());
+        COND_PRINT(local_debug, "env::getProperty0 '%s' -> '%s': NOT FOUND", name.c_str(), alt_name.c_str());
     } else {
-        COND_PRINT(debug, "env::getProperty0 '%s': NOT FOUND", name.c_str());
+        COND_PRINT(local_debug, "env::getProperty0 '%s': NOT FOUND", name.c_str());
     }
     // not found: empty string
     return std::string();
@@ -69,10 +69,10 @@ std::string environment::getProperty(const std::string & name) noexcept {
 std::string environment::getProperty(const std::string & name, const std::string & default_value) noexcept {
     const std::string value = getProperty(name);
     if( 0 == value.length() ) {
-        COND_PRINT(debug, "env::getProperty1 %s: null -> %s (default)", name.c_str(), default_value.c_str());
+        COND_PRINT(local_debug, "env::getProperty1 %s: null -> %s (default)", name.c_str(), default_value.c_str());
         return default_value;
     } else {
-        COND_PRINT(debug, "env::getProperty1 %s (default %s): %s", name.c_str(), default_value.c_str(), value.c_str());
+        COND_PRINT(local_debug, "env::getProperty1 %s (default %s): %s", name.c_str(), default_value.c_str(), value.c_str());
         return value;
     }
 }
@@ -80,11 +80,11 @@ std::string environment::getProperty(const std::string & name, const std::string
 bool environment::getBooleanProperty(const std::string & name, const bool default_value) noexcept {
     const std::string value = getProperty(name);
     if( 0 == value.length() ) {
-        COND_PRINT(debug, "env::getBooleanProperty %s: null -> %d (default)", name.c_str(), default_value);
+        COND_PRINT(local_debug, "env::getBooleanProperty %s: null -> %d (default)", name.c_str(), default_value);
         return default_value;
     } else {
         const bool res = "true" == value;
-        COND_PRINT(debug, "env::getBooleanProperty %s (default %d): %d/%s", name.c_str(), default_value, res, value.c_str());
+        COND_PRINT(local_debug, "env::getBooleanProperty %s (default %d): %d/%s", name.c_str(), default_value, res, value.c_str());
         return res;
     }
 }
@@ -96,7 +96,7 @@ int32_t environment::getInt32Property(const std::string & name, const int32_t de
 {
     const std::string value = getProperty(name);
     if( 0 == value.length() ) {
-        COND_PRINT(debug, "env::getInt32Property %s: null -> %" PRId32 " (default)", name.c_str(), default_value);
+        COND_PRINT(local_debug, "env::getInt32Property %s: null -> %" PRId32 " (default)", name.c_str(), default_value);
         return default_value;
     } else {
         int32_t res = default_value;
@@ -110,7 +110,7 @@ int32_t environment::getInt32Property(const std::string & name, const int32_t de
                 if( min_allowed <= res1 && res1 <= max_allowed ) {
                     // matching user value range
                     res = res1;
-                    COND_PRINT(debug, "env::getInt32Property %s (default %" PRId32 "): %" PRId32 "/%s",
+                    COND_PRINT(local_debug, "env::getInt32Property %s (default %" PRId32 "): %" PRId32 "/%s",
                             name.c_str(), default_value, res, value.c_str());
                 } else {
                     // invalid user value range
@@ -136,7 +136,7 @@ uint32_t environment::getUint32Property(const std::string & name, const uint32_t
 {
     const std::string value = getProperty(name);
     if( 0 == value.length() ) {
-        COND_PRINT(debug, "env::getUint32Property %s: null -> %" PRIu32 " (default)", name.c_str(), default_value);
+        COND_PRINT(local_debug, "env::getUint32Property %s: null -> %" PRIu32 " (default)", name.c_str(), default_value);
         return default_value;
     } else {
         uint32_t res = default_value;
@@ -150,7 +150,7 @@ uint32_t environment::getUint32Property(const std::string & name, const uint32_t
                 if( min_allowed <= res1 && res1 <= max_allowed ) {
                     // matching user value range
                     res = res1;
-                    COND_PRINT(debug, "env::getUint32Property %s (default %" PRIu32 "): %" PRIu32 "/%s",
+                    COND_PRINT(local_debug, "env::getUint32Property %s (default %" PRIu32 "): %" PRIu32 "/%s",
                             name.c_str(), default_value, res, value.c_str());
                 } else {
                     // invalid user value range
@@ -171,66 +171,67 @@ uint32_t environment::getUint32Property(const std::string & name, const uint32_t
     }
 }
 
-void environment::envSet(std::string prefixDomain, std::string basepair) noexcept {
+void environment::envSet(std::string prefix_domain, std::string basepair) noexcept {
     trimInPlace(basepair);
     if( basepair.length() > 0 ) {
         size_t pos = 0, start = 0;
         if( (pos = basepair.find('=', start)) != std::string::npos ) {
             const size_t elem_len = pos-start; // excluding '='
-            std::string name = prefixDomain+"."+basepair.substr(start, elem_len);
+            std::string name = prefix_domain+"."+basepair.substr(start, elem_len);
             std::string value = basepair.substr(pos+1, std::string::npos);
             trimInPlace(name);
             trimInPlace(value);
             if( name.length() > 0 ) {
                 if( value.length() > 0 ) {
-                    COND_PRINT(debug, "env::setProperty %s -> %s (explode)", name.c_str(), value.c_str());
+                    COND_PRINT(local_debug, "env::setProperty %s -> %s (explode)", name.c_str(), value.c_str());
                     setenv(name.c_str(), value.c_str(), 1 /* overwrite */);
                 } else {
-                    COND_PRINT(debug, "env::setProperty %s -> true (explode default-1)", name.c_str());
+                    COND_PRINT(local_debug, "env::setProperty %s -> true (explode default-1)", name.c_str());
                     setenv(name.c_str(), "true", 1 /* overwrite */);
                 }
             }
         } else {
-            const std::string name = prefixDomain+"."+basepair;
-            COND_PRINT(debug, "env::setProperty %s -> true (explode default-0)", name.c_str());
+            const std::string name = prefix_domain+"."+basepair;
+            COND_PRINT(local_debug, "env::setProperty %s -> true (explode default-0)", name.c_str());
             setenv(name.c_str(), "true", 1 /* overwrite */);
         }
     }
 }
 
-void environment::envExplodeProperties(std::string prefixDomain, std::string list) noexcept {
+void environment::envExplodeProperties(std::string prefix_domain, std::string list) noexcept {
     size_t pos = 0, start = 0;
     while( (pos = list.find(',', start)) != std::string::npos ) {
         const size_t elem_len = pos-start; // excluding ','
-        envSet(prefixDomain, list.substr(start, elem_len));
+        envSet(prefix_domain, list.substr(start, elem_len));
         start = pos+1; // skip ','
     }
     const size_t elem_len = list.length()-start; // last one
     if( elem_len > 0 ) {
-        envSet(prefixDomain, list.substr(start, elem_len));
+        envSet(prefix_domain, list.substr(start, elem_len));
     }
-    COND_PRINT(debug, "env::setProperty %s -> true (explode default)", prefixDomain.c_str());
-    setenv(prefixDomain.c_str(), "true", 1 /* overwrite */);
+    COND_PRINT(local_debug, "env::setProperty %s -> true (explode default)", prefix_domain.c_str());
+    setenv(prefix_domain.c_str(), "true", 1 /* overwrite */);
 }
 
-bool environment::getExplodingProperties(const std::string & prefixDomain) noexcept {
-    std::string value = environment::getProperty(prefixDomain, s_false);
+bool environment::getExplodingPropertiesImpl(const std::string & root_prefix_domain, const std::string & prefix_domain) noexcept {
+    std::string value = environment::getProperty(prefix_domain, s_false);
     if( s_false == value ) {
         return false;
     }
     if( s_true == value ) {
         return true;
     }
-    if( "direct_bt.debug" == prefixDomain ) {
-        debug = true;
+    if( root_prefix_domain.length() > 0 && root_prefix_domain+".debug" == prefix_domain ) {
+        local_debug = true;
     }
-    envExplodeProperties(prefixDomain, value);
+    envExplodeProperties(prefix_domain, value);
     return true;
 }
 
-environment::environment() noexcept
-: DEBUG( getExplodingProperties("direct_bt.debug") ),
-  DEBUG_JNI( getBooleanProperty("direct_bt.debug.jni", false) ),
-  VERBOSE( getExplodingProperties("direct_bt.verbose") || environment::DEBUG )
+environment::environment(const std::string & root_prefix_domain) noexcept
+: root_prefix_domain(root_prefix_domain),
+  debug( getExplodingPropertiesImpl(root_prefix_domain, root_prefix_domain+".debug") ),
+  debug_jni( getBooleanProperty(root_prefix_domain+".debug.jni", false) ),
+  verbose( getExplodingPropertiesImpl(root_prefix_domain, root_prefix_domain+".verbose") || environment::debug )
 {
 }
