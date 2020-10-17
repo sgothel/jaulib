@@ -207,6 +207,12 @@ template <typename _Tp, std::memory_order _MO> struct ordered_atomic : private s
 
   };
 
+  /** SC atomic integral scalar boolean. Memory-Model (MM) guaranteed sequential consistency (SC) between acquire (read) and release (write) */
+  typedef ordered_atomic<bool, std::memory_order::memory_order_seq_cst> sc_atomic_bool;
+
+  /** Relaxed non-SC atomic integral scalar boolean. Memory-Model (MM) only guarantees the atomic value, _no_ sequential consistency (SC) between acquire (read) and release (write). */
+  typedef ordered_atomic<bool, std::memory_order::memory_order_relaxed> relaxed_atomic_bool;
+
   /** SC atomic integral scalar integer. Memory-Model (MM) guaranteed sequential consistency (SC) between acquire (read) and release (write) */
   typedef ordered_atomic<int, std::memory_order::memory_order_seq_cst> sc_atomic_int;
 
