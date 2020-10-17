@@ -219,6 +219,41 @@ template <typename _Tp, std::memory_order _MO> struct ordered_atomic : private s
   /** Relaxed non-SC atomic integral scalar integer. Memory-Model (MM) only guarantees the atomic value, _no_ sequential consistency (SC) between acquire (read) and release (write). */
   typedef ordered_atomic<int, std::memory_order::memory_order_relaxed> relaxed_atomic_int;
 
+  /*
+   * This class provides a RAII-style Sequentially Consistent (SC) data race free (DRF) critical block.
+   * <p>
+   * RAII-style SC-DRF acquire via constructor and SC-DRF release via destructor,
+   * providing a DRF critical block.
+   * </p>
+   * <p>
+   * This temporary object reuses a jau::sc_atomic_bool atomic synchronization element.
+   * The type of the acting atomic is not relevant, only its atomic SC-DRF properties.
+   * </p>
+   *
+   * See also:
+   * <pre>
+   * - Sequentially Consistent (SC) ordering or SC-DRF (data race free) <https://en.cppreference.com/w/cpp/atomic/memory_order#Sequentially-consistent_ordering>
+   * - std::memory_order <https://en.cppreference.com/w/cpp/atomic/memory_order>
+   * </pre>
+   */
+  class sc_atomic_critical {
+      private:
+          sc_atomic_bool & sync_ref;
+          bool local_store;
+
+      public:
+        /** SC-DRF acquire via sc_atomic_bool::load() */
+        sc_atomic_critical(sc_atomic_bool &sync) noexcept : sync_ref(sync), local_store(sync.load()) {}
+
+        /** SC-DRF release via sc_atomic_bool::store() */
+        ~sc_atomic_critical() noexcept { sync_ref.store(local_store); }
+
+        sc_atomic_critical() noexcept = delete;
+        sc_atomic_critical(const sc_atomic_critical&) = delete;
+        sc_atomic_critical& operator=(const sc_atomic_critical&) = delete;
+        sc_atomic_critical& operator=(const sc_atomic_critical&) volatile = delete;
+  };
+
 } /* namespace jau */
 
 #endif /* JAU_ORDERED_ATOMIC_HPP_ */
