@@ -118,8 +118,9 @@ public:
 /*
  * This class provides a lifetime-managed 'PrimitiveArrayCritical' pinned heap,
  * which is automatically released when it goes out of scope.
- *
+ * <p>
  * RAII-style acquire and relinquish via destructor
+ * </p>
  */
 template <typename T, typename U>
 class JNICriticalArray {
