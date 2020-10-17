@@ -275,140 +275,122 @@ namespace jau {
         int8_t const * p = (int8_t const *) ( buffer + byte_offset );
         return *p;
     }
+
+    /**
+     * Safe access to a pointer cast from unaligned memory via __packed__ attribute,
+     * i.e. utilizing compiler generated safe load and store operations.
+     * <p>
+     * This template shall cause no costs, the cast data pointer is identical to 'T & p = &store'.
+     * </p>
+     */
+    template<typename T> struct __attribute__((__packed__)) packed_t {
+        T store;
+        constexpr T get(const bool littleEndian) const noexcept { return littleEndian ? le_to_cpu(store) : be_to_cpu(store); }
+    };
+
     inline void put_uint16(uint8_t * buffer, int const byte_offset, const uint16_t v) noexcept
     {
-        // Handle potentially misaligned address of buffer + byte_offset, can't just
-        //   uint16_t * p = (uint16_t *) ( buffer + byte_offset );
-        //   *p = v;
-        memcpy(buffer + byte_offset, &v, sizeof(v));
+        /**
+         * Handle potentially misaligned address of buffer + byte_offset, can't just
+         *   uint16_t * p = (uint16_t *) ( buffer + byte_offset );
+         *   *p = v;
+         * Universal alternative using memcpy is costly:
+         *   memcpy(buffer + byte_offset, &v, sizeof(v));
+         * Use compiler magic 'struct __attribute__((__packed__))' access:
+         */
+        reinterpret_cast<packed_t<uint16_t>*>( buffer + byte_offset )->store = v;
     }
-    inline void put_uint16(uint8_t * buffer, int const byte_offset, const uint16_t v, bool littleEndian) noexcept
+    inline void put_uint16(uint8_t * buffer, int const byte_offset, const uint16_t v, const bool littleEndian) noexcept
     {
-        // Handle potentially misaligned address of buffer + byte_offset, can't just
-        //   uint16_t * p = (uint16_t *) ( buffer + byte_offset );
-        //   *p = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
-        const uint16_t v2 = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
-        memcpy(buffer + byte_offset, &v2, sizeof(v2));
+        /**
+         * Handle potentially misaligned address of buffer + byte_offset, can't just
+         *   uint16_t * p = (uint16_t *) ( buffer + byte_offset );
+         *   *p = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
+         * Universal alternative using memcpy is costly:
+         *   const uint16_t v2 = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
+         *   memcpy(buffer + byte_offset, &v2, sizeof(v2));
+         * Use compiler magic 'struct __attribute__((__packed__))' access:
+         */
+        reinterpret_cast<packed_t<uint16_t>*>( buffer + byte_offset )->store = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
     }
     inline uint16_t get_uint16(uint8_t const * buffer, int const byte_offset) noexcept
     {
-        // Handle potentially misaligned address of buffer + byte_offset, can't just
-        //   uint16_t const * p = (uint16_t const *) ( buffer + byte_offset );
-        //   return *p;
-        uint16_t v;
-        memcpy(&v, buffer + byte_offset, sizeof(v));
-        return v;
+        /**
+         * Handle potentially misaligned address of buffer + byte_offset, can't just
+         *   uint16_t const * p = (uint16_t const *) ( buffer + byte_offset );
+         *   return *p;
+         * Universal alternative using memcpy is costly:
+         *   uint16_t v;
+         *   memcpy(&v, buffer + byte_offset, sizeof(v));
+         *   return v;
+         * Use compiler magic 'struct __attribute__((__packed__))' access:
+         */
+        return reinterpret_cast<const packed_t<uint16_t>*>( buffer + byte_offset )->store;
     }
-    inline uint16_t get_uint16(uint8_t const * buffer, int const byte_offset, bool littleEndian) noexcept
+    inline uint16_t get_uint16(uint8_t const * buffer, int const byte_offset, const bool littleEndian) noexcept
     {
-        // Handle potentially misaligned address of buffer + byte_offset, can't just
-        //   uint16_t const * p = (uint16_t const *) ( buffer + byte_offset );
-        //   return littleEndian ? le_to_cpu(*p) : be_to_cpu(*p);
-        uint16_t v;
-        memcpy(&v, buffer + byte_offset, sizeof(v));
-        return littleEndian ? le_to_cpu(v) : be_to_cpu(v);
+        /**
+         * Handle potentially misaligned address of buffer + byte_offset, can't just
+         *   uint16_t const * p = (uint16_t const *) ( buffer + byte_offset );
+         *   return littleEndian ? le_to_cpu(*p) : be_to_cpu(*p);
+         * Universal alternative using memcpy is costly:
+         *   uint16_t v;
+         *   memcpy(&v, buffer + byte_offset, sizeof(v));
+         *   return littleEndian ? le_to_cpu(v) : be_to_cpu(v);
+         * Use compiler magic 'struct __attribute__((__packed__))' access:
+         */
+        return reinterpret_cast<const packed_t<uint16_t>*>( buffer + byte_offset )->get(littleEndian);
     }
 
     inline void put_uint32(uint8_t * buffer, int const byte_offset, const uint32_t v) noexcept
     {
-        // Handle potentially misaligned address of buffer + byte_offset, can't just
-        //   uint32_t * p = (uint32_t *) ( buffer + byte_offset );
-        //   *p = v;
-        memcpy(buffer + byte_offset, &v, sizeof(v));
+        reinterpret_cast<packed_t<uint32_t>*>( buffer + byte_offset )->store = v;
     }
-    inline void put_uint32(uint8_t * buffer, int const byte_offset, const uint32_t v, bool littleEndian) noexcept
+    inline void put_uint32(uint8_t * buffer, int const byte_offset, const uint32_t v, const bool littleEndian) noexcept
     {
-        // Handle potentially misaligned address of buffer + byte_offset, can't just
-        //   uint32_t * p = (uint32_t *) ( buffer + byte_offset );
-        //   *p = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
-        const uint32_t v2 = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
-        memcpy(buffer + byte_offset, &v2, sizeof(v2));
+        reinterpret_cast<packed_t<uint32_t>*>( buffer + byte_offset )->store = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
     }
     inline uint32_t get_uint32(uint8_t const * buffer, int const byte_offset) noexcept
     {
-        // Handle potentially misaligned address of buffer + byte_offset, can't just
-        //   uint32_t const * p = (uint32_t const *) ( buffer + byte_offset );
-        //   return *p;
-        uint32_t v;
-        memcpy(&v, buffer + byte_offset, sizeof(v));
-        return v;
+        return reinterpret_cast<const packed_t<uint32_t>*>( buffer + byte_offset )->store;
     }
-    inline uint32_t get_uint32(uint8_t const * buffer, int const byte_offset, bool littleEndian) noexcept
+    inline uint32_t get_uint32(uint8_t const * buffer, int const byte_offset, const bool littleEndian) noexcept
     {
-        // Handle potentially misaligned address of buffer + byte_offset, can't just
-        //   uint32_t const * p = (uint32_t const *) ( buffer + byte_offset );
-        //   return littleEndian ? le_to_cpu(*p) : be_to_cpu(*p);
-        uint32_t v;
-        memcpy(&v, buffer + byte_offset, sizeof(v));
-        return littleEndian ? le_to_cpu(v) : be_to_cpu(v);
+        return reinterpret_cast<const packed_t<uint32_t>*>( buffer + byte_offset )->get(littleEndian);
     }
 
     inline void put_uint64(uint8_t * buffer, int const byte_offset, const uint64_t v) noexcept
     {
-        // Handle potentially misaligned address of buffer + byte_offset, can't just
-        //   uint64_t * p = (uint64_t *) ( buffer + byte_offset );
-        //   *p = v;
-        memcpy(buffer + byte_offset, &v, sizeof(v));
+        reinterpret_cast<packed_t<uint64_t>*>( buffer + byte_offset )->store = v;
     }
-    inline void put_uint64(uint8_t * buffer, int const byte_offset, const uint64_t v, bool littleEndian) noexcept
+    inline void put_uint64(uint8_t * buffer, int const byte_offset, const uint64_t v, const bool littleEndian) noexcept
     {
-        // Handle potentially misaligned address of buffer + byte_offset, can't just
-        //   uint64_t * p = (uint64_t *) ( buffer + byte_offset );
-        //   *p = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
-        const uint64_t v2 = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
-        memcpy(buffer + byte_offset, &v2, sizeof(v2));
+        reinterpret_cast<packed_t<uint64_t>*>( buffer + byte_offset )->store = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
     }
     inline uint64_t get_uint64(uint8_t const * buffer, int const byte_offset) noexcept
     {
-        // Handle potentially misaligned address of buffer + byte_offset, can't just
-        //   uint64_t const * p = (uint64_t const *) ( buffer + byte_offset );
-        //   return *p;
-        uint64_t v;
-        memcpy(&v, buffer + byte_offset, sizeof(v));
-        return v;
+        return reinterpret_cast<const packed_t<uint64_t>*>( buffer + byte_offset )->store;
     }
-    inline uint64_t get_uint64(uint8_t const * buffer, int const byte_offset, bool littleEndian) noexcept
+    inline uint64_t get_uint64(uint8_t const * buffer, int const byte_offset, const bool littleEndian) noexcept
     {
-        // Handle potentially misaligned address of buffer + byte_offset, can't just
-        //   uint64_t const * p = (uint64_t const *) ( buffer + byte_offset );
-        //   return littleEndian ? le_to_cpu(*p) : be_to_cpu(*p);
-        uint64_t v;
-        memcpy(&v, buffer + byte_offset, sizeof(v));
-        return littleEndian ? le_to_cpu(v) : be_to_cpu(v);
+        return reinterpret_cast<const packed_t<uint64_t>*>( buffer + byte_offset )->get(littleEndian);
     }
 
     inline void put_uint128(uint8_t * buffer, int const byte_offset, const uint128_t v) noexcept
     {
-        // Handle potentially misaligned address of buffer + byte_offset, can't just
-        //   uint128_t * p = (uint128_t *) ( buffer + byte_offset );
-        //   *p = v;
-        memcpy(buffer + byte_offset, &v, sizeof(v));
+        reinterpret_cast<packed_t<uint128_t>*>( buffer + byte_offset )->store = v;
     }
-    inline void put_uint128(uint8_t * buffer, int const byte_offset, const uint128_t v, bool littleEndian) noexcept
+    inline void put_uint128(uint8_t * buffer, int const byte_offset, const uint128_t v, const bool littleEndian) noexcept
     {
-        // Handle potentially misaligned address of buffer + byte_offset, can't just
-        //   uint128_t * p = (uint128_t *) ( buffer + byte_offset );
-        //   *p = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
-        const uint128_t v2 = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
-        memcpy(buffer + byte_offset, &v2, sizeof(v2));
+        reinterpret_cast<packed_t<uint128_t>*>( buffer + byte_offset )->store = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
     }
     inline uint128_t get_uint128(uint8_t const * buffer, int const byte_offset) noexcept
     {
-        // Handle potentially misaligned address of buffer + byte_offset, can't just
-        //   uint128_t const * p = (uint128_t const *) ( buffer + byte_offset );
-        //   return *p;
-        uint128_t v;
-        memcpy(&v, buffer + byte_offset, sizeof(v));
-        return v;
+        return reinterpret_cast<const packed_t<uint128_t>*>( buffer + byte_offset )->store;
     }
-    inline uint128_t get_uint128(uint8_t const * buffer, int const byte_offset, bool littleEndian) noexcept
+    inline uint128_t get_uint128(uint8_t const * buffer, int const byte_offset, const bool littleEndian) noexcept
     {
-        // Handle potentially misaligned address of buffer + byte_offset, can't just
-        //   uint128_t const * p = (uint128_t const *) ( buffer + byte_offset );
-        //   return littleEndian ? le_to_cpu(*p) : be_to_cpu(*p);
-        uint128_t v;
-        memcpy(&v, buffer + byte_offset, sizeof(v));
-        return littleEndian ? le_to_cpu(v) : be_to_cpu(v);
+        return reinterpret_cast<const packed_t<uint128_t>*>( buffer + byte_offset )->get(littleEndian);
     }
 
     inline void set_bit_uint32(const uint8_t nr, uint32_t &mask)

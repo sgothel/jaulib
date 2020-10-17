@@ -102,8 +102,9 @@ uint128_t jau::merge_uint128(uint16_t const uuid16, uint128_t const & base_uuid,
 #else
 #error "Unexpected __BYTE_ORDER"
 #endif
-    uint16_t * destu16 = (uint16_t*)(dest.data + offset);
-    *destu16 += uuid16;
+    // uint16_t * destu16 = (uint16_t*)(dest.data + offset);
+    // *destu16 += uuid16;
+    reinterpret_cast<packed_t<uint16_t>*>( dest.data + offset )->store += uuid16;
     return dest;
 }
 
@@ -137,8 +138,9 @@ uint128_t jau::merge_uint128(uint32_t const uuid32, uint128_t const & base_uuid,
 #else
 #error "Unexpected __BYTE_ORDER"
 #endif
-    uint32_t * destu32 = (uint32_t*)(dest.data + offset);
-    *destu32 += uuid32;
+    // uint32_t * destu32 = (uint32_t*)(dest.data + offset);
+    // *destu32 += uuid32;
+    reinterpret_cast<packed_t<uint32_t>*>( dest.data + offset )->store += uuid32;
     return dest;
 }
 
