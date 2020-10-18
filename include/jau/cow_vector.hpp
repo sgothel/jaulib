@@ -159,7 +159,7 @@ namespace jau {
 
             /**
              * Special case facility allowing the user to replace the current store
-             * with the given value, potentially acquired via jau::cow_vector::get_snapshot()
+             * with the given value, potentially acquired via jau::cow_vector::copy_store()
              * and mutated while holding the jau::cow_vector::get_write_mutex() lock.
              * <p>
              * This is a move operation, i.e. the given new_store_ref is invalid on the caller side
