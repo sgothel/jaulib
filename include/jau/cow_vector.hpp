@@ -66,7 +66,12 @@ namespace jau {
      * Naturally iterators are not supported directly,
      * otherwise we would need to copy the store to iterate through.<br>
      * However, one can utilize iteration using the shared snapshot
-     * of the underlying vector store via jau::cow_vector::get_snapshot().
+     * of the underlying vector store via jau::cow_vector::get_snapshot() for read operations.
+     * </p>
+     * <p>
+     * Custom mutable write operations are also supported via
+     * jau::cow_vector::get_write_mutex(), jau::cow_vector::copy_store() and jau::cow_vector::set_store().<br>
+     * See example in jau::cow_vector::set_store()
      * </p>
      * See also:
      * <pre>
@@ -124,24 +129,64 @@ namespace jau {
             /**
              * Returns this instances' recursive write mutex, allowing user to
              * implement more complex mutable write operations.
+             * <p>
+             * See example in jau::cow_vector::set_store()
+             * </p>
              *
-             * @see jau::cow_vector::get_snapshot()
+             * @see jau::cow_vector::get_write_mutex()
+             * @see jau::cow_vector::copy_store()
              * @see jau::cow_vector::set_store()
              */
             std::recursive_mutex & get_write_mutex() { return mtx_write; }
 
             /**
+             * Returns a new shared_ptr copy of the underlying store,
+             * i.e. using a new copy-constructed vectore.
+             * <p>
+             * See example in jau::cow_vector::set_store()
+             * </p>
+             * <p>
+             * This special operation uses a mutex lock and is blocking this instances' write operations only.
+             * </p>
+             * @see jau::cow_vector::get_write_mutex()
+             * @see jau::cow_vector::copy_store()
+             * @see jau::cow_vector::set_store()
+             */
+            std::shared_ptr<std::vector<Value_type>> copy_store() noexcept {
+                const std::lock_guard<std::recursive_mutex> lock(mtx_write);
+                return vector_ref( new vector_t(*store_ref) );
+            }
+
+            /**
              * Special case facility allowing the user to replace the current store
              * with the given value, potentially acquired via jau::cow_vector::get_snapshot()
              * and mutated while holding the jau::cow_vector::get_write_mutex() lock.
+             * <p>
+             * This is a move operation, i.e. the given new_store_ref is invalid on the caller side
+             * after this operation. <br>
+             * User shall pass the store via std::move()
+             * <pre>
+             *     cow_vector<std::shared_ptr<Thing>> list;
+             *     ...
+             *     {
+             *         const std::lock_guard<std::recursive_mutex> lock(list.get_write_mutex());
+             *         std::shared_ptr<std::vector<std::shared_ptr<Thing>>> snapshot = list.copy_store();
+             *         ...
+             *         some fancy mutation
+             *         ...
+             *         list.set_store(std::move(snapshot));
+             *     }
+             * </pre>
+             * </p>
+             * @param new_store_ref the user store to be moved here, replacing the current store.
              *
-             * @param new_store_ref the user store to be set
              * @see jau::cow_vector::get_write_mutex()
-             * @see jau::cow_vector::get_snapshot()
+             * @see jau::cow_vector::copy_store()
+             * @see jau::cow_vector::set_store()
              */
-            void set_store(std::shared_ptr<std::vector<Value_type>> & new_store_ref) noexcept {
+            void set_store(std::shared_ptr<std::vector<Value_type>> && new_store_ref) noexcept {
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
-                sc_atomic_critical sync( const_cast<cow_vector *>(this)->sync_atomic );
+                sc_atomic_critical sync(sync_atomic);
                 store_ref = new_store_ref;
             }
 
@@ -150,15 +195,14 @@ namespace jau {
             /**
              * Returns the current snapshot of the underlying shared std::vector<T> reference.
              * <p>
-             * Note that this snapshot will be outdated by the next (concurrent) write operation,
-             * i.e. the returned reference are still valid but do not represent the current content
-             * of this cow_vector instance.
+             * Note that this snapshot will be outdated by the next (concurrent) write operation.<br>
+             * The returned referenced vector is still valid and not mutated,
+             * but does not represent the current content of this cow_vector instance.
              * </p>
              * <p>
              * This read operation is <i>lock-free</i>.
              * </p>
-             * @see jau::cow_vector::get_write_mutex()
-             * @see jau::cow_vector::set_store()
+             * @see jau::for_each_cow
              */
             std::shared_ptr<std::vector<Value_type>> get_snapshot() const noexcept {
                 sc_atomic_critical sync( const_cast<cow_vector *>(this)->sync_atomic );
@@ -194,7 +238,7 @@ namespace jau {
              * </p>
              */
             Value_type & operator[](size_t i) noexcept {
-                sc_atomic_critical sync( const_cast<cow_vector *>(this)->sync_atomic );
+                sc_atomic_critical sync(sync_atomic);
                 return (*store_ref)[i];
             }
 
@@ -216,7 +260,7 @@ namespace jau {
              * </p>
              */
             Value_type & at(size_t i) noexcept {
-                sc_atomic_critical sync( const_cast<cow_vector *>(this)->sync_atomic );
+                sc_atomic_critical sync(sync_atomic);
                 return store_ref->at(i);
             }
 
