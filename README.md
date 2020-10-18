@@ -75,7 +75,11 @@ Changing install path from /usr/local to /usr
 ~~~~~~~~~~~~~
 Building debug build:
 ~~~~~~~~~~~~~
--DCMAKE_BUILD_TYPE=DEBUG
+-DDEBUG=ON
+~~~~~~~~~~~~~
+Building debug and instrumentation (sanitizer) build:
+~~~~~~~~~~~~~
+-DDEBUG=ON -DINSTRUMENTATION=ON
 ~~~~~~~~~~~~~
 Using clang instead of gcc:
 ~~~~~~~~~~~~~
@@ -102,6 +106,14 @@ Changes
 **1.0.0**
 
 * First stable release (TODO)
+
+**0.2.0**
+
+* Added cow_vector and sc_atomic_critical
+* Passed GCC all warnings, compile clean
+* Passed GCC sanitizer runtime checks
+* Passed valgrind's memcheck, helgrind and drd validating no memory leak nor data race or deadlock using dbt_scanner10
+* Added native de-mangled backtrace support using *libunwind* and and *abi::__cxa_demangle*
 
 **0.1.0**
 
