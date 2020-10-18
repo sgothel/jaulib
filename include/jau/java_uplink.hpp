@@ -63,12 +63,22 @@ namespace jau {
 
             virtual std::string get_java_class() const noexcept = 0;
 
-            std::string javaObjectToString() const noexcept { return nullptr == javaObjectRef ? "JavaAnon[null]" : javaObjectRef->toString(); }
+            std::string javaObjectToString() const noexcept {
+                if( nullptr == javaObjectRef ) {
+                    return "JavaAnon[null]";
+                } else if( 0 == javaObjectRef.use_count() ) { // safe-guard for concurrent dtor
+                    return "JavaAnon[empty]";
+                }
+                return javaObjectRef->toString();
+            }
 
             std::shared_ptr<JavaAnon> getJavaObject() noexcept { return javaObjectRef; }
 
             /** Assigns a new shared JavaAnon reference, replaced item might be deleted via JNI from dtor */
             void setJavaObject(std::shared_ptr<JavaAnon> objRef) noexcept { javaObjectRef = objRef; }
+
+            /** Resets the shared JavaAnon reference, the replaced item might be deleted via JNI from dtor */
+            void setJavaObject() noexcept { javaObjectRef.reset(); }
 
             /** Clears the java reference, i.e. nulling it, without deleting the global reference via JNI. */
             void clearJavaObject() noexcept {

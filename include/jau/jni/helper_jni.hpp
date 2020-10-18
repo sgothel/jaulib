@@ -141,13 +141,16 @@ namespace jau {
                 if( nullptr == shref ) {
                     throw RuntimeException("JavaGlobalObj::check: Null shared-JavaAnonObj", file, line);
                 }
+                if( 0 == shref.use_count() ) { // safe-guard for concurrent dtor
+                    throw RuntimeException("JavaGlobalObj::check: Empty shared-JavaAnonObj", file, line);
+                }
                 const jobject obj = static_cast<const JavaGlobalObj*>(shref.get())->getObject();
                 if( nullptr == obj ) {
                     throw RuntimeException("JavaGlobalObj::check: Null object", file, line);
                 }
             }
             static bool isValid(const std::shared_ptr<JavaAnon> & shref) noexcept {
-                if( nullptr == shref ) {
+                if( nullptr == shref || 0 == shref.use_count() ) {
                     return false;
                 }
                 const jobject obj = static_cast<const JavaGlobalObj*>(shref.get())->getObject();
