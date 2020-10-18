@@ -107,7 +107,7 @@ Changes
 
 * First stable release (TODO)
 
-**0.2.0**
+**0.2.1**
 
 * Added cow_vector and sc_atomic_critical
 * Passed GCC all warnings, compile clean
