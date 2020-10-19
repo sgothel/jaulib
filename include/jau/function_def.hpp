@@ -101,14 +101,14 @@ namespace jau {
             virtual std::string toString() const = 0;
     };
 
-    template<typename R, typename C, typename... A>
+    template<typename R, typename... A>
     class NullInvocationFunc : public InvocationFunc<R, A...> {
         public:
             NullInvocationFunc() noexcept { }
 
             int getType() const noexcept override { return 0; }
 
-            InvocationFunc<R, A...> clone() const noexcept override { return NullInvocationFunc(); }
+            InvocationFunc<R, A...> * clone() const noexcept override { return new NullInvocationFunc(); }
 
             R invoke(A...) override {
                 return (R)0;
@@ -315,24 +315,20 @@ namespace jau {
              * Constructs an instance with a null function.
              */
             FunctionDef() noexcept
-            : func(std::shared_ptr<InvocationFunc<R, A...>>( new NullInvocationFunc<R, A...>() ))
-            {};
-
-            /**
-             * Constructs an instance using the shared InvocationFunc<R, A...> function.
-             */
-            FunctionDef(std::shared_ptr<InvocationFunc<R, A...>> _func) noexcept
-            : func(_func) { }
+            : func( new NullInvocationFunc<R, A...>() ) { }
 
             /**
              * Constructs an instance by wrapping the given naked InvocationFunc<R, A...> function pointer
              * in a shared_ptr and taking ownership.
-             * <p>
-             * A convenience method.
-             * </p.
              */
             FunctionDef(InvocationFunc<R, A...> * _funcPtr) noexcept
-            : func(std::shared_ptr<InvocationFunc<R, A...>>(_funcPtr)) { }
+            : func( _funcPtr ) { }
+
+            /**
+             * Constructs an instance using the shared InvocationFunc<R, A...> function.
+             */
+            explicit FunctionDef(std::shared_ptr<InvocationFunc<R, A...>> _func) noexcept
+            : func( _func ) { }
 
             FunctionDef(const FunctionDef &o) noexcept = default;
             FunctionDef(FunctionDef &&o) noexcept = default;
