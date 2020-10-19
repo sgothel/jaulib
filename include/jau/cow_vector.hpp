@@ -36,8 +36,6 @@
 #include <vector>
 #include <algorithm>
 
-// #include <ext/alloc_traits.h>
-
 #include <jau/debug.hpp>
 #include <jau/basic_types.hpp>
 #include <jau/ordered_atomic.hpp>
@@ -210,6 +208,17 @@ namespace jau {
             }
 
             /**
+             * Like std::vector<T>::empty().
+             * <p>
+             * This read operation is <i>lock-free</i>.
+             * </p>
+             */
+            bool empty() const noexcept {
+                sc_atomic_critical sync( const_cast<cow_vector *>(this)->sync_atomic );
+                return store_ref->empty();
+            }
+
+            /**
              * Like std::vector<T>::size().
              * <p>
              * This read operation is <i>lock-free</i>.
@@ -248,7 +257,7 @@ namespace jau {
              * This read operation is <i>lock-free</i>.
              * </p>
              */
-            const Value_type & at(size_t i) const noexcept {
+            const Value_type & at(size_t i) const {
                 sc_atomic_critical sync( const_cast<cow_vector *>(this)->sync_atomic );
                 return store_ref->at(i);
             }
@@ -259,7 +268,7 @@ namespace jau {
              * This read operation is <i>lock-free</i>.
              * </p>
              */
-            Value_type & at(size_t i) noexcept {
+            Value_type & at(size_t i) {
                 sc_atomic_critical sync(sync_atomic);
                 return store_ref->at(i);
             }
@@ -267,7 +276,7 @@ namespace jau {
             // write access
 
             /**
-             * Like std::vector<T>::operator=().
+             * Like std::vector<T>::operator=(&), assignment
              * <p>
              * This write operation uses a mutex lock and is blocking this instances' write operations only.
              * </p>
@@ -287,28 +296,20 @@ namespace jau {
                 return *this;
             }
 
-#if 0 // ext/alloc_traits.h
             /**
-             * Like std::vector<T>::operator=().
+             * Like std::vector<T>::operator=(&&), move.
              * <p>
              * This write operation uses a mutex lock and is blocking this instances' write operations only.
              * </p>
              */
-            cow_vector& operator=(const cow_vector& x) noexcept(_Alloc_traits::_S_nothrow_move()) {
+            cow_vector& operator=(const cow_vector&& x) {
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
-                vector_ref x_store_ref;
-                {
-                    sc_atomic_critical sync_x( const_cast<cow_vector *>(&x)->sync_atomic );
-                    x_store_ref = x.store_ref;
-                }
-                vector_ref new_store_ref = vector_ref( new vector_t(*x_store_ref) );
-                {
-                    sc_atomic_critical sync(sync_atomic);
-                    store_ref = new_store_ref;
-                }
+                sc_atomic_critical sync(sync_atomic);
+                // swap store_ref
+                store_ref = x.store_ref;
+                x.store_ref = nullptr;
                 return *this;
             }
-#endif
 
             /**
              * Like std::vector<T>::clear(), but ending with zero capacity.
