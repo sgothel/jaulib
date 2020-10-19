@@ -245,6 +245,11 @@ namespace jau {
              * <p>
              * This read operation is <i>lock-free</i>.
              * </p>
+             * <p>
+             * Mutation of the resulting Value_type
+             * is not synchronized via this cow_vector instance.
+             * </p>
+             * @see put()
              */
             Value_type & operator[](size_t i) noexcept {
                 sc_atomic_critical sync(sync_atomic);
@@ -267,6 +272,11 @@ namespace jau {
              * <p>
              * This read operation is <i>lock-free</i>.
              * </p>
+             * <p>
+             * Mutation of the resulting Value_type
+             * is not synchronized via this cow_vector instance.
+             * </p>
+             * @see put()
              */
             Value_type & at(size_t i) {
                 sc_atomic_critical sync(sync_atomic);
@@ -488,6 +498,39 @@ namespace jau {
                     store_ref = new_store_ref;
                 } // else throw away new_store_ref
                 return count;
+            }
+
+            /**
+             * Thread safe Value_type copy assignment to Value_type at given position with bounds checking.
+             * <p>
+             * This write operation uses a mutex lock and is blocking this instances' write operations only.
+             * </p>
+             * @param x the value to be added at the tail.
+             */
+            void put(size_t i, const Value_type& x) {
+                const std::lock_guard<std::recursive_mutex> lock(mtx_write);
+                vector_ref new_store_ref = vector_ref( new vector_t(*store_ref) );
+                new_store_ref->at(i) = x;
+                {
+                    sc_atomic_critical sync(sync_atomic);
+                    store_ref = new_store_ref;
+                }
+            }
+
+            /**
+             * Thread safe Value_type move assignment to Value_type at given position with bounds checking.
+             * <p>
+             * This write operation uses a mutex lock and is blocking this instances' write operations only.
+             * </p>
+             */
+            void put(size_t i, Value_type&& x) {
+                const std::lock_guard<std::recursive_mutex> lock(mtx_write);
+                vector_ref new_store_ref = vector_ref( new vector_t(*store_ref) );
+                new_store_ref->at(i) = std::move(x);
+                {
+                    sc_atomic_critical sync(sync_atomic);
+                    store_ref = new_store_ref;
+                }
             }
     };
 
