@@ -14,20 +14,20 @@ using namespace jau;
 
 class Integer {
     public:
-        int value;
+        size_t value;
 
-        Integer(int v) : value(v) {}
+        Integer(size_t v) : value(v) {}
 
         Integer(const Integer &o) noexcept = default;
         Integer(Integer &&o) noexcept = default;
         Integer& operator=(const Integer &o) noexcept = default;
         Integer& operator=(Integer &&o) noexcept = default;
 
-        operator int() const {
+        operator size_t() const {
             return value;
         }
-        int intValue() const { return value; }
-        static Integer valueOf(const int i) { return Integer(i); }
+        size_t intValue() const { return value; }
+        static Integer valueOf(const size_t i) { return Integer(i); }
 };
 
 std::shared_ptr<Integer> NullInteger = nullptr;
@@ -39,49 +39,46 @@ typedef ringbuffer<SharedType, nullptr> SharedTypeRingbuffer;
 class Cppunit_tests : public Cppunit {
   private:
 
-    std::shared_ptr<SharedTypeRingbuffer> createEmpty(int initialCapacity) {
+    std::shared_ptr<SharedTypeRingbuffer> createEmpty(size_t initialCapacity) {
         return std::shared_ptr<SharedTypeRingbuffer>(new SharedTypeRingbuffer(initialCapacity));
     }
     std::shared_ptr<SharedTypeRingbuffer> createFull(const std::vector<std::shared_ptr<Integer>> & source) {
         return std::shared_ptr<SharedTypeRingbuffer>(new SharedTypeRingbuffer(source));
     }
 
-    std::vector<SharedType> createIntArray(const int capacity, const int startValue) {
+    std::vector<SharedType> createIntArray(const size_t capacity, const size_t startValue) {
         std::vector<SharedType> array(capacity);
-        for(int i=0; i<capacity; i++) {
+        for(size_t i=0; i<capacity; i++) {
             array[i] = SharedType(new Integer(startValue+i));
         }
         return array;
     }
 
-    void getThreadType01(const std::string msg, std::shared_ptr<SharedTypeRingbuffer> rb, int len, int startValue) {
+    void getThreadType01(const std::string msg, std::shared_ptr<SharedTypeRingbuffer> rb, size_t len) {
         // std::thread::id this_id = std::this_thread::get_id();
         // pthread_t this_id = pthread_self();
 
         fprintf(stderr, "%s: Created / %s\n", msg.c_str(), rb->toString().c_str());
-        for(int i=0; i<len; i++) {
+        for(size_t i=0; i<len; i++) {
             SharedType svI = rb->getBlocking();
             CHECKTM(msg+": Empty at read #"+std::to_string(i+1)+": "+rb->toString(), svI!=nullptr);
-            fprintf(stderr, "%s: Got %d / %s\n",
+            fprintf(stderr, "%s: Got %zu / %s\n",
                     msg.c_str(), svI->intValue(), rb->toString().c_str());
-            if( 0 <= startValue ) {
-                CHECKM(msg+": %s: Wrong value at read #"+std::to_string(i+1)+": "+rb->toString(), startValue+i, svI->intValue());
-            }
         }
         fprintf(stderr, "%s: Dies / %s\n", msg.c_str(), rb->toString().c_str());
     }
 
-    void putThreadType01(const std::string msg, std::shared_ptr<SharedTypeRingbuffer> rb, int len, int startValue) {
+    void putThreadType01(const std::string msg, std::shared_ptr<SharedTypeRingbuffer> rb, size_t len, size_t startValue) {
         // std::thread::id this_id = std::this_thread::get_id();
         // pthread_t this_id = pthread_self();
 
         fprintf(stderr, "%s: Created / %s\n", msg.c_str(), rb->toString().c_str());
-        int preSize = rb->getSize();
+        size_t preSize = rb->getSize();
         (void)preSize;
 
-        for(int i=0; i<len; i++) {
+        for(size_t i=0; i<len; i++) {
             Integer * vI = new Integer(startValue+i);
-            fprintf(stderr, "%s: Putting %d ... / %s\n",
+            fprintf(stderr, "%s: Putting %zu ... / %s\n",
                     msg.c_str(), vI->intValue(), rb->toString().c_str());
             rb->putBlocking( SharedType( vI ) );
         }
@@ -92,12 +89,12 @@ class Cppunit_tests : public Cppunit {
 
     void test01_Read1Write1() {
         fprintf(stderr, "\n\ntest01_Read1Write1\n");
-        int capacity = 100;
+        size_t capacity = 100;
         std::shared_ptr<SharedTypeRingbuffer> rb = createEmpty(capacity);
         CHECKM("Not empty size "+rb->toString(), 0, rb->getSize());
         CHECKTM("Not empty "+rb->toString(), rb->isEmpty());
 
-        std::thread getThread01(&Cppunit_tests::getThreadType01, this, "test01.get01", rb, capacity, 0); // @suppress("Invalid arguments")
+        std::thread getThread01(&Cppunit_tests::getThreadType01, this, "test01.get01", rb, capacity); // @suppress("Invalid arguments")
         std::thread putThread01(&Cppunit_tests::putThreadType01, this, "test01.put01", rb, capacity, 0); // @suppress("Invalid arguments")
         putThread01.join();
         getThread01.join();
@@ -108,16 +105,16 @@ class Cppunit_tests : public Cppunit {
 
     void test02_Read4Write1() {
         fprintf(stderr, "\n\ntest02_Read4Write1\n");
-        int capacity = 400;
+        size_t capacity = 400;
         std::shared_ptr<SharedTypeRingbuffer> rb = createEmpty(capacity);
         CHECKM("Not empty size "+rb->toString(), 0, rb->getSize());
         CHECKTM("Not empty "+rb->toString(), rb->isEmpty());
 
-        std::thread getThread01(&Cppunit_tests::getThreadType01, this, "test02.get01", rb, capacity/4, -1); // @suppress("Invalid arguments")
-        std::thread getThread02(&Cppunit_tests::getThreadType01, this, "test02.get02", rb, capacity/4, -1); // @suppress("Invalid arguments")
+        std::thread getThread01(&Cppunit_tests::getThreadType01, this, "test02.get01", rb, capacity/4); // @suppress("Invalid arguments")
+        std::thread getThread02(&Cppunit_tests::getThreadType01, this, "test02.get02", rb, capacity/4); // @suppress("Invalid arguments")
         std::thread putThread01(&Cppunit_tests::putThreadType01, this, "test02.put01", rb, capacity, 0); // @suppress("Invalid arguments")
-        std::thread getThread03(&Cppunit_tests::getThreadType01, this, "test02.get03", rb, capacity/4, -1); // @suppress("Invalid arguments")
-        std::thread getThread04(&Cppunit_tests::getThreadType01, this, "test02.get04", rb, capacity/4, -1); // @suppress("Invalid arguments")
+        std::thread getThread03(&Cppunit_tests::getThreadType01, this, "test02.get03", rb, capacity/4); // @suppress("Invalid arguments")
+        std::thread getThread04(&Cppunit_tests::getThreadType01, this, "test02.get04", rb, capacity/4); // @suppress("Invalid arguments")
         putThread01.join();
         getThread01.join();
         getThread02.join();
@@ -130,22 +127,22 @@ class Cppunit_tests : public Cppunit {
 
     void test03_Read8Write2() {
         fprintf(stderr, "\n\ntest03_Read8Write2\n");
-        int capacity = 800;
+        size_t capacity = 800;
         std::shared_ptr<SharedTypeRingbuffer> rb = createEmpty(capacity);
         CHECKM("Not empty size "+rb->toString(), 0, rb->getSize());
         CHECKTM("Not empty "+rb->toString(), rb->isEmpty());
 
-        std::thread getThread01(&Cppunit_tests::getThreadType01, this, "test03.get01", rb, capacity/8, -1); // @suppress("Invalid arguments")
-        std::thread getThread02(&Cppunit_tests::getThreadType01, this, "test03.get02", rb, capacity/8, -1); // @suppress("Invalid arguments")
+        std::thread getThread01(&Cppunit_tests::getThreadType01, this, "test03.get01", rb, capacity/8); // @suppress("Invalid arguments")
+        std::thread getThread02(&Cppunit_tests::getThreadType01, this, "test03.get02", rb, capacity/8); // @suppress("Invalid arguments")
         std::thread putThread01(&Cppunit_tests::putThreadType01, this, "test03.put01", rb, capacity/2,  0); // @suppress("Invalid arguments")
-        std::thread getThread03(&Cppunit_tests::getThreadType01, this, "test03.get03", rb, capacity/8, -1); // @suppress("Invalid arguments")
-        std::thread getThread04(&Cppunit_tests::getThreadType01, this, "test03.get04", rb, capacity/8, -1); // @suppress("Invalid arguments")
+        std::thread getThread03(&Cppunit_tests::getThreadType01, this, "test03.get03", rb, capacity/8); // @suppress("Invalid arguments")
+        std::thread getThread04(&Cppunit_tests::getThreadType01, this, "test03.get04", rb, capacity/8); // @suppress("Invalid arguments")
 
-        std::thread getThread05(&Cppunit_tests::getThreadType01, this, "test03.get05", rb, capacity/8, -1); // @suppress("Invalid arguments")
-        std::thread getThread06(&Cppunit_tests::getThreadType01, this, "test03.get06", rb, capacity/8, -1); // @suppress("Invalid arguments")
+        std::thread getThread05(&Cppunit_tests::getThreadType01, this, "test03.get05", rb, capacity/8); // @suppress("Invalid arguments")
+        std::thread getThread06(&Cppunit_tests::getThreadType01, this, "test03.get06", rb, capacity/8); // @suppress("Invalid arguments")
         std::thread putThread02(&Cppunit_tests::putThreadType01, this, "test03.put02", rb, capacity/2,  400); // @suppress("Invalid arguments")
-        std::thread getThread07(&Cppunit_tests::getThreadType01, this, "test03.get07", rb, capacity/8, -1); // @suppress("Invalid arguments")
-        std::thread getThread08(&Cppunit_tests::getThreadType01, this, "test03.get08", rb, capacity/8, -1); // @suppress("Invalid arguments")
+        std::thread getThread07(&Cppunit_tests::getThreadType01, this, "test03.get07", rb, capacity/8); // @suppress("Invalid arguments")
+        std::thread getThread08(&Cppunit_tests::getThreadType01, this, "test03.get08", rb, capacity/8); // @suppress("Invalid arguments")
 
         putThread01.join();
         putThread02.join();
