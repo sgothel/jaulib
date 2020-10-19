@@ -28,9 +28,6 @@ set_target_properties(
    PROPERTIES
    SOVERSION ${jaucpp_VERSION_MAJOR}
    VERSION ${jaucpp_VERSION_STRING}
-   CXX_STANDARD 17
-   CXX_STANDARD_REQUIRED ON
-   COMPILE_FLAGS "-Wall -Wextra -Werror"
 )
 install (DIRECTORY ${PROJECT_SOURCE_DIR}/include/jau/ DESTINATION include/jau)
 
