@@ -374,7 +374,8 @@ namespace jau {
              * <p>
              * This write operation uses a mutex lock and is blocking this instances' write operations only.
              * </p>
-             * @param x the value to be added at the tail.
+             * @param i the position within this store
+             * @param x the value to be assigned to the object at the given position
              */
             void put(size_t i, const Value_type& x) {
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
@@ -391,6 +392,8 @@ namespace jau {
              * <p>
              * This write operation uses a mutex lock and is blocking this instances' write operations only.
              * </p>
+             * @param i the position within this store
+             * @param x the value to be assigned to the object at the given position
              */
             void put(size_t i, Value_type&& x) {
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
