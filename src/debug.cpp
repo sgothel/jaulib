@@ -33,7 +33,7 @@
 
 using namespace jau;
 
-std::string jau::get_backtrace(int skip_frames) noexcept {
+std::string jau::get_backtrace(bool skip_anon_frames, int skip_frames) noexcept {
     // symbol:
     //  1: _ZN9direct_bt10DBTAdapter14startDiscoveryEbNS_19HCILEOwnAddressTypeEtt + 0x58d @ ip 0x7faa959d6daf, sp 0x7ffe38f301e0
     // de-mangled:
@@ -47,13 +47,15 @@ std::string jau::get_backtrace(int skip_frames) noexcept {
     unw_word_t offset;
     unw_getcontext(&uc);
     unw_init_local(&cursor, &uc);
+    bool last_frame_anon = false;
     while( unw_step(&cursor) > 0 ) {
         frame++;
         if( skip_frames > frame ) {
             continue;
         }
+        bool append_line;
         snprintf(cstr, sizeof(cstr), "%3d: ", frame);
-        out.append(cstr);
+        std::string line(cstr);
 
         unw_get_reg(&cursor, UNW_REG_IP, &ip);
         unw_get_reg(&cursor, UNW_REG_SP, &sp);
@@ -62,23 +64,31 @@ std::string jau::get_backtrace(int skip_frames) noexcept {
             char *real_name;
             cstr[sizeof(cstr) -1] = 0; // fail safe
             if ( (real_name = abi::__cxa_demangle(cstr, nullptr, nullptr, &status)) == nullptr ) {
-                out.append(cstr); // didn't work, use cstr
+                line.append(cstr); // didn't work, use cstr
             } else {
-                out.append(real_name);
+                line.append(real_name);
                 free( real_name );
             }
             snprintf(cstr, sizeof(cstr), " + 0x%lx @ ip %p, sp %p", (unsigned long)offset, (void*)ip, (void*)sp);
+            append_line = true;
+            last_frame_anon = false;
         } else {
-            snprintf(cstr, sizeof(cstr), "ip %p, sp %p, get_proc_name error 0x%x", (void*)ip, (void*)sp, (unsigned)res);
+            // anon frame w/o proc-name
+            snprintf(cstr, sizeof(cstr), "__no_proc_name__ @ ip %p, sp %p", (void*)ip, (void*)sp);
+            append_line = !skip_anon_frames || !last_frame_anon;
+            last_frame_anon = true;
         }
-        out.append(cstr);
-        out.append("\n");
+        line.append(cstr);
+        line.append("\n");
+        if( append_line ) {
+            out.append(line);
+        }
     }
     return out;
 }
 
-void jau::print_backtrace(int skip_frames) noexcept {
-    fprintf(stderr, "%s", get_backtrace(skip_frames).c_str());
+void jau::print_backtrace(bool skip_anon_frames, int skip_frames) noexcept {
+    fprintf(stderr, "%s", get_backtrace(skip_anon_frames, skip_frames).c_str());
     fflush(stderr);
 }
 
@@ -110,7 +120,7 @@ void jau::ABORT_impl(const char *func, const char *file, const int line, const c
     va_end (args);
     fprintf(stderr, "; last errno %d %s\n", errno, strerror(errno));
     fflush(stderr);
-    jau::print_backtrace(2);
+    jau::print_backtrace(true, 2);
     abort();
 }
 
@@ -119,7 +129,7 @@ void jau::ERR_PRINTv(const char *func, const char *file, const int line, const c
     vfprintf(stderr, format, args);
     fprintf(stderr, "; last errno %d %s\n", errno, strerror(errno));
     fflush(stderr);
-    jau::print_backtrace(2);
+    jau::print_backtrace(true, 2);
 }
 
 void jau::ERR_PRINT_impl(const char *prefix, const bool backtrace, const char *func, const char *file, const int line, const char * format, ...) noexcept {
@@ -131,7 +141,7 @@ void jau::ERR_PRINT_impl(const char *prefix, const bool backtrace, const char *f
     fprintf(stderr, "; last errno %d %s\n", errno, strerror(errno));
     fflush(stderr);
     if( backtrace ) {
-        jau::print_backtrace(2);
+        jau::print_backtrace(true, 2);
     }
 }
 
