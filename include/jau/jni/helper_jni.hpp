@@ -319,7 +319,7 @@ namespace jau {
     template <typename T>
     jobject convert_vector_sharedptr_to_jarraylist(JNIEnv *env, std::vector<std::shared_ptr<T>>& array)
     {
-        size_t array_size = array.size();
+        nsize_t array_size = array.size();
 
         jmethodID arraylist_add;
         jobject result = get_new_arraylist(env, (jsize)array_size, &arraylist_add);
@@ -328,7 +328,7 @@ namespace jau {
             return result;
         }
 
-        for (size_t i = 0; i < array_size; ++i) {
+        for (nsize_t i = 0; i < array_size; ++i) {
             std::shared_ptr<T> elem = array[i];
             std::shared_ptr<JavaAnon> objref = elem->getJavaObject();
             if ( nullptr == objref ) {

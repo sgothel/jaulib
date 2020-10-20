@@ -144,10 +144,10 @@ namespace jau {
 
     class IndexOutOfBoundsException : public RuntimeException {
       public:
-        IndexOutOfBoundsException(const int index, const int length, const char* file, int line) noexcept
+        IndexOutOfBoundsException(const nsize_t index, const nsize_t length, const char* file, int line) noexcept
         : RuntimeException("IndexOutOfBoundsException", "Index "+std::to_string(index)+", data length "+std::to_string(length), file, line) {}
 
-        IndexOutOfBoundsException(const int index, const int count, const int length, const char* file, int line) noexcept
+        IndexOutOfBoundsException(const nsize_t index, const nsize_t count, const nsize_t length, const char* file, int line) noexcept
         : RuntimeException("IndexOutOfBoundsException", "Index "+std::to_string(index)+", count "+std::to_string(count)+", data length "+std::to_string(length), file, line) {}
     };
 
@@ -174,11 +174,17 @@ namespace jau {
         uint128_t dest;
         uint8_t const * const s = source.data;
         uint8_t * const d = dest.data;
-        for(int i=0; i<16; i++) {
+        for(nsize_t i=0; i<16; i++) {
             d[i] = s[15-i];
         }
         return dest;
     }
+
+    /**
+    // *************************************************
+    // *************************************************
+    // *************************************************
+     */
 
     /**
      * On the i386 the host byte order is Least Significant Byte first (LSB) or Little-Endian,
@@ -296,17 +302,17 @@ namespace jau {
     #error "Unexpected __BYTE_ORDER"
 #endif
 
-    inline void put_uint8(uint8_t * buffer, int const byte_offset, const uint8_t v) noexcept
+    inline void put_uint8(uint8_t * buffer, nsize_t const byte_offset, const uint8_t v) noexcept
     {
         uint8_t * p = (uint8_t *) ( buffer + byte_offset );
         *p = v;
     }
-    inline uint8_t get_uint8(uint8_t const * buffer, int const byte_offset) noexcept
+    inline uint8_t get_uint8(uint8_t const * buffer, nsize_t const byte_offset) noexcept
     {
         uint8_t const * p = (uint8_t const *) ( buffer + byte_offset );
         return *p;
     }
-    inline int8_t get_int8(uint8_t const * buffer, int const byte_offset) noexcept
+    inline int8_t get_int8(uint8_t const * buffer, nsize_t const byte_offset) noexcept
     {
         int8_t const * p = (int8_t const *) ( buffer + byte_offset );
         return *p;
@@ -324,7 +330,7 @@ namespace jau {
         constexpr T get(const bool littleEndian) const noexcept { return littleEndian ? le_to_cpu(store) : be_to_cpu(store); }
     };
 
-    inline void put_uint16(uint8_t * buffer, int const byte_offset, const uint16_t v) noexcept
+    inline void put_uint16(uint8_t * buffer, nsize_t const byte_offset, const uint16_t v) noexcept
     {
         /**
          * Handle potentially misaligned address of buffer + byte_offset, can't just
@@ -336,7 +342,7 @@ namespace jau {
          */
         reinterpret_cast<packed_t<uint16_t>*>( buffer + byte_offset )->store = v;
     }
-    inline void put_uint16(uint8_t * buffer, int const byte_offset, const uint16_t v, const bool littleEndian) noexcept
+    inline void put_uint16(uint8_t * buffer, nsize_t const byte_offset, const uint16_t v, const bool littleEndian) noexcept
     {
         /**
          * Handle potentially misaligned address of buffer + byte_offset, can't just
@@ -349,7 +355,7 @@ namespace jau {
          */
         reinterpret_cast<packed_t<uint16_t>*>( buffer + byte_offset )->store = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
     }
-    inline uint16_t get_uint16(uint8_t const * buffer, int const byte_offset) noexcept
+    inline uint16_t get_uint16(uint8_t const * buffer, nsize_t const byte_offset) noexcept
     {
         /**
          * Handle potentially misaligned address of buffer + byte_offset, can't just
@@ -363,7 +369,7 @@ namespace jau {
          */
         return reinterpret_cast<const packed_t<uint16_t>*>( buffer + byte_offset )->store;
     }
-    inline uint16_t get_uint16(uint8_t const * buffer, int const byte_offset, const bool littleEndian) noexcept
+    inline uint16_t get_uint16(uint8_t const * buffer, nsize_t const byte_offset, const bool littleEndian) noexcept
     {
         /**
          * Handle potentially misaligned address of buffer + byte_offset, can't just
@@ -378,53 +384,53 @@ namespace jau {
         return reinterpret_cast<const packed_t<uint16_t>*>( buffer + byte_offset )->get(littleEndian);
     }
 
-    inline void put_uint32(uint8_t * buffer, int const byte_offset, const uint32_t v) noexcept
+    inline void put_uint32(uint8_t * buffer, nsize_t const byte_offset, const uint32_t v) noexcept
     {
         reinterpret_cast<packed_t<uint32_t>*>( buffer + byte_offset )->store = v;
     }
-    inline void put_uint32(uint8_t * buffer, int const byte_offset, const uint32_t v, const bool littleEndian) noexcept
+    inline void put_uint32(uint8_t * buffer, nsize_t const byte_offset, const uint32_t v, const bool littleEndian) noexcept
     {
         reinterpret_cast<packed_t<uint32_t>*>( buffer + byte_offset )->store = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
     }
-    inline uint32_t get_uint32(uint8_t const * buffer, int const byte_offset) noexcept
+    inline uint32_t get_uint32(uint8_t const * buffer, nsize_t const byte_offset) noexcept
     {
         return reinterpret_cast<const packed_t<uint32_t>*>( buffer + byte_offset )->store;
     }
-    inline uint32_t get_uint32(uint8_t const * buffer, int const byte_offset, const bool littleEndian) noexcept
+    inline uint32_t get_uint32(uint8_t const * buffer, nsize_t const byte_offset, const bool littleEndian) noexcept
     {
         return reinterpret_cast<const packed_t<uint32_t>*>( buffer + byte_offset )->get(littleEndian);
     }
 
-    inline void put_uint64(uint8_t * buffer, int const byte_offset, const uint64_t v) noexcept
+    inline void put_uint64(uint8_t * buffer, nsize_t const byte_offset, const uint64_t v) noexcept
     {
         reinterpret_cast<packed_t<uint64_t>*>( buffer + byte_offset )->store = v;
     }
-    inline void put_uint64(uint8_t * buffer, int const byte_offset, const uint64_t v, const bool littleEndian) noexcept
+    inline void put_uint64(uint8_t * buffer, nsize_t const byte_offset, const uint64_t v, const bool littleEndian) noexcept
     {
         reinterpret_cast<packed_t<uint64_t>*>( buffer + byte_offset )->store = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
     }
-    inline uint64_t get_uint64(uint8_t const * buffer, int const byte_offset) noexcept
+    inline uint64_t get_uint64(uint8_t const * buffer, nsize_t const byte_offset) noexcept
     {
         return reinterpret_cast<const packed_t<uint64_t>*>( buffer + byte_offset )->store;
     }
-    inline uint64_t get_uint64(uint8_t const * buffer, int const byte_offset, const bool littleEndian) noexcept
+    inline uint64_t get_uint64(uint8_t const * buffer, nsize_t const byte_offset, const bool littleEndian) noexcept
     {
         return reinterpret_cast<const packed_t<uint64_t>*>( buffer + byte_offset )->get(littleEndian);
     }
 
-    inline void put_uint128(uint8_t * buffer, int const byte_offset, const uint128_t v) noexcept
+    inline void put_uint128(uint8_t * buffer, nsize_t const byte_offset, const uint128_t v) noexcept
     {
         reinterpret_cast<packed_t<uint128_t>*>( buffer + byte_offset )->store = v;
     }
-    inline void put_uint128(uint8_t * buffer, int const byte_offset, const uint128_t v, const bool littleEndian) noexcept
+    inline void put_uint128(uint8_t * buffer, nsize_t const byte_offset, const uint128_t v, const bool littleEndian) noexcept
     {
         reinterpret_cast<packed_t<uint128_t>*>( buffer + byte_offset )->store = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
     }
-    inline uint128_t get_uint128(uint8_t const * buffer, int const byte_offset) noexcept
+    inline uint128_t get_uint128(uint8_t const * buffer, nsize_t const byte_offset) noexcept
     {
         return reinterpret_cast<const packed_t<uint128_t>*>( buffer + byte_offset )->store;
     }
-    inline uint128_t get_uint128(uint8_t const * buffer, int const byte_offset, const bool littleEndian) noexcept
+    inline uint128_t get_uint128(uint8_t const * buffer, nsize_t const byte_offset, const bool littleEndian) noexcept
     {
         return reinterpret_cast<const packed_t<uint128_t>*>( buffer + byte_offset )->get(littleEndian);
     }
@@ -475,7 +481,7 @@ namespace jau {
      * The source string within buffer is not required to contain an EOS null byte;
      * </p>
      */
-    std::string get_string(const uint8_t *buffer, int const buffer_len, int const max_len) noexcept;
+    std::string get_string(const uint8_t *buffer, nsize_t const buffer_len, nsize_t const max_len) noexcept;
 
     /**
      * Merge the given 'uuid16' into a 'base_uuid' copy at the given little endian 'uuid16_le_octet_index' position.
@@ -497,7 +503,7 @@ namespace jau {
      * BE: uuid16 -> value.data[2+3]
      * </pre>
      */
-    uint128_t merge_uint128(uint16_t const uuid16, uint128_t const & base_uuid, int const uuid16_le_octet_index);
+    uint128_t merge_uint128(uint16_t const uuid16, uint128_t const & base_uuid, nsize_t const uuid16_le_octet_index);
 
     /**
      * Merge the given 'uuid32' into a 'base_uuid' copy at the given little endian 'uuid32_le_octet_index' position.
@@ -519,7 +525,7 @@ namespace jau {
      * BE: uuid32 -> value.data[0..3]
      * </pre>
      */
-    uint128_t merge_uint128(uint32_t const uuid32, uint128_t const & base_uuid, int const uuid32_le_octet_index);
+    uint128_t merge_uint128(uint32_t const uuid32, uint128_t const & base_uuid, nsize_t const uuid32_le_octet_index);
 
     std::string uint8HexString(const uint8_t v, const bool leading0X=true) noexcept;
     std::string uint16HexString(const uint16_t v, const bool leading0X=true) noexcept;
@@ -533,7 +539,7 @@ namespace jau {
      * Otherwise orders MSB left -> LSB right, usual for readable integer values.
      * </p>
      */
-    std::string bytesHexString(const uint8_t * bytes, const size_t offset, const size_t length, const bool lsbFirst, const bool leading0X=true) noexcept;
+    std::string bytesHexString(const uint8_t * bytes, const nsize_t offset, const nsize_t length, const bool lsbFirst, const bool leading0X=true) noexcept;
 
     std::string int32SeparatedString(const int32_t v, const char separator=',') noexcept;
     std::string uint32SeparatedString(const uint32_t v, const char separator=',') noexcept;

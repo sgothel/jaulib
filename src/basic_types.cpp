@@ -64,17 +64,17 @@ const char* jau::RuntimeException::what() const noexcept {
     return out.c_str();
 }
 
-std::string jau::get_string(const uint8_t *buffer, int const buffer_len, int const max_len) noexcept {
-    const int cstr_len = std::min(buffer_len, max_len);
+std::string jau::get_string(const uint8_t *buffer, nsize_t const buffer_len, nsize_t const max_len) noexcept {
+    const nsize_t cstr_len = std::min(buffer_len, max_len);
     char cstr[max_len+1]; // EOS
     memcpy(cstr, buffer, cstr_len);
     cstr[cstr_len] = 0; // EOS
     return std::string(cstr);
 }
 
-uint128_t jau::merge_uint128(uint16_t const uuid16, uint128_t const & base_uuid, int const uuid16_le_octet_index)
+uint128_t jau::merge_uint128(uint16_t const uuid16, uint128_t const & base_uuid, nsize_t const uuid16_le_octet_index)
 {
-    if( 0 > uuid16_le_octet_index || uuid16_le_octet_index > 14 ) {
+    if( uuid16_le_octet_index > 14 ) {
         std::string msg("uuid16_le_octet_index ");
         msg.append(std::to_string(uuid16_le_octet_index));
         msg.append(", not within [0..14]");
@@ -96,9 +96,9 @@ uint128_t jau::merge_uint128(uint16_t const uuid16, uint128_t const & base_uuid,
     // BE: uuid16 -> value.data[2+3]
     //
 #if __BYTE_ORDER == __BIG_ENDIAN
-    int offset = 15 - 1 - uuid16_le_octet_index;
+    nsize_t offset = 15 - 1 - uuid16_le_octet_index;
 #elif __BYTE_ORDER == __LITTLE_ENDIAN
-    int offset = uuid16_le_octet_index;
+    nsize_t offset = uuid16_le_octet_index;
 #else
 #error "Unexpected __BYTE_ORDER"
 #endif
@@ -108,9 +108,9 @@ uint128_t jau::merge_uint128(uint16_t const uuid16, uint128_t const & base_uuid,
     return dest;
 }
 
-uint128_t jau::merge_uint128(uint32_t const uuid32, uint128_t const & base_uuid, int const uuid32_le_octet_index)
+uint128_t jau::merge_uint128(uint32_t const uuid32, uint128_t const & base_uuid, nsize_t const uuid32_le_octet_index)
 {
-    if( 0 > uuid32_le_octet_index || uuid32_le_octet_index > 12 ) {
+    if( uuid32_le_octet_index > 12 ) {
         std::string msg("uuid32_le_octet_index ");
         msg.append(std::to_string(uuid32_le_octet_index));
         msg.append(", not within [0..12]");
@@ -132,9 +132,9 @@ uint128_t jau::merge_uint128(uint32_t const uuid32, uint128_t const & base_uuid,
     // BE: uuid32 -> value.data[0..3]
     //
 #if __BYTE_ORDER == __BIG_ENDIAN
-    int offset = 15 - 3 - uuid32_le_octet_index;
+    nsize_t offset = 15 - 3 - uuid32_le_octet_index;
 #elif __BYTE_ORDER == __LITTLE_ENDIAN
-    int offset = uuid32_le_octet_index;
+    nsize_t offset = uuid32_le_octet_index;
 #else
 #error "Unexpected __BYTE_ORDER"
 #endif
@@ -145,12 +145,12 @@ uint128_t jau::merge_uint128(uint32_t const uuid32, uint128_t const & base_uuid,
 }
 
 std::string jau::uint8HexString(const uint8_t v, const bool leading0X) noexcept {
-    const int length = leading0X ? 4 : 2; // ( '0x00' | '00' )
+    const nsize_t length = leading0X ? 4 : 2; // ( '0x00' | '00' )
     std::string str;
     str.reserve(length+1); // including EOS for snprintf
     str.resize(length);
 
-    const int count = snprintf(&str[0], str.capacity(), ( leading0X ? "0x%.2X" : "%.2X" ), v);
+    const nsize_t count = snprintf(&str[0], str.capacity(), ( leading0X ? "0x%.2X" : "%.2X" ), v);
     if( length != count ) {
         ABORT("uint8_t string not of length %d but %d", length, count);
     }
@@ -158,12 +158,12 @@ std::string jau::uint8HexString(const uint8_t v, const bool leading0X) noexcept 
 }
 
 std::string jau::uint16HexString(const uint16_t v, const bool leading0X) noexcept {
-    const int length = leading0X ? 6 : 4; // ( '0x0000' | '0000' )
+    const nsize_t length = leading0X ? 6 : 4; // ( '0x0000' | '0000' )
     std::string str;
     str.reserve(length+1); // including EOS for snprintf
     str.resize(length);
 
-    const int count = snprintf(&str[0], str.capacity(), ( leading0X ? "0x%.4X" : "%.4X" ), v);
+    const nsize_t count = snprintf(&str[0], str.capacity(), ( leading0X ? "0x%.4X" : "%.4X" ), v);
     if( length != count ) {
         ABORT("uint16_t string not of length %d but %d", length, count);
     }
@@ -171,12 +171,12 @@ std::string jau::uint16HexString(const uint16_t v, const bool leading0X) noexcep
 }
 
 std::string jau::uint32HexString(const uint32_t v, const bool leading0X) noexcept {
-    const int length = leading0X ? 10 : 8; // ( '0x00000000' | '00000000' )
+    const nsize_t length = leading0X ? 10 : 8; // ( '0x00000000' | '00000000' )
     std::string str;
     str.reserve(length+1); // including EOS for snprintf
     str.resize(length);
 
-    const int count = snprintf(&str[0], str.capacity(), ( leading0X ? "0x%.8X" : "%.8X" ), v);
+    const nsize_t count = snprintf(&str[0], str.capacity(), ( leading0X ? "0x%.8X" : "%.8X" ), v);
     if( length != count ) {
         ABORT("uint32_t string not of length %d but %d", length, count);
     }
@@ -184,12 +184,12 @@ std::string jau::uint32HexString(const uint32_t v, const bool leading0X) noexcep
 }
 
 std::string jau::uint64HexString(const uint64_t v, const bool leading0X) noexcept {
-    const int length = leading0X ? 18 : 16; // ( '0x0000000000000000' | '0000000000000000' )
+    const nsize_t length = leading0X ? 18 : 16; // ( '0x0000000000000000' | '0000000000000000' )
     std::string str;
     str.reserve(length+1); // including EOS for snprintf
     str.resize(length);
 
-    const int count = snprintf(&str[0], str.capacity(), ( leading0X ? "0x%.16" PRIX64 : "%.16" PRIX64 ), v);
+    const nsize_t count = snprintf(&str[0], str.capacity(), ( leading0X ? "0x%.16" PRIX64 : "%.16" PRIX64 ), v);
     if( length != count ) {
         ABORT("uint64_t string not of length %d but %d", length, count);
     }
@@ -202,7 +202,7 @@ std::string jau::aptrHexString(const void * v, const bool leading0X) noexcept {
 
 static const char* HEX_ARRAY = "0123456789ABCDEF";
 
-std::string jau::bytesHexString(const uint8_t * bytes, const size_t offset, const size_t length, const bool lsbFirst, const bool leading0X) noexcept {
+std::string jau::bytesHexString(const uint8_t * bytes, const nsize_t offset, const nsize_t length, const bool lsbFirst, const bool leading0X) noexcept {
     std::string str;
 
     if( nullptr == bytes ) {
@@ -220,14 +220,14 @@ std::string jau::bytesHexString(const uint8_t * bytes, const size_t offset, cons
     }
     if( lsbFirst ) {
         // LSB left -> MSB right
-        for (size_t j = 0; j < length; j++) {
+        for (nsize_t j = 0; j < length; j++) {
             const int v = bytes[offset+j] & 0xFF;
             str.push_back(HEX_ARRAY[v >> 4]);
             str.push_back(HEX_ARRAY[v & 0x0F]);
         }
     } else {
         // MSB left -> LSB right
-        size_t j = length;
+        nsize_t j = length;
         do {
             j--;
             const int v = bytes[offset+j] & 0xFF;
@@ -248,14 +248,14 @@ std::string jau::int32SeparatedString(const int32_t v, const char separator) noe
     char *p_src = src;
     char *p_dst = dst;
 
-    int num_len = snprintf(src, sizeof(src), "%" PRId32, v);
+    nsize_t num_len = snprintf(src, sizeof(src), "%" PRId32, v);
 
     if (*p_src == '-') {
         *p_dst++ = *p_src++;
         num_len--;
     }
 
-    for ( int commas = 2 - num_len % 3; 0 != *p_src; commas = (commas + 1) % 3 )
+    for ( nsize_t commas = 2 - num_len % 3; 0 != *p_src; commas = (commas + 1) % 3 )
     {
         *p_dst++ = *p_src++;
         if ( 1 == commas ) {
@@ -275,9 +275,9 @@ std::string jau::uint32SeparatedString(const uint32_t v, const char separator) n
     char *p_src = src;
     char *p_dst = dst;
 
-    int num_len = snprintf(src, sizeof(src), "%" PRIu32, v);
+    nsize_t num_len = snprintf(src, sizeof(src), "%" PRIu32, v);
 
-    for ( int commas = 2 - num_len % 3; 0 != *p_src; commas = (commas + 1) % 3 )
+    for ( nsize_t commas = 2 - num_len % 3; 0 != *p_src; commas = (commas + 1) % 3 )
     {
         *p_dst++ = *p_src++;
         if ( 1 == commas ) {
@@ -297,9 +297,9 @@ std::string jau::uint64SeparatedString(const uint64_t v, const char separator) n
     char *p_src = src;
     char *p_dst = dst;
 
-    int num_len = snprintf(src, sizeof(src), "%" PRIu64, v);
+    nsize_t num_len = snprintf(src, sizeof(src), "%" PRIu64, v);
 
-    for ( int commas = 2 - num_len % 3; 0 != *p_src; commas = (commas + 1) % 3 )
+    for ( nsize_t commas = 2 - num_len % 3; 0 != *p_src; commas = (commas + 1) % 3 )
     {
         *p_dst++ = *p_src++;
         if ( 1 == commas ) {
