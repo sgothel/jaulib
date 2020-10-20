@@ -221,13 +221,13 @@ namespace jau {
 
         public:
             /** Utilizes copy-ctor from 'const I& _data' */
-            CaptureInvocationFunc(const I& _data, R(*_function)(I&, A...), bool dataIsIdentity) noexcept
-            : data(_data), function(_function), dataIsIdentity(dataIsIdentity) {
+            CaptureInvocationFunc(const I& _data, R(*_function)(I&, A...), bool dataIsIdentity_) noexcept
+            : data(_data), function(_function), dataIsIdentity(dataIsIdentity_) {
             }
 
             /** Utilizes move-ctor from moved 'I&& _data' */
-            CaptureInvocationFunc(I&& _data, R(*_function)(I&, A...), bool dataIsIdentity) noexcept
-            : data(std::move(_data)), function(_function), dataIsIdentity(dataIsIdentity) {
+            CaptureInvocationFunc(I&& _data, R(*_function)(I&, A...), bool dataIsIdentity_) noexcept
+            : data(std::move(_data)), function(_function), dataIsIdentity(dataIsIdentity_) {
             }
 
             int getType() const noexcept override { return 3; }

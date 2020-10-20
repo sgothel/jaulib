@@ -159,8 +159,8 @@ namespace jau {
                 }
                 return true;
             }
-            JavaGlobalObj(jobject obj, jmethodID mNotifyDeleted) noexcept
-            : javaObjectRef(obj), mNotifyDeleted(mNotifyDeleted) { }
+            JavaGlobalObj(jobject obj, jmethodID mNotifyDeleted_) noexcept
+            : javaObjectRef(obj), mNotifyDeleted(mNotifyDeleted_) { }
 
             JavaGlobalObj(const JavaGlobalObj &o) noexcept = default;
             JavaGlobalObj(JavaGlobalObj &&o) noexcept = default;

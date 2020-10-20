@@ -144,7 +144,7 @@ private:
     jboolean isCopy = false;
 
 public:
-    JNICriticalArray(JNIEnv *env) : env(env) {}
+    JNICriticalArray(JNIEnv *env_val) : env(env_val) {}
 
     JNICriticalArray(const JNICriticalArray &o) = delete;
     JNICriticalArray(JNICriticalArray &&o) = delete;
@@ -174,16 +174,16 @@ public:
     /**
      * Acquired the primitive array.
      */
-    T* get(U jarray, Mode mode=UPDATE_AND_RELEASE) {
-        if( nullptr == jarray ) {
+    T* get(U jarray_val, Mode mode_val=UPDATE_AND_RELEASE) {
+        if( nullptr == jarray_val ) {
             return nullptr;
         }
-        T* narray = static_cast<T*>( env->GetPrimitiveArrayCritical(jarray, &isCopy) );
-        if( nullptr != narray ) {
-            this->mode = mode;
-            this->jarray = jarray;
-            this->narray = narray;
-            return narray;
+        T* _narray = static_cast<T*>( env->GetPrimitiveArrayCritical(jarray_val, &isCopy) );
+        if( nullptr != _narray ) {
+            this->mode = mode_val;
+            this->jarray = jarray_val;
+            this->narray = _narray;
+            return _narray;
         }
         return nullptr;
     }

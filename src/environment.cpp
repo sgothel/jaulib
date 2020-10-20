@@ -228,10 +228,10 @@ bool environment::getExplodingPropertiesImpl(const std::string & root_prefix_dom
     return true;
 }
 
-environment::environment(const std::string & root_prefix_domain) noexcept
-: root_prefix_domain(root_prefix_domain),
-  debug( getExplodingPropertiesImpl(root_prefix_domain, root_prefix_domain+".debug") ),
-  debug_jni( getBooleanProperty(root_prefix_domain+".debug.jni", false) ),
-  verbose( getExplodingPropertiesImpl(root_prefix_domain, root_prefix_domain+".verbose") || environment::debug )
+environment::environment(const std::string & root_prefix_domain_) noexcept
+: root_prefix_domain(root_prefix_domain_),
+  debug( getExplodingPropertiesImpl(root_prefix_domain_, root_prefix_domain_+".debug") ),
+  debug_jni( getBooleanProperty(root_prefix_domain_+".debug.jni", false) ),
+  verbose( getExplodingPropertiesImpl(root_prefix_domain_, root_prefix_domain_+".verbose") || environment::debug )
 {
 }

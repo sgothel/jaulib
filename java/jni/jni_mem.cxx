@@ -95,12 +95,12 @@ JNIGlobalRef::JNIGlobalRef() noexcept {
     DBG_JNI_PRINT("JNIGlobalRef::def_ctor nullptr");
 }
 
-JNIGlobalRef::JNIGlobalRef(jobject object) {
-    if( nullptr == object ) {
+JNIGlobalRef::JNIGlobalRef(jobject _object) {
+    if( nullptr == _object ) {
         throw jau::RuntimeException("JNIGlobalRef ctor null jobject", E_FILE_LINE);
     }
-    this->object = jni_env->NewGlobalRef(object);
-    DBG_JNI_PRINT("JNIGlobalRef::def_ctor %p -> %p", object, this->object);
+    this->object = jni_env->NewGlobalRef(_object);
+    DBG_JNI_PRINT("JNIGlobalRef::def_ctor %p -> %p", _object, this->object);
 }
 
 JNIGlobalRef::JNIGlobalRef(const JNIGlobalRef &o) {
