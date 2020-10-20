@@ -202,7 +202,7 @@ std::string jau::aptrHexString(const void * v, const bool leading0X) noexcept {
 
 static const char* HEX_ARRAY = "0123456789ABCDEF";
 
-std::string jau::bytesHexString(const uint8_t * bytes, const int offset, const int length, const bool lsbFirst, const bool leading0X) noexcept {
+std::string jau::bytesHexString(const uint8_t * bytes, const size_t offset, const size_t length, const bool lsbFirst, const bool leading0X) noexcept {
     std::string str;
 
     if( nullptr == bytes ) {
@@ -220,18 +220,20 @@ std::string jau::bytesHexString(const uint8_t * bytes, const int offset, const i
     }
     if( lsbFirst ) {
         // LSB left -> MSB right
-        for (int j = 0; j < length; j++) {
+        for (size_t j = 0; j < length; j++) {
             const int v = bytes[offset+j] & 0xFF;
             str.push_back(HEX_ARRAY[v >> 4]);
             str.push_back(HEX_ARRAY[v & 0x0F]);
         }
     } else {
         // MSB left -> LSB right
-        for (int j = length-1; j >= 0; j--) {
+        size_t j = length;
+        do {
+            j--;
             const int v = bytes[offset+j] & 0xFF;
             str.push_back(HEX_ARRAY[v >> 4]);
             str.push_back(HEX_ARRAY[v & 0x0F]);
-        }
+        } while( j != 0);
     }
     return str;
 }
@@ -262,7 +264,7 @@ std::string jau::int32SeparatedString(const int32_t v, const char separator) noe
     }
     *--p_dst = 0; // place EOS on erroneous trailing comma
 
-    return std::string(dst, p_dst - dst);
+    return std::string(dst, static_cast<size_t>(p_dst - dst));
 }
 
 std::string jau::uint32SeparatedString(const uint32_t v, const char separator) noexcept {
@@ -284,7 +286,7 @@ std::string jau::uint32SeparatedString(const uint32_t v, const char separator) n
     }
     *--p_dst = 0; // place EOS on erroneous trailing comma
 
-    return std::string(dst, p_dst - dst);
+    return std::string(dst, static_cast<size_t>(p_dst - dst));
 }
 
 std::string jau::uint64SeparatedString(const uint64_t v, const char separator) noexcept {
@@ -306,7 +308,7 @@ std::string jau::uint64SeparatedString(const uint64_t v, const char separator) n
     }
     *--p_dst = 0; // place EOS on erroneous trailing comma
 
-    return std::string(dst, p_dst - dst);
+    return std::string(dst, static_cast<size_t>(p_dst - dst));
 }
 
 void jau::trimInPlace(std::string &s) noexcept {

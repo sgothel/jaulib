@@ -121,7 +121,7 @@ namespace jau {
     std::string from_jstring_to_string(JNIEnv *env, jstring str);
     jstring from_string_to_jstring(JNIEnv *env, const std::string & str);
 
-    jobject get_new_arraylist(JNIEnv *env, unsigned int size, jmethodID *add);
+    jobject get_new_arraylist(JNIEnv *env, jsize size, jmethodID *add);
 
     //
     // C++ JavaAnon implementation
@@ -319,16 +319,16 @@ namespace jau {
     template <typename T>
     jobject convert_vector_sharedptr_to_jarraylist(JNIEnv *env, std::vector<std::shared_ptr<T>>& array)
     {
-        unsigned int array_size = array.size();
+        size_t array_size = array.size();
 
         jmethodID arraylist_add;
-        jobject result = get_new_arraylist(env, array_size, &arraylist_add);
+        jobject result = get_new_arraylist(env, (jsize)array_size, &arraylist_add);
 
         if (0 == array_size) {
             return result;
         }
 
-        for (unsigned int i = 0; i < array_size; ++i) {
+        for (size_t i = 0; i < array_size; ++i) {
             std::shared_ptr<T> elem = array[i];
             std::shared_ptr<JavaAnon> objref = elem->getJavaObject();
             if ( nullptr == objref ) {

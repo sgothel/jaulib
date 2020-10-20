@@ -312,7 +312,7 @@ jstring jau::from_string_to_jstring(JNIEnv *env, const std::string & str)
     return env->NewStringUTF(str.c_str());
 }
 
-jobject jau::get_new_arraylist(JNIEnv *env, unsigned int size, jmethodID *add)
+jobject jau::get_new_arraylist(JNIEnv *env, jsize size, jmethodID *add)
 {
     jclass arraylist_class = search_class(env, "java/util/ArrayList");
     jmethodID arraylist_ctor = search_method(env, arraylist_class, "<init>", "(I)V", false);

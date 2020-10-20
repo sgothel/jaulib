@@ -497,7 +497,7 @@ namespace jau {
      * Otherwise orders MSB left -> LSB right, usual for readable integer values.
      * </p>
      */
-    std::string bytesHexString(const uint8_t * bytes, const int offset, const int length, const bool lsbFirst, const bool leading0X=true) noexcept;
+    std::string bytesHexString(const uint8_t * bytes, const size_t offset, const size_t length, const bool lsbFirst, const bool leading0X=true) noexcept;
 
     std::string int32SeparatedString(const int32_t v, const char separator=',') noexcept;
     std::string uint32SeparatedString(const uint32_t v, const char separator=',') noexcept;
