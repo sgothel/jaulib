@@ -12,32 +12,32 @@ using namespace jau;
 
 class Integer {
     public:
-        size_t value;
+    jau::nsize_t value;
 
-        Integer(size_t v) : value(v) {}
+        Integer(jau::nsize_t v) : value(v) {}
 
         Integer(const Integer &o) noexcept = default;
         Integer(Integer &&o) noexcept = default;
         Integer& operator=(const Integer &o) noexcept = default;
         Integer& operator=(Integer &&o) noexcept = default;
 
-        operator size_t() const {
+        operator jau::nsize_t() const {
             return value;
         }
-        size_t intValue() const { return value; }
-        static Integer valueOf(const size_t i) { return Integer(i); }
+        jau::nsize_t intValue() const { return value; }
+        static Integer valueOf(const jau::nsize_t i) { return Integer(i); }
 };
 
 std::shared_ptr<Integer> NullInteger = nullptr;
 
 typedef std::shared_ptr<Integer> SharedType;
-typedef ringbuffer<SharedType, nullptr> SharedTypeRingbuffer;
+typedef ringbuffer<SharedType, nullptr, jau::nsize_t> SharedTypeRingbuffer;
 
 // Test examples.
 class Cppunit_tests : public Cppunit {
   private:
 
-    std::shared_ptr<SharedTypeRingbuffer> createEmpty(size_t initialCapacity) {
+    std::shared_ptr<SharedTypeRingbuffer> createEmpty(jau::nsize_t initialCapacity) {
         std::shared_ptr<SharedTypeRingbuffer> rb = std::shared_ptr<SharedTypeRingbuffer>(new SharedTypeRingbuffer(initialCapacity));
         CHECKTM("Is !empty-1 "+rb->toString(), rb->isEmpty());
         CHECKTM("Is !empty-2 "+rb->toString(), rb->isEmpty2());
@@ -50,24 +50,24 @@ class Cppunit_tests : public Cppunit {
         return rb;
     }
 
-    std::vector<SharedType> createIntArray(const size_t capacity, const size_t startValue) {
+    std::vector<SharedType> createIntArray(const jau::nsize_t capacity, const jau::nsize_t startValue) {
         std::vector<SharedType> array(capacity);
-        for(size_t i=0; i<capacity; i++) {
+        for(jau::nsize_t i=0; i<capacity; i++) {
             array[i] = SharedType(new Integer(startValue+i));
         }
         return array;
     }
 
-    void readTestImpl(SharedTypeRingbuffer &rb, bool clearRef, size_t capacity, size_t len, size_t startValue) {
+    void readTestImpl(SharedTypeRingbuffer &rb, bool clearRef, jau::nsize_t capacity, jau::nsize_t len, jau::nsize_t startValue) {
         (void) clearRef;
 
-        size_t preSize = rb.getSize();
+        jau::nsize_t preSize = rb.getSize();
         CHECKM("Wrong capacity "+rb.toString(), capacity, rb.capacity());
         CHECKTM("Too low capacity to read "+std::to_string(len)+" elems: "+rb.toString(), capacity >= len);
         CHECKTM("Too low size to read "+std::to_string(len)+" elems: "+rb.toString(), preSize >= len);
         CHECKTM("Is empty "+rb.toString(), !rb.isEmpty());
 
-        for(size_t i=0; i<len; i++) {
+        for(jau::nsize_t i=0; i<len; i++) {
             SharedType svI = rb.get();
             CHECKTM("Empty at read #"+std::to_string(i+1)+": "+rb.toString(), svI!=nullptr);
             CHECKM("Wrong value at read #"+std::to_string(i+1)+": "+rb.toString(), startValue+i, svI->intValue());
@@ -78,15 +78,15 @@ class Cppunit_tests : public Cppunit {
         CHECKTM("Is full "+rb.toString(), !rb.isFull());
     }
 
-    void writeTestImpl(SharedTypeRingbuffer &rb, size_t capacity, size_t len, size_t startValue) {
-        size_t preSize = rb.getSize();
+    void writeTestImpl(SharedTypeRingbuffer &rb, jau::nsize_t capacity, jau::nsize_t len, jau::nsize_t startValue) {
+        jau::nsize_t preSize = rb.getSize();
 
         CHECKM("Wrong capacity "+rb.toString(), capacity, rb.capacity());
         CHECKTM("Too low capacity to write "+std::to_string(len)+" elems: "+rb.toString(), capacity >= len);
         CHECKTM("Too low size to write "+std::to_string(len)+" elems: "+rb.toString(), preSize+len <= capacity);
         CHECKTM("Is full "+rb.toString(), !rb.isFull());
 
-        for(size_t i=0; i<len; i++) {
+        for(jau::nsize_t i=0; i<len; i++) {
             std::string m = "Buffer is full at put #"+std::to_string(i)+": "+rb.toString();
             CHECKTM(m, rb.put( SharedType( new Integer(startValue+i) ) ) );
         }
@@ -95,24 +95,24 @@ class Cppunit_tests : public Cppunit {
         CHECKTM("Is empty "+rb.toString(), !rb.isEmpty());
     }
 
-    void moveGetPutImpl(SharedTypeRingbuffer &rb, size_t pos) {
+    void moveGetPutImpl(SharedTypeRingbuffer &rb, jau::nsize_t pos) {
         CHECKTM("RB is empty "+rb.toString(), !rb.isEmpty());
-        for(size_t i=0; i<pos; i++) {
+        for(jau::nsize_t i=0; i<pos; i++) {
             CHECKM("MoveFull.get failed "+rb.toString(), i, rb.get()->intValue());
             CHECKTM("MoveFull.put failed "+rb.toString(), rb.put( SharedType( new Integer(i) ) ) );
         }
     }
 
-    void movePutGetImpl(SharedTypeRingbuffer &rb, size_t pos) {
+    void movePutGetImpl(SharedTypeRingbuffer &rb, jau::nsize_t pos) {
         CHECKTM("RB is full "+rb.toString(), !rb.isFull());
-        for(size_t i=0; i<pos; i++) {
+        for(jau::nsize_t i=0; i<pos; i++) {
             CHECKTM("MoveEmpty.put failed "+rb.toString(), rb.put( SharedType( new Integer(600+i) ) ) );
             CHECKM("MoveEmpty.get failed "+rb.toString(), 600+i, rb.get()->intValue());
         }
     }
 
     void test01_FullRead() {
-        size_t capacity = 11;
+        jau::nsize_t capacity = 11;
         std::vector<SharedType> source = createIntArray(capacity, 0);
         std::shared_ptr<SharedTypeRingbuffer> rb = createFull(source);
         fprintf(stderr, "test01_FullRead: Created / %s\n", rb->toString().c_str());
@@ -127,7 +127,7 @@ class Cppunit_tests : public Cppunit {
     }
 
     void test02_EmptyWrite() {
-        size_t capacity = 11;
+        jau::nsize_t capacity = 11;
         std::shared_ptr<SharedTypeRingbuffer> rb = createEmpty(capacity);
         fprintf(stderr, "test01_EmptyWrite: Created / %s\n", rb->toString().c_str());
         CHECKM("Not zero size "+rb->toString(), 0, rb->getSize());
@@ -147,7 +147,7 @@ class Cppunit_tests : public Cppunit {
     }
 
     void test03_FullReadReset() {
-        size_t capacity = 11;
+        jau::nsize_t capacity = 11;
         std::vector<SharedType> source = createIntArray(capacity, 0);
         std::shared_ptr<SharedTypeRingbuffer> rb = createFull(source);
         fprintf(stderr, "test01_FullReadReset: Created / %s\n", rb->toString().c_str());
@@ -176,7 +176,7 @@ class Cppunit_tests : public Cppunit {
     }
 
     void test04_EmptyWriteClear() {
-        size_t capacity = 11;
+        jau::nsize_t capacity = 11;
         std::shared_ptr<SharedTypeRingbuffer> rb = createEmpty(capacity);
         CHECKTM("Not empty-1 "+rb->toString(), rb->isEmpty());
         CHECKTM("Not empty-2 "+rb->toString(), rb->isEmpty2());
@@ -207,7 +207,7 @@ class Cppunit_tests : public Cppunit {
     }
 
     void test05_ReadResetMid01() {
-        size_t capacity = 11;
+        jau::nsize_t capacity = 11;
         std::vector<SharedType> source = createIntArray(capacity, 0);
         std::shared_ptr<SharedTypeRingbuffer> rb = createFull(source);
         CHECKTM("Not full-1 "+rb->toString(), rb->isFull());
@@ -231,7 +231,7 @@ class Cppunit_tests : public Cppunit {
     }
 
     void test06_ReadResetMid02() {
-        size_t capacity = 11;
+        jau::nsize_t capacity = 11;
         std::vector<SharedType> source = createIntArray(capacity, 0);
         std::shared_ptr<SharedTypeRingbuffer> rb = createFull(source);
         CHECKTM("Not full-1 "+rb->toString(), rb->isFull());
@@ -255,13 +255,13 @@ class Cppunit_tests : public Cppunit {
         CHECKTM("Not empty-2 "+rb->toString(), rb->isEmpty2());
     }
 
-    void test_GrowFullImpl(size_t initialCapacity, size_t pos) {
-        size_t growAmount = 5;
-        size_t grownCapacity = initialCapacity+growAmount;
+    void test_GrowFullImpl(jau::nsize_t initialCapacity, jau::nsize_t pos) {
+        jau::nsize_t growAmount = 5;
+        jau::nsize_t grownCapacity = initialCapacity+growAmount;
         std::vector<SharedType> source = createIntArray(initialCapacity, 0);
         std::shared_ptr<SharedTypeRingbuffer> rb = createFull(source);
 
-        for(size_t i=0; i<initialCapacity; i++) {
+        for(jau::nsize_t i=0; i<initialCapacity; i++) {
             SharedType svI = rb->get();
             CHECKTM("Empty at read #"+std::to_string(i+1)+": "+rb->toString(), svI!=nullptr);
             CHECKM("Wrong value at read #"+std::to_string(i+1)+": "+rb->toString(), (0+i)%initialCapacity, svI->intValue());
@@ -283,21 +283,21 @@ class Cppunit_tests : public Cppunit {
         // PRINTM("X03 "+rb->toString());
         // rb->dump(stderr, "X03");
 
-        for(size_t i=0; i<growAmount; i++) {
+        for(jau::nsize_t i=0; i<growAmount; i++) {
             CHECKTM("Buffer is full at put #"+std::to_string(i)+": "+rb->toString(), rb->put( SharedType( new Integer(100+i) ) ) );
         }
         CHECKM("Not new size "+rb->toString(), grownCapacity, rb->getSize());
         CHECKTM("Not full-1 "+rb->toString(), rb->isFull());
         CHECKTM("Not full-2 "+rb->toString(), rb->isFull2());
 
-        for(size_t i=0; i<initialCapacity; i++) {
+        for(jau::nsize_t i=0; i<initialCapacity; i++) {
             SharedType svI = rb->get();
             // PRINTM("X05["+std::to_string(i)+"]: "+rb->toString()+", svI-null: "+std::to_string(svI==nullptr));
             CHECKTM("Empty at read #"+std::to_string(i+1)+": "+rb->toString(), svI!=nullptr);
             CHECKM("Wrong value at read #"+std::to_string(i+1)+": "+rb->toString(), (pos+i)%initialCapacity, svI->intValue());
         }
 
-        for(size_t i=0; i<growAmount; i++) {
+        for(jau::nsize_t i=0; i<growAmount; i++) {
             SharedType svI = rb->get();
             // PRINTM("X07["+std::to_string(i)+"]: "+rb->toString()+", svI-null: "+std::to_string(svI==nullptr));
             CHECKTM("Empty at read #"+std::to_string(i+1)+": "+rb->toString(), svI!=nullptr);

@@ -38,9 +38,9 @@
 #include <cstdint>
 
 #include <jau/debug.hpp>
-#include <jau/ordered_atomic.hpp>
 #include <jau/basic_types.hpp>
 #include <jau/ringbuffer_if.hpp>
+#include <jau/ordered_atomic.hpp>
 
 namespace jau {
 
@@ -85,20 +85,26 @@ namespace jau {
  * - std::memory_order <https://en.cppreference.com/w/cpp/atomic/memory_order>
  * </pre>
  */
-template <typename T, std::nullptr_t nullelem> class ringbuffer : public ringbuffer_if<T> {
+template <typename T, std::nullptr_t nullelem, typename Size_type> class ringbuffer : public ringbuffer_if<T, Size_type> {
     private:
+        /** SC atomic integral scalar jau::nsize_t. Memory-Model (MM) guaranteed sequential consistency (SC) between acquire (read) and release (write) */
+        typedef ordered_atomic<Size_type, std::memory_order::memory_order_seq_cst> sc_atomic_Size_type;
+
+        /** Relaxed non-SC atomic integral scalar jau::nsize_t. Memory-Model (MM) only guarantees the atomic value, _no_ sequential consistency (SC) between acquire (read) and release (write). */
+        typedef ordered_atomic<Size_type, std::memory_order::memory_order_relaxed> relaxed_atomic_Size_type;
+
         std::mutex syncRead, syncMultiRead;   // Memory-Model (MM) guaranteed sequential consistency (SC) between acquire and release
         std::mutex syncWrite, syncMultiWrite; // ditto
         std::condition_variable cvRead;
         std::condition_variable cvWrite;
 
-        /* final */ size_t capacityPlusOne;  // not final due to grow
-        /* final */ T * array;     // Synchronized due to MM's data-race-free SC (SC-DRF) between [atomic] acquire/release
-        sc_atomic_size_t readPos;     // Memory-Model (MM) guaranteed sequential consistency (SC) between acquire (read) and release (write)
-        sc_atomic_size_t writePos;    // ditto
-        relaxed_atomic_size_t size;   // Non-SC atomic size, only atomic value itself is synchronized.
+        /* final */ Size_type capacityPlusOne;  // not final due to grow
+        /* final */ T * array;           // Synchronized due to MM's data-race-free SC (SC-DRF) between [atomic] acquire/release
+        sc_atomic_Size_type readPos;     // Memory-Model (MM) guaranteed sequential consistency (SC) between acquire (read) and release (write)
+        sc_atomic_Size_type writePos;    // ditto
+        relaxed_atomic_Size_type size;   // Non-SC atomic size, only atomic value itself is synchronized.
 
-        T * newArray(const size_t count) noexcept {
+        T * newArray(const Size_type count) noexcept {
             return new T[count];
         }
         void freeArray(T * a) noexcept {
@@ -119,8 +125,8 @@ template <typename T, std::nullptr_t nullelem> class ringbuffer : public ringbuf
             readPos = source.readPos;
             writePos = source.writePos;
             size = source.size;
-            size_t localWritePos = readPos;
-            for(size_t i=0; i<size; i++) {
+            Size_type localWritePos = readPos;
+            for(Size_type i=0; i<size; i++) {
                 localWritePos = (localWritePos + 1) % capacityPlusOne;
                 array[localWritePos] = source.array[localWritePos];
             }
@@ -131,10 +137,10 @@ template <typename T, std::nullptr_t nullelem> class ringbuffer : public ringbuf
 
         void clearImpl() noexcept {
             // clear all elements, zero size
-            const size_t _size = size; // fast access
+            const Size_type _size = size; // fast access
             if( 0 < _size ) {
-                size_t localReadPos = readPos;
-                for(size_t i=0; i<_size; i++) {
+                Size_type localReadPos = readPos;
+                for(Size_type i=0; i<_size; i++) {
                     localReadPos = (localReadPos + 1) % capacityPlusOne;
                     array[localReadPos] = nullelem;
                 }
@@ -147,7 +153,7 @@ template <typename T, std::nullptr_t nullelem> class ringbuffer : public ringbuf
             }
         }
 
-        void resetImpl(const T * copyFrom, const size_t copyFromCount) noexcept {
+        void resetImpl(const T * copyFrom, const Size_type copyFromCount) noexcept {
             clearImpl();
 
             // fill with copyFrom elements
@@ -159,8 +165,8 @@ template <typename T, std::nullptr_t nullelem> class ringbuffer : public ringbuf
                     readPos = 0;
                     writePos = 0;
                 }
-                size_t localWritePos = writePos;
-                for(size_t i=0; i<copyFromCount; i++) {
+                Size_type localWritePos = writePos;
+                for(Size_type i=0; i<copyFromCount; i++) {
                     localWritePos = (localWritePos + 1) % capacityPlusOne;
                     array[localWritePos] = copyFrom[i];
                     size++;
@@ -172,8 +178,8 @@ template <typename T, std::nullptr_t nullelem> class ringbuffer : public ringbuf
         T getImpl(const bool blocking, const bool peek, const int timeoutMS) noexcept {
             std::unique_lock<std::mutex> lockMultiRead(syncMultiRead); // acquire syncMultiRead, _not_ sync'ing w/ putImpl
 
-            const size_t oldReadPos = readPos; // SC-DRF acquire atomic readPos, sync'ing with putImpl
-            size_t localReadPos = oldReadPos;
+            const Size_type oldReadPos = readPos; // SC-DRF acquire atomic readPos, sync'ing with putImpl
+            Size_type localReadPos = oldReadPos;
             if( localReadPos == writePos ) {
                 if( blocking ) {
                     std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ putImpl via same lock
@@ -211,7 +217,7 @@ template <typename T, std::nullptr_t nullelem> class ringbuffer : public ringbuf
         bool putImpl(const T &e, const bool sameRef, const bool blocking, const int timeoutMS) noexcept {
             std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite); // acquire syncMultiRead, _not_ sync'ing w/ getImpl
 
-            size_t localWritePos = writePos; // SC-DRF acquire atomic writePos, sync'ing with getImpl
+            Size_type localWritePos = writePos; // SC-DRF acquire atomic writePos, sync'ing with getImpl
             localWritePos = (localWritePos + 1) % capacityPlusOne;
             if( localWritePos == readPos ) {
                 if( blocking ) {
@@ -243,17 +249,17 @@ template <typename T, std::nullptr_t nullelem> class ringbuffer : public ringbuf
             return true;
         }
 
-        size_t dropImpl (const size_t count) noexcept {
+        Size_type dropImpl (const Size_type count) noexcept {
             // locks ringbuffer completely (read/write), hence no need for local copy nor wait/sync etc
             std::unique_lock<std::mutex> lockMultiRead(syncMultiRead, std::defer_lock); // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
             std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite, std::defer_lock); // otherwise RAII-style relinquish via destructor
             std::lock(lockMultiRead, lockMultiWrite);
 
-            const size_t dropCount = std::min(count, size.load());
+            const Size_type dropCount = std::min(count, size.load());
             if( 0 == dropCount ) {
                 return 0;
             }
-            for(size_t i=0; i<dropCount; i++) {
+            for(Size_type i=0; i<dropCount; i++) {
                 readPos = (readPos + 1) % capacityPlusOne;
                 // T r = array[localReadPos];
                 array[readPos] = nullelem;
@@ -272,7 +278,7 @@ template <typename T, std::nullptr_t nullelem> class ringbuffer : public ringbuf
 
         void dump(FILE *stream, std::string prefix) const noexcept override {
             fprintf(stream, "%s %s {\n", prefix.c_str(), toString().c_str());
-            for(size_t i=0; i<capacityPlusOne; i++) {
+            for(Size_type i=0; i<capacityPlusOne; i++) {
                 // fprintf(stream, "\t[%d]: %p\n", i, array[i].get()); // FIXME
             }
             fprintf(stream, "}\n");
@@ -305,7 +311,7 @@ template <typename T, std::nullptr_t nullelem> class ringbuffer : public ringbuf
             resetImpl(copyFrom.data(), copyFrom.size());
         }
 
-        ringbuffer(const T * copyFrom, const size_t copyFromSize) noexcept
+        ringbuffer(const T * copyFrom, const Size_type copyFromSize) noexcept
         : capacityPlusOne(copyFromSize + 1), array(newArray(capacityPlusOne)),
           readPos(0), writePos(0), size(0)
         {
@@ -329,7 +335,7 @@ template <typename T, std::nullptr_t nullelem> class ringbuffer : public ringbuf
          * @param arrayType the array type of the created empty internal array.
          * @param capacity the initial net capacity of the ring buffer
          */
-        ringbuffer(const size_t capacity) noexcept
+        ringbuffer(const Size_type capacity) noexcept
         : capacityPlusOne(capacity + 1), array(newArray(capacityPlusOne)),
           readPos(0), writePos(0), size(0)
         { }
@@ -370,7 +376,7 @@ template <typename T, std::nullptr_t nullelem> class ringbuffer : public ringbuf
         ringbuffer(ringbuffer &&o) noexcept = default;
         ringbuffer& operator=(ringbuffer &&o) noexcept = default;
 
-        size_t capacity() const noexcept override { return capacityPlusOne-1; }
+        Size_type capacity() const noexcept override { return capacityPlusOne-1; }
 
         void clear() noexcept override {
             std::unique_lock<std::mutex> lockMultiRead(syncMultiRead, std::defer_lock);          // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
@@ -379,7 +385,7 @@ template <typename T, std::nullptr_t nullelem> class ringbuffer : public ringbuf
             clearImpl();
         }
 
-        void reset(const T * copyFrom, const size_t copyFromCount) noexcept override {
+        void reset(const T * copyFrom, const Size_type copyFromCount) noexcept override {
             std::unique_lock<std::mutex> lockMultiRead(syncMultiRead, std::defer_lock);          // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
             std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite, std::defer_lock);        // otherwise RAII-style relinquish via destructor
             std::lock(lockMultiRead, lockMultiWrite);
@@ -393,9 +399,9 @@ template <typename T, std::nullptr_t nullelem> class ringbuffer : public ringbuf
             resetImpl(copyFrom.data(), copyFrom.size());
         }
 
-        size_t getSize() const noexcept override { return size; }
+        Size_type getSize() const noexcept override { return size; }
 
-        size_t getFreeSlots() const noexcept override { return capacityPlusOne - 1 - size; }
+        Size_type getFreeSlots() const noexcept override { return capacityPlusOne - 1 - size; }
 
         bool isEmpty() const noexcept override { return 0 == size; /* writePos == readPos */ }
         bool isEmpty2() const noexcept { return writePos == readPos; /* 0 == size */ }
@@ -417,7 +423,7 @@ template <typename T, std::nullptr_t nullelem> class ringbuffer : public ringbuf
             return getImpl(true, true, timeoutMS);
         }
 
-        size_t drop(const size_t count) noexcept override {
+        Size_type drop(const Size_type count) noexcept override {
             return dropImpl(count);
         }
 
@@ -437,7 +443,7 @@ template <typename T, std::nullptr_t nullelem> class ringbuffer : public ringbuf
             return putImpl(nullelem, true, true, timeoutMS);
         }
 
-        void waitForFreeSlots(const size_t count) noexcept override {
+        void waitForFreeSlots(const Size_type count) noexcept override {
             std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite, std::defer_lock);        // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
             std::unique_lock<std::mutex> lockRead(syncRead, std::defer_lock);                    // otherwise RAII-style relinquish via destructor
             std::lock(lockMultiWrite, lockRead);
@@ -447,11 +453,11 @@ template <typename T, std::nullptr_t nullelem> class ringbuffer : public ringbuf
             }
         }
 
-        void recapacity(const size_t newCapacity) override {
+        void recapacity(const Size_type newCapacity) override {
             std::unique_lock<std::mutex> lockMultiRead(syncMultiRead, std::defer_lock);          // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
             std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite, std::defer_lock);        // otherwise RAII-style relinquish via destructor
             std::lock(lockMultiRead, lockMultiWrite);
-            const size_t _size = size; // fast access
+            const Size_type _size = size; // fast access
 
             if( capacityPlusOne == newCapacity+1 ) {
                 return;
@@ -461,9 +467,9 @@ template <typename T, std::nullptr_t nullelem> class ringbuffer : public ringbuf
             }
 
             // save current data
-            size_t oldCapacityPlusOne = capacityPlusOne;
+            Size_type oldCapacityPlusOne = capacityPlusOne;
             T * oldArray = array;
-            size_t oldReadPos = readPos;
+            Size_type oldReadPos = readPos;
 
             // new blank resized array
             capacityPlusOne = newCapacity + 1;
@@ -473,8 +479,8 @@ template <typename T, std::nullptr_t nullelem> class ringbuffer : public ringbuf
 
             // copy saved data
             if( nullptr != oldArray && 0 < _size ) {
-                size_t localWritePos = writePos;
-                for(size_t i=0; i<_size; i++) {
+                Size_type localWritePos = writePos;
+                for(Size_type i=0; i<_size; i++) {
                     localWritePos = (localWritePos + 1) % capacityPlusOne;
                     oldReadPos = (oldReadPos + 1) % oldCapacityPlusOne;
                     array[localWritePos] = oldArray[oldReadPos];

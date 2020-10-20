@@ -50,7 +50,7 @@ namespace jau {
  * Synchronization and hence thread safety details belong to the implementation.
  * </p>
  */
-template <typename T> class ringbuffer_if {
+template <typename T, typename Size_type> class ringbuffer_if {
     public:
         virtual ~ringbuffer_if() noexcept {}
 
@@ -61,7 +61,7 @@ template <typename T> class ringbuffer_if {
         virtual void dump(FILE *stream, std::string prefix) const noexcept = 0;
 
         /** Returns the net capacity of this ring buffer. */
-        virtual size_t capacity() const noexcept = 0;
+        virtual Size_type capacity() const noexcept = 0;
 
         /**
          * Releasing all elements by assigning <code>null</code>.
@@ -76,14 +76,14 @@ template <typename T> class ringbuffer_if {
          * {@link #clear()} all elements and add all <code>copyFrom</code> elements thereafter.
          * @param copyFrom Mandatory array w/ length {@link #capacity()} to be copied into the internal array.
          */
-        virtual void reset(const T * copyFrom, const size_t copyFromCount) noexcept = 0;
+        virtual void reset(const T * copyFrom, const Size_type copyFromCount) noexcept = 0;
         virtual void reset(const std::vector<T> & copyFrom) noexcept = 0;
 
         /** Returns the number of elements in this ring buffer. */
-        virtual size_t getSize() const noexcept = 0;
+        virtual Size_type getSize() const noexcept = 0;
 
         /** Returns the number of free slots available to put.  */
-        virtual size_t getFreeSlots() const noexcept = 0;
+        virtual Size_type getFreeSlots() const noexcept = 0;
 
         /** Returns true if this ring buffer is empty, otherwise false. */
         virtual bool isEmpty() const noexcept = 0;
@@ -145,7 +145,7 @@ template <typename T> class ringbuffer_if {
          * @param count maximum number of elements to drop from ringbuffer.
          * @return actual number of dropped elements.
          */
-        virtual size_t drop(const size_t count) noexcept = 0;
+        virtual Size_type drop(const Size_type count) noexcept = 0;
 
         /**
          * Enqueues the given element.
@@ -201,7 +201,7 @@ template <typename T> class ringbuffer_if {
          * Blocks until at least <code>count</code> free slots become available.
          * @throws InterruptedException
          */
-        virtual void waitForFreeSlots(const size_t count) noexcept = 0;
+        virtual void waitForFreeSlots(const Size_type count) noexcept = 0;
 
         /**
          * Resizes this ring buffer's capacity.
@@ -209,7 +209,7 @@ template <typename T> class ringbuffer_if {
          * New capacity must be greater than current size.
          * </p>
          */
-        virtual void recapacity(const size_t newCapacity) = 0;
+        virtual void recapacity(const Size_type newCapacity) = 0;
 };
 
 } /* namespace jau */

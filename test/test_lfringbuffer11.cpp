@@ -14,71 +14,71 @@ using namespace jau;
 
 class Integer {
     public:
-        size_t value;
+        jau::nsize_t value;
 
-        Integer(size_t v) : value(v) {}
+        Integer(jau::nsize_t v) : value(v) {}
 
         Integer(const Integer &o) noexcept = default;
         Integer(Integer &&o) noexcept = default;
         Integer& operator=(const Integer &o) noexcept = default;
         Integer& operator=(Integer &&o) noexcept = default;
 
-        operator size_t() const {
+        operator jau::nsize_t() const {
             return value;
         }
-        size_t intValue() const { return value; }
-        static Integer valueOf(const size_t i) { return Integer(i); }
+        jau::nsize_t intValue() const { return value; }
+        static Integer valueOf(const jau::nsize_t i) { return Integer(i); }
 };
 
 std::shared_ptr<Integer> NullInteger = nullptr;
 
 typedef std::shared_ptr<Integer> SharedType;
-typedef ringbuffer<SharedType, nullptr> SharedTypeRingbuffer;
+typedef ringbuffer<SharedType, nullptr, jau::nsize_t> SharedTypeRingbuffer;
 
 // Test examples.
 class Cppunit_tests : public Cppunit {
   private:
 
-    std::shared_ptr<SharedTypeRingbuffer> createEmpty(size_t initialCapacity) {
+    std::shared_ptr<SharedTypeRingbuffer> createEmpty(jau::nsize_t initialCapacity) {
         return std::shared_ptr<SharedTypeRingbuffer>(new SharedTypeRingbuffer(initialCapacity));
     }
     std::shared_ptr<SharedTypeRingbuffer> createFull(const std::vector<std::shared_ptr<Integer>> & source) {
         return std::shared_ptr<SharedTypeRingbuffer>(new SharedTypeRingbuffer(source));
     }
 
-    std::vector<SharedType> createIntArray(const size_t capacity, const size_t startValue) {
+    std::vector<SharedType> createIntArray(const jau::nsize_t capacity, const jau::nsize_t startValue) {
         std::vector<SharedType> array(capacity);
-        for(size_t i=0; i<capacity; i++) {
+        for(jau::nsize_t i=0; i<capacity; i++) {
             array[i] = SharedType(new Integer(startValue+i));
         }
         return array;
     }
 
-    void getThreadType01(const std::string msg, std::shared_ptr<SharedTypeRingbuffer> rb, size_t len) {
+    void getThreadType01(const std::string msg, std::shared_ptr<SharedTypeRingbuffer> rb, jau::nsize_t len) {
         // std::thread::id this_id = std::this_thread::get_id();
         // pthread_t this_id = pthread_self();
 
         fprintf(stderr, "%s: Created / %s\n", msg.c_str(), rb->toString().c_str());
-        for(size_t i=0; i<len; i++) {
+        for(jau::nsize_t i=0; i<len; i++) {
             SharedType svI = rb->getBlocking();
             CHECKTM(msg+": Empty at read #"+std::to_string(i+1)+": "+rb->toString(), svI!=nullptr);
-            fprintf(stderr, "%s: Got %zu / %s\n",
+            fprintf(stderr, "%s: Got %u / %s\n",
                     msg.c_str(), svI->intValue(), rb->toString().c_str());
         }
         fprintf(stderr, "%s: Dies / %s\n", msg.c_str(), rb->toString().c_str());
     }
 
-    void putThreadType01(const std::string msg, std::shared_ptr<SharedTypeRingbuffer> rb, size_t len, size_t startValue) {
+    void putThreadType01(const std::string msg, std::shared_ptr<SharedTypeRingbuffer> rb, jau::nsize_t len, jau::nsize_t startValue) {
         // std::thread::id this_id = std::this_thread::get_id();
         // pthread_t this_id = pthread_self();
 
         fprintf(stderr, "%s: Created / %s\n", msg.c_str(), rb->toString().c_str());
-        size_t preSize = rb->getSize();
+        jau::nsize_t preSize = rb->getSize();
         (void)preSize;
 
-        for(size_t i=0; i<len; i++) {
+        for(jau::nsize_t i=0; i<len; i++) {
             Integer * vI = new Integer(startValue+i);
-            fprintf(stderr, "%s: Putting %zu ... / %s\n",
+            fprintf(stderr, "%s: Putting %u ... / %s\n",
                     msg.c_str(), vI->intValue(), rb->toString().c_str());
             rb->putBlocking( SharedType( vI ) );
         }
@@ -89,7 +89,7 @@ class Cppunit_tests : public Cppunit {
 
     void test01_Read1Write1() {
         fprintf(stderr, "\n\ntest01_Read1Write1\n");
-        size_t capacity = 100;
+        jau::nsize_t capacity = 100;
         std::shared_ptr<SharedTypeRingbuffer> rb = createEmpty(capacity);
         CHECKM("Not empty size "+rb->toString(), 0, rb->getSize());
         CHECKTM("Not empty "+rb->toString(), rb->isEmpty());
@@ -105,7 +105,7 @@ class Cppunit_tests : public Cppunit {
 
     void test02_Read4Write1() {
         fprintf(stderr, "\n\ntest02_Read4Write1\n");
-        size_t capacity = 400;
+        jau::nsize_t capacity = 400;
         std::shared_ptr<SharedTypeRingbuffer> rb = createEmpty(capacity);
         CHECKM("Not empty size "+rb->toString(), 0, rb->getSize());
         CHECKTM("Not empty "+rb->toString(), rb->isEmpty());
@@ -127,7 +127,7 @@ class Cppunit_tests : public Cppunit {
 
     void test03_Read8Write2() {
         fprintf(stderr, "\n\ntest03_Read8Write2\n");
-        size_t capacity = 800;
+        jau::nsize_t capacity = 800;
         std::shared_ptr<SharedTypeRingbuffer> rb = createEmpty(capacity);
         CHECKM("Not empty size "+rb->toString(), 0, rb->getSize());
         CHECKTM("Not empty "+rb->toString(), rb->isEmpty());
