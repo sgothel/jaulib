@@ -107,6 +107,13 @@ Changes
 
 * First stable release (TODO)
 
+**0.3.0**
+
+* TODO
+* Use nsize_t and snsize_t where appropriate for smaller footprint
+* Have ringbuffer's Size_type parameterized
+* Bugfixes and added cow_array
+
 **0.2.1**
 
 * Added cow_vector and sc_atomic_critical
