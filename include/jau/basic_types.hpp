@@ -42,7 +42,7 @@ namespace jau {
     /**
      * Returns current monotonic time in milliseconds.
      */
-    int64_t getCurrentMilliseconds() noexcept;
+    uint64_t getCurrentMilliseconds() noexcept;
 
     #define E_FILE_LINE __FILE__,__LINE__
 

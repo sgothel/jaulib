@@ -44,10 +44,10 @@ static const int64_t MilliPerOne = 1000L;
  * clock_gettime seems to be well supported at least on kernel >= 4.4.
  * Only bfin and sh are missing, while ia64 seems to be complicated.
  */
-int64_t jau::getCurrentMilliseconds() noexcept {
+uint64_t jau::getCurrentMilliseconds() noexcept {
     struct timespec t;
     clock_gettime(CLOCK_MONOTONIC, &t);
-    return t.tv_sec * MilliPerOne + t.tv_nsec / NanoPerMilli;
+    return static_cast<uint64_t>( t.tv_sec * MilliPerOne + t.tv_nsec / NanoPerMilli );
 }
 
 jau::RuntimeException::RuntimeException(std::string const type, std::string const m, const char* file, int line) noexcept
