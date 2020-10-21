@@ -208,7 +208,7 @@ namespace jau {
             }
 
             /**
-             * Like std::vector<T>::empty().
+             * Like std::vector::empty().
              * <p>
              * This read operation is <i>lock-free</i>.
              * </p>
@@ -219,7 +219,7 @@ namespace jau {
             }
 
             /**
-             * Like std::vector<T>::size().
+             * Like std::vector::size().
              * <p>
              * This read operation is <i>lock-free</i>.
              * </p>
@@ -230,7 +230,7 @@ namespace jau {
             }
 
             /**
-             * Like std::vector<T>::operator[](size_t).
+             * Like std::vector::operator[](size_t).
              * <p>
              * This read operation is <i>lock-free</i>.
              * </p>
@@ -241,7 +241,7 @@ namespace jau {
             }
 
             /**
-             * Like std::vector<T>::operator[](size_t).
+             * Like std::vector::operator[](size_t).
              * <p>
              * This read operation is <i>lock-free</i>.
              * </p>
@@ -257,7 +257,7 @@ namespace jau {
             }
 
             /**
-             * Like std::vector<T>::at(size_t).
+             * Like std::vector::at(size_t).
              * <p>
              * This read operation is <i>lock-free</i>.
              * </p>
@@ -268,7 +268,7 @@ namespace jau {
             }
 
             /**
-             * Like std::vector<T>::at(size_t).
+             * Like std::vector::at(size_t).
              * <p>
              * This read operation is <i>lock-free</i>.
              * </p>
@@ -286,7 +286,7 @@ namespace jau {
             // write access
 
             /**
-             * Like std::vector<T>::operator=(&), assignment
+             * Like std::vector::operator=(&), assignment
              * <p>
              * This write operation uses a mutex lock and is blocking this instances' write operations only.
              * </p>
@@ -307,12 +307,12 @@ namespace jau {
             }
 
             /**
-             * Like std::vector<T>::operator=(&&), move.
+             * Like std::vector::operator=(&&), move.
              * <p>
              * This write operation uses a mutex lock and is blocking this instances' write operations only.
              * </p>
              */
-            cow_vector& operator=(const cow_vector&& x) {
+            cow_vector& operator=(cow_vector&& x) {
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 sc_atomic_critical sync(sync_atomic);
                 // swap store_ref
@@ -322,7 +322,7 @@ namespace jau {
             }
 
             /**
-             * Like std::vector<T>::clear(), but ending with zero capacity.
+             * Like std::vector::clear(), but ending with zero capacity.
              * <p>
              * This write operation uses a mutex lock and is blocking this instances' write operations.
              * </p>
@@ -337,7 +337,7 @@ namespace jau {
             }
 
             /**
-             * Like std::vector<T>::swap().
+             * Like std::vector::swap().
              * <p>
              * This write operation uses a mutex lock and is blocking both cow_vector instance's write operations.
              * </p>
@@ -356,7 +356,7 @@ namespace jau {
             }
 
             /**
-             * Like std::vector<T>::pop_back().
+             * Like std::vector::pop_back().
              * <p>
              * This write operation uses a mutex lock and is blocking this instances' write operations only.
              * </p>
@@ -372,7 +372,7 @@ namespace jau {
             }
 
             /**
-             * Like std::vector<T>::push_back().
+             * Like std::vector::push_back(), copy
              * <p>
              * This write operation uses a mutex lock and is blocking this instances' write operations only.
              * </p>
@@ -389,7 +389,7 @@ namespace jau {
             }
 
             /**
-             * Like std::vector<T>::push_back().
+             * Like std::vector::push_back(), move
              * <p>
              * This write operation uses a mutex lock and is blocking this instances' write operations only.
              * </p>
@@ -413,7 +413,7 @@ namespace jau {
             typedef bool(*equal_comparator)(const Value_type& a, const Value_type& b);
 
             /**
-             * Like std::vector<T>::push_back(), but only if the newly added element does not yet exist.
+             * Like std::vector::push_back(), but only if the newly added element does not yet exist.
              * <p>
              * This write operation uses a mutex lock and is blocking this instances' write operations only.
              * </p>

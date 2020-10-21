@@ -210,7 +210,7 @@ namespace jau {
             }
 
             /**
-             * Like std::array<T>::data() const noexcept.
+             * Like std::array::data() const noexcept.
              * <p>
              * This read operation is <i>lock-free</i>.
              * </p>
@@ -221,7 +221,7 @@ namespace jau {
             }
 
             /**
-             * Like std::array<T>::empty().
+             * Like std::array::empty().
              * <p>
              * This read operation is <i>lock-free</i>.
              * </p>
@@ -232,7 +232,7 @@ namespace jau {
             }
 
             /**
-             * Like std::array<T>::size().
+             * Like std::array::size().
              * <p>
              * This read operation is <i>lock-free</i>.
              * </p>
@@ -243,7 +243,7 @@ namespace jau {
             }
 
             /**
-             * Like std::array<T>::operator[](size_t).
+             * Like std::array::operator[](size_t).
              * <p>
              * This read operation is <i>lock-free</i>.
              * </p>
@@ -254,7 +254,7 @@ namespace jau {
             }
 
             /**
-             * Like std::array<T>::operator[](size_t).
+             * Like std::array::operator[](size_t).
              * <p>
              * This read operation is <i>lock-free</i>.
              * </p>
@@ -270,7 +270,7 @@ namespace jau {
             }
 
             /**
-             * Like std::array<T>::at(size_t).
+             * Like std::array::at(size_t).
              * <p>
              * This read operation is <i>lock-free</i>.
              * </p>
@@ -281,7 +281,7 @@ namespace jau {
             }
 
             /**
-             * Like std::array<T>::at(size_t).
+             * Like std::array::at(size_t).
              * <p>
              * This read operation is <i>lock-free</i>.
              * </p>
@@ -299,7 +299,7 @@ namespace jau {
             // write access
 
             /**
-             * Like implicit std::array<T>::operator=(&), assignment
+             * Like implicit std::array::operator=(&), assignment
              * <p>
              * This write operation uses a mutex lock and is blocking this instances' write operations only.
              * </p>
@@ -320,12 +320,12 @@ namespace jau {
             }
 
             /**
-             * Like implicit std::array<T>::operator=(&&), move.
+             * Like implicit std::array::operator=(&&), move.
              * <p>
              * This write operation uses a mutex lock and is blocking this instances' write operations only.
              * </p>
              */
-            cow_array& operator=(const cow_array&& x) {
+            cow_array& operator=(cow_array&& x) {
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 sc_atomic_critical sync(sync_atomic);
                 // swap store_ref
@@ -335,7 +335,7 @@ namespace jau {
             }
 
             /**
-             * Like std::array<T>::fill()
+             * Like std::array::fill()
              * <p>
              * This write operation uses a mutex lock and is blocking this instances' write operations.
              * </p>
@@ -351,7 +351,7 @@ namespace jau {
             }
 
             /**
-             * Like std::array<T>::swap().
+             * Like std::array::swap().
              * <p>
              * This write operation uses a mutex lock and is blocking both cow_array instance's write operations.
              * </p>
