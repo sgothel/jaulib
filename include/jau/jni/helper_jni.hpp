@@ -317,6 +317,23 @@ namespace jau {
     //
 
     template <typename T>
+    jobject convert_instance_to_jobject(JNIEnv *env, T *elem,
+            const char *ctor_prototype, std::function<jobject(JNIEnv*, jclass, jmethodID, T*)> ctor)
+    {
+        jclass clazz = search_class(env, T::java_class().c_str());
+        jmethodID clazz_ctor = search_method(env, clazz, "<init>", ctor_prototype, false);
+
+        jobject object = ctor(env, clazz, clazz_ctor, elem);
+        if (!object)
+        {
+            throw std::runtime_error("cannot create instance of class\n");
+        }
+        java_exception_check_and_throw(env, E_FILE_LINE);
+
+        return object;
+    }
+
+    template <typename T>
     jobject convert_vector_sharedptr_to_jarraylist(JNIEnv *env, std::vector<std::shared_ptr<T>>& array)
     {
         nsize_t array_size = array.size();
