@@ -72,6 +72,39 @@ namespace jau {
         return f; // implicit move since C++11
     }
 
+    /**
+     * Call on release allows the user to pass a function
+     * to be called at destruction of this instance.
+     * <p>
+     * One goal was to provide a thread exit cleanup facility,
+     * setting a 'is_running' flag to false when the thread exists
+     * normally or abnormally.
+     * <pre>
+     *   jau::relaxed_atomic_bool is_running = true;
+     *
+     *   void some_thread_func() {
+     *       thread_local jau::call_on_release lili([&]() {
+     *           is_running = false;
+     *       });
+     *       ...
+     *       do some work here, which might get cancelled
+     *       ..
+     *   }
+     * </pre>
+     * </p>
+     * @tparam UnaryFunction user provided function to be called @ dtor
+     */
+    template <class UnaryFunction> class call_on_release {
+      private:
+        UnaryFunction f;
+
+      public:
+        call_on_release(UnaryFunction release_func) noexcept : f(release_func) {}
+        ~call_on_release() noexcept { f(); }
+        call_on_release(const call_on_release&) = delete;
+        call_on_release& operator=(const call_on_release&) = delete;
+        call_on_release& operator=(const call_on_release&) volatile = delete;
+    };
 
 } // namespace jau
 
