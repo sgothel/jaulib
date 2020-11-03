@@ -160,22 +160,86 @@ namespace jau {
     struct __attribute__((packed)) uint128_t {
         uint8_t data[16];
 
-        bool operator==(uint128_t const &o) const noexcept {
+        constexpr uint128_t() noexcept : data{0} {}
+        constexpr uint128_t(const uint128_t &o) noexcept = default;
+        uint128_t(uint128_t &&o) noexcept = default;
+        constexpr uint128_t& operator=(const uint128_t &o) noexcept = default;
+        uint128_t& operator=(uint128_t &&o) noexcept = default;
+
+        constexpr bool operator==(uint128_t const &o) const noexcept {
             if( this == &o ) {
                 return true;
             }
             return !std::memcmp(data, o.data, 16);
         }
-        bool operator!=(uint128_t const &o) const noexcept
+        constexpr bool operator!=(uint128_t const &o) const noexcept
         { return !(*this == o); }
     };
 
-    inline uint128_t bswap(uint128_t const & source) noexcept {
+    constexpr uint128_t bswap(uint128_t const & source) noexcept {
         uint128_t dest;
         uint8_t const * const s = source.data;
         uint8_t * const d = dest.data;
         for(nsize_t i=0; i<16; i++) {
             d[i] = s[15-i];
+        }
+        return dest;
+    }
+
+    struct __attribute__((packed)) uint192_t {
+        uint8_t data[24];
+
+        constexpr uint192_t() noexcept : data{0} {}
+        constexpr uint192_t(const uint192_t &o) noexcept = default;
+        uint192_t(uint192_t &&o) noexcept = default;
+        constexpr uint192_t& operator=(const uint192_t &o) noexcept = default;
+        uint192_t& operator=(uint192_t &&o) noexcept = default;
+
+        constexpr bool operator==(uint192_t const &o) const noexcept {
+            if( this == &o ) {
+                return true;
+            }
+            return !std::memcmp(data, o.data, 16);
+        }
+        constexpr bool operator!=(uint192_t const &o) const noexcept
+        { return !(*this == o); }
+    };
+
+    constexpr uint192_t bswap(uint192_t const & source) noexcept {
+        uint192_t dest;
+        uint8_t const * const s = source.data;
+        uint8_t * const d = dest.data;
+        for(nsize_t i=0; i<24; i++) {
+            d[i] = s[23-i];
+        }
+        return dest;
+    }
+
+    struct __attribute__((packed)) uint256_t {
+        uint8_t data[32];
+
+        constexpr uint256_t() noexcept : data{0} {}
+        constexpr uint256_t(const uint256_t &o) noexcept = default;
+        uint256_t(uint256_t &&o) noexcept = default;
+        constexpr uint256_t& operator=(const uint256_t &o) noexcept = default;
+        uint256_t& operator=(uint256_t &&o) noexcept = default;
+
+        constexpr bool operator==(uint256_t const &o) const noexcept {
+            if( this == &o ) {
+                return true;
+            }
+            return !std::memcmp(data, o.data, 16);
+        }
+        constexpr bool operator!=(uint256_t const &o) const noexcept
+        { return !(*this == o); }
+    };
+
+    constexpr uint256_t bswap(uint256_t const & source) noexcept {
+        uint256_t dest;
+        uint8_t const * const s = source.data;
+        uint8_t * const d = dest.data;
+        for(nsize_t i=0; i<32; i++) {
+            d[i] = s[31-i];
         }
         return dest;
     }
@@ -195,29 +259,29 @@ namespace jau {
      */
 
 #if __BYTE_ORDER == __BIG_ENDIAN
-    inline uint16_t be_to_cpu(uint16_t const & n) noexcept {
+    inline uint16_t be_to_cpu(uint16_t const n) noexcept {
         return n;
     }
-    inline uint16_t cpu_to_be(uint16_t const & h) noexcept {
+    inline uint16_t cpu_to_be(uint16_t const h) noexcept {
         return h;
     }
-    inline uint16_t le_to_cpu(uint16_t const & l) noexcept {
+    inline uint16_t le_to_cpu(uint16_t const l) noexcept {
         return bswap_16(l);
     }
-    inline uint16_t cpu_to_le(uint16_t const & h) noexcept {
+    inline uint16_t cpu_to_le(uint16_t const h) noexcept {
         return bswap_16(h);
     }
 
-    inline uint32_t be_to_cpu(uint32_t const & n) noexcept {
+    inline uint32_t be_to_cpu(uint32_t const n) noexcept {
         return n;
     }
-    inline uint32_t cpu_to_be(uint32_t const & h) noexcept {
+    inline uint32_t cpu_to_be(uint32_t const h) noexcept {
         return h;
     }
-    inline uint32_t le_to_cpu(uint32_t const & l) noexcept {
+    inline uint32_t le_to_cpu(uint32_t const l) noexcept {
         return bswap_32(l);
     }
-    inline uint32_t cpu_to_le(uint32_t const & h) noexcept {
+    inline uint32_t cpu_to_le(uint32_t const h) noexcept {
         return bswap_32(h);
     }
 
@@ -234,42 +298,68 @@ namespace jau {
         return bswap_64(h);
     }
 
-    inline uint128_t be_to_cpu(uint128_t const & n) noexcept {
+    constexpr uint128_t be_to_cpu(uint128_t const & n) noexcept {
         return n;
     }
-    inline uint128_t cpu_to_be(uint128_t const & h) noexcept {
+    constexpr uint128_t cpu_to_be(uint128_t const & h) noexcept {
         return n;
     }
-    inline uint128_t le_to_cpu(uint128_t const & l) noexcept {
+    constexpr uint128_t le_to_cpu(uint128_t const & l) noexcept {
         return bswap(l);
     }
-    inline uint128_t cpu_to_le(uint128_t const & h) noexcept {
+    constexpr uint128_t cpu_to_le(uint128_t const & h) noexcept {
+        return bswap(h);
+    }
+
+    constexpr uint192_t be_to_cpu(uint192_t const & n) noexcept {
+        return n;
+    }
+    constexpr uint192_t cpu_to_be(uint192_t const & h) noexcept {
+        return n;
+    }
+    constexpr uint192_t le_to_cpu(uint192_t const & l) noexcept {
+        return bswap(l);
+    }
+    constexpr uint192_t cpu_to_le(uint192_t const & h) noexcept {
+        return bswap(h);
+    }
+
+    constexpr uint256_t be_to_cpu(uint256_t const & n) noexcept {
+        return n;
+    }
+    constexpr uint256_t cpu_to_be(uint256_t const & h) noexcept {
+        return n;
+    }
+    constexpr uint256_t le_to_cpu(uint256_t const & l) noexcept {
+        return bswap(l);
+    }
+    constexpr uint256_t cpu_to_le(uint256_t const & h) noexcept {
         return bswap(h);
     }
 #elif __BYTE_ORDER == __LITTLE_ENDIAN
-    inline uint16_t be_to_cpu(uint16_t const & n) noexcept {
+    inline uint16_t be_to_cpu(uint16_t const n) noexcept {
         return bswap_16(n);
     }
-    inline uint16_t cpu_to_be(uint16_t const & h) noexcept {
+    inline uint16_t cpu_to_be(uint16_t const h) noexcept {
         return bswap_16(h);
     }
-    inline uint16_t le_to_cpu(uint16_t const & l) noexcept {
+    inline uint16_t le_to_cpu(uint16_t const l) noexcept {
         return l;
     }
-    inline uint16_t cpu_to_le(uint16_t const & h) noexcept {
+    inline uint16_t cpu_to_le(uint16_t const h) noexcept {
         return h;
     }
 
-    inline uint32_t be_to_cpu(uint32_t const & n) noexcept {
+    inline uint32_t be_to_cpu(uint32_t const n) noexcept {
         return bswap_32(n);
     }
-    inline uint32_t cpu_to_be(uint32_t const & h) noexcept {
+    inline uint32_t cpu_to_be(uint32_t const h) noexcept {
         return bswap_32(h);
     }
-    inline uint32_t le_to_cpu(uint32_t const & l) noexcept {
+    inline uint32_t le_to_cpu(uint32_t const l) noexcept {
         return l;
     }
-    inline uint32_t cpu_to_le(uint32_t const & h) noexcept {
+    inline uint32_t cpu_to_le(uint32_t const h) noexcept {
         return h;
     }
 
@@ -286,16 +376,42 @@ namespace jau {
         return h;
     }
 
-    inline uint128_t be_to_cpu(uint128_t const & n) noexcept {
+    constexpr uint128_t be_to_cpu(uint128_t const & n) noexcept {
         return bswap(n);
     }
-    inline uint128_t cpu_to_be(uint128_t const & h) noexcept {
+    constexpr uint128_t cpu_to_be(uint128_t const & h) noexcept {
         return bswap(h);
     }
-    inline uint128_t le_to_cpu(uint128_t const & l) noexcept {
+    constexpr uint128_t le_to_cpu(uint128_t const & l) noexcept {
         return l;
     }
-    inline uint128_t cpu_to_le(uint128_t const & h) noexcept {
+    constexpr uint128_t cpu_to_le(uint128_t const & h) noexcept {
+        return h;
+    }
+
+    constexpr uint192_t be_to_cpu(uint192_t const & n) noexcept {
+        return bswap(n);
+    }
+    constexpr uint192_t cpu_to_be(uint192_t const & h) noexcept {
+        return bswap(h);
+    }
+    constexpr uint192_t le_to_cpu(uint192_t const & l) noexcept {
+        return l;
+    }
+    constexpr uint192_t cpu_to_le(uint192_t const & h) noexcept {
+        return h;
+    }
+
+    constexpr uint256_t be_to_cpu(uint256_t const & n) noexcept {
+        return bswap(n);
+    }
+    constexpr uint256_t cpu_to_be(uint256_t const & h) noexcept {
+        return bswap(h);
+    }
+    constexpr uint256_t le_to_cpu(uint256_t const & l) noexcept {
+        return l;
+    }
+    constexpr uint256_t cpu_to_le(uint256_t const & h) noexcept {
         return h;
     }
 #else
@@ -401,11 +517,11 @@ namespace jau {
         return reinterpret_cast<const packed_t<uint32_t>*>( buffer + byte_offset )->get(littleEndian);
     }
 
-    inline void put_uint64(uint8_t * buffer, nsize_t const byte_offset, const uint64_t v) noexcept
+    inline void put_uint64(uint8_t * buffer, nsize_t const byte_offset, const uint64_t & v) noexcept
     {
         reinterpret_cast<packed_t<uint64_t>*>( buffer + byte_offset )->store = v;
     }
-    inline void put_uint64(uint8_t * buffer, nsize_t const byte_offset, const uint64_t v, const bool littleEndian) noexcept
+    inline void put_uint64(uint8_t * buffer, nsize_t const byte_offset, const uint64_t & v, const bool littleEndian) noexcept
     {
         reinterpret_cast<packed_t<uint64_t>*>( buffer + byte_offset )->store = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
     }
@@ -418,11 +534,11 @@ namespace jau {
         return reinterpret_cast<const packed_t<uint64_t>*>( buffer + byte_offset )->get(littleEndian);
     }
 
-    inline void put_uint128(uint8_t * buffer, nsize_t const byte_offset, const uint128_t v) noexcept
+    inline void put_uint128(uint8_t * buffer, nsize_t const byte_offset, const uint128_t & v) noexcept
     {
         reinterpret_cast<packed_t<uint128_t>*>( buffer + byte_offset )->store = v;
     }
-    inline void put_uint128(uint8_t * buffer, nsize_t const byte_offset, const uint128_t v, const bool littleEndian) noexcept
+    inline void put_uint128(uint8_t * buffer, nsize_t const byte_offset, const uint128_t & v, const bool littleEndian) noexcept
     {
         reinterpret_cast<packed_t<uint128_t>*>( buffer + byte_offset )->store = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
     }
@@ -433,6 +549,40 @@ namespace jau {
     inline uint128_t get_uint128(uint8_t const * buffer, nsize_t const byte_offset, const bool littleEndian) noexcept
     {
         return reinterpret_cast<const packed_t<uint128_t>*>( buffer + byte_offset )->get(littleEndian);
+    }
+
+    inline void put_uint192(uint8_t * buffer, nsize_t const byte_offset, const uint192_t & v) noexcept
+    {
+        reinterpret_cast<packed_t<uint192_t>*>( buffer + byte_offset )->store = v;
+    }
+    inline void put_uint192(uint8_t * buffer, nsize_t const byte_offset, const uint192_t & v, const bool littleEndian) noexcept
+    {
+        reinterpret_cast<packed_t<uint192_t>*>( buffer + byte_offset )->store = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
+    }
+    inline uint192_t get_uint192(uint8_t const * buffer, nsize_t const byte_offset) noexcept
+    {
+        return reinterpret_cast<const packed_t<uint192_t>*>( buffer + byte_offset )->store;
+    }
+    inline uint192_t get_uint192(uint8_t const * buffer, nsize_t const byte_offset, const bool littleEndian) noexcept
+    {
+        return reinterpret_cast<const packed_t<uint192_t>*>( buffer + byte_offset )->get(littleEndian);
+    }
+
+    inline void put_uint256(uint8_t * buffer, nsize_t const byte_offset, const uint256_t & v) noexcept
+    {
+        reinterpret_cast<packed_t<uint256_t>*>( buffer + byte_offset )->store = v;
+    }
+    inline void put_uint256(uint8_t * buffer, nsize_t const byte_offset, const uint256_t & v, const bool littleEndian) noexcept
+    {
+        reinterpret_cast<packed_t<uint256_t>*>( buffer + byte_offset )->store = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
+    }
+    inline uint256_t get_uint256(uint8_t const * buffer, nsize_t const byte_offset) noexcept
+    {
+        return reinterpret_cast<const packed_t<uint256_t>*>( buffer + byte_offset )->store;
+    }
+    inline uint256_t get_uint256(uint8_t const * buffer, nsize_t const byte_offset, const bool littleEndian) noexcept
+    {
+        return reinterpret_cast<const packed_t<uint256_t>*>( buffer + byte_offset )->get(littleEndian);
     }
 
     inline void set_bit_uint32(const uint8_t nr, uint32_t &mask)
