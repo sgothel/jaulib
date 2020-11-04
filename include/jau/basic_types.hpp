@@ -170,7 +170,7 @@ namespace jau {
             if( this == &o ) {
                 return true;
             }
-            return !std::memcmp(data, o.data, 16);
+            return !std::memcmp(data, o.data, sizeof(data));
         }
         constexpr bool operator!=(uint128_t const &o) const noexcept
         { return !(*this == o); }
@@ -199,7 +199,7 @@ namespace jau {
             if( this == &o ) {
                 return true;
             }
-            return !std::memcmp(data, o.data, 16);
+            return !std::memcmp(data, o.data, sizeof(data));
         }
         constexpr bool operator!=(uint192_t const &o) const noexcept
         { return !(*this == o); }
@@ -228,7 +228,7 @@ namespace jau {
             if( this == &o ) {
                 return true;
             }
-            return !std::memcmp(data, o.data, 16);
+            return !std::memcmp(data, o.data, sizeof(data));
         }
         constexpr bool operator!=(uint256_t const &o) const noexcept
         { return !(*this == o); }
