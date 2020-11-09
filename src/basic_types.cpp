@@ -200,6 +200,13 @@ std::string jau::aptrHexString(const void * v, const bool leading0X) noexcept {
     return uint64HexString((uint64_t)v, leading0X);
 }
 
+std::string jau::uint128HexString(const uint128_t v, const bool leading0X) noexcept {
+    return bytesHexString(v.data, 0, sizeof(v.data), false /* lsbFirst */, leading0X);
+}
+std::string jau::uint256HexString(const uint256_t v, const bool leading0X) noexcept {
+    return bytesHexString(v.data, 0, sizeof(v.data), false /* lsbFirst */, leading0X);
+}
+
 static const char* HEX_ARRAY = "0123456789ABCDEF";
 
 std::string jau::bytesHexString(const uint8_t * bytes, const nsize_t offset, const nsize_t length, const bool lsbFirst, const bool leading0X) noexcept {

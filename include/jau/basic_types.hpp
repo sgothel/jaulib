@@ -682,6 +682,8 @@ namespace jau {
     std::string uint32HexString(const uint32_t v, const bool leading0X=true) noexcept;
     std::string uint64HexString(const uint64_t v, const bool leading0X=true) noexcept;
     std::string aptrHexString(const void * v, const bool leading0X=true) noexcept;
+    std::string uint128HexString(const uint128_t v, const bool leading0X=true) noexcept;
+    std::string uint256HexString(const uint256_t v, const bool leading0X=true) noexcept;
 
     /**
      * If lsbFirst is true, orders LSB left -> MSB right, usual for byte streams.
