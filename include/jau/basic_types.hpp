@@ -37,6 +37,8 @@ extern "C" {
     #include <byteswap.h>
 }
 
+#include <jau/packed_attribute.hpp>
+
 namespace jau {
 
     /**
@@ -157,7 +159,7 @@ namespace jau {
     // *************************************************
      */
 
-    struct __attribute__((packed)) uint128_t {
+    __pack( struct uint128_t {
         uint8_t data[16];
 
         constexpr uint128_t() noexcept : data{0} {}
@@ -174,7 +176,7 @@ namespace jau {
         }
         constexpr bool operator!=(uint128_t const &o) const noexcept
         { return !(*this == o); }
-    };
+    } ) ;
 
     constexpr uint128_t bswap(uint128_t const & source) noexcept {
         uint128_t dest;
@@ -186,7 +188,7 @@ namespace jau {
         return dest;
     }
 
-    struct __attribute__((packed)) uint192_t {
+    __pack( struct uint192_t {
         uint8_t data[24];
 
         constexpr uint192_t() noexcept : data{0} {}
@@ -203,7 +205,7 @@ namespace jau {
         }
         constexpr bool operator!=(uint192_t const &o) const noexcept
         { return !(*this == o); }
-    };
+    } );
 
     constexpr uint192_t bswap(uint192_t const & source) noexcept {
         uint192_t dest;
@@ -215,7 +217,7 @@ namespace jau {
         return dest;
     }
 
-    struct __attribute__((packed)) uint256_t {
+    __pack( struct uint256_t {
         uint8_t data[32];
 
         constexpr uint256_t() noexcept : data{0} {}
@@ -232,7 +234,7 @@ namespace jau {
         }
         constexpr bool operator!=(uint256_t const &o) const noexcept
         { return !(*this == o); }
-    };
+    } );
 
     constexpr uint256_t bswap(uint256_t const & source) noexcept {
         uint256_t dest;
@@ -441,10 +443,10 @@ namespace jau {
      * This template shall cause no costs, the cast data pointer is identical to 'T & p = &store'.
      * </p>
      */
-    template<typename T> struct __attribute__((__packed__)) packed_t {
+    template<typename T> __pack ( struct packed_t {
         T store;
         constexpr T get(const bool littleEndian) const noexcept { return littleEndian ? le_to_cpu(store) : be_to_cpu(store); }
-    };
+    } ) ;
 
     inline void put_uint16(uint8_t * buffer, nsize_t const byte_offset, const uint16_t v) noexcept
     {
