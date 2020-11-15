@@ -215,6 +215,18 @@ template <typename _Tp, std::memory_order _MO> struct ordered_atomic : private s
   /** Relaxed non-SC atomic integral scalar boolean. Memory-Model (MM) only guarantees the atomic value, _no_ sequential consistency (SC) between acquire (read) and release (write). */
   typedef ordered_atomic<bool, std::memory_order::memory_order_relaxed> relaxed_atomic_bool;
 
+  /** SC atomic integral scalar uint8_t. Memory-Model (MM) guaranteed sequential consistency (SC) between acquire (read) and release (write) */
+  typedef ordered_atomic<uint8_t, std::memory_order::memory_order_seq_cst> sc_atomic_uint8;
+
+  /** Relaxed non-SC atomic integral scalar uint8_t. Memory-Model (MM) only guarantees the atomic value, _no_ sequential consistency (SC) between acquire (read) and release (write). */
+  typedef ordered_atomic<uint8_t, std::memory_order::memory_order_relaxed> relaxed_atomic_uint8;
+
+  /** SC atomic integral scalar uint16_t. Memory-Model (MM) guaranteed sequential consistency (SC) between acquire (read) and release (write) */
+  typedef ordered_atomic<uint16_t, std::memory_order::memory_order_seq_cst> sc_atomic_uint16;
+
+  /** Relaxed non-SC atomic integral scalar uint16_t. Memory-Model (MM) only guarantees the atomic value, _no_ sequential consistency (SC) between acquire (read) and release (write). */
+  typedef ordered_atomic<uint16_t, std::memory_order::memory_order_relaxed> relaxed_atomic_uint16;
+
   /** SC atomic integral scalar integer. Memory-Model (MM) guaranteed sequential consistency (SC) between acquire (read) and release (write) */
   typedef ordered_atomic<int, std::memory_order::memory_order_seq_cst> sc_atomic_int;
 
