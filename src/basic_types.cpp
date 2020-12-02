@@ -207,9 +207,13 @@ std::string jau::uint256HexString(const uint256_t v, const bool leading0X) noexc
     return bytesHexString(v.data, 0, sizeof(v.data), false /* lsbFirst */, leading0X);
 }
 
-static const char* HEX_ARRAY = "0123456789ABCDEF";
+static const char* HEX_ARRAY_LOW = "0123456789abcdef";
+static const char* HEX_ARRAY_BIG = "0123456789ABCDEF";
 
-std::string jau::bytesHexString(const uint8_t * bytes, const nsize_t offset, const nsize_t length, const bool lsbFirst, const bool leading0X) noexcept {
+std::string jau::bytesHexString(const uint8_t * bytes, const nsize_t offset, const nsize_t length, const bool lsbFirst,
+                                const bool leading0X, const bool lowerCase) noexcept
+{
+    const char* hex_array = lowerCase ? HEX_ARRAY_LOW : HEX_ARRAY_BIG;
     std::string str;
 
     if( nullptr == bytes ) {
@@ -229,8 +233,8 @@ std::string jau::bytesHexString(const uint8_t * bytes, const nsize_t offset, con
         // LSB left -> MSB right
         for (nsize_t j = 0; j < length; j++) {
             const int v = bytes[offset+j] & 0xFF;
-            str.push_back(HEX_ARRAY[v >> 4]);
-            str.push_back(HEX_ARRAY[v & 0x0F]);
+            str.push_back(hex_array[v >> 4]);
+            str.push_back(hex_array[v & 0x0F]);
         }
     } else {
         // MSB left -> LSB right
@@ -238,8 +242,8 @@ std::string jau::bytesHexString(const uint8_t * bytes, const nsize_t offset, con
         do {
             j--;
             const int v = bytes[offset+j] & 0xFF;
-            str.push_back(HEX_ARRAY[v >> 4]);
-            str.push_back(HEX_ARRAY[v & 0x0F]);
+            str.push_back(hex_array[v >> 4]);
+            str.push_back(hex_array[v & 0x0F]);
         } while( j != 0);
     }
     return str;

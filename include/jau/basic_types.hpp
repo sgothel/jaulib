@@ -659,12 +659,22 @@ namespace jau {
     std::string uint256HexString(const uint256_t v, const bool leading0X=true) noexcept;
 
     /**
-     * If lsbFirst is true, orders LSB left -> MSB right, usual for byte streams.
+     * Produce a hexadecimal string representation of the given byte values.
      * <p>
+     * If lsbFirst is true, orders LSB left -> MSB right, usual for byte streams.<br>
      * Otherwise orders MSB left -> LSB right, usual for readable integer values.
      * </p>
+     * @param bytes pointer to the first byte to print, less offset
+     * @param offset offset to bytes pointer to the first byte to print
+     * @param length number of bytes to print
+     * @param lsbFirst true having the least significant byte printed first (lowest addressed byte to highest),
+     *                 otherwise have the most significant byte printed first (highest addressed byte to lowest).
+     * @param leading0X true to have a leading '0x' being printed, otherwise no prefix is produced.
+     * @param lowerCase true to use lower case hex-chars, otherwise capital letters are being used.
+     * @return the hex-string representation of the data
      */
-    std::string bytesHexString(const uint8_t * bytes, const nsize_t offset, const nsize_t length, const bool lsbFirst, const bool leading0X=true) noexcept;
+    std::string bytesHexString(const uint8_t * bytes, const nsize_t offset, const nsize_t length,
+                               const bool lsbFirst, const bool leading0X=true, const bool lowerCase=true) noexcept;
 
     std::string int32SeparatedString(const int32_t v, const char separator=',') noexcept;
     std::string uint32SeparatedString(const uint32_t v, const char separator=',') noexcept;
