@@ -650,14 +650,6 @@ namespace jau {
      */
     uint128_t merge_uint128(uint32_t const uuid32, uint128_t const & base_uuid, nsize_t const uuid32_le_octet_index);
 
-    std::string uint8HexString(const uint8_t v, const bool leading0X=true) noexcept;
-    std::string uint16HexString(const uint16_t v, const bool leading0X=true) noexcept;
-    std::string uint32HexString(const uint32_t v, const bool leading0X=true) noexcept;
-    std::string uint64HexString(const uint64_t v, const bool leading0X=true) noexcept;
-    std::string aptrHexString(const void * v, const bool leading0X=true) noexcept;
-    std::string uint128HexString(const uint128_t v, const bool leading0X=true) noexcept;
-    std::string uint256HexString(const uint256_t v, const bool leading0X=true) noexcept;
-
     /**
      * Produce a hexadecimal string representation of the given byte values.
      * <p>
@@ -679,6 +671,76 @@ namespace jau {
     std::string int32SeparatedString(const int32_t v, const char separator=',') noexcept;
     std::string uint32SeparatedString(const uint32_t v, const char separator=',') noexcept;
     std::string uint64SeparatedString(const uint64_t v, const char separator=',') noexcept;
+
+    /**
+     * Produce a lower-case hexadecimal string representation of the given uint8_t values.
+     * @param v the value
+     * @param leading0X true to have a leading '0x' being printed, otherwise no prefix is produced.
+     * @return the hex-string representation of the value
+     */
+    inline std::string uint8HexString(const uint8_t v, const bool leading0X=true) noexcept {
+        return bytesHexString(reinterpret_cast<const uint8_t*>(&v), 0, sizeof(v), false /* lsbFirst */, leading0X, true /* lowerCase */);
+    }
+
+    /**
+     * Produce a lower-case hexadecimal string representation of the given uint16_t value.
+     * @param v the value
+     * @param leading0X true to have a leading '0x' being printed, otherwise no prefix is produced.
+     * @return the hex-string representation of the value
+     */
+    inline std::string uint16HexString(const uint16_t v, const bool leading0X=true) noexcept {
+        return bytesHexString(reinterpret_cast<const uint8_t*>(&v), 0, sizeof(v), false /* lsbFirst */, leading0X, true /* lowerCase */);
+    }
+
+    /**
+     * Produce a lower-case hexadecimal string representation of the given uint32_t value.
+     * @param v the value
+     * @param leading0X true to have a leading '0x' being printed, otherwise no prefix is produced.
+     * @return the hex-string representation of the value
+     */
+    inline std::string uint32HexString(const uint32_t v, const bool leading0X=true) noexcept {
+        return bytesHexString(reinterpret_cast<const uint8_t*>(&v), 0, sizeof(v), false /* lsbFirst */, leading0X, true /* lowerCase */);
+    }
+
+    /**
+     * Produce a lower-case hexadecimal string representation of the given uint64_t value.
+     * @param v the value
+     * @param leading0X true to have a leading '0x' being printed, otherwise no prefix is produced.
+     * @return the hex-string representation of the value
+     */
+    inline std::string uint64HexString(const uint64_t v, const bool leading0X=true) noexcept {
+        return bytesHexString(reinterpret_cast<const uint8_t*>(&v), 0, sizeof(v), false /* lsbFirst */, leading0X, true /* lowerCase */);
+    }
+
+    /**
+     * Produce a lower-case hexadecimal string representation of the given 'void *' value.
+     * @param v the value
+     * @param leading0X true to have a leading '0x' being printed, otherwise no prefix is produced.
+     * @return the hex-string representation of the value
+     */
+    inline std::string aptrHexString(const void * v, const bool leading0X=true) noexcept {
+        return uint64HexString(reinterpret_cast<uint64_t>(v), leading0X);
+    }
+
+    /**
+     * Produce a lower-case hexadecimal string representation of the given uint128_t value.
+     * @param v the value
+     * @param leading0X true to have a leading '0x' being printed, otherwise no prefix is produced.
+     * @return the hex-string representation of the value
+     */
+    inline std::string uint128HexString(const uint128_t v, const bool leading0X=true) noexcept {
+        return bytesHexString(v.data, 0, sizeof(v.data), false /* lsbFirst */, leading0X, true /* lowerCase */);
+    }
+
+    /**
+     * Produce a lower-case hexadecimal string representation of the given uint256_t value.
+     * @param v the value
+     * @param leading0X true to have a leading '0x' being printed, otherwise no prefix is produced.
+     * @return the hex-string representation of the value
+     */
+    inline std::string uint256HexString(const uint256_t v, const bool leading0X=true) noexcept {
+        return bytesHexString(v.data, 0, sizeof(v.data), false /* lsbFirst */, leading0X, true /* lowerCase */);
+    }
 
     /** trim in place */
     void trimInPlace(std::string &s) noexcept;

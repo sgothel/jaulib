@@ -144,69 +144,6 @@ uint128_t jau::merge_uint128(uint32_t const uuid32, uint128_t const & base_uuid,
     return dest;
 }
 
-std::string jau::uint8HexString(const uint8_t v, const bool leading0X) noexcept {
-    const nsize_t length = leading0X ? 4 : 2; // ( '0x00' | '00' )
-    std::string str;
-    str.reserve(length+1); // including EOS for snprintf
-    str.resize(length);
-
-    const nsize_t count = snprintf(&str[0], str.capacity(), ( leading0X ? "0x%.2X" : "%.2X" ), v);
-    if( length != count ) {
-        ABORT("uint8_t string not of length %d but %d", length, count);
-    }
-    return str;
-}
-
-std::string jau::uint16HexString(const uint16_t v, const bool leading0X) noexcept {
-    const nsize_t length = leading0X ? 6 : 4; // ( '0x0000' | '0000' )
-    std::string str;
-    str.reserve(length+1); // including EOS for snprintf
-    str.resize(length);
-
-    const nsize_t count = snprintf(&str[0], str.capacity(), ( leading0X ? "0x%.4X" : "%.4X" ), v);
-    if( length != count ) {
-        ABORT("uint16_t string not of length %d but %d", length, count);
-    }
-    return str;
-}
-
-std::string jau::uint32HexString(const uint32_t v, const bool leading0X) noexcept {
-    const nsize_t length = leading0X ? 10 : 8; // ( '0x00000000' | '00000000' )
-    std::string str;
-    str.reserve(length+1); // including EOS for snprintf
-    str.resize(length);
-
-    const nsize_t count = snprintf(&str[0], str.capacity(), ( leading0X ? "0x%.8X" : "%.8X" ), v);
-    if( length != count ) {
-        ABORT("uint32_t string not of length %d but %d", length, count);
-    }
-    return str;
-}
-
-std::string jau::uint64HexString(const uint64_t v, const bool leading0X) noexcept {
-    const nsize_t length = leading0X ? 18 : 16; // ( '0x0000000000000000' | '0000000000000000' )
-    std::string str;
-    str.reserve(length+1); // including EOS for snprintf
-    str.resize(length);
-
-    const nsize_t count = snprintf(&str[0], str.capacity(), ( leading0X ? "0x%.16" PRIX64 : "%.16" PRIX64 ), v);
-    if( length != count ) {
-        ABORT("uint64_t string not of length %d but %d", length, count);
-    }
-    return str;
-}
-
-std::string jau::aptrHexString(const void * v, const bool leading0X) noexcept {
-    return uint64HexString((uint64_t)v, leading0X);
-}
-
-std::string jau::uint128HexString(const uint128_t v, const bool leading0X) noexcept {
-    return bytesHexString(v.data, 0, sizeof(v.data), false /* lsbFirst */, leading0X);
-}
-std::string jau::uint256HexString(const uint256_t v, const bool leading0X) noexcept {
-    return bytesHexString(v.data, 0, sizeof(v.data), false /* lsbFirst */, leading0X);
-}
-
 static const char* HEX_ARRAY_LOW = "0123456789abcdef";
 static const char* HEX_ARRAY_BIG = "0123456789ABCDEF";
 
