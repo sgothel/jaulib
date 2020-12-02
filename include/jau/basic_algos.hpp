@@ -27,8 +27,105 @@
 #define JAU_BASIC_ALGOS_HPP_
 
 #include <mutex>
+#include <cmath>
 
 namespace jau {
+    /**
+    // *************************************************
+    // *************************************************
+    // *************************************************
+     */
+
+    /**
+     * Natural 'size_t' alternative using 'unsigned int' as its natural sized type.
+     * <p>
+     * The leading 'n' stands for natural.
+     * </p>
+     * <p>
+     * This is a compromise to indicate intend,
+     * but to avoid handling a multiple sized 'size_t' footprint where not desired.
+     * </p>
+     */
+    typedef unsigned int nsize_t;
+
+    /**
+     * Natural 'ssize_t' alternative using 'signed int' as its natural sized type.
+     * <p>
+     * The leading 'n' stands for natural.
+     * </p>
+     * <p>
+     * This is a compromise to indicate intend,
+     * but to avoid handling a multiple sized 'ssize_t' footprint where not desired.
+     * </p>
+     */
+    typedef signed int snsize_t;
+
+    /**
+    // *************************************************
+    // *************************************************
+    // *************************************************
+     */
+
+    /**
+     * Returns the value of the sign function.
+     * <pre>
+     * -1 for x < 0
+     *  0 for x = 0
+     *  1 for x > 0
+     * </pre>
+     * Implementation is type safe.
+     * @tparam T an integral number type
+     * @param x the integral number
+     * @return function result
+     */
+    template <typename T>
+    constexpr snsize_t sign(T x) noexcept
+    {
+        return (T(0) < x) - (x < T(0));
+    }
+
+    /**
+     * Returns the absolute value of an integral number
+     * @tparam T an integral number type
+     * @param x the integral number
+     * @return function result
+     */
+    template <typename T>
+    constexpr T abs(T x) noexcept
+    {
+        return sign(x) < 0 ? -x : x;
+    }
+
+    /**
+     * Returns the number of decimal digits of the given integral value number using std::log10<T>().
+     * <pre>
+     * x < 0: 2 + floor( log10( -x ) ) )
+     * x = 0: 1
+     * x > 0: 1 + (int)( log10(  x ) ) )
+     * </p>
+     * @tparam T an integral integer type
+     * @param x the integral integer
+     * @return digit count
+     */
+    template<typename T>
+    constexpr nsize_t digits10(T x) noexcept
+    {
+        const snsize_t x_sign = jau::sign<T>(x);
+        if( x_sign == 0 ) {
+            return 1;
+        }
+        if( x_sign < 0 ) {
+            return 2 + static_cast<nsize_t>( std::floor<T>( std::log10<T>( -x ) ) );
+        } else {
+            return 1 + static_cast<nsize_t>(                std::log10<T>(  x )   );
+        }
+    }
+
+    /**
+    // *************************************************
+    // *************************************************
+    // *************************************************
+     */
 
     /**
      * Custom for_each template, using indices instead of iterators,

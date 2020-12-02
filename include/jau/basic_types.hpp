@@ -37,6 +37,7 @@ extern "C" {
     #include <byteswap.h>
 }
 
+#include <jau/basic_algos.hpp>
 #include <jau/packed_attribute.hpp>
 
 namespace jau {
@@ -45,36 +46,6 @@ namespace jau {
      * Returns current monotonic time in milliseconds.
      */
     uint64_t getCurrentMilliseconds() noexcept;
-
-    /**
-    // *************************************************
-    // *************************************************
-    // *************************************************
-     */
-
-    /**
-     * Natural 'size_t' alternative using 'unsigned int' as its natural sized type.
-     * <p>
-     * The leading 'n' stands for natural.
-     * </p>
-     * <p>
-     * This is a compromise to indicate intend,
-     * but to avoid handling a multiple sized 'size_t' footprint where not desired.
-     * </p>
-     */
-    typedef unsigned int nsize_t;
-
-    /**
-     * Natural 'ssize_t' alternative using 'signed int' as its natural sized type.
-     * <p>
-     * The leading 'n' stands for natural.
-     * </p>
-     * <p>
-     * This is a compromise to indicate intend,
-     * but to avoid handling a multiple sized 'ssize_t' footprint where not desired.
-     * </p>
-     */
-    typedef signed int snsize_t;
 
     /**
     // *************************************************
