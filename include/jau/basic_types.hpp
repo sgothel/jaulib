@@ -668,9 +668,6 @@ namespace jau {
     std::string bytesHexString(const uint8_t * bytes, const nsize_t offset, const nsize_t length,
                                const bool lsbFirst, const bool leading0X=true, const bool lowerCase=true) noexcept;
 
-    std::string int32SeparatedString(const int32_t v, const char separator=',') noexcept;
-    std::string uint32SeparatedString(const uint32_t v, const char separator=',') noexcept;
-    std::string uint64SeparatedString(const uint64_t v, const char separator=',') noexcept;
 
     /**
      * Produce a lower-case hexadecimal string representation of the given uint8_t values.
@@ -740,6 +737,85 @@ namespace jau {
      */
     inline std::string uint256HexString(const uint256_t v, const bool leading0X=true) noexcept {
         return bytesHexString(v.data, 0, sizeof(v.data), false /* lsbFirst */, leading0X, true /* lowerCase */);
+    }
+
+    /**
+     * Produce a decimal string representation of an integral integer value.
+     * @tparam T an integral integer type
+     * @param v the integral integer value
+     * @param separator if not 0, use as separation character, otherwise no separation characters are being used
+     * @param width the minimum number of characters to be printed. Add padding with blank space if result is shorter.
+     * @return the string representation of the integral integer value
+     */
+    template<class T>
+    std::string to_decimal_string(const T v, const char separator=',', const nsize_t width=0) noexcept {
+        const nsize_t max_digits10 = std::numeric_limits<T>::digits10;
+        const nsize_t max_commas = 0 == separator ? 0 : ( max_digits10 - 1 ) / 3;
+        const nsize_t max_chars = max_digits10 + max_commas;
+
+        const nsize_t digit10_count = jau::digits10<T>(v);
+
+        const nsize_t comma_count = 0 == separator ? 0 : ( digit10_count - 1 ) / 3;
+        const nsize_t net_chars = digit10_count + comma_count;
+        const nsize_t total_chars = std::min<nsize_t>(max_chars, std::max<nsize_t>(width, net_chars));
+        std::string res(total_chars, ' ');
+
+        T n = v;
+        nsize_t char_iter = 0;
+
+        for(nsize_t digit10_iter = 0; digit10_iter < digit10_count && char_iter < total_chars; digit10_iter++ ) {
+            const int digit = n % 10;
+            n /= 10;
+            if( 0 < digit10_iter && 0 == digit10_iter % 3 ) {
+                res[total_chars-1-(char_iter++)] = separator;
+            }
+            res[total_chars-1-(char_iter++)] = '0' + digit;
+        }
+        return res;
+    }
+
+    /**
+     * Produce a decimal string representation of an int32_t value.
+     * @param v the value
+     * @param separator if not 0, use as separation character, otherwise no separation characters are being used
+     * @param width the minimum number of characters to be printed. Add padding with blank space if result is shorter.
+     * @return the string representation of the value
+     */
+    inline std::string int32DecString(const int32_t v, const char separator=',', const nsize_t width=0) noexcept {
+        return to_decimal_string<int32_t>(v, separator, width);
+    }
+
+    /**
+     * Produce a decimal string representation of a uint32_t value.
+     * @param v the value
+     * @param separator if not 0, use as separation character, otherwise no separation characters are being used
+     * @param width the minimum number of characters to be printed. Add padding with blank space if result is shorter.
+     * @return the string representation of the value
+     */
+    inline std::string uint32DecString(const uint32_t v, const char separator=',', const nsize_t width=0) noexcept {
+        return to_decimal_string<uint32_t>(v, separator, width);
+    }
+
+    /**
+     * Produce a decimal string representation of an int64_t value.
+     * @param v the value
+     * @param separator if not 0, use as separation character, otherwise no separation characters are being used
+     * @param width the minimum number of characters to be printed. Add padding with blank space if result is shorter.
+     * @return the string representation of the value
+     */
+    inline std::string int64DecString(const int64_t v, const char separator=',', const nsize_t width=0) noexcept {
+        return to_decimal_string<int64_t>(v, separator, width);
+    }
+
+    /**
+     * Produce a decimal string representation of a uint64_t value.
+     * @param v the value
+     * @param separator if not 0, use as separation character, otherwise no separation characters are being used
+     * @param width the minimum number of characters to be printed. Add padding with blank space if result is shorter.
+     * @return the string representation of the value
+     */
+    inline std::string uint64DecString(const uint64_t v, const char separator=',', const nsize_t width=0) noexcept {
+        return to_decimal_string<uint64_t>(v, separator, width);
     }
 
     /** trim in place */
