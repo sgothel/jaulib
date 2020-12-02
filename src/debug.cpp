@@ -93,7 +93,7 @@ void jau::print_backtrace(bool skip_anon_frames, int skip_frames) noexcept {
 }
 
 void jau::DBG_PRINT_impl(const char * format, ...) noexcept {
-    fprintf(stderr, "[%'9" PRIu64 "] Debug: ", environment::getElapsedMillisecond());
+    fprintf(stderr, "[%s] Debug: ", jau::uint64DecString(environment::getElapsedMillisecond(), ',', 9).c_str());
     va_list args;
     va_start (args, format);
     vfprintf(stderr, format, args);
@@ -103,7 +103,7 @@ void jau::DBG_PRINT_impl(const char * format, ...) noexcept {
 }
 
 void jau::WORDY_PRINT_impl(const char * format, ...) noexcept {
-    fprintf(stderr, "[%'9" PRIu64 "] Wordy: ", environment::getElapsedMillisecond());
+    fprintf(stderr, "[%s] Wordy: ", jau::uint64DecString(environment::getElapsedMillisecond(), ',', 9).c_str());
     va_list args;
     va_start (args, format);
     vfprintf(stderr, format, args);
@@ -113,7 +113,7 @@ void jau::WORDY_PRINT_impl(const char * format, ...) noexcept {
 }
 
 void jau::ABORT_impl(const char *func, const char *file, const int line, const char * format, ...) noexcept {
-    fprintf(stderr, "[%'9" PRIu64 "] ABORT @ %s:%d %s: ", environment::getElapsedMillisecond(), file, line, func);
+    fprintf(stderr, "[%s] ABORT @ %s:%d %s: ", jau::uint64DecString(environment::getElapsedMillisecond(), ',', 9).c_str(), file, line, func);
     va_list args;
     va_start (args, format);
     vfprintf(stderr, format, args);
@@ -125,7 +125,7 @@ void jau::ABORT_impl(const char *func, const char *file, const int line, const c
 }
 
 void jau::ERR_PRINTv(const char *func, const char *file, const int line, const char * format, va_list args) noexcept {
-    fprintf(stderr, "[%'9" PRIu64 "] Error @ %s:%d %s: ", environment::getElapsedMillisecond(), file, line, func);
+    fprintf(stderr, "[%s] Error @ %s:%d %s: ", jau::uint64DecString(environment::getElapsedMillisecond(), ',', 9).c_str(), file, line, func);
     vfprintf(stderr, format, args);
     fprintf(stderr, "; last errno %d %s\n", errno, strerror(errno));
     fflush(stderr);
@@ -133,7 +133,7 @@ void jau::ERR_PRINTv(const char *func, const char *file, const int line, const c
 }
 
 void jau::ERR_PRINT_impl(const char *prefix, const bool backtrace, const char *func, const char *file, const int line, const char * format, ...) noexcept {
-    fprintf(stderr, "[%'9" PRIu64 "] %s @ %s:%d %s: ", environment::getElapsedMillisecond(), prefix, file, line, func);
+    fprintf(stderr, "[%s] %s @ %s:%d %s: ", jau::uint64DecString(environment::getElapsedMillisecond(), ',', 9).c_str(), prefix, file, line, func);
     va_list args;
     va_start (args, format);
     vfprintf(stderr, format, args);
@@ -146,14 +146,14 @@ void jau::ERR_PRINT_impl(const char *prefix, const bool backtrace, const char *f
 }
 
 void jau::WARN_PRINTv(const char *func, const char *file, const int line, const char * format, va_list args) noexcept {
-    fprintf(stderr, "[%'9" PRIu64 "] Warning @ %s:%d %s: ", environment::getElapsedMillisecond(), file, line, func);
+    fprintf(stderr, "[%s] Warning @ %s:%d %s: ", jau::uint64DecString(environment::getElapsedMillisecond(), ',', 9).c_str(), file, line, func);
     vfprintf(stderr, format, args);
     fprintf(stderr, "\n");
     fflush(stderr);
 }
 
 void jau::WARN_PRINT_impl(const char *func, const char *file, const int line, const char * format, ...) noexcept {
-    fprintf(stderr, "[%'9" PRIu64 "] Warning @ %s:%d %s: ", environment::getElapsedMillisecond(), file, line, func);
+    fprintf(stderr, "[%s] Warning @ %s:%d %s: ", jau::uint64DecString(environment::getElapsedMillisecond(), ',', 9).c_str(), file, line, func);
     va_list args;
     va_start (args, format);
     vfprintf(stderr, format, args);
@@ -163,7 +163,7 @@ void jau::WARN_PRINT_impl(const char *func, const char *file, const int line, co
 }
 
 void jau::INFO_PRINT(const char * format, ...) noexcept {
-    fprintf(stderr, "[%'9" PRIu64 "] Info: ", environment::getElapsedMillisecond());
+    fprintf(stderr, "[%s] Info: ", jau::uint64DecString(environment::getElapsedMillisecond(), ',', 9).c_str());
     va_list args;
     va_start (args, format);
     vfprintf(stderr, format, args);
@@ -173,7 +173,7 @@ void jau::INFO_PRINT(const char * format, ...) noexcept {
 }
 
 void jau::PLAIN_PRINT(const char * format, ...) noexcept {
-    fprintf(stderr, "[%'9" PRIu64 "] ", environment::getElapsedMillisecond());
+    fprintf(stderr, "[%s] ", jau::uint64DecString(environment::getElapsedMillisecond(), ',', 9).c_str());
     va_list args;
     va_start (args, format);
     vfprintf(stderr, format, args);
@@ -183,7 +183,7 @@ void jau::PLAIN_PRINT(const char * format, ...) noexcept {
 }
 
 void jau::COND_PRINT_impl(const char * format, ...) noexcept {
-    fprintf(stderr, "[%'9" PRIu64 "] ", environment::getElapsedMillisecond());
+    fprintf(stderr, "[%s] ", jau::uint64DecString(environment::getElapsedMillisecond(), ',', 9).c_str());
     va_list args;
     va_start (args, format);
     vfprintf(stderr, format, args);
