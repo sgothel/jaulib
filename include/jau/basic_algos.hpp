@@ -79,21 +79,54 @@ namespace jau {
      * @return function result
      */
     template <typename T>
-    constexpr snsize_t sign(T x) noexcept
+    constexpr snsize_t sign(const T x) noexcept
     {
         return (T(0) < x) - (x < T(0));
     }
 
     /**
+     * Safely inverts the sign of an integral number.
+     * <p>
+     * Implementation takes special care to have T_MIN, i.e. std::numeric_limits<T>::min(),
+     * converted to T_MAX, i.e. std::numeric_limits<T>::max().<br>
+     * This is necessary since <code>T_MAX < | -T_MIN |</code> and the result would
+     * not fit in the return type T otherwise.
+     * </p>
+     * Hence for the extreme minimum case:
+     * <pre>
+     * jau::invert_sign<int32_t>(INT32_MIN) = | INT32_MIN | - 1 = INT32_MAX
+     * </pre>
+     * Otherwise with x < 0:
+     * <pre>
+     * jau::invert_sign<int32_t>(x) = | x | = -x
+     * </pre>
+     * and x >= 0:
+     * <pre>
+     * jau::invert_sign<int32_t>(x) = -x
+     * </pre>
+     * @tparam T
+     * @param x
+     * @return
+     */
+    template <typename T>
+    constexpr T invert_sign(const T x) noexcept
+    {
+        return std::numeric_limits<T>::min() == x ? std::numeric_limits<T>::max() : -x;
+    }
+
+    /**
      * Returns the absolute value of an integral number
+     * <p>
+     * Implementation uses jau::invert_sign() to have a safe absolute value conversion, if required.
+     * </p>
      * @tparam T an integral number type
      * @param x the integral number
      * @return function result
      */
     template <typename T>
-    constexpr T abs(T x) noexcept
+    constexpr T abs(const T x) noexcept
     {
-        return sign(x) < 0 ? -x : x;
+        return sign(x) < 0 ? invert_sign<T>( x ) : x;
     }
 
     /**
