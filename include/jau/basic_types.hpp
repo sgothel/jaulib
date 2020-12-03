@@ -749,20 +749,13 @@ namespace jau {
      */
     template<class T>
     std::string to_decimal_string(const T v, const char separator=',', const nsize_t width=0) noexcept {
-        // 'std::numeric_limits<T>::digits10' is not exactly representing the number of digits
-        const nsize_t max_digits10 = std::numeric_limits<T>::is_signed ?
-                jau::digits10<T>(std::numeric_limits<T>::min()) :
-                jau::digits10<T>(std::numeric_limits<T>::max());
-        const nsize_t max_commas = 0 == separator ? 0 : ( max_digits10 - 1 ) / 3;
-        const nsize_t max_chars = max_digits10 + max_commas;
-
         const snsize_t v_sign = jau::sign<T>(v);
         const nsize_t digit10_count1 = jau::digits10<T>(v, v_sign, true /* sign_is_digit */);
         const nsize_t digit10_count2 = v_sign < 0 ? digit10_count1 - 1 : digit10_count1; // less sign
 
         const nsize_t comma_count = 0 == separator ? 0 : ( digit10_count1 - 1 ) / 3;
         const nsize_t net_chars = digit10_count1 + comma_count;
-        const nsize_t total_chars = std::min<nsize_t>(max_chars, std::max<nsize_t>(width, net_chars));
+        const nsize_t total_chars = std::max<nsize_t>(width, net_chars);
         std::string res(total_chars, ' ');
 
         T n = v;
