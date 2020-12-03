@@ -172,8 +172,10 @@ void jau::INFO_PRINT(const char * format, ...) noexcept {
     fflush(stderr);
 }
 
-void jau::PLAIN_PRINT(const char * format, ...) noexcept {
-    fprintf(stderr, "[%s] ", jau::uint64DecString(environment::getElapsedMillisecond(), ',', 9).c_str());
+void jau::PLAIN_PRINT(const bool printPrefix, const char * format, ...) noexcept {
+    if( printPrefix ) {
+        fprintf(stderr, "[%s] ", jau::uint64DecString(environment::getElapsedMillisecond(), ',', 9).c_str());
+    }
     va_list args;
     va_start (args, format);
     vfprintf(stderr, format, args);
