@@ -130,28 +130,54 @@ namespace jau {
     }
 
     /**
-     * Returns the number of decimal digits of the given integral value number using std::log10<T>().
+     * Returns the number of decimal digits of the given integral value number using std::log10<T>().<br>
+     * If sign_is_digit == true (default), treats a potential negative sign as a digit.
      * <pre>
-     * x < 0: 2 + floor( log10( -x ) ) )
+     * x < 0: 1 + (int) ( log10( -x ) ) + ( sign_is_digit ? 1 : 0 )
      * x = 0: 1
-     * x > 0: 1 + (int)( log10(  x ) ) )
+     * x > 0: 1 + (int) ( log10(  x ) )
+     * </pre>
+     * Implementation uses jau::invert_sign() to have a safe absolute value conversion, if required.
+     * <p>
+     * Convenience method, reusing precomputed sign of value to avoid redundant computations.
      * </p>
      * @tparam T an integral integer type
      * @param x the integral integer
+     * @param x_sign the pre-determined sign of the given value x
+     * @param sign_is_digit if true and value is negative, adds one to result for sign. Defaults to true.
      * @return digit count
      */
     template<typename T>
-    constexpr nsize_t digits10(T x) noexcept
+    constexpr nsize_t digits10(const T x, const snsize_t x_sign, const bool sign_is_digit=true) noexcept
     {
-        const snsize_t x_sign = jau::sign<T>(x);
         if( x_sign == 0 ) {
             return 1;
         }
         if( x_sign < 0 ) {
-            return 2 + static_cast<nsize_t>( std::floor<T>( std::log10<T>( -x ) ) );
+            return 1 + static_cast<nsize_t>( std::log10<T>( invert_sign<T>( x ) ) ) + ( sign_is_digit ? 1 : 0 );
         } else {
-            return 1 + static_cast<nsize_t>(                std::log10<T>(  x )   );
+            return 1 + static_cast<nsize_t>( std::log10<T>(                 x   ) );
         }
+    }
+
+    /**
+     * Returns the number of decimal digits of the given integral value number using std::log10<T>().
+     * If sign_is_digit == true (default), treats a potential negative sign as a digit.
+     * <pre>
+     * x < 0: 1 + (int) ( log10( -x ) ) + ( sign_is_digit ? 1 : 0 )
+     * x = 0: 1
+     * x > 0: 1 + (int) ( log10(  x ) )
+     * </pre>
+     * Implementation uses jau::invert_sign() to have a safe absolute value conversion, if required.
+     * @tparam T an integral integer type
+     * @param x the integral integer
+     * @param sign_is_digit if true and value is negative, adds one to result for sign. Defaults to true.
+     * @return digit count
+     */
+    template<typename T>
+    constexpr nsize_t digits10(const T x, const bool sign_is_digit=true) noexcept
+    {
+        return digits10<T>(x, jau::sign<T>(x), sign_is_digit);
     }
 
     /**
