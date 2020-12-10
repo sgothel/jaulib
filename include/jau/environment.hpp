@@ -82,6 +82,13 @@ namespace jau {
             }
 
             /**
+             * Returns elapsed monotonic time in milliseconds since module startup comparing against the given timestamp, see {@link #startupTimeMilliseconds}.
+             */
+            static uint64_t getElapsedMillisecond(const uint64_t& current_ts) noexcept {
+                return current_ts - startupTimeMilliseconds;
+            }
+
+            /**
              * Returns the value of the environment's variable 'name'.
              * <p>
              * Note that only '[org.]tinyb.*' and 'direct_bt.*' Java JVM properties are passed via 'org.tinyb.BluetoothFactory'
