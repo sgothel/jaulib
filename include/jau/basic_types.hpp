@@ -139,6 +139,8 @@ namespace jau {
         constexpr uint128_t& operator=(const uint128_t &o) noexcept = default;
         uint128_t& operator=(uint128_t &&o) noexcept = default;
 
+        void clear() noexcept { bzero(data, sizeof(data)); }
+
         constexpr bool operator==(uint128_t const &o) const noexcept {
             if( this == &o ) {
                 return true;
@@ -168,6 +170,8 @@ namespace jau {
         constexpr uint192_t& operator=(const uint192_t &o) noexcept = default;
         uint192_t& operator=(uint192_t &&o) noexcept = default;
 
+        void clear() noexcept { bzero(data, sizeof(data)); }
+
         constexpr bool operator==(uint192_t const &o) const noexcept {
             if( this == &o ) {
                 return true;
@@ -196,6 +200,8 @@ namespace jau {
         uint256_t(uint256_t &&o) noexcept = default;
         constexpr uint256_t& operator=(const uint256_t &o) noexcept = default;
         uint256_t& operator=(uint256_t &&o) noexcept = default;
+
+        void clear() noexcept { bzero(data, sizeof(data)); }
 
         constexpr bool operator==(uint256_t const &o) const noexcept {
             if( this == &o ) {
