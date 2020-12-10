@@ -670,6 +670,15 @@ namespace jau {
 
 
     /**
+     * Produce a hexadecimal string representation of the given byte value.
+     * @param dest the std::string reference destination to append
+     * @param value the byte value to represent
+     * @param lowerCase true to use lower case hex-chars, otherwise capital letters are being used.
+     * @return the given std::string reference for chaining
+     */
+    std::string& byteHexString(std::string& dest, const uint8_t value, const bool lowerCase) noexcept;
+
+    /**
      * Produce a lower-case hexadecimal string representation of the given uint8_t values.
      * @param v the value
      * @param leading0X true to have a leading '0x' being printed, otherwise no prefix is produced.

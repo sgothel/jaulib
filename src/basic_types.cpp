@@ -186,6 +186,19 @@ std::string jau::bytesHexString(const uint8_t * bytes, const nsize_t offset, con
     return str;
 }
 
+std::string& jau::byteHexString(std::string& dest, const uint8_t value, const bool lowerCase) noexcept
+{
+    const char* hex_array = lowerCase ? HEX_ARRAY_LOW : HEX_ARRAY_BIG;
+
+    if( 2 > dest.capacity() - dest.size() ) { // Until C++20, then reserve is ignored if capacity > reserve
+        dest.reserve(dest.size()+2);
+    }
+    const int v = value & 0xFF;
+    dest.push_back(hex_array[v >> 4]);
+    dest.push_back(hex_array[v & 0x0F]);
+    return dest;
+}
+
 void jau::trimInPlace(std::string &s) noexcept {
     s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) {
         return !std::isspace(ch);
