@@ -37,7 +37,7 @@ extern "C" {
     #include <byteswap.h>
 }
 
-#include <jau/basic_algos.hpp>
+#include <jau/int_math.hpp>
 #include <jau/packed_attribute.hpp>
 
 namespace jau {
