@@ -4,7 +4,9 @@
 #include <cstring>
 #include <memory>
 
-#include <cppunit.h>
+#define CATCH_CONFIG_MAIN
+#include <catch2/catch_amalgamated.hpp>
+#include <jau/test/catch2_ext.hpp>
 
 #include <jau/ringbuffer.hpp>
 
@@ -34,19 +36,19 @@ typedef std::shared_ptr<Integer> SharedType;
 typedef ringbuffer<SharedType, nullptr, jau::nsize_t> SharedTypeRingbuffer;
 
 // Test examples.
-class Cppunit_tests : public Cppunit {
+class TestRingbuffer01 {
   private:
 
     std::shared_ptr<SharedTypeRingbuffer> createEmpty(jau::nsize_t initialCapacity) {
         std::shared_ptr<SharedTypeRingbuffer> rb = std::shared_ptr<SharedTypeRingbuffer>(new SharedTypeRingbuffer(initialCapacity));
-        CHECKTM("Is !empty-1 "+rb->toString(), rb->isEmpty());
-        CHECKTM("Is !empty-2 "+rb->toString(), rb->isEmpty2());
+        REQUIRE_MSG("empty-1 "+rb->toString(), rb->isEmpty());
+        REQUIRE_MSG("empty-2 "+rb->toString(), rb->isEmpty2());
         return rb;
     }
     std::shared_ptr<SharedTypeRingbuffer> createFull(const std::vector<std::shared_ptr<Integer>> & source) {
         std::shared_ptr<SharedTypeRingbuffer> rb = std::shared_ptr<SharedTypeRingbuffer>(new SharedTypeRingbuffer(source));
-        CHECKTM("Is !full-1 "+rb->toString(), rb->isFull());
-        CHECKTM("Is !full-2 "+rb->toString(), rb->isFull2());
+        REQUIRE_MSG("full-1 "+rb->toString(), rb->isFull());
+        REQUIRE_MSG("full-2 "+rb->toString(), rb->isFull2());
         return rb;
     }
 
@@ -62,198 +64,202 @@ class Cppunit_tests : public Cppunit {
         (void) clearRef;
 
         jau::nsize_t preSize = rb.getSize();
-        CHECKM("Wrong capacity "+rb.toString(), capacity, rb.capacity());
-        CHECKTM("Too low capacity to read "+std::to_string(len)+" elems: "+rb.toString(), capacity >= len);
-        CHECKTM("Too low size to read "+std::to_string(len)+" elems: "+rb.toString(), preSize >= len);
-        CHECKTM("Is empty "+rb.toString(), !rb.isEmpty());
+        REQUIRE_MSG("capacity "+rb.toString(), capacity == rb.capacity());
+        REQUIRE_MSG("capacity at read "+std::to_string(len)+" elems: "+rb.toString(), capacity >= len);
+        REQUIRE_MSG("size at read "+std::to_string(len)+" elems: "+rb.toString(), preSize >= len);
+        REQUIRE_MSG("not empty "+rb.toString(), !rb.isEmpty());
 
         for(jau::nsize_t i=0; i<len; i++) {
             SharedType svI = rb.get();
-            CHECKTM("Empty at read #"+std::to_string(i+1)+": "+rb.toString(), svI!=nullptr);
-            CHECKM("Wrong value at read #"+std::to_string(i+1)+": "+rb.toString(), startValue+i, svI->intValue());
+            REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb.toString(), svI!=nullptr);
+            REQUIRE_MSG("value at read #"+std::to_string(i+1)+": "+rb.toString(), startValue+i == svI->intValue());
         }
 
-        CHECKM("Invalid size "+rb.toString(), preSize-len, rb.getSize());
-        CHECKTM("Invalid free slots after reading "+std::to_string(len)+": "+rb.toString(), rb.getFreeSlots()>= len);
-        CHECKTM("Is full "+rb.toString(), !rb.isFull());
+        REQUIRE_MSG("size "+rb.toString(), preSize-len == rb.getSize());
+        REQUIRE_MSG("free slots after reading "+std::to_string(len)+": "+rb.toString(), rb.getFreeSlots()>= len);
+        REQUIRE_MSG("not full "+rb.toString(), !rb.isFull());
     }
 
     void writeTestImpl(SharedTypeRingbuffer &rb, jau::nsize_t capacity, jau::nsize_t len, jau::nsize_t startValue) {
         jau::nsize_t preSize = rb.getSize();
 
-        CHECKM("Wrong capacity "+rb.toString(), capacity, rb.capacity());
-        CHECKTM("Too low capacity to write "+std::to_string(len)+" elems: "+rb.toString(), capacity >= len);
-        CHECKTM("Too low size to write "+std::to_string(len)+" elems: "+rb.toString(), preSize+len <= capacity);
-        CHECKTM("Is full "+rb.toString(), !rb.isFull());
+        REQUIRE_MSG("capacity "+rb.toString(), capacity == rb.capacity());
+        REQUIRE_MSG("capacity at write "+std::to_string(len)+" elems: "+rb.toString(), capacity >= len);
+        REQUIRE_MSG("size at write "+std::to_string(len)+" elems: "+rb.toString(), preSize+len <= capacity);
+        REQUIRE_MSG("not full "+rb.toString(), !rb.isFull());
 
         for(jau::nsize_t i=0; i<len; i++) {
-            std::string m = "Buffer is full at put #"+std::to_string(i)+": "+rb.toString();
-            CHECKTM(m, rb.put( SharedType( new Integer(startValue+i) ) ) );
+            std::string m = "buffer put #"+std::to_string(i)+": "+rb.toString();
+            REQUIRE_MSG(m, rb.put( SharedType( new Integer(startValue+i) ) ) );
         }
 
-        CHECKM("Invalid size "+rb.toString(), preSize+len, rb.getSize());
-        CHECKTM("Is empty "+rb.toString(), !rb.isEmpty());
+        REQUIRE_MSG("size "+rb.toString(), preSize+len == rb.getSize());
+        REQUIRE_MSG("not empty "+rb.toString(), !rb.isEmpty());
     }
 
     void moveGetPutImpl(SharedTypeRingbuffer &rb, jau::nsize_t pos) {
-        CHECKTM("RB is empty "+rb.toString(), !rb.isEmpty());
+        REQUIRE_MSG("not empty "+rb.toString(), !rb.isEmpty());
         for(jau::nsize_t i=0; i<pos; i++) {
-            CHECKM("MoveFull.get failed "+rb.toString(), i, rb.get()->intValue());
-            CHECKTM("MoveFull.put failed "+rb.toString(), rb.put( SharedType( new Integer(i) ) ) );
+            REQUIRE_MSG("moveFull.get "+rb.toString(), i == rb.get()->intValue());
+            REQUIRE_MSG("moveFull.put "+rb.toString(), rb.put( SharedType( new Integer(i) ) ) );
         }
     }
 
     void movePutGetImpl(SharedTypeRingbuffer &rb, jau::nsize_t pos) {
-        CHECKTM("RB is full "+rb.toString(), !rb.isFull());
+        REQUIRE_MSG("RB is full "+rb.toString(), !rb.isFull());
         for(jau::nsize_t i=0; i<pos; i++) {
-            CHECKTM("MoveEmpty.put failed "+rb.toString(), rb.put( SharedType( new Integer(600+i) ) ) );
-            CHECKM("MoveEmpty.get failed "+rb.toString(), 600+i, rb.get()->intValue());
+            REQUIRE_MSG("moveEmpty.put "+rb.toString(), rb.put( SharedType( new Integer(600+i) ) ) );
+            REQUIRE_MSG("moveEmpty.get "+rb.toString(), 600+i == rb.get()->intValue());
         }
     }
+
+  public:
 
     void test01_FullRead() {
         jau::nsize_t capacity = 11;
         std::vector<SharedType> source = createIntArray(capacity, 0);
         std::shared_ptr<SharedTypeRingbuffer> rb = createFull(source);
-        fprintf(stderr, "test01_FullRead: Created / %s\n", rb->toString().c_str());
-        CHECKM("Not full size "+rb->toString(), capacity, rb->getSize());
-        CHECKTM("Not full-1 "+rb->toString(), rb->isFull());
-        CHECKTM("Not full-2 "+rb->toString(), rb->isFull2());
+        INFO_STR("test01_FullRead: Created / "+ rb->toString());
+        REQUIRE_MSG("full size "+rb->toString(), capacity == rb->getSize());
+        REQUIRE_MSG("full-1 "+rb->toString(), rb->isFull());
+        REQUIRE_MSG("full-2 "+rb->toString(), rb->isFull2());
 
         readTestImpl(*rb, true, capacity, capacity, 0);
-        fprintf(stderr, "test01_FullRead: PostRead / %s\n", rb->toString().c_str());
-        CHECKTM("Not empty-1 "+rb->toString(), rb->isEmpty());
-        CHECKTM("Not empty-2 "+rb->toString(), rb->isEmpty2());
+        INFO_STR("test01_FullRead: PostRead / " + rb->toString());
+        REQUIRE_MSG("empty-1 "+rb->toString(), rb->isEmpty());
+        REQUIRE_MSG("empty-2 "+rb->toString(), rb->isEmpty2());
     }
 
     void test02_EmptyWrite() {
         jau::nsize_t capacity = 11;
         std::shared_ptr<SharedTypeRingbuffer> rb = createEmpty(capacity);
-        fprintf(stderr, "test01_EmptyWrite: Created / %s\n", rb->toString().c_str());
-        CHECKM("Not zero size "+rb->toString(), 0, rb->getSize());
-        CHECKTM("Not empty-1 "+rb->toString(), rb->isEmpty());
-        CHECKTM("Not empty-2 "+rb->toString(), rb->isEmpty2());
+        INFO( std::string("test01_EmptyWrite: Created / ") + rb->toString().c_str());
+        REQUIRE_MSG("zero size "+rb->toString(), 0 == rb->getSize());
+        REQUIRE_MSG("empty-1 "+rb->toString(), rb->isEmpty());
+        REQUIRE_MSG("empty-2 "+rb->toString(), rb->isEmpty2());
 
         writeTestImpl(*rb, capacity, capacity, 0);
-        fprintf(stderr, "test01_EmptyWrite: PostWrite / %s\n", rb->toString().c_str());
-        CHECKM("Not full size "+rb->toString(), capacity, rb->getSize());
-        CHECKTM("Not full-1 "+rb->toString(), rb->isFull());
-        CHECKTM("Not full-2 "+rb->toString(), rb->isFull2());
+        INFO( std::string("test01_EmptyWrite: PostWrite / ") + rb->toString().c_str());
+        REQUIRE_MSG("full size "+rb->toString(), capacity == rb->getSize());
+        REQUIRE_MSG("full-1 "+rb->toString(), rb->isFull());
+        REQUIRE_MSG("full-2 "+rb->toString(), rb->isFull2());
 
         readTestImpl(*rb, true, capacity, capacity, 0);
-        fprintf(stderr, "test01_EmptyWrite: PostRead / %s\n", rb->toString().c_str());
-        CHECKTM("Not empty-1 "+rb->toString(), rb->isEmpty());
-        CHECKTM("Not empty-2 "+rb->toString(), rb->isEmpty2());
+        INFO( std::string("test01_EmptyWrite: PostRead / ") + rb->toString().c_str());
+        REQUIRE_MSG("empty-1 "+rb->toString(), rb->isEmpty());
+        REQUIRE_MSG("empty-2 "+rb->toString(), rb->isEmpty2());
     }
 
     void test03_FullReadReset() {
         jau::nsize_t capacity = 11;
         std::vector<SharedType> source = createIntArray(capacity, 0);
         std::shared_ptr<SharedTypeRingbuffer> rb = createFull(source);
-        fprintf(stderr, "test01_FullReadReset: Created / %s\n", rb->toString().c_str());
-        CHECKTM("Not full-1 "+rb->toString(), rb->isFull());
-        CHECKTM("Not full-2 "+rb->toString(), rb->isFull2());
+        INFO_STR("test01_FullReadReset: Created / " + rb->toString());
+        REQUIRE_MSG("full-1 "+rb->toString(), rb->isFull());
+        REQUIRE_MSG("full-2 "+rb->toString(), rb->isFull2());
 
         rb->reset(source);
-        fprintf(stderr, "test01_FullReadReset: Post Reset w/ source / %s\n", rb->toString().c_str());
-        CHECKTM("Not full-1 "+rb->toString(), rb->isFull());
-        CHECKTM("Not full-2 "+rb->toString(), rb->isFull2());
+        INFO_STR("test01_FullReadReset: Post Reset w/ source / " + rb->toString());
+        REQUIRE_MSG("full-1 "+rb->toString(), rb->isFull());
+        REQUIRE_MSG("full-2 "+rb->toString(), rb->isFull2());
 
         readTestImpl(*rb, false, capacity, capacity, 0);
-        fprintf(stderr, "test01_FullReadReset: Post Read / %s\n", rb->toString().c_str());
-        CHECKTM("Not empty-1 "+rb->toString(), rb->isEmpty());
-        CHECKTM("Not empty-2 "+rb->toString(), rb->isEmpty2());
+        INFO_STR("test01_FullReadReset: Post Read / " + rb->toString());
+        REQUIRE_MSG("empty-1 "+rb->toString(), rb->isEmpty());
+        REQUIRE_MSG("empty-2 "+rb->toString(), rb->isEmpty2());
 
         rb->reset(source);
-        fprintf(stderr, "test01_FullReadReset: Post Reset w/ source / %s\n", rb->toString().c_str());
-        CHECKTM("Not full-1 "+rb->toString(), rb->isFull());
-        CHECKTM("Not full-2 "+rb->toString(), rb->isFull2());
+        INFO_STR("test01_FullReadReset: Post Reset w/ source / " + rb->toString());
+        REQUIRE_MSG("full-1 "+rb->toString(), rb->isFull());
+        REQUIRE_MSG("full-2 "+rb->toString(), rb->isFull2());
 
         readTestImpl(*rb, false, capacity, capacity, 0);
-        fprintf(stderr, "test01_FullReadReset: Post Read / %s\n", rb->toString().c_str());
-        CHECKTM("Not empty-1 "+rb->toString(), rb->isEmpty());
-        CHECKTM("Not empty-2 "+rb->toString(), rb->isEmpty2());
+        INFO_STR("test01_FullReadReset: Post Read / " + rb->toString());
+        REQUIRE_MSG("empty-1 "+rb->toString(), rb->isEmpty());
+        REQUIRE_MSG("empty-2 "+rb->toString(), rb->isEmpty2());
     }
 
     void test04_EmptyWriteClear() {
         jau::nsize_t capacity = 11;
         std::shared_ptr<SharedTypeRingbuffer> rb = createEmpty(capacity);
-        CHECKTM("Not empty-1 "+rb->toString(), rb->isEmpty());
-        CHECKTM("Not empty-2 "+rb->toString(), rb->isEmpty2());
+        REQUIRE_MSG("empty-1 "+rb->toString(), rb->isEmpty());
+        REQUIRE_MSG("empty-2 "+rb->toString(), rb->isEmpty2());
 
         rb->clear();
-        CHECKTM("Not empty-1 "+rb->toString(), rb->isEmpty());
-        CHECKTM("Not empty-2 "+rb->toString(), rb->isEmpty2());
+        REQUIRE_MSG("empty-1 "+rb->toString(), rb->isEmpty());
+        REQUIRE_MSG("empty-2 "+rb->toString(), rb->isEmpty2());
 
         writeTestImpl(*rb, capacity, capacity, 0);
-        CHECKTM("Not full-1 "+rb->toString(), rb->isFull());
-        CHECKTM("Not full-2 "+rb->toString(), rb->isFull2());
+        REQUIRE_MSG("full-1 "+rb->toString(), rb->isFull());
+        REQUIRE_MSG("full-2 "+rb->toString(), rb->isFull2());
 
         readTestImpl(*rb, false, capacity, capacity, 0);
-        CHECKTM("Not empty-1 "+rb->toString(), rb->isEmpty());
-        CHECKTM("Not empty-2 "+rb->toString(), rb->isEmpty2());
+        REQUIRE_MSG("empty-1 "+rb->toString(), rb->isEmpty());
+        REQUIRE_MSG("empty-2 "+rb->toString(), rb->isEmpty2());
 
         rb->clear();
-        CHECKTM("Not empty-1 "+rb->toString(), rb->isEmpty());
-        CHECKTM("Not empty-2 "+rb->toString(), rb->isEmpty2());
+        REQUIRE_MSG("empty-1 "+rb->toString(), rb->isEmpty());
+        REQUIRE_MSG("empty-2 "+rb->toString(), rb->isEmpty2());
 
         writeTestImpl(*rb, capacity, capacity, 0);
-        CHECKTM("Not full-1 "+rb->toString(), rb->isFull());
-        CHECKTM("Not full-2 "+rb->toString(), rb->isFull2());
+        REQUIRE_MSG("full-1 "+rb->toString(), rb->isFull());
+        REQUIRE_MSG("full-2 "+rb->toString(), rb->isFull2());
 
         readTestImpl(*rb, false, capacity, capacity, 0);
-        CHECKTM("Not empty-1 "+rb->toString(), rb->isEmpty());
-        CHECKTM("Not empty-2 "+rb->toString(), rb->isEmpty2());
+        REQUIRE_MSG("empty-1 "+rb->toString(), rb->isEmpty());
+        REQUIRE_MSG("empty-2 "+rb->toString(), rb->isEmpty2());
     }
 
     void test05_ReadResetMid01() {
         jau::nsize_t capacity = 11;
         std::vector<SharedType> source = createIntArray(capacity, 0);
         std::shared_ptr<SharedTypeRingbuffer> rb = createFull(source);
-        CHECKTM("Not full-1 "+rb->toString(), rb->isFull());
-        CHECKTM("Not full-2 "+rb->toString(), rb->isFull2());
+        REQUIRE_MSG("full-1 "+rb->toString(), rb->isFull());
+        REQUIRE_MSG("full-2 "+rb->toString(), rb->isFull2());
 
         rb->reset(source);
-        CHECKTM("Not full-1 "+rb->toString(), rb->isFull());
-        CHECKTM("Not full-2 "+rb->toString(), rb->isFull2());
+        REQUIRE_MSG("full-1 "+rb->toString(), rb->isFull());
+        REQUIRE_MSG("full-2 "+rb->toString(), rb->isFull2());
 
         readTestImpl(*rb, false, capacity, 5, 0);
-        CHECKTM("Is empty "+rb->toString(), !rb->isEmpty());
-        CHECKTM("Is Full "+rb->toString(), !rb->isFull());
+        REQUIRE_MSG("not empty "+rb->toString(), !rb->isEmpty());
+        REQUIRE_MSG("not Full "+rb->toString(), !rb->isFull());
 
         rb->reset(source);
-        CHECKTM("Not full-1 "+rb->toString(), rb->isFull());
-        CHECKTM("Not full-2 "+rb->toString(), rb->isFull2());
+        REQUIRE_MSG("full-1 "+rb->toString(), rb->isFull());
+        REQUIRE_MSG("full-2 "+rb->toString(), rb->isFull2());
 
         readTestImpl(*rb, false, capacity, capacity, 0);
-        CHECKTM("Not empty-1 "+rb->toString(), rb->isEmpty());
-        CHECKTM("Not empty-2 "+rb->toString(), rb->isEmpty2());
+        REQUIRE_MSG("empty-1 "+rb->toString(), rb->isEmpty());
+        REQUIRE_MSG("empty-2 "+rb->toString(), rb->isEmpty2());
     }
 
     void test06_ReadResetMid02() {
         jau::nsize_t capacity = 11;
         std::vector<SharedType> source = createIntArray(capacity, 0);
         std::shared_ptr<SharedTypeRingbuffer> rb = createFull(source);
-        CHECKTM("Not full-1 "+rb->toString(), rb->isFull());
-        CHECKTM("Not full-2 "+rb->toString(), rb->isFull2());
+        REQUIRE_MSG("full-1 "+rb->toString(), rb->isFull());
+        REQUIRE_MSG("full-2 "+rb->toString(), rb->isFull2());
 
         rb->reset(source);
-        CHECKTM("Not full-1 "+rb->toString(), rb->isFull());
-        CHECKTM("Not full-2 "+rb->toString(), rb->isFull2());
+        REQUIRE_MSG("full-1 "+rb->toString(), rb->isFull());
+        REQUIRE_MSG("full-2 "+rb->toString(), rb->isFull2());
 
         moveGetPutImpl(*rb, 5);
         readTestImpl(*rb, false, capacity, 5, 5);
-        CHECKTM("Is empty "+rb->toString(), !rb->isEmpty());
-        CHECKTM("Is Full "+rb->toString(), !rb->isFull());
+        REQUIRE_MSG("not empty "+rb->toString(), !rb->isEmpty());
+        REQUIRE_MSG("not Full "+rb->toString(), !rb->isFull());
 
         rb->reset(source);
-        CHECKTM("Not full-1 "+rb->toString(), rb->isFull());
-        CHECKTM("Not full-2 "+rb->toString(), rb->isFull2());
+        REQUIRE_MSG("full-1 "+rb->toString(), rb->isFull());
+        REQUIRE_MSG("full-2 "+rb->toString(), rb->isFull2());
 
         readTestImpl(*rb, false, capacity, capacity, 0);
-        CHECKTM("Not empty-1 "+rb->toString(), rb->isEmpty());
-        CHECKTM("Not empty-2 "+rb->toString(), rb->isEmpty2());
+        REQUIRE_MSG("empty-1 "+rb->toString(), rb->isEmpty());
+        REQUIRE_MSG("empty-2 "+rb->toString(), rb->isEmpty2());
     }
+
+  private:
 
     void test_GrowFullImpl(jau::nsize_t initialCapacity, jau::nsize_t pos) {
         jau::nsize_t growAmount = 5;
@@ -263,52 +269,52 @@ class Cppunit_tests : public Cppunit {
 
         for(jau::nsize_t i=0; i<initialCapacity; i++) {
             SharedType svI = rb->get();
-            CHECKTM("Empty at read #"+std::to_string(i+1)+": "+rb->toString(), svI!=nullptr);
-            CHECKM("Wrong value at read #"+std::to_string(i+1)+": "+rb->toString(), (0+i)%initialCapacity, svI->intValue());
+            REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb->toString(), svI!=nullptr);
+            REQUIRE_MSG("value at read #"+std::to_string(i+1)+": "+rb->toString(), (0+i)%initialCapacity == svI->intValue());
         }
-        CHECKM("Not zero size "+rb->toString(), 0, rb->getSize());
+        REQUIRE_MSG("zero size "+rb->toString(), 0 == rb->getSize());
 
         rb->reset(source);
-        CHECKM("Not orig size "+rb->toString(), initialCapacity, rb->getSize());
+        REQUIRE_MSG("orig size "+rb->toString(), initialCapacity == rb->getSize());
 
         moveGetPutImpl(*rb, pos);
         // PRINTM("X02 "+rb->toString());
         // rb->dump(stderr, "X02");
 
         rb->recapacity(grownCapacity);
-        CHECKM("Wrong capacity "+rb->toString(), grownCapacity, rb->capacity());
-        CHECKM("Not orig size "+rb->toString(), initialCapacity, rb->getSize());
-        CHECKTM("Is full "+rb->toString(), !rb->isFull());
-        CHECKTM("Is empty "+rb->toString(), !rb->isEmpty());
+        REQUIRE_MSG("capacity "+rb->toString(), grownCapacity == rb->capacity());
+        REQUIRE_MSG("orig size "+rb->toString(), initialCapacity == rb->getSize());
+        REQUIRE_MSG("not full "+rb->toString(), !rb->isFull());
+        REQUIRE_MSG("not empty "+rb->toString(), !rb->isEmpty());
         // PRINTM("X03 "+rb->toString());
         // rb->dump(stderr, "X03");
 
         for(jau::nsize_t i=0; i<growAmount; i++) {
-            CHECKTM("Buffer is full at put #"+std::to_string(i)+": "+rb->toString(), rb->put( SharedType( new Integer(100+i) ) ) );
+            REQUIRE_MSG("buffer not full at put #"+std::to_string(i)+": "+rb->toString(), rb->put( SharedType( new Integer(100+i) ) ) );
         }
-        CHECKM("Not new size "+rb->toString(), grownCapacity, rb->getSize());
-        CHECKTM("Not full-1 "+rb->toString(), rb->isFull());
-        CHECKTM("Not full-2 "+rb->toString(), rb->isFull2());
+        REQUIRE_MSG("new size "+rb->toString(), grownCapacity == rb->getSize());
+        REQUIRE_MSG("full-1 "+rb->toString(), rb->isFull());
+        REQUIRE_MSG("full-2 "+rb->toString(), rb->isFull2());
 
         for(jau::nsize_t i=0; i<initialCapacity; i++) {
             SharedType svI = rb->get();
             // PRINTM("X05["+std::to_string(i)+"]: "+rb->toString()+", svI-null: "+std::to_string(svI==nullptr));
-            CHECKTM("Empty at read #"+std::to_string(i+1)+": "+rb->toString(), svI!=nullptr);
-            CHECKM("Wrong value at read #"+std::to_string(i+1)+": "+rb->toString(), (pos+i)%initialCapacity, svI->intValue());
+            REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb->toString(), svI!=nullptr);
+            REQUIRE_MSG("value at read #"+std::to_string(i+1)+": "+rb->toString(), (pos+i)%initialCapacity == svI->intValue());
         }
 
         for(jau::nsize_t i=0; i<growAmount; i++) {
             SharedType svI = rb->get();
             // PRINTM("X07["+std::to_string(i)+"]: "+rb->toString()+", svI-null: "+std::to_string(svI==nullptr));
-            CHECKTM("Empty at read #"+std::to_string(i+1)+": "+rb->toString(), svI!=nullptr);
-            CHECKM("Wrong value at read #"+std::to_string(i+1)+": "+rb->toString(), 100+i, svI->intValue());
+            REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb->toString(), svI!=nullptr);
+            REQUIRE_MSG("value at read #"+std::to_string(i+1)+": "+rb->toString(), 100+i == svI->intValue());
         }
 
-        CHECKM("Not zero size "+rb->toString(), 0, rb->getSize());
-        CHECKTM("Not empty-1 "+rb->toString(), rb->isEmpty());
-        CHECKTM("Not empty-2 "+rb->toString(), rb->isEmpty2());
+        REQUIRE_MSG("zero size "+rb->toString(), 0 == rb->getSize());
+        REQUIRE_MSG("empty-1 "+rb->toString(), rb->isEmpty());
+        REQUIRE_MSG("empty-2 "+rb->toString(), rb->isEmpty2());
 
-        CHECKTM("Is full "+rb->toString(), !rb->isFull());
+        REQUIRE_MSG("not full "+rb->toString(), !rb->isFull());
     }
 
   public:
@@ -338,30 +344,20 @@ class Cppunit_tests : public Cppunit {
         test_GrowFullImpl(11, 11-1-3);
     }
 
-    void test_list() override {
-        test01_FullRead();
-        test02_EmptyWrite();
-        test03_FullReadReset();
-        test04_EmptyWriteClear();
-        test05_ReadResetMid01();
-        test06_ReadResetMid02();
-
-        test20_GrowFull01_Begin();
-        test21_GrowFull02_Begin1();
-        test22_GrowFull03_Begin2();
-        test23_GrowFull04_Begin3();
-        test24_GrowFull05_End();
-        test25_GrowFull11_End1();
-        test26_GrowFull12_End2();
-        test27_GrowFull13_End3();
-    }
 };
 
-int main(int argc, char *argv[]) {
-    (void)argc;
-    (void)argv;
-
-    Cppunit_tests test1;
-    return test1.run();
-}
+METHOD_AS_TEST_CASE( TestRingbuffer01::test01_FullRead,          "Test TestRingbuffer 01- 01");
+METHOD_AS_TEST_CASE( TestRingbuffer01::test02_EmptyWrite,        "Test TestRingbuffer 01- 02");
+METHOD_AS_TEST_CASE( TestRingbuffer01::test03_FullReadReset,     "Test TestRingbuffer 01- 03");
+METHOD_AS_TEST_CASE( TestRingbuffer01::test04_EmptyWriteClear,   "Test TestRingbuffer 01- 04");
+METHOD_AS_TEST_CASE( TestRingbuffer01::test05_ReadResetMid01,    "Test TestRingbuffer 01- 05");
+METHOD_AS_TEST_CASE( TestRingbuffer01::test06_ReadResetMid02,    "Test TestRingbuffer 01- 06");
+METHOD_AS_TEST_CASE( TestRingbuffer01::test20_GrowFull01_Begin,  "Test TestRingbuffer 01- 20");
+METHOD_AS_TEST_CASE( TestRingbuffer01::test21_GrowFull02_Begin1, "Test TestRingbuffer 01- 21");
+METHOD_AS_TEST_CASE( TestRingbuffer01::test22_GrowFull03_Begin2, "Test TestRingbuffer 01- 22");
+METHOD_AS_TEST_CASE( TestRingbuffer01::test23_GrowFull04_Begin3, "Test TestRingbuffer 01- 23");
+METHOD_AS_TEST_CASE( TestRingbuffer01::test24_GrowFull05_End,    "Test TestRingbuffer 01- 24");
+METHOD_AS_TEST_CASE( TestRingbuffer01::test25_GrowFull11_End1,   "Test TestRingbuffer 01- 25");
+METHOD_AS_TEST_CASE( TestRingbuffer01::test26_GrowFull12_End2,   "Test TestRingbuffer 01- 26");
+METHOD_AS_TEST_CASE( TestRingbuffer01::test27_GrowFull13_End3,   "Test TestRingbuffer 01- 27");
 

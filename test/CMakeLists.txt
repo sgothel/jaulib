@@ -1,35 +1,42 @@
 include_directories(
-  ${PROJECT_SOURCE_DIR}/include/cppunit
-  ${PROJECT_SOURCE_DIR}/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/../include
 )
 
-add_executable (test_functiondef01   test_functiondef01.cpp)
-target_link_libraries (test_functiondef01 jaucpp)
-add_dependencies(test_functiondef01 jaucpp)
-add_test (NAME functiondef01  COMMAND test_functiondef01)
+set (catch2_LIB_SRCS
+  ${CMAKE_CURRENT_SOURCE_DIR}/../include/catch2/catch_amalgamated.cpp
+)
 
-add_executable (test_basictypes01    test_basictypes01.cpp)
-target_link_libraries (test_basictypes01 jaucpp)
-add_dependencies(test_basictypes01 jaucpp)
-add_test (NAME basictypes01   COMMAND test_basictypes01)
+add_library (catch2 STATIC ${catch2_LIB_SRCS})
 
-add_executable (test_lfringbuffer01  test_lfringbuffer01.cpp)
-target_link_libraries (test_lfringbuffer01 jaucpp)
-add_dependencies(test_lfringbuffer01 jaucpp)
-add_test (NAME lfringbuffer01 COMMAND test_lfringbuffer01)
+target_compile_options(catch2 PUBLIC "-Wno-error=format-overflow")
 
-add_executable (test_lfringbuffer11  test_lfringbuffer11.cpp)
-target_link_libraries (test_lfringbuffer11 jaucpp)
-add_dependencies(test_lfringbuffer11 jaucpp)
-add_test (NAME lfringbuffer11 COMMAND test_lfringbuffer11)
+# install(TARGETS catch2 LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
-add_executable (test_mm_sc_drf_00  test_mm_sc_drf_00.cpp)
-target_link_libraries (test_mm_sc_drf_00 jaucpp)
-add_dependencies(test_mm_sc_drf_00 jaucpp)
-add_test (NAME mm_sc_drf_00 COMMAND test_mm_sc_drf_00)
+# These examples use the standard separate compilation
+set( SOURCES_IDIOMATIC_EXAMPLES
+    test_functiondef01.cpp
+    test_basictypes01.cpp
+    test_lfringbuffer01.cpp
+    test_lfringbuffer11.cpp
+    test_mm_sc_drf_00.cpp
+    test_mm_sc_drf_01.cpp
+)
 
-add_executable (test_mm_sc_drf_01  test_mm_sc_drf_01.cpp)
-target_link_libraries (test_mm_sc_drf_01 jaucpp)
-add_dependencies(test_mm_sc_drf_01 jaucpp)
-add_test (NAME mm_sc_drf_01 COMMAND test_mm_sc_drf_01)
+string( REPLACE ".cpp" "" BASENAMES_IDIOMATIC_EXAMPLES "${SOURCES_IDIOMATIC_EXAMPLES}" )
+set( TARGETS_IDIOMATIC_EXAMPLES ${BASENAMES_IDIOMATIC_EXAMPLES} )
+
+foreach( name ${TARGETS_IDIOMATIC_EXAMPLES} )
+    add_executable(${name} ${name}.cpp)
+endforeach()
+
+set(ALL_EXAMPLE_TARGETS
+  ${TARGETS_IDIOMATIC_EXAMPLES}
+)
+
+foreach(name ${ALL_EXAMPLE_TARGETS})
+    target_link_libraries(${name} jaulib catch2)
+    add_dependencies(${name} jaulib catch2)
+    add_test (NAME ${name} COMMAND ${name})
+endforeach()
+
 

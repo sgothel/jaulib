@@ -6,7 +6,9 @@
 #include <thread>
 #include <pthread.h>
 
-#include <cppunit.h>
+#define CATCH_CONFIG_MAIN
+#include <catch2/catch_amalgamated.hpp>
+#include <jau/test/catch2_ext.hpp>
 
 #include <jau/ringbuffer.hpp>
 
@@ -36,7 +38,7 @@ typedef std::shared_ptr<Integer> SharedType;
 typedef ringbuffer<SharedType, nullptr, jau::nsize_t> SharedTypeRingbuffer;
 
 // Test examples.
-class Cppunit_tests : public Cppunit {
+class TestRingbuffer11 {
   private:
 
     std::shared_ptr<SharedTypeRingbuffer> createEmpty(jau::nsize_t initialCapacity) {
@@ -58,91 +60,92 @@ class Cppunit_tests : public Cppunit {
         // std::thread::id this_id = std::this_thread::get_id();
         // pthread_t this_id = pthread_self();
 
-        fprintf(stderr, "%s: Created / %s\n", msg.c_str(), rb->toString().c_str());
+        // INFO_STR, INFO: Not thread safe yet
+        // INFO_STR(msg+": Created / " + rb->toString());
         for(jau::nsize_t i=0; i<len; i++) {
             SharedType svI = rb->getBlocking();
-            CHECKTM(msg+": Empty at read #"+std::to_string(i+1)+": "+rb->toString(), svI!=nullptr);
-            fprintf(stderr, "%s: Got %u / %s\n",
-                    msg.c_str(), svI->intValue(), rb->toString().c_str());
+            REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb->toString(), svI!=nullptr);
+            // INFO_STR("Got "+std::to_string(svI->intValue())+" / " + rb->toString());
         }
-        fprintf(stderr, "%s: Dies / %s\n", msg.c_str(), rb->toString().c_str());
+        // INFO_STR(msg+": Dies / " + rb->toString());
+        (void)msg;
     }
 
     void putThreadType01(const std::string msg, std::shared_ptr<SharedTypeRingbuffer> rb, jau::nsize_t len, jau::nsize_t startValue) {
         // std::thread::id this_id = std::this_thread::get_id();
         // pthread_t this_id = pthread_self();
 
-        fprintf(stderr, "%s: Created / %s\n", msg.c_str(), rb->toString().c_str());
+        // INFO_STR(msg+": Created / " + rb->toString());
         jau::nsize_t preSize = rb->getSize();
         (void)preSize;
 
         for(jau::nsize_t i=0; i<len; i++) {
             Integer * vI = new Integer(startValue+i);
-            fprintf(stderr, "%s: Putting %u ... / %s\n",
-                    msg.c_str(), vI->intValue(), rb->toString().c_str());
+            // INFO_STR("Putting "+std::to_string(vI->intValue())+" ... / " + rb->toString());
             rb->putBlocking( SharedType( vI ) );
         }
-        fprintf(stderr, "%s: Dies / %s\n", msg.c_str(), rb->toString().c_str());
+        // INFO_STR(msg+": Dies / " + rb->toString());
+        (void)msg;
     }
 
   public:
 
     void test01_Read1Write1() {
-        fprintf(stderr, "\n\ntest01_Read1Write1\n");
+        INFO_STR("\n\ntest01_Read1Write1\n");
         jau::nsize_t capacity = 100;
         std::shared_ptr<SharedTypeRingbuffer> rb = createEmpty(capacity);
-        CHECKM("Not empty size "+rb->toString(), 0, rb->getSize());
-        CHECKTM("Not empty "+rb->toString(), rb->isEmpty());
+        REQUIRE_MSG("empty size "+rb->toString(), 0 == rb->getSize());
+        REQUIRE_MSG("empty "+rb->toString(), rb->isEmpty());
 
-        std::thread getThread01(&Cppunit_tests::getThreadType01, this, "test01.get01", rb, capacity); // @suppress("Invalid arguments")
-        std::thread putThread01(&Cppunit_tests::putThreadType01, this, "test01.put01", rb, capacity, 0); // @suppress("Invalid arguments")
+        std::thread getThread01(&TestRingbuffer11::getThreadType01, this, "test01.get01", rb, capacity); // @suppress("Invalid arguments")
+        std::thread putThread01(&TestRingbuffer11::putThreadType01, this, "test01.put01", rb, capacity, 0); // @suppress("Invalid arguments")
         putThread01.join();
         getThread01.join();
 
-        CHECKTM("Not empty "+rb->toString(), rb->isEmpty());
-        CHECKM("Not empty size "+rb->toString(), 0, rb->getSize());
+        REQUIRE_MSG("empty "+rb->toString(), rb->isEmpty());
+        REQUIRE_MSG("empty size "+rb->toString(), 0 == rb->getSize());
     }
 
     void test02_Read4Write1() {
-        fprintf(stderr, "\n\ntest02_Read4Write1\n");
+        INFO_STR("\n\ntest02_Read4Write1\n");
         jau::nsize_t capacity = 400;
         std::shared_ptr<SharedTypeRingbuffer> rb = createEmpty(capacity);
-        CHECKM("Not empty size "+rb->toString(), 0, rb->getSize());
-        CHECKTM("Not empty "+rb->toString(), rb->isEmpty());
+        REQUIRE_MSG("empty size "+rb->toString(), 0 == rb->getSize());
+        REQUIRE_MSG("empty "+rb->toString(), rb->isEmpty());
 
-        std::thread getThread01(&Cppunit_tests::getThreadType01, this, "test02.get01", rb, capacity/4); // @suppress("Invalid arguments")
-        std::thread getThread02(&Cppunit_tests::getThreadType01, this, "test02.get02", rb, capacity/4); // @suppress("Invalid arguments")
-        std::thread putThread01(&Cppunit_tests::putThreadType01, this, "test02.put01", rb, capacity, 0); // @suppress("Invalid arguments")
-        std::thread getThread03(&Cppunit_tests::getThreadType01, this, "test02.get03", rb, capacity/4); // @suppress("Invalid arguments")
-        std::thread getThread04(&Cppunit_tests::getThreadType01, this, "test02.get04", rb, capacity/4); // @suppress("Invalid arguments")
+        std::thread getThread01(&TestRingbuffer11::getThreadType01, this, "test02.get01", rb, capacity/4); // @suppress("Invalid arguments")
+        std::thread getThread02(&TestRingbuffer11::getThreadType01, this, "test02.get02", rb, capacity/4); // @suppress("Invalid arguments")
+        std::thread putThread01(&TestRingbuffer11::putThreadType01, this, "test02.put01", rb, capacity, 0); // @suppress("Invalid arguments")
+        std::thread getThread03(&TestRingbuffer11::getThreadType01, this, "test02.get03", rb, capacity/4); // @suppress("Invalid arguments")
+        std::thread getThread04(&TestRingbuffer11::getThreadType01, this, "test02.get04", rb, capacity/4); // @suppress("Invalid arguments")
         putThread01.join();
         getThread01.join();
         getThread02.join();
         getThread03.join();
         getThread04.join();
 
-        CHECKTM("Not empty "+rb->toString(), rb->isEmpty());
-        CHECKM("Not empty size "+rb->toString(), 0, rb->getSize());
+        REQUIRE_MSG("empty "+rb->toString(), rb->isEmpty());
+        REQUIRE_MSG("empty size "+rb->toString(), 0 == rb->getSize());
     }
 
     void test03_Read8Write2() {
-        fprintf(stderr, "\n\ntest03_Read8Write2\n");
+        INFO_STR("\n\ntest03_Read8Write2\n");
         jau::nsize_t capacity = 800;
         std::shared_ptr<SharedTypeRingbuffer> rb = createEmpty(capacity);
-        CHECKM("Not empty size "+rb->toString(), 0, rb->getSize());
-        CHECKTM("Not empty "+rb->toString(), rb->isEmpty());
+        REQUIRE_MSG("empty size "+rb->toString(), 0 == rb->getSize());
+        REQUIRE_MSG("empty "+rb->toString(), rb->isEmpty());
 
-        std::thread getThread01(&Cppunit_tests::getThreadType01, this, "test03.get01", rb, capacity/8); // @suppress("Invalid arguments")
-        std::thread getThread02(&Cppunit_tests::getThreadType01, this, "test03.get02", rb, capacity/8); // @suppress("Invalid arguments")
-        std::thread putThread01(&Cppunit_tests::putThreadType01, this, "test03.put01", rb, capacity/2,  0); // @suppress("Invalid arguments")
-        std::thread getThread03(&Cppunit_tests::getThreadType01, this, "test03.get03", rb, capacity/8); // @suppress("Invalid arguments")
-        std::thread getThread04(&Cppunit_tests::getThreadType01, this, "test03.get04", rb, capacity/8); // @suppress("Invalid arguments")
+        std::thread getThread01(&TestRingbuffer11::getThreadType01, this, "test03.get01", rb, capacity/8); // @suppress("Invalid arguments")
+        std::thread getThread02(&TestRingbuffer11::getThreadType01, this, "test03.get02", rb, capacity/8); // @suppress("Invalid arguments")
+        std::thread putThread01(&TestRingbuffer11::putThreadType01, this, "test03.put01", rb, capacity/2,  0); // @suppress("Invalid arguments")
+        std::thread getThread03(&TestRingbuffer11::getThreadType01, this, "test03.get03", rb, capacity/8); // @suppress("Invalid arguments")
+        std::thread getThread04(&TestRingbuffer11::getThreadType01, this, "test03.get04", rb, capacity/8); // @suppress("Invalid arguments")
 
-        std::thread getThread05(&Cppunit_tests::getThreadType01, this, "test03.get05", rb, capacity/8); // @suppress("Invalid arguments")
-        std::thread getThread06(&Cppunit_tests::getThreadType01, this, "test03.get06", rb, capacity/8); // @suppress("Invalid arguments")
-        std::thread putThread02(&Cppunit_tests::putThreadType01, this, "test03.put02", rb, capacity/2,  400); // @suppress("Invalid arguments")
-        std::thread getThread07(&Cppunit_tests::getThreadType01, this, "test03.get07", rb, capacity/8); // @suppress("Invalid arguments")
-        std::thread getThread08(&Cppunit_tests::getThreadType01, this, "test03.get08", rb, capacity/8); // @suppress("Invalid arguments")
+        std::thread getThread05(&TestRingbuffer11::getThreadType01, this, "test03.get05", rb, capacity/8); // @suppress("Invalid arguments")
+        std::thread getThread06(&TestRingbuffer11::getThreadType01, this, "test03.get06", rb, capacity/8); // @suppress("Invalid arguments")
+        std::thread putThread02(&TestRingbuffer11::putThreadType01, this, "test03.put02", rb, capacity/2,  400); // @suppress("Invalid arguments")
+        std::thread getThread07(&TestRingbuffer11::getThreadType01, this, "test03.get07", rb, capacity/8); // @suppress("Invalid arguments")
+        std::thread getThread08(&TestRingbuffer11::getThreadType01, this, "test03.get08", rb, capacity/8); // @suppress("Invalid arguments")
 
         putThread01.join();
         putThread02.join();
@@ -155,11 +158,11 @@ class Cppunit_tests : public Cppunit {
         getThread07.join();
         getThread08.join();
 
-        CHECKTM("Not empty "+rb->toString(), rb->isEmpty());
-        CHECKM("Not empty size "+rb->toString(), 0, rb->getSize());
+        REQUIRE_MSG("empty "+rb->toString(), rb->isEmpty());
+        REQUIRE_MSG("empty size "+rb->toString(), 0 == rb->getSize());
     }
 
-    void test_list() override {
+    void test_list() {
         test01_Read1Write1();
         test02_Read4Write1();
         test03_Read8Write2();
@@ -174,11 +177,5 @@ class Cppunit_tests : public Cppunit {
     }
 };
 
-int main(int argc, char *argv[]) {
-    (void)argc;
-    (void)argv;
-
-    Cppunit_tests test1;
-    return test1.run();
-}
+METHOD_AS_TEST_CASE( TestRingbuffer11::test_list, "Test TestRingbuffer 11- test_list");
 
