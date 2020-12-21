@@ -1,9 +1,9 @@
-Jau C++ Support Library inclusive Java JNI Binding
-==================================================
+Jau Support Library (C++, Java, ...)
+====================================
 
 Git Repository
 ==============
-This project's canonical repositories is hosted on [Gothel Software](https://jausoft.com/cgit/jaucpp.git/).
+This project's canonical repositories is hosted on [Gothel Software](https://jausoft.com/cgit/jaulib.git/).
 
 Goals
 ============
@@ -16,7 +16,7 @@ API Documentation
 
 Up to date API documentation can be found:
 
-* [C++ API Doc](https://jausoft.com/projects/jaucpp/build/documentation/cpp/html/index.html).
+* [C++ API Doc](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/index.html).
 
 Examples
 ============
@@ -33,8 +33,8 @@ Building Binaries
 
 It is advised to include this library into your main project, e.g. as a git-submodule.
 
-Then add *jaucpp/include/* to your include-path and also add the source files
-under *jaucpp/src/* into your build recipe.
+Then add *jaulib/include/* to your include-path and also add the source files
+under *jaulib/src/* into your build recipe.
 
 This library's build recipe are functional though, 
 but currently only intended to support unit testing and to produce a Doxygen API doc.
@@ -54,8 +54,8 @@ apt install doxygen graphviz
 For a generic build use:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}
 CPU_COUNT=`getconf _NPROCESSORS_ONLN`
-git clone https://jausoft.com/cgit/jaucpp.git
-cd jaucpp
+git clone https://jausoft.com/cgit/jaulib.git
+cd jaulib
 mkdir build
 cd build
 cmake -DBUILDJAVA=ON -DBUILDEXAMPLES=ON -DBUILD_TESTING=ON ..
