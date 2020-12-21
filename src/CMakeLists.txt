@@ -1,9 +1,9 @@
-set (jaucpp_LIB_INCLUDE_DIRS
   ${PROJECT_SOURCE_DIR}/include
+set (jaulib_LIB_INCLUDE_DIRS
 )
 
 include_directories(
-  ${jaucpp_LIB_INCLUDE_DIRS}
+  ${jaulib_LIB_INCLUDE_DIRS}
   ${CMAKE_CURRENT_BINARY_DIR}
 )
 
@@ -16,20 +16,20 @@ set (jaucpp_LIB_SRCS
   ${CMAKE_CURRENT_BINARY_DIR}/version.cpp
 )
 
-add_library (jaucpp SHARED ${jaucpp_LIB_SRCS})
+add_library (jaulib SHARED ${jaulib_LIB_SRCS})
 target_link_libraries (
-  jaucpp
+  jaulib
   unwind
   ${CMAKE_THREAD_LIBS_INIT}
 )
 
 set_target_properties(
-   jaucpp
+   jaulib
    PROPERTIES
-   SOVERSION ${jaucpp_VERSION_MAJOR}
-   VERSION ${jaucpp_VERSION_STRING}
+   SOVERSION ${jaulib_VERSION_MAJOR}
+   VERSION ${jaulib_VERSION_STRING}
 )
 install (DIRECTORY ${PROJECT_SOURCE_DIR}/include/jau/ DESTINATION include/jau)
 
-install(TARGETS jaucpp LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+# install(TARGETS jaulib LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
