@@ -399,18 +399,15 @@ namespace jau {
 
     inline void put_uint8(uint8_t * buffer, nsize_t const byte_offset, const uint8_t v) noexcept
     {
-        uint8_t * p = (uint8_t *) ( buffer + byte_offset );
-        *p = v;
+        *reinterpret_cast<uint8_t *>( buffer + byte_offset ) = v;
     }
     inline uint8_t get_uint8(uint8_t const * buffer, nsize_t const byte_offset) noexcept
     {
-        uint8_t const * p = (uint8_t const *) ( buffer + byte_offset );
-        return *p;
+        return *reinterpret_cast<uint8_t const *>( buffer + byte_offset );
     }
     inline int8_t get_int8(uint8_t const * buffer, nsize_t const byte_offset) noexcept
     {
-        int8_t const * p = (int8_t const *) ( buffer + byte_offset );
-        return *p;
+        return *reinterpret_cast<int8_t const *>( buffer + byte_offset );
     }
 
     /**
