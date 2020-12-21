@@ -142,7 +142,7 @@ if (DOXYGEN_FOUND)
       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
       COMMENT "Generating API documentation with Doxygen" VERBATIM
   )
-  add_custom_target(doc
+  add_custom_target(doc_jau
     DEPENDS ${jaulib_DOCS_DIR}/cpp)
 endif (DOXYGEN_FOUND)
 
