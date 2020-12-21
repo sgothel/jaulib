@@ -3,14 +3,15 @@
 #include <cinttypes>
 #include <cstring>
 
-#include <cppunit.h>
+#define CATCH_CONFIG_MAIN
+#include <catch2/catch_amalgamated.hpp>
 
 #include <jau/basic_types.hpp>
 
 using namespace jau;
 
 // Test examples.
-class Cppunit_tests : public Cppunit {
+class TestBasicTypes01 {
   private:
 
 #define SHOW_DECIMAL_STRING_STATS 0
@@ -37,58 +38,57 @@ class Cppunit_tests : public Cppunit {
         const nsize_t net_chars = digit10_count + comma_count;
         const nsize_t total_chars = std::min<nsize_t>(max_chars, std::max<nsize_t>(min_width, net_chars));
 
-        PRINTM(msg+": value "+std::to_string(value)+", use_separator "+std::to_string(use_separator)+", min_width "+std::to_string(min_width));
-        PRINTM(msg+": min "+std::to_string(min_value)+", max "+std::to_string(max_value));
-        PRINTM(msg+": max_digits10      "+std::to_string(max_digits10)+" [ orig "+std::to_string(max_digits10_0)+", min "+std::to_string(max_digits10_1)+", max "+std::to_string(max_digits10_2)+"]");
-        PRINTM(msg+": max_commas        "+std::to_string(max_commas));
-        PRINTM(msg+": max_chars         "+std::to_string(max_chars));
-        PRINTM(msg+": value digits10    "+std::to_string(digit10_count));
-        PRINTM(msg+": value commas      "+std::to_string(comma_count));
-        PRINTM(msg+": value net_chars   "+std::to_string(net_chars));
-        PRINTM(msg+": value total_chars "+std::to_string(total_chars));
+        INFO(msg+": value "+std::to_string(value)+", use_separator "+std::to_string(use_separator)+", min_width "+std::to_string(min_width));
+        INFO(msg+": min "+std::to_string(min_value)+", max "+std::to_string(max_value));
+        INFO(msg+": max_digits10      "+std::to_string(max_digits10)+" [ orig "+std::to_string(max_digits10_0)+", min "+std::to_string(max_digits10_1)+", max "+std::to_string(max_digits10_2)+"]");
+        INFO(msg+": max_commas        "+std::to_string(max_commas));
+        INFO(msg+": max_chars         "+std::to_string(max_chars));
+        INFO(msg+": value digits10    "+std::to_string(digit10_count));
+        INFO(msg+": value commas      "+std::to_string(comma_count));
+        INFO(msg+": value net_chars   "+std::to_string(net_chars));
+        INFO(msg+": value total_chars "+std::to_string(total_chars));
         std::string s = to_decimal_string<T>(value, use_separator ? ',' : 0, min_width);
-        PRINTM(msg+": result           '"+s+"', len "+std::to_string(s.length()));
+        INFO(msg+": result           '"+s+"', len "+std::to_string(s.length()));
     }
 #endif
 
-    void test_int32_t(const std::string msg, const int32_t v, const int expStrLen, const std::string expStr) {
+    void test_int32_t(const std::string msg, const int32_t v, const size_t expStrLen, const std::string expStr) {
 #if SHOW_DECIMAL_STRING_STATS
         show_decimal_string_stats<int32_t>(msg, v, true /* use_separator */, 0 /* min_width */);
 #endif
-
         const std::string str = int32DecString(v);
-        PRINTM(msg+": has '"+str+"', len "+std::to_string(str.length()));
-        PRINTM(msg+": exp '"+expStr+"', len "+std::to_string(expStr.length())+", equal: "+std::to_string(str==expStr));
-        CHECKM(msg, str.length(), expStrLen);
-        CHECKTM(msg, str == expStr);
+        INFO(msg+": has '"+str+"', len "+std::to_string(str.length()));
+        INFO(msg+": exp '"+expStr+"', len "+std::to_string(expStr.length())+", equal: "+std::to_string(str==expStr));
+        REQUIRE(str.length() == expStrLen);
+        REQUIRE_THAT(str, Catch::Matchers::Equals(expStr, Catch::CaseSensitive::Yes));
     }
 
-    void test_uint32_t(const std::string msg, const uint32_t v, const int expStrLen, const std::string expStr) {
+    void test_uint32_t(const std::string msg, const uint32_t v, const size_t expStrLen, const std::string expStr) {
 #if SHOW_DECIMAL_STRING_STATS
         show_decimal_string_stats<uint32_t>(msg, v, true /* use_separator */, 0 /* min_width */);
 #endif
 
         const std::string str = uint32DecString(v);
-        PRINTM(msg+": has '"+str+"', len "+std::to_string(str.length()));
-        PRINTM(msg+": exp '"+expStr+"', len "+std::to_string(expStr.length())+", equal: "+std::to_string(str==expStr));
-        CHECKM(msg, str.length(), expStrLen);
-        CHECKTM(msg, str == expStr);
+        INFO(msg+": has '"+str+"', len "+std::to_string(str.length()));
+        INFO(msg+": exp '"+expStr+"', len "+std::to_string(expStr.length())+", equal: "+std::to_string(str==expStr));
+        REQUIRE(str.length() == expStrLen);
+        REQUIRE_THAT(str, Catch::Matchers::Equals(expStr, Catch::CaseSensitive::Yes));
     }
 
-    void test_uint64_t(const std::string msg, const uint64_t v, const int expStrLen, const std::string expStr) {
+    void test_uint64_t(const std::string msg, const uint64_t v, const size_t expStrLen, const std::string expStr) {
 #if SHOW_DECIMAL_STRING_STATS
         show_decimal_string_stats<uint64_t>(msg, v, true /* use_separator */, 0 /* min_width */);
 #endif
 
         const std::string str = uint64DecString(v);
-        PRINTM(msg+": has '"+str+"', len "+std::to_string(str.length()));
-        PRINTM(msg+": exp '"+expStr+"', len "+std::to_string(expStr.length())+", equal: "+std::to_string(str==expStr));
-        CHECKM(msg, str.length(), expStrLen);
-        CHECKTM(msg, str == expStr);
+        INFO(msg+": has '"+str+"', len "+std::to_string(str.length()));
+        INFO(msg+": exp '"+expStr+"', len "+std::to_string(expStr.length())+", equal: "+std::to_string(str==expStr));
+        REQUIRE(str.length() == expStrLen);
+        REQUIRE_THAT(str, Catch::Matchers::Equals(expStr, Catch::CaseSensitive::Yes));
     }
 
   public:
-    void single_test() override {
+    void single_test() {
         {
             test_int32_t("INT32_MIN", INT32_MIN, 14, "-2,147,483,648");
             test_int32_t("int32_t -thousand", -1000, 6, "-1,000");
@@ -109,11 +109,5 @@ class Cppunit_tests : public Cppunit {
     }
 };
 
-int main(int argc, char *argv[]) {
-    (void)argc;
-    (void)argv;
-
-    Cppunit_tests test1;
-    return test1.run();
-}
+METHOD_AS_TEST_CASE( TestBasicTypes01::single_test, "Test Basic Types 01");
 

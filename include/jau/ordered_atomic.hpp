@@ -240,10 +240,10 @@ template <typename _Tp, std::memory_order _MO> struct ordered_atomic : private s
   typedef ordered_atomic<jau::nsize_t, std::memory_order::memory_order_relaxed> relaxed_atomic_nsize_t;
 
   /** SC atomic integral scalar size_t. Memory-Model (MM) guaranteed sequential consistency (SC) between acquire (read) and release (write) */
-  typedef ordered_atomic<size_t, std::memory_order::memory_order_seq_cst> sc_atomic_size_t;
+  typedef ordered_atomic<std::size_t, std::memory_order::memory_order_seq_cst> sc_atomic_size_t;
 
   /** Relaxed non-SC atomic integral scalar size_t. Memory-Model (MM) only guarantees the atomic value, _no_ sequential consistency (SC) between acquire (read) and release (write). */
-  typedef ordered_atomic<size_t, std::memory_order::memory_order_relaxed> relaxed_atomic_size_t;
+  typedef ordered_atomic<std::size_t, std::memory_order::memory_order_relaxed> relaxed_atomic_size_t;
 
   /**
    * This class provides a RAII-style Sequentially Consistent (SC) data race free (DRF) critical block.

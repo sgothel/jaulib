@@ -110,6 +110,9 @@ Changes
 **0.3.0**
 
 * TODO
+* Test: Using imported Catch2 (v3-devel) for C++ unit testing
+* Reduced ringbuffer to single implementation, adding move-operations
+* Added basic_types.hpp: 'to_decimal_string(..)' implementing <type>DecString() inlines.
 * Use nsize_t and snsize_t where appropriate for smaller footprint
 * Have ringbuffer's Size_type parameterized
 * Bugfixes and added cow_array
