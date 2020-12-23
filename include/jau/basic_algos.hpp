@@ -27,7 +27,6 @@
 #define JAU_BASIC_ALGOS_HPP_
 
 #include <mutex>
-#include <cmath>
 
 namespace jau {
     /**

@@ -14,8 +14,9 @@ target_compile_options(catch2 PUBLIC "-Wno-error=format-overflow")
 
 # These examples use the standard separate compilation
 set( SOURCES_IDIOMATIC_EXAMPLES
+    test_floatepsilon01.cpp
     test_functiondef01.cpp
-    test_basictypes01.cpp
+    test_intdecstring01.cpp
     test_lfringbuffer01.cpp
     test_lfringbuffer11.cpp
     test_mm_sc_drf_00.cpp

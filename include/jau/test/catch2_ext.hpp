@@ -12,6 +12,7 @@
 #define CATCH2_EXT_H
 
 #include <catch2/catch_amalgamated.hpp>
+#include <jau/float_math.hpp>
 
 // namespace Catch {
 ///////////////////////////////////////////////////////////////////////////////
@@ -34,6 +35,13 @@
 
     #define REQUIRE_MSG(MSG, ... ) INTERNAL_CATCH_TEST_M( MSG, "REQUIRE: ", Catch::ResultDisposition::Normal, __VA_ARGS__  )
     #define INFO_STR( msg ) INTERNAL_CATCH_INFO( "INFO", static_cast<std::string>(msg) )
+
+    #define REQUIRE_EPSI(a,b)           INTERNAL_CATCH_TEST( "REQUIRE: ", Catch::ResultDisposition::Normal, jau::machine_equal(a, b))
+    #define REQUIRE_EPSI_MSG(m,a,b)     INTERNAL_CATCH_TEST_M( m, "REQUIRE: ", Catch::ResultDisposition::Normal, jau::machine_equal(a, b))
+
+    #define REQUIRE_DIFF(a,b,d)         INTERNAL_CATCH_TEST( "REQUIRE: ", Catch::ResultDisposition::Normal, jau::machine_equal(a, b, 1, d))
+    #define REQUIRE_DIFF_MSG(m,a,b,d)   INTERNAL_CATCH_TEST_M( m, "REQUIRE: ", Catch::ResultDisposition::Normal, jau::machine_equal(a, b, 1, d))
+
 // }
 
 #endif // CATCH2_EXT_H

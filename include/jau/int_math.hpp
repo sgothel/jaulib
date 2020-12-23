@@ -26,7 +26,6 @@
 #ifndef JAU_BASIC_INT_MATH_HPP_
 #define JAU_BASIC_INT_MATH_HPP_
 
-#include <mutex>
 #include <cmath>
 
 namespace jau {
