@@ -3907,7 +3907,7 @@ namespace Catch {
 
 } // end namespace Catch
 
-
+#if 0
 
 namespace Catch {
     CATCH_INTERNAL_START_WARNINGS_SUPPRESSION
@@ -3931,6 +3931,7 @@ int main (int argc, char * argv[]) {
     return Catch::Session().run( argc, argv );
 }
 
+#endif
 
 
 #include <cstdio>

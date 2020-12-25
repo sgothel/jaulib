@@ -10984,4 +10984,9 @@ namespace Catch {
 #endif // CATCH_REPORTERS_ALL_HPP_INCLUDED
 
 #endif // CATCH_ALL_HPP_INCLUDED
+
+#if defined(CATCH_CONFIG_MAIN)
+#include <catch2/catch_main.cpp>
+#endif /* defined(CATCH_CONFIG_MAIN) */
+
 #endif // CATCH_AMALGAMATED_HPP_INCLUDED
