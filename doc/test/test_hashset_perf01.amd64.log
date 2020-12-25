@@ -1,0 +1,117 @@
+argc 3, auto-run 0
+Mem: stdvec_01 (full_): Elements    25 x 16 bytes; CAlloc[      512 bytes, alloc[balance     1 =     6 -     5]], 1.280000 ratio
+Mem: stdvec_01 (full_): Elements    50 x 16 bytes; CAlloc[    1,024 bytes, alloc[balance     1 =     7 -     6]], 1.280000 ratio
+Mem: stdvec_01 (full_): Elements   100 x 16 bytes; CAlloc[    2,048 bytes, alloc[balance     1 =     8 -     7]], 1.280000 ratio
+Mem: stdvec_01 (full_): Elements   200 x 16 bytes; CAlloc[    4,096 bytes, alloc[balance     1 =     9 -     8]], 1.280000 ratio
+Mem: stdvec_01 (full_): Elements 1,000 x 16 bytes; CAlloc[   16,384 bytes, alloc[balance     1 =    11 -    10]], 1.024000 ratio
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+test_hashset_perf01 is a Catch v3.0.0-preview.3 host application.
+Run with -? for options
+
+-------------------------------------------------------------------------------
+STD Vector Perf Test 01 - Fill Sequential and List
+-------------------------------------------------------------------------------
+/test/test_hashset_perf01.cpp:269
+...............................................................................
+
+benchmark name                       samples       iterations    estimated
+                                     mean          low mean      high mean
+                                     std dev       low std dev   high std dev
+-------------------------------------------------------------------------------
+Seq_List 25                                    100            60      2.064 ms 
+                                         343.05 ns    342.936 ns    343.582 ns 
+                                        1.07506 ns  0.0932254 ns    2.55378 ns 
+                                                                               
+Seq_List 50                                    100            39      2.067 ms 
+                                        550.599 ns    546.832 ns    556.485 ns 
+                                         23.629 ns     16.807 ns    38.1638 ns 
+                                                                               
+Seq_List 100                                   100            23     2.1344 ms 
+                                        908.328 ns    905.844 ns    915.301 ns 
+                                         18.916 ns    2.60158 ns    39.6416 ns 
+                                                                               
+Seq_List 200                                   100            13     2.1619 ms 
+                                         1.6673 us    1.66284 us    1.67519 us 
+                                        29.6194 ns    19.2921 ns    47.6946 ns 
+                                                                               
+Seq_List 1000                                  100             3     2.1549 ms 
+                                        7.34832 us    7.30432 us    7.43755 us 
+                                        306.073 ns    179.633 ns    483.433 ns 
+                                                                               
+
+Mem: stdvec_02 (full_): Elements    25 x 16 bytes; CAlloc[      512 bytes, alloc[balance     1 =     6 -     5]], 1.280000 ratio
+Mem: stdvec_02 (full_): Elements    50 x 16 bytes; CAlloc[    1,024 bytes, alloc[balance     1 =     7 -     6]], 1.280000 ratio
+Mem: stdvec_02 (full_): Elements   100 x 16 bytes; CAlloc[    2,048 bytes, alloc[balance     1 =     8 -     7]], 1.280000 ratio
+Mem: stdvec_02 (full_): Elements   200 x 16 bytes; CAlloc[    4,096 bytes, alloc[balance     1 =     9 -     8]], 1.280000 ratio
+Mem: stdvec_02 (full_): Elements 1,000 x 16 bytes; CAlloc[   16,384 bytes, alloc[balance     1 =    11 -    10]], 1.024000 ratio
+-------------------------------------------------------------------------------
+STD Vector Perf Test 02 - Fill Unique and Find-Each
+-------------------------------------------------------------------------------
+/test/test_hashset_perf01.cpp:297
+...............................................................................
+
+benchmark name                       samples       iterations    estimated
+                                     mean          low mean      high mean
+                                     std dev       low std dev   high std dev
+-------------------------------------------------------------------------------
+Unique Find 25                                 100            24     2.0472 ms 
+                                        852.497 ns     849.73 ns    858.158 ns 
+                                        19.3529 ns    10.6049 ns    30.5871 ns 
+                                                                               
+Unique Find 50                                 100             9     2.0709 ms 
+                                        2.24281 us    2.22486 us    2.25011 us 
+                                        53.3331 ns    15.7256 ns    94.6539 ns 
+                                                                               
+Unique Find 100                                100             3     2.2842 ms 
+                                        6.75987 us     6.7288 us    6.81588 us 
+                                         206.88 ns    129.222 ns    302.069 ns 
+                                                                               
+Unique Find 200                                100             1     2.7023 ms 
+                                        26.4917 us    26.4056 us    26.6488 us 
+                                        572.088 ns    274.826 ns    957.771 ns 
+                                                                               
+Unique Find 1000                               100             1    84.9358 ms 
+                                        970.189 us     968.48 us    972.371 us 
+                                        9.84229 us     7.6143 us    14.9796 us 
+                                                                               
+
+Mem: stdset_12 (full_): Elements    25 x 16 bytes; CAlloc[      600 bytes, alloc[balance    25 =    25 -     0]], 1.500000 ratio
+Mem: stdset_12 (full_): Elements    50 x 16 bytes; CAlloc[    1,200 bytes, alloc[balance    50 =    50 -     0]], 1.500000 ratio
+Mem: stdset_12 (full_): Elements   100 x 16 bytes; CAlloc[    2,400 bytes, alloc[balance   100 =   100 -     0]], 1.500000 ratio
+Mem: stdset_12 (full_): Elements   200 x 16 bytes; CAlloc[    4,800 bytes, alloc[balance   200 =   200 -     0]], 1.500000 ratio
+Mem: stdset_12 (full_): Elements 1,000 x 16 bytes; CAlloc[   24,000 bytes, alloc[balance 1,000 = 1,000 -     0]], 1.500000 ratio
+-------------------------------------------------------------------------------
+STD Unordered-Set Perf Test 12 - Fill Unique and Find-Each
+-------------------------------------------------------------------------------
+/test/test_hashset_perf01.cpp:324
+...............................................................................
+
+benchmark name                       samples       iterations    estimated
+                                     mean          low mean      high mean
+                                     std dev       low std dev   high std dev
+-------------------------------------------------------------------------------
+Unique Find 25                                 100            12     2.1552 ms 
+                                        1.81641 us     1.8122 us    1.83224 us 
+                                         36.556 ns    7.89957 ns    84.0457 ns 
+                                                                               
+Unique Find 50                                 100             7      2.359 ms 
+                                         3.3691 us    3.36238 us    3.39531 us 
+                                        57.3478 ns    6.25338 ns    131.391 ns 
+                                                                               
+Unique Find 100                                100             4     2.6164 ms 
+                                        6.49391 us    6.48824 us    6.51029 us 
+                                        45.1634 ns      19.76 ns    97.6575 ns 
+                                                                               
+Unique Find 200                                100             2      2.764 ms 
+                                        13.3148 us    13.2758 us    13.4136 us 
+                                        294.994 ns    142.841 ns    589.103 ns 
+                                                                               
+Unique Find 1000                               100             1     8.7068 ms 
+                                        86.4785 us     86.267 us    86.9334 us 
+                                        1.50441 us    802.647 ns    2.52316 us 
+                                                                               
+
+===============================================================================
+All tests passed (17601392 assertions in 3 test cases)
+

@@ -21,6 +21,8 @@ set( SOURCES_IDIOMATIC_EXAMPLES
     test_lfringbuffer11.cpp
     test_mm_sc_drf_00.cpp
     test_mm_sc_drf_01.cpp
+    test_cowvector_perf01.cpp
+    test_hashset_perf01.cpp
 )
 
 string( REPLACE ".cpp" "" BASENAMES_IDIOMATIC_EXAMPLES "${SOURCES_IDIOMATIC_EXAMPLES}" )
