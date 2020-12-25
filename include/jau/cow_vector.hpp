@@ -79,7 +79,7 @@ namespace jau {
      */
     template <typename Value_type, typename Alloc_type = std::allocator<Value_type>> class cow_vector {
         private:
-            typedef std::vector<Value_type> vector_t;
+            typedef std::vector<Value_type, Alloc_type> vector_t;
             typedef std::shared_ptr<vector_t> vector_ref;
 
             vector_ref store_ref;
@@ -90,16 +90,16 @@ namespace jau {
             // ctor
 
             cow_vector() noexcept
-            : store_ref(new vector_t()), sync_atomic(false) {}
+            : store_ref( std::make_shared<vector_t>() ), sync_atomic(false) {}
 
             explicit cow_vector(const Alloc_type & a) noexcept
-            : store_ref(new vector_t(a)), sync_atomic(false) { }
+            : store_ref( std::make_shared<vector_t>(a) ), sync_atomic(false) { }
 
             explicit cow_vector(size_t n, const Alloc_type& a = Alloc_type())
-            : store_ref(new vector_t(n, a)), sync_atomic(false) { }
+            : store_ref( std::make_shared<vector_t>(n, a) ), sync_atomic(false) { }
 
             cow_vector(size_t n, const Value_type& value, const Alloc_type& a = Alloc_type())
-            : store_ref(new vector_t(n, value, a)), sync_atomic(false) { }
+            : store_ref( std::make_shared<vector_t>(n, value, a) ), sync_atomic(false) { }
 
             cow_vector(const cow_vector& x)
             : sync_atomic(false) {
@@ -108,11 +108,11 @@ namespace jau {
                     sc_atomic_critical sync_x( const_cast<cow_vector *>(&x)->sync_atomic );
                     x_store_ref = x.store_ref;
                 }
-                store_ref = vector_ref( new vector_t(*x_store_ref) );
+                store_ref = std::make_shared<vector_t>( *x_store_ref, x_store_ref->get_allocator() );
             }
 
             explicit cow_vector(const vector_t& x)
-            : store_ref(new vector_t(x)), sync_atomic(false) { }
+            : store_ref( std::make_shared<vector_t>(x, x->get_allocator()) ), sync_atomic(false) { }
 
             cow_vector(cow_vector && x) noexcept {
                 // swap store_ref
@@ -152,7 +152,7 @@ namespace jau {
              */
             std::shared_ptr<std::vector<Value_type>> copy_store() noexcept {
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
-                return vector_ref( new vector_t(*store_ref) );
+                return std::make_shared<vector_t>( *store_ref, store_ref->get_allocator() );
             }
 
             /**
@@ -205,6 +205,16 @@ namespace jau {
             std::shared_ptr<std::vector<Value_type>> get_snapshot() const noexcept {
                 sc_atomic_critical sync( const_cast<cow_vector *>(this)->sync_atomic );
                 return store_ref;
+            }
+
+            Alloc_type get_allocator() const noexcept {
+                sc_atomic_critical sync( const_cast<cow_vector *>(this)->sync_atomic );
+                return store_ref->get_allocator();
+            }
+
+            std::size_t capacity() const noexcept {
+                sc_atomic_critical sync( const_cast<cow_vector *>(this)->sync_atomic );
+                return store_ref->capacity();
             }
 
             /**
@@ -285,6 +295,12 @@ namespace jau {
 
             // write access
 
+            void reserve(std::size_t n) {
+                const std::lock_guard<std::recursive_mutex> lock(mtx_write);
+                sc_atomic_critical sync( const_cast<cow_vector *>(this)->sync_atomic );
+                store_ref->reserve(n);
+            }
+
             /**
              * Like std::vector::operator=(&), assignment
              * <p>
@@ -298,10 +314,10 @@ namespace jau {
                     sc_atomic_critical sync_x( const_cast<cow_vector *>(&x)->sync_atomic );
                     x_store_ref = x.store_ref;
                 }
-                vector_ref new_store_ref = vector_ref( new vector_t(*x_store_ref) );
+                vector_ref new_store_ref = std::make_shared<vector_t>( *x_store_ref, x_store_ref->get_allocator() );
                 {
                     sc_atomic_critical sync(sync_atomic);
-                    store_ref = new_store_ref;
+                    store_ref = std::move(new_store_ref);
                 }
                 return *this;
             }
@@ -316,7 +332,7 @@ namespace jau {
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 sc_atomic_critical sync(sync_atomic);
                 // swap store_ref
-                store_ref = x.store_ref;
+                store_ref = std::move(x.store_ref);
                 x.store_ref = nullptr;
                 return *this;
             }
@@ -329,10 +345,10 @@ namespace jau {
              */
             void clear() noexcept {
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
-                vector_ref new_store_ref = vector_ref( new vector_t() );
+                vector_ref new_store_ref = std::make_shared<vector_t>();
                 {
                     sc_atomic_critical sync(sync_atomic);
-                    store_ref = new_store_ref;
+                    store_ref = std::move(new_store_ref);
                 }
             }
 
@@ -363,11 +379,11 @@ namespace jau {
              */
             void pop_back() noexcept {
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
-                vector_ref new_store_ref = vector_ref( new vector_t(*store_ref) );
+                vector_ref new_store_ref = std::make_shared<vector_t>( *store_ref, store_ref->get_allocator() );
                 new_store_ref->pop_back();
                 {
                     sc_atomic_critical sync(sync_atomic);
-                    store_ref = new_store_ref;
+                    store_ref = std::move(new_store_ref);
                 }
             }
 
@@ -380,11 +396,11 @@ namespace jau {
              */
             void push_back(const Value_type& x) {
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
-                vector_ref new_store_ref = vector_ref( new vector_t(*store_ref) );
+                vector_ref new_store_ref = std::make_shared<vector_t>( *store_ref, store_ref->get_allocator() );
                 new_store_ref->push_back(x);
                 {
                     sc_atomic_critical sync(sync_atomic);
-                    store_ref = new_store_ref;
+                    store_ref = std::move(new_store_ref);
                 }
             }
 
@@ -396,11 +412,11 @@ namespace jau {
              */
             void push_back(Value_type&& x) {
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
-                vector_ref new_store_ref = vector_ref( new vector_t(*store_ref) );
-                new_store_ref->push_back(x);
+                vector_ref new_store_ref = std::make_shared<vector_t>( *store_ref, store_ref->get_allocator() );
+                new_store_ref->push_back( std::move(x) );
                 {
                     sc_atomic_critical sync(sync_atomic);
-                    store_ref = new_store_ref;
+                    store_ref = std::move(new_store_ref);
                 }
             }
 
@@ -445,11 +461,11 @@ namespace jau {
                         ++it;
                     }
                 }
-                vector_ref new_store_ref = vector_ref( new vector_t(*store_ref) );
+                vector_ref new_store_ref = std::make_shared<vector_t>( *store_ref, store_ref->get_allocator() );
                 new_store_ref->push_back(x);
                 {
                     sc_atomic_critical sync(sync_atomic);
-                    store_ref = new_store_ref;
+                    store_ref = std::move(new_store_ref);
                 }
                 return true;
             }
@@ -481,7 +497,7 @@ namespace jau {
             int erase_matching(const Value_type& x, const bool all_matching, equal_comparator comparator) {
                 int count = 0;
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
-                vector_ref new_store_ref = vector_ref( new vector_t(*store_ref) );
+                vector_ref new_store_ref = std::make_shared<vector_t>( *store_ref, store_ref->get_allocator() );
                 for(auto it = new_store_ref->begin(); it != new_store_ref->end(); ) {
                     if( comparator( *it, x ) ) {
                         it = new_store_ref->erase(it);
@@ -495,7 +511,7 @@ namespace jau {
                 }
                 if( 0 < count ) { // mutated new_store_ref?
                     sc_atomic_critical sync(sync_atomic);
-                    store_ref = new_store_ref;
+                    store_ref = std::move(new_store_ref);
                 } // else throw away new_store_ref
                 return count;
             }
@@ -510,11 +526,11 @@ namespace jau {
              */
             void put(size_t i, const Value_type& x) {
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
-                vector_ref new_store_ref = vector_ref( new vector_t(*store_ref) );
+                vector_ref new_store_ref = std::make_shared<vector_t>( *store_ref, store_ref->get_allocator() );
                 new_store_ref->at(i) = x;
                 {
                     sc_atomic_critical sync(sync_atomic);
-                    store_ref = new_store_ref;
+                    store_ref = std::move(new_store_ref);
                 }
             }
 
@@ -528,11 +544,11 @@ namespace jau {
              */
             void put(size_t i, Value_type&& x) {
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
-                vector_ref new_store_ref = vector_ref( new vector_t(*store_ref) );
+                vector_ref new_store_ref = std::make_shared<vector_t>( *store_ref, store_ref->get_allocator() );
                 new_store_ref->at(i) = std::move(x);
                 {
                     sc_atomic_critical sync(sync_atomic);
-                    store_ref = new_store_ref;
+                    store_ref = std::move(new_store_ref);
                 }
             }
     };
