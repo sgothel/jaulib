@@ -618,61 +618,6 @@ namespace jau {
             }
 
             /**
-             * Like std::vector::push_back(), copy
-             * @param x the value to be added at the tail.
-             */
-            constexpr void push_back(const value_type& x) {
-                if( end_ == storage_end_ ) {
-                    grow_storage_move(grow_capacity());
-                }
-                new (end_) value_type( x ); // placement new
-                ++end_;
-            }
-
-            /**
-             * Like std::vector::push_back(), move
-             */
-            constexpr void push_back(value_type&& x) {
-                if( end_ == storage_end_ ) {
-                    grow_storage_move(grow_capacity());
-                }
-                new (end_) value_type( std::move(x) ); // placement new
-                ++end_;
-            }
-
-            /**
-             * Like std::vector::push_back(), but appends the whole value_type range [first, last).
-             * @tparam InputIt foreign input-iterator to range of value_type [first, last)
-             * @param first first foreign input-iterator to range of value_type [first, last)
-             * @param last last foreign input-iterator to range of value_type [first, last)
-             */
-            template< class InputIt >
-            constexpr void push_back( InputIt first, InputIt last ) {
-                const size_type count = size_type(last - first);
-
-                if( end_ + count >= storage_end_ ) {
-                    grow_storage_move(size() + count);
-                }
-                ctor_copy_range_foreign(end_, first, last);
-                end_ += count;
-            }
-
-            /**
-             * Like std::vector::push_back(), but appends the whole value_type range [first, last).
-             * @param first first const_iterator to range of value_type [first, last)
-             * @param last last const_iterator to range of value_type [first, last)
-             */
-            constexpr void push_back( const_iterator first, const_iterator last ) {
-                const size_type count = size_type(last - first);
-
-                if( end_ + count >= storage_end_ ) {
-                    grow_storage_move(size() + count);
-                }
-                ctor_copy_range(end_, first, last);
-                end_ += count;
-            }
-
-            /**
              * Like std::vector::erase().
              * <p>
              * Removes the element at the given position
@@ -792,6 +737,61 @@ namespace jau {
                 } else {
                     throw jau::IndexOutOfBoundsException(std::to_string(difference_type(pos - begin_)), std::to_string(size()), E_FILE_LINE);
                 }
+            }
+
+            /**
+             * Like std::vector::push_back(), copy
+             * @param x the value to be added at the tail.
+             */
+            constexpr void push_back(const value_type& x) {
+                if( end_ == storage_end_ ) {
+                    grow_storage_move(grow_capacity());
+                }
+                new (end_) value_type( x ); // placement new
+                ++end_;
+            }
+
+            /**
+             * Like std::vector::push_back(), move
+             */
+            constexpr void push_back(value_type&& x) {
+                if( end_ == storage_end_ ) {
+                    grow_storage_move(grow_capacity());
+                }
+                new (end_) value_type( std::move(x) ); // placement new
+                ++end_;
+            }
+
+            /**
+             * Like std::vector::push_back(), but appends the whole value_type range [first, last).
+             * @tparam InputIt foreign input-iterator to range of value_type [first, last)
+             * @param first first foreign input-iterator to range of value_type [first, last)
+             * @param last last foreign input-iterator to range of value_type [first, last)
+             */
+            template< class InputIt >
+            constexpr void push_back( InputIt first, InputIt last ) {
+                const size_type count = size_type(last - first);
+
+                if( end_ + count >= storage_end_ ) {
+                    grow_storage_move(size() + count);
+                }
+                ctor_copy_range_foreign(end_, first, last);
+                end_ += count;
+            }
+
+            /**
+             * Like std::vector::push_back(), but appends the whole value_type range [first, last).
+             * @param first first const_iterator to range of value_type [first, last)
+             * @param last last const_iterator to range of value_type [first, last)
+             */
+            constexpr void push_back( const_iterator first, const_iterator last ) {
+                const size_type count = size_type(last - first);
+
+                if( end_ + count >= storage_end_ ) {
+                    grow_storage_move(size() + count);
+                }
+                ctor_copy_range(end_, first, last);
+                end_ += count;
             }
 
             /**
