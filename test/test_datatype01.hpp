@@ -49,9 +49,12 @@ __pack ( struct Addr48Bit {
     Addr48Bit& operator=(Addr48Bit &&o) noexcept = default;
 
     bool next() noexcept {
-        for(int i=0; i<6; i++) {
-            if(b[i] < 0xfe ) {
-                b[i]++;
+        for(int i=0; i<6; ++i) {
+            if(b[i] < 0xff ) {
+                ++b[i];
+                for(int j=i-1; j>=0; --j) {
+                    b[j]=0;
+                }
                 return true;
             }
         }
@@ -59,7 +62,7 @@ __pack ( struct Addr48Bit {
     }
     void random(std::default_random_engine& e) {
         std::uniform_int_distribution<uint8_t> d(0, 255);
-        for(int i=0; i<6; i++) {
+        for(int i=0; i<6; ++i) {
             b[i] = static_cast<uint8_t>( d(e) );
         }
     }
@@ -79,7 +82,7 @@ __pack ( struct Addr48Bit {
         std::string str;
         str.reserve(17);
 
-        for(int i=6-1; 0 <= i; i--) {
+        for(int i=6-1; 0 <= i; --i) {
             jau::byteHexString(str, b[i], false /* lowerCase */);
             if( 0 < i ) {
                 str.push_back(':');
