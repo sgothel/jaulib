@@ -39,15 +39,15 @@
 #include <jau/debug.hpp>
 #include <jau/basic_types.hpp>
 #include <jau/ordered_atomic.hpp>
-
+#include <jau/cow_iterator.hpp>
 
 namespace jau {
 
     /**
-     * Implementation of a Copy-On-Write (CoW) vector,
+     * Implementation of a Copy-On-Write (CoW) using std::vector as the underlying storage,
      * exposing <i>lock-free</i> read operations using SC-DRF atomic synchronization.
      * <p>
-     * The vector's store is owned using a reference to the data structure,
+     * The vector's store is owned using a shared reference to the data structure,
      * allowing its replacement on Copy-On-Write (CoW).
      * </p>
      * <p>
@@ -61,10 +61,22 @@ namespace jau {
      * jau::sc_atomic_critical to synchronizing with write operations.
      * </p>
      * <p>
-     * Naturally iterators are not supported directly,
-     * otherwise we would need to copy the store to iterate through.<br>
-     * However, one can utilize iteration using the shared snapshot
-     * of the underlying vector store via jau::cow_vector::get_snapshot() for read operations.
+     * Immutable storage const_iterators are supported via jau::cow_ro_iterator,
+     * which are constructed <i>lock-free</i>.<br>
+     * jau::cow_ro_iterator hold a snapshot retrieved via jau::cow_vector::get_snapshot()
+     * until its destruction.
+     * </p>
+     * <p>
+     * Mutable storage iterators are supported via jau::cow_rw_iterator,
+     * which are constructed holding the write-lock.<br>
+     * jau::cow_rw_iterator hold a new store copy via jau::cow_vector::copy_store(),
+     * which replaces the current store via jau::cow_vector::set_store() at destruction.
+     * </p>
+     * <p>
+     * Index operation via ::operator[](size_t) or ::at(size_t) are not supported for now,
+     * since they would be only valid if Value_type itself is a std::shared_ptr
+     * and hence prohibit the destruction of the object if mutating the storage,
+     * e.g. via jau::cow_vector::push_back().
      * </p>
      * <p>
      * Custom mutable write operations are also supported via
@@ -76,53 +88,77 @@ namespace jau {
      * - Sequentially Consistent (SC) ordering or SC-DRF (data race free) <https://en.cppreference.com/w/cpp/atomic/memory_order#Sequentially-consistent_ordering>
      * - std::memory_order <https://en.cppreference.com/w/cpp/atomic/memory_order>
      * </pre>
+     * \deprecated { jau::cow_vector will be retired, use jau::cow_darray and potentially jau::darray. }
      */
-    template <typename Value_type, typename Alloc_type = std::allocator<Value_type>> class cow_vector {
-        private:
-            typedef std::vector<Value_type, Alloc_type> vector_t;
-            typedef std::shared_ptr<vector_t> vector_ref;
+    template <typename Value_type, typename Alloc_type = std::allocator<Value_type>>
+    class cow_vector
+    {
+        public:
+            typedef std::vector<Value_type, Alloc_type> storage_t;
+            typedef std::shared_ptr<storage_t> storage_ref_t;
 
-            vector_ref store_ref;
+            /**
+             * Immutable, read-only const_iterator, lock-free,
+             * holding the current shared store reference until destruction.
+             * <p>
+             * Using jau::cow_vector::get_snapshot() at construction.
+             * </p>
+             */
+            typedef cow_ro_iterator<Value_type, storage_t, storage_ref_t> const_iterator;
+
+            /**
+             * Mutable, read-write iterator, holding the write-lock and a store copy until destruction.
+             * <p>
+             * Using jau::cow_vector::get_write_mutex(), jau::cow_vector::copy_store() at construction<br>
+             * and jau::cow_vector::set_store() at destruction.
+             * </p>
+             */
+            typedef cow_rw_iterator<Value_type, storage_t, storage_ref_t, cow_vector> iterator;
+
+        private:
+            storage_ref_t store_ref;
             sc_atomic_bool sync_atomic;
             std::recursive_mutex mtx_write;
 
         public:
             // ctor
 
-            cow_vector() noexcept
-            : store_ref( std::make_shared<vector_t>() ), sync_atomic(false) {}
+            constexpr cow_vector() noexcept
+            : store_ref( std::make_shared<storage_t>() ), sync_atomic(false) {}
 
-            explicit cow_vector(const Alloc_type & a) noexcept
-            : store_ref( std::make_shared<vector_t>(a) ), sync_atomic(false) { }
+            constexpr explicit cow_vector(const Alloc_type & a) noexcept
+            : store_ref( std::make_shared<storage_t>(a) ), sync_atomic(false) { }
 
-            explicit cow_vector(size_t n, const Alloc_type& a = Alloc_type())
-            : store_ref( std::make_shared<vector_t>(n, a) ), sync_atomic(false) { }
+            constexpr explicit cow_vector(size_t n, const Alloc_type& a = Alloc_type())
+            : store_ref( std::make_shared<storage_t>(n, a) ), sync_atomic(false) { }
 
-            cow_vector(size_t n, const Value_type& value, const Alloc_type& a = Alloc_type())
-            : store_ref( std::make_shared<vector_t>(n, value, a) ), sync_atomic(false) { }
+            constexpr cow_vector(size_t n, const Value_type& value, const Alloc_type& a = Alloc_type())
+            : store_ref( std::make_shared<storage_t>(n, value, a) ), sync_atomic(false) { }
 
-            cow_vector(const cow_vector& x)
+            constexpr cow_vector(const cow_vector& x)
             : sync_atomic(false) {
-                vector_ref x_store_ref;
+                storage_ref_t x_store_ref;
                 {
                     sc_atomic_critical sync_x( const_cast<cow_vector *>(&x)->sync_atomic );
                     x_store_ref = x.store_ref;
                 }
-                store_ref = std::make_shared<vector_t>( *x_store_ref, x_store_ref->get_allocator() );
+                store_ref = std::make_shared<storage_t>( *x_store_ref, x_store_ref->get_allocator() );
             }
 
-            explicit cow_vector(const vector_t& x)
-            : store_ref( std::make_shared<vector_t>(x, x->get_allocator()) ), sync_atomic(false) { }
+            constexpr explicit cow_vector(const storage_t& x)
+            : store_ref( std::make_shared<storage_t>(x, x->get_allocator()) ), sync_atomic(false) { }
 
-            cow_vector(cow_vector && x) noexcept {
+            constexpr cow_vector(cow_vector && x) noexcept {
                 // swap store_ref
-                store_ref = x.store_ref;
+                store_ref = std::move(x.store_ref);
                 x.store_ref = nullptr;
                 // not really necessary
-                sync_atomic = x.sync_atomic;
+                sync_atomic = std::move(x.sync_atomic);
             }
 
             ~cow_vector() noexcept { }
+
+            // cow_vector features
 
             /**
              * Returns this instances' recursive write mutex, allowing user to
@@ -135,7 +171,7 @@ namespace jau {
              * @see jau::cow_vector::copy_store()
              * @see jau::cow_vector::set_store()
              */
-            std::recursive_mutex & get_write_mutex() { return mtx_write; }
+            constexpr std::recursive_mutex & get_write_mutex() noexcept { return mtx_write; }
 
             /**
              * Returns a new shared_ptr copy of the underlying store,
@@ -150,9 +186,9 @@ namespace jau {
              * @see jau::cow_vector::copy_store()
              * @see jau::cow_vector::set_store()
              */
-            std::shared_ptr<std::vector<Value_type>> copy_store() noexcept {
+            storage_ref_t copy_store() {
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
-                return std::make_shared<vector_t>( *store_ref, store_ref->get_allocator() );
+                return std::make_shared<storage_t>( *store_ref, store_ref->get_allocator() );
             }
 
             /**
@@ -182,13 +218,11 @@ namespace jau {
              * @see jau::cow_vector::copy_store()
              * @see jau::cow_vector::set_store()
              */
-            void set_store(std::shared_ptr<std::vector<Value_type>> && new_store_ref) noexcept {
+            constexpr void set_store(storage_ref_t && new_store_ref) noexcept {
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 sc_atomic_critical sync(sync_atomic);
-                store_ref = new_store_ref;
+                store_ref = std::move( new_store_ref );
             }
-
-            // read access
 
             /**
              * Returns the current snapshot of the underlying shared std::vector<T> reference.
@@ -202,17 +236,47 @@ namespace jau {
              * </p>
              * @see jau::for_each_cow
              */
-            std::shared_ptr<std::vector<Value_type>> get_snapshot() const noexcept {
+            constexpr storage_ref_t get_snapshot() const noexcept {
                 sc_atomic_critical sync( const_cast<cow_vector *>(this)->sync_atomic );
                 return store_ref;
             }
+
+            // const_iterator, non mutable, read-only
+
+            constexpr const_iterator begin() const noexcept {
+                return const_iterator(get_snapshot(), store_ref->cbegin());
+            }
+
+            constexpr const_iterator cbegin() const noexcept {
+                return const_iterator(get_snapshot(), store_ref->cbegin());
+            }
+
+            constexpr const_iterator end() const noexcept {
+                return const_iterator(get_snapshot(), store_ref->cend());
+            }
+
+            constexpr const_iterator cend() const noexcept {
+                return const_iterator(get_snapshot(), store_ref->cend());
+            }
+
+            // iterator, mutable, read-write
+
+            constexpr iterator begin() noexcept {
+                return iterator(*this, store_ref->begin());
+            }
+
+            constexpr iterator end() noexcept {
+                return iterator(*this, store_ref->end());
+            }
+
+            // read access
 
             Alloc_type get_allocator() const noexcept {
                 sc_atomic_critical sync( const_cast<cow_vector *>(this)->sync_atomic );
                 return store_ref->get_allocator();
             }
 
-            std::size_t capacity() const noexcept {
+            constexpr std::size_t capacity() const noexcept {
                 sc_atomic_critical sync( const_cast<cow_vector *>(this)->sync_atomic );
                 return store_ref->capacity();
             }
@@ -223,7 +287,7 @@ namespace jau {
              * This read operation is <i>lock-free</i>.
              * </p>
              */
-            bool empty() const noexcept {
+            constexpr bool empty() const noexcept {
                 sc_atomic_critical sync( const_cast<cow_vector *>(this)->sync_atomic );
                 return store_ref->empty();
             }
@@ -234,11 +298,12 @@ namespace jau {
              * This read operation is <i>lock-free</i>.
              * </p>
              */
-            size_t size() const noexcept {
+            constexpr size_t size() const noexcept {
                 sc_atomic_critical sync( const_cast<cow_vector *>(this)->sync_atomic );
                 return store_ref->size();
             }
 
+#if 0
             /**
              * Like std::vector::operator[](size_t).
              * <p>
@@ -292,13 +357,19 @@ namespace jau {
                 sc_atomic_critical sync(sync_atomic);
                 return store_ref->at(i);
             }
+#endif
 
             // write access
 
-            void reserve(std::size_t n) {
+            void reserve(std::size_t new_capacity) {
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
-                sc_atomic_critical sync( const_cast<cow_vector *>(this)->sync_atomic );
-                store_ref->reserve(n);
+                storage_ref_t old_store_ref = store_ref;
+                if( new_capacity > old_store_ref->capacity() ) {
+                    storage_ref_t new_store_ref = std::make_shared<storage_t>( *old_store_ref, old_store_ref->get_allocator() );
+                    new_store_ref->reserve(new_capacity);
+                    sc_atomic_critical sync( sync_atomic );
+                    store_ref = std::move(new_store_ref);
+                }
             }
 
             /**
@@ -309,12 +380,12 @@ namespace jau {
              */
             cow_vector& operator=(const cow_vector& x) {
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
-                vector_ref x_store_ref;
+                storage_ref_t x_store_ref;
                 {
                     sc_atomic_critical sync_x( const_cast<cow_vector *>(&x)->sync_atomic );
                     x_store_ref = x.store_ref;
                 }
-                vector_ref new_store_ref = std::make_shared<vector_t>( *x_store_ref, x_store_ref->get_allocator() );
+                storage_ref_t new_store_ref = std::make_shared<storage_t>( *x_store_ref, x_store_ref->get_allocator() );
                 {
                     sc_atomic_critical sync(sync_atomic);
                     store_ref = std::move(new_store_ref);
@@ -325,15 +396,20 @@ namespace jau {
             /**
              * Like std::vector::operator=(&&), move.
              * <p>
-             * This write operation uses a mutex lock and is blocking this instances' write operations only.
+             * This write operation uses a mutex lock and is blocking both cow_vector instance's write operations.
              * </p>
              */
             cow_vector& operator=(cow_vector&& x) {
-                const std::lock_guard<std::recursive_mutex> lock(mtx_write);
-                sc_atomic_critical sync(sync_atomic);
-                // swap store_ref
-                store_ref = std::move(x.store_ref);
-                x.store_ref = nullptr;
+                std::unique_lock<std::recursive_mutex> lock(mtx_write, std::defer_lock); // utilize std::lock(a, b), allowing mixed order waiting on either object
+                std::unique_lock<std::recursive_mutex> lock_x(x.mtx_write, std::defer_lock); // otherwise RAII-style relinquish via destructor
+                std::lock(lock, lock_x);
+                {
+                    sc_atomic_critical sync_x( x.sync_atomic );
+                    sc_atomic_critical sync(sync_atomic);
+                    // swap store_ref
+                    store_ref = std::move(x.store_ref);
+                    x.store_ref = nullptr;
+                }
                 return *this;
             }
 
@@ -345,7 +421,7 @@ namespace jau {
              */
             void clear() noexcept {
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
-                vector_ref new_store_ref = std::make_shared<vector_t>();
+                storage_ref_t new_store_ref = std::make_shared<storage_t>();
                 {
                     sc_atomic_critical sync(sync_atomic);
                     store_ref = std::move(new_store_ref);
@@ -363,9 +439,9 @@ namespace jau {
                 std::unique_lock<std::recursive_mutex> lock_x(x.mtx_write, std::defer_lock); // otherwise RAII-style relinquish via destructor
                 std::lock(lock, lock_x);
                 {
-                    sc_atomic_critical sync_x( const_cast<cow_vector *>(&x)->sync_atomic );
+                    sc_atomic_critical sync_x( x.sync_atomic );
                     sc_atomic_critical sync(sync_atomic);
-                    vector_ref x_store_ref = x.store_ref;
+                    storage_ref_t x_store_ref = x.store_ref;
                     x.store_ref = store_ref;
                     store_ref = x_store_ref;
                 }
@@ -379,11 +455,14 @@ namespace jau {
              */
             void pop_back() noexcept {
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
-                vector_ref new_store_ref = std::make_shared<vector_t>( *store_ref, store_ref->get_allocator() );
-                new_store_ref->pop_back();
-                {
-                    sc_atomic_critical sync(sync_atomic);
-                    store_ref = std::move(new_store_ref);
+                storage_ref_t old_store_ref = store_ref;
+                if( 0 < old_store_ref->size() ) {
+                    storage_ref_t new_store_ref = std::make_shared<storage_t>( *old_store_ref, old_store_ref->get_allocator() );
+                    new_store_ref->pop_back();
+                    {
+                        sc_atomic_critical sync(sync_atomic);
+                        store_ref = std::move(new_store_ref);
+                    }
                 }
             }
 
@@ -396,7 +475,7 @@ namespace jau {
              */
             void push_back(const Value_type& x) {
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
-                vector_ref new_store_ref = std::make_shared<vector_t>( *store_ref, store_ref->get_allocator() );
+                storage_ref_t new_store_ref = std::make_shared<storage_t>( *store_ref, store_ref->get_allocator() );
                 new_store_ref->push_back(x);
                 {
                     sc_atomic_critical sync(sync_atomic);
@@ -412,7 +491,7 @@ namespace jau {
              */
             void push_back(Value_type&& x) {
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
-                vector_ref new_store_ref = std::make_shared<vector_t>( *store_ref, store_ref->get_allocator() );
+                storage_ref_t new_store_ref = std::make_shared<storage_t>( *store_ref, store_ref->get_allocator() );
                 new_store_ref->push_back( std::move(x) );
                 {
                     sc_atomic_critical sync(sync_atomic);
@@ -461,7 +540,7 @@ namespace jau {
                         ++it;
                     }
                 }
-                vector_ref new_store_ref = std::make_shared<vector_t>( *store_ref, store_ref->get_allocator() );
+                storage_ref_t new_store_ref = std::make_shared<storage_t>( *store_ref, store_ref->get_allocator() );
                 new_store_ref->push_back(x);
                 {
                     sc_atomic_critical sync(sync_atomic);
@@ -497,11 +576,11 @@ namespace jau {
             int erase_matching(const Value_type& x, const bool all_matching, equal_comparator comparator) {
                 int count = 0;
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
-                vector_ref new_store_ref = std::make_shared<vector_t>( *store_ref, store_ref->get_allocator() );
+                storage_ref_t new_store_ref = std::make_shared<storage_t>( *store_ref, store_ref->get_allocator() );
                 for(auto it = new_store_ref->begin(); it != new_store_ref->end(); ) {
                     if( comparator( *it, x ) ) {
                         it = new_store_ref->erase(it);
-                        count++;
+                        ++count;
                         if( !all_matching ) {
                             break;
                         }
@@ -521,12 +600,15 @@ namespace jau {
              * <p>
              * This write operation uses a mutex lock and is blocking this instances' write operations only.
              * </p>
+             * <p>
+             * To mutate multiple elements, use the more efficient jau::cow_rw_iterator via begin() and end().
+             * </p>
              * @param i the position within this store
              * @param x the value to be assigned to the object at the given position
              */
             void put(size_t i, const Value_type& x) {
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
-                vector_ref new_store_ref = std::make_shared<vector_t>( *store_ref, store_ref->get_allocator() );
+                storage_ref_t new_store_ref = std::make_shared<storage_t>( *store_ref, store_ref->get_allocator() );
                 new_store_ref->at(i) = x;
                 {
                     sc_atomic_critical sync(sync_atomic);
@@ -539,12 +621,15 @@ namespace jau {
              * <p>
              * This write operation uses a mutex lock and is blocking this instances' write operations only.
              * </p>
+             * <p>
+             * To mutate multiple elements, use the more efficient jau::cow_rw_iterator via begin() and end().
+             * </p>
              * @param i the position within this store
              * @param x the value to be assigned to the object at the given position
              */
             void put(size_t i, Value_type&& x) {
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
-                vector_ref new_store_ref = std::make_shared<vector_t>( *store_ref, store_ref->get_allocator() );
+                storage_ref_t new_store_ref = std::make_shared<storage_t>( *store_ref, store_ref->get_allocator() );
                 new_store_ref->at(i) = std::move(x);
                 {
                     sc_atomic_critical sync(sync_atomic);
@@ -552,29 +637,6 @@ namespace jau {
                 }
             }
     };
-
-    /**
-     * Custom for_each template on a jau::cow_vector snapshot
-     * using jau::cow_vector::get_snapshot().
-     * <p>
-     * jau::for_each_idx() would also be usable, however,
-     * iterating through the snapshot preserves consistency over the
-     * fetched collection at the time of invocation.
-     * </p>
-     * <p>
-     * Method performs UnaryFunction on all snapshot elements [0..n-1].
-     * </p>
-     */
-    template<typename Value_type, class UnaryFunction>
-    constexpr UnaryFunction for_each_cow(cow_vector<Value_type> &cow, UnaryFunction f)
-    {
-        std::shared_ptr<std::vector<Value_type>> snapshot = cow.get_snapshot();
-        const size_t size = snapshot->size();
-        for (size_t i = 0; i < size; i++) {
-            f( (*snapshot)[i] );
-        }
-        return f; // implicit move since C++11
-    }
 
 } /* namespace jau */
 

@@ -33,6 +33,13 @@
 
 namespace jau {
 
+/**
+ * Performance counter std::allocator specialization.
+ * <p>
+ * Not overriding deprecated (C++17) and removed (C++20)
+ * methods: address(), max_size(), construct() and destroy().
+ * </p>
+ */
 template <class T>
 struct counting_allocator : public std::allocator<T>
 {
