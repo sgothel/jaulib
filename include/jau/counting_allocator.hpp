@@ -91,7 +91,7 @@ struct counting_allocator : public std::allocator<T>
       old_stats(true),
       memory_usage(other.memory_usage),
       alloc_count(other.alloc_count), dealloc_count(other.dealloc_count),
-      alloc_balance(other.alloc_balance))
+      alloc_balance(other.alloc_balance)
       {} // C++20
 #else
     counting_allocator(const counting_allocator& other) noexcept
@@ -103,6 +103,14 @@ struct counting_allocator : public std::allocator<T>
       alloc_balance(other.alloc_balance)
       { }
 #endif
+    constexpr counting_allocator(const counting_allocator& other, const bool keep_stats) noexcept
+    : std::allocator<T>(other),
+      // id(next_id++),
+      old_stats(keep_stats ? false : true),
+      memory_usage(other.memory_usage),
+      alloc_count(other.alloc_count), dealloc_count(other.dealloc_count),
+      alloc_balance(other.alloc_balance)
+      {}
 
 #if __cplusplus > 201703L
     template <typename U>
