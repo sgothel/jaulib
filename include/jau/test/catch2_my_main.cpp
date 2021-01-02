@@ -38,17 +38,32 @@
 /** Run w/o command-line args, i.e. default CI unit test. */
 bool catch_auto_run;
 
+/** Run w/ command-line arg '--perf_analysis'. */
+bool catch_perf_analysis;
+
 int main( int argc, char* argv[] )
 {
   Catch::Session session; // There must be exactly one instance
 
   catch_auto_run = ( 1 >= argc );
-  fprintf(stderr, "argc %d, auto-run %d\n", argc, catch_auto_run);
+
+  int argc_2=0;
+  char* argv_2[argc];
+
+  for(int i=0; i<argc; i++) {
+      if( 0 == strcmp("--perf_analysis", argv[i]) ) {
+          catch_perf_analysis = true;
+      } else {
+          argv_2[argc_2++] = argv[i];
+      }
+  }
+  fprintf(stderr, "argc %d, auto_run %d, perf_analysis %d\n",
+          argc, catch_auto_run, catch_perf_analysis);
 
   // writing to session.configData() here sets defaults
   // this is the preferred way to set them
 
-  int returnCode = session.applyCommandLine( argc, argv );
+  int returnCode = session.applyCommandLine( argc_2, argv_2 );
 
   if( returnCode != 0 ) { // Indicates a command line error
       return returnCode;
