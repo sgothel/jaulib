@@ -267,84 +267,67 @@ static bool test_stdset_12_seq_fillunique_findeach_clear(const std::size_t size0
 }
 
 TEST_CASE( "STD Vector Perf Test 01 - Fill Sequential and List", "[datatype][std][vector]" ) {
-    test_stdvec_01_seq_fill_list_clear(25, true);
-    test_stdvec_01_seq_fill_list_clear(50, true);
-    if( !catch_auto_run ) {
-        test_stdvec_01_seq_fill_list_clear(100, true);
-        test_stdvec_01_seq_fill_list_clear(200, true);
-        test_stdvec_01_seq_fill_list_clear(1000, true);
+    if( catch_auto_run ) {
+        test_stdvec_01_seq_fill_list_clear(50, false);
+        return;
     }
+    // test_stdvec_01_seq_fill_list_clear(25, true);
+    test_stdvec_01_seq_fill_list_clear(50, true);
+    test_stdvec_01_seq_fill_list_clear(100, true);
+    test_stdvec_01_seq_fill_list_clear(1000, true);
 
-    BENCHMARK("Seq_List 25") {
-        return test_stdvec_01_seq_fill_list_clear(25, false);
-    };
+    // BENCHMARK("Seq_List 25") {
+    //     return test_stdvec_01_seq_fill_list_clear(25, false);
+    // };
     BENCHMARK("Seq_List 50") {
         return test_stdvec_01_seq_fill_list_clear(50, false);
     };
-    if( !catch_auto_run ) {
-        BENCHMARK("Seq_List 100") {
-            return test_stdvec_01_seq_fill_list_clear(100, false);
-        };
-        BENCHMARK("Seq_List 200") {
-            return test_stdvec_01_seq_fill_list_clear(200, false);
-        };
-        BENCHMARK("Seq_List 1000") {
-            return test_stdvec_01_seq_fill_list_clear(1000, false);
-        };
-    }
+    BENCHMARK("Seq_List 100") {
+        return test_stdvec_01_seq_fill_list_clear(100, false);
+    };
+    BENCHMARK("Seq_List 1000") {
+        return test_stdvec_01_seq_fill_list_clear(1000, false);
+    };
 }
 
 TEST_CASE( "STD Vector Perf Test 02 - Fill Unique and Find-Each", "[datatype][std][vector]" ) {
-    test_stdvec_02_seq_fillunique_findeach_clear(25, true);
-    test_stdvec_02_seq_fillunique_findeach_clear(50, true);
-    if( !catch_auto_run ) {
-        test_stdvec_02_seq_fillunique_findeach_clear(100, true);
-        test_stdvec_02_seq_fillunique_findeach_clear(200, true);
-        test_stdvec_02_seq_fillunique_findeach_clear(1000, true);
+    if( catch_auto_run ) {
+        test_stdvec_02_seq_fillunique_findeach_clear(50, false);
+        return;
     }
-
-    BENCHMARK("Unique Find 25") {
-        return test_stdvec_02_seq_fillunique_findeach_clear(25, false);
-    };
+    // BENCHMARK("Unique Find 25") {
+    //     return test_stdvec_02_seq_fillunique_findeach_clear(25, false);
+    // };
     BENCHMARK("Unique Find 50") {
         return test_stdvec_02_seq_fillunique_findeach_clear(50, false);
     };
-    if( !catch_auto_run ) {
-        BENCHMARK("Unique Find 100") {
-            return test_stdvec_02_seq_fillunique_findeach_clear(100, false);
-        };
-        BENCHMARK("Unique Find 200") {
-            return test_stdvec_02_seq_fillunique_findeach_clear(200, false);
-        };
-        BENCHMARK("Unique Find 1000") {
-            return test_stdvec_02_seq_fillunique_findeach_clear(1000, false);
-        };
-    }
+    BENCHMARK("Unique Find 100") {
+        return test_stdvec_02_seq_fillunique_findeach_clear(100, false);
+    };
+    BENCHMARK("Unique Find 1000") {
+        return test_stdvec_02_seq_fillunique_findeach_clear(1000, false);
+    };
 }
 TEST_CASE( "STD Unordered-Set Perf Test 12 - Fill Unique and Find-Each", "[datatype][std][unordered_set]" ) {
-    test_stdset_12_seq_fillunique_findeach_clear(25, true);
-    test_stdset_12_seq_fillunique_findeach_clear(50, true);
-    if( !catch_auto_run ) {
-        test_stdset_12_seq_fillunique_findeach_clear(100, true);
-        test_stdset_12_seq_fillunique_findeach_clear(200, true);
-        test_stdset_12_seq_fillunique_findeach_clear(1000, true);
+    if( catch_auto_run ) {
+        test_stdset_12_seq_fillunique_findeach_clear(50, false);
+        return;
     }
+    // test_stdset_12_seq_fillunique_findeach_clear(25, true);
+    test_stdset_12_seq_fillunique_findeach_clear(50, true);
+    test_stdset_12_seq_fillunique_findeach_clear(100, true);
+    test_stdset_12_seq_fillunique_findeach_clear(1000, true);
 
-    BENCHMARK("Unique Find 25") {
-        return test_stdset_12_seq_fillunique_findeach_clear(25, false);
-    };
+    // BENCHMARK("Unique Find 25") {
+    //     return test_stdset_12_seq_fillunique_findeach_clear(25, false);
+    // };
     BENCHMARK("Unique Find 50") {
         return test_stdset_12_seq_fillunique_findeach_clear(50, false);
     };
-    if( !catch_auto_run ) {
-        BENCHMARK("Unique Find 100") {
-            return test_stdset_12_seq_fillunique_findeach_clear(100, false);
-        };
-        BENCHMARK("Unique Find 200") {
-            return test_stdset_12_seq_fillunique_findeach_clear(200, false);
-        };
-        BENCHMARK("Unique Find 1000") {
-            return test_stdset_12_seq_fillunique_findeach_clear(1000, false);
-        };
-    }
+    BENCHMARK("Unique Find 100") {
+        return test_stdset_12_seq_fillunique_findeach_clear(100, false);
+    };
+    BENCHMARK("Unique Find 1000") {
+        return test_stdset_12_seq_fillunique_findeach_clear(1000, false);
+    };
 }
