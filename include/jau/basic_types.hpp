@@ -120,6 +120,9 @@ namespace jau {
         IndexOutOfBoundsException(const std::size_t index, const std::size_t length, const char* file, int line) noexcept
         : RuntimeException("IndexOutOfBoundsException", "Index "+std::to_string(index)+", data length "+std::to_string(length), file, line) {}
 
+        IndexOutOfBoundsException(const std::string index_s, const std::string length_s, const char* file, int line) noexcept
+        : RuntimeException("IndexOutOfBoundsException", "Index "+index_s+", data length "+length_s, file, line) {}
+
         IndexOutOfBoundsException(const std::size_t index, const std::size_t count, const std::size_t length, const char* file, int line) noexcept
         : RuntimeException("IndexOutOfBoundsException", "Index "+std::to_string(index)+", count "+std::to_string(count)+", data length "+std::to_string(length), file, line) {}
     };
