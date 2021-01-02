@@ -28,6 +28,7 @@
 #include <cstring>
 #include <string>
 #include <cstdint>
+#include <limits>
 #include <atomic>
 #include <memory>
 #include <mutex>
@@ -78,7 +79,7 @@ namespace jau {
      * </p>
      * <p>
      * Index operation via ::operator[](size_t) or ::at(size_t) are not supported for now,
-     * since they would be only valid if Value_type itself is a std::shared_ptr
+     * since they would be only valid if value_type itself is a std::shared_ptr
      * and hence prohibit the destruction of the object if mutating the storage,
      * e.g. via jau::cow_darray::push_back().
      * </p>
@@ -99,8 +100,22 @@ namespace jau {
     class cow_darray
     {
         public:
-            typedef darray<Value_type, Alloc_type, Size_type> storage_t;
-            typedef std::shared_ptr<storage_t> storage_ref_t;
+            /** Default growth factor using the golden ratio 1.618 */
+            constexpr static const float DEFAULT_GROWTH_FACTOR = 1.618f;
+
+            // std container conform typedefs'
+
+            typedef Value_type                                  value_type;
+            // typedef value_type*                              pointer;
+            // typedef const value_type*                        const_pointer;
+            // typedef value_type&                              reference;
+            // typedef const value_type&                        const_reference;
+            typedef Size_type                                   size_type;
+            typedef typename std::make_signed<size_type>::type  difference_type;
+            typedef Alloc_type                                  allocator_type;
+
+            typedef darray<value_type, allocator_type, size_type> storage_t;
+            typedef std::shared_ptr<storage_t>                    storage_ref_t;
 
             /**
              * Immutable, read-only const_iterator, lock-free,
@@ -109,7 +124,7 @@ namespace jau {
              * Using jau::cow_darray::get_snapshot() at construction.
              * </p>
              */
-            typedef cow_ro_iterator<Value_type, storage_t, storage_ref_t> const_iterator;
+            typedef cow_ro_iterator<value_type, storage_t, storage_ref_t, size_type>             const_iterator;
 
             /**
              * Mutable, read-write iterator, holding the write-lock and a store copy until destruction.
@@ -118,12 +133,14 @@ namespace jau {
              * and jau::cow_darray::set_store() at destruction.
              * </p>
              */
-            typedef cow_rw_iterator<Value_type, storage_t, storage_ref_t, cow_darray> iterator;
+            typedef cow_rw_iterator<value_type, storage_t, storage_ref_t, cow_darray, size_type> iterator;
 
-            /** Default growth factor using the golden ratio 1.618 */
-            inline static const float DEFAULT_GROWTH_FACTOR = 1.618f;
+            // typedef std::reverse_iterator<iterator>         reverse_iterator;
+            // typedef std::reverse_iterator<const_iterator>   const_reverse_iterator;
 
         private:
+            static constexpr size_type DIFF_MAX = std::numeric_limits<difference_type>::max();
+
             storage_ref_t store_ref;
             sc_atomic_bool sync_atomic;
             std::recursive_mutex mtx_write;
@@ -141,9 +158,9 @@ namespace jau {
              * Creating an empty instance with initial capacity and other (default) properties.
              * @param capacity initial capacity of the new instance.
              * @param growth_factor given growth factor
-             * @param alloc given Alloc_type
+             * @param alloc given allocator_type
              */
-            constexpr explicit cow_darray(Size_type capacity, const float growth_factor=DEFAULT_GROWTH_FACTOR, const Alloc_type& alloc = Alloc_type())
+            constexpr explicit cow_darray(size_type capacity, const float growth_factor=DEFAULT_GROWTH_FACTOR, const allocator_type& alloc = allocator_type())
             : store_ref(std::make_shared<storage_t>(capacity, growth_factor, alloc)), sync_atomic(false) {}
 
             // conversion ctor on storage_t elements
@@ -151,13 +168,13 @@ namespace jau {
             constexpr cow_darray(const storage_t& x)
             : store_ref(std::make_shared<storage_t>(x)), sync_atomic(false) {}
 
-            constexpr explicit cow_darray(const storage_t& x, const float growth_factor, const Alloc_type& alloc)
+            constexpr explicit cow_darray(const storage_t& x, const float growth_factor, const allocator_type& alloc)
             : store_ref(std::make_shared<storage_t>(x, growth_factor, alloc)), sync_atomic(false) {}
 
             constexpr cow_darray(storage_t && x) noexcept
             : store_ref(std::make_shared<storage_t>(std::move(x))), sync_atomic(false) {}
 
-            constexpr explicit cow_darray(storage_t && x, const float growth_factor, const Alloc_type& alloc) noexcept
+            constexpr explicit cow_darray(storage_t && x, const float growth_factor, const allocator_type& alloc) noexcept
             : store_ref(std::make_shared<storage_t>(std::move(x), growth_factor, alloc)), sync_atomic(false) {}
 
             // copy_ctor on cow_darray elements
@@ -182,9 +199,9 @@ namespace jau {
              * Capacity and size will equal the given array, i.e. the result is a trimmed array.
              * @param x the given cow_darray, all elements will be copied into the new instance.
              * @param growth_factor custom growth factor
-             * @param alloc custom Alloc_type instance
+             * @param alloc custom allocator_type instance
              */
-            constexpr explicit cow_darray(const cow_darray& x, const float growth_factor, const Alloc_type& alloc)
+            constexpr explicit cow_darray(const cow_darray& x, const float growth_factor, const allocator_type& alloc)
             : sync_atomic(false) {
                 storage_ref_t x_store_ref;
                 {
@@ -198,14 +215,14 @@ namespace jau {
              * Creates a new instance with custom initial storage capacity, copying all elements from the given array.<br>
              * Size will equal the given array.
              * <p>
-             * Calculated safe capacity is: <code>std::max<Size_type>(x.size(), _capacity)</code>
+             * Throws jau::IllegalArgumentException() if <code>_capacity < x.size()</code>.
              * </p>
              * @param x the given cow_darray, all elements will be copied into the new instance.
              * @param _capacity custom initial storage capacity
              * @param growth_factor custom growth factor
-             * @param alloc custom Alloc_type instance
+             * @param alloc custom allocator_type instance
              */
-            constexpr explicit cow_darray(const cow_darray& x, const Size_type _capacity, const float growth_factor, const Alloc_type& alloc)
+            constexpr explicit cow_darray(const cow_darray& x, const size_type _capacity, const float growth_factor, const allocator_type& alloc)
             : sync_atomic(false) {
                 storage_ref_t x_store_ref;
                 {
@@ -229,44 +246,53 @@ namespace jau {
 
             /**
              * Creates a new instance with custom initial storage capacity,
-             * copying all elements from the given const_iterator Value_type range [first, last).<br>
-             * Size will equal the range [first, last), i.e. <code>Size_type(last-first)</code>.
+             * copying all elements from the given const_iterator value_type range [first, last).<br>
+             * Size will equal the range [first, last), i.e. <code>size_type(last-first)</code>.
              * <p>
-             * Calculated safe capacity is: <code>std::max<Size_type>(Size_type(last-first), _capacity)</code>
+             * Throws jau::IllegalArgumentException() if <code>_capacity < size_type(last - first)</code>.
              * </p>
              * @param _capacity custom initial storage capacity
-             * @param first const_iterator to first element of Value_type range [first, last)
-             * @param last const_iterator to last element of Value_type range [first, last)
+             * @param first const_iterator to first element of value_type range [first, last)
+             * @param last const_iterator to last element of value_type range [first, last)
              * @param growth_factor custom growth factor
-             * @param alloc custom Alloc_type instance
+             * @param alloc custom allocator_type instance
              */
-            constexpr cow_darray(const Size_type _capacity, const_iterator first, const_iterator last,
-                             const float growth_factor=DEFAULT_GROWTH_FACTOR, const Alloc_type& alloc = Alloc_type())
+            constexpr cow_darray(const size_type _capacity, const_iterator first, const_iterator last,
+                             const float growth_factor=DEFAULT_GROWTH_FACTOR, const allocator_type& alloc = allocator_type())
             : store_ref(std::make_shared<storage_t>(_capacity, first.underling(), last.underling(), growth_factor, alloc)), sync_atomic(false)
             { }
 
             /**
              * Creates a new instance with custom initial storage capacity,
-             * copying all elements from the given template input-iterator Value_type range [first, last).<br>
-             * Size will equal the range [first, last), i.e. <code>Size_type(last-first)</code>.
+             * copying all elements from the given template input-iterator value_type range [first, last).<br>
+             * Size will equal the range [first, last), i.e. <code>size_type(last-first)</code>.
              * <p>
-             * Calculated safe capacity is: <code>std::max<Size_type>(Size_type(last-first), _capacity)</code>
+             * Throws jau::IllegalArgumentException() if <code>_capacity < size_type(last - first)</code>.
              * </p>
              * @tparam InputIt template input-iterator custom type
              * @param _capacity custom initial storage capacity
-             * @param first template input-iterator to first element of Value_type range [first, last)
-             * @param last template input-iterator to last element of Value_type range [first, last)
+             * @param first template input-iterator to first element of value_type range [first, last)
+             * @param last template input-iterator to last element of value_type range [first, last)
              * @param growth_factor custom growth factor
-             * @param alloc custom Alloc_type instance
+             * @param alloc custom allocator_type instance
              */
             template< class InputIt >
-            constexpr explicit cow_darray(const Size_type _capacity, InputIt first, InputIt last,
-                                      const float growth_factor=DEFAULT_GROWTH_FACTOR, const Alloc_type& alloc = Alloc_type())
+            constexpr explicit cow_darray(const size_type _capacity, InputIt first, InputIt last,
+                                      const float growth_factor=DEFAULT_GROWTH_FACTOR, const allocator_type& alloc = allocator_type())
             : store_ref(std::make_shared<storage_t>(_capacity, first, last, growth_factor, alloc)), sync_atomic(false)
             { }
 
 
             ~cow_darray() noexcept { }
+
+            /**
+             * Returns <code>std::numeric_limits<difference_type>::max()</code> as the maximum array size.
+             * <p>
+             * We rely on the signed <code>difference_type</code> for pointer arithmetic,
+             * deducing ranges from iterator.
+             * </p>
+             */
+            constexpr size_type max_size() const noexcept { return DIFF_MAX; }
 
             // cow_vector features
 
@@ -381,17 +407,17 @@ namespace jau {
 
             // read access
 
-            const Alloc_type& get_allocator_ref() const noexcept {
+            const allocator_type& get_allocator_ref() const noexcept {
                 sc_atomic_critical sync( const_cast<cow_darray *>(this)->sync_atomic );
                 return store_ref->get_allocator_ref();
             }
 
-            Alloc_type get_allocator() const noexcept {
+            allocator_type get_allocator() const noexcept {
                 sc_atomic_critical sync( const_cast<cow_darray *>(this)->sync_atomic );
                 return store_ref->get_allocator();
             }
 
-            constexpr Size_type capacity() const noexcept {
+            constexpr size_type capacity() const noexcept {
                 sc_atomic_critical sync( const_cast<cow_darray *>(this)->sync_atomic );
                 return store_ref->capacity();
             }
@@ -413,7 +439,7 @@ namespace jau {
              * This read operation is <i>lock-free</i>.
              * </p>
              */
-            constexpr Size_type size() const noexcept {
+            constexpr size_type size() const noexcept {
                 sc_atomic_critical sync( const_cast<cow_darray *>(this)->sync_atomic );
                 return store_ref->size();
             }
@@ -430,7 +456,7 @@ namespace jau {
              * This write operation uses a mutex lock and is blocking this instances' write operations only.
              * </p>
              */
-            void reserve(Size_type new_capacity) {
+            void reserve(size_type new_capacity) {
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 storage_ref_t old_store_ref = store_ref;
                 if( new_capacity > old_store_ref->capacity() ) {
@@ -574,7 +600,7 @@ namespace jau {
              * </p>
              * @param x the value to be added at the tail.
              */
-            void push_back(const Value_type& x) {
+            void push_back(const value_type& x) {
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 storage_ref_t old_store_ref = store_ref;
                 if( old_store_ref->capacity_reached() ) {
@@ -599,7 +625,7 @@ namespace jau {
              * This write operation uses a mutex lock and is blocking this instances' write operations only.
              * </p>
              */
-            void push_back(Value_type&& x) {
+            void push_back(value_type&& x) {
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 storage_ref_t old_store_ref = store_ref;
                 if( old_store_ref->capacity_reached() ) {
@@ -619,19 +645,19 @@ namespace jau {
             }
 
             /**
-             * Like std::vector::push_back(), but appends the whole Value_type range [first, last).
+             * Like std::vector::push_back(), but appends the whole value_type range [first, last).
              * <p>
              * This write operation uses a mutex lock and is blocking this instances' write operations only.
              * </p>
-             * @tparam InputIt foreign input-iterator to range of Value_type [first, last)
-             * @param first first foreign input-iterator to range of Value_type [first, last)
-             * @param last last foreign input-iterator to range of Value_type [first, last)
+             * @tparam InputIt foreign input-iterator to range of value_type [first, last)
+             * @param first first foreign input-iterator to range of value_type [first, last)
+             * @param last last foreign input-iterator to range of value_type [first, last)
              */
             template< class InputIt >
             constexpr void push_back( InputIt first, InputIt last ) {
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 storage_ref_t old_store_ref = store_ref;
-                const Size_type new_size_ = old_store_ref->size() + Size_type(last - first);
+                const size_type new_size_ = old_store_ref->size() + size_type(last - first);
 
                 if( new_size_ > old_store_ref->capacity() ) {
                     // grow and swap all refs
@@ -650,17 +676,17 @@ namespace jau {
             }
 
             /**
-             * Like std::vector::push_back(), but appends the whole Value_type range [first, last).
+             * Like std::vector::push_back(), but appends the whole value_type range [first, last).
              * <p>
              * This write operation uses a mutex lock and is blocking this instances' write operations only.
              * </p>
-             * @param first first const_iterator to range of Value_type [first, last)
-             * @param last last const_iterator to range of Value_type [first, last)
+             * @param first first const_iterator to range of value_type [first, last)
+             * @param last last const_iterator to range of value_type [first, last)
              */
             constexpr void push_back( const_iterator first, const_iterator last ) {
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 storage_ref_t old_store_ref = store_ref;
-                const Size_type new_size_ = old_store_ref->size() + Size_type(last - first);
+                const size_type new_size_ = old_store_ref->size() + size_type(last - first);
 
                 if( new_size_ > old_store_ref->capacity() ) {
                     // grow and swap all refs
@@ -679,12 +705,12 @@ namespace jau {
             }
 
             /**
-             * Generic Value_type equal comparator to be user defined for e.g. jau::cow_darray::push_back_unique().
+             * Generic value_type equal comparator to be user defined for e.g. jau::cow_darray::push_back_unique().
              * @param a one element of the equality test.
              * @param b the other element of the equality test.
              * @return true if both are equal
              */
-            typedef bool(*equal_comparator)(const Value_type& a, const Value_type& b);
+            typedef bool(*equal_comparator)(const value_type& a, const value_type& b);
 
             /**
              * Like std::vector::push_back(), but only if the newly added element does not yet exist.
@@ -710,7 +736,7 @@ namespace jau {
              * @param comparator the equal comparator to return true if both given elements are equal
              * @return true if the element has been uniquely added, otherwise false
              */
-            bool push_back_unique(const Value_type& x, equal_comparator comparator) {
+            bool push_back_unique(const value_type& x, equal_comparator comparator) {
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 for(auto it = store_ref->begin(); it != store_ref->end(); ) {
                     if( comparator( *it, x ) ) {
@@ -747,7 +773,7 @@ namespace jau {
              * @param comparator the equal comparator to return true if both given elements are equal
              * @return number of erased elements
              */
-            int erase_matching(const Value_type& x, const bool all_matching, equal_comparator comparator) {
+            int erase_matching(const value_type& x, const bool all_matching, equal_comparator comparator) {
                 int count = 0;
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 storage_ref_t new_store_ref = std::make_shared<storage_t>( *store_ref );
@@ -770,7 +796,7 @@ namespace jau {
             }
 
             /**
-             * Thread safe Value_type copy assignment to Value_type at given position with bounds checking.
+             * Thread safe value_type copy assignment to value_type at given position with bounds checking.
              * <p>
              * This write operation uses a mutex lock and is blocking this instances' write operations only.
              * </p>
@@ -780,7 +806,7 @@ namespace jau {
              * @param i the position within this store
              * @param x the value to be assigned to the object at the given position
              */
-            void put(size_t i, const Value_type& x) {
+            void put(size_type i, const value_type& x) {
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 storage_ref_t new_store_ref = std::make_shared<storage_t>( *store_ref );
                 new_store_ref->at(i) = x;
@@ -791,7 +817,7 @@ namespace jau {
             }
 
             /**
-             * Thread safe Value_type move assignment to Value_type at given position with bounds checking.
+             * Thread safe value_type move assignment to value_type at given position with bounds checking.
              * <p>
              * This write operation uses a mutex lock and is blocking this instances' write operations only.
              * </p>
@@ -801,7 +827,7 @@ namespace jau {
              * @param i the position within this store
              * @param x the value to be assigned to the object at the given position
              */
-            void put(size_t i, Value_type&& x) {
+            void put(size_type i, value_type&& x) {
                 const std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 storage_ref_t new_store_ref = std::make_shared<storage_t>( *store_ref );
                 new_store_ref->at(i) = std::move(x);

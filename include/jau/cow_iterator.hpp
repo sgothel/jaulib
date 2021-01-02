@@ -26,6 +26,7 @@
 #define JAU_COW_ITERATOR_HPP_
 
 #include <cstddef>
+#include <limits>
 #include <mutex>
 
 namespace jau {
@@ -34,7 +35,7 @@ namespace jau {
      * Implementation of a Copy-On-Write (CoW) read-only iterator for immutable Value_type,
      * holding the shared Value_type& of the current CoW storage until destruction.
      */
-    template <typename Value_type, typename Storage_type, typename Storage_ref_type>
+    template <typename Value_type, typename Storage_type, typename Storage_ref_type, typename Size_type>
     class cow_ro_iterator {
 
         private:
@@ -42,6 +43,9 @@ namespace jau {
             typename Storage_type::const_iterator iterator_;
 
         public:
+            typedef Size_type                                   size_type;
+            typedef typename std::make_signed<Size_type>::type  difference_type;
+
             constexpr cow_ro_iterator(Storage_ref_type store, typename Storage_type::const_iterator iter)
             : store_holder_(store), iterator_(iter) {}
 
@@ -99,29 +103,29 @@ namespace jau {
             // Random access iterator requirements
 
             /** Subscript of 'element_index', returning immutable Value_type reference. */
-            constexpr const Value_type& operator[](std::ptrdiff_t i) const noexcept
+            constexpr const Value_type& operator[](difference_type i) const noexcept
             { return iterator_[i]; }
 
             /** Addition-assignment of 'element_count'; Well performing, return *this.  */
-            constexpr cow_ro_iterator& operator+=(std::ptrdiff_t i) noexcept
+            constexpr cow_ro_iterator& operator+=(difference_type i) noexcept
             { iterator_ += i; return *this; }
 
             /** Binary 'iterator + element_count'; Try to avoid: Low performance due to returning copy-ctor. */
-            constexpr cow_ro_iterator operator+(std::ptrdiff_t rhs) const noexcept
+            constexpr cow_ro_iterator operator+(difference_type rhs) const noexcept
             { return cow_iterator(store_holder_, iterator_ + rhs); }
 
             /** Subtraction-assignment of 'element_count'; Well performing, return *this.  */
-            constexpr cow_ro_iterator& operator-=(std::ptrdiff_t i) noexcept
+            constexpr cow_ro_iterator& operator-=(difference_type i) noexcept
             { iterator_ -= i; return *this; }
 
             /** Binary 'iterator - element_count'; Try to avoid: Low performance due to returning copy-ctor. */
-            constexpr cow_ro_iterator operator-(std::ptrdiff_t rhs) const noexcept
+            constexpr cow_ro_iterator operator-(difference_type rhs) const noexcept
             { return cow_iterator(store_holder_, iterator_ - rhs); }
 
             // Distance or element count, binary subtraction of two iterator.
 
-            /** Binary 'iterator - iterator -> element_count'; Well performing, return element_count of type std::ptrdiff_t. */
-            constexpr std::ptrdiff_t operator-(const cow_ro_iterator& rhs) const noexcept
+            /** Binary 'iterator - iterator -> element_count'; Well performing, return element_count of type difference_type. */
+            constexpr difference_type operator-(const cow_ro_iterator& rhs) const noexcept
             { return iterator_ - rhs.iterator_; }
     };
 
@@ -133,7 +137,7 @@ namespace jau {
      * storage in the CoW container and the lock will be released.
      * </p>
      */
-    template <typename Value_type, typename Storage_type, typename Storage_ref_type, typename CoW_container>
+    template <typename Value_type, typename Storage_type, typename Storage_ref_type, typename CoW_container, typename Size_type>
     class cow_rw_iterator {
 
         private:
@@ -146,6 +150,9 @@ namespace jau {
             : cow_parent_(cow_parent), lock_(cow_parent.get_write_mutex()), new_store_(store), iterator_(iter) {}
 
         public:
+            typedef Size_type                                   size_type;
+            typedef typename std::make_signed<Size_type>::type  difference_type;
+
             constexpr cow_rw_iterator(CoW_container& cow_parent, typename Storage_type::iterator (*get_iterator)(Storage_ref_type&))
             : cow_parent_(cow_parent), lock_(cow_parent.get_write_mutex()), new_store_(cow_parent.copy_store()), iterator_(get_iterator(new_store_)) {}
 
@@ -216,27 +223,27 @@ namespace jau {
             // Random access iterator requirements
 
             /** Subscript of 'element_index', returning immutable Value_type reference. */
-            constexpr const Value_type& operator[](std::ptrdiff_t i) const noexcept
+            constexpr const Value_type& operator[](difference_type i) const noexcept
             { return iterator_[i]; }
 
             /** Subscript of 'element_index', returning mutable Value_type reference. */
-            constexpr Value_type& operator[](std::ptrdiff_t i) noexcept
+            constexpr Value_type& operator[](difference_type i) noexcept
             { return iterator_[i]; }
 
             /** Addition-assignment of 'element_count'; Well performing, return *this.  */
-            constexpr cow_rw_iterator& operator+=(std::ptrdiff_t i) noexcept
+            constexpr cow_rw_iterator& operator+=(difference_type i) noexcept
             { iterator_ += i; return *this; }
 
             /** Binary 'iterator + element_count'; Try to avoid: Low performance due to returning copy-ctor. */
-            constexpr cow_rw_iterator operator+(std::ptrdiff_t rhs) const noexcept
+            constexpr cow_rw_iterator operator+(difference_type rhs) const noexcept
             { return cow_rw_iterator(cow_parent_, new_store_, iterator_ + rhs); }
 
             /** Subtraction-assignment of 'element_count'; Well performing, return *this.  */
-            constexpr cow_rw_iterator& operator-=(std::ptrdiff_t i) noexcept
+            constexpr cow_rw_iterator& operator-=(difference_type i) noexcept
             { iterator_ -= i; return *this; }
 
             /** Binary 'iterator - element_count'; Try to avoid: Low performance due to returning copy-ctor. */
-            constexpr cow_rw_iterator operator-(std::ptrdiff_t rhs) const noexcept
+            constexpr cow_rw_iterator operator-(difference_type rhs) const noexcept
             { return cow_rw_iterator(cow_parent_, new_store_, iterator_ - rhs); }
 
             // constexpr const cow_rw_iterator& base() const noexcept
@@ -244,8 +251,8 @@ namespace jau {
 
             // Distance or element count, binary subtraction of two iterator.
 
-            /** Binary 'iterator - iterator -> element_count'; Well performing, return element_count of type std::ptrdiff_t. */
-            constexpr std::ptrdiff_t operator-(const cow_rw_iterator& rhs) const noexcept
+            /** Binary 'iterator - iterator -> element_count'; Well performing, return element_count of type difference_type. */
+            constexpr difference_type operator-(const cow_rw_iterator& rhs) const noexcept
             { return iterator_ - rhs.iterator_; }
     };
 
