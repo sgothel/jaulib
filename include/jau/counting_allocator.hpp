@@ -36,6 +36,9 @@ namespace jau {
 /**
  * Performance counter std::allocator specialization.
  * <p>
+ * This class shall be compliant with <i>C++ named requirements for Allocator</i>.
+ * </p>
+ * <p>
  * Not overriding deprecated (C++17) and removed (C++20)
  * methods: address(), max_size(), construct() and destroy().
  * </p>
@@ -45,6 +48,10 @@ struct counting_allocator : public std::allocator<T>
 {
   public:
     template <class U> struct rebind {typedef counting_allocator<U> other;};
+
+    // typedefs' for C++ named requirements: Allocator
+    typedef T  value_type;
+
     // std::size_t id;
     bool old_stats;
     std::size_t memory_usage;
@@ -56,15 +63,15 @@ struct counting_allocator : public std::allocator<T>
     // inline static relaxed_atomic_size_t next_id = 1;
 
     /**
-     * vector<T>::get_allocator() returns a copy of the allocator instance,
+     * vector<value_type>::get_allocator() returns a copy of the allocator instance,
      * where we desire to access the copied statistics.
      * <p>
-     * However, vector<T>(const vector<T>&) also copies the allocator instance,
+     * However, vector<value_type>(const vector<value_type>&) also copies the allocator instance,
      * but here the copied statistics shall be flushed since the elements are
-     * copied into the new vector<T> instance using the new allocator.<br>
+     * copied into the new vector<value_type> instance using the new allocator.<br>
      * Without flushing the stats, we would see a size + size allocator stats,
      * the former size from the copied allocator and the latter from the
-     * copied elements into the new vector<T> instance.
+     * copied elements into the new vector<value_type> instance.
      * </p>
      */
     constexpr void flush_stats() noexcept {
@@ -85,7 +92,7 @@ struct counting_allocator : public std::allocator<T>
     }
 
     counting_allocator() noexcept
-    : std::allocator<T>(),
+    : std::allocator<value_type>(),
       // id(next_id++),
       old_stats(false),
       memory_usage(0), alloc_count(0), dealloc_count(0), alloc_balance(0)
@@ -93,7 +100,7 @@ struct counting_allocator : public std::allocator<T>
 
 #if __cplusplus > 201703L
     constexpr counting_allocator(const counting_allocator& other) noexcept
-    : std::allocator<T>(other),
+    : std::allocator<value_type>(other),
       // id(next_id++),
       old_stats(true),
       memory_usage(other.memory_usage),
@@ -102,7 +109,7 @@ struct counting_allocator : public std::allocator<T>
       {} // C++20
 #else
     counting_allocator(const counting_allocator& other) noexcept
-    : std::allocator<T>(other),
+    : std::allocator<value_type>(other),
       // id(next_id++),
       old_stats(true),
       memory_usage(other.memory_usage),
@@ -111,7 +118,7 @@ struct counting_allocator : public std::allocator<T>
       { }
 #endif
     constexpr counting_allocator(const counting_allocator& other, const bool keep_stats) noexcept
-    : std::allocator<T>(other),
+    : std::allocator<value_type>(other),
       // id(next_id++),
       old_stats(keep_stats ? false : true),
       memory_usage(other.memory_usage),
@@ -122,7 +129,7 @@ struct counting_allocator : public std::allocator<T>
 #if __cplusplus > 201703L
     template <typename U>
     constexpr counting_allocator(const counting_allocator<U>& other) noexcept
-    : std::allocator<T>(other),
+    : std::allocator<value_type>(other),
       // id(next_id++),
       old_stats(true),
       memory_usage(other.memory_usage),
@@ -132,7 +139,7 @@ struct counting_allocator : public std::allocator<T>
 #else
     template <typename U>
     counting_allocator(const counting_allocator<U>& other) noexcept
-    : std::allocator<T>(other),
+    : std::allocator<value_type>(other),
       // id(next_id++),
       old_stats(true),
       memory_usage(other.memory_usage),
@@ -148,48 +155,48 @@ struct counting_allocator : public std::allocator<T>
 #endif
 
 #if __cplusplus <= 201703L
-    T* allocate(std::size_t n, const void * hint) { // C++17 deprecated; C++20 removed
+    value_type* allocate(std::size_t n, const void * hint) { // C++17 deprecated; C++20 removed
         flush_stats();
-        memory_usage += n * sizeof(T);
+        memory_usage += n * sizeof(value_type);
         alloc_count++;
         alloc_balance++;
-        return std::allocator<T>::allocate(n, hint);
+        return std::allocator<value_type>::allocate(n, hint);
     }
 #endif
 
 #if __cplusplus > 201703L
-    [[nodiscard]] constexpr T* allocate(std::size_t n) { // C++17
+    [[nodiscard]] constexpr value_type* allocate(std::size_t n) { // C++17
         flush_stats();
-        memory_usage += n * sizeof(T);
+        memory_usage += n * sizeof(value_type);
         alloc_count++;
         alloc_balance++;
-        return std::allocator<T>::allocate(n);
+        return std::allocator<value_type>::allocate(n);
     }
 #else
-    T* allocate(std::size_t n) { // C++17
+    value_type* allocate(std::size_t n) { // C++17
         flush_stats();
-        memory_usage += n * sizeof(T);
+        memory_usage += n * sizeof(value_type);
         alloc_count++;
         alloc_balance++;
-        return std::allocator<T>::allocate(n);
+        return std::allocator<value_type>::allocate(n);
     }
 #endif
 
 #if __cplusplus > 201703L
-    constexpr void deallocate(T* p, std::size_t n ) {
+    constexpr void deallocate(value_type* p, std::size_t n ) {
         flush_stats();
-        memory_usage -= n * sizeof(T);
+        memory_usage -= n * sizeof(value_type);
         dealloc_count++;
         alloc_balance--;
-        std::allocator<T>::deallocate(p, n);
+        std::allocator<value_type>::deallocate(p, n);
     }
 #else
-    void deallocate(T* p, std::size_t n ) {
+    void deallocate(value_type* p, std::size_t n ) {
         flush_stats();
-        memory_usage -= n * sizeof(T);
+        memory_usage -= n * sizeof(value_type);
         dealloc_count++;
         alloc_balance--;
-        std::allocator<T>::deallocate(p, n);
+        std::allocator<value_type>::deallocate(p, n);
     }
 #endif
 };
