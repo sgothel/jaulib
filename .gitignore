@@ -24,3 +24,5 @@ dist*/
 # Archive files
 *.jar
 /Debug/
+/Debug test_cow_darray_perf01/
+/Profiling test_cow_darray_perf01/
