@@ -733,29 +733,32 @@ namespace jau {
             /**
              * Like std::vector::insert(), copy
              * <p>
-             * Inserts the element at the given position
+             * Inserts the element at pos
              * and moves all elements from there to the right beforehand.
              * </p>
              * <p>
              * size will be increased by one.
              * </p>
-             * @param i the position of the element to be removed
+             * @param pos iterator before which the content will be inserted. pos may be the end() iterator
+             * @param x element value to insert
              */
-            constexpr void insert(size_type i, const value_type& x) {
-                const size_type size_ = size();
-                if( 0 <= i && i <= size_ ) {
-                    const size_type old_capacity_ = capacity();
-                    if( size_ + 1 > old_capacity_ ) {
-                        grow_storage_move(grow_number(old_capacity_));
+            constexpr iterator insert(const_iterator pos, const value_type& x) {
+                if( begin_ <= pos && pos <= end_ ) {
+                    const size_type pos_idx = pos - begin_;
+                    if( end_ == storage_end_ ) {
+                        grow_storage_move(grow_capacity());
                     }
-                    const difference_type right_count = size_ - i;
+                    iterator pos_new = begin_ + pos_idx;
+                    const difference_type right_count = end_ - pos_new; // include original element at 'pos_new'
                     if( 0 < right_count ) {
-                        memmove(begin_+i+1, begin_+i, sizeof(value_type)*right_count); // move right elems one right
+                        memmove(pos_new+1, pos_new, sizeof(value_type)*right_count); // move right elems one left
                     }
-                    new (begin_+i) value_type( x ); // placement new
+                    new (pos_new) value_type( x ); // placement new
                     ++end_;
+
+                    return begin_ <= pos_new && pos_new <= end_ ? pos_new : nullptr;
                 } else {
-                    throw jau::IndexOutOfBoundsException(i, size_, E_FILE_LINE);
+                    throw jau::IndexOutOfBoundsException(std::to_string(difference_type(pos - begin_)), std::to_string(size()), E_FILE_LINE);
                 }
             }
 
@@ -768,23 +771,26 @@ namespace jau {
              * <p>
              * size will be increased by one.
              * </p>
-             * @param i the position of the element to be removed
+             * @param pos iterator before which the content will be inserted. pos may be the end() iterator
+             * @param x element value to be moved into
              */
-            void insert(size_type i, value_type&& x) {
-                const size_type size_ = size();
-                if( 0 <= i && i <= size_ ) {
-                    const size_type old_capacity_ = capacity();
-                    if( size_ + 1 > old_capacity_ ) {
-                        grow_storage_move(grow_number(old_capacity_));
+            constexpr iterator insert(const_iterator pos, value_type&& x) {
+                if( begin_ <= pos && pos <= end_ ) {
+                    const size_type pos_idx = pos - begin_;
+                    if( end_ == storage_end_ ) {
+                        grow_storage_move(grow_capacity());
                     }
-                    const difference_type right_count = size_ - i;
+                    iterator pos_new = begin_ + pos_idx;
+                    const difference_type right_count = end_ - pos_new; // include original element at 'pos_new'
                     if( 0 < right_count ) {
-                        memmove(begin_+i+1, begin_+i, sizeof(value_type)*right_count); // move right elems one right
+                        memmove(pos_new+1, pos_new, sizeof(value_type)*right_count); // move right elems one left
                     }
-                    new (begin_+i) value_type( std::move(x) ); // placement new
+                    new (pos_new) value_type( std::move( x ) ); // placement new
                     ++end_;
+
+                    return begin_ <= pos_new && pos_new <= end_ ? pos_new : nullptr;
                 } else {
-                    throw jau::IndexOutOfBoundsException(i, size_, E_FILE_LINE);
+                    throw jau::IndexOutOfBoundsException(std::to_string(difference_type(pos - begin_)), std::to_string(size()), E_FILE_LINE);
                 }
             }
 
