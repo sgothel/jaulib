@@ -63,7 +63,7 @@ namespace jau {
      * <li>...</li>
      * <li><b>Removed</b>: size_type x value_type fill operations, e.g. assign, constructor, .... for clarity, since supporting <i>capacity</i>.</li>
      * <li>...</li>
-     * <li><b>TODO</b>: emplace(..), list-initialization operations</li>
+     * <li><b>TODO</b>: std::initializer_list<T> operations</li>
      * </ul>
      * </p>
      * <p>
@@ -678,7 +678,7 @@ namespace jau {
             /**
              * Like std::vector::insert(), copy
              * <p>
-             * Inserts the element at pos
+             * Inserts the element before pos
              * and moves all elements from there to the right beforehand.
              * </p>
              * <p>
@@ -710,7 +710,7 @@ namespace jau {
             /**
              * Like std::vector::insert(), move
              * <p>
-             * Inserts the element at the given position
+             * Inserts the element before the given position
              * and moves all elements from there to the right beforehand.
              * </p>
              * <p>
@@ -732,6 +732,68 @@ namespace jau {
                     }
                     new (pos_new) value_type( std::move( x ) ); // placement new
                     ++end_;
+
+                    return begin_ <= pos_new && pos_new <= end_ ? pos_new : nullptr;
+                } else {
+                    throw jau::IndexOutOfBoundsException(std::to_string(difference_type(pos - begin_)), std::to_string(size()), E_FILE_LINE);
+                }
+            }
+
+            /**
+             * Like std::vector::emplace(), construct a new element in place.
+             * <p>
+             * Constructs the element before the given position using placement new
+             * and moves all elements from there to the right beforehand.
+             * </p>
+             * <p>
+             * size will be increased by one.
+             * </p>
+             * @param pos iterator before which the content will be inserted. pos may be the end() iterator
+             * @param args arguments to forward to the constructor of the element
+             */
+            template<typename... Args>
+            constexpr iterator emplace(const_iterator pos, Args&&... args) {
+                if( begin_ <= pos && pos <= end_ ) {
+                    const size_type pos_idx = pos - begin_;
+                    if( end_ == storage_end_ ) {
+                        grow_storage_move(grow_capacity());
+                    }
+                    iterator pos_new = begin_ + pos_idx;
+                    const difference_type right_count = end_ - pos_new; // include original element at 'pos_new'
+                    if( 0 < right_count ) {
+                        memmove(pos_new+1, pos_new, sizeof(value_type)*right_count); // move right elems one left
+                    }
+                    new (pos_new) value_type( std::forward<Args>(args)... ); // placement new, construct in-place
+                    ++end_;
+
+                    return begin_ <= pos_new && pos_new <= end_ ? pos_new : nullptr;
+                } else {
+                    throw jau::IndexOutOfBoundsException(std::to_string(difference_type(pos - begin_)), std::to_string(size()), E_FILE_LINE);
+                }
+            }
+
+            /**
+             * Like std::vector::insert(), inserting the value_type range [first, last).
+             * @tparam InputIt foreign input-iterator to range of value_type [first, last)
+             * @param pos iterator before which the content will be inserted. pos may be the end() iterator
+             * @param first first foreign input-iterator to range of value_type [first, last)
+             * @param last last foreign input-iterator to range of value_type [first, last)
+             */
+            template< class InputIt >
+            constexpr iterator insert( const_iterator pos, InputIt first, InputIt last ) {
+                if( begin_ <= pos && pos <= end_ ) {
+                    const size_type new_elem_count = size_type(last - first);
+                    const size_type pos_idx = pos - begin_;
+                    if( end_ + new_elem_count >= storage_end_ ) {
+                        grow_storage_move(size() + new_elem_count);
+                    }
+                    iterator pos_new = begin_ + pos_idx;
+                    const difference_type right_count = end_ - pos_new; // include original element at 'pos_new'
+                    if( 0 < right_count ) {
+                        memmove(pos_new+new_elem_count, pos_new, sizeof(value_type)*right_count); // move right elems one left
+                    }
+                    ctor_copy_range_foreign(pos_new, first, last);
+                    end_ += new_elem_count;
 
                     return begin_ <= pos_new && pos_new <= end_ ? pos_new : nullptr;
                 } else {
@@ -763,7 +825,28 @@ namespace jau {
             }
 
             /**
-             * Like std::vector::push_back(), but appends the whole value_type range [first, last).
+             * Like std::vector::emplace_back(), construct a new element in place at the end().
+             * <p>
+             * Constructs the element at the end() using placement new.
+             * </p>
+             * <p>
+             * size will be increased by one.
+             * </p>
+             * @param args arguments to forward to the constructor of the element
+             */
+            template<typename... Args>
+            constexpr reference emplace_back(Args&&... args) {
+                if( end_ == storage_end_ ) {
+                    grow_storage_move(grow_capacity());
+                }
+                new (end_) value_type( std::forward<Args>(args)... ); // placement new, construct in-place
+                reference res = *end_;
+                ++end_;
+                return res;
+            }
+
+            /**
+             * Like std::vector::push_back(), but appends the value_type range [first, last).
              * @tparam InputIt foreign input-iterator to range of value_type [first, last)
              * @param first first foreign input-iterator to range of value_type [first, last)
              * @param last last foreign input-iterator to range of value_type [first, last)
@@ -776,21 +859,6 @@ namespace jau {
                     grow_storage_move(size() + count);
                 }
                 ctor_copy_range_foreign(end_, first, last);
-                end_ += count;
-            }
-
-            /**
-             * Like std::vector::push_back(), but appends the whole value_type range [first, last).
-             * @param first first const_iterator to range of value_type [first, last)
-             * @param last last const_iterator to range of value_type [first, last)
-             */
-            constexpr void push_back( const_iterator first, const_iterator last ) {
-                const size_type count = size_type(last - first);
-
-                if( end_ + count >= storage_end_ ) {
-                    grow_storage_move(size() + count);
-                }
-                ctor_copy_range(end_, first, last);
                 end_ += count;
             }
 
