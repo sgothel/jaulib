@@ -48,6 +48,9 @@ namespace jau {
      * Implementation of a Copy-On-Write (CoW) using std::vector as the underlying storage,
      * exposing <i>lock-free</i> read operations using SC-DRF atomic synchronization.
      * <p>
+     * This class shall be compliant with <i>C++ named requirements for Container</i>.
+     * </p>
+     * <p>
      * The vector's store is owned using a shared reference to the data structure,
      * allowing its replacement on Copy-On-Write (CoW).
      * </p>
@@ -95,13 +98,13 @@ namespace jau {
     class cow_vector
     {
         public:
-            // std container conform typedefs'
+            // typedefs' for C++ named requirements: Container
 
             typedef Value_type                                  value_type;
-            // typedef value_type*                              pointer;
-            // typedef const value_type*                        const_pointer;
-            // typedef value_type&                              reference;
-            // typedef const value_type&                        const_reference;
+            typedef value_type*                                 pointer;
+            typedef const value_type*                           const_pointer;
+            typedef value_type&                                 reference;
+            typedef const value_type&                           const_reference;
             typedef std::size_t                                 size_type;
             typedef typename std::make_signed<size_type>::type  difference_type;
             typedef Alloc_type                                  allocator_type;

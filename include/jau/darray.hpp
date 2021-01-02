@@ -49,6 +49,9 @@ namespace jau {
      * exposing fine grained control over its underlying storage facility.<br>
      * Further, jau::darray provides high-performance and efficient storage properties on its own.
      * <p>
+     * This class shall be compliant with <i>C++ named requirements for Container</i>.
+     * </p>
+     * <p>
      * API and design differences to std::vector
      * <ul>
      * <li>jau::darray adds a parameterized <i>growth factor</i> aspect, default to golden ration jau::darray::DEFAULT_GROWTH_FACTOR</li>
@@ -80,7 +83,7 @@ namespace jau {
             /** Default growth factor using the golden ratio 1.618 */
             constexpr static const float DEFAULT_GROWTH_FACTOR = 1.618f;
 
-            // std container conform typedefs'
+            // typedefs' for C++ named requirements: Container
 
             typedef Value_type                                  value_type;
             typedef value_type*                                 pointer;
