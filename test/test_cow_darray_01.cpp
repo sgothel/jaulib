@@ -207,6 +207,32 @@ static void test_00_seq_fill_unique_itr(T& data, const std::size_t size) {
 /****************************************************************************************
  ****************************************************************************************/
 
+template< class Iter >
+static void print_iterator_info(const std::string& typedefname,
+        typename std::enable_if<
+                std::is_class<Iter>::value
+            >::type* = 0
+) {
+    jau::type_cue<Iter>::print(typedefname);
+    jau::type_cue<typename Iter::iterator_category>::print(typedefname+"::iterator_category");
+    jau::type_cue<typename Iter::iterator_type>::print(typedefname+"::iterator_type");
+    jau::type_cue<typename Iter::value_type>::print(typedefname+"::value_type");
+    jau::type_cue<typename Iter::reference>::print(typedefname+"::reference");
+    jau::type_cue<typename Iter::pointer>::print(typedefname+"::pointer");
+}
+
+template<class Iter>
+static void print_iterator_info(const std::string& typedefname,
+        typename std::enable_if<
+                !std::is_class<Iter>::value
+            >::type* = 0
+) {
+    jau::type_cue<Iter>::print(typedefname);
+}
+
+/****************************************************************************************
+ ****************************************************************************************/
+
 template<class T>
 static bool test_01_validate_index_ops(const std::string& type_id, const std::size_t size0, const std::size_t reserve0) {
     (void)type_id;
@@ -305,26 +331,6 @@ static void test_const_iterator_compare(const typename T::size_type size,
         REQUIRE( ( citer2 <   citer1 ) == true);       // iter op<(iter1, iter2)
         REQUIRE( ( citer2 <=  citer1 ) == true);       // iter op<=(iter1, iter2)
     }
-}
-
-template< class Iter >
-static void print_iterator_info(const char* typedefname,
-        typename std::enable_if<
-                std::is_class<Iter>::value
-            >::type* = 0
-) {
-    jau::type_cue<Iter>::print(typedefname);
-    jau::type_cue<typename Iter::iterator_category>::print("Iter::iterator_category");
-    jau::type_cue<typename Iter::iterator_type>::print("Iter::iterator_type");
-}
-
-template<class Iter>
-static void print_iterator_info(const char* typedefname,
-        typename std::enable_if<
-                !std::is_class<Iter>::value
-            >::type* = 0
-) {
-    jau::type_cue<Iter>::print(typedefname);
 }
 
 template<class T>

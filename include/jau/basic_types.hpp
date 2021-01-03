@@ -897,8 +897,8 @@ namespace jau {
          * @param typedefname the code typedefname (or typename) as a string, should match T
          * @param verbose if true, prints all <i>Type traits</i> known for this type. Be aware of the long output. Defaults to false.
          */
-        static void print(const char *typedefname, bool verbose=false) {
-            printf("Type: %s -> %s, %zu bytes\n", typedefname, type_name_cue<T>::name(), sizeof(T));
+        static void print(const std::string& typedefname, bool verbose=false) {
+            printf("Type: %s -> %s, %zu bytes\n", typedefname.c_str(), type_name_cue<T>::name(), sizeof(T));
             if( verbose ) {
                 printf("  Primary Type Categories\n");
                 printf("    void            %d\n", std::is_void<T>::value);
