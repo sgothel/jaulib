@@ -204,10 +204,16 @@ struct counting_allocator : public std::allocator<T>
 #if __cplusplus > 201703L
 template <class T1, class T2>
     constexpr bool operator==(const counting_allocator<T1>& lhs, const counting_allocator<T2>& rhs) noexcept {
+#if 0
         if( &lhs == &rhs ) {
             return true;
         }
         return lhs.memory_usage == rhs.memory_usage;
+#else
+        (void)lhs;
+        (void)rhs;
+        return true;
+#endif
     }
 #else
     template <class T1, class T2>
@@ -218,6 +224,8 @@ template <class T1, class T2>
         }
         return lhs.memory_usage == rhs.memory_usage;
 #else
+        (void)lhs;
+        (void)rhs;
         return true;
 #endif
     }
