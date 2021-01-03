@@ -147,7 +147,7 @@ static void test_00_seq_fill(T& data, const std::size_t size) {
     std::size_t i=0;
 
     for(; i<size && a0.next(); i++) {
-        data.push_back( std::move( DataType01(a0, static_cast<uint8_t>(1)) ) );
+        data.emplace_back( a0, static_cast<uint8_t>(1) );
     }
     if( i != data.size() ) {
         test_00_list_itr(data, true);
