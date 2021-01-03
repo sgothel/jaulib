@@ -293,7 +293,7 @@ namespace jau {
             }
 
             constexpr explicit darray(darray && x, const float growth_factor, const allocator_type& alloc) noexcept
-            : growth_factor_(std::move(x.growth_factor_)), alloc_inst(alloc),
+            : growth_factor_(std::move(growth_factor)), alloc_inst(alloc),
               begin_(std::move(x.begin_)), end_(std::move(x.end_)), storage_end_(std::move(x.storage_end_))
             {
                 // complete swapping store_ref
