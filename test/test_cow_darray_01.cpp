@@ -42,6 +42,9 @@
 #include <jau/cow_vector.hpp>
 #include <jau/counting_allocator.hpp>
 
+/**
+ * This unit test module tests jau::darray, jau::cow_darray and jau::cow_vector in detail.
+ */
 using namespace jau;
 
 static uint8_t start_addr_b[] = {0x20, 0x26, 0x2A, 0x01, 0x20, 0x10};
@@ -230,6 +233,25 @@ static void print_iterator_info(const std::string& typedefname,
     jau::type_cue<Iter>::print(typedefname);
 }
 
+template<class T>
+static bool test_00_inspect_iterator_types(const std::string& type_id) {
+    typedef typename T::size_type T_size_t;
+    typedef typename T::difference_type T_difference_t;
+
+    printf("**** Type Info: %s\n", type_id.c_str());
+    jau::type_cue<T>::print("T");
+    jau::type_cue<typename T::value_type>::print("T::value_type");
+    jau::type_cue<T_size_t>::print("T::size_type");
+    jau::type_cue<T_difference_t>::print("T::difference_type");
+    jau::type_cue<typename T::reference>::print("T::reference");
+    jau::type_cue<typename T::pointer>::print("T::pointer");
+    print_iterator_info<typename T::iterator>("T::iterator");
+    print_iterator_info<typename T::const_iterator>("T::const_iterator");
+    printf("\n\n");
+
+    return true;
+}
+
 /****************************************************************************************
  ****************************************************************************************/
 
@@ -337,17 +359,8 @@ template<class T>
 static bool test_01_validate_iterator_ops(const std::string& type_id, const std::size_t size0, const std::size_t reserve0) {
     typedef typename T::const_iterator T_const_iterator_t;
     typedef typename T::size_type T_size_t;
-    typedef typename T::difference_type T_difference_t;
 
-    printf("**** test_01_validate_iterator_ops: Type Info: %s\n", type_id.c_str());
-    jau::type_cue<T>::print("T");
-    jau::type_cue<typename T::value_type>::print("T::value_type");
-    jau::type_cue<T_size_t>::print("T::size_type");
-    jau::type_cue<T_difference_t>::print("T::difference_type");
-    jau::type_cue<typename T::reference>::print("T::reference");
-    jau::type_cue<typename T::pointer>::print("T::pointer");
-    print_iterator_info<typename T::const_iterator>("T::const_iterator");
-    printf("\n\n");
+    (void) type_id;
 
     T data;
     REQUIRE(0 == data.get_allocator().memory_usage);
@@ -385,7 +398,7 @@ static bool test_01_validate_iterator_ops(const std::string& type_id, const std:
         test_const_iterator_compare<T>(size, cbegin, cend, citer1, citer2, 0, 0);
     }
 
-    // const_iterator op++(), op--(), op++(int), op+=(difference_type), op+(iter a, difference_typeb) ..
+    // const_iterator op++(), op--(), op++(int), op+=(difference_type), op+(iter a, difference_type) ..
     {
         T_size_t size = data.size();
         T_const_iterator_t cbegin = data.cbegin();
@@ -408,6 +421,24 @@ static bool test_01_validate_iterator_ops(const std::string& type_id, const std:
 
             citer1--;
             test_const_iterator_compare<T>(size, cbegin, cend, citer1, citer2, 0, 0);
+
+            // iter op++()
+            citer2++;
+            test_const_iterator_compare<T>(size, cbegin, cend, citer1, citer2, 0, 1);
+            REQUIRE( ( *citer2 == *(cbegin+1) ) == true);  // iter op*(), op+(iter, difference_type) and value_type ==
+            REQUIRE( ( *citer2 == cbegin[1] ) == true);    // iter op*(), op[](difference_type) and value_type ==
+
+            // iter op++()
+            citer2++;
+            test_const_iterator_compare<T>(size, cbegin, cend, citer1, citer2, 0, 2);
+            REQUIRE( ( *citer2 == *(cbegin+2) ) == true);  // iter op*(), op+(iter, difference_type) and value_type ==
+            REQUIRE( ( *citer2 == cbegin[2] ) == true);    // iter op*(), op[](difference_type) and value_type ==
+
+            // iter op++()
+            citer2++;
+            test_const_iterator_compare<T>(size, cbegin, cend, citer1, citer2, 0, 3);
+            REQUIRE( ( *citer2 == *(cbegin+3) ) == true);  // iter op*(), op+(iter, difference_type) and value_type ==
+            REQUIRE( ( *citer2 == cbegin[3] ) == true);    // iter op*(), op[](difference_type) and value_type ==
         }
     }
 
@@ -423,6 +454,13 @@ static bool test_01_validate_iterator_ops(const std::string& type_id, const std:
 
 /****************************************************************************************
  ****************************************************************************************/
+
+TEST_CASE( "Test 00 - Inspect all Iterator Types", "[datatype][std][vector][darray][cow_vector][cow_darray]" ) {
+    test_00_inspect_iterator_types< std_vector_DataType01 >("std::vector<T>");
+    test_00_inspect_iterator_types< jau_darray_DataType01 >("jau::darray<T>");
+    test_00_inspect_iterator_types< jau_cow_vector_DataType01 >("jau::cow_vector<T>");
+    test_00_inspect_iterator_types< jau_cow_darray_DataType01 >("jau::cow_darray<T>");
+}
 
 TEST_CASE( "STD Vector Test 01 - Validate Iterator and Index Operations", "[datatype][std][vector]" ) {
     // test_01_validate_index_ops< std_vector_DataType01 >("std::vector<T>", 100, 0);

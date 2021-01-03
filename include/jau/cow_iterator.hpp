@@ -63,8 +63,8 @@ namespace jau {
             typedef typename Storage_type::size_type            size_type;          // using our template overload Size_type
             typedef typename Storage_type::difference_type      difference_type;    // derived from our Size_type
             // typedef typename Storage_type::value_type        value_type;         // OK
-            // typedef typename Storage_type::reference         reference;          // for some reason, the 'const' is lost
-            // typedef typename Storage_type::pointer           pointer;            // for some reason, the 'const' is lost
+            // typedef typename Storage_type::reference         reference;          // Storage_type is not 'const'
+            // typedef typename Storage_type::pointer           pointer;            // Storage_type is not 'const'
             typedef typename sub_traits_t::value_type           value_type;         // OK
             typedef typename sub_traits_t::reference            reference;          // 'const value_type &'
             typedef typename sub_traits_t::pointer              pointer;            // 'const value_type *'
