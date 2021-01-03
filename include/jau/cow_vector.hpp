@@ -120,7 +120,7 @@ namespace jau {
              * Using jau::cow_vector::get_snapshot() at construction.
              * </p>
              */
-            typedef cow_ro_iterator<value_type, storage_t, storage_ref_t, size_type>             const_iterator;
+            typedef cow_ro_iterator<storage_t, storage_ref_t>   const_iterator;
 
             /**
              * Mutable, read-write iterator, holding the write-lock and a store copy until destruction.
@@ -129,7 +129,7 @@ namespace jau {
              * and jau::cow_vector::set_store() at destruction.
              * </p>
              */
-            typedef cow_rw_iterator<value_type, storage_t, storage_ref_t, cow_vector, size_type> iterator;
+            typedef cow_rw_iterator<storage_t, storage_ref_t, cow_vector> iterator;
 
         private:
             static constexpr size_type DIFF_MAX = std::numeric_limits<difference_type>::max();

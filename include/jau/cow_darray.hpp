@@ -128,7 +128,7 @@ namespace jau {
              * Using jau::cow_darray::get_snapshot() at construction.
              * </p>
              */
-            typedef cow_ro_iterator<value_type, storage_t, storage_ref_t, size_type>             const_iterator;
+            typedef cow_ro_iterator<storage_t, storage_ref_t>   const_iterator;
 
             /**
              * Mutable, read-write iterator, holding the write-lock and a store copy until destruction.
@@ -137,7 +137,7 @@ namespace jau {
              * and jau::cow_darray::set_store() at destruction.
              * </p>
              */
-            typedef cow_rw_iterator<value_type, storage_t, storage_ref_t, cow_darray, size_type> iterator;
+            typedef cow_rw_iterator<storage_t, storage_ref_t, cow_darray> iterator;
 
             // typedef std::reverse_iterator<iterator>         reverse_iterator;
             // typedef std::reverse_iterator<const_iterator>   const_reverse_iterator;
