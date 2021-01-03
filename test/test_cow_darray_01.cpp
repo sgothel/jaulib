@@ -46,7 +46,15 @@ using namespace jau;
 static uint8_t start_addr_b[] = {0x20, 0x26, 0x2A, 0x01, 0x20, 0x10};
 static Addr48Bit start_addr(start_addr_b);
 
-typedef std::vector<DataType01, counting_allocator<DataType01>> DataType01Vector;
+typedef std::vector<DataType01, counting_allocator<DataType01>> std_vector_DataType01;
+typedef jau::darray<DataType01, counting_allocator<DataType01>> jau_darray_DataType01;
+typedef jau::cow_vector<DataType01, counting_allocator<DataType01>> jau_cow_vector_DataType01;
+typedef jau::cow_darray<DataType01, counting_allocator<DataType01>> jau_cow_darray_DataType01;
+
+JAU_TYPENAME_CUE_ALL(std_vector_DataType01)
+JAU_TYPENAME_CUE_ALL(jau_darray_DataType01)
+JAU_TYPENAME_CUE_ALL(jau_cow_vector_DataType01)
+JAU_TYPENAME_CUE_ALL(jau_cow_darray_DataType01)
 
 template<class T>
 DataType01 * findDataSet01_idx(T& data, DataType01 const & elem) noexcept {

@@ -92,6 +92,8 @@ __pack ( struct Addr48Bit {
     }
 } );
 
+JAU_TYPENAME_CUE_ALL(Addr48Bit)
+
 inline bool operator==(const Addr48Bit& lhs, const Addr48Bit& rhs) noexcept {
     if( &lhs == &rhs ) {
         return true;
@@ -163,6 +165,8 @@ class DataType01 {
             return "["+address.toString()+", "+std::to_string(type)+"]";
         }
 };
+JAU_TYPENAME_CUE_ALL(DataType01)
+
 inline bool operator==(const DataType01& lhs, const DataType01& rhs) noexcept {
     if( &lhs == &rhs ) {
         return true;
