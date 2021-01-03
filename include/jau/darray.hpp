@@ -891,7 +891,7 @@ namespace jau {
              * @param comparator the equal comparator to return true if both given elements are equal
              * @return true if the element has been uniquely added, otherwise false
              */
-            bool push_back_unique(const value_type& x, equal_comparator comparator) {
+            constexpr bool push_back_unique(const value_type& x, equal_comparator comparator) {
                 for(auto it = begin_; it != end_; ) {
                     if( comparator( *it, x ) ) {
                         return false; // already included
@@ -924,7 +924,7 @@ namespace jau {
              * @param comparator the equal comparator to return true if both given elements are equal
              * @return number of erased elements
              */
-            int erase_matching(const value_type& x, const bool all_matching, equal_comparator comparator) {
+            constexpr int erase_matching(const value_type& x, const bool all_matching, equal_comparator comparator) {
                 int count = 0;
                 for(auto it = end_-1; begin_ <= it; --it) {
                     if( comparator( *it, x ) ) {
