@@ -54,14 +54,9 @@ jau::RuntimeException::RuntimeException(std::string const type, std::string cons
 : msg(std::string(type).append(" @ ").append(file).append(":").append(std::to_string(line)).append(": ").append(m)),
   backtrace(jau::get_backtrace(true, 1))
 {
-}
-
-const char* jau::RuntimeException::what() const noexcept {
-    // return std::runtime_error::what();
-    std::string out(msg);
-    out.append("\nNative backtrace:\n");
-    out.append(backtrace);
-    return out.c_str();
+    what_ = msg;
+    what_.append("\nNative backtrace:\n");
+    what_.append(backtrace);
 }
 
 std::string jau::get_string(const uint8_t *buffer, nsize_t const buffer_len, nsize_t const max_len) noexcept {

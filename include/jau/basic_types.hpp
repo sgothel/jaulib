@@ -59,6 +59,7 @@ namespace jau {
       private:
         std::string msg;
         std::string backtrace;
+        std::string what_;
 
       protected:
         RuntimeException(std::string const type, std::string const m, const char* file, int line) noexcept;
@@ -76,7 +77,9 @@ namespace jau {
 
         std::string get_backtrace() const noexcept { return backtrace; }
 
-        virtual const char* what() const noexcept override;
+        virtual const char* what() const noexcept override {
+            return what_.c_str(); // return std::runtime_error::what();
+        }
     };
 
     class InternalError : public RuntimeException {
