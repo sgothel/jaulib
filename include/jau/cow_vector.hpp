@@ -337,62 +337,6 @@ namespace jau {
                 return store_ref->size();
             }
 
-#if 0
-            /**
-             * Like std::vector::operator[](size_type).
-             * <p>
-             * This read operation is <i>lock-free</i>.
-             * </p>
-             */
-            const value_type & operator[](size_type i) const noexcept {
-                sc_atomic_critical sync( const_cast<cow_vector *>(this)->sync_atomic );
-                return (*store_ref)[i];
-            }
-
-            /**
-             * Like std::vector::operator[](size_type).
-             * <p>
-             * This read operation is <i>lock-free</i>.
-             * </p>
-             * <p>
-             * Mutation of the resulting value_type
-             * is not synchronized via this cow_vector instance.
-             * </p>
-             * @see put()
-             */
-            value_type & operator[](size_type i) noexcept {
-                sc_atomic_critical sync(sync_atomic);
-                return (*store_ref)[i];
-            }
-
-            /**
-             * Like std::vector::at(size_type).
-             * <p>
-             * This read operation is <i>lock-free</i>.
-             * </p>
-             */
-            const value_type & at(size_type i) const {
-                sc_atomic_critical sync( const_cast<cow_vector *>(this)->sync_atomic );
-                return store_ref->at(i);
-            }
-
-            /**
-             * Like std::vector::at(size_type).
-             * <p>
-             * This read operation is <i>lock-free</i>.
-             * </p>
-             * <p>
-             * Mutation of the resulting value_type
-             * is not synchronized via this cow_vector instance.
-             * </p>
-             * @see put()
-             */
-            value_type & at(size_type i) {
-                sc_atomic_critical sync(sync_atomic);
-                return store_ref->at(i);
-            }
-#endif
-
             // write access
 
             void reserve(size_type new_capacity) {
@@ -536,6 +480,29 @@ namespace jau {
                     sc_atomic_critical sync(sync_atomic);
                     store_ref = std::move(new_store_ref);
                 }
+            }
+
+            /**
+             * Like std::vector::emplace_back(), construct a new element in place at the end().
+             * <p>
+             * Constructs the element at the end() using placement new.
+             * </p>
+             * <p>
+             * size will be increased by one.
+             * </p>
+             * @param args arguments to forward to the constructor of the element
+             */
+            template<typename... Args>
+            __constexpr_non_literal_atomic__
+            reference emplace_back(Args&&... args) {
+                std::lock_guard<std::recursive_mutex> lock(mtx_write);
+                storage_ref_t new_store_ref = std::make_shared<storage_t>( *store_ref, store_ref->get_allocator() );
+                reference res = new_store_ref->emplace_back( std::forward<Args>(args)... );
+                {
+                    sc_atomic_critical sync(sync_atomic);
+                    store_ref = std::move(new_store_ref);
+                }
+                return res;
             }
 
             /**

@@ -486,12 +486,11 @@ namespace jau {
              * </p>
              */
             void reserve(size_type new_capacity) {
-                storage_ref_t old_store_ref = store_ref;
-                if( new_capacity > old_store_ref->capacity() ) {
-                    storage_ref_t new_store_ref = std::make_shared<storage_t>( *old_store_ref, new_capacity,
-                                                                               old_store_ref->growth_factor(),
-                                                                               old_store_ref->get_allocator_ref() );
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
+                if( new_capacity > store_ref->capacity() ) {
+                    storage_ref_t new_store_ref = std::make_shared<storage_t>( *store_ref, new_capacity,
+                                                                               store_ref->growth_factor(),
+                                                                               store_ref->get_allocator_ref() );
                     sc_atomic_critical sync( sync_atomic );
                     store_ref = std::move(new_store_ref);
                 }
@@ -610,14 +609,13 @@ namespace jau {
              */
             __constexpr_non_literal_atomic__
             void pop_back() noexcept {
-                storage_ref_t old_store_ref = store_ref;
-                if( !old_store_ref->empty() ) {
-                    storage_ref_t new_store_ref = std::make_shared<storage_t>( old_store_ref->capacity(),
-                                                                               old_store_ref->cbegin(),
-                                                                               old_store_ref->cend()-1,
-                                                                               old_store_ref->growth_factor(),
-                                                                               old_store_ref->get_allocator_ref() );
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
+                if( !store_ref->empty() ) {
+                    storage_ref_t new_store_ref = std::make_shared<storage_t>( store_ref->capacity(),
+                                                                               store_ref->cbegin(),
+                                                                               store_ref->cend()-1,
+                                                                               store_ref->growth_factor(),
+                                                                               store_ref->get_allocator_ref() );
                     {
                         sc_atomic_critical sync(sync_atomic);
                         store_ref = std::move(new_store_ref);
@@ -634,13 +632,12 @@ namespace jau {
              */
             __constexpr_non_literal_atomic__
             void push_back(const value_type& x) {
-                storage_ref_t old_store_ref = store_ref;
-                if( old_store_ref->capacity_reached() ) {
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
+                if( store_ref->capacity_reached() ) {
                     // grow and swap all refs
-                    storage_ref_t new_store_ref = std::make_shared<storage_t>( *old_store_ref, old_store_ref->grow_capacity(),
-                                                                               old_store_ref->growth_factor(),
-                                                                               old_store_ref->get_allocator_ref() );
+                    storage_ref_t new_store_ref = std::make_shared<storage_t>( *store_ref, store_ref->grow_capacity(),
+                                                                               store_ref->growth_factor(),
+                                                                               store_ref->get_allocator_ref() );
                     new_store_ref->push_back(x);
                     {
                         sc_atomic_critical sync(sync_atomic);
@@ -660,13 +657,12 @@ namespace jau {
              */
             __constexpr_non_literal_atomic__
             void push_back(value_type&& x) {
-                storage_ref_t old_store_ref = store_ref;
-                if( old_store_ref->capacity_reached() ) {
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
+                if( store_ref->capacity_reached() ) {
                     // grow and swap all refs
-                    storage_ref_t new_store_ref = std::make_shared<storage_t>( *old_store_ref, old_store_ref->grow_capacity(),
-                                                                               old_store_ref->growth_factor(),
-                                                                               old_store_ref->get_allocator_ref() );
+                    storage_ref_t new_store_ref = std::make_shared<storage_t>( *store_ref, store_ref->grow_capacity(),
+                                                                               store_ref->growth_factor(),
+                                                                               store_ref->get_allocator_ref() );
                     new_store_ref->push_back( std::move(x) );
                     {
                         sc_atomic_critical sync(sync_atomic);
@@ -675,6 +671,37 @@ namespace jau {
                 } else {
                     // just append ..
                     store_ref->push_back( std::move(x) );
+                }
+            }
+
+            /**
+             * Like std::vector::emplace_back(), construct a new element in place at the end().
+             * <p>
+             * Constructs the element at the end() using placement new.
+             * </p>
+             * <p>
+             * size will be increased by one.
+             * </p>
+             * @param args arguments to forward to the constructor of the element
+             */
+            template<typename... Args>
+            __constexpr_non_literal_atomic__
+            reference emplace_back(Args&&... args) {
+                std::lock_guard<std::recursive_mutex> lock(mtx_write);
+                if( store_ref->capacity_reached() ) {
+                    // grow and swap all refs
+                    storage_ref_t new_store_ref = std::make_shared<storage_t>( *store_ref, store_ref->grow_capacity(),
+                                                                               store_ref->growth_factor(),
+                                                                               store_ref->get_allocator_ref() );
+                    reference res = new_store_ref->emplace_back( std::forward<Args>(args)... );
+                    {
+                        sc_atomic_critical sync(sync_atomic);
+                        store_ref = std::move(new_store_ref);
+                    }
+                    return res;
+                } else {
+                    // just append ..
+                    return store_ref->emplace_back( std::forward<Args>(args)... );
                 }
             }
 
@@ -688,17 +715,16 @@ namespace jau {
              * @param last last foreign input-iterator to range of value_type [first, last)
              */
             template< class InputIt >
-                storage_ref_t old_store_ref = store_ref;
-                const size_type new_size_ = old_store_ref->size() + size_type(last - first);
             __constexpr_non_literal_atomic__
             void push_back( InputIt first, InputIt last ) {
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
+                const size_type new_size_ = store_ref->size() + size_type(last - first);
 
-                if( new_size_ > old_store_ref->capacity() ) {
+                if( new_size_ > store_ref->capacity() ) {
                     // grow and swap all refs
-                    storage_ref_t new_store_ref = std::make_shared<storage_t>( *old_store_ref, new_size_,
-                                                                               old_store_ref->growth_factor(),
-                                                                               old_store_ref->get_allocator_ref() );
+                    storage_ref_t new_store_ref = std::make_shared<storage_t>( *store_ref, new_size_,
+                                                                               store_ref->growth_factor(),
+                                                                               store_ref->get_allocator_ref() );
                     store_ref->push_back( first, last );
                     {
                         sc_atomic_critical sync(sync_atomic);
@@ -707,35 +733,6 @@ namespace jau {
                 } else {
                     // just append ..
                     store_ref->push_back( first, last );
-                }
-            }
-
-            /**
-             * Like std::vector::push_back(), but appends the whole value_type range [first, last).
-             * <p>
-             * This write operation uses a mutex lock and is blocking this instances' write operations only.
-             * </p>
-             * @param first first const_iterator to range of value_type [first, last)
-             * @param last last const_iterator to range of value_type [first, last)
-             */
-            constexpr void push_back( const_iterator first, const_iterator last ) {
-                const std::lock_guard<std::recursive_mutex> lock(mtx_write);
-                storage_ref_t old_store_ref = store_ref;
-                const size_type new_size_ = old_store_ref->size() + size_type(last - first);
-
-                if( new_size_ > old_store_ref->capacity() ) {
-                    // grow and swap all refs
-                    storage_ref_t new_store_ref = std::make_shared<storage_t>( *old_store_ref, new_size_,
-                                                                               old_store_ref->growth_factor(),
-                                                                               old_store_ref->get_allocator_ref() );
-                    store_ref->push_back( first.underling(), last.underling() );
-                    {
-                        sc_atomic_critical sync(sync_atomic);
-                        store_ref = std::move(new_store_ref);
-                    }
-                } else {
-                    // just append ..
-                    store_ref->push_back( first.underling(), last.underling() );
                 }
             }
 
