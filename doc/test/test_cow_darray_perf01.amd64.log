@@ -26,7 +26,7 @@ Run with -? for options
 -------------------------------------------------------------------------------
 Perf Test 01 - Fill Sequential and List, empty and reserve
 -------------------------------------------------------------------------------
-/test/test_cow_darray_perf01.cpp:504
+/usr/local/projects/zafena/jaulib/test/test_cow_darray_perf01.cpp:545
 ...............................................................................
 
 benchmark name                       samples       iterations    estimated
@@ -34,160 +34,160 @@ benchmark name                       samples       iterations    estimated
                                      std dev       low std dev   high std dev
 -------------------------------------------------------------------------------
 STD_Vector_empty_idx FillSeq_List                                              
-50                                             100            35     2.1665 ms 
-                                        621.585 ns    618.805 ns    628.647 ns 
-                                        20.1134 ns    4.72608 ns    39.0232 ns 
+50                                             100            42      2.016 ms 
+                                        478.117 ns    478.015 ns    478.565 ns 
+                                       0.928515 ns    0.12008 ns    2.18453 ns 
                                                                                
 STD_Vector_empty_idx FillSeq_List                                              
-100                                            100            21     2.2176 ms 
-                                        1.05626 us    1.05123 us    1.06833 us 
-                                        38.1309 ns    18.3826 ns    67.1265 ns 
+100                                            100            26     2.0878 ms 
+                                        815.405 ns    811.203 ns    824.256 ns 
+                                        29.8954 ns    16.3979 ns    48.7606 ns 
                                                                                
 STD_Vector_empty_idx FillSeq_List                                              
-1000                                           100             3     2.4105 ms 
-                                         8.0459 us    8.04079 us    8.06672 us 
-                                        48.2372 ns    4.43307 ns    114.591 ns 
+1000                                           100             4     2.4432 ms 
+                                        6.02245 us    5.97913 us    6.09346 us 
+                                        277.744 ns    190.175 ns    387.594 ns 
                                                                                
 STD_Vector_empty_itr FillSeq_List                                              
-50                                             100            35     2.1875 ms 
-                                        623.779 ns    621.916 ns    631.391 ns 
-                                        16.5083 ns     1.8112 ns    38.4652 ns 
+50                                             100            41     2.0623 ms 
+                                        495.937 ns    494.044 ns    500.999 ns 
+                                        14.3107 ns    3.98768 ns    28.7192 ns 
                                                                                
 STD_Vector_empty_itr FillSeq_List                                              
-100                                            100            21     2.2281 ms 
-                                        1.05971 us    1.05726 us     1.0684 us 
-                                        20.7246 ns    6.07996 ns     46.812 ns 
+100                                            100            25     2.0775 ms 
+                                        835.766 ns    834.086 ns    843.826 ns 
+                                        15.8815 ns   0.375745 ns    37.8052 ns 
                                                                                
 STD_Vector_empty_itr FillSeq_List                                              
-1000                                           100             3     2.4246 ms 
-                                        8.19097 us    8.14078 us    8.27786 us 
-                                        328.634 ns    218.414 ns    491.635 ns 
+1000                                           100             4     2.3836 ms 
+                                        6.04275 us    6.01807 us    6.08915 us 
+                                        167.678 ns    101.813 ns     258.28 ns 
                                                                                
 JAU_DArray_empty_idx FillSeq_List                                              
-50                                             100            34     2.1964 ms 
-                                        632.731 ns    631.716 ns    637.706 ns 
-                                        9.92782 ns   0.244242 ns    21.7548 ns 
+50                                             100            34     2.0196 ms 
+                                        586.144 ns    586.018 ns    586.448 ns 
+                                       0.944865 ns   0.392545 ns    1.67298 ns 
                                                                                
 JAU_DArray_empty_idx FillSeq_List                                              
-100                                            100            19     2.2743 ms 
-                                         1.1914 us    1.18782 us     1.2057 us 
-                                        31.4437 ns    6.02321 ns    73.2294 ns 
+100                                            100            19     2.0995 ms 
+                                        1.08919 us    1.08429 us     1.0982 us 
+                                          32.77 ns    20.1938 ns    48.8193 ns 
                                                                                
 JAU_DArray_empty_idx FillSeq_List                                              
-1000                                           100             3     2.9721 ms 
-                                        9.92571 us    9.88341 us    10.0102 us 
-                                        292.166 ns    172.444 ns    478.252 ns 
+1000                                           100             3     2.6712 ms 
+                                        8.88905 us     8.8362 us    8.97177 us 
+                                        330.737 ns    232.374 ns     448.33 ns 
                                                                                
 JAU_DArray_empty_itr FillSeq_List                                              
-50                                             100            34     2.1896 ms 
-                                        633.849 ns    633.096 ns    636.274 ns 
-                                        5.87405 ns   0.509425 ns    12.9792 ns 
+50                                             100            35     2.0475 ms 
+                                        582.075 ns    579.049 ns    587.532 ns 
+                                        20.0486 ns    12.7167 ns    29.2766 ns 
                                                                                
 JAU_DArray_empty_itr FillSeq_List                                              
-100                                            100            18     2.1708 ms 
-                                        1.19469 us    1.19021 us    1.20893 us 
-                                        34.4665 ns   0.285733 ns    77.5966 ns 
+100                                            100            18     2.0322 ms 
+                                        1.11322 us    1.10783 us    1.12263 us 
+                                        35.3959 ns    22.7474 ns     50.606 ns 
                                                                                
 JAU_DArray_empty_itr FillSeq_List                                              
-1000                                           100             3     3.0147 ms 
-                                        10.0261 us    10.0093 us    10.0676 us 
-                                         124.17 ns    33.0341 ns    221.566 ns 
+1000                                           100             3     2.6508 ms 
+                                        8.72498 us    8.70302 us      8.783 us 
+                                        167.076 ns    57.8827 ns    333.049 ns 
                                                                                
 COW_Vector_empty_itr FillSeq_List                                              
-50                                             100             4     2.4092 ms 
-                                        6.70672 us    6.69499 us    6.73992 us 
-                                        87.5605 ns    12.9775 ns    185.387 ns 
+50                                             100             4     2.2308 ms 
+                                        5.42821 us    5.41819 us    5.45441 us 
+                                        72.9759 ns    5.65215 ns    147.194 ns 
                                                                                
 COW_Vector_empty_itr FillSeq_List                                              
-100                                            100             2      3.894 ms 
-                                        19.5508 us    19.4758 us    19.7054 us 
-                                         527.26 ns    282.539 ns    860.689 ns 
+100                                            100             2      3.723 ms 
+                                        18.4139 us    18.3644 us    18.5238 us 
+                                        357.314 ns    192.027 ns    698.471 ns 
                                                                                
 COW_Vector_empty_itr FillSeq_List                                              
-1000                                           100             1    106.887 ms 
-                                         1.0677 ms    1.06704 ms    1.06847 ms 
-                                        3.62089 us      3.086 us    4.38181 us 
+1000                                           100             1    99.1582 ms 
+                                        988.321 us    987.196 us    989.723 us 
+                                        6.39132 us    5.27695 us    7.61541 us 
                                                                                
 COW_DArray_empty_itr FillSeq_List                                              
-50                                             100            12     2.2884 ms 
-                                        1.90155 us    1.89493 us    1.92335 us 
-                                        53.9653 ns    16.8269 ns    120.067 ns 
+50                                             100            17     2.0978 ms 
+                                        1.20832 us    1.20375 us    1.21768 us 
+                                        31.9282 ns    17.9646 ns    51.5255 ns 
                                                                                
 COW_DArray_empty_itr FillSeq_List                                              
-100                                            100             7      2.408 ms 
-                                        3.43476 us    3.43245 us    3.44505 us 
-                                        21.0876 ns    2.18466 ns    49.7447 ns 
+100                                            100            10      2.112 ms 
+                                        2.05138 us    2.05004 us    2.05769 us 
+                                        12.8647 ns   0.728266 ns    30.6314 ns 
                                                                                
 COW_DArray_empty_itr FillSeq_List                                              
-1000                                           100             1     2.9401 ms 
-                                        29.4061 us    29.3331 us    29.5902 us 
-                                        541.123 ns     173.84 ns    957.745 ns 
+1000                                           100             2     3.2574 ms 
+                                        16.1831 us    16.1269 us    16.2938 us 
+                                        384.575 ns    226.321 ns    620.349 ns 
                                                                                
 STD_Vector_rserv_itr FillSeq_List                                              
-50                                             100            39     2.2074 ms 
-                                         553.86 ns    553.632 ns    554.967 ns 
-                                        2.21663 ns   0.083585 ns    5.28304 ns 
+50                                             100            44     2.0328 ms 
+                                        464.032 ns    463.911 ns     464.49 ns 
+                                        1.08459 ns   0.220955 ns    2.53461 ns 
                                                                                
 STD_Vector_rserv_itr FillSeq_List                                              
-100                                            100            23     2.1643 ms 
-                                        941.124 ns    940.716 ns    943.033 ns 
-                                        3.87733 ns   0.243967 ns    9.23063 ns 
+100                                            100            28     2.0356 ms 
+                                        737.483 ns    733.455 ns     744.33 ns 
+                                        26.1811 ns    17.3248 ns    37.3302 ns 
                                                                                
 STD_Vector_rserv_itr FillSeq_List                                              
-1000                                           100             4     2.7716 ms 
-                                        6.95907 us    6.93271 us    7.01618 us 
-                                        188.227 ns    106.088 ns     350.08 ns 
+1000                                           100             5      2.483 ms 
+                                        4.95046 us    4.93532 us    4.97886 us 
+                                        100.689 ns     53.363 ns    152.822 ns 
                                                                                
 JAU_DArray_rserv_itr FillSeq_List                                              
-50                                             100            43     2.2102 ms 
-                                        513.648 ns    511.751 ns    517.691 ns 
-                                        13.5405 ns    7.20997 ns     22.939 ns 
+50                                             100            44     2.0152 ms 
+                                        459.414 ns    458.568 ns    462.194 ns 
+                                        6.95084 ns    1.71793 ns    15.3387 ns 
                                                                                
 JAU_DArray_rserv_itr FillSeq_List                                              
-100                                            100            26     2.1866 ms 
-                                        837.875 ns    834.757 ns    844.336 ns 
-                                        21.9365 ns    12.1962 ns    35.8864 ns 
+100                                            100            28     2.0636 ms 
+                                        739.808 ns    736.816 ns    745.944 ns 
+                                        21.0955 ns    11.1233 ns    34.3621 ns 
                                                                                
 JAU_DArray_rserv_itr FillSeq_List                                              
-1000                                           100             4     2.3928 ms 
-                                        5.97925 us    5.96897 us    6.02777 us 
-                                        97.0827 ns    1.69152 ns    231.185 ns 
+1000                                           100             4     2.0188 ms 
+                                        5.06078 us    5.04065 us    5.10269 us 
+                                        141.731 ns    78.3732 ns    226.211 ns 
                                                                                
 COW_Vector_rserv_itr FillSeq_List                                              
-50                                             100             4     2.4812 ms 
-                                        6.03385 us    6.02818 us    6.04885 us 
-                                        43.3139 ns    13.7393 ns    87.7776 ns 
+50                                             100             4     2.3268 ms 
+                                         5.6464 us    5.62402 us    5.69427 us 
+                                        158.834 ns    86.8067 ns    269.022 ns 
                                                                                
 COW_Vector_rserv_itr FillSeq_List                                              
-100                                            100             2      3.972 ms 
-                                        19.7686 us    19.7567 us     19.794 us 
-                                        84.7455 ns    40.5248 ns    155.576 ns 
+100                                            100             2     3.7644 ms 
+                                        18.4158 us    18.3764 us    18.4912 us 
+                                        269.563 ns    151.577 ns    401.498 ns 
                                                                                
 COW_Vector_rserv_itr FillSeq_List                                              
-1000                                           100             1    106.717 ms 
-                                        1.06717 ms    1.06629 ms    1.06822 ms 
-                                        4.90332 us    4.12876 us    5.87329 us 
+1000                                           100             1    99.3154 ms 
+                                        1.01251 ms    1.01166 ms    1.01334 ms 
+                                         4.2832 us    3.75521 us    5.02227 us 
                                                                                
 COW_Vector_rserv_itr FillSeq_List                                              
-50                                             100             4     2.4532 ms 
-                                        6.03973 us    6.02415 us    6.07845 us 
-                                        117.359 ns    43.5409 ns    210.537 ns 
+50                                             100             4       2.33 ms 
+                                        5.54081 us    5.52338 us    5.58581 us 
+                                        128.923 ns    28.9264 ns    235.689 ns 
                                                                                
 COW_Vector_rserv_itr FillSeq_List                                              
-100                                            100             2     3.9616 ms 
-                                        19.8501 us    19.8017 us    19.9784 us 
-                                        364.324 ns    90.8049 ns    727.538 ns 
+100                                            100             2     3.7758 ms 
+                                        18.7729 us    18.7289 us    18.8641 us 
+                                        308.292 ns    169.964 ns    573.744 ns 
                                                                                
 COW_Vector_rserv_itr FillSeq_List                                              
-1000                                           100             1    107.007 ms 
-                                        1.06682 ms     1.0661 ms    1.06765 ms 
-                                        3.94988 us    3.36558 us    4.63711 us 
+1000                                           100             1    100.301 ms 
+                                        1.00408 ms    1.00221 ms    1.00583 ms 
+                                        9.23307 us    8.38463 us    10.1732 us 
                                                                                
 
 -------------------------------------------------------------------------------
 Perf Test 02 - Fill Unique and List, empty and reserve
 -------------------------------------------------------------------------------
-/test/test_cow_darray_perf01.cpp:530
+/usr/local/projects/zafena/jaulib/test/test_cow_darray_perf01.cpp:571
 ...............................................................................
 
 benchmark name                       samples       iterations    estimated
@@ -195,156 +195,156 @@ benchmark name                       samples       iterations    estimated
                                      std dev       low std dev   high std dev
 -------------------------------------------------------------------------------
 STD_Vector_empty_idx FillUni_List                                              
-50                                             100            11     2.2836 ms 
-                                        2.08186 us    2.07209 us    2.10323 us 
-                                        70.1608 ns    37.2187 ns    120.148 ns 
+50                                             100            12     2.0784 ms 
+                                        1.68197 us    1.68049 us    1.68832 us 
+                                        13.2631 ns    2.23602 ns    31.0511 ns 
                                                                                
 STD_Vector_empty_idx FillUni_List                                              
-100                                            100             3      2.226 ms 
-                                        7.28445 us    7.25868 us    7.34877 us 
-                                         183.66 ns    21.6146 ns    333.671 ns 
+100                                            100             4      2.292 ms 
+                                        5.70657 us    5.69829 us    5.71958 us 
+                                        52.2765 ns    36.1673 ns    69.5213 ns 
                                                                                
 STD_Vector_empty_idx FillUni_List                                              
-1000                                           100             1    72.8207 ms 
-                                        726.551 us    725.661 us    727.569 us 
-                                        4.85073 us    4.03768 us    5.94303 us 
+1000                                           100             1     36.389 ms 
+                                        365.085 us    364.336 us     365.83 us 
+                                        3.81315 us    3.37498 us     4.3033 us 
                                                                                
 STD_Vector_empty_itr FillUni_List                                              
-50                                             100            14      2.226 ms 
-                                        1.63127 us    1.63108 us    1.63163 us 
-                                        1.31582 ns   0.663901 ns    2.19424 ns 
+50                                             100            11     2.1373 ms 
+                                        1.82732 us    1.81623 us    1.84425 us 
+                                        68.6909 ns    49.0509 ns    91.2533 ns 
                                                                                
 STD_Vector_empty_itr FillUni_List                                              
-100                                            100             5     2.4145 ms 
-                                        5.08323 us    5.04033 us    5.13408 us 
-                                        236.825 ns    204.326 ns    330.908 ns 
+100                                            100             4     2.5536 ms 
+                                        6.42626 us    6.40176 us    6.47756 us 
+                                        172.865 ns    99.4006 ns    312.522 ns 
                                                                                
 STD_Vector_empty_itr FillUni_List                                              
-1000                                           100             1    49.8496 ms 
-                                        500.492 us     499.85 us    501.198 us 
-                                        3.42713 us     3.0872 us    3.92417 us 
+1000                                           100             1    47.3123 ms 
+                                        474.047 us    473.616 us    474.554 us 
+                                         2.3748 us    1.99803 us    2.81717 us 
                                                                                
 JAU_DArray_empty_idx FillUni_List                                              
-50                                             100            12     2.2296 ms 
-                                        1.86438 us    1.85575 us    1.88121 us 
-                                        58.9501 ns    33.4888 ns    90.5991 ns 
+50                                             100            13     2.1788 ms 
+                                        1.63654 us    1.63555 us    1.63815 us 
+                                        6.26791 ns    3.59657 ns    11.7824 ns 
                                                                                
 JAU_DArray_empty_idx FillUni_List                                              
-100                                            100             4     2.7524 ms 
-                                         6.9787 us    6.95905 us    7.01799 us 
-                                        136.572 ns    80.8991 ns    230.918 ns 
+100                                            100             4     2.1964 ms 
+                                        6.53689 us    6.51097 us    6.59144 us 
+                                        183.024 ns    99.7849 ns    306.082 ns 
                                                                                
 JAU_DArray_empty_idx FillUni_List                                              
-1000                                           100             1     38.491 ms 
-                                        383.875 us    383.366 us     384.45 us 
-                                        2.77703 us    2.49467 us    3.15385 us 
+1000                                           100             1    32.2007 ms 
+                                        325.062 us    324.611 us    325.608 us 
+                                        2.52574 us    2.13486 us    2.99083 us 
                                                                                
 JAU_DArray_empty_itr FillUni_List                                              
-50                                             100            14     2.2638 ms 
-                                        1.60804 us     1.6041 us    1.62654 us 
-                                        37.2628 ns    2.71767 ns    88.6383 ns 
+50                                             100            11     2.1362 ms 
+                                         1.9459 us    1.94246 us    1.95714 us 
+                                         26.381 ns   0.623628 ns    59.0286 ns 
                                                                                
 JAU_DArray_empty_itr FillUni_List                                              
-100                                            100             4     2.3072 ms 
-                                        5.78695 us    5.77482 us    5.83885 us 
-                                        109.201 ns    10.5425 ns    256.294 ns 
+100                                            100             4      2.536 ms 
+                                        6.24293 us    6.22967 us     6.2847 us 
+                                        102.043 ns    7.98198 ns    224.816 ns 
                                                                                
 JAU_DArray_empty_itr FillUni_List                                              
-1000                                           100             1    38.7446 ms 
-                                        384.675 us    384.033 us    385.372 us 
-                                        3.40512 us    3.03996 us     3.8883 us 
+1000                                           100             1    42.0475 ms 
+                                        421.468 us    420.753 us    422.298 us 
+                                        3.92799 us    3.40246 us    4.60223 us 
                                                                                
 COW_Vector_empty_itr FillUni_List                                              
-50                                             100             2     2.3156 ms 
-                                        11.5227 us    11.5191 us    11.5368 us 
-                                        33.0449 ns    6.27744 ns    77.5982 ns 
+50                                             100             2     2.2282 ms 
+                                        11.1828 us    11.1411 us    11.2611 us 
+                                        280.689 ns    172.085 ns    410.217 ns 
                                                                                
 COW_Vector_empty_itr FillUni_List                                              
-100                                            100             1     3.5521 ms 
-                                        35.1536 us    35.0932 us    35.4387 us 
-                                        569.688 ns    31.7695 ns    1.35406 us 
+100                                            100             1     3.2882 ms 
+                                        32.6741 us    32.5784 us    32.8968 us 
+                                        699.588 ns    332.721 ns    1.22272 us 
                                                                                
 COW_Vector_empty_itr FillUni_List                                              
-1000                                           100             1    187.582 ms 
-                                        1.87544 ms    1.87412 ms    1.87704 ms 
-                                        7.39734 us    5.93101 us    9.40215 us 
+1000                                           100             1     144.89 ms 
+                                        1.47565 ms    1.47455 ms    1.47671 ms 
+                                        5.52442 us    4.90599 us    6.23636 us 
                                                                                
 COW_DArray_empty_itr FillUni_List                                              
-50                                             100             4     2.7904 ms 
-                                        6.98415 us    6.97088 us    7.01619 us 
-                                        99.6001 ns    39.2271 ns    173.574 ns 
+50                                             100             4       2.64 ms 
+                                        6.56959 us    6.55954 us    6.61812 us 
+                                        96.2705 ns    2.22106 ns    229.391 ns 
                                                                                
 COW_DArray_empty_itr FillUni_List                                              
-100                                            100             2     3.3086 ms 
-                                        16.6341 us     16.592 us    16.7427 us 
-                                        304.178 ns    38.4631 ns    587.137 ns 
+100                                            100             2     2.9492 ms 
+                                        15.0232 us    14.9985 us    15.0852 us 
+                                        182.902 ns    61.7538 ns     320.24 ns 
                                                                                
 COW_DArray_empty_itr FillUni_List                                              
-1000                                           100             1    59.4288 ms 
-                                        594.232 us    593.612 us    594.899 us 
-                                        3.25515 us    2.91782 us    3.73734 us 
+1000                                           100             1    46.0061 ms 
+                                        457.412 us    456.958 us    457.978 us 
+                                        2.58249 us    2.16688 us    3.31521 us 
                                                                                
 STD_Vector_rserv_itr FillUni_List                                              
-50                                             100            15      2.316 ms 
-                                         1.5272 us    1.52398 us    1.53537 us 
-                                        23.2913 ns    3.89791 ns    42.4139 ns 
+50                                             100            12     2.1408 ms 
+                                        1.76106 us    1.75905 us    1.77044 us 
+                                         19.067 ns    1.53143 ns    45.3673 ns 
                                                                                
 STD_Vector_rserv_itr FillUni_List                                              
-100                                            100             5     2.5425 ms 
-                                        4.87912 us    4.84879 us      4.914 us 
-                                        165.663 ns    148.998 ns    212.749 ns 
+100                                            100             4       2.52 ms 
+                                        6.28143 us    6.25378 us    6.33351 us 
+                                        188.295 ns    115.973 ns    285.654 ns 
                                                                                
 STD_Vector_rserv_itr FillUni_List                                              
-1000                                           100             1    49.8425 ms 
-                                        501.254 us    500.366 us     502.17 us 
-                                        4.59384 us    4.17587 us    5.08954 us 
+1000                                           100             1    48.6881 ms 
+                                        477.798 us    477.278 us    478.476 us 
+                                        3.00362 us    2.22743 us    4.79396 us 
                                                                                
 JAU_DArray_rserv_itr FillUni_List                                              
-50                                             100            16     2.2928 ms 
-                                        1.46621 us    1.46596 us    1.46715 us 
-                                        2.21125 ns   0.515637 ns    5.14282 ns 
+50                                             100            12     2.1756 ms 
+                                        1.79391 us    1.79058 us     1.8029 us 
+                                        24.6883 ns    2.98708 ns    50.6232 ns 
                                                                                
 JAU_DArray_rserv_itr FillUni_List                                              
-100                                            100             5      2.563 ms 
-                                        5.19923 us    5.18781 us    5.22983 us 
-                                        83.4825 ns    7.97248 ns    170.149 ns 
+100                                            100             4      2.456 ms 
+                                         6.1552 us    6.12652 us    6.25524 us 
+                                        240.261 ns    72.2493 ns    537.403 ns 
                                                                                
 JAU_DArray_rserv_itr FillUni_List                                              
-1000                                           100             1    38.1178 ms 
-                                        378.979 us    378.435 us    379.667 us 
-                                        3.11186 us    2.60067 us    3.92334 us 
+1000                                           100             1    42.8156 ms 
+                                        425.033 us    424.406 us    425.655 us 
+                                        3.19607 us    2.80755 us    3.68366 us 
                                                                                
 COW_Vector_rserv_itr FillUni_List                                              
-50                                             100             2      2.336 ms 
-                                        11.6679 us     11.662 us    11.6905 us 
-                                        53.4083 ns     9.6442 ns     125.41 ns 
+50                                             100             2     2.3672 ms 
+                                        11.5077 us    11.4248 us    11.6414 us 
+                                        528.165 ns    367.494 ns    746.796 ns 
                                                                                
 COW_Vector_rserv_itr FillUni_List                                              
-100                                            100             1     3.5791 ms 
-                                        35.2218 us    35.2026 us    35.2506 us 
-                                        117.845 ns    88.5611 ns    203.828 ns 
+100                                            100             1     3.3949 ms 
+                                        33.5044 us    33.3579 us    34.0644 us 
+                                        1.25791 us     267.78 ns    2.86029 us 
                                                                                
 COW_Vector_rserv_itr FillUni_List                                              
-1000                                           100             1    187.428 ms 
-                                        1.87582 ms    1.87438 ms     1.8777 ms 
-                                        8.33879 us    6.44822 us     10.868 us 
+1000                                           100             1    147.793 ms 
+                                        1.54617 ms    1.54428 ms    1.54818 ms 
+                                        9.89322 us    8.58773 us    11.9951 us 
                                                                                
 COW_DArray_rserv_itr FillUni_List                                              
-50                                             100             4     2.6736 ms 
-                                        6.71567 us    6.69076 us    6.76715 us 
-                                        174.364 ns    94.5339 ns    281.455 ns 
+50                                             100             3     2.0445 ms 
+                                        6.65388 us    6.64979 us    6.67025 us 
+                                        39.9027 ns    1.27708 ns    95.1414 ns 
                                                                                
 COW_DArray_rserv_itr FillUni_List                                              
-100                                            100             2     3.2104 ms 
-                                        16.0465 us    16.0267 us    16.1416 us 
-                                        187.471 ns    4.82185 ns    446.259 ns 
+100                                            100             2     3.0918 ms 
+                                        14.9081 us    14.9015 us    14.9404 us 
+                                        64.5929 ns    1.86721 ns    154.039 ns 
                                                                                
 COW_DArray_rserv_itr FillUni_List                                              
-1000                                           100             1    59.1563 ms 
-                                        589.376 us    588.917 us    589.877 us 
-                                        2.44301 us    2.09285 us     2.8452 us 
+1000                                           100             1    47.6183 ms 
+                                        479.014 us    477.876 us    481.185 us 
+                                        7.78409 us    4.05437 us    12.8233 us 
                                                                                
 
 ===============================================================================
-All tests passed (64667504 assertions in 3 test cases)
+All tests passed (71144688 assertions in 3 test cases)
 
