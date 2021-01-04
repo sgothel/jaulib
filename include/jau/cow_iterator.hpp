@@ -30,6 +30,10 @@
 #include <mutex>
 
 #include <type_traits>
+#include <iostream>
+
+#include <jau/cpp_lang_macros.hpp>
+#include <jau/basic_types.hpp>
 
 namespace jau {
 
@@ -69,7 +73,7 @@ namespace jau {
             Storage_ref_type store_ref_;
             iterator_type    iterator_;
 
-            constexpr explicit cow_rw_iterator(CoW_container& cow_parent, Storage_ref_type& store, iterator_type iter) noexcept
+            constexpr explicit cow_rw_iterator(CoW_container& cow_parent, const Storage_ref_type& store, iterator_type iter) noexcept
             : cow_parent_(cow_parent), lock_(cow_parent.get_write_mutex()), store_ref_(store), iterator_(iter) {}
 
         public:
