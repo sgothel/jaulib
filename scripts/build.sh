@@ -27,7 +27,7 @@ buildit() {
     rm -rf build-$archabi
     mkdir -p build-$archabi
     cd build-$archabi
-    # CLANG_ARGS="-DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++"
+    CLANG_ARGS="-DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++"
     cmake $CLANG_ARGS -DCMAKE_INSTALL_PREFIX=$rootdir/dist-$archabi -DBUILD_TESTING=ON ..
     # cmake $CLANG_ARGS -DCMAKE_INSTALL_PREFIX=$rootdir/dist-$archabi -DBUILD_TESTING=ON -DGPROF=ON ..
     # cmake $CLANG_ARGS -DCMAKE_INSTALL_PREFIX=$rootdir/dist-$archabi -DBUILD_TESTING=ON -DPERF_ANALYSIS=ON ..
