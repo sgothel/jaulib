@@ -27,7 +27,6 @@
 #include <cstring>
 #include <random>
 #include <vector>
-#include <type_traits>
 
 #define CATCH_CONFIG_RUNNER
 // #define CATCH_CONFIG_MAIN
@@ -43,7 +42,7 @@
 #include <jau/counting_allocator.hpp>
 
 /**
- * This unit test module tests jau::darray, jau::cow_darray and jau::cow_vector in detail.
+ * Test general use of jau::darray, jau::cow_darray and jau::cow_vector.
  */
 using namespace jau;
 
@@ -210,58 +209,14 @@ static void test_00_seq_fill_unique_itr(T& data, const std::size_t size) {
 /****************************************************************************************
  ****************************************************************************************/
 
-template< class Iter >
-static void print_iterator_info(const std::string& typedefname,
-        typename std::enable_if<
-                std::is_class<Iter>::value
-            >::type* = 0
-) {
-    jau::type_cue<Iter>::print(typedefname);
-    jau::type_cue<typename Iter::iterator_category>::print(typedefname+"::iterator_category");
-    jau::type_cue<typename Iter::iterator_type>::print(typedefname+"::iterator_type");
-    jau::type_cue<typename Iter::value_type>::print(typedefname+"::value_type");
-    jau::type_cue<typename Iter::reference>::print(typedefname+"::reference");
-    jau::type_cue<typename Iter::pointer>::print(typedefname+"::pointer");
-}
-
-template<class Iter>
-static void print_iterator_info(const std::string& typedefname,
-        typename std::enable_if<
-                !std::is_class<Iter>::value
-            >::type* = 0
-) {
-    jau::type_cue<Iter>::print(typedefname);
-}
-
 template<class T>
-static bool test_00_inspect_iterator_types(const std::string& type_id) {
-    typedef typename T::size_type T_size_t;
-    typedef typename T::difference_type T_difference_t;
-
-    printf("**** Type Info: %s\n", type_id.c_str());
-    jau::type_cue<T>::print("T");
-    jau::type_cue<typename T::value_type>::print("T::value_type");
-    jau::type_cue<T_size_t>::print("T::size_type");
-    jau::type_cue<T_difference_t>::print("T::difference_type");
-    jau::type_cue<typename T::reference>::print("T::reference");
-    jau::type_cue<typename T::pointer>::print("T::pointer");
-    print_iterator_info<typename T::iterator>("T::iterator");
-    print_iterator_info<typename T::const_iterator>("T::const_iterator");
-    printf("\n\n");
-
-    return true;
-}
-
-/****************************************************************************************
- ****************************************************************************************/
-
-template<class T>
-static bool test_01_validate_index_ops(const std::string& type_id, const std::size_t size0, const std::size_t reserve0) {
+static bool test_01_seq_fill_list_idx(const std::string& type_id, const std::size_t size0, const std::size_t reserve0) {
     (void)type_id;
 
     T data;
     REQUIRE(0 == data.get_allocator().memory_usage);
     REQUIRE(data.size() == 0);
+    REQUIRE(data.capacity() == 0);
 
     if( 0 < reserve0 ) {
         data.reserve(reserve0);
@@ -283,98 +238,14 @@ static bool test_01_validate_index_ops(const std::string& type_id, const std::si
     // REQUIRE(0 == data.get_allocator().memory_usage);
     return data.size() == 0;
 }
-
 template<class T>
-static void test_const_iterator_equal(typename T::const_iterator& citer1, typename T::const_iterator& citer2)
-{
-    REQUIRE( (  citer1 ==  citer2 ) == true);       // iter op==(iter1, iter2)
-    REQUIRE( (  citer1 !=  citer2 ) == false);      // iter op!=(iter1, iter2)
-    REQUIRE( ( *citer1 == *citer2 ) == true);       // iter op*() and value_type ==
-    REQUIRE( ( *citer1 != *citer2 ) == false);      // iter op*() and value_type !=
-}
-template<class T>
-static void test_const_iterator_notequal(typename T::const_iterator& citer1, typename T::const_iterator& citer2)
-{
-    REQUIRE( (  citer1 ==  citer2 ) == false);      // iter op==(iter1, iter2)
-    REQUIRE( (  citer1 !=  citer2 ) == true);       // iter op!=(iter1, iter2)
-    REQUIRE( ( *citer1 == *citer2 ) == false);      // iter op*() and value_type ==
-    REQUIRE( ( *citer1 != *citer2 ) == true);       // iter op*() and value_type !=
-}
-
-template<class T>
-static void test_const_iterator_compare(const typename T::size_type size,
-                                        typename T::const_iterator& cbegin,
-                                        typename T::const_iterator& cend,
-                                        typename T::const_iterator& citer1, typename T::const_iterator& citer2,
-                                        const typename T::difference_type citer1_idx,
-                                        const typename T::difference_type citer2_idx)
-{
-    typename T::difference_type d_size = static_cast<typename T::difference_type>(size);
-    typename T::difference_type distance = citer2_idx - citer1_idx;
-    // iter op-(iter1, iter2)
-    REQUIRE( ( cend   -   cbegin ) == d_size);
-    REQUIRE( ( citer2 -   cbegin ) == citer2_idx);
-    REQUIRE( ( citer1 -   cbegin ) == citer1_idx);
-    REQUIRE( ( cend   -   citer1 ) == d_size - citer1_idx);
-    REQUIRE( ( cend   -   citer2 ) == d_size - citer2_idx);
-    REQUIRE( ( citer2 -   citer1 ) == distance);
-
-    // iter op-(iter, difference_type) and iter op==(iter1, iter2)
-    REQUIRE( ( citer1 -   citer1_idx ) == cbegin);
-    REQUIRE( ( citer2 -   citer2_idx ) == cbegin);
-    REQUIRE( ( citer2 -   distance )   == citer1);
-
-    // iter op+(iter, difference_type) and iter op==(iter1, iter2)
-    {
-        typename T::difference_type d_citer1_end = cend - citer1;
-        typename T::difference_type d_citer2_end = cend - citer2;
-        REQUIRE( ( citer1_idx + d_citer1_end ) == d_size); // validate op-(iter1, iter2)
-        REQUIRE( ( citer2_idx + d_citer2_end ) == d_size); // validate op-(iter1, iter2)
-
-        REQUIRE( ( citer1 + d_citer1_end ) == cend);
-        REQUIRE( ( citer2 + d_citer2_end ) == cend);
-    }
-
-    if( 0 == distance ) {
-        test_const_iterator_equal<T>(citer1, citer2);
-        REQUIRE( ( citer2 >   citer1 ) == false);      // iter op>(iter1, iter2)
-        REQUIRE( ( citer2 >=  citer1 ) == true);       // iter op>=(iter1, iter2)
-        REQUIRE( ( citer2 <   citer1 ) == false);      // iter op<(iter1, iter2)
-        REQUIRE( ( citer2 <=  citer1 ) == true);       // iter op<=(iter1, iter2)
-    } else if( distance > 0 ) { // citer2 > citer1
-        test_const_iterator_notequal<T>(citer1, citer2);
-        REQUIRE( ( citer2 >   citer1 ) == true);       // iter op>(iter1, iter2)
-        REQUIRE( ( citer2 >=  citer1 ) == true);       // iter op>=(iter1, iter2)
-        REQUIRE( ( citer2 <   citer1 ) == false);      // iter op<(iter1, iter2)
-        REQUIRE( ( citer2 <=  citer1 ) == false);      // iter op<=(iter1, iter2)
-    } else { // distance < 0: citer2 < citer1
-        REQUIRE( ( citer2 >   citer1 ) == false);      // iter op>(iter1, iter2)
-        REQUIRE( ( citer2 >=  citer1 ) == false);      // iter op>=(iter1, iter2)
-        REQUIRE( ( citer2 <   citer1 ) == true);       // iter op<(iter1, iter2)
-        REQUIRE( ( citer2 <=  citer1 ) == true);       // iter op<=(iter1, iter2)
-    }
-}
-
-template<class T>
-static bool test_01_validate_iterator_ops(const std::string& type_id, const std::size_t size0, const std::size_t reserve0) {
-    typedef typename T::const_iterator T_const_iterator_t;
-    typedef typename T::size_type T_size_t;
-
-    (void) type_id;
+static bool test_01_seq_fill_list_itr(const std::string& type_id, const std::size_t size0, const std::size_t reserve0) {
+    (void)type_id;
 
     T data;
     REQUIRE(0 == data.get_allocator().memory_usage);
     REQUIRE(data.size() == 0);
     REQUIRE(data.capacity() == 0);
-    REQUIRE(data.empty() == true);
-
-    {
-        // nullptr const_iterator
-        typename T::const_iterator citer1 = data.cbegin();
-        typename T::const_iterator citer2 = data.cbegin();
-        REQUIRE(citer1 == citer2);
-        REQUIRE(citer2 - citer1 == 0);
-    }
 
     if( 0 < reserve0 ) {
         data.reserve(reserve0);
@@ -386,63 +257,67 @@ static bool test_01_validate_iterator_ops(const std::string& type_id, const std:
     test_00_seq_fill(data, size0);
     REQUIRE(0 != data.get_allocator().memory_usage);
     REQUIRE(data.size() == size0);
-    REQUIRE(data.size() <= data.capacity());
-
-    // const_iterator equal
-    {
-        T_size_t size = data.size();
-        T_const_iterator_t cbegin = data.cbegin();
-        T_const_iterator_t cend = data.cend();
-        T_const_iterator_t citer1 = data.cbegin();
-        T_const_iterator_t citer2 = data.cbegin();
-        test_const_iterator_compare<T>(size, cbegin, cend, citer1, citer2, 0, 0);
-    }
-
-    // const_iterator op++(), op--(), op++(int), op+=(difference_type), op+(iter a, difference_type) ..
-    {
-        T_size_t size = data.size();
-        T_const_iterator_t cbegin = data.cbegin();
-        T_const_iterator_t cend = data.cend();
-        T_const_iterator_t citer1 = data.cbegin();
-        {
-            T_const_iterator_t citer2 = data.cbegin();
-            test_const_iterator_compare<T>(size, cbegin, cend, citer1, citer2, 0, 0);
-
-            // iter op++()
-            citer2++;
-            test_const_iterator_compare<T>(size, cbegin, cend, citer1, citer2, 0, 1);
-
-            citer1++;
-            test_const_iterator_compare<T>(size, cbegin, cend, citer1, citer2, 1, 1);
-
-            // iter op--()
-            citer2--;
-            test_const_iterator_compare<T>(size, cbegin, cend, citer1, citer2, 1, 0);
-
-            citer1--;
-            test_const_iterator_compare<T>(size, cbegin, cend, citer1, citer2, 0, 0);
-
-            // iter op++()
-            citer2++;
-            test_const_iterator_compare<T>(size, cbegin, cend, citer1, citer2, 0, 1);
-            REQUIRE( ( *citer2 == *(cbegin+1) ) == true);  // iter op*(), op+(iter, difference_type) and value_type ==
-            REQUIRE( ( *citer2 == cbegin[1] ) == true);    // iter op*(), op[](difference_type) and value_type ==
-
-            // iter op++()
-            citer2++;
-            test_const_iterator_compare<T>(size, cbegin, cend, citer1, citer2, 0, 2);
-            REQUIRE( ( *citer2 == *(cbegin+2) ) == true);  // iter op*(), op+(iter, difference_type) and value_type ==
-            REQUIRE( ( *citer2 == cbegin[2] ) == true);    // iter op*(), op[](difference_type) and value_type ==
-
-            // iter op++()
-            citer2++;
-            test_const_iterator_compare<T>(size, cbegin, cend, citer1, citer2, 0, 3);
-            REQUIRE( ( *citer2 == *(cbegin+3) ) == true);  // iter op*(), op+(iter, difference_type) and value_type ==
-            REQUIRE( ( *citer2 == cbegin[3] ) == true);    // iter op*(), op[](difference_type) and value_type ==
-        }
-    }
 
     test_00_list_itr(data, false);
+    REQUIRE(0 != data.get_allocator().memory_usage);
+    REQUIRE(data.size() == size0);
+
+    data.clear();
+    REQUIRE(data.size() == 0);
+    // REQUIRE(0 == data.get_allocator().memory_usage);
+    return data.size() == 0;
+}
+
+template<class T>
+static bool test_02_seq_fillunique_find_idx(const std::string& type_id, const std::size_t size0, const std::size_t reserve0) {
+    (void)type_id;
+
+    T data;
+    REQUIRE(0 == data.get_allocator().memory_usage);
+    REQUIRE(data.size() == 0);
+    REQUIRE(data.capacity() == 0);
+
+    if( 0 < reserve0 ) {
+        data.reserve(reserve0);
+        REQUIRE(data.size() == 0);
+        REQUIRE(0 != data.get_allocator().memory_usage);
+        REQUIRE(data.capacity() == reserve0);
+    }
+
+    test_00_seq_fill_unique_idx(data, size0);
+    REQUIRE(0 != data.get_allocator().memory_usage);
+    REQUIRE(data.size() == size0);
+
+    test_00_seq_find_idx(data);
+    REQUIRE(0 != data.get_allocator().memory_usage);
+    REQUIRE(data.size() == size0);
+
+    data.clear();
+    REQUIRE(data.size() == 0);
+    // REQUIRE(0 == data.get_allocator().memory_usage);
+    return data.size() == 0;
+}
+template<class T>
+static bool test_02_seq_fillunique_find_itr(const std::string& type_id, const std::size_t size0, const std::size_t reserve0) {
+    (void)type_id;
+
+    T data;
+    REQUIRE(0 == data.get_allocator().memory_usage);
+    REQUIRE(data.size() == 0);
+    REQUIRE(data.capacity() == 0);
+
+    if( 0 < reserve0 ) {
+        data.reserve(reserve0);
+        REQUIRE(data.size() == 0);
+        REQUIRE(0 != data.get_allocator().memory_usage);
+        REQUIRE(data.capacity() == reserve0);
+    }
+
+    test_00_seq_fill_unique_itr(data, size0);
+    REQUIRE(0 != data.get_allocator().memory_usage);
+    REQUIRE(data.size() == size0);
+
+    test_00_seq_find_itr(data);
     REQUIRE(0 != data.get_allocator().memory_usage);
     REQUIRE(data.size() == size0);
 
@@ -455,35 +330,66 @@ static bool test_01_validate_iterator_ops(const std::string& type_id, const std:
 /****************************************************************************************
  ****************************************************************************************/
 
-TEST_CASE( "Test 00 - Inspect all Iterator Types", "[datatype][std][vector][darray][cow_vector][cow_darray]" ) {
-    test_00_inspect_iterator_types< std_vector_DataType01 >("std::vector<T>");
-    test_00_inspect_iterator_types< jau_darray_DataType01 >("jau::darray<T>");
-    test_00_inspect_iterator_types< jau_cow_vector_DataType01 >("jau::cow_vector<T>");
-    test_00_inspect_iterator_types< jau_cow_darray_DataType01 >("jau::cow_darray<T>");
+TEST_CASE( "STD Vector Test 01 - Fill Sequential and List", "[datatype][std][vector]" ) {
+    test_01_seq_fill_list_idx< std::vector<DataType01, counting_allocator<DataType01>> >("stdvec_fillseq_empty__", 100, 0);
+    test_01_seq_fill_list_idx< std::vector<DataType01, counting_allocator<DataType01>> >("stdvec_fillseq_reserve", 100, 100);
+
+    test_01_seq_fill_list_itr< std::vector<DataType01, counting_allocator<DataType01>> >("stdvec_fillseq_empty__", 100, 0);
+    test_01_seq_fill_list_itr< std::vector<DataType01, counting_allocator<DataType01>> >("stdvec_fillseq_reserve", 100, 100);
 }
 
-TEST_CASE( "STD Vector Test 01 - Validate Iterator and Index Operations", "[datatype][std][vector]" ) {
-    // test_01_validate_index_ops< std_vector_DataType01 >("std::vector<T>", 100, 0);
-    // test_01_validate_index_ops< std_vector_DataType01 >("std::vector<T>", 100, 100);
+TEST_CASE( "STD Vector Test 02 - Fill Unique and Find-Each", "[datatype][std][vector]" ) {
+    test_02_seq_fillunique_find_idx< std::vector<DataType01, counting_allocator<DataType01>> >("stdvec_filluni_empty__", 100, 0);
+    test_02_seq_fillunique_find_idx< std::vector<DataType01, counting_allocator<DataType01>> >("stdvec_filluni_reserve", 100, 100);
 
-    test_01_validate_iterator_ops< std_vector_DataType01 >("std::vector<T>", 100, 0);
-    // test_01_validate_iterator_ops< std_vector_DataType01 >("std::vector<T>", 100, 100);
+    test_02_seq_fillunique_find_itr< std::vector<DataType01, counting_allocator<DataType01>> >("stdvec_filluni_empty__", 100, 0);
+    test_02_seq_fillunique_find_itr< std::vector<DataType01, counting_allocator<DataType01>> >("stdvec_filluni_reserve", 100, 100);
 }
 
-TEST_CASE( "JAU DArray Test 02 - Validate Iterator and Index Operations", "[datatype][jau][darray]" ) {
-    // test_01_validate_index_ops< jau_darray_DataType01 >("jau::darray<T>", 100, 0);
-    // test_01_validate_index_ops< jau_darray_DataType01 >("jau::darray<T>", 100, 100);
+TEST_CASE( "JAU COW_Vector Test 11 - Fill Sequential and List", "[datatype][jau][cow_vector]" ) {
+    // test_01_seq_fill_list_idx< jau::cow_vector<DataType01, counting_allocator<DataType01>> >("cowstdvec_fillseq_empty__", 100, 0);
+    // test_01_seq_fill_list_idx< jau::cow_vector<DataType01, counting_allocator<DataType01>> >("cowstdvec_fillseq_reserve", 100, 100);
 
-    test_01_validate_iterator_ops< jau_darray_DataType01 >("jau::darray<T>", 100, 0);
-    // test_01_validate_iterator_ops< jau_darray_DataType01 >("jau::darray<T>", 100, 100);
+    test_01_seq_fill_list_itr< jau::cow_vector<DataType01, counting_allocator<DataType01>> >("cowstdvec_fillseq_empty__", 100, 0);
+    test_01_seq_fill_list_itr< jau::cow_vector<DataType01, counting_allocator<DataType01>> >("cowstdvec_fillseq_reserve", 100, 100);
 }
 
-TEST_CASE( "JAU COW_Vector Test 11 - Validate Iterator Operations", "[datatype][jau][cow_vector]" ) {
-    test_01_validate_iterator_ops< jau_cow_vector_DataType01 >("jau::cow_vector<T>", 100, 0);
-    // test_01_validate_iterator_ops< jau_cow_vector_DataType01 >("jau::cow_vector<T>", 100, 100);
+TEST_CASE( "JAU COW_Vector Test 12 - Fill Unique and Find-Each", "[datatype][jau][cow_vector]" ) {
+    // test_02_seq_fillunique_find_idx< jau::cow_vector<DataType01, counting_allocator<DataType01>> >("cowstdvec_filluni_empty__", 100, 0);
+    // test_02_seq_fillunique_find_idx< jau::cow_vector<DataType01, counting_allocator<DataType01>> >("cowstdvec_filluni_reserve", 100, 100);
+
+    test_02_seq_fillunique_find_itr< jau::cow_vector<DataType01, counting_allocator<DataType01>> >("cowstdvec_filluni_empty__", 100, 0);
+    test_02_seq_fillunique_find_itr< jau::cow_vector<DataType01, counting_allocator<DataType01>> >("cowstdvec_filluni_reserve", 100, 100);
 }
 
-TEST_CASE( "JAU COW_DArray Test 21 - Validate Iterator Operations", "[datatype][jau][cow_darray]" ) {
-    test_01_validate_iterator_ops< jau_cow_darray_DataType01 >("jau::cow_darray<T>", 100, 0);
-    // test_01_validate_iterator_ops< jau_cow_darray_DataType01 >("jau::cow_darray<T>", 100, 100);
+TEST_CASE( "JAU DArray Test 21 - Fill Sequential and List", "[datatype][jau][darray]" ) {
+    test_01_seq_fill_list_idx< jau::darray<DataType01, counting_allocator<DataType01>> >("darray_fillseq_empty__", 100, 0);
+    test_01_seq_fill_list_idx< jau::darray<DataType01, counting_allocator<DataType01>> >("darray_fillseq_reserve", 100, 100);
+
+    test_01_seq_fill_list_itr< jau::darray<DataType01, counting_allocator<DataType01>> >("darray_fillseq_empty__", 100, 0);
+    test_01_seq_fill_list_itr< jau::darray<DataType01, counting_allocator<DataType01>> >("darray_fillseq_reserve", 100, 100);
+}
+
+TEST_CASE( "JAU DArray Test 22 - Fill Unique and Find-Each", "[datatype][jau][darray]" ) {
+    test_02_seq_fillunique_find_idx< jau::darray<DataType01, counting_allocator<DataType01>> >("darray_filluni_empty__", 100, 0);
+    test_02_seq_fillunique_find_idx< jau::darray<DataType01, counting_allocator<DataType01>> >("darray_filluni_reserve", 100, 100);
+
+    test_02_seq_fillunique_find_itr< jau::darray<DataType01, counting_allocator<DataType01>> >("darray_filluni_empty__", 100, 0);
+    test_02_seq_fillunique_find_itr< jau::darray<DataType01, counting_allocator<DataType01>> >("darray_filluni_reserve", 100, 100);
+}
+
+TEST_CASE( "JAU COW_DArray Test 31 - Fill Sequential and List", "[datatype][jau][cow_darray]" ) {
+    // test_01_seq_fill_list_idx< jau::cow_darray<DataType01, counting_allocator<DataType01>> >("cowdarray_fillseq_empty__", 100, 0);
+    // test_01_seq_fill_list_idx< jau::cow_darray<DataType01, counting_allocator<DataType01>> >("cowdarray_fillseq_reserve", 100, 100);
+
+    test_01_seq_fill_list_itr< jau::cow_darray<DataType01, counting_allocator<DataType01>> >("cowdarray_fillseq_empty__", 100, 0);
+    test_01_seq_fill_list_itr< jau::cow_darray<DataType01, counting_allocator<DataType01>> >("cowdarray_fillseq_reserve", 100, 100);
+}
+
+TEST_CASE( "JAU COW_DArray Test 32 - Fill Unique and Find-Each", "[datatype][jau][cow_darray]" ) {
+    // test_02_seq_fillunique_find_idx< jau::cow_darray<DataType01, counting_allocator<DataType01>> >("cowdarray_filluni_empty__", 100, 0);
+    // test_02_seq_fillunique_find_idx< jau::cow_darray<DataType01, counting_allocator<DataType01>> >("cowdarray_filluni_reserve", 100, 100);
+
+    test_02_seq_fillunique_find_itr< jau::cow_darray<DataType01, counting_allocator<DataType01>> >("cowdarray_filluni_empty__", 100, 0);
+    test_02_seq_fillunique_find_itr< jau::cow_darray<DataType01, counting_allocator<DataType01>> >("cowdarray_filluni_reserve", 100, 100);
 }

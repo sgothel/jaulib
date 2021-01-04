@@ -23,6 +23,7 @@ set( SOURCES_IDIOMATIC_EXAMPLES
     test_lfringbuffer11.cpp
     test_mm_sc_drf_00.cpp
     test_mm_sc_drf_01.cpp
+    test_cow_iterator_01.cpp
     test_cow_darray_01.cpp
     test_cow_darray_perf01.cpp
     test_hashset_perf01.cpp
