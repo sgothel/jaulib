@@ -406,4 +406,8 @@ namespace jau {
 
 } // namespace jau
 
+/** \example test_functiondef01.cpp
+ * This C++ unit test validates the jau::FunctionDef and all its jau::InvocationFunc specializations.
+ */
+
 #endif /* JAU_FUNCTION_HPP_ */

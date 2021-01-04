@@ -261,6 +261,7 @@ template <typename _Tp, std::memory_order _MO> struct ordered_atomic : private s
    * - Sequentially Consistent (SC) ordering or SC-DRF (data race free) <https://en.cppreference.com/w/cpp/atomic/memory_order#Sequentially-consistent_ordering>
    * - std::memory_order <https://en.cppreference.com/w/cpp/atomic/memory_order>
    * </pre>
+   * @see jau::ringbuffer
    */
   class sc_atomic_critical {
       private:
@@ -281,5 +282,19 @@ template <typename _Tp, std::memory_order _MO> struct ordered_atomic : private s
   };
 
 } /* namespace jau */
+
+/** \example test_mm_sc_drf_00.cpp
+ * Testing SC-DRF non-atomic global read and write within an atomic acquire/release critical block.
+ * <p>
+ * With test_mm_sc_drf_00.cpp, this work laid the groundwork for jau::sc_atomic_critical and jau::ringbuffer
+ * </p>
+ */
+
+/** \example test_mm_sc_drf_01.cpp
+ * Testing SC-DRF non-atomic global read and write within a locked mutex critical block.
+ * <p>
+ * With test_mm_sc_drf_00.cpp, this work laid the groundwork for jau::sc_atomic_critical and jau::ringbuffer
+ * </p>
+ */
 
 #endif /* JAU_ORDERED_ATOMIC_HPP_ */

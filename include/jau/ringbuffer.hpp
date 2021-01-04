@@ -84,6 +84,7 @@ namespace jau {
  * - Sequentially Consistent (SC) ordering or SC-DRF (data race free) <https://en.cppreference.com/w/cpp/atomic/memory_order#Sequentially-consistent_ordering>
  * - std::memory_order <https://en.cppreference.com/w/cpp/atomic/memory_order>
  * </pre>
+ * @see jau::sc_atomic_critical
  */
 template <typename T, std::nullptr_t nullelem, typename Size_type> class ringbuffer {
     private:
@@ -672,5 +673,19 @@ template <typename T, std::nullptr_t nullelem, typename Size_type> class ringbuf
 };
 
 } /* namespace jau */
+
+/** \example test_lfringbuffer01.cpp
+ * This C++ unit test validates jau::ringbuffer w/o parallel processing.
+ * <p>
+ * With test_lfringbuffer11.cpp, this work verifies jau::ringbuffer correctness
+ * </p>
+ */
+
+/** \example test_lfringbuffer11.cpp
+ * This C++ unit test validates jau::ringbuffer with parallel processing.
+ * <p>
+ * With test_lfringbuffer01.cpp, this work verifies jau::ringbuffer correctness
+ * </p>
+ */
 
 #endif /* JAU_RINGBUFFER_HPP_ */
