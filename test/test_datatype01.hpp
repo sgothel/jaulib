@@ -30,6 +30,9 @@
 #include <cstring>
 #include <random>
 
+#include <iostream>
+
+#include <jau/cpp_lang_macros.hpp>
 #include <jau/packed_attribute.hpp>
 #include <jau/ordered_atomic.hpp>
 #include <jau/basic_types.hpp>
@@ -78,7 +81,8 @@ __pack ( struct Addr48Bit {
         // printf("hash.Addr48Bit %zu\n", h);
         return h;
     }
-    std::string toString() const {
+
+    __constexpr_cxx20_ std::string toString() const noexcept {
         std::string str;
         str.reserve(17);
 
@@ -90,9 +94,21 @@ __pack ( struct Addr48Bit {
         }
         return str;
     }
+
+#if 0
+    __constexpr_cxx20_ operator std::string() const noexcept {
+        return toString();
+    }
+#endif
+
 } );
 
 JAU_TYPENAME_CUE_ALL(Addr48Bit)
+
+std::ostream & operator << (std::ostream &out, const Addr48Bit &a) {
+    out << a.toString();
+    return out;
+}
 
 inline bool operator==(const Addr48Bit& lhs, const Addr48Bit& rhs) noexcept {
     if( &lhs == &rhs ) {
@@ -161,11 +177,21 @@ class DataType01 {
 
         void clearHash() { hash = 0; }
 
-        std::string toString() const {
+        __constexpr_cxx20_ std::string toString() const noexcept {
             return "["+address.toString()+", "+std::to_string(type)+"]";
         }
+#if 0
+        __constexpr_cxx20_ operator std::string() const noexcept {
+            return toString();
+        }
+#endif
 };
 JAU_TYPENAME_CUE_ALL(DataType01)
+
+std::ostream & operator << (std::ostream &out, const DataType01 &a) {
+    out << a.toString();
+    return out;
+}
 
 inline bool operator==(const DataType01& lhs, const DataType01& rhs) noexcept {
     if( &lhs == &rhs ) {

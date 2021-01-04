@@ -267,6 +267,15 @@ namespace jau {
             /** Binary 'iterator - iterator -> element_count'; Well performing, return element_count of type difference_type. */
             constexpr difference_type operator-(const cow_rw_iterator& rhs) const noexcept
             { return iterator_ - rhs.iterator_; }
+
+            __constexpr_cxx20_ std::string toString() const noexcept {
+                return "cow_rw_iterator["+aptrHexString((void*)iterator_)+"]";
+            }
+#if 0
+            __constexpr_cxx20_ operator std::string() const noexcept {
+                return toString();
+            }
+#endif
     };
 
     /**
@@ -474,9 +483,30 @@ namespace jau {
 
             constexpr difference_type distance(const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) const noexcept
             { return iterator_ - rhs.iterator_; }
+
+            __constexpr_cxx20_ std::string toString() const noexcept {
+                return "cow_ro_iterator["+aptrHexString((void*)iterator_)+"]";
+            }
+#if 0
+            __constexpr_cxx20_ operator std::string() const noexcept {
+                return toString();
+            }
+#endif
     };
 
 } /* namespace jau */
+
+template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
+std::ostream & operator << (std::ostream &out, const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container> &c) {
+    out << c.toString();
+    return out;
+}
+
+template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
+std::ostream & operator << (std::ostream &out, const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container> &c) {
+    out << c.toString();
+    return out;
+}
 
 template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
 constexpr bool operator==(const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
