@@ -45,6 +45,43 @@ namespace jau {
     class cow_rw_iterator;
 
     /**
+     * iterator_type -> std::string conversion
+     * <p>
+     * TODO: Test whether 'base()' method actually exists,
+     * however - this is good enough for stl iterator_type
+     * having implemented the inner native iterator (a pointer).
+     * </p>
+     * @tparam iterator_type the iterator type
+     * @param iter the iterator
+     * @param if iterator_type is a class
+     * @return the std::string represenation
+     */
+    template< class iterator_type >
+        std::string to_string(const iterator_type & iter,
+            typename std::enable_if<
+                    std::is_class<iterator_type>::value
+                >::type* = 0
+    ) {
+        return aptrHexString( (void*) ( iter.base() ) );
+    }
+
+    /**
+     * iterator_type -> std::string conversion
+     * @tparam iterator_type the iterator type
+     * @param iter the iterator
+     * @param if iterator_type is not a class
+     * @return the std::string represenation
+     */
+    template< class iterator_type >
+        std::string to_string(const iterator_type & iter,
+            typename std::enable_if<
+                    !std::is_class<iterator_type>::value
+                >::type* = 0
+    ) {
+        return aptrHexString((void*)iter);
+    }
+
+    /**
      * Implementation of a Copy-On-Write (CoW) read-write iterator for mutable value_type.<br>
      * Instance holds the 'shared value_type reference', Storage_ref_type,
      * of the current CoW storage until destruction.
@@ -158,7 +195,7 @@ namespace jau {
             /**
              * Returns a copy of the underlying storage iterator.
              */
-            typename Storage_type::iterator underling() const noexcept { return iterator_; };
+            constexpr iterator_type base() const noexcept { return iterator_; };
 
             // Multipass guarantee equality
 
@@ -263,9 +300,6 @@ namespace jau {
             constexpr cow_rw_iterator operator-(difference_type rhs) const noexcept
             { return cow_rw_iterator(cow_parent_, store_ref_, iterator_ - rhs); }
 
-            // constexpr const cow_rw_iterator& base() const noexcept
-            // { return iterator_; }
-
             // Distance or element count, binary subtraction of two iterator.
 
             /** Binary 'iterator - iterator -> element_count'; Well performing, return element_count of type difference_type. */
@@ -273,7 +307,7 @@ namespace jau {
             { return iterator_ - rhs.iterator_; }
 
             __constexpr_cxx20_ std::string toString() const noexcept {
-                return "cow_rw_iterator["+aptrHexString((void*)iterator_)+"]";
+                return "cow_rw_iterator["+jau::to_string(iterator_)+"]";
             }
 #if 0
             __constexpr_cxx20_ operator std::string() const noexcept {
@@ -381,7 +415,7 @@ namespace jau {
             /**
              * Returns a copy of the underlying storage const_iterator.
              */
-            iterator_type underling() const noexcept { return iterator_; };
+            constexpr iterator_type base() const noexcept { return iterator_; };
 
             // Multipass guarantee equality
 
@@ -489,7 +523,7 @@ namespace jau {
             { return iterator_ - rhs.iterator_; }
 
             __constexpr_cxx20_ std::string toString() const noexcept {
-                return "cow_ro_iterator["+aptrHexString((void*)iterator_)+"]";
+                return "cow_ro_iterator["+jau::to_string(iterator_)+"]";
             }
 #if 0
             __constexpr_cxx20_ operator std::string() const noexcept {
