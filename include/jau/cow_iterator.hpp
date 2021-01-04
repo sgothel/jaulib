@@ -37,6 +37,9 @@ namespace jau {
     template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
     class cow_ro_iterator;
 
+    template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
+    class cow_rw_iterator;
+
     /**
      * Implementation of a Copy-On-Write (CoW) read-write iterator for mutable value_type.<br>
      * Instance holds the 'shared value_type reference', Storage_ref_type,
@@ -52,7 +55,7 @@ namespace jau {
      */
     template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
     class cow_rw_iterator {
-        friend class cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>;
+        friend cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>;
 
         public:
             /** Actual iterator type of the contained native iterator, probably a simple pointer. */
@@ -63,11 +66,11 @@ namespace jau {
 
             CoW_container& cow_parent_;
             std::lock_guard<std::recursive_mutex> lock_;
-            Storage_ref_type new_store_;
+            Storage_ref_type store_ref_;
             iterator_type    iterator_;
 
             constexpr explicit cow_rw_iterator(CoW_container& cow_parent, Storage_ref_type& store, iterator_type iter) noexcept
-            : cow_parent_(cow_parent), lock_(cow_parent.get_write_mutex()), new_store_(store), iterator_(iter) {}
+            : cow_parent_(cow_parent), lock_(cow_parent.get_write_mutex()), store_ref_(store), iterator_(iter) {}
 
         public:
             typedef typename sub_traits_t::iterator_category    iterator_category;  // random_access_iterator_tag
@@ -89,12 +92,12 @@ namespace jau {
 
             constexpr cow_rw_iterator(CoW_container& cow_parent, iterator_type (*get_iterator)(Storage_ref_type&))
             : cow_parent_(cow_parent), lock_(cow_parent.get_write_mutex()),
-              new_store_(cow_parent.copy_store()), iterator_(get_iterator(new_store_)) {}
+              store_ref_(cow_parent.copy_store()), iterator_(get_iterator(store_ref_)) {}
 
 #if 0
             constexpr cow_rw_iterator(CoW_container& cow_parent, iterator_type iter)
             : cow_parent_(cow_parent), lock_(cow_parent.get_write_mutex()),
-              new_store_(cow_parent.copy_store()), iterator_(iter) {}
+              store_ref_(cow_parent.copy_store()), iterator_(iter) {}
 #endif
 
 #if __cplusplus > 201703L
@@ -103,19 +106,19 @@ namespace jau {
             ~cow_rw_iterator() noexcept
 #endif
             {
-                cow_parent_.set_store(std::move(new_store_));
+                cow_parent_.set_store(std::move(store_ref_));
             }
 
             // C++ named requirements: LegacyIterator: CopyConstructible
             constexpr cow_rw_iterator(const cow_rw_iterator& o) noexcept
             : cow_parent_(o.cow_parent_), lock_(cow_parent_.get_write_mutex()),
-              new_store_(o.new_store_), iterator_(o.iterator_) {}
+              store_ref_(o.store_ref_), iterator_(o.iterator_) {}
 
             // C++ named requirements: LegacyIterator: CopyAssignable
             constexpr cow_rw_iterator& operator=(const cow_rw_iterator& o) noexcept {
                 cow_parent_ = o.cow_parent_;
                 lock_ = cow_parent_.get_write_mutex();
-                new_store_ = o.new_store_;
+                store_ref_ = o.store_ref_;
                 iterator_ = o.iterator_;
                 return *this;
             }
@@ -123,9 +126,9 @@ namespace jau {
             // C++ named requirements: LegacyIterator: MoveConstructable
             constexpr cow_rw_iterator(cow_rw_iterator && o) noexcept
             : cow_parent_(std::move(o.cow_parent_)), lock_(cow_parent_.get_write_mutex()),
-              new_store_(std::move(o.new_store_)), iterator_(std::move(o.iterator_)) {
+              store_ref_(std::move(o.store_ref_)), iterator_(std::move(o.iterator_)) {
                 o.lock_ = nullptr; // ???
-                o.new_store_ = nullptr;
+                o.store_ref_ = nullptr;
                 // o.iterator_ = nullptr;
             }
 
@@ -133,9 +136,9 @@ namespace jau {
             constexpr cow_rw_iterator& operator=(cow_rw_iterator&& o) noexcept {
                 cow_parent_ = std::move(o.cow_parent_);
                 lock_ = cow_parent_.get_write_mutex();
-                new_store_ = std::move(o.new_store_);
+                store_ref_ = std::move(o.store_ref_);
                 iterator_ = std::move(o.iterator_);
-                o.new_store_ = nullptr;
+                o.store_ref_ = nullptr;
                 // o.iterator_ = nullptr;
                 return *this;
             }
@@ -144,7 +147,7 @@ namespace jau {
             void swap(cow_rw_iterator& o) noexcept {
                 std::swap( cow_parent_, o.cow_parent_);
                 // std::swap( lock_, o.lock_); // lock stays in each
-                std::swap( new_store_, o.new_store_);
+                std::swap( store_ref_, o.store_ref_);
                 std::swap( iterator_, o.iterator_);
             }
 
@@ -155,47 +158,40 @@ namespace jau {
 
             // Multipass guarantee equality
 
-            constexpr bool operator==(const cow_rw_iterator& rhs) const noexcept {
-                if( this == &rhs ) {
-                    return true;
-                }
-                // only testing identity of pointer, OK for Multipass guarantee
-                return new_store_ == rhs.new_store_ &&
-                       iterator_ == rhs.iterator_;
+            /**
+             * Returns signum or three-way comparison value
+             * <pre>
+             *    0 if equal (both, store and iteratore),
+             *   -1 if this->iterator_ < rhs_iter and
+             *    1 if this->iterator_ > rhs_iter (otherwise)
+             * </pre>
+             * @param rhs_store right-hand side store
+             * @param rhs_iter right-hand side iterator
+             */
+            constexpr int compare(const cow_rw_iterator& rhs) const noexcept {
+                return store_ref_ == rhs.store_ref_ && iterator_ == rhs.iterator_ ? 0
+                       : ( iterator_ < rhs.iterator_ ? -1 : 1);
             }
+
+            constexpr bool operator==(const cow_rw_iterator& rhs) const noexcept
+            { return compare(rhs) == 0; }
+
             constexpr bool operator!=(const cow_rw_iterator& rhs) const noexcept
-            { return !(*this == rhs); }
+            { return compare(rhs) != 0; }
 
             // Relation
 
-            constexpr bool operator<=(const cow_rw_iterator& rhs) const noexcept {
-                if( this == &rhs ) {
-                    return true;
-                }
-                return new_store_ == rhs.new_store_ &&
-                       iterator_ <= rhs.iterator_;
-            }
-            constexpr bool operator<(const cow_rw_iterator& rhs) const noexcept {
-                if( this == &rhs ) {
-                    return false;
-                }
-                return new_store_ == rhs.new_store_ &&
-                       iterator_ < rhs.iterator_;
-            }
-            constexpr bool operator>=(const cow_rw_iterator& rhs) const noexcept {
-                if( this == &rhs ) {
-                    return true;
-                }
-                return new_store_ == rhs.new_store_ &&
-                       iterator_ >= rhs.iterator_;
-            }
-            constexpr bool operator>(const cow_rw_iterator& rhs) const noexcept {
-                if( this == &rhs ) {
-                    return false;
-                }
-                return new_store_ == rhs.new_store_ &&
-                       iterator_ > rhs.iterator_;
-            }
+            constexpr bool operator<=(const cow_rw_iterator& rhs) const noexcept
+            { return compare(rhs) <= 0; }
+
+            constexpr bool operator<(const cow_rw_iterator& rhs) const noexcept
+            { return compare(rhs) < 0; }
+
+            constexpr bool operator>=(const cow_rw_iterator& rhs) const noexcept
+            { return compare(rhs) >= 0; }
+
+            constexpr bool operator>(const cow_rw_iterator& rhs) const noexcept
+            { return compare(rhs) > 0; }
 
             // Forward iterator requirements
 
@@ -223,7 +219,7 @@ namespace jau {
 
             /** Post-increment; Try to avoid: Low performance due to returning copy-ctor. */
             constexpr cow_rw_iterator operator++(int) noexcept
-            { return cow_rw_iterator(cow_parent_, new_store_, iterator_++); }
+            { return cow_rw_iterator(cow_parent_, store_ref_, iterator_++); }
 
             // Bidirectional iterator requirements
 
@@ -235,7 +231,7 @@ namespace jau {
 
             /** Post-decrement; Try to avoid: Low performance due to returning copy-ctor. */
             constexpr cow_rw_iterator operator--(int) noexcept
-            { return cow_rw_iterator(cow_parent_, new_store_, iterator_--); }
+            { return cow_rw_iterator(cow_parent_, store_ref_, iterator_--); }
 
             // Random access iterator requirements
 
@@ -253,7 +249,7 @@ namespace jau {
 
             /** Binary 'iterator + element_count'; Try to avoid: Low performance due to returning copy-ctor. */
             constexpr cow_rw_iterator operator+(difference_type rhs) const noexcept
-            { return cow_rw_iterator(cow_parent_, new_store_, iterator_ + rhs); }
+            { return cow_rw_iterator(cow_parent_, store_ref_, iterator_ + rhs); }
 
             /** Subtraction-assignment of 'element_count'; Well performing, return *this.  */
             constexpr cow_rw_iterator& operator-=(difference_type i) noexcept
@@ -261,7 +257,7 @@ namespace jau {
 
             /** Binary 'iterator - element_count'; Try to avoid: Low performance due to returning copy-ctor. */
             constexpr cow_rw_iterator operator-(difference_type rhs) const noexcept
-            { return cow_rw_iterator(cow_parent_, new_store_, iterator_ - rhs); }
+            { return cow_rw_iterator(cow_parent_, store_ref_, iterator_ - rhs); }
 
             // constexpr const cow_rw_iterator& base() const noexcept
             // { return iterator_; }
@@ -294,7 +290,7 @@ namespace jau {
         private:
             typedef std::iterator_traits<iterator_type>         sub_traits_t;
 
-            Storage_ref_type store_holder_;
+            Storage_ref_type store_ref_;
             iterator_type    iterator_;
 
         public:
@@ -315,45 +311,57 @@ namespace jau {
 
         public:
             constexpr cow_ro_iterator() noexcept
-            : store_holder_(nullptr), iterator_() { }
+            : store_ref_(nullptr), iterator_() { }
 
             constexpr cow_ro_iterator(Storage_ref_type store, iterator_type iter) noexcept
-            : store_holder_(store), iterator_(iter) { }
+            : store_ref_(store), iterator_(iter) { }
 
-            // Conversion constructor: cow_rw_iterator -> cow_ro_iterator
-            constexpr cow_ro_iterator(const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& o) noexcept
-            : store_holder_(o.new_store_), iterator_(o.iterator_) {}
+            /**
+             * Conversion constructor: cow_rw_iterator -> cow_ro_iterator
+             * <p>
+             * Explicit due to high costs of potential automatic and accidental conversion,
+             * using a temporary cow_rw_iterator instance involving storage copy etc.
+             * </p>
+             */
+            constexpr explicit cow_ro_iterator(const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& o) noexcept
+            : store_ref_(o.store_ref_), iterator_(o.iterator_) {}
 
             // C++ named requirements: LegacyIterator: CopyConstructible
             constexpr cow_ro_iterator(const cow_ro_iterator& o) noexcept
-            : store_holder_(o.store_holder_), iterator_(o.iterator_) {}
+            : store_ref_(o.store_ref_), iterator_(o.iterator_) {}
 
             // C++ named requirements: LegacyIterator: CopyAssignable
             constexpr cow_ro_iterator& operator=(const cow_ro_iterator& o) noexcept {
-                store_holder_ = o.store_holder_;
+                store_ref_ = o.store_ref_;
+                iterator_ = o.iterator_;
+                return *this;
+            }
+
+            constexpr cow_ro_iterator& operator=(const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& o) noexcept {
+                store_ref_ = o.store_ref_;
                 iterator_ = o.iterator_;
                 return *this;
             }
 
             // C++ named requirements: LegacyIterator: MoveConstructable
             constexpr cow_ro_iterator(cow_ro_iterator && o) noexcept
-            : store_holder_(std::move(o.store_holder_)), iterator_(std::move(o.iterator_)) {
-                o.store_holder_ = nullptr;
+            : store_ref_(std::move(o.store_ref_)), iterator_(std::move(o.iterator_)) {
+                o.store_ref_ = nullptr;
                 // o.iterator_ = nullptr;
             }
 
             // C++ named requirements: LegacyIterator: MoveAssignable
             constexpr cow_ro_iterator& operator=(cow_ro_iterator&& o) noexcept {
-                store_holder_ = std::move(o.store_holder_);
+                store_ref_ = std::move(o.store_ref_);
                 iterator_ = std::move(o.iterator_);
-                o.store_holder_ = nullptr;
+                o.store_ref_ = nullptr;
                 // o.iterator_ = nullptr;
                 return *this;
             }
 
             // C++ named requirements: LegacyIterator: Swappable
             void swap(cow_ro_iterator& o) noexcept {
-                std::swap( store_holder_, o.store_holder_);
+                std::swap( store_ref_, o.store_ref_);
                 std::swap( iterator_, o.iterator_);
             }
 
@@ -364,47 +372,45 @@ namespace jau {
 
             // Multipass guarantee equality
 
-            constexpr bool operator==(const cow_ro_iterator& rhs) const noexcept {
-                if( this == &rhs ) {
-                    return true;
-                }
-                // only testing identity of pointer, OK for Multipass guarantee
-                return store_holder_ == rhs.store_holder_ &&
-                       iterator_ == rhs.iterator_;
+            /**
+             * Returns signum or three-way comparison value
+             * <pre>
+             *    0 if equal (both, store and iteratore),
+             *   -1 if this->iterator_ < rhs_iter and
+             *    1 if this->iterator_ > rhs_iter (otherwise)
+             * </pre>
+             * @param rhs_store right-hand side store
+             * @param rhs_iter right-hand side iterator
+             */
+            constexpr int compare(const cow_ro_iterator& rhs) const noexcept {
+                return store_ref_ == rhs.store_ref_ && iterator_ == rhs.iterator_ ? 0
+                       : ( iterator_ < rhs.iterator_ ? -1 : 1);
             }
+
+            constexpr int compare(const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) const noexcept {
+                return store_ref_ == rhs.store_ref_ && iterator_ == rhs.iterator_ ? 0
+                       : ( iterator_ < rhs.iterator_ ? -1 : 1);
+            }
+
+            constexpr bool operator==(const cow_ro_iterator& rhs) const noexcept
+            { return compare(rhs) == 0; }
+
             constexpr bool operator!=(const cow_ro_iterator& rhs) const noexcept
-            { return !(*this == rhs); }
+            { return compare(rhs) != 0; }
 
             // Relation
 
-            constexpr bool operator<=(const cow_ro_iterator& rhs) const noexcept {
-                if( this == &rhs ) {
-                    return true;
-                }
-                return store_holder_ == rhs.store_holder_ &&
-                       iterator_ <= rhs.iterator_;
-            }
-            constexpr bool operator<(const cow_ro_iterator& rhs) const noexcept {
-                if( this == &rhs ) {
-                    return false;
-                }
-                return store_holder_ == rhs.store_holder_ &&
-                       iterator_ < rhs.iterator_;
-            }
-            constexpr bool operator>=(const cow_ro_iterator& rhs) const noexcept {
-                if( this == &rhs ) {
-                    return true;
-                }
-                return store_holder_ == rhs.store_holder_ &&
-                       iterator_ >= rhs.iterator_;
-            }
-            constexpr bool operator>(const cow_ro_iterator& rhs) const noexcept {
-                if( this == &rhs ) {
-                    return false;
-                }
-                return store_holder_ == rhs.store_holder_ &&
-                       iterator_ > rhs.iterator_;
-            }
+            constexpr bool operator<=(const cow_ro_iterator& rhs) const noexcept
+            { return compare(rhs) <= 0; }
+
+            constexpr bool operator<(const cow_ro_iterator& rhs) const noexcept
+            { return compare(rhs) < 0; }
+
+            constexpr bool operator>=(const cow_ro_iterator& rhs) const noexcept
+            { return compare(rhs) >= 0; }
+
+            constexpr bool operator>(const cow_ro_iterator& rhs) const noexcept
+            { return compare(rhs) > 0; }
 
             // Forward iterator requirements
 
@@ -424,7 +430,7 @@ namespace jau {
 
             /** Post-increment; Try to avoid: Low performance due to returning copy-ctor. */
             constexpr cow_ro_iterator operator++(int) noexcept
-            { return cow_ro_iterator(store_holder_, iterator_++); }
+            { return cow_ro_iterator(store_ref_, iterator_++); }
 
             // Bidirectional iterator requirements
 
@@ -436,7 +442,7 @@ namespace jau {
 
             /** Post-decrement; Try to avoid: Low performance due to returning copy-ctor. */
             constexpr cow_ro_iterator operator--(int) noexcept
-            { return cow_ro_iterator(store_holder_, iterator_--); }
+            { return cow_ro_iterator(store_ref_, iterator_--); }
 
             // Random access iterator requirements
 
@@ -450,7 +456,7 @@ namespace jau {
 
             /** Binary 'iterator + element_count'; Try to avoid: Low performance due to returning copy-ctor. */
             constexpr cow_ro_iterator operator+(difference_type rhs) const noexcept
-            { return cow_ro_iterator(store_holder_, iterator_ + rhs); }
+            { return cow_ro_iterator(store_ref_, iterator_ + rhs); }
 
             /** Subtraction-assignment of 'element_count'; Well performing, return *this.  */
             constexpr cow_ro_iterator& operator-=(difference_type i) noexcept
@@ -458,15 +464,91 @@ namespace jau {
 
             /** Binary 'iterator - element_count'; Try to avoid: Low performance due to returning copy-ctor. */
             constexpr cow_ro_iterator operator-(difference_type rhs) const noexcept
-            { return cow_ro_iterator(store_holder_, iterator_ - rhs); }
+            { return cow_ro_iterator(store_ref_, iterator_ - rhs); }
 
             // Distance or element count, binary subtraction of two iterator.
 
             /** Binary 'iterator - iterator -> element_count'; Well performing, return element_count of type difference_type. */
             constexpr difference_type operator-(const cow_ro_iterator& rhs) const noexcept
             { return iterator_ - rhs.iterator_; }
+
+            constexpr difference_type distance(const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) const noexcept
+            { return iterator_ - rhs.iterator_; }
     };
 
 } /* namespace jau */
+
+template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
+constexpr bool operator==(const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
+                          const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
+{ return lhs.compare(rhs) == 0; }
+
+template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
+constexpr bool operator!=(const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
+                          const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
+{ return lhs.compare(rhs) != 0; }
+
+template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
+constexpr bool operator==(const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
+                          const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
+{ return rhs.compare(lhs) == 0; }
+
+template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
+constexpr bool operator!=(const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
+                          const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
+{ return rhs.compare(lhs) != 0; }
+
+template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
+constexpr bool operator<=(const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
+                          const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
+{ return lhs.compare(rhs) <= 0; }
+
+template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
+constexpr bool operator<=(const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
+                          const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
+{ return rhs.compare(lhs) > 0; }
+
+template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
+constexpr bool operator<(const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
+                         const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
+{ return lhs.compare(rhs) < 0; }
+
+template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
+constexpr bool operator<(const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
+                         const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
+{ return rhs.compare(lhs) >= 0; }
+
+template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
+constexpr bool operator>=(const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
+                          const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
+{ return lhs.compare(rhs) >= 0; }
+
+template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
+constexpr bool operator>=(const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
+                          const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
+{ return rhs.compare(lhs) < 0; }
+
+template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
+constexpr bool operator>(const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
+                         const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
+{ return lhs.compare(rhs) > 0; }
+
+template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
+constexpr bool operator>(const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
+                         const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
+{ return rhs.compare(lhs) <= 0; }
+
+template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
+constexpr typename Storage_type::difference_type operator-
+            ( const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
+              const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
+{ return lhs.distance(rhs); }
+
+template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
+constexpr typename Storage_type::difference_type operator-
+            ( const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
+              const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
+{ return rhs.distance(lhs) * -1; }
+
 
 #endif /* JAU_COW_ITERATOR_HPP_ */
