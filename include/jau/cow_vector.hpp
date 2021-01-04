@@ -120,7 +120,7 @@ namespace jau {
              * Using jau::cow_vector::get_snapshot() at construction.
              * </p>
              */
-            typedef cow_ro_iterator<storage_t, storage_ref_t>   const_iterator;
+            typedef cow_ro_iterator<storage_t, storage_ref_t, cow_vector> const_iterator;
 
             /**
              * Mutable, read-write iterator, holding the write-lock and a store copy until destruction.
@@ -293,11 +293,11 @@ namespace jau {
             // iterator, mutable, read-write
 
             constexpr iterator begin() noexcept {
-                return iterator(*this, store_ref->begin());
+                return iterator(*this, [](storage_ref_t& new_store) -> typename storage_t::iterator { return new_store->begin(); } );
             }
 
             constexpr iterator end() noexcept {
-                return iterator(*this, store_ref->end());
+                return iterator(*this, [](storage_ref_t& new_store) -> typename storage_t::iterator { return new_store->end(); } );
             }
 
             // read access

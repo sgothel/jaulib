@@ -166,7 +166,7 @@ namespace jau {
                     new (dest) value_type( *first ); // placement new
                 }
             }
-            constexpr static pointer clone_range(allocator_type& alloc, const_iterator first, const_iterator last) {
+            constexpr static pointer clone_range(allocator_type& alloc, iterator first, const_iterator last) {
                 pointer dest = allocStore(alloc, size_type(last-first));
                 ctor_copy_range(dest, first, last);
                 return dest;
