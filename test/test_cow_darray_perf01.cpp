@@ -36,6 +36,7 @@
 #include "test_datatype01.hpp"
 
 #include <jau/basic_types.hpp>
+#include <jau/basic_algos.hpp>
 #include <jau/darray.hpp>
 #include <jau/cow_darray.hpp>
 #include <jau/cow_vector.hpp>
@@ -49,8 +50,8 @@ using namespace jau;
 static uint8_t start_addr_b[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 static Addr48Bit start_addr(start_addr_b);
 
-// #define USE_ITER_ALGO 1
-// #define USE_EMPLACE 1
+// #define USE_STD_ITER_ALGO 1
+#define USE_JAU_ITER_ALGO 1
 
 /****************************************************************************************
  ****************************************************************************************/
@@ -69,9 +70,17 @@ DataType01 * findDataSet01_idx(T& data, DataType01 const & elem) noexcept {
 
 template<class T>
 const DataType01 * findDataSet01_itr(T& data, DataType01 const & elem) noexcept {
-#if defined(USE_ITER_ALGO)
+#if defined(USE_STD_ITER_ALGO)
+    // much slower, approx 3x over 1000 * 1000, why?
     typename T::const_iterator end = data.cend();
     auto it = std::find( data.cbegin(), end, elem);
+    if( it != end ) {
+        return &(*it);
+    }
+#elif defined (USE_JAU_ITER_ALGO)
+    // same logic, much faster
+    typename T::const_iterator end = data.cend();
+    auto it = jau::find( data.cbegin(), end, elem);
     if( it != end ) {
         return &(*it);
     }
@@ -98,8 +107,12 @@ static void test_00_list_idx(T& data) {
 
 template<class T>
 static void test_00_list_itr(T& data) {
-#if 0 && defined(USE_ITER_ALGO)
+#if defined(USE_STD_ITER_ALGO)
+    // slower, why?
     std::for_each(data.cbegin(), data.cend(), [](const DataType01 & e) { e.nop(); });
+#elif defined (USE_JAU_ITER_ALGO)
+    // same logic, faster
+    jau::for_each(data.cbegin(), data.cend(), [](const DataType01 & e) { e.nop(); });
 #else
     typename T::const_iterator iter = data.cbegin();
     typename T::const_iterator end = data.cend();
@@ -150,11 +163,7 @@ static void test_00_seq_fill(T& data, const Size_type size) {
     Size_type i=0;
 
     for(; i<size && a0.next(); i++) {
-#if defined(USE_EMPLACE)
         data.emplace_back( a0, static_cast<uint8_t>(1) );
-#else
-        data.push_back( std::move( DataType01(a0, static_cast<uint8_t>(1)) ) );
-#endif
     }
     REQUIRE(i == data.size());
 }
@@ -168,11 +177,7 @@ static void test_00_seq_fill_unique_idx(T& data, const Size_type size) {
         DataType01 elem(a0, static_cast<uint8_t>(1));
         DataType01* exist = findDataSet01_idx<T, Size_type>(data, elem);
         if( nullptr == exist ) {
-#if defined(USE_EMPLACE)
-            data.emplace_back( a0, static_cast<uint8_t>(1) );
-#else
-            data.push_back( std::move( DataType01(a0, static_cast<uint8_t>(1)) ) );
-#endif
+            data.push_back( std::move( elem ) );
             fi++;
         }
     }
@@ -188,11 +193,7 @@ static void test_00_seq_fill_unique_itr(T& data, const Size_type size) {
         DataType01 elem(a0, static_cast<uint8_t>(1));
         const DataType01* exist = findDataSet01_itr<T>(data, elem);
         if( nullptr == exist ) {
-#if defined(USE_EMPLACE)
-            data.emplace_back( a0, static_cast<uint8_t>(1) );
-#else
-            data.push_back( std::move( DataType01(a0, static_cast<uint8_t>(1)) ) );
-#endif
+            data.push_back( std::move( elem ) );
             fi++;
         }
     }
