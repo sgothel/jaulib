@@ -532,91 +532,91 @@ namespace jau {
 #endif
     };
 
+    template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
+    std::ostream & operator << (std::ostream &out, const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container> &c) {
+        out << c.toString();
+        return out;
+    }
+
+    template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
+    std::ostream & operator << (std::ostream &out, const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container> &c) {
+        out << c.toString();
+        return out;
+    }
+
+    template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
+    constexpr bool operator==(const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
+                              const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
+    { return lhs.compare(rhs) == 0; }
+
+    template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
+    constexpr bool operator!=(const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
+                              const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
+    { return lhs.compare(rhs) != 0; }
+
+    template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
+    constexpr bool operator==(const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
+                              const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
+    { return rhs.compare(lhs) == 0; }
+
+    template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
+    constexpr bool operator!=(const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
+                              const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
+    { return rhs.compare(lhs) != 0; }
+
+    template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
+    constexpr bool operator<=(const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
+                              const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
+    { return lhs.compare(rhs) <= 0; }
+
+    template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
+    constexpr bool operator<=(const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
+                              const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
+    { return rhs.compare(lhs) > 0; }
+
+    template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
+    constexpr bool operator<(const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
+                             const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
+    { return lhs.compare(rhs) < 0; }
+
+    template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
+    constexpr bool operator<(const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
+                             const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
+    { return rhs.compare(lhs) >= 0; }
+
+    template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
+    constexpr bool operator>=(const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
+                              const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
+    { return lhs.compare(rhs) >= 0; }
+
+    template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
+    constexpr bool operator>=(const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
+                              const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
+    { return rhs.compare(lhs) < 0; }
+
+    template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
+    constexpr bool operator>(const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
+                             const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
+    { return lhs.compare(rhs) > 0; }
+
+    template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
+    constexpr bool operator>(const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
+                             const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
+    { return rhs.compare(lhs) <= 0; }
+
+    template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
+    constexpr typename Storage_type::difference_type operator-
+                ( const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
+                  const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
+    { return lhs.distance(rhs); }
+
+    template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
+    constexpr typename Storage_type::difference_type operator-
+                ( const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
+                  const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
+    { return rhs.distance(lhs) * -1; }
+
 } /* namespace jau */
-
-template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
-std::ostream & operator << (std::ostream &out, const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container> &c) {
-    out << c.toString();
-    return out;
-}
-
-template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
-std::ostream & operator << (std::ostream &out, const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container> &c) {
-    out << c.toString();
-    return out;
-}
-
-template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
-constexpr bool operator==(const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
-                          const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
-{ return lhs.compare(rhs) == 0; }
-
-template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
-constexpr bool operator!=(const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
-                          const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
-{ return lhs.compare(rhs) != 0; }
-
-template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
-constexpr bool operator==(const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
-                          const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
-{ return rhs.compare(lhs) == 0; }
-
-template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
-constexpr bool operator!=(const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
-                          const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
-{ return rhs.compare(lhs) != 0; }
-
-template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
-constexpr bool operator<=(const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
-                          const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
-{ return lhs.compare(rhs) <= 0; }
-
-template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
-constexpr bool operator<=(const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
-                          const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
-{ return rhs.compare(lhs) > 0; }
-
-template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
-constexpr bool operator<(const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
-                         const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
-{ return lhs.compare(rhs) < 0; }
-
-template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
-constexpr bool operator<(const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
-                         const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
-{ return rhs.compare(lhs) >= 0; }
-
-template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
-constexpr bool operator>=(const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
-                          const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
-{ return lhs.compare(rhs) >= 0; }
-
-template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
-constexpr bool operator>=(const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
-                          const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
-{ return rhs.compare(lhs) < 0; }
-
-template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
-constexpr bool operator>(const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
-                         const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
-{ return lhs.compare(rhs) > 0; }
-
-template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
-constexpr bool operator>(const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
-                         const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
-{ return rhs.compare(lhs) <= 0; }
-
-template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
-constexpr typename Storage_type::difference_type operator-
-            ( const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
-              const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
-{ return lhs.distance(rhs); }
-
-template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
-constexpr typename Storage_type::difference_type operator-
-            ( const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
-              const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
-{ return rhs.distance(lhs) * -1; }
 
 
 #endif /* JAU_COW_ITERATOR_HPP_ */
