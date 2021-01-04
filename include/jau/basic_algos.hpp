@@ -161,7 +161,7 @@ namespace jau {
     constexpr UnaryFunction for_each_idx(InputArray &array, UnaryFunction f)
     {
         const size_t size = array.size();
-        for (size_t i = 0; i < size; i++) {
+        for (size_t i = 0; i < size; ++i) {
             f(array[i]);
         }
         return f; // implicit move since C++11
@@ -185,7 +185,7 @@ namespace jau {
         const std::lock_guard<Mutex> lock(mtx); // RAII-style acquire and relinquish via destructor
 
         const size_t size = array.size();
-        for (size_t i = 0; i < size; i++) {
+        for (size_t i = 0; i < size; ++i) {
             f(array[i]);
         }
         return f; // implicit move since C++11
