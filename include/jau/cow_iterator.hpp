@@ -86,13 +86,19 @@ namespace jau {
      * Instance holds the 'shared value_type reference', Storage_ref_type,
      * of the current CoW storage until destruction.
      * <p>
-     * This iterator simply wraps the native iterator of type 'iterator_type'
+     * This iterator wraps the native iterator of type 'iterator_type'
      * and manages the CoW related resource lifecycle.
      * </p>
      * <p>
      * At destruction, the mutated local storage will replace the
      * storage in the CoW container and the lock will be released.
      * </p>
+     * <p>
+     * Due to the costly nature of mutable CoW resource management,
+     * consider using jau::cow_rw_iterator if elements won't get mutated
+     * or any changes can be discarded.
+     * </p>
+     * @see jau::cow_darray
      */
     template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
     class cow_rw_iterator {
@@ -325,8 +331,16 @@ namespace jau {
      * and manages the CoW related resource lifecycle.
      * </p>
      * <p>
+     * This iterator is the preferred choice if no mutations are made to the elements state
+     * itself, or all changes can be discarded after the iterator's destruction.<br>
+     * This avoids the costly mutex lock and storage copy of jau::cow_rw_iterator.<br>
+     * Also see jau::for_each_fidelity to iterate through in this good faith fashion.
+     * </p>
+     * <p>
      * Implementation complies with iterator_category 'random_access_iterator_tag'
      * </p>
+     * @see jau::for_each_fidelity
+     * @see jau::cow_darray
      */
     template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
     class cow_ro_iterator {

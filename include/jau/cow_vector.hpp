@@ -93,7 +93,11 @@ namespace jau {
      * - Sequentially Consistent (SC) ordering or SC-DRF (data race free) <https://en.cppreference.com/w/cpp/atomic/memory_order#Sequentially-consistent_ordering>
      * - std::memory_order <https://en.cppreference.com/w/cpp/atomic/memory_order>
      * </pre>
-     * \deprecated { jau::cow_vector will be retired, use jau::cow_darray and potentially jau::darray. }
+     * \deprecated jau::cow_vector will be retired, use jau::cow_darray and potentially jau::darray.
+     * @see jau::cow_darray
+     * @see jau::cow_ro_iterator
+     * @see jau::for_each_fidelity
+     * @see jau::cow_rw_iterator
      */
     template <typename Value_type, typename Alloc_type = std::allocator<Value_type>>
     class cow_vector

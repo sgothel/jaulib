@@ -27,6 +27,7 @@
 #define JAU_BASIC_ALGOS_HPP_
 
 #include <mutex>
+#include <type_traits>
 
 namespace jau {
 
@@ -124,6 +125,57 @@ namespace jau {
     {
         for (; first != last; ++first) {
             f(*first);
+        }
+        return f; // implicit move since C++11
+    }
+
+    /**
+     * Like jau::for_each(), see above.
+     * <p>
+     * Additionally this template function removes
+     * the <code>const</code> qualifier
+     * of the <code>UnaryFunction</code> sole argument.<br>
+     * The latter is retrieved by dereferencing the iterator,
+     * which might expose the <code>const</code> qualifier if
+     * the iterator is a <code>const_iterator</code>.
+     * </p>
+     * <p>
+     * Implementation casts argument in the following fashion
+     * <code>const_cast<value_type*>(&arg)</code>,
+     * allowing to use <code>const_iterator</code> and subsequent
+     * non-const features of the argument, see below.
+     * </p>
+     * <p>
+     * Such situations may occur when preferring to use
+     * the <code>const_iterator</code> over non-const.<br>
+     * jau::cow_darray is such a scenario, where one might
+     * not mutate the elements of the container itself
+     * but needs to invoke non-const functions <i>in good faith</i>.<br>
+     * Here we can avoid costly side-effects of copying the CoW storage for later replacement.<br>
+     * See jau::cow_ro_iterator and jau::cow_rw_iterator
+     * in conjunction with jau::cow_darray.
+     * </p>
+     * <p>
+     * Requirements for the given IteratorIt type are to
+     * have typename <code>InputIt::value_type</code> available.
+     * </p>
+     * @tparam InputIt the iterator type, which might be a 'const_iterator' for non const types.
+     * @tparam UnaryFunction
+     * @param first range start of elements to apply the function
+     * @param last range end of elements to apply the function
+     * @param f the function object, like <code>void fun(const Type &a)</code>
+     * @return the function
+     * @see jau::cow_darray
+     * @see jau::cow_ro_iterator
+     * @see jau::cow_rw_iterator
+     */
+    template<class InputIt, class UnaryFunction>
+    constexpr UnaryFunction for_each_fidelity(InputIt first, InputIt last, UnaryFunction f)
+    {
+        typedef typename InputIt::value_type value_type;
+
+        for (; first != last; ++first) {
+            f( *const_cast<value_type*>( & (*first) ) );
         }
         return f; // implicit move since C++11
     }
