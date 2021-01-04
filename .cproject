@@ -277,7 +277,7 @@
 						<entry excluding="catch_main.cpp" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="include/catch2"/>
 						<entry excluding="test/catch2_my_main.cpp" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="include/jau"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="src"/>
-						<entry excluding="test_cow_darray_01.cpp|test_datatype01.hpp|test_floatepsilon01.cpp|test_functiondef01.cpp|test_hashset_perf01.cpp|test_intdecstring01.cpp|test_lfringbuffer01.cpp|test_lfringbuffer11.cpp|test_mm_sc_drf_00.cpp|test_mm_sc_drf_01.cpp" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="test"/>
+						<entry excluding="test_cow_darray_01.cpp|test_cow_iterator_01.cpp|test_datatype01.hpp|test_floatepsilon01.cpp|test_functiondef01.cpp|test_hashset_perf01.cpp|test_intdecstring01.cpp|test_lfringbuffer01.cpp|test_lfringbuffer11.cpp|test_mm_sc_drf_00.cpp|test_mm_sc_drf_01.cpp" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="test"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
