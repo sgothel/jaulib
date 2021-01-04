@@ -39,6 +39,7 @@ extern "C" {
 }
 
 #include <jau/int_math.hpp>
+#include <jau/cpp_lang_macros.hpp>
 #include <jau/packed_attribute.hpp>
 
 namespace jau {
@@ -875,7 +876,7 @@ namespace jau {
          * </p>
          */
         static const char * name() {
-#if defined(__GXX_RTTI)
+#if defined(__cxx_rtti_available__)
             return typeid(T).name();
 #else
             return "unnamed_type";
