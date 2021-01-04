@@ -110,6 +110,11 @@ Changes
 **0.3.0**
 
 * TODO
+* Passed gcc-10, gcc-11, clang-9 and clang-11
+* Passed detailed cow_iterator test.
+* jau::cow_vector is marked deprecated, as only jau::cow_darray can give certain guarantees using jau::darray
+* jau::cow_vector is aligned to jau::cow_darray and also uses jau::cow_ro_iterator and jau::cow_rw_iterator
+* Added jau::darray and jau::cow_darray (using jau::cow_ro_iterator and jau::cow_rw_iterator)
 * Test: Using imported Catch2 (v3-devel) for C++ unit testing
 * Reduced ringbuffer to single implementation, adding move-operations
 * Added basic_types.hpp: 'to_decimal_string(..)' implementing <type>DecString() inlines.
