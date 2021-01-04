@@ -53,4 +53,23 @@
      */
     #define __constexpr_non_literal_mutex__
 
+    /**
+     * Set define if RTTI is enabled during compilation,
+     * implying its runtime availability.
+     * <pre>
+     * - clang ('__clang__') may have '__has_feature(cxx_rtti)'
+     * - g++   ('__GNUC__')  may have '__GXX_RTTI'
+     * - msvc  (_MSC_VER)    may have: '_CPPRTTI'
+     * </pre>
+     */
+    #if defined(__clang__)
+        #if __has_feature(cxx_rtti)
+            #define __cxx_rtti_available__ 1
+        #endif
+    #else
+        #if defined(__GXX_RTTI) || defined(_CPPRTTI)
+            #define __cxx_rtti_available__ 1
+        #endif
+    #endif
+
 #endif /* CPP_LANG_MACROS_HPP_ */
