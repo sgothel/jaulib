@@ -41,6 +41,8 @@
 #include <jau/cow_darray.hpp>
 #include <jau/cow_vector.hpp>
 #include <jau/counting_allocator.hpp>
+#include <jau/callocator.hpp>
+#include <jau/counting_callocator.hpp>
 
 /**
  * Test jau:cow_[ro|rw]_iterator special properties from jau::cow_darray and jau::cow_vector in detail.
@@ -55,9 +57,9 @@ static uint8_t start_addr_b[] = {0x20, 0x26, 0x2A, 0x01, 0x20, 0x10};
 static Addr48Bit start_addr(start_addr_b);
 
 typedef std::vector<DataType01, counting_allocator<DataType01>> std_vector_DataType01;
-typedef jau::darray<DataType01, counting_allocator<DataType01>> jau_darray_DataType01;
+typedef jau::darray<DataType01, counting_callocator<DataType01>> jau_darray_DataType01;
 typedef jau::cow_vector<DataType01, counting_allocator<DataType01>> jau_cow_vector_DataType01;
-typedef jau::cow_darray<DataType01, counting_allocator<DataType01>> jau_cow_darray_DataType01;
+typedef jau::cow_darray<DataType01, counting_callocator<DataType01>> jau_cow_darray_DataType01;
 
 JAU_TYPENAME_CUE_ALL(std_vector_DataType01)
 JAU_TYPENAME_CUE_ALL(jau_darray_DataType01)

@@ -39,7 +39,7 @@
 #include <jau/debug.hpp>
 #include <jau/basic_types.hpp>
 #include <jau/ordered_atomic.hpp>
-
+#include <jau/callocator.hpp>
 
 namespace jau {
 
@@ -76,7 +76,7 @@ namespace jau {
      * </ul>
      * </p>
      */
-    template <typename Value_type, typename Alloc_type = std::allocator<Value_type>, typename Size_type = jau::nsize_t>
+    template <typename Value_type, typename Alloc_type = jau::callocator<Value_type>, typename Size_type = jau::nsize_t, bool use_realloc=true>
     class darray
     {
         public:
@@ -101,11 +101,11 @@ namespace jau {
         private:
             static constexpr size_type DIFF_MAX = std::numeric_limits<difference_type>::max();
 
-            constexpr static void freeStore(allocator_type& alloc, value_type *ptr, const size_type size_) {
-                if( nullptr != ptr ) {
-                    alloc.deallocate(ptr, size_);
-                }
-            }
+            allocator_type alloc_inst;
+            pointer begin_;
+            pointer end_;
+            pointer storage_end_;
+            float growth_factor_;
 
             /**
              * Allocates a new store using allocator_type.
@@ -119,13 +119,13 @@ namespace jau {
              * @param size_ the element count, must be <= <code>std::numeric_limits<difference_type>::max()</code>
              * @return nullptr if given <code>0 == size_</code> or the newly allocated memory
              */
-            constexpr static value_type * allocStore(allocator_type& alloc, const size_type size_) {
+            constexpr value_type * allocStore(const size_type size_) {
                 if( 0 != size_ ) {
                     if( size_ > DIFF_MAX ) {
                         throw jau::IllegalArgumentException("allocData "+std::to_string(size_)+" > difference_type max "+
                                 std::to_string(DIFF_MAX), E_FILE_LINE);
                     }
-                    value_type * m = alloc.allocate(size_);
+                    value_type * m = alloc_inst.allocate(size_);
                     if( nullptr == m ) {
                         throw jau::OutOfMemoryError("alloc "+std::to_string(size_)+" elements * "+
                                 std::to_string(sizeof(value_type))+" bytes/element = "+
@@ -136,11 +136,26 @@ namespace jau {
                 return nullptr;
             }
 
-            float growth_factor_;
-            allocator_type alloc_inst;
-            pointer begin_;
-            pointer end_;
-            pointer storage_end_;
+            constexpr value_type * reallocStore(const size_type new_capacity_) {
+                if( new_capacity_ > DIFF_MAX ) {
+                    throw jau::IllegalArgumentException("allocData "+std::to_string(new_capacity_)+" > difference_type max "+
+                            std::to_string(DIFF_MAX), E_FILE_LINE);
+                }
+                value_type * m = alloc_inst.reallocate(begin_, storage_end_-begin_, new_capacity_);
+                if( nullptr == m ) {
+                    free(begin_); // has not been touched by realloc
+                    throw jau::OutOfMemoryError("alloc "+std::to_string(new_capacity_)+" elements * "+
+                            std::to_string(sizeof(value_type))+" bytes/element = "+
+                            std::to_string(new_capacity_ * sizeof(value_type))+" bytes -> nullptr", E_FILE_LINE);
+                }
+                return m;
+            }
+
+            constexpr void freeStore() {
+                if( nullptr != begin_ ) {
+                    alloc_inst.deallocate(begin_, storage_end_-begin_);
+                }
+            }
 
             constexpr void set_iterator(pointer new_storage_, difference_type size_, difference_type capacity_) noexcept {
                 begin_       = new_storage_;
@@ -166,12 +181,17 @@ namespace jau {
                     new (dest) value_type( *first ); // placement new
                 }
             }
-            constexpr static pointer clone_range(allocator_type& alloc, iterator first, const_iterator last) {
-                pointer dest = allocStore(alloc, size_type(last-first));
+            constexpr pointer clone_range(iterator first, const_iterator last) {
+                pointer dest = allocStore(size_type(last-first));
                 ctor_copy_range(dest, first, last);
                 return dest;
             }
-            constexpr static pointer clone_range(allocator_type& alloc, const size_type dest_capacity, iterator first, const_iterator last) {
+            constexpr pointer clone_range(const size_type dest_capacity, iterator first, const_iterator last) {
+                pointer dest = allocStore(dest_capacity);
+                ctor_copy_range(dest, first, last);
+                return dest;
+            }
+            constexpr pointer clone_range_check(const size_type dest_capacity, iterator first, const_iterator last) {
                 if( first > last ) {
                     throw jau::IllegalArgumentException("first "+aptrHexString(first)+" > last "+aptrHexString(last), E_FILE_LINE);
                 }
@@ -179,7 +199,7 @@ namespace jau {
                     throw jau::IllegalArgumentException("capacity "+std::to_string(dest_capacity)+" < source range "+
                                                         std::to_string(difference_type(last-first)), E_FILE_LINE);
                 }
-                pointer dest = allocStore(alloc, dest_capacity);
+                pointer dest = allocStore(dest_capacity);
                 ctor_copy_range(dest, first, last);
                 return dest;
             }
@@ -191,7 +211,7 @@ namespace jau {
                 }
             }
             template< class InputIt >
-            constexpr static pointer clone_range_foreign(allocator_type& alloc, const size_type dest_capacity, InputIt first, InputIt last) {
+            constexpr pointer clone_range_foreign(const size_type dest_capacity, InputIt first, InputIt last) {
                 if( first > last ) {
                     throw jau::IllegalArgumentException("first "+std::to_string(first)+" > last "+
                                                         std::to_string(last), E_FILE_LINE);
@@ -200,23 +220,37 @@ namespace jau {
                     throw jau::IllegalArgumentException("capacity "+std::to_string(dest_capacity)+" < source range "+
                                                         std::to_string(difference_type(last-first)), E_FILE_LINE);
                 }
-                pointer dest = allocStore(alloc, dest_capacity);
+                pointer dest = allocStore(dest_capacity);
                 ctor_copy_range_foreign(dest, first, last);
                 return dest;
             }
 
-            constexpr static void ctor_move_range(pointer dest, iterator first, const_iterator last) {
-                for(; first < last; ++dest, ++first) {
-                    new (dest) value_type( std::move( *first ) ); // placement new
+            constexpr void grow_storage_move(const size_type new_capacity) {
+                if( use_realloc ) {
+                    pointer dest = reallocStore(new_capacity);
+                    set_iterator(dest, size(), new_capacity);
+                } else {
+                    pointer dest = allocStore(new_capacity);
+                    memcpy(dest, begin_, (uint8_t*)end_-(uint8_t*)begin_); // we can simply copy the memory over, also no overlap
+
+                    freeStore();
+                    set_iterator(dest, size(), new_capacity);
                 }
             }
-            constexpr void grow_storage_move(const size_type new_capacity) {
-                pointer dest = allocStore(alloc_inst, new_capacity);
-                ctor_move_range(dest, begin_, end_);
+            constexpr void grow_storage_move() {
+                const size_type old_capacity = capacity();
+                const size_type new_capacity = std::max<size_type>(old_capacity+1, static_cast<size_type>(old_capacity * growth_factor_ + 0.5f) );
 
-                freeStore(alloc_inst, begin_, capacity());
+                if( use_realloc ) {
+                    pointer dest = reallocStore(new_capacity);
+                    set_iterator(dest, size(), new_capacity);
+                } else {
+                    pointer dest = allocStore(new_capacity);
+                    memcpy(dest, begin_, (uint8_t*)end_-(uint8_t*)begin_); // we can simply copy the memory over, also no overlap
 
-                set_iterator(dest, size(), new_capacity);
+                    freeStore();
+                    set_iterator(dest, size(), new_capacity);
+                }
             }
 
         public:
@@ -227,8 +261,8 @@ namespace jau {
              * Default constructor, giving zero capacity and zero memory footprint.
              */
             constexpr darray() noexcept
-            : growth_factor_(DEFAULT_GROWTH_FACTOR), alloc_inst(),
-              begin_( nullptr ), end_( nullptr ), storage_end_( nullptr ) {}
+            : alloc_inst(), begin_( nullptr ), end_( nullptr ), storage_end_( nullptr ),
+              growth_factor_(DEFAULT_GROWTH_FACTOR) {}
 
             /**
              * Creating an empty instance with initial capacity and other (default) properties.
@@ -237,8 +271,8 @@ namespace jau {
              * @param alloc given allocator_type
              */
             constexpr explicit darray(size_type capacity, const float growth_factor=DEFAULT_GROWTH_FACTOR, const allocator_type& alloc = allocator_type())
-            : growth_factor_( growth_factor ), alloc_inst( alloc ), begin_( allocStore(alloc_inst, capacity) ),
-              end_( begin_ ), storage_end_( begin_ + capacity ) {}
+            : alloc_inst( alloc ), begin_( allocStore(capacity) ), end_( begin_ ), storage_end_( begin_ + capacity ),
+              growth_factor_( growth_factor ) {}
 
             // copy_ctor on darray elements
 
@@ -248,9 +282,8 @@ namespace jau {
              * @param x the given darray, all elements will be copied into the new instance.
              */
             constexpr darray(const darray& x)
-            : growth_factor_( x.growth_factor_ ), alloc_inst( x.alloc_inst ), begin_( clone_range(alloc_inst, x.begin_, x.end_) ),
-              end_( begin_ + x.size() ), storage_end_( begin_ + x.size() )
-            { }
+            : alloc_inst( x.alloc_inst ), begin_( clone_range(x.begin_, x.end_) ), end_( begin_ + x.size() ),
+              storage_end_( begin_ + x.size() ), growth_factor_( x.growth_factor_ ) { }
 
             /**
              * Creates a new instance, copying all elements from the given darray.<br>
@@ -260,9 +293,8 @@ namespace jau {
              * @param alloc custom allocator_type instance
              */
             constexpr explicit darray(const darray& x, const float growth_factor, const allocator_type& alloc)
-            : growth_factor_( growth_factor ), alloc_inst( alloc ), begin_( clone_range(alloc_inst, x.begin_, x.end_) ),
-              end_( begin_ + x.size() ), storage_end_( begin_ + x.size() )
-            { }
+            : alloc_inst( alloc ), begin_( clone_range(x.begin_, x.end_) ), end_( begin_ + x.size() ),
+              storage_end_( begin_ + x.size() ), growth_factor_( growth_factor ) { }
 
             /**
              * Creates a new instance with custom initial storage capacity, copying all elements from the given darray.<br>
@@ -276,15 +308,14 @@ namespace jau {
              * @param alloc custom allocator_type instance
              */
             constexpr explicit darray(const darray& x, const size_type _capacity, const float growth_factor, const allocator_type& alloc)
-            : growth_factor_( growth_factor ), alloc_inst( alloc ), begin_( clone_range(alloc_inst, _capacity, x.begin_, x.end_) ),
-              end_( begin_ + x.size() ), storage_end_( begin_ + _capacity )
-            { }
+            : alloc_inst( alloc ), begin_( clone_range( _capacity, x.begin_, x.end_) ), end_( begin_ + x.size() ),
+              storage_end_( begin_ + _capacity ), growth_factor_( growth_factor ) { }
 
             // move_ctor on darray elements
 
             constexpr darray(darray && x) noexcept
-            : growth_factor_(std::move(x.growth_factor_)), alloc_inst(std::move(x.alloc_inst)),
-              begin_(std::move(x.begin_)), end_(std::move(x.end_)), storage_end_(std::move(x.storage_end_))
+            : alloc_inst( x.alloc_inst, true ), begin_( std::move(x.begin_) ), end_( std::move(x.end_) ),
+              storage_end_( std::move(x.storage_end_) ), growth_factor_( std::move(x.growth_factor_) )
             {
                 // complete swapping store_ref
                 x.begin_ = nullptr;
@@ -293,8 +324,8 @@ namespace jau {
             }
 
             constexpr explicit darray(darray && x, const float growth_factor, const allocator_type& alloc) noexcept
-            : growth_factor_(std::move(growth_factor)), alloc_inst(alloc),
-              begin_(std::move(x.begin_)), end_(std::move(x.end_)), storage_end_(std::move(x.storage_end_))
+            : alloc_inst( alloc, true ), begin_( std::move(x.begin_) ), end_( std::move(x.end_) ),
+              storage_end_( std::move(x.storage_end_) ), growth_factor_( std::move(growth_factor) )
             {
                 // complete swapping store_ref
                 x.begin_ = nullptr;
@@ -319,9 +350,8 @@ namespace jau {
              */
             constexpr darray(const size_type _capacity, const_iterator first, const_iterator last,
                              const float growth_factor=DEFAULT_GROWTH_FACTOR, const allocator_type& alloc = allocator_type())
-            : growth_factor_( growth_factor ), alloc_inst( alloc ), begin_( clone_range(alloc_inst, _capacity, first, last) ),
-              end_(begin_ + size_type(last - first) ), storage_end_( begin_ + _capacity )
-            { }
+            : alloc_inst( alloc ), begin_( clone_range_check(_capacity, first, last) ), end_(begin_ + size_type(last - first) ),
+              storage_end_( begin_ + _capacity ), growth_factor_( growth_factor ) { }
 
             /**
              * Creates a new instance with custom initial storage capacity,
@@ -340,9 +370,8 @@ namespace jau {
             template< class InputIt >
             constexpr explicit darray(const size_type _capacity, InputIt first, InputIt last,
                                       const float growth_factor=DEFAULT_GROWTH_FACTOR, const allocator_type& alloc = allocator_type())
-            : growth_factor_( growth_factor ), alloc_inst( alloc ), begin_( clone_range_foreign(alloc_inst, _capacity, first, last) ),
-              end_(begin_ + size_type(last - first) ), storage_end_( begin_ + _capacity )
-            { }
+            : alloc_inst( alloc ), begin_( clone_range_foreign(_capacity, first, last) ), end_(begin_ + size_type(last - first) ),
+              storage_end_( begin_ + _capacity ), growth_factor_( growth_factor ) { }
 
             ~darray() noexcept {
                 clear();
@@ -393,16 +422,17 @@ namespace jau {
                 return growth_factor_;
             }
 
+            /**
+             * Return the current capacity.
+             */
             constexpr size_type capacity() const noexcept { return size_type(storage_end_ - begin_); }
 
-            constexpr size_type grow_number(const size_type old_number ) const noexcept {
-                const size_type res = static_cast<size_type>(old_number * growth_factor_ + 0.5f); // simple round up
-                return std::max<size_type>(old_number+1, res);
-            }
-            constexpr size_type grow_capacity() const noexcept {
-                const size_type old_number = capacity();
-                const size_type res = static_cast<size_type>(old_number * growth_factor_ + 0.5f); // simple round up
-                return std::max<size_type>(old_number+1, res);
+            /**
+             * Return the current capacity() multiplied by the growth factor, minimum is capacity()+1.
+             */
+            constexpr size_type get_grown_capacity() const noexcept {
+                const size_type old_capacity = capacity();
+                return std::max<size_type>(old_capacity+1, static_cast<size_type>(old_capacity * growth_factor_ + 0.5f) );
             }
 
             /**
@@ -499,12 +529,16 @@ namespace jau {
             void reserve(size_type new_capacity) {
                 const size_type capacity_ = capacity();
                 if( new_capacity > capacity_ ) {
-                    pointer new_storage = allocStore(alloc_inst, new_capacity);
-                    ctor_move_range(new_storage, begin_, end_);
+                    if( use_realloc ) {
+                        pointer new_storage = reallocStore(new_capacity);
+                        set_iterator(new_storage, size(), new_capacity);
+                    } else {
+                        pointer new_storage = allocStore(new_capacity);
+                        memcpy(new_storage, begin_, (uint8_t*)end_-(uint8_t*)begin_); // we can simply copy the memory over, also no overlap
 
-                    freeStore(alloc_inst, begin_, capacity_);
-
-                    set_iterator(new_storage, size(), new_capacity);
+                        freeStore();
+                        set_iterator(new_storage, size(), new_capacity);
+                    }
                 }
             }
 
@@ -517,8 +551,8 @@ namespace jau {
                 const size_type x_size_ = x.size();
                 dtor_range(begin_, end_);
                 if( x_size_ > capacity_ ) {
-                    freeStore(alloc_inst, begin_, capacity_);
-                    begin_ =  clone_range(alloc_inst, x_size_, x.begin_, x.end_);
+                    freeStore();
+                    begin_ =  clone_range(x_size_, x.begin_, x.end_);
                     set_iterator(x_size_, x_size_);
                 } else {
                     ctor_copy_range(begin_, x.begin_, x.end_);
@@ -540,8 +574,8 @@ namespace jau {
                 const size_type x_size_ = size_type(last - first);
                 dtor_range(begin_, end_);
                 if( x_size_ > capacity_ ) {
-                    freeStore(alloc_inst, begin_, capacity_);
-                    begin_ =  clone_range_foreign(alloc_inst, x_size_, first, last);
+                    freeStore();
+                    begin_ =  clone_range_foreign(x_size_, first, last);
                     set_iterator(x_size_, x_size_);
                 } else {
                     ctor_copy_range_foreign(begin_, first, last);
@@ -559,8 +593,8 @@ namespace jau {
                 const size_type x_size_ = size_type(last - first);
                 dtor_range(begin_, end_);
                 if( x_size_ > capacity_ ) {
-                    freeStore(alloc_inst, begin_, capacity_);
-                    begin_ =  clone_range(alloc_inst, x_size_, first, last);
+                    freeStore();
+                    begin_ =  clone_range_check(x_size_, first, last);
                     set_iterator(x_size_, x_size_);
                 } else {
                     ctor_copy_range(begin_, first, last);
@@ -591,7 +625,7 @@ namespace jau {
              */
             constexpr void clear() noexcept {
                 dtor_range(begin_, end_);
-                freeStore(alloc_inst, begin_, capacity());
+                freeStore();
                 begin_ = nullptr;
                 end_ = nullptr;
                 storage_end_ = nullptr;
@@ -691,7 +725,7 @@ namespace jau {
                 if( begin_ <= pos && pos <= end_ ) {
                     const size_type pos_idx = pos - begin_;
                     if( end_ == storage_end_ ) {
-                        grow_storage_move(grow_capacity());
+                        grow_storage_move();
                     }
                     iterator pos_new = begin_ + pos_idx;
                     const difference_type right_count = end_ - pos_new; // include original element at 'pos_new'
@@ -723,7 +757,7 @@ namespace jau {
                 if( begin_ <= pos && pos <= end_ ) {
                     const size_type pos_idx = pos - begin_;
                     if( end_ == storage_end_ ) {
-                        grow_storage_move(grow_capacity());
+                        grow_storage_move();
                     }
                     iterator pos_new = begin_ + pos_idx;
                     const difference_type right_count = end_ - pos_new; // include original element at 'pos_new'
@@ -756,7 +790,7 @@ namespace jau {
                 if( begin_ <= pos && pos <= end_ ) {
                     const size_type pos_idx = pos - begin_;
                     if( end_ == storage_end_ ) {
-                        grow_storage_move(grow_capacity());
+                        grow_storage_move();
                     }
                     iterator pos_new = begin_ + pos_idx;
                     const difference_type right_count = end_ - pos_new; // include original element at 'pos_new'
@@ -807,7 +841,7 @@ namespace jau {
              */
             constexpr void push_back(const value_type& x) {
                 if( end_ == storage_end_ ) {
-                    grow_storage_move(grow_capacity());
+                    grow_storage_move();
                 }
                 new (end_) value_type( x ); // placement new
                 ++end_;
@@ -818,9 +852,9 @@ namespace jau {
              */
             constexpr void push_back(value_type&& x) {
                 if( end_ == storage_end_ ) {
-                    grow_storage_move(grow_capacity());
+                    grow_storage_move();
                 }
-                new (end_) value_type( std::move(x) ); // placement new
+                new (end_) value_type( std::move(x) ); // placement new - or just memmove?
                 ++end_;
             }
 
@@ -837,7 +871,7 @@ namespace jau {
             template<typename... Args>
             constexpr reference emplace_back(Args&&... args) {
                 if( end_ == storage_end_ ) {
-                    grow_storage_move(grow_capacity());
+                    grow_storage_move();
                 }
                 new (end_) value_type( std::forward<Args>(args)... ); // placement new, construct in-place
                 reference res = *end_;

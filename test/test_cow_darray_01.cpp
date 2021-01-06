@@ -40,6 +40,8 @@
 #include <jau/cow_darray.hpp>
 #include <jau/cow_vector.hpp>
 #include <jau/counting_allocator.hpp>
+#include <jau/callocator.hpp>
+#include <jau/counting_callocator.hpp>
 
 /**
  * Test general use of jau::darray, jau::cow_darray and jau::cow_vector.
@@ -50,9 +52,9 @@ static uint8_t start_addr_b[] = {0x20, 0x26, 0x2A, 0x01, 0x20, 0x10};
 static Addr48Bit start_addr(start_addr_b);
 
 typedef std::vector<DataType01, counting_allocator<DataType01>> std_vector_DataType01;
-typedef jau::darray<DataType01, counting_allocator<DataType01>> jau_darray_DataType01;
+typedef jau::darray<DataType01, counting_callocator<DataType01>> jau_darray_DataType01;
 typedef jau::cow_vector<DataType01, counting_allocator<DataType01>> jau_cow_vector_DataType01;
-typedef jau::cow_darray<DataType01, counting_allocator<DataType01>> jau_cow_darray_DataType01;
+typedef jau::cow_darray<DataType01, counting_callocator<DataType01>> jau_cow_darray_DataType01;
 
 JAU_TYPENAME_CUE_ALL(std_vector_DataType01)
 JAU_TYPENAME_CUE_ALL(jau_darray_DataType01)
@@ -363,33 +365,33 @@ TEST_CASE( "JAU COW_Vector Test 12 - Fill Unique and Find-Each", "[datatype][jau
 }
 
 TEST_CASE( "JAU DArray Test 21 - Fill Sequential and List", "[datatype][jau][darray]" ) {
-    test_01_seq_fill_list_idx< jau::darray<DataType01, counting_allocator<DataType01>> >("darray_fillseq_empty__", 100, 0);
-    test_01_seq_fill_list_idx< jau::darray<DataType01, counting_allocator<DataType01>> >("darray_fillseq_reserve", 100, 100);
+    test_01_seq_fill_list_idx< jau::darray<DataType01, counting_callocator<DataType01>> >("darray_fillseq_empty__", 100, 0);
+    test_01_seq_fill_list_idx< jau::darray<DataType01, counting_callocator<DataType01>> >("darray_fillseq_reserve", 100, 100);
 
-    test_01_seq_fill_list_itr< jau::darray<DataType01, counting_allocator<DataType01>> >("darray_fillseq_empty__", 100, 0);
-    test_01_seq_fill_list_itr< jau::darray<DataType01, counting_allocator<DataType01>> >("darray_fillseq_reserve", 100, 100);
+    test_01_seq_fill_list_itr< jau::darray<DataType01, counting_callocator<DataType01>> >("darray_fillseq_empty__", 100, 0);
+    test_01_seq_fill_list_itr< jau::darray<DataType01, counting_callocator<DataType01>> >("darray_fillseq_reserve", 100, 100);
 }
 
 TEST_CASE( "JAU DArray Test 22 - Fill Unique and Find-Each", "[datatype][jau][darray]" ) {
-    test_02_seq_fillunique_find_idx< jau::darray<DataType01, counting_allocator<DataType01>> >("darray_filluni_empty__", 100, 0);
-    test_02_seq_fillunique_find_idx< jau::darray<DataType01, counting_allocator<DataType01>> >("darray_filluni_reserve", 100, 100);
+    test_02_seq_fillunique_find_idx< jau::darray<DataType01, counting_callocator<DataType01>> >("darray_filluni_empty__", 100, 0);
+    test_02_seq_fillunique_find_idx< jau::darray<DataType01, counting_callocator<DataType01>> >("darray_filluni_reserve", 100, 100);
 
-    test_02_seq_fillunique_find_itr< jau::darray<DataType01, counting_allocator<DataType01>> >("darray_filluni_empty__", 100, 0);
-    test_02_seq_fillunique_find_itr< jau::darray<DataType01, counting_allocator<DataType01>> >("darray_filluni_reserve", 100, 100);
+    test_02_seq_fillunique_find_itr< jau::darray<DataType01, counting_callocator<DataType01>> >("darray_filluni_empty__", 100, 0);
+    test_02_seq_fillunique_find_itr< jau::darray<DataType01, counting_callocator<DataType01>> >("darray_filluni_reserve", 100, 100);
 }
 
 TEST_CASE( "JAU COW_DArray Test 31 - Fill Sequential and List", "[datatype][jau][cow_darray]" ) {
-    // test_01_seq_fill_list_idx< jau::cow_darray<DataType01, counting_allocator<DataType01>> >("cowdarray_fillseq_empty__", 100, 0);
-    // test_01_seq_fill_list_idx< jau::cow_darray<DataType01, counting_allocator<DataType01>> >("cowdarray_fillseq_reserve", 100, 100);
+    // test_01_seq_fill_list_idx< jau::cow_darray<DataType01, counting_callocator<DataType01>> >("cowdarray_fillseq_empty__", 100, 0);
+    // test_01_seq_fill_list_idx< jau::cow_darray<DataType01, counting_callocator<DataType01>> >("cowdarray_fillseq_reserve", 100, 100);
 
-    test_01_seq_fill_list_itr< jau::cow_darray<DataType01, counting_allocator<DataType01>> >("cowdarray_fillseq_empty__", 100, 0);
-    test_01_seq_fill_list_itr< jau::cow_darray<DataType01, counting_allocator<DataType01>> >("cowdarray_fillseq_reserve", 100, 100);
+    test_01_seq_fill_list_itr< jau::cow_darray<DataType01, counting_callocator<DataType01>> >("cowdarray_fillseq_empty__", 100, 0);
+    test_01_seq_fill_list_itr< jau::cow_darray<DataType01, counting_callocator<DataType01>> >("cowdarray_fillseq_reserve", 100, 100);
 }
 
 TEST_CASE( "JAU COW_DArray Test 32 - Fill Unique and Find-Each", "[datatype][jau][cow_darray]" ) {
-    // test_02_seq_fillunique_find_idx< jau::cow_darray<DataType01, counting_allocator<DataType01>> >("cowdarray_filluni_empty__", 100, 0);
-    // test_02_seq_fillunique_find_idx< jau::cow_darray<DataType01, counting_allocator<DataType01>> >("cowdarray_filluni_reserve", 100, 100);
+    // test_02_seq_fillunique_find_idx< jau::cow_darray<DataType01, counting_callocator<DataType01>> >("cowdarray_filluni_empty__", 100, 0);
+    // test_02_seq_fillunique_find_idx< jau::cow_darray<DataType01, counting_callocator<DataType01>> >("cowdarray_filluni_reserve", 100, 100);
 
-    test_02_seq_fillunique_find_itr< jau::cow_darray<DataType01, counting_allocator<DataType01>> >("cowdarray_filluni_empty__", 100, 0);
-    test_02_seq_fillunique_find_itr< jau::cow_darray<DataType01, counting_allocator<DataType01>> >("cowdarray_filluni_reserve", 100, 100);
+    test_02_seq_fillunique_find_itr< jau::cow_darray<DataType01, counting_callocator<DataType01>> >("cowdarray_filluni_empty__", 100, 0);
+    test_02_seq_fillunique_find_itr< jau::cow_darray<DataType01, counting_callocator<DataType01>> >("cowdarray_filluni_reserve", 100, 100);
 }

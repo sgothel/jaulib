@@ -41,6 +41,7 @@
 #include <jau/basic_types.hpp>
 #include <jau/ordered_atomic.hpp>
 #include <jau/cow_iterator.hpp>
+#include <jau/callocator.hpp>
 
 namespace jau {
 
@@ -103,7 +104,7 @@ namespace jau {
      * @see jau::for_each_fidelity
      * @see jau::cow_rw_iterator
      */
-    template <typename Value_type, typename Alloc_type = std::allocator<Value_type>, typename Size_type = jau::nsize_t>
+    template <typename Value_type, typename Alloc_type = callocator<Value_type>, typename Size_type = jau::nsize_t>
     class cow_darray
     {
         public:
@@ -711,7 +712,7 @@ namespace jau {
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 if( store_ref->capacity_reached() ) {
                     // grow and swap all refs
-                    storage_ref_t new_store_ref = std::make_shared<storage_t>( *store_ref, store_ref->grow_capacity(),
+                    storage_ref_t new_store_ref = std::make_shared<storage_t>( *store_ref, store_ref->get_grown_capacity(),
                                                                                store_ref->growth_factor(),
                                                                                store_ref->get_allocator_ref() );
                     new_store_ref->push_back(x);
@@ -736,7 +737,7 @@ namespace jau {
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 if( store_ref->capacity_reached() ) {
                     // grow and swap all refs
-                    storage_ref_t new_store_ref = std::make_shared<storage_t>( *store_ref, store_ref->grow_capacity(),
+                    storage_ref_t new_store_ref = std::make_shared<storage_t>( *store_ref, store_ref->get_grown_capacity(),
                                                                                store_ref->growth_factor(),
                                                                                store_ref->get_allocator_ref() );
                     new_store_ref->push_back( std::move(x) );
@@ -766,7 +767,7 @@ namespace jau {
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 if( store_ref->capacity_reached() ) {
                     // grow and swap all refs
-                    storage_ref_t new_store_ref = std::make_shared<storage_t>( *store_ref, store_ref->grow_capacity(),
+                    storage_ref_t new_store_ref = std::make_shared<storage_t>( *store_ref, store_ref->get_grown_capacity(),
                                                                                store_ref->growth_factor(),
                                                                                store_ref->get_allocator_ref() );
                     reference res = new_store_ref->emplace_back( std::forward<Args>(args)... );
