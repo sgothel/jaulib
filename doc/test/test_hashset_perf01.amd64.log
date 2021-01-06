@@ -1,0 +1,192 @@
+COMMANDLINE scripts/test_hashset_perf01.sh -v normal
+EXE_WRAPPER nice -20
+logbasename test_hashset_perf01.amd64
+logfile /usr/local/projects/zafena/jaulib/doc/test/test_hashset_perf01.amd64.0.log
+valgrindlogfile /usr/local/projects/zafena/jaulib/doc/test/test_hashset_perf01.amd64.valgrind.0.log
+callgrindoutfile /usr/local/projects/zafena/jaulib/doc/test/test_hashset_perf01.amd64.callgrind.0.out
+nice -20 /usr/local/projects/zafena/jaulib/build-amd64/test/test_hashset_perf01 -v normal
+argc 3, auto_run 0, perf_analysis 0
+Mem: hash__set_empty_ 01 (full_): Elements    50 x 16 bytes; CAlloc[     1,200 bytes, alloc[balance    50 =    50 -     0]], 1.500000 ratio
+Mem: hash__set_empty_ 01 (full_): Elements   100 x 16 bytes; CAlloc[     2,400 bytes, alloc[balance   100 =   100 -     0]], 1.500000 ratio
+Mem: hash__set_empty_ 01 (full_): Elements 1,000 x 16 bytes; CAlloc[    24,000 bytes, alloc[balance 1,000 = 1,000 -     0]], 1.500000 ratio
+Mem: stdvec_empty_ 01 (full_): Elements    50 x 16 bytes; CAlloc[     1,024 bytes, alloc[balance     1 =     7 -     6]], 1.280000 ratio
+Mem: stdvec_empty_ 01 (full_): Elements   100 x 16 bytes; CAlloc[     2,048 bytes, alloc[balance     1 =     8 -     7]], 1.280000 ratio
+Mem: stdvec_empty_ 01 (full_): Elements 1,000 x 16 bytes; CAlloc[    16,384 bytes, alloc[balance     1 =    11 -    10]], 1.024000 ratio
+Mem: darray_empty_ 01 (full_): Elements    50 x 16 bytes; CAlloc[       880 bytes, alloc[balance     1 =     9 -     8]], 1.100000 ratio
+Mem: darray_empty_ 01 (full_): Elements   100 x 16 bytes; CAlloc[     2,304 bytes, alloc[balance     1 =    11 -    10]], 1.440000 ratio
+Mem: darray_empty_ 01 (full_): Elements 1,000 x 16 bytes; CAlloc[    25,552 bytes, alloc[balance     1 =    16 -    15]], 1.597000 ratio
+Mem: cowstdvec_empty_ 01 (full_): Elements    50 x 16 bytes; CAlloc[     1,568 bytes, alloc[balance     1 =     2 -     1]], 1.960000 ratio
+Mem: cowstdvec_empty_ 01 (full_): Elements   100 x 16 bytes; CAlloc[     3,168 bytes, alloc[balance     1 =     2 -     1]], 1.980000 ratio
+Mem: cowstdvec_empty_ 01 (full_): Elements 1,000 x 16 bytes; CAlloc[    31,968 bytes, alloc[balance     1 =     2 -     1]], 1.998000 ratio
+Mem: cowdarray_empty_ 01 (full_): Elements    50 x 16 bytes; CAlloc[       880 bytes, alloc[balance     1 =     1 -     0]], 1.100000 ratio
+Mem: cowdarray_empty_ 01 (full_): Elements   100 x 16 bytes; CAlloc[     2,304 bytes, alloc[balance     1 =     1 -     0]], 1.440000 ratio
+Mem: cowdarray_empty_ 01 (full_): Elements 1,000 x 16 bytes; CAlloc[    25,552 bytes, alloc[balance     1 =     1 -     0]], 1.597000 ratio
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+test_hashset_perf01 is a Catch v3.0.0-preview.3 host application.
+Run with -? for options
+
+-------------------------------------------------------------------------------
+Perf Test 02 - Fill Unique and List, empty and reserve
+-------------------------------------------------------------------------------
+/usr/local/projects/zafena/jaulib/test/test_hashset_perf01.cpp:432
+...............................................................................
+
+benchmark name                       samples       iterations    estimated
+                                     mean          low mean      high mean
+                                     std dev       low std dev   high std dev
+-------------------------------------------------------------------------------
+HashSet_NoOrdr_empty FillUni_List                                              
+50                                             100             7     2.3793 ms 
+                                         3.3771 us    3.36659 us    3.42847 us 
+                                        102.723 ns    2.91466 ns    245.023 ns 
+                                                                               
+HashSet_NoOrdr_empty FillUni_List                                              
+100                                            100             4     2.5984 ms 
+                                        6.44918 us    6.43608 us    6.47732 us 
+                                          94.01 ns    51.0451 ns    154.917 ns 
+                                                                               
+HashSet_NoOrdr_empty FillUni_List                                              
+1000                                           100             1     7.1946 ms 
+                                        71.7003 us    71.6291 us    71.8551 us 
+                                        509.115 ns    276.349 ns    926.812 ns 
+                                                                               
+STD_Vector_empty_itr FillUni_List                                              
+50                                             100            13     2.2126 ms 
+                                        1.70003 us    1.69851 us    1.70392 us 
+                                        11.0479 ns    1.47185 ns    20.4878 ns 
+                                                                               
+STD_Vector_empty_itr FillUni_List                                              
+100                                            100             4     2.2588 ms 
+                                        5.60069 us    5.58069 us    5.64281 us 
+                                        141.567 ns    75.9466 ns    240.949 ns 
+                                                                               
+STD_Vector_empty_itr FillUni_List                                              
+1000                                           100             1    38.3835 ms 
+                                        381.741 us    381.495 us    382.118 us 
+                                        1.53042 us    1.13383 us    2.32418 us 
+                                                                               
+JAU_DArray_empty_itr FillUni_List                                              
+50                                             100            12     2.1696 ms 
+                                        1.81025 us    1.80868 us    1.81729 us 
+                                        14.4014 ns    1.68176 ns    34.0006 ns 
+                                                                               
+JAU_DArray_empty_itr FillUni_List                                              
+100                                            100             4     2.3148 ms 
+                                        5.70056 us    5.68936 us     5.7555 us 
+                                        109.541 ns    2.70505 ns    261.273 ns 
+                                                                               
+JAU_DArray_empty_itr FillUni_List                                              
+1000                                           100             1    38.6937 ms 
+                                        386.734 us    386.462 us    387.259 us 
+                                        1.85586 us    1.17675 us    3.25799 us 
+                                                                               
+COW_Vector_empty_itr FillUni_List                                              
+50                                             100             2     2.3406 ms 
+                                        11.7611 us    11.7417 us    11.8093 us 
+                                        138.327 ns    10.5358 ns    256.175 ns 
+                                                                               
+COW_Vector_empty_itr FillUni_List                                              
+100                                            100             1     3.3416 ms 
+                                        33.4714 us    33.3411 us     34.059 us 
+                                        1.18578 us    62.8439 ns    2.80102 us 
+                                                                               
+COW_Vector_empty_itr FillUni_List                                              
+1000                                           100             1    152.211 ms 
+                                        1.52227 ms    1.52147 ms    1.52348 ms 
+                                        4.96257 us    3.58263 us    6.84884 us 
+                                                                               
+COW_DArray_empty_itr FillUni_List                                              
+50                                             100             4     2.7992 ms 
+                                        7.05456 us    7.03317 us    7.10376 us 
+                                        155.988 ns     79.758 ns    280.214 ns 
+                                                                               
+COW_DArray_empty_itr FillUni_List                                              
+100                                            100             2     3.1614 ms 
+                                        15.6241 us    15.6123 us    15.6561 us 
+                                        89.3194 ns    15.0112 ns    183.116 ns 
+                                                                               
+COW_DArray_empty_itr FillUni_List                                              
+1000                                           100             1    47.6988 ms 
+                                        477.281 us    476.891 us    477.806 us 
+                                        2.29097 us    1.79977 us    2.95709 us 
+                                                                               
+HashSet_NoOrdr_rserv FillUni_List                                              
+50                                             100             8     2.3512 ms 
+                                        2.94063 us    2.93533 us    2.95389 us 
+                                        37.3289 ns    1.19894 ns    68.5802 ns 
+                                                                               
+HashSet_NoOrdr_rserv FillUni_List                                              
+100                                            100             4     2.2112 ms 
+                                        5.59386 us      5.572 us    5.65651 us 
+                                        172.295 ns    62.5017 ns    368.193 ns 
+                                                                               
+HashSet_NoOrdr_rserv FillUni_List                                              
+1000                                           100             1     6.7466 ms 
+                                        67.3986 us    67.3557 us    67.5047 us 
+                                        318.702 ns    89.4561 ns    593.895 ns 
+                                                                               
+STD_Vector_rserv_itr FillUni_List                                              
+50                                             100            14     2.2736 ms 
+                                        1.59095 us    1.58255 us    1.61713 us 
+                                        68.1326 ns    27.0071 ns    148.784 ns 
+                                                                               
+STD_Vector_rserv_itr FillUni_List                                              
+100                                            100             5      2.606 ms 
+                                        5.65707 us    5.65118 us    5.68606 us 
+                                        58.0135 ns     1.0332 ns    138.417 ns 
+                                                                               
+STD_Vector_rserv_itr FillUni_List                                              
+1000                                           100             1    39.3419 ms 
+                                        380.876 us    380.521 us    381.412 us 
+                                        2.19615 us    1.63086 us    3.11937 us 
+                                                                               
+JAU_DArray_rserv_itr FillUni_List                                              
+50                                             100            13     2.2581 ms 
+                                        1.75339 us    1.74704 us    1.77682 us 
+                                        54.7423 ns    13.3784 ns    126.007 ns 
+                                                                               
+JAU_DArray_rserv_itr FillUni_List                                              
+100                                            100             4     2.2764 ms 
+                                        5.73446 us    5.71326 us    5.77858 us 
+                                        149.818 ns    78.7663 ns    249.204 ns 
+                                                                               
+JAU_DArray_rserv_itr FillUni_List                                              
+1000                                           100             1    38.2461 ms 
+                                        377.425 us    375.461 us    380.723 us 
+                                        12.6702 us    8.04021 us    17.4412 us 
+                                                                               
+COW_Vector_rserv_itr FillUni_List                                              
+50                                             100             2     2.2562 ms 
+                                        11.2544 us    11.2365 us    11.3361 us 
+                                        167.069 ns     11.184 ns    396.582 ns 
+                                                                               
+COW_Vector_rserv_itr FillUni_List                                              
+100                                            100             1     3.2777 ms 
+                                        33.0716 us    32.9493 us    33.3094 us 
+                                        840.132 ns    500.052 ns    1.31944 us 
+                                                                               
+COW_Vector_rserv_itr FillUni_List                                              
+1000                                           100             1     146.11 ms 
+                                        1.46657 ms    1.46372 ms    1.47297 ms 
+                                        20.6777 us    11.2288 us     41.044 us 
+                                                                               
+COW_DArray_rserv_itr FillUni_List                                              
+50                                             100             4      2.548 ms 
+                                        6.54523 us    6.51874 us    6.59169 us 
+                                        173.497 ns    116.471 ns    264.516 ns 
+                                                                               
+COW_DArray_rserv_itr FillUni_List                                              
+100                                            100             2     2.9008 ms 
+                                        14.5272 us    14.5062 us    14.6293 us 
+                                         202.58 ns    3.33069 ns    483.061 ns 
+                                                                               
+COW_DArray_rserv_itr FillUni_List                                              
+1000                                           100             1    46.3029 ms 
+                                        463.774 us    461.911 us    468.432 us 
+                                        13.6704 us    2.97071 us     24.542 us 
+                                                                               
+
+===============================================================================
+All tests passed (14542199 assertions in 2 test cases)
+
