@@ -37,27 +37,52 @@
 #include "test_datatype01.hpp"
 
 #include <jau/basic_types.hpp>
+#include <jau/basic_algos.hpp>
 #include <jau/counting_allocator.hpp>
+#include <jau/darray.hpp>
+#include <jau/cow_darray.hpp>
+#include <jau/cow_vector.hpp>
 
 using namespace jau;
 
 static uint8_t start_addr_b[] = {0x20, 0x26, 0x2A, 0x01, 0x20, 0x10};
 static Addr48Bit start_addr(start_addr_b);
 
+// #define USE_STD_ITER_ALGO 1
+#define USE_JAU_ITER_ALGO 1
+
 typedef std::vector<DataType01, counting_allocator<DataType01>> DataType01Vector;
+typedef jau::darray<DataType01, counting_allocator<DataType01>> DataType01DArray;
 typedef std::unordered_set<DataType01, std::hash<DataType01>, std::equal_to<DataType01>, counting_allocator<DataType01>> DataType01Set;
 
-DataType01 * findDataSet01(DataType01Vector& data, DataType01 const & elem) noexcept {
-    const size_t size = data.size();
-    for (size_t i = 0; i < size; i++) {
-        DataType01 & e = data[i];
-        if ( elem == e ) {
-            return &e;
+template<class T>
+const DataType01 * findDataSet01_itr(T& data, DataType01 const & elem) noexcept {
+#if defined(USE_STD_ITER_ALGO)
+    // much slower, approx 3x over 1000 * 1000, why?
+    typename T::const_iterator end = data.cend();
+    auto it = std::find( data.cbegin(), end, elem);
+    if( it != end ) {
+        return &(*it);
+    }
+#elif defined (USE_JAU_ITER_ALGO)
+    // same logic, much faster
+    typename T::const_iterator end = data.cend();
+    auto it = jau::find( data.cbegin(), end, elem);
+    if( it != end ) {
+        return &(*it);
+    }
+#else
+    typename T::const_iterator iter = data.cbegin();
+    typename T::const_iterator end = data.cend();
+    for(; iter != end ; ++iter) {
+        if( elem == *iter ) {
+            return &(*iter);
         }
     }
+#endif
     return nullptr;
 }
-const DataType01 * findDataSet01(DataType01Set& data, DataType01 const & elem) noexcept {
+const DataType01 * findDataSet01_hash(DataType01Set& data, DataType01 const & elem) noexcept {
     auto search = data.find(elem);
     if( search != data.end() ) {
         return &(*search);
@@ -65,124 +90,103 @@ const DataType01 * findDataSet01(DataType01Set& data, DataType01 const & elem) n
     return nullptr;
 }
 
-static void test_stdvec_00_list(DataType01Vector& data, const bool show) {
-    const std::size_t size = data.size();
-    for (std::size_t i = 0; i < size; i++) {
-        DataType01 & e = data[i];
-        e.nop();
-        if( show ) {
-            printf("data[%zu]: %s\n", i, e.toString().c_str());
-        }
+template<class T>
+static int test_00_list_itr(T& data) {
+    int some_number = 0; // add some validated work, avoiding any 'optimization away'
+#if defined(USE_STD_ITER_ALGO)
+    // slower, why?
+    std::for_each(data.cbegin(), data.cend(), [&some_number](const DataType01 & e) { some_number += e.nop(); });
+#elif defined (USE_JAU_ITER_ALGO)
+    // same logic, faster
+    jau::for_each(data.cbegin(), data.cend(), [&some_number](const DataType01 & e) { some_number += e.nop(); });
+#else
+    typename T::const_iterator iter = data.cbegin();
+    typename T::const_iterator end = data.cend();
+    for(; iter != end ; ++iter) {
+        const DataType01 & e = *iter;
+        some_number += e.nop();
     }
-}
-static void test_stdset_00_list(DataType01Set& data, const bool show) {
-    std::size_t i=0;
-    for(auto it = data.begin(); it != data.end(); it++, i++) {
-        const DataType01 & e = *it;
-        e.nop();
-        if( show ) {
-            printf("data[%zu]: %s\n", i, e.toString().c_str());
-        }
-    }
+#endif
+    REQUIRE(some_number > 0);
+    return some_number;
 }
 
-static void test_stdvec_00_seq_find_each(DataType01Vector& data, const bool show) {
+template<class T, typename Size_type>
+static void test_00_seq_find_itr(T& data) {
     Addr48Bit a0(start_addr);
-    const std::size_t size = data.size();
-    std::size_t fi = 0, i=0;
+    const Size_type size = data.size();
+    Size_type fi = 0, i=0;
 
-    for(; i<size && a0.next(); i++) {
+    for(; i<size && a0.next(); ++i) {
         DataType01 elem(a0, static_cast<uint8_t>(1));
-        DataType01 *found = findDataSet01(data, elem);
+        const DataType01 *found = findDataSet01_itr<T>(data, elem);
         if( nullptr != found ) {
-            fi++;
+            ++fi;
             found->nop();
-            if( show ) {
-                printf("data[%zu, %zu]: %s\n", i, fi, found->toString().c_str());
-            }
-        }
-    }
-    REQUIRE(fi == i);
-}
-static void test_stdset_00_seq_find_each(DataType01Set& data, const bool show) {
-    Addr48Bit a0(start_addr);
-    const std::size_t size = data.size();
-    std::size_t fi = 0, i=0;
-
-    for(; i<size && a0.next(); i++) {
-        DataType01 elem(a0, static_cast<uint8_t>(1));
-        const DataType01 *found = findDataSet01(data, elem);
-        if( nullptr != found ) {
-            fi++;
-            found->nop();
-            if( show ) {
-                printf("data[%zu, %zu]: %s\n", i, fi, found->toString().c_str());
-            }
         }
     }
     REQUIRE(fi == i);
 }
 
-static void test_stdvec_00_seq_fill(DataType01Vector& data, const std::size_t size) {
-    // data.reserve(size);
+static void test_00_seq_find_hash(DataType01Set& data) {
     Addr48Bit a0(start_addr);
-    std::size_t i=0;
+    const std::size_t size = data.size();
+    std::size_t fi = 0, i=0;
 
-    for(; i<size && a0.next(); i++) {
+    for(; i<size && a0.next(); ++i) {
         DataType01 elem(a0, static_cast<uint8_t>(1));
-        data.push_back( elem );
+        const DataType01 *found = findDataSet01_hash(data, elem);
+        if( nullptr != found ) {
+            ++fi;
+            found->nop();
+        }
     }
-    if( i != data.size() ) {
-        test_stdvec_00_list(data, true);
-        printf("a0 %s\n", a0.toString().c_str());
-        printf("Size %zu, expected %zu, iter %zu\n", data.size(), size, i);
+    REQUIRE(fi == i);
+}
+
+template<class T, typename Size_type>
+static void test_00_seq_fill(T& data, const Size_type size) {
+    Addr48Bit a0(start_addr);
+    Size_type i=0;
+
+    for(; i<size && a0.next(); ++i) {
+        data.emplace_back( a0, static_cast<uint8_t>(1) );
     }
     REQUIRE(i == data.size());
 }
 
-static void test_stdvec_00_seq_fill_unique(DataType01Vector& data, const std::size_t size) {
-    // data.reserve(size);
+template<class T, typename Size_type>
+static void test_00_seq_fill_unique_itr(T& data, const Size_type size) {
     Addr48Bit a0(start_addr);
-    std::size_t i=0, fi=0;
+    Size_type i=0, fi=0;
 
-    for(; i<size && a0.next(); i++) {
+    for(; i<size && a0.next(); ++i) {
         DataType01 elem(a0, static_cast<uint8_t>(1));
-        DataType01* exist = findDataSet01(data, elem);
+        const DataType01* exist = findDataSet01_itr<T>(data, elem);
         if( nullptr == exist ) {
-            data.push_back(elem);
-            fi++;
-        } else {
-            printf("Not unique #%zu: %s == %s (%d)\n", i, elem.toString().c_str(), exist->toString().c_str(), (elem == *exist));
+            data.push_back( std::move( elem ) );
+            ++fi;
         }
-    }
-    if( fi != size ) {
-        test_stdvec_00_list(data, true);
-        printf("a0 %s\n", a0.toString().c_str());
-        printf("Size %zu, expected %zu, iter %zu\n", data.size(), size, i);
     }
     REQUIRE(i == data.size());
     REQUIRE(fi == size);
 }
-static void test_stdset_00_seq_fill_unique(DataType01Set& data, const std::size_t size) {
+
+static void test_00_seq_fill_unique_hash(DataType01Set& data, const std::size_t size) {
     Addr48Bit a0(start_addr);
     std::size_t i=0, fi=0;
 
-    for(; i<size && a0.next(); i++) {
-        DataType01 elem(a0, static_cast<uint8_t>(1));
-        if( data.insert(elem).second ) {
-            fi++;
+    for(; i<size && a0.next(); ++i) {
+        if( data.emplace(a0, static_cast<uint8_t>(1)).second ) {
+            ++fi;
         }
-    }
-    if( fi != size ) {
-        test_stdset_00_list(data, true);
-        printf("a0 %s\n", a0.toString().c_str());
-        printf("Size %zu, expected %zu, iter %zu\n", data.size(), size, i);
     }
     REQUIRE(i == data.size());
     REQUIRE(fi == size);
 }
 
-static void print_mem(const std::string& pre, const DataType01Vector &data) {
+template<class T>
+static void print_mem(const std::string& pre, const T& data) {
     std::size_t bytes_element = sizeof(DataType01);
     std::size_t elements = data.size();
     std::size_t bytes_net = elements * bytes_element;
@@ -190,144 +194,259 @@ static void print_mem(const std::string& pre, const DataType01Vector &data) {
     double overhead = 0 == bytes_total ? 0.0 : ( 0 == bytes_net ? 10.0 : (double)bytes_total / (double)bytes_net );
     printf("Mem: %s: Elements %s x %zu bytes; %s, %lf ratio\n",
             pre.c_str(), int64DecString(elements, ',', 5).c_str(),
-            bytes_element, data.get_allocator().toString(9, 5).c_str(), overhead);
+            bytes_element, data.get_allocator().toString(10, 5).c_str(), overhead);
     // 5:     1,000
     // 7:   100,000
     // 9: 1,000,000
 }
-static void print_mem(const std::string& pre, const DataType01Set &data) {
-    std::size_t bytes_element = sizeof(DataType01);
-    std::size_t elements = data.size();
-    std::size_t bytes_net = elements * bytes_element;
-    std::size_t bytes_total = data.get_allocator().memory_usage;
-    double overhead = 0 == bytes_total ? 0.0 : ( 0 == bytes_net ? 10.0 : (double)bytes_total / (double)bytes_net );
-    printf("Mem: %s: Elements %s x %zu bytes; %s, %lf ratio\n",
-            pre.c_str(), int64DecString(elements, ',', 5).c_str(),
-            bytes_element, data.get_allocator().toString(9, 5).c_str(), overhead);
-}
 
-static bool test_stdvec_01_seq_fill_list_clear(const std::size_t size0, const bool do_print_mem) {
-    std::vector<DataType01, counting_allocator<DataType01>> data;
+
+/****************************************************************************************
+ ****************************************************************************************/
+
+template<class T, typename Size_type>
+static bool test_01_seq_fill_list_itr(const std::string& type_id, const Size_type size0, const Size_type reserve0, const bool do_print_mem) {
+    T data;
     REQUIRE(0 == data.get_allocator().memory_usage);
     REQUIRE(data.size() == 0);
-    // if( do_print_mem ) { print_mem("stdvec_01 (empty)", data); }
+    // if( do_print_mem ) { print_mem(type_id+" 01 (empty)", data); }
 
-    test_stdvec_00_seq_fill(data, size0);
+    if( 0 < reserve0 ) {
+        data.reserve(reserve0);
+        REQUIRE(data.size() == 0);
+        REQUIRE(0 != data.get_allocator().memory_usage);
+        REQUIRE(data.capacity() == reserve0);
+    }
+
+    test_00_seq_fill<T, Size_type>(data, size0);
+    REQUIRE(0 != data.get_allocator().memory_usage);
     REQUIRE(data.size() == size0);
 
-    test_stdvec_00_list(data, false);
+    test_00_list_itr<T>(data);
+    REQUIRE(0 != data.get_allocator().memory_usage);
     REQUIRE(data.size() == size0);
-    if( do_print_mem ) { print_mem("stdvec_01 (full_)", data); }
+    if( do_print_mem ) { print_mem(type_id+" 01 (full_)", data); }
 
     data.clear();
     REQUIRE(data.size() == 0);
-    // if( do_print_mem ) { print_mem("stdvec_01 (clear)", data); }
+    // if( do_print_mem ) { print_mem(type_id+" 01 (clear)", data); }
     // REQUIRE(0 == data.get_allocator().memory_usage);
     return data.size() == 0;
 }
 
-static bool test_stdvec_02_seq_fillunique_findeach_clear(const std::size_t size0, const bool do_print_mem) {
-    std::vector<DataType01, counting_allocator<DataType01>> data;
+template<class T>
+static std::size_t get_capacity(const T& data) {
+    const std::size_t bucket_count = data.bucket_count();
+    std::size_t capacity = 0;
+    for(std::size_t i=0; i<bucket_count; i++) {
+        capacity = data.bucket_size(i);
+    }
+    return capacity;
+}
+
+static bool test_01_seq_fill_list_hash(const std::string& type_id, const std::size_t size0, const std::size_t reserve0, const bool do_print_mem) {
+    DataType01Set data;
     REQUIRE(0 == data.get_allocator().memory_usage);
     REQUIRE(data.size() == 0);
-    // if( do_print_mem ) { print_mem("stdvec_02 (empty)", data); }
+    // if( do_print_mem ) { print_mem(type_id+" 01 (empty)", data); }
 
-    test_stdvec_00_seq_fill_unique(data, size0);
+    if( 0 < reserve0 ) {
+        data.reserve(reserve0);
+        REQUIRE(data.size() == 0);
+        REQUIRE(0 != data.get_allocator().memory_usage);
+        REQUIRE(get_capacity<DataType01Set>(data) >= reserve0);
+    }
+
+    test_00_seq_fill_unique_hash(data, size0);
+    REQUIRE(0 != data.get_allocator().memory_usage);
     REQUIRE(data.size() == size0);
 
-    test_stdvec_00_seq_find_each(data, false);
+    test_00_list_itr<DataType01Set>(data);
+    REQUIRE(0 != data.get_allocator().memory_usage);
     REQUIRE(data.size() == size0);
-    if( do_print_mem ) { print_mem("stdvec_02 (full_)", data); }
+    if( do_print_mem ) { print_mem(type_id+" 01 (full_)", data); }
 
     data.clear();
     REQUIRE(data.size() == 0);
-    // if( do_print_mem ) { print_mem("stdvec_02 (clear)", data); }
+    // if( do_print_mem ) { print_mem(type_id+" 01 (clear)", data); }
     // REQUIRE(0 == data.get_allocator().memory_usage);
     return data.size() == 0;
 }
 
-static bool test_stdset_12_seq_fillunique_findeach_clear(const std::size_t size0, const bool do_print_mem) {
-    std::unordered_set<DataType01, std::hash<DataType01>, std::equal_to<DataType01>, counting_allocator<DataType01>> data;
+template<class T, typename Size_type>
+static bool test_02_seq_fillunique_find_itr(const std::string& type_id, const Size_type size0, const Size_type reserve0, const bool do_print_mem) {
+    T data;
     REQUIRE(0 == data.get_allocator().memory_usage);
     REQUIRE(data.size() == 0);
-    // if( do_print_mem ) { print_mem("stdset_12 (empty)", data); }
+    // if( do_print_mem ) { print_mem(type_id+" 02 (empty)", data); }
 
-    test_stdset_00_seq_fill_unique(data, size0);
+    if( 0 < reserve0 ) {
+        data.reserve(reserve0);
+        REQUIRE(data.size() == 0);
+        REQUIRE(0 != data.get_allocator().memory_usage);
+        REQUIRE(data.capacity() == reserve0);
+    }
+
+    test_00_seq_fill_unique_itr<T, Size_type>(data, size0);
+    REQUIRE(0 != data.get_allocator().memory_usage);
     REQUIRE(data.size() == size0);
 
-    test_stdset_00_seq_find_each(data, false);
+    test_00_seq_find_itr<T, Size_type>(data);
+    REQUIRE(0 != data.get_allocator().memory_usage);
     REQUIRE(data.size() == size0);
-    if( do_print_mem ) { print_mem("stdset_12 (full_)", data); }
+    if( do_print_mem ) { print_mem(type_id+" 02 (full_)", data); }
 
     data.clear();
     REQUIRE(data.size() == 0);
-    // if( do_print_mem ) { print_mem("stdset_12 (clear)", data); }
+    // if( do_print_mem ) { print_mem(type_id+" 02 (clear)", data); }
     // REQUIRE(0 == data.get_allocator().memory_usage);
     return data.size() == 0;
 }
 
-TEST_CASE( "STD Vector Perf Test 01 - Fill Sequential and List", "[datatype][std][vector]" ) {
-    if( catch_auto_run ) {
-        test_stdvec_01_seq_fill_list_clear(50, false);
-        return;
-    }
-    // test_stdvec_01_seq_fill_list_clear(25, true);
-    test_stdvec_01_seq_fill_list_clear(50, true);
-    test_stdvec_01_seq_fill_list_clear(100, true);
-    test_stdvec_01_seq_fill_list_clear(1000, true);
+static bool test_02_seq_fillunique_find_hash(const std::string& type_id, const std::size_t size0, const std::size_t reserve0, const bool do_print_mem) {
+    DataType01Set data;
+    REQUIRE(0 == data.get_allocator().memory_usage);
+    REQUIRE(data.size() == 0);
+    // if( do_print_mem ) { print_mem(type_id+" 02 (empty)", data); }
 
-    // BENCHMARK("Seq_List 25") {
-    //     return test_stdvec_01_seq_fill_list_clear(25, false);
-    // };
-    BENCHMARK("Seq_List 50") {
-        return test_stdvec_01_seq_fill_list_clear(50, false);
-    };
-    BENCHMARK("Seq_List 100") {
-        return test_stdvec_01_seq_fill_list_clear(100, false);
-    };
-    BENCHMARK("Seq_List 1000") {
-        return test_stdvec_01_seq_fill_list_clear(1000, false);
-    };
+    if( 0 < reserve0 ) {
+        data.reserve(reserve0);
+        REQUIRE(data.size() == 0);
+        // REQUIRE(0 != data.get_allocator().memory_usage);
+        // REQUIRE(get_capacity<DataType01Set>(data) >= reserve0);
+    }
+
+    test_00_seq_fill_unique_hash(data, size0);
+    REQUIRE(0 != data.get_allocator().memory_usage);
+    REQUIRE(data.size() == size0);
+
+    test_00_seq_find_hash(data);
+    REQUIRE(0 != data.get_allocator().memory_usage);
+    REQUIRE(data.size() == size0);
+    if( do_print_mem ) { print_mem(type_id+" 02 (full_)", data); }
+
+    data.clear();
+    REQUIRE(data.size() == 0);
+    // if( do_print_mem ) { print_mem(type_id+" 02 (clear)", data); }
+    // REQUIRE(0 == data.get_allocator().memory_usage);
+    return data.size() == 0;
 }
 
-TEST_CASE( "STD Vector Perf Test 02 - Fill Unique and Find-Each", "[datatype][std][vector]" ) {
-    if( catch_auto_run ) {
-        test_stdvec_02_seq_fillunique_findeach_clear(50, false);
-        return;
-    }
-    // BENCHMARK("Unique Find 25") {
-    //     return test_stdvec_02_seq_fillunique_findeach_clear(25, false);
-    // };
-    BENCHMARK("Unique Find 50") {
-        return test_stdvec_02_seq_fillunique_findeach_clear(50, false);
-    };
-    BENCHMARK("Unique Find 100") {
-        return test_stdvec_02_seq_fillunique_findeach_clear(100, false);
-    };
-    BENCHMARK("Unique Find 1000") {
-        return test_stdvec_02_seq_fillunique_findeach_clear(1000, false);
-    };
-}
-TEST_CASE( "STD Unordered-Set Perf Test 12 - Fill Unique and Find-Each", "[datatype][std][unordered_set]" ) {
-    if( catch_auto_run ) {
-        test_stdset_12_seq_fillunique_findeach_clear(50, false);
-        return;
-    }
-    // test_stdset_12_seq_fillunique_findeach_clear(25, true);
-    test_stdset_12_seq_fillunique_findeach_clear(50, true);
-    test_stdset_12_seq_fillunique_findeach_clear(100, true);
-    test_stdset_12_seq_fillunique_findeach_clear(1000, true);
+/****************************************************************************************
+ ****************************************************************************************/
 
-    // BENCHMARK("Unique Find 25") {
-    //     return test_stdset_12_seq_fillunique_findeach_clear(25, false);
+template<class T, typename Size_type>
+static bool footprint_fillseq_list_itr(const std::string& type_id, const bool do_rserv) {
+    // test_01_seq_fill_list_itr<T, Size_type>(type_id, 25, do_rserv? 25 : 0, true);
+    test_01_seq_fill_list_itr<T, Size_type>(type_id, 50, do_rserv? 50 : 0, true);
+    if( !catch_auto_run ) {
+        test_01_seq_fill_list_itr<T, Size_type>(type_id, 100, do_rserv? 100 : 0, true);
+        test_01_seq_fill_list_itr<T, Size_type>(type_id, 1000, do_rserv? 1000 : 0, true);
+    }
+    return true;
+}
+
+static bool footprint_fillseq_list_hash(const std::string& type_id, const bool do_rserv) {
+    // test_01_seq_fill_list_hash(type_id, 25, do_rserv? 25 : 0, true);
+    test_01_seq_fill_list_hash(type_id, 50, do_rserv? 50 : 0, true);
+    if( !catch_auto_run ) {
+        test_01_seq_fill_list_hash(type_id, 100, do_rserv? 100 : 0, true);
+        test_01_seq_fill_list_hash(type_id, 1000, do_rserv? 1000 : 0, true);
+    }
+    return true;
+}
+
+template<class T, typename Size_type>
+static bool benchmark_fillunique_find_itr(const std::string& title_pre, const std::string& type_id,
+                                          const bool do_rserv) {
+    if( catch_perf_analysis ) {
+        BENCHMARK(title_pre+" FillUni_List 1000") {
+            return test_02_seq_fillunique_find_itr<T, Size_type>(type_id, 1000, do_rserv? 1000 : 0, false);
+        };
+        // test_02_seq_fillunique_find_itr<T, Size_type>(type_id, 100000, do_rserv? 100000 : 0, false);
+        return true;
+    }
+    if( catch_auto_run ) {
+        test_02_seq_fillunique_find_itr<T, Size_type>(type_id, 50, do_rserv? 50 : 0, false);
+        return true;
+    }
+    // BENCHMARK(title_pre+" FillUni_List 25") {
+    //    return test_02_seq_fillunique_find_itr<T, Size_type>(type_id, 25, do_rserv? 25 : 0, false);
     // };
-    BENCHMARK("Unique Find 50") {
-        return test_stdset_12_seq_fillunique_findeach_clear(50, false);
+    BENCHMARK(title_pre+" FillUni_List 50") {
+        return test_02_seq_fillunique_find_itr<T, Size_type>(type_id, 50, do_rserv? 50 : 0, false);
     };
-    BENCHMARK("Unique Find 100") {
-        return test_stdset_12_seq_fillunique_findeach_clear(100, false);
+    BENCHMARK(title_pre+" FillUni_List 100") {
+        return test_02_seq_fillunique_find_itr<T, Size_type>(type_id, 100, do_rserv? 100 : 0, false);
     };
-    BENCHMARK("Unique Find 1000") {
-        return test_stdset_12_seq_fillunique_findeach_clear(1000, false);
+    BENCHMARK(title_pre+" FillUni_List 1000") {
+        return test_02_seq_fillunique_find_itr<T, Size_type>(type_id, 1000, do_rserv? 1000 : 0, false);
     };
+    return true;
+}
+
+static bool benchmark_fillunique_find_hash(const std::string& title_pre, const std::string& type_id,
+                                          const bool do_rserv) {
+    if( catch_perf_analysis ) {
+        BENCHMARK(title_pre+" FillUni_List 1000") {
+            return test_02_seq_fillunique_find_hash(type_id, 1000, do_rserv? 1000 : 0, false);
+        };
+        // test_02_seq_fillunique_find_hash(type_id, 100000, do_rserv? 100000 : 0, false);
+        return true;
+    }
+    if( catch_auto_run ) {
+        test_02_seq_fillunique_find_hash(type_id, 50, do_rserv? 50 : 0, false);
+        return true;
+    }
+    // BENCHMARK(title_pre+" FillUni_List 25") {
+    //    return test_02_seq_fillunique_find_hash(type_id, 25, do_rserv? 25 : 0, false);
+    // };
+    BENCHMARK(title_pre+" FillUni_List 50") {
+        return test_02_seq_fillunique_find_hash(type_id, 50, do_rserv? 50 : 0, false);
+    };
+    BENCHMARK(title_pre+" FillUni_List 100") {
+        return test_02_seq_fillunique_find_hash(type_id, 100, do_rserv? 100 : 0, false);
+    };
+    BENCHMARK(title_pre+" FillUni_List 1000") {
+        return test_02_seq_fillunique_find_hash(type_id, 1000, do_rserv? 1000 : 0, false);
+    };
+    return true;
+}
+
+/****************************************************************************************
+ ****************************************************************************************/
+TEST_CASE( "Memory Footprint 01 - Fill Sequential and List", "[datatype][footprint]" ) {
+    if( catch_perf_analysis ) {
+        footprint_fillseq_list_hash("hash__set_empty_", false);
+        footprint_fillseq_list_itr< jau::cow_vector<DataType01, counting_allocator<DataType01>>,                std::size_t>("cowstdvec_empty_", false);
+        footprint_fillseq_list_itr< jau::cow_darray<DataType01, counting_allocator<DataType01>, jau::nsize_t>, jau::nsize_t>("cowdarray_empty_", false);
+        return;
+    }
+    footprint_fillseq_list_hash("hash__set_empty_", false);
+    footprint_fillseq_list_itr< std::vector<DataType01, counting_allocator<DataType01>>,                std::size_t>("stdvec_empty_", false);
+    footprint_fillseq_list_itr< jau::darray<DataType01, counting_allocator<DataType01>, jau::nsize_t>, jau::nsize_t>("darray_empty_", false);
+    footprint_fillseq_list_itr< jau::cow_vector<DataType01, counting_allocator<DataType01>>,                std::size_t>("cowstdvec_empty_", false);
+    footprint_fillseq_list_itr< jau::cow_darray<DataType01, counting_allocator<DataType01>, jau::nsize_t>, jau::nsize_t>("cowdarray_empty_", false);
+}
+
+TEST_CASE( "Perf Test 02 - Fill Unique and List, empty and reserve", "[datatype][unique]" ) {
+    if( catch_perf_analysis ) {
+        benchmark_fillunique_find_hash("HashSet_NoOrdr_empty", "hash__set_empty_", false);
+        benchmark_fillunique_find_itr< jau::cow_vector<DataType01, counting_allocator<DataType01>>,                std::size_t>("COW_Vector_empty_itr", "cowstdvec_empty_", false);
+        benchmark_fillunique_find_itr< jau::cow_darray<DataType01, counting_allocator<DataType01>, jau::nsize_t>, jau::nsize_t>("COW_DArray_empty_itr", "cowdarray_empty_", false);
+
+        return;
+    }
+    benchmark_fillunique_find_hash("HashSet_NoOrdr_empty", "hash__set_empty_", false);
+    benchmark_fillunique_find_itr< std::vector<DataType01, counting_allocator<DataType01>>,                std::size_t>("STD_Vector_empty_itr", "stdvec_empty_", false);
+    benchmark_fillunique_find_itr< jau::darray<DataType01, counting_allocator<DataType01>, jau::nsize_t>, jau::nsize_t>("JAU_DArray_empty_itr", "darray_empty_", false);
+    benchmark_fillunique_find_itr< jau::cow_vector<DataType01, counting_allocator<DataType01>>,                std::size_t>("COW_Vector_empty_itr", "cowstdvec_empty_", false);
+    benchmark_fillunique_find_itr< jau::cow_darray<DataType01, counting_allocator<DataType01>, jau::nsize_t>, jau::nsize_t>("COW_DArray_empty_itr", "cowdarray_empty_", false);
+
+    benchmark_fillunique_find_hash("HashSet_NoOrdr_rserv", "hash__set_empty_", true);
+    benchmark_fillunique_find_itr< std::vector<DataType01, counting_allocator<DataType01>>,                    std::size_t>("STD_Vector_rserv_itr", "stdvec_rserv", true);
+    benchmark_fillunique_find_itr< jau::darray<DataType01, counting_allocator<DataType01>, jau::nsize_t>,     jau::nsize_t>("JAU_DArray_rserv_itr", "darray_rserv", true);
+    benchmark_fillunique_find_itr< jau::cow_vector<DataType01, counting_allocator<DataType01>>,                std::size_t>("COW_Vector_rserv_itr", "cowstdvec_rserv", true);
+    benchmark_fillunique_find_itr< jau::cow_darray<DataType01, counting_allocator<DataType01>, jau::nsize_t>, jau::nsize_t>("COW_DArray_rserv_itr", "cowdarray_rserv", true);
+
 }
