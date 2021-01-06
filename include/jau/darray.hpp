@@ -231,7 +231,8 @@ namespace jau {
                     set_iterator(dest, size(), new_capacity);
                 } else {
                     pointer dest = allocStore(new_capacity);
-                    memcpy(dest, begin_, (uint8_t*)end_-(uint8_t*)begin_); // we can simply copy the memory over, also no overlap
+                    memcpy(reinterpret_cast<void*>(dest),
+                           reinterpret_cast<void*>(begin_), (uint8_t*)end_-(uint8_t*)begin_); // we can simply copy the memory over, also no overlap
 
                     freeStore();
                     set_iterator(dest, size(), new_capacity);
@@ -246,7 +247,8 @@ namespace jau {
                     set_iterator(dest, size(), new_capacity);
                 } else {
                     pointer dest = allocStore(new_capacity);
-                    memcpy(dest, begin_, (uint8_t*)end_-(uint8_t*)begin_); // we can simply copy the memory over, also no overlap
+                    memcpy(reinterpret_cast<void*>(dest),
+                           reinterpret_cast<void*>(begin_), (uint8_t*)end_-(uint8_t*)begin_); // we can simply copy the memory over, also no overlap
 
                     freeStore();
                     set_iterator(dest, size(), new_capacity);
@@ -534,7 +536,8 @@ namespace jau {
                         set_iterator(new_storage, size(), new_capacity);
                     } else {
                         pointer new_storage = allocStore(new_capacity);
-                        memcpy(new_storage, begin_, (uint8_t*)end_-(uint8_t*)begin_); // we can simply copy the memory over, also no overlap
+                        memcpy(reinterpret_cast<void*>(new_storage),
+                               reinterpret_cast<void*>(begin_), (uint8_t*)end_-(uint8_t*)begin_); // we can simply copy the memory over, also no overlap
 
                         freeStore();
                         set_iterator(new_storage, size(), new_capacity);
