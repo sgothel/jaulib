@@ -689,11 +689,12 @@ namespace jau {
                     ( pos )->~value_type(); // placement new -> manual destruction!
                     const difference_type right_count = ( end_ - pos ) - 1;
                     if( 0 < right_count ) {
-                        memmove(pos, pos+1, sizeof(value_type)*right_count); // move right elems one left
+                        memmove(reinterpret_cast<void*>(const_cast<value_type*>(pos)),
+                                reinterpret_cast<const void*>(pos+1), sizeof(value_type)*right_count); // move right elems one left
                     }
                     --end_;
                 }
-                return begin_ <= pos && pos <= end_ ? pos : nullptr;
+                return begin_ <= const_cast<iterator>(pos) && const_cast<iterator>(pos) <= end_ ? const_cast<iterator>(pos) : nullptr;
             }
 
             /**
@@ -705,11 +706,12 @@ namespace jau {
                 if( count > 0 ) {
                     const difference_type right_count = end_ - last;  // last is exclusive
                     if( 0 < right_count ) {
-                        memmove(first, last, sizeof(value_type)*right_count); // move right elems one left
+                        memmove(reinterpret_cast<void*>(const_cast<value_type*>(first)),
+                                reinterpret_cast<const void*>(last), sizeof(value_type)*right_count); // move right elems one left
                     }
                     end_ -= count;
                 }
-                return begin_ <= last && last <= end_ ? last : nullptr;
+                return begin_ <= const_cast<iterator>(last) && const_cast<iterator>(last) <= end_ ? const_cast<iterator>(last) : nullptr;
             }
 
             /**
@@ -733,7 +735,8 @@ namespace jau {
                     iterator pos_new = begin_ + pos_idx;
                     const difference_type right_count = end_ - pos_new; // include original element at 'pos_new'
                     if( 0 < right_count ) {
-                        memmove(pos_new+1, pos_new, sizeof(value_type)*right_count); // move right elems one left
+                        memmove(pos_new+1,
+                                pos_new, sizeof(value_type)*right_count); // move right elems one left
                     }
                     new (pos_new) value_type( x ); // placement new
                     ++end_;
