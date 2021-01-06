@@ -159,7 +159,7 @@ class DataType01 {
             return *this;
         }
 
-        bool nop() const noexcept { return true; }
+        int nop() const noexcept { return address.b[0]+1; }
 
         std::size_t hash_code() const noexcept {
             std::size_t h = hash;

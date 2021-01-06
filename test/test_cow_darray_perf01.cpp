@@ -59,7 +59,7 @@ static Addr48Bit start_addr(start_addr_b);
 template<class T, typename Size_type>
 DataType01 * findDataSet01_idx(T& data, DataType01 const & elem) noexcept {
     const Size_type size = data.size();
-    for (Size_type i = 0; i < size; i++) {
+    for (Size_type i = 0; i < size; ++i) {
         DataType01 & e = data[i];
         if ( elem == e ) {
             return &e;
@@ -97,30 +97,36 @@ const DataType01 * findDataSet01_itr(T& data, DataType01 const & elem) noexcept 
 }
 
 template<class T, typename Size_type>
-static void test_00_list_idx(T& data) {
+static int test_00_list_idx(T& data) {
+    int some_number = 0; // add some validated work, avoiding any 'optimization away'
     const Size_type size = data.size();
-    for (Size_type i = 0; i < size; i++) {
+    for (Size_type i = 0; i < size; ++i) {
         const DataType01 & e = data[i];
-        e.nop();
+        some_number += e.nop();
     }
+    REQUIRE(some_number > 0);
+    return some_number;
 }
 
 template<class T>
-static void test_00_list_itr(T& data) {
+static int test_00_list_itr(T& data) {
+    int some_number = 0; // add some validated work, avoiding any 'optimization away'
 #if defined(USE_STD_ITER_ALGO)
     // slower, why?
-    std::for_each(data.cbegin(), data.cend(), [](const DataType01 & e) { e.nop(); });
+    std::for_each(data.cbegin(), data.cend(), [&some_number](const DataType01 & e) { some_number += e.nop(); });
 #elif defined (USE_JAU_ITER_ALGO)
     // same logic, faster
-    jau::for_each(data.cbegin(), data.cend(), [](const DataType01 & e) { e.nop(); });
+    jau::for_each(data.cbegin(), data.cend(), [&some_number](const DataType01 & e) { some_number += e.nop(); });
 #else
     typename T::const_iterator iter = data.cbegin();
     typename T::const_iterator end = data.cend();
     for(; iter != end ; ++iter) {
         const DataType01 & e = *iter;
-        e.nop();
+        some_number += e.nop();
     }
 #endif
+    REQUIRE(some_number > 0);
+    return some_number;
 }
 
 template<class T, typename Size_type>
@@ -129,11 +135,11 @@ static void test_00_seq_find_idx(T& data) {
     const Size_type size = data.size();
     Size_type fi = 0, i=0;
 
-    for(; i<size && a0.next(); i++) {
+    for(; i<size && a0.next(); ++i) {
         DataType01 elem(a0, static_cast<uint8_t>(1));
         DataType01 *found = findDataSet01_idx<T, Size_type>(data, elem);
         if( nullptr != found ) {
-            fi++;
+            ++fi;
             found->nop();
         }
     }
@@ -146,11 +152,11 @@ static void test_00_seq_find_itr(T& data) {
     const Size_type size = data.size();
     Size_type fi = 0, i=0;
 
-    for(; i<size && a0.next(); i++) {
+    for(; i<size && a0.next(); ++i) {
         DataType01 elem(a0, static_cast<uint8_t>(1));
         const DataType01 *found = findDataSet01_itr<T>(data, elem);
         if( nullptr != found ) {
-            fi++;
+            ++fi;
             found->nop();
         }
     }
@@ -162,7 +168,7 @@ static void test_00_seq_fill(T& data, const Size_type size) {
     Addr48Bit a0(start_addr);
     Size_type i=0;
 
-    for(; i<size && a0.next(); i++) {
+    for(; i<size && a0.next(); ++i) {
         data.emplace_back( a0, static_cast<uint8_t>(1) );
     }
     REQUIRE(i == data.size());
@@ -173,12 +179,12 @@ static void test_00_seq_fill_unique_idx(T& data, const Size_type size) {
     Addr48Bit a0(start_addr);
     Size_type i=0, fi=0;
 
-    for(; i<size && a0.next(); i++) {
+    for(; i<size && a0.next(); ++i) {
         DataType01 elem(a0, static_cast<uint8_t>(1));
         DataType01* exist = findDataSet01_idx<T, Size_type>(data, elem);
         if( nullptr == exist ) {
             data.push_back( std::move( elem ) );
-            fi++;
+            ++fi;
         }
     }
     REQUIRE(i == data.size());
@@ -189,12 +195,12 @@ static void test_00_seq_fill_unique_itr(T& data, const Size_type size) {
     Addr48Bit a0(start_addr);
     Size_type i=0, fi=0;
 
-    for(; i<size && a0.next(); i++) {
+    for(; i<size && a0.next(); ++i) {
         DataType01 elem(a0, static_cast<uint8_t>(1));
         const DataType01* exist = findDataSet01_itr<T>(data, elem);
         if( nullptr == exist ) {
             data.push_back( std::move( elem ) );
-            fi++;
+            ++fi;
         }
     }
     REQUIRE(i == data.size());
@@ -227,19 +233,21 @@ static bool test_01_seq_fill_list_idx(const std::string& type_id, const Size_typ
     // if( do_print_mem ) { print_mem(type_id+" 01 (empty)", data); }
 
     if( 0 < reserve0 ) {
-        data.reserve(size0);
+        data.reserve(reserve0);
         REQUIRE(data.size() == 0);
         REQUIRE(0 != data.get_allocator().memory_usage);
-        REQUIRE(data.capacity() == size0);
+        REQUIRE(data.capacity() == reserve0);
     }
 
     test_00_seq_fill<T, Size_type>(data, size0);
     REQUIRE(0 != data.get_allocator().memory_usage);
     REQUIRE(data.size() == size0);
+    REQUIRE(data.capacity() >= size0);
 
     test_00_list_idx<T, Size_type>(data);
     REQUIRE(0 != data.get_allocator().memory_usage);
     REQUIRE(data.size() == size0);
+    REQUIRE(data.capacity() >= size0);
     if( do_print_mem ) { print_mem(type_id+" 01 (full_)", data); }
 
     data.clear();
@@ -257,19 +265,21 @@ static bool test_01_seq_fill_list_itr(const std::string& type_id, const Size_typ
     // if( do_print_mem ) { print_mem(type_id+" 01 (empty)", data); }
 
     if( 0 < reserve0 ) {
-        data.reserve(size0);
+        data.reserve(reserve0);
         REQUIRE(data.size() == 0);
         REQUIRE(0 != data.get_allocator().memory_usage);
-        REQUIRE(data.capacity() == size0);
+        REQUIRE(data.capacity() == reserve0);
     }
 
     test_00_seq_fill<T, Size_type>(data, size0);
     REQUIRE(0 != data.get_allocator().memory_usage);
     REQUIRE(data.size() == size0);
+    REQUIRE(data.capacity() >= size0);
 
     test_00_list_itr<T>(data);
     REQUIRE(0 != data.get_allocator().memory_usage);
     REQUIRE(data.size() == size0);
+    REQUIRE(data.capacity() >= size0);
     if( do_print_mem ) { print_mem(type_id+" 01 (full_)", data); }
 
     data.clear();
@@ -296,10 +306,12 @@ static bool test_02_seq_fillunique_find_idx(const std::string& type_id, const Si
     test_00_seq_fill_unique_idx<T, Size_type>(data, size0);
     REQUIRE(0 != data.get_allocator().memory_usage);
     REQUIRE(data.size() == size0);
+    REQUIRE(data.capacity() >= size0);
 
     test_00_seq_find_idx<T, Size_type>(data);
     REQUIRE(0 != data.get_allocator().memory_usage);
     REQUIRE(data.size() == size0);
+    REQUIRE(data.capacity() >= size0);
     if( do_print_mem ) { print_mem(type_id+" 02 (full_)", data); }
 
     data.clear();
@@ -325,38 +337,12 @@ static bool test_02_seq_fillunique_find_itr(const std::string& type_id, const Si
     test_00_seq_fill_unique_itr<T, Size_type>(data, size0);
     REQUIRE(0 != data.get_allocator().memory_usage);
     REQUIRE(data.size() == size0);
+    REQUIRE(data.capacity() >= size0);
 
     test_00_seq_find_itr<T, Size_type>(data);
     REQUIRE(0 != data.get_allocator().memory_usage);
     REQUIRE(data.size() == size0);
-    if( do_print_mem ) { print_mem(type_id+" 02 (full_)", data); }
-
-    data.clear();
-    REQUIRE(data.size() == 0);
-    // if( do_print_mem ) { print_mem(type_id+" 02 (clear)", data); }
-    // REQUIRE(0 == data.get_allocator().memory_usage);
-    return data.size() == 0;
-}
-
-template<class T, typename Size_type>
-static bool test_02b_seq_fillunique_find_itr_rserv(const std::string& type_id, const Size_type size0, const bool do_print_mem) {
-    T data;
-    REQUIRE(0 == data.get_allocator().memory_usage);
-    REQUIRE(data.size() == 0);
-    // if( do_print_mem ) { print_mem(type_id+" 02 (empty)", data); }
-
-    data.reserve(size0);
-    REQUIRE(data.size() == 0);
-    REQUIRE(0 != data.get_allocator().memory_usage);
-    REQUIRE(data.capacity() == size0);
-
-    test_00_seq_fill_unique_itr<T, Size_type>(data, size0);
-    REQUIRE(0 != data.get_allocator().memory_usage);
-    REQUIRE(data.size() == size0);
-
-    test_00_seq_find_itr<T, Size_type>(data);
-    REQUIRE(0 != data.get_allocator().memory_usage);
-    REQUIRE(data.size() == size0);
+    REQUIRE(data.capacity() >= size0);
     if( do_print_mem ) { print_mem(type_id+" 02 (full_)", data); }
 
     data.clear();
@@ -490,113 +476,70 @@ static bool benchmark_fillunique_find_itr(const std::string& title_pre, const st
     };
     return true;
 }
-template<class T, typename Size_type>
-static bool benchmark_fillunique_find_itr_rserv(const std::string& title_pre, const std::string& type_id) {
-    if( catch_perf_analysis ) {
-        BENCHMARK(title_pre+" FillUni_List 1000") {
-            return test_02b_seq_fillunique_find_itr_rserv<T, Size_type>(type_id, 1000, false);
-        };
-        // test_02b_seq_fillunique_find_itr_rserv<T, Size_type>(type_id, 100000, false);
-        return true;
-    }
-    if( catch_auto_run ) {
-        test_02b_seq_fillunique_find_itr_rserv<T, Size_type>(type_id, 50, false);
-        return true;
-    }
-    // BENCHMARK(title_pre+" FillUni_List 25") {
-    //    return test_02b_seq_fillunique_find_itr_rserv<T, Size_type>(type_id, 25, false);
-    // };
-    BENCHMARK(title_pre+" FillUni_List 50") {
-        return test_02b_seq_fillunique_find_itr_rserv<T, Size_type>(type_id, 50, false);
-    };
-    BENCHMARK(title_pre+" FillUni_List 100") {
-        return test_02b_seq_fillunique_find_itr_rserv<T, Size_type>(type_id, 100, false);
-    };
-    BENCHMARK(title_pre+" FillUni_List 1000") {
-        return test_02b_seq_fillunique_find_itr_rserv<T, Size_type>(type_id, 1000, false);
-    };
-    return true;
-}
 
 /****************************************************************************************
  ****************************************************************************************/
 
 TEST_CASE( "Memory Footprint 01 - Fill Sequential and List", "[datatype][footprint]" ) {
     if( catch_perf_analysis ) {
-#if 1
-        footprint_fillseq_list_itr< jau::cow_vector<DataType01, counting_allocator<DataType01>>, std::size_t >("cowstdvec_empty_", false);
-        footprint_fillseq_list_itr< jau::cow_darray<DataType01, counting_allocator<DataType01>>, jau::nsize_t >("cowdarray_empty_", false);
-#endif
+        footprint_fillseq_list_itr< jau::cow_vector<DataType01, counting_allocator<DataType01>>,                std::size_t>("cowstdvec_empty_", false);
+        footprint_fillseq_list_itr< jau::cow_darray<DataType01, counting_allocator<DataType01>, jau::nsize_t>, jau::nsize_t>("cowdarray_empty_", false);
         return;
     }
-    footprint_fillseq_list_itr< std::vector<DataType01, counting_allocator<DataType01>>, std::size_t >("stdvec_empty_", false);
-    footprint_fillseq_list_itr< jau::darray<DataType01, counting_allocator<DataType01>>, jau::nsize_t >("darray_empty_", false);
-    footprint_fillseq_list_itr< jau::cow_vector<DataType01, counting_allocator<DataType01>>, std::size_t >("cowstdvec_empty_", false);
-    footprint_fillseq_list_itr< jau::cow_darray<DataType01, counting_allocator<DataType01>>, jau::nsize_t >("cowdarray_empty_", false);
+    footprint_fillseq_list_itr< std::vector<DataType01, counting_allocator<DataType01>>,                std::size_t>("stdvec_empty_", false);
+    footprint_fillseq_list_itr< jau::darray<DataType01, counting_allocator<DataType01>, jau::nsize_t>, jau::nsize_t>("darray_empty_", false);
+    footprint_fillseq_list_itr< jau::cow_vector<DataType01, counting_allocator<DataType01>>,                std::size_t>("cowstdvec_empty_", false);
+    footprint_fillseq_list_itr< jau::cow_darray<DataType01, counting_allocator<DataType01>, jau::nsize_t>, jau::nsize_t>("cowdarray_empty_", false);
 
 #if 0
-    footprint_fillseq_list_itr< std::vector<DataType01, counting_allocator<DataType01>>, std::size_t >("stdvec_rserv", true);
-    footprint_fillseq_list_itr< jau::darray<DataType01, counting_allocator<DataType01>>, jau::nsize_t >("darray_rserv", true);
-    footprint_fillseq_list_itr< jau::cow_vector<DataType01, counting_allocator<DataType01>>, std::size_t >("cowstdvec_rserv", true);
-    footprint_fillseq_list_itr< jau::cow_darray<DataType01, counting_allocator<DataType01>>, jau::nsize_t >("cowdarray_rserv", true);
+    footprint_fillseq_list_itr< std::vector<DataType01, counting_allocator<DataType01>>,                std::size_t>("stdvec_rserv", true);
+    footprint_fillseq_list_itr< jau::darray<DataType01, counting_allocator<DataType01>, jau::nsize_t>, jau::nsize_t>("darray_rserv", true);
+    footprint_fillseq_list_itr< jau::cow_vector<DataType01, counting_allocator<DataType01>>,                std::size_t>("cowstdvec_rserv", true);
+    footprint_fillseq_list_itr< jau::cow_darray<DataType01, counting_allocator<DataType01>, jau::nsize_t>, jau::nsize_t>("cowdarray_rserv", true);
 #endif
 }
 
 TEST_CASE( "Perf Test 01 - Fill Sequential and List, empty and reserve", "[datatype][sequential]" ) {
     if( catch_perf_analysis ) {
-#if 1
-        benchmark_fillseq_list_itr< std::vector<DataType01, counting_allocator<DataType01>>, std::size_t >("STD_Vector_empty_itr", "stdvec_empty_", false);
-        benchmark_fillseq_list_itr< jau::darray<DataType01, counting_allocator<DataType01>, jau::nsize_t>, jau::nsize_t >("JAU_DArray_empty_itr", "darray_empty_", false);
-#endif
+        benchmark_fillseq_list_itr< jau::cow_vector<DataType01, counting_allocator<DataType01>>,            std::size_t>("COW_Vector_empty_itr", "cowstdvec_empty_", false);
+        benchmark_fillseq_list_itr< jau::darray<DataType01, counting_allocator<DataType01>, jau::nsize_t>, jau::nsize_t>("JAU_DArray_empty_itr", "darray_empty_", false);
         return;
     }
-    benchmark_fillseq_list_idx< std::vector<DataType01, counting_allocator<DataType01>>, std::size_t >("STD_Vector_empty_idx", "stdvec_empty_", false);
-    benchmark_fillseq_list_itr< std::vector<DataType01, counting_allocator<DataType01>>, std::size_t >("STD_Vector_empty_itr", "stdvec_empty_", false);
+    benchmark_fillseq_list_idx< std::vector<DataType01, counting_allocator<DataType01>>,                std::size_t>("STD_Vector_empty_idx", "stdvec_empty_", false);
+    benchmark_fillseq_list_itr< std::vector<DataType01, counting_allocator<DataType01>>,                std::size_t>("STD_Vector_empty_itr", "stdvec_empty_", false);
 
-    benchmark_fillseq_list_idx< jau::darray<DataType01, counting_allocator<DataType01>>, jau::nsize_t >("JAU_DArray_empty_idx", "darray_empty_", false);
-    benchmark_fillseq_list_itr< jau::darray<DataType01, counting_allocator<DataType01>, jau::nsize_t>, jau::nsize_t >("JAU_DArray_empty_itr", "darray_empty_", false);
+    benchmark_fillseq_list_idx< jau::darray<DataType01, counting_allocator<DataType01>, jau::nsize_t>, jau::nsize_t>("JAU_DArray_empty_idx", "darray_empty_", false);
+    benchmark_fillseq_list_itr< jau::darray<DataType01, counting_allocator<DataType01>, jau::nsize_t>, jau::nsize_t>("JAU_DArray_empty_itr", "darray_empty_", false);
 
-    // benchmark_fillseq_list_idx< jau::cow_vector<DataType01, counting_allocator<DataType01>>, std::size_t >("COW_Vector_empty_idx", "cowstdvec_empty_", false);
-    benchmark_fillseq_list_itr< jau::cow_vector<DataType01, counting_allocator<DataType01>>, std::size_t >("COW_Vector_empty_itr", "cowstdvec_empty_", false);
+    benchmark_fillseq_list_itr< jau::cow_vector<DataType01, counting_allocator<DataType01>>,                std::size_t>("COW_Vector_empty_itr", "cowstdvec_empty_", false);
 
-    // benchmark_fillseq_list_idx< jau::cow_darray<DataType01, counting_allocator<DataType01>>, jau::nsize_t >("COW_DArray_empty_idx", "cowdarray_empty_", false);
-    benchmark_fillseq_list_itr< jau::cow_darray<DataType01, counting_allocator<DataType01>>, jau::nsize_t >("COW_DArray_empty_itr", "cowdarray_empty_", false);
+    benchmark_fillseq_list_itr< jau::cow_darray<DataType01, counting_allocator<DataType01>, jau::nsize_t>, jau::nsize_t>("COW_DArray_empty_itr", "cowdarray_empty_", false);
 
-    benchmark_fillseq_list_itr< std::vector<DataType01, counting_allocator<DataType01>>, std::size_t >("STD_Vector_rserv_itr", "stdvec_rserv", true);
-    benchmark_fillseq_list_itr< jau::darray<DataType01, counting_allocator<DataType01>>, jau::nsize_t >("JAU_DArray_rserv_itr", "darray_rserv", true);
-    benchmark_fillseq_list_itr< jau::cow_vector<DataType01, counting_allocator<DataType01>>, std::size_t >("COW_Vector_rserv_itr", "cowstdvec_rserv", true);
-    benchmark_fillseq_list_itr< jau::cow_vector<DataType01, counting_allocator<DataType01>>, std::size_t >("COW_Vector_rserv_itr", "cowstdvec_rserv", true);
+    benchmark_fillseq_list_itr< std::vector<DataType01, counting_allocator<DataType01>>,                std::size_t>("STD_Vector_rserv_itr", "stdvec_rserv", true);
+    benchmark_fillseq_list_itr< jau::darray<DataType01, counting_allocator<DataType01>, jau::nsize_t>, jau::nsize_t>("JAU_DArray_rserv_itr", "darray_rserv", true);
+    benchmark_fillseq_list_itr< jau::cow_vector<DataType01, counting_allocator<DataType01>>,               std::size_t>("COW_Vector_rserv_itr", "cowstdvec_rserv", true);
+    benchmark_fillseq_list_itr< jau::cow_darray<DataType01, counting_allocator<DataType01>, jau::nsize_t>, std::size_t>("COW_DArray_rserv_itr", "cowdarray_rserv", true);
 }
 
 TEST_CASE( "Perf Test 02 - Fill Unique and List, empty and reserve", "[datatype][unique]" ) {
     if( catch_perf_analysis ) {
-#if 1
-        // benchmark_fillunique_find_itr_rserv< jau::cow_vector<DataType01, counting_allocator<DataType01>>, std::size_t >("COW_Vector_rserv_itr", "cowstdvec_rserv_");
-        // benchmark_fillunique_find_itr_rserv< jau::cow_darray<DataType01, counting_allocator<DataType01>>, jau::nsize_t >("COW_DArray_rserv_itr", "cowdarray_rserv_");
-
-        benchmark_fillunique_find_itr< jau::cow_vector<DataType01, counting_allocator<DataType01>>, std::size_t >("COW_Vector_empty_itr", "cowstdvec_empty_", false);
-        benchmark_fillunique_find_itr< jau::cow_darray<DataType01, counting_allocator<DataType01>>, jau::nsize_t >("COW_DArray_empty_itr", "cowdarray_empty_", false);
-#endif
+        benchmark_fillunique_find_itr< jau::cow_vector<DataType01, counting_allocator<DataType01>>,                std::size_t>("COW_Vector_empty_itr", "cowstdvec_empty_", false);
+        benchmark_fillunique_find_itr< jau::cow_darray<DataType01, counting_allocator<DataType01>, jau::nsize_t>, jau::nsize_t>("COW_DArray_empty_itr", "cowdarray_empty_", false);
         return;
     }
-    benchmark_fillunique_find_idx< std::vector<DataType01, counting_allocator<DataType01>>, std::size_t >("STD_Vector_empty_idx", "stdvec_empty_", false);
+    benchmark_fillunique_find_idx< std::vector<DataType01, counting_allocator<DataType01>>,                std::size_t>("STD_Vector_empty_idx", "stdvec_empty_", false);
+    benchmark_fillunique_find_itr< std::vector<DataType01, counting_allocator<DataType01>>,                std::size_t>("STD_Vector_empty_itr", "stdvec_empty_", false);
 
-    benchmark_fillunique_find_itr< std::vector<DataType01, counting_allocator<DataType01>>, std::size_t >("STD_Vector_empty_itr", "stdvec_empty_", false);
+    benchmark_fillunique_find_idx< jau::darray<DataType01, counting_allocator<DataType01>, jau::nsize_t>, jau::nsize_t>("JAU_DArray_empty_idx", "darray_empty_", false);
+    benchmark_fillunique_find_itr< jau::darray<DataType01, counting_allocator<DataType01>, jau::nsize_t>, jau::nsize_t>("JAU_DArray_empty_itr", "darray_empty_", false);
 
-    benchmark_fillunique_find_idx< jau::darray<DataType01, counting_allocator<DataType01>>, jau::nsize_t >("JAU_DArray_empty_idx", "darray_empty_", false);
-    benchmark_fillunique_find_itr< jau::darray<DataType01, counting_allocator<DataType01>>, jau::nsize_t >("JAU_DArray_empty_itr", "darray_empty_", false);
+    benchmark_fillunique_find_itr< jau::cow_vector<DataType01, counting_allocator<DataType01>>,                std::size_t>("COW_Vector_empty_itr", "cowstdvec_empty_", false);
 
-    // benchmark_fillunique_find_idx< jau::cow_vector<DataType01, counting_allocator<DataType01>>, std::size_t >("COW_Vector_empty_idx", "cowstdvec_empty_", false);
-    benchmark_fillunique_find_itr< jau::cow_vector<DataType01, counting_allocator<DataType01>>, std::size_t >("COW_Vector_empty_itr", "cowstdvec_empty_", false);
+    benchmark_fillunique_find_itr< jau::cow_darray<DataType01, counting_allocator<DataType01>, jau::nsize_t>, jau::nsize_t>("COW_DArray_empty_itr", "cowdarray_empty_", false);
 
-    // benchmark_fillunique_find_idx< jau::cow_darray<DataType01, counting_allocator<DataType01>>, jau::nsize_t >("COW_DArray_empty_idx", "cowdarray_empty_", false);
-    benchmark_fillunique_find_itr< jau::cow_darray<DataType01, counting_allocator<DataType01>>, jau::nsize_t >("COW_DArray_empty_itr", "cowdarray_empty_", false);
-
-#if 1
-    benchmark_fillunique_find_itr_rserv< std::vector<DataType01, counting_allocator<DataType01>>, std::size_t >("STD_Vector_rserv_itr", "stdvec_rserv");
-    benchmark_fillunique_find_itr_rserv< jau::darray<DataType01, counting_allocator<DataType01>>, jau::nsize_t >("JAU_DArray_rserv_itr", "darray_rserv");
-    benchmark_fillunique_find_itr_rserv< jau::cow_vector<DataType01, counting_allocator<DataType01>>, std::size_t >("COW_Vector_rserv_itr", "cowstdvec_rserv");
-    benchmark_fillunique_find_itr_rserv< jau::cow_darray<DataType01, counting_allocator<DataType01>>, jau::nsize_t >("COW_DArray_rserv_itr", "cowdarray_rserv");
-#endif
+    benchmark_fillunique_find_itr< std::vector<DataType01, counting_allocator<DataType01>>,                    std::size_t>("STD_Vector_rserv_itr", "stdvec_rserv", true);
+    benchmark_fillunique_find_itr< jau::darray<DataType01, counting_allocator<DataType01>, jau::nsize_t>,     jau::nsize_t>("JAU_DArray_rserv_itr", "darray_rserv", true);
+    benchmark_fillunique_find_itr< jau::cow_vector<DataType01, counting_allocator<DataType01>>,                std::size_t>("COW_Vector_rserv_itr", "cowstdvec_rserv", true);
+    benchmark_fillunique_find_itr< jau::cow_darray<DataType01, counting_allocator<DataType01>, jau::nsize_t>, jau::nsize_t>("COW_DArray_rserv_itr", "cowdarray_rserv", true);
 }
 
