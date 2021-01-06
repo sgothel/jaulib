@@ -110,6 +110,7 @@ Changes
 **0.3.0**
 
 * TODO
+* Introduce jau::callocator for jau::darray to support realloc instead of alloc, copy and dtor
 * Passed gcc-10, gcc-11, clang-9 and clang-11
 * Passed detailed cow_iterator test.
 * jau::cow_vector is marked deprecated, as only jau::cow_darray can give certain guarantees using jau::darray
