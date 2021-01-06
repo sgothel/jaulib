@@ -509,46 +509,46 @@ TEST_CASE( "Memory Footprint 01 - Fill Sequential and List", "[datatype][footpri
 TEST_CASE( "Perf Test 01 - Fill Sequential and List, empty and reserve", "[datatype][sequential]" ) {
     if( catch_perf_analysis ) {
         // benchmark_fillseq_list_itr< jau::cow_vector<DataType01, std::allocator<DataType01>>,            std::size_t>("COW_Vector_empty_itr", "cowstdvec_empty_", false);
-        // benchmark_fillseq_list_itr< jau::darray<DataType01, callocator<DataType01>, jau::nsize_t>, jau::nsize_t>("JAU_DArray_empty_itr", "darray_empty_", false);
+        // benchmark_fillseq_list_itr< jau::darray<DataType01, jau::callocator<DataType01>, jau::nsize_t>, jau::nsize_t>("JAU_DArray_empty_itr", "darray_empty_", false);
         benchmark_fillseq_list_itr< std::vector<DataType01, std::allocator<DataType01>>,                std::size_t>("STD_Vector_empty_itr", "stdvec_empty_", false);
-        benchmark_fillseq_list_itr< jau::darray<DataType01, callocator<DataType01>, jau::nsize_t>, jau::nsize_t>("JAU_DArray_empty_itr", "darray_empty_", false);
+        benchmark_fillseq_list_itr< jau::darray<DataType01, jau::callocator<DataType01>, jau::nsize_t>, jau::nsize_t>("JAU_DArray_empty_itr", "darray_empty_", false);
         return;
     }
     benchmark_fillseq_list_idx< std::vector<DataType01, std::allocator<DataType01>>,                std::size_t>("STD_Vector_empty_idx", "stdvec_empty_", false);
     benchmark_fillseq_list_itr< std::vector<DataType01, std::allocator<DataType01>>,                std::size_t>("STD_Vector_empty_itr", "stdvec_empty_", false);
 
-    benchmark_fillseq_list_idx< jau::darray<DataType01, callocator<DataType01>, jau::nsize_t>, jau::nsize_t>("JAU_DArray_empty_idx", "darray_empty_", false);
-    benchmark_fillseq_list_itr< jau::darray<DataType01, callocator<DataType01>, jau::nsize_t>, jau::nsize_t>("JAU_DArray_empty_itr", "darray_empty_", false);
+    benchmark_fillseq_list_idx< jau::darray<DataType01, jau::callocator<DataType01>, jau::nsize_t>, jau::nsize_t>("JAU_DArray_empty_idx", "darray_empty_", false);
+    benchmark_fillseq_list_itr< jau::darray<DataType01, jau::callocator<DataType01>, jau::nsize_t>, jau::nsize_t>("JAU_DArray_empty_itr", "darray_empty_", false);
 
     benchmark_fillseq_list_itr< jau::cow_vector<DataType01, std::allocator<DataType01>>,                std::size_t>("COW_Vector_empty_itr", "cowstdvec_empty_", false);
 
-    benchmark_fillseq_list_itr< jau::cow_darray<DataType01, callocator<DataType01>, jau::nsize_t>, jau::nsize_t>("COW_DArray_empty_itr", "cowdarray_empty_", false);
+    benchmark_fillseq_list_itr< jau::cow_darray<DataType01, jau::callocator<DataType01>, jau::nsize_t>, jau::nsize_t>("COW_DArray_empty_itr", "cowdarray_empty_", false);
 
     benchmark_fillseq_list_itr< std::vector<DataType01, std::allocator<DataType01>>,                std::size_t>("STD_Vector_rserv_itr", "stdvec_rserv", true);
-    benchmark_fillseq_list_itr< jau::darray<DataType01, callocator<DataType01>, jau::nsize_t>, jau::nsize_t>("JAU_DArray_rserv_itr", "darray_rserv", true);
+    benchmark_fillseq_list_itr< jau::darray<DataType01, jau::callocator<DataType01>, jau::nsize_t>, jau::nsize_t>("JAU_DArray_rserv_itr", "darray_rserv", true);
     benchmark_fillseq_list_itr< jau::cow_vector<DataType01, std::allocator<DataType01>>,               std::size_t>("COW_Vector_rserv_itr", "cowstdvec_rserv", true);
-    benchmark_fillseq_list_itr< jau::cow_darray<DataType01, callocator<DataType01>, jau::nsize_t>, std::size_t>("COW_DArray_rserv_itr", "cowdarray_rserv", true);
+    benchmark_fillseq_list_itr< jau::cow_darray<DataType01, jau::callocator<DataType01>, jau::nsize_t>, std::size_t>("COW_DArray_rserv_itr", "cowdarray_rserv", true);
 }
 
 TEST_CASE( "Perf Test 02 - Fill Unique and List, empty and reserve", "[datatype][unique]" ) {
     if( catch_perf_analysis ) {
         // benchmark_fillunique_find_itr< jau::cow_vector<DataType01, std::allocator<DataType01>>,                std::size_t>("COW_Vector_empty_itr", "cowstdvec_empty_", false);
-        // benchmark_fillunique_find_itr< jau::cow_darray<DataType01, callocator<DataType01>, jau::nsize_t>, jau::nsize_t>("COW_DArray_empty_itr", "cowdarray_empty_", false);
+        // benchmark_fillunique_find_itr< jau::cow_darray<DataType01, jau::callocator<DataType01>, jau::nsize_t>, jau::nsize_t>("COW_DArray_empty_itr", "cowdarray_empty_", false);
         return;
     }
     benchmark_fillunique_find_idx< std::vector<DataType01, std::allocator<DataType01>>,                std::size_t>("STD_Vector_empty_idx", "stdvec_empty_", false);
     benchmark_fillunique_find_itr< std::vector<DataType01, std::allocator<DataType01>>,                std::size_t>("STD_Vector_empty_itr", "stdvec_empty_", false);
 
-    benchmark_fillunique_find_idx< jau::darray<DataType01, callocator<DataType01>, jau::nsize_t>, jau::nsize_t>("JAU_DArray_empty_idx", "darray_empty_", false);
-    benchmark_fillunique_find_itr< jau::darray<DataType01, callocator<DataType01>, jau::nsize_t>, jau::nsize_t>("JAU_DArray_empty_itr", "darray_empty_", false);
+    benchmark_fillunique_find_idx< jau::darray<DataType01, jau::callocator<DataType01>, jau::nsize_t>, jau::nsize_t>("JAU_DArray_empty_idx", "darray_empty_", false);
+    benchmark_fillunique_find_itr< jau::darray<DataType01, jau::callocator<DataType01>, jau::nsize_t>, jau::nsize_t>("JAU_DArray_empty_itr", "darray_empty_", false);
 
     benchmark_fillunique_find_itr< jau::cow_vector<DataType01, std::allocator<DataType01>>,                std::size_t>("COW_Vector_empty_itr", "cowstdvec_empty_", false);
 
-    benchmark_fillunique_find_itr< jau::cow_darray<DataType01, callocator<DataType01>, jau::nsize_t>, jau::nsize_t>("COW_DArray_empty_itr", "cowdarray_empty_", false);
+    benchmark_fillunique_find_itr< jau::cow_darray<DataType01, jau::callocator<DataType01>, jau::nsize_t>, jau::nsize_t>("COW_DArray_empty_itr", "cowdarray_empty_", false);
 
     benchmark_fillunique_find_itr< std::vector<DataType01, std::allocator<DataType01>>,                    std::size_t>("STD_Vector_rserv_itr", "stdvec_rserv", true);
-    benchmark_fillunique_find_itr< jau::darray<DataType01, callocator<DataType01>, jau::nsize_t>,     jau::nsize_t>("JAU_DArray_rserv_itr", "darray_rserv", true);
+    benchmark_fillunique_find_itr< jau::darray<DataType01, jau::callocator<DataType01>, jau::nsize_t>,     jau::nsize_t>("JAU_DArray_rserv_itr", "darray_rserv", true);
     benchmark_fillunique_find_itr< jau::cow_vector<DataType01, std::allocator<DataType01>>,                std::size_t>("COW_Vector_rserv_itr", "cowstdvec_rserv", true);
-    benchmark_fillunique_find_itr< jau::cow_darray<DataType01, callocator<DataType01>, jau::nsize_t>, jau::nsize_t>("COW_DArray_rserv_itr", "cowdarray_rserv", true);
+    benchmark_fillunique_find_itr< jau::cow_darray<DataType01, jau::callocator<DataType01>, jau::nsize_t>, jau::nsize_t>("COW_DArray_rserv_itr", "cowdarray_rserv", true);
 }
 
