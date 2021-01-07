@@ -29,7 +29,7 @@ Run with -? for options
 -------------------------------------------------------------------------------
 Perf Test 02 - Fill Unique and List, empty and reserve
 -------------------------------------------------------------------------------
-/net/risa/projects/zafena/jaulib/test/test_hashset_perf01.cpp:423
+/net/risa/projects/zafena/jaulib/test/test_hashset_perf01.cpp:384
 ...............................................................................
 
 benchmark name                       samples       iterations    estimated
@@ -37,156 +37,156 @@ benchmark name                       samples       iterations    estimated
                                      std dev       low std dev   high std dev
 -------------------------------------------------------------------------------
 HashSet_NoOrdr_empty FillUni_List                                              
-50                                             100             8    10.2944 ms 
-                                        12.8225 us    12.7913 us    12.8834 us 
-                                        211.665 ns    115.142 ns    326.765 ns 
+50                                             100             9    10.6047 ms 
+                                         11.786 us    11.7652 us    11.8352 us 
+                                        153.295 ns    55.0297 ns    267.544 ns 
                                                                                
 HashSet_NoOrdr_empty FillUni_List                                              
-100                                            100             5    11.9925 ms 
-                                        24.0109 us    23.9643 us    24.1103 us 
-                                        333.746 ns    194.715 ns    528.016 ns 
+100                                            100             5     11.691 ms 
+                                        23.2341 us    23.1812 us    23.3466 us 
+                                         378.23 ns    206.178 ns    615.509 ns 
                                                                                
 HashSet_NoOrdr_empty FillUni_List                                              
-1000                                           100             1    25.0836 ms 
-                                         252.24 us    251.801 us    252.881 us 
-                                        2.67306 us    1.97567 us    3.44254 us 
+1000                                           100             1    24.8916 ms 
+                                        250.716 us    250.232 us     251.71 us 
+                                        3.38533 us    2.03634 us    6.19763 us 
                                                                                
 STD_Vector_empty_itr FillUni_List                                              
-50                                             100            12    10.3212 ms 
-                                        8.60645 us    8.59206 us     8.6412 us 
-                                        112.914 ns    65.5258 ns    179.714 ns 
+50                                             100            12    10.3872 ms 
+                                        8.62778 us    8.61484 us    8.66034 us 
+                                        95.2573 ns     26.553 ns    169.622 ns 
                                                                                
 STD_Vector_empty_itr FillUni_List                                              
-100                                            100             4    10.6296 ms 
-                                         26.602 us    26.5558 us    26.7095 us 
-                                        349.172 ns    195.969 ns    563.323 ns 
+100                                            100             4    10.6844 ms 
+                                        26.7706 us    26.6878 us    27.0262 us 
+                                          660.7 ns     228.05 ns     1.4221 us 
                                                                                
 STD_Vector_empty_itr FillUni_List                                              
-1000                                           100             1    213.242 ms 
-                                         2.1143 ms    2.11353 ms    2.11508 ms 
-                                        3.95824 us    3.87962 us    4.06804 us 
+1000                                           100             1     219.18 ms 
+                                        2.19781 ms    2.19659 ms    2.20032 ms 
+                                        8.55154 us    5.05116 us    16.4173 us 
                                                                                
 JAU_DArray_empty_itr FillUni_List                                              
-50                                             100            12    10.8204 ms 
-                                        9.06811 us    9.05175 us    9.10598 us 
-                                        123.216 ns    69.9651 ns    195.383 ns 
+50                                             100            11     9.8549 ms 
+                                        8.98084 us    8.96071 us    9.02203 us 
+                                        140.378 ns    81.6707 ns    217.888 ns 
                                                                                
 JAU_DArray_empty_itr FillUni_List                                              
-100                                            100             4    10.7656 ms 
-                                        26.9287 us      26.88 us    27.0401 us 
-                                        362.446 ns    211.752 ns    575.296 ns 
+100                                            100             4    10.7168 ms 
+                                        26.7708 us    26.7178 us    26.8881 us 
+                                        379.298 ns    215.061 ns    611.209 ns 
                                                                                
 JAU_DArray_empty_itr FillUni_List                                              
-1000                                           100             1    212.498 ms 
-                                        2.11656 ms    2.11574 ms    2.11736 ms 
-                                        4.10682 us    4.01196 us    4.29394 us 
+1000                                           100             1    218.801 ms 
+                                        2.19647 ms    2.19514 ms    2.20028 ms 
+                                        10.6801 us    4.49052 us    23.2775 us 
                                                                                
 COW_Vector_empty_itr FillUni_List                                              
-50                                             100             2    13.3294 ms 
-                                         66.854 us    66.7236 us    67.1107 us 
-                                        882.066 ns    471.992 ns    1.33289 us 
+50                                             100             2    13.3412 ms 
+                                        67.0565 us     66.922 us    67.3179 us 
+                                        914.224 ns    495.889 ns    1.36074 us 
                                                                                
 COW_Vector_empty_itr FillUni_List                                              
-100                                            100             1    17.0298 ms 
-                                        170.134 us    169.867 us    170.637 us 
-                                        1.80554 us    1.04471 us    2.67932 us 
+100                                            100             1    17.0542 ms 
+                                        171.047 us    170.627 us    172.038 us 
+                                        3.09183 us    1.61642 us    6.08157 us 
                                                                                
 COW_Vector_empty_itr FillUni_List                                              
-1000                                           100             1    719.427 ms 
-                                        7.20055 ms    7.19679 ms    7.20447 ms 
-                                        19.6006 us    18.2415 us    22.3895 us 
+1000                                           100             1     709.95 ms 
+                                        7.09095 ms     7.0893 ms    7.09318 ms 
+                                        9.74731 us    7.38605 us    13.1763 us 
                                                                                
 COW_DArray_empty_itr FillUni_List                                              
-50                                             100             3    12.9342 ms 
-                                         43.117 us    43.0361 us    43.2791 us 
-                                        540.577 ns    280.108 ns    799.948 ns 
+50                                             100             3    12.4905 ms 
+                                        41.5601 us    41.4946 us    41.7133 us 
+                                        490.539 ns    284.914 ns    774.693 ns 
                                                                                
 COW_DArray_empty_itr FillUni_List                                              
-100                                            100             2    18.8424 ms 
-                                        94.2633 us    94.1242 us    94.5307 us 
-                                        963.115 ns    607.474 ns     1.3784 us 
+100                                            100             2     18.248 ms 
+                                        91.1895 us      91.04 us    91.4639 us 
+                                        1.00543 us    627.786 ns    1.45076 us 
                                                                                
 COW_DArray_empty_itr FillUni_List                                              
-1000                                           100             1    291.364 ms 
-                                        2.90612 ms    2.90359 ms    2.90871 ms 
-                                         13.075 us    11.9768 us    14.7452 us 
+1000                                           100             1    281.208 ms 
+                                        2.81011 ms    2.80866 ms     2.8117 ms 
+                                        7.78178 us    6.74855 us    9.57065 us 
                                                                                
 HashSet_NoOrdr_rserv FillUni_List                                              
-50                                             100            11    10.8515 ms 
-                                        9.85563 us    9.83932 us    9.89571 us 
-                                        120.123 ns    31.3728 ns    214.402 ns 
+50                                             100            10      9.687 ms 
+                                        9.68376 us    9.66363 us    9.72702 us 
+                                        144.647 ns    80.8497 ns    229.208 ns 
                                                                                
 HashSet_NoOrdr_rserv FillUni_List                                              
-100                                            100             6     11.055 ms 
-                                        18.4808 us    18.4371 us    18.5691 us 
-                                        305.998 ns    179.278 ns    495.092 ns 
+100                                            100             6    11.0088 ms 
+                                        18.3468 us    18.3104 us    18.4214 us 
+                                         254.67 ns    141.679 ns    399.659 ns 
                                                                                
 HashSet_NoOrdr_rserv FillUni_List                                              
-1000                                           100             1    23.5642 ms 
-                                        237.445 us     237.03 us    238.126 us 
-                                        2.66165 us    1.84336 us    3.82944 us 
+1000                                           100             1     23.522 ms 
+                                        236.312 us    235.898 us    237.032 us 
+                                        2.70868 us    1.78976 us    4.07273 us 
                                                                                
 STD_Vector_rserv_itr FillUni_List                                              
-50                                             100            13    10.4585 ms 
-                                        8.09605 us    8.08053 us    8.12657 us 
-                                        106.976 ns    65.0323 ns    165.927 ns 
+50                                             100            12     9.7092 ms 
+                                        8.09875 us    8.08625 us    8.12947 us 
+                                        91.3008 ns    20.3419 ns    163.862 ns 
                                                                                
 STD_Vector_rserv_itr FillUni_List                                              
-100                                            100             4    10.2696 ms 
-                                        25.6915 us    25.6474 us     25.797 us 
-                                        347.972 ns    201.642 ns    553.582 ns 
+100                                            100             4     10.316 ms 
+                                        25.8462 us    25.8066 us     25.939 us 
+                                        292.931 ns    107.352 ns    508.393 ns 
                                                                                
 STD_Vector_rserv_itr FillUni_List                                              
-1000                                           100             1    213.137 ms 
-                                        2.10789 ms    2.10704 ms    2.10887 ms 
-                                        4.62626 us    3.98228 us    6.86279 us 
+1000                                           100             1    218.524 ms 
+                                        2.19158 ms    2.19052 ms    2.19349 ms 
+                                        7.09576 us    4.62263 us    12.8248 us 
                                                                                
 JAU_DArray_rserv_itr FillUni_List                                              
-50                                             100            13    10.5924 ms 
-                                        8.13325 us    8.12099 us    8.16472 us 
-                                        87.7125 ns    9.51621 ns    159.228 ns 
+50                                             100            12     9.7332 ms 
+                                        8.11606 us    8.10076 us    8.15411 us 
+                                        108.212 ns     9.6092 ns     199.47 ns 
                                                                                
 JAU_DArray_rserv_itr FillUni_List                                              
-100                                            100             4     10.372 ms 
-                                         25.953 us    25.9062 us    26.0639 us 
-                                         361.65 ns    210.481 ns    574.258 ns 
+100                                            100             4    10.3108 ms 
+                                        25.8044 us    25.7556 us    25.9123 us 
+                                        355.449 ns    203.481 ns    561.779 ns 
                                                                                
 JAU_DArray_rserv_itr FillUni_List                                              
-1000                                           100             1    211.968 ms 
-                                        2.11191 ms     2.1109 ms     2.1143 ms 
-                                        7.46121 us    4.12038 us    15.3731 us 
+1000                                           100             1    218.354 ms 
+                                        2.19227 ms    2.19098 ms    2.19485 ms 
+                                        8.98294 us    4.46776 us    15.0013 us 
                                                                                
 COW_Vector_rserv_itr FillUni_List                                              
-50                                             100             2     13.492 ms 
-                                        67.5832 us    67.4772 us     67.828 us 
-                                        793.689 ns    457.539 ns    1.26579 us 
+50                                             100             2    13.4444 ms 
+                                        67.7504 us     67.616 us    68.0025 us 
+                                        909.961 ns    537.269 ns    1.33471 us 
                                                                                
 COW_Vector_rserv_itr FillUni_List                                              
-100                                            100             1    17.0937 ms 
-                                        171.271 us     171.01 us    171.786 us 
-                                        1.78383 us    954.025 ns    2.68622 us 
+100                                            100             1    17.0464 ms 
+                                        171.213 us    170.894 us     171.77 us 
+                                        2.09968 us    1.33925 us     2.9913 us 
                                                                                
 COW_Vector_rserv_itr FillUni_List                                              
-1000                                           100             1    718.703 ms 
-                                        7.21914 ms    7.21781 ms    7.22076 ms 
-                                        7.42515 us    6.10671 us    9.25638 us 
+1000                                           100             1    707.971 ms 
+                                        7.08318 ms    7.08171 ms    7.08571 ms 
+                                        9.59664 us    6.05552 us    15.6792 us 
                                                                                
 COW_DArray_rserv_itr FillUni_List                                              
-50                                             100             3      12.24 ms 
-                                        40.8049 us    40.7419 us    40.9533 us 
-                                        485.513 ns    281.952 ns     774.68 ns 
+50                                             100             3    12.0303 ms 
+                                        40.1286 us    40.0622 us      40.28 us 
+                                        494.701 ns    283.582 ns    787.154 ns 
                                                                                
 COW_DArray_rserv_itr FillUni_List                                              
-100                                            100             2    18.0646 ms 
-                                        90.3527 us    90.2265 us    90.6055 us 
-                                        847.716 ns    443.714 ns    1.28578 us 
+100                                            100             2    17.7892 ms 
+                                        88.9882 us    88.8453 us    89.2484 us 
+                                        957.096 ns    617.143 ns    1.36359 us 
                                                                                
 COW_DArray_rserv_itr FillUni_List                                              
-1000                                           100             1    277.994 ms 
-                                        2.76195 ms    2.76107 ms    2.76273 ms 
-                                        4.24738 us    3.84218 us    4.52538 us 
+1000                                           100             1    290.998 ms 
+                                        2.90586 ms    2.90503 ms    2.90673 ms 
+                                        4.34107 us    3.69892 us    5.95691 us 
                                                                                
 
 ===============================================================================
-All tests passed (2346541 assertions in 2 test cases)
+All tests passed (2458629 assertions in 2 test cases)
 
