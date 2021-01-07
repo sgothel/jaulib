@@ -36,6 +36,7 @@
 
 #include "test_datatype01.hpp"
 
+#include <jau/basic_algos.hpp>
 #include <jau/basic_types.hpp>
 #include <jau/darray.hpp>
 #include <jau/cow_darray.hpp>
@@ -67,30 +68,20 @@ JAU_TYPENAME_CUE_ALL(jau_cow_vector_DataType01)
 JAU_TYPENAME_CUE_ALL(jau_cow_darray_DataType01)
 
 template<class T>
-const DataType01 * findDataSet01_itr(T& data, DataType01 const & elem) noexcept {
-    typename T::const_iterator iter = data.cbegin();
-    typename T::const_iterator end = data.cend();
-    for(; iter != end ; ++iter) {
-        if( elem == *iter ) {
-            return &(*iter);
-        }
-    }
-    return nullptr;
-}
-
-template<class T>
-static void test_00_list_itr(T& data, const bool show) {
+static int test_00_list_itr(T& data, const bool show) {
     Addr48Bit a0(start_addr);
-    typename T::const_iterator iter = data.cbegin();
-    typename T::const_iterator end = data.cend();
-    for(std::size_t i = 0; iter != end && a0.next(); ++iter, ++i) {
-        const DataType01 & e = *iter;
-        e.nop();
+    int some_number = 0, i=0; // add some validated work, avoiding any 'optimization away'
+    jau::for_each_const(data, [&some_number, &a0, &i, show](const DataType01 & e) {
+        some_number += e.nop();
         if( show ) {
-            printf("data[%zu]: %s\n", i, e.toString().c_str());
+            printf("data[%d]: %s\n", i, e.toString().c_str());
         }
+        REQUIRE( a0.next() );
         REQUIRE(e.address == a0);
-    }
+        ++i;
+    } );
+    REQUIRE(some_number > 0);
+    return some_number;
 }
 
 template<class T>
@@ -101,7 +92,7 @@ static void test_00_seq_find_itr(T& data) {
 
     for(; i<size && a0.next(); i++) {
         DataType01 elem(a0, static_cast<uint8_t>(1));
-        const DataType01 *found = findDataSet01_itr(data, elem);
+        const DataType01 *found = jau::find_const(data, elem);
         if( nullptr != found ) {
             fi++;
             found->nop();
@@ -419,11 +410,56 @@ static void test_iterator_arithmetic(const typename T::size_type size,
 }
 
 template<class T>
-static bool test_const_iterator_ops(const std::string& type_id, T& data) {
-    printf("**** test_const_iterator_ops: %s\n", type_id.c_str());
+static bool test_const_iterator_ops(const std::string& type_id, T& data,
+                std::enable_if_t< is_cow_type<T>::value, bool> = true )
+{
+    printf("**** test_const_iterator_ops(CoW): %s\n", type_id.c_str());
+    {
+        typename T::const_iterator begin = data.cbegin(); // immutable new_store non-const iterator, gets held until destruction
+        typename T::const_iterator end = begin.end();    // no new store iterator, on same store as begin, obtained from begin
+        typename T::difference_type data_size = static_cast<typename T::difference_type>(data.size());
+        typename T::difference_type begin_size = static_cast<typename T::difference_type>(begin.size());
+        typename T::difference_type end_size = static_cast<typename T::difference_type>(end.size());
+        REQUIRE( begin_size                 == data_size );
+        REQUIRE( end_size                   == data_size );
+        REQUIRE( end  - begin               == data_size );
+        REQUIRE( end - end_size             == begin     );
+        REQUIRE( begin + begin_size         == end       );
+        REQUIRE( *( end - end_size )        == *begin    );
+        REQUIRE( *( begin + begin_size )    == *end      );
+        test_iterator_dereference<T, typename T::const_iterator>(begin.size(), begin, end);
+    }
+
     {
         typename T::const_iterator begin = data.cbegin(); // no new store const_iterator
-        typename T::const_iterator end = data.cend();     // no new store const_iterator, on same store as begin
+        typename T::const_iterator end = begin.end();     // no new store const_iterator, on same store as begin, obtained from begin
+        test_iterator_arithmetic<T, typename T::const_iterator>(data.size(), begin, end);
+    }
+#if 0
+    {
+        // INTENIONAL FAILURES, checking behavior of error values etc
+        typename T::const_iterator begin = data.cbegin(); // no new store const_iterator
+        typename T::const_iterator iter = begin + 1;
+        CHECK( *begin == *iter );
+        CHECK( begin == iter );
+    }
+#endif
+    return true;
+}
+template<class T>
+static bool test_const_iterator_ops(const std::string& type_id, T& data,
+        std::enable_if_t< !is_cow_type<T>::value, bool> = true )
+{
+    printf("**** test_const_iterator_ops: %s\n", type_id.c_str());
+    {
+        typename T::const_iterator begin = data.cbegin(); // mutable new_store non-const iterator, gets held until destruction
+        typename T::const_iterator end = data.cend();    // no new store iterator, on same store as begin and from begin
+        typename T::difference_type data_size = static_cast<typename T::difference_type>(data.size());
+        REQUIRE( end  - begin               == data_size );
+        REQUIRE( end - data_size            == begin     );
+        REQUIRE( begin + data_size          == end       );
+        REQUIRE( *( end - data_size )       == *begin    );
+        REQUIRE( *( begin + data_size )     == *end      );
         test_iterator_dereference<T, typename T::const_iterator>(data.size(), begin, end);
     }
 
@@ -445,11 +481,48 @@ static bool test_const_iterator_ops(const std::string& type_id, T& data) {
 }
 
 template<class T>
-static bool test_mutable_iterator_ops(const std::string& type_id, T& data) {
-    printf("**** test_mutable_iterator_ops: %s\n", type_id.c_str());
+static bool test_mutable_iterator_ops(const std::string& type_id, T& data,
+        std::enable_if_t< is_cow_type<T>::value, bool> = true )
+{
+    printf("**** test_mutable_iterator_ops(CoW): %s\n", type_id.c_str());
+    {
+        typename T::iterator begin = data.begin(); // mutable new_store non-const iterator, gets held until destruction
+        typename T::iterator end = begin.end();    // no new store iterator, on same store as begin and from begin
+        typename T::difference_type data_size = static_cast<typename T::difference_type>(data.size());
+        typename T::difference_type begin_size = static_cast<typename T::difference_type>(begin.size());
+        typename T::difference_type end_size = static_cast<typename T::difference_type>(end.size());
+        REQUIRE( begin_size                 == data_size );
+        REQUIRE( end_size                   == data_size );
+        REQUIRE( end  - begin               == data_size );
+        REQUIRE( end - end_size             == begin     );
+        REQUIRE( begin + begin_size         == end       );
+        REQUIRE( *( end - end_size )        == *begin    );
+        REQUIRE( *( begin + begin_size )    == *end      );
+        test_iterator_dereference<T, typename T::iterator>(begin.size(), begin, end);
+    }
+
     {
         typename T::iterator begin = data.begin();      // mutable new_store non-const iterator, gets held until destruction
         typename T::iterator end = begin + data.size(); // hence use iterator artihmetic to have end pointer
+        test_iterator_arithmetic<T, typename T::iterator>(data.size(), begin, end);
+    }
+    return true;
+}
+
+template<class T>
+static bool test_mutable_iterator_ops(const std::string& type_id, T& data,
+        std::enable_if_t< !is_cow_type<T>::value, bool> = true )
+{
+    printf("**** test_mutable_iterator_ops(___): %s\n", type_id.c_str());
+    {
+        typename T::iterator begin = data.begin(); // mutable new_store non-const iterator, gets held until destruction
+        typename T::iterator end = data.end();    // no new store iterator, on same store as begin and from begin
+        typename T::difference_type data_size = static_cast<typename T::difference_type>(data.size());
+        REQUIRE( end  - begin               == data_size );
+        REQUIRE( end - data_size            == begin     );
+        REQUIRE( begin + data_size          == end       );
+        REQUIRE( *( end - data_size )       == *begin    );
+        REQUIRE( *( begin + data_size )     == *end      );
         test_iterator_dereference<T, typename T::iterator>(data.size(), begin, end);
     }
 

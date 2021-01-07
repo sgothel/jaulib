@@ -35,6 +35,7 @@
 
 #include "test_datatype01.hpp"
 
+#include <jau/basic_algos.hpp>
 #include <jau/basic_types.hpp>
 #include <jau/darray.hpp>
 #include <jau/cow_darray.hpp>
@@ -72,17 +73,6 @@ DataType01 * findDataSet01_idx(T& data, DataType01 const & elem) noexcept {
     }
     return nullptr;
 }
-template<class T>
-const DataType01 * findDataSet01_itr(T& data, DataType01 const & elem) noexcept {
-    typename T::const_iterator iter = data.cbegin();
-    typename T::const_iterator end = data.cend();
-    for(; iter != end ; ++iter) {
-        if( elem == *iter ) {
-            return &(*iter);
-        }
-    }
-    return nullptr;
-}
 
 template<class T>
 static void test_00_list_idx(T& data, const bool show) {
@@ -98,18 +88,20 @@ static void test_00_list_idx(T& data, const bool show) {
     }
 }
 template<class T>
-static void test_00_list_itr(T& data, const bool show) {
+static int test_00_list_itr(T& data, const bool show) {
     Addr48Bit a0(start_addr);
-    typename T::const_iterator iter = data.cbegin();
-    typename T::const_iterator end = data.cend();
-    for(std::size_t i = 0; iter != end && a0.next(); ++iter, ++i) {
-        const DataType01 & e = *iter;
-        e.nop();
+    int some_number = 0, i=0; // add some validated work, avoiding any 'optimization away'
+    jau::for_each_const(data, [&some_number, &a0, &i, show](const DataType01 & e) {
+        some_number += e.nop();
         if( show ) {
-            printf("data[%zu]: %s\n", i, e.toString().c_str());
+            printf("data[%d]: %s\n", i, e.toString().c_str());
         }
+        REQUIRE( a0.next() );
         REQUIRE(e.address == a0);
-    }
+        ++i;
+    } );
+    REQUIRE(some_number > 0);
+    return some_number;
 }
 
 template<class T>
@@ -136,7 +128,7 @@ static void test_00_seq_find_itr(T& data) {
 
     for(; i<size && a0.next(); i++) {
         DataType01 elem(a0, static_cast<uint8_t>(1));
-        const DataType01 *found = findDataSet01_itr(data, elem);
+        const DataType01 *found = jau::find_const(data, elem);
         if( nullptr != found ) {
             fi++;
             found->nop();
@@ -191,7 +183,7 @@ static void test_00_seq_fill_unique_itr(T& data, const std::size_t size) {
 
     for(; i<size && a0.next(); i++) {
         DataType01 elem(a0, static_cast<uint8_t>(1));
-        const DataType01* exist = findDataSet01_itr(data, elem);
+        const DataType01* exist = jau::find_const(data, elem);
         if( nullptr == exist ) {
             data.push_back( std::move(elem) );
             fi++;

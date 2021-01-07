@@ -54,34 +54,6 @@ static Addr48Bit start_addr(start_addr_b);
 #define USE_JAU_ITER_ALGO 1
 
 template<class T>
-const DataType01 * findDataSet01_itr(T& data, DataType01 const & elem) noexcept {
-#if defined(USE_STD_ITER_ALGO)
-    // much slower, approx 3x over 1000 * 1000, why?
-    typename T::const_iterator end = data.cend();
-    auto it = std::find( data.cbegin(), end, elem);
-    if( it != end ) {
-        return &(*it);
-    }
-#elif defined (USE_JAU_ITER_ALGO)
-    // same logic, much faster
-    typename T::const_iterator end = data.cend();
-    auto it = jau::find( data.cbegin(), end, elem);
-    if( it != end ) {
-        return &(*it);
-    }
-#else
-    typename T::const_iterator iter = data.cbegin();
-    typename T::const_iterator end = data.cend();
-    for(; iter != end ; ++iter) {
-        if( elem == *iter ) {
-            return &(*iter);
-        }
-    }
-#endif
-    return nullptr;
-}
-
-template<class T>
 const DataType01 * findDataSet01_hash(T& data, DataType01 const & elem) noexcept {
     auto search = data.find(elem);
     if( search != data.end() ) {
@@ -93,20 +65,9 @@ const DataType01 * findDataSet01_hash(T& data, DataType01 const & elem) noexcept
 template<class T>
 static int test_00_list_itr(T& data) {
     int some_number = 0; // add some validated work, avoiding any 'optimization away'
-#if defined(USE_STD_ITER_ALGO)
-    // slower, why?
-    std::for_each(data.cbegin(), data.cend(), [&some_number](const DataType01 & e) { some_number += e.nop(); });
-#elif defined (USE_JAU_ITER_ALGO)
-    // same logic, faster
-    jau::for_each(data.cbegin(), data.cend(), [&some_number](const DataType01 & e) { some_number += e.nop(); });
-#else
-    typename T::const_iterator iter = data.cbegin();
-    typename T::const_iterator end = data.cend();
-    for(; iter != end ; ++iter) {
-        const DataType01 & e = *iter;
+    jau::for_each_const(data, [&some_number](const DataType01 & e) {
         some_number += e.nop();
-    }
-#endif
+    } );
     REQUIRE(some_number > 0);
     return some_number;
 }
@@ -119,7 +80,7 @@ static void test_00_seq_find_itr(T& data) {
 
     for(; i<size && a0.next(); ++i) {
         DataType01 elem(a0, static_cast<uint8_t>(1));
-        const DataType01 *found = findDataSet01_itr<T>(data, elem);
+        const DataType01 *found = jau::find_const<T>(data, elem);
         if( nullptr != found ) {
             ++fi;
             found->nop();
@@ -163,7 +124,7 @@ static void test_00_seq_fill_unique_itr(T& data, const Size_type size) {
 
     for(; i<size && a0.next(); ++i) {
         DataType01 elem(a0, static_cast<uint8_t>(1));
-        const DataType01* exist = findDataSet01_itr<T>(data, elem);
+        const DataType01* exist = jau::find_const<T>(data, elem);
         if( nullptr == exist ) {
             data.push_back( std::move( elem ) );
             ++fi;

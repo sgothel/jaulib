@@ -44,13 +44,11 @@ namespace jau {
     template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
     class cow_rw_iterator;
 
+    /****************************************************************************************
+     ****************************************************************************************/
+
     /**
      * iterator_type -> std::string conversion
-     * <p>
-     * TODO: Test whether 'base()' method actually exists,
-     * however - this is good enough for stl iterator_type
-     * having implemented the inner native iterator (a pointer).
-     * </p>
      * @tparam iterator_type the iterator type
      * @param iter the iterator
      * @param if iterator_type is a class
@@ -59,9 +57,9 @@ namespace jau {
     template< class iterator_type >
         std::string to_string(const iterator_type & iter,
             typename std::enable_if<
-                    std::is_class<iterator_type>::value
-                >::type* = 0
-    ) {
+                    !std::is_pointer<iterator_type>::value
+                    >::type* = 0 )
+    {
         return aptrHexString( (void*) ( iter.base() ) );
     }
 
@@ -75,16 +73,21 @@ namespace jau {
     template< class iterator_type >
         std::string to_string(const iterator_type & iter,
             typename std::enable_if<
-                    !std::is_class<iterator_type>::value
-                >::type* = 0
-    ) {
+                    std::is_pointer<iterator_type>::value
+                >::type* = 0 )
+    {
         return aptrHexString((void*)iter);
     }
 
+    /****************************************************************************************
+     ****************************************************************************************/
+
     /**
      * Implementation of a Copy-On-Write (CoW) read-write iterator for mutable value_type.<br>
-     * Instance holds the 'shared value_type reference', Storage_ref_type,
-     * of the current CoW storage until destruction.
+     * Instance holds a copy of the CoW's value_type storage until destruction.
+     * <p>
+     * Implementation complies with Type Traits iterator_category 'random_access_iterator_tag'
+     * </p>
      * <p>
      * This iterator wraps the native iterator of type 'iterator_type'
      * and manages the CoW related resource lifecycle.
@@ -98,35 +101,57 @@ namespace jau {
      * consider using jau::cow_rw_iterator if elements won't get mutated
      * or any changes can be discarded.
      * </p>
+     * <p>
+     * To allow data-race free operations on this iterator's data copy from a potentially mutated CoW,
+     * only one begin iterator should be retrieved from CoW and all further operations shall use
+     * jau::cow_rw_iterator::size(), jau::cow_rw_iterator::begin() and jau::cow_rw_iterator::end().
+     * </p>
+     * @see jau::cow_rw_iterator::size()
+     * @see jau::cow_rw_iterator::begin()
+     * @see jau::cow_rw_iterator::end()
+     * @see jau::for_each_fidelity
      * @see jau::cow_darray
      */
     template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
     class cow_rw_iterator {
         friend cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>;
+        template<typename, typename, typename> friend class cow_darray;
+        template<typename, typename> friend class cow_vector;
 
         public:
+            typedef Storage_type                                storage_t;
+            typedef Storage_ref_type                            storage_ref_t;
+            typedef CoW_container                               cow_container_t;
+
             /** Actual iterator type of the contained native iterator, probably a simple pointer. */
-            typedef typename Storage_type::iterator             iterator_type;
+            typedef typename storage_t::iterator                iterator_type;
 
         private:
             typedef std::iterator_traits<iterator_type>         sub_traits_t;
 
-            CoW_container& cow_parent_;
+            cow_container_t&                      cow_parent_;
             std::lock_guard<std::recursive_mutex> lock_;
-            Storage_ref_type store_ref_;
-            iterator_type    iterator_;
+            storage_ref_t                         store_ref_;
+            iterator_type                         iterator_;
+            iterator_type                         iterator_begin;
 
-            constexpr explicit cow_rw_iterator(CoW_container& cow_parent, const Storage_ref_type& store, iterator_type iter) noexcept
-            : cow_parent_(cow_parent), lock_(cow_parent.get_write_mutex()), store_ref_(store), iterator_(iter) {}
+            constexpr explicit cow_rw_iterator(cow_container_t& cow_parent, const storage_ref_t& store, iterator_type iter) noexcept
+            : cow_parent_(cow_parent), lock_(cow_parent.get_write_mutex()), store_ref_(store),
+              iterator_(iter), iterator_begin(iter) {}
+
+            constexpr cow_rw_iterator(cow_container_t& cow_parent, iterator_type (*get_begin)(storage_ref_t&))
+            : cow_parent_(cow_parent), lock_(cow_parent.get_write_mutex()),
+              store_ref_(cow_parent.copy_store()), iterator_(get_begin(store_ref_)), iterator_begin(iterator_) {}
+
 
         public:
             typedef typename sub_traits_t::iterator_category    iterator_category;  // random_access_iterator_tag
 
-            typedef typename Storage_type::size_type            size_type;          // using our template overload Size_type
-            typedef typename Storage_type::difference_type      difference_type;    // derived from our Size_type
-            // typedef typename Storage_type::value_type        value_type;         // OK
-            // typedef typename Storage_type::reference         reference;          //
-            // typedef typename Storage_type::pointer           pointer;            //
+            typedef typename storage_t::size_type               size_type;          // using our template overload Size_type
+            typedef typename storage_t::difference_type         difference_type;    // derived from our Size_type
+            // typedef typename storage_t::value_type           value_type;         // OK
+            // typedef typename storage_t::reference            reference;          //
+            // typedef typename storage_t::pointer              pointer;            //
             typedef typename sub_traits_t::value_type           value_type;         // OK
             typedef typename sub_traits_t::reference            reference;          // 'value_type &'
             typedef typename sub_traits_t::pointer              pointer;            // 'value_type *'
@@ -136,16 +161,6 @@ namespace jau {
 #endif
 
         public:
-
-            constexpr cow_rw_iterator(CoW_container& cow_parent, iterator_type (*get_iterator)(Storage_ref_type&))
-            : cow_parent_(cow_parent), lock_(cow_parent.get_write_mutex()),
-              store_ref_(cow_parent.copy_store()), iterator_(get_iterator(store_ref_)) {}
-
-#if 0
-            constexpr cow_rw_iterator(CoW_container& cow_parent, iterator_type iter)
-            : cow_parent_(cow_parent), lock_(cow_parent.get_write_mutex()),
-              store_ref_(cow_parent.copy_store()), iterator_(iter) {}
-#endif
 
 #if __cplusplus > 201703L
             constexpr ~cow_rw_iterator() noexcept
@@ -159,7 +174,7 @@ namespace jau {
             // C++ named requirements: LegacyIterator: CopyConstructible
             constexpr cow_rw_iterator(const cow_rw_iterator& o) noexcept
             : cow_parent_(o.cow_parent_), lock_(cow_parent_.get_write_mutex()),
-              store_ref_(o.store_ref_), iterator_(o.iterator_) {}
+              store_ref_(o.store_ref_), iterator_(o.iterator_), iterator_begin(o.iterator_begin) {}
 
             // C++ named requirements: LegacyIterator: CopyAssignable
             constexpr cow_rw_iterator& operator=(const cow_rw_iterator& o) noexcept {
@@ -167,16 +182,18 @@ namespace jau {
                 lock_ = cow_parent_.get_write_mutex();
                 store_ref_ = o.store_ref_;
                 iterator_ = o.iterator_;
+                iterator_begin = o.iterator_begin;
                 return *this;
             }
 
             // C++ named requirements: LegacyIterator: MoveConstructable
             constexpr cow_rw_iterator(cow_rw_iterator && o) noexcept
             : cow_parent_(std::move(o.cow_parent_)), lock_(cow_parent_.get_write_mutex()),
-              store_ref_(std::move(o.store_ref_)), iterator_(std::move(o.iterator_)) {
+              store_ref_(std::move(o.store_ref_)), iterator_(std::move(o.iterator_)), iterator_begin(std::move(o.iterator_begin)) {
                 o.lock_ = nullptr; // ???
                 o.store_ref_ = nullptr;
                 // o.iterator_ = nullptr;
+                // o.iterator_begin = nullptr;
             }
 
             // C++ named requirements: LegacyIterator: MoveAssignable
@@ -185,8 +202,10 @@ namespace jau {
                 lock_ = cow_parent_.get_write_mutex();
                 store_ref_ = std::move(o.store_ref_);
                 iterator_ = std::move(o.iterator_);
+                iterator_begin = std::move(o.iterator_begin);
                 o.store_ref_ = nullptr;
                 // o.iterator_ = nullptr;
+                // o.iterator_begin = nullptr;
                 return *this;
             }
 
@@ -196,7 +215,43 @@ namespace jau {
                 // std::swap( lock_, o.lock_); // lock stays in each
                 std::swap( store_ref_, o.store_ref_);
                 std::swap( iterator_, o.iterator_);
+                std::swap( iterator_begin, o.iterator_begin);
             }
+
+            /**
+             * Return the size of the underlying value_type store.
+             * <p>
+             * This is an addition API entry, allowing data-race free arithmetic on
+             * this iterator's data snapshot from a potentially mutated CoW.
+             * </p>
+             * @see begin()
+             * @see end()
+             */
+            constexpr size_type size() const noexcept { return store_ref_->size(); }
+
+            /**
+             * Returns a new iterator pointing to the first element, aka begin.
+             * <p>
+             * This is an addition API entry, allowing data-race free operations on
+             * this iterator's data snapshot from a potentially mutated CoW.
+             * </p>
+             * @see size()
+             * @see end()
+             */
+            constexpr cow_rw_iterator begin() const noexcept
+            { return cow_rw_iterator( cow_parent_, store_ref_, iterator_begin ); }
+
+            /**
+             * Returns a new iterator pointing to the <i>element following the last element</i>, aka end.<br>
+             * <p>
+             * This is an addition API entry, allowing data-race free operations on
+             * this iterator's data snapshot from a potentially mutated CoW.
+             * </p>
+             * @see size()
+             * @see begin()
+             */
+            constexpr cow_rw_iterator end() const noexcept
+            { return cow_rw_iterator( cow_parent_, store_ref_, iterator_begin + store_ref_->size() ); }
 
             /**
              * Returns a copy of the underlying storage iterator.
@@ -324,10 +379,12 @@ namespace jau {
 
     /**
      * Implementation of a Copy-On-Write (CoW) read-only iterator for immutable value_type.<br>
-     * Instance holds the 'shared value_type reference', Storage_ref_type,
-     * of the current CoW storage until destruction.
+     * Instance holds a 'shared value_type' snapshot of the current CoW storage until destruction.
      * <p>
-     * This iterator simply wraps the native iterator of type 'iterator_type'
+     * Implementation complies with Type Traits iterator_category 'random_access_iterator_tag'
+     * </p>
+     * <p>
+     * Implementation simply wraps the native iterator of type 'iterator_type'
      * and manages the CoW related resource lifecycle.
      * </p>
      * <p>
@@ -337,31 +394,47 @@ namespace jau {
      * Also see jau::for_each_fidelity to iterate through in this good faith fashion.
      * </p>
      * <p>
-     * Implementation complies with iterator_category 'random_access_iterator_tag'
+     * To allow data-race free operations on this iterator's data snapshot from a potentially mutated CoW,
+     * only one begin iterator should be retrieved from CoW and all further operations shall use
+     * jau::cow_ro_iterator::size(), jau::cow_ro_iterator::begin() and jau::cow_ro_iterator::end().
      * </p>
+     * @see jau::cow_ro_iterator::size()
+     * @see jau::cow_ro_iterator::begin()
+     * @see jau::cow_ro_iterator::end()
      * @see jau::for_each_fidelity
      * @see jau::cow_darray
      */
     template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
     class cow_ro_iterator {
+        template<typename, typename, typename> friend class cow_darray;
+        template<typename, typename> friend class cow_vector;
+
         public:
+            typedef Storage_type                                storage_t;
+            typedef Storage_ref_type                            storage_ref_t;
+            typedef CoW_container                               cow_container_t;
+
             /** Actual const iterator type of the contained native iterator, probably a simple pointer. */
-            typedef typename Storage_type::const_iterator       iterator_type;
+            typedef typename storage_t::const_iterator          iterator_type;
 
         private:
             typedef std::iterator_traits<iterator_type>         sub_traits_t;
 
-            Storage_ref_type store_ref_;
-            iterator_type    iterator_;
+            storage_ref_t  store_ref_;
+            iterator_type  iterator_;
+            iterator_type  iterator_begin;
+
+            constexpr cow_ro_iterator(storage_ref_t store, iterator_type begin) noexcept
+            : store_ref_(store), iterator_(begin), iterator_begin(begin) { }
 
         public:
             typedef typename sub_traits_t::iterator_category    iterator_category;  // random_access_iterator_tag
 
-            typedef typename Storage_type::size_type            size_type;          // using our template overload Size_type
-            typedef typename Storage_type::difference_type      difference_type;    // derived from our Size_type
-            // typedef typename Storage_type::value_type        value_type;         // OK
-            // typedef typename Storage_type::reference         reference;          // Storage_type is not 'const'
-            // typedef typename Storage_type::pointer           pointer;            // Storage_type is not 'const'
+            typedef typename storage_t::size_type               size_type;          // using our template overload Size_type
+            typedef typename storage_t::difference_type         difference_type;    // derived from our Size_type
+            // typedef typename storage_t::value_type           value_type;         // OK
+            // typedef typename storage_t::reference            reference;          // storage_t is not 'const'
+            // typedef typename storage_t::pointer              pointer;            // storage_t is not 'const'
             typedef typename sub_traits_t::value_type           value_type;         // OK
             typedef typename sub_traits_t::reference            reference;          // 'const value_type &'
             typedef typename sub_traits_t::pointer              pointer;            // 'const value_type *'
@@ -372,10 +445,7 @@ namespace jau {
 
         public:
             constexpr cow_ro_iterator() noexcept
-            : store_ref_(nullptr), iterator_() { }
-
-            constexpr cow_ro_iterator(Storage_ref_type store, iterator_type iter) noexcept
-            : store_ref_(store), iterator_(iter) { }
+            : store_ref_(nullptr), iterator_(), iterator_begin() { }
 
             /**
              * Conversion constructor: cow_rw_iterator -> cow_ro_iterator
@@ -384,39 +454,44 @@ namespace jau {
              * using a temporary cow_rw_iterator instance involving storage copy etc.
              * </p>
              */
-            constexpr explicit cow_ro_iterator(const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& o) noexcept
-            : store_ref_(o.store_ref_), iterator_(o.iterator_) {}
+            constexpr explicit cow_ro_iterator(const cow_rw_iterator<storage_t, storage_ref_t, cow_container_t>& o) noexcept
+            : store_ref_(o.store_ref_), iterator_(o.iterator_), iterator_begin(o.iterator_begin) {}
 
             // C++ named requirements: LegacyIterator: CopyConstructible
             constexpr cow_ro_iterator(const cow_ro_iterator& o) noexcept
-            : store_ref_(o.store_ref_), iterator_(o.iterator_) {}
+            : store_ref_(o.store_ref_), iterator_(o.iterator_), iterator_begin(o.iterator_begin) {}
 
             // C++ named requirements: LegacyIterator: CopyAssignable
             constexpr cow_ro_iterator& operator=(const cow_ro_iterator& o) noexcept {
                 store_ref_ = o.store_ref_;
                 iterator_ = o.iterator_;
+                iterator_begin = o.iterator_begin;
                 return *this;
             }
 
-            constexpr cow_ro_iterator& operator=(const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& o) noexcept {
+            constexpr cow_ro_iterator& operator=(const cow_rw_iterator<storage_t, storage_ref_t, cow_container_t>& o) noexcept {
                 store_ref_ = o.store_ref_;
                 iterator_ = o.iterator_;
+                iterator_begin = o.iterator_begin;
                 return *this;
             }
 
             // C++ named requirements: LegacyIterator: MoveConstructable
             constexpr cow_ro_iterator(cow_ro_iterator && o) noexcept
-            : store_ref_(std::move(o.store_ref_)), iterator_(std::move(o.iterator_)) {
+            : store_ref_(std::move(o.store_ref_)), iterator_(std::move(o.iterator_)), iterator_begin(std::move(o.iterator_begin)) {
                 o.store_ref_ = nullptr;
                 // o.iterator_ = nullptr;
+                // o.iterator_begin = nullptr;
             }
 
             // C++ named requirements: LegacyIterator: MoveAssignable
             constexpr cow_ro_iterator& operator=(cow_ro_iterator&& o) noexcept {
                 store_ref_ = std::move(o.store_ref_);
                 iterator_ = std::move(o.iterator_);
+                iterator_begin = std::move(o.iterator_begin);
                 o.store_ref_ = nullptr;
                 // o.iterator_ = nullptr;
+                // o.iterator_begin = nullptr;
                 return *this;
             }
 
@@ -424,10 +499,49 @@ namespace jau {
             void swap(cow_ro_iterator& o) noexcept {
                 std::swap( store_ref_, o.store_ref_);
                 std::swap( iterator_, o.iterator_);
+                std::swap( iterator_begin, o.iterator_begin);
             }
 
             /**
+             * Return the size of the underlying value_type store.
+             * <p>
+             * This is an addition API entry, allowing data-race free arithmetic on
+             * this iterator's data snapshot from a potentially mutated CoW.
+             * </p>
+             * @see begin()
+             * @see end()
+             */
+            constexpr size_type size() const noexcept { return store_ref_->size(); }
+
+            /**
+             * Returns a new const_iterator pointing to the first element, aka begin.
+             * <p>
+             * This is an addition API entry, allowing data-race free operations on
+             * this iterator's data snapshot from a potentially mutated CoW.
+             * </p>
+             * @see size()
+             * @see end()
+             */
+            constexpr cow_ro_iterator begin() const noexcept
+            { return cow_ro_iterator( store_ref_, iterator_begin ); }
+
+            /**
+             * Returns a new const_iterator pointing to the <i>element following the last element</i>, aka end.<br>
+             * <p>
+             * This is an addition API entry, allowing data-race free operations on
+             * this iterator's data snapshot from a potentially mutated CoW.
+             * </p>
+             * @see size()
+             * @see begin()
+             */
+            constexpr cow_ro_iterator end() const noexcept
+            { return cow_ro_iterator( store_ref_, iterator_begin + store_ref_->size() ); }
+
+            /**
              * Returns a copy of the underlying storage const_iterator.
+             * <p>
+             * This is an addition API entry, inspired by the STL std::normal_iterator.
+             * </p>
              */
             constexpr iterator_type base() const noexcept { return iterator_; };
 
@@ -448,7 +562,7 @@ namespace jau {
                        : ( iterator_ < rhs.iterator_ ? -1 : 1);
             }
 
-            constexpr int compare(const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) const noexcept {
+            constexpr int compare(const cow_rw_iterator<storage_t, storage_ref_t, cow_container_t>& rhs) const noexcept {
                 return store_ref_ == rhs.store_ref_ && iterator_ == rhs.iterator_ ? 0
                        : ( iterator_ < rhs.iterator_ ? -1 : 1);
             }
@@ -533,7 +647,7 @@ namespace jau {
             constexpr difference_type operator-(const cow_ro_iterator& rhs) const noexcept
             { return iterator_ - rhs.iterator_; }
 
-            constexpr difference_type distance(const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) const noexcept
+            constexpr difference_type distance(const cow_rw_iterator<storage_t, storage_ref_t, cow_container_t>& rhs) const noexcept
             { return iterator_ - rhs.iterator_; }
 
             __constexpr_cxx20_ std::string toString() const noexcept {
@@ -546,6 +660,9 @@ namespace jau {
 #endif
     };
 
+    /****************************************************************************************
+     ****************************************************************************************/
+
     template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
     std::ostream & operator << (std::ostream &out, const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container> &c) {
         out << c.toString();
@@ -557,6 +674,9 @@ namespace jau {
         out << c.toString();
         return out;
     }
+
+    /****************************************************************************************
+     ****************************************************************************************/
 
     template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
     constexpr bool operator==(const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
@@ -629,6 +749,107 @@ namespace jau {
                 ( const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
                   const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
     { return rhs.distance(lhs) * -1; }
+
+    /****************************************************************************************
+     ****************************************************************************************/
+
+    /**
+     * <code>template< class T > is_cow_type<T>::value</code> compile-time Type Trait,
+     * determining whether the given template class is a CoW type, e.g. jau::cow_darray,
+     * jau::cow_vector or any of their iterator.
+     */
+    template< class, class = void >
+    struct is_cow_type : std::false_type { };
+
+    /**
+     * <code>template< class T > is_cow_type<T>::value</code> compile-time Type Trait,
+     * determining whether the given template class is a CoW type, e.g. jau::cow_darray,
+     * jau::cow_vector or any of their iterator.
+     */
+    template< class T >
+    struct is_cow_type<T, std::void_t<typename T::cow_container_t>> : std::true_type { };
+
+    template<class T>
+    const typename T::value_type * find_const(T& data, typename T::value_type const & elem,
+            std::enable_if_t< is_cow_type<T>::value, bool> = true ) noexcept
+    {
+        typename T::const_iterator begin = data.cbegin();
+        typename T::const_iterator end = begin.end();
+        auto it = jau::find( begin, end, elem);
+        if( it != end ) {
+            return &(*it);
+        }
+        return nullptr;
+    }
+    template<class T>
+    const typename T::value_type * find_const(T& data, typename T::value_type const & elem,
+            std::enable_if_t< !is_cow_type<T>::value, bool> = true ) noexcept
+    {
+        typename T::const_iterator end = data.cend();
+        auto it = jau::find( data.cbegin(), end, elem);
+        if( it != end ) {
+            return &(*it);
+        }
+        return nullptr;
+    }
+
+    /****************************************************************************************
+     ****************************************************************************************/
+
+    template<class T, class UnaryFunction>
+    constexpr UnaryFunction for_each_const(T& data, UnaryFunction f,
+            std::enable_if_t< is_cow_type<T>::value, bool> = true ) noexcept
+    {
+        typename T::const_iterator first = data.cbegin();
+        typename T::const_iterator last = first.end();
+        for (; first != last; ++first) {
+            f(*first);
+        }
+        return f; // implicit move since C++11
+    }
+    template<class T, class UnaryFunction>
+    constexpr UnaryFunction for_each_const(T& data, UnaryFunction f,
+            std::enable_if_t< !is_cow_type<T>::value, bool> = true ) noexcept
+    {
+        typename T::const_iterator first = data.cbegin();
+        typename T::const_iterator last = data.cend();
+        for (; first != last; ++first) {
+            f(*first);
+        }
+        return f; // implicit move since C++11
+    }
+
+    /****************************************************************************************
+     ****************************************************************************************/
+
+    /**
+     * See jau::for_each_fidelity()
+     */
+    template<class T, class UnaryFunction>
+    constexpr UnaryFunction for_each_fidelity(T& data, UnaryFunction f,
+            std::enable_if_t< is_cow_type<T>::value, bool> = true ) noexcept
+    {
+        typename T::const_iterator first = data.cbegin();
+        typename T::const_iterator last = first.end();
+        for (; first != last; ++first) {
+            f( *const_cast<typename T::value_type*>( & (*first) ) );
+        }
+        return f; // implicit move since C++11
+    }
+    /**
+     * See jau::for_each_fidelity()
+     */
+    template<class T, class UnaryFunction>
+    constexpr UnaryFunction for_each_fidelity(T& data, UnaryFunction f,
+            std::enable_if_t< !is_cow_type<T>::value, bool> = true ) noexcept
+    {
+        typename T::const_iterator first = data.cbegin();
+        typename T::const_iterator last = data.cend();
+        for (; first != last; ++first) {
+            f( *const_cast<typename T::value_type*>( & (*first) ) );
+        }
+        return f; // implicit move since C++11
+    }
 
 } /* namespace jau */
 

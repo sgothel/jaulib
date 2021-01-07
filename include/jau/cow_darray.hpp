@@ -93,16 +93,29 @@ namespace jau {
      * jau::cow_darray::get_write_mutex(), jau::cow_darray::copy_store() and jau::cow_darray::set_store().<br>
      * See example in jau::cow_darray::set_store()
      * </p>
-     *
+     * <p>
+     * To allow data-race free operations using iterators from a potentially mutated CoW,
+     * only one cow_darray::begin() const_iterator or iterator should be retrieved from this CoW
+     * and all further operations shall use its
+     * jau::cow_ro_iterator::size(), jau::cow_ro_iterator::begin() and jau::cow_ro_iterator::end()
+     * - or its respective variant from jau::cow_rw_iterator.
      * </p>
      * See also:
      * <pre>
      * - Sequentially Consistent (SC) ordering or SC-DRF (data race free) <https://en.cppreference.com/w/cpp/atomic/memory_order#Sequentially-consistent_ordering>
      * - std::memory_order <https://en.cppreference.com/w/cpp/atomic/memory_order>
      * </pre>
+     * @see jau::cow_darray::cbegin()
      * @see jau::cow_ro_iterator
+     * @see jau::cow_ro_iterator::size()
+     * @see jau::cow_ro_iterator::begin()
+     * @see jau::cow_ro_iterator::end()
      * @see jau::for_each_fidelity
+     * @see jau::cow_darray::begin()
      * @see jau::cow_rw_iterator
+     * @see jau::cow_rw_iterator::size()
+     * @see jau::cow_rw_iterator::begin()
+     * @see jau::cow_rw_iterator::end()
      */
     template <typename Value_type, typename Alloc_type = callocator<Value_type>, typename Size_type = jau::nsize_t>
     class cow_darray
@@ -125,6 +138,8 @@ namespace jau {
             typedef darray<value_type, allocator_type, size_type> storage_t;
             typedef std::shared_ptr<storage_t>                    storage_ref_t;
 
+            typedef cow_darray<value_type, allocator_type, size_type> cow_container_t;
+
             /**
              * Immutable, read-only const_iterator, lock-free,
              * holding the current shared store reference until destruction.
@@ -138,10 +153,13 @@ namespace jau {
              * Also see jau::for_each_fidelity to iterate through in this good faith fashion.
              * </p>
              * @see jau::cow_ro_iterator
+             * @see jau::cow_ro_iterator::size()
+             * @see jau::cow_ro_iterator::begin()
+             * @see jau::cow_ro_iterator::end()
              * @see jau::for_each_fidelity
              * @see jau::cow_rw_iterator
              */
-            typedef cow_ro_iterator<storage_t, storage_ref_t, cow_darray> const_iterator;
+            typedef cow_ro_iterator<storage_t, storage_ref_t, cow_container_t> const_iterator;
 
             /**
              * Mutable, read-write iterator, holding the write-lock and a store copy until destruction.
@@ -154,11 +172,13 @@ namespace jau {
              * consider using jau::cow_rw_iterator if elements won't get mutated
              * or any changes can be discarded.
              * </p>
-             * @see jau::cow_ro_iterator
-             * @see jau::for_each_fidelity
              * @see jau::cow_rw_iterator
+             * @see jau::cow_rw_iterator::size()
+             * @see jau::cow_rw_iterator::begin()
+             * @see jau::cow_rw_iterator::end()
+             * @see jau::cow_ro_iterator
              */
-            typedef cow_rw_iterator<storage_t, storage_ref_t, cow_darray> iterator;
+            typedef cow_rw_iterator<storage_t, storage_ref_t, cow_container_t> iterator;
 
             // typedef std::reverse_iterator<iterator>         reverse_iterator;
             // typedef std::reverse_iterator<const_iterator>   const_reverse_iterator;
@@ -410,86 +430,49 @@ namespace jau {
 
             // const_iterator, non mutable, read-only
 
-            /**
-             * Returns a jau::cow_darray::const_iterator of type jau::cow_ro_iterator.
-             * <p>
-             * This method variant is only chosen if the container is const.
-             * </p>
-             * @return jau::cow_darray::const_iterator of type jau::cow_ro_iterator
-             * @see jau::cow_ro_iterator
-             * @see jau::for_each_fidelity
-             */
-            constexpr const_iterator begin() const noexcept {
-                return const_iterator(get_snapshot(), store_ref->cbegin());
-            }
+            // Removed for clarity: "constexpr const_iterator begin() const noexcept"
 
             /**
-             * Returns a jau::cow_darray::const_iterator of type jau::cow_ro_iterator.
+             * Returns an jau::cow_ro_iterator to the first element of this CoW storage.
              * <p>
              * This method is the preferred choice if the use case allows,
              * read remarks in jau::cow_ro_iterator.
              * </p>
+             * <p>
+             * Use jau::cow_ro_iterator::end() on this returned const_iterator
+             * to retrieve the end const_iterator in a data-race free fashion.
+             * </p>
              * @return jau::cow_darray::const_iterator of type jau::cow_ro_iterator
              * @see jau::cow_ro_iterator
+             * @see jau::cow_ro_iterator::size()
+             * @see jau::cow_ro_iterator::begin()
+             * @see jau::cow_ro_iterator::end()
              * @see jau::for_each_fidelity
              */
             constexpr const_iterator cbegin() const noexcept {
                 return const_iterator(get_snapshot(), store_ref->cbegin());
             }
 
-            /**
-             * Returns a jau::cow_darray::const_iterator of type jau::cow_ro_iterator.
-             * <p>
-             * This method variant is only chosen if the container is const.
-             * </p>
-             * @return jau::cow_darray::const_iterator of type jau::cow_ro_iterator
-             * @see jau::cow_ro_iterator
-             * @see jau::for_each_fidelity
-             */
-            constexpr const_iterator end() const noexcept {
-                return const_iterator(get_snapshot(), store_ref->cend());
-            }
-
-            /**
-             * Returns a jau::cow_darray::const_iterator of type jau::cow_ro_iterator.
-             * <p>
-             * This method is the preferred choice if the use case allows,
-             * read remarks in jau::cow_ro_iterator.
-             * </p>
-             * @return jau::cow_darray::const_iterator of type jau::cow_ro_iterator
-             * @see jau::cow_ro_iterator
-             * @see jau::for_each_fidelity
-             */
-            constexpr const_iterator cend() const noexcept {
-                return const_iterator(get_snapshot(), store_ref->cend());
-            }
-
             // iterator, mutable, read-write
 
             /**
-             * Returns a jau::cow_darray::iterator of type jau::cow_rw_iterator.
+             * Returns an jau::cow_rw_iterator to the first element of this CoW storage.
              * <p>
              * Acquiring this mutable iterator has considerable costs attached,
              * read remarks in jau::cow_rw_iterator.
              * </p>
+             * <p>
+             * Use jau::cow_rw_iterator::end() on this returned iterator
+             * to retrieve the end iterator in a data-race free fashion.
+             * </p>
              * @return jau::cow_darray::iterator of type jau::cow_rw_iterator
              * @see jau::cow_rw_iterator
+             * @see jau::cow_rw_iterator::size()
+             * @see jau::cow_rw_iterator::begin()
+             * @see jau::cow_rw_iterator::end()
              */
             constexpr iterator begin() noexcept {
                 return iterator(*this, [](storage_ref_t& new_store) -> typename storage_t::iterator { return new_store->begin(); } );
-            }
-
-            /**
-             * Returns a jau::cow_darray::iterator of type jau::cow_rw_iterator.
-             * <p>
-             * Acquiring this mutable iterator has considerable costs attached,
-             * read remarks in jau::cow_rw_iterator.
-             * </p>
-             * @return jau::cow_darray::iterator of type jau::cow_rw_iterator
-             * @see jau::cow_rw_iterator
-             */
-            constexpr iterator end() noexcept {
-                return iterator(*this, [](storage_ref_t& new_store) -> typename storage_t::iterator { return new_store->end(); } );
             }
 
             // read access

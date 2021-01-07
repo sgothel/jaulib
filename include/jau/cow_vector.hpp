@@ -117,23 +117,19 @@ namespace jau {
             typedef std::vector<value_type, allocator_type>     storage_t;
             typedef std::shared_ptr<storage_t>                  storage_ref_t;
 
-            /**
-             * Immutable, read-only const_iterator, lock-free,
-             * holding the current shared store reference until destruction.
-             * <p>
-             * Using jau::cow_vector::get_snapshot() at construction.
-             * </p>
-             */
-            typedef cow_ro_iterator<storage_t, storage_ref_t, cow_vector> const_iterator;
+            typedef cow_vector<value_type, allocator_type>      cow_container_t;
 
             /**
-             * Mutable, read-write iterator, holding the write-lock and a store copy until destruction.
-             * <p>
-             * Using jau::cow_vector::get_write_mutex(), jau::cow_vector::copy_store() at construction<br>
-             * and jau::cow_vector::set_store() at destruction.
-             * </p>
+             * @see jau::cow_darray::const_iterator
+             * @see jau::cow_ro_iterator
              */
-            typedef cow_rw_iterator<storage_t, storage_ref_t, cow_vector> iterator;
+            typedef cow_ro_iterator<storage_t, storage_ref_t, cow_container_t> const_iterator;
+
+            /**
+             * @see jau::cow_darray::iterator
+             * @see jau::cow_rw_iterator
+             */
+            typedef cow_rw_iterator<storage_t, storage_ref_t, cow_container_t> iterator;
 
         private:
             static constexpr size_type DIFF_MAX = std::numeric_limits<difference_type>::max();
@@ -278,30 +274,22 @@ namespace jau {
 
             // const_iterator, non mutable, read-only
 
-            constexpr const_iterator begin() const noexcept {
-                return const_iterator(get_snapshot(), store_ref->cbegin());
-            }
+            // Removed for clarity: "constexpr const_iterator begin() const noexcept"
 
+            /**
+             * See description in jau::cow_darray::cbegin()
+             */
             constexpr const_iterator cbegin() const noexcept {
                 return const_iterator(get_snapshot(), store_ref->cbegin());
             }
 
-            constexpr const_iterator end() const noexcept {
-                return const_iterator(get_snapshot(), store_ref->cend());
-            }
-
-            constexpr const_iterator cend() const noexcept {
-                return const_iterator(get_snapshot(), store_ref->cend());
-            }
-
             // iterator, mutable, read-write
 
+            /**
+             * See description in jau::cow_darray::begin()
+             */
             constexpr iterator begin() noexcept {
                 return iterator(*this, [](storage_ref_t& new_store) -> typename storage_t::iterator { return new_store->begin(); } );
-            }
-
-            constexpr iterator end() noexcept {
-                return iterator(*this, [](storage_ref_t& new_store) -> typename storage_t::iterator { return new_store->end(); } );
             }
 
             // read access
