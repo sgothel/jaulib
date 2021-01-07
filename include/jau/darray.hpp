@@ -35,6 +35,7 @@
 #include <condition_variable>
 #include <vector>
 #include <algorithm>
+#include <utility>
 
 #include <jau/debug.hpp>
 #include <jau/basic_types.hpp>
@@ -668,24 +669,24 @@ namespace jau {
                     }
                     --end_;
                 }
-                return begin_ <= const_cast<iterator>(pos) && const_cast<iterator>(pos) <= end_ ? const_cast<iterator>(pos) : nullptr;
+                return begin_ <= const_cast<iterator>(pos) && const_cast<iterator>(pos) <= end_ ? const_cast<iterator>(pos) : end_;
             }
 
             /**
              * Like std::vector::erase(), removes the elements in the range [first, last).
              * @return iterator following the last removed element.
              */
-            constexpr iterator erase (const_iterator first, const_iterator last) {
+            constexpr iterator erase (iterator first, const_iterator last) {
                 const size_type count = dtor_range(first, last);
                 if( count > 0 ) {
                     const difference_type right_count = end_ - last;  // last is exclusive
                     if( 0 < right_count ) {
-                        memmove(reinterpret_cast<void*>(const_cast<value_type*>(first)),
-                                reinterpret_cast<const void*>(last), sizeof(value_type)*right_count); // move right elems one left
+                        memmove(reinterpret_cast<void*>(first),
+                                reinterpret_cast<const void*>(last), sizeof(value_type)*right_count); // move right elems count left
                     }
                     end_ -= count;
                 }
-                return begin_ <= const_cast<iterator>(last) && const_cast<iterator>(last) <= end_ ? const_cast<iterator>(last) : nullptr;
+                return begin_ <= const_cast<iterator>(first) && const_cast<iterator>(first) <= end_ ? const_cast<iterator>(first) : end_;
             }
 
             /**
@@ -709,13 +710,13 @@ namespace jau {
                     iterator pos_new = begin_ + pos_idx;
                     const difference_type right_count = end_ - pos_new; // include original element at 'pos_new'
                     if( 0 < right_count ) {
-                        memmove(pos_new+1,
-                                pos_new, sizeof(value_type)*right_count); // move right elems one left
+                        memmove(reinterpret_cast<void*>(pos_new+1),
+                                reinterpret_cast<void*>(pos_new), sizeof(value_type)*right_count); // move elems one right
                     }
                     new (pos_new) value_type( x ); // placement new
                     ++end_;
 
-                    return begin_ <= pos_new && pos_new <= end_ ? pos_new : nullptr;
+                    return begin_ <= pos_new && pos_new <= end_ ? pos_new : end_;
                 } else {
                     throw jau::IndexOutOfBoundsException(std::to_string(difference_type(pos - begin_)), std::to_string(size()), E_FILE_LINE);
                 }
@@ -742,12 +743,13 @@ namespace jau {
                     iterator pos_new = begin_ + pos_idx;
                     const difference_type right_count = end_ - pos_new; // include original element at 'pos_new'
                     if( 0 < right_count ) {
-                        memmove(pos_new+1, pos_new, sizeof(value_type)*right_count); // move right elems one left
+                        memmove(reinterpret_cast<void*>(pos_new+1),
+                                reinterpret_cast<void*>(pos_new), sizeof(value_type)*right_count); // move elems one right
                     }
                     new (pos_new) value_type( std::move( x ) ); // placement new
                     ++end_;
 
-                    return begin_ <= pos_new && pos_new <= end_ ? pos_new : nullptr;
+                    return begin_ <= pos_new && pos_new <= end_ ? pos_new : end_;
                 } else {
                     throw jau::IndexOutOfBoundsException(std::to_string(difference_type(pos - begin_)), std::to_string(size()), E_FILE_LINE);
                 }
@@ -775,12 +777,13 @@ namespace jau {
                     iterator pos_new = begin_ + pos_idx;
                     const difference_type right_count = end_ - pos_new; // include original element at 'pos_new'
                     if( 0 < right_count ) {
-                        memmove(pos_new+1, pos_new, sizeof(value_type)*right_count); // move right elems one left
+                        memmove(reinterpret_cast<void*>(pos_new+1),
+                                reinterpret_cast<void*>(pos_new), sizeof(value_type)*right_count); // move right elems one left
                     }
                     new (pos_new) value_type( std::forward<Args>(args)... ); // placement new, construct in-place
                     ++end_;
 
-                    return begin_ <= pos_new && pos_new <= end_ ? pos_new : nullptr;
+                    return begin_ <= pos_new && pos_new <= end_ ? pos_new : end_;
                 } else {
                     throw jau::IndexOutOfBoundsException(std::to_string(difference_type(pos - begin_)), std::to_string(size()), E_FILE_LINE);
                 }
@@ -792,6 +795,7 @@ namespace jau {
              * @param pos iterator before which the content will be inserted. pos may be the end() iterator
              * @param first first foreign input-iterator to range of value_type [first, last)
              * @param last last foreign input-iterator to range of value_type [first, last)
+             * @return Iterator pointing to the first element inserted, or pos if first==last.
              */
             template< class InputIt >
             constexpr iterator insert( const_iterator pos, InputIt first, InputIt last ) {
@@ -804,12 +808,13 @@ namespace jau {
                     iterator pos_new = begin_ + pos_idx;
                     const difference_type right_count = end_ - pos_new; // include original element at 'pos_new'
                     if( 0 < right_count ) {
-                        memmove(pos_new+new_elem_count, pos_new, sizeof(value_type)*right_count); // move right elems one left
+                        memmove(reinterpret_cast<void*>(pos_new+new_elem_count),
+                                reinterpret_cast<void*>(pos_new), sizeof(value_type)*right_count); // move elems count right
                     }
                     ctor_copy_range_foreign(pos_new, first, last);
                     end_ += new_elem_count;
 
-                    return begin_ <= pos_new && pos_new <= end_ ? pos_new : nullptr;
+                    return begin_ <= pos_new && pos_new <= end_ ? pos_new : end_;
                 } else {
                     throw jau::IndexOutOfBoundsException(std::to_string(difference_type(pos - begin_)), std::to_string(size()), E_FILE_LINE);
                 }
@@ -829,6 +834,7 @@ namespace jau {
 
             /**
              * Like std::vector::push_back(), move
+             * @param x the value to be added at the tail.
              */
             constexpr void push_back(value_type&& x) {
                 if( end_ == storage_end_ ) {
