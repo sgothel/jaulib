@@ -274,10 +274,12 @@ static void test_iterator_dereference(const typename T::size_type size,
     REQUIRE(    citer1 ==  begin         );  // iter op==()
     REQUIRE(    citer2 ==  begin         );  // iter op==()
     REQUIRE(    citer1 ==  citer1        );  // iter op==()
+    REQUIRE(    citer2 ==  citer1        );  // iter op==()
 
     REQUIRE(   *citer1 == *begin         );  // iter op*(), and value_type ==
     REQUIRE(   *citer2 == *begin         );  // iter op*(), and value_type ==
     REQUIRE(   *citer1 == *citer1        );  // iter op*(), and value_type ==
+    REQUIRE(   *citer2 == *citer1        );  // iter op*(), and value_type ==
 
     REQUIRE(    citer1[1] == *(begin+1)  );  // iter op[](diff), op+(iter, diff), iter op*(), and value_type ==
     REQUIRE(    citer2[1] == *(begin+1)  );  // iter op[](diff), op+(iter, diff), iter op*(), and value_type ==
@@ -287,8 +289,8 @@ static void test_iterator_dereference(const typename T::size_type size,
     REQUIRE(    citer2    !=  end-1      );  // iter op!=()
     REQUIRE(   *citer1    != *(end-1)    );  // iter op*(), and value_type ==
     REQUIRE(   *citer2    != *(end-1)    );  // iter op*(), and value_type ==
-    REQUIRE(    citer1[1] != *(end+1)    );  // iter op[](diff), op+(iter, diff), iter op*(), and value_type ==
-    REQUIRE(    citer2[1] != *(end+1)    );  // iter op[](diff), op+(iter, diff), iter op*(), and value_type ==
+    REQUIRE(    citer1[1] != *(end-2)    );  // iter op[](diff), op+(iter, diff), iter op*(), and value_type ==
+    REQUIRE(    citer2[1] != *(end-2)    );  // iter op[](diff), op+(iter, diff), iter op*(), and value_type ==
 
     REQUIRE(   citer2+size-1  ==   end -1  );
     REQUIRE( *(citer2+size-1) == *(end -1) );
@@ -459,7 +461,9 @@ static bool test_const_iterator_ops(const std::string& type_id, T& data,
         REQUIRE( end - data_size            == begin     );
         REQUIRE( begin + data_size          == end       );
         REQUIRE( *( end - data_size )       == *begin    );
-        REQUIRE( *( begin + data_size )     == *end      );
+        REQUIRE( *( begin + data_size - 1 ) == *( end - 1 ) );
+        REQUIRE( end[-data_size]            == begin[0]    );
+        REQUIRE( begin[data_size - 1]       == end[-1]     );
         test_iterator_dereference<T, typename T::const_iterator>(data.size(), begin, end);
     }
 
@@ -497,15 +501,180 @@ static bool test_mutable_iterator_ops(const std::string& type_id, T& data,
         REQUIRE( end - end_size             == begin     );
         REQUIRE( begin + begin_size         == end       );
         REQUIRE( *( end - end_size )        == *begin    );
-        REQUIRE( *( begin + begin_size )    == *end      );
+        REQUIRE( *( begin + begin_size - 1 ) == *( end - 1 ) );
+        REQUIRE( end[-end_size]              == begin[0]    );
+        REQUIRE( begin[begin_size - 1]       == end[-1]     );
         test_iterator_dereference<T, typename T::iterator>(begin.size(), begin, end);
     }
 
     {
         typename T::iterator begin = data.begin();      // mutable new_store non-const iterator, gets held until destruction
-        typename T::iterator end = begin + data.size(); // hence use iterator artihmetic to have end pointer
+        typename T::iterator end = begin.end();
         test_iterator_arithmetic<T, typename T::iterator>(data.size(), begin, end);
     }
+
+    // iterator-op: darray/vector-op
+    // -------------------------------------------
+    // 1 pop_back()
+    // 1 erase ():      erase (const_iterator pos)
+    // 3 erase (count): erase (iterator first, const_iterator last)
+    // 1 insert(const value_type& x): iterator insert(const_iterator pos, const value_type& x)
+    // 0 insert(value_type&& x): iterator insert(const_iterator pos, value_type&& x)
+    // 1 emplace(Args&&... args): emplace(const_iterator pos, Args&&... args)
+    // 2 insert(InputIt first, InputIt last ): insert( const_iterator pos, InputIt first, InputIt last )
+    // 1 void push_back(value_type& x)
+    // 1 void push_back(value_type&& x)
+    // 1 reference emplace_back(Args&&... args)
+    // 0 [void push_back( InputIt first, InputIt last )]
+    // 1 rewind()
+    {
+        typename T::iterator iter             = data.begin(); // mutable new_store non-const iterator, gets held until destruction
+        typename T::iterator::size_type size_pre = iter.size();
+        typename T::iterator::value_type elem  = iter.end()[-2];
+
+        // pop_back()
+        int i;
+        (void)i;
+        iter.pop_back();
+        REQUIRE( iter.size() == size_pre-1 );
+        REQUIRE( iter == iter.end() );
+        REQUIRE( iter == iter.begin()+size_pre-1 );
+        REQUIRE( iter[-1] == elem );
+
+        // insert( const_iterator pos, InputIt first, InputIt last )
+        REQUIRE( iter == iter.end() );
+        size_pre = iter.size();
+        jau_darray_DataType01 data2;
+        test_00_seq_fill(data2, 10);
+        // iter.push_back(data2.cbegin(), data2.cend()); // FIXME: Only in jau::darray not stl::vector
+        iter.insert(data2.cbegin(), data2.cend()); // same as push_pack(..) since pointing to end() - but iter points here to first new elem
+        REQUIRE( iter.size() == size_pre+10 );
+        REQUIRE( iter == iter.end()-10 );
+
+        // erase (count): erase (iterator first, const_iterator last)
+        REQUIRE( iter == iter.end()-10 );
+        size_pre = iter.size();
+        // std::cout << "iter.5" << iter << (iter - iter.begin()) << "/" << iter.size() << ", size2 " << size2 << std::endl;
+        iter.erase(10);
+        // std::cout << "iter.6" << iter << (iter - iter.begin()) << "/" << iter.size() << std::endl;
+        REQUIRE( iter.size() == size_pre-10 );
+        REQUIRE( iter == iter.end() );
+
+        // erase ()
+        size_pre = iter.size();
+        iter.rewind();
+        REQUIRE( iter == iter.begin() );
+        elem  = iter.begin()[1];
+        iter.erase();
+        REQUIRE( iter.size() == size_pre-1 );
+        REQUIRE( iter == iter.begin() );
+        REQUIRE( *iter == elem );
+
+        // void push_back(value_type& x)
+        size_pre = iter.size();
+        REQUIRE( iter == iter.begin() );
+        elem  = iter.end()[-1];
+        iter.push_back(data2[0]);
+        iter.push_back(data2[1]);
+        iter.push_back(data2[2]);
+        REQUIRE( iter.size() == size_pre+3 );
+        REQUIRE( iter == iter.end() );
+        REQUIRE( iter[-3] == data2[0] );
+        REQUIRE( iter[-2] == data2[1] );
+        REQUIRE( iter[-1] == data2[2] );
+
+        // erase (count): erase (iterator first, const_iterator last)
+        size_pre = iter.size();
+        REQUIRE( iter == iter.end() );
+        iter -= 3;
+        iter.erase(3);
+        REQUIRE( iter.size() == size_pre-3 );
+        REQUIRE( iter == iter.end() );
+
+        // void push_back(value_type&& x)
+        size_pre = iter.size();
+        REQUIRE( iter == iter.end() );
+        {
+            typename T::iterator::value_type elem0 = iter.begin()[0];
+            iter.push_back( std::move(elem0));
+        }
+        {
+            typename T::iterator::value_type elem0 = iter.begin()[1];
+            iter.push_back( std::move(elem0));
+        }
+        {
+            typename T::iterator::value_type elem0 = iter.begin()[2];
+            iter.push_back( std::move(elem0));
+        }
+        REQUIRE( iter.size() == size_pre+3 );
+        REQUIRE( iter == iter.end() );
+        REQUIRE( iter[-3] == iter.begin()[0] );
+        REQUIRE( iter[-2] == iter.begin()[1] );
+        REQUIRE( iter[-1] == iter.begin()[2] );
+
+        // iterator insert(const_iterator pos, const value_type& x)
+        iter.rewind();
+        iter += 20;
+        REQUIRE( iter == iter.begin()+20 );
+        size_pre = iter.size();
+        iter.insert(data2[0]);
+        iter.insert(data2[1]);
+        iter.insert(data2[2]);
+        // i=0; jau::for_each(iter.begin(), iter.end(), [&](const typename T::iterator::value_type & e) { printf("data[%d]: %s\n", i++, e.toString().c_str()); } );
+        REQUIRE( iter.size() == size_pre+3 );
+        REQUIRE( iter == iter.begin()+20 );
+        iter.rewind();
+        REQUIRE( iter[20] == data2[2] );
+        REQUIRE( iter[21] == data2[1] );
+        REQUIRE( iter[22] == data2[0] );
+
+        // insert( const_iterator pos, InputIt first, InputIt last )
+        iter += 20;
+        REQUIRE( iter == iter.begin()+20 );
+        size_pre = iter.size();
+        iter.insert(data2.cbegin(), data2.cbegin()+11);
+        REQUIRE( iter.size() == size_pre+11 );
+        REQUIRE( iter == iter.begin()+20 );
+
+        // erase (count): erase (iterator first, const_iterator last)
+        REQUIRE( iter == iter.begin()+20 );
+        size_pre = iter.size();
+        iter -= 10;
+        REQUIRE( iter == iter.begin()+10 );
+        iter.erase(11);
+        REQUIRE( iter.size() == size_pre-11 );
+        REQUIRE( iter == iter.begin()+10 );
+
+        // 1 emplace(Args&&... args): emplace(const_iterator pos, Args&&... args)
+        Addr48Bit a0(start_addr);
+        size_pre = iter.size();
+        REQUIRE( iter == iter.begin()+10 );
+        iter.emplace( a0, static_cast<uint8_t>(2) );
+        a0.next();
+        iter.emplace( a0, static_cast<uint8_t>(3) );
+        a0.next();
+        iter.emplace( a0, static_cast<uint8_t>(4) );
+        a0.next();
+        REQUIRE( iter == iter.begin()+10 );
+        REQUIRE( iter[0].type == 4 );
+        REQUIRE( iter[1].type == 3 );
+        REQUIRE( iter[2].type == 2 );
+
+        // 1 reference emplace_back(Args&&... args)
+        size_pre = iter.size();
+        REQUIRE( iter == iter.begin()+10 );
+        iter.emplace_back( a0, static_cast<uint8_t>(2) );
+        a0.next();
+        iter.emplace_back( a0, static_cast<uint8_t>(3) );
+        a0.next();
+        iter.emplace_back( a0, static_cast<uint8_t>(4) );
+        a0.next();
+        REQUIRE( iter == iter.end() );
+        REQUIRE( iter[-1].type == 4 );
+        REQUIRE( iter[-2].type == 3 );
+        REQUIRE( iter[-3].type == 2 );
+    }
+
     return true;
 }
 
@@ -515,8 +684,8 @@ static bool test_mutable_iterator_ops(const std::string& type_id, T& data,
 {
     printf("**** test_mutable_iterator_ops(___): %s\n", type_id.c_str());
     {
-        typename T::iterator begin = data.begin(); // mutable new_store non-const iterator, gets held until destruction
-        typename T::iterator end = data.end();    // no new store iterator, on same store as begin and from begin
+        typename T::iterator begin = data.begin();
+        typename T::iterator end = data.end();
         typename T::difference_type data_size = static_cast<typename T::difference_type>(data.size());
         REQUIRE( end  - begin               == data_size );
         REQUIRE( end - data_size            == begin     );
@@ -527,10 +696,11 @@ static bool test_mutable_iterator_ops(const std::string& type_id, T& data,
     }
 
     {
-        typename T::iterator begin = data.begin();      // mutable new_store non-const iterator, gets held until destruction
-        typename T::iterator end = begin + data.size(); // hence use iterator artihmetic to have end pointer
+        typename T::iterator begin = data.begin();
+        typename T::iterator end = data.end();
         test_iterator_arithmetic<T, typename T::iterator>(data.size(), begin, end);
     }
+
     return true;
 }
 
@@ -552,12 +722,13 @@ static bool test_01_validate_iterator_ops(const std::string& type_id) {
     REQUIRE(data.size() == size0);
     REQUIRE(data.size() <= data.capacity());
 
-    test_const_iterator_ops<T>(type_id, data);
-    test_mutable_iterator_ops<T>(type_id, data);
-
     test_00_list_itr(data, false);
     REQUIRE(0 != data.get_allocator().memory_usage);
     REQUIRE(data.size() == size0);
+
+    test_const_iterator_ops<T>(type_id, data);
+
+    test_mutable_iterator_ops<T>(type_id, data);
 
     data.clear();
     REQUIRE(data.size() == 0);

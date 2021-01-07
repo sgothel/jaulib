@@ -28,12 +28,14 @@
 #include <cstddef>
 #include <limits>
 #include <mutex>
+#include <utility>
 
 #include <type_traits>
 #include <iostream>
 
 #include <jau/cpp_lang_macros.hpp>
 #include <jau/basic_types.hpp>
+#include <jau/basic_algos.hpp>
 
 namespace jau {
 
@@ -367,6 +369,12 @@ namespace jau {
             constexpr difference_type operator-(const cow_rw_iterator& rhs) const noexcept
             { return iterator_ - rhs.iterator_; }
 
+            /**
+             * This iterator is set to the first element.
+             */
+            constexpr void rewind() noexcept
+            { iterator_ = iterator_begin; }
+
             __constexpr_cxx20_ std::string toString() const noexcept {
                 return "cow_rw_iterator["+jau::to_string(iterator_)+"]";
             }
@@ -375,6 +383,164 @@ namespace jau {
                 return toString();
             }
 #endif
+
+            /**
+             * Removes the last element and sets this iterator to end()
+             */
+            constexpr void pop_back() noexcept {
+                store_ref_->pop_back();
+                iterator_ = iterator_begin + size();
+            }
+
+            /**
+             * Erases the element at the current position.
+             * <p>
+             * This iterator is set to the element following the last removed element.
+             * </p>
+             */
+            constexpr void erase () {
+                iterator_ = store_ref_->erase(iterator_);
+                iterator_begin = store_ref_->begin();
+            }
+
+            /**
+             * Like std::vector::erase(), removes the elements in the range [current, current+count).
+             * <p>
+             * This iterator is set to the element following the last removed element.
+             * </p>
+             */
+            constexpr void erase (size_type count) {
+                iterator_ = store_ref_->erase(iterator_, iterator_+count);
+                iterator_begin = store_ref_->begin();
+            }
+
+            /**
+             * Inserts the element before the current position
+             * and moves all elements from there to the right beforehand.
+             * <p>
+             * size will be increased by one.
+             * </p>
+             * <p>
+             * This iterator is set to the inserted element.
+             * </p>
+             */
+            constexpr void insert(const value_type& x) {
+                iterator_ = store_ref_->insert(iterator_, x);
+                iterator_begin = store_ref_->begin();
+            }
+
+            /**
+             * Inserts the element before the current position (std::move operation)
+             * and moves all elements from there to the right beforehand.
+             * <p>
+             * size will be increased by one.
+             * </p>
+             * <p>
+             * This iterator is set to the inserted element.
+             * </p>
+             */
+            constexpr void insert(value_type&& x) {
+                iterator_ = store_ref_->insert(iterator_, std::move(x));
+                iterator_begin = store_ref_->begin();
+            }
+
+            /**
+             * Like std::vector::emplace(), construct a new element in place.
+             * <p>
+             * Constructs the element before the current position using placement new
+             * and moves all elements from there to the right beforehand.
+             * </p>
+             * <p>
+             * size will be increased by one.
+             * </p>
+             * <p>
+             * This iterator is set to the inserted element.
+             * </p>
+             * @param args arguments to forward to the constructor of the element
+             */
+            template<typename... Args>
+            constexpr void emplace(Args&&... args) {
+                iterator_ = store_ref_->emplace(iterator_, std::forward<Args>(args)... );
+                iterator_begin = store_ref_->begin();
+            }
+
+            /**
+             * Like std::vector::insert(), inserting the value_type range [first, last).
+             * <p>
+             * This iterator is set to the first element inserted, or pos if first==last.
+             * </p>
+             * @tparam InputIt foreign input-iterator to range of value_type [first, last)
+             * @param first first foreign input-iterator to range of value_type [first, last)
+             * @param last last foreign input-iterator to range of value_type [first, last)
+             */
+            template< class InputIt >
+            constexpr void insert( InputIt first, InputIt last ) {
+                iterator_ = store_ref_->insert(iterator_, first, last);
+                iterator_begin = store_ref_->begin();
+            }
+
+            /**
+             * Like std::vector::push_back(), copy
+             * <p>
+             * This iterator is set to the end.
+             * </p>
+             * @param x the value to be added at the tail.
+             */
+            constexpr void push_back(const value_type& x) {
+                store_ref_->push_back(x);
+                iterator_ = store_ref_->end();
+                iterator_begin = store_ref_->begin();
+            }
+
+            /**
+             * Like std::vector::push_back(), move
+             * <p>
+             * This iterator is set to the end.
+             * </p>
+             * @param x the value to be added at the tail.
+             */
+            constexpr void push_back(value_type&& x) {
+                store_ref_->push_back(std::move(x));
+                iterator_ = store_ref_->end();
+                iterator_begin = store_ref_->begin();
+            }
+
+            /**
+             * Like std::vector::emplace_back(), construct a new element in place at the end().
+             * <p>
+             * Constructs the element at the end() using placement new.
+             * </p>
+             * <p>
+             * size will be increased by one.
+             * </p>
+             * <p>
+             * This iterator is set to the end.
+             * </p>
+             * @param args arguments to forward to the constructor of the element
+             */
+            template<typename... Args>
+            constexpr reference emplace_back(Args&&... args) {
+                reference res = store_ref_->emplace_back(std::forward<Args>(args)...);
+                iterator_ = store_ref_->end();
+                iterator_begin = store_ref_->begin();
+                return res;
+            }
+
+            /**
+             * Like std::vector::push_back(), but appends the value_type range [first, last).
+             * <p>
+             * This iterator is set to the end.
+             * </p>
+             * @tparam InputIt foreign input-iterator to range of value_type [first, last)
+             * @param first first foreign input-iterator to range of value_type [first, last)
+             * @param last last foreign input-iterator to range of value_type [first, last)
+             */
+            template< class InputIt >
+            constexpr void push_back( InputIt first, InputIt last ) {
+                store_ref_->push_back(first, last);
+                iterator_ = store_ref_->end();
+                iterator_begin = store_ref_->begin();
+            }
     };
 
     /**
@@ -649,6 +815,12 @@ namespace jau {
 
             constexpr difference_type distance(const cow_rw_iterator<storage_t, storage_ref_t, cow_container_t>& rhs) const noexcept
             { return iterator_ - rhs.iterator_; }
+
+            /**
+             * This iterator is set to the first element.
+             */
+            constexpr void rewind() noexcept
+            { iterator_ = iterator_begin; }
 
             __constexpr_cxx20_ std::string toString() const noexcept {
                 return "cow_ro_iterator["+jau::to_string(iterator_)+"]";
