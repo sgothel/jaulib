@@ -169,7 +169,7 @@ namespace jau {
              * </p>
              * <p>
              * Due to the costly nature of mutable CoW resource management,
-             * consider using jau::cow_rw_iterator if elements won't get mutated
+             * consider using jau::cow_ro_iterator if elements won't get mutated
              * or any changes can be discarded.
              * </p>
              * @see jau::cow_rw_iterator
