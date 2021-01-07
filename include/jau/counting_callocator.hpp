@@ -121,7 +121,7 @@ struct counting_callocator : public jau::callocator<T>
       { }
 #endif
     constexpr counting_callocator(const counting_callocator& other, const bool keep_stats) noexcept
-    : jau::callocator<value_type>(other),
+    : jau::callocator<value_type>(other, keep_stats),
       // id(next_id++),
       old_stats(keep_stats ? false : true),
       memory_usage(other.memory_usage),
