@@ -190,9 +190,9 @@ namespace jau {
 
             // C++ named requirements: LegacyIterator: MoveConstructable
             constexpr cow_rw_iterator(cow_rw_iterator && o) noexcept
-            : cow_parent_(std::move(o.cow_parent_)), lock_(cow_parent_.get_write_mutex()),
+            : cow_parent_( o.cow_parent_ ), lock_(cow_parent_.get_write_mutex()),
               store_ref_(std::move(o.store_ref_)), iterator_(std::move(o.iterator_)), iterator_begin(std::move(o.iterator_begin)) {
-                o.lock_ = nullptr; // ???
+                // o.lock_ = nullptr; // ???
                 o.store_ref_ = nullptr;
                 // o.iterator_ = nullptr;
                 // o.iterator_begin = nullptr;
@@ -200,7 +200,7 @@ namespace jau {
 
             // C++ named requirements: LegacyIterator: MoveAssignable
             constexpr cow_rw_iterator& operator=(cow_rw_iterator&& o) noexcept {
-                cow_parent_ = std::move(o.cow_parent_);
+                cow_parent_ = o.cow_parent_;
                 lock_ = cow_parent_.get_write_mutex();
                 store_ref_ = std::move(o.store_ref_);
                 iterator_ = std::move(o.iterator_);
