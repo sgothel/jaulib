@@ -888,50 +888,6 @@ namespace jau {
                 } // else throw away new_store_ref
                 return count;
             }
-
-            /**
-             * Thread safe value_type copy assignment to value_type at given position with bounds checking.
-             * <p>
-             * This write operation uses a mutex lock and is blocking this instances' write operations only.
-             * </p>
-             * <p>
-             * To mutate multiple elements, use the more efficient jau::cow_rw_iterator via begin() and end().
-             * </p>
-             * @param i the position within this store
-             * @param x the value to be assigned to the object at the given position
-             */
-            __constexpr_non_literal_atomic__
-            void put(size_type i, const value_type& x) {
-                std::lock_guard<std::recursive_mutex> lock(mtx_write);
-                storage_ref_t new_store_ref = std::make_shared<storage_t>( *store_ref );
-                new_store_ref->at(i) = x;
-                {
-                    sc_atomic_critical sync(sync_atomic);
-                    store_ref = std::move(new_store_ref);
-                }
-            }
-
-            /**
-             * Thread safe value_type move assignment to value_type at given position with bounds checking.
-             * <p>
-             * This write operation uses a mutex lock and is blocking this instances' write operations only.
-             * </p>
-             * <p>
-             * To mutate multiple elements, use the more efficient jau::cow_rw_iterator via begin() and end().
-             * </p>
-             * @param i the position within this store
-             * @param x the value to be assigned to the object at the given position
-             */
-            __constexpr_non_literal_atomic__
-            void put(size_type i, value_type&& x) {
-                std::lock_guard<std::recursive_mutex> lock(mtx_write);
-                storage_ref_t new_store_ref = std::make_shared<storage_t>( *store_ref );
-                new_store_ref->at(i) = std::move(x);
-                {
-                    sc_atomic_critical sync(sync_atomic);
-                    store_ref = std::move(new_store_ref);
-                }
-            }
     };
 
 } /* namespace jau */
