@@ -673,6 +673,21 @@ static bool test_mutable_iterator_ops(const std::string& type_id, T& data,
         REQUIRE( iter[-1].type == 4 );
         REQUIRE( iter[-2].type == 3 );
         REQUIRE( iter[-3].type == 2 );
+
+        // multiple erase()
+        size_pre = iter.size();
+        REQUIRE( iter == iter.end() );
+        iter -= 15;
+        REQUIRE( iter == iter.end()-15 );
+        {
+            int count = 0;
+            while( iter != iter.end() ) {
+                iter.erase();
+                count++;
+            }
+            REQUIRE( iter.size() == size_pre - 15 );
+            REQUIRE( iter == iter.end() );
+        }
     }
 
     return true;
