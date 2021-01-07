@@ -655,32 +655,6 @@ namespace jau {
             }
 
             /**
-             * Like std::vector::erase().
-             * <p>
-             * Removes the element at the given position
-             * and moves all subsequent elements one left.
-             * </p>
-             * <p>
-             * size will be reduced by one.
-             * </p>
-             * @param i the position of the element to be removed
-             */
-            constexpr void erase(const size_type i) {
-                const size_type size_ = size();
-                if( 0 <= i && i < size_ ) {
-                    ( begin_ + i )->~value_type(); // placement new -> manual destruction!
-
-                    const difference_type right_count = size_ - 1 - i;
-                    if( 0 < right_count ) {
-                        memmove(begin_+i, begin_+i+1, sizeof(value_type)*right_count); // move right elems one left
-                    }
-                    --end_;
-                } else {
-                    throw jau::IndexOutOfBoundsException(i, size_, E_FILE_LINE);
-                }
-            }
-
-            /**
              * Like std::vector::erase(), removes the elements at pos.
              * @return iterator following the last removed element.
              */
