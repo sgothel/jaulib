@@ -33,7 +33,6 @@
 #include <memory>
 #include <mutex>
 #include <condition_variable>
-#include <vector>
 #include <algorithm>
 #include <utility>
 
@@ -64,7 +63,7 @@ namespace jau {
      * <li>...</li>
      * <li><b>Removed</b>: size_type x value_type fill operations, e.g. assign, constructor, .... for clarity, since supporting <i>capacity</i>.</li>
      * <li>...</li>
-     * <li><b>TODO</b>: std::initializer_list<T> operations</li>
+     * <li><b>TODO</b>: std::initializer_list<T> methods, ctor is provided.</li>
      * </ul>
      * </p>
      * <p>
@@ -77,7 +76,8 @@ namespace jau {
      * </ul>
      * </p>
      */
-    template <typename Value_type, typename Alloc_type = jau::callocator<Value_type>, typename Size_type = jau::nsize_t, bool use_realloc=true>
+    template <typename Value_type, typename Alloc_type = jau::callocator<Value_type>, typename Size_type = jau::nsize_t,
+              bool use_trivial_memcpy=false, bool use_realloc=false>
     class darray
     {
         public:
@@ -123,7 +123,7 @@ namespace jau {
             constexpr value_type * allocStore(const size_type size_) {
                 if( 0 != size_ ) {
                     if( size_ > DIFF_MAX ) {
-                        throw jau::IllegalArgumentException("allocData "+std::to_string(size_)+" > difference_type max "+
+                        throw jau::IllegalArgumentException("alloc "+std::to_string(size_)+" > difference_type max "+
                                 std::to_string(DIFF_MAX), E_FILE_LINE);
                     }
                     value_type * m = alloc_inst.allocate(size_);
@@ -139,13 +139,13 @@ namespace jau {
 
             constexpr value_type * reallocStore(const size_type new_capacity_) {
                 if( new_capacity_ > DIFF_MAX ) {
-                    throw jau::IllegalArgumentException("allocData "+std::to_string(new_capacity_)+" > difference_type max "+
+                    throw jau::IllegalArgumentException("realloc "+std::to_string(new_capacity_)+" > difference_type max "+
                             std::to_string(DIFF_MAX), E_FILE_LINE);
                 }
                 value_type * m = alloc_inst.reallocate(begin_, storage_end_-begin_, new_capacity_);
                 if( nullptr == m ) {
                     free(begin_); // has not been touched by realloc
-                    throw jau::OutOfMemoryError("alloc "+std::to_string(new_capacity_)+" elements * "+
+                    throw jau::OutOfMemoryError("realloc "+std::to_string(new_capacity_)+" elements * "+
                             std::to_string(sizeof(value_type))+" bytes/element = "+
                             std::to_string(new_capacity_ * sizeof(value_type))+" bytes -> nullptr", E_FILE_LINE);
                 }
@@ -207,15 +207,15 @@ namespace jau {
 
             template< class InputIt >
             constexpr static void ctor_copy_range_foreign(pointer dest, InputIt first, InputIt last) {
-                for(; first < last; ++dest, ++first) {
+                for(; first != last; ++dest, ++first) {
                     new (dest) value_type( *first ); // placement new
                 }
             }
             template< class InputIt >
             constexpr pointer clone_range_foreign(const size_type dest_capacity, InputIt first, InputIt last) {
                 if( first > last ) {
-                    throw jau::IllegalArgumentException("first "+std::to_string(first)+" > last "+
-                                                        std::to_string(last), E_FILE_LINE);
+                    throw jau::IllegalArgumentException("first "+aptrHexString( (void*)&(*first) )+" > last "+
+                                                        aptrHexString( (void*)&(*last) ), E_FILE_LINE);
                 }
                 if( dest_capacity < size_type(last-first) ) {
                     throw jau::IllegalArgumentException("capacity "+std::to_string(dest_capacity)+" < source range "+
@@ -227,32 +227,66 @@ namespace jau {
             }
 
             constexpr void grow_storage_move(const size_type new_capacity) {
-                if( use_realloc ) {
-                    pointer dest = reallocStore(new_capacity);
-                    set_iterator(dest, size(), new_capacity);
+                if( !use_trivial_memcpy ) {
+                    pointer new_storage = allocStore(new_capacity);
+                    {
+                        iterator dest = new_storage;
+                        iterator first = begin_;
+                        for(; first < end_; ++dest, ++first) {
+                            new (dest) value_type( std::move( *first ) ); // placement new
+                            ( first )->~value_type(); // manual destruction, even after std::move (object still exists)
+                        }
+                    }
+                    freeStore();
+                    set_iterator(new_storage, size(), new_capacity);
+                } else if( use_realloc ) {
+                    pointer new_storage = reallocStore(new_capacity);
+                    set_iterator(new_storage, size(), new_capacity);
                 } else {
-                    pointer dest = allocStore(new_capacity);
-                    memcpy(reinterpret_cast<void*>(dest),
+                    pointer new_storage = allocStore(new_capacity);
+                    memcpy(reinterpret_cast<void*>(new_storage),
                            reinterpret_cast<void*>(begin_), (uint8_t*)end_-(uint8_t*)begin_); // we can simply copy the memory over, also no overlap
 
                     freeStore();
-                    set_iterator(dest, size(), new_capacity);
+                    set_iterator(new_storage, size(), new_capacity);
                 }
             }
             constexpr void grow_storage_move() {
                 const size_type old_capacity = capacity();
                 const size_type new_capacity = std::max<size_type>(old_capacity+1, static_cast<size_type>(old_capacity * growth_factor_ + 0.5f) );
+                grow_storage_move(new_capacity);
+            }
 
-                if( use_realloc ) {
-                    pointer dest = reallocStore(new_capacity);
-                    set_iterator(dest, size(), new_capacity);
+            constexpr void move_elements(iterator dest, const_iterator first, const difference_type count) noexcept {
+                if( !use_trivial_memcpy ) {
+                    if( dest < first ) {
+                        // move elems left = dest < first
+                        const_iterator last = first + count;
+#if 0
+                        printf("move left %d/%d: [%d..%d] -> %d\n",
+                                (int)count, (int)size(), (int)(first-begin_), (int)(last-begin_-1), (int)(dest-begin_)); fflush(0);
+#endif
+                        for(; first < last; ++dest, ++first ) {
+                            new (dest) value_type( std::move( *first ) ); // placement new
+                            ( first )->~value_type(); // manual destruction, even after std::move (object still exists)
+                        }
+                    } else {
+                        // move elems right = dest > first
+#if 0
+                        printf("move right %d/%d: [%d..%d] -> %d\n",
+                                (int)count, (int)size(), (int)(first-begin_), (int)(first+count-1-begin_), (int)(dest-begin_)); fflush(0);
+#endif
+                        iterator last = const_cast<iterator>(first + count - 1);
+                        dest += count - 1;
+                        for(; first <= last; --dest, --last ) {
+                            new (dest) value_type( std::move( *last ) ); // placement new
+                            ( last )->~value_type(); // manual destruction, even after std::move (object still exists)
+                        }
+                    }
                 } else {
-                    pointer dest = allocStore(new_capacity);
-                    memcpy(reinterpret_cast<void*>(dest),
-                           reinterpret_cast<void*>(begin_), (uint8_t*)end_-(uint8_t*)begin_); // we can simply copy the memory over, also no overlap
-
-                    freeStore();
-                    set_iterator(dest, size(), new_capacity);
+                    // handles overlapp
+                    memmove(reinterpret_cast<void*>(dest),
+                            reinterpret_cast<const void*>(first), sizeof(value_type)*count);
                 }
             }
 
@@ -317,7 +351,7 @@ namespace jau {
             // move_ctor on darray elements
 
             constexpr darray(darray && x) noexcept
-            : alloc_inst( x.alloc_inst, true ), begin_( std::move(x.begin_) ), end_( std::move(x.end_) ),
+            : alloc_inst( x.alloc_inst ), begin_( std::move(x.begin_) ), end_( std::move(x.end_) ),
               storage_end_( std::move(x.storage_end_) ), growth_factor_( std::move(x.growth_factor_) )
             {
                 // complete swapping store_ref
@@ -327,7 +361,7 @@ namespace jau {
             }
 
             constexpr explicit darray(darray && x, const float growth_factor, const allocator_type& alloc) noexcept
-            : alloc_inst( alloc, true ), begin_( std::move(x.begin_) ), end_( std::move(x.end_) ),
+            : alloc_inst( alloc ), begin_( std::move(x.begin_) ), end_( std::move(x.end_) ),
               storage_end_( std::move(x.storage_end_) ), growth_factor_( std::move(growth_factor) )
             {
                 // complete swapping store_ref
@@ -532,17 +566,7 @@ namespace jau {
             void reserve(size_type new_capacity) {
                 const size_type capacity_ = capacity();
                 if( new_capacity > capacity_ ) {
-                    if( use_realloc ) {
-                        pointer new_storage = reallocStore(new_capacity);
-                        set_iterator(new_storage, size(), new_capacity);
-                    } else {
-                        pointer new_storage = allocStore(new_capacity);
-                        memcpy(reinterpret_cast<void*>(new_storage),
-                               reinterpret_cast<void*>(begin_), (uint8_t*)end_-(uint8_t*)begin_); // we can simply copy the memory over, also no overlap
-
-                        freeStore();
-                        set_iterator(new_storage, size(), new_capacity);
-                    }
+                    grow_storage_move(new_capacity);
                 }
             }
 
@@ -550,7 +574,6 @@ namespace jau {
              * Like std::vector::operator=(&), assignment
              */
             constexpr darray& operator=(const darray& x) {
-                const size_type size_ = size();
                 const size_type capacity_ = capacity();
                 const size_type x_size_ = x.size();
                 dtor_range(begin_, end_);
@@ -662,10 +685,9 @@ namespace jau {
             constexpr iterator erase (const_iterator pos) {
                 if( begin_ <= pos && pos < end_ ) {
                     ( pos )->~value_type(); // placement new -> manual destruction!
-                    const difference_type right_count = ( end_ - pos ) - 1;
+                    const difference_type right_count = end_ - ( pos + 1 );
                     if( 0 < right_count ) {
-                        memmove(reinterpret_cast<void*>(const_cast<value_type*>(pos)),
-                                reinterpret_cast<const void*>(pos+1), sizeof(value_type)*right_count); // move right elems one left
+                        move_elements(const_cast<value_type*>(pos), pos+1, right_count); // move right elems one left
                     }
                     --end_;
                 }
@@ -681,8 +703,7 @@ namespace jau {
                 if( count > 0 ) {
                     const difference_type right_count = end_ - last;  // last is exclusive
                     if( 0 < right_count ) {
-                        memmove(reinterpret_cast<void*>(first),
-                                reinterpret_cast<const void*>(last), sizeof(value_type)*right_count); // move right elems count left
+                        move_elements(first, last, right_count); // move right elems count left
                     }
                     end_ -= count;
                 }
@@ -710,8 +731,7 @@ namespace jau {
                     iterator pos_new = begin_ + pos_idx;
                     const difference_type right_count = end_ - pos_new; // include original element at 'pos_new'
                     if( 0 < right_count ) {
-                        memmove(reinterpret_cast<void*>(pos_new+1),
-                                reinterpret_cast<void*>(pos_new), sizeof(value_type)*right_count); // move elems one right
+                        move_elements(pos_new+1, pos_new, right_count); // move elems one right
                     }
                     new (pos_new) value_type( x ); // placement new
                     ++end_;
@@ -743,8 +763,7 @@ namespace jau {
                     iterator pos_new = begin_ + pos_idx;
                     const difference_type right_count = end_ - pos_new; // include original element at 'pos_new'
                     if( 0 < right_count ) {
-                        memmove(reinterpret_cast<void*>(pos_new+1),
-                                reinterpret_cast<void*>(pos_new), sizeof(value_type)*right_count); // move elems one right
+                        move_elements(pos_new+1, pos_new, right_count); // move elems one right
                     }
                     new (pos_new) value_type( std::move( x ) ); // placement new
                     ++end_;
@@ -777,8 +796,7 @@ namespace jau {
                     iterator pos_new = begin_ + pos_idx;
                     const difference_type right_count = end_ - pos_new; // include original element at 'pos_new'
                     if( 0 < right_count ) {
-                        memmove(reinterpret_cast<void*>(pos_new+1),
-                                reinterpret_cast<void*>(pos_new), sizeof(value_type)*right_count); // move right elems one left
+                        move_elements(pos_new+1, pos_new, right_count); // move elems one right
                     }
                     new (pos_new) value_type( std::forward<Args>(args)... ); // placement new, construct in-place
                     ++end_;
@@ -808,8 +826,7 @@ namespace jau {
                     iterator pos_new = begin_ + pos_idx;
                     const difference_type right_count = end_ - pos_new; // include original element at 'pos_new'
                     if( 0 < right_count ) {
-                        memmove(reinterpret_cast<void*>(pos_new+new_elem_count),
-                                reinterpret_cast<void*>(pos_new), sizeof(value_type)*right_count); // move elems count right
+                        move_elements(pos_new + new_elem_count, pos_new, right_count); // move elems count right
                     }
                     ctor_copy_range_foreign(pos_new, first, last);
                     end_ += new_elem_count;
@@ -840,7 +857,7 @@ namespace jau {
                 if( end_ == storage_end_ ) {
                     grow_storage_move();
                 }
-                new (end_) value_type( std::move(x) ); // placement new - or just memmove?
+                new (end_) value_type( std::move(x) ); // placement new, just one element - no optimization
                 ++end_;
             }
 
