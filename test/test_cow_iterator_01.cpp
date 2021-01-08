@@ -302,11 +302,13 @@ static void test_iterator_dereference(const typename T::size_type size,
     REQUIRE( (citer2+3)->toString() == begin[3].toString() );
     REQUIRE( (citer2+size-1)->toString() == (end-1)->toString() );
 
+#if 0
     printf("[0]: %s == %s\n", (citer2+0)->toString().c_str(), begin[3].toString().c_str());
     printf("[1]: %s == %s\n", (citer2+1)->toString().c_str(), begin[3].toString().c_str());
     printf("[2]: %s == %s\n", (citer2+2)->toString().c_str(), begin[3].toString().c_str());
     printf("[3]: %s == %s\n", (citer2+3)->toString().c_str(), begin[3].toString().c_str());
     printf("[E]: %s == %s\n", (citer2+size-1)->toString().c_str(), (end-1)->toString().c_str());
+#endif
 
     test_iterator_compare<T, iterator_type>(size, begin, end, citer1, citer2, 0, 0);
 }
@@ -342,7 +344,7 @@ static void test_iterator_arithmetic(const typename T::size_type size,
         citer1--;
         test_iterator_compare<T, iterator_type>(size, begin, end, citer1, citer2, 0, 0);
         REQUIRE( citer2->toString() == begin[0].toString() );
-        printf("[0]: %s == %s\n", citer2->toString().c_str(), begin[0].toString().c_str());
+        // printf("[0]: %s == %s\n", citer2->toString().c_str(), begin[0].toString().c_str());
 
         // iter op++(int)
         citer2++;
@@ -364,7 +366,7 @@ static void test_iterator_arithmetic(const typename T::size_type size,
         REQUIRE(   *citer2 == *(begin+3)    );  // iter op*(), op+(iter, difference_type) and value_type ==
         REQUIRE(   *citer2 == begin[3]      );  // iter op*(), op[](difference_type) and value_type ==
         REQUIRE( citer2->toString() == begin[3].toString() );
-        printf("[3]: %s == %s\n", citer2->toString().c_str(), begin[3].toString().c_str());
+        // printf("[3]: %s == %s\n", citer2->toString().c_str(), begin[3].toString().c_str());
 
         // iter op++()
         --citer2;
@@ -374,7 +376,7 @@ static void test_iterator_arithmetic(const typename T::size_type size,
         REQUIRE(   *citer2 == *(begin+0)    );  // iter op*(), op+(iter, difference_type) and value_type ==
         REQUIRE(   *citer2 == begin[0]      );    // iter op*(), op[](difference_type) and value_type ==
         REQUIRE( citer2->toString() == begin[0].toString() );
-        printf("[3]: %s == %s\n", citer2->toString().c_str(), begin[3].toString().c_str());
+        // printf("[3]: %s == %s\n", citer2->toString().c_str(), begin[3].toString().c_str());
 
         // iter +=(diff)
         citer2 += 3;
@@ -716,6 +718,187 @@ static bool test_mutable_iterator_ops(const std::string& type_id, T& data,
         test_iterator_arithmetic<T, typename T::iterator>(data.size(), begin, end);
     }
 
+    // iterator-op: darray/vector-op
+    // -------------------------------------------
+    // 1 pop_back()
+    // 1 erase (const_iterator pos)
+    // 3 erase (iterator first, const_iterator last)
+    // 1 iterator insert(const_iterator pos, const value_type& x)
+    // 0 iterator insert(const_iterator pos, value_type&& x)
+    // 1 emplace(const_iterator pos, Args&&... args)
+    // 2 insert( const_iterator pos, InputIt first, InputIt last )
+    // 1 void push_back(value_type& x)
+    // 1 void push_back(value_type&& x)
+    // 1 reference emplace_back(Args&&... args)
+    // 0 [void push_back( InputIt first, InputIt last )]
+    // 1 rewind()
+    {
+        typename T::iterator iter             = data.end();
+        typename T::size_type size_pre        = data.size();
+        typename T::value_type          elem  = iter[-2];
+
+        // pop_back()
+        int i;
+        (void)i;
+        data.pop_back();
+        iter--;
+        REQUIRE( data.size() == size_pre-1 );
+        REQUIRE( iter == data.end() );
+        REQUIRE( iter == data.begin()+size_pre-1 );
+        REQUIRE( iter[-1] == elem );
+
+        // insert( const_iterator pos, InputIt first, InputIt last )
+        REQUIRE( iter == data.end() );
+        size_pre = data.size();
+        jau_darray_DataType01 data2;
+        test_00_seq_fill(data2, 10);
+        // data.push_back(data2.cbegin(), data2.cend()); // FIXME: Only in jau::darray not stl::vector
+        iter = data.insert(iter, data2.cbegin(), data2.cend()); // same as push_pack(..) since pointing to end() - but data points here to first new elem
+        REQUIRE( data.size() == size_pre+10 );
+        REQUIRE( iter == data.end()-10 );
+
+        // erase (count): erase (iterator first, const_iterator last)
+        REQUIRE( iter == data.end()-10 );
+        size_pre = data.size();
+        // std::cout << "data.5" << data << (data - data.begin()) << "/" << data.size() << ", size2 " << size2 << std::endl;
+        iter = data.erase(iter, iter+10);
+        // std::cout << "data.6" << data << (data - data.begin()) << "/" << data.size() << std::endl;
+        REQUIRE( data.size() == size_pre-10 );
+        REQUIRE( iter == data.end() );
+
+        // erase ()
+        size_pre = data.size();
+        iter = data.begin();
+        REQUIRE( iter == data.begin() );
+        elem  = iter[1];
+        // i=0; jau::for_each(data.begin(), data.begin()+3, [&](const typename T::value_type & e) { printf("data[%d]: %s\n", i++, e.toString().c_str()); } );
+        iter = data.erase(iter);
+        // i=0; jau::for_each(data.begin(), data.begin()+3, [&](const typename T::value_type & e) { printf("data[%d]: %s\n", i++, e.toString().c_str()); } );
+        REQUIRE( data.size() == size_pre-1 );
+        REQUIRE( iter == data.begin() );
+        REQUIRE( *iter == elem );
+
+        // void push_back(value_type& x)
+        size_pre = data.size();
+        REQUIRE( iter == data.begin() );
+        elem  = data.end()[-1];
+        data.push_back(data2[0]);
+        data.push_back(data2[1]);
+        data.push_back(data2[2]);
+        iter = data.end();
+        REQUIRE( data.size() == size_pre+3 );
+        REQUIRE( iter == data.end() );
+        REQUIRE( iter[-3] == data2[0] );
+        REQUIRE( iter[-2] == data2[1] );
+        REQUIRE( iter[-1] == data2[2] );
+
+        // erase (count): erase (iterator first, const_iterator last)
+        size_pre = data.size();
+        REQUIRE( iter == data.end() );
+        iter -= 3;
+        iter = data.erase(iter, iter+3);
+        REQUIRE( data.size() == size_pre-3 );
+        REQUIRE( iter == data.end() );
+
+        // void push_back(value_type&& x)
+        size_pre = data.size();
+        REQUIRE( iter == data.end() );
+        {
+            typename T::value_type elem0 = data.begin()[0];
+            data.push_back( std::move(elem0));
+        }
+        {
+            typename T::value_type elem0 = data.begin()[1];
+            data.push_back( std::move(elem0));
+        }
+        {
+            typename T::value_type elem0 = data.begin()[2];
+            data.push_back( std::move(elem0));
+        }
+        iter = data.end();
+        REQUIRE( data.size() == size_pre+3 );
+        REQUIRE( iter == data.end() );
+        REQUIRE( iter[-3] == data.begin()[0] );
+        REQUIRE( iter[-2] == data.begin()[1] );
+        REQUIRE( iter[-1] == data.begin()[2] );
+
+        // iterator insert(const_iterator pos, const value_type& x)
+        iter = data.begin();
+        iter += 20;
+        REQUIRE( iter == data.begin()+20 );
+        size_pre = data.size();
+        iter = data.insert(iter, data2[0]);
+        iter = data.insert(iter, data2[1]);
+        iter = data.insert(iter, data2[2]);
+        REQUIRE( data.size() == size_pre+3 );
+        REQUIRE( iter == data.begin()+20 );
+        iter = data.begin();
+        REQUIRE( iter[20] == data2[2] );
+        REQUIRE( iter[21] == data2[1] );
+        REQUIRE( iter[22] == data2[0] );
+
+        // insert( const_iterator pos, InputIt first, InputIt last )
+        iter += 20;
+        REQUIRE( iter == data.begin()+20 );
+        size_pre = data.size();
+        iter = data.insert(iter, data2.cbegin(), data2.cbegin()+11);
+        REQUIRE( data.size() == size_pre+11 );
+        REQUIRE( iter == data.begin()+20 );
+
+        // erase (count): erase (iterator first, const_iterator last)
+        REQUIRE( iter == data.begin()+20 );
+        size_pre = data.size();
+        iter -= 10;
+        REQUIRE( iter == data.begin()+10 );
+        iter = data.erase(iter, iter+11);
+        REQUIRE( data.size() == size_pre-11 );
+        REQUIRE( iter == data.begin()+10 );
+
+        // 1 emplace(Args&&... args): emplace(const_iterator pos, Args&&... args)
+        Addr48Bit a0(start_addr);
+        size_pre = data.size();
+        REQUIRE( iter == data.begin()+10 );
+        iter = data.emplace(iter, a0, static_cast<uint8_t>(2) );
+        a0.next();
+        iter = data.emplace(iter, a0, static_cast<uint8_t>(3) );
+        a0.next();
+        iter = data.emplace(iter, a0, static_cast<uint8_t>(4) );
+        a0.next();
+        REQUIRE( iter == data.begin()+10 );
+        REQUIRE( iter[0].type == 4 );
+        REQUIRE( iter[1].type == 3 );
+        REQUIRE( iter[2].type == 2 );
+
+        // 1 reference emplace_back(Args&&... args)
+        size_pre = data.size();
+        REQUIRE( iter == data.begin()+10 );
+        data.emplace_back( a0, static_cast<uint8_t>(2) );
+        a0.next();
+        data.emplace_back( a0, static_cast<uint8_t>(3) );
+        a0.next();
+        data.emplace_back( a0, static_cast<uint8_t>(4) );
+        a0.next();
+        iter = data.end();
+        REQUIRE( iter == data.end() );
+        REQUIRE( iter[-1].type == 4 );
+        REQUIRE( iter[-2].type == 3 );
+        REQUIRE( iter[-3].type == 2 );
+
+        // multiple erase()
+        size_pre = data.size();
+        REQUIRE( iter == data.end() );
+        iter -= 15;
+        REQUIRE( iter == data.end()-15 );
+        {
+            int count = 0;
+            while( iter != data.end() ) {
+                iter = data.erase(iter);
+                count++;
+            }
+            REQUIRE( data.size() == size_pre - 15 );
+            REQUIRE( iter == data.end() );
+        }
+    }
     return true;
 }
 
