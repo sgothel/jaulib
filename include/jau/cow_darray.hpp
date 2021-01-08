@@ -484,7 +484,7 @@ namespace jau {
              * @see jau::cow_rw_iterator::begin()
              * @see jau::cow_rw_iterator::end()
              */
-            constexpr iterator begin() noexcept {
+            constexpr iterator begin() {
                 return iterator(*this, [](storage_ref_t& new_store) -> typename storage_t::iterator { return new_store->begin(); } );
             }
 

@@ -288,7 +288,7 @@ namespace jau {
             /**
              * See description in jau::cow_darray::begin()
              */
-            constexpr iterator begin() noexcept {
+            constexpr iterator begin() {
                 return iterator(*this, [](storage_ref_t& new_store) -> typename storage_t::iterator { return new_store->begin(); } );
             }
 
