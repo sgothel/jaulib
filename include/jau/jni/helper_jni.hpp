@@ -36,6 +36,8 @@
 
 #include <jau/java_uplink.hpp>
 #include <jau/basic_types.hpp>
+#include <jau/darray.hpp>
+#include <jau/basic_algos.hpp>
 
 #include <jau/jni/jni_mem.hpp>
 
@@ -334,7 +336,7 @@ namespace jau {
     }
 
     template <typename T>
-    jobject convert_vector_sharedptr_to_jarraylist(JNIEnv *env, std::vector<std::shared_ptr<T>>& array)
+    jobject convert_vector_sharedptr_to_jarraylist(JNIEnv *env, T& array)
     {
         nsize_t array_size = array.size();
 
@@ -345,20 +347,18 @@ namespace jau {
             return result;
         }
 
-        for (nsize_t i = 0; i < array_size; ++i) {
-            std::shared_ptr<T> elem = array[i];
+        jau::for_each(array.begin(), array.end(), [&](typename T::value_type & elem){
             std::shared_ptr<JavaAnon> objref = elem->getJavaObject();
             if ( nullptr == objref ) {
                 throw InternalError("JavaUplink element of array has no valid java-object: "+elem->toString(), E_FILE_LINE);
             }
             env->CallBooleanMethod(result, arraylist_add, JavaGlobalObj::GetObject(objref));
-        }
+        });
         return result;
     }
 
-    template <typename T>
-    jobject convert_vector_uniqueptr_to_jarraylist(JNIEnv *env, std::vector<std::unique_ptr<T>>& array,
-            const char *ctor_prototype)
+    template <typename T, typename U>
+    jobject convert_vector_uniqueptr_to_jarraylist(JNIEnv *env, T& array, const char *ctor_prototype)
     {
         unsigned int array_size = array.size();
 
@@ -370,12 +370,12 @@ namespace jau {
             return result;
         }
 
-        jclass clazz = search_class(env, T::java_class().c_str());
+        jclass clazz = search_class(env, U::java_class().c_str());
         jmethodID clazz_ctor = search_method(env, clazz, "<init>", ctor_prototype, false);
 
         for (unsigned int i = 0; i < array_size; ++i)
         {
-            T *elem = array[i].release();
+            U *elem = array[i].release();
             jobject object = env->NewObject(clazz, clazz_ctor, (jlong)elem);
             if (!object)
             {
@@ -387,9 +387,9 @@ namespace jau {
         return result;
     }
 
-    template <typename T>
-    jobject convert_vector_uniqueptr_to_jarraylist(JNIEnv *env, std::vector<std::unique_ptr<T>>& array,
-            const char *ctor_prototype, std::function<jobject(JNIEnv*, jclass, jmethodID, T*)> ctor)
+    template <typename T, typename U>
+    jobject convert_vector_uniqueptr_to_jarraylist(JNIEnv *env, T& array,
+            const char *ctor_prototype, std::function<jobject(JNIEnv*, jclass, jmethodID, U*)> ctor)
     {
         unsigned int array_size = array.size();
 
@@ -401,12 +401,12 @@ namespace jau {
             return result;
         }
 
-        jclass clazz = search_class(env, T::java_class().c_str());
+        jclass clazz = search_class(env, U::java_class().c_str());
         jmethodID clazz_ctor = search_method(env, clazz, "<init>", ctor_prototype, false);
 
         for (unsigned int i = 0; i < array_size; ++i)
         {
-            T *elem = array[i].release();
+            U *elem = array[i].release();
             jobject object = ctor(env, clazz, clazz_ctor, elem);
             if (!object)
             {
@@ -418,9 +418,9 @@ namespace jau {
         return result;
     }
 
-    template <typename T>
-    jobject convert_vector_sharedptr_to_jarraylist(JNIEnv *env, std::vector<std::shared_ptr<T>>& array,
-            const char *ctor_prototype, std::function<jobject(JNIEnv*, jclass, jmethodID, T*)> ctor)
+    template <typename T, typename U>
+    jobject convert_vector_sharedptr_to_jarraylist(JNIEnv *env, T& array,
+            const char *ctor_prototype, std::function<jobject(JNIEnv*, jclass, jmethodID, U*)> ctor)
     {
         unsigned int array_size = array.size();
 
@@ -432,12 +432,12 @@ namespace jau {
             return result;
         }
 
-        jclass clazz = search_class(env, T::java_class().c_str());
+        jclass clazz = search_class(env, U::java_class().c_str());
         jmethodID clazz_ctor = search_method(env, clazz, "<init>", ctor_prototype, false);
 
         for (unsigned int i = 0; i < array_size; ++i)
         {
-            T *elem = array[i].get();
+            U *elem = array[i].get();
             jobject object = ctor(env, clazz, clazz_ctor, elem);
             if (!object)
             {
