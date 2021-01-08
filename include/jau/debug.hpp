@@ -27,7 +27,6 @@
 #define JAU_DEBUG_HPP_
 
 #include <memory>
-#include <vector>
 
 #include <cstdint>
 #include <cinttypes>
@@ -146,12 +145,12 @@ namespace jau {
     #define COND_PRINT(C, ...) { if( C ) { jau::COND_PRINT_impl(__VA_ARGS__); } }
 
 
-    template<class ListElemType>
-    inline void printSharedPtrList(std::string prefix, std::vector<std::shared_ptr<ListElemType>> & list) noexcept {
+    template<class List>
+    inline void printSharedPtrList(std::string prefix, List & list) noexcept {
         fprintf(stderr, "%s: Start: %zu elements\n", prefix.c_str(), (size_t)list.size());
         int idx = 0;
         for (auto it = list.begin(); it != list.end(); idx++) {
-            std::shared_ptr<ListElemType> & e = *it;
+            typename List::value_type & e = *it;
             if ( nullptr != e ) {
                 fprintf(stderr, "%s[%d]: useCount %zu, mem %p\n", prefix.c_str(), idx, (size_t)e.use_count(), e.get());
             } else {
