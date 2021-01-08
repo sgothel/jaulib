@@ -69,9 +69,6 @@ struct callocator
     { (void)other; }
 #endif
 
-    constexpr callocator(const callocator& other, const bool keep_stats) noexcept
-    { (void)other; (void)keep_stats; }
-
 #if __cplusplus > 201703L
     template <typename U>
     constexpr callocator(const callocator<U>& other) noexcept

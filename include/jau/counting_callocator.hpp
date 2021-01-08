@@ -120,14 +120,6 @@ struct counting_callocator : public jau::callocator<T>
       realloc_count(other.realloc_count), alloc_balance(other.alloc_balance)
       { }
 #endif
-    constexpr counting_callocator(const counting_callocator& other, const bool keep_stats) noexcept
-    : jau::callocator<value_type>(other, keep_stats),
-      // id(next_id++),
-      old_stats(keep_stats ? false : true),
-      memory_usage(other.memory_usage),
-      alloc_count(other.alloc_count), dealloc_count(other.dealloc_count),
-      realloc_count(other.realloc_count), alloc_balance(other.alloc_balance)
-      {}
 
 #if __cplusplus > 201703L
     template <typename U>
