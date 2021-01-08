@@ -330,6 +330,19 @@ namespace jau {
             : store_ref(std::make_shared<storage_t>(_capacity, first, last, growth_factor, alloc)), sync_atomic(false)
             { }
 
+            /**
+             * Creates a new instance,
+             * copying all elements from the given template input-iterator value_type range [first, last).<br>
+             * Size will equal the range [first, last), i.e. <code>size_type(last-first)</code>.
+             * @tparam InputIt template input-iterator custom type
+             * @param first template input-iterator to first element of value_type range [first, last)
+             * @param last template input-iterator to last element of value_type range [first, last)
+             * @param alloc custom allocator_type instance
+             */
+            template< class InputIt >
+            constexpr explicit cow_darray(InputIt first, InputIt last, const allocator_type& alloc = allocator_type())
+            : store_ref(std::make_shared<storage_t>(first, last, alloc)), sync_atomic(false)
+            { }
 
             ~cow_darray() noexcept { }
 

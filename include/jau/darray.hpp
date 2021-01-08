@@ -33,6 +33,7 @@
 #include <memory>
 #include <mutex>
 #include <condition_variable>
+#include <initializer_list>
 #include <algorithm>
 #include <utility>
 
@@ -409,6 +410,30 @@ namespace jau {
                                       const float growth_factor=DEFAULT_GROWTH_FACTOR, const allocator_type& alloc = allocator_type())
             : alloc_inst( alloc ), begin_( clone_range_foreign(_capacity, first, last) ), end_(begin_ + size_type(last - first) ),
               storage_end_( begin_ + _capacity ), growth_factor_( growth_factor ) { }
+
+            /**
+             * Creates a new instance,
+             * copying all elements from the given template input-iterator value_type range [first, last).<br>
+             * Size will equal the range [first, last), i.e. <code>size_type(last-first)</code>.
+             * @tparam InputIt template input-iterator custom type
+             * @param first template input-iterator to first element of value_type range [first, last)
+             * @param last template input-iterator to last element of value_type range [first, last)
+             * @param alloc custom allocator_type instance
+             */
+            template< class InputIt >
+            constexpr explicit darray(InputIt first, InputIt last, const allocator_type& alloc = allocator_type())
+            : alloc_inst( alloc ), begin_( clone_range_foreign(size_type(last - first), first, last) ), end_(begin_ + size_type(last - first) ),
+              storage_end_( begin_ + size_type(last - first) ), growth_factor_( DEFAULT_GROWTH_FACTOR ) { }
+
+            /**
+             * Create a new instance from an initializer list.
+             *
+             * @param initlist initializer_list.
+             * @param alloc allocator
+             */
+            constexpr darray(std::initializer_list<value_type> initlist, const allocator_type& alloc = allocator_type())
+            : alloc_inst( alloc ), begin_( clone_range_foreign(initlist.size(), initlist.begin(), initlist.end()) ),
+              end_(begin_ + initlist.size() ), storage_end_( begin_ + initlist.size() ), growth_factor_( DEFAULT_GROWTH_FACTOR ) { }
 
             ~darray() noexcept {
                 clear();
