@@ -50,41 +50,6 @@ namespace jau {
      ****************************************************************************************/
 
     /**
-     * iterator_type -> std::string conversion
-     * @tparam iterator_type the iterator type
-     * @param iter the iterator
-     * @param if iterator_type is a class
-     * @return the std::string represenation
-     */
-    template< class iterator_type >
-        std::string to_string(const iterator_type & iter,
-            typename std::enable_if<
-                    !std::is_pointer<iterator_type>::value
-                    >::type* = 0 )
-    {
-        return aptrHexString( (void*) ( iter.base() ) );
-    }
-
-    /**
-     * iterator_type -> std::string conversion
-     * @tparam iterator_type the iterator type
-     * @param iter the iterator
-     * @param if iterator_type is not a class
-     * @return the std::string represenation
-     */
-    template< class iterator_type >
-        std::string to_string(const iterator_type & iter,
-            typename std::enable_if<
-                    std::is_pointer<iterator_type>::value
-                >::type* = 0 )
-    {
-        return aptrHexString((void*)iter);
-    }
-
-    /****************************************************************************************
-     ****************************************************************************************/
-
-    /**
      * Implementation of a Copy-On-Write (CoW) read-write iterator for mutable value_type.<br>
      * Instance holds a copy of the CoW's value_type storage until destruction.
      * <p>

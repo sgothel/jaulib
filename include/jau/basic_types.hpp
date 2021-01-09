@@ -876,6 +876,63 @@ namespace jau {
         return to_decimal_string<uint64_t>(v, separator, width);
     }
 
+    /**
+    // *************************************************
+    // *************************************************
+    // *************************************************
+     */
+
+    template< class value_type,
+              std::enable_if_t< std::is_integral_v<value_type> ||
+                                std::is_floating_point_v<value_type>,
+                                bool> = true>
+    std::string to_string(const value_type & ref)
+    {
+        return std::to_string(ref);
+    }
+    template< class value_type,
+              std::enable_if_t<!std::is_integral_v<value_type> &&
+                               !std::is_floating_point_v<value_type> &&
+                                std::is_pointer_v<value_type>,
+                               bool> = true>
+    std::string to_string(const value_type & ref)
+    {
+        return aptrHexString((void*)ref);
+    }
+
+    template< class value_type,
+              std::enable_if_t<!std::is_integral_v<value_type> &&
+                               !std::is_floating_point_v<value_type> &&
+                               !std::is_pointer_v<value_type> &&
+                               jau::has_toString<value_type>::value,
+                               bool> = true>
+    std::string to_string(const value_type & ref) {
+        return ref.toString();
+    }
+
+    template< class value_type,
+              std::enable_if_t<!std::is_integral_v<value_type> &&
+                               !std::is_floating_point_v<value_type> &&
+                               !std::is_pointer_v<value_type> &&
+                               !jau::has_toString<value_type>::value &&
+                               jau::has_member_of_pointer<value_type>::value,
+                               bool> = true>
+    std::string to_string(const value_type & ref) {
+        return aptrHexString((void*)ref.operator->());
+    }
+
+    template< class value_type,
+              std::enable_if_t<!std::is_integral_v<value_type> &&
+                               !std::is_floating_point_v<value_type> &&
+                               !std::is_pointer_v<value_type> &&
+                               !jau::has_toString<value_type>::value &&
+                               !jau::has_member_of_pointer<value_type>::value,
+                               bool> = true>
+    std::string to_string(const value_type & ref) {
+        (void)ref;
+        return "jau::to_string<T> not available for "+type_cue<value_type>::print("unknown", TypeTraitGroup::ALL);
+    }
+
 } // namespace jau
 
 /** \example test_intdecstring01.cpp
