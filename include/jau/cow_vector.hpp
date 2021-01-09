@@ -175,6 +175,30 @@ namespace jau {
                 sync_atomic = std::move(x.sync_atomic);
             }
 
+            /**
+             * Creates a new instance,
+             * copying all elements from the given template input-iterator value_type range [first, last).<br>
+             * Size will equal the range [first, last), i.e. <code>size_type(last-first)</code>.
+             * @tparam InputIt template input-iterator custom type
+             * @param first template input-iterator to first element of value_type range [first, last)
+             * @param last template input-iterator to last element of value_type range [first, last)
+             * @param alloc custom allocator_type instance
+             */
+            template< class InputIt >
+            constexpr cow_vector(InputIt first, InputIt last, const allocator_type& alloc = allocator_type())
+            : store_ref(std::make_shared<storage_t>(first, last, alloc)), sync_atomic(false)
+            { }
+
+            /**
+             * Create a new instance from an initializer list.
+             *
+             * @param initlist initializer_list.
+             * @param alloc allocator
+             */
+            constexpr cow_vector(std::initializer_list<value_type> initlist, const allocator_type& alloc = allocator_type())
+            : store_ref(std::make_shared<storage_t>(initlist, alloc)), sync_atomic(false)
+            { }
+
             ~cow_vector() noexcept { }
 
             /**

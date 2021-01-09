@@ -117,7 +117,7 @@ namespace jau {
      * @see jau::cow_rw_iterator::begin()
      * @see jau::cow_rw_iterator::end()
      */
-    template <typename Value_type, typename Alloc_type = callocator<Value_type>, typename Size_type = jau::nsize_t>
+    template <typename Value_type, typename Alloc_type = jau::callocator<Value_type>, typename Size_type = jau::nsize_t>
     class cow_darray
     {
         public:
@@ -340,9 +340,20 @@ namespace jau {
              * @param alloc custom allocator_type instance
              */
             template< class InputIt >
-            constexpr explicit cow_darray(InputIt first, InputIt last, const allocator_type& alloc = allocator_type())
+            constexpr cow_darray(InputIt first, InputIt last, const allocator_type& alloc = allocator_type())
             : store_ref(std::make_shared<storage_t>(first, last, alloc)), sync_atomic(false)
             { }
+
+            /**
+             * Create a new instance from an initializer list.
+             *
+             * @param initlist initializer_list.
+             * @param alloc allocator
+             */
+            constexpr cow_darray(std::initializer_list<value_type> initlist, const allocator_type& alloc = allocator_type())
+            : store_ref(std::make_shared<storage_t>(initlist, alloc)), sync_atomic(false)
+            { }
+
 
             ~cow_darray() noexcept { }
 

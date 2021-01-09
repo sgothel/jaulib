@@ -422,7 +422,7 @@ namespace jau {
              * @param alloc custom allocator_type instance
              */
             template< class InputIt >
-            constexpr explicit darray(InputIt first, InputIt last, const allocator_type& alloc = allocator_type())
+            constexpr darray(InputIt first, InputIt last, const allocator_type& alloc = allocator_type())
             : alloc_inst( alloc ), begin_( clone_range_foreign(size_type(last - first), first, last) ), end_(begin_ + size_type(last - first) ),
               storage_end_( begin_ + size_type(last - first) ), growth_factor_( DEFAULT_GROWTH_FACTOR ) { }
 
