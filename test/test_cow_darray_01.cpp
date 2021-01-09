@@ -240,6 +240,28 @@ JAU_TYPENAME_CUE_ALL(jau::darray<std::shared_ptr<DataType01>>)
 
 #define CHECK_TRAITS 0
 
+template< class Cont >
+static void print_container_info(const std::string& type_id, const Cont &c,
+        std::enable_if_t< jau::is_darray_type<Cont>::value, bool> = true )
+{
+    printf("\nContainer Type %s (a darray, a cow %d):\n  - Uses memcpy %d (trivially_copyable %d); realloc %d; base_of jau::callocator %d; size %d bytes\n",
+                type_id.c_str(), jau::is_cow_type<Cont>::value,
+                Cont::uses_memmove,
+                std::is_trivially_copyable<typename Cont::value_type>::value,
+                Cont::uses_realloc,
+                std::is_base_of<jau::callocator<typename Cont::value_type>, typename Cont::allocator_type>::value,
+                (int)sizeof(c));
+}
+
+template<class Cont>
+static void print_container_info(const std::string& type_id, const Cont &c,
+        std::enable_if_t< !jau::is_darray_type<Cont>::value, bool> = true )
+{
+    printf("\nContainer Type %s (!darray, a cow %d); size %d bytes\n",
+                type_id.c_str(), jau::is_cow_type<Cont>::value, (int)sizeof(c));
+}
+
+
 template<class Payload>
 static void testDArrayValueType(const std::string& type_id) {
     {
@@ -247,13 +269,6 @@ static void testDArrayValueType(const std::string& type_id) {
         // jau::type_cue<std::shared_ptr<Payload>>::print("std::shared_ptr<"+type_id+">", jau::TypeTraitGroup::ALL);
     }
     {
-        printf("PayloadListDefault, value_type %s uses_memcpy %d, %s is_trivially_copyable %d\n",
-                                        type_id.c_str(), PayloadListDefault<Payload>::uses_memmove,
-                                        type_id.c_str(), std::is_trivially_copyable<Payload>::value);
-        printf("PayloadListDefault, value_type %s uses_realloc %d, is_base_of jau::callocator %d\n",
-                                        type_id.c_str(), PayloadListDefault<Payload>::uses_realloc,
-                                        std::is_base_of<jau::callocator<Payload>, jau::callocator<Payload>>::value);
-
 #if CHECK_TRAITS
         CHECK( true == std::is_base_of<jau::callocator<Payload>, jau::callocator<Payload>>::value);
         CHECK( true == PayloadListDefault<Payload>::uses_realloc);
@@ -262,6 +277,7 @@ static void testDArrayValueType(const std::string& type_id) {
 #endif
 
         NamedPayloadListDefault<Payload> data = makeNamedPayloadListDefault<Payload>(1);
+        print_container_info("NamedPayloadListDefault<"+type_id+">", data.payload);
 
         NamedPayloadListDefault<Payload> data2 = data;
         data2.payload.erase(data2.payload.cbegin());
@@ -278,13 +294,6 @@ static void testDArrayValueType(const std::string& type_id) {
         printf("COPY+2: %s\n\n", data8.toString().c_str());
     }
     {
-        printf("PayloadListMemMove, value_type %s uses_memcpy %d, %s is_trivially_copyable %d\n",
-                                        type_id.c_str(), PayloadListMemMove<Payload>::uses_memmove,
-                                        type_id.c_str(), std::is_trivially_copyable<Payload>::value);
-        printf("PayloadListMemMove, value_type %s uses_realloc %d, is_base_of jau::callocator %d\n",
-                                        type_id.c_str(), PayloadListMemMove<Payload>::uses_realloc,
-                                        std::is_base_of<jau::callocator<Payload>, jau::callocator<Payload>>::value);
-
 #if CHECK_TRAITS
         CHECK( true == std::is_base_of<jau::callocator<Payload>, jau::callocator<Payload>>::value);
         CHECK( true == PayloadListMemMove<Payload>::uses_realloc);
@@ -293,6 +302,7 @@ static void testDArrayValueType(const std::string& type_id) {
 #endif
 
         NamedPayloadListMemMove<Payload> data = makeNamedPayloadListMemMove<Payload>(1);
+        print_container_info("NamedPayloadListMemMove<"+type_id+">", data.payload);
 
         NamedPayloadListMemMove<Payload> data2 = data;
         data2.payload.erase(data2.payload.cbegin());
@@ -309,13 +319,6 @@ static void testDArrayValueType(const std::string& type_id) {
         printf("COPY+2: %s\n\n", data8.toString().c_str());
     }
     {
-        printf("SharedPayloadListDefault, value_type std::shared_ptr<%s> uses_memcpy %d, std::shared_ptr<%s> is_trivially_copyable = %d\n",
-                                        type_id.c_str(), SharedPayloadListDefault<Payload>::uses_memmove,
-                                        type_id.c_str(), std::is_trivially_copyable<std::shared_ptr<Payload>>::value);
-        printf("SharedPayloadListDefault, value_type std::shared_ptr<%s> uses_realloc %d, is_base_of jau::callocator %d\n",
-                                        type_id.c_str(), SharedPayloadListDefault<Payload>::uses_realloc,
-                                        std::is_base_of<jau::callocator<std::shared_ptr<Payload>>, jau::callocator<std::shared_ptr<Payload>>>::value);
-
 #if CHECK_TRAITS
         CHECK( true == std::is_base_of<jau::callocator<std::shared_ptr<Payload>>, jau::callocator<std::shared_ptr<Payload>>>::value);
         CHECK( true == SharedPayloadListDefault<Payload>::uses_realloc);
@@ -324,6 +327,7 @@ static void testDArrayValueType(const std::string& type_id) {
 #endif
 
         NamedSharedPayloadListDefault<Payload> data = makeNamedSharedPayloadListDefault<Payload>(1);
+        print_container_info("NamedSharedPayloadListDefault<"+type_id+">", data.payload);
 
         NamedSharedPayloadListDefault<Payload> data2 = data;
         data2.payload.erase(data2.payload.cbegin());
@@ -340,13 +344,6 @@ static void testDArrayValueType(const std::string& type_id) {
         printf("COPY+2: %s\n\n", data8.toString().c_str());
     }
     {
-        printf("SharedPayloadListMemMove, value_type std::shared_ptr<%s> uses_memcpy %d, std::shared_ptr<%s> is_trivially_copyable = %d\n",
-                                        type_id.c_str(), SharedPayloadListMemMove<Payload>::uses_memmove,
-                                        type_id.c_str(), std::is_trivially_copyable<std::shared_ptr<Payload>>::value);
-        printf("SharedPayloadListMemMove, value_type std::shared_ptr<%s> uses_realloc %d, is_base_of jau::callocator %d\n",
-                                        type_id.c_str(), SharedPayloadListMemMove<Payload>::uses_realloc,
-                                        std::is_base_of<jau::callocator<std::shared_ptr<Payload>>, jau::callocator<std::shared_ptr<Payload>>>::value);
-
 #if CHECK_TRAITS
         CHECK( true == std::is_base_of<jau::callocator<std::shared_ptr<Payload>>, jau::callocator<std::shared_ptr<Payload>>>::value);
         CHECK( true == SharedPayloadListMemMove<Payload>::uses_realloc);
@@ -355,6 +352,7 @@ static void testDArrayValueType(const std::string& type_id) {
 #endif
 
         NamedSharedPayloadListMemMove<Payload> data = makeNamedSharedPayloadListMemMove<Payload>(1);
+        print_container_info("NamedSharedPayloadListMemMove<"+type_id+">", data.payload);
 
         NamedSharedPayloadListMemMove<Payload> data2 = data;
         data2.payload.erase(data2.payload.cbegin());
@@ -377,16 +375,6 @@ static GattServiceCharacteristic returnGattSrvcChar(int i) {
 }
 
 static void testDArrayGattServiceCharacteristic() {
-    typedef jau::darray<GattCharacteristicSpec> GattCharacteristicSpecList;
-
-    printf("GattCharacteristicSpecList, value_type GattCharacteristicSpec: uses_memcpy %d, is_trivially_copyable = %d\n",
-                                    GattCharacteristicSpecList::uses_memmove,
-                                    std::is_trivially_copyable<GattCharacteristicSpec>::value);
-    printf("GattCharacteristicSpecList, value_type GattCharacteristicSpec: uses_realloc = %d, is_base_of jau::callocator %d\n",
-                                    GattCharacteristicSpecList::uses_realloc,
-                                    std::is_base_of<jau::callocator<GattCharacteristicSpec>, jau::callocator<GattCharacteristicSpec>>::value);
-    // jau::type_cue<GattCharacteristicSpec>::print("GattCharacteristicSpec", jau::TypeTraitGroup::ALL);
-
 #if CHECK_TRAITS
     CHECK( true == std::is_base_of<jau::callocator<GattCharacteristicSpec>, jau::callocator<GattCharacteristicSpec>>::value);
     CHECK( true == GattCharacteristicSpecList::uses_realloc);
@@ -396,6 +384,8 @@ static void testDArrayGattServiceCharacteristic() {
 #endif
 
     GattServiceCharacteristic gatt2 = returnGattSrvcChar(1);
+    print_container_info("darray<GattCharacteristicSpec>", gatt2.characteristics);
+
     gatt2.characteristics.erase(gatt2.characteristics.cbegin());
 
     GattServiceCharacteristic gatt2b = gatt2;

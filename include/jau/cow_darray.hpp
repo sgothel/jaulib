@@ -153,6 +153,9 @@ namespace jau {
                            use_memmove, use_realloc>            storage_t;
             typedef std::shared_ptr<storage_t>                  storage_ref_t;
 
+            /** Used to determine whether this type is a darray or has a darray, see ::is_darray_type<T> */
+            typedef bool                                        darray_tag;
+
             typedef cow_darray<value_type, allocator_type,
                                size_type,
                                use_memmove, use_realloc>        cow_container_t;

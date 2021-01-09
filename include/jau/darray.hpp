@@ -113,6 +113,9 @@ namespace jau {
             // typedef std::reverse_iterator<const_iterator>    const_reverse_iterator;
             typedef Alloc_type                                  allocator_type;
 
+            /** Used to determine whether this type is a darray or has a darray, see ::is_darray_type<T> */
+            typedef bool                                        darray_tag;
+
         private:
             static constexpr size_type DIFF_MAX = std::numeric_limits<difference_type>::max();
 
@@ -1070,6 +1073,25 @@ namespace jau {
     template<typename Value_type, typename Alloc_type>
     inline void swap(darray<Value_type, Alloc_type>& rhs, darray<Value_type, Alloc_type>& lhs) noexcept
     { rhs.swap(lhs); }
+
+    /****************************************************************************************
+     ****************************************************************************************/
+
+    /**
+     * <code>template< class T > is_darray_type<T>::value</code> compile-time Type Trait,
+     * determining whether the given template class is a - or has a darray type, e.g. jau::cow_darray,
+     * jau::darray.
+     */
+    template< class, class = void >
+    struct is_darray_type : std::false_type { };
+
+    /**
+     * <code>template< class T > is_darray_type<T>::value</code> compile-time Type Trait,
+     * determining whether the given template class is a - or has a darray type, e.g. jau::cow_darray,
+     * jau::darray.
+     */
+    template< class T >
+    struct is_darray_type<T, std::void_t<typename T::darray_tag>> : std::true_type { };
 
 } /* namespace jau */
 
