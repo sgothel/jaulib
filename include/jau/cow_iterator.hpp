@@ -81,7 +81,7 @@ namespace jau {
     template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
     class cow_rw_iterator {
         friend cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>;
-        template<typename, typename, typename> friend class cow_darray;
+        template<typename, typename, typename, bool, bool> friend class cow_darray;
         template<typename, typename> friend class cow_vector;
 
         public:
@@ -536,7 +536,7 @@ namespace jau {
      */
     template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
     class cow_ro_iterator {
-        template<typename, typename, typename> friend class cow_darray;
+        template<typename, typename, typename, bool, bool> friend class cow_darray;
         template<typename, typename> friend class cow_vector;
 
         public:

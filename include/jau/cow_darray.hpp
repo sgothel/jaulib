@@ -100,6 +100,13 @@ namespace jau {
      * jau::cow_ro_iterator::size(), jau::cow_ro_iterator::begin() and jau::cow_ro_iterator::end()
      * - or its respective variant from jau::cow_rw_iterator.
      * </p>
+     * <p>
+     * Non-Type Template Parameter <code>use_memmove</code> can be overriden by the user
+     * and has its default value <code>std::is_trivially_copyable_v<Value_type></code>.<br>
+     * The default value has been chosen with care, see C++ Standard section 6.9 Types <i>trivially copyable</i>.<br>
+     * However, one can set <code>use_memmove</code> to true even without the value_type being <i>trivially copyable</i>,
+     * as long certain memory side-effects can be excluded (TBD).
+     * </p>
      * See also:
      * <pre>
      * - Sequentially Consistent (SC) ordering or SC-DRF (data race free) <https://en.cppreference.com/w/cpp/atomic/memory_order#Sequentially-consistent_ordering>
@@ -117,12 +124,18 @@ namespace jau {
      * @see jau::cow_rw_iterator::begin()
      * @see jau::cow_rw_iterator::end()
      */
-    template <typename Value_type, typename Alloc_type = jau::callocator<Value_type>, typename Size_type = jau::nsize_t>
+    template <typename Value_type, typename Alloc_type = jau::callocator<Value_type>, typename Size_type = jau::nsize_t,
+              bool use_memmove=std::is_trivially_copyable_v<Value_type>,
+              bool use_realloc=std::is_base_of_v<jau::callocator<Value_type>, Alloc_type>
+             >
     class cow_darray
     {
         public:
             /** Default growth factor using the golden ratio 1.618 */
             constexpr static const float DEFAULT_GROWTH_FACTOR = 1.618f;
+
+            constexpr static const bool uses_memmove = use_memmove;
+            constexpr static const bool uses_realloc = use_realloc;
 
             // typedefs' for C++ named requirements: Container
 
@@ -135,10 +148,14 @@ namespace jau {
             typedef typename std::make_signed<size_type>::type  difference_type;
             typedef Alloc_type                                  allocator_type;
 
-            typedef darray<value_type, allocator_type, size_type> storage_t;
-            typedef std::shared_ptr<storage_t>                    storage_ref_t;
+            typedef darray<value_type, allocator_type,
+                           size_type,
+                           use_memmove, use_realloc>            storage_t;
+            typedef std::shared_ptr<storage_t>                  storage_ref_t;
 
-            typedef cow_darray<value_type, allocator_type, size_type> cow_container_t;
+            typedef cow_darray<value_type, allocator_type,
+                               size_type,
+                               use_memmove, use_realloc>        cow_container_t;
 
             /**
              * Immutable, read-only const_iterator, lock-free,
