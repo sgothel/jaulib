@@ -17,8 +17,10 @@ endif(CMAKE_COMPILER_IS_GNUCC)
 # These examples use the standard separate compilation
 set( SOURCES_IDIOMATIC_EXAMPLES
     test_floatepsilon01.cpp
-    test_functiondef01.cpp
+    test_type_traits_queries01.cpp
+    test_to_string.cpp
     test_intdecstring01.cpp
+    test_functiondef01.cpp
     test_lfringbuffer01.cpp
     test_lfringbuffer11.cpp
     test_mm_sc_drf_00.cpp
