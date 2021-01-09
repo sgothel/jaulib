@@ -116,9 +116,7 @@ namespace jau {
          * <p>
          * If no user override has been provides, the default implementation
          * either returns <code>typeid(T).name()</code> if RTTI is enabled
-         * or <code>"unnamed_type"</code> if RTTI is disabled.<br>
-         * For the latter, we currently only test the G++ preprocessor macro <code>__GXX_RTTI</code>,
-         * if RTTI is enabled.
+         * or <code>"unnamed_type"</code> if RTTI is disabled.
          * </p>
          */
         static const char * name() {
