@@ -41,10 +41,10 @@ using namespace jau;
 struct One {
     typedef int type;
     static constexpr bool v = true;
-    type x;
-    One(type x = 0): x(x) {}
+    type x_;
+    One(type x = 0): x_(x) {}
     ~One() {}
-    type get() { return x; }
+    type get() { return x_; }
     type add(type x, type y) { return x+y; }
 };
 struct Two: One {};
