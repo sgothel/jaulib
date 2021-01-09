@@ -67,6 +67,21 @@ std::string jau::get_string(const uint8_t *buffer, nsize_t const buffer_len, nsi
     return std::string(cstr);
 }
 
+void jau::trimInPlace(std::string &s) noexcept {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) {
+        return !std::isspace(ch);
+    }));
+    s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) {
+        return !std::isspace(ch);
+    }).base(), s.end());
+}
+
+std::string jau::trimCopy(const std::string &_s) noexcept {
+    std::string s(_s);
+    trimInPlace(s);
+    return s;
+}
+
 uint128_t jau::merge_uint128(uint16_t const uuid16, uint128_t const & base_uuid, nsize_t const uuid16_le_octet_index)
 {
     if( uuid16_le_octet_index > 14 ) {
@@ -193,19 +208,3 @@ std::string& jau::byteHexString(std::string& dest, const uint8_t value, const bo
     dest.push_back(hex_array[v & 0x0F]);
     return dest;
 }
-
-void jau::trimInPlace(std::string &s) noexcept {
-    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) {
-        return !std::isspace(ch);
-    }));
-    s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) {
-        return !std::isspace(ch);
-    }).base(), s.end());
-}
-
-std::string jau::trimCopy(const std::string &_s) noexcept {
-    std::string s(_s);
-    trimInPlace(s);
-    return s;
-}
-

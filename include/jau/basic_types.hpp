@@ -41,6 +41,7 @@ extern "C" {
 #include <jau/int_math.hpp>
 #include <jau/cpp_lang_macros.hpp>
 #include <jau/packed_attribute.hpp>
+#include <jau/type_traits_queries.hpp>
 
 namespace jau {
 
@@ -405,6 +406,12 @@ namespace jau {
     #error "Unexpected __BYTE_ORDER"
 #endif
 
+    /**
+    // *************************************************
+    // *************************************************
+    // *************************************************
+     */
+
     inline void put_uint8(uint8_t * buffer, nsize_t const byte_offset, const uint8_t v) noexcept
     {
         *reinterpret_cast<uint8_t *>( buffer + byte_offset ) = v;
@@ -606,6 +613,12 @@ namespace jau {
     }
 
     /**
+    // *************************************************
+    // *************************************************
+    // *************************************************
+     */
+
+    /**
      * Returns a C++ String taken from buffer with maximum length of min(max_len, max_len).
      * <p>
      * The maximum length only delimits the string length and does not contain the EOS null byte.
@@ -616,6 +629,18 @@ namespace jau {
      * </p>
      */
     std::string get_string(const uint8_t *buffer, nsize_t const buffer_len, nsize_t const max_len) noexcept;
+
+    /** trim in place */
+    void trimInPlace(std::string &s) noexcept;
+
+    /** trim copy */
+    std::string trimCopy(const std::string &s) noexcept;
+
+    /**
+    // *************************************************
+    // *************************************************
+    // *************************************************
+     */
 
     /**
      * Merge the given 'uuid16' into a 'base_uuid' copy at the given little endian 'uuid16_le_octet_index' position.
@@ -660,6 +685,12 @@ namespace jau {
      * </pre>
      */
     uint128_t merge_uint128(uint32_t const uuid32, uint128_t const & base_uuid, nsize_t const uuid32_le_octet_index);
+
+    /**
+    // *************************************************
+    // *************************************************
+    // *************************************************
+     */
 
     /**
      * Produce a hexadecimal string representation of the given byte values.
@@ -760,6 +791,12 @@ namespace jau {
     }
 
     /**
+    // *************************************************
+    // *************************************************
+    // *************************************************
+     */
+
+    /**
      * Produce a decimal string representation of an integral integer value.
      * @tparam T an integral integer type
      * @param v the integral integer value
@@ -838,121 +875,6 @@ namespace jau {
     inline std::string uint64DecString(const uint64_t v, const char separator=',', const nsize_t width=0) noexcept {
         return to_decimal_string<uint64_t>(v, separator, width);
     }
-
-    /** trim in place */
-    void trimInPlace(std::string &s) noexcept;
-
-    /** trim copy */
-    std::string trimCopy(const std::string &s) noexcept;
-
-    /**
-     * Helper, allowing simple access and provision of a typename string representation
-     * at compile time, see jau::type_cue for usage.
-     * <p>
-     * You may use the macro <code>JAU_TYPENAME_CUE(TYPENAME)</code> to set a single type
-     * or maybe <code>JAU_TYPENAME_CUE_ALL(TYPENAME)</code> to set the single type and
-     * all pointer and reference variations (mutable and const).
-     * </p>
-     * <p>
-     * Without user override, implementation will use <code>typeid(T).name()</code>.
-     * </p>
-     * @tparam T the typename to name
-     * @see jau::type_cue
-     */
-    template <typename T>
-    struct type_name_cue
-    {
-        /**
-         * Return the string representation of this type.
-         * <p>
-         * This might be a compile time user override, see jau::type_name_cue.
-         * </p>
-         * <p>
-         * If no user override has been provides, the default implementation
-         * either returns <code>typeid(T).name()</code> if RTTI is enabled
-         * or <code>"unnamed_type"</code> if RTTI is disabled.<br>
-         * For the latter, we currently only test the G++ preprocessor macro <code>__GXX_RTTI</code>,
-         * if RTTI is enabled.
-         * </p>
-         */
-        static const char * name() {
-#if defined(__cxx_rtti_available__)
-            return typeid(T).name();
-#else
-            return "unnamed_type";
-#endif
-        }
-    };
-    /**
-     * Helper, allowing simple access to compile time typename and <i>Type traits</i> information,
-     * see jau::type_name_cue to setup typename's string representation.
-     *
-     * @tparam T the typename to introspect
-     * @see jau::type_name_cue
-     */
-    template <typename T>
-    struct type_cue : public type_name_cue<T>
-    {
-        /**
-         * Print information of this type to stdout, potentially with all <i>Type traits</i> known.
-         * @param typedefname the code typedefname (or typename) as a string, should match T
-         * @param verbose if true, prints all <i>Type traits</i> known for this type. Be aware of the long output. Defaults to false.
-         */
-        static void print(const std::string& typedefname, bool verbose=false) {
-            printf("Type: %s -> %s, %zu bytes\n", typedefname.c_str(), type_name_cue<T>::name(), sizeof(T));
-            if( verbose ) {
-                printf("  Primary Type Categories\n");
-                printf("    void            %d\n", std::is_void<T>::value);
-                printf("    null ptr        %d\n", std::is_null_pointer<T>::value);
-                printf("    integral        %d\n", std::is_integral<T>::value);
-                printf("    floating point  %d\n", std::is_floating_point<T>::value);
-                printf("    array           %d\n", std::is_array<T>::value);
-                printf("    enum            %d\n", std::is_enum<T>::value);
-                printf("    union           %d\n", std::is_union<T>::value);
-                printf("    class           %d\n", std::is_class<T>::value);
-                printf("    function        %d\n", std::is_function<T>::value);
-                printf("    pointer         %d\n", std::is_pointer<T>::value);
-                printf("    lvalue ref      %d\n", std::is_lvalue_reference<T>::value);
-                printf("    rvalue ref      %d\n", std::is_rvalue_reference<T>::value);
-                printf("    member obj ptr  %d\n", std::is_member_object_pointer<T>::value);
-                printf("    member func ptr %d\n", std::is_member_function_pointer<T>::value);
-                printf("\n");
-                printf("  Type Properties\n");
-                printf("    const           %d\n", std::is_const<T>::value);
-                printf("    volatile        %d\n", std::is_volatile<T>::value);
-                printf("    trivial         %d\n", std::is_trivial<T>::value);
-                printf("    trivially_copy. %d\n", std::is_trivially_copyable<T>::value);
-                printf("    standard_layout %d\n", std::is_standard_layout<T>::value);
-                printf("    pod             %d\n", std::is_pod<T>::value);
-                printf("    unique_obj_rep  %d\n", std::has_unique_object_representations<T>::value);
-                printf("    empty           %d\n", std::is_empty<T>::value);
-                printf("    polymorphic     %d\n", std::is_polymorphic<T>::value);
-                printf("    abstract        %d\n", std::is_abstract<T>::value);
-                printf("    final           %d\n", std::is_final<T>::value);
-                printf("    aggregate       %d\n", std::is_aggregate<T>::value);
-                printf("    signed          %d\n", std::is_signed<T>::value);
-                printf("    unsigned        %d\n", std::is_unsigned<T>::value);
-    #if __cplusplus > 201703L
-                printf("    bounded_array   %d\n", std::is_bounded_array<T>::value);
-                printf("    unbounded_array %d\n", std::is_unbounded_array<T>::value);
-                printf("    scoped enum     %d\n", std::is_scoped_enum<T>::value);
-    #endif
-                printf("\n");
-                printf("  Composite Type Categories\n");
-                printf("    fundamental     %d\n", std::is_fundamental<T>::value);
-                printf("    arithmetic      %d\n", std::is_arithmetic<T>::value);
-                printf("    scalar          %d\n", std::is_scalar<T>::value);
-                printf("    object          %d\n", std::is_object<T>::value);
-                printf("    compound        %d\n", std::is_compound<T>::value);
-                printf("    reference       %d\n", std::is_reference<T>::value);
-                printf("    member ptr      %d\n", std::is_member_pointer<T>::value);
-                printf("\n");
-            }
-        }
-    };
-    #define JAU_TYPENAME_CUE(A) template<> struct jau::type_name_cue<A> { static const char * name() { return #A; } };
-    #define JAU_TYPENAME_CUE_ALL(A) JAU_TYPENAME_CUE(A) JAU_TYPENAME_CUE(A*) JAU_TYPENAME_CUE(const A*) JAU_TYPENAME_CUE(A&) JAU_TYPENAME_CUE(const A&)
-
 
 } // namespace jau
 
