@@ -618,7 +618,27 @@ namespace jau {
                 } // else throw away new_store_ref
                 return count;
             }
+
+            __constexpr_cxx20_ std::string toString() const noexcept {
+                std::string res("{ " + std::to_string( size() ) + ": ");
+                int i=0;
+                jau::for_each_const(*this, [&res, &i](const value_type & e) {
+                    if( 1 < ++i ) { res.append(", "); }
+                    res.append( jau::to_string(e) );
+                } );
+                res.append(" }");
+                return res;
+            }
     };
+
+    /****************************************************************************************
+     ****************************************************************************************/
+
+    template<typename Value_type, typename Alloc_type>
+    std::ostream & operator << (std::ostream &out, const cow_vector<Value_type, Alloc_type> &c) {
+        out << c.toString();
+        return out;
+    }
 
 } /* namespace jau */
 
