@@ -29,7 +29,46 @@
 #include <mutex>
 #include <type_traits>
 
+#include <jau/cow_iterator.hpp>
+
 namespace jau {
+
+    /**
+     * Call on release allows the user to pass a function
+     * to be called at destruction of this instance.
+     * <p>
+     * One goal was to provide a thread exit cleanup facility,
+     * setting a 'is_running' flag to false when the thread exists
+     * normally or abnormally.
+     * <pre>
+     *   jau::relaxed_atomic_bool is_running = true;
+     *
+     *   void some_thread_func() {
+     *       thread_local jau::call_on_release lili([&]() {
+     *           is_running = false;
+     *       });
+     *       ...
+     *       do some work here, which might get cancelled
+     *       ..
+     *   }
+     * </pre>
+     * </p>
+     * @tparam UnaryFunction user provided function to be called @ dtor
+     */
+    template <class UnaryFunction> class call_on_release {
+      private:
+        UnaryFunction f;
+
+      public:
+        call_on_release(UnaryFunction release_func) noexcept : f(release_func) {}
+        ~call_on_release() noexcept { f(); }
+        call_on_release(const call_on_release&) = delete;
+        call_on_release& operator=(const call_on_release&) = delete;
+        call_on_release& operator=(const call_on_release&) volatile = delete;
+    };
+
+    /****************************************************************************************
+     ****************************************************************************************/
 
     /**
      * Like std::find() of 'algorithm'
@@ -129,6 +168,9 @@ namespace jau {
         return f; // implicit move since C++11
     }
 
+    /****************************************************************************************
+     ****************************************************************************************/
+
     /**
      * Like jau::for_each(), see above.
      * <p>
@@ -179,6 +221,9 @@ namespace jau {
         }
         return f; // implicit move since C++11
     }
+
+    /****************************************************************************************
+     ****************************************************************************************/
 
     /**
      * Custom for_each template, same as jau::for_each but using a mutex.
@@ -243,39 +288,90 @@ namespace jau {
         return f; // implicit move since C++11
     }
 
-    /**
-     * Call on release allows the user to pass a function
-     * to be called at destruction of this instance.
-     * <p>
-     * One goal was to provide a thread exit cleanup facility,
-     * setting a 'is_running' flag to false when the thread exists
-     * normally or abnormally.
-     * <pre>
-     *   jau::relaxed_atomic_bool is_running = true;
-     *
-     *   void some_thread_func() {
-     *       thread_local jau::call_on_release lili([&]() {
-     *           is_running = false;
-     *       });
-     *       ...
-     *       do some work here, which might get cancelled
-     *       ..
-     *   }
-     * </pre>
-     * </p>
-     * @tparam UnaryFunction user provided function to be called @ dtor
-     */
-    template <class UnaryFunction> class call_on_release {
-      private:
-        UnaryFunction f;
+    /****************************************************************************************
+     ****************************************************************************************/
 
-      public:
-        call_on_release(UnaryFunction release_func) noexcept : f(release_func) {}
-        ~call_on_release() noexcept { f(); }
-        call_on_release(const call_on_release&) = delete;
-        call_on_release& operator=(const call_on_release&) = delete;
-        call_on_release& operator=(const call_on_release&) volatile = delete;
-    };
+    template<class T>
+    const typename T::value_type * find_const(T& data, typename T::value_type const & elem,
+            std::enable_if_t< is_cow_type<T>::value, bool> = true ) noexcept
+    {
+        typename T::const_iterator begin = data.cbegin();
+        typename T::const_iterator end = begin.end();
+        auto it = jau::find( begin, end, elem);
+        if( it != end ) {
+            return &(*it);
+        }
+        return nullptr;
+    }
+    template<class T>
+    const typename T::value_type * find_const(T& data, typename T::value_type const & elem,
+            std::enable_if_t< !is_cow_type<T>::value, bool> = true ) noexcept
+    {
+        typename T::const_iterator end = data.cend();
+        auto it = jau::find( data.cbegin(), end, elem);
+        if( it != end ) {
+            return &(*it);
+        }
+        return nullptr;
+    }
+
+    /****************************************************************************************
+     ****************************************************************************************/
+
+    template<class T, class UnaryFunction>
+    constexpr UnaryFunction for_each_const(T& data, UnaryFunction f,
+            std::enable_if_t< is_cow_type<T>::value, bool> = true ) noexcept
+    {
+        typename T::const_iterator first = data.cbegin();
+        typename T::const_iterator last = first.end();
+        for (; first != last; ++first) {
+            f(*first);
+        }
+        return f; // implicit move since C++11
+    }
+    template<class T, class UnaryFunction>
+    constexpr UnaryFunction for_each_const(T& data, UnaryFunction f,
+            std::enable_if_t< !is_cow_type<T>::value, bool> = true ) noexcept
+    {
+        typename T::const_iterator first = data.cbegin();
+        typename T::const_iterator last = data.cend();
+        for (; first != last; ++first) {
+            f(*first);
+        }
+        return f; // implicit move since C++11
+    }
+
+    /****************************************************************************************
+     ****************************************************************************************/
+
+    /**
+     * See jau::for_each_fidelity()
+     */
+    template<class T, class UnaryFunction>
+    constexpr UnaryFunction for_each_fidelity(T& data, UnaryFunction f,
+            std::enable_if_t< is_cow_type<T>::value, bool> = true ) noexcept
+    {
+        typename T::const_iterator first = data.cbegin();
+        typename T::const_iterator last = first.end();
+        for (; first != last; ++first) {
+            f( *const_cast<typename T::value_type*>( & (*first) ) );
+        }
+        return f; // implicit move since C++11
+    }
+    /**
+     * See jau::for_each_fidelity()
+     */
+    template<class T, class UnaryFunction>
+    constexpr UnaryFunction for_each_fidelity(T& data, UnaryFunction f,
+            std::enable_if_t< !is_cow_type<T>::value, bool> = true ) noexcept
+    {
+        typename T::const_iterator first = data.cbegin();
+        typename T::const_iterator last = data.cend();
+        for (; first != last; ++first) {
+            f( *const_cast<typename T::value_type*>( & (*first) ) );
+        }
+        return f; // implicit move since C++11
+    }
 
 } // namespace jau
 

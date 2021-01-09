@@ -35,7 +35,6 @@
 
 #include <jau/cpp_lang_macros.hpp>
 #include <jau/basic_types.hpp>
-#include <jau/basic_algos.hpp>
 
 namespace jau {
 
@@ -906,87 +905,8 @@ namespace jau {
     template< class T >
     struct is_cow_type<T, std::void_t<typename T::cow_container_t>> : std::true_type { };
 
-    template<class T>
-    const typename T::value_type * find_const(T& data, typename T::value_type const & elem,
-            std::enable_if_t< is_cow_type<T>::value, bool> = true ) noexcept
-    {
-        typename T::const_iterator begin = data.cbegin();
-        typename T::const_iterator end = begin.end();
-        auto it = jau::find( begin, end, elem);
-        if( it != end ) {
-            return &(*it);
-        }
-        return nullptr;
-    }
-    template<class T>
-    const typename T::value_type * find_const(T& data, typename T::value_type const & elem,
-            std::enable_if_t< !is_cow_type<T>::value, bool> = true ) noexcept
-    {
-        typename T::const_iterator end = data.cend();
-        auto it = jau::find( data.cbegin(), end, elem);
-        if( it != end ) {
-            return &(*it);
-        }
-        return nullptr;
-    }
-
     /****************************************************************************************
      ****************************************************************************************/
-
-    template<class T, class UnaryFunction>
-    constexpr UnaryFunction for_each_const(T& data, UnaryFunction f,
-            std::enable_if_t< is_cow_type<T>::value, bool> = true ) noexcept
-    {
-        typename T::const_iterator first = data.cbegin();
-        typename T::const_iterator last = first.end();
-        for (; first != last; ++first) {
-            f(*first);
-        }
-        return f; // implicit move since C++11
-    }
-    template<class T, class UnaryFunction>
-    constexpr UnaryFunction for_each_const(T& data, UnaryFunction f,
-            std::enable_if_t< !is_cow_type<T>::value, bool> = true ) noexcept
-    {
-        typename T::const_iterator first = data.cbegin();
-        typename T::const_iterator last = data.cend();
-        for (; first != last; ++first) {
-            f(*first);
-        }
-        return f; // implicit move since C++11
-    }
-
-    /****************************************************************************************
-     ****************************************************************************************/
-
-    /**
-     * See jau::for_each_fidelity()
-     */
-    template<class T, class UnaryFunction>
-    constexpr UnaryFunction for_each_fidelity(T& data, UnaryFunction f,
-            std::enable_if_t< is_cow_type<T>::value, bool> = true ) noexcept
-    {
-        typename T::const_iterator first = data.cbegin();
-        typename T::const_iterator last = first.end();
-        for (; first != last; ++first) {
-            f( *const_cast<typename T::value_type*>( & (*first) ) );
-        }
-        return f; // implicit move since C++11
-    }
-    /**
-     * See jau::for_each_fidelity()
-     */
-    template<class T, class UnaryFunction>
-    constexpr UnaryFunction for_each_fidelity(T& data, UnaryFunction f,
-            std::enable_if_t< !is_cow_type<T>::value, bool> = true ) noexcept
-    {
-        typename T::const_iterator first = data.cbegin();
-        typename T::const_iterator last = data.cend();
-        for (; first != last; ++first) {
-            f( *const_cast<typename T::value_type*>( & (*first) ) );
-        }
-        return f; // implicit move since C++11
-    }
 
 } /* namespace jau */
 

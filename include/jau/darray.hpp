@@ -41,6 +41,7 @@
 #include <jau/basic_types.hpp>
 #include <jau/ordered_atomic.hpp>
 #include <jau/callocator.hpp>
+#include <jau/basic_algos.hpp>
 
 namespace jau {
 
