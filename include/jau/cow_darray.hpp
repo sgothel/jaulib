@@ -934,6 +934,48 @@ namespace jau {
         return out;
     }
 
+    /****************************************************************************************
+     ****************************************************************************************/
+
+    template<typename Value_type, typename Alloc_type>
+    inline bool operator==(const cow_darray<Value_type, Alloc_type>& rhs, const cow_darray<Value_type, Alloc_type>& lhs) {
+        if( &rhs == &lhs ) {
+            return true;
+        }
+        typename cow_darray<Value_type, Alloc_type>::const_iterator rhs_cend = rhs.cbegin();
+        rhs_cend += rhs.size();
+        return (rhs.size() == lhs.size() && std::equal(rhs.cbegin(), rhs_cend, lhs.cbegin()));
+    }
+    template<typename Value_type, typename Alloc_type>
+    inline bool operator!=(const cow_darray<Value_type, Alloc_type>& rhs, const cow_darray<Value_type, Alloc_type>& lhs) {
+        return !(rhs==lhs);
+    }
+
+    template<typename Value_type, typename Alloc_type>
+    inline bool operator<(const cow_darray<Value_type, Alloc_type>& rhs, const cow_darray<Value_type, Alloc_type>& lhs) {
+        typename cow_darray<Value_type, Alloc_type>::const_iterator rhs_cend = rhs.cbegin();
+        rhs_cend += rhs.size();
+        typename cow_darray<Value_type, Alloc_type>::const_iterator lhs_cend = lhs.cbegin();
+        lhs_cend += lhs.size();
+        return std::lexicographical_compare(rhs.cbegin(), rhs_cend, lhs.begin(), lhs_cend);
+    }
+
+    template<typename Value_type, typename Alloc_type>
+    inline bool operator>(const cow_darray<Value_type, Alloc_type>& rhs, const cow_darray<Value_type, Alloc_type>& lhs)
+    { return lhs < rhs; }
+
+    template<typename Value_type, typename Alloc_type>
+    inline bool operator<=(const cow_darray<Value_type, Alloc_type>& rhs, const cow_darray<Value_type, Alloc_type>& lhs)
+    { return !(lhs < rhs); }
+
+    template<typename Value_type, typename Alloc_type>
+    inline bool operator>=(const cow_darray<Value_type, Alloc_type>& rhs, const cow_darray<Value_type, Alloc_type>& lhs)
+    { return !(rhs < lhs); }
+
+    template<typename Value_type, typename Alloc_type>
+    inline void swap(cow_darray<Value_type, Alloc_type>& rhs, cow_darray<Value_type, Alloc_type>& lhs) noexcept
+    { rhs.swap(lhs); }
+
 } /* namespace jau */
 
 /** \example test_cow_iterator_01.cpp

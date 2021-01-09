@@ -1021,6 +1021,42 @@ namespace jau {
         out << c.toString();
         return out;
     }
+
+    /****************************************************************************************
+     ****************************************************************************************/
+
+    template<typename Value_type, typename Alloc_type>
+    inline bool operator==(const darray<Value_type, Alloc_type>& rhs, const darray<Value_type, Alloc_type>& lhs) {
+        if( &rhs == &lhs ) {
+            return true;
+        }
+        return (rhs.size() == lhs.size() && std::equal(rhs.cbegin(), rhs.cend(), lhs.cbegin()));
+    }
+    template<typename Value_type, typename Alloc_type>
+    inline bool operator!=(const darray<Value_type, Alloc_type>& rhs, const darray<Value_type, Alloc_type>& lhs) {
+        return !(rhs==lhs);
+    }
+
+    template<typename Value_type, typename Alloc_type>
+    inline bool operator<(const darray<Value_type, Alloc_type>& rhs, const darray<Value_type, Alloc_type>& lhs)
+    { return std::lexicographical_compare(rhs.cbegin(), rhs.cend(), lhs.cbegin(), lhs.cend()); }
+
+    template<typename Value_type, typename Alloc_type>
+    inline bool operator>(const darray<Value_type, Alloc_type>& rhs, const darray<Value_type, Alloc_type>& lhs)
+    { return lhs < rhs; }
+
+    template<typename Value_type, typename Alloc_type>
+    inline bool operator<=(const darray<Value_type, Alloc_type>& rhs, const darray<Value_type, Alloc_type>& lhs)
+    { return !(lhs < rhs); }
+
+    template<typename Value_type, typename Alloc_type>
+    inline bool operator>=(const darray<Value_type, Alloc_type>& rhs, const darray<Value_type, Alloc_type>& lhs)
+    { return !(rhs < lhs); }
+
+    template<typename Value_type, typename Alloc_type>
+    inline void swap(darray<Value_type, Alloc_type>& rhs, darray<Value_type, Alloc_type>& lhs) noexcept
+    { rhs.swap(lhs); }
+
 } /* namespace jau */
 
 #endif /* JAU_DYN_ARRAY_HPP_ */
