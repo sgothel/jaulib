@@ -41,11 +41,11 @@ using namespace jau;
 struct One {
     typedef int type;
     static constexpr bool v = true;
-    type x_;
-    One(type x = 0): x_(x) {}
+    type x;
+    One(type x_ = 0): x(x_) {}
     ~One() {}
-    type get() { return x_; }
-    type add(type x, type y) { return x+y; }
+    type get() { return x; }
+    type add(type x_, type y_) { return x_+y_; }
 };
 struct Two: One {};
 struct Not {};
@@ -54,15 +54,17 @@ struct Not {};
 TYPEDEF_CHECKER(has_type, type);
 TYPEDEF_CHECKER_ANY(any_type, type);
 TYPEDEF_CHECKER_STRICT(exact_type, type);
-MTYPE_CHECKER(has_x, x);
-MTYPE_CHECKER_ANY(any_x, x);
-MTYPE_CHECKER_STRICT(exact_x, x);
 MVALUE_CHECKER(true_v, v, true);
 MVALUE_CHECKER(true_z, z, true);
 MVALUE_CHECKER(false_v, v, false);
 MVALUE_CHECKER(one_v, v, 1);
 MVALUE_CHECKER_STRICT(exact_v, v, 1);
 #endif
+
+MTYPE_CHECKER(has_x, x);
+MTYPE_CHECKER_ANY(any_x, x);
+MTYPE_CHECKER_STRICT(exact_x, x);
+
 METHOD_CHECKER(has_get, get, long, ());
 METHOD_CHECKER(has_add, add, long, (1,2))
 METHOD_CHECKER_ANY(any_get, get, ());
@@ -85,18 +87,18 @@ TEST_CASE( "01 Type Traits Queries") {
     CHECK_2(exact_type, "typedef type = long", long);
 
     std::cout << sep;
-    CHECK_2(any_x, "var x");
-    CHECK_2(has_x, "var x of type convertible to long", long);
-    CHECK_2(exact_x, "var x of type int", int);
-    CHECK_2(exact_x, "var x of type long", long);
-
-    std::cout << sep;
     CHECK_2(true_v, "var v with value equal to true");
     CHECK_2(true_z, "var z with value equal to true");
     CHECK_2(false_v, "var v with value equal to false");
     CHECK_2(one_v, "var v with value equal to 1");
     CHECK_2(exact_v, "var v with value equal to 1 of type int");
 #endif
+
+    std::cout << sep;
+    CHECK_2(any_x, "var x");
+    CHECK_2(has_x, "var x of type convertible to long", long);
+    CHECK_2(exact_x, "var x of type int", int);
+    CHECK_2(exact_x, "var x of type long", long);
 
     std::cout << sep;
     CHECK_2(has_get, "get()");
