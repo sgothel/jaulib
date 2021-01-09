@@ -311,6 +311,10 @@ namespace jau {
       !std::is_same<decltype(std::declval<C>().fn args)*, void>::value>::type> : std::true_type {};
 
     METHOD_CHECKER(has_toString, toString, std::string, ())
+    template <typename _Tp> inline constexpr bool has_toString_v = has_toString<_Tp>::value;
+
+    METHOD_CHECKER(has_to_string, to_string, std::string, ())
+    template <typename _Tp> inline constexpr bool has_to_string_v = has_to_string<_Tp>::value;
 
     // Author: Sven Gothel
 
@@ -318,6 +322,8 @@ namespace jau {
     template<class C, typename=void> struct has_member_of_pointer : std::false_type {};
     template<class C> struct has_member_of_pointer<C, typename std::enable_if<
       std::is_pointer<decltype(std::declval<C>().operator->())>::value>::type> : std::true_type {};
+
+    template <typename _Tp> inline constexpr bool has_member_of_pointer_v = has_member_of_pointer<_Tp>::value;
 
 } // namespace jau
 

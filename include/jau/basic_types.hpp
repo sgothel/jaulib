@@ -904,7 +904,7 @@ namespace jau {
               std::enable_if_t<!std::is_integral_v<value_type> &&
                                !std::is_floating_point_v<value_type> &&
                                !std::is_pointer_v<value_type> &&
-                               jau::has_toString<value_type>::value,
+                                jau::has_toString_v<value_type>,
                                bool> = true>
     std::string to_string(const value_type & ref) {
         return ref.toString();
@@ -914,8 +914,20 @@ namespace jau {
               std::enable_if_t<!std::is_integral_v<value_type> &&
                                !std::is_floating_point_v<value_type> &&
                                !std::is_pointer_v<value_type> &&
-                               !jau::has_toString<value_type>::value &&
-                               jau::has_member_of_pointer<value_type>::value,
+                               !jau::has_toString_v<value_type> &&
+                                jau::has_to_string_v<value_type>,
+                               bool> = true>
+    std::string to_string(const value_type & ref) {
+        return ref.to_string();
+    }
+
+    template< class value_type,
+              std::enable_if_t<!std::is_integral_v<value_type> &&
+                               !std::is_floating_point_v<value_type> &&
+                               !std::is_pointer_v<value_type> &&
+                               !jau::has_toString_v<value_type> &&
+                               !jau::has_to_string_v<value_type> &&
+                                jau::has_member_of_pointer_v<value_type>,
                                bool> = true>
     std::string to_string(const value_type & ref) {
         return aptrHexString((void*)ref.operator->());
@@ -925,8 +937,9 @@ namespace jau {
               std::enable_if_t<!std::is_integral_v<value_type> &&
                                !std::is_floating_point_v<value_type> &&
                                !std::is_pointer_v<value_type> &&
-                               !jau::has_toString<value_type>::value &&
-                               !jau::has_member_of_pointer<value_type>::value,
+                               !jau::has_toString_v<value_type> &&
+                               !jau::has_to_string_v<value_type> &&
+                               !jau::has_member_of_pointer_v<value_type>,
                                bool> = true>
     std::string to_string(const value_type & ref) {
         (void)ref;
