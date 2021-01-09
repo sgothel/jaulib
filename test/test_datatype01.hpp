@@ -43,9 +43,18 @@ __pack ( struct Addr48Bit {
     uint8_t b[6]; // == sizeof(Addr48Bit)
 
     constexpr Addr48Bit() noexcept : b{0}  { }
+    constexpr Addr48Bit(const uint64_t encoded) noexcept
+    : b{static_cast<uint8_t>(encoded & 0xff),
+        static_cast<uint8_t>( ( encoded >>  8 ) & 0xff),
+        static_cast<uint8_t>( ( encoded >> 16 ) & 0xff),
+        static_cast<uint8_t>( ( encoded >> 24 ) & 0xff),
+        static_cast<uint8_t>( ( encoded >> 32 ) & 0xff),
+        static_cast<uint8_t>( ( encoded >> 40 ) & 0xff)}  { }
+
     Addr48Bit(const uint8_t * b_) noexcept {
         memcpy(b, b_, sizeof(b));
     }
+    // Trivially-copyable
     constexpr Addr48Bit(const Addr48Bit &o) noexcept = default;
     Addr48Bit(Addr48Bit &&o) noexcept = default;
     constexpr Addr48Bit& operator=(const Addr48Bit &o) noexcept = default;
@@ -129,7 +138,6 @@ inline bool operator!=(const Addr48Bit& lhs, const Addr48Bit& rhs) noexcept
 { return !(lhs == rhs); }
 
 
-
 class DataType01 {
     public:
         Addr48Bit address;
@@ -141,6 +149,9 @@ class DataType01 {
     public:
         DataType01(const Addr48Bit & address_, uint8_t type_)
         : address(address_), type(type_) {}
+
+        DataType01(const uint64_t encoded) noexcept
+        : address(encoded), type(0) { }
 
         constexpr DataType01() noexcept : address(), type{0} { }
         DataType01(const DataType01 &o) noexcept : address(o.address), type(o.type) { }
