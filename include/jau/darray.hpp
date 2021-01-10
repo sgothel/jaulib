@@ -106,6 +106,7 @@ namespace jau {
 
             constexpr static const bool uses_memmove = use_memmove;
             constexpr static const bool uses_realloc = use_realloc;
+            constexpr static const bool uses_secmem  = sec_mem;
 
             // typedefs' for C++ named requirements: Container
 
