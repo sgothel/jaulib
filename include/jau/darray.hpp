@@ -45,6 +45,14 @@
 
 namespace jau {
 
+#define DEBUG_DARRAY 1
+
+#if DEBUG_DARRAY
+    #define DARRAY_PRINTF(...) { printf(__VA_ARGS__); fflush(stdout); }
+#else
+    #define DARRAY_PRINTF(...)
+#endif
+
     /**
      * Implementation of a dynamic linear array storage, aka vector.<br>
      * Goals are to support a high-performance CoW dynamic array implementation, jau::cow_darray,<br>
@@ -86,8 +94,9 @@ namespace jau {
      * </p>
      */
     template <typename Value_type, typename Alloc_type = jau::callocator<Value_type>, typename Size_type = jau::nsize_t,
-              bool use_memmove=std::is_trivially_copyable_v<Value_type>,
-              bool use_realloc=std::is_base_of_v<jau::callocator<Value_type>, Alloc_type>
+              bool use_memmove = std::is_trivially_copyable_v<Value_type>,
+              bool use_realloc = std::is_base_of_v<jau::callocator<Value_type>, Alloc_type>,
+              bool sec_mem = false
              >
     class darray
     {
@@ -149,6 +158,9 @@ namespace jau {
                                 std::to_string(sizeof(value_type))+" bytes/element = "+
                                 std::to_string(size_ * sizeof(value_type))+" bytes -> nullptr", E_FILE_LINE);
                     }
+                    if( sec_mem ) {
+                        explicit_bzero((void*)m, size_*sizeof(value_type));
+                    }
                     return m;
                 }
                 return nullptr;
@@ -162,12 +174,18 @@ namespace jau {
                     throw jau::IllegalArgumentException("realloc "+std::to_string(new_capacity_)+" > difference_type max "+
                             std::to_string(DIFF_MAX), E_FILE_LINE);
                 }
+                if( sec_mem ) {
+                    explicit_bzero((void*)end_, (storage_end_-end_)*sizeof(value_type));
+                }
                 value_type * m = alloc_inst.reallocate(begin_, storage_end_-begin_, new_capacity_);
                 if( nullptr == m ) {
                     free(begin_); // has not been touched by realloc
                     throw jau::OutOfMemoryError("realloc "+std::to_string(new_capacity_)+" elements * "+
                             std::to_string(sizeof(value_type))+" bytes/element = "+
                             std::to_string(new_capacity_ * sizeof(value_type))+" bytes -> nullptr", E_FILE_LINE);
+                }
+                if( sec_mem ) {
+                    explicit_bzero((void*)(m+(end_-begin_)), (new_capacity_-(end_-begin_))*sizeof(value_type));
                 }
                 return m;
             }
@@ -181,6 +199,9 @@ namespace jau {
 
             constexpr void freeStore() {
                 if( nullptr != begin_ ) {
+                    if( sec_mem ) {
+                        explicit_bzero((void*)begin_, (storage_end_-begin_)*sizeof(value_type));
+                    }
                     alloc_inst.deallocate(begin_, storage_end_-begin_);
                 }
             }
@@ -196,33 +217,43 @@ namespace jau {
                 storage_end_ = begin_+capacity_;
             }
 
+            constexpr void dtor_one(iterator pos) {
+                DARRAY_PRINTF("dtor [%zd], count 1\n", (pos-begin_));
+                ( pos )->~value_type(); // placement new -> manual destruction!
+                if( sec_mem ) {
+                    explicit_bzero((void*)pos, sizeof(value_type));
+                }
+            }
+
             constexpr size_type dtor_range(iterator first, const_iterator last) {
                 size_type count=0;
+                DARRAY_PRINTF("dtor [%zd .. %zd], count %zd\n", (first-begin_), (last-begin_)-1, (last-first));
                 for(; first < last; ++first, ++count ) {
                     ( first )->~value_type(); // placement new -> manual destruction!
+                }
+                if( sec_mem ) {
+                    explicit_bzero((void*)(last-count), count*sizeof(value_type));
                 }
                 return count;
             }
 
-            constexpr static void ctor_copy_range(pointer dest, iterator first, const_iterator last) {
+            constexpr void ctor_copy_range(pointer dest, iterator first, const_iterator last) {
+                DARRAY_PRINTF("ctor_copy_range [%zd .. %zd] -> ??, dist %zd\n", (first-begin_), (last-begin_)-1, (last-first));
+                if( first > last ) {
+                    throw jau::IllegalArgumentException("first "+aptrHexString(first)+" > last "+aptrHexString(last), E_FILE_LINE);
+                }
                 for(; first < last; ++dest, ++first) {
                     new (dest) value_type( *first ); // placement new
                 }
             }
             constexpr pointer clone_range(iterator first, const_iterator last) {
+                DARRAY_PRINTF("clone_range [%zd .. %zd], count %zd\n", (first-begin_), (last-begin_)-1, (last-first));
                 pointer dest = allocStore(size_type(last-first));
                 ctor_copy_range(dest, first, last);
                 return dest;
             }
             constexpr pointer clone_range(const size_type dest_capacity, iterator first, const_iterator last) {
-                pointer dest = allocStore(dest_capacity);
-                ctor_copy_range(dest, first, last);
-                return dest;
-            }
-            constexpr pointer clone_range_check(const size_type dest_capacity, iterator first, const_iterator last) {
-                if( first > last ) {
-                    throw jau::IllegalArgumentException("first "+aptrHexString(first)+" > last "+aptrHexString(last), E_FILE_LINE);
-                }
+                DARRAY_PRINTF("clone_range [%zd .. %zd], count %zd -> %d\n", (first-begin_), (last-begin_)-1, (last-first), (int)dest_capacity);
                 if( dest_capacity < size_type(last-first) ) {
                     throw jau::IllegalArgumentException("capacity "+std::to_string(dest_capacity)+" < source range "+
                                                         std::to_string(difference_type(last-first)), E_FILE_LINE);
@@ -231,7 +262,6 @@ namespace jau {
                 ctor_copy_range(dest, first, last);
                 return dest;
             }
-
             template< class InputIt >
             constexpr static void ctor_copy_range_foreign(pointer dest, InputIt first, InputIt last) {
                 for(; first != last; ++dest, ++first) {
@@ -261,7 +291,7 @@ namespace jau {
                         iterator first = begin_;
                         for(; first < end_; ++dest, ++first) {
                             new (dest) value_type( std::move( *first ) ); // placement new
-                            ( first )->~value_type(); // manual destruction, even after std::move (object still exists)
+                            dtor_one(first); // manual destruction, even after std::move (object still exists)
                         }
                     }
                     freeStore();
@@ -285,29 +315,46 @@ namespace jau {
             }
 
             constexpr void move_elements(iterator dest, const_iterator first, const difference_type count) noexcept {
+                // Debatable here: "Moved sources have been disowned, semantically, need to zero to avoid source dtor releasing resources!"
+                // Debatable, b/c is this even possible for user to hold an instance the way, that a dtor gets called? Probably not.
+                // Hence we leave it to 'sec_mem' to bzero...
                 if( use_memmove ) {
                     // handles overlap
                     memmove(reinterpret_cast<void*>(dest),
                             reinterpret_cast<const void*>(first), sizeof(value_type)*count);
+                    if( sec_mem ) {
+                        if( dest < first ) {
+                            // move elems left
+                            DARRAY_PRINTF("move_elements.mmm.left [%zd .. %zd] -> %zd, dist %zd\n", (first-begin_), ((first + count)-begin_)-1, (dest-begin_), (first-dest));
+                            explicit_bzero((void*)(dest+count), (first-dest)*sizeof(value_type));
+                        } else {
+                            // move elems right
+                            DARRAY_PRINTF("move_elements.mmm.right [%zd .. %zd] -> %zd, dist %zd\n", (first-begin_), ((first + count)-begin_)-1, (dest-begin_), (dest-first));
+                            explicit_bzero((void*)first, (dest-first)*sizeof(value_type));
+                        }
+                    }
                 } else {
                     if( dest < first ) {
                         // move elems left
                         const_iterator last = first + count;
+                        DARRAY_PRINTF("move_elements.def.left [%zd .. %zd] -> %zd, dist %zd\n", (first-begin_), (last-begin_)-1, (dest-begin_), (first-dest));
                         for(; first < last; ++dest, ++first ) {
                             new (dest) value_type( std::move( *first ) ); // placement new
-                            ( first )->~value_type(); // manual destruction, even after std::move (object still exists)
+                            dtor_one( const_cast<value_type*>( first ) ); // manual destruction, even after std::move (object still exists)
                         }
                     } else {
                         // move elems right
-                        iterator last = const_cast<iterator>(first + count - 1);
+                        iterator last = const_cast<iterator>(first + count);
+                        DARRAY_PRINTF("move_elements.def.right [%zd .. %zd] -> %zd, dist %zd\n", (first-begin_), (last-begin_)-1, (dest-begin_), (dest-first));
                         dest += count - 1;
-                        for(; first <= last; --dest, --last ) {
+                        for(--last; first <= last; --dest, --last ) {
                             new (dest) value_type( std::move( *last ) ); // placement new
-                            ( last )->~value_type(); // manual destruction, even after std::move (object still exists)
+                            dtor_one( last ); // manual destruction, even after std::move (object still exists)
                         }
                     }
                 }
             }
+
 
         public:
 
@@ -318,7 +365,9 @@ namespace jau {
              */
             constexpr darray() noexcept
             : alloc_inst(), begin_( nullptr ), end_( nullptr ), storage_end_( nullptr ),
-              growth_factor_(DEFAULT_GROWTH_FACTOR) {}
+              growth_factor_(DEFAULT_GROWTH_FACTOR) {
+                DARRAY_PRINTF("ctor def: %s\n", get_info().c_str());
+            }
 
             /**
              * Creating an empty instance with initial capacity and other (default) properties.
@@ -328,7 +377,9 @@ namespace jau {
              */
             constexpr explicit darray(size_type capacity, const float growth_factor=DEFAULT_GROWTH_FACTOR, const allocator_type& alloc = allocator_type())
             : alloc_inst( alloc ), begin_( allocStore(capacity) ), end_( begin_ ), storage_end_( begin_ + capacity ),
-              growth_factor_( growth_factor ) {}
+              growth_factor_( growth_factor ) {
+                DARRAY_PRINTF("ctor 1: %s\n", get_info().c_str());
+            }
 
             // copy_ctor on darray elements
 
@@ -339,7 +390,10 @@ namespace jau {
              */
             constexpr darray(const darray& x)
             : alloc_inst( x.alloc_inst ), begin_( clone_range(x.begin_, x.end_) ), end_( begin_ + x.size() ),
-              storage_end_( begin_ + x.size() ), growth_factor_( x.growth_factor_ ) { }
+              storage_end_( begin_ + x.size() ), growth_factor_( x.growth_factor_ ) {
+                DARRAY_PRINTF("ctor copy0: this %s\n", get_info().c_str());
+                DARRAY_PRINTF("ctor copy0:    x %s\n", x.get_info().c_str());
+            }
 
             /**
              * Creates a new instance, copying all elements from the given darray.<br>
@@ -350,7 +404,10 @@ namespace jau {
              */
             constexpr explicit darray(const darray& x, const float growth_factor, const allocator_type& alloc)
             : alloc_inst( alloc ), begin_( clone_range(x.begin_, x.end_) ), end_( begin_ + x.size() ),
-              storage_end_( begin_ + x.size() ), growth_factor_( growth_factor ) { }
+              storage_end_( begin_ + x.size() ), growth_factor_( growth_factor ) {
+                DARRAY_PRINTF("ctor copy1: this %s\n", get_info().c_str());
+                DARRAY_PRINTF("ctor copy1:    x %s\n", x.get_info().c_str());
+            }
 
             /**
              * Creates a new instance with custom initial storage capacity, copying all elements from the given darray.<br>
@@ -365,28 +422,38 @@ namespace jau {
              */
             constexpr explicit darray(const darray& x, const size_type _capacity, const float growth_factor, const allocator_type& alloc)
             : alloc_inst( alloc ), begin_( clone_range( _capacity, x.begin_, x.end_) ), end_( begin_ + x.size() ),
-              storage_end_( begin_ + _capacity ), growth_factor_( growth_factor ) { }
+              storage_end_( begin_ + _capacity ), growth_factor_( growth_factor ) {
+                DARRAY_PRINTF("ctor copy2: this %s\n", get_info().c_str());
+                DARRAY_PRINTF("ctor copy2:    x %s\n", x.get_info().c_str());
+            }
 
             // move_ctor on darray elements
 
             constexpr darray(darray && x) noexcept
-            : alloc_inst( x.alloc_inst ), begin_( std::move(x.begin_) ), end_( std::move(x.end_) ),
+            : alloc_inst( std::move(x.alloc_inst) ), begin_( std::move(x.begin_) ), end_( std::move(x.end_) ),
               storage_end_( std::move(x.storage_end_) ), growth_factor_( std::move(x.growth_factor_) )
             {
-                // complete swapping store_ref
-                x.begin_ = nullptr;
-                x.end_ = nullptr;
-                x.storage_end_ = nullptr;
+                DARRAY_PRINTF("ctor move0: this %s\n", get_info().c_str());
+                DARRAY_PRINTF("ctor move0:    x %s\n", x.get_info().c_str());
+                // Moved sources have been disowned, semantically, need to zero to avoid source dtor releasing resources!
+                explicit_bzero((void*)&x, sizeof(x));
             }
 
             constexpr explicit darray(darray && x, const float growth_factor, const allocator_type& alloc) noexcept
-            : alloc_inst( alloc ), begin_( std::move(x.begin_) ), end_( std::move(x.end_) ),
+            : alloc_inst( std::move(alloc) ), begin_( std::move(x.begin_) ), end_( std::move(x.end_) ),
               storage_end_( std::move(x.storage_end_) ), growth_factor_( std::move(growth_factor) )
             {
-                // complete swapping store_ref
+                DARRAY_PRINTF("ctor move1: this %s\n", get_info().c_str());
+                DARRAY_PRINTF("ctor move1:    x %s\n", x.get_info().c_str());
+                // Moved sources have been disowned, semantically, need to zero to avoid source dtor releasing resources!
+#if 1
+                explicit_bzero((void*)&x, sizeof(x));
+#else
                 x.begin_ = nullptr;
                 x.end_ = nullptr;
                 x.storage_end_ = nullptr;
+                x.growth_factor_ = 0.0;
+#endif
             }
 
             // ctor on const_iterator and foreign template iterator
@@ -404,10 +471,12 @@ namespace jau {
              * @param growth_factor custom growth factor
              * @param alloc custom allocator_type instance
              */
-            constexpr darray(const size_type _capacity, const_iterator first, const_iterator last,
-                             const float growth_factor=DEFAULT_GROWTH_FACTOR, const allocator_type& alloc = allocator_type())
-            : alloc_inst( alloc ), begin_( clone_range_check(_capacity, first, last) ), end_(begin_ + size_type(last - first) ),
-              storage_end_( begin_ + _capacity ), growth_factor_( growth_factor ) { }
+            constexpr explicit darray(const size_type _capacity, const_iterator first, const_iterator last,
+                                      const float growth_factor=DEFAULT_GROWTH_FACTOR, const allocator_type& alloc = allocator_type())
+            : alloc_inst( alloc ), begin_( clone_range(_capacity, first, last) ), end_(begin_ + size_type(last - first) ),
+              storage_end_( begin_ + _capacity ), growth_factor_( growth_factor ) {
+                DARRAY_PRINTF("ctor iters0: %s\n", get_info().c_str());
+            }
 
             /**
              * Creates a new instance with custom initial storage capacity,
@@ -427,7 +496,9 @@ namespace jau {
             constexpr explicit darray(const size_type _capacity, InputIt first, InputIt last,
                                       const float growth_factor=DEFAULT_GROWTH_FACTOR, const allocator_type& alloc = allocator_type())
             : alloc_inst( alloc ), begin_( clone_range_foreign(_capacity, first, last) ), end_(begin_ + size_type(last - first) ),
-              storage_end_( begin_ + _capacity ), growth_factor_( growth_factor ) { }
+              storage_end_( begin_ + _capacity ), growth_factor_( growth_factor ) {
+                DARRAY_PRINTF("ctor iters1: %s\n", get_info().c_str());
+            }
 
             /**
              * Creates a new instance,
@@ -441,7 +512,9 @@ namespace jau {
             template< class InputIt >
             constexpr darray(InputIt first, InputIt last, const allocator_type& alloc = allocator_type())
             : alloc_inst( alloc ), begin_( clone_range_foreign(size_type(last - first), first, last) ), end_(begin_ + size_type(last - first) ),
-              storage_end_( begin_ + size_type(last - first) ), growth_factor_( DEFAULT_GROWTH_FACTOR ) { }
+              storage_end_( begin_ + size_type(last - first) ), growth_factor_( DEFAULT_GROWTH_FACTOR ) {
+                DARRAY_PRINTF("ctor iters2: %s\n", get_info().c_str());
+            }
 
             /**
              * Create a new instance from an initializer list.
@@ -451,9 +524,12 @@ namespace jau {
              */
             constexpr darray(std::initializer_list<value_type> initlist, const allocator_type& alloc = allocator_type())
             : alloc_inst( alloc ), begin_( clone_range_foreign(initlist.size(), initlist.begin(), initlist.end()) ),
-              end_(begin_ + initlist.size() ), storage_end_( begin_ + initlist.size() ), growth_factor_( DEFAULT_GROWTH_FACTOR ) { }
+              end_(begin_ + initlist.size() ), storage_end_( begin_ + initlist.size() ), growth_factor_( DEFAULT_GROWTH_FACTOR ) {
+                DARRAY_PRINTF("ctor initlist: %s\n", get_info().c_str());
+            }
 
             ~darray() noexcept {
+                DARRAY_PRINTF("dtor: %s\n", get_info().c_str());
                 clear();
             }
 
@@ -617,17 +693,24 @@ namespace jau {
              * Like std::vector::operator=(&), assignment
              */
             constexpr darray& operator=(const darray& x) {
-                const size_type capacity_ = capacity();
-                const size_type x_size_ = x.size();
-                dtor_range(begin_, end_);
-                if( x_size_ > capacity_ ) {
-                    freeStore();
-                    begin_ =  clone_range(x_size_, x.begin_, x.end_);
-                    set_iterator(x_size_, x_size_);
-                } else {
-                    ctor_copy_range(begin_, x.begin_, x.end_);
-                    set_iterator(x_size_, capacity_);
+                DARRAY_PRINTF("assignment copy.0: this %s\n", get_info().c_str());
+                DARRAY_PRINTF("assignment copy.0:    x %s\n", x.get_info().c_str());
+                if( this != &x ) {
+                    const size_type capacity_ = capacity();
+                    const size_type x_size_ = x.size();
+                    dtor_range(begin_, end_);
+                    growth_factor_ = x.growth_factor_;
+                    if( x_size_ > capacity_ ) {
+                        freeStore();
+                        begin_ =  clone_range(x_size_, x.begin_, x.end_);
+                        set_iterator(x_size_, x_size_);
+                    } else {
+                        ctor_copy_range(begin_, x.begin_, x.end_);
+                        set_iterator(x_size_, capacity_);
+                    }
                 }
+                DARRAY_PRINTF("assignment copy.X: this %s\n", get_info().c_str());
+                DARRAY_PRINTF("assignment copy.X:    x %s\n", x.get_info().c_str());
                 return *this;
             }
 
@@ -664,7 +747,7 @@ namespace jau {
                 dtor_range(begin_, end_);
                 if( x_size_ > capacity_ ) {
                     freeStore();
-                    begin_ =  clone_range_check(x_size_, first, last);
+                    begin_ =  clone_range(x_size_, first, last);
                     set_iterator(x_size_, x_size_);
                 } else {
                     ctor_copy_range(begin_, first, last);
@@ -676,17 +759,21 @@ namespace jau {
              * Like std::vector::operator=(&&), move.
              */
             constexpr darray& operator=(darray&& x) noexcept {
-                clear();
-                alloc_inst = std::move(x.alloc_inst);
-                begin_ = std::move(x.begin_);
-                end_ = std::move(x.end_);
-                storage_end_ = std::move(x.storage_end_);
+                DARRAY_PRINTF("assignment move.0: this %s\n", get_info().c_str());
+                DARRAY_PRINTF("assignment move.0:    x %s\n", x.get_info().c_str());
+                if( this != &x ) {
+                    clear();
+                    alloc_inst = std::move(x.alloc_inst);
+                    begin_ = std::move(x.begin_);
+                    end_ = std::move(x.end_);
+                    storage_end_ = std::move(x.storage_end_);
+                    growth_factor_ = std::move( x.growth_factor_ );
 
-                // complete swapping store_ref
-                x.begin_ = nullptr;
-                x.end_ = nullptr;
-                x.storage_end_ = nullptr;
-
+                    // Moved sources have been disowned, semantically, need to zero to avoid source dtor releasing resources!
+                    explicit_bzero((void*)&x, sizeof(x));
+                }
+                DARRAY_PRINTF("assignment move.X: this %s\n", get_info().c_str());
+                DARRAY_PRINTF("assignment move.X:    x %s\n", x.get_info().c_str());
                 return *this;
             }
 
@@ -705,11 +792,15 @@ namespace jau {
              * Like std::vector::swap().
              */
             constexpr void swap(darray& x) noexcept {
-                std::swap(growth_factor_, x.growth_factor_);
+                DARRAY_PRINTF("swap.0: this %s\n", get_info().c_str());
+                DARRAY_PRINTF("swap.0:    x %s\n", x.get_info().c_str());
                 std::swap(alloc_inst, x.alloc_inst);
                 std::swap(begin_, x.begin_);
                 std::swap(end_, x.end_);
                 std::swap(storage_end_, x.storage_end_);
+                std::swap(growth_factor_, x.growth_factor_);
+                DARRAY_PRINTF("swap.X: this %s\n", get_info().c_str());
+                DARRAY_PRINTF("swap.X:    x %s\n", x.get_info().c_str());
             }
 
             /**
@@ -717,7 +808,7 @@ namespace jau {
              */
             constexpr void pop_back() noexcept {
                 if( begin_ != end_ ) {
-                    ( --end_ )->~value_type(); // placement new -> manual destruction!
+                    dtor_one( --end_ );
                 }
             }
 
@@ -727,8 +818,8 @@ namespace jau {
              */
             constexpr iterator erase (const_iterator pos) {
                 if( begin_ <= pos && pos < end_ ) {
-                    ( pos )->~value_type(); // placement new -> manual destruction!
-                    const difference_type right_count = end_ - ( pos + 1 );
+                    dtor_one( const_cast<value_type*>( pos ) );
+                    const difference_type right_count = end_ - ( pos + 1 ); // pos is exclusive
                     if( 0 < right_count ) {
                         move_elements(const_cast<value_type*>(pos), pos+1, right_count); // move right elems one left
                     }
@@ -1026,6 +1117,22 @@ namespace jau {
                     res.append( jau::to_string(e) );
                 } );
                 res.append(" }");
+                return res;
+            }
+
+            __constexpr_cxx20_ std::string get_info() const noexcept {
+                difference_type cap_ = (storage_end_-begin_);
+                difference_type size_ = (end_-begin_);
+                std::string res("darray[this "+jau::aptrHexString(this)+
+                                 ", size "+std::to_string(size_)+"/"+std::to_string(cap_)+
+                                 ", growth "+std::to_string(growth_factor_)+
+                                 ", uses[mmm "+std::to_string(uses_memmove)+
+                                 ", ralloc "+std::to_string(uses_realloc)+
+                                 ", smem "+std::to_string(sec_mem)+
+                                 "], begin "+jau::aptrHexString(begin_)+
+                                 ", end "+jau::aptrHexString(end_)+
+                                 ", send "+jau::aptrHexString(storage_end_)+
+                                 "]");
                 return res;
             }
     };
