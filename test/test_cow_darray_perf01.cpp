@@ -86,7 +86,7 @@ static Addr48Bit start_addr(start_addr_b);
  ****************************************************************************************/
 
 template<class T, typename Size_type>
-DataType01 * findDataSet01_idx(T& data, DataType01 const & elem) noexcept {
+const DataType01 * findDataSet01_idx(T& data, DataType01 const & elem) noexcept {
     const Size_type size = data.size();
     for (Size_type i = 0; i < size; ++i) {
         DataType01 & e = data[i];
@@ -109,15 +109,59 @@ static int test_00_list_idx(T& data) {
     return some_number;
 }
 
+template<class T, typename Size_type>
+const DataType01 * findDataSet01_itr(T& data, DataType01 const & elem,
+        std::enable_if_t< is_cow_type<T>::value, bool> = true) noexcept
+{
+    typename T::const_iterator first = data.cbegin();
+    for (; !first.is_end(); ++first) {
+        if (*first == elem) {
+            return &(*first);
+        }
+    }
+    return nullptr;
+}
+template<class T, typename Size_type>
+const DataType01 * findDataSet01_itr(T& data, DataType01 const & elem,
+        std::enable_if_t< !is_cow_type<T>::value, bool> = true) noexcept
+{
+    typename T::const_iterator first = data.cbegin();
+    typename T::const_iterator last = data.cend();
+    for (; first != last; ++first) {
+        if (*first == elem) {
+            return &(*first);
+        }
+    }
+    return nullptr;
+}
+
 template<class T>
-static int test_00_list_itr(T& data) {
+static int test_00_list_itr(T& data,
+        std::enable_if_t< is_cow_type<T>::value, bool> = true )
+{
     int some_number = 0; // add some validated work, avoiding any 'optimization away'
-    jau::for_each_const(data, [&some_number](const DataType01 & e) {
-        some_number += e.nop();
-    } );
+    typename T::const_iterator first = data.cbegin();
+    for (; !first.is_end(); ++first) {
+        some_number += (*first).nop();
+    }
     REQUIRE(some_number > 0);
     return some_number;
 }
+
+template<class T>
+static int test_00_list_itr(T& data,
+        std::enable_if_t< !is_cow_type<T>::value, bool> = true )
+{
+    int some_number = 0; // add some validated work, avoiding any 'optimization away'
+    typename T::const_iterator first = data.cbegin();
+    typename T::const_iterator last = data.cend();
+    for (; first != last; ++first) {
+        some_number += (*first).nop();
+    }
+    REQUIRE(some_number > 0);
+    return some_number;
+}
+
 
 template<class T, typename Size_type>
 static void test_00_seq_find_idx(T& data) {
@@ -127,7 +171,7 @@ static void test_00_seq_find_idx(T& data) {
 
     for(; i<size && a0.next(); ++i) {
         DataType01 elem(a0, static_cast<uint8_t>(1));
-        DataType01 *found = findDataSet01_idx<T, Size_type>(data, elem);
+        const DataType01 *found = findDataSet01_idx<T, Size_type>(data, elem);
         if( nullptr != found ) {
             ++fi;
             found->nop();
@@ -144,7 +188,7 @@ static void test_00_seq_find_itr(T& data) {
 
     for(; i<size && a0.next(); ++i) {
         DataType01 elem(a0, static_cast<uint8_t>(1));
-        const DataType01 *found = jau::find_const<T>(data, elem);
+        const DataType01 *found = findDataSet01_itr<T, Size_type>(data, elem);
         if( nullptr != found ) {
             ++fi;
             found->nop();
@@ -171,7 +215,7 @@ static void test_00_seq_fill_unique_idx(T& data, const Size_type size) {
 
     for(; i<size && a0.next(); ++i) {
         DataType01 elem(a0, static_cast<uint8_t>(1));
-        DataType01* exist = findDataSet01_idx<T, Size_type>(data, elem);
+        const DataType01* exist = findDataSet01_idx<T, Size_type>(data, elem);
         if( nullptr == exist ) {
             data.push_back( std::move( elem ) );
             ++fi;
@@ -180,15 +224,64 @@ static void test_00_seq_fill_unique_idx(T& data, const Size_type size) {
     REQUIRE(i == data.size());
     REQUIRE(fi == size);
 }
+
+template<class value_type>
+static bool equal_comparator(const value_type& a, const value_type& b) {
+    return a == b;
+}
+
 template<class T, typename Size_type>
-static void test_00_seq_fill_unique_itr(T& data, const Size_type size) {
+static void test_00_seq_fill_unique_itr(T& data, const Size_type size,
+        std::enable_if_t< is_cow_type<T>::value, bool> = true) noexcept
+{
+    Addr48Bit a0(start_addr);
+    Size_type i=0, fi=0;
+
+#if 0
+    typename T::iterator first = data.begin();
+
+    for(; i<size && a0.next(); ++i, first.to_begin()) {
+        DataType01 elem(a0, static_cast<uint8_t>(1));
+        for (; !first.is_end(); ++first) {
+            if (*first == elem) {
+                break;
+            }
+        }
+        if( first.is_end() ) {
+            first.push_back( std::move( elem ) );
+            ++fi;
+        }
+    }
+    first.write_back();
+#else
+    for(; i<size && a0.next(); ++i) {
+        if( data.push_back_unique( DataType01(a0, static_cast<uint8_t>(1)),
+                                   equal_comparator<typename T::value_type> ) ) {
+            ++fi;
+        }
+    }
+#endif
+    REQUIRE(i == data.size());
+    REQUIRE(fi == size);
+}
+
+template<class T, typename Size_type>
+static void test_00_seq_fill_unique_itr(T& data, const Size_type size,
+        std::enable_if_t< !is_cow_type<T>::value, bool> = true) noexcept
+{
     Addr48Bit a0(start_addr);
     Size_type i=0, fi=0;
 
     for(; i<size && a0.next(); ++i) {
         DataType01 elem(a0, static_cast<uint8_t>(1));
-        const DataType01* exist = jau::find_const<T>(data, elem);
-        if( nullptr == exist ) {
+        typename T::const_iterator first = data.cbegin();
+        typename T::const_iterator last = data.cend();
+        for (; first != last; ++first) {
+            if (*first == elem) {
+                break;
+            }
+        }
+        if( first == last ) {
             data.push_back( std::move( elem ) );
             ++fi;
         }
@@ -537,6 +630,11 @@ TEST_CASE( "Perf Test 01 - Fill Sequential and List, empty and reserve", "[datat
         benchmark_fillseq_list_itr< std::vector<DataType01, std::allocator<DataType01>>,                std::size_t>("STD_Vector_def_empty_itr", "stdvec_empty_", false);
         benchmark_fillseq_list_itr< jau::darray<DataType01, jau::callocator<DataType01>, jau::nsize_t>, jau::nsize_t>("JAU_DArray_def_empty_itr", "darray_empty_", false);
         benchmark_fillseq_list_itr< jau::darray<DataType01, jau::callocator<DataType01>, jau::nsize_t, true, true>, jau::nsize_t>("JAU_DArray_mmm_empty_itr", "darray_empty_", false);
+#if RUN_RESERVE_BENCHMARK
+        benchmark_fillseq_list_itr< std::vector<DataType01, std::allocator<DataType01>>,                std::size_t>("STD_Vector_def_rserv_itr", "stdvec_rserv", true);
+        benchmark_fillseq_list_itr< jau::darray<DataType01, jau::callocator<DataType01>, jau::nsize_t>, jau::nsize_t>("JAU_DArray_def_rserv_itr", "darray_rserv", true);
+        benchmark_fillseq_list_itr< jau::darray<DataType01, jau::callocator<DataType01>, jau::nsize_t, true, true>, jau::nsize_t>("JAU_DArray_mmm_rserv_itr", "darray_rserv", true);
+#endif
         return;
     }
     benchmark_fillseq_list_idx< std::vector<DataType01, std::allocator<DataType01>>,                std::size_t>("STD_Vector_def_empty_idx", "stdvec_empty_", false);
@@ -558,15 +656,20 @@ TEST_CASE( "Perf Test 01 - Fill Sequential and List, empty and reserve", "[datat
     benchmark_fillseq_list_itr< jau::darray<DataType01, jau::callocator<DataType01>, jau::nsize_t, true, true>, jau::nsize_t>("JAU_DArray_mmm_rserv_itr", "darray_rserv", true);
     benchmark_fillseq_list_itr< jau::cow_vector<DataType01, std::allocator<DataType01>>,               std::size_t>("COW_Vector_def_rserv_itr", "cowstdvec_rserv", true);
     benchmark_fillseq_list_itr< jau::cow_darray<DataType01, jau::callocator<DataType01>, jau::nsize_t>, std::size_t>("COW_DArray_def_rserv_itr", "cowdarray_rserv", true);
-    benchmark_fillseq_list_itr< jau::cow_darray<DataType01, jau::callocator<DataType01>, jau::nsize_t>, std::size_t, true, true>("COW_DArray_mmm_rserv_itr", "cowdarray_rserv", true);
+    benchmark_fillseq_list_itr< jau::cow_darray<DataType01, jau::callocator<DataType01>, jau::nsize_t, true, true>, std::size_t>("COW_DArray_mmm_rserv_itr", "cowdarray_rserv", true);
 #endif
 }
 
 TEST_CASE( "Perf Test 02 - Fill Unique and List, empty and reserve", "[datatype][unique]" ) {
     if( catch_perf_analysis ) {
-        // benchmark_fillunique_find_itr< jau::cow_vector<DataType01, std::allocator<DataType01>>,                std::size_t>("COW_Vector_def_empty_itr", "cowstdvec_empty_", false);
-        // benchmark_fillunique_find_itr< jau::cow_darray<DataType01, jau::callocator<DataType01>, jau::nsize_t>, jau::nsize_t>("COW_DArray_def_empty_itr", "cowdarray_empty_", false);
-        // benchmark_fillunique_find_itr< jau::cow_darray<DataType01, jau::callocator<DataType01>, jau::nsize_t, true, true>, jau::nsize_t>("COW_DArray_mmm_empty_itr", "cowdarray_empty_", false);
+        benchmark_fillunique_find_itr< jau::cow_vector<DataType01, std::allocator<DataType01>>,                std::size_t>("COW_Vector_def_empty_itr", "cowstdvec_empty_", false);
+        benchmark_fillunique_find_itr< jau::cow_darray<DataType01, jau::callocator<DataType01>, jau::nsize_t>, jau::nsize_t>("COW_DArray_def_empty_itr", "cowdarray_empty_", false);
+        benchmark_fillunique_find_itr< jau::cow_darray<DataType01, jau::callocator<DataType01>, jau::nsize_t, true, true>, jau::nsize_t>("COW_DArray_mmm_empty_itr", "cowdarray_empty_", false);
+#if RUN_RESERVE_BENCHMARK
+        benchmark_fillunique_find_itr< jau::cow_vector<DataType01, std::allocator<DataType01>>,                std::size_t>("COW_Vector_def_rserv_itr", "cowstdvec_rserv", true);
+        benchmark_fillunique_find_itr< jau::cow_darray<DataType01, jau::callocator<DataType01>, jau::nsize_t>, jau::nsize_t>("COW_DArray_def_rserv_itr", "cowdarray_rserv", true);
+        benchmark_fillunique_find_itr< jau::cow_darray<DataType01, jau::callocator<DataType01>, jau::nsize_t, true, true>, jau::nsize_t>("COW_DArray_mmm_rserv_itr", "cowdarray_rserv", true);
+#endif
         return;
     }
     benchmark_fillunique_find_idx< std::vector<DataType01, std::allocator<DataType01>>,                std::size_t>("STD_Vector_def_empty_idx", "stdvec_empty_", false);
