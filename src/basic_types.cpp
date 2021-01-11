@@ -52,7 +52,7 @@ uint64_t jau::getCurrentMilliseconds() noexcept {
 
 jau::RuntimeException::RuntimeException(std::string const type, std::string const m, const char* file, int line) noexcept
 : msg(std::string(type).append(" @ ").append(file).append(":").append(std::to_string(line)).append(": ").append(m)),
-  backtrace(jau::get_backtrace(true, 1))
+  backtrace(jau::get_backtrace(true, -1, 1))
 {
     what_ = msg;
     what_.append("\nNative backtrace:\n");
