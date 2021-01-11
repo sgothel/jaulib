@@ -168,11 +168,19 @@ namespace jau {
             : store_ref( std::make_shared<storage_t>(x, x->get_allocator()) ), sync_atomic(false) { }
 
             constexpr cow_vector(cow_vector && x) noexcept {
-                // swap store_ref
-                store_ref = std::move(x.store_ref);
-                x.store_ref = nullptr;
-                // not really necessary
-                sync_atomic = std::move(x.sync_atomic);
+                // Stragtegy-1: Acquire lock, blocking
+                // - If somebody else holds the lock, we wait.
+                // - Then we own the lock
+                // - Post move-op, the source object does not exist anymore
+                std::unique_lock<std::recursive_mutex>  lock(x.mtx_write); // *this doesn't exist yet, not locking ourselves
+                {
+                    store_ref = std::move(x.store_ref);
+                    sync_atomic = std::move(x.sync_atomic);
+                    // mtx_write will be a fresh one, but we hold the source's lock
+
+                    // Moved source array has been taken over, null its store_ref
+                    x.store_ref = nullptr;
+                }
             }
 
             /**
@@ -394,14 +402,20 @@ namespace jau {
              * </p>
              */
             cow_vector& operator=(cow_vector&& x) {
-                std::unique_lock<std::recursive_mutex> lock(mtx_write, std::defer_lock); // utilize std::lock(a, b), allowing mixed order waiting on either object
-                std::unique_lock<std::recursive_mutex> lock_x(x.mtx_write, std::defer_lock); // otherwise RAII-style relinquish via destructor
-                std::lock(lock, lock_x);
+                // Stragtegy-2: Acquire locks of both, blocking
+                // - If somebody else holds the lock, we wait.
+                // - Then we own the lock for both instances
+                // - Post move-op, the source object does not exist anymore
+                std::unique_lock<std::recursive_mutex> lock1(x.mtx_write, std::defer_lock); // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
+                std::unique_lock<std::recursive_mutex> lock2(  mtx_write, std::defer_lock); // otherwise RAII-style relinquish via destructor
+                std::lock(lock1, lock2);
                 {
                     sc_atomic_critical sync_x( x.sync_atomic );
-                    sc_atomic_critical sync(sync_atomic);
-                    // swap store_ref
+                    sc_atomic_critical sync  (   sync_atomic );
                     store_ref = std::move(x.store_ref);
+                    // mtx_write and the atomic will be kept as is, but we hold the source's lock
+
+                    // Moved source array has been taken over, null its store_ref
                     x.store_ref = nullptr;
                 }
                 return *this;
