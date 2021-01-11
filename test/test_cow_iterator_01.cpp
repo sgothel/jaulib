@@ -140,8 +140,8 @@ static bool test_00_inspect_iterator_types(const std::string& type_id) {
 /****************************************************************************************
  ****************************************************************************************/
 
-template<class T, typename iterator_type>
-static void test_iterator_equal(iterator_type& citer1, iterator_type& citer2)
+template<class T, typename iterator_type1, typename iterator_type2>
+static void test_iterator_equal(iterator_type1& citer1, iterator_type2& citer2)
 {
     // Adding redundant switched operands comparison
     // to test all relational combination of the overloading. (Leave it as is)
@@ -155,8 +155,8 @@ static void test_iterator_equal(iterator_type& citer1, iterator_type& citer2)
     REQUIRE( !( *citer1 != *citer2 ) );  // iter op*() and value_type !=
     REQUIRE( !( *citer2 != *citer1 ) );  // iter op*() and value_type !=
 }
-template<class T, typename iterator_type>
-static void test_iterator_notequal(iterator_type& citer1, iterator_type& citer2)
+template<class T, typename iterator_type1, typename iterator_type2>
+static void test_iterator_notequal(iterator_type1& citer1, iterator_type2& citer2)
 {
     // Adding redundant switched operands comparison
     // to test all relational combination of the overloading. (Leave it as is)
@@ -171,11 +171,12 @@ static void test_iterator_notequal(iterator_type& citer1, iterator_type& citer2)
     REQUIRE( !( *citer2 == *citer1 ) );  // iter op*() and value_type !=
 }
 
-template<class T, typename iterator_type>
+// iterator_type1 .. can be all the same, but leave it to the caller which is which
+template<class T, typename iterator_type1, typename iterator_type2, typename iterator_type3, typename iterator_type4>
 static void test_iterator_compare(const typename T::size_type size,
-                                  iterator_type& begin,
-                                  iterator_type& end,
-                                  iterator_type& citer1, iterator_type& citer2,
+                                  iterator_type1& begin,
+                                  iterator_type2& end,
+                                  iterator_type3& citer1, iterator_type4& citer2,
                                   const typename T::difference_type citer1_idx,
                                   const typename T::difference_type citer2_idx)
 {
@@ -212,7 +213,7 @@ static void test_iterator_compare(const typename T::size_type size,
     // to test all relational combination of the overloading. (Leave it as is)
 
     if( 0 == distance ) {
-        test_iterator_equal<T, iterator_type>(citer1, citer2);
+        test_iterator_equal<T>(citer1, citer2);
         REQUIRE( !( citer2 >   citer1 ) );      // iter op>(iter1, iter2)
         REQUIRE(    citer2 >=  citer1   );      // iter op>=(iter1, iter2)
         REQUIRE( !( citer2 <   citer1 ) );      // iter op<(iter1, iter2)
@@ -220,7 +221,7 @@ static void test_iterator_compare(const typename T::size_type size,
         REQUIRE(    citer1 <=  citer2   );      // iter op>=(iter1, iter2)
         REQUIRE(    citer1 >=  citer2   );      // iter op>=(iter1, iter2)
     } else if( distance > 0 ) { // citer2 > citer1
-        test_iterator_notequal<T, iterator_type>(citer1, citer2);
+        test_iterator_notequal<T>(citer1, citer2);
         REQUIRE(    citer2 >   citer1   );      // iter op>(iter1, iter2)
         REQUIRE(    citer2 >=  citer1   );      // iter op>=(iter1, iter2)
         REQUIRE( !( citer2 <   citer1 ) );      // iter op<(iter1, iter2)
@@ -228,7 +229,7 @@ static void test_iterator_compare(const typename T::size_type size,
         REQUIRE(    citer1 <=  citer2   );      // iter op>(iter1, iter2)
         REQUIRE(    citer1 <   citer2   );      // iter op>=(iter1, iter2)
     } else { // distance < 0: citer2 < citer1
-        test_iterator_notequal<T, iterator_type>(citer1, citer2);
+        test_iterator_notequal<T>(citer1, citer2);
         REQUIRE( !( citer2 >   citer1 ) );      // iter op>(iter1, iter2)
         REQUIRE( !( citer2 >=  citer1 ) );      // iter op>=(iter1, iter2)
         REQUIRE(    citer2 <   citer1   );      // iter op<(iter1, iter2)
@@ -238,16 +239,23 @@ static void test_iterator_compare(const typename T::size_type size,
     }
 }
 
-template<class T, typename iterator_type>
+template<class T, typename iterator_type1, typename iterator_type2>
 static void test_iterator_dereference(const typename T::size_type size,
-                                      iterator_type& begin, iterator_type& end)
+                                      iterator_type1& begin, iterator_type2& end)
 {
     printf("**** test_iterator_dereference:\n");
-    print_iterator_info<iterator_type>("iterator_type");
+    print_iterator_info<iterator_type1>("iterator_type1");
+    print_iterator_info<iterator_type2>("iterator_type2");
+
+    {
+        T data_exp = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+        T data_has( begin, end );
+        REQUIRE(data_has == data_exp);
+    }
 
     // dereferencing, pointer, equality
-    iterator_type citer1 = begin;
-    iterator_type citer2 = begin;
+    iterator_type1 citer1 = begin;
+    iterator_type2 citer2 = begin;
 
     REQUIRE(    citer1 ==  begin         );  // iter op==()
     REQUIRE(    citer2 ==  begin         );  // iter op==()
@@ -280,56 +288,57 @@ static void test_iterator_dereference(const typename T::size_type size,
     REQUIRE( *(citer2+3) == begin[3] );
     REQUIRE( *(citer2+size-1) == end[-1] );
 
-    test_iterator_compare<T, iterator_type>(size, begin, end, citer1, citer2, 0, 0);
+    test_iterator_compare<T>(size, begin, end, citer1, citer2, 0, 0);
 }
 
-template<class T, typename iterator_type>
+template<class T, typename iterator_type1, typename iterator_type2>
 static void test_iterator_arithmetic(const typename T::size_type size,
-                                     iterator_type& begin, iterator_type& end)
+                                     iterator_type1& begin, iterator_type2& end)
 {
     printf("**** test_iterator_arithmetic:\n");
-    print_iterator_info<iterator_type>("iterator_type");
+    print_iterator_info<iterator_type1>("iterator_type1");
+    print_iterator_info<iterator_type2>("iterator_type2");
 
     // citer_type operations
     // op++(), op--(), op++(int), op--(int),
     // op+=(difference_type), op+(iter a, difference_type) ..
     {
-        iterator_type citer1 = begin;
-        iterator_type citer2 = begin;
-        test_iterator_compare<T, iterator_type>(size, begin, end, citer1, citer2, 0, 0);
+        iterator_type1 citer1 = begin;
+        iterator_type1 citer2 = begin;
+        test_iterator_compare<T>(size, begin, end, citer1, citer2, 0, 0);
 
         // iter op++(int)
         citer2++;
-        test_iterator_compare<T, iterator_type>(size, begin, end, citer1, citer2, 0, 1);
+        test_iterator_compare<T>(size, begin, end, citer1, citer2, 0, 1);
 
         // iter op++(int)
         citer1++;
-        test_iterator_compare<T, iterator_type>(size, begin, end, citer1, citer2, 1, 1);
+        test_iterator_compare<T>(size, begin, end, citer1, citer2, 1, 1);
 
         // iter op--(int)
         citer2--;
-        test_iterator_compare<T, iterator_type>(size, begin, end, citer1, citer2, 1, 0);
+        test_iterator_compare<T>(size, begin, end, citer1, citer2, 1, 0);
 
         // iter op--(int)
         citer1--;
-        test_iterator_compare<T, iterator_type>(size, begin, end, citer1, citer2, 0, 0);
+        test_iterator_compare<T>(size, begin, end, citer1, citer2, 0, 0);
         REQUIRE( *citer2 == begin[0] );
 
         // iter op++(int)
         citer2++;
-        test_iterator_compare<T, iterator_type>(size, begin, end, citer1, citer2, 0, 1);
+        test_iterator_compare<T>(size, begin, end, citer1, citer2, 0, 1);
         REQUIRE(   *citer2 == *(begin+1)    );  // iter op*(), op+(iter, difference_type) and value_type ==
         REQUIRE(   *citer2 == begin[1]      );  // iter op*(), op[](difference_type) and value_type ==
 
         // iter op++(int)
         citer2++;
-        test_iterator_compare<T, iterator_type>(size, begin, end, citer1, citer2, 0, 2);
+        test_iterator_compare<T>(size, begin, end, citer1, citer2, 0, 2);
         REQUIRE(   *citer2 == *(begin+2)    );  // iter op*(), op+(iter, difference_type) and value_type ==
         REQUIRE(   *citer2 == begin[2]      );  // iter op*(), op[](difference_type) and value_type ==
 
         // iter op++(int)
         citer2++;
-        test_iterator_compare<T, iterator_type>(size, begin, end, citer1, citer2, 0, 3);
+        test_iterator_compare<T>(size, begin, end, citer1, citer2, 0, 3);
         REQUIRE(   *citer2 == *(begin+3)    );  // iter op*(), op+(iter, difference_type) and value_type ==
         REQUIRE(   *citer2 == begin[3]      );  // iter op*(), op[](difference_type) and value_type ==
 
@@ -337,28 +346,28 @@ static void test_iterator_arithmetic(const typename T::size_type size,
         --citer2;
         --citer2;
         --citer2;
-        test_iterator_compare<T, iterator_type>(size, begin, end, citer1, citer2, 0, 0);
+        test_iterator_compare<T>(size, begin, end, citer1, citer2, 0, 0);
         REQUIRE(   *citer2 == *(begin+0)    );  // iter op*(), op+(iter, difference_type) and value_type ==
         REQUIRE(   *citer2 == begin[0]      );    // iter op*(), op[](difference_type) and value_type ==
 
         // iter +=(diff)
         citer2 += 3;
-        test_iterator_compare<T, iterator_type>(size, begin, end, citer1, citer2, 0, 3);
+        test_iterator_compare<T>(size, begin, end, citer1, citer2, 0, 3);
 
         // iter +=(diff)
-        citer2 += 7;
-        test_iterator_compare<T, iterator_type>(size, begin, end, citer1, citer2, 0, 10);
+        citer2 += 6;
+        test_iterator_compare<T>(size, begin, end, citer1, citer2, 0, 9);
 
         // iter -=(diff)
-        citer2 -= 10;
-        test_iterator_compare<T, iterator_type>(size, begin, end, citer1, citer2, 0, 0);
+        citer2 -= 9;
+        test_iterator_compare<T>(size, begin, end, citer1, citer2, 0, 0);
     }
     {
         // Adding redundant switched operands comparison
         // to test all relational combination of the overloading. (Leave it as is)
 
-        iterator_type citer1 = begin;
-        iterator_type citer2 = begin;
+        iterator_type1 citer1 = begin;
+        iterator_type1 citer2 = begin;
 
         REQUIRE(    citer1 == citer1        );  // iter op==()
         REQUIRE(    citer2 == citer1        );  // iter op==()
@@ -382,7 +391,6 @@ static bool test_citer_type_ops(const std::string& type_id,
 {
     typedef typename T::const_iterator  citer_type;
     typedef typename T::difference_type diff_type;
-    typedef typename T::const_iterator  citer_type;
 
     T data;
     fill_list(data, 10);
@@ -390,7 +398,7 @@ static bool test_citer_type_ops(const std::string& type_id,
     printf("**** test_citer_type_ops(CoW): %s\n", type_id.c_str());
     {
         citer_type begin = data.cbegin(); // immutable new_store non-const iterator, gets held until destruction
-        citer_type end = begin.end();    // no new store iterator, on same store as begin, obtained from begin
+        citer_type end = begin.cend();    // no new store iterator, on same store as begin, obtained from begin
         diff_type data_size = static_cast<diff_type>(data.size());
         diff_type begin_size = static_cast<diff_type>(begin.size());
         diff_type end_size = static_cast<diff_type>(end.size());
@@ -406,7 +414,7 @@ static bool test_citer_type_ops(const std::string& type_id,
 
     {
         citer_type begin = data.cbegin(); // no new store citer_type
-        citer_type end = begin.end();     // no new store citer_type, on same store as begin, obtained from begin
+        citer_type end = begin.cend();     // no new store citer_type, on same store as begin, obtained from begin
         test_iterator_arithmetic<T, citer_type>(data.size(), begin, end);
     }
     {
@@ -444,7 +452,7 @@ static bool test_citer_type_ops(const std::string& type_id,
     {
         citer_type begin = data.cbegin(); // no new store citer_type
         citer_type end = data.cend();     // no new store citer_type, on same store as begin
-        test_iterator_arithmetic<T, citer_type>(data.size(), begin, end);
+        test_iterator_arithmetic<T, citer_type, citer_type>(data.size(), begin, end);
     }
     {
         T data2 = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
@@ -462,6 +470,7 @@ static bool test_mutable_iterator_ops(const std::string& type_id,
     typedef typename T::iterator        iter_type;
     typedef typename T::difference_type diff_type;
     typedef typename T::value_type      value_type;
+    typedef typename T::storage_t       storage_t;
 
     printf("**** test_mutable_iterator_ops(CoW): %s\n", type_id.c_str());
     {
@@ -487,9 +496,17 @@ static bool test_mutable_iterator_ops(const std::string& type_id,
     {
         T data;
         fill_list(data, 10);
-        iter_type begin = data.begin();      // mutable new_store non-const iterator, gets held until destruction
+
+        // all 4 combinations of iter, citer:
+        iter_type begin = data.begin(); // mutable new_store non-const iterator, gets held until destruction
         iter_type end = begin.end();
-        test_iterator_arithmetic<T, iter_type>(data.size(), begin, end);
+        citer_type cbegin = begin.immutable();
+        citer_type cend = cbegin.cend();
+
+        test_iterator_arithmetic<T>(data.size(), begin, end);
+        test_iterator_arithmetic<T>(data.size(), cbegin, cend);
+        test_iterator_arithmetic<T>(data.size(), begin, cend);
+        test_iterator_arithmetic<T>(data.size(), cbegin, end);
     }
 
     // iterator-op: darray/vector-op
@@ -505,13 +522,24 @@ static bool test_mutable_iterator_ops(const std::string& type_id,
     // 1 void push_back(value_type&& x)
     // 1 reference emplace_back(Args&&... args)
     // 0 [void push_back( InputIt first, InputIt last )]
-    // 1 rewind()
+    // 1 to_begin()
     {
         T data;
         fill_list(data, 10);
-        iter_type iter             = data.begin(); // mutable new_store non-const iterator, gets held until destruction
-        size_type size_pre = iter.size();
-        value_type elem  = iter.end()[-2];
+        citer_type          citer0      = data.cbegin(); // immutable orig store iterator
+        {
+            T data_exp = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+            REQUIRE(data == data_exp);
+        }
+        REQUIRE( *data.snapshot() == citer0.storage() );
+
+        iter_type           iter        = data.begin(); // mutable new_store non-const iterator, gets held until destruction
+        size_type           size_pre    = iter.size();
+        value_type          elem        = iter.end()[-2];
+
+        REQUIRE( iter != citer0 );
+        REQUIRE( iter.storage() == citer0.storage() );
+        REQUIRE( iter.storage() == *data.snapshot() );
 
         int i;
         (void)i;
@@ -522,9 +550,11 @@ static bool test_mutable_iterator_ops(const std::string& type_id,
         REQUIRE( iter == iter.begin()+size_pre-1 );
         REQUIRE( iter[-1] == elem );
         {
-            T data_exp = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-            REQUIRE(data == data_exp);
+            storage_t data_exp = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            REQUIRE(iter.storage() == data_exp);
         }
+        REQUIRE(iter.storage() != citer0.storage());
+        REQUIRE(iter.storage() != *data.snapshot());
 
         // insert( citer_type pos, InputIt first, InputIt last )
         REQUIRE( iter == iter.end() );
@@ -538,8 +568,8 @@ static bool test_mutable_iterator_ops(const std::string& type_id,
         REQUIRE( iter.size() == size_pre+10 );
         REQUIRE( iter == iter.end()-10 );
         {
-            T data_exp = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
-            REQUIRE(data == data_exp);
+            storage_t data_exp = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+            REQUIRE(iter.storage() == data_exp);
         }
 
         // erase (count): erase (iterator first, citer_type last)
@@ -551,13 +581,13 @@ static bool test_mutable_iterator_ops(const std::string& type_id,
         REQUIRE( iter.size() == size_pre-10 );
         REQUIRE( iter == iter.end() );
         {
-            T data_exp = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-            REQUIRE(data == data_exp);
+            storage_t data_exp = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            REQUIRE(iter.storage() == data_exp);
         }
 
         // erase ()
         size_pre = iter.size();
-        iter.rewind();
+        iter.to_begin();
         REQUIRE( iter == iter.begin() );
         elem  = iter.begin()[1];
         iter.erase();
@@ -565,8 +595,8 @@ static bool test_mutable_iterator_ops(const std::string& type_id,
         REQUIRE( iter == iter.begin() );
         REQUIRE( *iter == elem );
         {
-            T data_exp = { 2, 3, 4, 5, 6, 7, 8, 9 };
-            REQUIRE(data == data_exp);
+            storage_t data_exp = { 2, 3, 4, 5, 6, 7, 8, 9 };
+            REQUIRE(iter.storage() == data_exp);
         }
 
         // void push_back(value_type& x)
@@ -587,8 +617,8 @@ static bool test_mutable_iterator_ops(const std::string& type_id,
             REQUIRE( iter[-1] == data2_iter[2] );
         }
         {
-            T data_exp = { 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3 };
-            REQUIRE(data == data_exp);
+            storage_t data_exp = { 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3 };
+            REQUIRE(iter.storage() == data_exp);
         }
 
         // erase (count): erase (iterator first, citer_type last)
@@ -599,8 +629,8 @@ static bool test_mutable_iterator_ops(const std::string& type_id,
         REQUIRE( iter.size() == size_pre-3 );
         REQUIRE( iter == iter.end() );
         {
-            T data_exp = { 2, 3, 4, 5, 6, 7, 8, 9 };
-            REQUIRE(data == data_exp);
+            storage_t data_exp = { 2, 3, 4, 5, 6, 7, 8, 9 };
+            REQUIRE(iter.storage() == data_exp);
         }
 
         // void push_back(value_type&& x)
@@ -624,8 +654,8 @@ static bool test_mutable_iterator_ops(const std::string& type_id,
         REQUIRE( iter[-2] == iter.begin()[1] );
         REQUIRE( iter[-1] == iter.begin()[2] );
         {
-            T data_exp = { 2, 3, 4, 5, 6, 7, 8, 9, 2, 3, 4 };
-            REQUIRE(data == data_exp);
+            storage_t data_exp = { 2, 3, 4, 5, 6, 7, 8, 9, 2, 3, 4 };
+            REQUIRE(iter.storage() == data_exp);
         }
 
         // erase last three
@@ -636,12 +666,12 @@ static bool test_mutable_iterator_ops(const std::string& type_id,
         iter.erase();
         REQUIRE( iter == iter.end() );
         {
-            T data_exp = { 2, 3, 4, 5, 6, 7, 8, 9 };
-            REQUIRE(data == data_exp);
+            storage_t data_exp = { 2, 3, 4, 5, 6, 7, 8, 9 };
+            REQUIRE(iter.storage() == data_exp);
         }
 
         // iterator insert(citer_type pos, const value_type& x)
-        iter.rewind();
+        iter.to_begin();
         iter += 5;
         REQUIRE( iter == iter.begin()+5 );
         size_pre = iter.size();
@@ -654,14 +684,14 @@ static bool test_mutable_iterator_ops(const std::string& type_id,
             iter.insert(data2_iter[2]);
             REQUIRE( iter.size() == size_pre+3 );
             REQUIRE( iter == iter.begin()+5 );
-            iter.rewind();
+            iter.to_begin();
             REQUIRE( iter[5] == data2_iter[2] );
             REQUIRE( iter[6] == data2_iter[1] );
             REQUIRE( iter[7] == data2_iter[0] );
         }
         {
-            T data_exp = { 2, 3, 4, 5, 6, 3, 2, 1, 7, 8, 9 };
-            REQUIRE(data == data_exp);
+            storage_t data_exp = { 2, 3, 4, 5, 6, 3, 2, 1, 7, 8, 9 };
+            REQUIRE(iter.storage() == data_exp);
         }
 
         // insert( citer_type pos, InputIt first, InputIt last )
@@ -676,8 +706,8 @@ static bool test_mutable_iterator_ops(const std::string& type_id,
         REQUIRE( iter.size() == size_pre+3 );
         REQUIRE( iter == iter.begin()+5 );
         {
-            T data_exp = { 2, 3, 4, 5, 6, 1, 2, 3, 3, 2, 1, 7, 8, 9 };
-            REQUIRE(data == data_exp);
+            storage_t data_exp = { 2, 3, 4, 5, 6, 1, 2, 3, 3, 2, 1, 7, 8, 9 };
+            REQUIRE(iter.storage() == data_exp);
         }
 
         // erase (count): erase (iterator first, citer_type last)
@@ -687,8 +717,8 @@ static bool test_mutable_iterator_ops(const std::string& type_id,
         REQUIRE( iter.size() == size_pre-6 );
         REQUIRE( iter == iter.begin()+5 );
         {
-            T data_exp = { 2, 3, 4, 5, 6, 7, 8, 9 };
-            REQUIRE(data == data_exp);
+            storage_t data_exp = { 2, 3, 4, 5, 6, 7, 8, 9 };
+            REQUIRE(iter.storage() == data_exp);
         }
 
         // 1 emplace(Args&&... args): emplace(citer_type pos, Args&&... args)
@@ -702,8 +732,8 @@ static bool test_mutable_iterator_ops(const std::string& type_id,
         REQUIRE( iter[1] == 3 );
         REQUIRE( iter[2] == 2 );
         {
-            T data_exp = { 2, 3, 4, 5, 6, 4, 3, 2, 7, 8, 9 };
-            REQUIRE(data == data_exp);
+            storage_t data_exp = { 2, 3, 4, 5, 6, 4, 3, 2, 7, 8, 9 };
+            REQUIRE(iter.storage() == data_exp);
         }
 
         // 1 reference emplace_back(Args&&... args)
@@ -717,8 +747,8 @@ static bool test_mutable_iterator_ops(const std::string& type_id,
         REQUIRE( iter[-2] == 3 );
         REQUIRE( iter[-3] == 2 );
         {
-            T data_exp = { 2, 3, 4, 5, 6, 4, 3, 2, 7, 8, 9, 2, 3, 4 };
-            REQUIRE(data == data_exp);
+            storage_t data_exp = { 2, 3, 4, 5, 6, 4, 3, 2, 7, 8, 9, 2, 3, 4 };
+            REQUIRE(iter.storage() == data_exp);
         }
 
         // multiple erase()
@@ -733,11 +763,24 @@ static bool test_mutable_iterator_ops(const std::string& type_id,
                 count++;
             }
             REQUIRE( iter.size() == size_pre - 10 );
-            REQUIRE( iter == iter.end() );
         }
         {
+            storage_t data_exp = { 2, 3, 4, 5 };
+            REQUIRE(iter.storage() == data_exp);
+        }
+        iter.to_begin(); // set to its begin
+
+        // write back ..
+        REQUIRE( iter != data.cbegin() );   // still not the same
+        REQUIRE( iter.storage() != *data.snapshot() );  // neither content
+        {
             T data_exp = { 2, 3, 4, 5 };
-            REQUIRE(data == data_exp);
+            REQUIRE(data != data_exp);
+        }
+        iter.write_back(); // invalidates iter and ...
+        {
+            T data_exp = { 2, 3, 4, 5 };
+            REQUIRE(data == data_exp);      // now got the newt content
         }
     }
 
@@ -749,6 +792,7 @@ static bool test_mutable_iterator_ops(const std::string& type_id,
         std::enable_if_t< !is_cow_type<T>::value, bool> = true )
 {
     typedef typename T::iterator        iter_type;
+    typedef typename T::const_iterator  citer_type;
     typedef typename T::difference_type diff_type;
 
     printf("**** test_mutable_iterator_ops(___): %s\n", type_id.c_str());
@@ -769,9 +813,17 @@ static bool test_mutable_iterator_ops(const std::string& type_id,
     {
         T data;
         fill_list(data, 10);
+
+        // all 4 combinations of iter, citer:
         iter_type begin = data.begin();
         iter_type end = data.end();
-        test_iterator_arithmetic<T, iter_type>(data.size(), begin, end);
+        citer_type cend = data.cend();
+        citer_type cbegin = data.cbegin();
+
+        test_iterator_arithmetic<T>(data.size(), begin, end);
+        test_iterator_arithmetic<T>(data.size(), cbegin, cend);
+        test_iterator_arithmetic<T>(data.size(), begin, cend);
+        test_iterator_arithmetic<T>(data.size(), cbegin, end);
     }
 
     // iterator-op: darray/vector-op
@@ -787,13 +839,17 @@ static bool test_mutable_iterator_ops(const std::string& type_id,
     // 1 void push_back(value_type&& x)
     // 1 reference emplace_back(Args&&... args)
     // 0 [void push_back( InputIt first, InputIt last )]
-    // 1 rewind()
     {
         T data;
         fill_list(data, 10);
-        iter_type iter             = data.end();
-        typename T::size_type size_pre        = data.size();
-        typename T::value_type          elem  = iter[-2];
+        {
+            T data_exp = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+            REQUIRE(data == data_exp);
+        }
+
+        iter_type               iter     = data.end();
+        typename T::size_type   size_pre = data.size();
+        typename T::value_type  elem     = iter[-2];
 
         // pop_back()
         int i;
@@ -1077,8 +1133,13 @@ static bool test_01_cow_iterator_properties(const std::string& type_id) {
     // test relationship and distance with mixed iterator and citer_type
     // in both direction using the free overloaded operator of cow_ro_* and cow_rw_*
     {
-        iter_type citer1 = data.begin();
-        citer_type citer2(citer1);
+        iter_type  citer1 = data.begin();
+        citer_type citer2 = citer1.immutable();
+        citer_type citer3 = citer1.immutable().to_end();
+
+        REQUIRE(    citer1.is_begin() );
+        REQUIRE(    citer2.is_begin() );
+        REQUIRE(    citer3.is_end() );
 
         REQUIRE( (  citer1 == citer2  ) == true);  // iter op==()
         REQUIRE( (  citer2 == citer1 ) == true);  // iter op==()
@@ -1104,69 +1165,25 @@ static bool test_01_cow_iterator_properties(const std::string& type_id) {
         REQUIRE( (  citer1 -  citer2 ) ==  1);  // iter op==()
         REQUIRE( (  citer2 -  citer1 ) == -1);  // iter op==()
 
+        REQUIRE( (  citer1.end() == citer3  ) == true);  // iter op==()
+        REQUIRE( (  citer1.to_end() == citer3  ) == true);  // iter op==()
+        REQUIRE(    citer1.is_end() );
+        REQUIRE(    citer3.is_end() );
+
     }
 
     // test mutable non-const 'new store' behavior
-    // inclusive 'iterator -> citer_type' conversion if 'iterator_is_const == true'
     citer_type c_begin0 = data.cbegin();  // orig store
     {
-        // iterator_type is citer_type.
-        // The cow_rw_iterator is being fetched via data.begin(), which creates a new store.
-        // The cow_rw_iterator is converted immediately to cow_ro_iterator and the cow_rw_iterator gets destructed.
-        // This destruction moves the cow_rw_iterator's new store into the cow container right away.
-
-        printf("testing mutable non-const behavior incl 'iterator -> citer_type' conversion.\n");
-
-        citer_type c_begin1;
-        {
-            citer_type m_begin1( data.begin() ); // mutable iterator first, converts to citer_type and
-                                                     // mutable iterator destructs (new_store -> cow)
-            c_begin1 = data.cbegin();
-            REQUIRE(*c_begin1 == *m_begin1);
-            REQUIRE( c_begin1 ==  m_begin1);
-            REQUIRE( ( c_begin1 - m_begin1 ) == 0);
-            printf("       1st store: %s == %s, dist %u\n",
-                    uint64DecString(*c_begin1, ',', 2).c_str(), uint64DecString(*m_begin1, ',', 2).c_str(), (unsigned int)(c_begin1 - m_begin1));
-
-            REQUIRE(*c_begin1 == *c_begin0);
-            REQUIRE( c_begin1 !=  c_begin0);
-            REQUIRE( ( c_begin1 - c_begin0 ) != 0);
-            printf("1st -> 0st store: %s == %s, dist %u != 0\n",
-                    uint64DecString(*c_begin1, ',', 2).c_str(), uint64DecString(*c_begin0, ',', 2).c_str(), (unsigned int)(c_begin1 - c_begin0) );
-
-            citer_type c_begin2;
-            {
-                citer_type m_begin2 ( data.begin() );  // mutable iterator first, converts to citer_type and
-                                                           // mutable iterator destructs (new_store -> cow)
-                c_begin2 = data.cbegin();
-                REQUIRE(*c_begin2 == *m_begin2);
-                REQUIRE( c_begin2 ==  m_begin2);
-                REQUIRE( ( c_begin2 - m_begin2 ) == 0);
-                printf("       2nd store: %s == %s, dist %u\n",
-                        uint64DecString(*c_begin2, ',', 2).c_str(), uint64DecString(*m_begin2, ',', 2).c_str(), (unsigned int)(c_begin2 - m_begin2) );
-
-                REQUIRE(*c_begin2 == *c_begin1);
-                REQUIRE( c_begin2 !=  c_begin1);
-                REQUIRE( ( c_begin2 - c_begin1 ) != 0);
-                printf("2nd -> 1st store: %s == %s, dist %u != 0\n",
-                        uint64DecString(*c_begin1, ',', 2).c_str(), uint64DecString(*c_begin0, ',', 2).c_str(), (unsigned int)(c_begin1 - c_begin0) );
-
-            }
-        }
-    }
-
-    {
         // iterator_type is mutable iterator.
-        // The cow_rw_iterator is being fetched via data.begin(), which creates a new store.
-        // The cow_rw_iterator is not converted into cow_ro_iterator.
-        // The cow_rw_iterator's new store is moved into the cow container
-        // when the cow_rw_iterator gets destructed later on (out of scope).
+        // The cow_rw_iterator is being fetched via data.begin(), which creates a new store and stays.
+        // The cow_rw_iterator's new store is moved into the cow container via write_back() later.
 
         printf("testing mutable non-const behavior.\n");
         citer_type c_begin1;
         {
-            iter_type m_begin1 = data.begin();  // mutable new_store non-const iterator, gets held until destruction
-            c_begin1 = m_begin1;                     // get immutable citer_type from newly created store
+            iter_type m_begin1 = data.begin();      // mutable new_store non-const iterator, gets held until write_back() or destruction
+            c_begin1 = m_begin1.immutable();        // get immutable citer_type from newly created store
 
             REQUIRE(*c_begin1 == *m_begin1);
             REQUIRE( c_begin1 ==  m_begin1);
@@ -1175,8 +1192,8 @@ static bool test_01_cow_iterator_properties(const std::string& type_id) {
                     uint64DecString(*c_begin1, ',', 2).c_str(), uint64DecString(*m_begin1, ',', 2).c_str(), (unsigned int)(c_begin1 - m_begin1));
             citer_type c_begin2;
             {
-                iter_type m_begin2 = data.begin();  // mutable new_store non-const iterator, gets held until destruction
-                c_begin2 = m_begin2;                     // get immutable citer_type from newly created store
+                iter_type m_begin2 = data.begin();  // mutable new_store non-const iterator, gets held until write_back() or destruction
+                c_begin2 = m_begin2.immutable();    // get immutable citer_type from newly created store
 
                 REQUIRE(*c_begin2 == *m_begin2);
                 REQUIRE( c_begin2 ==  m_begin2);
@@ -1189,6 +1206,8 @@ static bool test_01_cow_iterator_properties(const std::string& type_id) {
                 REQUIRE( ( c_begin2 - c_begin1 ) != 0);
                 printf("2nd -> 1st store: %s == %s, dist %u\n",
                         uint64DecString(*c_begin2, ',', 2).c_str(), uint64DecString(*c_begin1, ',', 2).c_str(), (unsigned int)(c_begin2 - c_begin1));
+
+                m_begin2.write_back();              // write back storage of m_begin2 to parent CoW and invalidate m_begin2
             }
             // 2nd store -> cow_xxx
             citer_type c_begin2b = data.cbegin();
@@ -1199,6 +1218,8 @@ static bool test_01_cow_iterator_properties(const std::string& type_id) {
                     uint64DecString(*c_begin2, ',', 2).c_str(), uint64DecString(*c_begin2b, ',', 2).c_str(), (unsigned int)(c_begin2 - c_begin2b));
             printf("2nd -> 1st          : %s == %s, dist %u\n",
                     uint64DecString(*c_begin1, ',', 2).c_str(), uint64DecString(*c_begin2, ',', 2).c_str(), (unsigned int)(c_begin1 - c_begin2));
+
+            m_begin1.write_back();                  // write back storage of m_begin1 to parent CoW and invalidate m_begin2
         }
         // 1st store -> cow_xxx
         citer_type c_begin1b = data.cbegin();

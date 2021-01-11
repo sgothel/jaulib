@@ -34,6 +34,7 @@
 #include <iostream>
 
 #include <jau/cpp_lang_macros.hpp>
+#include <jau/debug.hpp>
 #include <jau/basic_types.hpp>
 
 namespace jau {
@@ -49,8 +50,9 @@ namespace jau {
      ****************************************************************************************/
 
     /**
-     * Implementation of a Copy-On-Write (CoW) read-write iterator for mutable value_type.<br>
-     * Instance holds a copy of the CoW's value_type storage until destruction.
+     * Implementation of a Copy-On-Write (CoW) read-write iterator over mutable value_type storage.<br>
+     * Instance holds a copy of the parents' CoW storage and locks its write mutex until
+     * write_back() or destruction.
      * <p>
      * Implementation complies with Type Traits iterator_category 'random_access_iterator_tag'
      * </p>
@@ -59,8 +61,9 @@ namespace jau {
      * and manages the CoW related resource lifecycle.
      * </p>
      * <p>
-     * At destruction, the mutated local storage will replace the
-     * storage in the CoW container and the lock will be released.
+     * After completing all mutable operations but before this iterator's destruction,
+     * the user might want to write back this iterators' storage to its parents' CoW
+     * using write_back()
      * </p>
      * <p>
      * Due to the costly nature of mutable CoW resource management,
@@ -72,16 +75,14 @@ namespace jau {
      * only one begin iterator should be retrieved from CoW and all further operations shall use
      * jau::cow_rw_iterator::size(), jau::cow_rw_iterator::begin() and jau::cow_rw_iterator::end().
      * </p>
-     * @see jau::cow_rw_iterator::size()
-     * @see jau::cow_rw_iterator::begin()
-     * @see jau::cow_rw_iterator::end()
+     * @see jau::cow_rw_iterator::write_back()
      * @see jau::for_each_fidelity
      * @see jau::cow_darray
      */
     template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
     class cow_rw_iterator {
         friend cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>;
-        template<typename, typename, typename, bool, bool> friend class cow_darray;
+        template<typename, typename, typename, bool, bool, bool> friend class cow_darray;
         template<typename, typename> friend class cow_vector;
 
         public:
@@ -95,20 +96,18 @@ namespace jau {
         private:
             typedef std::iterator_traits<iterator_type>         sub_traits_t;
 
-            cow_container_t&                      cow_parent_;
-            std::lock_guard<std::recursive_mutex> lock_;
-            storage_ref_t                         store_ref_;
-            iterator_type                         iterator_;
-            iterator_type                         iterator_begin;
+            cow_container_t&                        cow_parent_;
+            std::unique_lock<std::recursive_mutex>  lock_;           // can move and swap
+            storage_ref_t                           store_ref_;
+            iterator_type                           iterator_;
 
             constexpr explicit cow_rw_iterator(cow_container_t& cow_parent, const storage_ref_t& store, iterator_type iter) noexcept
-            : cow_parent_(cow_parent), lock_(cow_parent.get_write_mutex()), store_ref_(store),
-              iterator_(iter), iterator_begin(iter) {}
+            : cow_parent_(cow_parent), lock_(cow_parent_.get_write_mutex()), store_ref_(store),
+              iterator_(iter) { }
 
-            constexpr cow_rw_iterator(cow_container_t& cow_parent, iterator_type (*get_begin)(storage_ref_t&))
-            : cow_parent_(cow_parent), lock_(cow_parent.get_write_mutex()),
-              store_ref_(cow_parent.copy_store()), iterator_(get_begin(store_ref_)), iterator_begin(iterator_) {}
-
+            constexpr explicit cow_rw_iterator(cow_container_t& cow_parent)
+            : cow_parent_(cow_parent), lock_(cow_parent_.get_write_mutex()),
+              store_ref_(cow_parent.copy_store()), iterator_(store_ref_->begin()) { }
 
         public:
             typedef typename sub_traits_t::iterator_category    iterator_category;  // random_access_iterator_tag
@@ -128,61 +127,153 @@ namespace jau {
 
         public:
 
-#if __cplusplus > 201703L
-            constexpr ~cow_rw_iterator() noexcept
-#else
-            ~cow_rw_iterator() noexcept
-#endif
-            {
-                cow_parent_.set_store(std::move(store_ref_));
+            /**
+             * Replace the parent's current store with this iterators' instance,
+             * unlock the CoW parents' write lock and discard all storage references.
+             * <p>
+             * After calling write_back(), this iterator is invalidated and no more operational.
+             * </p>
+             * <p>
+             * It is the user's responsibility to issue call this method
+             * to update the CoW parents' storage.
+             * </p>
+             * <p>
+             * It is not feasible nor effective to automatically earmark a dirty state
+             * on mutable operations.<br>
+             * This is due to the ambiguous semantics of like <code>operator*()</code>.<br>
+             * Also usage of multiple iterators to one CoW instance during a mutable operation
+             * complicates such an automated task, especially as we wish to only realize one
+             * storage replacement at the end.<br>
+             * Lastly, the user probably wants to issue the CoW storage sync
+             * in a programmatic deterministic fashion at the end.
+             * </p>
+             * @see jau::cow_darray::set_store()
+             */
+            void write_back() noexcept {
+                if( nullptr != store_ref_ ) {
+                    cow_parent_.set_store(std::move(store_ref_));
+
+                    lock_ = std::unique_lock<std::recursive_mutex>(); // force-dtor-unlock-null
+                    store_ref_ = nullptr;
+                    iterator_ = iterator_type();
+                }
             }
 
-            // C++ named requirements: LegacyIterator: CopyConstructible
+            /**
+             * C++ named requirements: LegacyIterator: CopyConstructible
+             */
             constexpr cow_rw_iterator(const cow_rw_iterator& o) noexcept
             : cow_parent_(o.cow_parent_), lock_(cow_parent_.get_write_mutex()),
-              store_ref_(o.store_ref_), iterator_(o.iterator_), iterator_begin(o.iterator_begin) {}
+              store_ref_(o.store_ref_), iterator_(o.iterator_) { }
 
-            // C++ named requirements: LegacyIterator: CopyAssignable
+            /**
+             * Assigns content of other mutable iterator to this one,
+             * if they are not identical.
+             * <p>
+             * C++ named requirements: LegacyIterator: CopyAssignable
+             * </p>
+             * @param o the new identity value to be copied into this iterator
+             * @return reference to this
+             */
             constexpr cow_rw_iterator& operator=(const cow_rw_iterator& o) noexcept {
-                cow_parent_ = o.cow_parent_;
-                lock_ = cow_parent_.get_write_mutex();
-                store_ref_ = o.store_ref_;
-                iterator_ = o.iterator_;
-                iterator_begin = o.iterator_begin;
+                if( this != &o ) {
+                    cow_parent_ = o.cow_parent_;
+                    lock_ = std::unique_lock<std::recursive_mutex>( cow_parent_.get_write_mutex() );
+                    store_ref_ = o.store_ref_;
+                    iterator_ = o.iterator_;
+                }
                 return *this;
             }
 
-            // C++ named requirements: LegacyIterator: MoveConstructable
+
+            /**
+             * C++ named requirements: LegacyIterator: MoveConstructable
+             */
             constexpr cow_rw_iterator(cow_rw_iterator && o) noexcept
-            : cow_parent_( o.cow_parent_ ), lock_(cow_parent_.get_write_mutex()),
-              store_ref_(std::move(o.store_ref_)), iterator_(std::move(o.iterator_)), iterator_begin(std::move(o.iterator_begin)) {
-                // o.lock_ = nullptr; // ???
-                o.store_ref_ = nullptr;
-                // o.iterator_ = nullptr;
-                // o.iterator_begin = nullptr;
+            : cow_parent_( o.cow_parent_ ), lock_( std::move( o.lock_ ) ),
+              store_ref_( std::move( o.store_ref_ ) ),
+              iterator_( std::move(o.iterator_ ) ) {
+                // Moved source has been disowned semantically and source's dtor will release resources!
             }
 
-            // C++ named requirements: LegacyIterator: MoveAssignable
+            /**
+             * Assigns identity of given mutable iterator,
+             * if they are not identical.
+             * <p>
+             * C++ named requirements: LegacyIterator: MoveAssignable
+             * </p>
+             * @param o the new identity to be taken
+             * @return reference to this
+             */
             constexpr cow_rw_iterator& operator=(cow_rw_iterator&& o) noexcept {
-                cow_parent_ = o.cow_parent_;
-                lock_ = cow_parent_.get_write_mutex();
-                store_ref_ = std::move(o.store_ref_);
-                iterator_ = std::move(o.iterator_);
-                iterator_begin = std::move(o.iterator_begin);
-                o.store_ref_ = nullptr;
-                // o.iterator_ = nullptr;
-                // o.iterator_begin = nullptr;
+                if( this != &o ) {
+                    cow_parent_ = o.cow_parent_;
+                    lock_ = std::move(o.lock_);
+                    store_ref_ = std::move(o.store_ref_);
+                    iterator_ = std::move(o.iterator_);
+                    // Moved source has been disowned semantically and source's dtor will release resources!
+                }
                 return *this;
             }
 
-            // C++ named requirements: LegacyIterator: Swappable
+            /**
+             * C++ named requirements: LegacyIterator: Swappable
+             */
             void swap(cow_rw_iterator& o) noexcept {
                 std::swap( cow_parent_, o.cow_parent_);
-                // std::swap( lock_, o.lock_); // lock stays in each
+                std::swap( lock_, o.lock_);
                 std::swap( store_ref_, o.store_ref_);
                 std::swap( iterator_, o.iterator_);
-                std::swap( iterator_begin, o.iterator_begin);
             }
+
+            /**
+             * Returns a new const_iterator pointing to the current position.<br>
+             * This is the only explicit conversion operation of mutable -> immutable iterator, see below.
+             * <p>
+             * Be aware that the resulting cow_ro_iterator points to transient storage
+             * of this immutable iterator. In case write_back() won't be called
+             * and this iterator destructs, the returned immutable iterator is invalidated.
+             * </p>
+             * @see size()
+             * @see end()
+             */
+            constexpr cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container> immutable() const noexcept
+            { return cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>( store_ref_, iterator_ ); }
+
+            /**
+             * Returns a new iterator pointing to the first element, aka begin.
+             * <p>
+             * This is an addition API entry, allowing data-race free operations on
+             * this iterator's data snapshot from a potentially mutated CoW.
+             * </p>
+             * @see size()
+             * @see end()
+             */
+            constexpr cow_rw_iterator begin() const noexcept
+            { return cow_rw_iterator( cow_parent_, store_ref_, store_ref_->begin()); }
+
+            /**
+             * Returns a new iterator pointing to the <i>element following the last element</i>, aka end.<br>
+             * <p>
+             * This is an addition API entry, allowing data-race free operations on
+             * this iterator's data snapshot from a potentially mutated CoW.
+             * </p>
+             * @see size()
+             * @see begin()
+             */
+            constexpr cow_rw_iterator end() const noexcept
+            { return cow_rw_iterator( cow_parent_, store_ref_, store_ref_->end() ); }
+
+            /**
+             * Returns true if storage is empty().
+             */
+            constexpr bool empty() const noexcept { return store_ref_->empty(); }
+
+            /**
+             * Returns true if storage capacity has been reached and the next push_back()
+             * will grow the storage and invalidates all iterators and references.
+             */
+            constexpr bool capacity_reached() const noexcept { return store_ref_->capacity_reached(); }
 
             /**
              * Return the size of the underlying value_type store.
@@ -196,33 +287,38 @@ namespace jau {
             constexpr size_type size() const noexcept { return store_ref_->size(); }
 
             /**
-             * Returns a new iterator pointing to the first element, aka begin.
-             * <p>
-             * This is an addition API entry, allowing data-race free operations on
-             * this iterator's data snapshot from a potentially mutated CoW.
-             * </p>
-             * @see size()
-             * @see end()
+             * Returns this instances' underlying shared storage by reference.
              */
-            constexpr cow_rw_iterator begin() const noexcept
-            { return cow_rw_iterator( cow_parent_, store_ref_, iterator_begin ); }
+            constexpr storage_t& storage() const noexcept {
+                return *store_ref_;
+            }
 
             /**
-             * Returns a new iterator pointing to the <i>element following the last element</i>, aka end.<br>
-             * <p>
-             * This is an addition API entry, allowing data-race free operations on
-             * this iterator's data snapshot from a potentially mutated CoW.
-             * </p>
-             * @see size()
-             * @see begin()
+             * Returns true, if this iterator points to end().
              */
-            constexpr cow_rw_iterator end() const noexcept
-            { return cow_rw_iterator( cow_parent_, store_ref_, iterator_begin + store_ref_->size() ); }
+            constexpr bool is_end() const noexcept { return iterator_ == store_ref_->end(); }
+
+            /**
+             * This iterator is set to the last element, end(). Returns *this;
+             */
+            constexpr cow_rw_iterator& to_end() noexcept
+            { iterator_ = store_ref_->end(); return *this; }
+
+            /**
+             * Returns true, if this iterator points to begin().
+             */
+            constexpr bool is_begin() const noexcept { return iterator_ == store_ref_->begin(); }
+
+            /**
+             * This iterator is set to the first element, begin(). Returns *this;
+             */
+            constexpr cow_rw_iterator& to_begin() noexcept
+            { iterator_ = store_ref_->begin(); return *this; }
 
             /**
              * Returns a copy of the underlying storage iterator.
              */
-            constexpr iterator_type base() const noexcept { return iterator_; };
+            constexpr iterator_type base() const noexcept { return iterator_; }
 
             // Multipass guarantee equality
 
@@ -263,18 +359,32 @@ namespace jau {
 
             // Forward iterator requirements
 
+            /**
+             * Dereferencing iterator to value_type reference
+             * @return immutable reference to value_type
+             */
             constexpr const reference operator*() const noexcept {
                 return *iterator_;
             }
 
+            /**
+             * Pointer to member access.
+             * @return immutable pointer to value_type
+             */
             constexpr const pointer operator->() const noexcept {
                 return &(*iterator_); // just in case iterator_type is a class, trick via dereference
             }
 
-            constexpr reference operator*() noexcept {
-                return *iterator_;
-            }
+            /**
+             * Dereferencing iterator to value_type reference.
+             * @return mutable reference to value_type
+             */
+            constexpr reference operator*() noexcept { return *iterator_; }
 
+            /**
+             * Pointer to member access.
+             * @return mutable pointer to value_type
+             */
             constexpr pointer operator->() noexcept {
                 return &(*iterator_); // just in case iterator_type is a class, trick via dereference
             }
@@ -307,9 +417,12 @@ namespace jau {
             constexpr const reference operator[](difference_type i) const noexcept
             { return iterator_[i]; }
 
-            /** Subscript of 'element_index', returning mutable Value_type reference. */
-            constexpr reference operator[](difference_type i) noexcept
-            { return iterator_[i]; }
+            /**
+             * Subscript of 'element_index', returning mutable Value_type reference.
+             */
+            constexpr reference operator[](difference_type i) noexcept {
+                return iterator_[i];
+            }
 
             /** Addition-assignment of 'element_count'; Well performing, return *this.  */
             constexpr cow_rw_iterator& operator+=(difference_type i) noexcept
@@ -333,27 +446,26 @@ namespace jau {
             constexpr difference_type operator-(const cow_rw_iterator& rhs) const noexcept
             { return iterator_ - rhs.iterator_; }
 
-            /**
-             * This iterator is set to the first element.
-             */
-            constexpr void rewind() noexcept
-            { iterator_ = iterator_begin; }
-
             __constexpr_cxx20_ std::string toString() const noexcept {
-                return "cow_rw_iterator["+jau::to_string(iterator_)+"]";
+                return jau::to_string(iterator_);
             }
 #if 0
             __constexpr_cxx20_ operator std::string() const noexcept {
                 return toString();
             }
 #endif
+            __constexpr_cxx20_ std::string get_info() const noexcept {
+                return "cow_rw_iterator[this "+jau::aptrHexString(this)+", CoW "+jau::aptrHexString(&cow_parent_)+
+                        ", store "+jau::aptrHexString(&store_ref_)+
+                       ", "+jau::to_string(iterator_)+"]";
+            }
 
             /**
              * Removes the last element and sets this iterator to end()
              */
             constexpr void pop_back() noexcept {
                 store_ref_->pop_back();
-                iterator_ = iterator_begin + size();
+                iterator_ = store_ref_->end();
             }
 
             /**
@@ -364,7 +476,6 @@ namespace jau {
              */
             constexpr void erase () {
                 iterator_ = store_ref_->erase(iterator_);
-                iterator_begin = store_ref_->begin();
             }
 
             /**
@@ -375,7 +486,6 @@ namespace jau {
              */
             constexpr void erase (size_type count) {
                 iterator_ = store_ref_->erase(iterator_, iterator_+count);
-                iterator_begin = store_ref_->begin();
             }
 
             /**
@@ -390,7 +500,6 @@ namespace jau {
              */
             constexpr void insert(const value_type& x) {
                 iterator_ = store_ref_->insert(iterator_, x);
-                iterator_begin = store_ref_->begin();
             }
 
             /**
@@ -405,7 +514,6 @@ namespace jau {
              */
             constexpr void insert(value_type&& x) {
                 iterator_ = store_ref_->insert(iterator_, std::move(x));
-                iterator_begin = store_ref_->begin();
             }
 
             /**
@@ -425,7 +533,6 @@ namespace jau {
             template<typename... Args>
             constexpr void emplace(Args&&... args) {
                 iterator_ = store_ref_->emplace(iterator_, std::forward<Args>(args)... );
-                iterator_begin = store_ref_->begin();
             }
 
             /**
@@ -440,7 +547,6 @@ namespace jau {
             template< class InputIt >
             constexpr void insert( InputIt first, InputIt last ) {
                 iterator_ = store_ref_->insert(iterator_, first, last);
-                iterator_begin = store_ref_->begin();
             }
 
             /**
@@ -453,7 +559,6 @@ namespace jau {
             constexpr void push_back(const value_type& x) {
                 store_ref_->push_back(x);
                 iterator_ = store_ref_->end();
-                iterator_begin = store_ref_->begin();
             }
 
             /**
@@ -466,7 +571,6 @@ namespace jau {
             constexpr void push_back(value_type&& x) {
                 store_ref_->push_back(std::move(x));
                 iterator_ = store_ref_->end();
-                iterator_begin = store_ref_->begin();
             }
 
             /**
@@ -486,7 +590,6 @@ namespace jau {
             constexpr reference emplace_back(Args&&... args) {
                 reference res = store_ref_->emplace_back(std::forward<Args>(args)...);
                 iterator_ = store_ref_->end();
-                iterator_begin = store_ref_->begin();
                 return res;
             }
 
@@ -503,13 +606,12 @@ namespace jau {
             constexpr void push_back( InputIt first, InputIt last ) {
                 store_ref_->push_back(first, last);
                 iterator_ = store_ref_->end();
-                iterator_begin = store_ref_->begin();
             }
     };
 
     /**
-     * Implementation of a Copy-On-Write (CoW) read-only iterator for immutable value_type.<br>
-     * Instance holds a 'shared value_type' snapshot of the current CoW storage until destruction.
+     * Implementation of a Copy-On-Write (CoW) read-onlu iterator over immutable value_type storage.<br>
+     * Instance holds a shared storage snapshot of the parents' CoW storage until destruction.
      * <p>
      * Implementation complies with Type Traits iterator_category 'random_access_iterator_tag'
      * </p>
@@ -536,7 +638,8 @@ namespace jau {
      */
     template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
     class cow_ro_iterator {
-        template<typename, typename, typename, bool, bool> friend class cow_darray;
+        friend cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>;
+        template<typename, typename, typename, bool, bool, bool> friend class cow_darray;
         template<typename, typename> friend class cow_vector;
 
         public:
@@ -552,10 +655,9 @@ namespace jau {
 
             storage_ref_t  store_ref_;
             iterator_type  iterator_;
-            iterator_type  iterator_begin;
 
-            constexpr cow_ro_iterator(storage_ref_t store, iterator_type begin) noexcept
-            : store_ref_(store), iterator_(begin), iterator_begin(begin) { }
+            constexpr cow_ro_iterator(storage_ref_t store, iterator_type it) noexcept
+            : store_ref_(store), iterator_(it) { }
 
         public:
             typedef typename sub_traits_t::iterator_category    iterator_category;  // random_access_iterator_tag
@@ -575,53 +677,34 @@ namespace jau {
 
         public:
             constexpr cow_ro_iterator() noexcept
-            : store_ref_(nullptr), iterator_(), iterator_begin() { }
-
-            /**
-             * Conversion constructor: cow_rw_iterator -> cow_ro_iterator
-             * <p>
-             * Explicit due to high costs of potential automatic and accidental conversion,
-             * using a temporary cow_rw_iterator instance involving storage copy etc.
-             * </p>
-             */
-            constexpr explicit cow_ro_iterator(const cow_rw_iterator<storage_t, storage_ref_t, cow_container_t>& o) noexcept
-            : store_ref_(o.store_ref_), iterator_(o.iterator_), iterator_begin(o.iterator_begin) {}
+            : store_ref_(nullptr), iterator_() { }
 
             // C++ named requirements: LegacyIterator: CopyConstructible
             constexpr cow_ro_iterator(const cow_ro_iterator& o) noexcept
-            : store_ref_(o.store_ref_), iterator_(o.iterator_), iterator_begin(o.iterator_begin) {}
+            : store_ref_(o.store_ref_), iterator_(o.iterator_) {}
 
             // C++ named requirements: LegacyIterator: CopyAssignable
             constexpr cow_ro_iterator& operator=(const cow_ro_iterator& o) noexcept {
-                store_ref_ = o.store_ref_;
-                iterator_ = o.iterator_;
-                iterator_begin = o.iterator_begin;
-                return *this;
-            }
-
-            constexpr cow_ro_iterator& operator=(const cow_rw_iterator<storage_t, storage_ref_t, cow_container_t>& o) noexcept {
-                store_ref_ = o.store_ref_;
-                iterator_ = o.iterator_;
-                iterator_begin = o.iterator_begin;
+                if( this != &o ) {
+                    store_ref_ = o.store_ref_;
+                    iterator_ = o.iterator_;
+                }
                 return *this;
             }
 
             // C++ named requirements: LegacyIterator: MoveConstructable
             constexpr cow_ro_iterator(cow_ro_iterator && o) noexcept
-            : store_ref_(std::move(o.store_ref_)), iterator_(std::move(o.iterator_)), iterator_begin(std::move(o.iterator_begin)) {
-                o.store_ref_ = nullptr;
-                // o.iterator_ = nullptr;
-                // o.iterator_begin = nullptr;
+            : store_ref_(std::move(o.store_ref_)), iterator_(std::move(o.iterator_)) {
+                // Moved source has been disowned semantically and source's dtor will release resources!
             }
 
             // C++ named requirements: LegacyIterator: MoveAssignable
             constexpr cow_ro_iterator& operator=(cow_ro_iterator&& o) noexcept {
-                store_ref_ = std::move(o.store_ref_);
-                iterator_ = std::move(o.iterator_);
-                iterator_begin = std::move(o.iterator_begin);
-                o.store_ref_ = nullptr;
-                // o.iterator_ = nullptr;
-                // o.iterator_begin = nullptr;
+                if( this != &o ) {
+                    store_ref_ = std::move(o.store_ref_);
+                    iterator_ = std::move(o.iterator_);
+                    // Moved source has been disowned semantically and source's dtor will release resources!
+                }
                 return *this;
             }
 
@@ -629,8 +712,42 @@ namespace jau {
             void swap(cow_ro_iterator& o) noexcept {
                 std::swap( store_ref_, o.store_ref_);
                 std::swap( iterator_, o.iterator_);
-                std::swap( iterator_begin, o.iterator_begin);
             }
+
+            /**
+             * Returns a new const_iterator pointing to the first element, aka begin.
+             * <p>
+             * This is an addition API entry, allowing data-race free operations on
+             * this iterator's data snapshot from a potentially mutated CoW.
+             * </p>
+             * @see size()
+             * @see end()
+             */
+            constexpr cow_ro_iterator cbegin() const noexcept
+            { return cow_ro_iterator( store_ref_, store_ref_->cbegin() ); }
+
+            /**
+             * Returns a new const_iterator pointing to the <i>element following the last element</i>, aka end.<br>
+             * <p>
+             * This is an addition API entry, allowing data-race free operations on
+             * this iterator's data snapshot from a potentially mutated CoW.
+             * </p>
+             * @see size()
+             * @see begin()
+             */
+            constexpr cow_ro_iterator cend() const noexcept
+            { return cow_ro_iterator( store_ref_, store_ref_->cend() ); }
+
+            /**
+             * Returns true if storage is empty().
+             */
+            constexpr bool empty() const noexcept { return store_ref_->empty(); }
+
+            /**
+             * Returns true if storage capacity has been reached and the next push_back()
+             * will grow the storage and invalidates all iterators and references.
+             */
+            constexpr bool capacity_reached() const noexcept { return store_ref_->capacity_reached(); }
 
             /**
              * Return the size of the underlying value_type store.
@@ -644,28 +761,33 @@ namespace jau {
             constexpr size_type size() const noexcept { return store_ref_->size(); }
 
             /**
-             * Returns a new const_iterator pointing to the first element, aka begin.
-             * <p>
-             * This is an addition API entry, allowing data-race free operations on
-             * this iterator's data snapshot from a potentially mutated CoW.
-             * </p>
-             * @see size()
-             * @see end()
+             * Returns this instances' underlying shared storage by reference.
              */
-            constexpr cow_ro_iterator begin() const noexcept
-            { return cow_ro_iterator( store_ref_, iterator_begin ); }
+            constexpr storage_t& storage() const noexcept {
+                return *store_ref_;
+            }
 
             /**
-             * Returns a new const_iterator pointing to the <i>element following the last element</i>, aka end.<br>
-             * <p>
-             * This is an addition API entry, allowing data-race free operations on
-             * this iterator's data snapshot from a potentially mutated CoW.
-             * </p>
-             * @see size()
-             * @see begin()
+             * Returns true, if this iterator points to cend().
              */
-            constexpr cow_ro_iterator end() const noexcept
-            { return cow_ro_iterator( store_ref_, iterator_begin + store_ref_->size() ); }
+            constexpr bool is_end() const noexcept { return iterator_ == store_ref_->cend(); }
+
+            /**
+             * This iterator is set to the last element, cend(). Returns *this;
+             */
+            constexpr cow_ro_iterator& to_end() noexcept
+            { iterator_ = store_ref_->cend(); return *this; }
+
+            /**
+             * Returns true, if this iterator points to cbegin().
+             */
+            constexpr bool is_begin() const noexcept { return iterator_ == store_ref_->cbegin(); }
+
+            /**
+             * This iterator is set to the first element, cbegin(). Returns *this;
+             */
+            constexpr cow_ro_iterator& to_begin() noexcept
+            { iterator_ = store_ref_->cbegin(); return *this; }
 
             /**
              * Returns a copy of the underlying storage const_iterator.
@@ -780,20 +902,19 @@ namespace jau {
             constexpr difference_type distance(const cow_rw_iterator<storage_t, storage_ref_t, cow_container_t>& rhs) const noexcept
             { return iterator_ - rhs.iterator_; }
 
-            /**
-             * This iterator is set to the first element.
-             */
-            constexpr void rewind() noexcept
-            { iterator_ = iterator_begin; }
-
             __constexpr_cxx20_ std::string toString() const noexcept {
-                return "cow_ro_iterator["+jau::to_string(iterator_)+"]";
+                return jau::to_string(iterator_);
             }
 #if 0
             __constexpr_cxx20_ operator std::string() const noexcept {
                 return toString();
             }
 #endif
+            __constexpr_cxx20_ std::string get_info() const noexcept {
+                return "cow_ro_iterator[this "+jau::aptrHexString(this)+
+                        ", store "+jau::aptrHexString(&store_ref_)+
+                       ", "+jau::to_string(iterator_)+"]";
+            }
     };
 
     /****************************************************************************************
