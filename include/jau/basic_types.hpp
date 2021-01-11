@@ -756,7 +756,7 @@ namespace jau {
      * @param leading0X true to have a leading '0x' being printed, otherwise no prefix is produced.
      * @return the hex-string representation of the value
      */
-    inline std::string uint64HexString(const uint64_t v, const bool leading0X=true) noexcept {
+    inline std::string uint64HexString(const uint64_t& v, const bool leading0X=true) noexcept {
         return bytesHexString(reinterpret_cast<const uint8_t*>(&v), 0, sizeof(v), false /* lsbFirst */, leading0X, true /* lowerCase */);
     }
 
@@ -776,7 +776,7 @@ namespace jau {
      * @param leading0X true to have a leading '0x' being printed, otherwise no prefix is produced.
      * @return the hex-string representation of the value
      */
-    inline std::string uint128HexString(const uint128_t v, const bool leading0X=true) noexcept {
+    inline std::string uint128HexString(const uint128_t& v, const bool leading0X=true) noexcept {
         return bytesHexString(v.data, 0, sizeof(v.data), false /* lsbFirst */, leading0X, true /* lowerCase */);
     }
 
@@ -786,7 +786,7 @@ namespace jau {
      * @param leading0X true to have a leading '0x' being printed, otherwise no prefix is produced.
      * @return the hex-string representation of the value
      */
-    inline std::string uint256HexString(const uint256_t v, const bool leading0X=true) noexcept {
+    inline std::string uint256HexString(const uint256_t& v, const bool leading0X=true) noexcept {
         return bytesHexString(v.data, 0, sizeof(v.data), false /* lsbFirst */, leading0X, true /* lowerCase */);
     }
 
@@ -805,7 +805,7 @@ namespace jau {
      * @return the string representation of the integral integer value
      */
     template<class T>
-    std::string to_decimal_string(const T v, const char separator=',', const nsize_t width=0) noexcept {
+    std::string to_decimal_string(const T& v, const char separator=',', const nsize_t width=0) noexcept {
         const snsize_t v_sign = jau::sign<T>(v);
         const nsize_t digit10_count1 = jau::digits10<T>(v, v_sign, true /* sign_is_digit */);
         const nsize_t digit10_count2 = v_sign < 0 ? digit10_count1 - 1 : digit10_count1; // less sign
@@ -861,7 +861,7 @@ namespace jau {
      * @param width the minimum number of characters to be printed. Add padding with blank space if result is shorter.
      * @return the string representation of the value
      */
-    inline std::string int64DecString(const int64_t v, const char separator=',', const nsize_t width=0) noexcept {
+    inline std::string int64DecString(const int64_t& v, const char separator=',', const nsize_t width=0) noexcept {
         return to_decimal_string<int64_t>(v, separator, width);
     }
 
@@ -872,7 +872,7 @@ namespace jau {
      * @param width the minimum number of characters to be printed. Add padding with blank space if result is shorter.
      * @return the string representation of the value
      */
-    inline std::string uint64DecString(const uint64_t v, const char separator=',', const nsize_t width=0) noexcept {
+    inline std::string uint64DecString(const uint64_t& v, const char separator=',', const nsize_t width=0) noexcept {
         return to_decimal_string<uint64_t>(v, separator, width);
     }
 
