@@ -1122,7 +1122,7 @@ namespace jau {
                 return count;
             }
 
-            __constexpr_cxx20_ std::string toString() const noexcept {
+            constexpr_cxx20 std::string toString() const noexcept {
                 std::string res("{ " + std::to_string( size() ) + ": ");
                 int i=0;
                 jau::for_each_const(*this, [&res, &i](const value_type & e) {
@@ -1133,7 +1133,7 @@ namespace jau {
                 return res;
             }
 
-            __constexpr_cxx20_ std::string get_info() const noexcept {
+            constexpr_cxx20 std::string get_info() const noexcept {
                 difference_type cap_ = (storage_end_-begin_);
                 difference_type size_ = (end_-begin_);
                 std::string res("darray[this "+jau::aptrHexString(this)+

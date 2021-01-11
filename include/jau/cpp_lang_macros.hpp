@@ -25,33 +25,40 @@
 #ifndef CPP_LANG_MACROS_HPP_
 #define CPP_LANG_MACROS_HPP_
 
+    /**
+     * <code>constexpr</code> enabled for C++20.
+     */
 #if __cplusplus > 201703L
-    #define __constexpr_cxx20_ constexpr
-    #warning CXX 20 detected but not evaluated yet
+    #define constexpr_cxx20 constexpr
 #else
-    #define __constexpr_cxx20_
+    #define constexpr_cxx20
 #endif
 
     /**
-     * Used when attempting to define a function 'constexpr',
-     * but uses non-literal variables, such as std::lock_guard etc.
+     * Used when designed to declare a function <code>constexpr</code>,
+     * but prohibited by its specific implementation.
+     * <p>
+     * Here it but uses non-literal variables, such as std::lock_guard etc.
      * As these can't be evaluated at compile time, the standard does
-     * not allow using 'constexpr' here.
+     * not allow using <code>constexpr</code> here.
+     * </p>
      * <p>
      * Empty until standard defines otherwise.
      * </p>
      */
-    #define __constexpr_non_literal_var__
+    #define constexpr_non_literal_var
 
     /**
-     * See __constexpr_non_literal_var__
+     * Used when designed to declare a function <code>constexpr</code>,
+     * but prohibited by its specific implementation.
+     * <p>
+     * Here it uses thread-safety related measures like atomic storage
+     * or mutex locks, which are non-literal variables and hence
+     * prohibit the use of <code>constexpr</code>.
+     * </p>
+     * @see constexpr_non_literal_var
      */
-    #define __constexpr_non_literal_atomic__
-
-    /**
-     * See __constexpr_non_literal_var__
-     */
-    #define __constexpr_non_literal_mutex__
+    #define constexpr_atomic
 
     /**
      * Set define if RTTI is enabled during compilation,

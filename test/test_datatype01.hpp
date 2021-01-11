@@ -91,7 +91,7 @@ __pack ( struct Addr48Bit {
         return h;
     }
 
-    __constexpr_cxx20_ std::string toString() const noexcept {
+    constexpr_cxx20 std::string toString() const noexcept {
         std::string str;
         str.reserve(17);
 
@@ -105,7 +105,7 @@ __pack ( struct Addr48Bit {
     }
 
 #if 0
-    __constexpr_cxx20_ operator std::string() const noexcept {
+    constexpr_cxx20 operator std::string() const noexcept {
         return toString();
     }
 #endif
@@ -188,11 +188,11 @@ class DataType01 {
 
         void clearHash() { hash = 0; }
 
-        __constexpr_cxx20_ std::string toString() const noexcept {
+        constexpr_cxx20 std::string toString() const noexcept {
             return "["+address.toString()+", "+std::to_string(type)+"]";
         }
 #if 0
-        __constexpr_cxx20_ operator std::string() const noexcept {
+        constexpr_cxx20 operator std::string() const noexcept {
             return toString();
         }
 #endif
