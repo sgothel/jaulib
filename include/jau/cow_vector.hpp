@@ -68,7 +68,7 @@ namespace jau {
      * <p>
      * Immutable storage const_iterators are supported via jau::cow_ro_iterator,
      * which are constructed <i>lock-free</i>.<br>
-     * jau::cow_ro_iterator hold a snapshot retrieved via jau::cow_vector::get_snapshot()
+     * jau::cow_ro_iterator hold a snapshot retrieved via jau::cow_vector::snapshot()
      * until its destruction.
      * </p>
      * <p>
@@ -291,7 +291,7 @@ namespace jau {
              * @see jau::for_each_cow
              */
             __constexpr_non_literal_atomic__
-            storage_ref_t get_snapshot() const noexcept {
+            storage_ref_t snapshot() const noexcept {
                 sc_atomic_critical sync( sync_atomic );
                 return store_ref;
             }
@@ -304,7 +304,7 @@ namespace jau {
              * See description in jau::cow_darray::cbegin()
              */
             constexpr const_iterator cbegin() const noexcept {
-                return const_iterator(get_snapshot(), store_ref->cbegin());
+                return const_iterator(snapshot(), store_ref->cbegin());
             }
 
             // iterator, mutable, read-write
@@ -313,7 +313,7 @@ namespace jau {
              * See description in jau::cow_darray::begin()
              */
             constexpr iterator begin() {
-                return iterator(*this, [](storage_ref_t& new_store) -> typename storage_t::iterator { return new_store->begin(); } );
+                return iterator(*this);
             }
 
             // read access
@@ -563,12 +563,7 @@ namespace jau {
                         ++it;
                     }
                 }
-                storage_ref_t new_store_ref = std::make_shared<storage_t>( *store_ref, store_ref->get_allocator() );
-                new_store_ref->push_back(x);
-                {
-                    sc_atomic_critical sync(sync_atomic);
-                    store_ref = std::move(new_store_ref);
-                }
+                push_back(x);
                 return true;
             }
 

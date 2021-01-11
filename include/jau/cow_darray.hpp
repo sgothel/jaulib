@@ -68,7 +68,7 @@ namespace jau {
      * <p>
      * Immutable storage const_iterators are supported via jau::cow_ro_iterator,
      * which are constructed <i>lock-free</i>.<br>
-     * jau::cow_ro_iterator hold a snapshot retrieved via jau::cow_darray::get_snapshot()
+     * jau::cow_ro_iterator hold a snapshot retrieved via jau::cow_darray::snapshot()
      * until its destruction.
      * </p>
      * <p>
@@ -166,7 +166,7 @@ namespace jau {
              * Immutable, read-only const_iterator, lock-free,
              * holding the current shared store reference until destruction.
              * <p>
-             * Using jau::cow_darray::get_snapshot() at construction.
+             * Using jau::cow_darray::snapshot() at construction.
              * </p>
              * <p>
              * This iterator is the preferred choice if no mutations are made to the elements state
@@ -219,7 +219,9 @@ namespace jau {
              * Default constructor, giving almost zero capacity and zero memory footprint, but the shared empty jau::darray
              */
             constexpr cow_darray() noexcept
-            : store_ref(std::make_shared<storage_t>()), sync_atomic(false) {}
+            : store_ref(std::make_shared<storage_t>()), sync_atomic(false) {
+                DARRAY_PRINTF("ctor def: %s\n", get_info().c_str());
+            }
 
             /**
              * Creating an empty instance with initial capacity and other (default) properties.
@@ -228,15 +230,23 @@ namespace jau {
              * @param alloc given allocator_type
              */
             constexpr explicit cow_darray(size_type capacity, const float growth_factor=DEFAULT_GROWTH_FACTOR, const allocator_type& alloc = allocator_type())
-            : store_ref(std::make_shared<storage_t>(capacity, growth_factor, alloc)), sync_atomic(false) {}
+            : store_ref(std::make_shared<storage_t>(capacity, growth_factor, alloc)), sync_atomic(false) {
+                DARRAY_PRINTF("ctor 1: %s\n", get_info().c_str());
+            }
 
             // conversion ctor on storage_t elements
 
             constexpr cow_darray(const storage_t& x)
-            : store_ref(std::make_shared<storage_t>(x)), sync_atomic(false) {}
+            : store_ref(std::make_shared<storage_t>(x)), sync_atomic(false) {
+                DARRAY_PRINTF("ctor copy_0: this %s\n", get_info().c_str());
+                DARRAY_PRINTF("ctor copy_0:    x %s\n", x.get_info().c_str());
+            }
 
             constexpr explicit cow_darray(const storage_t& x, const float growth_factor, const allocator_type& alloc)
-            : store_ref(std::make_shared<storage_t>(x, growth_factor, alloc)), sync_atomic(false) {}
+            : store_ref(std::make_shared<storage_t>(x, growth_factor, alloc)), sync_atomic(false) {
+                DARRAY_PRINTF("ctor copy_1: this %s\n", get_info().c_str());
+                DARRAY_PRINTF("ctor copy_1:    x %s\n", x.get_info().c_str());
+            }
 
             /**
              * Like std::vector::operator=(&), assignment, but copying from the underling jau::darray
@@ -246,6 +256,8 @@ namespace jau {
              */
             cow_darray& operator=(const storage_t& x) {
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
+                DARRAY_PRINTF("assignment copy_0: this %s\n", get_info().c_str());
+                DARRAY_PRINTF("assignment copy_0:    x %s\n", x.get_info().c_str());
                 {
                     sc_atomic_critical sync(sync_atomic);
                     store_ref = std::move( std::make_shared<storage_t>( x ) );
@@ -254,10 +266,18 @@ namespace jau {
             }
 
             constexpr cow_darray(storage_t && x) noexcept
-            : store_ref(std::make_shared<storage_t>(std::move(x))), sync_atomic(false) {}
+            : store_ref(std::make_shared<storage_t>(std::move(x))), sync_atomic(false) {
+                DARRAY_PRINTF("ctor move_0: this %s\n", get_info().c_str());
+                DARRAY_PRINTF("ctor move_0:    x %s\n", x.get_info().c_str());
+                // Moved source array has been taken over. darray's move-operator has flushed source
+            }
 
             constexpr explicit cow_darray(storage_t && x, const float growth_factor, const allocator_type& alloc) noexcept
-            : store_ref(std::make_shared<storage_t>(std::move(x), growth_factor, alloc)), sync_atomic(false) {}
+            : store_ref(std::make_shared<storage_t>(std::move(x), growth_factor, alloc)), sync_atomic(false) {
+                DARRAY_PRINTF("ctor move_1: this %s\n", get_info().c_str());
+                DARRAY_PRINTF("ctor move_1:    x %s\n", x.get_info().c_str());
+                // Moved source array has been taken over. darray's move-operator has flushed source
+            }
 
             /**
              * Like std::vector::operator=(&&), move, but taking the underling jau::darray
@@ -267,10 +287,12 @@ namespace jau {
              */
             cow_darray& operator=(storage_t&& x) {
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
+                DARRAY_PRINTF("assignment move_0: this %s\n", get_info().c_str());
+                DARRAY_PRINTF("assignment move_0:    x %s\n", x.get_info().c_str());
                 {
                     sc_atomic_critical sync(sync_atomic);
                     store_ref = std::move( std::make_shared<storage_t>( std::move(x) ) );
-                    // moved sources have been disowned
+                    // Moved source array has been taken over. darray's move-operator has flushed source
                 }
                 return *this;
             }
@@ -288,6 +310,8 @@ namespace jau {
                 storage_ref_t x_store_ref;
                 {
                     sc_atomic_critical sync_x( x.sync_atomic );
+                    DARRAY_PRINTF("ctor copy.0: this %s\n", get_info().c_str());
+                    DARRAY_PRINTF("ctor copy.0:    x %s\n", x.get_info().c_str());
                     x_store_ref = x.store_ref;
                 }
                 store_ref = std::make_shared<storage_t>( *x_store_ref );
@@ -306,6 +330,8 @@ namespace jau {
                 storage_ref_t x_store_ref;
                 {
                     sc_atomic_critical sync_x( x.sync_atomic );
+                    DARRAY_PRINTF("ctor copy.1: this %s\n", get_info().c_str());
+                    DARRAY_PRINTF("ctor copy.1:    x %s\n", x.get_info().c_str());
                     x_store_ref = x.store_ref;
                 }
                 store_ref = std::make_shared<storage_t>( *x_store_ref, growth_factor, alloc );
@@ -328,6 +354,8 @@ namespace jau {
                 storage_ref_t x_store_ref;
                 {
                     sc_atomic_critical sync_x( x.sync_atomic );
+                    DARRAY_PRINTF("ctor copy.2: this %s\n", get_info().c_str());
+                    DARRAY_PRINTF("ctor copy.2:    x %s\n", x.get_info().c_str());
                     x_store_ref = x.store_ref;
                 }
                 store_ref = std::make_shared<storage_t>( *x_store_ref, _capacity, growth_factor, alloc );
@@ -339,11 +367,14 @@ namespace jau {
              * This write operation uses a mutex lock and is blocking this instances' write operations only.
              * </p>
              */
+            __constexpr_non_literal_atomic__
             cow_darray& operator=(const cow_darray& x) {
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 storage_ref_t x_store_ref;
                 {
                     sc_atomic_critical sync_x( x.sync_atomic );
+                    DARRAY_PRINTF("assignment copy.0: this %s\n", get_info().c_str());
+                    DARRAY_PRINTF("assignment copy.0:    x %s\n", x.get_info().c_str());
                     x_store_ref = x.store_ref;
                 }
                 storage_ref_t new_store_ref = std::make_shared<storage_t>( *x_store_ref );
@@ -364,10 +395,14 @@ namespace jau {
                 // - Post move-op, the source object does not exist anymore
                 std::unique_lock<std::recursive_mutex>  lock(x.mtx_write); // *this doesn't exist yet, not locking ourselves
                 {
+                    DARRAY_PRINTF("ctor move.0: this %s\n", get_info().c_str());
+                    DARRAY_PRINTF("ctor move.0:    x %s\n", x.get_info().c_str());
                     store_ref = std::move(x.store_ref);
                     sync_atomic = std::move(x.sync_atomic);
                     // mtx_write will be a fresh one, but we hold the source's lock
-                    // moved sources have been disowned
+
+                    // Moved source array has been taken over, null its store_ref
+                    x.store_ref = nullptr;
                 }
             }
 
@@ -377,7 +412,8 @@ namespace jau {
              * This write operation uses a mutex lock and is blocking both cow_vector instance's write operations.
              * </p>
              */
-            cow_darray& operator=(cow_darray&& x) {
+            __constexpr_non_literal_atomic__
+            cow_darray& operator=(cow_darray&& x) noexcept {
                 // Stragtegy-2: Acquire locks of both, blocking
                 // - If somebody else holds the lock, we wait.
                 // - Then we own the lock for both instances
@@ -388,8 +424,13 @@ namespace jau {
                 {
                     sc_atomic_critical sync_x( x.sync_atomic );
                     sc_atomic_critical sync  (   sync_atomic );
+                    DARRAY_PRINTF("assignment move.0: this %s\n", get_info().c_str());
+                    DARRAY_PRINTF("assignment move.0:    x %s\n", x.get_info().c_str());
                     store_ref = std::move(x.store_ref);
-                    // moved sources have been disowned
+                    // mtx_write and the atomic will be kept as is, but we hold the source's lock
+
+                    // Moved source array has been taken over, null its store_ref
+                    x.store_ref = nullptr;
                 }
                 return *this;
             }
@@ -412,7 +453,9 @@ namespace jau {
             constexpr cow_darray(const size_type _capacity, const_iterator first, const_iterator last,
                              const float growth_factor=DEFAULT_GROWTH_FACTOR, const allocator_type& alloc = allocator_type())
             : store_ref(std::make_shared<storage_t>(_capacity, first.underling(), last.underling(), growth_factor, alloc)), sync_atomic(false)
-            { }
+            {
+                DARRAY_PRINTF("ctor iters0: %s\n", get_info().c_str());
+            }
 
             /**
              * Creates a new instance with custom initial storage capacity,
@@ -432,7 +475,9 @@ namespace jau {
             constexpr explicit cow_darray(const size_type _capacity, InputIt first, InputIt last,
                                       const float growth_factor=DEFAULT_GROWTH_FACTOR, const allocator_type& alloc = allocator_type())
             : store_ref(std::make_shared<storage_t>(_capacity, first, last, growth_factor, alloc)), sync_atomic(false)
-            { }
+            {
+                DARRAY_PRINTF("ctor iters1: %s\n", get_info().c_str());
+            }
 
             /**
              * Creates a new instance,
@@ -446,7 +491,9 @@ namespace jau {
             template< class InputIt >
             constexpr cow_darray(InputIt first, InputIt last, const allocator_type& alloc = allocator_type())
             : store_ref(std::make_shared<storage_t>(first, last, alloc)), sync_atomic(false)
-            { }
+            {
+                DARRAY_PRINTF("ctor iters2: %s\n", get_info().c_str());
+            }
 
             /**
              * Create a new instance from an initializer list.
@@ -456,10 +503,14 @@ namespace jau {
              */
             constexpr cow_darray(std::initializer_list<value_type> initlist, const allocator_type& alloc = allocator_type())
             : store_ref(std::make_shared<storage_t>(initlist, alloc)), sync_atomic(false)
-            { }
+            {
+                DARRAY_PRINTF("ctor initlist: %s\n", get_info().c_str());
+            }
 
 
-            ~cow_darray() noexcept { }
+            ~cow_darray() noexcept {
+                DARRAY_PRINTF("dtor: %s\n", get_info().c_str());
+            }
 
             /**
              * Returns <code>std::numeric_limits<difference_type>::max()</code> as the maximum array size.
@@ -501,12 +552,13 @@ namespace jau {
             __constexpr_non_literal_atomic__
             storage_ref_t copy_store() {
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
+                DARRAY_PRINTF("copy_store: %s\n", get_info().c_str());
                 return std::make_shared<storage_t>( *store_ref );
             }
 
             /**
-             * Special case facility allowing the user to replace the current store
-             * with the given value, potentially acquired via jau::cow_darray::copy_store()
+             * Replace the current store with the given instance,
+             * potentially acquired via jau::cow_darray::copy_store()
              * and mutated while holding the jau::cow_darray::get_write_mutex() lock.
              * <p>
              * This is a move operation, i.e. the given new_store_ref is invalid on the caller side
@@ -524,22 +576,30 @@ namespace jau {
              *         list.set_store(std::move(snapshot));
              *     }
              * </pre>
+             * Above functionality is covered by jau::cow_rw_iterator, see also jau::cow_rw_iterator::write_back()
              * </p>
              * @param new_store_ref the user store to be moved here, replacing the current store.
              *
              * @see jau::cow_darray::get_write_mutex()
              * @see jau::cow_darray::copy_store()
              * @see jau::cow_darray::set_store()
+             * @see jau::cow_rw_iterator
+             * @see jau::cow_rw_iterator::write_back()
              */
             __constexpr_non_literal_atomic__
             void set_store(storage_ref_t && new_store_ref) noexcept {
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 sc_atomic_critical sync(sync_atomic);
+#if DEBUG_DARRAY
+                DARRAY_PRINTF("set_store: dest %s\n", get_info().c_str());
+                DARRAY_PRINTF("set_store:  src %s\n", new_store_ref->get_info().c_str());
+                jau::print_backtrace(true, 8);
+#endif
                 store_ref = std::move( new_store_ref );
             }
 
             /**
-             * Returns the current snapshot of the underlying shared std::vector<T> reference.
+             * Returns the current snapshot of the underlying shared storage by reference.
              * <p>
              * Note that this snapshot will be outdated by the next (concurrent) write operation.<br>
              * The returned referenced vector is still valid and not mutated,
@@ -548,10 +608,9 @@ namespace jau {
              * <p>
              * This read operation is <i>lock-free</i>.
              * </p>
-             * @see jau::for_each_cow
              */
             __constexpr_non_literal_atomic__
-            storage_ref_t get_snapshot() const noexcept {
+            storage_ref_t snapshot() const noexcept {
                 sc_atomic_critical sync( sync_atomic );
                 return store_ref;
             }
@@ -578,7 +637,8 @@ namespace jau {
              * @see jau::for_each_fidelity
              */
             constexpr const_iterator cbegin() const noexcept {
-                return const_iterator(get_snapshot(), store_ref->cbegin());
+                storage_ref_t sr = snapshot();
+                return const_iterator(sr, sr->cbegin());
             }
 
             // iterator, mutable, read-write
@@ -600,7 +660,7 @@ namespace jau {
              * @see jau::cow_rw_iterator::end()
              */
             constexpr iterator begin() {
-                return iterator(*this, [](storage_ref_t& new_store) -> typename storage_t::iterator { return new_store->begin(); } );
+                return iterator(*this);
             }
 
             // read access
@@ -928,11 +988,11 @@ namespace jau {
             __constexpr_non_literal_atomic__
             int erase_matching(const value_type& x, const bool all_matching, equal_comparator comparator) {
                 int count = 0;
-                std::lock_guard<std::recursive_mutex> lock(mtx_write);
-                storage_ref_t new_store_ref = std::make_shared<storage_t>( *store_ref );
-                for(auto it = new_store_ref->begin(); it != new_store_ref->end(); ) {
+
+                iterator it = begin(); // lock mutex and copy_store
+                while( !it.is_end() ) {
                     if( comparator( *it, x ) ) {
-                        it = new_store_ref->erase(it);
+                        it.erase();
                         ++count;
                         if( !all_matching ) {
                             break;
@@ -941,7 +1001,9 @@ namespace jau {
                         ++it;
                     }
                 }
-                // @ iterator dtor: set_store if dirty and unlock mutex
+                if( 0 < count ) {
+                    it.write_back();
+                }
                 return count;
             }
 
@@ -957,7 +1019,9 @@ namespace jau {
             }
 
             __constexpr_cxx20_ std::string get_info() const noexcept {
-                return store_ref->get_info();
+                return ("cow_darray[this "+jau::aptrHexString(this)+
+                        ", "+store_ref->get_info()+
+                        "]");
             }
     };
 
