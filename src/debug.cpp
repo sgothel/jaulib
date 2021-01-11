@@ -33,13 +33,14 @@
 
 using namespace jau;
 
-std::string jau::get_backtrace(bool skip_anon_frames, int skip_frames) noexcept {
+std::string jau::get_backtrace(const bool skip_anon_frames, const jau::snsize_t max_frames, const jau::nsize_t skip_frames) noexcept {
     // symbol:
     //  1: _ZN9direct_bt10DBTAdapter14startDiscoveryEbNS_19HCILEOwnAddressTypeEtt + 0x58d @ ip 0x7faa959d6daf, sp 0x7ffe38f301e0
     // de-mangled:
     //  1: direct_bt::DBTAdapter::startDiscovery(bool, direct_bt::HCILEOwnAddressType, unsigned short, unsigned short) + 0x58d @ ip 0x7f687b459071, sp 0x7fff2bf795d0
     std::string out;
-    int frame=0, res;
+    jau::nsize_t frame=0;
+    int res;
     char cstr[256];
     unw_context_t uc;
     unw_word_t ip, sp;
@@ -48,17 +49,17 @@ std::string jau::get_backtrace(bool skip_anon_frames, int skip_frames) noexcept 
     unw_getcontext(&uc);
     unw_init_local(&cursor, &uc);
     bool last_frame_anon = false;
-    while( unw_step(&cursor) > 0 ) {
+    while( unw_step(&cursor) > 0 && ( max_frames - skip_frames ) > frame ) {
         frame++;
         if( skip_frames > frame ) {
             continue;
         }
         bool append_line;
-        snprintf(cstr, sizeof(cstr), "%3d: ", frame);
+        snprintf(cstr, sizeof(cstr), "%3u: ", frame);
         std::string line(cstr);
 
-        unw_get_reg(&cursor, UNW_REG_IP, &ip);
-        unw_get_reg(&cursor, UNW_REG_SP, &sp);
+        unw_get_reg(&cursor, UNW_REG_IP, &ip); // instruction pointer (pc)
+        unw_get_reg(&cursor, UNW_REG_SP, &sp); // stack pointer
         if( 0 == ( res = unw_get_proc_name(&cursor, cstr, sizeof(cstr), &offset) ) ) {
             int status;
             char *real_name;
@@ -87,8 +88,8 @@ std::string jau::get_backtrace(bool skip_anon_frames, int skip_frames) noexcept 
     return out;
 }
 
-void jau::print_backtrace(bool skip_anon_frames, int skip_frames) noexcept {
-    fprintf(stderr, "%s", get_backtrace(skip_anon_frames, skip_frames).c_str());
+void jau::print_backtrace(const bool skip_anon_frames, const jau::snsize_t max_frames, const jau::nsize_t skip_frames) noexcept {
+    fprintf(stderr, "%s", get_backtrace(skip_anon_frames, max_frames, skip_frames).c_str());
     fflush(stderr);
 }
 

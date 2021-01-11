@@ -47,18 +47,30 @@ namespace jau {
 
     /**
      * Returns a de-mangled backtrace string separated by newline excluding this function.
+     * <p>
+     * Returns one line per stack frame, each with
+     * <pre>
+     * - stack frame number
+     * - demangled function name + offset (sp)
+     * - the instruction pointer (pc)
+     * - the stack pointer (sp)
+     * </pre>
+     * </p>
      * @param skip_anon_frames if true, skip all frames w/o proc-name
      * @param skip_frames number of stack frames to skip, default is one frame for this function.
+     * @param max_frames number of stack frames to be printed or -1 for unlimited, defaults to -1
      * @return the de-mangled backtrace, separated by newline
      */
-    std::string get_backtrace(bool skip_anon_frames, int skip_frames=1) noexcept;
+    std::string get_backtrace(const bool skip_anon_frames, const jau::snsize_t max_frames=-1, const jau::nsize_t skip_frames=1) noexcept;
 
     /**
      * Prints the de-mangled backtrace string separated by newline excluding this function to stderr, using get_backtrace().
      * @param skip_anon_frames if true, skip all frames w/o proc-name
+     * @param max_frames number of stack frames to be printed or -1 for unlimited, defaults to -1
      * @param skip_frames number of stack frames to skip, default is two frames for this function and for get_backtrace().
+     * @see get_backtrace()
      */
-    void print_backtrace(bool skip_anon_frames, int skip_frames=2) noexcept;
+    void print_backtrace(const bool skip_anon_frames, const jau::snsize_t max_frames=-1, const jau::nsize_t skip_frames=2) noexcept;
 
     void DBG_PRINT_impl(const char * format, ...) noexcept;
 
