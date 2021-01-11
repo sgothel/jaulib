@@ -73,12 +73,14 @@ namespace jau {
      * </p>
      * <p>
      * Mutable storage iterators are supported via jau::cow_rw_iterator,
-     * which are constructed holding the write-lock.<br>
-     * jau::cow_rw_iterator hold a new store copy via jau::cow_vector::copy_store(),
-     * which replaces the current store via jau::cow_vector::set_store() at destruction.
+     * which holds a copy of this CoW storage and locks its write mutex until
+     * jau::cow_rw_iterator::write_back() or its destruction.<br>
+     * After completing all mutable operations but before this iterator's destruction,
+     * the user might want to write back this iterators' storage to this CoW
+     * using jau::cow_rw_iterator::write_back().
      * </p>
      * <p>
-     * Index operation via ::operator[](size_type) or ::at(size_type) are not supported for now,
+     * Index operation via ::operator[](size_type) or ::at(size_type) are not supported,
      * since they would be only valid if value_type itself is a std::shared_ptr
      * and hence prohibit the destruction of the object if mutating the storage,
      * e.g. via jau::cow_vector::push_back().
@@ -98,6 +100,7 @@ namespace jau {
      * @see jau::cow_ro_iterator
      * @see jau::for_each_fidelity
      * @see jau::cow_rw_iterator
+     * @see jau::cow_rw_iterator::write_back()
      */
     template <typename Value_type, typename Alloc_type = std::allocator<Value_type>>
     class cow_vector

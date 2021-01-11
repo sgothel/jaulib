@@ -68,14 +68,16 @@ namespace jau {
      * <p>
      * Immutable storage const_iterators are supported via jau::cow_ro_iterator,
      * which are constructed <i>lock-free</i>.<br>
-     * jau::cow_ro_iterator hold a snapshot retrieved via jau::cow_darray::snapshot()
+     * jau::cow_ro_iterator holds a snapshot retrieved via jau::cow_darray::snapshot()
      * until its destruction.
      * </p>
      * <p>
      * Mutable storage iterators are supported via jau::cow_rw_iterator,
-     * which are constructed holding the write-lock.<br>
-     * jau::cow_rw_iterator hold a new store copy via jau::cow_darray::copy_store(),
-     * which replaces the current store via jau::cow_darray::set_store() at destruction.
+     * which holds a copy of this CoW storage and locks its write mutex until
+     * jau::cow_rw_iterator::write_back() or its destruction.<br>
+     * After completing all mutable operations but before this iterator's destruction,
+     * the user might want to write back this iterators' storage to this CoW
+     * using jau::cow_rw_iterator::write_back().
      * </p>
      * <p>
      * Both, jau::cow_ro_iterator and jau::cow_rw_iterator are harmonized
@@ -112,17 +114,12 @@ namespace jau {
      * - Sequentially Consistent (SC) ordering or SC-DRF (data race free) <https://en.cppreference.com/w/cpp/atomic/memory_order#Sequentially-consistent_ordering>
      * - std::memory_order <https://en.cppreference.com/w/cpp/atomic/memory_order>
      * </pre>
-     * @see jau::cow_darray::cbegin()
+     *
+     * @see jau::darray
      * @see jau::cow_ro_iterator
-     * @see jau::cow_ro_iterator::size()
-     * @see jau::cow_ro_iterator::begin()
-     * @see jau::cow_ro_iterator::end()
      * @see jau::for_each_fidelity
-     * @see jau::cow_darray::begin()
      * @see jau::cow_rw_iterator
-     * @see jau::cow_rw_iterator::size()
-     * @see jau::cow_rw_iterator::begin()
-     * @see jau::cow_rw_iterator::end()
+     * @see jau::cow_rw_iterator::write_back()
      */
     template <typename Value_type, typename Alloc_type = jau::callocator<Value_type>, typename Size_type = jau::nsize_t,
               bool use_memmove = std::is_trivially_copyable_v<Value_type>,
