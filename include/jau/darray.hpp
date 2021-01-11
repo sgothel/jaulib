@@ -45,10 +45,10 @@
 
 namespace jau {
 
-#define DEBUG_DARRAY 1
+// #define DEBUG_DARRAY 1
 
 #if DEBUG_DARRAY
-    #define DARRAY_PRINTF(...) { printf(__VA_ARGS__); fflush(stdout); }
+    #define DARRAY_PRINTF(...) { fprintf(stderr, __VA_ARGS__); fflush(stderr); }
 #else
     #define DARRAY_PRINTF(...)
 #endif
@@ -127,7 +127,8 @@ namespace jau {
             typedef bool                                        darray_tag;
 
         private:
-            static constexpr size_type DIFF_MAX = std::numeric_limits<difference_type>::max();
+            constexpr static const size_type DIFF_MAX = std::numeric_limits<difference_type>::max();
+            constexpr static const size_type MIN_SIZE_AT_GROW = 10;
 
             allocator_type alloc_inst;
             pointer begin_;
@@ -240,9 +241,6 @@ namespace jau {
 
             constexpr void ctor_copy_range(pointer dest, iterator first, const_iterator last) {
                 DARRAY_PRINTF("ctor_copy_range [%zd .. %zd] -> ??, dist %zd\n", (first-begin_), (last-begin_)-1, (last-first));
-                if( first > last ) {
-                    throw jau::IllegalArgumentException("first "+aptrHexString(first)+" > last "+aptrHexString(last), E_FILE_LINE);
-                }
                 for(; first < last; ++dest, ++first) {
                     new (dest) value_type( *first ); // placement new
                 }
@@ -255,26 +253,41 @@ namespace jau {
             }
             constexpr pointer clone_range(const size_type dest_capacity, iterator first, const_iterator last) {
                 DARRAY_PRINTF("clone_range [%zd .. %zd], count %zd -> %d\n", (first-begin_), (last-begin_)-1, (last-first), (int)dest_capacity);
+                pointer dest = allocStore(dest_capacity);
+                ctor_copy_range(dest, first, last);
+                return dest;
+            }
+            constexpr void ctor_copy_range_check(pointer dest, iterator first, const_iterator last) {
+                DARRAY_PRINTF("ctor_copy_range_check [%zd .. %zd] -> ??, dist %zd\n", (first-begin_), (last-begin_)-1, (last-first));
+                if( first > last ) {
+                    throw jau::IllegalArgumentException("first "+aptrHexString(first)+" > last "+aptrHexString(last), E_FILE_LINE);
+                }
+                for(; first < last; ++dest, ++first) {
+                    new (dest) value_type( *first ); // placement new
+                }
+            }
+            constexpr pointer clone_range_check(const size_type dest_capacity, iterator first, const_iterator last) {
+                DARRAY_PRINTF("clone_range_check [%zd .. %zd], count %zd -> %d\n", (first-begin_), (last-begin_)-1, (last-first), (int)dest_capacity);
                 if( dest_capacity < size_type(last-first) ) {
                     throw jau::IllegalArgumentException("capacity "+std::to_string(dest_capacity)+" < source range "+
                                                         std::to_string(difference_type(last-first)), E_FILE_LINE);
                 }
                 pointer dest = allocStore(dest_capacity);
-                ctor_copy_range(dest, first, last);
+                ctor_copy_range_check(dest, first, last);
                 return dest;
             }
             template< class InputIt >
             constexpr static void ctor_copy_range_foreign(pointer dest, InputIt first, InputIt last) {
+                if( first > last ) {
+                    throw jau::IllegalArgumentException("first "+jau::to_string( first )+" > last "+
+                                                                 jau::to_string( last ), E_FILE_LINE);
+                }
                 for(; first != last; ++dest, ++first) {
                     new (dest) value_type( *first ); // placement new
                 }
             }
             template< class InputIt >
             constexpr pointer clone_range_foreign(const size_type dest_capacity, InputIt first, InputIt last) {
-                if( first > last ) {
-                    throw jau::IllegalArgumentException("first "+jau::to_string( first )+" > last "+
-                                                                 jau::to_string( last ), E_FILE_LINE);
-                }
                 if( dest_capacity < size_type(last-first) ) {
                     throw jau::IllegalArgumentException("capacity "+std::to_string(dest_capacity)+" < source range "+
                                                         std::to_string(difference_type(last-first)), E_FILE_LINE);
@@ -310,13 +323,11 @@ namespace jau {
                 }
             }
             constexpr void grow_storage_move() {
-                const size_type old_capacity = capacity();
-                const size_type new_capacity = std::max<size_type>(old_capacity+1, static_cast<size_type>(old_capacity * growth_factor_ + 0.5f) );
-                grow_storage_move(new_capacity);
+                grow_storage_move( get_grown_capacity() );
             }
 
             constexpr void move_elements(iterator dest, const_iterator first, const difference_type count) noexcept {
-                // Debatable here: "Moved sources have been disowned, semantically, need to zero to avoid source dtor releasing resources!"
+                // Debatable here: "Moved source array has been taken over, flush sources' pointer to avoid value_type dtor releasing taken resources!"
                 // Debatable, b/c is this even possible for user to hold an instance the way, that a dtor gets called? Probably not.
                 // Hence we leave it to 'sec_mem' to bzero...
                 if( use_memmove ) {
@@ -436,7 +447,7 @@ namespace jau {
             {
                 DARRAY_PRINTF("ctor move0: this %s\n", get_info().c_str());
                 DARRAY_PRINTF("ctor move0:    x %s\n", x.get_info().c_str());
-                // Moved sources have been disowned, semantically, need to zero to avoid source dtor releasing resources!
+                // Moved source array has been taken over, flush sources' pointer to avoid value_type dtor releasing taken resources!
                 explicit_bzero((void*)&x, sizeof(x));
             }
 
@@ -446,7 +457,7 @@ namespace jau {
             {
                 DARRAY_PRINTF("ctor move1: this %s\n", get_info().c_str());
                 DARRAY_PRINTF("ctor move1:    x %s\n", x.get_info().c_str());
-                // Moved sources have been disowned, semantically, need to zero to avoid source dtor releasing resources!
+                // Moved source array has been taken over, flush sources' pointer to avoid value_type dtor releasing taken resources!
 #if 1
                 explicit_bzero((void*)&x, sizeof(x));
 #else
@@ -474,7 +485,7 @@ namespace jau {
              */
             constexpr explicit darray(const size_type _capacity, const_iterator first, const_iterator last,
                                       const float growth_factor=DEFAULT_GROWTH_FACTOR, const allocator_type& alloc = allocator_type())
-            : alloc_inst( alloc ), begin_( clone_range(_capacity, first, last) ), end_(begin_ + size_type(last - first) ),
+            : alloc_inst( alloc ), begin_( clone_range_check(_capacity, first, last) ), end_(begin_ + size_type(last - first) ),
               storage_end_( begin_ + _capacity ), growth_factor_( growth_factor ) {
                 DARRAY_PRINTF("ctor iters0: %s\n", get_info().c_str());
             }
@@ -585,11 +596,12 @@ namespace jau {
             constexpr size_type capacity() const noexcept { return size_type(storage_end_ - begin_); }
 
             /**
-             * Return the current capacity() multiplied by the growth factor, minimum is capacity()+1.
+             * Return the current capacity() multiplied by the growth factor, minimum is max(capacity()+1, 10).
              */
             constexpr size_type get_grown_capacity() const noexcept {
-                const size_type old_capacity = capacity();
-                return std::max<size_type>(old_capacity+1, static_cast<size_type>(old_capacity * growth_factor_ + 0.5f) );
+                const size_type a_capacity = capacity();
+                return std::max<size_type>( std::max<size_type>( MIN_SIZE_AT_GROW, a_capacity+1 ),
+                                            static_cast<size_type>(a_capacity * growth_factor_ + 0.5f) );
             }
 
             /**
@@ -748,10 +760,10 @@ namespace jau {
                 dtor_range(begin_, end_);
                 if( x_size_ > capacity_ ) {
                     freeStore();
-                    begin_ =  clone_range(x_size_, first, last);
+                    begin_ =  clone_range_check(x_size_, first, last);
                     set_iterator(x_size_, x_size_);
                 } else {
-                    ctor_copy_range(begin_, first, last);
+                    ctor_copy_range_check(begin_, first, last);
                     set_iterator(x_size_, capacity_);
                 }
             }
@@ -770,7 +782,7 @@ namespace jau {
                     storage_end_ = std::move(x.storage_end_);
                     growth_factor_ = std::move( x.growth_factor_ );
 
-                    // Moved sources have been disowned, semantically, need to zero to avoid source dtor releasing resources!
+                    // Moved source array has been taken over, flush sources' pointer to avoid value_type dtor releasing taken resources!
                     explicit_bzero((void*)&x, sizeof(x));
                 }
                 DARRAY_PRINTF("assignment move.X: this %s\n", get_info().c_str());
@@ -1125,15 +1137,15 @@ namespace jau {
                 difference_type cap_ = (storage_end_-begin_);
                 difference_type size_ = (end_-begin_);
                 std::string res("darray[this "+jau::aptrHexString(this)+
-                                 ", size "+std::to_string(size_)+"/"+std::to_string(cap_)+
-                                 ", growth "+std::to_string(growth_factor_)+
-                                 ", uses[mmm "+std::to_string(uses_memmove)+
-                                 ", ralloc "+std::to_string(uses_realloc)+
-                                 ", smem "+std::to_string(sec_mem)+
-                                 "], begin "+jau::aptrHexString(begin_)+
-                                 ", end "+jau::aptrHexString(end_)+
-                                 ", send "+jau::aptrHexString(storage_end_)+
-                                 "]");
+                                ", size "+std::to_string(size_)+"/"+std::to_string(cap_)+
+                                ", growth "+std::to_string(growth_factor_)+
+                                ", uses[mmm "+std::to_string(uses_memmove)+
+                                ", ralloc "+std::to_string(uses_realloc)+
+                                ", smem "+std::to_string(sec_mem)+
+                                "], begin "+jau::aptrHexString(begin_)+
+                                ", end "+jau::aptrHexString(end_)+
+                                ", send "+jau::aptrHexString(storage_end_)+
+                                "]");
                 return res;
             }
     };
