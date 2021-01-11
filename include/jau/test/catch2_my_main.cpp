@@ -41,6 +41,9 @@ bool catch_auto_run;
 /** Run w/ command-line arg '--perf_analysis'. */
 bool catch_perf_analysis;
 
+static char * extra_args[] = { (char*)"--use-colour", (char*)"no" };
+static int extra_args_c = sizeof(extra_args) / sizeof(const char *);
+
 int main( int argc, char* argv[] )
 {
   Catch::Session session; // There must be exactly one instance
@@ -48,7 +51,7 @@ int main( int argc, char* argv[] )
   catch_auto_run = ( 1 >= argc );
 
   int argc_2=0;
-  char* argv_2[argc];
+  char* argv_2[argc+extra_args_c];
 
   for(int i=0; i<argc; i++) {
       if( 0 == strcmp("--perf_analysis", argv[i]) ) {
@@ -57,8 +60,14 @@ int main( int argc, char* argv[] )
           argv_2[argc_2++] = argv[i];
       }
   }
-  fprintf(stderr, "argc %d, auto_run %d, perf_analysis %d\n",
-          argc, catch_auto_run, catch_perf_analysis);
+  for(int i=0; i<extra_args_c; i++) {
+      argv_2[argc_2++] = extra_args[i];
+  }
+  fprintf(stderr, "argc %d -> %d, auto_run %d, perf_analysis %d\n",
+          argc, argc_2, catch_auto_run, catch_perf_analysis);
+  for(int i=0; i<argc_2; i++) {
+      printf("[%d] %s\n", i, argv_2[i]);
+  }
 
   // writing to session.configData() here sets defaults
   // this is the preferred way to set them
