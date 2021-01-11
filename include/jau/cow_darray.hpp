@@ -386,7 +386,7 @@ namespace jau {
 
             __constexpr_non_literal_atomic__
             cow_darray(cow_darray && x) noexcept {
-                // Stragtegy-1: Acquire lock, blocking
+                // Strategy-1: Acquire lock, blocking
                 // - If somebody else holds the lock, we wait.
                 // - Then we own the lock
                 // - Post move-op, the source object does not exist anymore
@@ -411,7 +411,7 @@ namespace jau {
              */
             __constexpr_non_literal_atomic__
             cow_darray& operator=(cow_darray&& x) noexcept {
-                // Stragtegy-2: Acquire locks of both, blocking
+                // Strategy-2: Acquire locks of both, blocking
                 // - If somebody else holds the lock, we wait.
                 // - Then we own the lock for both instances
                 // - Post move-op, the source object does not exist anymore

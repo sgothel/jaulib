@@ -192,7 +192,7 @@ namespace jau {
             }
 
             constexpr cow_vector(cow_vector && x) noexcept {
-                // Stragtegy-1: Acquire lock, blocking
+                // Strategy-1: Acquire lock, blocking
                 // - If somebody else holds the lock, we wait.
                 // - Then we own the lock
                 // - Post move-op, the source object does not exist anymore
@@ -214,7 +214,7 @@ namespace jau {
              * </p>
              */
             cow_vector& operator=(cow_vector&& x) {
-                // Stragtegy-2: Acquire locks of both, blocking
+                // Strategy-2: Acquire locks of both, blocking
                 // - If somebody else holds the lock, we wait.
                 // - Then we own the lock for both instances
                 // - Post move-op, the source object does not exist anymore
