@@ -191,7 +191,8 @@ namespace jau {
                 return *this;
             }
 
-            constexpr cow_vector(cow_vector && x) noexcept {
+            __constexpr_non_literal_atomic__
+            cow_vector(cow_vector && x) noexcept {
                 // Strategy-1: Acquire lock, blocking
                 // - If somebody else holds the lock, we wait.
                 // - Then we own the lock
@@ -213,6 +214,7 @@ namespace jau {
              * This write operation uses a mutex lock and is blocking both cow_vector instance's write operations.
              * </p>
              */
+            __constexpr_non_literal_atomic__
             cow_vector& operator=(cow_vector&& x) {
                 // Strategy-2: Acquire locks of both, blocking
                 // - If somebody else holds the lock, we wait.
