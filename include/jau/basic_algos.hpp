@@ -295,11 +295,11 @@ namespace jau {
     const typename T::value_type * find_const(T& data, typename T::value_type const & elem,
             std::enable_if_t< is_cow_type<T>::value, bool> = true ) noexcept
     {
-        typename T::const_iterator begin = data.cbegin();
-        typename T::const_iterator end = begin.end();
-        auto it = jau::find( begin, end, elem);
-        if( it != end ) {
-            return &(*it);
+        typename T::const_iterator first = data.cbegin();
+        for (; !first.is_end(); ++first) {
+            if (*first == elem) {
+                return &(*first);
+            }
         }
         return nullptr;
     }
@@ -307,10 +307,12 @@ namespace jau {
     const typename T::value_type * find_const(T& data, typename T::value_type const & elem,
             std::enable_if_t< !is_cow_type<T>::value, bool> = true ) noexcept
     {
-        typename T::const_iterator end = data.cend();
-        auto it = jau::find( data.cbegin(), end, elem);
-        if( it != end ) {
-            return &(*it);
+        typename T::const_iterator first = data.cbegin();
+        typename T::const_iterator last = data.cend();
+        for (; first != last; ++first) {
+            if (*first == elem) {
+                return &(*first);
+            }
         }
         return nullptr;
     }
@@ -323,8 +325,7 @@ namespace jau {
             std::enable_if_t< is_cow_type<T>::value, bool> = true ) noexcept
     {
         typename T::const_iterator first = data.cbegin();
-        typename T::const_iterator last = first.end();
-        for (; first != last; ++first) {
+        for (; !first.is_end(); ++first) {
             f(*first);
         }
         return f; // implicit move since C++11
@@ -352,8 +353,7 @@ namespace jau {
             std::enable_if_t< is_cow_type<T>::value, bool> = true ) noexcept
     {
         typename T::const_iterator first = data.cbegin();
-        typename T::const_iterator last = first.end();
-        for (; first != last; ++first) {
+        for (; !first.is_end(); ++first) {
             f( *const_cast<typename T::value_type*>( & (*first) ) );
         }
         return f; // implicit move since C++11
