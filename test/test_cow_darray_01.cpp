@@ -188,6 +188,15 @@ static NamedSharedPayloadListDefault<Payload> makeNamedSharedPayloadListDefault(
     return NamedSharedPayloadListDefault<Payload>{name, data};
 }
 template<class Payload>
+static NamedSharedPayloadListDefault<Payload> modifyCopyOfNamedSharedPayloadListDefault(NamedSharedPayloadListDefault<Payload> src) {
+    printf("XXX1: %s\n", src.toString().c_str());
+    src.payload.pop_back();
+    src.payload.erase(src.payload.cbegin());
+    printf("XXX2: %s\n", src.toString().c_str());
+    return src;
+}
+
+template<class Payload>
 static NamedSharedPayloadListMemMove<Payload> makeNamedSharedPayloadListMemMove(int name) {
     SharedPayloadListMemMove<Payload> data;
     int i=0;
@@ -342,6 +351,28 @@ static void testDArrayValueType(const std::string& type_id) {
         printf("COPY-1: %s\n\n", data2.toString().c_str());
         printf("COPY-2: %s\n\n", data3.toString().c_str());
         printf("COPY+2: %s\n\n", data8.toString().c_str());
+
+        NamedSharedPayloadListDefault<Payload> data8_mod(modifyCopyOfNamedSharedPayloadListDefault(data8));
+        printf("MODI+2-2: %s\n\n", data8_mod.toString().c_str());
+
+        struct Holder {
+            NamedSharedPayloadListDefault<Payload> lala;
+            NamedSharedPayloadListDefault<Payload> & get_ref() { return lala; }
+            NamedSharedPayloadListDefault<Payload> & get_ref2() { lala.payload.pop_back(); return lala; }
+            NamedSharedPayloadListDefault<Payload> get_copy() { return lala; }
+        };
+        Holder holder{ data };
+        NamedSharedPayloadListDefault<Payload> & r1r1 = holder.get_ref();
+        printf("R1R1: %s\n\n", r1r1.toString().c_str());
+
+        NamedSharedPayloadListDefault<Payload> r2c1 = holder.get_ref();
+        printf("R1C1: %s\n\n", r2c1.toString().c_str());
+
+        NamedSharedPayloadListDefault<Payload> c1c2 = holder.get_copy();
+        printf("C1C2: %s\n\n", c1c2.toString().c_str());
+
+        r1r1 = holder.get_ref2();
+        printf("R2R2: %s\n\n", r1r1.toString().c_str());
     }
     {
 #if CHECK_TRAITS
