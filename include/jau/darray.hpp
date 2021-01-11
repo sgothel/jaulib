@@ -439,6 +439,31 @@ namespace jau {
                 DARRAY_PRINTF("ctor copy2:    x %s\n", x.get_info().c_str());
             }
 
+            /**
+             * Like std::vector::operator=(&), assignment
+             */
+            constexpr darray& operator=(const darray& x) {
+                DARRAY_PRINTF("assignment copy.0: this %s\n", get_info().c_str());
+                DARRAY_PRINTF("assignment copy.0:    x %s\n", x.get_info().c_str());
+                if( this != &x ) {
+                    const size_type capacity_ = capacity();
+                    const size_type x_size_ = x.size();
+                    dtor_range(begin_, end_);
+                    growth_factor_ = x.growth_factor_;
+                    if( x_size_ > capacity_ ) {
+                        freeStore();
+                        begin_ =  clone_range(x_size_, x.begin_, x.end_);
+                        set_iterator(x_size_, x_size_);
+                    } else {
+                        ctor_copy_range(begin_, x.begin_, x.end_);
+                        set_iterator(x_size_, capacity_);
+                    }
+                }
+                DARRAY_PRINTF("assignment copy.X: this %s\n", get_info().c_str());
+                DARRAY_PRINTF("assignment copy.X:    x %s\n", x.get_info().c_str());
+                return *this;
+            }
+
             // move_ctor on darray elements
 
             constexpr darray(darray && x) noexcept
@@ -466,6 +491,28 @@ namespace jau {
                 x.storage_end_ = nullptr;
                 x.growth_factor_ = 0.0;
 #endif
+            }
+
+            /**
+             * Like std::vector::operator=(&&), move.
+             */
+            constexpr darray& operator=(darray&& x) noexcept {
+                DARRAY_PRINTF("assignment move.0: this %s\n", get_info().c_str());
+                DARRAY_PRINTF("assignment move.0:    x %s\n", x.get_info().c_str());
+                if( this != &x ) {
+                    clear();
+                    alloc_inst = std::move(x.alloc_inst);
+                    begin_ = std::move(x.begin_);
+                    end_ = std::move(x.end_);
+                    storage_end_ = std::move(x.storage_end_);
+                    growth_factor_ = std::move( x.growth_factor_ );
+
+                    // Moved source array has been taken over, flush sources' pointer to avoid value_type dtor releasing taken resources!
+                    explicit_bzero((void*)&x, sizeof(x));
+                }
+                DARRAY_PRINTF("assignment move.X: this %s\n", get_info().c_str());
+                DARRAY_PRINTF("assignment move.X:    x %s\n", x.get_info().c_str());
+                return *this;
             }
 
             // ctor on const_iterator and foreign template iterator
@@ -703,31 +750,6 @@ namespace jau {
             }
 
             /**
-             * Like std::vector::operator=(&), assignment
-             */
-            constexpr darray& operator=(const darray& x) {
-                DARRAY_PRINTF("assignment copy.0: this %s\n", get_info().c_str());
-                DARRAY_PRINTF("assignment copy.0:    x %s\n", x.get_info().c_str());
-                if( this != &x ) {
-                    const size_type capacity_ = capacity();
-                    const size_type x_size_ = x.size();
-                    dtor_range(begin_, end_);
-                    growth_factor_ = x.growth_factor_;
-                    if( x_size_ > capacity_ ) {
-                        freeStore();
-                        begin_ =  clone_range(x_size_, x.begin_, x.end_);
-                        set_iterator(x_size_, x_size_);
-                    } else {
-                        ctor_copy_range(begin_, x.begin_, x.end_);
-                        set_iterator(x_size_, capacity_);
-                    }
-                }
-                DARRAY_PRINTF("assignment copy.X: this %s\n", get_info().c_str());
-                DARRAY_PRINTF("assignment copy.X:    x %s\n", x.get_info().c_str());
-                return *this;
-            }
-
-            /**
              * Like std::vector::assign()
              * @tparam InputIt foreign input-iterator to range of value_type [first, last)
              * @param first first foreign input-iterator to range of value_type [first, last)
@@ -766,28 +788,6 @@ namespace jau {
                     ctor_copy_range_check(begin_, first, last);
                     set_iterator(x_size_, capacity_);
                 }
-            }
-
-            /**
-             * Like std::vector::operator=(&&), move.
-             */
-            constexpr darray& operator=(darray&& x) noexcept {
-                DARRAY_PRINTF("assignment move.0: this %s\n", get_info().c_str());
-                DARRAY_PRINTF("assignment move.0:    x %s\n", x.get_info().c_str());
-                if( this != &x ) {
-                    clear();
-                    alloc_inst = std::move(x.alloc_inst);
-                    begin_ = std::move(x.begin_);
-                    end_ = std::move(x.end_);
-                    storage_end_ = std::move(x.storage_end_);
-                    growth_factor_ = std::move( x.growth_factor_ );
-
-                    // Moved source array has been taken over, flush sources' pointer to avoid value_type dtor releasing taken resources!
-                    explicit_bzero((void*)&x, sizeof(x));
-                }
-                DARRAY_PRINTF("assignment move.X: this %s\n", get_info().c_str());
-                DARRAY_PRINTF("assignment move.X:    x %s\n", x.get_info().c_str());
-                return *this;
             }
 
             /**

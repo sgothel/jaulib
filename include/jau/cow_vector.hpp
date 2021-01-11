@@ -156,6 +156,9 @@ namespace jau {
             constexpr cow_vector(size_type n, const value_type& value, const allocator_type& a = allocator_type())
             : store_ref( std::make_shared<storage_t>(n, value, a) ), sync_atomic(false) { }
 
+            constexpr explicit cow_vector(const storage_t& x)
+            : store_ref( std::make_shared<storage_t>(x, x->get_allocator()) ), sync_atomic(false) { }
+
             __constexpr_non_literal_atomic__
             cow_vector(const cow_vector& x)
             : sync_atomic(false) {
@@ -167,8 +170,26 @@ namespace jau {
                 store_ref = std::make_shared<storage_t>( *x_store_ref, x_store_ref->get_allocator() );
             }
 
-            constexpr explicit cow_vector(const storage_t& x)
-            : store_ref( std::make_shared<storage_t>(x, x->get_allocator()) ), sync_atomic(false) { }
+            /**
+             * Like std::vector::operator=(&), assignment
+             * <p>
+             * This write operation uses a mutex lock and is blocking this instances' write operations only.
+             * </p>
+             */
+            cow_vector& operator=(const cow_vector& x) {
+                std::lock_guard<std::recursive_mutex> lock(mtx_write);
+                storage_ref_t x_store_ref;
+                {
+                    sc_atomic_critical sync_x( x.sync_atomic );
+                    x_store_ref = x.store_ref;
+                }
+                storage_ref_t new_store_ref = std::make_shared<storage_t>( *x_store_ref, x_store_ref->get_allocator() );
+                {
+                    sc_atomic_critical sync(sync_atomic);
+                    store_ref = std::move(new_store_ref);
+                }
+                return *this;
+            }
 
             constexpr cow_vector(cow_vector && x) noexcept {
                 // Stragtegy-1: Acquire lock, blocking
@@ -184,6 +205,32 @@ namespace jau {
                     // Moved source array has been taken over, null its store_ref
                     x.store_ref = nullptr;
                 }
+            }
+
+            /**
+             * Like std::vector::operator=(&&), move.
+             * <p>
+             * This write operation uses a mutex lock and is blocking both cow_vector instance's write operations.
+             * </p>
+             */
+            cow_vector& operator=(cow_vector&& x) {
+                // Stragtegy-2: Acquire locks of both, blocking
+                // - If somebody else holds the lock, we wait.
+                // - Then we own the lock for both instances
+                // - Post move-op, the source object does not exist anymore
+                std::unique_lock<std::recursive_mutex> lock1(x.mtx_write, std::defer_lock); // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
+                std::unique_lock<std::recursive_mutex> lock2(  mtx_write, std::defer_lock); // otherwise RAII-style relinquish via destructor
+                std::lock(lock1, lock2);
+                {
+                    sc_atomic_critical sync_x( x.sync_atomic );
+                    sc_atomic_critical sync  (   sync_atomic );
+                    store_ref = std::move(x.store_ref);
+                    // mtx_write and the atomic will be kept as is, but we hold the source's lock
+
+                    // Moved source array has been taken over, null its store_ref
+                    x.store_ref = nullptr;
+                }
+                return *this;
             }
 
             /**
@@ -375,53 +422,6 @@ namespace jau {
                     sc_atomic_critical sync( sync_atomic );
                     store_ref = std::move(new_store_ref);
                 }
-            }
-
-            /**
-             * Like std::vector::operator=(&), assignment
-             * <p>
-             * This write operation uses a mutex lock and is blocking this instances' write operations only.
-             * </p>
-             */
-            cow_vector& operator=(const cow_vector& x) {
-                std::lock_guard<std::recursive_mutex> lock(mtx_write);
-                storage_ref_t x_store_ref;
-                {
-                    sc_atomic_critical sync_x( x.sync_atomic );
-                    x_store_ref = x.store_ref;
-                }
-                storage_ref_t new_store_ref = std::make_shared<storage_t>( *x_store_ref, x_store_ref->get_allocator() );
-                {
-                    sc_atomic_critical sync(sync_atomic);
-                    store_ref = std::move(new_store_ref);
-                }
-                return *this;
-            }
-
-            /**
-             * Like std::vector::operator=(&&), move.
-             * <p>
-             * This write operation uses a mutex lock and is blocking both cow_vector instance's write operations.
-             * </p>
-             */
-            cow_vector& operator=(cow_vector&& x) {
-                // Stragtegy-2: Acquire locks of both, blocking
-                // - If somebody else holds the lock, we wait.
-                // - Then we own the lock for both instances
-                // - Post move-op, the source object does not exist anymore
-                std::unique_lock<std::recursive_mutex> lock1(x.mtx_write, std::defer_lock); // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
-                std::unique_lock<std::recursive_mutex> lock2(  mtx_write, std::defer_lock); // otherwise RAII-style relinquish via destructor
-                std::lock(lock1, lock2);
-                {
-                    sc_atomic_critical sync_x( x.sync_atomic );
-                    sc_atomic_critical sync  (   sync_atomic );
-                    store_ref = std::move(x.store_ref);
-                    // mtx_write and the atomic will be kept as is, but we hold the source's lock
-
-                    // Moved source array has been taken over, null its store_ref
-                    x.store_ref = nullptr;
-                }
-                return *this;
             }
 
             /**
