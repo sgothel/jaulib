@@ -175,7 +175,7 @@ namespace jau {
                 std::unique_lock<std::recursive_mutex>  lock(x.mtx_write); // *this doesn't exist yet, not locking ourselves
                 {
                     store_ref = std::move(x.store_ref);
-                    sync_atomic = std::move(x.sync_atomic);
+                    // sync_atomic = std::move(x.sync_atomic);
                     // mtx_write will be a fresh one, but we hold the source's lock
 
                     // Moved source array has been taken over, null its store_ref

@@ -398,7 +398,7 @@ namespace jau {
                     DARRAY_PRINTF("ctor move.0: this %s\n", get_info().c_str());
                     DARRAY_PRINTF("ctor move.0:    x %s\n", x.get_info().c_str());
                     store_ref = std::move(x.store_ref);
-                    sync_atomic = std::move(x.sync_atomic);
+                    // sync_atomic = std::move(x.sync_atomic); // issues w/ g++ 8.3 (move marked as deleted)
                     // mtx_write will be a fresh one, but we hold the source's lock
 
                     // Moved source array has been taken over, null its store_ref
