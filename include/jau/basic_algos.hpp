@@ -295,8 +295,7 @@ namespace jau {
     const typename T::value_type * find_const(T& data, typename T::value_type const & elem,
             std::enable_if_t< is_cow_type<T>::value, bool> = true ) noexcept
     {
-        typename T::const_iterator first = data.cbegin();
-        for (; !first.is_end(); ++first) {
+        for (typename T::const_iterator first = data.cbegin(); !first.is_end(); ++first) {
             if (*first == elem) {
                 return &(*first);
             }
@@ -324,8 +323,7 @@ namespace jau {
     constexpr UnaryFunction for_each_const(T& data, UnaryFunction f,
             std::enable_if_t< is_cow_type<T>::value, bool> = true ) noexcept
     {
-        typename T::const_iterator first = data.cbegin();
-        for (; !first.is_end(); ++first) {
+        for (typename T::const_iterator first = data.cbegin(); !first.is_end(); ++first) {
             f(*first);
         }
         return f; // implicit move since C++11
@@ -352,8 +350,7 @@ namespace jau {
     constexpr UnaryFunction for_each_fidelity(T& data, UnaryFunction f,
             std::enable_if_t< is_cow_type<T>::value, bool> = true ) noexcept
     {
-        typename T::const_iterator first = data.cbegin();
-        for (; !first.is_end(); ++first) {
+        for (typename T::const_iterator first = data.cbegin(); !first.is_end(); ++first) {
             f( *const_cast<typename T::value_type*>( & (*first) ) );
         }
         return f; // implicit move since C++11
