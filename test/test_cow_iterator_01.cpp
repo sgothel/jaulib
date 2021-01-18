@@ -541,6 +541,9 @@ static bool test_mutable_iterator_ops(const std::string& type_id,
         REQUIRE( iter.storage() == citer0.storage() );
         REQUIRE( iter.storage() == *data.snapshot() );
 
+        REQUIRE( iter.dist_begin() == 0       );
+        REQUIRE( iter.dist_end()   == static_cast<diff_type>(size_pre));
+
         int i;
         (void)i;
         // pop_back()
@@ -548,6 +551,8 @@ static bool test_mutable_iterator_ops(const std::string& type_id,
         REQUIRE( iter.size() == size_pre-1 );
         REQUIRE( iter == iter.end() );
         REQUIRE( iter == iter.begin()+size_pre-1 );
+        REQUIRE( iter.dist_begin() == static_cast<diff_type>(size_pre)-1 );
+        REQUIRE( iter.dist_end()   == 0          );
         REQUIRE( iter[-1] == elem );
         {
             storage_t data_exp = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
@@ -559,6 +564,8 @@ static bool test_mutable_iterator_ops(const std::string& type_id,
         // insert( citer_type pos, InputIt first, InputIt last )
         REQUIRE( iter == iter.end() );
         size_pre = iter.size();
+        REQUIRE( iter.dist_begin() == static_cast<diff_type>(size_pre));
+        REQUIRE( iter.dist_end()   == 0);
         {
             T data2;
             fill_list(data2, 10);
@@ -567,6 +574,8 @@ static bool test_mutable_iterator_ops(const std::string& type_id,
         }
         REQUIRE( iter.size() == size_pre+10 );
         REQUIRE( iter == iter.end()-10 );
+        REQUIRE( iter.dist_begin() == static_cast<diff_type>(size_pre));
+        REQUIRE( iter.dist_end()   == 10);
         {
             storage_t data_exp = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
             REQUIRE(iter.storage() == data_exp);
@@ -674,6 +683,8 @@ static bool test_mutable_iterator_ops(const std::string& type_id,
         iter.to_begin();
         iter += 5;
         REQUIRE( iter == iter.begin()+5 );
+        REQUIRE( iter.dist_begin() == 5 );
+
         size_pre = iter.size();
         {
             T data2;
@@ -1133,43 +1144,57 @@ static bool test_01_cow_iterator_properties(const std::string& type_id) {
     // test relationship and distance with mixed iterator and citer_type
     // in both direction using the free overloaded operator of cow_ro_* and cow_rw_*
     {
-        iter_type  citer1 = data.begin();
-        citer_type citer2 = citer1.immutable();
-        citer_type citer3 = citer1.immutable().to_end();
+        iter_type   iter1 = data.begin();
+        citer_type citer2 =  iter1.immutable();
+        citer_type citer3 =  iter1.immutable().to_end();
 
-        REQUIRE(    citer1.is_begin() );
+        REQUIRE(     iter1.is_begin() );
         REQUIRE(    citer2.is_begin() );
         REQUIRE(    citer3.is_end() );
 
-        REQUIRE( (  citer1 == citer2  ) == true);  // iter op==()
-        REQUIRE( (  citer2 == citer1 ) == true);  // iter op==()
+        REQUIRE(  iter1.dist_begin() == 0);
+        REQUIRE(  iter1.dist_end()   == size0);
+        REQUIRE( citer2.dist_begin() == 0);
+        REQUIRE( citer2.dist_end()   == size0);
+        REQUIRE( citer3.dist_begin() == size0);
+        REQUIRE( citer3.dist_end()   == 0);
+
+        REQUIRE( (   iter1 == citer2  ) == true);  // iter op==()
+        REQUIRE( (  citer2 ==  iter1 ) == true);  // iter op==()
 
         ++citer2;
-        REQUIRE( (  citer2 != citer1 ) == true);  // iter op==()
-        REQUIRE( (  citer1 != citer2 ) == true);  // iter op==()
-        REQUIRE( (  citer2 >  citer1 ) == true);  // iter op==()
-        REQUIRE( (  citer2 >= citer1 ) == true);  // iter op==()
-        REQUIRE( (  citer1 <  citer2 ) == true);  // iter op==()
-        REQUIRE( (  citer1 <= citer2 ) == true);  // iter op==()
-        REQUIRE( (  citer2 -  citer1 ) ==  1);  // iter op==()
-        REQUIRE( (  citer1 -  citer2 ) == -1);  // iter op==()
+        REQUIRE( (  citer2 !=  iter1 ) == true);  // iter op==()
+        REQUIRE( (   iter1 != citer2 ) == true);  // iter op==()
+        REQUIRE( (  citer2 >   iter1 ) == true);  // iter op==()
+        REQUIRE( (  citer2 >=  iter1 ) == true);  // iter op==()
+        REQUIRE( (   iter1 <  citer2 ) == true);  // iter op==()
+        REQUIRE( (   iter1 <= citer2 ) == true);  // iter op==()
+        REQUIRE( (  citer2 -   iter1 ) ==  1);  // iter op==()
+        REQUIRE( (   iter1 -  citer2 ) == -1);  // iter op==()
+        REQUIRE( citer2.dist_begin()   ==  1);
+        REQUIRE( citer2.dist_end()     == size0-1);
 
         --citer2;
-        ++citer1;
-        REQUIRE( (  citer1 != citer2 ) == true);  // iter op==()
-        REQUIRE( (  citer2 != citer1 ) == true);  // iter op==()
-        REQUIRE( (  citer1 >  citer2 ) == true);  // iter op==()
-        REQUIRE( (  citer1 >= citer2 ) == true);  // iter op==()
-        REQUIRE( (  citer2 <  citer1 ) == true);  // iter op==()
-        REQUIRE( (  citer2 <= citer1 ) == true);  // iter op==()
-        REQUIRE( (  citer1 -  citer2 ) ==  1);  // iter op==()
-        REQUIRE( (  citer2 -  citer1 ) == -1);  // iter op==()
+        ++iter1;
+        REQUIRE( (   iter1 != citer2 ) == true);  // iter op==()
+        REQUIRE( (  citer2 !=  iter1 ) == true);  // iter op==()
+        REQUIRE( (   iter1 >  citer2 ) == true);  // iter op==()
+        REQUIRE( (   iter1 >= citer2 ) == true);  // iter op==()
+        REQUIRE( (  citer2 <   iter1 ) == true);  // iter op==()
+        REQUIRE( (  citer2 <=  iter1 ) == true);  // iter op==()
+        REQUIRE( (   iter1 -  citer2 ) ==  1);  // iter op==()
+        REQUIRE( (  citer2 -   iter1 ) == -1);  // iter op==()
+        REQUIRE(  iter1.dist_begin() == 1);
+        REQUIRE(  iter1.dist_end()   == size0-1);
+        REQUIRE( citer2.dist_begin() == 0);
+        REQUIRE( citer2.dist_end()   == size0);
 
-        REQUIRE( (  citer1.end() == citer3  ) == true);  // iter op==()
-        REQUIRE( (  citer1.to_end() == citer3  ) == true);  // iter op==()
-        REQUIRE(    citer1.is_end() );
+        REQUIRE( (   iter1.end() == citer3  ) == true);  // iter op==()
+        REQUIRE( (   iter1.to_end() == citer3  ) == true);  // iter op==()
+        REQUIRE(     iter1.is_end() );
         REQUIRE(    citer3.is_end() );
-
+        REQUIRE(  iter1.dist_begin() == size0);
+        REQUIRE(  iter1.dist_end()   == 0);
     }
 
     // test mutable non-const 'new store' behavior
