@@ -116,7 +116,7 @@ template <typename T, std::nullptr_t nullelem, typename Size_type> class ringbuf
             if( allocArrayAndCapacity ) {
                 capacityPlusOne = source.capacityPlusOne;
                 if( nullptr != array ) {
-                    freeArray(array, true);
+                    freeArray(array);
                 }
                 array = newArray(capacityPlusOne);
             } else if( capacityPlusOne != source.capacityPlusOne ) {
@@ -161,6 +161,9 @@ template <typename T, std::nullptr_t nullelem, typename Size_type> class ringbuf
             if( nullptr != copyFrom && 0 < copyFromCount ) {
                 if( copyFromCount > capacityPlusOne-1 ) {
                     // new blank resized array
+                    if( nullptr != array ) {
+                        freeArray(array);
+                    }
                     capacityPlusOne = copyFromCount + 1;
                     array = newArray(capacityPlusOne);
                     readPos = 0;
@@ -408,6 +411,9 @@ template <typename T, std::nullptr_t nullelem, typename Size_type> class ringbuf
         { }
 
         ~ringbuffer() noexcept {
+            if( nullptr == array ) {
+                ABORT("ringbuffer::dtor array==nullptr");
+            }
             freeArray(array);
         }
 
