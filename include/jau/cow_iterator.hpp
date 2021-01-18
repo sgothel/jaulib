@@ -294,6 +294,11 @@ namespace jau {
             }
 
             /**
+             * Returns the distance to_end() using zero as first index. A.k.a the remaining elements iterable.
+             */
+            constexpr difference_type dist_end() const noexcept { return store_ref_->end() - iterator_; }
+
+            /**
              * Returns true, if this iterator points to end().
              */
             constexpr bool is_end() const noexcept { return iterator_ == store_ref_->end(); }
@@ -303,6 +308,11 @@ namespace jau {
              */
             constexpr cow_rw_iterator& to_end() noexcept
             { iterator_ = store_ref_->end(); return *this; }
+
+            /**
+             * Returns the distance to_begin() using zero as first index. A.k.a the index from start.
+             */
+            constexpr difference_type dist_begin() const noexcept { return iterator_ - store_ref_->begin(); }
 
             /**
              * Returns true, if this iterator points to begin().
@@ -768,6 +778,11 @@ namespace jau {
             }
 
             /**
+             * Returns the distance to_end() using zero as first index. A.k.a the remaining elements iterable.
+             */
+            constexpr difference_type dist_end() const noexcept { return store_ref_->cend() - iterator_; }
+
+            /**
              * Returns true, if this iterator points to cend().
              */
             constexpr bool is_end() const noexcept { return iterator_ == store_ref_->cend(); }
@@ -777,6 +792,11 @@ namespace jau {
              */
             constexpr cow_ro_iterator& to_end() noexcept
             { iterator_ = store_ref_->cend(); return *this; }
+
+            /**
+             * Returns the distance to_begin() using zero as first index. A.k.a the index from start.
+             */
+            constexpr difference_type dist_begin() const noexcept { return iterator_ - store_ref_->cbegin(); }
 
             /**
              * Returns true, if this iterator points to cbegin().
