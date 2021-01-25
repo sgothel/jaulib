@@ -110,6 +110,9 @@ Changes
 **0.3.0**
 
 * TODO
+* Offering JaulibSetup.cmake for parent projects for aligned setup.
+* Java: Working JNI-Lib bootstraping w/ fat-jar. Passing all unit tests.
+* Java: Generating jar and source-zip packages (normal + fat); Enable full junit testing.
 * Finalized jau::cow_darray and its iterator API. All write API entries were added to the mutable iterator.
 * Introduce jau::callocator for jau::darray to support realloc instead of alloc, copy and dtor
 * Passed gcc-10, gcc-11, clang-9 and clang-11
