@@ -60,7 +60,8 @@ Java_jau_sys_dl_UnixDynamicLinkerImpl_dlerror(JNIEnv *env, jclass _unused) {
 
   char *  _res;
   _res = dlerror();
-  if (_res == NULL) return NULL;  return env->NewStringUTF(_res);
+  if (_res == NULL) return NULL;  
+  return env->NewStringUTF(_res);
 }
 
 /*
