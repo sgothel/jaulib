@@ -38,7 +38,7 @@ import java.util.Enumeration;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-import org.jau.junit.util.SingletonJunitCase;
+import org.jau.junit.util.JunitTracer;
 import org.jau.net.URIDumpUtil;
 import org.jau.net.Uri;
 import org.jau.pkg.JarUtil;
@@ -54,7 +54,7 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class TestJarUtil extends SingletonJunitCase {
+public class TestJarUtil extends JunitTracer {
     static TempFileCache fileCache;
 
     @BeforeClass

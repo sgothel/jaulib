@@ -37,7 +37,7 @@ import java.net.URLConnection;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import org.jau.junit.util.SingletonJunitCase;
+import org.jau.junit.util.JunitTracer;
 import org.jau.lang.ExceptionUtils;
 import org.jau.sys.MachineDataInfo;
 import org.jau.sys.PlatformProps;
@@ -49,7 +49,7 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class TestIOUtil01 extends SingletonJunitCase {
+public class TestIOUtil01 extends JunitTracer {
 
     static final MachineDataInfo machine = PlatformProps.MACH_DESC_STAT;
     static final int tsz = machine.pageSizeInBytes() + machine.pageSizeInBytes() / 2 ;

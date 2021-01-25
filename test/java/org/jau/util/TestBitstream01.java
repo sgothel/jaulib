@@ -30,7 +30,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.jau.io.Bitstream;
-import org.jau.junit.util.SingletonJunitCase;
+import org.jau.junit.util.JunitTracer;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -52,7 +52,7 @@ import org.junit.runners.MethodSorters;
  * </ul>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class TestBitstream01 extends SingletonJunitCase {
+public class TestBitstream01 extends JunitTracer {
 
     Bitstream<ByteBuffer> getTestStream(final boolean msbFirstData, final boolean msbFirstWrite,
                                         final int preBits, final int skipBits, final int postBits) throws IOException {

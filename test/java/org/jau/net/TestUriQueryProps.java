@@ -5,14 +5,14 @@ import static org.jau.net.URIDumpUtil.showUri;
 import java.io.IOException;
 import java.net.URISyntaxException;
 
-import org.jau.junit.util.SingletonJunitCase;
+import org.jau.junit.util.JunitTracer;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class TestUriQueryProps extends SingletonJunitCase {
+public class TestUriQueryProps extends JunitTracer {
 
     @Test
     public void test() throws IOException, URISyntaxException {

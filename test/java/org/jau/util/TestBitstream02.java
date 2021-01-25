@@ -33,7 +33,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.jau.io.Bitstream;
-import org.jau.junit.util.SingletonJunitCase;
+import org.jau.junit.util.JunitTracer;
 import org.jau.lang.NioUtil;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
@@ -49,7 +49,7 @@ import org.junit.runners.MethodSorters;
  * </ul>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class TestBitstream02 extends SingletonJunitCase {
+public class TestBitstream02 extends JunitTracer {
 
     @Test
     public void test01Int8BitsAligned() throws IOException {

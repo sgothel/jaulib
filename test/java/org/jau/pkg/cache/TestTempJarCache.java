@@ -37,7 +37,7 @@ import java.net.URLClassLoader;
 import java.util.jar.JarFile;
 
 import org.jau.io.IOUtil;
-import org.jau.junit.util.SingletonJunitCase;
+import org.jau.junit.util.JunitTracer;
 import org.jau.lang.ReflectionUtil;
 import org.jau.net.URIDumpUtil;
 import org.jau.net.Uri;
@@ -55,7 +55,7 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class TestTempJarCache extends SingletonJunitCase {
+public class TestTempJarCache extends JunitTracer {
     static TempFileCache fileCache;
 
     static class TestClassLoader extends URLClassLoader {

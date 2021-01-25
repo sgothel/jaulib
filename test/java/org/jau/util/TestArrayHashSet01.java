@@ -29,14 +29,14 @@ package org.jau.util;
 import java.io.IOException;
 import java.util.List;
 
-import org.jau.junit.util.SingletonJunitCase;
+import org.jau.junit.util.JunitTracer;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class TestArrayHashSet01 extends SingletonJunitCase {
+public class TestArrayHashSet01 extends JunitTracer {
 
     public static class Dummy {
         int i1, i2, i3;

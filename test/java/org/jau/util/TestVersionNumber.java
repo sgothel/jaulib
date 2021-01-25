@@ -30,14 +30,14 @@ package org.jau.util;
 
 import java.io.IOException;
 
-import org.jau.junit.util.SingletonJunitCase;
+import org.jau.junit.util.JunitTracer;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class TestVersionNumber extends SingletonJunitCase {
+public class TestVersionNumber extends JunitTracer {
 
     @Test
     public void test01() {

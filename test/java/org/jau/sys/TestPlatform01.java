@@ -28,7 +28,7 @@
 
 package org.jau.sys;
 
-import org.jau.junit.util.SingletonJunitCase;
+import org.jau.junit.util.JunitTracer;
 import org.jau.sys.MachineDataInfo;
 import org.jau.sys.PlatformProps;
 import org.junit.Assert;
@@ -37,7 +37,7 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class TestPlatform01 extends SingletonJunitCase {
+public class TestPlatform01 extends JunitTracer {
 
     @Test
     public void testInfo00()  {

@@ -5,7 +5,7 @@ import static org.jau.net.URIDumpUtil.showURX;
 import java.io.IOException;
 import java.net.URISyntaxException;
 
-import org.jau.junit.util.SingletonJunitCase;
+import org.jau.junit.util.JunitTracer;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
@@ -13,7 +13,7 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class TestUrisWithAssetHandler extends SingletonJunitCase {
+public class TestUrisWithAssetHandler extends JunitTracer {
 
     @BeforeClass
     public static void assetRegistration() throws Exception {

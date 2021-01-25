@@ -33,7 +33,7 @@ import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 
 import org.jau.io.Bitstream;
-import org.jau.junit.util.SingletonJunitCase;
+import org.jau.junit.util.JunitTracer;
 import org.jau.lang.NioUtil;
 import org.jau.sys.PlatformProps;
 import org.junit.Assert;
@@ -47,7 +47,7 @@ import static org.jau.util.BitDemoData.*;
  * Test basic bit operations for {@link Bitstream}
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class TestBitstream00 extends SingletonJunitCase {
+public class TestBitstream00 extends JunitTracer {
 
     @Test
     public void test00ShowByteOrder() {

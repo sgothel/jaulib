@@ -6,14 +6,14 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 import org.jau.io.IOUtil;
-import org.jau.junit.util.SingletonJunitCase;
+import org.jau.junit.util.JunitTracer;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class TestUri01 extends SingletonJunitCase {
+public class TestUri01 extends JunitTracer {
 
     @Test
     public void test00BasicCoding() throws IOException, URISyntaxException {

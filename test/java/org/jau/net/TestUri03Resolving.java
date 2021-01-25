@@ -7,7 +7,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 
-import org.jau.junit.util.SingletonJunitCase;
+import org.jau.junit.util.JunitTracer;
 import org.jau.sys.PlatformProps;
 import org.jau.sys.PlatformTypes;
 import org.junit.Assert;
@@ -16,7 +16,7 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class TestUri03Resolving extends SingletonJunitCase {
+public class TestUri03Resolving extends JunitTracer {
 
     // Bug 908, issues w/ windows file path char: $ ^ ~ # [ ]
 

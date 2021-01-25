@@ -33,7 +33,7 @@ import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.util.List;
 
-import org.jau.junit.util.SingletonJunitCase;
+import org.jau.junit.util.JunitTracer;
 import org.jau.sys.JNILibrary;
 import org.jau.sys.PlatformProps;
 import org.jau.sys.PlatformTypes.OSType;
@@ -42,7 +42,7 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class TestElfReader01 extends SingletonJunitCase {
+public class TestElfReader01 extends JunitTracer {
     public static String GNU_LINUX_SELF_EXE = "/proc/self/exe";
     public static String ARM_HF_EXE = "tst-exe-armhf";
     public static String ARM_SF_EXE = "tst-exe-arm";

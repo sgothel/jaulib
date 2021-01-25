@@ -31,7 +31,7 @@ package org.jau.util.parallel;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 
-import org.jau.junit.util.SingletonJunitCase;
+import org.jau.junit.util.JunitTracer;
 import org.jau.lang.InterruptSource;
 import org.jau.util.parallel.RunnableTask;
 import org.junit.Assert;
@@ -40,7 +40,7 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class TestRunnableTask01 extends SingletonJunitCase {
+public class TestRunnableTask01 extends JunitTracer {
 
     @Test
     public void testInvokeAndWait00() throws IOException, InterruptedException, InvocationTargetException {

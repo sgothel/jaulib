@@ -33,7 +33,7 @@ import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
 
 import org.jau.base.JaulibVersion;
-import org.jau.junit.util.SingletonJunitCase;
+import org.jau.junit.util.JunitTracer;
 import org.jau.pkg.JaulibJarSHASum;
 import org.jau.sec.SHASum;
 import org.junit.Assert;
@@ -42,7 +42,7 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class TestVersionInfo extends SingletonJunitCase {
+public class TestVersionInfo extends JunitTracer {
     static boolean VERBOSE = false;
 
     @Test

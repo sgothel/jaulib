@@ -30,14 +30,14 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import org.jau.junit.util.SingletonJunitCase;
+import org.jau.junit.util.JunitTracer;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class TestArrayHashMap01 extends SingletonJunitCase {
+public class TestArrayHashMap01 extends JunitTracer {
 
     public static class Dummy {
         int i1, i2, i3;

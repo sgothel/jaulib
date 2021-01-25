@@ -33,7 +33,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 
 import org.jau.junit.util.MiscUtils;
-import org.jau.junit.util.SingletonJunitCase;
+import org.jau.junit.util.JunitTracer;
 import org.jau.lang.ReflectionUtil;
 import org.jau.pkg.JarUtil;
 import org.jau.sys.AndroidVersion;
@@ -66,7 +66,7 @@ import org.junit.runners.MethodSorters;
  * </p>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class TestUri99LaunchOnReservedCharPathBug908 extends SingletonJunitCase {
+public class TestUri99LaunchOnReservedCharPathBug908 extends JunitTracer {
     static class TestClassLoader extends URLClassLoader {
         public TestClassLoader(final URL[] urls) {
             super(urls);

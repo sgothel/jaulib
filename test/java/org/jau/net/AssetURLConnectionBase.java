@@ -7,11 +7,11 @@ import java.net.JarURLConnection;
 import java.net.URLConnection;
 
 import org.jau.io.IOUtil;
-import org.jau.junit.util.SingletonJunitCase;
+import org.jau.junit.util.JunitTracer;
 import org.jau.sys.AndroidVersion;
 import org.junit.Assert;
 
-public abstract class AssetURLConnectionBase extends SingletonJunitCase {
+public abstract class AssetURLConnectionBase extends JunitTracer {
 
     /** In jaulib_base.jar */
     protected static final String test_asset_rt_url      = "asset:jau/info.txt";

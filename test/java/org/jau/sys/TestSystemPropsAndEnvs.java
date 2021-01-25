@@ -33,13 +33,13 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 
-import org.jau.junit.util.SingletonJunitCase;
+import org.jau.junit.util.JunitTracer;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class TestSystemPropsAndEnvs extends SingletonJunitCase {
+public class TestSystemPropsAndEnvs extends JunitTracer {
 
     @Test
     public void dumpProperties() {
