@@ -56,12 +56,14 @@ public class ReflectionUtil {
     public static boolean isClassAvailable(final String clazzName, final ClassLoader cl) {
         try {
             return null != Class.forName(clazzName, false /* initializeClazz */, cl);
+        /**
         } catch( final ClassNotFoundException cnfe ) {
             return false;
         } catch( final ExceptionInInitializerError eiie ) {
             return false;
         } catch( final LinkageError le ) {
             return false;
+        */
         } catch( final Throwable t ) {
             return false;
         }

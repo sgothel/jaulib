@@ -27,8 +27,11 @@ public class PlatformRuntime {
     //
 
     /**
-     * System property: 'jogamp.gluegen.UseTempJarCache',
+     * true if enabled and in use.
+     * <p>
+     * System property: 'jau.pkg.UseTempJarCache',
      * defaults to true if {@link #OS_TYPE} is not {@link OSType#ANDROID}.
+     * </p>
      */
     public static final boolean USE_TEMP_JAR_CACHE;
 
@@ -71,8 +74,11 @@ public class PlatformRuntime {
                         JNIJarLibrary.addNativeJarLibs(new Class<?>[] { org.jau.sys.Debug.class }, null);
                     } catch (final Exception e0) {
                         // IllegalArgumentException, IOException
+                        _USE_TEMP_JAR_CACHE[0] = false;
                         System.err.println("Caught "+e0.getClass().getSimpleName()+": "+e0.getMessage()+", while JNILibLoaderBase.addNativeJarLibs(..)");
                     }
+                } else {
+                    _USE_TEMP_JAR_CACHE[0] = false;
                 }
                 for(final String libBaseName : libBaseNames) {
                     JNILibrary.loadLibrary(libBaseName, false, cl);
@@ -100,4 +106,13 @@ public class PlatformRuntime {
     public static MachineDataInfo getMachineDataInfo() {
         return MACH_DESC_RT;
     }
+
+    /**
+     * Returns true if enabled and in use.
+     * <p>
+     * System property: 'jau.pkg.UseTempJarCache',
+     * defaults to true if {@link #OS_TYPE} is not {@link OSType#ANDROID}.
+     * </p>
+     */
+    public static final boolean getUseTempJarCache() { return USE_TEMP_JAR_CACHE; }
 }

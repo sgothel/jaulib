@@ -101,6 +101,15 @@ public class PlatformProps {
     public static final MachineDataInfo MACH_DESC_RT;
 
     /**
+     * true if enabled and in use.
+     * <p>
+     * System property: 'jau.pkg.UseTempJarCache',
+     * defaults to true if {@link #OS_TYPE} is not {@link OSType#ANDROID}.
+     * </p>
+     */
+    public static final boolean USE_TEMP_JAR_CACHE;
+
+    /**
      * Unique platform denominator composed as '{@link #os_name}' + '-' + '{@link #os_arch}'.
      */
     public static final String os_and_arch;
@@ -265,6 +274,7 @@ public class PlatformProps {
 
         MACH_DESC_STAT = MachineDataInfo.guessStaticMachineDataInfo(OS, CPU).md;
         {
+            boolean _USE_TEMP_JAR_CACHE = false;
             Class<?> prt = null;
             try {
                 prt = ReflectionUtil.getClass(prt_name, true /* initializeClazz */, PlatformProps.class.getClassLoader());
@@ -276,15 +286,27 @@ public class PlatformProps {
             }
             if( null != prt ) {
                 final ReflectionUtil.MethodAccessor prtGetMachDesc = new ReflectionUtil.MethodAccessor(prt, "getMachineDataInfo");
+                final ReflectionUtil.MethodAccessor prtGetUseTempJarCache = new ReflectionUtil.MethodAccessor(prt, "getUseTempJarCache");
                 if( null != prtGetMachDesc && prtGetMachDesc.available() ) {
                     MACH_DESC_RT = prtGetMachDesc.callStaticMethod();
+                    _USE_TEMP_JAR_CACHE = null != MACH_DESC_RT;
                     if( DEBUG ) {
-                        System.err.println("Platform.RT: Available <"+prt_name+">");
+                        System.err.println("Platform.RT: Available <"+prt_name+".getMachineDataInfo()>");
                     }
                 } else {
                     MACH_DESC_RT = null;
                     if( DEBUG ) {
-                        System.err.println("Platform.RT: Not available (2) <"+prt_name+">");
+                        System.err.println("Platform.RT: Not available (2) <"+prt_name+".getMachineDataInfo()>");
+                    }
+                }
+                if( null != prtGetUseTempJarCache && prtGetUseTempJarCache.available() ) {
+                    _USE_TEMP_JAR_CACHE = prtGetUseTempJarCache.callStaticMethod();
+                    if( DEBUG ) {
+                        System.err.println("Platform.RT: Available <"+prt_name+".getUseTempJarCache()> = "+_USE_TEMP_JAR_CACHE);
+                    }
+                } else {
+                    if( DEBUG ) {
+                        System.err.println("Platform.RT: Not available (3) <"+prt_name+".getUseTempJarCache()>");
                     }
                 }
             } else {
@@ -293,6 +315,7 @@ public class PlatformProps {
                     System.err.println("Platform.RT: Not available (1) <"+prt_name+">");
                 }
             }
+            USE_TEMP_JAR_CACHE = _USE_TEMP_JAR_CACHE;
         }
 
         if( DEBUG ) {
@@ -300,9 +323,19 @@ public class PlatformProps {
             System.err.println("Platform.Hard: CPU_ARCH "+CPU+", ABI_TYPE "+ABI+" - strategy "+strategy+"(elfValid "+elfValid+"), little "+LITTLE_ENDIAN);
             System.err.println("Platform.MD.ST: "+MACH_DESC_STAT);
             System.err.println("Platform.MD.RT: "+MACH_DESC_RT);
+            System.err.println("Platform.sys: USE_TEMP_JAR_CACHE "+USE_TEMP_JAR_CACHE);
         }
     }
     public static void initSingleton() { }
+
+    /**
+     * Returns true if enabled and in use.
+     * <p>
+     * System property: 'jau.pkg.UseTempJarCache',
+     * defaults to true if {@link #O} is not {@link OSType#ANDROID}.
+     * </p>
+     */
+    public static final boolean getUseTempJarCache() { return USE_TEMP_JAR_CACHE; }
 
     protected PlatformProps() {}
 
