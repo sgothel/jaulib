@@ -80,6 +80,16 @@ Building debug build:
 ~~~~~~~~~~~~~
 -DDEBUG=ON
 ~~~~~~~~~~~~~
+Disable stripping native lib even in non debug build:
+~~~~~~~~~~~~~
+-DUSE_STRIP=OFF
+~~~~~~~~~~~~~
+Override default javac debug arguments `source,lines`:
+~~~~~~~~~~~~~
+-DJAVAC_DEBUG_ARGS="source,lines,vars"
+
+-DJAVAC_DEBUG_ARGS="none"
+~~~~~~~~~~~~~
 Building debug and instrumentation (sanitizer) build:
 ~~~~~~~~~~~~~
 -DDEBUG=ON -DINSTRUMENTATION=ON
