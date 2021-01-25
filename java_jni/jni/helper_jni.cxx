@@ -77,7 +77,7 @@ void jau::java_exception_check_and_throw(JNIEnv *env, const char* file, int line
         std::string msg = from_jstring_to_string(env, jmsg);
         fprintf(stderr, "Java exception occurred @ %s:%d and forward to Native: %s\n", file, line, msg.c_str()); fflush(stderr);
 
-        throw jau::RuntimeException("Java exception occurred @ %s : %d: "+msg, file, line);
+        throw jau::RuntimeException("Java exception occurred: "+msg, file, line);
     }
 }
 
