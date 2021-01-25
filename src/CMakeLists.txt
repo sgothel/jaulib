@@ -31,5 +31,5 @@ set_target_properties(
 )
 install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../include/jau/ DESTINATION include/jau)
 
-# install(TARGETS jaulib LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+install(TARGETS jaulib LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 

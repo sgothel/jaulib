@@ -1,0 +1,3 @@
+jaulib_test jau/info.txt Asset.
+
+This file exists for test purposes.

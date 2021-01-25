@@ -1,0 +1,27 @@
+Manifest-Version: 1.0
+Bundle-Date: @BUILD_TSTAMP@
+Bundle-ManifestVersion: 2
+Bundle-Name: org.jau.net
+Bundle-SymbolicName: org.jau.net
+Bundle-Version: @VERSION_SHORT@
+Export-Package: org.jau.net
+Require-Capability: osgi.ee;filter:="(&(osgi.ee=JavaSE)(version=1.9))"
+Package-Title: org.jau.net
+Package-Vendor: Gothel Software
+Package-Version: @VERSION_SHORT@
+Specification-Title: Jaulib NET
+Specification-Vendor: Gothel Software
+Specification-Version: @VERSION_API@
+Implementation-Title: Jaulib NET
+Implementation-Vendor: Gothel Software
+Implementation-Version: @VERSION@
+Implementation-Commit: @VERSION_SHA1@
+Implementation-URL: http://www.jausoft.com/
+Extension-Name: org.jau.net
+Trusted-Library: true
+Permissions: all-permissions
+Application-Library-Allowable-Codebase: *
+
+Name: org/jau/net
+Sealed: false
+

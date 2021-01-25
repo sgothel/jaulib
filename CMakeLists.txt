@@ -147,24 +147,78 @@ include_directories (${SYSTEM_USR_DIR})
 
 add_subdirectory (src)
 
+IF(BUILDJAVA)
+    find_package(Java 11 REQUIRED)
+    find_package(JNI REQUIRED)
+    include(UseJava)
+
+    if (JNI_FOUND)
+        message (STATUS "JNI_INCLUDE_DIRS=${JNI_INCLUDE_DIRS}")
+        message (STATUS "JNI_LIBRARIES=${JNI_LIBRARIES}")
+    endif (JNI_FOUND)
+
+    if (NOT DEFINED $ENV{JAVA_HOME_NATIVE})
+      set (JAVA_HOME_NATIVE $ENV{JAVA_HOME})
+      set (JAVAC $ENV{JAVA_HOME}/bin/javac)
+      set (JAR $ENV{JAVA_HOME}/bin/jar)
+    else ()
+      set (JAVAC $ENV{JAVA_HOME_NATIVE}/bin/javac)
+      set (JAR $ENV{JAVA_HOME_NATIVE}/bin/jar)
+    endif ()
+
+    set(CMAKE_JAVA_COMPILE_FLAGS -source 11 -target 11)
+    if(DEBUG)
+        set(CMAKE_JAVA_COMPILE_FLAGS ${CMAKE_JAVA_COMPILE_FLAGS} -g:source,lines)
+    else()
+        set(CMAKE_JAVA_COMPILE_FLAGS ${CMAKE_JAVA_COMPILE_FLAGS} -g:none)
+    endif(DEBUG)
+
+    configure_file (${CMAKE_CURRENT_SOURCE_DIR}/java_base/manifest.txt.in ${CMAKE_CURRENT_BINARY_DIR}/java_base/manifest.txt)
+    configure_file (${CMAKE_CURRENT_SOURCE_DIR}/java_jni/manifest.txt.in ${CMAKE_CURRENT_BINARY_DIR}/java_jni/manifest.txt)
+    configure_file (${CMAKE_CURRENT_SOURCE_DIR}/java_net/manifest.txt.in ${CMAKE_CURRENT_BINARY_DIR}/java_net/manifest.txt)
+    configure_file (${CMAKE_CURRENT_SOURCE_DIR}/java_pkg/manifest.txt.in ${CMAKE_CURRENT_BINARY_DIR}/java_pkg/manifest.txt)
+    add_subdirectory (java_base)
+    add_subdirectory (java_jni)
+    add_subdirectory (java_net)
+    add_subdirectory (java_pkg)
+    # add_subdirectory (examples/java)
+ENDIF(BUILDJAVA)
+
 # add a target to generate API documentation with Doxygen
 find_package (Doxygen)
 if (DOXYGEN_FOUND)
   configure_file (${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile.cpp.out @ONLY)
-  add_custom_command (OUTPUT ${jaulib_DOCS_DIR}/cpp
+  if (BUILDJAVA)
+    configure_file (${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.java.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile.java.out @ONLY)
+    add_custom_command (OUTPUT ${jaulib_DOCS_DIR}/cpp ${jaulib_DOCS_DIR}/java
+      COMMAND ${CMAKE_COMMAND} -E make_directory ${jaulib_DOCS_DIR}
+      COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile.cpp.out
+      COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile.java.out
+      DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/api/tinyb/*.hpp ${CMAKE_CURRENT_SOURCE_DIR}/api/direct_bt/*.hpp ${CMAKE_CURRENT_SOURCE_DIR}/java/org/tinyb/*.java ${CMAKE_CURRENT_SOURCE_DIR}/java/tinyb/dbus/*java ${CMAKE_CURRENT_SOURCE_DIR}/java/direct_bt/tinyb/*java
+      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+      COMMENT "Generating API documentation with Doxygen" VERBATIM
+    )
+    add_custom_target(doc_jau
+      DEPENDS ${jaulib_DOCS_DIR}/cpp ${jaulib_DOCS_DIR}/java)
+  else ()
+    add_custom_command (OUTPUT ${jaulib_DOCS_DIR}/cpp
       COMMAND ${CMAKE_COMMAND} -E make_directory ${jaulib_DOCS_DIR}
       COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile.cpp.out
       DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/include/
       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
       COMMENT "Generating API documentation with Doxygen" VERBATIM
-  )
-  add_custom_target(doc_jau
-    DEPENDS ${jaulib_DOCS_DIR}/cpp)
+    )
+    add_custom_target(doc_jau
+      DEPENDS ${jaulib_DOCS_DIR}/cpp)
+  endif ()
 endif (DOXYGEN_FOUND)
 
 if (BUILD_TESTING)
   enable_testing ()
   add_subdirectory (test)
+  if (BUILDJAVA)
+      configure_file (${CMAKE_CURRENT_SOURCE_DIR}/test/java/manifest.txt.in ${CMAKE_CURRENT_BINARY_DIR}/test/java/manifest.txt)
+      add_subdirectory (test/java)
+  endif(BUILDJAVA)
 endif(BUILD_TESTING)
-
 
