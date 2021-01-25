@@ -4,6 +4,7 @@ project (jaulib LANGUAGES C CXX)
 FIND_PACKAGE (Threads REQUIRED)
 
 include(JaulibSetup.cmake)
+JaulibSetup()
 
 configure_file (${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/version.cpp.in
                 ${CMAKE_CURRENT_BINARY_DIR}/src/version.cpp)

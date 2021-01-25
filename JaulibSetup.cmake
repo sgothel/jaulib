@@ -2,6 +2,12 @@
 # jaulib cmake build settings, modularized to be optionally included by parent projects
 #
 
+include_guard(GLOBAL)
+
+macro(JaulibSetup)
+
+message(STATUS "JaulibSetup: ${PROJECT_NAME}")
+
 # for all
 set (CMAKE_CXX_STANDARD 17)
 set (CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -52,24 +58,24 @@ if(DEBUG)
         endif(CMAKE_COMPILER_IS_GNUCC)
     endif(INSTRUMENTATION)
     unset(USE_STRIP CACHE)
-    message(STATUS "strip not used")
+    message(STATUS "${PROJECT_NAME} strip not used")
 elseif(GPROF)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -g -ggdb -pg -fno-rtti")
     unset(USE_STRIP CACHE)
-    message(STATUS "strip not used")
+    message(STATUS "${PROJECT_NAME} strip not used")
 elseif(PERF_ANALYSIS)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -g -ggdb -fno-rtti")
     unset(USE_STRIP CACHE)
-    message(STATUS "strip not used")
+    message(STATUS "${PROJECT_NAME} strip not used")
 else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -fno-rtti")
     find_program(STRIP strip)
     if (STRIP STREQUAL "STRIP-NOTFOUND")
         unset(USE_STRIP CACHE)
-        message(STATUS "strip not found")
+        message(STATUS "${PROJECT_NAME} strip not found")
     else()
         set(USE_STRIP true CACHE BOOL "strip usage")
-        message(STATUS "strip used")
+        message(STATUS "${PROJECT_NAME} strip used")
     endif()
 endif(DEBUG)
 
@@ -114,21 +120,27 @@ set(OS_AND_ARCH ${OS_NAME}-${OS_ARCH})
 set(os_and_arch_slash ${OS_NAME}/${OS_ARCH})
 set(os_and_arch_dot ${OS_NAME}.${OS_ARCH})
 
-message (INFO " - OS_NAME ${OS_NAME}")
-message (INFO " - OS_ARCH ${OS_ARCH} (${CMAKE_SYSTEM_PROCESSOR})")
-message (INFO " - OS_AND_ARCH ${OS_AND_ARCH}")
+message (STATUS "OS_NAME ${OS_NAME}")
+message (STATUS "OS_ARCH ${OS_ARCH} (${CMAKE_SYSTEM_PROCESSOR})")
+message (STATUS "OS_AND_ARCH ${OS_AND_ARCH}")
 
 # Make a version file containing the current version from git.
 include (GetGitRevisionDescription)
+
 git_describe (VERSION "--tags")
-get_git_head_revision(GIT_REFSPEC VERSION_SHA1)
+get_git_head_revision(GIT_REFSPEC VERSION_SHA1 ALLOW_LOOKING_ABOVE_CMAKE_SOURCE_DIR)
+git_local_changes(GIT_WORKDIR_STATUS)
+message(STATUS "${PROJECT_NAME} git_describe ${VERSION}")
+message(STATUS "${PROJECT_NAME} get_git_head_revision ${GIT_REFSPEC}")
+message(STATUS "${PROJECT_NAME} get_git_head_revision ${VERSION_SHA1}")
+message(STATUS "${PROJECT_NAME} git_local_changes ${GIT_WORKDIR_STATUS}")
 
 if ("x_${VERSION}" STREQUAL "x_GIT-NOTFOUND" OR "x_${VERSION}" STREQUAL "x_HEAD-HASH-NOTFOUND" OR "x_${VERSION}" STREQUAL "x_-128-NOTFOUND")
-  message (WARNING " - Install git to compile a production jaulib!")
+  message (WARNING " - Install git to compile for production!")
   set (VERSION "v1.0.0-dirty")
 endif ()
 
-message (INFO " - jaulib Version ${VERSION}")
+message (STATUS "${PROJECT_NAME} Version ${VERSION}")
 
 #parse the version information into pieces.
 string (REGEX REPLACE "^v([0-9]+)\\..*" "\\1" VERSION_MAJOR "${VERSION}")
@@ -173,4 +185,6 @@ IF(BUILDJAVA)
         # set(CMAKE_JAVA_COMPILE_FLAGS ${CMAKE_JAVA_COMPILE_FLAGS} -g:source,lines)
     endif(DEBUG)
 ENDIF(BUILDJAVA)
+
+endmacro()
 
