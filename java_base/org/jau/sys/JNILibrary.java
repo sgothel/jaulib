@@ -93,11 +93,11 @@ public class JNILibrary {
           tjc = ReflectionUtil.getClass(tjc_name, false /* initializeClazz */, JNILibrary.class.getClassLoader());
       } catch (final Throwable t) {}
       if( null != tjc ) {
-          tjcIsInit = new ReflectionUtil.MethodAccessor(tjc, "isInitialized");
+          tjcIsInit = new ReflectionUtil.MethodAccessor(tjc, "isInitialized", boolean.class);
           tjcFindLib = new ReflectionUtil.MethodAccessor(tjc, "findLibrary", String.class);
           tjcAvail = tjcIsInit.available() && tjcFindLib.available();
           if( DEBUG ) {
-              System.err.println("JNILibrary: Available <"+tjc_name+">, fully avail "+tjcAvail);
+              System.err.println("JNILibrary: Available <"+tjc_name+">, fully avail "+tjcAvail+" (a "+tjcIsInit.available()+", b "+tjcFindLib.available()+")");
           }
       } else {
           tjcIsInit = null;
@@ -186,7 +186,7 @@ public class JNILibrary {
       // System.err.println("sun.boot.library.path=" + Debug.getProperty("sun.boot.library.path", false));
       final String libraryPath = findLibrary(libraryName, cl); // implicit TempJarCache usage if used/initialized
       if(DEBUG) {
-          System.err.println("JNILibrary: loadLibraryInternal("+libraryName+"), TempJarCache: "+libraryPath);
+          System.err.println("JNILibrary: loadLibraryImpl("+libraryName+"), TempJarCache: "+libraryPath);
       }
       if(null != libraryPath) {
           if(DEBUG) {
@@ -228,21 +228,22 @@ public class JNILibrary {
           }
       }
       if(DEBUG) {
-          System.err.println("JNILibrary: loadLibraryInternal("+libraryName+"): OK - mode "+mode);
+          System.err.println("JNILibrary: loadLibraryImpl("+libraryName+"): OK - mode "+mode);
       }
   }
 
   public static final String findLibrary(final String libName, final ClassLoader loader) {
-    String res = null;
-    if( tjcAvail ) { // TempJarCache ..
-        if( Boolean.TRUE == tjcIsInit.callStaticMethod() ) {
-            res = tjcFindLib.callStaticMethod(libName);
-            if (DEBUG) {
-              System.err.println("NativeLibrary.findLibrary(<"+libName+">) (TempJarCache): "+res);
-            }
-        }
-    }
-    return res;
+      String res = null;
+      if( tjcAvail ) { // TempJarCache ..
+          final boolean _tjcIsInit = tjcIsInit.callStaticMethod(true);
+          if( _tjcIsInit ) {
+              res = tjcFindLib.callStaticMethod(libName);
+              if (DEBUG) {
+                  System.err.println("JNILibrary.findLibrary(<"+libName+">) (TempJarCache): "+res);
+              }
+          }
+      }
+      return res;
   }
 
   /**

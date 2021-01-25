@@ -36,6 +36,7 @@ import java.security.PrivilegedAction;
 import java.util.List;
 
 import org.jau.lang.NioUtil;
+import org.jau.lang.ReflectionUtil;
 import org.jau.sys.PlatformTypes.ABIType;
 import org.jau.sys.PlatformTypes.CPUType;
 import org.jau.sys.PlatformTypes.OSType;
@@ -48,6 +49,8 @@ import org.jau.util.VersionNumber;
  * Runtime platform properties.
  */
 public class PlatformProps {
+    private static final String prt_name = "jau.pkg.PlatformRuntime";
+
     public static final boolean DEBUG = Debug.debug("Platform");
 
     /**
@@ -74,6 +77,10 @@ public class PlatformProps {
 
     public static final String NEWLINE;
 
+    public static final String JAVA_VENDOR;
+    public static final String JAVA_VM_NAME;
+    public static final String JAVA_RUNTIME_NAME;
+
     public static final VersionNumber os_version;
     public static final OSType OS;
 
@@ -90,6 +97,9 @@ public class PlatformProps {
     /** Static (not runtime) determined {@link MachineDataInfo}. */
     public static final MachineDataInfo MACH_DESC_STAT;
 
+    /** Runtime determined {@link MachineDataInfo}, null if not available (i.e. no JNI libs loaded). */
+    public static final MachineDataInfo MACH_DESC_RT;
+
     /**
      * Unique platform denominator composed as '{@link #os_name}' + '-' + '{@link #os_arch}'.
      */
@@ -102,6 +112,9 @@ public class PlatformProps {
 
         NEWLINE = System.getProperty("line.separator");
 
+        JAVA_VENDOR = System.getProperty("java.vendor");
+        JAVA_VM_NAME = System.getProperty("java.vm.name");
+
         final String os_name_prop;
         final String os_arch_prop;
         {
@@ -109,51 +122,22 @@ public class PlatformProps {
                     AccessController.doPrivileged(new PrivilegedAction<String[]>() {
                         @Override
                         public String[] run() {
-                            final String[] props = new String[3];
+                            final String[] props = new String[4];
                             int i=0;
-                            props[i++] = System.getProperty("os.name").toLowerCase(); // 0
-                            props[i++] = System.getProperty("os.arch").toLowerCase(); // 1
-                            props[i++] = System.getProperty("os.version"); // 2
+                            props[i++] = System.getProperty("java.runtime.name"); // 0
+                            props[i++] = System.getProperty("os.name").toLowerCase(); // 1
+                            props[i++] = System.getProperty("os.arch").toLowerCase(); // 2
+                            props[i++] = System.getProperty("os.version"); // 3
                             return props;
                         }
                     });
             int i=0;
+            JAVA_RUNTIME_NAME = props[i++];
             os_name_prop = props[i++];
             os_arch_prop = props[i++];
-
             os_version = new VersionNumber(props[i++]);
         }
-
-        if ( os_name_prop.startsWith("linux") ) {
-            OS = OSType.LINUX;
-        }
-        else if ( os_name_prop.startsWith("freebsd") ) {
-            OS = OSType.FREEBSD;
-        }
-        else if ( os_name_prop.startsWith("android") ) {
-            OS = OSType.ANDROID;
-        }
-        else if ( os_name_prop.startsWith("mac os x") ||
-                  os_name_prop.startsWith("darwin") ) {
-            OS = OSType.MACOS;
-        }
-        else if ( os_name_prop.startsWith("sunos") ) {
-            OS = OSType.SUNOS;
-        }
-        else if ( os_name_prop.startsWith("hp-ux") ) {
-            OS = OSType.HPUX;
-        }
-        else if ( os_name_prop.startsWith("windows") ) {
-            OS = OSType.WINDOWS;
-        }
-        else if ( os_name_prop.startsWith("kd") ) {
-            OS = OSType.OPENKODE;
-        }
-        else if ( os_name_prop.startsWith("ios") ) {
-            OS = OSType.IOS;
-        } else {
-            OS = OSType.UNDEFINED;
-        }
+        OS = OSType.query(os_name_prop);
 
         // Hard values, i.e. w/ probing binaries
         final String elfCpuName;
@@ -280,11 +264,42 @@ public class PlatformProps {
         os_and_arch = os_name+"-"+os_arch;
 
         MACH_DESC_STAT = MachineDataInfo.guessStaticMachineDataInfo(OS, CPU).md;
+        {
+            Class<?> prt = null;
+            try {
+                prt = ReflectionUtil.getClass(prt_name, true /* initializeClazz */, PlatformProps.class.getClassLoader());
+            } catch (final Throwable t) {
+                if( DEBUG ) {
+                    System.err.println("Platform.RT: Exception: "+t.getMessage());
+                    t.printStackTrace();
+                }
+            }
+            if( null != prt ) {
+                final ReflectionUtil.MethodAccessor prtGetMachDesc = new ReflectionUtil.MethodAccessor(prt, "getMachineDataInfo");
+                if( null != prtGetMachDesc && prtGetMachDesc.available() ) {
+                    MACH_DESC_RT = prtGetMachDesc.callStaticMethod();
+                    if( DEBUG ) {
+                        System.err.println("Platform.RT: Available <"+prt_name+">");
+                    }
+                } else {
+                    MACH_DESC_RT = null;
+                    if( DEBUG ) {
+                        System.err.println("Platform.RT: Not available (2) <"+prt_name+">");
+                    }
+                }
+            } else {
+                MACH_DESC_RT = null;
+                if( DEBUG ) {
+                    System.err.println("Platform.RT: Not available (1) <"+prt_name+">");
+                }
+            }
+        }
 
         if( DEBUG ) {
             System.err.println("Platform.OS: os_name "+os_name+", os_arch "+os_arch+", os_version "+os_version);
             System.err.println("Platform.Hard: CPU_ARCH "+CPU+", ABI_TYPE "+ABI+" - strategy "+strategy+"(elfValid "+elfValid+"), little "+LITTLE_ENDIAN);
-            System.err.println("Platform.MD: "+MACH_DESC_STAT);
+            System.err.println("Platform.MD.ST: "+MACH_DESC_STAT);
+            System.err.println("Platform.MD.RT: "+MACH_DESC_RT);
         }
     }
     public static void initSingleton() { }

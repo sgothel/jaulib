@@ -15,11 +15,13 @@ add_jar(jaulib_test
         org/jau/net/data/AssetURLConnectionTest.txt
         org/jau/net/data/RelativeData.txt
         jau-test/info.txt
-        INCLUDE_JARS jaulib_base_jar jaulib_jni_jar jaulib_net_jar jaulib_pkg_jar ${JUNIT_JAR}
+        INCLUDE_JARS ${jaulib_fat_jar_file} ${JUNIT_JAR}
         MANIFEST ${CMAKE_CURRENT_BINARY_DIR}/manifest.txt
         OUTPUT_NAME jaulib_test
 )
-add_dependencies(jaulib_test jaulib_base_jar jaulib_jni_jar jaulib_net_jar jaulib_pkg_jar)
+add_dependencies(jaulib_test jaulib_fat_jar)
+
+install (FILES ${CMAKE_CURRENT_BINARY_DIR}/jaulib_test.jar DESTINATION ${CMAKE_INSTALL_LIBDIR}/../lib/java)
 
 string( REPLACE ".java" "" TEST_JAVA_FILES2 "${TEST_JAVA_FILES}" )
 string( REPLACE "/" "." BASENAMES_IDIOMATIC_EXAMPLES "${TEST_JAVA_FILES2}" )
@@ -29,15 +31,10 @@ set(ALL_EXAMPLE_TARGETS
   ${TARGETS_IDIOMATIC_EXAMPLES}
 )
 
-find_jar(jaulib_base_jar_file NAMES jaulib_base PATHS "${CMAKE_CURRENT_BINARY_DIR}/../../java_base")
-find_jar(jaulib_jni_jar_file NAMES jaulib_jni PATHS "${CMAKE_CURRENT_BINARY_DIR}/../../java_jni")
-find_jar(jaulib_net_jar_file NAMES jaulib_net PATHS "${CMAKE_CURRENT_BINARY_DIR}/../../java_net")
-find_jar(jaulib_pkg_jar_file NAMES jaulib_pkg PATHS "${CMAKE_CURRENT_BINARY_DIR}/../../java_pkg")
-
 foreach(name ${ALL_EXAMPLE_TARGETS})
 #    add_dependencies(${name} jaulib_test ${JUNIT_JAR})
     add_test (NAME ${name} COMMAND ${JAVA_RUNTIME} 
-                           -cp ${JUNIT_JAR}:${jaulib_base_jar_file}:${jaulib_jni_jar_file}:${jaulib_net_jar_file}:${jaulib_pkg_jar_file}:jaulib_test.jar
+                           -cp ${JUNIT_JAR}:${jaulib_fat_jar_file}:jaulib_test.jar
                            org.junit.runner.JUnitCore ${name})
 endforeach()
 

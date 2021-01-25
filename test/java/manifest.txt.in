@@ -21,4 +21,5 @@ Extension-Name: org.jau.test
 Trusted-Library: true
 Permissions: all-permissions
 Application-Library-Allowable-Codebase: *
-Class-Path: ../../java_base/jaulib_base.jar ../../java_jni/jaulib_jni.jar ../../java_net/jaulib_net.jar ../../java_pkg/jaulib_pkg.jar
+Class-Path: jaulib_fat.jar
+Main-Class: org.jau.util.TestVersionInfo

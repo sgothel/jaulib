@@ -31,7 +31,41 @@ package org.jau.sys;
 public final class PlatformTypes {
     public enum OSType {
         LINUX, FREEBSD, ANDROID, MACOS, SUNOS, HPUX, WINDOWS, OPENKODE, IOS, UNDEFINED;
+
+        public static final OSType query(final String osNameLower) {
+            if ( osNameLower.startsWith("linux") ) {
+                return OSType.LINUX;
+            }
+            else if ( osNameLower.startsWith("freebsd") ) {
+                return OSType.FREEBSD;
+            }
+            else if ( osNameLower.startsWith("android") ) {
+                return OSType.ANDROID;
+            }
+            else if ( osNameLower.startsWith("mac os x") ||
+                    osNameLower.startsWith("darwin") ) {
+                return OSType.MACOS;
+            }
+            else if ( osNameLower.startsWith("sunos") ) {
+                return OSType.SUNOS;
+            }
+            else if ( osNameLower.startsWith("hp-ux") ) {
+                return OSType.HPUX;
+            }
+            else if ( osNameLower.startsWith("windows") ) {
+                return OSType.WINDOWS;
+            }
+            else if ( osNameLower.startsWith("kd") ) {
+                return OSType.OPENKODE;
+            }
+            else if ( osNameLower.startsWith("ios") ) {
+                return OSType.IOS;
+            } else {
+                return OSType.UNDEFINED;
+            }
+        }
     }
+
     public enum CPUFamily {
         /** AMD/Intel */
         X86,

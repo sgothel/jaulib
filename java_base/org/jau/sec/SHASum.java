@@ -51,12 +51,12 @@ import org.jau.sys.Debug;
  * <p>
  * This implementation is being utilized at JogAmp build time to produce various
  * SHA sums over sources, class files and native libraries to ensure their identity.
- * See {@link JogampVersion#getImplementationSHASources()},
- * {@link JogampVersion#getImplementationSHAClasses()}
- * and {@link JogampVersion#getImplementationSHANatives()}.
+ * See {@link JauVersion#getImplementationSHASources()},
+ * {@link JauVersion#getImplementationSHAClasses()}
+ * and {@link JauVersion#getImplementationSHANatives()}.
  * </p>
  * <p>
- * {@link JogampVersion#getImplementationSHASources()} for module gluegen is produced via:
+ * {@link JauVersion#getImplementationSHASources()} for module gluegen is produced via:
  * <pre>
  * java -cp build/gluegen-rt.jar com.jogamp.common.util.SHASum --algorithm 256 --exclude ".*\\.log" --exclude "make/lib/toolchain" src jcpp/src make
  * </pre>
@@ -212,7 +212,7 @@ public class SHASum {
      * This ensures identical SHA sums over same contents within given paths.
      * </p>
      * <p>
-     * Example to calculate the SHA-256 over our source files as performed for {@link JogampVersion#getImplementationSHASources()}
+     * Example to calculate the SHA-256 over our source files as performed for {@link JauVersion#getImplementationSHASources()}
      * <pre>
      * java -cp build/gluegen-rt.jar com.jogamp.common.util.SHASum --algorithm 256 --exclude ".*\\.log" --exclude "make/lib/toolchain" src jcpp/src make
      * </pre>
