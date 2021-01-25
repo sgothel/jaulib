@@ -161,7 +161,7 @@ import org.jau.sys.PropertyAccess;
  * <p>
  * Other characters in a Uri must be percent encoded.
  * </p>
- * @since 2.2.1
+ * @since 0.3.0
  */
 public class Uri {
     private static final boolean DEBUG;
@@ -1244,7 +1244,7 @@ public class Uri {
 
     /**
      * Returns true, if this instance is a {@code jar} {@code scheme}, otherwise false.
-     * @since 2.3.2
+     * @since 0.3.0
      */
     public final boolean isJarScheme() {
         return null != scheme && JAR_SCHEME.equals( scheme.get() );
@@ -1392,7 +1392,7 @@ public class Uri {
      * return {@link #schemeSpecificPart} + {@code #} {@link #fragment} via it's own new Uri instance.
      * <p>
      * In case this Uri is a {@code jar-scheme}, the {@code query} is omitted,
-     * since it shall be invalid for {@code jar-schemes} anyway.
+     * since 0.3.0
      * </p>
      * <p>
      * Otherwise method returns {@code null}.

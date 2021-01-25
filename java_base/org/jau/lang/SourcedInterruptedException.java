@@ -36,7 +36,7 @@ import org.jau.lang.ExceptionUtils.CustomStackTrace;
  * This exception may be created directly where {@link #getCause()} returns {@code null},
  * or by propagating an existing {@link InterruptedException} as returned by {@link #getCause()}.
  * </p>
- * @since 2.3.2
+ * @since 0.3.0
  */
 @SuppressWarnings("serial")
 public class SourcedInterruptedException extends InterruptedException implements CustomStackTrace {

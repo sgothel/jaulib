@@ -43,7 +43,7 @@ public class RunnableTask extends TaskBase {
      * @param runnable the {@link Runnable} to execute on the current thread.
      *                 The runnable <b>must exit</b>, i.e. not loop forever.
      * @return the newly created and invoked {@link RunnableTask}
-     * @since 2.4.0
+     * @since 0.3.0
      */
     public static RunnableTask invokeOnCurrentThread(final Runnable runnable) {
         final RunnableTask rt = new RunnableTask( runnable, null, false, null );
@@ -60,7 +60,7 @@ public class RunnableTask extends TaskBase {
      * @param runnable the {@link Runnable} to execute on the new thread. If <code>waitUntilDone</code> is <code>true</code>,
      *                 the runnable <b>must exit</b>, i.e. not loop forever.
      * @return the newly created and invoked {@link RunnableTask}
-     * @since 2.3.2
+     * @since 0.3.0
      */
     public static RunnableTask invokeOnNewThread(final ThreadGroup tg, final String threadName,
                                                  final boolean waitUntilDone, final Runnable runnable) {

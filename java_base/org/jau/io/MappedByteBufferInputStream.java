@@ -52,7 +52,7 @@ import org.jau.sys.PlatformTypes;
  * Implementation further allows full random access via {@link #position()} and {@link #position(long)}
  * and accessing the memory mapped {@link ByteBuffer} slices directly via {@link #currentSlice()} and {@link #nextSlice()}.
  * </p>
- * @since 2.3.0
+ * @since 0.3.0
  */
 public class MappedByteBufferInputStream extends InputStream {
     public static enum CacheMode {
@@ -777,7 +777,7 @@ public class MappedByteBufferInputStream extends InputStream {
      * {@inheritDoc}
      * <p>
      * <i>Parameter {@code readLimit} is not used in this implementation,
-     * since the whole file is memory mapped and no read limitation occurs.</i>
+     * since 0.3.0
      * </p>
      */
     @Override

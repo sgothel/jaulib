@@ -102,7 +102,7 @@ public final class NativeLibrary implements DynamicLookupHelper {
    * @param global if {@code true} allows system wide access of the loaded library, otherwise access is restricted to the process.
    * @return {@link NativeLibrary} instance or {@code null} if library could not be loaded.
    * @throws SecurityException if user is not granted access for the named library.
-   * @since 2.4.0
+   * @since 0.3.0
    */
   public static final NativeLibrary open(final String libName,
                                          final boolean searchSystemPath,

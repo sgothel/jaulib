@@ -35,7 +35,7 @@ public interface DynamicLibraryBundleInfo {
 
     /**
      * Returns {@code true} if tool libraries shall be searched in the system path <i>(default)</i>, otherwise {@code false}.
-     * @since 2.4.0
+     * @since 0.3.0
      */
     public boolean searchToolLibInSystemPath();
 
@@ -44,7 +44,7 @@ public interface DynamicLibraryBundleInfo {
      * <p>
      * If {@link #searchToolLibInSystemPath()} is {@code false} the return value is ignored.
      * </p>
-     * @since 2.4.0
+     * @since 0.3.0
      */
     public boolean searchToolLibSystemPathFirst();
 

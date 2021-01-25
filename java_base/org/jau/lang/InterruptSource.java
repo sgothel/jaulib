@@ -29,7 +29,7 @@ package org.jau.lang;
 /**
  * Interface exposing {@link java.lang.Thread#interrupt()} source,
  * intended for {@link java.lang.Thread} specializations.
- * @since 2.3.2
+ * @since 0.3.0
  */
 public interface InterruptSource {
     /**
@@ -73,7 +73,7 @@ public interface InterruptSource {
     /**
      * {@link java.lang.Thread} specialization implementing {@link InterruptSource}
      * to track {@link java.lang.Thread#interrupt()} calls.
-     * @since 2.3.2
+     * @since 0.3.0
      */
     public static class Thread extends java.lang.Thread implements InterruptSource {
         volatile Throwable interruptSource = null;

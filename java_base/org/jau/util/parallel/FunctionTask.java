@@ -50,7 +50,7 @@ public class FunctionTask<R,A> extends TaskBase implements Function<R,A> {
      * @param func the {@link Function} to execute.
      * @param args the {@link Function} arguments
      * @return the newly created and invoked {@link FunctionTask}
-     * @since 2.4.0
+     * @since 0.3.0
      */
     public static <U,V> FunctionTask<U,V> invokeOnCurrentThread(final Function<U,V> func, final V... args) {
         final FunctionTask<U,V> rt = new FunctionTask<U,V>( func, null, false, null);
@@ -72,7 +72,7 @@ public class FunctionTask<R,A> extends TaskBase implements Function<R,A> {
      * @param func the {@link Function} to execute.
      * @param args the {@link Function} arguments
      * @return the newly created and invoked {@link FunctionTask}
-     * @since 2.3.2
+     * @since 0.3.0
      */
     public static <U,V> FunctionTask<U,V> invokeOnNewThread(final ThreadGroup tg, final String threadName,
                                                             final boolean waitUntilDone, final Function<U,V> func, final V... args) {

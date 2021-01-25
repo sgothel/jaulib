@@ -89,7 +89,7 @@ public abstract class TaskBase implements Runnable {
 
     /**
      * Returns the execution thread or {@code null} if not yet {@link #run()}.
-     * @since 2.3.2
+     * @since 0.3.0
      */
     public final Thread getExecutionThread() {
         return execThread;

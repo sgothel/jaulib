@@ -29,7 +29,7 @@ import jau.util.SyncedBitfield;
 
 /**
  * Simple bitfield interface for efficient bit storage access in O(1).
- * @since 2.3.2
+ * @since 0.3.0
  */
 public interface Bitfield {
     /**

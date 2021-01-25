@@ -28,7 +28,7 @@ package org.jau.lang;
 import java.io.PrintStream;
 
 /**
- * @since 2.3.0
+ * @since 0.3.0
  */
 public class ExceptionUtils {
     public static void dumpStack(final PrintStream out) {
@@ -57,7 +57,7 @@ public class ExceptionUtils {
 
     /**
      * Interface allowing {@link Throwable} specializations to provide their custom stack trace presentation.
-     * @since 2.3.2
+     * @since 0.3.0
      */
     public static interface CustomStackTrace {
         /**
@@ -67,7 +67,7 @@ public class ExceptionUtils {
          * @param causeStr the cause title
          * @param causeIdx the cause index over all causes known by caller
          * @param stackDepth the maximum depth for stack entries, or {@code -1} for all
-         * @since 2.3.2
+         * @since 0.3.0
          */
         void printCauseStack(final PrintStream s, final String causeStr, final int causeIdx, final int stackDepth);
         /**
@@ -87,7 +87,7 @@ public class ExceptionUtils {
      * @param causeIdx the cause index over all causes known by caller
      * @param causeDepth the maximum depth for causes, or {@code -1} for all
      * @param stackDepth the maximum depth for stack entries, or {@code -1} for all
-     * @since 2.3.2
+     * @since 0.3.0
      */
     public static int printCause(final PrintStream s, final String causeStr, Throwable cause, final int causeIdx, final int causeDepth, final int stackDepth) {
         int i=causeIdx;
@@ -109,7 +109,7 @@ public class ExceptionUtils {
      * @param t the {@link Throwable} for output
      * @param causeDepth the maximum depth for causes, or {@code -1} for all
      * @param stackDepth the maximum depth for stack entries, or {@code -1} for all
-     * @since 2.3.2
+     * @since 0.3.0
      */
     public static void printStackTrace(final PrintStream s, final Throwable t, final int causeDepth, final int stackDepth) {
         if( t instanceof CustomStackTrace ) {
@@ -143,7 +143,7 @@ public class ExceptionUtils {
      * @param t the {@link Throwable} for output
      * @param causeDepth the maximum depth for causes, or {@code -1} for all
      * @param stackDepth the maximum depth for stack entries, or {@code -1} for all
-     * @since 2.3.2
+     * @since 0.3.0
      */
     public static void dumpThrowable(final String additionalDescr, final Throwable t, final int causeDepth, final int stackDepth) {
         System.err.print("Caught "+additionalDescr+" ");

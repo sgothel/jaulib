@@ -43,7 +43,7 @@ import org.jau.io.MappedByteBufferInputStream.FileResizeOp;
  * An instance maybe created via its parent {@link MappedByteBufferInputStream#getOutputStream(FileResizeOp)}
  * or directly {@link #MappedByteBufferOutputStream(FileChannel, MapMode, CacheMode, int, FileResizeOp)}.
  * </p>
- * @since 2.3.0
+ * @since 0.3.0
  */
 public class MappedByteBufferOutputStream extends OutputStream {
     private final MappedByteBufferInputStream parent;
