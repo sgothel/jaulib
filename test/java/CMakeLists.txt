@@ -4,6 +4,8 @@ find_jar(JUNIT_JAR
   NAMES junit4 junit
   PATHS "/usr/share/java")
 
+set(jaulib_test_jar_file ${CMAKE_CURRENT_BINARY_DIR}/jaulib_test.jar CACHE FILEPATH "jaulib test jar file" FORCE)
+
 file(GLOB_RECURSE TEST_JAVA_SOURCES "*.java")
 
 file(GLOB_RECURSE TEST_JAVA_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "Test*.java")
@@ -21,7 +23,7 @@ add_jar(jaulib_test
 )
 add_dependencies(jaulib_test jaulib_fat_jar)
 
-install (FILES ${CMAKE_CURRENT_BINARY_DIR}/jaulib_test.jar DESTINATION ${CMAKE_INSTALL_LIBDIR}/../lib/java)
+install (FILES ${jaulib_test_jar_file} DESTINATION ${CMAKE_INSTALL_LIBDIR}/../lib/java)
 
 string( REPLACE ".java" "" TEST_JAVA_FILES2 "${TEST_JAVA_FILES}" )
 string( REPLACE "/" "." BASENAMES_IDIOMATIC_EXAMPLES "${TEST_JAVA_FILES2}" )
@@ -32,9 +34,8 @@ set(ALL_EXAMPLE_TARGETS
 )
 
 foreach(name ${ALL_EXAMPLE_TARGETS})
-#    add_dependencies(${name} jaulib_test ${JUNIT_JAR})
     add_test (NAME ${name} COMMAND ${JAVA_RUNTIME} 
-                           -cp ${JUNIT_JAR}:${jaulib_fat_jar_file}:jaulib_test.jar
+                           -cp ${JUNIT_JAR}:${jaulib_fat_jar_file}:${jaulib_test_jar_file}
                            org.junit.runner.JUnitCore ${name})
 endforeach()
 

@@ -12,8 +12,6 @@ bname=`basename $0 .sh`
 
 dist_dir=$rootdir/dist-$archabi
 
-java -cp /usr/share/java/junit4.jar:test/java/jaulib_test.jar $*
-
 if [ ! -e $dist_dir/lib/java/jaulib_test.jar ] ; then
     echo "test exe $dist_dir/lib/java/jaulib_test.jar not existing"
     exit 1
