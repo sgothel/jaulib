@@ -36,8 +36,10 @@ Building Binaries
 
 It is advised to include this library into your main project, e.g. as a git-submodule.
 
-Then add *jaulib/include/* to your include-path and also add the source files
+Then add *jaulib/include/* to your C++ include-path and also add the C++ source files
 under *jaulib/src/* into your build recipe.
+
+The produced Java libraries are fully functional.
 
 This library's build recipe are functional though, 
 but currently only intended to support unit testing and to produce a Doxygen API doc.
@@ -49,7 +51,7 @@ Installing build dependencies on Debian (10 or 11):
 apt install git
 apt install build-essential g++ gcc libc-dev libpthread-stubs0-dev 
 apt install libunwind8 libunwind-dev
-apt install openjdk-11-jdk openjdk-11-jre
+apt install openjdk-11-jdk openjdk-11-jre junit4
 apt install cmake cmake-extras extra-cmake-modules
 apt install doxygen graphviz
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
