@@ -37,7 +37,6 @@ import java.net.URLConnection;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import org.jau.io.IOUtil;
 import org.jau.junit.util.SingletonJunitCase;
 import org.jau.lang.ExceptionUtils;
 import org.jau.sys.MachineDataInfo;
