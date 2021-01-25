@@ -26,7 +26,7 @@
  * or implied, of JogAmp Community.
  */
 
-package org.jau.util;
+package org.jau.util.parallel;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;

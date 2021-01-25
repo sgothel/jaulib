@@ -26,7 +26,7 @@
  * or implied, of JogAmp Community.
  */
 
-package org.jau.util;
+package org.jau.sys;
 
 import java.io.IOException;
 import java.util.Iterator;

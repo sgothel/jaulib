@@ -24,7 +24,7 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package org.jau.util;
+package org.jau.io;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;

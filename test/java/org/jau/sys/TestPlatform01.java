@@ -26,7 +26,7 @@
  * or implied, of JogAmp Community.
  */
 
-package org.jau.util;
+package org.jau.sys;
 
 import org.jau.junit.util.SingletonJunitCase;
 import org.jau.sys.MachineDataInfo;

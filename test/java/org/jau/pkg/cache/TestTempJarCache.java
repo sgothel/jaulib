@@ -26,7 +26,7 @@
  * or implied, of JogAmp Community.
  */
 
-package org.jau.util;
+package org.jau.pkg.cache;
 
 import java.io.File;
 import java.io.IOException;
@@ -197,8 +197,9 @@ public class TestTempJarCache extends SingletonJunitCase {
     @Test
     public void testTempJarCache02AddNativeLibs() throws IOException, IllegalArgumentException, URISyntaxException {
         if(AndroidVersion.isAvailable) { System.err.println("n/a on Android"); return; }
-        final Uri.Encoded nativeJarName = Uri.Encoded.cast("gluegen-rt-natives-"+PlatformProps.os_and_arch+".jar");
-        final String libBaseName = "gluegen_rt";
+        // FIXME ?? final Uri.Encoded nativeJarName = Uri.Encoded.cast("jaulib_jni-natives-"+PlatformProps.os_and_arch+".jar");
+        final Uri.Encoded nativeJarName = Uri.Encoded.cast("jaulib_fat.jar");
+        final String libBaseName = "jaulib_jni_jni";
         final ClassLoader cl = getClass().getClassLoader();
 
         final Uri jarUri = JarUtil.getJarUri(TempJarCache.class.getName(), cl);
