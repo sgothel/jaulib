@@ -18,6 +18,9 @@ Up to date API documentation can be found:
 
 * [C++ API Doc](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/index.html).
 
+* [Java API Doc](https://jausoft.com/projects/jaulib/build/documentation/java/html/index.html).
+
+
 Examples
 ============
 
