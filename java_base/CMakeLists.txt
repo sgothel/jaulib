@@ -26,7 +26,5 @@ add_jar(jaulib_base_jar
 #)
 
 set(JNI_HEADER_PATH "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/jaulib_base_jar.dir/jni")
-install (FILES ${CMAKE_CURRENT_BINARY_DIR}/jaulib_base.jar DESTINATION ${CMAKE_INSTALL_LIBDIR}/../lib/java)
-
-# add_subdirectory (jni)
+# install (FILES ${CMAKE_CURRENT_BINARY_DIR}/jaulib_base.jar DESTINATION ${CMAKE_INSTALL_LIBDIR}/../lib/java)
 

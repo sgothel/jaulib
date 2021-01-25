@@ -20,6 +20,14 @@ set (CMAKE_SHARED_LINKER_FLAGS "-Wl,--as-needed")
 add_library (jaulib_pkg_jni SHARED ${jaulib_pkg_JNI_SRCS})
 target_link_libraries(jaulib_pkg_jni ${JNI_LIBRARIES})
 
+if(USE_STRIP)
+add_custom_command(TARGET jaulib_pkg_jni POST_BUILD
+                   COMMAND ${STRIP} ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}jaulib_pkg_jni${CMAKE_SHARED_LIBRARY_SUFFIX}.${jaulib_VERSION_STRING}
+                   COMMENT "stripping jaulib_pkg_jni"
+                   VERBATIM
+                   )
+endif(USE_STRIP)
+
 set_target_properties(
     jaulib_pkg_jni
     PROPERTIES

@@ -14,7 +14,5 @@ add_dependencies(jaulib_net_jar jaulib_base_jar jaulib_jni_jar)
 #add_dependencies(jaulib_pkg_jar jaulib_base_jar jaulib_jni_jar jaulib_net_jar)
 
 set(JNI_HEADER_PATH "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/jaulib_net_jar.dir/jni")
-install (FILES ${CMAKE_CURRENT_BINARY_DIR}/jaulib_net.jar DESTINATION ${CMAKE_INSTALL_LIBDIR}/../lib/java)
-
-# add_subdirectory (jni)
+# install (FILES ${CMAKE_CURRENT_BINARY_DIR}/jaulib_net.jar DESTINATION ${CMAKE_INSTALL_LIBDIR}/../lib/java)
 
