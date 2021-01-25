@@ -13,6 +13,7 @@ import org.jau.sys.PlatformProps;
 import org.jau.sys.PlatformTypes.OSType;
 
 import org.jau.sys.PropertyAccess;
+
 import jau.sys.MachineDataInfoRuntime;
 
 /**
@@ -20,7 +21,6 @@ import jau.sys.MachineDataInfoRuntime;
  */
 public class PlatformRuntime {
     private static final String useTempJarCachePropName = "jau.pkg.UseTempJarCache";
-    private static final String[] libBaseNames = { "jaulib_jni_jni", "jaulib_pkg_jni"} ;
 
     //
     // static initialization order:
@@ -80,8 +80,11 @@ public class PlatformRuntime {
                 } else {
                     _USE_TEMP_JAR_CACHE[0] = false;
                 }
-                for(final String libBaseName : libBaseNames) {
-                    JNILibrary.loadLibrary(libBaseName, false, cl);
+                try {
+                    JNILibrary.loadLibrary("jaulib_jni_jni", false, cl);
+                    JNILibrary.loadLibrary("jaulib_pkg_jni", false, cl);
+                } catch (final Throwable t) {
+                    System.err.println("Caught "+t.getClass().getSimpleName()+": "+t.getMessage()+", while loading libs..");
                 }
                 return null;
             } } );
