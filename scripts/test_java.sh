@@ -12,8 +12,8 @@ bname=`basename $0 .sh`
 
 dist_dir=$rootdir/dist-$archabi
 
-if [ ! -e $dist_dir/lib/java/jaulib_test.jar ] ; then
-    echo "test exe $dist_dir/lib/java/jaulib_test.jar not existing"
+if [ ! -e $dist_dir/lib/java/jaulib-test.jar ] ; then
+    echo "test exe $dist_dir/lib/java/jaulib-test.jar not existing"
     exit 1
 fi
 
@@ -40,9 +40,9 @@ runit() {
     echo logbasename $logbasename
     echo logfile $logfile
 
-    echo $EXE_WRAPPER java -cp /usr/share/java/junit4.jar:$dist_dir/lib/java/jaulib_test.jar $*
+    echo $EXE_WRAPPER java -cp /usr/share/java/junit4.jar:$dist_dir/lib/java/jaulib-test.jar $*
 
-    $EXE_WRAPPER java -cp /usr/share/java/junit4.jar:$dist_dir/lib/java/jaulib_test.jar $*
+    $EXE_WRAPPER java -cp /usr/share/java/junit4.jar:$dist_dir/lib/java/jaulib-test.jar $*
 }
 
 runit $* 2>&1 | tee $logfile

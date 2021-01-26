@@ -198,7 +198,7 @@ public class TestTempJarCache extends JunitTracer {
     public void testTempJarCache02AddNativeLibs() throws IOException, IllegalArgumentException, URISyntaxException {
         if(AndroidVersion.isAvailable) { System.err.println("n/a on Android"); return; }
         // FIXME ?? final Uri.Encoded nativeJarName = Uri.Encoded.cast("jaulib_jni-natives-"+PlatformProps.os_and_arch+".jar");
-        final Uri.Encoded nativeJarName = Uri.Encoded.cast("jaulib_fat.jar");
+        final Uri.Encoded nativeJarName = Uri.Encoded.cast("jaulib-fat.jar");
         final String libBaseName = "jaulib_jni_jni";
         final ClassLoader cl = getClass().getClassLoader();
 

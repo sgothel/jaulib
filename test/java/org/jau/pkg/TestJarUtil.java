@@ -138,7 +138,7 @@ public class TestJarUtil extends JunitTracer {
     @Test
     public void testJarUtilFlat01() throws IOException, IllegalArgumentException, URISyntaxException {
         System.err.println("XXXXXXXXXXXXXXXXXXXXXXXXXXXX");
-        validateJarUtil("jaulib_fat.jar", "org.jau.base.JaulibVersion", this.getClass().getClassLoader());
+        validateJarUtil("jaulib-fat.jar", "org.jau.base.JaulibVersion", this.getClass().getClassLoader());
         System.err.println("XXXXXXXXXXXXXXXXXXXXXXXXXXXX");
     }
 

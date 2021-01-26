@@ -4,7 +4,7 @@ find_jar(JUNIT_JAR
   NAMES junit4 junit
   PATHS "/usr/share/java")
 
-set(jaulib_test_jar_file ${CMAKE_CURRENT_BINARY_DIR}/jaulib_test.jar CACHE FILEPATH "jaulib test jar file" FORCE)
+set(jaulib_test_jar_file ${CMAKE_CURRENT_BINARY_DIR}/jaulib-test.jar CACHE FILEPATH "jaulib test jar file" FORCE)
 
 file(GLOB_RECURSE TEST_JAVA_SOURCES "*.java")
 
@@ -19,7 +19,7 @@ add_jar(jaulib_test
         jau-test/info.txt
         INCLUDE_JARS ${jaulib_fat_jar_file} ${JUNIT_JAR}
         MANIFEST ${CMAKE_CURRENT_BINARY_DIR}/manifest.txt
-        OUTPUT_NAME jaulib_test
+        OUTPUT_NAME jaulib-test
 )
 add_dependencies(jaulib_test jaulib_fat_jar)
 
