@@ -39,7 +39,7 @@ add_custom_command (OUTPUT ${jaulib_jar_file} ${jaulib_fat_jar_file} ${jaulib_ja
                        -C ${CMAKE_CURRENT_BINARY_DIR}/../java_pkg/${CMAKE_FILES_DIRECTORY}/jaulib_pkg_jar.dir/ org
                     COMMAND ${JAR}
                        --create --file ${jaulib_fat_jar_file}
-                       --manifest ${CMAKE_CURRENT_BINARY_DIR}/manifest.txt
+                       --manifest ${CMAKE_CURRENT_BINARY_DIR}/manifest-fat.txt
                        -C ${CMAKE_CURRENT_BINARY_DIR}/../java_base/${CMAKE_FILES_DIRECTORY}/jaulib_base_jar.dir/ jau
                        -C ${CMAKE_CURRENT_BINARY_DIR}/../java_base/${CMAKE_FILES_DIRECTORY}/jaulib_base_jar.dir/ org
                        -C ${CMAKE_CURRENT_BINARY_DIR}/../java_jni/${CMAKE_FILES_DIRECTORY}/jaulib_jni_jar.dir/ jau

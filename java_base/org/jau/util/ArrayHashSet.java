@@ -60,7 +60,7 @@ import java.util.ListIterator;
  * </ul>
  *
  * For thread safety, the application shall decorate access to instances via
- * {@link org.jau.util.parallel.locks.RecursiveLock}.
+ * {@link jau.test.util.parallel.locks.RecursiveLock}.
  *
 */
 public class ArrayHashSet<E>
