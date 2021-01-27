@@ -33,33 +33,32 @@ import org.jau.util.VersionUtil;
 
 public class JaulibVersion extends JauVersion {
 
-    protected static volatile JaulibVersion jaulibVersionInfo;
-
     protected JaulibVersion(final String packageName, final Manifest mf) {
         super(packageName, mf);
     }
 
+    /**
+     * Returns a transient new instance.
+     */
     public static JaulibVersion getInstance() {
-        if(null == jaulibVersionInfo) { // volatile: ok
-            synchronized(JaulibVersion.class) {
-                if( null == jaulibVersionInfo ) {
-                    final String packageNameCompileTime = "org.jau.base";
-                    final String packageNameRuntime = "org.jau.base";
-                    Manifest mf = VersionUtil.getManifest(JaulibVersion.class.getClassLoader(), packageNameRuntime);
-                    if(null != mf) {
-                        jaulibVersionInfo = new JaulibVersion(packageNameRuntime, mf);
-                    } else {
-                        mf = VersionUtil.getManifest(JaulibVersion.class.getClassLoader(), packageNameCompileTime);
-                        jaulibVersionInfo = new JaulibVersion(packageNameCompileTime, mf);
-                    }
-                }
-            }
+        final String packageNameCompileTime = "org.jau.base";
+        final String packageNameRuntime = "org.jau.base";
+        Manifest mf = VersionUtil.getManifest(JaulibVersion.class.getClassLoader(), packageNameRuntime);
+        if(null != mf) {
+            return new JaulibVersion(packageNameRuntime, mf);
+        } else {
+            mf = VersionUtil.getManifest(JaulibVersion.class.getClassLoader(), packageNameCompileTime);
+            return new JaulibVersion(packageNameCompileTime, mf);
         }
-        return jaulibVersionInfo;
     }
 
     public static void main(final String args[]) {
         System.err.println(VersionUtil.getPlatformInfo());
-        System.err.println(JaulibVersion.getInstance());
+        System.err.println("Version Info:");
+        final JaulibVersion v = JaulibVersion.getInstance();
+        System.err.println(v);
+        System.err.println("");
+        System.err.println("Full Manifest:");
+        System.err.println(v.getFullManifestInfo(null));
     }
 }

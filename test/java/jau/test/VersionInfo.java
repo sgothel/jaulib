@@ -9,10 +9,11 @@ public class VersionInfo {
     public static void main(final String args[]) throws IOException {
         System.err.println(VersionUtil.getPlatformInfo());
         System.err.println("Version Info:");
-        System.err.println(JaulibVersion.getInstance());
+        final JaulibVersion v = JaulibVersion.getInstance();
+        System.err.println(v);
         System.err.println("");
         System.err.println("Full Manifest:");
-        System.err.println(JaulibVersion.getInstance().getFullManifestInfo(null));
+        System.err.println(v.getFullManifestInfo(null));
     }
 
 }
