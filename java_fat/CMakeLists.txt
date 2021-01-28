@@ -63,9 +63,7 @@ add_custom_command (OUTPUT ${jaulib_jar_file} ${jaulib_fat_jar_file} ${jaulib_ja
                     VERBATIM
                    )
 
-add_custom_target (jaulib_fat_jar ALL 
-                   DEPENDS ${jaulib_jar_file} ${jaulib_fat_jar_file} ${jaulib_java_src_file}
-                  )
+add_custom_target (jaulib_fat_jar ALL DEPENDS ${jaulib_jar_file} ${jaulib_fat_jar_file} ${jaulib_java_src_file})
 
 add_dependencies(jaulib_fat_jar jaulib_base_jar jaulib_jni_jar jaulib_net_jar jaulib_pkg_jar jaulib_jni_jni jaulib_pkg_jni)
 
