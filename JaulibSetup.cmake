@@ -8,6 +8,9 @@ macro(JaulibSetup)
 
 message(STATUS "JaulibSetup: ${PROJECT_NAME}")
 
+set(ENV{LANG} en_US.UTF-8)
+set(ENV{LC_MEASUREMENT} en_US.UTF-8)
+
 # for all
 set (CMAKE_CXX_STANDARD 17)
 set (CMAKE_CXX_STANDARD_REQUIRED ON)
