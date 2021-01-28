@@ -235,14 +235,18 @@ public class ElfHeaderPart2 {
         try {
             final CPUType res = CPUType.query(cpuName);
             if( isARM && null != res ) {
-                if( res.family != CPUFamily.ARM32 || res.family != CPUFamily.ARM64 ) {
+                if( res.family != CPUFamily.ARM32 && res.family != CPUFamily.ARM64 ) {
+                    if(ElfHeaderPart1.DEBUG) {
+                        System.err.println("ELF-2: queryCPUTypeSafe("+cpuName+", isARM="+isARM+") -> "+res+" ( "+res.family+" ) rejected");
+                    }
                     return null; // reject non-arm
                 }
             }
             return res;
         } catch (final Throwable t) {
             if(ElfHeaderPart1.DEBUG) {
-                System.err.println("ELF-2: queryCPUTypeSafe("+cpuName+"): "+t.getMessage());
+                System.err.println("ELF-2: queryCPUTypeSafe("+cpuName+", isARM="+isARM+"): "+t.getMessage());
+                t.printStackTrace();
             }
         }
         return null;
