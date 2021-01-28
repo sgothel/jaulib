@@ -28,9 +28,11 @@ rm -f $logfile
 
 ulimit -c unlimited
 
-# run 'dpkg-reconfigure locales' enable 'en_US.UTF-8'
-export LANG=en_US.UTF-8
+# run as root 'dpkg-reconfigure locales' enable 'en_US.UTF-8'
+# perhaps run as root 'update-locale LC_MEASUREMENT=en_US.UTF-8 LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8'
 export LC_MEASUREMENT=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+export LANG=en_US.UTF-8
 
 # export EXE_WRAPPER="nice -20"
 
