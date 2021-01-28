@@ -205,14 +205,6 @@ public class JauVersion {
         return this.getAttribute(Attributes.Name.IMPLEMENTATION_VENDOR);
     }
 
-    public final String getImplementationVendorID() {
-        return this.getAttribute(Attributes.Name.IMPLEMENTATION_VENDOR_ID);
-    }
-
-    public final String getImplementationURL() {
-        return this.getAttribute(Attributes.Name.IMPLEMENTATION_URL);
-    }
-
     /**
      * Returns the {@link Attributes.Name#IMPLEMENTATION_VERSION IMPLEMENTATION_VERSION}.
      * <p>
@@ -256,8 +248,6 @@ public class JauVersion {
         sb.append("Specification Version: ").append(getSpecificationVersion()).append(nl);
         sb.append("Implementation Title: ").append(getImplementationTitle()).append(nl);
         sb.append("Implementation Vendor: ").append(getImplementationVendor()).append(nl);
-        sb.append("Implementation Vendor ID: ").append(getImplementationVendorID()).append(nl);
-        sb.append("Implementation URL: ").append(getImplementationURL()).append(nl);
         sb.append("Implementation Version: ").append(getImplementationVersion()).append(nl);
         sb.append("Implementation Build: ").append(getImplementationBuild()).append(nl);
         sb.append("Implementation Branch: ").append(getImplementationBranch()).append(nl);
