@@ -150,49 +150,49 @@ public final class PlatformTypes {
             }
         }
 
-        public static final CPUType query(final String cpuABILower) {
-            if( null == cpuABILower ) {
-                throw new IllegalArgumentException("Null cpuABILower arg");
+        public static final CPUType query(final String cpuNameLower) {
+            if( null == cpuNameLower ) {
+                throw new IllegalArgumentException("Null cpu name arg");
             }
-            if(        cpuABILower.equals("x86")  ||
-                       cpuABILower.equals("i386") ||
-                       cpuABILower.equals("i486") ||
-                       cpuABILower.equals("i586") ||
-                       cpuABILower.equals("i686") ) {
+            if(        cpuNameLower.equals("x86")  ||
+                       cpuNameLower.equals("i386") ||
+                       cpuNameLower.equals("i486") ||
+                       cpuNameLower.equals("i586") ||
+                       cpuNameLower.equals("i686") ) {
                 return X86_32;
-            } else if( cpuABILower.equals("x86_64") ||
-                       cpuABILower.equals("amd64")  ) {
+            } else if( cpuNameLower.equals("x86_64") ||
+                       cpuNameLower.equals("amd64")  ) {
                 return X86_64;
-            } else if( cpuABILower.equals("ia64") ) {
+            } else if( cpuNameLower.equals("ia64") ) {
                 return IA64;
-            } else if( cpuABILower.equals("aarch64") ) {
+            } else if( cpuNameLower.equals("aarch64") ) {
                 return ARM64;
-            } else if( cpuABILower.startsWith("arm") ) {
-                if(        cpuABILower.equals("armv8-a")   ||
-                           cpuABILower.equals("arm-v8-a") ||
-                           cpuABILower.equals("arm-8-a") ||
-                           cpuABILower.equals("arm64-v8a") ) {
+            } else if( cpuNameLower.startsWith("arm") ) {
+                if(        cpuNameLower.equals("armv8-a")   ||
+                           cpuNameLower.equals("arm-v8-a") ||
+                           cpuNameLower.equals("arm-8-a") ||
+                           cpuNameLower.equals("arm64-v8a") ) {
                     return ARMv8_A; // 64-bit, aarch64
-                } else if( cpuABILower.startsWith("arm64") ) {
+                } else if( cpuNameLower.startsWith("arm64") ) {
                     return ARM64;   // 64-bit, aarch64
-                } else if( cpuABILower.startsWith("armv7") ||
-                           cpuABILower.startsWith("arm-v7") ||
-                           cpuABILower.startsWith("arm-7") ||
-                           cpuABILower.startsWith("armeabi-v7") ) {
+                } else if( cpuNameLower.startsWith("armv7") ||
+                           cpuNameLower.startsWith("arm-v7") ||
+                           cpuNameLower.startsWith("arm-7") ||
+                           cpuNameLower.startsWith("armeabi-v7") ) {
                     return ARMv7;   // 32-bit, aarch32
-                } else if( cpuABILower.startsWith("armv5") ||
-                           cpuABILower.startsWith("arm-v5") ||
-                           cpuABILower.startsWith("arm-5") ) {
+                } else if( cpuNameLower.startsWith("armv5") ||
+                           cpuNameLower.startsWith("arm-v5") ||
+                           cpuNameLower.startsWith("arm-5") ) {
                     return ARMv5;   // 32-bit, aarch32
-                } else if( cpuABILower.startsWith("armv6") ||
-                           cpuABILower.startsWith("arm-v6") ||
-                           cpuABILower.startsWith("arm-6") ) {
+                } else if( cpuNameLower.startsWith("armv6") ||
+                           cpuNameLower.startsWith("arm-v6") ||
+                           cpuNameLower.startsWith("arm-6") ) {
                     return ARMv6;   // 32-bit, aarch32
                 } else {
                     return ARM;     // 32-bit, aarch32
                 }
-            } else if( cpuABILower.startsWith("cortex-a") && cpuABILower.length() > 8 ) {
-                final String versstr = cpuABILower.substring(8);
+            } else if( cpuNameLower.startsWith("cortex-a") && cpuNameLower.length() > 8 ) {
+                final String versstr = cpuNameLower.substring(8);
                 try {
                     final int vers = Integer.valueOf(versstr);
                     if( vers <= 32 ) {
@@ -201,10 +201,10 @@ public final class PlatformTypes {
                         return ARMv8_A; // 64-bit, aarch64
                     }
                 } catch( final NumberFormatException nfe) {
-                    throw new RuntimeException("'cortex-a' post-fix not an integer: '"+cpuABILower+"', post-fix '"+versstr+"'");
+                    throw new RuntimeException("'cortex-a' post-fix not an integer: '"+cpuNameLower+"', post-fix '"+versstr+"'");
                 }
-            } else if( cpuABILower.startsWith("cortex-r") && cpuABILower.length() > 8 ) {
-                final String versstr = cpuABILower.substring(8);
+            } else if( cpuNameLower.startsWith("cortex-r") && cpuNameLower.length() > 8 ) {
+                final String versstr = cpuNameLower.substring(8);
                 try {
                     final int vers = Integer.valueOf(versstr);
                     if( vers < 80 ) {
@@ -213,26 +213,26 @@ public final class PlatformTypes {
                         return ARMv8_A; // 64-bit, aarch64
                     }
                 } catch( final NumberFormatException nfe) {
-                    throw new RuntimeException("'cortex-r' post-fix not an integer: '"+cpuABILower+"', post-fix '"+versstr+"'");
+                    throw new RuntimeException("'cortex-r' post-fix not an integer: '"+cpuNameLower+"', post-fix '"+versstr+"'");
                 }
-            } else if( cpuABILower.equals("sparcv9") ) {
+            } else if( cpuNameLower.equals("sparcv9") ) {
                 return SPARCV9_64;
-            } else if( cpuABILower.equals("sparc") ) {
+            } else if( cpuNameLower.equals("sparc") ) {
                 return SPARC_32;
-            } else if( cpuABILower.equals("pa_risc2.0") ) {
+            } else if( cpuNameLower.equals("pa_risc2.0") ) {
                 return PA_RISC2_0;
-            } else if( cpuABILower.startsWith("ppc64") ) {
+            } else if( cpuNameLower.startsWith("ppc64") ) {
                 return PPC64;
-            } else if( cpuABILower.startsWith("ppc") ) {
+            } else if( cpuNameLower.startsWith("ppc") ) {
                 return PPC;
-            } else if( cpuABILower.startsWith("mips64") ) {
+            } else if( cpuNameLower.startsWith("mips64") ) {
                 return MIPS_64;
-            } else if( cpuABILower.startsWith("mips") ) {
+            } else if( cpuNameLower.startsWith("mips") ) {
                 return MIPS_32;
-            } else if( cpuABILower.startsWith("superh") ) {
+            } else if( cpuNameLower.startsWith("superh") ) {
                 return SuperH;
             } else {
-                throw new RuntimeException("Please port CPUType detection to your platform (CPU_ABI string '" + cpuABILower + "')");
+                throw new RuntimeException("Please port CPUType detection to your platform (CPU name string '" + cpuNameLower + "')");
             }
         }
     }
