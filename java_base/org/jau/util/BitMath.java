@@ -36,7 +36,7 @@ public class BitMath {
     public static final int MAX_POWER_OF_2 = 1 << ( Integer.SIZE - 2 );
 
     /**
-     * Returns the 32 bit mask of n-bits, i.e. n low order 1’s.
+     * Returns the 32 bit mask of n-bits, i.e. n low order 1's.
      * <p>
      * Implementation handles n == 32.
      * </p>
