@@ -173,7 +173,7 @@ IF(BUILDJAVA)
       set (JAR $ENV{JAVA_HOME_NATIVE}/bin/jar)
     endif ()
 
-    set(CMAKE_JAVA_COMPILE_FLAGS -source 11 -target 11)
+    set(CMAKE_JAVA_COMPILE_FLAGS ${CMAKE_JAVA_COMPILE_FLAGS} -source 11 -target 11 -encoding UTF-8)
     if(DEBUG)
         if(DEFINED JAVAC_DEBUG_ARGS)
             set(CMAKE_JAVA_COMPILE_FLAGS ${CMAKE_JAVA_COMPILE_FLAGS} -g:${JAVAC_DEBUG_ARGS})
