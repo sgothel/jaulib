@@ -26,10 +26,25 @@
 #ifndef PACKED_ATTRIBUTE_HPP_
 #define PACKED_ATTRIBUTE_HPP_
 
-#ifndef __packed
-    #define __packed __attribute__ ((packed))
+/** packed__: lead in macro, requires __packed lead out as well. Consider using __pack(...). */
+#ifndef packed__
+    #ifdef _MSC_VER
+        #define packed__ __pragma( pack(push, 1) )
+    #else
+        #define packed__
+    #endif
 #endif
 
+/** __packed: lead out macro, requires packed__ lead in as well. Consider using __pack(...). */
+#ifndef __packed
+    #ifdef _MSC_VER
+        #define __packed __pragma( pack(pop))
+    #else
+        #define __packed __attribute__ ((packed))
+    #endif
+#endif
+
+/** __pack(...): Produces MSVC, clang and gcc compatible lead-in and -out macros. */
 #ifndef __pack
     #ifdef _MSC_VER
         #define __pack(...) __pragma( pack(push, 1) ) __VA_ARGS__ __pragma( pack(pop))
