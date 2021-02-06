@@ -157,8 +157,8 @@ uint128_t jau::merge_uint128(uint32_t const uuid32, uint128_t const & base_uuid,
 static const char* HEX_ARRAY_LOW = "0123456789abcdef";
 static const char* HEX_ARRAY_BIG = "0123456789ABCDEF";
 
-std::string jau::bytesHexString(const uint8_t * bytes, const nsize_t offset, const nsize_t length, const bool lsbFirst,
-                                const bool leading0X, const bool lowerCase) noexcept
+std::string jau::bytesHexString(const uint8_t * bytes, const nsize_t offset, const nsize_t length,
+                                const bool lsbFirst, const bool lowerCase) noexcept
 {
     const char* hex_array = lowerCase ? HEX_ARRAY_LOW : HEX_ARRAY_BIG;
     std::string str;
@@ -169,22 +169,19 @@ std::string jau::bytesHexString(const uint8_t * bytes, const nsize_t offset, con
     if( 0 == length ) {
         return "nil";
     }
-    if( leading0X ) {
-        str.reserve(2 + length * 2 +1);
-        str.push_back('0');
-        str.push_back('x');
-    } else {
-        str.reserve(length * 2 +1);
-    }
     if( lsbFirst ) {
-        // LSB left -> MSB right
+        // LSB left -> MSB right, no leading `0x`
+        str.reserve(length * 2 +1);
         for (nsize_t j = 0; j < length; j++) {
             const int v = bytes[offset+j] & 0xFF;
             str.push_back(hex_array[v >> 4]);
             str.push_back(hex_array[v & 0x0F]);
         }
     } else {
-        // MSB left -> LSB right
+        // MSB left -> LSB right, with leading `0x`
+        str.reserve(2 + length * 2 +1);
+        str.push_back('0');
+        str.push_back('x');
         nsize_t j = length;
         do {
             j--;
