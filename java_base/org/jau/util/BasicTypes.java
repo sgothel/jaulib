@@ -26,7 +26,7 @@ package org.jau.util;
 public class BasicTypes {
 
     /**
-     * Produce a hexadecimal string representation of the given byte values.
+     * Produce a lower-case hexadecimal string representation of the given byte values.
      * <p>
      * If lsbFirst is true, orders LSB left -> MSB right, usual for byte streams. Result will not have a leading `0x`.<br>
      * Otherwise orders MSB left -> LSB right, usual for readable integer values. Result will have a leading `0x`.
@@ -37,17 +37,17 @@ public class BasicTypes {
      * @param lsbFirst true having the least significant byte printed first (lowest addressed byte to highest),
      *                 otherwise have the most significant byte printed first (highest addressed byte to lowest).
      *                 A leading `0x` will be prepended if {@code lsbFirst == false}.
-     * @param lowerCase true to use lower case hex-chars, otherwise capital letters are being used.
      * @return the hex-string representation of the data
      */
     public static String bytesHexString(final byte[] bytes, final int offset, final int length,
-                                        final boolean lsbFirst, final boolean lowerCase)
+                                        final boolean lsbFirst)
     {
         final int byte_len = 0 <= length ? length : bytes.length - offset;
         if( byte_len > ( bytes.length - offset ) ) {
             throw new IllegalArgumentException("byte[] ( "+bytes.length+" - "+offset+" ) < "+length+" bytes");
         }
-        final char[] hex_array = lowerCase ? HEX_ARRAY_LOW : HEX_ARRAY_BIG;
+        // final char[] hex_array = lowerCase ? HEX_ARRAY_LOW : HEX_ARRAY_BIG;
+        final char[] hex_array = HEX_ARRAY_LOW;
         final char[] hexChars;
         final int char_offset;
 
