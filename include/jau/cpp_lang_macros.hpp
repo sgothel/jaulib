@@ -27,16 +27,24 @@
 
     /**
      * <code>constexpr</code> enabled for C++20.
+     * <p>
+     * The alternative qualifier used is `inline`,
+     * as it is implied for for `constexpr` used for functions.
+     * </p>
      */
 #if __cplusplus > 201703L
-    #define constexpr_cxx20 constexpr
+    #define constexpr_func_cxx20 constexpr
 #else
-    #define constexpr_cxx20
+    #define constexpr_func_cxx20 inline
 #endif
 
     /**
      * Used when designed to declare a function <code>constexpr</code>,
      * but prohibited by its specific implementation.
+     * <p>
+     * The alternative qualifier used is `inline`,
+     * as it is implied for for `constexpr` used for functions.
+     * </p>
      * <p>
      * Here it but uses non-literal variables, such as std::lock_guard etc.
      * As these can't be evaluated at compile time, the standard does
@@ -46,11 +54,15 @@
      * Empty until standard defines otherwise.
      * </p>
      */
-    #define constexpr_non_literal_var
+    #define constexpr_fun_non_literal_var inline
 
     /**
      * Used when designed to declare a function <code>constexpr</code>,
      * but prohibited by its specific implementation.
+     * <p>
+     * The alternative qualifier used is `inline`,
+     * as it is implied for for `constexpr` used for functions.
+     * </p>
      * <p>
      * Here it uses thread-safety related measures like atomic storage
      * or mutex locks, which are non-literal variables and hence
@@ -58,7 +70,7 @@
      * </p>
      * @see constexpr_non_literal_var
      */
-    #define constexpr_atomic
+    #define constexpr_func_atomic inline
 
     /**
      * Set define if RTTI is enabled during compilation,

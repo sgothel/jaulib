@@ -301,7 +301,7 @@ namespace jau {
              * Capacity and size will equal the given array, i.e. the result is a trimmed array.
              * @param x the given cow_darray, all elements will be copied into the new instance.
              */
-            constexpr_atomic
+            constexpr_func_atomic
             cow_darray(const cow_darray& x)
             : sync_atomic(false) {
                 storage_ref_t x_store_ref;
@@ -321,7 +321,7 @@ namespace jau {
              * @param growth_factor custom growth factor
              * @param alloc custom allocator_type instance
              */
-            constexpr_atomic
+            constexpr_func_atomic
             explicit cow_darray(const cow_darray& x, const float growth_factor, const allocator_type& alloc)
             : sync_atomic(false) {
                 storage_ref_t x_store_ref;
@@ -345,7 +345,7 @@ namespace jau {
              * @param growth_factor custom growth factor
              * @param alloc custom allocator_type instance
              */
-            constexpr_atomic
+            constexpr_func_atomic
             explicit cow_darray(const cow_darray& x, const size_type _capacity, const float growth_factor, const allocator_type& alloc)
             : sync_atomic(false) {
                 storage_ref_t x_store_ref;
@@ -364,7 +364,7 @@ namespace jau {
              * This write operation uses a mutex lock and is blocking this instances' write operations only.
              * </p>
              */
-            constexpr_atomic
+            constexpr_func_atomic
             cow_darray& operator=(const cow_darray& x) {
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 storage_ref_t x_store_ref;
@@ -384,7 +384,7 @@ namespace jau {
 
             // move_ctor on cow_darray elements
 
-            constexpr_atomic
+            constexpr_func_atomic
             cow_darray(cow_darray && x) noexcept {
                 // Strategy-1: Acquire lock, blocking
                 // - If somebody else holds the lock, we wait.
@@ -409,7 +409,7 @@ namespace jau {
              * This write operation uses a mutex lock and is blocking both cow_vector instance's write operations.
              * </p>
              */
-            constexpr_atomic
+            constexpr_func_atomic
             cow_darray& operator=(cow_darray&& x) noexcept {
                 // Strategy-2: Acquire locks of both, blocking
                 // - If somebody else holds the lock, we wait.
@@ -546,7 +546,7 @@ namespace jau {
              * @see jau::cow_darray::copy_store()
              * @see jau::cow_darray::set_store()
              */
-            constexpr_atomic
+            constexpr_func_atomic
             storage_ref_t copy_store() {
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 DARRAY_PRINTF("copy_store: %s\n", get_info().c_str());
@@ -583,7 +583,7 @@ namespace jau {
              * @see jau::cow_rw_iterator
              * @see jau::cow_rw_iterator::write_back()
              */
-            constexpr_atomic
+            constexpr_func_atomic
             void set_store(storage_ref_t && new_store_ref) noexcept {
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 sc_atomic_critical sync(sync_atomic);
@@ -606,7 +606,7 @@ namespace jau {
              * This read operation is <i>lock-free</i>.
              * </p>
              */
-            constexpr_atomic
+            constexpr_func_atomic
             storage_ref_t snapshot() const noexcept {
                 sc_atomic_critical sync( sync_atomic );
                 return store_ref;
@@ -675,7 +675,7 @@ namespace jau {
             /**
              * Returns the growth factor
              */
-            constexpr_atomic
+            constexpr_func_atomic
             float growth_factor() const noexcept {
                 sc_atomic_critical sync( sync_atomic );
                 return store_ref->growth_factor();
@@ -688,7 +688,7 @@ namespace jau {
              * </p>
              * @return
              */
-            constexpr_atomic
+            constexpr_func_atomic
             size_type capacity() const noexcept {
                 sc_atomic_critical sync( sync_atomic );
                 return store_ref->capacity();
@@ -700,7 +700,7 @@ namespace jau {
              * This read operation is <i>lock-free</i>.
              * </p>
              */
-            constexpr_atomic
+            constexpr_func_atomic
             bool empty() const noexcept {
                 sc_atomic_critical sync( sync_atomic );
                 return store_ref->empty();
@@ -712,7 +712,7 @@ namespace jau {
              * This read operation is <i>lock-free</i>.
              * </p>
              */
-            constexpr_atomic
+            constexpr_func_atomic
             size_type size() const noexcept {
                 sc_atomic_critical sync( sync_atomic );
                 return store_ref->size();
@@ -747,7 +747,7 @@ namespace jau {
              * This write operation uses a mutex lock and is blocking this instances' write operations.
              * </p>
              */
-            constexpr_atomic
+            constexpr_func_atomic
             void clear() noexcept {
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 storage_ref_t new_store_ref = std::make_shared<storage_t>();
@@ -763,7 +763,7 @@ namespace jau {
              * This write operation uses a mutex lock and is blocking both cow_darray instance's write operations.
              * </p>
              */
-            constexpr_atomic
+            constexpr_func_atomic
             void swap(cow_darray& x) noexcept {
                 std::unique_lock<std::recursive_mutex> lock(mtx_write, std::defer_lock); // utilize std::lock(a, b), allowing mixed order waiting on either object
                 std::unique_lock<std::recursive_mutex> lock_x(x.mtx_write, std::defer_lock); // otherwise RAII-style relinquish via destructor
@@ -783,7 +783,7 @@ namespace jau {
              * This write operation uses a mutex lock and is blocking this instances' write operations only.
              * </p>
              */
-            constexpr_atomic
+            constexpr_func_atomic
             void pop_back() noexcept {
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 if( !store_ref->empty() ) {
@@ -806,7 +806,7 @@ namespace jau {
              * </p>
              * @param x the value to be added at the tail.
              */
-            constexpr_atomic
+            constexpr_func_atomic
             void push_back(const value_type& x) {
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 if( store_ref->capacity_reached() ) {
@@ -831,7 +831,7 @@ namespace jau {
              * This write operation uses a mutex lock and is blocking this instances' write operations only.
              * </p>
              */
-            constexpr_atomic
+            constexpr_func_atomic
             void push_back(value_type&& x) {
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 if( store_ref->capacity_reached() ) {
@@ -861,7 +861,7 @@ namespace jau {
              * @param args arguments to forward to the constructor of the element
              */
             template<typename... Args>
-            constexpr_atomic
+            constexpr_func_atomic
             reference emplace_back(Args&&... args) {
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 if( store_ref->capacity_reached() ) {
@@ -891,7 +891,7 @@ namespace jau {
              * @param last last foreign input-iterator to range of value_type [first, last)
              */
             template< class InputIt >
-            constexpr_atomic
+            constexpr_func_atomic
             void push_back( InputIt first, InputIt last ) {
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 const size_type new_size_ = store_ref->size() + size_type(last - first);
@@ -944,7 +944,7 @@ namespace jau {
              * @param comparator the equal comparator to return true if both given elements are equal
              * @return true if the element has been uniquely added, otherwise false
              */
-            constexpr_atomic
+            constexpr_func_atomic
             bool push_back_unique(const value_type& x, equal_comparator comparator) {
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 for(auto it = store_ref->begin(); it != store_ref->end(); ) {
@@ -982,7 +982,7 @@ namespace jau {
              * @param comparator the equal comparator to return true if both given elements are equal
              * @return number of erased elements
              */
-            constexpr_atomic
+            constexpr_func_atomic
             int erase_matching(const value_type& x, const bool all_matching, equal_comparator comparator) {
                 int count = 0;
 
@@ -1004,7 +1004,7 @@ namespace jau {
                 return count;
             }
 
-            constexpr_cxx20 std::string toString() const noexcept {
+            constexpr_func_cxx20 std::string toString() const noexcept {
                 std::string res("{ " + std::to_string( size() ) + ": ");
                 int i=0;
                 jau::for_each_const(*this, [&res, &i](const value_type & e) {
@@ -1015,7 +1015,7 @@ namespace jau {
                 return res;
             }
 
-            constexpr_cxx20 std::string get_info() const noexcept {
+            constexpr_func_cxx20 std::string get_info() const noexcept {
                 return ("cow_darray[this "+jau::aptrHexString(this)+
                         ", "+store_ref->get_info()+
                         "]");
