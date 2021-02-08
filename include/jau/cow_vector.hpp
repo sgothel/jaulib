@@ -37,7 +37,7 @@
 #include <vector>
 #include <algorithm>
 
-#include <jau/cpp_lang_macros.hpp>
+#include <jau/cpp_lang_util.hpp>
 #include <jau/debug.hpp>
 #include <jau/basic_types.hpp>
 #include <jau/ordered_atomic.hpp>

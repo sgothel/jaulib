@@ -26,38 +26,12 @@
 #ifndef JAU_BASIC_INT_MATH_HPP_
 #define JAU_BASIC_INT_MATH_HPP_
 
+#include <cstdint>
 #include <cmath>
 
+#include <jau/int_types.hpp>
+
 namespace jau {
-    /**
-    // *************************************************
-    // *************************************************
-    // *************************************************
-     */
-
-    /**
-     * Natural 'size_t' alternative using 'unsigned int' as its natural sized type.
-     * <p>
-     * The leading 'n' stands for natural.
-     * </p>
-     * <p>
-     * This is a compromise to indicate intend,
-     * but to avoid handling a multiple sized 'size_t' footprint where not desired.
-     * </p>
-     */
-    typedef unsigned int nsize_t;
-
-    /**
-     * Natural 'ssize_t' alternative using 'signed int' as its natural sized type.
-     * <p>
-     * The leading 'n' stands for natural.
-     * </p>
-     * <p>
-     * This is a compromise to indicate intend,
-     * but to avoid handling a multiple sized 'ssize_t' footprint where not desired.
-     * </p>
-     */
-    typedef signed int snsize_t;
 
     /**
     // *************************************************

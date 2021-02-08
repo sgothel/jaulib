@@ -35,7 +35,7 @@
 #include <condition_variable>
 #include <algorithm>
 
-#include <jau/cpp_lang_macros.hpp>
+#include <jau/cpp_lang_util.hpp>
 #include <jau/debug.hpp>
 #include <jau/darray.hpp>
 #include <jau/basic_types.hpp>

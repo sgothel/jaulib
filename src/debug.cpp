@@ -55,7 +55,7 @@ std::string jau::get_backtrace(const bool skip_anon_frames, const jau::snsize_t 
             continue;
         }
         bool append_line;
-        snprintf(cstr, sizeof(cstr), "%3u: ", frame);
+        snprintf(cstr, sizeof(cstr), "%3zu: ", (size_t)frame);
         std::string line(cstr);
 
         unw_get_reg(&cursor, UNW_REG_IP, &ip); // instruction pointer (pc)

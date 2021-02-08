@@ -33,7 +33,7 @@
 #include <type_traits>
 #include <iostream>
 
-#include <jau/cpp_lang_macros.hpp>
+#include <jau/cpp_lang_util.hpp>
 #include <jau/debug.hpp>
 #include <jau/basic_types.hpp>
 

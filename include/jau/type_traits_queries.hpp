@@ -32,19 +32,8 @@
 
 #include <cstring>
 #include <string>
-#include <memory>
 #include <cstdint>
-#include <vector>
 #include <type_traits>
-
-extern "C" {
-    #include <endian.h>
-    #include <byteswap.h>
-}
-
-#include <jau/int_math.hpp>
-#include <jau/cpp_lang_macros.hpp>
-#include <jau/packed_attribute.hpp>
 
 namespace jau {
 

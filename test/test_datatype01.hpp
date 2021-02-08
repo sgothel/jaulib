@@ -32,7 +32,7 @@
 
 #include <iostream>
 
-#include <jau/cpp_lang_macros.hpp>
+#include <jau/cpp_lang_util.hpp>
 #include <jau/packed_attribute.hpp>
 #include <jau/ordered_atomic.hpp>
 #include <jau/basic_types.hpp>
