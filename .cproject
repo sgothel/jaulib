@@ -46,6 +46,7 @@
 									<listOptionValue builtIn="false" value="/opt-linux-x86_64/jdk1.8.0_121/include/linux/"/>
 									<listOptionValue builtIn="false" value="/usr/lib/jvm/default-java/include/"/>
 								</option>
+								<option id="gnu.cpp.compiler.option.other.other.541336659" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -Wno-multichar -Wno-float-equal" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1543970397" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.so.debug.178013953" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.so.debug">
@@ -66,6 +67,7 @@
 									<listOptionValue builtIn="false" value="/usr/lib/jvm/default-java/include/"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/jaulib/include}&quot;"/>
 								</option>
+								<option id="gnu.c.compiler.option.misc.other.1736977298" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -Wno-multichar -Wno-float-equal" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.497175907" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.so.debug.33614666" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.so.debug">
