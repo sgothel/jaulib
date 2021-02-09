@@ -267,7 +267,7 @@ namespace jau {
      * </p>
      * @tparam Dummy_type just to make template `SFINAE` happy
      */
-    template <typename Dummy_type> inline constexpr bool has_endian_little_v = has_endian_little<Dummy_type>::value;
+    template <typename Dummy_type> constexpr bool has_endian_little_v = has_endian_little<Dummy_type>::value;
 
     /**
      * A big-endian type trait for convenience ..
@@ -277,7 +277,7 @@ namespace jau {
      * </p>
      * @tparam Dummy_type just to make template `SFINAE` happy
      */
-    struct has_endian_big : std::integral_constant<bool, endian::big == endian::native> {};
+    template <typename Dummy_type> struct has_endian_big : std::integral_constant<bool, endian::big == endian::native> {};
 
     /**
      * Value access of big-endian type trait for convenience ..
@@ -287,7 +287,7 @@ namespace jau {
      * </p>
      * @tparam Dummy_type just to make template `SFINAE` happy
      */
-    inline constexpr bool has_endian_big_v = has_endian_big::value;
+    template <typename Dummy_type> constexpr bool has_endian_big_v = has_endian_big<Dummy_type>::value;
 
     /**
     // *************************************************

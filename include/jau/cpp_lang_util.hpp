@@ -144,7 +144,7 @@ namespace jau {
      * @tparam Dummy_type just to make template `SFINAE` happy
      * @see has_builtin_bit_cast
      */
-    template <typename Dummy_type> inline constexpr bool has_builtin_bit_cast_v = has_builtin_bit_cast<Dummy_type>::value;
+    template <typename Dummy_type> constexpr bool has_builtin_bit_cast_v = has_builtin_bit_cast<Dummy_type>::value;
 
     #if !defined __has_builtin_bit_cast
         /**
