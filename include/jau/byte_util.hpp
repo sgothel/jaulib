@@ -195,7 +195,7 @@ namespace jau {
      * @param v the jau::endian value
      * @return the std::string representation
      */
-    constexpr_func_cxx20 std::string to_string(const endian& v) noexcept {
+    constexpr_cxx20 std::string to_string(const endian& v) noexcept {
         switch(v) {
             case endian::little:  return "little";
             case endian::big:  return "big";

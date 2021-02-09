@@ -30,51 +30,59 @@
 namespace jau {
 
     /**
-     * <code>constexpr</code> enabled for C++20.
+     * `constexpr` qualifier replacement for C++20 `constexpr`.
+     *
+     * > A `constexpr` specifier used in a function or static member variable (since C++17) declaration implies `inline`.
+     *
      * <p>
-     * The alternative qualifier used is `inline`,
-     * as it is implied for for `constexpr` used for functions.
+     * Evaluated using the alternative qualifier `inline` for C++ < 20,
+     * as it is implied for `constexpr` functions or static member variables, see above.
+     * </p>
+     * <p>
+     * Evaluated as `constexpr` for C++20, i.e. std::string literals, virtual functions, etc.
      * </p>
      */
 #if __cplusplus > 201703L
-    #define constexpr_func_cxx20 constexpr
+    #define constexpr_cxx20 constexpr
 #else
-    #define constexpr_func_cxx20 inline
+    #define constexpr_cxx20 inline
 #endif
 
     /**
-     * Used when designed to declare a function <code>constexpr</code>,
+     * Used when designed to declare a function `constexpr`,
      * but prohibited by its specific implementation.
      * <p>
-     * The alternative qualifier used is `inline`,
-     * as it is implied for for `constexpr` used for functions.
+     * Evaluated using the alternative qualifier `inline` for C++ < 20,
+     * as it is implied for `constexpr` functions or static member variables, see constexpr_cxx20.
      * </p>
      * <p>
      * Here it but uses non-literal variables, such as std::lock_guard etc.
      * As these can't be evaluated at compile time, the standard does
-     * not allow using <code>constexpr</code> here.
+     * not allow using `constexpr` here.
      * </p>
      * <p>
      * Empty until standard defines otherwise.
      * </p>
+     * @see constexpr_cxx20
      */
-    #define constexpr_fun_non_literal_var inline
+    #define constexpr_non_literal_var inline
 
     /**
-     * Used when designed to declare a function <code>constexpr</code>,
+     * Used when designed to declare a function `constexpr`,
      * but prohibited by its specific implementation.
      * <p>
-     * The alternative qualifier used is `inline`,
-     * as it is implied for for `constexpr` used for functions.
+     * Evaluated using the alternative qualifier `inline` for C++ < 20,
+     * as it is implied for `constexpr` functions or static member variables, see constexpr_cxx20.
      * </p>
      * <p>
      * Here it uses thread-safety related measures like atomic storage
      * or mutex locks, which are non-literal variables and hence
-     * prohibit the use of <code>constexpr</code>.
+     * prohibit the use of `constexpr`.
      * </p>
+     * @see constexpr_cxx20
      * @see constexpr_non_literal_var
      */
-    #define constexpr_func_atomic inline
+    #define constexpr_atomic inline
 
     #if defined(__clang__)
         #if __has_feature(cxx_rtti)

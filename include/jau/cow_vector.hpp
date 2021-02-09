@@ -159,7 +159,7 @@ namespace jau {
             constexpr explicit cow_vector(const storage_t& x)
             : store_ref( std::make_shared<storage_t>(x, x->get_allocator()) ), sync_atomic(false) { }
 
-            constexpr_func_atomic
+            constexpr_atomic
             cow_vector(const cow_vector& x)
             : sync_atomic(false) {
                 storage_ref_t x_store_ref;
@@ -191,7 +191,7 @@ namespace jau {
                 return *this;
             }
 
-            constexpr_func_atomic
+            constexpr_atomic
             cow_vector(cow_vector && x) noexcept {
                 // Strategy-1: Acquire lock, blocking
                 // - If somebody else holds the lock, we wait.
@@ -214,7 +214,7 @@ namespace jau {
              * This write operation uses a mutex lock and is blocking both cow_vector instance's write operations.
              * </p>
              */
-            constexpr_func_atomic
+            constexpr_atomic
             cow_vector& operator=(cow_vector&& x) {
                 // Strategy-2: Acquire locks of both, blocking
                 // - If somebody else holds the lock, we wait.
@@ -298,7 +298,7 @@ namespace jau {
              * @see jau::cow_vector::copy_store()
              * @see jau::cow_vector::set_store()
              */
-            constexpr_func_atomic
+            constexpr_atomic
             storage_ref_t copy_store() {
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 return std::make_shared<storage_t>( *store_ref, store_ref->get_allocator() );
@@ -331,7 +331,7 @@ namespace jau {
              * @see jau::cow_vector::copy_store()
              * @see jau::cow_vector::set_store()
              */
-            constexpr_func_atomic
+            constexpr_atomic
             void set_store(storage_ref_t && new_store_ref) noexcept {
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 sc_atomic_critical sync(sync_atomic);
@@ -350,7 +350,7 @@ namespace jau {
              * </p>
              * @see jau::for_each_cow
              */
-            constexpr_func_atomic
+            constexpr_atomic
             storage_ref_t snapshot() const noexcept {
                 sc_atomic_critical sync( sync_atomic );
                 return store_ref;
@@ -383,7 +383,7 @@ namespace jau {
                 return store_ref->get_allocator();
             }
 
-            constexpr_func_atomic
+            constexpr_atomic
             size_type capacity() const noexcept {
                 sc_atomic_critical sync( sync_atomic );
                 return store_ref->capacity();
@@ -395,7 +395,7 @@ namespace jau {
              * This read operation is <i>lock-free</i>.
              * </p>
              */
-            constexpr_func_atomic
+            constexpr_atomic
             bool empty() const noexcept {
                 sc_atomic_critical sync( sync_atomic );
                 return store_ref->empty();
@@ -407,7 +407,7 @@ namespace jau {
              * This read operation is <i>lock-free</i>.
              * </p>
              */
-            constexpr_func_atomic
+            constexpr_atomic
             size_type size() const noexcept {
                 sc_atomic_critical sync( sync_atomic );
                 return store_ref->size();
@@ -432,7 +432,7 @@ namespace jau {
              * This write operation uses a mutex lock and is blocking this instances' write operations.
              * </p>
              */
-            constexpr_func_atomic
+            constexpr_atomic
             void clear() noexcept {
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 storage_ref_t new_store_ref = std::make_shared<storage_t>();
@@ -448,7 +448,7 @@ namespace jau {
              * This write operation uses a mutex lock and is blocking both cow_vector instance's write operations.
              * </p>
              */
-            constexpr_func_atomic
+            constexpr_atomic
             void swap(cow_vector& x) noexcept {
                 std::unique_lock<std::recursive_mutex> lock(mtx_write, std::defer_lock); // utilize std::lock(a, b), allowing mixed order waiting on either object
                 std::unique_lock<std::recursive_mutex> lock_x(x.mtx_write, std::defer_lock); // otherwise RAII-style relinquish via destructor
@@ -468,7 +468,7 @@ namespace jau {
              * This write operation uses a mutex lock and is blocking this instances' write operations only.
              * </p>
              */
-            constexpr_func_atomic
+            constexpr_atomic
             void pop_back() noexcept {
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 storage_ref_t old_store_ref = store_ref;
@@ -489,7 +489,7 @@ namespace jau {
              * </p>
              * @param x the value to be added at the tail.
              */
-            constexpr_func_atomic
+            constexpr_atomic
             void push_back(const value_type& x) {
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 storage_ref_t new_store_ref = std::make_shared<storage_t>( *store_ref, store_ref->get_allocator() );
@@ -506,7 +506,7 @@ namespace jau {
              * This write operation uses a mutex lock and is blocking this instances' write operations only.
              * </p>
              */
-            constexpr_func_atomic
+            constexpr_atomic
             void push_back(value_type&& x) {
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 storage_ref_t new_store_ref = std::make_shared<storage_t>( *store_ref, store_ref->get_allocator() );
@@ -528,7 +528,7 @@ namespace jau {
              * @param args arguments to forward to the constructor of the element
              */
             template<typename... Args>
-            constexpr_func_atomic
+            constexpr_atomic
             reference emplace_back(Args&&... args) {
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 storage_ref_t new_store_ref = std::make_shared<storage_t>( *store_ref, store_ref->get_allocator() );
@@ -572,7 +572,7 @@ namespace jau {
              * @param comparator the equal comparator to return true if both given elements are equal
              * @return true if the element has been uniquely added, otherwise false
              */
-            constexpr_func_atomic
+            constexpr_atomic
             bool push_back_unique(const value_type& x, equal_comparator comparator) {
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 for(auto it = store_ref->begin(); it != store_ref->end(); ) {
@@ -610,7 +610,7 @@ namespace jau {
              * @param comparator the equal comparator to return true if both given elements are equal
              * @return number of erased elements
              */
-            constexpr_func_atomic
+            constexpr_atomic
             int erase_matching(const value_type& x, const bool all_matching, equal_comparator comparator) {
                 int count = 0;
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
@@ -633,7 +633,7 @@ namespace jau {
                 return count;
             }
 
-            constexpr_func_cxx20 std::string toString() const noexcept {
+            constexpr_cxx20 std::string toString() const noexcept {
                 std::string res("{ " + std::to_string( size() ) + ": ");
                 int i=0;
                 jau::for_each_const(*this, [&res, &i](const value_type & e) {
