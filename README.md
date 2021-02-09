@@ -125,6 +125,9 @@ Changes
 **0.3.0**
 
 * TODO
+* All get/set functions are exposed as overloaded templates [get|put]_value(..), so is to_hex_string(..).
+* All byte-order conversion and get/set functions are of 'constexpr' now.
+* Add constexpr 'enum class endian', 'pointer_cast()' and 'bit_cast()'.
 * Offering JaulibSetup.cmake for parent projects for aligned setup.
 * Java: Working JNI-Lib bootstraping w/ fat-jar. Passing all unit tests.
 * Java: Generating jar and source-zip packages (normal + fat); Enable full junit testing.
