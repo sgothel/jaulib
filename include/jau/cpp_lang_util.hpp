@@ -30,6 +30,53 @@
 namespace jau {
 
     /**
+     * `consteval` qualifier replacement for C++20 `consteval`.
+     *
+     * > A `consteval` specifier implies `inline`.
+     * > At most one of the `constexpr`, `consteval`, and `constinit` specifiers is allowed to appear within the same sequence of declaration specifiers.
+     * > ...
+     * > An immediate function is a `constexpr` function,
+     * > and must satisfy the requirements applicable to `constexpr` functions or `constexpr` constructors, as the case may be.
+     *
+     * <p>
+     * Evaluated using the alternative qualifier `constexpr` for C++ < 20,
+     * as it is almost contained within `consteval` but lacks the `immediate function` constraint.
+     * </p>
+     * <p>
+     * Evaluated as `consteval` for C++20.
+     * </p>
+     */
+#if __cplusplus > 201703L
+    #define consteval_cxx20 consteval
+#else
+    #define consteval_cxx20 constexpr
+#endif
+
+    /**
+     * `constinit` qualifier replacement for C++20 `constinit`.
+     *
+     * > `constinit` cannot be used together with `constexpr` or `consteval`.
+     * > When the declared variable is a reference, `constinit` is equivalent to `constexpr`.
+     * > When the declared variable is an object,
+     * > `constexpr` mandates that the object must have static initialization and constant destruction
+     * > and makes the object const-qualified, however, `constinit` does not mandate constant destruction and const-qualification.
+     *
+     * <p>
+     * Evaluated using the alternative qualifier `constexpr` for C++ < 20,
+     * as it is almost contained within `constinit` but lacks the loosening of not mandating constant destruction and const-qualification.<br>
+     * FIXME: Due to the above, this replacement might not be suitable: TBD!
+     * </p>
+     * <p>
+     * Evaluated as `constinit` for C++20.
+     * </p>
+     */
+#if __cplusplus > 201703L
+    #define constinit_cxx20 constinit
+#else
+    #define constinit_cxx20 constexpr
+#endif
+
+    /**
      * `constexpr` qualifier replacement for C++20 `constexpr`.
      *
      * > A `constexpr` specifier used in a function or static member variable (since C++17) declaration implies `inline`.
