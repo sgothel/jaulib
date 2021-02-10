@@ -124,7 +124,7 @@ Changes
 
 **0.3.0**
 
-* TODO
+* Consolidate conversion to hex and decimal string: `to_hexstring(Type)` and `to_decstring(Type)`, dropped `<type>[Hex|Dec]String(..)`
 * All get/set functions are exposed as overloaded templates [get|put]_value(..), so is to_hex_string(..).
 * All byte-order conversion and get/set functions are of 'constexpr' now.
 * Add constexpr 'enum class endian', 'pointer_cast()' and 'bit_cast()'.
