@@ -260,7 +260,7 @@ namespace jau {
             constexpr void ctor_copy_range_check(pointer dest, iterator first, const_iterator last) {
                 DARRAY_PRINTF("ctor_copy_range_check [%zd .. %zd] -> ??, dist %zd\n", (first-begin_), (last-begin_)-1, (last-first));
                 if( first > last ) {
-                    throw jau::IllegalArgumentException("first "+aptrHexString(first)+" > last "+aptrHexString(last), E_FILE_LINE);
+                    throw jau::IllegalArgumentException("first "+to_hexstring(first)+" > last "+to_hexstring(last), E_FILE_LINE);
                 }
                 for(; first < last; ++dest, ++first) {
                     new (dest) value_type( *first ); // placement new
@@ -1136,15 +1136,15 @@ namespace jau {
             constexpr_cxx20 std::string get_info() const noexcept {
                 difference_type cap_ = (storage_end_-begin_);
                 difference_type size_ = (end_-begin_);
-                std::string res("darray[this "+jau::aptrHexString(this)+
+                std::string res("darray[this "+jau::to_hexstring(this)+
                                 ", size "+std::to_string(size_)+"/"+std::to_string(cap_)+
                                 ", growth "+std::to_string(growth_factor_)+
                                 ", uses[mmm "+std::to_string(uses_memmove)+
                                 ", ralloc "+std::to_string(uses_realloc)+
                                 ", smem "+std::to_string(sec_mem)+
-                                "], begin "+jau::aptrHexString(begin_)+
-                                ", end "+jau::aptrHexString(end_)+
-                                ", send "+jau::aptrHexString(storage_end_)+
+                                "], begin "+jau::to_hexstring(begin_)+
+                                ", end "+jau::to_hexstring(end_)+
+                                ", send "+jau::to_hexstring(storage_end_)+
                                 "]");
                 return res;
             }

@@ -298,7 +298,7 @@ static void print_mem(const std::string& pre, const T& data) {
     std::size_t bytes_total = data.get_allocator().memory_usage;
     double overhead = 0 == bytes_total ? 0.0 : ( 0 == bytes_net ? 10.0 : (double)bytes_total / (double)bytes_net );
     printf("Mem: %s: Elements %s x %zu bytes; %s, %lf ratio\n",
-            pre.c_str(), int64DecString(elements, ',', 5).c_str(),
+            pre.c_str(), to_decstring(elements, ',', 5).c_str(),
             bytes_element, data.get_allocator().toString(10, 5).c_str(), overhead);
     // 5:     1,000
     // 7:   100,000

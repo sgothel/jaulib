@@ -167,7 +167,7 @@ namespace jau {
 
             std::string toString() const override {
                 // hack to convert member pointer to void *: '*((void**)&member)'
-                return "ClassInvocation "+uint64HexString((uint64_t)base)+"->"+aptrHexString( *((void**)&member) );
+                return "ClassInvocation "+to_hexstring((uint64_t)base)+"->"+to_hexstring( *((void**)&member) );
             }
     };
 
@@ -208,7 +208,7 @@ namespace jau {
 
             std::string toString() const override {
                 // hack to convert function pointer to void *: '*((void**)&function)'
-                return "PlainInvocation "+aptrHexString( *((void**)&function) );
+                return "PlainInvocation "+to_hexstring( *((void**)&function) );
             }
     };
 
@@ -257,7 +257,7 @@ namespace jau {
 
             std::string toString() const override {
                 // hack to convert function pointer to void *: '*((void**)&function)'
-                return "CaptureInvocation "+aptrHexString( *((void**)&function) );
+                return "CaptureInvocation "+to_hexstring( *((void**)&function) );
             }
     };
 
@@ -301,7 +301,7 @@ namespace jau {
             }
 
             std::string toString() const override {
-                return "StdInvocation "+uint64HexString( id );
+                return "StdInvocation "+to_hexstring( id );
             }
     };
 

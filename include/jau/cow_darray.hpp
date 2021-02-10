@@ -1016,7 +1016,7 @@ namespace jau {
             }
 
             constexpr_cxx20 std::string get_info() const noexcept {
-                return ("cow_darray[this "+jau::aptrHexString(this)+
+                return ("cow_darray[this "+jau::to_hexstring(this)+
                         ", "+store_ref->get_info()+
                         "]");
             }

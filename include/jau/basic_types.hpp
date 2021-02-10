@@ -227,7 +227,7 @@ namespace jau {
 } // namespace jau
 
 /** \example test_intdecstring01.cpp
- * This C++ unit test validates the jau::to_decimal_string implementation
+ * This C++ unit test validates the jau::to_decstring implementation
  */
 
 #endif /* JAU_BASIC_TYPES_HPP_ */

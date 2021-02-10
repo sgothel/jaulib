@@ -66,7 +66,7 @@ using namespace jau;
         INFO(msg+": value commas      "+std::to_string(comma_count));
         INFO(msg+": value net_chars   "+std::to_string(net_chars));
         INFO(msg+": value total_chars "+std::to_string(total_chars));
-        std::string s = to_decimal_string<T>(value, use_separator ? ',' : 0, min_width);
+        std::string s = to_decstring<T>(value, use_separator ? ',' : 0, min_width);
         INFO(msg+": result           '"+s+"', len "+std::to_string(s.length()));
     }
 #endif
@@ -75,7 +75,7 @@ static void test_int32_t(const std::string msg, const int32_t v, const size_t ex
 #if SHOW_DECIMAL_STRING_STATS
     show_decimal_string_stats<int32_t>(msg, v, true /* use_separator */, 0 /* min_width */);
 #endif
-    const std::string str = int32DecString(v);
+    const std::string str = to_decstring(v);
     INFO(msg+": has '"+str+"', len "+std::to_string(str.length()));
     INFO(msg+": exp '"+expStr+"', len "+std::to_string(expStr.length())+", equal: "+std::to_string(str==expStr));
     REQUIRE(str.length() == expStrLen);
@@ -87,7 +87,7 @@ static void test_uint32_t(const std::string msg, const uint32_t v, const size_t 
     show_decimal_string_stats<uint32_t>(msg, v, true /* use_separator */, 0 /* min_width */);
 #endif
 
-    const std::string str = uint32DecString(v);
+    const std::string str = to_decstring(v);
     INFO(msg+": has '"+str+"', len "+std::to_string(str.length()));
     INFO(msg+": exp '"+expStr+"', len "+std::to_string(expStr.length())+", equal: "+std::to_string(str==expStr));
     REQUIRE(str.length() == expStrLen);
@@ -99,7 +99,7 @@ static void test_uint64_t(const std::string msg, const uint64_t v, const size_t 
     show_decimal_string_stats<uint64_t>(msg, v, true /* use_separator */, 0 /* min_width */);
 #endif
 
-    const std::string str = uint64DecString(v);
+    const std::string str = to_decstring(v);
     INFO(msg+": has '"+str+"', len "+std::to_string(str.length()));
     INFO(msg+": exp '"+expStr+"', len "+std::to_string(expStr.length())+", equal: "+std::to_string(str==expStr));
     REQUIRE(str.length() == expStrLen);

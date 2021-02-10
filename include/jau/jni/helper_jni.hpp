@@ -173,7 +173,7 @@ namespace jau {
 
             std::string toString() const noexcept override {
                 const uint64_t ref = (uint64_t)(void*)javaObjectRef.getObject();
-                return "JavaGlobalObj["+uint64HexString(ref)+"]";
+                return "JavaGlobalObj["+to_hexstring(ref)+"]";
             }
 
             /** Clears the java reference, i.e. nulling it, without deleting the global reference via JNI. */

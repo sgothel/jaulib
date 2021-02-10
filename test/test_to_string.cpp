@@ -80,11 +80,11 @@ TEST_CASE( "JAU to_string() Test 00 - jau::to_string() std::string conversion", 
     vec_int_1.push_back(1); vec_int_1.push_back(2); vec_int_1.push_back(3);
     std_vec_int_citer vec_int_citer_1B = vec_int_1.cbegin();
     uint8_t* vec_int_citer_1B_ptr = (uint8_t*)(vec_int_citer_1B.operator->());
-    std::string vec_int_citer_1B_str = aptrHexString(vec_int_citer_1B_ptr);
+    std::string vec_int_citer_1B_str = to_hexstring(vec_int_citer_1B_ptr);
 
     std_vec_int_citer vec_int_citer_1E = vec_int_1.cend();
     uint8_t* vec_int_citer_1E_ptr = (uint8_t*)(vec_int_citer_1E.operator->());
-    std::string vec_int_citer_1E_str = aptrHexString(vec_int_citer_1E_ptr);
+    std::string vec_int_citer_1E_str = to_hexstring(vec_int_citer_1E_ptr);
 
     std::ptrdiff_t vec_int_citer_1E_1B_ptrdiff = vec_int_citer_1E_ptr - vec_int_citer_1B_ptr;
     int vec_int_citer_1E_1B_ptr_count = vec_int_citer_1E_1B_ptrdiff / sizeof(int);

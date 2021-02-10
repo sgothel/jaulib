@@ -112,9 +112,9 @@ static void test_byteorder(const Value_type v_cpu,
 {
     if( VERBOSE ) {
         fprintf(stderr, "test_byteorder: sizeof %zu; platform littleEndian %d", sizeof(Value_type), jau::isLittleEndian());
-        fprintf(stderr, "\ncpu: %s: ", jau::to_hex_string(v_cpu).c_str()); print(v_cpu);
-        fprintf(stderr, "\nle_: %s: ", jau::to_hex_string(v_le).c_str()); print(v_le);
-        fprintf(stderr, "\nbe_: %s: ", jau::to_hex_string(v_be).c_str()); print(v_be);
+        fprintf(stderr, "\ncpu: %s: ", jau::to_hexstring(v_cpu).c_str()); print(v_cpu);
+        fprintf(stderr, "\nle_: %s: ", jau::to_hexstring(v_le).c_str()); print(v_le);
+        fprintf(stderr, "\nbe_: %s: ", jau::to_hexstring(v_be).c_str()); print(v_be);
         fprintf(stderr, "\n");
     }
     {
@@ -284,9 +284,9 @@ template<typename Value_type>
 static void test_value_littlebig(const Value_type v_cpu, const Value_type v_le, const Value_type v_be) {
     if( VERBOSE ) {
         fprintf(stderr, "test_value_littlebig: sizeof %zu; platform littleEndian %d", sizeof(Value_type), jau::isLittleEndian());
-        fprintf(stderr, "\ncpu: %s: ", jau::to_hex_string(v_cpu).c_str()); print(v_cpu);
-        fprintf(stderr, "\nle_: %s: ", jau::to_hex_string(v_le).c_str()); print(v_le);
-        fprintf(stderr, "\nbe_: %s: ", jau::to_hex_string(v_be).c_str()); print(v_be);
+        fprintf(stderr, "\ncpu: %s: ", jau::to_hexstring(v_cpu).c_str()); print(v_cpu);
+        fprintf(stderr, "\nle_: %s: ", jau::to_hexstring(v_le).c_str()); print(v_le);
+        fprintf(stderr, "\nbe_: %s: ", jau::to_hexstring(v_be).c_str()); print(v_be);
         fprintf(stderr, "\n");
     }
     uint8_t buffer[2 * sizeof(Value_type)];

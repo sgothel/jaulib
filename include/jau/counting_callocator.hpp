@@ -88,10 +88,10 @@ struct counting_callocator : public jau::callocator<T>
 
   public:
     std::string toString(const nsize_t mem_width=0, const nsize_t count_width=0) {
-        return "CAlloc["/*+std::to_string(id)+", "*/+uint64DecString(memory_usage, ',', mem_width)+" bytes, alloc[balance "+
-                int64DecString(alloc_balance, ',', count_width)+" = "+
-                uint64DecString(alloc_count, ',', count_width)+" - "+uint64DecString(dealloc_count, ',', count_width)+
-                ", realloc = "+uint64DecString(realloc_count, ',', count_width)+"]]";
+        return "CAlloc["/*+std::to_string(id)+", "*/+to_decstring(memory_usage, ',', mem_width)+" bytes, alloc[balance "+
+                to_decstring(alloc_balance, ',', count_width)+" = "+
+                to_decstring(alloc_count, ',', count_width)+" - "+to_decstring(dealloc_count, ',', count_width)+
+                ", realloc = "+to_decstring(realloc_count, ',', count_width)+"]]";
     }
 
     counting_callocator() noexcept

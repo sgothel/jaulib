@@ -92,74 +92,33 @@ namespace jau {
     std::string& byteHexString(std::string& dest, const uint8_t value, const bool lowerCase) noexcept;
 
     /**
-     * Produce a lower-case hexadecimal string representation of the given uint8_t values.
-     * @param v the value
+     * Produce a lower-case hexadecimal string representation of the given pointer.
+     * @tparam value_type a pointer type
+     * @param v the pointer of given pointer type
      * @return the hex-string representation of the value
+     * @see bytesHexString()
      */
-    inline std::string uint8HexString(const uint8_t v) noexcept {
-        return bytesHexString(pointer_cast<const uint8_t*>(&v), 0, sizeof(v), false /* lsbFirst */);
+    template< class value_type,
+              std::enable_if_t<std::is_pointer_v<value_type>,
+                               bool> = true>
+    std::string to_hexstring(value_type const & v) noexcept
+    {
+        const uint64_t v2 = reinterpret_cast<uint64_t>(v);
+        return bytesHexString(pointer_cast<const uint8_t*>(&v2), 0, sizeof(v), false /* lsbFirst */);
     }
 
     /**
-     * Produce a lower-case hexadecimal string representation of the given uint16_t value.
-     * @param v the value
+     * Produce a lower-case hexadecimal string representation of the given value with standard layout.
+     * @tparam value_type a standard layout value type
+     * @param v the value of given standard layout type
      * @return the hex-string representation of the value
+     * @see bytesHexString()
      */
-    inline std::string uint16HexString(const uint16_t v) noexcept {
-        return bytesHexString(pointer_cast<const uint8_t*>(&v), 0, sizeof(v), false /* lsbFirst */);
-    }
-
-    /**
-     * Produce a lower-case hexadecimal string representation of the given uint32_t value.
-     * @param v the value
-     * @return the hex-string representation of the value
-     */
-    inline std::string uint32HexString(const uint32_t v) noexcept {
-        return bytesHexString(pointer_cast<const uint8_t*>(&v), 0, sizeof(v), false /* lsbFirst */);
-    }
-
-    /**
-     * Produce a lower-case hexadecimal string representation of the given uint64_t value.
-     * @param v the value
-     * @return the hex-string representation of the value
-     */
-    inline std::string uint64HexString(const uint64_t& v) noexcept {
-        return bytesHexString(pointer_cast<const uint8_t*>(&v), 0, sizeof(v), false /* lsbFirst */);
-    }
-
-    /**
-     * Produce a lower-case hexadecimal string representation of the given 'void *' value.
-     * @param v the value
-     * @return the hex-string representation of the value
-     */
-    inline std::string aptrHexString(const void * v) noexcept {
-        return uint64HexString(reinterpret_cast<uint64_t>(v));
-    }
-
-    /**
-     * Produce a lower-case hexadecimal string representation of the given uint128_t value.
-     * @param v the value
-     * @return the hex-string representation of the value
-     */
-    inline std::string uint128HexString(const uint128_t& v) noexcept {
-        return bytesHexString(v.data, 0, sizeof(v.data), false /* lsbFirst */);
-    }
-
-    /**
-     * Produce a lower-case hexadecimal string representation of the given uint256_t value.
-     * @param v the value
-     * @return the hex-string representation of the value
-     */
-    inline std::string uint256HexString(const uint256_t& v) noexcept {
-        return bytesHexString(v.data, 0, sizeof(v.data), false /* lsbFirst */);
-    }
-
-    template<typename T>
-    inline
-    typename std::enable_if_t<
-        std::is_standard_layout_v<T>,
-        std::string>
-    to_hex_string(T const & v) noexcept
+    template< class value_type,
+              std::enable_if_t<!std::is_pointer_v<value_type> &&
+                               std::is_standard_layout_v<value_type>,
+                               bool> = true>
+    std::string to_hexstring(value_type const & v) noexcept
     {
         return bytesHexString(pointer_cast<const uint8_t*>(&v), 0, sizeof(v), false /* lsbFirst */);
     }
@@ -178,10 +137,12 @@ namespace jau {
      * @param width the minimum number of characters to be printed. Add padding with blank space if result is shorter.
      * @return the string representation of the integral integer value
      */
-    template<class T>
-    std::string to_decimal_string(const T& v, const char separator=',', const nsize_t width=0) noexcept {
-        const snsize_t v_sign = jau::sign<T>(v);
-        const nsize_t digit10_count1 = jau::digits10<T>(v, v_sign, true /* sign_is_digit */);
+    template< class value_type,
+              std::enable_if_t< std::is_integral_v<value_type>,
+                                bool> = true>
+    std::string to_decstring(const value_type& v, const char separator=',', const nsize_t width=0) noexcept {
+        const snsize_t v_sign = jau::sign<value_type>(v);
+        const nsize_t digit10_count1 = jau::digits10<value_type>(v, v_sign, true /* sign_is_digit */);
         const nsize_t digit10_count2 = v_sign < 0 ? digit10_count1 - 1 : digit10_count1; // less sign
 
         const nsize_t comma_count = 0 == separator ? 0 : ( digit10_count1 - 1 ) / 3;
@@ -189,7 +150,7 @@ namespace jau {
         const nsize_t total_chars = std::max<nsize_t>(width, net_chars);
         std::string res(total_chars, ' ');
 
-        T n = v;
+        value_type n = v;
         nsize_t char_iter = 0;
 
         for(nsize_t digit10_iter = 0; digit10_iter < digit10_count2 /* && char_iter < total_chars */; digit10_iter++ ) {
@@ -204,50 +165,6 @@ namespace jau {
             res[total_chars-1-(char_iter++)] = '-';
         }
         return res;
-    }
-
-    /**
-     * Produce a decimal string representation of an int32_t value.
-     * @param v the value
-     * @param separator if not 0, use as separation character, otherwise no separation characters are being used
-     * @param width the minimum number of characters to be printed. Add padding with blank space if result is shorter.
-     * @return the string representation of the value
-     */
-    inline std::string int32DecString(const int32_t v, const char separator=',', const nsize_t width=0) noexcept {
-        return to_decimal_string<int32_t>(v, separator, width);
-    }
-
-    /**
-     * Produce a decimal string representation of a uint32_t value.
-     * @param v the value
-     * @param separator if not 0, use as separation character, otherwise no separation characters are being used
-     * @param width the minimum number of characters to be printed. Add padding with blank space if result is shorter.
-     * @return the string representation of the value
-     */
-    inline std::string uint32DecString(const uint32_t v, const char separator=',', const nsize_t width=0) noexcept {
-        return to_decimal_string<uint32_t>(v, separator, width);
-    }
-
-    /**
-     * Produce a decimal string representation of an int64_t value.
-     * @param v the value
-     * @param separator if not 0, use as separation character, otherwise no separation characters are being used
-     * @param width the minimum number of characters to be printed. Add padding with blank space if result is shorter.
-     * @return the string representation of the value
-     */
-    inline std::string int64DecString(const int64_t& v, const char separator=',', const nsize_t width=0) noexcept {
-        return to_decimal_string<int64_t>(v, separator, width);
-    }
-
-    /**
-     * Produce a decimal string representation of a uint64_t value.
-     * @param v the value
-     * @param separator if not 0, use as separation character, otherwise no separation characters are being used
-     * @param width the minimum number of characters to be printed. Add padding with blank space if result is shorter.
-     * @return the string representation of the value
-     */
-    inline std::string uint64DecString(const uint64_t& v, const char separator=',', const nsize_t width=0) noexcept {
-        return to_decimal_string<uint64_t>(v, separator, width);
     }
 
     /**
@@ -271,7 +188,7 @@ namespace jau {
                                bool> = true>
     std::string to_string(const value_type & ref)
     {
-        return aptrHexString((void*)ref);
+        return to_hexstring((void*)ref);
     }
 
     template< class value_type,
@@ -304,7 +221,7 @@ namespace jau {
                                 jau::has_member_of_pointer_v<value_type>,
                                bool> = true>
     std::string to_string(const value_type & ref) {
-        return aptrHexString((void*)ref.operator->());
+        return to_hexstring((void*)ref.operator->());
     }
 
     template< class value_type,
@@ -323,7 +240,7 @@ namespace jau {
 } // namespace jau
 
 /** \example test_intdecstring01.cpp
- * This C++ unit test validates the jau::to_decimal_string implementation
+ * This C++ unit test validates the jau::to_decstring implementation
  */
 
 #endif /* JAU_STRING_UTIL_HPP_ */
