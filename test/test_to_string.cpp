@@ -60,7 +60,11 @@ TEST_CASE( "JAU to_string() Test 00 - jau::to_string() std::string conversion", 
 
     CHECK( "1" == jau::to_string<int>(i1) );
     CHECK( "1116791496961" == jau::to_string(u64_1) );
-    CHECK( "0x000000000000affe" == jau::to_string(p_v_1) );
+    if( sizeof(p_v_1) == 8 ) {
+        CHECK( "0x000000000000affe" == jau::to_string(p_v_1) );
+    } else if( sizeof(p_v_1) == 4 ) {
+        CHECK( "0x0000affe" == jau::to_string(p_v_1) );
+    }
     CHECK( "1.650000" == jau::to_string(float_1) );
 
     CHECK( "01:04:05:F5:E1:01" == jau::to_string(addr48bit_1) );
