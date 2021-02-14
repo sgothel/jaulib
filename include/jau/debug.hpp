@@ -151,6 +151,14 @@ namespace jau {
     /** Use for unconditional plain messages, prefix '[elapsed_time] ' if printPrefix == true. */
     void PLAIN_PRINT(const bool printPrefix, const char * format, ...) noexcept;
 
+    /**
+     * Convenient fprintf() invocation, prepending the environment::getElapsedMillisecond() timestamp.
+     * @param stream the output stream
+     * @param format the format
+     * @param args the optional arguments
+     */
+    int fprintf_td(FILE* stream, const char * format, ...) noexcept;
+
     void COND_PRINT_impl(const char * format, ...) noexcept;
 
     /** Use for conditional plain messages, prefix '[elapsed_time] '. */

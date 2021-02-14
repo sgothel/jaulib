@@ -185,6 +185,15 @@ void jau::PLAIN_PRINT(const bool printPrefix, const char * format, ...) noexcept
     fflush(stderr);
 }
 
+int jau::fprintf_td(FILE* stream, const char * format, ...) noexcept {
+    int res = ::fprintf(stderr, "[%s] ", jau::to_decstring(environment::getElapsedMillisecond(), ',', 9).c_str());
+    va_list args;
+    va_start (args, format);
+    res += ::vfprintf(stream, format, args);
+    va_end (args);
+    return res;
+}
+
 void jau::COND_PRINT_impl(const char * format, ...) noexcept {
     fprintf(stderr, "[%s] ", jau::to_decstring(environment::getElapsedMillisecond(), ',', 9).c_str());
     va_list args;
