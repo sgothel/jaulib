@@ -50,6 +50,12 @@ namespace jau {
     uint64_t getCurrentMilliseconds() noexcept;
 
     /**
+     * Returns current wall-clock system `time of day` in seconds since Unix Epoch
+     * `00:00:00 UTC on 1 January 1970`.
+     */
+    uint64_t getWallClockSeconds() noexcept;
+
+    /**
     // *************************************************
     // *************************************************
     // *************************************************

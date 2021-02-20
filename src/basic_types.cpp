@@ -33,8 +33,8 @@
 
 using namespace jau;
 
-static const int64_t NanoPerMilli = 1000000L;
-static const int64_t MilliPerOne = 1000L;
+static const uint64_t NanoPerMilli = 1000000UL;
+static const uint64_t MilliPerOne = 1000UL;
 
 /**
  * See <http://man7.org/linux/man-pages/man2/clock_gettime.2.html>
@@ -47,7 +47,14 @@ static const int64_t MilliPerOne = 1000L;
 uint64_t jau::getCurrentMilliseconds() noexcept {
     struct timespec t;
     clock_gettime(CLOCK_MONOTONIC, &t);
-    return static_cast<uint64_t>( t.tv_sec * MilliPerOne + t.tv_nsec / NanoPerMilli );
+    return static_cast<uint64_t>( t.tv_sec ) * MilliPerOne +
+           static_cast<uint64_t>( t.tv_nsec ) / NanoPerMilli;
+}
+
+uint64_t jau::getWallClockSeconds() noexcept {
+    struct timespec t;
+    clock_gettime(CLOCK_REALTIME, &t);
+    return static_cast<uint64_t>( t.tv_sec );
 }
 
 jau::RuntimeException::RuntimeException(std::string const type, std::string const m, const char* file, int line) noexcept
