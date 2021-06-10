@@ -59,19 +59,19 @@ std::shared_ptr<Integer> NullInteger = nullptr;
 
 typedef std::shared_ptr<Integer> SharedType;
 static const SharedType SharedTypeNullElem(nullptr);
-typedef ringbuffer<SharedType, SharedTypeNullElem, jau::nsize_t> SharedTypeRingbuffer;
+typedef ringbuffer<SharedType, jau::nsize_t> SharedTypeRingbuffer;
 
 // Test examples.
 class TestRingbuffer03 {
   private:
 
     std::shared_ptr<SharedTypeRingbuffer> createEmpty(jau::nsize_t initialCapacity) {
-        std::shared_ptr<SharedTypeRingbuffer> rb = std::shared_ptr<SharedTypeRingbuffer>(new SharedTypeRingbuffer(initialCapacity));
+        std::shared_ptr<SharedTypeRingbuffer> rb = std::shared_ptr<SharedTypeRingbuffer>(new SharedTypeRingbuffer(SharedTypeNullElem, initialCapacity));
         REQUIRE_MSG("empty "+rb->toString(), rb->isEmpty());
         return rb;
     }
     std::shared_ptr<SharedTypeRingbuffer> createFull(const std::vector<std::shared_ptr<Integer>> & source) {
-        std::shared_ptr<SharedTypeRingbuffer> rb = std::shared_ptr<SharedTypeRingbuffer>(new SharedTypeRingbuffer(source));
+        std::shared_ptr<SharedTypeRingbuffer> rb = std::shared_ptr<SharedTypeRingbuffer>(new SharedTypeRingbuffer(SharedTypeNullElem, source));
         REQUIRE_MSG("full "+rb->toString(), rb->isFull());
         return rb;
     }

@@ -100,9 +100,14 @@ namespace jau {
  * - Sequentially Consistent (SC) ordering or SC-DRF (data race free) <https://en.cppreference.com/w/cpp/atomic/memory_order#Sequentially-consistent_ordering>
  * - std::memory_order <https://en.cppreference.com/w/cpp/atomic/memory_order>
  * </pre>
+ * <p>
+ * We would like to pass `T nullelem` as a non-type template parameter of type `T`, a potential Class.
+ * However, this is only allowed in C++20 and we use C++17 for now.
+ * Hence we have to pass `T nullelem` in the constructor.
+ * </p>
  * @see jau::sc_atomic_critical
  */
-template <typename T, const T& nullelem, typename Size_type,
+template <typename T, typename Size_type,
           bool use_memcpy = std::is_trivially_copyable_v<T>,
           bool use_memset = std::is_integral_v<T> && sizeof(T)==1
          >
@@ -136,8 +141,9 @@ class ringbuffer {
         mutable std::mutex syncRead,  syncMultiRead;  // Memory-Model (MM) guaranteed sequential consistency (SC) between acquire and release
         std::condition_variable cvRead;
 
-        /* final */ Size_type capacityPlusOne;  // not final due to grow
-        /* final */ T * array;           // Synchronized due to MM's data-race-free SC (SC-DRF) between [atomic] acquire/release
+        /* const */ T nullelem;          // not final due to assignment operation
+        /* const */ Size_type capacityPlusOne;  // not final due to grow
+        /* const */ T * array;           // Synchronized due to MM's data-race-free SC (SC-DRF) between [atomic] acquire/release
         sc_atomic_Size_type readPos;     // Memory-Model (MM) guaranteed sequential consistency (SC) between acquire (read) and release (write)
         sc_atomic_Size_type writePos;    // ditto
 
@@ -717,16 +723,6 @@ class ringbuffer {
         }
 
         /**
-         * Create an empty instance
-         */
-        ringbuffer() noexcept
-        : capacityPlusOne(1), array(nullptr),
-          readPos(0), writePos(0)
-        {
-            _DEBUG_DUMP("ctor(def)");
-        }
-
-        /**
          * Create a full ring buffer instance w/ the given array's net capacity and content.
          * <p>
          * Example for a 10 element Integer array:
@@ -743,19 +739,25 @@ class ringbuffer {
          * Implementation will allocate an internal array with size of array <code>copyFrom</code> <i>plus one</i>,
          * and copy all elements from array <code>copyFrom</code> into the internal array.
          * </p>
+         * @param nullelem The `null` value used to zero removed elements on get*(..) and clear()
          * @param copyFrom mandatory source array determining ring buffer's net {@link #capacity()} and initial content.
          * @throws IllegalArgumentException if <code>copyFrom</code> is <code>nullptr</code>
          */
-        ringbuffer(const std::vector<T> & copyFrom) noexcept
-        : capacityPlusOne(copyFrom.size() + 1), array(newArray(capacityPlusOne)),
+        ringbuffer(const T& nullelem_, const std::vector<T> & copyFrom) noexcept
+        : nullelem(nullelem_), capacityPlusOne(copyFrom.size() + 1), array(newArray(capacityPlusOne)),
           readPos(0), writePos(0)
         {
             resetImpl(copyFrom.data(), copyFrom.size());
             _DEBUG_DUMP("ctor(vector<T>)");
         }
 
-        ringbuffer(const T * copyFrom, const Size_type copyFromSize) noexcept
-        : capacityPlusOne(copyFromSize + 1), array(newArray(capacityPlusOne)),
+        /**
+         * @param nullelem The `null` value used to zero removed elements on get*(..) and clear()
+         * @param copyFrom
+         * @param copyFromSize
+         */
+        ringbuffer(const T& nullelem_, const T * copyFrom, const Size_type copyFromSize) noexcept
+        : nullelem(nullelem_), capacityPlusOne(copyFromSize + 1), array(newArray(capacityPlusOne)),
           readPos(0), writePos(0)
         {
             resetImpl(copyFrom, copyFromSize);
@@ -776,11 +778,12 @@ class ringbuffer {
          * <p>
          * Implementation will allocate an internal array of size <code>capacity</code> <i>plus one</i>.
          * </p>
+         * @param nullelem The `null` value used to zero removed elements on get*(..) and clear()
          * @param arrayType the array type of the created empty internal array.
          * @param capacity the initial net capacity of the ring buffer
          */
-        ringbuffer(const Size_type capacity) noexcept
-        : capacityPlusOne(capacity + 1), array(newArray(capacityPlusOne)),
+        ringbuffer(const T& nullelem_, const Size_type capacity) noexcept
+        : nullelem(nullelem_), capacityPlusOne(capacity + 1), array(newArray(capacityPlusOne)),
           readPos(0), writePos(0)
         {
             _DEBUG_DUMP("ctor(capacity)");
@@ -794,7 +797,7 @@ class ringbuffer {
         }
 
         ringbuffer(const ringbuffer &_source) noexcept
-        : capacityPlusOne(_source.capacityPlusOne), array(newArray(capacityPlusOne)),
+        : nullelem(_source.nullelem), capacityPlusOne(_source.capacityPlusOne), array(newArray(capacityPlusOne)),
           readPos(0), writePos(0)
         {
             std::unique_lock<std::mutex> lockMultiReadS(_source.syncMultiRead, std::defer_lock); // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
@@ -815,6 +818,8 @@ class ringbuffer {
             if( this == &_source ) {
                 return *this;
             }
+            nullelem = _source.nullelem;
+
             if( capacityPlusOne != _source.capacityPlusOne ) {
                 cloneFrom(true, _source);
             } else {

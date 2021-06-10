@@ -38,19 +38,19 @@ using namespace jau;
 typedef uint8_t IntegralType;
 typedef uint8_t TrivialType;
 static const TrivialType TrivialTypeNullElem(0xff);
-typedef ringbuffer<TrivialType, TrivialTypeNullElem, jau::nsize_t> TrivialTypeRingbuffer;
+typedef ringbuffer<TrivialType, jau::nsize_t> TrivialTypeRingbuffer;
 
 // Test examples.
 class TestRingbuffer01 {
   private:
 
     TrivialTypeRingbuffer createEmpty(jau::nsize_t initialCapacity) {
-        TrivialTypeRingbuffer rb(initialCapacity);
+        TrivialTypeRingbuffer rb(TrivialTypeNullElem, initialCapacity);
         REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
         return rb;
     }
     TrivialTypeRingbuffer createFull(const std::vector<TrivialType> & source) {
-        TrivialTypeRingbuffer rb(source);
+        TrivialTypeRingbuffer rb(TrivialTypeNullElem, source);
         REQUIRE_MSG("full "+rb.toString(), rb.isFull());
         return rb;
     }
