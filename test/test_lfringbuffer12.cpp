@@ -37,15 +37,34 @@
 
 using namespace jau;
 
-typedef uint8_t IntegralType;
-typedef uint8_t TrivialType;
-static const TrivialType TrivialTypeNullElem(0xff);
+typedef jau::snsize_t IntegralType;
+
+class Integer {
+    public:
+        IntegralType value;
+
+        Integer(IntegralType v) : value(v) {}
+
+        Integer() noexcept : value(0) { }
+
+        Integer(const Integer &o) noexcept = default;
+        Integer(Integer &&o) noexcept = default;
+        Integer& operator=(const Integer &o) noexcept = default;
+        Integer& operator=(Integer &&o) noexcept = default;
+
+        operator IntegralType() const {
+            return value;
+        }
+        IntegralType intValue() const { return value; }
+        static Integer valueOf(const IntegralType i) { return Integer(i); }
+};
+
+typedef Integer TrivialType;
+static const TrivialType TrivialTypeNullElem(-1);
 typedef ringbuffer<TrivialType, TrivialTypeNullElem, jau::nsize_t> TrivialTypeRingbuffer;
 
-constexpr static const IntegralType integral_modulus = 254;
-
 // Test examples.
-class TestRingbuffer11 {
+class TestRingbuffer12 {
   private:
 
     TrivialTypeRingbuffer createEmpty(jau::nsize_t initialCapacity) {
@@ -62,7 +81,7 @@ class TestRingbuffer11 {
     std::vector<TrivialType> createIntArray(const jau::nsize_t capacity, const IntegralType startValue) {
         std::vector<TrivialType> array(capacity);
         for(jau::nsize_t i=0; i<capacity; i++) {
-            array[i] = TrivialType( ( startValue + (IntegralType)i ) % integral_modulus );
+            array[i] = TrivialType(startValue+i);
         }
         return array;
     }
@@ -75,7 +94,7 @@ class TestRingbuffer11 {
         // INFO_STR(msg+": Created / " + rb->toString());
         for(jau::nsize_t i=0; i<len; i++) {
             TrivialType svI = rb->getBlocking();
-            REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb->toString()+", elem "+std::to_string(svI), svI!= TrivialTypeNullElem);
+            REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb->toString(), svI!=TrivialTypeNullElem);
             // INFO_STR("Got "+std::to_string(svI->intValue())+" / " + rb->toString());
         }
         // INFO_STR(msg+": Dies / " + rb->toString());
@@ -93,7 +112,7 @@ class TestRingbuffer11 {
 
         for(jau::nsize_t i=0; i<len; i++) {
             TrivialType svI = array[i];
-            REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb->toString()+", elem "+std::to_string(svI), svI!=TrivialTypeNullElem);
+            REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb->toString(), svI!=TrivialTypeNullElem);
             // INFO_STR("Got "+std::to_string(svI.intValue())+" / " + rb->toString());
         }
         // INFO_STR(msg+": Dies / " + rb->toString());
@@ -106,8 +125,8 @@ class TestRingbuffer11 {
 
         // INFO_STR(msg+": Created / " + rb->toString());
         for(jau::nsize_t i=0; i<len; i++) {
-            IntegralType vI( ( startValue + (IntegralType)i ) % integral_modulus );
-            // INFO_STR("Putting "+std::to_string(vI)+" ... / " + rb->toString());
+            Integer vI(startValue+i);
+            // INFO_STR("Putting "+std::to_string(vI->intValue())+" ... / " + rb->toString());
             rb->putBlocking( vI );
         }
         // INFO_STR(msg+": Dies / " + rb->toString());
@@ -135,8 +154,8 @@ class TestRingbuffer11 {
         REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.getSize());
         REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
 
-        std::thread getThread01(&TestRingbuffer11::getThreadType01, this, "test01a.get01", &rb, capacity); // @suppress("Invalid arguments")
-        std::thread putThread01(&TestRingbuffer11::putThreadType01, this, "test01a.put01", &rb, capacity, 0); // @suppress("Invalid arguments")
+        std::thread getThread01(&TestRingbuffer12::getThreadType01, this, "test01a.get01", &rb, capacity); // @suppress("Invalid arguments")
+        std::thread putThread01(&TestRingbuffer12::putThreadType01, this, "test01a.put01", &rb, capacity, 0); // @suppress("Invalid arguments")
         putThread01.join();
         getThread01.join();
 
@@ -151,8 +170,8 @@ class TestRingbuffer11 {
         REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.getSize());
         REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
 
-        std::thread getThread01(&TestRingbuffer11::getRangeThreadType02, this, "test01b.getR01", &rb, capacity); // @suppress("Invalid arguments")
-        std::thread putThread01(&TestRingbuffer11::putRangeThreadType02, this, "test01b.putR01", &rb, capacity, 0); // @suppress("Invalid arguments")
+        std::thread getThread01(&TestRingbuffer12::getRangeThreadType02, this, "test01b.getR01", &rb, capacity); // @suppress("Invalid arguments")
+        std::thread putThread01(&TestRingbuffer12::putRangeThreadType02, this, "test01b.putR01", &rb, capacity, 0); // @suppress("Invalid arguments")
         putThread01.join();
         getThread01.join();
 
@@ -167,11 +186,11 @@ class TestRingbuffer11 {
         REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.getSize());
         REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
 
-        std::thread getThread01(&TestRingbuffer11::getThreadType01, this, "test02a.get01", &rb, capacity/4); // @suppress("Invalid arguments")
-        std::thread getThread02(&TestRingbuffer11::getThreadType01, this, "test02a.get02", &rb, capacity/4); // @suppress("Invalid arguments")
-        std::thread putThread01(&TestRingbuffer11::putThreadType01, this, "test02a.put01", &rb, capacity, 0); // @suppress("Invalid arguments")
-        std::thread getThread03(&TestRingbuffer11::getThreadType01, this, "test02a.get03", &rb, capacity/4); // @suppress("Invalid arguments")
-        std::thread getThread04(&TestRingbuffer11::getThreadType01, this, "test02a.get04", &rb, capacity/4); // @suppress("Invalid arguments")
+        std::thread getThread01(&TestRingbuffer12::getThreadType01, this, "test02a.get01", &rb, capacity/4); // @suppress("Invalid arguments")
+        std::thread getThread02(&TestRingbuffer12::getThreadType01, this, "test02a.get02", &rb, capacity/4); // @suppress("Invalid arguments")
+        std::thread putThread01(&TestRingbuffer12::putThreadType01, this, "test02a.put01", &rb, capacity, 0); // @suppress("Invalid arguments")
+        std::thread getThread03(&TestRingbuffer12::getThreadType01, this, "test02a.get03", &rb, capacity/4); // @suppress("Invalid arguments")
+        std::thread getThread04(&TestRingbuffer12::getThreadType01, this, "test02a.get04", &rb, capacity/4); // @suppress("Invalid arguments")
         putThread01.join();
         getThread01.join();
         getThread02.join();
@@ -189,11 +208,11 @@ class TestRingbuffer11 {
         REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.getSize());
         REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
 
-        std::thread getThread01(&TestRingbuffer11::getRangeThreadType02, this, "test02b.getR01", &rb, capacity/4); // @suppress("Invalid arguments")
-        std::thread getThread02(&TestRingbuffer11::getRangeThreadType02, this, "test02b.getR02", &rb, capacity/4); // @suppress("Invalid arguments")
-        std::thread putThread01(&TestRingbuffer11::putRangeThreadType02, this, "test02b.putR01", &rb, capacity, 0); // @suppress("Invalid arguments")
-        std::thread getThread03(&TestRingbuffer11::getRangeThreadType02, this, "test02b.getR03", &rb, capacity/4); // @suppress("Invalid arguments")
-        std::thread getThread04(&TestRingbuffer11::getRangeThreadType02, this, "test02b.getR04", &rb, capacity/4); // @suppress("Invalid arguments")
+        std::thread getThread01(&TestRingbuffer12::getRangeThreadType02, this, "test02b.getR01", &rb, capacity/4); // @suppress("Invalid arguments")
+        std::thread getThread02(&TestRingbuffer12::getRangeThreadType02, this, "test02b.getR02", &rb, capacity/4); // @suppress("Invalid arguments")
+        std::thread putThread01(&TestRingbuffer12::putRangeThreadType02, this, "test02b.putR01", &rb, capacity, 0); // @suppress("Invalid arguments")
+        std::thread getThread03(&TestRingbuffer12::getRangeThreadType02, this, "test02b.getR03", &rb, capacity/4); // @suppress("Invalid arguments")
+        std::thread getThread04(&TestRingbuffer12::getRangeThreadType02, this, "test02b.getR04", &rb, capacity/4); // @suppress("Invalid arguments")
         putThread01.join();
         getThread01.join();
         getThread02.join();
@@ -211,17 +230,17 @@ class TestRingbuffer11 {
         REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.getSize());
         REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
 
-        std::thread getThread01(&TestRingbuffer11::getThreadType01, this, "test03a.get01", &rb, capacity/8); // @suppress("Invalid arguments")
-        std::thread getThread02(&TestRingbuffer11::getThreadType01, this, "test03a.get02", &rb, capacity/8); // @suppress("Invalid arguments")
-        std::thread putThread01(&TestRingbuffer11::putThreadType01, this, "test03a.put01", &rb, capacity/2,  0); // @suppress("Invalid arguments")
-        std::thread getThread03(&TestRingbuffer11::getThreadType01, this, "test03a.get03", &rb, capacity/8); // @suppress("Invalid arguments")
-        std::thread getThread04(&TestRingbuffer11::getThreadType01, this, "test03a.get04", &rb, capacity/8); // @suppress("Invalid arguments")
+        std::thread getThread01(&TestRingbuffer12::getThreadType01, this, "test03a.get01", &rb, capacity/8); // @suppress("Invalid arguments")
+        std::thread getThread02(&TestRingbuffer12::getThreadType01, this, "test03a.get02", &rb, capacity/8); // @suppress("Invalid arguments")
+        std::thread putThread01(&TestRingbuffer12::putThreadType01, this, "test03a.put01", &rb, capacity/2,  0); // @suppress("Invalid arguments")
+        std::thread getThread03(&TestRingbuffer12::getThreadType01, this, "test03a.get03", &rb, capacity/8); // @suppress("Invalid arguments")
+        std::thread getThread04(&TestRingbuffer12::getThreadType01, this, "test03a.get04", &rb, capacity/8); // @suppress("Invalid arguments")
 
-        std::thread getThread05(&TestRingbuffer11::getThreadType01, this, "test03a.get05", &rb, capacity/8); // @suppress("Invalid arguments")
-        std::thread getThread06(&TestRingbuffer11::getThreadType01, this, "test03a.get06", &rb, capacity/8); // @suppress("Invalid arguments")
-        std::thread putThread02(&TestRingbuffer11::putThreadType01, this, "test03a.put02", &rb, capacity/2,  400); // @suppress("Invalid arguments")
-        std::thread getThread07(&TestRingbuffer11::getThreadType01, this, "test03a.get07", &rb, capacity/8); // @suppress("Invalid arguments")
-        std::thread getThread08(&TestRingbuffer11::getThreadType01, this, "test03a.get08", &rb, capacity/8); // @suppress("Invalid arguments")
+        std::thread getThread05(&TestRingbuffer12::getThreadType01, this, "test03a.get05", &rb, capacity/8); // @suppress("Invalid arguments")
+        std::thread getThread06(&TestRingbuffer12::getThreadType01, this, "test03a.get06", &rb, capacity/8); // @suppress("Invalid arguments")
+        std::thread putThread02(&TestRingbuffer12::putThreadType01, this, "test03a.put02", &rb, capacity/2,  400); // @suppress("Invalid arguments")
+        std::thread getThread07(&TestRingbuffer12::getThreadType01, this, "test03a.get07", &rb, capacity/8); // @suppress("Invalid arguments")
+        std::thread getThread08(&TestRingbuffer12::getThreadType01, this, "test03a.get08", &rb, capacity/8); // @suppress("Invalid arguments")
 
         putThread01.join();
         putThread02.join();
@@ -245,17 +264,17 @@ class TestRingbuffer11 {
         REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.getSize());
         REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
 
-        std::thread getThread01(&TestRingbuffer11::getRangeThreadType02, this, "test03b.getR01", &rb, capacity/8); // @suppress("Invalid arguments")
-        std::thread getThread02(&TestRingbuffer11::getRangeThreadType02, this, "test03b.getR02", &rb, capacity/8); // @suppress("Invalid arguments")
-        std::thread putThread01(&TestRingbuffer11::putRangeThreadType02, this, "test03b.putR01", &rb, capacity/2,  0); // @suppress("Invalid arguments")
-        std::thread getThread03(&TestRingbuffer11::getRangeThreadType02, this, "test03b.getR03", &rb, capacity/8); // @suppress("Invalid arguments")
-        std::thread getThread04(&TestRingbuffer11::getRangeThreadType02, this, "test03b.getR04", &rb, capacity/8); // @suppress("Invalid arguments")
+        std::thread getThread01(&TestRingbuffer12::getRangeThreadType02, this, "test03b.getR01", &rb, capacity/8); // @suppress("Invalid arguments")
+        std::thread getThread02(&TestRingbuffer12::getRangeThreadType02, this, "test03b.getR02", &rb, capacity/8); // @suppress("Invalid arguments")
+        std::thread putThread01(&TestRingbuffer12::putRangeThreadType02, this, "test03b.putR01", &rb, capacity/2,  0); // @suppress("Invalid arguments")
+        std::thread getThread03(&TestRingbuffer12::getRangeThreadType02, this, "test03b.getR03", &rb, capacity/8); // @suppress("Invalid arguments")
+        std::thread getThread04(&TestRingbuffer12::getRangeThreadType02, this, "test03b.getR04", &rb, capacity/8); // @suppress("Invalid arguments")
 
-        std::thread getThread05(&TestRingbuffer11::getRangeThreadType02, this, "test03b.getR05", &rb, capacity/8); // @suppress("Invalid arguments")
-        std::thread getThread06(&TestRingbuffer11::getRangeThreadType02, this, "test03b.getR06", &rb, capacity/8); // @suppress("Invalid arguments")
-        std::thread putThread02(&TestRingbuffer11::putRangeThreadType02, this, "test03b.putR02", &rb, capacity/2,  400); // @suppress("Invalid arguments")
-        std::thread getThread07(&TestRingbuffer11::getRangeThreadType02, this, "test03b.getR07", &rb, capacity/8); // @suppress("Invalid arguments")
-        std::thread getThread08(&TestRingbuffer11::getRangeThreadType02, this, "test03b.getR08", &rb, capacity/8); // @suppress("Invalid arguments")
+        std::thread getThread05(&TestRingbuffer12::getRangeThreadType02, this, "test03b.getR05", &rb, capacity/8); // @suppress("Invalid arguments")
+        std::thread getThread06(&TestRingbuffer12::getRangeThreadType02, this, "test03b.getR06", &rb, capacity/8); // @suppress("Invalid arguments")
+        std::thread putThread02(&TestRingbuffer12::putRangeThreadType02, this, "test03b.putR02", &rb, capacity/2,  400); // @suppress("Invalid arguments")
+        std::thread getThread07(&TestRingbuffer12::getRangeThreadType02, this, "test03b.getR07", &rb, capacity/8); // @suppress("Invalid arguments")
+        std::thread getThread08(&TestRingbuffer12::getRangeThreadType02, this, "test03b.getR08", &rb, capacity/8); // @suppress("Invalid arguments")
 
         putThread01.join();
         putThread02.join();
@@ -301,6 +320,6 @@ class TestRingbuffer11 {
     }
 };
 
-METHOD_AS_TEST_CASE( TestRingbuffer11::test_sequential, "Test TestRingbuffer 11- test_sequential");
-METHOD_AS_TEST_CASE( TestRingbuffer11::test_range,      "Test TestRingbuffer 11- test_range");
+METHOD_AS_TEST_CASE( TestRingbuffer12::test_sequential, "Test TestRingbuffer 12- test_sequential");
+METHOD_AS_TEST_CASE( TestRingbuffer12::test_range,      "Test TestRingbuffer 12- test_range");
 

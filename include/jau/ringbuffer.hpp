@@ -44,6 +44,16 @@
 
 namespace jau {
 
+#if 0
+    #define _DEBUG_DUMP(...) { dump(stderr, __VA_ARGS__); }
+    #define _DEBUG_DUMP2(a, ...) { a.dump(stderr, __VA_ARGS__); }
+    #define _DEBUG_PRINT(...) { fprintf(stderr, __VA_ARGS__); }
+#else
+    #define _DEBUG_DUMP(...)
+    #define _DEBUG_DUMP2(a, ...)
+    #define _DEBUG_PRINT(...)
+#endif
+
 /**
  * Ring buffer implementation, a.k.a circular buffer,
  * exposing <i>lock-free</i>
@@ -78,6 +88,12 @@ namespace jau {
  *   <tr><td>Empty</td><td>writePos == readPos</td><td>size == 0</td></tr>
  *   <tr><td>Full</td><td>writePos == readPos - 1</td><td>size == capacity</td></tr>
  * </table>
+ * <pre>
+ * Empty [RW][][ ][ ][ ][ ][ ][ ] ; W==R
+ * Avail [ ][ ][R][.][.][.][.][W] ; W > R
+ * Avail [.][.][.][W][ ][ ][R][.] ; W <  R - 1
+ * Full  [.][.][.][.][.][W][R][.] ; W==R-1
+ * </pre>
  * </p>
  * See also:
  * <pre>
@@ -86,7 +102,25 @@ namespace jau {
  * </pre>
  * @see jau::sc_atomic_critical
  */
-template <typename T, std::nullptr_t nullelem, typename Size_type> class ringbuffer {
+template <typename T, const T& nullelem, typename Size_type,
+          bool use_memcpy = std::is_trivially_copyable_v<T>,
+          bool use_memset = std::is_integral_v<T> && sizeof(T)==1
+         >
+class ringbuffer {
+    public:
+        constexpr static const bool uses_memcpy = use_memcpy;
+        constexpr static const bool uses_memset = use_memset;
+
+        // typedefs' for C++ named requirements: Container (ex iterator)
+
+        typedef T                                           value_type;
+        typedef value_type*                                 pointer;
+        typedef const value_type*                           const_pointer;
+        typedef value_type&                                 reference;
+        typedef const value_type&                           const_reference;
+        typedef Size_type                                   size_type;
+        typedef typename std::make_signed<size_type>::type  difference_type;
+
     private:
         /** SC atomic integral scalar jau::nsize_t. Memory-Model (MM) guaranteed sequential consistency (SC) between acquire (read) and release (write) */
         typedef ordered_atomic<Size_type, std::memory_order::memory_order_seq_cst> sc_atomic_Size_type;
@@ -94,63 +128,110 @@ template <typename T, std::nullptr_t nullelem, typename Size_type> class ringbuf
         /** Relaxed non-SC atomic integral scalar jau::nsize_t. Memory-Model (MM) only guarantees the atomic value, _no_ sequential consistency (SC) between acquire (read) and release (write). */
         typedef ordered_atomic<Size_type, std::memory_order::memory_order_relaxed> relaxed_atomic_Size_type;
 
-        std::mutex syncRead, syncMultiRead;   // Memory-Model (MM) guaranteed sequential consistency (SC) between acquire and release
-        std::mutex syncWrite, syncMultiWrite; // ditto
-        std::condition_variable cvRead;
+        /** synchronizes write-operations (put*), i.e. modifying the writePos. */
+        mutable std::mutex syncWrite, syncMultiWrite; // Memory-Model (MM) guaranteed sequential consistency (SC) between acquire and release
         std::condition_variable cvWrite;
+
+        /** synchronizes read-operations (get*), i.e. modifying the readPos. */
+        mutable std::mutex syncRead,  syncMultiRead;  // Memory-Model (MM) guaranteed sequential consistency (SC) between acquire and release
+        std::condition_variable cvRead;
 
         /* final */ Size_type capacityPlusOne;  // not final due to grow
         /* final */ T * array;           // Synchronized due to MM's data-race-free SC (SC-DRF) between [atomic] acquire/release
         sc_atomic_Size_type readPos;     // Memory-Model (MM) guaranteed sequential consistency (SC) between acquire (read) and release (write)
         sc_atomic_Size_type writePos;    // ditto
-        relaxed_atomic_Size_type size;   // Non-SC atomic size, only atomic value itself is synchronized.
 
+        // DBG_PRINT("");
         T * newArray(const Size_type count) noexcept {
+#if 0
+            T *r = new T[count];
+            _DEBUG_DUMP("newArray ...");
+            _DEBUG_PRINT("newArray %" PRIu64 "\n", count);
+            return r;
+#else
             return new T[count];
+#endif
         }
-        void freeArray(T * a) noexcept {
-            delete[] a;
+        void freeArray(T ** a) noexcept {
+            _DEBUG_DUMP("freeArray(def)");
+            _DEBUG_PRINT("freeArray %p\n", *a);
+            if( nullptr == *a ) {
+                ABORT("ringbuffer::freeArray with nullptr");
+            }
+            delete[] *a;
+            *a = nullptr;
+        }
+
+        template<class _DataType>
+        static void* memset_wrap(_DataType *block, _DataType c, size_t n,
+                std::enable_if_t< std::is_integral_v<_DataType> && sizeof(_DataType)==1, bool > = true )
+        {
+            return ::memset(block, c, n);
+        }
+        template<class _DataType>
+        static void* memset_wrap(_DataType *block, _DataType c, size_t n,
+                std::enable_if_t< !std::is_integral_v<_DataType> || sizeof(_DataType)!=1, bool > = true )
+        {
+            ABORT("MEMSET shall not be used");
+            (void)block;
+            (void)c;
+            (void)n;
+            return nullptr;
+        }
+
+        /**
+         * clear all elements, zero size
+         */
+        void clearImpl() noexcept {
+            const Size_type size = getSize();
+            if( 0 < size ) {
+                if( uses_memset ) {
+                    memset_wrap(&array[0], nullelem, capacityPlusOne*sizeof(T));
+                    readPos  = 0;
+                    writePos = 0;
+                } else {
+                    Size_type localReadPos = readPos;
+                    for(Size_type i=0; i<size; i++) {
+                        localReadPos = (localReadPos + 1) % capacityPlusOne;
+                        array[localReadPos] = nullelem;
+                    }
+                    if( writePos != localReadPos ) {
+                        // Avoid exception, abort!
+                        ABORT("copy segment error: this %s, readPos %d/%d; writePos %d", toString().c_str(), readPos.load(), localReadPos, writePos.load());
+                    }
+                    readPos = localReadPos;
+                }
+            }
         }
 
         void cloneFrom(const bool allocArrayAndCapacity, const ringbuffer & source) noexcept {
             if( allocArrayAndCapacity ) {
                 capacityPlusOne = source.capacityPlusOne;
                 if( nullptr != array ) {
-                    freeArray(array);
+                    freeArray(&array);
                 }
                 array = newArray(capacityPlusOne);
             } else if( capacityPlusOne != source.capacityPlusOne ) {
-                throw InternalError("capacityPlusOne not equal: this "+toString()+", source "+source.toString(), E_FILE_LINE);
+                ABORT( ("capacityPlusOne not equal: this "+toString()+", source "+source.toString() ).c_str() );
             }
 
-            readPos = source.readPos;
-            writePos = source.writePos;
-            size = source.size;
-            Size_type localWritePos = readPos;
-            for(Size_type i=0; i<size; i++) {
-                localWritePos = (localWritePos + 1) % capacityPlusOne;
-                array[localWritePos] = source.array[localWritePos];
-            }
-            if( writePos != localWritePos ) {
-                throw InternalError("copy segment error: this "+toString()+", localWritePos "+std::to_string(localWritePos)+"; source "+source.toString(), E_FILE_LINE);
-            }
-        }
+            readPos = source.readPos.load();
+            writePos = source.writePos.load();
 
-        void clearImpl() noexcept {
-            // clear all elements, zero size
-            const Size_type _size = size; // fast access
-            if( 0 < _size ) {
-                Size_type localReadPos = readPos;
-                for(Size_type i=0; i<_size; i++) {
-                    localReadPos = (localReadPos + 1) % capacityPlusOne;
-                    array[localReadPos] = nullelem;
+            if( use_memcpy ) {
+                memcpy(reinterpret_cast<void*>(&array[0]),
+                       reinterpret_cast<void*>(const_cast<T*>(&source.array[0])),
+                       capacityPlusOne*sizeof(T));
+            } else {
+                const Size_type size = getSize();
+                Size_type localWritePos = readPos;
+                for(Size_type i=0; i<size; i++) {
+                    localWritePos = (localWritePos + 1) % capacityPlusOne;
+                    array[localWritePos] = source.array[localWritePos];
                 }
-                if( writePos != localReadPos ) {
-                    // Avoid exception, abort!
-                    ABORT("copy segment error: this %s, readPos %d/%d; writePos %d", toString().c_str(), readPos.load(), localReadPos, writePos.load());
+                if( writePos != localWritePos ) {
+                    ABORT( ("copy segment error: this "+toString()+", localWritePos "+std::to_string(localWritePos)+"; source "+source.toString()).c_str() );
                 }
-                readPos = localReadPos;
-                size = 0;
             }
         }
 
@@ -162,59 +243,31 @@ template <typename T, std::nullptr_t nullelem, typename Size_type> class ringbuf
                 if( copyFromCount > capacityPlusOne-1 ) {
                     // new blank resized array
                     if( nullptr != array ) {
-                        freeArray(array);
+                        freeArray(&array);
                     }
                     capacityPlusOne = copyFromCount + 1;
                     array = newArray(capacityPlusOne);
-                    readPos = 0;
+                    readPos  = 0;
                     writePos = 0;
                 }
-                Size_type localWritePos = writePos;
-                for(Size_type i=0; i<copyFromCount; i++) {
-                    localWritePos = (localWritePos + 1) % capacityPlusOne;
-                    array[localWritePos] = copyFrom[i];
-                    size++;
-                }
-                writePos = localWritePos;
-            }
-        }
-
-        T moveOutImpl(const bool blocking, const int timeoutMS) noexcept {
-            std::unique_lock<std::mutex> lockMultiRead(syncMultiRead); // acquire syncMultiRead, _not_ sync'ing w/ putImpl
-
-            const Size_type oldReadPos = readPos; // SC-DRF acquire atomic readPos, sync'ing with putImpl
-            Size_type localReadPos = oldReadPos;
-            if( localReadPos == writePos ) {
-                if( blocking ) {
-                    std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ putImpl via same lock
-                    while( localReadPos == writePos ) {
-                        if( 0 == timeoutMS ) {
-                            cvRead.wait(lockRead);
-                        } else {
-                            std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
-                            std::cv_status s = cvRead.wait_until(lockRead, t0 + std::chrono::milliseconds(timeoutMS));
-                            if( std::cv_status::timeout == s && localReadPos == writePos ) {
-                                return nullelem;
-                            }
-                        }
-                    }
+                if( use_memcpy ) {
+                    memcpy(reinterpret_cast<void*>(&array[0]),
+                           reinterpret_cast<void*>(const_cast<T*>(copyFrom)),
+                           copyFromCount*sizeof(T));
+                    readPos  = capacityPlusOne - 1; // last read-pos
+                    writePos = copyFromCount   - 1; // last write-pos
                 } else {
-                    return nullelem;
+                    Size_type localWritePos = writePos;
+                    for(Size_type i=0; i<copyFromCount; i++) {
+                        localWritePos = (localWritePos + 1) % capacityPlusOne;
+                        array[localWritePos] = copyFrom[i];
+                    }
+                    writePos = localWritePos;
                 }
             }
-            localReadPos = (localReadPos + 1) % capacityPlusOne;
-            T r = std::move( array[localReadPos] ); // SC-DRF
-            array[localReadPos] = nullelem;
-            {
-                std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ putImpl via same lock
-                size--;
-                readPos = localReadPos; // SC-DRF release atomic readPos
-                cvWrite.notify_all(); // notify waiting putter
-            }
-            return r;
         }
 
-        T peekImpl(const bool blocking, const int timeoutMS) noexcept {
+        T peekImpl(const bool blocking, const int timeoutMS, bool& success) noexcept {
             if( !std::is_copy_constructible_v<T> ) {
                 ABORT("T is not copy constructible");
                 return nullelem;
@@ -225,42 +278,255 @@ template <typename T, std::nullptr_t nullelem, typename Size_type> class ringbuf
             Size_type localReadPos = oldReadPos;
             if( localReadPos == writePos ) {
                 if( blocking ) {
-                    std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ putImpl via same lock
+                    std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ putImpl via same lock
                     while( localReadPos == writePos ) {
                         if( 0 == timeoutMS ) {
-                            cvRead.wait(lockRead);
+                            cvWrite.wait(lockWrite);
                         } else {
                             std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
-                            std::cv_status s = cvRead.wait_until(lockRead, t0 + std::chrono::milliseconds(timeoutMS));
+                            std::cv_status s = cvWrite.wait_until(lockWrite, t0 + std::chrono::milliseconds(timeoutMS));
                             if( std::cv_status::timeout == s && localReadPos == writePos ) {
+                                success = false;
                                 return nullelem;
                             }
                         }
                     }
                 } else {
+                    success = false;
                     return nullelem;
                 }
             }
             localReadPos = (localReadPos + 1) % capacityPlusOne;
             T r = array[localReadPos]; // SC-DRF
             readPos = oldReadPos; // SC-DRF release atomic readPos (complete acquire-release even @ peek)
+            success = true;
             return r;
         }
 
-        bool moveIntoImpl(T &&e, const bool blocking, const int timeoutMS) noexcept {
-            std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite); // acquire syncMultiRead, _not_ sync'ing w/ getImpl
+        T moveOutImpl(const bool blocking, const int timeoutMS, bool& success) noexcept {
+            std::unique_lock<std::mutex> lockMultiRead(syncMultiRead); // acquire syncMultiRead, _not_ sync'ing w/ putImpl
 
-            Size_type localWritePos = writePos; // SC-DRF acquire atomic writePos, sync'ing with getImpl
-            localWritePos = (localWritePos + 1) % capacityPlusOne;
-            if( localWritePos == readPos ) {
+            const Size_type oldReadPos = readPos; // SC-DRF acquire atomic readPos, sync'ing with putImpl
+            Size_type localReadPos = oldReadPos;
+            if( localReadPos == writePos ) {
                 if( blocking ) {
-                    std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ getImpl via same lock
-                    while( localWritePos == readPos ) {
+                    std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ putImpl via same lock
+                    while( localReadPos == writePos ) {
                         if( 0 == timeoutMS ) {
                             cvWrite.wait(lockWrite);
                         } else {
                             std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
                             std::cv_status s = cvWrite.wait_until(lockWrite, t0 + std::chrono::milliseconds(timeoutMS));
+                            if( std::cv_status::timeout == s && localReadPos == writePos ) {
+                                success = false;
+                                return nullelem;
+                            }
+                        }
+                    }
+                } else {
+                    success = false;
+                    return nullelem;
+                }
+            }
+            localReadPos = (localReadPos + 1) % capacityPlusOne;
+            T r = std::move( array[localReadPos] ); // SC-DRF
+            array[localReadPos] = nullelem;
+            {
+                std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ putImpl via same lock
+                readPos = localReadPos; // SC-DRF release atomic readPos
+                cvRead.notify_all(); // notify waiting putter
+            }
+            success = true;
+            return r;
+        }
+
+        bool moveOutImpl(T *dest, const Size_type count, const bool blocking, const int timeoutMS) noexcept {
+            std::unique_lock<std::mutex> lockMultiRead(syncMultiRead); // acquire syncMultiRead, _not_ sync'ing w/ putImpl
+
+            T *iter_out = dest;
+
+            if( count >= capacityPlusOne ) {
+                return false;
+            }
+
+            const Size_type oldReadPos = readPos; // SC-DRF acquire atomic readPos, sync'ing with putImpl
+            Size_type localReadPos = oldReadPos;
+            Size_type available = getSize();
+            if( count > available ) {
+                if( blocking ) {
+                    std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ putImpl via same lock
+                    available = getSize();
+                    while( count > available ) {
+                        if( 0 == timeoutMS ) {
+                            cvWrite.wait(lockWrite);
+                            available = getSize();
+                        } else {
+                            std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
+                            std::cv_status s = cvWrite.wait_until(lockWrite, t0 + std::chrono::milliseconds(timeoutMS));
+                            available = getSize();
+                            if( std::cv_status::timeout == s && count > available ) {
+                                return false;
+                            }
+                        }
+                    }
+                } else {
+                    return false;
+                }
+            }
+            /**
+             * Empty [RW][][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ] ; W==R
+             * Avail [ ][ ][R][.][.][.][.][W][ ][ ][ ][ ][ ][ ][ ] ; W > R
+             * Avail [.][.][.][W][ ][ ][R][.][.][.][.][.][.][.][.] ; W <  R - 1
+             * Full  [.][.][.][.][.][W][R][.][.][.][.][.][.][.][.] ; W==R-1
+             */
+            // Since available > 0, we can exclude Empty case.
+            Size_type togo_count = count;
+            const Size_type localWritePos = writePos;
+            if( localReadPos > localWritePos ) {
+                // we have a tail
+                localReadPos = ( localReadPos + 1 ) % capacityPlusOne; // next-read-pos
+                const Size_type tail_count = std::min(togo_count, capacityPlusOne - localReadPos);
+                if( use_memcpy ) {
+                    memcpy(reinterpret_cast<void*>(iter_out),
+                           reinterpret_cast<void*>(&array[localReadPos]),
+                           tail_count*sizeof(T));
+                    if( uses_memset ) {
+                        memset_wrap(&array[localReadPos], nullelem, tail_count*sizeof(T));
+                    } else {
+                        for(Size_type i=0; i<tail_count; i++) {
+                            array[localReadPos+i] = nullelem;
+                        }
+                    }
+                } else {
+                    for(Size_type i=0; i<tail_count; i++) {
+                        iter_out[i] = std::move( array[localReadPos+i] ); // SC-DRF
+                        array[localReadPos+i] = nullelem;
+                    }
+                }
+                localReadPos = ( localReadPos + tail_count - 1 ) % capacityPlusOne; // last read-pos
+                togo_count -= tail_count;
+                iter_out += tail_count;
+            }
+            if( togo_count > 0 ) {
+                // we have a head
+                localReadPos = ( localReadPos + 1 ) % capacityPlusOne; // next-read-pos
+                if( use_memcpy ) {
+                    memcpy(reinterpret_cast<void*>(iter_out),
+                           reinterpret_cast<void*>(&array[localReadPos]),
+                           togo_count*sizeof(T));
+                    if( uses_memset ) {
+                        memset_wrap(&array[localReadPos], nullelem, togo_count*sizeof(T));
+                    } else {
+                        for(Size_type i=0; i<togo_count; i++) {
+                            array[localReadPos+i] = nullelem;
+                        }
+                    }
+                } else {
+                    for(Size_type i=0; i<togo_count; i++) {
+                        iter_out[i] = array[localReadPos+i];
+                        array[localReadPos+i] = nullelem;
+                    }
+                }
+                localReadPos = ( localReadPos + togo_count - 1 ) % capacityPlusOne; // last read-pos
+            }
+            // T r = std::move( array[localReadPos] ); // SC-DRF
+            {
+                std::unique_lock<std::mutex> locRead(syncRead); // SC-DRF w/ putImpl via same lock
+                readPos = localReadPos; // SC-DRF release atomic readPos
+                cvRead.notify_all(); // notify waiting putter
+            }
+            return true;
+        }
+
+        bool dropImpl (const Size_type count, const bool blocking, const int timeoutMS) noexcept {
+            std::unique_lock<std::mutex> lockMultiRead(syncMultiRead); // acquire syncMultiRead, _not_ sync'ing w/ putImpl
+
+            if( count >= capacityPlusOne ) {
+                return false;
+            }
+
+            const Size_type oldReadPos = readPos; // SC-DRF acquire atomic readPos, sync'ing with putImpl
+            Size_type localReadPos = oldReadPos;
+            Size_type available = getSize();
+            if( count > available ) {
+                if( blocking ) {
+                    std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ putImpl via same lock
+                    available = getSize();
+                    while( count > available ) {
+                        if( 0 == timeoutMS ) {
+                            cvWrite.wait(lockWrite);
+                            available = getSize();
+                        } else {
+                            std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
+                            std::cv_status s = cvWrite.wait_until(lockWrite, t0 + std::chrono::milliseconds(timeoutMS));
+                            available = getSize();
+                            if( std::cv_status::timeout == s && count > available ) {
+                                return false;
+                            }
+                        }
+                    }
+                } else {
+                    return false;
+                }
+            }
+            /**
+             * Empty [RW][][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ] ; W==R
+             * Avail [ ][ ][R][.][.][.][.][W][ ][ ][ ][ ][ ][ ][ ] ; W > R
+             * Avail [.][.][.][W][ ][ ][R][.][.][.][.][.][.][.][.] ; W <  R - 1
+             * Full  [.][.][.][.][.][W][R][.][.][.][.][.][.][.][.] ; W==R-1
+             */
+            // Since available > 0, we can exclude Empty case.
+            Size_type togo_count = count;
+            const Size_type localWritePos = writePos;
+            if( localReadPos > localWritePos ) {
+                // we have a tail
+                localReadPos = ( localReadPos + 1 ) % capacityPlusOne; // next-read-pos
+                const Size_type tail_count = std::min(togo_count, capacityPlusOne - localReadPos);
+                if( uses_memset ) {
+                    memset_wrap(&array[localReadPos], nullelem, tail_count*sizeof(T));
+                } else {
+                    for(Size_type i=0; i<tail_count; i++) {
+                        array[localReadPos+i] = nullelem;
+                    }
+                }
+                localReadPos = ( localReadPos + tail_count - 1 ) % capacityPlusOne; // last read-pos
+                togo_count -= tail_count;
+            }
+            if( togo_count > 0 ) {
+                // we have a head
+                localReadPos = ( localReadPos + 1 ) % capacityPlusOne; // next-read-pos
+                if( uses_memset ) {
+                    memset_wrap(&array[localReadPos], nullelem, togo_count*sizeof(T));
+                } else {
+                    for(Size_type i=0; i<togo_count; i++) {
+                        array[localReadPos+i] = nullelem;
+                    }
+                }
+                localReadPos = ( localReadPos + togo_count - 1 ) % capacityPlusOne; // last read-pos
+            }
+            // T r = std::move( array[localReadPos] ); // SC-DRF
+            {
+                std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ putImpl via same lock
+                readPos = localReadPos; // SC-DRF release atomic readPos
+                cvRead.notify_all(); // notify waiting putter
+            }
+            return true;
+        }
+
+        bool moveIntoImpl(T &&e, const bool blocking, const int timeoutMS) noexcept {
+            std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite); // acquire syncMultiWrite, _not_ sync'ing w/ getImpl
+
+            Size_type localWritePos = writePos; // SC-DRF acquire atomic writePos, sync'ing with getImpl
+            localWritePos = (localWritePos + 1) % capacityPlusOne;
+            if( localWritePos == readPos ) {
+                if( blocking ) {
+                    std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ getImpl via same lock
+                    while( localWritePos == readPos ) {
+                        if( 0 == timeoutMS ) {
+                            cvRead.wait(lockRead);
+                        } else {
+                            std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
+                            std::cv_status s = cvRead.wait_until(lockRead, t0 + std::chrono::milliseconds(timeoutMS));
                             if( std::cv_status::timeout == s && localWritePos == readPos ) {
                                 return false;
                             }
@@ -272,10 +538,9 @@ template <typename T, std::nullptr_t nullelem, typename Size_type> class ringbuf
             }
             array[localWritePos] = std::move(e); // SC-DRF
             {
-                std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ getImpl via same lock
-                size++;
+                std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ getImpl via same lock
                 writePos = localWritePos; // SC-DRF release atomic writePos
-                cvRead.notify_all(); // notify waiting getter
+                cvWrite.notify_all(); // notify waiting getter
             }
             return true;
         }
@@ -285,19 +550,19 @@ template <typename T, std::nullptr_t nullelem, typename Size_type> class ringbuf
                 ABORT("T is not copy constructible");
                 return false;
             }
-            std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite); // acquire syncMultiRead, _not_ sync'ing w/ getImpl
+            std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite); // acquire syncMultiWrite, _not_ sync'ing w/ getImpl
 
             Size_type localWritePos = writePos; // SC-DRF acquire atomic writePos, sync'ing with getImpl
             localWritePos = (localWritePos + 1) % capacityPlusOne;
             if( localWritePos == readPos ) {
                 if( blocking ) {
-                    std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ getImpl via same lock
+                    std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ getImpl via same lock
                     while( localWritePos == readPos ) {
                         if( 0 == timeoutMS ) {
-                            cvWrite.wait(lockWrite);
+                            cvRead.wait(lockRead);
                         } else {
                             std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
-                            std::cv_status s = cvWrite.wait_until(lockWrite, t0 + std::chrono::milliseconds(timeoutMS));
+                            std::cv_status s = cvRead.wait_until(lockRead, t0 + std::chrono::milliseconds(timeoutMS));
                             if( std::cv_status::timeout == s && localWritePos == readPos ) {
                                 return false;
                             }
@@ -309,49 +574,156 @@ template <typename T, std::nullptr_t nullelem, typename Size_type> class ringbuf
             }
             array[localWritePos] = e; // SC-DRF
             {
-                std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ getImpl via same lock
-                size++;
+                std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ getImpl via same lock
                 writePos = localWritePos; // SC-DRF release atomic writePos
-                cvRead.notify_all(); // notify waiting getter
+                cvWrite.notify_all(); // notify waiting getter
             }
             return true;
         }
 
-        Size_type dropImpl (const Size_type count) noexcept {
-            // locks ringbuffer completely (read/write), hence no need for local copy nor wait/sync etc
-            std::unique_lock<std::mutex> lockMultiRead(syncMultiRead, std::defer_lock); // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
-            std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite, std::defer_lock); // otherwise RAII-style relinquish via destructor
-            std::lock(lockMultiRead, lockMultiWrite);
+        bool copyIntoImpl(const T *first, const T* last, const bool blocking, const int timeoutMS) noexcept {
+            if( !std::is_copy_constructible_v<T> ) {
+                ABORT("T is not copy constructible");
+                return false;
+            }
+            std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite); // acquire syncMultiWrite, _not_ sync'ing w/ getImpl
 
-            const Size_type dropCount = std::min(count, size.load());
-            if( 0 == dropCount ) {
-                return 0;
+            const T *iter_in = first;
+            const Size_type total_count = last - first;
+
+            if( total_count >= capacityPlusOne ) {
+                return false;
             }
-            for(Size_type i=0; i<dropCount; i++) {
-                readPos = (readPos + 1) % capacityPlusOne;
-                // T r = array[localReadPos];
-                array[readPos] = nullelem;
-                size--;
+            Size_type localWritePos = writePos; // SC-DRF acquire atomic writePos, sync'ing with getImpl
+            Size_type available = getFreeSlots();
+            if( total_count > available ) {
+                if( blocking ) {
+                    std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ getImpl via same lock
+                    available = getFreeSlots();
+                    while( total_count > available ) {
+                        if( 0 == timeoutMS ) {
+                            cvRead.wait(lockRead);
+                            available = getFreeSlots();
+                        } else {
+                            std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
+                            std::cv_status s = cvRead.wait_until(lockRead, t0 + std::chrono::milliseconds(timeoutMS));
+                            available = getFreeSlots();
+                            if( std::cv_status::timeout == s && total_count > available ) {
+                                return false;
+                            }
+                        }
+                    }
+                } else {
+                    return false;
+                }
             }
-            return dropCount;
+            /**
+             * Empty [RW][][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ] ; W==R
+             * Avail [ ][ ][R][.][.][.][.][W][ ][ ][ ][ ][ ][ ][ ] ; W > R
+             * Avail [.][.][.][W][ ][ ][R][.][.][.][.][.][.][.][.] ; W <  R - 1
+             * Full  [.][.][.][.][.][W][R][.][.][.][.][.][.][.][.] ; W==R-1
+             */
+            // Since available > 0, we can exclude Full case.
+            Size_type togo_count = total_count;
+            const Size_type localReadPos = readPos;
+            if( localWritePos >= localReadPos ) { // Empty at any position or W > R case
+                // we have a tail
+                localWritePos = ( localWritePos + 1 ) % capacityPlusOne; // next-write-pos
+                const Size_type tail_count = std::min(togo_count, capacityPlusOne - localWritePos);
+                if( use_memcpy ) {
+                    memcpy(reinterpret_cast<void*>(&array[localWritePos]),
+                           reinterpret_cast<void*>(const_cast<T*>(iter_in)),
+                           tail_count*sizeof(T));
+                } else {
+                    for(Size_type i=0; i<tail_count; i++) {
+                        array[localWritePos+i] = iter_in[i];
+                    }
+                }
+                localWritePos = ( localWritePos + tail_count - 1 ) % capacityPlusOne; // last write-pos
+                togo_count -= tail_count;
+                iter_in += tail_count;
+            }
+            if( togo_count > 0 ) {
+                // we have a head
+                localWritePos = ( localWritePos + 1 ) % capacityPlusOne; // next-write-pos
+                if( use_memcpy ) {
+                    memcpy(reinterpret_cast<void*>(&array[localWritePos]),
+                           reinterpret_cast<void*>(const_cast<T*>(iter_in)),
+                           togo_count*sizeof(T));
+                } else {
+                    for(Size_type i=0; i<togo_count; i++) {
+                        array[localWritePos+i] = iter_in[i];
+                    }
+                }
+                localWritePos = ( localWritePos + togo_count - 1 ) % capacityPlusOne; // last write-pos
+            }
+            // array[localWritePos] = e; // SC-DRF
+            {
+                std::unique_lock<std::mutex> lockRead(syncWrite); // SC-DRF w/ getImpl via same lock
+                writePos = localWritePos; // SC-DRF release atomic writePos
+                cvWrite.notify_all(); // notify waiting getter
+            }
+            return true;
         }
 
     public:
+
+        /**
+         * Blocks until at least <code>count</code> free slots become available.
+         * @throws InterruptedException
+         */
+        void waitForFreeSlots(const Size_type count, const int timeoutMS) noexcept {
+            std::unique_lock<std::mutex> lockMultiWrite(syncMultiRead);  // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
+
+            Size_type available = getFreeSlots();
+            if( count > available ) {
+                std::unique_lock<std::mutex> lockWrite(syncRead); // SC-DRF w/ getImpl via same lock
+                available = getFreeSlots();
+                while( count > available ) {
+                    if( 0 == timeoutMS ) {
+                        cvRead.wait(lockWrite);
+                        available = getFreeSlots();
+                    } else {
+                        std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
+                        std::cv_status s = cvRead.wait_until(lockWrite, t0 + std::chrono::milliseconds(timeoutMS));
+                        available = getFreeSlots();
+                        if( std::cv_status::timeout == s && count > available ) {
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
         /** Returns a short string representation incl. size/capacity and internal r/w index (impl. dependent). */
         std::string toString() const noexcept {
             const std::string es = isEmpty() ? ", empty" : "";
             const std::string fs = isFull() ? ", full" : "";
-            return "ringbuffer<?>[size "+std::to_string(size)+" / "+std::to_string(capacityPlusOne-1)+
+            return "ringbuffer<?>[size "+std::to_string(getSize())+" / "+std::to_string(capacityPlusOne-1)+
                     ", writePos "+std::to_string(writePos)+", readPos "+std::to_string(readPos)+es+fs+"]";
         }
 
         /** Debug functionality - Dumps the contents of the internal array. */
         void dump(FILE *stream, std::string prefix) const noexcept {
+#if 0
             fprintf(stream, "%s %s {\n", prefix.c_str(), toString().c_str());
             for(Size_type i=0; i<capacityPlusOne; i++) {
                 // fprintf(stream, "\t[%d]: %p\n", i, array[i].get()); // FIXME
             }
             fprintf(stream, "}\n");
+#else
+            fprintf(stream, "%s %s, array %p\n", prefix.c_str(), toString().c_str(), array);
+#endif
+        }
+
+        /**
+         * Create an empty instance
+         */
+        ringbuffer() noexcept
+        : capacityPlusOne(1), array(nullptr),
+          readPos(0), writePos(0)
+        {
+            _DEBUG_DUMP("ctor(def)");
         }
 
         /**
@@ -376,16 +748,18 @@ template <typename T, std::nullptr_t nullelem, typename Size_type> class ringbuf
          */
         ringbuffer(const std::vector<T> & copyFrom) noexcept
         : capacityPlusOne(copyFrom.size() + 1), array(newArray(capacityPlusOne)),
-          readPos(0), writePos(0), size(0)
+          readPos(0), writePos(0)
         {
             resetImpl(copyFrom.data(), copyFrom.size());
+            _DEBUG_DUMP("ctor(vector<T>)");
         }
 
         ringbuffer(const T * copyFrom, const Size_type copyFromSize) noexcept
         : capacityPlusOne(copyFromSize + 1), array(newArray(capacityPlusOne)),
-          readPos(0), writePos(0), size(0)
+          readPos(0), writePos(0)
         {
             resetImpl(copyFrom, copyFromSize);
+            _DEBUG_DUMP("ctor(T*, len)");
         }
 
         /**
@@ -407,24 +781,28 @@ template <typename T, std::nullptr_t nullelem, typename Size_type> class ringbuf
          */
         ringbuffer(const Size_type capacity) noexcept
         : capacityPlusOne(capacity + 1), array(newArray(capacityPlusOne)),
-          readPos(0), writePos(0), size(0)
-        { }
+          readPos(0), writePos(0)
+        {
+            _DEBUG_DUMP("ctor(capacity)");
+        }
 
         ~ringbuffer() noexcept {
-            if( nullptr == array ) {
-                ABORT("ringbuffer::dtor array==nullptr");
+            _DEBUG_DUMP("dtor(def)");
+            if( nullptr != array ) {
+                freeArray(&array);
             }
-            freeArray(array);
         }
 
         ringbuffer(const ringbuffer &_source) noexcept
         : capacityPlusOne(_source.capacityPlusOne), array(newArray(capacityPlusOne)),
-          readPos(0), writePos(0), size(0)
+          readPos(0), writePos(0)
         {
             std::unique_lock<std::mutex> lockMultiReadS(_source.syncMultiRead, std::defer_lock); // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
             std::unique_lock<std::mutex> lockMultiWriteS(_source.syncMultiWrite, std::defer_lock); // otherwise RAII-style relinquish via destructor
             std::lock(lockMultiReadS, lockMultiWriteS);                                          // *this instance does not exist yet
             cloneFrom(false, _source);
+            _DEBUG_DUMP("ctor(copy.this)");
+            _DEBUG_DUMP2(_source, "ctor(copy.source)");
         }
 
         ringbuffer& operator=(const ringbuffer &_source) noexcept {
@@ -443,6 +821,8 @@ template <typename T, std::nullptr_t nullelem, typename Size_type> class ringbuf
                 clearImpl(); // clear
                 cloneFrom(false, _source);
             }
+            _DEBUG_DUMP("assignment(copy.this)");
+            _DEBUG_DUMP2(_source, "assignment(copy.source)");
             return *this;
         }
 
@@ -453,7 +833,7 @@ template <typename T, std::nullptr_t nullelem, typename Size_type> class ringbuf
         Size_type capacity() const noexcept { return capacityPlusOne-1; }
 
         /**
-         * Releasing all elements by assigning <code>null</code>.
+         * Releasing all elements by assigning <code>nullelem</code>.
          * <p>
          * {@link #isEmpty()} will return <code>true</code> and
          * {@link #getSize()} will return <code>0</code> after calling this method.
@@ -485,58 +865,41 @@ template <typename T, std::nullptr_t nullelem, typename Size_type> class ringbuf
         }
 
         /** Returns the number of elements in this ring buffer. */
-        Size_type getSize() const noexcept { return size; }
-
-        /** Returns the number of free slots available to put.  */
-        Size_type getFreeSlots() const noexcept { return capacityPlusOne - 1 - size; }
-
-        /** Returns true if this ring buffer is empty, otherwise false. */
-        bool isEmpty() const noexcept { return 0 == size; /* writePos == readPos */ }
-        bool isEmpty2() const noexcept { return writePos == readPos; /* 0 == size */ }
-
-        /** Returns true if this ring buffer is full, otherwise false. */
-        bool isFull() const noexcept { return capacityPlusOne - 1 <= size; /* ( writePos + 1 ) % capacityPlusOne == readPos <==> capacityPlusOne - 1 == size */; }
-        bool isFull2() const noexcept { return ( writePos + 1 ) % capacityPlusOne == readPos; /* capacityPlusOne - 1 == size */; }
-
-        /**
-         * Dequeues the oldest enqueued element if available, otherwise null.
-         * <p>
-         * The returned ring buffer slot will be set to <code>null</code> to release the reference
-         * and move ownership to the caller.
-         * </p>
-         * <p>
-         * Method is non blocking and returns immediately;.
-         * </p>
-         * @return the oldest put element if available, otherwise null.
-         */
-        T get() noexcept {
-            return moveOutImpl(false, 0);
+        Size_type getSize() const noexcept {
+            const Size_type R = readPos;
+            const Size_type W = writePos;
+            // W >= R: W - R
+            // W <  R: C+1 - R - 1 + W + 1 = C+1 - R + W
+            return W >= R ? W - R : capacityPlusOne - R + W;
         }
 
+        /** Returns the number of free slots available to put.  */
+        Size_type getFreeSlots() const noexcept { return capacityPlusOne - 1 - getSize(); }
+
+        /** Returns true if this ring buffer is empty, otherwise false. */
+        bool isEmpty() const noexcept { return writePos == readPos; /* 0 == size */ }
+
+        /** Returns true if this ring buffer is full, otherwise false. */
+        bool isFull() const noexcept { return ( writePos + 1 ) % capacityPlusOne == readPos; /* W == R - 1 */; }
+
         /**
-         * Dequeues the oldest enqueued element.
-         * <p>
-         * The returned ring buffer slot will be set to <code>null</code> to release the reference
-         * and move ownership to the caller.
-         * </p>
-         * <p>
-         * <code>timeoutMS</code> defaults to zero,
-         * i.e. infinitive blocking until an element available via put.<br>
-         * Otherwise this methods blocks for the given milliseconds.
-         * </p>
-         * @return the oldest put element or <code>null</code> if timeout occurred.
-         * @throws InterruptedException
+         * Peeks the next element at the read position w/o modifying pointer, nor blocking.
+         * @return <code>nullelem</code> if empty, otherwise the element which would be read next.
          */
-        T getBlocking(const int timeoutMS=0) noexcept {
-            return moveOutImpl(true, timeoutMS);
+        T peek() noexcept {
+            bool success;
+            return peekImpl(false, 0, success);
         }
 
         /**
          * Peeks the next element at the read position w/o modifying pointer, nor blocking.
-         * @return <code>null</code> if empty, otherwise the element which would be read next.
+         * @param result storage for the resulting value if successful, otherwise <code>nullelem</code> if empty.
+         * @return true if successful, otherwise false.
          */
-        T peek() noexcept {
-            return peekImpl(false, 0);
+        bool peek(T& result) noexcept {
+            bool success;
+            result = peekImpl(false, 0, success);
+            return success;
         }
 
         /**
@@ -546,22 +909,163 @@ template <typename T, std::nullptr_t nullelem, typename Size_type> class ringbuf
          * i.e. infinitive blocking until an element available via put.<br>
          * Otherwise this methods blocks for the given milliseconds.
          * </p>
-         * @return <code>null</code> if empty or timeout occurred, otherwise the element which would be read next.
+         * @return <code>nullelem</code> if empty or timeout occurred, otherwise the element which would be read next.
          */
         T peekBlocking(const int timeoutMS=0) noexcept {
-            return peekImpl(true, timeoutMS);
+            bool success;
+            return peekImpl(true, timeoutMS, success);
         }
 
         /**
-         * Drops up to {@code count} oldest enqueued elements.
+         * Peeks the next element at the read position w/o modifying pointer, but with blocking.
+         * <p>
+         * <code>timeoutMS</code> defaults to zero,
+         * i.e. infinitive blocking until an element available via put.<br>
+         * Otherwise this methods blocks for the given milliseconds.
+         * </p>
+         * @param result storage for the resulting value if successful, otherwise <code>nullelem</code> if empty.
+         * @return true if successful, otherwise false.
+         */
+        bool peekBlocking(T& result, const int timeoutMS=0) noexcept {
+            bool success;
+            result = peekImpl(true, timeoutMS, success);
+            return success;
+        }
+
+        /**
+         * Dequeues the oldest enqueued element if available, otherwise null.
+         * <p>
+         * The returned ring buffer slot will be set to <code>nullelem</code> to release the reference
+         * and move ownership to the caller.
+         * </p>
          * <p>
          * Method is non blocking and returns immediately;.
          * </p>
-         * @param count maximum number of elements to drop from ringbuffer.
-         * @return actual number of dropped elements.
+         * @return the oldest put element if available, otherwise <code>nullelem</code>.
          */
-        Size_type drop(const Size_type count) noexcept {
-            return dropImpl(count);
+        T get() noexcept {
+            bool success;
+            return moveOutImpl(false, 0, success);
+        }
+
+        /**
+         * Dequeues the oldest enqueued element if available, otherwise null.
+         * <p>
+         * The returned ring buffer slot will be set to <code>nullelem</code> to release the reference
+         * and move ownership to the caller.
+         * </p>
+         * <p>
+         * Method is non blocking and returns immediately;.
+         * </p>
+         * @param result storage for the resulting value if successful, otherwise <code>nullelem</code> if empty.
+         * @return true if successful, otherwise false.
+         */
+        bool get(T& result) noexcept {
+            bool success;
+            result = moveOutImpl(false, 0, success);
+            return success;
+        }
+
+        /**
+         * Dequeues the oldest enqueued element.
+         * <p>
+         * The returned ring buffer slot will be set to <code>nullelem</code> to release the reference
+         * and move ownership to the caller.
+         * </p>
+         * <p>
+         * <code>timeoutMS</code> defaults to zero,
+         * i.e. infinitive blocking until an element available via put.<br>
+         * Otherwise this methods blocks for the given milliseconds.
+         * </p>
+         * @return the oldest put element or <code>nullelem</code> if timeout occurred.
+         */
+        T getBlocking(const int timeoutMS=0) noexcept {
+            bool success;
+            return moveOutImpl(true, timeoutMS, success);
+        }
+
+        /**
+         * Dequeues the oldest enqueued element.
+         * <p>
+         * The returned ring buffer slot will be set to <code>nullelem</code> to release the reference
+         * and move ownership to the caller.
+         * </p>
+         * <p>
+         * <code>timeoutMS</code> defaults to zero,
+         * i.e. infinitive blocking until an element available via put.<br>
+         * Otherwise this methods blocks for the given milliseconds.
+         * </p>
+         * @param result storage for the resulting value if successful, otherwise <code>nullelem</code> if empty.
+         * @return true if successful, otherwise false.
+         */
+        bool getBlocking(T& result, const int timeoutMS=0) noexcept {
+            bool success;
+            result = moveOutImpl(true, timeoutMS, success);
+            return success;
+        }
+
+        /**
+         * Dequeues the oldest enqueued count elements by copying them into the given consecutive 'dest' storage.
+         * <p>
+         * The returned ring buffer slot will be set to <code>nullelem</code> to release the reference
+         * and move ownership to the caller.
+         * </p>
+         * <p>
+         * Method is non blocking and returns immediately;.
+         * </p>
+         * @param dest pointer to first storage element of `count` consecutive elements.
+         * @param count number of consecutive elements to get
+         * @return true if successful, otherwise false
+         */
+        bool get(T *dest, const Size_type count) noexcept {
+            return moveOutImpl(dest, count, false, 0);
+        }
+
+        /**
+         * Dequeues the oldest enqueued count elements by copying them into the given consecutive 'dest' storage.
+         * <p>
+         * The returned ring buffer slot will be set to <code>nullelem</code> to release the reference
+         * and move ownership to the caller.
+         * </p>
+         * <p>
+         * <code>timeoutMS</code> defaults to zero,
+         * i.e. infinitive blocking until an element available via put.<br>
+         * Otherwise this methods blocks for the given milliseconds.
+         * </p>
+         * @param dest pointer to first storage element of `count` consecutive elements.
+         * @param count number of consecutive elements to get
+         * @param timeoutMS
+         * @return true if successful, otherwise false
+         * @return true if successful, otherwise false in case timeout occurred or otherwise.
+         */
+        bool getBlocking(T *dest, const Size_type count, const int timeoutMS=0) noexcept {
+            return moveOutImpl(dest, count, true, timeoutMS);
+        }
+
+        /**
+         * Drops {@code count} oldest enqueued elements.
+         * <p>
+         * Method is non blocking and returns immediately;.
+         * </p>
+         * @param count number of elements to drop from ringbuffer.
+         * @return true if successful, otherwise false
+         */
+        bool drop(const Size_type count) noexcept {
+            return dropImpl(count, false, 0);
+        }
+
+        /**
+         * Drops {@code count} oldest enqueued elements.
+         * <p>
+         * <code>timeoutMS</code> defaults to zero,
+         * i.e. infinitive blocking until an element available via put.<br>
+         * Otherwise this methods blocks for the given milliseconds.
+         * </p>
+         * @param count number of elements to drop from ringbuffer.
+         * @return true if successful, otherwise false
+         */
+        bool dropBlocking(const Size_type count, const int timeoutMS=0) noexcept {
+            return dropImpl(count, true, timeoutMS);
         }
 
         /**
@@ -572,6 +1076,7 @@ template <typename T, std::nullptr_t nullelem, typename Size_type> class ringbuf
          * <p>
          * Method is non blocking and returns immediately;.
          * </p>
+         * @return true if successful, otherwise false
          */
         bool put(T && e) noexcept {
             return moveIntoImpl(std::move(e), false, 0);
@@ -584,9 +1089,7 @@ template <typename T, std::nullptr_t nullelem, typename Size_type> class ringbuf
          * i.e. infinitive blocking until a free slot becomes available via get.<br>
          * Otherwise this methods blocks for the given milliseconds.
          * </p>
-         * <p>
-         * Returns true if successful, otherwise false in case timeout occurred.
-         * </p>
+         * @return true if successful, otherwise false in case timeout occurred or otherwise.
          */
         bool putBlocking(T && e, const int timeoutMS=0) noexcept {
             return moveIntoImpl(std::move(e), true, timeoutMS);
@@ -600,6 +1103,7 @@ template <typename T, std::nullptr_t nullelem, typename Size_type> class ringbuf
          * <p>
          * Method is non blocking and returns immediately;.
          * </p>
+         * @return true if successful, otherwise false
          */
         bool put(const T & e) noexcept {
             return copyIntoImpl(e, false, 0);
@@ -612,26 +1116,42 @@ template <typename T, std::nullptr_t nullelem, typename Size_type> class ringbuf
          * i.e. infinitive blocking until a free slot becomes available via get.<br>
          * Otherwise this methods blocks for the given milliseconds.
          * </p>
-         * <p>
-         * Returns true if successful, otherwise false in case timeout occurred.
-         * </p>
+         * @return true if successful, otherwise false in case timeout occurred or otherwise.
          */
         bool putBlocking(const T & e, const int timeoutMS=0) noexcept {
             return copyIntoImpl(e, true, timeoutMS);
         }
 
         /**
-         * Blocks until at least <code>count</code> free slots become available.
-         * @throws InterruptedException
+         * Enqueues the given range of consecutive elements by copying it into this ringbuffer storage.
+         * <p>
+         * Returns true if successful, otherwise false in case buffer is full.
+         * </p>
+         * <p>
+         * Method is non blocking and returns immediately;.
+         * </p>
+         * @param first pointer to first consecutive element to range of value_type [first, last)
+         * @param last pointer to last consecutive element to range of value_type [first, last)
+         * @return true if successful, otherwise false
          */
-        void waitForFreeSlots(const Size_type count) noexcept {
-            std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite, std::defer_lock);        // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
-            std::unique_lock<std::mutex> lockRead(syncRead, std::defer_lock);                    // otherwise RAII-style relinquish via destructor
-            std::lock(lockMultiWrite, lockRead);
+        bool put(const T *first, const T* last) noexcept {
+            return copyIntoImpl(first, last, false, 0);
+        }
 
-            while( capacityPlusOne - 1 - size < count ) {
-                cvRead.wait(lockRead);
-            }
+        /**
+         * Enqueues the given range of consecutive elementa by copying it into this ringbuffer storage.
+         * <p>
+         * <code>timeoutMS</code> defaults to zero,
+         * i.e. infinitive blocking until a free slot becomes available via get.<br>
+         * Otherwise this methods blocks for the given milliseconds.
+         * </p>
+         * @param first pointer to first consecutive element to range of value_type [first, last)
+         * @param last pointer to last consecutive element to range of value_type [first, last)
+         * @param timeoutMS
+         * @return true if successful, otherwise false in case timeout occurred or otherwise.
+         */
+        bool putBlocking(const T *first, const T* last, const int timeoutMS=0) noexcept {
+            return copyIntoImpl(first, last, true, timeoutMS);
         }
 
         /**
@@ -644,12 +1164,12 @@ template <typename T, std::nullptr_t nullelem, typename Size_type> class ringbuf
             std::unique_lock<std::mutex> lockMultiRead(syncMultiRead, std::defer_lock);          // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
             std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite, std::defer_lock);        // otherwise RAII-style relinquish via destructor
             std::lock(lockMultiRead, lockMultiWrite);
-            const Size_type _size = size; // fast access
+            const Size_type size = getSize();
 
             if( capacityPlusOne == newCapacity+1 ) {
                 return;
             }
-            if( _size > newCapacity ) {
+            if( size > newCapacity ) {
                 throw IllegalArgumentException("amount "+std::to_string(newCapacity)+" < size, "+toString(), E_FILE_LINE);
             }
 
@@ -665,16 +1185,16 @@ template <typename T, std::nullptr_t nullelem, typename Size_type> class ringbuf
             writePos = 0;
 
             // copy saved data
-            if( nullptr != oldArray && 0 < _size ) {
+            if( nullptr != oldArray && 0 < size ) {
                 Size_type localWritePos = writePos;
-                for(Size_type i=0; i<_size; i++) {
+                for(Size_type i=0; i<size; i++) {
                     localWritePos = (localWritePos + 1) % capacityPlusOne;
                     oldReadPos = (oldReadPos + 1) % oldCapacityPlusOne;
                     array[localWritePos] = std::move( oldArray[oldReadPos] );
                 }
                 writePos = localWritePos;
             }
-            freeArray(oldArray); // and release
+            freeArray(&oldArray); // and release
         }
 };
 

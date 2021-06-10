@@ -35,13 +35,34 @@
 
 using namespace jau;
 
-typedef uint8_t IntegralType;
-typedef uint8_t TrivialType;
-static const TrivialType TrivialTypeNullElem(0xff);
+typedef jau::snsize_t IntegralType;
+
+class Integer {
+    public:
+        IntegralType value;
+
+        Integer(IntegralType v) : value(v) {}
+
+        Integer() noexcept : value(0) { }
+
+        Integer(const Integer &o) noexcept = default;
+        Integer(Integer &&o) noexcept = default;
+        Integer& operator=(const Integer &o) noexcept = default;
+        Integer& operator=(Integer &&o) noexcept = default;
+
+        operator IntegralType() const {
+            return value;
+        }
+        IntegralType intValue() const { return value; }
+        static Integer valueOf(const IntegralType i) { return Integer(i); }
+};
+
+typedef Integer TrivialType;
+static const TrivialType TrivialTypeNullElem(-1);
 typedef ringbuffer<TrivialType, TrivialTypeNullElem, jau::nsize_t> TrivialTypeRingbuffer;
 
 // Test examples.
-class TestRingbuffer01 {
+class TestRingbuffer02 {
   private:
 
     TrivialTypeRingbuffer createEmpty(jau::nsize_t initialCapacity) {
@@ -75,7 +96,7 @@ class TestRingbuffer01 {
         for(jau::nsize_t i=0; i<len; i++) {
             TrivialType svI = rb.get();
             REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb.toString(), svI!=TrivialTypeNullElem);
-            REQUIRE_MSG("value at read #"+std::to_string(i+1)+": "+rb.toString(), startValue+(IntegralType)i == svI);
+            REQUIRE_MSG("value at read #"+std::to_string(i+1)+": "+rb.toString(), startValue+(IntegralType)i == svI.intValue());
         }
 
         REQUIRE_MSG("size "+rb.toString(), preSize-len == rb.getSize());
@@ -95,7 +116,7 @@ class TestRingbuffer01 {
             TrivialType svI;
             REQUIRE_MSG("ringbuffer get", rb.get(svI));
             REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb.toString(), svI!=TrivialTypeNullElem);
-            REQUIRE_MSG("value at read #"+std::to_string(i+1)+": "+rb.toString(), startValue+(IntegralType)i == svI);
+            REQUIRE_MSG("value at read #"+std::to_string(i+1)+": "+rb.toString(), startValue+(IntegralType)i == svI.intValue());
         }
 
         REQUIRE_MSG("size "+rb.toString(), preSize-len == rb.getSize());
@@ -122,7 +143,7 @@ class TestRingbuffer01 {
         for(jau::nsize_t i=0; i<len; i++) {
             TrivialType svI = array[i];
             REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb.toString(), svI!=TrivialTypeNullElem);
-            REQUIRE_MSG("value at read #"+std::to_string(i+1)+": "+rb.toString(), startValue+(IntegralType)i == svI);
+            REQUIRE_MSG("value at read #"+std::to_string(i+1)+": "+rb.toString(), startValue+(IntegralType)i == svI.intValue());
         }
     }
 
@@ -163,7 +184,7 @@ class TestRingbuffer01 {
     void moveGetPutImpl(TrivialTypeRingbuffer &rb, jau::nsize_t pos) {
         REQUIRE_MSG("not empty "+rb.toString(), !rb.isEmpty());
         for(jau::nsize_t i=0; i<pos; i++) {
-            REQUIRE_MSG("moveFull.get "+rb.toString(), (IntegralType)i == rb.get());
+            REQUIRE_MSG("moveFull.get "+rb.toString(), (IntegralType)i == rb.get().intValue());
             REQUIRE_MSG("moveFull.put "+rb.toString(), rb.put( TrivialType( (IntegralType)i ) ) );
         }
     }
@@ -172,7 +193,7 @@ class TestRingbuffer01 {
         REQUIRE_MSG("RB is full "+rb.toString(), !rb.isFull());
         for(jau::nsize_t i=0; i<pos; i++) {
             REQUIRE_MSG("moveEmpty.put "+rb.toString(), rb.put( TrivialType( 600+(IntegralType)i ) ) );
-            REQUIRE_MSG("moveEmpty.get "+rb.toString(), 600+(IntegralType)i == rb.get());
+            REQUIRE_MSG("moveEmpty.get "+rb.toString(), 600+(IntegralType)i == rb.get().intValue());
         }
     }
 
@@ -187,7 +208,7 @@ class TestRingbuffer01 {
                  ", size "+std::to_string(sizeof(rb))+" bytes");
         fprintf(stderr, "%s", msg.c_str());
         REQUIRE_MSG("Ringbuffer<T> using memcpy", TrivialTypeRingbuffer::uses_memcpy);
-        REQUIRE_MSG("Ringbuffer<T> uses memset", TrivialTypeRingbuffer::uses_memset);
+        REQUIRE_MSG("Ringbuffer<T> not using memset", !TrivialTypeRingbuffer::uses_memset);
     }
 
     void test01_FullRead() {
@@ -217,10 +238,11 @@ class TestRingbuffer01 {
 
         readTestImpl(rb, true, capacity, capacity, 0);
         INFO( std::string("test02_EmptyWrite: PostRead / ") + rb.toString().c_str());
-        REQUIRE_MSG("empty1 "+rb.toString(), rb.isEmpty());
+        REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
     }
 
     void test03_EmptyWriteRange() {
+#if 1
         {
             jau::nsize_t capacity = 11;
             TrivialTypeRingbuffer rb = createEmpty(capacity);
@@ -243,6 +265,8 @@ class TestRingbuffer01 {
             INFO( std::string("test03_EmptyWriteRange: PostRead / ") + rb.toString().c_str());
             REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
         }
+#endif
+#if 1
         {
             jau::nsize_t capacity = 11;
 
@@ -276,6 +300,8 @@ class TestRingbuffer01 {
             INFO( std::string("test03_EmptyWriteRange: PostRead / ") + rb.toString().c_str());
             REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
         }
+#endif
+#if 1
         {
             jau::nsize_t capacity = 11;
             TrivialTypeRingbuffer rb = createEmpty(capacity);
@@ -289,10 +315,10 @@ class TestRingbuffer01 {
              * Avail [ ][ ][R][.][W][ ][ ][ ][ ][ ][ ] ; W > R
              */
             TrivialType dummy(TrivialTypeNullElem);
-            rb.put(dummy); // w idx 0 -> 1
+            rb.put(dummy); // r idx 0 -> 1
             rb.put(dummy);
             rb.put(dummy);
-            rb.put(dummy); // w idx 3 -> 4
+            rb.put(dummy); // r idx 3 -> 4
             rb.drop(2);    // r idx 0 -> 2
 
             // left = 11 - 2
@@ -317,6 +343,8 @@ class TestRingbuffer01 {
             REQUIRE_MSG("size 0 "+rb.toString(), 0 == rb.getSize());
             REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
         }
+#endif
+#if 1
         {
             jau::nsize_t capacity = 11;
             TrivialTypeRingbuffer rb = createEmpty(capacity);
@@ -333,6 +361,7 @@ class TestRingbuffer01 {
             for(int i=0; i<11; i++) { rb.put(dummy); } // fill all
             REQUIRE_MSG("full "+rb.toString(), rb.isFull());
 
+            // for(int i=0; i<10; i++) { rb.get(); } // pull
             rb.drop(10); // pull
             REQUIRE_MSG("size 1"+rb.toString(), 1 == rb.getSize());
 
@@ -352,6 +381,7 @@ class TestRingbuffer01 {
 
             // take off 3 remaining dummies
             rb.drop(3); // pull
+            // for(int i=0; i<3; i++) { rb.get(); } // pull
             REQUIRE_MSG("size capacity-3 "+rb.toString(), capacity-3 == rb.getSize());
 
             readRangeTestImpl(rb, true, capacity, capacity-3, 0);
@@ -360,6 +390,7 @@ class TestRingbuffer01 {
             REQUIRE_MSG("size 0 "+rb.toString(), 0 == rb.getSize());
             REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
         }
+#endif
     }
 
     void test04_FullReadReset() {
@@ -462,7 +493,7 @@ class TestRingbuffer01 {
         for(jau::nsize_t i=0; i<initialCapacity; i++) {
             TrivialType svI = rb.get();
             REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb.toString(), svI!=TrivialTypeNullElem);
-            REQUIRE_MSG("value at read #"+std::to_string(i+1)+": "+rb.toString(), IntegralType((0+i)%initialCapacity) == svI);
+            REQUIRE_MSG("value at read #"+std::to_string(i+1)+": "+rb.toString(), IntegralType((0+i)%initialCapacity) == svI.intValue());
         }
         REQUIRE_MSG("zero size "+rb.toString(), 0 == rb.getSize());
 
@@ -491,14 +522,14 @@ class TestRingbuffer01 {
             TrivialType svI = rb.get();
             // PRINTM("X05["+std::to_string(i)+"]: "+rb.toString()+", svI-null: "+std::to_string(svI==TrivialTypeNullElem));
             REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb.toString(), svI!=TrivialTypeNullElem);
-            REQUIRE_MSG("value at read #"+std::to_string(i+1)+": "+rb.toString(), IntegralType((pos+i)%initialCapacity) == svI);
+            REQUIRE_MSG("value at read #"+std::to_string(i+1)+": "+rb.toString(), IntegralType((pos+i)%initialCapacity) == svI.intValue());
         }
 
         for(jau::nsize_t i=0; i<growAmount; i++) {
             TrivialType svI = rb.get();
             // PRINTM("X07["+std::to_string(i)+"]: "+rb.toString()+", svI-null: "+std::to_string(svI==TrivialTypeNullElem));
             REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb.toString(), svI!=TrivialTypeNullElem);
-            REQUIRE_MSG("value at read #"+std::to_string(i+1)+": "+rb.toString(), IntegralType(100+i) == svI);
+            REQUIRE_MSG("value at read #"+std::to_string(i+1)+": "+rb.toString(), IntegralType(100+i) == svI.intValue());
         }
 
         REQUIRE_MSG("zero size "+rb.toString(), 0 == rb.getSize());
@@ -537,23 +568,23 @@ class TestRingbuffer01 {
 };
 
 #if 1
-METHOD_AS_TEST_CASE( TestRingbuffer01::test00_PrintInfo,         "Test TestRingbuffer 01- 00");
-METHOD_AS_TEST_CASE( TestRingbuffer01::test01_FullRead,          "Test TestRingbuffer 01- 01");
-METHOD_AS_TEST_CASE( TestRingbuffer01::test02_EmptyWrite,        "Test TestRingbuffer 01- 02");
-METHOD_AS_TEST_CASE( TestRingbuffer01::test03_EmptyWriteRange,   "Test TestRingbuffer 01- 03");
-METHOD_AS_TEST_CASE( TestRingbuffer01::test04_FullReadReset,     "Test TestRingbuffer 01- 04");
-METHOD_AS_TEST_CASE( TestRingbuffer01::test05_EmptyWriteClear,   "Test TestRingbuffer 01- 05");
-METHOD_AS_TEST_CASE( TestRingbuffer01::test06_ReadResetMid01,    "Test TestRingbuffer 01- 06");
-METHOD_AS_TEST_CASE( TestRingbuffer01::test07_ReadResetMid02,    "Test TestRingbuffer 01- 07");
-METHOD_AS_TEST_CASE( TestRingbuffer01::test20_GrowFull01_Begin,  "Test TestRingbuffer 01- 20");
-METHOD_AS_TEST_CASE( TestRingbuffer01::test21_GrowFull02_Begin1, "Test TestRingbuffer 01- 21");
-METHOD_AS_TEST_CASE( TestRingbuffer01::test22_GrowFull03_Begin2, "Test TestRingbuffer 01- 22");
-METHOD_AS_TEST_CASE( TestRingbuffer01::test23_GrowFull04_Begin3, "Test TestRingbuffer 01- 23");
-METHOD_AS_TEST_CASE( TestRingbuffer01::test24_GrowFull05_End,    "Test TestRingbuffer 01- 24");
-METHOD_AS_TEST_CASE( TestRingbuffer01::test25_GrowFull11_End1,   "Test TestRingbuffer 01- 25");
-METHOD_AS_TEST_CASE( TestRingbuffer01::test26_GrowFull12_End2,   "Test TestRingbuffer 01- 26");
-METHOD_AS_TEST_CASE( TestRingbuffer01::test27_GrowFull13_End3,   "Test TestRingbuffer 01- 27");
+METHOD_AS_TEST_CASE( TestRingbuffer02::test00_PrintInfo,         "Test TestRingbuffer 02- 00");
+METHOD_AS_TEST_CASE( TestRingbuffer02::test01_FullRead,          "Test TestRingbuffer 02- 01");
+METHOD_AS_TEST_CASE( TestRingbuffer02::test02_EmptyWrite,        "Test TestRingbuffer 02- 02");
+METHOD_AS_TEST_CASE( TestRingbuffer02::test03_EmptyWriteRange,   "Test TestRingbuffer 02- 03");
+METHOD_AS_TEST_CASE( TestRingbuffer02::test04_FullReadReset,     "Test TestRingbuffer 02- 04");
+METHOD_AS_TEST_CASE( TestRingbuffer02::test05_EmptyWriteClear,   "Test TestRingbuffer 02- 05");
+METHOD_AS_TEST_CASE( TestRingbuffer02::test06_ReadResetMid01,    "Test TestRingbuffer 02- 06");
+METHOD_AS_TEST_CASE( TestRingbuffer02::test07_ReadResetMid02,    "Test TestRingbuffer 02- 07");
+METHOD_AS_TEST_CASE( TestRingbuffer02::test20_GrowFull01_Begin,  "Test TestRingbuffer 02- 20");
+METHOD_AS_TEST_CASE( TestRingbuffer02::test21_GrowFull02_Begin1, "Test TestRingbuffer 02- 21");
+METHOD_AS_TEST_CASE( TestRingbuffer02::test22_GrowFull03_Begin2, "Test TestRingbuffer 02- 22");
+METHOD_AS_TEST_CASE( TestRingbuffer02::test23_GrowFull04_Begin3, "Test TestRingbuffer 02- 23");
+METHOD_AS_TEST_CASE( TestRingbuffer02::test24_GrowFull05_End,    "Test TestRingbuffer 02- 24");
+METHOD_AS_TEST_CASE( TestRingbuffer02::test25_GrowFull11_End1,   "Test TestRingbuffer 02- 25");
+METHOD_AS_TEST_CASE( TestRingbuffer02::test26_GrowFull12_End2,   "Test TestRingbuffer 02- 26");
+METHOD_AS_TEST_CASE( TestRingbuffer02::test27_GrowFull13_End3,   "Test TestRingbuffer 02- 27");
 #else
-METHOD_AS_TEST_CASE( TestRingbuffer01::test00_PrintInfo,         "Test TestRingbuffer 01- 00");
-METHOD_AS_TEST_CASE( TestRingbuffer01::test03_EmptyWriteRange,   "Test TestRingbuffer 01- 03");
+METHOD_AS_TEST_CASE( TestRingbuffer02::test00_PrintInfo,         "Test TestRingbuffer 02- 00");
+METHOD_AS_TEST_CASE( TestRingbuffer02::test03_EmptyWriteRange,   "Test TestRingbuffer 02- 03");
 #endif

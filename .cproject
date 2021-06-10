@@ -24,7 +24,7 @@
 					<folderInfo id="cdt.managedbuild.config.gnu.so.debug.32135143." name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.gnu.so.debug.182035506" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.so.debug">
 							<targetPlatform id="cdt.managedbuild.target.gnu.platform.so.debug.986945831" name="Debug Platform" superClass="cdt.managedbuild.target.gnu.platform.so.debug"/>
-							<builder buildPath="${workspace_loc:/jaulib}/Debug" id="cdt.managedbuild.target.gnu.builder.so.debug.1895109028" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.so.debug"/>
+							<builder buildPath="${workspace_loc:/jaulib}/Debug" id="cdt.managedbuild.target.gnu.builder.so.debug.1895109028" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" parallelBuildOn="true" parallelizationNumber="optimal" superClass="cdt.managedbuild.target.gnu.builder.so.debug"/>
 							<tool id="cdt.managedbuild.tool.gnu.archiver.base.581329835" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.so.debug.2051654740" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.so.debug">
 								<option id="gnu.cpp.compiler.so.debug.option.optimization.level.1602964287" name="Optimization Level" superClass="gnu.cpp.compiler.so.debug.option.optimization.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.optimization.level.none" valueType="enumerated"/>
@@ -46,7 +46,7 @@
 									<listOptionValue builtIn="false" value="/opt-linux-x86_64/jdk1.8.0_121/include/linux/"/>
 									<listOptionValue builtIn="false" value="/usr/lib/jvm/default-java/include/"/>
 								</option>
-								<option id="gnu.cpp.compiler.option.other.other.541336659" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -Wno-multichar -Wno-float-equal" valueType="string"/>
+								<option id="gnu.cpp.compiler.option.other.other.541336659" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -Wno-multichar -Wno-float-equal" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1543970397" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.so.debug.178013953" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.so.debug">
@@ -92,10 +92,10 @@
 					<sourceEntries>
 						<entry excluding="catch_main.cpp" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="include/catch2"/>
 						<entry excluding="test/catch2_my_main.cpp" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="include/jau"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="java_jni/jni"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="java_pkg/jni"/>
+						<entry excluding="jau/Clock.cxx|jau/JVM_JNI8.cxx|jau/MachineDataInfoRuntime.cxx|jau/UnixDynamicLinkerImpl_JNI.cxx|jau/WindowsDynamicLinkerImpl_JNI.cxx|helper_jni.cxx|jni_mem.cxx" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="java_jni/jni"/>
+						<entry excluding="jau/JarUtil.cxx|jau/JVM_JNI8.cxx" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="java_pkg/jni"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="src"/>
-						<entry excluding="test_lfringbuffer11.cpp|test_type_traits_queries01.cpp|test_lfringbuffer01.cpp|test_mm_sc_drf_00.cpp|test_datatype01.hpp|test_to_string.cpp|test_floatepsilon01.cpp|test_mm_sc_drf_01.cpp|test_cow_darray_perf01.cpp|test_hashset_perf01.cpp|test_datatype02.hpp|test_functiondef01.cpp|test_intdecstring01.cpp" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="test"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="test"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

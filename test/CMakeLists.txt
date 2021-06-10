@@ -23,7 +23,11 @@ set( SOURCES_IDIOMATIC_EXAMPLES
     test_intdecstring01.cpp
     test_functiondef01.cpp
     test_lfringbuffer01.cpp
+    test_lfringbuffer02.cpp
+    test_lfringbuffer03.cpp
     test_lfringbuffer11.cpp
+    test_lfringbuffer12.cpp
+    test_lfringbuffer13.cpp
     test_mm_sc_drf_00.cpp
     test_mm_sc_drf_01.cpp
     test_cow_iterator_01.cpp
