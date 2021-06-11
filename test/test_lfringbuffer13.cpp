@@ -60,18 +60,18 @@ class Integer {
 std::shared_ptr<Integer> NullInteger = nullptr;
 
 typedef std::shared_ptr<Integer> SharedType;
-static const SharedType SharedTypeNullElem(nullptr);
-typedef ringbuffer<SharedType, jau::nsize_t> SharedTypeRingbuffer;
+constexpr const std::nullptr_t SharedTypeNullElem = nullptr ;
+typedef ringbuffer<SharedType, std::nullptr_t, jau::nsize_t> SharedTypeRingbuffer;
 
 // Test examples.
 class TestRingbuffer13 {
   private:
 
     std::shared_ptr<SharedTypeRingbuffer> createEmpty(jau::nsize_t initialCapacity) {
-        return std::shared_ptr<SharedTypeRingbuffer>(new SharedTypeRingbuffer(SharedTypeNullElem, initialCapacity));
+        return std::shared_ptr<SharedTypeRingbuffer>(new SharedTypeRingbuffer(nullptr, initialCapacity));
     }
     std::shared_ptr<SharedTypeRingbuffer> createFull(const std::vector<std::shared_ptr<Integer>> & source) {
-        return std::shared_ptr<SharedTypeRingbuffer>(new SharedTypeRingbuffer(SharedTypeNullElem, source));
+        return std::shared_ptr<SharedTypeRingbuffer>(new SharedTypeRingbuffer(nullptr, source));
     }
 
     std::vector<SharedType> createIntArray(const jau::nsize_t capacity, const IntegralType startValue) {

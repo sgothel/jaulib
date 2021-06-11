@@ -101,15 +101,16 @@ namespace jau {
  * - std::memory_order <https://en.cppreference.com/w/cpp/atomic/memory_order>
  * </pre>
  * <p>
- * We would like to pass `T nullelem` as a non-type template parameter of type `T`, a potential Class.
+ * We would like to pass `NullValue_type nullelem` as a non-type template parameter of type `NullValue_type`, a potential Class.
  * However, this is only allowed in C++20 and we use C++17 for now.
- * Hence we have to pass `T nullelem` in the constructor.
+ * Hence we have to pass `NullValue_type nullelem` in the constructor.
  * </p>
  * @see jau::sc_atomic_critical
  */
-template <typename T, typename Size_type,
-          bool use_memcpy = std::is_trivially_copyable_v<T>,
-          bool use_memset = std::is_integral_v<T> && sizeof(T)==1
+template <typename Value_type, typename NullValue_type, typename Size_type,
+          bool use_memcpy = std::is_trivially_copyable_v<Value_type>,
+          bool use_memset = std::is_integral_v<Value_type> && sizeof(Value_type)==1 &&
+                            std::is_integral_v<NullValue_type> && sizeof(NullValue_type)==1
          >
 class ringbuffer {
     public:
@@ -118,7 +119,7 @@ class ringbuffer {
 
         // typedefs' for C++ named requirements: Container (ex iterator)
 
-        typedef T                                           value_type;
+        typedef Value_type                                  value_type;
         typedef value_type*                                 pointer;
         typedef const value_type*                           const_pointer;
         typedef value_type&                                 reference;
@@ -141,24 +142,24 @@ class ringbuffer {
         mutable std::mutex syncRead,  syncMultiRead;  // Memory-Model (MM) guaranteed sequential consistency (SC) between acquire and release
         std::condition_variable cvRead;
 
-        /* const */ T nullelem;          // not final due to assignment operation
+        /* const */ NullValue_type nullelem;    // not final due to assignment operation
         /* const */ Size_type capacityPlusOne;  // not final due to grow
-        /* const */ T * array;           // Synchronized due to MM's data-race-free SC (SC-DRF) between [atomic] acquire/release
+        /* const */ Value_type * array;         // Synchronized due to MM's data-race-free SC (SC-DRF) between [atomic] acquire/release
         sc_atomic_Size_type readPos;     // Memory-Model (MM) guaranteed sequential consistency (SC) between acquire (read) and release (write)
         sc_atomic_Size_type writePos;    // ditto
 
         // DBG_PRINT("");
-        T * newArray(const Size_type count) noexcept {
+        Value_type * newArray(const Size_type count) noexcept {
 #if 0
-            T *r = new T[count];
+            Value_type *r = new Value_type[count];
             _DEBUG_DUMP("newArray ...");
             _DEBUG_PRINT("newArray %" PRIu64 "\n", count);
             return r;
 #else
-            return new T[count];
+            return new Value_type[count];
 #endif
         }
-        void freeArray(T ** a) noexcept {
+        void freeArray(Value_type ** a) noexcept {
             _DEBUG_DUMP("freeArray(def)");
             _DEBUG_PRINT("freeArray %p\n", *a);
             if( nullptr == *a ) {
@@ -168,15 +169,17 @@ class ringbuffer {
             *a = nullptr;
         }
 
-        template<class _DataType>
-        static void* memset_wrap(_DataType *block, _DataType c, size_t n,
-                std::enable_if_t< std::is_integral_v<_DataType> && sizeof(_DataType)==1, bool > = true )
+        template<typename _DataType, typename _NullType>
+        static void* memset_wrap(_DataType *block, const _NullType& c, size_t n,
+                std::enable_if_t< std::is_integral_v<_DataType> && sizeof(_DataType)==1 &&
+                                  std::is_integral_v<_NullType> && sizeof(_NullType)==1, bool > = true )
         {
             return ::memset(block, c, n);
         }
-        template<class _DataType>
-        static void* memset_wrap(_DataType *block, _DataType c, size_t n,
-                std::enable_if_t< !std::is_integral_v<_DataType> || sizeof(_DataType)!=1, bool > = true )
+        template<typename _DataType, typename _NullType>
+        static void* memset_wrap(_DataType *block, const _NullType& c, size_t n,
+                std::enable_if_t< !std::is_integral_v<_DataType> || sizeof(_DataType)!=1 ||
+                                  !std::is_integral_v<_NullType> || sizeof(_NullType)!=1, bool > = true )
         {
             ABORT("MEMSET shall not be used");
             (void)block;
@@ -192,7 +195,7 @@ class ringbuffer {
             const Size_type size = getSize();
             if( 0 < size ) {
                 if( uses_memset ) {
-                    memset_wrap(&array[0], nullelem, capacityPlusOne*sizeof(T));
+                    memset_wrap(&array[0], nullelem, capacityPlusOne*sizeof(Value_type));
                     readPos  = 0;
                     writePos = 0;
                 } else {
@@ -226,8 +229,8 @@ class ringbuffer {
 
             if( use_memcpy ) {
                 memcpy(reinterpret_cast<void*>(&array[0]),
-                       reinterpret_cast<void*>(const_cast<T*>(&source.array[0])),
-                       capacityPlusOne*sizeof(T));
+                       reinterpret_cast<void*>(const_cast<Value_type*>(&source.array[0])),
+                       capacityPlusOne*sizeof(Value_type));
             } else {
                 const Size_type size = getSize();
                 Size_type localWritePos = readPos;
@@ -241,7 +244,7 @@ class ringbuffer {
             }
         }
 
-        void resetImpl(const T * copyFrom, const Size_type copyFromCount) noexcept {
+        void resetImpl(const Value_type * copyFrom, const Size_type copyFromCount) noexcept {
             clearImpl();
 
             // fill with copyFrom elements
@@ -258,8 +261,8 @@ class ringbuffer {
                 }
                 if( use_memcpy ) {
                     memcpy(reinterpret_cast<void*>(&array[0]),
-                           reinterpret_cast<void*>(const_cast<T*>(copyFrom)),
-                           copyFromCount*sizeof(T));
+                           reinterpret_cast<void*>(const_cast<Value_type*>(copyFrom)),
+                           copyFromCount*sizeof(Value_type));
                     readPos  = capacityPlusOne - 1; // last read-pos
                     writePos = copyFromCount   - 1; // last write-pos
                 } else {
@@ -273,9 +276,9 @@ class ringbuffer {
             }
         }
 
-        T peekImpl(const bool blocking, const int timeoutMS, bool& success) noexcept {
-            if( !std::is_copy_constructible_v<T> ) {
-                ABORT("T is not copy constructible");
+        Value_type peekImpl(const bool blocking, const int timeoutMS, bool& success) noexcept {
+            if( !std::is_copy_constructible_v<Value_type> ) {
+                ABORT("Value_type is not copy constructible");
                 return nullelem;
             }
             std::unique_lock<std::mutex> lockMultiRead(syncMultiRead); // acquire syncMultiRead, _not_ sync'ing w/ putImpl
@@ -303,13 +306,13 @@ class ringbuffer {
                 }
             }
             localReadPos = (localReadPos + 1) % capacityPlusOne;
-            T r = array[localReadPos]; // SC-DRF
+            Value_type r = array[localReadPos]; // SC-DRF
             readPos = oldReadPos; // SC-DRF release atomic readPos (complete acquire-release even @ peek)
             success = true;
             return r;
         }
 
-        T moveOutImpl(const bool blocking, const int timeoutMS, bool& success) noexcept {
+        Value_type moveOutImpl(const bool blocking, const int timeoutMS, bool& success) noexcept {
             std::unique_lock<std::mutex> lockMultiRead(syncMultiRead); // acquire syncMultiRead, _not_ sync'ing w/ putImpl
 
             const Size_type oldReadPos = readPos; // SC-DRF acquire atomic readPos, sync'ing with putImpl
@@ -335,7 +338,7 @@ class ringbuffer {
                 }
             }
             localReadPos = (localReadPos + 1) % capacityPlusOne;
-            T r = std::move( array[localReadPos] ); // SC-DRF
+            Value_type r = std::move( array[localReadPos] ); // SC-DRF
             array[localReadPos] = nullelem;
             {
                 std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ putImpl via same lock
@@ -346,10 +349,10 @@ class ringbuffer {
             return r;
         }
 
-        bool moveOutImpl(T *dest, const Size_type count, const bool blocking, const int timeoutMS) noexcept {
+        bool moveOutImpl(Value_type *dest, const Size_type count, const bool blocking, const int timeoutMS) noexcept {
             std::unique_lock<std::mutex> lockMultiRead(syncMultiRead); // acquire syncMultiRead, _not_ sync'ing w/ putImpl
 
-            T *iter_out = dest;
+            Value_type *iter_out = dest;
 
             if( count >= capacityPlusOne ) {
                 return false;
@@ -395,9 +398,9 @@ class ringbuffer {
                 if( use_memcpy ) {
                     memcpy(reinterpret_cast<void*>(iter_out),
                            reinterpret_cast<void*>(&array[localReadPos]),
-                           tail_count*sizeof(T));
+                           tail_count*sizeof(Value_type));
                     if( uses_memset ) {
-                        memset_wrap(&array[localReadPos], nullelem, tail_count*sizeof(T));
+                        memset_wrap(&array[localReadPos], nullelem, tail_count*sizeof(Value_type));
                     } else {
                         for(Size_type i=0; i<tail_count; i++) {
                             array[localReadPos+i] = nullelem;
@@ -419,9 +422,9 @@ class ringbuffer {
                 if( use_memcpy ) {
                     memcpy(reinterpret_cast<void*>(iter_out),
                            reinterpret_cast<void*>(&array[localReadPos]),
-                           togo_count*sizeof(T));
+                           togo_count*sizeof(Value_type));
                     if( uses_memset ) {
-                        memset_wrap(&array[localReadPos], nullelem, togo_count*sizeof(T));
+                        memset_wrap(&array[localReadPos], nullelem, togo_count*sizeof(Value_type));
                     } else {
                         for(Size_type i=0; i<togo_count; i++) {
                             array[localReadPos+i] = nullelem;
@@ -435,7 +438,7 @@ class ringbuffer {
                 }
                 localReadPos = ( localReadPos + togo_count - 1 ) % capacityPlusOne; // last read-pos
             }
-            // T r = std::move( array[localReadPos] ); // SC-DRF
+            // Value_type r = std::move( array[localReadPos] ); // SC-DRF
             {
                 std::unique_lock<std::mutex> locRead(syncRead); // SC-DRF w/ putImpl via same lock
                 readPos = localReadPos; // SC-DRF release atomic readPos
@@ -489,7 +492,7 @@ class ringbuffer {
                 localReadPos = ( localReadPos + 1 ) % capacityPlusOne; // next-read-pos
                 const Size_type tail_count = std::min(togo_count, capacityPlusOne - localReadPos);
                 if( uses_memset ) {
-                    memset_wrap(&array[localReadPos], nullelem, tail_count*sizeof(T));
+                    memset_wrap(&array[localReadPos], nullelem, tail_count*sizeof(Value_type));
                 } else {
                     for(Size_type i=0; i<tail_count; i++) {
                         array[localReadPos+i] = nullelem;
@@ -502,7 +505,7 @@ class ringbuffer {
                 // we have a head
                 localReadPos = ( localReadPos + 1 ) % capacityPlusOne; // next-read-pos
                 if( uses_memset ) {
-                    memset_wrap(&array[localReadPos], nullelem, togo_count*sizeof(T));
+                    memset_wrap(&array[localReadPos], nullelem, togo_count*sizeof(Value_type));
                 } else {
                     for(Size_type i=0; i<togo_count; i++) {
                         array[localReadPos+i] = nullelem;
@@ -510,7 +513,7 @@ class ringbuffer {
                 }
                 localReadPos = ( localReadPos + togo_count - 1 ) % capacityPlusOne; // last read-pos
             }
-            // T r = std::move( array[localReadPos] ); // SC-DRF
+            // Value_type r = std::move( array[localReadPos] ); // SC-DRF
             {
                 std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ putImpl via same lock
                 readPos = localReadPos; // SC-DRF release atomic readPos
@@ -519,7 +522,7 @@ class ringbuffer {
             return true;
         }
 
-        bool moveIntoImpl(T &&e, const bool blocking, const int timeoutMS) noexcept {
+        bool moveIntoImpl(Value_type &&e, const bool blocking, const int timeoutMS) noexcept {
             std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite); // acquire syncMultiWrite, _not_ sync'ing w/ getImpl
 
             Size_type localWritePos = writePos; // SC-DRF acquire atomic writePos, sync'ing with getImpl
@@ -551,9 +554,9 @@ class ringbuffer {
             return true;
         }
 
-        bool copyIntoImpl(const T &e, const bool blocking, const int timeoutMS) noexcept {
-            if( !std::is_copy_constructible_v<T> ) {
-                ABORT("T is not copy constructible");
+        bool copyIntoImpl(const Value_type &e, const bool blocking, const int timeoutMS) noexcept {
+            if( !std::is_copy_constructible_v<Value_type> ) {
+                ABORT("Value_type is not copy constructible");
                 return false;
             }
             std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite); // acquire syncMultiWrite, _not_ sync'ing w/ getImpl
@@ -587,14 +590,14 @@ class ringbuffer {
             return true;
         }
 
-        bool copyIntoImpl(const T *first, const T* last, const bool blocking, const int timeoutMS) noexcept {
-            if( !std::is_copy_constructible_v<T> ) {
-                ABORT("T is not copy constructible");
+        bool copyIntoImpl(const Value_type *first, const Value_type* last, const bool blocking, const int timeoutMS) noexcept {
+            if( !std::is_copy_constructible_v<Value_type> ) {
+                ABORT("Value_type is not copy constructible");
                 return false;
             }
             std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite); // acquire syncMultiWrite, _not_ sync'ing w/ getImpl
 
-            const T *iter_in = first;
+            const Value_type *iter_in = first;
             const Size_type total_count = last - first;
 
             if( total_count >= capacityPlusOne ) {
@@ -638,8 +641,8 @@ class ringbuffer {
                 const Size_type tail_count = std::min(togo_count, capacityPlusOne - localWritePos);
                 if( use_memcpy ) {
                     memcpy(reinterpret_cast<void*>(&array[localWritePos]),
-                           reinterpret_cast<void*>(const_cast<T*>(iter_in)),
-                           tail_count*sizeof(T));
+                           reinterpret_cast<void*>(const_cast<Value_type*>(iter_in)),
+                           tail_count*sizeof(Value_type));
                 } else {
                     for(Size_type i=0; i<tail_count; i++) {
                         array[localWritePos+i] = iter_in[i];
@@ -654,8 +657,8 @@ class ringbuffer {
                 localWritePos = ( localWritePos + 1 ) % capacityPlusOne; // next-write-pos
                 if( use_memcpy ) {
                     memcpy(reinterpret_cast<void*>(&array[localWritePos]),
-                           reinterpret_cast<void*>(const_cast<T*>(iter_in)),
-                           togo_count*sizeof(T));
+                           reinterpret_cast<void*>(const_cast<Value_type*>(iter_in)),
+                           togo_count*sizeof(Value_type));
                 } else {
                     for(Size_type i=0; i<togo_count; i++) {
                         array[localWritePos+i] = iter_in[i];
@@ -743,12 +746,12 @@ class ringbuffer {
          * @param copyFrom mandatory source array determining ring buffer's net {@link #capacity()} and initial content.
          * @throws IllegalArgumentException if <code>copyFrom</code> is <code>nullptr</code>
          */
-        ringbuffer(const T& nullelem_, const std::vector<T> & copyFrom) noexcept
+        ringbuffer(const NullValue_type& nullelem_, const std::vector<Value_type> & copyFrom) noexcept
         : nullelem(nullelem_), capacityPlusOne(copyFrom.size() + 1), array(newArray(capacityPlusOne)),
           readPos(0), writePos(0)
         {
             resetImpl(copyFrom.data(), copyFrom.size());
-            _DEBUG_DUMP("ctor(vector<T>)");
+            _DEBUG_DUMP("ctor(vector<Value_type>)");
         }
 
         /**
@@ -756,12 +759,12 @@ class ringbuffer {
          * @param copyFrom
          * @param copyFromSize
          */
-        ringbuffer(const T& nullelem_, const T * copyFrom, const Size_type copyFromSize) noexcept
+        ringbuffer(const NullValue_type& nullelem_, const Value_type * copyFrom, const Size_type copyFromSize) noexcept
         : nullelem(nullelem_), capacityPlusOne(copyFromSize + 1), array(newArray(capacityPlusOne)),
           readPos(0), writePos(0)
         {
             resetImpl(copyFrom, copyFromSize);
-            _DEBUG_DUMP("ctor(T*, len)");
+            _DEBUG_DUMP("ctor(Value_type*, len)");
         }
 
         /**
@@ -782,7 +785,7 @@ class ringbuffer {
          * @param arrayType the array type of the created empty internal array.
          * @param capacity the initial net capacity of the ring buffer
          */
-        ringbuffer(const T& nullelem_, const Size_type capacity) noexcept
+        ringbuffer(const NullValue_type& nullelem_, const Size_type capacity) noexcept
         : nullelem(nullelem_), capacityPlusOne(capacity + 1), array(newArray(capacityPlusOne)),
           readPos(0), writePos(0)
         {
@@ -855,14 +858,14 @@ class ringbuffer {
          * {@link #clear()} all elements and add all <code>copyFrom</code> elements thereafter.
          * @param copyFrom Mandatory array w/ length {@link #capacity()} to be copied into the internal array.
          */
-        void reset(const T * copyFrom, const Size_type copyFromCount) noexcept {
+        void reset(const Value_type * copyFrom, const Size_type copyFromCount) noexcept {
             std::unique_lock<std::mutex> lockMultiRead(syncMultiRead, std::defer_lock);          // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
             std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite, std::defer_lock);        // otherwise RAII-style relinquish via destructor
             std::lock(lockMultiRead, lockMultiWrite);
             resetImpl(copyFrom, copyFromCount);
         }
 
-        void reset(const std::vector<T> & copyFrom) noexcept {
+        void reset(const std::vector<Value_type> & copyFrom) noexcept {
             std::unique_lock<std::mutex> lockMultiRead(syncMultiRead, std::defer_lock);          // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
             std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite, std::defer_lock);        // otherwise RAII-style relinquish via destructor
             std::lock(lockMultiRead, lockMultiWrite);
@@ -891,7 +894,7 @@ class ringbuffer {
          * Peeks the next element at the read position w/o modifying pointer, nor blocking.
          * @return <code>nullelem</code> if empty, otherwise the element which would be read next.
          */
-        T peek() noexcept {
+        Value_type peek() noexcept {
             bool success;
             return peekImpl(false, 0, success);
         }
@@ -901,7 +904,7 @@ class ringbuffer {
          * @param result storage for the resulting value if successful, otherwise <code>nullelem</code> if empty.
          * @return true if successful, otherwise false.
          */
-        bool peek(T& result) noexcept {
+        bool peek(Value_type& result) noexcept {
             bool success;
             result = peekImpl(false, 0, success);
             return success;
@@ -916,7 +919,7 @@ class ringbuffer {
          * </p>
          * @return <code>nullelem</code> if empty or timeout occurred, otherwise the element which would be read next.
          */
-        T peekBlocking(const int timeoutMS=0) noexcept {
+        Value_type peekBlocking(const int timeoutMS=0) noexcept {
             bool success;
             return peekImpl(true, timeoutMS, success);
         }
@@ -931,7 +934,7 @@ class ringbuffer {
          * @param result storage for the resulting value if successful, otherwise <code>nullelem</code> if empty.
          * @return true if successful, otherwise false.
          */
-        bool peekBlocking(T& result, const int timeoutMS=0) noexcept {
+        bool peekBlocking(Value_type& result, const int timeoutMS=0) noexcept {
             bool success;
             result = peekImpl(true, timeoutMS, success);
             return success;
@@ -948,7 +951,7 @@ class ringbuffer {
          * </p>
          * @return the oldest put element if available, otherwise <code>nullelem</code>.
          */
-        T get() noexcept {
+        Value_type get() noexcept {
             bool success;
             return moveOutImpl(false, 0, success);
         }
@@ -965,7 +968,7 @@ class ringbuffer {
          * @param result storage for the resulting value if successful, otherwise <code>nullelem</code> if empty.
          * @return true if successful, otherwise false.
          */
-        bool get(T& result) noexcept {
+        bool get(Value_type& result) noexcept {
             bool success;
             result = moveOutImpl(false, 0, success);
             return success;
@@ -984,7 +987,7 @@ class ringbuffer {
          * </p>
          * @return the oldest put element or <code>nullelem</code> if timeout occurred.
          */
-        T getBlocking(const int timeoutMS=0) noexcept {
+        Value_type getBlocking(const int timeoutMS=0) noexcept {
             bool success;
             return moveOutImpl(true, timeoutMS, success);
         }
@@ -1003,7 +1006,7 @@ class ringbuffer {
          * @param result storage for the resulting value if successful, otherwise <code>nullelem</code> if empty.
          * @return true if successful, otherwise false.
          */
-        bool getBlocking(T& result, const int timeoutMS=0) noexcept {
+        bool getBlocking(Value_type& result, const int timeoutMS=0) noexcept {
             bool success;
             result = moveOutImpl(true, timeoutMS, success);
             return success;
@@ -1022,7 +1025,7 @@ class ringbuffer {
          * @param count number of consecutive elements to get
          * @return true if successful, otherwise false
          */
-        bool get(T *dest, const Size_type count) noexcept {
+        bool get(Value_type *dest, const Size_type count) noexcept {
             return moveOutImpl(dest, count, false, 0);
         }
 
@@ -1043,7 +1046,7 @@ class ringbuffer {
          * @return true if successful, otherwise false
          * @return true if successful, otherwise false in case timeout occurred or otherwise.
          */
-        bool getBlocking(T *dest, const Size_type count, const int timeoutMS=0) noexcept {
+        bool getBlocking(Value_type *dest, const Size_type count, const int timeoutMS=0) noexcept {
             return moveOutImpl(dest, count, true, timeoutMS);
         }
 
@@ -1083,7 +1086,7 @@ class ringbuffer {
          * </p>
          * @return true if successful, otherwise false
          */
-        bool put(T && e) noexcept {
+        bool put(Value_type && e) noexcept {
             return moveIntoImpl(std::move(e), false, 0);
         }
 
@@ -1096,7 +1099,7 @@ class ringbuffer {
          * </p>
          * @return true if successful, otherwise false in case timeout occurred or otherwise.
          */
-        bool putBlocking(T && e, const int timeoutMS=0) noexcept {
+        bool putBlocking(Value_type && e, const int timeoutMS=0) noexcept {
             return moveIntoImpl(std::move(e), true, timeoutMS);
         }
 
@@ -1110,7 +1113,7 @@ class ringbuffer {
          * </p>
          * @return true if successful, otherwise false
          */
-        bool put(const T & e) noexcept {
+        bool put(const Value_type & e) noexcept {
             return copyIntoImpl(e, false, 0);
         }
 
@@ -1123,7 +1126,7 @@ class ringbuffer {
          * </p>
          * @return true if successful, otherwise false in case timeout occurred or otherwise.
          */
-        bool putBlocking(const T & e, const int timeoutMS=0) noexcept {
+        bool putBlocking(const Value_type & e, const int timeoutMS=0) noexcept {
             return copyIntoImpl(e, true, timeoutMS);
         }
 
@@ -1139,7 +1142,7 @@ class ringbuffer {
          * @param last pointer to last consecutive element to range of value_type [first, last)
          * @return true if successful, otherwise false
          */
-        bool put(const T *first, const T* last) noexcept {
+        bool put(const Value_type *first, const Value_type* last) noexcept {
             return copyIntoImpl(first, last, false, 0);
         }
 
@@ -1155,7 +1158,7 @@ class ringbuffer {
          * @param timeoutMS
          * @return true if successful, otherwise false in case timeout occurred or otherwise.
          */
-        bool putBlocking(const T *first, const T* last, const int timeoutMS=0) noexcept {
+        bool putBlocking(const Value_type *first, const Value_type* last, const int timeoutMS=0) noexcept {
             return copyIntoImpl(first, last, true, timeoutMS);
         }
 
@@ -1180,7 +1183,7 @@ class ringbuffer {
 
             // save current data
             Size_type oldCapacityPlusOne = capacityPlusOne;
-            T * oldArray = array;
+            Value_type * oldArray = array;
             Size_type oldReadPos = readPos;
 
             // new blank resized array

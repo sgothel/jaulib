@@ -61,19 +61,19 @@ class Integer {
 
 typedef Integer TrivialType;
 static const TrivialType TrivialTypeNullElem(-1);
-typedef ringbuffer<TrivialType, jau::nsize_t> TrivialTypeRingbuffer;
+typedef ringbuffer<TrivialType, TrivialType, jau::nsize_t> TrivialTypeRingbuffer;
 
 // Test examples.
 class TestRingbuffer12 {
   private:
 
     TrivialTypeRingbuffer createEmpty(jau::nsize_t initialCapacity) {
-        TrivialTypeRingbuffer rb(TrivialTypeNullElem, initialCapacity);
+        TrivialTypeRingbuffer rb(Integer(-1), initialCapacity);
         REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
         return rb;
     }
     TrivialTypeRingbuffer createFull(const std::vector<TrivialType> & source) {
-        TrivialTypeRingbuffer rb(TrivialTypeNullElem, source);
+        TrivialTypeRingbuffer rb(Integer(-1), source);
         REQUIRE_MSG("full "+rb.toString(), rb.isFull());
         return rb;
     }
