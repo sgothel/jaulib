@@ -678,30 +678,67 @@ class ringbuffer {
     public:
 
         /**
-         * Blocks until at least <code>count</code> free slots become available.
-         * @throws InterruptedException
+         * Blocks until at least <code>count</code> elements have been put
+         * for subsequent get() and getBlocking().
+         *
+         * @param min_count minimum number of put slots
+         * @param timeoutMS
+         * @return the number of put elements, available for get() and getBlocking()
          */
-        void waitForFreeSlots(const Size_type count, const int timeoutMS) noexcept {
-            std::unique_lock<std::mutex> lockMultiWrite(syncMultiRead);  // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
+        Size_type waitForElements(const Size_type min_count, const int timeoutMS) noexcept {
+            std::unique_lock<std::mutex> lockMultiRead(syncMultiRead); // acquire syncMultiRead, _not_ sync'ing w/ putImpl
 
-            Size_type available = getFreeSlots();
-            if( count > available ) {
-                std::unique_lock<std::mutex> lockWrite(syncRead); // SC-DRF w/ getImpl via same lock
-                available = getFreeSlots();
-                while( count > available ) {
+            Size_type available = getSize();
+            if( min_count > available ) {
+                std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ putImpl via same lock
+                available = getSize();
+                while( min_count > available ) {
                     if( 0 == timeoutMS ) {
-                        cvRead.wait(lockWrite);
-                        available = getFreeSlots();
+                        cvWrite.wait(lockWrite);
+                        available = getSize();
                     } else {
                         std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
-                        std::cv_status s = cvRead.wait_until(lockWrite, t0 + std::chrono::milliseconds(timeoutMS));
-                        available = getFreeSlots();
-                        if( std::cv_status::timeout == s && count > available ) {
-                            return;
+                        std::cv_status s = cvWrite.wait_until(lockWrite, t0 + std::chrono::milliseconds(timeoutMS));
+                        available = getSize();
+                        if( std::cv_status::timeout == s && min_count > available ) {
+                            return available;
                         }
                     }
                 }
             }
+            return available;
+        }
+
+        /**
+         * Blocks until at least <code>count</code> free slots become available
+         * for subsequent put() and putBlocking().
+         *
+         * @param min_count minimum number of free slots
+         * @param timeoutMS
+         * @return the number of free slots, available for put() and putBlocking()
+         */
+        Size_type waitForFreeSlots(const Size_type min_count, const int timeoutMS) noexcept {
+            std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite); // acquire syncMultiWrite, _not_ sync'ing w/ getImpl
+
+            Size_type available = getFreeSlots();
+            if( min_count > available ) {
+                std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ getImpl via same lock
+                available = getFreeSlots();
+                while( min_count > available ) {
+                    if( 0 == timeoutMS ) {
+                        cvRead.wait(lockRead);
+                        available = getFreeSlots();
+                    } else {
+                        std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
+                        std::cv_status s = cvRead.wait_until(lockRead, t0 + std::chrono::milliseconds(timeoutMS));
+                        available = getFreeSlots();
+                        if( std::cv_status::timeout == s && min_count > available ) {
+                            return available;
+                        }
+                    }
+                }
+            }
+            return available;
         }
 
         /** Returns a short string representation incl. size/capacity and internal r/w index (impl. dependent). */
