@@ -113,7 +113,7 @@ class TestRingbuffer01 {
         REQUIRE_MSG("not empty "+rb.toString(), !rb.isEmpty());
 
         std::vector<TrivialType> array(len);
-        REQUIRE_MSG("get-range of "+std::to_string(array.size())+" elem in "+rb.toString(), rb.get( &(*array.begin()), len) );
+        REQUIRE_MSG("get-range of "+std::to_string(array.size())+" elem in "+rb.toString(), len==rb.get( &(*array.begin()), len, len) );
 
         REQUIRE_MSG("size "+rb.toString(), preSize-len == rb.getSize());
         REQUIRE_MSG("free slots after reading "+std::to_string(len)+": "+rb.toString(), rb.getFreeSlots()>= len);

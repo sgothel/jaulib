@@ -349,23 +349,27 @@ class ringbuffer {
             return r;
         }
 
-        bool moveOutImpl(Value_type *dest, const Size_type count, const bool blocking, const int timeoutMS) noexcept {
+        Size_type moveOutImpl(Value_type *dest, const Size_type dest_len, const Size_type min_count_, const bool blocking, const int timeoutMS) noexcept {
             std::unique_lock<std::mutex> lockMultiRead(syncMultiRead); // acquire syncMultiRead, _not_ sync'ing w/ putImpl
 
+            const Size_type min_count = std::min(dest_len, min_count_);
             Value_type *iter_out = dest;
 
-            if( count >= capacityPlusOne ) {
-                return false;
+            if( min_count >= capacityPlusOne ) {
+                return 0;
+            }
+            if( 0 == min_count ) {
+                return 0;
             }
 
             const Size_type oldReadPos = readPos; // SC-DRF acquire atomic readPos, sync'ing with putImpl
             Size_type localReadPos = oldReadPos;
             Size_type available = getSize();
-            if( count > available ) {
+            if( min_count > available ) {
                 if( blocking ) {
                     std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ putImpl via same lock
                     available = getSize();
-                    while( count > available ) {
+                    while( min_count > available ) {
                         if( 0 == timeoutMS ) {
                             cvWrite.wait(lockWrite);
                             available = getSize();
@@ -373,15 +377,17 @@ class ringbuffer {
                             std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
                             std::cv_status s = cvWrite.wait_until(lockWrite, t0 + std::chrono::milliseconds(timeoutMS));
                             available = getSize();
-                            if( std::cv_status::timeout == s && count > available ) {
-                                return false;
+                            if( std::cv_status::timeout == s && min_count > available ) {
+                                return 0;
                             }
                         }
                     }
                 } else {
-                    return false;
+                    return 0;
                 }
             }
+            const Size_type count = std::min(dest_len, available);
+
             /**
              * Empty [RW][][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ] ; W==R
              * Avail [ ][ ][R][.][.][.][.][W][ ][ ][ ][ ][ ][ ][ ] ; W > R
@@ -444,7 +450,7 @@ class ringbuffer {
                 readPos = localReadPos; // SC-DRF release atomic readPos
                 cvRead.notify_all(); // notify waiting putter
             }
-            return true;
+            return count;
         }
 
         bool dropImpl (const Size_type count, const bool blocking, const int timeoutMS) noexcept {
@@ -1057,7 +1063,7 @@ class ringbuffer {
         }
 
         /**
-         * Dequeues the oldest enqueued count elements by copying them into the given consecutive 'dest' storage.
+         * Dequeues the oldest enqueued `min(dest_len, getSize()>=min_count)` elements by copying them into the given consecutive 'dest' storage.
          * <p>
          * The returned ring buffer slot will be set to <code>nullelem</code> to release the reference
          * and move ownership to the caller.
@@ -1066,15 +1072,16 @@ class ringbuffer {
          * Method is non blocking and returns immediately;.
          * </p>
          * @param dest pointer to first storage element of `count` consecutive elements.
-         * @param count number of consecutive elements to get
-         * @return true if successful, otherwise false
+         * @param dest_len number of consecutive elements in dest and maximum number of elements to get
+         * @param min_count minimum number of consecutive elements to get
+         * @return actual number of elements received
          */
-        bool get(Value_type *dest, const Size_type count) noexcept {
-            return moveOutImpl(dest, count, false, 0);
+        Size_type get(Value_type *dest, const Size_type dest_len, const Size_type min_count) noexcept {
+            return moveOutImpl(dest, dest_len, min_count, false, 0);
         }
 
         /**
-         * Dequeues the oldest enqueued count elements by copying them into the given consecutive 'dest' storage.
+         * Dequeues the oldest enqueued `min(dest_len, getSize()>=min_count)` elements by copying them into the given consecutive 'dest' storage.
          * <p>
          * The returned ring buffer slot will be set to <code>nullelem</code> to release the reference
          * and move ownership to the caller.
@@ -1085,13 +1092,13 @@ class ringbuffer {
          * Otherwise this methods blocks for the given milliseconds.
          * </p>
          * @param dest pointer to first storage element of `count` consecutive elements.
-         * @param count number of consecutive elements to get
+         * @param dest_len number of consecutive elements in dest and maximum number of elements to get
+         * @param min_count minimum number of consecutive elements to get
          * @param timeoutMS
-         * @return true if successful, otherwise false
-         * @return true if successful, otherwise false in case timeout occurred or otherwise.
+         * @return actual number of elements received
          */
-        bool getBlocking(Value_type *dest, const Size_type count, const int timeoutMS=0) noexcept {
-            return moveOutImpl(dest, count, true, timeoutMS);
+        Size_type getBlocking(Value_type *dest, const Size_type dest_len, const Size_type min_count, const int timeoutMS=0) noexcept {
+            return moveOutImpl(dest, dest_len, min_count, true, timeoutMS);
         }
 
         /**

@@ -89,7 +89,7 @@ class TestRingbuffer11 {
         // INFO_STR, INFO: Not thread safe yet
         // INFO_STR(msg+": Created / " + rb->toString());
         std::vector<TrivialType> array(len);
-        REQUIRE_MSG("get-range of "+std::to_string(array.size())+" elem in "+rb->toString(), rb->getBlocking( &(*array.begin()), len) );
+        REQUIRE_MSG("get-range of "+std::to_string(array.size())+" elem in "+rb->toString(), len==rb->getBlocking( &(*array.begin()), len, len) );
 
         for(jau::nsize_t i=0; i<len; i++) {
             TrivialType svI = array[i];
