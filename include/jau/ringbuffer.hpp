@@ -453,6 +453,9 @@ class ringbuffer {
             if( count >= capacityPlusOne ) {
                 return false;
             }
+            if( 0 == count ) {
+                return true;
+            }
 
             const Size_type oldReadPos = readPos; // SC-DRF acquire atomic readPos, sync'ing with putImpl
             Size_type localReadPos = oldReadPos;
@@ -603,6 +606,10 @@ class ringbuffer {
             if( total_count >= capacityPlusOne ) {
                 return false;
             }
+            if( 0 == total_count ) {
+                return true;
+            }
+
             Size_type localWritePos = writePos; // SC-DRF acquire atomic writePos, sync'ing with getImpl
             Size_type available = getFreeSlots();
             if( total_count > available ) {
