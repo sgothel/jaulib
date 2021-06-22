@@ -122,6 +122,15 @@ Changes
 
 * First stable release (TODO)
 
+**0.4.1**
+
+* ringbuffer: Added block access, fast-path for integral types, `bool get*(Value_type& v)`, ..
+* ringbuffer: Special `NullValue_type` template type and value (ctor) handling 
+* ringbuffer: Add 'Size_type waitForElements(..)' and fix 'Size_type waitForFreeSlots(..)'
+* ringbuffer: `get()` and `getBlocking()` takes size of dest buffer and minimum count to wait for, return received elements.
+* ringbuffer: syncWrite and syncRead member semantic cleanup, 
+* Added `uint64_t getWallClockSeconds()`
+
 **0.3.0**
 
 * Consolidate conversion to hex and decimal string: `to_hexstring(Type)` and `to_decstring(Type)`, dropped `<type>[Hex|Dec]String(..)`
