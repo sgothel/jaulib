@@ -58,7 +58,6 @@ class Integer {
 std::shared_ptr<Integer> NullInteger = nullptr;
 
 typedef std::shared_ptr<Integer> SharedType;
-constexpr const std::nullptr_t SharedTypeNullElem = nullptr ;
 typedef ringbuffer<SharedType, std::nullptr_t, jau::nsize_t> SharedTypeRingbuffer;
 
 // Test examples.
