@@ -211,7 +211,7 @@ namespace jau {
         jlong instance = env->GetLongField(obj, getInstanceField(env, obj));
         T *t = reinterpret_cast<T *>(instance);
         if (t == nullptr) {
-            throw std::runtime_error("Trying to acquire null NativeObject");
+            throw jau::RuntimeException("Trying to acquire null NativeObject", E_FILE_LINE);
         }
         t->checkValid();
         return t;
@@ -228,7 +228,7 @@ namespace jau {
     void setJavaUplinkObject(JNIEnv *env, jobject obj, T *t)
     {
         if (t == nullptr) {
-            throw std::runtime_error("Trying to create null NativeObject");
+            throw jau::RuntimeException("Trying to create null NativeObject", E_FILE_LINE);
         }
         jlong instance = reinterpret_cast<jlong>(t);
         env->SetLongField(obj, getInstanceField(env, obj), instance);
@@ -243,7 +243,7 @@ namespace jau {
     {
         T *t = reinterpret_cast<T *>(instance);
         if (t == nullptr) {
-            throw std::runtime_error("Trying to cast null object");
+            throw jau::RuntimeException("Trying to cast null object", E_FILE_LINE);
         }
         return t;
     }
@@ -270,7 +270,7 @@ namespace jau {
         jlong instance = env->GetLongField(obj, getInstanceField(env, obj));
         T *t = reinterpret_cast<T *>(instance);
         if (t == nullptr) {
-            throw std::runtime_error("Trying to acquire null object");
+            throw jau::RuntimeException("Trying to acquire null object", E_FILE_LINE);
         }
         return t;
     }
@@ -286,7 +286,7 @@ namespace jau {
     void setInstance(JNIEnv *env, jobject obj, T *t)
     {
         if (t == nullptr) {
-            throw std::runtime_error("Trying to create null object");
+            throw jau::RuntimeException("Trying to create null object", E_FILE_LINE);
         }
         jlong instance = reinterpret_cast<jlong>(t);
         env->SetLongField(obj, getInstanceField(env, obj), instance);
@@ -308,7 +308,7 @@ namespace jau {
         jobject result = env->NewObject(generic_class, generic_ctor, (jlong)copy_generic);
         if (!result)
         {
-            throw std::runtime_error("cannot create instance of class");
+            throw jau::RuntimeException("Cannot create instance of class", E_FILE_LINE);
         }
 
         return result;
@@ -328,7 +328,7 @@ namespace jau {
         jobject object = ctor(env, clazz, clazz_ctor, elem);
         if (!object)
         {
-            throw std::runtime_error("cannot create instance of class\n");
+            throw jau::RuntimeException("Cannot create instance of class", E_FILE_LINE);
         }
         java_exception_check_and_throw(env, E_FILE_LINE);
 
@@ -410,7 +410,7 @@ namespace jau {
             jobject object = ctor(env, clazz, clazz_ctor, elem);
             if (!object)
             {
-                throw std::runtime_error("cannot create instance of class\n");
+                throw jau::RuntimeException("Cannot create instance of class", E_FILE_LINE);
             }
             env->CallBooleanMethod(result, arraylist_add, object);
             java_exception_check_and_throw(env, E_FILE_LINE);
@@ -441,7 +441,7 @@ namespace jau {
             jobject object = ctor(env, clazz, clazz_ctor, elem);
             if (!object)
             {
-                throw std::runtime_error("cannot create instance of class\n");
+                throw jau::RuntimeException("Cannot create instance of class", E_FILE_LINE);
             }
             env->CallBooleanMethod(result, arraylist_add, object);
             java_exception_check_and_throw(env, E_FILE_LINE);

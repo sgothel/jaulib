@@ -294,11 +294,11 @@ std::string jau::from_jstring_to_string(JNIEnv *env, jstring str)
 {
     jboolean is_copy = JNI_TRUE;
     if (!str) {
-        throw std::invalid_argument("String should not be null");
+        throw jau::IllegalArgumentException("String argument should not be null", E_FILE_LINE);
     }
     const char *str_chars = (char *)env->GetStringUTFChars(str, &is_copy);
     if (!str_chars) {
-            throw std::bad_alloc();
+            throw jau::OutOfMemoryError("GetStringUTFChars returned null", E_FILE_LINE);
     }
     const std::string string_to_write = std::string(str_chars);
 
