@@ -122,6 +122,10 @@ Changes
 
 * First stable release (TODO)
 
+**0.4.2**
+
+* Moved `EUI48`, `EUI48Sub` (C++/Java) and `uuid_t`, `Octets` (C++) from `Direct-BT` for general use.
+
 **0.4.1**
 
 * ringbuffer: Added block access, fast-path for integral types, `bool get*(Value_type& v)`, ..

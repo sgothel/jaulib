@@ -20,6 +20,8 @@ set( SOURCES_IDIOMATIC_EXAMPLES
     test_type_traits_queries01.cpp
     test_to_string.cpp
     test_basictypeconv.cpp
+    test_eui48.cpp
+    test_uuid.cpp
     test_intdecstring01.cpp
     test_functiondef01.cpp
     test_lfringbuffer01.cpp
