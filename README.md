@@ -122,7 +122,7 @@ Changes
 
 * First stable release (TODO)
 
-**0.4.2**
+**0.4.3**
 
 * Moved `EUI48`, `EUI48Sub` (C++/Java) and `uuid_t`, `Octets` (C++) from `Direct-BT` for general use.
 
