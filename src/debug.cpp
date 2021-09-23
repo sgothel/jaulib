@@ -33,13 +33,13 @@
 
 using namespace jau;
 
-std::string jau::get_backtrace(const bool skip_anon_frames, const jau::snsize_t max_frames, const jau::nsize_t skip_frames) noexcept {
+std::string jau::get_backtrace(const bool skip_anon_frames, const jau::snsize_t max_frames, const jau::snsize_t skip_frames) noexcept {
     // symbol:
     //  1: _ZN9direct_bt10DBTAdapter14startDiscoveryEbNS_19HCILEOwnAddressTypeEtt + 0x58d @ ip 0x7faa959d6daf, sp 0x7ffe38f301e0
     // de-mangled:
     //  1: direct_bt::DBTAdapter::startDiscovery(bool, direct_bt::HCILEOwnAddressType, unsigned short, unsigned short) + 0x58d @ ip 0x7f687b459071, sp 0x7fff2bf795d0
     std::string out;
-    jau::nsize_t frame=0;
+    jau::snsize_t frame=0;
     int res;
     char cstr[256];
     unw_context_t uc;
@@ -49,13 +49,13 @@ std::string jau::get_backtrace(const bool skip_anon_frames, const jau::snsize_t 
     unw_getcontext(&uc);
     unw_init_local(&cursor, &uc);
     bool last_frame_anon = false;
-    while( unw_step(&cursor) > 0 && ( max_frames - skip_frames ) > frame ) {
+    while( unw_step(&cursor) > 0 && ( 0 > max_frames || ( max_frames + skip_frames ) > ( frame + 1 ) ) ) {
         frame++;
         if( skip_frames > frame ) {
             continue;
         }
         bool append_line;
-        snprintf(cstr, sizeof(cstr), "%3zu: ", (size_t)frame);
+        snprintf(cstr, sizeof(cstr), "%3zd: ", (ssize_t)frame);
         std::string line(cstr);
 
         unw_get_reg(&cursor, UNW_REG_IP, &ip); // instruction pointer (pc)
@@ -88,7 +88,7 @@ std::string jau::get_backtrace(const bool skip_anon_frames, const jau::snsize_t 
     return out;
 }
 
-void jau::print_backtrace(const bool skip_anon_frames, const jau::snsize_t max_frames, const jau::nsize_t skip_frames) noexcept {
+void jau::print_backtrace(const bool skip_anon_frames, const jau::snsize_t max_frames, const jau::snsize_t skip_frames) noexcept {
     fprintf(stderr, "%s", get_backtrace(skip_anon_frames, max_frames, skip_frames).c_str());
     fflush(stderr);
 }
@@ -121,7 +121,7 @@ void jau::ABORT_impl(const char *func, const char *file, const int line, const c
     va_end (args);
     fprintf(stderr, "; last errno %d %s\n", errno, strerror(errno));
     fflush(stderr);
-    jau::print_backtrace(true, 2);
+    jau::print_backtrace(true /* skip_anon_frames */, 3 /* max_frames */, 3 /* skip_frames: this() + print_b*() + get_b*() */);
     abort();
 }
 
@@ -130,7 +130,7 @@ void jau::ERR_PRINTv(const char *func, const char *file, const int line, const c
     vfprintf(stderr, format, args);
     fprintf(stderr, "; last errno %d %s\n", errno, strerror(errno));
     fflush(stderr);
-    jau::print_backtrace(true, 2);
+    jau::print_backtrace(true /* skip_anon_frames */, 3 /* max_frames */, 3 /* skip_frames: this() + print_b*() + get_b*() */);
 }
 
 void jau::ERR_PRINT_impl(const char *prefix, const bool backtrace, const char *func, const char *file, const int line, const char * format, ...) noexcept {
@@ -142,7 +142,7 @@ void jau::ERR_PRINT_impl(const char *prefix, const bool backtrace, const char *f
     fprintf(stderr, "; last errno %d %s\n", errno, strerror(errno));
     fflush(stderr);
     if( backtrace ) {
-        jau::print_backtrace(true, 2);
+        jau::print_backtrace(true /* skip_anon_frames */, 3 /* max_frames */, 3 /* skip_frames: this() + print_b*() + get_b*() */);
     }
 }
 
