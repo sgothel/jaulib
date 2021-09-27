@@ -121,7 +121,7 @@ void jau::ABORT_impl(const char *func, const char *file, const int line, const c
     va_end (args);
     fprintf(stderr, "; last errno %d %s\n", errno, strerror(errno));
     fflush(stderr);
-    jau::print_backtrace(true /* skip_anon_frames */, 3 /* max_frames */, 3 /* skip_frames: this() + print_b*() + get_b*() */);
+    jau::print_backtrace(true /* skip_anon_frames */, -1 /* max_frames -> all */, 3 /* skip_frames: this() + print_b*() + get_b*() */);
     abort();
 }
 
@@ -130,7 +130,7 @@ void jau::ERR_PRINTv(const char *func, const char *file, const int line, const c
     vfprintf(stderr, format, args);
     fprintf(stderr, "; last errno %d %s\n", errno, strerror(errno));
     fflush(stderr);
-    jau::print_backtrace(true /* skip_anon_frames */, 3 /* max_frames */, 3 /* skip_frames: this() + print_b*() + get_b*() */);
+    jau::print_backtrace(true /* skip_anon_frames */, 4 /* max_frames */, 3 /* skip_frames: this() + print_b*() + get_b*() */);
 }
 
 void jau::ERR_PRINT_impl(const char *prefix, const bool backtrace, const char *func, const char *file, const int line, const char * format, ...) noexcept {
@@ -142,7 +142,7 @@ void jau::ERR_PRINT_impl(const char *prefix, const bool backtrace, const char *f
     fprintf(stderr, "; last errno %d %s\n", errno, strerror(errno));
     fflush(stderr);
     if( backtrace ) {
-        jau::print_backtrace(true /* skip_anon_frames */, 3 /* max_frames */, 3 /* skip_frames: this() + print_b*() + get_b*() */);
+        jau::print_backtrace(true /* skip_anon_frames */, 4 /* max_frames */, 3 /* skip_frames: this() + print_b*() + get_b*() */);
     }
 }
 
