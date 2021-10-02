@@ -35,6 +35,15 @@ static uint8_t bt_base_uuid_be[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0
                                      0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB };
 uuid128_t jau::BT_BASE_UUID( bt_base_uuid_be, 0, false );
 
+std::string uuid_t::getTypeSizeString(const TypeSize v) noexcept {
+    switch( static_cast<TypeSize>(v) ) {
+        case TypeSize::UUID16_SZ: return "uuid16";
+        case TypeSize::UUID32_SZ: return "uuid32";
+        case TypeSize::UUID128_SZ: return "uuid128";
+        default: return "uuid_t unsupported size "+std::to_string(number(v));
+    }
+}
+
 uuid_t::TypeSize uuid_t::toTypeSize(const jau::nsize_t size) {
     switch( static_cast<TypeSize>(size) ) {
         case TypeSize::UUID16_SZ: return TypeSize::UUID16_SZ;

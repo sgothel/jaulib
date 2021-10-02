@@ -58,6 +58,7 @@ public:
     static constexpr jau::nsize_t number(const TypeSize rhs) noexcept {
         return static_cast<jau::nsize_t>(rhs);
     }
+    static std::string getTypeSizeString(const TypeSize v) noexcept;
 
 private:
     TypeSize type;
@@ -90,6 +91,7 @@ public:
 
     TypeSize getTypeSize() const noexcept { return type; }
     jau::nsize_t getTypeSizeInt() const noexcept { return uuid_t::number(type); }
+    std::string getTypeSizeString() const noexcept { return getTypeSizeString(type); }
 
     uuid128_t toUUID128(uuid128_t const & base_uuid=BT_BASE_UUID, jau::nsize_t const uuid32_le_octet_index=12) const noexcept;
 
@@ -99,6 +101,10 @@ public:
     virtual std::string toUUID128String(uuid128_t const & base_uuid=BT_BASE_UUID, jau::nsize_t const le_octet_index=12) const noexcept = 0;
     virtual jau::nsize_t put(uint8_t * const buffer, jau::nsize_t const byte_offset, bool const littleEndian) const noexcept = 0;
 };
+
+inline std::string to_string(const uuid_t::TypeSize v) noexcept {
+    return uuid_t::getTypeSizeString(v);
+}
 
 class uuid16_t : public uuid_t {
 public:
