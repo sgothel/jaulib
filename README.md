@@ -122,6 +122,12 @@ Changes
 
 * First stable release (TODO)
 
+**0.4.7**
+
+* Add uuid_t::equivalent(..) method fo relaxed comparison on different uuid_t types
+* Added uuid_t::getTypeSizeString()
+* Fix jau::get_backtrace(..) and adjusted ERR_PRINT and ABORT
+
 **0.4.3**
 
 * Moved `EUI48`, `EUI48Sub` (C++/Java) and `uuid_t`, `Octets` (C++) from `Direct-BT` for general use.
