@@ -80,14 +80,42 @@ public:
 
     std::unique_ptr<uuid_t> clone() const noexcept;
 
-    virtual bool operator==(uuid_t const &o) const noexcept {
-        if( this == &o ) {
-            return true;
-        }
-        return type == o.type;
-    }
+    /**
+     * Strict equality operator.
+     *
+     * Only returns true if type and value are equal.
+     *
+     * @param o other comparison argument
+     * @return true if equal, otherwise false.
+     */
+    virtual bool operator==(uuid_t const &o) const noexcept  = 0;
+
+    /**
+     * Strict not-equal operator.
+     *
+     * Returns true if type and/or value are not equal.
+     *
+     * @param o other comparison argument
+     * @return true if equal, otherwise false.
+     */
     bool operator!=(uuid_t const &o) const noexcept
     { return !(*this == o); }
+
+    /**
+     * Relaxed equality operator.
+     *
+     * Returns true if both uuid values are equivalent.
+     *
+     * If their uuid_t type differs, i.e. their TypeSize,
+     * both values will be transformed to uuid128_t before comparison.
+     *
+     * Potential uuid128_t conversion is performed using toUUDI128(),
+     * placing the sub-uuid at index 12 on BT_BASE_UUID (default).
+     *
+     * @param o other comparison argument
+     * @return true if equal, otherwise false.
+     */
+    bool equivalent(uuid_t const &o) const noexcept;
 
     TypeSize getTypeSize() const noexcept { return type; }
     jau::nsize_t getTypeSizeInt() const noexcept { return uuid_t::number(type); }
@@ -97,8 +125,17 @@ public:
 
     /** returns the pointer to the uuid data of size getTypeSize() */
     virtual const uint8_t * data() const noexcept = 0;
+
+    /**
+     * Returns the string representation in BE network order, i.e. `00000000-0000-1000-8000-00805F9B34FB`.
+     */
     virtual std::string toString() const noexcept = 0;
+
+    /**
+     * Returns the uuid128_t string representation in BE network order, i.e. `00000000-0000-1000-8000-00805F9B34FB`.
+     */
     virtual std::string toUUID128String(uuid128_t const & base_uuid=BT_BASE_UUID, jau::nsize_t const le_octet_index=12) const noexcept = 0;
+
     virtual jau::nsize_t put(uint8_t * const buffer, jau::nsize_t const byte_offset, bool const littleEndian) const noexcept = 0;
 };
 
@@ -123,6 +160,14 @@ public:
     uuid16_t& operator=(const uuid16_t &o) noexcept = default;
     uuid16_t& operator=(uuid16_t &&o) noexcept = default;
 
+    /**
+     * Strict equality operator.
+     *
+     * Only returns true if type and value are equal.
+     *
+     * @param o other comparison argument
+     * @return true if equal, otherwise false.
+     */
     bool operator==(uuid_t const &o) const noexcept override {
         if( this == &o ) {
             return true;
@@ -157,6 +202,14 @@ public:
     uuid32_t& operator=(const uuid32_t &o) noexcept = default;
     uuid32_t& operator=(uuid32_t &&o) noexcept = default;
 
+    /**
+     * Strict equality operator.
+     *
+     * Only returns true if type and value are equal.
+     *
+     * @param o other comparison argument
+     * @return true if equal, otherwise false.
+     */
     bool operator==(uuid_t const &o) const noexcept override {
         if( this == &o ) {
             return true;
@@ -197,6 +250,14 @@ public:
     uuid128_t& operator=(const uuid128_t &o) noexcept = default;
     uuid128_t& operator=(uuid128_t &&o) noexcept = default;
 
+    /**
+     * Strict equality operator.
+     *
+     * Only returns true if type and value are equal.
+     *
+     * @param o other comparison argument
+     * @return true if equal, otherwise false.
+     */
     bool operator==(uuid_t const &o) const noexcept override {
         if( this == &o ) {
             return true;

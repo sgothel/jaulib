@@ -63,11 +63,29 @@ TEST_CASE( "UUID Test 01", "[datatype][uuid]" ) {
 
 
     {
+        const uuid128_t v01("00001234-5678-100A-800B-00805F9B34FB");
+        REQUIRE(v01.getTypeSizeInt() == uuid_t::number( uuid_t::TypeSize::UUID128_SZ) );
+        REQUIRE(v01.getTypeSizeInt() == sizeof(v01.value));
+        REQUIRE("00001234-5678-100a-800b-00805f9b34fb" == v01.toString());
+        REQUIRE(uuid128_t("00001234-5678-100a-800b-00805f9b34fb") == v01);
+        REQUIRE(uuid128_t("00001234-5678-100a-800b-00805f9b34fc") != v01);
+    }
+    {
         const uuid16_t v01("1234");
         REQUIRE(v01.getTypeSizeInt() == uuid_t::number( uuid_t::TypeSize::UUID16_SZ ));
         REQUIRE(v01.getTypeSizeInt() == sizeof(v01.value));
         REQUIRE(0x1234 == v01.value);
         REQUIRE("1234" == v01.toString());
+
+        const uuid16_t v01_copy = v01;
+        REQUIRE(v01_copy == v01);
+        REQUIRE(uuid16_t("1235") != v01);
+
+        const uuid128_t v01_128 = v01.toUUID128();
+        const uuid128_t v02("00001234-0000-1000-8000-00805F9B34FB");
+        REQUIRE(v01_128 == v02);
+        REQUIRE(v01 != v02);
+        REQUIRE(v01.equivalent(v02));
     }
     {
         const uuid32_t v01("12345678");
@@ -75,12 +93,17 @@ TEST_CASE( "UUID Test 01", "[datatype][uuid]" ) {
         REQUIRE(v01.getTypeSizeInt() == sizeof(v01.value));
         REQUIRE(0x12345678 == v01.value);
         REQUIRE("12345678" == v01.toString());
-    }
-    {
-        const uuid128_t v01("00001234-5678-100A-800B-00805F9B34FB");
-        REQUIRE(v01.getTypeSizeInt() == uuid_t::number( uuid_t::TypeSize::UUID128_SZ) );
-        REQUIRE(v01.getTypeSizeInt() == sizeof(v01.value));
-        REQUIRE("00001234-5678-100a-800b-00805f9b34fb" == v01.toString());
+
+        const uuid32_t v01_copy = v01;
+        REQUIRE(v01_copy == v01);
+        REQUIRE(uuid32_t("12345679") != v01);
+
+        const uuid128_t v01_128 = v01.toUUID128();
+        const uuid128_t v02("12345678-0000-1000-8000-00805F9B34FB");
+        REQUIRE(v01_128 == v02);
+
+        REQUIRE(v01 != v02);
+        REQUIRE(v01.equivalent(v02));
     }
 
 

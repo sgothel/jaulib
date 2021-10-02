@@ -91,6 +91,16 @@ std::unique_ptr<uuid_t> uuid_t::clone() const noexcept {
     abort(); // never reached
 }
 
+bool uuid_t::equivalent(uuid_t const &o) const noexcept {
+    if( this == &o ) {
+        return true;
+    }
+    if( getTypeSize() == o.getTypeSize() ) {
+        return *this == o;
+    }
+    return toUUID128() == o.toUUID128();
+}
+
 uuid128_t uuid_t::toUUID128(uuid128_t const & base_uuid, jau::nsize_t const uuid32_le_octet_index) const noexcept {
     switch(type) {
         case TypeSize::UUID16_SZ:  return uuid128_t( *( static_cast<const uuid16_t*>(this)  ), base_uuid, uuid32_le_octet_index);
