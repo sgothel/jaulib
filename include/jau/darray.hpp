@@ -127,6 +127,10 @@ namespace jau {
             typedef bool                                        darray_tag;
 
         private:
+            typedef std::remove_const_t<Value_type>             value_type_mutable;
+            /** Required to create and move immutable elements, aka const */
+            typedef value_type_mutable*                         pointer_mutable;
+
             constexpr static const size_type DIFF_MAX = std::numeric_limits<difference_type>::max();
             constexpr static const size_type MIN_SIZE_AT_GROW = 10;
 
@@ -181,7 +185,7 @@ namespace jau {
                 }
                 value_type * m = alloc_inst.reallocate(begin_, storage_end_-begin_, new_capacity_);
                 if( nullptr == m ) {
-                    free(begin_); // has not been touched by realloc
+                    free(const_cast<pointer_mutable>(begin_)); // has not been touched by realloc
                     throw jau::OutOfMemoryError("realloc "+std::to_string(new_capacity_)+" elements * "+
                             std::to_string(sizeof(value_type))+" bytes/element = "+
                             std::to_string(new_capacity_ * sizeof(value_type))+" bytes -> nullptr", E_FILE_LINE);
@@ -242,7 +246,7 @@ namespace jau {
             constexpr void ctor_copy_range(pointer dest, iterator first, const_iterator last) {
                 DARRAY_PRINTF("ctor_copy_range [%zd .. %zd] -> ??, dist %zd\n", (first-begin_), (last-begin_)-1, (last-first));
                 for(; first < last; ++dest, ++first) {
-                    new (dest) value_type( *first ); // placement new
+                    new (const_cast<pointer_mutable>(dest)) value_type( *first ); // placement new
                 }
             }
             constexpr pointer clone_range(iterator first, const_iterator last) {
@@ -263,7 +267,7 @@ namespace jau {
                     throw jau::IllegalArgumentException("first "+to_hexstring(first)+" > last "+to_hexstring(last), E_FILE_LINE);
                 }
                 for(; first < last; ++dest, ++first) {
-                    new (dest) value_type( *first ); // placement new
+                    new (const_cast<pointer_mutable>(dest)) value_type( *first ); // placement new
                 }
             }
             constexpr pointer clone_range_check(const size_type dest_capacity, iterator first, const_iterator last) {
@@ -283,7 +287,7 @@ namespace jau {
                                                                  jau::to_string( last ), E_FILE_LINE);
                 }
                 for(; first != last; ++dest, ++first) {
-                    new (dest) value_type( *first ); // placement new
+                    new (const_cast<pointer_mutable>(dest)) value_type( *first ); // placement new
                 }
             }
             template< class InputIt >
@@ -304,7 +308,7 @@ namespace jau {
                         iterator dest = new_storage;
                         iterator first = begin_;
                         for(; first < end_; ++dest, ++first) {
-                            new (dest) value_type( std::move( *first ) ); // placement new
+                            new (const_cast<pointer_mutable>(dest)) value_type( std::move( *first ) ); // placement new
                             dtor_one(first); // manual destruction, even after std::move (object still exists)
                         }
                     }
@@ -315,8 +319,8 @@ namespace jau {
                     set_iterator(new_storage, size(), new_capacity);
                 } else {
                     pointer new_storage = allocStore(new_capacity);
-                    memcpy(reinterpret_cast<void*>(new_storage),
-                           reinterpret_cast<void*>(begin_), (uint8_t*)end_-(uint8_t*)begin_); // we can simply copy the memory over, also no overlap
+                    memcpy(reinterpret_cast<void*>(const_cast<pointer_mutable>(new_storage)),
+                           reinterpret_cast<const void*>(begin_), (uint8_t*)end_-(uint8_t*)begin_); // we can simply copy the memory over, also no overlap
 
                     freeStore();
                     set_iterator(new_storage, size(), new_capacity);
@@ -351,7 +355,7 @@ namespace jau {
                         const_iterator last = first + count;
                         DARRAY_PRINTF("move_elements.def.left [%zd .. %zd] -> %zd, dist %zd\n", (first-begin_), (last-begin_)-1, (dest-begin_), (first-dest));
                         for(; first < last; ++dest, ++first ) {
-                            new (dest) value_type( std::move( *first ) ); // placement new
+                            new (const_cast<pointer_mutable>(dest)) value_type( std::move( *first ) ); // placement new
                             dtor_one( const_cast<value_type*>( first ) ); // manual destruction, even after std::move (object still exists)
                         }
                     } else {
@@ -360,7 +364,7 @@ namespace jau {
                         DARRAY_PRINTF("move_elements.def.right [%zd .. %zd] -> %zd, dist %zd\n", (first-begin_), (last-begin_)-1, (dest-begin_), (dest-first));
                         dest += count - 1;
                         for(--last; first <= last; --dest, --last ) {
-                            new (dest) value_type( std::move( *last ) ); // placement new
+                            new (const_cast<pointer_mutable>(dest)) value_type( std::move( *last ) ); // placement new
                             dtor_one( last ); // manual destruction, even after std::move (object still exists)
                         }
                     }
@@ -880,7 +884,7 @@ namespace jau {
                     if( 0 < right_count ) {
                         move_elements(pos_new+1, pos_new, right_count); // move elems one right
                     }
-                    new (pos_new) value_type( x ); // placement new
+                    new (const_cast<pointer_mutable>(pos_new)) value_type( x ); // placement new
                     ++end_;
 
                     return begin_ <= pos_new && pos_new <= end_ ? pos_new : end_;
@@ -912,7 +916,7 @@ namespace jau {
                     if( 0 < right_count ) {
                         move_elements(pos_new+1, pos_new, right_count); // move elems one right
                     }
-                    new (pos_new) value_type( std::move( x ) ); // placement new
+                    new (const_cast<pointer_mutable>(pos_new)) value_type( std::move( x ) ); // placement new
                     ++end_;
 
                     return begin_ <= pos_new && pos_new <= end_ ? pos_new : end_;
@@ -945,7 +949,7 @@ namespace jau {
                     if( 0 < right_count ) {
                         move_elements(pos_new+1, pos_new, right_count); // move elems one right
                     }
-                    new (pos_new) value_type( std::forward<Args>(args)... ); // placement new, construct in-place
+                    new (const_cast<pointer_mutable>(pos_new)) value_type( std::forward<Args>(args)... ); // placement new, construct in-place
                     ++end_;
 
                     return begin_ <= pos_new && pos_new <= end_ ? pos_new : end_;
@@ -992,7 +996,7 @@ namespace jau {
                 if( end_ == storage_end_ ) {
                     grow_storage_move();
                 }
-                new (end_) value_type( x ); // placement new
+                new (const_cast<pointer_mutable>(end_)) value_type( x ); // placement new
                 ++end_;
             }
 
@@ -1004,7 +1008,7 @@ namespace jau {
                 if( end_ == storage_end_ ) {
                     grow_storage_move();
                 }
-                new (end_) value_type( std::move(x) ); // placement new, just one element - no optimization
+                new (const_cast<pointer_mutable>(end_)) value_type( std::move(x) ); // placement new, just one element - no optimization
                 ++end_;
             }
 
@@ -1023,7 +1027,7 @@ namespace jau {
                 if( end_ == storage_end_ ) {
                     grow_storage_move();
                 }
-                new (end_) value_type( std::forward<Args>(args)... ); // placement new, construct in-place
+                new (const_cast<pointer_mutable>(end_)) value_type( std::forward<Args>(args)... ); // placement new, construct in-place
                 reference res = *end_;
                 ++end_;
                 return res;

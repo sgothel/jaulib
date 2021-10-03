@@ -67,6 +67,56 @@ TEST_CASE( "JAU DArray Test 01 - jau::darray initializer list", "[datatype][jau]
     REQUIRE(3 == i);
 }
 
+static int countGattCharacteristicSpecList01ConstRef(const jau::darray<const GattCharacteristicSpec>& clist) {
+    int i = 0;
+    jau::for_each(clist.begin(), clist.end(), [&i](const GattCharacteristicSpec& ml){
+       (void)ml;
+       // printf("XX: %s\n\n", ml->toString().c_str());
+        ++i;
+    });
+    return i;
+}
+static int countGattCharacteristicSpecList02Copy(jau::darray<const GattCharacteristicSpec> clist) {
+    int i = 0;
+    jau::for_each(clist.begin(), clist.end(), [&i](const GattCharacteristicSpec& ml){
+       (void)ml;
+       // printf("XX: %s\n\n", ml->toString().c_str());
+        ++i;
+    });
+    return i;
+}
+
+TEST_CASE( "JAU DArray Test 02 - jau::darray immutable type (const)", "[const][jau][darray]" ) {
+    const GattCharacteristicSpec cs1 = { DEVICE_NAME, Mandatory,
+            // GattCharacteristicPropertySpec[9]:
+            { { Read, Mandatory },
+              { WriteWithAck, Optional }, { WriteNoAck, Excluded }, { AuthSignedWrite, Excluded }, { ReliableWriteExt, Excluded },
+              { Notify, Excluded }, { Indicate, Excluded }, { AuxWriteExt, Excluded }, { Broadcast, Excluded } },
+            // GattClientCharacteristicConfigSpec:
+            { Excluded, { Read, Excluded}, { WriteWithAck, Excluded } }
+          };
+    jau::darray<const GattCharacteristicSpec> clist = {
+            cs1,
+            { APPEARANCE, Mandatory,
+              // GattCharacteristicPropertySpec[9]:
+              { { Read, Mandatory },
+                { WriteWithAck, Excluded }, { WriteNoAck, Excluded }, { AuthSignedWrite, Excluded }, { ReliableWriteExt, Excluded },
+                { Notify, Excluded }, { Indicate, Excluded }, { AuxWriteExt, Excluded }, { Broadcast, Excluded } },
+              // GattClientCharacteristicConfigSpec:
+              { Excluded, { Read, Excluded}, { WriteWithAck, Excluded } }
+            } };
+    clist.push_back( cs1 );
+    int i = 0;
+    jau::for_each(clist.begin(), clist.end(), [&i](const GattCharacteristicSpec& ml){
+       (void)ml;
+       // printf("XX: %s\n\n", ml->toString().c_str());
+        ++i;
+    });
+    REQUIRE(3 == i);
+    REQUIRE(3 == countGattCharacteristicSpecList01ConstRef(clist));
+    REQUIRE(3 == countGattCharacteristicSpecList02Copy(clist));
+}
+
 /**********************************************************************************************************************************************/
 /**********************************************************************************************************************************************/
 /**********************************************************************************************************************************************/
@@ -430,7 +480,7 @@ static void testDArrayGattServiceCharacteristic() {
     printf("COPY2-3: %s\n\n", gatt2c.toString().c_str());
 }
 
-TEST_CASE( "JAU DArray Test 02 - jau::darray value_type behavior (type traits)", "[datatype][jau][darray]" ) {
+TEST_CASE( "JAU DArray Test 10 - jau::darray value_type behavior (type traits)", "[datatype][jau][darray]" ) {
     testDArrayValueType<uint64_t>("uint64_t");
     testDArrayValueType<Addr48Bit>("Addr48Bit");
     testDArrayValueType<DataType01>("DataType01");

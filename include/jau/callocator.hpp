@@ -57,6 +57,11 @@ struct callocator
     // typedefs' for C++ named requirements: Allocator
     typedef T  value_type;
 
+  private:
+    typedef std::remove_const_t<T> value_type_mutable;
+    /** Required to create and move immutable elements, aka const */
+    typedef value_type_mutable*    pointer_mutable;
+
   public:
     callocator() noexcept
     { } // C++11
@@ -105,7 +110,7 @@ struct callocator
     [[nodiscard]] constexpr value_type* reallocate(value_type* p, std::size_t old_size, std::size_t new_size) {
         (void)old_size;
         return reinterpret_cast<value_type*>(
-                            realloc( reinterpret_cast<void*>(p), new_size * sizeof(value_type) ) );
+                            realloc( reinterpret_cast<void*>(const_cast<pointer_mutable>(p)), new_size * sizeof(value_type) ) );
     }
 
 #if __cplusplus > 201703L
@@ -116,7 +121,7 @@ struct callocator
 #else
     void deallocate(value_type* p, std::size_t n ) {
         (void)n;
-        free( reinterpret_cast<void*>( p ) );
+        free( reinterpret_cast<void*>( const_cast<pointer_mutable>(p) ) );
     }
 #endif
 
