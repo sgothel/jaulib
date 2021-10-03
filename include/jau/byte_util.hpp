@@ -308,7 +308,7 @@ namespace jau {
         if( isLittleEndian() ) {
             return bswap(n);
         } else if( isBigEndian() ) {
-            return bswap(n);
+            return n;
         } else {
             return 0; // unreachable -> static_assert(..) above
         }
