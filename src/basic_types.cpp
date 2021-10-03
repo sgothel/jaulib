@@ -112,13 +112,13 @@ uint128_t jau::merge_uint128(uint16_t const uuid16, uint128_t const & base_uuid,
     //                   ^ index 2
     // BE: uuid16 -> value.data[2+3]
     //
-#if __BYTE_ORDER == __BIG_ENDIAN
-    nsize_t offset = 15 - 1 - uuid16_le_octet_index;
-#elif __BYTE_ORDER == __LITTLE_ENDIAN
-    nsize_t offset = uuid16_le_octet_index;
-#else
-#error "Unexpected __BYTE_ORDER"
-#endif
+    static_assert(isLittleOrBigEndian()); // one static_assert is sufficient for whole compilation unit
+    nsize_t offset;
+    if( isBigEndian() ) {
+        offset = 15 - 1 - uuid16_le_octet_index;
+    } else {
+        offset = uuid16_le_octet_index;
+    }
     // uint16_t * destu16 = (uint16_t*)(dest.data + offset);
     // *destu16 += uuid16;
     reinterpret_cast<packed_t<uint16_t>*>( dest.data + offset )->store += uuid16;
@@ -148,13 +148,13 @@ uint128_t jau::merge_uint128(uint32_t const uuid32, uint128_t const & base_uuid,
     //               ^ index 0
     // BE: uuid32 -> value.data[0..3]
     //
-#if __BYTE_ORDER == __BIG_ENDIAN
-    nsize_t offset = 15 - 3 - uuid32_le_octet_index;
-#elif __BYTE_ORDER == __LITTLE_ENDIAN
-    nsize_t offset = uuid32_le_octet_index;
-#else
-#error "Unexpected __BYTE_ORDER"
-#endif
+    static_assert(isLittleOrBigEndian()); // one static_assert is sufficient for whole compilation unit
+    nsize_t offset;;
+    if( isBigEndian() ) {
+        offset = 15 - 3 - uuid32_le_octet_index;
+    } else {
+        offset = uuid32_le_octet_index;
+    }
     // uint32_t * destu32 = (uint32_t*)(dest.data + offset);
     // *destu32 += uuid32;
     reinterpret_cast<packed_t<uint32_t>*>( dest.data + offset )->store += uuid32;
