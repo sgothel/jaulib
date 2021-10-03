@@ -122,6 +122,11 @@ Changes
 
 * First stable release (TODO)
 
+**0.4.8**
+
+* Octets: Expose endian awareness, pass either endian::little or endian::big at ctor
+* darray: Support immutable type, i.e. 'const Type'
+
 **0.4.7**
 
 * Add uuid_t::equivalent(..) method fo relaxed comparison on different uuid_t types
