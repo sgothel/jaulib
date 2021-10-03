@@ -173,23 +173,22 @@ std::string uuid128_t::toString() const noexcept {
 
     // snprintf uses host data type, in which values are stored,
     // hence no endian conversion
-#if __BYTE_ORDER == __BIG_ENDIAN
-    part0 = jau::get_uint32(value.data,  0);
-    part1 = jau::get_uint16(value.data,  4);
-    part2 = jau::get_uint16(value.data,  6);
-    part3 = jau::get_uint16(value.data,  8);
-    part4 = jau::get_uint32(value.data, 10);
-    part5 = jau::get_uint16(value.data, 14);
-#elif __BYTE_ORDER == __LITTLE_ENDIAN
-    part5 = jau::get_uint16(value.data,  0);
-    part4 = jau::get_uint32(value.data,  2);
-    part3 = jau::get_uint16(value.data,  6);
-    part2 = jau::get_uint16(value.data,  8);
-    part1 = jau::get_uint16(value.data, 10);
-    part0 = jau::get_uint32(value.data, 12);
-#else
-#error "Unexpected __BYTE_ORDER"
-#endif
+    static_assert(isLittleOrBigEndian()); // one static_assert is sufficient for whole compilation unit
+    if( isBigEndian() ) {
+        part0 = jau::get_uint32(value.data,  0);
+        part1 = jau::get_uint16(value.data,  4);
+        part2 = jau::get_uint16(value.data,  6);
+        part3 = jau::get_uint16(value.data,  8);
+        part4 = jau::get_uint32(value.data, 10);
+        part5 = jau::get_uint16(value.data, 14);
+    } else {
+        part5 = jau::get_uint16(value.data,  0);
+        part4 = jau::get_uint32(value.data,  2);
+        part3 = jau::get_uint16(value.data,  6);
+        part2 = jau::get_uint16(value.data,  8);
+        part1 = jau::get_uint16(value.data, 10);
+        part0 = jau::get_uint32(value.data, 12);
+    }
     const jau::nsize_t count = snprintf(&str[0], str.capacity(), "%.8x-%.4x-%.4x-%.4x-%.8x%.4x",
                                 part0, part1, part2, part3, part4, part5);
     if( length != count ) {
@@ -260,22 +259,21 @@ uuid128_t::uuid128_t(const std::string& str)
 
     // sscanf provided host data type, in which we store the values,
     // hence no endian conversion
-#if __BYTE_ORDER == __BIG_ENDIAN
-    jau::put_uint32(value.data,  0, part0);
-    jau::put_uint16(value.data,  4, part1);
-    jau::put_uint16(value.data,  6, part2);
-    jau::put_uint16(value.data,  8, part3);
-    jau::put_uint32(value.data, 10, part4);
-    jau::put_uint16(value.data, 14, part5);
-#elif __BYTE_ORDER == __LITTLE_ENDIAN
-    jau::put_uint16(value.data,  0, part5);
-    jau::put_uint32(value.data,  2, part4);
-    jau::put_uint16(value.data,  6, part3);
-    jau::put_uint16(value.data,  8, part2);
-    jau::put_uint16(value.data, 10, part1);
-    jau::put_uint32(value.data, 12, part0);
-#else
-#error "Unexpected __BYTE_ORDER"
-#endif
+    static_assert(isLittleOrBigEndian()); // one static_assert is sufficient for whole compilation unit
+    if( isBigEndian() ) {
+        jau::put_uint32(value.data,  0, part0);
+        jau::put_uint16(value.data,  4, part1);
+        jau::put_uint16(value.data,  6, part2);
+        jau::put_uint16(value.data,  8, part3);
+        jau::put_uint32(value.data, 10, part4);
+        jau::put_uint16(value.data, 14, part5);
+    } else {
+        jau::put_uint16(value.data,  0, part5);
+        jau::put_uint32(value.data,  2, part4);
+        jau::put_uint16(value.data,  6, part3);
+        jau::put_uint16(value.data,  8, part2);
+        jau::put_uint16(value.data, 10, part1);
+        jau::put_uint32(value.data, 12, part0);
+    }
 }
 
