@@ -63,14 +63,44 @@ namespace jau {
 
     #define E_FILE_LINE __FILE__,__LINE__
 
-    class RuntimeException : public std::exception {
+    class ExceptionBase {
       private:
         std::string msg;
         std::string backtrace;
         std::string what_;
 
       protected:
-        RuntimeException(std::string const type, std::string const m, const char* file, int line) noexcept;
+        ExceptionBase(std::string const type, std::string const m, const char* file, int line) noexcept;
+
+      public:
+        virtual ~ExceptionBase() noexcept { }
+
+        ExceptionBase(const ExceptionBase &o) = default;
+        ExceptionBase(ExceptionBase &&o) = default;
+        ExceptionBase& operator=(const ExceptionBase &o) = default;
+        ExceptionBase& operator=(ExceptionBase &&o) = default;
+
+        std::string get_backtrace() const noexcept { return backtrace; }
+
+        virtual const char* what() const noexcept {
+            return what_.c_str(); // return std::runtime_error::what();
+        }
+    };
+
+    class OutOfMemoryError : public std::bad_alloc, public ExceptionBase {
+      public:
+        OutOfMemoryError(std::string const m, const char* file, int line)
+        : bad_alloc(), ExceptionBase("OutOfMemoryError", m, file, line) {}
+
+        virtual const char* what() const noexcept override {
+            return ExceptionBase::what(); // return std::runtime_error::what();
+        }
+    };
+
+    class RuntimeException : public std::exception, public ExceptionBase {
+      protected:
+        RuntimeException(std::string const type, std::string const m, const char* file, int line) noexcept
+        : exception(), ExceptionBase(type, m, file, line) {}
 
       public:
         RuntimeException(std::string const m, const char* file, int line) noexcept
@@ -83,10 +113,8 @@ namespace jau {
         RuntimeException& operator=(const RuntimeException &o) = default;
         RuntimeException& operator=(RuntimeException &&o) = default;
 
-        std::string get_backtrace() const noexcept { return backtrace; }
-
         virtual const char* what() const noexcept override {
-            return what_.c_str(); // return std::runtime_error::what();
+            return ExceptionBase::what();
         }
     };
 
@@ -94,12 +122,6 @@ namespace jau {
       public:
         InternalError(std::string const m, const char* file, int line) noexcept
         : RuntimeException("InternalError", m, file, line) {}
-    };
-
-    class OutOfMemoryError : public RuntimeException {
-      public:
-        OutOfMemoryError(std::string const m, const char* file, int line) noexcept
-        : RuntimeException("OutOfMemoryError", m, file, line) {}
     };
 
     class NullPointerException : public RuntimeException {

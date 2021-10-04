@@ -57,7 +57,7 @@ uint64_t jau::getWallClockSeconds() noexcept {
     return static_cast<uint64_t>( t.tv_sec );
 }
 
-jau::RuntimeException::RuntimeException(std::string const type, std::string const m, const char* file, int line) noexcept
+jau::ExceptionBase::ExceptionBase(std::string const type, std::string const m, const char* file, int line) noexcept
 : msg(std::string(type).append(" @ ").append(file).append(":").append(std::to_string(line)).append(": ").append(m)),
   backtrace( jau::get_backtrace(true /* skip_anon_frames */) )
 {

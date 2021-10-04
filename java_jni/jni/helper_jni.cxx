@@ -81,6 +81,12 @@ void jau::java_exception_check_and_throw(JNIEnv *env, const char* file, int line
     }
 }
 
+void jau::print_native_caught_exception_fwd2java(const jau::OutOfMemoryError &e, const char* file, int line) {
+    fprintf(stderr, "Native exception caught @ %s:%d and forward to Java: %s\n", file, line, e.what()); fflush(stderr);
+}
+void jau::print_native_caught_exception_fwd2java(const jau::RuntimeException &e, const char* file, int line) {
+    fprintf(stderr, "Native exception caught @ %s:%d and forward to Java: %s\n", file, line, e.what()); fflush(stderr);
+}
 void jau::print_native_caught_exception_fwd2java(const std::exception &e, const char* file, int line) {
     fprintf(stderr, "Native exception caught @ %s:%d and forward to Java: %s\n", file, line, e.what()); fflush(stderr);
 }
@@ -147,8 +153,6 @@ void jau::rethrow_and_raise_java_exception_jauimpl(JNIEnv *env, const char* file
     try {
         // std::rethrow_exception(e);
         throw; // re-throw current exception
-    } catch (const std::bad_alloc &e) {
-        jau::raise_java_exception(env, e, file, line);
     } catch (const jau::OutOfMemoryError &e) {
         jau::raise_java_exception(env, e, file, line);
     } catch (const jau::InternalError &e) {
@@ -168,6 +172,8 @@ void jau::rethrow_and_raise_java_exception_jauimpl(JNIEnv *env, const char* file
     } catch (const std::runtime_error &e) {
         jau::raise_java_exception(env, e, file, line);
     } catch (const std::invalid_argument &e) {
+        jau::raise_java_exception(env, e, file, line);
+    } catch (const std::bad_alloc &e) {
         jau::raise_java_exception(env, e, file, line);
     } catch (const std::exception &e) {
         jau::raise_java_exception(env, e, file, line);

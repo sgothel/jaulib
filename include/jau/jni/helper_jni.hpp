@@ -71,6 +71,8 @@ namespace jau {
      */
     void java_exception_check_and_throw(JNIEnv *env, const char* file, int line);
 
+    void print_native_caught_exception_fwd2java(const jau::OutOfMemoryError &e, const char* file, int line);
+    void print_native_caught_exception_fwd2java(const jau::RuntimeException &e, const char* file, int line);
     void print_native_caught_exception_fwd2java(const std::exception &e, const char* file, int line);
     void print_native_caught_exception_fwd2java(const std::string &msg, const char* file, int line);
     void print_native_caught_exception_fwd2java(const char * cmsg, const char* file, int line);
