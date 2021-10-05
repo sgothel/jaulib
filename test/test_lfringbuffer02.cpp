@@ -87,7 +87,7 @@ class TestRingbuffer02 {
     void readTestImpl(TrivialTypeRingbuffer &rb, bool clearRef, jau::nsize_t capacity, jau::nsize_t len, IntegralType startValue) {
         (void) clearRef;
 
-        jau::nsize_t preSize = rb.getSize();
+        jau::nsize_t preSize = rb.size();
         REQUIRE_MSG("capacity "+rb.toString(), capacity == rb.capacity());
         REQUIRE_MSG("capacity at read "+std::to_string(len)+" elems: "+rb.toString(), capacity >= len);
         REQUIRE_MSG("size at read "+std::to_string(len)+" elems: "+rb.toString(), preSize >= len);
@@ -99,14 +99,14 @@ class TestRingbuffer02 {
             REQUIRE_MSG("value at read #"+std::to_string(i+1)+": "+rb.toString(), startValue+(IntegralType)i == svI.intValue());
         }
 
-        REQUIRE_MSG("size "+rb.toString(), preSize-len == rb.getSize());
-        REQUIRE_MSG("free slots after reading "+std::to_string(len)+": "+rb.toString(), rb.getFreeSlots()>= len);
+        REQUIRE_MSG("size "+rb.toString(), preSize-len == rb.size());
+        REQUIRE_MSG("free slots after reading "+std::to_string(len)+": "+rb.toString(), rb.freeSlots()>= len);
         REQUIRE_MSG("not full "+rb.toString(), !rb.isFull());
     }
     void readTestImpl2(TrivialTypeRingbuffer &rb, bool clearRef, jau::nsize_t capacity, jau::nsize_t len, IntegralType startValue) {
         (void) clearRef;
 
-        jau::nsize_t preSize = rb.getSize();
+        jau::nsize_t preSize = rb.size();
         REQUIRE_MSG("capacity "+rb.toString(), capacity == rb.capacity());
         REQUIRE_MSG("capacity at read "+std::to_string(len)+" elems: "+rb.toString(), capacity >= len);
         REQUIRE_MSG("size at read "+std::to_string(len)+" elems: "+rb.toString(), preSize >= len);
@@ -119,15 +119,15 @@ class TestRingbuffer02 {
             REQUIRE_MSG("value at read #"+std::to_string(i+1)+": "+rb.toString(), startValue+(IntegralType)i == svI.intValue());
         }
 
-        REQUIRE_MSG("size "+rb.toString(), preSize-len == rb.getSize());
-        REQUIRE_MSG("free slots after reading "+std::to_string(len)+": "+rb.toString(), rb.getFreeSlots()>= len);
+        REQUIRE_MSG("size "+rb.toString(), preSize-len == rb.size());
+        REQUIRE_MSG("free slots after reading "+std::to_string(len)+": "+rb.toString(), rb.freeSlots()>= len);
         REQUIRE_MSG("not full "+rb.toString(), !rb.isFull());
     }
 
     void readRangeTestImpl(TrivialTypeRingbuffer &rb, bool clearRef, jau::nsize_t capacity, jau::nsize_t len, IntegralType startValue) {
         (void) clearRef;
 
-        jau::nsize_t preSize = rb.getSize();
+        jau::nsize_t preSize = rb.size();
         REQUIRE_MSG("capacity "+rb.toString(), capacity == rb.capacity());
         REQUIRE_MSG("capacity at read "+std::to_string(len)+" elems: "+rb.toString(), capacity >= len);
         REQUIRE_MSG("size at read "+std::to_string(len)+" elems: "+rb.toString(), preSize >= len);
@@ -136,8 +136,8 @@ class TestRingbuffer02 {
         std::vector<TrivialType> array(len);
         REQUIRE_MSG("get-range of "+std::to_string(array.size())+" elem in "+rb.toString(), len==rb.get( &(*array.begin()), len, len) );
 
-        REQUIRE_MSG("size "+rb.toString(), preSize-len == rb.getSize());
-        REQUIRE_MSG("free slots after reading "+std::to_string(len)+": "+rb.toString(), rb.getFreeSlots()>= len);
+        REQUIRE_MSG("size "+rb.toString(), preSize-len == rb.size());
+        REQUIRE_MSG("free slots after reading "+std::to_string(len)+": "+rb.toString(), rb.freeSlots()>= len);
         REQUIRE_MSG("not full "+rb.toString(), !rb.isFull());
 
         for(jau::nsize_t i=0; i<len; i++) {
@@ -148,7 +148,7 @@ class TestRingbuffer02 {
     }
 
     void writeTestImpl(TrivialTypeRingbuffer &rb, jau::nsize_t capacity, jau::nsize_t len, IntegralType startValue) {
-        jau::nsize_t preSize = rb.getSize();
+        jau::nsize_t preSize = rb.size();
 
         REQUIRE_MSG("capacity "+rb.toString(), capacity == rb.capacity());
         REQUIRE_MSG("capacity at write "+std::to_string(len)+" elems: "+rb.toString(), capacity >= len);
@@ -160,12 +160,12 @@ class TestRingbuffer02 {
             REQUIRE_MSG(m, rb.put( TrivialType( startValue+i ) ) );
         }
 
-        REQUIRE_MSG("size "+rb.toString(), preSize+len == rb.getSize());
+        REQUIRE_MSG("size "+rb.toString(), preSize+len == rb.size());
         REQUIRE_MSG("not empty "+rb.toString(), !rb.isEmpty());
     }
 
     void writeRangeTestImpl(TrivialTypeRingbuffer &rb, jau::nsize_t capacity, const std::vector<TrivialType> & data) {
-        jau::nsize_t preSize = rb.getSize();
+        jau::nsize_t preSize = rb.size();
         jau::nsize_t postSize = preSize+data.size();
 
         REQUIRE_MSG("capacity "+rb.toString(), capacity == rb.capacity());
@@ -173,11 +173,11 @@ class TestRingbuffer02 {
         REQUIRE_MSG("size at write "+std::to_string(data.size())+" elems: "+rb.toString(), postSize<= capacity);
         REQUIRE_MSG("not full "+rb.toString(), !rb.isFull());
         REQUIRE_MSG("data fits in RB capacity "+rb.toString(), rb.capacity() >= data.size());
-        REQUIRE_MSG("data fits in RB free-slots "+rb.toString(), rb.getFreeSlots() >= data.size());
+        REQUIRE_MSG("data fits in RB free-slots "+rb.toString(), rb.freeSlots() >= data.size());
 
         REQUIRE_MSG("put-range of "+std::to_string(data.size())+" elem in "+rb.toString(), rb.put( &(*data.begin()), &(*data.end()) ) );
 
-        REQUIRE_MSG("size "+rb.toString(), postSize == rb.getSize());
+        REQUIRE_MSG("size "+rb.toString(), postSize == rb.size());
         REQUIRE_MSG("not empty "+rb.toString(), !rb.isEmpty());
     }
 
@@ -216,7 +216,7 @@ class TestRingbuffer02 {
         std::vector<TrivialType> source = createIntArray(capacity, 0);
         TrivialTypeRingbuffer rb = createFull(source);
         INFO_STR("test01_FullRead: Created / "+ rb.toString());
-        REQUIRE_MSG("full size "+rb.toString(), capacity == rb.getSize());
+        REQUIRE_MSG("full size "+rb.toString(), capacity == rb.size());
         REQUIRE_MSG("full "+rb.toString(), rb.isFull());
 
         readTestImpl(rb, true, capacity, capacity, 0);
@@ -228,12 +228,12 @@ class TestRingbuffer02 {
         jau::nsize_t capacity = 11;
         TrivialTypeRingbuffer rb = createEmpty(capacity);
         INFO( std::string("test02_EmptyWrite: Created / ") + rb.toString().c_str());
-        REQUIRE_MSG("zero size "+rb.toString(), 0 == rb.getSize());
+        REQUIRE_MSG("zero size "+rb.toString(), 0 == rb.size());
         REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
 
         writeTestImpl(rb, capacity, capacity, 0);
         INFO( std::string("test02_EmptyWrite: PostWrite / ") + rb.toString().c_str());
-        REQUIRE_MSG("full size "+rb.toString(), capacity == rb.getSize());
+        REQUIRE_MSG("full size "+rb.toString(), capacity == rb.size());
         REQUIRE_MSG("full "+rb.toString(), rb.isFull());
 
         readTestImpl(rb, true, capacity, capacity, 0);
@@ -247,7 +247,7 @@ class TestRingbuffer02 {
             jau::nsize_t capacity = 11;
             TrivialTypeRingbuffer rb = createEmpty(capacity);
             INFO( std::string("test03_EmptyWriteRange: Created / ") + rb.toString().c_str());
-            REQUIRE_MSG("zero size "+rb.toString(), 0 == rb.getSize());
+            REQUIRE_MSG("zero size "+rb.toString(), 0 == rb.size());
             REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
 
             /**
@@ -258,7 +258,7 @@ class TestRingbuffer02 {
             writeRangeTestImpl(rb, capacity, new_data);
 
             INFO( std::string("test03_EmptyWriteRange: PostWrite / ") + rb.toString().c_str());
-            REQUIRE_MSG("full size "+rb.toString(), capacity == rb.getSize());
+            REQUIRE_MSG("full size "+rb.toString(), capacity == rb.size());
             REQUIRE_MSG("full "+rb.toString(), rb.isFull());
 
             readRangeTestImpl(rb, true, capacity, capacity, 0);
@@ -272,7 +272,7 @@ class TestRingbuffer02 {
 
             TrivialTypeRingbuffer rb = createEmpty(capacity);
             INFO( std::string("test03_EmptyWriteRange: Created / ") + rb.toString().c_str());
-            REQUIRE_MSG("zero size "+rb.toString(), 0 == rb.getSize());
+            REQUIRE_MSG("zero size "+rb.toString(), 0 == rb.size());
             REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
 
             /**
@@ -291,7 +291,7 @@ class TestRingbuffer02 {
             // writeTestImpl(rb, capacity, capacity, 0);
 
             INFO( std::string("test03_EmptyWriteRange: PostWrite / ") + rb.toString().c_str());
-            REQUIRE_MSG("full size "+rb.toString(), capacity == rb.getSize());
+            REQUIRE_MSG("full size "+rb.toString(), capacity == rb.size());
             REQUIRE_MSG("full "+rb.toString(), rb.isFull());
 
             readRangeTestImpl(rb, true, capacity, capacity, 0);
@@ -306,7 +306,7 @@ class TestRingbuffer02 {
             jau::nsize_t capacity = 11;
             TrivialTypeRingbuffer rb = createEmpty(capacity);
             INFO( std::string("test03_EmptyWriteRange: Created / ") + rb.toString().c_str());
-            REQUIRE_MSG("zero size "+rb.toString(), 0 == rb.getSize());
+            REQUIRE_MSG("zero size "+rb.toString(), 0 == rb.size());
             REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
 
             /**
@@ -322,25 +322,25 @@ class TestRingbuffer02 {
             rb.drop(2);    // r idx 0 -> 2
 
             // left = 11 - 2
-            REQUIRE_MSG("size 2 "+rb.toString(), 2 == rb.getSize());
-            REQUIRE_MSG("available 11-2 "+rb.toString(), capacity-2 == rb.getFreeSlots());
+            REQUIRE_MSG("size 2 "+rb.toString(), 2 == rb.size());
+            REQUIRE_MSG("available 11-2 "+rb.toString(), capacity-2 == rb.freeSlots());
 
             std::vector<TrivialType> new_data = createIntArray(capacity-2, 0);
             writeRangeTestImpl(rb, capacity, new_data);
             // writeTestImpl(rb, capacity, capacity-2, 0);
 
             INFO( std::string("test03_EmptyWriteRange: PostWrite / ") + rb.toString().c_str());
-            REQUIRE_MSG("full size "+rb.toString(), capacity == rb.getSize());
+            REQUIRE_MSG("full size "+rb.toString(), capacity == rb.size());
             REQUIRE_MSG("full "+rb.toString(), rb.isFull());
 
             // take off 2 remaining dummies
             rb.drop(2);
-            REQUIRE_MSG("size capacity-2 "+rb.toString(), capacity-2 == rb.getSize());
+            REQUIRE_MSG("size capacity-2 "+rb.toString(), capacity-2 == rb.size());
 
             readRangeTestImpl(rb, true, capacity, capacity-2, 0);
             // readTestImpl(rb, true, capacity, capacity-2, 0);
             INFO( std::string("test03_EmptyWriteRange: PostRead / ") + rb.toString().c_str());
-            REQUIRE_MSG("size 0 "+rb.toString(), 0 == rb.getSize());
+            REQUIRE_MSG("size 0 "+rb.toString(), 0 == rb.size());
             REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
         }
 #endif
@@ -349,7 +349,7 @@ class TestRingbuffer02 {
             jau::nsize_t capacity = 11;
             TrivialTypeRingbuffer rb = createEmpty(capacity);
             INFO( std::string("test03_EmptyWriteRange: Created / ") + rb.toString().c_str());
-            REQUIRE_MSG("zero size "+rb.toString(), 0 == rb.getSize());
+            REQUIRE_MSG("zero size "+rb.toString(), 0 == rb.size());
             REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
 
             /**
@@ -363,31 +363,31 @@ class TestRingbuffer02 {
 
             // for(int i=0; i<10; i++) { rb.get(); } // pull
             rb.drop(10); // pull
-            REQUIRE_MSG("size 1"+rb.toString(), 1 == rb.getSize());
+            REQUIRE_MSG("size 1"+rb.toString(), 1 == rb.size());
 
             for(int i=0; i<2; i++) { rb.put(dummy); } // fill 2 more
-            REQUIRE_MSG("size 3"+rb.toString(), 3 == rb.getSize());
+            REQUIRE_MSG("size 3"+rb.toString(), 3 == rb.size());
 
             // left = 11 - 3
-            REQUIRE_MSG("available 11-3 "+rb.toString(), capacity-3 == rb.getFreeSlots());
+            REQUIRE_MSG("available 11-3 "+rb.toString(), capacity-3 == rb.freeSlots());
 
             std::vector<TrivialType> new_data = createIntArray(capacity-3, 0);
             writeRangeTestImpl(rb, capacity, new_data);
             // writeTestImpl(rb, capacity, capacity-3, 0);
 
             INFO( std::string("test03_EmptyWriteRange: PostWrite / ") + rb.toString().c_str());
-            REQUIRE_MSG("full size "+rb.toString(), capacity == rb.getSize());
+            REQUIRE_MSG("full size "+rb.toString(), capacity == rb.size());
             REQUIRE_MSG("full "+rb.toString(), rb.isFull());
 
             // take off 3 remaining dummies
             rb.drop(3); // pull
             // for(int i=0; i<3; i++) { rb.get(); } // pull
-            REQUIRE_MSG("size capacity-3 "+rb.toString(), capacity-3 == rb.getSize());
+            REQUIRE_MSG("size capacity-3 "+rb.toString(), capacity-3 == rb.size());
 
             readRangeTestImpl(rb, true, capacity, capacity-3, 0);
             // readTestImpl(rb, true, capacity, capacity-3, 0);
             INFO( std::string("test03_EmptyWriteRange: PostRead / ") + rb.toString().c_str());
-            REQUIRE_MSG("size 0 "+rb.toString(), 0 == rb.getSize());
+            REQUIRE_MSG("size 0 "+rb.toString(), 0 == rb.size());
             REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
         }
 #endif
@@ -495,10 +495,10 @@ class TestRingbuffer02 {
             REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb.toString(), svI!=TrivialTypeNullElem);
             REQUIRE_MSG("value at read #"+std::to_string(i+1)+": "+rb.toString(), IntegralType((0+i)%initialCapacity) == svI.intValue());
         }
-        REQUIRE_MSG("zero size "+rb.toString(), 0 == rb.getSize());
+        REQUIRE_MSG("zero size "+rb.toString(), 0 == rb.size());
 
         rb.reset(source);
-        REQUIRE_MSG("orig size "+rb.toString(), initialCapacity == rb.getSize());
+        REQUIRE_MSG("orig size "+rb.toString(), initialCapacity == rb.size());
 
         moveGetPutImpl(rb, pos);
         // PRINTM("X02 "+rb.toString());
@@ -506,7 +506,7 @@ class TestRingbuffer02 {
 
         rb.recapacity(grownCapacity);
         REQUIRE_MSG("capacity "+rb.toString(), grownCapacity == rb.capacity());
-        REQUIRE_MSG("orig size "+rb.toString(), initialCapacity == rb.getSize());
+        REQUIRE_MSG("orig size "+rb.toString(), initialCapacity == rb.size());
         REQUIRE_MSG("not full "+rb.toString(), !rb.isFull());
         REQUIRE_MSG("not empty "+rb.toString(), !rb.isEmpty());
         // PRINTM("X03 "+rb.toString());
@@ -515,7 +515,7 @@ class TestRingbuffer02 {
         for(jau::nsize_t i=0; i<growAmount; i++) {
             REQUIRE_MSG("buffer not full at put #"+std::to_string(i)+": "+rb.toString(), rb.put( TrivialType( 100+i ) ) );
         }
-        REQUIRE_MSG("new size "+rb.toString(), grownCapacity == rb.getSize());
+        REQUIRE_MSG("new size "+rb.toString(), grownCapacity == rb.size());
         REQUIRE_MSG("full "+rb.toString(), rb.isFull());
 
         for(jau::nsize_t i=0; i<initialCapacity; i++) {
@@ -532,7 +532,7 @@ class TestRingbuffer02 {
             REQUIRE_MSG("value at read #"+std::to_string(i+1)+": "+rb.toString(), IntegralType(100+i) == svI.intValue());
         }
 
-        REQUIRE_MSG("zero size "+rb.toString(), 0 == rb.getSize());
+        REQUIRE_MSG("zero size "+rb.toString(), 0 == rb.size());
         REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
 
         REQUIRE_MSG("not full "+rb.toString(), !rb.isFull());

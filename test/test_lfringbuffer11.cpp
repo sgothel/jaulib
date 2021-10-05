@@ -132,7 +132,7 @@ class TestRingbuffer11 {
         INFO_STR("\n\ntest01a_Read1Write1\n");
         jau::nsize_t capacity = 100;
         TrivialTypeRingbuffer rb = createEmpty(capacity);
-        REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.getSize());
+        REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.size());
         REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
 
         std::thread getThread01(&TestRingbuffer11::getThreadType01, this, "test01a.get01", &rb, capacity); // @suppress("Invalid arguments")
@@ -141,14 +141,14 @@ class TestRingbuffer11 {
         getThread01.join();
 
         REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
-        REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.getSize());
+        REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.size());
     }
 
     void test01b_Read1Write1_Range() {
         INFO_STR("\n\ntest01b_Read1Write1_Range\n");
         jau::nsize_t capacity = 100;
         TrivialTypeRingbuffer rb = createEmpty(capacity);
-        REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.getSize());
+        REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.size());
         REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
 
         std::thread getThread01(&TestRingbuffer11::getRangeThreadType02, this, "test01b.getR01", &rb, capacity); // @suppress("Invalid arguments")
@@ -157,14 +157,14 @@ class TestRingbuffer11 {
         getThread01.join();
 
         REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
-        REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.getSize());
+        REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.size());
     }
 
     void test02a_Read4Write1() {
         INFO_STR("\n\ntest02a_Read4Write1\n");
         jau::nsize_t capacity = 400;
         TrivialTypeRingbuffer rb = createEmpty(capacity);
-        REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.getSize());
+        REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.size());
         REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
 
         std::thread getThread01(&TestRingbuffer11::getThreadType01, this, "test02a.get01", &rb, capacity/4); // @suppress("Invalid arguments")
@@ -179,14 +179,14 @@ class TestRingbuffer11 {
         getThread04.join();
 
         REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
-        REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.getSize());
+        REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.size());
     }
 
     void test02b_Read4Write1_Range() {
         INFO_STR("\n\ntest02b_Read4Write1_Range\n");
         jau::nsize_t capacity = 400;
         TrivialTypeRingbuffer rb = createEmpty(capacity);
-        REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.getSize());
+        REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.size());
         REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
 
         std::thread getThread01(&TestRingbuffer11::getRangeThreadType02, this, "test02b.getR01", &rb, capacity/4); // @suppress("Invalid arguments")
@@ -201,14 +201,14 @@ class TestRingbuffer11 {
         getThread04.join();
 
         REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
-        REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.getSize());
+        REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.size());
     }
 
     void test03a_Read8Write2() {
         INFO_STR("\n\ntest03a_Read8Write2\n");
         jau::nsize_t capacity = 800;
         TrivialTypeRingbuffer rb = createEmpty(capacity);
-        REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.getSize());
+        REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.size());
         REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
 
         std::thread getThread01(&TestRingbuffer11::getThreadType01, this, "test03a.get01", &rb, capacity/8); // @suppress("Invalid arguments")
@@ -235,14 +235,14 @@ class TestRingbuffer11 {
         getThread08.join();
 
         REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
-        REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.getSize());
+        REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.size());
     }
 
     void test03b_Read8Write2_Range() {
         INFO_STR("\n\ntest03b_Read8Write2_Range\n");
         jau::nsize_t capacity = 800;
         TrivialTypeRingbuffer rb = createEmpty(capacity);
-        REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.getSize());
+        REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.size());
         REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
 
         std::thread getThread01(&TestRingbuffer11::getRangeThreadType02, this, "test03b.getR01", &rb, capacity/8); // @suppress("Invalid arguments")
@@ -269,7 +269,7 @@ class TestRingbuffer11 {
         getThread08.join();
 
         REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
-        REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.getSize());
+        REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.size());
     }
 
     void test_sequential() {

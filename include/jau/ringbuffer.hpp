@@ -192,15 +192,15 @@ class ringbuffer {
          * clear all elements, zero size
          */
         void clearImpl() noexcept {
-            const Size_type size = getSize();
-            if( 0 < size ) {
+            const Size_type size_ = size();
+            if( 0 < size_ ) {
                 if( uses_memset ) {
                     memset_wrap(&array[0], nullelem, capacityPlusOne*sizeof(Value_type));
                     readPos  = 0;
                     writePos = 0;
                 } else {
                     Size_type localReadPos = readPos;
-                    for(Size_type i=0; i<size; i++) {
+                    for(Size_type i=0; i<size_; i++) {
                         localReadPos = (localReadPos + 1) % capacityPlusOne;
                         array[localReadPos] = nullelem;
                     }
@@ -232,9 +232,9 @@ class ringbuffer {
                        reinterpret_cast<void*>(const_cast<Value_type*>(&source.array[0])),
                        capacityPlusOne*sizeof(Value_type));
             } else {
-                const Size_type size = getSize();
+                const Size_type size_ = size();
                 Size_type localWritePos = readPos;
-                for(Size_type i=0; i<size; i++) {
+                for(Size_type i=0; i<size_; i++) {
                     localWritePos = (localWritePos + 1) % capacityPlusOne;
                     array[localWritePos] = source.array[localWritePos];
                 }
@@ -364,19 +364,19 @@ class ringbuffer {
 
             const Size_type oldReadPos = readPos; // SC-DRF acquire atomic readPos, sync'ing with putImpl
             Size_type localReadPos = oldReadPos;
-            Size_type available = getSize();
+            Size_type available = size();
             if( min_count > available ) {
                 if( blocking ) {
                     std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ putImpl via same lock
-                    available = getSize();
+                    available = size();
                     while( min_count > available ) {
                         if( 0 == timeoutMS ) {
                             cvWrite.wait(lockWrite);
-                            available = getSize();
+                            available = size();
                         } else {
                             std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
                             std::cv_status s = cvWrite.wait_until(lockWrite, t0 + std::chrono::milliseconds(timeoutMS));
-                            available = getSize();
+                            available = size();
                             if( std::cv_status::timeout == s && min_count > available ) {
                                 return 0;
                             }
@@ -465,19 +465,19 @@ class ringbuffer {
 
             const Size_type oldReadPos = readPos; // SC-DRF acquire atomic readPos, sync'ing with putImpl
             Size_type localReadPos = oldReadPos;
-            Size_type available = getSize();
+            Size_type available = size();
             if( count > available ) {
                 if( blocking ) {
                     std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ putImpl via same lock
-                    available = getSize();
+                    available = size();
                     while( count > available ) {
                         if( 0 == timeoutMS ) {
                             cvWrite.wait(lockWrite);
-                            available = getSize();
+                            available = size();
                         } else {
                             std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
                             std::cv_status s = cvWrite.wait_until(lockWrite, t0 + std::chrono::milliseconds(timeoutMS));
-                            available = getSize();
+                            available = size();
                             if( std::cv_status::timeout == s && count > available ) {
                                 return false;
                             }
@@ -617,19 +617,19 @@ class ringbuffer {
             }
 
             Size_type localWritePos = writePos; // SC-DRF acquire atomic writePos, sync'ing with getImpl
-            Size_type available = getFreeSlots();
+            Size_type available = freeSlots();
             if( total_count > available ) {
                 if( blocking ) {
                     std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ getImpl via same lock
-                    available = getFreeSlots();
+                    available = freeSlots();
                     while( total_count > available ) {
                         if( 0 == timeoutMS ) {
                             cvRead.wait(lockRead);
-                            available = getFreeSlots();
+                            available = freeSlots();
                         } else {
                             std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
                             std::cv_status s = cvRead.wait_until(lockRead, t0 + std::chrono::milliseconds(timeoutMS));
-                            available = getFreeSlots();
+                            available = freeSlots();
                             if( std::cv_status::timeout == s && total_count > available ) {
                                 return false;
                             }
@@ -701,18 +701,18 @@ class ringbuffer {
         Size_type waitForElements(const Size_type min_count, const int timeoutMS) noexcept {
             std::unique_lock<std::mutex> lockMultiRead(syncMultiRead); // acquire syncMultiRead, _not_ sync'ing w/ putImpl
 
-            Size_type available = getSize();
+            Size_type available = size();
             if( min_count > available ) {
                 std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ putImpl via same lock
-                available = getSize();
+                available = size();
                 while( min_count > available ) {
                     if( 0 == timeoutMS ) {
                         cvWrite.wait(lockWrite);
-                        available = getSize();
+                        available = size();
                     } else {
                         std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
                         std::cv_status s = cvWrite.wait_until(lockWrite, t0 + std::chrono::milliseconds(timeoutMS));
-                        available = getSize();
+                        available = size();
                         if( std::cv_status::timeout == s && min_count > available ) {
                             return available;
                         }
@@ -733,18 +733,18 @@ class ringbuffer {
         Size_type waitForFreeSlots(const Size_type min_count, const int timeoutMS) noexcept {
             std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite); // acquire syncMultiWrite, _not_ sync'ing w/ getImpl
 
-            Size_type available = getFreeSlots();
+            Size_type available = freeSlots();
             if( min_count > available ) {
                 std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ getImpl via same lock
-                available = getFreeSlots();
+                available = freeSlots();
                 while( min_count > available ) {
                     if( 0 == timeoutMS ) {
                         cvRead.wait(lockRead);
-                        available = getFreeSlots();
+                        available = freeSlots();
                     } else {
                         std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
                         std::cv_status s = cvRead.wait_until(lockRead, t0 + std::chrono::milliseconds(timeoutMS));
-                        available = getFreeSlots();
+                        available = freeSlots();
                         if( std::cv_status::timeout == s && min_count > available ) {
                             return available;
                         }
@@ -758,7 +758,7 @@ class ringbuffer {
         std::string toString() const noexcept {
             const std::string es = isEmpty() ? ", empty" : "";
             const std::string fs = isFull() ? ", full" : "";
-            return "ringbuffer<?>[size "+std::to_string(getSize())+" / "+std::to_string(capacityPlusOne-1)+
+            return "ringbuffer<?>[size "+std::to_string(size())+" / "+std::to_string(capacityPlusOne-1)+
                     ", writePos "+std::to_string(writePos)+", readPos "+std::to_string(readPos)+es+fs+"]";
         }
 
@@ -923,7 +923,7 @@ class ringbuffer {
         }
 
         /** Returns the number of elements in this ring buffer. */
-        Size_type getSize() const noexcept {
+        Size_type size() const noexcept {
             const Size_type R = readPos;
             const Size_type W = writePos;
             // W >= R: W - R
@@ -932,7 +932,7 @@ class ringbuffer {
         }
 
         /** Returns the number of free slots available to put.  */
-        Size_type getFreeSlots() const noexcept { return capacityPlusOne - 1 - getSize(); }
+        Size_type freeSlots() const noexcept { return capacityPlusOne - 1 - size(); }
 
         /** Returns true if this ring buffer is empty, otherwise false. */
         bool isEmpty() const noexcept { return writePos == readPos; /* 0 == size */ }
@@ -1223,12 +1223,12 @@ class ringbuffer {
             std::unique_lock<std::mutex> lockMultiRead(syncMultiRead, std::defer_lock);          // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
             std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite, std::defer_lock);        // otherwise RAII-style relinquish via destructor
             std::lock(lockMultiRead, lockMultiWrite);
-            const Size_type size = getSize();
+            const Size_type size_ = size();
 
             if( capacityPlusOne == newCapacity+1 ) {
                 return;
             }
-            if( size > newCapacity ) {
+            if( size_ > newCapacity ) {
                 throw IllegalArgumentException("amount "+std::to_string(newCapacity)+" < size, "+toString(), E_FILE_LINE);
             }
 
@@ -1244,9 +1244,9 @@ class ringbuffer {
             writePos = 0;
 
             // copy saved data
-            if( nullptr != oldArray && 0 < size ) {
+            if( nullptr != oldArray && 0 < size_ ) {
                 Size_type localWritePos = writePos;
-                for(Size_type i=0; i<size; i++) {
+                for(Size_type i=0; i<size_; i++) {
                     localWritePos = (localWritePos + 1) % capacityPlusOne;
                     oldReadPos = (oldReadPos + 1) % oldCapacityPlusOne;
                     array[localWritePos] = std::move( oldArray[oldReadPos] );
