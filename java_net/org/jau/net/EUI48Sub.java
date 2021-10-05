@@ -36,11 +36,11 @@ import org.jau.util.BasicTypes;
  */
 public class EUI48Sub {
     /** EUI48Sub MAC address matching any device, i.e. '0:0:0:0:0:0'. */
-    public static final EUI48Sub ANY_DEVICE = new EUI48Sub( new byte[] { (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00 }, 0, 6 );
+    public static final EUI48Sub ANY_DEVICE = new EUI48Sub( new byte[] { (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00 }, 0, 6, ByteOrder.LITTLE_ENDIAN );
     /** EUI48Sub MAC address matching all device, i.e. 'ff:ff:ff:ff:ff:ff'. */
-    public static final EUI48Sub ALL_DEVICE = new EUI48Sub( new byte[] { (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff }, 0, 6 );
+    public static final EUI48Sub ALL_DEVICE = new EUI48Sub( new byte[] { (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff }, 0, 6, ByteOrder.LITTLE_ENDIAN );
     /** EUI48Sub MAC address matching local device, i.e. '0:0:0:ff:ff:ff'. */
-    public static final EUI48Sub LOCAL_DEVICE = new EUI48Sub( new byte[] { (byte)0x00, (byte)0x00, (byte)0x00, (byte)0xff, (byte)0xff, (byte)0xff }, 0, 6 );
+    public static final EUI48Sub LOCAL_DEVICE = new EUI48Sub( new byte[] { (byte)0x00, (byte)0x00, (byte)0x00, (byte)0xff, (byte)0xff, (byte)0xff }, 0, 6, ByteOrder.LITTLE_ENDIAN );
 
     /**
      * The EUI48 sub-address, always 6 bytes reserved.
@@ -137,17 +137,26 @@ public class EUI48Sub {
     }
 
     /**
-     * Constructor, copying len_ bytes from given b_ in native byte order.
-     * @param stream sub address bytes in native byte order
-     * @param pos start position in stream
-     * @param len_ length
+     * Copy len_ address bytes from given source and store it in {@link ByteOrder#nativeOrder()} byte order.
+     *
+     * If given address bytes are not in {@link ByteOrder#nativeOrder()} byte order,
+     * they are swapped.
+     *
+     * @param stream address bytes
+     * @param pos position in stream at address
+     * @param len_ number of address bytes
+     * @param byte_order {@link ByteOrder#LITTLE_ENDIAN} or {@link ByteOrder#BIG_ENDIAN} byte order
      */
-    public EUI48Sub(final byte stream[], final int pos, final int len_) {
+    public EUI48Sub(final byte stream[], final int pos, final int len_, final ByteOrder byte_order) {
         if( len_ > EUI48.byte_size || pos + len_ > stream.length ) {
             throw new IllegalArgumentException("EUI48 stream ( pos "+pos+", len "+len_+" > EUI48 size "+EUI48.byte_size+" or stream.length "+stream.length);
         }
         b = new byte[6];
-        System.arraycopy(stream, pos, b, 0,  len_);
+        if( byte_order == ByteOrder.nativeOrder() ) {
+            System.arraycopy(stream, pos, b, 0, len_);
+        } else {
+            BasicTypes.bswap(stream, pos, b, 0, len_);
+        }
         length = len_;
     }
 

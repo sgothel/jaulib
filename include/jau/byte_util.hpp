@@ -98,33 +98,27 @@ namespace jau {
         #endif
     }
 
+    constexpr void bswap(uint8_t * const sink, uint8_t const * const source, nsize_t const len) {
+        for(nsize_t i=0; i < len; ++i) {
+            sink[i] = source[len-1-i];
+        }
+    }
+
     constexpr uint128_t bswap(uint128_t const & source) noexcept {
         uint128_t dest;
-        uint8_t const * const s = source.data;
-        uint8_t * const d = dest.data;
-        for(nsize_t i=0; i<16; i++) {
-            d[i] = s[15-i];
-        }
+        bswap(dest.data, source.data, 16);
         return dest;
     }
 
     constexpr uint192_t bswap(uint192_t const & source) noexcept {
         uint192_t dest;
-        uint8_t const * const s = source.data;
-        uint8_t * const d = dest.data;
-        for(nsize_t i=0; i<24; i++) {
-            d[i] = s[23-i];
-        }
+        bswap(dest.data, source.data, 24);
         return dest;
     }
 
     constexpr uint256_t bswap(uint256_t const & source) noexcept {
         uint256_t dest;
-        uint8_t const * const s = source.data;
-        uint8_t * const d = dest.data;
-        for(nsize_t i=0; i<32; i++) {
-            d[i] = s[31-i];
-        }
+        bswap(dest.data, source.data, 32);
         return dest;
     }
 

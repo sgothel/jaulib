@@ -122,8 +122,10 @@ Changes
 
 * First stable release (TODO)
 
-**0.4.9**
+**0.5.0**
 
+* Bump minor version due to API change
+* EUI48Sub: Add required endian conversion for byte stream ctor (C++ and Java)
 * EUI48[Sub]: Add endian awareness, also fixes indexOf() semantics (C++ and Java)
 * Octets: Enhance API doc
 * Octets/ringbuffer: Use std method names for sizes

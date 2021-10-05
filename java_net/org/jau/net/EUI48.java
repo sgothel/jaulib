@@ -41,11 +41,11 @@ import java.nio.ByteOrder;
  */
 public class EUI48 {
     /** EUI48 MAC address matching any device, i.e. '0:0:0:0:0:0'. */
-    public static final EUI48 ANY_DEVICE = new EUI48( new byte[] { (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00 }, ByteOrder.nativeOrder() );
+    public static final EUI48 ANY_DEVICE = new EUI48( new byte[] { (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00 }, ByteOrder.LITTLE_ENDIAN );
     /** EUI48 MAC address matching all device, i.e. 'ff:ff:ff:ff:ff:ff'. */
-    public static final EUI48 ALL_DEVICE = new EUI48( new byte[] { (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff }, ByteOrder.nativeOrder() );
+    public static final EUI48 ALL_DEVICE = new EUI48( new byte[] { (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff }, ByteOrder.LITTLE_ENDIAN );
     /** EUI48 MAC address matching local device, i.e. '0:0:0:ff:ff:ff'. */
-    public static final EUI48 LOCAL_DEVICE = new EUI48( new byte[] { (byte)0x00, (byte)0x00, (byte)0x00, (byte)0xff, (byte)0xff, (byte)0xff }, ByteOrder.nativeOrder() );
+    public static final EUI48 LOCAL_DEVICE = new EUI48( new byte[] { (byte)0x00, (byte)0x00, (byte)0x00, (byte)0xff, (byte)0xff, (byte)0xff }, ByteOrder.LITTLE_ENDIAN );
 
     /**
      * The 6 byte EUI48 address.
@@ -116,7 +116,16 @@ public class EUI48 {
         }
     }
 
-    /** Construct instance via given source byte array */
+    /**
+     * Copy address bytes from given source and store it in {@link ByteOrder#nativeOrder()} byte order.
+     *
+     * If given address bytes are not in {@link ByteOrder#nativeOrder()} byte order,
+     * they are swapped.
+     *
+     * @param stream address bytes
+     * @param pos position in stream at address
+     * @param byte_order {@link ByteOrder#LITTLE_ENDIAN} or {@link ByteOrder#BIG_ENDIAN} byte order
+     */
     public EUI48(final byte stream[], final int pos, final ByteOrder byte_order) {
         if( byte_size > ( stream.length - pos ) ) {
             throw new IllegalArgumentException("EUI48 stream ( "+stream.length+" - "+pos+" ) < "+byte_size+" bytes");
@@ -129,7 +138,15 @@ public class EUI48 {
         }
     }
 
-    /** Construct instance using the given address of the byte array */
+    /**
+     * Copy address bytes from given source and store it in {@link ByteOrder#nativeOrder()} byte order.
+     *
+     * If given address bytes are not in {@link ByteOrder#nativeOrder()} byte order,
+     * they are swapped.
+     *
+     * @param address address bytes
+     * @param byte_order {@link ByteOrder#LITTLE_ENDIAN} or {@link ByteOrder#BIG_ENDIAN} byte order
+     */
     public EUI48(final byte address[], final ByteOrder byte_order) {
         if( byte_size != address.length ) {
             throw new IllegalArgumentException("EUI48 stream "+address.length+" != "+byte_size+" bytes");

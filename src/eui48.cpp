@@ -112,11 +112,16 @@ EUI48Sub::EUI48Sub(const std::string& str) {
     }
 }
 
-EUI48Sub::EUI48Sub(const uint8_t * b_, const jau::nsize_t len_) noexcept {
+EUI48Sub::EUI48Sub(const uint8_t * b_, const jau::nsize_t len_, const endian byte_order) noexcept {
     length = len_;
     const jau::nsize_t cpsz = std::max<jau::nsize_t>(sizeof(b), len_);
     const jau::nsize_t bzsz = sizeof(b) - cpsz;
-    memcpy(b, b_, cpsz);
+
+    if( endian::little == byte_order ) {
+        memcpy(b, b_, cpsz);
+    } else {
+        bswap(b, b_, cpsz);
+    }
     if( bzsz > 0 ) {
         bzero(b+cpsz, bzsz);
     }
@@ -249,8 +254,8 @@ static uint8_t _EUI48_ALL_DEVICE[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 static uint8_t _EUI48_LOCAL_DEVICE[] = {0x00, 0x00, 0x00, 0xff, 0xff, 0xff};
 
 const EUI48Sub jau::EUI48Sub::ANY_DEVICE; // default ctor is zero bytes!
-const EUI48Sub jau::EUI48Sub::ALL_DEVICE( _EUI48_ALL_DEVICE, 6);
-const EUI48Sub jau::EUI48Sub::LOCAL_DEVICE( _EUI48_LOCAL_DEVICE, 6);
+const EUI48Sub jau::EUI48Sub::ALL_DEVICE( _EUI48_ALL_DEVICE, 6, endian::little );
+const EUI48Sub jau::EUI48Sub::LOCAL_DEVICE( _EUI48_LOCAL_DEVICE, 6, endian::little );
 
 const EUI48 jau::EUI48::ANY_DEVICE; // default ctor is zero bytes!
 const EUI48 jau::EUI48::ALL_DEVICE( _EUI48_ALL_DEVICE, endian::little );

@@ -33,6 +33,11 @@ public class BasicTypes {
         sink[4+sink_pos] = source[1+source_pos];
         sink[5+sink_pos] = source[0+source_pos];
     }
+    public static void bswap(final byte[] source, final int source_pos, final byte[] sink, final int sink_pos, final int len) {
+        for(int i=0; i < len; ++i) {
+            sink[i+sink_pos] = source[len-1-i+source_pos];
+        }
+    }
 
     /**
      * Produce a lower-case hexadecimal string representation of the given byte values.
