@@ -41,10 +41,20 @@ std::string EUI48Sub::toString() const noexcept {
     if( 0 < length ) {
         str.reserve(3 * length - 1);
 
-        for(int i=length-1; 0 <= i; i--) {
-            jau::byteHexString(str, b[i], false /* lowerCase */);
-            if( 0 < i ) {
-                str.push_back(':');
+        static_assert(isLittleOrBigEndian()); // one static_assert is sufficient for whole compilation unit
+        if( isLittleEndian() ) {
+            for(int i=length-1; 0 <= i; --i) {
+                jau::byteHexString(str, b[i], false /* lowerCase */);
+                if( 0 < i ) {
+                    str.push_back(':');
+                }
+            }
+        } else {
+            for(int i=0; 0 < length; ++i) {
+                if( 0 < i ) {
+                    str.push_back(':');
+                }
+                jau::byteHexString(str, b[i], false /* lowerCase */);
             }
         }
     } else {
@@ -64,7 +74,7 @@ bool EUI48Sub::scanEUI48Sub(const std::string& str, EUI48Sub& dest, std::string&
     const char * str_ptr = str.c_str();
     jau::nsize_t j=0;
     bool exp_colon = false;
-    uint8_t b_[6]; // intermediate result high -> low
+    uint8_t b_[6]; // intermediate result high -> low (big-endian)
     while( j+1 < str_len /* && byte_count_ < byte_size */ ) { // min 2 chars left
         const bool is_colon = ':' == str[j];
         if( exp_colon && !is_colon ) {
@@ -84,11 +94,14 @@ bool EUI48Sub::scanEUI48Sub(const std::string& str, EUI48Sub& dest, std::string&
             exp_colon = true;
         }
     }
-    for(j=0; j<dest.length; ++j) { // swap low->high
-        dest.b[j] = b_[dest.length-1-j];
+    static_assert(isLittleOrBigEndian()); // one static_assert is sufficient for whole compilation unit
+    if( isLittleEndian() ) {
+        for(j=0; j<dest.length; ++j) { // swap to low->high
+            dest.b[j] = b_[dest.length-1-j];
+        }
+    } else {
+        memcpy(dest.b, b_, dest.length);
     }
-    // sscanf provided host data type, in which we store the values,
-    // hence no endian conversion
     return true;
 }
 
@@ -110,7 +123,8 @@ EUI48Sub::EUI48Sub(const uint8_t * b_, const jau::nsize_t len_) noexcept {
 }
 
 jau::snsize_t EUI48Sub::indexOf(const uint8_t haystack_b[], const jau::nsize_t haystack_length,
-                                const uint8_t needle_b[], const jau::nsize_t needle_length) noexcept {
+                                const uint8_t needle_b[], const jau::nsize_t needle_length,
+                                const endian byte_order) noexcept {
     if( 0 == needle_length ) {
         return 0;
     }
@@ -133,7 +147,12 @@ jau::snsize_t EUI48Sub::indexOf(const uint8_t haystack_b[], const jau::nsize_t h
             jau::nsize_t j = i, k=0;
             do {
                 if( ++j == innerEnd ) {
-                    return i; // gotcha
+                    // gotcha
+                    if( endian::native == byte_order ) {
+                        return i;
+                    } else {
+                        return 5 - i - ( needle_length - 1 );
+                    }
                 }
             } while( haystack_b[j] == needle_b[++k] );
         }
@@ -148,11 +167,30 @@ std::string EUI48::toString() const noexcept {
     std::string str;
     str.reserve(17); // 6 * 2 + ( 6 - 1 )
 
-    for(int i=6-1; 0 <= i; i--) {
-        jau::byteHexString(str, b[i], false /* lowerCase */);
-        if( 0 < i ) {
-            str.push_back(':');
-        }
+    if( isLittleEndian() ) {
+        jau::byteHexString(str, b[5], false /* lowerCase */);
+        str.push_back(':');
+        jau::byteHexString(str, b[4], false /* lowerCase */);
+        str.push_back(':');
+        jau::byteHexString(str, b[3], false /* lowerCase */);
+        str.push_back(':');
+        jau::byteHexString(str, b[2], false /* lowerCase */);
+        str.push_back(':');
+        jau::byteHexString(str, b[1], false /* lowerCase */);
+        str.push_back(':');
+        jau::byteHexString(str, b[0], false /* lowerCase */);
+    } else {
+        jau::byteHexString(str, b[0], false /* lowerCase */);
+        str.push_back(':');
+        jau::byteHexString(str, b[1], false /* lowerCase */);
+        str.push_back(':');
+        jau::byteHexString(str, b[2], false /* lowerCase */);
+        str.push_back(':');
+        jau::byteHexString(str, b[3], false /* lowerCase */);
+        str.push_back(':');
+        jau::byteHexString(str, b[4], false /* lowerCase */);
+        str.push_back(':');
+        jau::byteHexString(str, b[5], false /* lowerCase */);
     }
     return str;
 }
@@ -164,9 +202,16 @@ bool EUI48::scanEUI48(const std::string& str, EUI48& dest, std::string& errmsg) 
         errmsg.append(": "+str);
         return false;
     }
-    if ( sscanf(str.c_str(), "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx",
-                &dest.b[5], &dest.b[4], &dest.b[3], &dest.b[2], &dest.b[1], &dest.b[0]) != 6 )
-    {
+    static_assert(isLittleOrBigEndian()); // one static_assert is sufficient for whole compilation unit
+    int scanres;
+    if( isLittleEndian() ) {
+        scanres = sscanf(str.c_str(), "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx",
+                        &dest.b[5], &dest.b[4], &dest.b[3], &dest.b[2], &dest.b[1], &dest.b[0]);
+    } else {
+        scanres = sscanf(str.c_str(), "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx",
+                        &dest.b[0], &dest.b[1], &dest.b[2], &dest.b[3], &dest.b[4], &dest.b[5]);
+    }
+    if ( 6 != scanres ) {
         errmsg.append("EUI48 string not in format '01:02:03:0A:0B:0C' but '"+str+"'");
         return false;
     }
@@ -182,18 +227,32 @@ EUI48::EUI48(const std::string& str) {
     }
 }
 
-EUI48::EUI48(const uint8_t * b_) noexcept {
-    memcpy(b, b_, sizeof(b));
+EUI48::EUI48(const uint8_t * source, const endian byte_order) noexcept {
+    static_assert(isLittleOrBigEndian()); // one static_assert is sufficient for whole compilation unit
+    if( endian::little == byte_order ) {
+        memcpy(b, source, sizeof(b));
+    } else {
+        bswap_6bytes(b, source);
+    }
+}
+
+jau::nsize_t EUI48::put(uint8_t * const sink, jau::nsize_t const sink_pos, const endian byte_order) const noexcept {
+    if( endian::native == byte_order ) {
+        memcpy(sink + sink_pos, b, sizeof(b));
+    } else {
+        bswap_6bytes(sink + sink_pos, b);
+    }
+    return 6;
 }
 
 static uint8_t _EUI48_ALL_DEVICE[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 static uint8_t _EUI48_LOCAL_DEVICE[] = {0x00, 0x00, 0x00, 0xff, 0xff, 0xff};
 
 const EUI48Sub jau::EUI48Sub::ANY_DEVICE; // default ctor is zero bytes!
-const EUI48Sub jau::EUI48Sub::ALL_DEVICE( _EUI48_ALL_DEVICE, 6 );
-const EUI48Sub jau::EUI48Sub::LOCAL_DEVICE( _EUI48_LOCAL_DEVICE, 6 );
+const EUI48Sub jau::EUI48Sub::ALL_DEVICE( _EUI48_ALL_DEVICE, 6);
+const EUI48Sub jau::EUI48Sub::LOCAL_DEVICE( _EUI48_LOCAL_DEVICE, 6);
 
 const EUI48 jau::EUI48::ANY_DEVICE; // default ctor is zero bytes!
-const EUI48 jau::EUI48::ALL_DEVICE( _EUI48_ALL_DEVICE );
-const EUI48 jau::EUI48::LOCAL_DEVICE( _EUI48_LOCAL_DEVICE );
+const EUI48 jau::EUI48::ALL_DEVICE( _EUI48_ALL_DEVICE, endian::little );
+const EUI48 jau::EUI48::LOCAL_DEVICE( _EUI48_LOCAL_DEVICE, endian::little );
 

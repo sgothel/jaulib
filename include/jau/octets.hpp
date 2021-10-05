@@ -355,10 +355,10 @@ namespace jau {
 
             void put_eui48(const nsize_t i, const EUI48 & v) {
                 check_range(i, sizeof(v.b));
-                v.put(data(), i, little_endian());
+                v.put(data(), i, byte_order());
             }
-            void put_eui48_nc(const nsize_t i, const EUI48 & v) noexcept {
-                v.put(data(), i, little_endian());
+            inline void put_eui48_nc(const nsize_t i, const EUI48 & v) noexcept {
+                v.put(data(), i, byte_order());
             }
 
             void put_uint64(const nsize_t i, const uint64_t & v) {

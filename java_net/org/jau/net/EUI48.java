@@ -25,10 +25,14 @@
 package org.jau.net;
 
 import org.jau.util.BasicTypes;
+import java.nio.ByteOrder;
 
 /**
  * A packed 48 bit EUI-48 identifier, formerly known as MAC-48
  * or simply network device MAC address (Media Access Control address).
+ * <p>
+ * Stores value in {@link ByteOrder#nativeOrder()} byte order.
+ * </p>
  * <p>
  * Implementation caches the hash value {@link #hashCode()},
  * hence users shall take special care when mutating the
@@ -37,11 +41,11 @@ import org.jau.util.BasicTypes;
  */
 public class EUI48 {
     /** EUI48 MAC address matching any device, i.e. '0:0:0:0:0:0'. */
-    public static final EUI48 ANY_DEVICE = new EUI48( new byte[] { (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00 } );
+    public static final EUI48 ANY_DEVICE = new EUI48( new byte[] { (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00 }, ByteOrder.nativeOrder() );
     /** EUI48 MAC address matching all device, i.e. 'ff:ff:ff:ff:ff:ff'. */
-    public static final EUI48 ALL_DEVICE = new EUI48( new byte[] { (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff } );
+    public static final EUI48 ALL_DEVICE = new EUI48( new byte[] { (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff }, ByteOrder.nativeOrder() );
     /** EUI48 MAC address matching local device, i.e. '0:0:0:ff:ff:ff'. */
-    public static final EUI48 LOCAL_DEVICE = new EUI48( new byte[] { (byte)0x00, (byte)0x00, (byte)0x00, (byte)0xff, (byte)0xff, (byte)0xff } );
+    public static final EUI48 LOCAL_DEVICE = new EUI48( new byte[] { (byte)0x00, (byte)0x00, (byte)0x00, (byte)0xff, (byte)0xff, (byte)0xff }, ByteOrder.nativeOrder() );
 
     /**
      * The 6 byte EUI48 address.
@@ -56,7 +60,7 @@ public class EUI48 {
 
     /**
      * Size of the byte stream representation in bytes
-     * @see #getStream(byte[], int)
+     * @see #put(byte[], int)
      */
     /* pp */ static final int byte_size = 6;
 
@@ -78,8 +82,14 @@ public class EUI48 {
             return false;
         }
         try {
-            for(int i=0; i<byte_size; i++) {
-                dest.b[byte_size-1-i] = Integer.valueOf(str.substring(i*2+i, i*2+i+2), 16).byteValue();
+            if( ByteOrder.LITTLE_ENDIAN == ByteOrder.nativeOrder() ) {
+                for(int i=0; i<byte_size; i++) {
+                    dest.b[byte_size-1-i] = Integer.valueOf(str.substring(i*2+i, i*2+i+2), 16).byteValue();
+                }
+            } else {
+                for(int i=0; i<byte_size; i++) {
+                    dest.b[i] = Integer.valueOf(str.substring(i*2+i, i*2+i+2), 16).byteValue();
+                }
             }
         } catch (final NumberFormatException e) {
             errmsg.append("EUI48 string not in format '01:02:03:0A:0B:0C' but "+str+"; "+e.getMessage());
@@ -107,20 +117,29 @@ public class EUI48 {
     }
 
     /** Construct instance via given source byte array */
-    public EUI48(final byte stream[], final int pos) {
+    public EUI48(final byte stream[], final int pos, final ByteOrder byte_order) {
         if( byte_size > ( stream.length - pos ) ) {
             throw new IllegalArgumentException("EUI48 stream ( "+stream.length+" - "+pos+" ) < "+byte_size+" bytes");
         }
         b = new byte[byte_size];
-        System.arraycopy(stream, pos, b, 0,  byte_size);
+        if( byte_order == ByteOrder.nativeOrder() ) {
+            System.arraycopy(stream, pos, b, 0,  byte_size);
+        } else {
+            BasicTypes.bswap_6bytes(stream, pos, b, 0);
+        }
     }
 
     /** Construct instance using the given address of the byte array */
-    public EUI48(final byte address[]) {
+    public EUI48(final byte address[], final ByteOrder byte_order) {
         if( byte_size != address.length ) {
             throw new IllegalArgumentException("EUI48 stream "+address.length+" != "+byte_size+" bytes");
         }
-        b = address;
+        b = new byte[byte_size];
+        if( byte_order == ByteOrder.nativeOrder() ) {
+            System.arraycopy(address, 0, b, 0,  byte_size);
+        } else {
+            BasicTypes.bswap_6bytes(address, 0, b, 0);
+        }
     }
 
     /** Construct empty unset instance. */
@@ -195,46 +214,42 @@ public class EUI48 {
     }
 
     /**
-     * Method transfers all bytes representing a EUI48 from the given
-     * source array at the given position into this instance and clears its cached hash value.
-     * <p>
-     * Implementation is consistent with {@link #EUI48(byte[], int)}.
-     * </p>
-     * @param source the source array
-     * @param pos starting position in the source array
-     * @see #EUI48(byte[], int)
-     * @see #clearHash()
-     */
-    public final void putStream(final byte[] source, final int pos) {
-        if( byte_size > ( source.length - pos ) ) {
-            throw new IllegalArgumentException("Stream ( "+source.length+" - "+pos+" ) < "+byte_size+" bytes");
-        }
-        hash = 0;
-        System.arraycopy(source, pos, b, 0, byte_size);
-    }
-
-    /**
      * Method transfers all bytes representing this instance into the given
-     * destination array at the given position.
+     * destination array at the given position and in the given byte order.
      * <p>
-     * Implementation is consistent with {@link #EUI48(byte[], int)}.
+     * Implementation is consistent with {@link #EUI48(byte[], int, ByteOrder)}.
      * </p>
      * @param sink the destination array
-     * @param pos starting position in the destination array
-     * @see #EUI48(byte[], int)
+     * @param sink_pos starting position in the destination array
+     * @param byte_order destination buffer byte order
+     * @throws IllegalArgumentException
+     * @see #EUI48(byte[], int, ByteOrder)
      */
-    public final void getStream(final byte[] sink, final int pos) {
-        if( byte_size > ( sink.length - pos ) ) {
-            throw new IllegalArgumentException("Stream ( "+sink.length+" - "+pos+" ) < "+byte_size+" bytes");
+    public final void put(final byte[] sink, final int sink_pos, final ByteOrder byte_order) {
+        if( byte_size > ( sink.length - sink_pos ) ) {
+            throw new IllegalArgumentException("Stream ( "+sink.length+" - "+sink_pos+" ) < "+byte_size+" bytes");
         }
-        System.arraycopy(b, 0, sink, pos, byte_size);
+        if( byte_order == ByteOrder.nativeOrder() ) {
+            System.arraycopy(b, 0, sink, sink_pos, byte_size);
+        } else {
+            BasicTypes.bswap_6bytes(b, 0, sink, sink_pos);
+        }
     }
 
     /**
-     * Finds the index of given EUI48Sub.
+     * Finds the index of given EUI48Sub needle within this instance haystack in the given byte order.
+     *
+     * The returned index will be adjusted for the desired byte order.
+     * - {@link ByteOrder#BIG_ENDIAN} will return index 0 for the leading byte like the {@link #toString()} representation from left (MSB) to right (LSB).
+     * - {@link ByteOrder#LITTLE_ENDIAN} will return index 5 for the leading byte
+     *
+     * @param needle
+     * @param byte_order byte order will adjust the returned index, {@link ByteOrder#BIG_ENDIAN} is equivalent with {@link #toString()} representation from left (MSB) to right (LSB).
+     * @return index of first element of needle within this instance haystack or -1 if not found. If the needle length is zero, 0 (found) is returned.
+     * @see #indexOf(byte[], int, byte[], int, ByteOrder)
      */
-    public int indexOf(final EUI48Sub needle) {
-        return EUI48Sub.indexOf(b, 6, needle.b, needle.length);
+    public int indexOf(final EUI48Sub needle, final ByteOrder byte_order) {
+        return EUI48Sub.indexOf(b, 6, needle.b, needle.length, byte_order);
     }
 
     /**
@@ -244,7 +259,7 @@ public class EUI48 {
      * </p>
      */
     public boolean contains(final EUI48Sub needle) {
-        return 0 <= indexOf(needle);
+        return 0 <= indexOf(needle, ByteOrder.nativeOrder());
     }
 
     /**
@@ -258,11 +273,30 @@ public class EUI48 {
     @Override
     public final String toString() {
         final StringBuilder sb = new StringBuilder(17);
-        for(int i=byte_size-1; 0 <= i; i--) {
-            BasicTypes.byteHexString(sb, b[i], false /* lowerCase */);
-            if( 0 < i ) {
-                sb.append(":");
-            }
+        if( ByteOrder.LITTLE_ENDIAN == ByteOrder.nativeOrder() ) {
+            BasicTypes.byteHexString(sb, b[5], false /* lowerCase */);
+            sb.append(":");
+            BasicTypes.byteHexString(sb, b[4], false /* lowerCase */);
+            sb.append(":");
+            BasicTypes.byteHexString(sb, b[3], false /* lowerCase */);
+            sb.append(":");
+            BasicTypes.byteHexString(sb, b[2], false /* lowerCase */);
+            sb.append(":");
+            BasicTypes.byteHexString(sb, b[1], false /* lowerCase */);
+            sb.append(":");
+            BasicTypes.byteHexString(sb, b[0], false /* lowerCase */);
+        } else {
+            BasicTypes.byteHexString(sb, b[0], false /* lowerCase */);
+            sb.append(":");
+            BasicTypes.byteHexString(sb, b[1], false /* lowerCase */);
+            sb.append(":");
+            BasicTypes.byteHexString(sb, b[2], false /* lowerCase */);
+            sb.append(":");
+            BasicTypes.byteHexString(sb, b[3], false /* lowerCase */);
+            sb.append(":");
+            BasicTypes.byteHexString(sb, b[4], false /* lowerCase */);
+            sb.append(":");
+            BasicTypes.byteHexString(sb, b[5], false /* lowerCase */);
         }
         return sb.toString();
     }

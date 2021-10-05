@@ -30,6 +30,7 @@ package jau.test.net;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -50,7 +51,7 @@ import org.junit.runners.MethodSorters;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class TestEUI48 extends JunitTracer {
 
-    static void test_sub(final String mac_str, final List<String> mac_sub_strs, final List<Integer> indices) {
+    static void test_sub01(final ByteOrder byte_order, final String mac_str, final List<String> mac_sub_strs, final List<Integer> indices) {
         final EUI48 mac = new EUI48(mac_str);
 
         System.out.printf("Test EUI48 mac: '%s' -> '%s'\n", mac_str, mac.toString());
@@ -75,7 +76,7 @@ public class TestEUI48 extends JunitTracer {
             }
             Assert.assertEquals(sub_str, mac_sub.toString());
 
-            final int idx = mac.indexOf(mac_sub);
+            final int idx = mac.indexOf(mac_sub, byte_order);
             Assert.assertEquals( idx, indices.get(i).intValue());
             if( idx >= 0 ) {
                 Assert.assertTrue( mac.contains(mac_sub) );
@@ -84,7 +85,7 @@ public class TestEUI48 extends JunitTracer {
             }
         }
     }
-    static void test_sub(final String mac_sub_str_exp, final String mac_sub_str, final boolean expected_result) {
+    static void test_sub02(final String mac_sub_str_exp, final String mac_sub_str, final boolean expected_result) {
         final StringBuilder errmsg = new StringBuilder();
         final EUI48Sub mac_sub = new EUI48Sub ();
         final boolean res = EUI48Sub.scanEUI48Sub(mac_sub_str, mac_sub, errmsg);
@@ -104,25 +105,41 @@ public class TestEUI48 extends JunitTracer {
         {
             // index                      [high=5 ...   low=0]
             final String mac02_str = "C0:10:22:A0:10:00";
-            final String[] mac02_sub_strs = { "C0", "C0:10", ":10:22", "10:22", ":10:22:", "10:22:", "10", "10:00", "00", ":", "", "00:10", mac02_str};
-            final Integer[] mac02_sub_idxs = {  5,       4,        3,       3,         3,        3,    1,       0,    0,   0,  0,      -1,         0};
-            test_sub(mac02_str, Arrays.asList(mac02_sub_strs), Arrays.asList(mac02_sub_idxs));
+            final String[] mac02_sub_strs =    { "C0", "C0:10", ":10:22", "10:22", ":10:22:", "10:22:", "10", "10:00", "00", ":", "", "00:10", mac02_str};
+            final Integer[] mac02_sub_idxs_le = {  5,       4,        3,       3,         3,        3,    1,       0,    0,   0,  0,      -1,         0};
+            final Integer[] mac02_sub_idxs_be = {  0,       0,        1,       1,         1,        1,    4,       4,    5,   0,  0,      -1,         0};
+            test_sub01(ByteOrder.LITTLE_ENDIAN, mac02_str, Arrays.asList(mac02_sub_strs), Arrays.asList(mac02_sub_idxs_le));
+            test_sub01(ByteOrder.BIG_ENDIAN, mac02_str, Arrays.asList(mac02_sub_strs), Arrays.asList(mac02_sub_idxs_be));
         }
 
         {
             // index                      [high=5 ...   low=0]
             final String mac03_str = "01:02:03:04:05:06";
-            final String[] mac03_sub_strs = { "01", "01:02", ":03:04", "03:04", ":04:05:", "04:05:", "04", "05:06", "06", ":", "", "06:05", mac03_str};
-            final Integer[] mac03_sub_idxs = {  5,       4,        2,       2,         1,        1,    2,       0,    0,   0,  0,      -1,         0};
-            test_sub(mac03_str, Arrays.asList(mac03_sub_strs), Arrays.asList(mac03_sub_idxs));
+            final String[] mac03_sub_strs =    { "01", "01:02", ":03:04", "03:04", ":04:05:", "04:05:", "04", "05:06", "06", ":", "", "06:05", mac03_str};
+            final Integer[] mac03_sub_idxs_le = {  5,       4,        2,       2,         1,        1,    2,       0,    0,   0,  0,      -1,         0};
+            final Integer[] mac03_sub_idxs_be = {  0,       0,        2,       2,         3,        3,    3,       4,    5,   0,  0,      -1,         0};
+            test_sub01(ByteOrder.LITTLE_ENDIAN, mac03_str, Arrays.asList(mac03_sub_strs), Arrays.asList(mac03_sub_idxs_le));
+            test_sub01(ByteOrder.BIG_ENDIAN, mac03_str, Arrays.asList(mac03_sub_strs), Arrays.asList(mac03_sub_idxs_be));
         }
         {
             final String mac_sub_str = "C0:10:22:A0:10:00";
-            test_sub(mac_sub_str, mac_sub_str, true /* expected_result */);
+            test_sub02(mac_sub_str, mac_sub_str, true /* expected_result */);
         }
         {
             final String mac_sub_str = "0600106";
-            test_sub(null, mac_sub_str, false /* expected_result */);
+            test_sub02(null, mac_sub_str, false /* expected_result */);
+        }
+        {
+            final EUI48 h = new EUI48("01:02:03:04:05:06");
+            final EUI48Sub n = new EUI48Sub("01:02");
+            Assert.assertEquals(0, h.indexOf(n, ByteOrder.BIG_ENDIAN));
+            Assert.assertEquals(4, h.indexOf(n, ByteOrder.LITTLE_ENDIAN));
+        }
+        {
+            final EUI48 h = new EUI48("01:02:03:04:05:06");
+            final EUI48Sub n = new EUI48Sub("05:06");
+            Assert.assertEquals(4, h.indexOf(n, ByteOrder.BIG_ENDIAN));
+            Assert.assertEquals(0, h.indexOf(n, ByteOrder.LITTLE_ENDIAN));
         }
     }
 

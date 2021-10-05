@@ -25,6 +25,15 @@ package org.jau.util;
 
 public class BasicTypes {
 
+    public static void bswap_6bytes(final byte[/*6*/] source, final int source_pos, final byte[/*6*/] sink, final int sink_pos) {
+        sink[0+sink_pos] = source[5+source_pos];
+        sink[1+sink_pos] = source[4+source_pos];
+        sink[2+sink_pos] = source[3+source_pos];
+        sink[3+sink_pos] = source[2+source_pos];
+        sink[4+sink_pos] = source[1+source_pos];
+        sink[5+sink_pos] = source[0+source_pos];
+    }
+
     /**
      * Produce a lower-case hexadecimal string representation of the given byte values.
      * <p>

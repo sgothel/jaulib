@@ -23,12 +23,16 @@
  */
 package org.jau.net;
 
+import java.nio.ByteOrder;
 import java.util.Arrays;
 
 import org.jau.util.BasicTypes;
 
 /**
  * A 48 bit EUI-48 sub-identifier, see {@link EUI48}.
+ * <p>
+ * Stores value in {@link ByteOrder#nativeOrder()} byte order.
+ * </p>
  */
 public class EUI48Sub {
     /** EUI48Sub MAC address matching any device, i.e. '0:0:0:0:0:0'. */
@@ -92,9 +96,15 @@ public class EUI48Sub {
                 }
             }
             dest.length = len_;
-            for(j=0; j<len_; ++j) { // swap low->high
-                dest.b[j] = b_[len_-1-j];
+
+            if( ByteOrder.LITTLE_ENDIAN == ByteOrder.nativeOrder() ) {
+                for(j=0; j<len_; ++j) { // swap low->high
+                    dest.b[j] = b_[len_-1-j];
+                }
+            } else {
+                System.arraycopy(b_, 0, dest.b, 0, len_);
             }
+
         } catch (final NumberFormatException e) {
             errmsg.append("EUI48 sub-string not in format '01:02:03:0A:0B:0C' but "+str+", pos "+j+", len "+str_len);
             return false;
@@ -126,7 +136,12 @@ public class EUI48Sub {
         }
     }
 
-    /** Construct instance via given source byte array */
+    /**
+     * Constructor, copying len_ bytes from given b_ in native byte order.
+     * @param stream sub address bytes in native byte order
+     * @param pos start position in stream
+     * @param len_ length
+     */
     public EUI48Sub(final byte stream[], final int pos, final int len_) {
         if( len_ > EUI48.byte_size || pos + len_ > stream.length ) {
             throw new IllegalArgumentException("EUI48 stream ( pos "+pos+", len "+len_+" > EUI48 size "+EUI48.byte_size+" or stream.length "+stream.length);
@@ -191,15 +206,22 @@ public class EUI48Sub {
     }
 
     /**
-     * Find index of needle within haystack.
+     * Find index of needle within haystack in the given byte order.
+     *
+     * The returned index will be adjusted for the desired byte order.
+     * - {@link ByteOrder#BIG_ENDIAN} will return index 0 for the leading byte like the {@link #toString()} representation from left (MSB) to right (LSB).
+     * - {@link ByteOrder#LITTLE_ENDIAN} will return index 5 for the leading byte
+     *
      * @param haystack_b haystack data
      * @param haystack_length haystack length
      * @param needle_b needle data
      * @param needle_length needle length
+     * @param byte_order byte order will adjust the returned index, {@link ByteOrder#BIG_ENDIAN} is equivalent with {@link #toString()} representation from left (MSB) to right (LSB).
      * @return index of first element of needle within haystack or -1 if not found. If the needle length is zero, 0 (found) is returned.
      */
     public static int indexOf(final byte haystack_b[], final int haystack_length,
-                              final byte needle_b[], final int needle_length) {
+                              final byte needle_b[], final int needle_length,
+                              final ByteOrder byte_order) {
         if( 0 == needle_length ) {
             return 0;
         }
@@ -222,7 +244,12 @@ public class EUI48Sub {
                 int j = i, k=0;
                 do {
                     if( ++j == innerEnd ) {
-                        return i; // gotcha
+                        // gotcha
+                        if( ByteOrder.nativeOrder() == byte_order ) {
+                            return i;
+                        } else {
+                            return 5 - i - ( needle_length - 1 );
+                        }
                     }
                 } while( haystack_b[j] == needle_b[++k] );
             }
@@ -231,12 +258,19 @@ public class EUI48Sub {
     }
 
     /**
-     * Finds the index of given EUI48Sub needle within this instance haystack.
+     * Finds the index of given EUI48Sub needle within this instance haystack in the given byte order.
+     *
+     * The returned index will be adjusted for the desired byte order.
+     * - {@link ByteOrder#BIG_ENDIAN} will return index 0 for the leading byte like the {@link #toString()} representation from left (MSB) to right (LSB).
+     * - {@link ByteOrder#LITTLE_ENDIAN} will return index 5 for the leading byte
+     *
      * @param needle
+     * @param byte_order byte order will adjust the returned index, {@link ByteOrder#BIG_ENDIAN} is equivalent with {@link #toString()} representation from left (MSB) to right (LSB).
      * @return index of first element of needle within this instance haystack or -1 if not found. If the needle length is zero, 0 (found) is returned.
+     * @see #indexOf(byte[], int, byte[], int, ByteOrder)
      */
-    public int indexOf(final EUI48Sub needle) {
-        return indexOf(b, length, needle.b, needle.length);
+    public int indexOf(final EUI48Sub needle, final ByteOrder byte_order) {
+        return indexOf(b, length, needle.b, needle.length, byte_order);
     }
 
     /**
@@ -246,7 +280,7 @@ public class EUI48Sub {
      * </p>
      */
     public boolean contains(final EUI48Sub needle) {
-        return 0 <= indexOf(needle);
+        return 0 <= indexOf(needle, ByteOrder.nativeOrder());
     }
 
     /**
@@ -264,10 +298,19 @@ public class EUI48Sub {
         // len = ( str_len + 1 ) / 3
         if( 0 < length ) {
             final StringBuilder sb = new StringBuilder(3 * length - 1);
-            for(int i=length-1; 0 <= i; i--) {
-                BasicTypes.byteHexString(sb, b[i], false /* lowerCase */);
-                if( 0 < i ) {
-                    sb.append(":");
+            if( ByteOrder.LITTLE_ENDIAN == ByteOrder.nativeOrder() ) {
+                for(int i=length-1; 0 <= i; --i) {
+                    BasicTypes.byteHexString(sb, b[i], false /* lowerCase */);
+                    if( 0 < i ) {
+                        sb.append(":");
+                    }
+                }
+            } else {
+                for(int i=0; i < length; ++i) {
+                    if( 0 < i ) {
+                        sb.append(":");
+                    }
+                    BasicTypes.byteHexString(sb, b[i], false /* lowerCase */);
                 }
             }
             return sb.toString();

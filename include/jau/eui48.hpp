@@ -39,8 +39,11 @@ namespace jau {
 
     /**
      * A 48 bit EUI-48 sub-identifier, see EUI48.
+     *
+     * Stores value in endian::native byte order.
      */
     struct EUI48Sub {
+      public:
         /** EUI48 MAC address matching any device, i.e. `0:0:0:0:0:0`. */
         static const EUI48Sub ANY_DEVICE;
         /** EUI48 MAC address matching all device, i.e. `ff:ff:ff:ff:ff:ff`. */
@@ -59,6 +62,12 @@ namespace jau {
         jau::nsize_t length;
 
         constexpr EUI48Sub() noexcept : b{0}, length{0} { }
+
+        /**
+         * Constructor, copying len_ bytes from given b_ in endian::native byte order.
+         * @param b_ sub address bytes in endian::native byte order
+         * @param len_ length
+         */
         EUI48Sub(const uint8_t * b_, const jau::nsize_t len_) noexcept;
 
         /**
@@ -113,23 +122,37 @@ namespace jau {
         }
 
         /**
-         * Find index of needle within haystack.
+         * Find index of needle within haystack in the given byte order.
+         *
+         * The returned index will be adjusted for the desired byte order.
+         * - endian::big will return index 0 for the leading byte like the toString() representation from left (MSB) to right (LSB).
+         * - endian::little will return index 5 for the leading byte
+         *
          * @param haystack_b haystack data
          * @param haystack_length haystack length
          * @param needle_b needle data
          * @param needle_length needle length
+         * @param byte_order byte order will adjust the returned index, endian::big is equivalent with toString() representation from left (MSB) to right (LSB).
          * @return index of first element of needle within haystack or -1 if not found. If the needle length is zero, 0 (found) is returned.
          */
         static jau::snsize_t indexOf(const uint8_t haystack_b[], const jau::nsize_t haystack_length,
-                                     const uint8_t needle_b[], const jau::nsize_t needle_length) noexcept;
+                                     const uint8_t needle_b[], const jau::nsize_t needle_length,
+                                     const endian byte_order) noexcept;
 
         /**
-         * Finds the index of given EUI48Sub needle within this instance haystack.
+         * Finds the index of given EUI48Sub needle within this instance haystack in the given byte order.
+         *
+         * The returned index will be adjusted for the desired byte order.
+         * - endian::big will return index 0 for the leading byte like the toString() representation from left (MSB) to right (LSB).
+         * - endian::little will return index 5 for the leading byte
+         *
          * @param needle
+         * @param byte_order byte order will adjust the returned index, endian::big is equivalent with toString() representation from left (MSB) to right (LSB).
          * @return index of first element of needle within this instance haystack or -1 if not found. If the needle length is zero, 0 (found) is returned.
+         * @see indexOf()
          */
-        jau::snsize_t indexOf(const EUI48Sub& needle) const noexcept {
-            return indexOf(b, length, needle.b, needle.length);
+        jau::snsize_t indexOf(const EUI48Sub& needle, const endian byte_order) const noexcept {
+            return indexOf(b, length, needle.b, needle.length, byte_order);
         }
 
         /**
@@ -139,11 +162,11 @@ namespace jau {
          * </p>
          */
         bool contains(const EUI48Sub& needle) const noexcept {
-            return 0 <= indexOf(needle);
+            return 0 <= indexOf(needle, endian::native);
         }
 
         /**
-         * Returns the EUI48 sub-string representation,
+         * Returns the EUI48 sub-string representation with MSB first (endian::big),
          * less or equal 17 characters representing less or equal 6 bytes as upper case hexadecimal numbers separated via colon,
          * e.g. `01:02:03:0A:0B:0C`, `01:02:03:0A`, `:`, (empty).
          */
@@ -168,6 +191,8 @@ namespace jau {
     /**
      * A packed 48 bit EUI-48 identifier, formerly known as MAC-48
      * or simply network device MAC address (Media Access Control address).
+     *
+     * Stores value in endian::native byte order.
      */
     __pack ( struct EUI48 {
         /** EUI48 MAC address matching any device, i.e. `0:0:0:0:0:0`. */
@@ -183,7 +208,17 @@ namespace jau {
         uint8_t b[6]; // == sizeof(EUI48)
 
         constexpr EUI48() noexcept : b{0}  { }
-        EUI48(const uint8_t * b_) noexcept;
+
+        /**
+         * Copy address bytes from given source and store it in endian::native order.
+         *
+         * If given address bytes are not in endian::native order (littleEndian),
+         * they are swapped.
+         *
+         * @param source address bytes
+         * @param byte_order endian::little or endian::big byte order
+         */
+        EUI48(const uint8_t * source, const endian byte_order) noexcept;
 
         /**
          * Fills given EUI48 instance via given string representation.
@@ -237,11 +272,18 @@ namespace jau {
 
         /**
          * Finds the index of given EUI48Sub needle within this instance haystack.
+         *
+         * The returned index will be adjusted for the desired byte order.
+         * - endian::big will return index 0 for the leading byte like the string representation from left (MSB) to right (LSB).
+         * - endian::little will return index 5 for the leading byte
+         *
          * @param needle
+         * @param byte_order byte order will adjust the returned index, endian::big is equivalent to the string representation from left (MSB) to right (LSB).
          * @return index of first element of needle within this instance haystack or -1 if not found. If the needle length is zero, 0 (found) is returned.
+         * @see indexOf()
          */
-        jau::snsize_t indexOf(const EUI48Sub& needle) const noexcept {
-            return EUI48Sub::indexOf(b, sizeof(b), needle.b, needle.length);
+        jau::snsize_t indexOf(const EUI48Sub& needle, const endian byte_order) const noexcept {
+            return EUI48Sub::indexOf(b, sizeof(b), needle.b, needle.length, byte_order);
         }
 
         /**
@@ -251,15 +293,28 @@ namespace jau {
          * </p>
          */
         bool contains(const EUI48Sub& needle) const noexcept {
-            return 0 <= indexOf(needle);
+            return 0 <= indexOf(needle, endian::native);
         }
 
         /**
-         * Returns the EUI48 string representation,
+         * Returns the EUI48 string representation with MSB first (endian::big),
          * exactly 17 characters representing 6 bytes as upper case hexadecimal numbers separated via colon `01:02:03:0A:0B:0C`.
          * @see EUI48::EUI48()
          */
         std::string toString() const noexcept;
+
+        /**
+         * Method transfers all bytes representing this instance into the given
+         * destination array at the given position and in the given byte order.
+         * <p>
+         * Implementation is consistent with {@link #EUI48(byte[], int, ByteOrder)}.
+         * </p>
+         * @param sink the destination array
+         * @param sink_pos starting position in the destination array
+         * @param byte_order destination buffer byte order
+         * @see #EUI48(byte[], int, ByteOrder)
+         */
+        jau::nsize_t put(uint8_t * const sink, jau::nsize_t const sink_pos, const endian byte_order) const noexcept;
     } );
     inline std::string to_string(const EUI48& a) noexcept { return a.toString(); }
 
@@ -280,6 +335,51 @@ namespace jau {
 
     inline bool operator!=(const EUI48& lhs, const EUI48& rhs) noexcept
     { return !(lhs == rhs); }
+
+    constexpr static void bswap_6bytes(uint8_t* sink, const uint8_t* source) noexcept {
+        sink[0] = source[5];
+        sink[1] = source[4];
+        sink[2] = source[3];
+        sink[3] = source[2];
+        sink[4] = source[1];
+        sink[5] = source[0];
+    }
+
+    constexpr EUI48 bswap(EUI48 const & source) noexcept {
+        EUI48 dest;
+        bswap_6bytes(dest.b, source.b);
+        return dest;
+    }
+
+    constexpr EUI48 be_to_cpu(EUI48 const & n) noexcept {
+        static_assert(isLittleOrBigEndian()); // one static_assert is sufficient for whole compilation unit
+        if( isLittleEndian() ) {
+            return bswap(n);
+        } else {
+            return n;
+        }
+    }
+    constexpr EUI48 cpu_to_be(EUI48 const & h) noexcept {
+        if( isLittleEndian() ) {
+            return bswap(h);
+        } else {
+            return h;
+        }
+    }
+    constexpr EUI48 le_to_cpu(EUI48 const & l) noexcept {
+        if( isLittleEndian() ) {
+            return l;
+        } else {
+            return bswap(l);
+        }
+    }
+    constexpr EUI48 cpu_to_le(EUI48 const & h) noexcept {
+        if( isLittleEndian() ) {
+            return h;
+        } else {
+            return bswap(h);
+        }
+    }
 
 } /* namespace jau */
 
