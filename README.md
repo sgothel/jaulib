@@ -122,8 +122,11 @@ Changes
 
 * First stable release (TODO)
 
-**0.4.8**
+**0.4.9**
 
+* EUI48[Sub]: Add endian awareness, also fixes indexOf() semantics (C++ and Java)
+* Octets: Enhance API doc
+* Octets/ringbuffer: Use std method names for sizes
 * Octets: Expose endian awareness, pass either endian::little or endian::big at ctor
 * darray: Support immutable type, i.e. 'const Type'
 
