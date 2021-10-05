@@ -54,6 +54,9 @@ namespace jau {
      * Transient read only and endian aware octet data, i.e. non persistent passthrough, owned by caller.
      *
      * Endian byte order is passed at construction.
+     *
+     * Constructor and assignment operations are `noexcept`. In case invalid arguments are passed, abort() is being called.
+     * This is a design choice based on reusing already existing underlying resources.
      */
     class TROOctets
     {
@@ -66,22 +69,28 @@ namespace jau {
             bool _little_endian;
 
         protected:
-            static inline void checkPtr(uint8_t *d, nsize_t s) {
-                if( nullptr == d && 0 < s ) {
-                    throw IllegalArgumentException("TROOctets: nullptr with size "+std::to_string(s)+" > 0", E_FILE_LINE);
+            /**
+             * Validates the given data_ and size_.
+             *
+             * Aborts if data_ is nullptr and size_ > 0.
+             *
+             * @param data_ a memory pointer
+             * @param size_ claimed memory size
+             */
+            static inline void checkPtr(uint8_t *data_, nsize_t size_) noexcept {
+                if( nullptr == data_ && 0 < size_ ) {
+                    ABORT("TROOctets: nullptr with size %s > 0", std::to_string(size_).c_str());
+                    abort(); // never reached
                 }
             }
-            static inline bool is_little_endian(const endian v, const bool throw_exception) {
+
+            static inline bool is_little_endian(const endian v) noexcept {
                 switch(v) {
                     case endian::little: return true;
                     case endian::big: return false;
                     default: {
-                        if( throw_exception ) {
-                            throw IllegalArgumentException("TROOctets: endian choice must be little or big, given: "+jau::to_string(v), E_FILE_LINE);
-                        } else {
-                            ABORT("TROOctets: endian choice must be little or big, given: %s", jau::to_string(v).c_str());
-                            abort(); // never reached
-                        }
+                        ABORT("TROOctets: endian choice must be little or big, given: %s", jau::to_string(v).c_str());
+                        abort(); // never reached
                     }
                 }
             }
@@ -91,32 +100,39 @@ namespace jau {
             constexpr uint8_t * data() noexcept { return _data; }
 
             /**
-             * @param d a non nullptr memory, otherwise throws exception
-             * @param s used memory size, may be zero
+             * Internally sets the _size and _data fields after validation.
+             *
+             * Aborts if data_ is nullptr and size_ > 0
+             * or byte_order not endian::little nor endian::big, see abort().
+             *
+             * @param data_ a memory pointer
+             * @param size_ used memory size
              * @param byte_order endian::little or endian::big byte order
              */
-            inline void setData(uint8_t *d, nsize_t s, const endian byte_order) {
+            inline void setData(uint8_t *data_, nsize_t size_, const endian byte_order) noexcept {
                 TRACE_PRINT("POctets setData: %d bytes @ %p -> %d bytes @ %p",
-                        _size, _data, s, d);
-                checkPtr(d, s);
-                _size = s;
-                _data = d;
-                _little_endian = is_little_endian(byte_order, false);
+                        _size, _data, size_, data_);
+                checkPtr(data_, size_);
+                _size = size_;
+                _data = data_;
+                _little_endian = is_little_endian(byte_order);
             }
             constexpr void setSize(nsize_t s) noexcept { _size = s; }
 
         public:
             /**
              * Transient passthrough read-only memory, w/o ownership ..
+             *
+             * Aborts if source is nullptr and len > 0
+             * or byte_order not endian::little nor endian::big, see abort().
+             *
              * @param source a non nullptr memory, otherwise throws exception. Actual capacity known by owner.
              * @param len readable size of the memory, may be zero
              * @param byte_order endian::little or endian::big byte order
-             * @throws IllegalArgumentException if source is nullptr but size > 0
-             *         or byte_order not endian::little nor endian::big
              */
-            TROOctets(const uint8_t *source, const nsize_t len, const endian byte_order)
+            TROOctets(const uint8_t *source, const nsize_t len, const endian byte_order) noexcept
             : _size( len ), _data( const_cast<uint8_t *>(source) ),
-              _little_endian( is_little_endian(byte_order, true) )
+              _little_endian( is_little_endian(byte_order) )
             {
                 checkPtr(_data, _size);
             }
@@ -143,7 +159,7 @@ namespace jau {
             constexpr endian byte_order() const noexcept { return _little_endian ? endian::little : endian::big; }
 
             /** Returns the used memory size for read and write operations, may be zero. */
-            constexpr nsize_t getSize() const noexcept { return _size; }
+            constexpr nsize_t size() const noexcept { return _size; }
 
             uint8_t get_uint8(const nsize_t i) const {
                 check_range(i, 1);
@@ -179,10 +195,10 @@ namespace jau {
 
             EUI48 get_eui48(const nsize_t i) const {
                 check_range(i, sizeof(EUI48));
-                return EUI48(_data+i);
+                return EUI48(_data+i, byte_order());
             }
             inline EUI48 get_eui48_nc(const nsize_t i) const noexcept {
-                return EUI48(_data+i);
+                return EUI48(_data+i, byte_order());
             }
 
             uint64_t get_uint64(const nsize_t i) const {
@@ -278,19 +294,24 @@ namespace jau {
      * Transient endian aware octet data, i.e. non persistent passthrough, owned by caller.
      *
      * Endian byte order is passed at construction.
+     *
+     * Constructor and assignment operations are `noexcept`. In case invalid arguments are passed, abort() is being called.
+     * This is a design choice based on reusing already existing underlying resources.
      */
     class TOctets : public TROOctets
     {
         public:
             /**
              * Transient passthrough r/w memory, w/o ownership ..
+             *
+             * Aborts if source is nullptr and len > 0
+             * or byte_order not endian::little nor endian::big, see abort().
+             *
              * @param source transient data source
              * @param len length of transient data source
              * @param byte_order endian::little or endian::big byte order
-             * @throws IllegalArgumentException if source is nullptr but size > 0
-             *         or byte_order not endian::little nor endian::big
              */
-            TOctets(uint8_t *source, const nsize_t len, const endian byte_order)
+            TOctets(uint8_t *source, const nsize_t len, const endian byte_order) noexcept
             : TROOctets(source, len, byte_order) {}
 
             TOctets(const TOctets &o) noexcept = default;
@@ -334,10 +355,10 @@ namespace jau {
 
             void put_eui48(const nsize_t i, const EUI48 & v) {
                 check_range(i, sizeof(v.b));
-                memcpy(data() + i, v.b, sizeof(v.b));
+                v.put(data(), i, little_endian());
             }
             void put_eui48_nc(const nsize_t i, const EUI48 & v) noexcept {
-                memcpy(data() + i, v.b, sizeof(v.b));
+                v.put(data(), i, little_endian());
             }
 
             void put_uint64(const nsize_t i, const uint64_t & v) {
@@ -373,11 +394,11 @@ namespace jau {
             }
 
             void put_octets(const nsize_t i, const TROOctets & v) {
-                check_range(i, v.getSize());
-                memcpy(data() + i, v.get_ptr(), v.getSize());
+                check_range(i, v.size());
+                memcpy(data() + i, v.get_ptr(), v.size());
             }
             void put_octets_nc(const nsize_t i, const TROOctets & v) noexcept {
-                memcpy(data() + i, v.get_ptr(), v.getSize());
+                memcpy(data() + i, v.get_ptr(), v.size());
             }
 
             void put_bytes(const nsize_t i, const uint8_t *source, const nsize_t byte_count) {
@@ -425,7 +446,7 @@ namespace jau {
             }
 
             std::string toString() const noexcept {
-                return "size "+std::to_string(getSize())+", rw: "+bytesHexString(get_ptr(), 0, getSize(), true /* lsbFirst */);
+                return "size "+std::to_string(size())+", rw: "+bytesHexString(get_ptr(), 0, size(), true /* lsbFirst */);
             }
     };
 
@@ -437,49 +458,57 @@ namespace jau {
     class TOctetSlice
     {
         private:
-            const TOctets & parent;
-            nsize_t const offset;
-            nsize_t const size;
+            const TOctets & _parent;
+            nsize_t const _offset;
+            nsize_t const _size;
 
         public:
+            /**
+             * Creates a view of a given TOctet with the specified offset_ and size_.
+             *
+             * @param buffer_ the parent TOctet buffer
+             * @param offset_ offset to the parent TOctet buffer
+             * @param size_ size of this view, starting at offset_
+             * @throws IndexOutOfBoundsException if offset_ + size_ > parent buffer_.size()
+             */
             TOctetSlice(const TOctets &buffer_, const nsize_t offset_, const nsize_t size_)
-            : parent(buffer_), offset(offset_), size(size_)
+            : _parent(buffer_), _offset(offset_), _size(size_)
             {
-                if( offset_+size > buffer_.getSize() ) {
-                    throw IndexOutOfBoundsException(offset_, size, buffer_.getSize(), E_FILE_LINE);
+                if( offset_+_size > buffer_.size() ) {
+                    throw IndexOutOfBoundsException(offset_, _size, buffer_.size(), E_FILE_LINE);
                 }
             }
 
             /** Returns byte order of this octet store. */
-            constexpr endian byte_order() const noexcept { return parent.byte_order(); }
+            constexpr endian byte_order() const noexcept { return _parent.byte_order(); }
 
-            constexpr nsize_t getSize() const noexcept { return size; }
-            constexpr nsize_t getOffset() const noexcept { return offset; }
-            const TOctets& getParent() const noexcept { return parent; }
+            constexpr nsize_t size() const noexcept { return _size; }
+            constexpr nsize_t offset() const noexcept { return _offset; }
+            constexpr const TOctets& parent() const noexcept { return _parent; }
 
             uint8_t get_uint8(const nsize_t i) const {
-                return parent.get_uint8(offset+i);
+                return _parent.get_uint8(_offset+i);
             }
             constexpr uint8_t get_uint8_nc(const nsize_t i) const noexcept {
-                return parent.get_uint8_nc(offset+i);
+                return _parent.get_uint8_nc(_offset+i);
             }
 
             uint16_t get_uint16(const nsize_t i) const {
-                return parent.get_uint16(offset+i);
+                return _parent.get_uint16(_offset+i);
             }
             constexpr uint16_t get_uint16_nc(const nsize_t i) const noexcept {
-                return parent.get_uint16_nc(offset+i);
+                return _parent.get_uint16_nc(_offset+i);
             }
 
             uint8_t const * get_ptr(const nsize_t i) const {
-                return parent.get_ptr(offset+i);
+                return _parent.get_ptr(_offset+i);
             }
             constexpr uint8_t const * get_ptr_nc(const nsize_t i) const noexcept {
-                return parent.get_ptr_nc(offset+i);
+                return _parent.get_ptr_nc(_offset+i);
             }
 
             std::string toString() const noexcept {
-                return "offset "+std::to_string(offset)+", size "+std::to_string(size)+": "+bytesHexString(parent.get_ptr(), offset, size, true /* lsbFirst */);
+                return "offset "+std::to_string(_offset)+", size "+std::to_string(_size)+": "+bytesHexString(_parent.get_ptr(), _offset, _size, true /* lsbFirst */);
             }
     };
 
@@ -487,11 +516,14 @@ namespace jau {
      * Persistent endian aware octet data, i.e. owned memory allocation.
      *
      * Endian byte order is passed at construction.
+     *
+     * Constructor and assignment operations are **not** completely `noexcept` and may throw exceptions.
+     * This is a design choice based on dynamic resource allocation performed by this class.
      */
     class POctets : public TOctets
     {
         private:
-            nsize_t capacity;
+            nsize_t _capacity;
 
             void freeData() {
                 uint8_t * ptr = data();
@@ -501,6 +533,12 @@ namespace jau {
                 } // else: zero sized POctets w/ nullptr are supported
             }
 
+            /**
+             * Allocate a memory chunk.
+             * @param size
+             * @return
+             * @throws OutOfMemoryError if running out of memory
+             */
             static uint8_t * allocData(const nsize_t size) {
                 if( size <= 0 ) {
                     return nullptr;
@@ -514,14 +552,19 @@ namespace jau {
 
         public:
             /** Returns the memory capacity, never zero, greater or equal {@link #getSize()}. */
-            constexpr nsize_t getCapacity() const noexcept { return capacity; }
+            constexpr nsize_t capacity() const noexcept { return _capacity; }
 
             /**
-             * Intentional zero sized POctets instance.
+             * Zero sized POctets instance.
+             *
+             * Aborts if byte_order not endian::little nor endian::big, see abort().
+             *
+             * Will not throw an OutOfMemoryError exception due to no allocation.
+             *
              * @param byte_order endian::little or endian::big byte order
              */
-            POctets(const endian byte_order)
-            : TOctets(nullptr, 0, byte_order), capacity(0)
+            POctets(const endian byte_order) noexcept
+            : TOctets(nullptr, 0, byte_order), _capacity(0)
             {
                 TRACE_PRINT("POctets ctor0: zero-sized");
             }
@@ -529,44 +572,58 @@ namespace jau {
             /**
              * Takes ownership (malloc(size) and copy, free) ..
              *
+             * Aborts if byte_order not endian::little nor endian::big, see abort().
+             *
              * Capacity and size will be of given source size.
-             * @param _source source data to be copied into this new instance
+             *
+             * @param source_ source data to be copied into this new instance
              * @param size_ length of source data
              * @param byte_order endian::little or endian::big byte order
-             * @throws IllegalArgumentException if byte_order not endian::little nor endian::big
+             * @throws IllegalArgumentException if source_ is nullptr and size_ > 0
+             * @throws OutOfMemoryError if allocation fails
              */
-            POctets(const uint8_t *_source, const nsize_t size_, const endian byte_order)
+            POctets(const uint8_t *source_, const nsize_t size_, const endian byte_order)
             : TOctets( allocData(size_), size_, byte_order),
-              capacity( size_ )
+              _capacity( size_ )
             {
                 if( 0 < size_ ) {
-                    std::memcpy(data(), _source, size_);
+                    if( nullptr == source_ ) {
+                        throw IllegalArgumentException("source nullptr with size "+std::to_string(size_)+" > 0", E_FILE_LINE);
+                    }
+                    std::memcpy(data(), source_, size_);
                 }
                 TRACE_PRINT("POctets ctor1: %p", data());
             }
 
             /**
              * New buffer (malloc(capacity), free)
-             * @param _capacity new capacity
+             *
+             * Aborts if byte_order not endian::little nor endian::big, see abort().
+             *
+             * @param capacity_ new capacity
              * @param size_ new size with size <= capacity
              * @param byte_order endian::little or endian::big byte order
-             * @throws IllegalArgumentException if byte_order not endian::little nor endian::big
+             * @throws IllegalArgumentException if capacity_ < size_
+             * @throws OutOfMemoryError if allocation fails
              */
-            POctets(const nsize_t _capacity, const nsize_t size_, const endian byte_order)
-            : TOctets( allocData(_capacity), size_, byte_order),
-              capacity( _capacity )
+            POctets(const nsize_t capacity_, const nsize_t size_, const endian byte_order)
+            : TOctets( allocData( capacity_ ), size_, byte_order ),
+              _capacity( capacity_ )
             {
-                if( capacity < getSize() ) {
-                    throw IllegalArgumentException("capacity "+std::to_string(capacity)+" < size "+std::to_string(getSize()), E_FILE_LINE);
+                if( capacity() < size() ) {
+                    throw IllegalArgumentException("capacity "+std::to_string(capacity())+" < size "+std::to_string(size()), E_FILE_LINE);
                 }
                 TRACE_PRINT("POctets ctor2: %p", data());
             }
 
             /**
              * New buffer (malloc, free)
+             *
+             * Aborts if byte_order not endian::little nor endian::big, see abort().
+             *
              * @param size new size and capacity
              * @param byte_order endian::little or endian::big byte order
-             * @throws IllegalArgumentException if byte_order not endian::little nor endian::big
+             * @throws OutOfMemoryError if allocation fails
              */
             POctets(const nsize_t size, const endian byte_order)
             : POctets(size, size, byte_order)
@@ -574,44 +631,64 @@ namespace jau {
                 TRACE_PRINT("POctets ctor3: %p", data());
             }
 
+            /**
+             * Copy constructor
+             * @param _source POctet source to be copied
+             * @throws OutOfMemoryError if allocation fails
+             */
             POctets(const POctets &_source)
-            : TOctets( allocData(_source.getSize()), _source.getSize(), _source.byte_order() ),
-              capacity( _source.getSize() )
+            : TOctets( allocData(_source.size()), _source.size(), _source.byte_order() ),
+              _capacity( _source.size() )
             {
-                std::memcpy(data(), _source.get_ptr(), _source.getSize());
+                std::memcpy(data(), _source.get_ptr(), _source.size());
                 TRACE_PRINT("POctets ctor-cpy0: %p", data());
             }
 
+            /**
+             * Move constructor
+             * @param o POctet source to be taken over
+             */
             POctets(POctets &&o) noexcept
-            : TOctets( o.data(), o.getSize(), o.byte_order() ),
-              capacity( o.getCapacity() )
+            : TOctets( o.data(), o.size(), o.byte_order() ),
+              _capacity( o.capacity() )
             {
                 // moved origin data references
                 // purge origin
                 o.setData(nullptr, 0, o.byte_order());
-                o.capacity = 0;
+                o._capacity = 0;
                 TRACE_PRINT("POctets ctor-move0: %p", data());
             }
 
+            /**
+             * Assignment operator
+             * @param _source POctet source to be copied
+             * @return
+             * @throws OutOfMemoryError if allocation fails
+             */
             POctets& operator=(const POctets &_source) {
                 if( this == &_source ) {
                     return *this;
                 }
                 freeData();
-                setData(allocData(_source.getSize()), _source.getSize(), _source.byte_order());
-                capacity = _source.getSize();
-                std::memcpy(data(), _source.get_ptr(), _source.getSize());
+                setData(allocData(_source.size()), _source.size(), _source.byte_order());
+                _capacity = _source.size();
+                std::memcpy(data(), _source.get_ptr(), _source.size());
                 TRACE_PRINT("POctets assign0: %p", data());
                 return *this;
             }
 
+            /**
+             * Move assignment operator
+             * @param o POctet source to be taken over
+             * @return
+             */
             POctets& operator=(POctets &&o) noexcept {
                 // move origin data references
-                setData(o.data(), o.getSize(), o.byte_order());
-                capacity = o.capacity;
+                setData(o.data(), o.size(), o.byte_order());
+                _capacity = o._capacity;
                 // purge origin
                 o.setData(nullptr, 0, o.byte_order());
-                o.capacity = 0;
+                o._capacity = 0;
                 TRACE_PRINT("POctets assign-move0: %p", data());
                 return *this;
             }
@@ -619,54 +696,82 @@ namespace jau {
             virtual ~POctets() noexcept override {
                 freeData();
                 setData(nullptr, 0, byte_order());
-                capacity=0;
+                _capacity=0;
             }
 
-            /** Makes a persistent POctets by copying the data from TROOctets. */
+            /**
+             * Makes a persistent POctets by copying the data from TROOctets.
+             * @param _source TROOctets to be copied
+             * @throws OutOfMemoryError if allocation fails
+             */
             POctets(const TROOctets & _source)
-            : TOctets( allocData(_source.getSize()), _source.getSize(), _source.byte_order() ),
-              capacity( _source.getSize() )
+            : TOctets( allocData(_source.size()), _source.size(), _source.byte_order() ),
+              _capacity( _source.size() )
             {
-                std::memcpy(data(), _source.get_ptr(), _source.getSize());
+                std::memcpy(data(), _source.get_ptr(), _source.size());
                 TRACE_PRINT("POctets ctor-cpy1: %p", data());
             }
 
+            /**
+             * Assignment operator for TROOctets
+             * @param _source TROOctets to be copied
+             * @return
+             * @throws OutOfMemoryError if allocation fails
+             */
             POctets& operator=(const TROOctets &_source) {
                 if( static_cast<TROOctets *>(this) == &_source ) {
                     return *this;
                 }
                 freeData();
-                setData(allocData(_source.getSize()), _source.getSize(), _source.byte_order());
-                capacity = _source.getSize();
-                std::memcpy(data(), _source.get_ptr(), _source.getSize());
+                setData(allocData(_source.size()), _source.size(), _source.byte_order());
+                _capacity = _source.size();
+                std::memcpy(data(), _source.get_ptr(), _source.size());
                 TRACE_PRINT("POctets assign1: %p", data());
                 return *this;
             }
 
-            /** Makes a persistent POctets by copying the data from TOctetSlice. */
+            /**
+             * Makes a persistent POctets by copying the data from TOctetSlice.
+             * @param _source TROOctetSlice to be copied
+             * @throws OutOfMemoryError if allocation fails
+             */
             POctets(const TOctetSlice & _source)
-            : TOctets( allocData(_source.getSize()), _source.getSize(), _source.byte_order() ),
-              capacity( _source.getSize() )
+            : TOctets( allocData(_source.size()), _source.size(), _source.byte_order() ),
+              _capacity( _source.size() )
             {
-                std::memcpy(data(), _source.getParent().get_ptr() + _source.getOffset(), _source.getSize());
+                std::memcpy(data(), _source.parent().get_ptr() + _source.offset(), _source.size());
                 TRACE_PRINT("POctets ctor-cpy2: %p", data());
             }
 
+            /**
+             * Assignment operator for TOctetSlice
+             * @param _source TOctetSlice to be copied
+             * @return
+             * @throws OutOfMemoryError if allocation fails
+             */
             POctets& operator=(const TOctetSlice &_source) {
                 freeData();
-                setData(allocData(_source.getSize()), _source.getSize(), _source.byte_order());
-                capacity = _source.getSize();
-                std::memcpy(data(), _source.get_ptr(0), _source.getSize());
+                setData(allocData(_source.size()), _source.size(), _source.byte_order());
+                _capacity = _source.size();
+                std::memcpy(data(), _source.get_ptr(0), _source.size());
                 TRACE_PRINT("POctets assign2: %p", data());
                 return *this;
             }
 
-            POctets & resize(const nsize_t newSize, const nsize_t newCapacity) {
+            /**
+             * Resizes this instance, including its capacity
+             * @param newCapacity new capacity, must be >= newSize
+             * @param newSize new size, must be < newCapacity
+             * @return
+             * @throws OutOfMemoryError if allocation fails
+             * @throws IllegalArgumentException if newCapacity < newSize
+             */
+            POctets & resize(const nsize_t newCapacity, const nsize_t newSize) {
                 if( newCapacity < newSize ) {
                     throw IllegalArgumentException("newCapacity "+std::to_string(newCapacity)+" < newSize "+std::to_string(newSize), E_FILE_LINE);
                 }
-                if( newCapacity != capacity ) {
-                    if( newSize > getSize() ) {
+                if( newCapacity != _capacity ) {
+                    if( newSize > size() ) {
                         recapacity(newCapacity);
                         setSize(newSize);
                     } else {
@@ -679,57 +784,83 @@ namespace jau {
                 return *this;
             }
 
+            /**
+             * Sets a new size for this instance.
+             * @param newSize new size, must be <= current capacity()
+             * @return
+             * @throws IllegalArgumentException if newSize > current capacity()
+             */
             POctets & resize(const nsize_t newSize) {
-                if( capacity < newSize ) {
-                    throw IllegalArgumentException("capacity "+std::to_string(capacity)+" < newSize "+std::to_string(newSize), E_FILE_LINE);
+                if( _capacity < newSize ) {
+                    throw IllegalArgumentException("capacity "+std::to_string(_capacity)+" < newSize "+std::to_string(newSize), E_FILE_LINE);
                 }
                 setSize(newSize);
                 return *this;
             }
 
+            /**
+             * Changes the capacity.
+             *
+             * @param newCapacity new capacity, must be >= size()
+             * @return
+             * @throws OutOfMemoryError if allocation fails
+             * @throws IllegalArgumentException if newCapacity < size()
+             */
             POctets & recapacity(const nsize_t newCapacity) {
-                if( newCapacity < getSize() ) {
-                    throw IllegalArgumentException("newCapacity "+std::to_string(newCapacity)+" < size "+std::to_string(getSize()), E_FILE_LINE);
+                if( newCapacity < size() ) {
+                    throw IllegalArgumentException("newCapacity "+std::to_string(newCapacity)+" < size "+std::to_string(size()), E_FILE_LINE);
                 }
-                if( newCapacity == capacity ) {
+                if( newCapacity == _capacity ) {
                     return *this;
                 }
                 uint8_t* data2 = allocData(newCapacity);
-                if( getSize() > 0 ) {
-                    memcpy(data2, get_ptr(), getSize());
+                if( size() > 0 ) {
+                    memcpy(data2, get_ptr(), size());
                 }
                 TRACE_PRINT("POctets recapacity: %p -> %p", data(), data2);
                 free(data());
-                setData(data2, getSize(), byte_order());
-                capacity = newCapacity;
+                setData(data2, size(), byte_order());
+                _capacity = newCapacity;
                 return *this;
             }
 
+            /**
+             * Append and assign operator
+             * @param b
+             * @return
+             * @throws OutOfMemoryError if allocation due to potential recapacity() fails
+             */
             POctets & operator+=(const TROOctets &b) {
-                if( 0 < b.getSize() ) {
-                    const nsize_t newSize = getSize() + b.getSize();
-                    if( capacity < newSize ) {
+                if( 0 < b.size() ) {
+                    const nsize_t newSize = size() + b.size();
+                    if( _capacity < newSize ) {
                         recapacity( newSize );
                     }
-                    memcpy(data()+getSize(), b.get_ptr(), b.getSize());
+                    memcpy(data()+size(), b.get_ptr(), b.size());
                     setSize(newSize);
                 }
                 return *this;
             }
+            /**
+             * Append and assign operator
+             * @param b
+             * @return
+             * @throws OutOfMemoryError if allocation due to potential recapacity() fails
+             */
             POctets & operator+=(const TOctetSlice &b) {
-                if( 0 < b.getSize() ) {
-                    const nsize_t newSize = getSize() + b.getSize();
-                    if( capacity < newSize ) {
+                if( 0 < b.size() ) {
+                    const nsize_t newSize = size() + b.size();
+                    if( _capacity < newSize ) {
                         recapacity( newSize );
                     }
-                    memcpy(data()+getSize(), b.getParent().get_ptr()+b.getOffset(), b.getSize());
+                    memcpy(data()+size(), b.parent().get_ptr()+b.offset(), b.size());
                     setSize(newSize);
                 }
                 return *this;
             }
 
             std::string toString() const {
-                return "size "+std::to_string(getSize())+", capacity "+std::to_string(getCapacity())+", "+bytesHexString(get_ptr(), 0, getSize(), true /* lsbFirst */);
+                return "size "+std::to_string(size())+", capacity "+std::to_string(capacity())+", "+bytesHexString(get_ptr(), 0, size(), true /* lsbFirst */);
             }
     };
 
