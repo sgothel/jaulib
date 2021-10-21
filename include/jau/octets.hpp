@@ -633,15 +633,19 @@ namespace jau {
 
             /**
              * Copy constructor
-             * @param _source POctet source to be copied
+             *
+             * Capacity of this new instance will be of source.size() only.
+             *
+             * @param source POctet source to be copied
              * @throws OutOfMemoryError if allocation fails
              */
-            POctets(const POctets &_source)
-            : TOctets( allocData(_source.size()), _source.size(), _source.byte_order() ),
-              _capacity( _source.size() )
+            POctets(const POctets &source)
+            : TOctets( allocData(source.size()), source.size(), source.byte_order() ),
+              _capacity( source.size() )
             {
-                std::memcpy(data(), _source.get_ptr(), _source.size());
-                TRACE_PRINT("POctets ctor-cpy0: %p", data());
+                std::memcpy(data(), source.get_ptr(), source.size());
+                TRACE_PRINT("POctets ctor-cpy0: %p -> %p", source.get_ptr(), data());
+            }
             }
 
             /**
