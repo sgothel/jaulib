@@ -107,7 +107,7 @@ namespace jau {
              *
              * @param data_ a memory pointer
              * @param size_ used memory size
-             * @param byte_order endian::little or endian::big byte order
+             * @param byte_order endian::little or endian::big byte order, one may pass endian::native.
              */
             inline void setData(uint8_t *data_, nsize_t size_, const endian byte_order) noexcept {
                 TRACE_PRINT("POctets setData: %d bytes @ %p -> %d bytes @ %p",
@@ -128,7 +128,7 @@ namespace jau {
              *
              * @param source a non nullptr memory, otherwise throws exception. Actual capacity known by owner.
              * @param len readable size of the memory, may be zero
-             * @param byte_order endian::little or endian::big byte order
+             * @param byte_order endian::little or endian::big byte order, one may pass endian::native.
              */
             TROOctets(const uint8_t *source, const nsize_t len, const endian byte_order) noexcept
             : _size( len ), _data( const_cast<uint8_t *>(source) ),
@@ -309,7 +309,7 @@ namespace jau {
              *
              * @param source transient data source
              * @param len length of transient data source
-             * @param byte_order endian::little or endian::big byte order
+             * @param byte_order endian::little or endian::big byte order, one may pass endian::native.
              */
             TOctets(uint8_t *source, const nsize_t len, const endian byte_order) noexcept
             : TROOctets(source, len, byte_order) {}
@@ -561,7 +561,7 @@ namespace jau {
              *
              * Will not throw an OutOfMemoryError exception due to no allocation.
              *
-             * @param byte_order endian::little or endian::big byte order
+             * @param byte_order endian::little or endian::big byte order, one may pass endian::native.
              */
             POctets(const endian byte_order) noexcept
             : TOctets(nullptr, 0, byte_order), _capacity(0)
@@ -578,7 +578,7 @@ namespace jau {
              *
              * @param source_ source data to be copied into this new instance
              * @param size_ length of source data
-             * @param byte_order endian::little or endian::big byte order
+             * @param byte_order endian::little or endian::big byte order, one may pass endian::native.
              * @throws IllegalArgumentException if source_ is nullptr and size_ > 0
              * @throws OutOfMemoryError if allocation fails
              */
@@ -602,7 +602,7 @@ namespace jau {
              *
              * @param capacity_ new capacity
              * @param size_ new size with size <= capacity
-             * @param byte_order endian::little or endian::big byte order
+             * @param byte_order endian::little or endian::big byte order, one may pass endian::native.
              * @throws IllegalArgumentException if capacity_ < size_
              * @throws OutOfMemoryError if allocation fails
              */
@@ -622,7 +622,7 @@ namespace jau {
              * Aborts if byte_order not endian::little nor endian::big, see abort().
              *
              * @param size new size and capacity
-             * @param byte_order endian::little or endian::big byte order
+             * @param byte_order endian::little or endian::big byte order, one may pass endian::native.
              * @throws OutOfMemoryError if allocation fails
              */
             POctets(const nsize_t size, const endian byte_order)
