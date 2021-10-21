@@ -137,6 +137,17 @@ namespace jau {
                 checkPtr(_data, _size);
             }
 
+            /**
+             * Default constructor with nullptr memory, zero size and endian::native byte order.
+             *
+             * Conveniently exists to allow instantiation of variables
+             * intended for later assignment.
+             */
+            TROOctets() noexcept
+            : _size( 0 ), _data( nullptr ),
+              _little_endian( is_little_endian(endian::native) )
+            { }
+
             TROOctets(const TROOctets &o) noexcept = default;
             TROOctets(TROOctets &&o) noexcept = default;
             TROOctets& operator=(const TROOctets &o) noexcept = default;
@@ -646,6 +657,21 @@ namespace jau {
                 std::memcpy(data(), source.get_ptr(), source.size());
                 TRACE_PRINT("POctets ctor-cpy0: %p -> %p", source.get_ptr(), data());
             }
+
+            /**
+             * Copy constructor (explicit), allowing to set a higher capacity
+             * than source.size() in contrast to the copy-constructor.
+             *
+             * @param source POctet source to be copied
+             * @param capacity_ used to determine new capacity `std::max(capacity_, source.size())`
+             * @throws OutOfMemoryError if allocation fails
+             */
+            explicit POctets(const POctets &source, const nsize_t capacity_)
+            : TOctets( allocData(source.size()), source.size(), source.byte_order() ),
+              _capacity( std::max(capacity_, source.size()) )
+            {
+                std::memcpy(data(), source.get_ptr(), source.size());
+                TRACE_PRINT("POctets ctor-cpy0: %p -> %p", source.get_ptr(), data());
             }
 
             /**
