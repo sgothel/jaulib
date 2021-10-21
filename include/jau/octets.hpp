@@ -110,7 +110,7 @@ namespace jau {
              * @param byte_order endian::little or endian::big byte order, one may pass endian::native.
              */
             inline void setData(uint8_t *data_, nsize_t size_, const endian byte_order) noexcept {
-                TRACE_PRINT("POctets setData: %d bytes @ %p -> %d bytes @ %p",
+                TRACE_PRINT("POctets setData: %zu bytes @ %p -> %zu bytes @ %p",
                         _size, _data, size_, data_);
                 checkPtr(data_, size_);
                 _size = size_;
