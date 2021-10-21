@@ -117,14 +117,12 @@ public class EUI48 {
     }
 
     /**
-     * Copy address bytes from given source and store it in {@link ByteOrder#nativeOrder()} byte order.
-     *
-     * If given address bytes are not in {@link ByteOrder#nativeOrder()} byte order,
-     * they are swapped.
+     * Copy address bytes from given source and byte order,
+     * while converting them to {@link ByteOrder#nativeOrder()}.
      *
      * @param stream address bytes
      * @param pos position in stream at address
-     * @param byte_order {@link ByteOrder#LITTLE_ENDIAN} or {@link ByteOrder#BIG_ENDIAN} byte order
+     * @param byte_order {@link ByteOrder#LITTLE_ENDIAN} or {@link ByteOrder#BIG_ENDIAN} byte order of given address bytes, one may pass {@link ByteOrder#nativeOrder()}.
      */
     public EUI48(final byte stream[], final int pos, final ByteOrder byte_order) {
         if( byte_size > ( stream.length - pos ) ) {
@@ -139,13 +137,11 @@ public class EUI48 {
     }
 
     /**
-     * Copy address bytes from given source and store it in {@link ByteOrder#nativeOrder()} byte order.
-     *
-     * If given address bytes are not in {@link ByteOrder#nativeOrder()} byte order,
-     * they are swapped.
+     * Copy address bytes from given source and byte order,
+     * while converting them to {@link ByteOrder#nativeOrder()}.
      *
      * @param address address bytes
-     * @param byte_order {@link ByteOrder#LITTLE_ENDIAN} or {@link ByteOrder#BIG_ENDIAN} byte order
+     * @param byte_order {@link ByteOrder#LITTLE_ENDIAN} or {@link ByteOrder#BIG_ENDIAN} byte order of given address bytes, one may pass {@link ByteOrder#nativeOrder()}.
      */
     public EUI48(final byte address[], final ByteOrder byte_order) {
         if( byte_size != address.length ) {

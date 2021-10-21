@@ -64,14 +64,12 @@ namespace jau {
         constexpr EUI48Sub() noexcept : b{0}, length{0} { }
 
         /**
-         * Copy len_ address bytes from given source and store it in endian::native byte order.
-         *
-         * If given address bytes are not in endian::native byte order,
-         * they are swapped.
+         * Copy len_ address bytes from given source and byte_order,
+         * while converting them to endian::native byte order.
          *
          * @param b_ sub address bytes in endian::native byte order
          * @param len_ length
-         * @param byte_order endian::little or endian::big byte order
+         * @param byte_order endian::little or endian::big byte order of given sub_address, one may pass endian::native.
          */
         EUI48Sub(const uint8_t * b_, const jau::nsize_t len_, const endian byte_order) noexcept;
 
@@ -215,13 +213,11 @@ namespace jau {
         constexpr EUI48() noexcept : b{0}  { }
 
         /**
-         * Copy address bytes from given source and store it in endian::native byte order.
-         *
-         * If given address bytes are not in endian::native byte order,
-         * they are swapped.
+         * Copy address bytes from given source and byte_order,
+         * while converting them to endian::native byte order.
          *
          * @param source address bytes
-         * @param byte_order endian::little or endian::big byte order
+         * @param byte_order endian::little or endian::big byte order of given source, one may pass endian::native.
          */
         EUI48(const uint8_t * source, const endian byte_order) noexcept;
 
