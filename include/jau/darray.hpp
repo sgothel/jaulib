@@ -105,7 +105,7 @@ namespace jau {
             constexpr static const float DEFAULT_GROWTH_FACTOR = 1.618f;
 
             constexpr static const bool uses_memmove = use_memmove;
-            constexpr static const bool uses_realloc = use_realloc;
+            constexpr static const bool uses_realloc = use_realloc && use_memmove;
             constexpr static const bool uses_secmem  = sec_mem;
 
             // typedefs' for C++ named requirements: Container
@@ -164,7 +164,7 @@ namespace jau {
                                 std::to_string(sizeof(value_type))+" bytes/element = "+
                                 std::to_string(size_ * sizeof(value_type))+" bytes -> nullptr", E_FILE_LINE);
                     }
-                    if( sec_mem ) {
+                    if constexpr ( uses_secmem ) {
                         explicit_bzero((void*)m, size_*sizeof(value_type));
                     }
                     return m;
@@ -180,7 +180,7 @@ namespace jau {
                     throw jau::IllegalArgumentException("realloc "+std::to_string(new_capacity_)+" > difference_type max "+
                             std::to_string(DIFF_MAX), E_FILE_LINE);
                 }
-                if( sec_mem ) {
+                if constexpr ( uses_secmem ) {
                     explicit_bzero((void*)end_, (storage_end_-end_)*sizeof(value_type));
                 }
                 value_type * m = alloc_inst.reallocate(begin_, storage_end_-begin_, new_capacity_);
@@ -190,7 +190,7 @@ namespace jau {
                             std::to_string(sizeof(value_type))+" bytes/element = "+
                             std::to_string(new_capacity_ * sizeof(value_type))+" bytes -> nullptr", E_FILE_LINE);
                 }
-                if( sec_mem ) {
+                if constexpr ( uses_secmem ) {
                     explicit_bzero((void*)(m+(end_-begin_)), (new_capacity_-(end_-begin_))*sizeof(value_type));
                 }
                 return m;
@@ -205,12 +205,13 @@ namespace jau {
 
             constexpr void freeStore() {
                 if( nullptr != begin_ ) {
-                    if( sec_mem ) {
+                    if constexpr ( uses_secmem ) {
                         explicit_bzero((void*)begin_, (storage_end_-begin_)*sizeof(value_type));
                     }
                     alloc_inst.deallocate(begin_, storage_end_-begin_);
                 }
             }
+
 
             constexpr void set_iterator(pointer new_storage_, difference_type size_, difference_type capacity_) noexcept {
                 begin_       = new_storage_;
@@ -226,7 +227,7 @@ namespace jau {
             constexpr void dtor_one(iterator pos) {
                 DARRAY_PRINTF("dtor [%zd], count 1\n", (pos-begin_));
                 ( pos )->~value_type(); // placement new -> manual destruction!
-                if( sec_mem ) {
+                if constexpr ( uses_secmem ) {
                     explicit_bzero((void*)pos, sizeof(value_type));
                 }
             }
@@ -237,7 +238,7 @@ namespace jau {
                 for(; first < last; ++first, ++count ) {
                     ( first )->~value_type(); // placement new -> manual destruction!
                 }
-                if( sec_mem ) {
+                if constexpr ( uses_secmem ) {
                     explicit_bzero((void*)(last-count), count*sizeof(value_type));
                 }
                 return count;
@@ -302,7 +303,7 @@ namespace jau {
             }
 
             constexpr void grow_storage_move(const size_type new_capacity) {
-                if( !use_memmove ) {
+                if constexpr ( !uses_memmove ) {
                     pointer new_storage = allocStore(new_capacity);
                     {
                         iterator dest = new_storage;
@@ -314,7 +315,7 @@ namespace jau {
                     }
                     freeStore();
                     set_iterator(new_storage, size(), new_capacity);
-                } else if( use_realloc ) {
+                } else if constexpr ( uses_realloc ) {
                     pointer new_storage = reallocStore<allocator_type>(new_capacity);
                     set_iterator(new_storage, size(), new_capacity);
                 } else {
@@ -333,12 +334,12 @@ namespace jau {
             constexpr void move_elements(iterator dest, const_iterator first, const difference_type count) noexcept {
                 // Debatable here: "Moved source array has been taken over, flush sources' pointer to avoid value_type dtor releasing taken resources!"
                 // Debatable, b/c is this even possible for user to hold an instance the way, that a dtor gets called? Probably not.
-                // Hence we leave it to 'sec_mem' to bzero...
-                if( use_memmove ) {
+                // Hence we leave it to 'uses_secmem' to bzero...
+                if constexpr ( uses_memmove ) {
                     // handles overlap
                     memmove(reinterpret_cast<void*>(dest),
                             reinterpret_cast<const void*>(first), sizeof(value_type)*count);
-                    if( sec_mem ) {
+                    if constexpr ( uses_secmem ) {
                         if( dest < first ) {
                             // move elems left
                             DARRAY_PRINTF("move_elements.mmm.left [%zd .. %zd] -> %zd, dist %zd\n", (first-begin_), ((first + count)-begin_)-1, (dest-begin_), (first-dest));
@@ -1145,7 +1146,7 @@ namespace jau {
                                 ", growth "+std::to_string(growth_factor_)+
                                 ", uses[mmm "+std::to_string(uses_memmove)+
                                 ", ralloc "+std::to_string(uses_realloc)+
-                                ", smem "+std::to_string(sec_mem)+
+                                ", smem "+std::to_string(uses_secmem)+
                                 "], begin "+jau::to_hexstring(begin_)+
                                 ", end "+jau::to_hexstring(end_)+
                                 ", send "+jau::to_hexstring(storage_end_)+

@@ -194,7 +194,7 @@ class ringbuffer {
         void clearImpl() noexcept {
             const Size_type size_ = size();
             if( 0 < size_ ) {
-                if( uses_memset ) {
+                if constexpr ( uses_memset ) {
                     memset_wrap(&array[0], nullelem, capacityPlusOne*sizeof(Value_type));
                     readPos  = 0;
                     writePos = 0;
@@ -227,7 +227,7 @@ class ringbuffer {
             readPos = source.readPos.load();
             writePos = source.writePos.load();
 
-            if( use_memcpy ) {
+            if constexpr ( uses_memcpy ) {
                 memcpy(reinterpret_cast<void*>(&array[0]),
                        reinterpret_cast<void*>(const_cast<Value_type*>(&source.array[0])),
                        capacityPlusOne*sizeof(Value_type));
@@ -259,7 +259,7 @@ class ringbuffer {
                     readPos  = 0;
                     writePos = 0;
                 }
-                if( use_memcpy ) {
+                if constexpr ( uses_memcpy ) {
                     memcpy(reinterpret_cast<void*>(&array[0]),
                            reinterpret_cast<void*>(const_cast<Value_type*>(copyFrom)),
                            copyFromCount*sizeof(Value_type));
@@ -401,21 +401,21 @@ class ringbuffer {
                 // we have a tail
                 localReadPos = ( localReadPos + 1 ) % capacityPlusOne; // next-read-pos
                 const Size_type tail_count = std::min(togo_count, capacityPlusOne - localReadPos);
-                if( use_memcpy ) {
+                if constexpr ( uses_memcpy ) {
                     memcpy(reinterpret_cast<void*>(iter_out),
                            reinterpret_cast<void*>(&array[localReadPos]),
                            tail_count*sizeof(Value_type));
-                    if( uses_memset ) {
+                    if constexpr ( uses_memset ) {
                         memset_wrap(&array[localReadPos], nullelem, tail_count*sizeof(Value_type));
                     } else {
                         for(Size_type i=0; i<tail_count; i++) {
-                            array[localReadPos+i] = nullelem;
+                            array[localReadPos+i] = nullelem; // issues dtor
                         }
                     }
                 } else {
                     for(Size_type i=0; i<tail_count; i++) {
                         iter_out[i] = std::move( array[localReadPos+i] ); // SC-DRF
-                        array[localReadPos+i] = nullelem;
+                        array[localReadPos+i] = nullelem; // issues dtor
                     }
                 }
                 localReadPos = ( localReadPos + tail_count - 1 ) % capacityPlusOne; // last read-pos
@@ -425,11 +425,11 @@ class ringbuffer {
             if( togo_count > 0 ) {
                 // we have a head
                 localReadPos = ( localReadPos + 1 ) % capacityPlusOne; // next-read-pos
-                if( use_memcpy ) {
+                if constexpr ( uses_memcpy ) {
                     memcpy(reinterpret_cast<void*>(iter_out),
                            reinterpret_cast<void*>(&array[localReadPos]),
                            togo_count*sizeof(Value_type));
-                    if( uses_memset ) {
+                    if constexpr ( uses_memset ) {
                         memset_wrap(&array[localReadPos], nullelem, togo_count*sizeof(Value_type));
                     } else {
                         for(Size_type i=0; i<togo_count; i++) {
@@ -500,7 +500,7 @@ class ringbuffer {
                 // we have a tail
                 localReadPos = ( localReadPos + 1 ) % capacityPlusOne; // next-read-pos
                 const Size_type tail_count = std::min(togo_count, capacityPlusOne - localReadPos);
-                if( uses_memset ) {
+                if constexpr ( uses_memset ) {
                     memset_wrap(&array[localReadPos], nullelem, tail_count*sizeof(Value_type));
                 } else {
                     for(Size_type i=0; i<tail_count; i++) {
@@ -513,7 +513,7 @@ class ringbuffer {
             if( togo_count > 0 ) {
                 // we have a head
                 localReadPos = ( localReadPos + 1 ) % capacityPlusOne; // next-read-pos
-                if( uses_memset ) {
+                if constexpr ( uses_memset ) {
                     memset_wrap(&array[localReadPos], nullelem, togo_count*sizeof(Value_type));
                 } else {
                     for(Size_type i=0; i<togo_count; i++) {
@@ -652,7 +652,7 @@ class ringbuffer {
                 // we have a tail
                 localWritePos = ( localWritePos + 1 ) % capacityPlusOne; // next-write-pos
                 const Size_type tail_count = std::min(togo_count, capacityPlusOne - localWritePos);
-                if( use_memcpy ) {
+                if constexpr ( uses_memcpy ) {
                     memcpy(reinterpret_cast<void*>(&array[localWritePos]),
                            reinterpret_cast<void*>(const_cast<Value_type*>(iter_in)),
                            tail_count*sizeof(Value_type));
@@ -668,7 +668,7 @@ class ringbuffer {
             if( togo_count > 0 ) {
                 // we have a head
                 localWritePos = ( localWritePos + 1 ) % capacityPlusOne; // next-write-pos
-                if( use_memcpy ) {
+                if constexpr ( uses_memcpy ) {
                     memcpy(reinterpret_cast<void*>(&array[localWritePos]),
                            reinterpret_cast<void*>(const_cast<Value_type*>(iter_in)),
                            togo_count*sizeof(Value_type));
