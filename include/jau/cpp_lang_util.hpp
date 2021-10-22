@@ -266,7 +266,7 @@ namespace jau {
         Dest>
     bit_cast(const Source& src) noexcept
     {
-        if( is_builtin_bit_cast_available() ) {
+        if constexpr ( is_builtin_bit_cast_available() ) {
             return __builtin_bit_cast(Dest, src);
         } else {
             (void)src;
@@ -301,7 +301,7 @@ namespace jau {
         Dest>
     pointer_cast(const Source& src) noexcept
     {
-        if( is_builtin_bit_cast_available() ) {
+        if constexpr ( is_builtin_bit_cast_available() ) {
             return __builtin_bit_cast(Dest, src);
         } else {
             // not 'really' constexpr .. oops, working though
