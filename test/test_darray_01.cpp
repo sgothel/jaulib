@@ -40,8 +40,6 @@
 #include <jau/basic_algos.hpp>
 #include <jau/basic_types.hpp>
 #include <jau/darray.hpp>
-#include <jau/cow_darray.hpp>
-#include <jau/cow_vector.hpp>
 #include <jau/counting_allocator.hpp>
 #include <jau/callocator.hpp>
 #include <jau/counting_callocator.hpp>
