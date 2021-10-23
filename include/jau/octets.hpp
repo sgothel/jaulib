@@ -41,11 +41,11 @@
 
 #include <jau/debug.hpp>
 
-// #define TRACE_MEM 1
-#ifdef TRACE_MEM
-    #define TRACE_PRINT(...) { fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); fflush(stderr); }
+// #define JAU_TRACE_OCTETS 1
+#ifdef JAU_TRACE_OCTETS
+    #define JAU_TRACE_OCTETS_PRINT(...) { fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); fflush(stderr); }
 #else
-    #define TRACE_PRINT(...)
+    #define JAU_TRACE_OCTETS_PRINT(...)
 #endif
 
 namespace jau {
@@ -110,7 +110,7 @@ namespace jau {
              * @param byte_order endian::little or endian::big byte order, one may pass endian::native.
              */
             inline void setData(uint8_t *data_, nsize_t size_, const endian byte_order) noexcept {
-                TRACE_PRINT("POctets setData: %zu bytes @ %p -> %zu bytes @ %p",
+                JAU_TRACE_OCTETS_PRINT("POctets setData: %zu bytes @ %p -> %zu bytes @ %p",
                         _size, _data, size_, data_);
                 checkPtr(data_, size_);
                 _size = size_;
@@ -539,7 +539,7 @@ namespace jau {
             void freeData() {
                 uint8_t * ptr = data();
                 if( nullptr != ptr ) {
-                    TRACE_PRINT("POctets release: %p", ptr);
+                    JAU_TRACE_OCTETS_PRINT("POctets release: %p", ptr);
                     free(ptr);
                 } // else: zero sized POctets w/ nullptr are supported
             }
@@ -577,7 +577,7 @@ namespace jau {
             POctets(const endian byte_order) noexcept
             : TOctets(nullptr, 0, byte_order), _capacity(0)
             {
-                TRACE_PRINT("POctets ctor0: zero-sized");
+                JAU_TRACE_OCTETS_PRINT("POctets ctor0: zero-sized");
             }
 
             /**
@@ -603,7 +603,7 @@ namespace jau {
                     }
                     std::memcpy(data(), source_, size_);
                 }
-                TRACE_PRINT("POctets ctor1: %p", data());
+                JAU_TRACE_OCTETS_PRINT("POctets ctor1: %p", data());
             }
 
             /**
@@ -624,7 +624,7 @@ namespace jau {
                 if( capacity() < size() ) {
                     throw IllegalArgumentException("capacity "+std::to_string(capacity())+" < size "+std::to_string(size()), E_FILE_LINE);
                 }
-                TRACE_PRINT("POctets ctor2: %p", data());
+                JAU_TRACE_OCTETS_PRINT("POctets ctor2: %p", data());
             }
 
             /**
@@ -639,7 +639,7 @@ namespace jau {
             POctets(const nsize_t size, const endian byte_order)
             : POctets(size, size, byte_order)
             {
-                TRACE_PRINT("POctets ctor3: %p", data());
+                JAU_TRACE_OCTETS_PRINT("POctets ctor3: %p", data());
             }
 
             /**
@@ -655,7 +655,7 @@ namespace jau {
               _capacity( source.size() )
             {
                 std::memcpy(data(), source.get_ptr(), source.size());
-                TRACE_PRINT("POctets ctor-cpy0: %p -> %p", source.get_ptr(), data());
+                JAU_TRACE_OCTETS_PRINT("POctets ctor-cpy0: %p -> %p", source.get_ptr(), data());
             }
 
             /**
@@ -671,7 +671,7 @@ namespace jau {
               _capacity( std::max(capacity_, source.size()) )
             {
                 std::memcpy(data(), source.get_ptr(), source.size());
-                TRACE_PRINT("POctets ctor-cpy0: %p -> %p", source.get_ptr(), data());
+                JAU_TRACE_OCTETS_PRINT("POctets ctor-cpy-extra1: %p -> %p", source.get_ptr(), data());
             }
 
             /**
@@ -686,7 +686,7 @@ namespace jau {
                 // purge origin
                 o.setData(nullptr, 0, o.byte_order());
                 o._capacity = 0;
-                TRACE_PRINT("POctets ctor-move0: %p", data());
+                JAU_TRACE_OCTETS_PRINT("POctets ctor-move0: %p", data());
             }
 
             /**
@@ -703,7 +703,7 @@ namespace jau {
                 setData(allocData(_source.size()), _source.size(), _source.byte_order());
                 _capacity = _source.size();
                 std::memcpy(data(), _source.get_ptr(), _source.size());
-                TRACE_PRINT("POctets assign0: %p", data());
+                JAU_TRACE_OCTETS_PRINT("POctets assign0: %p", data());
                 return *this;
             }
 
@@ -719,7 +719,7 @@ namespace jau {
                 // purge origin
                 o.setData(nullptr, 0, o.byte_order());
                 o._capacity = 0;
-                TRACE_PRINT("POctets assign-move0: %p", data());
+                JAU_TRACE_OCTETS_PRINT("POctets assign-move0: %p", data());
                 return *this;
             }
 
@@ -739,7 +739,7 @@ namespace jau {
               _capacity( _source.size() )
             {
                 std::memcpy(data(), _source.get_ptr(), _source.size());
-                TRACE_PRINT("POctets ctor-cpy1: %p", data());
+                JAU_TRACE_OCTETS_PRINT("POctets ctor-cpy1: %p", data());
             }
 
             /**
@@ -756,7 +756,7 @@ namespace jau {
                 setData(allocData(_source.size()), _source.size(), _source.byte_order());
                 _capacity = _source.size();
                 std::memcpy(data(), _source.get_ptr(), _source.size());
-                TRACE_PRINT("POctets assign1: %p", data());
+                JAU_TRACE_OCTETS_PRINT("POctets assign1: %p", data());
                 return *this;
             }
 
@@ -770,7 +770,7 @@ namespace jau {
               _capacity( _source.size() )
             {
                 std::memcpy(data(), _source.parent().get_ptr() + _source.offset(), _source.size());
-                TRACE_PRINT("POctets ctor-cpy2: %p", data());
+                JAU_TRACE_OCTETS_PRINT("POctets ctor-cpy2: %p", data());
             }
 
             /**
@@ -784,7 +784,7 @@ namespace jau {
                 setData(allocData(_source.size()), _source.size(), _source.byte_order());
                 _capacity = _source.size();
                 std::memcpy(data(), _source.get_ptr(0), _source.size());
-                TRACE_PRINT("POctets assign2: %p", data());
+                JAU_TRACE_OCTETS_PRINT("POctets assign2: %p", data());
                 return *this;
             }
 
@@ -847,7 +847,7 @@ namespace jau {
                 if( size() > 0 ) {
                     memcpy(data2, get_ptr(), size());
                 }
-                TRACE_PRINT("POctets recapacity: %p -> %p", data(), data2);
+                JAU_TRACE_OCTETS_PRINT("POctets recapacity: %p -> %p", data(), data2);
                 free(data());
                 setData(data2, size(), byte_order());
                 _capacity = newCapacity;
