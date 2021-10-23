@@ -1,19 +1,16 @@
-Jau Support Library (C++, Java, ...)
-====================================
+# Jau Support Library (C++, Java, ...)
 
-Git Repository
-==============
+[Original document location](https://jausoft.com/cgit/jaulib.git/about/).
+
+## Git Repository
 This project's canonical repositories is hosted on [Gothel Software](https://jausoft.com/cgit/jaulib.git/).
 
-Goals
-============
+## Goals
 This project aims to provide general C++ collections, algorithms and utilizies inclusive utilizities for a Java JNI binding.
 
 This project was extracted from [Direct-BT](https://jausoft.com/cgit/direct_bt.git/about/) to enable general use and enforce better encapsulation.
 
-API Documentation
-============
-
+## API Documentation
 Up to date API documentation can be found:
 
 * [C++ API Doc](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/index.html).
@@ -21,19 +18,13 @@ Up to date API documentation can be found:
 * [Java API Doc](https://jausoft.com/projects/jaulib/build/documentation/java/html/index.html).
 
 
-Examples
-============
-
+## Examples
 See *Direct-BT* [C++ API Doc](https://jausoft.com/projects/direct_bt/build/documentation/cpp/html/index.html).
 
-Supported Platforms
-===================
-
+## Supported Platforms
 C++17 and better.
 
-Building Binaries
-=========================
-
+## Building Binaries
 It is advised to include this library into your main project, e.g. as a git-submodule.
 
 Then add *jaulib/include/* to your C++ include-path and also add the C++ source files
@@ -115,12 +106,26 @@ make doc
 ~~~~~~~~~~~~~
 
 
-Changes
-============
+## Changes
 
 **1.0.0**
 
 * First stable release (TODO)
+
+**0.6.0**
+
+* TODO ..
+* Bump minor version due to API change (`darray`, `cow_darray` and `ringbuffer`)
+* Revised Non-Type Template Parameter (NTTP) of `darray`, `cow_darray` and `ringbuffer`
+  - Dropped `use_realloc`, as it is fully deducted
+  - Renamed `sec_mem` to `use_secmem`
+  - Enable type traits in user `Value_type` to deduce `use_memmove` and `use_secmem`
+  - Ringbuffer uses placement-new for better efficacy (dropped C++ array default init)
+  - Ringbuffer also uses darray's NTTP `use_memmove` and `use_secmem`
+* Use explicit `constexpr if`: `darray`, `ringbuffer`, 
+  endian conversion `[le|be|cpu]_to_[le|be|cpu]()` and `bit_cast()`.
+* POctet: Add explicit copy-ctor with given capacity and add TROOctets default ctor
+* EUI48[Sub] C++/Java and POctets: Better API doc re byte order
 
 **0.5.0**
 
