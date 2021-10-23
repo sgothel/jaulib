@@ -214,6 +214,85 @@ inline bool operator==(const DataType01& lhs, const DataType01& rhs) noexcept {
 inline bool operator!=(const DataType01& lhs, const DataType01& rhs) noexcept
 { return !(lhs == rhs); }
 
+class DataType02_Memmove_Secmem {
+    public:
+        typedef std::true_type  container_memmove_compliant;
+        typedef std::true_type  enforce_secmem;
+
+        Addr48Bit address;
+        uint8_t type;
+
+    private:
+        jau::relaxed_atomic_size_t hash = 0; // default 0, cache
+
+    public:
+        DataType02_Memmove_Secmem(const Addr48Bit & address_, uint8_t type_)
+        : address(address_), type(type_) {}
+
+        DataType02_Memmove_Secmem(const uint64_t encoded) noexcept
+        : address(encoded), type(0) { }
+
+        constexpr DataType02_Memmove_Secmem() noexcept : address(), type{0} { }
+        DataType02_Memmove_Secmem(const DataType02_Memmove_Secmem &o) noexcept : address(o.address), type(o.type) { }
+        DataType02_Memmove_Secmem(DataType02_Memmove_Secmem &&o) noexcept {
+            address = std::move(o.address);
+            type = std::move(o.type);
+        }
+        constexpr DataType02_Memmove_Secmem& operator=(const DataType02_Memmove_Secmem &o) noexcept {
+            address = o.address;
+            type = o.type;
+            return *this;
+        }
+        DataType02_Memmove_Secmem& operator=(DataType02_Memmove_Secmem &&o) noexcept {
+            address = std::move(o.address);
+            type = std::move(o.type);
+            return *this;
+        }
+
+        int nop() const noexcept { return address.b[0]+1; }
+
+        std::size_t hash_code() const noexcept {
+            std::size_t h = hash;
+            if( 0 == h ) {
+                // 31 * x == (x << 5) - x
+                h = 31 + address.hash_code();
+                h = ((h << 5) - h) + type;
+                const_cast<DataType02_Memmove_Secmem *>(this)->hash = h;
+                // printf("hash.dataSet01 new %zu\n", h);
+            } else {
+                // printf("hash.dataSet01 *cache* %zu\n", h);
+            }
+            return h;
+        }
+
+        void clearHash() { hash = 0; }
+
+        constexpr_cxx20 std::string toString() const noexcept {
+            return "["+address.toString()+", "+std::to_string(type)+"]";
+        }
+#if 0
+        constexpr_cxx20 operator std::string() const noexcept {
+            return toString();
+        }
+#endif
+};
+JAU_TYPENAME_CUE_ALL(DataType02_Memmove_Secmem)
+
+std::ostream & operator << (std::ostream &out, const DataType02_Memmove_Secmem &a) {
+    out << a.toString();
+    return out;
+}
+
+inline bool operator==(const DataType02_Memmove_Secmem& lhs, const DataType02_Memmove_Secmem& rhs) noexcept {
+    if( &lhs == &rhs ) {
+        return true;
+    }
+    return lhs.address == rhs.address &&
+           lhs.type == rhs.type;
+}
+inline bool operator!=(const DataType02_Memmove_Secmem& lhs, const DataType02_Memmove_Secmem& rhs) noexcept
+{ return !(lhs == rhs); }
+
 // injecting specialization of std::hash to namespace std of our types above
 namespace std
 {

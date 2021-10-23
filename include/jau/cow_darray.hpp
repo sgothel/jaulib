@@ -101,30 +101,29 @@ namespace jau {
      * and all further operations shall use its
      * jau::cow_ro_iterator::size(), jau::cow_ro_iterator::begin() and jau::cow_ro_iterator::end()
      * - or its respective variant from jau::cow_rw_iterator.
-     * </p>
-     * <p>
-     * Non-Type Template Parameter <code>use_memmove</code> can be overriden by the user
-     * and has its default value <code>std::is_trivially_copyable_v<Value_type></code>.<br>
-     * The default value has been chosen with care, see C++ Standard section 6.9 Types <i>trivially copyable</i>.<br>
-     * However, one can set <code>use_memmove</code> to true even without the value_type being <i>trivially copyable</i>,
-     * as long certain memory side-effects can be excluded (TBD).
-     * </p>
+     *
+     * @anchor cow_darray_ntt_params
+     * ### Non-Type Template Parameter controlling Value_type memory
+     * See @ref darray_ntt_params.
+     * #### `use_memmove`
+     * `use_memmove` see @ref darray_memmove.
+     * #### `use_secmem`
+     * `use_secmem` see @ref darray_secmem.
+     *
      * See also:
-     * <pre>
      * - Sequentially Consistent (SC) ordering or SC-DRF (data race free) <https://en.cppreference.com/w/cpp/atomic/memory_order#Sequentially-consistent_ordering>
      * - std::memory_order <https://en.cppreference.com/w/cpp/atomic/memory_order>
-     * </pre>
      *
      * @see jau::darray
+     * @see @ref darray_ntt_params
      * @see jau::cow_ro_iterator
      * @see jau::for_each_fidelity
      * @see jau::cow_rw_iterator
      * @see jau::cow_rw_iterator::write_back()
      */
     template <typename Value_type, typename Alloc_type = jau::callocator<Value_type>, typename Size_type = jau::nsize_t,
-              bool use_memmove = std::is_trivially_copyable_v<Value_type>,
-              bool use_realloc = std::is_base_of_v<jau::callocator<Value_type>, Alloc_type>,
-              bool sec_mem = false
+              bool use_memmove = std::is_trivially_copyable_v<Value_type> || is_container_memmove_compliant_v<Value_type>,
+              bool use_secmem  = is_enforcing_secmem_v<Value_type>
              >
     class cow_darray
     {
@@ -133,8 +132,8 @@ namespace jau {
             constexpr static const float DEFAULT_GROWTH_FACTOR = 1.618f;
 
             constexpr static const bool uses_memmove = use_memmove;
-            constexpr static const bool uses_realloc = use_realloc && use_memmove;
-            constexpr static const bool uses_secmem  = sec_mem;
+            constexpr static const bool uses_secmem  = use_secmem;
+            constexpr static const bool uses_realloc = use_memmove && std::is_base_of_v<jau::callocator<Value_type>, Alloc_type>;
 
             // typedefs' for C++ named requirements: Container
 
@@ -149,7 +148,7 @@ namespace jau {
 
             typedef darray<value_type, allocator_type,
                            size_type,
-                           use_memmove, use_realloc, sec_mem>   storage_t;
+                           use_memmove, use_secmem>             storage_t;
             typedef std::shared_ptr<storage_t>                  storage_ref_t;
 
             /** Used to determine whether this type is a darray or has a darray, see ::is_darray_type<T> */
@@ -157,7 +156,7 @@ namespace jau {
 
             typedef cow_darray<value_type, allocator_type,
                                size_type, use_memmove,
-                               use_realloc, sec_mem>            cow_container_t;
+                               use_secmem>                      cow_container_t;
 
             /**
              * Immutable, read-only const_iterator, lock-free,

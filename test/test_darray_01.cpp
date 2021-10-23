@@ -122,7 +122,7 @@ TEST_CASE( "JAU DArray Test 02 - jau::darray immutable type (const)", "[const][j
 /**********************************************************************************************************************************************/
 
 template<class Payload>
-using SharedPayloadListMemMove = jau::darray<std::shared_ptr<Payload>, jau::callocator<std::shared_ptr<Payload>>, jau::nsize_t, true /* use_memmove */, true /* use_realloc */>;
+using SharedPayloadListMemMove = jau::darray<std::shared_ptr<Payload>, jau::callocator<std::shared_ptr<Payload>>, jau::nsize_t, true /* use_memmove */>;
 // JAU_TYPENAME_CUE_ALL(SharedPayloadListMemMove)
 
 template<class Payload>
@@ -172,7 +172,7 @@ struct NamedSharedPayloadListMemMove {
 // JAU_TYPENAME_CUE_ALL(NamedSharedPayloadListMemMove)
 
 template<class Payload>
-using PayloadListMemMove = jau::darray<Payload, jau::callocator<Payload>, jau::nsize_t, true /* use_memmove */, true /* use_realloc */>;
+using PayloadListMemMove = jau::darray<Payload, jau::callocator<Payload>, jau::nsize_t, true /* use_memmove */>;
 // JAU_TYPENAME_CUE_ALL(PayloadListMemMove)
 
 template<class Payload>
@@ -301,12 +301,13 @@ template< class Cont >
 static void print_container_info(const std::string& type_id, const Cont &c,
         std::enable_if_t< jau::is_darray_type<Cont>::value, bool> = true )
 {
-    printf("\nContainer Type %s (a darray, a cow %d):\n  - Uses memcpy %d (trivially_copyable %d); realloc %d; base_of jau::callocator %d; size %d bytes\n",
+    printf("\nContainer Type %s (a darray, a cow %d):\n  - Uses memmove %d (trivially_copyable %d); realloc %d; base_of jau::callocator %d; secmem %d; size %d bytes\n",
                 type_id.c_str(), jau::is_cow_type<Cont>::value,
                 Cont::uses_memmove,
                 std::is_trivially_copyable<typename Cont::value_type>::value,
                 Cont::uses_realloc,
                 std::is_base_of<jau::callocator<typename Cont::value_type>, typename Cont::allocator_type>::value,
+                Cont::uses_secmem,
                 (int)sizeof(c));
 }
 
@@ -482,6 +483,7 @@ TEST_CASE( "JAU DArray Test 10 - jau::darray value_type behavior (type traits)",
     testDArrayValueType<uint64_t>("uint64_t");
     testDArrayValueType<Addr48Bit>("Addr48Bit");
     testDArrayValueType<DataType01>("DataType01");
+    testDArrayValueType<DataType02_Memmove_Secmem>("DataType02");
     testDArrayGattServiceCharacteristic();
 }
 

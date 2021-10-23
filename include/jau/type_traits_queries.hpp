@@ -228,6 +228,47 @@ namespace jau {
     // *************************************************
      */
 
+    // Author: Sven Gothel
+
+    /**
+     * <code>template< class T > is_container_memmove_compliant<T>::value</code> compile-time Type Trait,
+     * determining whether the given template class claims to be container memmove compliant, see @Ref darray_memmove.
+     */
+    template< class, class = void >
+    struct is_container_memmove_compliant : std::false_type { };
+
+    /**
+     * <code>template< class T > is_container_memmove_compliant<T>::value</code> compile-time Type Trait,
+     * determining whether the given template class claims to be container memmove compliant, see @Ref darray_memmove.
+     */
+    template< class T >
+    struct is_container_memmove_compliant<T, std::void_t<typename T::container_memmove_compliant>> : T::container_memmove_compliant { };
+
+    template <typename T> inline constexpr bool is_container_memmove_compliant_v = is_container_memmove_compliant<T>::value;
+
+    /**
+     * <code>template< class T > is_enforcing_secmem<T>::value</code> compile-time Type Trait,
+     * determining whether the given template class enforces secmem, see @Ref darray_secmem.
+     */
+    template< class, class = void >
+    struct is_enforcing_secmem : std::false_type { };
+
+    /**
+     * <code>template< class T > is_enforcing_secmem<T>::value</code> compile-time Type Trait,
+     * determining whether the given template class enforces secmem, see @Ref darray_secmem.
+     */
+    template< class T >
+    struct is_enforcing_secmem<T, std::void_t<typename T::enforce_secmem>> : T::enforce_secmem { };
+
+    template <typename T> inline constexpr bool is_enforcing_secmem_v = is_enforcing_secmem<T>::value;
+
+
+    /**
+    // *************************************************
+    // *************************************************
+    // *************************************************
+     */
+
     // Author: firda @ stackoverflow (posted the following there)
     // Location: https://stackoverflow.com/questions/1966362/sfinae-to-check-for-inherited-member-functions/25448020#25448020
 #if 0

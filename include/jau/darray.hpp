@@ -85,18 +85,51 @@ namespace jau {
      * <li>Constructs and destructs value_type via <i>placement new</i> within the pre-allocated array capacity. Latter is managed via allocator_type.</li>
      * </ul>
      * </p>
-     * <p>
-     * Non-Type Template Parameter <code>use_memmove</code> can be overriden by the user
-     * and has its default value <code>std::is_trivially_copyable_v<Value_type></code>.<br>
-     * The default value has been chosen with care, see C++ Standard section 6.9 Types <i>trivially copyable</i>.<br>
-     * However, one can set <code>use_memmove</code> to true even without the value_type being <i>trivially copyable</i>,
-     * as long certain memory side-effects can be excluded (TBD).
-     * </p>
+     *
+     * @anchor darray_ntt_params
+     * ### Non-Type Template Parameter controlling Value_type memory
+     * @anchor darray_memmove
+     * #### `use_memmove`
+     * `use_memmove` can be overriden and defaults to `std::is_trivially_copyable_v<Value_type>`.
+     *
+     * The default value has been chosen with care, see C++ Standard section 6.9 Types *trivially copyable*.
+     * However, since the destructor is not being called when using `memmove` within this container,
+     * the requirements are more relaxed, see below.
+     *
+     * `memmove` will be used only to move an object in memory,
+     * where this container controls the creation and destruction.
+     * - We can't `memmove` one or more object into this container, even with an `rvalue` reference.
+     *   The `rvalue`'s destructor will be called and potential acquired resources were lost.
+     * - We can move it around within this container, i.e. when growing or shrinking the array,
+     *   or when earsing an object in the middle or even when moving out to the user.
+     *
+     * Relaxed requirements for `use_memmove` are:
+     * - Not using inner class pointer to inner class fields or methods (like launching a thread).
+     * - TBD ???
+     *
+     * Since element pointer and iterator are always invalidated for container after storage mutation,
+     * above constraints are not really anything novel and go along with normal std::vector.
+     *
+     * Users may include `typedef container_memmove_compliant` in their Value_type class
+     * to enforce `use_memmove` as follows:
+     * - `typedef std::true_type  container_memmove_compliant;`
+     *
+     * @anchor darray_secmem
+     * #### `use_secmem`
+     * `use_secmem` can be overriden and defaults to `false`.
+     *
+     * `use_secmem`, if enabled, ensures that the underlying memory will be zeroed out
+     * after use and element erasure.
+     *
+     * Users may include `typedef enforce_secmem` in their Value_type class
+     * to enforce `use_secmem` as follows:
+     * - `typedef std::true_type  enforce_secmem;`
+     *
+     * @see cow_darray
      */
     template <typename Value_type, typename Alloc_type = jau::callocator<Value_type>, typename Size_type = jau::nsize_t,
-              bool use_memmove = std::is_trivially_copyable_v<Value_type>,
-              bool use_realloc = std::is_base_of_v<jau::callocator<Value_type>, Alloc_type>,
-              bool sec_mem = false
+              bool use_memmove = std::is_trivially_copyable_v<Value_type> || is_container_memmove_compliant_v<Value_type>,
+              bool use_secmem  = is_enforcing_secmem_v<Value_type>
              >
     class darray
     {
@@ -105,8 +138,8 @@ namespace jau {
             constexpr static const float DEFAULT_GROWTH_FACTOR = 1.618f;
 
             constexpr static const bool uses_memmove = use_memmove;
-            constexpr static const bool uses_realloc = use_realloc && use_memmove;
-            constexpr static const bool uses_secmem  = sec_mem;
+            constexpr static const bool uses_secmem  = use_secmem;
+            constexpr static const bool uses_realloc = use_memmove && std::is_base_of_v<jau::callocator<Value_type>, Alloc_type>;
 
             // typedefs' for C++ named requirements: Container
 
@@ -212,6 +245,11 @@ namespace jau {
                 }
             }
 
+            constexpr void clear_iterator() noexcept {
+                begin_       = nullptr;
+                end_         = nullptr;
+                storage_end_ = nullptr;
+            }
 
             constexpr void set_iterator(pointer new_storage_, difference_type size_, difference_type capacity_) noexcept {
                 begin_       = new_storage_;
@@ -302,7 +340,7 @@ namespace jau {
                 return dest;
             }
 
-            constexpr void grow_storage_move(const size_type new_capacity) {
+            constexpr void realloc_storage_move(const size_type new_capacity) {
                 if constexpr ( !uses_memmove ) {
                     pointer new_storage = allocStore(new_capacity);
                     {
@@ -320,15 +358,27 @@ namespace jau {
                     set_iterator(new_storage, size(), new_capacity);
                 } else {
                     pointer new_storage = allocStore(new_capacity);
-                    memcpy(reinterpret_cast<void*>(const_cast<pointer_mutable>(new_storage)),
-                           reinterpret_cast<const void*>(begin_), (uint8_t*)end_-(uint8_t*)begin_); // we can simply copy the memory over, also no overlap
-
+                    memmove(reinterpret_cast<void*>(const_cast<pointer_mutable>(new_storage)),
+                            reinterpret_cast<const void*>(begin_), (uint8_t*)end_-(uint8_t*)begin_); // we can simply copy the memory over, also no overlap
                     freeStore();
                     set_iterator(new_storage, size(), new_capacity);
                 }
             }
+            constexpr void grow_storage_move(const size_type new_capacity) {
+                /**
+                 * Determine a grown_capacity, which is at least
+                 * - MIN_SIZE_AT_GROW
+                 * - old_capacity * growth_factor ..
+                 */
+                const size_type old_capacity = capacity();
+                const size_type grown_capacity = std::max<size_type>(
+                                                         std::max<size_type>( MIN_SIZE_AT_GROW, new_capacity ),
+                                                         std::max<size_type>( new_capacity, static_cast<size_type>(old_capacity * growth_factor_ + 0.5f) )
+                                                     );
+                realloc_storage_move( grown_capacity );
+            }
             constexpr void grow_storage_move() {
-                grow_storage_move( get_grown_capacity() );
+                realloc_storage_move( get_grown_capacity() );
             }
 
             constexpr void move_elements(iterator dest, const_iterator first, const difference_type count) noexcept {
@@ -478,7 +528,7 @@ namespace jau {
                 DARRAY_PRINTF("ctor move0: this %s\n", get_info().c_str());
                 DARRAY_PRINTF("ctor move0:    x %s\n", x.get_info().c_str());
                 // Moved source array has been taken over, flush sources' pointer to avoid value_type dtor releasing taken resources!
-                explicit_bzero((void*)&x, sizeof(x));
+                x.clear_iterator();
             }
 
             constexpr explicit darray(darray && x, const float growth_factor, const allocator_type& alloc) noexcept
@@ -488,14 +538,7 @@ namespace jau {
                 DARRAY_PRINTF("ctor move1: this %s\n", get_info().c_str());
                 DARRAY_PRINTF("ctor move1:    x %s\n", x.get_info().c_str());
                 // Moved source array has been taken over, flush sources' pointer to avoid value_type dtor releasing taken resources!
-#if 1
-                explicit_bzero((void*)&x, sizeof(x));
-#else
-                x.begin_ = nullptr;
-                x.end_ = nullptr;
-                x.storage_end_ = nullptr;
-                x.growth_factor_ = 0.0;
-#endif
+                x.clear_iterator();
             }
 
             /**
@@ -513,7 +556,7 @@ namespace jau {
                     growth_factor_ = std::move( x.growth_factor_ );
 
                     // Moved source array has been taken over, flush sources' pointer to avoid value_type dtor releasing taken resources!
-                    explicit_bzero((void*)&x, sizeof(x));
+                    x.clear_iterator();
                 }
                 DARRAY_PRINTF("assignment move.X: this %s\n", get_info().c_str());
                 DARRAY_PRINTF("assignment move.X:    x %s\n", x.get_info().c_str());
@@ -753,7 +796,20 @@ namespace jau {
                     grow_storage_move(new_capacity);
                 }
             }
-
+            
+            /**
+             * Like std::vector::shrink_to_fit(), but ensured `constexpr`.
+             *
+             * If capacity() > size(), reallocate storage to size().
+             */
+            constexpr void shrink_to_fit() {
+                const size_type size_ = size();
+                const size_type capacity_ = capacity();
+                if( capacity_ > size_ ) {
+                    realloc_storage_move(size_);
+                }                
+            }
+            
             /**
              * Like std::vector::assign()
              * @tparam InputIt foreign input-iterator to range of value_type [first, last)
@@ -1142,10 +1198,10 @@ namespace jau {
                 difference_type cap_ = (storage_end_-begin_);
                 difference_type size_ = (end_-begin_);
                 std::string res("darray[this "+jau::to_hexstring(this)+
-                                ", size "+std::to_string(size_)+"/"+std::to_string(cap_)+
+                                ", size "+std::to_string(size_)+" / "+std::to_string(cap_)+
                                 ", growth "+std::to_string(growth_factor_)+
                                 ", uses[mmm "+std::to_string(uses_memmove)+
-                                ", ralloc "+std::to_string(uses_realloc)+
+                                ", realloc "+std::to_string(uses_realloc)+
                                 ", smem "+std::to_string(uses_secmem)+
                                 "], begin "+jau::to_hexstring(begin_)+
                                 ", end "+jau::to_hexstring(end_)+
