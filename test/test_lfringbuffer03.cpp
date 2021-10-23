@@ -204,8 +204,9 @@ class TestRingbuffer03 {
         std::string msg("Ringbuffer: uses_memcpy "+std::to_string(SharedTypeRingbuffer::uses_memcpy)+
                  ", uses_memset "+std::to_string(SharedTypeRingbuffer::uses_memset)+
                  ", trivially_copyable "+std::to_string(std::is_trivially_copyable<typename SharedTypeRingbuffer::value_type>::value)+
-                 ", size "+std::to_string(sizeof(rb))+" bytes");
-        fprintf(stderr, "%s", msg.c_str());
+                 ", size "+std::to_string(sizeof(*rb))+" bytes");
+        fprintf(stderr, "%s\n", msg.c_str());
+        fprintf(stderr, "%s\n", rb->get_info().c_str());
         REQUIRE_MSG("Ringbuffer<shared_ptr<T>> not using memcpy", !SharedTypeRingbuffer::uses_memcpy);
         REQUIRE_MSG("Ringbuffer<shared_ptr<T>> not using memset", !SharedTypeRingbuffer::uses_memset);
     }

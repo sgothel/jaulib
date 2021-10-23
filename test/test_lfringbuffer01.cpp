@@ -185,7 +185,8 @@ class TestRingbuffer01 {
                  ", uses_memset "+std::to_string(TrivialTypeRingbuffer::uses_memset)+
                  ", trivially_copyable "+std::to_string(std::is_trivially_copyable<typename TrivialTypeRingbuffer::value_type>::value)+
                  ", size "+std::to_string(sizeof(rb))+" bytes");
-        fprintf(stderr, "%s", msg.c_str());
+        fprintf(stderr, "%s\n", msg.c_str());
+        fprintf(stderr, "%s\n", rb.get_info().c_str());
         REQUIRE_MSG("Ringbuffer<T> using memcpy", TrivialTypeRingbuffer::uses_memcpy);
         REQUIRE_MSG("Ringbuffer<T> uses memset", TrivialTypeRingbuffer::uses_memset);
     }

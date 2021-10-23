@@ -41,6 +41,7 @@
 #include <jau/debug.hpp>
 #include <jau/basic_types.hpp>
 #include <jau/ordered_atomic.hpp>
+#include <jau/callocator.hpp>
 
 namespace jau {
 
@@ -96,26 +97,43 @@ namespace jau {
  * </pre>
  * </p>
  * See also:
- * <pre>
  * - Sequentially Consistent (SC) ordering or SC-DRF (data race free) <https://en.cppreference.com/w/cpp/atomic/memory_order#Sequentially-consistent_ordering>
  * - std::memory_order <https://en.cppreference.com/w/cpp/atomic/memory_order>
- * </pre>
- * <p>
+ *
  * We would like to pass `NullValue_type nullelem` as a non-type template parameter of type `NullValue_type`, a potential Class.
  * However, this is only allowed in C++20 and we use C++17 for now.
  * Hence we have to pass `NullValue_type nullelem` in the constructor.
- * </p>
+ *
+ * @anchor ringbuffer_ntt_params
+ * ### Non-Type Template Parameter controlling Value_type memory
+ * See @ref darray_ntt_params.
+ * #### `use_memmove`
+ * `use_memmove` see @ref darray_memmove.
+ * #### `use_secmem`
+ * `use_secmem` see @ref darray_secmem.
+ * #### `use_memcpy`
+ * `use_memcpy` has more strict requirements than `use_memmove`,
+ * i.e. strictly relies on Value_type being `std::is_trivially_copyable_v<Value_type>`.
+ * #### `use_memset`
+ * `use_memset` has strict requirements
+ * and strictly relies on Value_type and NullValue_type being an integral of size 1 byte.
+ *
+ * @see @ref darray_ntt_params
  * @see jau::sc_atomic_critical
  */
 template <typename Value_type, typename NullValue_type, typename Size_type,
-          bool use_memcpy = std::is_trivially_copyable_v<Value_type>,
-          bool use_memset = std::is_integral_v<Value_type> && sizeof(Value_type)==1 &&
-                            std::is_integral_v<NullValue_type> && sizeof(NullValue_type)==1
+          bool use_memmove = std::is_trivially_copyable_v<Value_type> || is_container_memmove_compliant_v<Value_type>,
+          bool use_memcpy  = std::is_trivially_copyable_v<Value_type>,
+          bool use_memset  = std::is_integral_v<Value_type> && sizeof(Value_type)==1 &&
+                             std::is_integral_v<NullValue_type> && sizeof(NullValue_type)==1,
+          bool use_secmem  = is_enforcing_secmem_v<Value_type>
          >
 class ringbuffer {
     public:
+        constexpr static const bool uses_memmove = use_memmove;
         constexpr static const bool uses_memcpy = use_memcpy;
         constexpr static const bool uses_memset = use_memset;
+        constexpr static const bool uses_secmem  = use_secmem;
 
         // typedefs' for C++ named requirements: Container (ex iterator)
 
@@ -127,7 +145,13 @@ class ringbuffer {
         typedef Size_type                                   size_type;
         typedef typename std::make_signed<size_type>::type  difference_type;
 
+        typedef jau::callocator<Value_type>                 allocator_type;
+
     private:
+        typedef std::remove_const_t<Value_type>             value_type_mutable;
+        /** Required to create and move immutable elements, aka const */
+        typedef value_type_mutable*                         pointer_mutable;
+
         /** SC atomic integral scalar jau::nsize_t. Memory-Model (MM) guaranteed sequential consistency (SC) between acquire (read) and release (write) */
         typedef ordered_atomic<Size_type, std::memory_order::memory_order_seq_cst> sc_atomic_Size_type;
 
@@ -142,42 +166,23 @@ class ringbuffer {
         mutable std::mutex syncRead,  syncMultiRead;  // Memory-Model (MM) guaranteed sequential consistency (SC) between acquire and release
         std::condition_variable cvRead;
 
+        allocator_type alloc_inst;
+
         /* const */ NullValue_type nullelem;    // not final due to assignment operation
         /* const */ Size_type capacityPlusOne;  // not final due to grow
         /* const */ Value_type * array;         // Synchronized due to MM's data-race-free SC (SC-DRF) between [atomic] acquire/release
         sc_atomic_Size_type readPos;     // Memory-Model (MM) guaranteed sequential consistency (SC) between acquire (read) and release (write)
         sc_atomic_Size_type writePos;    // ditto
 
-        // DBG_PRINT("");
-        Value_type * newArray(const Size_type count) noexcept {
-#if 0
-            Value_type *r = new Value_type[count];
-            _DEBUG_DUMP("newArray ...");
-            _DEBUG_PRINT("newArray %" PRIu64 "\n", count);
-            return r;
-#else
-            return new Value_type[count];
-#endif
-        }
-        void freeArray(Value_type ** a) noexcept {
-            _DEBUG_DUMP("freeArray(def)");
-            _DEBUG_PRINT("freeArray %p\n", *a);
-            if( nullptr == *a ) {
-                ABORT("ringbuffer::freeArray with nullptr");
-            }
-            delete[] *a;
-            *a = nullptr;
-        }
-
         template<typename _DataType, typename _NullType>
-        static void* memset_wrap(_DataType *block, const _NullType& c, size_t n,
+        constexpr static void* memset_wrap(_DataType *block, const _NullType& c, size_t n,
                 std::enable_if_t< std::is_integral_v<_DataType> && sizeof(_DataType)==1 &&
                                   std::is_integral_v<_NullType> && sizeof(_NullType)==1, bool > = true )
         {
             return ::memset(block, c, n);
         }
         template<typename _DataType, typename _NullType>
-        static void* memset_wrap(_DataType *block, const _NullType& c, size_t n,
+        constexpr static void* memset_wrap(_DataType *block, const _NullType& c, size_t n,
                 std::enable_if_t< !std::is_integral_v<_DataType> || sizeof(_DataType)!=1 ||
                                   !std::is_integral_v<_NullType> || sizeof(_NullType)!=1, bool > = true )
         {
@@ -188,10 +193,60 @@ class ringbuffer {
             return nullptr;
         }
 
+        constexpr Value_type * newArray(const Size_type count) noexcept {
+            if( 0 < count ) {
+                value_type * m = alloc_inst.allocate(count);
+                if( nullptr == m ) {
+                    // Avoid exception, abort!
+                    const std::string s("alloc "+std::to_string(count)+" elements * "+
+                          std::to_string(sizeof(value_type))+" bytes/element = "+
+                          std::to_string(count * sizeof(value_type))+" bytes -> nullptr");
+                    ABORT(s.c_str());
+                }
+                if constexpr ( uses_secmem ) {
+                    explicit_bzero((void*)m, count*sizeof(value_type));
+                }
+                _DEBUG_DUMP("newArray ...");
+                _DEBUG_PRINT("newArray %" PRIu64 "\n", count);
+                return m;
+            } else {
+                _DEBUG_DUMP("newArray ...");
+                _DEBUG_PRINT("newArray %" PRIu64 "\n", count);
+                return nullptr;
+            }
+        }
+
+        constexpr void freeArray(Value_type ** a, const Size_type count) noexcept {
+            _DEBUG_DUMP("freeArray(def)");
+            _DEBUG_PRINT("freeArray %p\n", *a);
+            if( nullptr != *a ) {
+                if constexpr ( uses_secmem ) {
+                    explicit_bzero((void*)*a, count*sizeof(value_type));
+                }
+                alloc_inst.deallocate(*a, count);
+                *a = nullptr;
+            } else {
+                ABORT("ringbuffer::freeArray with nullptr");
+            }
+        }
+
+        constexpr void dtor_one(const Size_type pos) {
+            ( array + pos )->~value_type(); // placement new -> manual destruction!
+            if constexpr ( uses_secmem ) {
+                explicit_bzero((void*)(array + pos), sizeof(value_type));
+            }
+        }
+        constexpr void dtor_one(pointer elem) {
+            ( elem )->~value_type(); // placement new -> manual destruction!
+            if constexpr ( uses_secmem ) {
+                explicit_bzero((void*)(elem), sizeof(value_type));
+            }
+        }
+
         /**
          * clear all elements, zero size
          */
-        void clearImpl() noexcept {
+        constexpr void clearImpl() noexcept {
             const Size_type size_ = size();
             if( 0 < size_ ) {
                 if constexpr ( uses_memset ) {
@@ -202,7 +257,7 @@ class ringbuffer {
                     Size_type localReadPos = readPos;
                     for(Size_type i=0; i<size_; i++) {
                         localReadPos = (localReadPos + 1) % capacityPlusOne;
-                        array[localReadPos] = nullelem;
+                        dtor_one(localReadPos);
                     }
                     if( writePos != localReadPos ) {
                         // Avoid exception, abort!
@@ -215,28 +270,31 @@ class ringbuffer {
 
         void cloneFrom(const bool allocArrayAndCapacity, const ringbuffer & source) noexcept {
             if( allocArrayAndCapacity ) {
-                capacityPlusOne = source.capacityPlusOne;
                 if( nullptr != array ) {
-                    freeArray(&array);
+                    clearImpl();
+                    freeArray(&array, capacityPlusOne);
                 }
+                capacityPlusOne = source.capacityPlusOne;
                 array = newArray(capacityPlusOne);
             } else if( capacityPlusOne != source.capacityPlusOne ) {
                 ABORT( ("capacityPlusOne not equal: this "+toString()+", source "+source.toString() ).c_str() );
+            } else {
+                clearImpl();
             }
 
             readPos = source.readPos.load();
             writePos = source.writePos.load();
 
             if constexpr ( uses_memcpy ) {
-                memcpy(reinterpret_cast<void*>(&array[0]),
-                       reinterpret_cast<void*>(const_cast<Value_type*>(&source.array[0])),
-                       capacityPlusOne*sizeof(Value_type));
+                ::memcpy(reinterpret_cast<void*>(&array[0]),
+                         reinterpret_cast<void*>(const_cast<Value_type*>(&source.array[0])),
+                         capacityPlusOne*sizeof(Value_type));
             } else {
                 const Size_type size_ = size();
                 Size_type localWritePos = readPos;
                 for(Size_type i=0; i<size_; i++) {
                     localWritePos = (localWritePos + 1) % capacityPlusOne;
-                    array[localWritePos] = source.array[localWritePos];
+                    new (const_cast<pointer_mutable>(array + localWritePos)) value_type( source.array[localWritePos] ); // placement new
                 }
                 if( writePos != localWritePos ) {
                     ABORT( ("copy segment error: this "+toString()+", localWritePos "+std::to_string(localWritePos)+"; source "+source.toString()).c_str() );
@@ -245,34 +303,37 @@ class ringbuffer {
         }
 
         void resetImpl(const Value_type * copyFrom, const Size_type copyFromCount) noexcept {
-            clearImpl();
-
             // fill with copyFrom elements
             if( nullptr != copyFrom && 0 < copyFromCount ) {
                 if( copyFromCount > capacityPlusOne-1 ) {
                     // new blank resized array
                     if( nullptr != array ) {
-                        freeArray(&array);
+                        clearImpl();
+                        freeArray(&array, capacityPlusOne);
                     }
                     capacityPlusOne = copyFromCount + 1;
                     array = newArray(capacityPlusOne);
                     readPos  = 0;
                     writePos = 0;
+                } else {
+                    clearImpl();
                 }
                 if constexpr ( uses_memcpy ) {
-                    memcpy(reinterpret_cast<void*>(&array[0]),
-                           reinterpret_cast<void*>(const_cast<Value_type*>(copyFrom)),
-                           copyFromCount*sizeof(Value_type));
+                    ::memcpy(reinterpret_cast<void*>(&array[0]),
+                             reinterpret_cast<void*>(const_cast<Value_type*>(copyFrom)),
+                             copyFromCount*sizeof(Value_type));
                     readPos  = capacityPlusOne - 1; // last read-pos
                     writePos = copyFromCount   - 1; // last write-pos
                 } else {
                     Size_type localWritePos = writePos;
                     for(Size_type i=0; i<copyFromCount; i++) {
                         localWritePos = (localWritePos + 1) % capacityPlusOne;
-                        array[localWritePos] = copyFrom[i];
+                        new (const_cast<pointer_mutable>(array + localWritePos)) value_type( copyFrom[i] ); // placement new
                     }
                     writePos = localWritePos;
                 }
+            } else {
+                clearImpl();
             }
         }
 
@@ -306,7 +367,7 @@ class ringbuffer {
                 }
             }
             localReadPos = (localReadPos + 1) % capacityPlusOne;
-            Value_type r = array[localReadPos]; // SC-DRF
+            Value_type r = array[localReadPos];
             readPos = oldReadPos; // SC-DRF release atomic readPos (complete acquire-release even @ peek)
             success = true;
             return r;
@@ -338,8 +399,8 @@ class ringbuffer {
                 }
             }
             localReadPos = (localReadPos + 1) % capacityPlusOne;
-            Value_type r = std::move( array[localReadPos] ); // SC-DRF
-            array[localReadPos] = nullelem;
+            Value_type r( std::move( array[localReadPos] ) ); // uses_memmove: Possible, but just 1 object and Value_type storage still init
+            dtor_one( localReadPos );
             {
                 std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ putImpl via same lock
                 readPos = localReadPos; // SC-DRF release atomic readPos
@@ -401,21 +462,18 @@ class ringbuffer {
                 // we have a tail
                 localReadPos = ( localReadPos + 1 ) % capacityPlusOne; // next-read-pos
                 const Size_type tail_count = std::min(togo_count, capacityPlusOne - localReadPos);
-                if constexpr ( uses_memcpy ) {
-                    memcpy(reinterpret_cast<void*>(iter_out),
-                           reinterpret_cast<void*>(&array[localReadPos]),
-                           tail_count*sizeof(Value_type));
-                    if constexpr ( uses_memset ) {
-                        memset_wrap(&array[localReadPos], nullelem, tail_count*sizeof(Value_type));
-                    } else {
-                        for(Size_type i=0; i<tail_count; i++) {
-                            array[localReadPos+i] = nullelem; // issues dtor
-                        }
+                if constexpr ( uses_memmove ) {
+                    // must not dtor after memmove
+                    ::memmove(reinterpret_cast<void*>(iter_out),
+                              reinterpret_cast<void*>(&array[localReadPos]),
+                              tail_count*sizeof(Value_type));
+                    if constexpr ( uses_secmem ) {
+                        explicit_bzero(&array[localReadPos], tail_count*sizeof(Value_type));
                     }
                 } else {
                     for(Size_type i=0; i<tail_count; i++) {
-                        iter_out[i] = std::move( array[localReadPos+i] ); // SC-DRF
-                        array[localReadPos+i] = nullelem; // issues dtor
+                        iter_out[i] = std::move( array[localReadPos+i] );
+                        dtor_one( localReadPos + i ); // manual destruction, even after std::move (object still exists)
                     }
                 }
                 localReadPos = ( localReadPos + tail_count - 1 ) % capacityPlusOne; // last read-pos
@@ -425,26 +483,22 @@ class ringbuffer {
             if( togo_count > 0 ) {
                 // we have a head
                 localReadPos = ( localReadPos + 1 ) % capacityPlusOne; // next-read-pos
-                if constexpr ( uses_memcpy ) {
-                    memcpy(reinterpret_cast<void*>(iter_out),
-                           reinterpret_cast<void*>(&array[localReadPos]),
-                           togo_count*sizeof(Value_type));
-                    if constexpr ( uses_memset ) {
-                        memset_wrap(&array[localReadPos], nullelem, togo_count*sizeof(Value_type));
-                    } else {
-                        for(Size_type i=0; i<togo_count; i++) {
-                            array[localReadPos+i] = nullelem;
-                        }
+                if constexpr ( uses_memmove ) {
+                    // must not dtor after memmove
+                    ::memmove(reinterpret_cast<void*>(iter_out),
+                              reinterpret_cast<void*>(&array[localReadPos]),
+                              togo_count*sizeof(Value_type));
+                    if constexpr ( uses_secmem ) {
+                        explicit_bzero(&array[localReadPos], togo_count*sizeof(Value_type));
                     }
                 } else {
                     for(Size_type i=0; i<togo_count; i++) {
-                        iter_out[i] = array[localReadPos+i];
-                        array[localReadPos+i] = nullelem;
+                        iter_out[i] = std::move( array[localReadPos+i] );
+                        dtor_one( localReadPos + i ); // manual destruction, even after std::move (object still exists)
                     }
                 }
                 localReadPos = ( localReadPos + togo_count - 1 ) % capacityPlusOne; // last read-pos
             }
-            // Value_type r = std::move( array[localReadPos] ); // SC-DRF
             {
                 std::unique_lock<std::mutex> locRead(syncRead); // SC-DRF w/ putImpl via same lock
                 readPos = localReadPos; // SC-DRF release atomic readPos
@@ -504,7 +558,7 @@ class ringbuffer {
                     memset_wrap(&array[localReadPos], nullelem, tail_count*sizeof(Value_type));
                 } else {
                     for(Size_type i=0; i<tail_count; i++) {
-                        array[localReadPos+i] = nullelem;
+                        dtor_one( localReadPos+i );
                     }
                 }
                 localReadPos = ( localReadPos + tail_count - 1 ) % capacityPlusOne; // last read-pos
@@ -517,12 +571,11 @@ class ringbuffer {
                     memset_wrap(&array[localReadPos], nullelem, togo_count*sizeof(Value_type));
                 } else {
                     for(Size_type i=0; i<togo_count; i++) {
-                        array[localReadPos+i] = nullelem;
+                        dtor_one( localReadPos+i );
                     }
                 }
                 localReadPos = ( localReadPos + togo_count - 1 ) % capacityPlusOne; // last read-pos
             }
-            // Value_type r = std::move( array[localReadPos] ); // SC-DRF
             {
                 std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ putImpl via same lock
                 readPos = localReadPos; // SC-DRF release atomic readPos
@@ -554,7 +607,7 @@ class ringbuffer {
                     return false;
                 }
             }
-            array[localWritePos] = std::move(e); // SC-DRF
+            new (const_cast<pointer_mutable>(array + localWritePos)) value_type( std::move(e) ); // placement new
             {
                 std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ getImpl via same lock
                 writePos = localWritePos; // SC-DRF release atomic writePos
@@ -590,7 +643,7 @@ class ringbuffer {
                     return false;
                 }
             }
-            array[localWritePos] = e; // SC-DRF
+            new (const_cast<pointer_mutable>(array + localWritePos)) value_type( e ); // placement new
             {
                 std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ getImpl via same lock
                 writePos = localWritePos; // SC-DRF release atomic writePos
@@ -653,12 +706,12 @@ class ringbuffer {
                 localWritePos = ( localWritePos + 1 ) % capacityPlusOne; // next-write-pos
                 const Size_type tail_count = std::min(togo_count, capacityPlusOne - localWritePos);
                 if constexpr ( uses_memcpy ) {
-                    memcpy(reinterpret_cast<void*>(&array[localWritePos]),
-                           reinterpret_cast<void*>(const_cast<Value_type*>(iter_in)),
-                           tail_count*sizeof(Value_type));
+                    ::memcpy(reinterpret_cast<void*>(&array[localWritePos]),
+                             reinterpret_cast<void*>(const_cast<Value_type*>(iter_in)),
+                             tail_count*sizeof(Value_type));
                 } else {
                     for(Size_type i=0; i<tail_count; i++) {
-                        array[localWritePos+i] = iter_in[i];
+                        new (const_cast<pointer_mutable>(array + localWritePos + i)) value_type( iter_in[i] ); // placement new
                     }
                 }
                 localWritePos = ( localWritePos + tail_count - 1 ) % capacityPlusOne; // last write-pos
@@ -674,12 +727,11 @@ class ringbuffer {
                            togo_count*sizeof(Value_type));
                 } else {
                     for(Size_type i=0; i<togo_count; i++) {
-                        array[localWritePos+i] = iter_in[i];
+                        new (const_cast<pointer_mutable>(array + localWritePos + i)) value_type( iter_in[i] ); // placement new
                     }
                 }
                 localWritePos = ( localWritePos + togo_count - 1 ) % capacityPlusOne; // last write-pos
             }
-            // array[localWritePos] = e; // SC-DRF
             {
                 std::unique_lock<std::mutex> lockRead(syncWrite); // SC-DRF w/ getImpl via same lock
                 writePos = localWritePos; // SC-DRF release atomic writePos
@@ -764,15 +816,18 @@ class ringbuffer {
 
         /** Debug functionality - Dumps the contents of the internal array. */
         void dump(FILE *stream, std::string prefix) const noexcept {
-#if 0
-            fprintf(stream, "%s %s {\n", prefix.c_str(), toString().c_str());
-            for(Size_type i=0; i<capacityPlusOne; i++) {
-                // fprintf(stream, "\t[%d]: %p\n", i, array[i].get()); // FIXME
-            }
-            fprintf(stream, "}\n");
-#else
             fprintf(stream, "%s %s, array %p\n", prefix.c_str(), toString().c_str(), array);
-#endif
+        }
+
+        constexpr_cxx20 std::string get_info() const noexcept {
+            std::string res("ringbuffer<?>[this "+jau::to_hexstring(this)+
+                            ", size "+std::to_string(size())+" / "+std::to_string(capacityPlusOne-1)+
+                            ", uses[mmove "+std::to_string(uses_memmove)+
+                            ", mcpy "+std::to_string(uses_memcpy)+
+                            ", mset "+std::to_string(uses_memset)+
+                            ", smem "+std::to_string(uses_secmem)+
+                            "]]");
+            return res;
         }
 
         /**
@@ -845,7 +900,8 @@ class ringbuffer {
         ~ringbuffer() noexcept {
             _DEBUG_DUMP("dtor(def)");
             if( nullptr != array ) {
-                freeArray(&array);
+                clearImpl();
+                freeArray(&array, capacityPlusOne);
             }
         }
 
@@ -876,7 +932,6 @@ class ringbuffer {
             if( capacityPlusOne != _source.capacityPlusOne ) {
                 cloneFrom(true, _source);
             } else {
-                clearImpl(); // clear
                 cloneFrom(false, _source);
             }
             _DEBUG_DUMP("assignment(copy.this)");
@@ -1233,11 +1288,11 @@ class ringbuffer {
             }
 
             // save current data
-            Size_type oldCapacityPlusOne = capacityPlusOne;
+            const Size_type oldCapacityPlusOne = capacityPlusOne;
             Value_type * oldArray = array;
             Size_type oldReadPos = readPos;
 
-            // new blank resized array
+            // new blank resized array, starting at position 0
             capacityPlusOne = newCapacity + 1;
             array = newArray(capacityPlusOne);
             readPos = 0;
@@ -1249,11 +1304,12 @@ class ringbuffer {
                 for(Size_type i=0; i<size_; i++) {
                     localWritePos = (localWritePos + 1) % capacityPlusOne;
                     oldReadPos = (oldReadPos + 1) % oldCapacityPlusOne;
-                    array[localWritePos] = std::move( oldArray[oldReadPos] );
+                    new (const_cast<pointer_mutable>( array + localWritePos )) value_type( std::move( oldArray[oldReadPos] ) ); // placement new
+                    dtor_one( oldArray + oldReadPos ); // manual destruction, even after std::move (object still exists)
                 }
                 writePos = localWritePos;
             }
-            freeArray(&oldArray); // and release
+            freeArray(&oldArray, oldCapacityPlusOne); // and release
         }
 };
 
