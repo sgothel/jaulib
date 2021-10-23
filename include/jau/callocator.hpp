@@ -52,10 +52,21 @@ template <class T>
 struct callocator
 {
   public:
-    template <class U> struct rebind {typedef callocator<U> other;};
-
     // typedefs' for C++ named requirements: Allocator
-    typedef T  value_type;
+    typedef T               value_type;
+    typedef std::size_t     size_type;
+    typedef std::ptrdiff_t  difference_type;
+    typedef std::true_type  propagate_on_container_move_assignment;
+
+    // C++17, deprecated in C++20
+    typedef std::true_type  is_always_equal;
+
+    // deprecated in C++17 and removed in C++20
+    typedef T*              pointer;
+    typedef const T*        const_pointer;
+    typedef T&              reference;
+    typedef const T&        const_reference;
+    template <class U> struct rebind {typedef callocator<U> other;};
 
   private:
     typedef std::remove_const_t<T> value_type_mutable;
