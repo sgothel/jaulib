@@ -203,9 +203,6 @@ class ringbuffer {
                           std::to_string(count * sizeof(value_type))+" bytes -> nullptr");
                     ABORT(s.c_str());
                 }
-                if constexpr ( uses_secmem ) {
-                    explicit_bzero((void*)m, count*sizeof(value_type));
-                }
                 _DEBUG_DUMP("newArray ...");
                 _DEBUG_PRINT("newArray %" PRIu64 "\n", count);
                 return m;
@@ -220,9 +217,6 @@ class ringbuffer {
             _DEBUG_DUMP("freeArray(def)");
             _DEBUG_PRINT("freeArray %p\n", *a);
             if( nullptr != *a ) {
-                if constexpr ( uses_secmem ) {
-                    explicit_bzero((void*)*a, count*sizeof(value_type));
-                }
                 alloc_inst.deallocate(*a, count);
                 *a = nullptr;
             } else {

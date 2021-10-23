@@ -197,9 +197,6 @@ namespace jau {
                                 std::to_string(sizeof(value_type))+" bytes/element = "+
                                 std::to_string(size_ * sizeof(value_type))+" bytes -> nullptr", E_FILE_LINE);
                     }
-                    if constexpr ( uses_secmem ) {
-                        explicit_bzero((void*)m, size_*sizeof(value_type));
-                    }
                     return m;
                 }
                 return nullptr;
@@ -213,18 +210,12 @@ namespace jau {
                     throw jau::IllegalArgumentException("realloc "+std::to_string(new_capacity_)+" > difference_type max "+
                             std::to_string(DIFF_MAX), E_FILE_LINE);
                 }
-                if constexpr ( uses_secmem ) {
-                    explicit_bzero((void*)end_, (storage_end_-end_)*sizeof(value_type));
-                }
                 value_type * m = alloc_inst.reallocate(begin_, storage_end_-begin_, new_capacity_);
                 if( nullptr == m ) {
                     free(const_cast<pointer_mutable>(begin_)); // has not been touched by realloc
                     throw jau::OutOfMemoryError("realloc "+std::to_string(new_capacity_)+" elements * "+
                             std::to_string(sizeof(value_type))+" bytes/element = "+
                             std::to_string(new_capacity_ * sizeof(value_type))+" bytes -> nullptr", E_FILE_LINE);
-                }
-                if constexpr ( uses_secmem ) {
-                    explicit_bzero((void*)(m+(end_-begin_)), (new_capacity_-(end_-begin_))*sizeof(value_type));
                 }
                 return m;
             }
@@ -238,9 +229,6 @@ namespace jau {
 
             constexpr void freeStore() {
                 if( nullptr != begin_ ) {
-                    if constexpr ( uses_secmem ) {
-                        explicit_bzero((void*)begin_, (storage_end_-begin_)*sizeof(value_type));
-                    }
                     alloc_inst.deallocate(begin_, storage_end_-begin_);
                 }
             }
