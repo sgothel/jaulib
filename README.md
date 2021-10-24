@@ -116,6 +116,8 @@ make doc
 
 * TODO ..
 * Bump minor version due to API change (`darray`, `cow_darray` and `ringbuffer`)
+* Add `darray` and `cow_darray` initializer list construction using move-semantics, instead of copy-semantics (`std::initializer_list`).
+* Fix `cow_darray::push_back( InputIt first, InputIt last )`: On storage growth path, `push_back` must happen on new storage.
 * Revised Non-Type Template Parameter (NTTP) of `darray`, `cow_darray` and `ringbuffer`
   - Dropped `use_realloc`, as it is fully deducted
   - Renamed `sec_mem` to `use_secmem`
