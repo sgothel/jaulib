@@ -900,7 +900,7 @@ namespace jau {
                     storage_ref_t new_store_ref = std::make_shared<storage_t>( *store_ref, new_size_,
                                                                                store_ref->growth_factor(),
                                                                                store_ref->get_allocator_ref() );
-                    store_ref->push_back( first, last );
+                    new_store_ref->push_back( first, last );
                     {
                         sc_atomic_critical sync(sync_atomic);
                         store_ref = std::move(new_store_ref);
