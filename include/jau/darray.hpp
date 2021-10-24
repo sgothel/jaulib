@@ -45,9 +45,15 @@
 
 namespace jau {
 
-// #define JAU_DEBUG_DARRAY 1
+// #define JAU_DEBUG_DARRAY0 1
+#if JAU_DEBUG_DARRAY0
+    #define JAU_DARRAY_PRINTF0(...) { fprintf(stderr, __VA_ARGS__); fflush(stderr); }
+#else
+    #define JAU_DARRAY_PRINTF0(...)
+#endif
 
-#if DEBUG_DARRAY
+// #define JAU_DEBUG_DARRAY 1
+#if JAU_DEBUG_DARRAY
     #define JAU_DARRAY_PRINTF(...) { fprintf(stderr, __VA_ARGS__); fflush(stderr); }
 #else
     #define JAU_DARRAY_PRINTF(...)
@@ -251,7 +257,7 @@ namespace jau {
             }
 
             constexpr void dtor_one(iterator pos) {
-                JAU_DARRAY_PRINTF("dtor [%zd], count 1\n", (pos-begin_));
+                JAU_DARRAY_PRINTF0("dtor [%zd], count 1\n", (pos-begin_));
                 ( pos )->~value_type(); // placement new -> manual destruction!
                 if constexpr ( uses_secmem ) {
                     explicit_bzero((void*)pos, sizeof(value_type));
@@ -260,7 +266,7 @@ namespace jau {
 
             constexpr size_type dtor_range(iterator first, const_iterator last) {
                 size_type count=0;
-                JAU_DARRAY_PRINTF("dtor [%zd .. %zd], count %zd\n", (first-begin_), (last-begin_)-1, (last-first));
+                JAU_DARRAY_PRINTF0("dtor [%zd .. %zd], count %zd\n", (first-begin_), (last-begin_)-1, (last-first));
                 for(; first < last; ++first, ++count ) {
                     ( first )->~value_type(); // placement new -> manual destruction!
                 }
@@ -271,25 +277,25 @@ namespace jau {
             }
 
             constexpr void ctor_copy_range(pointer dest, iterator first, const_iterator last) {
-                JAU_DARRAY_PRINTF("ctor_copy_range [%zd .. %zd] -> ??, dist %zd\n", (first-begin_), (last-begin_)-1, (last-first));
+                JAU_DARRAY_PRINTF0("ctor_copy_range [%zd .. %zd] -> ??, dist %zd\n", (first-begin_), (last-begin_)-1, (last-first));
                 for(; first < last; ++dest, ++first) {
                     new (const_cast<pointer_mutable>(dest)) value_type( *first ); // placement new
                 }
             }
             constexpr pointer clone_range(iterator first, const_iterator last) {
-                // DARRAY_PRINTF("clone_range [%zd .. %zd], count %zd\n", (first-begin_), (last-begin_)-1, (last-first));
+                JAU_DARRAY_PRINTF0("clone_range [%zd .. %zd], count %zd\n", (first-begin_), (last-begin_)-1, (last-first));
                 pointer dest = allocStore(size_type(last-first));
                 ctor_copy_range(dest, first, last);
                 return dest;
             }
             constexpr pointer clone_range(const size_type dest_capacity, iterator first, const_iterator last) {
-                JAU_DARRAY_PRINTF("clone_range [%zd .. %zd], count %zd -> %d\n", (first-begin_), (last-begin_)-1, (last-first), (int)dest_capacity);
+                JAU_DARRAY_PRINTF0("clone_range [%zd .. %zd], count %zd -> %d\n", (first-begin_), (last-begin_)-1, (last-first), (int)dest_capacity);
                 pointer dest = allocStore(dest_capacity);
                 ctor_copy_range(dest, first, last);
                 return dest;
             }
             constexpr void ctor_copy_range_check(pointer dest, iterator first, const_iterator last) {
-                JAU_DARRAY_PRINTF("ctor_copy_range_check [%zd .. %zd] -> ??, dist %zd\n", (first-begin_), (last-begin_)-1, (last-first));
+                JAU_DARRAY_PRINTF0("ctor_copy_range_check [%zd .. %zd] -> ??, dist %zd\n", (first-begin_), (last-begin_)-1, (last-first));
                 if( first > last ) {
                     throw jau::IllegalArgumentException("first "+to_hexstring(first)+" > last "+to_hexstring(last), E_FILE_LINE);
                 }
@@ -298,7 +304,7 @@ namespace jau {
                 }
             }
             constexpr pointer clone_range_check(const size_type dest_capacity, iterator first, const_iterator last) {
-                JAU_DARRAY_PRINTF("clone_range_check [%zd .. %zd], count %zd -> %d\n", (first-begin_), (last-begin_)-1, (last-first), (int)dest_capacity);
+                JAU_DARRAY_PRINTF0("clone_range_check [%zd .. %zd], count %zd -> %d\n", (first-begin_), (last-begin_)-1, (last-first), (int)dest_capacity);
                 if( dest_capacity < size_type(last-first) ) {
                     throw jau::IllegalArgumentException("capacity "+std::to_string(dest_capacity)+" < source range "+
                                                         std::to_string(difference_type(last-first)), E_FILE_LINE);
@@ -381,11 +387,11 @@ namespace jau {
                     if constexpr ( uses_secmem ) {
                         if( dest < first ) {
                             // move elems left
-                            JAU_DARRAY_PRINTF("move_elements.mmm.left [%zd .. %zd] -> %zd, dist %zd\n", (first-begin_), ((first + count)-begin_)-1, (dest-begin_), (first-dest));
+                            JAU_DARRAY_PRINTF0("move_elements.mmm.left [%zd .. %zd] -> %zd, dist %zd\n", (first-begin_), ((first + count)-begin_)-1, (dest-begin_), (first-dest));
                             explicit_bzero((void*)(dest+count), (first-dest)*sizeof(value_type));
                         } else {
                             // move elems right
-                            JAU_DARRAY_PRINTF("move_elements.mmm.right [%zd .. %zd] -> %zd, dist %zd\n", (first-begin_), ((first + count)-begin_)-1, (dest-begin_), (dest-first));
+                            JAU_DARRAY_PRINTF0("move_elements.mmm.right [%zd .. %zd] -> %zd, dist %zd\n", (first-begin_), ((first + count)-begin_)-1, (dest-begin_), (dest-first));
                             explicit_bzero((void*)first, (dest-first)*sizeof(value_type));
                         }
                     }
@@ -393,7 +399,7 @@ namespace jau {
                     if( dest < first ) {
                         // move elems left
                         const_iterator last = first + count;
-                        JAU_DARRAY_PRINTF("move_elements.def.left [%zd .. %zd] -> %zd, dist %zd\n", (first-begin_), (last-begin_)-1, (dest-begin_), (first-dest));
+                        JAU_DARRAY_PRINTF0("move_elements.def.left [%zd .. %zd] -> %zd, dist %zd\n", (first-begin_), (last-begin_)-1, (dest-begin_), (first-dest));
                         for(; first < last; ++dest, ++first ) {
                             new (const_cast<pointer_mutable>(dest)) value_type( std::move( *first ) ); // placement new
                             dtor_one( const_cast<value_type*>( first ) ); // manual destruction, even after std::move (object still exists)
@@ -401,7 +407,7 @@ namespace jau {
                     } else {
                         // move elems right
                         iterator last = const_cast<iterator>(first + count);
-                        JAU_DARRAY_PRINTF("move_elements.def.right [%zd .. %zd] -> %zd, dist %zd\n", (first-begin_), (last-begin_)-1, (dest-begin_), (dest-first));
+                        JAU_DARRAY_PRINTF0("move_elements.def.right [%zd .. %zd] -> %zd, dist %zd\n", (first-begin_), (last-begin_)-1, (dest-begin_), (dest-first));
                         dest += count - 1;
                         for(--last; first <= last; --dest, --last ) {
                             new (const_cast<pointer_mutable>(dest)) value_type( std::move( *last ) ); // placement new
