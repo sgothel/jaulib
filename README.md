@@ -6,7 +6,7 @@
 This project's canonical repositories is hosted on [Gothel Software](https://jausoft.com/cgit/jaulib.git/).
 
 ## Goals
-This project aims to provide general C++ collections, algorithms and utilizies inclusive utilizities for a Java JNI binding.
+This project aims to provide general C++ and Java collections, algorithms and utilities - as well as basic concepts to support a Java JNI binding.
 
 This project was extracted from [Direct-BT](https://jausoft.com/cgit/direct_bt.git/about/) to enable general use and enforce better encapsulation.
 
@@ -114,7 +114,6 @@ make doc
 
 **0.6.0**
 
-* TODO ..
 * Bump minor version due to API change (`darray`, `cow_darray` and `ringbuffer`)
 * Add `darray` and `cow_darray` initializer list construction using move-semantics, instead of copy-semantics (`std::initializer_list`).
 * Fix `cow_darray::push_back( InputIt first, InputIt last )`: On storage growth path, `push_back` must happen on new storage.
