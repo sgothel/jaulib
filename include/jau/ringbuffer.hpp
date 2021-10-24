@@ -198,10 +198,8 @@ class ringbuffer {
                 value_type * m = alloc_inst.allocate(count);
                 if( nullptr == m ) {
                     // Avoid exception, abort!
-                    const std::string s("alloc "+std::to_string(count)+" elements * "+
-                          std::to_string(sizeof(value_type))+" bytes/element = "+
-                          std::to_string(count * sizeof(value_type))+" bytes -> nullptr");
-                    ABORT(s.c_str());
+                    ABORT("alloc %zu  elements * %zu bytes/element = %zu  bytes -> nullptr",
+                          count, sizeof(value_type), (count * sizeof(value_type)));
                 }
                 _DEBUG_DUMP("newArray ...");
                 _DEBUG_PRINT("newArray %" PRIu64 "\n", count);
