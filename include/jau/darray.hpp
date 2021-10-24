@@ -621,8 +621,14 @@ namespace jau {
             /**
              * Create a new instance from an initializer list.
              *
+             * Using the `std::initializer_list` requires to *copy* the given value_type objects into this darray.
+             *
+             * To utilize more efficient move semantics, see push_back_list() and jau::make_darray().
+             *
              * @param initlist initializer_list.
              * @param alloc allocator
+             * @see push_back_list()
+             * @see jau::make_darray()
              */
             constexpr darray(std::initializer_list<value_type> initlist, const allocator_type& alloc = allocator_type())
             : alloc_inst( alloc ), begin_( clone_range_foreign(initlist.size(), initlist.begin(), initlist.end()) ),
@@ -1103,6 +1109,51 @@ namespace jau {
             }
 
             /**
+             * Like push_back(), but for more multiple const r-value to copy.
+             *
+             * @tparam Args
+             * @param args r-value references to copy into this storage
+             */
+            template <typename... Args>
+            constexpr void push_back_list(const Args&... args)
+            {
+                const size_type count = sizeof...(Args);
+
+                JAU_DARRAY_PRINTF("push_back_list.copy.0: %zu elems: this %s\n", count, get_info().c_str());
+
+                if( end_ + count >= storage_end_ ) {
+                    grow_storage_move(size() + count);
+                }
+                // C++17 fold expression on above C++11 template pack args
+                ( new (const_cast<pointer_mutable>(end_++)) value_type( args ), ... ); // @suppress("Syntax error")
+
+                JAU_DARRAY_PRINTF("push_back_list.copy.X: %zu elems: this %s\n", count, get_info().c_str());
+            }
+
+            /**
+             * Like push_back(), but for more multiple r-value references to move.
+             *
+             * @tparam Args
+             * @param args r-value references to move into this storage
+             * @see jau::make_darray()
+             */
+            template <typename... Args>
+            constexpr void push_back_list(Args&&... args)
+            {
+                const size_type count = sizeof...(Args);
+
+                JAU_DARRAY_PRINTF("push_back_list.move.0: %zu elems: this %s\n", count, get_info().c_str());
+
+                if( end_ + count >= storage_end_ ) {
+                    grow_storage_move(size() + count);
+                }
+                // C++17 fold expression on above C++11 template pack args
+                ( new (const_cast<pointer_mutable>(end_++)) value_type( std::move(args) ), ... ); // @suppress("Syntax error")
+
+                JAU_DARRAY_PRINTF("push_back_list.move.X: %zu elems: this %s\n", count, get_info().c_str());
+            }
+
+            /**
              * Generic value_type equal comparator to be user defined for e.g. jau::darray::push_back_unique().
              * @param a one element of the equality test.
              * @param b the other element of the equality test.
@@ -1205,6 +1256,57 @@ namespace jau {
                 return res;
             }
     };
+
+    /**
+     * Construct a darray<T> instance, initialized by move semantics from the variadic (template pack) argument list.
+     *
+     * std::initializer_list<T> enforces to copy the created instances into the container,
+     * since its iterator references to `const` value_type.
+     *
+     * This alternative template passes the r-value argument references to darray::push_back_list(),
+     * hence using `std::move` without copying semantics.
+     *
+     * All argument types must be of same type, i.e. std::is_same.
+     * The deduced darray<T> instance also uses same type as its Value_type.
+     *
+     * @tparam First the first argument type, must be same
+     * @tparam Next all other argument types, must be same
+     * @tparam
+     * @param arg1 the first r-value
+     * @param argsN the other r-values
+     * @return the new `darray`
+     * @see darray::push_back_list()
+     * @see make_darray()
+     */
+    template <typename First, typename... Next,
+              // std::enable_if_t< ( std::is_same<First, Next>::value && ... ), bool> = true>
+              std::enable_if_t< std::conjunction_v<std::is_same<First, Next>... >, bool> = true>
+    constexpr darray< First > make_darray(First&& arg1, Next&&... argsN)
+    {
+        darray< First > d(1 + sizeof...(Next));
+        // C++17 fold expression on above C++11 template pack arg1 and argsN
+        // d.push_back_list( std::forward<First>(arg1), ( std::forward<Next>(argsN), ... ) ); // @suppress("Syntax error")
+        d.push_back_list( arg1, argsN... ); // @suppress("Syntax error")
+        return d;
+    }
+
+    /**
+     * Complement constructor for darray<T> instance, move semantics initializer for one argument.
+     * @tparam First
+     * @tparam Next
+     * @param arg1
+     * @return
+     * @see darray::push_back()
+     * @see darray::push_back_list()
+     * @see make_darray()
+     */
+    template <typename First, typename... Next>
+    constexpr darray< First > make_darray(First&& arg1)
+    {
+        darray< First > d(1);
+        d.push_back( std::forward<First>(arg1) );
+        return d;
+    }
 
     /****************************************************************************************
      ****************************************************************************************/

@@ -492,10 +492,14 @@ namespace jau {
             }
 
             /**
-             * Create a new instance from an initializer list.
+             * Using the `std::initializer_list` requires to *copy* the given value_type objects into this cow_darray.
+             *
+             * To utilize more efficient move semantics, see push_back_list() and jau::make_cow_darray().
              *
              * @param initlist initializer_list.
              * @param alloc allocator
+             * @see push_back_list()
+             * @see jau::make_cow_darray()
              */
             constexpr cow_darray(std::initializer_list<value_type> initlist, const allocator_type& alloc = allocator_type())
             : store_ref(std::make_shared<storage_t>(initlist, alloc)), sync_atomic(false)
@@ -912,6 +916,73 @@ namespace jau {
             }
 
             /**
+             * Like push_back(), but for more multiple const r-value to copy.
+             * <p>
+             * This write operation uses a mutex lock and is blocking this instances' write operations only.
+             * </p>
+             *
+             * @tparam Args
+             * @param args r-value references to copy into this storage
+             */
+            template <typename... Args>
+            constexpr_atomic void push_back_list(const Args&... args)
+            {
+                std::lock_guard<std::recursive_mutex> lock(mtx_write);
+                const size_type new_size_ = store_ref->size() + sizeof...(Args);
+
+                if( new_size_ > store_ref->capacity() ) {
+                    // grow and swap all refs
+                    storage_ref_t new_store_ref = std::make_shared<storage_t>( *store_ref, new_size_,
+                                                                               store_ref->growth_factor(),
+                                                                               store_ref->get_allocator_ref() );
+                    // C++17 fold expression on above C++11 template pack args
+                    ( new_store_ref->push_back( args ), ... ); // @suppress("Syntax error")
+                    {
+                        sc_atomic_critical sync(sync_atomic);
+                        store_ref = std::move(new_store_ref);
+                    }
+                } else {
+                    // just append ..
+                    // C++17 fold expression on above C++11 template pack args
+                    ( store_ref->push_back( args ), ... ); // @suppress("Syntax error")
+                }
+            }
+
+            /**
+             * Like push_back(), but for more multiple r-value references to move.
+             * <p>
+             * This write operation uses a mutex lock and is blocking this instances' write operations only.
+             * </p>
+             *
+             * @tparam Args
+             * @param args r-value references to move into this storage
+             * @see jau::make_cow_darray()
+             */
+            template <typename... Args>
+            constexpr_atomic void push_back_list(Args&&... args)
+            {
+                std::lock_guard<std::recursive_mutex> lock(mtx_write);
+                const size_type new_size_ = store_ref->size() + sizeof...(Args);
+
+                if( new_size_ > store_ref->capacity() ) {
+                    // grow and swap all refs
+                    storage_ref_t new_store_ref = std::make_shared<storage_t>( *store_ref, new_size_,
+                                                                               store_ref->growth_factor(),
+                                                                               store_ref->get_allocator_ref() );
+                    // C++17 fold expression on above C++11 template pack args
+                    ( new_store_ref->push_back( std::move(args) ), ... ); // @suppress("Syntax error")
+                    {
+                        sc_atomic_critical sync(sync_atomic);
+                        store_ref = std::move(new_store_ref);
+                    }
+                } else {
+                    // just append ..
+                    // C++17 fold expression on above C++11 template pack args
+                    ( store_ref->push_back( std::move(args) ), ... ); // @suppress("Syntax error")
+                }
+            }
+
+            /**
              * Generic value_type equal comparator to be user defined for e.g. jau::cow_darray::push_back_unique().
              * @param a one element of the equality test.
              * @param b the other element of the equality test.
@@ -1020,6 +1091,57 @@ namespace jau {
                         "]");
             }
     };
+
+    /**
+     * Construct a cow_darray<T> instance, initialized by move semantics from the variadic (template pack) argument list.
+     *
+     * std::initializer_list<T> enforces to copy the created instances into the container,
+     * since its iterator references to `const` value_type.
+     *
+     * This alternative template passes the r-value argument references to cow_darray::push_back_list(),
+     * hence using `std::move` without copying semantics.
+     *
+     * All argument types must be of same type, i.e. std::is_same.
+     * The deduced darray<T> instance also uses same type as its Value_type.
+     *
+     * @tparam First the first argument type, must be same
+     * @tparam Next all other argument types, must be same
+     * @tparam
+     * @param arg1 the first r-value
+     * @param argsN the other r-values
+     * @return the new `cow_darray`
+     * @see cow_darray::push_back_list()
+     * @see make_cow_darray()
+     */
+    template <typename First, typename... Next,
+              // std::enable_if_t< ( std::is_same<First, Next>::value && ... ), bool> = true>
+              std::enable_if_t< std::conjunction_v<std::is_same<First, Next>... >, bool> = true>
+    constexpr cow_darray< First > make_cow_darray(First&& arg1, Next&&... argsN)
+    {
+        cow_darray< First > d(1 + sizeof...(Next));
+        // C++17 fold expression on above C++11 template pack arg1 and argsN
+        // d.push_back_list( std::forward<First>(arg1), ( std::forward<Next>(argsN), ... ) ); // @suppress("Syntax error")
+        d.push_back_list( arg1, argsN... ); // @suppress("Syntax error")
+        return d;
+    }
+
+    /**
+     * Complement constructor for cow_darray<T> instance, move semantics initializer for one argument.
+     * @tparam First
+     * @tparam Next
+     * @param arg1
+     * @return
+     * @see cow_darray::push_back()
+     * @see cow_darray::push_back_list()
+     * @see make_cow_darray()
+     */
+    template <typename First, typename... Next>
+    constexpr cow_darray< First > make_cow_darray(First&& arg1)
+    {
+        cow_darray< First > d(1);
+        d.push_back( std::forward<First>(arg1) );
+        return d;
+    }
 
     /****************************************************************************************
      ****************************************************************************************/
