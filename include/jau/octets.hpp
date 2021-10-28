@@ -406,25 +406,53 @@ namespace jau {
 
             void put_octets(const nsize_t i, const TROOctets & v) {
                 check_range(i, v.size());
-                memcpy(data() + i, v.get_ptr(), v.size());
+                std::memcpy(data() + i, v.get_ptr(), v.size());
             }
             void put_octets_nc(const nsize_t i, const TROOctets & v) noexcept {
-                memcpy(data() + i, v.get_ptr(), v.size());
+                std::memcpy(data() + i, v.get_ptr(), v.size());
             }
 
             void put_bytes(const nsize_t i, const uint8_t *source, const nsize_t byte_count) {
                 check_range(i, byte_count);
-                memcpy(data() + i, source, byte_count);
+                std::memcpy(data() + i, source, byte_count);
             }
             void put_bytes_nc(const nsize_t i, const uint8_t *source, const nsize_t byte_count) noexcept {
-                memcpy(data() + i, source, byte_count);
+                std::memcpy(data() + i, source, byte_count);
+            }
+
+            void memmove(const nsize_t i, const uint8_t *source, const nsize_t byte_count) {
+                check_range(i, byte_count);
+                std::memmove(data() + i, source, byte_count);
+            }
+            void memmove_nc(const nsize_t i, const uint8_t *source, const nsize_t byte_count) noexcept {
+                std::memmove(data() + i, source, byte_count);
+            }
+
+            void memset(const nsize_t i, const uint8_t c, const nsize_t byte_count) {
+                check_range(i, byte_count);
+                std::memset(data() + i, c, byte_count);
+            }
+            void memset_nc(const nsize_t i, const uint8_t c, const nsize_t byte_count) noexcept {
+                std::memset(data() + i, c, byte_count);
+            }
+            void bzero(const nsize_t i, const nsize_t byte_count) {
+                check_range(i, byte_count);
+                ::bzero(data() + i, byte_count);
+            }
+            void bzero_nc(const nsize_t i, const nsize_t byte_count) noexcept {
+                ::bzero(data() + i, byte_count);
+            }
+            void bzero() noexcept {
+                if( size() > 0 ) {
+                    ::bzero(data(), size());
+                }
             }
 
             void put_string(const nsize_t i, const std::string & v, const nsize_t max_len, const bool includeEOS) {
                 const nsize_t size1 = v.size() + ( includeEOS ? 1 : 0 );
                 const nsize_t size = std::min(size1, max_len);
                 check_range(i, size);
-                memcpy(data() + i, v.c_str(), size);
+                std::memcpy(data() + i, v.c_str(), size);
                 if( size < size1 && includeEOS ) {
                     *(data() + i + size - 1) = 0; // ensure EOS
                 }
@@ -432,7 +460,7 @@ namespace jau {
             void put_string_nc(const nsize_t i, const std::string & v, const nsize_t max_len, const bool includeEOS) noexcept {
                 const nsize_t size1 = v.size() + ( includeEOS ? 1 : 0 );
                 const nsize_t size = std::min(size1, max_len);
-                memcpy(data() + i, v.c_str(), size);
+                std::memcpy(data() + i, v.c_str(), size);
                 if( size < size1 && includeEOS ) {
                     *(data() + i + size - 1) = 0; // ensure EOS
                 }
