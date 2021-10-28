@@ -112,6 +112,10 @@ make doc
 
 * First stable release (TODO)
 
+**0.6.1**
+
+* TOctets: Add convenient *memmove*, *memset* and *bzero* methods; Ensure all memory ops are either *std::* or global namespace *::*
+
 **0.6.0**
 
 * Bump minor version due to API change (`darray`, `cow_darray` and `ringbuffer`)
