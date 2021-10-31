@@ -112,6 +112,17 @@ make doc
 
 * First stable release (TODO)
 
+**0.7.0**
+
+* To be completed ...
+* ringbuffer API change: Drop whole `NullValue` *angle*, simplifying.
+  - Drop `Value_type [get|peek]*()`, use `bool [get|peek]*(Value_type&)` instead
+  - Drop `NullValue_type` template type param and `NullValue_type` ctor argument.
+  - Simplifies and unifies single and multi get and put, as well as testing (motivation).
+* ringbuffer: Drop `use_memset` non-type template param, 
+  simply use `use_memcpy` having same semantics of *TriviallyCopyable*.
+* darray: Refine API doc for `use_memmove` using *TriviallyCopyable* and *Trivial destructor* ...
+
 **0.6.1**
 
 * TOctets: Add convenient *memmove*, *memset* and *bzero* methods; Ensure all memory ops are either *std::* or global namespace *::*
@@ -125,8 +136,8 @@ make doc
   - Dropped `use_realloc`, as it is fully deducted
   - Renamed `sec_mem` to `use_secmem`
   - Enable type traits in user `Value_type` to deduce `use_memmove` and `use_secmem`
-  - Ringbuffer uses placement-new for better efficacy (dropped C++ array default init)
   - Ringbuffer also uses darray's NTTP `use_memmove` and `use_secmem`
+* Ringbuffer uses placement-new for better efficacy (dropped C++ array default init)
 * Use explicit `constexpr if`: `darray`, `ringbuffer`, 
   endian conversion `[le|be|cpu]_to_[le|be|cpu]()` and `bit_cast()`.
 * POctet: Add explicit copy-ctor with given capacity and add TROOctets default ctor
