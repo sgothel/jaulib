@@ -27,6 +27,7 @@ set( SOURCES_IDIOMATIC_EXAMPLES
     test_lfringbuffer01.cpp
     test_lfringbuffer02.cpp
     test_lfringbuffer03.cpp
+    test_lfringbuffer04.cpp
     test_lfringbuffer11.cpp
     test_lfringbuffer12.cpp
     test_lfringbuffer13.cpp

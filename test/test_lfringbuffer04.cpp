@@ -39,35 +39,16 @@ using namespace jau;
 
 typedef jau::snsize_t Integral_type;
 
-class Integer {
-    public:
-        Integral_type value;
-
-        Integer(Integral_type v) : value(v) {}
-
-        Integer() noexcept : value(-1) { }
-
-        Integer(const Integer &o) noexcept = default;
-        Integer(Integer &&o) noexcept = default;
-        Integer& operator=(const Integer &o) noexcept = default;
-        Integer& operator=(Integer &&o) noexcept = default;
-
-        operator Integral_type() const {
-            return value;
-        }
-        constexpr Integral_type getValue() const { return value; }
-        static Integer valueOf(const Integral_type i) { return Integer(i); }
-};
-typedef Integer Value_type;
+typedef std::array<Integral_type, 6> Value_type;
 
 template<>
-Value_type getDefault() { return Integer(); }
+Value_type getDefault() { return Value_type{-1, -1, -1, -1, -1, -1}; }
 
 template<>
-Value_type createValue(const Integral_type& v) { return Integer(v); }
+Value_type createValue(const Integral_type& v) { return Value_type{v, v+1, v+2, v+3, v+4, v+5}; }
 
 template<>
-Integral_type getValue(const Value_type& e) { return e.getValue(); }
+Integral_type getValue(const Value_type& e) { return e[0]; }
 
 typedef TestRingbuffer_A<Integral_type, Value_type, jau::nsize_t,
         true /* exp_memmove */, true /* exp_memcpy */, false /* exp_secmem */> TestRingbuffer02a;
