@@ -178,6 +178,8 @@ namespace jau {
             /** Required to create and move immutable elements, aka const */
             typedef value_type_mutable*                         pointer_mutable;
 
+            static constexpr void* voidptr_cast(const_pointer p) { return reinterpret_cast<void*>( const_cast<pointer_mutable>( p ) ); }
+
             constexpr static const size_type DIFF_MAX = std::numeric_limits<difference_type>::max();
             constexpr static const size_type MIN_SIZE_AT_GROW = 10;
 
@@ -268,7 +270,7 @@ namespace jau {
                 JAU_DARRAY_PRINTF0("dtor [%zd], count 1\n", (pos-begin_));
                 ( pos )->~value_type(); // placement new -> manual destruction!
                 if constexpr ( uses_secmem ) {
-                    explicit_bzero((void*)pos, sizeof(value_type));
+                    ::explicit_bzero(voidptr_cast(pos), sizeof(value_type));
                 }
             }
 
@@ -279,7 +281,7 @@ namespace jau {
                     ( first )->~value_type(); // placement new -> manual destruction!
                 }
                 if constexpr ( uses_secmem ) {
-                    explicit_bzero((void*)(last-count), count*sizeof(value_type));
+                    ::explicit_bzero(voidptr_cast(last-count), count*sizeof(value_type));
                 }
                 return count;
             }
@@ -361,8 +363,8 @@ namespace jau {
                     set_iterator(new_storage, size(), new_capacity);
                 } else {
                     pointer new_storage = allocStore(new_capacity);
-                    memmove(reinterpret_cast<void*>(const_cast<pointer_mutable>(new_storage)),
-                            reinterpret_cast<const void*>(begin_), (uint8_t*)end_-(uint8_t*)begin_); // we can simply copy the memory over, also no overlap
+                    ::memmove(voidptr_cast(new_storage),
+                              begin_, (uint8_t*)end_-(uint8_t*)begin_); // we can simply copy the memory over, also no overlap
                     freeStore();
                     set_iterator(new_storage, size(), new_capacity);
                 }
@@ -390,17 +392,17 @@ namespace jau {
                 // Hence we leave it to 'uses_secmem' to bzero...
                 if constexpr ( uses_memmove ) {
                     // handles overlap
-                    memmove(reinterpret_cast<void*>(dest),
-                            reinterpret_cast<const void*>(first), sizeof(value_type)*count);
+                    ::memmove(voidptr_cast(dest),
+                              first, sizeof(value_type)*count);
                     if constexpr ( uses_secmem ) {
                         if( dest < first ) {
                             // move elems left
                             JAU_DARRAY_PRINTF0("move_elements.mmm.left [%zd .. %zd] -> %zd, dist %zd\n", (first-begin_), ((first + count)-begin_)-1, (dest-begin_), (first-dest));
-                            explicit_bzero((void*)(dest+count), (first-dest)*sizeof(value_type));
+                            ::explicit_bzero(voidptr_cast(dest+count), (first-dest)*sizeof(value_type));
                         } else {
                             // move elems right
                             JAU_DARRAY_PRINTF0("move_elements.mmm.right [%zd .. %zd] -> %zd, dist %zd\n", (first-begin_), ((first + count)-begin_)-1, (dest-begin_), (dest-first));
-                            explicit_bzero((void*)first, (dest-first)*sizeof(value_type));
+                            ::explicit_bzero(voidptr_cast(first), (dest-first)*sizeof(value_type));
                         }
                     }
                 } else {
