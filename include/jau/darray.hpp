@@ -93,21 +93,29 @@ namespace jau {
      * </p>
      *
      * @anchor darray_ntt_params
-     * ### Non-Type Template Parameter controlling Value_type memory
+     * ### Non-Type Template Parameter (NTTP) controlling Value_type memory
      * @anchor darray_memmove
      * #### `use_memmove`
      * `use_memmove` can be overriden and defaults to `std::is_trivially_copyable_v<Value_type>`.
      *
-     * The default value has been chosen with care, see C++ Standard section 6.9 Types *trivially copyable*.
-     * However, since the destructor is not being called when using `memmove` within this container,
-     * the requirements are more relaxed, see below.
+     * The default value has been chosen with care, see C++ Standard section 6.9 Types [TriviallyCopyable](https://en.cppreference.com/w/cpp/named_req/TriviallyCopyable).
      *
-     * `memmove` will be used only to move an object in memory,
-     * where this container controls the creation and destruction.
-     * - We can't `memmove` one or more object into this container, even with an `rvalue` reference.
-     *   The `rvalue`'s destructor will be called and potential acquired resources were lost.
-     * - We can move it around within this container, i.e. when growing or shrinking the array,
-     *   or when earsing an object in the middle or even when moving out to the user.
+     * See [Trivial destructor](https://en.cppreference.com/w/cpp/language/destructor#Trivial_destructor)
+     * being key requirement to [TriviallyCopyable](https://en.cppreference.com/w/cpp/named_req/TriviallyCopyable).
+     * > A trivial destructor is a destructor that performs no action.
+     * > Objects with trivial destructors don't require a delete-expression and may be disposed of by simply deallocating their storage.
+     * > All data types compatible with the C language (POD types) are trivially destructible.`
+     *
+     * However, since the destructor is not being called when using `memmove` on elements within this container,
+     * the requirements are more relaxed and *TriviallyCopyable* not required nor guaranteed, see below.
+     *
+     * `memmove` will be used to move an object inside this container memory only,
+     * i.e. where construction and destruction is controlled.
+     * Not requiring *TriviallyCopyable* constraints `memmove` as follows:
+     * - We can't `memmove` one or more objects into this container, even with an `rvalue` reference.
+     *   The `rvalue`'s destructor will be called and potential acquired resources are lost.
+     * - We can `memmove` an object around within this container, i.e. when growing or shrinking the array. (*Used*)
+     * - We can `memmove` an object out of this container to the user. (*Unused*)
      *
      * Relaxed requirements for `use_memmove` are:
      * - Not using inner class pointer to inner class fields or methods (like launching a thread).
