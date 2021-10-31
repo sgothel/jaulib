@@ -40,7 +40,7 @@ using namespace jau;
 typedef uint8_t IntegralType;
 typedef uint8_t TrivialType;
 constexpr const TrivialType TrivialTypeNullElem(0xff);
-typedef ringbuffer<TrivialType, TrivialType, jau::nsize_t> TrivialTypeRingbuffer;
+typedef ringbuffer<TrivialType, jau::nsize_t> TrivialTypeRingbuffer;
 
 constexpr static const IntegralType integral_modulus = 254;
 
@@ -49,12 +49,12 @@ class TestRingbuffer11 {
   private:
 
     TrivialTypeRingbuffer createEmpty(jau::nsize_t initialCapacity) {
-        TrivialTypeRingbuffer rb(0xff, initialCapacity);
+        TrivialTypeRingbuffer rb(initialCapacity);
         REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
         return rb;
     }
     TrivialTypeRingbuffer createFull(const std::vector<TrivialType> & source) {
-        TrivialTypeRingbuffer rb(0xff, source);
+        TrivialTypeRingbuffer rb(source);
         REQUIRE_MSG("full "+rb.toString(), rb.isFull());
         return rb;
     }
@@ -74,8 +74,8 @@ class TestRingbuffer11 {
         // INFO_STR, INFO: Not thread safe yet
         // INFO_STR(msg+": Created / " + rb->toString());
         for(jau::nsize_t i=0; i<len; i++) {
-            TrivialType svI = rb->getBlocking();
-            REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb->toString()+", elem "+std::to_string(svI), svI!= TrivialTypeNullElem);
+            TrivialType svI;
+            REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb->toString()+", elem "+std::to_string(svI), rb->getBlocking(svI));
             // INFO_STR("Got "+std::to_string(svI->intValue())+" / " + rb->toString());
         }
         // INFO_STR(msg+": Dies / " + rb->toString());

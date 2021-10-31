@@ -57,21 +57,19 @@ class Integer {
         static Integer valueOf(const IntegralType i) { return Integer(i); }
 };
 
-std::shared_ptr<Integer> NullInteger = nullptr;
-
 typedef std::shared_ptr<Integer> SharedType;
 constexpr const std::nullptr_t SharedTypeNullElem = nullptr ;
-typedef ringbuffer<SharedType, std::nullptr_t, jau::nsize_t> SharedTypeRingbuffer;
+typedef ringbuffer<SharedType, jau::nsize_t> SharedTypeRingbuffer;
 
 // Test examples.
 class TestRingbuffer13 {
   private:
 
     std::shared_ptr<SharedTypeRingbuffer> createEmpty(jau::nsize_t initialCapacity) {
-        return std::shared_ptr<SharedTypeRingbuffer>(new SharedTypeRingbuffer(nullptr, initialCapacity));
+        return std::shared_ptr<SharedTypeRingbuffer>(new SharedTypeRingbuffer(initialCapacity));
     }
     std::shared_ptr<SharedTypeRingbuffer> createFull(const std::vector<std::shared_ptr<Integer>> & source) {
-        return std::shared_ptr<SharedTypeRingbuffer>(new SharedTypeRingbuffer(nullptr, source));
+        return std::shared_ptr<SharedTypeRingbuffer>(new SharedTypeRingbuffer(source));
     }
 
     std::vector<SharedType> createIntArray(const jau::nsize_t capacity, const IntegralType startValue) {
@@ -89,8 +87,8 @@ class TestRingbuffer13 {
         // INFO_STR, INFO: Not thread safe yet
         // INFO_STR(msg+": Created / " + rb->toString());
         for(jau::nsize_t i=0; i<len; i++) {
-            SharedType svI = rb->getBlocking();
-            REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb->toString(), svI!=SharedTypeNullElem);
+            SharedType svI;
+            REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb->toString(), rb->getBlocking(svI));
             // INFO_STR("Got "+std::to_string(svI->intValue())+" / " + rb->toString());
         }
         // INFO_STR(msg+": Dies / " + rb->toString());

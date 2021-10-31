@@ -58,19 +58,19 @@ class Integer {
 std::shared_ptr<Integer> NullInteger = nullptr;
 
 typedef std::shared_ptr<Integer> SharedType;
-typedef ringbuffer<SharedType, std::nullptr_t, jau::nsize_t> SharedTypeRingbuffer;
+typedef ringbuffer<SharedType, jau::nsize_t> SharedTypeRingbuffer;
 
 // Test examples.
 class TestRingbuffer03 {
   private:
 
     std::shared_ptr<SharedTypeRingbuffer> createEmpty(jau::nsize_t initialCapacity) {
-        std::shared_ptr<SharedTypeRingbuffer> rb = std::shared_ptr<SharedTypeRingbuffer>(new SharedTypeRingbuffer(nullptr, initialCapacity));
+        std::shared_ptr<SharedTypeRingbuffer> rb = std::shared_ptr<SharedTypeRingbuffer>(new SharedTypeRingbuffer(initialCapacity));
         REQUIRE_MSG("empty "+rb->toString(), rb->isEmpty());
         return rb;
     }
     std::shared_ptr<SharedTypeRingbuffer> createFull(const std::vector<std::shared_ptr<Integer>> & source) {
-        std::shared_ptr<SharedTypeRingbuffer> rb = std::shared_ptr<SharedTypeRingbuffer>(new SharedTypeRingbuffer(nullptr, source));
+        std::shared_ptr<SharedTypeRingbuffer> rb = std::shared_ptr<SharedTypeRingbuffer>(new SharedTypeRingbuffer(source));
         REQUIRE_MSG("full "+rb->toString(), rb->isFull());
         return rb;
     }
@@ -84,25 +84,6 @@ class TestRingbuffer03 {
     }
 
     void readTestImpl(SharedTypeRingbuffer &rb, bool clearRef, jau::nsize_t capacity, jau::nsize_t len, IntegralType startValue) {
-        (void) clearRef;
-
-        jau::nsize_t preSize = rb.size();
-        REQUIRE_MSG("capacity "+rb.toString(), capacity == rb.capacity());
-        REQUIRE_MSG("capacity at read "+std::to_string(len)+" elems: "+rb.toString(), capacity >= len);
-        REQUIRE_MSG("size at read "+std::to_string(len)+" elems: "+rb.toString(), preSize >= len);
-        REQUIRE_MSG("not empty "+rb.toString(), !rb.isEmpty());
-
-        for(jau::nsize_t i=0; i<len; i++) {
-            SharedType svI = rb.get();
-            REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb.toString(), svI!=nullptr);
-            REQUIRE_MSG("value at read #"+std::to_string(i+1)+": "+rb.toString(), IntegralType(startValue+i) == svI->intValue());
-        }
-
-        REQUIRE_MSG("size "+rb.toString(), preSize-len == rb.size());
-        REQUIRE_MSG("free slots after reading "+std::to_string(len)+": "+rb.toString(), rb.freeSlots()>= len);
-        REQUIRE_MSG("not full "+rb.toString(), !rb.isFull());
-    }
-    void readTestImpl2(SharedTypeRingbuffer &rb, bool clearRef, jau::nsize_t capacity, jau::nsize_t len, IntegralType startValue) {
         (void) clearRef;
 
         jau::nsize_t preSize = rb.size();
@@ -183,7 +164,9 @@ class TestRingbuffer03 {
     void moveGetPutImpl(SharedTypeRingbuffer &rb, jau::nsize_t pos) {
         REQUIRE_MSG("not empty "+rb.toString(), !rb.isEmpty());
         for(jau::nsize_t i=0; i<pos; i++) {
-            REQUIRE_MSG("moveFull.get "+rb.toString(), IntegralType(i) == rb.get()->intValue());
+            SharedType svI;
+            REQUIRE_MSG("moveFull.get "+rb.toString(), rb.get(svI));
+            REQUIRE_MSG("moveFull.get "+rb.toString(), IntegralType(i) == svI->intValue());
             REQUIRE_MSG("moveFull.put "+rb.toString(), rb.put( SharedType( new Integer(i) ) ) );
         }
     }
@@ -192,7 +175,9 @@ class TestRingbuffer03 {
         REQUIRE_MSG("RB is full "+rb.toString(), !rb.isFull());
         for(jau::nsize_t i=0; i<pos; i++) {
             REQUIRE_MSG("moveEmpty.put "+rb.toString(), rb.put( SharedType( new Integer(600+i) ) ) );
-            REQUIRE_MSG("moveEmpty.get "+rb.toString(), IntegralType(600+i) == rb.get()->intValue());
+            SharedType svI;
+            REQUIRE_MSG("moveEmpty.get "+rb.toString(), rb.get(svI));
+            REQUIRE_MSG("moveEmpty.get "+rb.toString(), IntegralType(600+i) == svI->intValue());
         }
     }
 
@@ -202,13 +187,11 @@ class TestRingbuffer03 {
         std::shared_ptr<SharedTypeRingbuffer> rb = createEmpty(11);
 
         std::string msg("Ringbuffer: uses_memcpy "+std::to_string(SharedTypeRingbuffer::uses_memcpy)+
-                 ", uses_memset "+std::to_string(SharedTypeRingbuffer::uses_memset)+
                  ", trivially_copyable "+std::to_string(std::is_trivially_copyable<typename SharedTypeRingbuffer::value_type>::value)+
                  ", size "+std::to_string(sizeof(*rb))+" bytes");
         fprintf(stderr, "%s\n", msg.c_str());
         fprintf(stderr, "%s\n", rb->get_info().c_str());
         REQUIRE_MSG("Ringbuffer<shared_ptr<T>> not using memcpy", !SharedTypeRingbuffer::uses_memcpy);
-        REQUIRE_MSG("Ringbuffer<shared_ptr<T>> not using memset", !SharedTypeRingbuffer::uses_memset);
     }
 
     void test01_FullRead() {
@@ -398,7 +381,7 @@ class TestRingbuffer03 {
         INFO_STR("test04_FullReadReset: Post Reset w/ source / " + rb->toString());
         REQUIRE_MSG("full "+rb->toString(), rb->isFull());
 
-        readTestImpl2(*rb, false, capacity, capacity, 0);
+        readTestImpl(*rb, false, capacity, capacity, 0);
         INFO_STR("test04_FullReadReset: Post Read / " + rb->toString());
         REQUIRE_MSG("empty "+rb->toString(), rb->isEmpty());
     }
@@ -423,7 +406,7 @@ class TestRingbuffer03 {
         writeTestImpl(*rb, capacity, capacity, 0);
         REQUIRE_MSG("full "+rb->toString(), rb->isFull());
 
-        readTestImpl2(*rb, false, capacity, capacity, 0);
+        readTestImpl(*rb, false, capacity, capacity, 0);
         REQUIRE_MSG("empty "+rb->toString(), rb->isEmpty());
     }
 
@@ -477,8 +460,8 @@ class TestRingbuffer03 {
         std::shared_ptr<SharedTypeRingbuffer> rb = createFull(source);
 
         for(jau::nsize_t i=0; i<initialCapacity; i++) {
-            SharedType svI = rb->get();
-            REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb->toString(), svI!=nullptr);
+            SharedType svI;
+            REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb->toString(), rb->get(svI));
             REQUIRE_MSG("value at read #"+std::to_string(i+1)+": "+rb->toString(), IntegralType((0+i)%initialCapacity) == svI->intValue());
         }
         REQUIRE_MSG("zero size "+rb->toString(), 0 == rb->size());
@@ -505,16 +488,14 @@ class TestRingbuffer03 {
         REQUIRE_MSG("full "+rb->toString(), rb->isFull());
 
         for(jau::nsize_t i=0; i<initialCapacity; i++) {
-            SharedType svI = rb->get();
-            // PRINTM("X05["+std::to_string(i)+"]: "+rb->toString()+", svI-null: "+std::to_string(svI==nullptr));
-            REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb->toString(), svI!=nullptr);
+            SharedType svI;
+            REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb->toString(), rb->get(svI));
             REQUIRE_MSG("value at read #"+std::to_string(i+1)+": "+rb->toString(), IntegralType((pos+i)%initialCapacity) == svI->intValue());
         }
 
         for(jau::nsize_t i=0; i<growAmount; i++) {
-            SharedType svI = rb->get();
-            // PRINTM("X07["+std::to_string(i)+"]: "+rb->toString()+", svI-null: "+std::to_string(svI==nullptr));
-            REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb->toString(), svI!=nullptr);
+            SharedType svI;
+            REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb->toString(), rb->get(svI));
             REQUIRE_MSG("value at read #"+std::to_string(i+1)+": "+rb->toString(), IntegralType(100+i) == svI->intValue());
         }
 

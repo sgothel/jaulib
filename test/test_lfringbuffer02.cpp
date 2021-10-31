@@ -59,19 +59,19 @@ class Integer {
 
 typedef Integer TrivialType;
 static const TrivialType TrivialTypeNullElem(-1);
-typedef ringbuffer<TrivialType, TrivialType, jau::nsize_t> TrivialTypeRingbuffer;
+typedef ringbuffer<TrivialType, jau::nsize_t> TrivialTypeRingbuffer;
 
 // Test examples.
 class TestRingbuffer02 {
   private:
 
     TrivialTypeRingbuffer createEmpty(jau::nsize_t initialCapacity) {
-        TrivialTypeRingbuffer rb(Integer(-1), initialCapacity);
+        TrivialTypeRingbuffer rb(initialCapacity);
         REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
         return rb;
     }
     TrivialTypeRingbuffer createFull(const std::vector<TrivialType> & source) {
-        TrivialTypeRingbuffer rb(Integer(-1), source);
+        TrivialTypeRingbuffer rb(source);
         REQUIRE_MSG("full "+rb.toString(), rb.isFull());
         return rb;
     }
@@ -85,25 +85,6 @@ class TestRingbuffer02 {
     }
 
     void readTestImpl(TrivialTypeRingbuffer &rb, bool clearRef, jau::nsize_t capacity, jau::nsize_t len, IntegralType startValue) {
-        (void) clearRef;
-
-        jau::nsize_t preSize = rb.size();
-        REQUIRE_MSG("capacity "+rb.toString(), capacity == rb.capacity());
-        REQUIRE_MSG("capacity at read "+std::to_string(len)+" elems: "+rb.toString(), capacity >= len);
-        REQUIRE_MSG("size at read "+std::to_string(len)+" elems: "+rb.toString(), preSize >= len);
-        REQUIRE_MSG("not empty "+rb.toString(), !rb.isEmpty());
-
-        for(jau::nsize_t i=0; i<len; i++) {
-            TrivialType svI = rb.get();
-            REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb.toString(), svI!=TrivialTypeNullElem);
-            REQUIRE_MSG("value at read #"+std::to_string(i+1)+": "+rb.toString(), startValue+(IntegralType)i == svI.intValue());
-        }
-
-        REQUIRE_MSG("size "+rb.toString(), preSize-len == rb.size());
-        REQUIRE_MSG("free slots after reading "+std::to_string(len)+": "+rb.toString(), rb.freeSlots()>= len);
-        REQUIRE_MSG("not full "+rb.toString(), !rb.isFull());
-    }
-    void readTestImpl2(TrivialTypeRingbuffer &rb, bool clearRef, jau::nsize_t capacity, jau::nsize_t len, IntegralType startValue) {
         (void) clearRef;
 
         jau::nsize_t preSize = rb.size();
@@ -184,7 +165,9 @@ class TestRingbuffer02 {
     void moveGetPutImpl(TrivialTypeRingbuffer &rb, jau::nsize_t pos) {
         REQUIRE_MSG("not empty "+rb.toString(), !rb.isEmpty());
         for(jau::nsize_t i=0; i<pos; i++) {
-            REQUIRE_MSG("moveFull.get "+rb.toString(), (IntegralType)i == rb.get().intValue());
+            TrivialType svI;
+            REQUIRE_MSG("moveFull.get "+rb.toString(), rb.get(svI));
+            REQUIRE_MSG("moveFull.get "+rb.toString(), (IntegralType)i == svI.intValue());
             REQUIRE_MSG("moveFull.put "+rb.toString(), rb.put( TrivialType( (IntegralType)i ) ) );
         }
     }
@@ -193,7 +176,9 @@ class TestRingbuffer02 {
         REQUIRE_MSG("RB is full "+rb.toString(), !rb.isFull());
         for(jau::nsize_t i=0; i<pos; i++) {
             REQUIRE_MSG("moveEmpty.put "+rb.toString(), rb.put( TrivialType( 600+(IntegralType)i ) ) );
-            REQUIRE_MSG("moveEmpty.get "+rb.toString(), 600+(IntegralType)i == rb.get().intValue());
+            TrivialType svI;
+            REQUIRE_MSG("moveEmpty.get "+rb.toString(), rb.get(svI));
+            REQUIRE_MSG("moveEmpty.get "+rb.toString(), 600+(IntegralType)i == svI.intValue());
         }
     }
 
@@ -203,13 +188,11 @@ class TestRingbuffer02 {
         TrivialTypeRingbuffer rb = createEmpty(11);
 
         std::string msg("Ringbuffer: uses_memcpy "+std::to_string(TrivialTypeRingbuffer::uses_memcpy)+
-                 ", uses_memset "+std::to_string(TrivialTypeRingbuffer::uses_memset)+
                  ", trivially_copyable "+std::to_string(std::is_trivially_copyable<typename TrivialTypeRingbuffer::value_type>::value)+
                  ", size "+std::to_string(sizeof(rb))+" bytes");
         fprintf(stderr, "%s\n", msg.c_str());
         fprintf(stderr, "%s\n", rb.get_info().c_str());
         REQUIRE_MSG("Ringbuffer<T> using memcpy", TrivialTypeRingbuffer::uses_memcpy);
-        REQUIRE_MSG("Ringbuffer<T> not using memset", !TrivialTypeRingbuffer::uses_memset);
     }
 
     void test01_FullRead() {
@@ -413,7 +396,7 @@ class TestRingbuffer02 {
         INFO_STR("test04_FullReadReset: Post Reset w/ source / " + rb.toString());
         REQUIRE_MSG("full "+rb.toString(), rb.isFull());
 
-        readTestImpl2(rb, false, capacity, capacity, 0);
+        readTestImpl(rb, false, capacity, capacity, 0);
         INFO_STR("test04_FullReadReset: Post Read / " + rb.toString());
         REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
     }
@@ -438,7 +421,7 @@ class TestRingbuffer02 {
         writeTestImpl(rb, capacity, capacity, 0);
         REQUIRE_MSG("full "+rb.toString(), rb.isFull());
 
-        readTestImpl2(rb, false, capacity, capacity, 0);
+        readTestImpl(rb, false, capacity, capacity, 0);
         REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
     }
 
@@ -492,8 +475,8 @@ class TestRingbuffer02 {
         TrivialTypeRingbuffer rb = createFull(source);
 
         for(jau::nsize_t i=0; i<initialCapacity; i++) {
-            TrivialType svI = rb.get();
-            REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb.toString(), svI!=TrivialTypeNullElem);
+            TrivialType svI;
+            REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb.toString(), rb.get(svI));
             REQUIRE_MSG("value at read #"+std::to_string(i+1)+": "+rb.toString(), IntegralType((0+i)%initialCapacity) == svI.intValue());
         }
         REQUIRE_MSG("zero size "+rb.toString(), 0 == rb.size());
@@ -520,16 +503,14 @@ class TestRingbuffer02 {
         REQUIRE_MSG("full "+rb.toString(), rb.isFull());
 
         for(jau::nsize_t i=0; i<initialCapacity; i++) {
-            TrivialType svI = rb.get();
-            // PRINTM("X05["+std::to_string(i)+"]: "+rb.toString()+", svI-null: "+std::to_string(svI==TrivialTypeNullElem));
-            REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb.toString(), svI!=TrivialTypeNullElem);
+            TrivialType svI;
+            REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb.toString(), rb.get(svI));
             REQUIRE_MSG("value at read #"+std::to_string(i+1)+": "+rb.toString(), IntegralType((pos+i)%initialCapacity) == svI.intValue());
         }
 
         for(jau::nsize_t i=0; i<growAmount; i++) {
-            TrivialType svI = rb.get();
-            // PRINTM("X07["+std::to_string(i)+"]: "+rb.toString()+", svI-null: "+std::to_string(svI==TrivialTypeNullElem));
-            REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb.toString(), svI!=TrivialTypeNullElem);
+            TrivialType svI;
+            REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb.toString(), rb.get(svI));
             REQUIRE_MSG("value at read #"+std::to_string(i+1)+": "+rb.toString(), IntegralType(100+i) == svI.intValue());
         }
 
