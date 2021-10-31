@@ -1256,7 +1256,9 @@ namespace jau {
                 std::string res("darray[this "+jau::to_hexstring(this)+
                                 ", size "+std::to_string(size_)+" / "+std::to_string(cap_)+
                                 ", growth "+std::to_string(growth_factor_)+
-                                ", uses[mmm "+std::to_string(uses_memmove)+
+                                ", type[integral "+std::to_string(std::is_integral_v<Value_type>)+
+                                ", trivialCpy "+std::to_string(std::is_trivially_copyable_v<Value_type>)+
+                                "], uses[mmove "+std::to_string(uses_memmove)+
                                 ", realloc "+std::to_string(uses_realloc)+
                                 ", smem "+std::to_string(uses_secmem)+
                                 "], begin "+jau::to_hexstring(begin_)+

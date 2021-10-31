@@ -829,7 +829,9 @@ class ringbuffer {
         constexpr_cxx20 std::string get_info() const noexcept {
             std::string res("ringbuffer<?>[this "+jau::to_hexstring(this)+
                             ", size "+std::to_string(size())+" / "+std::to_string(capacityPlusOne-1)+
-                            ", uses[mmove "+std::to_string(uses_memmove)+
+                            ", type[integral "+std::to_string(is_integral)+
+                            ", trivialCpy "+std::to_string(std::is_trivially_copyable_v<Value_type>)+
+                            "], uses[mmove "+std::to_string(uses_memmove)+
                             ", mcpy "+std::to_string(uses_memcpy)+
                             ", smem "+std::to_string(uses_secmem)+
                             "]]");
