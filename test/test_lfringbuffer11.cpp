@@ -74,7 +74,7 @@ class TestRingbuffer11 {
         // INFO_STR, INFO: Not thread safe yet
         // INFO_STR(msg+": Created / " + rb->toString());
         for(jau::nsize_t i=0; i<len; i++) {
-            TrivialType svI;
+            TrivialType svI = 0;
             REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb->toString()+", elem "+std::to_string(svI), rb->getBlocking(svI));
             // INFO_STR("Got "+std::to_string(svI->intValue())+" / " + rb->toString());
         }
