@@ -97,23 +97,45 @@ class TestRingbuffer_A {
         REQUIRE_MSG("not full "+rb.toString(), !rb.isFull());
     }
 
-    void readRangeTestImpl(ringbuffer_t &rb, bool clearRef, jau::nsize_t capacity, jau::nsize_t len, Integral_type startValue) {
+    void readRangeTestImpl(ringbuffer_t &rb, bool clearRef, jau::nsize_t capacity, jau::nsize_t dest_len, Integral_type startValue) {
         (void) clearRef;
 
         jau::nsize_t preSize = rb.size();
         REQUIRE_MSG("capacity "+rb.toString(), capacity == rb.capacity());
-        REQUIRE_MSG("capacity at read "+std::to_string(len)+" elems: "+rb.toString(), capacity >= len);
-        REQUIRE_MSG("size at read "+std::to_string(len)+" elems: "+rb.toString(), preSize >= len);
+        REQUIRE_MSG("capacity at read "+std::to_string(dest_len)+" elems: "+rb.toString(), capacity >= dest_len);
+        REQUIRE_MSG("size at read "+std::to_string(dest_len)+" elems: "+rb.toString(), preSize >= dest_len);
         REQUIRE_MSG("not empty "+rb.toString(), !rb.isEmpty());
 
-        std::vector<Value_type> array(len);
-        REQUIRE_MSG("get-range of "+std::to_string(array.size())+" elem in "+rb.toString(), len==rb.get( &(*array.begin()), len, len) );
+        std::vector<Value_type> array(dest_len);
+        REQUIRE_MSG("get-range of "+std::to_string(array.size())+" elem in "+rb.toString(), dest_len==rb.get( &(*array.begin()), dest_len, dest_len) );
 
-        REQUIRE_MSG("size "+rb.toString(), preSize-len == rb.size());
-        REQUIRE_MSG("free slots after reading "+std::to_string(len)+": "+rb.toString(), rb.freeSlots()>= len);
+        REQUIRE_MSG("size "+rb.toString(), preSize-dest_len == rb.size());
+        REQUIRE_MSG("free slots after reading "+std::to_string(dest_len)+": "+rb.toString(), rb.freeSlots()>= dest_len);
         REQUIRE_MSG("not full "+rb.toString(), !rb.isFull());
 
-        for(jau::nsize_t i=0; i<len; i++) {
+        for(jau::nsize_t i=0; i<dest_len; i++) {
+            Value_type svI = array[i];
+            REQUIRE_MSG("value at read #"+std::to_string(i+1)+": "+rb.toString(), startValue+(Integral_type)i == getValue<Integral_type, Value_type>(svI));
+        }
+    }
+
+    void readRangeTestImpl2(ringbuffer_t &rb, bool clearRef, jau::nsize_t capacity, jau::nsize_t dest_len, jau::nsize_t min_count, Integral_type startValue) {
+        (void) clearRef;
+
+        jau::nsize_t preSize = rb.size();
+        REQUIRE_MSG("capacity "+rb.toString(), capacity == rb.capacity());
+        REQUIRE_MSG("capacity at read "+std::to_string(dest_len)+" elems: "+rb.toString(), capacity >= dest_len);
+        REQUIRE_MSG("size at read "+std::to_string(dest_len)+" elems: "+rb.toString(), preSize >= dest_len);
+        REQUIRE_MSG("not empty "+rb.toString(), !rb.isEmpty());
+
+        std::vector<Value_type> array(dest_len);
+        REQUIRE_MSG("get-range of "+std::to_string(array.size())+" elem in "+rb.toString(), dest_len==rb.get( &(*array.begin()), dest_len, min_count) );
+
+        REQUIRE_MSG("size "+rb.toString(), preSize-dest_len == rb.size());
+        REQUIRE_MSG("free slots after reading "+std::to_string(dest_len)+": "+rb.toString(), rb.freeSlots()>= dest_len);
+        REQUIRE_MSG("not full "+rb.toString(), !rb.isFull());
+
+        for(jau::nsize_t i=0; i<dest_len; i++) {
             Value_type svI = array[i];
             REQUIRE_MSG("value at read #"+std::to_string(i+1)+": "+rb.toString(), startValue+(Integral_type)i == getValue<Integral_type, Value_type>(svI));
         }
@@ -218,11 +240,72 @@ class TestRingbuffer_A {
         REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
     }
 
-    void test03_EmptyWriteRange() {
+    void test03a_RangeRW01() {
         {
             jau::nsize_t capacity = 2*11;
             ringbuffer_t rb = createEmpty(capacity);
-            INFO( std::string("test03_EmptyWriteRange: Created / ") + rb.toString().c_str());
+            INFO( std::string("test03a_RangeRW01: Created / ") + rb.toString().c_str());
+            REQUIRE_MSG("zero size "+rb.toString(), 0 == rb.size());
+            REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
+
+            /**
+             * Move R == W == 0
+             * Empty [RW][][ ][  ][ ][ ][ ][ ][ ][ ][ ] ; start
+             */
+            // std::vector<Value_type> new_data = createIntArray(capacity, 0);
+            // writeRangeTestImpl(rb, capacity, new_data);
+            for(jau::nsize_t i=0; i<capacity; i++) {
+                rb.putBlocking( createValue<Integral_type, Value_type>( (Integral_type)( i ) ) );
+            }
+
+            INFO( std::string("test03a_RangeRW01: PostWrite / ") + rb.toString().c_str());
+            REQUIRE_MSG("full size "+rb.toString(), capacity == rb.size());
+            REQUIRE_MSG("full "+rb.toString(), rb.isFull());
+
+            readRangeTestImpl(rb, true, capacity, capacity/2, 0);
+            INFO( std::string("test03a_RangeRW01: PostRead-1 / ") + rb.toString().c_str());
+            REQUIRE_MSG("not empty "+rb.toString(), !rb.isEmpty());
+
+            readRangeTestImpl(rb, true, capacity, capacity/2, capacity/2);
+            INFO( std::string("test03a_RangeRW01: PostRead-2 / ") + rb.toString().c_str());
+            REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
+        }
+        {
+            jau::nsize_t capacity = 2*11;
+            ringbuffer_t rb = createEmpty(capacity);
+            INFO( std::string("test03a_RangeRW01: Created / ") + rb.toString().c_str());
+            REQUIRE_MSG("zero size "+rb.toString(), 0 == rb.size());
+            REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
+
+            /**
+             * Move R == W == 0
+             * Empty [RW][][ ][  ][ ][ ][ ][ ][ ][ ][ ] ; start
+             */
+            // std::vector<Value_type> new_data = createIntArray(capacity, 0);
+            // writeRangeTestImpl(rb, capacity, new_data);
+            for(jau::nsize_t i=0; i<capacity; i++) {
+                rb.putBlocking( createValue<Integral_type, Value_type>( (Integral_type)( i ) ) );
+            }
+
+            INFO( std::string("test03a_RangeRW01: PostWrite / ") + rb.toString().c_str());
+            REQUIRE_MSG("full size "+rb.toString(), capacity == rb.size());
+            REQUIRE_MSG("full "+rb.toString(), rb.isFull());
+
+            readRangeTestImpl2(rb, true, capacity, capacity/2, 1, 0);
+            INFO( std::string("test03a_RangeRW01: PostRead-1 / ") + rb.toString().c_str());
+            REQUIRE_MSG("not empty "+rb.toString(), !rb.isEmpty());
+
+            readRangeTestImpl2(rb, true, capacity, capacity/2, 1, capacity/2);
+            INFO( std::string("test03a_RangeRW01: PostRead-2 / ") + rb.toString().c_str());
+            REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
+        }
+    }
+
+    void test03b_RangeRW02() {
+        {
+            jau::nsize_t capacity = 2*11;
+            ringbuffer_t rb = createEmpty(capacity);
+            INFO( std::string("test03b_RangeRW02: Created / ") + rb.toString().c_str());
             REQUIRE_MSG("zero size "+rb.toString(), 0 == rb.size());
             REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
 
@@ -233,23 +316,23 @@ class TestRingbuffer_A {
             std::vector<Value_type> new_data = createIntArray(capacity, 0);
             writeRangeTestImpl(rb, capacity, new_data);
 
-            INFO( std::string("test03_EmptyWriteRange: PostWrite / ") + rb.toString().c_str());
+            INFO( std::string("test03b_RangeRW02: PostWrite / ") + rb.toString().c_str());
             REQUIRE_MSG("full size "+rb.toString(), capacity == rb.size());
             REQUIRE_MSG("full "+rb.toString(), rb.isFull());
 
             readRangeTestImpl(rb, true, capacity, capacity/2, 0);
-            INFO( std::string("test03_EmptyWriteRange: PostRead-1 / ") + rb.toString().c_str());
+            INFO( std::string("test03b_RangeRW02: PostRead-1 / ") + rb.toString().c_str());
             REQUIRE_MSG("not empty "+rb.toString(), !rb.isEmpty());
 
             readRangeTestImpl(rb, true, capacity, capacity/2, capacity/2);
-            INFO( std::string("test03_EmptyWriteRange: PostRead-2 / ") + rb.toString().c_str());
+            INFO( std::string("test03b_RangeRW02: PostRead-2 / ") + rb.toString().c_str());
             REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
         }
         {
             jau::nsize_t capacity = 2*11;
 
             ringbuffer_t rb = createEmpty(capacity);
-            INFO( std::string("test03_EmptyWriteRange: Created / ") + rb.toString().c_str());
+            INFO( std::string("test03b_RangeRW02: Created / ") + rb.toString().c_str());
             REQUIRE_MSG("zero size "+rb.toString(), 0 == rb.size());
             REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
 
@@ -268,23 +351,23 @@ class TestRingbuffer_A {
             writeRangeTestImpl(rb, capacity, new_data);
             // writeTestImpl(rb, capacity, capacity, 0);
 
-            INFO( std::string("test03_EmptyWriteRange: PostWrite / ") + rb.toString().c_str());
+            INFO( std::string("test03b_RangeRW02: PostWrite / ") + rb.toString().c_str());
             REQUIRE_MSG("full size "+rb.toString(), capacity == rb.size());
             REQUIRE_MSG("full "+rb.toString(), rb.isFull());
 
             readRangeTestImpl(rb, true, capacity, capacity/2, 0);
-            INFO( std::string("test03_EmptyWriteRange: PostRead-1 / ") + rb.toString().c_str());
+            INFO( std::string("test03b_RangeRW02: PostRead-1 / ") + rb.toString().c_str());
             REQUIRE_MSG("not empty "+rb.toString(), !rb.isEmpty());
 
             readRangeTestImpl(rb, true, capacity, capacity/2, capacity/2);
-            INFO( std::string("test03_EmptyWriteRange: PostRead-2 / ") + rb.toString().c_str());
+            INFO( std::string("test03b_RangeRW02: PostRead-2 / ") + rb.toString().c_str());
             REQUIRE_MSG("size 0 "+rb.toString(), 0 == rb.size());
             REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
         }
         {
             jau::nsize_t capacity = 2*11;
             ringbuffer_t rb = createEmpty(capacity);
-            INFO( std::string("test03_EmptyWriteRange: Created / ") + rb.toString().c_str());
+            INFO( std::string("test03b_RangeRW02: Created / ") + rb.toString().c_str());
             REQUIRE_MSG("zero size "+rb.toString(), 0 == rb.size());
             REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
 
@@ -308,7 +391,7 @@ class TestRingbuffer_A {
             writeRangeTestImpl(rb, capacity, new_data);
             // writeTestImpl(rb, capacity, capacity-2, 0);
 
-            INFO( std::string("test03_EmptyWriteRange: PostWrite / ") + rb.toString().c_str());
+            INFO( std::string("test03b_RangeRW02: PostWrite / ") + rb.toString().c_str());
             REQUIRE_MSG("full size "+rb.toString(), capacity == rb.size());
             REQUIRE_MSG("full "+rb.toString(), rb.isFull());
 
@@ -317,18 +400,18 @@ class TestRingbuffer_A {
             REQUIRE_MSG("size capacity-2 "+rb.toString(), capacity-2 == rb.size());
 
             readRangeTestImpl(rb, true, capacity, capacity/2-2, 0);
-            INFO( std::string("test03_EmptyWriteRange: PostRead-1 / ") + rb.toString().c_str());
+            INFO( std::string("test03b_RangeRW02: PostRead-1 / ") + rb.toString().c_str());
             REQUIRE_MSG("not empty "+rb.toString(), !rb.isEmpty());
 
             readRangeTestImpl(rb, true, capacity, capacity/2, capacity/2-2);
-            INFO( std::string("test03_EmptyWriteRange: PostRead-2 / ") + rb.toString().c_str());
+            INFO( std::string("test03b_RangeRW02: PostRead-2 / ") + rb.toString().c_str());
             REQUIRE_MSG("size 0 "+rb.toString(), 0 == rb.size());
             REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
         }
         {
             jau::nsize_t capacity = 2*11;
             ringbuffer_t rb = createEmpty(capacity);
-            INFO( std::string("test03_EmptyWriteRange: Created / ") + rb.toString().c_str());
+            INFO( std::string("test03b_RangeRW02: Created / ") + rb.toString().c_str());
             REQUIRE_MSG("zero size "+rb.toString(), 0 == rb.size());
             REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
 
@@ -355,7 +438,7 @@ class TestRingbuffer_A {
             writeRangeTestImpl(rb, capacity, new_data);
             // writeTestImpl(rb, capacity, capacity-3, 0);
 
-            INFO( std::string("test03_EmptyWriteRange: PostWrite / ") + rb.toString().c_str());
+            INFO( std::string("test03b_RangeRW02: PostWrite / ") + rb.toString().c_str());
             REQUIRE_MSG("full size "+rb.toString(), capacity == rb.size());
             REQUIRE_MSG("full "+rb.toString(), rb.isFull());
 
@@ -365,11 +448,11 @@ class TestRingbuffer_A {
             REQUIRE_MSG("size capacity-3 "+rb.toString(), capacity-3 == rb.size());
 
             readRangeTestImpl(rb, true, capacity, capacity/2-3, 0);
-            INFO( std::string("test03_EmptyWriteRange: PostRead-1 / ") + rb.toString().c_str());
+            INFO( std::string("test03b_RangeRW02: PostRead-1 / ") + rb.toString().c_str());
             REQUIRE_MSG("not empty "+rb.toString(), !rb.isEmpty());
 
             readRangeTestImpl(rb, true, capacity, capacity/2, capacity/2-3);
-            INFO( std::string("test03_EmptyWriteRange: PostRead-2 / ") + rb.toString().c_str());
+            INFO( std::string("test03b_RangeRW02: PostRead-2 / ") + rb.toString().c_str());
             REQUIRE_MSG("size 0 "+rb.toString(), 0 == rb.size());
             REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
         }
@@ -546,4 +629,71 @@ class TestRingbuffer_A {
     }
 
 };
+
+template <typename Integral_type, typename Value_type, typename Size_type,
+        bool exp_memmove, bool exp_memcpy, bool exp_secmem,
+        bool use_memmove = std::is_trivially_copyable_v<Value_type> || is_container_memmove_compliant_v<Value_type>,
+        bool use_memcpy  = std::is_trivially_copyable_v<Value_type>,
+        bool use_secmem  = is_enforcing_secmem_v<Value_type>
+    >
+void PerformRingbufferTests() {
+    typedef TestRingbuffer_A<Integral_type, Value_type, Size_type,
+            exp_memmove, exp_memcpy, exp_secmem,
+            use_memmove, use_memcpy, use_secmem> TestRingbuffer;
+
+    TestRingbuffer trb;
+
+    SECTION("test00_PrintInfo", "[ringbuffer]") {
+        trb.test00_PrintInfo();
+    }
+    SECTION("test01_FullRead", "[ringbuffer]") {
+        trb.test01_FullRead();
+    }
+    SECTION("test02", "[ringbuffer]") {
+        trb.test02_EmptyWrite();
+    }
+    SECTION("test03a", "[ringbuffer]") {
+        trb.test03a_RangeRW01();
+    }
+    SECTION("test03b", "[ringbuffer]") {
+        trb.test03b_RangeRW02();
+    }
+    SECTION("test04", "[ringbuffer]") {
+        trb.test04_FullReadReset();
+    }
+    SECTION("test05", "[ringbuffer]") {
+        trb.test05_EmptyWriteClear();
+    }
+    SECTION("test06", "[ringbuffer]") {
+        trb.test06_ReadResetMid01();
+    }
+    SECTION("test07", "[ringbuffer]") {
+        trb.test07_ReadResetMid02();
+    }
+    SECTION("test20", "[ringbuffer]") {
+        trb.test20_GrowFull01_Begin();
+    }
+    SECTION("test21", "[ringbuffer]") {
+        trb.test21_GrowFull02_Begin1();
+    }
+    SECTION("test22", "[ringbuffer]") {
+        trb.test22_GrowFull03_Begin2();
+    }
+    SECTION("test23", "[ringbuffer]") {
+        trb.test23_GrowFull04_Begin3();
+    }
+    SECTION("test24", "[ringbuffer]") {
+        trb.test24_GrowFull05_End();
+    }
+    SECTION("test25", "[ringbuffer]") {
+        trb.test25_GrowFull11_End1();
+    }
+    SECTION("test26", "[ringbuffer]") {
+        trb.test26_GrowFull12_End2();
+    }
+    SECTION("test27", "[ringbuffer]") {
+        trb.test27_GrowFull13_End3();
+    }
+}
+
 

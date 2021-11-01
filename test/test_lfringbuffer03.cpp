@@ -69,44 +69,13 @@ Value_type createValue(const Integral_type& v) { return std::make_shared<Integer
 template<>
 Integral_type getValue(const Value_type& e) { return e->getValue(); }
 
-typedef TestRingbuffer_A<Integral_type, Value_type, jau::nsize_t,
-        false /* exp_memmove */, false /* exp_memcpy */, false /* exp_secmem */> TestRingbuffer03a;
+TEST_CASE( "TestRingbuffer_A_03_a<Integral_type=jau::snsize_t, Value_type=std::shared_ptr<Integer>, Size_type=jau::nsize_t, exp_memmove=false, exp_memcpy=false, exp_secmem=false>", "[ringbuffer]" ) {
+    PerformRingbufferTests<Integral_type, Value_type, jau::nsize_t,
+            false /* exp_memmove */, false /* exp_memcpy */, false /* exp_secmem */>();
+}
 
-typedef TestRingbuffer_A<Integral_type, Value_type, jau::nsize_t,
-        false /* exp_memmove */, false /* exp_memcpy */, true /* exp_secmem */,
-        false /* use_memmove */, false /* use_memcpy */, true /* use_secmem */> TestRingbuffer03b;
-
-
-METHOD_AS_TEST_CASE( TestRingbuffer03a::test00_PrintInfo,         "Test TestRingbuffer 03a- 00");
-METHOD_AS_TEST_CASE( TestRingbuffer03a::test01_FullRead,          "Test TestRingbuffer 03a- 01");
-METHOD_AS_TEST_CASE( TestRingbuffer03a::test02_EmptyWrite,        "Test TestRingbuffer 03a- 02");
-METHOD_AS_TEST_CASE( TestRingbuffer03a::test03_EmptyWriteRange,   "Test TestRingbuffer 03a- 03");
-METHOD_AS_TEST_CASE( TestRingbuffer03a::test04_FullReadReset,     "Test TestRingbuffer 03a- 04");
-METHOD_AS_TEST_CASE( TestRingbuffer03a::test05_EmptyWriteClear,   "Test TestRingbuffer 03a- 05");
-METHOD_AS_TEST_CASE( TestRingbuffer03a::test06_ReadResetMid01,    "Test TestRingbuffer 03a- 06");
-METHOD_AS_TEST_CASE( TestRingbuffer03a::test07_ReadResetMid02,    "Test TestRingbuffer 03a- 07");
-METHOD_AS_TEST_CASE( TestRingbuffer03a::test20_GrowFull01_Begin,  "Test TestRingbuffer 03a- 20");
-METHOD_AS_TEST_CASE( TestRingbuffer03a::test21_GrowFull02_Begin1, "Test TestRingbuffer 03a- 21");
-METHOD_AS_TEST_CASE( TestRingbuffer03a::test22_GrowFull03_Begin2, "Test TestRingbuffer 03a- 22");
-METHOD_AS_TEST_CASE( TestRingbuffer03a::test23_GrowFull04_Begin3, "Test TestRingbuffer 03a- 23");
-METHOD_AS_TEST_CASE( TestRingbuffer03a::test24_GrowFull05_End,    "Test TestRingbuffer 03a- 24");
-METHOD_AS_TEST_CASE( TestRingbuffer03a::test25_GrowFull11_End1,   "Test TestRingbuffer 03a- 25");
-METHOD_AS_TEST_CASE( TestRingbuffer03a::test26_GrowFull12_End2,   "Test TestRingbuffer 03a- 26");
-METHOD_AS_TEST_CASE( TestRingbuffer03a::test27_GrowFull13_End3,   "Test TestRingbuffer 03a- 27");
-
-METHOD_AS_TEST_CASE( TestRingbuffer03b::test00_PrintInfo,         "Test TestRingbuffer 03b- 00");
-METHOD_AS_TEST_CASE( TestRingbuffer03b::test01_FullRead,          "Test TestRingbuffer 03b- 01");
-METHOD_AS_TEST_CASE( TestRingbuffer03b::test02_EmptyWrite,        "Test TestRingbuffer 03b- 02");
-METHOD_AS_TEST_CASE( TestRingbuffer03b::test03_EmptyWriteRange,   "Test TestRingbuffer 03b- 03");
-METHOD_AS_TEST_CASE( TestRingbuffer03b::test04_FullReadReset,     "Test TestRingbuffer 03b- 04");
-METHOD_AS_TEST_CASE( TestRingbuffer03b::test05_EmptyWriteClear,   "Test TestRingbuffer 03b- 05");
-METHOD_AS_TEST_CASE( TestRingbuffer03b::test06_ReadResetMid01,    "Test TestRingbuffer 03b- 06");
-METHOD_AS_TEST_CASE( TestRingbuffer03b::test07_ReadResetMid02,    "Test TestRingbuffer 03b- 07");
-METHOD_AS_TEST_CASE( TestRingbuffer03b::test20_GrowFull01_Begin,  "Test TestRingbuffer 03b- 20");
-METHOD_AS_TEST_CASE( TestRingbuffer03b::test21_GrowFull02_Begin1, "Test TestRingbuffer 03b- 21");
-METHOD_AS_TEST_CASE( TestRingbuffer03b::test22_GrowFull03_Begin2, "Test TestRingbuffer 03b- 22");
-METHOD_AS_TEST_CASE( TestRingbuffer03b::test23_GrowFull04_Begin3, "Test TestRingbuffer 03b- 23");
-METHOD_AS_TEST_CASE( TestRingbuffer03b::test24_GrowFull05_End,    "Test TestRingbuffer 03b- 24");
-METHOD_AS_TEST_CASE( TestRingbuffer03b::test25_GrowFull11_End1,   "Test TestRingbuffer 03b- 25");
-METHOD_AS_TEST_CASE( TestRingbuffer03b::test26_GrowFull12_End2,   "Test TestRingbuffer 03b- 26");
-METHOD_AS_TEST_CASE( TestRingbuffer03b::test27_GrowFull13_End3,   "Test TestRingbuffer 03b- 27");
+TEST_CASE( "TestRingbuffer_A_03_c<Integral_type=jau::snsize_t, Value_type=std::shared_ptr<Integer>, Size_type=jau::nsize_t, exp_memmove=false, exp_memcpy=false, exp_secmem=true>", "[ringbuffer]" ) {
+    PerformRingbufferTests<Integral_type, Value_type, jau::nsize_t,
+            false /* exp_memmove */, false /* exp_memcpy */, true /* exp_secmem */,
+            false /* use_memmove */, false /* use_memcpy */, true /* use_secmem */>();
+}
