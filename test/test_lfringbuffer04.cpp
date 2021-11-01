@@ -27,10 +27,6 @@
 #include <cstring>
 #include <memory>
 
-#define CATCH_CONFIG_MAIN
-#include <catch2/catch_amalgamated.hpp>
-#include <jau/test/catch2_ext.hpp>
-
 #include <jau/ringbuffer.hpp>
 
 #include "test_lfringbuffer_a.hpp"
