@@ -119,6 +119,7 @@ make doc
   - Drop `Value_type [get|peek]*()`, use `bool [get|peek]*(Value_type&)` instead
   - Drop `NullValue_type` template type param and `NullValue_type` ctor argument.
   - Simplifies and unifies single and multi get and put, as well as testing (motivation).
+  - Adding multi-threading tests w/ value checks in `test_lfringbuffer_a.hpp` for `test_lfringbuffer[01-04]`
 * ringbuffer: Drop `use_memset` non-type template param, 
   simply use `use_memcpy` having same semantics of *TriviallyCopyable*.
 * darray: Refine API doc for `use_memmove` using *TriviallyCopyable* and *Trivial destructor* ...
