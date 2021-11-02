@@ -59,32 +59,14 @@ namespace jau {
  * Ring buffer implementation, a.k.a circular buffer,
  * exposing <i>lock-free</i>
  * {@link #get() get*(..)} and {@link #put(Object) put*(..)} methods.
- * <p>
+ *
  * Implementation utilizes the <i>Always Keep One Slot Open</i>,
- * hence implementation maintains an internal array of <code>capacity</code> <i>plus one</i>!
- * </p>
- * <p>
- * Implementation is thread safe if:
- * <ul>
- *   <li>{@link #get() get*(..)} operations from multiple threads.</li>
- *   <li>{@link #put(Object) put*(..)} operations from multiple threads.</li>
- *   <li>{@link #get() get*(..)} and {@link #put(Object) put*(..)} thread may be the same.</li>
- * </ul>
- * </p>
- * <p>
- * Following methods acquire the global multi-read _and_ -write mutex:
- * <ul>
- *  <li>{@link #resetFull(Object[])}</li>
- *  <li>{@link #clear()}</li>
- *  <li>{@link #growEmptyBuffer(Object[])}</li>
- * </ul>
- * </p>
- * <p>
- * Characteristics:
- * <ul>
- *   <li>Read position points to the last read element.</li>
- *   <li>Write position points to the last written element.</li>
- * </ul>
+ * hence implementation maintains an internal array of `capacity` <i>plus one</i>!
+ *
+ * ### Characteristics
+ * - Read position points to the last read element.
+ * - Write position points to the last written element.
+ *
  * <table border="1">
  *   <tr><td>Empty</td><td>writePos == readPos</td><td>size == 0</td></tr>
  *   <tr><td>Full</td><td>writePos == readPos - 1</td><td>size == capacity</td></tr>
@@ -95,10 +77,44 @@ namespace jau {
  * Avail [.][.][.][W][ ][ ][R][.] ; W <  R - 1
  * Full  [.][.][.][.][.][W][R][.] ; W==R-1
  * </pre>
- * </p>
- * See also:
+ *
+ * ### Thread Safety
+ * Thread safety is guaranteed, considering the mode of operation as described below.
+ *
+ * @anchor ringbuffer_single_pc
+ * #### One producer-thread and one consumer-thread
+ * Expects one producer-thread at a time and one consumer-thread at a time,
+ * where both threads can be different or the same.
+ *
+ * This is the default mode with the least std::mutex operations.
+ * - Only blocking producer put() and consumer get() waiting for
+ * free slots or available data will utilize std::mutex on the counterpart's std::mutex.
+ * - Otherwise implementation avoids all std::mutex calls and relies on SC-DRF via
+ * std::atomic memory barriers.
+ *
+ * See setMultiPCEnabled().
+ *
+ * Implementation is thread safe if:
+ * - {@link #put() put*(..)} operations from one producer-thread at a time.
+ * - {@link #get() get*(..)} operations from one consumer-thread at a time.
+ * - {@link #put() put*(..)} producer and {@link #get() get*(..)} consumer threads may be the same.
+ *
+ * @anchor ringbuffer_multi_pc
+ * #### Multiple producer-threads and multiple consumer-threads
+ * Expects multiple producer-threads and multiple consumer-threads concurrently.
+ *
+ * Use setMultiPCEnabled() to enable or disable multiple producer and consumer mode.
+ *
+ * Implementation is thread safe if:
+ * - {@link #put() put*(..)} operations concurrently from multiple threads.
+ * - {@link #get() get*(..)} operations concurrently from multiple threads.
+ * - {@link #put() put*(..)} producer and {@link #get() get*(..)} consumer threads may be the same.
+ *
+ * #### See also
  * - Sequentially Consistent (SC) ordering or SC-DRF (data race free) <https://en.cppreference.com/w/cpp/atomic/memory_order#Sequentially-consistent_ordering>
  * - std::memory_order <https://en.cppreference.com/w/cpp/atomic/memory_order>
+ * - jau::sc_atomic_critical
+ * - setMultiPCEnabled()
  *
  * @anchor ringbuffer_ntt_params
  * ### Non-Type Template Parameter (NTTP) controlling Value_type memory
@@ -163,6 +179,14 @@ class ringbuffer {
         /** Relaxed non-SC atomic integral scalar jau::nsize_t. Memory-Model (MM) only guarantees the atomic value, _no_ sequential consistency (SC) between acquire (read) and release (write). */
         typedef ordered_atomic<Size_type, std::memory_order::memory_order_relaxed> relaxed_atomic_Size_type;
 
+        /**
+         * Flagging whether multiple-producer and -consumer are enabled,
+         * see @ref ringbuffer_multi_pc and @ref ringbuffer_single_pc.
+         *
+         * Defaults to `false`.
+         */
+        bool multi_pc_enabled = false;
+
         /** synchronizes write-operations (put*), i.e. modifying the writePos. */
         mutable std::mutex syncWrite, syncMultiWrite; // Memory-Model (MM) guaranteed sequential consistency (SC) between acquire and release
         std::condition_variable cvWrite;
@@ -218,6 +242,50 @@ class ringbuffer {
             if constexpr ( uses_secmem ) {
                 ::explicit_bzero(voidptr_cast(elem), sizeof(value_type));
             }
+        }
+
+        Size_type waitForElementsImpl(const Size_type min_count, const int timeoutMS) noexcept {
+            Size_type available = size();
+            if( min_count > available ) {
+                std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ putImpl via same lock
+                available = size();
+                while( min_count > available ) {
+                    if( 0 == timeoutMS ) {
+                        cvWrite.wait(lockWrite);
+                        available = size();
+                    } else {
+                        std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
+                        std::cv_status s = cvWrite.wait_until(lockWrite, t0 + std::chrono::milliseconds(timeoutMS));
+                        available = size();
+                        if( std::cv_status::timeout == s && min_count > available ) {
+                            return available;
+                        }
+                    }
+                }
+            }
+            return available;
+        }
+
+        Size_type waitForFreeSlotsImpl(const Size_type min_count, const int timeoutMS) noexcept {
+            Size_type available = freeSlots();
+            if( min_count > available ) {
+                std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ getImpl via same lock
+                available = freeSlots();
+                while( min_count > available ) {
+                    if( 0 == timeoutMS ) {
+                        cvRead.wait(lockRead);
+                        available = freeSlots();
+                    } else {
+                        std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
+                        std::cv_status s = cvRead.wait_until(lockRead, t0 + std::chrono::milliseconds(timeoutMS));
+                        available = freeSlots();
+                        if( std::cv_status::timeout == s && min_count > available ) {
+                            return available;
+                        }
+                    }
+                }
+            }
+            return available;
         }
 
         /**
@@ -281,6 +349,21 @@ class ringbuffer {
             }
         }
 
+        ringbuffer& assignCopyImpl(const ringbuffer &_source) noexcept {
+            if( this == &_source ) {
+                return *this;
+            }
+
+            if( capacityPlusOne != _source.capacityPlusOne ) {
+                cloneFrom(true, _source);
+            } else {
+                cloneFrom(false, _source);
+            }
+            _DEBUG_DUMP("assignment(copy.this)");
+            _DEBUG_DUMP2(_source, "assignment(copy.source)");
+            return *this;
+        }
+
         void resetImpl(const Value_type * copyFrom, const Size_type copyFromCount) noexcept {
             // fill with copyFrom elements
             if( nullptr != copyFrom && 0 < copyFromCount ) {
@@ -321,8 +404,6 @@ class ringbuffer {
                 ABORT("Value_type is not copy constructible");
                 return false;
             }
-            std::unique_lock<std::mutex> lockMultiRead(syncMultiRead); // acquire syncMultiRead, _not_ sync'ing w/ putImpl
-
             const Size_type oldReadPos = readPos; // SC-DRF acquire atomic readPos, sync'ing with putImpl
             Size_type localReadPos = oldReadPos;
             if( localReadPos == writePos ) {
@@ -357,8 +438,6 @@ class ringbuffer {
         }
 
         bool moveOutImpl(Value_type& dest, const bool blocking, const int timeoutMS) noexcept {
-            std::unique_lock<std::mutex> lockMultiRead(syncMultiRead); // acquire syncMultiRead, _not_ sync'ing w/ putImpl
-
             const Size_type oldReadPos = readPos; // SC-DRF acquire atomic readPos, sync'ing with putImpl
             Size_type localReadPos = oldReadPos;
             if( localReadPos == writePos ) {
@@ -406,8 +485,6 @@ class ringbuffer {
         }
 
         Size_type moveOutImpl(Value_type *dest, const Size_type dest_len, const Size_type min_count_, const bool blocking, const int timeoutMS) noexcept {
-            std::unique_lock<std::mutex> lockMultiRead(syncMultiRead); // acquire syncMultiRead, _not_ sync'ing w/ putImpl
-
             const Size_type min_count = std::min(dest_len, min_count_);
             Value_type *iter_out = dest;
 
@@ -502,14 +579,15 @@ class ringbuffer {
             return count;
         }
 
-        bool dropImpl (const Size_type count, const bool blocking, const int timeoutMS) noexcept {
-            std::unique_lock<std::mutex> lockMultiRead(syncMultiRead); // acquire syncMultiRead, _not_ sync'ing w/ putImpl
-
+        Size_type dropImpl (Size_type count, const bool blocking, const int timeoutMS) noexcept {
             if( count >= capacityPlusOne ) {
-                return false;
+                if( blocking ) {
+                    return 0;
+                }
+                count = capacityPlusOne-1; // claim theoretical maximum for non-blocking
             }
             if( 0 == count ) {
-                return true;
+                return 0;
             }
 
             const Size_type oldReadPos = readPos; // SC-DRF acquire atomic readPos, sync'ing with putImpl
@@ -528,12 +606,12 @@ class ringbuffer {
                             std::cv_status s = cvWrite.wait_until(lockWrite, t0 + std::chrono::milliseconds(timeoutMS));
                             available = size();
                             if( std::cv_status::timeout == s && count > available ) {
-                                return false;
+                                return 0;
                             }
                         }
                     }
                 } else {
-                    return false;
+                    count = available; // drop all available for non-blocking
                 }
             }
             /**
@@ -580,12 +658,10 @@ class ringbuffer {
                 readPos = localReadPos; // SC-DRF release atomic readPos
                 cvRead.notify_all(); // notify waiting putter
             }
-            return true;
+            return count;
         }
 
         bool moveIntoImpl(Value_type &&e, const bool blocking, const int timeoutMS) noexcept {
-            std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite); // acquire syncMultiWrite, _not_ sync'ing w/ getImpl
-
             Size_type localWritePos = writePos; // SC-DRF acquire atomic writePos, sync'ing with getImpl
             localWritePos = (localWritePos + 1) % capacityPlusOne;
             if( localWritePos == readPos ) {
@@ -628,8 +704,6 @@ class ringbuffer {
                 ABORT("Value_type is not copy constructible");
                 return false;
             }
-            std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite); // acquire syncMultiWrite, _not_ sync'ing w/ getImpl
-
             Size_type localWritePos = writePos; // SC-DRF acquire atomic writePos, sync'ing with getImpl
             localWritePos = (localWritePos + 1) % capacityPlusOne;
             if( localWritePos == readPos ) {
@@ -672,8 +746,6 @@ class ringbuffer {
                 ABORT("Value_type is not copy constructible");
                 return false;
             }
-            std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite); // acquire syncMultiWrite, _not_ sync'ing w/ getImpl
-
             const Value_type *iter_in = first;
             const Size_type total_count = last - first;
 
@@ -755,468 +827,7 @@ class ringbuffer {
             return true;
         }
 
-    public:
-
-        /**
-         * Blocks until at least <code>count</code> elements have been put
-         * for subsequent get() and getBlocking().
-         *
-         * @param min_count minimum number of put slots
-         * @param timeoutMS
-         * @return the number of put elements, available for get() and getBlocking()
-         */
-        Size_type waitForElements(const Size_type min_count, const int timeoutMS) noexcept {
-            std::unique_lock<std::mutex> lockMultiRead(syncMultiRead); // acquire syncMultiRead, _not_ sync'ing w/ putImpl
-
-            Size_type available = size();
-            if( min_count > available ) {
-                std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ putImpl via same lock
-                available = size();
-                while( min_count > available ) {
-                    if( 0 == timeoutMS ) {
-                        cvWrite.wait(lockWrite);
-                        available = size();
-                    } else {
-                        std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
-                        std::cv_status s = cvWrite.wait_until(lockWrite, t0 + std::chrono::milliseconds(timeoutMS));
-                        available = size();
-                        if( std::cv_status::timeout == s && min_count > available ) {
-                            return available;
-                        }
-                    }
-                }
-            }
-            return available;
-        }
-
-        /**
-         * Blocks until at least <code>count</code> free slots become available
-         * for subsequent put() and putBlocking().
-         *
-         * @param min_count minimum number of free slots
-         * @param timeoutMS
-         * @return the number of free slots, available for put() and putBlocking()
-         */
-        Size_type waitForFreeSlots(const Size_type min_count, const int timeoutMS) noexcept {
-            std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite); // acquire syncMultiWrite, _not_ sync'ing w/ getImpl
-
-            Size_type available = freeSlots();
-            if( min_count > available ) {
-                std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ getImpl via same lock
-                available = freeSlots();
-                while( min_count > available ) {
-                    if( 0 == timeoutMS ) {
-                        cvRead.wait(lockRead);
-                        available = freeSlots();
-                    } else {
-                        std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
-                        std::cv_status s = cvRead.wait_until(lockRead, t0 + std::chrono::milliseconds(timeoutMS));
-                        available = freeSlots();
-                        if( std::cv_status::timeout == s && min_count > available ) {
-                            return available;
-                        }
-                    }
-                }
-            }
-            return available;
-        }
-
-        /** Returns a short string representation incl. size/capacity and internal r/w index (impl. dependent). */
-        std::string toString() const noexcept {
-            const std::string es = isEmpty() ? ", empty" : "";
-            const std::string fs = isFull() ? ", full" : "";
-            return "ringbuffer<?>[size "+std::to_string(size())+" / "+std::to_string(capacityPlusOne-1)+
-                    ", writePos "+std::to_string(writePos)+", readPos "+std::to_string(readPos)+es+fs+"]";
-        }
-
-        /** Debug functionality - Dumps the contents of the internal array. */
-        void dump(FILE *stream, std::string prefix) const noexcept {
-            fprintf(stream, "%s %s, array %p\n", prefix.c_str(), toString().c_str(), array);
-        }
-
-        constexpr_cxx20 std::string get_info() const noexcept {
-            std::string res("ringbuffer<?>[this "+jau::to_hexstring(this)+
-                            ", size "+std::to_string(size())+" / "+std::to_string(capacityPlusOne-1)+
-                            ", type[integral "+std::to_string(is_integral)+
-                            ", trivialCpy "+std::to_string(std::is_trivially_copyable_v<Value_type>)+
-                            "], uses[mmove "+std::to_string(uses_memmove)+
-                            ", mcpy "+std::to_string(uses_memcpy)+
-                            ", smem "+std::to_string(uses_secmem)+
-                            "]]");
-            return res;
-        }
-
-        /**
-         * Create a full ring buffer instance w/ the given array's net capacity and content.
-         * <p>
-         * Example for a 10 element Integer array:
-         * <pre>
-         *  Integer[] source = new Integer[10];
-         *  // fill source with content ..
-         *  ringbuffer<Integer> rb = new ringbuffer<Integer>(source);
-         * </pre>
-         * </p>
-         * <p>
-         * {@link #isFull()} returns true on the newly created full ring buffer.
-         * </p>
-         * <p>
-         * Implementation will allocate an internal array with size of array <code>copyFrom</code> <i>plus one</i>,
-         * and copy all elements from array <code>copyFrom</code> into the internal array.
-         * </p>
-         * @param copyFrom mandatory source array determining ring buffer's net {@link #capacity()} and initial content.
-         * @throws IllegalArgumentException if <code>copyFrom</code> is <code>nullptr</code>
-         */
-        ringbuffer(const std::vector<Value_type> & copyFrom) noexcept
-        : capacityPlusOne(copyFrom.size() + 1), array(newArray(capacityPlusOne)),
-          readPos(0), writePos(0)
-        {
-            resetImpl(copyFrom.data(), copyFrom.size());
-            _DEBUG_DUMP("ctor(vector<Value_type>)");
-        }
-
-        /**
-         * @param copyFrom
-         * @param copyFromSize
-         */
-        ringbuffer(const Value_type * copyFrom, const Size_type copyFromSize) noexcept
-        : capacityPlusOne(copyFromSize + 1), array(newArray(capacityPlusOne)),
-          readPos(0), writePos(0)
-        {
-            resetImpl(copyFrom, copyFromSize);
-            _DEBUG_DUMP("ctor(Value_type*, len)");
-        }
-
-        /**
-         * Create an empty ring buffer instance w/ the given net <code>capacity</code>.
-         * <p>
-         * Example for a 10 element Integer array:
-         * <pre>
-         *  ringbuffer<Integer> rb = new ringbuffer<Integer>(10, Integer[].class);
-         * </pre>
-         * </p>
-         * <p>
-         * {@link #isEmpty()} returns true on the newly created empty ring buffer.
-         * </p>
-         * <p>
-         * Implementation will allocate an internal array of size <code>capacity</code> <i>plus one</i>.
-         * </p>
-         * @param arrayType the array type of the created empty internal array.
-         * @param capacity the initial net capacity of the ring buffer
-         */
-        ringbuffer(const Size_type capacity) noexcept
-        : capacityPlusOne(capacity + 1), array(newArray(capacityPlusOne)),
-          readPos(0), writePos(0)
-        {
-            _DEBUG_DUMP("ctor(capacity)");
-        }
-
-        ~ringbuffer() noexcept {
-            _DEBUG_DUMP("dtor(def)");
-            if( nullptr != array ) {
-                clearImpl();
-                freeArray(&array, capacityPlusOne);
-            }
-        }
-
-        ringbuffer(const ringbuffer &_source) noexcept
-        : capacityPlusOne(_source.capacityPlusOne), array(newArray(capacityPlusOne)),
-          readPos(0), writePos(0)
-        {
-            std::unique_lock<std::mutex> lockMultiReadS(_source.syncMultiRead, std::defer_lock); // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
-            std::unique_lock<std::mutex> lockMultiWriteS(_source.syncMultiWrite, std::defer_lock); // otherwise RAII-style relinquish via destructor
-            std::lock(lockMultiReadS, lockMultiWriteS);                                          // *this instance does not exist yet
-            cloneFrom(false, _source);
-            _DEBUG_DUMP("ctor(copy.this)");
-            _DEBUG_DUMP2(_source, "ctor(copy.source)");
-        }
-
-        ringbuffer& operator=(const ringbuffer &_source) noexcept {
-            std::unique_lock<std::mutex> lockMultiReadS(_source.syncMultiRead, std::defer_lock); // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
-            std::unique_lock<std::mutex> lockMultiWriteS(_source.syncMultiWrite, std::defer_lock); // otherwise RAII-style relinquish via destructor
-            std::unique_lock<std::mutex> lockMultiRead(syncMultiRead, std::defer_lock);          // same for *this instance!
-            std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite, std::defer_lock);
-            std::lock(lockMultiReadS, lockMultiWriteS, lockMultiRead, lockMultiWrite);
-
-            if( this == &_source ) {
-                return *this;
-            }
-
-            if( capacityPlusOne != _source.capacityPlusOne ) {
-                cloneFrom(true, _source);
-            } else {
-                cloneFrom(false, _source);
-            }
-            _DEBUG_DUMP("assignment(copy.this)");
-            _DEBUG_DUMP2(_source, "assignment(copy.source)");
-            return *this;
-        }
-
-        ringbuffer(ringbuffer &&o) noexcept = default;
-        ringbuffer& operator=(ringbuffer &&o) noexcept = default;
-
-        /** Returns the net capacity of this ring buffer. */
-        Size_type capacity() const noexcept { return capacityPlusOne-1; }
-
-        /**
-         * Releasing all elements by assigning <code>nullelem</code>.
-         * <p>
-         * {@link #isEmpty()} will return <code>true</code> and
-         * {@link #getSize()} will return <code>0</code> after calling this method.
-         * </p>
-         */
-        void clear() noexcept {
-            std::unique_lock<std::mutex> lockMultiRead(syncMultiRead, std::defer_lock);          // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
-            std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite, std::defer_lock);        // otherwise RAII-style relinquish via destructor
-            std::lock(lockMultiRead, lockMultiWrite);
-            clearImpl();
-        }
-
-        /**
-         * {@link #clear()} all elements and add all <code>copyFrom</code> elements thereafter.
-         * @param copyFrom Mandatory array w/ length {@link #capacity()} to be copied into the internal array.
-         */
-        void reset(const Value_type * copyFrom, const Size_type copyFromCount) noexcept {
-            std::unique_lock<std::mutex> lockMultiRead(syncMultiRead, std::defer_lock);          // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
-            std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite, std::defer_lock);        // otherwise RAII-style relinquish via destructor
-            std::lock(lockMultiRead, lockMultiWrite);
-            resetImpl(copyFrom, copyFromCount);
-        }
-
-        void reset(const std::vector<Value_type> & copyFrom) noexcept {
-            std::unique_lock<std::mutex> lockMultiRead(syncMultiRead, std::defer_lock);          // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
-            std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite, std::defer_lock);        // otherwise RAII-style relinquish via destructor
-            std::lock(lockMultiRead, lockMultiWrite);
-            resetImpl(copyFrom.data(), copyFrom.size());
-        }
-
-        /** Returns the number of elements in this ring buffer. */
-        Size_type size() const noexcept {
-            const Size_type R = readPos;
-            const Size_type W = writePos;
-            // W >= R: W - R
-            // W <  R: C+1 - R - 1 + W + 1 = C+1 - R + W
-            return W >= R ? W - R : capacityPlusOne - R + W;
-        }
-
-        /** Returns the number of free slots available to put.  */
-        Size_type freeSlots() const noexcept { return capacityPlusOne - 1 - size(); }
-
-        /** Returns true if this ring buffer is empty, otherwise false. */
-        bool isEmpty() const noexcept { return writePos == readPos; /* 0 == size */ }
-
-        /** Returns true if this ring buffer is full, otherwise false. */
-        bool isFull() const noexcept { return ( writePos + 1 ) % capacityPlusOne == readPos; /* W == R - 1 */; }
-
-        /**
-         * Peeks the next element at the read position w/o modifying pointer, nor blocking.
-         *
-         * Method is non blocking and returns immediately;.
-         *
-         * @param result storage for the resulting value if successful, otherwise unchanged.
-         * @return true if successful, otherwise false.
-         */
-        bool peek(Value_type& result) noexcept {
-            return peekImpl(result, false, 0);
-        }
-
-        /**
-         * Peeks the next element at the read position w/o modifying pointer, but with blocking.
-         *
-         * <code>timeoutMS</code> defaults to zero,
-         * i.e. infinitive blocking until an element available via put.<br>
-         * Otherwise this methods blocks for the given milliseconds.
-         *
-         * @param result storage for the resulting value if successful, otherwise unchanged.
-         * @return true if successful, otherwise false.
-         */
-        bool peekBlocking(Value_type& result, const int timeoutMS=0) noexcept {
-            return peekImpl(result, true, timeoutMS);
-        }
-
-        /**
-         * Dequeues the oldest enqueued element, if available.
-         *
-         * The ring buffer slot will be released and its value moved to the caller's `result` storage, if successful.
-         *
-         * Method is non blocking and returns immediately;.
-         *
-         * @param result storage for the resulting value if successful, otherwise unchanged.
-         * @return true if successful, otherwise false.
-         */
-        bool get(Value_type& result) noexcept {
-            return moveOutImpl(result, false, 0);
-        }
-
-        /**
-         * Dequeues the oldest enqueued element.
-         *
-         * The ring buffer slot will be released and its value moved to the caller's `result` storage, if successful.
-         *
-         * <code>timeoutMS</code> defaults to zero,
-         * i.e. infinitive blocking until an element available via put.<br>
-         * Otherwise this methods blocks for the given milliseconds.
-         *
-         * @param result storage for the resulting value if successful, otherwise unchanged.
-         * @return true if successful, otherwise false.
-         */
-        bool getBlocking(Value_type& result, const int timeoutMS=0) noexcept {
-            return moveOutImpl(result, true, timeoutMS);
-        }
-
-        /**
-         * Dequeues the oldest enqueued `min(dest_len, getSize()>=min_count)` elements by copying them into the given consecutive 'dest' storage.
-         *
-         * The ring buffer slots will be released and its value moved to the caller's `dest` storage, if successful.
-         *
-         * Method is non blocking and returns immediately;.
-         *
-         * @param dest pointer to first storage element of `dest_len` consecutive elements to store the values, if successful.
-         * @param dest_len number of consecutive elements in `dest`, hence maximum number of elements to return.
-         * @param min_count minimum number of consecutive elements to return.
-         * @return actual number of elements returned
-         */
-        Size_type get(Value_type *dest, const Size_type dest_len, const Size_type min_count) noexcept {
-            return moveOutImpl(dest, dest_len, min_count, false, 0);
-        }
-
-        /**
-         * Dequeues the oldest enqueued `min(dest_len, getSize()>=min_count)` elements by copying them into the given consecutive 'dest' storage.
-         *
-         * The ring buffer slots will be released and its value moved to the caller's `dest` storage, if successful.
-         *
-         * <code>timeoutMS</code> defaults to zero,
-         * i.e. infinitive blocking until an element available via put.<br>
-         * Otherwise this methods blocks for the given milliseconds.
-         *
-         * @param dest pointer to first storage element of `dest_len` consecutive elements to store the values, if successful.
-         * @param dest_len number of consecutive elements in `dest`, hence maximum number of elements to return.
-         * @param min_count minimum number of consecutive elements to return
-         * @param timeoutMS
-         * @return actual number of elements returned
-         */
-        Size_type getBlocking(Value_type *dest, const Size_type dest_len, const Size_type min_count, const int timeoutMS=0) noexcept {
-            return moveOutImpl(dest, dest_len, min_count, true, timeoutMS);
-        }
-
-        /**
-         * Drops {@code count} oldest enqueued elements.
-         *
-         * Method is non blocking and returns immediately;.
-         *
-         * @param count number of elements to drop from ringbuffer.
-         * @return true if successful, otherwise false
-         */
-        bool drop(const Size_type count) noexcept {
-            return dropImpl(count, false, 0);
-        }
-
-        /**
-         * Drops {@code count} oldest enqueued elements.
-         *
-         * <code>timeoutMS</code> defaults to zero,
-         * i.e. infinitive blocking until an element available via put.<br>
-         * Otherwise this methods blocks for the given milliseconds.
-         *
-         * @param count number of elements to drop from ringbuffer.
-         * @return true if successful, otherwise false
-         */
-        bool dropBlocking(const Size_type count, const int timeoutMS=0) noexcept {
-            return dropImpl(count, true, timeoutMS);
-        }
-
-        /**
-         * Enqueues the given element by moving it into this ringbuffer storage.
-         *
-         * Returns true if successful, otherwise false in case buffer is full.
-         *
-         * Method is non blocking and returns immediately;.
-         *
-         * @return true if successful, otherwise false
-         */
-        bool put(Value_type && e) noexcept {
-            return moveIntoImpl(std::move(e), false, 0);
-        }
-
-        /**
-         * Enqueues the given element by moving it into this ringbuffer storage.
-         *
-         * <code>timeoutMS</code> defaults to zero,
-         * i.e. infinitive blocking until a free slot becomes available via get.<br>
-         * Otherwise this methods blocks for the given milliseconds.
-         *
-         * @return true if successful, otherwise false in case timeout occurred or otherwise.
-         */
-        bool putBlocking(Value_type && e, const int timeoutMS=0) noexcept {
-            return moveIntoImpl(std::move(e), true, timeoutMS);
-        }
-
-        /**
-         * Enqueues the given element by copying it into this ringbuffer storage.
-         *
-         * Returns true if successful, otherwise false in case buffer is full.
-         *
-         * Method is non blocking and returns immediately;.
-         *
-         * @return true if successful, otherwise false
-         */
-        bool put(const Value_type & e) noexcept {
-            return copyIntoImpl(e, false, 0);
-        }
-
-        /**
-         * Enqueues the given element by copying it into this ringbuffer storage.
-         *
-         * <code>timeoutMS</code> defaults to zero,
-         * i.e. infinitive blocking until a free slot becomes available via get.<br>
-         * Otherwise this methods blocks for the given milliseconds.
-         *
-         * @return true if successful, otherwise false in case timeout occurred or otherwise.
-         */
-        bool putBlocking(const Value_type & e, const int timeoutMS=0) noexcept {
-            return copyIntoImpl(e, true, timeoutMS);
-        }
-
-        /**
-         * Enqueues the given range of consecutive elements by copying it into this ringbuffer storage.
-         *
-         * Returns true if successful, otherwise false in case buffer is full.
-         *
-         * Method is non blocking and returns immediately;.
-         *
-         * @param first pointer to first consecutive element to range of value_type [first, last)
-         * @param last pointer to last consecutive element to range of value_type [first, last)
-         * @return true if successful, otherwise false
-         */
-        bool put(const Value_type *first, const Value_type* last) noexcept {
-            return copyIntoImpl(first, last, false, 0);
-        }
-
-        /**
-         * Enqueues the given range of consecutive elementa by copying it into this ringbuffer storage.
-         *
-         * <code>timeoutMS</code> defaults to zero,
-         * i.e. infinitive blocking until a free slot becomes available via get.<br>
-         * Otherwise this methods blocks for the given milliseconds.
-         *
-         * @param first pointer to first consecutive element to range of value_type [first, last)
-         * @param last pointer to last consecutive element to range of value_type [first, last)
-         * @param timeoutMS
-         * @return true if successful, otherwise false in case timeout occurred or otherwise.
-         */
-        bool putBlocking(const Value_type *first, const Value_type* last, const int timeoutMS=0) noexcept {
-            return copyIntoImpl(first, last, true, timeoutMS);
-        }
-
-        /**
-         * Resizes this ring buffer's capacity.
-         * <p>
-         * New capacity must be greater than current size.
-         * </p>
-         */
-        void recapacity(const Size_type newCapacity) {
-            std::unique_lock<std::mutex> lockMultiRead(syncMultiRead, std::defer_lock);          // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
-            std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite, std::defer_lock);        // otherwise RAII-style relinquish via destructor
-            std::lock(lockMultiRead, lockMultiWrite);
+        void recapacityImpl(const Size_type newCapacity) {
             const Size_type size_ = size();
 
             if( capacityPlusOne == newCapacity+1 ) {
@@ -1249,6 +860,633 @@ class ringbuffer {
                 writePos = localWritePos;
             }
             freeArray(&oldArray, oldCapacityPlusOne); // and release
+        }
+
+    public:
+
+        /** Returns a short string representation incl. size/capacity and internal r/w index (impl. dependent). */
+        std::string toString() const noexcept {
+            const std::string e_s = isEmpty() ? ", empty" : "";
+            const std::string f_s = isFull() ? ", full" : "";
+            const std::string mode_s = getMultiPCEnabled() ? ", mpc" : ", one";
+            return "ringbuffer<?>[size "+std::to_string(size())+" / "+std::to_string(capacityPlusOne-1)+
+                    ", writePos "+std::to_string(writePos)+", readPos "+std::to_string(readPos)+e_s+f_s+mode_s+"]";
+        }
+
+        /** Debug functionality - Dumps the contents of the internal array. */
+        void dump(FILE *stream, std::string prefix) const noexcept {
+            fprintf(stream, "%s %s, array %p\n", prefix.c_str(), toString().c_str(), array);
+        }
+
+        constexpr_cxx20 std::string get_info() const noexcept {
+            const std::string e_s = isEmpty() ? ", empty" : "";
+            const std::string f_s = isFull() ? ", full" : "";
+            const std::string mode_s = getMultiPCEnabled() ? ", mpc" : ", one";
+            std::string res("ringbuffer<?>[this "+jau::to_hexstring(this)+
+                            ", size "+std::to_string(size())+" / "+std::to_string(capacityPlusOne-1)+
+                            ", "+e_s+f_s+mode_s+", type[integral "+std::to_string(is_integral)+
+                            ", trivialCpy "+std::to_string(std::is_trivially_copyable_v<Value_type>)+
+                            "], uses[mmove "+std::to_string(uses_memmove)+
+                            ", mcpy "+std::to_string(uses_memcpy)+
+                            ", smem "+std::to_string(uses_secmem)+
+                            "]]");
+            return res;
+        }
+
+        /**
+         * Create a full ring buffer instance w/ the given array's net capacity and content.
+         * <p>
+         * Example for a 10 element Integer array:
+         * <pre>
+         *  Integer[] source = new Integer[10];
+         *  // fill source with content ..
+         *  ringbuffer<Integer> rb = new ringbuffer<Integer>(source);
+         * </pre>
+         * </p>
+         * <p>
+         * {@link #isFull()} returns true on the newly created full ring buffer.
+         * </p>
+         * <p>
+         * Implementation will allocate an internal array with size of array `copyFrom` <i>plus one</i>,
+         * and copy all elements from array `copyFrom` into the internal array.
+         * </p>
+         * @param copyFrom mandatory source array determining ring buffer's net {@link #capacity()} and initial content.
+         * @throws IllegalArgumentException if `copyFrom` is `nullptr`
+         */
+        ringbuffer(const std::vector<Value_type> & copyFrom) noexcept
+        : capacityPlusOne(copyFrom.size() + 1), array(newArray(capacityPlusOne)),
+          readPos(0), writePos(0)
+        {
+            resetImpl(copyFrom.data(), copyFrom.size());
+            _DEBUG_DUMP("ctor(vector<Value_type>)");
+        }
+
+        /**
+         * @param copyFrom
+         * @param copyFromSize
+         */
+        ringbuffer(const Value_type * copyFrom, const Size_type copyFromSize) noexcept
+        : capacityPlusOne(copyFromSize + 1), array(newArray(capacityPlusOne)),
+          readPos(0), writePos(0)
+        {
+            resetImpl(copyFrom, copyFromSize);
+            _DEBUG_DUMP("ctor(Value_type*, len)");
+        }
+
+        /**
+         * Create an empty ring buffer instance w/ the given net `capacity`.
+         * <p>
+         * Example for a 10 element Integer array:
+         * <pre>
+         *  ringbuffer<Integer> rb = new ringbuffer<Integer>(10, Integer[].class);
+         * </pre>
+         * </p>
+         * <p>
+         * {@link #isEmpty()} returns true on the newly created empty ring buffer.
+         * </p>
+         * <p>
+         * Implementation will allocate an internal array of size `capacity` <i>plus one</i>.
+         * </p>
+         * @param arrayType the array type of the created empty internal array.
+         * @param capacity the initial net capacity of the ring buffer
+         */
+        ringbuffer(const Size_type capacity) noexcept
+        : capacityPlusOne(capacity + 1), array(newArray(capacityPlusOne)),
+          readPos(0), writePos(0)
+        {
+            _DEBUG_DUMP("ctor(capacity)");
+        }
+
+        ~ringbuffer() noexcept {
+            _DEBUG_DUMP("dtor(def)");
+            if( nullptr != array ) {
+                clearImpl();
+                freeArray(&array, capacityPlusOne);
+            }
+        }
+
+        ringbuffer(const ringbuffer &_source) noexcept
+        : capacityPlusOne(_source.capacityPlusOne), array(newArray(capacityPlusOne)),
+          readPos(0), writePos(0)
+        {
+            std::unique_lock<std::mutex> lockMultiReadS(_source.syncMultiRead, std::defer_lock); // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
+            std::unique_lock<std::mutex> lockMultiWriteS(_source.syncMultiWrite, std::defer_lock); // otherwise RAII-style relinquish via destructor
+            std::lock(lockMultiReadS, lockMultiWriteS);                                          // *this instance does not exist yet
+            cloneFrom(false, _source);
+            _DEBUG_DUMP("ctor(copy.this)");
+            _DEBUG_DUMP2(_source, "ctor(copy.source)");
+        }
+
+        ringbuffer& operator=(const ringbuffer &_source) noexcept {
+            if( multi_pc_enabled ) {
+                std::unique_lock<std::mutex> lockMultiReadS(_source.syncMultiRead, std::defer_lock); // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
+                std::unique_lock<std::mutex> lockMultiWriteS(_source.syncMultiWrite, std::defer_lock); // otherwise RAII-style relinquish via destructor
+                std::unique_lock<std::mutex> lockMultiRead(syncMultiRead, std::defer_lock);          // same for *this instance!
+                std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite, std::defer_lock);
+                std::lock(lockMultiReadS, lockMultiWriteS, lockMultiRead, lockMultiWrite);
+
+                return assignCopyImpl(_source);
+            } else {
+                std::unique_lock<std::mutex> lockReadS(_source.syncRead, std::defer_lock); // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
+                std::unique_lock<std::mutex> lockWriteS(_source.syncWrite, std::defer_lock); // otherwise RAII-style relinquish via destructor
+                std::unique_lock<std::mutex> lockRead(syncRead, std::defer_lock);          // same for *this instance!
+                std::unique_lock<std::mutex> lockWrite(syncWrite, std::defer_lock);
+                std::lock(lockReadS, lockWriteS, lockRead, lockWrite);
+
+                return assignCopyImpl(_source);
+            }
+        }
+
+        ringbuffer(ringbuffer &&o) noexcept = default;
+        ringbuffer& operator=(ringbuffer &&o) noexcept = default;
+
+        /**
+         * Return whether multiple producer and consumer are enabled,
+         * see @ref ringbuffer_multi_pc and @ref ringbuffer_single_pc.
+         *
+         * Defaults to `false`.
+         * @see @ref ringbuffer_multi_pc
+         * @see @ref ringbuffer_single_pc
+         * @see getMultiPCEnabled()
+         * @see setMultiPCEnabled()
+         */
+        constexpr bool getMultiPCEnabled() const { return multi_pc_enabled; }
+
+        /**
+         * Enable or disable capability to handle multiple producer and consumer,
+         * see @ref ringbuffer_multi_pc and @ref ringbuffer_single_pc.
+         *
+         * Defaults to `false`.
+         * @see @ref ringbuffer_multi_pc
+         * @see @ref ringbuffer_single_pc
+         * @see getMultiPCEnabled()
+         * @see setMultiPCEnabled()
+         */
+        constexpr void setMultiPCEnabled(const bool v) {
+            if( multi_pc_enabled ) {
+                std::unique_lock<std::mutex> lockMultiRead(syncMultiRead, std::defer_lock);          // same for *this instance!
+                std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite, std::defer_lock);
+                std::unique_lock<std::mutex> lockRead(syncRead, std::defer_lock);          // same for *this instance!
+                std::unique_lock<std::mutex> lockWrite(syncWrite, std::defer_lock);
+                std::lock(lockMultiRead, lockMultiWrite, lockRead, lockWrite);
+
+                multi_pc_enabled=v;
+            } else {
+                std::unique_lock<std::mutex> lockRead(syncRead, std::defer_lock);          // same for *this instance!
+                std::unique_lock<std::mutex> lockWrite(syncWrite, std::defer_lock);
+                std::lock(lockRead, lockWrite);
+
+                multi_pc_enabled=v;
+            }
+        }
+
+        /** Returns the net capacity of this ring buffer. */
+        Size_type capacity() const noexcept { return capacityPlusOne - 1; }
+
+        /** Returns the number of free slots available to put.  */
+        Size_type freeSlots() const noexcept { return capacityPlusOne - 1 - size(); }
+
+        /** Returns true if this ring buffer is empty, otherwise false. */
+        bool isEmpty() const noexcept { return writePos == readPos; /* 0 == size */ }
+
+        /** Returns true if this ring buffer is full, otherwise false. */
+        bool isFull() const noexcept { return ( writePos + 1 ) % capacityPlusOne == readPos; /* W == R - 1 */; }
+
+        /** Returns the number of elements in this ring buffer. */
+        Size_type size() const noexcept {
+            const Size_type R = readPos;
+            const Size_type W = writePos;
+            // W >= R: W - R
+            // W <  R: C+1 - R - 1 + W + 1 = C+1 - R + W
+            return W >= R ? W - R : capacityPlusOne - R + W;
+        }
+
+        /**
+         * Blocks until at least `count` elements have been put
+         * for subsequent get() and getBlocking().
+         *
+         * @param min_count minimum number of put slots
+         * @param timeoutMS
+         * @return the number of put elements, available for get() and getBlocking()
+         */
+        Size_type waitForElements(const Size_type min_count, const int timeoutMS) noexcept {
+            if( multi_pc_enabled ) {
+                std::unique_lock<std::mutex> lockMultiRead(syncMultiRead); // acquire syncMultiRead, _not_ sync'ing w/ putImpl
+                return waitForElementsImpl(min_count, timeoutMS);
+            } else {
+                return waitForElementsImpl(min_count, timeoutMS);
+            }
+        }
+
+        /**
+         * Blocks until at least `count` free slots become available
+         * for subsequent put() and putBlocking().
+         *
+         * @param min_count minimum number of free slots
+         * @param timeoutMS
+         * @return the number of free slots, available for put() and putBlocking()
+         */
+        Size_type waitForFreeSlots(const Size_type min_count, const int timeoutMS) noexcept {
+            if( multi_pc_enabled ) {
+                std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite); // acquire syncMultiWrite, _not_ sync'ing w/ getImpl
+                return waitForFreeSlotsImpl(min_count, timeoutMS);
+            } else {
+                return waitForFreeSlotsImpl(min_count, timeoutMS);
+            }
+        }
+
+        /**
+         * Releasing all elements available, i.e. size() at the time of the call
+         *
+         * Implementation either wait until all put*() and get*() operations are
+         * Assuming no concurrent put() operation, after the call:
+         * - {@link #isEmpty()} will return `true`
+         * - {@link #getSize()} shall return `0`
+         *
+         * Implementation utilizes drop() for all available elements.
+         */
+        void clear() noexcept {
+            if( multi_pc_enabled ) {
+                std::unique_lock<std::mutex> lockMultiRead(syncMultiRead, std::defer_lock);          // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
+                std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite, std::defer_lock);        // otherwise RAII-style relinquish via destructor
+                std::lock(lockMultiRead, lockMultiWrite);
+                dropImpl (capacityPlusOne-1, false /* blocking */, 0 /* timeoutMS */);
+            } else {
+                dropImpl (capacityPlusOne-1, false /* blocking */, 0 /* timeoutMS */);
+            }
+        }
+
+        /**
+         * Clears all elements and add all `copyFrom` elements thereafter, as if reconstructing this ringbuffer instance.
+         *
+         * It is the user's obligation to ensure thread safety when using @ref ringbuffer_single_pc,
+         * as implementation can only synchronize on the blocked put() and get() std::mutex.
+         *
+         * @param copyFrom Mandatory array w/ length {@link #capacity()} to be copied into the internal array.
+         *
+         * @see getMultiPCEnabled()
+         * @see setMultiPCEnabled()
+         * @see @ref ringbuffer_multi_pc
+         * @see @ref ringbuffer_single_pc
+         */
+        void reset(const Value_type * copyFrom, const Size_type copyFromCount) noexcept {
+            if( multi_pc_enabled ) {
+                std::unique_lock<std::mutex> lockMultiRead(syncMultiRead, std::defer_lock);          // same for *this instance!
+                std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite, std::defer_lock);
+                std::unique_lock<std::mutex> lockRead(syncRead, std::defer_lock);          // same for *this instance!
+                std::unique_lock<std::mutex> lockWrite(syncWrite, std::defer_lock);
+                std::lock(lockMultiRead, lockMultiWrite, lockRead, lockWrite);
+
+                resetImpl(copyFrom, copyFromCount);
+            } else {
+                std::unique_lock<std::mutex> lockRead(syncRead, std::defer_lock);          // same for *this instance!
+                std::unique_lock<std::mutex> lockWrite(syncWrite, std::defer_lock);
+                std::lock(lockRead, lockWrite);
+
+                resetImpl(copyFrom, copyFromCount);
+            }
+        }
+
+        /**
+         * Clears all elements and add all `copyFrom` elements thereafter, as if reconstructing this ringbuffer instance.
+         *
+         * It is the user's obligation to ensure thread safety when using @ref ringbuffer_single_pc,
+         * as implementation can only synchronize on the blocked put() and get() std::mutex.
+         *
+         * @param copyFrom
+         *
+         * @see getMultiPCEnabled()
+         * @see setMultiPCEnabled()
+         * @see @ref ringbuffer_multi_pc
+         * @see @ref ringbuffer_single_pc
+         */
+        void reset(const std::vector<Value_type> & copyFrom) noexcept {
+            if( multi_pc_enabled ) {
+                std::unique_lock<std::mutex> lockMultiRead(syncMultiRead, std::defer_lock);          // same for *this instance!
+                std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite, std::defer_lock);
+                std::unique_lock<std::mutex> lockRead(syncRead, std::defer_lock);          // same for *this instance!
+                std::unique_lock<std::mutex> lockWrite(syncWrite, std::defer_lock);
+                std::lock(lockMultiRead, lockMultiWrite, lockRead, lockWrite);
+
+                resetImpl(copyFrom.data(), copyFrom.size());
+            } else {
+                std::unique_lock<std::mutex> lockRead(syncRead, std::defer_lock);          // same for *this instance!
+                std::unique_lock<std::mutex> lockWrite(syncWrite, std::defer_lock);
+                std::lock(lockRead, lockWrite);
+
+                resetImpl(copyFrom.data(), copyFrom.size());
+            }
+        }
+
+        /**
+         * Resizes this ring buffer's capacity.
+         *
+         * New capacity must be greater than current size.
+         *
+         * It is the user's obligation to ensure thread safety when using @ref ringbuffer_single_pc,
+         * as implementation can only synchronize on the blocked put() and get() std::mutex.
+         *
+         * @param newCapacity
+         *
+         * @see getMultiPCEnabled()
+         * @see setMultiPCEnabled()
+         * @see @ref ringbuffer_multi_pc
+         * @see @ref ringbuffer_single_pc
+         */
+        void recapacity(const Size_type newCapacity) {
+            if( multi_pc_enabled ) {
+                std::unique_lock<std::mutex> lockMultiRead(syncMultiRead, std::defer_lock);          // same for *this instance!
+                std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite, std::defer_lock);
+                std::unique_lock<std::mutex> lockRead(syncRead, std::defer_lock);          // same for *this instance!
+                std::unique_lock<std::mutex> lockWrite(syncWrite, std::defer_lock);
+                std::lock(lockMultiRead, lockMultiWrite, lockRead, lockWrite);
+                recapacityImpl(newCapacity);
+            } else {
+                std::unique_lock<std::mutex> lockRead(syncRead, std::defer_lock);          // same for *this instance!
+                std::unique_lock<std::mutex> lockWrite(syncWrite, std::defer_lock);
+                std::lock(lockRead, lockWrite);
+
+                recapacityImpl(newCapacity);
+            }
+        }
+
+        /**
+         * Peeks the next element at the read position w/o modifying pointer, nor blocking.
+         *
+         * Method is non blocking and returns immediately;.
+         *
+         * @param result storage for the resulting value if successful, otherwise unchanged.
+         * @return true if successful, otherwise false.
+         */
+        bool peek(Value_type& result) noexcept {
+            if( multi_pc_enabled ) {
+                std::unique_lock<std::mutex> lockMultiRead(syncMultiRead); // acquire syncMultiRead, _not_ sync'ing w/ putImpl
+                return peekImpl(result, false, 0);
+            } else {
+                return peekImpl(result, false, 0);
+            }
+        }
+
+        /**
+         * Peeks the next element at the read position w/o modifying pointer, but with blocking.
+         *
+         * `timeoutMS` defaults to zero,
+         * i.e. infinitive blocking until an element available via put.<br>
+         * Otherwise this methods blocks for the given milliseconds.
+         *
+         * @param result storage for the resulting value if successful, otherwise unchanged.
+         * @return true if successful, otherwise false.
+         */
+        bool peekBlocking(Value_type& result, const int timeoutMS=0) noexcept {
+            if( multi_pc_enabled ) {
+                std::unique_lock<std::mutex> lockMultiRead(syncMultiRead); // acquire syncMultiRead, _not_ sync'ing w/ putImpl
+                return peekImpl(result, true, timeoutMS);
+            } else {
+                return peekImpl(result, true, timeoutMS);
+            }
+        }
+
+        /**
+         * Dequeues the oldest enqueued element, if available.
+         *
+         * The ring buffer slot will be released and its value moved to the caller's `result` storage, if successful.
+         *
+         * Method is non blocking and returns immediately;.
+         *
+         * @param result storage for the resulting value if successful, otherwise unchanged.
+         * @return true if successful, otherwise false.
+         */
+        bool get(Value_type& result) noexcept {
+            if( multi_pc_enabled ) {
+                std::unique_lock<std::mutex> lockMultiRead(syncMultiRead); // acquire syncMultiRead, _not_ sync'ing w/ putImpl
+                return moveOutImpl(result, false, 0);
+            } else {
+                return moveOutImpl(result, false, 0);
+            }
+        }
+
+        /**
+         * Dequeues the oldest enqueued element.
+         *
+         * The ring buffer slot will be released and its value moved to the caller's `result` storage, if successful.
+         *
+         * `timeoutMS` defaults to zero,
+         * i.e. infinitive blocking until an element available via put.<br>
+         * Otherwise this methods blocks for the given milliseconds.
+         *
+         * @param result storage for the resulting value if successful, otherwise unchanged.
+         * @return true if successful, otherwise false.
+         */
+        bool getBlocking(Value_type& result, const int timeoutMS=0) noexcept {
+            if( multi_pc_enabled ) {
+                std::unique_lock<std::mutex> lockMultiRead(syncMultiRead); // acquire syncMultiRead, _not_ sync'ing w/ putImpl
+                return moveOutImpl(result, true, timeoutMS);
+            } else {
+                return moveOutImpl(result, true, timeoutMS);
+            }
+        }
+
+        /**
+         * Dequeues the oldest enqueued `min(dest_len, getSize()>=min_count)` elements by copying them into the given consecutive 'dest' storage.
+         *
+         * The ring buffer slots will be released and its value moved to the caller's `dest` storage, if successful.
+         *
+         * Method is non blocking and returns immediately;.
+         *
+         * @param dest pointer to first storage element of `dest_len` consecutive elements to store the values, if successful.
+         * @param dest_len number of consecutive elements in `dest`, hence maximum number of elements to return.
+         * @param min_count minimum number of consecutive elements to return.
+         * @return actual number of elements returned
+         */
+        Size_type get(Value_type *dest, const Size_type dest_len, const Size_type min_count) noexcept {
+            if( multi_pc_enabled ) {
+                std::unique_lock<std::mutex> lockMultiRead(syncMultiRead); // acquire syncMultiRead, _not_ sync'ing w/ putImpl
+                return moveOutImpl(dest, dest_len, min_count, false, 0);
+            } else {
+                return moveOutImpl(dest, dest_len, min_count, false, 0);
+            }
+        }
+
+        /**
+         * Dequeues the oldest enqueued `min(dest_len, getSize()>=min_count)` elements by copying them into the given consecutive 'dest' storage.
+         *
+         * The ring buffer slots will be released and its value moved to the caller's `dest` storage, if successful.
+         *
+         * `timeoutMS` defaults to zero,
+         * i.e. infinitive blocking until an element available via put.<br>
+         * Otherwise this methods blocks for the given milliseconds.
+         *
+         * @param dest pointer to first storage element of `dest_len` consecutive elements to store the values, if successful.
+         * @param dest_len number of consecutive elements in `dest`, hence maximum number of elements to return.
+         * @param min_count minimum number of consecutive elements to return
+         * @param timeoutMS
+         * @return actual number of elements returned
+         */
+        Size_type getBlocking(Value_type *dest, const Size_type dest_len, const Size_type min_count, const int timeoutMS=0) noexcept {
+            if( multi_pc_enabled ) {
+                std::unique_lock<std::mutex> lockMultiRead(syncMultiRead); // acquire syncMultiRead, _not_ sync'ing w/ putImpl
+                return moveOutImpl(dest, dest_len, min_count, true, timeoutMS);
+            } else {
+                return moveOutImpl(dest, dest_len, min_count, true, timeoutMS);
+            }
+        }
+
+        /**
+         * Drops up to `max_count` oldest enqueued elements,
+         * but may drop less if not available.
+         *
+         * Method is non blocking and returns immediately;.
+         *
+         * @param max_count maximum number of elements to drop from ringbuffer.
+         * @return number of elements dropped
+         */
+        Size_type drop(const Size_type max_count) noexcept {
+            if( multi_pc_enabled ) {
+                std::unique_lock<std::mutex> lockMultiRead(syncMultiRead, std::defer_lock);          // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
+                std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite, std::defer_lock);        // otherwise RAII-style relinquish via destructor
+                std::lock(lockMultiRead, lockMultiWrite);
+                return dropImpl(max_count, false, 0);
+            } else {
+                return dropImpl(max_count, false, 0);
+            }
+        }
+
+        /**
+         * Drops exactly `count` oldest enqueued elements,
+         * will block until they become available.
+         *
+         * `timeoutMS` defaults to zero,
+         * i.e. infinitive blocking until an element available via put.<br>
+         * Otherwise this methods blocks for the given milliseconds.
+         *
+         * In `count` elements are not available to drop even after
+         * blocking for `timeoutMS`, no element will be dropped.
+         *
+         * @param count number of elements to drop from ringbuffer.
+         * @return true if successful, otherwise false
+         */
+        bool dropBlocking(const Size_type count, const int timeoutMS=0) noexcept {
+            if( multi_pc_enabled ) {
+                std::unique_lock<std::mutex> lockMultiRead(syncMultiRead, std::defer_lock);          // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
+                std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite, std::defer_lock);        // otherwise RAII-style relinquish via destructor
+                std::lock(lockMultiRead, lockMultiWrite);
+                return 0 != dropImpl(count, true, timeoutMS);
+            } else {
+                return 0 != dropImpl(count, true, timeoutMS);
+            }
+        }
+
+        /**
+         * Enqueues the given element by moving it into this ringbuffer storage.
+         *
+         * Returns true if successful, otherwise false in case buffer is full.
+         *
+         * Method is non blocking and returns immediately;.
+         *
+         * @return true if successful, otherwise false
+         */
+        bool put(Value_type && e) noexcept {
+            if( multi_pc_enabled ) {
+                std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite); // acquire syncMultiWrite, _not_ sync'ing w/ getImpl
+                return moveIntoImpl(std::move(e), false, 0);
+            } else {
+                return moveIntoImpl(std::move(e), false, 0);
+            }
+        }
+
+        /**
+         * Enqueues the given element by moving it into this ringbuffer storage.
+         *
+         * `timeoutMS` defaults to zero,
+         * i.e. infinitive blocking until a free slot becomes available via get.<br>
+         * Otherwise this methods blocks for the given milliseconds.
+         *
+         * @return true if successful, otherwise false in case timeout occurred or otherwise.
+         */
+        bool putBlocking(Value_type && e, const int timeoutMS=0) noexcept {
+            if( multi_pc_enabled ) {
+                std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite); // acquire syncMultiWrite, _not_ sync'ing w/ getImpl
+                return moveIntoImpl(std::move(e), true, timeoutMS);
+            } else {
+                return moveIntoImpl(std::move(e), true, timeoutMS);
+            }
+        }
+
+        /**
+         * Enqueues the given element by copying it into this ringbuffer storage.
+         *
+         * Returns true if successful, otherwise false in case buffer is full.
+         *
+         * Method is non blocking and returns immediately;.
+         *
+         * @return true if successful, otherwise false
+         */
+        bool put(const Value_type & e) noexcept {
+            if( multi_pc_enabled ) {
+                std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite); // acquire syncMultiWrite, _not_ sync'ing w/ getImpl
+                return copyIntoImpl(e, false, 0);
+            } else {
+                return copyIntoImpl(e, false, 0);
+            }
+        }
+
+        /**
+         * Enqueues the given element by copying it into this ringbuffer storage.
+         *
+         * `timeoutMS` defaults to zero,
+         * i.e. infinitive blocking until a free slot becomes available via get.<br>
+         * Otherwise this methods blocks for the given milliseconds.
+         *
+         * @return true if successful, otherwise false in case timeout occurred or otherwise.
+         */
+        bool putBlocking(const Value_type & e, const int timeoutMS=0) noexcept {
+            if( multi_pc_enabled ) {
+                std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite); // acquire syncMultiWrite, _not_ sync'ing w/ getImpl
+                return copyIntoImpl(e, true, timeoutMS);
+            } else {
+                return copyIntoImpl(e, true, timeoutMS);
+            }
+        }
+
+        /**
+         * Enqueues the given range of consecutive elements by copying it into this ringbuffer storage.
+         *
+         * Returns true if successful, otherwise false in case buffer is full.
+         *
+         * Method is non blocking and returns immediately;.
+         *
+         * @param first pointer to first consecutive element to range of value_type [first, last)
+         * @param last pointer to last consecutive element to range of value_type [first, last)
+         * @return true if successful, otherwise false
+         */
+        bool put(const Value_type *first, const Value_type* last) noexcept {
+            if( multi_pc_enabled ) {
+                std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite); // acquire syncMultiWrite, _not_ sync'ing w/ getImpl
+                return copyIntoImpl(first, last, false, 0);
+            } else {
+                return copyIntoImpl(first, last, false, 0);
+            }
+        }
+
+        /**
+         * Enqueues the given range of consecutive elementa by copying it into this ringbuffer storage.
+         *
+         * `timeoutMS` defaults to zero,
+         * i.e. infinitive blocking until a free slot becomes available via get.<br>
+         * Otherwise this methods blocks for the given milliseconds.
+         *
+         * @param first pointer to first consecutive element to range of value_type [first, last)
+         * @param last pointer to last consecutive element to range of value_type [first, last)
+         * @param timeoutMS
+         * @return true if successful, otherwise false in case timeout occurred or otherwise.
+         */
+        bool putBlocking(const Value_type *first, const Value_type* last, const int timeoutMS=0) noexcept {
+            if( multi_pc_enabled ) {
+                std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite); // acquire syncMultiWrite, _not_ sync'ing w/ getImpl
+                return copyIntoImpl(first, last, true, timeoutMS);
+            } else {
+                return copyIntoImpl(first, last, true, timeoutMS);
+            }
         }
 };
 

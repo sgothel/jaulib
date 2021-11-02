@@ -132,6 +132,8 @@ class TestRingbuffer11 {
         INFO_STR("\n\ntest01a_Read1Write1\n");
         jau::nsize_t capacity = 100;
         TrivialTypeRingbuffer rb = createEmpty(capacity);
+
+        fprintf(stderr, "test01a_Read1Write1: %s\n", rb.get_info().c_str());
         REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.size());
         REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
 
@@ -148,6 +150,8 @@ class TestRingbuffer11 {
         INFO_STR("\n\ntest01b_Read1Write1_Range\n");
         jau::nsize_t capacity = 100;
         TrivialTypeRingbuffer rb = createEmpty(capacity);
+
+        fprintf(stderr, "test01b_Read1Write1_Range: %s\n", rb.get_info().c_str());
         REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.size());
         REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
 
@@ -164,6 +168,9 @@ class TestRingbuffer11 {
         INFO_STR("\n\ntest02a_Read4Write1\n");
         jau::nsize_t capacity = 400;
         TrivialTypeRingbuffer rb = createEmpty(capacity);
+        rb.setMultiPCEnabled(true);
+
+        fprintf(stderr, "test02a_Read4Write1: %s\n", rb.get_info().c_str());
         REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.size());
         REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
 
@@ -186,6 +193,9 @@ class TestRingbuffer11 {
         INFO_STR("\n\ntest02b_Read4Write1_Range\n");
         jau::nsize_t capacity = 400;
         TrivialTypeRingbuffer rb = createEmpty(capacity);
+        rb.setMultiPCEnabled(true);
+
+        fprintf(stderr, "test02b_Read4Write1_Range: %s\n", rb.get_info().c_str());
         REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.size());
         REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
 
@@ -208,6 +218,9 @@ class TestRingbuffer11 {
         INFO_STR("\n\ntest03a_Read8Write2\n");
         jau::nsize_t capacity = 800;
         TrivialTypeRingbuffer rb = createEmpty(capacity);
+        rb.setMultiPCEnabled(true);
+
+        fprintf(stderr, "test03a_Read8Write2: %s\n", rb.get_info().c_str());
         REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.size());
         REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
 
@@ -242,6 +255,9 @@ class TestRingbuffer11 {
         INFO_STR("\n\ntest03b_Read8Write2_Range\n");
         jau::nsize_t capacity = 800;
         TrivialTypeRingbuffer rb = createEmpty(capacity);
+        rb.setMultiPCEnabled(true);
+
+        fprintf(stderr, "test03b_Read8Write2_Range: %s\n", rb.get_info().c_str());
         REQUIRE_MSG("empty size "+rb.toString(), 0 == rb.size());
         REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
 

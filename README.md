@@ -114,7 +114,10 @@ make doc
 
 **0.7.0**
 
-* To be completed ...
+* ringbuffer: Add notion of operating threading mode for more efficancy:
+  - One producer-thread and one consumer-thread (default)
+  - Multiple producer-threads and multiple consumer-threads
+  See getMultiPCEnabled() and setMultiPCEnabled()
 * ringbuffer API change: Drop whole `NullValue` *angle*, simplifying.
   - Drop `Value_type [get|peek]*()`, use `bool [get|peek]*(Value_type&)` instead
   - Drop `NullValue_type` template type param and `NullValue_type` ctor argument.
