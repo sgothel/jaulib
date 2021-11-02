@@ -606,7 +606,15 @@ class ringbuffer {
                     return false;
                 }
             }
-            new (const_cast<pointer_mutable>(array + localWritePos)) value_type( std::move(e) ); // placement new
+            if constexpr ( is_integral ) {
+                array[localWritePos] = e;
+            } else if constexpr ( uses_memcpy ) {
+                ::memcpy(voidptr_cast(&array[localWritePos]),
+                         &e,
+                         sizeof(Value_type));
+            } else {
+                new (const_cast<pointer_mutable>(array + localWritePos)) value_type( std::move(e) ); // placement new
+            }
             {
                 std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ getImpl via same lock
                 writePos = localWritePos; // SC-DRF release atomic writePos
