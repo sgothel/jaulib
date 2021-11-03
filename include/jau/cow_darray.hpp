@@ -105,9 +105,9 @@ namespace jau {
      * @anchor cow_darray_ntt_params
      * ### Non-Type Template Parameter controlling Value_type memory
      * See @ref darray_ntt_params.
-     * #### `use_memmove`
+     * #### use_memmove
      * `use_memmove` see @ref darray_memmove.
-     * #### `use_secmem`
+     * #### use_secmem
      * `use_secmem` see @ref darray_secmem.
      *
      * See also:

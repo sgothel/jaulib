@@ -95,7 +95,7 @@ namespace jau {
      * @anchor darray_ntt_params
      * ### Non-Type Template Parameter (NTTP) controlling Value_type memory
      * @anchor darray_memmove
-     * #### `use_memmove`
+     * #### use_memmove
      * `use_memmove` can be overriden and defaults to `std::is_trivially_copyable_v<Value_type>`.
      *
      * The default value has been chosen with care, see C++ Standard section 6.9 Types [TriviallyCopyable](https://en.cppreference.com/w/cpp/named_req/TriviallyCopyable).
@@ -129,7 +129,7 @@ namespace jau {
      * - `typedef std::true_type  container_memmove_compliant;`
      *
      * @anchor darray_secmem
-     * #### `use_secmem`
+     * #### use_secmem
      * `use_secmem` can be overriden and defaults to `false`.
      *
      * `use_secmem`, if enabled, ensures that the underlying memory will be zeroed out

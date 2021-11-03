@@ -78,6 +78,7 @@ namespace jau {
  * Full  [.][.][.][.][.][W][R][.] ; W==R-1
  * </pre>
  *
+ *
  * ### Thread Safety
  * Thread safety is guaranteed, considering the mode of operation as described below.
  *
@@ -123,10 +124,10 @@ namespace jau {
  * ### Non-Type Template Parameter (NTTP) controlling Value_type memory
  * See @ref darray_ntt_params.
  *
- * #### `use_memmove`
+ * #### use_memmove
  * `use_memmove` see @ref darray_memmove.
  *
- * #### `use_memcpy`
+ * #### use_memcpy
  * `use_memcpy` has more strict requirements than `use_memmove`,
  * i.e. strictly relies on Value_type being `std::is_trivially_copyable_v<Value_type>`.
  *
@@ -138,7 +139,7 @@ namespace jau {
  * > Objects with trivial destructors don't require a delete-expression and may be disposed of by simply deallocating their storage.
  * > All data types compatible with the C language (POD types) are trivially destructible.`
  *
- * #### `use_secmem`
+ * #### use_secmem
  * `use_secmem` see @ref darray_secmem.
  *
  * @see @ref darray_ntt_params
