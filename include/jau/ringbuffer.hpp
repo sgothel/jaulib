@@ -83,32 +83,35 @@ namespace jau {
  *
  * @anchor ringbuffer_single_pc
  * #### One producer-thread and one consumer-thread
- * Expects one producer-thread at a time and one consumer-thread at a time,
- * where both threads can be different or the same.
+ * Expects one producer-thread at a time and one consumer-thread at a time concurrently.
+ * Threads can be different or the same.
  *
  * This is the default mode with the least std::mutex operations.
  * - Only blocking producer put() and consumer get() waiting for
- * free slots or available data will utilize std::mutex on the counterpart's std::mutex.
- * - Otherwise implementation avoids all std::mutex calls and relies on SC-DRF via
- * std::atomic memory barriers.
+ * free slots or available data will utilize lock and wait for the corresponding operation.
+ * - Otherwise implementation is <i>lock-free</i> and relies on SC-DRF via atomic memory barriers.
  *
  * See setMultiPCEnabled().
  *
  * Implementation is thread safe if:
  * - {@link #put() put*(..)} operations from one producer-thread at a time.
  * - {@link #get() get*(..)} operations from one consumer-thread at a time.
- * - {@link #put() put*(..)} producer and {@link #get() get*(..)} consumer threads may be the same.
+ * - {@link #put() put*(..)} producer and {@link #get() get*(..)} consumer threads can be different or the same.
  *
  * @anchor ringbuffer_multi_pc
  * #### Multiple producer-threads and multiple consumer-threads
  * Expects multiple producer-threads and multiple consumer-threads concurrently.
+ * Threads can be different or the same.
+ *
+ * This operation mode utilizes a specific multi-producer and -consumer lock,
+ * synchronizing {@link #put() put*(..)} and {@link #get() get*(..)} operations separately.
  *
  * Use setMultiPCEnabled() to enable or disable multiple producer and consumer mode.
  *
  * Implementation is thread safe if:
  * - {@link #put() put*(..)} operations concurrently from multiple threads.
  * - {@link #get() get*(..)} operations concurrently from multiple threads.
- * - {@link #put() put*(..)} producer and {@link #get() get*(..)} consumer threads may be the same.
+ * - {@link #put() put*(..)} producer and {@link #get() get*(..)} consumer threads can be different or the same.
  *
  * #### See also
  * - Sequentially Consistent (SC) ordering or SC-DRF (data race free) <https://en.cppreference.com/w/cpp/atomic/memory_order#Sequentially-consistent_ordering>
