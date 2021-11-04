@@ -35,10 +35,10 @@ buildit() {
     cd build-$archabi
     # CLANG_ARGS="-DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++"
     cmake $CLANG_ARGS -DCMAKE_INSTALL_PREFIX=$rootdir/dist-$archabi -DBUILDJAVA=ON -DBUILD_TESTING=ON ..
-    # cmake $CLANG_ARGS -DCMAKE_INSTALL_PREFIX=$rootdir/dist-$archabi -DBUILDJAVA=ON -DBUILDEXAMPLES=ON -DBUILD_TESTING=ON -DDEBUG=ON ..
     make -j $CPU_COUNT install test doc_jau
     if [ $? -eq 0 ] ; then
         echo "BUILD SUCCESS $bname $archabi"
+        tar caf $rootdir/documentation.tar.xz documentation
         cd $rootdir
         return 0
     else
