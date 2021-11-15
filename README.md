@@ -112,6 +112,11 @@ make doc
 
 * First stable release (TODO)
 
+**0.7.2**
+
+* Add helper_jni: checkAndGetObject(..)
+* Refine API doc and add build-doc.sh helper script etc
+
 **0.7.0**
 
 * ringbuffer: Add notion of operating threading mode for more efficancy:
