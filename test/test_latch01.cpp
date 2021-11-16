@@ -48,7 +48,7 @@ class TestLatch01 {
 
   public:
 
-    void test01() {
+    void test01_wait() {
         INFO_STR("\n\ntest01\n");
         const size_t count = 8;
         std::thread tasks[count];
@@ -70,7 +70,31 @@ class TestLatch01 {
             }
         }
     }
+
+    void test02_wait_for() {
+        INFO_STR("\n\ntest02\n");
+        const size_t count = 8;
+        std::thread tasks[count];
+        jau::latch completion(count+1);
+
+        REQUIRE_MSG("not-zero", count+1 == completion.value());
+
+        for(size_t i=0; i<count; i++) {
+            tasks[i] = std::thread(&TestLatch01::something, this, std::ref(completion));
+        }
+        REQUIRE_MSG("complete", true == completion.arrive_and_wait_for(10000 /* timeout_ms */) );
+
+        REQUIRE_MSG("zero", 0 == completion.value());
+        REQUIRE_MSG("8", count == my_counter);
+
+        for(size_t i=0; i<count; i++) {
+            if( tasks[i].joinable() ) {
+                tasks[i].join();
+            }
+        }
+    }
 };
 
-METHOD_AS_TEST_CASE( TestLatch01::test01,      "Test TestLatch01");
+METHOD_AS_TEST_CASE( TestLatch01::test01_wait,      "Test TestLatch01 - test01_wait");
+METHOD_AS_TEST_CASE( TestLatch01::test02_wait_for,  "Test TestLatch01 - test02_wait_for");
 
