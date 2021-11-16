@@ -112,6 +112,12 @@ make doc
 
 * First stable release (TODO)
 
+**0.7.3**
+
+* TODO
+* Add jau::latch
+* ringbuffer: Remove locking mutex before `notify_all`, avoid re-block of notified wait() threads.
+
 **0.7.2**
 
 * Add helper_jni: checkAndGetObject(..)
