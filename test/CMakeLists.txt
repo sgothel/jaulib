@@ -24,6 +24,7 @@ set( SOURCES_IDIOMATIC_EXAMPLES
     test_uuid.cpp
     test_intdecstring01.cpp
     test_functiondef01.cpp
+    test_latch01.cpp
     test_lfringbuffer01.cpp
     test_lfringbuffer02.cpp
     test_lfringbuffer03.cpp

@@ -40,19 +40,21 @@ namespace jau {
      */
     class latch {
         private:
-            std::mutex mtx_cd;
-            std::mutex mtx_cv;
-            std::condition_variable cv;
+            mutable std::mutex mtx_cd;
+            mutable std::mutex mtx_cv;
+            mutable std::condition_variable cv;
             jau::sc_atomic_size_t count;
 
         public:
             /** Returns the maximum value of the internal counter supported by the implementation. */
             static constexpr size_t max() noexcept { return std::numeric_limits<size_t>::max(); }
 
-            constexpr latch(const size_t count_) noexcept
+            latch(const size_t count_) noexcept
             : count(count_) {}
 
             latch(const latch& o) = delete;
+
+            size_t value() const noexcept { return count; }
 
             /**
              * Atomically decrements the internal counter by n
@@ -69,7 +71,7 @@ namespace jau {
                 {
                     std::unique_lock<std::mutex> lock(mtx_cd); // Avoid data-race on concurrent count_down() calls
                     if( n < count ) {
-                        count -= n;
+                        count = count - n;
                         notify = false;
                     } else {
                         count = 0;
@@ -94,7 +96,9 @@ namespace jau {
             void wait() const noexcept {
                 if( 0 < count ) {
                     std::unique_lock<std::mutex> lock(mtx_cv);
-                    cv.wait(lock, [&count]{ return 0 == count; });
+                    while( 0 < count ) {
+                        cv.wait(lock);
+                    }
                 }
             }
 
