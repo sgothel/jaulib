@@ -38,10 +38,13 @@
 using namespace jau;
 
 class TestLatch01 {
-    private:
-        void something(jau::latch& l) {
-            l.count_down();
-        }
+  private:
+    jau::relaxed_atomic_int my_counter = 0;
+
+    void something(jau::latch& l) {
+        my_counter = my_counter + 1;
+        l.count_down();
+    }
 
   public:
 
@@ -59,6 +62,7 @@ class TestLatch01 {
         completion.arrive_and_wait();
 
         REQUIRE_MSG("zero", 0 == completion.value());
+        REQUIRE_MSG("8", count == my_counter);
 
         for(size_t i=0; i<count; i++) {
             if( tasks[i].joinable() ) {
