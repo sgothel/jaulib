@@ -637,7 +637,7 @@ class TestRingbuffer_A {
              * Empty [RW][][ ][ ][ ][ ][ ][ ][ ][ ][ ] ; start
              * Avail [.][W][ ][ ][ ][ ][ ][ ][ ][R][.] ; W < R - 1
              */
-            Value_type dummy;
+            Value_type dummy = getDefault<Value_type>();
             for(jau::nsize_t i=0; i<capacity; i++) { rb.put(dummy); } // fill all
             REQUIRE_MSG("full "+rb.toString(), rb.isFull());
 
