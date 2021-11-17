@@ -114,7 +114,7 @@ make doc
 
 **0.7.3**
 
-* TODO
+* Add `to_string(const ordered_atomic<>&)`, allowing to skip manual '.load()' using `jau::to_string()` etc.
 * Add jau::latch
 * ringbuffer: Remove locking mutex before `notify_all`, avoid re-block of notified wait() threads.
 
