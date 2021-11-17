@@ -209,6 +209,12 @@ template <typename _Tp, std::memory_order _MO> struct ordered_atomic : private s
 
   };
 
+  template <typename _Tp, std::memory_order _MO>
+  std::string to_string(const ordered_atomic<_Tp, _MO> & ref)
+  {
+        return to_string(ref.load());
+  }
+
   /** SC atomic integral scalar boolean. Memory-Model (MM) guaranteed sequential consistency (SC) between acquire (read) and release (write) */
   typedef ordered_atomic<bool, std::memory_order::memory_order_seq_cst> sc_atomic_bool;
 
