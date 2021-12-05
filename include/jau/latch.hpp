@@ -41,7 +41,6 @@ namespace jau {
     class latch {
         private:
             mutable std::mutex mtx_cd;
-            mutable std::mutex mtx_cv;
             mutable std::condition_variable cv;
             jau::sc_atomic_size_t count;
 
@@ -90,7 +89,7 @@ namespace jau {
             void count_down(const size_t n = 1) noexcept {
                 bool notify;
                 {
-                    std::unique_lock<std::mutex> lock(mtx_cd); // Avoid data-race on concurrent count_down() calls
+                    std::unique_lock<std::mutex> lock(mtx_cd); // Avoid data-race on concurrent count_down() and wait*() calls
                     if( n < count ) {
                         count = count - n;
                         notify = false;
@@ -122,7 +121,7 @@ namespace jau {
              */
             void wait() const noexcept {
                 if( 0 < count ) {
-                    std::unique_lock<std::mutex> lock(mtx_cv);
+                    std::unique_lock<std::mutex> lock(mtx_cd);
                     while( 0 < count ) {
                         cv.wait(lock);
                     }
@@ -160,7 +159,7 @@ namespace jau {
             template<typename Rep, typename Period>
             bool wait_for(const std::chrono::duration<Rep, Period>& timeout_duration) const noexcept {
                 if( 0 < count ) {
-                    std::unique_lock<std::mutex> lock(mtx_cv);
+                    std::unique_lock<std::mutex> lock(mtx_cd);
                     while( 0 < count ) {
                         std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
                         std::cv_status s = cv.wait_until(lock, t0 + timeout_duration);
