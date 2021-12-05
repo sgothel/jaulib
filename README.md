@@ -112,9 +112,10 @@ make doc
 
 * First stable release (TODO)
 
-**0.7.4**
+**0.7.5**
 
-* Fix jau::latch and `test_latch01.cpp`
+* Fix jau::ringbuffer (conditional variable lock)
+* Fix jau::latch (conditional variable lock) and `test_latch01.cpp`
 
 **0.7.3**
 
