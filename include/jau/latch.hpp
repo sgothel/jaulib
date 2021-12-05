@@ -159,11 +159,14 @@ namespace jau {
             template<typename Rep, typename Period>
             bool wait_for(const std::chrono::duration<Rep, Period>& timeout_duration) const noexcept {
                 if( 0 < count ) {
+                    std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now() + timeout_duration;
                     std::unique_lock<std::mutex> lock(mtx_cd);
                     while( 0 < count ) {
-                        std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
-                        std::cv_status s = cv.wait_until(lock, t0 + timeout_duration);
-                        if( std::cv_status::timeout == s && 0 < count ) {
+                        std::cv_status s = cv.wait_until(lock, t0);
+                        if( 0 == count ) {
+                            return true;
+                        }
+                        if( std::cv_status::timeout == s ) {
                             return false;
                         }
                     }
