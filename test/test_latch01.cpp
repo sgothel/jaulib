@@ -29,7 +29,8 @@
 #include <thread>
 #include <pthread.h>
 
-#define CATCH_CONFIG_MAIN
+#define CATCH_CONFIG_RUNNER
+// #define CATCH_CONFIG_MAIN
 #include <catch2/catch_amalgamated.hpp>
 #include <jau/test/catch2_ext.hpp>
 
@@ -42,7 +43,7 @@ class TestLatch01 {
     jau::relaxed_atomic_int my_counter = 0;
 
     void something(jau::latch& l) {
-        my_counter = my_counter + 1;
+        my_counter++;
         l.count_down();
     }
 
