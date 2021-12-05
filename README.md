@@ -112,6 +112,10 @@ make doc
 
 * First stable release (TODO)
 
+**0.7.4**
+
+* Fix jau::latch and `test_latch01.cpp`
+
 **0.7.3**
 
 * Add `to_string(const ordered_atomic<>&)`, allowing to skip manual '.load()' using `jau::to_string()` etc.
