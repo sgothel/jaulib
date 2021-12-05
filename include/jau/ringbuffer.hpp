@@ -481,11 +481,10 @@ class ringbuffer {
                 dtor_one( localReadPos );
             }
             {
-                // Pessimization (would re-block notified wait() thread): std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ putImpl via same lock
-                // Also not required as readPos is atomic of memory_order_seq_cst
+                std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ putImpl via same lock
                 readPos = localReadPos; // SC-DRF release atomic readPos
-                cvRead.notify_all(); // notify waiting putter
             }
+            cvRead.notify_all(); // notify waiting putter, have mutex unlocked before notify_all to avoid pessimistic re-block of notified wait() thread.
             return true;
         }
 
@@ -577,11 +576,10 @@ class ringbuffer {
                 localReadPos = ( localReadPos + togo_count - 1 ) % capacityPlusOne; // last read-pos
             }
             {
-                // Pessimization (would re-block notified wait() thread): std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ putImpl via same lock
-                // Also not required as readPos is atomic of memory_order_seq_cst
+                std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ putImpl via same lock
                 readPos = localReadPos; // SC-DRF release atomic readPos
-                cvRead.notify_all(); // notify waiting putter
             }
+            cvRead.notify_all(); // notify waiting putter, have mutex unlocked before notify_all to avoid pessimistic re-block of notified wait() thread.
             return count;
         }
 
@@ -660,11 +658,10 @@ class ringbuffer {
                 localReadPos = ( localReadPos + togo_count - 1 ) % capacityPlusOne; // last read-pos
             }
             {
-                // Pessimization (would re-block notified wait() thread): std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ putImpl via same lock
-                // Also not required as readPos is atomic of memory_order_seq_cst
+                std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ putImpl via same lock
                 readPos = localReadPos; // SC-DRF release atomic readPos
-                cvRead.notify_all(); // notify waiting putter
             }
+            cvRead.notify_all(); // notify waiting putter, have mutex unlocked before notify_all to avoid pessimistic re-block of notified wait() thread.
             return count;
         }
 
@@ -699,11 +696,10 @@ class ringbuffer {
                 new (const_cast<pointer_mutable>(array + localWritePos)) value_type( std::move(e) ); // placement new
             }
             {
-                // Pessimization (would re-block notified wait() thread): std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ getImpl via same lock
-                // Also not required as writePos is atomic of memory_order_seq_cst
+                std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ getImpl via same lock
                 writePos = localWritePos; // SC-DRF release atomic writePos
-                cvWrite.notify_all(); // notify waiting getter
             }
+            cvWrite.notify_all(); // notify waiting getter, have mutex unlocked before notify_all to avoid pessimistic re-block of notified wait() thread.
             return true;
         }
 
@@ -742,11 +738,10 @@ class ringbuffer {
                 new (const_cast<pointer_mutable>(array + localWritePos)) value_type( e ); // placement new
             }
             {
-                // Pessimization (would re-block notified wait() thread): std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ getImpl via same lock
-                // Also not required as writePos is atomic of memory_order_seq_cst
+                std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ getImpl via same lock
                 writePos = localWritePos; // SC-DRF release atomic writePos
-                cvWrite.notify_all(); // notify waiting getter
             }
+            cvWrite.notify_all(); // notify waiting getter, have mutex unlocked before notify_all to avoid pessimistic re-block of notified wait() thread.
             return true;
         }
 
@@ -829,11 +824,10 @@ class ringbuffer {
                 localWritePos = ( localWritePos + togo_count - 1 ) % capacityPlusOne; // last write-pos
             }
             {
-                // Pessimization (would re-block notified wait() thread): std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ getImpl via same lock
-                // Also not required as writePos is atomic of memory_order_seq_cst
+                std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ getImpl via same lock
                 writePos = localWritePos; // SC-DRF release atomic writePos
-                cvWrite.notify_all(); // notify waiting getter
             }
+            cvWrite.notify_all(); // notify waiting getter, have mutex unlocked before notify_all to avoid pessimistic re-block of notified wait() thread.
             return true;
         }
 
