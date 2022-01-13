@@ -100,7 +100,7 @@ namespace jau {
              */
             ~service_runner() noexcept;
 
-            std::string get_name() const noexcept { return name; }
+            const std::string& get_name() const noexcept { return name; }
             pthread_t get_threadid() const noexcept { return thread_id; }
 
             bool is_running() const noexcept { return running; }
@@ -116,8 +116,8 @@ namespace jau {
              *
              * Method attempts to stop the worker thread
              * - by flagging `shall stop`
-             * - sending SIGALRM
-             * - waiting until running and not timeout
+             * - sending `SIGALRM` to the worker thread
+             * - waiting until worker thread has stopped or timeout occurred
              */
             void stop() noexcept;
 
