@@ -51,6 +51,8 @@ namespace jau {
             typedef service_runner& service_runner_ref;
             typedef FunctionDef<void, service_runner_ref> Callback;
 
+            static const pid_t pid_self;
+
         private:
             std::string name;
 
@@ -73,7 +75,34 @@ namespace jau {
 
             void workerThread();
 
+            static bool install_sighandler() noexcept;
+
         public:
+            /**
+             * Remove the sighandler
+             */
+            static bool remove_sighandler() noexcept;
+
+            /**
+             * Install the singleton SIGALRM sighandler instance.
+             * - First call will install the sighandler
+             * - Should be called at least once within the application using jau::service_runner
+             */
+            static bool singleton_sighandler() noexcept {
+                /**
+                 * Thread safe starting with C++11 6.7:
+                 *
+                 * If control enters the declaration concurrently while the variable is being initialized,
+                 * the concurrent execution shall wait for completion of the initialization.
+                 *
+                 * (Magic Statics)
+                 *
+                 * Avoiding non-working double checked locking.
+                 */
+                static bool r = install_sighandler();
+                return r;
+            }
+
             /**
              * Service runner constructor.
              *
@@ -107,17 +136,25 @@ namespace jau {
             bool get_shall_stop() const noexcept { return shall_stop; }
 
             /**
-             * Starts this service
+             * Starts this service, if not running already.
+             *
+             * @see is_running()
              */
             void start() noexcept;
 
             /**
-             * Stops this service
+             * Stops this service, if running.
              *
              * Method attempts to stop the worker thread
              * - by flagging `shall stop`
              * - sending `SIGALRM` to the worker thread
              * - waiting until worker thread has stopped or timeout occurred
+             *
+             * Implementation requires a `SIGALRM` handler to be install,
+             * e.g. using singleton_sighandler().
+             *
+             * @see is_running()
+             * @see singleton_sighandler()
              */
             void stop() noexcept;
 

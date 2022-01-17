@@ -66,6 +66,54 @@ void service_runner::workerThread() {
     service_end_post_notify.invoke(*this);
 }
 
+const pid_t service_runner::pid_self = getpid();
+
+static void sigaction_handler(int sig, siginfo_t *info, void *ucontext) noexcept {
+    bool pidMatch = info->si_pid == service_runner::pid_self;
+    WORDY_PRINT("service_runner.sigaction: sig %d, info[code %d, errno %d, signo %d, pid %d, uid %d, fd %d], pid-self %d (match %d)",
+            sig, info->si_code, info->si_errno, info->si_signo,
+            info->si_pid, info->si_uid, info->si_fd,
+            service_runner::pid_self, pidMatch);
+    (void)ucontext;
+
+    if( !pidMatch || SIGALRM != sig ) {
+        return;
+    }
+#if 0
+    // We do not de-install the handler on single use,
+    // as we act for multiple SIGALRM events within direct-bt
+    remove_sighandler();
+#endif
+}
+
+bool service_runner::install_sighandler() noexcept {
+    struct sigaction sa_setup;
+    bzero(&sa_setup, sizeof(sa_setup));
+    sa_setup.sa_sigaction = sigaction_handler;
+    sigemptyset(&(sa_setup.sa_mask));
+    sa_setup.sa_flags = SA_SIGINFO;
+    if( 0 != sigaction( SIGALRM, &sa_setup, NULL ) ) {
+        ERR_PRINT("service_runner::install_sighandler: Setting sighandler");
+        return false;
+    }
+    DBG_PRINT("service_runner::install_sighandler: OK");
+    return true;
+}
+
+bool service_runner::remove_sighandler() noexcept {
+    struct sigaction sa_setup;
+    bzero(&sa_setup, sizeof(sa_setup));
+    sa_setup.sa_handler = SIG_DFL;
+    sigemptyset(&(sa_setup.sa_mask));
+    sa_setup.sa_flags = 0;
+    if( 0 != sigaction( SIGALRM, &sa_setup, NULL ) ) {
+        ERR_PRINT("service_runner::remove_sighandler: Resetting sighandler");
+        return false;
+    }
+    DBG_PRINT("service_runner::remove_sighandler: OK");
+    return true;
+}
+
 service_runner::service_runner(const std::string& name_,
                                nsize_t service_shutdown_timeout_ms_,
                                Callback service_work_,
@@ -97,6 +145,11 @@ void service_runner::start() noexcept {
      */
     std::unique_lock<std::mutex> lock(mtx_lifecycle); // RAII-style acquire and relinquish via destructor
 
+    if( running ) {
+        DBG_PRINT("%s::start: End.0: %s", name.c_str(), toString().c_str());
+        return;
+    }
+
     std::thread t(&service_runner::workerThread, this); // @suppress("Invalid arguments")
     thread_id = t.native_handle();
     // Avoid 'terminate called without an active exception'
@@ -106,7 +159,7 @@ void service_runner::start() noexcept {
     while( false == running ) {
         cv_init.wait(lock);
     }
-    DBG_PRINT("%s::start: End: %s", name.c_str(), toString().c_str());
+    DBG_PRINT("%s::start: End.X: %s", name.c_str(), toString().c_str());
 }
 
 void service_runner::stop() noexcept {
