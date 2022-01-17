@@ -112,7 +112,7 @@ make doc
 
 * First stable release (TODO)
 
-**0.7.8**
+**0.7.9**
 
 * Added `jau::service_runner`, a reusable dedicated thread performing custom user services.
 * Fix jau::ringbuffer (conditional variable lock)
