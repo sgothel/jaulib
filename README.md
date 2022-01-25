@@ -112,8 +112,9 @@ make doc
 
 * First stable release (TODO)
 
-**0.7.9**
+**0.7.10**
 
+* Fixes for clang++ 11.0.1-2
 * Added `jau::service_runner`, a reusable dedicated thread performing custom user services.
 * Fix jau::ringbuffer (conditional variable lock)
 * Fix jau::latch (conditional variable lock) and `test_latch01.cpp`
