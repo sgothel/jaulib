@@ -558,7 +558,7 @@ class TestRingbuffer_A {
              * Empty [RW][][ ][  ][ ][ ][ ][ ][ ][ ][ ] ; start
              * Empty [ ][ ][ ][RW][ ][ ][ ][ ][ ][ ][ ]
              */
-            Value_type dummy;
+            Value_type dummy = getDefault<Value_type>();
             rb.put(dummy);
             rb.put(dummy);
             rb.put(dummy);
@@ -593,7 +593,7 @@ class TestRingbuffer_A {
              * Empty [RW][][ ][ ][ ][ ][ ][ ][ ][ ][ ] ; start
              * Avail [ ][ ][R][.][W][ ][ ][ ][ ][ ][ ] ; W > R
              */
-            Value_type dummy;
+            Value_type dummy = getDefault<Value_type>();
             rb.put(dummy); // r idx 0 -> 1
             rb.put(dummy);
             rb.put(dummy);

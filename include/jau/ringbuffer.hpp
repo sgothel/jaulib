@@ -1026,7 +1026,11 @@ class ringbuffer {
          * @see getMultiPCEnabled()
          * @see setMultiPCEnabled()
          */
-        constexpr void setMultiPCEnabled(const bool v) {
+        constexpr_non_literal_var void setMultiPCEnabled(const bool v) {
+            /**
+             * Using just 'constexpr_non_literal_var' because
+             * clang: 'unique_lock<std::mutex>' is not literal because it is not an aggregate and has no constexpr constructors other than copy or move constructors
+             */
             if( multi_pc_enabled ) {
                 std::unique_lock<std::mutex> lockMultiRead(syncMultiRead, std::defer_lock);          // same for *this instance!
                 std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite, std::defer_lock);
