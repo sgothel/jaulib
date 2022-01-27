@@ -161,6 +161,59 @@ uint128_t jau::merge_uint128(uint32_t const uuid32, uint128_t const & base_uuid,
     return dest;
 }
 
+
+static snsize_t hexCharByte_(const char c)
+{
+  if('0' <= c && c <= '9') {
+      return c - '0';
+  }
+  if('A' <= c && c <= 'F') {
+      return c - 'A' + 10;
+  }
+  if('a' <= c && c <= 'f') {
+      return c - 'a' + 10;
+  }
+  return -1;
+}
+
+nsize_t jau::hexStringBytes(std::vector<uint8_t>& out, const std::string& hexstr, const bool lsbFirst, const bool checkLeading0x) noexcept {
+    ssize_t offset;
+    if( checkLeading0x && hexstr.size() >= 2 && hexstr[0] == '0' && hexstr[1] == 'x' ) {
+        offset = 2;
+    } else {
+        offset = 0;
+    }
+    const ssize_t size = ( hexstr.size() - offset ) / 2;
+    out.clear();
+    out.reserve(size);
+    if( lsbFirst ) {
+        for (ssize_t i = 0; i < size; i++) {
+            const nsize_t idx = i * 2;
+            const snsize_t h = hexCharByte_( hexstr[ offset + idx ] );
+            const snsize_t l = hexCharByte_( hexstr[ offset + idx + 1 ] );
+            if( 0 <= h && 0 <= l ) {
+                out.push_back( static_cast<uint8_t>( (h << 4) + l ) );
+            } else {
+                // invalid char
+                return out.size();
+            }
+        }
+    } else {
+        for(ssize_t idx = (size-1)*2; idx >= 0; idx-=2) {
+            const snsize_t h = hexCharByte_( hexstr[ offset + idx ] );
+            const snsize_t l = hexCharByte_( hexstr[ offset + idx + 1 ] );
+            if( 0 <= h && 0 <= l ) {
+                out.push_back( static_cast<uint8_t>( (h << 4) + l ) );
+            } else {
+                // invalid char
+                return out.size();
+            }
+        }
+    }
+    return out.size();
+}
+
+
 static const char* HEX_ARRAY_LOW = "0123456789abcdef";
 static const char* HEX_ARRAY_BIG = "0123456789ABCDEF";
 

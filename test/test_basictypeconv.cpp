@@ -344,3 +344,26 @@ TEST_CASE( "Integer Get/Put in explicit Byte Order Test 03", "[byteorder][get][p
     }
 }
 
+TEST_CASE( "HexString from and to byte vector conversion - Test 04", "[hexstring]" ) {
+    const std::vector<uint8_t> lalaSink1 = { 0x1a, 0x1b, 0x2a, 0x2b, 0xff };
+    {
+        const std::string value_s0 = "1a1b2a2bff";
+        const std::string value_s1 = jau::bytesHexString(lalaSink1.data(), 0, lalaSink1.size(), true /* lsbFirst */);
+        std::vector<uint8_t> lalaSink2;
+        jau::hexStringBytes(lalaSink2, value_s1, true /* lsbFirst */, false);
+        const std::string value_s2 = jau::bytesHexString(lalaSink2.data(), 0, lalaSink2.size(), true /* lsbFirst */);
+        REQUIRE( value_s0 == value_s1 );
+        REQUIRE( value_s0 == value_s2 );
+        // Assert.assertArrayEquals(lalaSink1, lalaSink2);
+    }
+    {
+        const std::string value_s0 = "0xff2b2a1b1a";
+        const std::string value_s1 = jau::bytesHexString(lalaSink1.data(), 0, lalaSink1.size(), false /* lsbFirst */);
+        std::vector<uint8_t> lalaSink2;
+        jau::hexStringBytes(lalaSink2, value_s1, false /* lsbFirst */, true);
+        const std::string value_s2 = jau::bytesHexString(lalaSink2.data(), 0, lalaSink2.size(), false /* lsbFirst */);
+        REQUIRE( value_s0 == value_s1 );
+        REQUIRE( value_s0 == value_s2 );
+        // Assert.assertArrayEquals(lalaSink1, lalaSink2);
+    }
+}

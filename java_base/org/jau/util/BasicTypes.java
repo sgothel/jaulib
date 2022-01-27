@@ -40,6 +40,58 @@ public class BasicTypes {
     }
 
     /**
+     * Converts a given hexadecimal string representation to a byte array.
+     *
+     * In case a non valid hexadecimal digit appears in the given string,
+     * conversion ends and returns the byte array up until the violation.
+     *
+     * @param hexstr the hexadecimal string representation
+     * @param lsbFirst low significant byte first
+     * @param checkLeading0x if true, checks for a leading `0x` and removes it, otherwise not.
+     * @return the matching byte array
+     */
+    public static byte[] hexStringBytes(final String hexstr, final boolean lsbFirst, final boolean checkLeading0x) {
+        final int offset;
+        if( checkLeading0x && hexstr.startsWith("0x") ) {
+            offset = 2;
+        } else {
+            offset = 0;
+        }
+        final int size = ( hexstr.length() - offset ) / 2;
+        final byte[] b = new byte[size];
+        if( lsbFirst ) {
+            for (int i = 0; i < b.length; i++) {
+                final int idx = i * 2;
+                final int h = Character.digit( hexstr.charAt( offset + idx ), 16 );
+                final int l = Character.digit( hexstr.charAt( offset + idx + 1 ), 16 );
+                if( 0 <= h && 0 <= l ) {
+                    b[i] = (byte) ( (h << 4) + l );
+                } else {
+                    // invalid char
+                    final byte[] b2 = new byte[i];
+                    System.arraycopy(b, 0, b2, 0, i);
+                    return b2;
+                }
+            }
+        } else {
+            int i=0;
+            for (int idx = (b.length-1)*2; idx >= 0; idx-=2, i++) {
+                final int h = Character.digit( hexstr.charAt( offset + idx ), 16);
+                final int l = Character.digit( hexstr.charAt( offset + idx + 1 ), 16);
+                if( 0 <= h && 0 <= l ) {
+                    b[i] = (byte) ( (h << 4) + l );
+                } else {
+                    // invalid char
+                    final byte[] b2 = new byte[i];
+                    System.arraycopy(b, 0, b2, 0, i);
+                    return b2;
+                }
+            }
+        }
+        return b;
+    }
+
+    /**
      * Produce a lower-case hexadecimal string representation of the given byte values.
      * <p>
      * If lsbFirst is true, orders LSB left -> MSB right, usual for byte streams. Result will not have a leading `0x`.<br>
@@ -80,10 +132,11 @@ public class BasicTypes {
             hexChars = new char[2 + byte_len * 2];
             hexChars[0] = '0';
             hexChars[1] = 'x';
-            for (int j = byte_len-1; j >= 0; j--) {
+            int k=0;
+            for (int j = byte_len-1; j >= 0; j--, k++) {
                 final int v = bytes[offset + j] & 0xFF;
-                hexChars[char_offset + j * 2] = hex_array[v >>> 4];
-                hexChars[char_offset + j * 2 + 1] = hex_array[v & 0x0F];
+                hexChars[char_offset + k * 2] = hex_array[v >>> 4];
+                hexChars[char_offset + k * 2 + 1] = hex_array[v & 0x0F];
             }
         }
         return new String(hexChars);
