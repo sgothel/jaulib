@@ -112,8 +112,9 @@ make doc
 
 * First stable release (TODO)
 
-**0.7.10**
+**0.7.11**
 
+* Add Java/C++ hexStringBytes(..); Fix Java's bytesHexString(..) path !lsbFirst; Add unit tests
 * Fixes for clang++ 11.0.1-2
 * Added `jau::service_runner`, a reusable dedicated thread performing custom user services.
 * Fix jau::ringbuffer (conditional variable lock)
