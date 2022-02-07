@@ -1,5 +1,6 @@
 build*/
 dist*/
+issues/
 
 # Object files
 *.o
@@ -15,7 +16,7 @@ dist*/
 *.swp
 *.swo
 *~
-#*.log
+*.log
 
 # Eclipse files
 #.cproject
