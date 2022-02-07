@@ -112,6 +112,10 @@ make doc
 
 * First stable release (TODO)
 
+**0.7.12**
+
+* git version info: Added post-tag: `VERSION_COMMITS` and `VERSION_SHA1_SHORT`. `VERSION_LONG` reflects post-tag and dirty. Added mapping to project version var-names.
+
 **0.7.11**
 
 * Add Java/C++ hexStringBytes(..); Fix Java's bytesHexString(..) path !lsbFirst; Add unit tests
