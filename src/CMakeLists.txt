@@ -27,7 +27,7 @@ target_link_libraries (
 
 if(USE_STRIP)
 add_custom_command(TARGET jaulib POST_BUILD
-                   COMMAND ${STRIP} ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}jaulib${CMAKE_SHARED_LIBRARY_SUFFIX}.${jaulib_VERSION_STRING}
+                   COMMAND ${STRIP} ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}jaulib${CMAKE_SHARED_LIBRARY_SUFFIX}.${jaulib_VERSION_SHORT}
                    COMMENT "stripping jaulib"
                    VERBATIM
                    )
@@ -37,7 +37,7 @@ set_target_properties(
    jaulib
    PROPERTIES
    SOVERSION ${jaulib_VERSION_MAJOR}
-   VERSION ${jaulib_VERSION_STRING}
+   VERSION ${jaulib_VERSION_SHORT}
 )
 install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../include/jau/ DESTINATION include/jau)
 

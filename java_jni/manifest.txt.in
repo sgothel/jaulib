@@ -3,19 +3,19 @@ Bundle-Date: @BUILD_TSTAMP@
 Bundle-ManifestVersion: 2
 Bundle-Name: org.jau.sys.dl
 Bundle-SymbolicName: org.jau.sys.dl
-Bundle-Version: @VERSION_SHORT@
+Bundle-Version: @jaulib_VERSION_SHORT@
 Export-Package: org.jau.sys.dl
 Require-Capability: osgi.ee;filter:="(&(osgi.ee=JavaSE)(version=1.9))"
 Package-Title: org.jau.sys.dl
 Package-Vendor: Gothel Software
-Package-Version: @VERSION_SHORT@
+Package-Version: @jaulib_VERSION_SHORT@
 Specification-Title: Jaulib JNI
 Specification-Vendor: Gothel Software
-Specification-Version: @VERSION_API@
+Specification-Version: @jaulib_VERSION_API@
 Implementation-Title: Jaulib JNI
 Implementation-Vendor: Gothel Software
-Implementation-Version: @VERSION@
-Implementation-Commit: @VERSION_SHA1@
+Implementation-Version: @jaulib_VERSION_LONG@
+Implementation-Commit: @jaulib_VERSION_SHA1@
 Implementation-URL: http://www.jausoft.com/
 Extension-Name: org.jau.sys.dl
 Trusted-Library: true

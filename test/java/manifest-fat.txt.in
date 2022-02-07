@@ -3,19 +3,19 @@ Bundle-Date: @BUILD_TSTAMP@
 Bundle-ManifestVersion: 2
 Bundle-Name: org.jau.test
 Bundle-SymbolicName: org.jau.test
-Bundle-Version: @VERSION_SHORT@
+Bundle-Version: @jaulib_VERSION_SHORT@
 Export-Package: org.jau.test
 Require-Capability: osgi.ee;filter:="(&(osgi.ee=JavaSE)(version=1.9))"
 Package-Title: org.jau.test
 Package-Vendor: Gothel Software
-Package-Version: @VERSION_SHORT@
+Package-Version: @jaulib_VERSION_SHORT@
 Specification-Title: Jaulib Fat Unit Tests
 Specification-Vendor: Gothel Software
-Specification-Version: @VERSION_API@
+Specification-Version: @jaulib_VERSION_API@
 Implementation-Title: Jaulib Fat Unit Tests
 Implementation-Vendor: Gothel Software
-Implementation-Version: @VERSION@
-Implementation-Commit: @VERSION_SHA1@
+Implementation-Version: @jaulib_VERSION_LONG@
+Implementation-Commit: @jaulib_VERSION_SHA1@
 Implementation-URL: http://www.jausoft.com/
 Extension-Name: org.jau.test
 Trusted-Library: true

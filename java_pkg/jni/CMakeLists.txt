@@ -22,7 +22,7 @@ target_link_libraries(jaulib_pkg_jni ${JNI_LIBRARIES})
 
 if(USE_STRIP)
 add_custom_command(TARGET jaulib_pkg_jni POST_BUILD
-                   COMMAND ${STRIP} ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}jaulib_pkg_jni${CMAKE_SHARED_LIBRARY_SUFFIX}.${jaulib_VERSION_STRING}
+                   COMMAND ${STRIP} ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}jaulib_pkg_jni${CMAKE_SHARED_LIBRARY_SUFFIX}.${jaulib_VERSION_SHORT}
                    COMMENT "stripping jaulib_pkg_jni"
                    VERBATIM
                    )
@@ -32,7 +32,7 @@ set_target_properties(
     jaulib_pkg_jni
     PROPERTIES
     SOVERSION ${jaulib_VERSION_MAJOR}
-    VERSION ${jaulib_VERSION_STRING}
+    VERSION ${jaulib_VERSION_SHORT}
 )
 
 install(TARGETS jaulib_pkg_jni LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})

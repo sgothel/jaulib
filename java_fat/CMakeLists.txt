@@ -18,13 +18,13 @@ add_custom_command (OUTPUT ${jaulib_jar_file} ${jaulib_fat_jar_file} ${jaulib_ja
                     COMMAND ${CMAKE_COMMAND}
                             -D_srcdir=${CMAKE_CURRENT_BINARY_DIR}/../java_jni/jni
                             -D_dstdir=${CMAKE_CURRENT_BINARY_DIR}/natives/${OS_AND_ARCH}
-                            -D_srcbasename=${CMAKE_SHARED_LIBRARY_PREFIX}jaulib_jni_jni${CMAKE_SHARED_LIBRARY_SUFFIX}.${jaulib_VERSION_STRING}
+                            -D_srcbasename=${CMAKE_SHARED_LIBRARY_PREFIX}jaulib_jni_jni${CMAKE_SHARED_LIBRARY_SUFFIX}.${jaulib_VERSION_SHORT}
                             -D_dstbasename=${CMAKE_SHARED_LIBRARY_PREFIX}jaulib_jni_jni${CMAKE_SHARED_LIBRARY_SUFFIX}
                             -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/modules/FileCopyS2D.cmake
                     COMMAND ${CMAKE_COMMAND}
                             -D_srcdir=${CMAKE_CURRENT_BINARY_DIR}/../java_pkg/jni
                             -D_dstdir=${CMAKE_CURRENT_BINARY_DIR}/natives/${OS_AND_ARCH}
-                            -D_srcbasename=${CMAKE_SHARED_LIBRARY_PREFIX}jaulib_pkg_jni${CMAKE_SHARED_LIBRARY_SUFFIX}.${jaulib_VERSION_STRING}
+                            -D_srcbasename=${CMAKE_SHARED_LIBRARY_PREFIX}jaulib_pkg_jni${CMAKE_SHARED_LIBRARY_SUFFIX}.${jaulib_VERSION_SHORT}
                             -D_dstbasename=${CMAKE_SHARED_LIBRARY_PREFIX}jaulib_pkg_jni${CMAKE_SHARED_LIBRARY_SUFFIX}
                             -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/modules/FileCopyS2D.cmake
                     COMMAND ${JAR}

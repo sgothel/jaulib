@@ -12,14 +12,20 @@ FIND_PACKAGE (Threads REQUIRED)
 include(JaulibSetup.cmake)
 JaulibSetup()
 
+# this is the library version, derived from git tag and revision
+set (jaulib_VERSION_MAJOR      ${VERSION_MAJOR})
+set (jaulib_VERSION_MINOR      ${VERSION_MINOR})
+set (jaulib_VERSION_PATCH      ${VERSION_PATCH})
+set (jaulib_VERSION_COMMITS    ${VERSION_COMMITS})
+set (jaulib_VERSION_SHA1       ${VERSION_SHA1})
+set (jaulib_VERSION_SHA1_SHORT ${VERSION_SHA1_SHORT})
+set (jaulib_GIT_DIRTY          ${GIT_WORKDIR_DIRTY})
+set (jaulib_VERSION_LONG       ${VERSION_LONG})
+set (jaulib_VERSION_SHORT      ${VERSION_SHORT})
+set (jaulib_VERSION_API        ${VERSION_API})
+
 configure_file (${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/version.cpp.in
                 ${CMAKE_CURRENT_BINARY_DIR}/src/version.cpp)
-
-# this is the library version, independant of git revision
-set (jaulib_VERSION_MAJOR ${VERSION_MAJOR})
-set (jaulib_VERSION_MINOR ${VERSION_MINOR})
-set (jaulib_VERSION_PATCH ${VERSION_PATCH})
-set (jaulib_VERSION_STRING "${jaulib_VERSION_MAJOR}.${jaulib_VERSION_MINOR}.${jaulib_VERSION_PATCH}")
 
 set (CMAKE_SWIG_FLAGS "")
 
