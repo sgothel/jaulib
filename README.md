@@ -112,6 +112,8 @@ make doc
 
 * First stable release (TODO)
 
+* SIGSEGV workaround in `jau::get_backtrace(..)` of libunwind [1.3 - 1.6.2]'s `unw_step(..)` using g++ 10.2.1 aarch64: Disable Optimization
+
 **0.7.12**
 
 * git version info: Added post-tag: `VERSION_COMMITS` and `VERSION_SHA1_SHORT`. `VERSION_LONG` reflects post-tag and dirty. Added mapping to project version var-names.
