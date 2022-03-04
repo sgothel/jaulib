@@ -33,6 +33,16 @@
 
 using namespace jau;
 
+/**
+ * On aarch64 using g++ (Debian 10.2.1-6) 10.2.1 20210110
+ * optimization of `jau::get_backtrace(..)` leads to a SIGSEGV
+ * on libunwind version [1.3 - 1.6.2] function `unw_step(..)`
+ */
+#if defined(__GNUC__) && ! defined(__clang__)
+    #pragma GCC push_options
+    #pragma GCC optimize("-O0")
+#endif
+
 std::string jau::get_backtrace(const bool skip_anon_frames, const jau::snsize_t max_frames, const jau::snsize_t skip_frames) noexcept {
     // symbol:
     //  1: _ZN9direct_bt10DBTAdapter14startDiscoveryEbNS_19HCILEOwnAddressTypeEtt + 0x58d @ ip 0x7faa959d6daf, sp 0x7ffe38f301e0
@@ -100,6 +110,10 @@ std::string jau::get_backtrace(const bool skip_anon_frames, const jau::snsize_t 
     }
     return out;
 }
+
+#if defined(__GNUC__) && ! defined(__clang__)
+    #pragma GCC pop_options
+#endif
 
 void jau::print_backtrace(const bool skip_anon_frames, const jau::snsize_t max_frames, const jau::snsize_t skip_frames) noexcept {
     fprintf(stderr, "%s", get_backtrace(skip_anon_frames, max_frames, skip_frames).c_str());
