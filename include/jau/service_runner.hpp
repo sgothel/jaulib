@@ -129,10 +129,27 @@ namespace jau {
              */
             ~service_runner() noexcept;
 
+            /**
+             * Return the given name of this service
+             */
             const std::string& get_name() const noexcept { return name; }
+
+            /**
+             * Return the thread-id of this service worker thread, zero if not running.
+             */
             pthread_t get_threadid() const noexcept { return thread_id; }
 
+            /**
+             * Returns true if service is running
+             */
             bool is_running() const noexcept { return running; }
+
+            /**
+             * Returns true if service shall stop.
+             *
+             * This flag can be used by the service_work Callback to determine whether to skip lengthly tasks,
+             * or even to skip stopping this service (again).
+             */
             bool get_shall_stop() const noexcept { return shall_stop; }
 
             /**
