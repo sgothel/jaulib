@@ -43,9 +43,9 @@ namespace jau {
      * Discussion: It is contemplated to add an implementation using a unique singleton service_runner
      * for multiple timer instances via event loops.
      */
-    class SimpleTimer {
+    class simple_timer {
         public:
-            typedef SimpleTimer& Timer0_ref;
+            typedef simple_timer& Timer0_ref;
 
             /**
              * User defined timer function using millisecond granularity.
@@ -80,8 +80,8 @@ namespace jau {
             }
 
         public:
-            SimpleTimer(const std::string& name, const nsize_t service_shutdown_timeout_ms) noexcept
-            : timer_service(name, service_shutdown_timeout_ms, jau::bindMemberFunc(this, &SimpleTimer::timer_worker)),
+            simple_timer(const std::string& name, const nsize_t service_shutdown_timeout_ms) noexcept
+            : timer_service(name, service_shutdown_timeout_ms, jau::bindMemberFunc(this, &simple_timer::timer_worker)),
               timer_func_ms(), duration_ms(0)
             {}
 
@@ -89,12 +89,29 @@ namespace jau {
              * No copy constructor nor move constructor.
              * @param o
              */
-            SimpleTimer(const SimpleTimer& o) = delete;
+            simple_timer(const simple_timer& o) = delete;
+
+            /**
+             * Return the given name of this timer
+             */
+            const std::string& get_name() const noexcept { return timer_service.get_name(); }
+
+            /**
+             * Return the thread-id of this timer's worker thread, zero if not running.
+             */
+            pthread_t get_threadid() const noexcept { return timer_service.get_threadid(); }
 
             /**
              * Returns true if timer is running
              */
             bool is_running() const { return timer_service.is_running(); }
+
+            /**
+             * Returns true if timer shall stop.
+             *
+             * This flag can be used by the Timer_func_ms function to determine whether to skip lengthly tasks.
+             */
+            bool get_shall_stop() const noexcept { return timer_service.get_shall_stop(); }
 
             /**
              * Start the timer with given user Timer_func_ms function and initial duration in milliseconds.
@@ -135,7 +152,7 @@ namespace jau {
             }
 
             /**
-             * Stop timer
+             * Stop timer, see service_runner::stop()
              */
             void stop() {
                 timer_service.stop();
