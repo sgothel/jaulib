@@ -37,6 +37,17 @@
 
 namespace jau {
 
+    enum class FunctionType : int {
+        Null = 0,
+        Class = 1,
+        Plain = 2,
+        Capture = 3,
+        Std = 4
+    };
+    constexpr int number(const FunctionType rhs) noexcept {
+        return static_cast<int>(rhs);
+    }
+
     /**
      * One goal to _produce_ the member-function type instance
      * is to be class type agnostic for storing in the toolkit.
@@ -88,7 +99,7 @@ namespace jau {
             InvocationFunc& operator=(InvocationFunc &&o) noexcept = default;
 
             /** Poor man's RTTI */
-            virtual int getType() const noexcept = 0;
+            virtual FunctionType getType() const noexcept = 0;
 
             virtual InvocationFunc<R, A...> * clone() const noexcept = 0;
 
@@ -106,7 +117,7 @@ namespace jau {
         public:
             NullInvocationFunc() noexcept { }
 
-            int getType() const noexcept override { return 0; }
+            FunctionType getType() const noexcept override { return FunctionType::Null; }
 
             InvocationFunc<R, A...> * clone() const noexcept override { return new NullInvocationFunc(); }
 
@@ -140,7 +151,7 @@ namespace jau {
             : base(_base), member(_member) {
             }
 
-            int getType() const noexcept override { return 1; }
+            FunctionType getType() const noexcept override { return FunctionType::Class; }
 
             InvocationFunc<R, A...> * clone() const noexcept override { return new ClassInvocationFunc(*this); }
 
@@ -181,7 +192,7 @@ namespace jau {
             : function(_function) {
             }
 
-            int getType() const noexcept override { return 2; }
+            FunctionType getType() const noexcept override { return FunctionType::Plain; }
 
             InvocationFunc<R, A...> * clone() const noexcept override { return new PlainInvocationFunc(*this); }
 
@@ -230,7 +241,7 @@ namespace jau {
             : data(std::move(_data)), function(_function), dataIsIdentity(dataIsIdentity_) {
             }
 
-            int getType() const noexcept override { return 3; }
+            FunctionType getType() const noexcept override { return FunctionType::Capture; }
 
             InvocationFunc<R, A...> * clone() const noexcept override { return new CaptureInvocationFunc(*this); }
 
@@ -275,7 +286,7 @@ namespace jau {
             : id(_id), function() {
             }
 
-            int getType() const noexcept override { return 10; }
+            FunctionType getType() const noexcept override { return FunctionType::Std; }
 
             InvocationFunc<R, A...> * clone() const noexcept override { return new StdInvocationFunc(*this); }
 
@@ -340,6 +351,8 @@ namespace jau {
 
             bool operator!=(const FunctionDef<R, A...>& rhs) const noexcept
             { return *func != *rhs.func; }
+
+            FunctionType getType() const noexcept { return func->getType(); }
 
             /** Returns the shared InvocationFunc<R, A...> function */
             std::shared_ptr<InvocationFunc<R, A...>> getFunction() noexcept { return func; }
