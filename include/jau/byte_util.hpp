@@ -63,6 +63,8 @@ namespace jau {
         #define __has_builtin_bswap64 1
     #endif
 
+    // Remember: constexpr specifier used in a function or static data member (since C++17) declaration implies inline.
+
     constexpr uint16_t bswap(uint16_t const source) noexcept {
         #if defined __has_builtin_bswap16
             return __builtin_bswap16(source);
@@ -98,9 +100,10 @@ namespace jau {
         #endif
     }
 
-    constexpr void bswap(uint8_t * const sink, uint8_t const * const source, nsize_t const len) {
-        for(nsize_t i=0; i < len; ++i) {
-            sink[i] = source[len-1-i];
+    constexpr void bswap(uint8_t * sink, uint8_t const * source, nsize_t len) {
+        source += len - 1;
+        for (; len > 0; len--) {
+            *sink++ = *source--;
         }
     }
 
