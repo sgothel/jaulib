@@ -117,7 +117,7 @@ EUI48Sub::EUI48Sub(const uint8_t * b_, const jau::nsize_t len_, const endian byt
     const jau::nsize_t cpsz = std::max<jau::nsize_t>(sizeof(b), len_);
     const jau::nsize_t bzsz = sizeof(b) - cpsz;
 
-    if( endian::little == byte_order ) {
+    if( endian::native == byte_order ) {
         memcpy(b, b_, cpsz);
     } else {
         bswap(b, b_, cpsz);
@@ -234,7 +234,7 @@ EUI48::EUI48(const std::string& str) {
 
 EUI48::EUI48(const uint8_t * source, const endian byte_order) noexcept {
     static_assert(isLittleOrBigEndian()); // one static_assert is sufficient for whole compilation unit
-    if( endian::little == byte_order ) {
+    if( endian::native == byte_order ) {
         memcpy(b, source, sizeof(b));
     } else {
         bswap_6bytes(b, source);
