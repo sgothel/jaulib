@@ -22,8 +22,8 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef JAU_SERVICERUNNER_HPP_
-#define JAU_SERVICERUNNER_HPP_
+#ifndef JAU_SERVICE_RUNNER_HPP_
+#define JAU_SERVICE_RUNNER_HPP_
 
 #include <cstring>
 #include <string>
@@ -54,21 +54,20 @@ namespace jau {
             static const pid_t pid_self;
 
         private:
-            std::string name;
+            std::string name_;
 
             /**
-             * Maximum time in milliseconds to wait for a thread shutdown.
+             * Maximum time in milliseconds to wait for a thread shutdown or zero to wait infinitely.
              */
-            nsize_t service_shutdown_timeout_ms;
+            nsize_t service_shutdown_timeout_ms_;
 
             Callback service_work;
             Callback service_init_locked;
             Callback service_end_locked;
-            Callback service_end_post_notify;
 
-            jau::sc_atomic_bool shall_stop;
+            jau::sc_atomic_bool shall_stop_;
             jau::sc_atomic_bool running;
-            pthread_t thread_id;
+            pthread_t thread_id_;
 
             std::mutex mtx_lifecycle;
             std::condition_variable cv_init;
@@ -109,18 +108,16 @@ namespace jau {
              * start() shall be issued to kick off this service.
              *
              * @param name service name
-             * @param service_shutdown_timeout_ms maximum time in milliseconds to wait for a thread shutdown, may be nullptr
+             * @param service_shutdown_timeout_ms maximum time in milliseconds to wait for stop() and join(), where zero waits infinitely
              * @param service_work service working function
              * @param service_init_locked optional service init function, lifecycle mutex is locked
              * @param service_end_locked optional service end function, lifecycle mutex is locked
-             * @param service_end_post_notify optional service end function post mutex lock and notify
              */
             service_runner(const std::string& name,
                            const nsize_t service_shutdown_timeout_ms,
                            Callback service_work,
                            Callback service_init_locked = Callback(),
-                           Callback service_end_locked = Callback(),
-                           Callback service_end_post_notify = Callback()) noexcept;
+                           Callback service_end_locked = Callback()) noexcept;
 
             /**
              * Service runner destructor.
@@ -132,15 +129,26 @@ namespace jau {
             /**
              * Return the given name of this service
              */
-            const std::string& get_name() const noexcept { return name; }
+            const std::string& name() const noexcept { return name_; }
+
+            /**
+             * Returns maximum time in milliseconds to wait for stop() and join(), where zero waits infinitely.
+             * @see stop()
+             * @see join()
+             */
+            nsize_t service_shutdown_timeout_ms() const noexcept { return service_shutdown_timeout_ms_; }
 
             /**
              * Return the thread-id of this service worker thread, zero if not running.
              */
-            pthread_t get_threadid() const noexcept { return thread_id; }
+            pthread_t thread_id() const noexcept { return thread_id_; }
 
             /**
              * Returns true if service is running
+             *
+             * @see start()
+             * @see stop()
+             * @see join()
              */
             bool is_running() const noexcept { return running; }
 
@@ -149,37 +157,71 @@ namespace jau {
              *
              * This flag can be used by the service_work Callback to determine whether to skip lengthly tasks,
              * or even to skip stopping this service (again).
+             *
+             * @see is_running()
+             * @see start()
+             * @see stop()
+             * @see join()
              */
-            bool get_shall_stop() const noexcept { return shall_stop; }
+            bool shall_stop() const noexcept { return shall_stop_; }
 
             /**
              * Starts this service, if not running already.
              *
+             * Methods blocks the current thread until service is started.
+             *
              * @see is_running()
+             * @see stop()
+             * @see join()
+             * @see service_shutdown_timeout_ms()
              */
             void start() noexcept;
 
             /**
              * Stops this service, if running.
              *
+             * If called from the service thread, method just issues set_shall_stop() without blocking,
+             * otherwise methods blocks the current thread until service is stopped.
+             *
+             * Maximum blocked wait period is optionally limited by service_shutdown_timeout_ms().
+             *
              * Method attempts to stop the worker thread
              * - by flagging `shall stop`
-             * - sending `SIGALRM` to the worker thread
-             * - waiting until worker thread has stopped or timeout occurred
+             * - if called from the service thread:
+             *   - sending `SIGALRM` to the worker thread
+             *   - waiting until worker thread has stopped or timeout occurred
              *
              * Implementation requires a `SIGALRM` handler to be install,
              * e.g. using singleton_sighandler().
              *
+             * @returns true if thread has been stopped or false if timeout has been hit
              * @see is_running()
+             * @see start()
+             * @see join()
+             * @see service_shutdown_timeout_ms()
              * @see singleton_sighandler()
              */
-            void stop() noexcept;
+            bool stop() noexcept;
+
+            /**
+             * Blocks the current thread until service is stopped
+             * or returns immediately if not running or called from the service thread.
+             *
+             * Maximum blocked wait period is optionally limited by service_shutdown_timeout_ms().
+             *
+             * @returns true if thread has been stopped or false if timeout has been hit
+             * @see is_running()
+             * @see start()
+             * @see stop()
+             * @see service_shutdown_timeout_ms()
+             */
+            bool join() noexcept;
 
             /**
              * Only marks the worker thread to stop in due process
              * by flagging `shall stop`.
              */
-            void set_shall_stop() noexcept { shall_stop = true; }
+            void set_shall_stop() noexcept { shall_stop_ = true; }
 
             /**
              * Returns a string representation of this service
@@ -191,4 +233,4 @@ namespace jau {
 
 
 
-#endif /* JAU_SERVICERUNNER_HPP_ */
+#endif /* JAU_SERVICE_RUNNER_HPP_ */

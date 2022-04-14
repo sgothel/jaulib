@@ -71,7 +71,7 @@ namespace jau {
                         std::unique_lock<std::mutex> lockReader(mtx_timerfunc); // RAII-style acquire and relinquish via destructor
                         tf = timer_func_ms;
                     }
-                    if( FunctionType::Null != tf.getType() && !sr_ref.get_shall_stop() ) {
+                    if( FunctionType::Null != tf.getType() && !sr_ref.shall_stop() ) {
                         duration_ms = tf.invoke(*this);
                     } else {
                         duration_ms = 0;
@@ -94,12 +94,12 @@ namespace jau {
             /**
              * Return the given name of this timer
              */
-            const std::string& get_name() const noexcept { return timer_service.get_name(); }
+            const std::string& name() const noexcept { return timer_service.name(); }
 
             /**
              * Return the thread-id of this timer's worker thread, zero if not running.
              */
-            pthread_t get_threadid() const noexcept { return timer_service.get_threadid(); }
+            pthread_t thread_id() const noexcept { return timer_service.thread_id(); }
 
             /**
              * Returns true if timer is running
@@ -111,7 +111,7 @@ namespace jau {
              *
              * This flag can be used by the Timer_func_ms function to determine whether to skip lengthly tasks.
              */
-            bool get_shall_stop() const noexcept { return timer_service.get_shall_stop(); }
+            bool shall_stop() const noexcept { return timer_service.shall_stop(); }
 
             /**
              * Start the timer with given user Timer_func_ms function and initial duration in milliseconds.
