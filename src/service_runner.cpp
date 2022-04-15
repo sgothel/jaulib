@@ -209,7 +209,7 @@ bool service_runner::join() noexcept {
     std::unique_lock<std::mutex> lockReader(mtx_lifecycle); // RAII-style acquire and relinquish via destructor
 
     const bool is_service = thread_id_ == pthread_self();
-    DBG_PRINT("%s::join: is_service %s, %s", is_service, toString().c_str());
+    DBG_PRINT("%s::join: is_service %d, %s", name_.c_str(), is_service, toString().c_str());
     bool result;
     if( running ) {
         if( !is_service ) {
