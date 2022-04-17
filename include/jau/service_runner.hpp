@@ -166,6 +166,17 @@ namespace jau {
             bool shall_stop() const noexcept { return shall_stop_; }
 
             /**
+             * Helper function to easy FunctionDef usage w/o creating a lambda alike capture
+             * with same semantics as shall_stop().
+             *
+             * The const qualifier has also been lifted, since free function pointer declarations can't match it.
+             *
+             * @param dummy a dummy argument to help FunctionDef template parameter pack, not used
+             * @see shall_stop()
+             */
+            bool shall_stop2(int dummy) /* const */ noexcept { (void)dummy; return shall_stop_; }
+
+            /**
              * Starts this service, if not running already.
              *
              * Methods blocks the current thread until service is started.
