@@ -101,8 +101,8 @@ class TestFunctionDef01 {
     void test_FunctionPointer00(std::string msg, bool expEqual, int value, int expRes, MyClassFunction & f1, MyClassFunction &f2) {
         // test std::function identity
         INFO(msg+": FunctionPointer00 Fun f1p == f2p : " + std::to_string( f1 == f2 ) + ", f1p: " + f1.toString() + ", f2 "+f2.toString() );
-        int f1r = f1.invoke(value);
-        int f2r = f2.invoke(value);
+        int f1r = f1(value);
+        int f2r = f2(value);
         INFO(msg+": FunctionPointer00 Res f1r == f2r : " + std::to_string( f1r == f2r ) + ", f1r: " + std::to_string( f1r ) + ", f2r "+std::to_string( f2r ) );
         if( expEqual ) {
             REQUIRE(f1r == expRes);
@@ -219,19 +219,19 @@ class TestFunctionDef01 {
                 } );
         test_FunctionPointer01("FuncPtr5a_o100_capture_00", true, f5a_o100_0, f5a_o100_0);
 #endif
-        MyClassFunction f5a_o100_1 = bindCaptureFunc<int, int, int>(offset100, func5a_capture);
-        MyClassFunction f5a_o100_2 = bindCaptureFunc(offset100, func5a_capture);
+        MyClassFunction f5a_o100_1 = bindCaptureValueFunc<int, int, int>(offset100, func5a_capture);
+        MyClassFunction f5a_o100_2 = bindCaptureValueFunc(offset100, func5a_capture);
         test_FunctionPointer01("FuncPtr5a_o100_capture_12", true, f5a_o100_1, f5a_o100_2);
         test_FunctionPointer00("FuncPtr5a_o100_capture_11", true, 1, 10101, f5a_o100_1, f5a_o100_1);
         test_FunctionPointer00("FuncPtr5a_o100_capture_12", true, 1, 10101, f5a_o100_1, f5a_o100_2);
         // test_FunctionPointer01("FuncPtr5a_o100_capture_01", false, f5a_o100_0, f5a_o100_1);
-        MyClassFunction f5a_o1000_1 = bindCaptureFunc(offset1000, func5a_capture);
-        MyClassFunction f5a_o1000_2 = bindCaptureFunc(offset1000, func5a_capture);
+        MyClassFunction f5a_o1000_1 = bindCaptureValueFunc(offset1000, func5a_capture);
+        MyClassFunction f5a_o1000_2 = bindCaptureValueFunc(offset1000, func5a_capture);
         test_FunctionPointer01("FuncPtr5a_o1000_capture_12", true, f5a_o1000_1, f5a_o1000_2);
         test_FunctionPointer01("FuncPtr5a_o100_o1000_capture_11", false, f5a_o100_1, f5a_o1000_1);
 
-        MyClassFunction f5b_o100_1 = bindCaptureFunc(offset100, func5b_capture);
-        MyClassFunction f5b_o100_2 = bindCaptureFunc(offset100, func5b_capture);
+        MyClassFunction f5b_o100_1 = bindCaptureValueFunc(offset100, func5b_capture);
+        MyClassFunction f5b_o100_2 = bindCaptureValueFunc(offset100, func5b_capture);
         test_FunctionPointer00("FuncPtr5b_o100_capture_11", true, 1, 100101, f5b_o100_1, f5b_o100_1);
         test_FunctionPointer00("FuncPtr5b_o100_capture_12", true, 1, 100101, f5b_o100_1, f5b_o100_2);
 
@@ -264,19 +264,19 @@ class TestFunctionDef01 {
                 } );
         test_FunctionPointer01("FuncPtr6a_o100_capture_00", true, f6a_o100_0, f6a_o100_0);
 #endif
-        MyClassFunction f6a_o100_1 = bindCaptureFunc<int, std::shared_ptr<IntOffset>, int>(offset100, func6a_capture);
-        MyClassFunction f6a_o100_2 = bindCaptureFunc(offset100, func6a_capture);
+        MyClassFunction f6a_o100_1 = bindCaptureValueFunc<int, std::shared_ptr<IntOffset>, int>(offset100, func6a_capture);
+        MyClassFunction f6a_o100_2 = bindCaptureValueFunc(offset100, func6a_capture);
         test_FunctionPointer01("FuncPtr6a_o100_capture_12", true, f6a_o100_1, f6a_o100_2);
         test_FunctionPointer00("FuncPtr6a_o100_capture_11", true, 1, 10101, f6a_o100_1, f6a_o100_1);
         test_FunctionPointer00("FuncPtr6a_o100_capture_12", true, 1, 10101, f6a_o100_1, f6a_o100_2);
         // test_FunctionPointer01("FuncPtr6a_o100_capture_01", false, f6a_o100_0, f6a_o100_1);
-        MyClassFunction f6a_o1000_1 = bindCaptureFunc(offset1000, func6a_capture);
-        MyClassFunction f6a_o1000_2 = bindCaptureFunc(offset1000, func6a_capture);
+        MyClassFunction f6a_o1000_1 = bindCaptureValueFunc(offset1000, func6a_capture);
+        MyClassFunction f6a_o1000_2 = bindCaptureValueFunc(offset1000, func6a_capture);
         test_FunctionPointer01("FuncPtr6a_o1000_capture_12", true, f6a_o1000_1, f6a_o1000_2);
         test_FunctionPointer01("FuncPtr6a_o100_o1000_capture_11", false, f6a_o100_1, f6a_o1000_1);
 
-        MyClassFunction f6b_o100_1 = bindCaptureFunc(offset100, func6b_capture);
-        MyClassFunction f6b_o100_2 = bindCaptureFunc(offset100, func6b_capture);
+        MyClassFunction f6b_o100_1 = bindCaptureValueFunc(offset100, func6b_capture);
+        MyClassFunction f6b_o100_2 = bindCaptureValueFunc(offset100, func6b_capture);
         test_FunctionPointer00("FuncPtr6b_o100_capture_11", true, 1, 100101, f6b_o100_1, f6b_o100_1);
         test_FunctionPointer00("FuncPtr6b_o100_capture_12", true, 1, 100101, f6b_o100_1, f6b_o100_2);
 
@@ -302,7 +302,7 @@ class TestFunctionDef01 {
         };
 
 #if 0
-        MyClassFunction f7a_o100_0 = bindCaptureFunc<int, IntOffset, int>(offset100,
+        MyClassFunction f7a_o100_0 = bindCaptureValueFunc<int, IntOffset, int>(offset100,
                 [](IntOffset& sharedOffset, int i)->int {
                     int res = i+10000+sharedOffset.value;
                     return res;;
@@ -310,22 +310,22 @@ class TestFunctionDef01 {
         test_FunctionPointer01("FuncPtr7a_o100_capture_00", true, f7a_o100_0, f7a_o100_0);
 #endif
         INFO("f7a_o100_1 copy_ctor");
-        MyClassFunction f7a_o100_1 = bindCaptureFunc<int, IntOffset, int>(offset100, func7a_capture);
+        MyClassFunction f7a_o100_1 = bindCaptureValueFunc<int, IntOffset, int>(offset100, func7a_capture);
         INFO("f7a_o100_1 copy_ctor done");
         INFO("f7a_o100_2 move_ctor");
-        MyClassFunction f7a_o100_2 = bindCaptureFunc(IntOffset(100), func7a_capture);
+        MyClassFunction f7a_o100_2 = bindCaptureValueFunc(IntOffset(100), func7a_capture);
         INFO("f7a_o100_2 move_ctor done");
         test_FunctionPointer01("FuncPtr7a_o100_capture_12", true, f7a_o100_1, f7a_o100_2);
         test_FunctionPointer00("FuncPtr7a_o100_capture_11", true, 1, 10101, f7a_o100_1, f7a_o100_1);
         test_FunctionPointer00("FuncPtr7a_o100_capture_12", true, 1, 10101, f7a_o100_1, f7a_o100_2);
         // test_FunctionPointer01("FuncPtr7a_o100_capture_01", false, f7a_o100_0, f7a_o100_1);
-        MyClassFunction f7a_o1000_1 = bindCaptureFunc(offset1000, func7a_capture);
-        MyClassFunction f7a_o1000_2 = bindCaptureFunc(offset1000, func7a_capture);
+        MyClassFunction f7a_o1000_1 = bindCaptureValueFunc(offset1000, func7a_capture);
+        MyClassFunction f7a_o1000_2 = bindCaptureValueFunc(offset1000, func7a_capture);
         test_FunctionPointer01("FuncPtr7a_o1000_capture_12", true, f7a_o1000_1, f7a_o1000_2);
         test_FunctionPointer01("FuncPtr7a_o100_o1000_capture_11", false, f7a_o100_1, f7a_o1000_1);
 
-        MyClassFunction f7b_o100_1 = bindCaptureFunc(offset100, func7b_capture);
-        MyClassFunction f7b_o100_2 = bindCaptureFunc(offset100, func7b_capture);
+        MyClassFunction f7b_o100_1 = bindCaptureValueFunc(offset100, func7b_capture);
+        MyClassFunction f7b_o100_2 = bindCaptureValueFunc(offset100, func7b_capture);
         test_FunctionPointer00("FuncPtr7b_o100_capture_11", true, 1, 100101, f7b_o100_1, f7b_o100_1);
         test_FunctionPointer00("FuncPtr7b_o100_capture_12", true, 1, 100101, f7b_o100_1, f7b_o100_2);
 

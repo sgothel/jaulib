@@ -41,8 +41,9 @@ namespace jau {
         Null = 0,
         Class = 1,
         Plain = 2,
-        Capture = 3,
-        Std = 4
+        CaptureValue = 3,
+        CaptureRef = 4,
+        Std = 5
     };
     constexpr int number(const FunctionType rhs) noexcept {
         return static_cast<int>(rhs);
@@ -98,8 +99,11 @@ namespace jau {
             InvocationFunc& operator=(const InvocationFunc &o) noexcept = default;
             InvocationFunc& operator=(InvocationFunc &&o) noexcept = default;
 
-            /** Poor man's RTTI */
+            /** Return the FunctionType of this invocation function wrapper */
             virtual FunctionType getType() const noexcept = 0;
+
+            /** Returns if this this invocation function wrapper's is of FunctionType::Null  */
+            virtual bool isNullType() const noexcept = 0;
 
             virtual InvocationFunc<R, A...> * clone() const noexcept = 0;
 
@@ -118,12 +122,11 @@ namespace jau {
             NullInvocationFunc() noexcept { }
 
             FunctionType getType() const noexcept override { return FunctionType::Null; }
+            bool isNullType() const noexcept override { return true; }
 
             InvocationFunc<R, A...> * clone() const noexcept override { return new NullInvocationFunc(); }
 
-            R invoke(A...) override {
-                return (R)0;
-            }
+            R invoke(A...) override { return (R)0; }
 
             bool operator==(const InvocationFunc<R, A...>& rhs) const noexcept override
             {
@@ -152,12 +155,11 @@ namespace jau {
             }
 
             FunctionType getType() const noexcept override { return FunctionType::Class; }
+            bool isNullType() const noexcept override { return false; }
 
             InvocationFunc<R, A...> * clone() const noexcept override { return new ClassInvocationFunc(*this); }
 
-            R invoke(A... args) override {
-                return (base->*member)(args...);
-            }
+            R invoke(A... args) override { return (base->*member)(args...); }
 
             bool operator==(const InvocationFunc<R, A...>& rhs) const noexcept override
             {
@@ -193,12 +195,11 @@ namespace jau {
             }
 
             FunctionType getType() const noexcept override { return FunctionType::Plain; }
+            bool isNullType() const noexcept override { return false; }
 
             InvocationFunc<R, A...> * clone() const noexcept override { return new PlainInvocationFunc(*this); }
 
-            R invoke(A... args) override {
-                return (*function)(args...);
-            }
+            R invoke(A... args) override { return (*function)(args...); }
 
             bool operator==(const InvocationFunc<R, A...>& rhs) const noexcept override
             {
@@ -224,7 +225,7 @@ namespace jau {
     };
 
     template<typename R, typename I, typename... A>
-    class CaptureInvocationFunc : public InvocationFunc<R, A...> {
+    class CaptureValueInvocationFunc : public InvocationFunc<R, A...> {
         private:
             I data;
             R(*function)(I&, A...);
@@ -232,22 +233,21 @@ namespace jau {
 
         public:
             /** Utilizes copy-ctor from 'const I& _data' */
-            CaptureInvocationFunc(const I& _data, R(*_function)(I&, A...), bool dataIsIdentity_) noexcept
+            CaptureValueInvocationFunc(const I& _data, R(*_function)(I&, A...), bool dataIsIdentity_) noexcept
             : data(_data), function(_function), dataIsIdentity(dataIsIdentity_) {
             }
 
             /** Utilizes move-ctor from moved 'I&& _data' */
-            CaptureInvocationFunc(I&& _data, R(*_function)(I&, A...), bool dataIsIdentity_) noexcept
+            CaptureValueInvocationFunc(I&& _data, R(*_function)(I&, A...), bool dataIsIdentity_) noexcept
             : data(std::move(_data)), function(_function), dataIsIdentity(dataIsIdentity_) {
             }
 
-            FunctionType getType() const noexcept override { return FunctionType::Capture; }
+            FunctionType getType() const noexcept override { return FunctionType::CaptureValue; }
+            bool isNullType() const noexcept override { return false; }
 
-            InvocationFunc<R, A...> * clone() const noexcept override { return new CaptureInvocationFunc(*this); }
+            InvocationFunc<R, A...> * clone() const noexcept override { return new CaptureValueInvocationFunc(*this); }
 
-            R invoke(A... args) override {
-                return (*function)(data, args...);
-            }
+            R invoke(A... args) override { return (*function)(data, args...); }
 
             bool operator==(const InvocationFunc<R, A...>& rhs) const noexcept override
             {
@@ -257,7 +257,7 @@ namespace jau {
                 if( getType() != rhs.getType() ) {
                     return false;
                 }
-                const CaptureInvocationFunc<R, I, A...> * prhs = static_cast<const CaptureInvocationFunc<R, I, A...>*>(&rhs);
+                const CaptureValueInvocationFunc<R, I, A...> * prhs = static_cast<const CaptureValueInvocationFunc<R, I, A...>*>(&rhs);
                 return dataIsIdentity == prhs->dataIsIdentity && function == prhs->function && ( !dataIsIdentity || data == prhs->data );
             }
 
@@ -268,7 +268,49 @@ namespace jau {
 
             std::string toString() const override {
                 // hack to convert function pointer to void *: '*((void**)&function)'
-                return "CaptureInvocation "+to_hexstring( *((void**)&function) );
+                return "CaptureValueInvocation "+to_hexstring( *((void**)&function) );
+            }
+    };
+
+    template<typename R, typename I, typename... A>
+    class CaptureRefInvocationFunc : public InvocationFunc<R, A...> {
+        private:
+            I* data_ptr;
+            R(*function)(I*, A...);
+            bool dataIsIdentity;
+
+        public:
+            CaptureRefInvocationFunc(I* _data_ptr, R(*_function)(I*, A...), bool dataIsIdentity_) noexcept
+            : data_ptr(_data_ptr), function(_function), dataIsIdentity(dataIsIdentity_) {
+            }
+
+            FunctionType getType() const noexcept override { return FunctionType::CaptureRef; }
+            bool isNullType() const noexcept override { return false; }
+
+            InvocationFunc<R, A...> * clone() const noexcept override { return new CaptureRefInvocationFunc(*this); }
+
+            R invoke(A... args) override { return (*function)(data_ptr, args...); }
+
+            bool operator==(const InvocationFunc<R, A...>& rhs) const noexcept override
+            {
+                if( &rhs == this ) {
+                    return true;
+                }
+                if( getType() != rhs.getType() ) {
+                    return false;
+                }
+                const CaptureRefInvocationFunc<R, I, A...> * prhs = static_cast<const CaptureRefInvocationFunc<R, I, A...>*>(&rhs);
+                return dataIsIdentity == prhs->dataIsIdentity && function == prhs->function && ( !dataIsIdentity || data_ptr == prhs->data_ptr );
+            }
+
+            bool operator!=(const InvocationFunc<R, A...>& rhs) const noexcept override
+            {
+                return !( *this == rhs );
+            }
+
+            std::string toString() const override {
+                // hack to convert function pointer to void *: '*((void**)&function)'
+                return "CaptureRefInvocation "+to_hexstring( *((void**)&function) );
             }
     };
 
@@ -287,12 +329,11 @@ namespace jau {
             }
 
             FunctionType getType() const noexcept override { return FunctionType::Std; }
+            bool isNullType() const noexcept override { return false; }
 
             InvocationFunc<R, A...> * clone() const noexcept override { return new StdInvocationFunc(*this); }
 
-            R invoke(A... args) override {
-                return function(args...);
-            }
+            R invoke(A... args) override { return function(args...); }
 
             bool operator==(const InvocationFunc<R, A...>& rhs) const noexcept override
             {
@@ -352,7 +393,11 @@ namespace jau {
             bool operator!=(const FunctionDef<R, A...>& rhs) const noexcept
             { return *func != *rhs.func; }
 
+            /** Return the FunctionType of this instance */
             FunctionType getType() const noexcept { return func->getType(); }
+
+            /** Returns if this this instance is of FunctionType::Null  */
+            bool isNullType() const noexcept { return func->isNullType(); }
 
             /** Returns the shared InvocationFunc<R, A...> function */
             std::shared_ptr<InvocationFunc<R, A...>> getFunction() noexcept { return func; }
@@ -364,9 +409,11 @@ namespace jau {
                 return "FunctionDef["+func->toString()+"]";
             }
 
-            R invoke(A... args) {
-                return func->invoke(args...);
-            }
+            R invoke(A... args) const { return func->invoke(args...); }
+            R invoke(A... args) { return func->invoke(args...); }
+
+            R operator()(A... args) const { return func->invoke(args...); }
+            R operator()(A... args) { return func->invoke(args...); }
     };
 
     template<typename R, typename C, typename... A>
@@ -390,8 +437,8 @@ namespace jau {
      */
     template<typename R, typename I, typename... A>
     inline jau::FunctionDef<R, A...>
-    bindCaptureFunc(const I& data, R(*func)(I&, A...), bool dataIsIdentity=true) noexcept {
-        return FunctionDef<R, A...>( new CaptureInvocationFunc<R, I, A...>(data, func, dataIsIdentity) );
+    bindCaptureValueFunc(const I& data, R(*func)(I&, A...), bool dataIsIdentity=true) noexcept {
+        return FunctionDef<R, A...>( new CaptureValueInvocationFunc<R, I, A...>(data, func, dataIsIdentity) );
     }
 
     /**
@@ -402,8 +449,14 @@ namespace jau {
      */
     template<typename R, typename I, typename... A>
     inline jau::FunctionDef<R, A...>
-    bindCaptureFunc(I&& data, R(*func)(I&, A...), bool dataIsIdentity=true) noexcept {
-        return FunctionDef<R, A...>( new CaptureInvocationFunc<R, I, A...>(std::move(data), func, dataIsIdentity) );
+    bindCaptureValueFunc(I&& data, R(*func)(I&, A...), bool dataIsIdentity=true) noexcept {
+        return FunctionDef<R, A...>( new CaptureValueInvocationFunc<R, I, A...>(std::move(data), func, dataIsIdentity) );
+    }
+
+    template<typename R, typename I, typename... A>
+    inline jau::FunctionDef<R, A...>
+    bindCaptureRefFunc(I* data_ptr, R(*func)(I*, A...), bool dataIsIdentity=true) noexcept {
+        return FunctionDef<R, A...>( new CaptureRefInvocationFunc<R, I, A...>(data_ptr, func, dataIsIdentity) );
     }
 
     template<typename R, typename... A>

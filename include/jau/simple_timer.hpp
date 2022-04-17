@@ -71,8 +71,8 @@ namespace jau {
                         std::unique_lock<std::mutex> lockReader(mtx_timerfunc); // RAII-style acquire and relinquish via destructor
                         tf = timer_func_ms;
                     }
-                    if( FunctionType::Null != tf.getType() && !sr_ref.shall_stop() ) {
-                        duration_ms = tf.invoke(*this);
+                    if( !tf.isNullType() && !sr_ref.shall_stop() ) {
+                        duration_ms = tf(*this);
                     } else {
                         duration_ms = 0;
                     }

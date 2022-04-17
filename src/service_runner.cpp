@@ -40,8 +40,8 @@ using namespace jau;
 void service_runner::workerThread() {
     {
         const std::lock_guard<std::mutex> lock(mtx_lifecycle); // RAII-style acquire and relinquish via destructor
-        service_init_locked.invoke(*this);
         shall_stop_ = false;
+        service_init_locked(*this);
         running = true;
         DBG_PRINT("%s::worker Started", name_.c_str());
     }
@@ -54,12 +54,12 @@ void service_runner::workerThread() {
     });
 
     while( !shall_stop_ ) {
-        service_work.invoke(*this);
+        service_work(*this);
     }
     {
         const std::lock_guard<std::mutex> lock(mtx_lifecycle); // RAII-style acquire and relinquish via destructor
         WORDY_PRINT("%s::worker: Ended", name_.c_str());
-        service_end_locked.invoke(*this);
+        service_end_locked(*this);
         thread_id_ = 0;
         running = false;
     }
