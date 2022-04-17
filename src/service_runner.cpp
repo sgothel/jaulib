@@ -40,7 +40,6 @@ using namespace jau;
 void service_runner::workerThread() {
     {
         const std::lock_guard<std::mutex> lock(mtx_lifecycle); // RAII-style acquire and relinquish via destructor
-        shall_stop_ = false;
         service_init_locked(*this);
         running = true;
         DBG_PRINT("%s::worker Started", name_.c_str());
@@ -142,6 +141,7 @@ void service_runner::start() noexcept {
      * We utilize a global SIGALRM handler, since we only can install one handler.
      */
     std::unique_lock<std::mutex> lock(mtx_lifecycle); // RAII-style acquire and relinquish via destructor
+    shall_stop_ = false;
 
     if( running ) {
         DBG_PRINT("%s::start: End.0: %s", name_.c_str(), toString().c_str());
