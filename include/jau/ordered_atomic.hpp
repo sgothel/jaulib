@@ -29,7 +29,7 @@
 #include <atomic>
 #include <memory>
 
-#include <jau/basic_types.hpp>
+#include <jau/int_types.hpp>
 
 namespace jau {
 

@@ -42,6 +42,8 @@
 #include <jau/byte_util.hpp>
 #include <jau/string_util.hpp>
 
+#include <jau/ordered_atomic.hpp>
+
 namespace jau {
 
     /**
