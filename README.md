@@ -112,6 +112,12 @@ make doc
 
 * First stable release (TODO)
 
+**0.8.0**
+
+* Enhance `service_runner`: fix using `service_shutdown_timeout_ms()`, add `join()`, `remove service_end_post_notify` (leak), 
+* Add `simple_timer`: A simple timer for timeout and interval applications, using one dedicated `service_runner` thread per instance.
+* Fix EUI48[Sub] ctor with byte-ptr: Don't swap if given `byte_order == endian::native`, we store in native order
+* `uint[128,192,256]_t`: Add ctor with given byte array in native byte order, useful for const initialization
 * SIGSEGV workaround in `jau::get_backtrace(..)` of libunwind [1.3 - 1.6.2]'s `unw_step(..)` using g++ 10.2.1 aarch64: Disable Optimization
 
 **0.7.12**
