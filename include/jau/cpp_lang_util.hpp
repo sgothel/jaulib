@@ -305,10 +305,9 @@ namespace jau {
             return __builtin_bit_cast(Dest, src);
         } else {
             // not 'really' constexpr .. oops, working though
-            return reinterpret_cast<Dest>(src);
+            return reinterpret_cast<Dest>( const_cast< std::remove_const_t< std::remove_pointer_t<Source> >* >( src ) );
         }
     }
-
 
 } // namespace jau
 

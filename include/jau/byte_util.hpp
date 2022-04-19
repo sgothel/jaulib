@@ -192,16 +192,7 @@ namespace jau {
      * @param v the jau::endian value
      * @return the std::string representation
      */
-    constexpr_cxx20 std::string to_string(const endian& v) noexcept {
-        switch(v) {
-            case endian::little:  return "little";
-            case endian::big:  return "big";
-            case endian::pdp:  return "pdb";
-            case endian::honeywell: return "honeywell";
-            case endian::undefined: return "undefined";
-        }
-        return "unlisted";
-    }
+    std::string to_string(const endian& v) noexcept;
 
     /**
      * Evaluates `true` if the given endian is defined,
@@ -543,17 +534,8 @@ namespace jau {
         return *pointer_cast<int8_t const *>( buffer + byte_offset );
     }
 
-    /**
-     * Safe access to a pointer cast from unaligned memory via __packed__ attribute,
-     * i.e. utilizing compiler generated safe load and store operations.
-     * <p>
-     * This template shall cause no costs, the cast data pointer is identical to 'T & p = &store'.
-     * </p>
-     */
-    template<typename T> __pack ( struct packed_t {
-        T store;
-        constexpr T get(const bool littleEndian) const noexcept { return littleEndian ? le_to_cpu(store) : be_to_cpu(store); }
-    } ) ;
+    template<typename T>
+    constexpr T get_value(const packed_t<T>* source, const bool littleEndian) noexcept { return littleEndian ? le_to_cpu(source->store) : be_to_cpu(source->store); }
 
     constexpr void put_uint16(uint8_t * buffer, nsize_t const byte_offset, const uint16_t v) noexcept
     {
@@ -606,7 +588,7 @@ namespace jau {
          *   return littleEndian ? le_to_cpu(v) : be_to_cpu(v);
          * Use compiler magic 'struct __attribute__((__packed__))' access:
          */
-        return pointer_cast<const packed_t<uint16_t>*>( buffer + byte_offset )->get(littleEndian);
+        return get_value(pointer_cast<const packed_t<uint16_t>*>( buffer + byte_offset ), littleEndian);
     }
 
     constexpr void put_uint32(uint8_t * buffer, nsize_t const byte_offset, const uint32_t v) noexcept
@@ -623,7 +605,7 @@ namespace jau {
     }
     constexpr uint32_t get_uint32(uint8_t const * buffer, nsize_t const byte_offset, const bool littleEndian) noexcept
     {
-        return pointer_cast<const packed_t<uint32_t>*>( buffer + byte_offset )->get(littleEndian);
+        return get_value(pointer_cast<const packed_t<uint32_t>*>( buffer + byte_offset ), littleEndian);
     }
 
     constexpr void put_uint64(uint8_t * buffer, nsize_t const byte_offset, const uint64_t & v) noexcept
@@ -640,7 +622,7 @@ namespace jau {
     }
     constexpr uint64_t get_uint64(uint8_t const * buffer, nsize_t const byte_offset, const bool littleEndian) noexcept
     {
-        return pointer_cast<const packed_t<uint64_t>*>( buffer + byte_offset )->get(littleEndian);
+        return get_value(pointer_cast<const packed_t<uint64_t>*>( buffer + byte_offset ), littleEndian);
     }
 
     constexpr void put_uint128(uint8_t * buffer, nsize_t const byte_offset, const uint128_t & v) noexcept
@@ -657,7 +639,7 @@ namespace jau {
     }
     constexpr uint128_t get_uint128(uint8_t const * buffer, nsize_t const byte_offset, const bool littleEndian) noexcept
     {
-        return pointer_cast<const packed_t<uint128_t>*>( buffer + byte_offset )->get(littleEndian);
+        return get_value(pointer_cast<const packed_t<uint128_t>*>( buffer + byte_offset ), littleEndian);
     }
 
     constexpr void put_uint192(uint8_t * buffer, nsize_t const byte_offset, const uint192_t & v) noexcept
@@ -674,7 +656,7 @@ namespace jau {
     }
     constexpr uint192_t get_uint192(uint8_t const * buffer, nsize_t const byte_offset, const bool littleEndian) noexcept
     {
-        return pointer_cast<const packed_t<uint192_t>*>( buffer + byte_offset )->get(littleEndian);
+        return get_value(pointer_cast<const packed_t<uint192_t>*>( buffer + byte_offset ), littleEndian);
     }
 
     constexpr void put_uint256(uint8_t * buffer, nsize_t const byte_offset, const uint256_t & v) noexcept
@@ -691,7 +673,7 @@ namespace jau {
     }
     constexpr uint256_t get_uint256(uint8_t const * buffer, nsize_t const byte_offset, const bool littleEndian) noexcept
     {
-        return pointer_cast<const packed_t<uint256_t>*>( buffer + byte_offset )->get(littleEndian);
+        return get_value(pointer_cast<const packed_t<uint256_t>*>( buffer + byte_offset ), littleEndian);
     }
 
     /**
@@ -738,7 +720,7 @@ namespace jau {
         T>
     get_value(uint8_t const * buffer, nsize_t const byte_offset, const bool littleEndian) noexcept
     {
-        return pointer_cast<const packed_t<T>*>( buffer + byte_offset )->get(littleEndian);
+        return get_value(pointer_cast<const packed_t<T>*>( buffer + byte_offset ), littleEndian);
     }
 
 } // namespace jau

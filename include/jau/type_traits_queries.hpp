@@ -169,7 +169,8 @@ namespace jau {
                 printf("    aggregate       %d\n", std::is_aggregate_v<T>);
                 printf("    signed          %d\n", std::is_signed_v<T>);
                 printf("    unsigned        %d\n", std::is_unsigned_v<T>);
-    #if __cplusplus > 201703L
+    #if __cplusplus > 202002L
+                // C++ 23
                 printf("    bounded_array   %d\n", std::is_bounded_array_v<T>);
                 printf("    unbounded_array %d\n", std::is_unbounded_array_v<T>);
                 printf("    scoped enum     %d\n", std::is_scoped_enum_v<T>);

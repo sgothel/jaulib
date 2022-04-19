@@ -28,6 +28,7 @@
 #include <cstdint>
 #include <cstring>
 
+#include <jau/cpp_lang_util.hpp>
 #include <jau/packed_attribute.hpp>
 
 namespace jau {
@@ -65,7 +66,7 @@ namespace jau {
         uint8_t data[16];
 
         constexpr uint128_t() noexcept : data{0} {}
-        constexpr uint128_t(const uint8_t v[16]) noexcept : data{0} { std::memcpy(data, v, 16); }
+        constexpr uint128_t(const uint8_t v[16]) noexcept : data{0} { *this = pointer_cast<packed_t<uint128_t>*>( v )->store; }
         constexpr uint128_t(const uint128_t &o) noexcept = default;
         uint128_t(uint128_t &&o) noexcept = default;
         constexpr uint128_t& operator=(const uint128_t &o) noexcept = default;
@@ -87,7 +88,7 @@ namespace jau {
         uint8_t data[24];
 
         constexpr uint192_t() noexcept : data{0} {}
-        constexpr uint192_t(const uint8_t v[24]) noexcept : data{0} { std::memcpy(data, v, 24); }
+        constexpr uint192_t(const uint8_t v[24]) noexcept : data{0} { *this = pointer_cast<packed_t<uint192_t>*>( v )->store; }
         constexpr uint192_t(const uint192_t &o) noexcept = default;
         uint192_t(uint192_t &&o) noexcept = default;
         constexpr uint192_t& operator=(const uint192_t &o) noexcept = default;
@@ -109,7 +110,7 @@ namespace jau {
         uint8_t data[32];
 
         constexpr uint256_t() noexcept : data{0} {}
-        constexpr uint256_t(const uint8_t v[32]) noexcept : data{0} { std::memcpy(data, v, 32); }
+        constexpr uint256_t(const uint8_t v[32]) noexcept : data{0} { *this = pointer_cast<packed_t<uint256_t>*>( v )->store; }
         constexpr uint256_t(const uint256_t &o) noexcept = default;
         uint256_t(uint256_t &&o) noexcept = default;
         constexpr uint256_t& operator=(const uint256_t &o) noexcept = default;

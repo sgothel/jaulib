@@ -265,3 +265,15 @@ std::string& jau::byteHexString(std::string& dest, const uint8_t value, const bo
     dest.push_back(hex_array[v & 0x0F]);
     return dest;
 }
+
+std::string jau::to_string(const endian& v) noexcept {
+    switch(v) {
+        case endian::little:  return "little";
+        case endian::big:  return "big";
+        case endian::pdp:  return "pdb";
+        case endian::honeywell: return "honeywell";
+        case endian::undefined: return "undefined";
+    }
+    return "unlisted";
+}
+

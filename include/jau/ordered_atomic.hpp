@@ -216,88 +216,88 @@ template <typename _Tp, std::memory_order _MO> struct ordered_atomic : private s
   }
 
   /** SC atomic integral scalar boolean. Memory-Model (MM) guaranteed sequential consistency (SC) between acquire (read) and release (write) */
-  typedef ordered_atomic<bool, std::memory_order::memory_order_seq_cst> sc_atomic_bool;
+  typedef ordered_atomic<bool, std::memory_order_seq_cst> sc_atomic_bool;
 
   /** Relaxed non-SC atomic integral scalar boolean. Memory-Model (MM) only guarantees the atomic value, _no_ sequential consistency (SC) between acquire (read) and release (write). */
-  typedef ordered_atomic<bool, std::memory_order::memory_order_relaxed> relaxed_atomic_bool;
+  typedef ordered_atomic<bool, std::memory_order_relaxed> relaxed_atomic_bool;
 
   /** SC atomic integral scalar int8_t. Memory-Model (MM) guaranteed sequential consistency (SC) between acquire (read) and release (write) */
-  typedef ordered_atomic<int8_t, std::memory_order::memory_order_seq_cst> sc_atomic_int8;
+  typedef ordered_atomic<int8_t, std::memory_order_seq_cst> sc_atomic_int8;
 
   /** Relaxed non-SC atomic integral scalar int8_t. Memory-Model (MM) only guarantees the atomic value, _no_ sequential consistency (SC) between acquire (read) and release (write). */
-  typedef ordered_atomic<int8_t, std::memory_order::memory_order_relaxed> relaxed_atomic_int8;
+  typedef ordered_atomic<int8_t, std::memory_order_relaxed> relaxed_atomic_int8;
 
   /** SC atomic integral scalar uint8_t. Memory-Model (MM) guaranteed sequential consistency (SC) between acquire (read) and release (write) */
-  typedef ordered_atomic<uint8_t, std::memory_order::memory_order_seq_cst> sc_atomic_uint8;
+  typedef ordered_atomic<uint8_t, std::memory_order_seq_cst> sc_atomic_uint8;
 
   /** Relaxed non-SC atomic integral scalar uint8_t. Memory-Model (MM) only guarantees the atomic value, _no_ sequential consistency (SC) between acquire (read) and release (write). */
-  typedef ordered_atomic<uint8_t, std::memory_order::memory_order_relaxed> relaxed_atomic_uint8;
+  typedef ordered_atomic<uint8_t, std::memory_order_relaxed> relaxed_atomic_uint8;
 
   /** SC atomic integral scalar int16_t. Memory-Model (MM) guaranteed sequential consistency (SC) between acquire (read) and release (write) */
-  typedef ordered_atomic<int16_t, std::memory_order::memory_order_seq_cst> sc_atomic_int16;
+  typedef ordered_atomic<int16_t, std::memory_order_seq_cst> sc_atomic_int16;
 
   /** Relaxed non-SC atomic integral scalar int16_t. Memory-Model (MM) only guarantees the atomic value, _no_ sequential consistency (SC) between acquire (read) and release (write). */
-  typedef ordered_atomic<int16_t, std::memory_order::memory_order_relaxed> relaxed_atomic_int16;
+  typedef ordered_atomic<int16_t, std::memory_order_relaxed> relaxed_atomic_int16;
 
   /** SC atomic integral scalar uint16_t. Memory-Model (MM) guaranteed sequential consistency (SC) between acquire (read) and release (write) */
-  typedef ordered_atomic<uint16_t, std::memory_order::memory_order_seq_cst> sc_atomic_uint16;
+  typedef ordered_atomic<uint16_t, std::memory_order_seq_cst> sc_atomic_uint16;
 
   /** Relaxed non-SC atomic integral scalar uint16_t. Memory-Model (MM) only guarantees the atomic value, _no_ sequential consistency (SC) between acquire (read) and release (write). */
-  typedef ordered_atomic<uint16_t, std::memory_order::memory_order_relaxed> relaxed_atomic_uint16;
+  typedef ordered_atomic<uint16_t, std::memory_order_relaxed> relaxed_atomic_uint16;
 
   /** SC atomic integral scalar integer. Memory-Model (MM) guaranteed sequential consistency (SC) between acquire (read) and release (write) */
-  typedef ordered_atomic<int, std::memory_order::memory_order_seq_cst> sc_atomic_int;
+  typedef ordered_atomic<int, std::memory_order_seq_cst> sc_atomic_int;
 
   /** Relaxed non-SC atomic integral scalar integer. Memory-Model (MM) only guarantees the atomic value, _no_ sequential consistency (SC) between acquire (read) and release (write). */
-  typedef ordered_atomic<int, std::memory_order::memory_order_relaxed> relaxed_atomic_int;
+  typedef ordered_atomic<int, std::memory_order_relaxed> relaxed_atomic_int;
 
   /** SC atomic integral scalar int32_t. Memory-Model (MM) guaranteed sequential consistency (SC) between acquire (read) and release (write) */
-  typedef ordered_atomic<int32_t, std::memory_order::memory_order_seq_cst> sc_atomic_int32;
+  typedef ordered_atomic<int32_t, std::memory_order_seq_cst> sc_atomic_int32;
 
   /** Relaxed non-SC atomic integral scalar int32_t. Memory-Model (MM) only guarantees the atomic value, _no_ sequential consistency (SC) between acquire (read) and release (write). */
-  typedef ordered_atomic<int32_t, std::memory_order::memory_order_relaxed> relaxed_atomic_int32;
+  typedef ordered_atomic<int32_t, std::memory_order_relaxed> relaxed_atomic_int32;
 
   /** SC atomic integral scalar uint32_t. Memory-Model (MM) guaranteed sequential consistency (SC) between acquire (read) and release (write) */
-  typedef ordered_atomic<uint32_t, std::memory_order::memory_order_seq_cst> sc_atomic_uint32;
+  typedef ordered_atomic<uint32_t, std::memory_order_seq_cst> sc_atomic_uint32;
 
   /** Relaxed non-SC atomic integral scalar uint32_t. Memory-Model (MM) only guarantees the atomic value, _no_ sequential consistency (SC) between acquire (read) and release (write). */
-  typedef ordered_atomic<uint32_t, std::memory_order::memory_order_relaxed> relaxed_atomic_uint32;
+  typedef ordered_atomic<uint32_t, std::memory_order_relaxed> relaxed_atomic_uint32;
 
   /** SC atomic integral scalar jau::nsize_t. Memory-Model (MM) guaranteed sequential consistency (SC) between acquire (read) and release (write) */
-  typedef ordered_atomic<jau::nsize_t, std::memory_order::memory_order_seq_cst> sc_atomic_nsize_t;
+  typedef ordered_atomic<jau::nsize_t, std::memory_order_seq_cst> sc_atomic_nsize_t;
 
   /** SC atomic integral scalar jau::snsize_t. Memory-Model (MM) guaranteed sequential consistency (SC) between acquire (read) and release (write) */
-  typedef ordered_atomic<jau::snsize_t, std::memory_order::memory_order_seq_cst> sc_atomic_snsize_t;
+  typedef ordered_atomic<jau::snsize_t, std::memory_order_seq_cst> sc_atomic_snsize_t;
 
   /** Relaxed non-SC atomic integral scalar jau::nsize_t. Memory-Model (MM) only guarantees the atomic value, _no_ sequential consistency (SC) between acquire (read) and release (write). */
-  typedef ordered_atomic<jau::nsize_t, std::memory_order::memory_order_relaxed> relaxed_atomic_nsize_t;
+  typedef ordered_atomic<jau::nsize_t, std::memory_order_relaxed> relaxed_atomic_nsize_t;
 
   /** Relaxed non-SC atomic integral scalar jau::snsize_t. Memory-Model (MM) only guarantees the atomic value, _no_ sequential consistency (SC) between acquire (read) and release (write). */
-  typedef ordered_atomic<jau::snsize_t, std::memory_order::memory_order_relaxed> relaxed_atomic_snsize_t;
+  typedef ordered_atomic<jau::snsize_t, std::memory_order_relaxed> relaxed_atomic_snsize_t;
 
   /** SC atomic integral scalar size_t. Memory-Model (MM) guaranteed sequential consistency (SC) between acquire (read) and release (write) */
-  typedef ordered_atomic<std::size_t, std::memory_order::memory_order_seq_cst> sc_atomic_size_t;
+  typedef ordered_atomic<std::size_t, std::memory_order_seq_cst> sc_atomic_size_t;
 
   /** SC atomic integral scalar ssize_t. Memory-Model (MM) guaranteed sequential consistency (SC) between acquire (read) and release (write) */
-  typedef jau::ordered_atomic<ssize_t, std::memory_order::memory_order_seq_cst> sc_atomic_ssize_t;
+  typedef jau::ordered_atomic<ssize_t, std::memory_order_seq_cst> sc_atomic_ssize_t;
 
   /** Relaxed non-SC atomic integral scalar size_t. Memory-Model (MM) only guarantees the atomic value, _no_ sequential consistency (SC) between acquire (read) and release (write). */
-  typedef ordered_atomic<std::size_t, std::memory_order::memory_order_relaxed> relaxed_atomic_size_t;
+  typedef ordered_atomic<std::size_t, std::memory_order_relaxed> relaxed_atomic_size_t;
 
   /** Relaxed non-SC atomic integral scalar ssize_t. Memory-Model (MM) only guarantees the atomic value, _no_ sequential consistency (SC) between acquire (read) and release (write). */
-  typedef ordered_atomic<ssize_t, std::memory_order::memory_order_relaxed> relaxed_atomic_ssize_t;
+  typedef ordered_atomic<ssize_t, std::memory_order_relaxed> relaxed_atomic_ssize_t;
 
   /** SC atomic integral scalar int64_t. Memory-Model (MM) guaranteed sequential consistency (SC) between acquire (read) and release (write) */
-  typedef ordered_atomic<int64_t, std::memory_order::memory_order_seq_cst> sc_atomic_int64;
+  typedef ordered_atomic<int64_t, std::memory_order_seq_cst> sc_atomic_int64;
 
   /** Relaxed non-SC atomic integral scalar int64_t. Memory-Model (MM) only guarantees the atomic value, _no_ sequential consistency (SC) between acquire (read) and release (write). */
-  typedef ordered_atomic<int64_t, std::memory_order::memory_order_relaxed> relaxed_atomic_int64;
+  typedef ordered_atomic<int64_t, std::memory_order_relaxed> relaxed_atomic_int64;
 
   /** SC atomic integral scalar uint64_t. Memory-Model (MM) guaranteed sequential consistency (SC) between acquire (read) and release (write) */
-  typedef ordered_atomic<uint64_t, std::memory_order::memory_order_seq_cst> sc_atomic_uint64;
+  typedef ordered_atomic<uint64_t, std::memory_order_seq_cst> sc_atomic_uint64;
 
   /** Relaxed non-SC atomic integral scalar uint64_t. Memory-Model (MM) only guarantees the atomic value, _no_ sequential consistency (SC) between acquire (read) and release (write). */
-  typedef ordered_atomic<uint64_t, std::memory_order::memory_order_relaxed> relaxed_atomic_uint64;
+  typedef ordered_atomic<uint64_t, std::memory_order_relaxed> relaxed_atomic_uint64;
 
   /**
    * This class provides a RAII-style Sequentially Consistent (SC) data race free (DRF) critical block.
