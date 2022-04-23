@@ -119,7 +119,6 @@ public class TestTempJarCache extends JunitTracer {
     public static void init() {
         // may already been initialized by other test
         // Assert.assertFalse(TempCacheReg.isTempFileCacheUsed());
-        PlatformRuntime.initSingleton();
         Assert.assertTrue(TempFileCache.initSingleton());
         Assert.assertTrue(TempCacheReg.isTempFileCacheUsed());
 

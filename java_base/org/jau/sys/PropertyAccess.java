@@ -29,7 +29,6 @@ package org.jau.sys;
 import java.security.*;
 import java.util.HashSet;
 
-import org.jau.lang.UnsafeUtil;
 import org.jau.sec.SecurityUtil;
 
 
@@ -177,7 +176,7 @@ public class PropertyAccess {
   }
 
   private static final String getTrustedPropKey(final String propertyKey) {
-    return UnsafeUtil.doPrivileged(new PrivilegedAction<String>() {
+    return SecurityUtil.doPrivileged(new PrivilegedAction<String>() {
         @Override
         public String run() {
           try {

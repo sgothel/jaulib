@@ -37,7 +37,7 @@ import java.util.StringTokenizer;
 
 import org.jau.io.IOUtil;
 import org.jau.lang.ReflectionUtil;
-import org.jau.lang.UnsafeUtil;
+import org.jau.sec.SecurityUtil;
 
 /**
  * Static JNI Native Libraries handler.
@@ -338,7 +338,7 @@ public class JNILibrary {
 
     // Add entries from java.library.path
     final String[] javaLibraryPaths =
-      UnsafeUtil.doPrivileged(new PrivilegedAction<String[]>() {
+      SecurityUtil.doPrivileged(new PrivilegedAction<String[]>() {
           @Override
           public String[] run() {
             int count = 0;
@@ -380,7 +380,7 @@ public class JNILibrary {
 
     // Add current working directory
     final String userDir =
-      UnsafeUtil.doPrivileged(new PrivilegedAction<String>() {
+      SecurityUtil.doPrivileged(new PrivilegedAction<String>() {
           @Override
           public String run() {
             return System.getProperty("user.dir");

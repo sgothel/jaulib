@@ -51,7 +51,6 @@ import org.jau.lang.ExceptionUtils;
 import org.jau.lang.InterruptSource;
 import org.jau.lang.NioUtil;
 import org.jau.lang.ReflectionUtil;
-import org.jau.lang.UnsafeUtil;
 import org.jau.sec.SecurityUtil;
 import org.jau.sys.AndroidUtil;
 import org.jau.sys.Debug;
@@ -73,7 +72,7 @@ public class IOUtil {
 
     static {
         final boolean _props[] = { false, false, false, false, false, false };
-        UnsafeUtil.doPrivileged(new PrivilegedAction<Object>() {
+        SecurityUtil.doPrivileged(new PrivilegedAction<Object>() {
             @Override
             public Object run() {
                 try {

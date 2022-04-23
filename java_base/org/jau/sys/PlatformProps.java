@@ -36,7 +36,7 @@ import java.util.List;
 
 import org.jau.lang.NioUtil;
 import org.jau.lang.ReflectionUtil;
-import org.jau.lang.UnsafeUtil;
+import org.jau.sec.SecurityUtil;
 import org.jau.sys.PlatformTypes.ABIType;
 import org.jau.sys.PlatformTypes.CPUType;
 import org.jau.sys.PlatformTypes.OSType;
@@ -128,7 +128,7 @@ public class PlatformProps {
         final String os_arch_prop;
         {
             final String[] props =
-                    UnsafeUtil.doPrivileged(new PrivilegedAction<String[]>() {
+                    SecurityUtil.doPrivileged(new PrivilegedAction<String[]>() {
                         @Override
                         public String[] run() {
                             final String[] props = new String[4];
@@ -160,7 +160,7 @@ public class PlatformProps {
             final ABIType[] _elfAbiType = { null };
             final int[] _elfLittleEndian = { 0 }; // 1 - little, 2 - big
             final boolean[] _elfValid = { false };
-            UnsafeUtil.doPrivileged(new PrivilegedAction<Object>() {
+            SecurityUtil.doPrivileged(new PrivilegedAction<Object>() {
                 @Override
                 public Object run() {
                     RandomAccessFile in = null;

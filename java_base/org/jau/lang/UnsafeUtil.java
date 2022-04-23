@@ -31,6 +31,7 @@ import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.security.PrivilegedAction;
 
+import org.jau.sec.SecurityUtil;
 import org.jau.sys.Debug;
 import org.jau.sys.PlatformProps;
 
@@ -60,25 +61,6 @@ public class UnsafeUtil {
     private static final Object illegalAccessLoggerSync = new Object();
     private static volatile boolean hasIllegalAccessError;
 
-    /**
-     * Deprecated call to {@link System#getSecurityManager()} w/o warnings.
-     */
-    @SuppressWarnings({ "deprecation", "removal" })
-    public static final SecurityManager getSecurityManager() {
-        return System.getSecurityManager();
-    }
-
-    /**
-     * Deprecated call to {@link java.security.AccessController#doPrivileged(PrivilegedAction)} w/o warnings.
-     * @param <T>
-     * @param o
-     * @return
-     */
-    @SuppressWarnings({ "deprecation", "removal" })
-    public static <T> T doPrivileged(final PrivilegedAction<T> o) {
-        return java.security.AccessController.doPrivileged( o );
-    }
-
     static {
         final Object[] _theUnsafe = { null };
         final Method[] _cleanBB = { null };
@@ -87,7 +69,7 @@ public class UnsafeUtil {
         final Class<?>[] _illegalAccessLoggerClass = { null };
         final Long[] _loggerOffset = { null };
 
-        doPrivileged(new PrivilegedAction<Object>() {
+        SecurityUtil.doPrivileged(new PrivilegedAction<Object>() {
             @Override
             public Object run() {
                 Class<?> unsafeClass = null;

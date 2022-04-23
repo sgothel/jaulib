@@ -32,22 +32,39 @@ import java.security.PrivilegedAction;
 import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
 
-import org.jau.lang.UnsafeUtil;
-
 public class SecurityUtil {
     @SuppressWarnings("removal")
     private static final SecurityManager securityManager;
     private static final Permission allPermissions;
     private static final boolean DEBUG = false;
 
+    /**
+     * Deprecated call to {@link System#getSecurityManager()} w/o warnings.
+     */
+    @SuppressWarnings({ "deprecation", "removal" })
+    public static final SecurityManager getSecurityManager() {
+        return System.getSecurityManager();
+    }
+
+    /**
+     * Deprecated call to {@link java.security.AccessController#doPrivileged(PrivilegedAction)} w/o warnings.
+     * @param <T>
+     * @param o
+     * @return
+     */
+    @SuppressWarnings({ "deprecation", "removal" })
+    public static <T> T doPrivileged(final PrivilegedAction<T> o) {
+        return java.security.AccessController.doPrivileged( o );
+    }
+
     static {
         allPermissions = new AllPermission();
-        securityManager = UnsafeUtil.getSecurityManager();
+        securityManager = getSecurityManager();
 
         if( DEBUG ) {
             final boolean hasAllPermissions;
             {
-                final ProtectionDomain insecPD = UnsafeUtil.doPrivileged(new PrivilegedAction<ProtectionDomain>() {
+                final ProtectionDomain insecPD = doPrivileged(new PrivilegedAction<ProtectionDomain>() {
                                                 @Override
                                                 public ProtectionDomain run() {
                                                     return SecurityUtil.class.getProtectionDomain();
@@ -64,7 +81,7 @@ public class SecurityUtil {
 
             System.err.println("SecurityUtil: Has SecurityManager: "+ ( null != securityManager ) ) ;
             System.err.println("SecurityUtil: Has AllPermissions: "+hasAllPermissions);
-            final Certificate[] certs = UnsafeUtil.doPrivileged(new PrivilegedAction<Certificate[]>() {
+            final Certificate[] certs = doPrivileged(new PrivilegedAction<Certificate[]>() {
                                                 @Override
                                                 public Certificate[] run() {
                                                     return getCerts(SecurityUtil.class);

@@ -2,11 +2,11 @@ package jau.pkg;
 
 import java.security.PrivilegedAction;
 
-import org.jau.lang.UnsafeUtil;
 import org.jau.net.Uri;
 import org.jau.pkg.JNIJarLibrary;
 import org.jau.pkg.JarUtil;
 import org.jau.pkg.cache.TempJarCache;
+import org.jau.sec.SecurityUtil;
 import org.jau.sys.JNILibrary;
 import org.jau.sys.MachineDataInfo;
 import org.jau.sys.PlatformProps;
@@ -48,7 +48,7 @@ public class PlatformRuntime {
         final boolean[] _isRunningFromJarURL = new boolean[] { false };
         final boolean[] _USE_TEMP_JAR_CACHE = new boolean[] { false };
 
-        UnsafeUtil.doPrivileged(new PrivilegedAction<Object>() {
+        SecurityUtil.doPrivileged(new PrivilegedAction<Object>() {
             @Override
             public Object run() {
 
@@ -76,6 +76,7 @@ public class PlatformRuntime {
                         // IllegalArgumentException, IOException
                         _USE_TEMP_JAR_CACHE[0] = false;
                         System.err.println("Caught "+e0.getClass().getSimpleName()+": "+e0.getMessage()+", while JNILibLoaderBase.addNativeJarLibs(..)");
+                        e0.printStackTrace();
                     }
                 } else {
                     _USE_TEMP_JAR_CACHE[0] = false;
@@ -85,6 +86,7 @@ public class PlatformRuntime {
                     JNILibrary.loadLibrary("jaulib_pkg_jni", false, cl);
                 } catch (final Throwable t) {
                     System.err.println("Caught "+t.getClass().getSimpleName()+": "+t.getMessage()+", while loading libs..");
+                    t.printStackTrace();
                 }
                 return null;
             } } );

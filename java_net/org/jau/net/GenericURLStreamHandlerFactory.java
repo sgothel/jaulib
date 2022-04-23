@@ -32,7 +32,7 @@ import java.security.PrivilegedAction;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.jau.lang.UnsafeUtil;
+import org.jau.sec.SecurityUtil;
 
 public class GenericURLStreamHandlerFactory implements URLStreamHandlerFactory {
     private static GenericURLStreamHandlerFactory factory = null;
@@ -74,7 +74,7 @@ public class GenericURLStreamHandlerFactory implements URLStreamHandlerFactory {
      */
     public synchronized static GenericURLStreamHandlerFactory register() {
         if(null == factory) {
-            factory = UnsafeUtil.doPrivileged(new PrivilegedAction<GenericURLStreamHandlerFactory>() {
+            factory = SecurityUtil.doPrivileged(new PrivilegedAction<GenericURLStreamHandlerFactory>() {
                 @Override
                 public GenericURLStreamHandlerFactory run() {
                     boolean ok = false;
