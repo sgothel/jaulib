@@ -25,7 +25,6 @@
  */
 package org.jau.sec;
 
-import java.security.AccessController;
 import java.security.AllPermission;
 import java.security.CodeSource;
 import java.security.Permission;
@@ -33,19 +32,22 @@ import java.security.PrivilegedAction;
 import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
 
+import org.jau.lang.UnsafeUtil;
+
 public class SecurityUtil {
+    @SuppressWarnings("removal")
     private static final SecurityManager securityManager;
     private static final Permission allPermissions;
     private static final boolean DEBUG = false;
 
     static {
         allPermissions = new AllPermission();
-        securityManager = System.getSecurityManager();
+        securityManager = UnsafeUtil.getSecurityManager();
 
         if( DEBUG ) {
             final boolean hasAllPermissions;
             {
-                final ProtectionDomain insecPD = AccessController.doPrivileged(new PrivilegedAction<ProtectionDomain>() {
+                final ProtectionDomain insecPD = UnsafeUtil.doPrivileged(new PrivilegedAction<ProtectionDomain>() {
                                                 @Override
                                                 public ProtectionDomain run() {
                                                     return SecurityUtil.class.getProtectionDomain();
@@ -62,7 +64,7 @@ public class SecurityUtil {
 
             System.err.println("SecurityUtil: Has SecurityManager: "+ ( null != securityManager ) ) ;
             System.err.println("SecurityUtil: Has AllPermissions: "+hasAllPermissions);
-            final Certificate[] certs = AccessController.doPrivileged(new PrivilegedAction<Certificate[]>() {
+            final Certificate[] certs = UnsafeUtil.doPrivileged(new PrivilegedAction<Certificate[]>() {
                                                 @Override
                                                 public Certificate[] run() {
                                                     return getCerts(SecurityUtil.class);

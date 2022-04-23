@@ -28,10 +28,11 @@ package org.jau.net;
 import java.net.URL;
 import java.net.URLStreamHandler;
 import java.net.URLStreamHandlerFactory;
-import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.jau.lang.UnsafeUtil;
 
 public class GenericURLStreamHandlerFactory implements URLStreamHandlerFactory {
     private static GenericURLStreamHandlerFactory factory = null;
@@ -73,7 +74,7 @@ public class GenericURLStreamHandlerFactory implements URLStreamHandlerFactory {
      */
     public synchronized static GenericURLStreamHandlerFactory register() {
         if(null == factory) {
-            factory = AccessController.doPrivileged(new PrivilegedAction<GenericURLStreamHandlerFactory>() {
+            factory = UnsafeUtil.doPrivileged(new PrivilegedAction<GenericURLStreamHandlerFactory>() {
                 @Override
                 public GenericURLStreamHandlerFactory run() {
                     boolean ok = false;

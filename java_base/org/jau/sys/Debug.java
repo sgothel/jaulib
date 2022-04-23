@@ -26,8 +26,9 @@
 
 package org.jau.sys;
 
-import java.security.AccessController;
 import java.security.PrivilegedAction;
+
+import org.jau.lang.UnsafeUtil;
 
 /** Helper routines for logging and debugging. */
 
@@ -37,7 +38,7 @@ public class Debug extends PropertyAccess {
   private static final boolean debugAll;
 
   static {
-    AccessController.doPrivileged(new PrivilegedAction<Object>() {
+    UnsafeUtil.doPrivileged(new PrivilegedAction<Object>() {
         @Override
         public Object run() {
             PropertyAccess.addTrustedPrefix("jau.");

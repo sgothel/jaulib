@@ -31,12 +31,12 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
-import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.List;
 
 import org.jau.lang.NioUtil;
 import org.jau.lang.ReflectionUtil;
+import org.jau.lang.UnsafeUtil;
 import org.jau.sys.PlatformTypes.ABIType;
 import org.jau.sys.PlatformTypes.CPUType;
 import org.jau.sys.PlatformTypes.OSType;
@@ -128,7 +128,7 @@ public class PlatformProps {
         final String os_arch_prop;
         {
             final String[] props =
-                    AccessController.doPrivileged(new PrivilegedAction<String[]>() {
+                    UnsafeUtil.doPrivileged(new PrivilegedAction<String[]>() {
                         @Override
                         public String[] run() {
                             final String[] props = new String[4];
@@ -160,7 +160,7 @@ public class PlatformProps {
             final ABIType[] _elfAbiType = { null };
             final int[] _elfLittleEndian = { 0 }; // 1 - little, 2 - big
             final boolean[] _elfValid = { false };
-            AccessController.doPrivileged(new PrivilegedAction<Object>() {
+            UnsafeUtil.doPrivileged(new PrivilegedAction<Object>() {
                 @Override
                 public Object run() {
                     RandomAccessFile in = null;

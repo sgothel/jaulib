@@ -44,6 +44,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 import org.jau.io.IOUtil;
+import org.jau.lang.UnsafeUtil;
 import org.jau.net.Uri;
 import org.jau.sec.SecurityUtil;
 import org.jau.sys.Debug;
@@ -92,7 +93,8 @@ public class JarUtil {
             throw new IllegalStateException("Resolver already set!");
         }
 
-        final SecurityManager security = System.getSecurityManager();
+        @SuppressWarnings("removal")
+        final SecurityManager security = UnsafeUtil.getSecurityManager();
         if(security != null) {
             security.checkSetFactory();
         }

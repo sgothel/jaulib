@@ -28,7 +28,6 @@ package org.jau.sys;
 
 import java.io.File;
 import java.net.URISyntaxException;
-import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -38,6 +37,7 @@ import java.util.StringTokenizer;
 
 import org.jau.io.IOUtil;
 import org.jau.lang.ReflectionUtil;
+import org.jau.lang.UnsafeUtil;
 
 /**
  * Static JNI Native Libraries handler.
@@ -338,7 +338,7 @@ public class JNILibrary {
 
     // Add entries from java.library.path
     final String[] javaLibraryPaths =
-      AccessController.doPrivileged(new PrivilegedAction<String[]>() {
+      UnsafeUtil.doPrivileged(new PrivilegedAction<String[]>() {
           @Override
           public String[] run() {
             int count = 0;
@@ -380,7 +380,7 @@ public class JNILibrary {
 
     // Add current working directory
     final String userDir =
-      AccessController.doPrivileged(new PrivilegedAction<String>() {
+      UnsafeUtil.doPrivileged(new PrivilegedAction<String>() {
           @Override
           public String run() {
             return System.getProperty("user.dir");

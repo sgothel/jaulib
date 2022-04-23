@@ -29,6 +29,7 @@ package org.jau.sys;
 import java.security.*;
 import java.util.HashSet;
 
+import org.jau.lang.UnsafeUtil;
 import org.jau.sec.SecurityUtil;
 
 
@@ -58,9 +59,9 @@ public class PropertyAccess {
 
   /**
    * @param prefix New prefix to be registered as trusted.
-   * @throws AccessControlException as thrown by {@link SecurityUtil#checkAllPermissions()}.
+   * @throws SecurityException as thrown by {@link SecurityUtil#checkAllPermissions()}.
    */
-  protected static final void addTrustedPrefix(final String prefix) throws AccessControlException {
+  protected static final void addTrustedPrefix(final String prefix) throws SecurityException {
       SecurityUtil.checkAllPermissions();
       trustedPrefixes.add(prefix);
   }
@@ -176,7 +177,7 @@ public class PropertyAccess {
   }
 
   private static final String getTrustedPropKey(final String propertyKey) {
-    return AccessController.doPrivileged(new PrivilegedAction<String>() {
+    return UnsafeUtil.doPrivileged(new PrivilegedAction<String>() {
         @Override
         public String run() {
           try {

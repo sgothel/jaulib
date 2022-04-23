@@ -1,8 +1,8 @@
 package jau.pkg;
 
-import java.security.AccessController;
 import java.security.PrivilegedAction;
 
+import org.jau.lang.UnsafeUtil;
 import org.jau.net.Uri;
 import org.jau.pkg.JNIJarLibrary;
 import org.jau.pkg.JarUtil;
@@ -48,7 +48,7 @@ public class PlatformRuntime {
         final boolean[] _isRunningFromJarURL = new boolean[] { false };
         final boolean[] _USE_TEMP_JAR_CACHE = new boolean[] { false };
 
-        AccessController.doPrivileged(new PrivilegedAction<Object>() {
+        UnsafeUtil.doPrivileged(new PrivilegedAction<Object>() {
             @Override
             public Object run() {
 
