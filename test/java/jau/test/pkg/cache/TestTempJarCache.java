@@ -50,6 +50,7 @@ import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
+import jau.pkg.PlatformRuntime;
 import jau.test.junit.util.JunitTracer;
 import jau.test.net.URIDumpUtil;
 
@@ -118,6 +119,7 @@ public class TestTempJarCache extends JunitTracer {
     public static void init() {
         // may already been initialized by other test
         // Assert.assertFalse(TempCacheReg.isTempFileCacheUsed());
+        PlatformRuntime.initSingleton();
         Assert.assertTrue(TempFileCache.initSingleton());
         Assert.assertTrue(TempCacheReg.isTempFileCacheUsed());
 
