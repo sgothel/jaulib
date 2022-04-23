@@ -1,5 +1,10 @@
 find_package(JNI REQUIRED)
 
+if (JNI_FOUND)
+    message (STATUS "JNI_INCLUDE_DIRS=${JNI_INCLUDE_DIRS}")
+    message (STATUS "JNI_LIBRARIES=${JNI_LIBRARIES}")
+endif (JNI_FOUND)
+
 set (jaulib_base_LIB_INCLUDE_DIRS
     ${PROJECT_SOURCE_DIR}/include
 )
@@ -27,7 +32,11 @@ endif()
 set (CMAKE_SHARED_LINKER_FLAGS "-Wl,--as-needed")
 
 add_library (jaulib_jni_jni SHARED ${jaulib_jni_JNI_SRCS})
-target_link_libraries(jaulib_jni_jni ${JNI_LIBRARIES} jaulib)
+target_link_libraries(
+    jaulib_jni_jni 
+    ${JNI_LIBRARIES} 
+    jaulib
+)
 
 if(USE_STRIP)
 add_custom_command(TARGET jaulib_jni_jni POST_BUILD
