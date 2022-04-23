@@ -186,7 +186,9 @@ public class TempJarCache {
             throw new RuntimeException("initSingleton() failed.");
         }
         if( forExecutables && !staticTempIsExecutable ) {
-            throw new RuntimeException("TempJarCache folder not suitable for executables");
+            final File tempDir = null != tmpFileCache ? tmpFileCache.getTempDir() : null;
+            final String tempDirAbsPath = null != tempDir ? tempDir.getAbsolutePath() : null;
+            throw new RuntimeException("TempJarCache folder not suitable for executables: "+tempDirAbsPath);
         }
     }
 
