@@ -1,5 +1,7 @@
 # java/CMakeLists.txt
 
+set(jaulib_base_jar_file ${CMAKE_CURRENT_BINARY_DIR}/jaulib_base.jar CACHE FILEPATH "jaulib base jar file" FORCE)
+
 set(CMAKE_JNI_TARGET TRUE)
 file(GLOB_RECURSE JAVA_SOURCES "*.java")
 add_jar(jaulib_base_jar 
