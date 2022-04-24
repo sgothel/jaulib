@@ -21,7 +21,7 @@ set (jaulib_LIB_SRCS
 add_library (jaulib SHARED ${jaulib_LIB_SRCS})
 target_link_libraries (
   jaulib
-  unwind
+  ${LIBUNWIND_LIBNAME}
   ${CMAKE_THREAD_LIBS_INIT}
 )
 

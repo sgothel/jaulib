@@ -77,6 +77,11 @@ Disable stripping native lib even in non debug build:
 ~~~~~~~~~~~~~
 -DUSE_STRIP=OFF
 ~~~~~~~~~~~~~
+Disable using `libunwind` (default: enabled for all but `arm32`, `armhf`)
+~~~~~~~~~~~~~
+-DUSE_LIBUNWIND=OFF
+~~~~~~~~~~~~~
+
 Override default javac debug arguments `source,lines`:
 ~~~~~~~~~~~~~
 -DJAVAC_DEBUG_ARGS="source,lines,vars"

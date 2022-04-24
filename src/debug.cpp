@@ -27,9 +27,11 @@
 
 #include <cstdarg>
 
-#define UNW_LOCAL_ONLY
-#include <libunwind.h>
-#include <cxxabi.h>
+#ifdef USE_LIBUNWIND
+    #define UNW_LOCAL_ONLY
+    #include <libunwind.h>
+    #include <cxxabi.h>
+#endif /* USE_LIBUNWIND */
 
 using namespace jau;
 
@@ -44,11 +46,12 @@ using namespace jau;
 #endif
 
 std::string jau::get_backtrace(const bool skip_anon_frames, const jau::snsize_t max_frames, const jau::snsize_t skip_frames) noexcept {
+    std::string out;
+#ifdef USE_LIBUNWIND
     // symbol:
     //  1: _ZN9direct_bt10DBTAdapter14startDiscoveryEbNS_19HCILEOwnAddressTypeEtt + 0x58d @ ip 0x7faa959d6daf, sp 0x7ffe38f301e0
     // de-mangled:
     //  1: direct_bt::DBTAdapter::startDiscovery(bool, direct_bt::HCILEOwnAddressType, unsigned short, unsigned short) + 0x58d @ ip 0x7f687b459071, sp 0x7fff2bf795d0
-    std::string out;
     jau::snsize_t frame=0;
     int res;
     char cstr[256];
@@ -108,6 +111,12 @@ std::string jau::get_backtrace(const bool skip_anon_frames, const jau::snsize_t 
             out.append(line);
         }
     }
+#else /* USE_LIBUNWIND */
+    (void)skip_anon_frames;
+    (void)max_frames;
+    (void)skip_frames;
+    out.append("0: backtrace disabled\n");
+#endif /* USE_LIBUNWIND */
     return out;
 }
 
