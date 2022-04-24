@@ -125,8 +125,9 @@ a Raspi-arm64, Raspi-armhf or PC-amd64 target image.
 
 * First stable release (TODO)
 
-**0.8.5**
+**0.8.6**
 
+* Enhance `service_runner` and fix `simple_timer`, i.e. end waiting if stopped
 * Disable `libunwind` on `armhf`/`arm32` for stability, see `USE_LIBUNWIND` cmake variable above
 * OpenJDK 17 compatible w/o warnings, use if available via build scripts.
 
