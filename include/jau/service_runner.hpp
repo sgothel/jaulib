@@ -65,6 +65,8 @@ namespace jau {
             Callback service_init_locked;
             Callback service_end_locked;
 
+            std::mutex mtx_shall_stop_;
+            std::condition_variable cv_shall_stop_;
             jau::sc_atomic_bool shall_stop_;
             jau::sc_atomic_bool running;
             pthread_t thread_id_;
@@ -72,7 +74,7 @@ namespace jau {
             std::mutex mtx_lifecycle;
             std::condition_variable cv_init;
 
-            void workerThread();
+            void service_thread();
 
             static bool install_sighandler() noexcept;
 
@@ -139,7 +141,7 @@ namespace jau {
             nsize_t service_shutdown_timeout_ms() const noexcept { return service_shutdown_timeout_ms_; }
 
             /**
-             * Return the thread-id of this service worker thread, zero if not running.
+             * Return the thread-id of this service service thread, zero if not running.
              */
             pthread_t thread_id() const noexcept { return thread_id_; }
 
@@ -159,6 +161,9 @@ namespace jau {
              * or even to skip stopping this service (again).
              *
              * @see is_running()
+             * @see set_shall_stop()
+             * @see mtx_shall_stop()
+             * @see cv_shall_stop()
              * @see start()
              * @see stop()
              * @see join()
@@ -177,11 +182,33 @@ namespace jau {
             bool shall_stop2(int dummy) /* const */ noexcept { (void)dummy; return shall_stop_; }
 
             /**
+             * Marks the service thread to stop in due process by flagging `shall stop` to `true`.
+             * @see is_running()
+             * @see shall_stop()
+             * @see mtx_shall_stop()
+             * @see cv_shall_stop()
+             * @see start()
+             * @see stop()
+             * @see join()
+             */
+            void set_shall_stop() noexcept;
+
+            /** mtx_shall_stop() and cv_shall_stop() allows caller to be notified when shall_stop() changes, i.e. start(), set_shall_stop() or stop() is called. */
+            std::mutex& mtx_shall_stop() noexcept { return mtx_shall_stop_; }
+
+            /** mtx_shall_stop() and cv_shall_stop() allows caller to be notified when shall_stop() changes, i.e. start(), set_shall_stop() or stop() is called. */
+            std::condition_variable& cv_shall_stop() noexcept { return  cv_shall_stop_; }
+
+            /**
              * Starts this service, if not running already.
              *
              * Methods blocks the current thread until service is started.
              *
              * @see is_running()
+             * @see shall_stop()
+             * @see set_shall_stop()
+             * @see mtx_shall_stop()
+             * @see cv_shall_stop()
              * @see stop()
              * @see join()
              * @see service_shutdown_timeout_ms()
@@ -196,17 +223,22 @@ namespace jau {
              *
              * Maximum blocked wait period is optionally limited by service_shutdown_timeout_ms().
              *
-             * Method attempts to stop the worker thread
-             * - by flagging `shall stop`
-             * - if called from the service thread:
-             *   - sending `SIGALRM` to the worker thread
-             *   - waiting until worker thread has stopped or timeout occurred
+             * Method attempts to stop the service thread
+             * - by flagging `shall stop` via set_shall_stop()
+             * - if not called from the service thread itself:
+             *   - sending `SIGALRM` to the service thread
+             *   - waiting until service thread has stopped or timeout occurred
              *
              * Implementation requires a `SIGALRM` handler to be install,
              * e.g. using singleton_sighandler().
              *
              * @returns true if thread has been stopped or false if timeout has been hit
+             *
              * @see is_running()
+             * @see shall_stop()
+             * @see set_shall_stop()
+             * @see mtx_shall_stop()
+             * @see cv_shall_stop()
              * @see start()
              * @see join()
              * @see service_shutdown_timeout_ms()
@@ -222,17 +254,15 @@ namespace jau {
              *
              * @returns true if thread has been stopped or false if timeout has been hit
              * @see is_running()
+             * @see shall_stop()
+             * @see set_shall_stop()
+             * @see mtx_shall_stop()
+             * @see cv_shall_stop()
              * @see start()
              * @see stop()
              * @see service_shutdown_timeout_ms()
              */
             bool join() noexcept;
-
-            /**
-             * Only marks the worker thread to stop in due process
-             * by flagging `shall stop`.
-             */
-            void set_shall_stop() noexcept { shall_stop_ = true; }
 
             /**
              * Returns a string representation of this service

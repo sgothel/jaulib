@@ -37,7 +37,7 @@ extern "C" {
 
 using namespace jau;
 
-void service_runner::workerThread() {
+void service_runner::service_thread() {
     {
         const std::lock_guard<std::mutex> lock(mtx_lifecycle); // RAII-style acquire and relinquish via destructor
         service_init_locked(*this);
@@ -123,7 +123,7 @@ service_runner::service_runner(const std::string& name__,
   service_work(service_work_),
   service_init_locked(service_init_locked_),
   service_end_locked(service_end_locked_),
-  shall_stop_(false), running(false),
+  shall_stop_(true), running(false),
   thread_id_(0)
 {
     DBG_PRINT("%s::ctor", name_.c_str());
@@ -135,20 +135,32 @@ service_runner::~service_runner() noexcept {
     DBG_PRINT("%s::dtor: End", name_.c_str());
 }
 
+void service_runner::set_shall_stop() noexcept {
+    {
+        const std::lock_guard<std::mutex> lock_stop(mtx_shall_stop_); // RAII-style acquire and relinquish via destructor
+        shall_stop_ = true;
+    }
+    cv_shall_stop_.notify_all(); // have mutex unlocked before notify_all to avoid pessimistic re-block of notified wait() thread.
+}
+
 void service_runner::start() noexcept {
     DBG_PRINT("%s::start: Begin: %s", name_.c_str(), toString().c_str());
     /**
      * We utilize a global SIGALRM handler, since we only can install one handler.
      */
     std::unique_lock<std::mutex> lock(mtx_lifecycle); // RAII-style acquire and relinquish via destructor
-    shall_stop_ = false;
+    {
+        const std::lock_guard<std::mutex> lock_stop(mtx_shall_stop_); // RAII-style acquire and relinquish via destructor
+        shall_stop_ = false;
+    }
+    cv_shall_stop_.notify_all(); // have mutex unlocked before notify_all to avoid pessimistic re-block of notified wait() thread.
 
     if( running ) {
         DBG_PRINT("%s::start: End.0: %s", name_.c_str(), toString().c_str());
         return;
     }
 
-    std::thread t(&service_runner::workerThread, this); // @suppress("Invalid arguments")
+    std::thread t(&service_runner::service_thread, this); // @suppress("Invalid arguments")
     thread_id_ = t.native_handle();
     // Avoid 'terminate called without an active exception'
     // as t may end due to I/O errors.
@@ -162,15 +174,15 @@ void service_runner::start() noexcept {
 
 bool service_runner::stop() noexcept {
     DBG_PRINT("%s::stop: Begin: %s", name_.c_str(), toString().c_str());
-    std::unique_lock<std::mutex> lockReader(mtx_lifecycle); // RAII-style acquire and relinquish via destructor
 
+    std::unique_lock<std::mutex> lock(mtx_lifecycle); // RAII-style acquire and relinquish via destructor
     const pthread_t tid_service = thread_id_;
     const bool is_service = tid_service == pthread_self();
     DBG_PRINT("%s::stop: service[running %d, shall_stop %d, is_service %d, tid %p)",
               name_.c_str(), running.load(), shall_stop_.load(), is_service, (void*)tid_service);
+    set_shall_stop();
     bool result;
     if( running ) {
-        shall_stop_ = true;
         if( !is_service ) {
             if( 0 != tid_service ) {
                 int kerr;
@@ -184,9 +196,9 @@ bool service_runner::stop() noexcept {
                 std::cv_status s { std::cv_status::no_timeout };
                 if( 0 < service_shutdown_timeout_ms_ ) {
                     std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
-                    s = cv_init.wait_until(lockReader, t0 + std::chrono::milliseconds(service_shutdown_timeout_ms_));
+                    s = cv_init.wait_until(lock, t0 + std::chrono::milliseconds(service_shutdown_timeout_ms_));
                 } else {
-                    cv_init.wait(lockReader);
+                    cv_init.wait(lock);
                 }
                 if( std::cv_status::timeout == s && true == running ) {
                     ERR_PRINT("%s::stop: Timeout (force !running): %s", name_.c_str(), toString().c_str());
