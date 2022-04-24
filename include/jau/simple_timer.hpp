@@ -63,27 +63,10 @@ namespace jau {
             Timer_func_ms timer_func_ms;
             jau::relaxed_atomic_nsize_t duration_ms;
 
-            void timer_worker(service_runner& sr_ref) {
-                do {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(duration_ms));
-                    Timer_func_ms tf;
-                    {
-                        std::unique_lock<std::mutex> lockReader(mtx_timerfunc); // RAII-style acquire and relinquish via destructor
-                        tf = timer_func_ms;
-                    }
-                    if( !tf.isNullType() && !sr_ref.shall_stop() ) {
-                        duration_ms = tf(*this);
-                    } else {
-                        duration_ms = 0;
-                    }
-                } while ( 0 < duration_ms );
-            }
+            void timer_work(service_runner& sr_ref);
 
         public:
-            simple_timer(const std::string& name, const nsize_t service_shutdown_timeout_ms) noexcept
-            : timer_service(name, service_shutdown_timeout_ms, jau::bindMemberFunc(this, &simple_timer::timer_worker)),
-              timer_func_ms(), duration_ms(0)
-            {}
+            simple_timer(const std::string& name, const nsize_t service_shutdown_timeout_ms) noexcept;
 
             /**
              * No copy constructor nor move constructor.
@@ -104,7 +87,7 @@ namespace jau {
             /**
              * Returns true if timer is running
              */
-            bool is_running() const { return timer_service.is_running(); }
+            bool is_running() const noexcept { return timer_service.is_running(); }
 
             /**
              * Returns true if timer shall stop.
@@ -120,15 +103,7 @@ namespace jau {
              * @param tofunc user Timer_func_ms to be called on next timer event
              * @return true if timer has been started, otherwise false implies timer is already running.
              */
-            bool start(nsize_t duration_ms_, Timer_func_ms tofunc) {
-                if( timer_service.is_running() ) {
-                    return false;
-                }
-                timer_func_ms = tofunc;
-                duration_ms = duration_ms_;
-                timer_service.start();
-                return true;
-            }
+            bool start(nsize_t duration_ms_, Timer_func_ms tofunc) noexcept;
 
             /**
              * Start or update the timer with given user Timer_func_ms function and initial duration in milliseconds.
@@ -139,24 +114,12 @@ namespace jau {
              * @param duration_ms_ initial timer duration until next timer event in milliseconds
              * @param tofunc user Timer_func_ms to be called on next timer event
              */
-            void start_or_update(nsize_t duration_ms_, Timer_func_ms tofunc) {
-                if( timer_service.is_running() ) {
-                    std::unique_lock<std::mutex> lockReader(mtx_timerfunc); // RAII-style acquire and relinquish via destructor
-                    timer_func_ms = tofunc;
-                    duration_ms = duration_ms_;
-                } else {
-                    timer_func_ms = tofunc;
-                    duration_ms = duration_ms_;
-                    timer_service.start();
-                }
-            }
+            void start_or_update(nsize_t duration_ms_, Timer_func_ms tofunc) noexcept;
 
             /**
              * Stop timer, see service_runner::stop()
              */
-            void stop() {
-                timer_service.stop();
-            }
+            void stop() noexcept { timer_service.stop(); }
     };
 
 } /* namespace jau */
