@@ -94,7 +94,7 @@ namespace jau {
     #define PERF_TS_T0_BASE()  const uint64_t _t0 = jau::getCurrentMilliseconds()
 
     #define PERF_TS_TD_BASE(m)  { const uint64_t _td = jau::getCurrentMilliseconds() - _t0; \
-                                  fprintf(stderr, "[%'9" PRIu64 "] PERF %s done in %d ms,\n", jau::environment::getElapsedMillisecond(), (m), (int)_td); }
+                                  fprintf(stderr, "[%s] PERF %s done in %d ms,\n", jau::to_decstring(jau::environment::getElapsedMillisecond(), ',', 9).c_str(), (m), (int)_td); }
     #ifdef PERF_PRINT_ON
         #define PERF_TS_T0() PERF_TS_T0_BASE()
         #define PERF_TS_TD(m) PERF_TS_TD_BASE(m)
