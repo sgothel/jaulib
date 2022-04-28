@@ -128,6 +128,26 @@ namespace jau {
         { return !(*this == o); }
     } );
 
+    namespace int_literals {
+        /** Literal for int64_t */
+        constexpr int64_t operator ""_i64(unsigned long long int __v)   { return (int64_t)__v; }
+
+        /** Literal for uint64_t */
+        constexpr int64_t operator ""_ui64(unsigned long long int __v)  { return (uint64_t)__v; }
+
+        /** Literal for (unsigned) size_t */
+        constexpr int64_t operator ""_uz(unsigned long long int __v)  { return (size_t)__v; }
+
+        /** Literal for ssize_t */
+        constexpr int64_t operator ""_sz(unsigned long long int __v)  { return (ssize_t)__v; }
+
+        /** Literal for (unsigned) jau::nsize_t */
+        constexpr int64_t operator ""_unz(unsigned long long int __v)  { return (jau::nsize_t)__v; }
+
+        /** Literal for jau::snsize_t */
+        constexpr int64_t operator ""_snz(unsigned long long int __v)  { return (jau::snsize_t)__v; }
+    }
+
 } // namespace jau
 
 /** \example test_basictypeconv.cpp
