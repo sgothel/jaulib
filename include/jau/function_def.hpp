@@ -126,7 +126,7 @@ namespace jau {
 
             InvocationFunc<R, A...> * clone() const noexcept override { return new NullInvocationFunc(); }
 
-            R invoke(A...) override { return (R)0; }
+            R invoke(A...) override { return R(); }
 
             bool operator==(const InvocationFunc<R, A...>& rhs) const noexcept override
             {
