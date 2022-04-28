@@ -39,6 +39,8 @@ namespace jau {
     // *************************************************
      */
 
+    // Remember: constexpr specifier used in a function or static data member (since C++17) declaration implies inline.
+
     /**
      * Returns the value of the sign function.
      * <pre>
@@ -47,28 +49,30 @@ namespace jau {
      *  1 for x > 0
      * </pre>
      * Implementation is type safe.
-     * @tparam T an integral number type
-     * @param x the integral number
+     * @tparam T an arithmetic number type
+     * @param x the arithmetic number
      * @return function result
      */
-    template <typename T>
+    template <typename T,
+              std::enable_if_t< std::is_arithmetic_v<T>, bool> = true>
     constexpr snsize_t sign(const T x) noexcept
     {
         return (T(0) < x) - (x < T(0));
     }
 
     /**
-     * Safely inverts the sign of an integral number.
-     * <p>
+     * Safely inverts the sign of an arithmetic number.
+     *
      * Implementation takes special care to have T_MIN, i.e. std::numeric_limits<T>::min(),
      * converted to T_MAX, i.e. std::numeric_limits<T>::max().<br>
      * This is necessary since <code>T_MAX < | -T_MIN |</code> and the result would
      * not fit in the return type T otherwise.
-     * </p>
+     *
      * Hence for the extreme minimum case:
      * <pre>
      * jau::invert_sign<int32_t>(INT32_MIN) = | INT32_MIN | - 1 = INT32_MAX
      * </pre>
+     *
      * Otherwise with x < 0:
      * <pre>
      * jau::invert_sign<int32_t>(x) = | x | = -x
@@ -77,29 +81,50 @@ namespace jau {
      * <pre>
      * jau::invert_sign<int32_t>(x) = -x
      * </pre>
-     * @tparam T
-     * @param x
-     * @return
+     *
+     * @tparam T an arithmetic number type
+     * @param x the arithmetic number
+     * @return function result
      */
-    template <typename T>
+    template <typename T,
+              std::enable_if_t< std::is_arithmetic_v<T> &&
+                               !std::is_unsigned_v<T>, bool> = true>
     constexpr T invert_sign(const T x) noexcept
     {
         return std::numeric_limits<T>::min() == x ? std::numeric_limits<T>::max() : -x;
     }
 
+    template <typename T,
+              std::enable_if_t< std::is_arithmetic_v<T> &&
+                                std::is_unsigned_v<T>, bool> = true>
+    constexpr T invert_sign(const T x) noexcept
+    {
+        return x;
+    }
+
     /**
-     * Returns the absolute value of an integral number
-     * <p>
+     * Returns the absolute value of an arithmetic number
+     *
      * Implementation uses jau::invert_sign() to have a safe absolute value conversion, if required.
-     * </p>
-     * @tparam T an integral number type
-     * @param x the integral number
+     *
+     * @tparam T an arithmetic number type
+     * @param x the arithmetic number
      * @return function result
      */
-    template <typename T>
+    template <typename T,
+              std::enable_if_t< std::is_arithmetic_v<T> &&
+                               !std::is_unsigned_v<T>, bool> = true>
     constexpr T abs(const T x) noexcept
     {
         return sign(x) < 0 ? invert_sign<T>( x ) : x;
+    }
+
+    template <typename T,
+              std::enable_if_t< std::is_arithmetic_v<T> &&
+                                std::is_unsigned_v<T>, bool> = true>
+    constexpr T abs(const T x) noexcept
+    {
+        return x;
     }
 
     /**
@@ -120,7 +145,8 @@ namespace jau {
      * @param sign_is_digit if true and value is negative, adds one to result for sign. Defaults to true.
      * @return digit count
      */
-    template<typename T>
+    template <typename T,
+              std::enable_if_t<  std::is_integral_v<T>, bool> = true>
     constexpr nsize_t digits10(const T x, const snsize_t x_sign, const bool sign_is_digit=true) noexcept
     {
         if( x_sign == 0 ) {
@@ -147,7 +173,8 @@ namespace jau {
      * @param sign_is_digit if true and value is negative, adds one to result for sign. Defaults to true.
      * @return digit count
      */
-    template<typename T>
+    template <typename T,
+              std::enable_if_t<  std::is_integral_v<T>, bool> = true>
     constexpr nsize_t digits10(const T x, const bool sign_is_digit=true) noexcept
     {
         return digits10<T>(x, jau::sign<T>(x), sign_is_digit);
