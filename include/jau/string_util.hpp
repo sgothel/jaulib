@@ -115,7 +115,7 @@ namespace jau {
     template< class value_type,
               std::enable_if_t<std::is_pointer_v<value_type>,
                                bool> = true>
-    std::string to_hexstring(value_type const & v) noexcept
+    inline std::string to_hexstring(value_type const & v) noexcept
     {
         const uint64_t v2 = reinterpret_cast<uint64_t>(v);
         return bytesHexString(pointer_cast<const uint8_t*>(&v2), 0, sizeof(v), false /* lsbFirst */);
@@ -132,7 +132,7 @@ namespace jau {
               std::enable_if_t<!std::is_pointer_v<value_type> &&
                                std::is_standard_layout_v<value_type>,
                                bool> = true>
-    std::string to_hexstring(value_type const & v) noexcept
+    inline std::string to_hexstring(value_type const & v) noexcept
     {
         return bytesHexString(pointer_cast<const uint8_t*>(&v), 0, sizeof(v), false /* lsbFirst */);
     }
@@ -191,7 +191,7 @@ namespace jau {
               std::enable_if_t< std::is_integral_v<value_type> ||
                                 std::is_floating_point_v<value_type>,
                                 bool> = true>
-    std::string to_string(const value_type & ref)
+    inline std::string to_string(const value_type & ref)
     {
         return std::to_string(ref);
     }
@@ -200,7 +200,7 @@ namespace jau {
                                !std::is_floating_point_v<value_type> &&
                                 std::is_pointer_v<value_type>,
                                bool> = true>
-    std::string to_string(const value_type & ref)
+    inline std::string to_string(const value_type & ref)
     {
         return to_hexstring((void*)ref);
     }
@@ -211,7 +211,7 @@ namespace jau {
                                !std::is_pointer_v<value_type> &&
                                 jau::has_toString_v<value_type>,
                                bool> = true>
-    std::string to_string(const value_type & ref) {
+    inline std::string to_string(const value_type & ref) {
         return ref.toString();
     }
 
@@ -222,7 +222,7 @@ namespace jau {
                                !jau::has_toString_v<value_type> &&
                                 jau::has_to_string_v<value_type>,
                                bool> = true>
-    std::string to_string(const value_type & ref) {
+    inline std::string to_string(const value_type & ref) {
         return ref.to_string();
     }
 
@@ -234,7 +234,7 @@ namespace jau {
                                !jau::has_to_string_v<value_type> &&
                                 jau::has_member_of_pointer_v<value_type>,
                                bool> = true>
-    std::string to_string(const value_type & ref) {
+    inline std::string to_string(const value_type & ref) {
         return to_hexstring((void*)ref.operator->());
     }
 
@@ -246,7 +246,7 @@ namespace jau {
                                !jau::has_to_string_v<value_type> &&
                                !jau::has_member_of_pointer_v<value_type>,
                                bool> = true>
-    std::string to_string(const value_type & ref) {
+    inline std::string to_string(const value_type & ref) {
         (void)ref;
         return "jau::to_string<T> not available for "+type_cue<value_type>::print("unknown", TypeTraitGroup::ALL);
     }
