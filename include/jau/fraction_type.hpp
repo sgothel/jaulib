@@ -1025,7 +1025,6 @@ namespace jau {
      * @see sleep_until()
      * @see sleep_for()
      * @see wait_until()
-     * @see wait_until2()
      * @see wait_for()
      */
     void sleep_until(const fraction_timespec& absolute_time, const bool monotonic=true) noexcept;
@@ -1046,7 +1045,6 @@ namespace jau {
      * @see sleep_until()
      * @see sleep_for()
      * @see wait_until()
-     * @see wait_until2()
      * @see wait_for()
      */
     void sleep_for(const fraction_timespec& relative_time, const bool monotonic=true) noexcept;
@@ -1067,7 +1065,6 @@ namespace jau {
      * @see sleep_until()
      * @see sleep_for()
      * @see wait_until()
-     * @see wait_until2()
      * @see wait_for()
      */
     void sleep_for(const fraction_i64& relative_time, const bool monotonic=true) noexcept;
@@ -1086,7 +1083,6 @@ namespace jau {
      * @see sleep_until()
      * @see sleep_for()
      * @see wait_until()
-     * @see wait_until2()
      * @see wait_for()
      */
     std::cv_status wait_until(std::condition_variable& cv, std::unique_lock<std::mutex>& lock, const fraction_timespec& absolute_time, const bool monotonic=true) noexcept;
@@ -1110,7 +1106,6 @@ namespace jau {
      * @see sleep_until()
      * @see sleep_for()
      * @see wait_until()
-     * @see wait_until2()
      * @see wait_for()
      */
     std::cv_status wait_for(std::condition_variable& cv, std::unique_lock<std::mutex>& lock, const fraction_timespec& relative_time, const bool monotonic=true) noexcept;
@@ -1134,7 +1129,6 @@ namespace jau {
      * @see sleep_until()
      * @see sleep_for()
      * @see wait_until()
-     * @see wait_until2()
      * @see wait_for()
      */
     std::cv_status wait_for(std::condition_variable& cv, std::unique_lock<std::mutex>& lock, const fraction_i64& relative_time, const bool monotonic=true) noexcept;
