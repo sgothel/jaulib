@@ -36,6 +36,7 @@
 #include <jau/ringbuffer.hpp>
 
 using namespace jau;
+using namespace jau::fractions_i64_literals;
 
 typedef jau::snsize_t IntegralType;
 
@@ -88,7 +89,7 @@ class TestRingbuffer13 {
         // INFO_STR(msg+": Created / " + rb->toString());
         for(jau::nsize_t i=0; i<len; i++) {
             SharedType svI;
-            REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb->toString(), rb->getBlocking(svI));
+            REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb->toString(), rb->getBlocking(svI, 0_s));
             // INFO_STR("Got "+std::to_string(svI->intValue())+" / " + rb->toString());
         }
         // INFO_STR(msg+": Dies / " + rb->toString());
@@ -102,7 +103,7 @@ class TestRingbuffer13 {
         // INFO_STR, INFO: Not thread safe yet
         // INFO_STR(msg+": Created / " + rb->toString());
         std::vector<SharedType> array(len);
-        REQUIRE_MSG("get-range of "+std::to_string(array.size())+" elem in "+rb->toString(), len==rb->getBlocking( &(*array.begin()), len, len) );
+        REQUIRE_MSG("get-range of "+std::to_string(array.size())+" elem in "+rb->toString(), len==rb->getBlocking( &(*array.begin()), len, len, 0_s) );
 
         for(jau::nsize_t i=0; i<len; i++) {
             SharedType svI = array[i];
@@ -121,7 +122,7 @@ class TestRingbuffer13 {
         for(jau::nsize_t i=0; i<len; i++) {
             Integer * vI = new Integer(startValue+i);
             // INFO_STR("Putting "+std::to_string(vI->intValue())+" ... / " + rb->toString());
-            rb->putBlocking( SharedType( vI ) );
+            rb->putBlocking( SharedType( vI ), 0_s );
         }
         // INFO_STR(msg+": Dies / " + rb->toString());
         (void)msg;

@@ -125,6 +125,16 @@ a Raspi-arm64, Raspi-armhf or PC-amd64 target image.
 
 * First stable release (TODO)
 
+**0.9.0**
+
+* Add getMonotonicTime() & getWallClockTime(), returning fraction_timespec
+* Add sleep_for(), sleep_until() and wait_for() & wait_until() using fraction, fraction_timespec, as well as choice over clock type.
+* Introduce new types: fraction, fraction_timespec; its constants & literals as well adoption in latch, ringbuffer, service_runner and simple_timer.
+* int_math.hpp: Add Integer overflow aware arithmetic, use Integer Overflow Builtins if available (GCC + Clang)
+* Refine sign(), invert_sign(), abs() and digits10() template funcs: Better type and signed/unsigned variant for invert_sign() and abs()
+* Add stdint literals in namespace `jau::int_literals`, e.g. `3_i64` for `(int64_t)3` for all stdint signed and unsigned 8-64 bit wide types
+* Always add libatomic (will be required for new fraction)
+
 **0.8.6**
 
 * Enhance `service_runner` and fix `simple_timer`, i.e. end waiting if stopped

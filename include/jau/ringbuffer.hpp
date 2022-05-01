@@ -41,6 +41,7 @@
 #include <jau/debug.hpp>
 #include <jau/basic_types.hpp>
 #include <jau/ordered_atomic.hpp>
+#include <jau/fraction_type.hpp>
 #include <jau/callocator.hpp>
 
 namespace jau {
@@ -248,18 +249,18 @@ class ringbuffer {
             }
         }
 
-        Size_type waitForElementsImpl(const Size_type min_count, const int timeoutMS) noexcept {
+        Size_type waitForElementsImpl(const Size_type min_count, const fraction_i64& timeout) noexcept {
             Size_type available = size();
             if( min_count > available ) {
                 std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ putImpl via same lock
                 available = size();
+                const fraction_timespec timeout_time = getMonotonicTime() + fraction_timespec(timeout);
                 while( min_count > available ) {
-                    if( 0 == timeoutMS ) {
+                    if( fractions_i64::zero == timeout ) {
                         cvWrite.wait(lockWrite);
                         available = size();
                     } else {
-                        std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
-                        std::cv_status s = cvWrite.wait_until(lockWrite, t0 + std::chrono::milliseconds(timeoutMS));
+                        std::cv_status s = wait_until(cvWrite, lockWrite, timeout_time );
                         available = size();
                         if( std::cv_status::timeout == s && min_count > available ) {
                             return available;
@@ -270,18 +271,18 @@ class ringbuffer {
             return available;
         }
 
-        Size_type waitForFreeSlotsImpl(const Size_type min_count, const int timeoutMS) noexcept {
+        Size_type waitForFreeSlotsImpl(const Size_type min_count, const fraction_i64& timeout) noexcept {
             Size_type available = freeSlots();
             if( min_count > available ) {
                 std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ getImpl via same lock
                 available = freeSlots();
+                const fraction_timespec timeout_time = getMonotonicTime() + fraction_timespec(timeout);
                 while( min_count > available ) {
-                    if( 0 == timeoutMS ) {
+                    if( fractions_i64::zero == timeout ) {
                         cvRead.wait(lockRead);
                         available = freeSlots();
                     } else {
-                        std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
-                        std::cv_status s = cvRead.wait_until(lockRead, t0 + std::chrono::milliseconds(timeoutMS));
+                        std::cv_status s = wait_until(cvRead, lockRead, timeout_time );
                         available = freeSlots();
                         if( std::cv_status::timeout == s && min_count > available ) {
                             return available;
@@ -403,7 +404,7 @@ class ringbuffer {
             }
         }
 
-        bool peekImpl(Value_type& dest, const bool blocking, const int timeoutMS) noexcept {
+        bool peekImpl(Value_type& dest, const bool blocking, const fraction_i64& timeout) noexcept {
             if( !std::is_copy_constructible_v<Value_type> ) {
                 ABORT("Value_type is not copy constructible");
                 return false;
@@ -413,12 +414,12 @@ class ringbuffer {
             if( localReadPos == writePos ) {
                 if( blocking ) {
                     std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ putImpl via same lock
+                    const fraction_timespec timeout_time = getMonotonicTime() + fraction_timespec(timeout);
                     while( localReadPos == writePos ) {
-                        if( 0 == timeoutMS ) {
+                        if( fractions_i64::zero == timeout ) {
                             cvWrite.wait(lockWrite);
                         } else {
-                            std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
-                            std::cv_status s = cvWrite.wait_until(lockWrite, t0 + std::chrono::milliseconds(timeoutMS));
+                            std::cv_status s = wait_until(cvWrite, lockWrite, timeout_time );
                             if( std::cv_status::timeout == s && localReadPos == writePos ) {
                                 return false;
                             }
@@ -441,18 +442,18 @@ class ringbuffer {
             return true;
         }
 
-        bool moveOutImpl(Value_type& dest, const bool blocking, const int timeoutMS) noexcept {
+        bool moveOutImpl(Value_type& dest, const bool blocking, const fraction_i64& timeout) noexcept {
             const Size_type oldReadPos = readPos; // SC-DRF acquire atomic readPos, sync'ing with putImpl
             Size_type localReadPos = oldReadPos;
             if( localReadPos == writePos ) {
                 if( blocking ) {
                     std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ putImpl via same lock
+                    const fraction_timespec timeout_time = getMonotonicTime() + fraction_timespec(timeout);
                     while( localReadPos == writePos ) {
-                        if( 0 == timeoutMS ) {
+                        if( fractions_i64::zero == timeout ) {
                             cvWrite.wait(lockWrite);
                         } else {
-                            std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
-                            std::cv_status s = cvWrite.wait_until(lockWrite, t0 + std::chrono::milliseconds(timeoutMS));
+                            std::cv_status s = wait_until(cvWrite, lockWrite, timeout_time );
                             if( std::cv_status::timeout == s && localReadPos == writePos ) {
                                 return false;
                             }
@@ -488,7 +489,7 @@ class ringbuffer {
             return true;
         }
 
-        Size_type moveOutImpl(Value_type *dest, const Size_type dest_len, const Size_type min_count_, const bool blocking, const int timeoutMS) noexcept {
+        Size_type moveOutImpl(Value_type *dest, const Size_type dest_len, const Size_type min_count_, const bool blocking, const fraction_i64& timeout) noexcept {
             const Size_type min_count = std::min(dest_len, min_count_);
             Value_type *iter_out = dest;
 
@@ -506,13 +507,13 @@ class ringbuffer {
                 if( blocking ) {
                     std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ putImpl via same lock
                     available = size();
+                    const fraction_timespec timeout_time = getMonotonicTime() + fraction_timespec(timeout);
                     while( min_count > available ) {
-                        if( 0 == timeoutMS ) {
+                        if( fractions_i64::zero == timeout ) {
                             cvWrite.wait(lockWrite);
                             available = size();
                         } else {
-                            std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
-                            std::cv_status s = cvWrite.wait_until(lockWrite, t0 + std::chrono::milliseconds(timeoutMS));
+                            std::cv_status s = wait_until(cvWrite, lockWrite, timeout_time );
                             available = size();
                             if( std::cv_status::timeout == s && min_count > available ) {
                                 return 0;
@@ -583,7 +584,7 @@ class ringbuffer {
             return count;
         }
 
-        Size_type dropImpl (Size_type count, const bool blocking, const int timeoutMS) noexcept {
+        Size_type dropImpl (Size_type count, const bool blocking, const fraction_i64& timeout) noexcept {
             if( count >= capacityPlusOne ) {
                 if( blocking ) {
                     return 0;
@@ -601,13 +602,13 @@ class ringbuffer {
                 if( blocking ) {
                     std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ putImpl via same lock
                     available = size();
+                    const fraction_timespec timeout_time = getMonotonicTime() + fraction_timespec(timeout);
                     while( count > available ) {
-                        if( 0 == timeoutMS ) {
+                        if( fractions_i64::zero == timeout ) {
                             cvWrite.wait(lockWrite);
                             available = size();
                         } else {
-                            std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
-                            std::cv_status s = cvWrite.wait_until(lockWrite, t0 + std::chrono::milliseconds(timeoutMS));
+                            std::cv_status s = wait_until(cvWrite, lockWrite, timeout_time );
                             available = size();
                             if( std::cv_status::timeout == s && count > available ) {
                                 return 0;
@@ -665,18 +666,18 @@ class ringbuffer {
             return count;
         }
 
-        bool moveIntoImpl(Value_type &&e, const bool blocking, const int timeoutMS) noexcept {
+        bool moveIntoImpl(Value_type &&e, const bool blocking, const fraction_i64& timeout) noexcept {
             Size_type localWritePos = writePos; // SC-DRF acquire atomic writePos, sync'ing with getImpl
             localWritePos = (localWritePos + 1) % capacityPlusOne;
             if( localWritePos == readPos ) {
                 if( blocking ) {
                     std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ getImpl via same lock
+                    const fraction_timespec timeout_time = getMonotonicTime() + fraction_timespec(timeout);
                     while( localWritePos == readPos ) {
-                        if( 0 == timeoutMS ) {
+                        if( fractions_i64::zero == timeout ) {
                             cvRead.wait(lockRead);
                         } else {
-                            std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
-                            std::cv_status s = cvRead.wait_until(lockRead, t0 + std::chrono::milliseconds(timeoutMS));
+                            std::cv_status s = wait_until(cvRead, lockRead, timeout_time );
                             if( std::cv_status::timeout == s && localWritePos == readPos ) {
                                 return false;
                             }
@@ -703,7 +704,7 @@ class ringbuffer {
             return true;
         }
 
-        bool copyIntoImpl(const Value_type &e, const bool blocking, const int timeoutMS) noexcept {
+        bool copyIntoImpl(const Value_type &e, const bool blocking, const fraction_i64& timeout) noexcept {
             if( !std::is_copy_constructible_v<Value_type> ) {
                 ABORT("Value_type is not copy constructible");
                 return false;
@@ -713,12 +714,12 @@ class ringbuffer {
             if( localWritePos == readPos ) {
                 if( blocking ) {
                     std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ getImpl via same lock
+                    const fraction_timespec timeout_time = getMonotonicTime() + fraction_timespec(timeout);
                     while( localWritePos == readPos ) {
-                        if( 0 == timeoutMS ) {
+                        if( fractions_i64::zero == timeout ) {
                             cvRead.wait(lockRead);
                         } else {
-                            std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
-                            std::cv_status s = cvRead.wait_until(lockRead, t0 + std::chrono::milliseconds(timeoutMS));
+                            std::cv_status s = wait_until(cvRead, lockRead, timeout_time );
                             if( std::cv_status::timeout == s && localWritePos == readPos ) {
                                 return false;
                             }
@@ -745,7 +746,7 @@ class ringbuffer {
             return true;
         }
 
-        bool copyIntoImpl(const Value_type *first, const Value_type* last, const bool blocking, const int timeoutMS) noexcept {
+        bool copyIntoImpl(const Value_type *first, const Value_type* last, const bool blocking, const fraction_i64& timeout) noexcept {
             if( !std::is_copy_constructible_v<Value_type> ) {
                 ABORT("Value_type is not copy constructible");
                 return false;
@@ -766,13 +767,13 @@ class ringbuffer {
                 if( blocking ) {
                     std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ getImpl via same lock
                     available = freeSlots();
+                    const fraction_timespec timeout_time = getMonotonicTime() + fraction_timespec(timeout);
                     while( total_count > available ) {
-                        if( 0 == timeoutMS ) {
+                        if( fractions_i64::zero == timeout ) {
                             cvRead.wait(lockRead);
                             available = freeSlots();
                         } else {
-                            std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
-                            std::cv_status s = cvRead.wait_until(lockRead, t0 + std::chrono::milliseconds(timeoutMS));
+                            std::cv_status s = wait_until(cvRead, lockRead, timeout_time );
                             available = freeSlots();
                             if( std::cv_status::timeout == s && total_count > available ) {
                                 return false;
@@ -1074,15 +1075,15 @@ class ringbuffer {
          * for subsequent get() and getBlocking().
          *
          * @param min_count minimum number of put slots
-         * @param timeoutMS
+         * @param timeout maximum duration in fractions of seconds to wait, where fractions_i64::zero waits infinitely
          * @return the number of put elements, available for get() and getBlocking()
          */
-        Size_type waitForElements(const Size_type min_count, const int timeoutMS) noexcept {
+        Size_type waitForElements(const Size_type min_count, const fraction_i64& timeout) noexcept {
             if( multi_pc_enabled ) {
                 std::unique_lock<std::mutex> lockMultiRead(syncMultiRead); // acquire syncMultiRead, _not_ sync'ing w/ putImpl
-                return waitForElementsImpl(min_count, timeoutMS);
+                return waitForElementsImpl(min_count, timeout);
             } else {
-                return waitForElementsImpl(min_count, timeoutMS);
+                return waitForElementsImpl(min_count, timeout);
             }
         }
 
@@ -1091,15 +1092,15 @@ class ringbuffer {
          * for subsequent put() and putBlocking().
          *
          * @param min_count minimum number of free slots
-         * @param timeoutMS
+         * @param timeout maximum duration in fractions of seconds to wait, where fractions_i64::zero waits infinitely
          * @return the number of free slots, available for put() and putBlocking()
          */
-        Size_type waitForFreeSlots(const Size_type min_count, const int timeoutMS) noexcept {
+        Size_type waitForFreeSlots(const Size_type min_count, const fraction_i64& timeout) noexcept {
             if( multi_pc_enabled ) {
                 std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite); // acquire syncMultiWrite, _not_ sync'ing w/ getImpl
-                return waitForFreeSlotsImpl(min_count, timeoutMS);
+                return waitForFreeSlotsImpl(min_count, timeout);
             } else {
-                return waitForFreeSlotsImpl(min_count, timeoutMS);
+                return waitForFreeSlotsImpl(min_count, timeout);
             }
         }
 
@@ -1118,9 +1119,9 @@ class ringbuffer {
                 std::unique_lock<std::mutex> lockMultiRead(syncMultiRead, std::defer_lock);          // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
                 std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite, std::defer_lock);        // otherwise RAII-style relinquish via destructor
                 std::lock(lockMultiRead, lockMultiWrite);
-                dropImpl (capacityPlusOne-1, false /* blocking */, 0 /* timeoutMS */);
+                dropImpl (capacityPlusOne-1, false /* blocking */, fractions_i64::zero);
             } else {
-                dropImpl (capacityPlusOne-1, false /* blocking */, 0 /* timeoutMS */);
+                dropImpl (capacityPlusOne-1, false /* blocking */, fractions_i64::zero);
             }
         }
 
@@ -1229,28 +1230,25 @@ class ringbuffer {
         bool peek(Value_type& result) noexcept {
             if( multi_pc_enabled ) {
                 std::unique_lock<std::mutex> lockMultiRead(syncMultiRead); // acquire syncMultiRead, _not_ sync'ing w/ putImpl
-                return peekImpl(result, false, 0);
+                return peekImpl(result, false, fractions_i64::zero);
             } else {
-                return peekImpl(result, false, 0);
+                return peekImpl(result, false, fractions_i64::zero);
             }
         }
 
         /**
          * Peeks the next element at the read position w/o modifying pointer, but with blocking.
          *
-         * `timeoutMS` defaults to zero,
-         * i.e. infinitive blocking until an element available via put.<br>
-         * Otherwise this methods blocks for the given milliseconds.
-         *
          * @param result storage for the resulting value if successful, otherwise unchanged.
+         * @param timeout maximum duration in fractions of seconds to wait, where fractions_i64::zero waits infinitely
          * @return true if successful, otherwise false.
          */
-        bool peekBlocking(Value_type& result, const int timeoutMS=0) noexcept {
+        bool peekBlocking(Value_type& result, const fraction_i64& timeout) noexcept {
             if( multi_pc_enabled ) {
                 std::unique_lock<std::mutex> lockMultiRead(syncMultiRead); // acquire syncMultiRead, _not_ sync'ing w/ putImpl
-                return peekImpl(result, true, timeoutMS);
+                return peekImpl(result, true, timeout);
             } else {
-                return peekImpl(result, true, timeoutMS);
+                return peekImpl(result, true, timeout);
             }
         }
 
@@ -1267,9 +1265,9 @@ class ringbuffer {
         bool get(Value_type& result) noexcept {
             if( multi_pc_enabled ) {
                 std::unique_lock<std::mutex> lockMultiRead(syncMultiRead); // acquire syncMultiRead, _not_ sync'ing w/ putImpl
-                return moveOutImpl(result, false, 0);
+                return moveOutImpl(result, false, fractions_i64::zero);
             } else {
-                return moveOutImpl(result, false, 0);
+                return moveOutImpl(result, false, fractions_i64::zero);
             }
         }
 
@@ -1278,19 +1276,16 @@ class ringbuffer {
          *
          * The ring buffer slot will be released and its value moved to the caller's `result` storage, if successful.
          *
-         * `timeoutMS` defaults to zero,
-         * i.e. infinitive blocking until an element available via put.<br>
-         * Otherwise this methods blocks for the given milliseconds.
-         *
          * @param result storage for the resulting value if successful, otherwise unchanged.
+         * @param timeout maximum duration in fractions of seconds to wait, where fractions_i64::zero waits infinitely
          * @return true if successful, otherwise false.
          */
-        bool getBlocking(Value_type& result, const int timeoutMS=0) noexcept {
+        bool getBlocking(Value_type& result, const fraction_i64& timeout) noexcept {
             if( multi_pc_enabled ) {
                 std::unique_lock<std::mutex> lockMultiRead(syncMultiRead); // acquire syncMultiRead, _not_ sync'ing w/ putImpl
-                return moveOutImpl(result, true, timeoutMS);
+                return moveOutImpl(result, true, timeout);
             } else {
-                return moveOutImpl(result, true, timeoutMS);
+                return moveOutImpl(result, true, timeout);
             }
         }
 
@@ -1309,9 +1304,9 @@ class ringbuffer {
         Size_type get(Value_type *dest, const Size_type dest_len, const Size_type min_count) noexcept {
             if( multi_pc_enabled ) {
                 std::unique_lock<std::mutex> lockMultiRead(syncMultiRead); // acquire syncMultiRead, _not_ sync'ing w/ putImpl
-                return moveOutImpl(dest, dest_len, min_count, false, 0);
+                return moveOutImpl(dest, dest_len, min_count, false, fractions_i64::zero);
             } else {
-                return moveOutImpl(dest, dest_len, min_count, false, 0);
+                return moveOutImpl(dest, dest_len, min_count, false, fractions_i64::zero);
             }
         }
 
@@ -1320,22 +1315,18 @@ class ringbuffer {
          *
          * The ring buffer slots will be released and its value moved to the caller's `dest` storage, if successful.
          *
-         * `timeoutMS` defaults to zero,
-         * i.e. infinitive blocking until an element available via put.<br>
-         * Otherwise this methods blocks for the given milliseconds.
-         *
          * @param dest pointer to first storage element of `dest_len` consecutive elements to store the values, if successful.
          * @param dest_len number of consecutive elements in `dest`, hence maximum number of elements to return.
          * @param min_count minimum number of consecutive elements to return
-         * @param timeoutMS
+         * @param timeout maximum duration in fractions of seconds to wait, where fractions_i64::zero waits infinitely
          * @return actual number of elements returned
          */
-        Size_type getBlocking(Value_type *dest, const Size_type dest_len, const Size_type min_count, const int timeoutMS=0) noexcept {
+        Size_type getBlocking(Value_type *dest, const Size_type dest_len, const Size_type min_count, const fraction_i64& timeout) noexcept {
             if( multi_pc_enabled ) {
                 std::unique_lock<std::mutex> lockMultiRead(syncMultiRead); // acquire syncMultiRead, _not_ sync'ing w/ putImpl
-                return moveOutImpl(dest, dest_len, min_count, true, timeoutMS);
+                return moveOutImpl(dest, dest_len, min_count, true, timeout);
             } else {
-                return moveOutImpl(dest, dest_len, min_count, true, timeoutMS);
+                return moveOutImpl(dest, dest_len, min_count, true, timeout);
             }
         }
 
@@ -1353,9 +1344,9 @@ class ringbuffer {
                 std::unique_lock<std::mutex> lockMultiRead(syncMultiRead, std::defer_lock);          // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
                 std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite, std::defer_lock);        // otherwise RAII-style relinquish via destructor
                 std::lock(lockMultiRead, lockMultiWrite);
-                return dropImpl(max_count, false, 0);
+                return dropImpl(max_count, false, fractions_i64::zero);
             } else {
-                return dropImpl(max_count, false, 0);
+                return dropImpl(max_count, false, fractions_i64::zero);
             }
         }
 
@@ -1363,24 +1354,21 @@ class ringbuffer {
          * Drops exactly `count` oldest enqueued elements,
          * will block until they become available.
          *
-         * `timeoutMS` defaults to zero,
-         * i.e. infinitive blocking until an element available via put.<br>
-         * Otherwise this methods blocks for the given milliseconds.
-         *
          * In `count` elements are not available to drop even after
          * blocking for `timeoutMS`, no element will be dropped.
          *
          * @param count number of elements to drop from ringbuffer.
+         * @param timeout maximum duration in fractions of seconds to wait, where fractions_i64::zero waits infinitely
          * @return true if successful, otherwise false
          */
-        bool dropBlocking(const Size_type count, const int timeoutMS=0) noexcept {
+        bool dropBlocking(const Size_type count, const fraction_i64& timeout) noexcept {
             if( multi_pc_enabled ) {
                 std::unique_lock<std::mutex> lockMultiRead(syncMultiRead, std::defer_lock);          // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
                 std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite, std::defer_lock);        // otherwise RAII-style relinquish via destructor
                 std::lock(lockMultiRead, lockMultiWrite);
-                return 0 != dropImpl(count, true, timeoutMS);
+                return 0 != dropImpl(count, true, timeout);
             } else {
-                return 0 != dropImpl(count, true, timeoutMS);
+                return 0 != dropImpl(count, true, timeout);
             }
         }
 
@@ -1396,27 +1384,25 @@ class ringbuffer {
         bool put(Value_type && e) noexcept {
             if( multi_pc_enabled ) {
                 std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite); // acquire syncMultiWrite, _not_ sync'ing w/ getImpl
-                return moveIntoImpl(std::move(e), false, 0);
+                return moveIntoImpl(std::move(e), false, fractions_i64::zero);
             } else {
-                return moveIntoImpl(std::move(e), false, 0);
+                return moveIntoImpl(std::move(e), false, fractions_i64::zero);
             }
         }
 
         /**
          * Enqueues the given element by moving it into this ringbuffer storage.
          *
-         * `timeoutMS` defaults to zero,
-         * i.e. infinitive blocking until a free slot becomes available via get.<br>
-         * Otherwise this methods blocks for the given milliseconds.
-         *
+         * @param e
+         * @param timeout maximum duration in fractions of seconds to wait, where fractions_i64::zero waits infinitely
          * @return true if successful, otherwise false in case timeout occurred or otherwise.
          */
-        bool putBlocking(Value_type && e, const int timeoutMS=0) noexcept {
+        bool putBlocking(Value_type && e, const fraction_i64& timeout) noexcept {
             if( multi_pc_enabled ) {
                 std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite); // acquire syncMultiWrite, _not_ sync'ing w/ getImpl
-                return moveIntoImpl(std::move(e), true, timeoutMS);
+                return moveIntoImpl(std::move(e), true, timeout);
             } else {
-                return moveIntoImpl(std::move(e), true, timeoutMS);
+                return moveIntoImpl(std::move(e), true, timeout);
             }
         }
 
@@ -1432,27 +1418,24 @@ class ringbuffer {
         bool put(const Value_type & e) noexcept {
             if( multi_pc_enabled ) {
                 std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite); // acquire syncMultiWrite, _not_ sync'ing w/ getImpl
-                return copyIntoImpl(e, false, 0);
+                return copyIntoImpl(e, false, fractions_i64::zero);
             } else {
-                return copyIntoImpl(e, false, 0);
+                return copyIntoImpl(e, false, fractions_i64::zero);
             }
         }
 
         /**
          * Enqueues the given element by copying it into this ringbuffer storage.
          *
-         * `timeoutMS` defaults to zero,
-         * i.e. infinitive blocking until a free slot becomes available via get.<br>
-         * Otherwise this methods blocks for the given milliseconds.
-         *
+         * @param timeout maximum duration in fractions of seconds to wait, where fractions_i64::zero waits infinitely
          * @return true if successful, otherwise false in case timeout occurred or otherwise.
          */
-        bool putBlocking(const Value_type & e, const int timeoutMS=0) noexcept {
+        bool putBlocking(const Value_type & e, const fraction_i64& timeout) noexcept {
             if( multi_pc_enabled ) {
                 std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite); // acquire syncMultiWrite, _not_ sync'ing w/ getImpl
-                return copyIntoImpl(e, true, timeoutMS);
+                return copyIntoImpl(e, true, timeout);
             } else {
-                return copyIntoImpl(e, true, timeoutMS);
+                return copyIntoImpl(e, true, timeout);
             }
         }
 
@@ -1470,30 +1453,26 @@ class ringbuffer {
         bool put(const Value_type *first, const Value_type* last) noexcept {
             if( multi_pc_enabled ) {
                 std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite); // acquire syncMultiWrite, _not_ sync'ing w/ getImpl
-                return copyIntoImpl(first, last, false, 0);
+                return copyIntoImpl(first, last, false, fractions_i64::zero);
             } else {
-                return copyIntoImpl(first, last, false, 0);
+                return copyIntoImpl(first, last, false, fractions_i64::zero);
             }
         }
 
         /**
          * Enqueues the given range of consecutive elementa by copying it into this ringbuffer storage.
          *
-         * `timeoutMS` defaults to zero,
-         * i.e. infinitive blocking until a free slot becomes available via get.<br>
-         * Otherwise this methods blocks for the given milliseconds.
-         *
          * @param first pointer to first consecutive element to range of value_type [first, last)
          * @param last pointer to last consecutive element to range of value_type [first, last)
-         * @param timeoutMS
+         * @param timeout maximum duration in fractions of seconds to wait, where fractions_i64::zero waits infinitely
          * @return true if successful, otherwise false in case timeout occurred or otherwise.
          */
-        bool putBlocking(const Value_type *first, const Value_type* last, const int timeoutMS=0) noexcept {
+        bool putBlocking(const Value_type *first, const Value_type* last, const fraction_i64& timeout) noexcept {
             if( multi_pc_enabled ) {
                 std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite); // acquire syncMultiWrite, _not_ sync'ing w/ getImpl
-                return copyIntoImpl(first, last, true, timeoutMS);
+                return copyIntoImpl(first, last, true, timeout);
             } else {
-                return copyIntoImpl(first, last, true, timeoutMS);
+                return copyIntoImpl(first, last, true, timeout);
             }
         }
 };

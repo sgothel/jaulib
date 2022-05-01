@@ -37,6 +37,7 @@
 #include <jau/ringbuffer.hpp>
 
 using namespace jau;
+using namespace jau::fractions_i64_literals;
 
 template<typename Value_type>
 Value_type getDefault();
@@ -107,7 +108,7 @@ class TestRingbuffer_A {
 
         for(jau::nsize_t i=0; i<dest_len; i++) {
             Value_type svI = getDefault<Value_type>();
-            REQUIRE_MSG("not empty at read #"+std::to_string(i)+" / "+std::to_string(dest_len), rb.getBlocking(svI));
+            REQUIRE_MSG("not empty at read #"+std::to_string(i)+" / "+std::to_string(dest_len), rb.getBlocking(svI, 0_s));
             REQUIRE_MSG("value at read #"+std::to_string(i)+" / "+std::to_string(dest_len)+" @ "+std::to_string(startValue), startValue+(Integral_type)i == getValue<Integral_type, Value_type>(svI));
         }
         REQUIRE_MSG("free slots after reading "+std::to_string(dest_len)+": "+rb.toString(), rb.freeSlots()>= dest_len);
@@ -159,7 +160,7 @@ class TestRingbuffer_A {
         REQUIRE_MSG("capacity at read "+std::to_string(dest_len)+" elems: "+rb.toString(), capacity >= dest_len);
 
         std::vector<Value_type> array(dest_len);
-        const jau::nsize_t count = rb.getBlocking( &(*array.begin()), dest_len, min_count);
+        const jau::nsize_t count = rb.getBlocking( &(*array.begin()), dest_len, min_count, 0_s);
         REQUIRE_MSG("get-range >= min_count / "+std::to_string(array.size())+" of "+rb.toString(), min_count <= count);
 
         for(jau::nsize_t i=0; i<count; i++) {
@@ -340,12 +341,12 @@ class TestRingbuffer_A {
             while(count1 < element_count || count2 < element_count) {
                 Value_type svI = getDefault<Value_type>();
                 if( count1 < element_count ) {
-                    REQUIRE_MSG("not empty at read.1 #"+std::to_string(count1)+" / "+std::to_string(element_count), rb1.getBlocking(svI));
+                    REQUIRE_MSG("not empty at read.1 #"+std::to_string(count1)+" / "+std::to_string(element_count), rb1.getBlocking(svI, 0_s));
                     REQUIRE_MSG("value at read.1 #"+std::to_string(count1)+" / "+std::to_string(element_count), (Integral_type)count1 == getValue<Integral_type, Value_type>(svI));
                     ++count1;
                 }
                 if( count2 < element_count ) {
-                    REQUIRE_MSG("not empty at read.2 #"+std::to_string(count2)+" / "+std::to_string(element_count), rb2.getBlocking(svI));
+                    REQUIRE_MSG("not empty at read.2 #"+std::to_string(count2)+" / "+std::to_string(element_count), rb2.getBlocking(svI, 0_s));
                     REQUIRE_MSG("value at read.2 #"+std::to_string(count2)+" / "+std::to_string(element_count), (Integral_type)count2 == getValue<Integral_type, Value_type>(svI));
                     ++count2;
                 }

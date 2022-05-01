@@ -114,12 +114,12 @@ bool service_runner::remove_sighandler() noexcept {
 }
 
 service_runner::service_runner(const std::string& name__,
-                               nsize_t service_shutdown_timeout_ms__,
+                               const fraction_i64& service_shutdown_timeout,
                                Callback service_work_,
                                Callback service_init_locked_,
                                Callback service_end_locked_) noexcept
 : name_(name__),
-  service_shutdown_timeout_ms_(service_shutdown_timeout_ms__),
+  service_shutdown_timeout_(service_shutdown_timeout),
   service_work(service_work_),
   service_init_locked(service_init_locked_),
   service_end_locked(service_end_locked_),
@@ -192,11 +192,11 @@ bool service_runner::stop() noexcept {
             }
             // Ensure the reader thread has ended, no runaway-thread using *this instance after destruction
             result = true;
+            const fraction_timespec timeout_time = getMonotonicTime() + fraction_timespec(service_shutdown_timeout_);
             while( true == running && result ) {
                 std::cv_status s { std::cv_status::no_timeout };
-                if( 0 < service_shutdown_timeout_ms_ ) {
-                    std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
-                    s = cv_init.wait_until(lock, t0 + std::chrono::milliseconds(service_shutdown_timeout_ms_));
+                if( fractions_i64::zero < service_shutdown_timeout_ ) {
+                    s = wait_until(cv_init, lock, timeout_time );
                 } else {
                     cv_init.wait(lock);
                 }
@@ -218,7 +218,7 @@ bool service_runner::stop() noexcept {
 
 bool service_runner::join() noexcept {
     DBG_PRINT("%s::join: Begin: %s", name_.c_str(), toString().c_str());
-    std::unique_lock<std::mutex> lockReader(mtx_lifecycle); // RAII-style acquire and relinquish via destructor
+    std::unique_lock<std::mutex> lock(mtx_lifecycle); // RAII-style acquire and relinquish via destructor
 
     const bool is_service = thread_id_ == pthread_self();
     DBG_PRINT("%s::join: is_service %d, %s", name_.c_str(), is_service, toString().c_str());
@@ -227,13 +227,13 @@ bool service_runner::join() noexcept {
         if( !is_service ) {
             // Ensure the reader thread has ended, no runaway-thread using *this instance after destruction
             result = true;
+            const fraction_timespec timeout_time = getMonotonicTime() + fraction_timespec(service_shutdown_timeout_);
             while( true == running && result ) {
                 std::cv_status s { std::cv_status::no_timeout };
-                if( 0 < service_shutdown_timeout_ms_ ) {
-                    std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
-                    s = cv_init.wait_until(lockReader, t0 + std::chrono::milliseconds(service_shutdown_timeout_ms_));
+                if( fractions_i64::zero < service_shutdown_timeout_ ) {
+                    s = wait_until(cv_init, lock, timeout_time );
                 } else {
-                    cv_init.wait(lockReader);
+                    cv_init.wait(lock);
                 }
                 if( std::cv_status::timeout == s && true == running ) {
                     ERR_PRINT("%s::join: Timeout (force !running): %s", name_.c_str(), toString().c_str());

@@ -30,58 +30,57 @@ void simple_timer::timer_work(service_runner& sr_ref) {
     if( !sr_ref.shall_stop() ) {
         // non-blocking sleep in regards to stop()
         std::unique_lock<std::mutex> lock(sr_ref.mtx_shall_stop()); // RAII-style acquire and relinquish via destructor
-        jau::nsize_t sleep_left_ms = duration_ms;
-        while( !sr_ref.shall_stop() && 0 < sleep_left_ms ) {
-            const std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
-            const std::cv_status s = sr_ref.cv_shall_stop().wait_until(lock, t0 + std::chrono::milliseconds(sleep_left_ms));
-            const jau::nsize_t slept = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::steady_clock::now() - t0 ).count();
-            sleep_left_ms = sleep_left_ms >= slept ? sleep_left_ms - slept : 0;
+        bool overflow = false;
+        const fraction_timespec timeout_time = getMonotonicTime() + fraction_timespec(duration, &overflow);
+        if( overflow ) {
+            sr_ref.set_shall_stop(); // bail out
+        }
+        std::cv_status s { std::cv_status::no_timeout };
+        while( !sr_ref.shall_stop() && std::cv_status::timeout != s ) {
+            s = wait_until( sr_ref.cv_shall_stop(), lock, timeout_time );
             if( std::cv_status::timeout == s && !sr_ref.shall_stop() ) {
-                // Made it through whole period w/o being stopped nor spurious wakeups
-                // This branch is only for documentation purposes, as shall_stop is being tested
-                sleep_left_ms = 0;
-                duration_ms = 0;
+                duration = fractions_i64::zero;
             }
         }
     }
-    Timer_func_ms tf;
+    Timer_func tf;
     {
         std::unique_lock<std::mutex> lockReader(mtx_timerfunc); // RAII-style acquire and relinquish via destructor
-        tf = timer_func_ms;
+        tf = timer_func;
     }
     if( !tf.isNullType() && !sr_ref.shall_stop() ) {
-        duration_ms = tf(*this);
+        duration = tf(*this);
     } else {
-        duration_ms = 0;
+        duration = fractions_i64::zero;
     }
-    if( 0 == duration_ms ) {
+    if( fractions_i64::zero == duration.load() ) {
         sr_ref.set_shall_stop();
     }
 }
 
-simple_timer::simple_timer(const std::string& name, const nsize_t service_shutdown_timeout_ms) noexcept
-: timer_service(name, service_shutdown_timeout_ms, jau::bindMemberFunc(this, &simple_timer::timer_work)),
-  timer_func_ms(), duration_ms(0)
+simple_timer::simple_timer(const std::string& name, const fraction_i64& service_shutdown_timeout) noexcept
+: timer_service(name, service_shutdown_timeout, jau::bindMemberFunc(this, &simple_timer::timer_work)),
+  timer_func(), duration()
 {}
 
-bool simple_timer::start(nsize_t duration_ms_, Timer_func_ms tofunc) noexcept {
+bool simple_timer::start(const fraction_i64& duration_, Timer_func tofunc) noexcept {
     if( is_running() ) {
         return false;
     }
-    timer_func_ms = tofunc;
-    duration_ms = duration_ms_;
+    timer_func = tofunc;
+    duration = duration_;
     timer_service.start();
     return true;
 }
 
-void simple_timer::start_or_update(nsize_t duration_ms_, Timer_func_ms tofunc) noexcept {
+void simple_timer::start_or_update(const fraction_i64& duration_, Timer_func tofunc) noexcept {
     if( is_running() ) {
         std::unique_lock<std::mutex> lockReader(mtx_timerfunc); // RAII-style acquire and relinquish via destructor
-        timer_func_ms = tofunc;
-        duration_ms = duration_ms_;
+        timer_func = tofunc;
+        duration = duration_;
     } else {
-        timer_func_ms = tofunc;
-        duration_ms = duration_ms_;
+        timer_func = tofunc;
+        duration = duration_;
         timer_service.start();
     }
 }

@@ -30,6 +30,8 @@
 #include <condition_variable>
 
 #include <jau/ordered_atomic.hpp>
+#include <jau/fraction_type.hpp>
+#include <jau/basic_types.hpp>
 
 namespace jau {
 
@@ -147,22 +149,19 @@ namespace jau {
              *
              * If the internal counter is zero already, returns immediately.
              *
-             * Implementation uses `std::chrono::steady_clock::now()`.
+             * Implementation uses wait_for() w/ a monotonic clock and fraction_i64.
              *
              * Extension of std::latch.
              *
-             * @tparam Rep
-             * @tparam Period
-             * @param timeout_duration maximum time duration to spend waiting
+             * @param timeout_duration maximum duration in fractions of seconds to wait
              * @return true if internal counter has reached zero, otherwise a timeout has occurred.
              */
-            template<typename Rep, typename Period>
-            bool wait_for(const std::chrono::duration<Rep, Period>& timeout_duration) const noexcept {
+            bool wait_for(const fraction_i64& timeout_duration) const noexcept {
                 if( 0 < count ) {
-                    std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now() + timeout_duration;
                     std::unique_lock<std::mutex> lock(mtx_cd);
+                    const fraction_timespec timeout_time = getMonotonicTime() + fraction_timespec(timeout_duration);
                     while( 0 < count ) {
-                        std::cv_status s = cv.wait_until(lock, t0);
+                        std::cv_status s = wait_until(cv, lock, timeout_time);
                         if( 0 == count ) {
                             return true;
                         }
@@ -175,6 +174,25 @@ namespace jau {
             }
 
             /**
+             * Atomically decrements the internal counter by n and (if necessary) blocks the calling thread until the counter reaches zero
+             * or the given timeout duration has expired.
+             *
+             * Equivalent to `count_down(n); wait(timeout_duration);`.
+             *
+             * Implementation uses `std::chrono::steady_clock::now()` and fraction_i64.
+             *
+             * Extension of std::latch.
+             *
+             * @param timeout_duration maximum duration in fractions of seconds to wait
+             * @param n the value by which the internal counter is decreased, defaults to 1
+             * @return true if internal counter has reached zero, otherwise a timeout has occurred.
+             */
+            bool arrive_and_wait_for(const fraction_i64& timeout_duration, const size_t n = 1) noexcept {
+                count_down(n);
+                return wait_for(timeout_duration);
+            }
+
+            /**
              * Blocks the calling thread until the internal counter reaches 0 or the given timeout duration has expired.
              *
              * If the internal counter is zero already, returns immediately.
@@ -183,11 +201,27 @@ namespace jau {
              *
              * Extension of std::latch.
              *
-             * @param timeout_ms maximum time duration to spend waiting in milliseconds
+             * @tparam Rep
+             * @tparam Period
+             * @param timeout_duration maximum duration to wait
              * @return true if internal counter has reached zero, otherwise a timeout has occurred.
              */
-            bool wait_for(const size_t timeout_ms) const noexcept {
-                return wait_for(std::chrono::milliseconds(timeout_ms));
+            template<typename Rep, typename Period>
+            bool wait_for(const std::chrono::duration<Rep, Period>& timeout_duration) const noexcept {
+                if( 0 < count ) {
+                    std::unique_lock<std::mutex> lock(mtx_cd);
+                    std::chrono::steady_clock::time_point timeout_time = std::chrono::steady_clock::now() + timeout_duration;
+                    while( 0 < count ) {
+                        std::cv_status s = cv.wait_until(lock, timeout_time );
+                        if( 0 == count ) {
+                            return true;
+                        }
+                        if( std::cv_status::timeout == s ) {
+                            return false;
+                        }
+                    }
+                }
+                return true;
             }
 
             /**
@@ -202,7 +236,7 @@ namespace jau {
              *
              * @tparam Rep
              * @tparam Period
-             * @param timeout_duration maximum time duration to spend waiting
+             * @param timeout_duration maximum duration to wait
              * @param n the value by which the internal counter is decreased, defaults to 1
              * @return true if internal counter has reached zero, otherwise a timeout has occurred.
              */
@@ -210,24 +244,6 @@ namespace jau {
             bool arrive_and_wait_for(const std::chrono::duration<Rep, Period>& timeout_duration, const size_t n = 1) noexcept {
                 count_down(n);
                 return wait_for(timeout_duration);
-            }
-
-            /**
-             * Atomically decrements the internal counter by n and (if necessary) blocks the calling thread until the counter reaches zero
-             * or the given timeout duration has expired.
-             *
-             * Equivalent to `count_down(n); wait(timeout_duration);`.
-             *
-             * Implementation uses `std::chrono::steady_clock::now()`.
-             *
-             * Extension of std::latch.
-             *
-             * @param timeout_ms maximum time duration to spend waiting in milliseconds
-             * @param n the value by which the internal counter is decreased, defaults to 1
-             * @return true if internal counter has reached zero, otherwise a timeout has occurred.
-             */
-            bool arrive_and_wait_for(const size_t timeout_ms, const size_t n = 1) noexcept {
-                return arrive_and_wait_for(std::chrono::milliseconds(timeout_ms), n);
             }
     };
 

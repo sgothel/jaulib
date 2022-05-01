@@ -37,6 +37,8 @@
 #include <jau/latch.hpp>
 
 using namespace jau;
+using namespace jau::fractions_i64_literals;
+using namespace jau::int_literals;
 
 class TestLatch01 {
   private:
@@ -83,7 +85,7 @@ class TestLatch01 {
         for(size_t i=0; i<count; i++) {
             tasks[i] = std::thread(&TestLatch01::something, this, std::ref(completion));
         }
-        REQUIRE_MSG("complete", true == completion.arrive_and_wait_for(10000 /* timeout_ms */) );
+        REQUIRE_MSG("complete", true == completion.arrive_and_wait_for(10_s) );
 
         REQUIRE_MSG("zero", 0 == completion.value());
         REQUIRE_MSG("8", count == my_counter);

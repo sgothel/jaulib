@@ -37,8 +37,8 @@
 #include <algorithm>
 
 #include <jau/cpp_lang_util.hpp>
-#include <jau/basic_types.hpp>
 #include <jau/ordered_atomic.hpp>
+#include <jau/fraction_type.hpp>
 #include <jau/function_def.hpp>
 
 namespace jau {
@@ -57,9 +57,9 @@ namespace jau {
             std::string name_;
 
             /**
-             * Maximum time in milliseconds to wait for a thread shutdown or zero to wait infinitely.
+             * Maximum duration in fractions of seconds to wait for service to stop at stop() and join(), where fractions_i64::zero waits infinitely
              */
-            nsize_t service_shutdown_timeout_ms_;
+            fraction_i64 service_shutdown_timeout_;
 
             Callback service_work;
             Callback service_init_locked;
@@ -110,13 +110,13 @@ namespace jau {
              * start() shall be issued to kick off this service.
              *
              * @param name service name
-             * @param service_shutdown_timeout_ms maximum time in milliseconds to wait for stop() and join(), where zero waits infinitely
+             * @param service_shutdown_timeout maximum duration in fractions of seconds to wait for service to stop at stop() and join(), where fractions_i64::zero waits infinitely
              * @param service_work service working function
              * @param service_init_locked optional service init function, lifecycle mutex is locked
              * @param service_end_locked optional service end function, lifecycle mutex is locked
              */
             service_runner(const std::string& name,
-                           const nsize_t service_shutdown_timeout_ms,
+                           const fraction_i64& service_shutdown_timeout,
                            Callback service_work,
                            Callback service_init_locked = Callback(),
                            Callback service_end_locked = Callback()) noexcept;
@@ -134,11 +134,11 @@ namespace jau {
             const std::string& name() const noexcept { return name_; }
 
             /**
-             * Returns maximum time in milliseconds to wait for stop() and join(), where zero waits infinitely.
+             * Returns maximum duration in fractions of seconds to wait for service to stop at stop() and join(), where fractions_i64::zero waits infinitely
              * @see stop()
              * @see join()
              */
-            nsize_t service_shutdown_timeout_ms() const noexcept { return service_shutdown_timeout_ms_; }
+            fraction_i64 service_shutdown_timeout() const noexcept { return service_shutdown_timeout_; }
 
             /**
              * Return the thread-id of this service service thread, zero if not running.
@@ -211,7 +211,7 @@ namespace jau {
              * @see cv_shall_stop()
              * @see stop()
              * @see join()
-             * @see service_shutdown_timeout_ms()
+             * @see service_shutdown_timeout()
              */
             void start() noexcept;
 
@@ -221,7 +221,7 @@ namespace jau {
              * If called from the service thread, method just issues set_shall_stop() without blocking,
              * otherwise methods blocks the current thread until service is stopped.
              *
-             * Maximum blocked wait period is optionally limited by service_shutdown_timeout_ms().
+             * Maximum blocked wait period is optionally limited by service_shutdown_timeout().
              *
              * Method attempts to stop the service thread
              * - by flagging `shall stop` via set_shall_stop()
@@ -241,7 +241,7 @@ namespace jau {
              * @see cv_shall_stop()
              * @see start()
              * @see join()
-             * @see service_shutdown_timeout_ms()
+             * @see service_shutdown_timeout()
              * @see singleton_sighandler()
              */
             bool stop() noexcept;
@@ -250,7 +250,7 @@ namespace jau {
              * Blocks the current thread until service is stopped
              * or returns immediately if not running or called from the service thread.
              *
-             * Maximum blocked wait period is optionally limited by service_shutdown_timeout_ms().
+             * Maximum blocked wait period is optionally limited by service_shutdown_timeout().
              *
              * @returns true if thread has been stopped or false if timeout has been hit
              * @see is_running()
@@ -260,7 +260,7 @@ namespace jau {
              * @see cv_shall_stop()
              * @see start()
              * @see stop()
-             * @see service_shutdown_timeout_ms()
+             * @see service_shutdown_timeout()
              */
             bool join() noexcept;
 

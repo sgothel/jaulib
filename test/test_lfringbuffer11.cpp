@@ -36,6 +36,7 @@
 #include <jau/ringbuffer.hpp>
 
 using namespace jau;
+using namespace jau::fractions_i64_literals;
 
 typedef uint8_t IntegralType;
 typedef uint8_t TrivialType;
@@ -75,7 +76,7 @@ class TestRingbuffer11 {
         // INFO_STR(msg+": Created / " + rb->toString());
         for(jau::nsize_t i=0; i<len; i++) {
             TrivialType svI = 0;
-            REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb->toString()+", elem "+std::to_string(svI), rb->getBlocking(svI));
+            REQUIRE_MSG("not empty at read #"+std::to_string(i+1)+": "+rb->toString()+", elem "+std::to_string(svI), rb->getBlocking(svI, fractions_i64::zero));
             // INFO_STR("Got "+std::to_string(svI->intValue())+" / " + rb->toString());
         }
         // INFO_STR(msg+": Dies / " + rb->toString());
@@ -89,7 +90,7 @@ class TestRingbuffer11 {
         // INFO_STR, INFO: Not thread safe yet
         // INFO_STR(msg+": Created / " + rb->toString());
         std::vector<TrivialType> array(len);
-        REQUIRE_MSG("get-range of "+std::to_string(array.size())+" elem in "+rb->toString(), len==rb->getBlocking( &(*array.begin()), len, len) );
+        REQUIRE_MSG("get-range of "+std::to_string(array.size())+" elem in "+rb->toString(), len==rb->getBlocking( &(*array.begin()), len, len, 0_s) );
 
         for(jau::nsize_t i=0; i<len; i++) {
             TrivialType svI = array[i];
@@ -108,7 +109,7 @@ class TestRingbuffer11 {
         for(jau::nsize_t i=0; i<len; i++) {
             IntegralType vI( ( startValue + (IntegralType)i ) % integral_modulus );
             // INFO_STR("Putting "+std::to_string(vI)+" ... / " + rb->toString());
-            rb->putBlocking( vI );
+            rb->putBlocking( vI, 0_s );
         }
         // INFO_STR(msg+": Dies / " + rb->toString());
         (void)msg;
