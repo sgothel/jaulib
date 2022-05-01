@@ -241,11 +241,12 @@ namespace jau {
      *
      * Returns zero if a and b is zero.
      *
-     * Note implementation uses modulo operator `(a/b)*b + a%b = a`,
-     * i.e. remainder of the integer division - hence implementation uses abs(a)%abs(b) to avoid negative numbers.
+     * Note implementation uses modulo operator `(a/b)*b + a % b = a `,
+     * i.e. remainder of the integer division - hence implementation uses `abs(a) % abs(b)`
+     * in case the integral T is a signed type (dropped for unsigned).
      *
      * Implementation is similar to std::gcd(), however, it uses a fixed common type T
-     * and a while loop instead of recursion.
+     * and a while loop instead of compile time evaluation via recursion.
      *
      * @tparam T integral type
      * @tparam
@@ -268,22 +269,6 @@ namespace jau {
         return a_;
     }
 
-    /**
-     * Returns the greatest common divisor (GCD) of the two given positive integer values following Euclid's algorithm from Euclid's Elements ~300 BC.
-     *
-     * Returns zero if a and b is zero.
-     *
-     * Since both operands are of type unsigned, no negative numbers can be produced by the modulo operator.
-     *
-     * Implementation is similar to std::gcd(), however, it uses a fixed common type T
-     * and a while loop instead of recursion.
-     *
-     * @tparam T integral type
-     * @tparam
-     * @param a positive integral value a
-     * @param b positive integral value b
-     * @return zero if a and b are zero, otherwise the greatest common divisor (GCD) of a and b,
-     */
     template <typename T,
               std::enable_if_t< std::is_integral_v<T> &&
                                 std::is_unsigned_v<T>, bool> = true>

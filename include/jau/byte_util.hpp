@@ -157,19 +157,22 @@ namespace jau {
     }
 
     /**
-     * Endian identifier, indicating endianess of all scaler types.
-     * <p>
+     * Endian identifier, indicating endianess of all scalar types.
+     *
      * Inspired by C++20 std::endian
-     * </p>
-     * <p>
+     *
      * Corner case platforms currently not supported,
      * i.e. unified endianess and mixed endianess.
-     * </p>
-     * <p>
+     *
      * All endian API entries are of `constexpr` and hence evaluated at compile time.<br>
      * Therefore, if-branches and expressions are also of `constexpr` and optimized 'away' at compile time.<br>
      * This includes the `cpu_to_<endian>(..)` and `<endian>_to_cpu(..)` etc utility functions.
-     * </p>
+     *
+     * On i386 platforms the host byte order is Least Significant Byte first (LSB) or Little-Endian,
+     * whereas the network byte order, as used on the Internet, is Most Significant Byte first (MSB) or Big-Endian.
+     * See #include <arpa/inet.h>
+     *
+     * Bluetooth is LSB or Little-Endian!
      */
     enum class endian : uint32_t
     {
@@ -288,14 +291,6 @@ namespace jau {
     // *************************************************
     // *************************************************
     // *************************************************
-     */
-
-    /**
-     * On the i386 the host byte order is Least Significant Byte first (LSB) or Little-Endian,
-     * whereas the network byte order, as used on the Internet, is Most Significant Byte first (MSB) or Big-Endian.
-     * See #include <arpa/inet.h>
-     *
-     * Bluetooth is LSB or Little-Endian!
      */
 
     constexpr uint16_t be_to_cpu(uint16_t const n) noexcept {

@@ -74,28 +74,29 @@ namespace jau {
      *
      * Further, fraction can be converted to std::chrono::duration,
      * matching the selected duration's period, see to_duration_count() and to_duration().
+     * However, it is recommended to use fraction_timespec, see below.
      *
      * The following properties are exposed:
-     * - Numerator carries sign and hence can be negative and can be of signed type
-     * - Denominator is always positive and is always an unsigned type
+     * - Numerator carries sign and hence can be negative and of signed type
+     * - Denominator is always positive and is an unsigned type
      * - All operations incl. construction will result in a reduced fraction using the greatest common denominator, see gcd().
-     * - No exceptions are thrown, a zero denominator is undefined behavior, implementation will return zero { n=0, d=1 }.
+     * - No exceptions are thrown, a zero denominator is undefined behavior (UB), implementation will return zero { n=0, d=1 }.
      *
      * See usable fixed typedef's
      * - fraction_i64
      * - fraction_ui64
      *
-     * fraction_timespec covers high precision and almost infinite range of time
+     * fraction_timespec covers high precision and an almost infinite range of time
      * similar to `struct timespec_t`.
      *
      * Counting nanoseconds in int64_t only lasts until `2262-04-12`,
      * since INT64_MAX is 9'223'372'036'854'775'807 for 9'223'372'036 seconds or 292 years.
      *
-     * Hence using one may use fraction_i64 for durations up to 292 years
+     * Hence one may use fraction_i64 for durations up to 292 years
      * and fraction_timespec for almost infinite range of time-points or durations beyond 292 years.
      *
-     * Constants are provided in in namespace jau::fractions_i64,
-     * from fractions_i64::pico to fractions_i64::tera, including fractions::fractions_i64 to fractions::fractions_i64, etc.
+     * Constants are provided in namespace jau::fractions_i64,
+     * from fractions_i64::pico to fractions_i64::tera, including fractions_i64::seconds to fractions_i64::days, etc.
      *
      * Literal operators are provided in namespace jau::fractions_i64_literals,
      * e.g. for `3_s`, `100_ns` ... literals.
@@ -801,10 +802,10 @@ namespace jau {
     } // namespace fractions_i64_literals
 
     /**
-     * Timespec structure using fraction_i64 for its components
-     * in analogy to `struct timespec_t`.
+     * Timespec structure using int64_t for its components
+     * in analogy to `struct timespec_t` on 64bit platforms.
      *
-     * fraction_timespec allows to cover an almost infinite range of time
+     * fraction_timespec covers an almost infinite range of time
      * while maintaining high precision like `struct timespec_t`.
      *
      * Note: Counting nanoseconds in int64_t only lasts until `2262-04-12`,
