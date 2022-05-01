@@ -45,11 +45,11 @@ namespace jau {
      * Byte utility functions and types for endian- and bit conversions,
      * inclusive alignment handling and general get & put functionality.
      *
-     * All endian API entries are of `constexpr` and hence evaluated at compile time.<br>
+     * All \ref endian API entries are of `constexpr` and hence evaluated at compile time.<br>
      * Therefore, if-branches and expressions are also of `constexpr` and optimized 'away' at compile time.<br>
      * This includes the `cpu_to_<endian>(..)` and `<endian>_to_cpu(..)` etc utility functions.
      *
-     * See endian enum class regarding endian `constexpr` compile time determination.
+     * See \ref endian enum class regarding endian `constexpr` compile time determination.
      *  @{
      */
 
@@ -203,14 +203,14 @@ namespace jau {
     PRAGMA_DISABLE_WARNING_POP
 
     /**
-     * Return std::string representation of the given jau::endian.
-     * @param v the jau::endian value
+     * Return std::string representation of the given \ref endian.
+     * @param v the \ref endian value
      * @return the std::string representation
      */
     std::string to_string(const endian& v) noexcept;
 
     /**
-     * Evaluates `true` if the given endian is defined,
+     * Evaluates `true` if the given \ref endian is defined,
      * i.e. `little`, `big`, `pdp` or `honeywell`.
      */
     constexpr bool isDefinedEndian(const endian &v) noexcept {
@@ -229,7 +229,7 @@ namespace jau {
     }
 
     /**
-     * Evaluates `true` if platform is running in little endian mode,
+     * Evaluates `true` if platform is running in little \ref endian mode,
      * i.e. `jau::endian::little == jau::endian::native`.
      */
     constexpr bool isLittleEndian() noexcept {
@@ -237,7 +237,7 @@ namespace jau {
     }
 
     /**
-     * Evaluates `true` if platform is running in big endian mode,
+     * Evaluates `true` if platform is running in big \ref endian mode,
      * i.e. `jau::endian::big == jau::endian::native`.
      */
     constexpr bool isBigEndian() noexcept {
@@ -245,7 +245,7 @@ namespace jau {
     }
 
     /**
-     * Evaluates `true` if platform is running in little or big endian mode,
+     * Evaluates `true` if platform is running in little or big \ref endian mode,
      * i.e. `jau::endian::little == jau::endian::native || jau::endian::big == jau::endian::native`.
      */
     constexpr bool isLittleOrBigEndian() noexcept {
@@ -255,7 +255,7 @@ namespace jau {
     /**
      * A little-endian type trait for convenience ..
      * <p>
-     * Since all endian definitions are of `constexpr`, code can simply use expressions of these
+     * Since all \ref endian definitions are of `constexpr`, code can simply use expressions of these
      * for compile-time evaluation and optimization. A template `SFINAE` is not required.
      * </p>
      * @tparam Dummy_type just to make template `SFINAE` happy
@@ -265,7 +265,7 @@ namespace jau {
     /**
      * Value access of little-endian type trait for convenience ..
      * <p>
-     * Since all endian definitions are of `constexpr`, code can simply use expressions of these
+     * Since all \ref endian definitions are of `constexpr`, code can simply use expressions of these
      * for compile-time evaluation and optimization. A template `SFINAE` is not required.
      * </p>
      * @tparam Dummy_type just to make template `SFINAE` happy
@@ -275,7 +275,7 @@ namespace jau {
     /**
      * A big-endian type trait for convenience ..
      * <p>
-     * Since all endian definitions are of `constexpr`, code can simply use expressions of these
+     * Since all \ref endian definitions are of `constexpr`, code can simply use expressions of these
      * for compile-time evaluation and optimization. A template `SFINAE` is not required.
      * </p>
      * @tparam Dummy_type just to make template `SFINAE` happy
@@ -285,7 +285,7 @@ namespace jau {
     /**
      * Value access of big-endian type trait for convenience ..
      * <p>
-     * Since all endian definitions are of `constexpr`, code can simply use expressions of these
+     * Since all \ref endian definitions are of `constexpr`, code can simply use expressions of these
      * for compile-time evaluation and optimization. A template `SFINAE` is not required.
      * </p>
      * @tparam Dummy_type just to make template `SFINAE` happy
