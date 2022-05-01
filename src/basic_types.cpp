@@ -277,3 +277,76 @@ std::string jau::to_string(const endian& v) noexcept {
     return "unlisted";
 }
 
+static bool to_integer(long long & result, const char * str, size_t str_len, const char limiter, const char *limiter_pos) {
+    static constexpr const bool _debug = false;
+    char *endptr = NULL;
+    if( nullptr == limiter_pos ) {
+        limiter_pos = str + str_len;
+    }
+    const long long num = std::strtoll(str, &endptr, 10);
+    if( 0 != errno ) {
+        // value under- or overflow occured
+        if constexpr ( _debug ) {
+            INFO_PRINT("Value under- or overflow occurred, value %lld in: '%s', errno %d %s", num, str, errno, strerror(errno));
+        }
+        return false;
+    }
+    if( nullptr == endptr || endptr == str ) {
+        // no digits consumed
+        if constexpr ( _debug ) {
+            INFO_PRINT("Value no digits consumed @ idx %d, %p == start, in: '%s'", endptr-str, endptr, str);
+        }
+        return false;
+    }
+    if( endptr < limiter_pos ) {
+        while( endptr < limiter_pos && ::isspace(*endptr) ) { // only accept whitespace
+            ++endptr;
+        }
+    }
+    if( *endptr != limiter || endptr != limiter_pos ) {
+        // numerator value not completely valid
+        if constexpr ( _debug ) {
+            INFO_PRINT("Value end not '%c' @ idx %d, %p != %p, in: %p '%s' len %zd", limiter, endptr-str, endptr, limiter_pos, str, str, str_len);
+        }
+        return false;
+    }
+    result = num;
+    return true;
+}
+
+bool jau::to_fraction_i64(fraction_i64& result, const std::string & value, const fraction_i64& min_allowed, const fraction_i64& max_allowed) noexcept {
+    static constexpr const bool _debug = false;
+    const char * str = const_cast<const char*>(value.c_str());
+    const size_t str_len = value.length();
+    const char *divptr = NULL;
+
+    divptr = std::strstr(str, "/");
+    if( nullptr == divptr ) {
+        if constexpr ( _debug ) {
+            INFO_PRINT("Missing '/' in: '%s'", str);
+        }
+        return false;
+    }
+
+    long long num;
+    if( !to_integer(num, str, str_len, '/', divptr) ) {
+        return false;
+    }
+
+    long long denom; // 0x7ffc7090d904 != 0x7ffc7090d907 " 10 / 1000000 "
+    if( !to_integer(denom, divptr+1, str_len-(divptr-str)-1, '\0', str + str_len) ) {
+        return false;
+    }
+
+    fraction_i64 temp((int64_t)num, (uint64_t)denom);
+    if( ! ( min_allowed <= temp && temp <= max_allowed ) ) {
+        // invalid user value range
+        if constexpr ( _debug ) {
+            INFO_PRINT("Numerator out of range, not %s <= %s <= %s, in: '%s'", min_allowed.to_string().c_str(), temp.to_string().c_str(), max_allowed.to_string().c_str(), str);
+        }
+        return false;
+    }
+    result = std::move(temp);
+    return true;
+}
+

@@ -70,9 +70,35 @@ namespace jau {
 
         public:
             /**
+             * Module startup time t0 in monotonic time using high precision and range of fraction_timespec.
+             */
+            static const fraction_timespec startupTimeMonotonic;
+
+            /**
              * Module startup time t0 in monotonic time in milliseconds.
              */
             static const uint64_t startupTimeMilliseconds;
+
+            /**
+             * Returns elapsed monotonic time using fraction_timespec since module startup,
+             * see {@link #startupTimeMonotonic} and getMonotonicTime().
+             * <pre>
+             *    return getMonotonicTime() - startupTimeMonotonic;
+             * </pre>
+             */
+            static fraction_timespec getElapsedMonotonicTime() noexcept {
+                return getMonotonicTime() - startupTimeMonotonic;
+            }
+
+            /**
+             * Returns elapsed monotonic time using fraction_timespec since module startup up to the given current_ts, see {@link #startupTimeMonotonic}.
+             * <pre>
+             *    return current_ts - startupTimeMonotonic;
+             * </pre>
+             */
+            static fraction_timespec getElapsedMonotonicTime(const fraction_timespec& current_ts) noexcept {
+                return current_ts - startupTimeMonotonic;
+            }
 
             /**
              * Returns current elapsed monotonic time in milliseconds since module startup, see {@link #startupTimeMilliseconds}.
@@ -156,6 +182,21 @@ namespace jau {
              */
             static uint32_t getUint32Property(const std::string & name, const uint32_t default_value,
                                               const uint32_t min_allowed=0, const uint32_t max_allowed=UINT32_MAX) noexcept;
+
+            /**
+             * Returns the fraction_i64 value of the environment's variable 'name' in format `<num>/<denom>`,
+             * with white space allowed, if within given fraction_i64 value range.
+             *
+             * Otherwise returns the 'default_value' if the environment variable's value is null
+             * or of invalid format or not within given fraction_i64 value range.
+             * <p>
+             * Implementation uses {@link #getProperty(const std::string & name)}
+             * and hence attempts to also find a Unix conform name,
+             * e.g. 'direct_bt_debug' if ''direct_bt.debug' wasn't found.
+             * </p>
+             */
+            static fraction_i64 getFractionProperty(const std::string & name, const fraction_i64& default_value,
+                                                    const fraction_i64& min_allowed, const fraction_i64& max_allowed) noexcept;
 
             /**
              * Fetches exploding variable-name (prefix_domain) values.

@@ -231,6 +231,96 @@ namespace jau {
     }
 
     /**
+     * Returns the greatest common divisor (GCD) of the two given integer values following Euclid's algorithm from Euclid's Elements ~300 BC,
+     * using the absolute positive value of given integers.
+     *
+     * Returns zero if a and b is zero.
+     *
+     * Note implementation uses modulo operator `(a/b)*b + a%b = a`,
+     * i.e. remainder of the integer division - hence implementation uses abs(a)%abs(b) to avoid negative numbers.
+     *
+     * Implementation is similar to std::gcd(), however, it uses a fixed common type T
+     * and a while loop instead of recursion.
+     *
+     * @tparam T integral type
+     * @tparam
+     * @param a integral value a
+     * @param b integral value b
+     * @return zero if a and b are zero, otherwise the greatest common divisor (GCD) of a and b,
+     */
+    template <typename T,
+              std::enable_if_t<  std::is_integral_v<T> &&
+                                !std::is_unsigned_v<T>, bool> = true>
+    constexpr T gcd(T a, T b) noexcept
+    {
+        T a_ = abs(a);
+        T b_ = abs(b);
+        while( b_ != 0 ) {
+            const T t = b_;
+            b_ = a_ % b_;
+            a_ = t;
+        }
+        return a_;
+    }
+
+    /**
+     * Returns the greatest common divisor (GCD) of the two given positive integer values following Euclid's algorithm from Euclid's Elements ~300 BC.
+     *
+     * Returns zero if a and b is zero.
+     *
+     * Since both operands are of type unsigned, no negative numbers can be produced by the modulo operator.
+     *
+     * Implementation is similar to std::gcd(), however, it uses a fixed common type T
+     * and a while loop instead of recursion.
+     *
+     * @tparam T integral type
+     * @tparam
+     * @param a positive integral value a
+     * @param b positive integral value b
+     * @return zero if a and b are zero, otherwise the greatest common divisor (GCD) of a and b,
+     */
+    template <typename T,
+              std::enable_if_t< std::is_integral_v<T> &&
+                                std::is_unsigned_v<T>, bool> = true>
+    constexpr T gcd(T a, T b) noexcept
+    {
+        while( b != 0 ) {
+            const T t = b;
+            b = a % b;
+            a = t;
+        }
+        return a;
+    }
+
+    /**
+     * Integer overflow aware calculation of least common multiple (LCM) following Euclid's algorithm from Euclid's Elements ~300 BC.
+     * @tparam T integral type
+     * @tparam
+     * @param result storage for lcm result: zero if a and b are zero, otherwise lcm of a and b
+     * @param a integral value a
+     * @param b integral value b
+     * @return true if overflow, otherwise false for success
+     */
+    template <typename T,
+              std::enable_if_t<  std::is_integral_v<T>, bool> = true>
+    constexpr bool lcm_overflow(const T a, const T b, T& result) noexcept
+    {
+        const T _gcd = gcd<T>( a, b );
+        if( 0 < _gcd ) {
+            T r;
+            if( mul_overflow(a, b, r) ) {
+                return true;
+            } else {
+                result = r / _gcd;
+                return false;
+            }
+        } else {
+            result = 0;
+            return false;
+        }
+    }
+
+    /**
      * Returns the number of decimal digits of the given integral value number using std::log10<T>().<br>
      * If sign_is_digit == true (default), treats a potential negative sign as a digit.
      * <pre>
