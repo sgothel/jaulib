@@ -33,6 +33,8 @@
 
 static constexpr inline bool VERBOSE = false;
 
+using namespace jau::int_literals;
+
 /**
  * Test private impl namespace
  */
@@ -366,4 +368,24 @@ TEST_CASE( "HexString from and to byte vector conversion - Test 04", "[hexstring
         REQUIRE( value_s0 == value_s2 );
         // Assert.assertArrayEquals(lalaSink1, lalaSink2);
     }
+}
+
+TEST_CASE( "Integer Type Test Test 05", "[integer][type]" ) {
+    REQUIRE( 3_i8 == (int8_t)3 );
+    REQUIRE( 3_u8 == (uint8_t)3 );
+
+    REQUIRE( 3_i16 == (int16_t)3 );
+    REQUIRE( 3_u16 == (uint16_t)3 );
+
+    REQUIRE( 3_i32 == (int32_t)3 );
+    REQUIRE( 3_u32 == (uint32_t)3 );
+
+    REQUIRE( 3_i64 == (int64_t)3 );
+    REQUIRE( 3_u64 == (uint64_t)3 );
+
+    REQUIRE( 3_iz == (ssize_t)3 );
+    REQUIRE( 3_uz == (size_t)3 );
+
+    REQUIRE( 3_inz == (jau::snsize_t)3 );
+    REQUIRE( 3_unz == (jau::nsize_t)3 );
 }
