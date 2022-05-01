@@ -118,21 +118,6 @@ namespace jau {
             }
 
         public:
-#if 0
-            template<typename _ToDur, typename _Rep, typename _Period>
-              constexpr __enable_if_is_duration<_ToDur>
-              duration_cast(const duration<_Rep, _Period>& __d)
-              {
-            typedef typename _ToDur::period             __to_period;
-            typedef typename _ToDur::rep                __to_rep;
-            typedef ratio_divide<_Period, __to_period>      __cf;
-            typedef typename common_type<__to_rep, _Rep, intmax_t>::type
-                                        __cr;
-            typedef  __duration_cast_impl<_ToDur, __cf, __cr,
-                              __cf::num == 1, __cf::den == 1> __dc;
-            return __dc::__cast(__d);
-              }
-#endif
 
             /**
              * Constructs a zero fraction instance { 0, 1 }
@@ -157,8 +142,8 @@ namespace jau {
             {
                 if( n != 0 && d != 0 ) {
                     // calculate smallest num and denom, both arguments 'n' and 'd' may be negative
-                    const uint_type abs_d = abs(d);
-                    const uint_type _gcd = gcd<uint_type>( (uint_type)abs(n), abs_d );
+                    const uint_type abs_d = jau::abs(d);
+                    const uint_type _gcd = gcd<uint_type>( (uint_type)jau::abs(n), abs_d );
                     num = ( n * jau::sign(d) ) / (int_type)_gcd;
                     denom = abs_d / _gcd;
                 }
@@ -178,7 +163,7 @@ namespace jau {
             {
                 if( n != 0 && abs_d != 0 ) {
                     // calculate smallest num and denom, only given argument 'n' can be negative
-                    const uint_type _gcd = gcd<uint_type>( (uint_type)abs(n), abs_d );
+                    const uint_type _gcd = gcd<uint_type>( (uint_type)jau::abs(n), abs_d );
                     num = n / (int_type)_gcd;
                     denom = abs_d / _gcd;
                 }
@@ -214,7 +199,7 @@ namespace jau {
              */
             constexpr fraction<int_type>& reduce() noexcept {
                 if( num != 0 && denom != 0 ) {
-                    const uint_type _gcd = gcd<uint_type>( (uint_type)abs(num), denom );
+                    const uint_type _gcd = gcd<uint_type>( (uint_type)jau::abs(num), denom );
                     num /= static_cast<int_type>(_gcd);
                     denom /= _gcd;
                 }
@@ -315,8 +300,8 @@ namespace jau {
                     // calculate smallest num and denom, both arguments 'n' and 'd' may be negative
                     const int_type n = dur.count()*Period::num;
                     const int_type d = Period::den;
-                    const uint_type abs_d = abs(d);
-                    const uint_type _gcd = gcd<uint_type>( (uint_type)abs(n), abs_d );
+                    const uint_type abs_d = jau::abs(d);
+                    const uint_type _gcd = gcd<uint_type>( (uint_type)jau::abs(n), abs_d );
                     num = ( n * jau::sign(d) ) / (int_type)_gcd;
                     denom = abs_d / _gcd;
                 }
@@ -490,8 +475,8 @@ namespace jau {
              * @return reference to this instance, reduced
              */
             constexpr fraction<int_type>& operator*=(const fraction<int_type>& rhs ) noexcept {
-                const uint_type gcd1 = gcd<uint_type>( (uint_type)abs(num),     rhs.denom );
-                const uint_type gcd2 = gcd<uint_type>( (uint_type)abs(rhs.num), denom );
+                const uint_type gcd1 = gcd<uint_type>( (uint_type)jau::abs(num),     rhs.denom );
+                const uint_type gcd2 = gcd<uint_type>( (uint_type)jau::abs(rhs.num), denom );
                 const int_type n1 = num / (int_type)gcd1;
                 const int_type n2 = rhs.num / (int_type)gcd2;
                 const uint_type d1 = denom / gcd2;
@@ -511,8 +496,8 @@ namespace jau {
              */
             constexpr fraction<int_type>& operator/=(const fraction<int_type>& rhs ) noexcept {
                 // flipped rhs num and denom as compared to multiply
-                const uint_type abs_num2 = abs(rhs.num);
-                const uint_type gcd1 = gcd<uint_type>( (uint_type)abs(num),  abs_num2 );
+                const uint_type abs_num2 = jau::abs(rhs.num);
+                const uint_type gcd1 = gcd<uint_type>( (uint_type)jau::abs(num),  abs_num2 );
                 const uint_type gcd2 = gcd<uint_type>(          rhs.denom ,  denom );
 
                 num = ( num / (int_type)gcd1 ) * jau::sign(rhs.num) * ( rhs.denom / (int_type)gcd2 );
@@ -586,7 +571,7 @@ namespace jau {
     template<typename int_type>
     constexpr fraction<int_type> abs(const fraction<int_type>& rhs) noexcept {
         fraction<int_type> copy(rhs); // skip normalize
-        copy.num = abs(rhs.num);
+        copy.num = jau::abs(rhs.num);
         return copy;
     }
 
