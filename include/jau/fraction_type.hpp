@@ -840,12 +840,31 @@ namespace jau {
         : tv_sec(s), tv_nsec(ns) { normalize(); }
 
         /**
-         * Construct a fraction_timespec via fraction_i64 conversion.
+         * Conversion constructor of fraction_timespec for a fraction_i64 value.
          *
          * If overflow_ptr is not nullptr, true is stored if an overflow occurred, otherwise false.
          *
          * In case of an overflow, tv_sec and tv_nsec will also be set to INT64_MAX
          *
+         * Example without overflow check and implicit fraction_i64 conversion to fraction_timespec:
+         * <pre>
+            fraction_i64 duration = 10_ms;
+            bool overflow = false;
+            const fraction_timespec timeout_time = getMonotonicTime() + duration;
+            if( overflow ) {
+                return; // bail out
+            }
+         * </pre>
+         *
+         * Example with overflow check for potential durations > 292 years and explicit fraction_i64 conversion to fraction_timespec:
+         * <pre>
+            fraction_i64 duration = 10_ms;
+            bool overflow = false;
+            const fraction_timespec timeout_time = getMonotonicTime() + fraction_timespec(duration, &overflow);
+            if( overflow ) {
+                return; // bail out
+            }
+         * </pre>
          * @param r the conversion input
          * @param overflow_ptr optional pointer to overflow result, defaults to nullptr
          */
@@ -1098,6 +1117,21 @@ namespace jau {
      * Method works similar to std::condition_variable::wait_for(), but utilizes fraction_timespec instead of `int64_t nanoseconds counter`
      * for maintaining high-precision and infinite range.
      *
+     * When using a condition predicate loop to ensure no spurious wake-up preemptively ends waiting for the condition variable event or timeout,
+     * it is always recommended to use wait_until() using the absolute timeout time computed once before said loop. Example from latch::wait_for():
+     * <pre>
+            std::unique_lock<std::mutex> lock(mtx_cd);
+            const fraction_timespec timeout_time = getMonotonicTime() + timeout_duration;
+            while( 0 < count ) {
+                std::cv_status s = wait_until(cv, lock, timeout_time);
+                if( 0 == count ) {
+                    return true;
+                }
+                if( std::cv_status::timeout == s ) {
+                    return false;
+                }
+            }
+     * </pre>
      * @param cv std::condition_variable instance
      * @param lock an object of type std::unique_lock<std::mutex>, which must be locked by the current thread
      * @param relative_time an object of type fraction_timespec representing the the maximum time to spend waiting
@@ -1121,6 +1155,22 @@ namespace jau {
      * Method works similar to std::condition_variable::wait_for(), but utilizes fraction_timespec instead of `int64_t nanoseconds counter`
      * for maintaining high-precision and infinite range.
      *
+     *
+     * When using a condition predicate loop to ensure no spurious wake-up preemptively ends waiting for the condition variable event or timeout,
+     * it is always recommended to use wait_until() using the absolute timeout time computed once before said loop. Example from latch::wait_for():
+     * <pre>
+            std::unique_lock<std::mutex> lock(mtx_cd);
+            const fraction_timespec timeout_time = getMonotonicTime() + timeout_duration;
+            while( 0 < count ) {
+                std::cv_status s = wait_until(cv, lock, timeout_time);
+                if( 0 == count ) {
+                    return true;
+                }
+                if( std::cv_status::timeout == s ) {
+                    return false;
+                }
+            }
+     * </pre>
      * @param cv std::condition_variable instance
      * @param lock an object of type std::unique_lock<std::mutex>, which must be locked by the current thread
      * @param relative_time an object of type fraction_i64 representing the the maximum time to spend waiting, which is limited to 292 years if using nanoseconds fractions.

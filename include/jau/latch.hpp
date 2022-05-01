@@ -164,7 +164,7 @@ namespace jau {
             bool wait_for(const fraction_i64& timeout_duration) const noexcept {
                 if( 0 < count ) {
                     std::unique_lock<std::mutex> lock(mtx_cd);
-                    const fraction_timespec timeout_time = getMonotonicTime() + fraction_timespec(timeout_duration);
+                    const fraction_timespec timeout_time = getMonotonicTime() + timeout_duration;
                     while( 0 < count ) {
                         std::cv_status s = wait_until(cv, lock, timeout_time);
                         if( 0 == count ) {
