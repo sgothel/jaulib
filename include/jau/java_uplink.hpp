@@ -33,6 +33,12 @@
 
 namespace jau {
 
+    /** @defgroup JavaVM Java Virtual Machine
+     *  Java virtual machine support, helping accessing the JVM and converting data types.
+     *
+     *  @{
+     */
+
     /**
      * Pure virtual JavaAnon, hiding Java JNI details from API,
      * to be implemented by JNI module.
@@ -96,6 +102,8 @@ namespace jau {
                 javaObjectRef = nullptr;
             }
     };
+
+    /**@}*/
 
 } /* namespace jau */
 

@@ -46,6 +46,17 @@ namespace jau {
 
     // Remember: constexpr specifier used in a function or static data member (since C++17) declaration implies inline.
 
+    /** @defgroup fractions Fractions for time and more
+     *  Fraction type and arithmetic support
+     *  inclusive its utilization for time without loss of precision nor range.
+     *
+     *  General timing functionality like sleep_until(), sleep_for(),
+     *  wait_until() and wait_for() are supported,
+     *  completed with getMonotonicClock() and getWallTimeClock().
+     *
+     *  @{
+     */
+
     /**
      * Fraction template type using integral values, evaluated at runtime.
      *
@@ -1155,5 +1166,7 @@ namespace std {
         return os;
     }
 } // namespace std
+
+    /**@}*/
 
 #endif /* JAU_FRACTION_TYPE_HPP_ */

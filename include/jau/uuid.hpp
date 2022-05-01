@@ -36,6 +36,11 @@
 
 namespace jau {
 
+/** \addtogroup NetUtils
+ *
+ *  @{
+ */
+
 class uuid128_t; // forward
 
 /**
@@ -303,6 +308,8 @@ inline uuid128_t get_uuid128(uint8_t const * buffer, jau::nsize_t const byte_off
 {
     return uuid128_t(jau::get_uint128(buffer, byte_offset, littleEndian));
 }
+
+/**@}*/
 
 } /* namespace jau */
 

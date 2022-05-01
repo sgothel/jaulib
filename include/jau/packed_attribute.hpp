@@ -26,6 +26,11 @@
 #ifndef PACKED_ATTRIBUTE_HPP_
 #define PACKED_ATTRIBUTE_HPP_
 
+/** \addtogroup CppLang
+ *
+ *  @{
+ */
+
 /** packed__: lead in macro, requires __packed lead out as well. Consider using __pack(...). */
 #ifndef packed__
     #ifdef _MSC_VER
@@ -53,6 +58,8 @@
     #endif
 #endif
 
+namespace jau {
+
     /**
      * Safe access to a pointer cast from unaligned memory via __packed__ attribute,
      * i.e. utilizing compiler generated safe load and store operations.
@@ -64,5 +71,8 @@
         T store;
     } ) ;
 
+} // namespace jau
+
+/**@}*/
 
 #endif /* PACKED_ATTRIBUTE_HPP_ */

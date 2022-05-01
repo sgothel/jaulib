@@ -40,6 +40,12 @@
 
 namespace jau {
 
+    /** @defgroup StringUtils String Utilities
+     *  String utilities for type conversion and manipulation.
+     *
+     *  @{
+     */
+
     /**
      * Returns a C++ String taken from buffer with maximum length of min(max_len, max_len).
      * <p>
@@ -250,6 +256,8 @@ namespace jau {
         (void)ref;
         return "jau::to_string<T> not available for "+type_cue<value_type>::print("unknown", TypeTraitGroup::ALL);
     }
+
+    /**@}*/
 
 } // namespace jau
 

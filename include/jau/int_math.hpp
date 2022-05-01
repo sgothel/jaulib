@@ -35,6 +35,11 @@ namespace jau {
 
     #define JAU_USE_BUILDIN_OVERFLOW 1
 
+    /** \addtogroup Integrals
+     *
+     *  @{
+     */
+
     /**
     // *************************************************
     // *************************************************
@@ -372,6 +377,8 @@ namespace jau {
     {
         return digits10<T>(x, jau::sign<T>(x), sign_is_digit);
     }
+
+    /**@}*/
 
 } // namespace jau
 

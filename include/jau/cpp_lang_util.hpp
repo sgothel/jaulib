@@ -29,6 +29,12 @@
 
 namespace jau {
 
+    /** @defgroup CppLang C++ Language Utilities
+     *  C++ language utilities, language feature alignment, type trails, data alignment and intrinsics.
+     *
+     *  @{
+     */
+
     /**
      * `consteval` qualifier replacement for C++20 `consteval`.
      *
@@ -308,6 +314,8 @@ namespace jau {
             return reinterpret_cast<Dest>( const_cast< std::remove_const_t< std::remove_pointer_t<Source> >* >( src ) );
         }
     }
+
+    /**@}*/
 
 } // namespace jau
 

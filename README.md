@@ -13,7 +13,8 @@ This project was extracted from [Direct-BT](https://jausoft.com/cgit/direct_bt.g
 ## API Documentation
 Up to date API documentation can be found:
 
-* [C++ API Doc](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/index.html).
+* [C++ API Doc](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/index.html)
+  - Grouped [C++ Modules](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/modules.html)
 
 * [Java API Doc](https://jausoft.com/projects/jaulib/build/documentation/java/html/index.html).
 

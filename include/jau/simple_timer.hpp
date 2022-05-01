@@ -37,6 +37,11 @@
 
 namespace jau {
 
+    /** \addtogroup Concurrency
+     *
+     *  @{
+     */
+
     /**
      * A simple timer for timeout and interval applications,
      * using one dedicated service_runner thread per instance.
@@ -130,6 +135,8 @@ namespace jau {
              */
             bool stop() noexcept { return timer_service.stop(); }
     };
+
+    /**@}*/
 
 } /* namespace jau */
 

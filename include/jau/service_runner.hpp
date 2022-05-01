@@ -43,6 +43,11 @@
 
 namespace jau {
 
+    /** \addtogroup Concurrency
+     *
+     *  @{
+     */
+
     /**
      * Service runner, a reusable dedicated thread performing custom user services.
      */
@@ -270,6 +275,7 @@ namespace jau {
             std::string toString() const noexcept;
     };
 
+    /**@}*/
 } // namespace jau
 
 

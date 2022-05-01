@@ -56,10 +56,22 @@ namespace jau {
     #define _DEBUG_PRINT(...)
 #endif
 
+/** @defgroup DataStructs Data structures and types
+ * Data structures and types, notably
+ *  - \ref ringbuffer
+ *  - \ref darray
+ *  - cow_darray
+ *  - cow_vector
+ *
+ *  @{
+ */
+
 /**
  * Ring buffer implementation, a.k.a circular buffer,
  * exposing <i>lock-free</i>
  * {@link #get() get*(..)} and {@link #put(Object) put*(..)} methods.
+ *
+ * This data structure is also supporting \ref Concurrency.
  *
  * Implementation utilizes the <i>Always Keep One Slot Open</i>,
  * hence implementation maintains an internal array of `capacity` <i>plus one</i>!
@@ -1476,6 +1488,8 @@ class ringbuffer {
             }
         }
 };
+
+/**@}*/
 
 } /* namespace jau */
 

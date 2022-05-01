@@ -39,6 +39,11 @@
 
 namespace jau {
 
+    /** \addtogroup DataStructs
+     *
+     *  @{
+     */
+
     // forward declaration for friendship with cow_rw_iterator
     template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
     class cow_ro_iterator;
@@ -1048,6 +1053,8 @@ namespace jau {
 
     /****************************************************************************************
      ****************************************************************************************/
+
+    /**@}*/
 
 } /* namespace jau */
 

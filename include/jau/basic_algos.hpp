@@ -32,6 +32,11 @@
 #include <jau/cow_iterator.hpp>
 
 namespace jau {
+    /** @defgroup Algorithms Basic Algorithms
+     *  Basic algorithms.
+     *
+     *  @{
+     */
 
     /**
      * Call on release allows the user to pass a function
@@ -369,6 +374,8 @@ namespace jau {
         }
         return f; // implicit move since C++11
     }
+
+    /**@}*/
 
 } // namespace jau
 

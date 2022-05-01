@@ -59,38 +59,37 @@ namespace jau {
     #define JAU_DARRAY_PRINTF(...)
 #endif
 
+    /** \addtogroup DataStructs
+     *
+     *  @{
+     */
+
     /**
      * Implementation of a dynamic linear array storage, aka vector.<br>
      * Goals are to support a high-performance CoW dynamic array implementation, jau::cow_darray,<br>
      * exposing fine grained control over its underlying storage facility.<br>
      * Further, jau::darray provides high-performance and efficient storage properties on its own.
-     * <p>
+     *
      * This class shall be compliant with <i>C++ named requirements for Container</i>.
-     * </p>
-     * <p>
+     *
      * API and design differences to std::vector
-     * <ul>
-     * <li>jau::darray adds a parameterized <i>growth factor</i> aspect, default to golden ration jau::darray::DEFAULT_GROWTH_FACTOR</li>
-     * <li><i>capacity</i> control via constructor and operations, related to <i>growth factor</i>.</li>
-     * <li>Iterator jau::darray::const_iterator .. are harmonized with jau::cow_ro_iterator .. used in jau:cow_darray.</li>
-     * <li>...</li>
-     * <li>Custom constructor and operations, supporting a more efficient jau::cow_darray implementation.</li>
-     * <li>Custom template typename Size_type, defaults to jau::nsize_t.</li>
-     * <li>...</li>
-     * <li><b>Removed</b>: size_type x value_type fill operations, e.g. assign, constructor, .... for clarity, since supporting <i>capacity</i>.</li>
-     * <li>...</li>
-     * <li><b>TODO</b>: std::initializer_list<T> methods, ctor is provided.</li>
-     * </ul>
-     * </p>
-     * <p>
+     * - jau::darray adds a parameterized <i>growth factor</i> aspect, default to golden ration jau::darray::DEFAULT_GROWTH_FACTOR
+     * - <i>capacity</i> control via constructor and operations, related to <i>growth factor</i>.
+     * - Iterator jau::darray::const_iterator .. are harmonized with jau::cow_ro_iterator .. used in jau:cow_darray.
+     * - ...
+     * - Custom constructor and operations, supporting a more efficient jau::cow_darray implementation.
+     * - Custom template typename Size_type, defaults to jau::nsize_t.
+     * - ...
+     * - <b>Removed</b>: size_type x value_type fill operations, e.g. assign, constructor, .... for clarity, since supporting <i>capacity</i>.
+     * - ...
+     * - <b>TODO</b>: std::initializer_list<T> methods, ctor is provided.
+     *
      * Implementation differences to std::vector and some details
-     * <ul>
-     * <li>Using zero overhead <i>value_type*</i> as iterator type.</li>
-     * <li>...</li>
-     * <li>Storage is operated on three iterator: <i>begin</i>, <i>end</i> and <i>storage_end</i>.</li>
-     * <li>Constructs and destructs value_type via <i>placement new</i> within the pre-allocated array capacity. Latter is managed via allocator_type.</li>
-     * </ul>
-     * </p>
+     * - Using zero overhead <i>value_type*</i> as iterator type.
+     * - ...
+     * - Storage is operated on three iterator: <i>begin</i>, <i>end</i> and <i>storage_end</i>.
+     * - Constructs and destructs value_type via <i>placement new</i> within the pre-allocated array capacity. Latter is managed via allocator_type.
+     *
      *
      * @anchor darray_ntt_params
      * ### Non-Type Template Parameter (NTTP) controlling Value_type memory
@@ -1382,6 +1381,8 @@ namespace jau {
      */
     template< class T >
     struct is_darray_type<T, std::void_t<typename T::darray_tag>> : std::true_type { };
+
+    /**@}*/
 
 } /* namespace jau */
 

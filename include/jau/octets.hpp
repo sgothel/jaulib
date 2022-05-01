@@ -50,6 +50,11 @@
 
 namespace jau {
 
+    /** \addtogroup ByteUtils
+     *
+     *  @{
+     */
+
     /**
      * Transient read only and endian aware octet data, i.e. non persistent passthrough, owned by caller.
      *
@@ -921,6 +926,8 @@ namespace jau {
                 return "size "+std::to_string(size())+", capacity "+std::to_string(capacity())+", "+bytesHexString(get_ptr(), 0, size(), true /* lsbFirst */);
             }
     };
+
+    /**@}*/
 
 } /* namespace jau */
 

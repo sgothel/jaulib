@@ -43,6 +43,11 @@
 
 namespace jau {
 
+    /** \addtogroup JavaVM
+     *
+     *  @{
+     */
+
     //
     // C++ <-> java exceptions
     //
@@ -533,6 +538,9 @@ namespace jau {
         }
         return result;
     }
+
+    /**@}*/
+
 
 } // namespace direct_bt
 

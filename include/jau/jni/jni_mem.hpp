@@ -34,6 +34,11 @@
 
 #include <jau/basic_types.hpp>
 
+/** \addtogroup JavaVM
+ *
+ *  @{
+ */
+
 extern JavaVM* vm;
 
 
@@ -194,6 +199,8 @@ public:
      */
     bool getIsCopy() const { return isCopy; }
 };
+
+/**@}*/
 
 #endif /* JAU_JNIMEM__HPP_ */
 

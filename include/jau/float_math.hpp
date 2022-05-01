@@ -30,6 +30,11 @@
 #include <algorithm>
 
 namespace jau {
+    /** @defgroup Floats Float support
+     *  Float data types and arithmetic
+     *  @{
+     */
+
     /**
     // *************************************************
     // *************************************************
@@ -105,6 +110,8 @@ namespace jau {
         return diff <= epsilon * std::fabs(a+b) * ulp ||
                diff < std::numeric_limits<T>::min(); // subnormal limit
     }
+
+    /**@}*/
 
 } // namespace jau
 

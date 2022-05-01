@@ -37,6 +37,11 @@
 
 namespace jau {
 
+    /** \addtogroup CppLang
+     *
+     *  @{
+     */
+
     // Author: Sven Gothel
 
     /**
@@ -353,6 +358,8 @@ namespace jau {
       std::is_pointer<decltype(std::declval<C>().operator->())>::value>::type> : std::true_type {};
 
     template <typename _Tp> inline constexpr bool has_member_of_pointer_v = has_member_of_pointer<_Tp>::value;
+
+    /**@}*/
 
 } // namespace jau
 

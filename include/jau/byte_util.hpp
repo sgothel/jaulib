@@ -41,6 +41,13 @@
 
 namespace jau {
 
+    /** @defgroup ByteUtils Byte Utilities
+     *  Byte utility functions and types for endian- and bit conversions,
+     *  inclusive alignment handling and general get & put functionality.
+     *
+     *  @{
+     */
+
     #if defined __has_builtin
         #if __has_builtin(__builtin_bswap16)
             #define __has_builtin_bswap16 1
@@ -722,6 +729,8 @@ namespace jau {
     {
         return get_value(pointer_cast<const packed_t<T>*>( buffer + byte_offset ), littleEndian);
     }
+
+    /**@}*/
 
 } // namespace jau
 

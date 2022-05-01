@@ -45,57 +45,55 @@
 
 namespace jau {
 
+    /** \addtogroup DataStructs
+     *
+     *  @{
+     */
+
     /**
      * Implementation of a Copy-On-Write (CoW) using jau::darray as the underlying storage,
      * exposing <i>lock-free</i> read operations using SC-DRF atomic synchronization.
-     * <p>
+     *
+     * This data structure is also supporting \ref Concurrency.
+     *
      * This class shall be compliant with <i>C++ named requirements for Container</i>.
-     * </p>
-     * <p>
+     *
      * The store is owned using a shared reference to the data structure,
      * allowing its replacement on Copy-On-Write (CoW).
-     * </p>
-     * <p>
+     *
      * Writing to the store utilizes a mutex lock to avoid data races
      * on the instances' write operations only, leaving read operations <i>lock-free</i>.<br>
      * Write operations replace the store reference with a new instance using
      * jau::sc_atomic_critical to synchronize with read operations.
-     * </p>
-     * <p>
+     *
      * Reading from the store is <i>lock-free</i> and accesses the store reference using
      * jau::sc_atomic_critical to synchronizing with write operations.
-     * </p>
-     * <p>
+     *
      * Immutable storage const_iterators are supported via jau::cow_ro_iterator,
      * which are constructed <i>lock-free</i>.<br>
      * jau::cow_ro_iterator holds a snapshot retrieved via jau::cow_darray::snapshot()
      * until its destruction.
-     * </p>
-     * <p>
+     *
      * Mutable storage iterators are supported via jau::cow_rw_iterator,
      * which holds a copy of this CoW storage and locks its write mutex until
      * jau::cow_rw_iterator::write_back() or its destruction.<br>
      * After completing all mutable operations but before this iterator's destruction,
      * the user might want to write back this iterators' storage to this CoW
      * using jau::cow_rw_iterator::write_back().
-     * </p>
-     * <p>
+     *
      * Both, jau::cow_ro_iterator and jau::cow_rw_iterator are harmonized
      * to work with jau::darray::const_iterator and jau::darray::iterator
      * for all iterator based operations.
-     * </p>
-     * <p>
+     *
      * Index operation via ::operator[](size_t) or ::at(size_t) are not supported,
      * since they would be only valid if value_type itself is a std::shared_ptr
      * and hence prohibit the destruction of the object if mutating the storage,
      * e.g. via jau::cow_darray::push_back().
-     * </p>
-     * <p>
+     *
      * Custom mutable write operations are also supported via
      * jau::cow_darray::get_write_mutex(), jau::cow_darray::copy_store() and jau::cow_darray::set_store().<br>
      * See example in jau::cow_darray::set_store()
-     * </p>
-     * <p>
+     *
      * To allow data-race free operations using iterators from a potentially mutated CoW,
      * only one cow_darray::begin() const_iterator or iterator should be retrieved from this CoW
      * and all further operations shall use its
@@ -1193,6 +1191,8 @@ namespace jau {
     template<typename Value_type, typename Alloc_type>
     inline void swap(cow_darray<Value_type, Alloc_type>& rhs, cow_darray<Value_type, Alloc_type>& lhs) noexcept
     { rhs.swap(lhs); }
+
+    /**@}*/
 
 } /* namespace jau */
 

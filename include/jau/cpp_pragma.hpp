@@ -27,6 +27,11 @@
 
 namespace jau {
 
+    /** \addtogroup CppLang
+     *
+     *  @{
+     */
+
 #if defined(_MSC_VER)
     #define PRAGMA_DISABLE_WARNING_PUSH           __pragma(warning( push ))
     #define PRAGMA_DISABLE_WARNING_POP            __pragma(warning( pop ))
@@ -63,6 +68,8 @@ namespace jau {
     #define PRAGMA_DISABLE_WARNING_NULL_DEREFERENCE
     #define PRAGMA_DISABLE_WARNING_FORMAT_OVERFLOW
 #endif
+
+    /**@}*/
 
 } // namespace jau
 

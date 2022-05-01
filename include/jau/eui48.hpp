@@ -35,6 +35,12 @@
 #include <jau/basic_types.hpp>
 #include <jau/packed_attribute.hpp>
 
+/** @defgroup NetUtils Network utilities and types
+ *  Networking types and functionality.
+ *
+ *  @{
+ */
+
 namespace jau {
 
     /**
@@ -399,5 +405,7 @@ namespace std
         }
     };
 }
+
+/**@}*/
 
 #endif /* JAU_EUI48_HPP_ */

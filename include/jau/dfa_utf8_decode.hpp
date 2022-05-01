@@ -35,9 +35,19 @@
 #include <cinttypes>
 
 namespace jau {
+    /**
+     * \ingroup ByteUtils
+     *
+     * @param state
+     * @param codep
+     * @param byte_value
+     * @return
+     */
     uint32_t dfa_utf8_decode(uint32_t & state, uint32_t & codep, const uint32_t byte_value);
 
     /**
+     * \ingroup ByteUtils
+     *
      * Returns all valid consecutive UTF-8 characters within buffer
      * in the range up to buffer_size or until EOS.
      * <p>

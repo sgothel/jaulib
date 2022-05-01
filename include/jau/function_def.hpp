@@ -37,6 +37,12 @@
 
 namespace jau {
 
+    /** @defgroup FunctionPtr Function pointer support
+     *  Function pointer support inclusive capturing lambdas.
+     *
+     *  @{
+     */
+
     enum class FunctionType : int {
         Null = 0,
         Class = 1,
@@ -469,6 +475,8 @@ namespace jau {
     bindStdFunc(uint64_t id) noexcept {
         return FunctionDef<R, A...>( new StdInvocationFunc<R, A...>(id) );
     }
+
+    /**@}*/
 
 } // namespace jau
 

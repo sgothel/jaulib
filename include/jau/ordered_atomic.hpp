@@ -37,6 +37,24 @@ namespace jau {
 # define CXX_ALWAYS_INLINE inline __attribute__((__always_inline__))
 #endif
 
+/** \addtogroup Concurrency
+ *
+ *  @{
+ */
+/**@}*/
+
+/** @defgroup Concurrency Concurrency
+ *  Concurrency support to avoid data races and help to synchronize access.
+ *
+ *  Notable, the following data structures from \ref DataStructs
+ *  are also supporting concurrency:
+ *  - \ref ringbuffer
+ *  - cow_darray
+ *  - cow_vector
+ *
+ *  @{
+ */
+
 /**
  * std::atomic<T> type with predefined fixed std::memory_order,
  * not allowing changing the memory model on usage and applying the set order to all operator.
@@ -334,6 +352,8 @@ template <typename _Tp, std::memory_order _MO> struct ordered_atomic : private s
         sc_atomic_critical& operator=(const sc_atomic_critical&) = delete;
         sc_atomic_critical& operator=(const sc_atomic_critical&) volatile = delete;
   };
+
+  /**@}*/
 
 } /* namespace jau */
 

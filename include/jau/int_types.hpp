@@ -32,6 +32,11 @@
 #include <jau/packed_attribute.hpp>
 
 namespace jau {
+    /** @defgroup Integrals Integral type support
+     * Integral integer data types and arithmetic
+     *  @{
+     */
+
     /**
      * Natural 'size_t' alternative using `uint_fast32_t` as its natural sized type.
      * <p>
@@ -165,6 +170,8 @@ namespace jau {
         /** Literal for unsigned jau::nsize_t */
         constexpr jau::nsize_t operator ""_unz(unsigned long long int __v)  { return (jau::nsize_t)__v; }
     }
+
+    /**@}*/
 
 } // namespace jau
 

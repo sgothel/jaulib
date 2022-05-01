@@ -35,6 +35,11 @@
 
 namespace jau {
 
+    /** \addtogroup Concurrency
+     *
+     *  @{
+     */
+
     /**
      * Inspired by std::latch of C++20
      *
@@ -246,6 +251,8 @@ namespace jau {
                 return wait_for(timeout_duration);
             }
     };
+
+    /**@}*/
 
 } /* namespace jau */
 

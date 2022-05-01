@@ -49,6 +49,8 @@
 namespace jau {
 
     /**
+     * \ingroup Fractions
+     *
      * Returns current monotonic time since Unix Epoch `00:00:00 UTC on 1970-01-01`.
      *
      * Returned fraction_timespec is passing machine precision and range of the underlying API.
@@ -78,6 +80,8 @@ namespace jau {
     fraction_timespec getMonotonicTime() noexcept;
 
     /**
+     * \ingroup Fractions
+     *
      * Returns current wall-clock real-time since Unix Epoch `00:00:00 UTC on 1970-01-01`.
      *
      * Returned fraction_timespec is passing machine precision and range of the underlying API.
@@ -213,6 +217,11 @@ namespace jau {
     // *************************************************
      */
 
+    /** \addtogroup Integrals
+     *
+     *  @{
+     */
+
     inline void set_bit_uint32(const uint8_t nr, uint32_t &mask)
     {
         if( nr > 31 ) { throw IndexOutOfBoundsException(nr, 32, E_FILE_LINE); }
@@ -298,6 +307,8 @@ namespace jau {
      * </pre>
      */
     uint128_t merge_uint128(uint32_t const uuid32, uint128_t const & base_uuid, nsize_t const uuid32_le_octet_index);
+
+    /**@}*/
 
 } // namespace jau
 
