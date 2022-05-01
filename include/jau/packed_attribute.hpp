@@ -58,18 +58,27 @@
     #endif
 #endif
 
+/**@}*/
+
 namespace jau {
+
+    /** \addtogroup CppLang
+     *
+     *  @{
+     */
 
     /**
      * Safe access to a pointer cast from unaligned memory via __packed__ attribute,
      * i.e. utilizing compiler generated safe load and store operations.
      * <p>
-     * This template shall cause no costs, the cast data pointer is identical to 'T & p = &store'.
+     * This template shall cause no costs, the cast data pointer is identical to 'T * p = &store'.
      * </p>
      */
     template<typename T> __pack ( struct packed_t {
         T store;
     } ) ;
+
+    /**@}*/
 
 } // namespace jau
 

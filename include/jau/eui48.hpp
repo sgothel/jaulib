@@ -35,13 +35,13 @@
 #include <jau/basic_types.hpp>
 #include <jau/packed_attribute.hpp>
 
-/** @defgroup NetUtils Network utilities and types
- *  Networking types and functionality.
- *
- *  @{
- */
-
 namespace jau {
+
+    /** @defgroup NetUtils Network utilities and types
+     *  Networking types and functionality.
+     *
+     *  @{
+     */
 
     /**
      * A 48 bit EUI-48 sub-identifier, see EUI48.
@@ -388,11 +388,17 @@ namespace jau {
         }
     }
 
+    /**@}*/
+
 } /* namespace jau */
 
 // injecting specialization of std::hash to namespace std of our types above
 namespace std
 {
+    /** \addtogroup NetUtils
+     *
+     */
+
     template<> struct hash<jau::EUI48Sub> {
         std::size_t operator()(jau::EUI48Sub const& a) const noexcept {
             return a.hash_code();
@@ -404,8 +410,8 @@ namespace std
             return a.hash_code();
         }
     };
-}
 
-/**@}*/
+    /**@}*/
+}
 
 #endif /* JAU_EUI48_HPP_ */

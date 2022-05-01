@@ -37,12 +37,6 @@ namespace jau {
 # define CXX_ALWAYS_INLINE inline __attribute__((__always_inline__))
 #endif
 
-/** \addtogroup Concurrency
- *
- *  @{
- */
-/**@}*/
-
 /** @defgroup Concurrency Concurrency
  *  Concurrency support to avoid data races and help to synchronize access.
  *
