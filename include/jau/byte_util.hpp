@@ -42,9 +42,14 @@
 namespace jau {
 
     /** @defgroup ByteUtils Byte Utilities
-     *  Byte utility functions and types for endian- and bit conversions,
-     *  inclusive alignment handling and general get & put functionality.
+     * Byte utility functions and types for endian- and bit conversions,
+     * inclusive alignment handling and general get & put functionality.
      *
+     * All endian API entries are of `constexpr` and hence evaluated at compile time.<br>
+     * Therefore, if-branches and expressions are also of `constexpr` and optimized 'away' at compile time.<br>
+     * This includes the `cpu_to_<endian>(..)` and `<endian>_to_cpu(..)` etc utility functions.
+     *
+     * See endian enum class regarding endian `constexpr` compile time determination.
      *  @{
      */
 
