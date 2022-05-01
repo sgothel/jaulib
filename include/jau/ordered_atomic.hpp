@@ -41,10 +41,18 @@ namespace jau {
  *  Concurrency support to avoid data races and help to synchronize access.
  *
  *  Notable, the following data structures from \ref DataStructs
- *  are also supporting concurrency:
+ *  are supporting concurrency:
  *  - \ref ringbuffer
  *  - cow_darray
  *  - cow_vector
+ *
+ *  Further, \ref Fractions are supporting concurrency:
+ *  - wait_until()
+ *  - wait_for()
+ *  - sleep_until()
+ *  - sleep_for()
+ *  - getMonotonicTime()
+ *  - getWallClockTime()
  *
  *  @{
  */

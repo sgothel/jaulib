@@ -46,13 +46,13 @@ namespace jau {
 
     // Remember: constexpr specifier used in a function or static data member (since C++17) declaration implies inline.
 
-    /** @defgroup fractions Fractions for time and more
+    /** @defgroup Fractions Fractions for time and more
      *  Fraction type and arithmetic support
      *  inclusive its utilization for time without loss of precision nor range.
      *
-     *  General timing functionality like sleep_until(), sleep_for(),
-     *  wait_until() and wait_for() are supported,
-     *  completed with getMonotonicClock() and getWallTimeClock().
+     *  Adds support for \ref Concurrency with general timing functionality
+     *  like sleep_until(), sleep_for(), wait_until() and wait_for(),
+     *  completed with getMonotonicTime() and getWallClockTime().
      *
      *  @{
      */
@@ -813,7 +813,12 @@ namespace jau {
      * If used as time-point, zero is time since Unix Epoch `00:00:00 UTC on 1970-01-01`.
      *
      * @see to_fraction_i64()
+     * @see sleep_until()
+     * @see sleep_for()
+     * @see wait_until()
+     * @see wait_for()
      * @see getMonotonicTime()
+     * @see getWallClockTime()
      */
     struct fraction_timespec {
         /**
@@ -1191,22 +1196,35 @@ namespace jau {
     /** Relaxed non-SC atomic integral scalar jau::fraction_u64. Memory-Model (MM) only guarantees the atomic value, _no_ sequential consistency (SC) between acquire (read) and release (write). Requires libatomic with libstdc++10. */
     typedef ordered_atomic<jau::fraction_u64, std::memory_order_relaxed> relaxed_atomic_fraction_u64;
 
+    /**@}*/
+
 } // namespace jau
 
 namespace std {
 
+    /** \addtogroup Fractions
+     */
+
+    /**
+     * Output stream operator for jau::fraction_timespec
+     */
     inline std::ostream& operator<<(std::ostream& os, const jau::fraction_timespec& v) noexcept {
         os << v.to_string();
         return os;
     }
 
+    /**
+     * Output stream operator for jau::fraction
+     */
     template<typename int_type>
     inline std::ostream& operator<<(std::ostream& os, const jau::fraction<int_type>& v) noexcept {
         os << v.to_string();
         return os;
     }
-} // namespace std
 
     /**@}*/
+
+} // namespace std
+
 
 #endif /* JAU_FRACTION_TYPE_HPP_ */
