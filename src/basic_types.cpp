@@ -102,6 +102,19 @@ void jau::sleep_for(const fraction_i64& relative_time, const bool monotonic) noe
     }
 }
 
+// Hack for glibc/pthread library w/o pthread_cond_clockwait,
+// i.e. on g++8, arm32, Debian 10.
+// Here we have to use pthread_cond_timedwait(), ignoring the clock type.
+//
+// __attribute__((weak)) tested w/ g++8.3, g++10 and clang-11
+//
+extern int pthread_cond_clockwait (pthread_cond_t *__restrict __cond,
+                   pthread_mutex_t *__restrict __mutex,
+                   __clockid_t __clock_id,
+                   const struct timespec *__restrict __abstime)
+     __nonnull ((1, 2, 4)) __attribute__((weak));
+
+
 std::cv_status jau::wait_until(std::condition_variable& cv, std::unique_lock<std::mutex>& lock, const fraction_timespec& absolute_time, const bool monotonic) noexcept {
     if( absolute_time <= fraction_tv::zero ) {
         return std::cv_status::no_timeout;
@@ -109,8 +122,12 @@ std::cv_status jau::wait_until(std::condition_variable& cv, std::unique_lock<std
     // typedef struct timespec __gthread_time_t;
     __gthread_time_t ts = { static_cast<std::time_t>( absolute_time.tv_sec ), static_cast<long>( absolute_time.tv_nsec ) };
 
-    pthread_cond_clockwait(cv.native_handle(), lock.mutex()->native_handle(),
-                           monotonic ? CLOCK_MONOTONIC : CLOCK_REALTIME, &ts);
+    if( pthread_cond_clockwait ) {
+        pthread_cond_clockwait(cv.native_handle(), lock.mutex()->native_handle(),
+                               monotonic ? CLOCK_MONOTONIC : CLOCK_REALTIME, &ts);
+    } else {
+        pthread_cond_timedwait(cv.native_handle(), lock.mutex()->native_handle(), &ts);
+    }
 
     const fraction_timespec now = monotonic ? getMonotonicTime() : getWallClockTime();
     return now < absolute_time ? std::cv_status::no_timeout : std::cv_status::timeout;
