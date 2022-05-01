@@ -125,8 +125,10 @@ namespace jau {
 
             /**
              * Stop timer, see service_runner::stop()
+             *
+             * @returns true if timer has been stopped or false if timeout has been hit
              */
-            void stop() noexcept { timer_service.stop(); }
+            bool stop() noexcept { return timer_service.stop(); }
     };
 
 } /* namespace jau */
