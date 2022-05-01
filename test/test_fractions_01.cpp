@@ -732,3 +732,52 @@ TEST_CASE( "Fraction Time Arithmetic Sub Test 03.2", "[fraction][fraction_timesp
     }
 }
 
+TEST_CASE( "Fraction Time Measurement Test 04.01", "[fraction][fraction_timespec][time]" ) {
+    // We assume accuracy of at least 1/2 millisecond, hence the difference shall not be greater
+    const fraction_i64 accuracy = fractions_i64::milli*2_i64/3_i64;
+    const int64_t sleep_ms = 50;
+    {
+        const fraction_timespec t0 = getMonotonicTime();
+        sleep_for( sleep_ms * 1_ms );
+        const fraction_timespec t1 = getMonotonicTime();
+        const fraction_timespec td_1 = t1 - t0;
+        const fraction_i64 td_2 = td_1.to_fraction_i64();
+        const fraction_i64 terr = abs( td_2 - fractions_i64::milli * sleep_ms );
+        INFO_STR( " Test-1: sleep_for() getMonotonicTime:");
+        INFO_STR( " - t0 " + t0.to_string() );
+        INFO_STR( " - t1 " + t1.to_string() );
+        INFO_STR( " - td_1 " + td_1.to_string() );
+        INFO_STR( " - td_2 " + td_2.to_string(true) + ", " + std::to_string( td_2.to_num_of(1_ms) ) + "ms, err " + terr.to_string(true) + " <?= " + accuracy.to_string(true) );
+        REQUIRE( t0.tv_sec >= 0 );
+        REQUIRE( t0.tv_nsec >= 0 );
+        REQUIRE( t1.tv_sec >= 0 );
+        REQUIRE( t1.tv_nsec >= 0 );
+        REQUIRE( td_1.tv_sec >= 0 );
+        REQUIRE( td_1.tv_nsec >= 0 );
+        REQUIRE( td_2 >= fractions_i64::zero );
+        // Check accuracy
+        REQUIRE( terr <= accuracy );
+    }
+    {
+        const fraction_timespec t0 = getMonotonicTime();
+        sleep_until( t0 + fraction_timespec( sleep_ms * 1_ms ) );
+        const fraction_timespec t1 = getMonotonicTime();
+        const fraction_timespec td_1 = t1 - t0;
+        const fraction_i64 td_2 = td_1.to_fraction_i64();
+        const fraction_i64 terr = abs( td_2 - fractions_i64::milli * sleep_ms );
+        INFO_STR( " Test-2: sleep_until() getMonotonicTime:");
+        INFO_STR( " - t0 " + t0.to_string() );
+        INFO_STR( " - t1 " + t1.to_string() );
+        INFO_STR( " - td_1 " + td_1.to_string() );
+        INFO_STR( " - td_2 " + td_2.to_string(true) + ", " + std::to_string( td_2.to_num_of(1_ms) ) + "ms, err " + terr.to_string(true) + " <?= " + accuracy.to_string(true) );
+        REQUIRE( t0.tv_sec >= 0 );
+        REQUIRE( t0.tv_nsec >= 0 );
+        REQUIRE( t1.tv_sec >= 0 );
+        REQUIRE( t1.tv_nsec >= 0 );
+        REQUIRE( td_1.tv_sec >= 0 );
+        REQUIRE( td_1.tv_nsec >= 0 );
+        REQUIRE( td_2 >= fractions_i64::zero );
+        // Check accuracy
+        REQUIRE( terr <= accuracy );
+    }
+}

@@ -39,12 +39,57 @@
 
 #include <jau/int_types.hpp>
 #include <jau/int_math.hpp>
+
 #include <jau/byte_util.hpp>
 #include <jau/string_util.hpp>
 
 #include <jau/ordered_atomic.hpp>
+#include <jau/fraction_type.hpp>
 
 namespace jau {
+
+    /**
+     * Returns current monotonic time since Unix Epoch `00:00:00 UTC on 1970-01-01`.
+     *
+     * Returned fraction_timespec is passing machine precision and range of the underlying API.
+     *
+     * See fraction_timespec::to_fraction_i64() of how to measure duration in high range and precision:
+     * <pre>
+     *   fraction_timespec t0 = getMonotonicTime();
+     *   // do something
+     *
+     *   // Exact duration
+     *   fraction_timespec td_1 = getMonotonicTime() - t0;
+     *
+     *   // or for durations <= 292 years
+     *   fraction_i64 td_2 = (getMonotonicTime() - t0).to_fraction_i64();
+     * </pre>
+     *
+     * This is in stark contract to counting nanoseconds in int64_t which only lasts until `2262-04-12`,
+     * since INT64_MAX is 9'223'372'036'854'775'807 for 9'223'372'036 seconds or 292 years.
+     *
+     * Monotonic time shall be used for high-performance measurements of durations,
+     * since the underlying OS shall support fast calls.
+     *
+     * @see fraction_timespec
+     * @see fraction_timespec::to_fraction_i64()
+     * @see getWallClockTime()
+     */
+    fraction_timespec getMonotonicTime() noexcept;
+
+    /**
+     * Returns current wall-clock real-time since Unix Epoch `00:00:00 UTC on 1970-01-01`.
+     *
+     * Returned fraction_timespec is passing machine precision and range of the underlying API.
+     *
+     * Wall-Clock time shall be used for accurate measurements of the actual time only,
+     * since the underlying OS unlikely supports fast calls.
+     *
+     * @see fraction_timespec
+     * @see fraction_timespec::to_fraction_i64()
+     * @see getMonotonicTime()
+     */
+    fraction_timespec getWallClockTime() noexcept;
 
     /**
      * Returns current monotonic time in milliseconds.

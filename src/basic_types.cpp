@@ -33,8 +33,8 @@
 
 using namespace jau;
 
-static const uint64_t NanoPerMilli = 1000000UL;
-static const uint64_t MilliPerOne = 1000UL;
+static constexpr const uint64_t NanoPerMilli =  1000'000UL;
+static constexpr const uint64_t MilliPerOne  =     1'000UL;
 
 /**
  * See <http://man7.org/linux/man-pages/man2/clock_gettime.2.html>
@@ -44,6 +44,18 @@ static const uint64_t MilliPerOne = 1000UL;
  * clock_gettime seems to be well supported at least on kernel >= 4.4.
  * Only bfin and sh are missing, while ia64 seems to be complicated.
  */
+fraction_timespec jau::getMonotonicTime() noexcept {
+    struct timespec t;
+    clock_gettime(CLOCK_MONOTONIC, &t);
+    return fraction_timespec( (int64_t)t.tv_sec, (int64_t)t.tv_nsec );
+}
+
+fraction_timespec jau::getWallClockTime() noexcept {
+    struct timespec t;
+    clock_gettime(CLOCK_REALTIME, &t);
+    return fraction_timespec( (int64_t)t.tv_sec, (int64_t)t.tv_nsec );
+}
+
 uint64_t jau::getCurrentMilliseconds() noexcept {
     struct timespec t;
     clock_gettime(CLOCK_MONOTONIC, &t);
@@ -55,6 +67,74 @@ uint64_t jau::getWallClockSeconds() noexcept {
     struct timespec t;
     clock_gettime(CLOCK_REALTIME, &t);
     return static_cast<uint64_t>( t.tv_sec );
+}
+
+void jau::sleep_until(const fraction_timespec& absolute_time, const bool monotonic) noexcept {
+    if( absolute_time <= fraction_tv::zero ) {
+        return;
+    }
+    // typedef struct timespec __gthread_time_t;
+    __gthread_time_t ts = { static_cast<std::time_t>( absolute_time.tv_sec ), static_cast<long>( absolute_time.tv_nsec ) };
+
+    while ( -1 == ::clock_nanosleep(monotonic ? CLOCK_MONOTONIC : CLOCK_REALTIME,
+                                    TIMER_ABSTIME,
+                                    &ts, &ts) && EINTR == errno ) { }
+}
+
+void jau::sleep_for(const fraction_timespec& relative_time, const bool monotonic) noexcept {
+    if( relative_time <= fraction_tv::zero ) {
+        return;
+    }
+    const fraction_timespec now = monotonic ? getMonotonicTime() : getWallClockTime();
+    sleep_until( now + relative_time );
+}
+
+void jau::sleep_for(const fraction_i64& relative_time, const bool monotonic) noexcept {
+    if( relative_time <= fractions_i64::zero ) {
+        return;
+    }
+    bool overflow = false;
+    const fraction_timespec atime = ( monotonic ? getMonotonicTime() : getWallClockTime() ) + fraction_timespec(relative_time, &overflow);
+    if( overflow ) {
+        return;
+    } else {
+        sleep_until( atime );
+    }
+}
+
+std::cv_status jau::wait_until(std::condition_variable& cv, std::unique_lock<std::mutex>& lock, const fraction_timespec& absolute_time, const bool monotonic) noexcept {
+    if( absolute_time <= fraction_tv::zero ) {
+        return std::cv_status::no_timeout;
+    }
+    // typedef struct timespec __gthread_time_t;
+    __gthread_time_t ts = { static_cast<std::time_t>( absolute_time.tv_sec ), static_cast<long>( absolute_time.tv_nsec ) };
+
+    pthread_cond_clockwait(cv.native_handle(), lock.mutex()->native_handle(),
+                           monotonic ? CLOCK_MONOTONIC : CLOCK_REALTIME, &ts);
+
+    const fraction_timespec now = monotonic ? getMonotonicTime() : getWallClockTime();
+    return now < absolute_time ? std::cv_status::no_timeout : std::cv_status::timeout;
+}
+
+std::cv_status jau::wait_for(std::condition_variable& cv, std::unique_lock<std::mutex>& lock, const fraction_timespec& relative_time, const bool monotonic) noexcept {
+    if( relative_time <= fraction_tv::zero ) {
+        return std::cv_status::no_timeout;
+    }
+    const fraction_timespec now = monotonic ? getMonotonicTime() : getWallClockTime();
+    return wait_until(cv, lock, now + relative_time, monotonic);
+}
+
+std::cv_status jau::wait_for(std::condition_variable& cv, std::unique_lock<std::mutex>& lock, const fraction_i64& relative_time, const bool monotonic) noexcept {
+    if( relative_time <= fractions_i64::zero ) {
+        return std::cv_status::no_timeout;
+    }
+    bool overflow = false;
+    const fraction_timespec atime = ( monotonic ? getMonotonicTime() : getWallClockTime() ) + fraction_timespec(relative_time, &overflow);
+    if( overflow ) {
+        return std::cv_status::timeout;
+    } else {
+        return wait_until(cv, lock, atime, monotonic);
+    }
 }
 
 jau::ExceptionBase::ExceptionBase(std::string const type, std::string const m, const char* file, int line) noexcept

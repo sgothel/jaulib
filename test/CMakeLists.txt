@@ -15,30 +15,7 @@ endif(CMAKE_COMPILER_IS_GNUCC)
 # install(TARGETS catch2 LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 # These examples use the standard separate compilation
-set( SOURCES_IDIOMATIC_EXAMPLES
-    test_floatepsilon01.cpp
-    test_type_traits_queries01.cpp
-    test_to_string.cpp
-    test_basictypeconv.cpp
-    test_eui48.cpp
-    test_uuid.cpp
-    test_intdecstring01.cpp
-    test_functiondef01.cpp
-    test_latch01.cpp
-    test_lfringbuffer01.cpp
-    test_lfringbuffer02.cpp
-    test_lfringbuffer03.cpp
-    test_lfringbuffer04.cpp
-    test_lfringbuffer11.cpp
-    test_lfringbuffer12.cpp
-    test_lfringbuffer13.cpp
-    test_mm_sc_drf_00.cpp
-    test_mm_sc_drf_01.cpp
-    test_cow_iterator_01.cpp
-    test_darray_01.cpp
-    test_cow_darray_perf01.cpp
-    test_hashset_perf01.cpp
-)
+file(GLOB_RECURSE SOURCES_IDIOMATIC_EXAMPLES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "test_*.cpp")
 
 string( REPLACE ".cpp" "" BASENAMES_IDIOMATIC_EXAMPLES "${SOURCES_IDIOMATIC_EXAMPLES}" )
 set( TARGETS_IDIOMATIC_EXAMPLES ${BASENAMES_IDIOMATIC_EXAMPLES} )

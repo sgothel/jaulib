@@ -1014,6 +1014,135 @@ namespace jau {
 
     } // namespace fraction_tv
 
+    /**
+     * sleep_until causes the current thread to block until the  specific time is reached.
+     *
+     * Method works similar to std::this_thread::sleep_until(), but utilizes fraction_timespec instead of `int64_t nanoseconds counter`
+     * for maintaining high-precision and infinite range.
+     *
+     * Implementation also uses ::clock_nanosleep(), with absolute time and either
+     * monotonic- or wall-clok time depending on given monotonic flag.
+     * This instead of ::nanosleep() with undefined clock-type and interruptions.
+     *
+     * @param absolute_time an object of type fraction_timespec representing the time when to stop waiting
+     * @param monotonic if true, implementation uses the fast and steady monotonic clock (default), otherwise the wall-clock
+     * @see sleep_until()
+     * @see sleep_for()
+     * @see wait_until()
+     * @see wait_until2()
+     * @see wait_for()
+     */
+    void sleep_until(const fraction_timespec& absolute_time, const bool monotonic=true) noexcept;
+
+    /**
+     * sleep_for causes the current thread to block until a specific amount of time has passed.
+     *
+     * Implementation calls sleep_until() passing absolute time derived via getMonotonicTime() or getWallClockTime(), see:
+     * <pre>
+     *   fraction_timespec absolute_time = ( monotonic ? getMonotonicTime() : getWallClockTime() ) + relative_time;
+     * </pre>
+     *
+     * Method works similar to std::this_thread::sleep_until(), but utilizes fraction_timespec instead of `int64_t nanoseconds counter`
+     * for maintaining high-precision and infinite range.
+     *
+     * @param relative_time an object of type fraction_timespec representing the the maximum time to spend waiting
+     * @param monotonic if true, implementation uses the fast and steady monotonic clock (default), otherwise the wall-clock
+     * @see sleep_until()
+     * @see sleep_for()
+     * @see wait_until()
+     * @see wait_until2()
+     * @see wait_for()
+     */
+    void sleep_for(const fraction_timespec& relative_time, const bool monotonic=true) noexcept;
+
+    /**
+     * sleep_for causes the current thread to block until a specific amount of time has passed.
+     *
+     * Implementation calls sleep_until() passing absolute time derived via getMonotonicTime() or getWallClockTime(), see:
+     * <pre>
+     *   fraction_timespec absolute_time = ( monotonic ? getMonotonicTime() : getWallClockTime() ) + relative_time;
+     * </pre>
+     *
+     * Method works similar to std::this_thread::sleep_until(), but utilizes fraction_timespec instead of `int64_t nanoseconds counter`
+     * for maintaining high-precision and infinite range.
+     *
+     * @param relative_time an object of type fraction_i64 representing the the maximum time to spend waiting, which is limited to 292 years if using nanoseconds fractions.
+     * @param monotonic if true, implementation uses the fast and steady monotonic clock (default), otherwise the wall-clock
+     * @see sleep_until()
+     * @see sleep_for()
+     * @see wait_until()
+     * @see wait_until2()
+     * @see wait_for()
+     */
+    void sleep_for(const fraction_i64& relative_time, const bool monotonic=true) noexcept;
+
+    /**
+     * wait_until causes the current thread to block until the condition variable is notified, a specific time is reached, or a spurious wakeup occurs.
+     *
+     * Method works similar to std::condition_variable::wait_until(), but utilizes fraction_timespec instead of `int64_t nanoseconds counter`
+     * for maintaining high-precision and infinite range.
+     *
+     * @param cv std::condition_variable instance
+     * @param lock an object of type std::unique_lock<std::mutex>, which must be locked by the current thread
+     * @param absolute_time an object of type fraction_timespec representing the time when to stop waiting
+     * @param monotonic if true, implementation uses the fast and steady monotonic clock (default), otherwise the wall-clock
+     * @return std::cv_status::timeout if the relative timeout specified by rel_time expired, std::cv_status::no_timeout otherwise.
+     * @see sleep_until()
+     * @see sleep_for()
+     * @see wait_until()
+     * @see wait_until2()
+     * @see wait_for()
+     */
+    std::cv_status wait_until(std::condition_variable& cv, std::unique_lock<std::mutex>& lock, const fraction_timespec& absolute_time, const bool monotonic=true) noexcept;
+
+    /**
+     * wait_for causes the current thread to block until the condition variable is notified, a specific amount of time has passed, or a spurious wakeup occurs.
+     *
+     * Implementation calls wait_until() passing absolute time derived via getMonotonicTime() or getWallClockTime(), see:
+     * <pre>
+     *   fraction_timespec absolute_time = ( monotonic ? getMonotonicTime() : getWallClockTime() ) + relative_time;
+     * </pre>
+     *
+     * Method works similar to std::condition_variable::wait_for(), but utilizes fraction_timespec instead of `int64_t nanoseconds counter`
+     * for maintaining high-precision and infinite range.
+     *
+     * @param cv std::condition_variable instance
+     * @param lock an object of type std::unique_lock<std::mutex>, which must be locked by the current thread
+     * @param relative_time an object of type fraction_timespec representing the the maximum time to spend waiting
+     * @param monotonic if true, implementation uses the fast and steady monotonic clock (default), otherwise the wall-clock
+     * @return std::cv_status::timeout if the relative timeout specified by rel_time expired, std::cv_status::no_timeout otherwise.
+     * @see sleep_until()
+     * @see sleep_for()
+     * @see wait_until()
+     * @see wait_until2()
+     * @see wait_for()
+     */
+    std::cv_status wait_for(std::condition_variable& cv, std::unique_lock<std::mutex>& lock, const fraction_timespec& relative_time, const bool monotonic=true) noexcept;
+
+    /**
+     * wait_for causes the current thread to block until the condition variable is notified, a specific amount of time has passed, or a spurious wakeup occurs.
+     *
+     * Implementation calls wait_until() passing absolute time derived via getMonotonicTime() or getWallClockTime(), see:
+     * <pre>
+     *   fraction_timespec absolute_time = ( monotonic ? getMonotonicTime() : getWallClockTime() ) + relative_time;
+     * </pre>
+     *
+     * Method works similar to std::condition_variable::wait_for(), but utilizes fraction_timespec instead of `int64_t nanoseconds counter`
+     * for maintaining high-precision and infinite range.
+     *
+     * @param cv std::condition_variable instance
+     * @param lock an object of type std::unique_lock<std::mutex>, which must be locked by the current thread
+     * @param relative_time an object of type fraction_i64 representing the the maximum time to spend waiting, which is limited to 292 years if using nanoseconds fractions.
+     * @param monotonic if true, implementation uses the fast and steady monotonic clock (default), otherwise the wall-clock
+     * @return std::cv_status::timeout if the relative timeout specified by rel_time expired, std::cv_status::no_timeout otherwise.
+     * @see sleep_until()
+     * @see sleep_for()
+     * @see wait_until()
+     * @see wait_until2()
+     * @see wait_for()
+     */
+    std::cv_status wait_for(std::condition_variable& cv, std::unique_lock<std::mutex>& lock, const fraction_i64& relative_time, const bool monotonic=true) noexcept;
+
     /** SC atomic integral scalar jau::fraction_i64. Memory-Model (MM) guaranteed sequential consistency (SC) between acquire (read) and release (write). Requires libatomic with libstdc++10. */
     typedef ordered_atomic<jau::fraction_i64, std::memory_order_seq_cst> sc_atomic_fraction_i64;
 
