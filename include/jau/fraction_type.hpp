@@ -849,11 +849,7 @@ namespace jau {
          * Example without overflow check and implicit fraction_i64 conversion to fraction_timespec:
          * <pre>
             fraction_i64 duration = 10_ms;
-            bool overflow = false;
             const fraction_timespec timeout_time = getMonotonicTime() + duration;
-            if( overflow ) {
-                return; // bail out
-            }
          * </pre>
          *
          * Example with overflow check for potential durations > 292 years and explicit fraction_i64 conversion to fraction_timespec:
