@@ -33,6 +33,8 @@
 
 namespace jau {
 
+    #define JAU_USE_BUILDIN_OVERFLOW 1
+
     /**
     // *************************************************
     // *************************************************
@@ -125,6 +127,107 @@ namespace jau {
     constexpr T abs(const T x) noexcept
     {
         return x;
+    }
+
+    /**
+     * Integer overflow aware addition returning true if overflow occurred,
+     * otherwise false having the result stored in res.
+     *
+     * Implementation uses [Integer Overflow Builtins](https://gcc.gnu.org/onlinedocs/gcc/Integer-Overflow-Builtins.html)
+     * if available, otherwise its own implementation.
+     *
+     * @tparam T an integral integer type
+     * @tparam
+     * @param a operand a
+     * @param b operand b
+     * @param res storage for result
+     * @return true if overflow, otherwise false
+     */
+    template <typename T,
+              std::enable_if_t< std::is_integral_v<T>, bool> = true>
+    constexpr bool add_overflow(const T a, const T b, T& res) noexcept
+    {
+#if JAU_USE_BUILDIN_OVERFLOW && ( defined(__GNUC__) || defined(__clang__) )
+        if ( __builtin_add_overflow(a, b, &res) )
+#else
+        // overflow:  a + b > R+ -> a > R+ - b, with b >= 0
+        // underflow: a + b < R- -> a < R- - b, with b < 0
+        if ( ( b >= 0 && a > std::numeric_limits<T>::max() - b ) ||
+             ( b  < 0 && a < std::numeric_limits<T>::min() - b ) )
+#endif
+        {
+            return true;
+        } else {
+            res = a * b;
+            return false;
+        }
+    }
+
+    /**
+     * Integer overflow aware subtraction returning true if overflow occurred,
+     * otherwise false having the result stored in res.
+     *
+     * Implementation uses [Integer Overflow Builtins](https://gcc.gnu.org/onlinedocs/gcc/Integer-Overflow-Builtins.html)
+     * if available, otherwise its own implementation.
+     *
+     * @tparam T an integral integer type
+     * @tparam
+     * @param a operand a
+     * @param b operand b
+     * @param res storage for result
+     * @return true if overflow, otherwise false
+     */
+    template <typename T,
+              std::enable_if_t< std::is_integral_v<T>, bool> = true>
+    constexpr bool sub_overflow(const T a, const T b, T& res) noexcept
+    {
+#if JAU_USE_BUILDIN_OVERFLOW && ( defined(__GNUC__) || defined(__clang__) )
+        if ( __builtin_sub_overflow(a, b, &res) )
+#else
+        // overflow:  a - b > R+ -> a > R+ + b, with b < 0
+        // underflow: a - b < R- -> a < R- + b, with b >= 0
+        if ( ( b  < 0 && a > std::numeric_limits<T>::max() + b ) ||
+             ( b >= 0 && a < std::numeric_limits<T>::min() + b ) )
+#endif
+        {
+            return true;
+        } else {
+            res = a * b;
+            return false;
+        }
+    }
+
+    /**
+     * Integer overflow aware multiplication returning true if overflow occurred,
+     * otherwise false having the result stored in res.
+     *
+     * Implementation uses [Integer Overflow Builtins](https://gcc.gnu.org/onlinedocs/gcc/Integer-Overflow-Builtins.html)
+     * if available, otherwise its own implementation.
+     *
+     * @tparam T an integral integer type
+     * @tparam
+     * @param a operand a
+     * @param b operand b
+     * @param res storage for result
+     * @return true if overflow, otherwise false
+     */
+    template <typename T,
+              std::enable_if_t< std::is_integral_v<T>, bool> = true>
+    constexpr bool mul_overflow(const T a, const T b, T& res) noexcept
+    {
+#if JAU_USE_BUILDIN_OVERFLOW && ( defined(__GNUC__) || defined(__clang__) )
+        if ( __builtin_mul_overflow(a, b, &res) )
+#else
+        // overflow: a * b > R+ -> a > R+ / b
+        if ( ( b > 0 && abs(a) > std::numeric_limits<T>::max() / b ) ||
+             ( b < 0 && abs(a) > std::numeric_limits<T>::min() / b ) )
+#endif
+        {
+            return true;
+        } else {
+            res = a * b;
+            return false;
+        }
     }
 
     /**
