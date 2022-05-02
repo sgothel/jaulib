@@ -114,6 +114,15 @@ extern int pthread_cond_clockwait (pthread_cond_t *__restrict __cond,
                    const struct timespec *__restrict __abstime)
      __nonnull ((1, 2, 4)) __attribute__((weak));
 
+static bool __jau__has_pthread_cond_clockwait() noexcept {
+    const bool r = nullptr != pthread_cond_clockwait;
+    fprintf(stderr, "INFO: jau::has_pthread_cond_clockwait: %d\n", r);
+    return r;
+}
+static bool jau_has_pthread_cond_clockwait() noexcept {
+    static bool r = __jau__has_pthread_cond_clockwait();
+    return r;
+}
 
 std::cv_status jau::wait_until(std::condition_variable& cv, std::unique_lock<std::mutex>& lock, const fraction_timespec& absolute_time, const bool monotonic) noexcept {
     if( absolute_time <= fraction_tv::zero ) {
@@ -122,7 +131,7 @@ std::cv_status jau::wait_until(std::condition_variable& cv, std::unique_lock<std
     // typedef struct timespec __gthread_time_t;
     __gthread_time_t ts = { static_cast<std::time_t>( absolute_time.tv_sec ), static_cast<long>( absolute_time.tv_nsec ) };
 
-    if( pthread_cond_clockwait ) {
+    if( jau_has_pthread_cond_clockwait() ) {
         pthread_cond_clockwait(cv.native_handle(), lock.mutex()->native_handle(),
                                monotonic ? CLOCK_MONOTONIC : CLOCK_REALTIME, &ts);
     } else {
