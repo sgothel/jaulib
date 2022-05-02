@@ -68,11 +68,44 @@ namespace jau {
      */
 
     /**
-     * Safe access to a pointer cast from unaligned memory via __packed__ attribute,
-     * i.e. utilizing compiler generated safe load and store operations.
-     * <p>
-     * This template shall cause no costs, the cast data pointer is identical to 'T * p = &store'.
-     * </p>
+     * Support aligned memory transfer from and to potentially unaligned memory.
+     *
+     * This template causes no costs, the cast data pointer is identical to 'T * p = &store'.
+     *
+     * packed_t is used in \ref ByteUtils.
+     *
+     * @anchor packed_t_alignment_cast
+     * Background for using packed_t:
+     *
+     * Due to the potentially unaligned memory address of `buffer`,
+     * we can't just directly use pointer arithmetic like:
+     * <pre>
+     *   // return uint16_t from memory
+     *   return *( (uint16_t *) ( buffer ) );
+     *
+     *   // store uint16_t to memory
+     *   *( (uint16_t *) ( buffer ) ) = v;
+     * </pre>
+     *
+     * The universal alternative using `memcpy()` is costly:
+     * <pre>
+     *   // return uint16_t from memory
+     *   memcpy(&v, buffer, sizeof(v));
+     *   return v;
+     *
+     *   // store uint16_t to memory
+     *   memcpy(buffer, &v, sizeof(v));
+     * </pre>
+     *
+     * Solution is to use the *free of costs* high performance *compiler magic* 'struct __attribute__((__packed__))'.<br />
+     * The offset memory is pointer_cast() into the desired packed_t type and its packed_t::store accessed thereafter:
+     * <pre>
+     *   // return uint16_t from memory
+     *   return pointer_cast<const packed_t<uint16_t>*>( buffer )->store;
+     *
+     *   // store uint16_t to memory
+     *   pointer_cast<packed_t<uint16_t>*>( buffer )->store = v;
+     * </pre>
      */
     template<typename T> __pack ( struct packed_t {
         T store;

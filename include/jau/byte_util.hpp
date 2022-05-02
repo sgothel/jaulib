@@ -52,7 +52,14 @@ namespace jau {
      * This includes the `cpu_to_<endian>(..)` and `<endian>_to_cpu(..)` etc utility functions.
      *
      * See \ref endian enum class regarding endian `constexpr` compile time determination.
-     *  @{
+     *
+     * Aligned memory transfer from and to potentially unaligned memory
+     * is performed via put_uint16(), get_uint16() with all its explicit stdint types,
+     * as well as the generic template functions put_value() and get_value().
+     * The implementation uses \ref packed_t to resolve a potential memory alignment issue *free of costs*,
+     * see \ref packed_t_alignment_cast.
+     *
+     * @{
      */
 
     #if defined __has_builtin
@@ -145,10 +152,6 @@ namespace jau {
     // *************************************************
      */
 
-    // The pragma to stop multichar warning == error `-Werror=multichar` doesn't seem to work with GCC <= 10.2
-    // Hence we have to disable this specific warning via: `-Wno-multichar`
-    // until all our compiler support `__builtin_bit_cast(T, a)`
-
     PRAGMA_DISABLE_WARNING_PUSH
     PRAGMA_DISABLE_WARNING_MULTICHAR
 
@@ -158,6 +161,9 @@ namespace jau {
                 constexpr uint8_t b[4] { 0x44, 0x43, 0x42, 0x41 }; // h->l: 41 42 43 44 = 'ABCD' hex ASCII code
                 return jau::bit_cast<uint32_t, uint8_t[4]>( b );
             } else {
+                // The pragma to stop multichar warning == error `-Werror=multichar` doesn't seem to work with GCC <= 10.2
+                // Hence we have to disable this specific warning via: `-Wno-multichar`
+                // until all our compiler support `__builtin_bit_cast(T, a)`
                 return 'ABCD'; // h->l: 41 42 43 44 = 'ABCD' hex ASCII code
             }
         }
@@ -543,146 +549,226 @@ namespace jau {
         return *pointer_cast<int8_t const *>( buffer + byte_offset );
     }
 
+    /**
+     * Return packed_t::store after converting it to from either endian::little ot endian::big depending on given `littleEndian`
+     * to endian::native.
+     * @tparam T
+     * @param source
+     * @param littleEndian
+     */
     template<typename T>
-    constexpr T get_value(const packed_t<T>* source, const bool littleEndian) noexcept { return littleEndian ? le_to_cpu(source->store) : be_to_cpu(source->store); }
+    constexpr T get_packed_value(const packed_t<T>* source, const bool littleEndian) noexcept { return littleEndian ? le_to_cpu(source->store) : be_to_cpu(source->store); }
 
+    /**
+     * Put the given uint16_t value into the given byte address
+     * using \ref packed_t to resolve a potential memory alignment issue *free of costs*.
+     *
+     * @see \ref packed_t_alignment_cast
+     */
     constexpr void put_uint16(uint8_t * buffer, nsize_t const byte_offset, const uint16_t v) noexcept
     {
-        /**
-         * Handle potentially misaligned address of buffer + byte_offset, can't just
-         *   uint16_t * p = (uint16_t *) ( buffer + byte_offset );
-         *   *p = v;
-         * Universal alternative using memcpy is costly:
-         *   memcpy(buffer + byte_offset, &v, sizeof(v));
-         * Use compiler magic 'struct __attribute__((__packed__))' access:
-         */
         pointer_cast<packed_t<uint16_t>*>( buffer + byte_offset )->store = v;
     }
+    /**
+     * Put the given uint16_t value into the given byte address
+     * using \ref packed_t to resolve a potential memory alignment issue *free of costs*.
+     *
+     * The value is converted from endian::native to either endian::little ot endian::big depending on given `littleEndian`
+     * before it is stored in memory.
+     *
+     * @see \ref packed_t_alignment_cast
+     */
     constexpr void put_uint16(uint8_t * buffer, nsize_t const byte_offset, const uint16_t v, const bool littleEndian) noexcept
     {
-        /**
-         * Handle potentially misaligned address of buffer + byte_offset, can't just
-         *   uint16_t * p = (uint16_t *) ( buffer + byte_offset );
-         *   *p = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
-         * Universal alternative using memcpy is costly:
-         *   const uint16_t v2 = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
-         *   memcpy(buffer + byte_offset, &v2, sizeof(v2));
-         * Use compiler magic 'struct __attribute__((__packed__))' access:
-         */
         pointer_cast<packed_t<uint16_t>*>( buffer + byte_offset )->store = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
     }
+    /**
+     * Returns a uint16_t value from the given byte address
+     * using \ref packed_t to resolve a potential memory alignment issue *free of costs*.
+     *
+     * @see \ref packed_t_alignment_cast
+     */
     constexpr uint16_t get_uint16(uint8_t const * buffer, nsize_t const byte_offset) noexcept
     {
-        /**
-         * Handle potentially misaligned address of buffer + byte_offset, can't just
-         *   uint16_t const * p = (uint16_t const *) ( buffer + byte_offset );
-         *   return *p;
-         * Universal alternative using memcpy is costly:
-         *   uint16_t v;
-         *   memcpy(&v, buffer + byte_offset, sizeof(v));
-         *   return v;
-         * Use compiler magic 'struct __attribute__((__packed__))' access:
-         */
         return pointer_cast<const packed_t<uint16_t>*>( buffer + byte_offset )->store;
     }
+    /**
+     * Returns a uint16_t value from the given byte address
+     * using \ref packed_t to resolve a potential memory alignment issue *free of costs*.
+     *
+     * The value is converted from either endian::little ot endian::big depending on given `littleEndian`
+     * to endian::native before it is returned to the caller.
+     *
+     * @see \ref packed_t_alignment_cast
+     */
     constexpr uint16_t get_uint16(uint8_t const * buffer, nsize_t const byte_offset, const bool littleEndian) noexcept
     {
-        /**
-         * Handle potentially misaligned address of buffer + byte_offset, can't just
-         *   uint16_t const * p = (uint16_t const *) ( buffer + byte_offset );
-         *   return littleEndian ? le_to_cpu(*p) : be_to_cpu(*p);
-         * Universal alternative using memcpy is costly:
-         *   uint16_t v;
-         *   memcpy(&v, buffer + byte_offset, sizeof(v));
-         *   return littleEndian ? le_to_cpu(v) : be_to_cpu(v);
-         * Use compiler magic 'struct __attribute__((__packed__))' access:
-         */
-        return get_value(pointer_cast<const packed_t<uint16_t>*>( buffer + byte_offset ), littleEndian);
+        return get_packed_value(pointer_cast<const packed_t<uint16_t>*>( buffer + byte_offset ), littleEndian);
     }
 
+    /**
+     * See put_uint16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
     constexpr void put_uint32(uint8_t * buffer, nsize_t const byte_offset, const uint32_t v) noexcept
     {
         pointer_cast<packed_t<uint32_t>*>( buffer + byte_offset )->store = v;
     }
+    /**
+     * See put_uint16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
     constexpr void put_uint32(uint8_t * buffer, nsize_t const byte_offset, const uint32_t v, const bool littleEndian) noexcept
     {
         pointer_cast<packed_t<uint32_t>*>( buffer + byte_offset )->store = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
     }
+    /**
+     * See get_uint16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
     constexpr uint32_t get_uint32(uint8_t const * buffer, nsize_t const byte_offset) noexcept
     {
         return pointer_cast<const packed_t<uint32_t>*>( buffer + byte_offset )->store;
     }
+    /**
+     * See get_uint16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
     constexpr uint32_t get_uint32(uint8_t const * buffer, nsize_t const byte_offset, const bool littleEndian) noexcept
     {
-        return get_value(pointer_cast<const packed_t<uint32_t>*>( buffer + byte_offset ), littleEndian);
+        return get_packed_value(pointer_cast<const packed_t<uint32_t>*>( buffer + byte_offset ), littleEndian);
     }
 
+    /**
+     * See put_uint16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
     constexpr void put_uint64(uint8_t * buffer, nsize_t const byte_offset, const uint64_t & v) noexcept
     {
         pointer_cast<packed_t<uint64_t>*>( buffer + byte_offset )->store = v;
     }
+    /**
+     * See put_uint16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
     constexpr void put_uint64(uint8_t * buffer, nsize_t const byte_offset, const uint64_t & v, const bool littleEndian) noexcept
     {
         pointer_cast<packed_t<uint64_t>*>( buffer + byte_offset )->store = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
     }
+    /**
+     * See get_uint16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
     constexpr uint64_t get_uint64(uint8_t const * buffer, nsize_t const byte_offset) noexcept
     {
         return pointer_cast<const packed_t<uint64_t>*>( buffer + byte_offset )->store;
     }
+    /**
+     * See get_uint16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
     constexpr uint64_t get_uint64(uint8_t const * buffer, nsize_t const byte_offset, const bool littleEndian) noexcept
     {
-        return get_value(pointer_cast<const packed_t<uint64_t>*>( buffer + byte_offset ), littleEndian);
+        return get_packed_value(pointer_cast<const packed_t<uint64_t>*>( buffer + byte_offset ), littleEndian);
     }
 
+    /**
+     * See put_uint16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
     constexpr void put_uint128(uint8_t * buffer, nsize_t const byte_offset, const uint128_t & v) noexcept
     {
         pointer_cast<packed_t<uint128_t>*>( buffer + byte_offset )->store = v;
     }
+    /**
+     * See put_uint16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
     constexpr void put_uint128(uint8_t * buffer, nsize_t const byte_offset, const uint128_t & v, const bool littleEndian) noexcept
     {
         pointer_cast<packed_t<uint128_t>*>( buffer + byte_offset )->store = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
     }
+    /**
+     * See get_uint16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
     constexpr uint128_t get_uint128(uint8_t const * buffer, nsize_t const byte_offset) noexcept
     {
         return pointer_cast<const packed_t<uint128_t>*>( buffer + byte_offset )->store;
     }
+    /**
+     * See get_uint16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
     constexpr uint128_t get_uint128(uint8_t const * buffer, nsize_t const byte_offset, const bool littleEndian) noexcept
     {
-        return get_value(pointer_cast<const packed_t<uint128_t>*>( buffer + byte_offset ), littleEndian);
+        return get_packed_value(pointer_cast<const packed_t<uint128_t>*>( buffer + byte_offset ), littleEndian);
     }
 
+    /**
+     * See put_uint16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
     constexpr void put_uint192(uint8_t * buffer, nsize_t const byte_offset, const uint192_t & v) noexcept
     {
         pointer_cast<packed_t<uint192_t>*>( buffer + byte_offset )->store = v;
     }
+    /**
+     * See put_uint16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
     constexpr void put_uint192(uint8_t * buffer, nsize_t const byte_offset, const uint192_t & v, const bool littleEndian) noexcept
     {
         pointer_cast<packed_t<uint192_t>*>( buffer + byte_offset )->store = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
     }
+    /**
+     * See get_uint16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
     constexpr uint192_t get_uint192(uint8_t const * buffer, nsize_t const byte_offset) noexcept
     {
         return pointer_cast<const packed_t<uint192_t>*>( buffer + byte_offset )->store;
     }
+    /**
+     * See get_uint16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
     constexpr uint192_t get_uint192(uint8_t const * buffer, nsize_t const byte_offset, const bool littleEndian) noexcept
     {
-        return get_value(pointer_cast<const packed_t<uint192_t>*>( buffer + byte_offset ), littleEndian);
+        return get_packed_value(pointer_cast<const packed_t<uint192_t>*>( buffer + byte_offset ), littleEndian);
     }
 
+    /**
+     * See put_uint16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
     constexpr void put_uint256(uint8_t * buffer, nsize_t const byte_offset, const uint256_t & v) noexcept
     {
         pointer_cast<packed_t<uint256_t>*>( buffer + byte_offset )->store = v;
     }
+    /**
+     * See put_uint16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
     constexpr void put_uint256(uint8_t * buffer, nsize_t const byte_offset, const uint256_t & v, const bool littleEndian) noexcept
     {
         pointer_cast<packed_t<uint256_t>*>( buffer + byte_offset )->store = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
     }
+    /**
+     * See get_uint16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
     constexpr uint256_t get_uint256(uint8_t const * buffer, nsize_t const byte_offset) noexcept
     {
         return pointer_cast<const packed_t<uint256_t>*>( buffer + byte_offset )->store;
     }
+    /**
+     * See get_uint16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
     constexpr uint256_t get_uint256(uint8_t const * buffer, nsize_t const byte_offset, const bool littleEndian) noexcept
     {
-        return get_value(pointer_cast<const packed_t<uint256_t>*>( buffer + byte_offset ), littleEndian);
+        return get_packed_value(pointer_cast<const packed_t<uint256_t>*>( buffer + byte_offset ), littleEndian);
     }
 
     /**
@@ -691,6 +777,16 @@ namespace jau {
     // *************************************************
      */
 
+    /**
+     * Put the given T value into the given byte address
+     * using \ref packed_t to resolve a potential memory alignment issue *free of costs*.
+     *
+     * @tparam T
+     * @param buffer
+     * @param byte_offset
+     * @param v
+     * @see \ref packed_t_alignment_cast
+     */
     template<typename T>
     constexpr
     typename std::enable_if_t<
@@ -702,6 +798,20 @@ namespace jau {
         pointer_cast<packed_t<T>*>( buffer + byte_offset )->store = v;
     }
 
+    /**
+     * Put the given T value into the given byte address
+     * using \ref packed_t to resolve a potential memory alignment issue *free of costs*.
+     *
+     * The value is converted from endian::native to either endian::little ot endian::big depending on given `littleEndian`
+     * before it is stored in memory.
+     *
+     * @tparam T
+     * @param buffer
+     * @param byte_offset
+     * @param v
+     * @param littleEndian
+     * @see \ref packed_t_alignment_cast
+     */
     template<typename T>
     constexpr
     typename std::enable_if_t<
@@ -712,6 +822,16 @@ namespace jau {
         pointer_cast<packed_t<T>*>( buffer + byte_offset )->store = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
     }
 
+    /**
+     * Returns a T value from the given byte address
+     * using \ref packed_t to resolve a potential memory alignment issue *free of costs*.
+     *
+     * @tparam T
+     * @param buffer
+     * @param byte_offset
+     * @return
+     * @see \ref packed_t_alignment_cast
+     */
     template<typename T>
     constexpr
     typename std::enable_if_t<
@@ -722,6 +842,20 @@ namespace jau {
         return pointer_cast<const packed_t<T>*>( buffer + byte_offset )->store;
     }
 
+    /**
+     * Returns a T value from the given byte address
+     * using \ref packed_t to resolve a potential memory alignment issue *free of costs*.
+     *
+     * The value is converted from either endian::little ot endian::big depending on given `littleEndian`
+     * to endian::native before it is returned to the caller.
+     *
+     * @tparam T
+     * @param buffer
+     * @param byte_offset
+     * @param littleEndian
+     * @return
+     * @see \ref packed_t_alignment_cast
+     */
     template<typename T>
     constexpr
     typename std::enable_if_t<
@@ -729,7 +863,7 @@ namespace jau {
         T>
     get_value(uint8_t const * buffer, nsize_t const byte_offset, const bool littleEndian) noexcept
     {
-        return get_value(pointer_cast<const packed_t<T>*>( buffer + byte_offset ), littleEndian);
+        return get_packed_value(pointer_cast<const packed_t<T>*>( buffer + byte_offset ), littleEndian);
     }
 
     /**@}*/
