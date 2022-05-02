@@ -45,6 +45,8 @@ namespace jau {
      * Byte utility functions and types for endian- and bit conversions,
      * inclusive alignment handling and general get & put functionality.
      *
+     * This category is also supporting \ref Integer.
+     *
      * All \ref endian API entries are of `constexpr` and hence evaluated at compile time.<br>
      * Therefore, if-branches and expressions are also of `constexpr` and optimized 'away' at compile time.<br>
      * This includes the `cpu_to_<endian>(..)` and `<endian>_to_cpu(..)` etc utility functions.

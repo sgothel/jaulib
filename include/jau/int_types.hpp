@@ -32,8 +32,11 @@
 #include <jau/packed_attribute.hpp>
 
 namespace jau {
-    /** @defgroup Integrals Integral type support
-     * Integral integer data types and arithmetic
+    /** @defgroup Integer Integer types and arithmetic
+     * Integral integer types and arithmetic.
+     *
+     * Further support is coming from \ref ByteUtils.
+     *
      *  @{
      */
 

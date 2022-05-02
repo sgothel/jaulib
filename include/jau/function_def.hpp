@@ -37,7 +37,7 @@
 
 namespace jau {
 
-    /** @defgroup FunctionPtr Function pointer support
+    /** @defgroup FunctionPtr Function Pointer
      *  Function pointer support inclusive capturing lambdas.
      *
      *  @{

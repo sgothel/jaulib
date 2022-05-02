@@ -46,11 +46,11 @@ namespace jau {
 
     // Remember: constexpr specifier used in a function or static data member (since C++17) declaration implies inline.
 
-    /** @defgroup Fractions Fractions for time and more
+    /** @defgroup Fractions Fraction Arithmetic and Time
      *  Fraction type and arithmetic support
      *  inclusive its utilization for time without loss of precision nor range.
      *
-     *  Adds support for \ref Concurrency with general timing functionality
+     *  Adds support for \ref Concurrency with general time functionality
      *  like sleep_until(), sleep_for(), wait_until() and wait_for(),
      *  completed with getMonotonicTime() and getWallClockTime().
      *

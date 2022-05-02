@@ -13,14 +13,25 @@ This project was extracted from [Direct-BT](https://jausoft.com/cgit/direct_bt.g
 ## API Documentation
 Up to date API documentation can be found:
 
-* [C++ API Doc](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/index.html)
-  - Grouped [C++ Modules](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/modules.html)
+* [C++ API Doc](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/index.html) with [modules](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/modules.html):
+  * [Basic Algorithms](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__Algorithms.html)
+  * [Byte Utilities](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__ByteUtils.html)
+  * [C++ Language Utilities](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__CppLang.html)
+  * [Concurrency](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__Concurrency.html)
+  * [Data Structures](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__DataStructs.html)
+  * [Float types and arithmetic](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__Floats.html)
+  * [Fraction Arithmetic and Time](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__Fractions.html)
+  * [Function Pointer](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__FunctionPtr.html)
+  * [Integer types and arithmetic](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__Integer.html)
+  * [Java VM Utilities](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__JavaVM.html)
+  * [Network Utilities](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__NetUtils.html)
+  * [String Utilities](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__StringUtils.html)
 
 * [Java API Doc](https://jausoft.com/projects/jaulib/build/documentation/java/html/index.html).
 
 
 ## Examples
-See *Direct-BT* [C++ API Doc](https://jausoft.com/projects/direct_bt/build/documentation/cpp/html/index.html).
+See *Direct-BT* [C++ API Doc](https://jausoft.com/projects/direct_bt/build/documentation/cpp/html/examples.html).
 
 ## Supported Platforms
 C++17 and better.
@@ -126,8 +137,9 @@ a Raspi-arm64, Raspi-armhf or PC-amd64 target image.
 
 * First stable release (TODO)
 
-**0.9.0**
+**0.9.3**
 
+* Group all functionality in modules: Algorithms, ByteUtils, CppLang, Concurrency, DataStructs, Floats, Fractions, FunctionPtr, Integrals, JavaJVM, NetUtils, StringUtils
 * Add getMonotonicTime() & getWallClockTime(), returning fraction_timespec
 * Add sleep_for(), sleep_until() and wait_for() & wait_until() using fraction, fraction_timespec, as well as choice over clock type.
 * Introduce new types: fraction, fraction_timespec; its constants & literals as well adoption in latch, ringbuffer, service_runner and simple_timer.

@@ -35,7 +35,7 @@ namespace jau {
 
     #define JAU_USE_BUILDIN_OVERFLOW 1
 
-    /** \addtogroup Integrals
+    /** \addtogroup Integer
      *
      *  @{
      */

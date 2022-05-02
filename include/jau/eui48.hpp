@@ -37,7 +37,7 @@
 
 namespace jau {
 
-    /** @defgroup NetUtils Network utilities and types
+    /** @defgroup NetUtils Network Utilities
      *  Networking types and functionality.
      *
      *  @{

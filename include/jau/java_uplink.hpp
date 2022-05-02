@@ -33,7 +33,7 @@
 
 namespace jau {
 
-    /** @defgroup JavaVM Java Virtual Machine
+    /** @defgroup JavaVM Java VM Utilities
      *  Java virtual machine support, helping accessing the JVM and converting data types.
      *
      *  @{

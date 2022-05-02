@@ -56,8 +56,8 @@ namespace jau {
     #define _DEBUG_PRINT(...)
 #endif
 
-/** @defgroup DataStructs Data structures and types
- * Data structures and types, notably
+/** @defgroup DataStructs Data Structures
+ * Data structures, notably
  *  - \ref ringbuffer
  *  - \ref darray
  *  - cow_darray

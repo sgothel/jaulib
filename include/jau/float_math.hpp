@@ -30,8 +30,8 @@
 #include <algorithm>
 
 namespace jau {
-    /** @defgroup Floats Float support
-     *  Float data types and arithmetic
+    /** @defgroup Floats Float types and arithmetic
+     *  Float types and arithmetic
      *  @{
      */
 

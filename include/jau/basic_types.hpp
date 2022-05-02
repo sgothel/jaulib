@@ -217,7 +217,7 @@ namespace jau {
     // *************************************************
      */
 
-    /** \addtogroup Integrals
+    /** \addtogroup Integer
      *
      *  @{
      */
