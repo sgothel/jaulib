@@ -70,7 +70,11 @@ namespace jau {
     /**
      * Support aligned memory transfer from and to potentially unaligned memory.
      *
-     * This template causes no costs, the cast data pointer is identical to 'T * p = &store'.
+     * This template causes little to no runtime costs.
+     *
+     * A casted data pointer to `packed_t<T>*` is similar to 'T * p = (T *) buffer', having `uint8_t * buffer`.
+     * However, `packed_t<T>*` doesn't have any intrinsic alignment corrections due to
+     * its used `__attribute__((__packed__))`.
      *
      * packed_t is used in \ref ByteUtils.
      *
