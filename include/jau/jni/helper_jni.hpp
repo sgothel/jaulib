@@ -184,6 +184,9 @@ namespace jau {
             JavaGlobalObj(jobject obj, jmethodID mNotifyDeleted_) noexcept
             : javaObjectRef(obj), mNotifyDeleted(mNotifyDeleted_) { }
 
+            JavaGlobalObj(JNIGlobalRef obj, jmethodID mNotifyDeleted_) noexcept
+            : javaObjectRef(obj), mNotifyDeleted(mNotifyDeleted_) { }
+
             JavaGlobalObj(const JavaGlobalObj &o) noexcept = default;
             JavaGlobalObj(JavaGlobalObj &&o) noexcept = default;
             JavaGlobalObj& operator=(const JavaGlobalObj &o) noexcept = default;
@@ -196,7 +199,8 @@ namespace jau {
                 return "JavaGlobalObj["+to_hexstring(ref)+"]";
             }
 
-            JNIGlobalRef & getJavaObject() noexcept { return javaObjectRef; }
+            const JNIGlobalRef & getJavaObject() const noexcept { return javaObjectRef; }
+            JNIGlobalRef getJavaObject() noexcept { return javaObjectRef; }
 
             /* Provides access to the stored GlobalRef as an jobject. */
             jobject getObject() const noexcept { return javaObjectRef.getObject(); }
