@@ -31,6 +31,7 @@
 
 #include <jni.h>
 #include <stdexcept>
+#include <mutex>
 
 #include <jau/basic_types.hpp>
 
@@ -79,6 +80,7 @@ extern thread_local JNIEnvContainer jni_env;
  */
 class JNIGlobalRef {
 private:
+    mutable std::mutex mtx;
     jobject object;
 
 public:
@@ -103,14 +105,20 @@ public:
     /* Deletes the stored GlobalRef */
     ~JNIGlobalRef() noexcept;
 
+    /**
+     * Should return JNIGlobalRefType if the `object` is valid or JNIInvalidRefType if the `object` is nullptr.
+     */
+    jobjectRefType getObjectRefType() const noexcept;
+    bool isValidReference() const noexcept { return getObjectRefType() != JNIInvalidRefType; }
 
     /* Provides access to the stored GlobalRef as an jobject. */
-    jobject operator*() noexcept { return object; }
+    jobject operator*() noexcept;
 
     /* Provides access to the stored GlobalRef as an jobject. */
-    jobject getObject() const noexcept { return object; }
+    jobject getObject() const noexcept;
+
     /* Provides access to the stored GlobalRef as a jclass. */
-    jclass getClass() const noexcept { return (jclass)object; }
+    jclass getClass() const noexcept { return (jclass)getObject(); }
 
     bool operator==(const JNIGlobalRef& rhs) const noexcept;
 
