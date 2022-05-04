@@ -153,10 +153,6 @@ JNIGlobalRef::~JNIGlobalRef() noexcept {
     }
 }
 
-void JNIGlobalRef::clear() noexcept {
-    DBG_JNI_PRINT("JNIGlobalRef::clear %p (nulled) -> null", object);
-    object = nullptr;
-}
 
 bool JNIGlobalRef::operator==(const JNIGlobalRef& rhs) const noexcept {
     if( &rhs == this ) {

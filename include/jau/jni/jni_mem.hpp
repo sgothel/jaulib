@@ -103,8 +103,6 @@ public:
     /* Deletes the stored GlobalRef */
     ~JNIGlobalRef() noexcept;
 
-    /** Clears the java reference, i.e. nulling it, without deleting the global reference via JNI. */
-    void clear() noexcept;
 
     /* Provides access to the stored GlobalRef as an jobject. */
     jobject operator*() noexcept { return object; }

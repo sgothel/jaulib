@@ -196,9 +196,6 @@ namespace jau {
                 return "JavaGlobalObj["+to_hexstring(ref)+"]";
             }
 
-            /** Clears the java reference, i.e. nulling it, without deleting the global reference via JNI. */
-            void clear() noexcept override { javaObjectRef.clear(); }
-
             JNIGlobalRef & getJavaObject() noexcept { return javaObjectRef; }
 
             /* Provides access to the stored GlobalRef as an jobject. */

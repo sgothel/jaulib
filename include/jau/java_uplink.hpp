@@ -51,9 +51,6 @@ namespace jau {
         public:
             virtual ~JavaAnon() noexcept { }
             virtual std::string toString() const noexcept { return "JavaAnon[???]"; }
-
-            /** Clears the java reference, i.e. nulling it, without deleting the global reference via JNI. */
-            virtual void clear() noexcept = 0;
     };
 
     /**
@@ -85,13 +82,6 @@ namespace jau {
 
             /** Resets the shared JavaAnon reference, the replaced item might be deleted via JNI from dtor */
             void setJavaObject() noexcept { javaObjectRef.reset(); }
-
-            /** Clears the java reference, i.e. nulling it, without deleting the global reference via JNI. */
-            void clearJavaObject() noexcept {
-                if( nullptr != javaObjectRef ) {
-                    javaObjectRef->clear();
-                }
-            }
 
             /**
              * Throws an IllegalStateException if isValid() == false
