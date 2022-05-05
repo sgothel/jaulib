@@ -184,8 +184,11 @@ namespace jau {
             JavaGlobalObj(jobject obj, jmethodID mNotifyDeleted_) noexcept
             : javaObjectRef(obj), mNotifyDeleted(mNotifyDeleted_) { }
 
-            JavaGlobalObj(JNIGlobalRef obj, jmethodID mNotifyDeleted_) noexcept
+            JavaGlobalObj(const JNIGlobalRef& obj, jmethodID mNotifyDeleted_) noexcept
             : javaObjectRef(obj), mNotifyDeleted(mNotifyDeleted_) { }
+
+            JavaGlobalObj(JNIGlobalRef && obj, jmethodID mNotifyDeleted_) noexcept
+            : javaObjectRef(std::move(obj)), mNotifyDeleted(mNotifyDeleted_) { }
 
             JavaGlobalObj(const JavaGlobalObj &o) noexcept = default;
             JavaGlobalObj(JavaGlobalObj &&o) noexcept = default;
