@@ -31,8 +31,10 @@
 #include <jau/debug.hpp>
 #include <jau/jni/jni_mem.hpp>
 
-JavaVM* vm;
-thread_local JNIEnvContainer jni_env;
+using namespace jau;
+
+JavaVM* jau::vm;
+thread_local JNIEnvContainer jau::jni_env;
 
 jint JNI_OnLoad(JavaVM *initVM, void *reserved) {
     (void)reserved; // warning

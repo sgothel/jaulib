@@ -35,6 +35,8 @@
 
 #include <jau/basic_types.hpp>
 
+namespace jau {
+
 /** \addtogroup JavaVM
  *
  *  @{
@@ -71,6 +73,8 @@ public:
 
 /* Each thread has a local jni_env variable of JNIEnvContainer type */
 extern thread_local JNIEnvContainer jni_env;
+
+class JavaGlobalObj; // fwd
 
 /*
  * This class provides a lifetime-managed GlobalRef variable,
@@ -208,6 +212,8 @@ public:
 };
 
 /**@}*/
+
+} /* namespace jau */
 
 #endif /* JAU_JNIMEM__HPP_ */
 
