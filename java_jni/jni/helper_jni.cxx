@@ -341,16 +341,23 @@ jobject jau::get_new_arraylist(JNIEnv *env, jsize size, jmethodID *add)
 //
 
 JavaGlobalObj::~JavaGlobalObj() noexcept {
-    JNIEnv *env = *jni_env;
-    {
-        std::unique_lock<std::mutex> lock(javaObjectRef.mtx);
-        jobject obj = javaObjectRef.object;
-        if( nullptr == obj || nullptr == mNotifyDeleted ) {
-            return;
+    try {
+        JNIEnv *env = *jni_env;
+        if( nullptr == env ) {
+            ABORT("JavaGlobalObj::dtor null JNIEnv");
         }
-        env->CallVoidMethod(obj, mNotifyDeleted);
+        {
+            std::unique_lock<std::mutex> lock(javaObjectRef.mtx);
+            jobject obj = javaObjectRef.object;
+            if( nullptr == obj || nullptr == mNotifyDeleted ) {
+                return;
+            }
+            env->CallVoidMethod(obj, mNotifyDeleted);
+        }
+        java_exception_check_and_throw(env, E_FILE_LINE); // caught below
+    } catch (std::exception &e) {
+        fprintf(stderr, "JavaGlobalObj::dtor: Caught %s\n", e.what());
     }
-    java_exception_check_and_throw(env, E_FILE_LINE); // would abort() if thrown
 }
 
 //
