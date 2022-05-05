@@ -341,12 +341,15 @@ jobject jau::get_new_arraylist(JNIEnv *env, jsize size, jmethodID *add)
 //
 
 JavaGlobalObj::~JavaGlobalObj() noexcept {
-    jobject obj = javaObjectRef.getObject();
-    if( nullptr == obj || nullptr == mNotifyDeleted ) {
-        return;
-    }
     JNIEnv *env = *jni_env;
-    env->CallVoidMethod(obj, mNotifyDeleted);
+    {
+        std::unique_lock<std::mutex> lock(javaObjectRef.mtx);
+        jobject obj = javaObjectRef.object;
+        if( nullptr == obj || nullptr == mNotifyDeleted ) {
+            return;
+        }
+        env->CallVoidMethod(obj, mNotifyDeleted);
+    }
     java_exception_check_and_throw(env, E_FILE_LINE); // would abort() if thrown
 }
 

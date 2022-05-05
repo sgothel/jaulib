@@ -80,6 +80,7 @@ extern thread_local JNIEnvContainer jni_env;
  */
 class JNIGlobalRef {
 private:
+    friend class JavaGlobalObj;
     mutable std::mutex mtx;
     jobject object;
 
