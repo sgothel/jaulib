@@ -104,7 +104,7 @@ JNIGlobalRef::JNIGlobalRef(jobject _object) {
     // Notably 'JNIInvalidRefType' is returned on a valid jobject via its constructor call, e.g. Java_jau_direct_1bt_DBTManager_initImpl()
     const jobjectRefType ref_type = env->GetObjectRefType(object);
     if( JNIInvalidRefType == ref_type ) {
-        throw jau::RuntimeException("JavaGlobalObj::ctor1: Invalid non-null object", E_FILE_LINE);
+        throw jau::RuntimeException("JavaGlobalObj::ctor1: Invalid non-null jobject", E_FILE_LINE);
     }
 #endif
     this->object = env->NewGlobalRef(_object);
@@ -120,7 +120,7 @@ JNIGlobalRef::JNIGlobalRef(const JNIGlobalRef &o) {
     }
     const jobjectRefType ref_type = env->GetObjectRefType(o.object);
     if( JNIInvalidRefType == ref_type ) {
-        throw jau::RuntimeException("JavaGlobalObj::ctor2: Invalid non-null object", E_FILE_LINE);
+        throw jau::RuntimeException("JavaGlobalObj::ctor2: Invalid non-null jobject", E_FILE_LINE);
     }
     object = env->NewGlobalRef(o.object);
     DBG_JNI_PRINT("JNIGlobalRef::copy_ctor %p -> %p", o.object, object);
@@ -147,7 +147,7 @@ JNIGlobalRef& JNIGlobalRef::operator=(const JNIGlobalRef &o) {
         const jobjectRefType ref_type = env->GetObjectRefType(object);
         if( JNIInvalidRefType == ref_type ) {
             object = nullptr;
-            throw jau::RuntimeException("JavaGlobalObj::assignment: Invalid non-null object", E_FILE_LINE);
+            throw jau::RuntimeException("JavaGlobalObj::assignment: Invalid non-null jobject", E_FILE_LINE);
         }
         env->DeleteGlobalRef(object);
         object = nullptr;
@@ -183,10 +183,10 @@ JNIGlobalRef::~JNIGlobalRef() noexcept {
             // due to move ctor and assignment, we accept nullptr object
             const jobjectRefType ref_type = env->GetObjectRefType(object);
             if( JNIInvalidRefType == ref_type ) {
-                object = nullptr;
-                throw jau::RuntimeException("JavaGlobalObj::dtor: Invalid non-null object", E_FILE_LINE);
+                ERR_PRINT("Invalid non-null jobject"); // noexcept
+            } else {
+                env->DeleteGlobalRef(object);
             }
-            env->DeleteGlobalRef(object);
             object = nullptr;
         }
     } catch (std::exception &e) {
