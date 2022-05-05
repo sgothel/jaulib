@@ -84,9 +84,11 @@ namespace jau {
             void setJavaObject() noexcept { javaObjectRef.reset(); }
 
             /**
-             * Throws an IllegalStateException if isValid() == false
+             * Throws an IllegalStateException if instance is not valid
+             *
+             * Default implementation does nothing.
              */
-            virtual void checkValid() const {}
+            virtual void checkValidInstance() const {}
 
             virtual ~JavaUplink() noexcept {
                 javaObjectRef = nullptr;

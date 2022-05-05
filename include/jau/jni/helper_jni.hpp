@@ -226,7 +226,7 @@ namespace jau {
     };
 
     //
-    // C++ JavaUplink <-> java access, assuming it implementats JavaUplink: field "long nativeInstance" and native method 'void checkValid()' etc
+    // C++ JavaUplink <-> java access, assuming it implementats JavaUplink: field "long nativeInstance" and native method 'void checkValidInstance()' etc
     //
 
     template <typename T>
@@ -237,7 +237,7 @@ namespace jau {
         if (t == nullptr) {
             throw jau::RuntimeException("Trying to acquire null NativeObject", E_FILE_LINE);
         }
-        t->checkValid();
+        t->checkValidInstance();
         return t;
     }
 
