@@ -177,7 +177,7 @@ JNIGlobalRef::~JNIGlobalRef() noexcept {
     try {
         JNIEnv * env = *jni_env;
         if( nullptr == env ) {
-            ABORT("JNIGlobalRef dtor null JNIEnv");
+            ABORT("JNIGlobalRef::dtor null JNIEnv");
         }
         std::unique_lock<std::mutex> lock(mtx);
         DBG_JNI_PRINT("JNIGlobalRef::dtor %p", object);
@@ -192,7 +192,7 @@ JNIGlobalRef::~JNIGlobalRef() noexcept {
             object = nullptr;
         }
     } catch (std::exception &e) {
-        fprintf(stderr, "JNIGlobalRef dtor: Caught %s\n", e.what());
+        fprintf(stderr, "JNIGlobalRef::dtor: Caught %s\n", e.what());
     }
 }
 
