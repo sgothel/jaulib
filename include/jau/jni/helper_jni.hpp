@@ -195,7 +195,7 @@ namespace jau {
             JavaGlobalObj& operator=(const JavaGlobalObj &o) noexcept = default;
             JavaGlobalObj& operator=(JavaGlobalObj &&o) noexcept = default;
 
-            virtual ~JavaGlobalObj() noexcept;
+            ~JavaGlobalObj() noexcept override;
 
             std::string toString() const noexcept override {
                 const uint64_t ref = (uint64_t)(void*)javaObjectRef.getObject();
