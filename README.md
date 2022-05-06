@@ -81,14 +81,17 @@ Changing install path from /usr/local to /usr
 ~~~~~~~~~~~~~
 -DCMAKE_INSTALL_PREFIX=/usr
 ~~~~~~~~~~~~~
+
 Building debug build:
 ~~~~~~~~~~~~~
 -DDEBUG=ON
 ~~~~~~~~~~~~~
+
 Disable stripping native lib even in non debug build:
 ~~~~~~~~~~~~~
 -DUSE_STRIP=OFF
 ~~~~~~~~~~~~~
+
 Disable using `libunwind` (default: enabled for all but `arm32`, `armhf`)
 ~~~~~~~~~~~~~
 -DUSE_LIBUNWIND=OFF
@@ -100,23 +103,28 @@ Override default javac debug arguments `source,lines`:
 
 -DJAVAC_DEBUG_ARGS="none"
 ~~~~~~~~~~~~~
+
 Building debug and instrumentation (sanitizer) build:
 ~~~~~~~~~~~~~
 -DDEBUG=ON -DINSTRUMENTATION=ON
 ~~~~~~~~~~~~~
+
 Using clang instead of gcc:
 ~~~~~~~~~~~~~
 -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++
 ~~~~~~~~~~~~~
+
 Cross-compiling on a different system:
 ~~~~~~~~~~~~~
 -DCMAKE_CXX_FLAGS:STRING=-m32 -march=i586
 -DCMAKE_C_FLAGS:STRING=-m32 -march=i586
 ~~~~~~~~~~~~~
+
 To build Java bindings:
 ~~~~~~~~~~~~~
 -DBUILDJAVA=ON
 ~~~~~~~~~~~~~
+
 To build documentation run: 
 ~~~~~~~~~~~~~
 make doc
@@ -136,6 +144,15 @@ a Raspi-arm64, Raspi-armhf or PC-amd64 target image.
 **1.0.0**
 
 * First stable release (TODO)
+
+**0.9.4** (TODO)
+
+* Robustness of JNI
+  - JNIGlobalRef: Make all operations atomic and fix copy ctor JNIGlobalRef/JavaGlobalObj
+  - JavaGlobalObj::dtor needs to acquire JNIGlobalRef lock for atomic `mNotifyDeleted` deleter call (C++ -> java)
+  - Remove unused JavaAnon/JavaUplink/JNIGlobalRef's `clear(), having leak potential
+  - Have derivations use `override` for `virtual` superclass, marking a requirement
+* Move all of `jni_mem` into namespace jau
 
 **0.9.3**
 
