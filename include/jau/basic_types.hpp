@@ -116,8 +116,8 @@ namespace jau {
 
     class ExceptionBase {
       private:
-        std::string msg;
-        std::string backtrace;
+        std::string msg_;
+        std::string backtrace_;
         std::string what_;
 
       protected:
@@ -131,7 +131,8 @@ namespace jau {
         ExceptionBase& operator=(const ExceptionBase &o) = default;
         ExceptionBase& operator=(ExceptionBase &&o) = default;
 
-        std::string get_backtrace() const noexcept { return backtrace; }
+        std::string message() const noexcept { return msg_; }
+        std::string backtrace() const noexcept { return backtrace_; }
 
         virtual const char* what() const noexcept {
             return what_.c_str(); // return std::runtime_error::what();
