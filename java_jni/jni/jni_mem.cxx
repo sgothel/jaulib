@@ -69,11 +69,11 @@ void JNIEnvContainer::attach() {
     if( JNI_EDETACHED == envRes ) {
         envRes = vm->AttachCurrentThreadAsDaemon((void**) &newEnv, NULL);
         if( JNI_OK != envRes ) {
-            throw jau::RuntimeException("Attach to VM failed", E_FILE_LINE);
+            throw jau::RuntimeException("Attach to VM failed, error "+std::to_string(envRes), E_FILE_LINE);
         }
         env = newEnv;
     } else if( JNI_OK != envRes ) {
-        throw jau::RuntimeException("GetEnv of VM failed", E_FILE_LINE);
+        throw jau::RuntimeException("GetEnv of VM failed, error "+std::to_string(envRes), E_FILE_LINE);
     }
     if (env==NULL) {
         throw jau::RuntimeException("GetEnv of VM is NULL", E_FILE_LINE);
@@ -175,10 +175,7 @@ JNIGlobalRef& JNIGlobalRef::operator=(JNIGlobalRef &&o) noexcept {
 
 JNIGlobalRef::~JNIGlobalRef() noexcept {
     try {
-        JNIEnv * env = *jni_env;
-        if( nullptr == env ) {
-            ABORT("JNIGlobalRef::dtor null JNIEnv");
-        }
+        JNIEnv * env = *jni_env; // exception if null
         std::unique_lock<std::mutex> lock(mtx);
         DBG_JNI_PRINT("JNIGlobalRef::dtor %p", object);
         if( nullptr != object ) {
@@ -191,8 +188,28 @@ JNIGlobalRef::~JNIGlobalRef() noexcept {
             }
             object = nullptr;
         }
+    } catch (jau::ExceptionBase &e0) {
+        if( root_environment::is_terminating() ) {
+            if( jau::environment::get().debug ) {
+                fprintf(stderr, "JNIGlobalRef::dtor: Caught at exit %s\n", e0.what());
+            } else {
+                // Be brief @ exit, as its expected at JVM shutdown
+                fprintf(stderr, "JNIGlobalRef::dtor: Caught at exit %s\n", e0.message().c_str());
+            }
+        } else {
+            fprintf(stderr, "JNIGlobalRef::dtor: Caught %s\n", e0.what());
+        }
     } catch (std::exception &e) {
-        fprintf(stderr, "JNIGlobalRef::dtor: Caught %s\n", e.what());
+        if( root_environment::is_terminating() ) {
+            if( jau::environment::get().debug ) {
+                fprintf(stderr, "JNIGlobalRef::dtor: Caught at exit %s\n", e.what());
+            } else {
+                // Be brief @ exit, as its expected at JVM shutdown
+                fprintf(stderr, "JNIGlobalRef::dtor: Caught at exit ...\n");
+            }
+        } else {
+            fprintf(stderr, "JNIGlobalRef::dtor: Caught %s\n", e.what());
+        }
     }
 }
 
