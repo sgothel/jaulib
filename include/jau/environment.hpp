@@ -49,6 +49,16 @@ namespace jau {
      * </p>
      */
     class root_environment {
+        public:
+            /**
+             * Optional path to signal early termination, i.e. JVM shutdown.
+             */
+            static void set_terminating() noexcept;
+            /**
+             * Returns true if program is terminating as detected via atexit() callback
+             * or set_terminating() has been called.
+             */
+            static bool is_terminating() noexcept;
     };
 
     /**

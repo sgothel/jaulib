@@ -30,11 +30,24 @@
 #include <cstdint>
 #include <vector>
 #include <cstdio>
+#include <cstdlib>
 
 #include <jau/environment.hpp>
 #include <jau/debug.hpp>
 
 using namespace jau;
+
+static jau::sc_atomic_bool is_terminating_ = false;
+
+static void at_exit_func() noexcept {
+    is_terminating_ = true;
+}
+static int install_atexit() noexcept {
+    return atexit(at_exit_func);
+}
+static bool atexit_cockie = 0 == install_atexit();
+bool root_environment::is_terminating() noexcept { (void)atexit_cockie; return is_terminating_.load(); }
+void root_environment::set_terminating() noexcept { is_terminating_ = true; }
 
 const uint64_t environment::startupTimeMilliseconds = jau::getCurrentMilliseconds();
 const fraction_timespec environment::startupTimeMonotonic = jau::getMonotonicTime();
