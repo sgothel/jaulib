@@ -52,6 +52,7 @@ namespace jau {
             virtual ~JavaAnon() noexcept { }
             virtual std::string toString() const noexcept { return "JavaAnon[???]"; }
     };
+    typedef std::shared_ptr<JavaAnon> JavaAnonRef;
 
     /**
      * Sharing the anonymous Java object (JavaAnon),
@@ -59,7 +60,7 @@ namespace jau {
      */
     class JavaUplink {
         private:
-            std::shared_ptr<JavaAnon> javaObjectRef;
+            JavaAnonRef javaObjectRef;
 
         public:
             virtual std::string toString() const noexcept { return "JavaUplink["+jau::to_hexstring(this)+"]"; }
@@ -75,10 +76,10 @@ namespace jau {
                 return javaObjectRef->toString();
             }
 
-            std::shared_ptr<JavaAnon> getJavaObject() noexcept { return javaObjectRef; }
+            const JavaAnonRef& getJavaObject() noexcept { return javaObjectRef; }
 
             /** Assigns a new shared JavaAnon reference, replaced item might be deleted via JNI from dtor */
-            void setJavaObject(std::shared_ptr<JavaAnon> objRef) noexcept { javaObjectRef = objRef; }
+            void setJavaObject(const JavaAnonRef& objRef) noexcept { javaObjectRef = objRef; }
 
             /** Resets the shared JavaAnon reference, the replaced item might be deleted via JNI from dtor */
             void setJavaObject() noexcept { javaObjectRef.reset(); }
@@ -94,6 +95,7 @@ namespace jau {
                 javaObjectRef = nullptr;
             }
     };
+    typedef std::shared_ptr<JavaUplink> JavaUplinkRef;
 
     /**@}*/
 

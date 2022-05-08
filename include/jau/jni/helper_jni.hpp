@@ -146,7 +146,7 @@ namespace jau {
             jmethodID  mNotifyDeleted;
 
         public:
-            static inline void check(const std::shared_ptr<JavaAnon> & shref, const char* file, int line) {
+            static inline void check(const JavaAnonRef& shref, const char* file, int line) {
                 if( nullptr == shref ) {
                     throw RuntimeException("JavaGlobalObj::check: Null shared-JavaAnonObj", file, line);
                 }
@@ -158,7 +158,7 @@ namespace jau {
                     throw RuntimeException("JavaGlobalObj::check: Null object", file, line);
                 }
             }
-            static inline jobject checkAndGetObject(const std::shared_ptr<JavaAnon> & shref, const char* file, int line) {
+            static inline jobject checkAndGetObject(const JavaAnonRef& shref, const char* file, int line) {
                 if( nullptr == shref ) {
                     throw RuntimeException("JavaGlobalObj::check: Null shared-JavaAnonObj", file, line);
                 }
@@ -171,7 +171,7 @@ namespace jau {
                 }
                 return obj;
             }
-            static bool isValid(const std::shared_ptr<JavaAnon> & shref) noexcept {
+            static bool isValid(const JavaAnonRef& shref) noexcept {
                 if( nullptr == shref || 0 == shref.use_count() ) {
                     return false;
                 }
@@ -211,16 +211,16 @@ namespace jau {
             jclass getClass() const noexcept { return javaObjectRef.getClass(); }
 
             /* Provides access to the stored GlobalRef as an getJavaObject. */
-            static JNIGlobalRef GetJavaObject(const std::shared_ptr<JavaAnon> & shref) noexcept {
+            static JNIGlobalRef GetJavaObject(const JavaAnonRef & shref) noexcept {
                 return static_cast<JavaGlobalObj*>(shref.get())->getJavaObject();
             }
             /* Provides access to the stored GlobalRef as an jobject. */
-            static jobject GetObject(const std::shared_ptr<JavaAnon> & shref) noexcept {
+            static jobject GetObject(const JavaAnonRef & shref) noexcept {
                 return static_cast<JavaGlobalObj*>(shref.get())->getObject();
             }
 
             /* Provides access to the stored GlobalRef as a jclass. */
-            static jclass GetClass(const std::shared_ptr<JavaAnon> & shref) noexcept {
+            static jclass GetClass(const JavaAnonRef & shref) noexcept {
                 return static_cast<JavaGlobalObj*>(shref.get())->getClass();
             }
     };
