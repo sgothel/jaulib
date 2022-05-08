@@ -1,10 +1,7 @@
 /*
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2020 Gothel Software e.K.
+ * Copyright (c) 2020, 2022 Gothel Software e.K.
  * Copyright (c) 2020 ZAFENA AB
- *
- * Author: Andrei Vasiliu <andrei.vasiliu@intel.com>
- * Copyright (c) 2016 Intel Corporation.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -194,6 +191,9 @@ void jau::rethrow_and_raise_java_exception_jauimpl(JNIEnv *env, const char* file
 //
 
 jfieldID jau::getField(JNIEnv *env, jobject obj, const char* field_name, const char* field_signature) {
+    if( nullptr == obj ) {
+        return nullptr;
+    }
     jclass clazz = env->GetObjectClass(obj);
     java_exception_check_and_throw(env, E_FILE_LINE);
     // J == long

@@ -1,10 +1,7 @@
 /*
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2020 Gothel Software e.K.
+ * Copyright (c) 2020, 2022 Gothel Software e.K.
  * Copyright (c) 2020 ZAFENA AB
- *
- * Author: Andrei Vasiliu <andrei.vasiliu@intel.com>
- * Copyright (c) 2016 Intel Corporation.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -224,53 +221,14 @@ namespace jau {
                 return static_cast<JavaGlobalObj*>(shref.get())->getClass();
             }
     };
-
-    //
-    // C++ JavaUplink <-> java access, assuming it implementats JavaUplink: field "long nativeInstance" and native method 'void checkValidInstance()' etc
-    //
-
-    template <typename T>
-    T *getJavaUplinkObject(JNIEnv *env, jobject obj)
-    {
-        jlong instance = env->GetLongField(obj, getInstanceField(env, obj));
-        T *t = reinterpret_cast<T *>(instance);
-        if (t == nullptr) {
-            throw jau::RuntimeException("Trying to acquire null NativeObject", E_FILE_LINE);
-        }
-        t->checkValidInstance();
-        return t;
-    }
-
-    template <typename T>
-    T *getJavaUplinkObjectUnchecked(JNIEnv *env, jobject obj)
-    {
-        jlong instance = env->GetLongField(obj, getInstanceField(env, obj));
-        return reinterpret_cast<T *>(instance);
-    }
-
-    template <typename T>
-    void setJavaUplinkObject(JNIEnv *env, jobject obj, T *t)
-    {
-        if (t == nullptr) {
-            throw jau::RuntimeException("Trying to create null NativeObject", E_FILE_LINE);
-        }
-        jlong instance = reinterpret_cast<jlong>(t);
-        env->SetLongField(obj, getInstanceField(env, obj), instance);
-    }
+    typedef std::shared_ptr<JavaGlobalObj> JavaGlobalObjRef;
 
     //
     // C++ JavaAnon <-> java access, all generic
     //
-
-    template <typename T>
-    T *castInstance(jlong instance)
-    {
-        T *t = reinterpret_cast<T *>(instance);
-        if (t == nullptr) {
-            throw jau::RuntimeException("Trying to cast null object", E_FILE_LINE);
-        }
-        return t;
-    }
+    // We prefer using `std::shared_ptr<T>` instead of a `naked pointer`,
+    // this way we automatically preserve the native instance lifecycle while within a JNI method.
+    //
 
     template <typename T>
     T *getObjectRef(JNIEnv *env, jobject obj, const char* field_name)
@@ -288,63 +246,399 @@ namespace jau {
         java_exception_check_and_throw(env, E_FILE_LINE);
     }
 
+    /**
+     * Returns the cast `shared_ptr<T>` pointer from the java object's `long nativeInstance` field.
+     *
+     * If `throw_on_nullptr` is true, throws an exception if the shared_ptr<T> pointer is nullptr.
+     *
+     * @tparam T
+     * @param instance
+     * @param throw_on_nullptr
+     * @return
+     */
     template <typename T>
-    T *getInstance(JNIEnv *env, jobject obj)
+    std::shared_ptr<T> * castInstance(jlong instance, const bool throw_on_nullptr=true)
     {
-        jlong instance = env->GetLongField(obj, getInstanceField(env, obj));
-        T *t = reinterpret_cast<T *>(instance);
-        if (t == nullptr) {
-            throw jau::RuntimeException("Trying to acquire null object", E_FILE_LINE);
+        std::shared_ptr<T> * ref_ptr = reinterpret_cast<std::shared_ptr<T> *>(instance);
+        if( throw_on_nullptr ) {
+            if (nullptr == ref_ptr) {
+                throw jau::RuntimeException("null reference store", E_FILE_LINE);
+            }
         }
-        return t;
+        return ref_ptr;
     }
 
+    /**
+     * Returns the cast `shared_ptr<T>` pointer from the java object's `long nativeInstance` field.
+     *
+     * If `throw_on_nullptr` is true, throws an exception if either the shared_ptr<T> pointer or
+     * its managed object reference is nullptr.
+     *
+     * @tparam T
+     * @param env
+     * @param obj
+     * @param throw_on_nullptr if true, throws exception if instance reference is nullptr (default). Otherwise not.
+     */
     template <typename T>
-    T *getInstanceUnchecked(JNIEnv *env, jobject obj)
-    {
-        jlong instance = env->GetLongField(obj, getInstanceField(env, obj));
-        return reinterpret_cast<T *>(instance);
-    }
-
-    template <typename T>
-    void setInstance(JNIEnv *env, jobject obj, T *t)
-    {
-        if (t == nullptr) {
-            throw jau::RuntimeException("Trying to create null object", E_FILE_LINE);
+    std::shared_ptr<T>* getInstance(JNIEnv *env, jobject obj, const bool throw_on_nullptr=true) {
+        const jlong nativeInstance = env->GetLongField(obj, getInstanceField(env, obj));
+        java_exception_check_and_throw(env, E_FILE_LINE);
+        std::shared_ptr<T>* ref_ptr = reinterpret_cast<std::shared_ptr<T> *>(nativeInstance);
+        if( throw_on_nullptr ) {
+            if (nullptr == ref_ptr) {
+                throw jau::RuntimeException("null reference store", E_FILE_LINE);
+            }
+            if (nullptr == *ref_ptr) {
+                throw jau::RuntimeException("null reference", E_FILE_LINE);
+            }
         }
-        jlong instance = reinterpret_cast<jlong>(t);
-        env->SetLongField(obj, getInstanceField(env, obj), instance);
+        return ref_ptr;
     }
 
-    inline void clearInstance(JNIEnv *env, jobject obj) {
-        env->SetLongField(obj, getInstanceField(env, obj), 0);
-    }
-
+    /**
+     * Deletes the `std::shared_ptr<T>` storage of the java object if exists first
+     * and writes the given `std::shared_ptr<T>` storage pointer into its `long nativeInstance` field.
+     *
+     * @tparam T
+     * @param env
+     * @param obj
+     * @param t
+     */
     template <typename T>
-    jobject generic_clone(JNIEnv *env, jobject obj)
+    void setInstance(JNIEnv *env, jobject obj, const std::shared_ptr<T>& t)
     {
-        T *obj_generic = getInstance<T>(env, obj);
-        T *copy_generic = obj_generic->clone();
+         if (t == nullptr) {
+             throw jau::RuntimeException("Trying to create null object", E_FILE_LINE);
+         }
+         const jlong instance = (jlong) (intptr_t) &t;
 
-        jclass generic_class = search_class(env, *copy_generic);
-        jmethodID generic_ctor = search_method(env, generic_class, "<init>", "(J)V", false);
+         jfieldID instance_field = getInstanceField(env, obj);
+         java_exception_check_and_throw(env, E_FILE_LINE);
+         {
+             const jlong nativeInstance = env->GetLongField(obj, instance_field);
+             java_exception_check_and_throw(env, E_FILE_LINE);
+             std::shared_ptr<T>* other = reinterpret_cast<std::shared_ptr<T> *>(nativeInstance);
+             if( nullptr != other ) {
+                 delete other;
+             }
+         }
+         env->SetLongField(obj, instance_field, instance);
+         java_exception_check_and_throw(env, E_FILE_LINE);
+    }
 
-        jobject result = env->NewObject(generic_class, generic_ctor, (jlong)copy_generic);
-        if (!result)
+
+    /**
+     * Deletes the `std::shared_ptr<T>` storage of the java object if exists
+     * and write `nullptr` into its `long nativeInstance` field.
+     *
+     * @tparam T
+     * @param env
+     * @param obj
+     */
+    template <typename T>
+    void clearInstance(JNIEnv *env, jobject obj) {
+        jfieldID instance_field = getInstanceField(env, obj);
+        java_exception_check_and_throw(env, E_FILE_LINE);
         {
-            throw jau::RuntimeException("Cannot create instance of class", E_FILE_LINE);
+            const jlong nativeInstance = env->GetLongField(obj, instance_field);
+            java_exception_check_and_throw(env, E_FILE_LINE);
+            std::shared_ptr<T>* other = reinterpret_cast<std::shared_ptr<T> *>(nativeInstance);
+            if( nullptr != other ) {
+                delete other;
+            }
         }
-
-        return result;
+        env->SetLongField(obj, instance_field, 0);
+        java_exception_check_and_throw(env, E_FILE_LINE);
     }
+
+    /**
+     * A `std::shared_ptr<T>` storage instance to be copied from and released into a java object's `long nativeInstance` field.
+     *
+     * An instance holds a shared_ptr<T> storage pointer for a managed object T.
+     *
+     * Using a `shared_ptr<T>` copy increments its reference counter and prohibits its destruction while in use.
+     *
+     * We prefer using `std::shared_ptr<T>` instead of a `naked pointer`,
+     * this way we automatically preserve the native instance lifecycle while within a JNI method.
+     *
+     * @tparam T the managed object type
+     */
+    template <typename T>
+    class shared_ptr_ref {
+        private:
+            std::shared_ptr<T>* ref_ptr;
+
+            void safe_delete() {
+                std::shared_ptr<T>* ref_ptr_ = ref_ptr;
+                ref_ptr = nullptr;
+                delete ref_ptr_;
+            }
+
+            static jlong get_instance(JNIEnv *env, jobject obj) {
+                if( nullptr != obj ) {
+                    const jlong res = env->GetLongField(obj, getInstanceField(env, obj));
+                    java_exception_check_and_throw(env, E_FILE_LINE);
+                    return res;
+                } else {
+                    return 0;
+                }
+            }
+            static jlong get_instance(JNIEnv *env, jobject obj, jfieldID instance_field) {
+                if( nullptr != obj ) {
+                    const jlong res = env->GetLongField(obj, instance_field);
+                    java_exception_check_and_throw(env, E_FILE_LINE);
+                    return res;
+                } else {
+                    return 0;
+                }
+            }
+
+        public:
+            /** Default constructor, nullptr */
+            shared_ptr_ref() noexcept
+            : ref_ptr( new std::shared_ptr<T>() )
+            { }
+
+            /** Copy constructor */
+            shared_ptr_ref(const shared_ptr_ref& o) noexcept
+            : ref_ptr( new std::shared_ptr<T>( o.shared_ptr() ) )
+            { }
+
+            /** Move constructor. */
+            shared_ptr_ref(shared_ptr_ref&& o) noexcept
+            : ref_ptr( o.ref_ptr )
+            {
+                o.ref_ptr = nullptr;
+            }
+
+            /** Assignment operator. */
+            shared_ptr_ref& operator=(const shared_ptr_ref& o) {
+                if( nullptr != ref_ptr ) {
+                    *ref_ptr = o.shared_ptr();
+                } else {
+                    ref_ptr = new std::shared_ptr<T>( o.shared_ptr() );
+                }
+                return *this;
+            }
+
+            /** Move assignment operator. */
+            shared_ptr_ref& operator=(shared_ptr_ref&& o) {
+                if( nullptr != ref_ptr ) {
+                    safe_delete();
+                }
+                ref_ptr = o.ref_ptr;
+                o.ref_ptr = nullptr;
+                return *this;
+            }
+
+            ~shared_ptr_ref() {
+                if( nullptr != ref_ptr ) {
+                    safe_delete();
+                }
+            }
+
+            /** Constructs a new instance, taking ownership of the given T pointer. */
+            shared_ptr_ref(T * ptr) noexcept
+            : ref_ptr( new std::shared_ptr<T>( ptr ) )
+            { }
+
+            /** Constructs a new instance, copying the given std::shared_ptr<T>. */
+            shared_ptr_ref(const std::shared_ptr<T>& ref) noexcept
+            : ref_ptr( new std::shared_ptr<T>( ref ) )
+            { }
+
+            /** Constructs a new instance, moving the given std::shared_ptr<T>. */
+            shared_ptr_ref(std::shared_ptr<T>&& ref) noexcept
+            : ref_ptr( new std::shared_ptr<T>( std::move(ref) ) )
+            { }
+
+            /** Assignment operator. */
+            shared_ptr_ref& operator=(const std::shared_ptr<T>& o) {
+                if( nullptr != ref_ptr ) {
+                    *ref_ptr = o;
+                } else {
+                    ref_ptr = new std::shared_ptr<T>( o );
+                }
+                return *this;
+            }
+
+            /**
+             * Throws an exception if this instances shared_ptr<T> storage is nullptr.
+             *
+             * The managed object reference may be nullptr.
+             */
+            void null_check1() const {
+                if (nullptr == ref_ptr) {
+                    throw jau::RuntimeException("null reference store", E_FILE_LINE);
+                }
+            }
+
+            /**
+             * Throws an exception if either this instances shared_ptr<T> storage or
+             * the managed object reference is nullptr.
+             */
+            void null_check2() const {
+                if (nullptr == ref_ptr) {
+                    throw jau::RuntimeException("null reference store", E_FILE_LINE);
+                }
+                if (nullptr == *ref_ptr) {
+                    throw jau::RuntimeException("null reference", E_FILE_LINE);
+                }
+            }
+
+            /**
+             * Constructs a new instance, copying the instance from the given java `long nativeInstance` value,
+             * representing a java object's shared_ptr<T> storage
+             *
+             * Using a `shared_ptr<T>` copy increments its reference counter and prohibits its destruction while in use.
+             *
+             * If `throw_on_nullptr` is true, throws an exception if either this instances shared_ptr<T> storage or
+             * the managed object reference is nullptr.
+             *
+             * @param nativeInstance the jlong representation of another shared_ptr<T> storage
+             * @param throw_on_nullptr if true, throws an exception if either this instances shared_ptr<T> storage or the managed object reference is nullptr.
+             */
+            shared_ptr_ref(jlong nativeInstance, const bool throw_on_nullptr=true)
+            : ref_ptr( new std::shared_ptr<T>() )
+            {
+                std::shared_ptr<T> * other = reinterpret_cast<std::shared_ptr<T> *>(nativeInstance);
+                if( nullptr != other  && nullptr != *other ) {
+                    *ref_ptr = *other;
+                }
+                if( throw_on_nullptr ) {
+                    null_check2(); // exception if nullptr, even if other shared_ptr instance becomes nullptr @ copy-ctor
+                }
+            }
+
+            /**
+             * Constructs a new instance, copying the instance from the java object's `long nativeInstance` field.
+             * representing its shared_ptr<T> storage
+             *
+             * Using a `shared_ptr<T>` copy increments its reference counter and prohibits its destruction while in use.
+             *
+             * If `throw_on_nullptr` is true, throws an exception if either this instances shared_ptr<T> storage or
+             * the managed object reference is nullptr.
+             *
+             * @param env denoting the JVM
+             * @param obj denoting the java object holding the `long nativeInstance` field, representing its shared_ptr<T> storage. Maybe `nullptr`, see `throw_on_nullptr`.
+             * @param throw_on_nullptr if true, throws an exception if either this instances shared_ptr<T> storage or the managed object reference is nullptr.
+             */
+            shared_ptr_ref(JNIEnv *env, jobject obj, const bool throw_on_nullptr=true)
+            : shared_ptr_ref( get_instance(env, obj), throw_on_nullptr )
+            { }
+
+            /**
+             * Release ownership and returns the shared_ptr<T> storage.
+             *
+             * This instance shall not be used anymore.
+             */
+            std::shared_ptr<T>* release() noexcept {
+                const std::shared_ptr<T>* res = ref_ptr;
+                ref_ptr = nullptr;
+                return res;
+            }
+
+            /**
+             * Release ownership and return the jlong representation of the shared_ptr<T> storage.
+             *
+             * This instance shall not be used anymore.
+             */
+            jlong release_to_jlong() noexcept {
+                const jlong res = (jlong) (intptr_t)ref_ptr;
+                ref_ptr = nullptr;
+                return res;
+            }
+
+            /**
+             * Deletes the `std::shared_ptr<T>` storage of the target java object if exists first
+             * and writes this instance's `std::shared_ptr<T>` storage pointer into its `long nativeInstance` field,
+             * then releases ownership, see release_to_jlong().
+             *
+             * This instance shall not be used anymore.
+             *
+             * Throws an exception if either this instances shared_ptr<T> storage or
+             * the managed object reference is nullptr.
+             *
+             * @param env
+             * @param obj the target java object
+             */
+            void release_into_object(JNIEnv *env, jobject obj) {
+                null_check2();
+                if( nullptr == obj ) {
+                    throw jau::RuntimeException("null target object", E_FILE_LINE);
+                }
+                jfieldID instance_field = getInstanceField(env, obj);
+                java_exception_check_and_throw(env, E_FILE_LINE);
+                {
+                    std::shared_ptr<T> * other = reinterpret_cast<std::shared_ptr<T> *>( get_instance(env, obj, instance_field) );
+                    if( nullptr != other ) {
+                        delete other;
+                    }
+                }
+                env->SetLongField(obj, instance_field, release_to_jlong());
+                java_exception_check_and_throw(env, E_FILE_LINE);
+            }
+
+            /**
+             * Returns true if either this instances shared_ptr<T> storage or
+             * the managed object reference is nullptr.
+             */
+            bool is_null() const noexcept {
+                return nullptr == ref_ptr || nullptr == *ref_ptr;
+            }
+
+            /**
+             * Provides access to the shared_ptr<T> pointer, l-value of storage.
+             */
+            std::shared_ptr<T>* pointer() noexcept {
+                return ref_ptr;
+            }
+
+            /**
+             * Provides access to const reference of shared_ptr<T>, r-value.
+             *
+             * Throws an exception if this instances shared_ptr<T> storage is nullptr.
+             */
+            const std::shared_ptr<T>& shared_ptr() const {
+                null_check1();
+                return *ref_ptr;
+            }
+
+            /**
+             * Provides access to reference of stored T.
+             *
+             * Throws an exception if either this instances shared_ptr<T> storage or
+             * the managed object reference is nullptr.
+             */
+            T& operator*() {
+                null_check2();
+                return *(ref_ptr->get());
+            }
+
+            /**
+             * Provides access to pointer of stored T.
+             *
+             * Throws an exception if either this instances shared_ptr<T> storage or
+             * the managed object reference is nullptr.
+             */
+            T* operator->() {
+                null_check2();
+                return ref_ptr->get();
+            }
+
+            std::string toString() const noexcept {
+                return "shared_ptr_ref[ ptr "+jau::to_hexstring(ref_ptr)+
+                                     ", obj "+ ( nullptr != ref_ptr ? jau::to_hexstring(ref_ptr->get()) : "null" ) + "]";
+            }
+    };
 
     //
     // C++ <-> java type mapping
     //
 
     template <typename T>
-    jobject convert_instance_to_jobject(JNIEnv *env, T *elem,
-            const char *ctor_prototype, std::function<jobject(JNIEnv*, jclass, jmethodID, T*)> ctor)
+    jobject convert_instance_to_jobject(JNIEnv *env, const std::shared_ptr<T>& elem,
+            const char *ctor_prototype, std::function<jobject(JNIEnv*, jclass, jmethodID, const std::shared_ptr<T>&)> ctor)
     {
         jclass clazz = search_class(env, T::java_class().c_str());
         jmethodID clazz_ctor = search_method(env, clazz, "<init>", ctor_prototype, false);
@@ -361,7 +655,8 @@ namespace jau {
 
     template <typename T>
     jobject convert_instance_to_jobject(JNIEnv *env, jclass clazz,
-            const char *ctor_prototype, std::function<jobject(JNIEnv*, jclass, jmethodID, T*)> ctor, T *elem)
+            const char *ctor_prototype, std::function<jobject(JNIEnv*, jclass, jmethodID, const std::shared_ptr<T>&)> ctor,
+            const std::shared_ptr<T>& elem)
     {
         jmethodID clazz_ctor = search_method(env, clazz, "<init>", ctor_prototype, false);
 
@@ -388,7 +683,7 @@ namespace jau {
         }
 
         jau::for_each(array.begin(), array.end(), [&](typename T::value_type & elem){
-            std::shared_ptr<JavaAnon> objref = elem->getJavaObject();
+            JavaAnonRef objref = elem->getJavaObject();
             if ( nullptr == objref ) {
                 throw InternalError("JavaUplink element of array has no valid java-object: "+elem->toString(), E_FILE_LINE);
             }
@@ -398,69 +693,8 @@ namespace jau {
     }
 
     template <typename T, typename U>
-    jobject convert_vector_uniqueptr_to_jarraylist(JNIEnv *env, T& array, const char *ctor_prototype)
-    {
-        unsigned int array_size = array.size();
-
-        jmethodID arraylist_add;
-        jobject result = get_new_arraylist(env, array_size, &arraylist_add);
-
-        if (array_size == 0)
-        {
-            return result;
-        }
-
-        jclass clazz = search_class(env, U::java_class().c_str());
-        jmethodID clazz_ctor = search_method(env, clazz, "<init>", ctor_prototype, false);
-
-        for (unsigned int i = 0; i < array_size; ++i)
-        {
-            U *elem = array[i].release();
-            jobject object = env->NewObject(clazz, clazz_ctor, (jlong)elem);
-            if (!object)
-            {
-                throw jau::InternalError("cannot create instance of class", E_FILE_LINE);
-            }
-            env->CallBooleanMethod(result, arraylist_add, object);
-            java_exception_check_and_throw(env, E_FILE_LINE);
-        }
-        return result;
-    }
-
-    template <typename T, typename U>
-    jobject convert_vector_uniqueptr_to_jarraylist(JNIEnv *env, T& array,
-            const char *ctor_prototype, std::function<jobject(JNIEnv*, jclass, jmethodID, U*)> ctor)
-    {
-        unsigned int array_size = array.size();
-
-        jmethodID arraylist_add;
-        jobject result = get_new_arraylist(env, array_size, &arraylist_add);
-
-        if (array_size == 0)
-        {
-            return result;
-        }
-
-        jclass clazz = search_class(env, U::java_class().c_str());
-        jmethodID clazz_ctor = search_method(env, clazz, "<init>", ctor_prototype, false);
-
-        for (unsigned int i = 0; i < array_size; ++i)
-        {
-            U *elem = array[i].release();
-            jobject object = ctor(env, clazz, clazz_ctor, elem);
-            if (!object)
-            {
-                throw jau::RuntimeException("Cannot create instance of class", E_FILE_LINE);
-            }
-            env->CallBooleanMethod(result, arraylist_add, object);
-            java_exception_check_and_throw(env, E_FILE_LINE);
-        }
-        return result;
-    }
-
-    template <typename T, typename U>
     jobject convert_vector_sharedptr_to_jarraylist(JNIEnv *env, T& array,
-            const char *ctor_prototype, std::function<jobject(JNIEnv*, jclass, jmethodID, U*)> ctor)
+            const char *ctor_prototype, std::function<jobject(JNIEnv*, jclass, jmethodID, const std::shared_ptr<U>&)> ctor)
     {
         unsigned int array_size = array.size();
 
@@ -477,8 +711,7 @@ namespace jau {
 
         for (unsigned int i = 0; i < array_size; ++i)
         {
-            U *elem = array[i].get();
-            jobject object = ctor(env, clazz, clazz_ctor, elem);
+            jobject object = ctor(env, clazz, clazz_ctor, array[i] /* const std::shared_ptr<U>& */);
             if (!object)
             {
                 throw jau::RuntimeException("Cannot create instance of class", E_FILE_LINE);
@@ -490,7 +723,7 @@ namespace jau {
     }
 
     template <typename T, typename U>
-    jobject convert_vector_uniqueptr_to_jarraylist(JNIEnv *env, T& array, std::function<jobject(JNIEnv*, U*)> ctor)
+    jobject convert_vector_sharedptr_to_jarraylist(JNIEnv *env, T& array, std::function<jobject(JNIEnv*, const std::shared_ptr<U>&)> ctor)
     {
         unsigned int array_size = array.size();
 
@@ -504,35 +737,7 @@ namespace jau {
 
         for (unsigned int i = 0; i < array_size; ++i)
         {
-            U *elem = array[i].release();
-            jobject object = ctor(env, elem);
-            if (!object)
-            {
-                throw jau::RuntimeException("Cannot create instance of class", E_FILE_LINE);
-            }
-            env->CallBooleanMethod(result, arraylist_add, object);
-            java_exception_check_and_throw(env, E_FILE_LINE);
-        }
-        return result;
-    }
-
-    template <typename T, typename U>
-    jobject convert_vector_sharedptr_to_jarraylist(JNIEnv *env, T& array, std::function<jobject(JNIEnv*, U*)> ctor)
-    {
-        unsigned int array_size = array.size();
-
-        jmethodID arraylist_add;
-        jobject result = get_new_arraylist(env, array_size, &arraylist_add);
-
-        if (array_size == 0)
-        {
-            return result;
-        }
-
-        for (unsigned int i = 0; i < array_size; ++i)
-        {
-            U *elem = array[i].get();
-            jobject object = ctor(env, elem);
+            jobject object = ctor(env, array[i] /* const std::shared_ptr<U>& */);
             if (!object)
             {
                 throw jau::RuntimeException("Cannot create instance of class", E_FILE_LINE);

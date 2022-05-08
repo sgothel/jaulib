@@ -147,7 +147,9 @@ a Raspi-arm64, Raspi-armhf or PC-amd64 target image.
 
 **0.9.4** (TODO)
 
+* Add `root_environment::is_terminating()`
 * Robustness of JNI
+  - Use `std::shared_ptr<T>` instead of a `naked pointer` for sane lifcycle, see new `shared_ptr_ref<T>`.
   - JNIGlobalRef: Make all operations atomic and fix copy ctor JNIGlobalRef/JavaGlobalObj
   - JavaGlobalObj::dtor needs to acquire JNIGlobalRef lock for atomic `mNotifyDeleted` deleter call (C++ -> java)
   - Remove unused JavaAnon/JavaUplink/JNIGlobalRef's `clear(), having leak potential
