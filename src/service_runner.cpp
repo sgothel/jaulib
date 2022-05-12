@@ -61,6 +61,7 @@ void service_runner::service_thread() {
         service_end_locked(*this);
         thread_id_ = 0;
         running = false;
+        thread_cleanup.set_released();
     }
     cv_init.notify_all(); // have mutex unlocked before notify_all to avoid pessimistic re-block of notified wait() thread.
 }

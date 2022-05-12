@@ -49,27 +49,38 @@ namespace jau {
      *   jau::relaxed_atomic_bool is_running = true;
      *
      *   void some_thread_func() {
-     *       thread_local jau::call_on_release lili([&]() {
+     *       thread_local jau::call_on_release thread_cleanup([&]() {
      *           is_running = false;
      *       });
      *       ...
      *       do some work here, which might get cancelled
      *       ..
+     *       thread_cleanup.set_released(); // mark orderly release
      *   }
      * </pre>
      * </p>
      * @tparam UnaryFunction user provided function to be called @ dtor
+     * @see jau::service_runner
      */
     template <class UnaryFunction> class call_on_release {
       private:
         UnaryFunction f;
+        jau::sc_atomic_bool released;
 
       public:
-        call_on_release(UnaryFunction release_func) noexcept : f(release_func) {}
-        ~call_on_release() noexcept { f(); }
+        call_on_release(UnaryFunction release_func) noexcept
+        : f(release_func), released(false) {}
+        ~call_on_release() noexcept {
+            if( !released ) { f(); }
+        }
         call_on_release(const call_on_release&) = delete;
         call_on_release& operator=(const call_on_release&) = delete;
         call_on_release& operator=(const call_on_release&) volatile = delete;
+
+        /** Mark the resource being orderly released, `release_func()` will not be called and *use after free* avoided. */
+        void set_released() noexcept { released = true; }
+        /** Query whethr the resource has been orderly released. */
+        bool is_released() const noexcept { return released; }
     };
 
     /****************************************************************************************
