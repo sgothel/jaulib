@@ -117,32 +117,32 @@ namespace jau {
         #define PERF3_TS_TD(m)
     #endif
 
-    /** Use for unconditional ::abort() call with given messages, prefix '[elapsed_time] ABORT @ file:line: '. Function also appends last errno and strerror(errno). */
+    /** Use for unconditional ::abort() call with given messages, prefix '[elapsed_time] ABORT @ file:line func: '. Function also appends last errno and strerror(errno). */
     void ABORT_impl(const char *func, const char *file, const int line, const char * format, ...) noexcept;
 
-    /** Use for unconditional ::abort() call with given messages, prefix '[elapsed_time] ABORT @ FILE:LINE: '. Function also appends last errno and strerror(errno). */
+    /** Use for unconditional ::abort() call with given messages, prefix '[elapsed_time] ABORT @ file:line func: '. Function also appends last errno and strerror(errno). */
     #define ABORT(...) { jau::ABORT_impl(__func__, __FILE__, __LINE__, __VA_ARGS__); }
 
-    /** Use for unconditional error messages, prefix '[elapsed_time] Error @ file:line: '. Function also appends last errno and strerror(errno). */
+    /** Use for unconditional error messages, prefix '[elapsed_time] Error @ file:line func: '. Function also appends last errno and strerror(errno). */
     void ERR_PRINTv(const char *func, const char *file, const int line, const char * format, va_list args) noexcept;
 
     void ERR_PRINT_impl(const char *prefix, const bool backtrace, const char *func, const char *file, const int line, const char * format, ...) noexcept;
 
-    /** Use for unconditional error messages, prefix '[elapsed_time] Error @ FILE:LINE: '. Function also appends last errno, strerror(errno) and full backtrace*/
+    /** Use for unconditional error messages, prefix '[elapsed_time] Error @ FILE:LINE FUNC: '. Function also appends last errno, strerror(errno) and full backtrace*/
     #define ERR_PRINT(...) { jau::ERR_PRINT_impl("Error", true /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); }
 
-    /** Use for unconditional error messages, prefix '[elapsed_time] Error @ FILE:LINE: '. Function also appends last errno and strerror(errno). No backtrace. */
+    /** Use for unconditional error messages, prefix '[elapsed_time] Error @ FILE:LINE FUNC: '. Function also appends last errno and strerror(errno). No backtrace. */
     #define ERR_PRINT2(...) { jau::ERR_PRINT_impl("Error", false /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); }
 
-    /** Use for unconditional interruption messages, prefix '[elapsed_time] Interrupted @ FILE:LINE: '. Function also appends last errno and strerror(errno). */
+    /** Use for unconditional interruption messages, prefix '[elapsed_time] Interrupted @ FILE:LINE FUNC: '. Function also appends last errno and strerror(errno). */
     #define IRQ_PRINT(...) { jau::ERR_PRINT_impl("Interrupted", false /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); }
 
-    /** Use for unconditional warning messages, prefix '[elapsed_time] Warning @ file:line: ' */
+    /** Use for unconditional warning messages, prefix '[elapsed_time] Warning @ file:line func: ' */
     void WARN_PRINTv(const char *func, const char *file, const int line, const char * format, va_list args) noexcept;
 
     void WARN_PRINT_impl(const char *func, const char *file, const int line, const char * format, ...) noexcept;
 
-    /** Use for unconditional warning messages, prefix '[elapsed_time] Warning @ FILE:LINE: ' */
+    /** Use for unconditional warning messages, prefix '[elapsed_time] Warning @ FILE:LINE FUNC: ' */
     #define WARN_PRINT(...) { jau::WARN_PRINT_impl(__func__, __FILE__, __LINE__, __VA_ARGS__); }
 
     /** Use for unconditional informal messages, prefix '[elapsed_time] Info: '. */
