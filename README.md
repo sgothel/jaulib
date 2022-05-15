@@ -147,6 +147,8 @@ a Raspi-arm64, Raspi-armhf or PC-amd64 target image.
 
 **0.9.4** (TODO)
 
+* Add `jau::latch::count_up()` to `jau::latch`, allowing to dynamically add *events* to required to complete
+* Fix `jau::call_on_release`: Skip calling `release_func` if resource has been marked orderly released, avoid use after free.
 * Add `root_environment::is_terminating()`
 * Robustness of JNI
   - Use `std::shared_ptr<T>` instead of a `naked pointer` for sane lifcycle, see new `shared_ptr_ref<T>`.
