@@ -43,6 +43,8 @@ namespace jau {
     /**
      * Inspired by std::latch of C++20
      *
+     * Adds count_up() as an extension, allowing to dynamically add *events* to required to complete.
+     *
      * @see https://en.cppreference.com/w/cpp/thread/latch
      */
     class latch {
@@ -107,6 +109,26 @@ namespace jau {
                 }
                 if( notify ) {
                     cv.notify_all();
+                }
+            }
+
+            /**
+             * Atomically increments the internal counter by n.
+             *
+             * If internal counter + n is greater than the maximum value of the internal counter, the counter is set to its maximum.
+             *
+             * This operation strongly happens-before all calls that are unblocked on this latch.
+             *
+             * Extension of std::latch.
+             *
+             * @param n the value by which the internal counter is increased, defaults to 1
+             */
+            void count_up(const size_t n = 1) noexcept {
+                std::unique_lock<std::mutex> lock(mtx_cd); // Avoid data-race on concurrent count_down() and wait*() calls
+                if( n <= std::numeric_limits<std::size_t>::max() - count ) {
+                    count = count + n;
+                } else {
+                    count = std::numeric_limits<std::size_t>::max();
                 }
             }
 
