@@ -931,8 +931,9 @@ namespace jau {
             using namespace jau::int_literals;
             const int64_t ns_per_sec = 1'000'000'000_i64;
             if( tv_nsec < 0 ) {
-                tv_nsec += ns_per_sec;
-                tv_sec -= 1;
+                const int64_t c = 1 + abs( tv_nsec ) / ns_per_sec;
+                tv_nsec += c * ns_per_sec;
+                tv_sec -= c;
             } else if( tv_nsec >= ns_per_sec ) {
                 const int64_t c = tv_nsec / ns_per_sec;
                 tv_nsec -= c * ns_per_sec;
@@ -948,8 +949,8 @@ namespace jau {
          * @return reference to this instance, normalized
          */
         constexpr fraction_timespec& operator+=(const fraction_timespec& rhs ) noexcept {
+            tv_nsec += rhs.tv_nsec; // we allow the 'overflow' over 1'000'000'000, fitting into type and normalize() later
             tv_sec += rhs.tv_sec;
-            tv_nsec += rhs.tv_nsec;
             return normalize();
         }
 
@@ -960,8 +961,8 @@ namespace jau {
          * @return reference to this instance, normalized
          */
         constexpr fraction_timespec& operator-=(const fraction_timespec& rhs ) noexcept {
+            tv_nsec -= rhs.tv_nsec; // we allow the 'overflow' over 1'000'000'000, fitting into type and normalize() later
             tv_sec -= rhs.tv_sec;
-            tv_nsec -= rhs.tv_nsec;
             return normalize();
         }
 

@@ -616,6 +616,38 @@ TEST_CASE( "struct timespec type validation Test 03.00", "[fraction][struct_time
 
 
 TEST_CASE( "Fraction Time Arithmetic Add Test 03.1", "[fraction][fraction_timespec][add]" ) {
+    const int64_t ns_per_sec = 1'000'000'000_i64;
+
+    // 12.4 + 12.4 = 24.8 w/ double overflow in tv_nsec
+    {
+        fraction_timespec a ( 10_i64, 2 * ns_per_sec + 400000000_i64 );
+        fraction_timespec b ( 10_i64, 2 * ns_per_sec + 400000000_i64 );
+        fraction_timespec exp_sum (  24_i64, 800000000_i64 );
+        INFO_STR(" a " + a.to_string() );
+        INFO_STR(" b " + b.to_string() );
+        INFO_STR(" a+b " + (a+b).to_string() );
+        REQUIRE( ( a + b ) == exp_sum );
+    }
+    // 13.4 - 3.4 = 10.0 w/ double overflow in tv_nsec
+    {
+        fraction_timespec a ( 13_i64,                  400000000_i64 );
+        fraction_timespec b (  1_i64, 2 * ns_per_sec + 400000000_i64 );
+        fraction_timespec exp_sum (  10_i64, 0_i64 );
+        INFO_STR(" a " + a.to_string() );
+        INFO_STR(" b " + b.to_string() );
+        INFO_STR(" a-b " + (a-b).to_string() );
+        REQUIRE( ( a - b ) == exp_sum );
+    }
+    // 12.0 - 1.9 = 10.1 w/ double overflow in tv_nsec
+    {
+        fraction_timespec a ( 12_i64,                           0_i64 );
+        fraction_timespec b (  3_i64, -2 * ns_per_sec + 900000000_i64 );
+        fraction_timespec exp_sum (  10_i64, 100000000_i64 );
+        INFO_STR(" a " + a.to_string() );
+        INFO_STR(" b " + b.to_string() );
+        INFO_STR(" a-b " + (a-b).to_string() );
+        REQUIRE( ( a - b ) == exp_sum );
+    }
     // 10.4 + 0.4 = 10.8
     {
         fraction_timespec a ( 10_i64, 400000000_i64 );
