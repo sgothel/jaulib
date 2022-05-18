@@ -146,6 +146,11 @@ a Raspi-arm64, Raspi-armhf or PC-amd64 target image.
 
 * First stable release (TODO)
 
+**0.10.1** (WIP)
+
+* Add `file_util.hpp`: File Utilities for platform agnostic C++ handling of file stats and directory traversal, etc.
+* `fraction_timespec`: Add notion of 'struct timespec' year 2038 issue, `to_timespec()` conversion, `to_iso8601_string()`
+
 **0.10.0**
 
 * Add `jau::latch::count_up()` to `jau::latch`, allowing to dynamically add *events* to required to complete
