@@ -564,6 +564,57 @@ TEST_CASE( "Fraction Arithmetic Test 02", "[integer][fraction]" ) {
     }
 }
 
+/**
+ * Resembling the GNU/Linux bits/types.h,
+ * documenting whether time_t is 32-bit (arm-32) or 64-bit (arm-64, x86_64, ..).
+ */
+static int sizeof_time_t() {
+/* X32 kernel interface is 64-bit.  */
+#if defined __x86_64__ && defined __ILP32__
+    // 64 bit size
+    #if __WORDSIZE == 32
+        return sizeof( __int64_t );
+    #else
+        return sizeof( long int );
+    #endif
+#else
+    // 32 bit or 64 bit
+    return sizeof( long int );
+#endif
+}
+
+/**
+ * Resembling the GNU/Linux bits/types.h,
+ * documenting whether tv_nsec of struct timespec is 32-bit (arm-32) or 64-bit (arm-64, x86_64, ..).
+ */
+static int sizeof_tv_nsec() {
+#if __WORDSIZE == 64 \
+  || (defined __SYSCALL_WORDSIZE && __SYSCALL_WORDSIZE == 64) \
+  || __TIMESIZE == 32
+    // 32 bit or 64 bit: __syscall_slong_t
+    return sizeof( int64_t );
+#else
+    // 32 bit or 64 bit
+    return sizeof( long int );
+#endif
+}
+
+TEST_CASE( "struct timespec type validation Test 03.00", "[fraction][struct_timespec][time]" ) {
+    // testing fraction_timespec::to_timespec()
+    {
+        using time_t_type = decltype(timespec::tv_sec);
+        INFO_STR(" tv_sec: sizeof=" + std::to_string( sizeof( time_t_type ) ) + ", signed " + std::to_string( std::is_signed_v<time_t_type>) );
+        CHECK( sizeof_time_t() == sizeof( time_t_type ) );
+        CHECK( true == std::is_signed_v<time_t_type> );
+
+        using ns_type = decltype(timespec::tv_nsec);
+        INFO_STR(" tv_nsec: sizeof=" + std::to_string( sizeof( ns_type ) ) + ", signed " + std::to_string( std::is_signed_v<ns_type>) );
+        CHECK( sizeof_tv_nsec() == sizeof( ns_type ) );
+        CHECK( true == std::is_signed_v<ns_type> );
+    }
+}
+
+
 TEST_CASE( "Fraction Time Arithmetic Add Test 03.1", "[fraction][fraction_timespec][add]" ) {
     // 10.4 + 0.4 = 10.8
     {
@@ -729,56 +780,6 @@ TEST_CASE( "Fraction Time Arithmetic Sub Test 03.2", "[fraction][fraction_timesp
         INFO_STR(" b " + b.to_string() );
         INFO_STR(" a-b " + (a-b).to_string() );
         REQUIRE( ( a - b ) == exp_sum );
-    }
-}
-
-/**
- * Resembling the GNU/Linux bits/types.h,
- * documenting whether time_t is 32-bit (arm-32) or 64-bit (arm-64, x86_64, ..).
- */
-static int sizeof_time_t() {
-/* X32 kernel interface is 64-bit.  */
-#if defined __x86_64__ && defined __ILP32__
-    // 64 bit size
-    #if __WORDSIZE == 32
-        return sizeof( __int64_t );
-    #else
-        return sizeof( long int );
-    #endif
-#else
-    // 32 bit or 64 bit
-    return sizeof( long int );
-#endif
-}
-
-/**
- * Resembling the GNU/Linux bits/types.h,
- * documenting whether tv_nsec of struct timespec is 32-bit (arm-32) or 64-bit (arm-64, x86_64, ..).
- */
-static int sizeof_tv_nsec() {
-#if __WORDSIZE == 64 \
-  || (defined __SYSCALL_WORDSIZE && __SYSCALL_WORDSIZE == 64) \
-  || __TIMESIZE == 32
-    // 32 bit or 64 bit: __syscall_slong_t
-    return sizeof( int64_t );
-#else
-    // 32 bit or 64 bit
-    return sizeof( long int );
-#endif
-}
-
-TEST_CASE( "struct timespec type validation Test 04.00", "[fraction][struct_timespec][time]" ) {
-    // testing fraction_timespec::to_timespec()
-    {
-        using time_t_type = decltype(timespec::tv_sec);
-        INFO_STR(" tv_sec: sizeof=" + std::to_string( sizeof( time_t_type ) ) + ", signed " + std::to_string( std::is_signed_v<time_t_type>) );
-        CHECK( sizeof_time_t() == sizeof( time_t_type ) );
-        CHECK( true == std::is_signed_v<time_t_type> );
-
-        using ns_type = decltype(timespec::tv_nsec);
-        INFO_STR(" tv_nsec: sizeof=" + std::to_string( sizeof( ns_type ) ) + ", signed " + std::to_string( std::is_signed_v<ns_type>) );
-        CHECK( sizeof_tv_nsec() == sizeof( ns_type ) );
-        CHECK( true == std::is_signed_v<ns_type> );
     }
 }
 

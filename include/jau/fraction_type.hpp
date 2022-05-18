@@ -821,7 +821,7 @@ namespace jau {
      * - to_timespec() conversion to `struct timespec`
      * - 32-bit signed integer only last for 68 years or until year 2038, starting from 1970 Unix Epoch
      * - [System call conversion for year 2038](https://lwn.net/Articles/643234/)
-     * - test/test_fractions_01.cpp `struct timespec type validation Test 04.00`
+     * - test/test_fractions_01.cpp `struct timespec type validation Test 03.00`
      *
      * @see to_timespec()
      * @see to_fraction_i64()
@@ -972,7 +972,7 @@ namespace jau {
          * Note-2: Limitations of `struct timespec` on 32-bit platforms
          * - 32-bit signed integer only last for 68 years or until year 2038, starting from 1970 Unix Epoch
          * - [System call conversion for year 2038](https://lwn.net/Articles/643234/)
-         * - test/test_fractions_01.cpp `struct timespec type validation Test 04.00`
+         * - test/test_fractions_01.cpp `struct timespec type validation Test 03.00`
          */
         constexpr struct timespec to_timespec() const noexcept {
             using ns_type = decltype(timespec::tv_nsec);
