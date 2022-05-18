@@ -149,7 +149,7 @@ namespace jau {
             template <typename T,
                       std::enable_if_t<  std::is_same_v<int_type, T> &&
                                         !std::is_unsigned_v<T>, bool> = true>
-            constexpr fraction(const int_type n, const T d) noexcept
+            constexpr fraction(const int_type& n, const T& d) noexcept
             : num(0), denom(1), overflow(false)
             {
                 if( n != 0 && d != 0 ) {
@@ -170,7 +170,7 @@ namespace jau {
              * @param n the given numerator
              * @param d the given denominator
              */
-            constexpr fraction(const int_type n, const uint_type abs_d) noexcept
+            constexpr fraction(const int_type& n, const uint_type& abs_d) noexcept
             : num(0), denom(1), overflow(false)
             {
                 if( n != 0 && abs_d != 0 ) {
@@ -256,7 +256,7 @@ namespace jau {
              * @param overflow_ptr optional pointer to overflow result, defaults to nullptr
              * @return numerator representing this fraction on the new base, or std::numeric_limits<int_type>::max() if an overflow occurred.
              */
-            constexpr int_type to_num_of(const int_type new_base_num, const uint_type new_base_denom, bool * overflow_ptr=nullptr) const noexcept {
+            constexpr int_type to_num_of(const int_type& new_base_num, const uint_type& new_base_denom, bool * overflow_ptr=nullptr) const noexcept {
                 int_type r;
                 if( mul_overflow(num, (int_type)new_base_denom, r) ) {
                     if( nullptr != overflow_ptr ) {
@@ -853,7 +853,7 @@ namespace jau {
         /**
          * Constructs a fraction_timespec instance with given components, normalized.
          */
-        constexpr fraction_timespec(const int64_t& s, const int64_t ns) noexcept
+        constexpr fraction_timespec(const int64_t& s, const int64_t& ns) noexcept
         : tv_sec(s), tv_nsec(ns) { normalize(); }
 
         /**
