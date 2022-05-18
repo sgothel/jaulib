@@ -96,7 +96,7 @@ namespace jau {
      * and fraction_timespec for almost infinite range of time-points or durations beyond 292 years.
      *
      * Constants are provided in namespace jau::fractions_i64,
-     * from fractions_i64::pico to fractions_i64::tera, including fractions_i64::seconds to fractions_i64::days, etc.
+     * from fractions_i64::pico to fractions_i64::tera, including fractions_i64::seconds to fractions_i64::years, etc.
      *
      * Literal operators are provided in namespace jau::fractions_i64_literals,
      * e.g. for `3_s`, `100_ns` ... literals.
@@ -741,6 +741,8 @@ namespace jau {
         inline constexpr const jau::fraction_i64 giga (     1'000'000'000l,                 1lu );
         /** mega is 10^6 */
         inline constexpr const jau::fraction_i64 mega (         1'000'000l,                 1lu );
+        /** years is 31'557'600/1 using 365.2425 days per year */
+        inline constexpr const jau::fraction_i64 years (       31'557'600l,                 1lu );
         /** days is 86400/1 */
         inline constexpr const jau::fraction_i64 days (            86'400l,                 1lu );
         /** hours is 3660/1 */
@@ -785,6 +787,8 @@ namespace jau {
         /** Literal for fractions_i64::pico */
         constexpr fraction_i64 operator ""_p(unsigned long long int __p)     { return (int64_t)__p    * fractions_i64::pico; }
 
+        /** Literal for fractions_i64::years */
+        constexpr fraction_i64 operator ""_y(unsigned long long int __y)     { return (int64_t)__y    * fractions_i64::years; }
         /** Literal for fractions_i64::days */
         constexpr fraction_i64 operator ""_d(unsigned long long int __d)     { return (int64_t)__d    * fractions_i64::days; }
         /** Literal for fractions_i64::hours */
@@ -803,16 +807,23 @@ namespace jau {
 
     /**
      * Timespec structure using int64_t for its components
-     * in analogy to `struct timespec_t` on 64bit platforms.
+     * in analogy to `struct timespec_t` on 64-bit platforms.
      *
      * fraction_timespec covers an almost infinite range of time
-     * while maintaining high precision like `struct timespec_t`.
+     * while maintaining high precision like `struct timespec_t` on 64-bit platforms.
      *
-     * Note: Counting nanoseconds in int64_t only lasts until `2262-04-12`,
+     * If used as an absolute time-point, zero is time since Unix Epoch `00:00:00 UTC on 1970-01-01`.
+     *
+     * Note-1: Counting nanoseconds in int64_t only lasts until `2262-04-12`,
      * since INT64_MAX is 9'223'372'036'854'775'807 for 9'223'372'036 seconds or 292 years.
      *
-     * If used as time-point, zero is time since Unix Epoch `00:00:00 UTC on 1970-01-01`.
+     * Note-2: Limitations of `struct timespec` on 32-bit platforms
+     * - to_timespec() conversion to `struct timespec`
+     * - 32-bit signed integer only last for 68 years or until year 2038, starting from 1970 Unix Epoch
+     * - [System call conversion for year 2038](https://lwn.net/Articles/643234/)
+     * - test/test_fractions_01.cpp `struct timespec type validation Test 04.00`
      *
+     * @see to_timespec()
      * @see to_fraction_i64()
      * @see sleep_until()
      * @see sleep_for()
@@ -954,9 +965,34 @@ namespace jau {
             return normalize();
         }
 
-        std::string to_string() const noexcept {
-            return std::to_string(tv_sec) + "s + " + std::to_string(tv_nsec) + "ns";
+        /**
+         * Return conversion to POSIX `struct timespec`,
+         * potentially narrowing the components if underlying system is not using 64-bit signed integer.
+         *
+         * Note-2: Limitations of `struct timespec` on 32-bit platforms
+         * - 32-bit signed integer only last for 68 years or until year 2038, starting from 1970 Unix Epoch
+         * - [System call conversion for year 2038](https://lwn.net/Articles/643234/)
+         * - test/test_fractions_01.cpp `struct timespec type validation Test 04.00`
+         */
+        constexpr struct timespec to_timespec() const noexcept {
+            using ns_type = decltype(timespec::tv_nsec);
+            return { static_cast<std::time_t>( tv_sec ), static_cast<ns_type>( tv_nsec ) };
         }
+
+        /**
+         * Return simple string representation in seconds and nanoseconds.
+         */
+        std::string to_string() const noexcept;
+
+        /**
+         * Convenience string conversion of `tv_sec` component interpreted as seconds since Unix Epoch in UTC
+         * to ISO 8601 `YYYY-mm-ddTHH:MM:SSZ`, e.g. '2020-05-18T02:26:21Z`.
+         *
+         * Implementation uses `strftime()` with format `%Y-%m-%dT%H:%M:%SZ`.
+         *
+         * @param use_space if true, using space instead for 'T' separator and drop trailing UTC `Z` for readability, otherwise be compliant with ISO 8601 (default)
+         */
+        std::string to_iso8601_string(const bool use_space=false) const noexcept;
     };
 
     inline std::string to_string(const fraction_timespec& v) noexcept { return v.to_string(); }

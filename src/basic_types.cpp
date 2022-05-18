@@ -69,12 +69,28 @@ uint64_t jau::getWallClockSeconds() noexcept {
     return static_cast<uint64_t>( t.tv_sec );
 }
 
+std::string fraction_timespec::to_string() const noexcept {
+    return std::to_string(tv_sec) + "s + " + std::to_string(tv_nsec) + "ns";
+}
+
+std::string fraction_timespec::to_iso8601_string(const bool use_space) const noexcept {
+    std::time_t t0 = static_cast<std::time_t>(tv_sec);
+    struct std::tm tm_0;
+    if( nullptr == ::gmtime_r( &t0, &tm_0 ) ) {
+        return use_space ? "1970-01-01 00:00:00" : "1970-01-01T00:00:00Z"; // 20 + 1
+    } else {
+        char b[20+1];
+        strftime(b, sizeof(b), use_space ? "%Y-%m-%d %H:%M:%S" : "%Y-%m-%dT%H:%M:%SZ", &tm_0);
+        return std::string(b);
+    }
+}
+
 void jau::sleep_until(const fraction_timespec& absolute_time, const bool monotonic) noexcept {
     if( absolute_time <= fraction_tv::zero ) {
         return;
     }
     // typedef struct timespec __gthread_time_t;
-    __gthread_time_t ts = { static_cast<std::time_t>( absolute_time.tv_sec ), static_cast<long>( absolute_time.tv_nsec ) };
+    __gthread_time_t ts = absolute_time.to_timespec();
 
     while ( -1 == ::clock_nanosleep(monotonic ? CLOCK_MONOTONIC : CLOCK_REALTIME,
                                     TIMER_ABSTIME,
@@ -129,7 +145,7 @@ std::cv_status jau::wait_until(std::condition_variable& cv, std::unique_lock<std
         return std::cv_status::no_timeout;
     }
     // typedef struct timespec __gthread_time_t;
-    __gthread_time_t ts = { static_cast<std::time_t>( absolute_time.tv_sec ), static_cast<long>( absolute_time.tv_nsec ) };
+    __gthread_time_t ts = absolute_time.to_timespec();
 
     if( jau_has_pthread_cond_clockwait() ) {
         pthread_cond_clockwait(cv.native_handle(), lock.mutex()->native_handle(),
@@ -162,6 +178,7 @@ std::cv_status jau::wait_for(std::condition_variable& cv, std::unique_lock<std::
         return wait_until(cv, lock, atime, monotonic);
     }
 }
+
 
 jau::ExceptionBase::ExceptionBase(std::string const type, std::string const m, const char* file, int line) noexcept
 : msg_(std::string(type).append(" @ ").append(file).append(":").append(std::to_string(line)).append(": ").append(m)),
