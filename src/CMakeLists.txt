@@ -13,6 +13,7 @@ set (jaulib_LIB_SRCS
   debug.cpp
   basic_types.cpp
   eui48.cpp
+  file_util.cpp
   uuid.cpp
   service_runner.cpp
   simple_timer.cpp
