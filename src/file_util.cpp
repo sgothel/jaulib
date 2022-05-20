@@ -96,6 +96,12 @@ std::string dir_item::path() const noexcept {
     }
 }
 
+file_stats::file_stats() noexcept
+: item_(), mode_(fmode_bits::NOT_EXISTING),
+  uid_(0), gid_(0), size_(0), atime_(), mtime_(), ctime_(),
+  errno_res_(0)
+{}
+
 file_stats::file_stats(const dir_item& item, const bool use_lstat) noexcept
 : item_(item), mode_(fmode_bits::NONE),
   uid_(0), gid_(0), size_(0), atime_(), mtime_(), ctime_(),
@@ -149,7 +155,7 @@ std::string file_stats::to_string(const bool use_space) const noexcept {
     std::string res( "file_stats['"+item_.path()+"', "+jau::fs::to_string(mode_) );
     if( 0 == errno_res_ ) {
         res.append( ", uid " ).append( std::to_string(uid_) ).append( ", gid " ).append( std::to_string(gid_) )
-        .append( ", size " ).append( std::to_string( size_ ) )
+        .append( ", size " ).append( jau::to_decstring( size_ ) )
         .append( ", atime " ).append( atime_.to_iso8601_string(use_space) )
         .append( ", mtime " ).append( mtime_.to_iso8601_string(use_space) )
         .append( ", ctime " ).append( ctime_.to_iso8601_string(use_space) );

@@ -98,6 +98,9 @@ namespace jau {
                 std::string element_;
 
             public:
+                dir_item() noexcept
+                : parent_dir_(), element_() {}
+
                 dir_item(std::string parent_dir__, std::string element__) noexcept
                 : parent_dir_(parent_dir__), element_(element__) {}
 
@@ -139,6 +142,9 @@ namespace jau {
                 int errno_res_;
 
             public:
+                /** Instantiate an empty file_stats with fmode_bits::NOT_EXISTING set. */
+                file_stats() noexcept;
+
                 /**
                  * Instantiates a file_stats for the given `path`
                  * using either `::lstat()` (default) or `::stat()`.
