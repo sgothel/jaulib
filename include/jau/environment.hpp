@@ -40,6 +40,12 @@ extern "C" {
 
 namespace jau {
 
+    /** @defgroup SysUtils System and OS Utilities
+     *  System and OS related types and functionality.
+     *
+     *  @{
+     */
+
     /**
      * Base jau environment class,
      * merely to tag all environment settings by inheritance and hence documentation.
@@ -350,6 +356,8 @@ namespace jau {
              */
             const bool verbose;
     };
+
+    /**@}*/
 
 } // namespace jau
 
