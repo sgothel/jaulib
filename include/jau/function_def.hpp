@@ -38,44 +38,45 @@
 namespace jau {
 
     /** @defgroup FunctionPtr Function Pointer
-     *  Function pointer support inclusive capturing lambdas.
+     *  Function pointer support via FunctionDef inclusive capturing lambdas.
      *
-     *  @{
-     */
-
-    enum class FunctionType : int {
-        Null = 0,
-        Class = 1,
-        Plain = 2,
-        CaptureValue = 3,
-        CaptureRef = 4,
-        Std = 5
-    };
-    constexpr int number(const FunctionType rhs) noexcept {
-        return static_cast<int>(rhs);
-    }
-
-    /**
-     * One goal to _produce_ the member-function type instance
-     * is to be class type agnostic for storing in the toolkit.
-     * This is essential to utilize a function-callback API,
-     * where only the provider of an instance knows about its class type.
+     * @anchor func_def_overview
+     * ### FunctionDef Overview
+     * #### FunctionDef Motivation
+     * One goal of FunctionDef is to allow a class member-function
+     * to be described by its return type `R` and arguments `A...` only.<br />
+     * Hence to be agnostic to the method owning class type.
      *
-     * Further we can't utilize std::function and std::bind,
-     * as std::function doesn't provide details about the
-     * member-function-call identity and hence lacks of
-     * the equality operator and
-     * std::bind doesn't even specify a return type.
+     * A toolkit storing callback functions, shall not enforce any constrains
+     * on the source of such a provided user function.<br />
+     * It shall not require to be sourced as a free function
+     * nor require the user to put a specific super interface
+     * on the implementing class of the callback.<br />
+     * Only the user shall have knowledge about the source of the function,
+     * whether it be a static free function or a member function.
      *
-     * A capturing lambda in C++-11, does produce decoration code
-     * accessing the captured elements, i.e. an anonymous helper class.
-     * Due to this fact, the return type is an undefined lambda specific
-     * and hence we can't use it to feed the function invocation
-     * into ClassFunction<> using a well specified type.
+     * A toolkit API shall only expose and use a callback function
+     * by its return type `R` and arguments `A...` only.
+     *
+     * Further a toolkit needs to identify the stored callback functions,
+     * e.g. to allow the user to remove one from its list of callbacks.<br/>
+     * Therefore a FunctionDef instance must provide the equality operator to support its identity check.<br/>
+     * This requirement is not fulfilled by `std::function`,
+     * which lacks details about the member-function-call identity
+     * and hence lacks the equality operator.
+     *
+     * Last but not least, `std::bind` doesn't provide specifics about the function return type
+     * and hence is not suitable for our goals.
+     *
+     * #### C++11 Capturing Lambda Restrictions
+     * A capturing lambda in C++11 produces decoration code accessing the captured elements,<br />
+     * i.e. an anonymous helper class.<br />
+     * Due to this fact, the return type is an undefined lambda specific<br/>
+     * and hence we can't use it to feed the InvocationFunc into FunctionDef requiring a well specified type.
      *
      * <pre>
         template<typename R, typename C, typename... A>
-        inline ClassFunction<R, A...>
+        inline FunctionDef<R, A...>
         bindClassFunction(C *base, R(C::*mfunc)(A...)) {
             return ClassFunction<R, A...>(
                     (void*)base,
@@ -86,11 +87,127 @@ namespace jau {
         }
         </pre>
      *
-     * Hence we need to manually produce the on-the-fly invocation data type
-     * to capture details on the caller's class type for the member-function-call,
-     * which are then being passed to the ClassFunction<> anonymously
-     * while still being able to perform certain operations
-     * like equality operation for identity.
+     * @anchor func_def_solutions
+     * #### FunctionDef Solution
+     * Due to the goals and limitations described above,
+     * we need to store the reference of class's instance,<br />
+     * which holds the member-function, in the InvocationFunc, see MemberInvocationFunc.<br />
+     * The latter can then be used by the FunctionDef instance anonymously,
+     * only defined by the function return type `R` and arguments `A...`.<br />
+     * MemberInvocationFunc then invokes the member-function
+     * by using the class's reference as its `this` pointer.<br />
+     * MemberInvocationFunc checks for equality simply by comparing the references.
+     *
+     * This methodology is also usable to handle capturing lambdas,
+     * since the user is able to group all captured variables<br />
+     * into an ad-hoc data struct and can pass its reference to  e.g. CaptureRefInvocationFunc similar to a member function.<br />
+     * CaptureRefInvocationFunc checks for equality simply by comparing the references,
+     * optionally this can include the reference to the captured data.
+     *
+     * We also allow std::function to be bound to a FunctionDef
+     * using StdInvocationFunc by passing a unique identifier, overcoming std::function lack of equality operator.
+     *
+     * Last but not least, naturally we also allow free-functions to be bound to a FunctionDef
+     * using FreeInvocationFunc.
+     *
+     * All resulting FunctionDef bindings support the equality operator
+     * and hence can be identified by a toolkit, e.g. for their removal from a list.
+     *
+     * @anchor func_def_usage
+     * #### FunctionDef Usage
+     * The following bind methods are available to produce an anonymous FunctionDef
+     * only being defined by the function return type `R` and arguments `A...`,<br />
+     * while being given a InvocationFunc instance resolving a potentially missing link.
+     *
+     * As an example, let's assume we like to bind to the following
+     * function prototype `bool func(int)`, which results to `FunctionDef<bool, int>`:
+     *
+     * - Class member functions via bindMemberFunc()
+     *   - `FunctionDef<R, A...> bindMemberFunc(C *base, R(C::*mfunc)(A...))`
+     *   ```
+     *   struct MyClass {
+     *      bool m_func(int v) { return 0 == v; }
+     *   };
+     *   MyClass i1;
+     *   FunctionDef<bool, int> func = bindMemberFunc(&i1, &MyClass::m_func);
+     *   ```
+     *
+     * - Free functions via bindFreeFunc()
+     *   - `FunctionDef<R, A...> bindFreeFunc(R(*func)(A...))`
+     *   ```
+     *   struct MyClass {
+     *      static bool func(int v) { return 0 == v; }
+     *   };
+     *   FunctionDef<bool, int> func0 = bindFreeFunc(&MyClass:func);
+     *
+     *   bool my_func(int v) { return 0 == v; }
+     *   FunctionDef<bool, int> func1 = bindFreeFunc(my_func);
+     *   ```
+     *
+     * - Capture by reference to value via bindCaptureRefFunc()
+     *   - `FunctionDef<R, A...> bindCaptureRefFunc(I* data_ptr, R(*func)(I*, A...), bool dataIsIdentity)`
+     *   ```
+     *   struct big_data {
+     *       int sum;
+     *   };
+     *   big_data data { 0 };
+     *
+     *   // bool my_func(int v)
+     *   FunctionDef<bool, int> func = bindCaptureRefFunc(&data,
+     *       ( bool(*)(big_data*, int) ) // help template type deduction of function-ptr
+     *           ( [](big_data* data, int v) -> bool {
+     *                 stats_ptr->sum += v;
+     *                 return 0 == v;
+     *             } ) );
+     *   ```
+     *
+     * - Capture by copy of value via bindCaptureValueFunc()
+     *   - `FunctionDef<R, A...> bindCaptureValueFunc(const I& data, R(*func)(I&, A...), bool dataIsIdentity)`
+     *   - `FunctionDef<R, A...> bindCaptureValueFunc(I&& data, R(*func)(I&, A...), bool dataIsIdentity)` <br />
+     *   See example of *Capture by reference to value* above.
+     *
+     * - std::function function via bindStdFunc()
+     *   - `FunctionDef<R, A...> bindStdFunc(uint64_t id, std::function<R(A...)> func)`
+     *   ```
+     *   // bool my_func(int v)
+     *   std::function<bool(int i)> func_stdlambda = [](int i)->bool {
+     *       return 0 == i;
+     *   };
+     *   FunctionDef<bool, int> func = bindStdFunc(100, func_stdlambda);
+     *   ```
+     *  @{
+     */
+
+    /**
+     * Function type identifier for InvocationFunc specializations
+     * used by FunctionDef.
+     *
+     * @see @ref func_def_overview "FunctionDef Overview" etc.
+     */
+    enum class FunctionType : int {
+        /** Denotes a NullInvocationFunc */
+        Null = 0,
+        /** Denotes a MemberInvocationFunc */
+        Member = 1,
+        /** Denotes a FreeInvocationFunc */
+        Free = 2,
+        /** Denotes a CaptureValueInvocationFunc */
+        CaptureValue = 3,
+        /** Denotes a CaptureRefInvocationFunc */
+        CaptureRef = 4,
+        /** Denotes a StdInvocationFunc */
+        Std = 5
+    };
+    constexpr int number(const FunctionType rhs) noexcept {
+        return static_cast<int>(rhs);
+    }
+
+    /**
+     * InvocationFunc pure-virtual interface for FunctionDef.
+     *
+     * @tparam R function return type
+     * @tparam A function arguments
+     * @see @ref func_def_overview "FunctionDef Overview" etc.
      */
     template<typename R, typename... A>
     class InvocationFunc {
@@ -122,6 +239,17 @@ namespace jau {
             virtual std::string toString() const = 0;
     };
 
+    /**
+     * InvocationFunc implementation for no function.
+     * identifiable as FunctionType::Null via FunctionDef::getType().
+     *
+     * This special type is used for an empty FunctionDef instance w/o holding a function,
+     * e.g. when created with the default constructor.
+     *
+     * @tparam R function return type
+     * @tparam A function arguments
+     * @see @ref func_def_overview "FunctionDef Overview" etc.
+     */
     template<typename R, typename... A>
     class NullInvocationFunc : public InvocationFunc<R, A...> {
         public:
@@ -149,21 +277,30 @@ namespace jau {
             }
     };
 
+    /**
+     * InvocationFunc implementation for class member functions,
+     * identifiable as FunctionType::Member via FunctionDef::getType().
+     *
+     * @tparam R function return type
+     * @tparam C class type holding the member-function
+     * @tparam A function arguments
+     * @see @ref func_def_overview "FunctionDef Overview" etc.
+     */
     template<typename R, typename C, typename... A>
-    class ClassInvocationFunc : public InvocationFunc<R, A...> {
+    class MemberInvocationFunc : public InvocationFunc<R, A...> {
         private:
             C* base;
             R(C::*member)(A...);
 
         public:
-            ClassInvocationFunc(C *_base, R(C::*_member)(A...)) noexcept
+            MemberInvocationFunc(C *_base, R(C::*_member)(A...)) noexcept
             : base(_base), member(_member) {
             }
 
-            FunctionType getType() const noexcept override { return FunctionType::Class; }
+            FunctionType getType() const noexcept override { return FunctionType::Member; }
             bool isNullType() const noexcept override { return false; }
 
-            InvocationFunc<R, A...> * clone() const noexcept override { return new ClassInvocationFunc(*this); }
+            InvocationFunc<R, A...> * clone() const noexcept override { return new MemberInvocationFunc(*this); }
 
             R invoke(A... args) override { return (base->*member)(args...); }
 
@@ -175,7 +312,7 @@ namespace jau {
                 if( getType() != rhs.getType() ) {
                     return false;
                 }
-                const ClassInvocationFunc<R, C, A...> * prhs = static_cast<const ClassInvocationFunc<R, C, A...>*>(&rhs);
+                const MemberInvocationFunc<R, C, A...> * prhs = static_cast<const MemberInvocationFunc<R, C, A...>*>(&rhs);
                 return base == prhs->base && member == prhs->member;
             }
 
@@ -186,24 +323,32 @@ namespace jau {
 
             std::string toString() const override {
                 // hack to convert member pointer to void *: '*((void**)&member)'
-                return "ClassInvocation "+to_hexstring((uint64_t)base)+"->"+to_hexstring( *((void**)&member) );
+                return "MemberInvocation "+to_hexstring((uint64_t)base)+"->"+to_hexstring( *((void**)&member) );
             }
     };
 
+    /**
+     * InvocationFunc implementation for free functions,
+     * identifiable as FunctionType::Free via FunctionDef::getType().
+     *
+     * @tparam R function return type
+     * @tparam A function arguments
+     * @see @ref func_def_overview "FunctionDef Overview" etc.
+     */
     template<typename R, typename... A>
-    class PlainInvocationFunc : public InvocationFunc<R, A...> {
+    class FreeInvocationFunc : public InvocationFunc<R, A...> {
         private:
             R(*function)(A...);
 
         public:
-            PlainInvocationFunc(R(*_function)(A...)) noexcept
+            FreeInvocationFunc(R(*_function)(A...)) noexcept
             : function(_function) {
             }
 
-            FunctionType getType() const noexcept override { return FunctionType::Plain; }
+            FunctionType getType() const noexcept override { return FunctionType::Free; }
             bool isNullType() const noexcept override { return false; }
 
-            InvocationFunc<R, A...> * clone() const noexcept override { return new PlainInvocationFunc(*this); }
+            InvocationFunc<R, A...> * clone() const noexcept override { return new FreeInvocationFunc(*this); }
 
             R invoke(A... args) override { return (*function)(args...); }
 
@@ -215,7 +360,7 @@ namespace jau {
                 if( getType() != rhs.getType() ) {
                     return false;
                 }
-                const PlainInvocationFunc<R, A...> * prhs = static_cast<const PlainInvocationFunc<R, A...>*>(&rhs);
+                const FreeInvocationFunc<R, A...> * prhs = static_cast<const FreeInvocationFunc<R, A...>*>(&rhs);
                 return function == prhs->function;
             }
 
@@ -230,6 +375,15 @@ namespace jau {
             }
     };
 
+    /**
+     * InvocationFunc implementation for functions using a copy of a captured value,
+     * identifiable as FunctionType::CaptureValue via FunctionDef::getType().
+     *
+     * @tparam R function return type
+     * @tparam I typename holding the captured data used by the function
+     * @tparam A function arguments
+     * @see @ref func_def_overview "FunctionDef Overview" etc.
+     */
     template<typename R, typename I, typename... A>
     class CaptureValueInvocationFunc : public InvocationFunc<R, A...> {
         private:
@@ -278,6 +432,15 @@ namespace jau {
             }
     };
 
+    /**
+     * InvocationFunc implementation for functions using a reference to a captured value,
+     * identifiable as FunctionType::CaptureRef via FunctionDef::getType().
+     *
+     * @tparam R function return type
+     * @tparam I typename holding the captured data used by the function
+     * @tparam A function arguments
+     * @see @ref func_def_overview "FunctionDef Overview" etc.
+     */
     template<typename R, typename I, typename... A>
     class CaptureRefInvocationFunc : public InvocationFunc<R, A...> {
         private:
@@ -320,6 +483,17 @@ namespace jau {
             }
     };
 
+    /**
+     * InvocationFunc implementation for std::function instances,
+     * identifiable as FunctionType::Std via FunctionDef::getType().
+     *
+     * Notable, instance is holding a unique uint64_t identifier
+     * to allow implementing the equality operator, not supported by std::function.
+     *
+     * @tparam R function return type
+     * @tparam A function arguments
+     * @see @ref func_def_overview "FunctionDef Overview" etc.
+     */
     template<typename R, typename... A>
     class StdInvocationFunc : public InvocationFunc<R, A...> {
         private:
@@ -363,6 +537,16 @@ namespace jau {
             }
     };
 
+    /**
+     * FunctionDef encapsulating an arbitrary InvocationFunc shared reference
+     * to allow anonymous function invocation w/o knowledge about its origin,
+     * i.e. free-function, member-function, capture-function, ..
+     *
+     * @tparam R function return type
+     * @tparam A function arguments
+     * @see @ref func_def_overview "FunctionDef Overview" etc.
+     * @see @ref func_def_usage "FunctionDef Usage"
+     */
     template<typename R, typename... A>
     class FunctionDef {
         private:
@@ -422,24 +606,59 @@ namespace jau {
             R operator()(A... args) { return func->invoke(args...); }
     };
 
+    /**
+     * Bind given class instance and member function to
+     * an anonymous FunctionDef using MemberInvocationFunc.
+     *
+     * @tparam R function return type
+     * @tparam C class type holding the member-function
+     * @tparam A function arguments
+     * @param base class instance `this` pointer
+     * @param mfunc member-function with `R` return value and `A...` arguments.
+     * @return anonymous FunctionDef
+     * @see @ref func_def_overview "FunctionDef Overview" etc.
+     * @see @ref func_def_usage "FunctionDef Usage"
+     */
     template<typename R, typename C, typename... A>
     inline jau::FunctionDef<R, A...>
     bindMemberFunc(C *base, R(C::*mfunc)(A...)) noexcept {
-        return FunctionDef<R, A...>( new ClassInvocationFunc<R, C, A...>(base, mfunc) );
-    }
-
-    template<typename R, typename... A>
-    inline jau::FunctionDef<R, A...>
-    bindPlainFunc(R(*func)(A...)) noexcept {
-        return FunctionDef<R, A...>( new PlainInvocationFunc<R, A...>(func) );
+        return FunctionDef<R, A...>( new MemberInvocationFunc<R, C, A...>(base, mfunc) );
     }
 
     /**
-     * <code>const I& data</code> will be copied into the InvocationFunc<..> specialization
-     * and hence captured by copy.
-     * <p>
+     * Bind given free-function to
+     * an anonymous FunctionDef using FreeInvocationFunc.
+     *
+     * @tparam R function return type
+     * @tparam A function arguments
+     * @param func free-function with `R` return value and `A...` arguments.
+     * @return anonymous FunctionDef
+     * @see @ref func_def_overview "FunctionDef Overview" etc.
+     * @see @ref func_def_usage "FunctionDef Usage"
+     */
+    template<typename R, typename... A>
+    inline jau::FunctionDef<R, A...>
+    bindFreeFunc(R(*func)(A...)) noexcept {
+        return FunctionDef<R, A...>( new FreeInvocationFunc<R, A...>(func) );
+    }
+
+    /**
+     * Bind given data by copying the value and the given function to
+     * an anonymous FunctionDef using CaptureValueInvocationFunc.
+     *
+     * `const I& data` will be copied into CaptureValueInvocationFunc and hence captured by copy.
+     *
      * The function call will have the reference of the copied data being passed for efficiency.
-     * </p>
+     *
+     * @tparam R function return type
+     * @tparam I typename holding the captured data used by the function
+     * @tparam A function arguments
+     * @param data data type instance holding the captured data
+     * @param func function with `R` return value and `A...` arguments.
+     * @param dataIsIdentity if true (default), equality requires equal data. Otherwise equality only compares the function pointer.
+     * @return anonymous FunctionDef
+     * @see @ref func_def_overview "FunctionDef Overview" etc.
+     * @see @ref func_def_usage "FunctionDef Usage"
      */
     template<typename R, typename I, typename... A>
     inline jau::FunctionDef<R, A...>
@@ -448,10 +667,22 @@ namespace jau {
     }
 
     /**
-     * <code>I&& data</code> will be moved into the InvocationFunc<..> specialization.
-     * <p>
-     * The function call will have the reference of the copied data being passed for efficiency.
-     * </p>
+     * Bind given data by moving the given value and copying the given function to
+     * an anonymous FunctionDef using CaptureValueInvocationFunc.
+     *
+     * `I&& data` will be moved into CaptureValueInvocationFunc.
+     *
+     * The function call will have the reference of the moved data being passed for efficiency.
+     *
+     * @tparam R function return type
+     * @tparam I typename holding the captured data used by the function
+     * @tparam A function arguments
+     * @param data data type instance holding the captured data
+     * @param func function with `R` return value and `A...` arguments.
+     * @param dataIsIdentity if true (default), equality requires equal data. Otherwise equality only compares the function pointer.
+     * @return anonymous FunctionDef
+     * @see @ref func_def_overview "FunctionDef Overview" etc.
+     * @see @ref func_def_usage "FunctionDef Usage"
      */
     template<typename R, typename I, typename... A>
     inline jau::FunctionDef<R, A...>
@@ -459,21 +690,44 @@ namespace jau {
         return FunctionDef<R, A...>( new CaptureValueInvocationFunc<R, I, A...>(std::move(data), func, dataIsIdentity) );
     }
 
+    /**
+     * Bind given data by passing the given reference to the value and function to
+     * an anonymous FunctionDef using CaptureRefInvocationFunc.
+     *
+     * @tparam R function return type
+     * @tparam I typename holding the captured data used by the function
+     * @tparam A function arguments
+     * @param data_ptr data type reference to instance holding the captured data
+     * @param func function with `R` return value and `A...` arguments.
+     * @param dataIsIdentity if true (default), equality requires same data_ptr. Otherwise equality only compares the function pointer.
+     * @return anonymous FunctionDef
+     * @see @ref func_def_overview "FunctionDef Overview" etc.
+     * @see @ref func_def_usage "FunctionDef Usage"
+     */
     template<typename R, typename I, typename... A>
     inline jau::FunctionDef<R, A...>
     bindCaptureRefFunc(I* data_ptr, R(*func)(I*, A...), bool dataIsIdentity=true) noexcept {
         return FunctionDef<R, A...>( new CaptureRefInvocationFunc<R, I, A...>(data_ptr, func, dataIsIdentity) );
     }
 
+    /**
+     * Bind given std::function to
+     * an anonymous FunctionDef using StdInvocationFunc.
+     *
+     * Notable, instance is holding the given unique uint64_t identifier
+     * to allow implementing the equality operator, not supported by std::function.
+     *
+     * @tparam R function return type
+     * @tparam A function arguments
+     * @param func free-function with `R` return value and `A...` arguments.
+     * @return anonymous FunctionDef
+     * @see @ref func_def_overview "FunctionDef Overview" etc.
+     * @see @ref func_def_usage "FunctionDef Usage"
+     */
     template<typename R, typename... A>
     inline jau::FunctionDef<R, A...>
     bindStdFunc(uint64_t id, std::function<R(A...)> func) noexcept {
         return FunctionDef<R, A...>( new StdInvocationFunc<R, A...>(id, func) );
-    }
-    template<typename R, typename... A>
-    inline jau::FunctionDef<R, A...>
-    bindStdFunc(uint64_t id) noexcept {
-        return FunctionDef<R, A...>( new StdInvocationFunc<R, A...>(id) );
     }
 
     /**@}*/

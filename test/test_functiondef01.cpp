@@ -34,6 +34,12 @@
 using namespace jau;
 
 // Test examples.
+
+static int Func1a_free(int i) {
+    int res = i+100;
+    return res;
+}
+
 class TestFunctionDef01 {
   private:
 
@@ -43,15 +49,15 @@ class TestFunctionDef01 {
     }
     int func2b_member(int i) {
         int res = i+1000;
-        return res;;
+        return res;
     }
     static int Func3a_static(int i) {
         int res = i+100;
-        return res;;
+        return res;
     }
     static int Func3b_static(int i) {
         int res = i+1000;
-        return res;;
+        return res;
     }
 
     // template<typename R, typename... A>
@@ -141,22 +147,26 @@ class TestFunctionDef01 {
         INFO("FuncPtr2_member: bindMemberFunc<int, TestFunctionDef01, int>: END");
     }
 
-    void test02_plainfunc_static() {
-        INFO("FuncPtr3_plain: bindPlainFunc<int, int>: START");
+    void test02_freefunc_static() {
+        INFO("FuncPtr3_free: bindFreeFunc<int, int>: START");
         // FunctionDef(Func1Type func)
-        MyClassFunction f3a_1 = bindPlainFunc<int, int>(&TestFunctionDef01::Func3a_static);
-        MyClassFunction f3a_2 = bindPlainFunc(&TestFunctionDef01::Func3a_static);
-        test_FunctionPointer00("FuncPtr3a_plain_11", true, 1, 101, f3a_1, f3a_1);
-        test_FunctionPointer00("FuncPtr3a_plain_12", true, 1, 101, f3a_1, f3a_2);
+        MyClassFunction f1a_1 = bindFreeFunc<int, int>(Func1a_free);
+        MyClassFunction f3a_1 = bindFreeFunc<int, int>(&TestFunctionDef01::Func3a_static);
+        MyClassFunction f3a_2 = bindFreeFunc(&TestFunctionDef01::Func3a_static);
+        test_FunctionPointer00("FuncPtr1a_free_10", true,  1, 101, f1a_1, f1a_1);
+        test_FunctionPointer00("FuncPtr3a_free_11", true,  1, 101, f3a_1, f3a_1);
+        test_FunctionPointer00("FuncPtr3a_free_12", true,  1, 101, f3a_1, f3a_2);
 
-        MyClassFunction f3b_1 = bindPlainFunc(&TestFunctionDef01::Func3b_static);
-        MyClassFunction f3b_2 = bindPlainFunc(&Func3b_static);
-        test_FunctionPointer00("FuncPtr3b_plain_11", true, 1, 1001, f3b_1, f3b_1);
-        test_FunctionPointer00("FuncPtr3b_plain_12", true, 1, 1001, f3b_1, f3b_2);
+        MyClassFunction f3b_1 = bindFreeFunc(&TestFunctionDef01::Func3b_static);
+        MyClassFunction f3b_2 = bindFreeFunc(&Func3b_static);
+        test_FunctionPointer00("FuncPtr3b_free_11", true, 1, 1001, f3b_1, f3b_1);
+        test_FunctionPointer00("FuncPtr3b_free_12", true, 1, 1001, f3b_1, f3b_2);
 
-        test_FunctionPointer00("FuncPtr3ab_plain_11", false, 1, 0, f3a_1, f3b_1);
-        test_FunctionPointer00("FuncPtr3ab_plain_22", false, 1, 0, f3a_2, f3b_2);
-        INFO("FuncPtr3_plain: bindPlainFunc<int, int>: END");
+        test_FunctionPointer00("FuncPtr1a3a_free_10", false, 1, 0, f1a_1, f3a_1);
+        test_FunctionPointer00("FuncPtr1a3b_free_10", false, 1, 0, f1a_1, f3b_1);
+        test_FunctionPointer00("FuncPtr3a3b_free_11", false, 1, 0, f3a_1, f3b_1);
+        test_FunctionPointer00("FuncPtr3a3b_free_22", false, 1, 0, f3a_2, f3b_2);
+        INFO("FuncPtr3_free: bindFreeFunc<int, int>: END");
     }
 
     void test03_stdfunc_lambda() {
@@ -183,15 +193,6 @@ class TestFunctionDef01 {
         test_FunctionPointer00("FuncPtr4ab_stdlambda_11", false, 1, 0, f4a_1, f4b_1);
         test_FunctionPointer00("FuncPtr4ab_stdlambda_22", false, 1, 0, f4a_2, f4b_2);
 
-        MyClassFunction f4a_0 = bindStdFunc<int, int>(100);
-        MyClassFunction f4b_0 = bindStdFunc<int, int>(200);
-        test_FunctionPointer01("FuncPtr4a_stdlambda_01", true, f4a_0, f4a_1);
-        test_FunctionPointer01("FuncPtr4a_stdlambda_02", true, f4a_0, f4a_2);
-        test_FunctionPointer01("FuncPtr4b_stdlambda_01", true, f4b_0, f4b_1);
-        test_FunctionPointer01("FuncPtr4b_stdlambda_02", true, f4b_0, f4b_2);
-        test_FunctionPointer01("FuncPtr4ab_stdlambda_00", false, f4a_0, f4b_0);
-        test_FunctionPointer01("FuncPtr4ab_stdlambda_01", false, f4a_0, f4b_1);
-        test_FunctionPointer01("FuncPtr4ab_stdlambda_10", false, f4a_1, f4b_0);
         INFO("FuncPtr4_stdlambda: bindStdFunc<int, int>: END");
     }
 
@@ -336,7 +337,7 @@ class TestFunctionDef01 {
 };
 
 METHOD_AS_TEST_CASE( TestFunctionDef01::test01_memberfunc_this,     "Test FunctionDef 01 - 01 memberfunc");
-METHOD_AS_TEST_CASE( TestFunctionDef01::test02_plainfunc_static,    "Test FunctionDef 01 - 02 plainfunc");
+METHOD_AS_TEST_CASE( TestFunctionDef01::test02_freefunc_static,     "Test FunctionDef 01 - 02 freefunc");
 METHOD_AS_TEST_CASE( TestFunctionDef01::test03_stdfunc_lambda,      "Test FunctionDef 01 - 03 stdfunc");
 METHOD_AS_TEST_CASE( TestFunctionDef01::test04_captfunc_lambda,     "Test FunctionDef 01 - 04 captfunc");
 METHOD_AS_TEST_CASE( TestFunctionDef01::test05_captfunc_lambda,     "Test FunctionDef 01 - 05 captfunc");
