@@ -55,7 +55,7 @@ namespace jau {
      * Only the user shall have knowledge about the source of the function,
      * whether it be a static free function or a member function.
      *
-     * A toolkit API shall only expose and use a callback function
+     * A toolkit API shall expose and use a callback function
      * by its return type `R` and arguments `A...` only.
      *
      * Further a toolkit needs to identify the stored callback functions,
