@@ -176,6 +176,12 @@ namespace jau {
         : RuntimeException("InternalError", m, file, line) {}
     };
 
+    class NotImplementedError : public RuntimeException {
+      public:
+        NotImplementedError(std::string const m, const char* file, int line) noexcept
+        : RuntimeException("NotImplementedError", m, file, line) {}
+    };
+
     class NullPointerException : public RuntimeException {
       public:
         NullPointerException(std::string const m, const char* file, int line) noexcept
@@ -211,6 +217,13 @@ namespace jau {
         IndexOutOfBoundsException(const std::size_t index, const std::size_t count, const std::size_t length, const char* file, int line) noexcept
         : RuntimeException("IndexOutOfBoundsException", "Index "+std::to_string(index)+", count "+std::to_string(count)+", data length "+std::to_string(length), file, line) {}
     };
+
+    class IOError : public RuntimeException {
+      public:
+        IOError(std::string const m, const char* file, int line) noexcept
+        : RuntimeException("IOError", m, file, line) {}
+    };
+
 
     /**
     // *************************************************
