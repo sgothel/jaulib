@@ -12,8 +12,10 @@ set (jaulib_LIB_SRCS
   environment.cpp
   debug.cpp
   basic_types.cpp
+  byte_stream.cpp
   eui48.cpp
   file_util.cpp
+  io_util.cpp
   uuid.cpp
   service_runner.cpp
   simple_timer.cpp
@@ -24,6 +26,7 @@ set (jaulib_LIB_SRCS
 add_library (jaulib SHARED ${jaulib_LIB_SRCS})
 target_link_libraries (
   jaulib
+  curl
   ${LIBUNWIND_LIBNAME}
   ${CMAKE_THREAD_LIBS_INIT}
 )

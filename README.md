@@ -59,7 +59,12 @@ apt install libunwind8 libunwind-dev
 apt install openjdk-11-jdk openjdk-11-jre junit4
 apt install cmake cmake-extras extra-cmake-modules
 apt install doxygen graphviz
+apt install libcurl4 libcurl4-gnutls-dev
+apt install mini-httpd
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Note that `curl` is only used for `jau/io_util.cpp`
+and `minit-httpd` for its unit test.
 
 For a generic build use:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}
