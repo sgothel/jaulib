@@ -81,6 +81,8 @@ class TestIOStream01 {
         }
 
         void test01() {
+            const jau::fs::file_stats in_stats(basename_10kiB);
+            const size_t file_size = in_stats.size();
             const std::string url_input = url_input_root + basename_10kiB;
 
             std::ofstream outfile("test02_01_out.bin", std::ios::out | std::ios::binary);
@@ -102,11 +104,14 @@ class TestIOStream01 {
             const uint64_t out_bytes_total = outfile.tellp();
             jau::PLAIN_PRINT(true, "test02io01 Done: total %" PRIu64 ", capacity %zu", consumed_total_bytes, buffer.capacity());
 
+            REQUIRE( file_size == http_total_bytes );
             REQUIRE( consumed_total_bytes == http_total_bytes );
             REQUIRE( consumed_total_bytes == out_bytes_total );
         }
 
         void test02() {
+            const jau::fs::file_stats in_stats(basename_10kiB);
+            const size_t file_size = in_stats.size();
             const std::string url_input = url_input_root + basename_10kiB;
 
             std::ofstream outfile("test02_02_out.bin", std::ios::out | std::ios::binary);
@@ -142,6 +147,7 @@ class TestIOStream01 {
             http_thread.join();
 
             REQUIRE( url_has_content_length == true );
+            REQUIRE( url_content_length == file_size );
             REQUIRE( url_content_length == consumed_total_bytes );
             REQUIRE( url_content_length == url_total_read );
             REQUIRE( url_content_length == out_bytes_total );
