@@ -63,8 +63,9 @@ apt install libcurl4 libcurl4-gnutls-dev
 apt install mini-httpd
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Note that `curl` is only used for `jau/io_util.cpp`
-and `minit-httpd` for its unit test.
+Note that the `curl` library is only used for `jau/io_util.cpp`
+and `mini-httpd` for its unit test.
+Both can be dropped if not used in your project using jaulib.
 
 For a generic build use:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}
@@ -157,7 +158,15 @@ a Raspi-arm64, Raspi-armhf or PC-amd64 target image.
 
 * First stable release (TODO)
 
-**0.10.1** (WIP)
+**0.10.2** (WIP)
+
+* Add `byte_stream.hpp` and `io_util.hpp` from Elevator project for generic use
+  - This adds build dependency to `curl` library and test dependency to `mini-httpd`, both not needed if unused.
+* Add `fs::get_cwd()`
+* Add `callocator_sec<T>`
+* FunctionDef: Complete documentation, refine names
+
+**0.10.1**
 
 * Add `file_util.hpp`: File Utilities for platform agnostic C++ handling of file stats and directory traversal, etc.
 * `fraction_timespec`: Add notion of 'struct timespec' year 2038 issue, `to_timespec()` conversion, `to_iso8601_string()`
