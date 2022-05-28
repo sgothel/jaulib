@@ -48,6 +48,7 @@ class TestFileUtil01 {
      */
     void test01_mkdir() {
         INFO_STR("\n\ntest01_mkdir\n");
+
         jau::fs::remove(root, true); // start fresh
         {
             jau::fs::file_stats root_stats(root);
@@ -167,9 +168,24 @@ class TestFileUtil01 {
 
         REQUIRE( true == jau::fs::remove(root, true) );
     }
+
+    /**
+     *
+     */
+    void test04_cwd() {
+        const std::string cwd = jau::fs::get_cwd();
+        INFO_STR("\n\ntest04_cwd: cwd "+cwd+"\n");
+        REQUIRE( 0 < cwd.size() );
+        const size_t idx = cwd.find("/jaulib/");
+        REQUIRE( 0 < idx );
+        REQUIRE( idx < cwd.size() );
+        REQUIRE( idx != std::string::npos );
+    }
+
 };
 
 METHOD_AS_TEST_CASE( TestFileUtil01::test01_mkdir, "Test TestFileUtil01 - test01_mkdir");
 METHOD_AS_TEST_CASE( TestFileUtil01::test02_touch, "Test TestFileUtil01 - test02_touch");
 METHOD_AS_TEST_CASE( TestFileUtil01::test03_visit, "Test TestFileUtil01 - test03_visit");
+METHOD_AS_TEST_CASE( TestFileUtil01::test04_cwd,   "Test TestFileUtil01 - test04_cwd");
 
