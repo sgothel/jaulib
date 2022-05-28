@@ -37,16 +37,13 @@ namespace jau {
  * It is the missing <code>::realloc()</code> in <code>std::allocator</code>, motivating this class.<br>
  * Since <code>realloc()</code> requires the passed pointer to originate from <code>malloc()</code> or <code>calloc</code>,
  * we have to use it for <code>allocate()</code> as well.
- * <p>
+ *
  * Added method is <code>reallocate()</code> using the native <code>realloc()</code>.
- * </p>
- * <p>
+ *
  * This class shall be compliant with <i>C++ named requirements for Allocator</i>.
- * </p>
- * <p>
+ *
  * Not implementing deprecated (C++17) and removed (C++20)
  * methods: address(), max_size(), construct() and destroy().
- * </p>
  */
 template <class T>
 struct callocator
@@ -104,7 +101,7 @@ struct callocator
 #if __cplusplus <= 201703L
     value_type* allocate(std::size_t n, const void * hint) { // C++17 deprecated; C++20 removed
         (void)hint;
-        return reinterpret_cast<value_type*>( malloc( n * sizeof(value_type) ) );
+        return reinterpret_cast<value_type*>( ::malloc( n * sizeof(value_type) ) );
     }
 #endif
 
@@ -114,14 +111,14 @@ struct callocator
     }
 #else
     value_type* allocate(std::size_t n) { // C++17
-        return reinterpret_cast<value_type*>( malloc( n * sizeof(value_type) ) );
+        return reinterpret_cast<value_type*>( ::malloc( n * sizeof(value_type) ) );
     }
 #endif
 
     [[nodiscard]] constexpr value_type* reallocate(value_type* p, std::size_t old_size, std::size_t new_size) {
         (void)old_size;
         return reinterpret_cast<value_type*>(
-                            realloc( reinterpret_cast<void*>(const_cast<pointer_mutable>(p)), new_size * sizeof(value_type) ) );
+                            ::realloc( reinterpret_cast<void*>(const_cast<pointer_mutable>(p)), new_size * sizeof(value_type) ) );
     }
 
 #if __cplusplus > 201703L
@@ -132,7 +129,7 @@ struct callocator
 #else
     void deallocate(value_type* p, std::size_t n ) {
         (void)n;
-        free( reinterpret_cast<void*>( const_cast<pointer_mutable>(p) ) );
+        ::free( reinterpret_cast<void*>( const_cast<pointer_mutable>(p) ) );
     }
 #endif
 
