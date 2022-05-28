@@ -406,6 +406,7 @@ static bool to_integer(long long & result, const char * str, size_t str_len, con
     if( nullptr == limiter_pos ) {
         limiter_pos = str + str_len;
     }
+    errno = 0;
     const long long num = std::strtoll(str, &endptr, 10);
     if( 0 != errno ) {
         // value under- or overflow occured
