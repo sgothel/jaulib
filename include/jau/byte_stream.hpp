@@ -2,9 +2,9 @@
  * Author: Sven Gothel <sgothel@jausoft.com>
  * Copyright (c) 2021 Gothel Software e.K.
  *
- * ByteStream, ByteStream_SecMemory and ByteStream_istream are derived from Botan under same license:
- * Copyright (c) 1999-2007 Jack Lloyd
- * Copyright (c) 2005 Matthew Gregan
+ * ByteInStream, ByteInStream_SecMemory and ByteInStream_istream are derived from Botan under same license:
+ * - Copyright (c) 1999-2007 Jack Lloyd
+ * - Copyright (c) 2005 Matthew Gregan
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -44,10 +44,26 @@
 
 namespace jau::io {
 
-    /**
-     * Operation result value
+    /** \addtogroup IOUtils
+     *
+     *  @{
      */
-    enum class result_t : int8_t {
+
+    /**
+     * I/O direction, read or write
+     */
+    enum class io_dir_t : int8_t {
+        /** Read Operation */
+        READ  = 0,
+
+        /** Write Operation */
+        WRITE =  1
+    };
+
+    /**
+     * Asynchronous I/O operation result value
+     */
+    enum class async_io_result_t : int8_t {
         /** Operation failed. */
         FAILED  = -1,
 
@@ -57,7 +73,7 @@ namespace jau::io {
         /** Operation succeeded. */
         SUCCESS =  1
     };
-    typedef jau::ordered_atomic<result_t, std::memory_order::memory_order_relaxed> relaxed_atomic_result_t;
+    typedef jau::ordered_atomic<async_io_result_t, std::memory_order::memory_order_relaxed> relaxed_atomic_result_t;
 
     typedef jau::ringbuffer<uint8_t, size_t> ByteRingbuffer;
 
@@ -74,32 +90,32 @@ namespace jau::io {
 #endif
 
     /**
-     * This class represents an abstract byte stream object.
+     * This class represents an abstract byte input stream object.
      *
-     * @anchor byte_stream_properties
-     * ### ByteStream Properties
-     * The byte stream can be originated from a local source w/o delay,
-     * remote like http streaming or even from another thread.<br />
+     * @anchor byte_in_stream_properties
+     * ### ByteInStream Properties
+     * The byte input stream can originate from a local source w/o delay,
+     * remote URL like http connection or even from another thread feeding the input buffer.<br />
      * Both latter asynchronous resources may expose blocking properties
      * in check_available().
      *
      * Asynchronous resources benefit from knowing their content size,
-     * their check_available() implementation may avoid
+     * as their check_available() implementation may avoid
      * blocking and waiting for requested bytes available
      * if the stream is already beyond its scope.
      *
-     * @see @ref byte_stream_properties "ByteStream Properties"
+     * @see @ref byte_in_stream_properties "ByteInStream Properties"
      */
-    class ByteStream
+    class ByteInStream
 #ifdef BOTAN_VERSION_MAJOR
     : public Botan::DataSource
 #endif
     {
         public:
-            ByteStream() = default;
-            virtual ~ByteStream() = default;
-            ByteStream& operator=(const ByteStream&) = delete;
-            ByteStream(const ByteStream&) = delete;
+            ByteInStream() = default;
+            virtual ~ByteInStream() = default;
+            ByteInStream& operator=(const ByteInStream&) = delete;
+            ByteInStream(const ByteInStream&) = delete;
 
             /**
              * Close the stream if supported by the underlying mechanism.
@@ -119,7 +135,7 @@ namespace jau::io {
              * @return true if n bytes are available, otherwise false
              *
              * @see read()
-             * @see @ref byte_stream_properties "ByteStream Properties"
+             * @see @ref byte_in_stream_properties "ByteInStream Properties"
              */
             VIRTUAL_BOTAN bool check_available(size_t n) OVERRIDE_BOTAN = 0;
 
@@ -136,7 +152,7 @@ namespace jau::io {
              * @return length in bytes that was actually read and put into out
              *
              * @see check_available()
-             * @see @ref byte_stream_properties "ByteStream Properties"
+             * @see @ref byte_in_stream_properties "ByteInStream Properties"
              */
             [[nodiscard]] VIRTUAL_BOTAN size_t read(uint8_t out[], size_t length) OVERRIDE_BOTAN = 0;
 
@@ -200,9 +216,9 @@ namespace jau::io {
     };
 
     /**
-     * This class represents a secure Memory-Based byte stream
+     * This class represents a secure Memory-Based byte input stream
      */
-    class ByteStream_SecMemory final : public ByteStream {
+    class ByteInStream_SecMemory final : public ByteInStream {
        public:
           /**
            * Read from a memory buffer
@@ -222,36 +238,36 @@ namespace jau::io {
           bool end_of_data() const override;
 
           /**
-          * Construct a memory source that reads from a string
+          * Construct a secure memory source that reads from a string
           * @param in the string to read from
           */
-          explicit ByteStream_SecMemory(const std::string& in);
+          explicit ByteInStream_SecMemory(const std::string& in);
 
           /**
-          * Construct a memory source that reads from a byte array
+          * Construct a secure memory source that reads from a byte array
           * @param in the byte array to read from
           * @param length the length of the byte array
           */
-          ByteStream_SecMemory(const uint8_t in[], size_t length)
+          ByteInStream_SecMemory(const uint8_t in[], size_t length)
           : m_source(in, in + length), m_offset(0) {}
 
           /**
-          * Construct a memory source that reads from a secure_vector
+          * Construct a secure memory source that reads from a secure_vector
           * @param in the MemoryRegion to read from
           */
-          explicit ByteStream_SecMemory(const io::secure_vector<uint8_t>& in)
+          explicit ByteInStream_SecMemory(const io::secure_vector<uint8_t>& in)
           : m_source(in), m_offset(0) {}
 
           /**
-          * Construct a memory source that reads from a std::vector
+          * Construct a secure memory source that reads from a std::vector
           * @param in the MemoryRegion to read from
           */
-          explicit ByteStream_SecMemory(const std::vector<uint8_t>& in)
+          explicit ByteInStream_SecMemory(const std::vector<uint8_t>& in)
           : m_source(in.begin(), in.end()), m_offset(0) {}
 
           void close() noexcept override;
 
-          ~ByteStream_SecMemory() override { close(); }
+          ~ByteInStream_SecMemory() override { close(); }
 
           size_t get_bytes_read() const override { return m_offset; }
 
@@ -263,9 +279,9 @@ namespace jau::io {
     };
 
     /**
-     * This class represents an std::istream based byte stream.
+     * This class represents a std::istream based byte input stream.
      */
-    class ByteStream_istream final : public ByteStream {
+    class ByteInStream_istream final : public ByteInStream {
        public:
           size_t read(uint8_t[], size_t) override;
           size_t peek(uint8_t[], size_t, size_t) const override;
@@ -273,15 +289,15 @@ namespace jau::io {
           bool end_of_data() const override;
           std::string id() const override;
 
-          ByteStream_istream(std::istream&, const std::string& id = "<std::istream>");
+          ByteInStream_istream(std::istream&, const std::string& id = "<std::istream>");
 
-          ByteStream_istream(const ByteStream_istream&) = delete;
+          ByteInStream_istream(const ByteInStream_istream&) = delete;
 
-          ByteStream_istream& operator=(const ByteStream_istream&) = delete;
+          ByteInStream_istream& operator=(const ByteInStream_istream&) = delete;
 
           void close() noexcept override;
 
-          ~ByteStream_istream() override { close(); }
+          ~ByteInStream_istream() override { close(); }
 
           size_t get_bytes_read() const override { return m_bytes_consumed; }
 
@@ -296,9 +312,9 @@ namespace jau::io {
 
 
     /**
-     * This class represents a file based byte stream.
+     * This class represents a file based byte input stream.
      */
-    class ByteStream_File final : public ByteStream {
+    class ByteInStream_File final : public ByteInStream {
        public:
           size_t read(uint8_t[], size_t) override;
           size_t peek(uint8_t[], size_t, size_t) const override;
@@ -307,19 +323,19 @@ namespace jau::io {
           std::string id() const override;
 
           /**
-           * Construct a Stream-Based byte stream from filesystem path
+           * Construct a Stream-Based byte input stream from filesystem path
            * @param file the path to the file
-           * @param use_binary whether to treat the file as binary or not
+           * @param use_binary whether to treat the file as binary (default) or use platform character conversion
            */
-          ByteStream_File(const std::string& file, bool use_binary);
+          ByteInStream_File(const std::string& file, bool use_binary = true);
 
-          ByteStream_File(const ByteStream_File&) = delete;
+          ByteInStream_File(const ByteInStream_File&) = delete;
 
-          ByteStream_File& operator=(const ByteStream_File&) = delete;
+          ByteInStream_File& operator=(const ByteInStream_File&) = delete;
 
           void close() noexcept override;
 
-          ~ByteStream_File() override { close(); }
+          ~ByteInStream_File() override { close(); }
 
           size_t get_bytes_read() const override { return (size_t)m_bytes_consumed; }
 
@@ -340,9 +356,11 @@ namespace jau::io {
     };
 
     /**
-     * This class represents a Ringbuffer-Based URL byte stream
+     * This class represents a Ringbuffer-Based byte input stream with a URL connection provisioned data feed.
+     *
+     * Standard implementation uses curl, hence all protocols supported by curl are supported.
      */
-    class ByteStream_URL final : public ByteStream {
+    class ByteInStream_URL final : public ByteInStream {
         public:
             /**
              * Check whether n bytes are available in the input stream.
@@ -355,7 +373,7 @@ namespace jau::io {
              * @return true if n bytes are available, otherwise false
              *
              * @see read()
-             * @see @ref byte_stream_properties "ByteStream Properties"
+             * @see @ref byte_in_stream_properties "ByteInStream Properties"
              */
             bool check_available(size_t n) override;
 
@@ -372,7 +390,7 @@ namespace jau::io {
              * @return length in bytes that was actually read and put into out
              *
              * @see check_available()
-             * @see @ref byte_stream_properties "ByteStream Properties"
+             * @see @ref byte_in_stream_properties "ByteInStream Properties"
              */
             size_t read(uint8_t out[], size_t length) override;
 
@@ -383,20 +401,20 @@ namespace jau::io {
             std::string id() const override { return m_url; }
 
             /**
-             * Construct a ringbuffer backed Http byte stream
+             * Construct a ringbuffer backed Http byte input stream
              * @param url the URL of the data to read
              * @param timeout maximum duration in fractions of seconds to wait @ check_available(), where fractions_i64::zero waits infinitely
              * @param exp_size if > 0 it is additionally used to determine EOF, otherwise the underlying EOF mechanism is being used only (default).
              */
-            ByteStream_URL(const std::string& url, jau::fraction_i64 timeout, const uint64_t exp_size=0);
+            ByteInStream_URL(const std::string& url, jau::fraction_i64 timeout, const uint64_t exp_size=0);
 
-            ByteStream_URL(const ByteStream_URL&) = delete;
+            ByteInStream_URL(const ByteInStream_URL&) = delete;
 
-            ByteStream_URL& operator=(const ByteStream_URL&) = delete;
+            ByteInStream_URL& operator=(const ByteInStream_URL&) = delete;
 
             void close() noexcept override;
 
-            ~ByteStream_URL() override { close(); }
+            ~ByteInStream_URL() override { close(); }
 
             size_t get_bytes_read() const override { return (size_t)m_bytes_consumed; }
 
@@ -426,9 +444,9 @@ namespace jau::io {
     };
 
     /**
-     * This class represents a Ringbuffer-Based externally provisioned data feed.
+     * This class represents a Ringbuffer-Based byte input stream with an externally provisioned data feed.
      */
-    class ByteStream_Feed final : public ByteStream {
+    class ByteInStream_Feed final : public ByteInStream {
         public:
             /**
              * Check whether n bytes are available in the input stream.
@@ -441,7 +459,7 @@ namespace jau::io {
              * @return true if n bytes are available, otherwise false
              *
              * @see read()
-             * @see @ref byte_stream_properties "ByteStream Properties"
+             * @see @ref byte_in_stream_properties "ByteInStream Properties"
              */
             bool check_available(size_t n) override;
 
@@ -458,7 +476,7 @@ namespace jau::io {
              * @return length in bytes that was actually read and put into out
              *
              * @see check_available()
-             * @see @ref byte_stream_properties "ByteStream Properties"
+             * @see @ref byte_in_stream_properties "ByteInStream Properties"
              */
             size_t read(uint8_t out[], size_t length) override;
 
@@ -469,20 +487,20 @@ namespace jau::io {
             std::string id() const override { return m_id; }
 
             /**
-             * Construct a ringbuffer backed externally provisioned byte stream
+             * Construct a ringbuffer backed externally provisioned byte input stream
              * @param id_name arbitrary identifier for this instance
              * @param timeout maximum duration in fractions of seconds to wait @ check_available() and write(), where fractions_i64::zero waits infinitely
              * @param exp_size if > 0 it is additionally used to determine EOF, otherwise the underlying EOF mechanism is being used only (default).
              */
-            ByteStream_Feed(const std::string& id_name, jau::fraction_i64 timeout, const uint64_t exp_size=0);
+            ByteInStream_Feed(const std::string& id_name, jau::fraction_i64 timeout, const uint64_t exp_size=0);
 
-            ByteStream_Feed(const ByteStream_URL&) = delete;
+            ByteInStream_Feed(const ByteInStream_URL&) = delete;
 
-            ByteStream_Feed& operator=(const ByteStream_URL&) = delete;
+            ByteInStream_Feed& operator=(const ByteInStream_URL&) = delete;
 
             void close() noexcept override;
 
-            ~ByteStream_Feed() override { close(); }
+            ~ByteInStream_Feed() override { close(); }
 
             size_t get_bytes_read() const override { return m_bytes_consumed; }
 
@@ -520,7 +538,7 @@ namespace jau::io {
              *
              * @param result should be either result_t::FAILED or result_t::SUCCESS.
              */
-            void set_eof(const result_t result) noexcept { m_result = result; }
+            void set_eof(const async_io_result_t result) noexcept { m_result = result; }
 
             std::string to_string() const override;
 
@@ -540,12 +558,12 @@ namespace jau::io {
     };
 
     /**
-     * This class represents a wrapped byte stream with the capability
+     * This class represents a wrapped byte input stream with the capability
      * to record the byte stream read out at will.
      *
      * Peek'ed bytes won't be recorded, only read bytes.
      */
-    class ByteStream_Recorder final : public ByteStream {
+    class ByteInStream_Recorder final : public ByteInStream {
         public:
             size_t read(uint8_t[], size_t) override;
 
@@ -564,20 +582,20 @@ namespace jau::io {
             std::string id() const override { return m_parent.id(); }
 
             /**
-             * Construct a byte stream wrapper using the given parent ByteStream.
-             * @param parent the parent ByteStream
+             * Construct a byte input stream wrapper using the given parent ByteInStream.
+             * @param parent the parent ByteInStream
              * @param buffer a user defined buffer for the recording
              */
-            ByteStream_Recorder(ByteStream& parent, io::secure_vector<uint8_t>& buffer)
+            ByteInStream_Recorder(ByteInStream& parent, io::secure_vector<uint8_t>& buffer)
             : m_parent(parent), m_bytes_consumed(0), m_buffer(buffer), m_rec_offset(0), m_is_recording(false) {};
 
-            ByteStream_Recorder(const ByteStream_Recorder&) = delete;
+            ByteInStream_Recorder(const ByteInStream_Recorder&) = delete;
 
-            ByteStream_Recorder& operator=(const ByteStream_Recorder&) = delete;
+            ByteInStream_Recorder& operator=(const ByteInStream_Recorder&) = delete;
 
             void close() noexcept override;
 
-            ~ByteStream_Recorder() override { close(); }
+            ~ByteInStream_Recorder() override { close(); }
 
             size_t get_bytes_read() const override { return m_parent.get_bytes_read(); }
 
@@ -625,12 +643,14 @@ namespace jau::io {
             std::string to_string() const override;
 
         private:
-            ByteStream& m_parent;
+            ByteInStream& m_parent;
             uint64_t m_bytes_consumed;
             io::secure_vector<uint8_t>& m_buffer;
             uint64_t m_rec_offset;
             bool m_is_recording;
     };
+
+    /**@}*/
 
 } // namespace elevator::io
 

@@ -2,9 +2,9 @@
  * Author: Sven Gothel <sgothel@jausoft.com>
  * Copyright (c) 2021 Gothel Software e.K.
  *
- * ByteStream, ByteStream_SecMemory and ByteStream_istream are derived from Botan under same license:
- * Copyright (c) 1999-2007 Jack Lloyd
- * Copyright (c) 2005 Matthew Gregan
+ * ByteInStream, ByteInStream_SecMemory and ByteInStream_istream are derived from Botan under same license:
+ * - Copyright (c) 1999-2007 Jack Lloyd
+ * - Copyright (c) 2005 Matthew Gregan
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -60,15 +60,15 @@ inline char* cast_uint8_ptr_to_char(uint8_t* b) {
 
 #ifndef BOTAN_VERSION_MAJOR
 
-size_t ByteStream::read_byte(uint8_t& out) {
+size_t ByteInStream::read_byte(uint8_t& out) {
     return read(&out, 1);
 }
 
-size_t ByteStream::peek_byte(uint8_t& out) const {
+size_t ByteInStream::peek_byte(uint8_t& out) const {
     return peek(&out, 1, 0);
 }
 
-size_t ByteStream::discard_next(size_t n)
+size_t ByteInStream::discard_next(size_t n)
 {
     uint8_t buf[64] = { 0 };
     size_t discarded = 0;
@@ -88,18 +88,18 @@ size_t ByteStream::discard_next(size_t n)
 
 #endif /* BOTAN_VERSION_MAJOR */
 
-size_t ByteStream_SecMemory::read(uint8_t out[], size_t length) {
+size_t ByteInStream_SecMemory::read(uint8_t out[], size_t length) {
     const size_t got = std::min<size_t>(m_source.size() - m_offset, length);
     copy_mem(out, m_source.data() + m_offset, got);
     m_offset += got;
     return got;
 }
 
-bool ByteStream_SecMemory::check_available(size_t n) {
+bool ByteInStream_SecMemory::check_available(size_t n) {
     return m_source.size() - m_offset >= n;
 }
 
-size_t ByteStream_SecMemory::peek(uint8_t out[], size_t length, size_t peek_offset) const {
+size_t ByteInStream_SecMemory::peek(uint8_t out[], size_t length, size_t peek_offset) const {
     const size_t bytes_left = m_source.size() - m_offset;
     if(peek_offset >= bytes_left) return 0;
 
@@ -108,25 +108,25 @@ size_t ByteStream_SecMemory::peek(uint8_t out[], size_t length, size_t peek_offs
     return got;
 }
 
-bool ByteStream_SecMemory::end_of_data() const {
+bool ByteInStream_SecMemory::end_of_data() const {
     return (m_offset == m_source.size());
 }
 
-void ByteStream_SecMemory::close() noexcept {
+void ByteInStream_SecMemory::close() noexcept {
     m_source.clear();
     m_offset = 0;
 }
 
-std::string ByteStream_SecMemory::to_string() const {
-    return "ByteStream_SecMemory[content size "+jau::to_decstring(m_source.size())+
+std::string ByteInStream_SecMemory::to_string() const {
+    return "ByteInStream_SecMemory[content size "+jau::to_decstring(m_source.size())+
                             ", consumed "+jau::to_decstring(m_offset)+
                             ", available "+jau::to_decstring(m_source.size()-m_offset)+"]";
 }
 
-size_t ByteStream_istream::read(uint8_t out[], size_t length) {
+size_t ByteInStream_istream::read(uint8_t out[], size_t length) {
     m_source.read(cast_uint8_ptr_to_char(out), length);
     if( m_source.bad() ) {
-        throw jau::IOError("ByteStream_Stream::read: Source failure", E_FILE_LINE);
+        throw jau::IOError("ByteInStream_Stream::read: Source failure", E_FILE_LINE);
     }
 
     const size_t got = static_cast<size_t>(m_source.gcount());
@@ -134,7 +134,7 @@ size_t ByteStream_istream::read(uint8_t out[], size_t length) {
     return got;
 }
 
-bool ByteStream_istream::check_available(size_t n) {
+bool ByteInStream_istream::check_available(size_t n) {
     // stream size is dynamic, hence can't store size until end
     const std::streampos orig_pos = m_source.tellg();
     m_source.seekg(0, std::ios::end);
@@ -143,9 +143,9 @@ bool ByteStream_istream::check_available(size_t n) {
     return avail >= n;
 }
 
-size_t ByteStream_istream::peek(uint8_t out[], size_t length, size_t offset) const {
+size_t ByteInStream_istream::peek(uint8_t out[], size_t length, size_t offset) const {
     if(end_of_data()) {
-        throw jau::IllegalStateException("ByteStream_Stream: Cannot peek when out of data", E_FILE_LINE);
+        throw jau::IllegalStateException("ByteInStream_Stream: Cannot peek when out of data", E_FILE_LINE);
     }
 
     size_t got = 0;
@@ -154,7 +154,7 @@ size_t ByteStream_istream::peek(uint8_t out[], size_t length, size_t offset) con
         secure_vector<uint8_t> buf(offset);
         m_source.read(cast_uint8_ptr_to_char(buf.data()), buf.size());
         if(m_source.bad()) {
-            throw jau::IOError("ByteStream_Stream::peek: Source failure", E_FILE_LINE);
+            throw jau::IOError("ByteInStream_Stream::peek: Source failure", E_FILE_LINE);
         }
         got = static_cast<size_t>(m_source.gcount());
     }
@@ -162,7 +162,7 @@ size_t ByteStream_istream::peek(uint8_t out[], size_t length, size_t offset) con
     if(got == offset) {
         m_source.read(cast_uint8_ptr_to_char(out), length);
         if(m_source.bad()) {
-            throw jau::IOError("ByteStream_Stream::peek: Source failure", E_FILE_LINE);
+            throw jau::IOError("ByteInStream_Stream::peek: Source failure", E_FILE_LINE);
         }
         got = static_cast<size_t>(m_source.gcount());
     }
@@ -175,33 +175,33 @@ size_t ByteStream_istream::peek(uint8_t out[], size_t length, size_t offset) con
     return got;
 }
 
-bool ByteStream_istream::end_of_data() const {
+bool ByteInStream_istream::end_of_data() const {
     return !m_source.good();
 }
 
-std::string ByteStream_istream::id() const {
+std::string ByteInStream_istream::id() const {
     return m_identifier;
 }
 
-ByteStream_istream::ByteStream_istream(std::istream& in, const std::string& name)
+ByteInStream_istream::ByteInStream_istream(std::istream& in, const std::string& name)
 : m_identifier(name), m_source(in),
   m_bytes_consumed(0)
 { }
 
-void ByteStream_istream::close() noexcept {
+void ByteInStream_istream::close() noexcept {
     // nop
 }
 
-std::string ByteStream_istream::to_string() const {
-    return "ByteStream_Stream["+m_identifier+
+std::string ByteInStream_istream::to_string() const {
+    return "ByteInStream_Stream["+m_identifier+
                             ", consumed "+jau::to_decstring(m_bytes_consumed)+
                             ", eod "+std::to_string(end_of_data())+"]";
 }
 
-size_t ByteStream_File::read(uint8_t out[], size_t length) {
+size_t ByteInStream_File::read(uint8_t out[], size_t length) {
    m_source->read(cast_uint8_ptr_to_char(out), length);
    if( m_source->bad() ) {
-      throw jau::IOError("ByteStream_File::read: Source failure", E_FILE_LINE);
+      throw jau::IOError("ByteInStream_File::read: Source failure", E_FILE_LINE);
    }
 
    const size_t got = static_cast<size_t>(m_source->gcount());
@@ -209,9 +209,9 @@ size_t ByteStream_File::read(uint8_t out[], size_t length) {
    return got;
 }
 
-size_t ByteStream_File::peek(uint8_t out[], size_t length, size_t offset) const {
+size_t ByteInStream_File::peek(uint8_t out[], size_t length, size_t offset) const {
    if( end_of_data() ) {
-      throw jau::IllegalStateException("ByteStream_File: Cannot peek when out of data", E_FILE_LINE);
+      throw jau::IllegalStateException("ByteInStream_File: Cannot peek when out of data", E_FILE_LINE);
    }
 
    size_t got = 0;
@@ -220,7 +220,7 @@ size_t ByteStream_File::peek(uint8_t out[], size_t length, size_t offset) const 
       secure_vector<uint8_t> buf(offset);
       m_source->read(cast_uint8_ptr_to_char(buf.data()), buf.size());
       if(m_source->bad()) {
-         throw jau::IOError("ByteStream_File::peek: Source failure", E_FILE_LINE);
+         throw jau::IOError("ByteInStream_File::peek: Source failure", E_FILE_LINE);
       }
       got = static_cast<size_t>(m_source->gcount());
    }
@@ -228,7 +228,7 @@ size_t ByteStream_File::peek(uint8_t out[], size_t length, size_t offset) const 
    if(got == offset) {
       m_source->read(cast_uint8_ptr_to_char(out), length);
       if(m_source->bad()) {
-         throw jau::IOError("ByteStream_File::peek: Source failure", E_FILE_LINE);
+         throw jau::IOError("ByteInStream_File::peek: Source failure", E_FILE_LINE);
       }
       got = static_cast<size_t>(m_source->gcount());
    }
@@ -241,19 +241,19 @@ size_t ByteStream_File::peek(uint8_t out[], size_t length, size_t offset) const 
    return got;
 }
 
-bool ByteStream_File::check_available(size_t n) {
+bool ByteInStream_File::check_available(size_t n) {
     return m_content_size - m_bytes_consumed >= (uint64_t)n;
 };
 
-bool ByteStream_File::end_of_data() const {
+bool ByteInStream_File::end_of_data() const {
     return !m_source->good() || m_bytes_consumed >= m_content_size;
 }
 
-std::string ByteStream_File::id() const {
+std::string ByteInStream_File::id() const {
     return m_identifier;
 }
 
-ByteStream_File::ByteStream_File(const std::string& path, bool use_binary)
+ByteInStream_File::ByteInStream_File(const std::string& path, bool use_binary)
 : m_identifier(path),
   m_source(), m_content_size(0), m_bytes_consumed(0)
 {
@@ -268,41 +268,41 @@ ByteStream_File::ByteStream_File(const std::string& path, bool use_binary)
     m_content_size = in_stats.size();
 }
 
-void ByteStream_File::close() noexcept {
+void ByteInStream_File::close() noexcept {
     m_source->close();
 }
 
-std::string ByteStream_File::to_string() const {
-    return "ByteStream_File["+m_identifier+", content_length "+jau::to_decstring(m_content_size)+
+std::string ByteInStream_File::to_string() const {
+    return "ByteInStream_File["+m_identifier+", content_length "+jau::to_decstring(m_content_size)+
                             ", consumed "+jau::to_decstring(m_bytes_consumed)+
                             ", available "+jau::to_decstring(m_content_size - m_bytes_consumed)+
                             ", eod "+std::to_string(end_of_data())+"]";
 }
 
-ByteStream_URL::ByteStream_URL(const std::string& url, jau::fraction_i64 timeout, const uint64_t exp_size)
+ByteInStream_URL::ByteInStream_URL(const std::string& url, jau::fraction_i64 timeout, const uint64_t exp_size)
 : m_url(url), m_exp_size(exp_size), m_timeout(timeout), m_buffer(0x00, BEST_URLSTREAM_RINGBUFFER_SIZE),
-  m_has_content_length( false ), m_content_size( 0 ), m_total_xfered( 0 ), m_result( io::result_t::NONE ),
+  m_has_content_length( false ), m_content_size( 0 ), m_total_xfered( 0 ), m_result( io::async_io_result_t::NONE ),
   m_bytes_consumed(0)
 
 {
     m_url_thread = read_url_stream(m_url, m_exp_size, m_buffer, m_has_content_length, m_content_size, m_total_xfered, m_result);
 }
 
-void ByteStream_URL::close() noexcept {
-    DBG_PRINT("ByteStream_URL: close.0 %s, %s", id().c_str(), to_string_int().c_str());
+void ByteInStream_URL::close() noexcept {
+    DBG_PRINT("ByteInStream_URL: close.0 %s, %s", id().c_str(), to_string_int().c_str());
 
-    m_result = result_t::FAILED; // signal end of curl thread!
+    m_result = async_io_result_t::FAILED; // signal end of curl thread!
 
     m_buffer.drop(m_buffer.size()); // unblock putBlocking(..)
     if( m_url_thread.joinable() ) {
-        DBG_PRINT("ByteStream_URL: close.1 %s, %s", id().c_str(), m_buffer.toString().c_str());
+        DBG_PRINT("ByteInStream_URL: close.1 %s, %s", id().c_str(), m_buffer.toString().c_str());
         m_url_thread.join();
     }
-    DBG_PRINT("ByteStream_URL: close.X %s, %s", id().c_str(), to_string_int().c_str());
+    DBG_PRINT("ByteInStream_URL: close.X %s, %s", id().c_str(), to_string_int().c_str());
 }
 
-bool ByteStream_URL::check_available(size_t n) {
-    if( result_t::NONE != m_result ) {
+bool ByteInStream_URL::check_available(size_t n) {
+    if( async_io_result_t::NONE != m_result ) {
         // url thread ended, only remaining bytes in buffer available left
         return m_buffer.size() >= n;
     }
@@ -313,29 +313,29 @@ bool ByteStream_URL::check_available(size_t n) {
     return m_buffer.waitForElements(n, m_timeout) >= n;
 }
 
-size_t ByteStream_URL::read(uint8_t out[], size_t length) {
+size_t ByteInStream_URL::read(uint8_t out[], size_t length) {
     if( 0 == length || ( m_has_content_length && m_content_size - m_bytes_consumed < 1 ) ) {
         return 0;
     }
     const size_t consumed_bytes = m_buffer.get(out, length, 1);
     m_bytes_consumed += consumed_bytes;
-    // DBG_PRINT("ByteStream_Feed::read: size %zu/%zu bytes, %s", consumed_bytes, length, to_string_int().c_str() );
+    // DBG_PRINT("ByteInStream_Feed::read: size %zu/%zu bytes, %s", consumed_bytes, length, to_string_int().c_str() );
     return consumed_bytes;
 }
 
-size_t ByteStream_URL::peek(uint8_t out[], size_t length, size_t peek_offset) const {
+size_t ByteInStream_URL::peek(uint8_t out[], size_t length, size_t peek_offset) const {
     (void)out;
     (void)length;
     (void)peek_offset;
-    throw jau::NotImplementedError("ByteStream_URL::peek not implemented", E_FILE_LINE);
+    throw jau::NotImplementedError("ByteInStream_URL::peek not implemented", E_FILE_LINE);
     return 0;
 }
 
-bool ByteStream_URL::end_of_data() const {
-    return result_t::NONE != m_result && m_buffer.isEmpty();
+bool ByteInStream_URL::end_of_data() const {
+    return async_io_result_t::NONE != m_result && m_buffer.isEmpty();
 }
 
-std::string ByteStream_URL::to_string_int() const {
+std::string ByteInStream_URL::to_string_int() const {
     return m_url+", Url[content_length "+std::to_string(m_has_content_length.load())+
                        " "+jau::to_decstring(m_content_size.load())+
                        ", xfered "+jau::to_decstring(m_total_xfered.load())+
@@ -344,28 +344,28 @@ std::string ByteStream_URL::to_string_int() const {
            ", available "+jau::to_decstring(get_available())+
            ", eod "+std::to_string(end_of_data())+", "+m_buffer.toString();
 }
-std::string ByteStream_URL::to_string() const {
-    return "ByteStream_URL["+to_string_int()+"]";
+std::string ByteInStream_URL::to_string() const {
+    return "ByteInStream_URL["+to_string_int()+"]";
 }
 
-ByteStream_Feed::ByteStream_Feed(const std::string& id_name, jau::fraction_i64 timeout, const uint64_t exp_size)
+ByteInStream_Feed::ByteInStream_Feed(const std::string& id_name, jau::fraction_i64 timeout, const uint64_t exp_size)
 : m_id(id_name), m_exp_size(exp_size), m_timeout(timeout), m_buffer(0x00, BEST_URLSTREAM_RINGBUFFER_SIZE),
-  m_has_content_length( false ), m_content_size( 0 ), m_total_xfered( 0 ), m_result( io::result_t::NONE ),
+  m_has_content_length( false ), m_content_size( 0 ), m_total_xfered( 0 ), m_result( io::async_io_result_t::NONE ),
   m_bytes_consumed(0)
 { }
 
-void ByteStream_Feed::close() noexcept {
-    DBG_PRINT("ByteStream_Feed: close.0 %s, %s", id().c_str(), to_string_int().c_str());
+void ByteInStream_Feed::close() noexcept {
+    DBG_PRINT("ByteInStream_Feed: close.0 %s, %s", id().c_str(), to_string_int().c_str());
 
-    m_result = result_t::FAILED; // signal end of curl thread!
+    m_result = async_io_result_t::FAILED; // signal end of curl thread!
 
     m_buffer.drop(m_buffer.size()); // unblock putBlocking(..)
 
-    DBG_PRINT("ByteStream_Feed: close.X %s, %s", id().c_str(), to_string_int().c_str());
+    DBG_PRINT("ByteInStream_Feed: close.X %s, %s", id().c_str(), to_string_int().c_str());
 }
 
-bool ByteStream_Feed::check_available(size_t n) {
-    if( result_t::NONE != m_result ) {
+bool ByteInStream_Feed::check_available(size_t n) {
+    if( async_io_result_t::NONE != m_result ) {
         // feeder completed, only remaining bytes in buffer available left
         return m_buffer.size() >= n;
     }
@@ -376,60 +376,60 @@ bool ByteStream_Feed::check_available(size_t n) {
     return m_buffer.waitForElements(n, m_timeout) >= n;
 }
 
-size_t ByteStream_Feed::read(uint8_t out[], size_t length) {
+size_t ByteInStream_Feed::read(uint8_t out[], size_t length) {
     if( 0 == length || ( m_has_content_length && m_content_size - m_bytes_consumed < 1 ) ) {
         return 0;
     }
     const size_t consumed_bytes = m_buffer.get(out, length, 1);
     m_bytes_consumed += consumed_bytes;
-    // DBG_PRINT("ByteStream_Feed::read: size %zu/%zu bytes, %s", consumed_bytes, length, to_string_int().c_str() );
+    // DBG_PRINT("ByteInStream_Feed::read: size %zu/%zu bytes, %s", consumed_bytes, length, to_string_int().c_str() );
     return consumed_bytes;
 }
 
-size_t ByteStream_Feed::peek(uint8_t out[], size_t length, size_t peek_offset) const {
+size_t ByteInStream_Feed::peek(uint8_t out[], size_t length, size_t peek_offset) const {
     (void)out;
     (void)length;
     (void)peek_offset;
-    throw jau::NotImplementedError("ByteStream_URL::peek not implemented", E_FILE_LINE);
+    throw jau::NotImplementedError("ByteInStream_URL::peek not implemented", E_FILE_LINE);
     return 0;
 }
 
-bool ByteStream_Feed::end_of_data() const {
-    return result_t::NONE != m_result && m_buffer.isEmpty();
+bool ByteInStream_Feed::end_of_data() const {
+    return async_io_result_t::NONE != m_result && m_buffer.isEmpty();
 }
 
-void ByteStream_Feed::write(uint8_t in[], size_t length) {
+void ByteInStream_Feed::write(uint8_t in[], size_t length) {
     if( 0 < length ) {
         size_t l = (in+length) - in;
         if( length != l ) {
-            throw jau::IOError("ByteStream_Feed "+std::to_string(length)+" != "+std::to_string(l), E_FILE_LINE);
+            throw jau::IOError("ByteInStream_Feed "+std::to_string(length)+" != "+std::to_string(l), E_FILE_LINE);
         }
         m_buffer.putBlocking(in, in+length, m_timeout);
         m_total_xfered.fetch_add(length);
     }
 }
 
-std::string ByteStream_Feed::to_string_int() const {
+std::string ByteInStream_Feed::to_string_int() const {
     return m_id+", ext[content_length "+std::to_string(m_has_content_length.load())+
                    " "+jau::to_decstring(m_content_size.load())+
                    ", xfered "+jau::to_decstring(m_total_xfered.load())+
                    ", result "+std::to_string((int8_t)m_result.load())+
            "], consumed "+std::to_string(m_bytes_consumed)+
            ", available "+std::to_string(get_available())+
-           ", eod "+std::to_string(result_t::NONE != m_result && m_buffer.isEmpty())+", "+m_buffer.toString();
+           ", eod "+std::to_string(async_io_result_t::NONE != m_result && m_buffer.isEmpty())+", "+m_buffer.toString();
 }
 
-std::string ByteStream_Feed::to_string() const {
-    return "ByteStream_Feed["+to_string_int()+"]";
+std::string ByteInStream_Feed::to_string() const {
+    return "ByteInStream_Feed["+to_string_int()+"]";
 }
 
-void ByteStream_Recorder::close() noexcept {
+void ByteInStream_Recorder::close() noexcept {
     clear_recording();
     m_parent.close();
-    DBG_PRINT("ByteStream_Recorder: close.X %s", id().c_str());
+    DBG_PRINT("ByteInStream_Recorder: close.X %s", id().c_str());
 }
 
-void ByteStream_Recorder::start_recording() noexcept {
+void ByteInStream_Recorder::start_recording() noexcept {
     if( is_recording() ) {
         m_buffer.resize(0);
     }
@@ -437,17 +437,17 @@ void ByteStream_Recorder::start_recording() noexcept {
     m_is_recording = true;
 }
 
-void ByteStream_Recorder::stop_recording() noexcept {
+void ByteInStream_Recorder::stop_recording() noexcept {
     m_is_recording = false;
 }
 
-void ByteStream_Recorder::clear_recording() noexcept {
+void ByteInStream_Recorder::clear_recording() noexcept {
     m_is_recording = false;
     m_buffer.clear();
     m_rec_offset = 0;
 }
 
-size_t ByteStream_Recorder::read(uint8_t out[], size_t length) {
+size_t ByteInStream_Recorder::read(uint8_t out[], size_t length) {
     const size_t consumed_bytes = m_parent.read(out, length);
     m_bytes_consumed += consumed_bytes;
     if( is_recording() ) {
@@ -456,8 +456,8 @@ size_t ByteStream_Recorder::read(uint8_t out[], size_t length) {
     return consumed_bytes;
 }
 
-std::string ByteStream_Recorder::to_string() const {
-    return "ByteStream_Recorder[parent "+m_parent.id()+", recording[on "+std::to_string(m_is_recording)+
+std::string ByteInStream_Recorder::to_string() const {
+    return "ByteInStream_Recorder[parent "+m_parent.id()+", recording[on "+std::to_string(m_is_recording)+
                                                    " offset "+jau::to_decstring(m_rec_offset)+
                             "], consumed "+jau::to_decstring(m_bytes_consumed)+
                             ", eod "+std::to_string(end_of_data())+"]";

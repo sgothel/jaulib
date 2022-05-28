@@ -41,6 +41,12 @@
 #include <jau/byte_stream.hpp>
 
 namespace jau::io {
+        /** @defgroup IOUtils IO Utilities
+         *  Input and Output (IO) types and functionality.
+         *
+         *  @{
+         */
+
         /**
          * Stream consumer function
          * - `bool consumer(secure_vector<uint8_t>& data, bool is_final)`
@@ -68,7 +74,7 @@ namespace jau::io {
          * @param consumer_fn
          * @return total bytes read
          */
-        uint64_t read_stream(ByteStream& in, const uint64_t exp_size,
+        uint64_t read_stream(ByteInStream& in, const uint64_t exp_size,
                              secure_vector<uint8_t>& buffer,
                              StreamConsumerFunc consumer_fn);
 
@@ -105,6 +111,9 @@ namespace jau::io {
                                     relaxed_atomic_result_t& result) noexcept;
 
         void print_stats(const std::string& prefix, const uint64_t& out_bytes_total, const jau::fraction_i64& td) noexcept;
+
+        /**@}*/
+
 } // namespace elevator::io
 
 #endif /* JAU_IO_UTIL_HPP_ */

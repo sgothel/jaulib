@@ -42,19 +42,19 @@ using namespace jau::fractions_i64_literals;
 
 
 uint64_t jau::io::read_file(const std::string& input_file, const uint64_t exp_size,
-                                 secure_vector<uint8_t>& buffer,
-                                 StreamConsumerFunc consumer_fn)
+                            secure_vector<uint8_t>& buffer,
+                            StreamConsumerFunc consumer_fn)
 {
     if(input_file == "-") {
-        ByteStream_istream in(std::cin);
+        ByteInStream_istream in(std::cin);
         return read_stream(in, exp_size, buffer, consumer_fn);
     } else {
-        ByteStream_File in(input_file, true /* use_binary */);
+        ByteInStream_File in(input_file, true /* use_binary */);
         return read_stream(in, exp_size, buffer, consumer_fn);
     }
 }
 
-uint64_t jau::io::read_stream(ByteStream& in, const uint64_t exp_size,
+uint64_t jau::io::read_stream(ByteInStream& in, const uint64_t exp_size,
                               secure_vector<uint8_t>& buffer,
                               StreamConsumerFunc consumer_fn) {
     uint64_t total = 0;
@@ -230,7 +230,7 @@ struct curl_glue2_t {
 static size_t consume_curl2(void *ptr, size_t size, size_t nmemb, void *stream) noexcept {
     curl_glue2_t * cg = (curl_glue2_t*)stream;
 
-    if( result_t::NONE!= cg->result ) {
+    if( async_io_result_t::NONE!= cg->result ) {
         // user abort!
         DBG_PRINT("consume_curl2 ABORT by User: total %" PRIi64 ", result %d, rb %s",
                 cg->total_read.load(), cg->result.load(), cg->buffer.toString().c_str() );
@@ -261,7 +261,7 @@ static size_t consume_curl2(void *ptr, size_t size, size_t nmemb, void *stream) 
                           cg->has_content_length ? cg->total_read >= cg->content_length : false ||
                           ( 0 < cg->exp_size || cg->total_read >= cg->exp_size );
     if( is_final ) {
-        cg->result = result_t::SUCCESS;
+        cg->result = async_io_result_t::SUCCESS;
     }
 
     DBG_PRINT("consume_curl2.X realsize %zu, total %" PRIu64 " / ( exp_size %" PRIu64 " or content_len %" PRIu64 " ), is_final %d, result %d, rb %s",
@@ -333,7 +333,7 @@ static void read_url_stream_thread(const char *url, std::unique_ptr<curl_glue2_t
     /* performs the tast, blocking! */
     res = curl_easy_perform(curl_handle);
     if( CURLE_OK != res ) {
-        if( result_t::NONE == cg->result ) {
+        if( async_io_result_t::NONE == cg->result ) {
             // Error during normal processing
             ERR_PRINT("Error processing url %s, error %d %d",
                       url, (int)res, errorbuffer.data());
@@ -346,11 +346,11 @@ static void read_url_stream_thread(const char *url, std::unique_ptr<curl_glue2_t
     }
 
     /* cleanup curl stuff */
-    cg->result = result_t::SUCCESS;
+    cg->result = async_io_result_t::SUCCESS;
     goto cleanup;
 
 errout:
-    cg->result = result_t::FAILED;
+    cg->result = async_io_result_t::FAILED;
 
 cleanup:
     if( nullptr != curl_handle ) {
@@ -369,7 +369,7 @@ std::thread jau::io::read_url_stream(const std::string& url, const uint64_t& exp
     has_content_length = false;
     content_length = 0;
     total_read = 0;
-    result = io::result_t::NONE;
+    result = io::async_io_result_t::NONE;
 
     if( buffer.capacity() < BEST_URLSTREAM_RINGBUFFER_SIZE ) {
         buffer.recapacity( BEST_URLSTREAM_RINGBUFFER_SIZE );

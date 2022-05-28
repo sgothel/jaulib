@@ -131,7 +131,7 @@ class TestIOStream01 {
             size_t consumed_loops = 0;
             uint64_t consumed_total_bytes = 0;
 
-            while( jau::io::result_t::NONE == result || !rb.isEmpty() ) {
+            while( jau::io::async_io_result_t::NONE == result || !rb.isEmpty() ) {
                 consumed_loops++;
                 // const size_t consumed_bytes = content_length >= 0 ? std::min(buffer_size, content_length - consumed_total_bytes) : rb.getSize();
                 const size_t consumed_bytes = rb.getBlocking(buffer.data(), buffer_size, 1, 0_s);
@@ -151,7 +151,7 @@ class TestIOStream01 {
             REQUIRE( url_content_length == consumed_total_bytes );
             REQUIRE( url_content_length == url_total_read );
             REQUIRE( url_content_length == out_bytes_total );
-            REQUIRE( jau::io::result_t::SUCCESS == result );
+            REQUIRE( jau::io::async_io_result_t::SUCCESS == result );
         }
 };
 
