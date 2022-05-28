@@ -166,6 +166,16 @@ std::string file_stats::to_string(const bool use_space) const noexcept {
     return res;
 }
 
+std::string jau::fs::get_cwd() noexcept {
+    char path[PATH_MAX];
+    char* res = getcwd(path, PATH_MAX);
+    if( res == path ) {
+        return std::string(path);
+    } else {
+        return std::string();
+    }
+}
+
 bool jau::fs::mkdir(const std::string& path, const bool verbose) noexcept {
     file_stats fstats(path);
 

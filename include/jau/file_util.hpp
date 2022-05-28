@@ -211,6 +211,11 @@ namespace jau {
         };
 
         /**
+         * Return the current working directory or empty on failure.
+         */
+        std::string get_cwd() noexcept;
+
+        /**
          * Create directory
          * @param path full path to new directory
          * @param verbose
