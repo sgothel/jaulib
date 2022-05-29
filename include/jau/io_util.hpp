@@ -56,51 +56,62 @@ namespace jau::io {
         typedef std::function<bool (secure_vector<uint8_t>& /* data */, bool /* is_final */)> StreamConsumerFunc;
 
         /**
+         * Synchronous byte input stream reader from given file path using the given StreamConsumerFunc consumer_fn.
          *
-         * @param input_file
+         * To abort streaming, user may return `false` from the given `consumer_func`.
+         *
+         * @param input_file input file name path, `-` denotes std::stdin.
          * @param exp_size if > 0 it is additionally used to determine EOF, otherwise the underlying EOF mechanism is being used only.
-         * @param buf_size
-         * @param consumer_fn
+         * @param buffer secure std::vector buffer, passed down to consumer_fn
+         * @param consumer_fn StreamConsumerFunc consumer for each received heap of bytes, returning true to continue stream of false to abort.
          * @return total bytes read or 0 if error
          */
         uint64_t read_file(const std::string& input_file, const uint64_t exp_size,
                            secure_vector<uint8_t>& buffer,
-                           StreamConsumerFunc consumer_fn);
+                           StreamConsumerFunc consumer_fn) noexcept;
 
         /**
-         * @param in
+         * Synchronous byte input stream reader using the given StreamConsumerFunc consumer_fn.
+         *
+         * To abort streaming, user may return `false` from the given `consumer_func`.
+         *
+         * @param in the input byte stream to read from
          * @param exp_size if > 0 it is additionally used to determine EOF, otherwise the underlying EOF mechanism is being used only.
-         * @param buf_size
-         * @param consumer_fn
-         * @return total bytes read
+         * @param buffer secure std::vector buffer, passed down to consumer_fn
+         * @param consumer_fn StreamConsumerFunc consumer for each received heap of bytes, returning true to continue stream of false to abort.
+         * @return total bytes read or 0 if error
          */
         uint64_t read_stream(ByteInStream& in, const uint64_t exp_size,
                              secure_vector<uint8_t>& buffer,
-                             StreamConsumerFunc consumer_fn);
+                             StreamConsumerFunc consumer_fn) noexcept;
 
         /**
+         * Synchronous URL stream reader using the given StreamConsumerFunc consumer_fn.
          *
-         * @param url
+         * To abort streaming, user may return `false` from the given `consumer_func`.
+         *
+         * @param url the URL to open a connection to and stream bytes from
          * @param exp_size if > 0 it is additionally used to determine EOF, otherwise the underlying EOF mechanism is being used only.
-         * @param buffer
-         * @param consumer_fn
+         * @param buffer secure std::vector buffer, passed down to consumer_fn
+         * @param consumer_fn StreamConsumerFunc consumer for each received heap of bytes, returning true to continue stream of false to abort.
          * @return total bytes read or 0 if error
          */
         uint64_t read_url_stream(const std::string& url, const uint64_t exp_size,
                                  secure_vector<uint8_t>& buffer,
-                                 StreamConsumerFunc consumer_fn);
+                                 StreamConsumerFunc consumer_fn) noexcept;
 
         /**
-         * Asynchronous URL read content using a byte jau::ringbuffer,
-         * allowing parallel reading.
+         * Asynchronous URL read content using the given byte jau::ringbuffer, allowing parallel reading.
          *
-         * @param url the URL of the content to read
+         * To abort streaming, user may set given reference `results` to a value other than async_io_result_t::NONE.
+         *
+         * @param url the URL to open a connection to and stream bytes from
          * @param exp_size if > 0 it is additionally used to determine EOF, otherwise the underlying EOF mechanism is being used only.
          * @param buffer the ringbuffer destination to write into
          * @param has_content_length indicating whether content_length is known from server
          * @param content_length tracking the content_length
          * @param total_read tracking the total_read
-         * @param result tracking the result_t
+         * @param result reference to tracking async_io_result_t. If set to other than async_io_result_t::NONE while streaming, streaming is aborted.
          * @return the url background reading thread
          */
         std::thread read_url_stream(const std::string& url, const uint64_t& exp_size,
@@ -108,7 +119,7 @@ namespace jau::io {
                                     jau::relaxed_atomic_bool& has_content_length,
                                     jau::relaxed_atomic_uint64& content_length,
                                     jau::relaxed_atomic_uint64& total_read,
-                                    relaxed_atomic_result_t& result) noexcept;
+                                    relaxed_atomic_async_io_result_t& result) noexcept;
 
         void print_stats(const std::string& prefix, const uint64_t& out_bytes_total, const jau::fraction_i64& td) noexcept;
 

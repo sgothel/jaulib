@@ -43,7 +43,7 @@ using namespace jau::fractions_i64_literals;
 
 uint64_t jau::io::read_file(const std::string& input_file, const uint64_t exp_size,
                             secure_vector<uint8_t>& buffer,
-                            StreamConsumerFunc consumer_fn)
+                            StreamConsumerFunc consumer_fn) noexcept
 {
     if(input_file == "-") {
         ByteInStream_istream in(std::cin);
@@ -56,20 +56,27 @@ uint64_t jau::io::read_file(const std::string& input_file, const uint64_t exp_si
 
 uint64_t jau::io::read_stream(ByteInStream& in, const uint64_t exp_size,
                               secure_vector<uint8_t>& buffer,
-                              StreamConsumerFunc consumer_fn) {
+                              StreamConsumerFunc consumer_fn) noexcept {
     uint64_t total = 0;
     bool has_more = !in.end_of_data();
     while( has_more ) {
-        buffer.resize(buffer.capacity());
+        if( in.check_available(1) ) { // at least one byte to stream ..
+            buffer.resize(buffer.capacity());
+            const uint64_t got = in.read(buffer.data(), buffer.capacity());
 
-        in.check_available(1);
-        const uint64_t got = in.read(buffer.data(), buffer.capacity());
-
-        buffer.resize(got);
-        total += got;
-        has_more = 1 <= got && !in.end_of_data() && ( 0 == exp_size || total < exp_size );
-        if( !consumer_fn(buffer, !has_more) ) {
-            break; // end streaming
+            buffer.resize(got);
+            total += got;
+            has_more = 1 <= got && !in.end_of_data() && ( 0 == exp_size || total < exp_size );
+            try {
+                if( !consumer_fn(buffer, !has_more) ) {
+                    break; // end streaming
+                }
+            } catch (std::exception &e) {
+                ERR_PRINT("jau::io::read_stream: Caught exception: %s", e.what());
+                break; // end streaming
+            }
+        } else {
+            has_more = false;
         }
     }
     return total;
@@ -115,7 +122,12 @@ static size_t consume_curl1(void *ptr, size_t size, size_t nmemb, void *stream) 
     DBG_PRINT("consume_curl1.X realsize %zu, total %" PRIu64 " / ( exp_size %" PRIu64 " or content_len %" PRIu64 " ), is_final %d",
            realsize, cg->total_read, cg->exp_size, cg->content_length, is_final );
 
-    if( !cg->consumer_fn(cg->buffer, is_final) ) {
+    try {
+        if( !cg->consumer_fn(cg->buffer, is_final) ) {
+            return 0; // end streaming
+        }
+    } catch (std::exception &e) {
+        ERR_PRINT("jau::io::read_url_stream: Caught exception: %s", e.what());
         return 0; // end streaming
     }
 
@@ -124,7 +136,7 @@ static size_t consume_curl1(void *ptr, size_t size, size_t nmemb, void *stream) 
 
 uint64_t jau::io::read_url_stream(const std::string& url, const uint64_t exp_size,
                                        secure_vector<uint8_t>& buffer,
-                                       StreamConsumerFunc consumer_fn) {
+                                       StreamConsumerFunc consumer_fn) noexcept {
     std::vector<char> errorbuffer;
     errorbuffer.reserve(CURL_ERROR_SIZE);
     CURLcode res;
