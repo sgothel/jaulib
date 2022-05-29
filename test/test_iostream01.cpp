@@ -80,10 +80,37 @@ class TestIOStream01 {
             std::system("killall mini_httpd");
         }
 
-        void test01() {
+        void test01_sync_ok() {
             const jau::fs::file_stats in_stats(basename_10kiB);
             const size_t file_size = in_stats.size();
             const std::string url_input = url_input_root + basename_10kiB;
+
+            std::ofstream outfile("test01_01_out.bin", std::ios::out | std::ios::binary);
+            REQUIRE( outfile.good() );
+            REQUIRE( outfile.is_open() );
+
+            jau::io::secure_vector<uint8_t> buffer(4096);
+            size_t consumed_calls = 0;
+            uint64_t consumed_total_bytes = 0;
+            jau::io::StreamConsumerFunc consume = [&](jau::io::secure_vector<uint8_t>& data, bool is_final) noexcept -> bool {
+                consumed_calls++;
+                consumed_total_bytes += data.size();
+                outfile.write(reinterpret_cast<char*>(data.data()), data.size());
+                jau::PLAIN_PRINT(true, "test01_sync_ok #%zu: consumed size %zu, total %" PRIu64 ", capacity %zu, final %d",
+                        consumed_calls, data.size(), consumed_total_bytes, data.capacity(), is_final );
+                return true;
+            };
+            uint64_t http_total_bytes = jau::io::read_url_stream(url_input, buffer, consume);
+            const uint64_t out_bytes_total = outfile.tellp();
+            jau::PLAIN_PRINT(true, "test01_sync_ok Done: total %" PRIu64 ", capacity %zu", consumed_total_bytes, buffer.capacity());
+
+            REQUIRE( file_size == http_total_bytes );
+            REQUIRE( consumed_total_bytes == http_total_bytes );
+            REQUIRE( consumed_total_bytes == out_bytes_total );
+        }
+
+        void test02_sync_404() {
+            const std::string url_input = url_input_root + "doesnt_exists.txt";
 
             std::ofstream outfile("test02_01_out.bin", std::ios::out | std::ios::binary);
             REQUIRE( outfile.good() );
@@ -96,25 +123,25 @@ class TestIOStream01 {
                 consumed_calls++;
                 consumed_total_bytes += data.size();
                 outfile.write(reinterpret_cast<char*>(data.data()), data.size());
-                jau::PLAIN_PRINT(true, "test02io01 #%zu: consumed size %zu, total %" PRIu64 ", capacity %zu, final %d",
+                jau::PLAIN_PRINT(true, "test02_sync_404 #%zu: consumed size %zu, total %" PRIu64 ", capacity %zu, final %d",
                         consumed_calls, data.size(), consumed_total_bytes, data.capacity(), is_final );
                 return true;
             };
             uint64_t http_total_bytes = jau::io::read_url_stream(url_input, buffer, consume);
             const uint64_t out_bytes_total = outfile.tellp();
-            jau::PLAIN_PRINT(true, "test02io01 Done: total %" PRIu64 ", capacity %zu", consumed_total_bytes, buffer.capacity());
+            jau::PLAIN_PRINT(true, "test02_sync_404 Done: total %" PRIu64 ", capacity %zu", consumed_total_bytes, buffer.capacity());
 
-            REQUIRE( file_size == http_total_bytes );
+            REQUIRE( 0 == http_total_bytes );
             REQUIRE( consumed_total_bytes == http_total_bytes );
             REQUIRE( consumed_total_bytes == out_bytes_total );
         }
 
-        void test02() {
+        void test11_async_ok() {
             const jau::fs::file_stats in_stats(basename_10kiB);
             const size_t file_size = in_stats.size();
             const std::string url_input = url_input_root + basename_10kiB;
 
-            std::ofstream outfile("test02_02_out.bin", std::ios::out | std::ios::binary);
+            std::ofstream outfile("test11_01_out.bin", std::ios::out | std::ios::binary);
             REQUIRE( outfile.good() );
             REQUIRE( outfile.is_open() );
 
@@ -134,15 +161,15 @@ class TestIOStream01 {
             while( jau::io::async_io_result_t::NONE == result || !rb.isEmpty() ) {
                 consumed_loops++;
                 // const size_t consumed_bytes = content_length >= 0 ? std::min(buffer_size, content_length - consumed_total_bytes) : rb.getSize();
-                const size_t consumed_bytes = rb.getBlocking(buffer.data(), buffer_size, 1, 0_s);
+                const size_t consumed_bytes = rb.getBlocking(buffer.data(), buffer_size, 1, 500_ms);
                 consumed_total_bytes += consumed_bytes;
-                jau::PLAIN_PRINT(true, "test02io02.0 #%zu: consumed[this %zu, total %" PRIu64 ", result %d, rb %s",
+                jau::PLAIN_PRINT(true, "test11_async_ok.0 #%zu: consumed[this %zu, total %" PRIu64 ", result %d, rb %s",
                         consumed_loops, consumed_bytes, consumed_total_bytes, result.load(), rb.toString().c_str() );
                 outfile.write(reinterpret_cast<char*>(buffer.data()), consumed_bytes);
             }
             const uint64_t out_bytes_total = outfile.tellp();
-            jau::PLAIN_PRINT(true, "test02io02.X Done: total %" PRIu64 ", result %d, rb %s",
-                    consumed_total_bytes, result.load(), rb.toString().c_str() );
+            jau::PLAIN_PRINT(true, "test11_async_ok.X Done: total %" PRIu64 ", result %d, rb %s",
+                    consumed_total_bytes, (int)result.load(), rb.toString().c_str() );
 
             http_thread.join();
 
@@ -153,7 +180,54 @@ class TestIOStream01 {
             REQUIRE( url_content_length == out_bytes_total );
             REQUIRE( jau::io::async_io_result_t::SUCCESS == result );
         }
+
+        void test12_async_404() {
+            const std::string url_input = url_input_root + "doesnt_exists.txt";
+
+            std::ofstream outfile("test12_01_out.bin", std::ios::out | std::ios::binary);
+            REQUIRE( outfile.good() );
+            REQUIRE( outfile.is_open() );
+
+            constexpr const size_t buffer_size = 4096;
+            jau::io::ByteRingbuffer rb(0x00, jau::io::BEST_URLSTREAM_RINGBUFFER_SIZE);
+            jau::relaxed_atomic_bool url_has_content_length;
+            jau::relaxed_atomic_uint64 url_content_length;
+            jau::relaxed_atomic_uint64 url_total_read;
+            jau::io::relaxed_atomic_async_io_result_t result;
+
+            std::thread http_thread = jau::io::read_url_stream(url_input, rb, url_has_content_length, url_content_length, url_total_read, result);
+
+            jau::io::secure_vector<uint8_t> buffer(buffer_size);
+            size_t consumed_loops = 0;
+            uint64_t consumed_total_bytes = 0;
+
+            while( jau::io::async_io_result_t::NONE == result || !rb.isEmpty() ) {
+                consumed_loops++;
+                // const size_t consumed_bytes = content_length >= 0 ? std::min(buffer_size, content_length - consumed_total_bytes) : rb.getSize();
+                const size_t consumed_bytes = rb.getBlocking(buffer.data(), buffer_size, 1, 500_ms);
+                consumed_total_bytes += consumed_bytes;
+                jau::PLAIN_PRINT(true, "test12_async_404.0 #%zu: consumed[this %zu, total %" PRIu64 ", result %d, rb %s",
+                        consumed_loops, consumed_bytes, consumed_total_bytes, result.load(), rb.toString().c_str() );
+                outfile.write(reinterpret_cast<char*>(buffer.data()), consumed_bytes);
+            }
+            const uint64_t out_bytes_total = outfile.tellp();
+            jau::PLAIN_PRINT(true, "test12_async_404.X Done: total %" PRIu64 ", result %d, rb %s",
+                    consumed_total_bytes, (int)result.load(), rb.toString().c_str() );
+
+            http_thread.join();
+
+            REQUIRE( url_has_content_length == false );
+            REQUIRE( url_content_length == 0 );
+            REQUIRE( url_content_length == consumed_total_bytes );
+            REQUIRE( url_content_length == url_total_read );
+            REQUIRE( url_content_length == out_bytes_total );
+            REQUIRE( jau::io::async_io_result_t::FAILED == result );
+        }
+
 };
 
-METHOD_AS_TEST_CASE( TestIOStream01::test01, "TestIOStream01 - 01");
-METHOD_AS_TEST_CASE( TestIOStream01::test02, "TestIOStream01 - 02");
+METHOD_AS_TEST_CASE( TestIOStream01::test01_sync_ok,   "TestIOStream01 - test01_sync_ok");
+METHOD_AS_TEST_CASE( TestIOStream01::test02_sync_404,  "TestIOStream01 - test02_sync_404");
+METHOD_AS_TEST_CASE( TestIOStream01::test11_async_ok,  "TestIOStream01 - test11_async_ok");
+METHOD_AS_TEST_CASE( TestIOStream01::test12_async_404, "TestIOStream01 - test12_async_404");
+

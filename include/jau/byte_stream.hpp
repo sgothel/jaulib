@@ -556,6 +556,18 @@ namespace jau::io {
             uint64_t content_size() const noexcept override { return m_content_size; }
 
             /**
+             * Interrupt a potentially blocked reader.
+             *
+             * Call this method if intended to abort streaming and to interrupt the reader thread's potentially blocked check_available() call,
+             * i.e. done at set_eof()
+             *
+             * @see set_eof()
+             */
+            void interruptReader() noexcept {
+                m_buffer.interruptReader();
+            }
+
+            /**
              * Write given bytes to the async ringbuffer.
              *
              * Wait up to timeout duration given in constructor until ringbuffer space is available, where fractions_i64::zero waits infinitely.
@@ -580,9 +592,13 @@ namespace jau::io {
             /**
              * Set end-of-data (EOS), i.e. when feeder completed provisioning bytes.
              *
+             * Implementation issues interruptReader() to unblock a potentially blocked reader thread.
+             *
              * @param result should be either result_t::FAILED or result_t::SUCCESS.
+             *
+             * @see interruptReader()
              */
-            void set_eof(const async_io_result_t result) noexcept { m_result = result; }
+            void set_eof(const async_io_result_t result) noexcept { m_result = result; interruptReader(); }
 
             std::string to_string() const noexcept override;
 

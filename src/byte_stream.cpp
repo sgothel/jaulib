@@ -368,8 +368,8 @@ bool ByteInStream_URL::end_of_data() const NOEXCEPT_BOTAN {
 }
 
 std::string ByteInStream_URL::to_string_int() const noexcept {
-    return m_url+", Url[content_length "+std::to_string(m_has_content_length.load())+
-                       " "+jau::to_decstring(m_content_size.load())+
+    return m_url+", Url[content_length has "+std::to_string(m_has_content_length.load())+
+                       ", size "+jau::to_decstring(m_content_size.load())+
                        ", xfered "+jau::to_decstring(m_total_xfered.load())+
                        ", result "+std::to_string((int8_t)m_result.load())+
            "], consumed "+jau::to_decstring(m_bytes_consumed)+
@@ -441,8 +441,8 @@ void ByteInStream_Feed::write(uint8_t in[], size_t length) noexcept {
 }
 
 std::string ByteInStream_Feed::to_string_int() const noexcept {
-    return m_id+", ext[content_length "+std::to_string(m_has_content_length.load())+
-                   " "+jau::to_decstring(m_content_size.load())+
+    return m_id+", ext[content_length has "+std::to_string(m_has_content_length.load())+
+                   ", size "+jau::to_decstring(m_content_size.load())+
                    ", xfered "+jau::to_decstring(m_total_xfered.load())+
                    ", result "+std::to_string((int8_t)m_result.load())+
            "], consumed "+std::to_string(m_bytes_consumed)+
