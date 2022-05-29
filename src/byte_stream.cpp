@@ -322,7 +322,9 @@ ByteInStream_URL::ByteInStream_URL(const std::string& url, jau::fraction_i64 tim
 void ByteInStream_URL::close() noexcept {
     DBG_PRINT("ByteInStream_URL: close.0 %s, %s", id().c_str(), to_string_int().c_str());
 
-    m_result = async_io_result_t::FAILED; // signal end of curl thread!
+    if( async_io_result_t::NONE == m_result ) {
+        m_result = async_io_result_t::SUCCESS; // signal end of streaming
+    }
 
     m_buffer.drop(m_buffer.size()); // unblock putBlocking(..)
     if( m_url_thread.joinable() ) {
@@ -391,7 +393,9 @@ ByteInStream_Feed::ByteInStream_Feed(const std::string& id_name, jau::fraction_i
 void ByteInStream_Feed::close() noexcept {
     DBG_PRINT("ByteInStream_Feed: close.0 %s, %s", id().c_str(), to_string_int().c_str());
 
-    m_result = async_io_result_t::FAILED; // signal end of curl thread!
+    if( async_io_result_t::NONE == m_result ) {
+        m_result = async_io_result_t::SUCCESS; // signal end of streaming
+    }
 
     m_buffer.drop(m_buffer.size()); // unblock putBlocking(..)
 
