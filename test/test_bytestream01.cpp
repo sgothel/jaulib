@@ -306,11 +306,8 @@ class TestByteStream01 {
             data_feed->set_eof( xfer_total == file_size ? jau::io::async_io_result_t::SUCCESS : jau::io::async_io_result_t::FAILED );
         }
 
-        // full speed, no content size, interrupting 1/4 way
+        // full speed, no content size, interrupting @ 1024 bytes within our header
         static void feed_source_20(jau::io::ByteInStream_Feed * data_feed) {
-            jau::fs::file_stats fs_feed(data_feed->id());
-            const uint64_t file_size = fs_feed.size();
-
             uint64_t xfer_total = 0;
             jau::io::ByteInStream_File enc_stream(data_feed->id(), true /* use_binary */);
             while( !enc_stream.end_of_data() ) {
@@ -319,7 +316,7 @@ class TestByteStream01 {
                 if( 0 < count ) {
                     xfer_total += count;
                     data_feed->write(buffer, count);
-                    if( xfer_total >= file_size/4 ) {
+                    if( xfer_total >= 1024 ) {
                         data_feed->set_eof( jau::io::async_io_result_t::FAILED ); // calls data_feed->interruptReader();
                         return;
                     }
@@ -434,7 +431,7 @@ class TestByteStream01 {
             {
                 const size_t file_idx = IDX_65MiB;
                 {
-                    // full speed, no content size, interrupting 1/4 way
+                    // full speed, no content size, interrupting @ 1024 bytes within our header
                     jau::io::ByteInStream_Feed data_feed(fname_payload_lst[file_idx], 500_ms);
                     std::thread feeder_thread= std::thread(&feed_source_20, &data_feed);
 
