@@ -73,7 +73,7 @@ namespace jau::io {
         /** Operation succeeded. */
         SUCCESS =  1
     };
-    typedef jau::ordered_atomic<async_io_result_t, std::memory_order::memory_order_relaxed> relaxed_atomic_result_t;
+    typedef jau::ordered_atomic<async_io_result_t, std::memory_order::memory_order_relaxed> relaxed_atomic_async_io_result_t;
 
     typedef jau::ringbuffer<uint8_t, size_t> ByteRingbuffer;
 
@@ -82,10 +82,12 @@ namespace jau::io {
 #ifdef BOTAN_VERSION_MAJOR
     #define VIRTUAL_BOTAN
     #define OVERRIDE_BOTAN override
+    #define NOEXCEPT_BOTAN
     template<typename T> using secure_vector = std::vector<T, Botan::secure_allocator<T>>;
 #else
     #define VIRTUAL_BOTAN virtual
     #define OVERRIDE_BOTAN
+    #define NOEXCEPT_BOTAN noexcept
     template<typename T> using secure_vector = std::vector<T, jau::callocator_sec<T>>;
 #endif
 
@@ -104,6 +106,14 @@ namespace jau::io {
      * blocking and waiting for requested bytes available
      * if the stream is already beyond its scope.
      *
+     * All method implementations are of `noexcept`
+     * and declared as such if used standalone w/o Botan.<br/>
+     * However, if using Botan, the `noexcept` qualifier is dropped
+     * for compatibility with Botan::DataSource virtual function table.
+     *
+     * One may use error() to detect whether an error has occurred,
+     * while end_of_data() not only covered the EOS case but includes error().
+     *
      * @see @ref byte_in_stream_properties "ByteInStream Properties"
      */
     class ByteInStream
@@ -113,7 +123,7 @@ namespace jau::io {
     {
         public:
             ByteInStream() = default;
-            virtual ~ByteInStream() = default;
+            virtual ~ByteInStream() NOEXCEPT_BOTAN = default;
             ByteInStream& operator=(const ByteInStream&) = delete;
             ByteInStream(const ByteInStream&) = delete;
 
@@ -137,7 +147,7 @@ namespace jau::io {
              * @see read()
              * @see @ref byte_in_stream_properties "ByteInStream Properties"
              */
-            VIRTUAL_BOTAN bool check_available(size_t n) OVERRIDE_BOTAN = 0;
+            VIRTUAL_BOTAN bool check_available(size_t n) NOEXCEPT_BOTAN OVERRIDE_BOTAN = 0;
 
             /**
              * Read from the source. Moves the internal offset so that every
@@ -154,7 +164,7 @@ namespace jau::io {
              * @see check_available()
              * @see @ref byte_in_stream_properties "ByteInStream Properties"
              */
-            [[nodiscard]] VIRTUAL_BOTAN size_t read(uint8_t out[], size_t length) OVERRIDE_BOTAN = 0;
+            [[nodiscard]] VIRTUAL_BOTAN size_t read(uint8_t out[], size_t length) NOEXCEPT_BOTAN OVERRIDE_BOTAN = 0;
 
             /**
              * Read from the source but do not modify the internal
@@ -166,13 +176,24 @@ namespace jau::io {
              * @param peek_offset the offset into the stream to read at
              * @return length in bytes that was actually read and put into out
              */
-            [[nodiscard]] VIRTUAL_BOTAN size_t peek(uint8_t out[], size_t length, size_t peek_offset) const OVERRIDE_BOTAN = 0;
+            [[nodiscard]] VIRTUAL_BOTAN size_t peek(uint8_t out[], size_t length, size_t peek_offset) const NOEXCEPT_BOTAN OVERRIDE_BOTAN = 0;
 
             /**
              * Test whether the source still has data that can be read.
+             *
+             * This may include a failure and/or error in the underlying implementation, see error()
+             *
              * @return true if there is no more data to read, false otherwise
+             * @see error()
              */
-            VIRTUAL_BOTAN bool end_of_data() const OVERRIDE_BOTAN = 0;
+            VIRTUAL_BOTAN bool end_of_data() const NOEXCEPT_BOTAN OVERRIDE_BOTAN = 0;
+
+            /**
+             * Return whether an error has occurred, excluding end_of_data().
+             *
+             * @return true if an error has occurred, false otherwise
+             */
+            virtual bool error() const noexcept = 0;
 
 #ifndef BOTAN_VERSION_MAJOR
 
@@ -180,7 +201,7 @@ namespace jau::io {
              * return the id of this data source
              * @return std::string representing the id of this data source
              */
-            virtual std::string id() const OVERRIDE_BOTAN { return ""; }
+            virtual std::string id() const noexcept { return ""; }
 
             /**
              * Read one byte.
@@ -188,7 +209,7 @@ namespace jau::io {
              * @return length in bytes that was actually read and put
              * into out
              */
-            size_t read_byte(uint8_t& out);
+            size_t read_byte(uint8_t& out) noexcept;
 
             /**
              * Peek at one byte.
@@ -196,23 +217,41 @@ namespace jau::io {
              * @return length in bytes that was actually read and put
              * into out
              */
-            size_t peek_byte(uint8_t& out) const;
+            size_t peek_byte(uint8_t& out) const noexcept;
 
             /**
              * Discard the next N bytes of the data
              * @param N the number of bytes to discard
              * @return number of bytes actually discarded
              */
-            size_t discard_next(size_t N);
+            size_t discard_next(size_t N) noexcept;
 
 #endif /* BOTAN_VERSION_MAJOR */
 
             /**
              * @return number of bytes read so far.
              */
-            VIRTUAL_BOTAN size_t get_bytes_read() const OVERRIDE_BOTAN = 0;
+            VIRTUAL_BOTAN size_t get_bytes_read() const NOEXCEPT_BOTAN OVERRIDE_BOTAN = 0;
 
-            virtual std::string to_string() const = 0;
+            /**
+             * Variant of Botan's get_byte_read() using uint64_t for big files on a 32-bit platform.
+             * @return number of bytes read so far.
+             */
+            virtual uint64_t bytes_read() const noexcept = 0;
+
+            /**
+             * Returns true if implementation is aware of content_size(), otherwise false.
+             * @see content_size()
+             */
+            virtual bool has_content_size() const noexcept = 0;
+
+            /**
+             * Returns the content_size if known.
+             * @see has_content_size()
+             */
+            virtual uint64_t content_size() const noexcept = 0;
+
+            virtual std::string to_string() const noexcept = 0;
     };
 
     /**
@@ -220,22 +259,15 @@ namespace jau::io {
      */
     class ByteInStream_SecMemory final : public ByteInStream {
        public:
-          /**
-           * Read from a memory buffer
-           */
-          size_t read(uint8_t[], size_t) override;
+          size_t read(uint8_t[], size_t) NOEXCEPT_BOTAN override;
 
-          /**
-           * Peek into a memory buffer
-           */
-          size_t peek(uint8_t[], size_t, size_t) const override;
+          size_t peek(uint8_t[], size_t, size_t) const NOEXCEPT_BOTAN override;
 
-          bool check_available(size_t n) override;
+          bool check_available(size_t n) NOEXCEPT_BOTAN override;
 
-          /**
-           * Check if the memory buffer is empty
-           */
-          bool end_of_data() const override;
+          bool end_of_data() const NOEXCEPT_BOTAN override;
+
+          bool error() const noexcept override { return false; }
 
           /**
           * Construct a secure memory source that reads from a string
@@ -267,11 +299,17 @@ namespace jau::io {
 
           void close() noexcept override;
 
-          ~ByteInStream_SecMemory() override { close(); }
+          ~ByteInStream_SecMemory() NOEXCEPT_BOTAN override { close(); }
 
-          size_t get_bytes_read() const override { return m_offset; }
+          size_t get_bytes_read() const NOEXCEPT_BOTAN override { return m_offset; }
 
-          std::string to_string() const override;
+          uint64_t bytes_read() const noexcept override { return m_offset; }
+
+          bool has_content_size() const noexcept override { return true; }
+
+          uint64_t content_size() const noexcept override { return m_source.size(); }
+
+          std::string to_string() const noexcept override;
 
        private:
           io::secure_vector<uint8_t> m_source;
@@ -283,13 +321,14 @@ namespace jau::io {
      */
     class ByteInStream_istream final : public ByteInStream {
        public:
-          size_t read(uint8_t[], size_t) override;
-          size_t peek(uint8_t[], size_t, size_t) const override;
-          bool check_available(size_t n) override;
-          bool end_of_data() const override;
-          std::string id() const override;
+          size_t read(uint8_t[], size_t) NOEXCEPT_BOTAN override;
+          size_t peek(uint8_t[], size_t, size_t) const NOEXCEPT_BOTAN override;
+          bool check_available(size_t n) NOEXCEPT_BOTAN override;
+          bool end_of_data() const NOEXCEPT_BOTAN override;
+          bool error() const noexcept override { return m_source.bad(); }
+          std::string id() const NOEXCEPT_BOTAN override;
 
-          ByteInStream_istream(std::istream&, const std::string& id = "<std::istream>");
+          ByteInStream_istream(std::istream&, const std::string& id = "<std::istream>") noexcept;
 
           ByteInStream_istream(const ByteInStream_istream&) = delete;
 
@@ -297,11 +336,17 @@ namespace jau::io {
 
           void close() noexcept override;
 
-          ~ByteInStream_istream() override { close(); }
+          ~ByteInStream_istream() NOEXCEPT_BOTAN override { close(); }
 
-          size_t get_bytes_read() const override { return m_bytes_consumed; }
+          size_t get_bytes_read() const NOEXCEPT_BOTAN override { return m_bytes_consumed; }
 
-          std::string to_string() const override;
+          uint64_t bytes_read() const noexcept override { return m_bytes_consumed; }
+
+          bool has_content_size() const noexcept override { return false; }
+
+          uint64_t content_size() const noexcept override { return 0; }
+
+          std::string to_string() const noexcept override;
 
        private:
           const std::string m_identifier;
@@ -316,18 +361,19 @@ namespace jau::io {
      */
     class ByteInStream_File final : public ByteInStream {
        public:
-          size_t read(uint8_t[], size_t) override;
-          size_t peek(uint8_t[], size_t, size_t) const override;
-          bool check_available(size_t n) override;
-          bool end_of_data() const override;
-          std::string id() const override;
+          size_t read(uint8_t[], size_t) NOEXCEPT_BOTAN override;
+          size_t peek(uint8_t[], size_t, size_t) const NOEXCEPT_BOTAN override;
+          bool check_available(size_t n) NOEXCEPT_BOTAN override;
+          bool end_of_data() const NOEXCEPT_BOTAN override;
+          bool error() const noexcept override { return m_source.bad(); }
+          std::string id() const NOEXCEPT_BOTAN override;
 
           /**
            * Construct a Stream-Based byte input stream from filesystem path
            * @param file the path to the file
            * @param use_binary whether to treat the file as binary (default) or use platform character conversion
            */
-          ByteInStream_File(const std::string& file, bool use_binary = true);
+          ByteInStream_File(const std::string& file, bool use_binary = true) noexcept;
 
           ByteInStream_File(const ByteInStream_File&) = delete;
 
@@ -335,22 +381,21 @@ namespace jau::io {
 
           void close() noexcept override;
 
-          ~ByteInStream_File() override { close(); }
+          ~ByteInStream_File() NOEXCEPT_BOTAN override { close(); }
 
-          size_t get_bytes_read() const override { return (size_t)m_bytes_consumed; }
+          size_t get_bytes_read() const NOEXCEPT_BOTAN override { return (size_t)m_bytes_consumed; }
 
-          /**
-           * Botan's get_bytes_read() API uses `size_t`,
-           * which only covers 32bit or 4GB on 32bit systems.
-           * @return uint64_t bytes read
-           */
-          uint64_t get_bytes_read_u64() const { return m_bytes_consumed; }
+          uint64_t bytes_read() const noexcept override { return m_bytes_consumed; }
 
-          std::string to_string() const override;
+          bool has_content_size() const noexcept override { return true; }
+
+          uint64_t content_size() const noexcept override { return m_content_size; }
+
+          std::string to_string() const noexcept override;
 
        private:
           const std::string m_identifier;
-          std::unique_ptr<std::ifstream> m_source;
+          mutable std::ifstream m_source;
           uint64_t m_content_size;
           uint64_t m_bytes_consumed;
     };
@@ -375,7 +420,7 @@ namespace jau::io {
              * @see read()
              * @see @ref byte_in_stream_properties "ByteInStream Properties"
              */
-            bool check_available(size_t n) override;
+            bool check_available(size_t n) NOEXCEPT_BOTAN override;
 
             /**
              * Read from the source. Moves the internal offset so that every
@@ -392,21 +437,22 @@ namespace jau::io {
              * @see check_available()
              * @see @ref byte_in_stream_properties "ByteInStream Properties"
              */
-            size_t read(uint8_t out[], size_t length) override;
+            size_t read(uint8_t out[], size_t length) NOEXCEPT_BOTAN override;
 
-            size_t peek(uint8_t out[], size_t length, size_t peek_offset) const override;
+            size_t peek(uint8_t out[], size_t length, size_t peek_offset) const NOEXCEPT_BOTAN override;
 
-            bool end_of_data() const override;
+            bool end_of_data() const NOEXCEPT_BOTAN override;
 
-            std::string id() const override { return m_url; }
+            bool error() const noexcept override { return async_io_result_t::FAILED == m_result; }
+
+            std::string id() const NOEXCEPT_BOTAN override { return m_url; }
 
             /**
              * Construct a ringbuffer backed Http byte input stream
              * @param url the URL of the data to read
              * @param timeout maximum duration in fractions of seconds to wait @ check_available(), where fractions_i64::zero waits infinitely
-             * @param exp_size if > 0 it is additionally used to determine EOF, otherwise the underlying EOF mechanism is being used only (default).
              */
-            ByteInStream_URL(const std::string& url, jau::fraction_i64 timeout, const uint64_t exp_size=0);
+            ByteInStream_URL(const std::string& url, jau::fraction_i64 timeout) noexcept;
 
             ByteInStream_URL(const ByteInStream_URL&) = delete;
 
@@ -414,31 +460,29 @@ namespace jau::io {
 
             void close() noexcept override;
 
-            ~ByteInStream_URL() override { close(); }
+            ~ByteInStream_URL() NOEXCEPT_BOTAN override { close(); }
 
-            size_t get_bytes_read() const override { return (size_t)m_bytes_consumed; }
+            size_t get_bytes_read() const NOEXCEPT_BOTAN override { return (size_t)m_bytes_consumed; }
 
-            /**
-             * Botan's get_bytes_read() API uses `size_t`,
-             * which only covers 32bit or 4GB on 32bit systems.
-             * @return uint64_t bytes read
-             */
-            uint64_t get_bytes_read_u64() const { return m_bytes_consumed; }
+            uint64_t bytes_read() const noexcept override { return m_bytes_consumed; }
 
-            std::string to_string() const override;
+            bool has_content_size() const noexcept override { return m_has_content_length; }
+
+            uint64_t content_size() const noexcept override { return m_content_size; }
+
+            std::string to_string() const noexcept override;
 
         private:
             uint64_t get_available() const noexcept { return m_has_content_length ? m_content_size - m_bytes_consumed : 0; }
-            std::string to_string_int() const;
+            std::string to_string_int() const noexcept;
 
             const std::string m_url;
-            const uint64_t m_exp_size;
             jau::fraction_i64 m_timeout;
             ByteRingbuffer m_buffer;
             jau::relaxed_atomic_bool m_has_content_length;
             jau::relaxed_atomic_uint64 m_content_size;
             jau::relaxed_atomic_uint64 m_total_xfered;
-            relaxed_atomic_result_t m_result;
+            relaxed_atomic_async_io_result_t m_result;
             std::thread m_url_thread;
             uint64_t m_bytes_consumed;
     };
@@ -461,7 +505,7 @@ namespace jau::io {
              * @see read()
              * @see @ref byte_in_stream_properties "ByteInStream Properties"
              */
-            bool check_available(size_t n) override;
+            bool check_available(size_t n) NOEXCEPT_BOTAN override;
 
             /**
              * Read from the source. Moves the internal offset so that every
@@ -478,21 +522,22 @@ namespace jau::io {
              * @see check_available()
              * @see @ref byte_in_stream_properties "ByteInStream Properties"
              */
-            size_t read(uint8_t out[], size_t length) override;
+            size_t read(uint8_t out[], size_t length) NOEXCEPT_BOTAN override;
 
-            size_t peek(uint8_t out[], size_t length, size_t peek_offset) const override;
+            size_t peek(uint8_t out[], size_t length, size_t peek_offset) const NOEXCEPT_BOTAN override;
 
-            bool end_of_data() const override;
+            bool end_of_data() const NOEXCEPT_BOTAN override;
 
-            std::string id() const override { return m_id; }
+            bool error() const noexcept override { return async_io_result_t::FAILED == m_result; }
+
+            std::string id() const NOEXCEPT_BOTAN override { return m_id; }
 
             /**
              * Construct a ringbuffer backed externally provisioned byte input stream
              * @param id_name arbitrary identifier for this instance
              * @param timeout maximum duration in fractions of seconds to wait @ check_available() and write(), where fractions_i64::zero waits infinitely
-             * @param exp_size if > 0 it is additionally used to determine EOF, otherwise the underlying EOF mechanism is being used only (default).
              */
-            ByteInStream_Feed(const std::string& id_name, jau::fraction_i64 timeout, const uint64_t exp_size=0);
+            ByteInStream_Feed(const std::string& id_name, jau::fraction_i64 timeout) noexcept;
 
             ByteInStream_Feed(const ByteInStream_URL&) = delete;
 
@@ -500,16 +545,15 @@ namespace jau::io {
 
             void close() noexcept override;
 
-            ~ByteInStream_Feed() override { close(); }
+            ~ByteInStream_Feed() NOEXCEPT_BOTAN override { close(); }
 
-            size_t get_bytes_read() const override { return m_bytes_consumed; }
+            size_t get_bytes_read() const NOEXCEPT_BOTAN override { return m_bytes_consumed; }
 
-            /**
-             * Botan's get_bytes_read() API uses `size_t`,
-             * which only covers 32bit or 4GB on 32bit systems.
-             * @return uint64_t bytes read
-             */
-            uint64_t get_bytes_read_u64() const { return m_bytes_consumed; }
+            uint64_t bytes_read() const noexcept override { return m_bytes_consumed; }
+
+            bool has_content_size() const noexcept override { return m_has_content_length; }
+
+            uint64_t content_size() const noexcept override { return m_content_size; }
 
             /**
              * Write given bytes to the async ringbuffer.
@@ -522,7 +566,7 @@ namespace jau::io {
              * @param in the byte array to transfer to the async ringbuffer
              * @param length the length of the byte array in
              */
-            void write(uint8_t in[], size_t length);
+            void write(uint8_t in[], size_t length) noexcept;
 
             /**
              * Set known content size, informal only.
@@ -540,20 +584,19 @@ namespace jau::io {
              */
             void set_eof(const async_io_result_t result) noexcept { m_result = result; }
 
-            std::string to_string() const override;
+            std::string to_string() const noexcept override;
 
         private:
             uint64_t get_available() const noexcept { return m_has_content_length ? m_content_size - m_bytes_consumed : 0; }
-            std::string to_string_int() const;
+            std::string to_string_int() const noexcept;
 
             const std::string m_id;
-            const uint64_t m_exp_size;
             jau::fraction_i64 m_timeout;
             ByteRingbuffer m_buffer;
             jau::relaxed_atomic_bool m_has_content_length;
             jau::relaxed_atomic_uint64 m_content_size;
             jau::relaxed_atomic_uint64 m_total_xfered;
-            relaxed_atomic_result_t m_result;
+            relaxed_atomic_async_io_result_t m_result;
             uint64_t m_bytes_consumed;
     };
 
@@ -565,28 +608,28 @@ namespace jau::io {
      */
     class ByteInStream_Recorder final : public ByteInStream {
         public:
-            size_t read(uint8_t[], size_t) override;
+            size_t read(uint8_t[], size_t) NOEXCEPT_BOTAN override;
 
-            size_t peek(uint8_t out[], size_t length, size_t peek_offset) const override {
+            size_t peek(uint8_t out[], size_t length, size_t peek_offset) const NOEXCEPT_BOTAN override {
                 return m_parent.peek(out, length, peek_offset);
             }
 
-            bool check_available(size_t n) override {
+            bool check_available(size_t n) NOEXCEPT_BOTAN override {
                 return m_parent.check_available(n);
             }
 
-            bool end_of_data() const override {
-                return m_parent.end_of_data();
-            }
+            bool end_of_data() const NOEXCEPT_BOTAN override { return m_parent.end_of_data(); }
 
-            std::string id() const override { return m_parent.id(); }
+            bool error() const noexcept override { return m_parent.error(); }
+
+            std::string id() const NOEXCEPT_BOTAN override { return m_parent.id(); }
 
             /**
              * Construct a byte input stream wrapper using the given parent ByteInStream.
              * @param parent the parent ByteInStream
              * @param buffer a user defined buffer for the recording
              */
-            ByteInStream_Recorder(ByteInStream& parent, io::secure_vector<uint8_t>& buffer)
+            ByteInStream_Recorder(ByteInStream& parent, io::secure_vector<uint8_t>& buffer) noexcept
             : m_parent(parent), m_bytes_consumed(0), m_buffer(buffer), m_rec_offset(0), m_is_recording(false) {};
 
             ByteInStream_Recorder(const ByteInStream_Recorder&) = delete;
@@ -595,16 +638,15 @@ namespace jau::io {
 
             void close() noexcept override;
 
-            ~ByteInStream_Recorder() override { close(); }
+            ~ByteInStream_Recorder() NOEXCEPT_BOTAN override { close(); }
 
-            size_t get_bytes_read() const override { return m_parent.get_bytes_read(); }
+            size_t get_bytes_read() const NOEXCEPT_BOTAN override { return m_parent.get_bytes_read(); }
 
-            /**
-             * Botan's get_bytes_read() API uses `size_t`,
-             * which only covers 32bit or 4GB on 32bit systems.
-             * @return uint64_t bytes read
-             */
-            uint64_t get_bytes_read_u64() const { return m_bytes_consumed; }
+            uint64_t bytes_read() const noexcept override { return m_bytes_consumed; }
+
+            bool has_content_size() const noexcept override { return m_parent.has_content_size(); }
+
+            uint64_t content_size() const noexcept override { return m_parent.content_size(); }
 
             /**
              * Starts the recording.
@@ -640,7 +682,7 @@ namespace jau::io {
 
             bool is_recording() noexcept { return m_is_recording; }
 
-            std::string to_string() const override;
+            std::string to_string() const noexcept override;
 
         private:
             ByteInStream& m_parent;

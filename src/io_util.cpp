@@ -41,20 +41,20 @@ using namespace jau::io;
 using namespace jau::fractions_i64_literals;
 
 
-uint64_t jau::io::read_file(const std::string& input_file, const uint64_t exp_size,
+uint64_t jau::io::read_file(const std::string& input_file,
                             secure_vector<uint8_t>& buffer,
                             StreamConsumerFunc consumer_fn) noexcept
 {
     if(input_file == "-") {
         ByteInStream_istream in(std::cin);
-        return read_stream(in, exp_size, buffer, consumer_fn);
+        return read_stream(in, buffer, consumer_fn);
     } else {
         ByteInStream_File in(input_file, true /* use_binary */);
-        return read_stream(in, exp_size, buffer, consumer_fn);
+        return read_stream(in, buffer, consumer_fn);
     }
 }
 
-uint64_t jau::io::read_stream(ByteInStream& in, const uint64_t exp_size,
+uint64_t jau::io::read_stream(ByteInStream& in,
                               secure_vector<uint8_t>& buffer,
                               StreamConsumerFunc consumer_fn) noexcept {
     uint64_t total = 0;
@@ -66,7 +66,7 @@ uint64_t jau::io::read_stream(ByteInStream& in, const uint64_t exp_size,
 
             buffer.resize(got);
             total += got;
-            has_more = 1 <= got && !in.end_of_data() && ( 0 == exp_size || total < exp_size );
+            has_more = 1 <= got && !in.end_of_data() && ( !in.has_content_size() || total < in.content_size() );
             try {
                 if( !consumer_fn(buffer, !has_more) ) {
                     break; // end streaming
@@ -84,7 +84,6 @@ uint64_t jau::io::read_stream(ByteInStream& in, const uint64_t exp_size,
 
 struct curl_glue1_t {
     CURL *curl_handle;
-    uint64_t exp_size;
     bool has_content_length;
     uint64_t content_length;
     uint64_t total_read;
@@ -101,12 +100,6 @@ static size_t consume_curl1(void *ptr, size_t size, size_t nmemb, void *stream) 
         if( !r ) {
             cg->content_length = v;
             cg->has_content_length = true;
-            if( 0 < cg->exp_size && cg->exp_size != cg->content_length ) {
-                // abort, size mismatch
-                DBG_PRINT("consume_curl1.E exp_size %" PRIu64 " != content_len %" PRIu64 "",
-                        cg->exp_size, cg->content_length);
-                return 0;
-            }
         }
     }
     const size_t realsize = size * nmemb;
@@ -116,11 +109,10 @@ static size_t consume_curl1(void *ptr, size_t size, size_t nmemb, void *stream) 
 
     cg->total_read += realsize;
     const bool is_final = 0 == realsize ||
-                          cg->has_content_length ? cg->total_read >= cg->content_length : false ||
-                          ( 0 < cg->exp_size || cg->total_read >= cg->exp_size );
+                          cg->has_content_length ? cg->total_read >= cg->content_length : false;
 
-    DBG_PRINT("consume_curl1.X realsize %zu, total %" PRIu64 " / ( exp_size %" PRIu64 " or content_len %" PRIu64 " ), is_final %d",
-           realsize, cg->total_read, cg->exp_size, cg->content_length, is_final );
+    DBG_PRINT("consume_curl1.X realsize %zu, total %" PRIu64 " / ( content_len %" PRIu64 " ), is_final %d",
+           realsize, cg->total_read, cg->content_length, is_final );
 
     try {
         if( !cg->consumer_fn(cg->buffer, is_final) ) {
@@ -134,9 +126,9 @@ static size_t consume_curl1(void *ptr, size_t size, size_t nmemb, void *stream) 
     return realsize;
 }
 
-uint64_t jau::io::read_url_stream(const std::string& url, const uint64_t exp_size,
-                                       secure_vector<uint8_t>& buffer,
-                                       StreamConsumerFunc consumer_fn) noexcept {
+uint64_t jau::io::read_url_stream(const std::string& url,
+                                  secure_vector<uint8_t>& buffer,
+                                  StreamConsumerFunc consumer_fn) noexcept {
     std::vector<char> errorbuffer;
     errorbuffer.reserve(CURL_ERROR_SIZE);
     CURLcode res;
@@ -148,7 +140,7 @@ uint64_t jau::io::read_url_stream(const std::string& url, const uint64_t exp_siz
         return 0;
     }
 
-    curl_glue1_t cg = { curl_handle, exp_size, false, 0, 0, buffer, consumer_fn };
+    curl_glue1_t cg = { curl_handle, false, 0, 0, buffer, consumer_fn };
 
     res = curl_easy_setopt(curl_handle, CURLOPT_ERRORBUFFER, errorbuffer.data());
     if( CURLE_OK != res ) {
@@ -215,14 +207,13 @@ errout:
 }
 
 struct curl_glue2_t {
-    curl_glue2_t(CURL *_curl_handle, const uint64_t _exp_size,
+    curl_glue2_t(CURL *_curl_handle,
                  jau::relaxed_atomic_bool& _has_content_length,
                  jau::relaxed_atomic_uint64& _content_length,
                  jau::relaxed_atomic_uint64& _total_read,
                  ByteRingbuffer& _buffer,
-                 relaxed_atomic_result_t& _result)
+                 relaxed_atomic_async_io_result_t& _result)
     : curl_handle(_curl_handle),
-      exp_size(_exp_size),
       has_content_length(_has_content_length),
       content_length(_content_length),
       total_read(_total_read),
@@ -231,12 +222,11 @@ struct curl_glue2_t {
     {}
 
     CURL *curl_handle;
-    const uint64_t exp_size;
     jau::relaxed_atomic_bool& has_content_length;
     jau::relaxed_atomic_uint64& content_length;
     jau::relaxed_atomic_uint64& total_read;
     ByteRingbuffer& buffer;
-    relaxed_atomic_result_t& result;
+    relaxed_atomic_async_io_result_t& result;
 };
 
 static size_t consume_curl2(void *ptr, size_t size, size_t nmemb, void *stream) noexcept {
@@ -255,12 +245,6 @@ static size_t consume_curl2(void *ptr, size_t size, size_t nmemb, void *stream) 
         if( CURLE_OK == r ) {
             cg->content_length = v;
             cg->has_content_length = true;
-            if( 0 < cg->exp_size && cg->exp_size != cg->content_length ) {
-                // abort, size mismatch
-                DBG_PRINT("consume_curl1.E exp_size %" PRIu64 " != content_len %" PRIu64 "",
-                        cg->exp_size, cg->content_length.load());
-                return 0;
-            }
         }
     }
     const size_t realsize = size * nmemb;
@@ -270,14 +254,13 @@ static size_t consume_curl2(void *ptr, size_t size, size_t nmemb, void *stream) 
 
     cg->total_read.fetch_add(realsize);
     const bool is_final = 0 == realsize ||
-                          cg->has_content_length ? cg->total_read >= cg->content_length : false ||
-                          ( 0 < cg->exp_size || cg->total_read >= cg->exp_size );
+                          cg->has_content_length ? cg->total_read >= cg->content_length : false;
     if( is_final ) {
         cg->result = async_io_result_t::SUCCESS;
     }
 
-    DBG_PRINT("consume_curl2.X realsize %zu, total %" PRIu64 " / ( exp_size %" PRIu64 " or content_len %" PRIu64 " ), is_final %d, result %d, rb %s",
-           realsize, cg->total_read.load(), cg->result.load(), cg->exp_size, cg->content_length.load(), is_final, cg->buffer.toString().c_str() );
+    DBG_PRINT("consume_curl2.X realsize %zu, total %" PRIu64 " / ( content_len %" PRIu64 " ), is_final %d, result %d, rb %s",
+           realsize, cg->total_read.load(), cg->result.load(), cg->content_length.load(), is_final, cg->buffer.toString().c_str() );
 
     return realsize;
 }
@@ -371,12 +354,12 @@ cleanup:
     return;
 }
 
-std::thread jau::io::read_url_stream(const std::string& url, const uint64_t& exp_size,
-                                          ByteRingbuffer& buffer,
-                                          jau::relaxed_atomic_bool& has_content_length,
-                                          jau::relaxed_atomic_uint64& content_length,
-                                          jau::relaxed_atomic_uint64& total_read,
-                                          relaxed_atomic_result_t& result) noexcept {
+std::thread jau::io::read_url_stream(const std::string& url,
+                                     ByteRingbuffer& buffer,
+                                     jau::relaxed_atomic_bool& has_content_length,
+                                     jau::relaxed_atomic_uint64& content_length,
+                                     jau::relaxed_atomic_uint64& total_read,
+                                     relaxed_atomic_async_io_result_t& result) noexcept {
     /* init user referenced values */
     has_content_length = false;
     content_length = 0;
@@ -387,45 +370,41 @@ std::thread jau::io::read_url_stream(const std::string& url, const uint64_t& exp
         buffer.recapacity( BEST_URLSTREAM_RINGBUFFER_SIZE );
     }
 
-    std::unique_ptr<curl_glue2_t> cg ( std::make_unique<curl_glue2_t>(nullptr, exp_size, has_content_length, content_length, total_read, buffer, result ) );
+    std::unique_ptr<curl_glue2_t> cg ( std::make_unique<curl_glue2_t>(nullptr, has_content_length, content_length, total_read, buffer, result ) );
 
     return std::thread(&::read_url_stream_thread, url.c_str(), std::move(cg)); // @suppress("Invalid arguments")
 }
 
 void jau::io::print_stats(const std::string& prefix, const uint64_t& out_bytes_total, const jau::fraction_i64& td) noexcept {
-    if( jau::environment::get().verbose ) {
+    jau::PLAIN_PRINT(true, "%s: Duration %s s, %s ms", prefix.c_str(),
+            td.to_string().c_str(), jau::to_decstring(td.to_ms()).c_str());
 
+    if( out_bytes_total >= 100'000'000 ) {
+        jau::PLAIN_PRINT(true, "%s: Size %s MB", prefix.c_str(),
+                jau::to_decstring(std::llround(out_bytes_total/1'000'000.0)).c_str());
+    } else if( out_bytes_total >= 100'000 ) {
+        jau::PLAIN_PRINT(true, "%s: Size %s KB", prefix.c_str(),
+                jau::to_decstring(std::llround(out_bytes_total/1'000.0)).c_str());
+    } else {
+        jau::PLAIN_PRINT(true, "%s: Size %s B", prefix.c_str(),
+                jau::to_decstring(out_bytes_total).c_str());
+    }
 
-        jau::PLAIN_PRINT(true, "%s: Duration %s s, %s ms", prefix.c_str(),
-                td.to_string().c_str(), jau::to_decstring(td.to_ms()).c_str());
+    const uint64_t _rate_bps = std::llround( out_bytes_total / td.to_double() ); // bytes per second
+    const uint64_t _rate_bitps = std::llround( ( out_bytes_total * 8.0 ) / td.to_double() ); // bits per second
 
-        if( out_bytes_total >= 100'000'000 ) {
-            jau::PLAIN_PRINT(true, "%s: Size %s MB", prefix.c_str(),
-                    jau::to_decstring(std::llround(out_bytes_total/1'000'000.0)).c_str());
-        } else if( out_bytes_total >= 100'000 ) {
-            jau::PLAIN_PRINT(true, "%s: Size %s KB", prefix.c_str(),
-                    jau::to_decstring(std::llround(out_bytes_total/1'000.0)).c_str());
-        } else {
-            jau::PLAIN_PRINT(true, "%s: Size %s B", prefix.c_str(),
-                    jau::to_decstring(out_bytes_total).c_str());
-        }
-
-        const uint64_t _rate_bps = std::llround( out_bytes_total / td.to_double() ); // bytes per second
-        const uint64_t _rate_bitps = std::llround( ( out_bytes_total * 8.0 ) / td.to_double() ); // bits per second
-
-        if( _rate_bitps >= 100'000'000 ) {
-            jau::PLAIN_PRINT(true, "%s: Bitrate %s Mbit/s, %s MB/s", prefix.c_str(),
-                    jau::to_decstring(std::llround(_rate_bitps/1'000'000.0)).c_str(),
-                    jau::to_decstring(std::llround(_rate_bps/1'000'000.0)).c_str());
-        } else if( _rate_bitps >= 100'000 ) {
-            jau::PLAIN_PRINT(true, "%s: Bitrate %s kbit/s, %s kB/s", prefix.c_str(),
-                    jau::to_decstring(std::llround(_rate_bitps/1'000.0)).c_str(),
-                    jau::to_decstring(std::llround(_rate_bps/1'000.0)).c_str());
-        } else {
-            jau::PLAIN_PRINT(true, "%s: Bitrate %s bit/s, %s B/s", prefix.c_str(),
-                    jau::to_decstring(_rate_bitps).c_str(),
-                    jau::to_decstring(_rate_bps).c_str());
-        }
+    if( _rate_bitps >= 100'000'000 ) {
+        jau::PLAIN_PRINT(true, "%s: Bitrate %s Mbit/s, %s MB/s", prefix.c_str(),
+                jau::to_decstring(std::llround(_rate_bitps/1'000'000.0)).c_str(),
+                jau::to_decstring(std::llround(_rate_bps/1'000'000.0)).c_str());
+    } else if( _rate_bitps >= 100'000 ) {
+        jau::PLAIN_PRINT(true, "%s: Bitrate %s kbit/s, %s kB/s", prefix.c_str(),
+                jau::to_decstring(std::llround(_rate_bitps/1'000.0)).c_str(),
+                jau::to_decstring(std::llround(_rate_bps/1'000.0)).c_str());
+    } else {
+        jau::PLAIN_PRINT(true, "%s: Bitrate %s bit/s, %s B/s", prefix.c_str(),
+                jau::to_decstring(_rate_bitps).c_str(),
+                jau::to_decstring(_rate_bps).c_str());
     }
 }
 

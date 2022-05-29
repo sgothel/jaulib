@@ -100,7 +100,7 @@ class TestIOStream01 {
                         consumed_calls, data.size(), consumed_total_bytes, data.capacity(), is_final );
                 return true;
             };
-            uint64_t http_total_bytes = jau::io::read_url_stream(url_input, 0, buffer, consume);
+            uint64_t http_total_bytes = jau::io::read_url_stream(url_input, buffer, consume);
             const uint64_t out_bytes_total = outfile.tellp();
             jau::PLAIN_PRINT(true, "test02io01 Done: total %" PRIu64 ", capacity %zu", consumed_total_bytes, buffer.capacity());
 
@@ -123,9 +123,9 @@ class TestIOStream01 {
             jau::relaxed_atomic_bool url_has_content_length;
             jau::relaxed_atomic_uint64 url_content_length;
             jau::relaxed_atomic_uint64 url_total_read;
-            jau::io::relaxed_atomic_result_t result;
+            jau::io::relaxed_atomic_async_io_result_t result;
 
-            std::thread http_thread = jau::io::read_url_stream(url_input, 0, rb, url_has_content_length, url_content_length, url_total_read, result);
+            std::thread http_thread = jau::io::read_url_stream(url_input, rb, url_has_content_length, url_content_length, url_total_read, result);
 
             jau::io::secure_vector<uint8_t> buffer(buffer_size);
             size_t consumed_loops = 0;
