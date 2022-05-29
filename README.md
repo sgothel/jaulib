@@ -158,10 +158,13 @@ a Raspi-arm64, Raspi-armhf or PC-amd64 target image.
 
 * First stable release (TODO)
 
-**0.10.2** (WIP)
+**0.11.0** (WIP)
 
 * Add `byte_stream.hpp` and `io_util.hpp` from Elevator project for generic use
   - This adds build dependency to `curl` library and test dependency to `mini-httpd`, both not needed if unused.
+  - Added unit tests for both, `test_bytestream01` and `test_iostream01`
+  - Add IOUtils Module/Group
+* `fs::file_stats`: Retrieve symlink data and have `fmode_bits::LINK` additionally set; Add `follow_sym_link_dirs` param to visit() and remove()
 * Add `fs::get_cwd()`
 * Add `callocator_sec<T>`
 * FunctionDef: Complete documentation, refine names
