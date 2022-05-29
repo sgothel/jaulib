@@ -102,18 +102,13 @@ file_stats::file_stats() noexcept
   errno_res_(0)
 {}
 
-file_stats::file_stats(const dir_item& item, const bool use_lstat) noexcept
+file_stats::file_stats(const dir_item& item) noexcept
 : item_(item), mode_(fmode_bits::NONE),
   uid_(0), gid_(0), size_(0), atime_(), mtime_(), ctime_(),
   errno_res_(0)
 {
     struct stat s;
-    int stat_res;
-    if( use_lstat ) {
-        stat_res = ::lstat(item_.path().c_str(), &s);
-    } else {
-        stat_res = ::stat(item_.path().c_str(), &s);
-    }
+    int stat_res = ::lstat(item_.path().c_str(), &s);
     if( 0 != stat_res ) {
         switch( errno ) {
             case EACCES:
@@ -129,14 +124,31 @@ file_stats::file_stats(const dir_item& item, const bool use_lstat) noexcept
             errno_res_ = errno;
         }
     } else {
+        if( S_ISLNK( s.st_mode ) ) {
+            // follow symbolic link, retrieve info from underlying file
+            stat_res = ::stat(item_.path().c_str(), &s);
+            if( 0 != stat_res ) {
+                switch( errno ) {
+                    case EACCES:
+                        mode_ |= fmode_bits::NO_ACCESS;
+                        break;
+                    case ENOENT:
+                        mode_ |= fmode_bits::NOT_EXISTING;
+                        break;
+                    default:
+                        break;
+                }
+                if( has_access() && exists() ) {
+                    errno_res_ = errno;
+                }
+                goto errorout;
+            }
+            mode_ |= fmode_bits::LINK;
+        }
         if( S_ISREG( s.st_mode ) ) {
             mode_ |= fmode_bits::FILE;
-        }
-        if( S_ISDIR( s.st_mode ) ) {
+        } else if( S_ISDIR( s.st_mode ) ) {
             mode_ |= fmode_bits::DIR;
-        }
-        if( S_ISLNK( s.st_mode ) ) {
-            mode_ |= fmode_bits::LINK;
         }
         uid_ = s.st_uid;
         gid_ = s.st_gid;
@@ -144,11 +156,13 @@ file_stats::file_stats(const dir_item& item, const bool use_lstat) noexcept
         atime_ = jau::fraction_timespec( s.st_atim.tv_sec, s.st_atim.tv_nsec );
         mtime_ = jau::fraction_timespec( s.st_mtim.tv_sec, s.st_mtim.tv_nsec );
         ctime_ = jau::fraction_timespec( s.st_ctim.tv_sec, s.st_ctim.tv_nsec );
+
+        errorout: ;
     }
 }
 
-file_stats::file_stats(const std::string& _path, const bool use_lstat) noexcept
-: file_stats(dir_item("", _path), use_lstat)
+file_stats::file_stats(const std::string& _path) noexcept
+: file_stats(dir_item("", _path))
 {}
 
 std::string file_stats::to_string(const bool use_space) const noexcept {
@@ -272,8 +286,11 @@ bool jau::fs::get_dir_content(const std::string& path, const consume_dir_item& d
     }
 }
 
-bool jau::fs::visit(const file_stats& item_stats, const path_visitor& visitor) noexcept {
+bool jau::fs::visit(const file_stats& item_stats, const bool follow_sym_link_dirs, const path_visitor& visitor) noexcept {
     if( item_stats.is_dir() ) {
+        if( !follow_sym_link_dirs && item_stats.is_link() ) {
+            return true;
+        }
         std::vector<dir_item> content;
         const consume_dir_item cs = jau::bindCaptureRefFunc<void, std::vector<dir_item>, const dir_item&>(&content,
                 ( void(*)(std::vector<dir_item>*, const dir_item&) ) /* help template type deduction of function-ptr */
@@ -285,10 +302,12 @@ bool jau::fs::visit(const file_stats& item_stats, const path_visitor& visitor) n
                 if( !element_stats.ok() || !element_stats.exists() ) {
                     continue;
                 } else if( element_stats.is_dir() ) {
-                    if( !jau::fs::visit(element_stats, visitor) ) {
+                    if( !follow_sym_link_dirs && element_stats.is_link() ) {
+                        continue;
+                    } else if( !jau::fs::visit(element_stats, follow_sym_link_dirs, visitor) ) {
                         return false;
                     }
-                } else if( element_stats.is_file() || element_stats.is_link() || !element_stats.has_access() ) {
+                } else if( element_stats.is_file() || !element_stats.has_access() ) {
                     if( !visitor( element_stats ) ) {
                         return false;
                     }
@@ -299,11 +318,11 @@ bool jau::fs::visit(const file_stats& item_stats, const path_visitor& visitor) n
     return visitor( item_stats );
 }
 
-bool jau::fs::visit(const std::string& path, const path_visitor& visitor) noexcept {
-    return jau::fs::visit(file_stats(path), visitor);
+bool jau::fs::visit(const std::string& path, const bool follow_sym_link_dirs, const path_visitor& visitor) noexcept {
+    return jau::fs::visit(file_stats(path), follow_sym_link_dirs, visitor);
 }
 
-bool jau::fs::remove(const std::string& path, const bool recursive, const bool verbose) noexcept {
+bool jau::fs::remove(const std::string& path, const bool recursive, const bool follow_sym_link_dirs, const bool verbose) noexcept {
     file_stats path_stats(path);
     if( path_stats.is_dir() && !recursive ) {
         if( verbose ) {
@@ -331,5 +350,5 @@ bool jau::fs::remove(const std::string& path, const bool recursive, const bool v
                         return true;
                     }
                   } ) );
-    return jau::fs::visit(path_stats, pv);
+    return jau::fs::visit(path_stats, follow_sym_link_dirs, pv);
 }

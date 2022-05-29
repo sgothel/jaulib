@@ -42,6 +42,7 @@ using namespace jau::fractions_i64_literals;
 class TestFileUtil01 {
   public:
     const std::string root = "test_data";
+    const std::string project_root = "../../test_data";
 
     /**
      *
@@ -144,8 +145,9 @@ class TestFileUtil01 {
             int total;
             int files;
             int dirs;
+            int sym_links;
         };
-        visitor_stats stats { 0, 0, 0 };
+        visitor_stats stats { 0, 0, 0, 0 };
         const jau::fs::path_visitor pv = jau::bindCaptureRefFunc(&stats,
                 ( bool(*)(visitor_stats*, const jau::fs::file_stats&) ) /* help template type deduction of function-ptr */
                     ( [](visitor_stats* stats_ptr, const jau::fs::file_stats& element_stats) -> bool {
@@ -154,6 +156,9 @@ class TestFileUtil01 {
                         if( !element_stats.has_access() ) {
                             return false;
                         }
+                        if( element_stats.is_link() ) {
+                            stats_ptr->sym_links++;
+                        }
                         if( element_stats.is_file() ) {
                             stats_ptr->files++;
                         } else if( element_stats.is_dir() ) {
@@ -161,10 +166,11 @@ class TestFileUtil01 {
                         }
                         return true;
                       } ) );
-        REQUIRE( true == jau::fs::visit(root, pv) );
+        REQUIRE( true == jau::fs::visit(root, true /* follow_sym_link_dirs */, pv) );
         REQUIRE( 12 == stats.total );
         REQUIRE(  8 == stats.files );
         REQUIRE(  4 == stats.dirs );
+        REQUIRE(  0 == stats.sym_links );
 
         REQUIRE( true == jau::fs::remove(root, true) );
     }
@@ -182,10 +188,115 @@ class TestFileUtil01 {
         REQUIRE( idx != std::string::npos );
     }
 
+    void test04_symlink_file() {
+        INFO_STR("\n\ntest04_symlink_file\n");
+        jau::fs::file_stats proot_stats(project_root);
+        INFO_STR("project_root "+proot_stats.to_string(true)+"\n");
+        REQUIRE( true == proot_stats.is_dir() );
+
+        jau::fs::file_stats file_01_link_stats(proot_stats.path()+"/file_01_slink.txt");
+        INFO_STR("project_root "+file_01_link_stats.to_string(true)+"\n");
+        REQUIRE( true == file_01_link_stats.is_link() );
+        REQUIRE( true == file_01_link_stats.is_file() );
+        REQUIRE( 15 == file_01_link_stats.size() );
+    }
+
+    void test05_visit_symlinks() {
+        INFO_STR("\n\ntest05_visit_symlinks\n");
+
+        struct visitor_stats {
+            int total_real;
+            int total_sym_link;
+            int files_real;
+            int files_sym_link;
+            int dirs_real;
+            int dirs_sym_link;
+        };
+        {
+            visitor_stats stats { 0, 0, 0, 0, 0, 0 };
+            const jau::fs::path_visitor pv = jau::bindCaptureRefFunc(&stats,
+                    ( bool(*)(visitor_stats*, const jau::fs::file_stats&) ) /* help template type deduction of function-ptr */
+                        ( [](visitor_stats* stats_ptr, const jau::fs::file_stats& element_stats) -> bool {
+                            if( element_stats.is_link() ) {
+                                stats_ptr->total_sym_link++;
+                            } else {
+                                stats_ptr->total_real++;
+                            }
+                            jau::fprintf_td(stderr, "test05_visit_symlinks: total[real %d, symlink %d]: %s\n",
+                                    stats_ptr->total_real, stats_ptr->total_sym_link, element_stats.to_string(true).c_str());
+                            if( !element_stats.has_access() ) {
+                                return false;
+                            }
+                            if( element_stats.is_file() ) {
+                                if( element_stats.is_link() ) {
+                                    stats_ptr->files_sym_link++;
+                                } else {
+                                    stats_ptr->files_real++;
+                                }
+                            } else if( element_stats.is_dir() ) {
+                                if( element_stats.is_link() ) {
+                                    stats_ptr->dirs_sym_link++;
+                                } else {
+                                    stats_ptr->dirs_real++;
+                                }
+                            }
+                            return true;
+                          } ) );
+            REQUIRE( true == jau::fs::visit(project_root, false /* follow_sym_link_dirs */, pv) );
+            REQUIRE(  7 == stats.total_real );
+            REQUIRE(  3 == stats.total_sym_link );
+            REQUIRE(  4 == stats.files_real );
+            REQUIRE(  3 == stats.files_sym_link );
+            REQUIRE(  3 == stats.dirs_real );
+            REQUIRE(  0 == stats.dirs_sym_link );
+        }
+        {
+            visitor_stats stats { 0, 0, 0, 0, 0, 0 };
+            const jau::fs::path_visitor pv = jau::bindCaptureRefFunc(&stats,
+                    ( bool(*)(visitor_stats*, const jau::fs::file_stats&) ) /* help template type deduction of function-ptr */
+                        ( [](visitor_stats* stats_ptr, const jau::fs::file_stats& element_stats) -> bool {
+                            if( element_stats.is_link() ) {
+                                stats_ptr->total_sym_link++;
+                            } else {
+                                stats_ptr->total_real++;
+                            }
+                            jau::fprintf_td(stderr, "test05_visit_symlinks: total[real %d, symlink %d]: %s\n",
+                                    stats_ptr->total_real, stats_ptr->total_sym_link, element_stats.to_string(true).c_str());
+                            if( !element_stats.has_access() ) {
+                                return false;
+                            }
+                            if( element_stats.is_file() ) {
+                                if( element_stats.is_link() ) {
+                                    stats_ptr->files_sym_link++;
+                                } else {
+                                    stats_ptr->files_real++;
+                                }
+                            } else if( element_stats.is_dir() ) {
+                                if( element_stats.is_link() ) {
+                                    stats_ptr->dirs_sym_link++;
+                                } else {
+                                    stats_ptr->dirs_real++;
+                                }
+                            }
+                            return true;
+                          } ) );
+            REQUIRE( true == jau::fs::visit(project_root, true /* follow_sym_link_dirs */, pv) );
+            REQUIRE(  9 == stats.total_real );
+            REQUIRE(  5 == stats.total_sym_link );
+            REQUIRE(  6 == stats.files_real );
+            REQUIRE(  4 == stats.files_sym_link );
+            REQUIRE(  3 == stats.dirs_real );
+            REQUIRE(  1 == stats.dirs_sym_link );
+        }
+    }
+
+
 };
 
-METHOD_AS_TEST_CASE( TestFileUtil01::test01_mkdir, "Test TestFileUtil01 - test01_mkdir");
-METHOD_AS_TEST_CASE( TestFileUtil01::test02_touch, "Test TestFileUtil01 - test02_touch");
-METHOD_AS_TEST_CASE( TestFileUtil01::test03_visit, "Test TestFileUtil01 - test03_visit");
-METHOD_AS_TEST_CASE( TestFileUtil01::test04_cwd,   "Test TestFileUtil01 - test04_cwd");
+METHOD_AS_TEST_CASE( TestFileUtil01::test01_mkdir,          "Test TestFileUtil01 - test01_mkdir");
+METHOD_AS_TEST_CASE( TestFileUtil01::test02_touch,          "Test TestFileUtil01 - test02_touch");
+METHOD_AS_TEST_CASE( TestFileUtil01::test03_visit,          "Test TestFileUtil01 - test03_visit");
+METHOD_AS_TEST_CASE( TestFileUtil01::test04_cwd,            "Test TestFileUtil01 - test04_cwd");
+METHOD_AS_TEST_CASE( TestFileUtil01::test04_symlink_file,   "Test TestFileUtil01 - test04_symlink_file");
+METHOD_AS_TEST_CASE( TestFileUtil01::test05_visit_symlinks, "Test TestFileUtil01 - test05_visit_symlinks");
 

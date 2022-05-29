@@ -50,15 +50,15 @@ namespace jau {
         enum class fmode_bits : uint32_t {
             /** No mode bit set */
             NONE         =        0,
-            /** Entity is a file. */
+            /** Entity is a file, might be in combination with LINK. */
             FILE         = 1U <<  0,
-            /** Entity is a directory. */
+            /** Entity is a directory, might be in combination with LINK. */
             DIR          = 1U <<  1,
-            /** Entity is a symbolic link. */
+            /** Entity is a symbolic link, might be in combination with FILE or DIR. */
             LINK         = 1U <<  2,
-            /** Entity gives no access to user. */
+            /** Entity gives no access to user, exclusive bit. */
             NO_ACCESS    = 1U << 30,
-            /** Entity does not exist. */
+            /** Entity does not exist, exclusive bit. */
             NOT_EXISTING = 1U << 31
         };
         constexpr uint32_t number(const fmode_bits rhs) noexcept {
@@ -120,8 +120,12 @@ namespace jau {
         };
 
         /**
-         * Platform agnostic C++ representation of POSIX ::lstat()
+         * Platform agnostic C++ representation of POSIX ::lstat() and ::stat()
          * for a given pathname.
+         *
+         * Implementation follows the symbolic link, i.e. first opens
+         * the given pathname with ::lstat() and if identifying as a symbolic link
+         * opens it via ::stat() to retrieve the actual properties like size, time and ownership.
          */
         class file_stats {
             public:
@@ -146,23 +150,19 @@ namespace jau {
                 file_stats() noexcept;
 
                 /**
-                 * Instantiates a file_stats for the given `path`
-                 * using either `::lstat()` (default) or `::stat()`.
+                 * Instantiates a file_stats for the given `path`.
                  *
                  * The dir_item will be constructed without parent_dir
                  * @param path the path to produce stats for
-                 * @param use_lstat if true using `::lstat()` (default) allowing symbolic links to be detected, otherwise using `::stat()`.
                  */
-                file_stats(const std::string& path, const bool use_lstat=true) noexcept;
+                file_stats(const std::string& path) noexcept;
 
                 /**
-                 * Instantiates a file_stats for the given dir_item
-                 * using either `::lstat()` (default) or `::stat()`.
+                 * Instantiates a file_stats for the given dir_item.
                  *
                  * @param item the dir_item to produce stats for
-                 * @param use_lstat if true using `::lstat()` (default) allowing symbolic links to be detected, otherwise using `::stat()`.
                  */
-                file_stats(const dir_item& item, const bool use_lstat=true) noexcept;
+                file_stats(const dir_item& item) noexcept;
 
                 /** Returns the dir_item. */
                 const dir_item& item() const noexcept { return item_; }
@@ -179,7 +179,7 @@ namespace jau {
                 /** Returns the group id, owning the element. */
                 gid_t gid() const noexcept { return gid_; }
 
-                /** Returns the size in bytes of this element if its a fmode_bits::FILE, otherwise zero. */
+                /** Returns the size in bytes of this element if is_file() including is_link(), otherwise zero. */
                 size_t size() const noexcept { return size_; }
 
                 /** Returns the last access time of this element since Unix Epoch. */
@@ -195,12 +195,19 @@ namespace jau {
                 /** Returns true if no error occurred */
                 bool ok()  const noexcept { return 0 == errno_res_; }
 
-                /** Returns true if given path is fmode_bits::FILE  */
+                /** Returns true if entity is a file, might be in combination with is_link().  */
                 bool is_file() const noexcept { return has_fmode_bit( mode_, fmode_bits::FILE ); }
+
+                /** Returns true if entity is a directory, might be in combination with is_link().  */
                 bool is_dir() const noexcept { return has_fmode_bit( mode_, fmode_bits::DIR ); }
+
+                /** Returns true if entity is a symbolic link, might be in combination with is_file() or is_dir(). */
                 bool is_link() const noexcept { return has_fmode_bit( mode_, fmode_bits::LINK ); }
 
+                /** Returns true if entity gives no access to user, exclusive bit. */
                 bool has_access() const noexcept { return !has_fmode_bit( mode_, fmode_bits::NO_ACCESS ); }
+
+                /** Returns true if entity does not exist, exclusive bit. */
                 bool exists() const noexcept { return !has_fmode_bit( mode_, fmode_bits::NOT_EXISTING ); }
 
                 /**
@@ -268,38 +275,42 @@ namespace jau {
          *
          * Any element without access or error otherwise will be skipped.
          *
-         * All elements of type fmode_bits::FILE, fmode_bits::DIR, fmode_bits::LINK and fmode_bits::NO_ACCESS
+         * All elements of type fmode_bits::FILE, fmode_bits::DIR and fmode_bits::NO_ACCESS
          * will be visited by the `visitor`
          * and processing ends if it returns `false`.
          *
          * @param path the starting path
+         * @param follow_sym_link_dirs pass true to visit directories with property fmode_bits::LINK, otherwise false.
          * @param visitor path_visitor function `bool visitor(const file_stats& item_stats)`.
          * @return true if all visitor invocation returned true and no error occurred, otherwise false
          */
-        bool visit(const std::string& path, const path_visitor& visitor) noexcept;
+        bool visit(const std::string& path, const bool follow_sym_link_dirs, const path_visitor& visitor) noexcept;
 
         /**
          * Visit all elements of path in a recursive manner, visiting content first then its parent directory.
          *
          * Any element without access or error otherwise will be skipped.
          *
-         * All elements of type fmode_bits::FILE, fmode_bits::DIR, fmode_bits::LINK and fmode_bits::NO_ACCESS
+         * All elements of type fmode_bits::FILE, fmode_bits::DIR and fmode_bits::NO_ACCESS
          * will be visited by the `visitor`
          * and processing ends if it returns `false`.
          *
          * @param item_stats pre-fetched file_stats for a given dir_item, used for efficiency
+         * @param follow_sym_link_dirs pass true to visit directories with property fmode_bits::LINK, otherwise false.
          * @param visitor path_visitor function `bool visitor(const file_stats& item_stats)`.
          * @return true if all visitor invocation returned true and no error occurred, otherwise false
          */
-        bool visit(const file_stats& item_stats, const path_visitor& visitor) noexcept;
+        bool visit(const file_stats& item_stats, const bool follow_sym_link_dirs, const path_visitor& visitor) noexcept;
 
         /**
          * Remove the given path. If path represents a director, `recursive` must be set to true.
          * @param path path to remove
          * @param recursive indicates to remove directories
+         * @param follow_sym_link_dirs pass true to remove directories with property fmode_bits::LINK (default), otherwise false.
+         * @param verbose pass true for verbose information about deleted files and directories, otherwise false (default)
          * @return true only if the file or the directory with content has been deleted, otherwise false
          */
-        bool remove(const std::string& path, const bool recursive, const bool verbose=false) noexcept;
+        bool remove(const std::string& path, const bool recursive, const bool follow_sym_link_dirs=true, const bool verbose=false) noexcept;
 
         /**@}*/
 
