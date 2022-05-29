@@ -159,6 +159,15 @@ a Raspi-arm64, Raspi-armhf or PC-amd64 target image.
 
 * First stable release (TODO)
 
+**0.11.1**
+
+* `interruptReader()` has been exposed as `ByteInStream_Feed::interruptReader()` and called in `ByteInStream_Feed::set_eof()`
+* `io::read_url_stream`: Properly handle `content_length` and be responsive on errors
+  - Fix `content_length` (-1 == unknown)
+  - Add `consume_header` w/ `response_code` for errors >= 400 calls `buffer.interruptReader()`
+  - `interruptReader()` calls have been added in synchronous- and asynchronous `read_url_stream()` functions on error
+* `ringbuffer`: Add `interruptReader()` if intended to abort writing and to interrupt the reader thread's potentially blocked read-access call
+
 **0.11.0**
 
 * Add `byte_stream.hpp` and `io_util.hpp` from Elevator project for generic use
