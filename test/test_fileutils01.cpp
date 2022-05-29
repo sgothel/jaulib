@@ -42,7 +42,10 @@ using namespace jau::fractions_i64_literals;
 class TestFileUtil01 {
   public:
     const std::string root = "test_data";
-    const std::string project_root = "../../test_data";
+    // normal location with jaulib as sole project
+    const std::string project_root1 = "../../test_data";
+    // submodule location with jaulib directly hosted below main project
+    const std::string project_root2 = "../../../jaulib/test_data";
 
     /**
      *
@@ -190,7 +193,13 @@ class TestFileUtil01 {
 
     void test04_symlink_file() {
         INFO_STR("\n\ntest04_symlink_file\n");
-        jau::fs::file_stats proot_stats(project_root);
+
+        jau::fs::file_stats proot_stats(project_root1);
+        if( !proot_stats.exists() ) {
+            proot_stats = jau::fs::file_stats(project_root2);
+        }
+        REQUIRE( true == proot_stats.exists() );
+
         INFO_STR("project_root "+proot_stats.to_string(true)+"\n");
         REQUIRE( true == proot_stats.is_dir() );
 
@@ -203,6 +212,12 @@ class TestFileUtil01 {
 
     void test05_visit_symlinks() {
         INFO_STR("\n\ntest05_visit_symlinks\n");
+
+        jau::fs::file_stats proot_stats(project_root1);
+        if( !proot_stats.exists() ) {
+            proot_stats = jau::fs::file_stats(project_root2);
+        }
+        REQUIRE( true == proot_stats.exists() );
 
         struct visitor_stats {
             int total_real;
@@ -242,7 +257,7 @@ class TestFileUtil01 {
                             }
                             return true;
                           } ) );
-            REQUIRE( true == jau::fs::visit(project_root, false /* follow_sym_link_dirs */, pv) );
+            REQUIRE( true == jau::fs::visit(proot_stats, false /* follow_sym_link_dirs */, pv) );
             REQUIRE(  7 == stats.total_real );
             REQUIRE(  3 == stats.total_sym_link );
             REQUIRE(  4 == stats.files_real );
@@ -280,7 +295,7 @@ class TestFileUtil01 {
                             }
                             return true;
                           } ) );
-            REQUIRE( true == jau::fs::visit(project_root, true /* follow_sym_link_dirs */, pv) );
+            REQUIRE( true == jau::fs::visit(proot_stats, true /* follow_sym_link_dirs */, pv) );
             REQUIRE(  9 == stats.total_real );
             REQUIRE(  5 == stats.total_sym_link );
             REQUIRE(  6 == stats.files_real );
