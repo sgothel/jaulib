@@ -158,7 +158,7 @@ a Raspi-arm64, Raspi-armhf or PC-amd64 target image.
 
 * First stable release (TODO)
 
-**0.11.0** (WIP)
+**0.11.0**
 
 * Add `byte_stream.hpp` and `io_util.hpp` from Elevator project for generic use
   - This adds build dependency to `curl` library and test dependency to `mini-httpd`, both not needed if unused.
