@@ -30,6 +30,7 @@ buildit() {
     echo CPU_COUNT $CPU_COUNT
 
     cd $rootdir/build-$archabi
+    rm -rf documentation
     make -j $CPU_COUNT doc_jau
     if [ $? -eq 0 ] ; then
         echo "REBUILD SUCCESS $bname $archabi"
