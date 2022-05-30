@@ -222,7 +222,7 @@ uint64_t jau::io::read_url_stream(const std::string& url,
     res = curl_easy_setopt(curl_handle, CURLOPT_SUPPRESS_CONNECT_HEADERS, 1L);
     if( CURLE_OK != res ) {
         ERR_PRINT("Error setting up url %s, error %d %d",
-                  url, (int)res, errorbuffer.data());
+                  url.c_str(), (int)res, errorbuffer.data());
         goto errout;
     }
 
@@ -230,7 +230,7 @@ uint64_t jau::io::read_url_stream(const std::string& url,
     res = curl_easy_setopt(curl_handle, CURLOPT_HEADER, 0L);
     if( CURLE_OK != res ) {
         ERR_PRINT("Error setting up url %s, error %d %d",
-                  url, (int)res, errorbuffer.data());
+                url.c_str(), (int)res, errorbuffer.data());
         goto errout;
     }
 
@@ -238,7 +238,7 @@ uint64_t jau::io::read_url_stream(const std::string& url,
     res = curl_easy_setopt(curl_handle, CURLOPT_HEADERFUNCTION, consume_header_curl1);
     if( CURLE_OK != res ) {
         ERR_PRINT("Error setting up url %s, error %d %d",
-                  url, (int)res, errorbuffer.data());
+                url.c_str(), (int)res, errorbuffer.data());
         goto errout;
     }
 
@@ -246,7 +246,7 @@ uint64_t jau::io::read_url_stream(const std::string& url,
     res = curl_easy_setopt(curl_handle, CURLOPT_HEADERDATA, (void*)&cg);
     if( CURLE_OK != res ) {
         ERR_PRINT("Error setting up url %s, error %d %d",
-                  url, (int)res, errorbuffer.data());
+                url.c_str(), (int)res, errorbuffer.data());
         goto errout;
     }
 
