@@ -310,7 +310,7 @@ std::string ByteInStream_File::to_string() const noexcept {
                             "]";
 }
 
-ByteInStream_URL::ByteInStream_URL(const std::string& url, jau::fraction_i64 timeout) noexcept
+ByteInStream_URL::ByteInStream_URL(const std::string& url, const jau::fraction_i64& timeout) noexcept
 : m_url(url), m_timeout(timeout), m_buffer(0x00, BEST_URLSTREAM_RINGBUFFER_SIZE),
   m_has_content_length( false ), m_content_size( 0 ), m_total_xfered( 0 ), m_result( io::async_io_result_t::NONE ),
   m_bytes_consumed(0)
@@ -384,7 +384,7 @@ std::string ByteInStream_URL::to_string() const noexcept {
     return "ByteInStream_URL["+to_string_int()+"]";
 }
 
-ByteInStream_Feed::ByteInStream_Feed(const std::string& id_name, jau::fraction_i64 timeout) noexcept
+ByteInStream_Feed::ByteInStream_Feed(const std::string& id_name, const jau::fraction_i64& timeout) noexcept
 : m_id(id_name), m_timeout(timeout), m_buffer(0x00, BEST_URLSTREAM_RINGBUFFER_SIZE),
   m_has_content_length( false ), m_content_size( 0 ), m_total_xfered( 0 ), m_result( io::async_io_result_t::NONE ),
   m_bytes_consumed(0)

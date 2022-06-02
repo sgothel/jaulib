@@ -452,7 +452,7 @@ namespace jau::io {
              * @param url the URL of the data to read
              * @param timeout maximum duration in fractions of seconds to wait @ check_available(), where fractions_i64::zero waits infinitely
              */
-            ByteInStream_URL(const std::string& url, jau::fraction_i64 timeout) noexcept;
+            ByteInStream_URL(const std::string& url, const jau::fraction_i64& timeout) noexcept;
 
             ByteInStream_URL(const ByteInStream_URL&) = delete;
 
@@ -537,7 +537,7 @@ namespace jau::io {
              * @param id_name arbitrary identifier for this instance
              * @param timeout maximum duration in fractions of seconds to wait @ check_available() and write(), where fractions_i64::zero waits infinitely
              */
-            ByteInStream_Feed(const std::string& id_name, jau::fraction_i64 timeout) noexcept;
+            ByteInStream_Feed(const std::string& id_name, const jau::fraction_i64& timeout) noexcept;
 
             ByteInStream_Feed(const ByteInStream_URL&) = delete;
 
