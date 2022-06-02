@@ -113,6 +113,9 @@ namespace jau {
     inline jfieldID getInstanceField(JNIEnv *env, jobject obj) {
         return getField(env, obj, "nativeInstance", "J");
     }
+    jobject getObjectFieldValue(JNIEnv *env, jobject obj, const char* field_name, const char* field_signature);
+    std::string getStringFieldValue(JNIEnv *env, jobject obj, const char* field_name);
+    jlong getLongFieldValue(JNIEnv *env, jobject obj, const char* field_name);
 
     jclass search_class(JNIEnv *env, const char *clazz_name);
     jclass search_class(JNIEnv *env, jobject obj);
@@ -129,6 +132,7 @@ namespace jau {
 
     jobject get_new_arraylist(JNIEnv *env, jsize size, jmethodID *add);
 
+    jobject convert_vector_string_to_jarraylist(JNIEnv *env, const std::vector<std::string>& array);
     //
     // C++ JavaAnon implementation
     //

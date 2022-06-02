@@ -202,6 +202,36 @@ jfieldID jau::getField(JNIEnv *env, jobject obj, const char* field_name, const c
     return res;
 }
 
+jobject jau::getObjectFieldValue(JNIEnv *env, jobject obj, const char* field_name, const char* field_signature) {
+    jfieldID f = jau::getField(env, obj, field_name, field_signature);
+    if (!f)
+    {
+        throw jau::InternalError(std::string("no field found: ")+field_signature+" "+field_name, E_FILE_LINE);
+    }
+    jobject v = env->GetObjectField(obj, f);
+    java_exception_check_and_throw(env, E_FILE_LINE);
+    if (!v)
+    {
+        throw jau::InternalError(std::string("no object at field: ")+field_signature+" "+field_name, E_FILE_LINE);
+    }
+    return v;
+}
+
+std::string jau::getStringFieldValue(JNIEnv *env, jobject obj, const char* field_name) {
+    return jau::from_jstring_to_string(env, (jstring)jau::getObjectFieldValue(env, obj, field_name, "Ljava/lang/String;"));
+}
+
+jlong jau::getLongFieldValue(JNIEnv *env, jobject obj, const char* field_name) {
+    jfieldID f = jau::getField(env, obj, field_name, "J");
+    if (!f)
+    {
+        throw jau::InternalError(std::string("no field found: J ")+field_name, E_FILE_LINE);
+    }
+    jlong v = env->GetLongField(obj, f);
+    java_exception_check_and_throw(env, E_FILE_LINE);
+    return v;
+}
+
 jclass jau::search_class(JNIEnv *env, const char *clazz_name)
 {
     jclass clazz = env->FindClass(clazz_name);
@@ -335,6 +365,24 @@ jobject jau::get_new_arraylist(JNIEnv *env, jsize size, jmethodID *add)
     return result;
 }
 
+jobject jau::convert_vector_string_to_jarraylist(JNIEnv *env, const std::vector<std::string>& array)
+{
+    nsize_t array_size = array.size();
+
+    jmethodID arraylist_add;
+    jobject result = get_new_arraylist(env, (jsize)array_size, &arraylist_add);
+
+    if (0 == array_size) {
+        return result;
+    }
+
+    jau::for_each(array.begin(), array.end(), [&](const std::string& elem){
+        jstring jelem = from_string_to_jstring(env, elem);
+        env->CallBooleanMethod(result, arraylist_add, jelem);
+        env->DeleteLocalRef(jelem);
+    });
+    return result;
+}
 
 //
 // C++ java_anon implementation
