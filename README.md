@@ -159,6 +159,14 @@ a Raspi-arm64, Raspi-armhf or PC-amd64 target image.
 
 * First stable release (TODO)
 
+**0.12.0**
+
+* Minor changes
+* JNI: Add helper functions
+  - `convert_jlist_string_to_vector()` and `convert_vector_string_to_jarraylist()`
+  - `getObjectFieldValue()`, `getStringFieldValue()` and `getLongFieldValue()`
+* Fix ByteInStream_[URL|Feed]::close(): Only change `m_result` if still NONE, then write SUCCESS (close success, no error)
+
 **0.11.1**
 
 * `interruptReader()` has been exposed as `ByteInStream_Feed::interruptReader()` and called in `ByteInStream_Feed::set_eof()`
