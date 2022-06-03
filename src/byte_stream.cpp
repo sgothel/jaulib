@@ -467,9 +467,7 @@ void ByteInStream_Recorder::close() noexcept {
 }
 
 void ByteInStream_Recorder::start_recording() noexcept {
-    if( is_recording() ) {
-        m_buffer.resize(0);
-    }
+    m_buffer.resize(0);
     m_rec_offset = m_bytes_consumed;
     m_is_recording = true;
 }
