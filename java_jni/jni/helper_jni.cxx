@@ -384,6 +384,27 @@ jobject jau::convert_vector_string_to_jarraylist(JNIEnv *env, const std::vector<
     return result;
 }
 
+std::vector<std::string> jau::convert_jlist_string_to_vector(JNIEnv *env, jobject jlist)
+{
+    std::vector<std::string> result;
+
+    jclass list_class = search_class(env, "java/util/List");
+    jmethodID list_size = search_method(env, list_class, "size", "()I", false);
+    nsize_t array_size = env->CallIntMethod(jlist, list_size);
+
+    if (0 == array_size) {
+        return result;
+    }
+    jmethodID list_get = search_method(env, list_class, "get", "(I)Ljava/lang/Object;", false);
+
+    for(nsize_t i=0; i<array_size; ++i) {
+        jobject jstr = env->CallObjectMethod(jlist, list_get, i);
+        result.push_back( jau::from_jstring_to_string(env, (jstring)jstr) );
+        env->DeleteLocalRef(jstr);
+    }
+    return result;
+}
+
 //
 // C++ java_anon implementation
 //

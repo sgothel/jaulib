@@ -133,6 +133,8 @@ namespace jau {
     jobject get_new_arraylist(JNIEnv *env, jsize size, jmethodID *add);
 
     jobject convert_vector_string_to_jarraylist(JNIEnv *env, const std::vector<std::string>& array);
+    std::vector<std::string> convert_jlist_string_to_vector(JNIEnv *env, jobject jlist);
+
     //
     // C++ JavaAnon implementation
     //
