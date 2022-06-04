@@ -159,6 +159,22 @@ a Raspi-arm64, Raspi-armhf or PC-amd64 target image.
 
 * First stable release (TODO)
 
+**0.13.0**
+
+* `string_util.hpp`: Add `jau::to_string()` support for `std::string` and `std::string_view` as well as for `std::vector<T>` lists
+* Add namespace `jau::io::uri`, limited URI scheme functionality to query whether implementation may handle the protocol.
+  - Query *libcurl* supported protocols at runtime
+  - Test for local file protocol
+  - Test whether protocol in given uri is supported by *libcurl*
+* `jau::io::read_url_stream()`, sync and async, return immediately if protocol in given url is not supportet
+  - async variant returns `std::unique_ptr<std::thread>`, where a nullptr is used for no support
+* `jau::io::ByteInStream_File` recognizes the local file protocol and cuts off `file://` is used.
+  - Fix: Recognition of a non-existing path, unaccessbile path or non-file case properly
+* `jau::io::ByteInStream_URL` recognizes a non supported protocol via async `jau::io::read_url_stream()`.
+* Added convenient `jau::io::std::unique_ptr<ByteInStream> to_ByteInStream()`
+  - Returning either a `jau::io::ByteInStream_File`, `jau::io::ByteInStream_URL` or nullptr if `path_or_url` is not supported
+* Make Java class `org.jau.ney.Uri` standalone, drop dependencies for easier reusage.
+
 **0.12.0**
 
 * Minor changes

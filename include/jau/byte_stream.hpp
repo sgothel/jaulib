@@ -42,6 +42,8 @@
 // Include Botan header files before this one to be integrated w/ Botan!
 // #include <botan_all.h>
 
+using namespace jau::fractions_i64_literals;
+
 namespace jau::io {
 
     /** \addtogroup IOUtils
@@ -365,15 +367,19 @@ namespace jau::io {
           size_t peek(uint8_t[], size_t, size_t) const NOEXCEPT_BOTAN override;
           bool check_available(size_t n) NOEXCEPT_BOTAN override;
           bool end_of_data() const NOEXCEPT_BOTAN override;
-          bool error() const noexcept override { return m_source.bad(); }
+          bool error() const noexcept override { return nullptr == m_source || m_source->bad(); }
           std::string id() const NOEXCEPT_BOTAN override;
 
           /**
            * Construct a Stream-Based byte input stream from filesystem path
-           * @param file the path to the file
+           *
+           * In case the given path is a local file URI starting with `file://`, see jau::io::uri::is_local_file_protocol(),
+           * the leading `file://` is cut off and the remainder being used.
+           *
+           * @param path the path to the file, maybe a local file URI
            * @param use_binary whether to treat the file as binary (default) or use platform character conversion
            */
-          ByteInStream_File(const std::string& file, bool use_binary = true) noexcept;
+          ByteInStream_File(const std::string& path, bool use_binary = true) noexcept;
 
           ByteInStream_File(const ByteInStream_File&) = delete;
 
@@ -395,7 +401,7 @@ namespace jau::io {
 
        private:
           const std::string m_identifier;
-          mutable std::ifstream m_source;
+          mutable std::unique_ptr<std::ifstream> m_source;
           uint64_t m_content_size;
           uint64_t m_bytes_consumed;
     };
@@ -403,7 +409,9 @@ namespace jau::io {
     /**
      * This class represents a Ringbuffer-Based byte input stream with a URL connection provisioned data feed.
      *
-     * Standard implementation uses curl, hence all protocols supported by curl are supported.
+     * Standard implementation uses [curl](https://curl.se/),
+     * hence all [*libcurl* network protocols](https://curl.se/docs/url-syntax.html) are supported,
+     * jau::io::uri::supported_protocols().
      */
     class ByteInStream_URL final : public ByteInStream {
         public:
@@ -450,7 +458,7 @@ namespace jau::io {
             /**
              * Construct a ringbuffer backed Http byte input stream
              * @param url the URL of the data to read
-             * @param timeout maximum duration in fractions of seconds to wait @ check_available(), where fractions_i64::zero waits infinitely
+             * @param timeout maximum duration in fractions of seconds to wait @ check_available() for next bytes, where fractions_i64::zero waits infinitely
              */
             ByteInStream_URL(const std::string& url, const jau::fraction_i64& timeout) noexcept;
 
@@ -483,9 +491,23 @@ namespace jau::io {
             jau::relaxed_atomic_uint64 m_content_size;
             jau::relaxed_atomic_uint64 m_total_xfered;
             relaxed_atomic_async_io_result_t m_result;
-            std::thread m_url_thread;
+            std::unique_ptr<std::thread> m_url_thread;
             uint64_t m_bytes_consumed;
     };
+
+    /**
+     * Parses the given path_or_uri, if it matches a supported protocol, see jau::io::uri::protocol_supported(),
+     * but is not a local file, see jau::io::uri::is_local_file_protocol(), ByteInStream_URL is being attempted.
+     *
+     * If the above fails, ByteInStream_File is attempted.
+     *
+     * If non of the above leads to a ByteInStream without ByteInStream::error(), nullptr is returned.
+     *
+     * @param path_or_uri given path or uri for with a ByteInStream instance shall be established.
+     * @param timeout a timeout in case ByteInStream_URL is being used as maximum dureation to wait for next bytes at ByteInStream_URL::check_available(), defaults to 20_s
+     * @return a working ByteInStream w/o ByteInStream::error() or nullptr
+     */
+    std::unique_ptr<ByteInStream> to_ByteInStream(const std::string& path_or_uri, jau::fraction_i64 timeout=20_s) noexcept;
 
     /**
      * This class represents a Ringbuffer-Based byte input stream with an externally provisioned data feed.

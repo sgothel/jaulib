@@ -80,8 +80,8 @@ class TestByteStream01 {
                     fname_payload_size_lst.push_back( size );
                 }
                 data() {
-                    add_test_file("test_cipher_01_11kiB", 1024*11);
-                    add_test_file("test_cipher_02_65MiB", 1024*1024*65);
+                    add_test_file("testfile_blob_01_11kiB.bin", 1024*11);
+                    add_test_file("testfile_blob_02_65MiB.bin", 1024*1024*65);
                 }
             public:
                 static const data& get() {
@@ -99,13 +99,14 @@ class TestByteStream01 {
 
         ~TestByteStream01() {
             std::system("killall mini_httpd");
-            std::system("killall mini_httpd");
         }
 
         static void httpd_start() {
             std::system("killall mini_httpd");
-            std::system("killall mini_httpd");
-            std::system("/usr/sbin/mini_httpd -p 8080");
+            const std::string cwd = jau::fs::get_cwd();
+            const std::string cmd = "/usr/sbin/mini_httpd -p 8080 -l "+cwd+"/mini_httpd.log";
+            jau::PLAIN_PRINT(true, "%s", cmd.c_str());
+            std::system(cmd.c_str());
         }
 
         static bool transfer(jau::io::ByteInStream& input, const std::string& output_fname) {
@@ -158,6 +159,130 @@ class TestByteStream01 {
             jau::PLAIN_PRINT(true, "Transfer End: %s", input.to_string().c_str());
 
             return true;
+        }
+
+        void test00a_protocols_error() {
+            httpd_start();
+            {
+                std::vector<std::string_view> protos = jau::io::uri::supported_protocols();
+                jau::PLAIN_PRINT(true, "test00_protocols: Supported protocols: %zu: %s", protos.size(), jau::to_string(protos, ",").c_str());
+                REQUIRE( 0 < protos.size() );
+            }
+            const size_t file_idx = IDX_11kiB;
+            {
+                const std::string url = "not_exiting_file.txt";
+                REQUIRE( false == jau::io::uri::is_local_file_protocol(url) );
+                REQUIRE( false == jau::io::uri::protocol_supported(url) );
+
+                std::unique_ptr<jau::io::ByteInStream> in = jau::io::to_ByteInStream(url);
+                if( nullptr != in ) {
+                    jau::PLAIN_PRINT(true, "test00_protocols: not_exiting_file: %s", in->to_string().c_str());
+                }
+                REQUIRE( nullptr == in );
+            }
+            {
+                const std::string url = "file://not_exiting_file_uri.txt";
+                REQUIRE( true == jau::io::uri::is_local_file_protocol(url) );
+                REQUIRE( true == jau::io::uri::protocol_supported(url) );
+
+                std::unique_ptr<jau::io::ByteInStream> in = jau::io::to_ByteInStream(url);
+                if( nullptr != in ) {
+                    jau::PLAIN_PRINT(true, "test00_protocols: not_exiting_file_uri: %s", in->to_string().c_str());
+                }
+                REQUIRE( nullptr == in );
+            }
+            {
+                const std::string url = "lala://localhost:8080/" + fname_payload_lst[file_idx];
+                REQUIRE( false == jau::io::uri::is_local_file_protocol(url) );
+                REQUIRE( false == jau::io::uri::protocol_supported(url) );
+
+                std::unique_ptr<jau::io::ByteInStream> in = jau::io::to_ByteInStream(url);
+                if( nullptr != in ) {
+                    jau::PLAIN_PRINT(true, "test00_protocols: not_exiting_protocol_uri: %s", in->to_string().c_str());
+                }
+                REQUIRE( nullptr == in );
+            }
+            {
+                const std::string url = url_input_root + "not_exiting_http_uri.txt";
+                REQUIRE( false == jau::io::uri::is_local_file_protocol(url) );
+                REQUIRE( true == jau::io::uri::protocol_supported(url) );
+
+                std::unique_ptr<jau::io::ByteInStream> in = jau::io::to_ByteInStream(url);
+                REQUIRE( nullptr != in );
+                jau::sleep_for( 10_ms );
+                jau::PLAIN_PRINT(true, "test00_protocols: not_exiting_http_uri: %s", in->to_string().c_str());
+                REQUIRE( true == in->end_of_data() );
+                REQUIRE( true == in->error() );
+                REQUIRE( 0 == in->content_size() );
+            }
+        }
+
+        void test00b_protocols_ok() {
+            httpd_start();
+            const size_t file_idx = IDX_11kiB;
+            {
+                const std::string url = fname_payload_lst[file_idx];
+                REQUIRE( false == jau::io::uri::is_local_file_protocol(url) );
+                REQUIRE( false == jau::io::uri::protocol_supported(url) );
+
+                std::unique_ptr<jau::io::ByteInStream> in = jau::io::to_ByteInStream(url);
+                if( nullptr != in ) {
+                    jau::PLAIN_PRINT(true, "test00_protocols: local-file-0: %s", in->to_string().c_str());
+                }
+                REQUIRE( nullptr != in );
+                REQUIRE( false == in->error() );
+
+                bool res = transfer(*in, fname_payload_copy_lst[file_idx]);
+                REQUIRE( true == res );
+
+                jau::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
+                REQUIRE( true == out_stats.exists() );
+                REQUIRE( true == out_stats.is_file() );
+                REQUIRE( in->content_size() == out_stats.size() );
+                REQUIRE( fname_payload_size_lst[file_idx] == out_stats.size() );
+            }
+            {
+                const std::string url = "file://" + fname_payload_lst[file_idx];
+                REQUIRE( true == jau::io::uri::is_local_file_protocol(url) );
+                REQUIRE( true == jau::io::uri::protocol_supported(url) );
+
+                std::unique_ptr<jau::io::ByteInStream> in = jau::io::to_ByteInStream(url);
+                if( nullptr != in ) {
+                    jau::PLAIN_PRINT(true, "test00_protocols: local-file-1: %s", in->to_string().c_str());
+                }
+                REQUIRE( nullptr != in );
+                REQUIRE( false == in->error() );
+
+                bool res = transfer(*in, fname_payload_copy_lst[file_idx]);
+                REQUIRE( true == res );
+
+                jau::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
+                REQUIRE( true == out_stats.exists() );
+                REQUIRE( true == out_stats.is_file() );
+                REQUIRE( in->content_size() == out_stats.size() );
+                REQUIRE( fname_payload_size_lst[file_idx] == out_stats.size() );
+            }
+            {
+                const std::string url = url_input_root + fname_payload_lst[file_idx];
+                REQUIRE( false == jau::io::uri::is_local_file_protocol(url) );
+                REQUIRE( true == jau::io::uri::protocol_supported(url) );
+
+                std::unique_ptr<jau::io::ByteInStream> in = jau::io::to_ByteInStream(url);
+                if( nullptr != in ) {
+                    jau::PLAIN_PRINT(true, "test00_protocols: http: %s", in->to_string().c_str());
+                }
+                REQUIRE( nullptr != in );
+                REQUIRE( false == in->error() );
+
+                bool res = transfer(*in, fname_payload_copy_lst[file_idx]);
+                REQUIRE( true == res );
+
+                jau::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
+                REQUIRE( true == out_stats.exists() );
+                REQUIRE( true == out_stats.is_file() );
+                REQUIRE( in->content_size() == out_stats.size() );
+                REQUIRE( fname_payload_size_lst[file_idx] == out_stats.size() );
+            }
         }
 
         void test01_copy_file_ok() {
@@ -475,12 +600,13 @@ std::vector<std::string> TestByteStream01::fname_payload_lst;
 std::vector<std::string> TestByteStream01::fname_payload_copy_lst;
 std::vector<uint64_t> TestByteStream01::fname_payload_size_lst;
 
-METHOD_AS_TEST_CASE( TestByteStream01::test01_copy_file_ok,    "TestByteStream01 test01_copy_file_ok");
+METHOD_AS_TEST_CASE( TestByteStream01::test00a_protocols_error, "TestByteStream01 test00a_protocols_error");
+METHOD_AS_TEST_CASE( TestByteStream01::test00b_protocols_ok,    "TestByteStream01 test00b_protocols_ok");
 
-METHOD_AS_TEST_CASE( TestByteStream01::test11_copy_http_ok,    "TestByteStream01 test11_copy_http_ok");
-METHOD_AS_TEST_CASE( TestByteStream01::test12_copy_http_404,   "TestByteStream01 test12_copy_http_404");
+METHOD_AS_TEST_CASE( TestByteStream01::test01_copy_file_ok,     "TestByteStream01 test01_copy_file_ok");
 
-METHOD_AS_TEST_CASE( TestByteStream01::test21_copy_fed_ok,     "TestByteStream01 test21_copy_fed_ok");
-METHOD_AS_TEST_CASE( TestByteStream01::test22_copy_fed_irq,    "TestByteStream01 test22_copy_fed_irq");
+METHOD_AS_TEST_CASE( TestByteStream01::test11_copy_http_ok,     "TestByteStream01 test11_copy_http_ok");
+METHOD_AS_TEST_CASE( TestByteStream01::test12_copy_http_404,    "TestByteStream01 test12_copy_http_404");
 
-
+METHOD_AS_TEST_CASE( TestByteStream01::test21_copy_fed_ok,      "TestByteStream01 test21_copy_fed_ok");
+METHOD_AS_TEST_CASE( TestByteStream01::test22_copy_fed_irq,     "TestByteStream01 test22_copy_fed_irq");

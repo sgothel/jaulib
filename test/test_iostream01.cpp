@@ -53,7 +53,7 @@ using namespace jau::fractions_i64_literals;
 class TestIOStream01 {
     public:
         const std::string url_input_root = "http://localhost:8080/";
-        const std::string basename_10kiB = "data-10kiB.bin";
+        const std::string basename_10kiB = "testfile_data_10kiB.bin";
 
         TestIOStream01() {
             // produce fresh demo data
@@ -71,13 +71,76 @@ class TestIOStream01 {
                 }
             }
             std::system("killall mini_httpd");
-            std::system("killall mini_httpd");
-            std::system("/usr/sbin/mini_httpd -p 8080");
+            const std::string cwd = jau::fs::get_cwd();
+            const std::string cmd = "/usr/sbin/mini_httpd -p 8080 -l "+cwd+"/mini_httpd.log";
+            jau::PLAIN_PRINT(true, "%s", cmd.c_str());
+            std::system(cmd.c_str());
         }
 
         ~TestIOStream01() {
             std::system("killall mini_httpd");
-            std::system("killall mini_httpd");
+        }
+
+        void test00_protocols() {
+            {
+                std::vector<std::string_view> protos = jau::io::uri::supported_protocols();
+                jau::PLAIN_PRINT(true, "test00_protocols: Supported protocols: %zu: %s", protos.size(), jau::to_string(protos, ",").c_str());
+                REQUIRE( 0 < protos.size() );
+            }
+            {
+                const std::string url = url_input_root + basename_10kiB;
+                REQUIRE( false == jau::io::uri::is_local_file_protocol(url) );
+                REQUIRE( true == jau::io::uri::protocol_supported(url) );
+            }
+            {
+                const std::string url = "https://localhost:8080/" + basename_10kiB;
+                REQUIRE( false == jau::io::uri::is_local_file_protocol(url) );
+                REQUIRE( true == jau::io::uri::protocol_supported(url) );
+            }
+            {
+                const std::string url = "file://" + basename_10kiB;
+                REQUIRE( true == jau::io::uri::is_local_file_protocol(url) );
+                REQUIRE( true == jau::io::uri::protocol_supported(url) );
+            }
+            {
+                const std::string url = "lala://localhost:8080/" + basename_10kiB;
+                REQUIRE( false == jau::io::uri::is_local_file_protocol(url) );
+                REQUIRE( false == jau::io::uri::protocol_supported(url) );
+            }
+            {
+                // sync read_url_stream w/ unknown protocol
+                const std::string url = "lala://localhost:8080/" + basename_10kiB;
+                jau::io::secure_vector<uint8_t> buffer(4096);
+                size_t consumed_calls = 0;
+                uint64_t consumed_total_bytes = 0;
+                jau::io::StreamConsumerFunc consume = [&](jau::io::secure_vector<uint8_t>& data, bool is_final) noexcept -> bool {
+                    (void)is_final;
+                    consumed_calls++;
+                    consumed_total_bytes += data.size();
+                    return true;
+                };
+                uint64_t http_total_bytes = jau::io::read_url_stream(url, buffer, consume);
+                REQUIRE( 0 == http_total_bytes );
+                REQUIRE( consumed_total_bytes == http_total_bytes );
+                REQUIRE( 0 == consumed_calls );
+            }
+            {
+                // async read_url_stream w/ unknown protocol
+                const std::string url = "lala://localhost:8080/" + basename_10kiB;
+
+                jau::io::ByteRingbuffer rb(0x00, jau::io::BEST_URLSTREAM_RINGBUFFER_SIZE);
+                jau::relaxed_atomic_bool url_has_content_length;
+                jau::relaxed_atomic_uint64 url_content_length;
+                jau::relaxed_atomic_uint64 url_total_read;
+                jau::io::relaxed_atomic_async_io_result_t result;
+
+                std::unique_ptr<std::thread> http_thread = jau::io::read_url_stream(url, rb, url_has_content_length, url_content_length, url_total_read, result);
+                REQUIRE( nullptr == http_thread );
+                REQUIRE( url_has_content_length == false );
+                REQUIRE( url_content_length == 0 );
+                REQUIRE( url_content_length == url_total_read );
+                REQUIRE( jau::io::async_io_result_t::FAILED == result );
+            }
         }
 
         void test01_sync_ok() {
@@ -85,7 +148,7 @@ class TestIOStream01 {
             const size_t file_size = in_stats.size();
             const std::string url_input = url_input_root + basename_10kiB;
 
-            std::ofstream outfile("test01_01_out.bin", std::ios::out | std::ios::binary);
+            std::ofstream outfile("testfile01_01_out.bin", std::ios::out | std::ios::binary);
             REQUIRE( outfile.good() );
             REQUIRE( outfile.is_open() );
 
@@ -112,7 +175,7 @@ class TestIOStream01 {
         void test02_sync_404() {
             const std::string url_input = url_input_root + "doesnt_exists.txt";
 
-            std::ofstream outfile("test02_01_out.bin", std::ios::out | std::ios::binary);
+            std::ofstream outfile("testfile02_01_out.bin", std::ios::out | std::ios::binary);
             REQUIRE( outfile.good() );
             REQUIRE( outfile.is_open() );
 
@@ -141,7 +204,7 @@ class TestIOStream01 {
             const size_t file_size = in_stats.size();
             const std::string url_input = url_input_root + basename_10kiB;
 
-            std::ofstream outfile("test11_01_out.bin", std::ios::out | std::ios::binary);
+            std::ofstream outfile("testfile11_01_out.bin", std::ios::out | std::ios::binary);
             REQUIRE( outfile.good() );
             REQUIRE( outfile.is_open() );
 
@@ -152,7 +215,8 @@ class TestIOStream01 {
             jau::relaxed_atomic_uint64 url_total_read;
             jau::io::relaxed_atomic_async_io_result_t result;
 
-            std::thread http_thread = jau::io::read_url_stream(url_input, rb, url_has_content_length, url_content_length, url_total_read, result);
+            std::unique_ptr<std::thread> http_thread = jau::io::read_url_stream(url_input, rb, url_has_content_length, url_content_length, url_total_read, result);
+            REQUIRE( nullptr != http_thread );
 
             jau::io::secure_vector<uint8_t> buffer(buffer_size);
             size_t consumed_loops = 0;
@@ -171,7 +235,7 @@ class TestIOStream01 {
             jau::PLAIN_PRINT(true, "test11_async_ok.X Done: total %" PRIu64 ", result %d, rb %s",
                     consumed_total_bytes, (int)result.load(), rb.toString().c_str() );
 
-            http_thread.join();
+            http_thread->join();
 
             REQUIRE( url_has_content_length == true );
             REQUIRE( url_content_length == file_size );
@@ -184,7 +248,7 @@ class TestIOStream01 {
         void test12_async_404() {
             const std::string url_input = url_input_root + "doesnt_exists.txt";
 
-            std::ofstream outfile("test12_01_out.bin", std::ios::out | std::ios::binary);
+            std::ofstream outfile("testfile12_01_out.bin", std::ios::out | std::ios::binary);
             REQUIRE( outfile.good() );
             REQUIRE( outfile.is_open() );
 
@@ -195,7 +259,8 @@ class TestIOStream01 {
             jau::relaxed_atomic_uint64 url_total_read;
             jau::io::relaxed_atomic_async_io_result_t result;
 
-            std::thread http_thread = jau::io::read_url_stream(url_input, rb, url_has_content_length, url_content_length, url_total_read, result);
+            std::unique_ptr<std::thread> http_thread = jau::io::read_url_stream(url_input, rb, url_has_content_length, url_content_length, url_total_read, result);
+            REQUIRE( nullptr != http_thread );
 
             jau::io::secure_vector<uint8_t> buffer(buffer_size);
             size_t consumed_loops = 0;
@@ -214,7 +279,7 @@ class TestIOStream01 {
             jau::PLAIN_PRINT(true, "test12_async_404.X Done: total %" PRIu64 ", result %d, rb %s",
                     consumed_total_bytes, (int)result.load(), rb.toString().c_str() );
 
-            http_thread.join();
+            http_thread->join();
 
             REQUIRE( url_has_content_length == false );
             REQUIRE( url_content_length == 0 );
@@ -226,6 +291,7 @@ class TestIOStream01 {
 
 };
 
+METHOD_AS_TEST_CASE( TestIOStream01::test00_protocols, "TestIOStream01 - test00_protocols");
 METHOD_AS_TEST_CASE( TestIOStream01::test01_sync_ok,   "TestIOStream01 - test01_sync_ok");
 METHOD_AS_TEST_CASE( TestIOStream01::test02_sync_404,  "TestIOStream01 - test02_sync_404");
 METHOD_AS_TEST_CASE( TestIOStream01::test11_async_ok,  "TestIOStream01 - test11_async_ok");

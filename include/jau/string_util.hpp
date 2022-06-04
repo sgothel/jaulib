@@ -201,9 +201,31 @@ namespace jau {
     {
         return std::to_string(ref);
     }
+
     template< class value_type,
               std::enable_if_t<!std::is_integral_v<value_type> &&
                                !std::is_floating_point_v<value_type> &&
+                                std::is_base_of_v<std::string, value_type>,
+                               bool> = true>
+    inline std::string to_string(const value_type & ref) {
+        return ref;
+    }
+
+    template< class value_type,
+              std::enable_if_t<!std::is_integral_v<value_type> &&
+                               !std::is_floating_point_v<value_type> &&
+                               !std::is_base_of_v<std::string, value_type> &&
+                                std::is_base_of_v<std::string_view, value_type>,
+                               bool> = true>
+    inline std::string to_string(const value_type & ref) {
+        return std::string(ref);
+    }
+
+    template< class value_type,
+              std::enable_if_t<!std::is_integral_v<value_type> &&
+                               !std::is_floating_point_v<value_type> &&
+                               !std::is_base_of_v<std::string, value_type> &&
+                               !std::is_base_of_v<std::string_view, value_type> &&
                                 std::is_pointer_v<value_type>,
                                bool> = true>
     inline std::string to_string(const value_type & ref)
@@ -214,6 +236,8 @@ namespace jau {
     template< class value_type,
               std::enable_if_t<!std::is_integral_v<value_type> &&
                                !std::is_floating_point_v<value_type> &&
+                               !std::is_base_of_v<std::string, value_type> &&
+                               !std::is_base_of_v<std::string_view, value_type> &&
                                !std::is_pointer_v<value_type> &&
                                 jau::has_toString_v<value_type>,
                                bool> = true>
@@ -224,6 +248,8 @@ namespace jau {
     template< class value_type,
               std::enable_if_t<!std::is_integral_v<value_type> &&
                                !std::is_floating_point_v<value_type> &&
+                               !std::is_base_of_v<std::string, value_type> &&
+                               !std::is_base_of_v<std::string_view, value_type> &&
                                !std::is_pointer_v<value_type> &&
                                !jau::has_toString_v<value_type> &&
                                 jau::has_to_string_v<value_type>,
@@ -235,6 +261,8 @@ namespace jau {
     template< class value_type,
               std::enable_if_t<!std::is_integral_v<value_type> &&
                                !std::is_floating_point_v<value_type> &&
+                               !std::is_base_of_v<std::string, value_type> &&
+                               !std::is_base_of_v<std::string_view, value_type> &&
                                !std::is_pointer_v<value_type> &&
                                !jau::has_toString_v<value_type> &&
                                !jau::has_to_string_v<value_type> &&
@@ -247,6 +275,8 @@ namespace jau {
     template< class value_type,
               std::enable_if_t<!std::is_integral_v<value_type> &&
                                !std::is_floating_point_v<value_type> &&
+                               !std::is_base_of_v<std::string, value_type> &&
+                               !std::is_base_of_v<std::string_view, value_type> &&
                                !std::is_pointer_v<value_type> &&
                                !jau::has_toString_v<value_type> &&
                                !jau::has_to_string_v<value_type> &&
@@ -255,6 +285,24 @@ namespace jau {
     inline std::string to_string(const value_type & ref) {
         (void)ref;
         return "jau::to_string<T> not available for "+type_cue<value_type>::print("unknown", TypeTraitGroup::ALL);
+    }
+
+    template<typename T>
+    std::string to_string(std::vector<T> const &list, const std::string& delim)
+    {
+        if ( list.empty() ) {
+            return std::string();
+        }
+        bool need_delim = false;
+        std::string res;
+        for(const T& e : list) {
+            if( need_delim ) {
+                res.append( delim ).append( " " );
+            }
+            res.append( to_string( e ) );
+            need_delim = true;
+        }
+        return res;
     }
 
     /**@}*/

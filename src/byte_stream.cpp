@@ -223,12 +223,12 @@ size_t ByteInStream_File::read(uint8_t out[], size_t length) NOEXCEPT_BOTAN {
     if( 0 == length || end_of_data() ) {
         return 0;
     }
-    m_source.read(cast_uint8_ptr_to_char(out), length);
+    m_source->read(cast_uint8_ptr_to_char(out), length);
     if( error() ) {
         DBG_PRINT("ByteInStream_File::read: Error occurred in %s", to_string().c_str());
         return 0;
     }
-    const size_t got = static_cast<size_t>(m_source.gcount());
+    const size_t got = static_cast<size_t>(m_source->gcount());
     m_bytes_consumed += got;
     return got;
 }
@@ -241,37 +241,37 @@ size_t ByteInStream_File::peek(uint8_t out[], size_t length, size_t offset) cons
 
     if(offset) {
         secure_vector<uint8_t> buf(offset);
-        m_source.read(cast_uint8_ptr_to_char(buf.data()), buf.size());
+        m_source->read(cast_uint8_ptr_to_char(buf.data()), buf.size());
         if( error() ) {
             DBG_PRINT("ByteInStream_File::peek: Error occurred (offset) in %s", to_string().c_str());
             return 0;
         }
-        got = static_cast<size_t>(m_source.gcount());
+        got = static_cast<size_t>(m_source->gcount());
     }
 
     if(got == offset) {
-        m_source.read(cast_uint8_ptr_to_char(out), length);
+        m_source->read(cast_uint8_ptr_to_char(out), length);
         if( error() ) {
             DBG_PRINT("ByteInStream_File::peek: Error occurred (read) in %s", to_string().c_str());
             return 0;
         }
-        got = static_cast<size_t>(m_source.gcount());
+        got = static_cast<size_t>(m_source->gcount());
     }
 
-    if(m_source.eof()) {
-        m_source.clear();
+    if(m_source->eof()) {
+        m_source->clear();
     }
-    m_source.seekg(m_bytes_consumed, std::ios::beg);
+    m_source->seekg(m_bytes_consumed, std::ios::beg);
 
     return got;
 }
 
 bool ByteInStream_File::check_available(size_t n) NOEXCEPT_BOTAN {
-    return m_content_size - m_bytes_consumed >= (uint64_t)n;
+    return nullptr != m_source && m_content_size - m_bytes_consumed >= (uint64_t)n;
 };
 
 bool ByteInStream_File::end_of_data() const NOEXCEPT_BOTAN {
-    return !m_source.good() || m_bytes_consumed >= m_content_size;
+    return nullptr == m_source || !m_source->good() || m_bytes_consumed >= m_content_size;
 }
 
 std::string ByteInStream_File::id() const NOEXCEPT_BOTAN {
@@ -280,25 +280,35 @@ std::string ByteInStream_File::id() const NOEXCEPT_BOTAN {
 
 ByteInStream_File::ByteInStream_File(const std::string& path, bool use_binary) noexcept
 : m_identifier(path),
-  m_source(path, use_binary ? std::ios::binary : std::ios::in),
+  m_source(),
   m_content_size(0), m_bytes_consumed(0)
 {
-    if( error() ) {
-        DBG_PRINT("ByteInStream_File::ctor: Error occurred in %s", to_string().c_str());
+    std::unique_ptr<jau::fs::file_stats> stats;
+    if( jau::io::uri::is_local_file_protocol(path) ) {
+        // cut of leading `file://`
+        std::string path2 = path.substr(7);
+        stats = std::make_unique<jau::fs::file_stats>(path2);
     } else {
-        const jau::fs::file_stats in_stats(path);
-        if( !in_stats.exists() || !in_stats.has_access() ) {
-            DBG_PRINT("ByteInStream_File::ctor: Error, not an existing or accessible file in %s", to_string().c_str());
-        } else if( !in_stats.is_file() ) {
-            DBG_PRINT("ByteInStream_File::ctor: Error, not a file in %s", to_string().c_str());
-        } else {
-            m_content_size = in_stats.size();
+        stats = std::make_unique<jau::fs::file_stats>(path);
+    }
+    if( !stats->exists() || !stats->has_access() ) {
+        DBG_PRINT("ByteInStream_File::ctor: Error, not an existing or accessible file in %s, %s", stats->to_string(true).c_str(), to_string().c_str());
+    } else if( !stats->is_file() ) {
+        DBG_PRINT("ByteInStream_File::ctor: Error, not a file in %s, %s", stats->to_string(true).c_str(), to_string().c_str());
+    } else {
+        m_content_size = stats->size();
+        m_source = std::make_unique<std::ifstream>(stats->path(), use_binary ? std::ios::binary : std::ios::in);
+        if( error() ) {
+            DBG_PRINT("ByteInStream_File::ctor: Error occurred in %s, %s", stats->to_string(true), to_string().c_str());
+            m_source = nullptr;
         }
     }
 }
 
 void ByteInStream_File::close() noexcept {
-    m_source.close();
+    if( nullptr != m_source ) {
+        m_source->close();
+    }
 }
 
 std::string ByteInStream_File::to_string() const noexcept {
@@ -310,6 +320,7 @@ std::string ByteInStream_File::to_string() const noexcept {
                             "]";
 }
 
+
 ByteInStream_URL::ByteInStream_URL(const std::string& url, const jau::fraction_i64& timeout) noexcept
 : m_url(url), m_timeout(timeout), m_buffer(0x00, BEST_URLSTREAM_RINGBUFFER_SIZE),
   m_has_content_length( false ), m_content_size( 0 ), m_total_xfered( 0 ), m_result( io::async_io_result_t::NONE ),
@@ -317,6 +328,10 @@ ByteInStream_URL::ByteInStream_URL(const std::string& url, const jau::fraction_i
 
 {
     m_url_thread = read_url_stream(m_url, m_buffer, m_has_content_length, m_content_size, m_total_xfered, m_result);
+    if( nullptr == m_url_thread ) {
+        // url protocol not supported
+        m_result = async_io_result_t::FAILED;
+    }
 }
 
 void ByteInStream_URL::close() noexcept {
@@ -327,10 +342,11 @@ void ByteInStream_URL::close() noexcept {
     }
 
     m_buffer.drop(m_buffer.size()); // unblock putBlocking(..)
-    if( m_url_thread.joinable() ) {
+    if( nullptr != m_url_thread && m_url_thread->joinable() ) {
         DBG_PRINT("ByteInStream_URL: close.1 %s, %s", id().c_str(), m_buffer.toString().c_str());
-        m_url_thread.join();
+        m_url_thread->join();
     }
+    m_url_thread = nullptr;
     DBG_PRINT("ByteInStream_URL: close.X %s, %s", id().c_str(), to_string_int().c_str());
 }
 
@@ -382,6 +398,22 @@ std::string ByteInStream_URL::to_string_int() const noexcept {
 }
 std::string ByteInStream_URL::to_string() const noexcept {
     return "ByteInStream_URL["+to_string_int()+"]";
+}
+
+std::unique_ptr<ByteInStream> jau::io::to_ByteInStream(const std::string& path_or_uri, jau::fraction_i64 timeout) noexcept {
+    if( !jau::io::uri::is_local_file_protocol(path_or_uri) &&
+         jau::io::uri::protocol_supported(path_or_uri) )
+    {
+        std::unique_ptr<ByteInStream> res = std::make_unique<ByteInStream_URL>(path_or_uri, timeout);
+        if( nullptr != res && !res->error() ) {
+            return res;
+        }
+    }
+    std::unique_ptr<ByteInStream> res = std::make_unique<ByteInStream_File>(path_or_uri);
+    if( nullptr != res && !res->error() ) {
+        return res;
+    }
+    return nullptr;
 }
 
 ByteInStream_Feed::ByteInStream_Feed(const std::string& id_name, const jau::fraction_i64& timeout) noexcept

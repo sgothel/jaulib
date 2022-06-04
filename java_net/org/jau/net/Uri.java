@@ -36,10 +36,6 @@ import java.net.URISyntaxException;
 import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 
-import org.jau.io.IOUtil;
-import org.jau.sys.Debug;
-import org.jau.sys.PropertyAccess;
-
 /**
  * This class implements an immutable Uri as defined by <a href="https://tools.ietf.org/html/rfc2396">RFC 2396</a>.
  * <p>
@@ -164,6 +160,9 @@ import org.jau.sys.PropertyAccess;
  * @since 0.3.0
  */
 public class Uri {
+    private static final boolean DEBUG = false;
+    private static final boolean DEBUG_SHOWFIX = false;
+    /**
     private static final boolean DEBUG;
     private static final boolean DEBUG_SHOWFIX;
 
@@ -171,7 +170,7 @@ public class Uri {
         Debug.initSingleton();
         DEBUG = IOUtil.DEBUG || Debug.debug("Uri");
         DEBUG_SHOWFIX = PropertyAccess.isPropertyDefined("jau.debug.Uri.ShowFix", true);
-    }
+    } */
 
     /**
      * Usually used to fix a path from a previously contained and opaque Uri,
@@ -1125,7 +1124,7 @@ public class Uri {
      *             specification RFC2396 or could not be parsed correctly.
      */
     public static Uri valueOf(final File file) throws URISyntaxException {
-        return Uri.valueOfFilepath(IOUtil.slashify(file.getAbsolutePath(), true, file.isDirectory()));
+        return Uri.valueOfFilepath(Util.slashify(file.getAbsolutePath(), true, file.isDirectory()));
     }
 
     /**
@@ -1457,7 +1456,7 @@ public class Uri {
                 return false; // nothing to cut-off
             }
             pathBuf.setLength(0);
-            pathBuf.append( IOUtil.cleanPathString( pathS ) );
+            pathBuf.append( Util.cleanPathString( pathS ) );
             cleaned = pathBuf.length() != pathS.length();
         }
 
@@ -1489,7 +1488,7 @@ public class Uri {
             // 2nd round of cleaning!
             final String pathS = pathBuf.toString();
             pathBuf.setLength(0);
-            pathBuf.append( IOUtil.cleanPathString( pathS ) );
+            pathBuf.append( Util.cleanPathString( pathS ) );
         }
         return true; // continue processing w/ buffer
     }
@@ -2542,5 +2541,96 @@ public class Uri {
     }
     private static void failExpecting(final Encoded input, final String expected, final int p) throws URISyntaxException {
         fail(input, "Expecting " + expected, p);
+    }
+
+    static class Util {
+        private static final Pattern patternSingleBS = Pattern.compile("\\\\{1}");
+        /**
+         *
+         * @param path
+         * @param startWithSlash
+         * @param endWithSlash
+         * @return
+         * @throws URISyntaxException if path is empty or has no parent directory available while resolving <code>../</code>
+         */
+        public static String slashify(final String path, final boolean startWithSlash, final boolean endWithSlash) throws URISyntaxException {
+            String p = patternSingleBS.matcher(path).replaceAll("/");
+            if (startWithSlash && !p.startsWith("/")) {
+                p = "/" + p;
+            }
+            if (endWithSlash && !p.endsWith("/")) {
+                p = p + "/";
+            }
+            return cleanPathString(p);
+        }
+        /**
+         * @param path assuming a slashified path, either denotes a file or directory, either relative or absolute.
+         * @return parent of path
+         * @throws URISyntaxException if path is empty or has no parent directory available
+         */
+        public static String getParentOf(final String path) throws URISyntaxException {
+            final int pl = null!=path ? path.length() : 0;
+            if(pl == 0) {
+                throw new IllegalArgumentException("path is empty <"+path+">");
+            }
+
+            final int e = path.lastIndexOf("/");
+            if( e < 0 ) {
+                throw new URISyntaxException(path, "path contains no '/': <"+path+">");
+            }
+            if( e == 0 ) {
+                // path is root directory
+                throw new URISyntaxException(path, "path has no parents: <"+path+">");
+            }
+            if( e <  pl - 1 ) {
+                // path is file, return it's parent directory
+                return path.substring(0, e+1);
+            }
+            final int j = path.lastIndexOf("!") + 1; // '!' Separates JARFile entry -> local start of path
+            // path is a directory ..
+            final int p = path.lastIndexOf("/", e-1);
+            if( p >= j) {
+                // parent itself has '/' - post '!' or no '!' at all
+                return path.substring(0, p+1);
+            } else {
+                // parent itself has no '/'
+                final String parent = path.substring(j, e);
+                if( parent.equals("..") ) {
+                    throw new URISyntaxException(path, "parent is unresolved: <"+path+">");
+                } else {
+                    // parent is '!' or empty (relative path)
+                    return path.substring(0, j);
+                }
+            }
+        }
+
+        /**
+         * @param path assuming a slashified path, either denoting a file or directory, either relative or absolute.
+         * @return clean path string where {@code ./} and {@code ../} is resolved,
+         *         while keeping a starting {@code ../} at the beginning of a relative path.
+         * @throws URISyntaxException if path is empty or has no parent directory available while resolving <code>../</code>
+         */
+        public static String cleanPathString(String path) throws URISyntaxException {
+            // Resolve './' before '../' to handle case 'parent/./../a.txt' properly.
+            int idx = path.length() - 1;
+            while ( idx >= 1 && ( idx = path.lastIndexOf("./", idx) ) >= 0 ) {
+                if( 0 < idx && path.charAt(idx-1) == '.' ) {
+                    idx-=2; // skip '../' -> idx upfront
+                } else {
+                    path = path.substring(0, idx) + path.substring(idx+2);
+                    idx--; // idx upfront
+                }
+            }
+            idx = 0;
+            while ( ( idx = path.indexOf("../", idx) ) >= 0 ) {
+                if( 0 == idx ) {
+                    idx += 3; // skip starting '../'
+                } else {
+                    path = getParentOf(path.substring(0, idx)) + path.substring(idx+3);
+                    idx = 0;
+                }
+            }
+            return path;
+        }
     }
 }

@@ -82,6 +82,53 @@ uint64_t jau::io::read_stream(ByteInStream& in,
     return total;
 }
 
+std::vector<std::string_view> jau::io::uri::supported_protocols() noexcept {
+    const curl_version_info_data* cvid = curl_version_info(CURLVERSION_NOW);
+    if( nullptr == cvid || nullptr == cvid->protocols ) {
+        return std::vector<std::string_view>();
+    }
+    std::vector<std::string_view> res;
+    for(int i=0; nullptr != cvid->protocols[i]; ++i) {
+        res.push_back( std::string_view(cvid->protocols[i]) );
+    }
+    return res;
+}
+
+static bool _is_scheme_valid(const std::string_view& scheme) noexcept {
+    if ( scheme.empty() ) {
+        return false;
+    }
+    auto pos = std::find_if_not(scheme.begin(), scheme.end(), [&](char c){
+        return std::isalnum(c) || c == '+' || c == '.' || c == '-';
+    });
+    return pos == scheme.end();
+}
+std::string_view jau::io::uri::get_scheme(const std::string_view& uri) noexcept {
+    std::size_t pos = uri.find(':');
+    if (pos == std::string_view::npos) {
+        return uri.substr(0, 0);
+    }
+    std::string_view scheme = uri.substr(0, pos);
+    if( !_is_scheme_valid( scheme ) ) {
+        return uri.substr(0, 0);
+    }
+    return scheme;
+}
+
+bool jau::io::uri::protocol_supported(const std::string_view& uri) noexcept {
+    const std::string_view scheme = get_scheme(uri);
+    if( scheme.empty() ) {
+        return false;
+    }
+    const std::vector<std::string_view> protos = supported_protocols();
+    auto it = std::find(protos.cbegin(), protos.cend(), scheme);
+    return protos.cend() != it;
+}
+
+bool jau::io::uri::is_local_file_protocol(const std::string_view& uri) noexcept {
+    return 0 == uri.find("file://");
+}
+
 struct curl_glue1_t {
     CURL *curl_handle;
     bool has_content_length;
@@ -177,6 +224,13 @@ uint64_t jau::io::read_url_stream(const std::string& url,
     std::vector<char> errorbuffer;
     errorbuffer.reserve(CURL_ERROR_SIZE);
     CURLcode res;
+
+    if( !uri::protocol_supported(url) ) {
+        const std::string_view scheme = uri::get_scheme(url);
+        DBG_PRINT("Protocol of given uri-scheme '%s' not supported. Supported protocols [%s].",
+                std::string(scheme).c_str(), to_string(uri::supported_protocols(), ",").c_str());
+        return 0;
+    }
 
     /* init the curl session */
     CURL *curl_handle = curl_easy_init();
@@ -519,16 +573,24 @@ cleanup:
     return;
 }
 
-std::thread jau::io::read_url_stream(const std::string& url,
-                                     ByteRingbuffer& buffer,
-                                     jau::relaxed_atomic_bool& has_content_length,
-                                     jau::relaxed_atomic_uint64& content_length,
-                                     jau::relaxed_atomic_uint64& total_read,
-                                     relaxed_atomic_async_io_result_t& result) noexcept {
+std::unique_ptr<std::thread> jau::io::read_url_stream(const std::string& url,
+                                                      ByteRingbuffer& buffer,
+                                                      jau::relaxed_atomic_bool& has_content_length,
+                                                      jau::relaxed_atomic_uint64& content_length,
+                                                      jau::relaxed_atomic_uint64& total_read,
+                                                      relaxed_atomic_async_io_result_t& result) noexcept {
     /* init user referenced values */
     has_content_length = false;
     content_length = 0;
     total_read = 0;
+
+    if( !uri::protocol_supported(url) ) {
+        result = io::async_io_result_t::FAILED;
+        const std::string_view scheme = uri::get_scheme(url);
+        DBG_PRINT("Protocol of given uri-scheme '%s' not supported. Supported protocols [%s].",
+                std::string(scheme).c_str(), to_string(uri::supported_protocols(), ",").c_str());
+        return nullptr;
+    }
     result = io::async_io_result_t::NONE;
 
     if( buffer.capacity() < BEST_URLSTREAM_RINGBUFFER_SIZE ) {
@@ -537,7 +599,7 @@ std::thread jau::io::read_url_stream(const std::string& url,
 
     std::unique_ptr<curl_glue2_t> cg ( std::make_unique<curl_glue2_t>(nullptr, has_content_length, content_length, total_read, buffer, result ) );
 
-    return std::thread(&::read_url_stream_thread, url.c_str(), std::move(cg)); // @suppress("Invalid arguments")
+    return std::make_unique<std::thread>(&::read_url_stream_thread, url.c_str(), std::move(cg)); // @suppress("Invalid arguments")
 }
 
 void jau::io::print_stats(const std::string& prefix, const uint64_t& out_bytes_total, const jau::fraction_i64& td) noexcept {
