@@ -84,48 +84,6 @@ namespace jau::io {
                              StreamConsumerFunc consumer_fn) noexcept;
 
         /**
-         * Limited URI scheme functionality to query whether implementation may handle the protocol.
-         *
-         * The URI scheme functionality exposed here is limited and only provided to decide whether the used implementation
-         * is able to handle the protocol. This is not a replacement for a proper URI class.
-         */
-        namespace uri {
-            /**
-             * Returns a list of supported protocol supported by [*libcurl* network protocols](https://curl.se/docs/url-syntax.html),
-             * queried at runtime.
-             * @see protocol_supported()
-             */
-            std::vector<std::string_view> supported_protocols() noexcept;
-
-            /**
-             * Returns the valid uri-scheme-view from given uri-view,
-             * which is empty if no valid scheme is included.
-             *
-             * @param uri an uri-view
-             * @return valid uri-scheme-view, empty if non found
-             */
-            std::string_view get_scheme(const std::string_view& uri) noexcept;
-
-            /**
-             * Returns true if the uri-scheme of given uri-view matches a supported by [*libcurl* network protocols](https://curl.se/docs/url-syntax.html) otherwise false.
-             *
-             * The *libcurl* supported protocols is queried at runtime, see supported_protocols().
-             *
-             * @param uri an uri-view to test
-             * @return true if the uri-scheme of given uri is supported, otherwise false.
-             * @see supported_protocols()
-             * @see get_scheme()
-             */
-            bool protocol_supported(const std::string_view& uri) noexcept;
-
-            /**
-             * Returns true if the uri-scheme of given uri-view matches the local `file` protocol, i.e. starts with `file://`.
-             * @param uri an uri-view to test
-             */
-            bool is_local_file_protocol(const std::string_view& uri) noexcept;
-        }
-
-        /**
          * Synchronous URL stream reader using the given StreamConsumerFunc consumer_fn.
          *
          * To abort streaming, user may return `false` from the given `consumer_func`.
@@ -176,6 +134,55 @@ namespace jau::io {
         void print_stats(const std::string& prefix, const uint64_t& out_bytes_total, const jau::fraction_i64& td) noexcept;
 
         /**@}*/
+
+        /**
+         * Limited URI scheme functionality to query whether implementation may handle the protocol.
+         *
+         * The URI scheme functionality exposed here is limited and only provided to decide whether the used implementation
+         * is able to handle the protocol. This is not a replacement for a proper URI class.
+         */
+        namespace uri {
+            /** \addtogroup IOUtils
+             *
+             *  @{
+             */
+
+            /**
+             * Returns a list of supported protocol supported by [*libcurl* network protocols](https://curl.se/docs/url-syntax.html),
+             * queried at runtime.
+             * @see protocol_supported()
+             */
+            std::vector<std::string_view> supported_protocols() noexcept;
+
+            /**
+             * Returns the valid uri-scheme-view from given uri-view,
+             * which is empty if no valid scheme is included.
+             *
+             * @param uri an uri-view
+             * @return valid uri-scheme-view, empty if non found
+             */
+            std::string_view get_scheme(const std::string_view& uri) noexcept;
+
+            /**
+             * Returns true if the uri-scheme of given uri-view matches a supported by [*libcurl* network protocols](https://curl.se/docs/url-syntax.html) otherwise false.
+             *
+             * The *libcurl* supported protocols is queried at runtime, see supported_protocols().
+             *
+             * @param uri an uri-view to test
+             * @return true if the uri-scheme of given uri is supported, otherwise false.
+             * @see supported_protocols()
+             * @see get_scheme()
+             */
+            bool protocol_supported(const std::string_view& uri) noexcept;
+
+            /**
+             * Returns true if the uri-scheme of given uri-view matches the local `file` protocol, i.e. starts with `file://`.
+             * @param uri an uri-view to test
+             */
+            bool is_local_file_protocol(const std::string_view& uri) noexcept;
+
+            /**@}*/
+        }
 
 } // namespace elevator::io
 
