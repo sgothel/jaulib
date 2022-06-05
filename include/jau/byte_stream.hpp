@@ -36,11 +36,12 @@
 #include <thread>
 
 #include <jau/basic_types.hpp>
-#include <jau/callocator_sec.hpp>
 #include <jau/ringbuffer.hpp>
 
 // Include Botan header files before this one to be integrated w/ Botan!
 // #include <botan_all.h>
+
+#include <jau/io_util.hpp>
 
 using namespace jau::fractions_i64_literals;
 
@@ -51,46 +52,14 @@ namespace jau::io {
      *  @{
      */
 
-    /**
-     * I/O direction, read or write
-     */
-    enum class io_dir_t : int8_t {
-        /** Read Operation */
-        READ  = 0,
-
-        /** Write Operation */
-        WRITE =  1
-    };
-
-    /**
-     * Asynchronous I/O operation result value
-     */
-    enum class async_io_result_t : int8_t {
-        /** Operation failed. */
-        FAILED  = -1,
-
-        /** Operation still in progress. */
-        NONE    =  0,
-
-        /** Operation succeeded. */
-        SUCCESS =  1
-    };
-    typedef jau::ordered_atomic<async_io_result_t, std::memory_order::memory_order_relaxed> relaxed_atomic_async_io_result_t;
-
-    typedef jau::ringbuffer<uint8_t, size_t> ByteRingbuffer;
-
-    extern const size_t BEST_URLSTREAM_RINGBUFFER_SIZE;
-
 #ifdef BOTAN_VERSION_MAJOR
     #define VIRTUAL_BOTAN
     #define OVERRIDE_BOTAN override
     #define NOEXCEPT_BOTAN
-    template<typename T> using secure_vector = std::vector<T, Botan::secure_allocator<T>>;
 #else
     #define VIRTUAL_BOTAN virtual
     #define OVERRIDE_BOTAN
     #define NOEXCEPT_BOTAN noexcept
-    template<typename T> using secure_vector = std::vector<T, jau::callocator_sec<T>>;
 #endif
 
     /**

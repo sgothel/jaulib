@@ -31,6 +31,7 @@
 
 #include <jau/debug.hpp>
 #include <jau/io_util.hpp>
+#include <jau/byte_stream.hpp>
 
 #include <curl/curl.h>
 
