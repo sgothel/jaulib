@@ -327,14 +327,39 @@ class ringbuffer {
                     Size_type localReadPos = readPos;
                     for(Size_type i=0; i<size_; i++) {
                         localReadPos = (localReadPos + 1) % capacityPlusOne;
-                        dtor_one(localReadPos);
+                        ( array + localReadPos )->~value_type(); // placement new -> manual destruction!
                     }
                     if( writePos != localReadPos ) {
                         // Avoid exception, abort!
                         ABORT("copy segment error: this %s, readPos %d/%d; writePos %d", toString().c_str(), readPos.load(), localReadPos, writePos.load());
                     }
+                    if constexpr ( uses_secmem ) {
+                        ::explicit_bzero(voidptr_cast(&array[0]), capacityPlusOne*sizeof(Value_type));
+                    }
                     readPos = localReadPos;
                 }
+            }
+        }
+
+        constexpr void clearAndZeroMemImpl() noexcept {
+            if constexpr ( use_memcpy ) {
+                ::explicit_bzero(voidptr_cast(&array[0]), capacityPlusOne*sizeof(Value_type));
+                readPos  = 0;
+                writePos = 0;
+            } else {
+                const Size_type size_ = size();
+                Size_type localReadPos = readPos;
+                for(Size_type i=0; i<size_; i++) {
+                    localReadPos = (localReadPos + 1) % capacityPlusOne;
+                    ( array + localReadPos )->~value_type(); // placement new -> manual destruction!
+                }
+                if( writePos != localReadPos ) {
+                    // Avoid exception, abort!
+                    ABORT("copy segment error: this %s, readPos %d/%d; writePos %d", toString().c_str(), readPos.load(), localReadPos, writePos.load());
+                }
+                ::explicit_bzero(voidptr_cast(&array[0]), capacityPlusOne*sizeof(Value_type));
+                readPos  = 0;
+                writePos = 0;
             }
         }
 
@@ -1145,21 +1170,39 @@ class ringbuffer {
         /**
          * Releasing all elements available, i.e. size() at the time of the call
          *
-         * Implementation either wait until all put*() and get*() operations are
+         * It is the user's obligation to ensure thread safety when using @ref ringbuffer_single_pc,
+         * as implementation can only synchronize on the blocked put() and get() std::mutex.
+         *
          * Assuming no concurrent put() operation, after the call:
          * - {@link #isEmpty()} will return `true`
          * - {@link #getSize()} shall return `0`
          *
-         * Implementation utilizes drop() for all available elements.
+         * @param zeromem pass true to zero ringbuffer memory after releasing elements, otherwise non template type parameter use_secmem determines the behavior (default), see @ref ringbuffer_ntt_params.
+         * @see @ref ringbuffer_ntt_params
          */
-        void clear() noexcept {
+        void clear(const bool zeromem=false) noexcept {
             if( multi_pc_enabled ) {
-                std::unique_lock<std::mutex> lockMultiRead(syncMultiRead, std::defer_lock);          // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
-                std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite, std::defer_lock);        // otherwise RAII-style relinquish via destructor
-                std::lock(lockMultiRead, lockMultiWrite);
-                dropImpl (capacityPlusOne-1, false /* blocking */, fractions_i64::zero);
+                std::unique_lock<std::mutex> lockMultiRead(syncMultiRead, std::defer_lock);          // same for *this instance!
+                std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite, std::defer_lock);
+                std::unique_lock<std::mutex> lockRead(syncRead, std::defer_lock);          // same for *this instance!
+                std::unique_lock<std::mutex> lockWrite(syncWrite, std::defer_lock);
+                std::lock(lockMultiRead, lockMultiWrite, lockRead, lockWrite);
+
+                if( zeromem ) {
+                    clearAndZeroMemImpl();
+                } else {
+                    clearImpl();
+                }
             } else {
-                dropImpl (capacityPlusOne-1, false /* blocking */, fractions_i64::zero);
+                std::unique_lock<std::mutex> lockRead(syncRead, std::defer_lock);          // same for *this instance!
+                std::unique_lock<std::mutex> lockWrite(syncWrite, std::defer_lock);
+                std::lock(lockRead, lockWrite);
+
+                if( zeromem ) {
+                    clearAndZeroMemImpl();
+                } else {
+                    clearImpl();
+                }
             }
         }
 
