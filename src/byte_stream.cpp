@@ -346,6 +346,7 @@ void ByteInStream_URL::close() noexcept {
         m_url_thread->join();
     }
     m_url_thread = nullptr;
+    m_buffer.clear( true /* zeromem */);
     DBG_PRINT("ByteInStream_URL: close.X %s, %s", id().c_str(), to_string_int().c_str());
 }
 
@@ -427,9 +428,9 @@ void ByteInStream_Feed::close() noexcept {
     if( async_io_result_t::NONE == m_result ) {
         m_result = async_io_result_t::SUCCESS; // signal end of streaming
     }
-
     m_buffer.drop(m_buffer.size()); // unblock putBlocking(..)
 
+    m_buffer.clear( true /* zeromem */);
     DBG_PRINT("ByteInStream_Feed: close.X %s, %s", id().c_str(), to_string_int().c_str());
 }
 
