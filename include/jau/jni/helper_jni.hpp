@@ -32,9 +32,10 @@
 #include <jni.h>
 
 #include <jau/java_uplink.hpp>
+#include <jau/basic_algos.hpp>
 #include <jau/basic_types.hpp>
 #include <jau/darray.hpp>
-#include <jau/basic_algos.hpp>
+#include <jau/io_util.hpp>
 
 #include <jau/jni/jni_mem.hpp>
 
@@ -127,8 +128,11 @@ namespace jau {
                             const char *type, bool is_static);
 
     bool from_jboolean_to_bool(jboolean val);
+
     std::string from_jstring_to_string(JNIEnv *env, jstring str);
     jstring from_string_to_jstring(JNIEnv *env, const std::string & str);
+
+    jau::io::secure_string from_jbytebuffer_to_sstring(JNIEnv *env, jobject jbytebuffer);
 
     jobject get_new_arraylist(JNIEnv *env, jsize size, jmethodID *add);
 

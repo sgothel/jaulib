@@ -326,8 +326,7 @@ bool jau::from_jboolean_to_bool(jboolean val)
     return result;
 }
 
-std::string jau::from_jstring_to_string(JNIEnv *env, jstring str)
-{
+std::string jau::from_jstring_to_string(JNIEnv *env, jstring str) {
     jboolean is_copy = JNI_TRUE;
     if (!str) {
         throw jau::IllegalArgumentException("String argument should not be null", E_FILE_LINE);
@@ -343,9 +342,28 @@ std::string jau::from_jstring_to_string(JNIEnv *env, jstring str)
     return string_to_write;
 }
 
-jstring jau::from_string_to_jstring(JNIEnv *env, const std::string & str)
-{
+jstring jau::from_string_to_jstring(JNIEnv *env, const std::string & str) {
     return env->NewStringUTF(str.c_str());
+}
+
+jau::io::secure_string jau::from_jbytebuffer_to_sstring(JNIEnv *env, jobject jbytebuffer) {
+    if (!jbytebuffer) {
+        throw jau::IllegalArgumentException("ByteBuffer argument should not be null", E_FILE_LINE);
+    }
+    const char* address = (const char*)env->GetDirectBufferAddress(jbytebuffer);
+    size_t capacity = (size_t)env->GetDirectBufferCapacity(jbytebuffer);
+    if( nullptr == address || 0 == capacity ) {
+        return jau::io::secure_string(); // empty
+    }
+    jclass buffer_class = search_class(env, "java/nio/Buffer");
+    jmethodID buffer_limit = search_method(env, buffer_class, "limit", "()I", false);
+    jint jbytebuffer_limit = env->CallIntMethod(jbytebuffer, buffer_limit);
+    java_exception_check_and_throw(env, E_FILE_LINE);
+    size_t max_len = std::min<size_t>(capacity, jbytebuffer_limit);
+    if( 0 == max_len ) {
+        return jau::io::secure_string(); // empty
+    }
+    return jau::io::secure_string(address, ::strnlen(address, max_len));
 }
 
 jobject jau::get_new_arraylist(JNIEnv *env, jsize size, jmethodID *add)
