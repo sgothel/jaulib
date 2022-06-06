@@ -52,6 +52,8 @@ namespace jau::io {
     template<typename T> using secure_vector = std::vector<T, jau::callocator_sec<T>>;
 #endif
 
+    typedef std::basic_string<char, std::char_traits<char>, jau::callocator_sec<char>> secure_string;
+
     typedef jau::ringbuffer<uint8_t, size_t> ByteRingbuffer;
 
     extern const size_t BEST_URLSTREAM_RINGBUFFER_SIZE;
