@@ -35,7 +35,7 @@
 
 #include <jau/basic_types.hpp>
 
-namespace jau {
+namespace jau::jni {
 
 /** \addtogroup JavaVM
  *

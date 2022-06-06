@@ -31,7 +31,7 @@
 
 #include <jau/basic_types.hpp>
 
-namespace jau {
+namespace jau::jni {
 
     /** @defgroup JavaVM Java VM Utilities
      *  Java virtual machine support, helping accessing the JVM and converting data types.

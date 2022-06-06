@@ -39,7 +39,7 @@
 
 #include <jau/jni/jni_mem.hpp>
 
-namespace jau {
+namespace jau::jni {
 
     /** \addtogroup JavaVM
      *
@@ -761,6 +761,6 @@ namespace jau {
     /**@}*/
 
 
-} // namespace direct_bt
+} // namespace jau::jni
 
 #endif /* JAU_HELPER_JNI_HPP_ */
