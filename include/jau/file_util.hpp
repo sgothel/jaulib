@@ -385,6 +385,23 @@ namespace jau {
         }
         std::string to_string(const file_stats::field_t mask) noexcept;
 
+        /**
+         * Return stripped last component from given path separated by `/`, excluding the trailing separator `/`.
+         *
+         * If no directory separator `/` is contained, return `.`.
+         *
+         * @param path given path
+         * @return leading directory name w/o slash or `.`
+         */
+        std::string dirname(const std::string_view& path) noexcept;
+
+        /**
+         * Return stripped leading directory components from given path separated by `/`.
+         *
+         * @param path given path
+         * @return last non-slash component or `.`
+         */
+        std::string basename(const std::string_view& path) noexcept;
 
         /**
          * Return the current working directory or empty on failure.

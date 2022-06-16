@@ -414,6 +414,48 @@ std::string file_stats::to_string(const bool use_space) const noexcept {
     return res;
 }
 
+std::string jau::fs::dirname(const std::string_view& path) noexcept {
+    if( 0 == path.size() ) {
+        return std::string();
+    }
+    size_t end_pos;
+    if( '/' == path[path.size()-1] ) {
+        if( 1 == path.size() ) { // maintain a single '/'
+            return std::string(path);
+        }
+        end_pos = path.size()-2;
+    } else {
+        end_pos = path.size()-1;
+    }
+    size_t idx = path.find_last_of('/', end_pos);
+    if( idx == std::string_view::npos ) {
+        return ".";
+    } else {
+        return std::string( path.substr(0, idx) );
+    }
+}
+
+std::string jau::fs::basename(const std::string_view& path) noexcept {
+    if( 0 == path.size() ) {
+        return std::string();
+    }
+    size_t end_pos;
+    if( '/' == path[path.size()-1] ) {
+        if( 1 == path.size() ) { // maintain a single '/'
+            return std::string(path);
+        }
+        end_pos = path.size()-2;
+    } else {
+        end_pos = path.size()-1;
+    }
+    size_t idx = path.find_last_of('/', end_pos);
+    if( idx == std::string_view::npos ) {
+        return std::string( path.substr(0, end_pos+1));
+    } else {
+        return std::string( path.substr(idx+1, end_pos-idx) );
+    }
+}
+
 std::string jau::fs::get_cwd() noexcept {
     char path[PATH_MAX];
     char* res = getcwd(path, PATH_MAX);
