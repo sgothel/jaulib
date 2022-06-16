@@ -554,10 +554,48 @@ bool jau::fs::get_dir_content(const std::string& path, const consume_dir_item& d
     }
 }
 
-bool jau::fs::visit(const file_stats& item_stats, const bool follow_sym_link_dirs, const path_visitor& visitor) noexcept {
+#define TRAVERSEEVENT_ENUM(X,M) \
+    X(traverse_event,symlink,M) \
+    X(traverse_event,file,M) \
+    X(traverse_event,dir_entry,M) \
+    X(traverse_event,dir_exit,M) \
+    X(traverse_event,dir_symlink,M)
+
+std::string jau::fs::to_string(const traverse_event mask) noexcept {
+    std::string out("[");
+    bool comma = false;
+    TRAVERSEEVENT_ENUM(APPEND_BITSTR,mask)
+    out.append("]");
+    return out;
+}
+
+
+#define TRAVERSEOPTIONS_ENUM(X,M) \
+    X(traverse_options,recursive,M) \
+    X(traverse_options,follow_symlinks,M) \
+    X(traverse_options,dir_entry,M) \
+    X(traverse_options,dir_exit,M)
+
+std::string jau::fs::to_string(const traverse_options mask) noexcept {
+    std::string out("[");
+    bool comma = false;
+    TRAVERSEOPTIONS_ENUM(APPEND_BITSTR,mask)
+    out.append("]");
+    return out;
+}
+
+bool jau::fs::visit(const file_stats& item_stats, const traverse_options topts, const path_visitor& visitor) noexcept {
     if( item_stats.is_dir() ) {
-        if( !follow_sym_link_dirs && item_stats.is_link() ) {
-            return true;
+        if( item_stats.is_link() && !is_set(topts, traverse_options::follow_symlinks) ) {
+            return visitor( traverse_event::dir_symlink, item_stats );
+        }
+        if( !is_set(topts, traverse_options::recursive) ) {
+            return visitor( traverse_event::dir_non_recursive, item_stats );
+        }
+        if( is_set(topts, traverse_options::dir_entry) ) {
+            if( !visitor( traverse_event::dir_entry, item_stats ) ) {
+                return false;
+            }
         }
         std::vector<dir_item> content;
         const consume_dir_item cs = jau::bindCaptureRefFunc<void, std::vector<dir_item>, const dir_item&>(&content,
@@ -567,56 +605,64 @@ bool jau::fs::visit(const file_stats& item_stats, const bool follow_sym_link_dir
         if( get_dir_content(item_stats.path(), cs) && content.size() > 0 ) {
             for (const dir_item& element : content) {
                 const file_stats element_stats( element );
-                if( !element_stats.ok() || !element_stats.exists() ) {
-                    continue;
-                } else if( element_stats.is_dir() ) {
-                    if( !follow_sym_link_dirs && element_stats.is_link() ) {
-                        continue;
-                    } else if( !jau::fs::visit(element_stats, follow_sym_link_dirs, visitor) ) {
+                if( element_stats.is_dir() ) { // an OK dir
+                    if( element_stats.is_link() && !is_set(topts, traverse_options::follow_symlinks) ) {
+                        if( !visitor( traverse_event::dir_symlink, element_stats ) ) {
+                            return false;
+                        }
+                    } else if( !visit(element_stats, topts, visitor) ) { // recursive
                         return false;
                     }
-                } else if( element_stats.is_file() || !element_stats.has_access() ) {
-                    if( !visitor( element_stats ) ) {
-                        return false;
-                    }
+                } else if( !visitor( ( element_stats.is_file() ? traverse_event::file : traverse_event::none ) |
+                                     ( element_stats.is_link() ? traverse_event::symlink : traverse_event::none),
+                                     element_stats ) )
+                {
+                    return false;
                 }
             }
         }
     }
-    return visitor( item_stats );
+    if( item_stats.is_dir() && is_set(topts, traverse_options::dir_exit) ) {
+        return visitor( traverse_event::dir_exit, item_stats );
+    } else if( item_stats.is_file() || !item_stats.ok() ) { // file or error-alike
+        return visitor( ( item_stats.is_file() ? traverse_event::file : traverse_event::none ) |
+                        ( item_stats.is_link() ? traverse_event::symlink : traverse_event::none),
+                        item_stats );
+    } else {
+        return true;
+    }
 }
 
-bool jau::fs::visit(const std::string& path, const bool follow_sym_link_dirs, const path_visitor& visitor) noexcept {
-    return jau::fs::visit(file_stats(path), follow_sym_link_dirs, visitor);
+bool jau::fs::visit(const std::string& path, const traverse_options topts, const path_visitor& visitor) noexcept {
+    return jau::fs::visit(file_stats(path), topts, visitor);
 }
 
-bool jau::fs::remove(const std::string& path, const bool recursive, const bool follow_sym_link_dirs, const bool verbose) noexcept {
+bool jau::fs::remove(const std::string& path, const traverse_options topts) noexcept {
     file_stats path_stats(path);
-    if( path_stats.is_dir() && !recursive ) {
-        if( verbose ) {
+    if( path_stats.is_dir() && !is_set(topts, traverse_options::recursive) ) {
+        if( is_set(topts, traverse_options::verbose) ) {
             jau::fprintf_td(stderr, "remove: Error: path is dir but !recursive, %s\n", path_stats.to_string().c_str());
         }
         return false;
     }
-    const path_visitor pv = jau::bindCaptureRefFunc<bool, const bool, const file_stats&>(&verbose,
-            ( bool(*)(const bool*, const file_stats&) ) /* help template type deduction of function-ptr */
-                ( [](const bool* _verbose, const file_stats& element_stats) -> bool {
-                    if( !element_stats.has_access() ) {
-                        if( *_verbose ) {
-                            jau::fprintf_td(stderr, "remove: Error: remove failed: no access, %s\n", element_stats.to_string().c_str());
-                        }
-                        return false;
-                    }
+    const path_visitor pv = jau::bindCaptureRefFunc<bool, const traverse_options, traverse_event, const file_stats&>(&topts,
+            ( bool(*)(const traverse_options*, traverse_event, const file_stats&) ) /* help template type deduction of function-ptr */
+                ( [](const traverse_options* _options, traverse_event tevt, const file_stats& element_stats) -> bool {
+                    (void)tevt;
                     const int res = ::remove( element_stats.path().c_str() );
                     if( 0 != res ) {
-                        if( *_verbose ) {
+                        if( is_set(*_options, traverse_options::verbose) ) {
                             jau::fprintf_td(stderr, "remove: Error: remove failed: %s, res %d, errno %d (%s)\n",
                                     element_stats.to_string().c_str(), res, errno, strerror(errno));
                         }
                         return false;
                     } else {
+                        if( is_set(*_options, traverse_options::verbose) ) {
+                            jau::fprintf_td(stderr, "remove: %s removed\n", element_stats.to_string().c_str());
+                        }
                         return true;
                     }
                   } ) );
-    return jau::fs::visit(path_stats, follow_sym_link_dirs, pv);
+    return jau::fs::visit(path_stats,
+                ( topts & ~jau::fs::traverse_options::dir_entry ) | jau::fs::traverse_options::dir_exit, pv);
 }

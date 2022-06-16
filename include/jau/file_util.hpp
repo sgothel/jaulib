@@ -455,52 +455,215 @@ namespace jau {
         bool get_dir_content(const std::string& path, const consume_dir_item& digest) noexcept;
 
         /**
-         * path_visitor jau::FunctionDef definition
-         * - `bool visitor(const file_stats& item_stats)`
+         * Filesystem traverse event used to call path_visitor for path elements from visit().
+         *
+         * This `enum class` type fulfills `C++ named requirements: BitmaskType`.
+         *
+         * @see path_visitor
+         * @see visit()
          */
-        typedef jau::FunctionDef<bool, const file_stats&> path_visitor;
+        enum class traverse_event : uint16_t {
+                /** No value, neither file, symlink nor dir_entry or dir_exit. Implying an error state in file_stat, e.g. !file_stats::has_access(). */
+                none = 0,
+
+                /**
+                 * Visiting a symbolic-link, either to a file or a non-existing entity. Not followed symbolic-links to a directory is expressed via dir_symlink.
+                 *
+                 * In case of a symbolic-link to an existing file, file is also set.
+                 */
+                symlink = 1 << 0,
+
+                /** Visiting a file, may be in conjunction with symlink. */
+                file = 1 << 1,
+
+                /**
+                 * Visiting a directory on entry, see traverse_options::dir_entry.
+                 *
+                 * If a directory is visited non-recursive, i.e. traverse_options::recursive not set,
+                 * dir_entry and dir_exit are set, see dir_non_recursive.
+                 *
+                 * If a directory is a symbolic link which is not followed, i.e. traverse_options::follow_symlinks not set,
+                 * dir_symlink is used instead.
+                 */
+                dir_entry = 1 << 2,
+
+                /**
+                 * Visiting a directory on exit, see traverse_options::dir_exit.
+                 *
+                 * If a directory is visited non-recursive, i.e. traverse_options::recursive not set,
+                 * dir_entry and dir_exit are set, see dir_non_recursive.
+                 *
+                 * If a directory is a symbolic link which is not followed, i.e. traverse_options::follow_symlinks not set,
+                 * dir_symlink is used instead.
+                 */
+                dir_exit = 1 << 3,
+
+                /**
+                 * Visiting a symbolic-link to a directory which is not followed, i.e. traverse_options::follow_symlinks not set.
+                 */
+                dir_symlink = 1 << 4,
+
+                /**
+                 * Visiting a directory non-recursive, i.e. traverse_options::recursive not set.
+                 *
+                 * Value is a bit-mask of dir_entry | dir_exit
+                 */
+                dir_non_recursive = dir_entry | dir_exit
+        };
+        constexpr uint16_t number(const traverse_event rhs) noexcept {
+            return static_cast<uint16_t>(rhs);
+        }
+        constexpr traverse_event operator ~(const traverse_event rhs) noexcept {
+            return static_cast<traverse_event> ( ~number(rhs) );
+        }
+        constexpr traverse_event operator ^(const traverse_event lhs, const traverse_event rhs) noexcept {
+            return static_cast<traverse_event> ( number(lhs) ^ number(rhs) );
+        }
+        constexpr traverse_event operator |(const traverse_event lhs, const traverse_event rhs) noexcept {
+            return static_cast<traverse_event> ( number(lhs) | number(rhs) );
+        }
+        constexpr traverse_event operator &(const traverse_event lhs, const traverse_event rhs) noexcept {
+            return static_cast<traverse_event> ( number(lhs) & number(rhs) );
+        }
+        constexpr traverse_event& operator |=(traverse_event& lhs, const traverse_event rhs) noexcept {
+            lhs = static_cast<traverse_event> ( number(lhs) | number(rhs) );
+            return lhs;
+        }
+        constexpr traverse_event& operator &=(traverse_event& lhs, const traverse_event rhs) noexcept {
+            lhs = static_cast<traverse_event> ( number(lhs) & number(rhs) );
+            return lhs;
+        }
+        constexpr traverse_event& operator ^=(traverse_event& lhs, const traverse_event rhs) noexcept {
+            lhs = static_cast<traverse_event> ( number(lhs) ^ number(rhs) );
+            return lhs;
+        }
+        constexpr bool operator ==(const traverse_event lhs, const traverse_event rhs) noexcept {
+            return number(lhs) == number(rhs);
+        }
+        constexpr bool operator !=(const traverse_event lhs, const traverse_event rhs) noexcept {
+            return !( lhs == rhs );
+        }
+        constexpr bool is_set(const traverse_event mask, const traverse_event bit) noexcept {
+            return bit == ( mask & bit );
+        }
+        std::string to_string(const traverse_event mask) noexcept;
 
         /**
-         * Visit all elements of path in a recursive manner, visiting content first then its parent directory.
+         * path_visitor jau::FunctionDef definition
+         * - `bool visitor(traverse_event tevt, const file_stats& item_stats)`
+         */
+        typedef jau::FunctionDef<bool, traverse_event, const file_stats&> path_visitor;
+
+        /**
+         * Filesystem traverse options used to visit() path elements.
          *
-         * Any element without access or error otherwise will be skipped.
+         * This `enum class` type fulfills `C++ named requirements: BitmaskType`.
          *
-         * All elements of type fmode_bits::FILE, fmode_bits::DIR and fmode_bits::NO_ACCESS
-         * will be visited by the `visitor`
-         * and processing ends if it returns `false`.
+         * @see visit()
+         * @see remove()
+         */
+        enum class traverse_options : uint16_t {
+                /** No option set */
+                none = 0,
+
+                /** Traverse through directories, i.e. perform visit, copy, remove etc actions recursively throughout the directory structure. */
+                recursive = 1 << 0,
+
+                /** Traverse through symbolic linked directories if traverse_options::recursive is set, i.e. directories with property fmode_t::link set. */
+                follow_symlinks = 1 << 1,
+
+                /** Visit the content's parent directory at entry. Both, dir_entry and dir_exit can be set, only one or none. */
+                dir_entry = 1 << 2,
+
+                /** Visit the content's parent directory at exit. Both, dir_entry and dir_exit can be set, only one or none. */
+                dir_exit = 1 << 3,
+
+                /** Enable verbosity mode, potentially used by a path_visitor implementation like remove(). */
+                verbose = 1 << 15
+        };
+        constexpr uint16_t number(const traverse_options rhs) noexcept {
+            return static_cast<uint16_t>(rhs);
+        }
+        constexpr traverse_options operator ~(const traverse_options rhs) noexcept {
+            return static_cast<traverse_options> ( ~number(rhs) );
+        }
+        constexpr traverse_options operator ^(const traverse_options lhs, const traverse_options rhs) noexcept {
+            return static_cast<traverse_options> ( number(lhs) ^ number(rhs) );
+        }
+        constexpr traverse_options operator |(const traverse_options lhs, const traverse_options rhs) noexcept {
+            return static_cast<traverse_options> ( number(lhs) | number(rhs) );
+        }
+        constexpr traverse_options operator &(const traverse_options lhs, const traverse_options rhs) noexcept {
+            return static_cast<traverse_options> ( number(lhs) & number(rhs) );
+        }
+        constexpr traverse_options& operator |=(traverse_options& lhs, const traverse_options rhs) noexcept {
+            lhs = static_cast<traverse_options> ( number(lhs) | number(rhs) );
+            return lhs;
+        }
+        constexpr traverse_options& operator &=(traverse_options& lhs, const traverse_options rhs) noexcept {
+            lhs = static_cast<traverse_options> ( number(lhs) & number(rhs) );
+            return lhs;
+        }
+        constexpr traverse_options& operator ^=(traverse_options& lhs, const traverse_options rhs) noexcept {
+            lhs = static_cast<traverse_options> ( number(lhs) ^ number(rhs) );
+            return lhs;
+        }
+        constexpr bool operator ==(const traverse_options lhs, const traverse_options rhs) noexcept {
+            return number(lhs) == number(rhs);
+        }
+        constexpr bool operator !=(const traverse_options lhs, const traverse_options rhs) noexcept {
+            return !( lhs == rhs );
+        }
+        constexpr bool is_set(const traverse_options mask, const traverse_options bit) noexcept {
+            return bit == ( mask & bit );
+        }
+        std::string to_string(const traverse_options mask) noexcept;
+
+        /**
+         * Visit element(s) of a given path, see traverse_options for detailed settings.
+         *
+         * All elements of type fmode_t::file, fmode_t::dir and fmode_t::no_access or fmode_t::not_existing
+         * will be visited by the given path_visitor `visitor`.
+         *
+         * Processing ends if the `visitor returns `false`.
          *
          * @param path the starting path
-         * @param follow_sym_link_dirs pass true to visit directories with property fmode_bits::LINK, otherwise false.
+         * @param topts given traverse_options for this operation
          * @param visitor path_visitor function `bool visitor(const file_stats& item_stats)`.
-         * @return true if all visitor invocation returned true and no error occurred, otherwise false
+         * @return true if all visitor invocations returned true, otherwise false
          */
-        bool visit(const std::string& path, const bool follow_sym_link_dirs, const path_visitor& visitor) noexcept;
+        bool visit(const std::string& path, const traverse_options topts, const path_visitor& visitor) noexcept;
 
         /**
-         * Visit all elements of path in a recursive manner, visiting content first then its parent directory.
+         * Visit element(s) of a given path, see traverse_options for detailed settings.
          *
-         * Any element without access or error otherwise will be skipped.
+         * All elements of type fmode_t::file, fmode_t::dir and fmode_t::no_access or fmode_t::not_existing
+         * will be visited by the given path_visitor `visitor`.
          *
-         * All elements of type fmode_bits::FILE, fmode_bits::DIR and fmode_bits::NO_ACCESS
-         * will be visited by the `visitor`
-         * and processing ends if it returns `false`.
+         * Processing ends if the `visitor returns `false`.
          *
          * @param item_stats pre-fetched file_stats for a given dir_item, used for efficiency
-         * @param follow_sym_link_dirs pass true to visit directories with property fmode_bits::LINK, otherwise false.
+         * @param topts given traverse_options for this operation
          * @param visitor path_visitor function `bool visitor(const file_stats& item_stats)`.
-         * @return true if all visitor invocation returned true and no error occurred, otherwise false
+         * @return true if all visitor invocations returned true, otherwise false
          */
-        bool visit(const file_stats& item_stats, const bool follow_sym_link_dirs, const path_visitor& visitor) noexcept;
+        bool visit(const file_stats& item_stats, const traverse_options topts, const path_visitor& visitor) noexcept;
 
         /**
          * Remove the given path. If path represents a director, `recursive` must be set to true.
+         *
+         * The given traverse_options `options` are handled as follows:
+         * - traverse_options::parent_dir_last will be added by implementation to operate correct
+         * - traverse_options::recursive shall shall be set by caller to remove directories
+         * - traverse_options::follow_symlinks shall be set by caller to remove symbolic linked directories recursively, which is kind of dangerous.
+         *   If not set, only the symbolic link will be removed (default)
+         *
          * @param path path to remove
-         * @param recursive indicates to remove directories
-         * @param follow_sym_link_dirs pass true to remove directories with property fmode_bits::LINK (default), otherwise false.
-         * @param verbose pass true for verbose information about deleted files and directories, otherwise false (default)
+         * @param topts given traverse_options for this operation, defaults to traverse_options::none
          * @return true only if the file or the directory with content has been deleted, otherwise false
          */
-        bool remove(const std::string& path, const bool recursive, const bool follow_sym_link_dirs=true, const bool verbose=false) noexcept;
+        bool remove(const std::string& path, const traverse_options topts=traverse_options::none) noexcept;
+
 
         /**@}*/
 
