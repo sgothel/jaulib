@@ -666,3 +666,383 @@ bool jau::fs::remove(const std::string& path, const traverse_options topts) noex
     return jau::fs::visit(path_stats,
                 ( topts & ~jau::fs::traverse_options::dir_entry ) | jau::fs::traverse_options::dir_exit, pv);
 }
+
+#define COPYOPTIONS_BIT_ENUM(X,M) \
+    X(copy_options,recursive,M) \
+    X(copy_options,follow_symlinks,M) \
+    X(copy_options,overwrite,M) \
+    X(copy_options,preserve_all,M) \
+    X(copy_options,sync,M)
+
+#define APPEND_BIT_COPYOPTIONS(U,V) _append_bitstr(out, mask, U::V, #V, comma);
+
+std::string jau::fs::to_string(const copy_options mask) noexcept {
+    std::string out("[");
+    bool comma = false;
+    COPYOPTIONS_BIT_ENUM(APPEND_BITSTR,mask)
+    out.append("]");
+    return out;
+}
+
+static bool copy_file(const file_stats& source_stats, const std::string& dest_path, const copy_options copts) noexcept {
+    file_stats dest_stats(dest_path);
+
+    // overwrite: remove pre-existing file, if copy_options::overwrite set
+    if( dest_stats.is_file() ) {
+        if( !is_set(copts, copy_options::overwrite) ) {
+            if( is_set(copts, copy_options::verbose) ) {
+                jau::fprintf_td(stderr, "copy: Error: dest_path exists but copy_options::overwrite not set: source %s, dest '%s', copts %s\n",
+                        source_stats.to_string().c_str(), dest_stats.to_string().c_str(), to_string( copts ).c_str());
+            }
+            return false;
+        }
+        const int res = ::remove( dest_path.c_str() );
+        if( 0 != res ) {
+            if( is_set(copts, copy_options::verbose) ) {
+                jau::fprintf_td(stderr, "copy: Error: remove existing dest_path for symbolic-link failed: source %s, dest '%s', errno %d (%s)\n",
+                        source_stats.to_string().c_str(), dest_stats.to_string().c_str(), errno, strerror(errno));
+            }
+            return false;
+        }
+    }
+
+    // copy as symbolic link
+    if( source_stats.is_link() && !is_set(copts, copy_options::follow_symlinks) ) {
+        const std::string link_target_path = source_stats.link_target()->path();
+        if( 0 == link_target_path.size() ) {
+            if( is_set(copts, copy_options::verbose) ) {
+                jau::fprintf_td(stderr, "copy: Error: Symbolic link-path is empty %s\n", source_stats.to_string().c_str());
+            }
+            return false;
+        }
+        // symlink
+        const int res = ::symlink(link_target_path.c_str(), dest_path.c_str());
+        if( 0 > res ) {
+            if( is_set(copts, copy_options::verbose) ) {
+                jau::fprintf_td(stderr, "copy: Error: Creating symlink failed %s -> %s, errno %d, %s\n",
+                        dest_path.c_str(), link_target_path.c_str(), errno, ::strerror(errno));
+            }
+            return false;
+        }
+        if( is_set(copts, copy_options::preserve_all) ) {
+            // preserve time
+            struct timespec ts2[2] = { source_stats.atime().to_timespec(), source_stats.mtime().to_timespec() };
+            if( 0 != ::utimensat(AT_FDCWD, dest_path.c_str(), ts2, AT_SYMLINK_NOFOLLOW) ) {
+                if( is_set(copts, copy_options::verbose) ) {
+                    jau::fprintf_td(stderr, "copy: Error: Couldn't preserve time of symlink, source %s, dest '%s', errno %d (%s)\n",
+                            source_stats.to_string().c_str(), dest_path.c_str(), errno, ::strerror(errno));
+                }
+                return false;
+            }
+            // preserve ownership
+            const uid_t caller_uid = getuid();
+            const ::uid_t source_uid = 0 == caller_uid ? source_stats.uid() : -1;
+            if( 0 != ::fchownat(AT_FDCWD, dest_path.c_str(), source_uid, source_stats.gid(), AT_SYMLINK_NOFOLLOW) ) {
+                if( errno != EPERM && errno != EINVAL ) { // OK to fail due to permissions
+                    if( is_set(copts, copy_options::verbose) ) {
+                        jau::fprintf_td(stderr, "copy: Error: Couldn't preserve ownership of symlink, source %s, dest '%s', errno %d (%s)\n",
+                                source_stats.to_string().c_str(), dest_path.c_str(), errno, ::strerror(errno));
+                    }
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    // copy actual file bytes
+    const file_stats* target_stats = source_stats.is_link() ? source_stats.link_target().get() : &source_stats;
+    const fmode_t dest_mode = target_stats->prot_mode();
+    const fmode_t omitted_permissions = dest_mode & ( fmode_t::rwx_grp | fmode_t::rwx_oth );
+
+    const uid_t caller_uid = getuid();
+    int src=-1, dst=-1;
+    int src_flags = O_RDONLY|O_BINARY|O_NOCTTY;
+    off64_t offset = 0;
+
+    bool res = false;
+    if( caller_uid == target_stats->uid() ) {
+        src_flags |= O_NOATIME;
+    } // else we are not allowed to not use O_NOATIME
+    src = ::open64(source_stats.path().c_str(), src_flags);
+    if ( 0 > src ) {
+        if( is_set(copts, copy_options::verbose) ) {
+            jau::fprintf_td(stderr, "copy: Error: Failed to open source %s, errno %d, %s\n", source_stats.to_string().c_str(), errno, ::strerror(errno));
+        }
+        goto errout;
+    }
+    dst = ::open64(dest_path.c_str(), O_CREAT|O_WRONLY|O_BINARY|O_EXCL|O_CLOEXEC|O_NOCTTY, jau::fs::posix_protection_bits( dest_mode & ~omitted_permissions ) );
+    if ( 0 > dst ) {
+        if( is_set(copts, copy_options::verbose) ) {
+            jau::fprintf_td(stderr, "copy: Error: Failed to open target_path '%s', errno %d, %s\n", dest_path.c_str(), errno, ::strerror(errno));
+        }
+        goto errout;
+    }
+    while ( (uint64_t)offset < source_stats.size()) {
+        ssize_t rc;
+        if constexpr ( _use_sendfile ) {
+            const size_t count = std::max<size_t>(std::numeric_limits<ssize_t>::max(), source_stats.size() - offset);
+            rc = ::sendfile64(dst, src, &offset, count);
+        } else {
+            char buffer[BUFSIZ];
+            if( ( rc = ::read(src, buffer, sizeof(buffer)) ) > 0 ) {
+                ssize_t bytes_to_write = rc;
+                size_t buffer_offset = 0;
+                while( 0 < bytes_to_write ) { // write the read chunk, allowing potential multiple write-ops
+                    ssize_t bytes_written;
+                    if( ( bytes_written = ::write(dst, buffer+buffer_offset, bytes_to_write) ) < 0 ) {
+                        rc = bytes_written;
+                        break;
+                    }
+                    buffer_offset += bytes_written;
+                    bytes_to_write -= bytes_written;
+                    offset += bytes_written;
+                }
+            }
+        }
+        if ( 0 > rc ) {
+            if( is_set(copts, copy_options::verbose) ) {
+                jau::fprintf_td(stderr, "copy: Error: Failed to copy bytes @ %s / %s, %s -> '%s', errno %d, %s\n",
+                        jau::to_decstring(offset).c_str(), jau::to_decstring(source_stats.size()).c_str(),
+                        source_stats.to_string().c_str(), dest_path.c_str(), errno, ::strerror(errno));
+            }
+            goto errout;
+        }
+        if ( 0 == rc ) {
+            break;
+        }
+    }
+    if( (uint64_t)offset < source_stats.size() ) {
+        if( is_set(copts, copy_options::verbose) ) {
+            jau::fprintf_td(stderr, "copy: Error: Incomplete transfer %s / %s, %s -> '%s', errno %d, %s\n",
+                    jau::to_decstring(offset).c_str(), jau::to_decstring(source_stats.size()).c_str(),
+                    source_stats.to_string().c_str(), dest_path.c_str(), errno, ::strerror(errno));
+        }
+        goto errout;
+    }
+    res = true;
+    if( omitted_permissions != fmode_t::none ) {
+        // restore omitted permissions
+        if( 0 != ::fchmod(dst, jau::fs::posix_protection_bits( dest_mode  )) ) {
+            if( is_set(copts, copy_options::verbose) ) {
+                jau::fprintf_td(stderr, "copy: Error: Couldn't restore omitted permissions, source %s, dest '%s', errno %d (%s)\n",
+                        source_stats.to_string().c_str(), dest_path.c_str(), errno, ::strerror(errno));
+            }
+            res = false;
+        }
+    }
+    if( is_set(copts, copy_options::preserve_all) ) {
+        // preserve time
+        struct timespec ts2[2] = { target_stats->atime().to_timespec(), target_stats->mtime().to_timespec() };
+        if( 0 != ::futimens(dst, ts2) ) {
+            if( is_set(copts, copy_options::verbose) ) {
+                jau::fprintf_td(stderr, "copy: Error: Couldn't preserve time of file, source %s, dest '%s', errno %d (%s)\n",
+                        source_stats.to_string().c_str(), dest_path.c_str(), errno, ::strerror(errno));
+            }
+            res = false;
+        }
+        // preserve ownership
+        ::uid_t source_uid = 0 == caller_uid ? target_stats->uid() : -1;
+        if( 0 != ::fchown(dst, source_uid, target_stats->gid()) ) {
+            if( errno != EPERM && errno != EINVAL ) { // OK to fail due to permissions
+                if( is_set(copts, copy_options::verbose) ) {
+                    jau::fprintf_td(stderr, "copy: Error: Couldn't preserve ownership of file, source %s, dest '%s', errno %d (%s)\n",
+                            source_stats.to_string().c_str(), dest_path.c_str(), errno, ::strerror(errno));
+                }
+                res = false;
+            }
+        }
+    }
+    if( is_set(copts, copy_options::sync) ) {
+        if( 0 != ::fsync(dst) ) {
+            if( is_set(copts, copy_options::verbose) ) {
+                jau::fprintf_td(stderr, "copy: Error: Couldn't synchronize destination file, source %s, dest '%s', errno %d (%s)\n",
+                        source_stats.to_string().c_str(), dest_path.c_str(), errno, ::strerror(errno));
+            }
+            res = false;
+        }
+    }
+errout:
+    if( 0 < src ) {
+        ::close(src);
+    }
+    if( 0 < dst ) {
+        ::close(dst);
+    }
+    return res;
+}
+
+static bool copy_mkdir(const file_stats& source_stats, const file_stats& dest_stats, const copy_options copts) noexcept {
+    (void)source_stats;
+    const std::string dest_path = dest_stats.path();
+
+    if( dest_stats.is_dir() ) {
+        if( is_set(copts, copy_options::verbose) ) {
+            jau::fprintf_td(stderr, "copy: mkdir directory already exist: %s\n", dest_stats.to_string().c_str());
+        }
+    } else if( !dest_stats.exists() ) {
+        const int dir_err = ::mkdir(dest_path.c_str(), posix_protection_bits(fmode_t::rwx_usr));
+        if ( 0 != dir_err ) {
+            if( is_set(copts, copy_options::verbose) ) {
+                jau::fprintf_td(stderr, "copy: mkdir failed: %s, errno %d (%s)\n", dest_stats.to_string().c_str(), errno, strerror(errno));
+            }
+            return false;
+        }
+    } else {
+        if( is_set(copts, copy_options::verbose) ) {
+            jau::fprintf_td(stderr, "copy: mkdir failed: %s, exists but is no dir\n", dest_stats.to_string().c_str());
+        }
+        return false;
+    }
+    return true;
+}
+
+static bool copy_dir_preserve(const file_stats& source_stats, const file_stats& dest_stats, const copy_options copts) noexcept {
+    const std::string dest_path = dest_stats.path();
+    if( !dest_stats.is_dir() ) {
+        if( is_set(copts, copy_options::verbose) ) {
+            jau::fprintf_td(stderr, "copy: dir_preserve failed: %s, is no dir\n", dest_stats.to_string().c_str());
+        }
+        return false;
+    }
+    const file_stats* target_stats = source_stats.is_link() ? source_stats.link_target().get() : &source_stats;
+
+    // restore permissions
+    const fmode_t dest_mode = target_stats->prot_mode();
+    if( 0 != ::fchmodat(AT_FDCWD, dest_path.c_str(), jau::fs::posix_protection_bits( dest_mode ), 0) ) {
+        if( is_set(copts, copy_options::verbose) ) {
+            jau::fprintf_td(stderr, "copy: Error: dir_preserve restore permissions, source %s, dest '%s', errno %d (%s)\n",
+                    source_stats.to_string().c_str(), dest_path.c_str(), errno, ::strerror(errno));
+        }
+        return false;
+    }
+
+    if( is_set(copts, copy_options::preserve_all) ) {
+        // preserve time
+        struct timespec ts2[2] = { target_stats->atime().to_timespec(), target_stats->mtime().to_timespec() };
+        if( 0 != ::utimensat(AT_FDCWD, dest_path.c_str(), ts2, 0) ) {
+            if( is_set(copts, copy_options::verbose) ) {
+                jau::fprintf_td(stderr, "copy: Error: dir_preserve time of file failed, source %s, dest '%s', errno %d (%s)\n",
+                        source_stats.to_string().c_str(), dest_stats.to_string().c_str(), errno, ::strerror(errno));
+            }
+            return false;
+        }
+        // preserve ownership
+        const uid_t caller_uid = getuid();
+        const ::uid_t source_uid = 0 == caller_uid ? target_stats->uid() : -1;
+        if( 0 != ::chown( dest_path.c_str(), source_uid, target_stats->gid() ) ) {
+            if( errno != EPERM && errno != EINVAL ) { // OK to fail due to permissions
+                if( is_set(copts, copy_options::verbose) ) {
+                    jau::fprintf_td(stderr, "copy: Error: dir_preserve ownership of file failed, source %s, dest '%s', errno %d (%s)\n",
+                            source_stats.to_string().c_str(), dest_stats.to_string().c_str(), errno, ::strerror(errno));
+                }
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool jau::fs::copy(const std::string& source_path, const std::string& target_path, const copy_options copts) noexcept {
+    traverse_options topts = traverse_options::dir_entry | traverse_options::dir_exit;
+    if( is_set(copts, copy_options::recursive) ) {
+        topts |= traverse_options::recursive;
+    }
+    if( is_set(copts, copy_options::follow_symlinks) ) {
+        topts |= traverse_options::follow_symlinks;
+    }
+    if( is_set(copts, copy_options::verbose) ) {
+        topts |= traverse_options::verbose;
+    }
+    file_stats source_stats(source_path);
+    file_stats target_stats(target_path);
+    bool target_path_is_root = false;
+
+    if( source_stats.is_dir() ) {
+        if( !is_set(copts, copy_options::recursive) ) {
+            if( is_set(copts, copy_options::verbose) ) {
+                jau::fprintf_td(stderr, "copy: Error: source_path is dir but !recursive, %s\n", source_stats.to_string().c_str());
+            }
+            return false;
+        }
+        if( !target_stats.exists() ) {
+            target_stats = file_stats(target_stats.path()); // update
+            target_path_is_root = true;
+        } else if( !target_stats.is_dir() ) {
+            if( is_set(copts, copy_options::verbose) ) {
+                jau::fprintf_td(stderr, "copy: Error: source_path is dir but target_path not, source %s, target %s\n",
+                        source_stats.to_string().c_str(), target_stats.to_string().c_str());
+            }
+            return false;
+        }
+    } else if( source_stats.is_file() ) {
+        if( target_stats.exists() ) {
+            if( target_stats.is_file() ) {
+                if( !is_set(copts, copy_options::overwrite)) {
+                    if( is_set(copts, copy_options::verbose) ) {
+                        jau::fprintf_td(stderr, "copy: Error: source_path is file, target_path existing file w/o overwrite, source %s, target %s\n",
+                                source_stats.to_string().c_str(), target_stats.to_string().c_str());
+                    }
+                    return false;
+                }
+                target_path_is_root = true;
+            }
+        } else {
+            // else new file2file
+            target_path_is_root = true;
+        }
+    } else {
+        if( is_set(copts, copy_options::verbose) ) {
+            jau::fprintf_td(stderr, "copy: Error: source_path is neither file nor dir, source %s, target %s\n",
+                    source_stats.to_string().c_str(), target_stats.to_string().c_str());
+        }
+        return false;
+    }
+    struct copy_context_t {
+            file_stats source_stats;
+            size_t source_path_len;
+            std::string source_basename;
+            file_stats target_stats;
+            copy_options copts;
+            bool target_path_is_root;
+    };
+    copy_context_t copy_context { source_stats, source_path.size(), basename(source_path), target_stats, copts, target_path_is_root };
+    const path_visitor pv = jau::bindCaptureRefFunc<bool, copy_context_t, traverse_event, const file_stats&>(&copy_context,
+            ( bool(*)(copy_context_t*, traverse_event, const file_stats&) ) /* help template type deduction of function-ptr */
+                ( [](copy_context_t* ctx, traverse_event tevt, const file_stats& element_stats) -> bool {
+                    if( !element_stats.has_access() ) {
+                        if( is_set(ctx->copts, copy_options::verbose) ) {
+                            jau::fprintf_td(stderr, "copy: Error: remove failed: no access, %s\n", element_stats.to_string().c_str());
+                        }
+                        return false;
+                    }
+                    std::string element_path = element_stats.path();
+                    std::string element_path_trail;
+                    if( ctx->source_path_len < element_path.size() ) {
+                        element_path_trail = "/" + element_path.substr(ctx->source_path_len+1);
+                    }
+                    std::string target_path_;
+                    if( ctx->target_path_is_root ) {
+                        target_path_ = ctx->target_stats.path() + element_path_trail;
+                    } else {
+                        target_path_ = ctx->target_stats.path() + "/" + ctx->source_basename + element_path_trail;
+                    }
+                    if( is_set(tevt, traverse_event::dir_entry) ) {
+                        const file_stats target_stats_(target_path_);
+                        if( !copy_mkdir( element_stats, target_stats_, ctx->copts ) ) {
+                            return false;
+                        }
+                    } else if( is_set(tevt, traverse_event::dir_exit) ) {
+                        const file_stats target_stats_(target_path_);
+                        if( !copy_dir_preserve( element_stats, target_stats_, ctx->copts ) ) {
+                            return false;
+                        }
+                    } else if( is_set(tevt, traverse_event::file) || is_set(tevt, traverse_event::symlink) || is_set(tevt, traverse_event::dir_symlink) ) {
+                        if( !copy_file(element_stats, target_path_, ctx->copts) ) {
+                            return false;
+                        }
+                    }
+                    return true;
+                  } ) );
+    return jau::fs::visit(source_stats, topts, pv);
+}
+

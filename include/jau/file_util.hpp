@@ -664,6 +664,104 @@ namespace jau {
          */
         bool remove(const std::string& path, const traverse_options topts=traverse_options::none) noexcept;
 
+        /**
+         * Filesystem copy options used to copy() path elements.
+         *
+         * By default, the fmode_t POSIX protection mode bits are preserved
+         * while using the caller's uid and gid as well as current timestamps. <br />
+         * Use copy_options::preserve_all to preserve uid and gid if allowed from the caller and access- and modification-timestamps.
+         *
+         * This `enum class` type fulfills `C++ named requirements: BitmaskType`.
+         *
+         * @see copy()
+         */
+        enum class copy_options : uint16_t {
+            /** No option set */
+            none = 0,
+
+            /** Traverse through directories, i.e. perform visit, copy, remove etc actions recursively throughout the directory structure. */
+            recursive = 1 << 0,
+
+            /** Copy referenced symbolic linked files or directories instead of just the symbolic link with property fmode_t::link set. */
+            follow_symlinks = 1 << 1,
+
+            /** Overwrite existing destination files, always. */
+            overwrite = 1 << 8,
+
+            /** Preserve uid and gid if allowed and access- and modification-timestamps, i.e. producing a most exact meta-data copy. */
+            preserve_all = 1 << 9,
+
+            /** Ensure data and meta-data file synchronization is performed via ::fsync() after asynchronous copy operations of a file's content. */
+            sync = 1 << 10,
+
+            /** Enable verbosity mode, show error messages on stderr. */
+            verbose = 1 << 15
+        };
+        constexpr uint16_t number(const copy_options rhs) noexcept {
+            return static_cast<uint16_t>(rhs);
+        }
+        constexpr copy_options operator ~(const copy_options rhs) noexcept {
+            return static_cast<copy_options> ( ~number(rhs) );
+        }
+        constexpr copy_options operator ^(const copy_options lhs, const copy_options rhs) noexcept {
+            return static_cast<copy_options> ( number(lhs) ^ number(rhs) );
+        }
+        constexpr copy_options operator |(const copy_options lhs, const copy_options rhs) noexcept {
+            return static_cast<copy_options> ( number(lhs) | number(rhs) );
+        }
+        constexpr copy_options operator &(const copy_options lhs, const copy_options rhs) noexcept {
+            return static_cast<copy_options> ( number(lhs) & number(rhs) );
+        }
+        constexpr copy_options& operator |=(copy_options& lhs, const copy_options rhs) noexcept {
+            lhs = static_cast<copy_options> ( number(lhs) | number(rhs) );
+            return lhs;
+        }
+        constexpr copy_options& operator &=(copy_options& lhs, const copy_options rhs) noexcept {
+            lhs = static_cast<copy_options> ( number(lhs) & number(rhs) );
+            return lhs;
+        }
+        constexpr copy_options& operator ^=(copy_options& lhs, const copy_options rhs) noexcept {
+            lhs = static_cast<copy_options> ( number(lhs) ^ number(rhs) );
+            return lhs;
+        }
+        constexpr bool operator ==(const copy_options lhs, const copy_options rhs) noexcept {
+            return number(lhs) == number(rhs);
+        }
+        constexpr bool operator !=(const copy_options lhs, const copy_options rhs) noexcept {
+            return !( lhs == rhs );
+        }
+        constexpr bool is_set(const copy_options mask, const copy_options bit) noexcept {
+            return bit == ( mask & bit );
+        }
+        std::string to_string(const copy_options mask) noexcept;
+
+        /**
+         * Copy the given source_path to dest_path using copy_options.
+         *
+         * The behavior is similar like POSIX `cp` commandline tooling.
+         *
+         * Implementation either uses ::sendfile() if running under `GNU/Linux`,
+         * otherwise POSIX ::read() and ::write().
+         *
+         * The following behavior is being followed regarding dest_path:
+         * - If source_path is a directory and copy_options::recursive set
+         *   - If dest_path doesn't exist, source_path dir content is copied into the newly created dest_path.
+         *   - If dest_path exists as a directory, source_path dir will be copied below the dest_path directory.
+         *   - Everything else is considered an error
+         * - If source_path is a file
+         *   - If dest_path doesn't exist, source_path file is copied to dest_path as a file.
+         *   - If dest_path exists as a directory, source_path file will be copied below the dest_path directory.
+         *   - If dest_path exists as a file, copy_options::overwrite must be set to have it overwritten by the source_path file
+         *   - Everything else is considered an error
+         *
+         * See copy_options for details.
+         *
+         * @param source_path
+         * @param dest_path
+         * @param copts
+         * @return true if successful, otherwise false
+         */
+        bool copy(const std::string& source_path, const std::string& dest_path, const copy_options copts = copy_options::none) noexcept;
 
         /**@}*/
 
