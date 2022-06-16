@@ -23,63 +23,95 @@
  */
 
 #include <cstdint>
+#include <cstdlib>
 #include <cinttypes>
+#include <limits>
 
 #include <jau/debug.hpp>
 #include <jau/file_util.hpp>
 
 extern "C" {
     #include <sys/stat.h>
+#ifdef __linux__
+    #include <sys/sendfile.h>
+#endif
     #include <sys/types.h>
     #include <dirent.h>
     #include <fcntl.h>
     #include <unistd.h>
 }
 
+#ifndef O_BINARY
+#define O_BINARY    0
+#endif
+#ifndef O_NONBLOCK
+#define O_NONBLOCK  0
+#endif
+
 using namespace jau;
 using namespace jau::fs;
 
-#define CASE2_TO_STRING(U,V) case U::V: return #V;
+#ifdef __linux__
+    static constexpr const bool _use_statx = true;
+    static constexpr const bool _use_sendfile = true;
+#else
+    static constexpr const bool _use_statx = false;
+    static constexpr const bool _use_sendfile = false;
+#endif
 
-#define FMODE_BIT_ENUM(X) \
-    X(fmode_bits,NONE) \
-    X(fmode_bits,FILE) \
-    X(fmode_bits,DIR) \
-    X(fmode_bits,LINK) \
-    X(fmode_bits,NO_ACCESS) \
-    X(fmode_bits,NOT_EXISTING)
-
-static std::string _get_fmode_bit_str(const fmode_bits bit) noexcept {
-    switch(bit) {
-    FMODE_BIT_ENUM(CASE2_TO_STRING)
-        default: ; // fall through intended
+template<typename T>
+static void append_bitstr(std::string& out, T mask, T bit, const std::string& bitstr, bool& comma) {
+    if( is_set( mask, bit )) {
+        if( comma ) { out.append(", "); }
+        out.append(bitstr); comma = true;
     }
-    return "??? "+jau::to_hexstring(number(bit));
 }
 
-std::string jau::fs::to_string(const fmode_bits mask) noexcept {
-    std::string out("[");
+#define APPEND_BITSTR(U,V,M) append_bitstr(out, M, U::V, #V, comma);
+
+#define FMODEBITS_ENUM(X,M) \
+    X(fmode_t,dir,M) \
+    X(fmode_t,file,M) \
+    X(fmode_t,link,M) \
+    X(fmode_t,no_access,M) \
+    X(fmode_t,not_existing,M)
+
+static void append_bitstr(std::string& out, fmode_t mask, fmode_t bit, const std::string& bitstr) {
+    if( is_set( mask, bit )) {
+        out.append(bitstr);
+    } else {
+        out.append("-");
+    }
+}
+
+std::string jau::fs::to_string(const fmode_t mask, const bool show_rwx) noexcept {
+    std::string out;
     bool comma = false;
-    if( has_fmode_bit( mask, fmode_bits::FILE )) {
-        out.append(_get_fmode_bit_str( fmode_bits::FILE )); comma = true;
+    FMODEBITS_ENUM(APPEND_BITSTR,mask)
+    out.append(", ");
+    if( show_rwx ) {
+        if( fmode_t::none != ( mask & fmode_t::ugs_set ) ) {
+            append_bitstr(out, mask, fmode_t::set_uid, "u");
+            append_bitstr(out, mask, fmode_t::set_gid, "g");
+            append_bitstr(out, mask, fmode_t::sticky,  "s");
+        }
+        const std::string r("r");
+        const std::string w("w");
+        const std::string x("x");
+        append_bitstr(out, mask, fmode_t::read_usr,  r);
+        append_bitstr(out, mask, fmode_t::write_usr, w);
+        append_bitstr(out, mask, fmode_t::exec_usr,  x);
+        append_bitstr(out, mask, fmode_t::read_grp,  r);
+        append_bitstr(out, mask, fmode_t::write_grp, w);
+        append_bitstr(out, mask, fmode_t::exec_grp,  x);
+        append_bitstr(out, mask, fmode_t::read_oth,  r);
+        append_bitstr(out, mask, fmode_t::write_oth, w);
+        append_bitstr(out, mask, fmode_t::exec_oth,  x);
+    } else {
+        char buf[8];
+        int len = snprintf(buf, sizeof(buf), "0%o", (unsigned int)(mask & fmode_t::protection_mask));
+        out.append(std::string(buf, len));
     }
-    if( has_fmode_bit( mask, fmode_bits::DIR )) {
-        if( comma ) { out.append(", "); }
-        out.append(_get_fmode_bit_str( fmode_bits::DIR )); comma = true;
-    }
-    if( has_fmode_bit( mask, fmode_bits::LINK )) {
-        if( comma ) { out.append(", "); }
-        out.append(_get_fmode_bit_str( fmode_bits::LINK )); comma = true;
-    }
-    if( has_fmode_bit( mask, fmode_bits::NO_ACCESS )) {
-        if( comma ) { out.append(", "); }
-        out.append(_get_fmode_bit_str( fmode_bits::NO_ACCESS )); comma = true;
-    }
-    if( has_fmode_bit( mask, fmode_bits::NOT_EXISTING )) {
-        if( comma ) { out.append(", "); }
-        out.append(_get_fmode_bit_str( fmode_bits::NOT_EXISTING )); comma = true;
-    }
-    out.append("]");
     return out;
 }
 
@@ -96,26 +128,58 @@ std::string dir_item::path() const noexcept {
     }
 }
 
+#define FILESTATS_FIELD_ENUM(X,M) \
+    X(file_stats::field_t,type,M) \
+    X(file_stats::field_t,mode,M) \
+    X(file_stats::field_t,nlink,M) \
+    X(file_stats::field_t,uid,M) \
+    X(file_stats::field_t,gid,M) \
+    X(file_stats::field_t,atime,M) \
+    X(file_stats::field_t,mtime,M) \
+    X(file_stats::field_t,ctime,M) \
+    X(file_stats::field_t,ino,M) \
+    X(file_stats::field_t,size,M) \
+    X(file_stats::field_t,blocks,M) \
+    X(file_stats::field_t,btime,M)
+
+std::string jau::fs::to_string(const file_stats::field_t mask) noexcept {
+    std::string out("[");
+    bool comma = false;
+    FILESTATS_FIELD_ENUM(APPEND_BITSTR,mask)
+    out.append("]");
+    return out;
+}
+
 file_stats::file_stats() noexcept
-: item_(), mode_(fmode_bits::NOT_EXISTING),
-  uid_(0), gid_(0), size_(0), atime_(), mtime_(), ctime_(),
+: has_fields_(field_t::none), item_(), link_target_(), mode_(fmode_t::not_existing),
+  uid_(0), gid_(0), size_(0), btime_(), atime_(), ctime_(), mtime_(),
   errno_res_(0)
 {}
 
-file_stats::file_stats(const dir_item& item) noexcept
-: item_(item), mode_(fmode_bits::NONE),
-  uid_(0), gid_(0), size_(0), atime_(), mtime_(), ctime_(),
+static constexpr bool jau_has_stat(const uint32_t mask, const uint32_t bit) { return bit == ( mask & bit ); }
+
+file_stats::file_stats(const ctor_cookie& cc, const dir_item& item, const std::string_view symlink) noexcept
+: has_fields_(field_t::none), item_(item), link_target_(), mode_(fmode_t::none),
+  uid_(0), gid_(0), size_(0), btime_(), atime_(), ctime_(), mtime_(),
   errno_res_(0)
 {
-    struct stat s;
-    int stat_res = ::lstat(item_.path().c_str(), &s);
+    (void)cc;
+    const bool follow_symlink = symlink.size() > 0;
+    const std::string path(follow_symlink ? symlink : item_.path());
+
+if constexpr ( _use_statx ) {
+    struct ::statx s;
+    ::bzero(&s, sizeof(s));
+    int stat_res = ::statx(AT_FDCWD, path.c_str(),
+                           ( AT_NO_AUTOMOUNT | ( follow_symlink ? 0 : AT_SYMLINK_NOFOLLOW ) ),
+                           ( STATX_BASIC_STATS | STATX_BTIME ), &s);
     if( 0 != stat_res ) {
         switch( errno ) {
             case EACCES:
-                mode_ |= fmode_bits::NO_ACCESS;
+                mode_ |= fmode_t::no_access;
                 break;
             case ENOENT:
-                mode_ |= fmode_bits::NOT_EXISTING;
+                mode_ |= fmode_t::not_existing;
                 break;
             default:
                 break;
@@ -124,55 +188,225 @@ file_stats::file_stats(const dir_item& item) noexcept
             errno_res_ = errno;
         }
     } else {
-        if( S_ISLNK( s.st_mode ) ) {
-            // follow symbolic link, retrieve info from underlying file
-            stat_res = ::stat(item_.path().c_str(), &s);
-            if( 0 != stat_res ) {
-                switch( errno ) {
-                    case EACCES:
-                        mode_ |= fmode_bits::NO_ACCESS;
-                        break;
-                    case ENOENT:
-                        mode_ |= fmode_bits::NOT_EXISTING;
-                        break;
-                    default:
-                        break;
-                }
-                if( has_access() && exists() ) {
-                    errno_res_ = errno;
-                }
-                goto errorout;
+        if( jau_has_stat( s.stx_mask, STATX_TYPE ) ) {
+            has_fields_ |= field_t::type;
+        }
+        if( has( field_t::type ) ) {
+            if( S_ISLNK( s.stx_mode ) ) {
+                mode_ |= fmode_t::link;
             }
-            mode_ |= fmode_bits::LINK;
+            if( S_ISREG( s.stx_mode ) ) {
+                mode_ |= fmode_t::file;
+            } else if( S_ISDIR( s.stx_mode ) ) {
+                mode_ |= fmode_t::dir;
+            }
+        }
+        if( jau_has_stat( s.stx_mask, STATX_MODE ) ) {
+            has_fields_ |= field_t::mode;
+            // Append POSIX protection bits
+            mode_ |= static_cast<fmode_t>( s.stx_mode & ( S_IRWXU | S_IRWXG | S_IRWXO | S_ISUID | S_ISGID | S_ISVTX ) );
+        }
+        if( jau_has_stat( s.stx_mask, STATX_NLINK ) ) {
+            has_fields_ |= field_t::nlink;
+        }
+        if( jau_has_stat( s.stx_mask, STATX_UID ) ) {
+            has_fields_ |= field_t::uid;
+            uid_ = s.stx_uid;
+        }
+        if( jau_has_stat( s.stx_mask, STATX_GID ) ) {
+            has_fields_ |= field_t::gid;
+            gid_ = s.stx_gid;
+        }
+        if( jau_has_stat( s.stx_mask, STATX_ATIME ) || 0 != s.stx_atime.tv_sec || 0 != s.stx_atime.tv_nsec ) { // if STATX_ATIME is not reported but has its value (duh?)
+            has_fields_ |= field_t::atime;
+            atime_ = jau::fraction_timespec( s.stx_atime.tv_sec, s.stx_atime.tv_nsec );
+        }
+        if( jau_has_stat( s.stx_mask, STATX_MTIME ) ) {
+            has_fields_ |= field_t::mtime;
+            mtime_ = jau::fraction_timespec( s.stx_mtime.tv_sec, s.stx_mtime.tv_nsec );
+        }
+        if( jau_has_stat( s.stx_mask, STATX_CTIME ) ) {
+            has_fields_ |= field_t::ctime;
+            ctime_ = jau::fraction_timespec( s.stx_ctime.tv_sec, s.stx_ctime.tv_nsec );
+        }
+        if( jau_has_stat( s.stx_mask, STATX_INO ) ) {
+            has_fields_ |= field_t::ino;
+        }
+        if( jau_has_stat( s.stx_mask, STATX_SIZE ) ) {
+            if( is_file() && !is_link() ) {
+                has_fields_ |= field_t::size;
+                size_ = s.stx_size;
+            }
+        }
+        if( jau_has_stat( s.stx_mask, STATX_BLOCKS ) ) {
+            has_fields_ |= field_t::blocks;
+        }
+        if( jau_has_stat( s.stx_mask, STATX_BTIME ) ) {
+            has_fields_ |= field_t::btime;
+            btime_ = jau::fraction_timespec( s.stx_btime.tv_sec, s.stx_btime.tv_nsec );
+        }
+        if( is_link() && !follow_symlink ) {
+            // follow symbolic link (only once), retrieve info from underlying file
+            std::string link_path;
+            {
+                const ssize_t path_link_max_len = 0 < s.stx_size ? s.stx_size + 1 : PATH_MAX;
+                char* buffer = (char*) ::malloc(path_link_max_len);
+                ssize_t path_link_len = 0;;
+                if( nullptr == buffer ) {
+                    errno_res_ = errno;
+                    link_target_ = std::make_shared<file_stats>();
+                    goto errorout;
+                }
+                path_link_len = ::readlink(path.c_str(), buffer, path_link_max_len);
+                if( 0 > path_link_len ) {
+                    errno_res_ = errno;
+                    ::free(buffer);
+                    link_target_ = std::make_shared<file_stats>();
+                    goto errorout;
+                }
+                // Note: if( path_link_len == path_link_max_len ) then buffer may have been truncated
+                link_path = std::string(buffer, path_link_len);
+            }
+            link_target_ = std::make_shared<file_stats>(ctor_cookie(0), dir_item(link_path), path /* symlink */);
+            if( link_target_->is_file() ) {
+                mode_ |= fmode_t::file;
+                if( !link_target_->is_link() ) {
+                    has_fields_ |= field_t::size;
+                    size_ = link_target_->size();
+                }
+            } else if( link_target_->is_dir() ) {
+                mode_ |= fmode_t::dir;
+            } else if( !link_target_->exists() ) {
+                mode_ |= fmode_t::not_existing;
+            } else if( !link_target_->has_access() ) {
+                mode_ |= fmode_t::no_access;
+            }
+        }
+    }
+} else { /* constexpr !_use_statx */
+    struct ::stat64 s;
+    ::bzero(&s, sizeof(s));
+    int stat_res = follow_symlink ? ::stat64(path.c_str(), &s) : ::lstat64(path.c_str(), &s);
+    if( 0 != stat_res ) {
+        switch( errno ) {
+            case EACCES:
+                mode_ |= fmode_t::no_access;
+                break;
+            case ENOENT:
+                mode_ |= fmode_t::not_existing;
+                break;
+            default:
+                break;
+        }
+        if( has_access() && exists() ) {
+            errno_res_ = errno;
+        }
+    } else {
+        has_fields_ = field_t::type  | field_t::mode  | field_t::uid   | field_t::gid |
+                      field_t::atime | field_t::ctime | field_t::mtime | field_t::size;
+
+        if( S_ISLNK( s.st_mode ) ) {
+            mode_ |= fmode_t::link;
         }
         if( S_ISREG( s.st_mode ) ) {
-            mode_ |= fmode_bits::FILE;
+            mode_ |= fmode_t::file;
         } else if( S_ISDIR( s.st_mode ) ) {
-            mode_ |= fmode_bits::DIR;
+            mode_ |= fmode_t::dir;
         }
+
+        // Append POSIX protection bits
+        mode_ |= static_cast<fmode_t>( s.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO | S_ISUID | S_ISGID | S_ISVTX ) );
+
         uid_ = s.st_uid;
         gid_ = s.st_gid;
         size_ = is_file() ? s.st_size : 0;
         atime_ = jau::fraction_timespec( s.st_atim.tv_sec, s.st_atim.tv_nsec );
-        mtime_ = jau::fraction_timespec( s.st_mtim.tv_sec, s.st_mtim.tv_nsec );
         ctime_ = jau::fraction_timespec( s.st_ctim.tv_sec, s.st_ctim.tv_nsec );
+        mtime_ = jau::fraction_timespec( s.st_mtim.tv_sec, s.st_mtim.tv_nsec );
 
-        errorout: ;
+        if( is_link() && !follow_symlink ) {
+            // follow symbolic link (only once), retrieve info from underlying file
+            std::string link_path;
+            {
+                const ssize_t path_link_max_len = 0 < s.st_size ? s.st_size + 1 : PATH_MAX;
+                char* buffer = (char*) ::malloc(path_link_max_len);
+                ssize_t path_link_len = 0;;
+                if( nullptr == buffer ) {
+                    errno_res_ = errno;
+                    link_target_ = std::make_shared<file_stats>();
+                    goto errorout;
+                }
+                path_link_len = ::readlink(path.c_str(), buffer, path_link_max_len);
+                if( 0 > path_link_len ) {
+                    errno_res_ = errno;
+                    ::free(buffer);
+                    link_target_ = std::make_shared<file_stats>();
+                    goto errorout;
+                }
+                // Note: if( path_link_len == path_link_max_len ) then buffer may have been truncated
+                link_path = std::string(buffer, path_link_len);
+            }
+            link_target_ = std::make_shared<file_stats>(ctor_cookie(0), dir_item(link_path), path /* symlink */);
+            if( link_target_->is_file() ) {
+                mode_ |= fmode_t::file;
+                if( !link_target_->is_link() ) {
+                    has_fields_ |= field_t::size;
+                    size_ = link_target_->size();
+                }
+            } else if( link_target_->is_dir() ) {
+                mode_ |= fmode_t::dir;
+            } else if( !link_target_->exists() ) {
+                mode_ |= fmode_t::not_existing;
+            } else if( !link_target_->has_access() ) {
+                mode_ |= fmode_t::no_access;
+            }
+        }
     }
+} /* constexpr !_use_statx */
+
+    errorout: ;
 }
 
-file_stats::file_stats(const std::string& _path) noexcept
-: file_stats(dir_item("", _path))
+file_stats::file_stats(const dir_item& item) noexcept
+: file_stats(ctor_cookie(0), item, std::string_view() /* symlink */)
 {}
 
+file_stats::file_stats(const std::string& _path) noexcept
+: file_stats(ctor_cookie(0), dir_item(_path), std::string_view() /* symlink */)
+{}
+
+bool file_stats::has(const field_t fields) const noexcept {
+    return fields == ( has_fields_ & fields );
+}
+
 std::string file_stats::to_string(const bool use_space) const noexcept {
-    std::string res( "file_stats['"+item_.path()+"', "+jau::fs::to_string(mode_) );
+    const std::string link_detail = is_link() ? " -> '" + link_target_->path() + "'" : "";
+    std::string res( "file_stats[");
+    res.append(jau::fs::to_string(mode_))
+       .append(", '"+item_.path()+"'"+link_detail );
     if( 0 == errno_res_ ) {
-        res.append( ", uid " ).append( std::to_string(uid_) ).append( ", gid " ).append( std::to_string(gid_) )
-        .append( ", size " ).append( jau::to_decstring( size_ ) )
-        .append( ", atime " ).append( atime_.to_iso8601_string(use_space) )
-        .append( ", mtime " ).append( mtime_.to_iso8601_string(use_space) )
-        .append( ", ctime " ).append( ctime_.to_iso8601_string(use_space) );
+        if( has( field_t::uid ) ) {
+            res.append( ", uid " ).append( std::to_string(uid_) );
+        }
+        if( has( field_t::gid ) ) {
+            res.append( ", gid " ).append( std::to_string(gid_) );
+        }
+        if( has( field_t::size ) ) {
+            res.append( ", size " ).append( jau::to_decstring( size_ ) );
+        }
+        if( has( field_t::btime ) ) {
+            res.append( ", btime " ).append( btime_.to_iso8601_string(use_space) );
+        }
+        if( has( field_t::atime ) ) {
+            res.append( ", atime " ).append( atime_.to_iso8601_string(use_space) );
+        }
+        if( has( field_t::ctime ) ) {
+            res.append( ", ctime " ).append( ctime_.to_iso8601_string(use_space) );
+        }
+        if( has( field_t::mtime ) ) {
+            res.append( ", mtime " ).append( mtime_.to_iso8601_string(use_space) );
+        }
+        // res.append( ", fields ").append( jau::fs::to_string( has_fields_ ) );
     } else {
         res.append( ", errno " ).append( std::to_string(errno_res_) ).append( ", " ).append( std::string(::strerror(errno_res_)) );
     }
