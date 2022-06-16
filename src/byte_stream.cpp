@@ -298,7 +298,7 @@ ByteInStream_File::ByteInStream_File(const std::string& path, bool use_binary) n
         m_content_size = stats->size();
         m_source = std::make_unique<std::ifstream>(stats->path(), use_binary ? std::ios::binary : std::ios::in);
         if( error() ) {
-            DBG_PRINT("ByteInStream_File::ctor: Error occurred in %s, %s", stats->to_string(true), to_string().c_str());
+            DBG_PRINT("ByteInStream_File::ctor: Error occurred in %s, %s", stats->to_string(true).c_str(), to_string().c_str());
             m_source = nullptr;
         }
     }
