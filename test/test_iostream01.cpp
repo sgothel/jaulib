@@ -58,7 +58,7 @@ class TestIOStream01 {
         TestIOStream01() {
             // produce fresh demo data
 
-            jau::fs::remove(basename_10kiB, false /* recursive */);
+            jau::fs::remove(basename_10kiB);
             {
                 std::string one_line = "Hello World, this is a test and I like it. Exactly 100 characters long. 0123456780 abcdefghjklmnop..";
                 std::ofstream ofs(basename_10kiB, std::ios::out | std::ios::binary);

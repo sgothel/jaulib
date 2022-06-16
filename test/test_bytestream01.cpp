@@ -58,9 +58,9 @@ class TestByteStream01 {
         class data {
             private:
                 static void add_test_file(const std::string name, const size_t size_limit) {
-                    jau::fs::remove(name, false /* recursive */);
-                    jau::fs::remove(name+".enc", false /* recursive */);
-                    jau::fs::remove(name+".enc.dec", false /* recursive */);
+                    jau::fs::remove(name);
+                    jau::fs::remove(name+".enc");
+                    jau::fs::remove(name+".enc.dec");
                     size_t size;
                     {
                         static const std::string one_line = "Hello World, this is a test and I like it. Exactly 100 characters long. 0123456780 abcdefghjklmnop..";
@@ -116,7 +116,7 @@ class TestByteStream01 {
                 const jau::fs::file_stats output_stats(output_fname);
                 if( output_stats.exists() ) {
                     if( output_stats.is_file() ) {
-                        if( !jau::fs::remove(output_fname, false /* recursive */) ) {
+                        if( !jau::fs::remove(output_fname) ) {
                             ERR_PRINT2("ByteStream copy failed: Failed deletion of existing output file %s", output_fname.c_str());
                             return false;
                         }
