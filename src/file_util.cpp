@@ -458,7 +458,7 @@ std::string jau::fs::basename(const std::string_view& path) noexcept {
 
 std::string jau::fs::get_cwd() noexcept {
     char path[PATH_MAX];
-    char* res = getcwd(path, PATH_MAX);
+    char* res = ::getcwd(path, PATH_MAX);
     if( res == path ) {
         return std::string(path);
     } else {
@@ -466,25 +466,19 @@ std::string jau::fs::get_cwd() noexcept {
     }
 }
 
-bool jau::fs::mkdir(const std::string& path, const bool verbose) noexcept {
-    file_stats fstats(path);
+bool jau::fs::mkdir(const std::string& path, const fmode_t mode, const bool verbose) noexcept {
+    file_stats stats(path);
 
-    if( !fstats.ok() ) {
+    if( stats.is_dir() ) {
         if( verbose ) {
-            jau::fprintf_td(stderr, "mkdir stat failed: %s\n", fstats.to_string().c_str());
-        }
-        return false;
-    }
-    if( fstats.is_dir() ) {
-        if( verbose ) {
-            jau::fprintf_td(stderr, "mkdir failed: %s, dir already exists\n", fstats.to_string().c_str());
+            jau::fprintf_td(stderr, "mkdir: dir already exists: %s\n", stats.to_string().c_str());
         }
         return true;
-    } else if( !fstats.exists() ) {
-        const int dir_err = ::mkdir(path.c_str(), S_IRWXU | S_IRWXG ); // excluding others
+    } else if( !stats.exists() ) {
+        const int dir_err = ::mkdir(path.c_str(), posix_protection_bits(mode));
         if ( 0 != dir_err ) {
             if( verbose ) {
-                jau::fprintf_td(stderr, "mkdir failed: %s, errno %d (%s)\n", fstats.to_string().c_str(), errno, strerror(errno));
+                jau::fprintf_td(stderr, "mkdir failed: %s, errno %d (%s)\n", stats.to_string().c_str(), errno, strerror(errno));
             }
             return false;
         } else {
@@ -492,15 +486,14 @@ bool jau::fs::mkdir(const std::string& path, const bool verbose) noexcept {
         }
     } else {
         if( verbose ) {
-            jau::fprintf_td(stderr, "mkdir failed: %s, exists but is no dir\n", fstats.to_string().c_str());
+            jau::fprintf_td(stderr, "mkdir failed: %s, exists but is no dir\n", stats.to_string().c_str());
         }
         return false;
     }
 }
 
-bool jau::fs::touch(const std::string& path, const jau::fraction_timespec& atime, const jau::fraction_timespec& mtime, const bool verbose) noexcept {
-    const ::mode_t mode = 0666;
-    int fd = ::open(path.c_str(), O_WRONLY|O_CREAT|O_NOCTTY|O_NONBLOCK, mode);
+bool jau::fs::touch(const std::string& path, const jau::fraction_timespec& atime, const jau::fraction_timespec& mtime, const fmode_t mode, const bool verbose) noexcept {
+    int fd = ::open(path.c_str(), O_WRONLY|O_CREAT|O_NOCTTY|O_NONBLOCK, posix_protection_bits(mode));
     if( 0 > fd ) {
         if( verbose ) {
             jau::fprintf_td(stderr, "touch failed: Couldn't open/create file '%s', errno %d (%s)\n", path.c_str(), errno, strerror(errno));
@@ -522,9 +515,8 @@ bool jau::fs::touch(const std::string& path, const jau::fraction_timespec& atime
     return res;
 }
 
-bool jau::fs::touch(const std::string& path, const bool verbose) noexcept {
-    const ::mode_t mode = 0666;
-    int fd = ::open(path.c_str(), O_WRONLY|O_CREAT|O_NOCTTY|O_NONBLOCK, mode);
+bool jau::fs::touch(const std::string& path, const fmode_t mode, const bool verbose) noexcept {
+    int fd = ::open(path.c_str(), O_WRONLY|O_CREAT|O_NOCTTY|O_NONBLOCK, posix_protection_bits(mode));
     if( 0 > fd ) {
         if( verbose ) {
             jau::fprintf_td(stderr, "touch failed: Couldn't open/create file '%s', errno %d (%s)\n", path.c_str(), errno, strerror(errno));

@@ -411,28 +411,32 @@ namespace jau {
         /**
          * Create directory
          * @param path full path to new directory
-         * @param verbose
+         * @param mode fmode_t POSIX protection bits used, defaults to jau::fs::fmode_t::def_dir_prot
+         * @param verbose defaults to false
          * @return true if successful, otherwise false
          */
-        bool mkdir(const std::string& path, const bool verbose=false) noexcept;
+        bool mkdir(const std::string& path, const fmode_t mode=jau::fs::fmode_t::def_dir_prot, const bool verbose=false) noexcept;
 
         /**
          * Touch the file with given atime and mtime and create file if not existing yet.
          * @param path full path to file
          * @param atime new access time
          * @param mtime new modification time
-         * @param verbose
+         * @param mode fmode_t POSIX protection bits used, defaults to jau::fs::fmode_t::def_file_prot
+         * @param verbose defaults to false
          * @return true if successful, otherwise false
          */
-        bool touch(const std::string& path, const jau::fraction_timespec& atime, const jau::fraction_timespec& mtime, const bool verbose=false) noexcept;
+        bool touch(const std::string& path, const jau::fraction_timespec& atime, const jau::fraction_timespec& mtime,
+                   const fmode_t mode=jau::fs::fmode_t::def_file_prot, const bool verbose=false) noexcept;
 
         /**
          * Touch the file with current time and create file if not existing yet.
          * @param path full path to file
-         * @param verbose
+         * @param mode fmode_t POSIX protection bits used, defaults to jau::fs::fmode_t::def_file_prot
+         * @param verbose defaults to false
          * @return true if successful, otherwise false
          */
-        bool touch(const std::string& path, const bool verbose=false) noexcept;
+        bool touch(const std::string& path, const fmode_t mode=jau::fs::fmode_t::def_file_prot, const bool verbose=false) noexcept;
 
         /**
          * `void consume_dir_item(const dir_item& item)`
