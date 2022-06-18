@@ -70,15 +70,17 @@ class TestIOStream01 {
                     ofs.write(reinterpret_cast<char*>(one_line.data()), one_line.size());
                 }
             }
-            std::system("killall mini_httpd");
+            int res = std::system("killall mini_httpd");
             const std::string cwd = jau::fs::get_cwd();
             const std::string cmd = "/usr/sbin/mini_httpd -p 8080 -l "+cwd+"/mini_httpd.log";
             jau::PLAIN_PRINT(true, "%s", cmd.c_str());
-            std::system(cmd.c_str());
+            res = std::system(cmd.c_str());
+            (void)res;
         }
 
         ~TestIOStream01() {
-            std::system("killall mini_httpd");
+            int res = std::system("killall mini_httpd");
+            (void)res;
         }
 
         void test00_protocols() {
