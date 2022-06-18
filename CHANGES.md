@@ -8,6 +8,25 @@
 
 * First stable release (TODO)
 
+**0.14.0** (TODO)
+
+* Use `libcurl` optional, enable via cmake option `-DUSE_LIBCURL=ON` and remove dependencies if unused.
+* `libunwind` default is disabled (must be explicitly enabled via `-DUSE_LIBUNWIND=ON`)
+* Fix issues with gcc 9.4 used on Ubuntu 20.04
+* `file_util`, namespace `jau::fs`
+  - `fmode_{bits->t}`: Add full POSIX protection bit support
+  - `file_stats`: Use statx() or { lstat64() and stat64() }, maintain retrieved `field_t`, contain the linked-target as `std::shared_ptr<file_stats>`.
+  - Add dirname() and basename()
+  - Add `fmode_t` POSIX protection bits to mkdir() and touch()
+  - Add `traverse_event` as `path_visitor()` argument and `traverse_options` - both supporting visit(); remove() uses `traverse_options`
+  - Add jau::fs::copy() with [`recursive`, `follow_symlinks`, `overwrite`, `preserve_all`, `sync`] `copy_options`, using visit()
+* Move JavaVM Group to namespace jau::jni
+* Security
+  - `ringbuffer<T>:` Add clear() argument bool zeromem=false, allowing to explicitly zero memory if used w/o `sec_mem`
+  - `ByteInStream_URL`, `ByteInStream_Feed`: Zero ringbuffer at close()/dtor() to be on par with `ByteInStream_SecMemory` and `ByteInStream_File` + `secure_vector<T>` usage.
+  - Add `secure_string` typedef along with `secure_vector` using `::explicit_bzero()` `jau::callocator_sec<T>`
+* Add jau::io::uri to Group IOUtils
+
 **0.13.0**
 
 * `string_util.hpp`: Add `jau::to_string()` support for `std::string` and `std::string_view` as well as for `std::vector<T>` lists
