@@ -98,17 +98,21 @@ class TestByteStream01 {
         }
 
         ~TestByteStream01() {
+#ifdef USE_LIBCURL
             int res = std::system("killall mini_httpd");
             (void)res;
+#endif // USE_LIBCURL
         }
 
         static void httpd_start() {
+#ifdef USE_LIBCURL
             int res = std::system("killall mini_httpd");
             const std::string cwd = jau::fs::get_cwd();
             const std::string cmd = "/usr/sbin/mini_httpd -p 8080 -l "+cwd+"/mini_httpd.log";
             jau::PLAIN_PRINT(true, "%s", cmd.c_str());
             res = std::system(cmd.c_str());
             (void)res;
+#endif // USE_LIBCURL
         }
 
         static bool transfer(jau::io::ByteInStream& input, const std::string& output_fname) {
@@ -168,8 +172,13 @@ class TestByteStream01 {
             {
                 std::vector<std::string_view> protos = jau::io::uri::supported_protocols();
                 jau::PLAIN_PRINT(true, "test00_protocols: Supported protocols: %zu: %s", protos.size(), jau::to_string(protos, ",").c_str());
+#ifdef USE_LIBCURL
                 REQUIRE( 0 < protos.size() );
+#else
+                REQUIRE( 0 == protos.size() );
+#endif // USE_LIBCURL
             }
+#ifdef USE_LIBCURL
             const size_t file_idx = IDX_11kiB;
             {
                 const std::string url = "not_exiting_file.txt";
@@ -217,6 +226,7 @@ class TestByteStream01 {
                 REQUIRE( true == in->error() );
                 REQUIRE( 0 == in->content_size() );
             }
+#endif // USE_LIBCURL
         }
 
         void test00b_protocols_ok() {
@@ -603,12 +613,16 @@ std::vector<std::string> TestByteStream01::fname_payload_copy_lst;
 std::vector<uint64_t> TestByteStream01::fname_payload_size_lst;
 
 METHOD_AS_TEST_CASE( TestByteStream01::test00a_protocols_error, "TestByteStream01 test00a_protocols_error");
-METHOD_AS_TEST_CASE( TestByteStream01::test00b_protocols_ok,    "TestByteStream01 test00b_protocols_ok");
+#ifdef USE_LIBCURL
+    METHOD_AS_TEST_CASE( TestByteStream01::test00b_protocols_ok,    "TestByteStream01 test00b_protocols_ok");
+#endif // USE_LIBCURL
 
 METHOD_AS_TEST_CASE( TestByteStream01::test01_copy_file_ok,     "TestByteStream01 test01_copy_file_ok");
 
-METHOD_AS_TEST_CASE( TestByteStream01::test11_copy_http_ok,     "TestByteStream01 test11_copy_http_ok");
-METHOD_AS_TEST_CASE( TestByteStream01::test12_copy_http_404,    "TestByteStream01 test12_copy_http_404");
+#ifdef USE_LIBCURL
+    METHOD_AS_TEST_CASE( TestByteStream01::test11_copy_http_ok,     "TestByteStream01 test11_copy_http_ok");
+    METHOD_AS_TEST_CASE( TestByteStream01::test12_copy_http_404,    "TestByteStream01 test12_copy_http_404");
+#endif // USE_LIBCURL
 
 METHOD_AS_TEST_CASE( TestByteStream01::test21_copy_fed_ok,      "TestByteStream01 test21_copy_fed_ok");
 METHOD_AS_TEST_CASE( TestByteStream01::test22_copy_fed_irq,     "TestByteStream01 test22_copy_fed_irq");

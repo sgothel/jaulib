@@ -26,7 +26,7 @@ set (jaulib_LIB_SRCS
 add_library (jaulib SHARED ${jaulib_LIB_SRCS})
 target_link_libraries (
   jaulib
-  curl
+  ${LIBCURL_LIBNAME}
   ${LIBUNWIND_LIBNAME}
   ${CMAKE_THREAD_LIBS_INIT}
 )

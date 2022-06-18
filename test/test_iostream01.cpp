@@ -70,25 +70,34 @@ class TestIOStream01 {
                     ofs.write(reinterpret_cast<char*>(one_line.data()), one_line.size());
                 }
             }
+#ifdef USE_LIBCURL
             int res = std::system("killall mini_httpd");
             const std::string cwd = jau::fs::get_cwd();
             const std::string cmd = "/usr/sbin/mini_httpd -p 8080 -l "+cwd+"/mini_httpd.log";
             jau::PLAIN_PRINT(true, "%s", cmd.c_str());
             res = std::system(cmd.c_str());
             (void)res;
+#endif // USE_LIBCURL
         }
 
         ~TestIOStream01() {
+#ifdef USE_LIBCURL
             int res = std::system("killall mini_httpd");
             (void)res;
+#endif // USE_LIBCURL
         }
 
         void test00_protocols() {
             {
                 std::vector<std::string_view> protos = jau::io::uri::supported_protocols();
                 jau::PLAIN_PRINT(true, "test00_protocols: Supported protocols: %zu: %s", protos.size(), jau::to_string(protos, ",").c_str());
+#ifdef USE_LIBCURL
                 REQUIRE( 0 < protos.size() );
+#else
+                REQUIRE( 0 == protos.size() );
+#endif
             }
+#ifdef USE_LIBCURL
             {
                 const std::string url = url_input_root + basename_10kiB;
                 REQUIRE( false == jau::io::uri::is_local_file_protocol(url) );
@@ -143,6 +152,7 @@ class TestIOStream01 {
                 REQUIRE( url_content_length == url_total_read );
                 REQUIRE( jau::io::async_io_result_t::FAILED == result );
             }
+#endif // USE_LIBCURL
         }
 
         void test01_sync_ok() {
@@ -294,8 +304,10 @@ class TestIOStream01 {
 };
 
 METHOD_AS_TEST_CASE( TestIOStream01::test00_protocols, "TestIOStream01 - test00_protocols");
-METHOD_AS_TEST_CASE( TestIOStream01::test01_sync_ok,   "TestIOStream01 - test01_sync_ok");
-METHOD_AS_TEST_CASE( TestIOStream01::test02_sync_404,  "TestIOStream01 - test02_sync_404");
-METHOD_AS_TEST_CASE( TestIOStream01::test11_async_ok,  "TestIOStream01 - test11_async_ok");
-METHOD_AS_TEST_CASE( TestIOStream01::test12_async_404, "TestIOStream01 - test12_async_404");
+#ifdef USE_LIBCURL
+    METHOD_AS_TEST_CASE( TestIOStream01::test01_sync_ok,   "TestIOStream01 - test01_sync_ok");
+    METHOD_AS_TEST_CASE( TestIOStream01::test02_sync_404,  "TestIOStream01 - test02_sync_404");
+    METHOD_AS_TEST_CASE( TestIOStream01::test11_async_ok,  "TestIOStream01 - test11_async_ok");
+    METHOD_AS_TEST_CASE( TestIOStream01::test12_async_404, "TestIOStream01 - test12_async_404");
+#endif // USE_LIBCURL
 

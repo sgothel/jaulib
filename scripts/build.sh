@@ -38,7 +38,10 @@ buildit() {
     mkdir -p build-$archabi
     cd build-$archabi
     # CLANG_ARGS="-DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++"
-    cmake $CLANG_ARGS -DCMAKE_INSTALL_PREFIX=$rootdir/dist-$archabi -DBUILDJAVA=ON -DBUILD_TESTING=ON ..
+    cmake $CLANG_ARGS -DCMAKE_INSTALL_PREFIX=$rootdir/dist-$archabi -DBUILDJAVA=ON -DBUILD_TESTING=ON -DUSE_LIBUNWIND=ON -DUSE_LIBCURL=ON ..
+    # cmake $CLANG_ARGS -DCMAKE_INSTALL_PREFIX=$rootdir/dist-$archabi -DBUILDJAVA=ON -DBUILD_TESTING=ON -DDEBUG=ON -DUSE_LIBUNWIND=ON -DUSE_LIBCURL=ON ..
+
+    # cmake $CLANG_ARGS -DCMAKE_INSTALL_PREFIX=$rootdir/dist-$archabi -DBUILDJAVA=ON -DBUILD_TESTING=ON ..
     # cmake $CLANG_ARGS -DCMAKE_INSTALL_PREFIX=$rootdir/dist-$archabi -DBUILDJAVA=ON -DBUILD_TESTING=ON -DDEBUG=ON ..
 
     # cmake $CLANG_ARGS -DCMAKE_INSTALL_PREFIX=$rootdir/dist-$archabi -DBUILDJAVA=ON -DBUILD_TESTING=ON -DUSE_STRIP=OFF ..

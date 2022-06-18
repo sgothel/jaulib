@@ -33,7 +33,9 @@
 #include <jau/io_util.hpp>
 #include <jau/byte_stream.hpp>
 
-#include <curl/curl.h>
+#ifdef USE_LIBCURL
+    #include <curl/curl.h>
+#endif
 
 #include <thread>
 #include <pthread.h>
@@ -84,14 +86,16 @@ uint64_t jau::io::read_stream(ByteInStream& in,
 }
 
 std::vector<std::string_view> jau::io::uri::supported_protocols() noexcept {
+    std::vector<std::string_view> res;
+#ifdef USE_LIBCURL
     const curl_version_info_data* cvid = curl_version_info(CURLVERSION_NOW);
     if( nullptr == cvid || nullptr == cvid->protocols ) {
-        return std::vector<std::string_view>();
+        return res;
     }
-    std::vector<std::string_view> res;
     for(int i=0; nullptr != cvid->protocols[i]; ++i) {
         res.push_back( std::string_view(cvid->protocols[i]) );
     }
+#endif // USE_LIBCURL
     return res;
 }
 
@@ -129,6 +133,8 @@ bool jau::io::uri::protocol_supported(const std::string_view& uri) noexcept {
 bool jau::io::uri::is_local_file_protocol(const std::string_view& uri) noexcept {
     return 0 == uri.find("file://");
 }
+
+#ifdef USE_LIBCURL
 
 struct curl_glue1_t {
     CURL *curl_handle;
@@ -219,9 +225,12 @@ static size_t consume_data_curl1(char *ptr, size_t size, size_t nmemb, void *use
     return realsize;
 }
 
+#endif // USE_LIBCURL
+
 uint64_t jau::io::read_url_stream(const std::string& url,
                                   secure_vector<uint8_t>& buffer,
                                   StreamConsumerFunc consumer_fn) noexcept {
+#ifdef USE_LIBCURL
     std::vector<char> errorbuffer;
     errorbuffer.reserve(CURL_ERROR_SIZE);
     CURLcode res;
@@ -335,8 +344,15 @@ uint64_t jau::io::read_url_stream(const std::string& url,
 
 errout:
     curl_easy_cleanup(curl_handle);
+#else // USE_LIBCURL
+    (void) url;
+    (void) buffer;
+    (void) consumer_fn;
+#endif // USE_LIBCURL
     return 0;
 }
+
+#ifdef USE_LIBCURL
 
 struct curl_glue2_t {
     curl_glue2_t(CURL *_curl_handle,
@@ -574,6 +590,8 @@ cleanup:
     return;
 }
 
+#endif // USE_LIBCURL
+
 std::unique_ptr<std::thread> jau::io::read_url_stream(const std::string& url,
                                                       ByteRingbuffer& buffer,
                                                       jau::relaxed_atomic_bool& has_content_length,
@@ -585,12 +603,17 @@ std::unique_ptr<std::thread> jau::io::read_url_stream(const std::string& url,
     content_length = 0;
     total_read = 0;
 
+#ifdef USE_LIBCURL
     if( !uri::protocol_supported(url) ) {
+#else // USE_LIBCURL
+        (void) buffer;
+#endif // USE_LIBCURL
         result = io::async_io_result_t::FAILED;
         const std::string_view scheme = uri::get_scheme(url);
         DBG_PRINT("Protocol of given uri-scheme '%s' not supported. Supported protocols [%s].",
                 std::string(scheme).c_str(), to_string(uri::supported_protocols(), ",").c_str());
         return nullptr;
+#ifdef USE_LIBCURL
     }
     result = io::async_io_result_t::NONE;
 
@@ -601,6 +624,7 @@ std::unique_ptr<std::thread> jau::io::read_url_stream(const std::string& url,
     std::unique_ptr<curl_glue2_t> cg ( std::make_unique<curl_glue2_t>(nullptr, has_content_length, content_length, total_read, buffer, result ) );
 
     return std::make_unique<std::thread>(&::read_url_stream_thread, url.c_str(), std::move(cg)); // @suppress("Invalid arguments")
+#endif // USE_LIBCURL
 }
 
 void jau::io::print_stats(const std::string& prefix, const uint64_t& out_bytes_total, const jau::fraction_i64& td) noexcept {

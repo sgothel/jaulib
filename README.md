@@ -52,21 +52,24 @@ but currently only intended to support unit testing and to produce a Doxygen API
 
 The project requires CMake 3.13+ for building and a Java JDK >= 11.
 
-Installing build dependencies on Debian (10 or 11):
+Installing build dependencies for Debian >= 11 and Ubuntu >= 20.04:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}
 apt install git
 apt install build-essential g++ gcc libc-dev libpthread-stubs0-dev 
 apt install libunwind8 libunwind-dev
-apt install openjdk-11-jdk openjdk-11-jre junit4
+apt install openjdk-17-jdk openjdk-17-jre junit4
 apt install cmake cmake-extras extra-cmake-modules
 apt install doxygen graphviz
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To use URL streaming functionality via the `curl` library in `jau_io_util.hpp` and `jau/io_util.cpp`,
+the cmake option `-DUSE_LIBCURL=ON` must be set. <br />
+This also requires installation of the following packets:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}
 apt install libcurl4 libcurl4-gnutls-dev
 apt install mini-httpd
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Note that the `curl` library is only used for `jau/io_util.cpp`
-and `mini-httpd` for its unit test.
-Both can be dropped if not used in your project using jaulib.
+Note: `mini-httpd` is being used for unit testing URL streaming only.
 
 For a generic build use:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}
@@ -101,7 +104,11 @@ Disable stripping native lib even in non debug build:
 -DUSE_STRIP=OFF
 ~~~~~~~~~~~~~
 
+Enable using `libcurl` (default: disabled)
 ~~~~~~~~~~~~~
+-DUSE_LIBCURL=ON
+~~~~~~~~~~~~~
+
 Enable using `libunwind` (default: disabled)
 ~~~~~~~~~~~~~
 -DUSE_LIBUNWIND=ON
