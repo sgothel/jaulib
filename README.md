@@ -101,9 +101,10 @@ Disable stripping native lib even in non debug build:
 -DUSE_STRIP=OFF
 ~~~~~~~~~~~~~
 
-Disable using `libunwind` (default: enabled for all but `arm32`, `armhf`)
 ~~~~~~~~~~~~~
--DUSE_LIBUNWIND=OFF
+Enable using `libunwind` (default: disabled)
+~~~~~~~~~~~~~
+-DUSE_LIBUNWIND=ON
 ~~~~~~~~~~~~~
 
 Disable using `C++ Runtime Type Information` (*RTTI*) (default: enabled)
