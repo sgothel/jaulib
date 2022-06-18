@@ -26,7 +26,7 @@ set (GCC_FLAGS_WARNING_NO_ERROR "-Wno-error=array-bounds -Wno-error=null-derefer
 # set (DISABLED_CC_FLAGS_WARNING "-Wsign-conversion")
 
 # debug only
-set (GCC_FLAGS_STACK "-fstack-protector-strong -fstack-check")
+set (GCC_FLAGS_STACK "-fstack-protector-strong")
 set (GCC_FLAGS_SANITIZE_ALLLEAK "-fsanitize-address-use-after-scope -fsanitize=address -fsanitize=pointer-compare -fsanitize=pointer-subtract -fsanitize=undefined -fsanitize=leak")
 set (GCC_FLAGS_SANITIZE_UNDEFINED "-fsanitize=undefined")
 set (GCC_FLAGS_SANITIZE_THREAD "-fsanitize-address-use-after-scope -fsanitize=undefined -fsanitize=thread")
