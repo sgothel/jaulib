@@ -10,6 +10,7 @@
 
 **0.14.0** (TODO)
 
+* Update Catch2 to v3.0.1, generated 2022-05-17 and adopt build and tests
 * Use `libcurl` optional, enable via cmake option `-DUSE_LIBCURL=ON` and remove dependencies if unused.
 * `libunwind` default is disabled (must be explicitly enabled via `-DUSE_LIBUNWIND=ON`)
 * Fix issues with gcc 9.4 used on Ubuntu 20.04
