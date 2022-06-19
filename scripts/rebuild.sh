@@ -3,7 +3,10 @@
 sdir=`dirname $(readlink -f $0)`
 rootdir=`dirname $sdir`
 bname=`basename $0 .sh`
-logfile=$bname.log
+
+. $sdir/setup-machine-arch.sh
+
+logfile=$rootdir/$bname-$archabi.log
 rm -f $logfile
 
 . $sdir/setup-machine-arch.sh

@@ -3,10 +3,11 @@
 sdir=`dirname $(readlink -f $0)`
 rootdir=`dirname $sdir`
 bname=`basename $0 .sh`
-logfile=$bname.log
-rm -f $logfile
 
 . $sdir/setup-machine-arch.sh
+
+logfile=$rootdir/$bname-$archabi.log
+rm -f $logfile
 
 if [ -e /usr/lib/jvm/java-17-openjdk-$archabi ] ; then
     export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-$archabi
