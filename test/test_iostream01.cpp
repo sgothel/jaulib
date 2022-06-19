@@ -34,9 +34,6 @@
 #include <thread>
 #include <pthread.h>
 
-#define CATCH_CONFIG_RUNNER
-// #define CATCH_CONFIG_MAIN
-#include <catch2/catch_amalgamated.hpp>
 #include <jau/test/catch2_ext.hpp>
 
 #include <jau/file_util.hpp>
