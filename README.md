@@ -37,7 +37,66 @@ Up to date API documentation can be found:
 See *Direct-BT* [C++ API Doc](https://jausoft.com/projects/direct_bt/build/documentation/cpp/html/examples.html).
 
 ## Supported Platforms
-C++17 and better.
+Minimum language requirements
+- C++17
+- Java 11
+
+The following **platforms** are tested and hence supported
+
+**Debian 12 Bookworm (GNU/Linux)**
+- compiler
+  - gcc 11.2.0
+  - clang 13.0.1
+  - openjdk 17
+- architectures
+  - amd64 (validated, Generic)
+
+**Debian 11 Bullseye (GNU/Linux)**
+- compiler
+  - gcc 10.2.1
+  - clang 11.0.1
+  - openjdk 17
+- architectures
+  - amd64 (validated, Generic)
+  - arm64 (should work, Raspberry Pi 3+ and 4)
+  - arm32 (should work, Raspberry Pi 3+ and 4)
+
+**Debian 10 Buster (GNU/Linux)**
+- *deprecated*
+- compiler
+  - gcc 8.3.0
+  - openjdk 11
+- architectures
+  - amd64 (validated, Generic)
+  - arm64 (validated, Raspberry Pi 3+ and 4)
+  - arm32 (validated, Raspberry Pi 3+ and 4)
+- potential issues with *capsh*, see below.
+
+**Ubuntu 22.04 (GNU/Linux)**
+- compiler
+  - gcc 11.2.0
+  - clang 14.0.0
+  - openjdk 17
+- architectures
+  - amd64 (validated, Generic)
+
+**Ubuntu 20.04 (GNU/Linux)**
+- compiler
+  - gcc 9.4.0
+  - clang 10.0.0
+  - openjdk 17
+- architectures
+  - amd64 (validated, Generic)
+
+**Ubuntu 18.04 (GNU/Linux)**
+- *deprecated*
+- compiler
+  - gcc 8.3
+  - openjdk 11
+- architectures
+  - amd64 (validated, Generic)
+- potential issues with *capsh*, see below.
+
 
 ## Building Binaries
 It is advised to include this library into your main project, e.g. as a git-submodule.
@@ -49,6 +108,17 @@ The produced Java libraries are fully functional.
 
 This library's build recipe are functional though, 
 but currently only intended to support unit testing and to produce a Doxygen API doc.
+
+### Build Dependencies
+- CMake 3.13+ but >= 3.18 is recommended
+- gcc >= 8.3.0
+  - or clang >= 10.0
+- Optional
+  - libunwind8 >= 1.2.1
+  - libcurl4 >= 7.74 (tested, lower may work)
+  - For Java support
+    - OpenJDK >= 11
+    - junit4 >= 4.12
 
 The project requires CMake 3.13+ for building and a Java JDK >= 11.
 
