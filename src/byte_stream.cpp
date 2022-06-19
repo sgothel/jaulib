@@ -36,7 +36,9 @@
 #include <jau/file_util.hpp>
 #include <jau/byte_stream.hpp>
 
-#include <curl/curl.h>
+#ifdef USE_LIBCURL
+    #include <curl/curl.h>
+#endif
 
 #include <thread>
 #include <pthread.h>
@@ -44,7 +46,11 @@
 using namespace jau::io;
 using namespace jau::fractions_i64_literals;
 
-const size_t jau::io::BEST_URLSTREAM_RINGBUFFER_SIZE = 2*CURL_MAX_WRITE_SIZE;
+#ifdef USE_LIBCURL
+    const size_t jau::io::BEST_URLSTREAM_RINGBUFFER_SIZE = 2*CURL_MAX_WRITE_SIZE;
+#else
+    const size_t jau::io::BEST_URLSTREAM_RINGBUFFER_SIZE = 2*16384;
+#endif
 
 inline constexpr void copy_mem(uint8_t* out, const uint8_t* in, size_t n) noexcept {
     if(in != nullptr && out != nullptr && n > 0) {
