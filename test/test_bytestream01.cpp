@@ -398,6 +398,7 @@ class TestByteStream01 {
             }
             // probably set after transfering due to above sleep, which also ends when total size has been reached.
             data_feed->set_eof( jau::io::async_io_result_t::SUCCESS );
+            (void)xfer_total; // not used yet ..
         }
 
         // throttled, with content size
