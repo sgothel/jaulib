@@ -39,7 +39,7 @@ See *Direct-BT* [C++ API Doc](https://jausoft.com/projects/direct_bt/build/docum
 ## Supported Platforms
 Minimum language requirements
 - C++17
-- Java 11
+- Java 11 (optional)
 
 The following **platforms** are tested and hence supported
 
