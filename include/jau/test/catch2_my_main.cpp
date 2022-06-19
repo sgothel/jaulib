@@ -33,6 +33,7 @@
 #ifndef CATCH2_MY_MAIN_H
 #define CATCH2_MY_MAIN_H
 
+#define CATCH_AMALGAMATED_CUSTOM_MAIN 1
 #include <catch2/catch_amalgamated.hpp>
 
 /** Run w/o command-line args, i.e. default CI unit test. */
@@ -41,7 +42,7 @@ bool catch_auto_run;
 /** Run w/ command-line arg '--perf_analysis'. */
 bool catch_perf_analysis;
 
-static char * extra_args[] = { (char*)"--use-colour", (char*)"no" };
+static char * extra_args[] = { (char*)"--colour-mode", (char*)"none" };
 static int extra_args_c = sizeof(extra_args) / sizeof(const char *);
 
 int main( int argc, char* argv[] )

@@ -8,9 +8,7 @@ set (catch2_LIB_SRCS
 
 add_library (catch2 STATIC ${catch2_LIB_SRCS})
 
-if(CMAKE_COMPILER_IS_GNUCC)
-target_compile_options(catch2 PUBLIC "-Wno-error=format-overflow" "-Wno-format-overflow")
-endif(CMAKE_COMPILER_IS_GNUCC)
+target_compile_options(catch2 PUBLIC "-DCATCH_AMALGAMATED_CUSTOM_MAIN=1")
 
 # install(TARGETS catch2 LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
