@@ -272,7 +272,9 @@ namespace jau {
 
                 dir_item item_;
 
-                std::shared_ptr<file_stats> link_target_; // Link-target a symbolic-link points to if is_link(), otherwise nullptr.
+                std::shared_ptr<std::string> link_target_path_; // stored link-target path this symbolic-link points to if is_link(), otherwise nullptr.
+                std::shared_ptr<file_stats> link_target_; // link-target this symbolic-link points to if is_link(), otherwise nullptr.
+
                 fmode_t mode_;
                 uid_t uid_;
                 gid_t gid_;
@@ -285,14 +287,14 @@ namespace jau {
                 int errno_res_;
 
                 /** Private class only for private make_shared(). */
-                class ctor_cookie { friend file_stats; ctor_cookie(const uint16_t secret) { (void)secret; } };
+                class ctor_cookie { friend file_stats; uint16_t rec_level; ctor_cookie(const uint16_t recursion_level_) { rec_level=recursion_level_; } };
 
             public:
                 /** Instantiate an empty file_stats with fmode_t::not_existing set. */
                 file_stats() noexcept;
 
                 /** Private ctor for private make_shared<file_stats>() intended for friends. */
-                file_stats(const ctor_cookie& cc, const dir_item& item, const std::string_view follow_symlink) noexcept;
+                file_stats(const ctor_cookie& cc, const dir_item& item) noexcept;
 
                 /**
                  * Instantiates a file_stats for the given `path`.
@@ -309,14 +311,59 @@ namespace jau {
                  */
                 file_stats(const dir_item& item) noexcept;
 
-                /** Returns the dir_item. */
+                /**
+                 * Returns the dir_item.
+                 *
+                 * In case this instance is created by following a symbolic link instance,
+                 * it represents the resolved path relative to the used symbolic link's dirname.
+                 *
+                 * @see is_link()
+                 * @see path()
+                 */
                 const dir_item& item() const noexcept { return item_; }
 
-                /** Returns a unix path representation. */
+                /**
+                 * Returns the unix path representation.
+                 *
+                 * In case this instance is created by following a symbolic link instance,
+                 * it represents the resolved path relative to the used symbolic link's dirname.
+                 *
+                 * @see is_link()
+                 * @see item()
+                 */
                 std::string path() const noexcept { return item_.path(); }
 
-                /** Returns the link-target a symbolic-link points to if is_link(), otherwise nullptr. */
+                /**
+                 * Returns the stored link-target path this symbolic-link points to if instance is a symbolic-link, otherwise nullptr.
+                 *
+                 * @see is_link()
+                 * @see link_target()
+                 * @see final_target()
+                 */
+                const std::shared_ptr<std::string>& link_target_path() const noexcept { return link_target_path_; }
+
+                /**
+                 * Returns the link-target this symbolic-link points to if instance is a symbolic-link, otherwise nullptr.
+                 *
+                 * nullptr is also returned for an erroneous symbolic-links, i.e. non-existing link-targets or recursive loop-errors.
+                 *
+                 * @see is_link()
+                 * @see link_target_path()
+                 * @see final_target()
+                 */
                 const std::shared_ptr<file_stats>& link_target() const noexcept { return link_target_; }
+
+                /**
+                 * Returns the final target element, either a pointer to this instance if not a symbolic-link
+                 * or the final link-target a symbolic-link (chain) points to.
+                 *
+                 * @param link_count optional size_t pointer to store the number of symbolic links leading to the final target, excluding the final instance. 0 indicates no symbolic-link;
+                 *
+                 * @see is_link()
+                 * @see link_target_path()
+                 * @see link_target()
+                 */
+                const file_stats* final_target(size_t* link_count=nullptr) const noexcept;
 
                 /** Returns true if the given field_t fields were retrieved, otherwise false. */
                 bool has(const field_t fields) const noexcept;
@@ -694,14 +741,21 @@ namespace jau {
             /** Copy referenced symbolic linked files or directories instead of just the symbolic link with property fmode_t::link set. */
             follow_symlinks = 1 << 1,
 
+            /**
+             * Ignore errors from erroneous symlinks, i.e. non-existing link-targets or recursive loop-errors.
+             *
+             * This flag is required to copy erroneous symlinks using follow_symlinks, otherwise not.
+             */
+            ignore_symlink_errors = 1 << 8,
+
             /** Overwrite existing destination files, always. */
-            overwrite = 1 << 8,
+            overwrite = 1 << 9,
 
             /** Preserve uid and gid if allowed and access- and modification-timestamps, i.e. producing a most exact meta-data copy. */
-            preserve_all = 1 << 9,
+            preserve_all = 1 << 10,
 
             /** Ensure data and meta-data file synchronization is performed via ::fsync() after asynchronous copy operations of a file's content. */
-            sync = 1 << 10,
+            sync = 1 << 11,
 
             /** Enable verbosity mode, show error messages on stderr. */
             verbose = 1 << 15

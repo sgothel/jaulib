@@ -340,27 +340,26 @@ std::string jau::fs::to_string(const file_stats::field_t mask) noexcept {
 }
 
 file_stats::file_stats() noexcept
-: has_fields_(field_t::none), item_(), link_target_(), mode_(fmode_t::not_existing),
+: has_fields_(field_t::none), item_(), link_target_path_(), link_target_(), mode_(fmode_t::not_existing),
   uid_(0), gid_(0), size_(0), btime_(), atime_(), ctime_(), mtime_(),
   errno_res_(0)
 {}
 
 static constexpr bool jau_has_stat(const uint32_t mask, const uint32_t bit) { return bit == ( mask & bit ); }
 
-file_stats::file_stats(const ctor_cookie& cc, const dir_item& item, const std::string_view symlink) noexcept
-: has_fields_(field_t::none), item_(item), link_target_(), mode_(fmode_t::none),
+file_stats::file_stats(const ctor_cookie& cc, const dir_item& item) noexcept
+: has_fields_(field_t::none), item_(item), link_target_path_(), link_target_(), mode_(fmode_t::none),
   uid_(0), gid_(0), size_(0), btime_(), atime_(), ctime_(), mtime_(),
   errno_res_(0)
 {
     (void)cc;
-    const bool follow_symlink = symlink.size() > 0;
-    const std::string path(follow_symlink ? symlink : item_.path());
+    const std::string path( item_.path() );
 
 if constexpr ( _use_statx ) {
     struct ::statx s;
     ::bzero(&s, sizeof(s));
     int stat_res = ::statx(AT_FDCWD, path.c_str(),
-                           ( AT_NO_AUTOMOUNT | ( follow_symlink ? 0 : AT_SYMLINK_NOFOLLOW ) ),
+                           ( AT_NO_AUTOMOUNT | AT_SYMLINK_NOFOLLOW ),
                            ( STATX_BASIC_STATS | STATX_BTIME ), &s);
     if( 0 != stat_res ) {
         switch( errno ) {
@@ -434,8 +433,8 @@ if constexpr ( _use_statx ) {
             has_fields_ |= field_t::btime;
             btime_ = jau::fraction_timespec( s.stx_btime.tv_sec, s.stx_btime.tv_nsec );
         }
-        if( is_link() && !follow_symlink ) {
-            // follow symbolic link (only once), retrieve info from underlying file
+        if( is_link() ) {
+            // follow symbolic link recursively until !exists(), is_file() or is_dir()
             std::string link_path;
             {
                 const ssize_t path_link_max_len = 0 < s.stx_size ? s.stx_size + 1 : PATH_MAX;
@@ -456,13 +455,46 @@ if constexpr ( _use_statx ) {
                 // Note: if( path_link_len == path_link_max_len ) then buffer may have been truncated
                 link_path = std::string(buffer, path_link_len);
             }
-            link_target_ = std::make_shared<file_stats>(ctor_cookie(0), dir_item(link_path), path /* symlink */);
+            link_target_path_ = std::make_shared<std::string>(link_path);
+            if( 0 == cc.rec_level ) {
+                // Initial symbolic followed: Test recursive loop-error
+                constexpr const bool _debug = false;
+                ::bzero(&s, sizeof(s));
+                stat_res = ::statx(AT_FDCWD, path.c_str(), AT_NO_AUTOMOUNT, STATX_BASIC_STATS, &s);
+                if( 0 != stat_res ) {
+                    if constexpr ( _debug ) {
+                        jau::fprintf_td(stderr, "file_stats(%d): Test link ERROR: '%s', %d, errno %d (%s)\n", (int)cc.rec_level, path.c_str(), stat_res, errno, ::strerror(errno));
+                    }
+                    switch( errno ) {
+                        case EACCES:
+                            mode_ |= fmode_t::no_access;
+                            break;
+                        case ELOOP:
+                            // Too many symbolic links encountered while traversing the pathname
+                            [[fallthrough]];
+                        case ENOENT:
+                            // A component of pathname does not exist
+                            [[fallthrough]];
+                        default:
+                            // Anything else ..
+                            mode_ |= fmode_t::not_existing;
+                            break;
+                    }
+                    goto errorout;
+                }
+                if constexpr ( _debug ) {
+                    jau::fprintf_td(stderr, "file_stats(%d): Test link OK: '%s'\n", (int)cc.rec_level, path.c_str());
+                }
+            }
+            if( 0 < link_path.size() && '/' == link_path[0] ) {
+                link_target_ = std::make_shared<file_stats>(ctor_cookie(cc.rec_level+1), dir_item( link_path )); // absolute link_path
+            } else {
+                link_target_ = std::make_shared<file_stats>(ctor_cookie(cc.rec_level+1), dir_item( jau::fs::dirname(path) + _slash + link_path ));
+            }
             if( link_target_->is_file() ) {
                 mode_ |= fmode_t::file;
-                if( !link_target_->is_link() ) {
-                    has_fields_ |= field_t::size;
-                    size_ = link_target_->size();
-                }
+                has_fields_ |= field_t::size;
+                size_ = link_target_->size();
             } else if( link_target_->is_dir() ) {
                 mode_ |= fmode_t::dir;
             } else if( !link_target_->exists() ) {
@@ -475,7 +507,7 @@ if constexpr ( _use_statx ) {
 } else { /* constexpr !_use_statx */
     struct ::stat64 s;
     ::bzero(&s, sizeof(s));
-    int stat_res = follow_symlink ? ::stat64(path.c_str(), &s) : ::lstat64(path.c_str(), &s);
+    int stat_res = ::lstat64(path.c_str(), &s);
     if( 0 != stat_res ) {
         switch( errno ) {
             case EACCES:
@@ -492,13 +524,16 @@ if constexpr ( _use_statx ) {
         }
     } else {
         has_fields_ = field_t::type  | field_t::mode  | field_t::uid   | field_t::gid |
-                      field_t::atime | field_t::ctime | field_t::mtime | field_t::size;
+                      field_t::atime | field_t::ctime | field_t::mtime;
 
         if( S_ISLNK( s.st_mode ) ) {
             mode_ |= fmode_t::link;
         }
         if( S_ISREG( s.st_mode ) ) {
             mode_ |= fmode_t::file;
+            if( !is_link() ) {
+                has_fields_ |= field_t::size;
+            }
         } else if( S_ISDIR( s.st_mode ) ) {
             mode_ |= fmode_t::dir;
         }
@@ -513,8 +548,8 @@ if constexpr ( _use_statx ) {
         ctime_ = jau::fraction_timespec( s.st_ctim.tv_sec, s.st_ctim.tv_nsec );
         mtime_ = jau::fraction_timespec( s.st_mtim.tv_sec, s.st_mtim.tv_nsec );
 
-        if( is_link() && !follow_symlink ) {
-            // follow symbolic link (only once), retrieve info from underlying file
+        if( is_link() ) {
+            // follow symbolic link recursively until !exists(), is_file() or is_dir()
             std::string link_path;
             {
                 const ssize_t path_link_max_len = 0 < s.st_size ? s.st_size + 1 : PATH_MAX;
@@ -535,13 +570,39 @@ if constexpr ( _use_statx ) {
                 // Note: if( path_link_len == path_link_max_len ) then buffer may have been truncated
                 link_path = std::string(buffer, path_link_len);
             }
-            link_target_ = std::make_shared<file_stats>(ctor_cookie(0), dir_item(link_path), path /* symlink */);
+            link_target_path_ = std::make_shared<std::string>(link_path);
+            if( 0 == cc.rec_level ) {
+                // Initial symbolic followed: Test recursive loop-error
+                ::bzero(&s, sizeof(s));
+                stat_res = ::stat64(path.c_str(), &s);
+                if( 0 != stat_res ) {
+                    switch( errno ) {
+                        case EACCES:
+                            mode_ |= fmode_t::no_access;
+                            break;
+                        case ELOOP:
+                            // Too many symbolic links encountered while traversing the pathname
+                            [[fallthrough]];
+                        case ENOENT:
+                            // A component of pathname does not exist
+                            [[fallthrough]];
+                        default:
+                            // Anything else ..
+                            mode_ |= fmode_t::not_existing;
+                            break;
+                    }
+                    goto errorout;
+                }
+            }
+            if( 0 < link_path.size() && '/' == link_path[0] ) {
+                link_target_ = std::make_shared<file_stats>(ctor_cookie(cc.rec_level+1), dir_item( link_path )); // absolute link_path
+            } else {
+                link_target_ = std::make_shared<file_stats>(ctor_cookie(cc.rec_level+1), dir_item( jau::fs::dirname(path) + _slash + link_path ));
+            }
             if( link_target_->is_file() ) {
                 mode_ |= fmode_t::file;
-                if( !link_target_->is_link() ) {
-                    has_fields_ |= field_t::size;
-                    size_ = link_target_->size();
-                }
+                has_fields_ |= field_t::size;
+                size_ = link_target_->size();
             } else if( link_target_->is_dir() ) {
                 mode_ |= fmode_t::dir;
             } else if( !link_target_->exists() ) {
@@ -557,22 +618,47 @@ if constexpr ( _use_statx ) {
 }
 
 file_stats::file_stats(const dir_item& item) noexcept
-: file_stats(ctor_cookie(0), item, std::string_view() /* symlink */)
+: file_stats(ctor_cookie(0), item)
 {}
 
 file_stats::file_stats(const std::string& _path) noexcept
-: file_stats(ctor_cookie(0), dir_item(_path), std::string_view() /* symlink */)
+: file_stats(ctor_cookie(0), dir_item(_path))
 {}
+
+const file_stats* file_stats::final_target(size_t* link_count) const noexcept {
+    size_t count = 0;
+    const file_stats* fs0 = this;
+    const file_stats* fs1 = fs0->link_target().get();
+    while( nullptr != fs1 ) {
+        ++count;
+        fs0 = fs1;
+        fs1 = fs0->link_target().get();
+    }
+    if( nullptr != link_count ) {
+        *link_count = count;
+    }
+    return fs0;
+}
 
 bool file_stats::has(const field_t fields) const noexcept {
     return fields == ( has_fields_ & fields );
 }
 
 std::string file_stats::to_string(const bool use_space) const noexcept {
-    const std::string link_detail = is_link() ? " -> '" + link_target_->path() + "'" : "";
+    std::string stored_path, link_detail;
+    {
+        if( nullptr != link_target_path_ ) {
+            stored_path = " [-> "+*link_target_path_+"]";
+        }
+        size_t link_count;
+        const file_stats* final_target_ = final_target(&link_count);
+        if( 0 < link_count ) {
+            link_detail = " -(" + std::to_string(link_count) + ")-> '" + final_target_->path() + "'";
+        }
+    }
     std::string res( "file_stats[");
     res.append(jau::fs::to_string(mode_))
-       .append(", '"+item_.path()+"'"+link_detail );
+       .append(", '"+item_.path()+"'"+stored_path+link_detail );
     if( 0 == errno_res_ ) {
         if( has( field_t::uid ) ) {
             res.append( ", uid " ).append( std::to_string(uid_) );
@@ -680,8 +766,8 @@ bool jau::fs::get_dir_content(const std::string& path, const consume_dir_item& d
     if( ( dir = ::opendir( path.c_str() ) ) != nullptr ) {
         while ( ( ent = ::readdir( dir ) ) != NULL ) {
             std::string fname( ent->d_name );
-            if( "." != fname && ".." != fname ) { // avoid '.' and '..'
-                digest( dir_item( path, fname ) );
+            if( _dot != fname && _dotdot != fname ) { // avoid '.' and '..'
+                digest( dir_item( path + _slash + fname ) );
             }
         }
         ::closedir (dir);
@@ -807,6 +893,7 @@ bool jau::fs::remove(const std::string& path, const traverse_options topts) noex
 #define COPYOPTIONS_BIT_ENUM(X,M) \
     X(copy_options,recursive,M) \
     X(copy_options,follow_symlinks,M) \
+    X(copy_options,ignore_symlink_errors,M) \
     X(copy_options,overwrite,M) \
     X(copy_options,preserve_all,M) \
     X(copy_options,sync,M)
@@ -845,19 +932,19 @@ static bool copy_file(const file_stats& source_stats, const std::string& dest_pa
 
     // copy as symbolic link
     if( source_stats.is_link() && !is_set(copts, copy_options::follow_symlinks) ) {
-        const std::string link_target_path = source_stats.link_target()->path();
-        if( 0 == link_target_path.size() ) {
+        const std::shared_ptr<std::string> link_target_path = source_stats.link_target_path();
+        if( nullptr == link_target_path || 0 == link_target_path->size() ) {
             if( is_set(copts, copy_options::verbose) ) {
                 jau::fprintf_td(stderr, "copy: Error: Symbolic link-path is empty %s\n", source_stats.to_string().c_str());
             }
             return false;
         }
         // symlink
-        const int res = ::symlink(link_target_path.c_str(), dest_path.c_str());
+        const int res = ::symlink(link_target_path->c_str(), dest_path.c_str());
         if( 0 > res ) {
             if( is_set(copts, copy_options::verbose) ) {
                 jau::fprintf_td(stderr, "copy: Error: Creating symlink failed %s -> %s, errno %d, %s\n",
-                        dest_path.c_str(), link_target_path.c_str(), errno, ::strerror(errno));
+                        dest_path.c_str(), link_target_path->c_str(), errno, ::strerror(errno));
             }
             return false;
         }
@@ -887,7 +974,7 @@ static bool copy_file(const file_stats& source_stats, const std::string& dest_pa
         return true;
     }
     // copy actual file bytes
-    const file_stats* target_stats = source_stats.is_link() ? source_stats.link_target().get() : &source_stats;
+    const file_stats* target_stats = source_stats.final_target(); // follows symlinks up to definite item
     const fmode_t dest_mode = target_stats->prot_mode();
     const fmode_t omitted_permissions = dest_mode & ( fmode_t::rwx_grp | fmode_t::rwx_oth );
 
@@ -902,8 +989,11 @@ static bool copy_file(const file_stats& source_stats, const std::string& dest_pa
     } // else we are not allowed to not use O_NOATIME
     src = ::open64(source_stats.path().c_str(), src_flags);
     if ( 0 > src ) {
+        if( source_stats.is_link() ) {
+            res = is_set(copts, copy_options::ignore_symlink_errors);
+        }
         if( is_set(copts, copy_options::verbose) ) {
-            jau::fprintf_td(stderr, "copy: Error: Failed to open source %s, errno %d, %s\n", source_stats.to_string().c_str(), errno, ::strerror(errno));
+            jau::fprintf_td(stderr, "copy: %s: Failed to open source %s, errno %d, %s\n", res?"Ignored":"Error", source_stats.to_string().c_str(), errno, ::strerror(errno));
         }
         goto errout;
     }
@@ -1155,13 +1245,13 @@ bool jau::fs::copy(const std::string& source_path, const std::string& target_pat
                     std::string element_path = element_stats.path();
                     std::string element_path_trail;
                     if( ctx->source_path_len < element_path.size() ) {
-                        element_path_trail = "/" + element_path.substr(ctx->source_path_len+1);
+                        element_path_trail = _slash + element_path.substr(ctx->source_path_len+1);
                     }
                     std::string target_path_;
                     if( ctx->target_path_is_root ) {
                         target_path_ = ctx->target_stats.path() + element_path_trail;
                     } else {
-                        target_path_ = ctx->target_stats.path() + "/" + ctx->source_basename + element_path_trail;
+                        target_path_ = ctx->target_stats.path() + _slash + ctx->source_basename + element_path_trail;
                     }
                     if( is_set(tevt, traverse_event::dir_entry) ) {
                         const file_stats target_stats_(target_path_);
