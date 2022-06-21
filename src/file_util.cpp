@@ -59,6 +59,208 @@ using namespace jau::fs;
     static constexpr const bool _use_sendfile = false;
 #endif
 
+std::string jau::fs::get_cwd() noexcept {
+    char path[PATH_MAX];
+    char* res = ::getcwd(path, PATH_MAX);
+    if( res == path ) {
+        return std::string(path);
+    } else {
+        return std::string();
+    }
+}
+
+static const std::string _slash("/");
+static const std::string _slash_dot_slash("/./");
+static const std::string _slash_dot("/.");
+static const std::string _dot_slash("./");
+static const std::string _dot(".");
+static const std::string _slash_dotdot_slash("/../");
+static const std::string _slash_dotdot("/..");
+static const std::string _dotdot("..");
+
+std::string jau::fs::dirname(const std::string_view& path) noexcept {
+    if( 0 == path.size() ) {
+        return _dot;
+    }
+    size_t end_pos;
+    if( '/' == path[path.size()-1] ) {
+        if( 1 == path.size() ) { // maintain a single '/'
+            return std::string(path);
+        }
+        end_pos = path.size()-2;
+    } else {
+        end_pos = path.size()-1;
+    }
+    size_t idx = path.find_last_of('/', end_pos);
+    if( idx == std::string_view::npos ) {
+        return _dot;
+    } else {
+        // ensure `/lala` -> '/', i.e. don't cut off single '/'
+        return std::string( path.substr(0, std::max<size_t>(1, idx)) );
+    }
+}
+
+std::string jau::fs::basename(const std::string_view& path) noexcept {
+    if( 0 == path.size() ) {
+        return _dot;
+    }
+    size_t end_pos;
+    if( '/' == path[path.size()-1] ) {
+        if( 1 == path.size() ) { // maintain a single '/'
+            return std::string(path);
+        }
+        end_pos = path.size()-2;
+    } else {
+        end_pos = path.size()-1;
+    }
+    size_t idx = path.find_last_of('/', end_pos);
+    if( idx == std::string_view::npos ) {
+        return std::string( path.substr(0, end_pos+1));
+    } else {
+        return std::string( path.substr(idx+1, end_pos-idx) );
+    }
+}
+
+static std::string jau_resolve_dir(std::string_view path_) {
+    constexpr const bool _debug = false;
+
+    if constexpr ( _debug ) {
+        jau::fprintf_td(stderr, "X.0: path '%s'\n", std::string(path_).c_str());
+    }
+
+    if( _dot == path_ || _slash == path_ ) {
+        return std::string(path_);
+    }
+
+    // remove initial './'
+    if( 0 == path_.find(_dot_slash) ) {
+        path_ = path_.substr(2, path_.size()-2);
+    }
+
+    // remove trailing slash if not ending with '/./' or '/../'
+    if( '/' == path_[path_.size()-1] &&
+        ( path_.size() < 3 || std::string_view::npos == path_.find(_slash_dot_slash, path_.size()-3) ) &&
+        ( path_.size() < 4 || std::string_view::npos == path_.find(_slash_dotdot_slash, path_.size()-4) )
+      )
+    {
+        path_ = path_.substr(0, path_.size()-1);
+    }
+
+    std::string path2(path_);
+
+    // append final '/' to complete '/../' or '/./' sequence
+    if( ( path_.size() >= 3 && std::string_view::npos != path_.find(_slash_dotdot, path_.size()-3) ) ||
+        ( path_.size() >= 2 && std::string_view::npos != path_.find(_slash_dot, path_.size()-2) ) ){
+        path2.append(_slash);
+    }
+
+    if constexpr ( _debug ) {
+        jau::fprintf_td(stderr, "X.1: path2 '%s'\n", path2.c_str());
+    }
+
+    // resolve '/./'
+    size_t idx;
+    do {
+        idx = path2.find(_slash_dot_slash);
+        if( std::string_view::npos != idx ) {
+            std::string pre = path2.substr(0, idx);
+            if( 0 == pre.size() ) {
+                // case '/./bbb' -> '/bbb'
+                path2 = path2.substr(idx+2);
+            } else if( _dot == pre ) {
+                // case '././bbb' -> 'bbb'
+                path2 = path2.substr(idx+3);
+            } else {
+                // case '/zzz/aaa/./bbb' -> '/zzz/aaa/bbb'
+                path2 = pre.append( path2.substr(idx+2) );
+            }
+            if constexpr ( _debug ) {
+                jau::fprintf_td(stderr, "X.2.2: path2: '%s'\n", path2.c_str());
+            }
+        }
+    } while( idx != std::string_view::npos );
+    if constexpr ( _debug ) {
+        jau::fprintf_td(stderr, "X.2.X: path2: '%s'\n", path2.c_str());
+    }
+
+    // resolve '/../'
+    size_t spos=0;
+    do {
+        idx = path2.find(_slash_dotdot_slash, spos);
+        if( std::string_view::npos != idx ) {
+            if( 0 == idx ) {
+                // case '/../bbb' -> Error, End
+                ERR_PRINT2("dir_item::resolve: '..' resolution error: '%s' -> '%s'", std::string(path_).c_str(), path2.c_str());
+                return path2;
+            }
+            std::string pre = path2.substr(0, idx);
+            if( _dotdot == pre ) {
+                // case '../../bbb' -> '../../bbb' unchanged
+                spos = idx+4;
+            } else if( _dot == pre ) {
+                // case './../bbb' -> '../bbb'
+                path2 = path2.substr(idx+1);
+            } else {
+                pre = jau::fs::dirname( pre );
+                if( _slash == pre ) {
+                    // case '/aaa/../bbb' -> '/bbb'
+                    path2 = path2.substr(idx+3);
+                } else {
+                    // case '/zzz/aaa/../bbb' -> '/zzz/bbb'
+                    path2 = pre.append( path2.substr(idx+3) );
+                }
+            }
+            if constexpr ( _debug ) {
+                jau::fprintf_td(stderr, "X.3.2: path2: '%s'\n", path2.c_str());
+            }
+        }
+    } while( idx != std::string_view::npos );
+    if constexpr ( _debug ) {
+        jau::fprintf_td(stderr, "X.3.X: path2: '%s'\n", path2.c_str());
+    }
+
+    // remove trailing slash in path2
+    if( '/' == path2[path2.size()-1] ) {
+        path2 = path2.substr(0, path2.size()-1);
+    }
+    if constexpr ( _debug ) {
+        jau::fprintf_td(stderr, "X.X: path2: '%s'\n", path2.c_str());
+    }
+    return path2;
+}
+
+
+dir_item::dir_item(const std::string_view& path_) noexcept
+: dirname_(jau::fs::dirname(path_)), basename_(jau::fs::basename(path_)) {
+    if( std::string_view::npos != path_.find(_dot_slash) || std::string_view::npos != path_.find(_slash_dot) ) {
+        const std::string path2 = jau_resolve_dir(path_);
+        dirname_ = jau::fs::dirname(path2);
+        basename_ = jau::fs::basename(path2);
+    }
+    if( _slash == dirname_ && _slash == basename_ ) { // remove duplicate '/' in basename
+        basename_ = _dot;
+    }
+}
+
+
+std::string dir_item::path() const noexcept {
+    if( _dot ==  dirname_ ) {
+        return basename_;
+    }
+    if( _dot ==  basename_ ) {
+        return dirname_;
+    }
+    if( _slash == dirname_ ) {
+        return dirname_ + basename_;
+    }
+    return dirname_ + _slash + basename_;
+}
+
+std::string dir_item::to_string() const noexcept {
+    return "['"+dirname()+"', '"+basename()+"']";
+}
+
+
 template<typename T>
 static void append_bitstr(std::string& out, T mask, T bit, const std::string& bitstr, bool& comma) {
     if( is_set( mask, bit )) {
@@ -113,19 +315,6 @@ std::string jau::fs::to_string(const fmode_t mask, const bool show_rwx) noexcept
         out.append(std::string(buf, len));
     }
     return out;
-}
-
-std::string dir_item::path() const noexcept {
-    if( parent_dir_.size() > 0 ) {
-        if( element_.size() > 0 ) {
-            return parent_dir_ + "/" + element_;
-        } else {
-            // item shall not be empty
-            return parent_dir_;
-        }
-    } else {
-        return element_;
-    }
 }
 
 #define FILESTATS_FIELD_ENUM(X,M) \
@@ -412,58 +601,6 @@ std::string file_stats::to_string(const bool use_space) const noexcept {
     }
     res.append("]");
     return res;
-}
-
-std::string jau::fs::dirname(const std::string_view& path) noexcept {
-    if( 0 == path.size() ) {
-        return std::string();
-    }
-    size_t end_pos;
-    if( '/' == path[path.size()-1] ) {
-        if( 1 == path.size() ) { // maintain a single '/'
-            return std::string(path);
-        }
-        end_pos = path.size()-2;
-    } else {
-        end_pos = path.size()-1;
-    }
-    size_t idx = path.find_last_of('/', end_pos);
-    if( idx == std::string_view::npos ) {
-        return ".";
-    } else {
-        return std::string( path.substr(0, idx) );
-    }
-}
-
-std::string jau::fs::basename(const std::string_view& path) noexcept {
-    if( 0 == path.size() ) {
-        return std::string();
-    }
-    size_t end_pos;
-    if( '/' == path[path.size()-1] ) {
-        if( 1 == path.size() ) { // maintain a single '/'
-            return std::string(path);
-        }
-        end_pos = path.size()-2;
-    } else {
-        end_pos = path.size()-1;
-    }
-    size_t idx = path.find_last_of('/', end_pos);
-    if( idx == std::string_view::npos ) {
-        return std::string( path.substr(0, end_pos+1));
-    } else {
-        return std::string( path.substr(idx+1, end_pos-idx) );
-    }
-}
-
-std::string jau::fs::get_cwd() noexcept {
-    char path[PATH_MAX];
-    char* res = ::getcwd(path, PATH_MAX);
-    if( res == path ) {
-        return std::string(path);
-    } else {
-        return std::string();
-    }
 }
 
 bool jau::fs::mkdir(const std::string& path, const fmode_t mode, const bool verbose) noexcept {

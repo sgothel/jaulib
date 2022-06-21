@@ -191,6 +191,13 @@ class TestFileUtil01 {
             }
         }
         {
+            const std::string pathname0 = "/lala.txt";
+            const std::string pathname1 = jau::fs::dirname(pathname0);
+            INFO_STR("\n\ntest02_dirname: cwd "+pathname0+" -> "+pathname1+"\n");
+            REQUIRE( 0 < pathname1.size() );
+            REQUIRE( pathname1 == "/" );
+        }
+        {
             const std::string pathname0 = "blabla/jaulib/test/sub.txt";
             const std::string pathname1 = jau::fs::dirname(pathname0);
             INFO_STR("\n\ntest02_dirname: cwd "+pathname0+" -> "+pathname1+"\n");
@@ -252,6 +259,13 @@ class TestFileUtil01 {
             }
         }
         {
+            const std::string pathname0 = "/lala.txt";
+            const std::string pathname1 = jau::fs::basename(pathname0);
+            INFO_STR("\n\ntest03_basename: cwd "+pathname0+" -> "+pathname1+"\n");
+            REQUIRE( 0 < pathname1.size() );
+            REQUIRE( pathname1 == "lala.txt" );
+        }
+        {
             const std::string pathname0 = "blabla/jaulib/test/sub.txt";
             const std::string pathname1 = jau::fs::basename(pathname0);
             INFO_STR("\n\ntest03_basename: cwd "+pathname0+" -> "+pathname1+"\n");
@@ -276,8 +290,244 @@ class TestFileUtil01 {
         }
     }
 
-    void test04_file_stat() {
-        INFO_STR("\n\ntest04_file_stat\n");
+    void test04_dir_item() {
+        {
+            const std::string dirname_;
+            const jau::fs::dir_item di(dirname_);
+            INFO_STR("\n\ntest04_dir_item: 01 '"+dirname_+"' -> "+di.to_string()+" -> '"+di.path()+"'\n");
+            REQUIRE( "." == di.dirname() );
+            REQUIRE( "." == di.basename() );
+            REQUIRE( "." == di.path() );
+        }
+        {
+            const std::string dirname_(".");
+            const jau::fs::dir_item di(dirname_);
+            INFO_STR("\n\ntest04_dir_item: 02 '"+dirname_+"' -> "+di.to_string()+" -> '"+di.path()+"'\n");
+            REQUIRE( "." == di.dirname() );
+            REQUIRE( "." == di.basename() );
+            REQUIRE( "." == di.path() );
+        }
+        {
+            const std::string dirname_("/");
+            const jau::fs::dir_item di(dirname_);
+            INFO_STR("\n\ntest04_dir_item: 03 '"+dirname_+"' -> "+di.to_string()+" -> '"+di.path()+"'\n");
+            REQUIRE( "/" == di.dirname() );
+            REQUIRE( "." == di.basename() );
+            REQUIRE( "/" == di.path() );
+        }
+
+        {
+            const std::string path1_ = "lala";
+            const jau::fs::dir_item di(path1_);
+            INFO_STR("\n\ntest04_dir_item: 10 '"+path1_+" -> "+di.to_string()+" -> '"+di.path()+"'\n");
+            REQUIRE( "." == di.dirname() );
+            REQUIRE( "lala" == di.basename() );
+            REQUIRE( "lala" == di.path() );
+        }
+        {
+            const std::string path1_ = "lala/";
+            const jau::fs::dir_item di(path1_);
+            INFO_STR("\n\ntest04_dir_item: 11 '"+path1_+" -> "+di.to_string()+" -> '"+di.path()+"'\n");
+            REQUIRE( "." == di.dirname() );
+            REQUIRE( "lala" == di.basename() );
+            REQUIRE( "lala" == di.path() );
+        }
+
+        {
+            const std::string path1_ = "/lala";
+            const jau::fs::dir_item di(path1_);
+            INFO_STR("\n\ntest04_dir_item: 12 '"+path1_+" -> "+di.to_string()+" -> '"+di.path()+"'\n");
+            REQUIRE( "/" == di.dirname() );
+            REQUIRE( "lala" == di.basename() );
+            REQUIRE( "/lala" == di.path() );
+        }
+
+        {
+            const std::string path1_ = "dir0/lala";
+            const jau::fs::dir_item di(path1_);
+            INFO_STR("\n\ntest04_dir_item: 20 '"+path1_+" -> "+di.to_string()+" -> '"+di.path()+"'\n");
+            REQUIRE( "dir0" == di.dirname() );
+            REQUIRE( "lala" == di.basename() );
+            REQUIRE( "dir0/lala" == di.path() );
+        }
+        {
+            const std::string path1_ = "dir0/lala/";
+            const jau::fs::dir_item di(path1_);
+            INFO_STR("\n\ntest04_dir_item: 21 '"+path1_+" -> "+di.to_string()+" -> '"+di.path()+"'\n");
+            REQUIRE( "dir0" == di.dirname() );
+            REQUIRE( "lala" == di.basename() );
+            REQUIRE( "dir0/lala" == di.path() );
+        }
+        {
+            const std::string path1_ = "/dir0/lala";
+            const jau::fs::dir_item di(path1_);
+            INFO_STR("\n\ntest04_dir_item: 22 '"+path1_+" -> "+di.to_string()+" -> '"+di.path()+"'\n");
+            REQUIRE( "/dir0" == di.dirname() );
+            REQUIRE( "lala" == di.basename() );
+            REQUIRE( "/dir0/lala" == di.path() );
+        }
+        {
+            const std::string path1_ = "/dir0/lala/";
+            const jau::fs::dir_item di(path1_);
+            INFO_STR("\n\ntest04_dir_item: 23 '"+path1_+" -> "+di.to_string()+" -> '"+di.path()+"'\n");
+            REQUIRE( "/dir0" == di.dirname() );
+            REQUIRE( "lala" == di.basename() );
+            REQUIRE( "/dir0/lala" == di.path() );
+        }
+
+
+        {
+            const std::string path1_ = "/dir0/../lala";
+            const jau::fs::dir_item di(path1_);
+            INFO_STR("\n\ntest04_dir_item: 30 '"+path1_+" -> "+di.to_string()+" -> '"+di.path()+"'\n");
+            REQUIRE( "/" == di.dirname() );
+            REQUIRE( "lala" == di.basename() );
+            REQUIRE( "/lala" == di.path() );
+        }
+        {
+            const std::string path1_ = "dir0/../lala";
+            const jau::fs::dir_item di(path1_);
+            INFO_STR("\n\ntest04_dir_item: 31 '"+path1_+" -> "+di.to_string()+" -> '"+di.path()+"'\n");
+            REQUIRE( "." == di.dirname() );
+            REQUIRE( "lala" == di.basename() );
+            REQUIRE( "lala" == di.path() );
+        }
+        {
+            const std::string path1_ = "../../lala";
+            const jau::fs::dir_item di(path1_);
+            INFO_STR("\n\ntest04_dir_item: 32 '"+path1_+" -> "+di.to_string()+" -> '"+di.path()+"'\n");
+            REQUIRE( "../.." == di.dirname() );
+            REQUIRE( "lala" == di.basename() );
+            REQUIRE( "../../lala" == di.path() );
+        }
+        {
+            const std::string path1_ = "./../lala";
+            const jau::fs::dir_item di(path1_);
+            INFO_STR("\n\ntest04_dir_item: 33 '"+path1_+" -> "+di.to_string()+" -> '"+di.path()+"'\n");
+            REQUIRE( ".." == di.dirname() );
+            REQUIRE( "lala" == di.basename() );
+            REQUIRE( "../lala" == di.path() );
+        }
+        {
+            const std::string path1_ = "dir0/../../lala";
+            const jau::fs::dir_item di(path1_);
+            INFO_STR("\n\ntest04_dir_item: 34 '"+path1_+" -> "+di.to_string()+" -> '"+di.path()+"'\n");
+            REQUIRE( ".." == di.dirname() );
+            REQUIRE( "lala" == di.basename() );
+            REQUIRE( "../lala" == di.path() );
+        }
+
+        {
+            const std::string path1_ = "dir0/dir1/../lala";
+            const jau::fs::dir_item di(path1_);
+            INFO_STR("\n\ntest04_dir_item: 40 '"+path1_+" -> "+di.to_string()+" -> '"+di.path()+"'\n");
+            REQUIRE( "dir0" == di.dirname() );
+            REQUIRE( "lala" == di.basename() );
+            REQUIRE( "dir0/lala" == di.path() );
+        }
+        {
+            const std::string path1_ = "/dir0/dir1/../lala/";
+            const jau::fs::dir_item di(path1_);
+            INFO_STR("\n\ntest04_dir_item: 41 '"+path1_+" -> "+di.to_string()+" -> '"+di.path()+"'\n");
+            REQUIRE( "/dir0" == di.dirname() );
+            REQUIRE( "lala" == di.basename() );
+            REQUIRE( "/dir0/lala" == di.path() );
+        }
+        {
+            const std::string path1_ = "dir0/dir1/../bbb/ccc/../lala";
+            const jau::fs::dir_item di(path1_);
+            INFO_STR("\n\ntest04_dir_item: 42 '"+path1_+" -> "+di.to_string()+" -> '"+di.path()+"'\n");
+            REQUIRE( "dir0/bbb" == di.dirname() );
+            REQUIRE( "lala" == di.basename() );
+            REQUIRE( "dir0/bbb/lala" == di.path() );
+        }
+        {
+            const std::string path1_ = "dir0/dir1/bbb/../../lala";
+            const jau::fs::dir_item di(path1_);
+            INFO_STR("\n\ntest04_dir_item: 43 '"+path1_+" -> "+di.to_string()+" -> '"+di.path()+"'\n");
+            REQUIRE( "dir0" == di.dirname() );
+            REQUIRE( "lala" == di.basename() );
+            REQUIRE( "dir0/lala" == di.path() );
+        }
+        {
+            const std::string path1_ = "dir0/dir1/bbb/../../../lala";
+            const jau::fs::dir_item di(path1_);
+            INFO_STR("\n\ntest04_dir_item: 44 '"+path1_+" -> "+di.to_string()+" -> '"+di.path()+"'\n");
+            REQUIRE( "." == di.dirname() );
+            REQUIRE( "lala" == di.basename() );
+            REQUIRE( "lala" == di.path() );
+        }
+        {
+            const std::string path1_ = "dir0/dir1/bbb/../../../../lala";
+            const jau::fs::dir_item di(path1_);
+            INFO_STR("\n\ntest04_dir_item: 45 '"+path1_+" -> "+di.to_string()+" -> '"+di.path()+"'\n");
+            REQUIRE( ".." == di.dirname() );
+            REQUIRE( "lala" == di.basename() );
+            REQUIRE( "../lala" == di.path() );
+        }
+        {
+            const std::string path1_ = "dir0/dir1/bbb/../../lala/..";
+            const jau::fs::dir_item di(path1_);
+            INFO_STR("\n\ntest04_dir_item: 46 '"+path1_+" -> "+di.to_string()+" -> '"+di.path()+"'\n");
+            REQUIRE( "." == di.dirname() );
+            REQUIRE( "dir0" == di.basename() );
+            REQUIRE( "dir0" == di.path() );
+        }
+        {
+            const std::string path1_ = "dir0/./dir1/./bbb/../.././lala";
+            const jau::fs::dir_item di(path1_);
+            INFO_STR("\n\ntest04_dir_item: 50 '"+path1_+" -> "+di.to_string()+" -> '"+di.path()+"'\n");
+            REQUIRE( "dir0" == di.dirname() );
+            REQUIRE( "lala" == di.basename() );
+            REQUIRE( "dir0/lala" == di.path() );
+        }
+        {
+            const std::string path1_ = "dir0/./dir1/./bbb/../.././lala/.";
+            const jau::fs::dir_item di(path1_);
+            INFO_STR("\n\ntest04_dir_item: 51 '"+path1_+" -> "+di.to_string()+" -> '"+di.path()+"'\n");
+            REQUIRE( "dir0" == di.dirname() );
+            REQUIRE( "lala" == di.basename() );
+            REQUIRE( "dir0/lala" == di.path() );
+        }
+        {
+            const std::string path1_ = "./dir0/./dir1/./bbb/../.././lala/.";
+            const jau::fs::dir_item di(path1_);
+            INFO_STR("\n\ntest04_dir_item: 51 '"+path1_+" -> "+di.to_string()+" -> '"+di.path()+"'\n");
+            REQUIRE( "dir0" == di.dirname() );
+            REQUIRE( "lala" == di.basename() );
+            REQUIRE( "dir0/lala" == di.path() );
+        }
+        {
+            const std::string path1_ = "/./dir0/./dir1/./bbb/../.././lala/.";
+            const jau::fs::dir_item di(path1_);
+            INFO_STR("\n\ntest04_dir_item: 52 '"+path1_+" -> "+di.to_string()+" -> '"+di.path()+"'\n");
+            REQUIRE( "/dir0" == di.dirname() );
+            REQUIRE( "lala" == di.basename() );
+            REQUIRE( "/dir0/lala" == di.path() );
+        }
+
+        {
+            const std::string path1_ = "../../test_data/file_01_slink09R1.txt";
+            const jau::fs::dir_item di(path1_);
+            INFO_STR("\n\ntest04_dir_item: 60 '"+path1_+" -> "+di.to_string()+" -> '"+di.path()+"'\n");
+            REQUIRE( "../../test_data" == di.dirname() );
+            REQUIRE( "file_01_slink09R1.txt" == di.basename() );
+            REQUIRE( "../../test_data/file_01_slink09R1.txt" == di.path() );
+        }
+
+        {
+            // Error
+            const std::string path1_ = "/../lala";
+            const jau::fs::dir_item di(path1_);
+            INFO_STR("\n\ntest04_dir_item: 99 '"+path1_+" -> "+di.to_string()+" -> '"+di.path()+"'\n");
+            REQUIRE( "/.." == di.dirname() );
+            REQUIRE( "lala" == di.basename() );
+            REQUIRE( "/../lala" == di.path() );
+        }
+    }
+
+    void test05_file_stat() {
+        INFO_STR("\n\ntest05_file_stat\n");
 
         {
             jau::fs::file_stats stats(project_root_ext+"/file_01.txt");
@@ -1007,7 +1257,8 @@ class TestFileUtil01 {
 METHOD_AS_TEST_CASE( TestFileUtil01::test01_cwd,                "Test TestFileUtil01 - test01_cwd");
 METHOD_AS_TEST_CASE( TestFileUtil01::test02_dirname,            "Test TestFileUtil01 - test02_dirname");
 METHOD_AS_TEST_CASE( TestFileUtil01::test03_basename,           "Test TestFileUtil01 - test03_basename");
-METHOD_AS_TEST_CASE( TestFileUtil01::test04_file_stat,          "Test TestFileUtil01 - test04_file_stat");
+METHOD_AS_TEST_CASE( TestFileUtil01::test04_dir_item,           "Test TestFileUtil01 - test04_dir_item");
+METHOD_AS_TEST_CASE( TestFileUtil01::test05_file_stat,          "Test TestFileUtil01 - test05_file_stat");
 
 METHOD_AS_TEST_CASE( TestFileUtil01::test10_mkdir,              "Test TestFileUtil01 - test10_mkdir");
 METHOD_AS_TEST_CASE( TestFileUtil01::test11_touch,              "Test TestFileUtil01 - test11_touch");

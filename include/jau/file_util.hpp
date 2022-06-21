@@ -45,6 +45,69 @@ namespace jau {
          */
 
         /**
+         * Return the current working directory or empty on failure.
+         */
+        std::string get_cwd() noexcept;
+
+        /**
+         * Return stripped last component from given path separated by `/`, excluding the trailing separator `/`.
+         *
+         * If no directory separator `/` is contained, return `.`.
+         *
+         * If only the root path `/` is given, return `/`.
+         *
+         * @param path given path
+         * @return leading directory name w/o slash or `.`
+         */
+        std::string dirname(const std::string_view& path) noexcept;
+
+        /**
+         * Return stripped leading directory components from given path separated by `/`.
+         *
+         * If only the root path `/` is given, return `/`.
+         *
+         * @param path given path
+         * @return last non-slash component or `.`
+         */
+        std::string basename(const std::string_view& path) noexcept;
+
+        /**
+         * Representing a directory item split into dirname() and basename().
+         */
+        class dir_item {
+            private:
+                std::string dirname_;
+                std::string basename_;
+
+            public:
+                dir_item() noexcept
+                : dirname_(), basename_() {}
+
+                /**
+                 * Implementation reduces the path, if containing `..` or '.' elements.
+                 *
+                 * @param path_ the full path of the item, which will be split into dirname and basename.
+                 */
+                dir_item(const std::string_view& path_) noexcept;
+
+                /** Returns the dirname, shall not be empty and denotes `.` for current working director. */
+                const std::string& dirname() const noexcept { return dirname_; }
+
+                /** Return the basename, shall not be empty nor contain a dirname. */
+                const std::string& basename() const noexcept { return basename_; }
+
+                /**
+                 * Returns a full unix path representation combining dirname() and basename().
+                 */
+                std::string path() const noexcept;
+
+                /**
+                 * Returns a comprehensive string representation of this item
+                 */
+                std::string to_string() const noexcept;
+        };
+
+        /**
          * Generic file type and POSIX protection mode bits as used in file_stats, touch(), mkdir() etc.
          *
          * The POSIX protection mode bits reside in the lower 16-bits and are bit-wise POSIX compliant
@@ -166,37 +229,6 @@ namespace jau {
 
         /** Returns the POSIX protection bits: rwx_all | set_uid | set_gid | sticky, i.e. fmode_t masked with fmode_t::protection_mask. */
         constexpr ::mode_t posix_protection_bits(const fmode_t mask) noexcept { return static_cast<::mode_t>(mask & fmode_t::protection_mask); }
-
-        /**
-         * Representing a directory element, optionally split into parent_dir() and item(),
-         * where item() shall not be empty.
-         */
-        class dir_item {
-            private:
-                std::string parent_dir_;
-                std::string element_;
-
-            public:
-                dir_item() noexcept
-                : parent_dir_(), element_() {}
-
-                dir_item(const std::string_view& parent_dir__, const std::string_view& element__) noexcept
-                : parent_dir_(parent_dir__), element_(element__) {}
-
-                dir_item(const std::string_view& element__) noexcept
-                : parent_dir_(), element_(element__) {}
-
-                /** Returns the parent dir, may be empty. */
-                const std::string& parent_dir() const noexcept { return parent_dir_; }
-
-                /** Return the directory element, shall not be empty and may contain full path. */
-                const std::string& element() const noexcept { return element_; }
-
-                /**
-                 * Returns a unix path representation combining parent_dir() and element().
-                 */
-                std::string path() const noexcept;
-        };
 
         /**
          * Platform agnostic C++ representation of POSIX ::lstat() and ::stat()
@@ -384,29 +416,6 @@ namespace jau {
             return bits == ( mask & bits );
         }
         std::string to_string(const file_stats::field_t mask) noexcept;
-
-        /**
-         * Return stripped last component from given path separated by `/`, excluding the trailing separator `/`.
-         *
-         * If no directory separator `/` is contained, return `.`.
-         *
-         * @param path given path
-         * @return leading directory name w/o slash or `.`
-         */
-        std::string dirname(const std::string_view& path) noexcept;
-
-        /**
-         * Return stripped leading directory components from given path separated by `/`.
-         *
-         * @param path given path
-         * @return last non-slash component or `.`
-         */
-        std::string basename(const std::string_view& path) noexcept;
-
-        /**
-         * Return the current working directory or empty on failure.
-         */
-        std::string get_cwd() noexcept;
 
         /**
          * Create directory
