@@ -79,14 +79,29 @@ namespace jau {
                 std::string dirname_;
                 std::string basename_;
 
+                struct backed_string_view {
+                    std::string backing;
+                    std::string_view view;
+
+                    backed_string_view(std::string&& backing_, const std::string_view& view_ ) noexcept
+                    : backing(std::move(backing_)), view(view_) {}
+
+                    backed_string_view(const std::string_view& view_ ) noexcept
+                    : backing(), view(view_) {}
+                };
+                static backed_string_view reduce(const std::string_view& path_) noexcept;
+
+                dir_item(const backed_string_view cleanpath) noexcept;
+
             public:
+
                 dir_item() noexcept
                 : dirname_(), basename_() {}
 
                 /**
-                 * Implementation reduces the path, if containing `..` or '.' elements.
+                 * Create a dir_item where path is split into dirname and basename after `.` and `..` has been reduced.
                  *
-                 * @param path_ the full path of the item, which will be split into dirname and basename.
+                 * @param path_ the raw path
                  */
                 dir_item(const std::string_view& path_) noexcept;
 
