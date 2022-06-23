@@ -10,11 +10,14 @@
 
 **0.14.0** (TODO)
 
+* Add `jau::fs::mount_image()` and `umount()`, enable testing via `-DTEST_WITH_SUDO=ON` as it requires `root` permissions.
 * Update Catch2 to v3.0.1, generated 2022-05-17 and adopt build and tests
 * Use `libcurl` optional, enable via cmake option `-DUSE_LIBCURL=ON` and remove dependencies if unused.
 * `libunwind` default is disabled (must be explicitly enabled via `-DUSE_LIBUNWIND=ON`)
 * Fix issues with gcc 9.4 used on Ubuntu 20.04
 * `file_util`, namespace `jau::fs`
+  - `file_stats` fully maps symbolic links via `link_target()` and exposing stored `link_target_path()`
+  - `dir_item` reduces `.` and `..` in given path, drop taking splitted dirname and basename arguments
   - `fmode_{bits->t}`: Add full POSIX protection bit support
   - `file_stats`: Use statx() or { lstat64() and stat64() }, maintain retrieved `field_t`, contain the linked-target as `std::shared_ptr<file_stats>`.
   - Add dirname() and basename()
