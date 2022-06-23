@@ -34,8 +34,10 @@ extern "C" {
     #include <sys/stat.h>
 #ifdef __linux__
     #include <sys/sendfile.h>
+    #include <linux/loop.h>
 #endif
     #include <sys/types.h>
+    #include <sys/mount.h>
     #include <dirent.h>
     #include <fcntl.h>
     #include <unistd.h>
@@ -1390,5 +1392,143 @@ bool jau::fs::copy(const std::string& source_path, const std::string& target_pat
                     return true;
                   } ) );
     return jau::fs::visit(source_stats, topts, pv);
+}
+
+jau::fs::mount_ctx jau::fs::mount_image(const std::string& image_path, const std::string& mount_point, const std::string& fs_type,
+                                        const unsigned long mountflags, const std::string fs_options)
+{
+    file_stats image_stats(image_path);
+    if( !image_stats.is_file()) {
+        return mount_ctx();
+    }
+    file_stats target_stats(mount_point);
+    if( !target_stats.is_dir()) {
+        return mount_ctx();
+    }
+    int backingfile = ::open64(image_stats.path().c_str(), O_RDWR);
+    if( 0 > backingfile )  {
+        jau::fprintf_td(stderr, "mount: Error: Couldn't open image-file '%s': res %d, errno %d (%s)\n",
+                image_stats.to_string().c_str(), backingfile, errno, ::strerror(errno));
+        return mount_ctx();
+    }
+#ifdef __linux__
+    int loop_device_id = -1;
+    int loop_ctl_fd = -1, loop_device_fd = -1;
+    char loopname[4096];
+    void* fs_options_cstr = nullptr;
+    int mount_res = -1;
+
+    loop_ctl_fd = ::open64("/dev/loop-control", O_RDWR);
+    if( 0 > loop_ctl_fd ) {
+        jau::fprintf_td(stderr, "mount: Error: Couldn't open loop-control: res %d, errno %d (%s)\n",
+                loop_ctl_fd, errno, ::strerror(errno));
+        goto errout;
+    }
+
+    loop_device_id = (int) ::ioctl(loop_ctl_fd, LOOP_CTL_GET_FREE);
+    if( 0 > loop_device_id ) {
+        jau::fprintf_td(stderr, "mount: Error: Couldn't get free loop-device: res %d, errno %d (%s)\n",
+                loop_device_id, errno, ::strerror(errno));
+        goto errout;
+    }
+    ::close(loop_ctl_fd);
+    loop_ctl_fd = -1;
+
+    snprintf(loopname, sizeof(loopname), "/dev/loop%d", loop_device_id);
+    jau::fprintf_td(stderr, "mount: Info: Using loop-device '%s'\n", loopname);
+
+    loop_device_fd = ::open64(loopname, O_RDWR);
+    if( 0 > loop_device_fd ) {
+        jau::fprintf_td(stderr, "mount: Error: Couldn't open loop-device '%s': res %d, errno %d (%s)\n",
+                loopname, loop_device_fd, errno, ::strerror(errno));
+        goto errout;
+    }
+    if( 0 > ::ioctl(loop_device_fd, LOOP_SET_FD, backingfile) ) {
+        jau::fprintf_td(stderr, "mount: Error: Couldn't attach image-file '%s' to loop-device '%s': errno %d (%s)\n",
+                image_stats.to_string().c_str(), loopname, errno, ::strerror(errno));
+        goto errout;
+    }
+    ::close(loop_device_fd);
+    loop_device_fd = -1;
+    ::close(backingfile);
+    backingfile = -1;
+
+    if( fs_options.size() > 0 ) {
+        fs_options_cstr = (void*) fs_options.data();
+    }
+    mount_res = ::mount(loopname, target_stats.path().c_str(), fs_type.c_str(), mountflags, fs_options_cstr);
+    if( 0 != mount_res ) {
+        jau::fprintf_td(stderr, "mount: Error: source_path %s, target_path %s, fs_type %s, res %d, errno %d (%s)\n",
+                image_path.c_str(), mount_point.c_str(), fs_type.c_str(), mount_res, errno, ::strerror(errno));
+        ::ioctl(loop_device_fd, LOOP_CLR_FD, 0);
+        goto errout;
+    }
+    return mount_ctx(mount_point, loop_device_id);
+
+errout:
+    if( 0 <= loop_ctl_fd ) {
+        ::close(loop_ctl_fd);
+    }
+    if( 0 <= loop_device_fd ) {
+        ::close(loop_device_fd);
+    }
+#else
+    (void)fs_type;
+    (void)mountflags;
+    (void)fs_options;
+#endif
+    if( 0 <= backingfile ) {
+        ::close(backingfile);
+    }
+    return mount_ctx();
+}
+
+bool jau::fs::umount(const mount_ctx& context)
+{
+    if( !context.mounted) {
+        return false;
+    }
+    file_stats target_stats(context.mount_point);
+    if( !target_stats.is_dir()) {
+        return false;
+    }
+    const int umount_res = ::umount(target_stats.path().c_str());
+    if( 0 != umount_res ) {
+        jau::fprintf_td(stderr, "umount: Error: Couldn't umount '%s': res %d, errno %d (%s)\n",
+                target_stats.to_string().c_str(), umount_res, errno, ::strerror(errno));
+    }
+    if( 0 > context.loop_device_id ) {
+        // mounted w/o loop-device, done
+        return 0 == umount_res;
+    }
+#ifdef __linux__
+    int loop_device_fd = -1;
+    char loopname[4096];
+
+    snprintf(loopname, sizeof(loopname), "/dev/loop%d", context.loop_device_id);
+    jau::fprintf_td(stderr, "umount: Info: Using loop-device '%s'\n", loopname);
+
+    loop_device_fd = ::open64(loopname, O_RDWR);
+    if( 0 > loop_device_fd ) {
+        jau::fprintf_td(stderr, "umount: Error: Couldn't open loop-device '%s': res %d, errno %d (%s)\n",
+                loopname, loop_device_fd, errno, ::strerror(errno));
+        goto errout;
+    }
+    if( 0 > ::ioctl(loop_device_fd, LOOP_CLR_FD, 0) ) {
+        jau::fprintf_td(stderr, "umount: Error: Couldn't deattach loop-device '%s': errno %d (%s)\n",
+                loopname, errno, ::strerror(errno));
+        goto errout;
+    }
+    ::close(loop_device_fd);
+    loop_device_fd = -1;
+
+    return 0 == umount_res;
+
+errout:
+    if( 0 <= loop_device_fd ) {
+        ::close(loop_device_fd);
+    }
+#endif
+    return false;
 }
 

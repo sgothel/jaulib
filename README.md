@@ -114,6 +114,17 @@ Building debug build:
 -DDEBUG=ON
 ~~~~~~~~~~~~~
 
+Add unit tests to build (default: disabled)
+~~~~~~~~~~~~~
+-DBUILD_TESTING=ON
+~~~~~~~~~~~~~
+
+Add unit tests requiring `sudo` to build (default: disabled),
+this option required `-DBUILD_TESTING=ON` to be effective.
+~~~~~~~~~~~~~
+-DTEST_WITH_SUDO=ON
+~~~~~~~~~~~~~
+
 Disable stripping native lib even in non debug build:
 ~~~~~~~~~~~~~
 -DUSE_STRIP=OFF

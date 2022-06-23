@@ -851,6 +851,47 @@ namespace jau {
          */
         bool copy(const std::string& source_path, const std::string& dest_path, const copy_options copts = copy_options::none) noexcept;
 
+        struct mount_ctx {
+            bool mounted;
+            std::string mount_point;
+            int loop_device_id;
+
+            mount_ctx(const std::string& mount_point_, const int loop_device_id_)
+            : mounted(true), mount_point(mount_point_), loop_device_id(loop_device_id_) {}
+
+            mount_ctx()
+            : mounted(false), mount_point(), loop_device_id(-1) {}
+        };
+
+        /**
+         * Attach the filesystem image named in `image_path` to `target_path`.
+         *
+         * This method requires root permissions.
+         *
+         * @param image_path path of image source file
+         * @param mount_point directory where `image_path` shall be attached to
+         * @param fs_type type of filesystem, e.g. `squashfs`, `tmpfs`, `iso9660`, etc.
+         * @param mountflags mount flags, e.g. `MS_LAZYTIME | MS_NOATIME | MS_RDONLY` for a read-only lazy-time and no-atime filesystem.
+         * @param fs_options special filesystem options
+         * @return mount_ctx structure containing mounted status etc
+         *
+         * @see umount()
+         */
+        mount_ctx mount_image(const std::string& image_path, const std::string& mount_point, const std::string& fs_type,
+                              const unsigned long mountflags, const std::string fs_options="");
+
+        /**
+         * Detach the given mount_ctc `context`
+         *
+         * This method requires root permissions.
+         *
+         * @param context mount_ctx previously attached via mount_image()
+         * @return true if successful, otherwise false
+         *
+         * @see mount_image()
+         */
+        bool umount(const mount_ctx& context);
+
         /**@}*/
 
     } /* namespace fs */

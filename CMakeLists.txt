@@ -36,6 +36,14 @@ include_directories (${SYSTEM_USR_DIR})
 
 add_subdirectory (src)
 
+message(STATUS "${PROJECT_NAME} TEST_WITH_SUDO = ${TEST_WITH_SUDO} (pre-set)")
+if(NOT DEFINED TEST_WITH_SUDO)
+    set(TEST_WITH_SUDO OFF)
+    message(STATUS "${PROJECT_NAME} TEST_WITH_SUDO ${TEST_WITH_SUDO} (default)")
+else()
+    message(STATUS "${PROJECT_NAME} TEST_WITH_SUDO ${TEST_WITH_SUDO} (user)")
+endif()
+
 IF(BUILDJAVA)
     configure_file (${CMAKE_CURRENT_SOURCE_DIR}/java_base/manifest.txt.in ${CMAKE_CURRENT_BINARY_DIR}/java_base/manifest.txt)
     configure_file (${CMAKE_CURRENT_SOURCE_DIR}/java_jni/manifest.txt.in ${CMAKE_CURRENT_BINARY_DIR}/java_jni/manifest.txt)
