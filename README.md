@@ -41,7 +41,7 @@ Minimum language requirements
 - C++17
 - Java 11 (optional)
 
-See [supported Platforms](PLATFORMS.md) for details.
+See [supported platforms](PLATFORMS.md) for details.
 
 ## Building Binaries
 It is advised to include this library into your main project, e.g. as a git-submodule.
