@@ -964,7 +964,7 @@ bool jau::fs::compare(const file_stats& source1, const file_stats& source2, cons
         if( ( rc1 = ::read(src1, buffer1, sizeof(buffer1)) ) > 0 ) {
             ssize_t bytes_to_write = rc1;
             size_t buffer_offset = 0;
-            while( 0 < bytes_to_write ) { // write the read chunk, allowing potential multiple write-ops
+            while( 0 < bytes_to_write ) { // src2-read required src1 size in chunks, allowing potential multiple read-ops to match src1 size
                 if( ( rc2 = ::read(src2, buffer2+buffer_offset, bytes_to_write) ) < 0 ) {
                     break;
                 }
@@ -1009,10 +1009,10 @@ bool jau::fs::compare(const file_stats& source1, const file_stats& source2, cons
     }
     res = true;
 errout:
-    if( 0 < src1 ) {
+    if( 0 <= src1 ) {
         ::close(src1);
     }
-    if( 0 < src2 ) {
+    if( 0 <= src2 ) {
         ::close(src2);
     }
     return res;
