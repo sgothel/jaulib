@@ -736,6 +736,16 @@ namespace jau {
         bool remove(const std::string& path, const traverse_options topts=traverse_options::none) noexcept;
 
         /**
+         * Compare the bytes of both files, denoted by source1 and source2.
+         *
+         * @param source1 first source file to compare
+         * @param source2 second source file to compare
+         * @param verbose defaults to false
+         * @return true if both elements are files and their bytes are equal, otherwise false.
+         */
+        bool compare(const file_stats& source1, const file_stats& source2, const bool verbose=false) noexcept;
+
+        /**
          * Filesystem copy options used to copy() path elements.
          *
          * By default, the fmode_t POSIX protection mode bits are preserved

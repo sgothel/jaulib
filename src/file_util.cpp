@@ -914,6 +914,108 @@ std::string jau::fs::to_string(const copy_options mask) noexcept {
     return out;
 }
 
+bool jau::fs::compare(const file_stats& source1, const file_stats& source2, const bool verbose) noexcept {
+    if( !source1.is_file() ) {
+        if( verbose ) {
+            jau::fprintf_td(stderr, "compare: Error: source1_stats is not a file: %s\n", source1.to_string().c_str());
+        }
+        return false;
+    }
+    if( !source2.is_file() ) {
+        if( verbose ) {
+            jau::fprintf_td(stderr, "compare: Error: source2_stats is not a file: %s\n", source2.to_string().c_str());
+        }
+        return false;
+    }
+
+    if( source1.size() != source2.size() ) {
+        if( verbose ) {
+            jau::fprintf_td(stderr, "compare: Error: Source files size mismatch, %s != %s\n",
+                    source1.to_string().c_str(), source2.to_string().c_str());
+        }
+        return false;
+    }
+
+    int src1=-1, src2=-1;
+    int src_flags = O_RDONLY|O_BINARY|O_NOCTTY;
+    uint64_t offset = 0;
+
+    bool res = false;
+    src1 = ::open64(source1.path().c_str(), src_flags);
+    if ( 0 > src1 ) {
+        if( verbose ) {
+            jau::fprintf_td(stderr, "compare: Error: Failed to open source1 %s, errno %d, %s\n", source1.to_string().c_str(), errno, ::strerror(errno));
+        }
+        goto errout;
+    }
+    src2 = ::open64(source2.path().c_str(), src_flags);
+    if ( 0 > src2 ) {
+        if( verbose ) {
+            jau::fprintf_td(stderr, "compare: Error: Failed to open source2 %s, errno %d, %s\n", source2.to_string().c_str(), errno, ::strerror(errno));
+        }
+        goto errout;
+    }
+    while ( offset < source1.size()) {
+        ssize_t rc1, rc2=0;
+        char buffer1[BUFSIZ];
+        char buffer2[BUFSIZ];
+        if( ( rc1 = ::read(src1, buffer1, sizeof(buffer1)) ) > 0 ) {
+            ssize_t bytes_to_write = rc1;
+            size_t buffer_offset = 0;
+            while( 0 < bytes_to_write ) { // write the read chunk, allowing potential multiple write-ops
+                if( ( rc2 = ::read(src2, buffer2+buffer_offset, bytes_to_write) ) < 0 ) {
+                    break;
+                }
+                buffer_offset += rc2;
+                bytes_to_write -= rc2;
+                offset += (uint64_t)rc2;
+            }
+        }
+        if ( 0 > rc1 || 0 > rc2 ) {
+            if( verbose ) {
+                if ( 0 > rc1 ) {
+                    jau::fprintf_td(stderr, "compare: Error: Failed to read source1 bytes @ %s / %s, %s, errno %d, %s\n",
+                            jau::to_decstring(offset).c_str(), jau::to_decstring(source1.size()).c_str(),
+                            source1.to_string().c_str(), errno, ::strerror(errno));
+                } else if ( 0 > rc2 ) {
+                    jau::fprintf_td(stderr, "compare: Error: Failed to read source2 bytes @ %s / %s, %s, errno %d, %s\n",
+                            jau::to_decstring(offset).c_str(), jau::to_decstring(source2.size()).c_str(),
+                            source2.to_string().c_str(), errno, ::strerror(errno));
+                }
+            }
+            goto errout;
+        }
+        if( 0 != ::memcmp(buffer1, buffer2, rc1) ) {
+            if( verbose ) {
+                jau::fprintf_td(stderr, "compare: Error: Comparison failed of %s bytes @ %s / %s, %s != %s\n",
+                        jau::to_decstring(rc1).c_str(), jau::to_decstring(offset-rc1).c_str(), jau::to_decstring(source1.size()).c_str(),
+                        source1.to_string().c_str(), source2.to_string().c_str());
+            }
+            goto errout;
+        }
+        if ( 0 == rc1 ) {
+            break;
+        }
+    }
+    if( offset < source1.size() ) {
+        if( verbose ) {
+            jau::fprintf_td(stderr, "compare: Error: Incomplete transfer %s / %s, %s != %s\n",
+                    jau::to_decstring(offset).c_str(), jau::to_decstring(source1.size()).c_str(),
+                    source1.to_string().c_str(), source2.to_string().c_str(), errno, ::strerror(errno));
+        }
+        goto errout;
+    }
+    res = true;
+errout:
+    if( 0 < src1 ) {
+        ::close(src1);
+    }
+    if( 0 < src2 ) {
+        ::close(src2);
+    }
+    return res;
+}
+
 static bool copy_file(const file_stats& source_stats, const std::string& dest_path, const copy_options copts) noexcept {
     file_stats dest_stats(dest_path);
 
@@ -987,7 +1089,7 @@ static bool copy_file(const file_stats& source_stats, const std::string& dest_pa
     const uid_t caller_uid = getuid();
     int src=-1, dst=-1;
     int src_flags = O_RDONLY|O_BINARY|O_NOCTTY;
-    off64_t offset = 0;
+    uint64_t offset = 0;
 
     bool res = false;
     if( caller_uid == target_stats->uid() ) {
@@ -1010,41 +1112,52 @@ static bool copy_file(const file_stats& source_stats, const std::string& dest_pa
         }
         goto errout;
     }
-    while ( (uint64_t)offset < source_stats.size()) {
-        ssize_t rc;
+    while ( offset < source_stats.size()) {
+        ssize_t rc1, rc2=0;
         if constexpr ( _use_sendfile ) {
-            const size_t count = std::max<size_t>(std::numeric_limits<ssize_t>::max(), source_stats.size() - offset);
-            rc = ::sendfile64(dst, src, &offset, count);
+            off64_t offset_i = (off64_t)offset; // we drop 1 bit of value-range as off64_t is int64_t
+            const uint64_t count = std::max<uint64_t>(std::numeric_limits<ssize_t>::max(), source_stats.size() - offset);
+            if( ( rc1 = ::sendfile64(dst, src, &offset_i, (size_t)count) ) >= 0 ) {
+                offset = (uint64_t)offset_i;
+            }
         } else {
             char buffer[BUFSIZ];
-            if( ( rc = ::read(src, buffer, sizeof(buffer)) ) > 0 ) {
-                ssize_t bytes_to_write = rc;
+            if( ( rc1 = ::read(src, buffer, sizeof(buffer)) ) > 0 ) {
+                ssize_t bytes_to_write = rc1;
                 size_t buffer_offset = 0;
                 while( 0 < bytes_to_write ) { // write the read chunk, allowing potential multiple write-ops
-                    ssize_t bytes_written;
-                    if( ( bytes_written = ::write(dst, buffer+buffer_offset, bytes_to_write) ) < 0 ) {
-                        rc = bytes_written;
+                    if( ( rc2 = ::write(dst, buffer+buffer_offset, bytes_to_write) ) < 0 ) {
                         break;
                     }
-                    buffer_offset += bytes_written;
-                    bytes_to_write -= bytes_written;
-                    offset += bytes_written;
+                    buffer_offset += rc2;
+                    bytes_to_write -= rc2;
+                    offset += rc2;
                 }
             }
         }
-        if ( 0 > rc ) {
+        if ( 0 > rc1 || 0 > rc2 ) {
             if( is_set(copts, copy_options::verbose) ) {
-                jau::fprintf_td(stderr, "copy: Error: Failed to copy bytes @ %s / %s, %s -> '%s', errno %d, %s\n",
-                        jau::to_decstring(offset).c_str(), jau::to_decstring(source_stats.size()).c_str(),
-                        source_stats.to_string().c_str(), dest_path.c_str(), errno, ::strerror(errno));
+                if constexpr ( _use_sendfile ) {
+                    jau::fprintf_td(stderr, "copy: Error: Failed to copy bytes @ %s / %s, %s -> '%s', errno %d, %s\n",
+                            jau::to_decstring(offset).c_str(), jau::to_decstring(source_stats.size()).c_str(),
+                            source_stats.to_string().c_str(), dest_path.c_str(), errno, ::strerror(errno));
+                } else if ( 0 > rc1 ) {
+                    jau::fprintf_td(stderr, "copy: Error: Failed to read bytes @ %s / %s, %s, errno %d, %s\n",
+                            jau::to_decstring(offset).c_str(), jau::to_decstring(source_stats.size()).c_str(),
+                            source_stats.to_string().c_str(), errno, ::strerror(errno));
+                } else if ( 0 > rc2 ) {
+                    jau::fprintf_td(stderr, "copy: Error: Failed to write bytes @ %s / %s, %s, errno %d, %s\n",
+                            jau::to_decstring(offset).c_str(), jau::to_decstring(source_stats.size()).c_str(),
+                            dest_path.c_str(), errno, ::strerror(errno));
+                }
             }
             goto errout;
         }
-        if ( 0 == rc ) {
+        if ( 0 == rc1 ) {
             break;
         }
     }
-    if( (uint64_t)offset < source_stats.size() ) {
+    if( offset < source_stats.size() ) {
         if( is_set(copts, copy_options::verbose) ) {
             jau::fprintf_td(stderr, "copy: Error: Incomplete transfer %s / %s, %s -> '%s', errno %d, %s\n",
                     jau::to_decstring(offset).c_str(), jau::to_decstring(source_stats.size()).c_str(),
@@ -1095,10 +1208,10 @@ static bool copy_file(const file_stats& source_stats, const std::string& dest_pa
         }
     }
 errout:
-    if( 0 < src ) {
+    if( 0 <= src ) {
         ::close(src);
     }
-    if( 0 < dst ) {
+    if( 0 <= dst ) {
         ::close(dst);
     }
     return res;
