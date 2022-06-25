@@ -31,16 +31,17 @@
 #include <jau/file_util.hpp>
 
 extern "C" {
+    #include <unistd.h>
+    #include <dirent.h>
+    #include <fcntl.h>
     #include <sys/stat.h>
+    #include <sys/types.h>
+    #include <sys/wait.h>
+    #include <sys/mount.h>
 #ifdef __linux__
     #include <sys/sendfile.h>
     #include <linux/loop.h>
 #endif
-    #include <sys/types.h>
-    #include <sys/mount.h>
-    #include <dirent.h>
-    #include <fcntl.h>
-    #include <unistd.h>
 }
 
 #ifndef O_BINARY
@@ -1402,6 +1403,14 @@ bool jau::fs::copy(const std::string& source_path, const std::string& target_pat
     return jau::fs::visit(source_stats, topts, pv);
 }
 
+static bool set_effective_uid(::uid_t user_id) {
+    if( 0 != ::seteuid(user_id) ) {
+        ERR_PRINT("seteuid(%" PRIu32 ") failed", user_id);
+        return false;
+    }
+    return true;
+}
+
 jau::fs::mount_ctx jau::fs::mount_image(const std::string& image_path, const std::string& mount_point, const std::string& fs_type,
                                         const unsigned long mountflags, const std::string fs_options)
 {
@@ -1415,71 +1424,106 @@ jau::fs::mount_ctx jau::fs::mount_image(const std::string& image_path, const std
     }
     int backingfile = ::open64(image_stats.path().c_str(), O_RDWR);
     if( 0 > backingfile )  {
-        jau::fprintf_td(stderr, "mount: Error: Couldn't open image-file '%s': res %d, errno %d (%s)\n",
-                image_stats.to_string().c_str(), backingfile, errno, ::strerror(errno));
+        ERR_PRINT("Couldn't open image-file '%s': res %d", image_stats.to_string().c_str(), backingfile);
         return mount_ctx();
     }
 #ifdef __linux__
+    const ::uid_t caller_uid = ::geteuid();
     int loop_device_id = -1;
-    int loop_ctl_fd = -1, loop_device_fd = -1;
-    char loopname[4096];
-    void* fs_options_cstr = nullptr;
-    int mount_res = -1;
 
-    loop_ctl_fd = ::open64("/dev/loop-control", O_RDWR);
-    if( 0 > loop_ctl_fd ) {
-        jau::fprintf_td(stderr, "mount: Error: Couldn't open loop-control: res %d, errno %d (%s)\n",
-                loop_ctl_fd, errno, ::strerror(errno));
+    ::pid_t pid = ::fork();
+    if( 0 == pid ) {
+        int loop_ctl_fd = -1, loop_device_fd = -1;
+        char loopname[4096];
+        int mount_res = -1;
+        void* fs_options_cstr = nullptr;
+
+        if( 0 != caller_uid ) {
+            if( !set_effective_uid(0) ) {
+                goto errout_child;
+            }
+        }
+        loop_ctl_fd = ::open64("/dev/loop-control", O_RDWR);
+        if( 0 > loop_ctl_fd ) {
+            ERR_PRINT("Couldn't open loop-control: res %d", loop_ctl_fd);
+            goto errout_child;
+        }
+
+        loop_device_id = (int) ::ioctl(loop_ctl_fd, LOOP_CTL_GET_FREE);
+        if( 0 > loop_device_id ) {
+            ERR_PRINT("Couldn't get free loop-device: res %d", loop_device_id);
+            goto errout_child;
+        }
+        if( 254 < loop_device_id ) { // _exit() encoding
+            ERR_PRINT("loop-device %d out of valid range [0..254]", loop_device_id);
+            goto errout_child;
+        }
+        ::close(loop_ctl_fd);
+        loop_ctl_fd = -1;
+
+        snprintf(loopname, sizeof(loopname), "/dev/loop%d", loop_device_id);
+        jau::INFO_PRINT("mount: Info: Using loop-device '%s'", loopname);
+
+        loop_device_fd = ::open64(loopname, O_RDWR);
+        if( 0 > loop_device_fd ) {
+            ERR_PRINT("Couldn't open loop-device '%s': res %d", loopname, loop_device_fd);
+            goto errout_child;
+        }
+        if( 0 > ::ioctl(loop_device_fd, LOOP_SET_FD, backingfile) ) {
+            ERR_PRINT("Couldn't attach image-file '%s' to loop-device '%s'", image_stats.to_string().c_str(), loopname);
+            goto errout_child;
+        }
+
+        if( fs_options.size() > 0 ) {
+            fs_options_cstr = (void*) fs_options.data();
+        }
+        mount_res = ::mount(loopname, target_stats.path().c_str(), fs_type.c_str(), mountflags, fs_options_cstr);
+        if( 0 != mount_res ) {
+            ERR_PRINT("source_path %s, target_path %s, fs_type %s, res %d", image_path.c_str(), mount_point.c_str(), fs_type.c_str(), mount_res);
+            ::ioctl(loop_device_fd, LOOP_CLR_FD, 0);
+            goto errout_child;
+        }
+        ::close(loop_device_fd);
+        loop_device_fd = -1;
+        ::_exit(loop_device_id+1);
+
+errout_child:
+        if( 0 <= loop_ctl_fd ) {
+            ::close(loop_ctl_fd);
+        }
+        if( 0 <= loop_device_fd ) {
+            ::close(loop_device_fd);
+        }
+        ::_exit(0);
+    } else if( 0 < pid ) {
+        int pid_status = 0;
+        ::pid_t child_pid = ::waitpid(pid, &pid_status, 0);
+        if( 0 > child_pid ) {
+            ERR_PRINT("wait(%d) failed: %d", pid, child_pid);
+        } else {
+            if( child_pid != pid ) {
+                WARN_PRINT("wait(%d) terminated pid %d", pid, child_pid);
+            }
+            if( !WIFEXITED(pid_status) ) {
+                goto errout;
+            }
+            loop_device_id = WEXITSTATUS(pid_status);
+            if( 0 >= loop_device_id ) {
+                goto errout;
+            }
+            --loop_device_id;
+        }
+    } else {
+        ERR_PRINT("Couldn't fork() process: res %d", pid);
         goto errout;
     }
-
-    loop_device_id = (int) ::ioctl(loop_ctl_fd, LOOP_CTL_GET_FREE);
-    if( 0 > loop_device_id ) {
-        jau::fprintf_td(stderr, "mount: Error: Couldn't get free loop-device: res %d, errno %d (%s)\n",
-                loop_device_id, errno, ::strerror(errno));
-        goto errout;
-    }
-    ::close(loop_ctl_fd);
-    loop_ctl_fd = -1;
-
-    snprintf(loopname, sizeof(loopname), "/dev/loop%d", loop_device_id);
-    jau::fprintf_td(stderr, "mount: Info: Using loop-device '%s'\n", loopname);
-
-    loop_device_fd = ::open64(loopname, O_RDWR);
-    if( 0 > loop_device_fd ) {
-        jau::fprintf_td(stderr, "mount: Error: Couldn't open loop-device '%s': res %d, errno %d (%s)\n",
-                loopname, loop_device_fd, errno, ::strerror(errno));
-        goto errout;
-    }
-    if( 0 > ::ioctl(loop_device_fd, LOOP_SET_FD, backingfile) ) {
-        jau::fprintf_td(stderr, "mount: Error: Couldn't attach image-file '%s' to loop-device '%s': errno %d (%s)\n",
-                image_stats.to_string().c_str(), loopname, errno, ::strerror(errno));
-        goto errout;
-    }
-    ::close(loop_device_fd);
-    loop_device_fd = -1;
-    ::close(backingfile);
-    backingfile = -1;
-
-    if( fs_options.size() > 0 ) {
-        fs_options_cstr = (void*) fs_options.data();
-    }
-    mount_res = ::mount(loopname, target_stats.path().c_str(), fs_type.c_str(), mountflags, fs_options_cstr);
-    if( 0 != mount_res ) {
-        jau::fprintf_td(stderr, "mount: Error: source_path %s, target_path %s, fs_type %s, res %d, errno %d (%s)\n",
-                image_path.c_str(), mount_point.c_str(), fs_type.c_str(), mount_res, errno, ::strerror(errno));
-        ::ioctl(loop_device_fd, LOOP_CLR_FD, 0);
-        goto errout;
+    if( 0 <= backingfile ) {
+        ::close(backingfile);
+        backingfile = -1;
     }
     return mount_ctx(mount_point, loop_device_id);
 
 errout:
-    if( 0 <= loop_ctl_fd ) {
-        ::close(loop_ctl_fd);
-    }
-    if( 0 <= loop_device_fd ) {
-        ::close(loop_device_fd);
-    }
 #else
     (void)fs_type;
     (void)mountflags;
@@ -1500,43 +1544,68 @@ bool jau::fs::umount(const mount_ctx& context)
     if( !target_stats.is_dir()) {
         return false;
     }
-    const int umount_res = ::umount(target_stats.path().c_str());
-    if( 0 != umount_res ) {
-        jau::fprintf_td(stderr, "umount: Error: Couldn't umount '%s': res %d, errno %d (%s)\n",
-                target_stats.to_string().c_str(), umount_res, errno, ::strerror(errno));
-    }
-    if( 0 > context.loop_device_id ) {
-        // mounted w/o loop-device, done
-        return 0 == umount_res;
-    }
+    const ::uid_t caller_uid = ::geteuid();
+
+    ::pid_t pid = ::fork();
+    if( 0 == pid ) {
+        if( 0 != caller_uid ) {
+            if( !set_effective_uid(0) ) {
+                ::_exit(EXIT_FAILURE);
+            }
+        }
+        const int umount_res = ::umount(target_stats.path().c_str());
+        if( 0 != umount_res ) {
+            ERR_PRINT("Couldn't umount '%s': res %d\n", target_stats.to_string().c_str(), umount_res);
+        }
+        if( 0 > context.loop_device_id ) {
+            // mounted w/o loop-device, done
+            ::_exit(0 == umount_res ? EXIT_SUCCESS : EXIT_FAILURE);
+        }
 #ifdef __linux__
-    int loop_device_fd = -1;
-    char loopname[4096];
+        int loop_device_fd = -1;
+        char loopname[4096];
 
-    snprintf(loopname, sizeof(loopname), "/dev/loop%d", context.loop_device_id);
-    jau::fprintf_td(stderr, "umount: Info: Using loop-device '%s'\n", loopname);
+        snprintf(loopname, sizeof(loopname), "/dev/loop%d", context.loop_device_id);
+        jau::INFO_PRINT("umount: Info: Using loop-device '%s'", loopname);
 
-    loop_device_fd = ::open64(loopname, O_RDWR);
-    if( 0 > loop_device_fd ) {
-        jau::fprintf_td(stderr, "umount: Error: Couldn't open loop-device '%s': res %d, errno %d (%s)\n",
-                loopname, loop_device_fd, errno, ::strerror(errno));
-        goto errout;
-    }
-    if( 0 > ::ioctl(loop_device_fd, LOOP_CLR_FD, 0) ) {
-        jau::fprintf_td(stderr, "umount: Error: Couldn't deattach loop-device '%s': errno %d (%s)\n",
-                loopname, errno, ::strerror(errno));
-        goto errout;
-    }
-    ::close(loop_device_fd);
-    loop_device_fd = -1;
-
-    return 0 == umount_res;
-
-errout:
-    if( 0 <= loop_device_fd ) {
+        loop_device_fd = ::open64(loopname, O_RDWR);
+        if( 0 > loop_device_fd ) {
+            ERR_PRINT("Couldn't open loop-device '%s': res %d", loopname, loop_device_fd);
+            goto errout_child;
+        }
+        if( 0 > ::ioctl(loop_device_fd, LOOP_CLR_FD, 0) ) {
+            ERR_PRINT("Couldn't detach loop-device '%s'", loopname);
+            goto errout_child;
+        }
         ::close(loop_device_fd);
-    }
+        loop_device_fd = -1;
 #endif
+
+        ::_exit(0 == umount_res ? EXIT_SUCCESS : EXIT_FAILURE);
+
+#ifdef __linux__
+errout_child:
+        if( 0 <= loop_device_fd ) {
+            ::close(loop_device_fd);
+        }
+        ::_exit(EXIT_FAILURE);
+#endif
+    } else if( 0 < pid ) {
+        int pid_status = 0;
+        ::pid_t child_pid = ::waitpid(pid, &pid_status, 0);
+        if( 0 > child_pid ) {
+            ERR_PRINT("wait(%d) failed: %d", pid, child_pid);
+        } else {
+            if( child_pid != pid ) {
+                WARN_PRINT("wait(%d) terminated pid %d", pid, child_pid);
+            }
+            if( WIFEXITED(pid_status) && EXIT_SUCCESS == WEXITSTATUS(pid_status) ) {
+                return true;
+            }
+        }
+    } else {
+        ERR_PRINT("Couldn't fork() process: res %d", pid);
+    }
     return false;
 }
 
