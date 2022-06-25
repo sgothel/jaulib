@@ -244,6 +244,12 @@ class TestFileUtil02 : TestFileUtilBase {
                 ERR_PRINT("capabilities incomplete, needs: cap_sys_admin, cap_setuid, cap_setgid, uid is % " PRIu32 "", caller_uid);
                 return;
             }
+
+            if( !set_groups(sizeof(group_list)/sizeof(*group_list), group_list) ) {
+                return;
+            }
+            print_creds("user level");
+
         } else {
             print_creds("root level - setuid root -> user");
 
