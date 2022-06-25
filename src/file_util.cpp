@@ -1069,7 +1069,7 @@ static bool copy_file(const file_stats& source_stats, const std::string& dest_pa
                 return false;
             }
             // preserve ownership
-            const uid_t caller_uid = getuid();
+            const uid_t caller_uid = ::geteuid();
             const ::uid_t source_uid = 0 == caller_uid ? source_stats.uid() : -1;
             if( 0 != ::fchownat(AT_FDCWD, dest_path.c_str(), source_uid, source_stats.gid(), AT_SYMLINK_NOFOLLOW) ) {
                 if( errno != EPERM && errno != EINVAL ) { // OK to fail due to permissions
@@ -1088,7 +1088,7 @@ static bool copy_file(const file_stats& source_stats, const std::string& dest_pa
     const fmode_t dest_mode = target_stats->prot_mode();
     const fmode_t omitted_permissions = dest_mode & ( fmode_t::rwx_grp | fmode_t::rwx_oth );
 
-    const uid_t caller_uid = getuid();
+    const uid_t caller_uid = ::geteuid();
     int src=-1, dst=-1;
     int src_flags = O_RDONLY|O_BINARY|O_NOCTTY;
     uint64_t offset = 0;
@@ -1193,10 +1193,14 @@ static bool copy_file(const file_stats& source_stats, const std::string& dest_pa
         if( 0 != ::fchown(dst, source_uid, target_stats->gid()) ) {
             if( errno != EPERM && errno != EINVAL ) { // OK to fail due to permissions
                 if( is_set(copts, copy_options::verbose) ) {
-                    jau::fprintf_td(stderr, "copy: Error: Couldn't preserve ownership of file, source %s, dest '%s', errno %d (%s)\n",
-                            source_stats.to_string().c_str(), dest_path.c_str(), errno, ::strerror(errno));
+                    jau::fprintf_td(stderr, "copy: Error: Couldn't preserve ownership of file, uid(caller %" PRIu32 ", chown %" PRIu32 "), source %s, dest '%s', errno %d (%s)\n",
+                            caller_uid, source_uid, source_stats.to_string().c_str(), dest_path.c_str(), errno, ::strerror(errno));
                 }
                 res = false;
+            }
+            if( is_set(copts, copy_options::verbose) ) {
+                jau::fprintf_td(stderr, "copy: Ignored: Preserve ownership of file failed, uid(caller %" PRIu32 ", chown %" PRIu32 "), source %s, dest '%s', errno %d (%s)\n",
+                        caller_uid, source_uid, source_stats.to_string().c_str(), dest_stats.to_string().c_str(), errno, ::strerror(errno));
             }
         }
     }
@@ -1275,15 +1279,19 @@ static bool copy_dir_preserve(const file_stats& source_stats, const file_stats& 
             return false;
         }
         // preserve ownership
-        const uid_t caller_uid = getuid();
+        const uid_t caller_uid = ::geteuid();
         const ::uid_t source_uid = 0 == caller_uid ? target_stats->uid() : -1;
         if( 0 != ::chown( dest_path.c_str(), source_uid, target_stats->gid() ) ) {
             if( errno != EPERM && errno != EINVAL ) { // OK to fail due to permissions
                 if( is_set(copts, copy_options::verbose) ) {
-                    jau::fprintf_td(stderr, "copy: Error: dir_preserve ownership of file failed, source %s, dest '%s', errno %d (%s)\n",
-                            source_stats.to_string().c_str(), dest_stats.to_string().c_str(), errno, ::strerror(errno));
+                    jau::fprintf_td(stderr, "copy: Error: dir_preserve ownership of file failed, uid(caller %" PRIu32 ", chown %" PRIu32 "), source %s, dest '%s', errno %d (%s)\n",
+                            caller_uid, source_uid, source_stats.to_string().c_str(), dest_stats.to_string().c_str(), errno, ::strerror(errno));
                 }
                 return false;
+            }
+            if( is_set(copts, copy_options::verbose) ) {
+                jau::fprintf_td(stderr, "copy: Ignored: dir_preserve ownership of file failed, uid(caller %" PRIu32 ", chown %" PRIu32 "), source %s, dest '%s', errno %d (%s)\n",
+                        caller_uid, source_uid, source_stats.to_string().c_str(), dest_stats.to_string().c_str(), errno, ::strerror(errno));
             }
         }
     }
