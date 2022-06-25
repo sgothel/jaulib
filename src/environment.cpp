@@ -58,7 +58,7 @@ static const std::string s_true("true");
 static const std::string s_false("false");
 
 std::string environment::getProperty(const std::string & name) noexcept {
-    const char * value = getenv(name.c_str());
+    const char * value = ::getenv(name.c_str());
     if( nullptr != value ) {
         COND_PRINT(local_debug, "env::getProperty0 '%s': '%s'", name.c_str(), value);
         return std::string( value );
@@ -67,7 +67,7 @@ std::string environment::getProperty(const std::string & name) noexcept {
         // Retry with '.' -> '_' to please unix shell
         std::string alt_name(name);
         std::replace( alt_name.begin(), alt_name.end(), '.', '_');
-        value = getenv(alt_name.c_str());
+        value = ::getenv(alt_name.c_str());
         if( nullptr != value ) {
             COND_PRINT(local_debug, "env::getProperty0 '%s' -> '%s': '%s'", name.c_str(), alt_name.c_str(), value);
             return std::string( value );
@@ -214,16 +214,16 @@ void environment::envSet(std::string prefix_domain, std::string basepair) noexce
             if( name.length() > 0 ) {
                 if( value.length() > 0 ) {
                     COND_PRINT(local_debug, "env::setProperty %s -> %s (explode)", name.c_str(), value.c_str());
-                    setenv(name.c_str(), value.c_str(), 1 /* overwrite */);
+                    ::setenv(name.c_str(), value.c_str(), 1 /* overwrite */);
                 } else {
                     COND_PRINT(local_debug, "env::setProperty %s -> true (explode default-1)", name.c_str());
-                    setenv(name.c_str(), "true", 1 /* overwrite */);
+                    ::setenv(name.c_str(), "true", 1 /* overwrite */);
                 }
             }
         } else {
             const std::string name = prefix_domain+"."+basepair;
             COND_PRINT(local_debug, "env::setProperty %s -> true (explode default-0)", name.c_str());
-            setenv(name.c_str(), "true", 1 /* overwrite */);
+            ::setenv(name.c_str(), "true", 1 /* overwrite */);
         }
     }
 }
@@ -240,7 +240,7 @@ void environment::envExplodeProperties(std::string prefix_domain, std::string li
         envSet(prefix_domain, list.substr(start, elem_len));
     }
     COND_PRINT(local_debug, "env::setProperty %s -> true (explode default)", prefix_domain.c_str());
-    setenv(prefix_domain.c_str(), "true", 1 /* overwrite */);
+    ::setenv(prefix_domain.c_str(), "true", 1 /* overwrite */);
 }
 
 bool environment::getExplodingPropertiesImpl(const std::string & root_prefix_domain, const std::string & prefix_domain) noexcept {
