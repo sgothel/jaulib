@@ -130,9 +130,9 @@ Add unit tests to build (default: disabled)
 Add unit tests requiring `sudo` to build (default: disabled).<br />
 This option requires `-DBUILD_TESTING=ON` to be effective.<br />
 Covered unit test requiring `sudo` are currently 
-- `jau::fs::mount_image()`
-- `jau::fs::umount()`
-on the `Linux` OS only
+- `Linux` OS
+  - `jau::fs::mount_image()`
+  - `jau::fs::umount()`
 ~~~~~~~~~~~~~
 -DTEST_WITH_SUDO=ON
 ~~~~~~~~~~~~~
