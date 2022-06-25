@@ -10,7 +10,9 @@
 
 **0.14.0** (TODO)
 
-* Add `jau::fs::mount_image()` and `umount()`, enable testing via `-DTEST_WITH_SUDO=ON` as it requires `root` permissions.
+* Add `jau::fs::mount_image()` and `umount()`
+  - `mount_image()` is currently only supported on `Linux`
+  - Enable testing on `Linux` via `-DTEST_WITH_SUDO=ON` as it requires `root` permissions.
   - Require to be calles as user with capabilities `cap_sys_admin,cap_setuid,cap_setgid+eip` or as root via sudo
   - Uses fork() to have child-process seteuid(0) if not already for loop-control and mount only.
 * Update Catch2 to v3.0.1, generated 2022-05-17 and adopt build and tests

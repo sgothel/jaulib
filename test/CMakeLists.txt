@@ -25,7 +25,7 @@ foreach( name ${TARGETS_IDIOMATIC_TEST} )
     add_test (NAME ${name} COMMAND ${name})
 endforeach()
 
-IF(TEST_WITH_SUDO)
+IF( ( TEST_WITH_SUDO ) AND ( "${OS_NAME}" STREQUAL "linux" ) ) 
     set(test_data_sqfs_file ${CMAKE_CURRENT_BINARY_DIR}/test_data.sqfs CACHE FILEPATH "test_data sqfs image file" FORCE)
 
     add_custom_command (OUTPUT ${test_data_sqfs_file}
@@ -35,7 +35,7 @@ IF(TEST_WITH_SUDO)
         VERBATIM
     )
     add_custom_target (test_data_sqfs ALL DEPENDS ${test_data_sqfs_file})
-    message(STATUS "test_data.sqfs produced in ${CMAKE_CURRENT_BINARY_DIR}/test_data.sqfs")
+    message(STATUS "test_data.sqfs to be produced in ${CMAKE_CURRENT_BINARY_DIR}/test_data.sqfs")
 
     # These examples use the standard separate compilation
     file(GLOB_RECURSE SOURCES_IDIOMATIC_TESTSUDO RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "testsudo_*.cpp")
@@ -53,4 +53,7 @@ IF(TEST_WITH_SUDO)
         #
         # add_test (NAME ${name} COMMAND sudo -E ./${name})
     endforeach()
-ENDIF(TEST_WITH_SUDO)
+ELSE()
+    message(STATUS "testsudo_* disabled: TEST_WITH_SUDO ${TEST_WITH_SUDO}, OS_NAME ${OS_NAME}")
+ENDIF()
+

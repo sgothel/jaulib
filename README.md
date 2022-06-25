@@ -71,11 +71,18 @@ Installing build dependencies for Debian >= 11 and Ubuntu >= 20.04:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}
 apt install git
 apt install build-essential g++ gcc libc-dev libpthread-stubs0-dev 
-apt install libcap-dev libcap2-bin
 apt install libunwind8 libunwind-dev
 apt install openjdk-17-jdk openjdk-17-jre junit4
 apt install cmake cmake-extras extra-cmake-modules
-apt install doxygen graphviz squashfs-tools
+apt install doxygen graphviz
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To test `jau::fs::mount_image()` and `jau::fs::umount()` under `Linux`
+with enabled cmake option `-DTEST_WITH_SUDO=ON`, <br />
+the following build dependencies are added
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}
+apt install libcap-dev libcap2-bin
+apt install squashfs-tools
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To use URL streaming functionality via the `curl` library in `jau_io_util.hpp` and `jau/io_util.cpp`,
@@ -120,8 +127,12 @@ Add unit tests to build (default: disabled)
 -DBUILD_TESTING=ON
 ~~~~~~~~~~~~~
 
-Add unit tests requiring `sudo` to build (default: disabled),
-this option requires `-DBUILD_TESTING=ON` to be effective.
+Add unit tests requiring `sudo` to build (default: disabled).<br />
+This option requires `-DBUILD_TESTING=ON` to be effective.<br />
+Covered unit test requiring `sudo` are currently 
+- `jau::fs::mount_image()`
+- `jau::fs::umount()`
+on the `Linux` OS only
 ~~~~~~~~~~~~~
 -DTEST_WITH_SUDO=ON
 ~~~~~~~~~~~~~
