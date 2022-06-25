@@ -83,15 +83,74 @@ namespace jau {
                     std::string backing;
                     std::string_view view;
 
-                    backed_string_view(std::string&& backing_, const std::string_view& view_ ) noexcept
-                    : backing(std::move(backing_)), view(view_) {}
+                    backed_string_view() noexcept
+                    : backing(), view(backing) {}
+
+                    backed_string_view(const std::string& backing_, const std::string_view& view_ ) noexcept
+                    : backing(backing_),
+                      view( backing_.size() > 0 ? ((std::string_view)backing).substr(view_.data() - backing_.data(), view_.size()) : view_)
+                    {}
 
                     backed_string_view(const std::string_view& view_ ) noexcept
                     : backing(), view(view_) {}
-                };
-                static backed_string_view reduce(const std::string_view& path_) noexcept;
 
-                dir_item(const backed_string_view cleanpath) noexcept;
+#if 0
+                    backed_string_view(const backed_string_view& o) noexcept
+                    : backing(o.backing),
+                      view( o.is_backed() ? ((std::string_view)backing).substr(o.view.data() - o.backing.data(), o.view.size()) : o.view)
+                    {}
+#else
+                    /** Reason: Inefficient, removing the whole purpose of this class reducing std::string duplication. */
+                    backed_string_view(const backed_string_view& o) noexcept = delete;
+#endif
+
+#if 0
+                    backed_string_view(backed_string_view&& o) noexcept
+                    : backing( std::move(o.backing) ),
+                      view( std::move(o.view) )
+                    {
+                        fprintf(stderr, "backed_string_view move_ctor %s\n", to_string(true).c_str());
+                    }
+#else
+                    /** Reason: clang - for some reason - does not move a std::string, but copies it */
+                    backed_string_view(backed_string_view&& o) noexcept = delete;
+#endif
+
+                    bool is_backed() const noexcept { return backing.size() > 0; }
+
+                    void backup() noexcept {
+                        backing = std::string(view);
+                        view = backing;
+                    }
+                    void backup(const std::string& orig) noexcept {
+                        backing = orig;
+                        view = backing;
+                    }
+                    void backup(const std::string_view& orig) noexcept {
+                        backing = std::string(orig);
+                        view = backing;
+                    }
+                    void backup_and_append(const std::string& orig, const std::string& appendix) noexcept {
+                        backing = orig;
+                        backing.append( appendix );
+                        view = backing;
+                    }
+                    void backup_and_append(const std::string_view& orig, const std::string& appendix) noexcept {
+                        backing = std::string(orig);
+                        backing.append( appendix );
+                        view = backing;
+                    }
+
+                    std::string to_string(const bool destailed=false) const noexcept {
+                        if( destailed ) {
+                            return "[backing '"+backing+"', view '"+std::string(view)+"']";
+                        }
+                        return std::string(view);
+                    }
+                };
+                static std::unique_ptr<backed_string_view> reduce(const std::string_view& path_) noexcept;
+
+                dir_item(std::unique_ptr<backed_string_view> cleanpath) noexcept;
 
             public:
 
