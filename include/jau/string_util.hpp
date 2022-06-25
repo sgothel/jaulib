@@ -305,6 +305,9 @@ namespace jau {
         return res;
     }
 
+    bool to_integer(long long & result, const std::string& str, const char limiter='\0', const char *limiter_pos=nullptr);
+    bool to_integer(long long & result, const char * str, size_t str_len, const char limiter='\0', const char *limiter_pos=nullptr);
+
     /**@}*/
 
 } // namespace jau

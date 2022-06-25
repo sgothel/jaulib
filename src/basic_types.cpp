@@ -400,9 +400,9 @@ std::string jau::to_string(const endian& v) noexcept {
     return "unlisted";
 }
 
-static bool to_integer(long long & result, const char * str, size_t str_len, const char limiter, const char *limiter_pos) {
+bool jau::to_integer(long long & result, const char * str, size_t str_len, const char limiter, const char *limiter_pos) {
     static constexpr const bool _debug = false;
-    char *endptr = NULL;
+    char *endptr = nullptr;
     if( nullptr == limiter_pos ) {
         limiter_pos = str + str_len;
     }
@@ -436,6 +436,10 @@ static bool to_integer(long long & result, const char * str, size_t str_len, con
     }
     result = num;
     return true;
+}
+
+bool jau::to_integer(long long & result, const std::string& str, const char limiter, const char *limiter_pos) {
+    return to_integer(result, str.c_str(), str.size(), limiter, limiter_pos);
 }
 
 bool jau::to_fraction_i64(fraction_i64& result, const std::string & value, const fraction_i64& min_allowed, const fraction_i64& max_allowed) noexcept {
