@@ -26,6 +26,17 @@ foreach( name ${TARGETS_IDIOMATIC_TEST} )
 endforeach()
 
 IF(TEST_WITH_SUDO)
+    set(test_data_sqfs_file ${CMAKE_CURRENT_BINARY_DIR}/test_data.sqfs CACHE FILEPATH "test_data sqfs image file" FORCE)
+
+    add_custom_command (OUTPUT ${test_data_sqfs_file}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..
+        COMMAND /usr/bin/mksquashfs test_data ${CMAKE_CURRENT_BINARY_DIR}/test_data.sqfs -comp lzo
+        COMMENT "producing test_data sqfs image file"
+        VERBATIM
+    )
+    add_custom_target (test_data_sqfs ALL DEPENDS ${test_data_sqfs_file})
+    message(STATUS "test_data.sqfs produced in ${CMAKE_CURRENT_BINARY_DIR}/test_data.sqfs")
+
     # These examples use the standard separate compilation
     file(GLOB_RECURSE SOURCES_IDIOMATIC_TESTSUDO RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "testsudo_*.cpp")
 

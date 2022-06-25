@@ -74,7 +74,7 @@ apt install build-essential g++ gcc libc-dev libpthread-stubs0-dev
 apt install libunwind8 libunwind-dev
 apt install openjdk-17-jdk openjdk-17-jre junit4
 apt install cmake cmake-extras extra-cmake-modules
-apt install doxygen graphviz
+apt install doxygen graphviz squashfs-tools
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To use URL streaming functionality via the `curl` library in `jau_io_util.hpp` and `jau/io_util.cpp`,
