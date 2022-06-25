@@ -24,18 +24,6 @@
 
 #include "test_fileutils.hpp"
 
-extern "C" {
-    #include <sys/types.h>
-    #include <sys/mount.h>
-    #include <fcntl.h>
-}
-#ifndef O_BINARY
-#define O_BINARY    0
-#endif
-#ifndef O_NONBLOCK
-#define O_NONBLOCK  0
-#endif
-
 void testxx_copy_r_p(const std::string& title, const jau::fs::file_stats& source, const int source_added_dead_links, const std::string& dest) {
     REQUIRE( true == source.exists() );
 

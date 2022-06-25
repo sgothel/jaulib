@@ -45,14 +45,12 @@ IF(TEST_WITH_SUDO)
 
     foreach( name ${TARGETS_IDIOMATIC_TESTSUDO} )
         add_executable(${name} ${name}.cpp)
-        target_link_libraries(${name} jaulib catch2)
-        add_dependencies(${name} jaulib catch2)
+        target_link_libraries(${name} jaulib catch2 cap)
+        add_dependencies(${name} jaulib catch2 test_data_sqfs)
+        add_test (NAME ${name} COMMAND sudo -E /sbin/capsh --caps=cap_sys_admin,cap_setuid,cap_setgid+eip\ cap_setpcap+ep
+                                   --keep=1 --user=$ENV{USER} --addamb=cap_sys_admin,cap_setuid,cap_setgid+eip
+                                   -- -c "ulimit -c unlimited; ./${name}")
         #
-        # cap_sys_admin is not enough to access /dev/loop*
-        #    add_test (NAME ${name} COMMAND sudo -E /sbin/capsh --caps=cap_sys_admin+eip\ cap_setpcap,cap_setuid,cap_setgid+ep
-        #                           --keep=1 --user=$ENV{USER} --addamb=cap_sys_admin+eip
-        #                           -- -c "ulimit -c unlimited; ./${name}")
-        #
-        add_test (NAME ${name} COMMAND sudo -E ./${name})
+        # add_test (NAME ${name} COMMAND sudo -E ./${name})
     endforeach()
 ENDIF(TEST_WITH_SUDO)
