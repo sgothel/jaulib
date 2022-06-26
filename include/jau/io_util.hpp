@@ -194,20 +194,20 @@ namespace jau::io {
         std::vector<std::string_view> supported_protocols() noexcept;
 
         /**
-         * Returns the valid uri-scheme-view from given uri-view,
+         * Returns the valid uri-scheme from given uri,
          * which is empty if no valid scheme is included.
          *
-         * @param uri an uri-view
-         * @return valid uri-scheme-view, empty if non found
+         * @param uri an uri
+         * @return valid uri-scheme, empty if non found
          */
         std::string_view get_scheme(const std::string_view& uri) noexcept;
 
         /**
-         * Returns true if the uri-scheme of given uri-view matches a supported by [*libcurl* network protocols](https://curl.se/docs/url-syntax.html) otherwise false.
+         * Returns true if the uri-scheme of given uri matches a supported by [*libcurl* network protocols](https://curl.se/docs/url-syntax.html) otherwise false.
          *
          * The *libcurl* supported protocols is queried at runtime, see supported_protocols().
          *
-         * @param uri an uri-view to test
+         * @param uri an uri to test
          * @return true if the uri-scheme of given uri is supported, otherwise false.
          * @see supported_protocols()
          * @see get_scheme()
@@ -215,8 +215,8 @@ namespace jau::io {
         bool protocol_supported(const std::string_view& uri) noexcept;
 
         /**
-         * Returns true if the uri-scheme of given uri-view matches the local `file` protocol, i.e. starts with `file://`.
-         * @param uri an uri-view to test
+         * Returns true if the uri-scheme of given uri matches the local `file` protocol, i.e. starts with `file://`.
+         * @param uri an uri to test
          */
         bool is_local_file_protocol(const std::string_view& uri) noexcept;
 
