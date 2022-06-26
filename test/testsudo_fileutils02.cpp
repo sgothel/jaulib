@@ -248,7 +248,6 @@ class TestFileUtil02 : TestFileUtilBase {
             if( !set_groups(sizeof(group_list)/sizeof(*group_list), group_list) ) {
                 return;
             }
-            print_creds("user level");
 
         } else {
             print_creds("root level - setuid root -> user");
@@ -287,12 +286,12 @@ class TestFileUtil02 : TestFileUtilBase {
             if( !set_effective_uid(user_id) ) {
                 return;
             }
-            print_creds("user level");
 
             if constexpr ( change_caps ) {
                 if( !cap_set_proc_flag("user level", CAP_EFFECTIVE, cap_list_size, cap_list) ) { return; }
             }
         }
+        print_creds("user level");
         REQUIRE( user_id == ::geteuid() );
 
         {
