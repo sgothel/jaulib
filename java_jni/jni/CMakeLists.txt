@@ -21,6 +21,9 @@ set (jaulib_jni_JNI_SRCS
   ${PROJECT_SOURCE_DIR}/java_jni/jni/jau/JVM_JNI8.cxx
   ${PROJECT_SOURCE_DIR}/java_jni/jni/jau/MachineDataInfoRuntime.cxx
   ${PROJECT_SOURCE_DIR}/java_jni/jni/jau/Clock.cxx
+  ${PROJECT_SOURCE_DIR}/java_jni/jni/jau/ByteInStream_Feed.cxx
+  ${PROJECT_SOURCE_DIR}/java_jni/jni/jau/ByteInStream_URL.cxx
+  ${PROJECT_SOURCE_DIR}/java_jni/jni/jau/jau_nio_uri.cxx
 )
 
 if(WIN32)

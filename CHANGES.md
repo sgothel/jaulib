@@ -10,10 +10,14 @@
 
 **0.14.0** (TODO)
 
+* Add java mapping of `jau::io::ByteInStream` for file, URL and feed for general use
+  - `org.jau.nio.ByteInStream`, `org.jau.nio.ByteInStream_File`, `org.jau.nio.ByteInStream_URL`, `org.jau.nio.ByteInStream_Feed`
+  - Mapped `jau::io::to_ByteInStream()` to `org.jau.nio.ByteInStream.create()`
+  - Mapped `jau::io::uri` to `org.jau.nio.Uri`
 * Add `jau::fs::mount_image()` and `umount()`
   - `mount_image()` is currently only supported on `Linux`
   - Enable testing on `Linux` via `-DTEST_WITH_SUDO=ON` as it requires `root` permissions.
-  - Require to be calles as user with capabilities `cap_sys_admin,cap_setuid,cap_setgid+eip` or as root via sudo
+  - Require to be called as user with capabilities `cap_sys_admin,cap_setuid,cap_setgid+eip` or as root via sudo
   - Uses fork() to have child-process seteuid(0) if not already for loop-control and mount only.
 * Update Catch2 to v3.0.1, generated 2022-05-17 and adopt build and tests
 * Use `libcurl` optional, enable via cmake option `-DUSE_LIBCURL=ON` and remove dependencies if unused.
