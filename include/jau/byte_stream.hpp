@@ -473,7 +473,7 @@ namespace jau::io {
      * If non of the above leads to a ByteInStream without ByteInStream::error(), nullptr is returned.
      *
      * @param path_or_uri given path or uri for with a ByteInStream instance shall be established.
-     * @param timeout a timeout in case ByteInStream_URL is being used as maximum dureation to wait for next bytes at ByteInStream_URL::check_available(), defaults to 20_s
+     * @param timeout a timeout in case ByteInStream_URL is being used as maximum duration to wait for next bytes at ByteInStream_URL::check_available(), defaults to 20_s
      * @return a working ByteInStream w/o ByteInStream::error() or nullptr
      */
     std::unique_ptr<ByteInStream> to_ByteInStream(const std::string& path_or_uri, jau::fraction_i64 timeout=20_s) noexcept;
@@ -530,9 +530,9 @@ namespace jau::io {
              */
             ByteInStream_Feed(const std::string& id_name, const jau::fraction_i64& timeout) noexcept;
 
-            ByteInStream_Feed(const ByteInStream_URL&) = delete;
+            ByteInStream_Feed(const ByteInStream_Feed&) = delete;
 
-            ByteInStream_Feed& operator=(const ByteInStream_URL&) = delete;
+            ByteInStream_Feed& operator=(const ByteInStream_Feed&) = delete;
 
             void close() noexcept override;
 
