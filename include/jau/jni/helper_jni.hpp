@@ -103,7 +103,7 @@ namespace jau::jni {
      * Re-throw current exception and raise respective java exception
      * using any matching function above.
      */
-    #define rethrow_and_raise_java_exception_jau(E) rethrow_and_raise_java_exception_jauimpl((E), __FILE__, __LINE__)
+    #define rethrow_and_raise_java_exception_jau(E) jau::jni::rethrow_and_raise_java_exception_jauimpl((E), __FILE__, __LINE__)
     // inline void rethrow_and_raise_java_exception_jau(JNIEnv *env) { rethrow_and_raise_java_exception_jauimpl(env, __FILE__, __LINE__); }
 
     //
@@ -137,6 +137,7 @@ namespace jau::jni {
     jobject get_new_arraylist(JNIEnv *env, jsize size, jmethodID *add);
 
     jobject convert_vector_string_to_jarraylist(JNIEnv *env, const std::vector<std::string>& array);
+    jobject convert_vector_stringview_to_jarraylist(JNIEnv *env, const std::vector<std::string_view>& array);
     std::vector<std::string> convert_jlist_string_to_vector(JNIEnv *env, jobject jlist);
 
     //

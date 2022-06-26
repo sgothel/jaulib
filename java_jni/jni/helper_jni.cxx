@@ -401,6 +401,26 @@ jobject jau::jni::convert_vector_string_to_jarraylist(JNIEnv *env, const std::ve
     return result;
 }
 
+jobject jau::jni::convert_vector_stringview_to_jarraylist(JNIEnv *env, const std::vector<std::string_view>& array)
+{
+    nsize_t array_size = array.size();
+
+    jmethodID arraylist_add;
+    jobject result = get_new_arraylist(env, (jsize)array_size, &arraylist_add);
+
+    if (0 == array_size) {
+        return result;
+    }
+
+    jau::for_each(array.begin(), array.end(), [&](const std::string_view& elem_view){
+        const std::string elem(elem_view);
+        jstring jelem = from_string_to_jstring(env, elem);
+        env->CallBooleanMethod(result, arraylist_add, jelem);
+        env->DeleteLocalRef(jelem);
+    });
+    return result;
+}
+
 std::vector<std::string> jau::jni::convert_jlist_string_to_vector(JNIEnv *env, jobject jlist)
 {
     std::vector<std::string> result;
