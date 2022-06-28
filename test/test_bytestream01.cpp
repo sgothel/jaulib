@@ -113,7 +113,7 @@ class TestByteStream01 {
 #endif // USE_LIBCURL
         }
 
-        static bool transfer(jau::io::ByteInStream& input, const std::string& output_fname) {
+        static bool transfer(jau::io::ByteInStream& input, const std::string& output_fname, const size_t buffer_size=4096) {
             const jau::fraction_timespec _t0 = jau::getMonotonicTime();
             jau::PLAIN_PRINT(true, "Transfer Start: %s", input.to_string().c_str());
             {
@@ -149,7 +149,7 @@ class TestByteStream01 {
                 }
             };
             jau::io::secure_vector<uint8_t> io_buffer;
-            io_buffer.reserve(4096); // TODO: Perf test w/ 2*16384
+            io_buffer.reserve(buffer_size); // TODO: Perf test w/ 2*16384
             const uint64_t in_bytes_total = jau::io::read_stream(input, io_buffer, consume_data);
             input.close();
 
@@ -166,6 +166,7 @@ class TestByteStream01 {
         }
 
         void test00a_protocols_error() {
+            jau::fprintf_td(stderr, "\n"); jau::fprintf_td(stderr, "%s\n", __func__);
             const bool http_support_expected = jau::io::uri::protocol_supported("http:");
             const bool file_support_expected = jau::io::uri::protocol_supported("file:");
             httpd_start();
@@ -232,6 +233,7 @@ class TestByteStream01 {
         }
 
         void test00b_protocols_ok() {
+            jau::fprintf_td(stderr, "\n"); jau::fprintf_td(stderr, "%s\n", __func__);
             const bool http_support_expected = jau::io::uri::protocol_supported("http:");
             const bool file_support_expected = jau::io::uri::protocol_supported("file:");
             httpd_start();
@@ -308,38 +310,56 @@ class TestByteStream01 {
             }
         }
 
-        void test01_copy_file_ok() {
-            {
-                const size_t file_idx = IDX_11kiB;
-                jau::io::ByteInStream_File data_stream(fname_payload_lst[file_idx], true /* use_binary */);
+        void test01_copy_file_ok_11kiB_buff4k() {
+            jau::fprintf_td(stderr, "\n"); jau::fprintf_td(stderr, "%s\n", __func__);
+            const size_t file_idx = IDX_11kiB;
+            jau::io::ByteInStream_File data_stream(fname_payload_lst[file_idx], true /* use_binary */);
 
-                bool res = transfer(data_stream, fname_payload_copy_lst[file_idx]);
-                REQUIRE( true == res );
+            bool res = transfer(data_stream, fname_payload_copy_lst[file_idx], 4096);
+            REQUIRE( true == res );
 
-                jau::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
-                REQUIRE( true == out_stats.exists() );
-                REQUIRE( true == out_stats.is_file() );
-                REQUIRE( data_stream.content_size() == out_stats.size() );
-                REQUIRE( fname_payload_size_lst[file_idx] == out_stats.size() );
-                REQUIRE( true == jau::fs::compare(data_stream.id(), out_stats.path(), true /* verbose */) );
-            }
-            {
-                const size_t file_idx = IDX_65MiB;
-                jau::io::ByteInStream_File data_stream(fname_payload_lst[file_idx], true /* use_binary */);
-
-                bool res = transfer(data_stream, fname_payload_copy_lst[file_idx]);
-                REQUIRE( true == res );
-
-                jau::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
-                REQUIRE( true == out_stats.exists() );
-                REQUIRE( true == out_stats.is_file() );
-                REQUIRE( data_stream.content_size() == out_stats.size() );
-                REQUIRE( fname_payload_size_lst[file_idx] == out_stats.size() );
-                REQUIRE( true == jau::fs::compare(data_stream.id(), out_stats.path(), true /* verbose */) );
-            }
+            jau::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
+            REQUIRE( true == out_stats.exists() );
+            REQUIRE( true == out_stats.is_file() );
+            REQUIRE( data_stream.content_size() == out_stats.size() );
+            REQUIRE( fname_payload_size_lst[file_idx] == out_stats.size() );
+            REQUIRE( true == jau::fs::compare(data_stream.id(), out_stats.path(), true /* verbose */) );
         }
 
-        void test11_copy_http_ok() {
+        void test02_copy_file_ok_65MiB_buff4k() {
+            jau::fprintf_td(stderr, "\n"); jau::fprintf_td(stderr, "%s\n", __func__);
+            const size_t file_idx = IDX_65MiB;
+            jau::io::ByteInStream_File data_stream(fname_payload_lst[file_idx], true /* use_binary */);
+
+            bool res = transfer(data_stream, fname_payload_copy_lst[file_idx], 4096);
+            REQUIRE( true == res );
+
+            jau::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
+            REQUIRE( true == out_stats.exists() );
+            REQUIRE( true == out_stats.is_file() );
+            REQUIRE( data_stream.content_size() == out_stats.size() );
+            REQUIRE( fname_payload_size_lst[file_idx] == out_stats.size() );
+            REQUIRE( true == jau::fs::compare(data_stream.id(), out_stats.path(), true /* verbose */) );
+        }
+
+        void test04_copy_file_ok_65MiB_buff32k() {
+            jau::fprintf_td(stderr, "\n"); jau::fprintf_td(stderr, "%s\n", __func__);
+            const size_t file_idx = IDX_65MiB;
+            jau::io::ByteInStream_File data_stream(fname_payload_lst[file_idx], true /* use_binary */);
+
+            bool res = transfer(data_stream, fname_payload_copy_lst[file_idx], 32768);
+            REQUIRE( true == res );
+
+            jau::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
+            REQUIRE( true == out_stats.exists() );
+            REQUIRE( true == out_stats.is_file() );
+            REQUIRE( data_stream.content_size() == out_stats.size() );
+            REQUIRE( fname_payload_size_lst[file_idx] == out_stats.size() );
+            REQUIRE( true == jau::fs::compare(data_stream.id(), out_stats.path(), true /* verbose */) );
+        }
+
+        void test11_copy_http_ok_buff32k() {
+            jau::fprintf_td(stderr, "\n"); jau::fprintf_td(stderr, "%s\n", __func__);
             if( !jau::io::uri::protocol_supported("http:") ) {
                 jau::PLAIN_PRINT(true, "http not supported, abort\n");
                 return;
@@ -352,7 +372,7 @@ class TestByteStream01 {
 
                 jau::io::ByteInStream_URL data_stream(uri_original, 500_ms);
 
-                bool res = transfer(data_stream, fname_payload_copy_lst[file_idx]);
+                bool res = transfer(data_stream, fname_payload_copy_lst[file_idx], 32768);
                 REQUIRE( true == res );
 
                 jau::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
@@ -369,7 +389,7 @@ class TestByteStream01 {
 
                 jau::io::ByteInStream_URL data_stream(uri_original, 500_ms);
 
-                bool res = transfer(data_stream, fname_payload_copy_lst[file_idx]);
+                bool res = transfer(data_stream, fname_payload_copy_lst[file_idx], 32768);
                 REQUIRE( true == res );
 
                 jau::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
@@ -382,6 +402,7 @@ class TestByteStream01 {
         }
 
         void test12_copy_http_404() {
+            jau::fprintf_td(stderr, "\n"); jau::fprintf_td(stderr, "%s\n", __func__);
             if( !jau::io::uri::protocol_supported("http:") ) {
                 jau::PLAIN_PRINT(true, "http not supported, abort\n");
                 return;
@@ -408,11 +429,11 @@ class TestByteStream01 {
         }
 
         // throttled, no content size, interruptReader() via set_eof() will avoid timeout
-        static void feed_source_00(jau::io::ByteInStream_Feed * data_feed) {
+        static void feed_source_00(jau::io::ByteInStream_Feed * data_feed, const size_t feed_size=1024) {
             uint64_t xfer_total = 0;
             jau::io::ByteInStream_File data_stream(data_feed->id(), true /* use_binary */);
+            uint8_t buffer[feed_size];
             while( !data_stream.end_of_data() ) {
-                uint8_t buffer[1024]; // 1k
                 size_t count = data_stream.read(buffer, sizeof(buffer));
                 if( 0 < count ) {
                     xfer_total += count;
@@ -426,13 +447,13 @@ class TestByteStream01 {
         }
 
         // throttled, with content size
-        static void feed_source_01(jau::io::ByteInStream_Feed * data_feed) {
+        static void feed_source_01(jau::io::ByteInStream_Feed * data_feed, const size_t feed_size=1024) {
             uint64_t xfer_total = 0;
             jau::io::ByteInStream_File data_stream(data_feed->id(), true /* use_binary */);
             const uint64_t file_size = data_stream.content_size();
             data_feed->set_content_size( file_size );
+            uint8_t buffer[feed_size];
             while( !data_stream.end_of_data() && xfer_total < file_size ) {
-                uint8_t buffer[1024]; // 1k
                 size_t count = data_stream.read(buffer, sizeof(buffer));
                 if( 0 < count ) {
                     xfer_total += count;
@@ -445,13 +466,13 @@ class TestByteStream01 {
         }
 
         // full speed, with content size
-        static void feed_source_10(jau::io::ByteInStream_Feed * data_feed) {
+        static void feed_source_10(jau::io::ByteInStream_Feed * data_feed, const size_t feed_size=1024) {
             uint64_t xfer_total = 0;
             jau::io::ByteInStream_File data_stream(data_feed->id(), true /* use_binary */);
             const uint64_t file_size = data_stream.content_size();
             data_feed->set_content_size( data_stream.content_size() );
+            uint8_t buffer[feed_size];
             while( !data_stream.end_of_data() && xfer_total < file_size ) {
-                uint8_t buffer[1024]; // 1k
                 size_t count = data_stream.read(buffer, sizeof(buffer));
                 if( 0 < count ) {
                     xfer_total += count;
@@ -462,11 +483,11 @@ class TestByteStream01 {
         }
 
         // full speed, no content size, interrupting @ 1024 bytes within our header
-        static void feed_source_20(jau::io::ByteInStream_Feed * data_feed) {
+        static void feed_source_20(jau::io::ByteInStream_Feed * data_feed, const size_t feed_size=1024) {
             uint64_t xfer_total = 0;
             jau::io::ByteInStream_File data_stream(data_feed->id(), true /* use_binary */);
+            uint8_t buffer[feed_size];
             while( !data_stream.end_of_data() ) {
-                uint8_t buffer[1024]; // 1k
                 size_t count = data_stream.read(buffer, sizeof(buffer));
                 if( 0 < count ) {
                     xfer_total += count;
@@ -482,13 +503,13 @@ class TestByteStream01 {
         }
 
         // full speed, with content size, interrupting 1/4 way
-        static void feed_source_21(jau::io::ByteInStream_Feed * data_feed) {
+        static void feed_source_21(jau::io::ByteInStream_Feed * data_feed, const size_t feed_size=1024) {
             uint64_t xfer_total = 0;
             jau::io::ByteInStream_File data_stream(data_feed->id(), true /* use_binary */);
             const uint64_t file_size = data_stream.content_size();
             data_feed->set_content_size( data_stream.content_size() );
+            uint8_t buffer[feed_size];
             while( !data_stream.end_of_data() ) {
-                uint8_t buffer[1024]; // 1k
                 size_t count = data_stream.read(buffer, sizeof(buffer));
                 if( 0 < count ) {
                     xfer_total += count;
@@ -503,15 +524,18 @@ class TestByteStream01 {
             data_feed->set_eof( jau::io::async_io_result_t::SUCCESS );
         }
 
-        void test21_copy_fed_ok() {
+        void test20_copy_fed_ok_buff4k_feed1k() {
+            jau::fprintf_td(stderr, "\n"); jau::fprintf_td(stderr, "%s\n", __func__);
+            const size_t buffer_size = 4096;
+            const size_t feed_size = 1024;
             {
                 const size_t file_idx = IDX_11kiB;
                 {
                     // full speed, with content size
                     jau::io::ByteInStream_Feed data_feed(fname_payload_lst[file_idx], 500_ms);
-                    std::thread feeder_thread= std::thread(&feed_source_10, &data_feed);
+                    std::thread feeder_thread= std::thread(&feed_source_10, &data_feed, feed_size);
 
-                    bool res = transfer(data_feed, fname_payload_copy_lst[file_idx]);
+                    bool res = transfer(data_feed, fname_payload_copy_lst[file_idx], buffer_size);
                     if( feeder_thread.joinable() ) {
                         feeder_thread.join();
                     }
@@ -527,9 +551,9 @@ class TestByteStream01 {
                 {
                     // throttled, with content size
                     jau::io::ByteInStream_Feed data_feed(fname_payload_lst[file_idx], 500_ms);
-                    std::thread feeder_thread= std::thread(&feed_source_01, &data_feed);
+                    std::thread feeder_thread= std::thread(&feed_source_01, &data_feed, feed_size);
 
-                    bool res = transfer(data_feed, fname_payload_copy_lst[file_idx]);
+                    bool res = transfer(data_feed, fname_payload_copy_lst[file_idx], buffer_size);
                     if( feeder_thread.joinable() ) {
                         feeder_thread.join();
                     }
@@ -545,9 +569,9 @@ class TestByteStream01 {
                 {
                     // throttled, no content size, interruptReader() via set_eof() will avoid timeout
                     jau::io::ByteInStream_Feed data_feed(fname_payload_lst[file_idx], 500_ms);
-                    std::thread feeder_thread= std::thread(&feed_source_00, &data_feed);
+                    std::thread feeder_thread= std::thread(&feed_source_00, &data_feed, feed_size);
 
-                    bool res = transfer(data_feed, fname_payload_copy_lst[file_idx]);
+                    bool res = transfer(data_feed, fname_payload_copy_lst[file_idx], buffer_size);
                     if( feeder_thread.joinable() ) {
                         feeder_thread.join();
                     }
@@ -566,9 +590,93 @@ class TestByteStream01 {
                 {
                     // full speed, with content size
                     jau::io::ByteInStream_Feed data_feed(fname_payload_lst[file_idx], 500_ms);
-                    std::thread feeder_thread= std::thread(&feed_source_10, &data_feed);
+                    std::thread feeder_thread= std::thread(&feed_source_10, &data_feed, feed_size);
 
-                    bool res = transfer(data_feed, fname_payload_copy_lst[file_idx]);
+                    bool res = transfer(data_feed, fname_payload_copy_lst[file_idx], buffer_size);
+                    if( feeder_thread.joinable() ) {
+                        feeder_thread.join();
+                    }
+                    REQUIRE( true == res );
+
+                    jau::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
+                    REQUIRE( true == out_stats.exists() );
+                    REQUIRE( true == out_stats.is_file() );
+                    REQUIRE( data_feed.content_size() == out_stats.size() );
+                    REQUIRE( fname_payload_size_lst[file_idx] == out_stats.size() );
+                    REQUIRE( true == jau::fs::compare(data_feed.id(), out_stats.path(), true /* verbose */) );
+                }
+            }
+        }
+
+        void test21_copy_fed_ok_buff32k() {
+            jau::fprintf_td(stderr, "\n"); jau::fprintf_td(stderr, "%s\n", __func__);
+            const size_t buffer_size = 32768;
+            const size_t feed_size = 32768;
+            {
+                const size_t file_idx = IDX_11kiB;
+                {
+                    // full speed, with content size
+                    jau::io::ByteInStream_Feed data_feed(fname_payload_lst[file_idx], 500_ms);
+                    std::thread feeder_thread= std::thread(&feed_source_10, &data_feed, feed_size);
+
+                    bool res = transfer(data_feed, fname_payload_copy_lst[file_idx], buffer_size);
+                    if( feeder_thread.joinable() ) {
+                        feeder_thread.join();
+                    }
+                    REQUIRE( true == res );
+
+                    jau::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
+                    REQUIRE( true == out_stats.exists() );
+                    REQUIRE( true == out_stats.is_file() );
+                    REQUIRE( data_feed.content_size() == out_stats.size() );
+                    REQUIRE( fname_payload_size_lst[file_idx] == out_stats.size() );
+                    REQUIRE( true == jau::fs::compare(data_feed.id(), out_stats.path(), true /* verbose */) );
+                }
+                {
+                    // throttled, with content size
+                    jau::io::ByteInStream_Feed data_feed(fname_payload_lst[file_idx], 500_ms);
+                    std::thread feeder_thread= std::thread(&feed_source_01, &data_feed, feed_size);
+
+                    bool res = transfer(data_feed, fname_payload_copy_lst[file_idx], buffer_size);
+                    if( feeder_thread.joinable() ) {
+                        feeder_thread.join();
+                    }
+                    REQUIRE( true == res );
+
+                    jau::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
+                    REQUIRE( true == out_stats.exists() );
+                    REQUIRE( true == out_stats.is_file() );
+                    REQUIRE( data_feed.content_size() == out_stats.size() );
+                    REQUIRE( fname_payload_size_lst[file_idx] == out_stats.size() );
+                    REQUIRE( true == jau::fs::compare(data_feed.id(), out_stats.path(), true /* verbose */) );
+                }
+                {
+                    // throttled, no content size, interruptReader() via set_eof() will avoid timeout
+                    jau::io::ByteInStream_Feed data_feed(fname_payload_lst[file_idx], 500_ms);
+                    std::thread feeder_thread= std::thread(&feed_source_00, &data_feed, feed_size);
+
+                    bool res = transfer(data_feed, fname_payload_copy_lst[file_idx], buffer_size);
+                    if( feeder_thread.joinable() ) {
+                        feeder_thread.join();
+                    }
+                    REQUIRE( true == res );
+
+                    jau::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
+                    REQUIRE( true == out_stats.exists() );
+                    REQUIRE( true == out_stats.is_file() );
+                    REQUIRE( data_feed.content_size() == 0 );
+                    REQUIRE( fname_payload_size_lst[file_idx] == out_stats.size() );
+                    REQUIRE( true == jau::fs::compare(data_feed.id(), out_stats.path(), true /* verbose */) );
+                }
+            }
+            {
+                const size_t file_idx = IDX_65MiB;
+                {
+                    // full speed, with content size
+                    jau::io::ByteInStream_Feed data_feed(fname_payload_lst[file_idx], 500_ms);
+                    std::thread feeder_thread= std::thread(&feed_source_10, &data_feed, feed_size);
+
+                    bool res = transfer(data_feed, fname_payload_copy_lst[file_idx], buffer_size);
                     if( feeder_thread.joinable() ) {
                         feeder_thread.join();
                     }
@@ -585,14 +693,17 @@ class TestByteStream01 {
         }
 
         void test22_copy_fed_irq() {
+            jau::fprintf_td(stderr, "\n"); jau::fprintf_td(stderr, "%s\n", __func__);
+            const size_t buffer_size = 4096;
+            const size_t feed_size = 1024;
             {
                 const size_t file_idx = IDX_65MiB;
                 {
                     // full speed, no content size, interrupting @ 1024 bytes within our header
                     jau::io::ByteInStream_Feed data_feed(fname_payload_lst[file_idx], 500_ms);
-                    std::thread feeder_thread= std::thread(&feed_source_20, &data_feed);
+                    std::thread feeder_thread= std::thread(&feed_source_20, &data_feed, feed_size);
 
-                    bool res = transfer(data_feed, fname_payload_copy_lst[file_idx]);
+                    bool res = transfer(data_feed, fname_payload_copy_lst[file_idx], buffer_size);
                     if( feeder_thread.joinable() ) {
                         feeder_thread.join();
                     }
@@ -609,9 +720,9 @@ class TestByteStream01 {
                 {
                     // full speed, with content size, interrupting 1/4 way
                     jau::io::ByteInStream_Feed data_feed(fname_payload_lst[file_idx], 500_ms);
-                    std::thread feeder_thread= std::thread(&feed_source_21, &data_feed);
+                    std::thread feeder_thread= std::thread(&feed_source_21, &data_feed, feed_size);
 
-                    bool res = transfer(data_feed, fname_payload_copy_lst[file_idx]);
+                    bool res = transfer(data_feed, fname_payload_copy_lst[file_idx], buffer_size);
                     if( feeder_thread.joinable() ) {
                         feeder_thread.join();
                     }
@@ -634,13 +745,16 @@ std::vector<std::string> TestByteStream01::fname_payload_lst;
 std::vector<std::string> TestByteStream01::fname_payload_copy_lst;
 std::vector<uint64_t> TestByteStream01::fname_payload_size_lst;
 
-METHOD_AS_TEST_CASE( TestByteStream01::test00a_protocols_error, "TestByteStream01 test00a_protocols_error");
-METHOD_AS_TEST_CASE( TestByteStream01::test00b_protocols_ok,    "TestByteStream01 test00b_protocols_ok");
+METHOD_AS_TEST_CASE( TestByteStream01::test00a_protocols_error,           "TestByteStream01 test00a_protocols_error");
+METHOD_AS_TEST_CASE( TestByteStream01::test00b_protocols_ok,              "TestByteStream01 test00b_protocols_ok");
 
-METHOD_AS_TEST_CASE( TestByteStream01::test01_copy_file_ok,     "TestByteStream01 test01_copy_file_ok");
+METHOD_AS_TEST_CASE( TestByteStream01::test01_copy_file_ok_11kiB_buff4k,  "TestByteStream01 test01_copy_file_ok_11kiB_buff4k");
+METHOD_AS_TEST_CASE( TestByteStream01::test02_copy_file_ok_65MiB_buff4k,  "TestByteStream01 test02_copy_file_ok_65MiB_buff4k");
+METHOD_AS_TEST_CASE( TestByteStream01::test04_copy_file_ok_65MiB_buff32k, "TestByteStream01 test04_copy_file_ok_65MiB_buff32k");
 
-METHOD_AS_TEST_CASE( TestByteStream01::test11_copy_http_ok,     "TestByteStream01 test11_copy_http_ok");
-METHOD_AS_TEST_CASE( TestByteStream01::test12_copy_http_404,    "TestByteStream01 test12_copy_http_404");
+METHOD_AS_TEST_CASE( TestByteStream01::test11_copy_http_ok_buff32k,       "TestByteStream01 test11_copy_http_ok");
+METHOD_AS_TEST_CASE( TestByteStream01::test12_copy_http_404,              "TestByteStream01 test12_copy_http_404");
 
-METHOD_AS_TEST_CASE( TestByteStream01::test21_copy_fed_ok,      "TestByteStream01 test21_copy_fed_ok");
-METHOD_AS_TEST_CASE( TestByteStream01::test22_copy_fed_irq,     "TestByteStream01 test22_copy_fed_irq");
+METHOD_AS_TEST_CASE( TestByteStream01::test20_copy_fed_ok_buff4k_feed1k,  "TestByteStream01 test20_copy_fed_ok_buff4k_feed1k");
+METHOD_AS_TEST_CASE( TestByteStream01::test21_copy_fed_ok_buff32k,        "TestByteStream01 test21_copy_fed_ok_buff32k");
+METHOD_AS_TEST_CASE( TestByteStream01::test22_copy_fed_irq,               "TestByteStream01 test22_copy_fed_irq");
