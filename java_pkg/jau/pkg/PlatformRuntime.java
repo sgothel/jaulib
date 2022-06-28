@@ -1,6 +1,7 @@
 package jau.pkg;
 
 import java.security.PrivilegedAction;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jau.net.Uri;
 import org.jau.pkg.JNIJarLibrary;
@@ -44,9 +45,12 @@ public class PlatformRuntime {
     /** Runtime determined {@link MachineDataInfo}. */
     public static final MachineDataInfo MACH_DESC_RT;
 
+    private static AtomicBoolean initializedID = new AtomicBoolean(false);
+
     static {
         final boolean[] _isRunningFromJarURL = new boolean[] { false };
         final boolean[] _USE_TEMP_JAR_CACHE = new boolean[] { false };
+        final boolean[] _libsLoaded = new boolean[] { false };
 
         SecurityUtil.doPrivileged(new PrivilegedAction<Object>() {
             @Override
@@ -68,7 +72,7 @@ public class PlatformRuntime {
                         ( null != platformClassJarURI ) &&
                         PropertyAccess.getBooleanProperty(useTempJarCachePropName, true, true);
 
-                // load GluegenRT native library
+                // load jaulib native library
                 if(_USE_TEMP_JAR_CACHE[0] && TempJarCache.initSingleton() && TempJarCache.isInitialized(true) ) {
                     try {
                         JNIJarLibrary.addNativeJarLibs(new Class<?>[] { org.jau.sys.Debug.class }, null);
@@ -82,8 +86,18 @@ public class PlatformRuntime {
                     _USE_TEMP_JAR_CACHE[0] = false;
                 }
                 try {
-                    JNILibrary.loadLibrary("jaulib_jni_jni", false, cl);
-                    JNILibrary.loadLibrary("jaulib_pkg_jni", false, cl);
+                    if( !JNILibrary.loadLibrary("jaulib", false, cl) ) {
+                        throw new RuntimeException("Couldn't load native tool library with basename <jaulib>");
+                    }
+                    if( !JNILibrary.loadLibrary("jaulib_jni_jni", false, cl) ) {
+                        throw new RuntimeException("Couldn't load native java library with basename <jaulib_jni_jni>");
+                    }
+                    if( OSType.MACOS == PlatformProps.OS || OSType.IOS == PlatformProps.OS ) {
+                        if( !JNILibrary.loadLibrary("jaulib_pkg_jni", false, cl) ) {
+                            throw new RuntimeException("Couldn't load native MACOS/OS java library with basename <jaulib_pkg_jni>");
+                        }
+                    }
+                    _libsLoaded[0] = true;
                 } catch (final Throwable t) {
                     System.err.println("Caught "+t.getClass().getSimpleName()+": "+t.getMessage()+", while loading libs..");
                     t.printStackTrace();
@@ -93,6 +107,8 @@ public class PlatformRuntime {
         isRunningFromJarURL = _isRunningFromJarURL[0];
         USE_TEMP_JAR_CACHE = _USE_TEMP_JAR_CACHE[0];
 
+        initializedID.set(_libsLoaded[0]);
+
         //
         // Validate and setup MachineDataInfo.StaticConfig
         //
@@ -100,10 +116,19 @@ public class PlatformRuntime {
         MACH_DESC_RT = MachineDataInfoRuntime.getRuntime();
     }
 
+    public static void checkInitialized() {
+        if( false == initializedID.get() ) {
+            throw new IllegalStateException("Jaulib not initialized.");
+        }
+    }
+    public static boolean isInitialized() {
+        return false != initializedID.get();
+    }
     /**
      * kick off static initialization of <i>platform property information</i> and <i>native gluegen_rt lib loading</i>
      */
     public static void initSingleton() { }
+
 
     /**
      * Returns the MachineDataInfo of the running machine.

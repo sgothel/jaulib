@@ -10,6 +10,7 @@
 
 **0.14.0** (TODO)
 
+* Have `jau.pkg.PlatformRuntime` load tool library `jaulib` as well, resolving dependencies for self-testing.
 * Add java mapping of `jau::io::ByteInStream` for file, URL and feed for general use
   - `org.jau.nio.ByteInStream`, `org.jau.nio.ByteInStream_File`, `org.jau.nio.ByteInStream_URL`, `org.jau.nio.ByteInStream_Feed`
   - Mapped `jau::io::to_ByteInStream()` to `org.jau.nio.ByteInStream.create()`

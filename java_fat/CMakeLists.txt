@@ -16,6 +16,12 @@ set(jaulib_java_src_file ${CMAKE_CURRENT_BINARY_DIR}/jaulib-java-src.zip CACHE F
 add_custom_command (OUTPUT ${jaulib_jar_file} ${jaulib_fat_jar_file} ${jaulib_java_src_file}
                     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
                     COMMAND ${CMAKE_COMMAND}
+                            -D_srcdir=${CMAKE_CURRENT_BINARY_DIR}/../src
+                            -D_dstdir=${CMAKE_CURRENT_BINARY_DIR}/natives/${OS_AND_ARCH}
+                            -D_srcbasename=${CMAKE_SHARED_LIBRARY_PREFIX}jaulib${CMAKE_SHARED_LIBRARY_SUFFIX}.${jaulib_VERSION_SHORT}
+                            -D_dstbasename=${CMAKE_SHARED_LIBRARY_PREFIX}jaulib${CMAKE_SHARED_LIBRARY_SUFFIX}
+                            -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/modules/FileCopyS2D.cmake
+                    COMMAND ${CMAKE_COMMAND}
                             -D_srcdir=${CMAKE_CURRENT_BINARY_DIR}/../java_jni/jni
                             -D_dstdir=${CMAKE_CURRENT_BINARY_DIR}/natives/${OS_AND_ARCH}
                             -D_srcbasename=${CMAKE_SHARED_LIBRARY_PREFIX}jaulib_jni_jni${CMAKE_SHARED_LIBRARY_SUFFIX}.${jaulib_VERSION_SHORT}

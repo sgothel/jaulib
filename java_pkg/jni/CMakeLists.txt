@@ -12,7 +12,7 @@ include_directories(
 
 set (jaulib_pkg_JNI_SRCS
   ${PROJECT_SOURCE_DIR}/java_pkg/jni/jau/JarUtil.cxx
-  ${PROJECT_SOURCE_DIR}/java_jni/jni/jau/JVM_JNI8.cxx
+  ${PROJECT_SOURCE_DIR}/java_pkg/jni/jau/JVM_JNI8.cxx
 )
 
 set (CMAKE_SHARED_LINKER_FLAGS "-Wl,--as-needed")
