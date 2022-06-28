@@ -92,8 +92,26 @@ jint Java_org_jau_nio_ByteInStream_1Feed_read(JNIEnv *env, jobject obj, jbyteArr
         if( NULL == out_ptr ) {
             throw jau::InternalError("GetPrimitiveArrayCritical(address byte array) is null", E_FILE_LINE);
         }
-        const size_t res = ref->read(out_ptr + joffset, jlength);
-        return (jint)res;
+        return (jint) ref->read(out_ptr + joffset, jlength);
+    } catch(...) {
+        rethrow_and_raise_java_exception_jau(env);
+    }
+    return 0;
+}
+
+jint Java_org_jau_nio_ByteInStream_1Feed_read2Impl(JNIEnv *env, jobject obj, jobject jout, jint out_offset) {
+    try {
+        jau::jni::shared_ptr_ref<jau::io::ByteInStream_Feed> ref(env, obj); // hold until done
+
+        if( nullptr == jout ) {
+            throw jau::IllegalArgumentException("out buffer null", E_FILE_LINE);
+        }
+        const jlong out_cap = env->GetDirectBufferCapacity(jout);
+        uint8_t * out_ptr = static_cast<uint8_t *>( env->GetDirectBufferAddress(jout) );
+        if( 0 > out_cap || nullptr == out_ptr ) {
+            throw jau::IllegalArgumentException("out buffer access failure", E_FILE_LINE);
+        }
+        return (jint) ref->read(out_ptr + out_offset, out_cap - out_offset);
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }

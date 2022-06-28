@@ -23,6 +23,10 @@
  */
 package org.jau.nio;
 
+import java.nio.ByteBuffer;
+
+import org.jau.lang.NioUtil;
+
 /**
  * This class represents a Ringbuffer-Based byte input stream with an externally provisioned data feed.
  *
@@ -91,6 +95,17 @@ public final class ByteInStream_Feed implements ByteInStream  {
 
     @Override
     public native long bytes_read();
+
+    @Override
+    public int read(final ByteBuffer out) {
+        if( !NioUtil.isDirect(out) ) {
+            throw new IllegalArgumentException("out buffer not direct");
+        }
+        final int res = read2Impl(out, (int)NioUtil.getDirectBufferByteOffset(out));
+        out.limit(out.position() + res);
+        return res;
+    }
+    private native int read2Impl(Object out, int out_offset);
 
     @Override
     public native boolean has_content_size();

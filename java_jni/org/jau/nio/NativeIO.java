@@ -50,9 +50,9 @@ import org.jau.io.PrintUtil;
  */
 public interface NativeIO {
     /**
-     * Stream consumer
+     * Stream consumer using a byte array
      */
-    public static interface StreamConsumer {
+    public static interface StreamConsumer1 {
         /**
          *
          * @param data
@@ -64,18 +64,18 @@ public interface NativeIO {
     }
 
     /**
-     * Synchronous byte input stream reader using the given {@link StreamConsumer}.
+     * Synchronous byte array input stream reader using the given {@link StreamConsumer1}.
      *
-     * To abort streaming, user may return `false` from the given {@link StreamConsumer#consume(byte[], long, boolean)}.
+     * To abort streaming, user may return `false` from the given {@link StreamConsumer1#consume(byte[], long, boolean)}.
      *
      * @param in the input byte stream to read from
-     * @param buffer byte buffer passed down to {@link StreamConsumer#consume(byte[], long, boolean)}
+     * @param buffer byte buffer passed down to {@link StreamConsumer1#consume(byte[], long, boolean)}
      * @param consumer StreamConsumer consumer for each received heap of bytes, returning true to continue stream of false to abort.
      * @return total bytes read or 0 if error
      */
     public static long read_stream(final ByteInStream in,
                                    final byte buffer[],
-                                   final StreamConsumer consumer)
+                                   final StreamConsumer1 consumer)
     {
         long total = 0;
         boolean has_more = !in.end_of_data();
@@ -87,6 +87,56 @@ public interface NativeIO {
                 has_more = 1 <= got && !in.end_of_data() && ( !in.has_content_size() || total < in.content_size() );
                 try {
                     if( !consumer.consume(buffer, got, !has_more) ) {
+                        break; // end streaming
+                    }
+                } catch (final Throwable e) {
+                    PrintUtil.fprintf_td(System.err, "org.jau.nio.read_stream: Caught exception: %s", e.getMessage());
+                    break; // end streaming
+                }
+            } else {
+                has_more = false;
+            }
+        }
+        return total;
+    }
+
+    /**
+     * Stream consumer using a direct ByteBuffer
+     */
+    public static interface StreamConsumer2 {
+        /**
+         *
+         * @param data
+         * @param is_final
+         * @return true to signal continuation, false to end streaming.
+         */
+        boolean consume(ByteBuffer data, boolean is_final);
+    }
+
+    /**
+     * Synchronous direct ByteBuffer input stream reader using the given {@link StreamConsumer2}.
+     *
+     * To abort streaming, user may return `false` from the given {@link StreamConsumer2#consume(ByteBuffer, boolean)}.
+     *
+     * @param in the input byte stream to read from
+     * @param buffer byte buffer passed down to {@link StreamConsumer2#consume(ByteBuffer, boolean)}
+     * @param consumer StreamConsumer2 consumer for each received heap of bytes, returning true to continue stream of false to abort.
+     * @return total bytes read or 0 if error
+     */
+    public static long read_stream(final ByteInStream in,
+                                   final ByteBuffer buffer,
+                                   final StreamConsumer2 consumer)
+    {
+        long total = 0;
+        boolean has_more = !in.end_of_data();
+        while( has_more ) {
+            if( in.check_available(1) ) { // at least one byte to stream ..
+                final int got = in.read(buffer);
+
+                total += got;
+                has_more = 1 <= got && !in.end_of_data() && ( !in.has_content_size() || total < in.content_size() );
+                try {
+                    if( !consumer.consume(buffer, !has_more) ) {
                         break; // end streaming
                     }
                 } catch (final Throwable e) {
@@ -171,24 +221,4 @@ public interface NativeIO {
                     _rate_bitps, _rate_bps);
         }
     }
-
-    /**
-     * Allocates a new direct ByteBuffer with the specified number of
-     * elements. The returned buffer will have its byte order set to
-     * the host platform's native byte order.
-     */
-    public static ByteBuffer newDirectByteBuffer(final int numElements) {
-        return nativeOrder(ByteBuffer.allocateDirect(numElements));
-    }
-
-    /**
-     * Helper routine to set a ByteBuffer to the native byte order, if
-     * that operation is supported by the underlying NIO
-     * implementation.
-     */
-    public static ByteBuffer nativeOrder(final ByteBuffer buf) {
-        return buf.order(ByteOrder.nativeOrder());
-    }
-
-
 }

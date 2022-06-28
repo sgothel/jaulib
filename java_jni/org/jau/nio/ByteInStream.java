@@ -23,6 +23,8 @@
  */
 package org.jau.nio;
 
+import java.nio.ByteBuffer;
+
 /**
  * This class represents an abstract byte input stream object.
  *
@@ -101,6 +103,27 @@ public interface ByteInStream extends AutoCloseable  {
      * @see @ref byte_in_stream_properties "ByteInStream Properties"
      */
     int read(byte out[], final int offset, final int length);
+
+    /**
+     * Read from the source. Moves the internal offset so that every
+     * call to read will return a new portion of the source.
+     *
+     * Use check_available() to wait and ensure a certain amount of bytes are available.
+     *
+     * This method is not blocking.
+     *
+     * @param out the direct {@link ByteBuffer} to write the result starting at its {@link ByteBuffer#position() position} up to {@link ByteBuffer#capacity() capacity}.
+     *            {@link ByteBuffer#limit() Limit} will be set to {@link ByteBuffer#position() position} + read-bytes.
+     * @return length in bytes that was actually read and put into out,
+     *         equal to its {@link ByteBuffer#limit() limit} - {@link ByteBuffer#position() position}, i.e. {@link ByteBuffer#remaining() remaining}.
+     *
+     * @see check_available()
+     * @see @ref byte_in_stream_properties "ByteInStream Properties"
+     *
+     * @param out
+     * @return
+     */
+    int read(ByteBuffer out);
 
     /**
      * Read from the source but do not modify the internal
