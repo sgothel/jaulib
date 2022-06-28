@@ -178,7 +178,7 @@ public class Shdr {
   }
 
   public static Shdr create(final int mdIdx) {
-      return create(mdIdx, NioUtil.newNativeByteBuffer( size(mdIdx) ) );
+      return create(mdIdx, NioUtil.newDirectByteBuffer( size(mdIdx) ) );
   }
 
   public static Shdr create(final int mdIdx, final java.nio.ByteBuffer buf) {

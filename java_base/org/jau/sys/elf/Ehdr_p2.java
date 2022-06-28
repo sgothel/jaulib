@@ -178,7 +178,7 @@ public class Ehdr_p2 {
   }
 
   public static Ehdr_p2 create(final int mdIdx) {
-      return create(mdIdx, NioUtil.newNativeByteBuffer( size(mdIdx) ) );
+      return create(mdIdx, NioUtil.newDirectByteBuffer( size(mdIdx) ) );
   }
 
   public static Ehdr_p2 create(final int mdIdx, final java.nio.ByteBuffer buf) {

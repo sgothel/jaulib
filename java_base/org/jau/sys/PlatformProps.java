@@ -492,7 +492,7 @@ public class PlatformProps {
         }
     }
     private static final boolean queryIsLittleEndianImpl() {
-        final ByteBuffer tst_b = NioUtil.newNativeByteBuffer(NioUtil.SIZEOF_INT); // 32bit in native order
+        final ByteBuffer tst_b = NioUtil.newDirectByteBuffer(NioUtil.SIZEOF_INT); // 32bit in native order
         final IntBuffer tst_i = tst_b.asIntBuffer();
         final ShortBuffer tst_s = tst_b.asShortBuffer();
         tst_i.put(0, 0x0A0B0C0D);

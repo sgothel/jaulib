@@ -285,13 +285,13 @@ public class IOUtil {
             initialCapacity = avail;
         }
         final MachineDataInfo machine = PlatformProps.MACH_DESC_STAT;
-        ByteBuffer data = NioUtil.newNativeByteBuffer( machine.pageAlignedSize( initialCapacity ) );
+        ByteBuffer data = NioUtil.newDirectByteBuffer( machine.pageAlignedSize( initialCapacity ) );
         final byte[] chunk = new byte[machine.pageSizeInBytes()];
         int chunk2Read = Math.min(machine.pageSizeInBytes(), avail);
         int numRead = 0;
         do {
             if (avail > data.remaining()) {
-                final ByteBuffer newData = NioUtil.newNativeByteBuffer(
+                final ByteBuffer newData = NioUtil.newDirectByteBuffer(
                                                machine.pageAlignedSize(data.position() + avail) );
                 newData.put(data);
                 data = newData;

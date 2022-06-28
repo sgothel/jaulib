@@ -23,8 +23,15 @@
  */
 package org.jau.lang;
 
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.CharBuffer;
+import java.nio.DoubleBuffer;
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
+import java.nio.LongBuffer;
+import java.nio.ShortBuffer;
 
 import org.jau.sys.Debug;
 import org.jau.sys.PlatformProps;
@@ -45,8 +52,69 @@ public class NioUtil {
 
     private NioUtil() {}
 
-    public static ByteBuffer newNativeByteBuffer(final int size) {
+    /**
+     * Allocates a new direct ByteBuffer with the specified number of
+     * elements. The returned buffer will have its byte order set to
+     * the host platform's native byte order.
+     */
+    public static ByteBuffer newDirectByteBuffer(final int size) {
         return ByteBuffer.allocateDirect( size ).order( ByteOrder.nativeOrder() );
+    }
+
+    /**
+     * Helper routine to set a ByteBuffer to the native byte order, if
+     * that operation is supported by the underlying NIO
+     * implementation.
+     */
+    public static ByteBuffer nativeOrder(final ByteBuffer buf) {
+        return buf.order(ByteOrder.nativeOrder());
+    }
+
+    /**
+     * Helper routine to tell whether a buffer is direct or not. Null
+     * pointers <b>are</b> considered direct.
+     */
+    public static boolean isDirect(final Object buf) {
+        if (buf == null) {
+            return true;
+        }
+        if (buf instanceof Buffer) {
+            return ((Buffer) buf).isDirect();
+        }
+        throw new IllegalArgumentException("Unexpected buffer type " + buf.getClass().getName());
+    }
+
+    /**
+     * Helper routine to get the Buffer byte offset by taking into
+     * account the Buffer position and the underlying type.  This is
+     * the total offset for Direct Buffers.
+     *
+     * Return value is of type `long` only to cover the `int` multiple of the position and element type size.<br/>
+     * For ByteBuffer, the return value can be safely cast to `int`.
+     */
+    public static long getDirectBufferByteOffset(final Object buf) {
+        if (buf == null) {
+            return 0;
+        }
+        if (buf instanceof Buffer) {
+            final long pos = ((Buffer) buf).position();
+            if (buf instanceof ByteBuffer) {
+                return pos;
+            } else if (buf instanceof FloatBuffer) {
+                return pos * SIZEOF_FLOAT;
+            } else if (buf instanceof IntBuffer) {
+                return pos * SIZEOF_INT;
+            } else if (buf instanceof ShortBuffer) {
+                return pos * SIZEOF_SHORT;
+            } else if (buf instanceof DoubleBuffer) {
+                return pos * SIZEOF_DOUBLE;
+            } else if (buf instanceof LongBuffer) {
+                return pos * SIZEOF_LONG;
+            } else if (buf instanceof CharBuffer) {
+                return pos * SIZEOF_CHAR;
+            }
+        }
+        throw new IllegalArgumentException("Disallowed array backing store type in buffer " + buf.getClass().getName());
     }
 
     /**

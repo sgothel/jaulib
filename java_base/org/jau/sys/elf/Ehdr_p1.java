@@ -53,7 +53,7 @@ public class Ehdr_p1 {
   }
 
   public static Ehdr_p1 create() {
-    return create( NioUtil.newNativeByteBuffer( size() ) );
+    return create( NioUtil.newDirectByteBuffer( size() ) );
   }
 
   public static Ehdr_p1 create(final java.nio.ByteBuffer buf) {
