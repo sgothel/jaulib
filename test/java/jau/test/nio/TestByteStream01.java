@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.jau.fs.FileUtil;
 import org.jau.nio.ByteInStream;
 import org.jau.nio.ByteInStream_Feed;
 import org.jau.nio.ByteInStream_File;
@@ -333,6 +334,7 @@ public class TestByteStream01 extends JunitTracer {
                 final long copy_size = file_size(fname_payload_copy_lst.get(file_idx));
                 Assert.assertEquals( in.content_size(), copy_size );
                 Assert.assertEquals( fname_payload_size_lst.get(file_idx).longValue(), copy_size );
+                Assert.assertTrue( FileUtil.compare(in.id(), fname_payload_copy_lst.get(file_idx), true /* verbose */) );
             }
         }
         {
@@ -354,6 +356,7 @@ public class TestByteStream01 extends JunitTracer {
                 final long copy_size = file_size(fname_payload_copy_lst.get(file_idx));
                 Assert.assertEquals( in.content_size(), copy_size );
                 Assert.assertEquals( fname_payload_size_lst.get(file_idx).longValue(), copy_size );
+                Assert.assertTrue( FileUtil.compare(fname_payload_lst.get(file_idx), fname_payload_copy_lst.get(file_idx), true /* verbose */) );
             }
         }
         {
@@ -376,6 +379,7 @@ public class TestByteStream01 extends JunitTracer {
                     final long copy_size = file_size(fname_payload_copy_lst.get(file_idx));
                     Assert.assertEquals( in.content_size(), copy_size );
                     Assert.assertEquals( fname_payload_size_lst.get(file_idx).longValue(), copy_size );
+                    Assert.assertTrue( FileUtil.compare(fname_payload_lst.get(file_idx), fname_payload_copy_lst.get(file_idx), true /* verbose */) );
                 } else {
                     Assert.assertNull( in );
                 }
@@ -396,6 +400,7 @@ public class TestByteStream01 extends JunitTracer {
                 final long copy_size = file_size(fname_payload_copy_lst.get(file_idx));
                 Assert.assertEquals( data_stream.content_size(), copy_size );
                 Assert.assertEquals( fname_payload_size_lst.get(file_idx).longValue(), copy_size );
+                Assert.assertTrue( FileUtil.compare(fname_payload_lst.get(file_idx), fname_payload_copy_lst.get(file_idx), true /* verbose */) );
             }
         }
         {
@@ -408,6 +413,7 @@ public class TestByteStream01 extends JunitTracer {
                 final long copy_size = file_size(fname_payload_copy_lst.get(file_idx));
                 Assert.assertEquals( data_stream.content_size(), copy_size );
                 Assert.assertEquals( fname_payload_size_lst.get(file_idx).longValue(), copy_size );
+                Assert.assertTrue( FileUtil.compare(fname_payload_lst.get(file_idx), fname_payload_copy_lst.get(file_idx), true /* verbose */) );
             }
         }
     }
@@ -433,6 +439,7 @@ public class TestByteStream01 extends JunitTracer {
                 final long copy_size = file_size(fname_payload_copy_lst.get(file_idx));
                 Assert.assertEquals( data_stream.content_size(), copy_size );
                 Assert.assertEquals( fname_payload_size_lst.get(file_idx).longValue(), copy_size );
+                Assert.assertTrue( FileUtil.compare(fname_payload_lst.get(file_idx), fname_payload_copy_lst.get(file_idx), true /* verbose */) );
             }
         }
         {
@@ -448,6 +455,7 @@ public class TestByteStream01 extends JunitTracer {
                 final long copy_size = file_size(fname_payload_copy_lst.get(file_idx));
                 Assert.assertEquals( data_stream.content_size(), copy_size );
                 Assert.assertEquals( fname_payload_size_lst.get(file_idx).longValue(), copy_size );
+                Assert.assertTrue( FileUtil.compare(fname_payload_lst.get(file_idx), fname_payload_copy_lst.get(file_idx), true /* verbose */) );
             }
         }
     }
@@ -606,6 +614,7 @@ public class TestByteStream01 extends JunitTracer {
                 final long copy_size = file_size(fname_payload_copy_lst.get(file_idx));
                 Assert.assertEquals( data_feed.content_size(), copy_size );
                 Assert.assertEquals( fname_payload_size_lst.get(file_idx).longValue(), copy_size );
+                Assert.assertTrue( FileUtil.compare(fname_payload_lst.get(file_idx), fname_payload_copy_lst.get(file_idx), true /* verbose */) );
             }
 
             // throttled, with content size
@@ -622,6 +631,7 @@ public class TestByteStream01 extends JunitTracer {
                 final long copy_size = file_size(fname_payload_copy_lst.get(file_idx));
                 Assert.assertEquals( data_feed.content_size(), copy_size );
                 Assert.assertEquals( fname_payload_size_lst.get(file_idx).longValue(), copy_size );
+                Assert.assertTrue( FileUtil.compare(fname_payload_lst.get(file_idx), fname_payload_copy_lst.get(file_idx), true /* verbose */) );
             }
 
             // throttled, no content size, interruptReader() via set_eof() will avoid timeout
@@ -638,6 +648,7 @@ public class TestByteStream01 extends JunitTracer {
                 final long copy_size = file_size(fname_payload_copy_lst.get(file_idx));
                 Assert.assertEquals( data_feed.content_size(), 0 );
                 Assert.assertEquals( fname_payload_size_lst.get(file_idx).longValue(), copy_size );
+                Assert.assertTrue( FileUtil.compare(fname_payload_lst.get(file_idx), fname_payload_copy_lst.get(file_idx), true /* verbose */) );
             }
         }
         {
@@ -657,6 +668,7 @@ public class TestByteStream01 extends JunitTracer {
                 final long copy_size = file_size(fname_payload_copy_lst.get(file_idx));
                 Assert.assertEquals( data_feed.content_size(), copy_size );
                 Assert.assertEquals( fname_payload_size_lst.get(file_idx).longValue(), copy_size );
+                Assert.assertTrue( FileUtil.compare(fname_payload_lst.get(file_idx), fname_payload_copy_lst.get(file_idx), true /* verbose */) );
             }
         }
     }
@@ -682,6 +694,7 @@ public class TestByteStream01 extends JunitTracer {
                 Assert.assertFalse( data_feed.has_content_size() );
                 Assert.assertEquals( data_feed.content_size(), 0 );
                 Assert.assertTrue( fname_payload_size_lst.get(file_idx).longValue() > copy_size );
+                Assert.assertFalse( FileUtil.compare(fname_payload_lst.get(file_idx), fname_payload_copy_lst.get(file_idx), true /* verbose */) );
             }
 
             // full speed, with content size, interrupting 1/4 way
@@ -699,6 +712,7 @@ public class TestByteStream01 extends JunitTracer {
                 Assert.assertTrue( data_feed.has_content_size() );
                 Assert.assertEquals( fname_payload_size_lst.get(file_idx).longValue(), data_feed.content_size() );
                 Assert.assertTrue( data_feed.content_size() > copy_size );
+                Assert.assertFalse( FileUtil.compare(fname_payload_lst.get(file_idx), fname_payload_copy_lst.get(file_idx), true /* verbose */) );
             }
         }
     }

@@ -912,6 +912,12 @@ std::string jau::fs::to_string(const copy_options mask) noexcept {
     return out;
 }
 
+bool jau::fs::compare(const std::string& source1, const std::string& source2, const bool verbose) noexcept {
+    const file_stats s1(source1);
+    const file_stats s2(source2);
+    return compare(s1, s2, verbose);
+}
+
 bool jau::fs::compare(const file_stats& source1, const file_stats& source2, const bool verbose) noexcept {
     if( !source1.is_file() ) {
         if( verbose ) {
