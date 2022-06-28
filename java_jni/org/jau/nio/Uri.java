@@ -43,6 +43,8 @@ public class Uri {
      * Returns the valid uri-scheme from given uri,
      * which is empty if no valid scheme is included.
      *
+     * The given uri must included at least a colon after the uri-scheme part.
+     *
      * @param uri an uri
      * @return valid uri-scheme, empty if non found
      */
@@ -50,6 +52,8 @@ public class Uri {
 
     /**
      * Returns true if the uri-scheme of given uri matches a supported by [*libcurl* network protocols](https://curl.se/docs/url-syntax.html) otherwise false.
+     *
+     * The uri-scheme is retrieved via get_scheme() passing given uri, hence must included at least a colon after the uri-scheme part.
      *
      * The *libcurl* supported protocols is queried at runtime, see supported_protocols().
      *

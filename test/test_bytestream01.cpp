@@ -58,6 +58,7 @@ class TestByteStream01 {
                     jau::fs::remove(name);
                     jau::fs::remove(name+".enc");
                     jau::fs::remove(name+".enc.dec");
+                    jau::fs::remove(name+".copy");
                     size_t size;
                     {
                         static const std::string one_line = "Hello World, this is a test and I like it. Exactly 100 characters long. 0123456780 abcdefghjklmnop..";
@@ -165,17 +166,18 @@ class TestByteStream01 {
         }
 
         void test00a_protocols_error() {
+            const bool http_support_expected = jau::io::uri::protocol_supported("http:");
+            const bool file_support_expected = jau::io::uri::protocol_supported("file:");
             httpd_start();
             {
                 std::vector<std::string_view> protos = jau::io::uri::supported_protocols();
                 jau::PLAIN_PRINT(true, "test00_protocols: Supported protocols: %zu: %s", protos.size(), jau::to_string(protos, ",").c_str());
-#ifdef USE_LIBCURL
-                REQUIRE( 0 < protos.size() );
-#else
-                REQUIRE( 0 == protos.size() );
-#endif // USE_LIBCURL
+                if( http_support_expected ) { // assume no http -> no curl
+                    REQUIRE( 0 < protos.size() );
+                } else {
+                    REQUIRE( 0 == protos.size() );
+                }
             }
-#ifdef USE_LIBCURL
             const size_t file_idx = IDX_11kiB;
             {
                 const std::string url = "not_exiting_file.txt";
@@ -191,7 +193,7 @@ class TestByteStream01 {
             {
                 const std::string url = "file://not_exiting_file_uri.txt";
                 REQUIRE( true == jau::io::uri::is_local_file_protocol(url) );
-                REQUIRE( true == jau::io::uri::protocol_supported(url) );
+                REQUIRE( file_support_expected == jau::io::uri::protocol_supported(url) );
 
                 std::unique_ptr<jau::io::ByteInStream> in = jau::io::to_ByteInStream(url);
                 if( nullptr != in ) {
@@ -213,20 +215,25 @@ class TestByteStream01 {
             {
                 const std::string url = url_input_root + "not_exiting_http_uri.txt";
                 REQUIRE( false == jau::io::uri::is_local_file_protocol(url) );
-                REQUIRE( true == jau::io::uri::protocol_supported(url) );
+                REQUIRE( http_support_expected == jau::io::uri::protocol_supported(url) );
 
                 std::unique_ptr<jau::io::ByteInStream> in = jau::io::to_ByteInStream(url);
-                REQUIRE( nullptr != in );
-                jau::sleep_for( 10_ms );
-                jau::PLAIN_PRINT(true, "test00_protocols: not_exiting_http_uri: %s", in->to_string().c_str());
-                REQUIRE( true == in->end_of_data() );
-                REQUIRE( true == in->error() );
-                REQUIRE( 0 == in->content_size() );
+                if( http_support_expected ) {
+                    REQUIRE( nullptr != in );
+                    jau::sleep_for( 10_ms );
+                    jau::PLAIN_PRINT(true, "test00_protocols: not_exiting_http_uri: %s", in->to_string().c_str());
+                    REQUIRE( true == in->end_of_data() );
+                    REQUIRE( true == in->error() );
+                    REQUIRE( 0 == in->content_size() );
+                } else {
+                    REQUIRE( nullptr == in );
+                }
             }
-#endif // USE_LIBCURL
         }
 
         void test00b_protocols_ok() {
+            const bool http_support_expected = jau::io::uri::protocol_supported("http:");
+            const bool file_support_expected = jau::io::uri::protocol_supported("file:");
             httpd_start();
             const size_t file_idx = IDX_11kiB;
             {
@@ -253,7 +260,7 @@ class TestByteStream01 {
             {
                 const std::string url = "file://" + fname_payload_lst[file_idx];
                 REQUIRE( true == jau::io::uri::is_local_file_protocol(url) );
-                REQUIRE( true == jau::io::uri::protocol_supported(url) );
+                REQUIRE( file_support_expected == jau::io::uri::protocol_supported(url) );
 
                 std::unique_ptr<jau::io::ByteInStream> in = jau::io::to_ByteInStream(url);
                 if( nullptr != in ) {
@@ -274,23 +281,27 @@ class TestByteStream01 {
             {
                 const std::string url = url_input_root + fname_payload_lst[file_idx];
                 REQUIRE( false == jau::io::uri::is_local_file_protocol(url) );
-                REQUIRE( true == jau::io::uri::protocol_supported(url) );
+                REQUIRE( http_support_expected == jau::io::uri::protocol_supported(url) );
 
                 std::unique_ptr<jau::io::ByteInStream> in = jau::io::to_ByteInStream(url);
                 if( nullptr != in ) {
                     jau::PLAIN_PRINT(true, "test00_protocols: http: %s", in->to_string().c_str());
                 }
-                REQUIRE( nullptr != in );
-                REQUIRE( false == in->error() );
+                if( http_support_expected ) {
+                    REQUIRE( nullptr != in );
+                    REQUIRE( false == in->error() );
 
-                bool res = transfer(*in, fname_payload_copy_lst[file_idx]);
-                REQUIRE( true == res );
+                    bool res = transfer(*in, fname_payload_copy_lst[file_idx]);
+                    REQUIRE( true == res );
 
-                jau::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
-                REQUIRE( true == out_stats.exists() );
-                REQUIRE( true == out_stats.is_file() );
-                REQUIRE( in->content_size() == out_stats.size() );
-                REQUIRE( fname_payload_size_lst[file_idx] == out_stats.size() );
+                    jau::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
+                    REQUIRE( true == out_stats.exists() );
+                    REQUIRE( true == out_stats.is_file() );
+                    REQUIRE( in->content_size() == out_stats.size() );
+                    REQUIRE( fname_payload_size_lst[file_idx] == out_stats.size() );
+                } else {
+                    REQUIRE( nullptr == in );
+                }
             }
         }
 
@@ -324,8 +335,11 @@ class TestByteStream01 {
         }
 
         void test11_copy_http_ok() {
+            if( !jau::io::uri::protocol_supported("http:") ) {
+                jau::PLAIN_PRINT(true, "http not supported, abort\n");
+                return;
+            }
             httpd_start();
-
             {
                 const size_t file_idx = IDX_11kiB;
 
@@ -361,8 +375,11 @@ class TestByteStream01 {
         }
 
         void test12_copy_http_404() {
+            if( !jau::io::uri::protocol_supported("http:") ) {
+                jau::PLAIN_PRINT(true, "http not supported, abort\n");
+                return;
+            }
             httpd_start();
-
             {
                 const size_t file_idx = IDX_11kiB;
 
@@ -403,12 +420,10 @@ class TestByteStream01 {
 
         // throttled, with content size
         static void feed_source_01(jau::io::ByteInStream_Feed * data_feed) {
-            jau::fs::file_stats fs_feed(data_feed->id());
-            const uint64_t file_size = fs_feed.size();
-            data_feed->set_content_size( file_size );
-
             uint64_t xfer_total = 0;
             jau::io::ByteInStream_File data_stream(data_feed->id(), true /* use_binary */);
+            const uint64_t file_size = data_stream.content_size();
+            data_feed->set_content_size( file_size );
             while( !data_stream.end_of_data() && xfer_total < file_size ) {
                 uint8_t buffer[1024]; // 1k
                 size_t count = data_stream.read(buffer, sizeof(buffer));
@@ -419,17 +434,15 @@ class TestByteStream01 {
                 }
             }
             // probably set after transfering due to above sleep, which also ends when total size has been reached.
-            data_feed->set_eof( jau::io::async_io_result_t::SUCCESS );
+            data_feed->set_eof( xfer_total == file_size ? jau::io::async_io_result_t::SUCCESS : jau::io::async_io_result_t::FAILED );
         }
 
         // full speed, with content size
         static void feed_source_10(jau::io::ByteInStream_Feed * data_feed) {
-            jau::fs::file_stats fs_feed(data_feed->id());
-            const uint64_t file_size = fs_feed.size();
-            data_feed->set_content_size( file_size );
-
             uint64_t xfer_total = 0;
             jau::io::ByteInStream_File data_stream(data_feed->id(), true /* use_binary */);
+            const uint64_t file_size = data_stream.content_size();
+            data_feed->set_content_size( data_stream.content_size() );
             while( !data_stream.end_of_data() && xfer_total < file_size ) {
                 uint8_t buffer[1024]; // 1k
                 size_t count = data_stream.read(buffer, sizeof(buffer));
@@ -444,10 +457,10 @@ class TestByteStream01 {
         // full speed, no content size, interrupting @ 1024 bytes within our header
         static void feed_source_20(jau::io::ByteInStream_Feed * data_feed) {
             uint64_t xfer_total = 0;
-            jau::io::ByteInStream_File enc_stream(data_feed->id(), true /* use_binary */);
-            while( !enc_stream.end_of_data() ) {
+            jau::io::ByteInStream_File data_stream(data_feed->id(), true /* use_binary */);
+            while( !data_stream.end_of_data() ) {
                 uint8_t buffer[1024]; // 1k
-                size_t count = enc_stream.read(buffer, sizeof(buffer));
+                size_t count = data_stream.read(buffer, sizeof(buffer));
                 if( 0 < count ) {
                     xfer_total += count;
                     data_feed->write(buffer, count);
@@ -463,15 +476,13 @@ class TestByteStream01 {
 
         // full speed, with content size, interrupting 1/4 way
         static void feed_source_21(jau::io::ByteInStream_Feed * data_feed) {
-            jau::fs::file_stats fs_feed(data_feed->id());
-            const uint64_t file_size = fs_feed.size();
-            data_feed->set_content_size( file_size );
-
             uint64_t xfer_total = 0;
-            jau::io::ByteInStream_File enc_stream(data_feed->id(), true /* use_binary */);
-            while( !enc_stream.end_of_data() ) {
+            jau::io::ByteInStream_File data_stream(data_feed->id(), true /* use_binary */);
+            const uint64_t file_size = data_stream.content_size();
+            data_feed->set_content_size( data_stream.content_size() );
+            while( !data_stream.end_of_data() ) {
                 uint8_t buffer[1024]; // 1k
-                size_t count = enc_stream.read(buffer, sizeof(buffer));
+                size_t count = data_stream.read(buffer, sizeof(buffer));
                 if( 0 < count ) {
                     xfer_total += count;
                     data_feed->write(buffer, count);
@@ -611,16 +622,12 @@ std::vector<std::string> TestByteStream01::fname_payload_copy_lst;
 std::vector<uint64_t> TestByteStream01::fname_payload_size_lst;
 
 METHOD_AS_TEST_CASE( TestByteStream01::test00a_protocols_error, "TestByteStream01 test00a_protocols_error");
-#ifdef USE_LIBCURL
-    METHOD_AS_TEST_CASE( TestByteStream01::test00b_protocols_ok,    "TestByteStream01 test00b_protocols_ok");
-#endif // USE_LIBCURL
+METHOD_AS_TEST_CASE( TestByteStream01::test00b_protocols_ok,    "TestByteStream01 test00b_protocols_ok");
 
 METHOD_AS_TEST_CASE( TestByteStream01::test01_copy_file_ok,     "TestByteStream01 test01_copy_file_ok");
 
-#ifdef USE_LIBCURL
-    METHOD_AS_TEST_CASE( TestByteStream01::test11_copy_http_ok,     "TestByteStream01 test11_copy_http_ok");
-    METHOD_AS_TEST_CASE( TestByteStream01::test12_copy_http_404,    "TestByteStream01 test12_copy_http_404");
-#endif // USE_LIBCURL
+METHOD_AS_TEST_CASE( TestByteStream01::test11_copy_http_ok,     "TestByteStream01 test11_copy_http_ok");
+METHOD_AS_TEST_CASE( TestByteStream01::test12_copy_http_404,    "TestByteStream01 test12_copy_http_404");
 
 METHOD_AS_TEST_CASE( TestByteStream01::test21_copy_fed_ok,      "TestByteStream01 test21_copy_fed_ok");
 METHOD_AS_TEST_CASE( TestByteStream01::test22_copy_fed_irq,     "TestByteStream01 test22_copy_fed_irq");

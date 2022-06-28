@@ -94,21 +94,22 @@ class TestIOStream01 {
                 REQUIRE( 0 == protos.size() );
 #endif
             }
-#ifdef USE_LIBCURL
+            const bool http_support_expected = jau::io::uri::protocol_supported("http:");
+            const bool file_support_expected = jau::io::uri::protocol_supported("file:");
             {
                 const std::string url = url_input_root + basename_10kiB;
                 REQUIRE( false == jau::io::uri::is_local_file_protocol(url) );
-                REQUIRE( true == jau::io::uri::protocol_supported(url) );
+                REQUIRE( http_support_expected == jau::io::uri::protocol_supported(url) );
             }
             {
                 const std::string url = "https://localhost:8080/" + basename_10kiB;
                 REQUIRE( false == jau::io::uri::is_local_file_protocol(url) );
-                REQUIRE( true == jau::io::uri::protocol_supported(url) );
+                REQUIRE( http_support_expected == jau::io::uri::protocol_supported(url) );
             }
             {
                 const std::string url = "file://" + basename_10kiB;
                 REQUIRE( true == jau::io::uri::is_local_file_protocol(url) );
-                REQUIRE( true == jau::io::uri::protocol_supported(url) );
+                REQUIRE( file_support_expected == jau::io::uri::protocol_supported(url) );
             }
             {
                 const std::string url = "lala://localhost:8080/" + basename_10kiB;
@@ -149,10 +150,13 @@ class TestIOStream01 {
                 REQUIRE( url_content_length == url_total_read );
                 REQUIRE( jau::io::async_io_result_t::FAILED == result );
             }
-#endif // USE_LIBCURL
         }
 
         void test01_sync_ok() {
+            if( !jau::io::uri::protocol_supported("http:") ) {
+                jau::PLAIN_PRINT(true, "http not supported, abort\n");
+                return;
+            }
             const jau::fs::file_stats in_stats(basename_10kiB);
             const size_t file_size = in_stats.size();
             const std::string url_input = url_input_root + basename_10kiB;
@@ -182,6 +186,10 @@ class TestIOStream01 {
         }
 
         void test02_sync_404() {
+            if( !jau::io::uri::protocol_supported("http:") ) {
+                jau::PLAIN_PRINT(true, "http not supported, abort\n");
+                return;
+            }
             const std::string url_input = url_input_root + "doesnt_exists.txt";
 
             std::ofstream outfile("testfile02_01_out.bin", std::ios::out | std::ios::binary);
@@ -209,6 +217,10 @@ class TestIOStream01 {
         }
 
         void test11_async_ok() {
+            if( !jau::io::uri::protocol_supported("http:") ) {
+                jau::PLAIN_PRINT(true, "http not supported, abort\n");
+                return;
+            }
             const jau::fs::file_stats in_stats(basename_10kiB);
             const size_t file_size = in_stats.size();
             const std::string url_input = url_input_root + basename_10kiB;
@@ -255,6 +267,10 @@ class TestIOStream01 {
         }
 
         void test12_async_404() {
+            if( !jau::io::uri::protocol_supported("http:") ) {
+                jau::PLAIN_PRINT(true, "http not supported, abort\n");
+                return;
+            }
             const std::string url_input = url_input_root + "doesnt_exists.txt";
 
             std::ofstream outfile("testfile12_01_out.bin", std::ios::out | std::ios::binary);
@@ -301,10 +317,8 @@ class TestIOStream01 {
 };
 
 METHOD_AS_TEST_CASE( TestIOStream01::test00_protocols, "TestIOStream01 - test00_protocols");
-#ifdef USE_LIBCURL
-    METHOD_AS_TEST_CASE( TestIOStream01::test01_sync_ok,   "TestIOStream01 - test01_sync_ok");
-    METHOD_AS_TEST_CASE( TestIOStream01::test02_sync_404,  "TestIOStream01 - test02_sync_404");
-    METHOD_AS_TEST_CASE( TestIOStream01::test11_async_ok,  "TestIOStream01 - test11_async_ok");
-    METHOD_AS_TEST_CASE( TestIOStream01::test12_async_404, "TestIOStream01 - test12_async_404");
-#endif // USE_LIBCURL
+METHOD_AS_TEST_CASE( TestIOStream01::test01_sync_ok,   "TestIOStream01 - test01_sync_ok");
+METHOD_AS_TEST_CASE( TestIOStream01::test02_sync_404,  "TestIOStream01 - test02_sync_404");
+METHOD_AS_TEST_CASE( TestIOStream01::test11_async_ok,  "TestIOStream01 - test11_async_ok");
+METHOD_AS_TEST_CASE( TestIOStream01::test12_async_404, "TestIOStream01 - test12_async_404");
 
