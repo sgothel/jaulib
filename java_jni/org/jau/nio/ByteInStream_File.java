@@ -25,8 +25,10 @@ package org.jau.nio;
 
 /**
  * This class represents a file based byte input stream.
+ *
+ * Instance uses the native C++ object `jau::io::ByteInStream_File`.
  */
-public final class ByteInStream_File implements ByteInStream, AutoCloseable  {
+public final class ByteInStream_File implements ByteInStream {
     private volatile long nativeInstance;
     /* pp */ long getNativeInstance() { return nativeInstance; }
 
@@ -62,6 +64,9 @@ public final class ByteInStream_File implements ByteInStream, AutoCloseable  {
     private native long ctorImpl(final String path, final boolean use_binary);
 
     @Override
+    public native void closeStream();
+
+    @Override
     public void close() {
         final long handle;
         synchronized( this ) {
@@ -83,10 +88,10 @@ public final class ByteInStream_File implements ByteInStream, AutoCloseable  {
     public native boolean check_available(final long n);
 
     @Override
-    public native long read(final byte[] out, final int offset, final int length);
+    public native int read(final byte[] out, final int offset, final int length);
 
     @Override
-    public native long peek(byte[] out, final int offset, final int length, final long peek_offset);
+    public native int peek(byte[] out, final int offset, final int length, final long peek_offset);
 
     @Override
     public native boolean end_of_data();

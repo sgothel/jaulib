@@ -26,11 +26,13 @@ package org.jau.nio;
 /**
  * This class represents a Ringbuffer-Based byte input stream with a URL connection provisioned data feed.
  *
+ * Instance uses the native C++ object `jau::io::ByteInStream_URL`.
+ *
  * Standard implementation uses [curl](https://curl.se/),
  * hence all [*libcurl* network protocols](https://curl.se/docs/url-syntax.html) are supported,
  * jau::io::uri::supported_protocols().
  */
-public final class ByteInStream_URL implements ByteInStream, AutoCloseable  {
+public final class ByteInStream_URL implements ByteInStream {
     private volatile long nativeInstance;
     /* pp */ long getNativeInstance() { return nativeInstance; }
 
@@ -48,6 +50,9 @@ public final class ByteInStream_URL implements ByteInStream, AutoCloseable  {
         }
     }
     private native long ctorImpl(final String url, final long timeoutMS);
+
+    @Override
+    public native void closeStream();
 
     @Override
     public void close() {
@@ -71,10 +76,10 @@ public final class ByteInStream_URL implements ByteInStream, AutoCloseable  {
     public native boolean check_available(final long n);
 
     @Override
-    public native long read(final byte[] out, final int offset, final int length);
+    public native int read(final byte[] out, final int offset, final int length);
 
     @Override
-    public native long peek(byte[] out, final int offset, final int length, final long peek_offset);
+    public native int peek(byte[] out, final int offset, final int length, final long peek_offset);
 
     @Override
     public native boolean end_of_data();

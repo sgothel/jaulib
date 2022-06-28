@@ -44,6 +44,15 @@ jlong Java_org_jau_nio_ByteInStream_1URL_ctorImpl(JNIEnv *env, jobject obj, jstr
     return (jlong) (intptr_t)nullptr;
 }
 
+void Java_org_jau_nio_ByteInStream_1URL_closeStream(JNIEnv *env, jobject obj) {
+    try {
+        jau::jni::shared_ptr_ref<jau::io::ByteInStream_URL> ref(env, obj); // hold until done
+        ref->close();
+    } catch(...) {
+        rethrow_and_raise_java_exception_jau(env);
+    }
+}
+
 void Java_org_jau_nio_ByteInStream_1URL_dtorImpl(JNIEnv *env, jclass clazz, jlong nativeInstance) {
     (void)clazz;
     try {
@@ -67,7 +76,7 @@ jboolean Java_org_jau_nio_ByteInStream_1URL_check_1available(JNIEnv *env, jobjec
     return JNI_FALSE;
 }
 
-jlong Java_org_jau_nio_ByteInStream_1URL_read(JNIEnv *env, jobject obj, jbyteArray jout, jint joffset, jint jlength) {
+jint Java_org_jau_nio_ByteInStream_1URL_read(JNIEnv *env, jobject obj, jbyteArray jout, jint joffset, jint jlength) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_URL> ref(env, obj); // hold until done
 
@@ -84,14 +93,14 @@ jlong Java_org_jau_nio_ByteInStream_1URL_read(JNIEnv *env, jobject obj, jbyteArr
             throw jau::InternalError("GetPrimitiveArrayCritical(address byte array) is null", E_FILE_LINE);
         }
         const size_t res = ref->read(out_ptr + joffset, jlength);
-        return (jlong)res;
+        return (jint)res;
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }
     return 0;
 }
 
-jlong Java_org_jau_nio_ByteInStream_1URL_peek(JNIEnv *env, jobject obj, jbyteArray jout, jint joffset, jint jlength, jlong jpeek_offset) {
+jint Java_org_jau_nio_ByteInStream_1URL_peek(JNIEnv *env, jobject obj, jbyteArray jout, jint joffset, jint jlength, jlong jpeek_offset) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_URL> ref(env, obj); // hold until done
 
@@ -108,7 +117,7 @@ jlong Java_org_jau_nio_ByteInStream_1URL_peek(JNIEnv *env, jobject obj, jbyteArr
             throw jau::InternalError("GetPrimitiveArrayCritical(address byte array) is null", E_FILE_LINE);
         }
         const size_t res = ref->peek(out_ptr + joffset, jlength, jpeek_offset);
-        return (jlong)res;
+        return (jint)res;
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }
@@ -189,8 +198,8 @@ jlong Java_org_jau_nio_ByteInStream_1URL_content_1size(JNIEnv *env, jobject obj)
 
 jstring Java_org_jau_nio_ByteInStream_1URL_toString(JNIEnv *env, jobject obj) {
     try {
-        jau::jni::shared_ptr_ref<jau::io::ByteInStream_URL> ref(env, obj); // hold until done
-        std::string str = ref->to_string();
+        jau::jni::shared_ptr_ref<jau::io::ByteInStream_URL> ref(env, obj, false /* throw_on_nullptr */); // hold until done
+        std::string str = ref.is_null() ? "null" : ref->to_string();
         return jau::jni::from_string_to_jstring(env, str);
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);

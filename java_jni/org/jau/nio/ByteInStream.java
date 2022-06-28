@@ -26,6 +26,9 @@ package org.jau.nio;
 /**
  * This class represents an abstract byte input stream object.
  *
+ * Its specializations utilize a native C++ implementation
+ * derived from `jau::io::ByteInStream`.
+ *
  * @anchor byte_in_stream_properties
  * ### ByteInStream Properties
  * The byte input stream can originate from a local source w/o delay,
@@ -45,51 +48,19 @@ package org.jau.nio;
  */
 public interface ByteInStream extends AutoCloseable  {
     /**
-     * Parses the given path_or_uri, if it matches a supported protocol, see {@link org.jau.nio.Uri#protocol_supported(String)},
-     * but is not a local file, see {@link org.jau.nio.Uri#is_local_file_protocol(String)}, ByteInStream_URL is being attempted.
+     * Close the stream if supported by the underlying mechanism.
      *
-     * If the above fails, ByteInStream_File is attempted.
+     * Native instance will not be disposed.
      *
-     * If non of the above leads to a ByteInStream without {@link ByteInStream#error()}, null is returned.
-     *
-     * @param path_or_uri given path or uri for with a ByteInStream instance shall be established.
-     * @param timeout a timeout in case ByteInStream_URL is being used as maximum duration to wait for next bytes at {@link ByteInStream_URL#check_available(long)}, defaults to 20_s
-     * @return a working ByteInStream w/o {@link ByteInStream#error()} or nullptr
+     * {@inheritDoc}
      */
-    public static ByteInStream create(final String path_or_uri, final long timeoutMS) {
-        if( !org.jau.nio.Uri.is_local_file_protocol(path_or_uri) &&
-             org.jau.nio.Uri.protocol_supported(path_or_uri) )
-        {
-            final ByteInStream res = new ByteInStream_URL(path_or_uri, timeoutMS);
-            if( null != res && !res.error() ) {
-                return res;
-            }
-        }
-        final ByteInStream res = new ByteInStream_File(path_or_uri);
-        if( null != res && !res.error() ) {
-            return res;
-        }
-        return null;
-    }
-    /**
-     * Parses the given path_or_uri, if it matches a supported protocol, see {@link org.jau.nio.Uri#protocol_supported(String)},
-     * but is not a local file, see {@link org.jau.nio.Uri#is_local_file_protocol(String)}, ByteInStream_URL is being attempted.
-     *
-     * If the above fails, ByteInStream_File is attempted.
-     *
-     * If non of the above leads to a ByteInStream without {@link ByteInStream#error()}, null is returned.
-     *
-     * Method uses a timeout of 20_s for maximum duration to wait for next bytes at {@link ByteInStream_URL#check_available(long)}
-     *
-     * @param path_or_uri given path or uri for with a ByteInStream instance shall be established.
-     * @return a working ByteInStream w/o {@link ByteInStream#error()} or nullptr
-     */
-    public static ByteInStream create(final String path_or_uri) {
-        return create(path_or_uri, 20000);
-    }
+    void closeStream();
 
     /**
-     * Close the stream if supported by the underlying mechanism.
+     * Close the stream if supported by the underlying mechanism
+     * and dispose the native instance.
+     *
+     * Instance is unusable after having this method called.
      *
      * {@inheritDoc}
      */
@@ -129,7 +100,7 @@ public interface ByteInStream extends AutoCloseable  {
      * @see check_available()
      * @see @ref byte_in_stream_properties "ByteInStream Properties"
      */
-    long read(byte out[], final int offset, final int length);
+    int read(byte out[], final int offset, final int length);
 
     /**
      * Read from the source but do not modify the internal
@@ -142,7 +113,7 @@ public interface ByteInStream extends AutoCloseable  {
      * @param peek_offset the offset into the stream to read at
      * @return length in bytes that was actually read and put into out
      */
-    long peek(byte out[], final int offset, final int length, final long peek_offset);
+    int peek(byte out[], final int offset, final int length, final long peek_offset);
 
     /**
      * Test whether the source still has data that can be read.

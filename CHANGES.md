@@ -13,8 +13,9 @@
 * Have `jau.pkg.PlatformRuntime` load tool library `jaulib` as well, resolving dependencies for self-testing.
 * Add java mapping of `jau::io::ByteInStream` for file, URL and feed for general use
   - `org.jau.nio.ByteInStream`, `org.jau.nio.ByteInStream_File`, `org.jau.nio.ByteInStream_URL`, `org.jau.nio.ByteInStream_Feed`
-  - Mapped `jau::io::to_ByteInStream()` to `org.jau.nio.ByteInStream.create()`
+  - Mapped `jau::io::to_ByteInStream()` to `org.jau.nio.NioUtils.to_ByteInStream()`
   - Mapped `jau::io::uri` to `org.jau.nio.Uri`
+  - Added java unit test `TestByteStream01` covering above, same as native `test_bytestream01`
 * Add `jau::fs::mount_image()` and `umount()`
   - `mount_image()` is currently only supported on `Linux`
   - Enable testing on `Linux` via `-DTEST_WITH_SUDO=ON` as it requires `root` permissions.
