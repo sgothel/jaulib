@@ -21,15 +21,13 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.jau.sys;
+package org.jau.io;
 
 import java.io.PrintStream;
-import java.lang.reflect.Array;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.List;
 
-public class JauUtils extends Clock {
+import org.jau.sys.Clock;
+
+public class PrintUtil extends Clock {
     /**
      * Convenient {@link PrintStream#printf(String, Object...)} invocation, prepending the {@link #elapsedTimeMillis()} timestamp.
      * @param out the output stream
@@ -55,48 +53,6 @@ public class JauUtils extends Clock {
      */
     public static void print(final PrintStream out, final String msg) {
         out.printf("[%,9d] %s", elapsedTimeMillis(), msg);
-    }
-
-    /**
-     * Convert a non empty list to an array of same type.
-     *
-     * @param <E> the element type of the list
-     * @param list the list instance
-     * @throws IllegalArgumentException if given list instance is empty
-     */
-    @SuppressWarnings("unchecked")
-    public static <E> E[] toArray(final List<E> list) throws IllegalArgumentException {
-        if( 0 == list.size() ) {
-            throw new IllegalArgumentException("Given list is empty");
-        }
-        final Class<E> clazz;
-        {
-            final E e0 = list.get(0);
-            clazz = (Class<E>) e0.getClass();
-        }
-        final E[] res = (E[]) Array.newInstance(clazz, list.size());
-        for(int i=0; i < res.length; ++i) {
-            res[i] = list.get(i);
-        }
-        return res;
-    }
-
-    /**
-     * Allocates a new direct ByteBuffer with the specified number of
-     * elements. The returned buffer will have its byte order set to
-     * the host platform's native byte order.
-     */
-    public static ByteBuffer newDirectByteBuffer(final int numElements) {
-        return nativeOrder(ByteBuffer.allocateDirect(numElements));
-    }
-
-    /**
-     * Helper routine to set a ByteBuffer to the native byte order, if
-     * that operation is supported by the underlying NIO
-     * implementation.
-     */
-    public static ByteBuffer nativeOrder(final ByteBuffer buf) {
-        return buf.order(ByteOrder.nativeOrder());
     }
 
 }

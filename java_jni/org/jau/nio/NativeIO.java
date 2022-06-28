@@ -23,7 +23,10 @@
  */
 package org.jau.nio;
 
-import org.jau.sys.JauUtils;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
+import org.jau.io.PrintUtil;
 
 /**
  * This class represents an abstract byte input stream object.
@@ -45,7 +48,7 @@ import org.jau.sys.JauUtils;
  *
  * @see @ref byte_in_stream_properties "ByteInStream Properties"
  */
-public interface NioUtils {
+public interface NativeIO {
     /**
      * Stream consumer
      */
@@ -87,7 +90,7 @@ public interface NioUtils {
                         break; // end streaming
                     }
                 } catch (final Throwable e) {
-                    JauUtils.fprintf_td(System.err, "org.jau.nio.read_stream: Caught exception: %s", e.getMessage());
+                    PrintUtil.fprintf_td(System.err, "org.jau.nio.read_stream: Caught exception: %s", e.getMessage());
                     break; // end streaming
                 }
             } else {
@@ -103,11 +106,11 @@ public interface NioUtils {
      *
      * If the above fails, ByteInStream_File is attempted.
      *
-     * If non of the above leads to a ByteInStream without {@link NioUtils#error()}, null is returned.
+     * If non of the above leads to a ByteInStream without {@link NativeIO#error()}, null is returned.
      *
      * @param path_or_uri given path or uri for with a ByteInStream instance shall be established.
      * @param timeout a timeout in case ByteInStream_URL is being used as maximum duration to wait for next bytes at {@link ByteInStream_URL#check_available(long)}, defaults to 20_s
-     * @return a working ByteInStream w/o {@link NioUtils#error()} or nullptr
+     * @return a working ByteInStream w/o {@link NativeIO#error()} or nullptr
      */
     public static ByteInStream to_ByteInStream(final String path_or_uri, final long timeoutMS) {
         if( !org.jau.nio.Uri.is_local_file_protocol(path_or_uri) &&
@@ -130,43 +133,62 @@ public interface NioUtils {
      *
      * If the above fails, ByteInStream_File is attempted.
      *
-     * If non of the above leads to a ByteInStream without {@link NioUtils#error()}, null is returned.
+     * If non of the above leads to a ByteInStream without {@link NativeIO#error()}, null is returned.
      *
      * Method uses a timeout of 20_s for maximum duration to wait for next bytes at {@link ByteInStream_URL#check_available(long)}
      *
      * @param path_or_uri given path or uri for with a ByteInStream instance shall be established.
-     * @return a working ByteInStream w/o {@link NioUtils#error()} or nullptr
+     * @return a working ByteInStream w/o {@link NativeIO#error()} or nullptr
      */
     public static ByteInStream to_ByteInStream(final String path_or_uri) {
         return to_ByteInStream(path_or_uri, 20000);
     }
 
     public static void print_stats(final String prefix, final long out_bytes_total, final long td_ms) {
-        JauUtils.fprintf_td(System.err, "%s: Duration %,d ms\n", prefix, td_ms);
+        PrintUtil.fprintf_td(System.err, "%s: Duration %,d ms\n", prefix, td_ms);
 
         if( out_bytes_total >= 100000000 ) {
 
-            JauUtils.fprintf_td(System.err, "%s: Size %,d MB%n", prefix, Math.round(out_bytes_total/1000000.0));
+            PrintUtil.fprintf_td(System.err, "%s: Size %,d MB%n", prefix, Math.round(out_bytes_total/1000000.0));
         } else if( out_bytes_total >= 100000 ) {
-            JauUtils.fprintf_td(System.err, "%s: Size %,d KB%n", prefix, Math.round(out_bytes_total/1000.0));
+            PrintUtil.fprintf_td(System.err, "%s: Size %,d KB%n", prefix, Math.round(out_bytes_total/1000.0));
         } else {
-            JauUtils.fprintf_td(System.err, "%s: Size %,d B%n", prefix, out_bytes_total);
+            PrintUtil.fprintf_td(System.err, "%s: Size %,d B%n", prefix, out_bytes_total);
         }
 
         final long _rate_bps = Math.round( out_bytes_total / ( td_ms / 1000.0 )); // bytes per second
         final long _rate_bitps = Math.round( ( out_bytes_total * 8.0 ) / ( td_ms / 1000.0 ) ); // bits per second
 
         if( _rate_bitps >= 100000000 ) {
-            JauUtils.fprintf_td(System.err, "%s: Bitrate %,d Mbit/s, %,d MB/s%n", prefix,
+            PrintUtil.fprintf_td(System.err, "%s: Bitrate %,d Mbit/s, %,d MB/s%n", prefix,
                     Math.round(_rate_bitps/1000000.0),
                     Math.round(_rate_bps/1000000.0));
         } else if( _rate_bitps >= 100000 ) {
-            JauUtils.fprintf_td(System.err, "%s: Bitrate %,d kbit/s, %,d kB/s%n", prefix,
+            PrintUtil.fprintf_td(System.err, "%s: Bitrate %,d kbit/s, %,d kB/s%n", prefix,
                     Math.round(_rate_bitps/10000), Math.round(_rate_bps/10000));
         } else {
-            JauUtils.fprintf_td(System.err, "%s: Bitrate %,d bit/s, %,d B/s%n", prefix,
+            PrintUtil.fprintf_td(System.err, "%s: Bitrate %,d bit/s, %,d B/s%n", prefix,
                     _rate_bitps, _rate_bps);
         }
     }
+
+    /**
+     * Allocates a new direct ByteBuffer with the specified number of
+     * elements. The returned buffer will have its byte order set to
+     * the host platform's native byte order.
+     */
+    public static ByteBuffer newDirectByteBuffer(final int numElements) {
+        return nativeOrder(ByteBuffer.allocateDirect(numElements));
+    }
+
+    /**
+     * Helper routine to set a ByteBuffer to the native byte order, if
+     * that operation is supported by the underlying NIO
+     * implementation.
+     */
+    public static ByteBuffer nativeOrder(final ByteBuffer buf) {
+        return buf.order(ByteOrder.nativeOrder());
+    }
+
 
 }

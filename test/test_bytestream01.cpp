@@ -149,7 +149,7 @@ class TestByteStream01 {
                 }
             };
             jau::io::secure_vector<uint8_t> io_buffer;
-            io_buffer.reserve(4096);
+            io_buffer.reserve(4096); // TODO: Perf test w/ 2*16384
             const uint64_t in_bytes_total = jau::io::read_stream(input, io_buffer, consume_data);
             input.close();
 

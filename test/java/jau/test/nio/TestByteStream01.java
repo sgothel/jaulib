@@ -36,13 +36,13 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.jau.fs.FileUtil;
+import org.jau.io.PrintUtil;
 import org.jau.nio.ByteInStream;
 import org.jau.nio.ByteInStream_Feed;
 import org.jau.nio.ByteInStream_File;
 import org.jau.nio.ByteInStream_URL;
-import org.jau.nio.NioUtils;
+import org.jau.nio.NativeIO;
 import org.jau.nio.Uri;
-import org.jau.sys.JauUtils;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
@@ -81,13 +81,13 @@ public class TestByteStream01 extends JunitTracer {
         try {
             if( file.exists() ) {
                 if( !file.delete() ) {
-                    JauUtils.println(System.err, "Remove.1: Failed deletion of existing file "+name);
+                    PrintUtil.println(System.err, "Remove.1: Failed deletion of existing file "+name);
                     return false;
                 }
             }
             return true;
         } catch (final Exception ex) {
-            JauUtils.println(System.err, "Remove.2: Failed deletion of existing file "+name+": "+ex.getMessage());
+            PrintUtil.println(System.err, "Remove.2: Failed deletion of existing file "+name+": "+ex.getMessage());
             ex.printStackTrace();
         }
         return false;
@@ -117,7 +117,7 @@ public class TestByteStream01 extends JunitTracer {
                 size += 1;
 
             } catch (final Exception ex) {
-                JauUtils.println(System.err, "Write test file: Failed "+name+": "+ex.getMessage());
+                PrintUtil.println(System.err, "Write test file: Failed "+name+": "+ex.getMessage());
                 ex.printStackTrace();
             } finally {
                 try {
@@ -167,7 +167,7 @@ public class TestByteStream01 extends JunitTracer {
         final Path path = Paths.get("");
         final String directoryName = path.toAbsolutePath().toString();
         final String[] cmd = new String[]{"/usr/sbin/mini_httpd", "-p", "8080", "-l", directoryName+"/mini_httpd.log"};
-        JauUtils.fprintf_td(System.err, "%s%n", Arrays.toString(cmd));
+        PrintUtil.fprintf_td(System.err, "%s%n", Arrays.toString(cmd));
         Assert.assertTrue( system(cmd) );
     }
 
@@ -176,7 +176,7 @@ public class TestByteStream01 extends JunitTracer {
 
     static boolean transfer(final ByteInStream input, final String output_fname) {
         final long _t0 = org.jau.sys.Clock.currentTimeMillis();
-        JauUtils.fprintf_td(System.err, "Transfer Start: %s%n", input);
+        PrintUtil.fprintf_td(System.err, "Transfer Start: %s%n", input);
         remove_file(output_fname);
 
         final File file = new File( output_fname );
@@ -189,14 +189,14 @@ public class TestByteStream01 extends JunitTracer {
             Assert.assertFalse( file.exists() );
             out[0] = new FileOutputStream(file);
         } catch (final Exception ex) {
-            JauUtils.fprintf_td(System.err, "Opening output file : Failed %s: %s%n", file, ex.getMessage());
+            PrintUtil.fprintf_td(System.err, "Opening output file : Failed %s: %s%n", file, ex.getMessage());
             ex.printStackTrace();
             return false;
         }
 
         final long[] out_bytes_payload = { 0 };
         final boolean[] out_failure = { false };
-        final NioUtils.StreamConsumer consumer = (final byte[] data, final int data_len, final boolean is_final) -> {
+        final NativeIO.StreamConsumer consumer = (final byte[] data, final int data_len, final boolean is_final) -> {
                 try {
                     if( !is_final && ( !input.has_content_size() || out_bytes_payload[0] + data_len < input.content_size() ) ) {
                         out[0].write( data, 0, data_len );
@@ -208,14 +208,14 @@ public class TestByteStream01 extends JunitTracer {
                         return false; // EOS
                     }
                 } catch (final Exception ex) {
-                    JauUtils.fprintf_td(System.err, "Write input bytes: Failed %s: %s%n", input, ex.getMessage());
+                    PrintUtil.fprintf_td(System.err, "Write input bytes: Failed %s: %s%n", input, ex.getMessage());
                     ex.printStackTrace();
                     out_failure[0] = true;
                     return false;
                 }
         };
-        final byte[] io_buffer = new byte[4096];
-        final long in_bytes_total = NioUtils.read_stream(input, io_buffer, consumer);
+        final byte[] io_buffer = new byte[4096]; // TODO: Perf test w/ 2*16384
+        final long in_bytes_total = NativeIO.read_stream(input, io_buffer, consumer);
         input.closeStream();
         try {
             out[0].close();
@@ -225,13 +225,13 @@ public class TestByteStream01 extends JunitTracer {
         }
 
         if ( 0==in_bytes_total || out_failure[0] ) {
-            JauUtils.fprintf_td(System.err, "ByteStream copy failed: Output file write failed %s%n", output_fname);
+            PrintUtil.fprintf_td(System.err, "ByteStream copy failed: Output file write failed %s%n", output_fname);
             return false;
         }
 
         final long _td = org.jau.sys.Clock.currentTimeMillis() - _t0;
-        NioUtils.print_stats("Transfer "+output_fname, out_bytes_payload[0], _td);
-        JauUtils.fprintf_td(System.err, "Transfer End: %s%n", input.toString());
+        NativeIO.print_stats("Transfer "+output_fname, out_bytes_payload[0], _td);
+        PrintUtil.fprintf_td(System.err, "Transfer End: %s%n", input.toString());
 
         return true;
     }
@@ -244,7 +244,7 @@ public class TestByteStream01 extends JunitTracer {
         httpd_start();
         {
             final List<String> protos = Uri.supported_protocols();
-            JauUtils.fprintf_td(System.err, "test00_protocols: Supported protocols: %d: %s%n", protos.size(), protos);
+            PrintUtil.fprintf_td(System.err, "test00_protocols: Supported protocols: %d: %s%n", protos.size(), protos);
             if( http_support_expected ) { // assume no http -> no curl
                 Assert.assertTrue( 0 < protos.size() );
             } else {
@@ -257,9 +257,9 @@ public class TestByteStream01 extends JunitTracer {
             Assert.assertFalse( Uri.is_local_file_protocol(url) );
             Assert.assertFalse( Uri.protocol_supported(url) );
 
-            try( final ByteInStream in = NioUtils.to_ByteInStream(url) ) {
+            try( final ByteInStream in = NativeIO.to_ByteInStream(url) ) {
                 if( null != in ) {
-                    JauUtils.fprintf_td(System.err, "test00_protocols: not_exiting_file: %s%n", in);
+                    PrintUtil.fprintf_td(System.err, "test00_protocols: not_exiting_file: %s%n", in);
                 }
                 Assert.assertNull(in);
             }
@@ -269,9 +269,9 @@ public class TestByteStream01 extends JunitTracer {
             Assert.assertTrue( Uri.is_local_file_protocol(url) );
             Assert.assertEquals( file_support_expected, Uri.protocol_supported(url) );
 
-            try( final ByteInStream in = NioUtils.to_ByteInStream(url) ) {
+            try( final ByteInStream in = NativeIO.to_ByteInStream(url) ) {
                 if( null != in ) {
-                    JauUtils.fprintf_td(System.err, "test00_protocols: not_exiting_file_uri: %s%n", in);
+                    PrintUtil.fprintf_td(System.err, "test00_protocols: not_exiting_file_uri: %s%n", in);
                 }
                 Assert.assertNull(in);
             }
@@ -281,9 +281,9 @@ public class TestByteStream01 extends JunitTracer {
             Assert.assertFalse( Uri.is_local_file_protocol(url) );
             Assert.assertFalse( Uri.protocol_supported(url) );
 
-            try( final ByteInStream in = NioUtils.to_ByteInStream(url) ) {
+            try( final ByteInStream in = NativeIO.to_ByteInStream(url) ) {
                 if( null != in ) {
-                    JauUtils.fprintf_td(System.err, "test00_protocols: not_exiting_protocol_uri: %s%n", in);
+                    PrintUtil.fprintf_td(System.err, "test00_protocols: not_exiting_protocol_uri: %s%n", in);
                 }
                 Assert.assertNull(in);
             }
@@ -293,11 +293,11 @@ public class TestByteStream01 extends JunitTracer {
             Assert.assertFalse( Uri.is_local_file_protocol(url) );
             Assert.assertEquals( http_support_expected, Uri.protocol_supported(url) );
 
-            try( final ByteInStream in = NioUtils.to_ByteInStream(url) ) {
+            try( final ByteInStream in = NativeIO.to_ByteInStream(url) ) {
                 if( http_support_expected ) {
                     Assert.assertNotNull(in);
                     try { Thread.sleep(10); } catch (final Throwable t) {}
-                    JauUtils.fprintf_td(System.err, "test00_protocols: not_exiting_http_uri: %s%n", in);
+                    PrintUtil.fprintf_td(System.err, "test00_protocols: not_exiting_http_uri: %s%n", in);
                     Assert.assertTrue( in.end_of_data() );
                     Assert.assertTrue( in.error() );
                     Assert.assertEquals( 0, in.content_size() );
@@ -320,9 +320,9 @@ public class TestByteStream01 extends JunitTracer {
             Assert.assertFalse( Uri.is_local_file_protocol(url) );
             Assert.assertFalse( Uri.protocol_supported(url) );
 
-            try( final ByteInStream in = NioUtils.to_ByteInStream(url) ) {
+            try( final ByteInStream in = NativeIO.to_ByteInStream(url) ) {
                 if( null != in ) {
-                    JauUtils.fprintf_td(System.err, "test00_protocols: local-file-0: %s%n", in);
+                    PrintUtil.fprintf_td(System.err, "test00_protocols: local-file-0: %s%n", in);
                 }
                 Assert.assertNotEquals( null, in );
                 Assert.assertFalse( in.error() );
@@ -342,9 +342,9 @@ public class TestByteStream01 extends JunitTracer {
             Assert.assertTrue( Uri.is_local_file_protocol(url) );
             Assert.assertEquals( file_support_expected, Uri.protocol_supported(url) );
 
-            try( final ByteInStream in = NioUtils.to_ByteInStream(url) ) {
+            try( final ByteInStream in = NativeIO.to_ByteInStream(url) ) {
                 if( null != in ) {
-                    JauUtils.fprintf_td(System.err, "test00_protocols: local-file-1: %s%n", in);
+                    PrintUtil.fprintf_td(System.err, "test00_protocols: local-file-1: %s%n", in);
                 }
                 Assert.assertNotNull( in );
                 Assert.assertFalse( in.error() );
@@ -364,9 +364,9 @@ public class TestByteStream01 extends JunitTracer {
             Assert.assertFalse( Uri.is_local_file_protocol(url) );
             Assert.assertEquals( http_support_expected, Uri.protocol_supported(url) );
 
-            try( final ByteInStream in = NioUtils.to_ByteInStream(url) ) {
+            try( final ByteInStream in = NativeIO.to_ByteInStream(url) ) {
                 if( null != in ) {
-                    JauUtils.fprintf_td(System.err, "test00_protocols: http: %s%n", in);
+                    PrintUtil.fprintf_td(System.err, "test00_protocols: http: %s%n", in);
                 }
                 if( http_support_expected ) {
                     Assert.assertNotNull( in );
@@ -422,7 +422,7 @@ public class TestByteStream01 extends JunitTracer {
     public void test11_copy_http_ok() {
         PlatformRuntime.checkInitialized();
         if( !Uri.protocol_supported("http:") ) {
-            JauUtils.fprintf_td(System.err, "http not supported, abort%n");
+            PrintUtil.fprintf_td(System.err, "http not supported, abort%n");
             return;
         }
         httpd_start();
@@ -464,7 +464,7 @@ public class TestByteStream01 extends JunitTracer {
     public void test12_copy_http_404() {
         PlatformRuntime.checkInitialized();
         if( !Uri.protocol_supported("http:") ) {
-            JauUtils.fprintf_td(System.err, "http not supported, abort%n");
+            PrintUtil.fprintf_td(System.err, "http not supported, abort%n");
             return;
         }
         httpd_start();
