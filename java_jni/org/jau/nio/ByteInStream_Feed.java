@@ -79,6 +79,17 @@ public final class ByteInStream_Feed implements ByteInStream  {
     public native int read(final byte[] out, final int offset, final int length);
 
     @Override
+    public int read(final ByteBuffer out) {
+        if( !NioUtil.isDirect(out) ) {
+            throw new IllegalArgumentException("out buffer not direct");
+        }
+        final int res = read2Impl(out, (int)NioUtil.getDirectBufferByteOffset(out));
+        out.limit(out.position() + res);
+        return res;
+    }
+    private native int read2Impl(Object out, int out_offset);
+
+    @Override
     public native int peek(byte[] out, final int offset, final int length, final long peek_offset);
 
     @Override
@@ -95,17 +106,6 @@ public final class ByteInStream_Feed implements ByteInStream  {
 
     @Override
     public native long bytes_read();
-
-    @Override
-    public int read(final ByteBuffer out) {
-        if( !NioUtil.isDirect(out) ) {
-            throw new IllegalArgumentException("out buffer not direct");
-        }
-        final int res = read2Impl(out, (int)NioUtil.getDirectBufferByteOffset(out));
-        out.limit(out.position() + res);
-        return res;
-    }
-    private native int read2Impl(Object out, int out_offset);
 
     @Override
     public native boolean has_content_size();
@@ -135,6 +135,25 @@ public final class ByteInStream_Feed implements ByteInStream  {
      * @param length number of in bytes to write starting at offset
      */
     public native void write(final byte[] in, final int offset, final int length);
+
+    /**
+     * Write given bytes to the async ringbuffer.
+     *
+     * Wait up to timeout duration given in constructor until ringbuffer space is available, where fractions_i64::zero waits infinitely.
+     *
+     * This method is blocking.
+     *
+     * @param in the direct {@link ByteBuffer} to transfer to the async ringbuffer starting at its {@link ByteBuffer#position() position} up to its {@link ByteBuffer#limit() limit}.
+     *            {@link ByteBuffer#limit() Limit} will be reset to {@link ByteBuffer#position() position}.
+     */
+    public void write(final ByteBuffer in) {
+        if( !NioUtil.isDirect(in) ) {
+            throw new IllegalArgumentException("out buffer not direct");
+        }
+        write2Impl(in, (int)NioUtil.getDirectBufferByteOffset(in), in.limit());
+        in.limit(in.position());
+    }
+    private native void write2Impl(ByteBuffer out, int out_offset, int out_limit);
 
     /**
      * Set known content size, informal only.

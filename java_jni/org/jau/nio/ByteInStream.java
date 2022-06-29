@@ -112,7 +112,7 @@ public interface ByteInStream extends AutoCloseable  {
      *
      * This method is not blocking.
      *
-     * @param out the direct {@link ByteBuffer} to write the result starting at its {@link ByteBuffer#position() position} up to {@link ByteBuffer#capacity() capacity}.
+     * @param out the direct {@link ByteBuffer} to write the result starting at its {@link ByteBuffer#position() position} up to its {@link ByteBuffer#capacity() capacity}.
      *            {@link ByteBuffer#limit() Limit} will be set to {@link ByteBuffer#position() position} + read-bytes.
      * @return length in bytes that was actually read and put into out,
      *         equal to its {@link ByteBuffer#limit() limit} - {@link ByteBuffer#position() position}, i.e. {@link ByteBuffer#remaining() remaining}.

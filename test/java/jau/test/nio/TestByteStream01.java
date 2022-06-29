@@ -218,7 +218,7 @@ public class TestByteStream01 extends JunitTracer {
                     return false;
                 }
         };
-        final byte[] io_buffer = new byte[buffer_size]; // TODO: Perf test w/ 2*16384
+        final byte[] io_buffer = new byte[buffer_size];
         final long in_bytes_total = NativeIO.read_stream(input, io_buffer, consumer);
         input.closeStream();
         try {
@@ -291,7 +291,7 @@ public class TestByteStream01 extends JunitTracer {
                     return false;
                 }
         };
-        final ByteBuffer io_buffer = NioUtil.newDirectByteBuffer(buffer_size); // TODO: Perf test w/ 2*16384
+        final ByteBuffer io_buffer = NioUtil.newDirectByteBuffer(buffer_size);
         final long in_bytes_total = NativeIO.read_stream(input, io_buffer, consumer);
         input.closeStream();
         if( null != outc[0] ) {
@@ -659,7 +659,25 @@ public class TestByteStream01 extends JunitTracer {
     }
 
     // full speed, with content size
-    static void feed_source_10(final ByteInStream_Feed data_feed, final int feed_size) {
+    static void feed_source_10_nio(final ByteInStream_Feed data_feed, final int feed_size) {
+        long xfer_total = 0;
+        try( final ByteInStream_File data_stream = new ByteInStream_File(data_feed.id() ) ) {
+            final long file_size = data_stream.content_size();
+            data_feed.set_content_size( file_size );
+            final ByteBuffer buffer = NioUtil.newDirectByteBuffer(feed_size);
+            while( !data_stream.end_of_data() && xfer_total < file_size ) {
+                final int count = data_stream.read(buffer);
+                if( 0 < count ) {
+                    xfer_total += count;
+                    data_feed.write(buffer);
+                }
+            }
+            data_feed.set_eof( xfer_total == file_size ? 1 /* SUCCESS */ : -1 /* FAILED */);
+        }
+    }
+
+    // full speed, with content size
+    static void feed_source_10_std(final ByteInStream_Feed data_feed, final int feed_size) {
         long xfer_total = 0;
         try( final ByteInStream_File data_stream = new ByteInStream_File(data_feed.id() ) ) {
             final long file_size = data_stream.content_size();
@@ -730,7 +748,7 @@ public class TestByteStream01 extends JunitTracer {
 
             // full speed, with content size
             try( final ByteInStream_Feed data_feed = new ByteInStream_Feed(fname_payload_lst.get(file_idx), 500) ) {
-                final Thread feeder_thread = executeOffThread( () -> { feed_source_10(data_feed, feed_size); }, "test21_copy_fed_ok::feed_source_10", false /* detach */);
+                final Thread feeder_thread = executeOffThread( () -> { feed_source_10_nio(data_feed, feed_size); }, "test21_copy_fed_ok::feed_source_10", false /* detach */);
 
                 final boolean res = transfer_nio(data_feed, fname_payload_copy_lst.get(file_idx), buffer_size);
                 try {
@@ -784,7 +802,7 @@ public class TestByteStream01 extends JunitTracer {
 
             // full speed, with content size
             try( final ByteInStream_Feed data_feed = new ByteInStream_Feed(fname_payload_lst.get(file_idx), 500) ) {
-                final Thread feeder_thread = executeOffThread( () -> { feed_source_10(data_feed, feed_size); }, "test21_copy_fed_ok2::feed_source_10", false /* detach */);
+                final Thread feeder_thread = executeOffThread( () -> { feed_source_10_nio(data_feed, feed_size); }, "test21_copy_fed_ok2::feed_source_10", false /* detach */);
 
                 final boolean res = transfer_nio(data_feed, fname_payload_copy_lst.get(file_idx), buffer_size);
                 try {
@@ -811,7 +829,7 @@ public class TestByteStream01 extends JunitTracer {
 
             // full speed, with content size
             try( final ByteInStream_Feed data_feed = new ByteInStream_Feed(fname_payload_lst.get(file_idx), 500) ) {
-                final Thread feeder_thread = executeOffThread( () -> { feed_source_10(data_feed, feed_size); }, "test21_copy_fed_ok::feed_source_10", false /* detach */);
+                final Thread feeder_thread = executeOffThread( () -> { feed_source_10_nio(data_feed, feed_size); }, "test21_copy_fed_ok::feed_source_10", false /* detach */);
 
                 final boolean res = transfer_nio(data_feed, fname_payload_copy_lst.get(file_idx), buffer_size);
                 try {
@@ -860,12 +878,19 @@ public class TestByteStream01 extends JunitTracer {
                 Assert.assertTrue( FileUtil.compare(fname_payload_lst.get(file_idx), fname_payload_copy_lst.get(file_idx), true /* verbose */) );
             }
         }
+    }
+
+    @Test(timeout = 10000)
+    public void test22_copy_fed_ok_buff32k_nio() {
+        PlatformRuntime.checkInitialized();
+        final int buffer_size = 32768;
+        final int feed_size = 32768;
         {
             final int file_idx = IDX_65MiB;
 
             // full speed, with content size
             try( final ByteInStream_Feed data_feed = new ByteInStream_Feed(fname_payload_lst.get(file_idx), 500) ) {
-                final Thread feeder_thread = executeOffThread( () -> { feed_source_10(data_feed, feed_size); }, "test21_copy_fed_ok2::feed_source_10", false /* detach */);
+                final Thread feeder_thread = executeOffThread( () -> { feed_source_10_nio(data_feed, feed_size); }, "test21_copy_fed_ok2::feed_source_10", false /* detach */);
 
                 final boolean res = transfer_nio(data_feed, fname_payload_copy_lst.get(file_idx), buffer_size);
                 try {
@@ -883,7 +908,34 @@ public class TestByteStream01 extends JunitTracer {
     }
 
     @Test(timeout = 10000)
-    public void test22_copy_fed_irq() {
+    public void test23_copy_fed_ok_buff32k_std() {
+        PlatformRuntime.checkInitialized();
+        final int buffer_size = 32768;
+        final int feed_size = 32768;
+        {
+            final int file_idx = IDX_65MiB;
+
+            // full speed, with content size
+            try( final ByteInStream_Feed data_feed = new ByteInStream_Feed(fname_payload_lst.get(file_idx), 500) ) {
+                final Thread feeder_thread = executeOffThread( () -> { feed_source_10_std(data_feed, feed_size); }, "test23_copy_fed_ok2::feed_source_10", false /* detach */);
+
+                final boolean res = transfer_std(data_feed, fname_payload_copy_lst.get(file_idx), buffer_size);
+                try {
+                    feeder_thread.join(1000);
+                } catch (final InterruptedException e) { }
+                Assert.assertTrue( res );
+
+                Assert.assertTrue( file_exists( fname_payload_copy_lst.get(file_idx) ) );
+                final long copy_size = file_size(fname_payload_copy_lst.get(file_idx));
+                Assert.assertEquals( data_feed.content_size(), copy_size );
+                Assert.assertEquals( fname_payload_size_lst.get(file_idx).longValue(), copy_size );
+                Assert.assertTrue( FileUtil.compare(fname_payload_lst.get(file_idx), fname_payload_copy_lst.get(file_idx), true /* verbose */) );
+            }
+        }
+    }
+
+    @Test(timeout = 10000)
+    public void test24_copy_fed_irq() {
         PlatformRuntime.checkInitialized();
         final int buffer_size = 4096;
         final int feed_size = 1024;

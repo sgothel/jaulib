@@ -245,6 +245,23 @@ void Java_org_jau_nio_ByteInStream_1Feed_write(JNIEnv *env, jobject obj, jbyteAr
     }
 }
 
+void Java_org_jau_nio_ByteInStream_1Feed_write2Impl(JNIEnv *env, jobject obj, jobject jout, jint out_offset, jint out_limit) {
+    try {
+        jau::jni::shared_ptr_ref<jau::io::ByteInStream_Feed> ref(env, obj); // hold until done
+
+        if( nullptr == jout ) {
+            throw jau::IllegalArgumentException("out buffer null", E_FILE_LINE);
+        }
+        uint8_t * out_ptr = static_cast<uint8_t *>( env->GetDirectBufferAddress(jout) );
+        if( nullptr == out_ptr ) {
+            throw jau::IllegalArgumentException("out buffer access failure", E_FILE_LINE);
+        }
+        ref->write(out_ptr + out_offset, out_limit - out_offset);
+    } catch(...) {
+        rethrow_and_raise_java_exception_jau(env);
+    }
+}
+
 void Java_org_jau_nio_ByteInStream_1Feed_set_1content_1size(JNIEnv *env, jobject obj, jlong jcontent_size) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_Feed> ref(env, obj); // hold until done

@@ -149,7 +149,7 @@ class TestByteStream01 {
                 }
             };
             jau::io::secure_vector<uint8_t> io_buffer;
-            io_buffer.reserve(buffer_size); // TODO: Perf test w/ 2*16384
+            io_buffer.reserve(buffer_size);
             const uint64_t in_bytes_total = jau::io::read_stream(input, io_buffer, consume_data);
             input.close();
 
@@ -669,6 +669,12 @@ class TestByteStream01 {
                     REQUIRE( true == jau::fs::compare(data_feed.id(), out_stats.path(), true /* verbose */) );
                 }
             }
+        }
+
+        void test22_copy_fed_ok_buff32k() {
+            jau::fprintf_td(stderr, "\n"); jau::fprintf_td(stderr, "%s\n", __func__);
+            const size_t buffer_size = 32768;
+            const size_t feed_size = 32768;
             {
                 const size_t file_idx = IDX_65MiB;
                 {
@@ -692,7 +698,7 @@ class TestByteStream01 {
             }
         }
 
-        void test22_copy_fed_irq() {
+        void test23_copy_fed_irq() {
             jau::fprintf_td(stderr, "\n"); jau::fprintf_td(stderr, "%s\n", __func__);
             const size_t buffer_size = 4096;
             const size_t feed_size = 1024;
@@ -757,4 +763,5 @@ METHOD_AS_TEST_CASE( TestByteStream01::test12_copy_http_404,              "TestB
 
 METHOD_AS_TEST_CASE( TestByteStream01::test20_copy_fed_ok_buff4k_feed1k,  "TestByteStream01 test20_copy_fed_ok_buff4k_feed1k");
 METHOD_AS_TEST_CASE( TestByteStream01::test21_copy_fed_ok_buff32k,        "TestByteStream01 test21_copy_fed_ok_buff32k");
-METHOD_AS_TEST_CASE( TestByteStream01::test22_copy_fed_irq,               "TestByteStream01 test22_copy_fed_irq");
+METHOD_AS_TEST_CASE( TestByteStream01::test22_copy_fed_ok_buff32k,        "TestByteStream01 test22_copy_fed_ok_buff32k");
+METHOD_AS_TEST_CASE( TestByteStream01::test23_copy_fed_irq,               "TestByteStream01 test23_copy_fed_irq");
