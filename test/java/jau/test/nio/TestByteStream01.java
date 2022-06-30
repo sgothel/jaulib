@@ -30,7 +30,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
-import java.nio.channels.WritableByteChannel;
+import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -251,11 +251,11 @@ public class TestByteStream01 extends JunitTracer {
         }
 
         final OutputStream out[] = { null };
-        final WritableByteChannel outc[] = { null };
+        final FileChannel outc[] = { null };
         try {
             Assert.assertFalse( file.exists() );
             out[0] = new FileOutputStream(file);
-            outc[0] = Channels.newChannel(out[0]);
+            outc[0] = ((FileOutputStream)out[0]).getChannel();
         } catch (final Exception ex) {
             PrintUtil.fprintf_td(System.err, "Opening output file : Failed %s: %s%n", file, ex.getMessage());
             ex.printStackTrace();
