@@ -33,7 +33,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.jau.io.Bitstream;
-import org.jau.lang.NioUtil;
+import org.jau.io.Buffers;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -63,7 +63,7 @@ public class TestBitstream02 extends JunitTracer {
     }
     void test01Int8BitsAlignedImpl(final byte val8) throws IOException {
         // Test with buffer defined value
-        final ByteBuffer bb = ByteBuffer.allocate(NioUtil.SIZEOF_BYTE);
+        final ByteBuffer bb = ByteBuffer.allocate(Buffers.SIZEOF_BYTE);
         System.err.println("XXX Test01Int8BitsAligned: value "+val8+", "+toHexBinaryString(val8, 8));
         bb.put(0, val8);
 
@@ -106,7 +106,7 @@ public class TestBitstream02 extends JunitTracer {
     }
     void test02Int8BitsUnalignedImpl(final int preBits, final byte val8) throws IOException {
         final int preBytes = ( preBits + 7 ) >>> 3;
-        final int byteCount = preBytes + NioUtil.SIZEOF_BYTE;
+        final int byteCount = preBytes + Buffers.SIZEOF_BYTE;
         final ByteBuffer bb = ByteBuffer.allocate(byteCount);
         System.err.println("XXX Test02Int8BitsUnaligned: preBits "+preBits+", value "+val8+", "+toHexBinaryString(val8, 8));
 

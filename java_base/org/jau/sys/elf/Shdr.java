@@ -25,8 +25,8 @@
  */
 package org.jau.sys.elf;
 
-import org.jau.lang.NioUtil;
-import org.jau.lang.StructAccessor;
+import org.jau.io.Buffers;
+import org.jau.io.StructAccessor;
 import org.jau.sys.MachineDataInfo;
 
 public class Shdr {
@@ -178,7 +178,7 @@ public class Shdr {
   }
 
   public static Shdr create(final int mdIdx) {
-      return create(mdIdx, NioUtil.newDirectByteBuffer( size(mdIdx) ) );
+      return create(mdIdx, Buffers.newDirectByteBuffer( size(mdIdx) ) );
   }
 
   public static Shdr create(final int mdIdx, final java.nio.ByteBuffer buf) {

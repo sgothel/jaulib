@@ -25,7 +25,7 @@ package org.jau.nio;
 
 import java.nio.ByteBuffer;
 
-import org.jau.lang.NioUtil;
+import org.jau.io.Buffers;
 
 /**
  * This class represents a file based byte input stream.
@@ -96,10 +96,10 @@ public final class ByteInStream_File implements ByteInStream {
 
     @Override
     public int read(final ByteBuffer out) {
-        if( !NioUtil.isDirect(out) ) {
+        if( !Buffers.isDirect(out) ) {
             throw new IllegalArgumentException("out buffer not direct");
         }
-        final int res = read2Impl(out, (int)NioUtil.getDirectBufferByteOffset(out));
+        final int res = read2Impl(out, (int)Buffers.getDirectBufferByteOffset(out));
         out.limit(out.position() + res);
         return res;
     }

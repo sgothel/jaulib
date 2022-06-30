@@ -21,7 +21,7 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.jau.lang;
+package org.jau.io;
 
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
@@ -33,13 +33,14 @@ import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.nio.ShortBuffer;
 
+import org.jau.lang.UnsafeUtil;
 import org.jau.sys.Debug;
 import org.jau.sys.PlatformProps;
 
 /**
- * Utility methods to simplify NIO buffers
+ * Utility methods allowing easy {@link java.nio.Buffer} manipulations.
  */
-public class NioUtil {
+public class Buffers {
     static final boolean DEBUG = Debug.debug("NioUtil");
 
     public static final int SIZEOF_BYTE     = 1;
@@ -50,7 +51,7 @@ public class NioUtil {
     public static final int SIZEOF_LONG     = 8;
     public static final int SIZEOF_DOUBLE   = 8;
 
-    private NioUtil() {}
+    private Buffers() {}
 
     /**
      * Allocates a new direct ByteBuffer with the specified number of

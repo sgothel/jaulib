@@ -35,7 +35,7 @@ import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 
 import org.jau.io.Bitstream;
-import org.jau.lang.NioUtil;
+import org.jau.io.Buffers;
 import org.jau.sys.PlatformProps;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
@@ -67,7 +67,7 @@ public class TestBitstream00 extends JunitTracer {
         dumpData("tstLSB.whole", testBytesLSB, 0, testBytesLSB.length);
     }
     void showOrderImpl(final ByteOrder byteOrder) {
-        final ByteBuffer bb_long = ByteBuffer.allocate(NioUtil.SIZEOF_LONG);
+        final ByteBuffer bb_long = ByteBuffer.allocate(Buffers.SIZEOF_LONG);
         if( null != byteOrder ) {
             bb_long.order(byteOrder);
         }
@@ -76,7 +76,7 @@ public class TestBitstream00 extends JunitTracer {
         lb.put(0, 0x0807060504030201L);
         dumpData("long."+byteOrder, bb_long, 0, bb_long.capacity());
 
-        final ByteBuffer bb_int = ByteBuffer.allocate(NioUtil.SIZEOF_INT);
+        final ByteBuffer bb_int = ByteBuffer.allocate(Buffers.SIZEOF_INT);
         if( null != byteOrder ) {
             bb_int.order(byteOrder);
         }

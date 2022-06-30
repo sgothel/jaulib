@@ -25,7 +25,7 @@ package org.jau.nio;
 
 import java.nio.ByteBuffer;
 
-import org.jau.lang.NioUtil;
+import org.jau.io.Buffers;
 
 /**
  * This class represents a Ringbuffer-Based byte input stream with an externally provisioned data feed.
@@ -80,10 +80,10 @@ public final class ByteInStream_Feed implements ByteInStream  {
 
     @Override
     public int read(final ByteBuffer out) {
-        if( !NioUtil.isDirect(out) ) {
+        if( !Buffers.isDirect(out) ) {
             throw new IllegalArgumentException("out buffer not direct");
         }
-        final int res = read2Impl(out, (int)NioUtil.getDirectBufferByteOffset(out));
+        final int res = read2Impl(out, (int)Buffers.getDirectBufferByteOffset(out));
         out.limit(out.position() + res);
         return res;
     }
@@ -147,10 +147,10 @@ public final class ByteInStream_Feed implements ByteInStream  {
      *            {@link ByteBuffer#limit() Limit} will be reset to {@link ByteBuffer#position() position}.
      */
     public void write(final ByteBuffer in) {
-        if( !NioUtil.isDirect(in) ) {
+        if( !Buffers.isDirect(in) ) {
             throw new IllegalArgumentException("out buffer not direct");
         }
-        write2Impl(in, (int)NioUtil.getDirectBufferByteOffset(in), in.limit());
+        write2Impl(in, (int)Buffers.getDirectBufferByteOffset(in), in.limit());
         in.limit(in.position());
     }
     private native void write2Impl(ByteBuffer out, int out_offset, int out_limit);

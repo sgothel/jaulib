@@ -49,7 +49,6 @@ import java.util.regex.Pattern;
 
 import org.jau.lang.ExceptionUtils;
 import org.jau.lang.InterruptSource;
-import org.jau.lang.NioUtil;
 import org.jau.lang.ReflectionUtil;
 import org.jau.sec.SecurityUtil;
 import org.jau.sys.AndroidUtil;
@@ -285,13 +284,13 @@ public class IOUtil {
             initialCapacity = avail;
         }
         final MachineDataInfo machine = PlatformProps.MACH_DESC_STAT;
-        ByteBuffer data = NioUtil.newDirectByteBuffer( machine.pageAlignedSize( initialCapacity ) );
+        ByteBuffer data = Buffers.newDirectByteBuffer( machine.pageAlignedSize( initialCapacity ) );
         final byte[] chunk = new byte[machine.pageSizeInBytes()];
         int chunk2Read = Math.min(machine.pageSizeInBytes(), avail);
         int numRead = 0;
         do {
             if (avail > data.remaining()) {
-                final ByteBuffer newData = NioUtil.newDirectByteBuffer(
+                final ByteBuffer newData = Buffers.newDirectByteBuffer(
                                                machine.pageAlignedSize(data.position() + avail) );
                 newData.put(data);
                 data = newData;

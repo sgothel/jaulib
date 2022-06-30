@@ -39,8 +39,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.jau.fs.FileUtil;
+import org.jau.io.Buffers;
 import org.jau.io.PrintUtil;
-import org.jau.lang.NioUtil;
 import org.jau.nio.ByteInStream;
 import org.jau.nio.ByteInStream_Feed;
 import org.jau.nio.ByteInStream_File;
@@ -291,7 +291,7 @@ public class TestByteStream01 extends JunitTracer {
                     return false;
                 }
         };
-        final ByteBuffer io_buffer = NioUtil.newDirectByteBuffer(buffer_size);
+        final ByteBuffer io_buffer = Buffers.newDirectByteBuffer(buffer_size);
         final long in_bytes_total = NativeIO.read_stream(input, io_buffer, consumer);
         input.closeStream();
         if( null != outc[0] ) {
@@ -664,7 +664,7 @@ public class TestByteStream01 extends JunitTracer {
         try( final ByteInStream_File data_stream = new ByteInStream_File(data_feed.id() ) ) {
             final long file_size = data_stream.content_size();
             data_feed.set_content_size( file_size );
-            final ByteBuffer buffer = NioUtil.newDirectByteBuffer(feed_size);
+            final ByteBuffer buffer = Buffers.newDirectByteBuffer(feed_size);
             while( !data_stream.end_of_data() && xfer_total < file_size ) {
                 final int count = data_stream.read(buffer);
                 if( 0 < count ) {

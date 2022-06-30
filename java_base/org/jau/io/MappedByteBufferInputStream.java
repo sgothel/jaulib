@@ -36,7 +36,6 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 
-import org.jau.lang.NioUtil;
 import org.jau.sys.Debug;
 import org.jau.sys.PlatformProps;
 import org.jau.sys.PlatformTypes;
@@ -647,7 +646,7 @@ public class MappedByteBufferInputStream extends InputStream {
         if( !mbb.isDirect() ) {
             return false;
         }
-        if( !NioUtil.Cleaner.clean(mbb) && CacheMode.FLUSH_PRE_HARD == cmode ) {
+        if( !Buffers.Cleaner.clean(mbb) && CacheMode.FLUSH_PRE_HARD == cmode ) {
             cmode = CacheMode.FLUSH_PRE_SOFT;
             return false;
         } else {

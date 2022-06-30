@@ -27,9 +27,8 @@ package org.jau.sys.elf;
 
 import java.nio.ByteBuffer;
 
-import org.jau.lang.NioUtil;
-import org.jau.lang.StructAccessor;
-// import org.jau.sys.MachineDataInfo;
+import org.jau.io.Buffers;
+import org.jau.io.StructAccessor;
 
 public class Ehdr_p1 {
 
@@ -53,7 +52,7 @@ public class Ehdr_p1 {
   }
 
   public static Ehdr_p1 create() {
-    return create( NioUtil.newDirectByteBuffer( size() ) );
+    return create( Buffers.newDirectByteBuffer( size() ) );
   }
 
   public static Ehdr_p1 create(final java.nio.ByteBuffer buf) {
@@ -78,7 +77,7 @@ public class Ehdr_p1 {
   public Ehdr_p1 setE_ident(final int offset, final byte[] val) {
     final int arrayLength = 16;
     if( offset + val.length > arrayLength ) { throw new IndexOutOfBoundsException("offset "+offset+" + val.length "+val.length+" > array-length "+arrayLength); };
-    final int elemSize = NioUtil.SIZEOF_BYTE;
+    final int elemSize = Buffers.SIZEOF_BYTE;
     final ByteBuffer destB = getBuffer();
     final int bTotal = arrayLength * elemSize;
     // if( bTotal > e_ident_size ) { throw new IndexOutOfBoundsException("bTotal "+bTotal+" > size "+e_ident_size+", elemSize "+elemSize+" * "+arrayLength); };
@@ -92,14 +91,14 @@ public class Ehdr_p1 {
 
   /** Getter for native field: CType['char *', size [fixed false, lnx64 16], [array*1]], with array length of <code>16</code> */
   public ByteBuffer getE_ident() {
-    return accessor.slice(e_ident_offset,  NioUtil.SIZEOF_BYTE * 16);
+    return accessor.slice(e_ident_offset,  Buffers.SIZEOF_BYTE * 16);
   }
 
   /** Getter for native field: CType['char *', size [fixed false, lnx64 16], [array*1]], with array length of <code>16</code> */
   public byte[] getE_ident(final int offset, final byte result[]) {
     final int arrayLength = 16;
     if( offset + result.length > arrayLength ) { throw new IndexOutOfBoundsException("offset "+offset+" + result.length "+result.length+" > array-length "+arrayLength); };
-    return accessor.getBytesAt(e_ident_offset + (NioUtil.SIZEOF_BYTE * offset), result);
+    return accessor.getBytesAt(e_ident_offset + (Buffers.SIZEOF_BYTE * offset), result);
   }
 
 

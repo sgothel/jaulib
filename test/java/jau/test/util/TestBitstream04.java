@@ -36,7 +36,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import org.jau.io.Bitstream;
-import org.jau.lang.NioUtil;
+import org.jau.io.Buffers;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -73,7 +73,7 @@ public class TestBitstream04 extends JunitTracer {
     }
     void test01Int32BitsAlignedImpl(final ByteOrder byteOrder, final int val32, final int expUInt32Int) throws IOException {
         // Test with buffer defined value
-        final ByteBuffer bb = ByteBuffer.allocate(NioUtil.SIZEOF_INT);
+        final ByteBuffer bb = ByteBuffer.allocate(Buffers.SIZEOF_INT);
         if( null != byteOrder ) {
             bb.order(byteOrder);
         }
@@ -144,7 +144,7 @@ public class TestBitstream04 extends JunitTracer {
     }
     void test02Int32BitsUnalignedImpl(final ByteOrder byteOrder, final int preBits, final int val32, final int expUInt32Int) throws IOException {
         final int preBytes = ( preBits + 7 ) >>> 3;
-        final int byteCount = preBytes + NioUtil.SIZEOF_INT;
+        final int byteCount = preBytes + Buffers.SIZEOF_INT;
         final ByteBuffer bb = ByteBuffer.allocate(byteCount);
         if( null != byteOrder ) {
             bb.order(byteOrder);
