@@ -154,8 +154,8 @@ namespace jau {
 
             public:
 
-                dir_item() noexcept
-                : dirname_(), basename_() {}
+                /** Empty item w/ `.` set for both, dirname and basename */
+                dir_item() noexcept;
 
                 /**
                  * Create a dir_item where path is split into dirname and basename after `.` and `..` has been reduced.
@@ -174,6 +174,14 @@ namespace jau {
                  * Returns a full unix path representation combining dirname() and basename().
                  */
                 std::string path() const noexcept;
+
+                bool operator ==(const dir_item& rhs) const noexcept {
+                    return dirname_ == rhs.dirname_ && basename_ == rhs.basename_;
+                }
+
+                bool operator !=(const dir_item& rhs) const noexcept {
+                    return !( *this == rhs );
+                }
 
                 /**
                  * Returns a comprehensive string representation of this item
@@ -305,7 +313,7 @@ namespace jau {
         constexpr ::mode_t posix_protection_bits(const fmode_t mask) noexcept { return static_cast<::mode_t>(mask & fmode_t::protection_mask); }
 
         /**
-         * Platform agnostic C++ representation of POSIX ::lstat() and ::stat()
+         * Platform agnostic representation of POSIX ::lstat() and ::stat()
          * for a given pathname.
          *
          * Implementation follows the symbolic link, i.e. first opens
@@ -494,6 +502,12 @@ namespace jau {
                 /** Returns true if entity does not exist, exclusive bit. */
                 bool exists() const noexcept { return !is_set( mode_, fmode_t::not_existing ); }
 
+                bool operator ==(const file_stats& rhs) const noexcept;
+
+                bool operator !=(const file_stats& rhs) const noexcept {
+                    return !( *this == rhs );
+                }
+
                 /**
                  * Returns a comprehensive string representation of this element
                  * @param use_space if true, using space instead for 'T' separator and drop trailing UTC `Z` for readability, otherwise be compliant with ISO 8601 (default)
@@ -553,20 +567,18 @@ namespace jau {
          * @param atime new access time
          * @param mtime new modification time
          * @param mode fmode_t POSIX protection bits used, defaults to jau::fs::fmode_t::def_file_prot
-         * @param verbose defaults to false
          * @return true if successful, otherwise false
          */
         bool touch(const std::string& path, const jau::fraction_timespec& atime, const jau::fraction_timespec& mtime,
-                   const fmode_t mode=jau::fs::fmode_t::def_file_prot, const bool verbose=false) noexcept;
+                   const fmode_t mode=jau::fs::fmode_t::def_file_prot) noexcept;
 
         /**
          * Touch the file with current time and create file if not existing yet.
          * @param path full path to file
          * @param mode fmode_t POSIX protection bits used, defaults to jau::fs::fmode_t::def_file_prot
-         * @param verbose defaults to false
          * @return true if successful, otherwise false
          */
-        bool touch(const std::string& path, const fmode_t mode=jau::fs::fmode_t::def_file_prot, const bool verbose=false) noexcept;
+        bool touch(const std::string& path, const fmode_t mode=jau::fs::fmode_t::def_file_prot) noexcept;
 
         /**
          * `void consume_dir_item(const dir_item& item)`
@@ -599,12 +611,15 @@ namespace jau {
                 /**
                  * Visiting a symbolic-link, either to a file or a non-existing entity. Not followed symbolic-links to a directory is expressed via dir_symlink.
                  *
-                 * In case of a symbolic-link to an existing file, file is also set.
+                 * In case of a symbolic-link to an existing file, file is also set, i.e. file_symlink.
                  */
                 symlink = 1 << 0,
 
-                /** Visiting a file, may be in conjunction with symlink. */
+                /** Visiting a file, may be in conjunction with symlink, i.e. file_symlink. */
                 file = 1 << 1,
+
+                /** Visiting a symlink to a file, i.e. symlink | file  */
+                file_symlink = symlink | file,
 
                 /**
                  * Visiting a directory on entry, see traverse_options::dir_entry.

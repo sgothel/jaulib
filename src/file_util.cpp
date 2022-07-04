@@ -242,6 +242,10 @@ dir_item::dir_item(std::unique_ptr<backed_string_view> cleanpath) noexcept
     }
 }
 
+dir_item::dir_item() noexcept
+: dirname_(_dot), basename_(_dot) {}
+
+
 dir_item::dir_item(const std::string_view& path_) noexcept
 : dir_item( reduce(path_) )
 { }
@@ -648,6 +652,27 @@ bool file_stats::has(const field_t fields) const noexcept {
     return fields == ( has_fields_ & fields );
 }
 
+bool file_stats::operator ==(const file_stats& rhs) const noexcept {
+    if( this == &rhs ) {
+        return true;
+    }
+    return item_ == rhs.item_ &&
+           has_fields_ == rhs.has_fields_ &&
+           mode_ == rhs.mode_ &&
+           uid_ == rhs.uid_ && gid_ == rhs.gid_ &&
+           errno_res_ == rhs.errno_res_ &&
+           size_ == rhs.size_ &&
+           btime_ == rhs.btime_ &&
+           atime_ == rhs.atime_ &&
+           ctime_ == rhs.ctime_ &&
+           mtime_ == rhs.mtime_ &&
+           ( !is_link() ||
+             ( link_target_path_ == rhs.link_target_path_&&
+               link_target_ == rhs.link_target_
+             )
+           );
+}
+
 std::string file_stats::to_string(const bool use_space) const noexcept {
     std::string stored_path, link_detail;
     {
@@ -704,36 +729,27 @@ bool jau::fs::mkdir(const std::string& path, const fmode_t mode, const bool verb
     } else if( !stats.exists() ) {
         const int dir_err = ::mkdir(path.c_str(), posix_protection_bits(mode));
         if ( 0 != dir_err ) {
-            if( verbose ) {
-                jau::fprintf_td(stderr, "mkdir failed: %s, errno %d (%s)\n", stats.to_string().c_str(), errno, strerror(errno));
-            }
+            ERR_PRINT("%s, failure", stats.to_string().c_str());
             return false;
         } else {
             return true;
         }
     } else {
-        if( verbose ) {
-            jau::fprintf_td(stderr, "mkdir failed: %s, exists but is no dir\n", stats.to_string().c_str());
-        }
+        ERR_PRINT("%s, exists but is no dir", stats.to_string().c_str());
         return false;
     }
 }
 
-bool jau::fs::touch(const std::string& path, const jau::fraction_timespec& atime, const jau::fraction_timespec& mtime, const fmode_t mode, const bool verbose) noexcept {
+bool jau::fs::touch(const std::string& path, const jau::fraction_timespec& atime, const jau::fraction_timespec& mtime, const fmode_t mode) noexcept {
     int fd = ::open(path.c_str(), O_WRONLY|O_CREAT|O_NOCTTY|O_NONBLOCK, posix_protection_bits(mode));
     if( 0 > fd ) {
-        if( verbose ) {
-            jau::fprintf_td(stderr, "touch failed: Couldn't open/create file '%s', errno %d (%s)\n", path.c_str(), errno, strerror(errno));
-        }
+        ERR_PRINT("Couldn't open/create file '%s'", path.c_str());
         return false;
     }
-
     struct timespec ts2[2] = { atime.to_timespec(), mtime.to_timespec() };
     bool res;
     if( 0 != ::futimens(fd, ts2) ) {
-        if( verbose ) {
-            jau::fprintf_td(stderr, "touch failed: Couldn't update time of file '%s', errno %d (%s)\n", path.c_str(), errno, strerror(errno));
-        }
+        ERR_PRINT("Couldn't update time of file '%s'", path.c_str());
         res = false;
     } else {
         res = true;
@@ -742,20 +758,15 @@ bool jau::fs::touch(const std::string& path, const jau::fraction_timespec& atime
     return res;
 }
 
-bool jau::fs::touch(const std::string& path, const fmode_t mode, const bool verbose) noexcept {
+bool jau::fs::touch(const std::string& path, const fmode_t mode) noexcept {
     int fd = ::open(path.c_str(), O_WRONLY|O_CREAT|O_NOCTTY|O_NONBLOCK, posix_protection_bits(mode));
     if( 0 > fd ) {
-        if( verbose ) {
-            jau::fprintf_td(stderr, "touch failed: Couldn't open/create file '%s', errno %d (%s)\n", path.c_str(), errno, strerror(errno));
-        }
+        ERR_PRINT("Couldn't open/create file '%s'", path.c_str());
         return false;
     }
-
     bool res;
     if( 0 != ::futimens(fd, NULL /* current time */) ) {
-        if( verbose ) {
-            jau::fprintf_td(stderr, "touch failed: Couldn't update time of file '%s', errno %d (%s)\n", path.c_str(), errno, strerror(errno));
-        }
+        ERR_PRINT("Couldn't update time of file '%s'", path.c_str());
         res = false;
     } else {
         res = true;
@@ -920,21 +931,17 @@ bool jau::fs::compare(const std::string& source1, const std::string& source2, co
 
 bool jau::fs::compare(const file_stats& source1, const file_stats& source2, const bool verbose) noexcept {
     if( !source1.is_file() ) {
-        if( verbose ) {
-            jau::fprintf_td(stderr, "compare: Error: source1_stats is not a file: %s\n", source1.to_string().c_str());
-        }
+        ERR_PRINT("source1_stats is not a file: %s", source1.to_string().c_str());
         return false;
     }
     if( !source2.is_file() ) {
-        if( verbose ) {
-            jau::fprintf_td(stderr, "compare: Error: source2_stats is not a file: %s\n", source2.to_string().c_str());
-        }
+        ERR_PRINT("source2_stats is not a file: %s", source2.to_string().c_str());
         return false;
     }
 
     if( source1.size() != source2.size() ) {
         if( verbose ) {
-            jau::fprintf_td(stderr, "compare: Error: Source files size mismatch, %s != %s\n",
+            jau::fprintf_td(stderr, "compare: Source files size mismatch, %s != %s\n",
                     source1.to_string().c_str(), source2.to_string().c_str());
         }
         return false;
@@ -947,16 +954,12 @@ bool jau::fs::compare(const file_stats& source1, const file_stats& source2, cons
     bool res = false;
     src1 = ::open64(source1.path().c_str(), src_flags);
     if ( 0 > src1 ) {
-        if( verbose ) {
-            jau::fprintf_td(stderr, "compare: Error: Failed to open source1 %s, errno %d, %s\n", source1.to_string().c_str(), errno, ::strerror(errno));
-        }
+        ERR_PRINT("Failed to open source1 %s, errno %d, %s", source1.to_string().c_str());
         goto errout;
     }
     src2 = ::open64(source2.path().c_str(), src_flags);
     if ( 0 > src2 ) {
-        if( verbose ) {
-            jau::fprintf_td(stderr, "compare: Error: Failed to open source2 %s, errno %d, %s\n", source2.to_string().c_str(), errno, ::strerror(errno));
-        }
+        ERR_PRINT("Failed to open source2 %s, errno %d, %s", source2.to_string().c_str());
         goto errout;
     }
     while ( offset < source1.size()) {
@@ -976,22 +979,20 @@ bool jau::fs::compare(const file_stats& source1, const file_stats& source2, cons
             }
         }
         if ( 0 > rc1 || 0 > rc2 ) {
-            if( verbose ) {
-                if ( 0 > rc1 ) {
-                    jau::fprintf_td(stderr, "compare: Error: Failed to read source1 bytes @ %s / %s, %s, errno %d, %s\n",
-                            jau::to_decstring(offset).c_str(), jau::to_decstring(source1.size()).c_str(),
-                            source1.to_string().c_str(), errno, ::strerror(errno));
-                } else if ( 0 > rc2 ) {
-                    jau::fprintf_td(stderr, "compare: Error: Failed to read source2 bytes @ %s / %s, %s, errno %d, %s\n",
-                            jau::to_decstring(offset).c_str(), jau::to_decstring(source2.size()).c_str(),
-                            source2.to_string().c_str(), errno, ::strerror(errno));
-                }
+            if ( 0 > rc1 ) {
+                ERR_PRINT("Failed to read source1 bytes @ %s / %s, %s",
+                        jau::to_decstring(offset).c_str(), jau::to_decstring(source1.size()).c_str(),
+                        source1.to_string().c_str());
+            } else if ( 0 > rc2 ) {
+                ERR_PRINT("Failed to read source2 bytes @ %s / %s, %s",
+                        jau::to_decstring(offset).c_str(), jau::to_decstring(source2.size()).c_str(),
+                        source2.to_string().c_str());
             }
             goto errout;
         }
         if( 0 != ::memcmp(buffer1, buffer2, rc1) ) {
             if( verbose ) {
-                jau::fprintf_td(stderr, "compare: Error: Comparison failed of %s bytes @ %s / %s, %s != %s\n",
+                jau::fprintf_td(stderr, "compare: Difference within %s bytes @ %s / %s, %s != %s\n",
                         jau::to_decstring(rc1).c_str(), jau::to_decstring(offset-rc1).c_str(), jau::to_decstring(source1.size()).c_str(),
                         source1.to_string().c_str(), source2.to_string().c_str());
             }
@@ -1002,11 +1003,9 @@ bool jau::fs::compare(const file_stats& source1, const file_stats& source2, cons
         }
     }
     if( offset < source1.size() ) {
-        if( verbose ) {
-            jau::fprintf_td(stderr, "compare: Error: Incomplete transfer %s / %s, %s != %s\n",
-                    jau::to_decstring(offset).c_str(), jau::to_decstring(source1.size()).c_str(),
-                    source1.to_string().c_str(), source2.to_string().c_str(), errno, ::strerror(errno));
-        }
+        ERR_PRINT("Incomplete transfer %s / %s, %s != %s\n",
+                jau::to_decstring(offset).c_str(), jau::to_decstring(source1.size()).c_str(),
+                source1.to_string().c_str(), source2.to_string().c_str());
         goto errout;
     }
     res = true;
