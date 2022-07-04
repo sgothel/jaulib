@@ -759,6 +759,32 @@ namespace jau::jni {
         return result;
     }
 
+    template <typename T, typename U>
+    jobject convert_vector_to_jarraylist(JNIEnv *env, T& array, std::function<jobject(JNIEnv*, const U&)> ctor)
+    {
+        unsigned int array_size = array.size();
+
+        jmethodID arraylist_add;
+        jobject result = get_new_arraylist(env, array_size, &arraylist_add);
+
+        if (array_size == 0)
+        {
+            return result;
+        }
+
+        for (unsigned int i = 0; i < array_size; ++i)
+        {
+            jobject object = ctor(env, array[i] /* const U& */);
+            if (!object)
+            {
+                throw jau::RuntimeException("Cannot create instance of class", E_FILE_LINE);
+            }
+            env->CallBooleanMethod(result, arraylist_add, object);
+            java_exception_check_and_throw(env, E_FILE_LINE);
+        }
+        return result;
+    }
+
     /**@}*/
 
 

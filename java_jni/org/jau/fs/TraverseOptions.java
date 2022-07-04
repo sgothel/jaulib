@@ -28,11 +28,11 @@ package org.jau.fs;
  *
  * This `enum class` type fulfills `C++ named requirements: BitmaskType`.
  *
- * @see visit()
- * @see remove()
+ * @see FileUtil#visit(FileStats, TraverseOptions, org.jau.fs.FileUtil.PathVisitor)
+ * @see FileUtil#remove(String, TraverseOptions)
  */
 public class TraverseOptions {
-    public enum Option {
+    public enum Bit {
         /** No option set */
         none ( (short) 0 ),
 
@@ -51,7 +51,7 @@ public class TraverseOptions {
         /** Enable verbosity mode, potentially used by a path_visitor implementation like remove(). */
         verbose ( (short) ( 1 << 15 ) );
 
-        Option(final short v) { value = v; }
+        Bit(final short v) { value = v; }
         public final short value;
     }
     public short mask;
@@ -63,14 +63,14 @@ public class TraverseOptions {
         mask = 0;
     }
 
-    public boolean isSet(final Option bit) { return bit.value == ( mask & bit.value ); }
-    public void set(final Option bit) { mask = (short) ( mask | bit.value ); }
+    public boolean isSet(final Bit bit) { return bit.value == ( mask & bit.value ); }
+    public void set(final Bit bit) { mask = (short) ( mask | bit.value ); }
 
     @Override
     public String toString() {
         int count = 0;
         final StringBuilder out = new StringBuilder();
-        for (final Option dt : Option.values()) {
+        for (final Bit dt : Bit.values()) {
             if( isSet(dt) ) {
                 if( 0 < count ) { out.append(", "); }
                 out.append(dt.name()); count++;
@@ -83,4 +83,12 @@ public class TraverseOptions {
         return out.toString();
     }
 
+    @Override
+    public boolean equals(final Object other) {
+        if (this == other) {
+            return true;
+        }
+        return (other instanceof TraverseOptions) &&
+               this.mask == ((TraverseOptions)other).mask;
+    }
 }

@@ -23,10 +23,185 @@
  */
 package org.jau.fs;
 
+import java.time.Instant;
+import java.util.List;
+
 /**
  * Native file types and functionality.
  */
 public final class FileUtil {
+    /**
+     * Return the current working directory or empty on failure.
+     */
+    public static native String get_cwd();
+
+    /**
+     * Return stripped last component from given path separated by `/`, excluding the trailing separator `/`.
+     *
+     * If no directory separator `/` is contained, return `.`.
+     *
+     * If only the root path `/` is given, return `/`.
+     *
+     * @param path given path
+     * @return leading directory name w/o slash or `.`
+     */
+    public static native String dirname(final String path);
+
+    /**
+     * Return stripped leading directory components from given path separated by `/`.
+     *
+     * If only the root path `/` is given, return `/`.
+     *
+     * @param path given path
+     * @return last non-slash component or `.`
+     */
+    public static native String basename(final String path);
+
+    /**
+     * Create directory
+     * @param path full path to new directory
+     * @param mode fmode_t POSIX protection bits used, defaults to {@link FMode#def_dir}
+     * @param verbose defaults to false
+     * @return true if successful, otherwise false
+     */
+    public static boolean mkdir(final String path, final FMode mode) {
+        return mkdirImpl(path, mode.mask);
+    }
+    private static native boolean mkdirImpl(final String path, final int mode);
+
+    /**
+     * See {@link #mkdir(String, FMode)} using {@link FMode#def_dir}
+     */
+    public static boolean mkdir(final String path) {
+        return mkdirImpl(path, FMode.def_dir.mask);
+    }
+
+    /**
+     * Touch the file with given atime and mtime and create file if not existing yet.
+     * @param path full path to file
+     * @param atime new access time
+     * @param mtime new modification time
+     * @param mode fmode_t POSIX protection bits used, defaults to {@link FMode#def_file}
+     * @param verbose defaults to false
+     * @return true if successful, otherwise false
+     */
+    public static boolean touch(final String path, final Instant atime, final Instant mtime,
+                                final FMode mode) {
+        return touchImpl(path,
+                         atime.getEpochSecond(), atime.getNano(),
+                         mtime.getEpochSecond(), mtime.getNano(),
+                         mode.mask);
+    }
+    private static native boolean touchImpl(final String path,
+                                            long atime_s, long atime_ns,
+                                            long mtime_s, long mtime_ns,
+                                            int mode);
+
+    public static final long UTIME_NOW  = ((1l << 30) - 1l);
+
+    /**
+     * Touch the file with current time and create file if not existing yet.
+     * @param path full path to file
+     * @param mode fmode_t POSIX protection bits used, defaults to {@link FMode#def_file}
+     * @param verbose defaults to false
+     * @return true if successful, otherwise false
+     */
+    public static boolean touch(final String path, final FMode mode) {
+        return touchImpl(path, 0, UTIME_NOW, 0, UTIME_NOW, mode.mask);
+    }
+
+    /**
+     * Returns a list of directory elements excluding `.` and `..` for the given path, non recursive.
+     *
+     * @param path path to directory
+     * @return list of DirItem if given path exists, is directory and is readable, otherwise null
+     */
+    public static native List<DirItem> get_dir_content(final String path);
+
+    /**
+     * Path visitor for {@link FileUtil#visit(FileStats, TraverseOptions, PathVisitor)}
+     */
+    public static interface PathVisitor {
+        boolean visit(TraverseEvent tevt, final FileStats item_stats);
+    }
+
+    /**
+     * Visit element(s) of a given path, see traverse_options for detailed settings.
+     *
+     * All elements of type fmode_t::file, fmode_t::dir and fmode_t::no_access or fmode_t::not_existing
+     * will be visited by the given path_visitor `visitor`.
+     *
+     * Processing ends if the `visitor returns `false`.
+     *
+     * @param path the starting path
+     * @param topts given traverse_options for this operation
+     * @param visitor path_visitor function `bool visitor(const file_stats& item_stats)`.
+     * @return true if all visitor invocations returned true, otherwise false
+     */
+    public static boolean visit(final String path, final TraverseOptions topts, final PathVisitor visitor) {
+        return visit(new FileStats(path), topts, visitor);
+    }
+
+    /**
+     * Visit element(s) of a given path, see traverse_options for detailed settings.
+     *
+     * All elements of type fmode_t::file, fmode_t::dir and fmode_t::no_access or fmode_t::not_existing
+     * will be visited by the given path_visitor `visitor`.
+     *
+     * Processing ends if the `visitor returns `false`.
+     *
+     * @param item_stats pre-fetched file_stats for a given dir_item, used for efficiency
+     * @param topts given traverse_options for this operation
+     * @param visitor path_visitor function `bool visitor(const file_stats& item_stats)`.
+     * @return true if all visitor invocations returned true, otherwise false
+     */
+    public static boolean visit(final FileStats item_stats, final TraverseOptions topts, final PathVisitor visitor) {
+        if( item_stats.is_dir() ) {
+            if( item_stats.is_link() && !topts.isSet(TraverseOptions.Bit.follow_symlinks) ) {
+                return visitor.visit( TraverseEvent.dir_symlink, item_stats );
+            }
+            if( !topts.isSet(TraverseOptions.Bit.recursive) ) {
+                return visitor.visit( TraverseEvent.dir_non_recursive, item_stats );
+            }
+            if( topts.isSet(TraverseOptions.Bit.dir_entry) ) {
+                if( !visitor.visit( TraverseEvent.dir_entry, item_stats ) ) {
+                    return false;
+                }
+            }
+            final List<DirItem> content = get_dir_content(item_stats.path());
+            if( null != content && content.size() > 0 ) {
+                for (final DirItem element : content) {
+                    final FileStats element_stats = new FileStats( element.path() );
+                    if( element_stats.is_dir() ) { // an OK dir
+                        if( element_stats.is_link() && !topts.isSet(TraverseOptions.Bit.follow_symlinks) ) {
+                            if( !visitor.visit( TraverseEvent.dir_symlink, element_stats ) ) {
+                                return false;
+                            }
+                        } else if( !visit(element_stats, topts, visitor) ) { // recursive
+                            return false;
+                        }
+                    } else if( !visitor.visit( element_stats.is_file() && element_stats.is_link() ? TraverseEvent.file_symlink :
+                                               ( element_stats.is_file() ? TraverseEvent.file :
+                                                 ( element_stats.is_link() ? TraverseEvent.symlink : TraverseEvent.none ) ),
+                                               element_stats ) )
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+        if( item_stats.is_dir() && topts.isSet(TraverseOptions.Bit.dir_exit) ) {
+            return visitor.visit( TraverseEvent.dir_exit, item_stats );
+        } else if( item_stats.is_file() || !item_stats.ok() ) { // file or error-alike
+            return visitor.visit( item_stats.is_file() && item_stats.is_link() ? TraverseEvent.file_symlink :
+                                  ( item_stats.is_file() ? TraverseEvent.file :
+                                    ( item_stats.is_link() ? TraverseEvent.symlink : TraverseEvent.none ) ),
+                                  item_stats );
+        } else {
+            return true;
+        }
+    }
+
     /**
      * Remove the given path. If path represents a director, `recursive` must be set to true.
      *

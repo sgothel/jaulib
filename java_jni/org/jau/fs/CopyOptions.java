@@ -28,14 +28,12 @@ package org.jau.fs;
  *
  * By default, the fmode_t POSIX protection mode bits are preserved
  * while using the caller's uid and gid as well as current timestamps. <br />
- * Use copy_options::preserve_all to preserve uid and gid if allowed from the caller and access- and modification-timestamps.
+ * Use {@link CopyOptions.Bit#preserve_all} to preserve uid and gid if allowed from the caller and access- and modification-timestamps.
  *
- * This `enum class` type fulfills `C++ named requirements: BitmaskType`.
- *
- * @see copy()
+ * @see FileUtil#copy(String, String, CopyOptions)
  */
 public class CopyOptions {
-    public enum Option {
+    public enum Bit {
         /** No option set */
         none ( (short) 0 ),
 
@@ -64,7 +62,7 @@ public class CopyOptions {
         /** Enable verbosity mode, show error messages on stderr. */
         verbose ( (short)( 1 << 15 ) );
 
-        Option(final short v) { value = v; }
+        Bit(final short v) { value = v; }
         public final short value;
     }
 
@@ -77,14 +75,14 @@ public class CopyOptions {
         mask = 0;
     }
 
-    public boolean isSet(final Option bit) { return bit.value == ( mask & bit.value ); }
-    public void set(final Option bit) { mask = (short) ( mask | bit.value ); }
+    public boolean isSet(final Bit bit) { return bit.value == ( mask & bit.value ); }
+    public void set(final Bit bit) { mask = (short) ( mask | bit.value ); }
 
     @Override
     public String toString() {
         int count = 0;
         final StringBuilder out = new StringBuilder();
-        for (final Option dt : Option.values()) {
+        for (final Bit dt : Bit.values()) {
             if( isSet(dt) ) {
                 if( 0 < count ) { out.append(", "); }
                 out.append(dt.name()); count++;
@@ -95,5 +93,13 @@ public class CopyOptions {
             out.append("]");
         }
         return out.toString();
+    }
+    @Override
+    public boolean equals(final Object other) {
+        if (this == other) {
+            return true;
+        }
+        return (other instanceof CopyOptions) &&
+               this.mask == ((CopyOptions)other).mask;
     }
 }

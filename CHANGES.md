@@ -14,7 +14,8 @@
   - `copy()` with `copy_options` -> `CopyOptions`
   - `remove()` with `traverse_options` -> `TraverseOptions`
   - `mount_image()` and `umount()`
-  - TODO: Partially copy `test_fileutils01.cpp` and `testsudo_fileutils02.cpp` to java.
+  - Copied `test_fileutils01.cpp` to java, passed.
+  - TODO Copy `testsudo_fileutils02.cpp` to java.
 * Have `jau.pkg.PlatformRuntime` load tool library `jaulib` as well, resolving dependencies for self-testing.
 * Add java mapping of `jau::io::ByteInStream` for file, URL and feed for general use
   - `org.jau.nio.ByteInStream`, `org.jau.nio.ByteInStream_File`, `org.jau.nio.ByteInStream_URL`, `org.jau.nio.ByteInStream_Feed`
