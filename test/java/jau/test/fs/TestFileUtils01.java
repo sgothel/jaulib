@@ -949,6 +949,7 @@ public class TestFileUtils01 extends FileUtilBaseTest {
 
     @Test(timeout = 10000)
     public void test30_copy_file2dir() {
+        PlatformRuntime.checkInitialized();
         PrintUtil.println(System.err, "test30_copy_file2dir\n");
 
         FileStats root_orig_stats = new FileStats(project_root1);
@@ -1046,6 +1047,7 @@ public class TestFileUtils01 extends FileUtilBaseTest {
 
     @Test(timeout = 10000)
     public void test31_copy_file2file() {
+        PlatformRuntime.checkInitialized();
         PrintUtil.println(System.err, "test31_copy_file2file\n");
 
         FileStats root_orig_stats = new FileStats(project_root1);
@@ -1151,6 +1153,7 @@ public class TestFileUtils01 extends FileUtilBaseTest {
 
     @Test(timeout = 10000)
     public void test40_copy_ext_r_p() {
+        PlatformRuntime.checkInitialized();
         PrintUtil.println(System.err, "test40_copy_ext_r_p\n");
 
         FileStats root_orig_stats = new FileStats(project_root1);
@@ -1162,10 +1165,12 @@ public class TestFileUtils01 extends FileUtilBaseTest {
 
         final String root_copy = root+"_copy_test40";
         testxx_copy_r_p("test40_copy_ext_r_p", root_orig_stats, 0 /* source_added_dead_links */, root_copy);
+        Assert.assertTrue( true == FileUtil.remove(root_copy, topts_rec) );
     }
 
     @Test(timeout = 10000)
     public void test41_copy_ext_r_p_fsl() {
+        PlatformRuntime.checkInitialized();
         PrintUtil.println(System.err, "test41_copy_ext_r_p_fsl\n");
 
         FileStats root_orig_stats = new FileStats(project_root1);
@@ -1239,6 +1244,10 @@ public class TestFileUtils01 extends FileUtilBaseTest {
             Assert.assertTrue(  0 == stats_copy.dirs_sym_link );
         }
         Assert.assertTrue( true == FileUtil.remove(root_copy, topts_rec) );
+    }
+
+    public static void main(final String args[]) {
+        org.junit.runner.JUnitCore.main(TestFileUtils01.class.getName());
     }
 
 }

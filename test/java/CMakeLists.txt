@@ -8,7 +8,7 @@ set(jaulib_test_jar_file ${CMAKE_CURRENT_BINARY_DIR}/jaulib-test.jar CACHE FILEP
 
 file(GLOB_RECURSE TEST_JAVA_SOURCES "*.java")
 
-file(GLOB_RECURSE TEST_JAVA_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "Test*.java")
+file(GLOB_RECURSE TEST_JAVA_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "Test[A-Z]*.java")
 
 add_jar(jaulib_test
         ${TEST_JAVA_SOURCES}
@@ -64,4 +64,21 @@ foreach(name ${TARGETS_IDIOMATIC_EXAMPLES})
                            -cp ${JUNIT_JAR}:${jaulib_fat_jar_file}:${jaulib_test_jar_file}
                            org.junit.runner.JUnitCore ${name})
 endforeach()
+
+IF( ( TEST_WITH_SUDO ) AND ( "${OS_NAME}" STREQUAL "linux" ) ) 
+    # These examples use the standard separate compilation
+    file(GLOB_RECURSE TESTSUDO_JAVA_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "Testsudo[A-Z]*.java")
+
+    string( REPLACE ".java" "" TESTSUDO_JAVA_FILES2 "${TESTSUDO_JAVA_FILES}" )
+    string( REPLACE "/" "." BASENAMES_IDIOMATIC_TESTSUDO "${TESTSUDO_JAVA_FILES2}" )
+    set( TARGETS_IDIOMATIC_TESTSUDO ${BASENAMES_IDIOMATIC_TESTSUDO} )
+
+    foreach( name ${TARGETS_IDIOMATIC_TESTSUDO} )
+        add_test (NAME ${name} COMMAND sudo -E /sbin/capsh --caps=cap_sys_admin,cap_setuid,cap_setgid+eip\ cap_setpcap+ep
+                           --keep=1 --user=$ENV{USER} --addamb=cap_sys_admin,cap_setuid,cap_setgid+eip
+                           -- -c "ulimit -c unlimited; ${JAVA_RUNTIME} -cp ${JUNIT_JAR}:${jaulib_fat_jar_file}:${jaulib_test_jar_file} org.junit.runner.JUnitCore ${name}")
+    endforeach()
+ELSE()
+    message(STATUS "Testsudo* disabled: TEST_WITH_SUDO ${TEST_WITH_SUDO}, OS_NAME ${OS_NAME}")
+ENDIF()
 

@@ -264,14 +264,15 @@ public final class FileUtil {
     /**
      * Attach the filesystem image named in `image_path` to `target_path`.
      *
-     * This method requires root permissions.
+     * This method either requires root permissions <br />
+     * or the following capabilities: `cap_sys_admin`,`cap_setuid`, `cap_setgid`.
      *
      * @param image_path path of image source file
      * @param mount_point directory where `image_path` shall be attached to
      * @param fs_type type of filesystem, e.g. `squashfs`, `tmpfs`, `iso9660`, etc.
      * @param mountflags mount flags, e.g. `MS_LAZYTIME | MS_NOATIME | MS_RDONLY` for a read-only lazy-time and no-atime filesystem.
      * @param fs_options special filesystem options
-     * @return mount_ctx structure containing mounted status etc
+     * @return native mount context if successful, otherwise null
      *
      * @see umount()
      */
@@ -281,9 +282,10 @@ public final class FileUtil {
     /**
      * Detach the given mount_ctc `context`
      *
-     * This method requires root permissions.
+     * This method either requires root permissions <br />
+     * or the following capabilities: `cap_sys_admin`,`cap_setuid`, `cap_setgid`.
      *
-     * @param context mount_ctx previously attached via mount_image()
+     * @param context native mount context, previously attached via mount_image()
      * @return true if successful, otherwise false
      *
      * @see mount_image()

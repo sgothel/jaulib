@@ -373,8 +373,10 @@ jlong Java_org_jau_fs_FileUtil_mount_1image(JNIEnv *env, jclass cls,
         jau::fs::mount_ctx res = jau::fs::mount_image(image_path, mount_point, fs_type,
                                                       mountflags, fs_options);
 
-        jau::jni::shared_ptr_ref<jau::fs::mount_ctx> ref( new jau::fs::mount_ctx(res) );
-        return ref.release_to_jlong();
+        if( res.mounted ) {
+            jau::jni::shared_ptr_ref<jau::fs::mount_ctx> ref( new jau::fs::mount_ctx(res) );
+            return ref.release_to_jlong();
+        }
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }

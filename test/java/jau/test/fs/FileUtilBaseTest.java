@@ -316,7 +316,6 @@ public class FileUtilBaseTest extends JunitTracer {
                 } };
             Assert.assertTrue( true == FileUtil.visit(source, topts, pv1) );
         }
-        Assert.assertTrue( true == FileUtil.remove(dest, topts_rec) );
     }
 
 }

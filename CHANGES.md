@@ -11,11 +11,12 @@
 **0.14.0** (TODO)
 
 * Add java mapping of `jau::fs::*` operations
+  - `get_cwd()`, `basename()`, `dirname()`, `compare()`, `mkdir()`, `touch()`, `get_dir_content()`
+  - `visit()` with `path_visitor` -> `PathVisitor` and `traverse_options` -> `TraverserOptions`
   - `copy()` with `copy_options` -> `CopyOptions`
   - `remove()` with `traverse_options` -> `TraverseOptions`
   - `mount_image()` and `umount()`
-  - Copied `test_fileutils01.cpp` to java, passed.
-  - TODO Copy `testsudo_fileutils02.cpp` to java.
+  - Copied `test_fileutils01.cpp` to `TestFileUtils01.java` and `testsudo_fileutils02.cpp` to `TestsudoFileUtils02.java`.
 * Have `jau.pkg.PlatformRuntime` load tool library `jaulib` as well, resolving dependencies for self-testing.
 * Add java mapping of `jau::io::ByteInStream` for file, URL and feed for general use
   - `org.jau.nio.ByteInStream`, `org.jau.nio.ByteInStream_File`, `org.jau.nio.ByteInStream_URL`, `org.jau.nio.ByteInStream_Feed`

@@ -950,7 +950,8 @@ namespace jau {
         /**
          * Attach the filesystem image named in `image_path` to `target_path`.
          *
-         * This method requires root permissions.
+         * This method either requires root permissions <br />
+         * or the following capabilities: `cap_sys_admin`,`cap_setuid`, `cap_setgid`.
          *
          * @param image_path path of image source file
          * @param mount_point directory where `image_path` shall be attached to
@@ -967,7 +968,8 @@ namespace jau {
         /**
          * Detach the given mount_ctc `context`
          *
-         * This method requires root permissions.
+         * This method either requires root permissions <br />
+         * or the following capabilities: `cap_sys_admin`,`cap_setuid`, `cap_setgid`.
          *
          * @param context mount_ctx previously attached via mount_image()
          * @return true if successful, otherwise false
