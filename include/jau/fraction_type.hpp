@@ -1034,6 +1034,28 @@ namespace jau {
     }
 
     /**
+     * Returns the value of the sign function applied to tv_sec.
+     * <pre>
+     * -1 for numerator < 0
+     *  0 for numerator = 0
+     *  1 for numerator > 0
+     * </pre>
+     * @return function result
+     */
+    constexpr snsize_t sign(const fraction_timespec& rhs) noexcept {
+        return sign(rhs.tv_sec);
+    }
+
+    /**
+     * Returns the absolute fraction_timespec
+     */
+    constexpr fraction_timespec abs(const fraction_timespec& rhs) noexcept {
+        fraction_timespec copy(rhs); // skip normalize
+        copy.tv_sec= jau::abs(rhs.tv_sec);
+        return copy;
+    }
+
+    /**
      * Returns sum of two fraction_timespec.
      *
      * @param lhs a fraction_timespec
