@@ -175,12 +175,12 @@ namespace jau::io {
     /**@}*/
 
     /**
-     * Limited URI scheme functionality to query whether implementation may handle the protocol.
+     * Limited URI toolkit to query handled protocols by the IO implementation.
      *
      * The URI scheme functionality exposed here is limited and only provided to decide whether the used implementation
      * is able to handle the protocol. This is not a replacement for a proper URI class.
      */
-    namespace uri {
+    namespace uri_tk {
         /** \addtogroup IOUtils
          *
          *  @{

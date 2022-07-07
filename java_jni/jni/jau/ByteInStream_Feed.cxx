@@ -22,7 +22,7 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "org_jau_nio_ByteInStream_Feed.h"
+#include "org_jau_io_ByteInStream_Feed.h"
 
 #include <jau/debug.hpp>
 
@@ -30,7 +30,7 @@
 
 #include "jau/byte_stream.hpp"
 
-jlong Java_org_jau_nio_ByteInStream_1Feed_ctorImpl(JNIEnv *env, jobject obj, jstring jid_name, jlong jtimeoutMS) {
+jlong Java_org_jau_io_ByteInStream_1Feed_ctorImpl(JNIEnv *env, jobject obj, jstring jid_name, jlong jtimeoutMS) {
     try {
         (void)obj;
         // new instance
@@ -44,7 +44,7 @@ jlong Java_org_jau_nio_ByteInStream_1Feed_ctorImpl(JNIEnv *env, jobject obj, jst
     return (jlong) (intptr_t)nullptr;
 }
 
-void Java_org_jau_nio_ByteInStream_1Feed_closeStream(JNIEnv *env, jobject obj) {
+void Java_org_jau_io_ByteInStream_1Feed_closeStream(JNIEnv *env, jobject obj) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_Feed> ref(env, obj); // hold until done
         ref->close();
@@ -53,7 +53,7 @@ void Java_org_jau_nio_ByteInStream_1Feed_closeStream(JNIEnv *env, jobject obj) {
     }
 }
 
-void Java_org_jau_nio_ByteInStream_1Feed_dtorImpl(JNIEnv *env, jclass clazz, jlong nativeInstance) {
+void Java_org_jau_io_ByteInStream_1Feed_dtorImpl(JNIEnv *env, jclass clazz, jlong nativeInstance) {
     (void)clazz;
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_Feed> sref(nativeInstance, false /* throw_on_nullptr */); // hold copy until done
@@ -66,7 +66,7 @@ void Java_org_jau_nio_ByteInStream_1Feed_dtorImpl(JNIEnv *env, jclass clazz, jlo
     }
 }
 
-jboolean Java_org_jau_nio_ByteInStream_1Feed_check_1available(JNIEnv *env, jobject obj, jlong n) {
+jboolean Java_org_jau_io_ByteInStream_1Feed_check_1available(JNIEnv *env, jobject obj, jlong n) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_Feed> ref(env, obj); // hold until done
         return ref->check_available((size_t)n) ? JNI_TRUE : JNI_FALSE;
@@ -76,7 +76,7 @@ jboolean Java_org_jau_nio_ByteInStream_1Feed_check_1available(JNIEnv *env, jobje
     return JNI_FALSE;
 }
 
-jint Java_org_jau_nio_ByteInStream_1Feed_read(JNIEnv *env, jobject obj, jbyteArray jout, jint joffset, jint jlength) {
+jint Java_org_jau_io_ByteInStream_1Feed_read(JNIEnv *env, jobject obj, jbyteArray jout, jint joffset, jint jlength) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_Feed> ref(env, obj); // hold until done
 
@@ -99,7 +99,7 @@ jint Java_org_jau_nio_ByteInStream_1Feed_read(JNIEnv *env, jobject obj, jbyteArr
     return 0;
 }
 
-jint Java_org_jau_nio_ByteInStream_1Feed_read2Impl(JNIEnv *env, jobject obj, jobject jout, jint out_offset) {
+jint Java_org_jau_io_ByteInStream_1Feed_read2Impl(JNIEnv *env, jobject obj, jobject jout, jint out_offset) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_Feed> ref(env, obj); // hold until done
 
@@ -118,7 +118,7 @@ jint Java_org_jau_nio_ByteInStream_1Feed_read2Impl(JNIEnv *env, jobject obj, job
     return 0;
 }
 
-jint Java_org_jau_nio_ByteInStream_1Feed_peek(JNIEnv *env, jobject obj, jbyteArray jout, jint joffset, jint jlength, jlong jpeek_offset) {
+jint Java_org_jau_io_ByteInStream_1Feed_peek(JNIEnv *env, jobject obj, jbyteArray jout, jint joffset, jint jlength, jlong jpeek_offset) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_Feed> ref(env, obj); // hold until done
 
@@ -142,7 +142,7 @@ jint Java_org_jau_nio_ByteInStream_1Feed_peek(JNIEnv *env, jobject obj, jbyteArr
     return 0;
 }
 
-jboolean Java_org_jau_nio_ByteInStream_1Feed_end_1of_1data(JNIEnv *env, jobject obj) {
+jboolean Java_org_jau_io_ByteInStream_1Feed_end_1of_1data(JNIEnv *env, jobject obj) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_Feed> ref(env, obj); // hold until done
         return ref->end_of_data() ? JNI_TRUE : JNI_FALSE;
@@ -152,7 +152,7 @@ jboolean Java_org_jau_nio_ByteInStream_1Feed_end_1of_1data(JNIEnv *env, jobject 
     return JNI_TRUE;
 }
 
-jboolean Java_org_jau_nio_ByteInStream_1Feed_error(JNIEnv *env, jobject obj) {
+jboolean Java_org_jau_io_ByteInStream_1Feed_error(JNIEnv *env, jobject obj) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_Feed> ref(env, obj); // hold until done
         return ref->error() ? JNI_TRUE : JNI_FALSE;
@@ -162,7 +162,7 @@ jboolean Java_org_jau_nio_ByteInStream_1Feed_error(JNIEnv *env, jobject obj) {
     return JNI_TRUE;
 }
 
-jstring Java_org_jau_nio_ByteInStream_1Feed_id(JNIEnv *env, jobject obj) {
+jstring Java_org_jau_io_ByteInStream_1Feed_id(JNIEnv *env, jobject obj) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_Feed> ref(env, obj); // hold until done
         return jau::jni::from_string_to_jstring(env, ref->id());
@@ -172,7 +172,7 @@ jstring Java_org_jau_nio_ByteInStream_1Feed_id(JNIEnv *env, jobject obj) {
     return nullptr;
 }
 
-jlong Java_org_jau_nio_ByteInStream_1Feed_discard_1next(JNIEnv *env, jobject obj, jlong n) {
+jlong Java_org_jau_io_ByteInStream_1Feed_discard_1next(JNIEnv *env, jobject obj, jlong n) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_Feed> ref(env, obj); // hold until done
 
@@ -184,7 +184,7 @@ jlong Java_org_jau_nio_ByteInStream_1Feed_discard_1next(JNIEnv *env, jobject obj
     return 0;
 }
 
-jlong Java_org_jau_nio_ByteInStream_1Feed_get_1bytes_1read(JNIEnv *env, jobject obj) {
+jlong Java_org_jau_io_ByteInStream_1Feed_get_1bytes_1read(JNIEnv *env, jobject obj) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_Feed> ref(env, obj); // hold until done
         return static_cast<jlong>( ref->get_bytes_read() );
@@ -194,7 +194,7 @@ jlong Java_org_jau_nio_ByteInStream_1Feed_get_1bytes_1read(JNIEnv *env, jobject 
     return 0;
 }
 
-jboolean Java_org_jau_nio_ByteInStream_1Feed_has_1content_1size(JNIEnv *env, jobject obj) {
+jboolean Java_org_jau_io_ByteInStream_1Feed_has_1content_1size(JNIEnv *env, jobject obj) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_Feed> ref(env, obj); // hold until done
         return ref->has_content_size() ? JNI_TRUE : JNI_FALSE;
@@ -204,7 +204,7 @@ jboolean Java_org_jau_nio_ByteInStream_1Feed_has_1content_1size(JNIEnv *env, job
     return JNI_FALSE;
 }
 
-jlong Java_org_jau_nio_ByteInStream_1Feed_content_1size(JNIEnv *env, jobject obj) {
+jlong Java_org_jau_io_ByteInStream_1Feed_content_1size(JNIEnv *env, jobject obj) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_Feed> ref(env, obj); // hold until done
         return static_cast<jlong>( ref->content_size() );
@@ -214,7 +214,7 @@ jlong Java_org_jau_nio_ByteInStream_1Feed_content_1size(JNIEnv *env, jobject obj
     return 0;
 }
 
-void Java_org_jau_nio_ByteInStream_1Feed_interruptReader(JNIEnv *env, jobject obj) {
+void Java_org_jau_io_ByteInStream_1Feed_interruptReader(JNIEnv *env, jobject obj) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_Feed> ref(env, obj); // hold until done
         ref->interruptReader();
@@ -223,7 +223,7 @@ void Java_org_jau_nio_ByteInStream_1Feed_interruptReader(JNIEnv *env, jobject ob
     }
 }
 
-void Java_org_jau_nio_ByteInStream_1Feed_write(JNIEnv *env, jobject obj, jbyteArray jin, jint joffset, jint jlength) {
+void Java_org_jau_io_ByteInStream_1Feed_write(JNIEnv *env, jobject obj, jbyteArray jin, jint joffset, jint jlength) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_Feed> ref(env, obj); // hold until done
 
@@ -245,7 +245,7 @@ void Java_org_jau_nio_ByteInStream_1Feed_write(JNIEnv *env, jobject obj, jbyteAr
     }
 }
 
-void Java_org_jau_nio_ByteInStream_1Feed_write2Impl(JNIEnv *env, jobject obj, jobject jout, jint out_offset, jint out_limit) {
+void Java_org_jau_io_ByteInStream_1Feed_write2Impl(JNIEnv *env, jobject obj, jobject jout, jint out_offset, jint out_limit) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_Feed> ref(env, obj); // hold until done
 
@@ -262,7 +262,7 @@ void Java_org_jau_nio_ByteInStream_1Feed_write2Impl(JNIEnv *env, jobject obj, jo
     }
 }
 
-void Java_org_jau_nio_ByteInStream_1Feed_set_1content_1size(JNIEnv *env, jobject obj, jlong jcontent_size) {
+void Java_org_jau_io_ByteInStream_1Feed_set_1content_1size(JNIEnv *env, jobject obj, jlong jcontent_size) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_Feed> ref(env, obj); // hold until done
         ref->set_content_size( static_cast<uint64_t>( jcontent_size ) );
@@ -271,7 +271,7 @@ void Java_org_jau_nio_ByteInStream_1Feed_set_1content_1size(JNIEnv *env, jobject
     }
 }
 
-void Java_org_jau_nio_ByteInStream_1Feed_set_1eof(JNIEnv *env, jobject obj, jint jresult) {
+void Java_org_jau_io_ByteInStream_1Feed_set_1eof(JNIEnv *env, jobject obj, jint jresult) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_Feed> ref(env, obj); // hold until done
         ref->set_eof(static_cast<jau::io::async_io_result_t>(jresult));
@@ -280,7 +280,7 @@ void Java_org_jau_nio_ByteInStream_1Feed_set_1eof(JNIEnv *env, jobject obj, jint
     }
 }
 
-jstring Java_org_jau_nio_ByteInStream_1Feed_toString(JNIEnv *env, jobject obj) {
+jstring Java_org_jau_io_ByteInStream_1Feed_toString(JNIEnv *env, jobject obj) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_Feed> ref(env, obj, false /* throw_on_nullptr */); // hold until done
         std::string str = ref.is_null() ? "null" : ref->to_string();

@@ -167,11 +167,11 @@ class TestByteStream01 {
 
         void test00a_protocols_error() {
             jau::fprintf_td(stderr, "\n"); jau::fprintf_td(stderr, "%s\n", __func__);
-            const bool http_support_expected = jau::io::uri::protocol_supported("http:");
-            const bool file_support_expected = jau::io::uri::protocol_supported("file:");
+            const bool http_support_expected = jau::io::uri_tk::protocol_supported("http:");
+            const bool file_support_expected = jau::io::uri_tk::protocol_supported("file:");
             httpd_start();
             {
-                std::vector<std::string_view> protos = jau::io::uri::supported_protocols();
+                std::vector<std::string_view> protos = jau::io::uri_tk::supported_protocols();
                 jau::PLAIN_PRINT(true, "test00_protocols: Supported protocols: %zu: %s", protos.size(), jau::to_string(protos, ",").c_str());
                 if( http_support_expected ) { // assume no http -> no curl
                     REQUIRE( 0 < protos.size() );
@@ -182,8 +182,8 @@ class TestByteStream01 {
             const size_t file_idx = IDX_11kiB;
             {
                 const std::string url = "not_exiting_file.txt";
-                REQUIRE( false == jau::io::uri::is_local_file_protocol(url) );
-                REQUIRE( false == jau::io::uri::protocol_supported(url) );
+                REQUIRE( false == jau::io::uri_tk::is_local_file_protocol(url) );
+                REQUIRE( false == jau::io::uri_tk::protocol_supported(url) );
 
                 std::unique_ptr<jau::io::ByteInStream> in = jau::io::to_ByteInStream(url);
                 if( nullptr != in ) {
@@ -193,8 +193,8 @@ class TestByteStream01 {
             }
             {
                 const std::string url = "file://not_exiting_file_uri.txt";
-                REQUIRE( true == jau::io::uri::is_local_file_protocol(url) );
-                REQUIRE( file_support_expected == jau::io::uri::protocol_supported(url) );
+                REQUIRE( true == jau::io::uri_tk::is_local_file_protocol(url) );
+                REQUIRE( file_support_expected == jau::io::uri_tk::protocol_supported(url) );
 
                 std::unique_ptr<jau::io::ByteInStream> in = jau::io::to_ByteInStream(url);
                 if( nullptr != in ) {
@@ -204,8 +204,8 @@ class TestByteStream01 {
             }
             {
                 const std::string url = "lala://localhost:8080/" + fname_payload_lst[file_idx];
-                REQUIRE( false == jau::io::uri::is_local_file_protocol(url) );
-                REQUIRE( false == jau::io::uri::protocol_supported(url) );
+                REQUIRE( false == jau::io::uri_tk::is_local_file_protocol(url) );
+                REQUIRE( false == jau::io::uri_tk::protocol_supported(url) );
 
                 std::unique_ptr<jau::io::ByteInStream> in = jau::io::to_ByteInStream(url);
                 if( nullptr != in ) {
@@ -215,8 +215,8 @@ class TestByteStream01 {
             }
             {
                 const std::string url = url_input_root + "not_exiting_http_uri.txt";
-                REQUIRE( false == jau::io::uri::is_local_file_protocol(url) );
-                REQUIRE( http_support_expected == jau::io::uri::protocol_supported(url) );
+                REQUIRE( false == jau::io::uri_tk::is_local_file_protocol(url) );
+                REQUIRE( http_support_expected == jau::io::uri_tk::protocol_supported(url) );
 
                 std::unique_ptr<jau::io::ByteInStream> in = jau::io::to_ByteInStream(url);
                 if( http_support_expected ) {
@@ -234,14 +234,14 @@ class TestByteStream01 {
 
         void test00b_protocols_ok() {
             jau::fprintf_td(stderr, "\n"); jau::fprintf_td(stderr, "%s\n", __func__);
-            const bool http_support_expected = jau::io::uri::protocol_supported("http:");
-            const bool file_support_expected = jau::io::uri::protocol_supported("file:");
+            const bool http_support_expected = jau::io::uri_tk::protocol_supported("http:");
+            const bool file_support_expected = jau::io::uri_tk::protocol_supported("file:");
             httpd_start();
             const size_t file_idx = IDX_11kiB;
             {
                 const std::string url = fname_payload_lst[file_idx];
-                REQUIRE( false == jau::io::uri::is_local_file_protocol(url) );
-                REQUIRE( false == jau::io::uri::protocol_supported(url) );
+                REQUIRE( false == jau::io::uri_tk::is_local_file_protocol(url) );
+                REQUIRE( false == jau::io::uri_tk::protocol_supported(url) );
 
                 std::unique_ptr<jau::io::ByteInStream> in = jau::io::to_ByteInStream(url);
                 if( nullptr != in ) {
@@ -262,8 +262,8 @@ class TestByteStream01 {
             }
             {
                 const std::string url = "file://" + fname_payload_lst[file_idx];
-                REQUIRE( true == jau::io::uri::is_local_file_protocol(url) );
-                REQUIRE( file_support_expected == jau::io::uri::protocol_supported(url) );
+                REQUIRE( true == jau::io::uri_tk::is_local_file_protocol(url) );
+                REQUIRE( file_support_expected == jau::io::uri_tk::protocol_supported(url) );
 
                 std::unique_ptr<jau::io::ByteInStream> in = jau::io::to_ByteInStream(url);
                 if( nullptr != in ) {
@@ -284,8 +284,8 @@ class TestByteStream01 {
             }
             {
                 const std::string url = url_input_root + fname_payload_lst[file_idx];
-                REQUIRE( false == jau::io::uri::is_local_file_protocol(url) );
-                REQUIRE( http_support_expected == jau::io::uri::protocol_supported(url) );
+                REQUIRE( false == jau::io::uri_tk::is_local_file_protocol(url) );
+                REQUIRE( http_support_expected == jau::io::uri_tk::protocol_supported(url) );
 
                 std::unique_ptr<jau::io::ByteInStream> in = jau::io::to_ByteInStream(url);
                 if( nullptr != in ) {
@@ -360,7 +360,7 @@ class TestByteStream01 {
 
         void test11_copy_http_ok_buff32k() {
             jau::fprintf_td(stderr, "\n"); jau::fprintf_td(stderr, "%s\n", __func__);
-            if( !jau::io::uri::protocol_supported("http:") ) {
+            if( !jau::io::uri_tk::protocol_supported("http:") ) {
                 jau::PLAIN_PRINT(true, "http not supported, abort\n");
                 return;
             }
@@ -403,7 +403,7 @@ class TestByteStream01 {
 
         void test12_copy_http_404() {
             jau::fprintf_td(stderr, "\n"); jau::fprintf_td(stderr, "%s\n", __func__);
-            if( !jau::io::uri::protocol_supported("http:") ) {
+            if( !jau::io::uri_tk::protocol_supported("http:") ) {
                 jau::PLAIN_PRINT(true, "http not supported, abort\n");
                 return;
             }

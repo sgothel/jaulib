@@ -21,12 +21,10 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.jau.nio;
+package org.jau.io;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-
-import org.jau.io.PrintUtil;
 
 /**
  * This class represents an abstract byte input stream object.
@@ -48,7 +46,7 @@ import org.jau.io.PrintUtil;
  *
  * @see @ref byte_in_stream_properties "ByteInStream Properties"
  */
-public interface NativeIO {
+public interface ByteInStreamUtil {
     /**
      * Stream consumer using a byte array
      */
@@ -151,20 +149,20 @@ public interface NativeIO {
     }
 
     /**
-     * Parses the given path_or_uri, if it matches a supported protocol, see {@link org.jau.nio.Uri#protocol_supported(String)},
-     * but is not a local file, see {@link org.jau.nio.Uri#is_local_file_protocol(String)}, ByteInStream_URL is being attempted.
+     * Parses the given path_or_uri, if it matches a supported protocol, see {@link org.jau.io.UriTk#protocol_supported(String)},
+     * but is not a local file, see {@link org.jau.io.UriTk#is_local_file_protocol(String)}, ByteInStream_URL is being attempted.
      *
      * If the above fails, ByteInStream_File is attempted.
      *
-     * If non of the above leads to a ByteInStream without {@link NativeIO#error()}, null is returned.
+     * If non of the above leads to a ByteInStream without {@link ByteInStreamUtil#error()}, null is returned.
      *
      * @param path_or_uri given path or uri for with a ByteInStream instance shall be established.
      * @param timeout a timeout in case ByteInStream_URL is being used as maximum duration to wait for next bytes at {@link ByteInStream_URL#check_available(long)}, defaults to 20_s
-     * @return a working ByteInStream w/o {@link NativeIO#error()} or nullptr
+     * @return a working ByteInStream w/o {@link ByteInStreamUtil#error()} or nullptr
      */
     public static ByteInStream to_ByteInStream(final String path_or_uri, final long timeoutMS) {
-        if( !org.jau.nio.Uri.is_local_file_protocol(path_or_uri) &&
-             org.jau.nio.Uri.protocol_supported(path_or_uri) )
+        if( !org.jau.io.UriTk.is_local_file_protocol(path_or_uri) &&
+             org.jau.io.UriTk.protocol_supported(path_or_uri) )
         {
             final ByteInStream res = new ByteInStream_URL(path_or_uri, timeoutMS);
             if( null != res && !res.error() ) {
@@ -178,17 +176,17 @@ public interface NativeIO {
         return null;
     }
     /**
-     * Parses the given path_or_uri, if it matches a supported protocol, see {@link org.jau.nio.Uri#protocol_supported(String)},
-     * but is not a local file, see {@link org.jau.nio.Uri#is_local_file_protocol(String)}, ByteInStream_URL is being attempted.
+     * Parses the given path_or_uri, if it matches a supported protocol, see {@link org.jau.io.UriTk#protocol_supported(String)},
+     * but is not a local file, see {@link org.jau.io.UriTk#is_local_file_protocol(String)}, ByteInStream_URL is being attempted.
      *
      * If the above fails, ByteInStream_File is attempted.
      *
-     * If non of the above leads to a ByteInStream without {@link NativeIO#error()}, null is returned.
+     * If non of the above leads to a ByteInStream without {@link ByteInStreamUtil#error()}, null is returned.
      *
      * Method uses a timeout of 20_s for maximum duration to wait for next bytes at {@link ByteInStream_URL#check_available(long)}
      *
      * @param path_or_uri given path or uri for with a ByteInStream instance shall be established.
-     * @return a working ByteInStream w/o {@link NativeIO#error()} or nullptr
+     * @return a working ByteInStream w/o {@link ByteInStreamUtil#error()} or nullptr
      */
     public static ByteInStream to_ByteInStream(final String path_or_uri) {
         return to_ByteInStream(path_or_uri, 20000);

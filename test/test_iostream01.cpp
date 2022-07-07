@@ -86,7 +86,7 @@ class TestIOStream01 {
 
         void test00_protocols() {
             {
-                std::vector<std::string_view> protos = jau::io::uri::supported_protocols();
+                std::vector<std::string_view> protos = jau::io::uri_tk::supported_protocols();
                 jau::PLAIN_PRINT(true, "test00_protocols: Supported protocols: %zu: %s", protos.size(), jau::to_string(protos, ",").c_str());
 #ifdef USE_LIBCURL
                 REQUIRE( 0 < protos.size() );
@@ -94,27 +94,27 @@ class TestIOStream01 {
                 REQUIRE( 0 == protos.size() );
 #endif
             }
-            const bool http_support_expected = jau::io::uri::protocol_supported("http:");
-            const bool file_support_expected = jau::io::uri::protocol_supported("file:");
+            const bool http_support_expected = jau::io::uri_tk::protocol_supported("http:");
+            const bool file_support_expected = jau::io::uri_tk::protocol_supported("file:");
             {
                 const std::string url = url_input_root + basename_10kiB;
-                REQUIRE( false == jau::io::uri::is_local_file_protocol(url) );
-                REQUIRE( http_support_expected == jau::io::uri::protocol_supported(url) );
+                REQUIRE( false == jau::io::uri_tk::is_local_file_protocol(url) );
+                REQUIRE( http_support_expected == jau::io::uri_tk::protocol_supported(url) );
             }
             {
                 const std::string url = "https://localhost:8080/" + basename_10kiB;
-                REQUIRE( false == jau::io::uri::is_local_file_protocol(url) );
-                REQUIRE( http_support_expected == jau::io::uri::protocol_supported(url) );
+                REQUIRE( false == jau::io::uri_tk::is_local_file_protocol(url) );
+                REQUIRE( http_support_expected == jau::io::uri_tk::protocol_supported(url) );
             }
             {
                 const std::string url = "file://" + basename_10kiB;
-                REQUIRE( true == jau::io::uri::is_local_file_protocol(url) );
-                REQUIRE( file_support_expected == jau::io::uri::protocol_supported(url) );
+                REQUIRE( true == jau::io::uri_tk::is_local_file_protocol(url) );
+                REQUIRE( file_support_expected == jau::io::uri_tk::protocol_supported(url) );
             }
             {
                 const std::string url = "lala://localhost:8080/" + basename_10kiB;
-                REQUIRE( false == jau::io::uri::is_local_file_protocol(url) );
-                REQUIRE( false == jau::io::uri::protocol_supported(url) );
+                REQUIRE( false == jau::io::uri_tk::is_local_file_protocol(url) );
+                REQUIRE( false == jau::io::uri_tk::protocol_supported(url) );
             }
             {
                 // sync read_url_stream w/ unknown protocol
@@ -153,7 +153,7 @@ class TestIOStream01 {
         }
 
         void test01_sync_ok() {
-            if( !jau::io::uri::protocol_supported("http:") ) {
+            if( !jau::io::uri_tk::protocol_supported("http:") ) {
                 jau::PLAIN_PRINT(true, "http not supported, abort\n");
                 return;
             }
@@ -186,7 +186,7 @@ class TestIOStream01 {
         }
 
         void test02_sync_404() {
-            if( !jau::io::uri::protocol_supported("http:") ) {
+            if( !jau::io::uri_tk::protocol_supported("http:") ) {
                 jau::PLAIN_PRINT(true, "http not supported, abort\n");
                 return;
             }
@@ -217,7 +217,7 @@ class TestIOStream01 {
         }
 
         void test11_async_ok() {
-            if( !jau::io::uri::protocol_supported("http:") ) {
+            if( !jau::io::uri_tk::protocol_supported("http:") ) {
                 jau::PLAIN_PRINT(true, "http not supported, abort\n");
                 return;
             }
@@ -267,7 +267,7 @@ class TestIOStream01 {
         }
 
         void test12_async_404() {
-            if( !jau::io::uri::protocol_supported("http:") ) {
+            if( !jau::io::uri_tk::protocol_supported("http:") ) {
                 jau::PLAIN_PRINT(true, "http not supported, abort\n");
                 return;
             }

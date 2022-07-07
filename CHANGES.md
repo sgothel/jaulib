@@ -8,7 +8,7 @@
 
 * First stable release (TODO)
 
-**0.14.0** (TODO)
+**0.14.0**
 
 * Add java mapping of `jau::fs::*` operations
   - `get_cwd()`, `basename()`, `dirname()`, `compare()`, `mkdir()`, `touch()`, `get_dir_content()`
@@ -19,9 +19,9 @@
   - Copied `test_fileutils01.cpp` to `TestFileUtils01.java` and `testsudo_fileutils02.cpp` to `TestsudoFileUtils02.java`.
 * Have `jau.pkg.PlatformRuntime` load tool library `jaulib` as well, resolving dependencies for self-testing.
 * Add java mapping of `jau::io::ByteInStream` for file, URL and feed for general use
-  - `org.jau.nio.ByteInStream`, `org.jau.nio.ByteInStream_File`, `org.jau.nio.ByteInStream_URL`, `org.jau.nio.ByteInStream_Feed`
-  - Mapped `jau::io::to_ByteInStream()` to `org.jau.nio.NioUtils.to_ByteInStream()`
-  - Mapped `jau::io::uri` to `org.jau.nio.Uri`
+  - `org.jau.io.ByteInStream`, `org.jau.io.ByteInStream_File`, `org.jau.io.ByteInStream_URL`, `org.jau.io.ByteInStream_Feed`
+  - Mapped `jau::io::to_ByteInStream()` to `org.jau.io.ByteInStreamUtil.to_ByteInStream()`
+  - Mapped `jau::io::uri_tk` to `org.jau.io.UriTk`
   - Added java unit test `TestByteStream01` covering above, same as native `test_bytestream01`
 * Add `jau::fs::mount_image()` and `umount()`
   - `mount_image()` is currently only supported on `Linux`
@@ -46,12 +46,12 @@
   - `ringbuffer<T>:` Add clear() argument bool zeromem=false, allowing to explicitly zero memory if used w/o `sec_mem`
   - `ByteInStream_URL`, `ByteInStream_Feed`: Zero ringbuffer at close()/dtor() to be on par with `ByteInStream_SecMemory` and `ByteInStream_File` + `secure_vector<T>` usage.
   - Add `secure_string` typedef along with `secure_vector` using `::explicit_bzero()` `jau::callocator_sec<T>`
-* Add jau::io::uri to Group IOUtils
+* Add `jau::io::uri_tk` to Group IOUtils
 
 **0.13.0**
 
 * `string_util.hpp`: Add `jau::to_string()` support for `std::string` and `std::string_view` as well as for `std::vector<T>` lists
-* Add namespace `jau::io::uri`, limited URI scheme functionality to query whether implementation may handle the protocol.
+* Add namespace `jau::io::uri_tk`, limited URI scheme functionality to query whether implementation may handle the protocol.
   - Query *libcurl* supported protocols at runtime
   - Test for local file protocol
   - Test whether protocol in given uri is supported by *libcurl*

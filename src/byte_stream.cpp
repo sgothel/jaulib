@@ -289,7 +289,7 @@ ByteInStream_File::ByteInStream_File(const std::string& path, bool use_binary) n
   m_content_size(0), m_bytes_consumed(0)
 {
     std::unique_ptr<jau::fs::file_stats> stats;
-    if( jau::io::uri::is_local_file_protocol(path) ) {
+    if( jau::io::uri_tk::is_local_file_protocol(path) ) {
         // cut of leading `file://`
         std::string path2 = path.substr(7);
         stats = std::make_unique<jau::fs::file_stats>(path2);
@@ -407,8 +407,8 @@ std::string ByteInStream_URL::to_string() const noexcept {
 }
 
 std::unique_ptr<ByteInStream> jau::io::to_ByteInStream(const std::string& path_or_uri, jau::fraction_i64 timeout) noexcept {
-    if( !jau::io::uri::is_local_file_protocol(path_or_uri) &&
-         jau::io::uri::protocol_supported(path_or_uri) )
+    if( !jau::io::uri_tk::is_local_file_protocol(path_or_uri) &&
+         jau::io::uri_tk::protocol_supported(path_or_uri) )
     {
         std::unique_ptr<ByteInStream> res = std::make_unique<ByteInStream_URL>(path_or_uri, timeout);
         if( nullptr != res && !res->error() ) {

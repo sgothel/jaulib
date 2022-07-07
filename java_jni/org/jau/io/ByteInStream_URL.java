@@ -21,51 +21,39 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.jau.nio;
+package org.jau.io;
 
 import java.nio.ByteBuffer;
 
 import org.jau.io.Buffers;
 
 /**
- * This class represents a file based byte input stream.
+ * This class represents a Ringbuffer-Based byte input stream with a URL connection provisioned data feed.
  *
- * Instance uses the native C++ object `jau::io::ByteInStream_File`.
+ * Instance uses the native C++ object `jau::io::ByteInStream_URL`.
+ *
+ * Standard implementation uses [curl](https://curl.se/),
+ * hence all [*libcurl* network protocols](https://curl.se/docs/url-syntax.html) are supported,
+ * jau::io::uri::supported_protocols().
  */
-public final class ByteInStream_File implements ByteInStream {
+public final class ByteInStream_URL implements ByteInStream {
     private volatile long nativeInstance;
     /* pp */ long getNativeInstance() { return nativeInstance; }
 
     /**
-     * Construct a Stream-Based byte input stream from filesystem path treating file as binary.
-     *
-     * In case the given path is a local file URI starting with `file://`, see {@link org.jau.nio.Uri#is_local_file_protocol(String)},
-     * the leading `file://` is cut off and the remainder being used.
-     *
-     * @param path the path to the file, maybe a local file URI
+     * Construct a ringbuffer backed Http byte input stream
+     * @param url the URL of the data to read
+     * @param timeout maximum duration in fractions of seconds to wait @ check_available() for next bytes, where fractions_i64::zero waits infinitely
      */
-    public ByteInStream_File(final String path) {
-        this(path, true);
-    }
-
-    /**
-     * Construct a Stream-Based byte input stream from filesystem path
-     *
-     * In case the given path is a local file URI starting with `file://`, see {@link org.jau.nio.Uri#is_local_file_protocol(String)},
-     * the leading `file://` is cut off and the remainder being used.
-     *
-     * @param path the path to the file, maybe a local file URI
-     * @param use_binary whether to treat the file as binary (default) or use platform character conversion
-     */
-    public ByteInStream_File(final String path, final boolean use_binary) {
+    public ByteInStream_URL(final String url, final long timeoutMS) {
         try {
-            nativeInstance = ctorImpl(path, use_binary);
+            nativeInstance = ctorImpl(url, timeoutMS);
         } catch (final Throwable t) {
-            System.err.println("ByteInStream_File.ctor: native ctor failed: "+t.getMessage());
+            System.err.println("ByteInStream_URL.ctor: native ctor failed: "+t.getMessage());
             throw t;
         }
     }
-    private native long ctorImpl(final String path, final boolean use_binary);
+    private native long ctorImpl(final String url, final long timeoutMS);
 
     @Override
     public native void closeStream();

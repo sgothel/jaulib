@@ -39,13 +39,13 @@ import java.util.List;
 
 import org.jau.fs.FileUtil;
 import org.jau.io.Buffers;
+import org.jau.io.ByteInStream;
+import org.jau.io.ByteInStreamUtil;
+import org.jau.io.ByteInStream_Feed;
+import org.jau.io.ByteInStream_File;
+import org.jau.io.ByteInStream_URL;
 import org.jau.io.PrintUtil;
-import org.jau.nio.ByteInStream;
-import org.jau.nio.ByteInStream_Feed;
-import org.jau.nio.ByteInStream_File;
-import org.jau.nio.ByteInStream_URL;
-import org.jau.nio.NativeIO;
-import org.jau.nio.Uri;
+import org.jau.io.UriTk;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
@@ -199,7 +199,7 @@ public class TestByteStream01 extends JunitTracer {
 
         final long[] out_bytes_payload = { 0 };
         final boolean[] out_failure = { false };
-        final NativeIO.StreamConsumer1 consumer = (final byte[] data, final int data_len, final boolean is_final) -> {
+        final ByteInStreamUtil.StreamConsumer1 consumer = (final byte[] data, final int data_len, final boolean is_final) -> {
                 try {
                     if( !is_final && ( !input.has_content_size() || out_bytes_payload[0] + data_len < input.content_size() ) ) {
                         out[0].write( data, 0, data_len );
@@ -218,7 +218,7 @@ public class TestByteStream01 extends JunitTracer {
                 }
         };
         final byte[] io_buffer = new byte[buffer_size];
-        final long in_bytes_total = NativeIO.read_stream(input, io_buffer, consumer);
+        final long in_bytes_total = ByteInStreamUtil.read_stream(input, io_buffer, consumer);
         input.closeStream();
         try {
             out[0].close();
@@ -233,7 +233,7 @@ public class TestByteStream01 extends JunitTracer {
         }
 
         final long _td = org.jau.sys.Clock.currentTimeMillis() - _t0;
-        NativeIO.print_stats("Transfer "+output_fname, out_bytes_payload[0], _td);
+        ByteInStreamUtil.print_stats("Transfer "+output_fname, out_bytes_payload[0], _td);
         PrintUtil.fprintf_td(System.err, "Transfer End: %s%n", input.toString());
 
         return true;
@@ -269,7 +269,7 @@ public class TestByteStream01 extends JunitTracer {
 
         final long[] out_bytes_payload = { 0 };
         final boolean[] out_failure = { false };
-        final NativeIO.StreamConsumer2 consumer = (final ByteBuffer data, final boolean is_final) -> {
+        final ByteInStreamUtil.StreamConsumer2 consumer = (final ByteBuffer data, final boolean is_final) -> {
                 try {
                     final int data_len = data.remaining();
                     if( !is_final && ( !input.has_content_size() || out_bytes_payload[0] + data_len < input.content_size() ) ) {
@@ -291,7 +291,7 @@ public class TestByteStream01 extends JunitTracer {
                 }
         };
         final ByteBuffer io_buffer = Buffers.newDirectByteBuffer(buffer_size);
-        final long in_bytes_total = NativeIO.read_stream(input, io_buffer, consumer);
+        final long in_bytes_total = ByteInStreamUtil.read_stream(input, io_buffer, consumer);
         input.closeStream();
         if( null != outc[0] ) {
             try { outc[0].close(); outc[0]=null; } catch (final IOException e) { e.printStackTrace(); }
@@ -306,7 +306,7 @@ public class TestByteStream01 extends JunitTracer {
         }
 
         final long _td = org.jau.sys.Clock.currentTimeMillis() - _t0;
-        NativeIO.print_stats("Transfer "+output_fname, out_bytes_payload[0], _td);
+        ByteInStreamUtil.print_stats("Transfer "+output_fname, out_bytes_payload[0], _td);
         PrintUtil.fprintf_td(System.err, "Transfer End: %s%n", input.toString());
 
         return true;
@@ -315,11 +315,11 @@ public class TestByteStream01 extends JunitTracer {
     @Test(timeout = 10000)
     public final void test00a_protocols_error() {
         PlatformRuntime.checkInitialized();
-        final boolean http_support_expected = Uri.protocol_supported("http:");
-        final boolean file_support_expected = Uri.protocol_supported("file:");
+        final boolean http_support_expected = UriTk.protocol_supported("http:");
+        final boolean file_support_expected = UriTk.protocol_supported("file:");
         httpd_start();
         {
-            final List<String> protos = Uri.supported_protocols();
+            final List<String> protos = UriTk.supported_protocols();
             PrintUtil.fprintf_td(System.err, "test00_protocols: Supported protocols: %d: %s%n", protos.size(), protos);
             if( http_support_expected ) { // assume no http -> no curl
                 Assert.assertTrue( 0 < protos.size() );
@@ -330,10 +330,10 @@ public class TestByteStream01 extends JunitTracer {
         final int file_idx = IDX_11kiB;
         {
             final String url = "not_exiting_file.txt";
-            Assert.assertFalse( Uri.is_local_file_protocol(url) );
-            Assert.assertFalse( Uri.protocol_supported(url) );
+            Assert.assertFalse( UriTk.is_local_file_protocol(url) );
+            Assert.assertFalse( UriTk.protocol_supported(url) );
 
-            try( final ByteInStream in = NativeIO.to_ByteInStream(url) ) {
+            try( final ByteInStream in = ByteInStreamUtil.to_ByteInStream(url) ) {
                 if( null != in ) {
                     PrintUtil.fprintf_td(System.err, "test00_protocols: not_exiting_file: %s%n", in);
                 }
@@ -342,10 +342,10 @@ public class TestByteStream01 extends JunitTracer {
         }
         {
             final String url = "file://not_exiting_file_uri.txt";
-            Assert.assertTrue( Uri.is_local_file_protocol(url) );
-            Assert.assertEquals( file_support_expected, Uri.protocol_supported(url) );
+            Assert.assertTrue( UriTk.is_local_file_protocol(url) );
+            Assert.assertEquals( file_support_expected, UriTk.protocol_supported(url) );
 
-            try( final ByteInStream in = NativeIO.to_ByteInStream(url) ) {
+            try( final ByteInStream in = ByteInStreamUtil.to_ByteInStream(url) ) {
                 if( null != in ) {
                     PrintUtil.fprintf_td(System.err, "test00_protocols: not_exiting_file_uri: %s%n", in);
                 }
@@ -354,10 +354,10 @@ public class TestByteStream01 extends JunitTracer {
         }
         {
             final String url = "lala://localhost:8080/" + fname_payload_lst.get(file_idx);
-            Assert.assertFalse( Uri.is_local_file_protocol(url) );
-            Assert.assertFalse( Uri.protocol_supported(url) );
+            Assert.assertFalse( UriTk.is_local_file_protocol(url) );
+            Assert.assertFalse( UriTk.protocol_supported(url) );
 
-            try( final ByteInStream in = NativeIO.to_ByteInStream(url) ) {
+            try( final ByteInStream in = ByteInStreamUtil.to_ByteInStream(url) ) {
                 if( null != in ) {
                     PrintUtil.fprintf_td(System.err, "test00_protocols: not_exiting_protocol_uri: %s%n", in);
                 }
@@ -366,10 +366,10 @@ public class TestByteStream01 extends JunitTracer {
         }
         {
             final String url = url_input_root + "not_exiting_http_uri.txt";
-            Assert.assertFalse( Uri.is_local_file_protocol(url) );
-            Assert.assertEquals( http_support_expected, Uri.protocol_supported(url) );
+            Assert.assertFalse( UriTk.is_local_file_protocol(url) );
+            Assert.assertEquals( http_support_expected, UriTk.protocol_supported(url) );
 
-            try( final ByteInStream in = NativeIO.to_ByteInStream(url) ) {
+            try( final ByteInStream in = ByteInStreamUtil.to_ByteInStream(url) ) {
                 if( http_support_expected ) {
                     Assert.assertNotNull(in);
                     try { Thread.sleep(100); } catch (final Throwable t) {} // time to read 404 response
@@ -387,16 +387,16 @@ public class TestByteStream01 extends JunitTracer {
     @Test(timeout = 10000)
     public final void test00b_protocols_ok() {
         PlatformRuntime.checkInitialized();
-        final boolean http_support_expected = Uri.protocol_supported("http:");
-        final boolean file_support_expected = Uri.protocol_supported("file:");
+        final boolean http_support_expected = UriTk.protocol_supported("http:");
+        final boolean file_support_expected = UriTk.protocol_supported("file:");
         httpd_start();
         final int file_idx = IDX_11kiB;
         {
             final String url = fname_payload_lst.get(file_idx);
-            Assert.assertFalse( Uri.is_local_file_protocol(url) );
-            Assert.assertFalse( Uri.protocol_supported(url) );
+            Assert.assertFalse( UriTk.is_local_file_protocol(url) );
+            Assert.assertFalse( UriTk.protocol_supported(url) );
 
-            try( final ByteInStream in = NativeIO.to_ByteInStream(url) ) {
+            try( final ByteInStream in = ByteInStreamUtil.to_ByteInStream(url) ) {
                 if( null != in ) {
                     PrintUtil.fprintf_td(System.err, "test00_protocols: local-file-0: %s%n", in);
                 }
@@ -415,10 +415,10 @@ public class TestByteStream01 extends JunitTracer {
         }
         {
             final String url = "file://" + fname_payload_lst.get(file_idx);
-            Assert.assertTrue( Uri.is_local_file_protocol(url) );
-            Assert.assertEquals( file_support_expected, Uri.protocol_supported(url) );
+            Assert.assertTrue( UriTk.is_local_file_protocol(url) );
+            Assert.assertEquals( file_support_expected, UriTk.protocol_supported(url) );
 
-            try( final ByteInStream in = NativeIO.to_ByteInStream(url) ) {
+            try( final ByteInStream in = ByteInStreamUtil.to_ByteInStream(url) ) {
                 if( null != in ) {
                     PrintUtil.fprintf_td(System.err, "test00_protocols: local-file-1: %s%n", in);
                 }
@@ -437,10 +437,10 @@ public class TestByteStream01 extends JunitTracer {
         }
         {
             final String url = url_input_root + fname_payload_lst.get(file_idx);
-            Assert.assertFalse( Uri.is_local_file_protocol(url) );
-            Assert.assertEquals( http_support_expected, Uri.protocol_supported(url) );
+            Assert.assertFalse( UriTk.is_local_file_protocol(url) );
+            Assert.assertEquals( http_support_expected, UriTk.protocol_supported(url) );
 
-            try( final ByteInStream in = NativeIO.to_ByteInStream(url) ) {
+            try( final ByteInStream in = ByteInStreamUtil.to_ByteInStream(url) ) {
                 if( null != in ) {
                     PrintUtil.fprintf_td(System.err, "test00_protocols: http: %s%n", in);
                 }
@@ -546,7 +546,7 @@ public class TestByteStream01 extends JunitTracer {
     @Test(timeout = 10000)
     public void test11_copy_http_ok_nio_buff32k() {
         PlatformRuntime.checkInitialized();
-        if( !Uri.protocol_supported("http:") ) {
+        if( !UriTk.protocol_supported("http:") ) {
             PrintUtil.fprintf_td(System.err, "http not supported, abort%n");
             return;
         }
@@ -588,7 +588,7 @@ public class TestByteStream01 extends JunitTracer {
     @Test(timeout = 10000)
     public void test12_copy_http_404() {
         PlatformRuntime.checkInitialized();
-        if( !Uri.protocol_supported("http:") ) {
+        if( !UriTk.protocol_supported("http:") ) {
             PrintUtil.fprintf_td(System.err, "http not supported, abort%n");
             return;
         }

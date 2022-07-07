@@ -22,7 +22,7 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "org_jau_nio_Uri.h"
+#include "org_jau_io_UriTk.h"
 
 #include <jau/debug.hpp>
 
@@ -30,10 +30,10 @@
 
 #include "jau/io_util.hpp"
 
-jobject Java_org_jau_nio_Uri_supported_1protocols(JNIEnv *env, jclass cls) {
+jobject Java_org_jau_io_UriTk_supported_1protocols(JNIEnv *env, jclass cls) {
     (void)cls;
     try {
-        std::vector<std::string_view> protos = jau::io::uri::supported_protocols();
+        std::vector<std::string_view> protos = jau::io::uri_tk::supported_protocols();
         return jau::jni::convert_vector_stringview_to_jarraylist(env, protos);
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
@@ -41,11 +41,11 @@ jobject Java_org_jau_nio_Uri_supported_1protocols(JNIEnv *env, jclass cls) {
     return nullptr;
 }
 
-jstring Java_org_jau_nio_Uri_get_1scheme(JNIEnv *env, jclass cls, jstring juri) {
+jstring Java_org_jau_io_UriTk_get_1scheme(JNIEnv *env, jclass cls, jstring juri) {
     (void)cls;
     try {
         const std::string uri = jau::jni::from_jstring_to_string(env, juri);
-        const std::string res(jau::io::uri::get_scheme(uri));
+        const std::string res(jau::io::uri_tk::get_scheme(uri));
         return jau::jni::from_string_to_jstring(env, res);
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
@@ -53,22 +53,22 @@ jstring Java_org_jau_nio_Uri_get_1scheme(JNIEnv *env, jclass cls, jstring juri) 
     return nullptr;
 }
 
-jboolean Java_org_jau_nio_Uri_protocol_1supported(JNIEnv *env, jclass cls, jstring juri) {
+jboolean Java_org_jau_io_UriTk_protocol_1supported(JNIEnv *env, jclass cls, jstring juri) {
     (void)cls;
     try {
         const std::string uri = jau::jni::from_jstring_to_string(env, juri);
-        return jau::io::uri::protocol_supported(uri) ? JNI_TRUE : JNI_FALSE;
+        return jau::io::uri_tk::protocol_supported(uri) ? JNI_TRUE : JNI_FALSE;
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }
     return JNI_FALSE;
 }
 
-jboolean Java_org_jau_nio_Uri_is_1local_1file_1protocol(JNIEnv *env, jclass cls, jstring juri) {
+jboolean Java_org_jau_io_UriTk_is_1local_1file_1protocol(JNIEnv *env, jclass cls, jstring juri) {
     (void)cls;
     try {
         const std::string uri = jau::jni::from_jstring_to_string(env, juri);
-        return jau::io::uri::is_local_file_protocol(uri) ? JNI_TRUE : JNI_FALSE;
+        return jau::io::uri_tk::is_local_file_protocol(uri) ? JNI_TRUE : JNI_FALSE;
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }

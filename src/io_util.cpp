@@ -85,7 +85,7 @@ uint64_t jau::io::read_stream(ByteInStream& in,
     return total;
 }
 
-std::vector<std::string_view> jau::io::uri::supported_protocols() noexcept {
+std::vector<std::string_view> jau::io::uri_tk::supported_protocols() noexcept {
     std::vector<std::string_view> res;
 #ifdef USE_LIBCURL
     const curl_version_info_data* cvid = curl_version_info(CURLVERSION_NOW);
@@ -108,7 +108,7 @@ static bool _is_scheme_valid(const std::string_view& scheme) noexcept {
     });
     return pos == scheme.end();
 }
-std::string_view jau::io::uri::get_scheme(const std::string_view& uri) noexcept {
+std::string_view jau::io::uri_tk::get_scheme(const std::string_view& uri) noexcept {
     std::size_t pos = uri.find(':');
     if (pos == std::string_view::npos) {
         return uri.substr(0, 0);
@@ -120,7 +120,7 @@ std::string_view jau::io::uri::get_scheme(const std::string_view& uri) noexcept 
     return scheme;
 }
 
-bool jau::io::uri::protocol_supported(const std::string_view& uri) noexcept {
+bool jau::io::uri_tk::protocol_supported(const std::string_view& uri) noexcept {
     const std::string_view scheme = get_scheme(uri);
     if( scheme.empty() ) {
         return false;
@@ -130,7 +130,7 @@ bool jau::io::uri::protocol_supported(const std::string_view& uri) noexcept {
     return protos.cend() != it;
 }
 
-bool jau::io::uri::is_local_file_protocol(const std::string_view& uri) noexcept {
+bool jau::io::uri_tk::is_local_file_protocol(const std::string_view& uri) noexcept {
     return 0 == uri.find("file://");
 }
 
@@ -235,10 +235,10 @@ uint64_t jau::io::read_url_stream(const std::string& url,
     errorbuffer.reserve(CURL_ERROR_SIZE);
     CURLcode res;
 
-    if( !uri::protocol_supported(url) ) {
-        const std::string_view scheme = uri::get_scheme(url);
+    if( !uri_tk::protocol_supported(url) ) {
+        const std::string_view scheme = uri_tk::get_scheme(url);
         DBG_PRINT("Protocol of given uri-scheme '%s' not supported. Supported protocols [%s].",
-                std::string(scheme).c_str(), to_string(uri::supported_protocols(), ",").c_str());
+                std::string(scheme).c_str(), to_string(uri_tk::supported_protocols(), ",").c_str());
         return 0;
     }
 
@@ -604,14 +604,14 @@ std::unique_ptr<std::thread> jau::io::read_url_stream(const std::string& url,
     total_read = 0;
 
 #ifdef USE_LIBCURL
-    if( !uri::protocol_supported(url) ) {
+    if( !uri_tk::protocol_supported(url) ) {
 #else // USE_LIBCURL
         (void) buffer;
 #endif // USE_LIBCURL
         result = io::async_io_result_t::FAILED;
-        const std::string_view scheme = uri::get_scheme(url);
+        const std::string_view scheme = uri_tk::get_scheme(url);
         DBG_PRINT("Protocol of given uri-scheme '%s' not supported. Supported protocols [%s].",
-                std::string(scheme).c_str(), to_string(uri::supported_protocols(), ",").c_str());
+                std::string(scheme).c_str(), to_string(uri_tk::supported_protocols(), ",").c_str());
         return nullptr;
 #ifdef USE_LIBCURL
     }

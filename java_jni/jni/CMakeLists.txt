@@ -28,7 +28,7 @@ set (jaulib_jni_JNI_SRCS
   ${PROJECT_SOURCE_DIR}/java_jni/jni/jau/ByteInStream_File.cxx
   ${PROJECT_SOURCE_DIR}/java_jni/jni/jau/ByteInStream_URL.cxx
   ${PROJECT_SOURCE_DIR}/java_jni/jni/jau/ByteInStream_Feed.cxx
-  ${PROJECT_SOURCE_DIR}/java_jni/jni/jau/jau_nio_uri.cxx
+  ${PROJECT_SOURCE_DIR}/java_jni/jni/jau/jau_io_UriTk.cxx
   ${PROJECT_SOURCE_DIR}/java_jni/jni/jau/jau_fs_FileUtil.cxx
 )
 

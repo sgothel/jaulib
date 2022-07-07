@@ -21,17 +21,17 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.jau.nio;
+package org.jau.io;
 
 import java.util.List;
 
 /**
- * Limited URI scheme functionality to query whether implementation may handle the protocol.
+ * Limited URI toolkit to query handled protocols by the IO implementation.
  *
  * The URI scheme functionality exposed here is limited and only provided to decide whether the used implementation
  * is able to handle the protocol. This is not a replacement for a proper URI class.
  */
-public class Uri {
+public class UriTk {
     /**
      * Returns a list of supported protocol supported by [*libcurl* network protocols](https://curl.se/docs/url-syntax.html),
      * queried at runtime.
