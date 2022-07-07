@@ -25,6 +25,7 @@ set (jaulib_jni_JNI_SRCS
   ${PROJECT_SOURCE_DIR}/java_jni/jni/jau/JVM_JNI8.cxx
   ${PROJECT_SOURCE_DIR}/java_jni/jni/jau/MachineDataInfoRuntime.cxx
   ${PROJECT_SOURCE_DIR}/java_jni/jni/jau/jau_fs_FileUtil.cxx
+  ${PROJECT_SOURCE_DIR}/java_jni/jni/jau/jau_io_MemUtil.cxx
   ${PROJECT_SOURCE_DIR}/java_jni/jni/jau/jau_io_UriTk.cxx
   ${PROJECT_SOURCE_DIR}/java_jni/jni/jau/jau_sys_Clock.cxx
   ${PROJECT_SOURCE_DIR}/java_jni/jni/jau/ByteInStream_File.cxx
