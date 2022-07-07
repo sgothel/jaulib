@@ -131,7 +131,7 @@ void testxx_copy_r_p(const std::string& title, const jau::fs::file_stats& source
                                             } else {
                                                 attr_equal =
                                                         element_stats2.mode() == _dvp->stats.mode() &&
-                                                        element_stats2.atime() == _dvp->stats.atime() &&
+                                                        // element_stats2.atime() == _dvp->stats.atime() && // destination access-time may differ due to processing post copy
                                                         element_stats2.mtime() == _dvp->stats.mtime() &&
                                                         element_stats2.uid() == _dvp->stats.uid() &&
                                                         element_stats2.gid() == _dvp->stats.gid() &&

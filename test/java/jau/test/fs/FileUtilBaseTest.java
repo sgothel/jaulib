@@ -279,7 +279,7 @@ public class FileUtilBaseTest extends JunitTracer {
                                 } else {
                                     attr_equal =
                                             element_stats2.mode().equals( dvp.stats.mode() ) &&
-                                            element_stats2.atime().equals( dvp.stats.atime() ) &&
+                                            // element_stats2.atime().equals( dvp.stats.atime() ) && // destination access-time may differ due to processing post copy
                                             element_stats2.mtime().equals( dvp.stats.mtime() ) &&
                                             element_stats2.uid() == dvp.stats.uid() &&
                                             element_stats2.gid() == dvp.stats.gid() &&
