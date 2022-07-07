@@ -138,7 +138,7 @@ std::unique_ptr<dir_item::backed_string_view> dir_item::reduce(const std::string
     }
 
     // remove initial './'
-    if( 0 == path2->view.find(_dot_slash) ) {
+    while( 0 == path2->view.find(_dot_slash) ) {
         path2->view = path2->view.substr(2, path2->view.size()-2);
     }
 
@@ -163,64 +163,78 @@ std::unique_ptr<dir_item::backed_string_view> dir_item::reduce(const std::string
     }
 
     // resolve '/./'
+    size_t spos=0;
     size_t idx;
     do {
-        idx = path2->view.find(_slash_dot_slash);
-        if( std::string_view::npos != idx ) {
-            std::string_view pre = path2->view.substr(0, idx);
-            if( 0 == pre.size() ) {
-                // case '/./bbb' -> '/bbb'
-                path2->view = path2->view.substr(idx+2);
-            } else if( _dot == pre ) {
-                // case '././bbb' -> 'bbb'
-                path2->view = path2->view.substr(idx+3);
-            } else {
-                // case '/zzz/aaa/./bbb' -> '/zzz/aaa/bbb'
-                const std::string post( path2->view.substr(idx+2) );
-                path2->backup_and_append( pre, post );
-            }
-            if constexpr ( _debug ) {
-                jau::fprintf_td(stderr, "X.2.2: path2: '%s'\n", path2->to_string(true).c_str());
-            }
+        idx = path2->view.find(_slash_dot_slash, spos);
+        if constexpr ( _debug ) {
+            jau::fprintf_td(stderr, "X.2.1: path2: spos %zu, idx %zu, '%s'\n", spos, idx, path2->to_string(true).c_str());
         }
-    } while( idx != std::string_view::npos );
+        if( std::string_view::npos == idx ) {
+            break;
+        }
+        std::string_view pre = path2->view.substr(0, idx);
+        if( 0 == pre.size() ) {
+            // case '/./bbb' -> '/bbb'
+            path2->view = path2->view.substr(idx+2);
+            spos = 0;
+        } else {
+            // case '/zzz/aaa/./bbb' -> '/zzz/aaa/bbb'
+            const std::string post( path2->view.substr(idx+2) );
+            path2->backup_and_append( pre, post );
+            spos = pre.size();
+        }
+        if constexpr ( _debug ) {
+            jau::fprintf_td(stderr, "X.2.2: path2: spos %zu, '%s'\n", spos, path2->to_string(true).c_str());
+        }
+    } while( spos <= path2->view.size()-3 );
     if constexpr ( _debug ) {
         jau::fprintf_td(stderr, "X.2.X: path2: '%s'\n", path2->to_string(true).c_str());
     }
 
     // resolve '/../'
-    size_t spos=0;
+    spos=0;
     do {
         idx = path2->view.find(_slash_dotdot_slash, spos);
-        if( std::string_view::npos != idx ) {
-            if( 0 == idx ) {
-                // case '/../bbb' -> Error, End
-                WARN_PRINT("dir_item::resolve: '..' resolution error: '%s' -> '%s'", std::string(path_).c_str(), path2->to_string().c_str());
-                return path2;
-            }
-            std::string_view pre = path2->view.substr(0, idx);
-            if( _dotdot == pre ) {
-                // case '../../bbb' -> '../../bbb' unchanged
-                spos = idx+4;
-            } else if( _dot == pre ) {
-                // case './../bbb' -> '../bbb'
-                path2->view = path2->view.substr(idx+1);
+        if constexpr ( _debug ) {
+            jau::fprintf_td(stderr, "X.3.1: path2: spos %zu, idx %zu, '%s'\n", spos, idx, path2->to_string(true).c_str());
+        }
+        if( std::string_view::npos == idx ) {
+            break;
+        }
+        if( 0 == idx ) {
+            // case '/../bbb' -> Error, End
+            WARN_PRINT("dir_item::resolve: '..' resolution error: '%s' -> '%s'", std::string(path_).c_str(), path2->to_string().c_str());
+            return path2;
+        }
+        std::string_view pre = path2->view.substr(0, idx);
+        if( 2 == idx && _dotdot == pre ) {
+            // case '../../bbb' -> '../../bbb' unchanged
+            spos = idx+4;
+        } else if( 3 <= idx && _slash_dotdot == path2->view.substr(idx-3, 3) ) {
+            // case '../../../bbb' -> '../../../bbb' unchanged
+            spos = idx+4;
+        } else {
+            std::string pre_str = jau::fs::dirname( pre );
+            if( _slash == pre_str ) {
+                // case '/aaa/../bbb' -> '/bbb'
+                path2->view = path2->view.substr(idx+3);
+                spos = 0;
+            } else if( _dot == pre_str ) {
+                // case 'aaa/../bbb' -> 'bbb'
+                path2->view = path2->view.substr(idx+4);
+                spos = 0;
             } else {
-                std::string pre_str = jau::fs::dirname( pre );
-                if( _slash == pre_str ) {
-                    // case '/aaa/../bbb' -> '/bbb'
-                    path2->view = path2->view.substr(idx+3);
-                } else {
-                    // case '/zzz/aaa/../bbb' -> '/zzz/bbb'
-                    const std::string post( path2->view.substr(idx+3) );
-                    path2->backup_and_append( pre_str, post );
-                }
-            }
-            if constexpr ( _debug ) {
-                jau::fprintf_td(stderr, "X.3.2: path2: '%s'\n", path2->to_string(true).c_str());
+                // case '/zzz/aaa/../bbb' -> '/zzz/bbb'
+                const std::string post( path2->view.substr(idx+3) );
+                path2->backup_and_append( pre_str, post );
+                spos = pre_str.size();
             }
         }
-    } while( idx != std::string_view::npos );
+        if constexpr ( _debug ) {
+            jau::fprintf_td(stderr, "X.3.2: path2: spos %zu, '%s'\n", spos, path2->to_string(true).c_str());
+        }
+    } while( spos <= path2->view.size()-4 );
     if constexpr ( _debug ) {
         jau::fprintf_td(stderr, "X.3.X: path2: '%s'\n", path2->to_string(true).c_str());
     }

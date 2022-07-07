@@ -420,7 +420,43 @@ public class TestFileUtils01 extends FileUtilBaseTest {
             PrintUtil.println(System.err, "test04_dir_item: 60 '"+path1_+" -> "+di.toString()+" -> '"+di.path()+"'\n");
             Assert.assertTrue( "../../test_data".equals( di.dirname() ) );
             Assert.assertTrue( "file_01_slink09R1.txt".equals( di.basename() ) );
-            Assert.assertTrue( "../../test_data/file_01_slink09R1.txt".equals( di.path() ) );
+            Assert.assertTrue( path1_.equals( di.path() ) );
+        }
+
+        {
+            final String path1_ = "../../../jaulib/test_data";
+            final DirItem di = new DirItem(path1_);
+            PrintUtil.println(System.err, "test04_dir_item: 61 '"+path1_+" -> "+di.toString()+" -> '"+di.path()+"'\n");
+            Assert.assertTrue( "../../../jaulib".equals( di.dirname() ) );
+            Assert.assertTrue( "test_data".equals( di.basename() ) );
+            Assert.assertTrue( path1_.equals( di.path() ) );
+        }
+
+        {
+            final String path1_ = "../../../../jaulib/test_data";
+            final DirItem di = new DirItem(path1_);
+            PrintUtil.println(System.err, "test04_dir_item: 62 '"+path1_+" -> "+di.toString()+" -> '"+di.path()+"'\n");
+            Assert.assertTrue( "../../../../jaulib".equals( di.dirname() ) );
+            Assert.assertTrue( "test_data".equals( di.basename() ) );
+            Assert.assertTrue( path1_.equals( di.path() ) );
+        }
+
+        {
+            final String path1_ = "././././jaulib/test_data";
+            final DirItem di = new DirItem(path1_);
+            PrintUtil.println(System.err, "test04_dir_item: 63 '"+path1_+" -> "+di.toString()+" -> '"+di.path()+"'\n");
+            Assert.assertTrue( "jaulib".equals( di.dirname() ) );
+            Assert.assertTrue( "test_data".equals( di.basename() ) );
+            Assert.assertTrue( "jaulib/test_data".equals( di.path() ) );
+        }
+
+        {
+            final String path1_ = "a/././././jaulib/test_data";
+            final DirItem di = new DirItem(path1_);
+            PrintUtil.println(System.err, "test04_dir_item: 64 '"+path1_+" -> "+di.toString()+" -> '"+di.path()+"'\n");
+            Assert.assertTrue( "a/jaulib".equals( di.dirname() ) );
+            Assert.assertTrue( "test_data".equals( di.basename() ) );
+            Assert.assertTrue( "a/jaulib/test_data".equals( di.path() ) );
         }
 
         {

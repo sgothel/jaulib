@@ -396,7 +396,42 @@ class TestFileUtil01 : TestFileUtilBase {
             INFO_STR("\n\ntest04_dir_item: 60 '"+path1_+" -> "+di.to_string()+" -> '"+di.path()+"'\n");
             REQUIRE( "../../test_data" == di.dirname() );
             REQUIRE( "file_01_slink09R1.txt" == di.basename() );
-            REQUIRE( "../../test_data/file_01_slink09R1.txt" == di.path() );
+            REQUIRE( path1_ == di.path() );
+        }
+
+        {
+            const std::string path1_ = "../../../jaulib/test_data";
+            const jau::fs::dir_item di(path1_);
+            INFO_STR("\n\ntest04_dir_item: 61 '"+path1_+" -> "+di.to_string()+" -> '"+di.path()+"'\n");
+            REQUIRE( "../../../jaulib" == di.dirname() );
+            REQUIRE( "test_data" == di.basename() );
+            REQUIRE( path1_ == di.path() );
+        }
+
+        {
+            const std::string path1_ = "../../../../jaulib/test_data";
+            const jau::fs::dir_item di(path1_);
+            INFO_STR("\n\ntest04_dir_item: 62 '"+path1_+" -> "+di.to_string()+" -> '"+di.path()+"'\n");
+            REQUIRE( "../../../../jaulib" == di.dirname() );
+            REQUIRE( "test_data" == di.basename() );
+            REQUIRE( path1_ == di.path() );
+        }
+
+        {
+            const std::string path1_ = "././././jaulib/test_data";
+            const jau::fs::dir_item di(path1_);
+            INFO_STR("\n\ntest04_dir_item: 63 '"+path1_+" -> "+di.to_string()+" -> '"+di.path()+"'\n");
+            REQUIRE( "jaulib" == di.dirname() );
+            REQUIRE( "test_data" == di.basename() );
+            REQUIRE( "jaulib/test_data" == di.path() );
+        }
+        {
+            const std::string path1_ = "a/././././jaulib/test_data";
+            const jau::fs::dir_item di(path1_);
+            INFO_STR("\n\ntest04_dir_item: 64 '"+path1_+" -> "+di.to_string()+" -> '"+di.path()+"'\n");
+            REQUIRE( "a/jaulib" == di.dirname() );
+            REQUIRE( "test_data" == di.basename() );
+            REQUIRE( "a/jaulib/test_data" == di.path() );
         }
 
         {
