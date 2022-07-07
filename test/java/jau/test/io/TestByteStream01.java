@@ -22,7 +22,7 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package jau.test.nio;
+package jau.test.io;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -162,16 +162,20 @@ public class TestByteStream01 extends JunitTracer {
 
     @AfterClass
     public static void httpd_stop() {
-        Assert.assertTrue( system(new String[]{"killall", "mini_httpd"}) );
+        if( UriTk.protocol_supported("http:") ) {
+            Assert.assertTrue( system(new String[]{"killall", "mini_httpd"}) );
+        }
     }
 
     static void httpd_start() {
-        Assert.assertTrue( system(new String[]{"killall", "mini_httpd"}) );
-        final Path path = Paths.get("");
-        final String directoryName = path.toAbsolutePath().toString();
-        final String[] cmd = new String[]{"/usr/sbin/mini_httpd", "-p", "8080", "-l", directoryName+"/mini_httpd.log"};
-        PrintUtil.fprintf_td(System.err, "%s%n", Arrays.toString(cmd));
-        Assert.assertTrue( system(cmd) );
+        if( UriTk.protocol_supported("http:") ) {
+            Assert.assertTrue( system(new String[]{"killall", "mini_httpd"}) );
+            final Path path = Paths.get("");
+            final String directoryName = path.toAbsolutePath().toString();
+            final String[] cmd = new String[]{"/usr/sbin/mini_httpd", "-p", "8080", "-l", directoryName+"/mini_httpd.log"};
+            PrintUtil.fprintf_td(System.err, "%s%n", Arrays.toString(cmd));
+            Assert.assertTrue( system(cmd) );
+        }
     }
 
     final static String url_input_root = "http://localhost:8080/";
