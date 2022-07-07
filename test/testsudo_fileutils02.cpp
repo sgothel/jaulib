@@ -196,6 +196,9 @@ class TestFileUtil02 : TestFileUtilBase {
         ::cap_free(caps);
     }
 
+    /** default group cdrom for all user, usually set to 24 in Debian and Ubuntu */
+    static const ::gid_t extra_test_group = 24;
+
     void test50_mount_copy_r_p() {
         INFO_STR("\n\ntest50_mount_copy_r_p\n");
         // ::cap_value_t cap_list[] = { CAP_SYS_ADMIN, CAP_SETUID, CAP_SETGID, CAP_CHOWN, CAP_FOWNER };
@@ -211,7 +214,7 @@ class TestFileUtil02 : TestFileUtilBase {
             ERR_PRINT("couldn't fetch [SUDO_]UID");
             return;
         }
-        ::gid_t group_list[] = { user_id, group_id, 60 };
+        ::gid_t group_list[] = { user_id, group_id, extra_test_group };
 
         const bool setuid_user_to_root = super_uid != caller_uid;
         if( setuid_user_to_root ) {
