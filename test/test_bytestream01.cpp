@@ -221,7 +221,7 @@ class TestByteStream01 {
                 std::unique_ptr<jau::io::ByteInStream> in = jau::io::to_ByteInStream(url);
                 if( http_support_expected ) {
                     REQUIRE( nullptr != in );
-                    jau::sleep_for( 10_ms );
+                    jau::sleep_for( 100_ms ); // time to read 404 response
                     jau::PLAIN_PRINT(true, "test00_protocols: not_exiting_http_uri: %s", in->to_string().c_str());
                     REQUIRE( true == in->end_of_data() );
                     REQUIRE( true == in->error() );

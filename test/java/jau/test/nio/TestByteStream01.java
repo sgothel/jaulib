@@ -372,7 +372,7 @@ public class TestByteStream01 extends JunitTracer {
             try( final ByteInStream in = NativeIO.to_ByteInStream(url) ) {
                 if( http_support_expected ) {
                     Assert.assertNotNull(in);
-                    try { Thread.sleep(10); } catch (final Throwable t) {}
+                    try { Thread.sleep(100); } catch (final Throwable t) {} // time to read 404 response
                     PrintUtil.fprintf_td(System.err, "test00_protocols: not_exiting_http_uri: %s%n", in);
                     Assert.assertTrue( in.end_of_data() );
                     Assert.assertTrue( in.error() );
