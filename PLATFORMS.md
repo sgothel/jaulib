@@ -3,6 +3,9 @@
 [Original main document location](https://jausoft.com/cgit/jaulib.git/about/).
 
 ## Supported Platforms
+Minimum language requirements
+- C++17
+- Java 11 (optional)
 
 The following **platforms** are tested and hence supported
 
