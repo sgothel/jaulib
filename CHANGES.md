@@ -10,6 +10,8 @@
 
 **0.14.0**
 
+* Java `org.jau.sys.Clock`: Add `Instant get[Monotonic|Wallclock]Time()` and `wallClockSeconds()` 
+  - matching C++ lib using Java `Instant` for C++ `fraction_timespec`
 * Add java mapping of `jau::fs::*` operations
   - `get_cwd()`, `basename()`, `dirname()`, `compare()`, `mkdir()`, `touch()`, `get_dir_content()`
   - `visit()` with `path_visitor` -> `PathVisitor` and `traverse_options` -> `TraverserOptions`
