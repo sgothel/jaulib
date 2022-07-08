@@ -23,6 +23,8 @@
  */
 package org.jau.sys;
 
+import java.time.Instant;
+
 public class Clock {
     private static long t0;
     static {
@@ -31,9 +33,49 @@ public class Clock {
     private static native long startupTimeMillisImpl();
 
     /**
+     * Returns current monotonic time since Unix Epoch `00:00:00 UTC on 1970-01-01`.
+     *
+     * Returned fraction_timespec is passing machine precision and range of the underlying native API.
+     *
+     * Monotonic time shall be used for high-performance measurements of durations,
+     * since the underlying OS shall support fast calls.
+     *
+     * @see getWallClockTime()
+     */
+    public static Instant getMonotonicTime() {
+        final long[/*2*/] val = { 0, 0 };
+        getMonotonicTimeImpl(val);
+        return Instant.ofEpochSecond(val[0], val[1]);
+    }
+    private static native void getMonotonicTimeImpl(final long[/*2*/] val);
+
+    /**
+     * Returns current wall-clock real-time since Unix Epoch `00:00:00 UTC on 1970-01-01`.
+     *
+     * Returned Instant is passing machine precision and range of the underlying native API.
+     *
+     * Wall-Clock time shall be used for accurate measurements of the actual time only,
+     * since the underlying OS unlikely supports fast calls.
+     *
+     * @see getMonotonicTime()
+     */
+    public static Instant getWallClockTime() {
+        final long[/*2*/] val = { 0, 0 };
+        getWallClockTimeImpl(val);
+        return Instant.ofEpochSecond(val[0], val[1]);
+    }
+    private static native void getWallClockTimeImpl(final long[/*2*/] val);
+
+    /**
      * Returns current monotonic time in milliseconds.
      */
     public static native long currentTimeMillis();
+
+    /**
+     * Returns current wall-clock system `time of day` in seconds since Unix Epoch
+     * `00:00:00 UTC on 1 January 1970`.
+     */
+    public static native long wallClockSeconds();
 
     /**
      * Returns the startup time in monotonic time in milliseconds of the native module.

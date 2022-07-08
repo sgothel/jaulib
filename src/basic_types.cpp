@@ -51,20 +51,20 @@ fraction_timespec jau::getMonotonicTime() noexcept {
 }
 
 fraction_timespec jau::getWallClockTime() noexcept {
-    struct timespec t;
+    struct timespec t { 0, 0 };
     clock_gettime(CLOCK_REALTIME, &t);
     return fraction_timespec( (int64_t)t.tv_sec, (int64_t)t.tv_nsec );
 }
 
 uint64_t jau::getCurrentMilliseconds() noexcept {
-    struct timespec t;
+    struct timespec t { 0, 0 };
     clock_gettime(CLOCK_MONOTONIC, &t);
     return static_cast<uint64_t>( t.tv_sec ) * MilliPerOne +
            static_cast<uint64_t>( t.tv_nsec ) / NanoPerMilli;
 }
 
 uint64_t jau::getWallClockSeconds() noexcept {
-    struct timespec t;
+    struct timespec t { 0, 0 };
     clock_gettime(CLOCK_REALTIME, &t);
     return static_cast<uint64_t>( t.tv_sec );
 }

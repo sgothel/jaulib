@@ -38,6 +38,54 @@
 static const int64_t NanoPerMilli = 1000000L;
 static const int64_t MilliPerOne = 1000L;
 
+void Java_org_jau_sys_Clock_getMonotonicTimeImpl(JNIEnv *env, jclass clazz, jlongArray jval) {
+    (void)clazz;
+    try {
+        if( nullptr == jval ) {
+            throw jau::IllegalArgumentException("val null", E_FILE_LINE);
+        }
+        const size_t in_size = env->GetArrayLength(jval);
+        if( 2 > in_size ) {
+            throw jau::IllegalArgumentException("val size "+std::to_string(in_size)+" < 2", E_FILE_LINE);
+        }
+        jau::jni::JNICriticalArray<int64_t, jlongArray> criticalArray(env); // RAII - release
+        int64_t * val_ptr = criticalArray.get(jval, criticalArray.Mode::UPDATE_AND_RELEASE);
+        if( NULL == val_ptr ) {
+            throw jau::InternalError("GetPrimitiveArrayCritical(address val array) is null", E_FILE_LINE);
+        }
+        struct timespec t { 0, 0 };
+        clock_gettime(CLOCK_MONOTONIC, &t);
+        val_ptr[0] = (int64_t)t.tv_sec;
+        val_ptr[1] = (int64_t)t.tv_nsec;
+    } catch(...) {
+        rethrow_and_raise_java_exception_jau(env);
+    }
+}
+
+void Java_org_jau_sys_Clock_getWallClockTimeImpl(JNIEnv *env, jclass clazz, jlongArray jval) {
+    (void)clazz;
+    try {
+        if( nullptr == jval ) {
+            throw jau::IllegalArgumentException("val null", E_FILE_LINE);
+        }
+        const size_t in_size = env->GetArrayLength(jval);
+        if( 2 > in_size ) {
+            throw jau::IllegalArgumentException("val size "+std::to_string(in_size)+" < 2", E_FILE_LINE);
+        }
+        jau::jni::JNICriticalArray<int64_t, jlongArray> criticalArray(env); // RAII - release
+        int64_t * val_ptr = criticalArray.get(jval, criticalArray.Mode::UPDATE_AND_RELEASE);
+        if( NULL == val_ptr ) {
+            throw jau::InternalError("GetPrimitiveArrayCritical(address val array) is null", E_FILE_LINE);
+        }
+        struct timespec t { 0, 0 };
+        clock_gettime(CLOCK_REALTIME, &t);
+        val_ptr[0] = (int64_t)t.tv_sec;
+        val_ptr[1] = (int64_t)t.tv_nsec;
+    } catch(...) {
+        rethrow_and_raise_java_exception_jau(env);
+    }
+}
+
 /**
  * See <http://man7.org/linux/man-pages/man2/clock_gettime.2.html>
  * <p>
@@ -50,10 +98,20 @@ jlong Java_org_jau_sys_Clock_currentTimeMillis(JNIEnv *env, jclass clazz) {
     (void)env;
     (void)clazz;
 
-    struct timespec t;
+    struct timespec t { 0, 0 };
     clock_gettime(CLOCK_MONOTONIC, &t);
-    int64_t res = t.tv_sec * MilliPerOne + t.tv_nsec / NanoPerMilli;
+    int64_t res = static_cast<int64_t>( t.tv_sec ) * MilliPerOne +
+                  static_cast<int64_t>( t.tv_nsec ) / NanoPerMilli;
     return (jlong)res;
+}
+
+jlong Java_org_jau_sys_Clock_wallClockSeconds(JNIEnv *env, jclass clazz) {
+    (void)env;
+    (void)clazz;
+
+    struct timespec t { 0, 0 };
+    clock_gettime(CLOCK_REALTIME, &t);
+    return (jlong)( static_cast<int64_t>( t.tv_sec ) );
 }
 
 jlong Java_org_jau_sys_Clock_startupTimeMillisImpl(JNIEnv *env, jclass clazz) {
