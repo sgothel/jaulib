@@ -927,8 +927,6 @@ bool jau::fs::remove(const std::string& path, const traverse_options topts) noex
     X(copy_options,preserve_all,M) \
     X(copy_options,sync,M)
 
-#define APPEND_BIT_COPYOPTIONS(U,V) _append_bitstr(out, mask, U::V, #V, comma);
-
 std::string jau::fs::to_string(const copy_options mask) noexcept {
     std::string out("[");
     bool comma = false;
