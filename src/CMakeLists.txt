@@ -10,6 +10,7 @@ include_directories(
 set (jaulib_LIB_SRCS
   dfa_utf8_decode.cpp
   environment.cpp
+  cpuid.cpp
   debug.cpp
   basic_types.cpp
   byte_stream.cpp
