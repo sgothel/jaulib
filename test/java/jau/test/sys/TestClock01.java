@@ -79,7 +79,7 @@ public class TestClock01 extends JunitTracer {
         Assert.assertTrue( td_max >= m_t1_d );
 
         Assert.assertTrue( 0      <= w_t2_d ); // sec granularity only
-        Assert.assertTrue( td_max >= w_t2_d );
+        Assert.assertTrue( 1000   >= w_t2_d );
 
         Assert.assertTrue( td_min <= w_t3_d );
         Assert.assertTrue( td_max >= w_t3_d );
