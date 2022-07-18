@@ -26,17 +26,33 @@
 
 void testxx_copy_r_p(const std::string& title, const jau::fs::file_stats& source, const int source_added_dead_links, const std::string& dest) {
     REQUIRE( true == source.exists() );
+    REQUIRE( true == source.is_dir() );
+
+    bool dest_is_parent;
+    std::string dest_root;
+    {
+        jau::fs::file_stats dest_stats(dest);
+        if( dest_stats.exists() ) {
+            // If dest_path exists as a directory, source_path dir will be copied below the dest_path directory.
+            REQUIRE( true == dest_stats.is_dir() );
+            dest_is_parent = true;
+            dest_root = dest + "/" + source.item().basename();
+        } else {
+            // If dest_path doesn't exist, source_path dir content is copied into the newly created dest_path.
+            dest_is_parent = false;
+            dest_root = dest;
+        }
+    }
+    jau::fprintf_td(stderr, "%s: source %s, dest[arg %s, is_parent %d, dest_root %s]\n",
+            title.c_str(), source.to_string().c_str(), dest.c_str(), dest_is_parent, dest_root.c_str());
 
     const jau::fs::copy_options copts = jau::fs::copy_options::recursive |
                                         jau::fs::copy_options::preserve_all |
                                         jau::fs::copy_options::sync |
                                         jau::fs::copy_options::verbose;
-    {
-        jau::fs::remove(dest, jau::fs::traverse_options::recursive);
+    REQUIRE( true == jau::fs::copy(source.path(), dest, copts) );
 
-        REQUIRE( true == jau::fs::copy(source.path(), dest, copts) );
-    }
-    jau::fs::file_stats dest_stats(dest);
+    jau::fs::file_stats dest_stats(dest_root);
     REQUIRE( true == dest_stats.exists() );
     REQUIRE( true == dest_stats.ok() );
     REQUIRE( true == dest_stats.is_dir() );
@@ -168,9 +184,6 @@ void testxx_copy_r_p(const std::string& title, const jau::fs::file_stats& source
                         }
                       } ) );
         REQUIRE( true == jau::fs::visit(source, topts, pv1) );
-    }
-    if constexpr ( _remove_target_test_dir ) {
-        REQUIRE( true == jau::fs::remove(dest, jau::fs::traverse_options::recursive) );
     }
 }
 

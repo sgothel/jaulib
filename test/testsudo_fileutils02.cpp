@@ -321,7 +321,9 @@ class TestFileUtil02 : TestFileUtilBase {
             REQUIRE( true == mctx.mounted );
 
             const std::string root_copy = root+"_copy_test50";
+            jau::fs::remove(root_copy, jau::fs::traverse_options::recursive);
             testxx_copy_r_p("test50_mount_copy_r_p", mount_point, 1 /* source_added_dead_links */, root_copy);
+            REQUIRE( true == jau::fs::remove(root_copy, jau::fs::traverse_options::recursive) );
 
             bool umount_ok;
             {

@@ -50,7 +50,7 @@ public class CopyOptions {
          */
         ignore_symlink_errors ( (short)( 1 << 8 ) ),
 
-        /** Overwrite existing destination files, always. */
+        /** Overwrite existing destination files. */
         overwrite ( (short)( 1 << 9 ) ),
 
         /** Preserve uid and gid if allowed and access- and modification-timestamps, i.e. producing a most exact meta-data copy. */

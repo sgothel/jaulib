@@ -1178,11 +1178,13 @@ class TestFileUtil01 : TestFileUtilBase {
         REQUIRE( true == root_orig_stats.exists() );
 
         const std::string root_copy = root+"_copy_test40";
+        jau::fs::remove(root_copy, jau::fs::traverse_options::recursive);
         testxx_copy_r_p("test40_copy_ext_r_p", root_orig_stats, 0 /* source_added_dead_links */, root_copy);
+        REQUIRE( true == jau::fs::remove(root_copy, jau::fs::traverse_options::recursive) );
     }
 
-    void test41_copy_ext_r_p_fsl() {
-        INFO_STR("\n\ntest41_copy_ext_r_p_fsl\n");
+    void test41_copy_ext_r_p_below() {
+        INFO_STR("\n\ntest41_copy_ext_r_p_below\n");
 
         jau::fs::file_stats root_orig_stats(project_root1);
         if( !root_orig_stats.exists() ) {
@@ -1190,7 +1192,23 @@ class TestFileUtil01 : TestFileUtilBase {
         }
         REQUIRE( true == root_orig_stats.exists() );
 
-        const std::string root_copy = root+"_copy_test41";
+        const std::string root_copy_parent = root+"_copy_test41_parent";
+        jau::fs::remove(root_copy_parent, jau::fs::traverse_options::recursive);
+        REQUIRE( true == jau::fs::mkdir(root_copy_parent, jau::fs::fmode_t::def_dir_prot) );
+        testxx_copy_r_p("test41_copy_ext_r_p_below", root_orig_stats, 0 /* source_added_dead_links */, root_copy_parent);
+        REQUIRE( true == jau::fs::remove(root_copy_parent, jau::fs::traverse_options::recursive) );
+    }
+
+    void test42_copy_ext_r_p_fsl() {
+        INFO_STR("\n\ntest42_copy_ext_r_p_fsl\n");
+
+        jau::fs::file_stats root_orig_stats(project_root1);
+        if( !root_orig_stats.exists() ) {
+            root_orig_stats = jau::fs::file_stats(project_root2);
+        }
+        REQUIRE( true == root_orig_stats.exists() );
+
+        const std::string root_copy = root+"_copy_test42";
         const jau::fs::copy_options copts = jau::fs::copy_options::recursive |
                                             jau::fs::copy_options::preserve_all |
                                             jau::fs::copy_options::follow_symlinks |
@@ -1227,11 +1245,11 @@ class TestFileUtil01 : TestFileUtilBase {
             REQUIRE( true == jau::fs::visit(root_orig_stats, topts_orig, pv_orig) );
             REQUIRE( true == jau::fs::visit(root_copy_stats, topts_copy, pv_copy) );
 
-            jau::fprintf_td(stderr, "test41_copy_ext_r_p_fsl: copy %s, traverse_orig %s, traverse_copy %s\n",
+            jau::fprintf_td(stderr, "test42_copy_ext_r_p_fsl: copy %s, traverse_orig %s, traverse_copy %s\n",
                     to_string(copts).c_str(), to_string(topts_orig).c_str(), to_string(topts_copy).c_str());
 
-            jau::fprintf_td(stderr, "test41_copy_ext_r_p_fsl: source      visitor stats\n%s\n", stats.to_string().c_str());
-            jau::fprintf_td(stderr, "test41_copy_ext_r_p_fsl: destination visitor stats\n%s\n", stats_copy.to_string().c_str());
+            jau::fprintf_td(stderr, "test42_copy_ext_r_p_fsl: source      visitor stats\n%s\n", stats.to_string().c_str());
+            jau::fprintf_td(stderr, "test42_copy_ext_r_p_fsl: destination visitor stats\n%s\n", stats_copy.to_string().c_str());
 
             REQUIRE(  9 == stats.total_real );
             REQUIRE( 11 == stats.total_sym_links_existing );
@@ -1278,4 +1296,5 @@ METHOD_AS_TEST_CASE( TestFileUtil01::test30_copy_file2dir,      "Test TestFileUt
 METHOD_AS_TEST_CASE( TestFileUtil01::test31_copy_file2file,     "Test TestFileUtil01 - test31_copy_file2file");
 
 METHOD_AS_TEST_CASE( TestFileUtil01::test40_copy_ext_r_p,       "Test TestFileUtil01 - test40_copy_ext_r_p");
-METHOD_AS_TEST_CASE( TestFileUtil01::test41_copy_ext_r_p_fsl,   "Test TestFileUtil01 - test41_copy_ext_r_p_fsl");
+METHOD_AS_TEST_CASE( TestFileUtil01::test41_copy_ext_r_p_below, "Test TestFileUtil01 - test41_copy_ext_r_p_below");
+METHOD_AS_TEST_CASE( TestFileUtil01::test42_copy_ext_r_p_fsl,   "Test TestFileUtil01 - test42_copy_ext_r_p_fsl");

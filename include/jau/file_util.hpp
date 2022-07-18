@@ -25,11 +25,8 @@
 #ifndef JAU_FILE_UTIL_HPP_
 #define JAU_FILE_UTIL_HPP_
 
-#include <cstring>
 #include <string>
 #include <memory>
-#include <cstdint>
-#include <cstdio>
 
 #include <jau/fraction_type.hpp>
 #include <jau/function_def.hpp>
@@ -163,6 +160,19 @@ namespace jau {
                  * @param path_ the raw path
                  */
                 dir_item(const std::string_view& path_) noexcept;
+
+
+                /**
+                 * Create a dir_item with already cleaned dirname and basename
+                 * without any further processing nor validation.
+                 *
+                 * @param dirname__
+                 * @param basename__
+                 * @see reduce()
+                 * @see jau::fs::dirname()
+                 * @see jau::fs::basename()
+                 */
+                dir_item(const std::string& dirname__, const std::string& basename__) noexcept;
 
                 /** Returns the dirname, shall not be empty and denotes `.` for current working director. */
                 const std::string& dirname() const noexcept { return dirname_; }
@@ -376,15 +386,26 @@ namespace jau {
                 file_stats() noexcept;
 
                 /** Private ctor for private make_shared<file_stats>() intended for friends. */
-                file_stats(const ctor_cookie& cc, const dir_item& item) noexcept;
+                file_stats(const ctor_cookie& cc, const int dirfd, const dir_item& item) noexcept;
 
                 /**
                  * Instantiates a file_stats for the given `path`.
                  *
                  * The dir_item will be constructed without parent_dir
+                 *
                  * @param path the path to produce stats for
                  */
                 file_stats(const std::string& path) noexcept;
+
+                /**
+                 * Instantiates a file_stats for the given `path`.
+                 *
+                 * The dir_item will be constructed without parent_dir
+                 *
+                 * @param dirfd file descriptor of given dir_item item's directory, dir_item::dirname(), or AT_FDCWD for the current working directory of the calling process
+                 * @param path the path to produce stats for
+                 */
+                file_stats(const int dirfd, const std::string& path) noexcept;
 
                 /**
                  * Instantiates a file_stats for the given dir_item.
@@ -392,6 +413,14 @@ namespace jau {
                  * @param item the dir_item to produce stats for
                  */
                 file_stats(const dir_item& item) noexcept;
+
+                /**
+                 * Instantiates a file_stats for the given dir_item.
+                 *
+                 * @param dirfd file descriptor of given dir_item item's directory, dir_item::dirname(), or AT_FDCWD for the current working directory of the calling process
+                 * @param item the dir_item to produce stats for
+                 */
+                file_stats(const int dirfd, const dir_item& item) noexcept;
 
                 /**
                  * Returns the dir_item.
@@ -803,6 +832,9 @@ namespace jau {
          * - traverse_options::follow_symlinks shall be set by caller to remove symbolic linked directories recursively, which is kind of dangerous.
          *   If not set, only the symbolic link will be removed (default)
          *
+         * Implementation is most data-race-free (DRF), utilizes following safeguards
+         * - utilizing parent directory file descriptor and `openat()` and `unlinkat()` operations against concurrent mutation
+         *
          * @param path path to remove
          * @param topts given traverse_options for this operation, defaults to traverse_options::none
          * @return true only if the file or the directory with content has been deleted, otherwise false
@@ -857,7 +889,7 @@ namespace jau {
              */
             ignore_symlink_errors = 1 << 8,
 
-            /** Overwrite existing destination files, always. */
+            /** Overwrite existing destination files. */
             overwrite = 1 << 9,
 
             /** Preserve uid and gid if allowed and access- and modification-timestamps, i.e. producing a most exact meta-data copy. */
@@ -912,9 +944,6 @@ namespace jau {
          *
          * The behavior is similar like POSIX `cp` commandline tooling.
          *
-         * Implementation either uses ::sendfile() if running under `GNU/Linux`,
-         * otherwise POSIX ::read() and ::write().
-         *
          * The following behavior is being followed regarding dest_path:
          * - If source_path is a directory and copy_options::recursive set
          *   - If dest_path doesn't exist, source_path dir content is copied into the newly created dest_path.
@@ -925,6 +954,19 @@ namespace jau {
          *   - If dest_path exists as a directory, source_path file will be copied below the dest_path directory.
          *   - If dest_path exists as a file, copy_options::overwrite must be set to have it overwritten by the source_path file
          *   - Everything else is considered an error
+         *
+         * Implementation either uses ::sendfile() if running under `GNU/Linux`,
+         * otherwise POSIX ::read() and ::write().
+         *
+         * Implementation is most data-race-free (DRF), utilizes following safeguards on recursive directory copy
+         * - utilizing parent directory file descriptor and `openat()` operations against concurrent mutation
+         * - for each entered *directory*
+         *   - new destination directory is create with '.<random_number>' and user-rwx permissions only
+         *   - its file descriptor is being opened
+         *   - its user-read permission is dropped, remains user-wx permissions only
+         *   - its renamed to destination path
+         *   - all copy operations are performed inside
+         *   - at exit, its permissions are restored, etc.
          *
          * See copy_options for details.
          *

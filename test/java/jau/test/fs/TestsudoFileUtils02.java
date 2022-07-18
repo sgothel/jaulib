@@ -64,7 +64,9 @@ public class TestsudoFileUtils02 extends FileUtilBaseTest {
             Assert.assertTrue( 0 != mctx );
 
             final String root_copy = root+"_copy_test50";
+            FileUtil.remove(root_copy, topts_rec);
             testxx_copy_r_p("test50_mount_copy_r_p", new FileStats(mount_point), 1 /* source_added_dead_links */, root_copy);
+            Assert.assertTrue( true == FileUtil.remove(root_copy, topts_rec) );
 
             final boolean umount_ok = FileUtil.umount(mctx);
             Assert.assertTrue( true == umount_ok );

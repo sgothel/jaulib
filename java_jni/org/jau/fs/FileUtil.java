@@ -211,6 +211,9 @@ public final class FileUtil {
      * - traverse_options::follow_symlinks shall be set by caller to remove symbolic linked directories recursively, which is kind of dangerous.
      *   If not set, only the symbolic link will be removed (default)
      *
+     * Implementation is most data-race-free (DRF), utilizes following safeguards
+     * - utilizing parent directory file descriptor and `openat()` and `unlinkat()` operations against concurrent mutation
+     *
      * @param path path to remove
      * @param topts given traverse_options for this operation, defaults to traverse_options::none
      * @return true only if the file or the directory with content has been deleted, otherwise false
@@ -235,9 +238,6 @@ public final class FileUtil {
      *
      * The behavior is similar like POSIX `cp` commandline tooling.
      *
-     * Implementation either uses ::sendfile() if running under `GNU/Linux`,
-     * otherwise POSIX ::read() and ::write().
-     *
      * The following behavior is being followed regarding dest_path:
      * - If source_path is a directory and copy_options::recursive set
      *   - If dest_path doesn't exist, source_path dir content is copied into the newly created dest_path.
@@ -248,6 +248,19 @@ public final class FileUtil {
      *   - If dest_path exists as a directory, source_path file will be copied below the dest_path directory.
      *   - If dest_path exists as a file, copy_options::overwrite must be set to have it overwritten by the source_path file
      *   - Everything else is considered an error
+     *
+     * Implementation either uses ::sendfile() if running under `GNU/Linux`,
+     * otherwise POSIX ::read() and ::write().
+     *
+     * Implementation is most data-race-free (DRF), utilizes following safeguards on recursive directory copy
+     * - utilizing parent directory file descriptor and `openat()` operations against concurrent mutation
+     * - for each entered *directory*
+     *   - new destination directory is create with '.<random_number>' and user-rwx permissions only
+     *   - its file descriptor is being opened
+     *   - its user-read permission is dropped, remains user-wx permissions only
+     *   - its renamed to destination path
+     *   - all copy operations are performed inside
+     *   - at exit, its permissions are restored, etc.
      *
      * See copy_options for details.
      *

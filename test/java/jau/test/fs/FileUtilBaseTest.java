@@ -190,19 +190,35 @@ public class FileUtilBaseTest extends JunitTracer {
     };
 
     public void testxx_copy_r_p(final String title, final FileStats source, final int source_added_dead_links, final String dest) {
-        Assert.assertTrue( true == source.exists() );
+        Assert.assertTrue( source.exists() );
+        Assert.assertTrue( source.is_dir() );
+
+        final boolean dest_is_parent;
+        final String dest_root;
+        {
+            final FileStats dest_stats = new FileStats(dest);
+            if( dest_stats.exists() ) {
+                // If dest_path exists as a directory, source_path dir will be copied below the dest_path directory.
+                Assert.assertTrue( dest_stats.is_dir() );
+                dest_is_parent = true;
+                dest_root = dest + "/" + source.item().basename();
+            } else {
+                // If dest_path doesn't exist, source_path dir content is copied into the newly created dest_path.
+                dest_is_parent = false;
+                dest_root = dest;
+            }
+        }
+        PrintUtil.fprintf_td(System.err, "%s: source %s, dest[arg %s, is_parent %b, dest_root %s]\n",
+                title, source, dest, dest_is_parent, dest_root);
 
         final CopyOptions copts = new CopyOptions();
         copts.set(CopyOptions.Bit.recursive);
         copts.set(CopyOptions.Bit.preserve_all);
         copts.set(CopyOptions.Bit.sync);
         copts.set(CopyOptions.Bit.verbose);
-        {
-            FileUtil.remove(dest, topts_rec);
+        Assert.assertTrue( true == FileUtil.copy(source.path(), dest, copts) );
 
-            Assert.assertTrue( true == FileUtil.copy(source.path(), dest, copts) );
-        }
-        final FileStats dest_stats = new FileStats(dest);
+        final FileStats dest_stats = new FileStats(dest_root);
         Assert.assertTrue( true == dest_stats.exists() );
         Assert.assertTrue( true == dest_stats.ok() );
         Assert.assertTrue( true == dest_stats.is_dir() );
