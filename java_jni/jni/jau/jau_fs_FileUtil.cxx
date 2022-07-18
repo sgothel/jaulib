@@ -359,6 +359,18 @@ jboolean Java_org_jau_fs_FileUtil_copy_1impl(JNIEnv *env, jclass cls, jstring js
     return false;
 }
 
+jboolean Java_org_jau_fs_FileUtil_rename(JNIEnv *env, jclass cls, jstring joldpath, jstring jnewpath) {
+    (void)cls;
+    try {
+        const std::string oldpath = jau::jni::from_jstring_to_string(env, joldpath);
+        const std::string newpath = jau::jni::from_jstring_to_string(env, jnewpath);
+        return jau::fs::rename(oldpath, newpath) ? JNI_TRUE : JNI_FALSE;
+    } catch(...) {
+        rethrow_and_raise_java_exception_jau(env);
+    }
+    return false;
+}
+
 jlong Java_org_jau_fs_FileUtil_mount_1image(JNIEnv *env, jclass cls,
                                            jstring jimage_path, jstring jmount_point,
                                            jstring jfs_type, jlong jmountflags, jstring jfs_options) {

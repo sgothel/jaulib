@@ -1646,6 +1646,22 @@ bool jau::fs::copy(const std::string& source_path, const std::string& target_pat
     return res;
 }
 
+bool jau::fs::rename(const std::string& oldpath, const std::string& newpath) noexcept {
+    file_stats oldpath_stats(oldpath);
+    file_stats newpath_stats(newpath);
+    if( !oldpath_stats.exists() ) {
+        ERR_PRINT("oldpath doesn't exist, oldpath %s, newpath %s\n",
+                oldpath_stats.to_string().c_str(), newpath_stats.to_string().c_str());
+        return false;
+    }
+    if( 0 != ::rename(oldpath_stats.path().c_str(), newpath_stats.path().c_str()) ) {
+        ERR_PRINT("raname failed, oldpath %s, newpath %s\n",
+                oldpath_stats.to_string().c_str(), newpath_stats.to_string().c_str());
+        return false;
+    }
+    return true;
+}
+
 static bool set_effective_uid(::uid_t user_id) {
     if( 0 != ::seteuid(user_id) ) {
         ERR_PRINT("seteuid(%" PRIu32 ") failed", user_id);

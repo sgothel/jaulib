@@ -1231,7 +1231,6 @@ class TestFileUtil01 : TestFileUtilBase {
                 return true;
               } );
         {
-
             const jau::fs::traverse_options topts_orig = jau::fs::traverse_options::recursive |
                                                          jau::fs::traverse_options::dir_entry |
                                                          jau::fs::traverse_options::follow_symlinks;
@@ -1273,8 +1272,44 @@ class TestFileUtil01 : TestFileUtilBase {
             REQUIRE(  4 == stats_copy.dirs_real );
             REQUIRE(  0 == stats_copy.dirs_sym_link );
         }
+
+        const std::string root_copy_renamed = root+"_copy_test42_renamed";
+        {
+            REQUIRE( true == jau::fs::rename(root_copy, root_copy_renamed) );
+        }
+        jau::fs::file_stats root_copy_stats2(root_copy);
+        REQUIRE( false == root_copy_stats2.exists() );
+
+        jau::fs::file_stats root_copy_renamed_stats(root_copy_renamed);
+        REQUIRE( true == root_copy_renamed_stats.exists() );
+        REQUIRE( true == root_copy_renamed_stats.ok() );
+        REQUIRE( true == root_copy_renamed_stats.is_dir() );
+
+        {
+            const jau::fs::traverse_options topts_copy = jau::fs::traverse_options::recursive |
+                                                         jau::fs::traverse_options::dir_entry;
+            visitor_stats stats_copy(topts_copy);
+            const jau::fs::path_visitor pv_copy = jau::bindCaptureRefFunc(&stats_copy, pv_capture);
+            REQUIRE( true == jau::fs::visit(root_copy_renamed_stats, topts_copy, pv_copy) );
+
+            jau::fprintf_td(stderr, "test42_copy_ext_r_p_fsl: renamed: traverse_copy %s\n", to_string(topts_copy).c_str());
+
+            jau::fprintf_td(stderr, "test42_copy_ext_r_p_fsl: renamed: visitor stats\n%s\n", stats_copy.to_string().c_str());
+
+            REQUIRE( 20 == stats_copy.total_real );
+            REQUIRE(  0 == stats_copy.total_sym_links_existing );
+            REQUIRE(  0 == stats_copy.total_sym_links_not_existing );
+            REQUIRE(  0 == stats_copy.total_no_access );
+            REQUIRE(  0 == stats_copy.total_not_existing );
+            REQUIRE( 60 <  stats_copy.total_file_bytes );             // some followed symlink files are of unknown size, e.g. /etc/fstab
+            REQUIRE( 16 == stats_copy.files_real );
+            REQUIRE(  0 == stats_copy.files_sym_link );
+            REQUIRE(  4 == stats_copy.dirs_real );
+            REQUIRE(  0 == stats_copy.dirs_sym_link );
+        }
+
         if constexpr ( _remove_target_test_dir ) {
-            REQUIRE( true == jau::fs::remove(root_copy, jau::fs::traverse_options::recursive) );
+            REQUIRE( true == jau::fs::remove(root_copy_renamed, jau::fs::traverse_options::recursive) );
         }
     }
 };

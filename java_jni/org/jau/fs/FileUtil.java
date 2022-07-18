@@ -275,6 +275,24 @@ public final class FileUtil {
     private static native boolean copy_impl(final String source_path, final String dest_path, final short copts);
 
     /**
+     * Rename oldpath to newpath using POSIX `::rename()`, with the following combinations
+     * - oldpath and newpath refer to the same file, a successful no-operation.
+     * - oldpath file
+     *   - newpath not-existing file
+     *   - newpath existing file to be atomically replaced
+     * - oldpath directory
+     *   - newpath not-existing directory
+     *   - newpath existing empty directory
+     * - oldpath symlink will be renamed
+     * - newpath symlink will be overwritten
+     *
+     * @param oldpath previous path
+     * @param newpath new path
+     * @return true only if the rename operation was successful, otherwise false
+     */
+    public static native boolean rename(final String oldpath, final String newpath);
+
+    /**
      * Attach the filesystem image named in `image_path` to `target_path`.
      *
      * This method either requires root permissions <br />

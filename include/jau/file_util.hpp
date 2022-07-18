@@ -977,6 +977,24 @@ namespace jau {
          */
         bool copy(const std::string& source_path, const std::string& dest_path, const copy_options copts = copy_options::none) noexcept;
 
+        /**
+         * Rename oldpath to newpath using POSIX `::rename()`, with the following combinations
+         * - oldpath and newpath refer to the same file, a successful no-operation.
+         * - oldpath file
+         *   - newpath not-existing file
+         *   - newpath existing file to be atomically replaced
+         * - oldpath directory
+         *   - newpath not-existing directory
+         *   - newpath existing empty directory
+         * - oldpath symlink will be renamed
+         * - newpath symlink will be overwritten
+         *
+         * @param oldpath previous path
+         * @param newpath new path
+         * @return true only if the rename operation was successful, otherwise false
+         */
+        bool rename(const std::string& oldpath, const std::string& newpath) noexcept;
+
         struct mount_ctx {
             bool mounted;
             std::string mount_point;

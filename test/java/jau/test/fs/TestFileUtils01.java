@@ -1299,7 +1299,46 @@ public class TestFileUtils01 extends FileUtilBaseTest {
             Assert.assertTrue(  4 == stats_copy.dirs_real );
             Assert.assertTrue(  0 == stats_copy.dirs_sym_link );
         }
-        Assert.assertTrue( true == FileUtil.remove(root_copy, topts_rec) );
+
+        final String root_copy_renamed = root+"_copy_test42_renamed";
+        {
+            Assert.assertTrue( true == FileUtil.rename(root_copy, root_copy_renamed) );
+        }
+        final FileStats root_copy_stats2 = new FileStats(root_copy);
+        Assert.assertTrue( false == root_copy_stats2.exists() );
+
+        final FileStats root_copy_renamed_stats = new FileStats(root_copy_renamed);
+        Assert.assertTrue( true == root_copy_renamed_stats.exists() );
+        Assert.assertTrue( true == root_copy_renamed_stats.ok() );
+        Assert.assertTrue( true == root_copy_renamed_stats.is_dir() );
+        {
+            final TraverseOptions topts_copy = new TraverseOptions();
+            topts_copy.set(TraverseOptions.Bit.recursive);
+            topts_copy.set(TraverseOptions.Bit.dir_entry);
+
+            final VisitorStats stats_copy = new VisitorStats(topts_copy);
+
+            final PathStatsVisitor pv_copy = new PathStatsVisitor(stats_copy);
+
+            Assert.assertTrue( true == FileUtil.visit(root_copy_renamed_stats, topts_copy, pv_copy) );
+
+            PrintUtil.fprintf_td(System.err, "test42_copy_ext_r_p_fsl: renamed: traverse_copy %s\n", topts_copy);
+
+            PrintUtil.fprintf_td(System.err, "test42_copy_ext_r_p_fsl: renamed: visitor stats\n%s\n", stats_copy);
+
+            Assert.assertTrue( 20 == stats_copy.total_real );
+            Assert.assertTrue(  0 == stats_copy.total_sym_links_existing );
+            Assert.assertTrue(  0 == stats_copy.total_sym_links_not_existing );
+            Assert.assertTrue(  0 == stats_copy.total_no_access );
+            Assert.assertTrue(  0 == stats_copy.total_not_existing );
+            Assert.assertTrue( 60 <  stats_copy.total_file_bytes );             // some followed symlink files are of unknown size, e.g. /etc/fstab
+            Assert.assertTrue( 16 == stats_copy.files_real );
+            Assert.assertTrue(  0 == stats_copy.files_sym_link );
+            Assert.assertTrue(  4 == stats_copy.dirs_real );
+            Assert.assertTrue(  0 == stats_copy.dirs_sym_link );
+        }
+
+        Assert.assertTrue( true == FileUtil.remove(root_copy_renamed, topts_rec) );
     }
 
     public static void main(final String args[]) {
