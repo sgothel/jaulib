@@ -386,7 +386,7 @@ namespace jau {
                 file_stats() noexcept;
 
                 /** Private ctor for private make_shared<file_stats>() intended for friends. */
-                file_stats(const ctor_cookie& cc, const int dirfd, const dir_item& item) noexcept;
+                file_stats(const ctor_cookie& cc, const int dirfd, const dir_item& item, const bool dirfd_is_item_dirname) noexcept;
 
                 /**
                  * Instantiates a file_stats for the given `path`.
@@ -419,8 +419,9 @@ namespace jau {
                  *
                  * @param dirfd file descriptor of given dir_item item's directory, dir_item::dirname(), or AT_FDCWD for the current working directory of the calling process
                  * @param item the dir_item to produce stats for
+                 * @param dirfd_is_item_dirname if true, dir_item::basename() is relative to dirfd (default), otherwise full dir_item::path() is relative to dirfd.
                  */
-                file_stats(const int dirfd, const dir_item& item) noexcept;
+                file_stats(const int dirfd, const dir_item& item, const bool dirfd_is_item_dirname=true) noexcept;
 
                 /**
                  * Returns the dir_item.
@@ -626,6 +627,18 @@ namespace jau {
         bool get_dir_content(const std::string& path, const consume_dir_item& digest) noexcept;
 
         /**
+         * Returns a list of directory elements excluding `.` and `..` for the given path, non recursive.
+         *
+         * The custom consume_dir_item `digest` may also be used to filter the element, besides storing it.
+         *
+         * @param dirfd file descriptor to given `path` left untouched as a copy is being used to retrieve the directory content.
+         * @param path path to directory
+         * @param digest consume_dir_item function to receive each directory item, e.g. `void consume_dir_item(const dir_item& item)`
+         * @return true if given path exists, is directory and is readable, otherwise false
+         */
+        bool get_dir_content(const int dirfd, const std::string& path, const consume_dir_item& digest) noexcept;
+
+        /**
          * Filesystem traverse event used to call path_visitor for path elements from visit().
          *
          * This `enum class` type fulfills `C++ named requirements: BitmaskType`.
@@ -804,9 +817,12 @@ namespace jau {
          * @param path the starting path
          * @param topts given traverse_options for this operation
          * @param visitor path_visitor function `bool visitor(const file_stats& item_stats)`.
+         * @param dirfds optional empty `dirfd` stack pointer defaults to nullptr.
+         *        If user provided, exposes the used `dirfd` stack, which last entry represents the current visitor parent directory.
+         *        The `dirfd` stack starts and ends empty, i.e. all directory file descriptor are closed.
          * @return true if all visitor invocations returned true, otherwise false
          */
-        bool visit(const std::string& path, const traverse_options topts, const path_visitor& visitor) noexcept;
+        bool visit(const std::string& path, const traverse_options topts, const path_visitor& visitor, std::vector<int>* dirfds=nullptr) noexcept;
 
         /**
          * Visit element(s) of a given path, see traverse_options for detailed settings.
@@ -819,9 +835,12 @@ namespace jau {
          * @param item_stats pre-fetched file_stats for a given dir_item, used for efficiency
          * @param topts given traverse_options for this operation
          * @param visitor path_visitor function `bool visitor(const file_stats& item_stats)`.
+         * @param dirfds optional empty `dirfd` stack pointer defaults to nullptr.
+         *        If user provided, exposes the used `dirfd` stack, which last entry represents the current visitor parent directory.
+         *        The `dirfd` stack starts and ends empty, i.e. all directory file descriptor are closed.
          * @return true if all visitor invocations returned true, otherwise false
          */
-        bool visit(const file_stats& item_stats, const traverse_options topts, const path_visitor& visitor) noexcept;
+        bool visit(const file_stats& item_stats, const traverse_options topts, const path_visitor& visitor, std::vector<int>* dirfds=nullptr) noexcept;
 
         /**
          * Remove the given path. If path represents a director, `recursive` must be set to true.

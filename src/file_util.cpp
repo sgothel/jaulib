@@ -378,18 +378,19 @@ file_stats::file_stats() noexcept
 
 static constexpr bool jau_has_stat(const uint32_t mask, const uint32_t bit) { return bit == ( mask & bit ); }
 
-file_stats::file_stats(const ctor_cookie& cc, const int dirfd, const dir_item& item) noexcept
+file_stats::file_stats(const ctor_cookie& cc, const int dirfd, const dir_item& item, const bool dirfd_is_item_dirname) noexcept
 : has_fields_(field_t::none), item_(item), link_target_path_(), link_target_(), mode_(fmode_t::none),
   uid_(0), gid_(0), size_(0), btime_(), atime_(), ctime_(), mtime_(),
   errno_res_(0)
 {
     (void)cc;
-    const std::string path( item_.path() );
+    const std::string full_path( item_.path() );
+    const std::string& dirfd_path = dirfd_is_item_dirname ? item.basename() : full_path;
 
 if constexpr ( _use_statx ) {
     struct ::statx s;
     ::bzero(&s, sizeof(s));
-    int stat_res = ::statx(dirfd, path.c_str(),
+    int stat_res = ::statx(dirfd, dirfd_path.c_str(),
                            ( AT_NO_AUTOMOUNT | AT_SYMLINK_NOFOLLOW ),
                            ( STATX_BASIC_STATS | STATX_BTIME ), &s);
     if( 0 != stat_res ) {
@@ -476,7 +477,7 @@ if constexpr ( _use_statx ) {
                     link_target_ = std::make_shared<file_stats>();
                     goto errorout;
                 }
-                path_link_len = ::readlink(path.c_str(), buffer, path_link_max_len);
+                path_link_len = ::readlinkat(dirfd, dirfd_path.c_str(), buffer, path_link_max_len);
                 if( 0 > path_link_len ) {
                     errno_res_ = errno;
                     ::free(buffer);
@@ -491,10 +492,10 @@ if constexpr ( _use_statx ) {
                 // Initial symbolic followed: Test recursive loop-error
                 constexpr const bool _debug = false;
                 ::bzero(&s, sizeof(s));
-                stat_res = ::statx(dirfd, path.c_str(), AT_NO_AUTOMOUNT, STATX_BASIC_STATS, &s);
+                stat_res = ::statx(dirfd, dirfd_path.c_str(), AT_NO_AUTOMOUNT, STATX_BASIC_STATS, &s);
                 if( 0 != stat_res ) {
                     if constexpr ( _debug ) {
-                        jau::fprintf_td(stderr, "file_stats(%d): Test link ERROR: '%s', %d, errno %d (%s)\n", (int)cc.rec_level, path.c_str(), stat_res, errno, ::strerror(errno));
+                        jau::fprintf_td(stderr, "file_stats(%d): Test link ERROR: '%s', %d, errno %d (%s)\n", (int)cc.rec_level, full_path.c_str(), stat_res, errno, ::strerror(errno));
                     }
                     switch( errno ) {
                         case EACCES:
@@ -514,15 +515,13 @@ if constexpr ( _use_statx ) {
                     goto errorout;
                 }
                 if constexpr ( _debug ) {
-                    jau::fprintf_td(stderr, "file_stats(%d): Test link OK: '%s'\n", (int)cc.rec_level, path.c_str());
+                    jau::fprintf_td(stderr, "file_stats(%d): Test link OK: '%s'\n", (int)cc.rec_level, full_path.c_str());
                 }
             }
             if( 0 < link_path.size() && '/' == link_path[0] ) {
-                link_target_ = std::make_shared<file_stats>(ctor_cookie(cc.rec_level+1), dirfd, dir_item( link_path )); // absolute link_path
-            } else if( AT_FDCWD == dirfd ) {
-                link_target_ = std::make_shared<file_stats>(ctor_cookie(cc.rec_level+1), dirfd, dir_item( jau::fs::dirname(path) + _slash + link_path ));
+                link_target_ = std::make_shared<file_stats>(ctor_cookie(cc.rec_level+1), dirfd, dir_item( link_path ), false /* dirfd_is_item_dirname */); // absolute link_path
             } else {
-                link_target_ = std::make_shared<file_stats>(ctor_cookie(cc.rec_level+1), dirfd, dir_item( _dot, link_path ));
+                link_target_ = std::make_shared<file_stats>(ctor_cookie(cc.rec_level+1), dirfd, dir_item( jau::fs::dirname(full_path), link_path ), dirfd_is_item_dirname );
             }
             if( link_target_->is_file() ) {
                 mode_ |= fmode_t::file;
@@ -540,7 +539,7 @@ if constexpr ( _use_statx ) {
 } else { /* constexpr !_use_statx */
     struct ::stat64 s;
     ::bzero(&s, sizeof(s));
-    int stat_res = ::fstatat64(dirfd, path.c_str(), &s, AT_SYMLINK_NOFOLLOW); // lstat64 compatible
+    int stat_res = ::fstatat64(dirfd, dirfd_path.c_str(), &s, AT_SYMLINK_NOFOLLOW); // lstat64 compatible
     if( 0 != stat_res ) {
         switch( errno ) {
             case EACCES:
@@ -593,7 +592,7 @@ if constexpr ( _use_statx ) {
                     link_target_ = std::make_shared<file_stats>();
                     goto errorout;
                 }
-                path_link_len = ::readlink(path.c_str(), buffer, path_link_max_len);
+                path_link_len = ::readlinkat(dirfd, dirfd_path.c_str(), buffer, path_link_max_len);
                 if( 0 > path_link_len ) {
                     errno_res_ = errno;
                     ::free(buffer);
@@ -607,7 +606,7 @@ if constexpr ( _use_statx ) {
             if( 0 == cc.rec_level ) {
                 // Initial symbolic followed: Test recursive loop-error
                 ::bzero(&s, sizeof(s));
-                stat_res = ::fstatat64(dirfd, path.c_str(), &s, 0); // stat64 compatible
+                stat_res = ::fstatat64(dirfd, dirfd_path.c_str(), &s, 0); // stat64 compatible
                 if( 0 != stat_res ) {
                     switch( errno ) {
                         case EACCES:
@@ -628,11 +627,9 @@ if constexpr ( _use_statx ) {
                 }
             }
             if( 0 < link_path.size() && '/' == link_path[0] ) {
-                link_target_ = std::make_shared<file_stats>(ctor_cookie(cc.rec_level+1), dirfd, dir_item( link_path )); // absolute link_path
-            } else if( AT_FDCWD == dirfd ) {
-                link_target_ = std::make_shared<file_stats>(ctor_cookie(cc.rec_level+1), dirfd, dir_item( jau::fs::dirname(path) + _slash + link_path ));
+                link_target_ = std::make_shared<file_stats>(ctor_cookie(cc.rec_level+1), dirfd, dir_item( link_path ), false /* dirfd_is_item_dirname */); // absolute link_path
             } else {
-                link_target_ = std::make_shared<file_stats>(ctor_cookie(cc.rec_level+1), dirfd, dir_item( _dot, link_path ));
+                link_target_ = std::make_shared<file_stats>(ctor_cookie(cc.rec_level+1), dirfd, dir_item( jau::fs::dirname(full_path), link_path ), dirfd_is_item_dirname );
             }
             if( link_target_->is_file() ) {
                 mode_ |= fmode_t::file;
@@ -653,19 +650,19 @@ if constexpr ( _use_statx ) {
 }
 
 file_stats::file_stats(const dir_item& item) noexcept
-: file_stats(ctor_cookie(0), AT_FDCWD, item)
+: file_stats(ctor_cookie(0), AT_FDCWD, item, false /* dirfd_is_item_dirname */)
 {}
 
-file_stats::file_stats(const int dirfd, const dir_item& item) noexcept
-: file_stats(ctor_cookie(0), dirfd, item)
+file_stats::file_stats(const int dirfd, const dir_item& item, const bool dirfd_is_item_dirname) noexcept
+: file_stats(ctor_cookie(0), dirfd, item, dirfd_is_item_dirname)
 {}
 
 file_stats::file_stats(const std::string& _path) noexcept
-: file_stats(ctor_cookie(0), AT_FDCWD, dir_item(_path))
+: file_stats(ctor_cookie(0), AT_FDCWD, dir_item(_path), false /* dirfd_is_item_dirname */)
 {}
 
 file_stats::file_stats(const int dirfd, const std::string& _path) noexcept
-: file_stats(ctor_cookie(0), dirfd, dir_item(_path))
+: file_stats(ctor_cookie(0), dirfd, dir_item(_path), false /* dirfd_is_item_dirname */)
 {}
 
 const file_stats* file_stats::final_target(size_t* link_count) const noexcept {
@@ -828,6 +825,28 @@ bool jau::fs::get_dir_content(const std::string& path, const consume_dir_item& d
     }
 }
 
+bool jau::fs::get_dir_content(const int dirfd, const std::string& path, const consume_dir_item& digest) noexcept {
+    DIR *dir;
+    struct dirent *ent;
+    int dirfd2 = ::dup(dirfd);
+    if( 0 > dirfd2 ) {
+        ERR_PRINT("Couldn't duplicate given dirfd %d for path '%s'", dirfd, path.c_str());
+        return false;
+    }
+    if( ( dir = ::fdopendir( dirfd2 ) ) != nullptr ) {
+        while ( ( ent = ::readdir( dir ) ) != NULL ) {
+            std::string fname( ent->d_name );
+            if( _dot != fname && _dotdot != fname ) { // avoid '.' and '..'
+                digest( dir_item( path, fname ) );
+            }
+        }
+        ::closedir (dir);
+        return true;
+    } else {
+        return false;
+    }
+}
+
 #define TRAVERSEEVENT_ENUM(X,M) \
     X(traverse_event,symlink,M) \
     X(traverse_event,file,M) \
@@ -858,7 +877,7 @@ std::string jau::fs::to_string(const traverse_options mask) noexcept {
     return out;
 }
 
-bool jau::fs::visit(const file_stats& item_stats, const traverse_options topts, const path_visitor& visitor) noexcept {
+static bool _visit(const file_stats& item_stats, const traverse_options topts, const path_visitor& visitor, std::vector<int>& dirfds) noexcept {
     if( item_stats.is_dir() ) {
         if( item_stats.is_link() && !is_set(topts, traverse_options::follow_symlinks) ) {
             return visitor( traverse_event::dir_symlink, item_stats );
@@ -866,6 +885,18 @@ bool jau::fs::visit(const file_stats& item_stats, const traverse_options topts, 
         if( !is_set(topts, traverse_options::recursive) ) {
             return visitor( traverse_event::dir_non_recursive, item_stats );
         }
+        if( dirfds.size() < 1 ) {
+            ERR_PRINT("dirfd stack error: count %zu] @ %s", dirfds.size(), item_stats.to_string().c_str());
+            return false;
+        }
+        const int parent_dirfd = dirfds.back();
+        const int this_dirfd = ::openat64(parent_dirfd, item_stats.item().basename().c_str(), _open_dir_flags);
+        if ( 0 > this_dirfd ) {
+            ERR_PRINT("entered path dir couldn't be opened, source %s", item_stats.to_string().c_str());
+            return false;
+        }
+        dirfds.push_back(this_dirfd);
+
         if( is_set(topts, traverse_options::dir_entry) ) {
             if( !visitor( traverse_event::dir_entry, item_stats ) ) {
                 return false;
@@ -876,15 +907,15 @@ bool jau::fs::visit(const file_stats& item_stats, const traverse_options topts, 
                 ( void(*)(std::vector<dir_item>*, const dir_item&) ) /* help template type deduction of function-ptr */
                     ( [](std::vector<dir_item>* receiver, const dir_item& item) -> void { receiver->push_back( item ); } )
             );
-        if( get_dir_content(item_stats.path(), cs) && content.size() > 0 ) {
+        if( get_dir_content(this_dirfd, item_stats.path(), cs) && content.size() > 0 ) {
             for (const dir_item& element : content) {
-                const file_stats element_stats( element );
+                const file_stats element_stats( this_dirfd, element, true /* dirfd_is_item_dirname */ );
                 if( element_stats.is_dir() ) { // an OK dir
                     if( element_stats.is_link() && !is_set(topts, traverse_options::follow_symlinks) ) {
                         if( !visitor( traverse_event::dir_symlink, element_stats ) ) {
                             return false;
                         }
-                    } else if( !visit(element_stats, topts, visitor) ) { // recursive
+                    } else if( !_visit(element_stats, topts, visitor, dirfds) ) { // recursive
                         return false;
                     }
                 } else if( !visitor( ( element_stats.is_file() ? traverse_event::file : traverse_event::none ) |
@@ -895,20 +926,61 @@ bool jau::fs::visit(const file_stats& item_stats, const traverse_options topts, 
                 }
             }
         }
-    }
-    if( item_stats.is_dir() && is_set(topts, traverse_options::dir_exit) ) {
-        return visitor( traverse_event::dir_exit, item_stats );
-    } else if( item_stats.is_file() || !item_stats.ok() ) { // file or error-alike
+        if( dirfds.size() < 2 ) {
+            ERR_PRINT("dirfd stack error: count %zu] @ %s", dirfds.size(), item_stats.to_string().c_str());
+            return false;
+        }
+        bool res = true;
+        if( is_set(topts, traverse_options::dir_exit) ) {
+            res = visitor( traverse_event::dir_exit, item_stats );
+        }
+        ::close(this_dirfd);
+        dirfds.pop_back();
+        return res;
+    } // endif item_stats.is_dir()
+    else if( item_stats.is_file() || !item_stats.ok() ) { // file or error-alike
         return visitor( ( item_stats.is_file() ? traverse_event::file : traverse_event::none ) |
                         ( item_stats.is_link() ? traverse_event::symlink : traverse_event::none),
                         item_stats );
-    } else {
-        return true;
     }
+    return true;
 }
 
-bool jau::fs::visit(const std::string& path, const traverse_options topts, const path_visitor& visitor) noexcept {
-    return jau::fs::visit(file_stats(path), topts, visitor);
+bool jau::fs::visit(const file_stats& item_stats, const traverse_options topts, const path_visitor& visitor, std::vector<int>* dirfds) noexcept {
+    const bool user_dirfds = nullptr != dirfds;
+    if( !user_dirfds ) {
+        dirfds = new std::vector<int>();
+    }
+    if( 0 != dirfds->size() ) {
+        ERR_PRINT("dirfd stack error: count %zu] @ %s", dirfds->size(), item_stats.to_string().c_str());
+        return false;
+    }
+    // initial parent directory dirfd of initial item_stats (a directory)
+    const int dirfd = ::openat64(AT_FDCWD, item_stats.item().dirname().c_str(), _open_dir_flags);
+    if ( 0 > dirfd ) {
+        ERR_PRINT("path dirname couldn't be opened, source %s", item_stats.to_string().c_str());
+        return false;
+    }
+    dirfds->push_back(dirfd);
+
+    bool res = _visit(item_stats, topts, visitor, *dirfds);
+
+    if( dirfds->size() != 1 && res ) {
+        ERR_PRINT("dirfd stack error: count %zu", dirfds->size());
+        res = false;
+    }
+    while( !dirfds->empty() ) {
+        ::close(dirfds->back());
+        dirfds->pop_back();
+    }
+    if( !user_dirfds ) {
+        delete dirfds;
+    }
+    return res;
+}
+
+bool jau::fs::visit(const std::string& path, const traverse_options topts, const path_visitor& visitor, std::vector<int>* dirfds) noexcept {
+    return jau::fs::visit(file_stats(path), topts, visitor, dirfds);
 }
 
 bool jau::fs::remove(const std::string& path, const traverse_options topts) noexcept {
@@ -934,15 +1006,7 @@ bool jau::fs::remove(const std::string& path, const traverse_options topts) noex
         traverse_options topts;
         std::vector<int> dirfds;
     };
-    remove_context_t ctx = { topts, std::vector<int>() };
-    {
-        const int dirfd = ::openat64(AT_FDCWD, path_stats.item().dirname().c_str(), _open_dir_flags);
-        if ( 0 > dirfd ) {
-            ERR_PRINT("path dirname couldn't be opened, source %s", path_stats.to_string().c_str());
-            return false;
-        }
-        ctx.dirfds.push_back(dirfd);
-    }
+    remove_context_t ctx = { topts | jau::fs::traverse_options::dir_exit, std::vector<int>() };
 
     const path_visitor pv = jau::bindCaptureRefFunc<bool, remove_context_t, traverse_event, const file_stats&>(&ctx,
             ( bool(*)(remove_context_t*, traverse_event, const file_stats&) ) /* help template type deduction of function-ptr */
@@ -955,24 +1019,11 @@ bool jau::fs::remove(const std::string& path, const traverse_options topts) noex
                         }
                         return false;
                     }
-                    if( ctx_ptr->dirfds.size() < 1 ) {
-                        ERR_PRINT("dirfd stack error: count %zu] @ %s", ctx_ptr->dirfds.size(), element_stats.to_string().c_str());
-                        return false;
-                    }
                     const int dirfd = ctx_ptr->dirfds.back();
                     const std::string& basename_ = element_stats.item().basename();
                     if( is_set(tevt, traverse_event::dir_entry) ) {
-                        const int new_dirfd = ::openat64(dirfd, basename_.c_str(), _open_dir_flags);
-                        if ( 0 > new_dirfd ) {
-                            ERR_PRINT("entered path dir couldn't be opened, source %s", element_stats.to_string().c_str());
-                            return false;
-                        }
-                        ctx_ptr->dirfds.push_back(new_dirfd);
+                        // NOP
                     } else if( is_set(tevt, traverse_event::dir_exit) ) {
-                        if( ctx_ptr->dirfds.size() < 2 ) {
-                            ERR_PRINT("dirfd stack error: count %zu] @ %s", ctx_ptr->dirfds.size(), element_stats.to_string().c_str());
-                            return false;
-                        }
                         const int dirfd2 = *( ctx_ptr->dirfds.end() - 2 );
                         const int res = ::unlinkat( dirfd2, basename_.c_str(), AT_REMOVEDIR );
                         if( 0 != res ) {
@@ -982,8 +1033,6 @@ bool jau::fs::remove(const std::string& path, const traverse_options topts) noex
                         if( is_set(ctx_ptr->topts, traverse_options::verbose) ) {
                             jau::fprintf_td(stderr, "remove: %s removed\n", element_stats.to_string().c_str());
                         }
-                        ::close(dirfd);
-                        ctx_ptr->dirfds.pop_back();
                     } else if( is_set(tevt, traverse_event::file) || is_set(tevt, traverse_event::symlink) || is_set(tevt, traverse_event::dir_symlink) ) {
                         const int res = ::unlinkat( dirfd, basename_.c_str(), 0 );
                         if( 0 != res ) {
@@ -996,17 +1045,7 @@ bool jau::fs::remove(const std::string& path, const traverse_options topts) noex
                     }
                     return true;
                   } ) );
-    bool res = jau::fs::visit(path_stats,
-                              topts | jau::fs::traverse_options::dir_entry | jau::fs::traverse_options::dir_exit, pv);
-    if( ctx.dirfds.size() != 1 ) {
-        ERR_PRINT("dirfd stack error: count %zu", ctx.dirfds.size());
-        res = false;
-    }
-    while( !ctx.dirfds.empty() ) {
-        ::close(ctx.dirfds.back());
-        ctx.dirfds.pop_back();
-    }
-    return res;
+    return jau::fs::visit(path_stats, ctx.topts, pv, &ctx.dirfds);
 }
 
 bool jau::fs::compare(const std::string& source1, const std::string& source2, const bool verbose) noexcept {
@@ -1533,20 +1572,12 @@ bool jau::fs::copy(const std::string& source_path, const std::string& target_pat
         }
         return false;
     }
-    {
-        const int src_dirfd = ::openat64(AT_FDCWD, source_stats.item().dirname().c_str(), _open_dir_flags);
-        if ( 0 > src_dirfd ) {
-            ERR_PRINT("source_path dirname couldn't be opened, source %s", source_stats.to_string().c_str());
-            return false;
-        }
-        ctx.src_dirfds.push_back(src_dirfd);
-    }
+    // src_dirfd of 'source_stats.item().dirname().c_str()' will be pushed by visit() itself
     if( target_stats.is_dir() ) {
         // Case: If dest_path exists as a directory, source_path dir will be copied below the dest_path directory.
         const int dst_dirfd = ::openat64(AT_FDCWD, target_stats.path().c_str(), _open_dir_flags);
         if ( 0 > dst_dirfd ) {
             ERR_PRINT("target dir couldn't be opened, target %s", target_stats.to_string().c_str());
-            ::close(ctx.src_dirfds.back());
             return false;
         }
         ctx.dst_dirfds.push_back(dst_dirfd);
@@ -1558,14 +1589,12 @@ bool jau::fs::copy(const std::string& source_path, const std::string& target_pat
                 jau::fprintf_td(stderr, "copy: Error: target parent is not an existing directory, target %s, target_parent %s\n",
                         target_stats.to_string().c_str(), target_parent_stats.to_string().c_str());
             }
-            ::close(ctx.src_dirfds.back());
             return false;
         }
         const int dst_dirfd = ::openat64(AT_FDCWD, target_parent_stats.path().c_str(), _open_dir_flags);
         if ( 0 > dst_dirfd ) {
             ERR_PRINT("target dirname couldn't be opened, target %s, target_parent %s",
                     target_stats.to_string().c_str(), target_parent_stats.to_string().c_str());
-            ::close(ctx.src_dirfds.back());
             return false;
         }
         ctx.dst_dirfds.push_back(dst_dirfd);
@@ -1584,9 +1613,7 @@ bool jau::fs::copy(const std::string& source_path, const std::string& target_pat
                         }
                         return false;
                     }
-                    if( ctx_ptr->src_dirfds.size() < 1 || ctx_ptr->dst_dirfds.size() < 1 ||
-                        ctx_ptr->src_dirfds.size() != ctx_ptr->dst_dirfds.size() - ctx_ptr->skip_dst_dir_mkdir )
-                    {
+                    if( ctx_ptr->dst_dirfds.size() < 1 ) {
                         ERR_PRINT("dirfd stack error: count[src %zu, dst %zu, dst_skip %d] @ %s",
                                 ctx_ptr->src_dirfds.size(), ctx_ptr->dst_dirfds.size(), ctx_ptr->skip_dst_dir_mkdir, element_stats.to_string().c_str());
                         return false;
@@ -1595,13 +1622,6 @@ bool jau::fs::copy(const std::string& source_path, const std::string& target_pat
                     const int dst_dirfd = ctx_ptr->dst_dirfds.back();
                     const std::string& basename_ = element_stats.item().basename();
                     if( is_set(tevt, traverse_event::dir_entry) ) {
-                        const int new_src_dirfd = ::openat64(src_dirfd, basename_.c_str(), _open_dir_flags);
-                        if ( 0 > new_src_dirfd ) {
-                            ERR_PRINT("entered source_path dir couldn't be opened, source %s", element_stats.to_string().c_str());
-                            return false;
-                        }
-                        ctx_ptr->src_dirfds.push_back(new_src_dirfd);
-
                         if( 0 < ctx_ptr->skip_dst_dir_mkdir ) {
                             --ctx_ptr->skip_dst_dir_mkdir;
                         } else {
@@ -1611,7 +1631,7 @@ bool jau::fs::copy(const std::string& source_path, const std::string& target_pat
                             }
                         }
                     } else if( is_set(tevt, traverse_event::dir_exit) ) {
-                        if( ctx_ptr->src_dirfds.size() < 2 || ctx_ptr->dst_dirfds.size() < 2 ) {
+                        if( ctx_ptr->dst_dirfds.size() < 2 ) {
                             ERR_PRINT("dirfd stack error: count[src %zu, dst %zu] @ %s",
                                     ctx_ptr->src_dirfds.size(), ctx_ptr->dst_dirfds.size(), element_stats.to_string().c_str());
                             return false;
@@ -1620,9 +1640,7 @@ bool jau::fs::copy(const std::string& source_path, const std::string& target_pat
                             return false;
                         }
                         ::close(dst_dirfd);
-                        ::close(src_dirfd);
                         ctx_ptr->dst_dirfds.pop_back();
-                        ctx_ptr->src_dirfds.pop_back();
                     } else if( is_set(tevt, traverse_event::file) || is_set(tevt, traverse_event::symlink) || is_set(tevt, traverse_event::dir_symlink) ) {
                         if( !copy_file(src_dirfd, element_stats, dst_dirfd, basename_, ctx_ptr->copts) ) {
                             return false;
@@ -1630,18 +1648,10 @@ bool jau::fs::copy(const std::string& source_path, const std::string& target_pat
                     }
                     return true;
                   } ) );
-    bool res = jau::fs::visit(source_stats, topts, pv);
-    if( ctx.src_dirfds.size() != 1 || ctx.src_dirfds.size() != ctx.dst_dirfds.size() ) {
-        ERR_PRINT("dirfd stack error: count[src %zu, dst %zu]", ctx.src_dirfds.size(), ctx.dst_dirfds.size());
-        res = false;
-    }
+    bool res = jau::fs::visit(source_stats, topts, pv, &ctx.src_dirfds);
     while( !ctx.dst_dirfds.empty() ) {
         ::close(ctx.dst_dirfds.back());
         ctx.dst_dirfds.pop_back();
-    }
-    while( !ctx.src_dirfds.empty() ) {
-        ::close(ctx.src_dirfds.back());
-        ctx.src_dirfds.pop_back();
     }
     return res;
 }
