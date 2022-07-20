@@ -1198,7 +1198,14 @@ static bool copy_file(const int src_dirfd, const file_stats& src_stats,
         // symlink
         const int res = ::symlinkat(link_target_path->c_str(), dst_dirfd, dst_basename.c_str());
         if( 0 > res ) {
-            ERR_PRINT("Creating symlink failed %s -> %s", dst_basename.c_str(), link_target_path->c_str());
+            if( EPERM == errno && is_set(copts, copy_options::ignore_symlink_errors ) ) {
+                if( is_set(copts, copy_options::verbose) ) {
+                    jau::fprintf_td(stderr, "copy: Ignored: Failed to create symink %s -> %s, %s, errno %d, %s\n",
+                            dst_basename.c_str(), link_target_path->c_str(), src_stats.to_string().c_str(), errno, ::strerror(errno));
+                }
+                return true;
+            }
+            ERR_PRINT("Creating symlink failed %s -> %s, %s", dst_basename.c_str(), link_target_path->c_str(), src_stats.to_string().c_str());
             return false;
         }
         if( is_set(copts, copy_options::preserve_all) ) {

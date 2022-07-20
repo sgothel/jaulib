@@ -44,9 +44,12 @@ public class CopyOptions {
         follow_symlinks ( (short)( 1 << 1 ) ),
 
         /**
-         * Ignore errors from erroneous symlinks, i.e. non-existing link-targets or recursive loop-errors.
+         * Ignore errors from erroneous symlinks, e.g. non-existing link-targets, recursive loop-errors.or unsupported symmlinks on target filesystem.
          *
-         * This flag is required to copy erroneous symlinks using follow_symlinks, otherwise not.
+         * This flag is required to
+         * - copy erroneous non-existing symlinks if using follow_symlinks
+         * - copy erroneous recursive loop-error symlinks if using follow_symlinks
+         * - ignore symlinks if not supported by target filesystem if not using follow_symlinks
          */
         ignore_symlink_errors ( (short)( 1 << 8 ) ),
 
