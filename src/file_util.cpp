@@ -705,7 +705,7 @@ bool file_stats::operator ==(const file_stats& rhs) const noexcept {
            );
 }
 
-std::string file_stats::to_string(const bool use_space) const noexcept {
+std::string file_stats::to_string() const noexcept {
     std::string stored_path, link_detail;
     {
         if( nullptr != link_target_path_ ) {
@@ -731,16 +731,16 @@ std::string file_stats::to_string(const bool use_space) const noexcept {
             res.append( ", size " ).append( jau::to_decstring( size_ ) );
         }
         if( has( field_t::btime ) ) {
-            res.append( ", btime " ).append( btime_.to_iso8601_string(use_space) );
+            res.append( ", btime " ).append( btime_.to_iso8601_string() );
         }
         if( has( field_t::atime ) ) {
-            res.append( ", atime " ).append( atime_.to_iso8601_string(use_space) );
+            res.append( ", atime " ).append( atime_.to_iso8601_string() );
         }
         if( has( field_t::ctime ) ) {
-            res.append( ", ctime " ).append( ctime_.to_iso8601_string(use_space) );
+            res.append( ", ctime " ).append( ctime_.to_iso8601_string() );
         }
         if( has( field_t::mtime ) ) {
-            res.append( ", mtime " ).append( mtime_.to_iso8601_string(use_space) );
+            res.append( ", mtime " ).append( mtime_.to_iso8601_string() );
         }
         // res.append( ", fields ").append( jau::fs::to_string( has_fields_ ) );
     } else {

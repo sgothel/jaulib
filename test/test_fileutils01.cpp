@@ -725,7 +725,7 @@ class TestFileUtil01 : TestFileUtilBase {
         jau::fs::remove(root, jau::fs::traverse_options::recursive); // start fresh
         {
             jau::fs::file_stats root_stats(root);
-            INFO_STR("root_stats.pre: "+root_stats.to_string(true)+"\n");
+            INFO_STR("root_stats.pre: "+root_stats.to_string()+"\n");
             REQUIRE( !root_stats.exists() );
             REQUIRE( root_stats.has_access() );
             REQUIRE( !root_stats.is_dir() );
@@ -735,7 +735,7 @@ class TestFileUtil01 : TestFileUtilBase {
         REQUIRE( true == jau::fs::mkdir(root, jau::fs::fmode_t::def_dir_prot) );
         {
             jau::fs::file_stats root_stats(root);
-            INFO_STR("root_stats.post: "+root_stats.to_string(true)+"\n");
+            INFO_STR("root_stats.post: "+root_stats.to_string()+"\n");
             REQUIRE( root_stats.exists() );
             REQUIRE( root_stats.has_access() );
             REQUIRE( root_stats.is_dir() );
@@ -755,7 +755,7 @@ class TestFileUtil01 : TestFileUtilBase {
         REQUIRE( true == jau::fs::mkdir(root, jau::fs::fmode_t::def_dir_prot) );
         {
             jau::fs::file_stats root_stats(root);
-            jau::fprintf_td(stderr, "root_stats1.post: %s\n", root_stats.to_string(true).c_str());
+            jau::fprintf_td(stderr, "root_stats1.post: %s\n", root_stats.to_string().c_str());
             REQUIRE( root_stats.exists() );
             REQUIRE( root_stats.has_access() );
             REQUIRE( root_stats.is_dir() );
@@ -767,18 +767,18 @@ class TestFileUtil01 : TestFileUtilBase {
         {
             const jau::fraction_timespec now = jau::getWallClockTime();
             jau::fs::file_stats file_stats(file_01);
-            jau::fprintf_td(stderr, "file_stats2.post: %s\n", file_stats.to_string(true).c_str());
+            jau::fprintf_td(stderr, "file_stats2.post: %s\n", file_stats.to_string().c_str());
             const jau::fraction_timespec btime = file_stats.btime();
             const jau::fraction_timespec atime = file_stats.atime();
             const jau::fraction_timespec atime_td = jau::abs(now - atime);
             const jau::fraction_timespec mtime = file_stats.mtime();
             const jau::fraction_timespec mtime_td = jau::abs(now - mtime);
-            jau::fprintf_td(stderr, "now:   %s, %s\n", now.to_iso8601_string(true).c_str(), now.to_string().c_str());
-            jau::fprintf_td(stderr, "btime: %s, %s\n", btime.to_iso8601_string(true).c_str(), btime.to_string().c_str());
+            jau::fprintf_td(stderr, "now:   %s, %s\n", now.to_iso8601_string().c_str(), now.to_string().c_str());
+            jau::fprintf_td(stderr, "btime: %s, %s\n", btime.to_iso8601_string().c_str(), btime.to_string().c_str());
             jau::fprintf_td(stderr, "atime: %s, %s, td_now %s\n",
-                    atime.to_iso8601_string(true).c_str(), atime.to_string().c_str(), atime_td.to_string().c_str());
+                    atime.to_iso8601_string().c_str(), atime.to_string().c_str(), atime_td.to_string().c_str());
             jau::fprintf_td(stderr, "mtime: %s, %s, td_now %s\n",
-                    mtime.to_iso8601_string(true).c_str(), mtime.to_string().c_str(), mtime_td.to_string().c_str());
+                    mtime.to_iso8601_string().c_str(), mtime.to_string().c_str(), mtime_td.to_string().c_str());
             REQUIRE( file_stats.exists() );
             REQUIRE( file_stats.has_access() );
             REQUIRE( !file_stats.is_dir() );
@@ -801,12 +801,12 @@ class TestFileUtil01 : TestFileUtilBase {
             const jau::fraction_timespec atime_td = jau::abs(now - atime_pre);
             const jau::fraction_timespec mtime_pre = file_stats_pre.mtime();
             const jau::fraction_timespec mtime_td = jau::abs(now - mtime_pre);
-            jau::fprintf_td(stderr, "now      : %s, %s\n", now.to_iso8601_string(true).c_str(), now.to_string().c_str());
-            jau::fprintf_td(stderr, "btime.pre: %s, %s\n", btime_pre.to_iso8601_string(true).c_str(), btime_pre.to_string().c_str());
+            jau::fprintf_td(stderr, "now      : %s, %s\n", now.to_iso8601_string().c_str(), now.to_string().c_str());
+            jau::fprintf_td(stderr, "btime.pre: %s, %s\n", btime_pre.to_iso8601_string().c_str(), btime_pre.to_string().c_str());
             jau::fprintf_td(stderr, "atime.pre: %s, %s, td_now %s\n",
-                    atime_pre.to_iso8601_string(true).c_str(), atime_pre.to_string().c_str(), atime_td.to_string().c_str());
+                    atime_pre.to_iso8601_string().c_str(), atime_pre.to_string().c_str(), atime_td.to_string().c_str());
             jau::fprintf_td(stderr, "mtime.pre: %s, %s, td_now %s\n",
-                    mtime_pre.to_iso8601_string(true).c_str(), mtime_pre.to_string().c_str(), mtime_td.to_string().c_str());
+                    mtime_pre.to_iso8601_string().c_str(), mtime_pre.to_string().c_str(), mtime_td.to_string().c_str());
             if( file_stats_pre.has( jau::fs::file_stats::field_t::atime ) ) {
                 REQUIRE( td_1s >= atime_td );
             }
@@ -817,15 +817,15 @@ class TestFileUtil01 : TestFileUtilBase {
             const jau::fraction_timespec ts_20200101( 1577836800_s + 0_h); // 2020-01-01 00:00:00
             const jau::fraction_timespec atime_set( ts_20200101 +  1_d + 10_h );
             const jau::fraction_timespec mtime_set( ts_20200101 + 31_d + 10_h );
-            INFO_STR("atime.set: "+atime_set.to_iso8601_string(true)+", "+atime_set.to_string()+"\n");
-            INFO_STR("mtime.set: "+mtime_set.to_iso8601_string(true)+", "+mtime_set.to_string()+"\n");
+            INFO_STR("atime.set: "+atime_set.to_iso8601_string()+", "+atime_set.to_string()+"\n");
+            INFO_STR("mtime.set: "+mtime_set.to_iso8601_string()+", "+mtime_set.to_string()+"\n");
             REQUIRE( true == jau::fs::touch(file_02, atime_set, mtime_set, jau::fs::fmode_t::def_file_prot) );
 
             jau::fs::file_stats file_stats_post(file_02);
             const jau::fraction_timespec atime_post = file_stats_post.atime();
             const jau::fraction_timespec mtime_post = file_stats_post.mtime();
-            INFO_STR("atime.post: "+atime_post.to_iso8601_string(true)+", "+atime_post.to_string()+"\n");
-            INFO_STR("mtime.post: "+mtime_post.to_iso8601_string(true)+", "+mtime_post.to_string()+"\n");
+            INFO_STR("atime.post: "+atime_post.to_iso8601_string()+", "+atime_post.to_string()+"\n");
+            INFO_STR("mtime.post: "+mtime_post.to_iso8601_string()+", "+mtime_post.to_string()+"\n");
             jau::fprintf_td(stderr, "test11_touch: 03: %s\n", file_stats_post.to_string().c_str());
             {
                 REQUIRE( file_stats_post.exists() );

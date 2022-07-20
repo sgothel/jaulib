@@ -540,9 +540,8 @@ namespace jau {
 
                 /**
                  * Returns a comprehensive string representation of this element
-                 * @param use_space if true, using space instead for 'T' separator and drop trailing UTC `Z` for readability, otherwise be compliant with ISO 8601 (default)
                  */
-                std::string to_string(const bool use_space=false) const noexcept;
+                std::string to_string() const noexcept;
         };
         constexpr uint32_t number(const file_stats::field_t rhs) noexcept {
             return static_cast<uint32_t>(rhs);

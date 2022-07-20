@@ -73,14 +73,26 @@ std::string fraction_timespec::to_string() const noexcept {
     return std::to_string(tv_sec) + "s + " + std::to_string(tv_nsec) + "ns";
 }
 
-std::string fraction_timespec::to_iso8601_string(const bool use_space) const noexcept {
+std::string fraction_timespec::to_iso8601_string() const noexcept {
     std::time_t t0 = static_cast<std::time_t>(tv_sec);
     struct std::tm tm_0;
     if( nullptr == ::gmtime_r( &t0, &tm_0 ) ) {
-        return use_space ? "1970-01-01 00:00:00" : "1970-01-01T00:00:00Z"; // 20 + 1
+        return "1970-01-01T00:00:00.0Z"; // 22 + 1
     } else {
-        char b[20+1];
-        strftime(b, sizeof(b), use_space ? "%Y-%m-%d %H:%M:%S" : "%Y-%m-%dT%H:%M:%SZ", &tm_0);
+        // 2022-05-28T23:23:50Z 20+1
+        //
+        // 1655994850s + 228978909ns
+        // 2022-06-23T14:34:10.228978909Z 30+1
+        char b[30+1];
+        size_t p = strftime(b, sizeof(b), "%Y-%m-%dT%H:%M:%S", &tm_0);
+        if( 0 < p && p < sizeof(b)-1 ) {
+            const size_t remaining = sizeof(b) - p;
+            if( 0 < tv_nsec ) {
+                snprintf(b+p, remaining, ".%09" PRIi64 "Z", tv_nsec);
+            } else {
+                snprintf(b+p, remaining, "Z");
+            }
+        }
         return std::string(b);
     }
 }

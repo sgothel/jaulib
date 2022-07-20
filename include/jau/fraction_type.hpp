@@ -992,14 +992,13 @@ namespace jau {
         std::string to_string() const noexcept;
 
         /**
-         * Convenience string conversion of `tv_sec` component interpreted as seconds since Unix Epoch in UTC
-         * to ISO 8601 `YYYY-mm-ddTHH:MM:SSZ`, e.g. '2020-05-18T02:26:21Z`.
+         * Convenience string conversion interpreted since Unix Epoch in UTC
+         * to ISO 8601 `YYYY-mm-ddTHH:MM:SS.ssZ`, e.g. '2022-06-23T14:34:10Z` or '2022-06-23T14:34:10.228978909Z`.
          *
-         * Implementation uses `strftime()` with format `%Y-%m-%dT%H:%M:%SZ`.
-         *
-         * @param use_space if true, using space instead for 'T' separator and drop trailing UTC `Z` for readability, otherwise be compliant with ISO 8601 (default)
+         * Implementation uses `strftime()` with format `%Y-%m-%dT%H:%M:%S`
+         * and adds 9 digits nanoseconds as fractions of seconds if not zero and the final `Z`.
          */
-        std::string to_iso8601_string(const bool use_space=false) const noexcept;
+        std::string to_iso8601_string() const noexcept;
     };
 
     inline std::string to_string(const fraction_timespec& v) noexcept { return v.to_string(); }

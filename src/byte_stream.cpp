@@ -297,14 +297,14 @@ ByteInStream_File::ByteInStream_File(const std::string& path, bool use_binary) n
         stats = std::make_unique<jau::fs::file_stats>(path);
     }
     if( !stats->exists() || !stats->has_access() ) {
-        DBG_PRINT("ByteInStream_File::ctor: Error, not an existing or accessible file in %s, %s", stats->to_string(true).c_str(), to_string().c_str());
+        DBG_PRINT("ByteInStream_File::ctor: Error, not an existing or accessible file in %s, %s", stats->to_string().c_str(), to_string().c_str());
     } else if( !stats->is_file() ) {
-        DBG_PRINT("ByteInStream_File::ctor: Error, not a file in %s, %s", stats->to_string(true).c_str(), to_string().c_str());
+        DBG_PRINT("ByteInStream_File::ctor: Error, not a file in %s, %s", stats->to_string().c_str(), to_string().c_str());
     } else {
         m_content_size = stats->size();
         m_source = std::make_unique<std::ifstream>(stats->path(), use_binary ? std::ios::binary : std::ios::in);
         if( error() ) {
-            DBG_PRINT("ByteInStream_File::ctor: Error occurred in %s, %s", stats->to_string(true).c_str(), to_string().c_str());
+            DBG_PRINT("ByteInStream_File::ctor: Error occurred in %s, %s", stats->to_string().c_str(), to_string().c_str());
             m_source = nullptr;
         }
     }
