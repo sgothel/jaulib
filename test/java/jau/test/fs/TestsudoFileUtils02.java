@@ -24,6 +24,7 @@
 
 package jau.test.fs;
 
+import org.jau.fs.CopyOptions;
 import org.jau.fs.FMode;
 import org.jau.fs.FileStats;
 import org.jau.fs.FileUtil;
@@ -63,9 +64,15 @@ public class TestsudoFileUtils02 extends FileUtilBaseTest {
             final long mctx = FileUtil.mount_image(image_stats.path(), mount_point, "squashfs", 0, "");
             Assert.assertTrue( 0 != mctx );
 
+            final CopyOptions copts = new CopyOptions();
+            copts.set(CopyOptions.Bit.recursive);
+            copts.set(CopyOptions.Bit.preserve_all);
+            copts.set(CopyOptions.Bit.sync);
+            copts.set(CopyOptions.Bit.verbose);
+
             final String root_copy = root+"_copy_test50";
             FileUtil.remove(root_copy, topts_rec);
-            testxx_copy_r_p("test50_mount_copy_r_p", new FileStats(mount_point), 1 /* source_added_dead_links */, root_copy);
+            testxx_copy_r_p("test50_mount_copy_r_p", new FileStats(mount_point), 1 /* source_added_dead_links */, root_copy, copts, false /* dest_is_vfat */);
             Assert.assertTrue( true == FileUtil.remove(root_copy, topts_rec) );
 
             final boolean umount_ok = FileUtil.umount(mctx);

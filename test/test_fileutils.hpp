@@ -140,6 +140,8 @@ class TestFileUtilBase {
     const std::string project_root1 = "../../test_data";
     // submodule location with jaulib directly hosted below main project
     const std::string project_root2 = "../../../jaulib/test_data";
-    // external filesystem to test ...
+    // external filesystem source to test ...
     const std::string project_root_ext = "/mnt/ssd0/data/test_data";
+    // external vfat filesystem destination to test ...
+    const std::string dest_fs_vfat = "/mnt/vfat";
 };

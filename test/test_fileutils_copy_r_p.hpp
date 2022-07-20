@@ -24,7 +24,12 @@
 
 #include "test_fileutils.hpp"
 
-void testxx_copy_r_p(const std::string& title, const jau::fs::file_stats& source, const int source_added_dead_links, const std::string& dest) {
+void testxx_copy_r_p(const std::string& title,
+                     const jau::fs::file_stats& source, const int source_added_dead_links,
+                     const std::string& dest,
+                     const jau::fs::copy_options copts,
+                     const bool dest_is_vfat)
+{
     REQUIRE( true == source.exists() );
     REQUIRE( true == source.is_dir() );
 
@@ -43,13 +48,14 @@ void testxx_copy_r_p(const std::string& title, const jau::fs::file_stats& source
             dest_root = dest;
         }
     }
-    jau::fprintf_td(stderr, "%s: source %s, dest[arg %s, is_parent %d, dest_root %s]\n",
-            title.c_str(), source.to_string().c_str(), dest.c_str(), dest_is_parent, dest_root.c_str());
+    jau::fprintf_td(stderr, "%s: source %s, dest[arg %s, is_parent %d, dest_root %s], copts %s, dest_is_vfat %d\n",
+            title.c_str(), source.to_string().c_str(),
+            dest.c_str(), dest_is_parent, dest_root.c_str(),
+            to_string(copts).c_str(), dest_is_vfat);
 
-    const jau::fs::copy_options copts = jau::fs::copy_options::recursive |
-                                        jau::fs::copy_options::preserve_all |
-                                        jau::fs::copy_options::sync |
-                                        jau::fs::copy_options::verbose;
+    const bool opt_follow_links = is_set(copts, jau::fs::copy_options::follow_symlinks );
+    const bool opt_drop_dest_links = !opt_follow_links && is_set(copts, jau::fs::copy_options::ignore_symlink_errors );
+
     REQUIRE( true == jau::fs::copy(source.path(), dest, copts) );
 
     jau::fs::file_stats dest_stats(dest_root);
@@ -91,16 +97,46 @@ void testxx_copy_r_p(const std::string& title, const jau::fs::file_stats& source
         REQUIRE(  3 == stats.dirs_real );
         REQUIRE(  1 == stats.dirs_sym_link );
 
-        REQUIRE(  7 == stats_copy.total_real );
-        REQUIRE(  9 == stats_copy.total_sym_links_existing );
-        REQUIRE(  5 == stats_copy.total_sym_links_not_existing ); // symlink ../README.txt + 4 dead_link*
-        REQUIRE(  0 == stats_copy.total_no_access );
-        REQUIRE(  5 == stats_copy.total_not_existing );           // symlink ../README.txt + 4 dead_link*
-        REQUIRE( 60 == stats_copy.total_file_bytes );
-        REQUIRE(  4 == stats_copy.files_real );
-        REQUIRE(  8 == stats_copy.files_sym_link );
-        REQUIRE(  3 == stats_copy.dirs_real );
-        REQUIRE(  1 == stats_copy.dirs_sym_link );
+        if( ( !opt_follow_links && !opt_drop_dest_links ) ||
+            ( opt_drop_dest_links && 0 < stats_copy.total_sym_links_existing )
+          )
+        {
+            // 1:1 exact copy
+            REQUIRE(  7 == stats_copy.total_real );
+            REQUIRE(  9 == stats_copy.total_sym_links_existing );
+            REQUIRE(  5 == stats_copy.total_sym_links_not_existing ); // symlink ../README.txt + 4 dead_link*
+            REQUIRE(  0 == stats_copy.total_no_access );
+            REQUIRE(  5 == stats_copy.total_not_existing );           // symlink ../README.txt + 4 dead_link*
+            REQUIRE( 60 == stats_copy.total_file_bytes );
+            REQUIRE(  4 == stats_copy.files_real );
+            REQUIRE(  8 == stats_copy.files_sym_link );
+            REQUIRE(  3 == stats_copy.dirs_real );
+            REQUIRE(  1 == stats_copy.dirs_sym_link );
+        } else if( opt_drop_dest_links ) {
+            // destination filesystem has no symlink support, i.e. vfat
+            REQUIRE(  7 == stats_copy.total_real );
+            REQUIRE(  0 == stats_copy.total_sym_links_existing );
+            REQUIRE(  0 == stats_copy.total_sym_links_not_existing ); // symlink ../README.txt + 4 dead_link*
+            REQUIRE(  0 == stats_copy.total_no_access );
+            REQUIRE(  0 == stats_copy.total_not_existing );           // symlink ../README.txt + 4 dead_link*
+            REQUIRE( 60 == stats_copy.total_file_bytes );
+            REQUIRE(  4 == stats_copy.files_real );
+            REQUIRE(  0 == stats_copy.files_sym_link );
+            REQUIRE(  3 == stats_copy.dirs_real );
+            REQUIRE(  0 == stats_copy.dirs_sym_link );
+        } else if( opt_follow_links ) {
+            // followed symlinks
+            REQUIRE( 20 == stats_copy.total_real );
+            REQUIRE(  0 == stats_copy.total_sym_links_existing );
+            REQUIRE(  0 == stats_copy.total_sym_links_not_existing );
+            REQUIRE(  0 == stats_copy.total_no_access );
+            REQUIRE(  0 == stats_copy.total_not_existing );
+            REQUIRE( 60 <  stats_copy.total_file_bytes );             // some followed symlink files are of unknown size, e.g. /etc/fstab
+            REQUIRE( 16 == stats_copy.files_real );
+            REQUIRE(  0 == stats_copy.files_sym_link );
+            REQUIRE(  4 == stats_copy.dirs_real );
+            REQUIRE(  0 == stats_copy.dirs_sym_link );
+        }
     }
     {
         // compare each file in detail O(n*n)
@@ -110,6 +146,8 @@ void testxx_copy_r_p(const std::string& title, const jau::fs::file_stats& source
                 std::string title;
                 std::string source_folder_path;
                 jau::fs::file_stats dest;
+                bool dest_is_vfat;
+                bool opt_drop_dest_links;
         };
         struct dest_visitor_params {
                 std::string title;
@@ -117,14 +155,15 @@ void testxx_copy_r_p(const std::string& title, const jau::fs::file_stats& source
                 std::string dest_folder_path;
                 std::string source_basename;
                 jau::fs::file_stats stats;
+                bool dest_is_vfat;
                 bool match;
         };
-        source_visitor_params svp { title, source.path(), dest_stats };
+        source_visitor_params svp { title, source.path(), dest_stats, dest_is_vfat, opt_drop_dest_links };
         const jau::fs::path_visitor pv1 = jau::bindCaptureRefFunc<bool, source_visitor_params, jau::fs::traverse_event, const jau::fs::file_stats&>(&svp,
                 ( bool(*)(source_visitor_params*, jau::fs::traverse_event, const jau::fs::file_stats&) ) /* help template type deduction of function-ptr */
                     ( [](source_visitor_params* _svp, jau::fs::traverse_event tevt1, const jau::fs::file_stats& element_stats1) -> bool {
                         (void)tevt1;
-                        dest_visitor_params dvp { _svp->title, _svp->source_folder_path, _svp->dest.path(), jau::fs::basename( element_stats1.path() ), element_stats1, false };
+                        dest_visitor_params dvp { _svp->title, _svp->source_folder_path, _svp->dest.path(), jau::fs::basename( element_stats1.path() ), element_stats1, _svp->dest_is_vfat, false };
                         const jau::fs::path_visitor pv2 = jau::bindCaptureRefFunc<bool, dest_visitor_params, jau::fs::traverse_event, const jau::fs::file_stats&>(&dvp,
                                 ( bool(*)(dest_visitor_params*, jau::fs::traverse_event, const jau::fs::file_stats&) ) /* help template type deduction of function-ptr */
                                     ( [](dest_visitor_params* _dvp, jau::fs::traverse_event tevt2, const jau::fs::file_stats& element_stats2) -> bool {
@@ -145,13 +184,38 @@ void testxx_copy_r_p(const std::string& title, const jau::fs::file_stats& source
 
                                                 bit_equal = true; // pretend
                                             } else {
-                                                attr_equal =
-                                                        element_stats2.mode() == _dvp->stats.mode() &&
-                                                        // element_stats2.atime() == _dvp->stats.atime() && // destination access-time may differ due to processing post copy
-                                                        element_stats2.mtime() == _dvp->stats.mtime() &&
-                                                        element_stats2.uid() == _dvp->stats.uid() &&
-                                                        element_stats2.gid() == _dvp->stats.gid() &&
-                                                        element_stats2.size() == _dvp->stats.size();
+                                                if( !_dvp->dest_is_vfat ) {
+                                                    // full attribute check
+                                                    attr_equal =
+                                                            element_stats2.mode() == _dvp->stats.mode() &&
+                                                            // element_stats2.atime() == _dvp->stats.atime() && // destination access-time may differ due to processing post copy
+                                                            element_stats2.mtime() == _dvp->stats.mtime() &&
+                                                            element_stats2.uid() == _dvp->stats.uid() &&
+                                                            element_stats2.gid() == _dvp->stats.gid() &&
+                                                            element_stats2.size() == _dvp->stats.size();
+                                                } else {
+                                                    // minimal vfat attribute check
+                                                    const jau::fraction_timespec td(5_s);
+
+                                                    attr_equal =
+                                                            // ( element_stats2.mode() & jau::fs::fmode_t::rwx_usr ) == ( _dvp->stats.mode() & jau::fs::fmode_t::rwx_usr ) &&
+                                                            // element_stats2.atime().tv_sec == _dvp->stats.atime().tv_sec && // destination access-time may differ due to processing post copy
+                                                            abs( element_stats2.mtime() - _dvp->stats.mtime() ) <= td &&
+                                                            element_stats2.uid() == _dvp->stats.uid() &&
+                                                            // element_stats2.gid() == _dvp->stats.gid() &&
+                                                            element_stats2.size() == _dvp->stats.size();
+                                                }
+                                                if( !attr_equal ) {
+                                                    jau::fprintf_td(stderr, "%s.check: '%s'\n  mode %s == %s\n  mtime %s == %s, d %s\n  uid %s == %s\n  gid %s == %s\n  size %s == %s\n",
+                                                            _dvp->title.c_str(), basename2.c_str(),
+                                                            jau::fs::to_string(element_stats2.mode()).c_str(), jau::fs::to_string(_dvp->stats.mode()).c_str(),
+                                                            // element_stats2.atime().to_string().c_str(), _dvp->stats.atime().to_string().c_str(),
+                                                            element_stats2.mtime().to_string().c_str(), _dvp->stats.mtime().to_string().c_str(),
+                                                            abs( element_stats2.mtime() - _dvp->stats.mtime() ).to_string().c_str(),
+                                                            std::to_string(element_stats2.uid()).c_str(), std::to_string(_dvp->stats.uid()).c_str(),
+                                                            std::to_string(element_stats2.gid()).c_str(), std::to_string(_dvp->stats.gid()).c_str(),
+                                                            jau::to_decstring(element_stats2.size()).c_str(), jau::to_decstring(_dvp->stats.size()).c_str() );
+                                                }
 
                                                 if( _dvp->stats.is_file() ) {
                                                     bit_equal = jau::fs::compare(_dvp->stats, element_stats2, true);
@@ -170,10 +234,12 @@ void testxx_copy_r_p(const std::string& title, const jau::fs::file_stats& source
                                         }
                                       } ) );
                         if( jau::fs::visit(_svp->dest, topts, pv2) ) {
-                            jau::fprintf_td(stderr, "%s.check: '%s', not found!\n\t source %s\n\n",
-                                    _svp->title.c_str(), dvp.source_basename.c_str(),
+                            // not found
+                            const bool ignore = element_stats1.is_link() && _svp->opt_drop_dest_links;
+                            jau::fprintf_td(stderr, "%s.check: %s: '%s', not found!\n\t source %s\n\n",
+                                    _svp->title.c_str(), ignore ? "Ignored" : "Error", dvp.source_basename.c_str(),
                                     element_stats1.to_string().c_str());
-                            return false; // not found, abort
+                            return ignore;
                         } else {
                             // found
                             if( dvp.match ) {

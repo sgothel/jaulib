@@ -1199,9 +1199,15 @@ public class TestFileUtils01 extends FileUtilBaseTest {
         Assert.assertTrue( true == root_orig_stats.exists() );
         Assert.assertTrue( true == root_orig_stats.is_dir() );
 
+        final CopyOptions copts = new CopyOptions();
+        copts.set(CopyOptions.Bit.recursive);
+        copts.set(CopyOptions.Bit.preserve_all);
+        copts.set(CopyOptions.Bit.sync);
+        copts.set(CopyOptions.Bit.verbose);
+
         final String root_copy = root+"_copy_test40";
         FileUtil.remove(root_copy, topts_rec);
-        testxx_copy_r_p("test40_copy_ext_r_p", root_orig_stats, 0 /* source_added_dead_links */, root_copy);
+        testxx_copy_r_p("test40_copy_ext_r_p", root_orig_stats, 0 /* source_added_dead_links */, root_copy, copts, false /* dest_is_vfat */);
         Assert.assertTrue( true == FileUtil.remove(root_copy, topts_rec) );
     }
 
@@ -1217,17 +1223,61 @@ public class TestFileUtils01 extends FileUtilBaseTest {
         Assert.assertTrue( true == root_orig_stats.exists() );
         Assert.assertTrue( true == root_orig_stats.is_dir() );
 
+        final CopyOptions copts = new CopyOptions();
+        copts.set(CopyOptions.Bit.recursive);
+        copts.set(CopyOptions.Bit.preserve_all);
+        copts.set(CopyOptions.Bit.sync);
+        copts.set(CopyOptions.Bit.verbose);
+
         final String root_copy_parent = root+"_copy_test41_parent";
         FileUtil.remove(root_copy_parent, topts_rec);
         Assert.assertTrue( FileUtil.mkdir(root_copy_parent) );
-        testxx_copy_r_p("test41_copy_ext_r_p_below", root_orig_stats, 0 /* source_added_dead_links */, root_copy_parent);
+        testxx_copy_r_p("test41_copy_ext_r_p_below", root_orig_stats, 0 /* source_added_dead_links */, root_copy_parent, copts, false /* dest_is_vfat */);
         Assert.assertTrue( true == FileUtil.remove(root_copy_parent, topts_rec) );
     }
 
     @Test(timeout = 10000)
-    public void test42_copy_ext_r_p_fsl() {
+    public void test42_copy_ext_r_p_vfat() {
         PlatformRuntime.checkInitialized();
-        PrintUtil.println(System.err, "test42_copy_ext_r_p_fsl\n");
+        PrintUtil.println(System.err, "test42_copy_ext_r_p_vfat\n");
+
+        // Query and prepare vfat data sink
+        final FileStats dest_fs_vfat_stats = new FileStats(dest_fs_vfat);
+        if( !dest_fs_vfat_stats.is_dir() ) {
+            PrintUtil.fprintf_td(System.err, "test42_copy_ext_r_p_vfat: Skipped, no vfat dest-dir %s\n", dest_fs_vfat_stats);
+            return;
+        }
+        final String dest_vfat_parent = dest_fs_vfat+"/test42_data_sink";
+        FileUtil.remove(dest_vfat_parent, topts_rec);
+        if( !FileUtil.mkdir(dest_vfat_parent) ) {
+            PrintUtil.fprintf_td(System.err, "test42_copy_ext_r_p_vfat: Skipped, couldn't create vfat dest folder %s\n", dest_vfat_parent);
+            return;
+        }
+
+        // Source
+        FileStats root_orig_stats = new FileStats(project_root1);
+        if( !root_orig_stats.exists() ) {
+            root_orig_stats = new FileStats(project_root2);
+        }
+        Assert.assertTrue( true == root_orig_stats.exists() );
+        Assert.assertTrue( true == root_orig_stats.is_dir() );
+
+        final CopyOptions copts = new CopyOptions();
+        copts.set(CopyOptions.Bit.recursive);
+        copts.set(CopyOptions.Bit.preserve_all);
+        copts.set(CopyOptions.Bit.ignore_symlink_errors);
+        copts.set(CopyOptions.Bit.sync);
+        copts.set(CopyOptions.Bit.verbose);
+
+        final String dest_vfat_dir = dest_vfat_parent+"/"+root;
+        testxx_copy_r_p("test42_copy_ext_r_p_vfat", root_orig_stats, 0 /* source_added_dead_links */, dest_vfat_dir, copts, true /* dest_is_vfat */);
+        Assert.assertTrue( true == FileUtil.remove(dest_vfat_parent, topts_rec) );
+    }
+
+    @Test(timeout = 10000)
+    public void test50_copy_ext_r_p_fsl() {
+        PlatformRuntime.checkInitialized();
+        PrintUtil.println(System.err, "test50_copy_ext_r_p_fsl\n");
 
         FileStats root_orig_stats = new FileStats(project_root1);
         if( !root_orig_stats.exists() ) {
@@ -1236,7 +1286,7 @@ public class TestFileUtils01 extends FileUtilBaseTest {
         Assert.assertTrue( true == root_orig_stats.exists() );
         Assert.assertTrue( true == root_orig_stats.is_dir() );
 
-        final String root_copy = root+"_copy_test42";
+        final String root_copy = root+"_copy_test50";
         final CopyOptions copts = new CopyOptions();
         copts.set(CopyOptions.Bit.recursive);
         copts.set(CopyOptions.Bit.preserve_all);
@@ -1272,10 +1322,10 @@ public class TestFileUtils01 extends FileUtilBaseTest {
             Assert.assertTrue( true == FileUtil.visit(root_orig_stats, topts_orig, pv_orig) );
             Assert.assertTrue( true == FileUtil.visit(root_copy_stats, topts_copy, pv_copy) );
 
-            PrintUtil.fprintf_td(System.err, "test42_copy_ext_r_p_fsl: copy %s, traverse_orig %s, traverse_copy %s\n", copts, topts_orig, topts_copy);
+            PrintUtil.fprintf_td(System.err, "test50_copy_ext_r_p_fsl: copy %s, traverse_orig %s, traverse_copy %s\n", copts, topts_orig, topts_copy);
 
-            PrintUtil.fprintf_td(System.err, "test42_copy_ext_r_p_fsl: source      visitor stats\n%s\n", stats);
-            PrintUtil.fprintf_td(System.err, "test42_copy_ext_r_p_fsl: destination visitor stats\n%s\n", stats_copy);
+            PrintUtil.fprintf_td(System.err, "test50_copy_ext_r_p_fsl: source      visitor stats\n%s\n", stats);
+            PrintUtil.fprintf_td(System.err, "test50_copy_ext_r_p_fsl: destination visitor stats\n%s\n", stats_copy);
 
             Assert.assertTrue(  9 == stats.total_real );
             Assert.assertTrue( 11 == stats.total_sym_links_existing );
@@ -1300,7 +1350,7 @@ public class TestFileUtils01 extends FileUtilBaseTest {
             Assert.assertTrue(  0 == stats_copy.dirs_sym_link );
         }
 
-        final String root_copy_renamed = root+"_copy_test42_renamed";
+        final String root_copy_renamed = root+"_copy_test50_renamed";
         {
             Assert.assertTrue( true == FileUtil.rename(root_copy, root_copy_renamed) );
         }
@@ -1322,9 +1372,9 @@ public class TestFileUtils01 extends FileUtilBaseTest {
 
             Assert.assertTrue( true == FileUtil.visit(root_copy_renamed_stats, topts_copy, pv_copy) );
 
-            PrintUtil.fprintf_td(System.err, "test42_copy_ext_r_p_fsl: renamed: traverse_copy %s\n", topts_copy);
+            PrintUtil.fprintf_td(System.err, "test50_copy_ext_r_p_fsl: renamed: traverse_copy %s\n", topts_copy);
 
-            PrintUtil.fprintf_td(System.err, "test42_copy_ext_r_p_fsl: renamed: visitor stats\n%s\n", stats_copy);
+            PrintUtil.fprintf_td(System.err, "test50_copy_ext_r_p_fsl: renamed: visitor stats\n%s\n", stats_copy);
 
             Assert.assertTrue( 20 == stats_copy.total_real );
             Assert.assertTrue(  0 == stats_copy.total_sym_links_existing );

@@ -23,6 +23,8 @@
  */
 package jau.test.fs;
 
+import java.time.temporal.ChronoUnit;
+
 import org.jau.fs.CopyOptions;
 import org.jau.fs.FileStats;
 import org.jau.fs.FileUtil;
@@ -41,6 +43,8 @@ public class FileUtilBaseTest extends JunitTracer {
     public static final String project_root2 = "../../../../jaulib/test_data";
     // external filesystem to test ...
     public static final String project_root_ext = "/mnt/ssd0/data/test_data";
+    // external vfat filesystem destination to test ...
+    public static final String dest_fs_vfat = "/mnt/vfat";
 
     public static final TraverseOptions topts_none = new TraverseOptions();
     public static final TraverseOptions topts_rec = new TraverseOptions(TraverseOptions.Bit.recursive.value);
@@ -165,10 +169,15 @@ public class FileUtilBaseTest extends JunitTracer {
         public String title;
         public String source_folder_path;
         public FileStats dest;
-        public source_visitor_params(final String t, final String sfp, final FileStats d) {
+        public boolean dest_is_vfat;
+        public boolean opt_drop_dest_links;
+
+        public source_visitor_params(final String t, final String sfp, final FileStats d, final boolean dest_is_vfat_, final boolean opt_drop_dest_links_) {
             title = t;
             source_folder_path = sfp;
             dest = d;
+            dest_is_vfat = dest_is_vfat_;
+            opt_drop_dest_links = opt_drop_dest_links_;
         }
     };
 
@@ -178,18 +187,23 @@ public class FileUtilBaseTest extends JunitTracer {
         public String dest_folder_path;
         public String source_basename;
         public FileStats stats;
+        public boolean dest_is_vfat;
         public boolean match;
-        public dest_visitor_params(final String t, final String sfp, final String dfp, final String sb, final FileStats s) {
+        public dest_visitor_params(final String t, final String sfp, final String dfp, final String sb, final FileStats s, final boolean dest_is_vfat_) {
             title = t;
             source_folder_path = sfp;
             dest_folder_path = dfp;
             source_basename = sb;
             stats = s;
+            dest_is_vfat = dest_is_vfat_;
             match = false;
         }
     };
 
-    public void testxx_copy_r_p(final String title, final FileStats source, final int source_added_dead_links, final String dest) {
+    public void testxx_copy_r_p(final String title, final FileStats source, final int source_added_dead_links,
+                                final String dest,
+                                final CopyOptions copts,
+                                final boolean dest_is_vfat) {
         Assert.assertTrue( source.exists() );
         Assert.assertTrue( source.is_dir() );
 
@@ -208,14 +222,12 @@ public class FileUtilBaseTest extends JunitTracer {
                 dest_root = dest;
             }
         }
-        PrintUtil.fprintf_td(System.err, "%s: source %s, dest[arg %s, is_parent %b, dest_root %s]\n",
-                title, source, dest, dest_is_parent, dest_root);
+        PrintUtil.fprintf_td(System.err, "%s: source %s, dest[arg %s, is_parent %b, dest_root %s], copts %s, dest_is_vfat %b\n",
+                title, source, dest, dest_is_parent, dest_root, copts, dest_is_vfat);
 
-        final CopyOptions copts = new CopyOptions();
-        copts.set(CopyOptions.Bit.recursive);
-        copts.set(CopyOptions.Bit.preserve_all);
-        copts.set(CopyOptions.Bit.sync);
-        copts.set(CopyOptions.Bit.verbose);
+        final boolean opt_follow_links = copts.isSet(CopyOptions.Bit.follow_symlinks);
+        final boolean opt_drop_dest_links = !opt_follow_links && copts.isSet(CopyOptions.Bit.ignore_symlink_errors);
+
         Assert.assertTrue( true == FileUtil.copy(source.path(), dest, copts) );
 
         final FileStats dest_stats = new FileStats(dest_root);
@@ -252,16 +264,46 @@ public class FileUtilBaseTest extends JunitTracer {
             Assert.assertTrue(  3 == stats.dirs_real );
             Assert.assertTrue(  1 == stats.dirs_sym_link );
 
-            Assert.assertTrue(  7 == stats_copy.total_real );
-            Assert.assertTrue(  9 == stats_copy.total_sym_links_existing );
-            Assert.assertTrue(  5 == stats_copy.total_sym_links_not_existing ); // symlink ../README.txt + 4 dead_link*
-            Assert.assertTrue(  0 == stats_copy.total_no_access );
-            Assert.assertTrue(  5 == stats_copy.total_not_existing );           // symlink ../README.txt + 4 dead_link*
-            Assert.assertTrue( 60 == stats_copy.total_file_bytes );
-            Assert.assertTrue(  4 == stats_copy.files_real );
-            Assert.assertTrue(  8 == stats_copy.files_sym_link );
-            Assert.assertTrue(  3 == stats_copy.dirs_real );
-            Assert.assertTrue(  1 == stats_copy.dirs_sym_link );
+            if( ( !opt_follow_links && !opt_drop_dest_links ) ||
+                ( opt_drop_dest_links && 0 < stats_copy.total_sym_links_existing )
+              )
+            {
+                // 1:1 exact copy
+                Assert.assertTrue(  7 == stats_copy.total_real );
+                Assert.assertTrue(  9 == stats_copy.total_sym_links_existing );
+                Assert.assertTrue(  5 == stats_copy.total_sym_links_not_existing ); // symlink ../README.txt + 4 dead_link*
+                Assert.assertTrue(  0 == stats_copy.total_no_access );
+                Assert.assertTrue(  5 == stats_copy.total_not_existing );           // symlink ../README.txt + 4 dead_link*
+                Assert.assertTrue( 60 == stats_copy.total_file_bytes );
+                Assert.assertTrue(  4 == stats_copy.files_real );
+                Assert.assertTrue(  8 == stats_copy.files_sym_link );
+                Assert.assertTrue(  3 == stats_copy.dirs_real );
+                Assert.assertTrue(  1 == stats_copy.dirs_sym_link );
+            } else if( opt_drop_dest_links ) {
+                // destination filesystem has no symlink support, i.e. vfat
+                Assert.assertTrue(  7 == stats_copy.total_real );
+                Assert.assertTrue(  0 == stats_copy.total_sym_links_existing );
+                Assert.assertTrue(  0 == stats_copy.total_sym_links_not_existing ); // symlink ../README.txt + 4 dead_link*
+                Assert.assertTrue(  0 == stats_copy.total_no_access );
+                Assert.assertTrue(  0 == stats_copy.total_not_existing );           // symlink ../README.txt + 4 dead_link*
+                Assert.assertTrue( 60 == stats_copy.total_file_bytes );
+                Assert.assertTrue(  4 == stats_copy.files_real );
+                Assert.assertTrue(  0 == stats_copy.files_sym_link );
+                Assert.assertTrue(  3 == stats_copy.dirs_real );
+                Assert.assertTrue(  0 == stats_copy.dirs_sym_link );
+            } else if( opt_follow_links ) {
+                // followed symlinks
+                Assert.assertTrue( 20 == stats_copy.total_real );
+                Assert.assertTrue(  0 == stats_copy.total_sym_links_existing );
+                Assert.assertTrue(  0 == stats_copy.total_sym_links_not_existing ); // symlink ../README.txt + 4 dead_link*
+                Assert.assertTrue(  0 == stats_copy.total_no_access );
+                Assert.assertTrue(  0 == stats_copy.total_not_existing );           // symlink ../README.txt + 4 dead_link*
+                Assert.assertTrue( 60 <  stats_copy.total_file_bytes );
+                Assert.assertTrue( 16 == stats_copy.files_real );
+                Assert.assertTrue(  0 == stats_copy.files_sym_link );
+                Assert.assertTrue(  4 == stats_copy.dirs_real );
+                Assert.assertTrue(  0 == stats_copy.dirs_sym_link );
+            }
         }
         {
             // compare each file in detail O(n*n)
@@ -269,11 +311,11 @@ public class FileUtilBaseTest extends JunitTracer {
             topts.set(TraverseOptions.Bit.recursive);
             topts.set(TraverseOptions.Bit.dir_entry);
 
-            final source_visitor_params svp = new source_visitor_params(title, source.path(), dest_stats);
+            final source_visitor_params svp = new source_visitor_params(title, source.path(), dest_stats, dest_is_vfat, opt_drop_dest_links);
             final FileUtil.PathVisitor pv1 = new FileUtil.PathVisitor() {
                 @Override
                 public boolean visit(final TraverseEvent tevt1, final FileStats element_stats1) {
-                    final dest_visitor_params dvp = new dest_visitor_params(svp.title, svp.source_folder_path, svp.dest.path(), FileUtil.basename(element_stats1.path() ), element_stats1);
+                    final dest_visitor_params dvp = new dest_visitor_params(svp.title, svp.source_folder_path, svp.dest.path(), FileUtil.basename(element_stats1.path() ), element_stats1, svp.dest_is_vfat);
                     final FileUtil.PathVisitor pv2 = new FileUtil.PathVisitor() {
                         @Override
                         public boolean visit(final TraverseEvent tevt2, final FileStats element_stats2) {
@@ -293,14 +335,28 @@ public class FileUtilBaseTest extends JunitTracer {
 
                                     bit_equal = true; // pretend
                                 } else {
-                                    attr_equal =
-                                            element_stats2.mode().equals( dvp.stats.mode() ) &&
-                                            // element_stats2.atime().equals( dvp.stats.atime() ) && // destination access-time may differ due to processing post copy
-                                            element_stats2.mtime().equals( dvp.stats.mtime() ) &&
-                                            element_stats2.uid() == dvp.stats.uid() &&
-                                            element_stats2.gid() == dvp.stats.gid() &&
-                                            element_stats2.size() == dvp.stats.size();
+                                    if( !dvp.dest_is_vfat ) {
+                                        // full attribute check
+                                        attr_equal =
+                                                element_stats2.mode().equals( dvp.stats.mode() ) &&
+                                                // element_stats2.atime().equals( dvp.stats.atime() ) && // destination access-time may differ due to processing post copy
+                                                element_stats2.mtime().equals( dvp.stats.mtime() ) &&
+                                                element_stats2.uid() == dvp.stats.uid() &&
+                                                element_stats2.gid() == dvp.stats.gid() &&
+                                                element_stats2.size() == dvp.stats.size();
+                                    } else {
+                                        // minimal vfat attribute check
+                                        // const jau::fraction_timespec td(5_s);
+                                        final long td_ms = 5000;
 
+                                        attr_equal =
+                                                // ( element_stats2.mode() & jau::fs::fmode_t::rwx_usr ) == ( dvp.stats.mode() & jau::fs::fmode_t::rwx_usr ) &&
+                                                // element_stats2.atime().equals( dvp.stats.atime() ) && // destination access-time may differ due to processing post copy
+                                                Math.abs( element_stats2.mtime().toEpochMilli() - dvp.stats.mtime().toEpochMilli() ) <= td_ms &&
+                                                element_stats2.uid() == dvp.stats.uid() &&
+                                                // element_stats2.gid() == dvp.stats.gid() &&
+                                                element_stats2.size() == dvp.stats.size();
+                                    }
                                     if( dvp.stats.is_file() ) {
                                         bit_equal = FileUtil.compare(dvp.stats.path(), element_stats2.path(), true);
                                     } else {
@@ -318,9 +374,11 @@ public class FileUtilBaseTest extends JunitTracer {
                             }
                         } };
                     if( FileUtil.visit(svp.dest, topts, pv2) ) {
-                        PrintUtil.fprintf_td(System.err, "%s.check: '%s', not found!\n\t source %s\n\n",
-                                svp.title, dvp.source_basename, element_stats1);
-                        return false; // not found, abort
+                        // not found
+                        final boolean ignore = element_stats1.is_link() && svp.opt_drop_dest_links;
+                        PrintUtil.fprintf_td(System.err, "%s.check: %s: '%s', not found!\n\t source %s\n\n",
+                                svp.title, ignore ? "Ignored" : "Error", dvp.source_basename, element_stats1);
+                        return ignore;
                     } else {
                         // found
                         if( dvp.match ) {

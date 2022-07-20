@@ -320,9 +320,13 @@ class TestFileUtil02 : TestFileUtilBase {
             }
             REQUIRE( true == mctx.mounted );
 
+            const jau::fs::copy_options copts = jau::fs::copy_options::recursive |
+                                                jau::fs::copy_options::preserve_all |
+                                                jau::fs::copy_options::sync |
+                                                jau::fs::copy_options::verbose;
             const std::string root_copy = root+"_copy_test50";
             jau::fs::remove(root_copy, jau::fs::traverse_options::recursive);
-            testxx_copy_r_p("test50_mount_copy_r_p", mount_point, 1 /* source_added_dead_links */, root_copy);
+            testxx_copy_r_p("test50_mount_copy_r_p", mount_point, 1 /* source_added_dead_links */, root_copy, copts, false /* dest_is_vfat */);
             REQUIRE( true == jau::fs::remove(root_copy, jau::fs::traverse_options::recursive) );
 
             bool umount_ok;
