@@ -739,6 +739,64 @@ TEST_CASE( "Fraction Time Arithmetic Add Test 03.1", "[fraction][fraction_timesp
 }
 
 TEST_CASE( "Fraction Time Arithmetic Sub Test 03.2", "[fraction][fraction_timespec][sub]" ) {
+    // normalize tests
+    // normalize: 1 s + 4*1000000000 ns = 5s
+    {
+        fraction_timespec a( 1, 4000000000_i64 );
+        INFO_STR(" a " + a.to_string() );
+        REQUIRE( a.tv_sec == 5 );
+        REQUIRE( a.tv_nsec == 0_i64 );
+    }
+    // normalize: -1 s - 4*1000000000 ns = -5s
+    {
+        fraction_timespec a( -1, -4000000000_i64 );
+        INFO_STR(" a " + a.to_string() );
+        REQUIRE( a.tv_sec == -5 );
+        REQUIRE( a.tv_nsec == 0_i64 );
+    }
+    // normalize: -1 s + 4*1000000000 ns = 3s
+    {
+        fraction_timespec a( -1, 4000000000_i64 );
+        INFO_STR(" a " + a.to_string() );
+        REQUIRE( a.tv_sec == 3 );
+        REQUIRE( a.tv_nsec == 0_i64 );
+    }
+    // normalize: 1 - 0.4 = 0.6
+    {
+        fraction_timespec a( 1, -400000000_i64 );
+        INFO_STR(" a " + a.to_string() );
+        REQUIRE( a.tv_sec == 0 );
+        REQUIRE( a.tv_nsec == 600000000_i64 );
+    }
+    // normalize: -1 + 0.4 = -0.6
+    {
+        fraction_timespec a( -1, +400000000_i64 );
+        INFO_STR(" a " + a.to_string() );
+        REQUIRE( a.tv_sec == 0 );
+        REQUIRE( a.tv_nsec == -600000000_i64 );
+    }
+    // 674.0 - 675.547 = -1.547
+    {
+        fraction_timespec a( 674, 0 );
+        fraction_timespec b( 675, 547000000_i64 );
+        fraction_timespec exp_sum( -1, -547000000_i64 );
+        INFO_STR(" a " + a.to_string() );
+        INFO_STR(" b " + b.to_string() );
+        INFO_STR(" exp " + exp_sum.to_string() );
+        INFO_STR(" a-b " + (a-b).to_string() );
+        REQUIRE( ( a - b ) == exp_sum );
+    }
+    // 674.0 - 675.547 = -1.547
+    {
+        fraction_timespec a { 674_s + 0_ms };
+        fraction_timespec b { 675_s + 547_ms };
+        fraction_timespec exp_sum {  -1_s - 547_ms };
+        INFO_STR(" a " + a.to_string() );
+        INFO_STR(" b " + b.to_string() );
+        INFO_STR(" exp " + exp_sum.to_string() );
+        INFO_STR(" a-b " + (a-b).to_string() );
+        REQUIRE( ( a - b ) == exp_sum );
+    }
     // 10.4 - 0.3 = 10.1
     {
         fraction_timespec a ( 10_i64, 400000000_i64 );
@@ -773,6 +831,7 @@ TEST_CASE( "Fraction Time Arithmetic Sub Test 03.2", "[fraction][fraction_timesp
         INFO_STR(" a-b " + (a-b).to_string() );
         REQUIRE( ( a - b ) == exp_sum );
     }
+
     // 10.4 - -0.3 = 10.7
     {
         fraction_timespec a { 10_s + 400_ms };

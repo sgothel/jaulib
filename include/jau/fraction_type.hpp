@@ -834,13 +834,14 @@ namespace jau {
      */
     struct fraction_timespec {
         /**
-         * Seconds component, with its absolute value in range [0..inf[ or [0..inf).
+         * Seconds component, with its absolute value in range [0..inf[ or [0..inf),
+         * sharing same sign with tv_nsec.
          */
         int64_t tv_sec;
 
         /**
-         * Positive fraction of seconds for the nanoseconds component,
-         * where its value shall be in range [0..1'000'000'000[ or [0..1'000'000'000).
+         * Nanoseconds component with its absolute value in range [0..1'000'000'000[ or [0..1'000'000'000),
+         * sharing same sign with tv_nsec.
          */
         int64_t tv_nsec;
 
@@ -922,22 +923,27 @@ namespace jau {
         }
 
         /**
-         * Normalize tv_nsec to be in range [0..1'000'000'000[ or [0..1'000'000'000),
-         * used after an arithmetic operation.
+         * Normalize tv_nsec with its absolute range [0..1'000'000'000[ or [0..1'000'000'000)
+         * and having same sign as tv_sec.
+         *
+         * Used after arithmetic operations.
          *
          * @returns reference to this instance
          */
         constexpr fraction_timespec& normalize() noexcept {
             using namespace jau::int_literals;
             const int64_t ns_per_sec = 1'000'000'000_i64;
-            if( tv_nsec < 0 ) {
-                const int64_t c = 1 + abs( tv_nsec ) / ns_per_sec;
-                tv_nsec += c * ns_per_sec;
-                tv_sec -= c;
-            } else if( tv_nsec >= ns_per_sec ) {
+            if( abs(tv_nsec) >= ns_per_sec ) {
                 const int64_t c = tv_nsec / ns_per_sec;
                 tv_nsec -= c * ns_per_sec;
                 tv_sec += c;
+            }
+            if( tv_nsec < 0 && tv_sec >= 1 ) {
+                tv_nsec += ns_per_sec;
+                tv_sec -= 1;
+            } else if( tv_nsec > 0 && tv_sec <= -1 ) {
+                tv_nsec -= ns_per_sec;
+                tv_sec += 1;
             }
             return *this;
         }
@@ -1043,7 +1049,7 @@ namespace jau {
      * @return function result
      */
     constexpr snsize_t sign(const fraction_timespec& rhs) noexcept {
-        return sign(rhs.tv_sec);
+        return 0 != rhs.tv_sec ? sign(rhs.tv_sec) : sign(rhs.tv_nsec);
     }
 
     /**
@@ -1052,6 +1058,7 @@ namespace jau {
     constexpr fraction_timespec abs(const fraction_timespec& rhs) noexcept {
         fraction_timespec copy(rhs); // skip normalize
         copy.tv_sec= jau::abs(rhs.tv_sec);
+        copy.tv_nsec= jau::abs(rhs.tv_nsec);
         return copy;
     }
 
