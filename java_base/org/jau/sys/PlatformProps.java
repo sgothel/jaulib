@@ -522,7 +522,8 @@ public class PlatformProps {
         }
     }
     private static final boolean queryIsLittleEndianImpl() {
-        final ByteBuffer tst_b = Buffers.newDirectByteBuffer(Buffers.SIZEOF_INT); // 32bit in native order
+        final ByteBuffer tst_b = ByteBuffer.allocate(Buffers.SIZEOF_INT).order(ByteOrder.nativeOrder());
+        // NIO Buffer not required for LE detection: final ByteBuffer tst_b = Buffers.newDirectByteBuffer(Buffers.SIZEOF_INT); // 32bit in native order
         final IntBuffer tst_i = tst_b.asIntBuffer();
         final ShortBuffer tst_s = tst_b.asShortBuffer();
         tst_i.put(0, 0x0A0B0C0D);
