@@ -31,6 +31,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 import org.jau.sys.JNILibrary;
@@ -80,9 +83,27 @@ public class TestElfReader01 extends JunitTracer {
     public void test01GNULinuxSelfExe () throws IOException {
         if( null == userFile ) {
             if( OSType.LINUX == PlatformProps.OS ) {
-                final File f = new File(GNU_LINUX_SELF_EXE);
-                if( checkFileReadAccess(f) ) {
-                    testElfHeaderImpl(f, false);
+                /**
+                 * Directly using the `/proc/self/exe` via RandomAccessFile within ElfHeaderPart1 leads to a segmentation fault
+                 * when using qemu binfmt_misc for armhf or aarch64 (cross build and test)!
+                 *
+                 * Hence we use the resolved link's exe-file, see below - don't ask ;-)
+                 *
+                    final File f = new File(GNU_LINUX_SELF_EXE);
+                    if( checkFileReadAccess(f) ) {
+                        testElfHeaderImpl(f, false);
+                    }
+                 */
+                final Path exe_symlink = FileSystems.getDefault().getPath("/proc/self/exe");
+                if( Files.isSymbolicLink(exe_symlink) ) {
+                    final Path exe_path = Files.readSymbolicLink(exe_symlink);
+                    final File f = exe_path.toFile();
+                    if( checkFileReadAccess(f) ) {
+                        System.err.println("ElfFile: "+exe_symlink+" -> "+exe_path+" -> "+f);
+                        testElfHeaderImpl(f, false);
+                    }
+                } else {
+                    System.err.println("ElfFile: "+exe_symlink+" -> NULL");
                 }
             }
         }
