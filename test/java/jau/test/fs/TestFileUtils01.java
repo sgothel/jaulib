@@ -750,7 +750,7 @@ public class TestFileUtils01 extends FileUtilBaseTest {
         PlatformRuntime.checkInitialized();
         PrintUtil.println(System.err, "test10_mkdir\n");
 
-        FileUtil.remove(root, topts_rec); // start fresh
+        FileUtil.remove(root, TraverseOptions.recursive); // start fresh
         {
             final FileStats root_stats = new FileStats(root);
             PrintUtil.println(System.err, "root_stats.pre: "+root_stats);
@@ -771,8 +771,8 @@ public class TestFileUtils01 extends FileUtilBaseTest {
             Assert.assertTrue( !root_stats.is_file() );
             Assert.assertTrue( !root_stats.is_link() );
         }
-        Assert.assertTrue( false == FileUtil.remove(root, topts_none) );
-        Assert.assertTrue( true == FileUtil.remove(root, topts_rec) );
+        Assert.assertTrue( false == FileUtil.remove(root, TraverseOptions.none) );
+        Assert.assertTrue( true == FileUtil.remove(root, TraverseOptions.recursive) );
     }
 
     @Test(timeout = 10000)
@@ -868,7 +868,7 @@ public class TestFileUtils01 extends FileUtilBaseTest {
             }
         }
 
-        Assert.assertTrue( true == FileUtil.remove(root, topts_rec) );
+        Assert.assertTrue( true == FileUtil.remove(root, TraverseOptions.recursive) );
     }
 
     @Test(timeout = 10000)
@@ -924,7 +924,7 @@ public class TestFileUtils01 extends FileUtilBaseTest {
             PrintUtil.fprintf_td(System.err, "test20_visit[R, FSL]: %s\n%s\n", topts_R_FSL, stats_R_FSL);
             Assert.assertTrue( stats_R_FSL_PDL.equals( stats_R_FSL ) );
         }
-        Assert.assertTrue( true == FileUtil.remove(root, topts_rec) );
+        Assert.assertTrue( true == FileUtil.remove(root, TraverseOptions.recursive) );
     }
 
     @Test(timeout = 10000)
@@ -998,7 +998,7 @@ public class TestFileUtils01 extends FileUtilBaseTest {
         final String root_copy = root+"_copy_test30";
         {
             // Fresh target folder
-            FileUtil.remove(root_copy, topts_rec);
+            FileUtil.remove(root_copy, TraverseOptions.recursive);
 
             Assert.assertTrue( true == FileUtil.mkdir(root_copy, FMode.def_dir) );
             {
@@ -1078,7 +1078,7 @@ public class TestFileUtils01 extends FileUtilBaseTest {
                 Assert.assertTrue( source1_stats.mode().equals( dest_stats.mode() ) );
             }
         }
-        Assert.assertTrue( true == FileUtil.remove(root_copy, topts_rec) );
+        Assert.assertTrue( true == FileUtil.remove(root_copy, TraverseOptions.recursive) );
     }
 
     @Test(timeout = 10000)
@@ -1096,7 +1096,7 @@ public class TestFileUtils01 extends FileUtilBaseTest {
         final String root_copy = root+"_copy_test31";
         {
             // Fresh target folder
-            FileUtil.remove(root_copy, topts_rec);
+            FileUtil.remove(root_copy, TraverseOptions.recursive);
 
             Assert.assertTrue( true == FileUtil.mkdir(root_copy, FMode.def_dir) );
             {
@@ -1184,7 +1184,7 @@ public class TestFileUtils01 extends FileUtilBaseTest {
                 Assert.assertTrue( source2_stats.link_target().prot_mode().equals( dest_stats.prot_mode() ) );
             }
         }
-        Assert.assertTrue( true == FileUtil.remove(root_copy, topts_rec) );
+        Assert.assertTrue( true == FileUtil.remove(root_copy, TraverseOptions.recursive) );
     }
 
     @Test(timeout = 10000)
@@ -1206,9 +1206,9 @@ public class TestFileUtils01 extends FileUtilBaseTest {
         copts.set(CopyOptions.Bit.verbose);
 
         final String root_copy = root+"_copy_test40";
-        FileUtil.remove(root_copy, topts_rec);
+        FileUtil.remove(root_copy, TraverseOptions.recursive);
         testxx_copy_r_p("test40_copy_ext_r_p", root_orig_stats, 0 /* source_added_dead_links */, root_copy, copts, false /* dest_is_vfat */);
-        Assert.assertTrue( true == FileUtil.remove(root_copy, topts_rec) );
+        Assert.assertTrue( true == FileUtil.remove(root_copy, TraverseOptions.recursive) );
     }
 
     @Test(timeout = 10000)
@@ -1230,10 +1230,10 @@ public class TestFileUtils01 extends FileUtilBaseTest {
         copts.set(CopyOptions.Bit.verbose);
 
         final String root_copy_parent = root+"_copy_test41_parent";
-        FileUtil.remove(root_copy_parent, topts_rec);
+        FileUtil.remove(root_copy_parent, TraverseOptions.recursive);
         Assert.assertTrue( FileUtil.mkdir(root_copy_parent) );
         testxx_copy_r_p("test41_copy_ext_r_p_below", root_orig_stats, 0 /* source_added_dead_links */, root_copy_parent, copts, false /* dest_is_vfat */);
-        Assert.assertTrue( true == FileUtil.remove(root_copy_parent, topts_rec) );
+        Assert.assertTrue( true == FileUtil.remove(root_copy_parent, TraverseOptions.recursive) );
     }
 
     @Test(timeout = 10000)
@@ -1248,7 +1248,7 @@ public class TestFileUtils01 extends FileUtilBaseTest {
             return;
         }
         final String dest_vfat_parent = dest_fs_vfat+"/test42_data_sink";
-        FileUtil.remove(dest_vfat_parent, topts_rec);
+        FileUtil.remove(dest_vfat_parent, TraverseOptions.recursive);
         if( !FileUtil.mkdir(dest_vfat_parent) ) {
             PrintUtil.fprintf_td(System.err, "test42_copy_ext_r_p_vfat: Skipped, couldn't create vfat dest folder %s\n", dest_vfat_parent);
             return;
@@ -1271,7 +1271,7 @@ public class TestFileUtils01 extends FileUtilBaseTest {
 
         final String dest_vfat_dir = dest_vfat_parent+"/"+root;
         testxx_copy_r_p("test42_copy_ext_r_p_vfat", root_orig_stats, 0 /* source_added_dead_links */, dest_vfat_dir, copts, true /* dest_is_vfat */);
-        Assert.assertTrue( true == FileUtil.remove(dest_vfat_parent, topts_rec) );
+        Assert.assertTrue( true == FileUtil.remove(dest_vfat_parent, TraverseOptions.recursive) );
     }
 
     @Test(timeout = 10000)
@@ -1294,7 +1294,7 @@ public class TestFileUtils01 extends FileUtilBaseTest {
         copts.set(CopyOptions.Bit.ignore_symlink_errors);
         copts.set(CopyOptions.Bit.verbose);
         {
-            FileUtil.remove(root_copy, topts_rec);
+            FileUtil.remove(root_copy, TraverseOptions.recursive);
 
             Assert.assertTrue( true == FileUtil.copy(root_orig_stats.path(), root_copy, copts) );
         }
@@ -1388,7 +1388,7 @@ public class TestFileUtils01 extends FileUtilBaseTest {
             Assert.assertTrue(  0 == stats_copy.dirs_sym_link );
         }
 
-        Assert.assertTrue( true == FileUtil.remove(root_copy_renamed, topts_rec) );
+        Assert.assertTrue( true == FileUtil.remove(root_copy_renamed, TraverseOptions.recursive) );
     }
 
     public static void main(final String args[]) {

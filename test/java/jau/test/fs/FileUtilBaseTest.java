@@ -46,9 +46,6 @@ public class FileUtilBaseTest extends JunitTracer {
     // external vfat filesystem destination to test ...
     public static final String dest_fs_vfat = "/mnt/vfat";
 
-    public static final TraverseOptions topts_none = new TraverseOptions();
-    public static final TraverseOptions topts_rec = new TraverseOptions(TraverseOptions.Bit.recursive.value);
-
     public static class VisitorStats {
         public TraverseOptions topts;
         public int total_real;

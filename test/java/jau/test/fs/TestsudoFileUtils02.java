@@ -28,6 +28,7 @@ import org.jau.fs.CopyOptions;
 import org.jau.fs.FMode;
 import org.jau.fs.FileStats;
 import org.jau.fs.FileUtil;
+import org.jau.fs.TraverseOptions;
 import org.jau.io.PrintUtil;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
@@ -58,7 +59,7 @@ public class TestsudoFileUtils02 extends FileUtilBaseTest {
             Assert.assertTrue( true == image_stats.exists() );
 
             final String mount_point = root+"_mount";
-            FileUtil.remove(mount_point, topts_rec); // start fresh
+            FileUtil.remove(mount_point, TraverseOptions.recursive); // start fresh
             Assert.assertTrue( true == FileUtil.mkdir(mount_point, FMode.def_dir) );
 
             final long mctx = FileUtil.mount_image(image_stats.path(), mount_point, "squashfs", 0, "");
@@ -71,15 +72,15 @@ public class TestsudoFileUtils02 extends FileUtilBaseTest {
             copts.set(CopyOptions.Bit.verbose);
 
             final String root_copy = root+"_copy_test50";
-            FileUtil.remove(root_copy, topts_rec);
+            FileUtil.remove(root_copy, TraverseOptions.recursive);
             testxx_copy_r_p("test50_mount_copy_r_p", new FileStats(mount_point), 1 /* source_added_dead_links */, root_copy, copts, false /* dest_is_vfat */);
-            Assert.assertTrue( true == FileUtil.remove(root_copy, topts_rec) );
+            Assert.assertTrue( true == FileUtil.remove(root_copy, TraverseOptions.recursive) );
 
             final boolean umount_ok = FileUtil.umount(mctx);
             Assert.assertTrue( true == umount_ok );
 
-            Assert.assertTrue( true == FileUtil.remove(root_copy, topts_rec) );
-            Assert.assertTrue( true == FileUtil.remove(mount_point, topts_rec) );
+            Assert.assertTrue( true == FileUtil.remove(root_copy, TraverseOptions.recursive) );
+            Assert.assertTrue( true == FileUtil.remove(mount_point, TraverseOptions.recursive) );
         }
     }
 

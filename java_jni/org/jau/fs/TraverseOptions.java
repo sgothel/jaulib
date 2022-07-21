@@ -32,6 +32,9 @@ package org.jau.fs;
  * @see FileUtil#remove(String, TraverseOptions)
  */
 public class TraverseOptions {
+    public static final TraverseOptions none = new TraverseOptions();
+    public static final TraverseOptions recursive = new TraverseOptions(TraverseOptions.Bit.recursive.value);
+
     public enum Bit {
         /** No option set */
         none ( (short) 0 ),
