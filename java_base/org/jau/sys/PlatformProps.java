@@ -29,8 +29,12 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.PrivilegedAction;
 import java.util.List;
 
@@ -358,9 +362,35 @@ public class PlatformProps {
         File file = null;
         try {
             if( OSType.LINUX == osType ) {
-                file = new File("/proc/self/exe");
-                if( !checkFileReadAccess(file) ) {
-                    file = null;
+                /**
+                 * Directly using the `/proc/self/exe` via RandomAccessFile within ElfHeaderPart1 leads to a segmentation fault
+                 * when using qemu binfmt_misc for armhf or aarch64 (cross build and test)!
+                 *
+                 * Hence we use the resolved link's exe-file, see below - don't ask ;-)
+                 *
+                    file = new File("/proc/self/exe");
+                    if( !checkFileReadAccess(file) ) {
+                        file = null;
+                    }
+                 */
+                try {
+                    final Path exe_symlink = FileSystems.getDefault().getPath("/proc/self/exe");
+                    if( Files.isSymbolicLink(exe_symlink) ) {
+                        final Path exe_path = Files.readSymbolicLink(exe_symlink);
+                        file = exe_path.toFile();
+                        if( !checkFileReadAccess(file) ) {
+                            file = null;
+                        }
+                        if(DEBUG) {
+                            System.err.println("ElfFile: "+exe_symlink+" -> "+exe_path+" -> "+file);
+                        }
+                    } else {
+                        System.err.println("ElfFile: "+exe_symlink+" -> NULL");
+                    }
+                } catch(final Throwable t) {
+                    if(DEBUG) {
+                        t.printStackTrace();
+                    }
                 }
             }
             if( null == file ) {
