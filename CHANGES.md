@@ -8,6 +8,16 @@
 
 * First stable release (TODO)
 
+**0.15.0** (WIP)
+
+* Resolve OpenJDK segmentation fault running via qemu binfmt_misc armhf or aarch64 on x86_64 host (cross build and test)
+* `copy_options::ignore_symlink_errors`: Also ignore symlinks if not supported by target filesystem if not using `follow_symlinks` (e.g.: vfat target)
+* `fraction_timespec::to_iso8601_string()`, `file_stats::to_string()`: Drop `use_space` parameter and print UTC ISO8601 w/ nanoseconds if not zero
+* Fix `fraction_timespec::normalize()`
+* Add `jau::fs::rename()` (C++) / `FileUtil.rename()` (Java)
+* Data-Race-Free (DRF) or transaction safe `jau::fs::visit()`, `copy()` and `remove()`: Use `dirfd` `openat()` etc operations and temp-dir for newly dirs (copy) ..
+* Add cpuid.hpp (SysUtils), namespace `jau::cpu:` Query `cpu_family` and arm/aarch64 hwcaps using glibc/Linux 'getauxval()' (todo: x86, x86_64 via cpuid)
+
 **0.14.0**
 
 * Java `org.jau.sys.Clock`: Add `Instant get[Monotonic|Wallclock]Time()` and `wallClockSeconds()` 
