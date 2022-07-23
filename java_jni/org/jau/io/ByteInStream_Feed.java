@@ -25,8 +25,6 @@ package org.jau.io;
 
 import java.nio.ByteBuffer;
 
-import org.jau.io.Buffers;
-
 /**
  * This class represents a Ringbuffer-Based byte input stream with an externally provisioned data feed.
  *

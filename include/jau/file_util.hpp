@@ -257,23 +257,25 @@ namespace jau {
             def_dir_prot    = 00750,
 
             /** Default file protection bit: Safe default: POSIX S_IRUSR | S_IWUSR | S_IRGRP or read_usr | write_usr | read_grp */
-            def_file_prot    = 00640,
+            def_file_prot   = 00640,
 
             /** 12 bit protection bit mask 07777 for rwx_all | set_uid | set_gid | sticky . */
-            protection_mask = 0b111111111111,
+            protection_mask = 0b000000000111111111111,
 
+            /** Type: Entity is a file descriptor, might be in combination with link. */
+            fd              = 0b000001000000000000000,
             /** Type: Entity is a directory, might be in combination with link. */
-            dir          = 0b000010000000000000000,
+            dir             = 0b000010000000000000000,
             /** Type: Entity is a file, might be in combination with link. */
-            file         = 0b000100000000000000000,
+            file            = 0b000100000000000000000,
             /** Type: Entity is a symbolic link, might be in combination with file or dir. */
-            link         = 0b001000000000000000000,
+            link            = 0b001000000000000000000,
             /** Type: Entity gives no access to user, exclusive bit. */
-            no_access    = 0b010000000000000000000,
+            no_access       = 0b010000000000000000000,
             /** Type: Entity does not exist, exclusive bit. */
-            not_existing = 0b100000000000000000000,
-            /** Type mask for dir | file | link | no_access | not_existing. */
-            type_mask    = 0b111110000000000000000,
+            not_existing    = 0b100000000000000000000,
+            /** Type mask for fd | dir | file | link | no_access | not_existing. */
+            type_mask       = 0b111111000000000000000,
         };
         constexpr uint32_t number(const fmode_t rhs) noexcept {
             return static_cast<uint32_t>(rhs);
@@ -323,12 +325,46 @@ namespace jau {
         constexpr ::mode_t posix_protection_bits(const fmode_t mask) noexcept { return static_cast<::mode_t>(mask & fmode_t::protection_mask); }
 
         /**
+         * Returns platform dependent named file descriptor of given file descriptor, if supported.
+         *
+         * Implementation returns (`%d` stands for integer):
+         * - `/dev/fd/%d` (GNU/Linux, FreeBSD, ..)
+         *
+         * Currently implementation always returns above pattern,
+         * not handling the target OS differences.
+         *
+         * @param fd file descriptor.
+         * @return the named file descriptor or nullptr if fd < 0 or not supported by OS.
+         *
+         * @see jau::fs::from_named_fd()
+         * @see jau::fs::file_stats:is_fd()
+         */
+        std::unique_ptr<std::string> to_named_fd(const int fd) noexcept;
+
+        /**
+         * Returns the file descriptor from the given named file descriptor.
+         *
+         * Detected named file descriptors are (`%d` stands for integer)
+         * - `/dev/fd/%d` (GNU/Linux, FreeBSD, ..)
+         * - `/proc/self/fd/%d` (GNU/Linux)
+         *
+         * @param named_fd the named file descriptor
+         * @return file descriptor or -1 if invalid or not supported by OS.
+         *
+         * @see jau::fs::to_named_fd()
+         * @see jau::fs::file_stats:is_fd()
+         */
+        int from_named_fd(const std::string& named_fd) noexcept;
+
+        /**
          * Platform agnostic representation of POSIX ::lstat() and ::stat()
          * for a given pathname.
          *
          * Implementation follows the symbolic link, i.e. first opens
          * the given pathname with ::lstat() and if identifying as a symbolic link
          * opens it via ::stat() to retrieve the actual properties like size, time and ownership.
+         *
+         * Implementation supports named file descriptor, see is_fd().
          *
          * On `GNU/Linux` implementation uses ::statx().
          */
@@ -353,7 +389,8 @@ namespace jau {
                     ino            = 0b0000000100000000,
                     size           = 0b0000001000000000,
                     blocks         = 0b0000010000000000,
-                    btime          = 0b0000100000000000
+                    btime          = 0b0000100000000000,
+                    fd             = 0b0001000000000000
                 };
 
                 typedef uint32_t uid_t;
@@ -368,6 +405,7 @@ namespace jau {
                 std::shared_ptr<file_stats> link_target_; // link-target this symbolic-link points to if is_link(), otherwise nullptr.
 
                 fmode_t mode_;
+                int fd_;
                 uid_t uid_;
                 gid_t gid_;
                 uint64_t size_;
@@ -489,6 +527,9 @@ namespace jau {
                 /** Returns the POSIX protection bit portion of fmode_t, i.e. mode() & fmode_t::protection_mask. */
                 fmode_t prot_mode() const noexcept { return mode_ & fmode_t::protection_mask; }
 
+                /** Returns the file descriptor if is_fd(), otherwise -1 for no file descriptor. */
+                int fd() const noexcept { return fd_; }
+
                 /** Returns the user id, owning the element. */
                 uid_t uid() const noexcept { return uid_; }
 
@@ -516,6 +557,14 @@ namespace jau {
 
                 /** Returns true if no error occurred */
                 bool ok()  const noexcept { return 0 == errno_res_; }
+
+                /**
+                 * Returns true if entity is a file descriptor, might be in combination with is_link().
+                 *
+                 * @see jau::fs::from_named_fd()
+                 * @see jau::fs::to_named_fd()
+                 */
+                bool is_fd() const noexcept { return is_set( mode_, fmode_t::fd ); }
 
                 /** Returns true if entity is a file, might be in combination with is_link().  */
                 bool is_file() const noexcept { return is_set( mode_, fmode_t::file ); }

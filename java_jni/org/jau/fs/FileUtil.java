@@ -58,6 +58,21 @@ public final class FileUtil {
     public static native String basename(final String path);
 
     /**
+     * Returns platform dependent named file descriptor of given file descriptor, if supported.
+     *
+     * Implementation returns (`%d` stands for integer):
+     * - `/dev/fd/%d` (GNU/Linux, FreeBSD, ..)
+     *
+     * Currently implementation always returns above pattern,
+     * not handling the target OS differences.
+     *
+     * @param fd file descriptor.
+     * @return the named file descriptor or null if fd < 0 or not supported by OS.
+     * @see FileStats#is_fd()
+     */
+    public static native String to_named_fd(final int fd);
+
+    /**
      * Create directory
      * @param path full path to new directory
      * @param mode fmode_t POSIX protection bits used, defaults to {@link FMode#def_dir}

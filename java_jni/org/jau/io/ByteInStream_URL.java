@@ -25,8 +25,6 @@ package org.jau.io;
 
 import java.nio.ByteBuffer;
 
-import org.jau.io.Buffers;
-
 /**
  * This class represents a Ringbuffer-Based byte input stream with a URL connection provisioned data feed.
  *
@@ -43,7 +41,7 @@ public final class ByteInStream_URL implements ByteInStream {
     /**
      * Construct a ringbuffer backed Http byte input stream
      * @param url the URL of the data to read
-     * @param timeout maximum duration in fractions of seconds to wait @ check_available() for next bytes, where fractions_i64::zero waits infinitely
+     * @param timeout maximum duration in milliseconds to wait @ check_available() for next bytes, where zero waits infinitely
      */
     public ByteInStream_URL(final String url, final long timeoutMS) {
         try {

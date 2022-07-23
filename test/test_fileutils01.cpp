@@ -712,8 +712,66 @@ class TestFileUtil01 : TestFileUtilBase {
             const jau::fs::file_stats* final_target = stats.final_target(&link_count);
             jau::fprintf_td(stderr, "- final_target (%zu link count): %s\n", link_count, final_target->to_string().c_str());
             REQUIRE( 0 == link_count );
+            REQUIRE( *final_target == stats );
             REQUIRE( final_target == &stats );
         }
+    }
+
+    static void test_file_stat_fd_item(const int fd, const std::string& named_fd_link, const std::string& named_fd1, const std::string& named_fd2) {
+        {
+            jau::fs::file_stats stats_1(named_fd1);
+            REQUIRE(  stats_1.exists() );
+            REQUIRE(  stats_1.has_access() );
+            REQUIRE( !stats_1.is_dir() );
+            REQUIRE( !stats_1.is_file() );
+            REQUIRE( !stats_1.is_link() );
+            REQUIRE(  stats_1.is_fd() );
+            REQUIRE(  fd == stats_1.fd() );
+            REQUIRE( 0 == stats_1.size() );
+            REQUIRE( nullptr == stats_1.link_target_path() );
+        }
+        {
+            jau::fs::file_stats stats_link(named_fd_link);
+            jau::fprintf_td(stderr, "fd_link: %s\n", stats_link.to_string().c_str());
+            REQUIRE(  stats_link.exists() );
+            REQUIRE(  stats_link.has_access() );
+            REQUIRE( !stats_link.is_dir() );
+            REQUIRE( !stats_link.is_file() );
+            REQUIRE(  stats_link.is_link() );
+            REQUIRE(  stats_link.is_fd() );
+            REQUIRE( 0 == stats_link.size() );
+            REQUIRE( nullptr != stats_link.link_target_path() );
+
+            size_t link_count;
+            const jau::fs::file_stats* final_target = stats_link.final_target(&link_count);
+            REQUIRE( nullptr != final_target );
+            jau::fprintf_td(stderr, "- final_target (%zu link count): %s\n", link_count, final_target->to_string().c_str());
+            REQUIRE( 1 <= link_count );
+            REQUIRE( 2 >= link_count );
+            if( named_fd1 != final_target->path() && named_fd2 != final_target->path() ) {
+                INFO_STR("link_target_path "+final_target->path()+" not[ "+named_fd1+", "+named_fd2+"]");
+                REQUIRE( false);
+            }
+        }
+    }
+
+    void test07_file_stat_fd() {
+        INFO_STR("\n\ntest07_file_stat_fd\n");
+
+        const std::string fd_stdin_l = "/dev/stdin";
+        const std::string fd_stdout_l = "/dev/stdout";
+        const std::string fd_stderr_l = "/dev/stderr";
+
+        const std::string fd_stdin_1 = "/dev/fd/0";
+        const std::string fd_stdout_1 = "/dev/fd/1";
+        const std::string fd_stderr_1 = "/dev/fd/2";
+        const std::string fd_stdin_2 = "/proc/self/fd/0";
+        const std::string fd_stdout_2 = "/proc/self/fd/1";
+        const std::string fd_stderr_2 = "/proc/self/fd/2";
+
+        test_file_stat_fd_item(0, fd_stdin_l, fd_stdin_1, fd_stdin_2);
+        test_file_stat_fd_item(1, fd_stdout_l, fd_stdout_1, fd_stdout_2);
+        test_file_stat_fd_item(2, fd_stderr_l, fd_stderr_1, fd_stderr_2);
     }
 
     /**
@@ -1362,6 +1420,7 @@ METHOD_AS_TEST_CASE( TestFileUtil01::test03_basename,           "Test TestFileUt
 METHOD_AS_TEST_CASE( TestFileUtil01::test04_dir_item,           "Test TestFileUtil01 - test04_dir_item");
 METHOD_AS_TEST_CASE( TestFileUtil01::test05_file_stat,          "Test TestFileUtil01 - test05_file_stat");
 METHOD_AS_TEST_CASE( TestFileUtil01::test06_file_stat_symlinks, "Test TestFileUtil01 - test06_file_stat_symlinks");
+METHOD_AS_TEST_CASE( TestFileUtil01::test07_file_stat_fd,       "Test TestFileUtil01 - test07_file_stat_fd");
 
 METHOD_AS_TEST_CASE( TestFileUtil01::test10_mkdir,              "Test TestFileUtil01 - test10_mkdir");
 METHOD_AS_TEST_CASE( TestFileUtil01::test11_touch,              "Test TestFileUtil01 - test11_touch");

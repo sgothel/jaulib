@@ -103,13 +103,13 @@ void Java_org_jau_fs_FileStats_dtorImpl(JNIEnv *env, jclass clazz, jlong nativeI
     }
 }
 
-jintArray Java_org_jau_fs_FileStats_getInt5FieldsFModeUidGidErrno(JNIEnv *env, jclass clazz, jlong nativeInstance) {
+jintArray Java_org_jau_fs_FileStats_getInt6FieldsFModeFdUidGidErrno(JNIEnv *env, jclass clazz, jlong nativeInstance) {
     (void)clazz;
     try {
         jau::jni::shared_ptr_ref<jau::fs::file_stats> sref(nativeInstance, true /* throw_on_nullptr */); // hold copy until done
 
-        const size_t array_size = 5;
-        const jint values[] = { (jint)sref->fields(), (jint)sref->mode(), (jint)sref->uid(), (jint)sref->gid(), (jint)sref->errno_res() };
+        const size_t array_size = 6;
+        const jint values[] = { (jint)sref->fields(), (jint)sref->mode(), (jint)sref->fd(), (jint)sref->uid(), (jint)sref->gid(), (jint)sref->errno_res() };
         jintArray jres = env->NewIntArray((jsize)array_size);
         if (nullptr == jres) {
             throw jau::InternalError("Cannot create instance of jintArray", E_FILE_LINE);

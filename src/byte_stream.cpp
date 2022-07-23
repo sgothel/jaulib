@@ -272,11 +272,13 @@ size_t ByteInStream_File::peek(uint8_t out[], size_t length, size_t offset) cons
 }
 
 bool ByteInStream_File::check_available(size_t n) NOEXCEPT_BOTAN {
-    return nullptr != m_source && m_content_size - m_bytes_consumed >= (uint64_t)n;
+    return nullptr != m_source && m_source->good() &&
+           ( !m_has_content_length || m_content_size - m_bytes_consumed >= (uint64_t)n );
 };
 
 bool ByteInStream_File::end_of_data() const NOEXCEPT_BOTAN {
-    return nullptr == m_source || !m_source->good() || m_bytes_consumed >= m_content_size;
+    return nullptr == m_source || !m_source->good() ||
+           ( m_has_content_length && m_bytes_consumed >= m_content_size );
 }
 
 std::string ByteInStream_File::id() const NOEXCEPT_BOTAN {
@@ -286,7 +288,7 @@ std::string ByteInStream_File::id() const NOEXCEPT_BOTAN {
 ByteInStream_File::ByteInStream_File(const std::string& path, bool use_binary) noexcept
 : m_identifier(path),
   m_source(),
-  m_content_size(0), m_bytes_consumed(0)
+  m_has_content_length(false), m_content_size(0), m_bytes_consumed(0)
 {
     std::unique_ptr<jau::fs::file_stats> stats;
     if( jau::io::uri_tk::is_local_file_protocol(path) ) {
@@ -298,9 +300,10 @@ ByteInStream_File::ByteInStream_File(const std::string& path, bool use_binary) n
     }
     if( !stats->exists() || !stats->has_access() ) {
         DBG_PRINT("ByteInStream_File::ctor: Error, not an existing or accessible file in %s, %s", stats->to_string().c_str(), to_string().c_str());
-    } else if( !stats->is_file() ) {
-        DBG_PRINT("ByteInStream_File::ctor: Error, not a file in %s, %s", stats->to_string().c_str(), to_string().c_str());
+    } else if( !stats->is_file() && !stats->is_fd() ) {
+        DBG_PRINT("ByteInStream_File::ctor: Error, not a file nor fd in %s, %s", stats->to_string().c_str(), to_string().c_str());
     } else {
+        m_has_content_length = stats->is_file();
         m_content_size = stats->size();
         m_source = std::make_unique<std::ifstream>(stats->path(), use_binary ? std::ios::binary : std::ios::in);
         if( error() ) {
@@ -319,7 +322,7 @@ void ByteInStream_File::close() noexcept {
 std::string ByteInStream_File::to_string() const noexcept {
     return "ByteInStream_File["+m_identifier+", content_length "+jau::to_decstring(m_content_size)+
                             ", consumed "+jau::to_decstring(m_bytes_consumed)+
-                            ", available "+jau::to_decstring(m_content_size - m_bytes_consumed)+
+                            ", available "+jau::to_decstring(get_available())+
                             ", eod "+std::to_string( end_of_data() )+
                             ", error "+std::to_string( error() )+
                             "]";

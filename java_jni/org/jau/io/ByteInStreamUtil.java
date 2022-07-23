@@ -24,7 +24,6 @@
 package org.jau.io;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 /**
  * This class represents an abstract byte input stream object.
@@ -157,7 +156,7 @@ public interface ByteInStreamUtil {
      * If non of the above leads to a ByteInStream without {@link ByteInStreamUtil#error()}, null is returned.
      *
      * @param path_or_uri given path or uri for with a ByteInStream instance shall be established.
-     * @param timeout a timeout in case ByteInStream_URL is being used as maximum duration to wait for next bytes at {@link ByteInStream_URL#check_available(long)}, defaults to 20_s
+     * @param timeoutMS a timeout in case ByteInStream_URL is being used as maximum duration in milliseconds to wait for next bytes at {@link ByteInStream_URL#check_available(long)}, defaults to 20_s
      * @return a working ByteInStream w/o {@link ByteInStreamUtil#error()} or nullptr
      */
     public static ByteInStream to_ByteInStream(final String path_or_uri, final long timeoutMS) {

@@ -34,6 +34,8 @@ import java.time.ZoneOffset;
  * the given pathname with ::lstat() and if identifying as a symbolic link
  * opens it via ::stat() to retrieve the actual properties like size, time and ownership.
  *
+ * Implementation supports named file descriptor, see is_fd().
+ *
  * On `GNU/Linux` implementation uses ::statx().
  */
 public class FileStats {
@@ -54,7 +56,8 @@ public class FileStats {
             ino            ( 0b0000000100000000 ),
             size           ( 0b0000001000000000 ),
             blocks         ( 0b0000010000000000 ),
-            btime          ( 0b0000100000000000 );
+            btime          ( 0b0000100000000000 ),
+            fd             ( 0b0001000000000000 );
 
             Type(final int v) { value = v; }
             public final int value;
@@ -102,6 +105,7 @@ public class FileStats {
 
     private final Field has_fields_;
     private final FMode mode_;
+    private final int fd_;
     private final int uid_;
     private final int gid_;
     private final int errno_res_;
@@ -123,6 +127,7 @@ public class FileStats {
         has_fields_ = new Field();
         mode_ = new FMode();
         mode_.set(FMode.Bit.not_existing);
+        fd_ = -1;
         uid_ = 0;
         gid_ = 0;
         errno_res_ = 0;
@@ -179,20 +184,21 @@ public class FileStats {
             link_target_path_ = s3[2];
         }
         {
-            final int[/*3*/] i5 = getInt5FieldsFModeUidGidErrno(h);
-            has_fields_ = new Field(i5[0]);
-            mode_ = new FMode(i5[1]);
-            uid_ = i5[2];
-            gid_ = i5[3];
-            errno_res_ = i5[4];
+            final int[/*6*/] i6 = getInt6FieldsFModeFdUidGidErrno(h);
+            has_fields_ = new Field(i6[0]);
+            mode_ = new FMode(i6[1]);
+            fd_ = i6[2];
+            uid_ = i6[3];
+            gid_ = i6[4];
+            errno_res_ = i6[5];
         }
         {
-            final long[/*1+ 2*4*/] l3 = getLong9SizeTimes(h);
-            size_ = l3[0];
-            btime_ = Instant.ofEpochSecond(l3[1+0*2+0], l3[1+0*2+1]);
-            atime_ = Instant.ofEpochSecond(l3[1+1*2+0], l3[1+1*2+1]);
-            ctime_ = Instant.ofEpochSecond(l3[1+2*2+0], l3[1+2*2+1]);
-            mtime_ = Instant.ofEpochSecond(l3[1+3*2+0], l3[1+3*2+1]);
+            final long[/*1+ 2*4*/] l9 = getLong9SizeTimes(h);
+            size_ = l9[0];
+            btime_ = Instant.ofEpochSecond(l9[1+0*2+0], l9[1+0*2+1]);
+            atime_ = Instant.ofEpochSecond(l9[1+1*2+0], l9[1+1*2+1]);
+            ctime_ = Instant.ofEpochSecond(l9[1+2*2+0], l9[1+2*2+1]);
+            mtime_ = Instant.ofEpochSecond(l9[1+3*2+0], l9[1+3*2+1]);
         }
         {
             final long lth = ctorLinkTargetImpl(h);
@@ -206,7 +212,7 @@ public class FileStats {
     }
     private static native long ctorImpl(final String path);
     private static native void dtorImpl(final long h);
-    private static native int[/*4*/] getInt5FieldsFModeUidGidErrno(final long h);
+    private static native int[/*4*/] getInt6FieldsFModeFdUidGidErrno(final long h);
     private static native String[/*3*/] getString3DirItemLinkTargetPath(final long h);
     private static native long[/*1+ 2*4*/] getLong9SizeTimes(final long h);
     private static native long ctorLinkTargetImpl(final long h);
@@ -290,6 +296,9 @@ public class FileStats {
     /** Returns the POSIX protection bit portion of fmode_t, i.e. mode() & {@link FMode.Bit#protection_mask}. */
     public FMode prot_mode() { return mode_.mask(FMode.Bit.protection_mask.value); }
 
+    /** Returns the file descriptor if is_fd(), otherwise -1 for no file descriptor. */
+    public int fd() { return fd_; }
+
     /** Returns the user id, owning the element. */
     public int uid() { return uid_; }
 
@@ -317,6 +326,17 @@ public class FileStats {
 
     /** Returns true if no error occurred */
     public boolean ok() { return 0 == errno_res_; }
+
+    /**
+     * Returns true if entity is a file descriptor, might be in combination with is_link().
+     *
+     * Detected named file descriptors are (`%d` stands for integer)
+     * - `/dev/fd/%d` (GNU/Linux, FreeBSD, ..)
+     * - `/proc/self/fd/%d` (GNU/Linux)
+     *
+     * @see FileUtil#to_named_fd(int)
+     */
+    public boolean is_fd() { return mode_.isSet( FMode.Bit.fd ); }
 
     /** Returns true if entity is a file, might be in combination with is_link().  */
     public boolean is_file() { return mode_.isSet( FMode.Bit.file ); }

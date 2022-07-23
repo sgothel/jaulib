@@ -328,7 +328,10 @@ namespace jau::io {
 
 
     /**
-     * This class represents a file based byte input stream.
+     * This class represents a file based byte input stream, including named file descriptor.
+     *
+     * If source path denotes a named file descriptor, i.e. jau::fs::file_stats::is_fd() returns true,
+     * has_content_size() returns false and check_available() returns true as long the stream is open and EOS hasn't occurred.
      */
     class ByteInStream_File final : public ByteInStream {
        public:
@@ -362,15 +365,17 @@ namespace jau::io {
 
           uint64_t bytes_read() const noexcept override { return m_bytes_consumed; }
 
-          bool has_content_size() const noexcept override { return true; }
+          bool has_content_size() const noexcept override { return m_has_content_length; }
 
           uint64_t content_size() const noexcept override { return m_content_size; }
 
           std::string to_string() const noexcept override;
 
        private:
+          uint64_t get_available() const noexcept { return m_has_content_length ? m_content_size - m_bytes_consumed : 0; }
           const std::string m_identifier;
           mutable std::unique_ptr<std::ifstream> m_source;
+          bool m_has_content_length;
           uint64_t m_content_size;
           uint64_t m_bytes_consumed;
     };
@@ -473,7 +478,7 @@ namespace jau::io {
      * If non of the above leads to a ByteInStream without ByteInStream::error(), nullptr is returned.
      *
      * @param path_or_uri given path or uri for with a ByteInStream instance shall be established.
-     * @param timeout a timeout in case ByteInStream_URL is being used as maximum duration to wait for next bytes at ByteInStream_URL::check_available(), defaults to 20_s
+     * @param timeout in case `path_or_uri` resolves to ByteInStream_URL, timeout is being used as maximum duration to wait for next bytes at ByteInStream_URL::check_available(), defaults to 20_s
      * @return a working ByteInStream w/o ByteInStream::error() or nullptr
      */
     std::unique_ptr<ByteInStream> to_ByteInStream(const std::string& path_or_uri, jau::fraction_i64 timeout=20_s) noexcept;
