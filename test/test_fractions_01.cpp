@@ -872,9 +872,14 @@ TEST_CASE( "Fraction Time Arithmetic Sub Test 03.2", "[fraction][fraction_timesp
 }
 
 TEST_CASE( "Fraction Time Measurement Test 04.01", "[fraction][fraction_timespec][time]" ) {
-    // We assume accuracy of at least 1/2 millisecond, hence the difference shall not be greater
-    const fraction_i64 accuracy = fractions_i64::milli*2_i64/3_i64;
     const int64_t sleep_ms = 50;
+    //
+    // Ideally we assume accuracy of at least 1/2 millisecond, hence the difference shall not be greater
+    //    const fraction_i64 accuracy = fractions_i64::milli*2_i64/3_i64;
+    // However, running within virtual machines etc, we have to be more generous here: 60_ms
+    // Detected using KVM on GNU/Linux host for FreeBSD 13.1 target
+    const fraction_i64 accuracy = fractions_i64::milli*60_i64;
+    //
     {
         const fraction_timespec t0 = getMonotonicTime();
         sleep_for( sleep_ms * 1_ms );
