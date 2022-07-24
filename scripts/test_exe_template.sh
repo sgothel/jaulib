@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Arguments:
 #   --perf_analysis   special performance analysis using 3rd party tools
@@ -10,9 +10,12 @@ sdir=`dirname $(readlink -f $0)`
 rootdir=`dirname $sdir`
 bname=`basename $0 .sh`
 
-. $sdir/setup-machine-arch.sh
+. $sdir/setup-machine-arch.sh "-quiet"
 
-build_dir=$rootdir/build-$archabi
+dist_dir=$rootdir/"dist-$os_name-$archabi"
+build_dir=$rootdir/"build-$os_name-$archabi"
+echo dist_dir $dist_dir
+echo build_dir $build_dir
 
 if [ ! -e $build_dir/test/$bname ] ; then
     echo "test exe $build_dir/test/$bname not existing"
@@ -23,7 +26,7 @@ if [ "$1" = "-log" ] ; then
     logbasename=$2
     shift 2
 else
-    logbasename=$bname.$archabi
+    logbasename=$bname-$os_name-$archabi
 fi
 
 logfile=$rootdir/doc/test/$logbasename.0.log
@@ -61,12 +64,15 @@ runit() {
     echo valgrindlogfile $valgrindlogfile
     echo callgrindoutfile $callgrindoutfile
 
-    echo $EXE_WRAPPER $build_dir/test/$bname $*
+    cd $build_dir/test
+    pwd
+
+    echo $EXE_WRAPPER ./$bname $*
 
     #export ASAN_OPTIONS=verbosity=1:malloc_context_size=20
     #export ASAN_OPTIONS=print_stats:halt_on_error:replace_intrin
 
-    $EXE_WRAPPER $build_dir/test/$bname $*
+    $EXE_WRAPPER ./$bname $*
 }
 
 runit $* 2>&1 | tee $logfile

@@ -41,6 +41,8 @@
 
 #include <jau/debug.hpp>
 
+#include "test_httpd.hpp"
+
 extern "C" {
     #include <unistd.h>
 }
@@ -70,7 +72,7 @@ class TestIOStream01 {
             if( jau::io::uri_tk::protocol_supported("http:") ) {
                 int res = std::system("killall mini_httpd");
                 const std::string cwd = jau::fs::get_cwd();
-                const std::string cmd = "/usr/sbin/mini_httpd -p 8080 -l "+cwd+"/mini_httpd.log";
+                const std::string cmd = std::string(mini_httpd_exe)+" -p 8080 -l "+cwd+"/mini_httpd.log";
                 jau::PLAIN_PRINT(true, "%s", cmd.c_str());
                 res = std::system(cmd.c_str());
                 (void)res;

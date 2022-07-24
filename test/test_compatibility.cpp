@@ -23,6 +23,13 @@
  */
 
 /**
+ * [Operating Systems](https://sourceforge.net/p/predef/wiki/OperatingSystems/)
+ * predefined macros.
+ * - BSD  included from <sys/param.h>
+ */
+#include <sys/param.h>
+
+/**
  * [Unix standards](https://sourceforge.net/p/predef/wiki/Standards/)
  * require the existence macros in the <unistd.h> header file.
  */
@@ -53,96 +60,95 @@
  * __TIMESIZE == 64 uses 64-bit time_t version
  */
 extern "C" {
+    // don't include anything yes as we like to grab the vanilla values first
     extern int printf(const char * format, ...);
 }
+int my_strcmp(const char *, const char *);
+
+#define MACRO_STRINGIFY(item) "" #item
+#define COND_CODE(macro, code)                           \
+    do {                                                 \
+        if (my_strcmp("" #macro, MACRO_STRINGIFY(macro))) { \
+            (code);                                      \
+        }                                                \
+    } while (0)
+
+#define PRINT_COND(macro)                                \
+    do {                                                 \
+        if (my_strcmp("" #macro, MACRO_STRINGIFY(macro))) { \
+            printf("- %s\t%s\n", #macro, MACRO_STRINGIFY(macro)); \
+        } else {                                         \
+            printf("- %s\t-\n", #macro);              \
+        }                                                \
+    } while (0)
 
 void print_unix_std() {
+    printf("Operating System\n");
+    PRINT_COND(BSD);
+    PRINT_COND(__FreeBSD__);
+    PRINT_COND(__NetBSD__);
+    PRINT_COND(__OpenBSD__);
+    PRINT_COND(__bsdi__);
+    PRINT_COND(__DragonFly__);
+    PRINT_COND(_SYSTYPE_BSD);
+
+    PRINT_COND(__CYGWIN__);
+
+    PRINT_COND(__GNU__);
+    PRINT_COND(__gnu_hurd__);
+
+    PRINT_COND(__gnu_linux__);
+    PRINT_COND(__linux__);
+    PRINT_COND(__APPLE__);
+
+    PRINT_COND(__QNX__);
+    PRINT_COND(__QNXNTO__);
+
+    PRINT_COND(sun);
+    PRINT_COND(__sun);
+    printf("\n");
+
     printf("Unix Standards Inputs\n");
-    #ifdef _POSIX_C_SOURCE
-        printf("- _POSIX_C_SOURCE     %ld\n", _POSIX_C_SOURCE);
-    #else
-        printf("- _POSIX_C_SOURCE     -\n");
-    #endif
-    #ifdef _FILE_OFFSET_BITS
-        printf("- _FILE_OFFSET_BITS   %d\n", _FILE_OFFSET_BITS);
-    #else
-        printf("- _FILE_OFFSET_BITS   -\n");
-    #endif
-    #ifdef _LARGEFILE64_SOURCE
-        printf("- _LARGEFILE64_SOURCE %d\n", _LARGEFILE64_SOURCE);
-    #else
-        printf("- _LARGEFILE64_SOURCE -\n");
-    #endif
-    #ifdef _TIME_BITS
-        printf("- _TIME_BITS          %d\n", _TIME_BITS);
-    #else
-        printf("- _TIME_BITS          -\n");
-    #endif
-    #ifdef __TIMESIZE
-        printf("- __TIMESIZE          %d\n", __TIMESIZE);
-    #else
-        printf("- __TIMESIZE          -\n");
-    #endif
+    PRINT_COND(_POSIX_C_SOURCE);
+    PRINT_COND(_FILE_OFFSET_BITS);
+    PRINT_COND(_LARGEFILE64_SOURCE);
+    PRINT_COND(_TIME_BITS);
+    PRINT_COND(__TIMESIZE);
     printf("\n");
 
     printf("Unix Standards Outputs\n");
-    #ifdef _POSIX_VERSION
-        printf("- _POSIX_VERSION      %ld\n", _POSIX_VERSION);
-    #else
-        printf("- _POSIX_VERSION      -\n");
-    #endif
-    #ifdef _POSIX2_C_VERSION
-        printf("- _POSIX2_C_VERSION   %ld\n", _POSIX2_C_VERSION);
-    #else
-        printf("- _POSIX2_C_VERSION   -\n");
-    #endif
-    #ifdef _XOPEN_VERSION
-        printf("- _XOPEN_VERSION      %d\n", _XOPEN_VERSION);
-    #else
-        printf("- _XOPEN_VERSION      -\n");
-    #endif
-    #ifdef __LSB_VERSION__
-        printf("- __LSB_VERSION__     %ld\n", __LSB_VERSION__);
-    #else
-        printf("- __LSB_VERSION__     -\n");
-    #endif
+    PRINT_COND(_POSIX_VERSION);
+    PRINT_COND(_POSIX2_C_VERSION);
+    PRINT_COND(_XOPEN_VERSION);
+    PRINT_COND(__LSB_VERSION__);
     printf("\n");
 }
 
 void print_libc() {
     printf("GLIBC  C Library Outputs\n");
-    #ifdef __GNU_LIBRARY__
-        printf("- __GNU_LIBRARY__      %d\n", __GNU_LIBRARY__);
-    #else
-        printf("- __GNU_LIBRARY__      -\n",);
-    #endif
-    #ifdef __GLIBC__
-        printf("- __GLIBC__            %d\n", __GLIBC__);
-    #else
-        printf("- __GLIBC__      -\n");
-    #endif
-    #ifdef __GLIBC_MINOR__
-        printf("- __GLIBC_MINOR__      %d\n", __GLIBC_MINOR__);
-    #else
-        printf("- __GLIBC_MINOR__      -\n");
-    #endif
+    PRINT_COND(__GNU_LIBRARY__);
+    PRINT_COND(__GLIBC__);
+    PRINT_COND(__GLIBC_MINOR__);
     printf("\n");
 
     printf("Bionic C Library Outputs\n");
-    #ifdef __BIONIC__
-        printf("- __BIONIC__           %d\n", __BIONIC__);
-    #else
-        printf("- __BIONIC__           -\n");
-    #endif
+    PRINT_COND(__BIONIC__);
     printf("\n");
 
     printf("uClibc C Library Outputs\n");
-    #ifdef __UCLIBC__
-        printf("- __UCLIBC__           %d\n", __UCLIBC__);
-        printf("- __UCLIBC__           %d.%d.%d\n", __UCLIBC_MAJOR__, __UCLIBC_MINOR__, __UCLIBC_SUBLEVEL__);
-    #else
-        printf("- __UCLIBC__           -\n");
-    #endif
+    PRINT_COND(__UCLIBC__);
+    printf("\n");
+
+    printf("GNU C++ Library Outputs\n");
+    PRINT_COND(__GLIBCPP__);
+    PRINT_COND(__GLIBCXX__);
+    printf("\n");
+
+    printf("C++ Library Outputs\n");
+    PRINT_COND(_LIBCPP_VERSION);
+    PRINT_COND(_LIBCPP_ABI_VERSION);
+    printf("\n");
+
     printf("\n");
 
 }
@@ -151,6 +157,12 @@ void print_libc() {
 #include <jau/test/catch2_ext.hpp>
 
 #include <jau/basic_types.hpp>
+
+#include <string.h>
+
+int my_strcmp(const char *s1, const char *s2) {
+    return ::strcmp(s1, s2);
+}
 
 /**
  * Resembling the GNU/Linux bits/types.h,

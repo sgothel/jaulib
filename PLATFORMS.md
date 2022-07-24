@@ -9,6 +9,14 @@ Minimum language requirements
 
 The following **platforms** are tested and hence supported
 
+**FreeBSD 13.1 (FreeBSD)**
+- libc++ 13.0.0
+- compiler
+  - clang 13.0.0
+  - openjdk 17
+- architectures
+  - amd64 (validated, Generic)
+
 **Debian 12 Bookworm (GNU/Linux)**
 - linux 5.18
 - glibc 2.33

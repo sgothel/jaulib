@@ -16,10 +16,12 @@ set(ownership_fix_tag ${CMAKE_CURRENT_SOURCE_DIR}/../test_data/ownership_fix_tag
 add_custom_command (OUTPUT ${ownership_fix_tag}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../test_data
     # Ubuntu `/usr/bin/ln`, Debian `/bin/ln`
-    # Ubuntu `/usr/bin/chgrp`, Debian `/bin/chgrp`
-    COMMAND chgrp cdrom file_01.txt
-    COMMAND chgrp cdrom dir_01/dir_01_02
-    COMMENT "changed group ownership of 2 test_data entries to cdrom"
+    # FreeBSD,Ubuntu `/usr/bin/chgrp`, Debian `/bin/chgrp`
+    # Ubuntu, Debian group 24: cdrom
+    # FreeBSD, Ubuntu, Debian group 44: video
+    COMMAND chgrp -f 44 file_01.txt
+    COMMAND chgrp -f 44 dir_01/dir_01_02
+    COMMENT "changed group ownership of 2 test_data entries to 44(video)"
     VERBATIM
 )
 add_custom_target (ownership_fix ALL DEPENDS ${ownership_fix_tag})

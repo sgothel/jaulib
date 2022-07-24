@@ -2,7 +2,7 @@
 
 find_jar(JUNIT_JAR
   NAMES junit4 junit
-  PATHS "/usr/share/java")
+  PATHS "/usr/share/java" "/usr/local/share/java/classes" )
 
 set(jaulib_test_jar_file ${CMAKE_CURRENT_BINARY_DIR}/jaulib-test.jar CACHE FILEPATH "jaulib test jar file" FORCE)
 

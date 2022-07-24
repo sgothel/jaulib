@@ -12,24 +12,29 @@ sdir=`dirname $(readlink -f $0)`
 rootdir=`dirname $sdir`
 bname=`basename $0 .sh`
 
-. $sdir/setup-machine-arch.sh
+. $sdir/setup-machine-arch.sh "-quiet"
 
-build_dir=${rootdir}/build-${archabi}
-dist_dir=$rootdir/dist-$archabi
+dist_dir=$rootdir/"dist-$os_name-$archabi"
+build_dir=$rootdir/"build-$os_name-$archabi"
+echo dist_dir $dist_dir
+echo build_dir $build_dir
 
 if [ ! -e $dist_dir/lib/java/jaulib-test.jar ] ; then
     echo "test exe $dist_dir/lib/java/jaulib-test.jar not existing"
     exit 1
 fi
 
-if [ -e /usr/lib/jvm/java-17-openjdk-$archabi ] ; then
-    export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-$archabi
-elif [ -e /usr/lib/jvm/java-11-openjdk-$archabi ] ; then
-    export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-$archabi
-fi
-if [ ! -e $JAVA_HOME ] ; then
-    echo $JAVA_HOME does not exist
+if [ -z "$JAVA_HOME" -o ! -e "$JAVA_HOME" ] ; then
+    echo "ERROR: JAVA_HOME $JAVA_HOME does not exist"
     exit 1
+else
+    echo JAVA_HOME $JAVA_HOME
+fi
+if [ -z "$JUNIT_CP" ] ; then
+    echo "ERROR: JUNIT_CP $JUNIT_CP does not exist"
+    exit 1
+else
+    echo JUNIT_CP $JUNIT_CP
 fi
 JAVA_EXE=${JAVA_HOME}/bin/java
 # JAVA_EXE=`readlink -f $(which java)`
@@ -43,7 +48,7 @@ else
     logfile=
 fi
 
-test_class=jau.test.nio.TestByteStream01
+test_class=jau.test.io.TestByteStream01
 if [ ! -z "$1" ] ; then
     test_class=$1
     shift 1
@@ -51,7 +56,7 @@ fi
 test_basename=`echo ${test_class} | sed 's/.*\.//g'`
 
 if [ -z "${logfile}" ] ; then
-    logfile=~/${bname}-${test_basename}-${archabi}.log
+    logfile=~/${bname}-${test_basename}-${os_name}-${archabi}.log
 fi
 rm -f $logfile
 logbasename=`basename ${logfile} .log`
@@ -66,9 +71,10 @@ export LANG=en_US.UTF-8
 
 # export JAVA_PROPS="-Xint"
 # export EXE_WRAPPER="nice -20"
+# export JAVA_PROPS="-Djau.debug=true -Djau.verbose=true"
 
-test_classpath=/usr/share/java/junit4.jar:${dist_dir}/lib/java/jaulib.jar:${build_dir}/test/java/jaulib-test.jar
-#test_classpath=/usr/share/java/junit4.jar:${dist_dir}/lib/java/jaulib-fat.jar:${build_dir}/test/java/jaulib-test.jar
+test_classpath=$JUNIT_CP:${dist_dir}/lib/java/jaulib.jar:${build_dir}/test/java/jaulib-test.jar
+#test_classpath=$JUNIT_CP:${dist_dir}/lib/java/jaulib-fat.jar:${build_dir}/test/java/jaulib-test.jar
 
 do_test() {
     echo "script invocation: $0 ${script_args}"
@@ -84,10 +90,10 @@ do_test() {
     cd ${test_dir}
     pwd
 
-    echo "$EXE_WRAPPER ${JAVA_CMD} ${JAVA_PROPS} -cp ${test_classpath} -Djava.library.path=${rootdir}/dist-${archabi}/lib org.junit.runner.JUnitCore ${test_class} ${*@Q}"
+    echo "$EXE_WRAPPER ${JAVA_CMD} ${JAVA_PROPS} -cp ${test_classpath} -Djava.library.path=${dist_dir}/lib org.junit.runner.JUnitCore ${test_class} ${*@Q}"
 
     ulimit -c unlimited
-    $EXE_WRAPPER ${JAVA_CMD} ${JAVA_PROPS} -cp ${test_classpath} -Djava.library.path=${rootdir}/dist-${archabi}/lib org.junit.runner.JUnitCore ${test_class} ${*@Q}
+    $EXE_WRAPPER ${JAVA_CMD} ${JAVA_PROPS} -cp ${test_classpath} -Djava.library.path=${dist_dir}/lib org.junit.runner.JUnitCore ${test_class} ${*@Q}
     # $EXE_WRAPPER ${JAVA_CMD} ${JAVA_PROPS} -cp ${test_classpath} org.junit.runner.JUnitCore ${test_class} ${*@Q}
     exit $?
 }

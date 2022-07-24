@@ -12,10 +12,13 @@ sdir=`dirname $(readlink -f $0)`
 rootdir=`dirname $sdir`
 bname=`basename $0 .sh`
 
-. $sdir/setup-machine-arch.sh
+. $sdir/setup-machine-arch.sh "-quiet"
 
-build_dir=${rootdir}/build-${archabi}
-dist_dir=$rootdir/dist-$archabi
+dist_dir=$rootdir/"dist-$os_name-$archabi"
+build_dir=$rootdir/"build-$os_name-$archabi"
+echo dist_dir $dist_dir
+echo build_dir $build_dir
+
 
 if [ ! -e $dist_dir/lib/java/jaulib-test.jar ] ; then
     echo "test exe $dist_dir/lib/java/jaulib-test.jar not existing"
@@ -51,7 +54,7 @@ fi
 test_basename=`echo ${test_class} | sed 's/.*\.//g'`
 
 if [ -z "${logfile}" ] ; then
-    logfile=~/${bname}-${test_basename}-${archabi}.log
+    logfile=~/${bname}-${test_basename}-${os_name}-${archabi}.log
 fi
 rm -f $logfile
 logbasename=`basename ${logfile} .log`

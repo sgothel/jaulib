@@ -160,6 +160,15 @@ public class TestByteStream01 extends JunitTracer {
         return false;
     }
 
+    static final String mini_httpd_exe() {
+        final String os_name = System.getProperty("os.name");
+        if( "FreeBSD".equals(os_name) ) {
+            return "/usr/local/sbin/mini_httpd";
+        } else {
+            return "/usr/sbin/mini_httpd";
+        }
+    }
+
     @AfterClass
     public static void httpd_stop() {
         if( UriTk.protocol_supported("http:") ) {
@@ -172,7 +181,7 @@ public class TestByteStream01 extends JunitTracer {
             Assert.assertTrue( system(new String[]{"killall", "mini_httpd"}) );
             final Path path = Paths.get("");
             final String directoryName = path.toAbsolutePath().toString();
-            final String[] cmd = new String[]{"/usr/sbin/mini_httpd", "-p", "8080", "-l", directoryName+"/mini_httpd.log"};
+            final String[] cmd = new String[]{mini_httpd_exe(), "-p", "8080", "-l", directoryName+"/mini_httpd.log"};
             PrintUtil.fprintf_td(System.err, "%s%n", Arrays.toString(cmd));
             Assert.assertTrue( system(cmd) );
         }

@@ -197,7 +197,8 @@ class TestFileUtil02 : TestFileUtilBase {
     }
 
     /** default group cdrom for all user, usually set to 24 in Debian and Ubuntu */
-    static const ::gid_t extra_test_group = 24;
+    /** default group video for most user, usually set to 44 in FreeBSD, Debian and Ubuntu */
+    static const ::gid_t extra_test_group = 44;
 
     void test50_mount_copy_r_p() {
         INFO_STR("\n\ntest50_mount_copy_r_p\n");

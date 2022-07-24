@@ -57,6 +57,7 @@ import org.jau.sys.MachineDataInfo;
 import org.jau.sys.PlatformProps;
 import org.jau.sys.PlatformTypes;
 import org.jau.sys.PropertyAccess;
+import org.jau.sys.PlatformTypes.OSType;
 
 public class IOUtil {
     public static final boolean DEBUG;
@@ -698,6 +699,8 @@ public class IOUtil {
         switch(PlatformProps.OS) {
             case WINDOWS:
               return "echo off"+PlatformProps.NEWLINE;
+            case FREEBSD:
+              return "#!/bin/test"+PlatformProps.NEWLINE;
             default:
               return "#!/bin/true"+PlatformProps.NEWLINE;
         }

@@ -5,6 +5,7 @@ set (jaulib_LIB_INCLUDE_DIRS
 include_directories(
   ${jaulib_LIB_INCLUDE_DIRS}
   ${CMAKE_CURRENT_BINARY_DIR}
+  ${SYS_INCLUDE_DIRS}
 )
 
 set (jaulib_LIB_SRCS
