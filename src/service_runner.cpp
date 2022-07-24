@@ -70,9 +70,9 @@ const pid_t service_runner::pid_self = getpid();
 
 static void sigaction_handler(int sig, siginfo_t *info, void *ucontext) noexcept {
     bool pidMatch = info->si_pid == service_runner::pid_self;
-    WORDY_PRINT("service_runner.sigaction: sig %d, info[code %d, errno %d, signo %d, pid %d, uid %d, fd %d], pid-self %d (match %d)",
+    WORDY_PRINT("service_runner.sigaction: sig %d, info[code %d, errno %d, signo %d, pid %d, uid %d], pid-self %d (match %d)",
             sig, info->si_code, info->si_errno, info->si_signo,
-            info->si_pid, info->si_uid, info->si_fd,
+            info->si_pid, info->si_uid,
             service_runner::pid_self, pidMatch);
     (void)ucontext;
 
