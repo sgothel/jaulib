@@ -9,7 +9,12 @@
 * First stable release (TODO)
 
 **0.15.0** (WIP)
-
+* Add support for FreeBSD
+  - Build clean and passes all tests.
+  - Motivation: Have one more target system for POSIX and clang validation.
+* Add support for (named) file descriptor: `jau::fs::file_stat` and `jau::io::ByteInStream_File`
+  - sub-project `pipe dreams` for `cipherpack`.
+  - allow stream-processing via pipes (e.g. stdin/stdout)
 * Resolve OpenJDK segmentation fault running via qemu binfmt_misc armhf or aarch64 on x86_64 host (cross build and test)
 * `copy_options::ignore_symlink_errors`: Also ignore symlinks if not supported by target filesystem if not using `follow_symlinks` (e.g.: vfat target)
 * `fraction_timespec::to_iso8601_string()`, `file_stats::to_string()`: Drop `use_space` parameter and print UTC ISO8601 w/ nanoseconds if not zero
