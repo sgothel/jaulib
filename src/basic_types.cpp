@@ -102,7 +102,7 @@ void jau::sleep_until(const fraction_timespec& absolute_time, const bool monoton
         return;
     }
     // typedef struct timespec __gthread_time_t;
-    __gthread_time_t ts = absolute_time.to_timespec();
+    struct timespec ts = absolute_time.to_timespec();
 
     while ( -1 == ::clock_nanosleep(monotonic ? CLOCK_MONOTONIC : CLOCK_REALTIME,
                                     TIMER_ABSTIME,
@@ -157,7 +157,7 @@ std::cv_status jau::wait_until(std::condition_variable& cv, std::unique_lock<std
         return std::cv_status::no_timeout;
     }
     // typedef struct timespec __gthread_time_t;
-    __gthread_time_t ts = absolute_time.to_timespec();
+    struct timespec ts = absolute_time.to_timespec();
 
     if( jau_has_pthread_cond_clockwait() ) {
         pthread_cond_clockwait(cv.native_handle(), lock.mutex()->native_handle(),
