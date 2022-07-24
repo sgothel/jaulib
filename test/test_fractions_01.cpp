@@ -509,17 +509,17 @@ TEST_CASE( "Fraction Arithmetic Test 02", "[integer][fraction]" ) {
     }
     {
         const std::chrono::milliseconds::rep exp_count = 100;
-        const fraction<int64_t> a(exp_count * fractions_i64::milli);
+        const fraction<int64_t> a(static_cast<int64_t>(exp_count) * fractions_i64::milli);
         test_duration(a, std::chrono::milliseconds::zero(), exp_count);
     }
     {
         const std::chrono::nanoseconds::rep exp_count = -50;
-        const fraction_i64 a(exp_count * fractions_i64::nano);
+        const fraction_i64 a(static_cast<int64_t>(exp_count) * fractions_i64::nano);
         test_duration(a, std::chrono::nanoseconds::zero(), exp_count);
     }
     {
         const std::chrono::hours::rep exp_count = 24;
-        const fraction_i64 a(exp_count * fractions_i64::hours);
+        const fraction_i64 a(static_cast<int64_t>(exp_count) * fractions_i64::hours);
         test_duration(a, std::chrono::hours::zero(), exp_count);
     }
     {
