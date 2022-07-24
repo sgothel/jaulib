@@ -4,6 +4,10 @@ find_jar(JUNIT_JAR
   NAMES junit4 junit
   PATHS "/usr/share/java" "/usr/local/share/java/classes" )
 
+find_jar(HAMCREST_JAR
+  NAMES hamcrest-all hamcrest
+  PATHS "/usr/share/java" "/usr/local/share/java/classes" )
+
 set(jaulib_test_jar_file ${CMAKE_CURRENT_BINARY_DIR}/jaulib-test.jar CACHE FILEPATH "jaulib test jar file" FORCE)
 
 file(GLOB_RECURSE TEST_JAVA_SOURCES "*.java")
@@ -17,7 +21,7 @@ add_jar(jaulib_test
         jau/test/net/data/RelativeData.txt
         jau/test/net/data2/RelativeData2.txt
         jau-test/info.txt
-        INCLUDE_JARS ${jaulib_fat_jar_file} ${JUNIT_JAR}
+        INCLUDE_JARS ${jaulib_fat_jar_file} ${JUNIT_JAR} ${HAMCREST_JAR}
         MANIFEST ${CMAKE_CURRENT_BINARY_DIR}/manifest.txt
         OUTPUT_NAME jaulib-test
 )
@@ -61,7 +65,7 @@ set( TARGETS_IDIOMATIC_EXAMPLES ${BASENAMES_IDIOMATIC_EXAMPLES} )
 
 foreach(name ${TARGETS_IDIOMATIC_EXAMPLES})
     add_test (NAME ${name} COMMAND ${JAVA_RUNTIME} -Dfile.encoding=UTF-8
-                           -cp ${JUNIT_JAR}:${jaulib_fat_jar_file}:${jaulib_test_jar_file}
+                           -cp ${JUNIT_JAR}:${HAMCREST_JAR}:${jaulib_fat_jar_file}:${jaulib_test_jar_file}
                            org.junit.runner.JUnitCore ${name})
 endforeach()
 
@@ -76,7 +80,7 @@ IF( ( TEST_WITH_SUDO ) AND ( "${OS_NAME}" STREQUAL "linux" ) )
     foreach( name ${TARGETS_IDIOMATIC_TESTSUDO} )
         add_test (NAME ${name} COMMAND sudo -E /sbin/capsh --caps=cap_sys_admin,cap_setuid,cap_setgid+eip\ cap_setpcap+ep
                            --keep=1 --user=$ENV{USER} --addamb=cap_sys_admin,cap_setuid,cap_setgid+eip
-                           -- -c "ulimit -c unlimited; ${JAVA_RUNTIME} -Dfile.encoding=UTF-8 -cp ${JUNIT_JAR}:${jaulib_fat_jar_file}:${jaulib_test_jar_file} org.junit.runner.JUnitCore ${name}")
+                           -- -c "ulimit -c unlimited; ${JAVA_RUNTIME} -Dfile.encoding=UTF-8 -cp ${JUNIT_JAR}:${HAMCREST_JAR}:${jaulib_fat_jar_file}:${jaulib_test_jar_file} org.junit.runner.JUnitCore ${name}")
     endforeach()
 ELSE()
     message(STATUS "Testsudo* disabled: TEST_WITH_SUDO ${TEST_WITH_SUDO}, OS_NAME ${OS_NAME}")
