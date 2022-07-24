@@ -130,27 +130,44 @@ void jau::sleep_for(const fraction_i64& relative_time, const bool monotonic) noe
     }
 }
 
-// Hack for glibc/pthread library w/o pthread_cond_clockwait,
-// i.e. on g++8, arm32, Debian 10.
-// Here we have to use pthread_cond_timedwait(), ignoring the clock type.
-//
-// __attribute__((weak)) tested w/ g++8.3, g++10 and clang-11
-//
-extern int pthread_cond_clockwait (pthread_cond_t *__restrict __cond,
-                   pthread_mutex_t *__restrict __mutex,
-                   __clockid_t __clock_id,
-                   const struct timespec *__restrict __abstime)
-     __nonnull ((1, 2, 4)) __attribute__((weak));
+#if __linux__
+    // Hack for glibc/pthread library w/o pthread_cond_clockwait,
+    // i.e. on g++8, arm32, Debian 10.
+    // Here we have to use pthread_cond_timedwait(), ignoring the clock type.
+    //
+    // __attribute__((weak)) tested w/ g++8.3, g++10 and clang-11
+    //
+    extern int pthread_cond_clockwait (pthread_cond_t *__restrict __cond,
+                       pthread_mutex_t *__restrict __mutex,
+                       __clockid_t __clock_id,
+                       const struct timespec *__restrict __abstime)
+         __nonnull ((1, 2, 4)) __attribute__((weak));
 
-static bool __jau__has_pthread_cond_clockwait() noexcept {
-    const bool r = nullptr != pthread_cond_clockwait;
-    fprintf(stderr, "INFO: jau::has_pthread_cond_clockwait: %d\n", r);
-    return r;
-}
-static bool jau_has_pthread_cond_clockwait() noexcept {
-    static bool r = __jau__has_pthread_cond_clockwait();
-    return r;
-}
+    static bool __jau__has_pthread_cond_clockwait() noexcept {
+        const bool r = nullptr != pthread_cond_clockwait;
+        fprintf(stderr, "INFO: jau::has_pthread_cond_clockwait: %d\n", r);
+        return r;
+    }
+    static bool jau_has_pthread_cond_clockwait() noexcept {
+        static bool r = __jau__has_pthread_cond_clockwait();
+        return r;
+    }
+#else
+    static int pthread_cond_clockwait (pthread_cond_t * __cond,
+                       pthread_mutex_t * __mutex,
+                       __clockid_t __clock_id,
+                       const struct timespec * __abstime) {
+        (void)__cond;
+        (void)__mutex;
+        (void)__clock_id;
+        (void)__abstime;
+        return -1;
+    }
+
+    static bool jau_has_pthread_cond_clockwait() noexcept {
+        return false;
+    }
+#endif
 
 std::cv_status jau::wait_until(std::condition_variable& cv, std::unique_lock<std::mutex>& lock, const fraction_timespec& absolute_time, const bool monotonic) noexcept {
     if( absolute_time <= fraction_tv::zero ) {
