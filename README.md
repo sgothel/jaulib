@@ -151,7 +151,9 @@ cd jaulib
 mkdir build
 cd build
 cmake -DBUILDJAVA=ON -DBUILDEXAMPLES=ON -DBUILD_TESTING=ON ..
-make -j $CPU_COUNT install test doc
+make -j $CPU_COUNT install
+make test
+make doc
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The install target of the last command will create the include/ and lib/ directories with a copy of
