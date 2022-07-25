@@ -41,6 +41,11 @@
 #include <jau/fraction_type.hpp>
 #include <jau/function_def.hpp>
 
+extern "C" {
+    #include <unistd.h>
+    #include <pthread.h>
+}
+
 namespace jau {
 
     /** \addtogroup Concurrency
@@ -56,7 +61,7 @@ namespace jau {
             typedef service_runner& service_runner_ref;
             typedef FunctionDef<void, service_runner_ref> Callback;
 
-            static const pid_t pid_self;
+            static const ::pid_t pid_self;
 
         private:
             std::string name_;
@@ -74,7 +79,7 @@ namespace jau {
             std::condition_variable cv_shall_stop_;
             jau::sc_atomic_bool shall_stop_;
             jau::sc_atomic_bool running;
-            pthread_t thread_id_;
+            ::pthread_t thread_id_;
 
             std::mutex mtx_lifecycle;
             std::condition_variable cv_init;

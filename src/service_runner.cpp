@@ -29,6 +29,7 @@ extern "C" {
     #include <sys/socket.h>
     #include <poll.h>
     #include <signal.h>
+    #include <pthread.h>
 }
 
 #include <jau/debug.hpp>
@@ -66,7 +67,7 @@ void service_runner::service_thread() {
     cv_init.notify_all(); // have mutex unlocked before notify_all to avoid pessimistic re-block of notified wait() thread.
 }
 
-const pid_t service_runner::pid_self = getpid();
+const ::pid_t service_runner::pid_self = ::getpid();
 
 static void sigaction_handler(int sig, siginfo_t *info, void *ucontext) noexcept {
     bool pidMatch = info->si_pid == service_runner::pid_self;
@@ -88,11 +89,11 @@ static void sigaction_handler(int sig, siginfo_t *info, void *ucontext) noexcept
 
 bool service_runner::install_sighandler() noexcept {
     struct sigaction sa_setup;
-    bzero(&sa_setup, sizeof(sa_setup));
+    ::bzero(&sa_setup, sizeof(sa_setup));
     sa_setup.sa_sigaction = sigaction_handler;
-    sigemptyset(&(sa_setup.sa_mask));
+    ::sigemptyset(&(sa_setup.sa_mask));
     sa_setup.sa_flags = SA_SIGINFO;
-    if( 0 != sigaction( SIGALRM, &sa_setup, NULL ) ) {
+    if( 0 != ::sigaction( SIGALRM, &sa_setup, NULL ) ) {
         ERR_PRINT("service_runner::install_sighandler: Setting sighandler");
         return false;
     }
@@ -102,11 +103,11 @@ bool service_runner::install_sighandler() noexcept {
 
 bool service_runner::remove_sighandler() noexcept {
     struct sigaction sa_setup;
-    bzero(&sa_setup, sizeof(sa_setup));
+    ::bzero(&sa_setup, sizeof(sa_setup));
     sa_setup.sa_handler = SIG_DFL;
-    sigemptyset(&(sa_setup.sa_mask));
+    ::sigemptyset(&(sa_setup.sa_mask));
     sa_setup.sa_flags = 0;
-    if( 0 != sigaction( SIGALRM, &sa_setup, NULL ) ) {
+    if( 0 != ::sigaction( SIGALRM, &sa_setup, NULL ) ) {
         ERR_PRINT("service_runner::remove_sighandler: Resetting sighandler");
         return false;
     }
@@ -177,8 +178,8 @@ bool service_runner::stop() noexcept {
     DBG_PRINT("%s::stop: Begin: %s", name_.c_str(), toString().c_str());
 
     std::unique_lock<std::mutex> lock(mtx_lifecycle); // RAII-style acquire and relinquish via destructor
-    const pthread_t tid_service = thread_id_;
-    const bool is_service = tid_service == pthread_self();
+    const ::pthread_t tid_service = thread_id_;
+    const bool is_service = tid_service == ::pthread_self();
     DBG_PRINT("%s::stop: service[running %d, shall_stop %d, is_service %d, tid %p)",
               name_.c_str(), running.load(), shall_stop_.load(), is_service, (void*)tid_service);
     set_shall_stop();
@@ -187,7 +188,7 @@ bool service_runner::stop() noexcept {
         if( !is_service ) {
             if( 0 != tid_service ) {
                 int kerr;
-                if( 0 != ( kerr = pthread_kill(tid_service, SIGALRM) ) ) {
+                if( 0 != ( kerr = ::pthread_kill(tid_service, SIGALRM) ) ) {
                     ERR_PRINT("%s::stop: pthread_kill %p FAILED: %d", name_.c_str(), (void*)tid_service, kerr);
                 }
             }
@@ -221,7 +222,7 @@ bool service_runner::join() noexcept {
     DBG_PRINT("%s::join: Begin: %s", name_.c_str(), toString().c_str());
     std::unique_lock<std::mutex> lock(mtx_lifecycle); // RAII-style acquire and relinquish via destructor
 
-    const bool is_service = thread_id_ == pthread_self();
+    const bool is_service = thread_id_ == ::pthread_self();
     DBG_PRINT("%s::join: is_service %d, %s", name_.c_str(), is_service, toString().c_str());
     bool result;
     if( running ) {
