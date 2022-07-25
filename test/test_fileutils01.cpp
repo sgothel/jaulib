@@ -24,6 +24,13 @@
 
 #include "test_fileutils_copy_r_p.hpp"
 
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <fstream>
+#include <iostream>
+
 class TestFileUtil01 : TestFileUtilBase {
   public:
 
@@ -774,6 +781,128 @@ class TestFileUtil01 : TestFileUtilBase {
         test_file_stat_fd_item(2, fd_stderr_l, fd_stderr_1, fd_stderr_2);
     }
 
+    // 128 bytes
+    static constexpr const char* pipe_msg = "Therefore I say unto you, Take no thought for your life, what ye shall eat, or what ye shall drink; nor yet for your body, what.";
+    static const size_t pipe_msg_len = 128;
+    static const size_t pipe_msg_count = 10;
+
+    void test08_pipe_01() {
+        jau::fprintf_td(stderr, "test08_pipe_01\n");
+
+        const std::string fd_name_prefix = "/dev/fd/";
+
+        int pipe_fds[2];
+        REQUIRE( 0 == ::pipe(pipe_fds) );
+        ::pid_t pid = ::fork();
+
+        if( 0 == pid ) {
+            // child process: WRITE
+            ::close(pipe_fds[0]); // close unused read end
+            const int new_stdout = pipe_fds[1];
+            const std::string fd_stdout = fd_name_prefix+std::to_string(new_stdout);
+
+            jau::fs::file_stats stats_stdout(fd_stdout);
+            jau::fprintf_td(stderr, "Child: stats_stdout %s\n", stats_stdout.to_string().c_str());
+            if( !stats_stdout.exists() || !stats_stdout.is_fd() || new_stdout != stats_stdout.fd() ) {
+                jau::fprintf_td(stderr, "Child: Error: stats_stdout %s\n", stats_stdout.to_string().c_str());
+                ::_exit(EXIT_FAILURE);
+            }
+            std::ofstream outfile(fd_stdout, std::ios::out | std::ios::binary);
+            if( !outfile.good() || !outfile.is_open() ) {
+                jau::fprintf_td(stderr, "Child: Error: outfile bad\n");
+                ::_exit(EXIT_FAILURE);
+            }
+
+            // throttled w/ 64 bytes per 8_ms, i.e. 1280 / 64 * 8_ms ~ 160_ms (~20 chunks)
+            const size_t max_chunck = 64;
+            for(size_t count=0; count < pipe_msg_count; ++count) {
+                size_t sent=0;
+                while( sent < pipe_msg_len && !outfile.fail() ) {
+                    const size_t chunck_sz = std::min(max_chunck, pipe_msg_len-sent);
+                    outfile.write(pipe_msg+sent, chunck_sz);
+                    sent += chunck_sz;
+                    jau::sleep_for( 8_ms );
+                }
+            }
+
+            outfile.close();
+            ::close(pipe_fds[1]);
+
+            if( outfile.fail() ) {
+                jau::fprintf_td(stderr, "Child: Error: outfile failed after write/closure\n");
+                ::_exit(EXIT_FAILURE);
+            }
+            jau::fprintf_td(stderr, "Child: Done\n");
+            ::_exit(EXIT_SUCCESS);
+
+        } else if( 0 < pid ) {
+            // parent process: READ
+            ::close(pipe_fds[1]); // close unused write end
+            const int new_stdin = pipe_fds[0]; // dup2(fd[0], 0);
+            const std::string fd_stdin = fd_name_prefix+std::to_string(new_stdin);
+
+            jau::fs::file_stats stats_stdin(fd_stdin);
+            jau::fprintf_td(stderr, "Parent: stats_stdin %s\n", stats_stdin.to_string().c_str());
+            REQUIRE(  stats_stdin.exists() );
+            REQUIRE(  stats_stdin.has_access() );
+            REQUIRE( !stats_stdin.is_dir() );
+            REQUIRE( !stats_stdin.is_file() );
+            REQUIRE(  stats_stdin.is_fd() );
+            REQUIRE(  new_stdin == stats_stdin.fd() );
+            REQUIRE( 0 == stats_stdin.size() );
+
+            // capture stdin
+            std::ifstream infile(fd_stdin, std::ios::in | std::ios::binary );
+            REQUIRE( infile.good() );
+            REQUIRE( infile.is_open() );
+
+            char buffer[pipe_msg_count * pipe_msg_len + 512];
+            ::bzero(buffer, sizeof(buffer));
+            size_t total_read = 0;
+            {
+                while( infile.good() && total_read < sizeof(buffer) ) {
+                    infile.read(buffer+total_read, sizeof(buffer)-total_read);
+                    REQUIRE( !infile.bad() );
+                    const size_t got = static_cast<size_t>(infile.gcount());
+                    total_read += got;
+                    jau::fprintf_td(stderr, "Parent: Got %zu -> %zu\n", got, total_read);
+                }
+                infile.close();
+                ::close(pipe_fds[0]);
+                REQUIRE( !infile.bad() );
+            }
+            // check actual transmitted content
+            REQUIRE( total_read == pipe_msg_len*pipe_msg_count);
+            for(size_t count=0; count < pipe_msg_count; ++count) {
+                REQUIRE( 0 == ::memcmp(pipe_msg, buffer+(count*pipe_msg_len), pipe_msg_len) );
+            }
+
+            int pid_status = 0;
+            ::pid_t child_pid = ::waitpid(pid, &pid_status, 0);
+            if( 0 > child_pid ) {
+                jau::fprintf_td(stderr, "Parent: Error: wait(%d) failed: child_pid %d\n", pid, child_pid);
+                REQUIRE_MSG("wait for child failed", false);
+            } else {
+                if( child_pid != pid ) {
+                    jau::fprintf_td(stderr, "Parent: Error: wait(%d) terminated child_pid pid %d\n", pid, child_pid);
+                    REQUIRE(child_pid == pid);
+                }
+                if( !WIFEXITED(pid_status) ) {
+                    jau::fprintf_td(stderr, "Parent: Error: wait(%d) terminated abnormally child_pid %d, pid_status %d\n", pid, child_pid, pid_status);
+                    REQUIRE(true == WIFEXITED(pid_status));
+                }
+                if( EXIT_SUCCESS != WEXITSTATUS(pid_status) ) {
+                    jau::fprintf_td(stderr, "Parent: Error: wait(%d) exit with failure child_pid %d, exit_code %d\n", pid, child_pid, WEXITSTATUS(pid_status));
+                    REQUIRE(EXIT_SUCCESS == WEXITSTATUS(pid_status));
+                }
+            }
+        } else {
+            // fork failed
+            jau::fprintf_td(stderr, "fork failed %d, %s\n", errno, ::strerror(errno));
+            REQUIRE_MSG( "fork failed", false );
+        }
+    }
+
     /**
      *
      */
@@ -1421,6 +1550,7 @@ METHOD_AS_TEST_CASE( TestFileUtil01::test04_dir_item,           "Test TestFileUt
 METHOD_AS_TEST_CASE( TestFileUtil01::test05_file_stat,          "Test TestFileUtil01 - test05_file_stat");
 METHOD_AS_TEST_CASE( TestFileUtil01::test06_file_stat_symlinks, "Test TestFileUtil01 - test06_file_stat_symlinks");
 METHOD_AS_TEST_CASE( TestFileUtil01::test07_file_stat_fd,       "Test TestFileUtil01 - test07_file_stat_fd");
+METHOD_AS_TEST_CASE( TestFileUtil01::test08_pipe_01,            "Test TestFileUtil01 - test08_pipe_01");
 
 METHOD_AS_TEST_CASE( TestFileUtil01::test10_mkdir,              "Test TestFileUtil01 - test10_mkdir");
 METHOD_AS_TEST_CASE( TestFileUtil01::test11_touch,              "Test TestFileUtil01 - test11_touch");
