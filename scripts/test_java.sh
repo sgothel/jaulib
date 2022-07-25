@@ -56,7 +56,8 @@ fi
 test_basename=`echo ${test_class} | sed 's/.*\.//g'`
 
 if [ -z "${logfile}" ] ; then
-    logfile=~/${bname}-${test_basename}-${os_name}-${archabi}.log
+    mkdir -p $rootdir/doc/test
+    logfile=$rootdir/doc/test/${bname}-${test_basename}-${os_name}-${archabi}.log
 fi
 rm -f $logfile
 logbasename=`basename ${logfile} .log`

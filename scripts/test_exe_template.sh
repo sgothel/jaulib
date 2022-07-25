@@ -31,6 +31,7 @@ else
     logbasename=$bname-$os_name-$archabi
 fi
 
+mkdir -p $rootdir/doc/test
 logfile=$rootdir/doc/test/$logbasename.0.log
 rm -f $logfile
 
