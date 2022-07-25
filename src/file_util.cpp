@@ -1851,12 +1851,13 @@ errout_child:
         int pid_status = 0;
         ::pid_t child_pid = ::waitpid(pid, &pid_status, 0);
         if( 0 > child_pid ) {
-            ERR_PRINT("wait(%d) failed: %d", pid, child_pid);
+            ERR_PRINT("wait(%d) failed: child_pid %d", pid, child_pid);
         } else {
             if( child_pid != pid ) {
-                WARN_PRINT("wait(%d) terminated pid %d", pid, child_pid);
+                WARN_PRINT("wait(%d) terminated child_pid %d", pid, child_pid);
             }
             if( !WIFEXITED(pid_status) ) {
+                WARN_PRINT("wait(%d) terminated abnormally child_pid %d, pid_status %d", pid, child_pid, pid_status);
                 goto errout;
             }
             loop_device_id = WEXITSTATUS(pid_status);
@@ -1955,14 +1956,15 @@ errout_child:
         int pid_status = 0;
         ::pid_t child_pid = ::waitpid(pid, &pid_status, 0);
         if( 0 > child_pid ) {
-            ERR_PRINT("wait(%d) failed: %d", pid, child_pid);
+            ERR_PRINT("wait(%d) failed: child_pid %d", pid, child_pid);
         } else {
             if( child_pid != pid ) {
-                WARN_PRINT("wait(%d) terminated pid %d", pid, child_pid);
+                WARN_PRINT("wait(%d) terminated child_pid %d", pid, child_pid);
             }
             if( WIFEXITED(pid_status) && EXIT_SUCCESS == WEXITSTATUS(pid_status) ) {
                 return true;
             }
+            WARN_PRINT("wait(%d) terminated abnormally child_pid %d, pid_status %d", pid, child_pid, pid_status);
         }
     } else {
         ERR_PRINT("Couldn't fork() process: res %d", pid);
