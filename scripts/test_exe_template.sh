@@ -6,6 +6,8 @@
 #   <none>            auto_run, no benchmarking
 #
 
+script_args="$@"
+
 sdir=`dirname $(readlink -f $0)`
 rootdir=`dirname $sdir`
 bname=`basename $0 .sh`
@@ -57,7 +59,7 @@ export LANG=en_US.UTF-8
 export EXE_WRAPPER="nice -20"
 
 runit() {
-    echo COMMANDLINE $0 $*
+    echo "script invocation: $0 ${script_args}"
     echo EXE_WRAPPER $EXE_WRAPPER
     echo logbasename $logbasename
     echo logfile $logfile
@@ -67,13 +69,13 @@ runit() {
     cd $build_dir/test
     pwd
 
-    echo $EXE_WRAPPER ./$bname $*
+    echo "$EXE_WRAPPER ./$bname ${*@Q}"
 
     #export ASAN_OPTIONS=verbosity=1:malloc_context_size=20
     #export ASAN_OPTIONS=print_stats:halt_on_error:replace_intrin
 
-    $EXE_WRAPPER ./$bname $*
+    $EXE_WRAPPER ./$bname "$@"
 }
 
-runit $* 2>&1 | tee $logfile
+runit "$@" 2>&1 | tee $logfile
 
