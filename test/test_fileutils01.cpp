@@ -756,7 +756,7 @@ class TestFileUtil01 : TestFileUtilBase {
     }
 
     void test07_file_stat_fd() {
-        INFO_STR("\n\ntest07_file_stat_fd\n");
+        jau::fprintf_td(stderr, "test07_file_stat_fd\n");
 
         const std::string fd_stdin_l = "/dev/stdin";
         const std::string fd_stdout_l = "/dev/stdout";
