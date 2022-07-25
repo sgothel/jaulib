@@ -65,8 +65,6 @@ but currently only intended to support unit testing and to produce a Doxygen API
     - OpenJDK >= 11
     - junit4 >= 4.12
 
-The project requires CMake 3.13+ for building and a Java JDK >= 11.
-
 #### Install on FreeBSD
 
 Installing build dependencies on FreeBSD >= 13:
