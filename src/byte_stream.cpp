@@ -305,7 +305,11 @@ ByteInStream_File::ByteInStream_File(const std::string& path, bool use_binary) n
     } else {
         m_has_content_length = stats->is_file();
         m_content_size = stats->size();
-        m_source = std::make_unique<std::ifstream>(stats->path(), use_binary ? std::ios::binary : std::ios::in);
+        std::ios_base::openmode omode = std::ios::in;
+        if( use_binary ) {
+            omode |= std::ios::binary;
+        }
+        m_source = std::make_unique<std::ifstream>(stats->path(), omode);
         if( error() ) {
             DBG_PRINT("ByteInStream_File::ctor: Error occurred in %s, %s", stats->to_string().c_str(), to_string().c_str());
             m_source = nullptr;
