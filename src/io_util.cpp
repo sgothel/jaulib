@@ -80,6 +80,8 @@ uint64_t jau::io::read_stream(ByteInStream& in,
             }
         } else {
             has_more = false;
+            buffer.resize(0);
+            consumer_fn(buffer, true); // forced final, zero size
         }
     }
     return total;

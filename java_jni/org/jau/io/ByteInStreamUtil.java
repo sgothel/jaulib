@@ -92,6 +92,7 @@ public interface ByteInStreamUtil {
                 }
             } else {
                 has_more = false;
+                consumer.consume(buffer, 0, true); // forced final, zero size
             }
         }
         return total;
