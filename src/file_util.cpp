@@ -1768,6 +1768,10 @@ bool jau::fs::rename(const std::string& oldpath, const std::string& newpath) noe
     return true;
 }
 
+void jau::fs::sync() noexcept {
+    ::sync();
+}
+
 static bool set_effective_uid(::uid_t user_id) {
     if( 0 != ::seteuid(user_id) ) {
         ERR_PRINT("seteuid(%" PRIu32 ") failed", user_id);

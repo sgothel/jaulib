@@ -1191,6 +1191,7 @@ public class TestFileUtils01 extends FileUtilBaseTest {
                 Assert.assertTrue( false == dest_stats.exists() );
             }
             Assert.assertTrue( true == FileUtil.copy(source1_stats.path(), root_copy+"/file_10.txt", copts) );
+            FileUtil.sync(); // just check API
             {
                 final FileStats dest_stats = new FileStats(root_copy+"/file_10.txt");
                 PrintUtil.fprintf_td(System.err, "test31_copy_file2file: 10: dest.post: %s\n", dest_stats);
@@ -1214,6 +1215,7 @@ public class TestFileUtils01 extends FileUtilBaseTest {
                 Assert.assertTrue( true == dest_stats.is_file() );
             }
             Assert.assertTrue( false == FileUtil.copy(source1_stats.path(), root_copy+"/file_10.txt", copts) );
+            FileUtil.sync(); // just check API
         }
         {
             // Overwrite copy file to file
@@ -1232,6 +1234,7 @@ public class TestFileUtils01 extends FileUtilBaseTest {
                 Assert.assertTrue( source1_stats.mode().equals( dest_stats.mode() ) );
             }
             Assert.assertTrue( true == FileUtil.copy(source2_stats.path(), root_copy+"/file_10.txt", copts) );
+            FileUtil.sync(); // just check API
             {
                 final FileStats dest_stats = new FileStats(root_copy+"/file_10.txt");
                 PrintUtil.fprintf_td(System.err, "test31_copy_file2file: 12: dest.post: %s\n", dest_stats);

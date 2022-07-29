@@ -371,6 +371,15 @@ jboolean Java_org_jau_fs_FileUtil_rename(JNIEnv *env, jclass cls, jstring joldpa
     return false;
 }
 
+void Java_org_jau_fs_FileUtil_sync(JNIEnv *env, jclass cls) {
+    (void)cls;
+    try {
+        jau::fs::sync();
+    } catch(...) {
+        rethrow_and_raise_java_exception_jau(env);
+    }
+}
+
 jlong Java_org_jau_fs_FileUtil_mount_1image(JNIEnv *env, jclass cls,
                                            jstring jimage_path, jstring jmount_point,
                                            jstring jfs_type, jlong jmountflags, jstring jfs_options) {

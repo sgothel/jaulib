@@ -309,6 +309,11 @@ public final class FileUtil {
     public static native boolean rename(final String oldpath, final String newpath);
 
     /**
+     * Synchronizes filesystems, i.e. all pending modifications to filesystem metadata and cached file data will be written to the underlying filesystems.
+     */
+    public static native void sync();
+
+    /**
      * Attach the filesystem image named in `image_path` to `target_path`.
      *
      * This method either requires root permissions <br />

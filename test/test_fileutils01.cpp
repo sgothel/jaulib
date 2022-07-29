@@ -1299,6 +1299,7 @@ class TestFileUtil01 : TestFileUtilBase {
                 REQUIRE( false == dest_stats.exists() );
             }
             REQUIRE( true == jau::fs::copy(source1_stats.path(), root_copy+"/file_10.txt", copts) );
+            jau::fs::sync(); // just check API
             {
                 jau::fs::file_stats dest_stats(root_copy+"/file_10.txt");
                 jau::fprintf_td(stderr, "test31_copy_file2file: 10: dest.post: %s\n", dest_stats.to_string().c_str());
@@ -1321,6 +1322,7 @@ class TestFileUtil01 : TestFileUtilBase {
                 REQUIRE( true == dest_stats.is_file() );
             }
             REQUIRE( false == jau::fs::copy(source1_stats.path(), root_copy+"/file_10.txt", copts) );
+            jau::fs::sync(); // just check API
         }
         {
             // Overwrite copy file to file
@@ -1339,6 +1341,7 @@ class TestFileUtil01 : TestFileUtilBase {
                 REQUIRE( source1_stats.mode() == dest_stats.mode() );
             }
             REQUIRE( true == jau::fs::copy(source2_stats.path(), root_copy+"/file_10.txt", copts) );
+            jau::fs::sync(); // just check API
             {
                 jau::fs::file_stats dest_stats(root_copy+"/file_10.txt");
                 jau::fprintf_td(stderr, "test31_copy_file2file: 12: dest.post: %s\n", dest_stats.to_string().c_str());

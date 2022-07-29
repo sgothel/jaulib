@@ -1073,6 +1073,11 @@ namespace jau {
          */
         bool rename(const std::string& oldpath, const std::string& newpath) noexcept;
 
+        /**
+         * Synchronizes filesystems, i.e. all pending modifications to filesystem metadata and cached file data will be written to the underlying filesystems.
+         */
+        void sync() noexcept;
+
         struct mount_ctx {
             bool mounted;
             std::string mount_point;
