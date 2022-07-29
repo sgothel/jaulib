@@ -115,7 +115,14 @@ public class FMode {
     }
 
     public boolean isSet(final Bit bit) { return bit.value == ( mask & bit.value ); }
-    public void set(final Bit bit) { mask = (short) ( mask | bit.value ); }
+
+    /**
+     * Sets the given bit and returns this instance for chaining.
+     * @param bit the given Bit value to set
+     * @return this instance for chaining.
+     */
+    public FMode set(final Bit bit) { mask = (short) ( mask | bit.value ); return this; }
+
     public FMode mask(final int bits) {
         final int r = mask & bits;
         if( r == mask ) { return this; }

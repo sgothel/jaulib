@@ -79,7 +79,13 @@ public class CopyOptions {
     }
 
     public boolean isSet(final Bit bit) { return bit.value == ( mask & bit.value ); }
-    public void set(final Bit bit) { mask = (short) ( mask | bit.value ); }
+
+    /**
+     * Sets the given bit and returns this instance for chaining.
+     * @param bit the given Bit value to set
+     * @return this instance for chaining.
+     */
+    public CopyOptions set(final Bit bit) { mask = (short) ( mask | bit.value ); return this; }
 
     @Override
     public String toString() {
