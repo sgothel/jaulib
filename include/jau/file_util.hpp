@@ -950,6 +950,13 @@ namespace jau {
             follow_symlinks = 1 << 1,
 
             /**
+             * Copy source dir content into an already existing destination directory as if destination directory did not exist.
+             *
+             * Otherwise, if destination directory already exist, the source directory will be copied below the destination directory.
+             */
+            into_existing_dir = 1 << 2,
+
+            /**
              * Ignore errors from erroneous symlinks, e.g. non-existing link-targets, recursive loop-errors.or unsupported symmlinks on target filesystem.
              *
              * This flag is required to
@@ -1017,7 +1024,8 @@ namespace jau {
          * The following behavior is being followed regarding dest_path:
          * - If source_path is a directory and copy_options::recursive set
          *   - If dest_path doesn't exist, source_path dir content is copied into the newly created dest_path.
-         *   - If dest_path exists as a directory, source_path dir will be copied below the dest_path directory.
+         *   - If dest_path exists as a directory, source_path dir will be copied below the dest_path directory
+         *     _if_ copy_options::into_existing_dir is not set. Otherwise its content is copied into the existing dest_path.
          *   - Everything else is considered an error
          * - If source_path is a file
          *   - If dest_path doesn't exist, source_path file is copied to dest_path as a file.

@@ -1214,6 +1214,7 @@ errout:
 #define COPYOPTIONS_BIT_ENUM(X,M) \
     X(copy_options,recursive,M) \
     X(copy_options,follow_symlinks,M) \
+    X(copy_options,into_existing_dir,M) \
     X(copy_options,ignore_symlink_errors,M) \
     X(copy_options,overwrite,M) \
     X(copy_options,preserve_all,M) \
@@ -1656,8 +1657,9 @@ bool jau::fs::copy(const std::string& source_path, const std::string& target_pat
         return false;
     }
     // src_dirfd of 'source_stats.item().dirname().c_str()' will be pushed by visit() itself
-    if( target_stats.is_dir() ) {
-        // Case: If dest_path exists as a directory, source_path dir will be copied below the dest_path directory.
+    if( target_stats.is_dir() && !is_set(copts, copy_options::into_existing_dir) ) {
+        // Case: If dest_path exists as a directory, source_path dir will be copied below the dest_path directory
+        //       _if_ copy_options::into_existing_dir is not set. Otherwise its content is copied into the existing dest_path.
         const int dst_dirfd = __posix_openat64(AT_FDCWD, target_stats.path().c_str(), _open_dir_flags);
         if ( 0 > dst_dirfd ) {
             ERR_PRINT("target dir couldn't be opened, target %s", target_stats.to_string().c_str());
@@ -1666,6 +1668,7 @@ bool jau::fs::copy(const std::string& source_path, const std::string& target_pat
         ctx.dst_dirfds.push_back(dst_dirfd);
     } else {
         // Case: If dest_path doesn't exist, source_path dir content is copied into the newly created dest_path.
+        // - OR - dest_path does exist and copy_options::into_existing_dir is set
         file_stats target_parent_stats(target_stats.item().dirname());
         if( !target_parent_stats.is_dir() ) {
             if( is_set(copts, copy_options::verbose) ) {
@@ -1674,16 +1677,26 @@ bool jau::fs::copy(const std::string& source_path, const std::string& target_pat
             }
             return false;
         }
-        const int dst_dirfd = __posix_openat64(AT_FDCWD, target_parent_stats.path().c_str(), _open_dir_flags);
-        if ( 0 > dst_dirfd ) {
+        const int dst_parent_dirfd = __posix_openat64(AT_FDCWD, target_parent_stats.path().c_str(), _open_dir_flags);
+        if ( 0 > dst_parent_dirfd ) {
             ERR_PRINT("target dirname couldn't be opened, target %s, target_parent %s",
                     target_stats.to_string().c_str(), target_parent_stats.to_string().c_str());
             return false;
         }
-        ctx.dst_dirfds.push_back(dst_dirfd);
+        ctx.dst_dirfds.push_back(dst_parent_dirfd);
 
-        if( !copy_push_mkdir(target_stats, ctx) ) {
-            return false;
+        if( target_stats.is_dir() ) {
+            // Case: copy_options::into_existing_dir
+            const int dst_dirfd = __posix_openat64(AT_FDCWD, target_stats.path().c_str(), _open_dir_flags);
+            if ( 0 > dst_dirfd ) {
+                ERR_PRINT("target dir couldn't be opened, target %s", target_stats.to_string().c_str());
+                return false;
+            }
+            ctx.dst_dirfds.push_back(dst_dirfd);
+        } else {
+            if( !copy_push_mkdir(target_stats, ctx) ) {
+                return false;
+            }
         }
         ctx.skip_dst_dir_mkdir = 1;
     }

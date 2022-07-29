@@ -1394,19 +1394,62 @@ class TestFileUtil01 : TestFileUtilBase {
         REQUIRE( true == jau::fs::remove(root_copy_parent, jau::fs::traverse_options::recursive) );
     }
 
-    void test42_copy_ext_r_p_vfat() {
-        INFO_STR("\n\ntest42_copy_ext_r_p_vfat\n");
+    void test42_copy_ext_r_p_into() {
+        INFO_STR("\n\ntest41_copy_ext_r_p_into\n");
+
+        jau::fs::file_stats root_orig_stats(project_root1);
+        if( !root_orig_stats.exists() ) {
+            root_orig_stats = jau::fs::file_stats(project_root2);
+        }
+        REQUIRE( true == root_orig_stats.exists() );
+
+        const jau::fs::copy_options copts = jau::fs::copy_options::recursive |
+                                            jau::fs::copy_options::into_existing_dir |
+                                            jau::fs::copy_options::preserve_all |
+                                            jau::fs::copy_options::sync |
+                                            jau::fs::copy_options::verbose;
+        const std::string root_copy = root+"_copy_test42_into";
+        jau::fs::remove(root_copy, jau::fs::traverse_options::recursive);
+        REQUIRE( true == jau::fs::mkdir(root_copy, jau::fs::fmode_t::def_dir_prot) );
+        testxx_copy_r_p("test42_copy_ext_r_p_into", root_orig_stats, 0 /* source_added_dead_links */, root_copy, copts, false /* dest_is_vfat */);
+        REQUIRE( true == jau::fs::remove(root_copy, jau::fs::traverse_options::recursive) );
+    }
+
+    void test43_copy_ext_r_p_over() {
+        INFO_STR("\n\ntest43_copy_ext_r_p_over\n");
+
+        jau::fs::file_stats root_orig_stats(project_root1);
+        if( !root_orig_stats.exists() ) {
+            root_orig_stats = jau::fs::file_stats(project_root2);
+        }
+        REQUIRE( true == root_orig_stats.exists() );
+
+        const jau::fs::copy_options copts = jau::fs::copy_options::recursive |
+                                            jau::fs::copy_options::preserve_all |
+                                            jau::fs::copy_options::sync |
+                                            jau::fs::copy_options::verbose;
+        const std::string root_copy = root+"_copy_test43_over";
+        jau::fs::remove(root_copy, jau::fs::traverse_options::recursive);
+        REQUIRE( true == jau::fs::mkdir(root_copy, jau::fs::fmode_t::def_dir_prot) );
+        const std::string root_copy_sub = root_copy+"/"+root_orig_stats.item().basename();
+        REQUIRE( true == jau::fs::mkdir(root_copy_sub, jau::fs::fmode_t::def_dir_prot) );
+        testxx_copy_r_p("test43_copy_ext_r_p_over", root_orig_stats, 0 /* source_added_dead_links */, root_copy, copts, false /* dest_is_vfat */);
+        REQUIRE( true == jau::fs::remove(root_copy, jau::fs::traverse_options::recursive) );
+    }
+
+    void test49_copy_ext_r_p_vfat() {
+        INFO_STR("\n\ntest49_copy_ext_r_p_vfat\n");
 
         // Query and prepare vfat data sink
         jau::fs::file_stats dest_fs_vfat_stats(dest_fs_vfat);
         if( !dest_fs_vfat_stats.is_dir() ) {
-            jau::fprintf_td(stderr, "test42_copy_ext_r_p_vfat: Skipped, no vfat dest-dir %s\n", dest_fs_vfat_stats.to_string().c_str());
+            jau::fprintf_td(stderr, "test49_copy_ext_r_p_vfat: Skipped, no vfat dest-dir %s\n", dest_fs_vfat_stats.to_string().c_str());
             return;
         }
-        const std::string dest_vfat_parent = dest_fs_vfat+"/test42_data_sink";
+        const std::string dest_vfat_parent = dest_fs_vfat+"/test49_data_sink";
         jau::fs::remove(dest_vfat_parent, jau::fs::traverse_options::recursive);
         if( !jau::fs::mkdir(dest_vfat_parent, jau::fs::fmode_t::def_dir_prot) ) {
-            jau::fprintf_td(stderr, "test42_copy_ext_r_p_vfat: Skipped, couldn't create vfat dest folder %s\n", dest_vfat_parent.c_str());
+            jau::fprintf_td(stderr, "test49_copy_ext_r_p_vfat: Skipped, couldn't create vfat dest folder %s\n", dest_vfat_parent.c_str());
             return;
         }
 
@@ -1423,7 +1466,7 @@ class TestFileUtil01 : TestFileUtilBase {
                                             jau::fs::copy_options::sync |
                                             jau::fs::copy_options::verbose;
         const std::string dest_vfat_dir = dest_vfat_parent+"/"+root;
-        testxx_copy_r_p("test42_copy_ext_r_p_vfat", root_orig_stats, 0 /* source_added_dead_links */, dest_vfat_dir, copts, true /* dest_is_vfat */);
+        testxx_copy_r_p("test49_copy_ext_r_p_vfat", root_orig_stats, 0 /* source_added_dead_links */, dest_vfat_dir, copts, true /* dest_is_vfat */);
 
         REQUIRE( true == jau::fs::remove(dest_vfat_parent, jau::fs::traverse_options::recursive) );
     }
@@ -1563,6 +1606,9 @@ METHOD_AS_TEST_CASE( TestFileUtil01::test31_copy_file2file,     "Test TestFileUt
 
 METHOD_AS_TEST_CASE( TestFileUtil01::test40_copy_ext_r_p,       "Test TestFileUtil01 - test40_copy_ext_r_p");
 METHOD_AS_TEST_CASE( TestFileUtil01::test41_copy_ext_r_p_below, "Test TestFileUtil01 - test41_copy_ext_r_p_below");
-METHOD_AS_TEST_CASE( TestFileUtil01::test42_copy_ext_r_p_vfat,  "Test TestFileUtil01 - test42_copy_ext_r_p_vfat");
+METHOD_AS_TEST_CASE( TestFileUtil01::test42_copy_ext_r_p_into,  "Test TestFileUtil01 - test42_copy_ext_r_p_into");
+METHOD_AS_TEST_CASE( TestFileUtil01::test43_copy_ext_r_p_over,  "Test TestFileUtil01 - test43_copy_ext_r_p_over");
+
+METHOD_AS_TEST_CASE( TestFileUtil01::test49_copy_ext_r_p_vfat,  "Test TestFileUtil01 - test49_copy_ext_r_p_vfat");
 
 METHOD_AS_TEST_CASE( TestFileUtil01::test50_copy_ext_r_p_fsl,   "Test TestFileUtil01 - test50_copy_ext_r_p_fsl");

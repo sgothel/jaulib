@@ -44,6 +44,13 @@ public class CopyOptions {
         follow_symlinks ( (short)( 1 << 1 ) ),
 
         /**
+         * Copy source dir content into an already existing destination directory as if destination directory did not exist.
+         *
+         * Otherwise, if destination directory already exist, the source directory will be copied below the destination directory.
+         */
+        into_existing_dir ( (short)( 1 << 2 ) ),
+
+        /**
          * Ignore errors from erroneous symlinks, e.g. non-existing link-targets, recursive loop-errors.or unsupported symmlinks on target filesystem.
          *
          * This flag is required to

@@ -38,10 +38,16 @@ void testxx_copy_r_p(const std::string& title,
     {
         jau::fs::file_stats dest_stats(dest);
         if( dest_stats.exists() ) {
-            // If dest_path exists as a directory, source_path dir will be copied below the dest_path directory.
+            // If dest_path exists as a directory, source_path dir will be copied below the dest_path directory
+            // _if_ copy_options::into_existing_dir is not set. Otherwise its content is copied into the existing dest_path.
             REQUIRE( true == dest_stats.is_dir() );
-            dest_is_parent = true;
-            dest_root = dest + "/" + source.item().basename();
+            if( is_set(copts, jau::fs::copy_options::into_existing_dir ) ) {
+                dest_is_parent = false;
+                dest_root = dest;
+            } else {
+                dest_is_parent = true;
+                dest_root = dest + "/" + source.item().basename();
+            }
         } else {
             // If dest_path doesn't exist, source_path dir content is copied into the newly created dest_path.
             dest_is_parent = false;

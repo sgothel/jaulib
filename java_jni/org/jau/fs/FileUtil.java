@@ -254,14 +254,15 @@ public final class FileUtil {
      * The behavior is similar like POSIX `cp` commandline tooling.
      *
      * The following behavior is being followed regarding dest_path:
-     * - If source_path is a directory and copy_options::recursive set
+     * - If source_path is a directory and CopyOptions::recursive set
      *   - If dest_path doesn't exist, source_path dir content is copied into the newly created dest_path.
-     *   - If dest_path exists as a directory, source_path dir will be copied below the dest_path directory.
+     *   - If dest_path exists as a directory, source_path dir will be copied below the dest_path directory
+     *     _if_ CopyOptions::into_existing_dir is not set. Otherwise its content is copied into the existing dest_path.
      *   - Everything else is considered an error
      * - If source_path is a file
      *   - If dest_path doesn't exist, source_path file is copied to dest_path as a file.
      *   - If dest_path exists as a directory, source_path file will be copied below the dest_path directory.
-     *   - If dest_path exists as a file, copy_options::overwrite must be set to have it overwritten by the source_path file
+     *   - If dest_path exists as a file, CopyOptions::overwrite must be set to have it overwritten by the source_path file
      *   - Everything else is considered an error
      *
      * Implementation either uses ::sendfile() if running under `GNU/Linux`,

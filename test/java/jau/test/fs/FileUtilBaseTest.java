@@ -209,10 +209,16 @@ public class FileUtilBaseTest extends JunitTracer {
         {
             final FileStats dest_stats = new FileStats(dest);
             if( dest_stats.exists() ) {
-                // If dest_path exists as a directory, source_path dir will be copied below the dest_path directory.
+                // If dest_path exists as a directory, source_path dir will be copied below the dest_path directory
+                // _if_ copy_options::into_existing_dir is not set. Otherwise its content is copied into the existing dest_path.
                 Assert.assertTrue( dest_stats.is_dir() );
-                dest_is_parent = true;
-                dest_root = dest + "/" + source.item().basename();
+                if( copts.isSet(CopyOptions.Bit.into_existing_dir) ) {
+                    dest_is_parent = false;
+                    dest_root = dest;
+                } else {
+                    dest_is_parent = true;
+                    dest_root = dest + "/" + source.item().basename();
+                }
             } else {
                 // If dest_path doesn't exist, source_path dir content is copied into the newly created dest_path.
                 dest_is_parent = false;
