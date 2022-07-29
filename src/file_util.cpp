@@ -1769,7 +1769,7 @@ bool jau::fs::rename(const std::string& oldpath, const std::string& newpath) noe
         return false;
     }
     if( 0 != ::rename(oldpath_stats.path().c_str(), newpath_stats.path().c_str()) ) {
-        ERR_PRINT("raname failed, oldpath %s, newpath %s\n",
+        ERR_PRINT("rename failed, oldpath %s, newpath %s\n",
                 oldpath_stats.to_string().c_str(), newpath_stats.to_string().c_str());
         return false;
     }
