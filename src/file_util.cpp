@@ -929,6 +929,7 @@ std::string jau::fs::to_string(const traverse_event mask) noexcept {
 #define TRAVERSEOPTIONS_ENUM(X,M) \
     X(traverse_options,recursive,M) \
     X(traverse_options,follow_symlinks,M) \
+    X(traverse_options,lexicographical_order,M) \
     X(traverse_options,dir_entry,M) \
     X(traverse_options,dir_exit,M)
 
@@ -938,6 +939,10 @@ std::string jau::fs::to_string(const traverse_options mask) noexcept {
     TRAVERSEOPTIONS_ENUM(APPEND_BITSTR,mask)
     out.append("]");
     return out;
+}
+
+static bool _dir_item_basename_compare(const dir_item& a, const dir_item& b) {
+    return a.basename() < b.basename();
 }
 
 static bool _visit(const file_stats& item_stats, const traverse_options topts, const path_visitor& visitor, std::vector<int>& dirfds) noexcept {
@@ -971,6 +976,9 @@ static bool _visit(const file_stats& item_stats, const traverse_options topts, c
                     ( [](std::vector<dir_item>* receiver, const dir_item& item) -> void { receiver->push_back( item ); } )
             );
         if( get_dir_content(this_dirfd, item_stats.path(), cs) && content.size() > 0 ) {
+            if( is_set(topts, traverse_options::lexicographical_order) ) {
+                std::sort(content.begin(), content.end(), _dir_item_basename_compare);
+            }
             for (const dir_item& element : content) {
                 const file_stats element_stats( this_dirfd, element, true /* dirfd_is_item_dirname */ );
                 if( element_stats.is_dir() ) { // an OK dir

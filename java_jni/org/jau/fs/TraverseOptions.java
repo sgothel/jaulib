@@ -45,11 +45,14 @@ public class TraverseOptions {
         /** Traverse through symbolic linked directories if traverse_options::recursive is set, i.e. directories with property fmode_t::link set. */
         follow_symlinks ( (short) ( 1 << 1 ) ),
 
+        /** Traverse through elements in lexicographical order. This might be required when computing an order dependent outcome like a hash value. */
+        lexicographical_order ( (short) ( 1 << 2 ) ),
+
         /** Visit the content's parent directory at entry. Both, dir_entry and dir_exit can be set, only one or none. */
-        dir_entry ( (short) ( 1 << 2 ) ),
+        dir_entry ( (short) ( 1 << 8 ) ),
 
         /** Visit the content's parent directory at exit. Both, dir_entry and dir_exit can be set, only one or none. */
-        dir_exit ( (short) ( 1 << 3 ) ),
+        dir_exit ( (short) ( 1 << 9 ) ),
 
         /** Enable verbosity mode, potentially used by a path_visitor implementation like remove(). */
         verbose ( (short) ( 1 << 15 ) );

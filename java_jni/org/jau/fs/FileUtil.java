@@ -24,6 +24,7 @@
 package org.jau.fs;
 
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -183,8 +184,19 @@ public final class FileUtil {
                     return false;
                 }
             }
+
+            final Comparator<DirItem> dirItemComparator = new Comparator<DirItem> () {
+                @Override
+                public int compare(final DirItem o1, final DirItem o2) {
+                    return o1.basename().compareTo(o2.basename());
+                }
+            };
+
             final List<DirItem> content = get_dir_content(item_stats.path());
             if( null != content && content.size() > 0 ) {
+                if( topts.isSet(TraverseOptions.Bit.lexicographical_order) ) {
+                    content.sort(dirItemComparator);
+                }
                 for (final DirItem element : content) {
                     final FileStats element_stats = new FileStats( element.path() );
                     if( element_stats.is_dir() ) { // an OK dir

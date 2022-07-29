@@ -807,11 +807,14 @@ namespace jau {
                 /** Traverse through symbolic linked directories if traverse_options::recursive is set, i.e. directories with property fmode_t::link set. */
                 follow_symlinks = 1 << 1,
 
+                /** Traverse through elements in lexicographical order. This might be required when computing an order dependent outcome like a hash value. */
+                lexicographical_order = 1 << 2,
+
                 /** Visit the content's parent directory at entry. Both, dir_entry and dir_exit can be set, only one or none. */
-                dir_entry = 1 << 2,
+                dir_entry = 1 << 8,
 
                 /** Visit the content's parent directory at exit. Both, dir_entry and dir_exit can be set, only one or none. */
-                dir_exit = 1 << 3,
+                dir_exit = 1 << 9,
 
                 /** Enable verbosity mode, potentially used by a path_visitor implementation like remove(). */
                 verbose = 1 << 15
