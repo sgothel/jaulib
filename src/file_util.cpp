@@ -1228,17 +1228,25 @@ bool jau::fs::compare(const file_stats& source1, const file_stats& source2, cons
         ssize_t rc1, rc2=0;
         char buffer1[BUFSIZ];
         char buffer2[BUFSIZ];
+
         if( ( rc1 = ::read(src1, buffer1, sizeof(buffer1)) ) > 0 ) {
             ssize_t bytes_to_write = rc1;
             size_t buffer_offset = 0;
-            while( 0 < bytes_to_write ) { // src2-read required src1 size in chunks, allowing potential multiple read-ops to match src1 size
-                if( ( rc2 = ::read(src2, buffer2+buffer_offset, bytes_to_write) ) < 0 ) {
-                    break;
+            while( 0 <= rc2 && 0 < bytes_to_write ) { // src2-read required src1 size in chunks, allowing potential multiple read-ops to match src1 size
+                while( ( rc2 = ::read(src2, buffer2+buffer_offset, bytes_to_write) ) < 0 ) {
+                    if ( errno == EAGAIN || errno == EINTR ) {
+                        // cont temp unavail or interruption
+                        continue;
+                    }
+                    break; // error, exist inner (break) and outter loop (rc2<0)
                 }
                 buffer_offset += rc2;
                 bytes_to_write -= rc2;
                 offset += (uint64_t)rc2;
             }
+        } else if ( 0 > rc1 && ( errno == EAGAIN || errno == EINTR ) ) {
+            // cont temp unavail or interruption
+            continue;
         }
         if ( 0 > rc1 || 0 > rc2 ) {
             if ( 0 > rc1 ) {
@@ -1416,14 +1424,21 @@ static bool copy_file(const int src_dirfd, const file_stats& src_stats,
         if( ( rc1 = ::read(src, buffer, sizeof(buffer)) ) > 0 ) {
             ssize_t bytes_to_write = rc1;
             size_t buffer_offset = 0;
-            while( 0 < bytes_to_write ) { // write the read chunk, allowing potential multiple write-ops
-                if( ( rc2 = ::write(dst, buffer+buffer_offset, bytes_to_write) ) < 0 ) {
-                    break;
+            while( 0 <= rc2 && 0 < bytes_to_write ) { // write the read chunk, allowing potential multiple write-ops
+                while( ( rc2 = ::write(dst, buffer+buffer_offset, bytes_to_write) ) < 0 ) {
+                    if ( errno == EAGAIN || errno == EINTR ) {
+                        // cont temp unavail or interruption
+                        continue;
+                    }
+                    break; // error, exist inner (break) and outter loop (rc2<0)
                 }
                 buffer_offset += rc2;
                 bytes_to_write -= rc2;
                 offset += rc2;
             }
+        } else if ( 0 > rc1 && ( errno == EAGAIN || errno == EINTR ) ) {
+            // cont temp unavail or interruption
+            continue;
         }
 #endif/* _USE_SENDFILE_ */
         if ( 0 > rc1 || 0 > rc2 ) {
