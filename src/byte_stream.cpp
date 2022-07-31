@@ -366,7 +366,7 @@ ByteInStream_File::ByteInStream_File(const int fd) noexcept
     }
 }
 
-ByteInStream_File::ByteInStream_File(const int dirfd, const std::string& path, bool use_binary) noexcept
+ByteInStream_File::ByteInStream_File(const int dirfd, const std::string& path) noexcept
 : m_fd(-1), m_state(iostate::goodbit),
   m_has_content_length(false), m_content_size(0), m_bytes_consumed(0)
 {
@@ -384,10 +384,7 @@ ByteInStream_File::ByteInStream_File(const int dirfd, const std::string& path, b
         m_has_content_length = stats.is_file();
         m_content_size = stats.size();
         // TODO: Consider O_NONBLOCK, despite being potentially useless on files?
-        int src_flags = O_RDONLY|O_BINARY|O_NOCTTY;
-        if( use_binary ) {
-            src_flags |= O_BINARY;
-        }
+        const int src_flags = O_RDONLY|O_BINARY|O_NOCTTY;
         m_fd = __posix_openat64(dirfd, stats.path().c_str(), src_flags);
         if ( 0 > m_fd ) {
             setstate( iostate::failbit ); // Note: conforming with std::ifstream open
@@ -396,8 +393,8 @@ ByteInStream_File::ByteInStream_File(const int dirfd, const std::string& path, b
     }
 }
 
-ByteInStream_File::ByteInStream_File(const std::string& path, bool use_binary) noexcept
-: ByteInStream_File(AT_FDCWD, path, use_binary) {}
+ByteInStream_File::ByteInStream_File(const std::string& path) noexcept
+: ByteInStream_File(AT_FDCWD, path) {}
 
 void ByteInStream_File::close() noexcept {
     if( 0 <= m_fd ) {

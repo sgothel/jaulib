@@ -430,6 +430,16 @@ namespace jau::io {
           std::string id() const NOEXCEPT_BOTAN override { return stats.path(); }
 
           /**
+           * Construct a stream based byte input stream from filesystem path
+           *
+           * In case the given path is a local file URI starting with `file://`, see jau::io::uri::is_local_file_protocol(),
+           * the leading `file://` is cut off and the remainder being used.
+           *
+           * @param path the path to the file, maybe a local file URI
+           */
+          ByteInStream_File(const std::string& path) noexcept;
+
+          /**
            * Construct a stream based byte input stream from filesystem path and parent directory file descriptor
            *
            * In case the given path is a local file URI starting with `file://`, see jau::io::uri::is_local_file_protocol(),
@@ -437,20 +447,8 @@ namespace jau::io {
            *
            * @param dirfd parent directory file descriptor
            * @param path the path to the file, maybe a local file URI
-           * @param use_binary whether to treat the file as binary (default) or use platform character conversion
            */
-          ByteInStream_File(const int dirfd, const std::string& path, bool use_binary = true) noexcept;
-
-          /**
-           * Construct a stream based byte input stream from filesystem path
-           *
-           * In case the given path is a local file URI starting with `file://`, see jau::io::uri::is_local_file_protocol(),
-           * the leading `file://` is cut off and the remainder being used.
-           *
-           * @param path the path to the file, maybe a local file URI
-           * @param use_binary whether to treat the file as binary (default) or use platform character conversion
-           */
-          ByteInStream_File(const std::string& path, bool use_binary = true) noexcept;
+          ByteInStream_File(const int dirfd, const std::string& path) noexcept;
 
           /**
            * Construct a stream based byte input stream by duplicating given file descriptor

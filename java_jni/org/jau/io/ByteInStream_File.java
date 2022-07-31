@@ -38,7 +38,7 @@ public final class ByteInStream_File implements ByteInStream {
     /* pp */ long getNativeInstance() { return nativeInstance; }
 
     /**
-     * Construct a Stream-Based byte input stream from filesystem path treating file as binary.
+     * Construct a Stream-Based byte input stream from filesystem path
      *
      * In case the given path is a local file URI starting with `file://`, see {@link org.jau.io.UriTk#is_local_file_protocol(String)},
      * the leading `file://` is cut off and the remainder being used.
@@ -46,27 +46,51 @@ public final class ByteInStream_File implements ByteInStream {
      * @param path the path to the file, maybe a local file URI
      */
     public ByteInStream_File(final String path) {
-        this(path, true);
-    }
-
-    /**
-     * Construct a Stream-Based byte input stream from filesystem path
-     *
-     * In case the given path is a local file URI starting with `file://`, see {@link org.jau.io.UriTk#is_local_file_protocol(String)},
-     * the leading `file://` is cut off and the remainder being used.
-     *
-     * @param path the path to the file, maybe a local file URI
-     * @param use_binary whether to treat the file as binary (default) or use platform character conversion
-     */
-    public ByteInStream_File(final String path, final boolean use_binary) {
         try {
-            nativeInstance = ctorImpl(path, use_binary);
+            nativeInstance = ctorImpl1(path);
         } catch (final Throwable t) {
             System.err.println("ByteInStream_File.ctor: native ctor failed: "+t.getMessage());
             throw t;
         }
     }
-    private native long ctorImpl(final String path, final boolean use_binary);
+    private native long ctorImpl1(final String path);
+
+    /**
+     * Construct a stream based byte input stream from filesystem path and parent directory file descriptor
+     *
+     * In case the given path is a local file URI starting with `file://`, see jau::io::uri::is_local_file_protocol(),
+     * the leading `file://` is cut off and the remainder being used.
+     *
+     * @param dirfd parent directory file descriptor
+     * @param path the path to the file, maybe a local file URI
+     */
+    public ByteInStream_File(final int dirfd, final String path) {
+        try {
+            nativeInstance = ctorImpl2(dirfd, path);
+        } catch (final Throwable t) {
+            System.err.println("ByteInStream_File.ctor: native ctor failed: "+t.getMessage());
+            throw t;
+        }
+    }
+    private native long ctorImpl2(final int dirfd, final String path);
+
+    /**
+     * Construct a stream based byte input stream by duplicating given file descriptor
+     *
+     * In case the given path is a local file URI starting with `file://`, see jau::io::uri::is_local_file_protocol(),
+     * the leading `file://` is cut off and the remainder being used.
+     *
+     * @param fd file descriptor to duplicate leaving the given `fd` untouched
+     */
+    public ByteInStream_File(final int fd) {
+        try {
+            nativeInstance = ctorImpl3(fd);
+        } catch (final Throwable t) {
+            System.err.println("ByteInStream_File.ctor: native ctor failed: "+t.getMessage());
+            throw t;
+        }
+    }
+    private native long ctorImpl3(final int fd);
 
     @Override
     public native void closeStream();

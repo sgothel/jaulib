@@ -317,7 +317,7 @@ class TestByteStream01 {
         void test01_copy_file_ok_11kiB_buff4k() {
             jau::fprintf_td(stderr, "\n"); jau::fprintf_td(stderr, "%s\n", __func__);
             const size_t file_idx = IDX_11kiB;
-            jau::io::ByteInStream_File data_stream(fname_payload_lst[file_idx], true /* use_binary */);
+            jau::io::ByteInStream_File data_stream(fname_payload_lst[file_idx]);
 
             bool res = transfer(data_stream, fname_payload_copy_lst[file_idx], 4096);
             REQUIRE( true == res );
@@ -333,7 +333,7 @@ class TestByteStream01 {
         void test02_copy_file_ok_65MiB_buff4k() {
             jau::fprintf_td(stderr, "\n"); jau::fprintf_td(stderr, "%s\n", __func__);
             const size_t file_idx = IDX_65MiB;
-            jau::io::ByteInStream_File data_stream(fname_payload_lst[file_idx], true /* use_binary */);
+            jau::io::ByteInStream_File data_stream(fname_payload_lst[file_idx]);
 
             bool res = transfer(data_stream, fname_payload_copy_lst[file_idx], 4096);
             REQUIRE( true == res );
@@ -349,7 +349,7 @@ class TestByteStream01 {
         void test04_copy_file_ok_65MiB_buff32k() {
             jau::fprintf_td(stderr, "\n"); jau::fprintf_td(stderr, "%s\n", __func__);
             const size_t file_idx = IDX_65MiB;
-            jau::io::ByteInStream_File data_stream(fname_payload_lst[file_idx], true /* use_binary */);
+            jau::io::ByteInStream_File data_stream(fname_payload_lst[file_idx]);
 
             bool res = transfer(data_stream, fname_payload_copy_lst[file_idx], 32768);
             REQUIRE( true == res );
@@ -435,7 +435,7 @@ class TestByteStream01 {
         // throttled, no content size, interruptReader() via set_eof() will avoid timeout
         static void feed_source_00(jau::io::ByteInStream_Feed * data_feed, const size_t feed_size=1024) {
             uint64_t xfer_total = 0;
-            jau::io::ByteInStream_File data_stream(data_feed->id(), true /* use_binary */);
+            jau::io::ByteInStream_File data_stream(data_feed->id());
             uint8_t buffer[feed_size];
             while( !data_stream.end_of_data() ) {
                 size_t count = data_stream.read(buffer, sizeof(buffer));
@@ -453,7 +453,7 @@ class TestByteStream01 {
         // throttled, with content size
         static void feed_source_01(jau::io::ByteInStream_Feed * data_feed, const size_t feed_size=1024) {
             uint64_t xfer_total = 0;
-            jau::io::ByteInStream_File data_stream(data_feed->id(), true /* use_binary */);
+            jau::io::ByteInStream_File data_stream(data_feed->id());
             const uint64_t file_size = data_stream.content_size();
             data_feed->set_content_size( file_size );
             uint8_t buffer[feed_size];
@@ -472,7 +472,7 @@ class TestByteStream01 {
         // full speed, with content size
         static void feed_source_10(jau::io::ByteInStream_Feed * data_feed, const size_t feed_size=1024) {
             uint64_t xfer_total = 0;
-            jau::io::ByteInStream_File data_stream(data_feed->id(), true /* use_binary */);
+            jau::io::ByteInStream_File data_stream(data_feed->id());
             const uint64_t file_size = data_stream.content_size();
             data_feed->set_content_size( data_stream.content_size() );
             uint8_t buffer[feed_size];
@@ -489,7 +489,7 @@ class TestByteStream01 {
         // full speed, no content size, interrupting @ 1024 bytes within our header
         static void feed_source_20(jau::io::ByteInStream_Feed * data_feed, const size_t feed_size=1024) {
             uint64_t xfer_total = 0;
-            jau::io::ByteInStream_File data_stream(data_feed->id(), true /* use_binary */);
+            jau::io::ByteInStream_File data_stream(data_feed->id());
             uint8_t buffer[feed_size];
             while( !data_stream.end_of_data() ) {
                 size_t count = data_stream.read(buffer, sizeof(buffer));
@@ -509,7 +509,7 @@ class TestByteStream01 {
         // full speed, with content size, interrupting 1/4 way
         static void feed_source_21(jau::io::ByteInStream_Feed * data_feed, const size_t feed_size=1024) {
             uint64_t xfer_total = 0;
-            jau::io::ByteInStream_File data_stream(data_feed->id(), true /* use_binary */);
+            jau::io::ByteInStream_File data_stream(data_feed->id());
             const uint64_t file_size = data_stream.content_size();
             data_feed->set_content_size( data_stream.content_size() );
             uint8_t buffer[feed_size];

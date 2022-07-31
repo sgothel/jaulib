@@ -52,7 +52,7 @@ uint64_t jau::io::read_file(const std::string& input_file,
         ByteInStream_istream in(std::cin);
         return read_stream(in, buffer, consumer_fn);
     } else {
-        ByteInStream_File in(input_file, true /* use_binary */);
+        ByteInStream_File in(input_file);
         return read_stream(in, buffer, consumer_fn);
     }
 }

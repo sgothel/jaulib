@@ -30,12 +30,37 @@
 
 #include "jau/byte_stream.hpp"
 
-jlong Java_org_jau_io_ByteInStream_1File_ctorImpl(JNIEnv *env, jobject obj, jstring jpath, jboolean juse_binary) {
+jlong Java_org_jau_io_ByteInStream_1File_ctorImpl1(JNIEnv *env, jobject obj, jstring jpath) {
     try {
         (void)obj;
         // new instance
         const std::string path = jau::jni::from_jstring_to_string(env, jpath);
-        jau::jni::shared_ptr_ref<jau::io::ByteInStream_File> ref( new jau::io::ByteInStream_File(path, JNI_TRUE == juse_binary) );
+        jau::jni::shared_ptr_ref<jau::io::ByteInStream_File> ref( new jau::io::ByteInStream_File(path) );
+        return ref.release_to_jlong();
+    } catch(...) {
+        rethrow_and_raise_java_exception_jau(env);
+    }
+    return (jlong) (intptr_t)nullptr;
+}
+
+jlong Java_org_jau_io_ByteInStream_1File_ctorImpl2(JNIEnv *env, jobject obj, jint dirfd, jstring jpath) {
+    try {
+        (void)obj;
+        // new instance
+        const std::string path = jau::jni::from_jstring_to_string(env, jpath);
+        jau::jni::shared_ptr_ref<jau::io::ByteInStream_File> ref( new jau::io::ByteInStream_File(dirfd, path) );
+        return ref.release_to_jlong();
+    } catch(...) {
+        rethrow_and_raise_java_exception_jau(env);
+    }
+    return (jlong) (intptr_t)nullptr;
+}
+
+jlong Java_org_jau_io_ByteInStream_1File_ctorImpl3(JNIEnv *env, jobject obj, jint fd) {
+    try {
+        (void)obj;
+        // new instance
+        jau::jni::shared_ptr_ref<jau::io::ByteInStream_File> ref( new jau::io::ByteInStream_File(fd) );
         return ref.release_to_jlong();
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
