@@ -24,6 +24,9 @@
 
 package jau.test.fs;
 
+import java.io.File;
+import java.io.FileDescriptor;
+import java.io.FileOutputStream;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
@@ -745,41 +748,65 @@ public class TestFileUtils01 extends FileUtilBaseTest {
         }
     }
 
-    static void test_file_stat_fd_item(final int fd, final String named_fd_link, final String named_fd1, final String named_fd2) {
+    static void test_file_stat_fd_item(final FMode.Bit exp_type, final int fd, final String named_fd1, final String named_fd_link) {
+        PrintUtil.fprintf_td(System.err, "test_file_stat_fd_item: expect '%s', fd %d, name_fd1 '%s', make_fd_link '%s'\n", exp_type, fd, named_fd1, named_fd_link);
         {
-            final FileStats stats_1 = new FileStats(named_fd1);
-            Assert.assertTrue(  stats_1.exists() );
-            Assert.assertTrue(  stats_1.has_access() );
-            Assert.assertTrue( !stats_1.is_dir() );
-            Assert.assertTrue( !stats_1.is_file() );
-            Assert.assertTrue( !stats_1.is_link() );
-            Assert.assertTrue(  stats_1.is_fd() );
-            Assert.assertEquals( fd, stats_1.fd() );
-            Assert.assertEquals( 0, stats_1.size() );
-            Assert.assertNull( stats_1.link_target_path() );
+            final FileStats stats = new FileStats(fd);
+            PrintUtil.fprintf_td(System.err, "fd: %s\n", stats);
+            Assert.assertTrue(  stats.exists() );
+            Assert.assertTrue(  stats.has_access() );
+            Assert.assertTrue( !stats.is_socket() );
+            Assert.assertTrue( !stats.is_block() );
+            Assert.assertTrue( !stats.is_dir() );
+            if( !stats.type_mode().isSet(exp_type) ) {
+                PrintUtil.fprintf_td(System.err, "INFO: Not matching expected type '%s': fd: %s\n", exp_type, stats);
+            }
+            Assert.assertTrue(  stats.has_fd() );
+            Assert.assertEquals( fd, stats.fd() );
+            if( !stats.is_file() ) {
+                Assert.assertEquals( 0, stats.size() );
+            }
         }
-        {
-            final FileStats stats_link = new FileStats(named_fd_link);
-            PrintUtil.fprintf_td(System.err, "fd_link: %s\n", stats_link);
-            Assert.assertTrue(  stats_link.exists() );
-            Assert.assertTrue(  stats_link.has_access() );
-            Assert.assertTrue( !stats_link.is_dir() );
-            Assert.assertTrue( !stats_link.is_file() );
-            Assert.assertTrue(  stats_link.is_link() );
-            Assert.assertTrue(  stats_link.is_fd() );
-            Assert.assertEquals( 0, stats_link.size() );
-            Assert.assertNotNull( stats_link.link_target_path() );
+        if( !named_fd1.isEmpty() ) {
+            final FileStats stats = new FileStats(named_fd1);
+            PrintUtil.fprintf_td(System.err, "fd_1: %s\n", stats);
+            Assert.assertTrue(  stats.exists() );
+            Assert.assertTrue(  stats.has_access() );
+            Assert.assertTrue( !stats.is_socket() );
+            Assert.assertTrue( !stats.is_block() );
+            Assert.assertTrue( !stats.is_dir() );
+            if( !stats.type_mode().isSet(exp_type) ) {
+                PrintUtil.fprintf_td(System.err, "INFO: Not matching expected type '%s': fd: %s\n", exp_type, stats);
+            }
+            Assert.assertTrue(  stats.has_fd() );
+            Assert.assertEquals( fd, stats.fd() );
+            if( !stats.is_file() ) {
+                Assert.assertEquals( 0, stats.size() );
+            }
+        }
+        if( !named_fd_link.isEmpty() ) {
+            final FileStats stats = new FileStats(named_fd_link);
+            PrintUtil.fprintf_td(System.err, "fd_link: %s\n", stats);
+            Assert.assertTrue(  stats.exists() );
+            Assert.assertTrue(  stats.has_access() );
+            Assert.assertTrue( !stats.is_socket() );
+            Assert.assertTrue( !stats.is_block() );
+            Assert.assertTrue( !stats.is_dir() );
+            if( !stats.type_mode().isSet(exp_type) ) {
+                PrintUtil.fprintf_td(System.err, "INFO: Not matching expected type '%s': fd: %s\n", exp_type, stats);
+            }
+            Assert.assertTrue(  stats.has_fd() );
+            Assert.assertEquals( fd, stats.fd() );
+            if( !stats.is_file() ) {
+                Assert.assertEquals( 0, stats.size() );
+            }
 
             final long link_count[] = { 0 };
-            final FileStats final_target = stats_link.final_target(link_count);
+            final FileStats final_target = stats.final_target(link_count);
             Assert.assertNotNull( final_target );
             PrintUtil.fprintf_td(System.err, "- final_target (%d link count): %s\n", link_count[0], final_target);
             Assert.assertTrue( 1 <= link_count[0] );
             Assert.assertTrue( 2 >= link_count[0] );
-            if( !named_fd1.equals( final_target.path() ) && !named_fd2.equals( final_target.path() ) ) {
-                PrintUtil.fprintf_td(System.err, "link_target_path %s not[ %s, %s]", final_target.path(), named_fd1, named_fd2);
-                Assert.assertTrue( false );
-            }
         }
     }
 
@@ -788,20 +815,29 @@ public class TestFileUtils01 extends FileUtilBaseTest {
         PlatformRuntime.checkInitialized();
         PrintUtil.println(System.err, "test07_file_stat_fd\n");
 
+        final String fd_stdin_1 = "/dev/fd/0";
+        final String fd_stdout_1 = "/dev/fd/1";
+        final String fd_stderr_1 = "/dev/fd/2";
+
         final String fd_stdin_l = "/dev/stdin";
         final String fd_stdout_l = "/dev/stdout";
         final String fd_stderr_l = "/dev/stderr";
 
-        final String fd_stdin_1 = "/dev/fd/0";
-        final String fd_stdout_1 = "/dev/fd/1";
-        final String fd_stderr_1 = "/dev/fd/2";
-        final String fd_stdin_2 = "/proc/self/fd/0";
-        final String fd_stdout_2 = "/proc/self/fd/1";
-        final String fd_stderr_2 = "/proc/self/fd/2";
-
-        test_file_stat_fd_item(0, fd_stdin_l, fd_stdin_1, fd_stdin_2);
-        test_file_stat_fd_item(1, fd_stdout_l, fd_stdout_1, fd_stdout_2);
-        test_file_stat_fd_item(2, fd_stderr_l, fd_stderr_1, fd_stderr_2);
+        test_file_stat_fd_item(FMode.Bit.chr, 0, fd_stdin_1, fd_stdin_l);
+        test_file_stat_fd_item(FMode.Bit.chr, 1, fd_stdout_1, fd_stdout_l);
+        test_file_stat_fd_item(FMode.Bit.chr, 2, fd_stderr_1, fd_stderr_l);
+        try {
+            final File file = new File("test07_file_stat_fd_tmp");
+            final FileOutputStream fos = new FileOutputStream(file);
+            final int fd = FileUtil.from_java_fd(fos.getFD());
+            final String named_fd = FileUtil.to_named_fd(fd);
+            PrintUtil.fprintf_td(System.err, "XXXX.0: %s -> fd %d, named_fd '%s'\n", file.toString(), fd, named_fd);
+            Assert.assertTrue( 0 <= fd );
+            test_file_stat_fd_item(FMode.Bit.file, fd, FileUtil.to_named_fd(fd), "");
+            fos.close();
+        } catch( final Exception e ) {
+            e.printStackTrace();
+        }
     }
 
     @Test(timeout = 10000)

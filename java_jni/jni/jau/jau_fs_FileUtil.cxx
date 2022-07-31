@@ -56,7 +56,7 @@ jstring Java_org_jau_fs_FMode_to_1string(JNIEnv *env, jclass cls, jint mask, jbo
 // FileStats
 //
 
-jlong Java_org_jau_fs_FileStats_ctorImpl(JNIEnv *env, jclass clazz, jstring jpath) {
+jlong Java_org_jau_fs_FileStats_ctorImpl1(JNIEnv *env, jclass clazz, jstring jpath) {
     (void)clazz;
     try {
         if( nullptr == jpath ) {
@@ -66,6 +66,19 @@ jlong Java_org_jau_fs_FileStats_ctorImpl(JNIEnv *env, jclass clazz, jstring jpat
 
         // new instance
         jau::jni::shared_ptr_ref<jau::fs::file_stats> ref( new jau::fs::file_stats( path ) );
+
+        return ref.release_to_jlong();
+    } catch(...) {
+        rethrow_and_raise_java_exception_jau(env);
+    }
+    return (jlong) (intptr_t) nullptr;
+}
+
+jlong Java_org_jau_fs_FileStats_ctorImpl2(JNIEnv *env, jclass clazz, jint fd) {
+    (void)clazz;
+    try {
+        // new instance
+        jau::jni::shared_ptr_ref<jau::fs::file_stats> ref( new jau::fs::file_stats( fd ) );
 
         return ref.release_to_jlong();
     } catch(...) {
@@ -254,6 +267,38 @@ jstring Java_org_jau_fs_FileUtil_basename(JNIEnv *env, jclass cls, jstring jpath
         rethrow_and_raise_java_exception_jau(env);
     }
     return nullptr;
+}
+
+jstring Java_org_jau_fs_FileUtil_to_1named_1fd(JNIEnv *env, jclass cls, jint fd) {
+    (void)cls;
+    try {
+        const std::string named_fd = jau::fs::to_named_fd(fd);
+        return jau::jni::from_string_to_jstring(env, named_fd);
+    } catch(...) {
+        rethrow_and_raise_java_exception_jau(env);
+    }
+    return nullptr;
+}
+
+jint Java_org_jau_fs_FileUtil_from_1named_1fd(JNIEnv *env, jclass cls, jstring jnamed_fd) {
+    (void)cls;
+    try {
+        const std::string named_fd = jau::jni::from_jstring_to_string(env, jnamed_fd);
+        return jau::fs::from_named_fd(named_fd);
+    } catch(...) {
+        rethrow_and_raise_java_exception_jau(env);
+    }
+    return -1;
+}
+
+jint Java_org_jau_fs_FileUtil_from_1java_1fd(JNIEnv *env, jclass cls, jobject jfd) {
+    (void)cls;
+    try {
+        return jau::jni::getIntFieldValue(env, jfd, "fd");
+    } catch(...) {
+        rethrow_and_raise_java_exception_jau(env);
+    }
+    return -1;
 }
 
 jboolean Java_org_jau_fs_FileUtil_mkdirImpl(JNIEnv *env, jclass cls, jstring jpath, jint jmode) {

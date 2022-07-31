@@ -69,9 +69,36 @@ public final class FileUtil {
      *
      * @param fd file descriptor.
      * @return the named file descriptor or null if fd < 0 or not supported by OS.
-     * @see FileStats#is_fd()
+     *
+     * @see from_named_fd()
+     * @see FileStats#has_fd()
      */
     public static native String to_named_fd(final int fd);
+
+    /**
+     * Returns the file descriptor from the given named file descriptor.
+     *
+     * Detected named file descriptors are (`%d` stands for integer)
+     * - `/dev/fd/%d` (GNU/Linux, FreeBSD, ..)
+     * - `/proc/self/fd/%d` (GNU/Linux)
+     *
+     * @param named_fd the named file descriptor
+     * @return file descriptor or -1 if invalid or not supported by OS.
+     *
+     * @see to_named_fd()
+     * @see {@link FileStats#has_fd()}
+     */
+    public static native int from_named_fd(final String named_fd);
+
+    /**
+     * Returns the file descriptor from the given FileDescriptor instance.
+     *
+     * @param jfd the FileDescriptor instance
+     * @return file descriptor or -1 if invalid or not supported by OS.
+     *
+     * @see {@link FileStats#has_fd()}
+     */
+    public static native int from_java_fd(final java.io.FileDescriptor jfd);
 
     /**
      * Create directory

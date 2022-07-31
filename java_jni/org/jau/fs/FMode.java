@@ -85,22 +85,28 @@ public class FMode {
         def_file_prot   ( 00640 ),
 
         /** 12 bit protection bit mask 07777 for rwx_all | set_uid | set_gid | sticky . */
-        protection_mask ( 0b000000000111111111111 ),
+        protection_mask ( 0b00000000000000000000111111111111 ),
 
-        /** Type: Entity is a file descriptor, might be in combination with link. */
-        fd              ( 0b000001000000000000000 ),
+        /** Type: Entity is a socket, might be in combination with link. */
+        sock            ( 0b00000000000000000001000000000000 ),
+        /** Type: Entity is a block device ), might be in combination with link. */
+        blk             ( 0b00000000000000000010000000000000 ),
+        /** Type: Entity is a character device ), might be in combination with link. */
+        chr             ( 0b00000000000000000100000000000000 ),
+        /** Type: Entity is a fifo/pipe ), might be in combination with link. */
+        fifo            ( 0b00000000000000001000000000000000 ),
         /** Type: Entity is a directory ), might be in combination with link. */
-        dir             ( 0b000010000000000000000 ),
+        dir             ( 0b00000000000000010000000000000000 ),
         /** Type: Entity is a file ), might be in combination with link. */
-        file            ( 0b000100000000000000000 ),
-        /** Type: Entity is a symbolic link ), might be in combination with file or dir. */
-        link            ( 0b001000000000000000000 ),
+        file            ( 0b00000000000000100000000000000000 ),
+        /** Type: Entity is a symbolic link ), might be in combination with file or dir ), fifo ), chr ), blk or sock. */
+        link            ( 0b00000000000001000000000000000000 ),
         /** Type: Entity gives no access to user ), exclusive bit. */
-        no_access       ( 0b010000000000000000000 ),
+        no_access       ( 0b00100000000000000000000000000000 ),
         /** Type: Entity does not exist ), exclusive bit. */
-        not_existing    ( 0b100000000000000000000 ),
-        /** Type mask for fd | dir | file | link | no_access | not_existing. */
-        type_mask       ( 0b111111000000000000000 );
+        not_existing    ( 0b01000000000000000000000000000000 ),
+        /** Type mask for sock | blk | chr | fifo | dir | file | link | no_access | not_existing. */
+        type_mask       ( 0b01100000000001111111000000000000 );
 
         Bit(final int v) { value = v; }
         public final int value;

@@ -175,9 +175,19 @@ public class FileStats {
      * @param path the path to produce stats for
      */
     public FileStats(final String path) {
-        this( ctorImpl(path) );
+        this( (byte)0, ctorImpl1(path) );
     }
-    private FileStats(final long h) {
+
+    /**
+     * Instantiates a file_stats for the given `fd` file descriptor.
+     *
+     * @param fd file descriptor of an opened file
+     */
+    public FileStats(final int fd) {
+        this( (byte)0, ctorImpl2(fd) );
+    }
+
+    private FileStats(final byte dummy, final long h) { // use dummy to avoid override with public fd ctor
         {
             final String[/*3*/] s3 = getString3DirItemLinkTargetPath(h);
             item_ = new DirItem(s3[0], s3[1]);
@@ -205,14 +215,15 @@ public class FileStats {
             if( lth == 0 ) {
                 link_target_ = null;
             } else {
-                link_target_ = new FileStats(lth);
+                link_target_ = new FileStats( (byte)0, lth );
             }
         }
         dtorImpl(h);
     }
-    private static native long ctorImpl(final String path);
+    private static native long ctorImpl1(final String path);
+    private static native long ctorImpl2(final int fd);
     private static native void dtorImpl(final long h);
-    private static native int[/*4*/] getInt6FieldsFModeFdUidGidErrno(final long h);
+    private static native int[/*6*/] getInt6FieldsFModeFdUidGidErrno(final long h);
     private static native String[/*3*/] getString3DirItemLinkTargetPath(final long h);
     private static native long[/*1+ 2*4*/] getLong9SizeTimes(final long h);
     private static native long ctorLinkTargetImpl(final long h);
@@ -296,7 +307,14 @@ public class FileStats {
     /** Returns the POSIX protection bit portion of fmode_t, i.e. mode() & {@link FMode.Bit#protection_mask}. */
     public FMode prot_mode() { return mode_.mask(FMode.Bit.protection_mask.value); }
 
-    /** Returns the file descriptor if is_fd(), otherwise -1 for no file descriptor. */
+    /** Returns the type bit portion of fmode_t, i.e. mode() & fmode_t::type_mask. */
+    public FMode type_mode() { return mode_.mask(FMode.Bit.type_mask.value); }
+
+    /**
+     * Returns the file descriptor if has_fd(), otherwise -1 for no file descriptor.
+     *
+     * @see has_fd()
+     */
     public int fd() { return fd_; }
 
     /** Returns the user id, owning the element. */
@@ -328,23 +346,36 @@ public class FileStats {
     public boolean ok() { return 0 == errno_res_; }
 
     /**
-     * Returns true if entity is a file descriptor, might be in combination with is_link().
+     * Returns true if entity has a file descriptor.
      *
      * Detected named file descriptors are (`%d` stands for integer)
      * - `/dev/fd/%d` (GNU/Linux, FreeBSD, ..)
      * - `/proc/self/fd/%d` (GNU/Linux)
      *
+     * @see fd()
      * @see FileUtil#to_named_fd(int)
      */
-    public boolean is_fd() { return mode_.isSet( FMode.Bit.fd ); }
+    public boolean has_fd() { return 0 <= fd_; }
 
-    /** Returns true if entity is a file, might be in combination with is_link().  */
-    public boolean is_file() { return mode_.isSet( FMode.Bit.file ); }
+    /** Returns true if entity is a socket, might be in combination with is_link().  */
+    public boolean is_socket() { return mode_.isSet( FMode.Bit.sock ); }
+
+    /** Returns true if entity is a block device, might be in combination with is_link().  */
+    public boolean is_block() { return mode_.isSet( FMode.Bit.blk ); }
+
+    /** Returns true if entity is a character device, might be in combination with is_link().  */
+    public boolean is_char() { return mode_.isSet( FMode.Bit.chr ); }
+
+    /** Returns true if entity is a fifo/pipe, might be in combination with is_link().  */
+    public boolean is_fifo() { return mode_.isSet( FMode.Bit.fifo ); }
 
     /** Returns true if entity is a directory, might be in combination with is_link().  */
     public boolean is_dir() { return mode_.isSet( FMode.Bit.dir ); }
 
-    /** Returns true if entity is a symbolic link, might be in combination with is_file() or is_dir(). */
+    /** Returns true if entity is a file, might be in combination with is_link().  */
+    public boolean is_file() { return mode_.isSet( FMode.Bit.file ); }
+
+    /** Returns true if entity is a symbolic link, might be in combination with is_file(), is_dir(), is_fifo(), is_char(), is_block(), is_socket(). */
     public boolean is_link() { return mode_.isSet( FMode.Bit.link ); }
 
     /** Returns true if entity gives no access to user, exclusive bit. */
