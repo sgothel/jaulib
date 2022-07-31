@@ -28,7 +28,7 @@ import java.nio.ByteBuffer;
 /**
  * This class represents a file based byte input stream, including named file descriptor.
  *
- * If source path denotes a named file descriptor, i.e. {@link org.jau.fs.FileStats#is_fd()} returns true,
+ * If source path denotes a named file descriptor, i.e. {@link org.jau.fs.FileStats#has_fd()} returns true,
  * has_content_size() returns false and check_available() returns true as long the stream is open and EOS hasn't occurred.
  *
  * Instance uses the native C++ object `jau::io::ByteInStream_File`.

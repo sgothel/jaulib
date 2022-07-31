@@ -29,7 +29,6 @@
 #ifndef JAU_BYTE_STREAM_HPP_
 #define JAU_BYTE_STREAM_HPP_
 
-#include <fstream>
 #include <string>
 #include <cstdint>
 #include <functional>
@@ -37,6 +36,7 @@
 
 #include <jau/basic_types.hpp>
 #include <jau/ringbuffer.hpp>
+#include <jau/file_util.hpp>
 
 // Include Botan header files before this one to be integrated w/ Botan!
 // #include <botan_all.h>
@@ -328,22 +328,121 @@ namespace jau::io {
 
 
     /**
+     * Mimic std::iobase::iostate
+     *
+     * This `enum class` type fulfills `C++ named requirements: BitmaskType`.
+     */
+    enum class iostate : uint32_t {
+      /** No error occurred nor has EOS being reached. Value is no bit set! */
+      none = 0,
+
+      /** No error occurred nor has EOS being reached. Value is no bit set! */
+      goodbit = 0,
+
+      /** Irrecoverable stream error, including loss of integrity of the underlying stream or media. */
+      badbit  = 1 << 0,
+
+      /** An input operation reached the end of its stream. */
+      eofbit  = 1 << 1,
+
+      /** Input or output operation failed (formatting or extraction error). */
+      failbit = 1 << 2
+    };
+    constexpr uint32_t number(const iostate rhs) noexcept {
+        return static_cast<uint32_t>(rhs);
+    }
+    constexpr iostate operator ~(const iostate rhs) noexcept {
+        return static_cast<iostate> ( ~number(rhs) );
+    }
+    constexpr iostate operator ^(const iostate lhs, const iostate rhs) noexcept {
+        return static_cast<iostate> ( number(lhs) ^ number(rhs) );
+    }
+    constexpr iostate operator |(const iostate lhs, const iostate rhs) noexcept {
+        return static_cast<iostate> ( number(lhs) | number(rhs) );
+    }
+    constexpr iostate operator &(const iostate lhs, const iostate rhs) noexcept {
+        return static_cast<iostate> ( number(lhs) & number(rhs) );
+    }
+    constexpr iostate& operator |=(iostate& lhs, const iostate rhs) noexcept {
+        lhs = static_cast<iostate> ( number(lhs) | number(rhs) );
+        return lhs;
+    }
+    constexpr iostate& operator &=(iostate& lhs, const iostate rhs) noexcept {
+        lhs = static_cast<iostate> ( number(lhs) & number(rhs) );
+        return lhs;
+    }
+    constexpr iostate& operator ^=(iostate& lhs, const iostate rhs) noexcept {
+        lhs = static_cast<iostate> ( number(lhs) ^ number(rhs) );
+        return lhs;
+    }
+    constexpr bool operator ==(const iostate lhs, const iostate rhs) noexcept {
+        return number(lhs) == number(rhs);
+    }
+    constexpr bool operator !=(const iostate lhs, const iostate rhs) noexcept {
+        return !( lhs == rhs );
+    }
+    std::string to_string(const iostate mask) noexcept;
+
+    /**
      * This class represents a file based byte input stream, including named file descriptor.
      *
      * If source path denotes a named file descriptor, i.e. jau::fs::file_stats::is_fd() returns true,
      * has_content_size() returns false and check_available() returns true as long the stream is open and EOS hasn't occurred.
      */
     class ByteInStream_File final : public ByteInStream {
+       private:
+          jau::fs::file_stats stats;
+          /**
+           * We mimic std::ifstream via OS level file descriptor operations,
+           * giving us more flexibility and enabling use of openat() operations.
+           */
+          int m_fd;
+
+          mutable iostate m_state;
+
+          // Remember: constexpr specifier used in a function or static data member (since C++17) declaration implies inline
+
+          constexpr bool is_open() const noexcept
+          { return 0 <= m_fd; }
+
+          constexpr bool good() const noexcept
+          { return iostate::goodbit == m_state; }
+
+          constexpr bool eof() const noexcept
+          { return iostate::none != ( m_state & iostate::eofbit ); }
+
+          constexpr bool fail() const noexcept
+          { return iostate::none != ( m_state & ( iostate::badbit | iostate::failbit ) ); }
+
+          constexpr bool bad() const noexcept
+          { return iostate::none != ( m_state & iostate::badbit ); }
+
+          constexpr iostate rdstate() const noexcept { return m_state; }
+          void clear(iostate state = iostate::goodbit) const noexcept { m_state = state; }
+          void setstate(iostate state) const noexcept { m_state |= state; }
+
        public:
           size_t read(uint8_t[], size_t) NOEXCEPT_BOTAN override;
           size_t peek(uint8_t[], size_t, size_t) const NOEXCEPT_BOTAN override;
           bool check_available(size_t n) NOEXCEPT_BOTAN override;
           bool end_of_data() const NOEXCEPT_BOTAN override;
-          bool error() const noexcept override { return nullptr == m_source || m_source->bad(); }
-          std::string id() const NOEXCEPT_BOTAN override;
+          bool error() const noexcept override { return fail(); }
+          std::string id() const NOEXCEPT_BOTAN override { return stats.path(); }
 
           /**
-           * Construct a Stream-Based byte input stream from filesystem path
+           * Construct a stream based byte input stream from filesystem path and parent directory file descriptor
+           *
+           * In case the given path is a local file URI starting with `file://`, see jau::io::uri::is_local_file_protocol(),
+           * the leading `file://` is cut off and the remainder being used.
+           *
+           * @param dirfd parent directory file descriptor
+           * @param path the path to the file, maybe a local file URI
+           * @param use_binary whether to treat the file as binary (default) or use platform character conversion
+           */
+          ByteInStream_File(const int dirfd, const std::string& path, bool use_binary = true) noexcept;
+
+          /**
+           * Construct a stream based byte input stream from filesystem path
            *
            * In case the given path is a local file URI starting with `file://`, see jau::io::uri::is_local_file_protocol(),
            * the leading `file://` is cut off and the remainder being used.
@@ -352,6 +451,16 @@ namespace jau::io {
            * @param use_binary whether to treat the file as binary (default) or use platform character conversion
            */
           ByteInStream_File(const std::string& path, bool use_binary = true) noexcept;
+
+          /**
+           * Construct a stream based byte input stream by duplicating given file descriptor
+           *
+           * In case the given path is a local file URI starting with `file://`, see jau::io::uri::is_local_file_protocol(),
+           * the leading `file://` is cut off and the remainder being used.
+           *
+           * @param fd file descriptor to duplicate leaving the given `fd` untouched
+           */
+          ByteInStream_File(const int fd) noexcept;
 
           ByteInStream_File(const ByteInStream_File&) = delete;
 
@@ -373,8 +482,6 @@ namespace jau::io {
 
        private:
           uint64_t get_available() const noexcept { return m_has_content_length ? m_content_size - m_bytes_consumed : 0; }
-          const std::string m_identifier;
-          mutable std::unique_ptr<std::ifstream> m_source;
           bool m_has_content_length;
           uint64_t m_content_size;
           uint64_t m_bytes_consumed;

@@ -33,8 +33,14 @@
 // #include <botan_all.h>
 
 #include <jau/debug.hpp>
-#include <jau/file_util.hpp>
 #include <jau/byte_stream.hpp>
+
+extern "C" {
+    #include <unistd.h>
+    #include <sys/types.h>
+    #include <sys/stat.h>
+    #include <fcntl.h>
+}
 
 #ifdef USE_LIBCURL
     #include <curl/curl.h>
@@ -43,8 +49,24 @@
 #include <thread>
 #include <pthread.h>
 
+#ifndef O_BINARY
+#define O_BINARY    0
+#endif
+#ifndef O_NONBLOCK
+#define O_NONBLOCK  0
+#endif
+
 using namespace jau::io;
 using namespace jau::fractions_i64_literals;
+
+#if defined(__FreeBSD__)
+    typedef off_t off64_t;
+    #define __posix_openat64 ::openat
+    #define __posix_lseek64  ::lseek
+#else
+    #define __posix_openat64 ::openat64
+    #define __posix_lseek64  ::lseek64
+#endif
 
 #ifdef USE_LIBCURL
     const size_t jau::io::BEST_URLSTREAM_RINGBUFFER_SIZE = 2*CURL_MAX_WRITE_SIZE;
@@ -224,111 +246,175 @@ std::string ByteInStream_istream::to_string() const noexcept {
                             "]";
 }
 
+template<typename T>
+static void append_bitstr(std::string& out, T mask, T bit, const std::string& bitstr, bool& comma) {
+    if( bit == ( mask & bit ) ) {
+        if( comma ) { out.append(", "); }
+        out.append(bitstr); comma = true;
+    }
+}
+
+#define APPEND_BITSTR(U,V,W,M) append_bitstr(out, M, U::V, #W, comma);
+
+#define IOSTATE_ENUM(X,M) \
+    X(iostate,badbit,bad,M) \
+    X(iostate,eofbit,eof,M) \
+    X(iostate,failbit,fail,M)
+
+std::string jau::io::to_string(const iostate mask) noexcept {
+    if( iostate::goodbit == mask ) {
+        return "good";
+    }
+    std::string out;
+    bool comma = false;
+    IOSTATE_ENUM(APPEND_BITSTR,mask)
+    return out;
+}
+
 size_t ByteInStream_File::read(uint8_t out[], size_t length) NOEXCEPT_BOTAN {
     if( 0 == length || end_of_data() ) {
         return 0;
     }
-    m_source->read(cast_uint8_ptr_to_char(out), length);
-    if( error() ) {
-        DBG_PRINT("ByteInStream_File::read: Error occurred in %s", to_string().c_str());
-        return 0;
+    size_t total = 0;
+    while( total < length ) {
+        ssize_t len;
+        while ( ( len = ::read(m_fd, out+total, length-total) ) < 0 ) {
+            if ( errno == EAGAIN || errno == EINTR ) {
+                // cont temp unavail or interruption
+                continue;
+            }
+            // Check errno == ETIMEDOUT ??
+            setstate( iostate::failbit );
+            DBG_PRINT("ByteInStream_File::read: Error occurred in %s, errno %d %s", to_string().c_str(), errno, strerror(errno));
+            return 0;
+        }
+        total += static_cast<size_t>(len);
+        if( 0 == len || ( m_has_content_length && m_bytes_consumed + total >= m_content_size ) ) {
+            setstate( iostate::eofbit ); // Note: std::istream also sets iostate::failbit on eof, we don't.
+            break;
+        }
     }
-    const size_t got = static_cast<size_t>(m_source->gcount());
-    m_bytes_consumed += got;
-    return got;
+    m_bytes_consumed += total;
+    return total;
 }
 
 size_t ByteInStream_File::peek(uint8_t out[], size_t length, size_t offset) const NOEXCEPT_BOTAN {
-    if( 0 == length || end_of_data() ) {
+    if( 0 == length || end_of_data() || offset > std::numeric_limits<off64_t>::max() ||
+        ( m_has_content_length && m_content_size - m_bytes_consumed < offset + 1 /* min number of bytes to read */ ) ) {
         return 0;
     }
     size_t got = 0;
 
-    if(offset) {
-        secure_vector<uint8_t> buf(offset);
-        m_source->read(cast_uint8_ptr_to_char(buf.data()), buf.size());
-        if( error() ) {
-            DBG_PRINT("ByteInStream_File::peek: Error occurred (offset) in %s", to_string().c_str());
+    off64_t abs_pos = 0;
+    if( 0 < offset ) {
+        abs_pos = __posix_lseek64(m_fd, static_cast<off64_t>(offset), SEEK_CUR);
+        if( 0 > abs_pos ) {
+            setstate( iostate::failbit );
+            DBG_PRINT("ByteInStream_File::peek: Error occurred (offset1 %zd) in %s, errno %d %s",
+                    offset, to_string().c_str(), errno, strerror(errno));
             return 0;
         }
-        got = static_cast<size_t>(m_source->gcount());
     }
-
-    if(got == offset) {
-        m_source->read(cast_uint8_ptr_to_char(out), length);
-        if( error() ) {
-            DBG_PRINT("ByteInStream_File::peek: Error occurred (read) in %s", to_string().c_str());
+    if( abs_pos == static_cast<off64_t>(offset) ) {
+        ssize_t len = 0;
+        while ( ( len = ::read(m_fd, out, length) ) < 0 ) {
+            if ( errno == EAGAIN || errno == EINTR ) {
+                // cont temp unavail or interruption
+                continue;
+            }
+            // Check errno == ETIMEDOUT ??
+            setstate( iostate::failbit );
+            DBG_PRINT("ByteInStream_File::peak: Error occurred (read) in %s, errno %d %s", to_string().c_str(), errno, strerror(errno));
             return 0;
         }
-        got = static_cast<size_t>(m_source->gcount());
+        got = len; // potentially zero bytes, i.e. eof
     }
-
-    if(m_source->eof()) {
-        m_source->clear();
+    if( __posix_lseek64(m_fd, static_cast<off64_t>(m_bytes_consumed), SEEK_SET) < 0 ) {
+        // even though we were able to fetch the desired data above, let's fail if position reset fails
+        setstate( iostate::failbit );
+        DBG_PRINT("ByteInStream_File::peek: Error occurred (offset2 %zd) in %s, errno %d %s",
+                offset, to_string().c_str(), errno, strerror(errno));
+        return 0;
     }
-    m_source->seekg(m_bytes_consumed, std::ios::beg);
-
     return got;
 }
 
 bool ByteInStream_File::check_available(size_t n) NOEXCEPT_BOTAN {
-    return nullptr != m_source && m_source->good() &&
-           ( !m_has_content_length || m_content_size - m_bytes_consumed >= (uint64_t)n );
+    return is_open() && good() && ( !m_has_content_length || m_content_size - m_bytes_consumed >= (uint64_t)n );
 };
 
 bool ByteInStream_File::end_of_data() const NOEXCEPT_BOTAN {
-    return nullptr == m_source || !m_source->good() ||
-           ( m_has_content_length && m_bytes_consumed >= m_content_size );
+    return !is_open() || !good() || ( m_has_content_length && m_bytes_consumed >= m_content_size );
 }
 
-std::string ByteInStream_File::id() const NOEXCEPT_BOTAN {
-    return m_identifier;
-}
-
-ByteInStream_File::ByteInStream_File(const std::string& path, bool use_binary) noexcept
-: m_identifier(path),
-  m_source(),
+ByteInStream_File::ByteInStream_File(const int fd) noexcept
+: m_fd(-1), m_state(iostate::goodbit),
   m_has_content_length(false), m_content_size(0), m_bytes_consumed(0)
 {
-    std::unique_ptr<jau::fs::file_stats> stats;
+    stats = jau::fs::file_stats(fd);
+    if( !stats.exists() || !stats.has_access() ) {
+        setstate( iostate::failbit ); // Note: conforming with std::ifstream open
+        DBG_PRINT("ByteInStream_File::ctor: Error, not an existing or accessible file in %s, %s", stats.to_string().c_str(), to_string().c_str());
+    } else {
+        m_has_content_length = stats.is_file();
+        m_content_size = stats.size();
+        m_fd = ::dup(fd);
+        if ( 0 > m_fd ) {
+            setstate( iostate::failbit ); // Note: conforming with std::ifstream open
+            DBG_PRINT("ByteInStream_File::ctor: Error occurred in %s, %s", stats.to_string().c_str(), to_string().c_str());
+        }
+    }
+}
+
+ByteInStream_File::ByteInStream_File(const int dirfd, const std::string& path, bool use_binary) noexcept
+: m_fd(-1), m_state(iostate::goodbit),
+  m_has_content_length(false), m_content_size(0), m_bytes_consumed(0)
+{
     if( jau::io::uri_tk::is_local_file_protocol(path) ) {
         // cut of leading `file://`
         std::string path2 = path.substr(7);
-        stats = std::make_unique<jau::fs::file_stats>(path2);
+        stats = jau::fs::file_stats(dirfd, path2);
     } else {
-        stats = std::make_unique<jau::fs::file_stats>(path);
+        stats = jau::fs::file_stats(dirfd, path);
     }
-    if( !stats->exists() || !stats->has_access() ) {
-        DBG_PRINT("ByteInStream_File::ctor: Error, not an existing or accessible file in %s, %s", stats->to_string().c_str(), to_string().c_str());
-    } else if( !stats->is_file() && !stats->is_fd() ) {
-        DBG_PRINT("ByteInStream_File::ctor: Error, not a file nor fd in %s, %s", stats->to_string().c_str(), to_string().c_str());
+    if( !stats.exists() || !stats.has_access() ) {
+        setstate( iostate::failbit ); // Note: conforming with std::ifstream open
+        DBG_PRINT("ByteInStream_File::ctor: Error, not an existing or accessible file in %s, %s", stats.to_string().c_str(), to_string().c_str());
     } else {
-        m_has_content_length = stats->is_file();
-        m_content_size = stats->size();
-        std::ios_base::openmode omode = std::ios::in;
+        m_has_content_length = stats.is_file();
+        m_content_size = stats.size();
+        // TODO: Consider O_NONBLOCK, despite being potentially useless on files?
+        int src_flags = O_RDONLY|O_BINARY|O_NOCTTY;
         if( use_binary ) {
-            omode |= std::ios::binary;
+            src_flags |= O_BINARY;
         }
-        m_source = std::make_unique<std::ifstream>(stats->path(), omode);
-        if( error() ) {
-            DBG_PRINT("ByteInStream_File::ctor: Error occurred in %s, %s", stats->to_string().c_str(), to_string().c_str());
-            m_source = nullptr;
+        m_fd = __posix_openat64(dirfd, stats.path().c_str(), src_flags);
+        if ( 0 > m_fd ) {
+            setstate( iostate::failbit ); // Note: conforming with std::ifstream open
+            DBG_PRINT("ByteInStream_File::ctor: Error while opening %s, %s", stats.to_string().c_str(), to_string().c_str());
         }
     }
 }
 
+ByteInStream_File::ByteInStream_File(const std::string& path, bool use_binary) noexcept
+: ByteInStream_File(AT_FDCWD, path, use_binary) {}
+
 void ByteInStream_File::close() noexcept {
-    if( nullptr != m_source ) {
-        m_source->close();
+    if( 0 <= m_fd ) {
+        ::close(m_fd);
+        m_fd = -1;
     }
 }
 
 std::string ByteInStream_File::to_string() const noexcept {
-    return "ByteInStream_File["+m_identifier+", content_length "+jau::to_decstring(m_content_size)+
+    return "ByteInStream_File[content_length "+jau::to_decstring(m_content_size)+
                             ", consumed "+jau::to_decstring(m_bytes_consumed)+
                             ", available "+jau::to_decstring(get_available())+
-                            ", eod "+std::to_string( end_of_data() )+
+                            ", open "+std::to_string(is_open())+
+                            ", iostate["+jau::io::to_string(m_state)+
+                            "], eod "+std::to_string( end_of_data() )+
                             ", error "+std::to_string( error() )+
+                            ", "+stats.to_string()+
                             "]";
 }
 

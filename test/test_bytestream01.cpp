@@ -270,6 +270,8 @@ class TestByteStream01 {
                 std::unique_ptr<jau::io::ByteInStream> in = jau::io::to_ByteInStream(url);
                 if( nullptr != in ) {
                     jau::PLAIN_PRINT(true, "test00_protocols: local-file-1: %s", in->to_string().c_str());
+                } else {
+                    jau::PLAIN_PRINT(true, "test00_protocols: local-file-1: NULL from url '%s'", url.c_str());
                 }
                 REQUIRE( nullptr != in );
                 REQUIRE( false == in->error() );
