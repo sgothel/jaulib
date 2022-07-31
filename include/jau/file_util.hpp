@@ -75,6 +75,7 @@ namespace jau {
             private:
                 std::string dirname_;
                 std::string basename_;
+                bool empty_;
 
                 struct backed_string_view {
                     std::string backing;
@@ -151,7 +152,7 @@ namespace jau {
 
             public:
 
-                /** Empty item w/ `.` set for both, dirname and basename */
+                /** Empty item w/ `.` set for both, dirname and basename. empty() will return true; */
                 dir_item() noexcept;
 
                 /**
@@ -184,6 +185,11 @@ namespace jau {
                  * Returns a full unix path representation combining dirname() and basename().
                  */
                 std::string path() const noexcept;
+
+                /**
+                 * Returns true if bot, dirname() and basename() refer to `.`, e.g.. default ctor.
+                 */
+                bool empty() const noexcept { return empty_; }
 
                 bool operator ==(const dir_item& rhs) const noexcept {
                     return dirname_ == rhs.dirname_ && basename_ == rhs.basename_;
@@ -260,22 +266,28 @@ namespace jau {
             def_file_prot   = 00640,
 
             /** 12 bit protection bit mask 07777 for rwx_all | set_uid | set_gid | sticky . */
-            protection_mask = 0b000000000111111111111,
+            protection_mask = 0b00000000000000000000111111111111,
 
-            /** Type: Entity is a file descriptor, might be in combination with link. */
-            fd              = 0b000001000000000000000,
+            /** Type: Entity is a socket, might be in combination with link. */
+            sock            = 0b00000000000000000001000000000000,
+            /** Type: Entity is a block device, might be in combination with link. */
+            blk             = 0b00000000000000000010000000000000,
+            /** Type: Entity is a character device, might be in combination with link. */
+            chr             = 0b00000000000000000100000000000000,
+            /** Type: Entity is a fifo/pipe, might be in combination with link. */
+            fifo            = 0b00000000000000001000000000000000,
             /** Type: Entity is a directory, might be in combination with link. */
-            dir             = 0b000010000000000000000,
+            dir             = 0b00000000000000010000000000000000,
             /** Type: Entity is a file, might be in combination with link. */
-            file            = 0b000100000000000000000,
-            /** Type: Entity is a symbolic link, might be in combination with file or dir. */
-            link            = 0b001000000000000000000,
+            file            = 0b00000000000000100000000000000000,
+            /** Type: Entity is a symbolic link, might be in combination with file or dir, fifo, chr, blk or sock. */
+            link            = 0b00000000000001000000000000000000,
             /** Type: Entity gives no access to user, exclusive bit. */
-            no_access       = 0b010000000000000000000,
+            no_access       = 0b00100000000000000000000000000000,
             /** Type: Entity does not exist, exclusive bit. */
-            not_existing    = 0b100000000000000000000,
-            /** Type mask for fd | dir | file | link | no_access | not_existing. */
-            type_mask       = 0b111111000000000000000,
+            not_existing    = 0b01000000000000000000000000000000,
+            /** Type mask for sock | blk | chr | fifo | dir | file | link | no_access | not_existing. */
+            type_mask       = 0b01100000000001111111000000000000,
         };
         constexpr uint32_t number(const fmode_t rhs) noexcept {
             return static_cast<uint32_t>(rhs);
@@ -334,12 +346,12 @@ namespace jau {
          * not handling the target OS differences.
          *
          * @param fd file descriptor.
-         * @return the named file descriptor or nullptr if fd < 0 or not supported by OS.
+         * @return the named file descriptor or an empty string if fd < 0 or not supported by OS.
          *
          * @see jau::fs::from_named_fd()
-         * @see jau::fs::file_stats:is_fd()
+         * @see jau::fs::file_stats:has_fd()
          */
-        std::unique_ptr<std::string> to_named_fd(const int fd) noexcept;
+        std::string to_named_fd(const int fd) noexcept;
 
         /**
          * Returns the file descriptor from the given named file descriptor.
@@ -352,7 +364,7 @@ namespace jau {
          * @return file descriptor or -1 if invalid or not supported by OS.
          *
          * @see jau::fs::to_named_fd()
-         * @see jau::fs::file_stats:is_fd()
+         * @see jau::fs::file_stats:has_fd()
          */
         int from_named_fd(const std::string& named_fd) noexcept;
 
@@ -424,7 +436,7 @@ namespace jau {
                 file_stats() noexcept;
 
                 /** Private ctor for private make_shared<file_stats>() intended for friends. */
-                file_stats(const ctor_cookie& cc, const int dirfd, const dir_item& item, const bool dirfd_is_item_dirname) noexcept;
+                file_stats(const ctor_cookie& cc, int dirfd, const dir_item& item, const bool dirfd_is_item_dirname) noexcept;
 
                 /**
                  * Instantiates a file_stats for the given `path`.
@@ -460,6 +472,13 @@ namespace jau {
                  * @param dirfd_is_item_dirname if true, dir_item::basename() is relative to dirfd (default), otherwise full dir_item::path() is relative to dirfd.
                  */
                 file_stats(const int dirfd, const dir_item& item, const bool dirfd_is_item_dirname=true) noexcept;
+
+                /**
+                 * Instantiates a file_stats for the given `fd` file descriptor.
+                 *
+                 * @param fd file descriptor of an opened file
+                 */
+                file_stats(const int fd) noexcept;
 
                 /**
                  * Returns the dir_item.
@@ -527,7 +546,14 @@ namespace jau {
                 /** Returns the POSIX protection bit portion of fmode_t, i.e. mode() & fmode_t::protection_mask. */
                 fmode_t prot_mode() const noexcept { return mode_ & fmode_t::protection_mask; }
 
-                /** Returns the file descriptor if is_fd(), otherwise -1 for no file descriptor. */
+                /** Returns the type bit portion of fmode_t, i.e. mode() & fmode_t::type_mask. */
+                fmode_t type_mode() const noexcept { return mode_ & fmode_t::type_mask; }
+
+                /**
+                 * Returns the file descriptor if has_fd(), otherwise -1 for no file descriptor.
+                 *
+                 * @see has_fd()
+                 */
                 int fd() const noexcept { return fd_; }
 
                 /** Returns the user id, owning the element. */
@@ -553,33 +579,46 @@ namespace jau {
                 const fraction_timespec& mtime() const noexcept { return mtime_; }
 
                 /** Returns the `errno` value occurred to produce this instance, or zero for no error. */
-                int errno_res() const noexcept { return errno_res_; }
+                constexpr int errno_res() const noexcept { return errno_res_; }
 
                 /** Returns true if no error occurred */
-                bool ok()  const noexcept { return 0 == errno_res_; }
+                constexpr bool ok()  const noexcept { return 0 == errno_res_; }
 
                 /**
-                 * Returns true if entity is a file descriptor, might be in combination with is_link().
+                 * Returns true if entity has a file descriptor.
                  *
+                 * @see fd()
                  * @see jau::fs::from_named_fd()
                  * @see jau::fs::to_named_fd()
                  */
-                bool is_fd() const noexcept { return is_set( mode_, fmode_t::fd ); }
+                constexpr bool has_fd() const noexcept { return 0 <= fd_; }
 
-                /** Returns true if entity is a file, might be in combination with is_link().  */
-                bool is_file() const noexcept { return is_set( mode_, fmode_t::file ); }
+                /** Returns true if entity is a socket, might be in combination with is_link().  */
+                constexpr bool is_socket() const noexcept { return is_set( mode_, fmode_t::sock ); }
+
+                /** Returns true if entity is a block device, might be in combination with is_link().  */
+                constexpr bool is_block() const noexcept { return is_set( mode_, fmode_t::blk ); }
+
+                /** Returns true if entity is a character device, might be in combination with is_link().  */
+                constexpr bool is_char() const noexcept { return is_set( mode_, fmode_t::chr ); }
+
+                /** Returns true if entity is a fifo/pipe, might be in combination with is_link().  */
+                constexpr bool is_fifo() const noexcept { return is_set( mode_, fmode_t::fifo ); }
 
                 /** Returns true if entity is a directory, might be in combination with is_link().  */
-                bool is_dir() const noexcept { return is_set( mode_, fmode_t::dir ); }
+                constexpr bool is_dir() const noexcept { return is_set( mode_, fmode_t::dir ); }
 
-                /** Returns true if entity is a symbolic link, might be in combination with is_file() or is_dir(). */
-                bool is_link() const noexcept { return is_set( mode_, fmode_t::link ); }
+                /** Returns true if entity is a file, might be in combination with is_link().  */
+                constexpr bool is_file() const noexcept { return is_set( mode_, fmode_t::file ); }
+
+                /** Returns true if entity is a symbolic link, might be in combination with is_file(), is_dir(), is_fifo(), is_char(), is_block(), is_socket(). */
+                constexpr bool is_link() const noexcept { return is_set( mode_, fmode_t::link ); }
 
                 /** Returns true if entity gives no access to user, exclusive bit. */
-                bool has_access() const noexcept { return !is_set( mode_, fmode_t::no_access ); }
+                constexpr bool has_access() const noexcept { return !is_set( mode_, fmode_t::no_access ); }
 
                 /** Returns true if entity does not exist, exclusive bit. */
-                bool exists() const noexcept { return !is_set( mode_, fmode_t::not_existing ); }
+                constexpr bool exists() const noexcept { return !is_set( mode_, fmode_t::not_existing ); }
 
                 bool operator ==(const file_stats& rhs) const noexcept;
 

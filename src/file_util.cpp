@@ -68,11 +68,11 @@ using namespace jau::fs;
     typedef struct ::stat struct_stat64;
     typedef off_t off64_t;
     #define __posix_fstatat64 ::fstatat
-    #define __posix_openat64 ::openat
+    #define __posix_openat64  ::openat
 #else
     typedef struct ::stat64 struct_stat64;
     #define __posix_fstatat64 ::fstatat64
-    #define __posix_openat64 ::openat64
+    #define __posix_openat64  ::openat64
 #endif
 
 std::string jau::fs::get_cwd() noexcept {
@@ -263,19 +263,18 @@ std::unique_ptr<dir_item::backed_string_view> dir_item::reduce(const std::string
 }
 
 dir_item::dir_item(std::unique_ptr<backed_string_view> cleanpath) noexcept
-: dirname_(jau::fs::dirname(cleanpath->view)), basename_(jau::fs::basename(cleanpath->view)) {
+: dirname_(jau::fs::dirname(cleanpath->view)), basename_(jau::fs::basename(cleanpath->view)), empty_(false) {
     if( _slash == dirname_ && _slash == basename_ ) { // remove duplicate '/' in basename
         basename_ = _dot;
     }
 }
 
 dir_item::dir_item(const std::string& dirname__, const std::string& basename__) noexcept
-: dirname_(dirname__), basename_(basename__) {
+: dirname_(dirname__), basename_(basename__), empty_(false) {
 }
 
 dir_item::dir_item() noexcept
-: dirname_(_dot), basename_(_dot) {}
-
+: dirname_(_dot), basename_(_dot), empty_(true) {}
 
 dir_item::dir_item(const std::string_view& path_) noexcept
 : dir_item( reduce(path_) )
@@ -311,7 +310,10 @@ static void append_bitstr(std::string& out, T mask, T bit, const std::string& bi
 #define APPEND_BITSTR(U,V,M) append_bitstr(out, M, U::V, #V, comma);
 
 #define FMODEBITS_ENUM(X,M) \
-    X(fmode_t,fd,M) \
+    X(fmode_t,sock,M) \
+    X(fmode_t,blk,M) \
+    X(fmode_t,chr,M) \
+    X(fmode_t,fifo,M) \
     X(fmode_t,dir,M) \
     X(fmode_t,file,M) \
     X(fmode_t,link,M) \
@@ -330,39 +332,41 @@ std::string jau::fs::to_string(const fmode_t mask, const bool show_rwx) noexcept
     std::string out;
     bool comma = false;
     FMODEBITS_ENUM(APPEND_BITSTR,mask)
-    out.append(", ");
-    if( show_rwx ) {
-        if( fmode_t::none != ( mask & fmode_t::ugs_set ) ) {
-            append_bitstr(out, mask, fmode_t::set_uid, "u");
-            append_bitstr(out, mask, fmode_t::set_gid, "g");
-            append_bitstr(out, mask, fmode_t::sticky,  "s");
+    if( fmode_t::none != ( mask & fmode_t::protection_mask ) ) {
+        out.append(", ");
+        if( show_rwx ) {
+            if( fmode_t::none != ( mask & fmode_t::ugs_set ) ) {
+                append_bitstr(out, mask, fmode_t::set_uid, "u");
+                append_bitstr(out, mask, fmode_t::set_gid, "g");
+                append_bitstr(out, mask, fmode_t::sticky,  "s");
+            }
+            const std::string r("r");
+            const std::string w("w");
+            const std::string x("x");
+            append_bitstr(out, mask, fmode_t::read_usr,  r);
+            append_bitstr(out, mask, fmode_t::write_usr, w);
+            append_bitstr(out, mask, fmode_t::exec_usr,  x);
+            append_bitstr(out, mask, fmode_t::read_grp,  r);
+            append_bitstr(out, mask, fmode_t::write_grp, w);
+            append_bitstr(out, mask, fmode_t::exec_grp,  x);
+            append_bitstr(out, mask, fmode_t::read_oth,  r);
+            append_bitstr(out, mask, fmode_t::write_oth, w);
+            append_bitstr(out, mask, fmode_t::exec_oth,  x);
+        } else {
+            char buf[8];
+            int len = snprintf(buf, sizeof(buf), "0%o", (unsigned int)(mask & fmode_t::protection_mask));
+            out.append(std::string(buf, len));
         }
-        const std::string r("r");
-        const std::string w("w");
-        const std::string x("x");
-        append_bitstr(out, mask, fmode_t::read_usr,  r);
-        append_bitstr(out, mask, fmode_t::write_usr, w);
-        append_bitstr(out, mask, fmode_t::exec_usr,  x);
-        append_bitstr(out, mask, fmode_t::read_grp,  r);
-        append_bitstr(out, mask, fmode_t::write_grp, w);
-        append_bitstr(out, mask, fmode_t::exec_grp,  x);
-        append_bitstr(out, mask, fmode_t::read_oth,  r);
-        append_bitstr(out, mask, fmode_t::write_oth, w);
-        append_bitstr(out, mask, fmode_t::exec_oth,  x);
-    } else {
-        char buf[8];
-        int len = snprintf(buf, sizeof(buf), "0%o", (unsigned int)(mask & fmode_t::protection_mask));
-        out.append(std::string(buf, len));
     }
     return out;
 }
 
-std::unique_ptr<std::string> jau::fs::to_named_fd(const int fd) noexcept {
+std::string jau::fs::to_named_fd(const int fd) noexcept {
     if( 0 > fd ) {
-        return nullptr;
+        return "";
     }
-    std::unique_ptr<std::string> res = std::make_unique<std::string>("/dev/fd/");
-    res->append(std::to_string(fd));
+    std::string res("/dev/fd/");
+    res.append(std::to_string(fd));
     return res;
 }
 
@@ -410,29 +414,51 @@ file_stats::file_stats() noexcept
     static constexpr bool jau_has_stat(const uint32_t mask, const uint32_t bit) { return bit == ( mask & bit ); }
 #endif
 
-file_stats::file_stats(const ctor_cookie& cc, const int dirfd, const dir_item& item, const bool dirfd_is_item_dirname) noexcept
+file_stats::file_stats(const ctor_cookie& cc, int dirfd, const dir_item& item, const bool dirfd_is_item_dirname) noexcept
 : has_fields_(field_t::none), item_(item), link_target_path_(), link_target_(), mode_(fmode_t::none), fd_(-1),
   uid_(0), gid_(0), size_(0), btime_(), atime_(), ctime_(), mtime_(),
   errno_res_(0)
 {
     constexpr const bool _debug = false;
     (void)cc;
-    const std::string full_path( item_.path() );
-    const std::string& dirfd_path = dirfd_is_item_dirname ? item.basename() : full_path;
-    {
+    const std::string full_path( item_.empty() ? "" : item_.path() );
+    if( item_.empty() && AT_FDCWD != dirfd ) {
+        if( 0 <= dirfd ) {
+            has_fields_ |= field_t::fd;
+            fd_ = dirfd;
+            item_ = dir_item(jau::fs::to_named_fd(fd_));
+        } else {
+            ERR_PRINT("rec_level %d, dirfd %d < 0, %s, dirfd_is_item_dirname %d, AT_EMPTY_PATH",
+                    (int)cc.rec_level, dirfd, item_.to_string().c_str(), dirfd_is_item_dirname);
+            return;
+        }
+    } else {
         int scan_value = jau::fs::from_named_fd(full_path);
         if( 0 <= scan_value ) {
-            mode_ = fmode_t::fd;
             has_fields_ |= field_t::fd;
-            fd_ = scan_value;
+            dirfd = scan_value; // intentional overwrite
+            fd_ = dirfd;
+        } else if( 0 == full_path.find("/dev/fd/pipe:") ) {
+            // Last resort and should-be unreachable,
+            // since above `jau::fs::from_named_fd()` shall hit!
+            //
+            // fifo/pipe object used in GNU/Linux (at least),
+            // which can't be stat'ed / accessed
+            has_fields_ |= field_t::type;
+            mode_ |= fmode_t::fifo;
+            if constexpr ( _debug ) {
+                jau::fprintf_td(stderr, "file_stats(%d): FIFO: '%s', errno %d (%s)\n", (int)cc.rec_level, to_string().c_str(), errno, ::strerror(errno));
+            }
+            return;
         }
     }
+    const std::string dirfd_path = has( field_t::fd ) ? "" : ( dirfd_is_item_dirname ? item.basename() : full_path );
 
 #if _USE_STATX_
     struct ::statx s;
     ::bzero(&s, sizeof(s));
     int stat_res = ::statx(dirfd, dirfd_path.c_str(),
-                           ( AT_NO_AUTOMOUNT | AT_SYMLINK_NOFOLLOW ),
+                           ( AT_NO_AUTOMOUNT | AT_SYMLINK_NOFOLLOW | ( has( field_t::fd ) ? AT_EMPTY_PATH : 0 ) ),
                            ( STATX_BASIC_STATS | STATX_BTIME ), &s);
     if( 0 != stat_res ) {
         if constexpr ( _debug ) {
@@ -456,13 +482,21 @@ file_stats::file_stats(const ctor_cookie& cc, const int dirfd, const dir_item& i
             has_fields_ |= field_t::type;
         }
         if( has( field_t::type ) ) {
-            if( S_ISLNK( s.stx_mode ) && !is_fd() ) {
+            if( S_ISLNK( s.stx_mode ) ) {
                 mode_ |= fmode_t::link;
             }
             if( S_ISREG( s.stx_mode ) ) {
                 mode_ |= fmode_t::file;
             } else if( S_ISDIR( s.stx_mode ) ) {
                 mode_ |= fmode_t::dir;
+            } else if( S_ISFIFO( s.stx_mode ) ) {
+                mode_ |= fmode_t::fifo;
+            } else if( S_ISCHR( s.stx_mode ) ) {
+                mode_ |= fmode_t::chr;
+            } else if( S_ISSOCK( s.stx_mode ) ) {
+                mode_ |= fmode_t::sock;
+            } else if( S_ISBLK( s.stx_mode ) ) {
+                mode_ |= fmode_t::blk;
             }
         }
         if( jau_has_stat( s.stx_mask, STATX_MODE ) ) {
@@ -497,7 +531,7 @@ file_stats::file_stats(const ctor_cookie& cc, const int dirfd, const dir_item& i
             has_fields_ |= field_t::ino;
         }
         if( jau_has_stat( s.stx_mask, STATX_SIZE ) ) {
-            if( is_file() && !is_link() ) {
+            if( !is_link() && is_file() ) {
                 has_fields_ |= field_t::size;
                 size_ = s.stx_size;
             }
@@ -535,7 +569,7 @@ file_stats::file_stats(const ctor_cookie& cc, const int dirfd, const dir_item& i
             if( 0 == cc.rec_level ) {
                 // Initial symbolic followed: Test recursive loop-error
                 ::bzero(&s, sizeof(s));
-                stat_res = ::statx(dirfd, dirfd_path.c_str(), AT_NO_AUTOMOUNT, STATX_BASIC_STATS, &s);
+                stat_res = ::statx(dirfd, dirfd_path.c_str(), AT_NO_AUTOMOUNT | ( has( field_t::fd ) ? AT_EMPTY_PATH : 0 ), STATX_BASIC_STATS, &s);
                 if( 0 != stat_res ) {
                     if constexpr ( _debug ) {
                         jau::fprintf_td(stderr, "file_stats(%d): Test link ERROR: '%s', %d, errno %d (%s)\n", (int)cc.rec_level, full_path.c_str(), stat_res, errno, ::strerror(errno));
@@ -563,16 +597,24 @@ file_stats::file_stats(const ctor_cookie& cc, const int dirfd, const dir_item& i
             } else {
                 link_target_ = std::make_shared<file_stats>(ctor_cookie(cc.rec_level+1), dirfd, dir_item( jau::fs::dirname(full_path), link_path ), dirfd_is_item_dirname );
             }
-            if( link_target_->is_fd() ) {
-                mode_ |= fmode_t::fd;
+            if( link_target_->has_fd() ) {
                 has_fields_ |= field_t::fd;
                 fd_ = link_target_->fd();
+            }
+            if( link_target_->is_socket() ) {
+                mode_ |= fmode_t::sock;
+            } else if( link_target_->is_block() ) {
+                mode_ |= fmode_t::blk;
+            } else if( link_target_->is_char() ) {
+                mode_ |= fmode_t::chr;
+            } else if( link_target_->is_fifo() ) {
+                mode_ |= fmode_t::fifo;
+            } else if( link_target_->is_dir() ) {
+                mode_ |= fmode_t::dir;
             } else if( link_target_->is_file() ) {
                 mode_ |= fmode_t::file;
                 has_fields_ |= field_t::size;
                 size_ = link_target_->size();
-            } else if( link_target_->is_dir() ) {
-                mode_ |= fmode_t::dir;
             } else if( !link_target_->exists() ) {
                 mode_ |= fmode_t::not_existing;
             } else if( !link_target_->has_access() ) {
@@ -586,7 +628,7 @@ file_stats::file_stats(const ctor_cookie& cc, const int dirfd, const dir_item& i
 #else /* _USE_STATX_ */
     struct_stat64 s;
     ::bzero(&s, sizeof(s));
-    int stat_res = __posix_fstatat64(dirfd, dirfd_path.c_str(), &s, AT_SYMLINK_NOFOLLOW); // lstat64 compatible
+    int stat_res = __posix_fstatat64(dirfd, dirfd_path.c_str(), &s, AT_SYMLINK_NOFOLLOW | ( has( field_t::fd ) ? AT_EMPTY_PATH : 0 )); // lstat64 compatible
     if( 0 != stat_res ) {
         if constexpr ( _debug ) {
             jau::fprintf_td(stderr, "file_stats(%d): Test ERROR: '%s', %d, errno %d (%s)\n", (int)cc.rec_level, full_path.c_str(), stat_res, errno, ::strerror(errno));
@@ -608,16 +650,25 @@ file_stats::file_stats(const ctor_cookie& cc, const int dirfd, const dir_item& i
         has_fields_ = field_t::type  | field_t::mode  | field_t::uid   | field_t::gid |
                       field_t::atime | field_t::ctime | field_t::mtime;
 
-        if( S_ISLNK( s.st_mode ) && !is_fd() ) {
+        if( S_ISLNK( s.st_mode ) ) {
             mode_ |= fmode_t::link;
         }
         if( S_ISREG( s.st_mode ) ) {
             mode_ |= fmode_t::file;
             if( !is_link() ) {
                 has_fields_ |= field_t::size;
+                size_ = s.st_size;
             }
         } else if( S_ISDIR( s.st_mode ) ) {
             mode_ |= fmode_t::dir;
+        } else if( S_ISFIFO( s.st_mode ) ) {
+            mode_ |= fmode_t::fifo;
+        } else if( S_ISCHR( s.st_mode ) ) {
+            mode_ |= fmode_t::chr;
+        } else if( S_ISSOCK( s.st_mode ) ) {
+            mode_ |= fmode_t::sock;
+        } else if( S_ISBLK( s.st_mode ) ) {
+            mode_ |= fmode_t::blk;
         }
 
         // Append POSIX protection bits
@@ -625,7 +676,6 @@ file_stats::file_stats(const ctor_cookie& cc, const int dirfd, const dir_item& i
 
         uid_ = s.st_uid;
         gid_ = s.st_gid;
-        size_ = is_file() ? s.st_size : 0;
         atime_ = jau::fraction_timespec( s.st_atim.tv_sec, s.st_atim.tv_nsec );
         ctime_ = jau::fraction_timespec( s.st_ctim.tv_sec, s.st_ctim.tv_nsec );
         mtime_ = jau::fraction_timespec( s.st_mtim.tv_sec, s.st_mtim.tv_nsec );
@@ -656,7 +706,7 @@ file_stats::file_stats(const ctor_cookie& cc, const int dirfd, const dir_item& i
             if( 0 == cc.rec_level ) {
                 // Initial symbolic followed: Test recursive loop-error
                 ::bzero(&s, sizeof(s));
-                stat_res = __posix_fstatat64(dirfd, dirfd_path.c_str(), &s, 0); // stat64 compatible
+                stat_res = __posix_fstatat64(dirfd, dirfd_path.c_str(), &s, has( field_t::fd ) ? AT_EMPTY_PATH : 0); // stat64 compatible
                 if( 0 != stat_res ) {
                     if constexpr ( _debug ) {
                         jau::fprintf_td(stderr, "file_stats(%d): Test link ERROR: '%s', %d, errno %d (%s)\n", (int)cc.rec_level, full_path.c_str(), stat_res, errno, ::strerror(errno));
@@ -684,16 +734,24 @@ file_stats::file_stats(const ctor_cookie& cc, const int dirfd, const dir_item& i
             } else {
                 link_target_ = std::make_shared<file_stats>(ctor_cookie(cc.rec_level+1), dirfd, dir_item( jau::fs::dirname(full_path), link_path ), dirfd_is_item_dirname );
             }
-            if( link_target_->is_fd() ) {
-                mode_ |= fmode_t::fd;
+            if( link_target_->has_fd() ) {
                 has_fields_ |= field_t::fd;
                 fd_ = link_target_->fd();
+            }
+            if( link_target_->is_socket() ) {
+                mode_ |= fmode_t::sock;
+            } else if( link_target_->is_block() ) {
+                mode_ |= fmode_t::blk;
+            } else if( link_target_->is_char() ) {
+                mode_ |= fmode_t::chr;
+            } else if( link_target_->is_fifo() ) {
+                mode_ |= fmode_t::fifo;
+            } else if( link_target_->is_dir() ) {
+                mode_ |= fmode_t::dir;
             } else if( link_target_->is_file() ) {
                 mode_ |= fmode_t::file;
                 has_fields_ |= field_t::size;
                 size_ = link_target_->size();
-            } else if( link_target_->is_dir() ) {
-                mode_ |= fmode_t::dir;
             } else if( !link_target_->exists() ) {
                 mode_ |= fmode_t::not_existing;
             } else if( !link_target_->has_access() ) {
@@ -723,6 +781,10 @@ file_stats::file_stats(const std::string& _path) noexcept
 
 file_stats::file_stats(const int dirfd, const std::string& _path) noexcept
 : file_stats(ctor_cookie(0), dirfd, dir_item(_path), false /* dirfd_is_item_dirname */)
+{}
+
+file_stats::file_stats(const int fd) noexcept
+: file_stats(ctor_cookie(0), fd, dir_item(), false /* dirfd_is_item_dirname */)
 {}
 
 const file_stats* file_stats::final_target(size_t* link_count) const noexcept {
@@ -1073,7 +1135,7 @@ bool jau::fs::remove(const std::string& path, const traverse_options topts) noex
         }
         return false;
     }
-    if( path_stats.is_fd() ) {
+    if( path_stats.has_fd() ) {
         ERR_PRINT("remove: failed: path is fd: %s", path_stats.to_string().c_str());
         return false;
     }
