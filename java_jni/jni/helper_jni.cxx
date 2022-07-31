@@ -231,6 +231,17 @@ jlong jau::jni::getLongFieldValue(JNIEnv *env, jobject obj, const char* field_na
     return v;
 }
 
+jint jau::jni::getIntFieldValue(JNIEnv *env, jobject obj, const char* field_name) {
+    jfieldID f = jau::jni::getField(env, obj, field_name, "I");
+    if (!f)
+    {
+        throw jau::InternalError(std::string("no field found: I ")+field_name, E_FILE_LINE);
+    }
+    jlong v = env->GetIntField(obj, f);
+    java_exception_check_and_throw(env, E_FILE_LINE);
+    return v;
+}
+
 jclass jau::jni::search_class(JNIEnv *env, const char *clazz_name)
 {
     jclass clazz = env->FindClass(clazz_name);

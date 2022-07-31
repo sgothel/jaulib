@@ -117,6 +117,7 @@ namespace jau::jni {
     jobject getObjectFieldValue(JNIEnv *env, jobject obj, const char* field_name, const char* field_signature);
     std::string getStringFieldValue(JNIEnv *env, jobject obj, const char* field_name);
     jlong getLongFieldValue(JNIEnv *env, jobject obj, const char* field_name);
+    jint getIntFieldValue(JNIEnv *env, jobject obj, const char* field_name);
 
     jclass search_class(JNIEnv *env, const char *clazz_name);
     jclass search_class(JNIEnv *env, jobject obj);
