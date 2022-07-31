@@ -9,6 +9,11 @@
 * First stable release (TODO)
 
 **0.15.0** (WIP)
+* Add `jau::io::read_stream()` with double-buffered reading to ensure last `consumer_fn()` call gets `is_final` set if next buffer has `eof()` w/ zero bytes
+* `jau::io::ByteInStream_File`: Replace `std::ifstream` for file-descriptor (fd) POSIX layer to support dirfd and plain fd operations
+* `jau::fs::file_stats`: Support new `fmode_t` types sock, blk, chr and fifo, move fd from type -> attribute, support sole `file_stats(fd)` ctor,
+* Add `jau::fs::traverse_options::lexicographical_order` as required when computing an order dependent outcome like a hash value
+* Add `jau::fs::copy_option::into_existing_dir`: Copy source dir content into an already existing destination directory as if destination directory did not exist
 * Add support for FreeBSD
   - Build clean and passes all tests.
   - Motivation: Have one more target system for POSIX and clang validation.
