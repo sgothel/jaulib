@@ -123,6 +123,29 @@ namespace jau::io {
             StreamConsumerFunc consumer_fn) noexcept;
 
     /**
+     * Synchronous double-buffered byte input stream reader using the given StreamConsumerFunc consumer_fn.
+     *
+     * To abort streaming, user may return `false` from the given `consumer_func`.
+     *
+     * Implementation reads one buffer ahead in respect to consumer_fn(). <br/>
+     * If reading zero bytes on the next buffer,
+     * it propagates the end-of-file (EOF) to the previous buffer which will be send via consumer_fn() next.<br/>
+     *
+     * This way, the consumer_fn() will always receive its `is_final` flag on the last sent bytes (size > 0)
+     * even if the content-size is unknown (pipe). <br/>
+     * Hence it allows e.g. decryption to work where the final data chunck must be processed as such.
+     *
+     * @param in the input byte stream to read from
+     * @param buffer1 secure std::vector buffer, passed down to consumer_fn
+     * @param buffer2 secure std::vector buffer, passed down to consumer_fn
+     * @param consumer_fn StreamConsumerFunc consumer for each received heap of bytes, returning true to continue stream of false to abort.
+     * @return total bytes read or 0 if error
+     */
+    uint64_t read_stream(ByteInStream& in,
+            secure_vector<uint8_t>& buffer1, secure_vector<uint8_t>& buffer2,
+            StreamConsumerFunc consumer_fn) noexcept;
+
+    /**
      * Synchronous URL stream reader using the given StreamConsumerFunc consumer_fn.
      *
      * To abort streaming, user may return `false` from the given `consumer_func`.
