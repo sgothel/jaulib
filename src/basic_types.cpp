@@ -25,6 +25,7 @@
 
 #include <cstdint>
 #include <cinttypes>
+#include <cstring>
 
 #include <algorithm>
 
@@ -219,11 +220,9 @@ jau::ExceptionBase::ExceptionBase(std::string const type, std::string const m, c
 }
 
 std::string jau::get_string(const uint8_t *buffer, nsize_t const buffer_len, nsize_t const max_len) noexcept {
-    const nsize_t cstr_len = std::min(buffer_len, max_len);
-    char cstr[max_len+1]; // EOS
-    memcpy(cstr, buffer, cstr_len);
-    cstr[cstr_len] = 0; // EOS
-    return std::string(cstr);
+    const nsize_t cstr_max_len = std::min(buffer_len, max_len);
+    const size_t cstr_len = ::strnlen(reinterpret_cast<const char*>(buffer), cstr_max_len); // if cstr_len == cstr_max_len then no EOS
+    return std::string(reinterpret_cast<const char*>(buffer), cstr_len);
 }
 
 void jau::trimInPlace(std::string &s) noexcept {
@@ -506,4 +505,3 @@ bool jau::to_fraction_i64(fraction_i64& result, const std::string & value, const
     result = std::move(temp);
     return true;
 }
-
