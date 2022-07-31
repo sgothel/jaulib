@@ -25,8 +25,9 @@
 #include "test_fileutils_copy_r_p.hpp"
 
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <sys/wait.h>
-#include <sys/types.h>
 #include <unistd.h>
 #include <fstream>
 #include <iostream>
@@ -453,6 +454,7 @@ class TestFileUtil01 : TestFileUtilBase {
     }
 
     void test05_file_stat() {
+        errno = 0;
         INFO_STR("\n\ntest05_file_stat\n");
 
         {
@@ -551,6 +553,7 @@ class TestFileUtil01 : TestFileUtilBase {
     }
 
     void test06_file_stat_symlinks() {
+        errno = 0;
         INFO_STR("\n\ntest06_file_stat_symlinks\n");
 
         jau::fs::file_stats proot_stats(project_root1);
@@ -724,61 +727,108 @@ class TestFileUtil01 : TestFileUtilBase {
         }
     }
 
-    static void test_file_stat_fd_item(const int fd, const std::string& named_fd_link, const std::string& named_fd1, const std::string& named_fd2) {
+    static void test_file_stat_fd_item(const jau::fs::fmode_t exp_type, const int fd, const std::string& named_fd1, const std::string& named_fd_link) {
+        jau::fprintf_td(stderr, "test_file_stat_fd_item: expect '%s', fd %d, name_fd1 '%s', make_fd_link '%s'\n",
+                jau::fs::to_string(exp_type).c_str(), fd, named_fd1.c_str(), named_fd_link.c_str());
         {
-            jau::fs::file_stats stats_1(named_fd1);
-            REQUIRE(  stats_1.exists() );
-            REQUIRE(  stats_1.has_access() );
-            REQUIRE( !stats_1.is_dir() );
-            REQUIRE( !stats_1.is_file() );
-            REQUIRE( !stats_1.is_link() );
-            REQUIRE(  stats_1.is_fd() );
-            REQUIRE(  fd == stats_1.fd() );
-            REQUIRE( 0 == stats_1.size() );
-            REQUIRE( nullptr == stats_1.link_target_path() );
+            errno = 0;
+            jau::fprintf_td(stderr, "test_file_stat_fd_item.1: expect '%s', fd %d\n", jau::fs::to_string(exp_type).c_str(), fd);
+            jau::fs::file_stats stats(fd);
+            jau::fprintf_td(stderr, "fd: %s\n", stats.to_string().c_str());
+            REQUIRE(  stats.exists() );
+            REQUIRE(  stats.has_access() );
+            REQUIRE( !stats.is_socket() );
+            REQUIRE( !stats.is_block() );
+            REQUIRE( !stats.is_dir() );
+            if( jau::fs::fmode_t::none == ( stats.type_mode() & exp_type ) ) {
+                jau::fprintf_td(stderr, "INFO: Not matching expected type '%s': fd: %s\n", jau::fs::to_string(exp_type).c_str(), stats.to_string().c_str());
+            }
+            REQUIRE(  stats.has_fd() );
+            REQUIRE(  fd == stats.fd() );
+            if( !stats.is_file() ) {
+                REQUIRE( 0 == stats.size() );
+            }
+            jau::fprintf_td(stderr, "test_file_stat_fd_item.1: X\n\n");
         }
-        {
-            jau::fs::file_stats stats_link(named_fd_link);
-            jau::fprintf_td(stderr, "fd_link: %s\n", stats_link.to_string().c_str());
-            REQUIRE(  stats_link.exists() );
-            REQUIRE(  stats_link.has_access() );
-            REQUIRE( !stats_link.is_dir() );
-            REQUIRE( !stats_link.is_file() );
-            REQUIRE(  stats_link.is_link() );
-            REQUIRE(  stats_link.is_fd() );
-            REQUIRE( 0 == stats_link.size() );
-            REQUIRE( nullptr != stats_link.link_target_path() );
+        if( !named_fd1.empty() ) {
+            errno = 0;
+            jau::fprintf_td(stderr, "test_file_stat_fd_item.2: expect '%s', fd %d, name_fd1 '%s'\n",
+                    jau::fs::to_string(exp_type).c_str(), fd, named_fd1.c_str());
+            jau::fs::file_stats stats(named_fd1);
+            jau::fprintf_td(stderr, "fd_1: %s\n", stats.to_string().c_str());
+            REQUIRE(  stats.exists() );
+            REQUIRE(  stats.has_access() );
+            REQUIRE( !stats.is_socket() );
+            REQUIRE( !stats.is_block() );
+            REQUIRE( !stats.is_dir() );
+            if( jau::fs::fmode_t::none == ( stats.type_mode() & exp_type ) ) {
+                jau::fprintf_td(stderr, "INFO: Not matching expected type '%s': fd: %s\n", jau::fs::to_string(exp_type).c_str(), stats.to_string().c_str());
+            }
+            REQUIRE(  stats.has_fd() );
+            REQUIRE(  fd == stats.fd() );
+            if( !stats.is_file() ) {
+                REQUIRE( 0 == stats.size() );
+            }
+            jau::fprintf_td(stderr, "test_file_stat_fd_item.2: X\n\n");
+        }
+        if( !named_fd_link.empty() ) {
+            errno = 0;
+            jau::fprintf_td(stderr, "test_file_stat_fd_item.3: expect '%s', fd %d, make_fd_link '%s'\n",
+                    jau::fs::to_string(exp_type).c_str(), fd, named_fd_link.c_str());
+            jau::fs::file_stats stats(named_fd_link);
+            jau::fprintf_td(stderr, "fd_link: %s\n", stats.to_string().c_str());
+            REQUIRE(  stats.exists() );
+            REQUIRE(  stats.has_access() );
+            REQUIRE( !stats.is_socket() );
+            REQUIRE( !stats.is_block() );
+            REQUIRE( !stats.is_dir() );
+            if( jau::fs::fmode_t::none == ( stats.type_mode() & exp_type ) ) {
+                jau::fprintf_td(stderr, "INFO: Not matching expected type '%s': fd: %s\n", jau::fs::to_string(exp_type).c_str(), stats.to_string().c_str());
+            }
+            REQUIRE(  stats.has_fd() );
+            REQUIRE(  fd == stats.fd() );
+            if( !stats.is_file() ) {
+                REQUIRE( 0 == stats.size() );
+            }
 
             size_t link_count;
-            const jau::fs::file_stats* final_target = stats_link.final_target(&link_count);
+            const jau::fs::file_stats* final_target = stats.final_target(&link_count);
             REQUIRE( nullptr != final_target );
             jau::fprintf_td(stderr, "- final_target (%zu link count): %s\n", link_count, final_target->to_string().c_str());
             REQUIRE( 1 <= link_count );
             REQUIRE( 2 >= link_count );
-            if( named_fd1 != final_target->path() && named_fd2 != final_target->path() ) {
-                INFO_STR("link_target_path "+final_target->path()+" not[ "+named_fd1+", "+named_fd2+"]");
-                REQUIRE( false);
-            }
+            jau::fprintf_td(stderr, "test_file_stat_fd_item.3: X\n\n");
         }
     }
 
     void test07_file_stat_fd() {
         jau::fprintf_td(stderr, "test07_file_stat_fd\n");
 
+        const std::string fd_stdin_1 = "/dev/fd/0";
+        const std::string fd_stdout_1 = "/dev/fd/1";
+        const std::string fd_stderr_1 = "/dev/fd/2";
+
         const std::string fd_stdin_l = "/dev/stdin";
         const std::string fd_stdout_l = "/dev/stdout";
         const std::string fd_stderr_l = "/dev/stderr";
 
-        const std::string fd_stdin_1 = "/dev/fd/0";
-        const std::string fd_stdout_1 = "/dev/fd/1";
-        const std::string fd_stderr_1 = "/dev/fd/2";
-        const std::string fd_stdin_2 = "/proc/self/fd/0";
-        const std::string fd_stdout_2 = "/proc/self/fd/1";
-        const std::string fd_stderr_2 = "/proc/self/fd/2";
-
-        test_file_stat_fd_item(0, fd_stdin_l, fd_stdin_1, fd_stdin_2);
-        test_file_stat_fd_item(1, fd_stdout_l, fd_stdout_1, fd_stdout_2);
-        test_file_stat_fd_item(2, fd_stderr_l, fd_stderr_1, fd_stderr_2);
+        test_file_stat_fd_item(jau::fs::fmode_t::chr, 0, fd_stdin_1, fd_stdin_l);
+        test_file_stat_fd_item(jau::fs::fmode_t::chr, 1, fd_stdout_1, fd_stdout_l);
+        test_file_stat_fd_item(jau::fs::fmode_t::chr, 2, fd_stderr_1, fd_stderr_l);
+        {
+            int fd = ::open("test07_file_stat_fd_tmp", O_CREAT|O_WRONLY|O_NOCTTY, S_IRUSR | S_IWUSR | S_IRGRP );
+            REQUIRE( 0 <= fd );
+            test_file_stat_fd_item(jau::fs::fmode_t::file, fd, jau::fs::to_named_fd(fd), "");
+            ::close(fd);
+        }
+        {
+            int pipe_fds[2];
+            REQUIRE( 0 == ::pipe(pipe_fds) );
+            test_file_stat_fd_item(jau::fs::fmode_t::fifo, pipe_fds[0], jau::fs::to_named_fd(pipe_fds[0]), "");
+            test_file_stat_fd_item(jau::fs::fmode_t::fifo, pipe_fds[1], jau::fs::to_named_fd(pipe_fds[1]), "");
+            ::close(pipe_fds[0]);
+            ::close(pipe_fds[1]);
+        }
     }
 
     // 128 bytes
@@ -787,9 +837,8 @@ class TestFileUtil01 : TestFileUtilBase {
     static const size_t pipe_msg_count = 10;
 
     void test08_pipe_01() {
+        errno = 0;
         jau::fprintf_td(stderr, "test08_pipe_01\n");
-
-        const std::string fd_name_prefix = "/dev/fd/";
 
         int pipe_fds[2];
         REQUIRE( 0 == ::pipe(pipe_fds) );
@@ -799,11 +848,11 @@ class TestFileUtil01 : TestFileUtilBase {
             // child process: WRITE
             ::close(pipe_fds[0]); // close unused read end
             const int new_stdout = pipe_fds[1];
-            const std::string fd_stdout = fd_name_prefix+std::to_string(new_stdout);
+            const std::string fd_stdout = jau::fs::to_named_fd(new_stdout);
 
             jau::fs::file_stats stats_stdout(fd_stdout);
             jau::fprintf_td(stderr, "Child: stats_stdout %s\n", stats_stdout.to_string().c_str());
-            if( !stats_stdout.exists() || !stats_stdout.is_fd() || new_stdout != stats_stdout.fd() ) {
+            if( !stats_stdout.exists() || !stats_stdout.has_fd() || new_stdout != stats_stdout.fd() ) {
                 jau::fprintf_td(stderr, "Child: Error: stats_stdout %s\n", stats_stdout.to_string().c_str());
                 ::_exit(EXIT_FAILURE);
             }
@@ -839,37 +888,44 @@ class TestFileUtil01 : TestFileUtilBase {
             // parent process: READ
             ::close(pipe_fds[1]); // close unused write end
             const int new_stdin = pipe_fds[0]; // dup2(fd[0], 0);
-            const std::string fd_stdin = fd_name_prefix+std::to_string(new_stdin);
+            const std::string fd_stdin = jau::fs::to_named_fd(new_stdin);
 
             jau::fs::file_stats stats_stdin(fd_stdin);
             jau::fprintf_td(stderr, "Parent: stats_stdin %s\n", stats_stdin.to_string().c_str());
             REQUIRE(  stats_stdin.exists() );
             REQUIRE(  stats_stdin.has_access() );
+            REQUIRE( !stats_stdin.is_socket() );
+            REQUIRE( !stats_stdin.is_block() );
             REQUIRE( !stats_stdin.is_dir() );
             REQUIRE( !stats_stdin.is_file() );
-            REQUIRE(  stats_stdin.is_fd() );
+            const bool fifo_or_char = stats_stdin.is_fifo() || stats_stdin.is_char();
+            REQUIRE(  true == fifo_or_char );
+            REQUIRE(  stats_stdin.has_fd() );
             REQUIRE(  new_stdin == stats_stdin.fd() );
             REQUIRE( 0 == stats_stdin.size() );
 
             // capture stdin
-            std::ifstream infile(fd_stdin, std::ios::in | std::ios::binary );
-            REQUIRE( infile.good() );
-            REQUIRE( infile.is_open() );
+            jau::io::ByteInStream_File infile(fd_stdin);
+            jau::fprintf_td(stderr, "Parent: infile %s\n", infile.to_string().c_str());
+            REQUIRE( !infile.error() );
 
-            char buffer[pipe_msg_count * pipe_msg_len + 512];
+            uint8_t buffer[pipe_msg_count * pipe_msg_len + 512];
             ::bzero(buffer, sizeof(buffer));
             size_t total_read = 0;
             {
-                while( infile.good() && total_read < sizeof(buffer) ) {
-                    infile.read(buffer+total_read, sizeof(buffer)-total_read);
-                    REQUIRE( !infile.bad() );
-                    const size_t got = static_cast<size_t>(infile.gcount());
+                while( !infile.end_of_data() && total_read < sizeof(buffer) ) {
+                    const size_t got = infile.read(buffer+total_read, sizeof(buffer)-total_read);
+                    jau::fprintf_td(stderr, "Parent: infile.a_ %s\n", infile.to_string().c_str());
+                    REQUIRE( !infile.error() );
                     total_read += got;
                     jau::fprintf_td(stderr, "Parent: Got %zu -> %zu\n", got, total_read);
                 }
+                jau::fprintf_td(stderr, "Parent: infile.a_1 %s\n", infile.to_string().c_str());
                 infile.close();
+                jau::fprintf_td(stderr, "Parent: infile.a_2 %s\n", infile.to_string().c_str());
                 ::close(pipe_fds[0]);
-                REQUIRE( !infile.bad() );
+                jau::fprintf_td(stderr, "Parent: infile.a_3 %s\n", infile.to_string().c_str());
+                REQUIRE( !infile.error() );
             }
             // check actual transmitted content
             REQUIRE( total_read == pipe_msg_len*pipe_msg_count);

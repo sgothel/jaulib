@@ -33,6 +33,7 @@
 
 #include <jau/debug.hpp>
 #include <jau/file_util.hpp>
+#include <jau/byte_stream.hpp>
 
 using namespace jau::fractions_i64_literals;
 
