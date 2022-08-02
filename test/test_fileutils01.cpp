@@ -24,11 +24,13 @@
 
 #include "test_fileutils_copy_r_p.hpp"
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <sys/wait.h>
-#include <unistd.h>
+extern "C" {
+    #include <sys/types.h>
+    #include <sys/stat.h>
+    #include <fcntl.h>
+    #include <sys/wait.h>
+    #include <unistd.h>
+}
 #include <fstream>
 #include <iostream>
 
