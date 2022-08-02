@@ -61,8 +61,8 @@ uint64_t jau::io::read_stream(ByteInStream& in,
                               secure_vector<uint8_t>& buffer,
                               StreamConsumerFunc consumer_fn) noexcept {
     uint64_t total = 0;
-    bool has_more = !in.end_of_data();
-    while( has_more ) {
+    bool has_more;
+    do {
         if( in.check_available(1) ) { // at least one byte to stream ..
             buffer.resize(buffer.capacity());
             const uint64_t got = in.read(buffer.data(), buffer.capacity());
@@ -83,7 +83,7 @@ uint64_t jau::io::read_stream(ByteInStream& in,
             buffer.resize(0);
             consumer_fn(buffer, true); // forced final, zero size
         }
-    }
+    } while( has_more );
     return total;
 }
 

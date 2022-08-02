@@ -97,6 +97,9 @@ namespace jau::io {
      *
      * To abort streaming, user may return `false` from the given `consumer_func`.
      *
+     * It is guaranteed that consumer_fn() is called with `is_final=true` once at the end,
+     * even if `input_file` stream has zero size.
+     *
      * @param input_file input file name path, `-` denotes std::stdin.
      * @param buffer secure std::vector buffer, passed down to consumer_fn
      * @param consumer_fn StreamConsumerFunc consumer for each received heap of bytes, returning true to continue stream of false to abort.
@@ -113,6 +116,9 @@ namespace jau::io {
      *
      * To abort streaming, user may return `false` from the given `consumer_func`.
      *
+     * It is guaranteed that consumer_fn() is called with `is_final=true` once at the end,
+     * even input stream has zero size.
+     *
      * @param in the input byte stream to read from
      * @param buffer secure std::vector buffer, passed down to consumer_fn
      * @param consumer_fn StreamConsumerFunc consumer for each received heap of bytes, returning true to continue stream of false to abort.
@@ -126,6 +132,9 @@ namespace jau::io {
      * Synchronous double-buffered byte input stream reader using the given StreamConsumerFunc consumer_fn.
      *
      * To abort streaming, user may return `false` from the given `consumer_func`.
+     *
+     * It is guaranteed that consumer_fn() is called with `is_final=true` once at the end,
+     * even if input stream has zero size.
      *
      * Implementation reads one buffer ahead in respect to consumer_fn(). <br/>
      * If reading zero bytes on the next buffer,
