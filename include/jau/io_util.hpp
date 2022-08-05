@@ -36,9 +36,6 @@
 #include <jau/callocator_sec.hpp>
 #include <jau/ringbuffer.hpp>
 
-// Include Botan header files before this one to be integrated w/ Botan!
-// #include <botan_all.h>
-
 namespace jau::io {
     /** @defgroup IOUtils IO Utilities
      *  Input and Output (IO) types and functionality.
@@ -46,11 +43,7 @@ namespace jau::io {
      *  @{
      */
 
-#ifdef BOTAN_VERSION_MAJOR
-    template<typename T> using secure_vector = std::vector<T, Botan::secure_allocator<T>>;
-#else
     template<typename T> using secure_vector = std::vector<T, jau::callocator_sec<T>>;
-#endif
 
     typedef std::basic_string<char, std::char_traits<char>, jau::callocator_sec<char>> secure_string;
 

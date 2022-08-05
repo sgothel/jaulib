@@ -2,10 +2,6 @@
  * Author: Sven Gothel <sgothel@jausoft.com>
  * Copyright (c) 2021 Gothel Software e.K.
  *
- * ByteInStream, ByteInStream_SecMemory and ByteInStream_istream are derived from Botan under same license:
- * - Copyright (c) 1999-2007 Jack Lloyd
- * - Copyright (c) 2005 Matthew Gregan
- *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
  * "Software"), to deal in the Software without restriction, including
@@ -38,9 +34,6 @@
 #include <jau/ringbuffer.hpp>
 #include <jau/file_util.hpp>
 
-// Include Botan header files before this one to be integrated w/ Botan!
-// #include <botan_all.h>
-
 #include <jau/io_util.hpp>
 
 using namespace jau::fractions_i64_literals;
@@ -52,283 +45,8 @@ namespace jau::io {
      *  @{
      */
 
-#ifdef BOTAN_VERSION_MAJOR
-    #define VIRTUAL_BOTAN
-    #define OVERRIDE_BOTAN override
-    #define NOEXCEPT_BOTAN
-#else
-    #define VIRTUAL_BOTAN virtual
-    #define OVERRIDE_BOTAN
-    #define NOEXCEPT_BOTAN noexcept
-#endif
-
     /**
-     * This class represents an abstract byte input stream object.
-     *
-     * @anchor byte_in_stream_properties
-     * ### ByteInStream Properties
-     * The byte input stream can originate from a local source w/o delay,
-     * remote URL like http connection or even from another thread feeding the input buffer.<br />
-     * Both latter asynchronous resources may expose blocking properties
-     * in check_available().
-     *
-     * Asynchronous resources benefit from knowing their content size,
-     * as their check_available() implementation may avoid
-     * blocking and waiting for requested bytes available
-     * if the stream is already beyond its scope.
-     *
-     * All method implementations are of `noexcept`
-     * and declared as such if used standalone w/o Botan.<br/>
-     * However, if using Botan, the `noexcept` qualifier is dropped
-     * for compatibility with Botan::DataSource virtual function table.
-     *
-     * One may use error() to detect whether an error has occurred,
-     * while end_of_data() not only covered the EOS case but includes error().
-     *
-     * @see @ref byte_in_stream_properties "ByteInStream Properties"
-     */
-    class ByteInStream
-#ifdef BOTAN_VERSION_MAJOR
-    : public Botan::DataSource
-#endif
-    {
-        public:
-            ByteInStream() = default;
-            virtual ~ByteInStream() NOEXCEPT_BOTAN = default;
-            ByteInStream& operator=(const ByteInStream&) = delete;
-            ByteInStream(const ByteInStream&) = delete;
-
-            /**
-             * Close the stream if supported by the underlying mechanism.
-             */
-            virtual void close() noexcept = 0;
-
-            /**
-             * Check whether n bytes are available in the input stream.
-             *
-             * This method may be blocking when using an asynchronous source
-             * up until the requested bytes are actually available.
-             *
-             * A subsequent call to read() shall return immediately with at least
-             * the requested numbers of bytes available.
-             *
-             * @param n byte count to wait for
-             * @return true if n bytes are available, otherwise false
-             *
-             * @see read()
-             * @see @ref byte_in_stream_properties "ByteInStream Properties"
-             */
-            VIRTUAL_BOTAN bool check_available(size_t n) NOEXCEPT_BOTAN OVERRIDE_BOTAN = 0;
-
-            /**
-             * Read from the source. Moves the internal offset so that every
-             * call to read will return a new portion of the source.
-             *
-             * Use check_available() to wait and ensure a certain amount of bytes are available.
-             *
-             * This method is not blocking.
-             *
-             * @param out the byte array to write the result to
-             * @param length the length of the byte array out
-             * @return length in bytes that was actually read and put into out
-             *
-             * @see check_available()
-             * @see @ref byte_in_stream_properties "ByteInStream Properties"
-             */
-            [[nodiscard]] VIRTUAL_BOTAN size_t read(uint8_t out[], size_t length) NOEXCEPT_BOTAN OVERRIDE_BOTAN = 0;
-
-            /**
-             * Read from the source but do not modify the internal
-             * offset. Consecutive calls to peek() will return portions of
-             * the source starting at the same position.
-             *
-             * @param out the byte array to write the output to
-             * @param length the length of the byte array out
-             * @param peek_offset the offset into the stream to read at
-             * @return length in bytes that was actually read and put into out
-             */
-            [[nodiscard]] VIRTUAL_BOTAN size_t peek(uint8_t out[], size_t length, size_t peek_offset) const NOEXCEPT_BOTAN OVERRIDE_BOTAN = 0;
-
-            /**
-             * Test whether the source still has data that can be read.
-             *
-             * This may include a failure and/or error in the underlying implementation, see error()
-             *
-             * @return true if there is no more data to read, false otherwise
-             * @see error()
-             */
-            VIRTUAL_BOTAN bool end_of_data() const NOEXCEPT_BOTAN OVERRIDE_BOTAN = 0;
-
-            /**
-             * Return whether an error has occurred, excluding end_of_data().
-             *
-             * @return true if an error has occurred, false otherwise
-             */
-            virtual bool error() const noexcept = 0;
-
-#ifndef BOTAN_VERSION_MAJOR
-
-            /**
-             * return the id of this data source
-             * @return std::string representing the id of this data source
-             */
-            virtual std::string id() const noexcept { return ""; }
-
-            /**
-             * Read one byte.
-             * @param out the byte to read to
-             * @return length in bytes that was actually read and put
-             * into out
-             */
-            size_t read_byte(uint8_t& out) noexcept;
-
-            /**
-             * Peek at one byte.
-             * @param out an output byte
-             * @return length in bytes that was actually read and put
-             * into out
-             */
-            size_t peek_byte(uint8_t& out) const noexcept;
-
-            /**
-             * Discard the next N bytes of the data
-             * @param N the number of bytes to discard
-             * @return number of bytes actually discarded
-             */
-            size_t discard_next(size_t N) noexcept;
-
-#endif /* BOTAN_VERSION_MAJOR */
-
-            /**
-             * @return number of bytes read so far.
-             */
-            VIRTUAL_BOTAN size_t get_bytes_read() const NOEXCEPT_BOTAN OVERRIDE_BOTAN = 0;
-
-            /**
-             * Variant of Botan's get_byte_read() using uint64_t for big files on a 32-bit platform.
-             * @return number of bytes read so far.
-             */
-            virtual uint64_t bytes_read() const noexcept = 0;
-
-            /**
-             * Returns true if implementation is aware of content_size(), otherwise false.
-             * @see content_size()
-             */
-            virtual bool has_content_size() const noexcept = 0;
-
-            /**
-             * Returns the content_size if known.
-             * @see has_content_size()
-             */
-            virtual uint64_t content_size() const noexcept = 0;
-
-            virtual std::string to_string() const noexcept = 0;
-    };
-
-    /**
-     * This class represents a secure Memory-Based byte input stream
-     */
-    class ByteInStream_SecMemory final : public ByteInStream {
-       public:
-          size_t read(uint8_t[], size_t) NOEXCEPT_BOTAN override;
-
-          size_t peek(uint8_t[], size_t, size_t) const NOEXCEPT_BOTAN override;
-
-          bool check_available(size_t n) NOEXCEPT_BOTAN override;
-
-          bool end_of_data() const NOEXCEPT_BOTAN override;
-
-          bool error() const noexcept override { return false; }
-
-          /**
-          * Construct a secure memory source that reads from a string
-          * @param in the string to read from
-          */
-          explicit ByteInStream_SecMemory(const std::string& in);
-
-          /**
-          * Construct a secure memory source that reads from a byte array
-          * @param in the byte array to read from
-          * @param length the length of the byte array
-          */
-          ByteInStream_SecMemory(const uint8_t in[], size_t length)
-          : m_source(in, in + length), m_offset(0) {}
-
-          /**
-          * Construct a secure memory source that reads from a secure_vector
-          * @param in the MemoryRegion to read from
-          */
-          explicit ByteInStream_SecMemory(const io::secure_vector<uint8_t>& in)
-          : m_source(in), m_offset(0) {}
-
-          /**
-          * Construct a secure memory source that reads from a std::vector
-          * @param in the MemoryRegion to read from
-          */
-          explicit ByteInStream_SecMemory(const std::vector<uint8_t>& in)
-          : m_source(in.begin(), in.end()), m_offset(0) {}
-
-          void close() noexcept override;
-
-          ~ByteInStream_SecMemory() NOEXCEPT_BOTAN override { close(); }
-
-          size_t get_bytes_read() const NOEXCEPT_BOTAN override { return m_offset; }
-
-          uint64_t bytes_read() const noexcept override { return m_offset; }
-
-          bool has_content_size() const noexcept override { return true; }
-
-          uint64_t content_size() const noexcept override { return m_source.size(); }
-
-          std::string to_string() const noexcept override;
-
-       private:
-          io::secure_vector<uint8_t> m_source;
-          size_t m_offset;
-    };
-
-    /**
-     * This class represents a std::istream based byte input stream.
-     */
-    class ByteInStream_istream final : public ByteInStream {
-       public:
-          size_t read(uint8_t[], size_t) NOEXCEPT_BOTAN override;
-          size_t peek(uint8_t[], size_t, size_t) const NOEXCEPT_BOTAN override;
-          bool check_available(size_t n) NOEXCEPT_BOTAN override;
-          bool end_of_data() const NOEXCEPT_BOTAN override;
-          bool error() const noexcept override { return m_source.bad(); }
-          std::string id() const NOEXCEPT_BOTAN override;
-
-          ByteInStream_istream(std::istream&, const std::string& id = "<std::istream>") noexcept;
-
-          ByteInStream_istream(const ByteInStream_istream&) = delete;
-
-          ByteInStream_istream& operator=(const ByteInStream_istream&) = delete;
-
-          void close() noexcept override;
-
-          ~ByteInStream_istream() NOEXCEPT_BOTAN override { close(); }
-
-          size_t get_bytes_read() const NOEXCEPT_BOTAN override { return m_bytes_consumed; }
-
-          uint64_t bytes_read() const noexcept override { return m_bytes_consumed; }
-
-          bool has_content_size() const noexcept override { return false; }
-
-          uint64_t content_size() const noexcept override { return 0; }
-
-          std::string to_string() const noexcept override;
-
-       private:
-          const std::string m_identifier;
-
-          std::istream& m_source;
-          size_t m_bytes_consumed;
-    };
-
-
-    /**
-     * Mimic std::iobase::iostate
+     * Mimic std::ios_base::iostate for state functionality, see iostate_func.
      *
      * This `enum class` type fulfills `C++ named requirements: BitmaskType`.
      */
@@ -384,50 +102,315 @@ namespace jau::io {
     std::string to_string(const iostate mask) noexcept;
 
     /**
-     * This class represents a file based byte input stream, including named file descriptor.
+     * Supporting std::basic_ios's iostate functionality for all ByteInStream implementations.
+     */
+    class iostate_func {
+        private:
+            iostate m_state;
+
+        protected:
+            constexpr iostate rdstate_impl() const noexcept { return m_state; }
+            constexpr void setstate_impl(iostate state) const noexcept { const_cast<iostate_func*>(this)->m_state |= state; }
+
+        public:
+            iostate_func() noexcept
+            : m_state( iostate::goodbit ) {}
+
+            iostate_func(const iostate_func& o) noexcept = default;
+            iostate_func(iostate_func&& o) noexcept = default;
+            iostate_func& operator=(const iostate_func &o) noexcept = default;
+            iostate_func& operator=(iostate_func &&o) noexcept = default;
+
+            virtual ~iostate_func() noexcept {}
+
+            /** Clears state flags by assignment to the given value. */
+            virtual void clear(const iostate state = iostate::goodbit) noexcept { m_state = state; }
+
+            /**
+             * Returns the current state flags.
+             *
+             * Method is marked `virtual` to allow implementations with asynchronous resources
+             * to determine or update the current iostate.
+             *
+             * Method is used throughout all query members and setstate(),
+             * hence they all will use the updated state from a potential override implementation.
+             */
+            virtual iostate rdstate() const noexcept { return m_state; }
+
+            /** Sets state flags, by keeping its previous bits. */
+            void setstate(const iostate state) noexcept { clear( rdstate() | state ); }
+
+            /** Checks if no error nor eof() has occurred i.e. I/O operations are available. */
+            bool good() const noexcept
+            { return iostate::goodbit == rdstate(); }
+
+            /** Checks if end-of-file has been reached. */
+            bool eof() const noexcept
+            { return iostate::none != ( rdstate() & iostate::eofbit ); }
+
+            /** Checks if an error has occurred. */
+            bool fail() const noexcept
+            { return iostate::none != ( rdstate() & ( iostate::badbit | iostate::failbit ) ); }
+
+            /** Checks if an error has occurred, synonym of fail(). */
+            bool operator!() const noexcept { return fail(); }
+
+            /** Checks if no error has occurred, synonym of !fail(). */
+            explicit operator bool() const noexcept { return !fail(); }
+
+            /** Checks if a non-recoverable error has occurred. */
+            bool bad() const noexcept
+            { return iostate::none != ( rdstate() & iostate::badbit ); }
+    };
+
+    /**
+     * Abstract byte input stream object.
+     *
+     * @anchor byte_in_stream_properties
+     * ### ByteInStream Properties
+     * The byte input stream can originate from a local source w/o delay,
+     * remote URL like http connection or even from another thread feeding the input buffer.<br />
+     * Both latter asynchronous resources may expose blocking properties
+     * in available().
+     *
+     * Asynchronous resources benefit from knowing their content size,
+     * as their available() implementation may avoid
+     * blocking and waiting for requested bytes available
+     * if the stream is already beyond its scope.
+     *
+     * All method implementations are of `noexcept`.
+     *
+     * One may use fail() to detect whether an error has occurred,
+     * while end_of_data() not only covers the end-of-stream (EOS) case but includes fail().
+     *
+     * @see @ref byte_in_stream_properties "ByteInStream Properties"
+     */
+    class ByteInStream : public iostate_func
+    {
+        public:
+            ByteInStream() noexcept
+            : iostate_func() {}
+
+            virtual ~ByteInStream() noexcept = default;
+            ByteInStream& operator=(const ByteInStream&) = delete;
+            ByteInStream(const ByteInStream&) = delete;
+
+            /**
+             * Close the stream if supported by the underlying mechanism.
+             */
+            virtual void close() noexcept = 0;
+
+            /**
+             * Return whether n bytes are available in the input stream,
+             * if has_content_size() or using an asynchronous source.
+             *
+             * If !has_content_size() and not being an asynchronous source,
+             * !end_of_data() is returned.
+             *
+             * Method may be blocking when using an asynchronous source
+             * up until the requested bytes are available.
+             *
+             * A subsequent call to read() shall return immediately with at least
+             * the requested numbers of bytes available,
+             * if has_content_size() or using an asynchronous source.
+             *
+             * See details of the implementing class.
+             *
+             * @param n byte count to wait for
+             * @return true if n bytes are available, otherwise false
+             *
+             * @see has_content_size()
+             * @see read()
+             * @see @ref byte_in_stream_properties "ByteInStream Properties"
+             */
+            virtual bool available(size_t n) noexcept  = 0;
+
+            /**
+             * Read from the source. Moves the internal offset so that every
+             * call to read will return a new portion of the source.
+             *
+             * Use available() to try to wait for a certain amount of bytes available.
+             *
+             * This method shall only block until `min(available, length)` bytes are transfered.
+             *
+             * See details of the implementing class.
+             *
+             * @param out the byte array to write the result to
+             * @param length the length of the byte array out
+             * @return length in bytes that was actually read and put into out
+             *
+             * @see available()
+             * @see @ref byte_in_stream_properties "ByteInStream Properties"
+             */
+            [[nodiscard]] virtual size_t read(void* out, size_t length) noexcept = 0;
+
+            /**
+             * Read one byte.
+             * @param out the byte to read to
+             * @return length in bytes that was actually read and put
+             * into out
+             */
+            size_t read(uint8_t& out) noexcept;
+
+            /**
+             * Read from the source but do not modify the internal
+             * offset. Consecutive calls to peek() will return portions of
+             * the source starting at the same position.
+             *
+             * @param out the byte array to write the output to
+             * @param length the length of the byte array out
+             * @param peek_offset the offset into the stream to read at
+             * @return length in bytes that was actually read and put into out
+             */
+            [[nodiscard]] virtual size_t peek(void* out, size_t length, size_t peek_offset) noexcept = 0;
+
+            /**
+             * Peek at one byte.
+             * @param out an output byte
+             * @return length in bytes that was actually read and put
+             * into out
+             */
+            size_t peek(uint8_t& out) noexcept;
+
+            /**
+             * Discard the next N bytes of the data
+             * @param N the number of bytes to discard
+             * @return number of bytes actually discarded
+             */
+            size_t discard(size_t N) noexcept;
+
+            /**
+             * Test whether the source still has data that can be read, synonym for !good().
+             *
+             * Hence this includes errors in the underlying implementation, see fail()
+             *
+             * @return true if there is no more data to read, false otherwise
+             * @see good()
+             * @see fail()
+             */
+            bool end_of_data() const noexcept  { return !good(); }
+
+            /**
+             * return the id of this data source
+             * @return std::string representing the id of this data source
+             */
+            virtual std::string id() const noexcept { return ""; }
+
+            /**
+             * Returns the input position indicator, similar to std::basic_istream.
+             *
+             * @return number of bytes read so far.
+             */
+            virtual uint64_t tellg() const noexcept = 0;
+
+            /**
+             * Returns true if implementation is aware of content_size(), otherwise false.
+             * @see content_size()
+             */
+            virtual bool has_content_size() const noexcept = 0;
+
+            /**
+             * Returns the content_size if known.
+             * @see has_content_size()
+             */
+            virtual uint64_t content_size() const noexcept = 0;
+
+            virtual std::string to_string() const noexcept = 0;
+    };
+
+    /**
+     * Secure Memory-Based byte input stream
+     */
+    class ByteInStream_SecMemory final : public ByteInStream {
+       public:
+          size_t read(void*, size_t) noexcept override;
+
+          size_t peek(void*, size_t, size_t) noexcept override;
+
+          bool available(size_t n) noexcept override;
+
+          /**
+          * Construct a secure memory source that reads from a string
+          * @param in the string to read from
+          */
+          explicit ByteInStream_SecMemory(const std::string& in);
+
+          /**
+          * Construct a secure memory source that reads from a byte array
+          * @param in the byte array to read from
+          * @param length the length of the byte array
+          */
+          ByteInStream_SecMemory(const uint8_t in[], size_t length)
+          : m_source(in, in + length), m_offset(0) {}
+
+          /**
+          * Construct a secure memory source that reads from a secure_vector
+          * @param in the MemoryRegion to read from
+          */
+          explicit ByteInStream_SecMemory(const io::secure_vector<uint8_t>& in)
+          : m_source(in), m_offset(0) {}
+
+          /**
+          * Construct a secure memory source that reads from a std::vector
+          * @param in the MemoryRegion to read from
+          */
+          explicit ByteInStream_SecMemory(const std::vector<uint8_t>& in)
+          : m_source(in.begin(), in.end()), m_offset(0) {}
+
+          void close() noexcept override;
+
+          ~ByteInStream_SecMemory() noexcept override { close(); }
+
+          uint64_t tellg() const noexcept override { return m_offset; }
+
+          bool has_content_size() const noexcept override { return true; }
+
+          uint64_t content_size() const noexcept override { return m_source.size(); }
+
+          std::string to_string() const noexcept override;
+
+       private:
+          io::secure_vector<uint8_t> m_source;
+          size_t m_offset;
+    };
+
+    /**
+     * File based byte input stream, including named file descriptor.
+     *
+     * Implementation mimics std::ifstream via OS level file descriptor (FD) operations,
+     * giving more flexibility, allowing reusing existing FD and enabling openat() operations.
      *
      * If source path denotes a named file descriptor, i.e. jau::fs::file_stats::is_fd() returns true,
-     * has_content_size() returns false and check_available() returns true as long the stream is open and EOS hasn't occurred.
+     * has_content_size() returns false and available() returns true as long the stream is open and EOS hasn't occurred.
      */
     class ByteInStream_File final : public ByteInStream {
        private:
           jau::fs::file_stats stats;
-          /**
-           * We mimic std::ifstream via OS level file descriptor operations,
-           * giving us more flexibility and enabling use of openat() operations.
-           */
+
           int m_fd;
 
-          mutable iostate m_state;
+          bool m_has_content_length;
+          uint64_t m_content_size;
+          uint64_t m_bytes_consumed;
+          uint64_t get_available() const noexcept { return m_has_content_length ? m_content_size - m_bytes_consumed : 0; }
 
-          // Remember: constexpr specifier used in a function or static data member (since C++17) declaration implies inline
+       public:
+          size_t read(void*, size_t) noexcept override;
+          size_t peek(void*, size_t, size_t) noexcept override;
+          bool available(size_t n) noexcept override;
 
+          /** Checks if the stream has an associated file. */
           constexpr bool is_open() const noexcept
           { return 0 <= m_fd; }
 
-          constexpr bool good() const noexcept
-          { return iostate::goodbit == m_state; }
+          std::string id() const noexcept override { return stats.path(); }
 
-          constexpr bool eof() const noexcept
-          { return iostate::none != ( m_state & iostate::eofbit ); }
-
-          constexpr bool fail() const noexcept
-          { return iostate::none != ( m_state & ( iostate::badbit | iostate::failbit ) ); }
-
-          constexpr bool bad() const noexcept
-          { return iostate::none != ( m_state & iostate::badbit ); }
-
-          constexpr iostate rdstate() const noexcept { return m_state; }
-          void clear(iostate state = iostate::goodbit) const noexcept { m_state = state; }
-          void setstate(iostate state) const noexcept { m_state |= state; }
-
-       public:
-          size_t read(uint8_t[], size_t) NOEXCEPT_BOTAN override;
-          size_t peek(uint8_t[], size_t, size_t) const NOEXCEPT_BOTAN override;
-          bool check_available(size_t n) NOEXCEPT_BOTAN override;
-          bool end_of_data() const NOEXCEPT_BOTAN override;
-          bool error() const noexcept override { return fail(); }
-          std::string id() const NOEXCEPT_BOTAN override { return stats.path(); }
+          /**
+           * Returns the file descriptor if is_open(), otherwise -1 for no file descriptor.
+           *
+           * @see is_open()
+           */
+          int fd() const noexcept { return m_fd; }
 
           /**
            * Construct a stream based byte input stream from filesystem path
@@ -466,23 +449,15 @@ namespace jau::io {
 
           void close() noexcept override;
 
-          ~ByteInStream_File() NOEXCEPT_BOTAN override { close(); }
+          virtual ~ByteInStream_File() noexcept override { close(); }
 
-          size_t get_bytes_read() const NOEXCEPT_BOTAN override { return (size_t)m_bytes_consumed; }
-
-          uint64_t bytes_read() const noexcept override { return m_bytes_consumed; }
+          uint64_t tellg() const noexcept override { return m_bytes_consumed; }
 
           bool has_content_size() const noexcept override { return m_has_content_length; }
 
           uint64_t content_size() const noexcept override { return m_content_size; }
 
           std::string to_string() const noexcept override;
-
-       private:
-          uint64_t get_available() const noexcept { return m_has_content_length ? m_content_size - m_bytes_consumed : 0; }
-          bool m_has_content_length;
-          uint64_t m_content_size;
-          uint64_t m_bytes_consumed;
     };
 
     /**
@@ -507,37 +482,35 @@ namespace jau::io {
              * @see read()
              * @see @ref byte_in_stream_properties "ByteInStream Properties"
              */
-            bool check_available(size_t n) NOEXCEPT_BOTAN override;
+            bool available(size_t n) noexcept override;
 
             /**
              * Read from the source. Moves the internal offset so that every
              * call to read will return a new portion of the source.
              *
-             * Use check_available() to wait and ensure a certain amount of bytes are available.
+             * Use available() to wait and ensure a certain amount of bytes are available.
              *
-             * This method is not blocking.
+             * This method is not blocking beyond the transfer of `min(available, length)` bytes.
              *
              * @param out the byte array to write the result to
              * @param length the length of the byte array out
              * @return length in bytes that was actually read and put into out
              *
-             * @see check_available()
+             * @see available()
              * @see @ref byte_in_stream_properties "ByteInStream Properties"
              */
-            size_t read(uint8_t out[], size_t length) NOEXCEPT_BOTAN override;
+            size_t read(void* out, size_t length) noexcept override;
 
-            size_t peek(uint8_t out[], size_t length, size_t peek_offset) const NOEXCEPT_BOTAN override;
+            size_t peek(void* out, size_t length, size_t peek_offset) noexcept override;
 
-            bool end_of_data() const NOEXCEPT_BOTAN override;
+            iostate rdstate() const noexcept override;
 
-            bool error() const noexcept override { return async_io_result_t::FAILED == m_result; }
-
-            std::string id() const NOEXCEPT_BOTAN override { return m_url; }
+            std::string id() const noexcept override { return m_url; }
 
             /**
              * Construct a ringbuffer backed Http byte input stream
              * @param url the URL of the data to read
-             * @param timeout maximum duration in fractions of seconds to wait @ check_available() for next bytes, where fractions_i64::zero waits infinitely
+             * @param timeout maximum duration in fractions of seconds to wait @ available() for next bytes, where fractions_i64::zero waits infinitely
              */
             ByteInStream_URL(const std::string& url, const jau::fraction_i64& timeout) noexcept;
 
@@ -547,11 +520,9 @@ namespace jau::io {
 
             void close() noexcept override;
 
-            ~ByteInStream_URL() NOEXCEPT_BOTAN override { close(); }
+            ~ByteInStream_URL() noexcept override { close(); }
 
-            size_t get_bytes_read() const NOEXCEPT_BOTAN override { return (size_t)m_bytes_consumed; }
-
-            uint64_t bytes_read() const noexcept override { return m_bytes_consumed; }
+            uint64_t tellg() const noexcept override { return m_bytes_consumed; }
 
             bool has_content_size() const noexcept override { return m_has_content_length; }
 
@@ -580,11 +551,11 @@ namespace jau::io {
      *
      * If the above fails, ByteInStream_File is attempted.
      *
-     * If non of the above leads to a ByteInStream without ByteInStream::error(), nullptr is returned.
+     * If non of the above leads to a ByteInStream without ByteInStream::fail(), nullptr is returned.
      *
      * @param path_or_uri given path or uri for with a ByteInStream instance shall be established.
-     * @param timeout in case `path_or_uri` resolves to ByteInStream_URL, timeout is being used as maximum duration to wait for next bytes at ByteInStream_URL::check_available(), defaults to 20_s
-     * @return a working ByteInStream w/o ByteInStream::error() or nullptr
+     * @param timeout in case `path_or_uri` resolves to ByteInStream_URL, timeout is being used as maximum duration to wait for next bytes at ByteInStream_URL::available(), defaults to 20_s
+     * @return a working ByteInStream w/o ByteInStream::fail() or nullptr
      */
     std::unique_ptr<ByteInStream> to_ByteInStream(const std::string& path_or_uri, jau::fraction_i64 timeout=20_s) noexcept;
 
@@ -606,37 +577,35 @@ namespace jau::io {
              * @see read()
              * @see @ref byte_in_stream_properties "ByteInStream Properties"
              */
-            bool check_available(size_t n) NOEXCEPT_BOTAN override;
+            bool available(size_t n) noexcept override;
 
             /**
              * Read from the source. Moves the internal offset so that every
              * call to read will return a new portion of the source.
              *
-             * Use check_available() to wait and ensure a certain amount of bytes are available.
+             * Use available() to wait and ensure a certain amount of bytes are available.
              *
-             * This method is not blocking.
+             * This method is not blocking beyond the transfer of `min(available, length)` bytes.
              *
              * @param out the byte array to write the result to
              * @param length the length of the byte array out
              * @return length in bytes that was actually read and put into out
              *
-             * @see check_available()
+             * @see available()
              * @see @ref byte_in_stream_properties "ByteInStream Properties"
              */
-            size_t read(uint8_t out[], size_t length) NOEXCEPT_BOTAN override;
+            size_t read(void* out, size_t length) noexcept override;
 
-            size_t peek(uint8_t out[], size_t length, size_t peek_offset) const NOEXCEPT_BOTAN override;
+            size_t peek(void* out, size_t length, size_t peek_offset) noexcept override;
 
-            bool end_of_data() const NOEXCEPT_BOTAN override;
+            iostate rdstate() const noexcept override;
 
-            bool error() const noexcept override { return async_io_result_t::FAILED == m_result; }
-
-            std::string id() const NOEXCEPT_BOTAN override { return m_id; }
+            std::string id() const noexcept override { return m_id; }
 
             /**
              * Construct a ringbuffer backed externally provisioned byte input stream
              * @param id_name arbitrary identifier for this instance
-             * @param timeout maximum duration in fractions of seconds to wait @ check_available() and write(), where fractions_i64::zero waits infinitely
+             * @param timeout maximum duration in fractions of seconds to wait @ available() and write(), where fractions_i64::zero waits infinitely
              */
             ByteInStream_Feed(const std::string& id_name, const jau::fraction_i64& timeout) noexcept;
 
@@ -646,11 +615,9 @@ namespace jau::io {
 
             void close() noexcept override;
 
-            ~ByteInStream_Feed() NOEXCEPT_BOTAN override { close(); }
+            ~ByteInStream_Feed() noexcept override { close(); }
 
-            size_t get_bytes_read() const NOEXCEPT_BOTAN override { return m_bytes_consumed; }
-
-            uint64_t bytes_read() const noexcept override { return m_bytes_consumed; }
+            uint64_t tellg() const noexcept override { return m_bytes_consumed; }
 
             bool has_content_size() const noexcept override { return m_has_content_length; }
 
@@ -659,7 +626,7 @@ namespace jau::io {
             /**
              * Interrupt a potentially blocked reader.
              *
-             * Call this method if intended to abort streaming and to interrupt the reader thread's potentially blocked check_available() call,
+             * Call this method if intended to abort streaming and to interrupt the reader thread's potentially blocked available() call,
              * i.e. done at set_eof()
              *
              * @see set_eof()
@@ -699,7 +666,7 @@ namespace jau::io {
              *
              * @see interruptReader()
              */
-            void set_eof(const async_io_result_t result) noexcept { m_result = result; interruptReader(); }
+            void set_eof(const async_io_result_t result) noexcept;
 
             std::string to_string() const noexcept override;
 
@@ -719,27 +686,26 @@ namespace jau::io {
 
     /**
      * This class represents a wrapped byte input stream with the capability
-     * to record the byte stream read out at will.
+     * to record the read byte stream at will.
      *
      * Peek'ed bytes won't be recorded, only read bytes.
      */
     class ByteInStream_Recorder final : public ByteInStream {
         public:
-            size_t read(uint8_t[], size_t) NOEXCEPT_BOTAN override;
+            size_t read(void*, size_t) noexcept override;
 
-            size_t peek(uint8_t out[], size_t length, size_t peek_offset) const NOEXCEPT_BOTAN override {
+            size_t peek(void* out, size_t length, size_t peek_offset) noexcept override {
                 return m_parent.peek(out, length, peek_offset);
             }
 
-            bool check_available(size_t n) NOEXCEPT_BOTAN override {
-                return m_parent.check_available(n);
+            bool available(size_t n) noexcept override {
+                return m_parent.available(n);
             }
 
-            bool end_of_data() const NOEXCEPT_BOTAN override { return m_parent.end_of_data(); }
+            void clear(iostate state = iostate::goodbit) noexcept override { m_parent.clear( state ); }
+            iostate rdstate() const noexcept override { return m_parent.rdstate(); }
 
-            bool error() const noexcept override { return m_parent.error(); }
-
-            std::string id() const NOEXCEPT_BOTAN override { return m_parent.id(); }
+            std::string id() const noexcept override { return m_parent.id(); }
 
             /**
              * Construct a byte input stream wrapper using the given parent ByteInStream.
@@ -755,11 +721,9 @@ namespace jau::io {
 
             void close() noexcept override;
 
-            ~ByteInStream_Recorder() NOEXCEPT_BOTAN override { close(); }
+            ~ByteInStream_Recorder() noexcept override { close(); }
 
-            size_t get_bytes_read() const NOEXCEPT_BOTAN override { return m_parent.get_bytes_read(); }
-
-            uint64_t bytes_read() const noexcept override { return m_bytes_consumed; }
+            uint64_t tellg() const noexcept override { return m_bytes_consumed; }
 
             bool has_content_size() const noexcept override { return m_parent.has_content_size(); }
 

@@ -23,8 +23,6 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <fstream>
-#include <iostream>
 #include <chrono>
 
 // #include <botan_all.h>
@@ -49,7 +47,7 @@ uint64_t jau::io::read_file(const std::string& input_file,
                             StreamConsumerFunc consumer_fn) noexcept
 {
     if(input_file == "-") {
-        ByteInStream_istream in(std::cin);
+        ByteInStream_File in(0); // stdin
         return read_stream(in, buffer, consumer_fn);
     } else {
         ByteInStream_File in(input_file);
@@ -63,7 +61,7 @@ uint64_t jau::io::read_stream(ByteInStream& in,
     uint64_t total = 0;
     bool has_more;
     do {
-        if( in.check_available(1) ) { // at least one byte to stream ..
+        if( in.available(1) ) { // at least one byte to stream ..
             buffer.resize(buffer.capacity());
             const uint64_t got = in.read(buffer.data(), buffer.capacity());
 
@@ -89,7 +87,7 @@ uint64_t jau::io::read_stream(ByteInStream& in,
 
 static uint64_t _read_buffer(ByteInStream& in,
                              secure_vector<uint8_t>& buffer) noexcept {
-    if( in.check_available(1) ) { // at least one byte to stream ..
+    if( in.available(1) ) { // at least one byte to stream ..
         buffer.resize(buffer.capacity());
         const uint64_t got = in.read(buffer.data(), buffer.capacity());
         buffer.resize(got);

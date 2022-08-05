@@ -26,8 +26,6 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <fstream>
-#include <iostream>
 #include <chrono>
 
 // #include <botan_all.h>
@@ -74,7 +72,7 @@ using namespace jau::fractions_i64_literals;
     const size_t jau::io::BEST_URLSTREAM_RINGBUFFER_SIZE = 2*16384;
 #endif
 
-inline constexpr void copy_mem(uint8_t* out, const uint8_t* in, size_t n) noexcept {
+inline constexpr void copy_mem(void* out, const void* in, size_t n) noexcept {
     if(in != nullptr && out != nullptr && n > 0) {
         std::memmove(out, in, sizeof(uint8_t)*n);
     }
@@ -88,50 +86,49 @@ inline const uint8_t* cast_char_ptr_to_uint8(const char* s) noexcept {
    return reinterpret_cast<const uint8_t*>(s);
 }
 
-#ifndef BOTAN_VERSION_MAJOR
-
-size_t ByteInStream::read_byte(uint8_t& out) noexcept {
+size_t ByteInStream::read(uint8_t& out) noexcept {
     return read(&out, 1);
 }
 
-size_t ByteInStream::peek_byte(uint8_t& out) const noexcept {
+size_t ByteInStream::peek(uint8_t& out) noexcept {
     return peek(&out, 1, 0);
 }
 
-size_t ByteInStream::discard_next(size_t n) noexcept {
-    uint8_t buf[64] = { 0 };
+size_t ByteInStream::discard(size_t n) noexcept {
+    uint8_t buf[1024] = { 0 };
     size_t discarded = 0;
 
     while(n)
     {
-        const size_t got = this->read(buf, std::min(n, sizeof(buf)));
+        const size_t got = read(buf, std::min(n, sizeof(buf)));
+        if( 0 == got ) {
+            break;
+        }
         discarded += got;
         n -= got;
-
-        if(got == 0)
-            break;
     }
 
     return discarded;
 }
 
-#endif /* BOTAN_VERSION_MAJOR */
-
-size_t ByteInStream_SecMemory::read(uint8_t out[], size_t length) NOEXCEPT_BOTAN {
+size_t ByteInStream_SecMemory::read(void* out, size_t length) noexcept {
     if( 0 == length || end_of_data() ) {
         return 0;
     }
     const size_t got = std::min<size_t>(m_source.size() - m_offset, length);
     copy_mem(out, m_source.data() + m_offset, got);
     m_offset += got;
+    if( m_source.size() == m_offset ) {
+        setstate_impl( iostate::eofbit );
+    }
     return got;
 }
 
-bool ByteInStream_SecMemory::check_available(size_t n) NOEXCEPT_BOTAN {
+bool ByteInStream_SecMemory::available(size_t n) noexcept {
     return m_source.size() - m_offset >= n;
 }
 
-size_t ByteInStream_SecMemory::peek(uint8_t out[], size_t length, size_t peek_offset) const NOEXCEPT_BOTAN {
+size_t ByteInStream_SecMemory::peek(void* out, size_t length, size_t peek_offset) noexcept {
     const size_t bytes_left = m_source.size() - m_offset;
     if(peek_offset >= bytes_left) {
         return 0;
@@ -139,10 +136,6 @@ size_t ByteInStream_SecMemory::peek(uint8_t out[], size_t length, size_t peek_of
     const size_t got = std::min(bytes_left - peek_offset, length);
     copy_mem(out, &m_source[m_offset + peek_offset], got);
     return got;
-}
-
-bool ByteInStream_SecMemory::end_of_data() const NOEXCEPT_BOTAN {
-    return m_source.size() == m_offset;
 }
 
 ByteInStream_SecMemory::ByteInStream_SecMemory(const std::string& in)
@@ -160,90 +153,8 @@ std::string ByteInStream_SecMemory::to_string() const noexcept {
     return "ByteInStream_SecMemory[content size "+jau::to_decstring(m_source.size())+
                             ", consumed "+jau::to_decstring(m_offset)+
                             ", available "+jau::to_decstring(m_source.size()-m_offset)+
-                            ", eod "+std::to_string( end_of_data() )+
-                            ", error "+std::to_string( error() )+
-                            "]";
-}
-
-size_t ByteInStream_istream::read(uint8_t out[], size_t length) NOEXCEPT_BOTAN {
-    if( 0 == length || end_of_data() ) {
-        return 0;
-    }
-    m_source.read(cast_uint8_ptr_to_char(out), length);
-    if( error() ) {
-        DBG_PRINT("ByteInStream_istream::read: Error occurred in %s", to_string().c_str());
-        return 0;
-    }
-    const size_t got = static_cast<size_t>(m_source.gcount());
-    m_bytes_consumed += got;
-    return got;
-}
-
-bool ByteInStream_istream::check_available(size_t n) NOEXCEPT_BOTAN {
-    // stream size is dynamic, hence can't store size until end
-    const std::streampos orig_pos = m_source.tellg();
-    m_source.seekg(0, std::ios::end);
-    uint64_t avail = static_cast<uint64_t>(m_source.tellg() - orig_pos);
-    m_source.seekg(orig_pos);
-    return avail >= n;
-}
-
-size_t ByteInStream_istream::peek(uint8_t out[], size_t length, size_t offset) const NOEXCEPT_BOTAN {
-    if( 0 == length || end_of_data() ) {
-        return 0;
-    }
-    size_t got = 0;
-
-    if( offset ) {
-        secure_vector<uint8_t> buf(offset);
-        m_source.read(cast_uint8_ptr_to_char(buf.data()), buf.size());
-        if( error() ) {
-            DBG_PRINT("ByteInStream_istream::peek: Error occurred (offset) in %s", to_string().c_str());
-            return 0;
-        }
-        got = static_cast<size_t>(m_source.gcount());
-    }
-
-    if(got == offset) {
-        m_source.read(cast_uint8_ptr_to_char(out), length);
-        if( error() ) {
-            DBG_PRINT("ByteInStream_istream::peek: Error occurred (read) in %s", to_string().c_str());
-            return 0;
-        }
-        got = static_cast<size_t>(m_source.gcount());
-    }
-
-    if( m_source.eof() ) {
-        m_source.clear();
-    }
-    m_source.seekg(m_bytes_consumed, std::ios::beg);
-
-    return got;
-}
-
-bool ByteInStream_istream::end_of_data() const NOEXCEPT_BOTAN {
-    return !m_source.good();
-}
-
-std::string ByteInStream_istream::id() const NOEXCEPT_BOTAN {
-    return m_identifier;
-}
-
-ByteInStream_istream::ByteInStream_istream(std::istream& in, const std::string& name) noexcept
-: m_identifier(name), m_source(in),
-  m_bytes_consumed(0)
-{ }
-
-void ByteInStream_istream::close() noexcept {
-    // nop
-}
-
-std::string ByteInStream_istream::to_string() const noexcept {
-    return "ByteInStream_Stream["+m_identifier+
-                            ", consumed "+jau::to_decstring(m_bytes_consumed)+
-                            ", eod "+std::to_string( end_of_data() )+
-                            ", error "+std::to_string( error() )+
-                            "]";
+                            ", iostate["+jau::io::to_string(rdstate())+
+                            "]]";
 }
 
 template<typename T>
@@ -271,26 +182,30 @@ std::string jau::io::to_string(const iostate mask) noexcept {
     return out;
 }
 
-size_t ByteInStream_File::read(uint8_t out[], size_t length) NOEXCEPT_BOTAN {
+size_t ByteInStream_File::read(void* out, size_t length) noexcept {
     if( 0 == length || end_of_data() ) {
         return 0;
     }
+    uint8_t* out_u8 = static_cast<uint8_t*>(out);
     size_t total = 0;
     while( total < length ) {
         ssize_t len;
-        while ( ( len = ::read(m_fd, out+total, length-total) ) < 0 ) {
-            if ( errno == EAGAIN || errno == EINTR ) {
+        while ( ( len = ::read(m_fd, out_u8+total, length-total) ) < 0 ) {
+            if ( errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR ) {
                 // cont temp unavail or interruption
+                // unlikely for regular files and we open w/o O_NONBLOCK
+                // - EAGAIN (file) and EWOULDBLOCK (socket) if blocking
+                // - EINTR (signal)
                 continue;
             }
             // Check errno == ETIMEDOUT ??
-            setstate( iostate::failbit );
+            setstate_impl( iostate::failbit );
             DBG_PRINT("ByteInStream_File::read: Error occurred in %s, errno %d %s", to_string().c_str(), errno, strerror(errno));
             return 0;
         }
         total += static_cast<size_t>(len);
         if( 0 == len || ( m_has_content_length && m_bytes_consumed + total >= m_content_size ) ) {
-            setstate( iostate::eofbit ); // Note: std::istream also sets iostate::failbit on eof, we don't.
+            setstate_impl( iostate::eofbit ); // Note: std::istream also sets iostate::failbit on eof, we don't.
             break;
         }
     }
@@ -298,7 +213,7 @@ size_t ByteInStream_File::read(uint8_t out[], size_t length) NOEXCEPT_BOTAN {
     return total;
 }
 
-size_t ByteInStream_File::peek(uint8_t out[], size_t length, size_t offset) const NOEXCEPT_BOTAN {
+size_t ByteInStream_File::peek(void* out, size_t length, size_t offset) noexcept {
     if( 0 == length || end_of_data() || offset > std::numeric_limits<off64_t>::max() ||
         ( m_has_content_length && m_content_size - m_bytes_consumed < offset + 1 /* min number of bytes to read */ ) ) {
         return 0;
@@ -309,7 +224,7 @@ size_t ByteInStream_File::peek(uint8_t out[], size_t length, size_t offset) cons
     if( 0 < offset ) {
         abs_pos = __posix_lseek64(m_fd, static_cast<off64_t>(offset), SEEK_CUR);
         if( 0 > abs_pos ) {
-            setstate( iostate::failbit );
+            setstate_impl( iostate::failbit );
             DBG_PRINT("ByteInStream_File::peek: Error occurred (offset1 %zd) in %s, errno %d %s",
                     offset, to_string().c_str(), errno, strerror(errno));
             return 0;
@@ -323,7 +238,7 @@ size_t ByteInStream_File::peek(uint8_t out[], size_t length, size_t offset) cons
                 continue;
             }
             // Check errno == ETIMEDOUT ??
-            setstate( iostate::failbit );
+            setstate_impl( iostate::failbit );
             DBG_PRINT("ByteInStream_File::peak: Error occurred (read) in %s, errno %d %s", to_string().c_str(), errno, strerror(errno));
             return 0;
         }
@@ -331,7 +246,7 @@ size_t ByteInStream_File::peek(uint8_t out[], size_t length, size_t offset) cons
     }
     if( __posix_lseek64(m_fd, static_cast<off64_t>(m_bytes_consumed), SEEK_SET) < 0 ) {
         // even though we were able to fetch the desired data above, let's fail if position reset fails
-        setstate( iostate::failbit );
+        setstate_impl( iostate::failbit );
         DBG_PRINT("ByteInStream_File::peek: Error occurred (offset2 %zd) in %s, errno %d %s",
                 offset, to_string().c_str(), errno, strerror(errno));
         return 0;
@@ -339,36 +254,31 @@ size_t ByteInStream_File::peek(uint8_t out[], size_t length, size_t offset) cons
     return got;
 }
 
-bool ByteInStream_File::check_available(size_t n) NOEXCEPT_BOTAN {
+bool ByteInStream_File::available(size_t n) noexcept {
     return is_open() && good() && ( !m_has_content_length || m_content_size - m_bytes_consumed >= (uint64_t)n );
 };
 
-bool ByteInStream_File::end_of_data() const NOEXCEPT_BOTAN {
-    return !is_open() || !good() || ( m_has_content_length && m_bytes_consumed >= m_content_size );
-}
-
 ByteInStream_File::ByteInStream_File(const int fd) noexcept
-: m_fd(-1), m_state(iostate::goodbit),
-  m_has_content_length(false), m_content_size(0), m_bytes_consumed(0)
+: ByteInStream(),
+  stats(fd), m_fd(-1), m_has_content_length(false), m_content_size(0), m_bytes_consumed(0)
 {
-    stats = jau::fs::file_stats(fd);
     if( !stats.exists() || !stats.has_access() ) {
-        setstate( iostate::failbit ); // Note: conforming with std::ifstream open
+        setstate_impl( iostate::failbit ); // Note: conforming with std::ifstream open
         DBG_PRINT("ByteInStream_File::ctor: Error, not an existing or accessible file in %s, %s", stats.to_string().c_str(), to_string().c_str());
     } else {
-        m_has_content_length = stats.is_file();
-        m_content_size = stats.size();
+        m_has_content_length = stats.has( jau::fs::file_stats::field_t::size );
+        m_content_size = m_has_content_length ? stats.size() : 0;
         m_fd = ::dup(fd);
         if ( 0 > m_fd ) {
-            setstate( iostate::failbit ); // Note: conforming with std::ifstream open
+            setstate_impl( iostate::failbit ); // Note: conforming with std::ifstream open
             DBG_PRINT("ByteInStream_File::ctor: Error occurred in %s, %s", stats.to_string().c_str(), to_string().c_str());
         }
     }
 }
 
 ByteInStream_File::ByteInStream_File(const int dirfd, const std::string& path) noexcept
-: m_fd(-1), m_state(iostate::goodbit),
-  m_has_content_length(false), m_content_size(0), m_bytes_consumed(0)
+: ByteInStream(),
+  stats(), m_fd(-1), m_has_content_length(false), m_content_size(0), m_bytes_consumed(0)
 {
     if( jau::io::uri_tk::is_local_file_protocol(path) ) {
         // cut of leading `file://`
@@ -378,16 +288,25 @@ ByteInStream_File::ByteInStream_File(const int dirfd, const std::string& path) n
         stats = jau::fs::file_stats(dirfd, path);
     }
     if( !stats.exists() || !stats.has_access() ) {
-        setstate( iostate::failbit ); // Note: conforming with std::ifstream open
+        setstate_impl( iostate::failbit ); // Note: conforming with std::ifstream open
         DBG_PRINT("ByteInStream_File::ctor: Error, not an existing or accessible file in %s, %s", stats.to_string().c_str(), to_string().c_str());
     } else {
-        m_has_content_length = stats.is_file();
-        m_content_size = stats.size();
-        // TODO: Consider O_NONBLOCK, despite being potentially useless on files?
+        if( stats.has( jau::fs::file_stats::field_t::size ) ) {
+            m_has_content_length = true;
+            m_content_size = stats.size();
+        } else {
+            m_has_content_length = false;
+            m_content_size = 0;
+        }
+        // O_NONBLOCK, is useless on files and counter to this class logic
         const int src_flags = O_RDONLY|O_BINARY|O_NOCTTY;
-        m_fd = __posix_openat64(dirfd, stats.path().c_str(), src_flags);
+        if( stats.has_fd() ) {
+            m_fd = ::dup( stats.fd() );
+        } else {
+            m_fd = __posix_openat64(dirfd, stats.path().c_str(), src_flags);
+        }
         if ( 0 > m_fd ) {
-            setstate( iostate::failbit ); // Note: conforming with std::ifstream open
+            setstate_impl( iostate::failbit ); // Note: conforming with std::ifstream open
             DBG_PRINT("ByteInStream_File::ctor: Error while opening %s, %s", stats.to_string().c_str(), to_string().c_str());
         }
     }
@@ -404,14 +323,12 @@ void ByteInStream_File::close() noexcept {
 }
 
 std::string ByteInStream_File::to_string() const noexcept {
-    return "ByteInStream_File[content_length "+jau::to_decstring(m_content_size)+
+    return "ByteInStream_File[content_length "+( has_content_size() ? jau::to_decstring(m_content_size) : "n/a" )+
                             ", consumed "+jau::to_decstring(m_bytes_consumed)+
                             ", available "+jau::to_decstring(get_available())+
-                            ", open "+std::to_string(is_open())+
-                            ", iostate["+jau::io::to_string(m_state)+
-                            "], eod "+std::to_string( end_of_data() )+
-                            ", error "+std::to_string( error() )+
-                            ", "+stats.to_string()+
+                            ", fd "+std::to_string(m_fd)+
+                            ", iostate["+jau::io::to_string(rdstate())+
+                            "], "+stats.to_string()+
                             "]";
 }
 
@@ -446,7 +363,7 @@ void ByteInStream_URL::close() noexcept {
     DBG_PRINT("ByteInStream_URL: close.X %s, %s", id().c_str(), to_string_int().c_str());
 }
 
-bool ByteInStream_URL::check_available(size_t n) NOEXCEPT_BOTAN {
+bool ByteInStream_URL::available(size_t n) noexcept {
     if( async_io_result_t::NONE != m_result ) {
         // url thread ended, only remaining bytes in buffer available left
         return m_buffer.size() >= n;
@@ -458,17 +375,17 @@ bool ByteInStream_URL::check_available(size_t n) NOEXCEPT_BOTAN {
     return m_buffer.waitForElements(n, m_timeout) >= n;
 }
 
-size_t ByteInStream_URL::read(uint8_t out[], size_t length) NOEXCEPT_BOTAN {
+size_t ByteInStream_URL::read(void* out, size_t length) noexcept {
     if( 0 == length || end_of_data() ) {
         return 0;
     }
-    const size_t consumed_bytes = m_buffer.get(out, length, 1);
+    const size_t consumed_bytes = m_buffer.get(static_cast<uint8_t*>(out), length, 1);
     m_bytes_consumed += consumed_bytes;
     // DBG_PRINT("ByteInStream_Feed::read: size %zu/%zu bytes, %s", consumed_bytes, length, to_string_int().c_str() );
     return consumed_bytes;
 }
 
-size_t ByteInStream_URL::peek(uint8_t out[], size_t length, size_t peek_offset) const NOEXCEPT_BOTAN {
+size_t ByteInStream_URL::peek(void* out, size_t length, size_t peek_offset) noexcept {
     (void)out;
     (void)length;
     (void)peek_offset;
@@ -476,21 +393,26 @@ size_t ByteInStream_URL::peek(uint8_t out[], size_t length, size_t peek_offset) 
     return 0;
 }
 
-bool ByteInStream_URL::end_of_data() const NOEXCEPT_BOTAN {
-    return ( async_io_result_t::NONE != m_result && m_buffer.isEmpty() ) ||
-           ( m_has_content_length && m_bytes_consumed >= m_content_size );
+iostate ByteInStream_URL::rdstate() const noexcept {
+    if ( ( async_io_result_t::NONE != m_result && m_buffer.isEmpty() ) ||
+         ( m_has_content_length && m_bytes_consumed >= m_content_size ) )
+    {
+        setstate_impl( iostate::eofbit );
+    }
+    if( async_io_result_t::FAILED == m_result ) {
+        setstate_impl( iostate::failbit );
+    }
+    return rdstate_impl();
 }
 
 std::string ByteInStream_URL::to_string_int() const noexcept {
-    return m_url+", Url[content_length has "+std::to_string(m_has_content_length.load())+
-                       ", size "+jau::to_decstring(m_content_size.load())+
+    return m_url+", Url[content_length "+( has_content_size() ? jau::to_decstring(m_content_size.load()) : "n/a" )+
                        ", xfered "+jau::to_decstring(m_total_xfered.load())+
                        ", result "+std::to_string((int8_t)m_result.load())+
            "], consumed "+jau::to_decstring(m_bytes_consumed)+
            ", available "+jau::to_decstring(get_available())+
-           ", eod "+std::to_string( end_of_data() )+
-           ", error "+std::to_string( error() )+
-           ", "+m_buffer.toString();
+           ", iostate["+jau::io::to_string(rdstate())+
+           "], "+m_buffer.toString();
 }
 std::string ByteInStream_URL::to_string() const noexcept {
     return "ByteInStream_URL["+to_string_int()+"]";
@@ -501,12 +423,12 @@ std::unique_ptr<ByteInStream> jau::io::to_ByteInStream(const std::string& path_o
          jau::io::uri_tk::protocol_supported(path_or_uri) )
     {
         std::unique_ptr<ByteInStream> res = std::make_unique<ByteInStream_URL>(path_or_uri, timeout);
-        if( nullptr != res && !res->error() ) {
+        if( nullptr != res && !res->fail() ) {
             return res;
         }
     }
     std::unique_ptr<ByteInStream> res = std::make_unique<ByteInStream_File>(path_or_uri);
-    if( nullptr != res && !res->error() ) {
+    if( nullptr != res && !res->fail() ) {
         return res;
     }
     return nullptr;
@@ -530,7 +452,7 @@ void ByteInStream_Feed::close() noexcept {
     DBG_PRINT("ByteInStream_Feed: close.X %s, %s", id().c_str(), to_string_int().c_str());
 }
 
-bool ByteInStream_Feed::check_available(size_t n) NOEXCEPT_BOTAN {
+bool ByteInStream_Feed::available(size_t n) noexcept {
     if( async_io_result_t::NONE != m_result ) {
         // feeder completed, only remaining bytes in buffer available left
         return m_buffer.size() >= n;
@@ -542,17 +464,17 @@ bool ByteInStream_Feed::check_available(size_t n) NOEXCEPT_BOTAN {
     return m_buffer.waitForElements(n, m_timeout) >= n;
 }
 
-size_t ByteInStream_Feed::read(uint8_t out[], size_t length) NOEXCEPT_BOTAN {
+size_t ByteInStream_Feed::read(void* out, size_t length) noexcept {
     if( 0 == length || end_of_data() ) {
         return 0;
     }
-    const size_t consumed_bytes = m_buffer.get(out, length, 1);
-    m_bytes_consumed += consumed_bytes;
+    const size_t got = m_buffer.get(static_cast<uint8_t*>(out), length, 1);
+    m_bytes_consumed += got;
     // DBG_PRINT("ByteInStream_Feed::read: size %zu/%zu bytes, %s", consumed_bytes, length, to_string_int().c_str() );
-    return consumed_bytes;
+    return got;
 }
 
-size_t ByteInStream_Feed::peek(uint8_t out[], size_t length, size_t peek_offset) const NOEXCEPT_BOTAN {
+size_t ByteInStream_Feed::peek(void* out, size_t length, size_t peek_offset) noexcept {
     (void)out;
     (void)length;
     (void)peek_offset;
@@ -560,9 +482,16 @@ size_t ByteInStream_Feed::peek(uint8_t out[], size_t length, size_t peek_offset)
     return 0;
 }
 
-bool ByteInStream_Feed::end_of_data() const NOEXCEPT_BOTAN {
-    return ( async_io_result_t::NONE != m_result && m_buffer.isEmpty() ) ||
-           ( m_has_content_length && m_bytes_consumed >= m_content_size );
+iostate ByteInStream_Feed::rdstate() const noexcept {
+    if ( ( async_io_result_t::NONE != m_result && m_buffer.isEmpty() ) ||
+         ( m_has_content_length && m_bytes_consumed >= m_content_size ) )
+    {
+        setstate_impl( iostate::eofbit );
+    }
+    if( async_io_result_t::FAILED == m_result ) {
+        setstate_impl( iostate::failbit );
+    }
+    return rdstate_impl();
 }
 
 void ByteInStream_Feed::write(uint8_t in[], size_t length) noexcept {
@@ -572,16 +501,19 @@ void ByteInStream_Feed::write(uint8_t in[], size_t length) noexcept {
     }
 }
 
+void ByteInStream_Feed::set_eof(const async_io_result_t result) noexcept {
+    m_result = result;
+    interruptReader();
+}
+
 std::string ByteInStream_Feed::to_string_int() const noexcept {
-    return m_id+", ext[content_length has "+std::to_string(m_has_content_length.load())+
-                   ", size "+jau::to_decstring(m_content_size.load())+
+    return m_id+", ext[content_length "+( has_content_size() ? jau::to_decstring(m_content_size.load()) : "n/a" )+
                    ", xfered "+jau::to_decstring(m_total_xfered.load())+
                    ", result "+std::to_string((int8_t)m_result.load())+
            "], consumed "+std::to_string(m_bytes_consumed)+
            ", available "+std::to_string(get_available())+
-           ", eod "+std::to_string( end_of_data() )+
-           ", error "+std::to_string( error() )+
-           ", "+m_buffer.toString();
+           ", iostate["+jau::io::to_string(rdstate())+
+           "], "+m_buffer.toString();
 }
 
 std::string ByteInStream_Feed::to_string() const noexcept {
@@ -610,19 +542,19 @@ void ByteInStream_Recorder::clear_recording() noexcept {
     m_rec_offset = 0;
 }
 
-size_t ByteInStream_Recorder::read(uint8_t out[], size_t length) NOEXCEPT_BOTAN {
+size_t ByteInStream_Recorder::read(void* out, size_t length) noexcept {
     const size_t consumed_bytes = m_parent.read(out, length);
     m_bytes_consumed += consumed_bytes;
     if( is_recording() ) {
-        m_buffer.insert(m_buffer.end(), out, out+consumed_bytes);
+        uint8_t* out_u8 = static_cast<uint8_t*>(out);
+        m_buffer.insert(m_buffer.end(), out_u8, out_u8+consumed_bytes);
     }
     return consumed_bytes;
 }
 
 std::string ByteInStream_Recorder::to_string() const noexcept {
     return "ByteInStream_Recorder[parent "+m_parent.id()+", recording[on "+std::to_string(m_is_recording)+
-                                                   " offset "+jau::to_decstring(m_rec_offset)+
+                            " offset "+jau::to_decstring(m_rec_offset)+
                             "], consumed "+jau::to_decstring(m_bytes_consumed)+
-                            ", eod "+std::to_string(end_of_data())+
-                            ", error "+std::to_string(error())+"]";
+                            ", iostate["+jau::io::to_string(rdstate())+"]]";
 }
