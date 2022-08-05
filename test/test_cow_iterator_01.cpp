@@ -404,7 +404,7 @@ static bool test_citer_type_ops(const std::string& type_id,
         REQUIRE( end - end_size             == begin     );
         REQUIRE( begin + begin_size         == end       );
         REQUIRE( *( end - end_size )        == *begin    );
-        REQUIRE( *( begin + begin_size )    == *end      );
+        REQUIRE( *( begin + begin_size -1 ) == *(end-1)  );
         test_iterator_dereference<T, citer_type>(begin.size(), begin, end);
     }
 
@@ -813,7 +813,7 @@ static bool test_mutable_iterator_ops(const std::string& type_id,
         REQUIRE( end - data_size            == begin     );
         REQUIRE( begin + data_size          == end       );
         REQUIRE( *( end - data_size )       == *begin    );
-        REQUIRE( *( begin + data_size )     == *end      );
+        REQUIRE( *( begin + data_size - 1 ) == *(end -1) );
         test_iterator_dereference<T, iter_type>(data.size(), begin, end);
     }
 
