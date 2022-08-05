@@ -32,13 +32,13 @@
 #include <stdio.h>
 #include <cinttypes>
 
-#include <sstream>
 #include <cstdint>
 #include <cmath>
 
 #include <jau/int_types.hpp>
 #include <jau/int_math.hpp>
 #include <jau/ordered_atomic.hpp>
+#include <jau/cpp_pragma.hpp>
 
 namespace jau {
 
@@ -361,10 +361,17 @@ namespace jau {
                 if( overflow ) {
                     r.append(" O! ");
                 } else if( show_double ) {
-                    std::ostringstream out;
-                    out.precision( std::max<nsize_t>( 6, digits10(denom, false /* sign_is_digit */) ) );
-                    out << to_double();
-                    r.append(" ( " + out.str() + " )");
+                    const int precision = std::max<int>( 6, digits10(denom, false /* sign_is_digit */) );
+                    std::string fmt("%.");
+                    fmt.append(std::to_string(precision)).append("f");
+                    char buf[96];
+                    PRAGMA_DISABLE_WARNING_PUSH
+                    PRAGMA_DISABLE_WARNING_FORMAT_NONLITERAL
+                    int res = ::snprintf(buf, sizeof(buf), fmt.c_str(), to_double());
+                    PRAGMA_DISABLE_WARNING_POP
+                    if( 0 < res ) {
+                        r.append(" ( " + std::string(buf) + " )");
+                    }
                 }
                 return r;
             }
