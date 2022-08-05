@@ -342,6 +342,12 @@ namespace jau {
          * Implementation returns (`%d` stands for integer):
          * - `/dev/fd/%d` (GNU/Linux, FreeBSD, ..)
          *
+         * Following standard POSIX mappings exist
+         * - fd 0, `/dev/fd/0`, `/dev/stdin`
+         * - fd 1, `/dev/fd/1`, `/dev/stdout`
+         * - fd 2, `/dev/fd/2`, `/dev/stderr`
+         * - fd [0-99], `/dev/fd/[0-99]`
+         *
          * Currently implementation always returns above pattern,
          * not handling the target OS differences.
          *

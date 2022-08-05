@@ -415,24 +415,24 @@ file_stats::file_stats() noexcept
 #endif
 
 file_stats::file_stats(const ctor_cookie& cc, int dirfd, const dir_item& item, const bool dirfd_is_item_dirname) noexcept
-: has_fields_(field_t::none), item_(item), link_target_path_(), link_target_(), mode_(fmode_t::none), fd_(-1),
-  uid_(0), gid_(0), size_(0), btime_(), atime_(), ctime_(), mtime_(),
-  errno_res_(0)
+: has_fields_(field_t::none), item_(), link_target_path_(), link_target_(), mode_(fmode_t::none), fd_(-1),
+  uid_(0), gid_(0), size_(0), btime_(), atime_(), ctime_(), mtime_(), errno_res_(0)
 {
     constexpr const bool _debug = false;
     (void)cc;
-    const std::string full_path( item_.empty() ? "" : item_.path() );
-    if( item_.empty() && AT_FDCWD != dirfd ) {
+    const std::string full_path( item.empty() ? "" : item.path() );
+    if( item.empty() && AT_FDCWD != dirfd ) {
         if( 0 <= dirfd ) {
             has_fields_ |= field_t::fd;
             fd_ = dirfd;
             item_ = dir_item(jau::fs::to_named_fd(fd_));
         } else {
             ERR_PRINT("rec_level %d, dirfd %d < 0, %s, dirfd_is_item_dirname %d, AT_EMPTY_PATH",
-                    (int)cc.rec_level, dirfd, item_.to_string().c_str(), dirfd_is_item_dirname);
+                    (int)cc.rec_level, dirfd, item.to_string().c_str(), dirfd_is_item_dirname);
             return;
         }
     } else {
+        item_ = item;
         int scan_value = jau::fs::from_named_fd(full_path);
         if( 0 <= scan_value ) {
             has_fields_ |= field_t::fd;
@@ -452,7 +452,7 @@ file_stats::file_stats(const ctor_cookie& cc, int dirfd, const dir_item& item, c
             return;
         }
     }
-    const std::string dirfd_path = has( field_t::fd ) ? "" : ( dirfd_is_item_dirname ? item.basename() : full_path );
+    const std::string dirfd_path = has( field_t::fd ) ? "" : ( dirfd_is_item_dirname ? item_.basename() : full_path );
 
 #if _USE_STATX_
     struct ::statx s;
@@ -548,22 +548,18 @@ file_stats::file_stats(const ctor_cookie& cc, int dirfd, const dir_item& item, c
             std::string link_path;
             {
                 const ssize_t path_link_max_len = 0 < s.stx_size ? s.stx_size + 1 : PATH_MAX;
-                char* buffer = (char*) ::malloc(path_link_max_len);
+                std::vector<char> buffer;
+                buffer.reserve(path_link_max_len);
+                buffer.resize(path_link_max_len);
                 ssize_t path_link_len = 0;;
-                if( nullptr == buffer ) {
-                    errno_res_ = errno;
-                    link_target_ = std::make_shared<file_stats>();
-                    goto errorout;
-                }
-                path_link_len = ::readlinkat(dirfd, dirfd_path.c_str(), buffer, path_link_max_len);
+                path_link_len = ::readlinkat(dirfd, dirfd_path.c_str(), buffer.data(), path_link_max_len);
                 if( 0 > path_link_len ) {
                     errno_res_ = errno;
-                    ::free(buffer);
                     link_target_ = std::make_shared<file_stats>();
                     goto errorout;
                 }
                 // Note: if( path_link_len == path_link_max_len ) then buffer may have been truncated
-                link_path = std::string(buffer, path_link_len);
+                link_path = std::string(buffer.data(), path_link_len);
             }
             link_target_path_ = std::make_shared<std::string>(link_path);
             if( 0 == cc.rec_level ) {
@@ -613,8 +609,10 @@ file_stats::file_stats(const ctor_cookie& cc, int dirfd, const dir_item& item, c
                 mode_ |= fmode_t::dir;
             } else if( link_target_->is_file() ) {
                 mode_ |= fmode_t::file;
-                has_fields_ |= field_t::size;
-                size_ = link_target_->size();
+                if( link_target_->has( field_t::size ) ) {
+                    has_fields_ |= field_t::size;
+                    size_ = link_target_->size();
+                }
             } else if( !link_target_->exists() ) {
                 mode_ |= fmode_t::not_existing;
             } else if( !link_target_->has_access() ) {
@@ -685,22 +683,18 @@ file_stats::file_stats(const ctor_cookie& cc, int dirfd, const dir_item& item, c
             std::string link_path;
             {
                 const ssize_t path_link_max_len = 0 < s.st_size ? s.st_size + 1 : PATH_MAX;
-                char* buffer = (char*) ::malloc(path_link_max_len);
+                std::vector<char> buffer;
+                buffer.reserve(path_link_max_len);
+                buffer.resize(path_link_max_len);
                 ssize_t path_link_len = 0;;
-                if( nullptr == buffer ) {
-                    errno_res_ = errno;
-                    link_target_ = std::make_shared<file_stats>();
-                    goto errorout;
-                }
-                path_link_len = ::readlinkat(dirfd, dirfd_path.c_str(), buffer, path_link_max_len);
+                path_link_len = ::readlinkat(dirfd, dirfd_path.c_str(), buffer.data(), path_link_max_len);
                 if( 0 > path_link_len ) {
                     errno_res_ = errno;
-                    ::free(buffer);
                     link_target_ = std::make_shared<file_stats>();
                     goto errorout;
                 }
                 // Note: if( path_link_len == path_link_max_len ) then buffer may have been truncated
-                link_path = std::string(buffer, path_link_len);
+                link_path = std::string(buffer.data(), path_link_len);
             }
             link_target_path_ = std::make_shared<std::string>(link_path);
             if( 0 == cc.rec_level ) {
@@ -854,6 +848,8 @@ std::string file_stats::to_string() const noexcept {
         }
         if( has( field_t::size ) ) {
             res.append( ", size " ).append( jau::to_decstring( size_ ) );
+        } else {
+            res.append( ", size n/a" );
         }
         if( has( field_t::btime ) ) {
             res.append( ", btime " ).append( btime_.to_iso8601_string() );
@@ -1406,7 +1402,7 @@ static bool copy_file(const int src_dirfd, const file_stats& src_stats,
         }
         goto errout;
     }
-    dst = __posix_openat64 (dst_dirfd, dst_basename.c_str(), O_CREAT|O_WRONLY|O_BINARY|O_EXCL|O_NOCTTY, jau::fs::posix_protection_bits( dest_mode & ~omitted_permissions ) );
+    dst = __posix_openat64 (dst_dirfd, dst_basename.c_str(), O_CREAT|O_EXCL|O_WRONLY|O_BINARY|O_NOCTTY, jau::fs::posix_protection_bits( dest_mode & ~omitted_permissions ) );
     if ( 0 > dst ) {
         ERR_PRINT("Failed to open target_path '%s'", dst_basename.c_str());
         goto errout;
