@@ -77,7 +77,7 @@ public interface ByteInStreamUtil {
         long total = 0;
         boolean has_more = !in.end_of_data();
         while( has_more ) {
-            if( in.check_available(1) ) { // at least one byte to stream ..
+            if( in.available(1) ) { // at least one byte to stream ..
                 final int got = in.read(buffer, 0, buffer.length);
 
                 total += got;
@@ -128,7 +128,7 @@ public interface ByteInStreamUtil {
         long total = 0;
         boolean has_more = !in.end_of_data();
         while( has_more ) {
-            if( in.check_available(1) ) { // at least one byte to stream ..
+            if( in.available(1) ) { // at least one byte to stream ..
                 final int got = in.read(buffer);
 
                 total += got;
@@ -157,7 +157,7 @@ public interface ByteInStreamUtil {
      * If non of the above leads to a ByteInStream without {@link ByteInStreamUtil#error()}, null is returned.
      *
      * @param path_or_uri given path or uri for with a ByteInStream instance shall be established.
-     * @param timeoutMS a timeout in case ByteInStream_URL is being used as maximum duration in milliseconds to wait for next bytes at {@link ByteInStream_URL#check_available(long)}, defaults to 20_s
+     * @param timeoutMS a timeout in case ByteInStream_URL is being used as maximum duration in milliseconds to wait for next bytes at {@link ByteInStream_URL#available(long)}, defaults to 20_s
      * @return a working ByteInStream w/o {@link ByteInStreamUtil#error()} or nullptr
      */
     public static ByteInStream to_ByteInStream(final String path_or_uri, final long timeoutMS) {
@@ -165,12 +165,12 @@ public interface ByteInStreamUtil {
              org.jau.io.UriTk.protocol_supported(path_or_uri) )
         {
             final ByteInStream res = new ByteInStream_URL(path_or_uri, timeoutMS);
-            if( null != res && !res.error() ) {
+            if( null != res && !res.fail() ) {
                 return res;
             }
         }
         final ByteInStream res = new ByteInStream_File(path_or_uri);
-        if( null != res && !res.error() ) {
+        if( null != res && !res.fail() ) {
             return res;
         }
         return null;
@@ -183,7 +183,7 @@ public interface ByteInStreamUtil {
      *
      * If non of the above leads to a ByteInStream without {@link ByteInStreamUtil#error()}, null is returned.
      *
-     * Method uses a timeout of 20_s for maximum duration to wait for next bytes at {@link ByteInStream_URL#check_available(long)}
+     * Method uses a timeout of 20_s for maximum duration to wait for next bytes at {@link ByteInStream_URL#available(long)}
      *
      * @param path_or_uri given path or uri for with a ByteInStream instance shall be established.
      * @return a working ByteInStream w/o {@link ByteInStreamUtil#error()} or nullptr

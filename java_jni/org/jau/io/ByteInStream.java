@@ -26,7 +26,7 @@ package org.jau.io;
 import java.nio.ByteBuffer;
 
 /**
- * This class represents an abstract byte input stream object.
+ * Abstract byte input stream object.
  *
  * Its specializations utilize a native C++ implementation
  * derived from `jau::io::ByteInStream`.
@@ -36,15 +36,17 @@ import java.nio.ByteBuffer;
  * The byte input stream can originate from a local source w/o delay,
  * remote URL like http connection or even from another thread feeding the input buffer.<br />
  * Both latter asynchronous resources may expose blocking properties
- * in check_available().
+ * in available().
  *
  * Asynchronous resources benefit from knowing their content size,
- * as their check_available() implementation may avoid
+ * as their available() implementation may avoid
  * blocking and waiting for requested bytes available
  * if the stream is already beyond its scope.
  *
- * One may use error() to detect whether an error has occurred,
- * while end_of_data() not only covered the EOS case but includes error().
+ * All method implementations are of `noexcept`.
+ *
+ * One may use fail() to detect whether an error has occurred,
+ * while end_of_data() not only covers the end-of-stream (EOS) case but includes fail().
  *
  * @see @ref byte_in_stream_properties "ByteInStream Properties"
  */
@@ -69,37 +71,87 @@ public interface ByteInStream extends AutoCloseable  {
     @Override
     void close();
 
+    /** Clears state flags by assignment to the given value. */
+    void clear(final IOState state);
+
     /**
-     * Check whether n bytes are available in the input stream.
+     * Returns the current state flags.
      *
-     * This method may be blocking when using an asynchronous source
-     * up until the requested bytes are actually available.
+     * Method is marked `virtual` to allow implementations with asynchronous resources
+     * to determine or update the current iostate.
+     *
+     * Method is used throughout all query members and setstate(),
+     * hence they all will use the updated state from a potential override implementation.
+     */
+    IOState rdState();
+
+    /** Sets state flags, by keeping its previous bits. */
+    void setState(final IOState state);
+
+    /** Checks if no error nor eof() has occurred i.e. I/O operations are available. */
+    boolean good();
+
+    /** Checks if end-of-file has been reached. */
+    boolean eof();
+
+    /** Checks if an error has occurred. */
+    boolean fail();
+
+    /** Checks if a non-recoverable error has occurred. */
+    boolean bad();
+
+    /**
+     * Test whether the source still has data that can be read, synonym for !good().
+     *
+     * Hence this includes errors in the underlying implementation, see fail()
+     *
+     * @return true if there is no more data to read, false otherwise
+     * @see good()
+     * @see fail()
+     */
+    boolean end_of_data();
+
+    /**
+     * Return whether n bytes are available in the input stream,
+     * if has_content_size() or using an asynchronous source.
+     *
+     * If !has_content_size() and not being an asynchronous source,
+     * !end_of_data() is returned.
+     *
+     * Method may be blocking when using an asynchronous source
+     * up until the requested bytes are available.
      *
      * A subsequent call to read() shall return immediately with at least
-     * the requested numbers of bytes available.
+     * the requested numbers of bytes available,
+     * if has_content_size() or using an asynchronous source.
+     *
+     * See details of the implementing class.
      *
      * @param n byte count to wait for
      * @return true if n bytes are available, otherwise false
      *
+     * @see has_content_size()
      * @see read()
      * @see @ref byte_in_stream_properties "ByteInStream Properties"
      */
-    boolean check_available(long n);
+    boolean available(long n);
 
     /**
      * Read from the source. Moves the internal offset so that every
      * call to read will return a new portion of the source.
      *
-     * Use check_available() to wait and ensure a certain amount of bytes are available.
+     * Use available() to try to wait for a certain amount of bytes available.
      *
-     * This method is not blocking.
+     * This method shall only block until `min(available, length)` bytes are transfered.
+     *
+     * See details of the implementing class.
      *
      * @param out the byte array to write the result to
      * @param offset offset to in byte array to read into
-     * @param length number of in bytes to read into starting at offset
+     * @param length the length of the byte array out
      * @return length in bytes that was actually read and put into out
      *
-     * @see check_available()
+     * @see available()
      * @see @ref byte_in_stream_properties "ByteInStream Properties"
      */
     int read(byte out[], final int offset, final int length);
@@ -108,20 +160,19 @@ public interface ByteInStream extends AutoCloseable  {
      * Read from the source. Moves the internal offset so that every
      * call to read will return a new portion of the source.
      *
-     * Use check_available() to wait and ensure a certain amount of bytes are available.
+     * Use available() to try to wait for a certain amount of bytes available.
      *
-     * This method is not blocking.
+     * This method shall only block until `min(available, length)` bytes are transfered.
+     *
+     * See details of the implementing class.
      *
      * @param out the direct {@link ByteBuffer} to write the result starting at its {@link ByteBuffer#position() position} up to its {@link ByteBuffer#capacity() capacity}.
      *            {@link ByteBuffer#limit() Limit} will be set to {@link ByteBuffer#position() position} + read-bytes.
      * @return length in bytes that was actually read and put into out,
      *         equal to its {@link ByteBuffer#limit() limit} - {@link ByteBuffer#position() position}, i.e. {@link ByteBuffer#remaining() remaining}.
      *
-     * @see check_available()
+     * @see available()
      * @see @ref byte_in_stream_properties "ByteInStream Properties"
-     *
-     * @param out
-     * @return
      */
     int read(ByteBuffer out);
 
@@ -139,23 +190,6 @@ public interface ByteInStream extends AutoCloseable  {
     int peek(byte out[], final int offset, final int length, final long peek_offset);
 
     /**
-     * Test whether the source still has data that can be read.
-     *
-     * This may include a failure and/or error in the underlying implementation, see error()
-     *
-     * @return true if there is no more data to read, false otherwise
-     * @see error()
-     */
-    boolean end_of_data();
-
-    /**
-     * Return whether an error has occurred, excluding end_of_data().
-     *
-     * @return true if an error has occurred, false otherwise
-     */
-    boolean error();
-
-    /**
      * return the id of this data source
      * @return std::string representing the id of this data source
      */
@@ -169,9 +203,11 @@ public interface ByteInStream extends AutoCloseable  {
     long discard_next(long N);
 
     /**
+     * Returns the input position indicator, similar to std::basic_istream.
+     *
      * @return number of bytes read so far.
      */
-    long bytes_read();
+    long tellg();
 
     /**
      * Returns true if implementation is aware of content_size(), otherwise false.

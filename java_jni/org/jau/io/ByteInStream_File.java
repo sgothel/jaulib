@@ -26,10 +26,13 @@ package org.jau.io;
 import java.nio.ByteBuffer;
 
 /**
- * This class represents a file based byte input stream, including named file descriptor.
+ * File based byte input stream, including named file descriptor.
  *
- * If source path denotes a named file descriptor, i.e. {@link org.jau.fs.FileStats#has_fd()} returns true,
- * has_content_size() returns false and check_available() returns true as long the stream is open and EOS hasn't occurred.
+ * Implementation mimics std::ifstream via OS level file descriptor (FD) operations,
+ * giving more flexibility, allowing reusing existing FD and enabling openat() operations.
+ *
+ * If source path denotes a named file descriptor, i.e. jau::fs::file_stats::is_fd() returns true,
+ * has_content_size() returns false and available() returns true as long the stream is open and EOS hasn't occurred.
  *
  * Instance uses the native C++ object `jau::io::ByteInStream_File`.
  */
@@ -53,7 +56,7 @@ public final class ByteInStream_File implements ByteInStream {
             throw t;
         }
     }
-    private native long ctorImpl1(final String path);
+    private static native long ctorImpl1(final String path);
 
     /**
      * Construct a stream based byte input stream from filesystem path and parent directory file descriptor
@@ -72,7 +75,7 @@ public final class ByteInStream_File implements ByteInStream {
             throw t;
         }
     }
-    private native long ctorImpl2(final int dirfd, final String path);
+    private static native long ctorImpl2(final int dirfd, final String path);
 
     /**
      * Construct a stream based byte input stream by duplicating given file descriptor
@@ -90,7 +93,7 @@ public final class ByteInStream_File implements ByteInStream {
             throw t;
         }
     }
-    private native long ctorImpl3(final int fd);
+    private static native long ctorImpl3(final int fd);
 
     @Override
     public native void closeStream();
@@ -114,7 +117,47 @@ public final class ByteInStream_File implements ByteInStream {
     }
 
     @Override
-    public native boolean check_available(final long n);
+    public void clear(final IOState state) {
+        clearImpl( state.mask );
+    }
+    private native void clearImpl(int s);
+
+    /**
+     * Returns the file descriptor if is_open(), otherwise -1 for no file descriptor.
+     *
+     * @see is_open()
+     */
+    public native int fd();
+
+    @Override
+    public IOState rdState() {
+        return new IOState( rdStateImpl() );
+    }
+    private native int rdStateImpl();
+
+    @Override
+    public void setState(final IOState state) {
+        setStateImpl( state.mask );
+    }
+    private native void setStateImpl(int s);
+
+    @Override
+    public native boolean good();
+
+    @Override
+    public native boolean eof();
+
+    @Override
+    public native boolean fail();
+
+    @Override
+    public native boolean bad();
+
+    @Override
+    public boolean end_of_data() { return !good(); }
+
+    @Override
+    public native boolean available(final long n);
 
     @Override
     public native int read(final byte[] out, final int offset, final int length);
@@ -134,19 +177,13 @@ public final class ByteInStream_File implements ByteInStream {
     public native int peek(byte[] out, final int offset, final int length, final long peek_offset);
 
     @Override
-    public native boolean end_of_data();
-
-    @Override
-    public native boolean error();
-
-    @Override
     public native String id();
 
     @Override
     public native long discard_next(long N);
 
     @Override
-    public native long bytes_read();
+    public native long tellg();
 
     @Override
     public native boolean has_content_size();

@@ -22,20 +22,45 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "org_jau_io_ByteInStream_File.h"
+#include "jau/byte_stream.hpp"
 
 #include <jau/debug.hpp>
 
 #include "jau/jni/helper_jni.hpp"
 
-#include "jau/byte_stream.hpp"
+// #include "org_jau_io_IOState.h"
+#include "org_jau_io_ByteInStream_File.h"
 
-jlong Java_org_jau_io_ByteInStream_1File_ctorImpl1(JNIEnv *env, jobject obj, jstring jpath) {
+
+extern "C" {
+    #include <fcntl.h>
+}
+
+//
+// IOState
+//
+
+jstring Java_org_jau_io_IOState_to_1string(JNIEnv *env, jclass cls, jint mask) {
+    (void)cls;
     try {
-        (void)obj;
+        const std::string s = jau::io::to_string(static_cast<jau::io::iostate>(mask));
+        return jau::jni::from_string_to_jstring(env, s);
+    } catch(...) {
+        rethrow_and_raise_java_exception_jau(env);
+    }
+    return nullptr;
+}
+
+//
+// ByteInStream_File
+//
+
+jlong Java_org_jau_io_ByteInStream_1File_ctorImpl1(JNIEnv *env, jclass cls, jstring jpath) {
+    try {
+        (void)cls;
         // new instance
-        const std::string path = jau::jni::from_jstring_to_string(env, jpath);
-        jau::jni::shared_ptr_ref<jau::io::ByteInStream_File> ref( new jau::io::ByteInStream_File(path) );
+        const std::string _path = jau::jni::from_jstring_to_string(env, jpath);
+        jau::jni::shared_ptr_ref<jau::io::ByteInStream_File> ref( new jau::io::ByteInStream_File( _path ) );
         return ref.release_to_jlong();
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
@@ -43,9 +68,9 @@ jlong Java_org_jau_io_ByteInStream_1File_ctorImpl1(JNIEnv *env, jobject obj, jst
     return (jlong) (intptr_t)nullptr;
 }
 
-jlong Java_org_jau_io_ByteInStream_1File_ctorImpl2(JNIEnv *env, jobject obj, jint dirfd, jstring jpath) {
+jlong Java_org_jau_io_ByteInStream_1File_ctorImpl2(JNIEnv *env, jclass cls, jint dirfd, jstring jpath) {
     try {
-        (void)obj;
+        (void)cls;
         // new instance
         const std::string path = jau::jni::from_jstring_to_string(env, jpath);
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_File> ref( new jau::io::ByteInStream_File(dirfd, path) );
@@ -56,9 +81,9 @@ jlong Java_org_jau_io_ByteInStream_1File_ctorImpl2(JNIEnv *env, jobject obj, jin
     return (jlong) (intptr_t)nullptr;
 }
 
-jlong Java_org_jau_io_ByteInStream_1File_ctorImpl3(JNIEnv *env, jobject obj, jint fd) {
+jlong Java_org_jau_io_ByteInStream_1File_ctorImpl3(JNIEnv *env, jclass cls, jint fd) {
     try {
-        (void)obj;
+        (void)cls;
         // new instance
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_File> ref( new jau::io::ByteInStream_File(fd) );
         return ref.release_to_jlong();
@@ -90,10 +115,88 @@ void Java_org_jau_io_ByteInStream_1File_dtorImpl(JNIEnv *env, jclass clazz, jlon
     }
 }
 
-jboolean Java_org_jau_io_ByteInStream_1File_check_1available(JNIEnv *env, jobject obj, jlong n) {
+void Java_org_jau_io_ByteInStream_1File_clearImpl(JNIEnv *env, jobject obj, jint mask) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_File> ref(env, obj); // hold until done
-        return ref->check_available((size_t)n) ? JNI_TRUE : JNI_FALSE;
+        ref->clear( static_cast<jau::io::iostate>(mask) );
+    } catch(...) {
+        rethrow_and_raise_java_exception_jau(env);
+    }
+}
+
+jint Java_org_jau_io_ByteInStream_1File_fd(JNIEnv *env, jobject obj) {
+    try {
+        jau::jni::shared_ptr_ref<jau::io::ByteInStream_File> ref(env, obj); // hold until done
+        return ref->fd();
+    } catch(...) {
+        rethrow_and_raise_java_exception_jau(env);
+    }
+    return -1;
+}
+
+jint Java_org_jau_io_ByteInStream_1File_rdStateImpl(JNIEnv *env, jobject obj) {
+    try {
+        jau::jni::shared_ptr_ref<jau::io::ByteInStream_File> ref(env, obj); // hold until done
+        return static_cast<jint>( ref->rdstate() );
+    } catch(...) {
+        rethrow_and_raise_java_exception_jau(env);
+    }
+    return static_cast<jint>(jau::io::iostate::failbit);
+}
+
+void Java_org_jau_io_ByteInStream_1File_setStateImpl(JNIEnv *env, jobject obj, jint mask) {
+    try {
+        jau::jni::shared_ptr_ref<jau::io::ByteInStream_File> ref(env, obj); // hold until done
+        ref->setstate( static_cast<jau::io::iostate>(mask) );
+    } catch(...) {
+        rethrow_and_raise_java_exception_jau(env);
+    }
+}
+
+jboolean Java_org_jau_io_ByteInStream_1File_good(JNIEnv *env, jobject obj) {
+    try {
+        jau::jni::shared_ptr_ref<jau::io::ByteInStream_File> ref(env, obj); // hold until done
+        return ref->good() ? JNI_TRUE : JNI_FALSE;
+    } catch(...) {
+        rethrow_and_raise_java_exception_jau(env);
+    }
+    return JNI_FALSE;
+}
+
+jboolean Java_org_jau_io_ByteInStream_1File_eof(JNIEnv *env, jobject obj) {
+    try {
+        jau::jni::shared_ptr_ref<jau::io::ByteInStream_File> ref(env, obj); // hold until done
+        return ref->eof() ? JNI_TRUE : JNI_FALSE;
+    } catch(...) {
+        rethrow_and_raise_java_exception_jau(env);
+    }
+    return JNI_TRUE;
+}
+
+jboolean Java_org_jau_io_ByteInStream_1File_fail(JNIEnv *env, jobject obj) {
+    try {
+        jau::jni::shared_ptr_ref<jau::io::ByteInStream_File> ref(env, obj); // hold until done
+        return ref->fail() ? JNI_TRUE : JNI_FALSE;
+    } catch(...) {
+        rethrow_and_raise_java_exception_jau(env);
+    }
+    return JNI_TRUE;
+}
+
+jboolean Java_org_jau_io_ByteInStream_1File_bad(JNIEnv *env, jobject obj) {
+    try {
+        jau::jni::shared_ptr_ref<jau::io::ByteInStream_File> ref(env, obj); // hold until done
+        return ref->bad() ? JNI_TRUE : JNI_FALSE;
+    } catch(...) {
+        rethrow_and_raise_java_exception_jau(env);
+    }
+    return JNI_FALSE;
+}
+
+jboolean Java_org_jau_io_ByteInStream_1File_available(JNIEnv *env, jobject obj, jlong n) {
+    try {
+        jau::jni::shared_ptr_ref<jau::io::ByteInStream_File> ref(env, obj); // hold until done
+        return ref->available((size_t)n) ? JNI_TRUE : JNI_FALSE;
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }
@@ -166,26 +269,6 @@ jint Java_org_jau_io_ByteInStream_1File_peek(JNIEnv *env, jobject obj, jbyteArra
     return 0;
 }
 
-jboolean Java_org_jau_io_ByteInStream_1File_end_1of_1data(JNIEnv *env, jobject obj) {
-    try {
-        jau::jni::shared_ptr_ref<jau::io::ByteInStream_File> ref(env, obj); // hold until done
-        return ref->end_of_data() ? JNI_TRUE : JNI_FALSE;
-    } catch(...) {
-        rethrow_and_raise_java_exception_jau(env);
-    }
-    return JNI_TRUE;
-}
-
-jboolean Java_org_jau_io_ByteInStream_1File_error(JNIEnv *env, jobject obj) {
-    try {
-        jau::jni::shared_ptr_ref<jau::io::ByteInStream_File> ref(env, obj); // hold until done
-        return ref->error() ? JNI_TRUE : JNI_FALSE;
-    } catch(...) {
-        rethrow_and_raise_java_exception_jau(env);
-    }
-    return JNI_TRUE;
-}
-
 jstring Java_org_jau_io_ByteInStream_1File_id(JNIEnv *env, jobject obj) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_File> ref(env, obj); // hold until done
@@ -200,7 +283,7 @@ jlong Java_org_jau_io_ByteInStream_1File_discard_1next(JNIEnv *env, jobject obj,
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_File> ref(env, obj); // hold until done
 
-        const size_t res = ref->discard_next(n);
+        const size_t res = ref->discard(n);
         return (jlong)res;
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
@@ -208,10 +291,10 @@ jlong Java_org_jau_io_ByteInStream_1File_discard_1next(JNIEnv *env, jobject obj,
     return 0;
 }
 
-jlong Java_org_jau_io_ByteInStream_1File_get_1bytes_1read(JNIEnv *env, jobject obj) {
+jlong Java_org_jau_io_ByteInStream_1File_tellg(JNIEnv *env, jobject obj) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_File> ref(env, obj); // hold until done
-        return static_cast<jlong>( ref->get_bytes_read() );
+        return static_cast<jlong>( ref->tellg() );
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }

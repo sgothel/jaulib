@@ -71,7 +71,40 @@ public final class ByteInStream_Feed implements ByteInStream  {
     }
 
     @Override
-    public native boolean check_available(final long n);
+    public void clear(final IOState state) {
+        clearImpl( state.mask );
+    }
+    private native void clearImpl(int s);
+
+    @Override
+    public IOState rdState() {
+        return new IOState( rdStateImpl() );
+    }
+    private native int rdStateImpl();
+
+    @Override
+    public void setState(final IOState state) {
+        setStateImpl( state.mask );
+    }
+    private native void setStateImpl(int s);
+
+    @Override
+    public native boolean good();
+
+    @Override
+    public native boolean eof();
+
+    @Override
+    public native boolean fail();
+
+    @Override
+    public native boolean bad();
+
+    @Override
+    public boolean end_of_data() { return !good(); }
+
+    @Override
+    public native boolean available(final long n);
 
     @Override
     public native int read(final byte[] out, final int offset, final int length);
@@ -91,19 +124,13 @@ public final class ByteInStream_Feed implements ByteInStream  {
     public native int peek(byte[] out, final int offset, final int length, final long peek_offset);
 
     @Override
-    public native boolean end_of_data();
-
-    @Override
-    public native boolean error();
-
-    @Override
     public native String id();
 
     @Override
     public native long discard_next(long N);
 
     @Override
-    public native long bytes_read();
+    public native long tellg();
 
     @Override
     public native boolean has_content_size();
