@@ -324,20 +324,17 @@ bool jau::jni::from_jboolean_to_bool(jboolean val)
     }
 }
 
-std::string jau::jni::from_jstring_to_string(JNIEnv *env, jstring str) {
-    jboolean is_copy = JNI_TRUE;
-    if (!str) {
+std::string jau::jni::from_jstring_to_string(JNIEnv *env, jstring jstr) {
+    if (!jstr) {
         throw jau::IllegalArgumentException("String argument should not be null", E_FILE_LINE);
     }
-    const char *str_chars = (char *)env->GetStringUTFChars(str, &is_copy);
+    const char *str_chars = (char *)env->GetStringUTFChars(jstr, NULL);
     if (!str_chars) {
             throw jau::OutOfMemoryError("GetStringUTFChars returned null", E_FILE_LINE);
     }
-    const std::string string_to_write = std::string(str_chars);
-
-    env->ReleaseStringUTFChars(str, str_chars);
-
-    return string_to_write;
+    std::string str_cpy(str_chars);
+    env->ReleaseStringUTFChars(jstr, str_chars);
+    return str_cpy;
 }
 
 jstring jau::jni::from_string_to_jstring(JNIEnv *env, const std::string & str) {
