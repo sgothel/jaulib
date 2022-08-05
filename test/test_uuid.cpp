@@ -1,4 +1,3 @@
-#include <iostream>
 #include <cassert>
 #include <cinttypes>
 #include <cstring>
@@ -10,9 +9,6 @@
 using namespace jau;
 
 TEST_CASE( "UUID Test 01", "[datatype][uuid]" ) {
-    std::cout << "Hello COUT" << std::endl;
-    std::cerr << "Hello CERR" << std::endl;
-
     uint8_t buffer[100];
     static uint8_t uuid128_bytes[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00,
                                        0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB };

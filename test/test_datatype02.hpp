@@ -24,13 +24,10 @@
 #ifndef TEST_DATATYPE02_CPP_
 #define TEST_DATATYPE02_CPP_
 
-#include <iostream>
 #include <cassert>
 #include <cinttypes>
 #include <cstring>
 #include <random>
-
-#include <iostream>
 
 #include <jau/cpp_lang_util.hpp>
 #include <jau/packed_attribute.hpp>
