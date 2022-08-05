@@ -315,25 +315,13 @@ jfieldID jau::jni::search_field(JNIEnv *env, jclass clazz, const char *field_nam
 
 bool jau::jni::from_jboolean_to_bool(jboolean val)
 {
-    bool result;
-
-    if (val == JNI_TRUE)
-    {
-        result = true;
+    if( JNI_TRUE == val ) {
+        return true;
+    } else if( JNI_FALSE == val ) {
+        return false;
+    } else {
+        throw jau::InternalError("the jboolean value is not true/false", E_FILE_LINE);
     }
-    else
-    {
-        if (val == JNI_FALSE)
-        {
-            result = false;
-        }
-        else
-        {
-            throw jau::InternalError("the jboolean value is not true/false", E_FILE_LINE);
-        }
-    }
-
-    return result;
 }
 
 std::string jau::jni::from_jstring_to_string(JNIEnv *env, jstring str) {
