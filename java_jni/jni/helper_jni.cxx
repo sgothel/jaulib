@@ -392,6 +392,7 @@ jobject jau::jni::convert_vector_string_to_jarraylist(JNIEnv *env, const std::ve
     jau::for_each(array.begin(), array.end(), [&](const std::string& elem){
         jstring jelem = from_string_to_jstring(env, elem);
         env->CallBooleanMethod(result, arraylist_add, jelem);
+        jau::jni::java_exception_check_and_throw(env, E_FILE_LINE);
         env->DeleteLocalRef(jelem);
     });
     return result;
@@ -412,6 +413,7 @@ jobject jau::jni::convert_vector_stringview_to_jarraylist(JNIEnv *env, const std
         const std::string elem(elem_view);
         jstring jelem = from_string_to_jstring(env, elem);
         env->CallBooleanMethod(result, arraylist_add, jelem);
+        jau::jni::java_exception_check_and_throw(env, E_FILE_LINE);
         env->DeleteLocalRef(jelem);
     });
     return result;
@@ -424,6 +426,7 @@ std::vector<std::string> jau::jni::convert_jlist_string_to_vector(JNIEnv *env, j
     jclass list_class = search_class(env, "java/util/List");
     jmethodID list_size = search_method(env, list_class, "size", "()I", false);
     nsize_t array_size = env->CallIntMethod(jlist, list_size);
+    jau::jni::java_exception_check_and_throw(env, E_FILE_LINE);
 
     if (0 == array_size) {
         return result;
@@ -432,6 +435,7 @@ std::vector<std::string> jau::jni::convert_jlist_string_to_vector(JNIEnv *env, j
 
     for(nsize_t i=0; i<array_size; ++i) {
         jobject jstr = env->CallObjectMethod(jlist, list_get, i);
+        jau::jni::java_exception_check_and_throw(env, E_FILE_LINE);
         result.push_back( jau::jni::from_jstring_to_string(env, (jstring)jstr) );
         env->DeleteLocalRef(jstr);
     }
