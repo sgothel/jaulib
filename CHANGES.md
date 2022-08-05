@@ -9,6 +9,7 @@
 * First stable release (TODO)
 
 **0.15.0**
+* Add `[[nodiscard]]` to Byte{In,Out}Stream read(), peek(), write() interface and all specializations, refine single byte API.
 * Add `ByteOutStream` and  `ByteOutStream_File` POSIX 'fd' implementation
 * `io_util`/`byte_stream`: Decouple from Botan, add iostate and new `Byte*Stream*` super `iostate_func` class for `std::basic_ios`'s iostate functionality
 * Add `jau::io::read_stream()` with double-buffered reading to ensure last `consumer_fn()` call gets `is_final` set if next buffer has `eof()` w/ zero bytes

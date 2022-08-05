@@ -169,8 +169,10 @@ class TestIOStream01 {
             uint64_t consumed_total_bytes = 0;
             jau::io::StreamConsumerFunc consume = [&](jau::io::secure_vector<uint8_t>& data, bool is_final) noexcept -> bool {
                 consumed_calls++;
+                if( data.size() != outfile.write(data.data(), data.size()) ) {
+                    return false;
+                }
                 consumed_total_bytes += data.size();
-                outfile.write(data.data(), data.size());
                 jau::PLAIN_PRINT(true, "test01_sync_ok #%zu: consumed size %zu, total %" PRIu64 ", capacity %zu, final %d",
                         consumed_calls, data.size(), consumed_total_bytes, data.capacity(), is_final );
                 return true;
@@ -200,8 +202,10 @@ class TestIOStream01 {
             uint64_t consumed_total_bytes = 0;
             jau::io::StreamConsumerFunc consume = [&](jau::io::secure_vector<uint8_t>& data, bool is_final) noexcept -> bool {
                 consumed_calls++;
+                if( data.size() != outfile.write(data.data(), data.size()) ) {
+                    return false;
+                }
                 consumed_total_bytes += data.size();
-                outfile.write(data.data(), data.size());
                 jau::PLAIN_PRINT(true, "test02_sync_404 #%zu: consumed size %zu, total %" PRIu64 ", capacity %zu, final %d",
                         consumed_calls, data.size(), consumed_total_bytes, data.capacity(), is_final );
                 return true;
@@ -249,7 +253,9 @@ class TestIOStream01 {
                 consumed_total_bytes += consumed_bytes;
                 jau::PLAIN_PRINT(true, "test11_async_ok.0 #%zu: consumed[this %zu, total %" PRIu64 ", result %d, rb %s",
                         consumed_loops, consumed_bytes, consumed_total_bytes, result.load(), rb.toString().c_str() );
-                outfile.write(buffer.data(), consumed_bytes);
+                if( consumed_bytes != outfile.write(buffer.data(), consumed_bytes) ) {
+                    break;
+                }
             }
             const uint64_t out_bytes_total = outfile.tellp();
             jau::PLAIN_PRINT(true, "test11_async_ok.X Done: total %" PRIu64 ", result %d, rb %s",
@@ -297,7 +303,9 @@ class TestIOStream01 {
                 consumed_total_bytes += consumed_bytes;
                 jau::PLAIN_PRINT(true, "test12_async_404.0 #%zu: consumed[this %zu, total %" PRIu64 ", result %d, rb %s",
                         consumed_loops, consumed_bytes, consumed_total_bytes, result.load(), rb.toString().c_str() );
-                outfile.write(reinterpret_cast<char*>(buffer.data()), consumed_bytes);
+                if( consumed_bytes != outfile.write(reinterpret_cast<char*>(buffer.data()), consumed_bytes) ) {
+                    break;
+                }
             }
             const uint64_t out_bytes_total = outfile.tellp();
             jau::PLAIN_PRINT(true, "test12_async_404.X Done: total %" PRIu64 ", result %d, rb %s",

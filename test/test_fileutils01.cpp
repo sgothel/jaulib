@@ -868,7 +868,10 @@ class TestFileUtil01 : TestFileUtilBase {
                 size_t sent=0;
                 while( sent < pipe_msg_len && !outfile.fail() ) {
                     const size_t chunck_sz = std::min(max_chunck, pipe_msg_len-sent);
-                    outfile.write(pipe_msg+sent, chunck_sz);
+                    if( chunck_sz != outfile.write(pipe_msg+sent, chunck_sz) ) {
+                        count = pipe_msg_count;
+                        break;
+                    }
                     sent += chunck_sz;
                     jau::sleep_for( 8_ms );
                 }

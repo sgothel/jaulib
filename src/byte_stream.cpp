@@ -86,12 +86,12 @@ inline const uint8_t* cast_char_ptr_to_uint8(const char* s) noexcept {
    return reinterpret_cast<const uint8_t*>(s);
 }
 
-size_t ByteInStream::read(uint8_t& out) noexcept {
-    return read(&out, 1);
+bool ByteInStream::read(uint8_t& out) noexcept {
+    return 1 == read(&out, 1);
 }
 
-size_t ByteInStream::peek(uint8_t& out) noexcept {
-    return peek(&out, 1, 0);
+bool ByteInStream::peek(uint8_t& out) noexcept {
+    return 1 == peek(&out, 1, 0);
 }
 
 size_t ByteInStream::discard(size_t n) noexcept {
@@ -567,6 +567,10 @@ std::string ByteInStream_Recorder::to_string() const noexcept {
                             " offset "+jau::to_decstring(m_rec_offset)+
                             "], consumed "+jau::to_decstring(m_bytes_consumed)+
                             ", iostate["+jau::io::to_string(rdstate())+"]]";
+}
+
+bool ByteOutStream::write(const uint8_t& in) noexcept {
+    return 1 == write(&in, 1);
 }
 
 size_t ByteOutStream_File::write(const void* out, size_t length) noexcept {

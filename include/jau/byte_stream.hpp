@@ -250,10 +250,9 @@ namespace jau::io {
             /**
              * Read one byte.
              * @param out the byte to read to
-             * @return length in bytes that was actually read and put
-             * into out
+             * @return true if one byte has been read, false otherwise
              */
-            size_t read(uint8_t& out) noexcept;
+            [[nodiscard]] bool read(uint8_t& out) noexcept;
 
             /**
              * Read from the source but do not modify the internal
@@ -270,17 +269,16 @@ namespace jau::io {
             /**
              * Peek at one byte.
              * @param out an output byte
-             * @return length in bytes that was actually read and put
-             * into out
+             * @return true if one byte has been peeked, false otherwise
              */
-            size_t peek(uint8_t& out) noexcept;
+            [[nodiscard]] bool peek(uint8_t& out) noexcept;
 
             /**
              * Discard the next N bytes of the data
              * @param N the number of bytes to discard
              * @return number of bytes actually discarded
              */
-            size_t discard(size_t N) noexcept;
+            [[nodiscard]] size_t discard(size_t N) noexcept;
 
             /**
              * Test whether the source still has data that can be read, synonym for !good().
@@ -326,9 +324,9 @@ namespace jau::io {
      */
     class ByteInStream_SecMemory final : public ByteInStream {
        public:
-          size_t read(void*, size_t) noexcept override;
+            [[nodiscard]] size_t read(void*, size_t) noexcept override;
 
-          size_t peek(void*, size_t, size_t) noexcept override;
+            [[nodiscard]] size_t peek(void*, size_t, size_t) noexcept override;
 
           bool available(size_t n) noexcept override;
 
@@ -400,8 +398,8 @@ namespace jau::io {
           uint64_t get_available() const noexcept { return m_has_content_length ? m_content_size - m_bytes_consumed : 0; }
 
        public:
-          size_t read(void*, size_t) noexcept override;
-          size_t peek(void*, size_t, size_t) noexcept override;
+          [[nodiscard]] size_t read(void*, size_t) noexcept override;
+          [[nodiscard]] size_t peek(void*, size_t, size_t) noexcept override;
           bool available(size_t n) noexcept override;
 
           bool is_open() const noexcept override { return 0 <= m_fd; }
@@ -502,9 +500,9 @@ namespace jau::io {
              * @see available()
              * @see @ref byte_in_stream_properties "ByteInStream Properties"
              */
-            size_t read(void* out, size_t length) noexcept override;
+            [[nodiscard]] size_t read(void* out, size_t length) noexcept override;
 
-            size_t peek(void* out, size_t length, size_t peek_offset) noexcept override;
+            [[nodiscard]] size_t peek(void* out, size_t length, size_t peek_offset) noexcept override;
 
             iostate rdstate() const noexcept override;
 
@@ -599,9 +597,9 @@ namespace jau::io {
              * @see available()
              * @see @ref byte_in_stream_properties "ByteInStream Properties"
              */
-            size_t read(void* out, size_t length) noexcept override;
+            [[nodiscard]] size_t read(void* out, size_t length) noexcept override;
 
-            size_t peek(void* out, size_t length, size_t peek_offset) noexcept override;
+            [[nodiscard]] size_t peek(void* out, size_t length, size_t peek_offset) noexcept override;
 
             iostate rdstate() const noexcept override;
 
@@ -699,9 +697,9 @@ namespace jau::io {
      */
     class ByteInStream_Recorder final : public ByteInStream {
         public:
-            size_t read(void*, size_t) noexcept override;
+            [[nodiscard]] size_t read(void*, size_t) noexcept override;
 
-            size_t peek(void* out, size_t length, size_t peek_offset) noexcept override {
+            [[nodiscard]] size_t peek(void* out, size_t length, size_t peek_offset) noexcept override {
                 return m_parent.peek(out, length, peek_offset);
             }
 
@@ -819,18 +817,17 @@ namespace jau::io {
             [[nodiscard]] virtual size_t write(const void* in, size_t length) noexcept = 0;
 
             /**
+             * Write one byte.
+             * @param in the byte to be written
+             * @return true if one byte has been written, otherwise false
+             */
+            [[nodiscard]] bool write(const uint8_t& in) noexcept;
+
+            /**
              * return the id of this data source
              * @return std::string representing the id of this data source
              */
             virtual std::string id() const noexcept { return ""; }
-
-            /**
-             * Read one byte.
-             * @param out the byte to read to
-             * @return length in bytes that was actually read and put
-             * into out
-             */
-            size_t write_byte(uint8_t& out) noexcept;
 
             /**
              * Returns the output position indicator.
@@ -859,7 +856,7 @@ namespace jau::io {
        public:
           bool is_open() const noexcept override { return 0 <= m_fd; }
 
-          size_t write(const void*, size_t) noexcept override;
+          [[nodiscard]] size_t write(const void*, size_t) noexcept override;
 
           std::string id() const noexcept override { return stats.path(); }
 
