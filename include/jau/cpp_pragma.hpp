@@ -43,6 +43,7 @@ namespace jau {
     #define PRAGMA_DISABLE_WARNING_MULTICHAR
     #define PRAGMA_DISABLE_WARNING_NULL_DEREFERENCE
     #define PRAGMA_DISABLE_WARNING_FORMAT_OVERFLOW
+    #define PRAGMA_DISABLE_WARNING_FORMAT_NONLITERAL
 
 #elif defined(__GNUC__) || defined(__clang__)
     #define DO_PRAGMA(X) _Pragma(#X)
@@ -57,6 +58,7 @@ namespace jau {
     #define PRAGMA_DISABLE_WARNING_MULTICHAR                        PRAGMA_DISABLE_WARNING(-Wmultichar)
     #define PRAGMA_DISABLE_WARNING_NULL_DEREFERENCE                 PRAGMA_DISABLE_WARNING(-Wnull-dereference)
     #define PRAGMA_DISABLE_WARNING_FORMAT_OVERFLOW                  PRAGMA_DISABLE_WARNING(-Wformat-overflow)
+    #define PRAGMA_DISABLE_WARNING_FORMAT_NONLITERAL                PRAGMA_DISABLE_WARNING(-Wformat-nonliteral)
 
 #else
     #define PRAGMA_DISABLE_WARNING_PUSH
@@ -67,6 +69,7 @@ namespace jau {
     #define PRAGMA_DISABLE_WARNING_MULTICHAR
     #define PRAGMA_DISABLE_WARNING_NULL_DEREFERENCE
     #define PRAGMA_DISABLE_WARNING_FORMAT_OVERFLOW
+    #define PRAGMA_DISABLE_WARNING_FORMAT_NONLITERAL
 #endif
 
     /**@}*/
