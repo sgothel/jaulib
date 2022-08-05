@@ -31,8 +31,6 @@ extern "C" {
     #include <sys/wait.h>
     #include <unistd.h>
 }
-#include <fstream>
-#include <iostream>
 
 class TestFileUtil01 : TestFileUtilBase {
   public:
@@ -858,9 +856,9 @@ class TestFileUtil01 : TestFileUtilBase {
                 jau::fprintf_td(stderr, "Child: Error: stats_stdout %s\n", stats_stdout.to_string().c_str());
                 ::_exit(EXIT_FAILURE);
             }
-            std::ofstream outfile(fd_stdout, std::ios::out | std::ios::binary);
+            jau::io::ByteOutStream_File outfile(fd_stdout);
             if( !outfile.good() || !outfile.is_open() ) {
-                jau::fprintf_td(stderr, "Child: Error: outfile bad\n");
+                jau::fprintf_td(stderr, "Child: Error: outfile bad: %s\n", outfile.to_string().c_str());
                 ::_exit(EXIT_FAILURE);
             }
 
@@ -880,7 +878,7 @@ class TestFileUtil01 : TestFileUtilBase {
             ::close(pipe_fds[1]);
 
             if( outfile.fail() ) {
-                jau::fprintf_td(stderr, "Child: Error: outfile failed after write/closure\n");
+                jau::fprintf_td(stderr, "Child: Error: outfile failed after write/closure: %s\n", outfile.to_string().c_str());
                 ::_exit(EXIT_FAILURE);
             }
             jau::fprintf_td(stderr, "Child: Done\n");
@@ -909,7 +907,7 @@ class TestFileUtil01 : TestFileUtilBase {
             // capture stdin
             jau::io::ByteInStream_File infile(fd_stdin);
             jau::fprintf_td(stderr, "Parent: infile %s\n", infile.to_string().c_str());
-            REQUIRE( !infile.error() );
+            REQUIRE( !infile.fail() );
 
             uint8_t buffer[pipe_msg_count * pipe_msg_len + 512];
             ::bzero(buffer, sizeof(buffer));
@@ -918,7 +916,7 @@ class TestFileUtil01 : TestFileUtilBase {
                 while( !infile.end_of_data() && total_read < sizeof(buffer) ) {
                     const size_t got = infile.read(buffer+total_read, sizeof(buffer)-total_read);
                     jau::fprintf_td(stderr, "Parent: infile.a_ %s\n", infile.to_string().c_str());
-                    REQUIRE( !infile.error() );
+                    REQUIRE( !infile.fail() );
                     total_read += got;
                     jau::fprintf_td(stderr, "Parent: Got %zu -> %zu\n", got, total_read);
                 }
@@ -927,7 +925,7 @@ class TestFileUtil01 : TestFileUtilBase {
                 jau::fprintf_td(stderr, "Parent: infile.a_2 %s\n", infile.to_string().c_str());
                 ::close(pipe_fds[0]);
                 jau::fprintf_td(stderr, "Parent: infile.a_3 %s\n", infile.to_string().c_str());
-                REQUIRE( !infile.error() );
+                REQUIRE( !infile.fail() );
             }
             // check actual transmitted content
             REQUIRE( total_read == pipe_msg_len*pipe_msg_count);

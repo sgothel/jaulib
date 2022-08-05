@@ -22,13 +22,9 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <iostream>
 #include <cassert>
 #include <cinttypes>
 #include <cstring>
-
-#include <fstream>
-#include <iostream>
 
 #include <jau/test/catch2_ext.hpp>
 
@@ -56,7 +52,7 @@ class TestByteStream01 {
 
         class data {
             private:
-                static void add_test_file(const std::string name, const size_t size_limit) {
+                static bool add_test_file(const std::string name, const size_t size_limit) {
                     jau::fs::remove(name);
                     jau::fs::remove(name+".enc");
                     jau::fs::remove(name+".enc.dec");
@@ -64,24 +60,31 @@ class TestByteStream01 {
                     size_t size;
                     {
                         static const std::string one_line = "Hello World, this is a test and I like it. Exactly 100 characters long. 0123456780 abcdefghjklmnop..";
-                        std::ofstream ofs(name, std::ios::out | std::ios::binary);
+                        jau::io::ByteOutStream_File ofs(name);
 
                         REQUIRE( ofs.good() == true );
                         REQUIRE( ofs.is_open() == true );
 
                         for(size=0; size < size_limit; size+=one_line.size()) {
-                            ofs.write(reinterpret_cast<const char*>(one_line.data()), one_line.size());
+                            if( one_line.size() != ofs.write(one_line.data(), one_line.size()) ) {
+                                ERR_PRINT("Write %zu bytes to test file failed: %s", one_line.size(), ofs.to_string().c_str());
+                                return false;
+                            }
                         }
-                        ofs.write("X", 1); // make it odd
+                        if( 1 != ofs.write("X", 1) ) { // make it odd
+                            ERR_PRINT("Write %zu bytes to test file failed: %s", 1, ofs.to_string().c_str());
+                            return false;
+                        }
                         size += 1;
                     }
                     fname_payload_lst.push_back(name);
                     fname_payload_copy_lst.push_back(name+".copy");
                     fname_payload_size_lst.push_back( size );
+                    return true;
                 }
                 data() {
-                    add_test_file("testfile_blob_01_11kiB.bin", 1024*11);
-                    add_test_file("testfile_blob_02_65MiB.bin", 1024*1024*65);
+                    REQUIRE( true == add_test_file("testfile_blob_01_11kiB.bin", 1024*11) );
+                    REQUIRE( true == add_test_file("testfile_blob_02_65MiB.bin", 1024*1024*65) );
                 }
             public:
                 static const data& get() {
@@ -132,7 +135,7 @@ class TestByteStream01 {
                     }
                 }
             }
-            std::ofstream outfile(output_fname, std::ios::out | std::ios::binary);
+            jau::io::ByteOutStream_File outfile(output_fname);
             if ( !outfile.good() || !outfile.is_open() ) {
                 ERR_PRINT2("ByteStream copy failed: Couldn't open output file %s", output_fname.c_str());
                 return false;
@@ -141,12 +144,12 @@ class TestByteStream01 {
             uint64_t out_bytes_payload = 0;
             jau::io::StreamConsumerFunc consume_data = [&](jau::io::secure_vector<uint8_t>& data, bool is_final) -> bool {
                 if( !is_final && ( !input.has_content_size() || out_bytes_payload + data.size() < input.content_size() ) ) {
-                    outfile.write(reinterpret_cast<char*>(data.data()), data.size());
-                    out_bytes_payload += data.size();
-                    return true; // continue ..
+                    const size_t written = outfile.write(data.data(), data.size());
+                    out_bytes_payload += written;
+                    return data.size() == written; // continue ..
                 } else {
-                    outfile.write(reinterpret_cast<char*>(data.data()), data.size());
-                    out_bytes_payload += data.size();
+                    const size_t written = outfile.write(data.data(), data.size());
+                    out_bytes_payload += written;
                     return false; // EOS
                 }
             };
@@ -155,8 +158,12 @@ class TestByteStream01 {
             const uint64_t in_bytes_total = jau::io::read_stream(input, io_buffer, consume_data);
             input.close();
 
-            if ( 0==in_bytes_total || outfile.fail() ) {
-                IRQ_PRINT("ByteStream copy failed: Output file write failed %s", output_fname.c_str());
+            if ( 0==in_bytes_total || input.fail() ) {
+                IRQ_PRINT("ByteStream copy failed: Input file read failed in %s, out %s", input.to_string().c_str(), outfile.to_string().c_str());
+                return false;
+            }
+            if ( outfile.fail() ) {
+                IRQ_PRINT("ByteStream copy failed: Output file write failed in %s, out %s", input.to_string().c_str(), outfile.to_string().c_str());
                 return false;
             }
 
@@ -226,7 +233,7 @@ class TestByteStream01 {
                     jau::sleep_for( 100_ms ); // time to read 404 response
                     jau::PLAIN_PRINT(true, "test00_protocols: not_exiting_http_uri: %s", in->to_string().c_str());
                     REQUIRE( true == in->end_of_data() );
-                    REQUIRE( true == in->error() );
+                    REQUIRE( true == in->fail() );
                     REQUIRE( 0 == in->content_size() );
                 } else {
                     REQUIRE( nullptr == in );
@@ -250,7 +257,7 @@ class TestByteStream01 {
                     jau::PLAIN_PRINT(true, "test00_protocols: local-file-0: %s", in->to_string().c_str());
                 }
                 REQUIRE( nullptr != in );
-                REQUIRE( false == in->error() );
+                REQUIRE( false == in->fail() );
 
                 bool res = transfer(*in, fname_payload_copy_lst[file_idx]);
                 REQUIRE( true == res );
@@ -274,7 +281,7 @@ class TestByteStream01 {
                     jau::PLAIN_PRINT(true, "test00_protocols: local-file-1: NULL from url '%s'", url.c_str());
                 }
                 REQUIRE( nullptr != in );
-                REQUIRE( false == in->error() );
+                REQUIRE( false == in->fail() );
 
                 bool res = transfer(*in, fname_payload_copy_lst[file_idx]);
                 REQUIRE( true == res );
@@ -297,7 +304,7 @@ class TestByteStream01 {
                 }
                 if( http_support_expected ) {
                     REQUIRE( nullptr != in );
-                    REQUIRE( false == in->error() );
+                    REQUIRE( false == in->fail() );
 
                     bool res = transfer(*in, fname_payload_copy_lst[file_idx]);
                     REQUIRE( true == res );
@@ -425,7 +432,7 @@ class TestByteStream01 {
                 jau::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
                 REQUIRE( true == out_stats.exists() );
                 REQUIRE( true == out_stats.is_file() );
-                REQUIRE( data_stream.error() == true );
+                REQUIRE( data_stream.fail() == true );
                 REQUIRE( data_stream.has_content_size() == false );
                 REQUIRE( data_stream.content_size() == 0 );
                 REQUIRE( 0 == out_stats.size() );
@@ -503,7 +510,7 @@ class TestByteStream01 {
                 }
             }
             // probably set after transfering due to above sleep, which also ends when total size has been reached.
-            data_feed->set_eof( jau::io::async_io_result_t::SUCCESS );
+            // data_feed->set_eof( jau::io::async_io_result_t::SUCCESS );
         }
 
         // full speed, with content size, interrupting 1/4 way
@@ -525,7 +532,7 @@ class TestByteStream01 {
                 }
             }
             // probably set after transfering due to above sleep, which also ends when total size has been reached.
-            data_feed->set_eof( jau::io::async_io_result_t::SUCCESS );
+            // data_feed->set_eof( jau::io::async_io_result_t::SUCCESS );
         }
 
         void test20_copy_fed_ok_buff4k_feed1k() {
@@ -717,7 +724,7 @@ class TestByteStream01 {
                     if( feeder_thread.joinable() ) {
                         feeder_thread.join();
                     }
-                    REQUIRE( true == res );
+                    REQUIRE( false == res );
 
                     jau::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
                     REQUIRE( true == out_stats.exists() );
@@ -736,7 +743,7 @@ class TestByteStream01 {
                     if( feeder_thread.joinable() ) {
                         feeder_thread.join();
                     }
-                    REQUIRE( true == res );
+                    REQUIRE( false == res );
 
                     jau::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
                     REQUIRE( true == out_stats.exists() );

@@ -31,11 +31,6 @@
 // #include "org_jau_io_IOState.h"
 #include "org_jau_io_ByteInStream_File.h"
 
-
-extern "C" {
-    #include <fcntl.h>
-}
-
 //
 // IOState
 //
@@ -113,6 +108,16 @@ void Java_org_jau_io_ByteInStream_1File_dtorImpl(JNIEnv *env, jclass clazz, jlon
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }
+}
+
+jboolean Java_org_jau_io_ByteInStream_1File_is_1open(JNIEnv *env, jobject obj) {
+    try {
+        jau::jni::shared_ptr_ref<jau::io::ByteInStream_File> ref(env, obj); // hold until done
+        return ref->is_open() ? JNI_TRUE : JNI_FALSE;
+    } catch(...) {
+        rethrow_and_raise_java_exception_jau(env);
+    }
+    return JNI_FALSE;
 }
 
 void Java_org_jau_io_ByteInStream_1File_clearImpl(JNIEnv *env, jobject obj, jint mask) {

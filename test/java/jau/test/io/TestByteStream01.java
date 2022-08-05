@@ -24,12 +24,7 @@
 
 package jau.test.io;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -37,13 +32,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.jau.fs.FMode;
+import org.jau.fs.FileStats;
 import org.jau.fs.FileUtil;
+import org.jau.fs.TraverseOptions;
 import org.jau.io.Buffers;
 import org.jau.io.ByteInStream;
 import org.jau.io.ByteInStreamUtil;
 import org.jau.io.ByteInStream_Feed;
 import org.jau.io.ByteInStream_File;
 import org.jau.io.ByteInStream_URL;
+import org.jau.io.ByteOutStream_File;
 import org.jau.io.PrintUtil;
 import org.jau.io.UriTk;
 import org.junit.AfterClass;
@@ -69,26 +68,26 @@ public class TestByteStream01 extends JunitTracer {
     static List<Long> fname_payload_size_lst = new ArrayList<Long>();
 
     static boolean file_exists(final String name) {
-        final File file = new File( name );
-        return file.exists();
+        final FileStats stats = new FileStats( name );
+        return stats.is_file();
     }
 
     static long file_size(final String name) {
-        try (ByteInStream_File f = new ByteInStream_File(name)) {
-            return f.content_size();
-        }
+        final FileStats stats = new FileStats( name );
+        return stats.size();
     }
 
     static boolean remove_file(final String name) {
-        final File file = new File( name );
+        final FileStats stats = new FileStats( name );
         try {
-            if( file.exists() ) {
-                if( !file.delete() ) {
+            if( stats.is_file() ) {
+                if( !FileUtil.remove(name, TraverseOptions.none) ) {
                     PrintUtil.println(System.err, "Remove.1: Failed deletion of existing file "+name);
                     return false;
                 }
+                return true;
             }
-            return true;
+            return !stats.exists();
         } catch (final Exception ex) {
             PrintUtil.println(System.err, "Remove.2: Failed deletion of existing file "+name+": "+ex.getMessage());
             ex.printStackTrace();
@@ -96,7 +95,7 @@ public class TestByteStream01 extends JunitTracer {
         return false;
     }
 
-    static void add_test_file(final String name, final long size_limit) {
+    static boolean add_test_file(final String name, final long size_limit) {
         Assert.assertTrue( remove_file(name) );
         Assert.assertTrue( remove_file(name+".enc") );
         Assert.assertTrue( remove_file(name+".enc.dec") );
@@ -106,41 +105,35 @@ public class TestByteStream01 extends JunitTracer {
             final Charset charset = Charset.forName("ASCII");
             final byte[] one_line_bytes = one_line.getBytes(charset);
 
-            final File file = new File( name );
-            OutputStream out = null;
-            try {
-                Assert.assertFalse( file.exists() );
-
-                out = new FileOutputStream(file);
-
-                for(size=0; size < size_limit; size+=one_line_bytes.length) {
-                    out.write( one_line_bytes );
-                }
-                out.write( (byte)'X' ); // make it odd
-                size += 1;
-
-            } catch (final Exception ex) {
-                PrintUtil.println(System.err, "Write test file: Failed "+name+": "+ex.getMessage());
-                ex.printStackTrace();
-            } finally {
-                try {
-                    if( null != out ) {
-                        out.close();
+            Assert.assertFalse( file_exists(name) );
+            final ByteOutStream_File out = new ByteOutStream_File(name, FMode.def_file);
+            Assert.assertTrue( out.good() );
+            Assert.assertTrue( out.is_open() );
+            {
+                final int line_len = one_line_bytes.length;
+                for(size=0; size < size_limit; size+=line_len) {
+                    if( line_len != out.write( one_line_bytes, 0, line_len ) ) {
+                        PrintUtil.fprintf_td(System.err, "Write %d bytes to test file failed: %s", line_len, out.toString());
+                        return false;
                     }
-                } catch (final IOException e) {
-                    e.printStackTrace();
                 }
+                if( 1 != out.write( one_line_bytes, 0, 1 ) ) { // make it odd
+                    PrintUtil.fprintf_td(System.err, "Write %d bytes to test file failed: %s", 1, out.toString());
+                    return false;
+                }
+                size += 1;
             }
-
         }
         fname_payload_lst.add(name);
         fname_payload_copy_lst.add(name+".copy");
         fname_payload_size_lst.add( Long.valueOf(size) );
+        return true;
     }
 
     static {
-        add_test_file("test_cipher_01_11kiB.bin", 1024*11);
-        add_test_file("test_cipher_02_65MiB.bin", 1024*1024*65);
+        PlatformRuntime.checkInitialized();
+        Assert.assertTrue( add_test_file("test_cipher_01_11kiB.bin", 1024*11) );
+        Assert.assertTrue( add_test_file("test_cipher_02_65MiB.bin", 1024*1024*65) );
     }
 
     static boolean system(final String[] command) {
@@ -195,54 +188,38 @@ public class TestByteStream01 extends JunitTracer {
         PrintUtil.fprintf_td(System.err, "Transfer Start: %s%n", input);
         remove_file(output_fname);
 
-        final File file = new File( output_fname );
-        if( file.exists() ) {
+        if( file_exists( output_fname ) ) {
             return false;
         }
-
-        final OutputStream out[] = { null };
-        try {
-            Assert.assertFalse( file.exists() );
-            out[0] = new FileOutputStream(file);
-        } catch (final Exception ex) {
-            PrintUtil.fprintf_td(System.err, "Opening output file : Failed %s: %s%n", file, ex.getMessage());
-            ex.printStackTrace();
-            return false;
-        }
-
         final long[] out_bytes_payload = { 0 };
-        final boolean[] out_failure = { false };
-        final ByteInStreamUtil.StreamConsumer1 consumer = (final byte[] data, final int data_len, final boolean is_final) -> {
-                try {
+        try ( ByteOutStream_File out = new ByteOutStream_File(output_fname, FMode.def_file) ) {
+            // final ByteOutStream_File[] out = { _out };
+            Assert.assertTrue( out.good() );
+
+            final ByteInStreamUtil.StreamConsumer1 consumer = (final byte[] data, final int data_len, final boolean is_final) -> {
                     if( !is_final && ( !input.has_content_size() || out_bytes_payload[0] + data_len < input.content_size() ) ) {
-                        out[0].write( data, 0, data_len );
-                        out_bytes_payload[0] += data_len;
-                        return true; // continue ..
+                        final int written = out.write( data, 0, data_len );
+                        out_bytes_payload[0] += written;
+                        return data_len == written; // continue ..
                     } else {
-                        out[0].write( data, 0, data_len );
-                        out_bytes_payload[0] += data_len;
+                        final int written = out.write( data, 0, data_len );
+                        out_bytes_payload[0] += written;
                         return false; // EOS
                     }
-                } catch (final Exception ex) {
-                    PrintUtil.fprintf_td(System.err, "Write input bytes: Failed %s: %s%n", input, ex.getMessage());
-                    ex.printStackTrace();
-                    out_failure[0] = true;
-                    return false;
-                }
-        };
-        final byte[] io_buffer = new byte[buffer_size];
-        final long in_bytes_total = ByteInStreamUtil.read_stream(input, io_buffer, consumer);
-        input.closeStream();
-        try {
-            out[0].close();
-            out[0] = null;
-        } catch (final IOException e) {
-            e.printStackTrace();
-        }
+            };
+            final byte[] io_buffer = new byte[buffer_size];
+            final long in_bytes_total = ByteInStreamUtil.read_stream(input, io_buffer, consumer);
+            input.closeStream();
+            out.closeStream();
 
-        if ( 0==in_bytes_total || out_failure[0] ) {
-            PrintUtil.fprintf_td(System.err, "ByteStream copy failed: Output file write failed %s%n", output_fname);
-            return false;
+            if ( 0==in_bytes_total || input.fail() ) {
+                PrintUtil.fprintf_td(System.err, "ByteStream copy failed: Input file read failed in %s, out %s%n", input, out);
+                return false;
+            }
+            if ( out.fail() ) {
+                PrintUtil.fprintf_td(System.err, "ByteStream copy failed: Output file write failed in %s, out %s%n", input, out);
+                return false;
+            }
         }
 
         final long _td = org.jau.sys.Clock.currentTimeMillis() - _t0;
@@ -257,65 +234,40 @@ public class TestByteStream01 extends JunitTracer {
         PrintUtil.fprintf_td(System.err, "Transfer Start: %s%n", input);
         remove_file(output_fname);
 
-        final File file = new File( output_fname );
-        if( file.exists() ) {
+        if( file_exists( output_fname ) ) {
             return false;
         }
-
-        final OutputStream out[] = { null };
-        final FileChannel outc[] = { null };
-        try {
-            Assert.assertFalse( file.exists() );
-            out[0] = new FileOutputStream(file);
-            outc[0] = ((FileOutputStream)out[0]).getChannel();
-        } catch (final Exception ex) {
-            PrintUtil.fprintf_td(System.err, "Opening output file : Failed %s: %s%n", file, ex.getMessage());
-            ex.printStackTrace();
-            if( null != outc[0] ) {
-                try { outc[0].close(); } catch (final IOException e) { }
-            }
-            if( null != out[0] ) {
-                try { out[0].close(); } catch (final IOException e) { }
-            }
-            return false;
-        }
-
         final long[] out_bytes_payload = { 0 };
-        final boolean[] out_failure = { false };
-        final ByteInStreamUtil.StreamConsumer2 consumer = (final ByteBuffer data, final boolean is_final) -> {
-                try {
+        try ( ByteOutStream_File out = new ByteOutStream_File(output_fname, FMode.def_file) ) {
+            Assert.assertTrue( out.good() );
+
+            final ByteInStreamUtil.StreamConsumer2 consumer = (final ByteBuffer data, final boolean is_final) -> {
                     final int data_len = data.remaining();
                     if( !is_final && ( !input.has_content_size() || out_bytes_payload[0] + data_len < input.content_size() ) ) {
-                        outc[0].write(data);
+                        final int written = out.write(data);
                         data.rewind();
-                        out_bytes_payload[0] += data_len;
-                        return true; // continue ..
+                        out_bytes_payload[0] += written;
+                        return written == data_len; // continue ..
                     } else {
-                        outc[0].write(data);
+                        final int written = out.write(data);
                         data.rewind();
-                        out_bytes_payload[0] += data_len;
+                        out_bytes_payload[0] += written;
                         return false; // EOS
                     }
-                } catch (final Exception ex) {
-                    PrintUtil.fprintf_td(System.err, "Write input bytes: Failed %s: %s%n", input, ex.getMessage());
-                    ex.printStackTrace();
-                    out_failure[0] = true;
-                    return false;
-                }
-        };
-        final ByteBuffer io_buffer = Buffers.newDirectByteBuffer(buffer_size);
-        final long in_bytes_total = ByteInStreamUtil.read_stream(input, io_buffer, consumer);
-        input.closeStream();
-        if( null != outc[0] ) {
-            try { outc[0].close(); outc[0]=null; } catch (final IOException e) { e.printStackTrace(); }
-        }
-        if( null != out[0] ) {
-            try { out[0].close(); out[0]=null; } catch (final IOException e) { e.printStackTrace(); }
-        }
+            };
+            final ByteBuffer io_buffer = Buffers.newDirectByteBuffer(buffer_size);
+            final long in_bytes_total = ByteInStreamUtil.read_stream(input, io_buffer, consumer);
+            input.closeStream();
+            out.closeStream();
 
-        if ( 0==in_bytes_total || out_failure[0] ) {
-            PrintUtil.fprintf_td(System.err, "ByteStream copy failed: Output file write failed %s%n", output_fname);
-            return false;
+            if ( 0==in_bytes_total || input.fail() ) {
+                PrintUtil.fprintf_td(System.err, "ByteStream copy failed: Input file read failed in %s, out %s%n", input, out);
+                return false;
+            }
+            if ( out.fail() ) {
+                PrintUtil.fprintf_td(System.err, "ByteStream copy failed: Output file write failed in %s, out %s%n", input, out);
+                return false;
+            }
         }
 
         final long _td = org.jau.sys.Clock.currentTimeMillis() - _t0;
@@ -388,7 +340,7 @@ public class TestByteStream01 extends JunitTracer {
                     try { Thread.sleep(100); } catch (final Throwable t) {} // time to read 404 response
                     PrintUtil.fprintf_td(System.err, "test00_protocols: not_exiting_http_uri: %s%n", in);
                     Assert.assertTrue( in.end_of_data() );
-                    Assert.assertTrue( in.error() );
+                    Assert.assertTrue( in.fail() );
                     Assert.assertEquals( 0, in.content_size() );
                 } else {
                     Assert.assertNull(in);
@@ -414,7 +366,7 @@ public class TestByteStream01 extends JunitTracer {
                     PrintUtil.fprintf_td(System.err, "test00_protocols: local-file-0: %s%n", in);
                 }
                 Assert.assertNotEquals( null, in );
-                Assert.assertFalse( in.error() );
+                Assert.assertFalse( in.fail() );
 
                 final boolean res = transfer_nio(in, fname_payload_copy_lst.get(file_idx), 4096);
                 Assert.assertTrue( res );
@@ -436,7 +388,7 @@ public class TestByteStream01 extends JunitTracer {
                     PrintUtil.fprintf_td(System.err, "test00_protocols: local-file-1: %s%n", in);
                 }
                 Assert.assertNotNull( in );
-                Assert.assertFalse( in.error() );
+                Assert.assertFalse( in.fail() );
 
                 final boolean res = transfer_nio(in, fname_payload_copy_lst.get(file_idx), 4096);
                 Assert.assertTrue( res );
@@ -459,7 +411,7 @@ public class TestByteStream01 extends JunitTracer {
                 }
                 if( http_support_expected ) {
                     Assert.assertNotNull( in );
-                    Assert.assertFalse( in.error() );
+                    Assert.assertFalse( in.fail() );
 
                     final boolean res = transfer_nio(in, fname_payload_copy_lst.get(file_idx), 4096);
                     Assert.assertTrue( res );
@@ -617,7 +569,7 @@ public class TestByteStream01 extends JunitTracer {
 
                 Assert.assertTrue( file_exists( fname_payload_copy_lst.get(file_idx) ) );
                 final long copy_size = file_size(fname_payload_copy_lst.get(file_idx));
-                Assert.assertTrue( data_stream.error() );
+                Assert.assertTrue( data_stream.fail() );
                 Assert.assertFalse( data_stream.has_content_size() );
                 Assert.assertEquals( data_stream.content_size(), 0 );
                 Assert.assertEquals( 0, copy_size );
@@ -962,7 +914,7 @@ public class TestByteStream01 extends JunitTracer {
                 try {
                     feeder_thread.join(1000);
                 } catch (final InterruptedException e) { }
-                Assert.assertTrue( res );
+                Assert.assertFalse( res );
 
                 Assert.assertTrue( file_exists( fname_payload_copy_lst.get(file_idx) ) );
                 final long copy_size = file_size(fname_payload_copy_lst.get(file_idx));
@@ -980,7 +932,7 @@ public class TestByteStream01 extends JunitTracer {
                 try {
                     feeder_thread.join(1000);
                 } catch (final InterruptedException e) { }
-                Assert.assertTrue( res );
+                Assert.assertFalse( res );
 
                 Assert.assertTrue( file_exists( fname_payload_copy_lst.get(file_idx) ) );
                 final long copy_size = file_size(fname_payload_copy_lst.get(file_idx));

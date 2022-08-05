@@ -50,7 +50,10 @@ import java.nio.ByteBuffer;
  *
  * @see @ref byte_in_stream_properties "ByteInStream Properties"
  */
-public interface ByteInStream extends AutoCloseable  {
+public interface ByteInStream extends IOStateFunc, AutoCloseable  {
+    /** Checks if the stream has an associated file. */
+    boolean is_open();
+
     /**
      * Close the stream if supported by the underlying mechanism.
      *
@@ -70,35 +73,6 @@ public interface ByteInStream extends AutoCloseable  {
      */
     @Override
     void close();
-
-    /** Clears state flags by assignment to the given value. */
-    void clear(final IOState state);
-
-    /**
-     * Returns the current state flags.
-     *
-     * Method is marked `virtual` to allow implementations with asynchronous resources
-     * to determine or update the current iostate.
-     *
-     * Method is used throughout all query members and setstate(),
-     * hence they all will use the updated state from a potential override implementation.
-     */
-    IOState rdState();
-
-    /** Sets state flags, by keeping its previous bits. */
-    void setState(final IOState state);
-
-    /** Checks if no error nor eof() has occurred i.e. I/O operations are available. */
-    boolean good();
-
-    /** Checks if end-of-file has been reached. */
-    boolean eof();
-
-    /** Checks if an error has occurred. */
-    boolean fail();
-
-    /** Checks if a non-recoverable error has occurred. */
-    boolean bad();
 
     /**
      * Test whether the source still has data that can be read, synonym for !good().
@@ -147,7 +121,7 @@ public interface ByteInStream extends AutoCloseable  {
      * See details of the implementing class.
      *
      * @param out the byte array to write the result to
-     * @param offset offset to in byte array to read into
+     * @param offset offset to byte array to read into
      * @param length the length of the byte array out
      * @return length in bytes that was actually read and put into out
      *
@@ -182,7 +156,7 @@ public interface ByteInStream extends AutoCloseable  {
      * the source starting at the same position.
      *
      * @param out the byte array to write the output to
-     * @param offset offset to in byte array to read into
+     * @param offset offset to byte array to read into
      * @param length number of in bytes to read into starting at offset
      * @param peek_offset the offset into the stream to read at
      * @return length in bytes that was actually read and put into out

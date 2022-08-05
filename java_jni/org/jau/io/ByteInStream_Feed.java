@@ -26,7 +26,7 @@ package org.jau.io;
 import java.nio.ByteBuffer;
 
 /**
- * This class represents a Ringbuffer-Based byte input stream with an externally provisioned data feed.
+ * Ringbuffer-Based byte input stream with an externally provisioned data feed.
  *
  * Instance uses the native C++ object `jau::io::ByteInStream_Feed`.
  */
@@ -69,6 +69,9 @@ public final class ByteInStream_Feed implements ByteInStream  {
     public void finalize() {
         close();
     }
+
+    @Override
+    public native boolean is_open();
 
     @Override
     public void clear(final IOState state) {

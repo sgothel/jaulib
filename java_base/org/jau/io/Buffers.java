@@ -87,8 +87,8 @@ public class Buffers {
 
     /**
      * Helper routine to get the Buffer byte offset by taking into
-     * account the Buffer position and the underlying type.  This is
-     * the total offset for Direct Buffers.
+     * account the Buffer position and the underlying type.
+     * This is the total offset for Direct Buffers.
      *
      * Return value is of type `long` only to cover the `int` multiple of the position and element type size.<br/>
      * For ByteBuffer, the return value can be safely cast to `int`.
@@ -113,6 +113,39 @@ public class Buffers {
                 return pos * SIZEOF_LONG;
             } else if (buf instanceof CharBuffer) {
                 return pos * SIZEOF_CHAR;
+            }
+        }
+        throw new IllegalArgumentException("Disallowed array backing store type in buffer " + buf.getClass().getName());
+    }
+
+    /**
+     * Helper routine to get the Buffer byte limit by taking into
+     * account the Buffer limit and the underlying type.
+     * This is the total limit for Direct Buffers.
+     *
+     * Return value is of type `long` only to cover the `int` multiple of the position and element type size.<br/>
+     * For ByteBuffer, the return value can be safely cast to `int`.
+     */
+    public static long getDirectBufferByteLimit(final Object buf) {
+        if (buf == null) {
+            return 0;
+        }
+        if (buf instanceof Buffer) {
+            final long limit = ((Buffer) buf).limit();
+            if (buf instanceof ByteBuffer) {
+                return limit;
+            } else if (buf instanceof FloatBuffer) {
+                return limit * SIZEOF_FLOAT;
+            } else if (buf instanceof IntBuffer) {
+                return limit * SIZEOF_INT;
+            } else if (buf instanceof ShortBuffer) {
+                return limit * SIZEOF_SHORT;
+            } else if (buf instanceof DoubleBuffer) {
+                return limit * SIZEOF_DOUBLE;
+            } else if (buf instanceof LongBuffer) {
+                return limit * SIZEOF_LONG;
+            } else if (buf instanceof CharBuffer) {
+                return limit * SIZEOF_CHAR;
             }
         }
         throw new IllegalArgumentException("Disallowed array backing store type in buffer " + buf.getClass().getName());

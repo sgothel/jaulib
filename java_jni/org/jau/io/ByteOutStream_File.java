@@ -25,71 +25,78 @@ package org.jau.io;
 
 import java.nio.ByteBuffer;
 
+import org.jau.fs.FMode;
+
 /**
- * File based byte input stream, including named file descriptor.
+ * File based byte output stream, including named file descriptor.
  *
  * Implementation mimics std::ifstream via OS level file descriptor (FD) operations,
  * giving more flexibility, allowing reusing existing FD and enabling openat() operations.
  *
- * If source path denotes a named file descriptor, i.e. jau::fs::file_stats::is_fd() returns true,
- * has_content_size() returns false and available() returns true as long the stream is open and EOS hasn't occurred.
- *
- * Instance uses the native C++ object `jau::io::ByteInStream_File`.
+ * Instance uses the native C++ object `jau::io::ByteOutStream_File`.
  */
-public final class ByteInStream_File implements ByteInStream {
+public final class ByteOutStream_File implements ByteOutStream {
     private volatile long nativeInstance;
     /* pp */ long getNativeInstance() { return nativeInstance; }
 
     /**
-     * Construct a Stream-Based byte input stream from filesystem path
+     * Construct a stream based byte output stream from filesystem path,
+     * either an existing or new file.
      *
-     * In case the given path is a local file URI starting with `file://`, see {@link org.jau.io.UriTk#is_local_file_protocol(String)},
+     * In case the file already exists, the underlying file offset is positioned at the end of the file.
+     *
+     * In case the given path is a local file URI starting with `file://`, see jau::io::uri::is_local_file_protocol(),
      * the leading `file://` is cut off and the remainder being used.
      *
      * @param path the path to the file, maybe a local file URI
+     * @param mode file protection mode for a new file, otherwise ignored, may use {@link FMode#def_file}.
      */
-    public ByteInStream_File(final String path) {
+    public ByteOutStream_File(final String path, final FMode mode) {
         try {
-            nativeInstance = ctorImpl1(path);
+            nativeInstance = ctorImpl1(path, mode.mask);
         } catch (final Throwable t) {
-            System.err.println("ByteInStream_File.ctor: native ctor failed: "+t.getMessage());
+            System.err.println("ByteOutStream_File.ctor: native ctor failed: "+t.getMessage());
             throw t;
         }
     }
-    private static native long ctorImpl1(final String path);
+    private static native long ctorImpl1(final String path, int mode);
 
     /**
-     * Construct a stream based byte input stream from filesystem path and parent directory file descriptor
+     * Construct a stream based byte output stream from filesystem path and parent directory file descriptor,
+     * either an existing or new file.
+     *
+     * In case the file already exists, the underlying file offset is positioned at the end of the file.
      *
      * In case the given path is a local file URI starting with `file://`, see jau::io::uri::is_local_file_protocol(),
      * the leading `file://` is cut off and the remainder being used.
      *
      * @param dirfd parent directory file descriptor
      * @param path the path to the file, maybe a local file URI
+     * @param mode file protection mode for a new file, otherwise ignored, may use {@link FMode#def_file}.
      */
-    public ByteInStream_File(final int dirfd, final String path) {
+    public ByteOutStream_File(final int dirfd, final String path, final FMode mode) {
         try {
-            nativeInstance = ctorImpl2(dirfd, path);
+            nativeInstance = ctorImpl2(dirfd, path, mode.mask);
         } catch (final Throwable t) {
-            System.err.println("ByteInStream_File.ctor: native ctor failed: "+t.getMessage());
+            System.err.println("ByteOutStream_File.ctor: native ctor failed: "+t.getMessage());
             throw t;
         }
     }
-    private static native long ctorImpl2(final int dirfd, final String path);
+    private static native long ctorImpl2(final int dirfd, final String path, int mode);
 
     /**
-     * Construct a stream based byte input stream by duplicating given file descriptor
+     * Construct a stream based byte output stream by duplicating given file descriptor
      *
      * In case the given path is a local file URI starting with `file://`, see jau::io::uri::is_local_file_protocol(),
      * the leading `file://` is cut off and the remainder being used.
      *
      * @param fd file descriptor to duplicate leaving the given `fd` untouched
      */
-    public ByteInStream_File(final int fd) {
+    public ByteOutStream_File(final int fd) {
         try {
             nativeInstance = ctorImpl3(fd);
         } catch (final Throwable t) {
-            System.err.println("ByteInStream_File.ctor: native ctor failed: "+t.getMessage());
+            System.err.println("ByteOutStream_File.ctor: native ctor failed: "+t.getMessage());
             throw t;
         }
     }
@@ -157,42 +164,24 @@ public final class ByteInStream_File implements ByteInStream {
     public native boolean bad();
 
     @Override
-    public boolean end_of_data() { return !good(); }
+    public native int write(final byte[] in, final int offset, final int length);
 
     @Override
-    public native boolean available(final long n);
-
-    @Override
-    public native int read(final byte[] out, final int offset, final int length);
-
-    @Override
-    public int read(final ByteBuffer out) {
-        if( !Buffers.isDirect(out) ) {
-            throw new IllegalArgumentException("out buffer not direct");
+    public int write(final ByteBuffer in) {
+        if( !Buffers.isDirect(in) ) {
+            throw new IllegalArgumentException("in buffer not direct");
         }
-        final int res = read2Impl(out, (int)Buffers.getDirectBufferByteOffset(out));
-        out.limit(out.position() + res);
+        final int res = write2Impl(in, (int)Buffers.getDirectBufferByteOffset(in), (int)Buffers.getDirectBufferByteLimit(in));
+        in.position(in.position() + res);
         return res;
     }
-    private native int read2Impl(Object out, int out_offset);
-
-    @Override
-    public native int peek(byte[] out, final int offset, final int length, final long peek_offset);
+    private native int write2Impl(Object in, int in_offset, int in_limit);
 
     @Override
     public native String id();
 
     @Override
-    public native long discard_next(long N);
-
-    @Override
-    public native long tellg();
-
-    @Override
-    public native boolean has_content_size();
-
-    @Override
-    public native long content_size();
+    public native long tellp();
 
     @Override
     public native String toString();

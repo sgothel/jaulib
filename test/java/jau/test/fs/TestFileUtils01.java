@@ -24,9 +24,6 @@
 
 package jau.test.fs;
 
-import java.io.File;
-import java.io.FileDescriptor;
-import java.io.FileOutputStream;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
@@ -37,6 +34,7 @@ import org.jau.fs.FMode;
 import org.jau.fs.FileStats;
 import org.jau.fs.FileUtil;
 import org.jau.fs.TraverseOptions;
+import org.jau.io.ByteOutStream_File;
 import org.jau.io.PrintUtil;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
@@ -827,11 +825,10 @@ public class TestFileUtils01 extends FileUtilBaseTest {
         test_file_stat_fd_item(FMode.Bit.chr, 1, fd_stdout_1, fd_stdout_l);
         test_file_stat_fd_item(FMode.Bit.chr, 2, fd_stderr_1, fd_stderr_l);
         try {
-            final File file = new File("test07_file_stat_fd_tmp");
-            final FileOutputStream fos = new FileOutputStream(file);
-            final int fd = FileUtil.from_java_fd(fos.getFD());
+            final ByteOutStream_File fos = new ByteOutStream_File("test07_file_stat_fd_tmp", FMode.def_file);
+            final int fd = fos.fd();
             final String named_fd = FileUtil.to_named_fd(fd);
-            PrintUtil.fprintf_td(System.err, "XXXX.0: %s -> fd %d, named_fd '%s'\n", file.toString(), fd, named_fd);
+            PrintUtil.fprintf_td(System.err, "XXXX.0: %s -> fd %d, named_fd '%s'\n", fos.toString(), fd, named_fd);
             Assert.assertTrue( 0 <= fd );
             test_file_stat_fd_item(FMode.Bit.file, fd, FileUtil.to_named_fd(fd), "");
             fos.close();

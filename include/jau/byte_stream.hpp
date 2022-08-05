@@ -195,6 +195,9 @@ namespace jau::io {
             ByteInStream& operator=(const ByteInStream&) = delete;
             ByteInStream(const ByteInStream&) = delete;
 
+            /** Checks if the stream has an associated file. */
+            virtual bool is_open() const noexcept = 0;
+
             /**
              * Close the stream if supported by the underlying mechanism.
              */
@@ -357,6 +360,8 @@ namespace jau::io {
           explicit ByteInStream_SecMemory(const std::vector<uint8_t>& in)
           : m_source(in.begin(), in.end()), m_offset(0) {}
 
+          bool is_open() const noexcept override { return true; }
+
           void close() noexcept override;
 
           ~ByteInStream_SecMemory() noexcept override { close(); }
@@ -399,9 +404,7 @@ namespace jau::io {
           size_t peek(void*, size_t, size_t) noexcept override;
           bool available(size_t n) noexcept override;
 
-          /** Checks if the stream has an associated file. */
-          constexpr bool is_open() const noexcept
-          { return 0 <= m_fd; }
+          bool is_open() const noexcept override { return 0 <= m_fd; }
 
           std::string id() const noexcept override { return stats.path(); }
 
@@ -461,7 +464,7 @@ namespace jau::io {
     };
 
     /**
-     * This class represents a Ringbuffer-Based byte input stream with a URL connection provisioned data feed.
+     * Ringbuffer-Based byte input stream with a URL connection provisioned data feed.
      *
      * Standard implementation uses [curl](https://curl.se/),
      * hence all [*libcurl* network protocols](https://curl.se/docs/url-syntax.html) are supported,
@@ -518,6 +521,8 @@ namespace jau::io {
 
             ByteInStream_URL& operator=(const ByteInStream_URL&) = delete;
 
+            bool is_open() const noexcept override;
+
             void close() noexcept override;
 
             ~ByteInStream_URL() noexcept override { close(); }
@@ -560,7 +565,7 @@ namespace jau::io {
     std::unique_ptr<ByteInStream> to_ByteInStream(const std::string& path_or_uri, jau::fraction_i64 timeout=20_s) noexcept;
 
     /**
-     * This class represents a Ringbuffer-Based byte input stream with an externally provisioned data feed.
+     * Ringbuffer-Based byte input stream with an externally provisioned data feed.
      */
     class ByteInStream_Feed final : public ByteInStream {
         public:
@@ -612,6 +617,8 @@ namespace jau::io {
             ByteInStream_Feed(const ByteInStream_Feed&) = delete;
 
             ByteInStream_Feed& operator=(const ByteInStream_Feed&) = delete;
+
+            bool is_open() const noexcept override;
 
             void close() noexcept override;
 
@@ -685,7 +692,7 @@ namespace jau::io {
     };
 
     /**
-     * This class represents a wrapped byte input stream with the capability
+     * Wrapped byte input stream with the capability
      * to record the read byte stream at will.
      *
      * Peek'ed bytes won't be recorded, only read bytes.
@@ -718,6 +725,8 @@ namespace jau::io {
             ByteInStream_Recorder(const ByteInStream_Recorder&) = delete;
 
             ByteInStream_Recorder& operator=(const ByteInStream_Recorder&) = delete;
+
+            bool is_open() const noexcept override { return m_parent.is_open(); }
 
             void close() noexcept override;
 
@@ -772,6 +781,150 @@ namespace jau::io {
             uint64_t m_rec_offset;
             bool m_is_recording;
     };
+
+    /**
+     * Abstract byte output stream object,
+     * to write data to a sink.
+     *
+     * All method implementations are of `noexcept`.
+     *
+     * One may use fail() to detect whether an error has occurred.
+     */
+    class ByteOutStream : public iostate_func
+    {
+        public:
+            ByteOutStream() = default;
+            virtual ~ByteOutStream() noexcept = default;
+            ByteOutStream& operator=(const ByteOutStream&) = delete;
+            ByteOutStream(const ByteOutStream&) = delete;
+
+            /** Checks if the stream has an associated file. */
+            virtual bool is_open() const noexcept = 0;
+
+            /**
+             * Close the stream if supported by the underlying mechanism.
+             */
+            virtual void close() noexcept = 0;
+
+            /**
+             * Write to the data sink. Moves the internal offset so that every
+             * call to write will be appended to the sink.
+             *
+             * This method is not blocking beyond the transfer length bytes.
+             *
+             * @param in the input bytes to write out
+             * @param length the length of the byte array in
+             * @return length in bytes that were actually written
+             */
+            [[nodiscard]] virtual size_t write(const void* in, size_t length) noexcept = 0;
+
+            /**
+             * return the id of this data source
+             * @return std::string representing the id of this data source
+             */
+            virtual std::string id() const noexcept { return ""; }
+
+            /**
+             * Read one byte.
+             * @param out the byte to read to
+             * @return length in bytes that was actually read and put
+             * into out
+             */
+            size_t write_byte(uint8_t& out) noexcept;
+
+            /**
+             * Returns the output position indicator.
+             *
+             * @return number of bytes written so far.
+             */
+            virtual uint64_t tellp() const noexcept = 0;
+
+            virtual std::string to_string() const noexcept = 0;
+    };
+
+    /**
+     * File based byte output stream, including named file descriptor.
+     */
+    class ByteOutStream_File final : public ByteOutStream {
+       private:
+          jau::fs::file_stats stats;
+          /**
+           * We mimic std::ofstream via OS level file descriptor operations,
+           * giving us more flexibility and enabling use of openat() operations.
+           */
+          int m_fd;
+
+          // Remember: constexpr specifier used in a function or static data member (since C++17) declaration implies inline
+
+       public:
+          bool is_open() const noexcept override { return 0 <= m_fd; }
+
+          size_t write(const void*, size_t) noexcept override;
+
+          std::string id() const noexcept override { return stats.path(); }
+
+          /**
+           * Returns the file descriptor if is_open(), otherwise -1 for no file descriptor.
+           *
+           * @see is_open()
+           */
+          int fd() const noexcept { return m_fd; }
+
+          /**
+           * Construct a stream based byte output stream from filesystem path,
+           * either an existing or new file.
+           *
+           * In case the file already exists, the underlying file offset is positioned at the end of the file.
+           *
+           * In case the given path is a local file URI starting with `file://`, see jau::io::uri::is_local_file_protocol(),
+           * the leading `file://` is cut off and the remainder being used.
+           *
+           * @param path the path to the file, maybe a local file URI
+           * @param mode file protection mode for a new file, otherwise ignored.
+           */
+          ByteOutStream_File(const std::string& path, const jau::fs::fmode_t mode = jau::fs::fmode_t::def_file_prot) noexcept;
+
+          /**
+           * Construct a stream based byte output stream from filesystem path and parent directory file descriptor,
+           * either an existing or new file.
+           *
+           * In case the file already exists, the underlying file offset is positioned at the end of the file.
+           *
+           * In case the given path is a local file URI starting with `file://`, see jau::io::uri::is_local_file_protocol(),
+           * the leading `file://` is cut off and the remainder being used.
+           *
+           * @param dirfd parent directory file descriptor
+           * @param path the path to the file, maybe a local file URI
+           * @param mode file protection mode for a new file, otherwise ignored.
+           */
+          ByteOutStream_File(const int dirfd, const std::string& path, const jau::fs::fmode_t mode = jau::fs::fmode_t::def_file_prot) noexcept;
+
+          /**
+           * Construct a stream based byte output stream by duplicating given file descriptor
+           *
+           * In case the given path is a local file URI starting with `file://`, see jau::io::uri::is_local_file_protocol(),
+           * the leading `file://` is cut off and the remainder being used.
+           *
+           * @param fd file descriptor to duplicate leaving the given `fd` untouched
+           */
+          ByteOutStream_File(const int fd) noexcept;
+
+          ByteOutStream_File(const ByteOutStream_File&) = delete;
+
+          ByteOutStream_File& operator=(const ByteOutStream_File&) = delete;
+
+          void close() noexcept override;
+
+          ~ByteOutStream_File() noexcept override { close(); }
+
+          uint64_t tellp() const noexcept override { return m_bytes_consumed; }
+
+          std::string to_string() const noexcept override;
+
+       private:
+          uint64_t m_bytes_consumed;
+    };
+
 
     /**@}*/
 

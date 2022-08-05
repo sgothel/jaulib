@@ -23,13 +23,9 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <iostream>
 #include <cassert>
 #include <cinttypes>
 #include <cstring>
-
-#include <fstream>
-#include <iostream>
 
 #include <thread>
 #include <pthread.h>
@@ -38,6 +34,7 @@
 
 #include <jau/file_util.hpp>
 #include <jau/io_util.hpp>
+#include <jau/byte_stream.hpp>
 
 #include <jau/debug.hpp>
 
@@ -60,13 +57,13 @@ class TestIOStream01 {
             jau::fs::remove(basename_10kiB);
             {
                 std::string one_line = "Hello World, this is a test and I like it. Exactly 100 characters long. 0123456780 abcdefghjklmnop..";
-                std::ofstream ofs(basename_10kiB, std::ios::out | std::ios::binary);
+                jau::io::ByteOutStream_File ofs(basename_10kiB);
 
                 REQUIRE( ofs.good() == true );
                 REQUIRE( ofs.is_open() == true );
 
                 for(int i=0; i < 1024*10; i+=one_line.size()) { // 10kiB
-                    ofs.write(reinterpret_cast<char*>(one_line.data()), one_line.size());
+                    REQUIRE( one_line.size() == ofs.write(one_line.data(), one_line.size()) );
                 }
             }
             if( jau::io::uri_tk::protocol_supported("http:") ) {
@@ -163,7 +160,7 @@ class TestIOStream01 {
             const size_t file_size = in_stats.size();
             const std::string url_input = url_input_root + basename_10kiB;
 
-            std::ofstream outfile("testfile01_01_out.bin", std::ios::out | std::ios::binary);
+            jau::io::ByteOutStream_File outfile("testfile01_01_out.bin");
             REQUIRE( outfile.good() );
             REQUIRE( outfile.is_open() );
 
@@ -173,7 +170,7 @@ class TestIOStream01 {
             jau::io::StreamConsumerFunc consume = [&](jau::io::secure_vector<uint8_t>& data, bool is_final) noexcept -> bool {
                 consumed_calls++;
                 consumed_total_bytes += data.size();
-                outfile.write(reinterpret_cast<char*>(data.data()), data.size());
+                outfile.write(data.data(), data.size());
                 jau::PLAIN_PRINT(true, "test01_sync_ok #%zu: consumed size %zu, total %" PRIu64 ", capacity %zu, final %d",
                         consumed_calls, data.size(), consumed_total_bytes, data.capacity(), is_final );
                 return true;
@@ -194,7 +191,7 @@ class TestIOStream01 {
             }
             const std::string url_input = url_input_root + "doesnt_exists.txt";
 
-            std::ofstream outfile("testfile02_01_out.bin", std::ios::out | std::ios::binary);
+            jau::io::ByteOutStream_File outfile("testfile02_01_out.bin");
             REQUIRE( outfile.good() );
             REQUIRE( outfile.is_open() );
 
@@ -204,7 +201,7 @@ class TestIOStream01 {
             jau::io::StreamConsumerFunc consume = [&](jau::io::secure_vector<uint8_t>& data, bool is_final) noexcept -> bool {
                 consumed_calls++;
                 consumed_total_bytes += data.size();
-                outfile.write(reinterpret_cast<char*>(data.data()), data.size());
+                outfile.write(data.data(), data.size());
                 jau::PLAIN_PRINT(true, "test02_sync_404 #%zu: consumed size %zu, total %" PRIu64 ", capacity %zu, final %d",
                         consumed_calls, data.size(), consumed_total_bytes, data.capacity(), is_final );
                 return true;
@@ -227,7 +224,7 @@ class TestIOStream01 {
             const size_t file_size = in_stats.size();
             const std::string url_input = url_input_root + basename_10kiB;
 
-            std::ofstream outfile("testfile11_01_out.bin", std::ios::out | std::ios::binary);
+            jau::io::ByteOutStream_File outfile("testfile11_01_out.bin");
             REQUIRE( outfile.good() );
             REQUIRE( outfile.is_open() );
 
@@ -252,7 +249,7 @@ class TestIOStream01 {
                 consumed_total_bytes += consumed_bytes;
                 jau::PLAIN_PRINT(true, "test11_async_ok.0 #%zu: consumed[this %zu, total %" PRIu64 ", result %d, rb %s",
                         consumed_loops, consumed_bytes, consumed_total_bytes, result.load(), rb.toString().c_str() );
-                outfile.write(reinterpret_cast<char*>(buffer.data()), consumed_bytes);
+                outfile.write(buffer.data(), consumed_bytes);
             }
             const uint64_t out_bytes_total = outfile.tellp();
             jau::PLAIN_PRINT(true, "test11_async_ok.X Done: total %" PRIu64 ", result %d, rb %s",
@@ -275,7 +272,7 @@ class TestIOStream01 {
             }
             const std::string url_input = url_input_root + "doesnt_exists.txt";
 
-            std::ofstream outfile("testfile12_01_out.bin", std::ios::out | std::ios::binary);
+            jau::io::ByteOutStream_File outfile("testfile12_01_out.bin");
             REQUIRE( outfile.good() );
             REQUIRE( outfile.is_open() );
 

@@ -31,6 +31,7 @@ set (jaulib_jni_JNI_SRCS
   ${PROJECT_SOURCE_DIR}/java_jni/jni/jau/ByteInStream_File.cxx
   ${PROJECT_SOURCE_DIR}/java_jni/jni/jau/ByteInStream_URL.cxx
   ${PROJECT_SOURCE_DIR}/java_jni/jni/jau/ByteInStream_Feed.cxx
+  ${PROJECT_SOURCE_DIR}/java_jni/jni/jau/ByteOutStream_File.cxx
 )
 
 if(WIN32)

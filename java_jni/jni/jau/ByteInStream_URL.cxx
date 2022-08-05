@@ -66,6 +66,16 @@ void Java_org_jau_io_ByteInStream_1URL_dtorImpl(JNIEnv *env, jclass clazz, jlong
     }
 }
 
+jboolean Java_org_jau_io_ByteInStream_1URL_is_1open(JNIEnv *env, jobject obj) {
+    try {
+        jau::jni::shared_ptr_ref<jau::io::ByteInStream_URL> ref(env, obj); // hold until done
+        return ref->is_open() ? JNI_TRUE : JNI_FALSE;
+    } catch(...) {
+        rethrow_and_raise_java_exception_jau(env);
+    }
+    return JNI_FALSE;
+}
+
 void Java_org_jau_io_ByteInStream_1URL_clearImpl(JNIEnv *env, jobject obj, jint mask) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_URL> ref(env, obj); // hold until done
