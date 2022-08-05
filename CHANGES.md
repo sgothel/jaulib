@@ -8,7 +8,9 @@
 
 * First stable release (TODO)
 
-**0.15.0** (WIP)
+**0.15.0**
+* Add `ByteOutStream` and  `ByteOutStream_File` POSIX 'fd' implementation
+* `io_util`/`byte_stream`: Decouple from Botan, add iostate and new `Byte*Stream*` super `iostate_func` class for `std::basic_ios`'s iostate functionality
 * Add `jau::io::read_stream()` with double-buffered reading to ensure last `consumer_fn()` call gets `is_final` set if next buffer has `eof()` w/ zero bytes
 * `jau::io::ByteInStream_File`: Replace `std::ifstream` for file-descriptor (fd) POSIX layer to support dirfd and plain fd operations
 * `jau::fs::file_stats`: Support new `fmode_t` types sock, blk, chr and fifo, move fd from type -> attribute, support sole `file_stats(fd)` ctor,
