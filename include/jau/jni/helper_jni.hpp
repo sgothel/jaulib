@@ -128,7 +128,7 @@ namespace jau::jni {
     jfieldID search_field(JNIEnv *env, jclass clazz, const char *field_name,
                             const char *type, bool is_static);
 
-    bool from_jboolean_to_bool(jboolean val);
+    bool from_jboolean_to_bool(const jboolean val);
 
     std::string from_jstring_to_string(JNIEnv *env, jstring str);
     jstring from_string_to_jstring(JNIEnv *env, const std::string & str);
