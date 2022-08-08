@@ -102,6 +102,15 @@ namespace jau {
     std::string bytesHexString(const uint8_t * bytes, const nsize_t offset, const nsize_t length,
                                const bool lsbFirst, const bool lowerCase=true) noexcept;
 
+    template< class uint8_container_type,
+              std::enable_if_t<std::is_integral_v<typename uint8_container_type::value_type> &&
+                               std::is_convertible_v<typename uint8_container_type::value_type, uint8_t>,
+                               bool> = true>
+    std::string bytesHexString(const uint8_container_type& bytes,
+                               const bool lsbFirst, const bool lowerCase=true) noexcept {
+            return bytesHexString((const uint8_t *)bytes.data(), 0, bytes.size(), lsbFirst, lowerCase);
+    }
+
     /**
      * Produce a hexadecimal string representation of the given byte value.
      * @param dest the std::string reference destination to append
