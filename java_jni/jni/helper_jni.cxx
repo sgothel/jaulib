@@ -378,6 +378,26 @@ jobject jau::jni::get_new_arraylist(JNIEnv *env, jsize size, jmethodID *add)
     return result;
 }
 
+jobject jau::jni::convert_vector_bytes_to_jarraylist(JNIEnv *env, const std::vector<std::vector<uint8_t>>& array)
+{
+    nsize_t array_size = array.size();
+
+    jmethodID arraylist_add;
+    jobject result = get_new_arraylist(env, (jsize)array_size, &arraylist_add);
+
+    if (0 == array_size) {
+        return result;
+    }
+
+    jau::for_each(array.begin(), array.end(), [&](const std::vector<uint8_t>& elem){
+        jbyteArray jelem = jau::jni::convert_bytes_to_jbytearray(env, elem);
+        env->CallBooleanMethod(result, arraylist_add, jelem);
+        jau::jni::java_exception_check_and_throw(env, E_FILE_LINE);
+        env->DeleteLocalRef(jelem);
+    });
+    return result;
+}
+
 jobject jau::jni::convert_vector_string_to_jarraylist(JNIEnv *env, const std::vector<std::string>& array)
 {
     nsize_t array_size = array.size();

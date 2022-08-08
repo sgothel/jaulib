@@ -137,9 +137,22 @@ namespace jau::jni {
 
     jobject get_new_arraylist(JNIEnv *env, jsize size, jmethodID *add);
 
+    jobject convert_vector_bytes_to_jarraylist(JNIEnv *env, const std::vector<std::vector<uint8_t>>& array);
     jobject convert_vector_string_to_jarraylist(JNIEnv *env, const std::vector<std::string>& array);
     jobject convert_vector_stringview_to_jarraylist(JNIEnv *env, const std::vector<std::string_view>& array);
     std::vector<std::string> convert_jlist_string_to_vector(JNIEnv *env, jobject jlist);
+
+    template< class byte_container_type,
+              std::enable_if_t<std::is_integral_v<typename byte_container_type::value_type> &&
+                               std::is_convertible_v<typename byte_container_type::value_type, jbyte>,
+                               bool> = true>
+    jbyteArray convert_bytes_to_jbytearray(JNIEnv *env, const byte_container_type& data) {
+        const size_t data_size = data.size();
+        jbyteArray jdata = env->NewByteArray((jsize)data_size);
+        env->SetByteArrayRegion(jdata, 0, (jsize)data_size, (const jbyte *)data.data());
+        jau::jni::java_exception_check_and_throw(env, E_FILE_LINE);
+        return jdata;
+    }
 
     //
     // C++ JavaAnon implementation
