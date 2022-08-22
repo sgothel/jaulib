@@ -179,12 +179,21 @@ public class FileStats {
     }
 
     /**
+     * Instantiates a file_stats for the given dir_item.
+     *
+     * @param item the dir_item to produce stats for
+     */
+    public FileStats(final DirItem item) {
+        this( (byte)0, ctorImpl2(item.dirname(), item.basename()) );
+    }
+
+    /**
      * Instantiates a file_stats for the given `fd` file descriptor.
      *
      * @param fd file descriptor of an opened file
      */
     public FileStats(final int fd) {
-        this( (byte)0, ctorImpl2(fd) );
+        this( (byte)0, ctorImpl3(fd) );
     }
 
     private FileStats(final byte dummy, final long h) { // use dummy to avoid override with public fd ctor
@@ -221,7 +230,8 @@ public class FileStats {
         dtorImpl(h);
     }
     private static native long ctorImpl1(final String path);
-    private static native long ctorImpl2(final int fd);
+    private static native long ctorImpl2(final String dirname, final String basename);
+    private static native long ctorImpl3(final int fd);
     private static native void dtorImpl(final long h);
     private static native int[/*6*/] getInt6FieldsFModeFdUidGidErrno(final long h);
     private static native String[/*3*/] getString3DirItemLinkTargetPath(final long h);

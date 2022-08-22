@@ -225,7 +225,7 @@ public final class FileUtil {
                     content.sort(dirItemComparator);
                 }
                 for (final DirItem element : content) {
-                    final FileStats element_stats = new FileStats( element.path() );
+                    final FileStats element_stats = new FileStats( element );
                     if( element_stats.is_dir() ) { // an OK dir
                         if( element_stats.is_link() && !topts.isSet(TraverseOptions.Bit.follow_symlinks) ) {
                             if( !visitor.visit( TraverseEvent.dir_symlink, element_stats ) ) {

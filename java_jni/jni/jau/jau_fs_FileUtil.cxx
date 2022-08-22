@@ -74,7 +74,27 @@ jlong Java_org_jau_fs_FileStats_ctorImpl1(JNIEnv *env, jclass clazz, jstring jpa
     return (jlong) (intptr_t) nullptr;
 }
 
-jlong Java_org_jau_fs_FileStats_ctorImpl2(JNIEnv *env, jclass clazz, jint fd) {
+jlong Java_org_jau_fs_FileStats_ctorImpl2(JNIEnv *env, jclass clazz, jstring jdirname, jstring jbasename) {
+    (void)clazz;
+    try {
+        if( nullptr == jdirname || nullptr == jbasename ) {
+            throw jau::IllegalArgumentException("path null", E_FILE_LINE);
+        }
+        std::string dirname = jau::jni::from_jstring_to_string(env, jdirname);
+        std::string basename = jau::jni::from_jstring_to_string(env, jbasename);
+        jau::fs::dir_item item(dirname, basename);
+
+        // new instance
+        jau::jni::shared_ptr_ref<jau::fs::file_stats> ref( new jau::fs::file_stats( item ) );
+
+        return ref.release_to_jlong();
+    } catch(...) {
+        rethrow_and_raise_java_exception_jau(env);
+    }
+    return (jlong) (intptr_t) nullptr;
+}
+
+jlong Java_org_jau_fs_FileStats_ctorImpl3(JNIEnv *env, jclass clazz, jint fd) {
     (void)clazz;
     try {
         // new instance
