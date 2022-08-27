@@ -147,6 +147,7 @@ ByteInStream_SecMemory::ByteInStream_SecMemory(const std::string& in)
 void ByteInStream_SecMemory::close() noexcept {
     m_source.clear();
     m_offset = 0;
+    setstate_impl( iostate::eofbit );
 }
 
 std::string ByteInStream_SecMemory::to_string() const noexcept {
@@ -319,6 +320,7 @@ void ByteInStream_File::close() noexcept {
     if( 0 <= m_fd ) {
         ::close(m_fd);
         m_fd = -1;
+        setstate_impl( iostate::eofbit );
     }
 }
 
@@ -665,6 +667,7 @@ void ByteOutStream_File::close() noexcept {
     if( 0 <= m_fd ) {
         ::close(m_fd);
         m_fd = -1;
+        setstate_impl( iostate::eofbit );
     }
 }
 
