@@ -762,17 +762,17 @@ std::vector<std::string> TestByteStream01::fname_payload_lst;
 std::vector<std::string> TestByteStream01::fname_payload_copy_lst;
 std::vector<uint64_t> TestByteStream01::fname_payload_size_lst;
 
-METHOD_AS_TEST_CASE( TestByteStream01::test00a_protocols_error,           "TestByteStream01 test00a_protocols_error");
-METHOD_AS_TEST_CASE( TestByteStream01::test00b_protocols_ok,              "TestByteStream01 test00b_protocols_ok");
+METHOD_AS_TEST_CASE( TestByteStream01::test00a_protocols_error,           "test00a_protocols_error");
+METHOD_AS_TEST_CASE( TestByteStream01::test00b_protocols_ok,              "test00b_protocols_ok");
 
-METHOD_AS_TEST_CASE( TestByteStream01::test01_copy_file_ok_11kiB_buff4k,  "TestByteStream01 test01_copy_file_ok_11kiB_buff4k");
-METHOD_AS_TEST_CASE( TestByteStream01::test02_copy_file_ok_65MiB_buff4k,  "TestByteStream01 test02_copy_file_ok_65MiB_buff4k");
-METHOD_AS_TEST_CASE( TestByteStream01::test04_copy_file_ok_65MiB_buff32k, "TestByteStream01 test04_copy_file_ok_65MiB_buff32k");
+METHOD_AS_TEST_CASE( TestByteStream01::test01_copy_file_ok_11kiB_buff4k,  "test01_copy_file_ok_11kiB_buff4k");
+METHOD_AS_TEST_CASE( TestByteStream01::test02_copy_file_ok_65MiB_buff4k,  "test02_copy_file_ok_65MiB_buff4k");
+METHOD_AS_TEST_CASE( TestByteStream01::test04_copy_file_ok_65MiB_buff32k, "test04_copy_file_ok_65MiB_buff32k");
 
-METHOD_AS_TEST_CASE( TestByteStream01::test11_copy_http_ok_buff32k,       "TestByteStream01 test11_copy_http_ok");
-METHOD_AS_TEST_CASE( TestByteStream01::test12_copy_http_404,              "TestByteStream01 test12_copy_http_404");
+METHOD_AS_TEST_CASE( TestByteStream01::test11_copy_http_ok_buff32k,       "test11_copy_http_ok");
+METHOD_AS_TEST_CASE( TestByteStream01::test12_copy_http_404,              "test12_copy_http_404");
 
-METHOD_AS_TEST_CASE( TestByteStream01::test20_copy_fed_ok_buff4k_feed1k,  "TestByteStream01 test20_copy_fed_ok_buff4k_feed1k");
-METHOD_AS_TEST_CASE( TestByteStream01::test21_copy_fed_ok_buff32k,        "TestByteStream01 test21_copy_fed_ok_buff32k");
-METHOD_AS_TEST_CASE( TestByteStream01::test22_copy_fed_ok_buff32k,        "TestByteStream01 test22_copy_fed_ok_buff32k");
-METHOD_AS_TEST_CASE( TestByteStream01::test23_copy_fed_irq,               "TestByteStream01 test23_copy_fed_irq");
+METHOD_AS_TEST_CASE( TestByteStream01::test20_copy_fed_ok_buff4k_feed1k,  "test20_copy_fed_ok_buff4k_feed1k");
+METHOD_AS_TEST_CASE( TestByteStream01::test21_copy_fed_ok_buff32k,        "test21_copy_fed_ok_buff32k");
+METHOD_AS_TEST_CASE( TestByteStream01::test22_copy_fed_ok_buff32k,        "test22_copy_fed_ok_buff32k");
+METHOD_AS_TEST_CASE( TestByteStream01::test23_copy_fed_irq,               "test23_copy_fed_irq");
