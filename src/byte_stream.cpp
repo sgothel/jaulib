@@ -469,7 +469,7 @@ bool ByteInStream_Feed::available(size_t n) noexcept {
 }
 
 bool ByteInStream_Feed::is_open() const noexcept {
-    // url thread has not ended or remaining bytes in buffer available left
+    // feeder has not ended or remaining bytes in buffer available left
     return async_io_result_t::NONE == m_result || m_buffer.size() > 0;
 }
 
@@ -504,7 +504,7 @@ iostate ByteInStream_Feed::rdstate() const noexcept {
 }
 
 void ByteInStream_Feed::write(uint8_t in[], size_t length) noexcept {
-    if( 0 < length ) {
+    if( 0 < length && async_io_result_t::NONE == m_result ) { // feeder still running
         m_buffer.putBlocking(in, in+length, m_timeout);
         m_total_xfered.fetch_add(length);
     }
