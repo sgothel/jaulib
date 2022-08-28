@@ -378,8 +378,8 @@ bool ByteInStream_URL::available(size_t n) noexcept {
 }
 
 bool ByteInStream_URL::is_open() const noexcept {
-    // url thread ended, only remaining bytes in buffer available left
-    return async_io_result_t::NONE != m_result && m_buffer.size() > 0;
+    // url thread has not ended or remaining bytes in buffer available left
+    return async_io_result_t::NONE == m_result || m_buffer.size() > 0;
 }
 
 size_t ByteInStream_URL::read(void* out, size_t length) noexcept {
@@ -472,8 +472,8 @@ bool ByteInStream_Feed::available(size_t n) noexcept {
 }
 
 bool ByteInStream_Feed::is_open() const noexcept {
-    // url thread ended, only remaining bytes in buffer available left
-    return async_io_result_t::NONE != m_result && m_buffer.size() > 0;
+    // url thread has not ended or remaining bytes in buffer available left
+    return async_io_result_t::NONE == m_result || m_buffer.size() > 0;
 }
 
 size_t ByteInStream_Feed::read(void* out, size_t length) noexcept {
