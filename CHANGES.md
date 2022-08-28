@@ -9,6 +9,9 @@
 * First stable release (TODO)
 
 **0.15.0**
+* ringbuffer: Add write interrupt, close() interrupting r/w ops, check capacity upfront for r/w ops
+* `ByteInStream_{SecMemor, File}`, `ByteOutStream_File`: Set `iostate::eofbit` at close(), ensure ending potential loops
+* FileStats (java): Expose ctor using DirItem for efficiency
 * Add `[[nodiscard]]` to Byte{In,Out}Stream read(), peek(), write() interface and all specializations, refine single byte API.
 * Add `ByteOutStream` and  `ByteOutStream_File` POSIX 'fd' implementation
 * `io_util`/`byte_stream`: Decouple from Botan, add iostate and new `Byte*Stream*` super `iostate_func` class for `std::basic_ios`'s iostate functionality
