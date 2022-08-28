@@ -355,13 +355,12 @@ void ByteInStream_URL::close() noexcept {
         m_result = async_io_result_t::SUCCESS; // signal end of streaming
     }
 
-    m_buffer.drop(m_buffer.size()); // unblock putBlocking(..)
+    m_buffer.close( true /* zeromem */); // also unblocks all r/w ops
     if( nullptr != m_url_thread && m_url_thread->joinable() ) {
         DBG_PRINT("ByteInStream_URL: close.1 %s, %s", id().c_str(), m_buffer.toString().c_str());
         m_url_thread->join();
     }
     m_url_thread = nullptr;
-    m_buffer.clear( true /* zeromem */);
     DBG_PRINT("ByteInStream_URL: close.X %s, %s", id().c_str(), to_string_int().c_str());
 }
 
@@ -453,9 +452,7 @@ void ByteInStream_Feed::close() noexcept {
     if( async_io_result_t::NONE == m_result ) {
         m_result = async_io_result_t::SUCCESS; // signal end of streaming
     }
-    m_buffer.drop(m_buffer.size()); // unblock putBlocking(..)
-
-    m_buffer.clear( true /* zeromem */);
+    m_buffer.close( true /* zeromem */); // also unblocks all r/w ops
     DBG_PRINT("ByteInStream_Feed: close.X %s, %s", id().c_str(), to_string_int().c_str());
 }
 
