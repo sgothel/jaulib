@@ -212,7 +212,8 @@ class ringbuffer {
         mutable std::mutex syncRead,  syncMultiRead;  // Memory-Model (MM) guaranteed sequential consistency (SC) between acquire and release
         std::condition_variable cvRead;
 
-        jau::relaxed_atomic_bool interrupted = false;
+        jau::relaxed_atomic_bool interrupted_read = false;
+        jau::relaxed_atomic_bool interrupted_write = false;
 
         allocator_type alloc_inst;
 
@@ -265,12 +266,12 @@ class ringbuffer {
 
         Size_type waitForElementsImpl(const Size_type min_count, const fraction_i64& timeout) noexcept {
             Size_type available = size();
-            if( min_count > available ) {
-                interrupted = false;
+            if( min_count > available && min_count < capacityPlusOne ) {
+                interrupted_read = false;
                 std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ putImpl via same lock
                 available = size();
                 const fraction_timespec timeout_time = getMonotonicTime() + fraction_timespec(timeout);
-                while( !interrupted && min_count > available ) {
+                while( !interrupted_read && min_count > available ) {
                     if( fractions_i64::zero == timeout ) {
                         cvWrite.wait(lockWrite);
                         available = size();
@@ -282,8 +283,8 @@ class ringbuffer {
                         }
                     }
                 }
-                if( interrupted ) {
-                    interrupted = false;
+                if( interrupted_read ) {
+                    interrupted_read = false;
                 }
             }
             return available;
@@ -291,11 +292,12 @@ class ringbuffer {
 
         Size_type waitForFreeSlotsImpl(const Size_type min_count, const fraction_i64& timeout) noexcept {
             Size_type available = freeSlots();
-            if( min_count > available ) {
+            if( min_count > available && min_count < capacityPlusOne ) {
+                interrupted_write = false;
                 std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ getImpl via same lock
                 available = freeSlots();
                 const fraction_timespec timeout_time = getMonotonicTime() + fraction_timespec(timeout);
-                while( min_count > available ) {
+                while( !interrupted_write && min_count > available ) {
                     if( fractions_i64::zero == timeout ) {
                         cvRead.wait(lockRead);
                         available = freeSlots();
@@ -307,12 +309,17 @@ class ringbuffer {
                         }
                     }
                 }
+                if( interrupted_write ) {
+                    interrupted_write = false;
+                }
             }
             return available;
         }
 
         /**
-         * clear all elements, zero size
+         * clear all elements, zero size.
+         *
+         * Moves readPos == writePos compatible with put*() when waiting for available
          */
         constexpr void clearImpl() noexcept {
             const Size_type size_ = size();
@@ -321,8 +328,7 @@ class ringbuffer {
                     if constexpr ( uses_secmem ) {
                         ::explicit_bzero(voidptr_cast(&array[0]), capacityPlusOne*sizeof(Value_type));
                     }
-                    readPos  = 0;
-                    writePos = 0;
+                    readPos = writePos.load();
                 } else {
                     Size_type localReadPos = readPos;
                     for(Size_type i=0; i<size_; i++) {
@@ -344,8 +350,7 @@ class ringbuffer {
         constexpr void clearAndZeroMemImpl() noexcept {
             if constexpr ( use_memcpy ) {
                 ::explicit_bzero(voidptr_cast(&array[0]), capacityPlusOne*sizeof(Value_type));
-                readPos  = 0;
-                writePos = 0;
+                readPos = writePos.load();
             } else {
                 const Size_type size_ = size();
                 Size_type localReadPos = readPos;
@@ -358,8 +363,7 @@ class ringbuffer {
                     ABORT("copy segment error: this %s, readPos %d/%d; writePos %d", toString().c_str(), readPos.load(), localReadPos, writePos.load());
                 }
                 ::explicit_bzero(voidptr_cast(&array[0]), capacityPlusOne*sizeof(Value_type));
-                readPos  = 0;
-                writePos = 0;
+                readPos = localReadPos;
             }
         }
 
@@ -452,14 +456,17 @@ class ringbuffer {
                 ABORT("Value_type is not copy constructible");
                 return false;
             }
+            if( 1 >= capacityPlusOne ) {
+                return false;
+            }
             const Size_type oldReadPos = readPos; // SC-DRF acquire atomic readPos, sync'ing with putImpl
             Size_type localReadPos = oldReadPos;
             if( localReadPos == writePos ) {
                 if( blocking ) {
-                    interrupted = false;
+                    interrupted_read = false;
                     std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ putImpl via same lock
                     const fraction_timespec timeout_time = getMonotonicTime() + fraction_timespec(timeout);
-                    while( !interrupted && localReadPos == writePos ) {
+                    while( !interrupted_read && localReadPos == writePos ) {
                         if( fractions_i64::zero == timeout ) {
                             cvWrite.wait(lockWrite);
                         } else {
@@ -469,8 +476,8 @@ class ringbuffer {
                             }
                         }
                     }
-                    if( interrupted ) {
-                        interrupted = false;
+                    if( interrupted_read ) {
+                        interrupted_read = false;
                         return false;
                     }
                 } else {
@@ -491,14 +498,17 @@ class ringbuffer {
         }
 
         bool moveOutImpl(Value_type& dest, const bool blocking, const fraction_i64& timeout) noexcept {
+            if( 1 >= capacityPlusOne ) {
+                return false;
+            }
             const Size_type oldReadPos = readPos; // SC-DRF acquire atomic readPos, sync'ing with putImpl
             Size_type localReadPos = oldReadPos;
             if( localReadPos == writePos ) {
                 if( blocking ) {
-                    interrupted = false;
+                    interrupted_read = false;
                     std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ putImpl via same lock
                     const fraction_timespec timeout_time = getMonotonicTime() + fraction_timespec(timeout);
-                    while( !interrupted && localReadPos == writePos ) {
+                    while( !interrupted_read && localReadPos == writePos ) {
                         if( fractions_i64::zero == timeout ) {
                             cvWrite.wait(lockWrite);
                         } else {
@@ -508,8 +518,8 @@ class ringbuffer {
                             }
                         }
                     }
-                    if( interrupted ) {
-                        interrupted = false;
+                    if( interrupted_read ) {
+                        interrupted_read = false;
                         return false;
                     }
                 } else {
@@ -558,11 +568,11 @@ class ringbuffer {
             Size_type available = size();
             if( min_count > available ) {
                 if( blocking ) {
-                    interrupted = false;
+                    interrupted_read = false;
                     std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ putImpl via same lock
                     available = size();
                     const fraction_timespec timeout_time = getMonotonicTime() + fraction_timespec(timeout);
-                    while( !interrupted && min_count > available ) {
+                    while( !interrupted_read && min_count > available ) {
                         if( fractions_i64::zero == timeout ) {
                             cvWrite.wait(lockWrite);
                             available = size();
@@ -574,8 +584,8 @@ class ringbuffer {
                             }
                         }
                     }
-                    if( interrupted ) {
-                        interrupted = false;
+                    if( interrupted_read ) {
+                        interrupted_read = false;
                         return 0;
                     }
                 } else {
@@ -658,11 +668,11 @@ class ringbuffer {
             Size_type available = size();
             if( count > available ) {
                 if( blocking ) {
-                    interrupted = false;
+                    interrupted_read = false;
                     std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ putImpl via same lock
                     available = size();
                     const fraction_timespec timeout_time = getMonotonicTime() + fraction_timespec(timeout);
-                    while( !interrupted && count > available ) {
+                    while( !interrupted_read && count > available ) {
                         if( fractions_i64::zero == timeout ) {
                             cvWrite.wait(lockWrite);
                             available = size();
@@ -674,8 +684,8 @@ class ringbuffer {
                             }
                         }
                     }
-                    if( interrupted ) {
-                        interrupted = false;
+                    if( interrupted_read ) {
+                        interrupted_read = false;
                         return 0;
                     }
                 } else {
@@ -730,13 +740,17 @@ class ringbuffer {
         }
 
         bool moveIntoImpl(Value_type &&e, const bool blocking, const fraction_i64& timeout) noexcept {
+            if( 1 >= capacityPlusOne ) {
+                return false;
+            }
             Size_type localWritePos = writePos; // SC-DRF acquire atomic writePos, sync'ing with getImpl
             localWritePos = (localWritePos + 1) % capacityPlusOne;
             if( localWritePos == readPos ) {
                 if( blocking ) {
+                    interrupted_write = false;
                     std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ getImpl via same lock
                     const fraction_timespec timeout_time = getMonotonicTime() + fraction_timespec(timeout);
-                    while( localWritePos == readPos ) {
+                    while( !interrupted_write && localWritePos == readPos ) {
                         if( fractions_i64::zero == timeout ) {
                             cvRead.wait(lockRead);
                         } else {
@@ -745,6 +759,10 @@ class ringbuffer {
                                 return false;
                             }
                         }
+                    }
+                    if( interrupted_write ) {
+                        interrupted_write = false;
+                        return false;
                     }
                 } else {
                     return false;
@@ -772,13 +790,17 @@ class ringbuffer {
                 ABORT("Value_type is not copy constructible");
                 return false;
             }
+            if( 1 >= capacityPlusOne ) {
+                return false;
+            }
             Size_type localWritePos = writePos; // SC-DRF acquire atomic writePos, sync'ing with getImpl
             localWritePos = (localWritePos + 1) % capacityPlusOne;
             if( localWritePos == readPos ) {
                 if( blocking ) {
+                    interrupted_write = false;
                     std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ getImpl via same lock
                     const fraction_timespec timeout_time = getMonotonicTime() + fraction_timespec(timeout);
-                    while( localWritePos == readPos ) {
+                    while( !interrupted_write && localWritePos == readPos ) {
                         if( fractions_i64::zero == timeout ) {
                             cvRead.wait(lockRead);
                         } else {
@@ -787,6 +809,10 @@ class ringbuffer {
                                 return false;
                             }
                         }
+                    }
+                    if( interrupted_write ) {
+                        interrupted_write = false;
+                        return false;
                     }
                 } else {
                     return false;
@@ -828,10 +854,11 @@ class ringbuffer {
             Size_type available = freeSlots();
             if( total_count > available ) {
                 if( blocking ) {
+                    interrupted_write = false;
                     std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ getImpl via same lock
                     available = freeSlots();
                     const fraction_timespec timeout_time = getMonotonicTime() + fraction_timespec(timeout);
-                    while( total_count > available ) {
+                    while( !interrupted_write && total_count > available ) {
                         if( fractions_i64::zero == timeout ) {
                             cvRead.wait(lockRead);
                             available = freeSlots();
@@ -842,6 +869,10 @@ class ringbuffer {
                                 return false;
                             }
                         }
+                    }
+                    if( interrupted_write ) {
+                        interrupted_write = false;
+                        return false;
                     }
                 } else {
                     return false;
@@ -928,6 +959,20 @@ class ringbuffer {
                 writePos = localWritePos;
             }
             freeArray(&oldArray, oldCapacityPlusOne); // and release
+        }
+
+        void closeImpl(const bool zeromem) noexcept {
+            if( zeromem ) {
+                clearAndZeroMemImpl();
+            } else {
+                clearImpl();
+            }
+            freeArray(&array, capacityPlusOne);
+
+            capacityPlusOne = 1;
+            array = newArray(capacityPlusOne);
+            readPos = 0;
+            writePos = 0;
         }
 
     public:
@@ -1175,7 +1220,7 @@ class ringbuffer {
          *
          * Assuming no concurrent put() operation, after the call:
          * - {@link #isEmpty()} will return `true`
-         * - {@link #getSize()} shall return `0`
+         * - {@link #size()} shall return `0`
          *
          * @param zeromem pass true to zero ringbuffer memory after releasing elements, otherwise non template type parameter use_secmem determines the behavior (default), see @ref ringbuffer_ntt_params.
          * @see @ref ringbuffer_ntt_params
@@ -1204,6 +1249,49 @@ class ringbuffer {
                     clearImpl();
                 }
             }
+            cvRead.notify_all(); // notify waiting writer, have mutex unlocked before notify_all to avoid pessimistic re-block of notified wait() thread.
+        }
+
+        /**
+         * Close this ringbuffer by releasing all elements available
+         * and resizing capacity to zero.
+         * Essentially causing all read and write operations to fail.
+         *
+         * Potential writer and reader thread will be
+         * - notified, allowing them to be woken up
+         * - interrupted to abort the write and read operation
+         *
+         * Subsequent write and read operations will fail and not block.
+         *
+         * After the call:
+         * - {@link #isEmpty()} will return `true`
+         * - {@link #size()} shall return `0`
+         * - {@link #capacity()} shall return `0`
+         * - {@link #freeSlots()} shall return `0`
+         */
+        void close(const bool zeromem=false) noexcept {
+            if( multi_pc_enabled ) {
+                std::unique_lock<std::mutex> lockMultiRead(syncMultiRead, std::defer_lock);          // same for *this instance!
+                std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite, std::defer_lock);
+                std::unique_lock<std::mutex> lockRead(syncRead, std::defer_lock);          // same for *this instance!
+                std::unique_lock<std::mutex> lockWrite(syncWrite, std::defer_lock);
+                std::lock(lockMultiRead, lockMultiWrite, lockRead, lockWrite);
+
+                closeImpl(zeromem);
+                interrupted_read = true;
+                interrupted_write = true;
+            } else {
+                std::unique_lock<std::mutex> lockRead(syncRead, std::defer_lock);          // same for *this instance!
+                std::unique_lock<std::mutex> lockWrite(syncWrite, std::defer_lock);
+                std::lock(lockRead, lockWrite);
+
+                closeImpl(zeromem);
+                interrupted_write = true;
+                interrupted_read = true;
+            }
+            // have mutex unlocked before notify_all to avoid pessimistic re-block of notified wait() thread.
+            cvRead.notify_all();  // notify waiting writer
+            cvWrite.notify_all(); // notify waiting reader
         }
 
         /**
@@ -1303,12 +1391,16 @@ class ringbuffer {
         /**
          * Interrupt a potentially blocked reader.
          *
-         * Call this method if intended to abort writing and to interrupt the reader thread's potentially blocked read-access call.
+         * Call this method if intended to abort reading and to interrupt the reader thread's potentially blocked read-access call.
          */
-        void interruptReader() noexcept { interrupted = true; cvWrite.notify_all(); }
+        void interruptReader() noexcept { interrupted_read = true; cvWrite.notify_all(); }
 
-        // Not really desired nor usefull, since the reader can clear the ringbuffer.
-        // void interruptWriter() noexcept { interrupted = true; cvRead.notify_all(); }
+        /**
+         * Interrupt a potentially blocked writer.
+         *
+         * Call this method if intended to abort writing and to interrupt the writing thread's potentially blocked write-access call.
+         */
+        void interruptWriter() noexcept { interrupted_write = true; cvRead.notify_all(); }
 
         /**
          * Peeks the next element at the read position w/o modifying pointer, nor blocking.
@@ -1381,7 +1473,7 @@ class ringbuffer {
         }
 
         /**
-         * Dequeues the oldest enqueued `min(dest_len, getSize()>=min_count)` elements by copying them into the given consecutive 'dest' storage.
+         * Dequeues the oldest enqueued `min(dest_len, size()>=min_count)` elements by copying them into the given consecutive 'dest' storage.
          *
          * The ring buffer slots will be released and its value moved to the caller's `dest` storage, if successful.
          *
@@ -1402,7 +1494,7 @@ class ringbuffer {
         }
 
         /**
-         * Dequeues the oldest enqueued `min(dest_len, getSize()>=min_count)` elements by copying them into the given consecutive 'dest' storage.
+         * Dequeues the oldest enqueued `min(dest_len, size()>=min_count)` elements by copying them into the given consecutive 'dest' storage.
          *
          * The ring buffer slots will be released and its value moved to the caller's `dest` storage, if successful.
          *
