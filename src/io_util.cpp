@@ -450,7 +450,7 @@ struct curl_glue2_t {
 static size_t consume_header_curl2(char *buffer, size_t size, size_t nmemb, void *userdata) noexcept {
     curl_glue2_t * cg = (curl_glue2_t*)userdata;
 
-    if( async_io_result_t::NONE!= cg->result ) {
+    if( async_io_result_t::NONE != cg->result ) {
         // user abort!
         DBG_PRINT("consume_header_curl2 ABORT by User: total %" PRIi64 ", result %d, rb %s",
                 cg->total_read.load(), cg->result.load(), cg->buffer.toString().c_str() );
@@ -500,7 +500,7 @@ static size_t consume_header_curl2(char *buffer, size_t size, size_t nmemb, void
 static size_t consume_data_curl2(char *ptr, size_t size, size_t nmemb, void *userdata) noexcept {
     curl_glue2_t * cg = (curl_glue2_t*)userdata;
 
-    if( async_io_result_t::NONE!= cg->result ) {
+    if( async_io_result_t::NONE != cg->result ) {
         // user abort!
         DBG_PRINT("consume_data_curl2 ABORT by User: total %" PRIi64 ", result %d, rb %s",
                 cg->total_read.load(), cg->result.load(), cg->buffer.toString().c_str() );
@@ -554,7 +554,7 @@ static void read_url_stream_thread(const char *url, std::unique_ptr<curl_glue2_t
 
     res = curl_easy_setopt(curl_handle, CURLOPT_ERRORBUFFER, errorbuffer.data());
     if( CURLE_OK != res ) {
-        ERR_PRINT("Error setting up url %s, error %d %d",
+        ERR_PRINT("Error setting up url %s, error %d '%s'",
                   url, (int)res, curl_easy_strerror(res));
         goto errout;
     }
@@ -562,72 +562,72 @@ static void read_url_stream_thread(const char *url, std::unique_ptr<curl_glue2_t
     /* set URL to get here */
     res = curl_easy_setopt(curl_handle, CURLOPT_URL, url);
     if( CURLE_OK != res ) {
-        ERR_PRINT("Error setting up url %s, error %d %d",
-                  url, (int)res, errorbuffer.data());
+        ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
+                  url, (int)res, curl_easy_strerror(res), errorbuffer.data());
         goto errout;
     }
 
     /* Switch on full protocol/debug output while testing */
     res = curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 0L);
     if( CURLE_OK != res ) {
-        ERR_PRINT("Error setting up url %s, error %d %d",
-                  url, (int)res, errorbuffer.data());
+        ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
+                  url, (int)res, curl_easy_strerror(res), errorbuffer.data());
         goto errout;
     }
 
     /* disable progress meter, set to 0L to enable it */
     res = curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 1L);
     if( CURLE_OK != res ) {
-        ERR_PRINT("Error setting up url %s, error %d %d",
-                  url, (int)res, errorbuffer.data());
+        ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
+                  url, (int)res, curl_easy_strerror(res), errorbuffer.data());
         goto errout;
     }
 
     /* Suppress proxy CONNECT response headers from user callbacks */
     res = curl_easy_setopt(curl_handle, CURLOPT_SUPPRESS_CONNECT_HEADERS, 1L);
     if( CURLE_OK != res ) {
-        ERR_PRINT("Error setting up url %s, error %d %d",
-                  url, (int)res, errorbuffer.data());
+        ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
+                  url, (int)res, curl_easy_strerror(res), errorbuffer.data());
         goto errout;
     }
 
     /* Don't pass headers to the data stream. */
     res = curl_easy_setopt(curl_handle, CURLOPT_HEADER, 0L);
     if( CURLE_OK != res ) {
-        ERR_PRINT("Error setting up url %s, error %d %d",
-                  url, (int)res, errorbuffer.data());
+        ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
+                  url, (int)res, curl_easy_strerror(res), errorbuffer.data());
         goto errout;
     }
 
     /* send header data to this function  */
     res = curl_easy_setopt(curl_handle, CURLOPT_HEADERFUNCTION, consume_header_curl2);
     if( CURLE_OK != res ) {
-        ERR_PRINT("Error setting up url %s, error %d %d",
-                  url, (int)res, errorbuffer.data());
+        ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
+                  url, (int)res, curl_easy_strerror(res), errorbuffer.data());
         goto errout;
     }
 
     /* set userdata for consume_header_curl2 */
     res = curl_easy_setopt(curl_handle, CURLOPT_HEADERDATA, (void*)cg.get());
     if( CURLE_OK != res ) {
-        ERR_PRINT("Error setting up url %s, error %d %d",
-                  url, (int)res, errorbuffer.data());
+        ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
+                  url, (int)res, curl_easy_strerror(res), errorbuffer.data());
         goto errout;
     }
 
     /* send received data to this function  */
     res = curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, consume_data_curl2);
     if( CURLE_OK != res ) {
-        ERR_PRINT("Error setting up url %s, error %d %d",
-                  url, (int)res, errorbuffer.data());
+        ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
+                  url, (int)res, curl_easy_strerror(res), errorbuffer.data());
         goto errout;
     }
 
     /* set userdata for consume_data_curl2 */
     res = curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void*)cg.get());
     if( CURLE_OK != res ) {
-        ERR_PRINT("Error setting up url %s, error %d %d",
-                  url, (int)res, errorbuffer.data());
+        ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
+                  url, (int)res, curl_easy_strerror(res), errorbuffer.data());
         goto errout;
     }
 
@@ -636,12 +636,12 @@ static void read_url_stream_thread(const char *url, std::unique_ptr<curl_glue2_t
     if( CURLE_OK != res ) {
         if( async_io_result_t::NONE == cg->result ) {
             // Error during normal processing
-            IRQ_PRINT("Error processing url %s, error %d %d",
-                      url, (int)res, errorbuffer.data());
+            IRQ_PRINT("Error processing url %s, error %d '%s' '%s'",
+                      url, (int)res, curl_easy_strerror(res), errorbuffer.data());
         } else {
             // User aborted or response code error detected via consume_header_curl2
-            DBG_PRINT("Processing aborted url %s, error %d %d",
-                      url, (int)res, errorbuffer.data());
+            DBG_PRINT("Processing aborted url %s, error %d '%s' '%s'",
+                      url, (int)res, curl_easy_strerror(res), errorbuffer.data());
         }
         goto errout;
     }
