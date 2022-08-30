@@ -482,9 +482,11 @@ size_t ByteInStream_Feed::read(void* out, size_t length) noexcept {
     if( 0 == length || end_of_data() ) {
         return 0;
     }
-    const size_t got = m_buffer.get(static_cast<uint8_t*>(out), length, 1);
+    const size_t got = m_has_content_length ?
+                        m_buffer.getBlocking(static_cast<uint8_t*>(out), length, 1, m_timeout) :
+                        m_buffer.get(static_cast<uint8_t*>(out), length, 1);
     m_bytes_consumed += got;
-    // DBG_PRINT("ByteInStream_Feed::read: size %zu/%zu bytes, %s", consumed_bytes, length, to_string_int().c_str() );
+    // DBG_PRINT("ByteInStream_Feed::read: size %zu/%zu bytes, %s", got, length, to_string_int().c_str() );
     return got;
 }
 
