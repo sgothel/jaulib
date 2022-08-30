@@ -540,6 +540,7 @@ namespace jau::io {
             const std::string m_url;
             jau::fraction_i64 m_timeout;
             ByteRingbuffer m_buffer;
+            jau::io::url_header_sync m_header_sync;
             jau::relaxed_atomic_bool m_has_content_length;
             jau::relaxed_atomic_uint64 m_content_size;
             jau::relaxed_atomic_uint64 m_total_xfered;

@@ -337,11 +337,12 @@ std::string ByteInStream_File::to_string() const noexcept {
 
 ByteInStream_URL::ByteInStream_URL(const std::string& url, const jau::fraction_i64& timeout) noexcept
 : m_url(url), m_timeout(timeout), m_buffer(0x00, BEST_URLSTREAM_RINGBUFFER_SIZE),
-  m_has_content_length( false ), m_content_size( 0 ), m_total_xfered( 0 ), m_result( io::async_io_result_t::NONE ),
+  m_header_sync(), m_has_content_length( false ), m_content_size( 0 ),
+  m_total_xfered( 0 ), m_result( io::async_io_result_t::NONE ),
   m_bytes_consumed(0)
 
 {
-    m_url_thread = read_url_stream(m_url, m_buffer, m_has_content_length, m_content_size, m_total_xfered, m_result);
+    m_url_thread = read_url_stream(m_url, m_buffer, m_header_sync, m_has_content_length, m_content_size, m_total_xfered, m_result);
     if( nullptr == m_url_thread ) {
         // url protocol not supported
         m_result = async_io_result_t::FAILED;
@@ -369,6 +370,7 @@ bool ByteInStream_URL::available(size_t n) noexcept {
         // url thread ended, only remaining bytes in buffer available left
         return m_buffer.size() >= n;
     }
+    m_header_sync.wait_until_completion(m_timeout);
     if( m_has_content_length && m_content_size - m_bytes_consumed < n ) {
         return false;
     }
@@ -382,13 +384,16 @@ bool ByteInStream_URL::is_open() const noexcept {
 }
 
 size_t ByteInStream_URL::read(void* out, size_t length) noexcept {
+    m_header_sync.wait_until_completion(m_timeout);
     if( 0 == length || end_of_data() ) {
         return 0;
     }
-    const size_t consumed_bytes = m_buffer.get(static_cast<uint8_t*>(out), length, 1);
-    m_bytes_consumed += consumed_bytes;
-    // DBG_PRINT("ByteInStream_Feed::read: size %zu/%zu bytes, %s", consumed_bytes, length, to_string_int().c_str() );
-    return consumed_bytes;
+    const size_t got = m_has_content_length ?
+                        m_buffer.getBlocking(static_cast<uint8_t*>(out), length, 1, m_timeout) :
+                        m_buffer.get(static_cast<uint8_t*>(out), length, 1);
+    m_bytes_consumed += got;
+    // DBG_PRINT("ByteInStream_URL::read: size %zu/%zu bytes, %s", got, length, to_string_int().c_str() );
+    return got;
 }
 
 size_t ByteInStream_URL::peek(void* out, size_t length, size_t peek_offset) noexcept {
