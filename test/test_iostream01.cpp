@@ -137,13 +137,15 @@ class TestIOStream01 {
                 const std::string url = "lala://localhost:8080/" + basename_10kiB;
 
                 jau::io::ByteRingbuffer rb(0x00, jau::io::BEST_URLSTREAM_RINGBUFFER_SIZE);
+                jau::io::url_header_sync url_header_sync;
                 jau::relaxed_atomic_bool url_has_content_length;
                 jau::relaxed_atomic_uint64 url_content_length;
                 jau::relaxed_atomic_uint64 url_total_read;
                 jau::io::relaxed_atomic_async_io_result_t result;
 
-                std::unique_ptr<std::thread> http_thread = jau::io::read_url_stream(url, rb, url_has_content_length, url_content_length, url_total_read, result);
+                std::unique_ptr<std::thread> http_thread = jau::io::read_url_stream(url, rb, url_header_sync, url_has_content_length, url_content_length, url_total_read, result);
                 REQUIRE( nullptr == http_thread );
+                REQUIRE( url_header_sync.completed() == true );
                 REQUIRE( url_has_content_length == false );
                 REQUIRE( url_content_length == 0 );
                 REQUIRE( url_content_length == url_total_read );
@@ -234,12 +236,13 @@ class TestIOStream01 {
 
             constexpr const size_t buffer_size = 4096;
             jau::io::ByteRingbuffer rb(0x00, jau::io::BEST_URLSTREAM_RINGBUFFER_SIZE);
+            jau::io::url_header_sync url_header_sync;
             jau::relaxed_atomic_bool url_has_content_length;
             jau::relaxed_atomic_uint64 url_content_length;
             jau::relaxed_atomic_uint64 url_total_read;
             jau::io::relaxed_atomic_async_io_result_t result;
 
-            std::unique_ptr<std::thread> http_thread = jau::io::read_url_stream(url_input, rb, url_has_content_length, url_content_length, url_total_read, result);
+            std::unique_ptr<std::thread> http_thread = jau::io::read_url_stream(url_input, rb, url_header_sync, url_has_content_length, url_content_length, url_total_read, result);
             REQUIRE( nullptr != http_thread );
 
             jau::io::secure_vector<uint8_t> buffer(buffer_size);
@@ -263,6 +266,7 @@ class TestIOStream01 {
 
             http_thread->join();
 
+            REQUIRE( url_header_sync.completed() == true );
             REQUIRE( url_has_content_length == true );
             REQUIRE( url_content_length == file_size );
             REQUIRE( url_content_length == consumed_total_bytes );
@@ -284,12 +288,13 @@ class TestIOStream01 {
 
             constexpr const size_t buffer_size = 4096;
             jau::io::ByteRingbuffer rb(0x00, jau::io::BEST_URLSTREAM_RINGBUFFER_SIZE);
+            jau::io::url_header_sync url_header_sync;
             jau::relaxed_atomic_bool url_has_content_length;
             jau::relaxed_atomic_uint64 url_content_length;
             jau::relaxed_atomic_uint64 url_total_read;
             jau::io::relaxed_atomic_async_io_result_t result;
 
-            std::unique_ptr<std::thread> http_thread = jau::io::read_url_stream(url_input, rb, url_has_content_length, url_content_length, url_total_read, result);
+            std::unique_ptr<std::thread> http_thread = jau::io::read_url_stream(url_input, rb, url_header_sync, url_has_content_length, url_content_length, url_total_read, result);
             REQUIRE( nullptr != http_thread );
 
             jau::io::secure_vector<uint8_t> buffer(buffer_size);
@@ -313,6 +318,7 @@ class TestIOStream01 {
 
             http_thread->join();
 
+            REQUIRE( url_header_sync.completed() == true );
             REQUIRE( url_has_content_length == false );
             REQUIRE( url_content_length == 0 );
             REQUIRE( url_content_length == consumed_total_bytes );

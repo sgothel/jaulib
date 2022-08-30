@@ -169,6 +169,47 @@ namespace jau::io {
             StreamConsumerFunc consumer_fn) noexcept;
 
     /**
+     * Synchronization for URL header completion
+     * as used by asynchronous read_url_stream().
+     *
+     * @see url_header_sync::completed()
+     */
+    class url_header_sync {
+        private:
+            std::mutex m_sync;
+            std::condition_variable m_cv;
+            jau::relaxed_atomic_bool m_completed;
+
+        public:
+            url_header_sync() noexcept
+            : m_completed(false)
+            { }
+
+            /**
+             * Returns whether URL header is completed.
+             *
+             * Completion is reached in any of the following cases
+             * - Final (http) CRLF message received
+             * - Any http header error response received
+             * - First data package received
+             * - End of operation
+             */
+            bool completed() const noexcept { return m_completed; }
+
+            /**
+             * Notify completion, see completed()
+             */
+            void notify_complete() noexcept;
+
+            /**
+             * Wait until completed() has been reached.
+             * @param timeout maximum duration in fractions of seconds to wait, where fractions_i64::zero waits infinitely
+             * @return true if completed within timeout, otherwise false
+             */
+            bool wait_until_completion(const jau::fraction_i64& timeout) noexcept;
+    };
+
+    /**
      * Asynchronous URL read content using the given byte jau::ringbuffer, allowing parallel reading.
      *
      * To abort streaming, user may set given reference `results` to a value other than async_io_result_t::NONE.
@@ -182,6 +223,7 @@ namespace jau::io {
      *
      * @param url the URL to open a connection to and stream bytes from
      * @param buffer the ringbuffer destination to write into
+     * @param header_sync synchronization object for URL header completion
      * @param has_content_length indicating whether content_length is known from server
      * @param content_length tracking the content_length
      * @param total_read tracking the total_read
@@ -190,6 +232,7 @@ namespace jau::io {
      */
     std::unique_ptr<std::thread> read_url_stream(const std::string& url,
             ByteRingbuffer& buffer,
+            jau::io::url_header_sync& header_sync,
             jau::relaxed_atomic_bool& has_content_length,
             jau::relaxed_atomic_uint64& content_length,
             jau::relaxed_atomic_uint64& total_read,
@@ -222,7 +265,7 @@ namespace jau::io {
          * Returns the valid uri-scheme from given uri,
          * which is empty if no valid scheme is included.
          *
-         * The given uri must included at least a colon after the uri-scheme part.
+         * The given uri must include at least a colon after the uri-scheme part.
          *
          * @param uri an uri
          * @return valid uri-scheme, empty if non found
@@ -232,7 +275,7 @@ namespace jau::io {
         /**
          * Returns true if the uri-scheme of given uri matches a supported by [*libcurl* network protocols](https://curl.se/docs/url-syntax.html) otherwise false.
          *
-         * The uri-scheme is retrieved via get_scheme() passing given uri, hence must included at least a colon after the uri-scheme part.
+         * The uri-scheme is retrieved via get_scheme() passing given uri, hence must include at least a colon after the uri-scheme part.
          *
          * The *libcurl* supported protocols is queried at runtime, see supported_protocols().
          *
@@ -248,6 +291,12 @@ namespace jau::io {
          * @param uri an uri to test
          */
         bool is_local_file_protocol(const std::string_view& uri) noexcept;
+
+        /**
+         * Returns true if the uri-scheme of given uri matches the `http` or `https` protocol, i.e. starts with `http:` or `https:`.
+         * @param uri an uri to test
+         */
+        bool is_httpx_protocol(const std::string_view& uri) noexcept;
 
         /**@}*/
     }
