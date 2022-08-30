@@ -9,6 +9,9 @@
 * First stable release (TODO)
 
 **0.15.0**
+* `ByteInStream_URL` available() and read() await `url_header_sync` for `m_content_size` and blocks at read if available
+  - `ByteInStream_Feed::read()` blocks as well with known `m_content_size`, but has no `url_header_sync` mechanism
+* Introduce `url_header_sync` object, used for async `read_url_stream()` and hence `ByteInStream_URL`
 * ringbuffer: Add write interrupt, close() interrupting r/w ops, check capacity upfront for r/w ops
 * `ByteInStream_{SecMemor, File}`, `ByteOutStream_File`: Set `iostate::eofbit` at close(), ensure ending potential loops
 * FileStats (java): Expose ctor using DirItem for efficiency
