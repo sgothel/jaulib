@@ -1128,46 +1128,158 @@ namespace jau {
 
         struct mount_ctx {
             bool mounted;
-            std::string mount_point;
+            std::string target;
             int loop_device_id;
 
-            mount_ctx(const std::string& mount_point_, const int loop_device_id_)
-            : mounted(true), mount_point(mount_point_), loop_device_id(loop_device_id_) {}
+            mount_ctx(const std::string& target_, const int loop_device_id_)
+            : mounted(true), target(target_), loop_device_id(loop_device_id_) {}
 
             mount_ctx()
-            : mounted(false), mount_point(), loop_device_id(-1) {}
+            : mounted(false), target(), loop_device_id(-1) {}
         };
 
         /**
-         * Attach the filesystem image named in `image_path` to `target_path`.
+         * Generic flag bit values for mount() `flags`.
          *
-         * This method either requires root permissions <br />
-         * or the following capabilities: `cap_sys_admin`,`cap_setuid`, `cap_setgid`.
-         *
-         * @param image_path path of image source file
-         * @param mount_point directory where `image_path` shall be attached to
-         * @param fs_type type of filesystem, e.g. `squashfs`, `tmpfs`, `iso9660`, etc.
-         * @param mountflags mount flags, e.g. `MS_LAZYTIME | MS_NOATIME | MS_RDONLY` for a read-only lazy-time and no-atime filesystem.
-         * @param fs_options special filesystem options
-         * @return mount_ctx structure containing mounted status etc
-         *
-         * @see umount()
+         * See mount(2) for a detailed description.
          */
-        mount_ctx mount_image(const std::string& image_path, const std::string& mount_point, const std::string& fs_type,
-                              const unsigned long mountflags, const std::string fs_options="");
+        typedef uint64_t mountflags_t;
 
         /**
-         * Detach the given mount_ctc `context`
+         * Flag bit values for mount() `flags` under GNU/Linux.
+         *
+         * See mount(2) for a detailed description.
+         */
+        enum mountflags_linux : mountflags_t {
+            none = 0,
+            MS_RDONLY = 1,
+            MS_NOSUID = 2,
+            MS_NODEV = 4,
+            MS_NOEXEC = 8,
+            MS_SYNCHRONOUS = 16,
+            MS_REMOUNT = 32,
+            MS_MANDLOCK = 64,
+            MS_DIRSYNC = 128,
+            MS_NOATIME = 1024,
+            MS_NODIRATIME = 2048,
+            MS_BIND = 4096,
+            MS_MOVE = 8192,
+            MS_REC = 16384,
+            MS_SILENT = 32768,
+            MS_POSIXACL = 1 << 16,
+            MS_UNBINDABLE = 1 << 17,
+            MS_PRIVATE = 1 << 18,
+            MS_SLAVE = 1 << 19,
+            MS_SHARED = 1 << 20,
+            MS_RELATIME = 1 << 21,
+            MS_KERNMOUNT = 1 << 22,
+            MS_I_VERSION =  1 << 23,
+            MS_STRICTATIME = 1 << 24,
+            MS_LAZYTIME = 1 << 25,
+            MS_ACTIVE = 1 << 30,
+            MS_NOUSER = 1UL << 31
+        };
+
+        /**
+         * Attach the filesystem image named in `image_path` to `target`
+         * using an intermediate platform specific filesystem image loop-device.
          *
          * This method either requires root permissions <br />
          * or the following capabilities: `cap_sys_admin`,`cap_setuid`, `cap_setgid`.
          *
-         * @param context mount_ctx previously attached via mount_image()
+         * Unmounting shall be done via umount() with mount_ctx argument to ensure
+         * all intermediate resources are released.
+         *
+         * @param image_path path of image source file
+         * @param target directory where `image_path` filesystem shall be attached to
+         * @param fs_type type of filesystem, e.g. `squashfs`, `tmpfs`, `iso9660`, etc.
+         * @param flags filesystem agnostic mount flags, see mountflags_linux.
+         * @param fs_options comma separated options for the filesystem `fs_type`, see mount(8) for available options for the used filesystem.
+         * @return mount_ctx structure containing mounted status etc
+         *
+         * @see mountflags_t
+         * @see mountflags_linux
+         * @see mount()
+         * @see umount()
+         */
+        mount_ctx mount_image(const std::string& image_path, const std::string& target, const std::string& fs_type,
+                              const mountflags_t flags, const std::string fs_options="");
+
+        /**
+         * Attach the filesystem named in `source` to `target`
+         * using the given filesystem source directly.
+         *
+         * This method either requires root permissions <br />
+         * or the following capabilities: `cap_sys_admin`,`cap_setuid`, `cap_setgid`.
+         *
+         * @param source filesystem path for device, directory, file or dummy-string which shall be attached
+         * @param target directory where `source` filesystem shall be attached to
+         * @param fs_type type of filesystem, e.g. `squashfs`, `tmpfs`, `iso9660`, etc.
+         * @param flags filesystem agnostic mount flags, see mountflags_linux.
+         * @param fs_options comma separated options for the filesystem `fs_type`, see mount(8) for available options for the used filesystem.
+         * @return mount_ctx structure containing mounted status etc
+         *
+         * @see mountflags_t
+         * @see mountflags_linux
+         * @see mount_image()
+         * @see umount()
+         */
+        mount_ctx mount(const std::string& source, const std::string& target, const std::string& fs_type,
+                        const mountflags_t flags, const std::string fs_options="");
+
+        /**
+         * Generic flag bit values for umount() `flags`.
+         *
+         * See umount(2) for a detailed description.
+         */
+        typedef int umountflags_t;
+
+        /**
+         * Flag bit values for umount() `flags` under GNU/Linux.
+         *
+         * See umount(2) for a detailed description.
+         */
+        enum umountflags_linux : umountflags_t {
+            MNT_FORCE = 1,
+            MNT_DETACH = 2,
+            MNT_EXPIRE = 4,
+            UMOUNT_NOFOLLOW = 8
+        };
+
+        /**
+         * Detach the given mount_ctx `context`
+         *
+         * This method either requires root permissions <br />
+         * or the following capabilities: `cap_sys_admin`,`cap_setuid`, `cap_setgid`.
+         *
+         * @param context mount_ctx previously attached via mount_image() or mount()
+         * @param flags optional umount options, if supported by the system. See umount_options_linux.
          * @return true if successful, otherwise false
          *
+         * @see umountflags_t
+         * @see umountflags_linux
+         * @see mount()
          * @see mount_image()
          */
-        bool umount(const mount_ctx& context);
+        bool umount(const mount_ctx& context, const umountflags_t flags);
+
+        /**
+         * Detach the topmost filesystem mounted on `target`
+         * optionally using given `umountflags` options if supported.
+         *
+         * This method either requires root permissions <br />
+         * or the following capabilities: `cap_sys_admin`,`cap_setuid`, `cap_setgid`.
+         *
+         * @param target directory of previously attached filesystem
+         * @param flags optional umount options, if supported by the system. See umount_options_linux.
+         * @return true if successful, otherwise false
+         *
+         * @see umountflags_t
+         * @see umountflags_linux
+         * @see mount()
+         * @see mount_image()
+         */
+        bool umount(const std::string& target, const umountflags_t flags);
 
         /**@}*/
 

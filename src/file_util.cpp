@@ -1861,17 +1861,20 @@ static bool set_effective_uid(::uid_t user_id) {
     return true;
 }
 
-jau::fs::mount_ctx jau::fs::mount_image(const std::string& image_path, const std::string& mount_point, const std::string& fs_type,
-                                        const unsigned long mountflags, const std::string fs_options)
+jau::fs::mount_ctx jau::fs::mount_image(const std::string& image_path, const std::string& target, const std::string& fs_type,
+                                        const mountflags_t flags, const std::string fs_options)
 {
     file_stats image_stats(image_path);
     if( !image_stats.is_file()) {
+        ERR_PRINT("image_path not a file: %s", image_stats.to_string().c_str());
         return mount_ctx();
     }
-    file_stats target_stats(mount_point);
+    file_stats target_stats(target);
     if( !target_stats.is_dir()) {
+        ERR_PRINT("target not a dir: %s", target_stats.to_string().c_str());
         return mount_ctx();
     }
+    const std::string target_path(target_stats.path());
     int backingfile = __posix_openat64(AT_FDCWD, image_stats.path().c_str(), O_RDWR);
     if( 0 > backingfile )  {
         ERR_PRINT("Couldn't open image-file '%s': res %d", image_stats.to_string().c_str(), backingfile);
@@ -1927,9 +1930,10 @@ jau::fs::mount_ctx jau::fs::mount_image(const std::string& image_path, const std
         if( fs_options.size() > 0 ) {
             fs_options_cstr = (void*) fs_options.data();
         }
-        mount_res = ::mount(loopname, target_stats.path().c_str(), fs_type.c_str(), mountflags, fs_options_cstr);
+        mount_res = ::mount(loopname, target_path.c_str(), fs_type.c_str(), flags, fs_options_cstr);
         if( 0 != mount_res ) {
-            ERR_PRINT("source_path %s, target_path %s, fs_type %s, res %d", image_path.c_str(), mount_point.c_str(), fs_type.c_str(), mount_res);
+            ERR_PRINT("source_path %s, target_path %s, fs_type %s, res %d",
+                    image_stats.path().c_str(), target_path.c_str(), fs_type.c_str(), mount_res);
             ::ioctl(loop_device_fd, LOOP_CLR_FD, 0);
             goto errout_child;
         }
@@ -1972,12 +1976,12 @@ errout_child:
         ::close(backingfile);
         backingfile = -1;
     }
-    return mount_ctx(mount_point, loop_device_id);
+    return mount_ctx(target_path, loop_device_id);
 
 errout:
 #else
     (void)fs_type;
-    (void)mountflags;
+    (void)flags;
     (void)fs_options;
 #endif
     if( 0 <= backingfile ) {
@@ -1986,12 +1990,83 @@ errout:
     return mount_ctx();
 }
 
-bool jau::fs::umount(const mount_ctx& context)
+mount_ctx jau::fs::mount(const std::string& source, const std::string& target, const std::string& fs_type,
+                         const mountflags_t flags, const std::string fs_options)
+{
+    if( source.empty() ) {
+        ERR_PRINT("source is an empty string ");
+        return mount_ctx();
+    }
+    file_stats source_stats(source);
+    file_stats target_stats(target);
+    if( !target_stats.is_dir()) {
+        ERR_PRINT("target not a dir: %s", target_stats.to_string().c_str());
+        return mount_ctx();
+    }
+    const std::string target_path(target_stats.path());
+    const ::uid_t caller_uid = ::geteuid();
+
+    ::pid_t pid = ::fork();
+    if( 0 == pid ) {
+        void* fs_options_cstr = nullptr;
+
+        if( 0 != caller_uid ) {
+            if( !set_effective_uid(0) ) {
+                ::_exit( EXIT_FAILURE );
+            }
+        }
+        if( fs_options.size() > 0 ) {
+            fs_options_cstr = (void*) fs_options.data();
+        }
+#ifdef __linux__
+        const int mount_res = ::mount(source_stats.path().c_str(), target_path.c_str(), fs_type.c_str(), flags, fs_options_cstr);
+#elif defined(__FreeBSD__)
+        /**
+         * Non generic due to the 'fstype'_args structure passed via data
+         * ufs_args data = { .fsspec=source_stats.path().c_str() };
+         * ::mount(fs_type.c_str(), target_path.c_str(), mountflags, data);
+         */
+        (void)flags;
+        (void)fs_options_cstr;
+        const int mount_res = -1;
+#else
+        #warning Add OS support
+        const int mount_res = -1;
+#endif
+        if( 0 != mount_res ) {
+            ERR_PRINT("source_path %s, target_path %s, fs_type %s, flags %" PRIu64 ", res %d",
+                    source_stats.path().c_str(), target_path.c_str(), fs_type.c_str(), flags, mount_res);
+            ::_exit( EXIT_FAILURE );
+        } else {
+            ::_exit( EXIT_SUCCESS );
+        }
+
+    } else if( 0 < pid ) {
+        int pid_status = 0;
+        ::pid_t child_pid = ::waitpid(pid, &pid_status, 0);
+        if( 0 > child_pid ) {
+            ERR_PRINT("wait(%d) failed: child_pid %d", pid, child_pid);
+        } else {
+            if( child_pid != pid ) {
+                WARN_PRINT("wait(%d) terminated child_pid %d", pid, child_pid);
+            }
+            if( WIFEXITED(pid_status) && EXIT_SUCCESS == WEXITSTATUS(pid_status) ) {
+                return mount_ctx(target_path, -1);
+            }
+            WARN_PRINT("wait(%d) terminated abnormally child_pid %d, pid_status %d", pid, child_pid, pid_status);
+        }
+    } else {
+        ERR_PRINT("Couldn't fork() process: res %d", pid);
+    }
+    return mount_ctx();
+}
+
+bool jau::fs::umount(const mount_ctx& context, const umountflags_t flags)
 {
     if( !context.mounted) {
         return false;
     }
-    file_stats target_stats(context.mount_point);
+    file_stats target_stats(context.target);
     if( !target_stats.is_dir()) {
         return false;
     }
@@ -2001,19 +2076,19 @@ bool jau::fs::umount(const mount_ctx& context)
     if( 0 == pid ) {
         if( 0 != caller_uid ) {
             if( !set_effective_uid(0) ) {
-                ::_exit(EXIT_FAILURE);
+                ::_exit( EXIT_FAILURE );
             }
         }
 #if defined(__linux__)
-        const int umount_res = ::umount(target_stats.path().c_str());
+        const int umount_res = ::umount2(target_stats.path().c_str(), flags);
 #elif defined(__FreeBSD__)
-        const int umount_res = ::unmount(target_stats.path().c_str(), 0);
+        const int umount_res = ::unmount(target_stats.path().c_str(), flags);
 #else
         #warning Add OS support
         const int umount_res = -1;
 #endif
         if( 0 != umount_res ) {
-            ERR_PRINT("Couldn't umount '%s': res %d\n", target_stats.to_string().c_str(), umount_res);
+            ERR_PRINT("Couldn't umount '%s', flags %d: res %d\n", target_stats.to_string().c_str(), flags, umount_res);
         }
         if( 0 > context.loop_device_id ) {
             // mounted w/o loop-device, done
@@ -2041,14 +2116,14 @@ bool jau::fs::umount(const mount_ctx& context)
 #endif
 
         // No loop-device handling for OS
-        ::_exit(EXIT_FAILURE);
+        ::_exit( EXIT_FAILURE );
 
 #ifdef __linux__
 errout_child:
         if( 0 <= loop_device_fd ) {
             ::close(loop_device_fd);
         }
-        ::_exit(EXIT_FAILURE);
+        ::_exit( EXIT_FAILURE );
 #endif
     } else if( 0 < pid ) {
         int pid_status = 0;
@@ -2070,3 +2145,54 @@ errout_child:
     return false;
 }
 
+bool jau::fs::umount(const std::string& target, const umountflags_t flags)
+{
+    if( target.empty() ) {
+        return false;
+    }
+    file_stats target_stats(target);
+    if( !target_stats.is_dir()) {
+        return false;
+    }
+    const ::uid_t caller_uid = ::geteuid();
+
+    ::pid_t pid = ::fork();
+    if( 0 == pid ) {
+        if( 0 != caller_uid ) {
+            if( !set_effective_uid(0) ) {
+                ::_exit( EXIT_FAILURE );
+            }
+        }
+#if defined(__linux__)
+        const int umount_res = ::umount2(target_stats.path().c_str(), flags);
+#elif defined(__FreeBSD__)
+        const int umount_res = ::unmount(target_stats.path().c_str(), flags);
+#else
+        #warning Add OS support
+        const int umount_res = -1;
+#endif
+        if( 0 == umount_res ) {
+            ::_exit( EXIT_SUCCESS );
+        } else {
+            ERR_PRINT("Couldn't umount '%s', flags %d: res %d\n", target_stats.to_string().c_str(), flags, umount_res);
+            ::_exit( EXIT_FAILURE );
+        }
+    } else if( 0 < pid ) {
+        int pid_status = 0;
+        ::pid_t child_pid = ::waitpid(pid, &pid_status, 0);
+        if( 0 > child_pid ) {
+            ERR_PRINT("wait(%d) failed: child_pid %d", pid, child_pid);
+        } else {
+            if( child_pid != pid ) {
+                WARN_PRINT("wait(%d) terminated child_pid %d", pid, child_pid);
+            }
+            if( WIFEXITED(pid_status) && EXIT_SUCCESS == WEXITSTATUS(pid_status) ) {
+                return true;
+            }
+            WARN_PRINT("wait(%d) terminated abnormally child_pid %d, pid_status %d", pid, child_pid, pid_status);
+        }
+    } else {
+        ERR_PRINT("Couldn't fork() process: res %d", pid);
+    }
+    return false;
+}

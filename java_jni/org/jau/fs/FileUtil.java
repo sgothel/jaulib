@@ -353,33 +353,90 @@ public final class FileUtil {
     public static native void sync();
 
     /**
-     * Attach the filesystem image named in `image_path` to `target_path`.
+     * Attach the filesystem image named in `image_path` to `target`
+     * using an intermediate platform specific filesystem image loop-device.
      *
      * This method either requires root permissions <br />
      * or the following capabilities: `cap_sys_admin`,`cap_setuid`, `cap_setgid`.
      *
-     * @param image_path path of image source file
-     * @param mount_point directory where `image_path` shall be attached to
-     * @param fs_type type of filesystem, e.g. `squashfs`, `tmpfs`, `iso9660`, etc.
-     * @param mountflags mount flags, e.g. `MS_LAZYTIME | MS_NOATIME | MS_RDONLY` for a read-only lazy-time and no-atime filesystem.
-     * @param fs_options special filesystem options
-     * @return native mount context if successful, otherwise null
+     * Unmounting shall be done via umount() with mount_ctx argument to ensure
+     * all intermediate resources are released.
      *
+     * @param image_path path of image source file
+     * @param target directory where `image_path` filesystem shall be attached to
+     * @param fs_type type of filesystem, e.g. `squashfs`, `tmpfs`, `iso9660`, etc.
+     * @param flags filesystem agnostic mount flags, see mountflags_linux.
+     * @param fs_options comma separated options for the filesystem `fs_type`, see mount(8) for available options for the used filesystem.
+     * @return mount_ctx structure containing mounted status etc
+     *
+     * @see mount()
      * @see umount()
      */
-    public static native long mount_image(final String image_path, final String mount_point, final String fs_type,
+    public static long mount_image(final String image_path, final String target, final String fs_type,
+                                   final MountFlags flags, final String fs_options) {
+        return mount_image_impl(image_path, target, fs_type, flags.value(), fs_options);
+    }
+    private static native long mount_image_impl(final String image_path, final String target, final String fs_type,
+                                                final long mountflags, final String fs_options);
+
+    /**
+     * Attach the filesystem named in `source` to `target`
+     * using the given filesystem source directly.
+     *
+     * This method either requires root permissions <br />
+     * or the following capabilities: `cap_sys_admin`,`cap_setuid`, `cap_setgid`.
+     *
+     * @param source filesystem path for device, directory, file or dummy-string which shall be attached
+     * @param target directory where `source` filesystem shall be attached to
+     * @param fs_type type of filesystem, e.g. `squashfs`, `tmpfs`, `iso9660`, etc.
+     * @param flags mount flags, e.g. `MS_LAZYTIME | MS_NOATIME | MS_RDONLY` for a read-only lazy-time and no-atime filesystem.
+     * @param fs_options comma separated options for the filesystem `fs_type`, see mount(8) for available options for the used filesystem.
+     * @return mount_ctx structure containing mounted status etc
+     *
+     * @see mount_image()
+     * @see umount()
+     */
+    public static long mount(final String source, final String target, final String fs_type,
+                             final MountFlags flags, final String fs_options) {
+        return mount_impl(source, target, fs_type, flags.value(), fs_options);
+    }
+    private static native long mount_impl(final String source, final String target, final String fs_type,
                                           final long mountflags, final String fs_options);
 
     /**
-     * Detach the given mount_ctc `context`
+     * Detach the given mount_ctx `context`
      *
      * This method either requires root permissions <br />
      * or the following capabilities: `cap_sys_admin`,`cap_setuid`, `cap_setgid`.
      *
-     * @param context native mount context, previously attached via mount_image()
+     * @param context native mount context, previously attached via mount_image() or mount()
+     * @param flags optional umount options, if supported by the system
      * @return true if successful, otherwise false
      *
+     * @see mount()
      * @see mount_image()
      */
-    public static native boolean umount(final long context);
+    public static boolean umount(final long context, final UnmountFlags flags) {
+        return umount1_impl(context, flags.value());
+    }
+    private static native boolean umount1_impl(final long context, final int unmountflags);
+
+    /**
+     * Detach the topmost filesystem mounted on `target`
+     * optionally using given `umountflags` options if supported.
+     *
+     * This method either requires root permissions <br />
+     * or the following capabilities: `cap_sys_admin`,`cap_setuid`, `cap_setgid`.
+     *
+     * @param target directory of previously attached filesystem
+     * @param umountflags optional umount options, if supported by the system
+     * @return true if successful, otherwise false
+     *
+     * @see mount()
+     * @see mount_image()
+     */
+    public static boolean umount(final String target, final UnmountFlags flags) {
+        return umount2_impl(target, flags.value());
+    }
+    private static native boolean umount2_impl(final String target, final int unmountflags);
 }

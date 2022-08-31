@@ -87,13 +87,13 @@ do_test() {
     cd ${test_dir}
     pwd
 
-    echo "$EXE_WRAPPER ${JAVA_CMD} ${JAVA_PROPS} -cp ${test_classpath} -Djava.library.path=${rootdir}/dist-${archabi}/lib org.junit.runner.JUnitCore ${test_class} ${*@Q}"
+    echo "$EXE_WRAPPER ${JAVA_CMD} ${JAVA_PROPS} -cp ${test_classpath} -Djava.library.path=${dist_dir}/lib org.junit.runner.JUnitCore ${test_class} ${*@Q}"
 
     ulimit -c unlimited
-    # $EXE_WRAPPER ${JAVA_CMD} ${JAVA_PROPS} -cp ${test_classpath} -Djava.library.path=${rootdir}/dist-${archabi}/lib org.junit.runner.JUnitCore ${test_class} ${*@Q}
+    # $EXE_WRAPPER ${JAVA_CMD} ${JAVA_PROPS} -cp ${test_classpath} -Djava.library.path=${dist_dir}/lib org.junit.runner.JUnitCore ${test_class} ${*@Q}
     # $EXE_WRAPPER ${JAVA_CMD} ${JAVA_PROPS} -cp ${test_classpath} org.junit.runner.JUnitCore ${test_class} ${*@Q}
 
-    "/usr/bin/sudo" -E "/sbin/capsh" "--caps=cap_sys_admin,cap_setuid,cap_setgid+eip cap_setpcap+ep" "--keep=1" "--user=${USER}" "--addamb=cap_sys_admin,cap_setuid,cap_setgid+eip" "--" "-c" "ulimit -c unlimited; $EXE_WRAPPER ${JAVA_CMD} ${JAVA_PROPS} -cp ${test_classpath} -Djava.library.path=${rootdir}/dist-${archabi}/lib org.junit.runner.JUnitCore ${test_class} ${*@Q}"
+    "/usr/bin/sudo" -E "/sbin/capsh" "--caps=cap_sys_admin,cap_setuid,cap_setgid+eip cap_setpcap+ep" "--keep=1" "--user=${USER}" "--addamb=cap_sys_admin,cap_setuid,cap_setgid+eip" "--" "-c" "ulimit -c unlimited; $EXE_WRAPPER ${JAVA_CMD} ${JAVA_PROPS} -cp ${test_classpath} -Djava.library.path=${dist_dir}/lib ${test_class} ${*@Q}"
 
     exit $?
 }

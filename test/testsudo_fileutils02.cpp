@@ -313,7 +313,12 @@ class TestFileUtil02 : TestFileUtilBase {
                 print_creds("pre-mount");
                 print_caps("pre-mount");
 
-                mctx = jau::fs::mount_image(image_stats.path(), mount_point, "squashfs", /* MS_LAZYTIME | MS_NOATIME | */ MS_RDONLY, "");
+                jau::fs::mountflags_t flags = 0;
+#ifdef __linux__
+                flags |= jau::fs::mountflags_linux::MS_RDONLY;
+#endif
+                jau::fprintf_td(stderr, "MountFlags %" PRIu64 "\n", flags);
+                mctx = jau::fs::mount_image(image_stats.path(), mount_point, "squashfs", flags, "");
 
                 print_creds("post-mount");
                 print_caps("post-mount");
@@ -336,7 +341,12 @@ class TestFileUtil02 : TestFileUtilBase {
                 print_creds("pre-umount");
                 print_caps("pre-umount");
 
-                umount_ok = jau::fs::umount(mctx);
+                jau::fs::umountflags_t flags = 0;
+#ifdef __linux__
+                flags |= jau::fs::umountflags_linux::MNT_DETACH; // lazy
+#endif
+                jau::fprintf_td(stderr, "UnmountFlags %d\n", flags);
+                umount_ok = jau::fs::umount(mctx, flags);
 
                 print_creds("post-umount");
                 print_caps("post-umount");

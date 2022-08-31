@@ -445,18 +445,18 @@ void Java_org_jau_fs_FileUtil_sync(JNIEnv *env, jclass cls) {
     }
 }
 
-jlong Java_org_jau_fs_FileUtil_mount_1image(JNIEnv *env, jclass cls,
-                                           jstring jimage_path, jstring jmount_point,
-                                           jstring jfs_type, jlong jmountflags, jstring jfs_options) {
+jlong Java_org_jau_fs_FileUtil_mount_1image_1impl(JNIEnv *env, jclass cls,
+                                                  jstring jimage_path, jstring jtarget,
+                                                  jstring jfs_type, jlong jmountflags, jstring jfs_options) {
     (void)cls;
     try {
         const std::string image_path = jau::jni::from_jstring_to_string(env, jimage_path);
-        const std::string mount_point = jau::jni::from_jstring_to_string(env, jmount_point);
+        const std::string target = jau::jni::from_jstring_to_string(env, jtarget);
         const std::string fs_type = jau::jni::from_jstring_to_string(env, jfs_type);
-        const long mountflags = static_cast<long>(jmountflags);
+        const jau::fs::mountflags_t mountflags = static_cast<jau::fs::mountflags_t>(jmountflags);
         const std::string fs_options = jau::jni::from_jstring_to_string(env, jfs_options);
 
-        jau::fs::mount_ctx res = jau::fs::mount_image(image_path, mount_point, fs_type,
+        jau::fs::mount_ctx res = jau::fs::mount_image(image_path, target, fs_type,
                                                       mountflags, fs_options);
 
         if( res.mounted ) {
@@ -469,7 +469,31 @@ jlong Java_org_jau_fs_FileUtil_mount_1image(JNIEnv *env, jclass cls,
     return 0;
 }
 
-jboolean Java_org_jau_fs_FileUtil_umount(JNIEnv *env, jclass cls, jlong jcontext) {
+jlong Java_org_jau_fs_FileUtil_mount_1impl(JNIEnv *env, jclass cls,
+                                           jstring jsource, jstring jtarget,
+                                           jstring jfs_type, jlong jmountflags, jstring jfs_options) {
+    (void)cls;
+    try {
+        const std::string source = jau::jni::from_jstring_to_string(env, jsource);
+        const std::string target = jau::jni::from_jstring_to_string(env, jtarget);
+        const std::string fs_type = jau::jni::from_jstring_to_string(env, jfs_type);
+        const jau::fs::mountflags_t mountflags = static_cast<jau::fs::mountflags_t>(jmountflags);
+        const std::string fs_options = jau::jni::from_jstring_to_string(env, jfs_options);
+
+        jau::fs::mount_ctx res = jau::fs::mount(source, target, fs_type,
+                                                mountflags, fs_options);
+
+        if( res.mounted ) {
+            jau::jni::shared_ptr_ref<jau::fs::mount_ctx> ref( new jau::fs::mount_ctx(res) );
+            return ref.release_to_jlong();
+        }
+    } catch(...) {
+        rethrow_and_raise_java_exception_jau(env);
+    }
+    return 0;
+}
+
+jboolean Java_org_jau_fs_FileUtil_umount1_1impl(JNIEnv *env, jclass cls, jlong jcontext, jint jumountflags) {
     (void)cls;
     try {
         jau::jni::shared_ptr_ref<jau::fs::mount_ctx> sref(jcontext, false /* throw_on_nullptr */); // hold copy until done
@@ -480,10 +504,23 @@ jboolean Java_org_jau_fs_FileUtil_umount(JNIEnv *env, jclass cls, jlong jcontext
 
             // umount using copy if !null
             if( !sref.is_null() ) {
-                return jau::fs::umount(*sref) ? JNI_TRUE : JNI_FALSE;
+                const jau::fs::umountflags_t umountflags = static_cast<jau::fs::umountflags_t>(jumountflags);
+                return jau::fs::umount(*sref, umountflags) ? JNI_TRUE : JNI_FALSE;
             }
         }
         // dtor copy
+    } catch(...) {
+        rethrow_and_raise_java_exception_jau(env);
+    }
+    return JNI_FALSE;
+}
+
+jboolean Java_org_jau_fs_FileUtil_umount2_1impl(JNIEnv *env, jclass cls, jstring jtarget, jint jumountflags) {
+    (void)cls;
+    try {
+        const std::string target = jau::jni::from_jstring_to_string(env, jtarget);
+        const jau::fs::umountflags_t umountflags = static_cast<jau::fs::umountflags_t>(jumountflags);
+        return jau::fs::umount(target, umountflags) ? JNI_TRUE : JNI_FALSE;
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }
