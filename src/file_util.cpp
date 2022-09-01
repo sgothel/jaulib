@@ -2050,10 +2050,11 @@ mount_ctx jau::fs::mount(const std::string& source, const std::string& target, c
             if( child_pid != pid ) {
                 WARN_PRINT("wait(%d) terminated child_pid %d", pid, child_pid);
             }
-            if( WIFEXITED(pid_status) && EXIT_SUCCESS == WEXITSTATUS(pid_status) ) {
+            if( !WIFEXITED(pid_status) ) {
+                WARN_PRINT("wait(%d) terminated abnormally child_pid %d, pid_status %d", pid, child_pid, pid_status);
+            } else if( EXIT_SUCCESS == WEXITSTATUS(pid_status) ) {
                 return mount_ctx(target_path, -1);
-            }
-            WARN_PRINT("wait(%d) terminated abnormally child_pid %d, pid_status %d", pid, child_pid, pid_status);
+            } // else mount failed
         }
     } else {
         ERR_PRINT("Couldn't fork() process: res %d", pid);
@@ -2134,10 +2135,11 @@ errout_child:
             if( child_pid != pid ) {
                 WARN_PRINT("wait(%d) terminated child_pid %d", pid, child_pid);
             }
-            if( WIFEXITED(pid_status) && EXIT_SUCCESS == WEXITSTATUS(pid_status) ) {
+            if( !WIFEXITED(pid_status) ) {
+                WARN_PRINT("wait(%d) terminated abnormally child_pid %d, pid_status %d", pid, child_pid, pid_status);
+            } else if( EXIT_SUCCESS == WEXITSTATUS(pid_status) ) {
                 return true;
-            }
-            WARN_PRINT("wait(%d) terminated abnormally child_pid %d, pid_status %d", pid, child_pid, pid_status);
+            } // else umount failed
         }
     } else {
         ERR_PRINT("Couldn't fork() process: res %d", pid);
@@ -2186,10 +2188,11 @@ bool jau::fs::umount(const std::string& target, const umountflags_t flags)
             if( child_pid != pid ) {
                 WARN_PRINT("wait(%d) terminated child_pid %d", pid, child_pid);
             }
-            if( WIFEXITED(pid_status) && EXIT_SUCCESS == WEXITSTATUS(pid_status) ) {
+            if( !WIFEXITED(pid_status) ) {
+                WARN_PRINT("wait(%d) terminated abnormally child_pid %d, pid_status %d", pid, child_pid, pid_status);
+            } else if( EXIT_SUCCESS == WEXITSTATUS(pid_status) ) {
                 return true;
-            }
-            WARN_PRINT("wait(%d) terminated abnormally child_pid %d, pid_status %d", pid, child_pid, pid_status);
+            } // else umount failed
         }
     } else {
         ERR_PRINT("Couldn't fork() process: res %d", pid);
