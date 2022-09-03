@@ -235,14 +235,14 @@ public class BasicTypes {
      * @see #radix_to_dec(String, int)
      */
     public static String dec_to_radix(int num, final int base, final int padding_width, final char padding_char) {
-        if( 0 > num || 0 >= base || base > radix_max_base ) {
+        if( 0 > num || 1 >= base || base > radix_max_base ) {
             return "";
         }
 
         final String radix_symbols = base <= 64 ? radix_symbols_64 : radix_symbols_82;
         final StringBuilder res = new StringBuilder();
         do {
-            res.insert( 0, radix_symbols.charAt( num % base ) );
+            res.insert( 0, radix_symbols.charAt( num % base ) ); // safe: radix_symbols.length() == max_base
             num /= base;
         } while ( 0 != num );
 
@@ -266,7 +266,7 @@ public class BasicTypes {
      * @see #radix_to_dec(String, int)
      */
     public static String dec_to_radix(long num, final int base, final int padding_width, final char padding_char) {
-        if( 0 > num || 0 >= base || base > radix_max_base ) {
+        if( 0 > num || 1 >= base || base > radix_max_base ) {
             return "";
         }
 
@@ -274,7 +274,7 @@ public class BasicTypes {
         final StringBuilder res = new StringBuilder();
         final long lbase = base;
         do {
-            res.insert( 0, radix_symbols.charAt( (int)( num % lbase ) ) );
+            res.insert( 0, radix_symbols.charAt( (int)( num % lbase ) ) ); // safe: radix_symbols.length() == max_base
             num /= lbase;
         } while ( 0 != num );
 
@@ -325,14 +325,18 @@ public class BasicTypes {
      * @see #dec_to_radix(int, int)
      */
     public static long radix_to_dec(final String str, final int base) {
-        if( base > radix_max_base ) {
+        if( 1 >= base || base > radix_max_base ) {
             return -1;
         }
         final String radix_symbols = base <= 64 ? radix_symbols_64 : radix_symbols_82;
         final int str_len = str.length();
         long res = 0;
         for (int i = 0; i < str_len; ++i) {
-            res = res * base + radix_symbols.indexOf(str.charAt(i));
+            final int d = radix_symbols.indexOf( str.charAt(i) );
+            if( 0 > d ) {
+                return -1; // encoded value not found
+            }
+            res = res * base + d;
         }
         return res;
     }

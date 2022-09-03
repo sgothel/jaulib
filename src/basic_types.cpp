@@ -425,14 +425,14 @@ static const std::string radix_symbols_82 = "0123456789abcdefghijklmnopqrstuvwxy
 
 std::string jau::dec_to_radix(int32_t num, const int32_t base, const unsigned int padding_width, const char padding_char) noexcept
 {
-    if( 0 > num || 0 >= base || base > radix_max_base ) {
+    if( 0 > num || 1 >= base || base > radix_max_base ) {
         return "";
     }
     const std::string& radix_symbols = base <= 64 ? radix_symbols_64 : radix_symbols_82;
     std::string res;
     do {
         std::div_t quotient = std::div(num, base);
-        res.insert( res.begin(), radix_symbols[ quotient.rem ] );
+        res.insert( res.begin(), radix_symbols[ quotient.rem ] ); // safe: radix_symbols.length() == max_base
         num = quotient.quot;
     } while ( 0 != num );
 
@@ -444,14 +444,14 @@ std::string jau::dec_to_radix(int32_t num, const int32_t base, const unsigned in
 
 std::string jau::dec_to_radix(int64_t num, const int32_t base, const unsigned int padding_width, const char padding_char) noexcept
 {
-    if( 0 > num || 0 >= base || base > radix_max_base ) {
+    if( 0 > num || 1 >= base || base > radix_max_base ) {
         return "";
     }
     const std::string& radix_symbols = base <= 64 ? radix_symbols_64 : radix_symbols_82;
     std::string res;
     do {
         std::lldiv_t quotient = std::lldiv(num, (int64_t)base);
-        res.insert( res.begin(), radix_symbols[ quotient.rem ] );
+        res.insert( res.begin(), radix_symbols[ quotient.rem ] ); // safe: radix_symbols.length() == max_base
         num = quotient.quot;
     } while ( 0 != num );
 
@@ -463,13 +463,18 @@ std::string jau::dec_to_radix(int64_t num, const int32_t base, const unsigned in
 
 int64_t jau::radix_to_dec(const std::string_view& str, const int base) noexcept
 {
-    if( base > radix_max_base ) {
+    if( 1 >= base || base > radix_max_base ) {
         return -1;
     }
     const std::string& radix_symbols = base <= 64 ? radix_symbols_64 : radix_symbols_82;
+    std::string::size_type str_len = str.length();
     int64_t res = 0;
-    for (std::string::size_type pos = 0; pos < str.length(); ++pos) {
-        res = res * base + radix_symbols.find(str[pos]);
+    for (std::string::size_type pos = 0; pos < str_len; ++pos) {
+        const std::string::size_type d = radix_symbols.find( str[pos] );
+        if( std::string::npos == d ) {
+            return -1; // encoded value not found
+        }
+        res = res * base + static_cast<int64_t>(d);
     }
     return res;
 }
