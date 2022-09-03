@@ -197,6 +197,50 @@ namespace jau {
     }
 
     /**
+     * Converts a given positive decimal number to a symbolix string using given radix.
+     *
+     * ## Constraints
+     * - Code page 437 compatible
+     * - Forbidden [v]fat chars: <>:"/\|?*
+     * - Further excluding quoting chars: "'$ and space to avoid any quoting issues
+     *
+     * Note: Beyond base 82, native C/C++ char encoding doesn't fit as code page 437 won't fit into ASCII. UTF-8 or wide chars would be required.
+     *
+     * ## Examples
+     * ### Base 62
+     * - 62**3-1 = 238327, 238327/365d = 652.95 years
+     * - 62 `0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ`
+     *
+     * ### Base 82
+     * - 82**3-1 = 551367, 551367/365d = 1510.59 years
+     * - 82 `0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!#%&()+,-.;=@[]^_{}~`
+     *
+     * ### Base 143 (Disabled due to narrow char string usage, see above)
+     * - 143**3-1 = 2924206, 2924206/365d = 8011.52 years
+     * - 143 `0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!#%&()+,-.;=@[]^_{}~ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿½¼¡«»αßΓπΣσµτΦΘΩδ∞φε`
+     *
+     * @param num a positive decimal number
+     * @param base radix to use, either 62 or 82 where 82 is the maximum.
+     * @param padding_width minimal width of the encoded radix string
+     * @param padding_char padding character, usually '0'
+     * @return the encoded radix string or an empty string if base > 82 or num is negative
+     * @see radix_to_dec()
+     */
+    std::string dec_to_radix(int num, const int base, const int padding_width=0, const char padding_char='0') noexcept;
+
+    /**
+     * Converts a given positive decimal number to a symbolic string using given radix.
+     *
+     * See dec_to_radix() for details.
+     *
+     * @param str an encoded radix string
+     * @param base radix to use, either 62 or 82 where 82 is the maximum.
+     * @return the decoded radix decimal value or -1 if base > 82
+     * @see dec_to_radix()
+     */
+    int radix_to_dec(const std::string_view& str, const int base) noexcept;
+
+    /**
     // *************************************************
     // *************************************************
     // *************************************************

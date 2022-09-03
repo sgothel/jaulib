@@ -199,6 +199,94 @@ public class BasicTypes {
         return new String(res);
     }
 
+    private static final int radix_max_base = 143;
+    private static final String radix_symbols = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!#%&()+,-.;=@[]^_{}~ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿½¼¡«»αßΓπΣσµτΦΘΩδ∞φε";
+
+    /**
+     * Converts a given positive decimal number to a symbolix string using given radix.
+     *
+     * ## Constraints
+     * - Code page 437 compatible
+     * - Forbidden [v]fat chars: <>:"/\|?*
+     * - Further excluding quoting chars: "'$ and space to avoid any quoting issues
+     *
+     * Note: Beyond base 82, native C/C++ alike char encoding doesn't fit as code page 437 won't fit into ASCII. UTF-8 or wide chars would be required.
+     * If compatibility with narrow byte chars using ASCII is required, don't exceed base 82.
+     *
+     * ## Examples
+     * ### Base 62
+     * - 62**3-1 = 238327, 238327/365d = 652.95 years
+     * - 62 `0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ`
+     *
+     * ### Base 82
+     * - 82**3-1 = 551367, 551367/365d = 1510.59 years
+     * - 82 `0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!#%&()+,-.;=@[]^_{}~`
+     *
+     * ### Base 143
+     * - 143**3-1 = 2924206, 2924206/365d = 8011.52 years
+     * - 143 `0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!#%&()+,-.;=@[]^_{}~ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿½¼¡«»αßΓπΣσµτΦΘΩδ∞φε`
+     *
+     * @param num a positive decimal number
+     * @param base radix to use, either 62, 82 or 143 where 143 is the maximum.
+     * @param padding_width minimal width of the encoded radix string
+     * @param padding_char padding character, usually '0'
+     * @return the encoded radix string or an empty string if base > 143 or num is negative
+     * @see #radix_to_dec(String, int)
+     */
+    public static String dec_to_radix(int num, final int base, final int padding_width, final char padding_char) {
+        if( 0 > num || base > radix_max_base ) {
+            return "";
+        }
+
+        final StringBuilder res = new StringBuilder();
+        do {
+            res.insert( 0, radix_symbols.charAt( num % base ) );
+            num /= base;
+        } while ( 0 != num );
+
+        for(int i=res.length(); i<padding_width; ++i) {
+            res.insert(0, padding_char);
+        }
+        return res.toString();
+    }
+
+    /**
+     * Converts a given positive decimal number to a symbolix string using given radix.
+     *
+     * See {@link #dec_to_radix(int, int, int)} for details.
+     *
+     * @param num a positive decimal number
+     * @param base radix to use, either 62, 82 or 143 where 143 is the maximum.
+     * @return the encoded radix string or an empty string if base > 143 or num is negative
+     * @see #dec_to_radix(int, int, int, char)
+     * @see #radix_to_dec(String, int)
+     */
+    public static String dec_to_radix(final int num, final int base) {
+        return dec_to_radix(num, base, 0 /* padding_width */, '0');
+    }
+
+    /**
+     * Converts a given positive decimal number to a symbolic string using given radix.
+     *
+     * See {@link #dec_to_radix(int, int, int)} for details.
+     *
+     * @param str an encoded radix string
+     * @param base radix to use, either 62, 82 or 143 where 143 is the maximum.
+     * @return the decoded radix decimal value or -1 if base > 143
+     * @see #dec_to_radix(int, int)
+     */
+    public static int radix_to_dec(final String str, final int base) {
+        if( base > radix_max_base ) {
+            return -1;
+        }
+        final int str_len = str.length();
+        int res = 0;
+        for (int i = 0; i < str_len; ++i) {
+            res = res * base + radix_symbols.indexOf(str.charAt(i));
+        }
+        return res;
+    }
+
     /**
      * Returns all valid consecutive UTF-8 characters within buffer
      * in the range offset -> size or until EOS.

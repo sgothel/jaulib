@@ -417,6 +417,42 @@ std::string& jau::byteHexString(std::string& dest, const uint8_t value, const bo
     return dest;
 }
 
+// Beyond base 82, char encoding doesn't fit, not code page 437 and UTF-8 or wide chars would be required.
+// static constexpr const int radix_max_base = 143;
+// static const char* const radix_symbols = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!#%&()+,-.;=@[]^_{}~ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿½¼¡«»αßΓπΣσµτΦΘΩδ∞φε";
+static constexpr const int radix_max_base = 82;
+static const std::string radix_symbols = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!#%&()+,-.;=@[]^_{}~";
+
+std::string jau::dec_to_radix(int num, const int base, const int padding_width, const char padding_char) noexcept
+{
+    if( 0 > num || base > radix_max_base ) {
+        return "";
+    }
+    std::string res;
+    do {
+        std::div_t quotient = std::div(num, base);
+        res.insert( res.begin(), radix_symbols[ quotient.rem ] );
+        num = quotient.quot;
+    } while ( 0 != num );
+
+    for(int i=res.length(); i<padding_width; ++i) {
+        res.insert(res.begin(), padding_char);
+    }
+    return res;
+}
+
+int jau::radix_to_dec(const std::string_view& str, const int base) noexcept
+{
+    if( base > radix_max_base ) {
+        return -1;
+    }
+    int res = 0;
+    for (std::string::size_type pos = 0; pos < str.length(); ++pos) {
+        res = res * base + radix_symbols.find(str[pos]);
+    }
+    return res;
+}
+
 std::string jau::to_string(const endian& v) noexcept {
     switch(v) {
         case endian::little:  return "little";

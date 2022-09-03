@@ -60,6 +60,56 @@ public class TestBasicTypes {
 
     }
 
+    private static void testRadix(final int base) {
+        final String r1_max = BasicTypes.dec_to_radix(base-1, base, 3, '0');
+        final String r1_max_s = BasicTypes.dec_to_radix(base-1, base);
+        final String r3_max = r1_max_s.concat(r1_max_s).concat(r1_max_s);
+        final int min = BasicTypes.radix_to_dec("0", base);
+        final int max = BasicTypes.radix_to_dec(r3_max, base);
+
+        System.err.printf("Test base %d: [%d .. %d] <-> ['%s' .. '%s'], %d years (max/365d) \n",
+                base, min, max, BasicTypes.dec_to_radix(min, base), BasicTypes.dec_to_radix(max, base), (max/365));
+
+        Assert.assertEquals(0, min);
+        Assert.assertEquals(0, BasicTypes.radix_to_dec("000", base));
+        Assert.assertEquals("0", BasicTypes.dec_to_radix(0, base));
+        Assert.assertEquals("000", BasicTypes.dec_to_radix(0, base, 3, '0'));
+
+        Assert.assertEquals(1, BasicTypes.radix_to_dec("001", base));
+        Assert.assertEquals("1", BasicTypes.dec_to_radix(1, base));
+        Assert.assertEquals("001", BasicTypes.dec_to_radix(1, base, 3, '0'));
+        {
+            final int v0_d = BasicTypes.radix_to_dec(r1_max, base);
+            final String v1_s = BasicTypes.dec_to_radix(base-1, base, 3, '0');
+            Assert.assertEquals(r1_max, v1_s);
+            Assert.assertEquals(base-1, v0_d);
+        }
+        {
+            final int v0_d = BasicTypes.radix_to_dec(r3_max, base);
+            final String v1_s = BasicTypes.dec_to_radix(max, base, 3, '0');
+            Assert.assertEquals(r3_max, v1_s);
+            Assert.assertEquals(max, v0_d);
+        }
+        for(int iter=min; iter<=max; ++iter) {
+            final String rad = BasicTypes.dec_to_radix(iter, base, 3, '0');
+            final int dec = BasicTypes.radix_to_dec(rad, base);
+            Assert.assertEquals(iter, dec);
+        }
+    }
+
+    @Test
+    public void test01RadixBase62() {
+        testRadix(62);
+    }
+    @Test
+    public void test02RadixBase82() {
+        testRadix(82);
+    }
+    @Test
+    public void test03RadixBase143() {
+        testRadix(143);
+    }
+
     public static void main(final String args[]) {
         org.junit.runner.JUnitCore.main(TestBasicTypes.class.getName());
     }

@@ -9,6 +9,7 @@
 * First stable release (TODO)
 
 **0.15.0**
+* Add `jau::dec_to_radix()` and `radix_to_dec()` variable radix from and to decimal encoding.
 * Complete full `jau::fs::mount()` and `umount()`: 
   - `mount()` for block devices etc (non loop-device image)
   - `umount()` of mount-point
