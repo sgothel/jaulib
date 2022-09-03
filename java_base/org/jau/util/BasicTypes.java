@@ -231,10 +231,11 @@ public class BasicTypes {
      * @param padding_width minimal width of the encoded radix string
      * @param padding_char padding character, usually '0'
      * @return the encoded radix string or an empty string if base > 143 or num is negative
+     * @see #dec_to_radix(long, int, int, char)
      * @see #radix_to_dec(String, int)
      */
     public static String dec_to_radix(int num, final int base, final int padding_width, final char padding_char) {
-        if( 0 > num || base > radix_max_base ) {
+        if( 0 > num || 0 >= base || base > radix_max_base ) {
             return "";
         }
 
@@ -242,6 +243,37 @@ public class BasicTypes {
         do {
             res.insert( 0, radix_symbols.charAt( num % base ) );
             num /= base;
+        } while ( 0 != num );
+
+        for(int i=res.length(); i<padding_width; ++i) {
+            res.insert(0, padding_char);
+        }
+        return res.toString();
+    }
+
+    /**
+     * Converts a given positive decimal number to a symbolix string using given radix.
+     *
+     * See {@link #dec_to_radix(int, int, int)} for details.
+     *
+     * @param num a positive decimal number
+     * @param base radix to use, either 62, 82 or 143 where 143 is the maximum.
+     * @param padding_width minimal width of the encoded radix string
+     * @param padding_char padding character, usually '0'
+     * @return the encoded radix string or an empty string if base > 143 or num is negative
+     * @see #dec_to_radix(int, int, int, char)
+     * @see #radix_to_dec(String, int)
+     */
+    public static String dec_to_radix(long num, final int base, final int padding_width, final char padding_char) {
+        if( 0 > num || 0 >= base || base > radix_max_base ) {
+            return "";
+        }
+
+        final StringBuilder res = new StringBuilder();
+        final long lbase = base;
+        do {
+            res.insert( 0, radix_symbols.charAt( (int)( num % lbase ) ) );
+            num /= lbase;
         } while ( 0 != num );
 
         for(int i=res.length(); i<padding_width; ++i) {
@@ -266,6 +298,21 @@ public class BasicTypes {
     }
 
     /**
+     * Converts a given positive decimal number to a symbolix string using given radix.
+     *
+     * See {@link #dec_to_radix(int, int, int)} for details.
+     *
+     * @param num a positive decimal number
+     * @param base radix to use, either 62, 82 or 143 where 143 is the maximum.
+     * @return the encoded radix string or an empty string if base > 143 or num is negative
+     * @see #dec_to_radix(long, int, int, char)
+     * @see #radix_to_dec(String, int)
+     */
+    public static String dec_to_radix(final long num, final int base) {
+        return dec_to_radix(num, base, 0 /* padding_width */, '0');
+    }
+
+    /**
      * Converts a given positive decimal number to a symbolic string using given radix.
      *
      * See {@link #dec_to_radix(int, int, int)} for details.
@@ -275,12 +322,12 @@ public class BasicTypes {
      * @return the decoded radix decimal value or -1 if base > 143
      * @see #dec_to_radix(int, int)
      */
-    public static int radix_to_dec(final String str, final int base) {
+    public static long radix_to_dec(final String str, final int base) {
         if( base > radix_max_base ) {
             return -1;
         }
         final int str_len = str.length();
-        int res = 0;
+        long res = 0;
         for (int i = 0; i < str_len; ++i) {
             res = res * base + radix_symbols.indexOf(str.charAt(i));
         }

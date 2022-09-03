@@ -388,7 +388,7 @@ TEST_CASE( "Integer Type Test Test 05", "[integer][type]" ) {
     REQUIRE( 3_unz == (jau::nsize_t)3 );
 }
 
-static void testRadix(const int base) {
+static void testRadix32(const int base) {
     {
         // UTF-8 (or codepage 437) <-> ASCII collision
         const std::string s1 = "Ç";
@@ -444,12 +444,47 @@ static void testRadix(const int base) {
     }
 }
 
+static void testRadix64(const int base, const int64_t min, const int64_t max) {
+    const int padding = 9;
+    const std::string r1_max = jau::dec_to_radix(base-1, base, padding, '0');
+
+    fprintf(stderr, "Test base %d: [%" PRIi64 " .. %" PRIi64 "] <-> ['%s' .. '%s'], %" PRIi64 " years (max/365d) \n",
+            base, min, max, jau::dec_to_radix(min, base).c_str(), jau::dec_to_radix(max, base).c_str(), (max/365));
+
+    REQUIRE(0 == jau::radix_to_dec("000", base));
+    REQUIRE("0" == jau::dec_to_radix(0, base));
+
+    REQUIRE(1 == jau::radix_to_dec("001", base));
+    REQUIRE("1" == jau::dec_to_radix(1, base));
+    {
+        const int64_t v0_d = jau::radix_to_dec(r1_max, base);
+        const std::string v1_s = jau::dec_to_radix(base-1, base, padding, '0');
+        REQUIRE(r1_max == v1_s);
+        REQUIRE(base-1 == v0_d);
+    }
+    for(int64_t iter=std::max(0_i64, min-1); iter<max; ) {
+        ++iter;
+        const std::string rad = jau::dec_to_radix(iter, base, padding, '0');
+        const int64_t dec = jau::radix_to_dec(rad, base);
+#if 0
+        fprintf(stderr, "test base %d: iter %" PRIi64 ", rad '%s', dec %" PRIi64 "\n", base, iter, rad.c_str(), dec);
+#endif
+        REQUIRE(iter == dec);
+    }
+}
+
 TEST_CASE( "Radix Base 62 Test 05", "[integer][type]" ) {
-    testRadix(62);
+    testRadix32(62);
+    testRadix64(62, 0x7fffff00, 0x80000100_i64);
+    testRadix64(62, 0xFFFFFFF0_i64, 0x100000010_i64);
+    testRadix64(62, 0x7FFFFFFFFFFFFFF0_i64, 0x7FFFFFFFFFFFFFFF_i64);
 }
 
 TEST_CASE( "Radix Base 82 Test 05", "[integer][type]" ) {
-    testRadix(82);
+    testRadix32(82);
+    testRadix64(82, 0x7fffff00, 0x80000100_i64);
+    testRadix64(82, 0xFFFFFFF0_i64, 0x100000010_i64);
+    testRadix64(82, 0x7FFFFFFFFFFFFFF0_i64, 0x7FFFFFFFFFFFFFFF_i64);
 }
 
 // TEST_CASE( "Radix Base 143 Test 05", "[integer][type]" ) {

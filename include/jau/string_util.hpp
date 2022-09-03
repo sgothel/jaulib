@@ -226,7 +226,8 @@ namespace jau {
      * @return the encoded radix string or an empty string if base > 82 or num is negative
      * @see radix_to_dec()
      */
-    std::string dec_to_radix(int num, const int base, const int padding_width=0, const char padding_char='0') noexcept;
+    std::string dec_to_radix(int32_t num, const int32_t base, const unsigned int padding_width=0, const char padding_char='0') noexcept;
+    std::string dec_to_radix(int64_t num, const int32_t base, const unsigned int padding_width=0, const char padding_char='0') noexcept;
 
     /**
      * Converts a given positive decimal number to a symbolic string using given radix.
@@ -238,7 +239,7 @@ namespace jau {
      * @return the decoded radix decimal value or -1 if base > 82
      * @see dec_to_radix()
      */
-    int radix_to_dec(const std::string_view& str, const int base) noexcept;
+    int64_t radix_to_dec(const std::string_view& str, const int base) noexcept;
 
     /**
     // *************************************************
