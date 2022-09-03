@@ -1529,16 +1529,16 @@ static bool copy_push_mkdir(const file_stats& dst_stats, copy_context_t& ctx) no
         basename_ = dst_stats.item().basename();
     } else if( !dst_stats.exists() ) {
         new_dir = true;
-        constexpr const uint64_t val_min = 888;
-        constexpr const uint64_t val_max = 999999999999999; // 15 digits
+        constexpr const int32_t val_min = 888;
+        constexpr const int32_t val_max = std::numeric_limits<int32_t>::max(); // 6 digits base 62 = 56800235583 > INT_MAX
         uint64_t mkdir_cntr = 0;
         std::mt19937_64 prng;
-        std::uniform_int_distribution<uint64_t> prng_dist(val_min, val_max);
+        std::uniform_int_distribution<int32_t> prng_dist(val_min, val_max);
         bool mkdir_ok = false;
         do {
             ++mkdir_cntr;
-            const uint64_t val = prng_dist(prng);
-            basename_ = "."+std::to_string(val);
+            const int32_t val_d = prng_dist(prng);
+            basename_ = "."+jau::dec_to_radix(val_d, 62, 6); // base 63, 6 digits
             if( 0 == ::mkdirat(dest_dirfd, basename_.c_str(), jau::fs::posix_protection_bits(fmode_t::rwx_usr)) ) {
                 mkdir_ok = true;
             } else if (errno != EINTR && errno != EEXIST) {
