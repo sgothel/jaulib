@@ -393,15 +393,15 @@ static void testRadix32(const int base) {
         // UTF-8 (or codepage 437) <-> ASCII collision
         const std::string s1 = "Ç";
         const std::string s2 = "é";
-        fprintf(stderr, "test.s1 '%s' %03d, %03d, size %zu\n", s1.c_str(), s1[0], (int)(0xFF & s1[0]), sizeof(s1[0]));
-        fprintf(stderr, "test.s2 '%s' %03d, %03d, size %zu\n", s2.c_str(), s2[0], (int)(0xFF & s2[0]), sizeof(s2[0]));
+        fprintf(stderr, "test.s1 '%s' %03d, %03d, size %zu\n", s1.c_str(), (int)s1[0], (int)(0xFF & s1[0]), sizeof(s1[0]));
+        fprintf(stderr, "test.s2 '%s' %03d, %03d, size %zu\n", s2.c_str(), (int)s2[0], (int)(0xFF & s2[0]), sizeof(s2[0]));
     }
     {
         // UTF-8 (or codepage 437) <-> ASCII collision
         const std::wstring s1 = L"Ç";
         const std::wstring s2 = L"é";
-        fprintf(stderr, "test.s1 %03d, %03d, size %zu\n", s1[0], (int)(0xFFFF & s1[0]), sizeof(s1[0]));
-        fprintf(stderr, "test.s2 %03d, %03d, size %zu\n", s2[0], (int)(0xFFFF & s2[0]), sizeof(s2[0]));
+        fprintf(stderr, "test.s1 %03d, %03d, size %zu\n", (int)s1[0], (int)(0xFFFF & s1[0]), sizeof(s1[0]));
+        fprintf(stderr, "test.s2 %03d, %03d, size %zu\n", (int)s2[0], (int)(0xFFFF & s2[0]), sizeof(s2[0]));
     }
 
     const std::string r1_max = jau::dec_to_radix(base-1, base, 3, '0');
