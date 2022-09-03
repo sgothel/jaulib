@@ -473,11 +473,11 @@ static void testRadix64(const int base, const int64_t min, const int64_t max) {
     }
 }
 
-TEST_CASE( "Radix Base 62 Test 05", "[integer][type]" ) {
-    testRadix32(62);
-    testRadix64(62, 0x7fffff00, 0x80000100_i64);
-    testRadix64(62, 0xFFFFFFF0_i64, 0x100000010_i64);
-    testRadix64(62, 0x7FFFFFFFFFFFFFF0_i64, 0x7FFFFFFFFFFFFFFF_i64);
+TEST_CASE( "Radix Base 64 Test 05", "[integer][type]" ) {
+    testRadix32(64);
+    testRadix64(64, 0x7fffff00, 0x80000100_i64);
+    testRadix64(64, 0xFFFFFFF0_i64, 0x100000010_i64);
+    testRadix64(64, 0x7FFFFFFFFFFFFFF0_i64, 0x7FFFFFFFFFFFFFFF_i64);
 }
 
 TEST_CASE( "Radix Base 82 Test 05", "[integer][type]" ) {
@@ -487,6 +487,3 @@ TEST_CASE( "Radix Base 82 Test 05", "[integer][type]" ) {
     testRadix64(82, 0x7FFFFFFFFFFFFFF0_i64, 0x7FFFFFFFFFFFFFFF_i64);
 }
 
-// TEST_CASE( "Radix Base 143 Test 05", "[integer][type]" ) {
-//    testRadix(143);
-// }

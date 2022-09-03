@@ -127,11 +127,11 @@ public class TestBasicTypes {
     }
 
     @Test
-    public void test01RadixBase62() {
-        testRadix32(62);
-        testRadix64(62, 0x7fffff00L, 0x80000100L);
-        testRadix64(62, 0xFFFFFFF0L, 0x100000010L);
-        testRadix64(62, 0x7FFFFFFFFFFFFFF0L, 0x7FFFFFFFFFFFFFFFL);
+    public void test01RadixBase64() {
+        testRadix32(64);
+        testRadix64(64, 0x7fffff00L, 0x80000100L);
+        testRadix64(64, 0xFFFFFFF0L, 0x100000010L);
+        testRadix64(64, 0x7FFFFFFFFFFFFFF0L, 0x7FFFFFFFFFFFFFFFL);
 
     }
     @Test
@@ -140,13 +140,6 @@ public class TestBasicTypes {
         testRadix64(82, 0x7fffff00L, 0x80000100L);
         testRadix64(82, 0xFFFFFFF0L, 0x100000010L);
         testRadix64(82, 0x7FFFFFFFFFFFFFF0L, 0x7FFFFFFFFFFFFFFFL);
-    }
-    @Test
-    public void test03RadixBase143() {
-        testRadix32(143);
-        testRadix64(143, 0x7fffff00L, 0x80000100L);
-        testRadix64(143, 0xFFFFFFF0L, 0x100000010L);
-        testRadix64(143, 0x7FFFFFFFFFFFFFF0L, 0x7FFFFFFFFFFFFFFFL);
     }
 
     public static void main(final String args[]) {

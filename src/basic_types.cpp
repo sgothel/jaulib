@@ -417,17 +417,18 @@ std::string& jau::byteHexString(std::string& dest, const uint8_t value, const bo
     return dest;
 }
 
-// Beyond base 82, char encoding doesn't fit, not code page 437 and UTF-8 or wide chars would be required.
 // static constexpr const int radix_max_base = 143;
 // static const char* const radix_symbols = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!#%&()+,-.;=@[]^_{}~ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿½¼¡«»αßΓπΣσµτΦΘΩδ∞φε";
 static constexpr const int radix_max_base = 82;
-static const std::string radix_symbols = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!#%&()+,-.;=@[]^_{}~";
+static const std::string radix_symbols_64 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_";
+static const std::string radix_symbols_82 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!#%&()+,-.;=@[]^_{}~";
 
 std::string jau::dec_to_radix(int32_t num, const int32_t base, const unsigned int padding_width, const char padding_char) noexcept
 {
     if( 0 > num || 0 >= base || base > radix_max_base ) {
         return "";
     }
+    const std::string& radix_symbols = base <= 64 ? radix_symbols_64 : radix_symbols_82;
     std::string res;
     do {
         std::div_t quotient = std::div(num, base);
@@ -446,6 +447,7 @@ std::string jau::dec_to_radix(int64_t num, const int32_t base, const unsigned in
     if( 0 > num || 0 >= base || base > radix_max_base ) {
         return "";
     }
+    const std::string& radix_symbols = base <= 64 ? radix_symbols_64 : radix_symbols_82;
     std::string res;
     do {
         std::lldiv_t quotient = std::lldiv(num, (int64_t)base);
@@ -464,6 +466,7 @@ int64_t jau::radix_to_dec(const std::string_view& str, const int base) noexcept
     if( base > radix_max_base ) {
         return -1;
     }
+    const std::string& radix_symbols = base <= 64 ? radix_symbols_64 : radix_symbols_82;
     int64_t res = 0;
     for (std::string::size_type pos = 0; pos < str.length(); ++pos) {
         res = res * base + radix_symbols.find(str[pos]);

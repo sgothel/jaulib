@@ -1538,7 +1538,7 @@ static bool copy_push_mkdir(const file_stats& dst_stats, copy_context_t& ctx) no
         do {
             ++mkdir_cntr;
             const int32_t val_d = prng_dist(prng);
-            basename_ = "."+jau::dec_to_radix(val_d, 62, 6); // base 63, 6 digits
+            basename_ = "."+jau::dec_to_radix(val_d, 64, 6); // base 64, 6 digits
             if( 0 == ::mkdirat(dest_dirfd, basename_.c_str(), jau::fs::posix_protection_bits(fmode_t::rwx_usr)) ) {
                 mkdir_ok = true;
             } else if (errno != EINTR && errno != EEXIST) {
