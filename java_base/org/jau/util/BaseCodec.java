@@ -526,7 +526,7 @@ public class BaseCodec {
         }
         final char padding = aspec.padding64();
 
-        final int out_len = (in_len +2) / 3 * 4;
+        final int out_len = ( in_len + 2 ) / 3 * 4; // estimate ..
         final StringBuilder res = new StringBuilder(out_len);
 
         while( 0 < in_len && 0 < out_len ) {
@@ -589,7 +589,7 @@ public class BaseCodec {
         }
         final char padding = aspec.padding64();
 
-        final int out_len = 3 * ( in_len / 4 ) + 2;
+        final int out_len = 3 * ( in_len / 4 ) + 2; // estimate w/ potentially up to 2 additional bytes
         final ByteBuffer res = ByteBuffer.allocate(out_len);
         int in_pos = 0;
 

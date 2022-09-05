@@ -90,7 +90,7 @@ std::string jau::codec::base::encode64(const void* in_octets, size_t in_len, con
     const char padding = aspec.padding64();
     const uint8_t* in_bytes = (const uint8_t*)in_octets;
 
-    size_t out_len = (in_len +2) / 3 * 4;
+    size_t out_len = ( in_len + 2 ) / 3 * 4; // estimate ..
     std::string res;
     res.reserve(out_len);
 
@@ -145,7 +145,7 @@ std::vector<uint8_t> jau::codec::base::decode64(const std::string_view& in_code,
     const char padding = aspec.padding64();
     const char* in_chars = in_code.data();
 
-    const size_t out_len = in_len / 4 * 3;
+    const size_t out_len = 3 * ( in_len / 4 ) + 2; // estimate w/ potentially up to 2 additional bytes
     std::vector<uint8_t> res;
     res.reserve(out_len);
 
