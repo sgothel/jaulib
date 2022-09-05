@@ -228,7 +228,9 @@ public class TestBaseCodec {
 
     private static byte[] to_array(final ByteBuffer bb) {
         final byte[] res = new byte[bb.remaining()];
-        bb.get(bb.position(), res, 0, res.length);
+        final int pos = bb.position();
+        bb.get(res, 0, res.length);
+        bb.position(pos);
         return res;
     }
     private static void testBinaryBase64() {
