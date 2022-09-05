@@ -199,145 +199,23 @@ public class BasicTypes {
         return new String(res);
     }
 
-    private static final int radix_max_base = 82;
-    private static final String radix_symbols_64 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_";
-    private static final String radix_symbols_82 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!#%&()+,-.;=@[]^_{}~";
-
-    /**
-     * Converts a given positive decimal number to a symbolic string using given radix.
-     *
-     * ## Constraints
-     * - ASCII, URL and filenam safe
-     * - Code page 437 compatible
-     * - Forbidden [v]fat chars: <>:"/\|?*
-     * - Further excluding quoting chars: "'$ and space to avoid any quoting issues
-     * - Use a alphanumeric alphabet with natural increasing character value representing higher values (in contrast to Base64).
-     *
-     * Note: Beyond base 82, native C/C++ char encoding doesn't fit as code page 437 won't fit into ASCII. UTF-8 or wide chars would be required.
-     *
-     * ## Examples
-     * ### Base 64 - Using rfc4648 `URL and Filename safe` Base 64 Alphabet
-     * - 64**3-1 = 262143, 262143/365d = 718.2 years
-     * - 64 `0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_`
-     * - Extra padding could be `=` similar to Base64.
-     * - Benefits from 6-bit alignment for one base 64 digit similar, 2**6 == 64
-     *
-     * ### Base 82
-     * - 82**3-1 = 551367, 551367/365d = 1510.59 years
-     * - 82 `0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!#%&()+,-.;=@[]^_{}~`
-     *
-     * @param num a positive decimal number
-     * @param base radix to use, either 64 or 82 where 82 is the maximum.
-     * @param padding_width minimal width of the encoded radix string
-     * @param padding_char padding character, usually '0'
-     * @return the encoded radix string or an empty string if base > 82 or num is negative
-     * @see #dec_to_radix(long, int, int, char)
-     * @see #radix_to_dec(String, int)
-     */
-    public static String dec_to_radix(int num, final int base, final int padding_width, final char padding_char) {
-        if( 0 > num || 1 >= base || base > radix_max_base ) {
-            return "";
-        }
-
-        final String radix_symbols = base <= 64 ? radix_symbols_64 : radix_symbols_82;
-        final StringBuilder res = new StringBuilder();
+    public static double machineEpsilonDouble() {
+        final double one = 1.0;
+        final double two = 2.0;
+        double x = one, res;
         do {
-            res.insert( 0, radix_symbols.charAt( num % base ) ); // safe: radix_symbols.length() == max_base
-            num /= base;
-        } while ( 0 != num );
-
-        for(int i=res.length(); i<padding_width; ++i) {
-            res.insert(0, padding_char);
-        }
-        return res.toString();
+            res = x;
+        } while (one + (x /= two) > one);
+        return res;
     }
 
-    /**
-     * Converts a given positive decimal number to a symbolix string using given radix.
-     *
-     * See {@link #dec_to_radix(int, int, int)} for details.
-     *
-     * @param num a positive decimal number
-     * @param base radix to use, either 64 or 82 where 82 is the maximum.
-     * @param padding_width minimal width of the encoded radix string
-     * @param padding_char padding character, usually '0'
-     * @return the encoded radix string or an empty string if base > 82 or num is negative
-     * @see #dec_to_radix(int, int, int, char)
-     * @see #radix_to_dec(String, int)
-     */
-    public static String dec_to_radix(long num, final int base, final int padding_width, final char padding_char) {
-        if( 0 > num || 1 >= base || base > radix_max_base ) {
-            return "";
-        }
-
-        final String radix_symbols = base <= 64 ? radix_symbols_64 : radix_symbols_82;
-        final StringBuilder res = new StringBuilder();
-        final long lbase = base;
+    public static float machineEpsilonFloat() {
+        final float one = 1.0f;
+        final float two = 2.0f;
+        float x = one, res;
         do {
-            res.insert( 0, radix_symbols.charAt( (int)( num % lbase ) ) ); // safe: radix_symbols.length() == max_base
-            num /= lbase;
-        } while ( 0 != num );
-
-        for(int i=res.length(); i<padding_width; ++i) {
-            res.insert(0, padding_char);
-        }
-        return res.toString();
-    }
-
-    /**
-     * Converts a given positive decimal number to a symbolix string using given radix.
-     *
-     * See {@link #dec_to_radix(int, int, int)} for details.
-     *
-     * @param num a positive decimal number
-     * @param base radix to use, either 64 or 82 where 82 is the maximum.
-     * @return the encoded radix string or an empty string if base > 82 or num is negative
-     * @see #dec_to_radix(int, int, int, char)
-     * @see #radix_to_dec(String, int)
-     */
-    public static String dec_to_radix(final int num, final int base) {
-        return dec_to_radix(num, base, 0 /* padding_width */, '0');
-    }
-
-    /**
-     * Converts a given positive decimal number to a symbolix string using given radix.
-     *
-     * See {@link #dec_to_radix(int, int, int)} for details.
-     *
-     * @param num a positive decimal number
-     * @param base radix to use, either 64 or 82 where 82 is the maximum.
-     * @return the encoded radix string or an empty string if base > 82 or num is negative
-     * @see #dec_to_radix(long, int, int, char)
-     * @see #radix_to_dec(String, int)
-     */
-    public static String dec_to_radix(final long num, final int base) {
-        return dec_to_radix(num, base, 0 /* padding_width */, '0');
-    }
-
-    /**
-     * Converts a given positive decimal number to a symbolic string using given radix.
-     *
-     * See {@link #dec_to_radix(int, int, int)} for details.
-     *
-     * @param str an encoded radix string
-     * @param base radix to use, either 64 or 82 where 82 is the maximum.
-     * @return the decoded radix decimal value or -1 if base > 82
-     * @see #dec_to_radix(int, int)
-     */
-    public static long radix_to_dec(final String str, final int base) {
-        if( 1 >= base || base > radix_max_base ) {
-            return -1;
-        }
-        final String radix_symbols = base <= 64 ? radix_symbols_64 : radix_symbols_82;
-        final int str_len = str.length();
-        long res = 0;
-        for (int i = 0; i < str_len; ++i) {
-            final int d = radix_symbols.indexOf( str.charAt(i) );
-            if( 0 > d ) {
-                return -1; // encoded value not found
-            }
-            res = res * base + d;
-        }
+            res = x;
+        } while (one + (x /= two) > one);
         return res;
     }
 

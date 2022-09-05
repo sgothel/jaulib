@@ -197,51 +197,6 @@ namespace jau {
     }
 
     /**
-     * Converts a given positive decimal number to a symbolic string using given radix.
-     *
-     * ## Constraints
-     * - ASCII, URL and filenam safe
-     * - Code page 437 compatible
-     * - Forbidden [v]fat chars: <>:"/\|?*
-     * - Further excluding quoting chars: "'$ and space to avoid any quoting issues
-     * - Use a alphanumeric alphabet with natural increasing character value representing higher values (in contrast to Base64).
-     *
-     * Note: Beyond base 82, native C/C++ char encoding doesn't fit as code page 437 won't fit into ASCII. UTF-8 or wide chars would be required.
-     *
-     * ## Examples
-     * ### Base 64 - Using rfc4648 `URL and Filename safe` Base 64 Alphabet
-     * - 64**3-1 = 264143, 264143/365d = 718.2 years
-     * - 64 `0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_`
-     * - Extra padding could be `=` similar to Base64.
-     * - Benefits from 6-bit alignment for one base 64 digit similar, 2**6 == 64
-     *
-     * ### Base 82
-     * - 82**3-1 = 551367, 551367/365d = 1510.59 years
-     * - 82 `0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!#%&()+,-.;=@[]^_{}~`
-     *
-     * @param num a positive decimal number
-     * @param base radix to use, either 64 or 82 where 82 is the maximum.
-     * @param padding_width minimal width of the encoded radix string. Defaults to 0.
-     * @param padding_char padding character. Defaults to '0'.
-     * @return the encoded radix string or an empty string if base > 82 or num is negative
-     * @see radix_to_dec()
-     */
-    std::string dec_to_radix(int32_t num, const int32_t base, const unsigned int padding_width=0, const char padding_char='0') noexcept;
-    std::string dec_to_radix(int64_t num, const int32_t base, const unsigned int padding_width=0, const char padding_char='0') noexcept;
-
-    /**
-     * Converts a given positive decimal number to a symbolic string using given radix.
-     *
-     * See dec_to_radix() for details.
-     *
-     * @param str an encoded radix string
-     * @param base radix to use, either 64 or 82 where 82 is the maximum.
-     * @return the decoded radix decimal value or -1 if base > 82
-     * @see dec_to_radix()
-     */
-    int64_t radix_to_dec(const std::string_view& str, const int base) noexcept;
-
-    /**
     // *************************************************
     // *************************************************
     // *************************************************

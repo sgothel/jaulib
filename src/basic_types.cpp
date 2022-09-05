@@ -417,68 +417,6 @@ std::string& jau::byteHexString(std::string& dest, const uint8_t value, const bo
     return dest;
 }
 
-// static constexpr const int radix_max_base = 143;
-// static const char* const radix_symbols = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!#%&()+,-.;=@[]^_{}~ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿½¼¡«»αßΓπΣσµτΦΘΩδ∞φε";
-static constexpr const int radix_max_base = 82;
-static const std::string radix_symbols_64 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_";
-static const std::string radix_symbols_82 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!#%&()+,-.;=@[]^_{}~";
-
-std::string jau::dec_to_radix(int32_t num, const int32_t base, const unsigned int padding_width, const char padding_char) noexcept
-{
-    if( 0 > num || 1 >= base || base > radix_max_base ) {
-        return "";
-    }
-    const std::string& radix_symbols = base <= 64 ? radix_symbols_64 : radix_symbols_82;
-    std::string res;
-    do {
-        std::div_t quotient = std::div(num, base);
-        res.insert( res.begin(), radix_symbols[ quotient.rem ] ); // safe: radix_symbols.length() == max_base
-        num = quotient.quot;
-    } while ( 0 != num );
-
-    for(unsigned int i=res.length(); i<padding_width; ++i) {
-        res.insert(res.begin(), padding_char);
-    }
-    return res;
-}
-
-std::string jau::dec_to_radix(int64_t num, const int32_t base, const unsigned int padding_width, const char padding_char) noexcept
-{
-    if( 0 > num || 1 >= base || base > radix_max_base ) {
-        return "";
-    }
-    const std::string& radix_symbols = base <= 64 ? radix_symbols_64 : radix_symbols_82;
-    std::string res;
-    do {
-        std::lldiv_t quotient = std::lldiv(num, (int64_t)base);
-        res.insert( res.begin(), radix_symbols[ quotient.rem ] ); // safe: radix_symbols.length() == max_base
-        num = quotient.quot;
-    } while ( 0 != num );
-
-    for(unsigned int i=res.length(); i<padding_width; ++i) {
-        res.insert(res.begin(), padding_char);
-    }
-    return res;
-}
-
-int64_t jau::radix_to_dec(const std::string_view& str, const int base) noexcept
-{
-    if( 1 >= base || base > radix_max_base ) {
-        return -1;
-    }
-    const std::string& radix_symbols = base <= 64 ? radix_symbols_64 : radix_symbols_82;
-    std::string::size_type str_len = str.length();
-    int64_t res = 0;
-    for (std::string::size_type pos = 0; pos < str_len; ++pos) {
-        const std::string::size_type d = radix_symbols.find( str[pos] );
-        if( std::string::npos == d ) {
-            return -1; // encoded value not found
-        }
-        res = res * base + static_cast<int64_t>(d);
-    }
-    return res;
-}
-
 std::string jau::to_string(const endian& v) noexcept {
     switch(v) {
         case endian::little:  return "little";

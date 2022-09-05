@@ -9,7 +9,7 @@
 * First stable release (TODO)
 
 **0.15.0**
-* Add `jau::dec_to_radix()` and `radix_to_dec()` variable radix from and to decimal encoding.
+* Add `jau::codec::base` and `org.jau.util.BaseCodec` for variable integer base coding and fixed binary base 64 coding.
 * Complete full `jau::fs::mount()` and `umount()`: 
   - `mount()` for block devices etc (non loop-device image)
   - `umount()` of mount-point

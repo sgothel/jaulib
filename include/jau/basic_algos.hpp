@@ -162,6 +162,30 @@ namespace jau {
     }
 
     /**
+     * Identical to C++20 std::remove_if() of `algorithm`
+     *
+     * @tparam ForwardIt the iterator type
+     * @tparam UnaryPredicate
+     * @param first range start of elements to examine
+     * @param last range end of elements to examine, exclusive
+     * @param p unary predicate which returns true for the desired element to be removed
+     * @return past-the end iterator for the new range of values.
+     */
+    template<class ForwardIt, class UnaryPredicate>
+    ForwardIt remove_if(ForwardIt first, ForwardIt last, UnaryPredicate p)
+    {
+        first = find_if(first, last, p);
+        if (first != last) {
+            for(ForwardIt i = first; ++i != last; ) {
+                if (!p(*i)) {
+                    *first++ = std::move(*i);
+                }
+            }
+        }
+        return first; // implicit move since C++11
+    }
+
+    /**
      * Like std::for_each() of 'algorithm'
      * <p>
      * Only exists here as performance analysis over O(n*n) complexity
