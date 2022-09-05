@@ -174,7 +174,7 @@ namespace jau {
     template<class ForwardIt, class UnaryPredicate>
     ForwardIt remove_if(ForwardIt first, ForwardIt last, UnaryPredicate p)
     {
-        first = find_if(first, last, p);
+        first = jau::find_if(first, last, p);
         if (first != last) {
             for(ForwardIt i = first; ++i != last; ) {
                 if (!p(*i)) {
