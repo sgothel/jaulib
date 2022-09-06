@@ -183,7 +183,12 @@ static void testIntegerBase86(const jau::codec::base::alphabet& aspec) {
     // testRadix_int64(86, aspec, 0x0_i64, 0x7FFFFFFFFFFFFFFF_i64);
 }
 
-TEST_CASE( "Integer Base 64 Encoding Test 01", "[integer][type]" ) {
+TEST_CASE( "Integer Base 38 Encoding Test 01", "[integer][type]" ) {
+    testRadix_3digits_int32(38, jau::codec::base::ascii38_alphabet());
+    testRadix_3digits_int32(38, jau::codec::base::ascii64_alphabet());
+}
+
+TEST_CASE( "Integer Base 64 Encoding Test 02", "[integer][type]" ) {
     testIntegerBase64(jau::codec::base::base64_alphabet());
     testIntegerBase64(jau::codec::base::base64url_alphabet());
     testIntegerBase64(jau::codec::base::natural86_alphabet());
@@ -191,7 +196,7 @@ TEST_CASE( "Integer Base 64 Encoding Test 01", "[integer][type]" ) {
     testIntegerBase64(jau::codec::base::ascii86_alphabet());
 }
 
-TEST_CASE( "Integer Base 86 Encoding Test 02", "[integer][type]" ) {
+TEST_CASE( "Integer Base 86 Encoding Test 03", "[integer][type]" ) {
     testIntegerBase86(jau::codec::base::natural86_alphabet());
     testIntegerBase86(jau::codec::base::ascii86_alphabet());
 }

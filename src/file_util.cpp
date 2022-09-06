@@ -1531,7 +1531,7 @@ static bool copy_push_mkdir(const file_stats& dst_stats, copy_context_t& ctx) no
     } else if( !dst_stats.exists() ) {
         new_dir = true;
         constexpr const int32_t val_min = 888;
-        constexpr const int32_t val_max = std::numeric_limits<int32_t>::max(); // 6 digits base 64 > INT_MAX
+        constexpr const int32_t val_max = std::numeric_limits<int32_t>::max(); // 6 digits base 38 > INT_MAX
         uint64_t mkdir_cntr = 0;
         std::mt19937_64 prng;
         std::uniform_int_distribution<int32_t> prng_dist(val_min, val_max);
@@ -1539,7 +1539,7 @@ static bool copy_push_mkdir(const file_stats& dst_stats, copy_context_t& ctx) no
         do {
             ++mkdir_cntr;
             const int32_t val_d = prng_dist(prng);
-            basename_ = "."+jau::codec::base::encode(val_d, 64, jau::codec::base::ascii64_alphabet(), 6); // base 64, 6 digits
+            basename_ = "."+jau::codec::base::encode(val_d, 38, jau::codec::base::ascii38_alphabet(), 6); // base 38, 6 digits
             if( 0 == ::mkdirat(dest_dirfd, basename_.c_str(), jau::fs::posix_protection_bits(fmode_t::rwx_usr)) ) {
                 mkdir_ok = true;
             } else if (errno != EINTR && errno != EEXIST) {

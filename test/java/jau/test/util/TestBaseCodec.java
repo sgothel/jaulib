@@ -187,7 +187,13 @@ public class TestBaseCodec {
     }
 
     @Test
-    public void test01IntegerBase64() {
+    public void test01IntegerBase38() {
+        testRadix_3digits_int32(38, new BaseCodec.Ascii38Alphabet());
+        testRadix_3digits_int32(38, new BaseCodec.Ascii64Alphabet());
+    }
+
+    @Test
+    public void test02IntegerBase64() {
         testIntegerBase64(new BaseCodec.Base64Alphabet());
         testIntegerBase64(new BaseCodec.Base64urlAlphabet());
         testIntegerBase64(new BaseCodec.Natural86Alphabet());
@@ -196,7 +202,7 @@ public class TestBaseCodec {
     }
 
     @Test
-    public void test02IntegerBase86() {
+    public void test03IntegerBase86() {
         testIntegerBase86(new BaseCodec.Natural86Alphabet());
         testIntegerBase86(new BaseCodec.Ascii86Alphabet());
     }

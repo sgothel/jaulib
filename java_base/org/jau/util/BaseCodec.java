@@ -246,6 +246,48 @@ public class BaseCodec {
     }
 
     /**
+     * Safe base 38 alphabet with ASCII code-point sorting order.
+     *
+     * - Value: `-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_`
+     * - Padding: `=`
+     *
+     * ### Properties
+     * - 7-bit ASCII
+     * - Code page 437 compatible
+     * - Safe URL and filename use
+     * - Excludes forbidden [v]fat chars: `<>:"/\|?*`
+     * - Only using upper-case letters for unique filename under vfat
+     * - Excludes quoting chars: "'$ and space
+     * - Supporting ASCII code-point sorting.
+     * - Order: `-` < `0` < `A` < `a` < `z`
+     *
+     * @see encodeBase()
+     * @see decodeBase()
+     */
+    public static class Ascii38Alphabet extends Alphabet {
+        private static final String data = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_";
+
+        @Override
+        public int code_point(final char c) {
+            if ('0' <= c && c <= '9') {
+                return c - '0' + 1;
+            } else if ('A' <= c && c <= 'Z') {
+                return c - 'A' + 11;
+            } else if ('-' == c) {
+                return 0;
+            } else if ('_' == c) {
+                return 37;
+            } else {
+                return -1;
+            }
+        }
+
+        public Ascii38Alphabet() {
+            super("ascii38", 38, data, '=');
+        }
+    }
+
+    /**
      * Safe base 64 alphabet with ASCII code-point sorting order.
      *
      * - Value: `-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz`
