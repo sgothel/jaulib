@@ -75,7 +75,7 @@ int64_t jau::codec::base::decode(const std::string_view& str, const int base, co
     int64_t res = 0;
     for (std::string::size_type pos = 0; pos < str_len; ++pos) {
         const int cp = aspec.code_point( str[pos] );
-        if( 0 > cp ) {
+        if( 0 > cp || cp >= base ) {
             return -1; // encoded value not found
         }
         res = res * base + static_cast<int64_t>(cp);
@@ -152,7 +152,7 @@ std::vector<uint8_t> jau::codec::base::decode64(const std::string_view& in_code,
     while( in_len >= 2 ) {
         const int cp0 = aspec.code_point( in_chars[0] );
         const int cp1 = aspec.code_point( in_chars[1] );
-        if( 0 > cp0 || 0 > cp1 ) {
+        if( 0 > cp0 || cp0 >= 64 || 0 > cp1 || cp1 >= 64 ) {
             break;
         }
         res.push_back( cp0 << 2 | cp1 >> 4 );
@@ -171,7 +171,7 @@ std::vector<uint8_t> jau::codec::base::decode64(const std::string_view& in_code,
             }
         } else {
             const int cp2 = aspec.code_point( in_chars[2] );
-            if( 0 > cp2 ) {
+            if( 0 > cp2 || cp2 >= 64 ) {
                 break;
             }
             res.push_back( ( ( cp1 << 4 ) & 0xf0 ) | ( cp2 >> 2 ) );
@@ -187,7 +187,7 @@ std::vector<uint8_t> jau::codec::base::decode64(const std::string_view& in_code,
                 }
             } else {
                 const int cp3 = aspec.code_point( in_chars[3] );
-                if( 0 > cp3 ) {
+                if( 0 > cp3 || cp3 >= 64 ) {
                     break;
                 }
                 res.push_back( ( ( cp2 << 6 ) & 0xc0 ) | cp3 );

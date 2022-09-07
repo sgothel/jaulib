@@ -540,7 +540,7 @@ public class BaseCodec {
         long res = 0;
         for (int i = 0; i < str_len; ++i) {
             final int d = aspec.code_point( str.charAt(i) );
-            if( 0 > d ) {
+            if( 0 > d || d >= base ) {
                 return -1; // encoded value not found
             }
             res = res * base + d;
@@ -638,7 +638,7 @@ public class BaseCodec {
         while( in_len >= 2 ) {
             final int cp0 = aspec.code_point( in_code.charAt( in_pos + 0 ) );
             final int cp1 = aspec.code_point( in_code.charAt( in_pos + 1 ) );
-            if( 0 > cp0 || 0 > cp1 ) {
+            if( 0 > cp0 || cp0 >= 64 || 0 > cp1 || cp1 >= 64 ) {
                 break;
             }
             res.put( (byte)(cp0 << 2 | cp1 >> 4) );
@@ -657,7 +657,7 @@ public class BaseCodec {
                 }
             } else {
                 final int cp2 = aspec.code_point( in_code.charAt( in_pos + 2 ) );
-                if( 0 > cp2 ) {
+                if( 0 > cp2 || cp2 >= 64 ) {
                     break;
                 }
                 res.put( (byte)( ( ( cp1 << 4 ) & 0xf0 ) | ( cp2 >> 2 ) ) );
@@ -673,7 +673,7 @@ public class BaseCodec {
                     }
                 } else {
                     final int cp3 = aspec.code_point( in_code.charAt( in_pos + 3 ) );
-                    if( 0 > cp3 ) {
+                    if( 0 > cp3 || cp3 >= 64 ) {
                         break;
                     }
                     res.put( (byte)( ( ( cp2 << 6 ) & 0xc0 ) | cp3 ) );
