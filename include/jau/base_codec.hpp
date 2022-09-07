@@ -56,17 +56,22 @@ namespace jau::codec::base {
 
         private:
             std::string name_;
-            int max_base_;
+            int base_;
             std::string_view symbols_;
             char padding64_;
             code_point_func cpf;
 
         public:
-            alphabet(const std::string& _name, int _max_base, std::string_view _symbols, char _padding64, code_point_func _cpf) noexcept
-            : name_(_name), max_base_(_max_base), symbols_(_symbols), padding64_(_padding64), cpf(_cpf) {}
+            alphabet(const std::string& _name, int _base, std::string_view _symbols, char _padding64, code_point_func _cpf) noexcept
+            : name_(_name), base_(_base), symbols_(_symbols), padding64_(_padding64), cpf(_cpf) {}
 
+            /** Human readable name for this alphabet instance. */
             constexpr const std::string& name() const noexcept { return name_; }
-            constexpr int max_base() const noexcept { return max_base_; }
+
+            /** The fixed base used for this alphabet. */
+            constexpr int base() const noexcept { return base_; }
+
+            /** The string of symbols of this alphabet. */
             constexpr const std::string_view& symbols() const noexcept { return symbols_; }
 
             /** Padding symbol for base <= 64 and block encoding only. May return zero for no padding. */
@@ -75,14 +80,13 @@ namespace jau::codec::base {
             /** Returns the code-point of the given character or -1 if not element of this alphabet. */
             constexpr int code_point(const char c) const noexcept { return cpf(c); }
 
-            constexpr char at( size_t pos ) const { return symbols_.at(pos); }
-            constexpr char operator[]( size_t pos ) const { return symbols_[pos]; }
-            constexpr char symbol( size_t pos ) const { return symbols_[pos]; }
+            /** Retrieve the character at given code-point of this alphabet. */
+            constexpr char operator[]( size_t cp ) const noexcept { return symbols_[cp]; }
 
             std::string to_string() const noexcept {
                 std::string res("alphabet[");
                 res.append(name());
-                res.append(", base <= "+std::to_string(max_base())+"]");
+                res.append(", base <= "+std::to_string(base())+"]");
                 return res;
             }
     };
@@ -90,7 +94,7 @@ namespace jau::codec::base {
     inline std::string to_string(const alphabet& v) noexcept { return v.to_string(); }
 
     inline bool operator!=(const alphabet& lhs, const alphabet& rhs ) noexcept {
-        return lhs.max_base() != rhs.max_base() || lhs.name() != rhs.name() || lhs.symbols() != rhs.symbols();
+        return lhs.base() != rhs.base() || lhs.name() != rhs.name() || lhs.symbols() != rhs.symbols();
     }
 
     inline bool operator==(const alphabet& lhs, const alphabet& rhs ) noexcept {
@@ -107,6 +111,7 @@ namespace jau::codec::base {
      * - Padding: `=`
      *
      * ### Properties
+     * - Base 64
      * - 7-bit ASCII
      * - Code page 437 compatible
      * - [`base64` alphabet](https://www.rfc-editor.org/rfc/rfc4648.html), identical order
@@ -149,6 +154,7 @@ namespace jau::codec::base {
      * - Padding: `=`
      *
      * ### Properties
+     * - Base 64
      * - 7-bit ASCII
      * - Code page 437 compatible
      * - [`base64url` alphabet](https://www.rfc-editor.org/rfc/rfc4648.html), identical order
@@ -184,14 +190,15 @@ namespace jau::codec::base {
     };
 
     /**
-     * Natural base 86 alphabet including a safe base 64 subset, both without ASCII code-point sorting order.
+     * Safe natural base 64 alphabet, both without ASCII code-point sorting order.
      *
-     * Order is considered a natural extension of decimal symbols, i.e. `0` < `a` < `A` < `_` < `~`
+     * Order is considered a natural extension of decimal symbols, i.e. `0` < `a` < `A` < `_`.
      *
-     * - Value: `0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_!#%&()+,/:;<=>?@[]^{}~`
-     * - Padding: `=` (base <= 64)
+     * - Value: `0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_`
+     * - Padding: `=`
      *
-     * ### Properties up to base <= 64
+     * ### Properties
+     * - Base 64
      * - 7-bit ASCII
      * - Code page 437 compatible
      * - [`base64url` alphabet](https://www.rfc-editor.org/rfc/rfc4648.html), but different order
@@ -200,8 +207,42 @@ namespace jau::codec::base {
      * - Excludes quoting chars: "'$ and space
      * - Not supporting ASCII code-point sorting.
      * - Order: `0` < `a` < `A` < `_`
+     */
+    class natural64_alphabet : public alphabet {
+        private:
+            static inline constexpr const std::string_view data = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_";
+
+            static int s_code_point(const char c) noexcept {
+                if ('0' <= c && c <= '9') {
+                    return c - '0';
+                } else if ('a' <= c && c <= 'z') {
+                    return c - 'a' + 10;
+                } else if ('A' <= c && c <= 'Z') {
+                    return c - 'A' + 36;
+                } else if ('-' == c) {
+                    return 62;
+                } else if ('_' == c) {
+                    return 63;
+                } else {
+                    return -1;
+                }
+            }
+
+        public:
+            natural64_alphabet() noexcept
+            : alphabet("natural64", 64, data, '=', s_code_point) {}
+    };
+
+    /**
+     * Natural base 86 alphabet, without ASCII code-point sorting order.
      *
-     * ### Properties base range [65 .. 86]
+     * Order is considered a natural extension of decimal symbols, i.e. `0` < `a` < `A` < `_` < `~`
+     *
+     * - Value: `0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_!#%&()+,/:;<=>?@[]^{}~`
+     * - Padding: none
+     *
+     * ### Properties
+     * - Base 86
      * - 7-bit ASCII
      * - Code page 437 compatible
      * - Excludes quoting chars: "'$ and space
@@ -252,7 +293,7 @@ namespace jau::codec::base {
 
         public:
             natural86_alphabet() noexcept
-            : alphabet("natural86", 86, data, '=', s_code_point) {}
+            : alphabet("natural86", 86, data, 0, s_code_point) {}
     };
 
     /**
@@ -262,6 +303,7 @@ namespace jau::codec::base {
      * - Padding: `=`
      *
      * ### Properties
+     * - Base 38
      * - 7-bit ASCII
      * - Code page 437 compatible
      * - Safe URL and filename use
@@ -301,6 +343,7 @@ namespace jau::codec::base {
      * - Padding: `=`
      *
      * ### Properties
+     * - Base 64
      * - 7-bit ASCII
      * - Code page 437 compatible
      * - [`base64url` alphabet](https://www.rfc-editor.org/rfc/rfc4648.html), but different order
@@ -342,6 +385,7 @@ namespace jau::codec::base {
      * - Padding: None
      *
      * ### Properties
+     * - Base 86
      * - 7-bit ASCII
      * - Code page 437 compatible
      * - Excludes quoting chars: "'$ and space
@@ -399,7 +443,7 @@ namespace jau::codec::base {
     };
 
     /**
-     * Encodes a given positive decimal number to a symbolic string representing a given base and alphabet.
+     * Encodes a given positive decimal number to a symbolic string representing a given alphabet and its base.
      *
      * Besides using a custom alphabet, the following build-in alphabets are provided
      * - jau::codec::base::base64_alphabet
@@ -409,7 +453,6 @@ namespace jau::codec::base {
      * - jau::codec::base::ascii86_alphabet
      *
      * @param num a positive decimal number
-     * @param base positive radix to use <= alphabet::max_base()
      * @param aspec the used alphabet specification
      * @param min_width minimum width of the encoded string, encoded zero is used for padding
      * @return the encoded string or an empty string if base exceeds alphabet::max_base() or invalid arguments
@@ -417,10 +460,10 @@ namespace jau::codec::base {
      * @see encodeBase()
      * @see decodeBase()
      */
-    std::string encode(int num, const int base, const alphabet& aspec, const unsigned int min_width=0) noexcept;
+    std::string encode(int num, const alphabet& aspec, const unsigned int min_width=0) noexcept;
 
     /**
-     * Encodes a given positive decimal number to a symbolic string representing a given base and alphabet.
+     * Encodes a given positive decimal number to a symbolic string representing a given alphabet and its base.
      *
      * Besides using a custom alphabet, the following build-in alphabets are provided
      * - jau::codec::base::base64_alphabet
@@ -430,7 +473,6 @@ namespace jau::codec::base {
      * - jau::codec::base::ascii86_alphabet
      *
      * @param num a positive decimal number
-     * @param base positive radix to use <= alphabet::max_base()
      * @param aspec the used alphabet specification
      * @param min_width minimum width of the encoded string, encoded zero is used for padding
      * @return the encoded string or an empty string if base exceeds alphabet::max_base() or invalid arguments
@@ -438,10 +480,10 @@ namespace jau::codec::base {
      * @see encodeBase()
      * @see decodeBase()
      */
-    std::string encode(int64_t num, const int base, const alphabet& aspec, const unsigned int min_width=0) noexcept;
+    std::string encode(int64_t num, const alphabet& aspec, const unsigned int min_width=0) noexcept;
 
     /**
-     * Decodes a given symbolic string representing a given base and alphabet to a positive decimal number.
+     * Decodes a given symbolic string representing a given alphabet and its base to a positive decimal number.
      *
      * Besides using a custom alphabet, the following build-in alphabets are provided
      * - jau::codec::base::base64_alphabet
@@ -451,13 +493,12 @@ namespace jau::codec::base {
      * - jau::codec::base::ascii86_alphabet
      *
      * @param str an encoded string
-     * @param base positive radix to use <= alphabet::max_base()
      * @param aspec the used alphabet specification
      * @return the decoded decimal value or -1 if base exceeds alphabet::max_base(), unknown code-point or invalid arguments
      *
      * @see encodeBase()
      */
-    int64_t decode(const std::string_view& str, const int base, const alphabet& aspec) noexcept;
+    int64_t decode(const std::string_view& str, const alphabet& aspec) noexcept;
 
     /**
      * Encodes given octets using the given alphabet and fixed base 64 encoding
@@ -467,7 +508,7 @@ namespace jau::codec::base {
      *
      * @param in_octets pointer to octets start
      * @param in_len length of octets in bytes
-     * @param aspec the used alphabet specification
+     * @param aspec the used base 64 alphabet specification
      * @return the encoded string, empty if base exceeds alphabet::max_base() or invalid arguments
      */
     std::string encode64(const void* in_octets, size_t in_len, const alphabet& aspec) noexcept;
@@ -479,7 +520,7 @@ namespace jau::codec::base {
      * An error only occurs if the encoded string length > 0 and resulting decoded octets size is empty.
      *
      * @param str encoded string
-     * @param aspec the used alphabet specification
+     * @param aspec the used base 64 alphabet specification
      * @return the decoded octets, empty if base exceeds alphabet::max_base(), unknown code-point or invalid arguments
      */
     std::vector<uint8_t> decode64(const std::string_view& str, const alphabet& aspec) noexcept;
@@ -510,7 +551,7 @@ namespace jau::codec::base {
      *
      * @param in_octets pointer to octets start
      * @param in_len length of octets in bytes
-     * @param aspec the used alphabet specification
+     * @param aspec the used base 64 alphabet specification
      * @return the encoded string, empty if base exceeds alphabet::max_base() or invalid arguments
      */
     inline std::string encode64_pem(const void* in_octets, size_t in_len, const alphabet& aspec) noexcept {
@@ -528,7 +569,7 @@ namespace jau::codec::base {
      *
      * @param in_octets pointer to octets start
      * @param in_len length of octets in bytes
-     * @param aspec the used alphabet specification
+     * @param aspec the used base 64 alphabet specification
      * @return the encoded string, empty if base exceeds alphabet::max_base() or invalid arguments
      */
     inline std::string encode64_mime(const void* in_octets, size_t in_len, const alphabet& aspec) noexcept {
@@ -545,7 +586,7 @@ namespace jau::codec::base {
      * An error only occurs if the encoded string length > 0 and resulting decoded octets size is empty.
      *
      * @param str and encoded string, will be copied
-     * @param aspec the used alphabet specification
+     * @param aspec the used base 64 alphabet specification
      * @return the decoded octets, empty if base exceeds alphabet::max_base(), unknown code-point or invalid arguments
      */
     inline std::vector<uint8_t> decode64_lf(const std::string_view& str, const alphabet& aspec) noexcept {
@@ -562,7 +603,7 @@ namespace jau::codec::base {
      * An error only occurs if the encoded string length > 0 and resulting decoded octets size is empty.
      *
      * @param str and encoded string, no copy, will be mutated
-     * @param aspec the used alphabet specification
+     * @param aspec the used base 64 alphabet specification
      * @return the decoded octets, empty if base exceeds alphabet::max_base(), unknown code-point or invalid arguments
      */
     inline std::vector<uint8_t> decode64_lf(std::string& str, const alphabet& aspec) noexcept {

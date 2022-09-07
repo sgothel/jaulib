@@ -39,19 +39,24 @@ public class BaseCodec {
      */
     public static abstract class Alphabet {
         private final String name_;
-        private final int max_base_;
+        private final int base_;
         private final String symbols_;
         private final char padding64_;
 
-        protected Alphabet(final String name, final int max_base, final String symbols, final char passing64) {
+        protected Alphabet(final String name, final int base, final String symbols, final char passing64) {
             this.name_ = name;
-            this.max_base_ = max_base;
+            this.base_ = base;
             this.symbols_ = symbols;
             this.padding64_ = passing64;
         }
 
+        /** Human readable name for this alphabet instance. */
         public final String name() { return name_; }
-        public final int max_base() { return max_base_; }
+
+        /** The fixed base used for this alphabet. */
+        public final int base() { return base_; }
+
+        /** The string of symbols of this alphabet. */
         public final String symbols() { return symbols_; }
 
         /** Padding symbol for base <= 64 and block encoding only. May return zero for no padding. */
@@ -60,8 +65,8 @@ public class BaseCodec {
         /** Returns the code-point of the given character or -1 if not element of this alphabet. */
         public abstract int code_point(final char c);
 
-        public final char charAt( final int pos ) { return symbols().charAt(pos); }
-        public final char symbol( final int pos ) { return symbols().charAt(pos); }
+        /** Retrieve the character at given code-point of this alphabet. */
+        public final char charAt( final int cp ) { return symbols().charAt(cp); }
 
         @Override
         public boolean equals(final Object o) {
@@ -70,14 +75,14 @@ public class BaseCodec {
             }
             if( o instanceof Alphabet ) {
                 final Alphabet oa = (Alphabet)o;
-                    return max_base() == max_base() && name().equals(oa.name()) && symbols().equals(oa.symbols());
+                    return base() == base() && name().equals(oa.name()) && symbols().equals(oa.symbols());
             }
             return false;
         }
 
         @Override
         public String toString() {
-            return "Alphabet["+name_+", base <= "+max_base_+"]";
+            return "Alphabet["+name_+", base <= "+base_+"]";
         }
     };
 
@@ -91,6 +96,7 @@ public class BaseCodec {
      * - Padding: `=`
      *
      * ### Properties
+     * - Base 64
      * - 7-bit ASCII
      * - Code page 437 compatible
      * - [`base64` alphabet](https://www.rfc-editor.org/rfc/rfc4648.html), identical order
@@ -133,6 +139,7 @@ public class BaseCodec {
      * - Padding: `=`
      *
      * ### Properties
+     * - Base 64
      * - 7-bit ASCII
      * - Code page 437 compatible
      * - [`base64url` alphabet](https://www.rfc-editor.org/rfc/rfc4648.html), identical order
@@ -141,9 +148,6 @@ public class BaseCodec {
      * - Excludes quoting chars: "'$ and space
      * - Not supporting ASCII code-point sorting.
      * - Order: `A` < `a` < `0` < `_`
-     *
-     * @see encodeBase()
-     * @see decodeBase()
      */
     public static class Base64urlAlphabet extends Alphabet {
         private static final String data  = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
@@ -171,14 +175,15 @@ public class BaseCodec {
     }
 
     /**
-     * Natural base 86 alphabet including a safe base 64 subset, both without ASCII code-point sorting order.
+     * Safe natural base 64 alphabet, both without ASCII code-point sorting order.
      *
-     * Order is considered a natural extension of decimal symbols, i.e. `0` < `a` < `A` < `_` < `~`
+     * Order is considered a natural extension of decimal symbols, i.e. `0` < `a` < `A` < `_`.
      *
-     * - Value: `0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_!#%&()+,/:;<=>?@[]^{}~`
-     * - Padding: `=` (base <= 64)
+     * - Value: `0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_`
+     * - Padding: `=`
      *
-     * ### Properties up to base <= 64
+     * ### Properties
+     * - Base 64
      * - 7-bit ASCII
      * - Code page 437 compatible
      * - [`base64url` alphabet](https://www.rfc-editor.org/rfc/rfc4648.html), but different order
@@ -187,8 +192,42 @@ public class BaseCodec {
      * - Excludes quoting chars: "'$ and space
      * - Not supporting ASCII code-point sorting.
      * - Order: `0` < `a` < `A` < `_`
+     */
+    public static class Natural64Alphabet extends Alphabet {
+        private static final String data = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_";
+
+        @Override
+        public int code_point(final char c) {
+            if ('0' <= c && c <= '9') {
+                return c - '0';
+            } else if ('a' <= c && c <= 'z') {
+                return c - 'a' + 10;
+            } else if ('A' <= c && c <= 'Z') {
+                return c - 'A' + 36;
+            } else if ('-' == c) {
+                return 62;
+            } else if ('_' == c) {
+                return 63;
+            } else {
+                return -1;
+            }
+        }
+
+        public Natural64Alphabet() {
+            super("natural64", 64, data, '=');
+        }
+    }
+
+    /**
+     * Natural base 86 alphabet, without ASCII code-point sorting order.
      *
-     * ### Properties base range [65 .. 86]
+     * Order is considered a natural extension of decimal symbols, i.e. `0` < `a` < `A` < `_` < `~`
+     *
+     * - Value: `0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_!#%&()+,/:;<=>?@[]^{}~`
+     * - Padding: none
+     *
+     * ### Properties
+     * - Base 86
      * - 7-bit ASCII
      * - Code page 437 compatible
      * - Excludes quoting chars: "'$ and space
@@ -241,7 +280,7 @@ public class BaseCodec {
         }
 
         public Natural86Alphabet() {
-            super("natural86", 86, data, '=');
+            super("natural86", 86, data, (char)0);
         }
     }
 
@@ -252,6 +291,7 @@ public class BaseCodec {
      * - Padding: `=`
      *
      * ### Properties
+     * - Base 38
      * - 7-bit ASCII
      * - Code page 437 compatible
      * - Safe URL and filename use
@@ -294,6 +334,7 @@ public class BaseCodec {
      * - Padding: `=`
      *
      * ### Properties
+     * - Base 64
      * - 7-bit ASCII
      * - Code page 437 compatible
      * - [`base64url` alphabet](https://www.rfc-editor.org/rfc/rfc4648.html), but different order
@@ -338,6 +379,7 @@ public class BaseCodec {
      * - Padding: None
      *
      * ### Properties
+     * - Base 86
      * - 7-bit ASCII
      * - Code page 437 compatible
      * - Excludes quoting chars: "'$ and space
@@ -398,7 +440,7 @@ public class BaseCodec {
     }
 
     /**
-     * Encodes a given positive decimal number to a symbolic string representing a given base and alphabet.
+     * Encodes a given positive decimal number to a symbolic string representing a given alphabet and its base.
      *
      * Besides using a custom alphabet, the following build-in alphabets are provided
      * - {@link BaseCodec.Base64Alphabet}
@@ -408,7 +450,6 @@ public class BaseCodec {
      * - {@link BaseCodec.Ascii86Alphabet}
      *
      * @param num a positive decimal number
-     * @param base positive radix to use <= Alphabet.max_base()
      * @param aspec the used alphabet specification
      * @param min_width minimum width of the encoded string, encoded zero is used for padding
      * @return the encoded string or an empty string if base exceeds Alphabet.max_base() or invalid arguments
@@ -416,8 +457,9 @@ public class BaseCodec {
      * @see {@link BaseCodec#encode(long, int, Alphabet, int)}
      * @see {@link BaseCodec#decode(String, int, Alphabet)}
      */
-    public static String encode(int num, final int base, final Alphabet aspec, final int min_width) {
-        if( 0 > num || 1 >= base || base > aspec.max_base() ) {
+    public static String encode(int num, final Alphabet aspec, final int min_width) {
+        final int base = aspec.base();
+        if( 0 > num || 1 >= base ) {
             return "";
         }
         final StringBuilder res = new StringBuilder();
@@ -434,7 +476,7 @@ public class BaseCodec {
     }
 
     /**
-     * Encodes a given positive decimal number to a symbolic string representing a given base and alphabet.
+     * Encodes a given positive decimal number to a symbolic string representing given alphabet and its base.
      *
      * Besides using a custom alphabet, the following build-in alphabets are provided
      * - {@link BaseCodec.Base64Alphabet}
@@ -444,7 +486,6 @@ public class BaseCodec {
      * - {@link BaseCodec.Ascii86Alphabet}
      *
      * @param num a positive decimal number
-     * @param base positive radix to use <= Alphabet.max_base()
      * @param aspec the used alphabet specification
      * @param min_width minimum width of the encoded string, encoded zero is used for padding
      * @return the encoded string or an empty string if base exceeds Alphabet.max_base() or invalid arguments
@@ -452,15 +493,15 @@ public class BaseCodec {
      * @see {@link BaseCodec#encode(int, int, Alphabet, int)}
      * @see {@link BaseCodec#decode(String, int, Alphabet)}
      */
-    public static String encode(long num, final int base, final Alphabet aspec, final int min_width) {
-        if( 0 > num || 1 >= base || base > aspec.max_base() ) {
+    public static String encode(long num, final Alphabet aspec, final int min_width) {
+        final long base = aspec.base();
+        if( 0 > num || 1 >= base ) {
             return "";
         }
         final StringBuilder res = new StringBuilder();
-        final long lbase = base;
         do {
-            res.insert( 0, aspec.charAt( (int)( num % lbase ) ) ); // safe: base <= alphabet.length()
-            num /= lbase;
+            res.insert( 0, aspec.charAt( (int)( num % base ) ) ); // safe: base <= alphabet.length()
+            num /= base;
         } while ( 0 != num );
 
         final char s0 = aspec.charAt(0);
@@ -471,7 +512,7 @@ public class BaseCodec {
     }
 
     /**
-     * Encodes a given positive decimal number to a symbolic string representing a given base and alphabet.
+     * Encodes a given positive decimal number to a symbolic string representing a given alphabet and its base.
      *
      * Besides using a custom alphabet, the following build-in alphabets are provided
      * - {@link BaseCodec.Base64Alphabet}
@@ -481,19 +522,18 @@ public class BaseCodec {
      * - {@link BaseCodec.Ascii86Alphabet}
      *
      * @param num a positive decimal number
-     * @param base positive radix to use <= Alphabet.max_base()
      * @param aspec the used alphabet specification
      * @return the encoded string or an empty string if base exceeds Alphabet.max_base() or invalid arguments
      *
      * @see {@link BaseCodec#encode(int, int, Alphabet, int)}
      * @see {@link BaseCodec#decode(String, int, Alphabet)}
      */
-    public static String encode(final int num, final int base, final Alphabet aspec) {
-        return encode(num, base, aspec, 0 /* min_width */);
+    public static String encode(final int num, final Alphabet aspec) {
+        return encode(num, aspec, 0 /* min_width */);
     }
 
     /**
-     * Encodes a given positive decimal number to a symbolic string representing a given base and alphabet.
+     * Encodes a given positive decimal number to a symbolic string representing a given alphabet and its base.
      *
      * Besides using a custom alphabet, the following build-in alphabets are provided
      * - {@link BaseCodec.Base64Alphabet}
@@ -503,19 +543,18 @@ public class BaseCodec {
      * - {@link BaseCodec.Ascii86Alphabet}
      *
      * @param num a positive decimal number
-     * @param base positive radix to use <= Alphabet.max_base()
      * @param aspec the used alphabet specification
      * @return the encoded string or an empty string if base exceeds Alphabet.max_base() or invalid arguments
      *
      * @see {@link BaseCodec#encode(long, int, Alphabet, int)}
      * @see {@link BaseCodec#decode(String, int, Alphabet)}
      */
-    public static String encode(final long num, final int base, final Alphabet aspec) {
-        return encode(num, base, aspec, 0 /* min_width */);
+    public static String encode(final long num, final Alphabet aspec) {
+        return encode(num, aspec, 0 /* min_width */);
     }
 
     /**
-     * Decodes a given symbolic string representing a given base and alphabet to a positive decimal number.
+     * Decodes a given symbolic string representing a given alphabet and its base to a positive decimal number.
      *
      * Besides using a custom alphabet, the following build-in alphabets are provided
      * - {@link BaseCodec.Base64Alphabet}
@@ -525,22 +564,22 @@ public class BaseCodec {
      * - {@link BaseCodec.Ascii86Alphabet}
      *
      * @param str an encoded string
-     * @param base positive radix to use <= Alphabet.max_base()
      * @param aspec the used alphabet specification
      * @return the decoded radix decimal value or -1 if base exceeds Alphabet.max_base(), unknown code-point or invalid arguments
      *
      * @see {@link BaseCodec#encode(int, int, Alphabet, int)}
      * @see {@link BaseCodec#encode(long, int, Alphabet, int)}
      */
-    public static long decode(final String str, final int base, final Alphabet aspec) {
-        if( 1 >= base || base > aspec.max_base() ) {
+    public static long decode(final String str, final Alphabet aspec) {
+        final int base = aspec.base();
+        if( 1 >= base ) {
             return -1;
         }
         final int str_len = str.length();
         long res = 0;
         for (int i = 0; i < str_len; ++i) {
             final int d = aspec.code_point( str.charAt(i) );
-            if( 0 > d || d >= base ) {
+            if( 0 > d ) {
                 return -1; // encoded value not found
             }
             res = res * base + d;
@@ -559,11 +598,11 @@ public class BaseCodec {
      * @param in_octets source byte array
      * @param in_pos index to octets start
      * @param in_len length of octets in bytes
-     * @param aspec the used alphabet specification
+     * @param aspec the used base 64 alphabet specification
      * @return the encoded string, empty if base exceeds alphabet::max_base() or invalid arguments
      */
     public static StringBuilder encode64(final byte[] in_octets, int in_pos, int in_len, final Alphabet aspec) {
-        if( 64 > aspec.max_base() || in_pos + in_len > in_octets.length ) {
+        if( 64 != aspec.base() || in_pos + in_len > in_octets.length ) {
             return new StringBuilder(0);
         }
         final char padding = aspec.padding64();
@@ -618,11 +657,11 @@ public class BaseCodec {
      * An error only occurs if the encoded string length > 0 and resulting decoded octets size is empty.
      *
      * @param in_code encoded string
-     * @param aspec the used alphabet specification
+     * @param aspec the used base 64 alphabet specification
      * @return the decoded octets, empty if base exceeds alphabet::max_base(), unknown code-point or invalid arguments
      */
     public static ByteBuffer decode64(final String in_code, final Alphabet aspec) {
-        if( 64 > aspec.max_base() ) {
+        if( 64 != aspec.base() ) {
             return ByteBuffer.allocate(0); // Error
         }
         int in_len = in_code.length();
@@ -638,7 +677,7 @@ public class BaseCodec {
         while( in_len >= 2 ) {
             final int cp0 = aspec.code_point( in_code.charAt( in_pos + 0 ) );
             final int cp1 = aspec.code_point( in_code.charAt( in_pos + 1 ) );
-            if( 0 > cp0 || cp0 >= 64 || 0 > cp1 || cp1 >= 64 ) {
+            if( 0 > cp0 || 0 > cp1 ) {
                 break;
             }
             res.put( (byte)(cp0 << 2 | cp1 >> 4) );
@@ -657,7 +696,7 @@ public class BaseCodec {
                 }
             } else {
                 final int cp2 = aspec.code_point( in_code.charAt( in_pos + 2 ) );
-                if( 0 > cp2 || cp2 >= 64 ) {
+                if( 0 > cp2 ) {
                     break;
                 }
                 res.put( (byte)( ( ( cp1 << 4 ) & 0xf0 ) | ( cp2 >> 2 ) ) );
@@ -673,7 +712,7 @@ public class BaseCodec {
                     }
                 } else {
                     final int cp3 = aspec.code_point( in_code.charAt( in_pos + 3 ) );
-                    if( 0 > cp3 || cp3 >= 64 ) {
+                    if( 0 > cp3 ) {
                         break;
                     }
                     res.put( (byte)( ( ( cp2 << 6 ) & 0xc0 ) | cp3 ) );
@@ -752,7 +791,7 @@ public class BaseCodec {
      *
      * @param in_octets pointer to octets start
      * @param in_len length of octets in bytes
-     * @param aspec the used alphabet specification
+     * @param aspec the used base 64 alphabet specification
      * @return the encoded string, empty if base exceeds alphabet::max_base() or invalid arguments
      */
     public static StringBuilder encode64_mime(final byte[] in_octets, final int in_pos, final int in_len, final Alphabet aspec) {
@@ -769,7 +808,7 @@ public class BaseCodec {
      * An error only occurs if the encoded string length > 0 and resulting decoded octets size is empty.
      *
      * @param str and encoded string, will be copied
-     * @param aspec the used alphabet specification
+     * @param aspec the used base 64 alphabet specification
      * @return the decoded octets, empty if base exceeds alphabet::max_base(), unknown code-point or invalid arguments
      */
     public static ByteBuffer decode64_lf(final String str, final Alphabet aspec) {
@@ -786,7 +825,7 @@ public class BaseCodec {
      * An error only occurs if the encoded string length > 0 and resulting decoded octets size is empty.
      *
      * @param str and encoded string, no copy, will be mutated
-     * @param aspec the used alphabet specification
+     * @param aspec the used base 64 alphabet specification
      * @return the decoded octets, empty if base exceeds alphabet::max_base(), unknown code-point or invalid arguments
      */
     public static ByteBuffer decode64_lf(final StringBuilder str, final Alphabet aspec) {

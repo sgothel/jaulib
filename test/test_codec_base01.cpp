@@ -31,62 +31,62 @@
 
 using namespace jau::int_literals;
 
-static void testRadix_3digits_int32(const int base, const jau::codec::base::alphabet& aspec) {
+static void testRadix_3digits_int32(const jau::codec::base::alphabet& aspec) {
+    const int base = aspec.base();
     REQUIRE( 1 < base );
-    REQUIRE( base <= aspec.max_base() );
 
     const char min_cp = aspec[0]; // minimum code-point
     const char max_cp = aspec[base-1]; // maximum code-point
 
-    const int min = (int)jau::codec::base::decode(std::string()+min_cp, base, aspec);
-    const int max = (int)jau::codec::base::decode(std::string()+max_cp+max_cp+max_cp, base, aspec);
-    const int max_s = (int)jau::codec::base::decode(std::string()+max_cp, base, aspec);
+    const int min = (int)jau::codec::base::decode(std::string()+min_cp, aspec);
+    const int max = (int)jau::codec::base::decode(std::string()+max_cp+max_cp+max_cp, aspec);
+    const int max_s = (int)jau::codec::base::decode(std::string()+max_cp, aspec);
 
     const double machine_epsilon = std::numeric_limits<double>::epsilon();
     REQUIRE(0 == min);
     REQUIRE(base-1 == max_s);
     REQUIRE( std::abs( std::pow(base, 3)-1 - max ) <=  machine_epsilon );
 
-    const std::string r1_min = jau::codec::base::encode(0, base, aspec, 3);
-    const std::string r1_min_s = jau::codec::base::encode(0, base, aspec);
+    const std::string r1_min = jau::codec::base::encode(0, aspec, 3);
+    const std::string r1_min_s = jau::codec::base::encode(0, aspec);
     REQUIRE(std::string()+min_cp+min_cp+min_cp == r1_min);
     REQUIRE(std::string()+min_cp == r1_min_s);
 
-    const std::string r1_max = jau::codec::base::encode(base-1, base, aspec, 3);
-    const std::string r1_max_s = jau::codec::base::encode(base-1, base, aspec);
+    const std::string r1_max = jau::codec::base::encode(base-1, aspec, 3);
+    const std::string r1_max_s = jau::codec::base::encode(base-1, aspec);
     REQUIRE(std::string()+min_cp+min_cp+max_cp == r1_max);
     REQUIRE(std::string()+max_cp == r1_max_s);
 
-    const std::string r3_max = jau::codec::base::encode((int)std::pow(base, 3)-1, base, aspec, 3);
+    const std::string r3_max = jau::codec::base::encode((int)std::pow(base, 3)-1, aspec, 3);
     REQUIRE(std::string()+max_cp+max_cp+max_cp == r3_max);
 
     fprintf(stderr, "Test32Bit base %d, %s: [%d .. %d] <-> ['%s' .. '%s'], %d years (max/365d) \n",
-            base, aspec.to_string().c_str(), min, max, jau::codec::base::encode(min, base, aspec).c_str(), jau::codec::base::encode(max, base, aspec).c_str(), (max/365));
+            base, aspec.to_string().c_str(), min, max, jau::codec::base::encode(min, aspec).c_str(), jau::codec::base::encode(max, aspec).c_str(), (max/365));
 
-    REQUIRE(0 == jau::codec::base::decode(std::string()+min_cp+min_cp+min_cp, base, aspec));
-    REQUIRE(std::string()+min_cp == jau::codec::base::encode(0, base, aspec));
-    REQUIRE(std::string()+min_cp+min_cp+min_cp == jau::codec::base::encode(0, base, aspec, 3));
+    REQUIRE(0 == jau::codec::base::decode(std::string()+min_cp+min_cp+min_cp, aspec));
+    REQUIRE(std::string()+min_cp == jau::codec::base::encode(0, aspec));
+    REQUIRE(std::string()+min_cp+min_cp+min_cp == jau::codec::base::encode(0, aspec, 3));
 
-    REQUIRE(max == jau::codec::base::decode(std::string()+max_cp+max_cp+max_cp, base, aspec));
-    REQUIRE(std::string()+max_cp+max_cp+max_cp == jau::codec::base::encode(max, base, aspec, 3));
-    REQUIRE(max_s == jau::codec::base::decode(std::string()+max_cp, base, aspec));
-    REQUIRE(std::string()+min_cp+min_cp+max_cp == jau::codec::base::encode(max_s, base, aspec, 3));
+    REQUIRE(max == jau::codec::base::decode(std::string()+max_cp+max_cp+max_cp, aspec));
+    REQUIRE(std::string()+max_cp+max_cp+max_cp == jau::codec::base::encode(max, aspec, 3));
+    REQUIRE(max_s == jau::codec::base::decode(std::string()+max_cp, aspec));
+    REQUIRE(std::string()+min_cp+min_cp+max_cp == jau::codec::base::encode(max_s, aspec, 3));
 
     {
-        const int v0_d = jau::codec::base::decode(r1_max, base, aspec);
-        const std::string v1_s = jau::codec::base::encode(base-1, base, aspec, 3);
+        const int v0_d = jau::codec::base::decode(r1_max, aspec);
+        const std::string v1_s = jau::codec::base::encode(base-1, aspec, 3);
         REQUIRE(r1_max == v1_s);
         REQUIRE(base-1 == v0_d);
     }
     {
-        const int v0_d = jau::codec::base::decode(r3_max, base, aspec);
-        const std::string v1_s = jau::codec::base::encode(max, base, aspec, 3);
+        const int v0_d = jau::codec::base::decode(r3_max, aspec);
+        const std::string v1_s = jau::codec::base::encode(max, aspec, 3);
         REQUIRE(r3_max == v1_s);
         REQUIRE(max == v0_d);
     }
     for(int iter=min; iter<=max; ++iter) {
-        const std::string rad = jau::codec::base::encode(iter, base, aspec, 3);
-        const int dec = jau::codec::base::decode(rad, base, aspec);
+        const std::string rad = jau::codec::base::encode(iter, aspec, 3);
+        const int dec = jau::codec::base::decode(rad, aspec);
 #if 0
         fprintf(stderr, "test base %d: iter %d, rad '%s' %03d %03d %03d, dec %d\n",
                 base, iter, rad.c_str(), (int)(0xFF & rad[0]), (int)(0xFF & rad[1]), (int)(0xFF & rad[2]), dec);
@@ -98,7 +98,7 @@ static void testRadix_3digits_int32(const int base, const jau::codec::base::alph
         // Test 0-9 ..
         fprintf(stderr, "Natural 0-9: ");
         for(int iter=0; iter<=9; ++iter) {
-            const std::string rad = jau::codec::base::encode(iter, base, aspec);
+            const std::string rad = jau::codec::base::encode(iter, aspec);
             fprintf(stderr, "%s, ", rad.c_str());
             const char c = (char)('0'+iter);
             REQUIRE(std::string()+c == rad);
@@ -107,32 +107,31 @@ static void testRadix_3digits_int32(const int base, const jau::codec::base::alph
     }
 }
 
-static void testRadix_int64(const int base, const jau::codec::base::alphabet& aspec, const int64_t test_min, const int64_t test_max) {
+static void testRadix_int64(const jau::codec::base::alphabet& aspec, const int64_t test_min, const int64_t test_max) {
     const int int64_max_enc_width = 11; // 9223372036854775807 ==  '7__________' (base 64, natural)
-
+    const int base = aspec.base();
     REQUIRE( 1 < base );
-    REQUIRE( base <= aspec.max_base() );
 
     const char min_cp = aspec[0]; // minimum code-point
     const char max_cp = aspec[base-1]; // maximum code-point
 
-    const std::string max_radix = jau::codec::base::encode(std::numeric_limits<int64_t>::max(), base, aspec, int64_max_enc_width);
+    const std::string max_radix = jau::codec::base::encode(std::numeric_limits<int64_t>::max(), aspec, int64_max_enc_width);
 
-    const int64_t min = jau::codec::base::decode(std::string()+min_cp, base, aspec);
-    const int64_t max = jau::codec::base::decode(max_radix, base, aspec);
-    const int64_t max_s = jau::codec::base::decode(std::string()+max_cp, base, aspec);
+    const int64_t min = jau::codec::base::decode(std::string()+min_cp, aspec);
+    const int64_t max = jau::codec::base::decode(max_radix, aspec);
+    const int64_t max_s = jau::codec::base::decode(std::string()+max_cp, aspec);
 
     REQUIRE(0 == min);
     REQUIRE(base-1 == max_s);
     REQUIRE(std::numeric_limits<int64_t>::max() == max);
 
-    const std::string r1_min = jau::codec::base::encode(0, base, aspec, int64_max_enc_width);
-    const std::string r1_min_s = jau::codec::base::encode(0, base, aspec);
+    const std::string r1_min = jau::codec::base::encode(0, aspec, int64_max_enc_width);
+    const std::string r1_min_s = jau::codec::base::encode(0, aspec);
     REQUIRE(std::string()+min_cp+min_cp+min_cp+min_cp+min_cp+min_cp+min_cp+min_cp+min_cp+min_cp+min_cp == r1_min);
     REQUIRE(std::string()+min_cp == r1_min_s);
 
-    const std::string r1_max = jau::codec::base::encode(base-1, base, aspec, int64_max_enc_width);
-    const std::string r1_max_s = jau::codec::base::encode(base-1, base, aspec);
+    const std::string r1_max = jau::codec::base::encode(base-1, aspec, int64_max_enc_width);
+    const std::string r1_max_s = jau::codec::base::encode(base-1, aspec);
     REQUIRE(std::string()+min_cp+min_cp+min_cp+min_cp+min_cp+min_cp+min_cp+min_cp+min_cp+min_cp+max_cp == r1_max);
     REQUIRE(std::string()+max_cp == r1_max_s);
 
@@ -142,24 +141,24 @@ static void testRadix_int64(const int base, const jau::codec::base::alphabet& as
 
     fprintf(stderr, "Test64bit base %d, %s: [%" PRIi64 " .. %" PRIi64 "] <-> ['%s' .. '%s'], %" PRIi64 " years (max/365d) \n",
             base, aspec.to_string().c_str(),
-            min, max, jau::codec::base::encode(min, base, aspec).c_str(), jau::codec::base::encode(max, base, aspec).c_str(), (max/365));
+            min, max, jau::codec::base::encode(min, aspec).c_str(), jau::codec::base::encode(max, aspec).c_str(), (max/365));
 
     fprintf(stderr, "- range: [%" PRIi64 " .. %" PRIi64 "] <-> ['%s' .. '%s']\n",
-            test_min, test_max, jau::codec::base::encode(test_min, base, aspec).c_str(), jau::codec::base::encode(test_max, base, aspec).c_str());
+            test_min, test_max, jau::codec::base::encode(test_min, aspec).c_str(), jau::codec::base::encode(test_max, aspec).c_str());
 
-    REQUIRE(0 == jau::codec::base::decode(std::string()+min_cp+min_cp+min_cp, base, aspec));
-    REQUIRE(std::string()+min_cp == jau::codec::base::encode(0, base, aspec));
+    REQUIRE(0 == jau::codec::base::decode(std::string()+min_cp+min_cp+min_cp, aspec));
+    REQUIRE(std::string()+min_cp == jau::codec::base::encode(0, aspec));
 
     {
-        const int64_t v0_d = jau::codec::base::decode(r1_max, base, aspec);
-        const std::string v1_s = jau::codec::base::encode(base-1, base, aspec, int64_max_enc_width);
+        const int64_t v0_d = jau::codec::base::decode(r1_max, aspec);
+        const std::string v1_s = jau::codec::base::encode(base-1, aspec, int64_max_enc_width);
         REQUIRE(r1_max == v1_s);
         REQUIRE(base-1 == v0_d);
     }
     for(int64_t iter=std::max(0_i64, test_min-1); iter<test_max; ) {
         ++iter;
-        const std::string rad = jau::codec::base::encode(iter, base, aspec, int64_max_enc_width);
-        const int64_t dec = jau::codec::base::decode(rad, base, aspec);
+        const std::string rad = jau::codec::base::encode(iter, aspec, int64_max_enc_width);
+        const int64_t dec = jau::codec::base::decode(rad, aspec);
 #if 0
         fprintf(stderr, "test base %d: iter %" PRIi64 ", rad '%s', dec %" PRIi64 "\n", base, iter, rad.c_str(), dec);
 #endif
@@ -168,32 +167,29 @@ static void testRadix_int64(const int base, const jau::codec::base::alphabet& as
 }
 
 static void testIntegerBase64(const jau::codec::base::alphabet& aspec) {
-    testRadix_3digits_int32(64, aspec);
-    testRadix_int64(64, aspec, 0x7fffff00_i64, 0x80000100_i64);
-    testRadix_int64(64, aspec, 0xFFFFFFF0_i64, 0x100000010_i64);
-    testRadix_int64(64, aspec, 0x7FFFFFFFFFFFFFF0_i64, 0x7FFFFFFFFFFFFFFF_i64);
-    // testRadix_int64(64, aspec, 0x0_i64, 0x7FFFFFFFFFFFFFFF_i64);
+    testRadix_3digits_int32(aspec);
+    testRadix_int64(aspec, 0x7fffff00_i64, 0x80000100_i64);
+    testRadix_int64(aspec, 0xFFFFFFF0_i64, 0x100000010_i64);
+    testRadix_int64(aspec, 0x7FFFFFFFFFFFFFF0_i64, 0x7FFFFFFFFFFFFFFF_i64);
+    // testRadix_int64(aspec, 0x0_i64, 0x7FFFFFFFFFFFFFFF_i64);
 }
 
 static void testIntegerBase86(const jau::codec::base::alphabet& aspec) {
-    testRadix_3digits_int32(86, aspec);
-    testRadix_int64(86, aspec, 0x7fffff00_i64, 0x80000100_i64);
-    testRadix_int64(86, aspec, 0xFFFFFFF0_i64, 0x100000010_i64);
-    testRadix_int64(86, aspec, 0x7FFFFFFFFFFFFFF0_i64, 0x7FFFFFFFFFFFFFFF_i64);
-    // testRadix_int64(86, aspec, 0x0_i64, 0x7FFFFFFFFFFFFFFF_i64);
+    testRadix_3digits_int32(aspec);
+    testRadix_int64(aspec, 0x7fffff00_i64, 0x80000100_i64);
+    testRadix_int64(aspec, 0xFFFFFFF0_i64, 0x100000010_i64);
+    testRadix_int64(aspec, 0x7FFFFFFFFFFFFFF0_i64, 0x7FFFFFFFFFFFFFFF_i64);
+    // testRadix_int64(aspec, 0x0_i64, 0x7FFFFFFFFFFFFFFF_i64);
 }
 
 TEST_CASE( "Integer Base 38 Encoding Test 01", "[integer][type]" ) {
-    testRadix_3digits_int32(38, jau::codec::base::ascii38_alphabet());
-    testRadix_3digits_int32(38, jau::codec::base::ascii64_alphabet());
+    testRadix_3digits_int32(jau::codec::base::ascii38_alphabet());
 }
 
 TEST_CASE( "Integer Base 64 Encoding Test 02", "[integer][type]" ) {
     testIntegerBase64(jau::codec::base::base64_alphabet());
     testIntegerBase64(jau::codec::base::base64url_alphabet());
-    testIntegerBase64(jau::codec::base::natural86_alphabet());
     testIntegerBase64(jau::codec::base::ascii64_alphabet());
-    testIntegerBase64(jau::codec::base::ascii86_alphabet());
 }
 
 TEST_CASE( "Integer Base 86 Encoding Test 03", "[integer][type]" ) {

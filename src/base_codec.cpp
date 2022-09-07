@@ -29,9 +29,10 @@
 using namespace jau;
 using namespace jau::codec::base;
 
-std::string jau::codec::base::encode(int num, const int base, const alphabet& aspec, const unsigned int min_width) noexcept
+std::string jau::codec::base::encode(int num, const alphabet& aspec, const unsigned int min_width) noexcept
 {
-    if( 0 > num || 1 >= base || base > aspec.max_base() ) {
+    const int base = aspec.base();
+    if( 0 > num || 1 >= base ) {
         return "";
     }
     std::string res;
@@ -48,8 +49,9 @@ std::string jau::codec::base::encode(int num, const int base, const alphabet& as
     return res;
 }
 
-std::string jau::codec::base::encode(int64_t num, const int base, const alphabet& aspec, const unsigned int min_width) noexcept {
-    if( 0 > num || 1 >= base || base > aspec.max_base() ) {
+std::string jau::codec::base::encode(int64_t num, const alphabet& aspec, const unsigned int min_width) noexcept {
+    const int base = aspec.base();
+    if( 0 > num || 1 >= base ) {
         return "";
     }
     std::string res;
@@ -66,16 +68,17 @@ std::string jau::codec::base::encode(int64_t num, const int base, const alphabet
     return res;
 }
 
-int64_t jau::codec::base::decode(const std::string_view& str, const int base, const alphabet& aspec) noexcept
+int64_t jau::codec::base::decode(const std::string_view& str, const alphabet& aspec) noexcept
 {
-    if( 1 >= base || base > aspec.max_base() ) {
+    const int base = aspec.base();
+    if( 1 >= base ) {
         return -1;
     }
     std::string::size_type str_len = str.length();
     int64_t res = 0;
     for (std::string::size_type pos = 0; pos < str_len; ++pos) {
         const int cp = aspec.code_point( str[pos] );
-        if( 0 > cp || cp >= base ) {
+        if( 0 > cp ) {
             return -1; // encoded value not found
         }
         res = res * base + static_cast<int64_t>(cp);
@@ -84,7 +87,7 @@ int64_t jau::codec::base::decode(const std::string_view& str, const int base, co
 }
 
 std::string jau::codec::base::encode64(const void* in_octets, size_t in_len, const alphabet& aspec) noexcept {
-    if( 64 > aspec.max_base() ) {
+    if( 64 != aspec.base() ) {
         return "";
     }
     const char padding = aspec.padding64();
@@ -135,7 +138,7 @@ std::string jau::codec::base::encode64(const void* in_octets, size_t in_len, con
 }
 
 std::vector<uint8_t> jau::codec::base::decode64(const std::string_view& in_code, const alphabet& aspec) noexcept {
-    if( 64 > aspec.max_base() ) {
+    if( 64 != aspec.base() ) {
         return std::vector<uint8_t>(); // Error
     }
     size_t in_len = in_code.length();
@@ -152,7 +155,7 @@ std::vector<uint8_t> jau::codec::base::decode64(const std::string_view& in_code,
     while( in_len >= 2 ) {
         const int cp0 = aspec.code_point( in_chars[0] );
         const int cp1 = aspec.code_point( in_chars[1] );
-        if( 0 > cp0 || cp0 >= 64 || 0 > cp1 || cp1 >= 64 ) {
+        if( 0 > cp0 || 0 > cp1 ) {
             break;
         }
         res.push_back( cp0 << 2 | cp1 >> 4 );
@@ -171,7 +174,7 @@ std::vector<uint8_t> jau::codec::base::decode64(const std::string_view& in_code,
             }
         } else {
             const int cp2 = aspec.code_point( in_chars[2] );
-            if( 0 > cp2 || cp2 >= 64 ) {
+            if( 0 > cp2 ) {
                 break;
             }
             res.push_back( ( ( cp1 << 4 ) & 0xf0 ) | ( cp2 >> 2 ) );
@@ -187,7 +190,7 @@ std::vector<uint8_t> jau::codec::base::decode64(const std::string_view& in_code,
                 }
             } else {
                 const int cp3 = aspec.code_point( in_chars[3] );
-                if( 0 > cp3 || cp3 >= 64 ) {
+                if( 0 > cp3 ) {
                     break;
                 }
                 res.push_back( ( ( cp2 << 6 ) & 0xc0 ) | cp3 );

@@ -40,72 +40,72 @@ public class TestBaseCodec {
 
     static final Alphabet natural86_alphabet = new BaseCodec.Natural86Alphabet();
 
-    private static void testRadix_3digits_int32(final int base, final Alphabet aspec) {
+    private static void testRadix_3digits_int32(final Alphabet aspec) {
+        final int base = aspec.base();
         Assert.assertTrue( 1 < base );
-        Assert.assertTrue( base <= aspec.max_base() );
 
         final char min_cp = aspec.charAt(0); // minimum code-point
         final char max_cp = aspec.charAt(base-1); // maximum code-point
 
-        final int min = (int)BaseCodec.decode(""+min_cp, base, aspec);
-        final int max = (int)BaseCodec.decode(""+max_cp+max_cp+max_cp, base, aspec);
-        final int max_s = (int)BaseCodec.decode(""+max_cp, base, aspec);
+        final int min = (int)BaseCodec.decode(""+min_cp, aspec);
+        final int max = (int)BaseCodec.decode(""+max_cp+max_cp+max_cp, aspec);
+        final int max_s = (int)BaseCodec.decode(""+max_cp, aspec);
 
         final double machine_epsilon = BasicTypes.machineEpsilonDouble();
         Assert.assertEquals(0, min);
         Assert.assertEquals(base-1, max_s);
         Assert.assertTrue( Math.abs( Math.pow(base, 3)-1 - max ) <=  machine_epsilon );
 
-        final String r1_min = BaseCodec.encode(0, base, aspec, 3);
-        final String r1_min_s = BaseCodec.encode(0, base, aspec);
+        final String r1_min = BaseCodec.encode(0, aspec, 3);
+        final String r1_min_s = BaseCodec.encode(0, aspec);
         Assert.assertEquals(""+min_cp+min_cp+min_cp, r1_min);
         Assert.assertEquals(""+min_cp, r1_min_s);
 
-        final String r1_max = BaseCodec.encode(base-1, base, aspec, 3);
-        final String r1_max_s = BaseCodec.encode(base-1, base, aspec);
+        final String r1_max = BaseCodec.encode(base-1, aspec, 3);
+        final String r1_max_s = BaseCodec.encode(base-1, aspec);
         Assert.assertEquals(""+min_cp+min_cp+max_cp, r1_max);
         Assert.assertEquals(""+max_cp, r1_max_s);
 
-        final String r3_max = BaseCodec.encode((int)Math.pow(base, 3)-1, base, aspec, 3);
+        final String r3_max = BaseCodec.encode((int)Math.pow(base, 3)-1, aspec, 3);
         Assert.assertEquals(""+max_cp+max_cp+max_cp, r3_max);
 
         System.err.printf("Test base %d, %s: [%d .. %d] <-> ['%s' .. '%s'], %d years (max/365d)\n",
                 base, aspec, min, max,
-                BaseCodec.encode(min, base, aspec),
-                BaseCodec.encode(max, base, aspec), (max/365));
+                BaseCodec.encode(min, aspec),
+                BaseCodec.encode(max, aspec), (max/365));
 
-        Assert.assertEquals(0, BaseCodec.decode(""+min_cp+min_cp+min_cp, base, aspec));
-        Assert.assertEquals(""+min_cp, BaseCodec.encode(0, base, aspec));
-        Assert.assertEquals(""+min_cp+min_cp+min_cp, BaseCodec.encode(0, base, aspec, 3));
+        Assert.assertEquals(0, BaseCodec.decode(""+min_cp+min_cp+min_cp, aspec));
+        Assert.assertEquals(""+min_cp, BaseCodec.encode(0, aspec));
+        Assert.assertEquals(""+min_cp+min_cp+min_cp, BaseCodec.encode(0, aspec, 3));
 
-        Assert.assertEquals(max, BaseCodec.decode(""+max_cp+max_cp+max_cp, base, aspec));
-        Assert.assertEquals(""+max_cp+max_cp+max_cp, BaseCodec.encode(max, base, aspec, 3));
-        Assert.assertEquals(max_s, BaseCodec.decode(""+max_cp, base, aspec));
-        Assert.assertEquals(""+min_cp+min_cp+max_cp, BaseCodec.encode(max_s, base, aspec, 3));
+        Assert.assertEquals(max, BaseCodec.decode(""+max_cp+max_cp+max_cp, aspec));
+        Assert.assertEquals(""+max_cp+max_cp+max_cp, BaseCodec.encode(max, aspec, 3));
+        Assert.assertEquals(max_s, BaseCodec.decode(""+max_cp, aspec));
+        Assert.assertEquals(""+min_cp+min_cp+max_cp, BaseCodec.encode(max_s, aspec, 3));
 
         {
-            final int v0_d = (int)BaseCodec.decode(r1_max, base, aspec);
-            final String v1_s = BaseCodec.encode(base-1, base, aspec, 3);
+            final int v0_d = (int)BaseCodec.decode(r1_max, aspec);
+            final String v1_s = BaseCodec.encode(base-1, aspec, 3);
             // System.err.printf("r1_max '%s' ('%s'), base-1 %d (%d)\n", r1_max, v1_s, base-1, v0_d);
             Assert.assertEquals(r1_max, v1_s);
             Assert.assertEquals(base-1, v0_d);
         }
         {
-            final int v0_d = (int)BaseCodec.decode(r3_max, base, aspec);
-            final String v1_s = BaseCodec.encode(max, base, aspec, 3);
+            final int v0_d = (int)BaseCodec.decode(r3_max, aspec);
+            final String v1_s = BaseCodec.encode(max, aspec, 3);
             Assert.assertEquals(r3_max, v1_s);
             Assert.assertEquals(max, v0_d);
         }
         for(int iter=min; iter<=max; ++iter) {
-            final String rad = BaseCodec.encode(iter, base, aspec, 3);
-            final int dec = (int)BaseCodec.decode(rad, base, aspec);
+            final String rad = BaseCodec.encode(iter, aspec, 3);
+            final int dec = (int)BaseCodec.decode(rad, aspec);
             Assert.assertEquals(iter, dec);
         }
         if( natural86_alphabet.equals( aspec ) ) {
             // Test 0-9 ..
             System.err.printf("Natural 0-9: ");
             for(int iter=0; iter<=9; ++iter) {
-                final String rad = BaseCodec.encode(iter, base, aspec);
+                final String rad = BaseCodec.encode(iter, aspec);
                 System.err.printf("%s, ", rad);
                 final char c = (char)('0'+iter);
                 Assert.assertEquals(""+c, rad);
@@ -114,57 +114,56 @@ public class TestBaseCodec {
         }
     }
 
-    private static void testRadix_int64(final int base, final Alphabet aspec, final long test_min, final long test_max) {
+    private static void testRadix_int64(final Alphabet aspec, final long test_min, final long test_max) {
         final int int64_max_enc_width = 11; // 9223372036854775807 ==  '7__________' (base 64, natural)
-
+        final int base = aspec.base();
         Assert.assertTrue( 1 < base );
-        Assert.assertTrue( base <= aspec.max_base() );
 
         final char min_cp = aspec.charAt(0); // minimum code-point
         final char max_cp = aspec.charAt(base-1); // maximum code-point
 
-        final String max_radix = BaseCodec.encode(Long.MAX_VALUE, base, aspec, int64_max_enc_width);
+        final String max_radix = BaseCodec.encode(Long.MAX_VALUE, aspec, int64_max_enc_width);
 
-        final long min = BaseCodec.decode(""+min_cp, base, aspec);
-        final long max = BaseCodec.decode(max_radix, base, aspec);
-        final long max_s = BaseCodec.decode(""+max_cp, base, aspec);
+        final long min = BaseCodec.decode(""+min_cp, aspec);
+        final long max = BaseCodec.decode(max_radix, aspec);
+        final long max_s = BaseCodec.decode(""+max_cp, aspec);
 
         Assert.assertEquals(0, min);
         Assert.assertEquals(base-1, max_s);
         Assert.assertEquals(Long.MAX_VALUE, max);
 
-        final String r1_min = BaseCodec.encode(0, base, aspec, int64_max_enc_width);
-        final String r1_min_s = BaseCodec.encode(0, base, aspec);
+        final String r1_min = BaseCodec.encode(0, aspec, int64_max_enc_width);
+        final String r1_min_s = BaseCodec.encode(0, aspec);
         Assert.assertEquals(""+min_cp+min_cp+min_cp+min_cp+min_cp+min_cp+min_cp+min_cp+min_cp+min_cp+min_cp, r1_min);
         Assert.assertEquals(""+min_cp, r1_min_s);
 
-        final String r1_max = BaseCodec.encode(base-1, base, aspec, int64_max_enc_width);
-        final String r1_max_s = BaseCodec.encode(base-1, base, aspec);
+        final String r1_max = BaseCodec.encode(base-1, aspec, int64_max_enc_width);
+        final String r1_max_s = BaseCodec.encode(base-1, aspec);
         Assert.assertEquals(""+min_cp+min_cp+min_cp+min_cp+min_cp+min_cp+min_cp+min_cp+min_cp+min_cp+max_cp, r1_max);
         Assert.assertEquals(""+max_cp, r1_max_s);
 
         System.err.printf("Test base %d, %s: [%d .. %d] <-> ['%s' .. '%s'], %d years (max/365d)\n",
                 base, aspec, min, max,
-                BaseCodec.encode(min, base, aspec),
-                BaseCodec.encode(max, base, aspec), (max/365));
+                BaseCodec.encode(min, aspec),
+                BaseCodec.encode(max, aspec), (max/365));
 
         System.err.printf("- range: [%d .. %d] <-> ['%s' .. '%s']\n",
                 test_min, test_max,
-                BaseCodec.encode(test_min, base, aspec), BaseCodec.encode(test_max, base, aspec));
+                BaseCodec.encode(test_min, aspec), BaseCodec.encode(test_max, aspec));
 
-        Assert.assertEquals(0, BaseCodec.decode(""+min_cp+min_cp+min_cp, base, aspec));
-        Assert.assertEquals(""+min_cp, BaseCodec.encode(0, base, aspec));
+        Assert.assertEquals(0, BaseCodec.decode(""+min_cp+min_cp+min_cp, aspec));
+        Assert.assertEquals(""+min_cp, BaseCodec.encode(0, aspec));
 
         {
-            final long v0_d = BaseCodec.decode(r1_max, base, aspec);
-            final String v1_s = BaseCodec.encode(base-1, base, aspec, int64_max_enc_width);
+            final long v0_d = BaseCodec.decode(r1_max, aspec);
+            final String v1_s = BaseCodec.encode(base-1, aspec, int64_max_enc_width);
             Assert.assertEquals(r1_max, v1_s);
             Assert.assertEquals(base-1, v0_d);
         }
         for(long iter=Math.max(0L, test_min-1); iter<test_max; ) {
             ++iter;
-            final String rad = BaseCodec.encode(iter, base, aspec, int64_max_enc_width);
-            final long dec = BaseCodec.decode(rad, base, aspec);
+            final String rad = BaseCodec.encode(iter, aspec, int64_max_enc_width);
+            final long dec = BaseCodec.decode(rad, aspec);
             if( false ) {
                 System.err.printf("test base %d: iter %d, rad '%s', dec %d\n", base, iter, rad, dec);
             }
@@ -173,32 +172,29 @@ public class TestBaseCodec {
     }
 
     private static void testIntegerBase64(final Alphabet alphabet) {
-        testRadix_3digits_int32(64, alphabet);
-        testRadix_int64(64, alphabet, 0x7fffff00L, 0x80000100L);
-        testRadix_int64(64, alphabet, 0xFFFFFFF0L, 0x100000010L);
-        testRadix_int64(64, alphabet, 0x7FFFFFFFFFFFFFF0L, 0x7FFFFFFFFFFFFFFFL);
+        testRadix_3digits_int32(alphabet);
+        testRadix_int64(alphabet, 0x7fffff00L, 0x80000100L);
+        testRadix_int64(alphabet, 0xFFFFFFF0L, 0x100000010L);
+        testRadix_int64(alphabet, 0x7FFFFFFFFFFFFFF0L, 0x7FFFFFFFFFFFFFFFL);
     }
 
     private static void testIntegerBase86(final Alphabet alphabet) {
-        testRadix_3digits_int32(86, alphabet);
-        testRadix_int64(86, alphabet, 0x7fffff00L, 0x80000100L);
-        testRadix_int64(86, alphabet, 0xFFFFFFF0L, 0x100000010L);
-        testRadix_int64(86, alphabet, 0x7FFFFFFFFFFFFFF0L, 0x7FFFFFFFFFFFFFFFL);
+        testRadix_3digits_int32(alphabet);
+        testRadix_int64(alphabet, 0x7fffff00L, 0x80000100L);
+        testRadix_int64(alphabet, 0xFFFFFFF0L, 0x100000010L);
+        testRadix_int64(alphabet, 0x7FFFFFFFFFFFFFF0L, 0x7FFFFFFFFFFFFFFFL);
     }
 
     @Test
     public void test01IntegerBase38() {
-        testRadix_3digits_int32(38, new BaseCodec.Ascii38Alphabet());
-        testRadix_3digits_int32(38, new BaseCodec.Ascii64Alphabet());
+        testRadix_3digits_int32(new BaseCodec.Ascii38Alphabet());
     }
 
     @Test
     public void test02IntegerBase64() {
         testIntegerBase64(new BaseCodec.Base64Alphabet());
         testIntegerBase64(new BaseCodec.Base64urlAlphabet());
-        testIntegerBase64(new BaseCodec.Natural86Alphabet());
         testIntegerBase64(new BaseCodec.Ascii64Alphabet());
-        testIntegerBase64(new BaseCodec.Ascii86Alphabet());
     }
 
     @Test
