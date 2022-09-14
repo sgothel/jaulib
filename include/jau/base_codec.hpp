@@ -36,8 +36,11 @@
  */
 namespace jau::codec::base {
 
-    /** @defgroup Codec Data Stream Encoder and Decoder
-     *  Variable integer base coding and fixed binary base 64 coding.
+    /** @defgroup Codec Codec
+     *  Data Stream Encoder and Decoder
+     *
+     *  Supported codecs:
+     *  - jau::codec::base::alphabet enables variable integer base encode() and fixed binary base-64 encode64().
      *
      *  @{
      */
