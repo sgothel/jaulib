@@ -48,7 +48,7 @@ void simple_timer::timer_work(service_runner& sr_ref) {
         std::unique_lock<std::mutex> lockReader(mtx_timerfunc); // RAII-style acquire and relinquish via destructor
         tf = timer_func;
     }
-    if( !tf.isNullType() && !sr_ref.shall_stop() ) {
+    if( !tf.is_null() && !sr_ref.shall_stop() ) {
         duration = tf(*this);
     } else {
         duration = fractions_i64::zero;
@@ -59,7 +59,7 @@ void simple_timer::timer_work(service_runner& sr_ref) {
 }
 
 simple_timer::simple_timer(const std::string& name, const fraction_i64& service_shutdown_timeout) noexcept
-: timer_service(name, service_shutdown_timeout, jau::bindMemberFunc(this, &simple_timer::timer_work)),
+: timer_service(name, service_shutdown_timeout, jau::bind_member(this, &simple_timer::timer_work)),
   timer_func(), duration()
 {}
 

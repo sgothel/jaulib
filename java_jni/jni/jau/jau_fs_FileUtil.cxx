@@ -362,7 +362,7 @@ jobject Java_org_jau_fs_FileUtil_get_1dir_1content(JNIEnv *env, jclass cls, jstr
     try {
         const std::string path = jau::jni::from_jstring_to_string(env, jpath);
         std::vector<jau::fs::dir_item> content;
-        const jau::fs::consume_dir_item cs = jau::bindCaptureRefFunc<void, std::vector<jau::fs::dir_item>, const jau::fs::dir_item&>(&content,
+        const jau::fs::consume_dir_item cs = jau::bind_capref<void, std::vector<jau::fs::dir_item>, const jau::fs::dir_item&>(&content,
             ( void(*)(std::vector<jau::fs::dir_item>*, const jau::fs::dir_item&) ) /* help template type deduction of function-ptr */
                 ( [](std::vector<jau::fs::dir_item>* receiver, const jau::fs::dir_item& item) -> void { receiver->push_back( item ); } )
         );

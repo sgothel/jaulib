@@ -71,7 +71,7 @@ class TestSimpleTimer01 {
         REQUIRE( 0 == ping_count );
         REQUIRE( false == periodic_dog.is_running() );
         REQUIRE( true == periodic_dog.shall_stop() );
-        const bool r = periodic_dog.start(dog_period, jau::bindMemberFunc(this, &TestSimpleTimer01::dog_watch_func));
+        const bool r = periodic_dog.start(dog_period, jau::bind_member(this, &TestSimpleTimer01::dog_watch_func));
         REQUIRE( true == r );
         REQUIRE( true  == periodic_dog.is_running() );
         REQUIRE( false == periodic_dog.shall_stop() );
@@ -105,7 +105,7 @@ class TestSimpleTimer01 {
         REQUIRE( 0 == ping_count );
         REQUIRE( false == periodic_dog.is_running() );
         REQUIRE( true == periodic_dog.shall_stop() );
-        const bool r = periodic_dog.start(dog_period, jau::bindMemberFunc(this, &TestSimpleTimer01::dog_watch_func));
+        const bool r = periodic_dog.start(dog_period, jau::bind_member(this, &TestSimpleTimer01::dog_watch_func));
         REQUIRE( true == r );
         REQUIRE( true  == periodic_dog.is_running() );
         REQUIRE( false == periodic_dog.shall_stop() );

@@ -39,7 +39,7 @@
 #include <jau/cpp_lang_util.hpp>
 #include <jau/ordered_atomic.hpp>
 #include <jau/fraction_type.hpp>
-#include <jau/function_def.hpp>
+#include <jau/functional.hpp>
 
 extern "C" {
     #include <unistd.h>
@@ -59,7 +59,7 @@ namespace jau {
     class service_runner {
         public:
             typedef service_runner& service_runner_ref;
-            typedef FunctionDef<void, service_runner_ref> Callback;
+            typedef function<void(service_runner_ref)> Callback;
 
             static const ::pid_t pid_self;
 

@@ -1117,7 +1117,7 @@ class TestFileUtil01 : TestFileUtilBase {
                                                           jau::fs::traverse_options::dir_exit;
         visitor_stats stats_R_FSL_PDL(topts_R_FSL_PDL);
         {
-            const jau::fs::path_visitor pv = jau::bindCaptureRefFunc(&stats_R_FSL_PDL,
+            const jau::fs::path_visitor pv = jau::bind_capref(&stats_R_FSL_PDL,
                     ( bool(*)(visitor_stats*, jau::fs::traverse_event, const jau::fs::file_stats&) ) /* help template type deduction of function-ptr */
                         ( [](visitor_stats* stats_ptr, jau::fs::traverse_event tevt, const jau::fs::file_stats& element_stats) -> bool {
                             (void)tevt;
@@ -1142,7 +1142,7 @@ class TestFileUtil01 : TestFileUtilBase {
                                                       jau::fs::traverse_options::dir_entry;
         visitor_stats stats_R_FSL(topts_R_FSL);
         {
-            const jau::fs::path_visitor pv = jau::bindCaptureRefFunc(&stats_R_FSL,
+            const jau::fs::path_visitor pv = jau::bind_capref(&stats_R_FSL,
                     ( bool(*)(visitor_stats*, jau::fs::traverse_event, const jau::fs::file_stats&) ) /* help template type deduction of function-ptr */
                         ( [](visitor_stats* stats_ptr, jau::fs::traverse_event tevt, const jau::fs::file_stats& element_stats) -> bool {
                             (void)tevt;
@@ -1170,7 +1170,7 @@ class TestFileUtil01 : TestFileUtilBase {
             const jau::fs::traverse_options topts = jau::fs::traverse_options::recursive |
                                                     jau::fs::traverse_options::dir_entry;
             visitor_stats stats(topts);
-            const jau::fs::path_visitor pv = jau::bindCaptureRefFunc(&stats,
+            const jau::fs::path_visitor pv = jau::bind_capref(&stats,
                     ( bool(*)(visitor_stats*, jau::fs::traverse_event, const jau::fs::file_stats&) ) /* help template type deduction of function-ptr */
                         ( [](visitor_stats* stats_ptr, jau::fs::traverse_event tevt, const jau::fs::file_stats& element_stats) -> bool {
                             (void)tevt;
@@ -1195,7 +1195,7 @@ class TestFileUtil01 : TestFileUtilBase {
                                                     jau::fs::traverse_options::dir_entry |
                                                     jau::fs::traverse_options::follow_symlinks;
             visitor_stats stats(topts);
-            const jau::fs::path_visitor pv = jau::bindCaptureRefFunc(&stats,
+            const jau::fs::path_visitor pv = jau::bind_capref(&stats,
                     ( bool(*)(visitor_stats*, jau::fs::traverse_event, const jau::fs::file_stats&) ) /* help template type deduction of function-ptr */
                         ( [](visitor_stats* stats_ptr, jau::fs::traverse_event tevt, const jau::fs::file_stats& element_stats) -> bool {
                             (void)tevt;
@@ -1573,8 +1573,8 @@ class TestFileUtil01 : TestFileUtilBase {
                                                          jau::fs::traverse_options::dir_entry;
             visitor_stats stats(topts_orig);
             visitor_stats stats_copy(topts_copy);
-            const jau::fs::path_visitor pv_orig = jau::bindCaptureRefFunc(&stats, pv_capture);
-            const jau::fs::path_visitor pv_copy = jau::bindCaptureRefFunc(&stats_copy, pv_capture);
+            const jau::fs::path_visitor pv_orig = jau::bind_capref(&stats, pv_capture);
+            const jau::fs::path_visitor pv_copy = jau::bind_capref(&stats_copy, pv_capture);
             REQUIRE( true == jau::fs::visit(root_orig_stats, topts_orig, pv_orig) );
             REQUIRE( true == jau::fs::visit(root_copy_stats, topts_copy, pv_copy) );
 
@@ -1623,7 +1623,7 @@ class TestFileUtil01 : TestFileUtilBase {
             const jau::fs::traverse_options topts_copy = jau::fs::traverse_options::recursive |
                                                          jau::fs::traverse_options::dir_entry;
             visitor_stats stats_copy(topts_copy);
-            const jau::fs::path_visitor pv_copy = jau::bindCaptureRefFunc(&stats_copy, pv_capture);
+            const jau::fs::path_visitor pv_copy = jau::bind_capref(&stats_copy, pv_capture);
             REQUIRE( true == jau::fs::visit(root_copy_renamed_stats, topts_copy, pv_copy) );
 
             jau::fprintf_td(stderr, "test50_copy_ext_r_p_fsl: renamed: traverse_copy %s\n", to_string(topts_copy).c_str());

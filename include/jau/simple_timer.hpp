@@ -32,7 +32,7 @@
 
 #include <jau/ordered_atomic.hpp>
 #include <jau/fraction_type.hpp>
-#include <jau/function_def.hpp>
+#include <jau/functional.hpp>
 #include <jau/service_runner.hpp>
 
 namespace jau {
@@ -61,7 +61,7 @@ namespace jau {
              *
              * @return duration in fractions of seconds for the next timer event or zero to end the timer thread.
              */
-            typedef FunctionDef<fraction_i64, Timer0_ref> Timer_func;
+            typedef function<fraction_i64(Timer0_ref)> Timer_func;
 
         private:
             service_runner timer_service;

@@ -1030,7 +1030,7 @@ static bool _visit(const file_stats& item_stats, const traverse_options topts, c
             }
         }
         std::vector<dir_item> content;
-        const consume_dir_item cs = jau::bindCaptureRefFunc<void, std::vector<dir_item>, const dir_item&>(&content,
+        const consume_dir_item cs = jau::bind_capref<void, std::vector<dir_item>, const dir_item&>(&content,
                 ( void(*)(std::vector<dir_item>*, const dir_item&) ) /* help template type deduction of function-ptr */
                     ( [](std::vector<dir_item>* receiver, const dir_item& item) -> void { receiver->push_back( item ); } )
             );
@@ -1142,7 +1142,7 @@ bool jau::fs::remove(const std::string& path, const traverse_options topts) noex
     };
     remove_context_t ctx = { topts | jau::fs::traverse_options::dir_exit, std::vector<int>() };
 
-    const path_visitor pv = jau::bindCaptureRefFunc<bool, remove_context_t, traverse_event, const file_stats&>(&ctx,
+    const path_visitor pv = jau::bind_capref<bool, remove_context_t, traverse_event, const file_stats&>(&ctx,
             ( bool(*)(remove_context_t*, traverse_event, const file_stats&) ) /* help template type deduction of function-ptr */
                 ( [](remove_context_t* ctx_ptr, traverse_event tevt, const file_stats& element_stats) -> bool {
                     (void)tevt;
@@ -1782,7 +1782,7 @@ bool jau::fs::copy(const std::string& source_path, const std::string& target_pat
         }
         ctx.skip_dst_dir_mkdir = 1;
     }
-    const path_visitor pv = jau::bindCaptureRefFunc<bool, copy_context_t, traverse_event, const file_stats&>(&ctx,
+    const path_visitor pv = jau::bind_capref<bool, copy_context_t, traverse_event, const file_stats&>(&ctx,
             ( bool(*)(copy_context_t*, traverse_event, const file_stats&) ) /* help template type deduction of function-ptr */
                 ( [](copy_context_t* ctx_ptr, traverse_event tevt, const file_stats& element_stats) -> bool {
                     if( !element_stats.has_access() ) {

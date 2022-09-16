@@ -29,7 +29,7 @@
 #include <memory>
 
 #include <jau/fraction_type.hpp>
-#include <jau/function_def.hpp>
+#include <jau/functional.hpp>
 
 namespace jau {
 
@@ -706,7 +706,7 @@ namespace jau {
         /**
          * `void consume_dir_item(const dir_item& item)`
          */
-        typedef jau::FunctionDef<void, const dir_item&> consume_dir_item;
+        typedef jau::function<void(const dir_item&)> consume_dir_item;
 
         /**
          * Returns a list of directory elements excluding `.` and `..` for the given path, non recursive.
@@ -832,7 +832,7 @@ namespace jau {
          * path_visitor jau::FunctionDef definition
          * - `bool visitor(traverse_event tevt, const file_stats& item_stats)`
          */
-        typedef jau::FunctionDef<bool, traverse_event, const file_stats&> path_visitor;
+        typedef jau::function<bool(traverse_event, const file_stats&)> path_visitor;
 
         /**
          * Filesystem traverse options used to visit() path elements.

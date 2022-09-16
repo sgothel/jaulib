@@ -81,8 +81,8 @@ void testxx_copy_r_p(const std::string& title,
                                                 jau::fs::traverse_options::dir_entry;
         visitor_stats stats(topts);
         visitor_stats stats_copy(topts);
-        const jau::fs::path_visitor pv_orig = jau::bindCaptureRefFunc(&stats, pv_capture);
-        const jau::fs::path_visitor pv_copy = jau::bindCaptureRefFunc(&stats_copy, pv_capture);
+        const jau::fs::path_visitor pv_orig = jau::bind_capref(&stats, pv_capture);
+        const jau::fs::path_visitor pv_copy = jau::bind_capref(&stats_copy, pv_capture);
         REQUIRE( true == jau::fs::visit(source, topts, pv_orig) );
         REQUIRE( true == jau::fs::visit(dest_stats, topts, pv_copy) );
 
@@ -165,12 +165,12 @@ void testxx_copy_r_p(const std::string& title,
                 bool match;
         };
         source_visitor_params svp { title, source.path(), dest_stats, dest_is_vfat, opt_drop_dest_links };
-        const jau::fs::path_visitor pv1 = jau::bindCaptureRefFunc<bool, source_visitor_params, jau::fs::traverse_event, const jau::fs::file_stats&>(&svp,
+        const jau::fs::path_visitor pv1 = jau::bind_capref<bool, source_visitor_params, jau::fs::traverse_event, const jau::fs::file_stats&>(&svp,
                 ( bool(*)(source_visitor_params*, jau::fs::traverse_event, const jau::fs::file_stats&) ) /* help template type deduction of function-ptr */
                     ( [](source_visitor_params* _svp, jau::fs::traverse_event tevt1, const jau::fs::file_stats& element_stats1) -> bool {
                         (void)tevt1;
                         dest_visitor_params dvp { _svp->title, _svp->source_folder_path, _svp->dest.path(), jau::fs::basename( element_stats1.path() ), element_stats1, _svp->dest_is_vfat, false };
-                        const jau::fs::path_visitor pv2 = jau::bindCaptureRefFunc<bool, dest_visitor_params, jau::fs::traverse_event, const jau::fs::file_stats&>(&dvp,
+                        const jau::fs::path_visitor pv2 = jau::bind_capref<bool, dest_visitor_params, jau::fs::traverse_event, const jau::fs::file_stats&>(&dvp,
                                 ( bool(*)(dest_visitor_params*, jau::fs::traverse_event, const jau::fs::file_stats&) ) /* help template type deduction of function-ptr */
                                     ( [](dest_visitor_params* _dvp, jau::fs::traverse_event tevt2, const jau::fs::file_stats& element_stats2) -> bool {
                                         (void)tevt2;
