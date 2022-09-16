@@ -8,6 +8,13 @@
 
 * First stable release (TODO)
 
+**0.16.0**
+* `jau::FunctionDef<>` -> `jau::function<R(A...)>` 
+  - from `FunctionDef<R, A1, A2>` -> `function<R(A1, A2)>`
+  - support for void return type
+  - header file renamed `function_def.hpp` -> `functional.hpp`
+  - C++ naming scheme
+
 **0.15.0**
 * Add `jau::codec::base` and `org.jau.util.BaseCodec` for variable integer base coding and fixed binary base 64 coding.
 * Complete full `jau::fs::mount()` and `umount()`: 
