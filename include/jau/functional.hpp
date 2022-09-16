@@ -720,8 +720,8 @@ namespace jau {
     };
 
     /**
-     * Bind given class instance and member function to
-     * an anonymous function using MemberInvocationFunc.
+     * Bind given class instance and non-void member function to
+     * an anonymous function using func_member_targer_t.
      *
      * @tparam R function return type
      * @tparam C class type holding the member-function
@@ -738,6 +738,18 @@ namespace jau {
         return function<R(A...)>( new func::member_target_t<R, C, A...>(base, mfunc) );
     }
 
+    /**
+     * Bind given class instance and void member function to
+     * an anonymous function using func_member_targer_t.
+     *
+     * @tparam C class type holding the member-function
+     * @tparam A function arguments
+     * @param base class instance `this` pointer
+     * @param mfunc member-function with `A...` arguments.
+     * @return anonymous function
+     * @see @ref function_overview "function Overview" etc.
+     * @see @ref function_usage "function Usage"
+     */
     template<typename C, typename... A>
     inline jau::function<void(A...)>
     bind_member(C *base, void(C::*mfunc)(A...)) noexcept {
@@ -745,8 +757,8 @@ namespace jau {
     }
 
     /**
-     * Bind given free-function to
-     * an anonymous function using FreeInvocationFunc.
+     * Bind given non-void free-function to
+     * an anonymous function using func::free_target_t.
      *
      * @tparam R function return type
      * @tparam A function arguments
@@ -761,6 +773,16 @@ namespace jau {
         return function<R(A...)>( new func::free_target_t<R, A...>(func) );
     }
 
+    /**
+     * Bind given void free-function to
+     * an anonymous function using func::free_target_t.
+     *
+     * @tparam A function arguments
+     * @param func free-function with `A...` arguments.
+     * @return anonymous function
+     * @see @ref function_overview "function Overview" etc.
+     * @see @ref function_usage "function Usage"
+     */
     template<typename... A>
     inline jau::function<void(A...)>
     bind_free(void(*func)(A...)) noexcept {
@@ -768,12 +790,12 @@ namespace jau {
     }
 
     /**
-     * Bind given data by copying the value and the given function to
-     * an anonymous function using CaptureValueInvocationFunc.
+     * Bind given data by copying the value and the given non-void function to
+     * an anonymous function using func::capval_target_t.
      *
-     * `const I& data` will be copied into CaptureValueInvocationFunc and hence captured by copy.
+     * `const I& data` will be copied into func::capval_target_t and hence captured by copy.
      *
-     * The function call will have the reference of the copied data being passed for efficiency.
+     * The function invocation will have the reference of the copied data being passed to the target function for efficiency.
      *
      * @tparam R function return type
      * @tparam I typename holding the captured data used by the function
@@ -791,6 +813,23 @@ namespace jau {
         return function<R(A...)>( new func::capval_target_t<R, I, A...>(data, func, dataIsIdentity) );
     }
 
+    /**
+     * Bind given data by copying the value and the given void function to
+     * an anonymous function using func::capval_target_t.
+     *
+     * `const I& data` will be copied into func::capval_target_t and hence captured by copy.
+     *
+     * The function invocation will have the reference of the copied data being passed to the target function for efficiency.
+     *
+     * @tparam I typename holding the captured data used by the function
+     * @tparam A function arguments
+     * @param data data type instance holding the captured data
+     * @param func function with `A...` arguments.
+     * @param dataIsIdentity if true (default), equality requires equal data. Otherwise equality only compares the function pointer.
+     * @return anonymous function
+     * @see @ref function_overview "function Overview" etc.
+     * @see @ref function_usage "function Usage"
+     */
     template<typename I, typename... A>
     inline jau::function<void(A...)>
     bind_capval(const I& data, void(*func)(I&, A...), bool dataIsIdentity=true) noexcept {
@@ -798,12 +837,12 @@ namespace jau {
     }
 
     /**
-     * Bind given data by moving the given value and copying the given function to
-     * an anonymous function using CaptureValueInvocationFunc.
+     * Bind given data by moving the given value and copying the given non-void function to
+     * an anonymous function using func::capval_target_t.
      *
-     * `I&& data` will be moved into CaptureValueInvocationFunc.
+     * `I&& data` will be moved into func::capval_target_t.
      *
-     * The function call will have the reference of the moved data being passed for efficiency.
+     * The function invocation will have the reference of the moved data being passed to the target function for efficiency.
      *
      * @tparam R function return type
      * @tparam I typename holding the captured data used by the function
@@ -821,6 +860,23 @@ namespace jau {
         return function<R(A...)>( new func::capval_target_t<R, I, A...>(std::move(data), func, dataIsIdentity) );
     }
 
+    /**
+     * Bind given data by moving the given value and copying the given void function to
+     * an anonymous function using func::capval_target_t.
+     *
+     * `I&& data` will be moved into func::capval_target_t.
+     *
+     * The function invocation will have the reference of the moved data being passed to the target function for efficiency.
+     *
+     * @tparam I typename holding the captured data used by the function
+     * @tparam A function arguments
+     * @param data data type instance holding the captured data
+     * @param func function with `A...` arguments.
+     * @param dataIsIdentity if true (default), equality requires equal data. Otherwise equality only compares the function pointer.
+     * @return anonymous function
+     * @see @ref function_overview "function Overview" etc.
+     * @see @ref function_usage "function Usage"
+     */
     template<typename I, typename... A>
     inline jau::function<void(A...)>
     bind_capval(I&& data, void(*func)(I&, A...), bool dataIsIdentity=true) noexcept {
@@ -828,10 +884,10 @@ namespace jau {
     }
 
     /**
-     * Bind given data by passing the given reference (pointer) to the value and function to
-     * an anonymous function using CaptureRefInvocationFunc.
+     * Bind given data by passing the given reference (pointer) to the value and non-void function to
+     * an anonymous function using func::capref_target_t.
      *
-     * The function call will have the reference (pointer) being passed for efficiency.
+     * The function invocation will have the reference of the data being passed to the target function.
      *
      * @tparam R function return type
      * @tparam I typename holding the captured data used by the function
@@ -849,6 +905,21 @@ namespace jau {
         return function<R(A...)>( new func::capref_target_t<R, I, A...>(data_ptr, func, dataIsIdentity) );
     }
 
+    /**
+     * Bind given data by passing the given reference (pointer) to the value and void function to
+     * an anonymous function using func::capref_target_t.
+     *
+     * The function invocation will have the reference of the data being passed to the target function.
+     *
+     * @tparam I typename holding the captured data used by the function
+     * @tparam A function arguments
+     * @param data_ptr data type reference to instance holding the captured data
+     * @param func function with `A...` arguments.
+     * @param dataIsIdentity if true (default), equality requires same data_ptr. Otherwise equality only compares the function pointer.
+     * @return anonymous function
+     * @see @ref function_overview "function Overview" etc.
+     * @see @ref function_usage "function Usage"
+     */
     template<typename I, typename... A>
     inline jau::function<void(A...)>
     bind_capref(I* data_ptr, void(*func)(I*, A...), bool dataIsIdentity=true) noexcept {
@@ -856,11 +927,11 @@ namespace jau {
     }
 
     /**
-     * Bind given std::function to
-     * an anonymous function using StdInvocationFunc.
+     * Bind given non-void std::function to
+     * an anonymous function using func::std_target_t.
      *
      * Notable, instance is holding the given unique uint64_t identifier
-     * to allow implementing the equality operator, not supported by std::function.
+     * to allow implementing the equality operator w/o RTTI, not supported by std::function.
      *
      * @tparam R function return type
      * @tparam A function arguments
@@ -875,6 +946,19 @@ namespace jau {
         return function<R(A...)>( new func::std_target_t<R, A...>(id, func) );
     }
 
+    /**
+     * Bind given void std::function to
+     * an anonymous function using func::std_target_t.
+     *
+     * Notable, instance is holding the given unique uint64_t identifier
+     * to allow implementing the equality operator w/o RTTI, not supported by std::function.
+     *
+     * @tparam A function arguments
+     * @param func free-function with `A...` arguments.
+     * @return anonymous function
+     * @see @ref function_overview "function Overview" etc.
+     * @see @ref function_usage "function Usage"
+     */
     template<typename... A>
     inline jau::function<void(A...)>
     bind_std(uint64_t id, std::function<void(A...)> func) noexcept {
