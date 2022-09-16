@@ -36,7 +36,7 @@ buildit() {
     if [ $? -eq 0 ] ; then
         echo "REBUILD SUCCESS $bname $os_name $archabi"
         rm -f $rootdir/documentation.tar.xz
-        # tar caf $rootdir/documentation.tar.xz documentation
+        tar caf $rootdir/documentation.tar.xz documentation
         cd $rootdir
         return 0
     else
