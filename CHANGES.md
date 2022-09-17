@@ -8,6 +8,12 @@
 
 * First stable release (TODO)
 
+**0.16.1**
+* `jau::function<R(A...)>` 
+  - add fast path `target_t::delegate_t` invocation
+  - add function ctor for all type, incl. non-capturing lambda assignment
+  - add performance tests
+
 **0.16.0**
 * `jau::FunctionDef<>` -> `jau::function<R(A...)>` 
   - from `FunctionDef<R, A1, A2>` -> `function<R(A1, A2)>`
