@@ -659,7 +659,7 @@ namespace jau {
     } /* namespace func */
 
     /**
-     * Class template [jau::function](@ref function_def) is a general-purpose polymorphic function wrapper.
+     * [Function](@ref function_overview} class template [jau::function](@ref function_def) is a general-purpose polymorphic function wrapper.
      *
      * See @ref function_overview "Function Overview".
      *

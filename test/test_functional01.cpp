@@ -42,6 +42,10 @@ static void Func1a_free(int&r, int i) noexcept {
     r = i+100;
 }
 
+static void Func2a_free() noexcept {
+    // nop
+}
+
 class TestFunction01 {
   private:
 
@@ -78,6 +82,15 @@ class TestFunction01 {
     }
     static void Func13b_static(int& r, const int i) noexcept {
         r = i+1000;
+    }
+
+    typedef function<void()> MyClassFunction2;
+
+    void func20a_member() {
+        // nop
+    }
+    static void Func20a_static() {
+        // nop
     }
 
     struct IntOffset {
@@ -170,29 +183,56 @@ class TestFunction01 {
         }
     }
 
+    void test_FunctionPointer20(std::string msg, bool expEqual, MyClassFunction2 & f1, MyClassFunction2 &f2) noexcept {
+        // test std::function identity
+        INFO(msg+": FunctionPointer20 Fun f1p == f2p : " + std::to_string( f1 == f2 ) + ", f1p: " + f1.toString() + ", f2 "+f2.toString() );
+        f1();
+        f2();
+        if( expEqual ) {
+            REQUIRE(f1 == f2);
+        } else {
+            REQUIRE(f1 != f2);
+        }
+    }
+
   public:
+
+    /**
+     * Unit test covering most variants of jau::function<R(A...)
+     */
     void test00_usage() {
         INFO("Test 00_usage: START");
-#if 0
         {
-            typedef int(*cfunc)(int);
-
-            function<int(int)> f1a_1 = (cfunc) ( [](int i)->int {
-                int res = i+10000;
-                return res;
+            // free, result void and no params
+            typedef void(*cfunc)();
+            function<void()> fl_0 = (cfunc) ( []() -> void {
+                // nop
             } );
+            function<void()> f2a_0 = Func2a_free;
+            function<void()> f2a_1 = bind_free(Func2a_free);
+            function<void()> f20a_1 = bind_free(&TestFunction01::Func20a_static);
+            function<void()> f20a_2 = bind_free(&TestFunction01::Func20a_static);
+            test_FunctionPointer20("FuncPtr1a_free_10", true,   fl_0, fl_0);
+            test_FunctionPointer20("FuncPtr1a_free_10", true,   f2a_0, f2a_1);
+            test_FunctionPointer20("FuncPtr1a_free_10", true,   f2a_1, f2a_1);
+            test_FunctionPointer20("FuncPtr3a_free_11", true,   f20a_1, f20a_1);
+            test_FunctionPointer20("FuncPtr3a_free_12", true,   f20a_1, f20a_2);
+            test_FunctionPointer20("FuncPtr1a_free_10", false,  f2a_1, f20a_1);
+
         }
-        {
-            typedef int(*cfunc)(int);
-            function<int(int)> f1a_1 ( (cfunc) TestFunction01::Func03a_static );
-            // function<int(int)> f1a_1 = (cfunc) TestFunction01::Func03a_static;
-        }
-#endif
         {
             // free, result non-void
+            typedef int(*cfunc)(int);
+            function<int(int)> fl_0 = (cfunc) ( [](int i) -> int {
+                int res = i+100;
+                return res;
+            } );
+            function<int(int)> f1a_0 = Func0a_free;
             function<int(int)> f1a_1 = bind_free(Func0a_free);
             function<int(int)> f3a_1 = bind_free(&TestFunction01::Func03a_static);
             function<int(int)> f3a_2 = bind_free(&TestFunction01::Func03a_static);
+            test_FunctionPointer00("FuncPtr1a_free_10", true,   1, 101, fl_0, fl_0);
+            test_FunctionPointer00("FuncPtr1a_free_10", true,   1, 101, f1a_0, f1a_1);
             test_FunctionPointer00("FuncPtr1a_free_10", true,   1, 101, f1a_1, f1a_1);
             test_FunctionPointer00("FuncPtr3a_free_11", true,   1, 101, f3a_1, f3a_1);
             test_FunctionPointer00("FuncPtr3a_free_12", true,   1, 101, f3a_1, f3a_2);
@@ -200,27 +240,39 @@ class TestFunction01 {
         }
         {
             // free, result void
+            typedef void(*cfunc)(int&, int);
+            function<void(int&, int)> fl_0 = (cfunc) ( [](int& res, int i) -> void {
+                res = i+100;
+            } );
+            function<void(int&, int)> f1a_0 = Func1a_free;
             function<void(int&, int)> f1a_1 = bind_free(Func1a_free);
+            function<void(int&, int)> f3a_0 = &TestFunction01::Func13a_static;
             function<void(int&, int)> f3a_1 = bind_free(&TestFunction01::Func13a_static);
             function<void(int&, int)> f3a_2 = bind_free(&TestFunction01::Func13a_static);
-            test_FunctionPointer10("FuncPtr1a_free_10", true,   1, 101, f1a_1, f1a_1);
+            test_FunctionPointer10("FuncPtr1a_free_10", true,   1, 101, fl_0, fl_0);
+            test_FunctionPointer10("FuncPtr1a_free_10", true,   1, 101, f1a_1, f1a_0);
+            test_FunctionPointer10("FuncPtr3a_free_11", true,   1, 101, f3a_1, f3a_0);
             test_FunctionPointer10("FuncPtr3a_free_11", true,   1, 101, f3a_1, f3a_1);
             test_FunctionPointer10("FuncPtr3a_free_12", true,   1, 101, f3a_1, f3a_2);
             test_FunctionPointer10("FuncPtr1a_free_10", false,  1, 101, f1a_1, f3a_1);
         }
         {
             // member, result non-void
+            function<int(int)> f2a_0(this, &TestFunction01::func02a_member);
             function<int(int)> f2a_1 = bind_member(this, &TestFunction01::func02a_member);
             function<int(int)> f2a_2 = bind_member(this, &TestFunction01::func02a_member);
             function<int(int)> f2b_1 = bind_member(this, &TestFunction01::func02b_member);
+            test_FunctionPointer00("FuncPtr2a_member_12", true,  1, 101, f2a_1, f2a_0);
             test_FunctionPointer00("FuncPtr2a_member_12", true,  1, 101, f2a_1, f2a_2);
             test_FunctionPointer00("FuncPtr2a_member_12", false, 1, 101, f2a_1, f2b_1);
         }
         {
             // member, result void
+            function<void(int&, int)> f2a_0(this, &TestFunction01::func12a_member);
             function<void(int&, int)> f2a_1 = bind_member(this, &TestFunction01::func12a_member);
             function<void(int&, int)> f2a_2 = bind_member(this, &TestFunction01::func12a_member);
             function<void(int&, int)> f2b_1 = bind_member(this, &TestFunction01::func12b_member);
+            test_FunctionPointer10("FuncPtr2a_member_12", true,  1, 101, f2a_1, f2a_0);
             test_FunctionPointer10("FuncPtr2a_member_12", true,  1, 101, f2a_1, f2a_2);
             test_FunctionPointer10("FuncPtr2a_member_12", false, 1, 101, f2a_1, f2b_1);
         }
@@ -239,22 +291,30 @@ class TestFunction01 {
                 return res;
             };
 
+            function<int(int)> f5_o100_0(offset100,
+                    (cfunc) ( [](int& capture, int i)->int {
+                        int res = i+10000+capture;
+                        return res;
+                    } ) );
             function<int(int)> f5_o100_1 = bind_capval(offset100,
                     (cfunc) ( [](int& capture, int i)->int {
                         int res = i+10000+capture;
-                        return res;;
+                        return res;
                     } ) );
             function<int(int)> f5_o100_2 = bind_capval(offset100,
                     (cfunc) ( [](int& capture, int i)->int {
                         int res = i+10000+capture;
-                        return res;;
+                        return res;
                     } ) );
+            test_FunctionPointer01("FuncPtr5a_o100_capture_00", true,  f5_o100_0, f5_o100_0);
             test_FunctionPointer01("FuncPtr5a_o100_capture_00", true,  f5_o100_1, f5_o100_1);
             test_FunctionPointer01("FuncPtr5a_o100_capture_00", false, f5_o100_1, f5_o100_2);
 
+            function<int(int)> f5a_o100_0(offset100, func5a_capture);
             function<int(int)> f5a_o100_1 = bind_capval(offset100, func5a_capture);
             function<int(int)> f5a_o100_2 = bind_capval(offset100, func5a_capture);
             function<int(int)> f5b_o100_1 = bind_capval(offset100, func5b_capture);
+            test_FunctionPointer01("FuncPtr5a_o100_capture_12", true,  f5a_o100_1, f5a_o100_0);
             test_FunctionPointer01("FuncPtr5a_o100_capture_12", true,  f5a_o100_1, f5a_o100_2);
             test_FunctionPointer01("FuncPtr5a_o100_capture_12", false, f5a_o100_1, f5b_o100_1);
             test_FunctionPointer00("FuncPtr5a_o100_capture_11", true,  1, 10101, f5a_o100_1, f5a_o100_1);
