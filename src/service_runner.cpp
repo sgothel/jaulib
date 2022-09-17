@@ -168,7 +168,7 @@ void service_runner::start() noexcept {
     // as t may end due to I/O errors.
     t.detach();
 
-    while( false == running ) {
+    while( false == running && false == shall_stop_ ) {
         cv_init.wait(lock);
     }
     DBG_PRINT("%s::start: End.X: %s", name_.c_str(), toString().c_str());
