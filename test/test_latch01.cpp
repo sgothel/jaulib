@@ -46,8 +46,12 @@ class TestLatch01 {
         l.count_down();
     }
 
-    void somethingUp(jau::latch& l, const fraction_i64 duration) {
+    void somethingUp2x(jau::latch& l, const fraction_i64 duration) {
         l.count_up();
+        l.count_up();
+        my_counter++;
+        jau::sleep_for( duration );
+        l.count_down();
         my_counter++;
         jau::sleep_for( duration );
         l.count_down();
@@ -58,7 +62,7 @@ class TestLatch01 {
     /**
      * Testing jau::latch with set initial count value, count_down() and arrive_and_wait().
      */
-    void test01_wait() {
+    void test01_down_wait() {
         INFO_STR("\n\ntest01\n");
         const size_t count = 10;
         std::thread tasks[count];
@@ -84,7 +88,7 @@ class TestLatch01 {
     /**
      * Testing jau::latch with set initial count value, count_down() and arrive_and_wait_for().
      */
-    void test02_wait_for() {
+    void test02_down_wait_for() {
         INFO_STR("\n\ntest02\n");
         const size_t count = 10;
         std::thread tasks[count];
@@ -108,21 +112,52 @@ class TestLatch01 {
     }
 
     /**
-     * Testing jau::latch with zero initial count value, count_up(), count_down() and wait().
+     * Testing jau::latch default ctor with zero value, then set initial count value, count_down() and arrive_and_wait().
      */
-    void test02_wait() {
-        INFO_STR("\n\ntest02\n");
+    void test03_down_wait_for() {
+        INFO_STR("\n\ntest03\n");
         const size_t count = 10;
         std::thread tasks[count];
-        jau::latch completion(0);
+        jau::latch completion;
 
-        REQUIRE_MSG("not-zero", 0 == completion.value());
+        REQUIRE_MSG("zero", 0 == completion.value());
+
+        completion.set(count+1);
+        REQUIRE_MSG("not-zero", count+1 == completion.value());
 
         for(size_t i=0; i<count; i++) {
-            tasks[i] = std::thread(&TestLatch01::somethingUp, this, std::ref(completion), (int64_t)i*1_ms);
+            tasks[i] = std::thread(&TestLatch01::something, this, std::ref(completion), (int64_t)i*1_ms);
+        }
+        REQUIRE_MSG("complete", true == completion.arrive_and_wait_for(10_s) );
+
+        REQUIRE_MSG("zero", 0 == completion.value());
+        REQUIRE_MSG("10", count == my_counter);
+
+        for(size_t i=0; i<count; i++) {
+            if( tasks[i].joinable() ) {
+                tasks[i].join();
+            }
+        }
+    }
+
+
+    /**
+     * Testing jau::latch with zero initial count value, count_up(), count_down() and wait().
+     */
+    void test04_up_wait_for() {
+        INFO_STR("\n\ntest04\n");
+        const size_t count = 10;
+        std::thread tasks[count];
+        jau::latch completion;
+
+        REQUIRE_MSG("zero", 0 == completion.value());
+
+        for(size_t i=0; i<count/2; i++) {
+            tasks[i] = std::thread(&TestLatch01::somethingUp2x, this, std::ref(completion), (int64_t)i*1_ms);
         }
         REQUIRE_MSG("not-zero", 0 < completion.value()); // at least one count_up() occurred
-        completion.wait();
+
+        REQUIRE_MSG("complete", true == completion.arrive_and_wait_for(10_s) );
 
         REQUIRE_MSG("zero", 0 == completion.value());
         REQUIRE_MSG("10", count == my_counter);
@@ -135,7 +170,7 @@ class TestLatch01 {
     }
 };
 
-METHOD_AS_TEST_CASE( TestLatch01::test01_wait,      "Test TestLatch01 - test01_wait");
-METHOD_AS_TEST_CASE( TestLatch01::test02_wait_for,  "Test TestLatch01 - test02_wait_for");
-METHOD_AS_TEST_CASE( TestLatch01::test02_wait,      "Test TestLatch01 - test02_wait");
-
+METHOD_AS_TEST_CASE( TestLatch01::test01_down_wait,      "test01_down_wait");
+METHOD_AS_TEST_CASE( TestLatch01::test02_down_wait_for,  "test02_down_wait_for");
+METHOD_AS_TEST_CASE( TestLatch01::test03_down_wait_for,  "test03_down_wait_for");
+METHOD_AS_TEST_CASE( TestLatch01::test04_up_wait_for,    "test04_up_wait_for");

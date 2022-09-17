@@ -58,6 +58,16 @@ namespace jau {
             static constexpr size_t max() noexcept { return std::numeric_limits<size_t>::max(); }
 
             /**
+             * Initialize instance with counter zero.
+             *
+             * Useful for member instances in combination with count_up() or with set() before count_down().
+             *
+             * Extension of std::latch.
+             */
+            latch() noexcept
+            : count(0) {}
+
+            /**
              * Initialize instance with given counter.
              *
              * Compatible with std::latch.
@@ -113,7 +123,7 @@ namespace jau {
             }
 
             /**
-             * Atomically increments the internal counter by n.
+             * Atomically increments the internal counter by n, i.e. adds value to count down.
              *
              * If internal counter + n is greater than the maximum value of the internal counter, the counter is set to its maximum.
              *
@@ -130,6 +140,20 @@ namespace jau {
                 } else {
                     count = std::numeric_limits<std::size_t>::max();
                 }
+            }
+
+            /**
+             * Atomically set the internal counter by n.
+             *
+             * This operation strongly happens-before all calls that are unblocked on this latch.
+             *
+             * Extension of std::latch.
+             *
+             * @param n the value to be assigned to the internal counter
+             */
+            void set(const size_t n) noexcept {
+                std::unique_lock<std::mutex> lock(mtx_cd); // Avoid data-race on concurrent count_down() and wait*() calls
+                count = n;
             }
 
             /**
