@@ -8,7 +8,8 @@
 
 * First stable release (TODO)
 
-**0.16.1**
+**0.16.2**
+* Fix `jau::service_runner::start()`: Case `set_shall_stop()` occurs fast by worker callback -> infinite loop.
 * `jau::function<R(A...)>` 
   - add fast path `target_t::delegate_t` invocation
   - add function ctor for all type, incl. non-capturing lambda assignment
