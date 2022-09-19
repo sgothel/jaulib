@@ -27,6 +27,7 @@
 
 #include "functional0.hpp"
 
+#define SKIP_JAU_LAMBDAS 1
 #define FUNCTIONAL_PROVIDED 1
 #include "test_functional_perf.hpp"
 

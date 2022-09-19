@@ -57,7 +57,7 @@ export LANG=en_US.UTF-8
 # export EXE_WRAPPER="nice -20 valgrind --tool=callgrind --read-inline-info=yes --instr-atstart=yes --collect-atstart=yes --collect-systime=nsec --combine-dumps=yes --separate-threads=no --callgrind-out-file=$callgrindoutfile --log-file=$valgrindlogfile"
 # export EXE_WRAPPER="ASAN_OPTIONS=verbosity=1:malloc_context_size=20 "
 # export EXE_WRAPPER="ASAN_OPTIONS=print_stats:halt_on_error:replace_intrin "
-export EXE_WRAPPER="nice -20"
+# export EXE_WRAPPER="nice -20"
 
 runit() {
     echo "script invocation: $0 ${script_args}"

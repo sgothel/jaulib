@@ -44,89 +44,9 @@ class TestFunction01 {
         int res = i+100;
         return res;;
     }
-    int func02b_member(int i) noexcept {
-        int res = i+1000;
-        return res;
-    }
     static int Func03a_static(int i) {
         int res = i+100;
         return res;
-    }
-    static int Func03b_static(int i) noexcept {
-        int res = i+1000;
-        return res;
-    }
-
-    struct IntOffset {
-        int value;
-        IntOffset(int v) : value(v) {}
-
-        IntOffset(const IntOffset &o)
-        : value(o.value)
-        {
-            INFO("IntOffset::copy_ctor");
-        }
-        IntOffset(IntOffset &&o)
-        : value(std::move(o.value))
-        {
-            INFO("IntOffset::move_ctor");
-        }
-        IntOffset& operator=(const IntOffset &o) {
-            INFO("IntOffset::copy_assign");
-            if( &o == this ) {
-                return *this;
-            }
-            value = o.value;
-            return *this;
-        }
-        IntOffset& operator=(IntOffset &&o) {
-            INFO("IntOffset::move_assign");
-            value = std::move(o.value);
-            (void)value;
-            return *this;
-        }
-
-        bool operator==(const IntOffset& rhs) const {
-            if( &rhs == this ) {
-                return true;
-            }
-            return value == rhs.value;
-        }
-
-        bool operator!=(const IntOffset& rhs) const
-        { return !( *this == rhs ); }
-
-    };
-
-    static int test_FunctionPointer00(const int value, jau_func_t & f1) noexcept {
-        const int f1r = f1(value);
-        return f1r;
-    }
-
-    static int test_FunctionPointer01(const int value, native_func_t f1) noexcept {
-        const int f1r = (*f1)(value);
-        return f1r;
-    }
-
-    static int test_Func03a_static(const int value) noexcept {
-        const int f1r = TestFunction01::Func03a_static(value);
-        return f1r;
-    }
-
-    static int test_Func02a_member(const int value, TestFunction01& i) noexcept {
-        const int f1r = i.func02a_member(value);
-        return f1r;
-    }
-
-    template<typename F>
-    int test_Func02a_stdmember(const int value, F& i) noexcept {
-        const int f1r = i(value);
-        return f1r;
-    }
-
-    static int test_FunctionPointer02(const int value, std_func_t f1) noexcept {
-        const int f1r = f1(value);
-        return f1r;
     }
 
   public:
@@ -140,7 +60,7 @@ class TestFunction01 {
             BENCHMARK("free_rawfunc") {
                 volatile int r=0;
                 for(int i=0; i<loops; ++i) {
-                    r += test_Func03a_static(i);
+                    r += TestFunction01::Func03a_static(i);
                 }
                 return r;
             };
@@ -153,7 +73,7 @@ class TestFunction01 {
             BENCHMARK("free_cfuncptr") {
                 volatile int r=0;
                 for(int i=0; i<loops; ++i) {
-                    r += test_FunctionPointer01(i, f);
+                    r += f(i);
                 }
                 return r;
             };
@@ -167,7 +87,7 @@ class TestFunction01 {
             BENCHMARK("free_stdfunc") {
                 volatile int r=0;
                 for(int i=0; i<loops; ++i) {
-                    r += test_FunctionPointer02(i, f);
+                    r += f(i);
                 }
                 return r;
             };
@@ -181,7 +101,7 @@ class TestFunction01 {
             BENCHMARK("free_jaufunc") {
                 volatile int r=0;
                 for(int i=0; i<loops; ++i) {
-                    r += test_FunctionPointer00(i, f);
+                    r += f(i);
                 }
                 return r;
             };
@@ -192,7 +112,7 @@ class TestFunction01 {
             BENCHMARK("member_rawfunc") {
                 volatile int r=0;
                 for(int i=0; i<loops; ++i) {
-                    r += test_Func02a_member(i, *this);
+                    r += func02a_member(i);
                 }
                 return r;
             };
@@ -206,7 +126,7 @@ class TestFunction01 {
             BENCHMARK("member_stdbind_unspec") {
                 volatile int r=0;
                 for(int i=0; i<loops; ++i) {
-                    r += test_Func02a_stdmember(i, f);
+                    r += f(i);
                 }
                 return r;
             };
@@ -219,7 +139,7 @@ class TestFunction01 {
             BENCHMARK("member_jaufunc") {
                 volatile int r=0;
                 for(int i=0; i<loops; ++i) {
-                    r += test_FunctionPointer00(i, f);
+                    r += f(i);
                 }
                 return r;
             };
@@ -230,7 +150,7 @@ class TestFunction01 {
             int offset100 = 100;
 
             int(*func5a_capture)(int&, int) = [](int& capture, int i)->int {
-                int res = i+10000+capture;
+                int res = i+capture;
                 return res;
             };
             jau::function<int(int)> f = jau::bind_capval(offset100, func5a_capture);
@@ -238,7 +158,7 @@ class TestFunction01 {
             BENCHMARK("capval_lambda_jaufunc") {
                 volatile int r=0;
                 for(int i=0; i<loops; ++i) {
-                    r += test_FunctionPointer00(i, f);
+                    r += f(i);
                 }
                 return r;
             };
@@ -247,10 +167,10 @@ class TestFunction01 {
 #if 1
         // lambda w/ explicit capture by reference, jau::function
         {
-            IntOffset offset100(100);
+            int offset100 = 100;
 
-            int(*func7a_capture)(IntOffset*, int) = [](IntOffset* capture, int i)->int {
-                int res = i+10000+capture->value;
+            int(*func7a_capture)(int*, int) = [](int* capture, int i)->int {
+                int res = i+*capture;
                 return res;
             };
             jau::function<int(int)> f = jau::bind_capref(&offset100, func7a_capture);
@@ -258,7 +178,7 @@ class TestFunction01 {
             BENCHMARK("capref_lambda_jaufunc") {
                 volatile int r=0;
                 for(int i=0; i<loops; ++i) {
-                    r += test_FunctionPointer00(i, f);
+                    r += f(i);
                 }
                 return r;
             };
@@ -275,12 +195,29 @@ class TestFunction01 {
             BENCHMARK("std_function_lambda_jaufunc") {
                 volatile int r=0;
                 for(int i=0; i<loops; ++i) {
-                    r += test_FunctionPointer00(i, f);
+                    r += f(i);
                 }
                 return r;
             };
         }
+#endif
 
+#if !SKIP_JAU_LAMBDAS
+        {
+            volatile int captured = 100;
+
+            jau::function<int(int)> f = [&](int a) -> int {
+                return captured + a;
+            };
+
+            BENCHMARK("clambda_jaufunc") {
+                volatile int r=0;
+                for(int i=0; i<loops; ++i) {
+                    r += f(i);
+                }
+                return r;
+            };
+        }
 #endif
 
         REQUIRE( true == true );

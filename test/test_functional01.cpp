@@ -28,6 +28,7 @@
 #include <jau/test/catch2_ext.hpp>
 
 #include <jau/functional.hpp>
+#include <jau/type_traits_queries.hpp>
 
 using namespace jau;
 
@@ -46,7 +47,892 @@ static void Func2a_free() noexcept {
     // nop
 }
 
+// See in functional.hpp: C++11 Capturing Lambda Restrictions using std::function
+#if defined(__cxx_rtti_available__)
+    // OK
+#else
+    #if defined(__clang__)
+        // OK
+    #elif defined(__GNUC__) && !defined(__clang__)
+        #define EXPECT_SAME_LAMBDA_IN_SAME_FUNC_ERROR 1
+    #else
+        // Unknown
+    #endif
+#endif
+
 class TestFunction01 {
+  public:
+
+    /**
+     * Unit test covering most variants of jau::function<R(A...)
+     */
+    void test00_usage() {
+        INFO("Test 00_usage: START");
+        {
+            // Test capturing lambdas
+            volatile int i = 100;
+
+            function<int(int)> fa0 = [&](int a) -> int {
+                return i + a;
+            };
+            fprintf(stderr, "lambda.0: %s\n", fa0.toString().c_str());
+            REQUIRE( jau::func::target_type::lambda == fa0.type() );
+
+            function<int(int)> fa1 = lambda_02();
+            fprintf(stderr, "lambda.1: %s\n", fa1.toString().c_str());
+            REQUIRE( jau::func::target_type::lambda == fa1.type() );
+
+            auto fa2_stub = [&](int a) -> int {
+                return i + a;
+            };
+            function<int(int)> fa2_a = fa2_stub;
+            fprintf(stderr, "lambda.2_a: %s\n", fa2_a.toString().c_str());
+            REQUIRE( jau::func::target_type::lambda == fa2_a.type() );
+
+            function<int(int)> fa2_b = fa2_stub;
+            fprintf(stderr, "lambda.2_b: %s\n", fa2_b.toString().c_str());
+            REQUIRE( jau::func::target_type::lambda == fa2_b.type() );
+
+            test_function0_result_____("lambda.0_1_",       1, 101, fa0, fa1);
+            test_function0________type("lambda.0_1_", false,        fa0, fa1);
+            test_function0_result_____("lambda.0_2a",       1, 101, fa0, fa2_a);
+            test_function0_result_____("lambda.0_2b",       1, 101, fa0, fa2_b);
+#if EXPECT_SAME_LAMBDA_IN_SAME_FUNC_ERROR
+            if( fa0 == fa2_a ) {
+                fprintf(stderr, "EXPECT_SAME_LAMBDA_IN_SAME_FUNC_ERROR: %s:%d\n", __FILE__, __LINE__);
+            } else {
+                fprintf(stderr, "EXPECT_SAME_LAMBDA_IN_SAME_FUNC_ERROR: FIXED: %s:%d\n", __FILE__, __LINE__);
+                test_function0________type("lambda.0_2a", false,        fa0, fa2_a);
+            }
+            if( fa0 == fa2_b ) {
+                fprintf(stderr, "EXPECT_SAME_LAMBDA_IN_SAME_FUNC_ERROR: %s:%d\n", __FILE__, __LINE__);
+            } else {
+                fprintf(stderr, "EXPECT_SAME_LAMBDA_IN_SAME_FUNC_ERROR: FIXED: %s:%d\n", __FILE__, __LINE__);
+                test_function0________type("lambda.0_2b", false,        fa0, fa2_b);
+            }
+#else
+            test_function0________type("lambda.0_2a", false,        fa0, fa2_a);
+            test_function0________type("lambda.0_2b", false,        fa0, fa2_b);
+#endif
+            test_function0_result_____("lambda.2a2b",       1, 101, fa2_a, fa2_b);
+            test_function0________type("lambda.2a2b", true,         fa2_a, fa2_b);
+
+            // and this non-capturing lambda is also detected as lambda
+            function<int(int)> fl3_1 = [](int a) -> int {
+                // return i + a;
+                return a + 100;
+            } ;
+            fprintf(stderr, "lambda.3_1 (plain)%s\n", fl3_1.toString().c_str());
+            REQUIRE( jau::func::target_type::lambda == fl3_1.type() );
+            test_function0_result_type("lambda.3131", true, 1, 101, fl3_1, fl3_1);
+        }
+        {
+            // Test non-capturing lambdas -> free functions
+            typedef int(*cfunc)(int); // to force non-capturing lambda into a free function template type deduction
+            volatile int i = 100;
+
+            auto f = ( [](int a) -> int {
+                // return i + a;
+                return a + 100;
+            } );
+            function<int(int)> fl_ = bind_free<int, int>( (cfunc) f);
+            fprintf(stderr, "plain lambda.0 %s\n", fl_.toString().c_str());
+            REQUIRE( jau::func::target_type::free == fl_.type() );
+
+            test_function0_result_type("FuncPtr1a_free_10", true, 1, 101, fl_, fl_);
+            (void)i;
+
+        }
+        {
+            // free, result void and no params
+            typedef void(*cfunc)();
+            function<void()> fl_0 = (cfunc) ( []() -> void {
+                // nop
+            } );
+            fprintf(stderr, "freeA.0 %s\n", fl_0.toString().c_str());
+            REQUIRE( jau::func::target_type::free == fl_0.type() );
+
+            function<void()> f2a_0 = Func2a_free;
+            fprintf(stderr, "freeA.1 %s\n", f2a_0.toString().c_str());
+            REQUIRE( jau::func::target_type::free == f2a_0.type() );
+
+            function<void()> f2a_1 = bind_free(Func2a_free);
+            fprintf(stderr, "freeA.2 %s\n", f2a_1.toString().c_str());
+            REQUIRE( jau::func::target_type::free == f2a_1.type() );
+
+            function<void()> f20a_1 = bind_free(&TestFunction01::Func20a_static);
+            fprintf(stderr, "freeA.3 %s\n", f20a_1.toString().c_str());
+            REQUIRE( jau::func::target_type::free == f20a_1.type() );
+
+            function<void()> f20a_2 = bind_free(&TestFunction01::Func20a_static);
+            fprintf(stderr, "freeA.4 %s\n", f20a_2.toString().c_str());
+            REQUIRE( jau::func::target_type::free == f20a_2.type() );
+
+            test_function2________type("FuncPtr1a_free_10", true,   fl_0, fl_0);
+            test_function2________type("FuncPtr1a_free_10", true,   f2a_0, f2a_1);
+            test_function2________type("FuncPtr1a_free_10", true,   f2a_1, f2a_1);
+            test_function2________type("FuncPtr3a_free_11", true,   f20a_1, f20a_1);
+            test_function2________type("FuncPtr3a_free_12", true,   f20a_1, f20a_2);
+            test_function2________type("FuncPtr1a_free_10", false,  f2a_1, f20a_1);
+
+        }
+        {
+            // free, result non-void
+            typedef int(*cfunc)(int); // to force non-capturing lambda into a free function template type deduction
+            function<int(int)> fl_0 = (cfunc) ( [](int i) -> int {
+                int res = i+100;
+                return res;
+            } );
+            fprintf(stderr, "freeB.0 %s\n", fl_0.toString().c_str());
+            REQUIRE( jau::func::target_type::free == fl_0.type() );
+
+            function<int(int)> f1a_0 = Func0a_free;
+            fprintf(stderr, "freeB.1 %s\n", f1a_0.toString().c_str());
+            REQUIRE( jau::func::target_type::free == f1a_0.type() );
+
+            function<int(int)> f1a_1 = bind_free(Func0a_free);
+            function<int(int)> f3a_1 = bind_free(&TestFunction01::Func03a_static);
+            function<int(int)> f3a_2 = bind_free(&TestFunction01::Func03a_static);
+            test_function0_result_type("FuncPtr1a_free_10", true,   1, 101, fl_0, fl_0);
+            test_function0_result_type("FuncPtr1a_free_10", true,   1, 101, f1a_0, f1a_1);
+            test_function0_result_type("FuncPtr1a_free_10", true,   1, 101, f1a_1, f1a_1);
+            test_function0_result_type("FuncPtr3a_free_11", true,   1, 101, f3a_1, f3a_1);
+            test_function0_result_type("FuncPtr3a_free_12", true,   1, 101, f3a_1, f3a_2);
+            test_function0_result_type("FuncPtr1a_free_10", false,  1, 101, f1a_1, f3a_1);
+        }
+        {
+            // free, result void
+            typedef void(*cfunc)(int&, int); // to force non-capturing lambda into a free function template type deduction
+            function<void(int&, int)> fl_0 = (cfunc) ( [](int& res, int i) -> void {
+                res = i+100;
+            } );
+            function<void(int&, int)> f1a_0 = Func1a_free;
+            function<void(int&, int)> f1a_1 = bind_free(Func1a_free);
+            function<void(int&, int)> f3a_0 = &TestFunction01::Func13a_static;
+            function<void(int&, int)> f3a_1 = bind_free(&TestFunction01::Func13a_static);
+            function<void(int&, int)> f3a_2 = bind_free(&TestFunction01::Func13a_static);
+            test_function1_result_type("FuncPtr1a_free_10", true,   1, 101, fl_0, fl_0);
+            test_function1_result_type("FuncPtr1a_free_10", true,   1, 101, f1a_1, f1a_0);
+            test_function1_result_type("FuncPtr3a_free_11", true,   1, 101, f3a_1, f3a_0);
+            test_function1_result_type("FuncPtr3a_free_11", true,   1, 101, f3a_1, f3a_1);
+            test_function1_result_type("FuncPtr3a_free_12", true,   1, 101, f3a_1, f3a_2);
+            test_function1_result_type("FuncPtr1a_free_10", false,  1, 101, f1a_1, f3a_1);
+        }
+        {
+            // member, result non-void
+            function<int(int)> f2a_0(this, &TestFunction01::func02a_member);
+            fprintf(stderr, "memberA.0 %s\n", f2a_0.toString().c_str());
+            REQUIRE( jau::func::target_type::member == f2a_0.type() );
+
+            function<int(int)> f2a_1 = bind_member(this, &TestFunction01::func02a_member);
+            fprintf(stderr, "memberA.1 %s\n", f2a_1.toString().c_str());
+            REQUIRE( jau::func::target_type::member == f2a_1.type() );
+
+            function<int(int)> f2a_2 = bind_member(this, &TestFunction01::func02a_member);
+            function<int(int)> f2b_1 = bind_member(this, &TestFunction01::func02b_member);
+            test_function0_result_type("FuncPtr2a_member_12", true,  1, 101, f2a_1, f2a_0);
+            test_function0_result_type("FuncPtr2a_member_12", true,  1, 101, f2a_1, f2a_2);
+            test_function0_result_type("FuncPtr2a_member_12", false, 1, 101, f2a_1, f2b_1);
+        }
+        {
+            // member, result void
+            function<void(int&, int)> f2a_0(this, &TestFunction01::func12a_member);
+            function<void(int&, int)> f2a_1 = bind_member(this, &TestFunction01::func12a_member);
+            function<void(int&, int)> f2a_2 = bind_member(this, &TestFunction01::func12a_member);
+            function<void(int&, int)> f2b_1 = bind_member(this, &TestFunction01::func12b_member);
+            test_function1_result_type("FuncPtr2a_member_12", true,  1, 101, f2a_1, f2a_0);
+            test_function1_result_type("FuncPtr2a_member_12", true,  1, 101, f2a_1, f2a_2);
+            test_function1_result_type("FuncPtr2a_member_12", false, 1, 101, f2a_1, f2b_1);
+        }
+        {
+            // Lambda alike w/ explicit capture by value, result non-void
+            int offset100 = 100;
+
+            typedef int(*cfunc)(int&, int); // to force non-capturing lambda into a free function template type deduction
+
+            int(*func5a_capture)(int&, int) = [](int& capture, int i)->int {
+                int res = i+10000+capture;
+                return res;
+            };
+
+            int(*func5b_capture)(int&, int) = [](int& capture, int i)->int {
+                int res = i+100000+capture;
+                return res;
+            };
+
+            function<int(int)> f5_o100_0(offset100,
+                    (cfunc) ( [](int& capture, int i)->int {
+                        int res = i+10000+capture;
+                        return res;
+                    } ) );
+            fprintf(stderr, "capvalA.0 %s\n", f5_o100_0.toString().c_str());
+            REQUIRE( jau::func::target_type::capval == f5_o100_0.type() );
+
+            function<int(int)> f5_o100_1 = bind_capval(offset100,
+                    (cfunc) ( [](int& capture, int i)->int {
+                        int res = i+10000+capture;
+                        return res;
+                    } ) );
+            function<int(int)> f5_o100_2 = bind_capval(offset100,
+                    (cfunc) ( [](int& capture, int i)->int {
+                        int res = i+10000+capture;
+                        return res;
+                    } ) );
+            test_function0________type("FuncPtr5a_o100_capture_00", true,  f5_o100_0, f5_o100_0);
+            test_function0________type("FuncPtr5a_o100_capture_00", true,  f5_o100_1, f5_o100_1);
+            test_function0________type("FuncPtr5a_o100_capture_00", false, f5_o100_1, f5_o100_2);
+
+            function<int(int)> f5a_o100_0(offset100, func5a_capture);
+            fprintf(stderr, "capvalA.1 %s\n", f5a_o100_0.toString().c_str());
+            REQUIRE( jau::func::target_type::capval == f5a_o100_0.type() );
+
+            function<int(int)> f5a_o100_1 = bind_capval(offset100, func5a_capture);
+            function<int(int)> f5a_o100_2 = bind_capval(offset100, func5a_capture);
+            function<int(int)> f5b_o100_1 = bind_capval(offset100, func5b_capture);
+            test_function0________type("FuncPtr5a_o100_capture_12", true,  f5a_o100_1, f5a_o100_0);
+            test_function0________type("FuncPtr5a_o100_capture_12", true,  f5a_o100_1, f5a_o100_2);
+            test_function0________type("FuncPtr5a_o100_capture_12", false, f5a_o100_1, f5b_o100_1);
+            test_function0_result_type("FuncPtr5a_o100_capture_11", true,  1, 10101, f5a_o100_1, f5a_o100_1);
+            test_function0_result_type("FuncPtr5a_o100_capture_12", true,  1, 10101, f5a_o100_1, f5a_o100_2);
+            test_function0_result_type("FuncPtr5a_o100_capture_12", false, 1, 10101, f5a_o100_1, f5b_o100_1);
+        }
+        {
+            // Lambda alike w/ explicit capture by reference, result non-void
+            IntOffset offset100(100);
+
+            typedef int(*cfunc)(IntOffset*, int); // to force non-capturing lambda into a free function template type deduction
+
+            int(*func7a_capture)(IntOffset*, int) = [](IntOffset* capture, int i)->int {
+                int res = i+10000+capture->value;
+                return res;
+            };
+            int(*func7b_capture)(IntOffset*, int) = [](IntOffset* capture, int i)->int {
+                int res = i+100000+capture->value;
+                return res;
+            };
+
+            function<int(int)> f7_o100_1 = bind_capref<int, IntOffset, int>(&offset100,
+                    (cfunc) ( [](IntOffset* capture, int i)->int {
+                        int res = i+10000+capture->value;
+                        return res;;
+                    } ) );
+            fprintf(stderr, "caprefA.0 %s\n", f7_o100_1.toString().c_str());
+            REQUIRE( jau::func::target_type::capref == f7_o100_1.type() );
+
+            function<int(int)> f7_o100_2 = bind_capref<int, IntOffset, int>(&offset100,
+                    (cfunc) ( [](IntOffset* capture, int i)->int {
+                        int res = i+10000+capture->value;
+                        return res;;
+                    } ) );
+            test_function0________type("FuncPtr7a_o100_capture_00", true,  f7_o100_1, f7_o100_1);
+            test_function0________type("FuncPtr7a_o100_capture_00", false, f7_o100_1, f7_o100_2);
+
+            function<int(int)> f7a_o100_1 = bind_capref(&offset100, func7a_capture);
+            fprintf(stderr, "caprefA.1 %s\n", f7a_o100_1.toString().c_str());
+            REQUIRE( jau::func::target_type::capref == f7a_o100_1.type() );
+            function<int(int)> f7a_o100_2 = bind_capref(&offset100, func7a_capture);
+            function<int(int)> f7b_o100_1 = bind_capref(&offset100, func7b_capture);
+            test_function0________type("FuncPtr7a_o100_capture_12", true,  f7a_o100_1, f7a_o100_2);
+            test_function0________type("FuncPtr7a_o100_capture_12", false, f7a_o100_1, f7b_o100_1);
+            test_function0_result_type("FuncPtr7a_o100_capture_11", true,  1, 10101, f7a_o100_1, f7a_o100_1);
+            test_function0_result_type("FuncPtr7a_o100_capture_12", true,  1, 10101, f7a_o100_1, f7a_o100_2);
+            test_function0_result_type("FuncPtr7a_o100_capture_12", false, 1, 10101, f7a_o100_1, f7b_o100_1);
+        }
+        {
+            // std::function lambda
+            std::function<int(int i)> func4a_stdlambda = [](int i)->int {
+                int res = i+100;
+                return res;;
+            };
+            std::function<int(int i)> func4b_stdlambda = [](int i)->int {
+                int res = i+1000;
+                return res;;
+            };
+            function<int(int)> f4a_1 = bind_std(100, func4a_stdlambda);
+            fprintf(stderr, "stdfunc.0 %s\n", f4a_1.toString().c_str());
+            REQUIRE( jau::func::target_type::std == f4a_1.type() );
+
+            function<int(int)> f4a_2 = bind_std(100, func4a_stdlambda);
+            test_function0_result_type("FuncPtr4a_stdlambda_11", true, 1, 101, f4a_1, f4a_1);
+            test_function0_result_type("FuncPtr4a_stdlambda_12", true, 1, 101, f4a_1, f4a_2);
+        }
+
+        INFO("Test 00_usage: END");
+    }
+
+    void test01_memberfunc_this() {
+        INFO("Test 01_member: bind_member<int, TestFunction01, int>: START");
+        // function(TestFunction01 &base, Func1Type func)
+        MyClassFunction0 f2a_1 = bind_member<int, TestFunction01, int>(this, &TestFunction01::func02a_member);
+        MyClassFunction0 f2a_2 = bind_member(this, &TestFunction01::func02a_member);
+        test_function0_result_type("FuncPtr2a_member_11", true, 1, 101, f2a_1, f2a_1);
+        test_function0_result_type("FuncPtr2a_member_12", true, 1, 101, f2a_1, f2a_2);
+
+        MyClassFunction0 f2b_1 = bind_member(this, &TestFunction01::func02b_member);
+        MyClassFunction0 f2b_2 = bind_member(this, &TestFunction01::func02b_member);
+        test_function0_result_type("FuncPtr2b_member_11", true, 1, 1001, f2b_1, f2b_1);
+        test_function0_result_type("FuncPtr2b_member_12", true, 1, 1001, f2b_1, f2b_2);
+
+        test_function0_result_type("FuncPtr2ab_member_11", false, 1, 0, f2a_1, f2b_1);
+        test_function0_result_type("FuncPtr2ab_member_22", false, 1, 0, f2a_2, f2b_2);
+        INFO("Test 01_member: bind_member<int, TestFunction01, int>: END");
+    }
+
+    void test11_memberfunc_this() {
+        INFO("Test 11_member: bind_member<int, TestFunction01, int>: START");
+        // function(TestFunction01 &base, Func1Type func)
+        MyClassFunction1 f2a_1 = bind_member<TestFunction01, int&, int>(this, &TestFunction01::func12a_member);
+        MyClassFunction1 f2a_2 = bind_member(this, &TestFunction01::func12a_member);
+        test_function1_result_type("FuncPtr2a_member_11", true, 1, 101, f2a_1, f2a_1);
+        test_function1_result_type("FuncPtr2a_member_12", true, 1, 101, f2a_1, f2a_2);
+
+        MyClassFunction1 f2b_1 = bind_member(this, &TestFunction01::func12b_member);
+        MyClassFunction1 f2b_2 = bind_member(this, &TestFunction01::func12b_member);
+        test_function1_result_type("FuncPtr2b_member_11", true, 1, 1001, f2b_1, f2b_1);
+        test_function1_result_type("FuncPtr2b_member_12", true, 1, 1001, f2b_1, f2b_2);
+
+        test_function1_result_type("FuncPtr2ab_member_11", false, 1, 0, f2a_1, f2b_1);
+        test_function1_result_type("FuncPtr2ab_member_22", false, 1, 0, f2a_2, f2b_2);
+        INFO("Test 11_member: bind_member<int, TestFunction01, int>: END");
+    }
+
+    void test02_freefunc_static() {
+        INFO("Test 02_free: bind_free<int, int>: START");
+        // function(Func1Type func)
+        MyClassFunction0 f1a_1 = bind_free<int, int>(Func0a_free);
+        MyClassFunction0 f3a_1 = bind_free<int, int>(&TestFunction01::Func03a_static);
+        MyClassFunction0 f3a_2 = bind_free(&TestFunction01::Func03a_static);
+        test_function0_result_type("FuncPtr1a_free_10", true,  1, 101, f1a_1, f1a_1);
+        test_function0_result_type("FuncPtr3a_free_11", true,  1, 101, f3a_1, f3a_1);
+        test_function0_result_type("FuncPtr3a_free_12", true,  1, 101, f3a_1, f3a_2);
+
+        MyClassFunction0 f3b_1 = bind_free(&TestFunction01::Func03b_static);
+        MyClassFunction0 f3b_2 = bind_free(&Func03b_static);
+        test_function0_result_type("FuncPtr3b_free_11", true, 1, 1001, f3b_1, f3b_1);
+        test_function0_result_type("FuncPtr3b_free_12", true, 1, 1001, f3b_1, f3b_2);
+
+        test_function0_result_type("FuncPtr1a3a_free_10", false, 1, 0, f1a_1, f3a_1);
+        test_function0_result_type("FuncPtr1a3b_free_10", false, 1, 0, f1a_1, f3b_1);
+        test_function0_result_type("FuncPtr3a3b_free_11", false, 1, 0, f3a_1, f3b_1);
+        test_function0_result_type("FuncPtr3a3b_free_22", false, 1, 0, f3a_2, f3b_2);
+        INFO("Test 02_free: bind_free<int, int>: END");
+    }
+
+    void test12_freefunc_static() {
+        INFO("Test 12_free: bind_free<int, int>: START");
+        // function(Func1Type func)
+        MyClassFunction1 f1a_1 = bind_free<int&, int>(Func1a_free);
+        MyClassFunction1 f3a_1 = bind_free<int&, int>(&TestFunction01::Func13a_static);
+        MyClassFunction1 f3a_2 = bind_free(&TestFunction01::Func13a_static);
+        test_function1_result_type("FuncPtr1a_free_10", true,  1, 101, f1a_1, f1a_1);
+        test_function1_result_type("FuncPtr3a_free_11", true,  1, 101, f3a_1, f3a_1);
+        test_function1_result_type("FuncPtr3a_free_12", true,  1, 101, f3a_1, f3a_2);
+
+        MyClassFunction1 f3b_1 = bind_free(&TestFunction01::Func13b_static);
+        MyClassFunction1 f3b_2 = bind_free(&Func13b_static);
+        test_function1_result_type("FuncPtr3b_free_11", true, 1, 1001, f3b_1, f3b_1);
+        test_function1_result_type("FuncPtr3b_free_12", true, 1, 1001, f3b_1, f3b_2);
+
+        test_function1_result_type("FuncPtr1a3a_free_10", false, 1, 0, f1a_1, f3a_1);
+        test_function1_result_type("FuncPtr1a3b_free_10", false, 1, 0, f1a_1, f3b_1);
+        test_function1_result_type("FuncPtr3a3b_free_11", false, 1, 0, f3a_1, f3b_1);
+        test_function1_result_type("FuncPtr3a3b_free_22", false, 1, 0, f3a_2, f3b_2);
+        INFO("Test 12_free: bind_free<int, int>: END");
+    }
+
+    void test03_stdfunc_lambda() {
+        INFO("Test 03_stdlambda: bind_std<int, int>: START");
+        // function(Func1Type func) <int, int>
+        std::function<int(int i)> func4a_stdlambda = [](int i)->int {
+            int res = i+100;
+            return res;;
+        };
+        std::function<int(int i)> func4b_stdlambda = [](int i)->int {
+            int res = i+1000;
+            return res;;
+        };
+        MyClassFunction0 f4a_1 = bind_std<int, int>(100, func4a_stdlambda);
+        MyClassFunction0 f4a_2 = bind_std(100, func4a_stdlambda);
+        test_function0_result_type("FuncPtr4a_stdlambda_11", true, 1, 101, f4a_1, f4a_1);
+        test_function0_result_type("FuncPtr4a_stdlambda_12", true, 1, 101, f4a_1, f4a_2);
+
+        MyClassFunction0 f4b_1 = bind_std(200, func4b_stdlambda);
+        MyClassFunction0 f4b_2 = bind_std(200, func4b_stdlambda);
+        test_function0_result_type("FuncPtr4b_stdlambda_11", true, 1, 1001, f4b_1, f4b_1);
+        test_function0_result_type("FuncPtr4b_stdlambda_12", true, 1, 1001, f4b_1, f4b_2);
+
+        test_function0_result_type("FuncPtr4ab_stdlambda_11", false, 1, 0, f4a_1, f4b_1);
+        test_function0_result_type("FuncPtr4ab_stdlambda_22", false, 1, 0, f4a_2, f4b_2);
+
+        INFO("Test 03_stdlambda: bind_std<int, int>: END");
+    }
+
+    void test13_stdfunc_lambda() {
+        INFO("Test 13_stdlambda: bind_std<int, int>: START");
+        // function(Func1Type func) <int, int>
+        std::function<void(int& r, int i)> func4a_stdlambda = [](int& r, int i)->void {
+            r = i+100;
+        };
+        std::function<void(int& r, int i)> func4b_stdlambda = [](int& r, int i)->void {
+            r = i+1000;
+        };
+        MyClassFunction1 f4a_1 = bind_std<int&, int>(100, func4a_stdlambda);
+        MyClassFunction1 f4a_2 = bind_std(100, func4a_stdlambda);
+        test_function1_result_type("FuncPtr4a_stdlambda_11", true, 1, 101, f4a_1, f4a_1);
+        test_function1_result_type("FuncPtr4a_stdlambda_12", true, 1, 101, f4a_1, f4a_2);
+
+        MyClassFunction1 f4b_1 = bind_std(200, func4b_stdlambda);
+        MyClassFunction1 f4b_2 = bind_std(200, func4b_stdlambda);
+        test_function1_result_type("FuncPtr4b_stdlambda_11", true, 1, 1001, f4b_1, f4b_1);
+        test_function1_result_type("FuncPtr4b_stdlambda_12", true, 1, 1001, f4b_1, f4b_2);
+
+        test_function1_result_type("FuncPtr4ab_stdlambda_11", false, 1, 0, f4a_1, f4b_1);
+        test_function1_result_type("FuncPtr4ab_stdlambda_22", false, 1, 0, f4a_2, f4b_2);
+
+        INFO("Test 13_stdlambda: bind_std<int, int>: END");
+    }
+
+    void test04_capval_lambda() {
+        INFO("Test 04_capval: bindCapture<int, int, int>: START");
+        // bindCapture(I& data, R(*func)(I&, A...))
+        // function(Func1Type func) <int, int>
+        int offset100 = 100;
+        int offset1000 = 1000;
+
+        typedef int(*cfunc)(int&, int); // to force non-capturing lambda into a free function template type deduction
+
+        int(*func5a_capture)(int&, int) = [](int& capture, int i)->int {
+            int res = i+10000+capture;
+            return res;
+        };
+        int(*func5b_capture)(int&, int) = [](int& capture, int i)->int {
+            int res = i+100000+capture;
+            return res;
+        };
+
+        MyClassFunction0 f5a_o100_0 = bind_capval<int, int, int>(offset100,
+                (cfunc) ( [](int& capture, int i)->int {
+                    int res = i+10000+capture;
+                    return res;;
+                } ) );
+        test_function0________type("FuncPtr5a_o100_capture_00", true, f5a_o100_0, f5a_o100_0);
+
+        MyClassFunction0 f5a_o100_1 = bind_capval<int, int, int>(offset100, func5a_capture);
+        MyClassFunction0 f5a_o100_2 = bind_capval(offset100, func5a_capture);
+        test_function0________type("FuncPtr5a_o100_capture_12", true, f5a_o100_1, f5a_o100_2);
+        test_function0_result_type("FuncPtr5a_o100_capture_11", true, 1, 10101, f5a_o100_1, f5a_o100_1);
+        test_function0_result_type("FuncPtr5a_o100_capture_12", true, 1, 10101, f5a_o100_1, f5a_o100_2);
+        // test_FunctionPointer01("FuncPtr5a_o100_capture_01", false, f5a_o100_0, f5a_o100_1);
+        MyClassFunction0 f5a_o1000_1 = bind_capval(offset1000, func5a_capture);
+        MyClassFunction0 f5a_o1000_2 = bind_capval(offset1000, func5a_capture);
+        test_function0________type("FuncPtr5a_o1000_capture_12", true, f5a_o1000_1, f5a_o1000_2);
+        test_function0________type("FuncPtr5a_o100_o1000_capture_11", false, f5a_o100_1, f5a_o1000_1);
+
+        MyClassFunction0 f5b_o100_1 = bind_capval(offset100, func5b_capture);
+        MyClassFunction0 f5b_o100_2 = bind_capval(offset100, func5b_capture);
+        test_function0_result_type("FuncPtr5b_o100_capture_11", true, 1, 100101, f5b_o100_1, f5b_o100_1);
+        test_function0_result_type("FuncPtr5b_o100_capture_12", true, 1, 100101, f5b_o100_1, f5b_o100_2);
+
+        test_function0_result_type("FuncPtr5ab_o100_capture_11", false, 1, 0, f5a_o100_1, f5b_o100_1);
+        test_function0_result_type("FuncPtr5ab_o100_capture_22", false, 1, 0, f5a_o100_2, f5b_o100_2);
+        INFO("Test 04_capval: bindCapture<int, int, int>: END");
+    }
+
+    void test14_capval_lambda() {
+        INFO("Test 14_capval: bindCapture<int, int, int>: START");
+        // bindCapture(I& data, R(*func)(I&, A...))
+        // function(Func1Type func) <int, int>
+        int offset100 = 100;
+        int offset1000 = 1000;
+
+        typedef void(*cfunc)(int&, int&, int); // to force non-capturing lambda into a free function template type deduction
+
+        void(*func5a_capture)(int&, int&, int) = [](int& capture, int& res, int i)->void {
+            res = i+10000+capture;
+        };
+        void(*func5b_capture)(int&, int&, int) = [](int& capture, int& res, int i)->void {
+            res = i+100000+capture;
+        };
+
+        MyClassFunction1 f5a_o100_0 = bind_capval<int, int&, int>(offset100,
+                (cfunc) ( [](int& capture, int& res, int i)->void {
+                    res = i+10000+capture;
+                } ) );
+        test_function1________type("FuncPtr5a_o100_capture_00", true, f5a_o100_0, f5a_o100_0);
+
+        MyClassFunction1 f5a_o100_1 = bind_capval<int, int&, int>(offset100, func5a_capture);
+        MyClassFunction1 f5a_o100_2 = bind_capval(offset100, func5a_capture);
+        test_function1________type("FuncPtr5a_o100_capture_12", true, f5a_o100_1, f5a_o100_2);
+        test_function1_result_type("FuncPtr5a_o100_capture_11", true, 1, 10101, f5a_o100_1, f5a_o100_1);
+        test_function1_result_type("FuncPtr5a_o100_capture_12", true, 1, 10101, f5a_o100_1, f5a_o100_2);
+        // test_FunctionPointer01("FuncPtr5a_o100_capture_01", false, f5a_o100_0, f5a_o100_1);
+        MyClassFunction1 f5a_o1000_1 = bind_capval(offset1000, func5a_capture);
+        MyClassFunction1 f5a_o1000_2 = bind_capval(offset1000, func5a_capture);
+        test_function1________type("FuncPtr5a_o1000_capture_12", true, f5a_o1000_1, f5a_o1000_2);
+        test_function1________type("FuncPtr5a_o100_o1000_capture_11", false, f5a_o100_1, f5a_o1000_1);
+
+        MyClassFunction1 f5b_o100_1 = bind_capval(offset100, func5b_capture);
+        MyClassFunction1 f5b_o100_2 = bind_capval(offset100, func5b_capture);
+        test_function1_result_type("FuncPtr5b_o100_capture_11", true, 1, 100101, f5b_o100_1, f5b_o100_1);
+        test_function1_result_type("FuncPtr5b_o100_capture_12", true, 1, 100101, f5b_o100_1, f5b_o100_2);
+
+        test_function1_result_type("FuncPtr5ab_o100_capture_11", false, 1, 0, f5a_o100_1, f5b_o100_1);
+        test_function1_result_type("FuncPtr5ab_o100_capture_22", false, 1, 0, f5a_o100_2, f5b_o100_2);
+        INFO("Test 14_capval: bindCapture<int, int, int>: END");
+    }
+
+    void test05_capval_lambda() {
+        INFO("Test 05_capval: bindCapture<int, std::shared_ptr<IntOffset>, int>: START");
+        // bindCapture(I& data, R(*func)(I&, A...))
+        // function(Func1Type func) <int, int>
+        std::shared_ptr<IntOffset> offset100(new IntOffset(100));
+        std::shared_ptr<IntOffset> offset1000(new IntOffset(1000));
+
+        typedef int(*cfunc)(std::shared_ptr<IntOffset>&, int); // to force non-capturing lambda into a free function template type deduction
+
+        int(*func6a_capture)(std::shared_ptr<IntOffset>&, int) = [](std::shared_ptr<IntOffset>& capture, int i)->int {
+            int res = i+10000+capture->value;
+            return res;
+        };
+        int(*func6b_capture)(std::shared_ptr<IntOffset>&, int) = [](std::shared_ptr<IntOffset>& capture, int i)->int {
+            int res = i+100000+capture->value;
+            return res;
+        };
+
+        MyClassFunction0 f6a_o100_0 = bind_capval<int, std::shared_ptr<IntOffset>, int>(offset100,
+                (cfunc) ( [](std::shared_ptr<IntOffset>& sharedOffset, int i)->int {
+                    int res = i+10000+sharedOffset->value;
+                    return res;;
+                } ) );
+        test_function0________type("FuncPtr6a_o100_capture_00", true, f6a_o100_0, f6a_o100_0);
+
+        MyClassFunction0 f6a_o100_1 = bind_capval<int, std::shared_ptr<IntOffset>, int>(offset100, func6a_capture);
+        MyClassFunction0 f6a_o100_2 = bind_capval(offset100, func6a_capture);
+        test_function0________type("FuncPtr6a_o100_capture_12", true, f6a_o100_1, f6a_o100_2);
+        test_function0_result_type("FuncPtr6a_o100_capture_11", true, 1, 10101, f6a_o100_1, f6a_o100_1);
+        test_function0_result_type("FuncPtr6a_o100_capture_12", true, 1, 10101, f6a_o100_1, f6a_o100_2);
+        // test_FunctionPointer01("FuncPtr6a_o100_capture_01", false, f6a_o100_0, f6a_o100_1);
+        MyClassFunction0 f6a_o1000_1 = bind_capval(offset1000, func6a_capture);
+        MyClassFunction0 f6a_o1000_2 = bind_capval(offset1000, func6a_capture);
+        test_function0________type("FuncPtr6a_o1000_capture_12", true, f6a_o1000_1, f6a_o1000_2);
+        test_function0________type("FuncPtr6a_o100_o1000_capture_11", false, f6a_o100_1, f6a_o1000_1);
+
+        MyClassFunction0 f6b_o100_1 = bind_capval(offset100, func6b_capture);
+        MyClassFunction0 f6b_o100_2 = bind_capval(offset100, func6b_capture);
+        test_function0_result_type("FuncPtr6b_o100_capture_11", true, 1, 100101, f6b_o100_1, f6b_o100_1);
+        test_function0_result_type("FuncPtr6b_o100_capture_12", true, 1, 100101, f6b_o100_1, f6b_o100_2);
+
+        test_function0_result_type("FuncPtr6ab_o100_capture_11", false, 1, 0, f6a_o100_1, f6b_o100_1);
+        test_function0_result_type("FuncPtr6ab_o100_capture_22", false, 1, 0, f6a_o100_2, f6b_o100_2);
+        INFO("Test 05_capval: bindCapture<int, std::shared_ptr<IntOffset>, int>: END");
+    }
+
+    void test06_capval_lambda() {
+        INFO("Test 06_capval: bindCapture<int, IntOffset, int>: START");
+        // bindCapture(I& data, R(*func)(I&, A...))
+        // function(Func1Type func) <int, int>
+        IntOffset offset100(100);
+        IntOffset offset1000(1000);
+
+        typedef int(*cfunc)(IntOffset&, int); // to force non-capturing lambda into a free function template type deduction
+
+        int(*func7a_capture)(IntOffset&, int) = [](IntOffset& capture, int i)->int {
+            int res = i+10000+capture.value;
+            return res;
+        };
+        int(*func7b_capture)(IntOffset&, int) = [](IntOffset& capture, int i)->int {
+            int res = i+100000+capture.value;
+            return res;
+        };
+
+        MyClassFunction0 f7a_o100_0 = bind_capval<int, IntOffset, int>(offset100,
+                (cfunc) ( [](IntOffset& capture, int i)->int {
+                    int res = i+10000+capture.value;
+                    return res;;
+                } ) );
+        test_function0________type("FuncPtr7a_o100_capture_00", true, f7a_o100_0, f7a_o100_0);
+
+        INFO("f7a_o100_1 copy_ctor");
+        MyClassFunction0 f7a_o100_1 = bind_capval<int, IntOffset, int>(offset100, func7a_capture);
+        INFO("f7a_o100_1 copy_ctor done");
+        INFO("f7a_o100_2 move_ctor");
+        MyClassFunction0 f7a_o100_2 = bind_capval(IntOffset(100), func7a_capture);
+        INFO("f7a_o100_2 move_ctor done");
+        test_function0________type("FuncPtr7a_o100_capture_12", true, f7a_o100_1, f7a_o100_2);
+        test_function0_result_type("FuncPtr7a_o100_capture_11", true, 1, 10101, f7a_o100_1, f7a_o100_1);
+        test_function0_result_type("FuncPtr7a_o100_capture_12", true, 1, 10101, f7a_o100_1, f7a_o100_2);
+        // test_FunctionPointer01("FuncPtr7a_o100_capture_01", false, f7a_o100_0, f7a_o100_1);
+        MyClassFunction0 f7a_o1000_1 = bind_capval(offset1000, func7a_capture);
+        MyClassFunction0 f7a_o1000_2 = bind_capval(offset1000, func7a_capture);
+        test_function0________type("FuncPtr7a_o1000_capture_12", true, f7a_o1000_1, f7a_o1000_2);
+        test_function0________type("FuncPtr7a_o100_o1000_capture_11", false, f7a_o100_1, f7a_o1000_1);
+
+        MyClassFunction0 f7b_o100_1 = bind_capval(offset100, func7b_capture);
+        MyClassFunction0 f7b_o100_2 = bind_capval(offset100, func7b_capture);
+        test_function0_result_type("FuncPtr7b_o100_capture_11", true, 1, 100101, f7b_o100_1, f7b_o100_1);
+        test_function0_result_type("FuncPtr7b_o100_capture_12", true, 1, 100101, f7b_o100_1, f7b_o100_2);
+
+        test_function0_result_type("FuncPtr7ab_o100_capture_11", false, 1, 0, f7a_o100_1, f7b_o100_1);
+        test_function0_result_type("FuncPtr7ab_o100_capture_22", false, 1, 0, f7a_o100_2, f7b_o100_2);
+        INFO("Test 06_capval: bindCapture<int, IntOffset, int>: END");
+    }
+
+    void test07_capref_lambda() {
+        INFO("Test 07_capref: bindCapture<int, IntOffset, int>: START");
+        // bindCapture(I& data, R(*func)(I&, A...))
+        // function(Func1Type func) <int, int>
+        IntOffset offset100(100);
+        IntOffset offset1000(1000);
+
+        typedef int(*cfunc)(IntOffset*, int); // to force non-capturing lambda into a free function template type deduction
+
+        int(*func7a_capture)(IntOffset*, int) = [](IntOffset* capture, int i)->int {
+            int res = i+10000+capture->value;
+            return res;
+        };
+        int(*func7b_capture)(IntOffset*, int) = [](IntOffset* capture, int i)->int {
+            int res = i+100000+capture->value;
+            return res;
+        };
+
+        MyClassFunction0 f7a_o100_0 = bind_capref<int, IntOffset, int>(&offset100,
+                (cfunc) ( [](IntOffset* capture, int i)->int {
+                    int res = i+10000+capture->value;
+                    return res;;
+                } ) );
+        test_function0________type("FuncPtr7a_o100_capture_00", true, f7a_o100_0, f7a_o100_0);
+
+        INFO("f7a_o100_1 copy_ctor");
+        MyClassFunction0 f7a_o100_1 = bind_capref<int, IntOffset, int>(&offset100, func7a_capture);
+        INFO("f7a_o100_1 copy_ctor done");
+        INFO("f7a_o100_2 move_ctor");
+        MyClassFunction0 f7a_o100_2 = bind_capref(&offset100, func7a_capture);
+        INFO("f7a_o100_2 move_ctor done");
+        test_function0________type("FuncPtr7a_o100_capture_12", true, f7a_o100_1, f7a_o100_2);
+        test_function0_result_type("FuncPtr7a_o100_capture_11", true, 1, 10101, f7a_o100_1, f7a_o100_1);
+        test_function0_result_type("FuncPtr7a_o100_capture_12", true, 1, 10101, f7a_o100_1, f7a_o100_2);
+        // test_FunctionPointer01("FuncPtr7a_o100_capture_01", false, f7a_o100_0, f7a_o100_1);
+        MyClassFunction0 f7a_o1000_1 = bind_capref(&offset1000, func7a_capture);
+        MyClassFunction0 f7a_o1000_2 = bind_capref(&offset1000, func7a_capture);
+        test_function0________type("FuncPtr7a_o1000_capture_12", true, f7a_o1000_1, f7a_o1000_2);
+        test_function0________type("FuncPtr7a_o100_o1000_capture_11", false, f7a_o100_1, f7a_o1000_1);
+
+        MyClassFunction0 f7b_o100_1 = bind_capref(&offset100, func7b_capture);
+        MyClassFunction0 f7b_o100_2 = bind_capref(&offset100, func7b_capture);
+        test_function0_result_type("FuncPtr7b_o100_capture_11", true, 1, 100101, f7b_o100_1, f7b_o100_1);
+        test_function0_result_type("FuncPtr7b_o100_capture_12", true, 1, 100101, f7b_o100_1, f7b_o100_2);
+
+        test_function0_result_type("FuncPtr7ab_o100_capture_11", false, 1, 0, f7a_o100_1, f7b_o100_1);
+        test_function0_result_type("FuncPtr7ab_o100_capture_22", false, 1, 0, f7a_o100_2, f7b_o100_2);
+        INFO("Test 07_capref: bindCapture<int, IntOffset, int>: END");
+    }
+
+    void test08_lambda() {
+        {
+            volatile int i = 100;
+
+            auto fa0_stub = ( [&](int a) -> int {
+                return i + a;
+            } );
+            typedef decltype(fa0_stub) fa0_type;
+            jau::type_cue<fa0_type>::print("lambda.1.fa0_type", TypeTraitGroup::ALL);
+
+            typedef jau::func::lambda_target_t<int, fa0_type, int> lambda_target_t;
+
+            std::shared_ptr<lambda_target_t> fa0_target = std::make_shared<lambda_target_t>(fa0_stub);
+
+            function<int(int)> fa0(nullptr, fa0_target);
+
+            fprintf(stderr, "fa0.1: %s\n", fa0.toString().c_str());
+            REQUIRE( jau::func::target_type::lambda == fa0.type() );
+
+            test_function0_result_type("lambda.1", true, 1, 101, fa0, fa0);
+        }
+        {
+            volatile int i = 100;
+
+            auto fa0_stub = ( [&](int a) -> int {
+                return i + a;
+            } );
+            typedef decltype(fa0_stub) fa0_type;
+            jau::type_cue<fa0_type>::print("lambda.2.fa0_type", TypeTraitGroup::ALL);
+
+            // function<int(int)> fa0 = jau::bind_lambda<int, fa0_type, int>( fa0_stub );
+            function<int(int)> fa0 = fa0_stub;
+
+            fprintf(stderr, "fa0.2: %s\n", fa0.toString().c_str());
+            REQUIRE( jau::func::target_type::lambda == fa0.type() );
+
+            test_function0_result_type("lambda.2", true, 1, 101, fa0, fa0);
+        }
+        {
+            volatile int i = 100;
+
+            auto fa0_stub = ( [i](int a) -> int {
+                return i + a;
+            } );
+            typedef decltype(fa0_stub) fa0_type;
+            jau::type_cue<fa0_type>::print("lambda.3.fa0_type", TypeTraitGroup::ALL);
+
+            function<int(int)> fa0( fa0_stub );
+
+            fprintf(stderr, "fa0.3: %s\n", fa0.toString().c_str());
+            REQUIRE( jau::func::target_type::lambda == fa0.type() );
+
+            test_function0_result_type("lambda.3", true, 1, 101, fa0, fa0);
+        }
+        {
+            volatile int i = 100;
+
+            function<int(int)> fa0 = [i](int a) -> int {
+                return i + a;
+            };
+
+            fprintf(stderr, "fa0.4: %s\n", fa0.toString().c_str());
+            REQUIRE( jau::func::target_type::lambda == fa0.type() );
+
+            test_function0_result_type("lambda.4", true, 1, 101, fa0, fa0);
+        }
+        {
+            volatile int i = 100;
+
+            function<int(int)> fa0 = [&](int a) -> int {
+                return i + a;
+            };
+
+            fprintf(stderr, "fa0.4: %s\n", fa0.toString().c_str());
+            REQUIRE( jau::func::target_type::lambda == fa0.type() );
+
+            test_function0_result_type("lambda.4", true, 1, 101, fa0, fa0);
+        }
+        {
+#if 0
+            function<void(int)> f0 = jau::bind_lambda( [&i](int a) -> void {
+                int r = i + a;
+                (void)r;
+            } );
+            (void)f0;
+
+            function<int(int)> f = jau::bind_lambda( [&i](int a) -> int {
+                return i + a;
+            } );
+            test_function0_result_type("FuncPtr1a_free_10", true, 1, 101, f, f);
+#endif
+        }
+    }
+
+    void test09_lambda_id() {
+        {
+            volatile int i = 100;
+            volatile int j = 10;
+
+            auto fa0_stub = ( [&](int a) -> int {
+                return i + a;
+            } );
+
+            function<int(int)> fa0_a( fa0_stub );
+            fprintf(stderr, "fa0_a: %s\n", fa0_a.toString().c_str());
+            REQUIRE( jau::func::target_type::lambda == fa0_a.type() );
+            {
+                auto fa0c_stub = ( [&](int a) -> int {
+                    return i + a;
+                } );
+                function<int(int)> fa0_c( fa0c_stub );
+                fprintf(stderr, "fa0_c: %s\n", fa0_c.toString().c_str());
+                fprintf(stderr, "fa0_stub is_same fa0c_stub: %d\n",
+                        std::is_same_v<decltype(fa0_stub), decltype(fa0c_stub)> );
+                fprintf(stderr, "fa0_a == fa0_c: %d\n",
+                        fa0_a == fa0_c );
+            }
+
+            // Note-0: Based on same fa0_stub, hence same code and capture!
+            function<int(int)> fa0_b( fa0_stub );
+            fprintf(stderr, "fa1: %s\n", fa0_b.toString().c_str());
+            REQUIRE( jau::func::target_type::lambda == fa0_a.type() );
+
+            function<int(int)> fa2_1 = [&](int a) -> int {
+                return i + a;
+            };
+            fprintf(stderr, "fa2_1: %s\n", fa2_1.toString().c_str());
+            REQUIRE( jau::func::target_type::lambda == fa2_1.type() );
+
+            // NOTE-1: fa2_2 == fa2_1: Equivalent code but not same, diff capture!
+            function<int(int)> fa2_2 = lambda_02();
+            fprintf(stderr, "fa2_2: %s\n", fa2_2.toString().c_str());
+            REQUIRE( jau::func::target_type::lambda == fa2_2.type() );
+
+            // NOTE-2: fa2_3 == fa2_1: Equivalent code but not same, same capture!
+            // FIXME: No RTTI on GCC produces same __PRETTY_FUNCTION__ based id (just parent function + generic lambda),
+            //        where clang uses filename + line, which works.
+            function<int(int)> fa2_3 = [&](int a) -> int {
+                return i + a;
+            };
+            fprintf(stderr, "fa2_3: %s\n", fa2_3.toString().c_str());
+            REQUIRE( jau::func::target_type::lambda == fa2_3.type() );
+
+            // NOTE-3: fa2_4 != fa2_1: Different capture type than fa2_1 (but equivalent code)
+            function<int(int)> fa2_4 = [i](int a) -> int {
+                return i + a;
+            };
+            fprintf(stderr, "fa2_4: %s\n", fa2_4.toString().c_str());
+            REQUIRE( jau::func::target_type::lambda == fa2_4.type() );
+
+            // NOTE-B: f_b != fa2_1: Equivalent but different code and different capture than fa2_1!
+            // !RTTI GCC: OK (different capture)
+            function<int(int)> f_b = [&](int a) -> int {
+                return j + a;
+            };
+            fprintf(stderr, "f_b: %s\n", f_b.toString().c_str());
+            REQUIRE( jau::func::target_type::lambda == f_b.type() );
+
+            // NOTE-C: f_c != fa2_1: Different code type and different capture than fa2_1!
+            // !RTTI GCC: OK (different capture)
+            function<int(int)> f_c = [&](int a) -> int {
+                return 2 * ( j + a );
+            };
+            fprintf(stderr, "f_c: %s\n", f_c.toString().c_str());
+            REQUIRE( jau::func::target_type::lambda == f_c.type() );
+
+            // NOTE-D: f_d != fa2_1: Different code type than fa2_1, but same capture!
+            // FIXME: See Note-2 !!!
+            function<int(int)> f_d = [&](int a) -> int {
+                return 2 * ( i + a );
+            };
+            fprintf(stderr, "f_d: %s\n", f_d.toString().c_str());
+            REQUIRE( jau::func::target_type::lambda == f_d.type() );
+
+            test_function0_result_type("lambda.5a", true,  1, 101, fa0_a, fa0_b); // Note-0: Same code and capture
+            test_function0_result_type("lambda.5b", true,  1, 101, fa2_1, fa2_1);
+            test_function0_result_____("lambda.5c",        1, 101, fa2_1, fa2_2); // NOTE-1: Equal result
+            test_function0________type("lambda.5c", false,         fa2_1, fa2_2); // NOTE-1: Diff code
+            test_function0_result_____("lambda.5e",        1, 101, fa2_1, fa2_4); // NOTE-3: Equal result
+            test_function0________type("lambda.5e", false,         fa2_1, fa2_4); // NOTE-3: Diff capture / code
+
+            test_function0________type("lambda.5B", false,         fa2_1, f_b);   // NOTE-B
+            test_function0________type("lambda.5C", false,         fa2_1, f_c);   // NOTE-C
+
+            test_function0_result_____("lambda.5d",        1, 101, fa2_1, fa2_3); // NOTE-2: Equal result
+#if EXPECT_SAME_LAMBDA_IN_SAME_FUNC_ERROR
+            if( fa2_1 == fa2_3 ) {
+                fprintf(stderr, "EXPECT_SAME_LAMBDA_IN_SAME_FUNC_ERROR: %s:%d\n", __FILE__, __LINE__);
+            } else {
+                fprintf(stderr, "EXPECT_SAME_LAMBDA_IN_SAME_FUNC_ERROR: FIXED: %s:%d\n", __FILE__, __LINE__);
+                test_function0________type("lambda.5d", false,         fa2_1, fa2_3); // NOTE-2: Diff code
+            }
+            if( fa2_1 == f_d ) {
+                fprintf(stderr, "EXPECT_SAME_LAMBDA_IN_SAME_FUNC_ERROR: %s:%d\n", __FILE__, __LINE__);
+            } else {
+                fprintf(stderr, "EXPECT_SAME_LAMBDA_IN_SAME_FUNC_ERROR: FIXED: %s:%d\n", __FILE__, __LINE__);
+                test_function0________type("lambda.5D", false,         fa2_1, f_d);   // NOTE-D
+            }
+#else
+            test_function0________type("lambda.5d", false,         fa2_1, fa2_3); // NOTE-2: Diff code
+            test_function0________type("lambda.5D", false,         fa2_1, f_d);   // NOTE-D
+#endif
+
+        }
+    }
+
   private:
 
     // template<typename R, typename... A>
@@ -93,6 +979,99 @@ class TestFunction01 {
         // nop
     }
 
+    void test_function0_result_type(std::string msg, bool expEqual, const int value, int expRes, MyClassFunction0 & f1, MyClassFunction0 &f2) {
+        // test std::function identity
+        INFO(msg+": Func0.rt Func f1p == f2p : " + std::to_string( f1 == f2 ) + ", f1p: " + f1.toString() + ", f2 "+f2.toString() );
+        int f1r = f1(value);
+        int f2r = f2(value);
+        INFO(msg+": Func0.rt Res_ f1r == f2r : " + std::to_string( f1r == f2r ) + ", f1r: " + std::to_string( f1r ) + ", f2r "+std::to_string( f2r ) );
+        if( expEqual ) {
+            REQUIRE(f1r == expRes);
+            REQUIRE(f2r == expRes);
+            REQUIRE(f1 == f2);
+        } else {
+            REQUIRE(f1 != f2);
+        }
+    }
+    void test_function0________type(std::string msg, bool expEqual, MyClassFunction0 & f1, MyClassFunction0 &f2) {
+        // test std::function identity
+        INFO(msg+": Func0._t Func f1p == f2p : " + std::to_string( f1 == f2 ) + ", f1p: " + f1.toString() + ", f2 "+f2.toString() );
+        {
+            int f1r = f1(0);
+            int f2r = f2(0);
+            (void)f1r;
+            (void)f2r;
+        }
+        if( expEqual ) {
+            CHECK(f1 == f2);
+        } else {
+            CHECK(f1 != f2);
+        }
+    }
+    void test_function0_result_____(std::string msg, const int value, int expRes, MyClassFunction0 & f1, MyClassFunction0 &f2) {
+        // test std::function identity
+        INFO(msg+": Func0.r_ Func f1p == f2p : " + std::to_string( f1 == f2 ) + ", f1p: " + f1.toString() + ", f2 "+f2.toString() );
+        int f1r = f1(value);
+        int f2r = f2(value);
+        INFO(msg+": Func0.r_ Res_ f1r == f2r : " + std::to_string( f1r == f2r ) + ", f1r: " + std::to_string( f1r ) + ", f2r "+std::to_string( f2r ) );
+        REQUIRE(f1r == expRes);
+        REQUIRE(f2r == expRes);
+    }
+
+    void test_function1_result_type(std::string msg, bool expEqual, const int value, int expRes, MyClassFunction1 & f1, MyClassFunction1 &f2) noexcept {
+        // test std::function identity
+        INFO(msg+": Func1.rt Func f1p == f2p : " + std::to_string( f1 == f2 ) + ", f1p: " + f1.toString() + ", f2 "+f2.toString() );
+        int f1r, f2r;
+        f1(f1r, value);
+        f2(f2r, value);
+        INFO(msg+": Func1.rt Res_ f1r == f2r : " + std::to_string( f1r == f2r ) + ", f1r: " + std::to_string( f1r ) + ", f2r "+std::to_string( f2r ) );
+        if( expEqual ) {
+            REQUIRE(f1r == expRes);
+            REQUIRE(f2r == expRes);
+            REQUIRE(f1 == f2);
+        } else {
+            REQUIRE(f1 != f2);
+        }
+    }
+    void test_function1________type(std::string msg, bool expEqual, MyClassFunction1 & f1, MyClassFunction1 &f2) noexcept {
+        // test std::function identity
+        INFO(msg+": Func1._t Func f1p == f2p : " + std::to_string( f1 == f2 ) + ", f1p: " + f1.toString() + ", f2 "+f2.toString() );
+        {
+            int f1r, f2r;
+            f1(f1r, 0);
+            f2(f2r, 0);
+            (void)f1r;
+            (void)f2r;
+        }
+        if( expEqual ) {
+            CHECK(f1 == f2);
+        } else {
+            CHECK(f1 != f2);
+        }
+    }
+
+    void test_function2________type(std::string msg, bool expEqual, MyClassFunction2 & f1, MyClassFunction2 &f2) noexcept {
+        // test std::function identity
+        INFO(msg+": Func2._t Func f1p == f2p : " + std::to_string( f1 == f2 ) + ", f1p: " + f1.toString() + ", f2 "+f2.toString() );
+        {
+            f1();
+            f2();
+        }
+        if( expEqual ) {
+            CHECK(f1 == f2);
+        } else {
+            CHECK(f1 != f2);
+        }
+    }
+
+    function<int(int)>  lambda_02() {
+        int i = 100;
+        function<int(int)> f = [i](int a) -> int {
+            return i + a;
+        };
+        return f;
+    }
+
     struct IntOffset {
         int value;
         IntOffset(int v) : value(v) {}
@@ -134,616 +1113,6 @@ class TestFunction01 {
 
     };
 
-    void test_FunctionPointer00(std::string msg, bool expEqual, const int value, int expRes, MyClassFunction0 & f1, MyClassFunction0 &f2) {
-        // test std::function identity
-        INFO(msg+": FunctionPointer00 Fun f1p == f2p : " + std::to_string( f1 == f2 ) + ", f1p: " + f1.toString() + ", f2 "+f2.toString() );
-        int f1r = f1(value);
-        int f2r = f2(value);
-        INFO(msg+": FunctionPointer00 Res f1r == f2r : " + std::to_string( f1r == f2r ) + ", f1r: " + std::to_string( f1r ) + ", f2r "+std::to_string( f2r ) );
-        if( expEqual ) {
-            REQUIRE(f1r == expRes);
-            REQUIRE(f2r == expRes);
-            REQUIRE(f1 == f2);
-        } else {
-            REQUIRE(f1 != f2);
-        }
-    }
-    void test_FunctionPointer01(std::string msg, bool expEqual, MyClassFunction0 & f1, MyClassFunction0 &f2) {
-        // test std::function identity
-        INFO(msg+": FunctionPointer01 Fun f1p == f2p : " + std::to_string( f1 == f2 ) + ", f1p: " + f1.toString() + ", f2 "+f2.toString() );
-        if( expEqual ) {
-            REQUIRE(f1 == f2);
-        } else {
-            REQUIRE(f1 != f2);
-        }
-    }
-
-    void test_FunctionPointer10(std::string msg, bool expEqual, const int value, int expRes, MyClassFunction1 & f1, MyClassFunction1 &f2) noexcept {
-        // test std::function identity
-        INFO(msg+": FunctionPointer10 Fun f1p == f2p : " + std::to_string( f1 == f2 ) + ", f1p: " + f1.toString() + ", f2 "+f2.toString() );
-        int f1r, f2r;
-        f1(f1r, value);
-        f2(f2r, value);
-        INFO(msg+": FunctionPointer10 Res f1r == f2r : " + std::to_string( f1r == f2r ) + ", f1r: " + std::to_string( f1r ) + ", f2r "+std::to_string( f2r ) );
-        if( expEqual ) {
-            REQUIRE(f1r == expRes);
-            REQUIRE(f2r == expRes);
-            REQUIRE(f1 == f2);
-        } else {
-            REQUIRE(f1 != f2);
-        }
-    }
-    void test_FunctionPointer11(std::string msg, bool expEqual, MyClassFunction1 & f1, MyClassFunction1 &f2) noexcept {
-        // test std::function identity
-        INFO(msg+": FunctionPointer11 Fun f1p == f2p : " + std::to_string( f1 == f2 ) + ", f1p: " + f1.toString() + ", f2 "+f2.toString() );
-        if( expEqual ) {
-            REQUIRE(f1 == f2);
-        } else {
-            REQUIRE(f1 != f2);
-        }
-    }
-
-    void test_FunctionPointer20(std::string msg, bool expEqual, MyClassFunction2 & f1, MyClassFunction2 &f2) noexcept {
-        // test std::function identity
-        INFO(msg+": FunctionPointer20 Fun f1p == f2p : " + std::to_string( f1 == f2 ) + ", f1p: " + f1.toString() + ", f2 "+f2.toString() );
-        f1();
-        f2();
-        if( expEqual ) {
-            REQUIRE(f1 == f2);
-        } else {
-            REQUIRE(f1 != f2);
-        }
-    }
-
-  public:
-
-    /**
-     * Unit test covering most variants of jau::function<R(A...)
-     */
-    void test00_usage() {
-        INFO("Test 00_usage: START");
-        {
-            // free, result void and no params
-            typedef void(*cfunc)();
-            function<void()> fl_0 = (cfunc) ( []() -> void {
-                // nop
-            } );
-            function<void()> f2a_0 = Func2a_free;
-            function<void()> f2a_1 = bind_free(Func2a_free);
-            function<void()> f20a_1 = bind_free(&TestFunction01::Func20a_static);
-            function<void()> f20a_2 = bind_free(&TestFunction01::Func20a_static);
-            test_FunctionPointer20("FuncPtr1a_free_10", true,   fl_0, fl_0);
-            test_FunctionPointer20("FuncPtr1a_free_10", true,   f2a_0, f2a_1);
-            test_FunctionPointer20("FuncPtr1a_free_10", true,   f2a_1, f2a_1);
-            test_FunctionPointer20("FuncPtr3a_free_11", true,   f20a_1, f20a_1);
-            test_FunctionPointer20("FuncPtr3a_free_12", true,   f20a_1, f20a_2);
-            test_FunctionPointer20("FuncPtr1a_free_10", false,  f2a_1, f20a_1);
-
-        }
-        {
-            // free, result non-void
-            typedef int(*cfunc)(int);
-            function<int(int)> fl_0 = (cfunc) ( [](int i) -> int {
-                int res = i+100;
-                return res;
-            } );
-            function<int(int)> f1a_0 = Func0a_free;
-            function<int(int)> f1a_1 = bind_free(Func0a_free);
-            function<int(int)> f3a_1 = bind_free(&TestFunction01::Func03a_static);
-            function<int(int)> f3a_2 = bind_free(&TestFunction01::Func03a_static);
-            test_FunctionPointer00("FuncPtr1a_free_10", true,   1, 101, fl_0, fl_0);
-            test_FunctionPointer00("FuncPtr1a_free_10", true,   1, 101, f1a_0, f1a_1);
-            test_FunctionPointer00("FuncPtr1a_free_10", true,   1, 101, f1a_1, f1a_1);
-            test_FunctionPointer00("FuncPtr3a_free_11", true,   1, 101, f3a_1, f3a_1);
-            test_FunctionPointer00("FuncPtr3a_free_12", true,   1, 101, f3a_1, f3a_2);
-            test_FunctionPointer00("FuncPtr1a_free_10", false,  1, 101, f1a_1, f3a_1);
-        }
-        {
-            // free, result void
-            typedef void(*cfunc)(int&, int);
-            function<void(int&, int)> fl_0 = (cfunc) ( [](int& res, int i) -> void {
-                res = i+100;
-            } );
-            function<void(int&, int)> f1a_0 = Func1a_free;
-            function<void(int&, int)> f1a_1 = bind_free(Func1a_free);
-            function<void(int&, int)> f3a_0 = &TestFunction01::Func13a_static;
-            function<void(int&, int)> f3a_1 = bind_free(&TestFunction01::Func13a_static);
-            function<void(int&, int)> f3a_2 = bind_free(&TestFunction01::Func13a_static);
-            test_FunctionPointer10("FuncPtr1a_free_10", true,   1, 101, fl_0, fl_0);
-            test_FunctionPointer10("FuncPtr1a_free_10", true,   1, 101, f1a_1, f1a_0);
-            test_FunctionPointer10("FuncPtr3a_free_11", true,   1, 101, f3a_1, f3a_0);
-            test_FunctionPointer10("FuncPtr3a_free_11", true,   1, 101, f3a_1, f3a_1);
-            test_FunctionPointer10("FuncPtr3a_free_12", true,   1, 101, f3a_1, f3a_2);
-            test_FunctionPointer10("FuncPtr1a_free_10", false,  1, 101, f1a_1, f3a_1);
-        }
-        {
-            // member, result non-void
-            function<int(int)> f2a_0(this, &TestFunction01::func02a_member);
-            function<int(int)> f2a_1 = bind_member(this, &TestFunction01::func02a_member);
-            function<int(int)> f2a_2 = bind_member(this, &TestFunction01::func02a_member);
-            function<int(int)> f2b_1 = bind_member(this, &TestFunction01::func02b_member);
-            test_FunctionPointer00("FuncPtr2a_member_12", true,  1, 101, f2a_1, f2a_0);
-            test_FunctionPointer00("FuncPtr2a_member_12", true,  1, 101, f2a_1, f2a_2);
-            test_FunctionPointer00("FuncPtr2a_member_12", false, 1, 101, f2a_1, f2b_1);
-        }
-        {
-            // member, result void
-            function<void(int&, int)> f2a_0(this, &TestFunction01::func12a_member);
-            function<void(int&, int)> f2a_1 = bind_member(this, &TestFunction01::func12a_member);
-            function<void(int&, int)> f2a_2 = bind_member(this, &TestFunction01::func12a_member);
-            function<void(int&, int)> f2b_1 = bind_member(this, &TestFunction01::func12b_member);
-            test_FunctionPointer10("FuncPtr2a_member_12", true,  1, 101, f2a_1, f2a_0);
-            test_FunctionPointer10("FuncPtr2a_member_12", true,  1, 101, f2a_1, f2a_2);
-            test_FunctionPointer10("FuncPtr2a_member_12", false, 1, 101, f2a_1, f2b_1);
-        }
-        {
-            // lambda w/ explicit capture by value, result non-void
-            int offset100 = 100;
-
-            typedef int(*cfunc)(int&, int);
-
-            int(*func5a_capture)(int&, int) = [](int& capture, int i)->int {
-                int res = i+10000+capture;
-                return res;
-            };
-            int(*func5b_capture)(int&, int) = [](int& capture, int i)->int {
-                int res = i+100000+capture;
-                return res;
-            };
-
-            function<int(int)> f5_o100_0(offset100,
-                    (cfunc) ( [](int& capture, int i)->int {
-                        int res = i+10000+capture;
-                        return res;
-                    } ) );
-            function<int(int)> f5_o100_1 = bind_capval(offset100,
-                    (cfunc) ( [](int& capture, int i)->int {
-                        int res = i+10000+capture;
-                        return res;
-                    } ) );
-            function<int(int)> f5_o100_2 = bind_capval(offset100,
-                    (cfunc) ( [](int& capture, int i)->int {
-                        int res = i+10000+capture;
-                        return res;
-                    } ) );
-            test_FunctionPointer01("FuncPtr5a_o100_capture_00", true,  f5_o100_0, f5_o100_0);
-            test_FunctionPointer01("FuncPtr5a_o100_capture_00", true,  f5_o100_1, f5_o100_1);
-            test_FunctionPointer01("FuncPtr5a_o100_capture_00", false, f5_o100_1, f5_o100_2);
-
-            function<int(int)> f5a_o100_0(offset100, func5a_capture);
-            function<int(int)> f5a_o100_1 = bind_capval(offset100, func5a_capture);
-            function<int(int)> f5a_o100_2 = bind_capval(offset100, func5a_capture);
-            function<int(int)> f5b_o100_1 = bind_capval(offset100, func5b_capture);
-            test_FunctionPointer01("FuncPtr5a_o100_capture_12", true,  f5a_o100_1, f5a_o100_0);
-            test_FunctionPointer01("FuncPtr5a_o100_capture_12", true,  f5a_o100_1, f5a_o100_2);
-            test_FunctionPointer01("FuncPtr5a_o100_capture_12", false, f5a_o100_1, f5b_o100_1);
-            test_FunctionPointer00("FuncPtr5a_o100_capture_11", true,  1, 10101, f5a_o100_1, f5a_o100_1);
-            test_FunctionPointer00("FuncPtr5a_o100_capture_12", true,  1, 10101, f5a_o100_1, f5a_o100_2);
-            test_FunctionPointer00("FuncPtr5a_o100_capture_12", false, 1, 10101, f5a_o100_1, f5b_o100_1);
-        }
-        {
-            // lambda w/ explicit capture by reference, result non-void
-            IntOffset offset100(100);
-
-            typedef int(*cfunc)(IntOffset*, int);
-
-            int(*func7a_capture)(IntOffset*, int) = [](IntOffset* capture, int i)->int {
-                int res = i+10000+capture->value;
-                return res;
-            };
-            int(*func7b_capture)(IntOffset*, int) = [](IntOffset* capture, int i)->int {
-                int res = i+100000+capture->value;
-                return res;
-            };
-
-            function<int(int)> f7_o100_1 = bind_capref<int, IntOffset, int>(&offset100,
-                    (cfunc) ( [](IntOffset* capture, int i)->int {
-                        int res = i+10000+capture->value;
-                        return res;;
-                    } ) );
-            function<int(int)> f7_o100_2 = bind_capref<int, IntOffset, int>(&offset100,
-                    (cfunc) ( [](IntOffset* capture, int i)->int {
-                        int res = i+10000+capture->value;
-                        return res;;
-                    } ) );
-            test_FunctionPointer01("FuncPtr7a_o100_capture_00", true,  f7_o100_1, f7_o100_1);
-            test_FunctionPointer01("FuncPtr7a_o100_capture_00", false, f7_o100_1, f7_o100_2);
-
-            function<int(int)> f7a_o100_1 = bind_capref(&offset100, func7a_capture);
-            function<int(int)> f7a_o100_2 = bind_capref(&offset100, func7a_capture);
-            function<int(int)> f7b_o100_1 = bind_capref(&offset100, func7b_capture);
-            test_FunctionPointer01("FuncPtr7a_o100_capture_12", true,  f7a_o100_1, f7a_o100_2);
-            test_FunctionPointer01("FuncPtr7a_o100_capture_12", false, f7a_o100_1, f7b_o100_1);
-            test_FunctionPointer00("FuncPtr7a_o100_capture_11", true,  1, 10101, f7a_o100_1, f7a_o100_1);
-            test_FunctionPointer00("FuncPtr7a_o100_capture_12", true,  1, 10101, f7a_o100_1, f7a_o100_2);
-            test_FunctionPointer00("FuncPtr7a_o100_capture_12", false, 1, 10101, f7a_o100_1, f7b_o100_1);
-        }
-        {
-            // std::function lambda
-            std::function<int(int i)> func4a_stdlambda = [](int i)->int {
-                int res = i+100;
-                return res;;
-            };
-            std::function<int(int i)> func4b_stdlambda = [](int i)->int {
-                int res = i+1000;
-                return res;;
-            };
-            function<int(int)> f4a_1 = bind_std(100, func4a_stdlambda);
-            function<int(int)> f4a_2 = bind_std(100, func4a_stdlambda);
-            test_FunctionPointer00("FuncPtr4a_stdlambda_11", true, 1, 101, f4a_1, f4a_1);
-            test_FunctionPointer00("FuncPtr4a_stdlambda_12", true, 1, 101, f4a_1, f4a_2);
-        }
-
-        INFO("Test 00_usage: END");
-    }
-
-    void test01_memberfunc_this() {
-        INFO("Test 01_member: bind_member<int, TestFunction01, int>: START");
-        // function(TestFunction01 &base, Func1Type func)
-        MyClassFunction0 f2a_1 = bind_member<int, TestFunction01, int>(this, &TestFunction01::func02a_member);
-        MyClassFunction0 f2a_2 = bind_member(this, &TestFunction01::func02a_member);
-        test_FunctionPointer00("FuncPtr2a_member_11", true, 1, 101, f2a_1, f2a_1);
-        test_FunctionPointer00("FuncPtr2a_member_12", true, 1, 101, f2a_1, f2a_2);
-
-        MyClassFunction0 f2b_1 = bind_member(this, &TestFunction01::func02b_member);
-        MyClassFunction0 f2b_2 = bind_member(this, &TestFunction01::func02b_member);
-        test_FunctionPointer00("FuncPtr2b_member_11", true, 1, 1001, f2b_1, f2b_1);
-        test_FunctionPointer00("FuncPtr2b_member_12", true, 1, 1001, f2b_1, f2b_2);
-
-        test_FunctionPointer00("FuncPtr2ab_member_11", false, 1, 0, f2a_1, f2b_1);
-        test_FunctionPointer00("FuncPtr2ab_member_22", false, 1, 0, f2a_2, f2b_2);
-        INFO("Test 01_member: bind_member<int, TestFunction01, int>: END");
-    }
-
-    void test11_memberfunc_this() {
-        INFO("Test 11_member: bind_member<int, TestFunction01, int>: START");
-        // function(TestFunction01 &base, Func1Type func)
-        MyClassFunction1 f2a_1 = bind_member<TestFunction01, int&, int>(this, &TestFunction01::func12a_member);
-        MyClassFunction1 f2a_2 = bind_member(this, &TestFunction01::func12a_member);
-        test_FunctionPointer10("FuncPtr2a_member_11", true, 1, 101, f2a_1, f2a_1);
-        test_FunctionPointer10("FuncPtr2a_member_12", true, 1, 101, f2a_1, f2a_2);
-
-        MyClassFunction1 f2b_1 = bind_member(this, &TestFunction01::func12b_member);
-        MyClassFunction1 f2b_2 = bind_member(this, &TestFunction01::func12b_member);
-        test_FunctionPointer10("FuncPtr2b_member_11", true, 1, 1001, f2b_1, f2b_1);
-        test_FunctionPointer10("FuncPtr2b_member_12", true, 1, 1001, f2b_1, f2b_2);
-
-        test_FunctionPointer10("FuncPtr2ab_member_11", false, 1, 0, f2a_1, f2b_1);
-        test_FunctionPointer10("FuncPtr2ab_member_22", false, 1, 0, f2a_2, f2b_2);
-        INFO("Test 11_member: bind_member<int, TestFunction01, int>: END");
-    }
-
-    void test02_freefunc_static() {
-        INFO("Test 02_free: bind_free<int, int>: START");
-        // function(Func1Type func)
-        MyClassFunction0 f1a_1 = bind_free<int, int>(Func0a_free);
-        MyClassFunction0 f3a_1 = bind_free<int, int>(&TestFunction01::Func03a_static);
-        MyClassFunction0 f3a_2 = bind_free(&TestFunction01::Func03a_static);
-        test_FunctionPointer00("FuncPtr1a_free_10", true,  1, 101, f1a_1, f1a_1);
-        test_FunctionPointer00("FuncPtr3a_free_11", true,  1, 101, f3a_1, f3a_1);
-        test_FunctionPointer00("FuncPtr3a_free_12", true,  1, 101, f3a_1, f3a_2);
-
-        MyClassFunction0 f3b_1 = bind_free(&TestFunction01::Func03b_static);
-        MyClassFunction0 f3b_2 = bind_free(&Func03b_static);
-        test_FunctionPointer00("FuncPtr3b_free_11", true, 1, 1001, f3b_1, f3b_1);
-        test_FunctionPointer00("FuncPtr3b_free_12", true, 1, 1001, f3b_1, f3b_2);
-
-        test_FunctionPointer00("FuncPtr1a3a_free_10", false, 1, 0, f1a_1, f3a_1);
-        test_FunctionPointer00("FuncPtr1a3b_free_10", false, 1, 0, f1a_1, f3b_1);
-        test_FunctionPointer00("FuncPtr3a3b_free_11", false, 1, 0, f3a_1, f3b_1);
-        test_FunctionPointer00("FuncPtr3a3b_free_22", false, 1, 0, f3a_2, f3b_2);
-        INFO("Test 02_free: bind_free<int, int>: END");
-    }
-
-    void test12_freefunc_static() {
-        INFO("Test 12_free: bind_free<int, int>: START");
-        // function(Func1Type func)
-        MyClassFunction1 f1a_1 = bind_free<int&, int>(Func1a_free);
-        MyClassFunction1 f3a_1 = bind_free<int&, int>(&TestFunction01::Func13a_static);
-        MyClassFunction1 f3a_2 = bind_free(&TestFunction01::Func13a_static);
-        test_FunctionPointer10("FuncPtr1a_free_10", true,  1, 101, f1a_1, f1a_1);
-        test_FunctionPointer10("FuncPtr3a_free_11", true,  1, 101, f3a_1, f3a_1);
-        test_FunctionPointer10("FuncPtr3a_free_12", true,  1, 101, f3a_1, f3a_2);
-
-        MyClassFunction1 f3b_1 = bind_free(&TestFunction01::Func13b_static);
-        MyClassFunction1 f3b_2 = bind_free(&Func13b_static);
-        test_FunctionPointer10("FuncPtr3b_free_11", true, 1, 1001, f3b_1, f3b_1);
-        test_FunctionPointer10("FuncPtr3b_free_12", true, 1, 1001, f3b_1, f3b_2);
-
-        test_FunctionPointer10("FuncPtr1a3a_free_10", false, 1, 0, f1a_1, f3a_1);
-        test_FunctionPointer10("FuncPtr1a3b_free_10", false, 1, 0, f1a_1, f3b_1);
-        test_FunctionPointer10("FuncPtr3a3b_free_11", false, 1, 0, f3a_1, f3b_1);
-        test_FunctionPointer10("FuncPtr3a3b_free_22", false, 1, 0, f3a_2, f3b_2);
-        INFO("Test 12_free: bind_free<int, int>: END");
-    }
-
-    void test03_stdfunc_lambda() {
-        INFO("Test 03_stdlambda: bind_std<int, int>: START");
-        // function(Func1Type func) <int, int>
-        std::function<int(int i)> func4a_stdlambda = [](int i)->int {
-            int res = i+100;
-            return res;;
-        };
-        std::function<int(int i)> func4b_stdlambda = [](int i)->int {
-            int res = i+1000;
-            return res;;
-        };
-        MyClassFunction0 f4a_1 = bind_std<int, int>(100, func4a_stdlambda);
-        MyClassFunction0 f4a_2 = bind_std(100, func4a_stdlambda);
-        test_FunctionPointer00("FuncPtr4a_stdlambda_11", true, 1, 101, f4a_1, f4a_1);
-        test_FunctionPointer00("FuncPtr4a_stdlambda_12", true, 1, 101, f4a_1, f4a_2);
-
-        MyClassFunction0 f4b_1 = bind_std(200, func4b_stdlambda);
-        MyClassFunction0 f4b_2 = bind_std(200, func4b_stdlambda);
-        test_FunctionPointer00("FuncPtr4b_stdlambda_11", true, 1, 1001, f4b_1, f4b_1);
-        test_FunctionPointer00("FuncPtr4b_stdlambda_12", true, 1, 1001, f4b_1, f4b_2);
-
-        test_FunctionPointer00("FuncPtr4ab_stdlambda_11", false, 1, 0, f4a_1, f4b_1);
-        test_FunctionPointer00("FuncPtr4ab_stdlambda_22", false, 1, 0, f4a_2, f4b_2);
-
-        INFO("Test 03_stdlambda: bind_std<int, int>: END");
-    }
-
-    void test13_stdfunc_lambda() {
-        INFO("Test 13_stdlambda: bind_std<int, int>: START");
-        // function(Func1Type func) <int, int>
-        std::function<void(int& r, int i)> func4a_stdlambda = [](int& r, int i)->void {
-            r = i+100;
-        };
-        std::function<void(int& r, int i)> func4b_stdlambda = [](int& r, int i)->void {
-            r = i+1000;
-        };
-        MyClassFunction1 f4a_1 = bind_std<int&, int>(100, func4a_stdlambda);
-        MyClassFunction1 f4a_2 = bind_std(100, func4a_stdlambda);
-        test_FunctionPointer10("FuncPtr4a_stdlambda_11", true, 1, 101, f4a_1, f4a_1);
-        test_FunctionPointer10("FuncPtr4a_stdlambda_12", true, 1, 101, f4a_1, f4a_2);
-
-        MyClassFunction1 f4b_1 = bind_std(200, func4b_stdlambda);
-        MyClassFunction1 f4b_2 = bind_std(200, func4b_stdlambda);
-        test_FunctionPointer10("FuncPtr4b_stdlambda_11", true, 1, 1001, f4b_1, f4b_1);
-        test_FunctionPointer10("FuncPtr4b_stdlambda_12", true, 1, 1001, f4b_1, f4b_2);
-
-        test_FunctionPointer10("FuncPtr4ab_stdlambda_11", false, 1, 0, f4a_1, f4b_1);
-        test_FunctionPointer10("FuncPtr4ab_stdlambda_22", false, 1, 0, f4a_2, f4b_2);
-
-        INFO("Test 13_stdlambda: bind_std<int, int>: END");
-    }
-
-    void test04_capval_lambda() {
-        INFO("Test 04_capval: bindCapture<int, int, int>: START");
-        // bindCapture(I& data, R(*func)(I&, A...))
-        // function(Func1Type func) <int, int>
-        int offset100 = 100;
-        int offset1000 = 1000;
-
-        typedef int(*cfunc)(int&, int);
-
-        int(*func5a_capture)(int&, int) = [](int& capture, int i)->int {
-            int res = i+10000+capture;
-            return res;
-        };
-        int(*func5b_capture)(int&, int) = [](int& capture, int i)->int {
-            int res = i+100000+capture;
-            return res;
-        };
-
-        MyClassFunction0 f5a_o100_0 = bind_capval<int, int, int>(offset100,
-                (cfunc) ( [](int& capture, int i)->int {
-                    int res = i+10000+capture;
-                    return res;;
-                } ) );
-        test_FunctionPointer01("FuncPtr5a_o100_capture_00", true, f5a_o100_0, f5a_o100_0);
-
-        MyClassFunction0 f5a_o100_1 = bind_capval<int, int, int>(offset100, func5a_capture);
-        MyClassFunction0 f5a_o100_2 = bind_capval(offset100, func5a_capture);
-        test_FunctionPointer01("FuncPtr5a_o100_capture_12", true, f5a_o100_1, f5a_o100_2);
-        test_FunctionPointer00("FuncPtr5a_o100_capture_11", true, 1, 10101, f5a_o100_1, f5a_o100_1);
-        test_FunctionPointer00("FuncPtr5a_o100_capture_12", true, 1, 10101, f5a_o100_1, f5a_o100_2);
-        // test_FunctionPointer01("FuncPtr5a_o100_capture_01", false, f5a_o100_0, f5a_o100_1);
-        MyClassFunction0 f5a_o1000_1 = bind_capval(offset1000, func5a_capture);
-        MyClassFunction0 f5a_o1000_2 = bind_capval(offset1000, func5a_capture);
-        test_FunctionPointer01("FuncPtr5a_o1000_capture_12", true, f5a_o1000_1, f5a_o1000_2);
-        test_FunctionPointer01("FuncPtr5a_o100_o1000_capture_11", false, f5a_o100_1, f5a_o1000_1);
-
-        MyClassFunction0 f5b_o100_1 = bind_capval(offset100, func5b_capture);
-        MyClassFunction0 f5b_o100_2 = bind_capval(offset100, func5b_capture);
-        test_FunctionPointer00("FuncPtr5b_o100_capture_11", true, 1, 100101, f5b_o100_1, f5b_o100_1);
-        test_FunctionPointer00("FuncPtr5b_o100_capture_12", true, 1, 100101, f5b_o100_1, f5b_o100_2);
-
-        test_FunctionPointer00("FuncPtr5ab_o100_capture_11", false, 1, 0, f5a_o100_1, f5b_o100_1);
-        test_FunctionPointer00("FuncPtr5ab_o100_capture_22", false, 1, 0, f5a_o100_2, f5b_o100_2);
-        INFO("Test 04_capval: bindCapture<int, int, int>: END");
-    }
-
-    void test14_capval_lambda() {
-        INFO("Test 14_capval: bindCapture<int, int, int>: START");
-        // bindCapture(I& data, R(*func)(I&, A...))
-        // function(Func1Type func) <int, int>
-        int offset100 = 100;
-        int offset1000 = 1000;
-
-        typedef void(*cfunc)(int&, int&, int);
-
-        void(*func5a_capture)(int&, int&, int) = [](int& capture, int& res, int i)->void {
-            res = i+10000+capture;
-        };
-        void(*func5b_capture)(int&, int&, int) = [](int& capture, int& res, int i)->void {
-            res = i+100000+capture;
-        };
-
-        MyClassFunction1 f5a_o100_0 = bind_capval<int, int&, int>(offset100,
-                (cfunc) ( [](int& capture, int& res, int i)->void {
-                    res = i+10000+capture;
-                } ) );
-        test_FunctionPointer11("FuncPtr5a_o100_capture_00", true, f5a_o100_0, f5a_o100_0);
-
-        MyClassFunction1 f5a_o100_1 = bind_capval<int, int&, int>(offset100, func5a_capture);
-        MyClassFunction1 f5a_o100_2 = bind_capval(offset100, func5a_capture);
-        test_FunctionPointer11("FuncPtr5a_o100_capture_12", true, f5a_o100_1, f5a_o100_2);
-        test_FunctionPointer10("FuncPtr5a_o100_capture_11", true, 1, 10101, f5a_o100_1, f5a_o100_1);
-        test_FunctionPointer10("FuncPtr5a_o100_capture_12", true, 1, 10101, f5a_o100_1, f5a_o100_2);
-        // test_FunctionPointer01("FuncPtr5a_o100_capture_01", false, f5a_o100_0, f5a_o100_1);
-        MyClassFunction1 f5a_o1000_1 = bind_capval(offset1000, func5a_capture);
-        MyClassFunction1 f5a_o1000_2 = bind_capval(offset1000, func5a_capture);
-        test_FunctionPointer11("FuncPtr5a_o1000_capture_12", true, f5a_o1000_1, f5a_o1000_2);
-        test_FunctionPointer11("FuncPtr5a_o100_o1000_capture_11", false, f5a_o100_1, f5a_o1000_1);
-
-        MyClassFunction1 f5b_o100_1 = bind_capval(offset100, func5b_capture);
-        MyClassFunction1 f5b_o100_2 = bind_capval(offset100, func5b_capture);
-        test_FunctionPointer10("FuncPtr5b_o100_capture_11", true, 1, 100101, f5b_o100_1, f5b_o100_1);
-        test_FunctionPointer10("FuncPtr5b_o100_capture_12", true, 1, 100101, f5b_o100_1, f5b_o100_2);
-
-        test_FunctionPointer10("FuncPtr5ab_o100_capture_11", false, 1, 0, f5a_o100_1, f5b_o100_1);
-        test_FunctionPointer10("FuncPtr5ab_o100_capture_22", false, 1, 0, f5a_o100_2, f5b_o100_2);
-        INFO("Test 14_capval: bindCapture<int, int, int>: END");
-    }
-
-    void test05_capval_lambda() {
-        INFO("Test 05_capval: bindCapture<int, std::shared_ptr<IntOffset>, int>: START");
-        // bindCapture(I& data, R(*func)(I&, A...))
-        // function(Func1Type func) <int, int>
-        std::shared_ptr<IntOffset> offset100(new IntOffset(100));
-        std::shared_ptr<IntOffset> offset1000(new IntOffset(1000));
-
-        typedef int(*cfunc)(std::shared_ptr<IntOffset>&, int);
-
-        int(*func6a_capture)(std::shared_ptr<IntOffset>&, int) = [](std::shared_ptr<IntOffset>& capture, int i)->int {
-            int res = i+10000+capture->value;
-            return res;
-        };
-        int(*func6b_capture)(std::shared_ptr<IntOffset>&, int) = [](std::shared_ptr<IntOffset>& capture, int i)->int {
-            int res = i+100000+capture->value;
-            return res;
-        };
-
-        MyClassFunction0 f6a_o100_0 = bind_capval<int, std::shared_ptr<IntOffset>, int>(offset100,
-                (cfunc) ( [](std::shared_ptr<IntOffset>& sharedOffset, int i)->int {
-                    int res = i+10000+sharedOffset->value;
-                    return res;;
-                } ) );
-        test_FunctionPointer01("FuncPtr6a_o100_capture_00", true, f6a_o100_0, f6a_o100_0);
-
-        MyClassFunction0 f6a_o100_1 = bind_capval<int, std::shared_ptr<IntOffset>, int>(offset100, func6a_capture);
-        MyClassFunction0 f6a_o100_2 = bind_capval(offset100, func6a_capture);
-        test_FunctionPointer01("FuncPtr6a_o100_capture_12", true, f6a_o100_1, f6a_o100_2);
-        test_FunctionPointer00("FuncPtr6a_o100_capture_11", true, 1, 10101, f6a_o100_1, f6a_o100_1);
-        test_FunctionPointer00("FuncPtr6a_o100_capture_12", true, 1, 10101, f6a_o100_1, f6a_o100_2);
-        // test_FunctionPointer01("FuncPtr6a_o100_capture_01", false, f6a_o100_0, f6a_o100_1);
-        MyClassFunction0 f6a_o1000_1 = bind_capval(offset1000, func6a_capture);
-        MyClassFunction0 f6a_o1000_2 = bind_capval(offset1000, func6a_capture);
-        test_FunctionPointer01("FuncPtr6a_o1000_capture_12", true, f6a_o1000_1, f6a_o1000_2);
-        test_FunctionPointer01("FuncPtr6a_o100_o1000_capture_11", false, f6a_o100_1, f6a_o1000_1);
-
-        MyClassFunction0 f6b_o100_1 = bind_capval(offset100, func6b_capture);
-        MyClassFunction0 f6b_o100_2 = bind_capval(offset100, func6b_capture);
-        test_FunctionPointer00("FuncPtr6b_o100_capture_11", true, 1, 100101, f6b_o100_1, f6b_o100_1);
-        test_FunctionPointer00("FuncPtr6b_o100_capture_12", true, 1, 100101, f6b_o100_1, f6b_o100_2);
-
-        test_FunctionPointer00("FuncPtr6ab_o100_capture_11", false, 1, 0, f6a_o100_1, f6b_o100_1);
-        test_FunctionPointer00("FuncPtr6ab_o100_capture_22", false, 1, 0, f6a_o100_2, f6b_o100_2);
-        INFO("Test 05_capval: bindCapture<int, std::shared_ptr<IntOffset>, int>: END");
-    }
-
-    void test06_capval_lambda() {
-        INFO("Test 06_capval: bindCapture<int, IntOffset, int>: START");
-        // bindCapture(I& data, R(*func)(I&, A...))
-        // function(Func1Type func) <int, int>
-        IntOffset offset100(100);
-        IntOffset offset1000(1000);
-
-        typedef int(*cfunc)(IntOffset&, int);
-
-        int(*func7a_capture)(IntOffset&, int) = [](IntOffset& capture, int i)->int {
-            int res = i+10000+capture.value;
-            return res;
-        };
-        int(*func7b_capture)(IntOffset&, int) = [](IntOffset& capture, int i)->int {
-            int res = i+100000+capture.value;
-            return res;
-        };
-
-        MyClassFunction0 f7a_o100_0 = bind_capval<int, IntOffset, int>(offset100,
-                (cfunc) ( [](IntOffset& capture, int i)->int {
-                    int res = i+10000+capture.value;
-                    return res;;
-                } ) );
-        test_FunctionPointer01("FuncPtr7a_o100_capture_00", true, f7a_o100_0, f7a_o100_0);
-
-        INFO("f7a_o100_1 copy_ctor");
-        MyClassFunction0 f7a_o100_1 = bind_capval<int, IntOffset, int>(offset100, func7a_capture);
-        INFO("f7a_o100_1 copy_ctor done");
-        INFO("f7a_o100_2 move_ctor");
-        MyClassFunction0 f7a_o100_2 = bind_capval(IntOffset(100), func7a_capture);
-        INFO("f7a_o100_2 move_ctor done");
-        test_FunctionPointer01("FuncPtr7a_o100_capture_12", true, f7a_o100_1, f7a_o100_2);
-        test_FunctionPointer00("FuncPtr7a_o100_capture_11", true, 1, 10101, f7a_o100_1, f7a_o100_1);
-        test_FunctionPointer00("FuncPtr7a_o100_capture_12", true, 1, 10101, f7a_o100_1, f7a_o100_2);
-        // test_FunctionPointer01("FuncPtr7a_o100_capture_01", false, f7a_o100_0, f7a_o100_1);
-        MyClassFunction0 f7a_o1000_1 = bind_capval(offset1000, func7a_capture);
-        MyClassFunction0 f7a_o1000_2 = bind_capval(offset1000, func7a_capture);
-        test_FunctionPointer01("FuncPtr7a_o1000_capture_12", true, f7a_o1000_1, f7a_o1000_2);
-        test_FunctionPointer01("FuncPtr7a_o100_o1000_capture_11", false, f7a_o100_1, f7a_o1000_1);
-
-        MyClassFunction0 f7b_o100_1 = bind_capval(offset100, func7b_capture);
-        MyClassFunction0 f7b_o100_2 = bind_capval(offset100, func7b_capture);
-        test_FunctionPointer00("FuncPtr7b_o100_capture_11", true, 1, 100101, f7b_o100_1, f7b_o100_1);
-        test_FunctionPointer00("FuncPtr7b_o100_capture_12", true, 1, 100101, f7b_o100_1, f7b_o100_2);
-
-        test_FunctionPointer00("FuncPtr7ab_o100_capture_11", false, 1, 0, f7a_o100_1, f7b_o100_1);
-        test_FunctionPointer00("FuncPtr7ab_o100_capture_22", false, 1, 0, f7a_o100_2, f7b_o100_2);
-        INFO("Test 06_capval: bindCapture<int, IntOffset, int>: END");
-    }
-
-    void test07_capref_lambda() {
-        INFO("Test 07_capref: bindCapture<int, IntOffset, int>: START");
-        // bindCapture(I& data, R(*func)(I&, A...))
-        // function(Func1Type func) <int, int>
-        IntOffset offset100(100);
-        IntOffset offset1000(1000);
-
-        typedef int(*cfunc)(IntOffset*, int);
-
-        int(*func7a_capture)(IntOffset*, int) = [](IntOffset* capture, int i)->int {
-            int res = i+10000+capture->value;
-            return res;
-        };
-        int(*func7b_capture)(IntOffset*, int) = [](IntOffset* capture, int i)->int {
-            int res = i+100000+capture->value;
-            return res;
-        };
-
-        MyClassFunction0 f7a_o100_0 = bind_capref<int, IntOffset, int>(&offset100,
-                (cfunc) ( [](IntOffset* capture, int i)->int {
-                    int res = i+10000+capture->value;
-                    return res;;
-                } ) );
-        test_FunctionPointer01("FuncPtr7a_o100_capture_00", true, f7a_o100_0, f7a_o100_0);
-
-        INFO("f7a_o100_1 copy_ctor");
-        MyClassFunction0 f7a_o100_1 = bind_capref<int, IntOffset, int>(&offset100, func7a_capture);
-        INFO("f7a_o100_1 copy_ctor done");
-        INFO("f7a_o100_2 move_ctor");
-        MyClassFunction0 f7a_o100_2 = bind_capref(&offset100, func7a_capture);
-        INFO("f7a_o100_2 move_ctor done");
-        test_FunctionPointer01("FuncPtr7a_o100_capture_12", true, f7a_o100_1, f7a_o100_2);
-        test_FunctionPointer00("FuncPtr7a_o100_capture_11", true, 1, 10101, f7a_o100_1, f7a_o100_1);
-        test_FunctionPointer00("FuncPtr7a_o100_capture_12", true, 1, 10101, f7a_o100_1, f7a_o100_2);
-        // test_FunctionPointer01("FuncPtr7a_o100_capture_01", false, f7a_o100_0, f7a_o100_1);
-        MyClassFunction0 f7a_o1000_1 = bind_capref(&offset1000, func7a_capture);
-        MyClassFunction0 f7a_o1000_2 = bind_capref(&offset1000, func7a_capture);
-        test_FunctionPointer01("FuncPtr7a_o1000_capture_12", true, f7a_o1000_1, f7a_o1000_2);
-        test_FunctionPointer01("FuncPtr7a_o100_o1000_capture_11", false, f7a_o100_1, f7a_o1000_1);
-
-        MyClassFunction0 f7b_o100_1 = bind_capref(&offset100, func7b_capture);
-        MyClassFunction0 f7b_o100_2 = bind_capref(&offset100, func7b_capture);
-        test_FunctionPointer00("FuncPtr7b_o100_capture_11", true, 1, 100101, f7b_o100_1, f7b_o100_1);
-        test_FunctionPointer00("FuncPtr7b_o100_capture_12", true, 1, 100101, f7b_o100_1, f7b_o100_2);
-
-        test_FunctionPointer00("FuncPtr7ab_o100_capture_11", false, 1, 0, f7a_o100_1, f7b_o100_1);
-        test_FunctionPointer00("FuncPtr7ab_o100_capture_22", false, 1, 0, f7a_o100_2, f7b_o100_2);
-        INFO("Test 07_capref: bindCapture<int, IntOffset, int>: END");
-    }
-
 };
 
 METHOD_AS_TEST_CASE( TestFunction01::test00_usage,               "00_usage");
@@ -754,7 +1123,9 @@ METHOD_AS_TEST_CASE( TestFunction01::test03_stdfunc_lambda,      "03_stdfunc");
 METHOD_AS_TEST_CASE( TestFunction01::test04_capval_lambda,       "04_capval");
 METHOD_AS_TEST_CASE( TestFunction01::test05_capval_lambda,       "05_capval");
 METHOD_AS_TEST_CASE( TestFunction01::test06_capval_lambda,       "06_capval");
-METHOD_AS_TEST_CASE( TestFunction01::test07_capref_lambda,       "06_capref");
+METHOD_AS_TEST_CASE( TestFunction01::test07_capref_lambda,       "07_capref");
+METHOD_AS_TEST_CASE( TestFunction01::test08_lambda,              "08_lambda");
+METHOD_AS_TEST_CASE( TestFunction01::test09_lambda_id,           "09_lambda_id");
 
 METHOD_AS_TEST_CASE( TestFunction01::test11_memberfunc_this,     "11_memberfunc");
 METHOD_AS_TEST_CASE( TestFunction01::test12_freefunc_static,     "12_freefunc");
