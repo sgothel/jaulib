@@ -40,21 +40,16 @@ class TestLatch01 {
   private:
     jau::relaxed_atomic_int my_counter = 0;
 
-    void something(jau::latch& l, const fraction_i64 duration) {
-        my_counter++;
+    void countDown(jau::latch& l, const fraction_i64 duration) {
+        my_counter--;
         jau::sleep_for( duration );
         l.count_down();
     }
 
-    void somethingUp2x(jau::latch& l, const fraction_i64 duration) {
-        l.count_up();
-        l.count_up();
+    void countUp(jau::latch& l, const fraction_i64 duration) {
         my_counter++;
         jau::sleep_for( duration );
-        l.count_down();
-        my_counter++;
-        jau::sleep_for( duration );
-        l.count_down();
+        l.count_up();
     }
 
   public:
@@ -68,15 +63,18 @@ class TestLatch01 {
         std::thread tasks[count];
         jau::latch completion(count+1);
 
-        REQUIRE_MSG("not-zero", count+1 == completion.value());
+        my_counter = count;
+
+        REQUIRE(count+1 == completion.value());
+        REQUIRE(count == my_counter);
 
         for(size_t i=0; i<count; i++) {
-            tasks[i] = std::thread(&TestLatch01::something, this, std::ref(completion), (int64_t)i*1_ms);
+            tasks[i] = std::thread(&TestLatch01::countDown, this, std::ref(completion), (int64_t)i*1_ms);
         }
         completion.arrive_and_wait();
 
-        REQUIRE_MSG("zero", 0 == completion.value());
-        REQUIRE_MSG("10", count == my_counter);
+        REQUIRE(0 == completion.value());
+        REQUIRE(0 == my_counter);
 
         for(size_t i=0; i<count; i++) {
             if( tasks[i].joinable() ) {
@@ -94,15 +92,18 @@ class TestLatch01 {
         std::thread tasks[count];
         jau::latch completion(count+1);
 
-        REQUIRE_MSG("not-zero", count+1 == completion.value());
+        my_counter = count;
+
+        REQUIRE(count+1 == completion.value());
+        REQUIRE(count == my_counter);
 
         for(size_t i=0; i<count; i++) {
-            tasks[i] = std::thread(&TestLatch01::something, this, std::ref(completion), (int64_t)i*1_ms);
+            tasks[i] = std::thread(&TestLatch01::countDown, this, std::ref(completion), (int64_t)i*1_ms);
         }
-        REQUIRE_MSG("complete", true == completion.arrive_and_wait_for(10_s) );
+        REQUIRE( true == completion.arrive_and_wait_for(10_s) );
 
-        REQUIRE_MSG("zero", 0 == completion.value());
-        REQUIRE_MSG("10", count == my_counter);
+        REQUIRE(0 == completion.value());
+        REQUIRE(0 == my_counter);
 
         for(size_t i=0; i<count; i++) {
             if( tasks[i].joinable() ) {
@@ -112,7 +113,7 @@ class TestLatch01 {
     }
 
     /**
-     * Testing jau::latch default ctor with zero value, then set initial count value, count_down() and arrive_and_wait().
+     * Testing jau::latch default ctor with zero value, then set initial count value, count_down() and wait_for().
      */
     void test03_down_wait_for() {
         INFO_STR("\n\ntest03\n");
@@ -120,18 +121,21 @@ class TestLatch01 {
         std::thread tasks[count];
         jau::latch completion;
 
-        REQUIRE_MSG("zero", 0 == completion.value());
+        REQUIRE( 0 == completion.value() );
 
-        completion.set(count+1);
-        REQUIRE_MSG("not-zero", count+1 == completion.value());
+        my_counter = count;
+        completion.set(count);
+
+        REQUIRE(count == completion.value());
+        REQUIRE(count == my_counter);
 
         for(size_t i=0; i<count; i++) {
-            tasks[i] = std::thread(&TestLatch01::something, this, std::ref(completion), (int64_t)i*1_ms);
+            tasks[i] = std::thread(&TestLatch01::countDown, this, std::ref(completion), (int64_t)i*1_ms);
         }
-        REQUIRE_MSG("complete", true == completion.arrive_and_wait_for(10_s) );
+        REQUIRE( true == completion.wait_for(10_s) );
 
-        REQUIRE_MSG("zero", 0 == completion.value());
-        REQUIRE_MSG("10", count == my_counter);
+        REQUIRE(0 == completion.value());
+        REQUIRE(0 == my_counter);
 
         for(size_t i=0; i<count; i++) {
             if( tasks[i].joinable() ) {
@@ -150,21 +154,43 @@ class TestLatch01 {
         std::thread tasks[count];
         jau::latch completion;
 
-        REQUIRE_MSG("zero", 0 == completion.value());
+        my_counter = 0;
 
-        for(size_t i=0; i<count/2; i++) {
-            tasks[i] = std::thread(&TestLatch01::somethingUp2x, this, std::ref(completion), (int64_t)i*1_ms);
+        REQUIRE( 0 == completion.value() );
+        REQUIRE( 0 == my_counter );
+
+        // count up
+        {
+            for(size_t i=0; i<count; i++) {
+                tasks[i] = std::thread(&TestLatch01::countUp, this, std::ref(completion), (int64_t)i*1_ms);
+            }
+
+            // TODO?: Add latch::wait_for_max()?
+            while( completion.value() < count ) {
+                jau::sleep_for( 10_ms );
+            }
+            REQUIRE(count == completion.value());
+            REQUIRE(count == my_counter);
+            for(size_t i=0; i<count; i++) {
+                if( tasks[i].joinable() ) {
+                    tasks[i].join();
+                }
+            }
         }
-        REQUIRE_MSG("not-zero", 0 < completion.value()); // at least one count_up() occurred
+        // count down
+        {
+            for(size_t i=0; i<count; i++) {
+                tasks[i] = std::thread(&TestLatch01::countDown, this, std::ref(completion), (int64_t)i*1_ms);
+            }
+            REQUIRE(true == completion.wait_for(10_s) );
 
-        REQUIRE_MSG("complete", true == completion.arrive_and_wait_for(10_s) );
+            REQUIRE(0 == completion.value());
+            REQUIRE(0 == my_counter);
 
-        REQUIRE_MSG("zero", 0 == completion.value());
-        REQUIRE_MSG("10", count == my_counter);
-
-        for(size_t i=0; i<count; i++) {
-            if( tasks[i].joinable() ) {
-                tasks[i].join();
+            for(size_t i=0; i<count; i++) {
+                if( tasks[i].joinable() ) {
+                    tasks[i].join();
+                }
             }
         }
     }
