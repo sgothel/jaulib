@@ -165,6 +165,21 @@ namespace jau {
         #endif
     #endif
 
+    #if defined(__clang__)
+        #define JAU_PRETTY_FUNCTION __PRETTY_FUNCTION__
+    #elif defined(__GNUC__) && !defined(__clang__)
+        #define JAU_PRETTY_FUNCTION __PRETTY_FUNCTION__
+    #elif defined(_MSC_VER)
+        #define JAU_PRETTY_FUNCTION __FUNCSIG__
+    #else
+        #error "JAU_PRETTY_FUNCTION not available"
+    #endif
+
+    template<typename T>
+    constexpr const char* pretty_function() {
+        return JAU_PRETTY_FUNCTION;
+    }
+
     /**
     // *************************************************
     // *************************************************
