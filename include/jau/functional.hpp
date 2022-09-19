@@ -550,9 +550,6 @@ namespace jau {
                 size_t size() const noexcept override { return sizeof(*this); }
         };
 
-// Assume runtime lifecycle of typeid(L).name()
-#define TYPEID_LIFECYCLE_BIG 1
-
         /**
          * func::lambda_target_t implementation for lambda closures,
          * identifiable as func::target_type::lambda via jau::function<R(A...)>::type().
@@ -568,12 +565,9 @@ namespace jau {
             private:
                 typedef typename target_t<R, A...>::delegate_t delegate_t;
 
-#if TYPEID_LIFECYCLE_BIG
                 // No static template field to avoid error: self-comparison always evaluates to false [-Werror=tautological-compare]
+                // We assume runtime lifecycle of typeid(L).name()
                 const char* funcsig;
-#else
-                std::string funcsig;
-#endif
                 size_t hash_value;
                 L function; // intentionally last due to pot invalid cast
 
@@ -589,21 +583,12 @@ namespace jau {
                 : target_t<R, A...>( delegate_t(static_cast<void*>(this), invoke_impl) ),
                   function(function_)
                 {
-#if TYPEID_LIFECYCLE_BIG
-    #if defined(__cxx_rtti_available__)
+#if defined(__cxx_rtti_available__)
                   funcsig = typeid(L).name();
-    #else
-                  funcsig = JAU_PRETTY_FUNCTION; // jau::pretty_function<L>();
-    #endif
-                  hash_value = std::hash<std::string_view>{}(std::string_view(funcsig));
-#elif defined(__cxx_rtti_available__)
-                  const std::type_index t(typeid(L));
-                  funcsig = t.name();
-                  hash_value = std::hash<std::string>{}(funcsig);
 #else
-                  funcsig = jau::pretty_function<L>();
-                  hash_value = std::hash<std::string>{}(funcsig);
+                  funcsig = JAU_PRETTY_FUNCTION; // jau::pretty_function<L>();
 #endif
+                  hash_value = std::hash<std::string_view>{}(std::string_view(funcsig));
                 }
 
                 target_type type() const noexcept override { return target_type::lambda; }
