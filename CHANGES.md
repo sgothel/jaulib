@@ -8,6 +8,9 @@
 
 * First stable release (TODO)
 
+**0.16.3**
+* functional: Add general lambda support, revise API doc, have native target function size accessible
+
 **0.16.2**
 * Fix `jau::service_runner::start()`: Case `set_shall_stop()` occurs fast by worker callback -> infinite loop.
 * `jau::function<R(A...)>` 
