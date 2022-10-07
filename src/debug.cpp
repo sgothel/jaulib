@@ -30,8 +30,9 @@
 #ifdef USE_LIBUNWIND
     #define UNW_LOCAL_ONLY
     #include <libunwind.h>
-    #include <cxxabi.h>
 #endif /* USE_LIBUNWIND */
+
+#include <cxxabi.h>
 
 using namespace jau;
 
@@ -44,6 +45,32 @@ using namespace jau;
     #pragma GCC push_options
     #pragma GCC optimize("-O0")
 #endif
+
+std::string jau::demangle_name(const char* mangled_name) noexcept {
+    if( nullptr == mangled_name || 0 == ::strlen(mangled_name) ) {
+        return std::string();
+    }
+    int status;
+    /**
+     *   0: The demangling operation succeeded.
+     *  -1: A memory allocation failure occurred.
+     *  -2: @a mangled_name is not a valid name under the C++ ABI mangling rules.
+     *  -3: One of the arguments is invalid.
+     */
+    char* real_name = abi::__cxa_demangle(mangled_name, nullptr, nullptr, &status);
+    if ( nullptr == real_name ) {
+        return std::string(mangled_name); // didn't work, use mangled_name
+    } else {
+        std::string res;
+        if( 0 != status || 0 == ::strlen(real_name) ) {
+            res = std::string(mangled_name);    // didn't work, use mangled_name
+        } else {
+            res = std::string(real_name);
+        }
+        free( real_name );
+        return res;
+    }
+}
 
 std::string jau::get_backtrace(const bool skip_anon_frames, const jau::snsize_t max_frames, const jau::snsize_t skip_frames) noexcept {
     std::string out;

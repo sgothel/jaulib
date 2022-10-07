@@ -515,6 +515,22 @@ namespace jau {
     }
 
     /**
+     * Returns the demangled given mangled_name if successful,
+     * otherwise the mangled_name.
+     *
+     * Implementation utilizes the [cross-vendor C++ ABI abi::__cxa_demangle()](https://gcc.gnu.org/onlinedocs/libstdc++/libstdc++-html-USERS-4.3/a01696.html)
+     * as supported at least on on `gcc` and `clang`.
+     *
+     * May be used to demangle the result of jau::type_name() or jau::type_info::name() if jau::type_info::rtti_available == true,
+     * i.e. RTTI typeif(T) symbols are being used.
+     *
+     * See also [gcc libstdc++ FAQ, Chapter 28](https://gcc.gnu.org/onlinedocs/libstdc++/manual/ext_demangling.html).
+     *
+     * @param mangled_name mangled name
+     */
+    std::string demangle_name(const char* mangled_name) noexcept;
+
+    /**
     // *************************************************
     // *************************************************
     // *************************************************
