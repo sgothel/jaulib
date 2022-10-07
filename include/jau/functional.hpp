@@ -32,7 +32,6 @@
 #include <cstdint>
 #include <type_traits>
 #include <functional>
-#include <typeindex>
 
 #include <jau/basic_types.hpp>
 #include <jau/cpp_lang_util.hpp>
@@ -46,7 +45,7 @@ namespace jau {
      * ### Function Overview
      * Similar to std::function, [jau::function<R(A...)>](@ref function_def) stores any callable target function
      * solely described by its return type `R` and arguments types `A...` from any source,
-     * e.g. free functions, capturing and non-capturing lambda function, member functions, etc.
+     * e.g. free functions, capturing and non-capturing lambda function, member functions,
      *
      * [jau::function<R(A...)>](@ref function_def) supports equality operations for all func::target_t source types,
      * allowing to manage container of [jau::function](@ref function_def)s.
@@ -63,8 +62,7 @@ namespace jau {
      * - supports capturing lambda functions
      *   - See [limitations on their equality operator w/o RTTI on `gcc`](@ref function_limitations).
      * - most operations are `noexcept`, except for the user given function invocation.
-     *
-     * Implementation utilizes a fast path target function [delegate](@ref delegate_class), see [func::target_t<R(A...)>::delegate_t:invoke()](@ref delegate_invoke).
+     * - exposes the target function signature jau::type_info via jau::function::signature()
      *
      * Instances of [jau::function](@ref function_def) can store, copy, and invoke any of its callable targets
      * - free functions
@@ -79,11 +77,11 @@ namespace jau {
      *   - see [limitations on their equality operator w/o RTTI on `gcc`](@ref function_limitations).
      * - lambda alike functions using a captured data type by reference
      *   - bind_capref()
-     *   - constructor [function(I* data_ptr, R(*func)(I*, A...), bool dataIsIdentity=true)](@ref function_ctor_capref)
+     *   - constructor [function(I* data_ptr, R(*func)(I*, A...))](@ref function_ctor_capref)
      * - lambda alike functions using a captured data type by value
      *   - bind_capval()
-     *   - constructor copy [function(const I& data, R(*func)(I&, A...), bool dataIsIdentity=true)](@ref function_ctor_capval_copy)
-     *   - constructor move [function(I&& data, R(*func)(I&, A...), bool dataIsIdentity=true)](@ref function_ctor_capval_move)
+     *   - constructor copy [function(const I& data, R(*func)(I&, A...))](@ref function_ctor_capval_copy)
+     *   - constructor move [function(I&& data, R(*func)(I&, A...))](@ref function_ctor_capval_move)
      * - std::function
      *   - bind_std()
      *   - constructor [function(uint64_t id, std::function<R(A...)> func)](@ref function_ctor_std)
@@ -182,7 +180,7 @@ namespace jau {
      *   typedef bool(*cfunc)(big_data*, int); // to force non-capturing lambda into a free function template type deduction
      *   ```
      *
-     *   - Constructor [function(I* data_ptr, R(*func)(I*, A...), bool dataIsIdentity=true)](@ref function_ctor_capref)
+     *   - Constructor [function(I* data_ptr, R(*func)(I*, A...))](@ref function_ctor_capref)
      *   ```
      *   function<int(int)> func(&data,
      *       (cfunc) ( [](big_data* data, int v) -> bool {
@@ -191,7 +189,7 @@ namespace jau {
      *             } ) );
      *   ```
      *
-     *   - Bind `jau::function<R(A...)> jau::bind_capref(I* data_ptr, R(*func)(I*, A...), bool dataIsIdentity)`
+     *   - Bind `jau::function<R(A...)> jau::bind_capref(I* data_ptr, R(*func)(I*, A...))`
      *   ```
      *   jau::function<bool(int)> func = jau::bind_capref(&data,
      *       (cfunc) ( [](big_data* data, int v) -> bool {
@@ -201,10 +199,10 @@ namespace jau {
      *   ```
      *
      * - Lambda alike capture by copy of value via constructor and jau::bind_capval()
-     *   - Constructor copy [function(const I& data, R(*func)(I&, A...), bool dataIsIdentity=true)](@ref function_ctor_capval_copy)
-     *   - Constructor move [function(I&& data, R(*func)(I&, A...), bool dataIsIdentity=true)](@ref function_ctor_capval_move)
-     *   - Bind copy `jau::function<R(A...)> jau::bind_capval(const I& data, R(*func)(I&, A...), bool dataIsIdentity)`
-     *   - Bind move `jau::function<R(A...)> jau::bind_capval(I&& data, R(*func)(I&, A...), bool dataIsIdentity)` <br />
+     *   - Constructor copy [function(const I& data, R(*func)(I&, A...))](@ref function_ctor_capval_copy)
+     *   - Constructor move [function(I&& data, R(*func)(I&, A...))](@ref function_ctor_capval_move)
+     *   - Bind copy `jau::function<R(A...)> jau::bind_capval(const I& data, R(*func)(I&, A...))`
+     *   - Bind move `jau::function<R(A...)> jau::bind_capval(I&& data, R(*func)(I&, A...))` <br />
      *   See example of *Capture by reference to value* above.
      *
      * - std::function function via [constructor](@ref function_ctor_std) and jau::bind_std()
@@ -227,28 +225,15 @@ namespace jau {
      * @anchor function_limitations
      * #### Function Limitations
      *
-     * ##### Equality operation on lambda function without RTTI
-     * Equality operator on a [jau::function<R(A...)>](@ref function_def) instance delegates
-     * to its shared func::target_t. <br />
-     * This removes the lambda function's type when invoking the polymorphic operator. <br />
-     * Hence `decltype(lambda_instance)` is to no use from within the func::lambda_target_t's equality operator.
+     * ##### Non unique lambda type names without RTTI using `gcc` or non `clang` compiler
      *
-     * Implementation relies on the stored type information at func::lambda_target_t construction
-     * where the lambda `decltype(T)` is available.
+     * Due to [limitations of jau::make_ctti<R, L, A...>()](@ref ctti_name_lambda_limitations),
+     * *not using RTTI on `gcc` or non `clang` compiler* will *erroneously mistake* different lambda
+     * *functions defined within one function and using same function prototype `R<A...>`* to be the same.
      *
-     * Due to the lack of standardized *Compile-Time Type Information (CTTI)*,
-     * we rely either on the *Runtime Type Information (RTTI)*, which works well on `clang` and `gcc` at least,
-     * or we have to utilize the non-standardized macro extensions
-     * - `__PRETTY_FUNCTION__`
-     *   - `clang` produces a unique tag using filename and line number, compatible.
-     *   - `gcc` produces a non-unique tag using the parent function of the lambda location and its too brief signature, not fully compatible.
-     * - `__FUNCSIG__`
-     *   - `msvc++` not tested
-     * - Any other compiler is not supported yet
+     * jau::type_info::limited_lambda_id will expose the potential limitation.
      *
-     * Due to these restrictions, *not using RTTI on `gcc`* will *erroneously mistake* two different lambda
-     * *functions defined within one function* to be the same.
-     *
+     * See [CTTI lambda name limitations](@ref ctti_name_lambda_limitations) and [limitations of jau::type_info](@ref type_info_limitations).
      *
      * #### C++11 Capturing Lambda Restrictions using std::function
      * A capturing lambda in C++11 produces decoration code accessing the captured elements,<br />
@@ -287,9 +272,9 @@ namespace jau {
          * func::target_type identifier for specializations of func::target_t
          * used by jau::function<R(A...)>::type().
          *
-         * @see @ref function_overview "Function Overview" etc.
+         * @see @ref function_overview "Function Overview"
          */
-        enum class target_type : int {
+        enum class target_type : uint32_t {
             /** Denotes a func::null_target_t */
             null = 0,
             /** Denotes a func::member_target_t */
@@ -305,62 +290,22 @@ namespace jau {
             /** Denotes a func::std_target_t */
             std = 6
         };
-        constexpr int number(const target_type rhs) noexcept {
-            return static_cast<int>(rhs);
-        }
 
         /**
          * func::target_t pure-virtual interface for [jau::function](@ref function_def).
          *
-         * Implementation utilizes a fast path target function [delegate](@ref delegate_class), see [func::target_t<R(A...)>::delegate_t:invoke()](@ref delegate_invoke).
-         *
          * @tparam R function return type
          * @tparam A function arguments
-         * @see @ref function_overview "Function Overview" etc.
+         * @see @ref function_overview "Function Overview"
          */
         template<typename R, typename... A>
         class target_t {
-            public:
-                typedef R(*invocation_t)(void* base, A... args);
-
-                /**
-                 * @anchor delegate_class
-                 * Delegated target function details from specialization, allowing a fast path target function invocation, see [invoke()](@ref delegate_invoke).
-                 */
-                class delegate_t final {
-                    private:
-                        /** Delegated specialization base pointer. */
-                        void* base;
-                        /** Delegated specialization callback. */
-                        invocation_t cb;
-
-                    public:
-                        delegate_t(void* base_, invocation_t cb_) noexcept
-                        : base(base_), cb(cb_) {}
-
-                        /**
-                         * \brief Delegated fast path target function invocation.
-                         *
-                         * @anchor delegate_invoke Fast path target function invocation using delegated artifacts
-                         * from the specialized instance allowing to
-                         * - bypass the virtual function table
-                         * - hence allowing constexpr inline here and at function<R(A...)> caller
-                         *
-                         * @param args target function arguments
-                         * @return target function result
-                         */
-                        constexpr R invoke(A... args) const {
-                            return cb(base, args...);
-                        }
-                };
-
             private:
-                /** Delegated details from specialization. */
-                delegate_t ddetail;
+                target_type ttype;
 
             protected:
-                target_t(delegate_t ddetail_) noexcept
-                : ddetail(ddetail_) {}
+                target_t(target_type ttype_) noexcept
+                : ttype(ttype_) {}
 
             public:
                 virtual ~target_t() noexcept {}
@@ -371,29 +316,10 @@ namespace jau {
                 target_t& operator=(target_t &&o) noexcept = default;
 
                 /** Return the func::target_type of this invocation function wrapper */
-                virtual target_type type() const noexcept = 0;
+                constexpr target_type type() const noexcept { return ttype; }
 
-                /** Returns if this this invocation function wrapper's is of jau::func::target_type::null  */
-                virtual bool is_null() const noexcept = 0;
-
-                virtual target_t<R, A...> * clone() const noexcept = 0;
-
-                /** Return pointer to delegated details from specialization. */
-                constexpr delegate_t& delegate() noexcept { return ddetail; }
-
+                virtual R operator()(A... args) = 0;
                 virtual bool operator==(const target_t<R, A...>& rhs) const noexcept = 0;
-
-                bool operator!=(const target_t<R, A...>& rhs) const noexcept {
-                    return !( *this == rhs );
-                }
-
-                virtual std::string toString() const = 0;
-
-                /** Net size of this target_t instance's function details. */
-                virtual size_t detail_size() const noexcept = 0;
-
-                /** Total size of this target_t instance. */
-                virtual size_t size() const noexcept = 0;
         };
 
         /**
@@ -405,42 +331,23 @@ namespace jau {
          *
          * @tparam R function return type
          * @tparam A function arguments
-         * @see @ref function_overview "Function Overview" etc.
+         * @see @ref function_overview "Function Overview"
          */
         template<typename R, typename... A>
         class null_target_t final : public target_t<R, A...> {
-            private:
-                typedef typename target_t<R, A...>::delegate_t delegate_t;
+            public:
+                null_target_t() noexcept
+                : target_t<R, A...>( target_type::null )
+                { }
 
-                constexpr static R invoke_impl(void* base, A... args) {
-                    (void)base;
+                R operator()(A... args) override {
                     (void)(... , args);
                     return R();
                 }
 
-            public:
-                null_target_t() noexcept
-                : target_t<R, A...>( delegate_t(static_cast<void*>(this), invoke_impl) )
-                { }
-
-                target_type type() const noexcept override { return target_type::null; }
-
-                bool is_null() const noexcept override { return true; }
-
-                target_t<R, A...> * clone() const noexcept override { return new null_target_t(); }
-
-                bool operator==(const target_t<R, A...>& rhs) const noexcept override
-                {
-                    return type() == rhs.type();
+                bool operator==(const target_t<R, A...>& rhs) const noexcept override {
+                    return target_t<R, A...>::type() == rhs.type();
                 }
-
-                std::string toString() const override {
-                    return "null(sz " + std::to_string(detail_size()) + "/" + std::to_string(size()) + ")";
-                }
-
-                size_t detail_size() const noexcept override { return 0; }
-
-                size_t size() const noexcept override { return sizeof(*this); }
         };
 
         /**
@@ -448,54 +355,44 @@ namespace jau {
          * identifiable as func::target_type::member via jau::function<R(A...)>::type().
          *
          * @tparam R function return type
-         * @tparam C class type holding the member-function
+         * @tparam C0 class type holding the member-function
+         * @tparam C1 class derived from C0 or C0 of this base-pointer used to invoke the member-function
          * @tparam A function arguments
-         * @see @ref function_overview "Function Overview" etc.
+         * @see @ref function_overview "Function Overview"
          */
-        template<typename R, typename C, typename... A>
+        template<typename R, typename C0, typename C1, typename... A>
         class member_target_t final : public target_t<R, A...> {
             private:
-                typedef typename target_t<R, A...>::delegate_t delegate_t;
-
-                C* base;
-                R(C::*member)(A...);
-
-                constexpr static R invoke_impl(void* vbase, A... args) {
-                    member_target_t<R, C, A...>* base = static_cast<member_target_t<R, C, A...>*>(vbase);
-                    return ((base->base)->*(base->member))(args...);
-                }
+                C1* base;
+                R(C0::*member)(A...);
 
             public:
-                member_target_t(C *_base, R(C::*_member)(A...)) noexcept
-                : target_t<R, A...>( delegate_t(static_cast<void*>(this), invoke_impl) ),
+                /**
+                 * Construct a target_t<R, A...> instance from given this base-pointer and member-function.
+                 *
+                 * This factory function is only enabled if C0 is base of C1.
+                 *
+                 * @param _base this base-pointer of class C1 derived from C0 or C0 used to invoke the member-function
+                 * @param _member member-function of class C0
+                 * @return target_t<R, A...> instance holding the target-function details.
+                 */
+                member_target_t(C1 *_base, R(C0::*_member)(A...),
+                                std::enable_if_t<std::is_base_of_v<C0, C1>, bool> = true) noexcept
+                : target_t<R, A...>( target_type::member ),
                   base(_base), member(_member) { }
 
-                target_type type() const noexcept override { return target_type::member; }
-
-                bool is_null() const noexcept override { return false; }
-
-                target_t<R, A...> * clone() const noexcept override { return new member_target_t(*this); }
-
-                bool operator==(const target_t<R, A...>& rhs) const noexcept override
-                {
-                    if( &rhs == this ) {
-                        return true;
-                    }
-                    if( type() != rhs.type() ) {
-                        return false;
-                    }
-                    const member_target_t<R, C, A...> * prhs = static_cast<const member_target_t<R, C, A...>*>(&rhs);
-                    return base == prhs->base && member == prhs->member;
+                R operator()(A... args) override {
+                    return (base->*member)(args...);
                 }
 
-                std::string toString() const override {
-                    // hack to convert member pointer to void *: '*((void**)&member)'
-                    return "member("+to_hexstring((uint64_t)base)+"->"+to_hexstring( *((void**)&member) ) + ", sz "+std::to_string(detail_size())+"/"+std::to_string(size())+")";
+                bool operator==(const target_t<R, A...>& rhs) const noexcept override {
+                    const member_target_t<R, C0, C1, A...>* prhs = static_cast<const member_target_t<R, C0, C1, A...>*>(&rhs);
+                    return this == prhs ||
+                           ( target_t<R, A...>::type() == rhs.type() &&
+                             base == prhs->base &&
+                             member == prhs->member
+                           );
                 }
-
-                size_t detail_size() const noexcept override { return sizeof(base)+sizeof(member); }
-
-                size_t size() const noexcept override { return sizeof(*this); }
         };
 
         /**
@@ -504,50 +401,29 @@ namespace jau {
          *
          * @tparam R function return type
          * @tparam A function arguments
-         * @see @ref function_overview "Function Overview" etc.
+         * @see @ref function_overview "Function Overview"
          */
         template<typename R, typename... A>
         class free_target_t final : public target_t<R, A...> {
             private:
-                typedef typename target_t<R, A...>::delegate_t delegate_t;
-
                 R(*function)(A...);
-
-                constexpr static R invoke_impl(void* vbase, A... args) {
-                    free_target_t<R, A...>* base = static_cast<free_target_t<R, A...>*>(vbase);
-                    return (*base->function)(args...);
-                }
 
             public:
                 free_target_t(R(*_function)(A...)) noexcept
-                : target_t<R, A...>( delegate_t(static_cast<void*>(this), invoke_impl) ),
+                : target_t<R, A...>( target_type::free ),
                   function(_function) { }
 
-                target_type type() const noexcept override { return target_type::free; }
-                bool is_null() const noexcept override { return false; }
-
-                target_t<R, A...> * clone() const noexcept override { return new free_target_t(*this); }
-
-                bool operator==(const target_t<R, A...>& rhs) const noexcept override
-                {
-                    if( &rhs == this ) {
-                        return true;
-                    }
-                    if( type() != rhs.type() ) {
-                        return false;
-                    }
-                    const free_target_t<R, A...> * prhs = static_cast<const free_target_t<R, A...>*>(&rhs);
-                    return function == prhs->function;
+                R operator()(A... args) override {
+                    return (*function)(args...);
                 }
 
-                std::string toString() const override {
-                    // hack to convert function pointer to void *: '*((void**)&function)'
-                    return "free("+to_hexstring( *( (void**) &function ) )  + ", sz "+std::to_string(detail_size())+"/"+std::to_string(size())+")";
+                bool operator==(const target_t<R, A...>& rhs) const noexcept override {
+                    const free_target_t<R, A...>* prhs = static_cast<const free_target_t<R, A...>*>(&rhs);
+                    return this == prhs ||
+                           ( target_t<R, A...>::type() == rhs.type() &&
+                             function == prhs->function
+                           );
                 }
-
-                size_t detail_size() const noexcept override { return sizeof(function); }
-
-                size_t size() const noexcept override { return sizeof(*this); }
         };
 
         /**
@@ -557,75 +433,36 @@ namespace jau {
          * @tparam R function return type
          * @tparam L typename holding the lambda closure
          * @tparam A function arguments
-         * @see @ref function_overview "Function Overview" etc.
+         * @see @ref function_overview "Function Overview"
          */
         template<typename R, typename L, typename...A>
         class lambda_target_t final : public target_t<R, A...>
         {
             private:
-                typedef typename target_t<R, A...>::delegate_t delegate_t;
+                jau::type_info sig;
+                L function;
 
-                // No static template field to avoid error: self-comparison always evaluates to false [-Werror=tautological-compare]
-                // We assume runtime lifecycle of typeid(L).name()
-                const char* funcsig;
-                size_t hash_value;
-                L function; // intentionally last due to pot invalid cast
-
-                constexpr static R invoke_impl(void* vbase, A... args) {
-                    lambda_target_t<R, L, A...>* base = static_cast<lambda_target_t<R, L, A...>*>(vbase);
-                    return (base->function)(args...);
-                }
+                constexpr size_t detail_size() const noexcept { return sizeof(function); }
 
             public:
-                typedef L closure_t;
-
                 lambda_target_t(L function_) noexcept
-                : target_t<R, A...>( delegate_t(static_cast<void*>(this), invoke_impl) ),
-                  function(function_)
-                {
-#if defined(__cxx_rtti_available__)
-                  funcsig = typeid(L).name();
-#else
-                  funcsig = JAU_PRETTY_FUNCTION; // jau::pretty_function<L>();
-#endif
-                  hash_value = std::hash<std::string_view>{}(std::string_view(funcsig));
+                : target_t<R, A...>( target_type::lambda ),
+                  sig( jau::make_ctti<R, L, A...>() ), function(function_)
+                { }
+
+                R operator()(A... args) override {
+                    return function(args...);
                 }
 
-                target_type type() const noexcept override { return target_type::lambda; }
-                bool is_null() const noexcept override { return false; }
-
-                target_t<R, A...> * clone() const noexcept override { return new lambda_target_t(*this); }
-
-                bool operator==(const target_t<R, A...>& rhs) const noexcept override
-                {
-                    if( &rhs == this ) {
-                        return true;
-                    }
-                    if( type() != rhs.type() ) {
-                        return false;
-                    }
-                    const lambda_target_t<R, L, A...> * prhs = static_cast<const lambda_target_t<R, L, A...>*>(&rhs);
-                    // Note: Potential invalid cast due to different `L` type of rhs renders decltype(prhs->function) useless
-                    if( detail_size() != prhs->detail_size() ||  // fast: size first
-                        hash_value != prhs->hash_value ||        // fast: hash value of signature
-                        funcsig != prhs->funcsig                 // slower: signature itself, potential hash collision
-                      )
-                    {
-                        return false;
-                    }
-                    // finally compare the anonymous data chunk of the lambda
-                    const void *d1 = (void*)&function;
-                    const void *d2 = (void*)&prhs->function;
-                    return 0 == ::memcmp(d1, d2, sizeof(function));
+                bool operator==(const target_t<R, A...>& rhs) const noexcept override {
+                    const lambda_target_t<R, L, A...>* prhs = static_cast<const lambda_target_t<R, L, A...>*>(&rhs);
+                    return this == prhs ||
+                           ( target_t<R, A...>::type() == rhs.type() &&
+                             detail_size() == prhs->detail_size() &&                                     // fast:  wrong size -> false, otherwise ...
+                             sig == prhs->sig &&                                                         // mixed: wrong jau::type_info -> false, otherwise ...
+                             0 == ::memcmp((void*)&function, (void*)&prhs->function, sizeof(function))   // slow:  compare the anonymous data chunk of the lambda
+                           );
                 }
-
-                std::string toString() const override {
-                    return "lambda(sz "+std::to_string(detail_size())+"/"+std::to_string(size())+", sig "+std::string(funcsig)+", hash "+to_hexstring(hash_value)+")";
-                }
-
-                size_t detail_size() const noexcept override { return sizeof(function); }
-
-                size_t size() const noexcept override { return sizeof(*this); }
         };
 
         /**
@@ -635,58 +472,37 @@ namespace jau {
          * @tparam R function return type
          * @tparam I typename holding the captured data used by the function
          * @tparam A function arguments
-         * @see @ref function_overview "Function Overview" etc.
+         * @see @ref function_overview "Function Overview"
          */
         template<typename R, typename I, typename... A>
         class capval_target_t final : public target_t<R, A...> {
             private:
-                typedef typename target_t<R, A...>::delegate_t delegate_t;
-
-                I data;
                 R(*function)(I&, A...);
-                bool dataIsIdentity;
-
-                constexpr static R invoke_impl(void* vbase, A... args) {
-                    capval_target_t<R, I, A...>* base = static_cast<capval_target_t<R, I, A...>*>(vbase);
-                    return (*base->function)(base->data, args...);
-                }
+                I data;
 
             public:
                 /** Utilizes copy-ctor from 'const I& _data' */
-                capval_target_t(const I& _data, R(*_function)(I&, A...), bool dataIsIdentity_) noexcept
-                : target_t<R, A...>( delegate_t(static_cast<void*>(this), invoke_impl) ),
-                  data(_data), function(_function), dataIsIdentity(dataIsIdentity_) { }
+                capval_target_t(const I& _data, R(*_function)(I&, A...)) noexcept
+                : target_t<R, A...>( target_type::capval ),
+                  function(_function), data(_data) { }
 
                 /** Utilizes move-ctor from moved 'I&& _data' */
-                capval_target_t(I&& _data, R(*_function)(I&, A...), bool dataIsIdentity_) noexcept
-                : target_t<R, A...>( delegate_t(static_cast<void*>(this), invoke_impl) ),
-                  data(std::move(_data)), function(_function), dataIsIdentity(dataIsIdentity_) { }
+                capval_target_t(I&& _data, R(*_function)(I&, A...)) noexcept
+                : target_t<R, A...>( target_type::capval ),
+                  function(_function), data(std::move(_data)) { }
 
-                target_type type() const noexcept override { return target_type::capval; }
-                bool is_null() const noexcept override { return false; }
-
-                target_t<R, A...> * clone() const noexcept override { return new capval_target_t(*this); }
-
-                bool operator==(const target_t<R, A...>& rhs) const noexcept override
-                {
-                    if( &rhs == this ) {
-                        return true;
-                    }
-                    if( type() != rhs.type() ) {
-                        return false;
-                    }
-                    const capval_target_t<R, I, A...> * prhs = static_cast<const capval_target_t<R, I, A...>*>(&rhs);
-                    return dataIsIdentity == prhs->dataIsIdentity && function == prhs->function && ( !dataIsIdentity || data == prhs->data );
+                R operator()(A... args) override {
+                    return (*function)(data, args...);
                 }
 
-                std::string toString() const override {
-                    // hack to convert function pointer to void *: '*((void**)&function)'
-                    return "capval("+to_hexstring( *((void**)&function) ) + ", sz " +std::to_string(detail_size())+"/"+std::to_string(size())+")";
+                bool operator==(const target_t<R, A...>& rhs) const noexcept override {
+                    const capval_target_t<R, I, A...>* prhs = static_cast<const capval_target_t<R, I, A...>*>(&rhs);
+                    return this == prhs ||
+                           ( target_t<R, A...>::type() == rhs.type() &&
+                             function == prhs->function &&
+                             data == prhs->data
+                           );
                 }
-
-                size_t detail_size() const noexcept override { return sizeof(data)+sizeof(function)+sizeof(dataIsIdentity); }
-
-                size_t size() const noexcept override { return sizeof(*this); }
         };
 
         /**
@@ -696,52 +512,31 @@ namespace jau {
          * @tparam R function return type
          * @tparam I typename holding the captured data used by the function
          * @tparam A function arguments
-         * @see @ref function_overview "Function Overview" etc.
+         * @see @ref function_overview "Function Overview"
          */
         template<typename R, typename I, typename... A>
         class capref_target_t final : public target_t<R, A...> {
             private:
-                typedef typename target_t<R, A...>::delegate_t delegate_t;
-
-                I* data_ptr;
                 R(*function)(I*, A...);
-                bool dataIsIdentity;
-
-                constexpr static R invoke_impl(void* vbase, A... args) {
-                    capref_target_t<R, I, A...>* base = static_cast<capref_target_t<R, I, A...>*>(vbase);
-                    return (*base->function)(base->data_ptr, args...);
-                }
+                I* data_ptr;
 
             public:
-                capref_target_t(I* _data_ptr, R(*_function)(I*, A...), bool dataIsIdentity_) noexcept
-                : target_t<R, A...>( delegate_t(static_cast<void*>(this), invoke_impl) ),
-                  data_ptr(_data_ptr), function(_function), dataIsIdentity(dataIsIdentity_) { }
+                capref_target_t(I* _data_ptr, R(*_function)(I*, A...)) noexcept
+                : target_t<R, A...>( target_type::capref ),
+                  function(_function), data_ptr(_data_ptr) { }
 
-                target_type type() const noexcept override { return target_type::capref; }
-                bool is_null() const noexcept override { return false; }
-
-                target_t<R, A...> * clone() const noexcept override { return new capref_target_t(*this); }
-
-                bool operator==(const target_t<R, A...>& rhs) const noexcept override
-                {
-                    if( &rhs == this ) {
-                        return true;
-                    }
-                    if( type() != rhs.type() ) {
-                        return false;
-                    }
-                    const capref_target_t<R, I, A...> * prhs = static_cast<const capref_target_t<R, I, A...>*>(&rhs);
-                    return dataIsIdentity == prhs->dataIsIdentity && function == prhs->function && ( !dataIsIdentity || data_ptr == prhs->data_ptr );
+                R operator()(A... args) override {
+                    return (*function)(data_ptr, args...);
                 }
 
-                std::string toString() const override {
-                    // hack to convert function pointer to void *: '*((void**)&function)'
-                    return "capref("+to_hexstring( *((void**)&function) ) + ", sz "+std::to_string(detail_size())+"/"+std::to_string(size())+")";
+                bool operator==(const target_t<R, A...>& rhs) const noexcept override {
+                    const capref_target_t<R, I, A...>* prhs = static_cast<const capref_target_t<R, I, A...>*>(&rhs);
+                    return this == prhs ||
+                           ( target_t<R, A...>::type() == rhs.type() &&
+                             function == prhs->function &&
+                             data_ptr == prhs->data_ptr
+                           );
                 }
-
-                size_t detail_size() const noexcept override { return sizeof(data_ptr)+sizeof(function)+sizeof(dataIsIdentity); }
-
-                size_t size() const noexcept override { return sizeof(*this); }
         };
 
         /**
@@ -753,65 +548,47 @@ namespace jau {
          *
          * @tparam R function return type
          * @tparam A function arguments
-         * @see @ref function_overview "Function Overview" etc.
+         * @see @ref function_overview "Function Overview"
          */
         template<typename R, typename... A>
         class std_target_t : public target_t<R, A...> {
             private:
-                typedef typename target_t<R, A...>::delegate_t delegate_t;
-
                 uint64_t id;
                 std::function<R(A...)> function;
 
-                constexpr static R invoke_impl(void* vbase, A... args) {
-                    std_target_t<R, A...>* base = static_cast<std_target_t<R, A...>*>(vbase);
-                    return (base->function)(args...);
-                }
+                constexpr size_t detail_size() const noexcept { return sizeof(id)+sizeof(function); }
 
             public:
                 std_target_t(uint64_t _id, std::function<R(A...)> _function) noexcept
-                : target_t<R, A...>( delegate_t(static_cast<void*>(this), invoke_impl) ),
+                : target_t<R, A...>( target_type::std ),
                   id(_id), function(_function) { }
 
                 std_target_t(uint64_t _id) noexcept
-                : target_t<R, A...>( delegate_t(static_cast<void*>(this), invoke_impl) ),
+                : target_t<R, A...>( target_type::std ),
                   id(_id), function() { }
 
-                target_type type() const noexcept override { return target_type::std; }
-                bool is_null() const noexcept override { return false; }
-
-                target_t<R, A...> * clone() const noexcept override { return new std_target_t(*this); }
-
-                bool operator==(const target_t<R, A...>& rhs) const noexcept override
-                {
-                    if( &rhs == this ) {
-                        return true;
-                    }
-                    if( type() != rhs.type() ) {
-                        return false;
-                    }
-                    const std_target_t<R, A...> * prhs = static_cast<const std_target_t<R, A...>*>(&rhs);
-#if 1
-                    return id == prhs->id;
-#else
-                    const void *d1 = (void*)&function;
-                    const void *d2 = (void*)&prhs->function;
-                    return 0 == ::memcmp(d1, d2, sizeof(function));
-#endif
+                R operator()(A... args) override {
+                    return function(args...);
                 }
 
-                std::string toString() const override {
-                    return "std("+to_hexstring( id ) + ", sz "+std::to_string(detail_size())+"/"+std::to_string(size())+")";
+                bool operator==(const target_t<R, A...>& rhs) const noexcept override {
+                    const std_target_t<R, A...>* prhs = static_cast<const std_target_t<R, A...>*>(&rhs);
+                    return this == prhs ||
+                           ( target_t<R, A...>::type() == rhs.type() &&
+                             id == prhs->id &&
+                             detail_size() && prhs->detail_size()
+                           );
                 }
-
-                size_t detail_size() const noexcept override { return sizeof(id)+sizeof(function); }
-
-                size_t size() const noexcept override { return sizeof(*this); }
         };
 
         /**@}*/
 
     } /* namespace func */
+
+     constexpr uint32_t number(const func::target_type rhs) noexcept {
+         return static_cast<uint32_t>(rhs);
+     }
+     std::string to_string(const func::target_type v) noexcept;
 
     /**
      * Class template [jau::function](@ref function_def) is a general-purpose polymorphic function wrapper.
@@ -833,18 +610,18 @@ namespace jau {
      *
      * @tparam R function return type
      * @tparam A function arguments
-     * @see @ref function_overview "Function Overview" etc.
+     * @see @ref function_overview "Function Overview"
      * @see @ref function_usage "Function Usage"
      */
     template<typename R, typename... A>
-    class function<R(A...)> {
+    class function<R(A...)> final {
         public:
             /** The target function type, i.e. func::target_t<R, A...> */
             typedef func::target_t<R, A...> target_type;
 
         private:
             std::shared_ptr<target_type> target_func;
-            typename func::target_t<R, A...>::delegate_t* ddetail;
+            size_t target_func_size;
 
         public:
             /** The target function return type R */
@@ -855,12 +632,12 @@ namespace jau {
              *
              * @anchor function_ctor_def
              * Constructs an instance with a null target function.
-             * @see @ref function_overview "function Overview" etc.
+             * @see @ref function_overview "function Overview"
              * @see @ref function_usage "function Usage"
              */
             function() noexcept
             : target_func( std::make_shared<func::null_target_t<R, A...>>() ),
-              ddetail( &target_func->delegate() )
+              target_func_size( sizeof(func::null_target_t<R, A...>))
             { }
 
             /**
@@ -868,12 +645,12 @@ namespace jau {
              *
              * @anchor function_ctor_nullptr
              * Constructs an instance with a null target function.
-             * @see @ref function_overview "function Overview" etc.
+             * @see @ref function_overview "function Overview"
              * @see @ref function_usage "function Usage"
              */
             function(std::nullptr_t ) noexcept
             : target_func( std::make_shared<func::null_target_t<R, A...>>() ),
-              ddetail( &target_func->delegate() )
+              target_func_size( sizeof(func::null_target_t<R, A...>))
             { }
 
             /**
@@ -881,25 +658,25 @@ namespace jau {
              *
              * @anchor function_ctor_target_type
              * Constructs an instance with the given shared target function pointer.
-             * @see @ref function_overview "function Overview" etc.
+             * @see @ref function_overview "function Overview"
              * @see @ref function_usage "function Usage"
              */
-            explicit function(const void* dummy, std::shared_ptr<target_type> _funcPtr) noexcept
+            explicit function(std::shared_ptr<target_type> _funcPtr, size_t asize_) noexcept
             : target_func( _funcPtr ),
-              ddetail( &target_func->delegate() )
-            { (void)dummy; }
+              target_func_size( asize_ )
+            { }
 
             /**
              * \brief Free function constructor
              *
              * @anchor function_ctor_free
              * Constructs an instance by taking a free target function, which may also be a non-capturing lambda if explicitly bind_free().
-             * @see @ref function_overview "function Overview" etc.
+             * @see @ref function_overview "function Overview"
              * @see @ref function_usage "function Usage"
              */
             function(R(*func)(A...)) noexcept
             : target_func( std::make_shared<func::free_target_t<R, A...>>(func) ),
-              ddetail( &target_func->delegate() )
+              target_func_size( sizeof(func::free_target_t<R, A...>))
             { }
 
             /**
@@ -909,7 +686,7 @@ namespace jau {
              * Constructs an instance by taking a lambda function.
              * @tparam L typename holding the lambda closure
              * @param func the lambda reference
-             * @see @ref function_overview "function Overview" etc.
+             * @see @ref function_overview "function Overview"
              * @see @ref function_usage "function Usage"
              */
             template<typename L,
@@ -920,7 +697,7 @@ namespace jau {
                      , bool> = true>
             function(L func) noexcept
             : target_func( std::make_shared<func::lambda_target_t<R, L, A...>>(func) ),
-              ddetail( &target_func->delegate() )
+              target_func_size( sizeof(func::lambda_target_t<R, L, A...>))
             { }
 
             /**
@@ -928,16 +705,17 @@ namespace jau {
              *
              * \anchor function_ctor_member
              * Constructs an instance by taking a member target function.
-             * @tparam C typename holding the class type of the member function
+             * @tparam C0 class type holding the member-function
+             * @tparam C1 class derived from C0 or C0 of this base-pointer used to invoke the member-function
              * @param base pointer to the class instance of the member function
              * @param mfunc member function of class
-             * @see @ref function_overview "function Overview" etc.
+             * @see @ref function_overview "function Overview"
              * @see @ref function_usage "function Usage"
              */
-            template<typename C>
-            function(C *base, R(C::*mfunc)(A...)) noexcept
-            : target_func( std::make_shared<func::member_target_t<R, C, A...>>(base, mfunc) ),
-              ddetail( &target_func->delegate() )
+            template<typename C0, typename C1>
+            function(C1 *base, R(C0::*mfunc)(A...)) noexcept
+            : target_func( std::make_shared<func::member_target_t<R, C0, C1, A...>>(base, mfunc) ),
+              target_func_size( sizeof(func::member_target_t<R, C0, C1, A...>))
             { }
 
             /**
@@ -954,14 +732,13 @@ namespace jau {
              * @tparam I typename holding the captured data used by the function
              * @param data data type instance holding the captured data
              * @param func function with `R` return value and `A...` arguments.
-             * @param dataIsIdentity if true (default), equality requires equal data. Otherwise equality only compares the function pointer.
-             * @see @ref function_overview "function Overview" etc.
+             * @see @ref function_overview "function Overview"
              * @see @ref function_usage "function Usage"
              */
             template<typename I>
-            function(const I& data, R(*func)(I&, A...), bool dataIsIdentity=true) noexcept
-            : target_func( std::make_shared<func::capval_target_t<R, I, A...>>(data, func, dataIsIdentity) ),
-              ddetail( &target_func->delegate() )
+            function(const I& data, R(*func)(I&, A...)) noexcept
+            : target_func( std::make_shared<func::capval_target_t<R, I, A...>>(data, func) ),
+              target_func_size( sizeof(func::capval_target_t<R, I, A...>))
             { }
 
             /**
@@ -978,14 +755,13 @@ namespace jau {
              * @tparam I typename holding the captured data used by the function
              * @param data data type instance holding the captured data
              * @param func function with `R` return value and `A...` arguments.
-             * @param dataIsIdentity if true (default), equality requires equal data. Otherwise equality only compares the function pointer.
-             * @see @ref function_overview "function Overview" etc.
+             * @see @ref function_overview "function Overview"
              * @see @ref function_usage "function Usage"
              */
             template<typename I>
-            function(I&& data, R(*func)(I&, A...), bool dataIsIdentity=true) noexcept
-            : target_func( std::make_shared<func::capval_target_t<R, I, A...>>(std::move(data), func, dataIsIdentity) ),
-              ddetail( &target_func->delegate() )
+            function(I&& data, R(*func)(I&, A...)) noexcept
+            : target_func( std::make_shared<func::capval_target_t<R, I, A...>>(std::move(data), func) ),
+              target_func_size( sizeof(func::capval_target_t<R, I, A...>))
             { }
 
             /**
@@ -1000,14 +776,13 @@ namespace jau {
              * @tparam I typename holding the captured data used by the function
              * @param data_ptr data type reference to instance holding the captured data
              * @param func function with `R` return value and `A...` arguments.
-             * @param dataIsIdentity if true (default), equality requires same data_ptr. Otherwise equality only compares the function pointer.
-             * @see @ref function_overview "function Overview" etc.
+             * @see @ref function_overview "function Overview"
              * @see @ref function_usage "function Usage"
              */
             template<typename I>
-            function(I* data_ptr, R(*func)(I*, A...), bool dataIsIdentity=true) noexcept
-            : target_func( std::make_shared<func::capref_target_t<R, I, A...>>(data_ptr, func, dataIsIdentity) ),
-              ddetail( &target_func->delegate() )
+            function(I* data_ptr, R(*func)(I*, A...)) noexcept
+            : target_func( std::make_shared<func::capref_target_t<R, I, A...>>(data_ptr, func) ),
+              target_func_size( sizeof(func::capref_target_t<R, I, A...>))
             { }
 
             /**
@@ -1021,78 +796,129 @@ namespace jau {
              * to allow implementing the equality operator w/o RTTI, not supported by std::function.
              *
              * @param func free-function with `R` return value and `A...` arguments.
-             * @see @ref function_overview "function Overview" etc.
+             * @see @ref function_overview "function Overview"
              * @see @ref function_usage "function Usage"
              */
             function(uint64_t id, std::function<R(A...)> func) noexcept
             : target_func( std::make_shared<func::std_target_t<R, A...>>(id, func) ),
-              ddetail( &target_func->delegate() )
+              target_func_size( sizeof(func::std_target_t<R, A...>))
             { }
 
-            function(const function &o) noexcept
-            : target_func( o.target_func ),
-              ddetail( &target_func->delegate() )
-            { }
-
-            function(function &&o) noexcept
-            : target_func( std::move( o.target_func ) ),
-              ddetail( &target_func->delegate() )
-            { o.target_func = nullptr; }
-
-            function& operator=(const function &o) noexcept
-            {
-                target_func = o.target_func;
-                ddetail = &target_func->delegate();
-                return *this;
-            }
-
-            function& operator=(function &&o) noexcept
-            {
-                target_func = std::move(o.target_func);
-                ddetail = &target_func->delegate();
-                o.target_func = nullptr;
-                return *this;
-            }
+            function(const function &o) noexcept = default;
+            function(function &&o) noexcept = default;
+            function& operator=(const function &o) noexcept = default;
+            function& operator=(function &&o) noexcept = default;
 
             /** Return the jau::func::type of this instance */
-            func::target_type type() const noexcept { return target_func->type(); }
+            constexpr func::target_type type() const noexcept { return target_func->type(); }
 
             /** Returns true if this instance does not hold a callable target function, i.e. is of func::target_type::null.  */
-            bool is_null() const noexcept { return target_func->is_null(); }
+            constexpr bool is_null() const noexcept { return func::target_type::null == target_func->type(); }
 
             /** Returns true if this instance holds a callable target function, i.e. is not of func::target_type::null.  */
-            explicit operator bool() const noexcept { return !target_func->is_null(); }
+            explicit constexpr operator bool() const noexcept { return !is_null(); }
 
-            /** Returns the shared target function. */
-            std::shared_ptr<target_type> target() const noexcept { return target_func; }
+            /** Returns signature of this function prototype R(A...) w/o underlying target function details. */
+            std::string signature() const noexcept {
+                const char* s = jau::type_name<R(A...)>();
+                if constexpr ( jau::type_info::rtti_available ) {
+                    return jau::demangle_name( s );
+                } else {
+                    return std::string( s );
+                }
+            }
+
+            /** Returns the size of the target type  */
+            constexpr size_t target_size() const noexcept { return target_func_size; }
 
             std::string toString() const {
-                return "function[ "+target_func->toString()+", sz "+std::to_string(size())+" ]";
+                return "function<" + to_string( type() ) + ", " + signature() + ">( sz target_data " +
+                        std::to_string( target_func_size ) + " + shared_ptr " +
+                        std::to_string( sizeof( target_func ) ) + " + extra " +
+                        std::to_string( sizeof( target_func_size ) ) + " -> " +
+                        std::to_string( sizeof( *this ) + target_func_size ) + " ) ";
             }
-
-            /** Net size of this target_t instance's function details. */
-            size_t target_detail_size() const noexcept { return target_func->detail_size(); }
-
-            /** Total size of this target_t instance. */
-            size_t target_size() const noexcept { return target_func->size(); }
-
-            /** Total size of this instance, incl. shared target_t size. */
-            size_t size() const noexcept { return sizeof(*this) + target_func->size(); }
 
             constexpr R operator()(A... args) const {
-                return ddetail->invoke(args...);
+                return (*target_func)(args...);
             }
             constexpr R operator()(A... args) {
-                return ddetail->invoke(args...);
+                return (*target_func)(args...);
+            }
+
+            constexpr bool operator==(const function<R(A...)>& rhs) const noexcept {
+                return target_func->operator==(*rhs.target_func);
+            }
+            constexpr bool operator!=(const function<R(A...)>& rhs) const noexcept {
+                return !operator==(rhs);
             }
     };
 
-    template<typename R, typename... A>
-    bool operator==(const function<R(A...)>& lhs, const function<R(A...)>& rhs) noexcept
-    { return *lhs.target() == *rhs.target(); }
+    /**
+     * Equal operator using different jau::function<R(A...)> return and argument types for both arguments,
+     * always returns false.
+     * @tparam Rl left function return type
+     * @tparam Al left function arguments
+     * @tparam Fl left function Fl<Rl(<Al...)>
+     * @tparam Rr right function return type
+     * @tparam Ar right function arguments
+     * @tparam Fr right function Fr<Rr(<Ar...)>
+     * @param lhs left function Fl<Rl(<Al...)>
+     * @param rhs right function Fr<Rr(<Ar...)>
+     * @return false
+     * @see @ref function_overview "function Overview"
+     * @see @ref function_usage "function Usage"
+     */
+    template<typename Rl, typename... Al, template <typename...> class Fl = function,
+             typename Rr, typename... Ar, template <typename...> class Fr = function,
+             std::enable_if_t< !std::is_same_v< Fl<Rl(Al...)>, Fr<Rr(Ar...)> >
+             , bool> = true>
+    bool operator==(const function<Rl(Al...)>& lhs, const function<Rr(Ar...)>& rhs) noexcept
+    {
+        (void)lhs;
+        (void)rhs;
+        return false;
+    }
 
-    template<typename R, typename... A>
-    bool operator!=(const function<R(A...)>& lhs, const function<R(A...)>& rhs) noexcept
+    /**
+     * Equal operator using same jau::function<R(A...)> return and argument types for both arguments,
+     * returning actual result of equality operation.
+     * @tparam Rl left function return type
+     * @tparam Al left function arguments
+     * @tparam Fl left function Fl<Rl(<Al...)>
+     * @tparam Rr right function return type
+     * @tparam Ar right function arguments
+     * @tparam Fr right function Fr<Rr(<Ar...)>
+     * @param lhs left function Fl<Rl(<Al...)>
+     * @param rhs right function Fr<Rr(<Ar...)>
+     * @return equality result of same type functions
+     * @see @ref function_overview "function Overview"
+     * @see @ref function_usage "function Usage"
+     */
+    template<typename Rl, typename... Al, template <typename...> class Fl = function,
+             typename Rr, typename... Ar, template <typename...> class Fr = function,
+             std::enable_if_t< std::is_same_v< Fl<Rl(Al...)>, Fr<Rr(Ar...)> >
+             , bool> = true>
+    bool operator==(const function<Rl(Al...)>& lhs, const function<Rr(Ar...)>& rhs) noexcept
+    { return lhs.operator==( rhs ); }
+
+    /**
+     * Unequal operator using two jau::function<R(A...)> types for both arguments.
+     * @tparam Rl left function return type
+     * @tparam Al left function arguments
+     * @tparam Fl left function Fl<Rl(<Al...)>
+     * @tparam Rr right function return type
+     * @tparam Ar right function arguments
+     * @tparam Fr right function Fr<Rr(<Ar...)>
+     * @param lhs left function Fl<Rl(<Al...)>
+     * @param rhs right function Fr<Rr(<Ar...)>
+     * @return unequality result of same type functions
+     * @see @ref function_overview "function Overview"
+     * @see @ref function_usage "function Usage"
+     */
+    template<typename Rl, typename... Al, template <typename...> typename Fl = function,
+             typename Rr, typename... Ar, template <typename...> typename Fr = function>
+    bool operator!=(const function<Rl(Al...)>& lhs, const function<Rr(Ar...)>& rhs) noexcept
     { return !( lhs == rhs ); }
 
     /**
@@ -1100,38 +926,83 @@ namespace jau {
      * an anonymous function using func_member_targer_t.
      *
      * @tparam R function return type
-     * @tparam C class type holding the member-function
+     * @tparam C0 class type holding the member-function
+     * @tparam C1 class derived from C0 or C0 of this base-pointer used to invoke the member-function
      * @tparam A function arguments
      * @param base class instance `this` pointer
      * @param mfunc member-function with `R` return value and `A...` arguments.
      * @return anonymous function
      * @see @ref function_ctor_member "function constructor for member function"
-     * @see @ref function_overview "function Overview" etc.
+     * @see @ref function_overview "function Overview"
+     * @see @ref function_usage "function Usage"
+     */
+    template<typename R, typename C0, typename C1, typename... A>
+    inline jau::function<R(A...)>
+    bind_member(C1 *base, R(C0::*mfunc)(A...)) noexcept {
+        return function<R(A...)>( std::make_shared<func::member_target_t<R, C0, C1, A...>>(base, mfunc),
+                                  sizeof(func::member_target_t<R, C0, C1, A...>) );
+    }
+
+    /**
+     * Bind given class instance and non-void member function to
+     * an anonymous function using func_member_targer_t.
+     *
+     * @tparam R function return type
+     * @tparam C class type holding the member-function and of this base pointer
+     * @tparam A function arguments
+     * @param base class instance `this` pointer
+     * @param mfunc member-function with `R` return value and `A...` arguments.
+     * @return anonymous function
+     * @see @ref function_ctor_member "function constructor for member function"
+     * @see @ref function_overview "function Overview"
      * @see @ref function_usage "function Usage"
      */
     template<typename R, typename C, typename... A>
     inline jau::function<R(A...)>
     bind_member(C *base, R(C::*mfunc)(A...)) noexcept {
-        return function<R(A...)>( nullptr, std::make_shared<func::member_target_t<R, C, A...>>(base, mfunc) );
+        return function<R(A...)>( std::make_shared<func::member_target_t<R, C, C, A...>>(base, mfunc),
+                                  sizeof(func::member_target_t<R, C, C, A...>) );
     }
 
     /**
      * Bind given class instance and void member function to
      * an anonymous function using func_member_targer_t.
      *
-     * @tparam C class type holding the member-function
+     * @tparam C0 class type holding the member-function
+     * @tparam C1 class derived from C0 or C0 of this base-pointer used to invoke the member-function
      * @tparam A function arguments
      * @param base class instance `this` pointer
      * @param mfunc member-function with `A...` arguments.
      * @return anonymous function
      * @see @ref function_ctor_member "function constructor for member function"
-     * @see @ref function_overview "function Overview" etc.
+     * @see @ref function_overview "function Overview"
+     * @see @ref function_usage "function Usage"
+     */
+    template<typename C0, typename C1, typename... A>
+    inline jau::function<void(A...)>
+    bind_member(C1 *base, void(C0::*mfunc)(A...)) noexcept {
+        return function<void(A...)>( std::make_shared<func::member_target_t<void, C0, C1, A...>>(base, mfunc),
+                                     sizeof(func::member_target_t<void, C0, C1, A...>) );
+    }
+
+    /**
+     * Bind given class instance and void member function to
+     * an anonymous function using func_member_targer_t.
+     *
+     * @tparam C class type holding the member-function and of this base pointer
+     * @tparam A function arguments
+     * @param base class instance `this` pointer
+     * @param mfunc member-function with `A...` arguments.
+     * @return anonymous function
+     * @see @ref function_ctor_member "function constructor for member function"
+     * @see @ref function_overview "function Overview"
      * @see @ref function_usage "function Usage"
      */
     template<typename C, typename... A>
     inline jau::function<void(A...)>
     bind_member(C *base, void(C::*mfunc)(A...)) noexcept {
-        return function<void(A...)>( nullptr, std::make_shared<func::member_target_t<void, C, A...>>(base, mfunc) );
+        return function<void(A...)>( std::make_shared<func::member_target_t<void, C, C, A...>>(base, mfunc),
+                                     sizeof(func::member_target_t<void, C, C, A...>) );
     }
 
     /**
@@ -1143,13 +1014,14 @@ namespace jau {
      * @param func free-function with `R` return value and `A...` arguments.
      * @return anonymous function
      * @see @ref function_ctor_free "function constructor for free function"
-     * @see @ref function_overview "function Overview" etc.
+     * @see @ref function_overview "function Overview"
      * @see @ref function_usage "function Usage"
      */
     template<typename R, typename... A>
     inline jau::function<R(A...)>
     bind_free(R(*func)(A...)) noexcept {
-        return function<R(A...)>( nullptr, std::make_shared<func::free_target_t<R, A...>>(func) );
+        return function<R(A...)>( std::make_shared<func::free_target_t<R, A...>>(func),
+                                  sizeof(func::free_target_t<R, A...>) );
     }
 
     /**
@@ -1160,13 +1032,14 @@ namespace jau {
      * @param func free-function with `A...` arguments.
      * @return anonymous function
      * @see @ref function_ctor_free "function constructor for free function"
-     * @see @ref function_overview "function Overview" etc.
+     * @see @ref function_overview "function Overview"
      * @see @ref function_usage "function Usage"
      */
     template<typename... A>
     inline jau::function<void(A...)>
     bind_free(void(*func)(A...)) noexcept {
-        return function<void(A...)>( nullptr, std::make_shared<func::free_target_t<void, A...>>(func) );
+        return function<void(A...)>( std::make_shared<func::free_target_t<void, A...>>(func),
+                                     sizeof(func::free_target_t<void, A...>) );
     }
 
 #if 0
@@ -1182,13 +1055,14 @@ namespace jau {
      * @param func the lambda reference
      * @return anonymous function
      * @see @ref function_ctor_lambda "function constructor for lambda"
-     * @see @ref function_overview "function Overview" etc.
+     * @see @ref function_overview "function Overview"
      * @see @ref function_usage "function Usage"
      */
     template<typename R, typename L, typename... A>
     inline jau::function<R(A...)>
     bind_lambda(L func) noexcept {
-        return function<R(A...)>( nullptr, std::make_shared<func::lambda_target_t<R, L, A...>>(func) );
+        return function<R(A...)>( std::make_shared<func::lambda_target_t<R, L, A...>>(func),
+                                  sizeof(func::lambda_target_t<R, L, A...>) );
     }
 
     /**
@@ -1200,13 +1074,14 @@ namespace jau {
      * @param func the lambda reference
      * @return anonymous function
      * @see @ref function_ctor_lambda "function constructor for lambda"
-     * @see @ref function_overview "function Overview" etc.
+     * @see @ref function_overview "function Overview"
      * @see @ref function_usage "function Usage"
      */
     template<typename L, typename... A>
     inline jau::function<void(A...)>
     bind_lambda(L func) noexcept {
-        return function<void(A...)>( nullptr, std::make_shared<func::lambda_target_t<void, L, A...>>(func) );
+        return function<void(A...)>( std::make_shared<func::lambda_target_t<void, L, A...>>(func),
+                                     sizeof(func::lambda_target_t<void, L, A...>) );
     }
 #endif
 
@@ -1223,16 +1098,16 @@ namespace jau {
      * @tparam A function arguments
      * @param data data type instance holding the captured data
      * @param func function with `R` return value and `A...` arguments.
-     * @param dataIsIdentity if true (default), equality requires equal data. Otherwise equality only compares the function pointer.
      * @return anonymous function
      * @see @ref function_ctor_capval_copy "function constructor for copying capturing value"
-     * @see @ref function_overview "function Overview" etc.
+     * @see @ref function_overview "function Overview"
      * @see @ref function_usage "function Usage"
      */
     template<typename R, typename I, typename... A>
     inline jau::function<R(A...)>
-    bind_capval(const I& data, R(*func)(I&, A...), bool dataIsIdentity=true) noexcept {
-        return function<R(A...)>( nullptr, std::make_shared<func::capval_target_t<R, I, A...>>(data, func, dataIsIdentity) );
+    bind_capval(const I& data, R(*func)(I&, A...)) noexcept {
+        return function<R(A...)>( std::make_shared<func::capval_target_t<R, I, A...>>(data, func),
+                                  sizeof(func::capval_target_t<R, I, A...>) );
     }
 
     /**
@@ -1247,16 +1122,16 @@ namespace jau {
      * @tparam A function arguments
      * @param data data type instance holding the captured data
      * @param func function with `A...` arguments.
-     * @param dataIsIdentity if true (default), equality requires equal data. Otherwise equality only compares the function pointer.
      * @return anonymous function
      * @see @ref function_ctor_capval_copy "function constructor for copying capturing value"
-     * @see @ref function_overview "function Overview" etc.
+     * @see @ref function_overview "function Overview"
      * @see @ref function_usage "function Usage"
      */
     template<typename I, typename... A>
     inline jau::function<void(A...)>
-    bind_capval(const I& data, void(*func)(I&, A...), bool dataIsIdentity=true) noexcept {
-        return function<void(A...)>( nullptr, std::make_shared<func::capval_target_t<void, I, A...>>(data, func, dataIsIdentity) );
+    bind_capval(const I& data, void(*func)(I&, A...)) noexcept {
+        return function<void(A...)>( std::make_shared<func::capval_target_t<void, I, A...>>(data, func),
+                                     sizeof(func::capval_target_t<void, I, A...>) );
     }
 
     /**
@@ -1272,16 +1147,16 @@ namespace jau {
      * @tparam A function arguments
      * @param data data type instance holding the captured data
      * @param func function with `R` return value and `A...` arguments.
-     * @param dataIsIdentity if true (default), equality requires equal data. Otherwise equality only compares the function pointer.
      * @return anonymous function
      * @see @ref function_ctor_capval_move "function constructor for moving capturing value"
-     * @see @ref function_overview "function Overview" etc.
+     * @see @ref function_overview "function Overview"
      * @see @ref function_usage "function Usage"
      */
     template<typename R, typename I, typename... A>
     inline jau::function<R(A...)>
-    bind_capval(I&& data, R(*func)(I&, A...), bool dataIsIdentity=true) noexcept {
-        return function<R(A...)>( nullptr, std::make_shared<func::capval_target_t<R, I, A...>>(std::move(data), func, dataIsIdentity) );
+    bind_capval(I&& data, R(*func)(I&, A...)) noexcept {
+        return function<R(A...)>( std::make_shared<func::capval_target_t<R, I, A...>>(std::move(data), func),
+                                  sizeof(func::capval_target_t<R, I, A...>) );
     }
 
     /**
@@ -1296,16 +1171,16 @@ namespace jau {
      * @tparam A function arguments
      * @param data data type instance holding the captured data
      * @param func function with `A...` arguments.
-     * @param dataIsIdentity if true (default), equality requires equal data. Otherwise equality only compares the function pointer.
      * @return anonymous function
      * @see @ref function_ctor_capval_move "function constructor for moving capturing value"
-     * @see @ref function_overview "function Overview" etc.
+     * @see @ref function_overview "function Overview"
      * @see @ref function_usage "function Usage"
      */
     template<typename I, typename... A>
     inline jau::function<void(A...)>
-    bind_capval(I&& data, void(*func)(I&, A...), bool dataIsIdentity=true) noexcept {
-        return function<void(A...)>( nullptr, std::make_shared<func::capval_target_t<void, I, A...>>(std::move(data), func, dataIsIdentity) );
+    bind_capval(I&& data, void(*func)(I&, A...)) noexcept {
+        return function<void(A...)>( std::make_shared<func::capval_target_t<void, I, A...>>(std::move(data), func),
+                                     sizeof(func::capval_target_t<void, I, A...>) );
     }
 
     /**
@@ -1319,16 +1194,16 @@ namespace jau {
      * @tparam A function arguments
      * @param data_ptr data type reference to instance holding the captured data
      * @param func function with `R` return value and `A...` arguments.
-     * @param dataIsIdentity if true (default), equality requires same data_ptr. Otherwise equality only compares the function pointer.
      * @return anonymous function
      * @see @ref function_ctor_capref "function constructor for capturing reference"
-     * @see @ref function_overview "function Overview" etc.
+     * @see @ref function_overview "function Overview"
      * @see @ref function_usage "function Usage"
      */
     template<typename R, typename I, typename... A>
     inline jau::function<R(A...)>
-    bind_capref(I* data_ptr, R(*func)(I*, A...), bool dataIsIdentity=true) noexcept {
-        return function<R(A...)>( nullptr, std::make_shared<func::capref_target_t<R, I, A...>>(data_ptr, func, dataIsIdentity) );
+    bind_capref(I* data_ptr, R(*func)(I*, A...)) noexcept {
+        return function<R(A...)>( std::make_shared<func::capref_target_t<R, I, A...>>(data_ptr, func),
+                                  sizeof(func::capref_target_t<R, I, A...>) );
     }
 
     /**
@@ -1341,16 +1216,16 @@ namespace jau {
      * @tparam A function arguments
      * @param data_ptr data type reference to instance holding the captured data
      * @param func function with `A...` arguments.
-     * @param dataIsIdentity if true (default), equality requires same data_ptr. Otherwise equality only compares the function pointer.
      * @return anonymous function
      * @see @ref function_ctor_capref "function constructor for capturing reference"
-     * @see @ref function_overview "function Overview" etc.
+     * @see @ref function_overview "function Overview"
      * @see @ref function_usage "function Usage"
      */
     template<typename I, typename... A>
     inline jau::function<void(A...)>
-    bind_capref(I* data_ptr, void(*func)(I*, A...), bool dataIsIdentity=true) noexcept {
-        return function<void(A...)>( nullptr, std::make_shared<func::capref_target_t<void, I, A...>>(data_ptr, func, dataIsIdentity) );
+    bind_capref(I* data_ptr, void(*func)(I*, A...)) noexcept {
+        return function<void(A...)>( std::make_shared<func::capref_target_t<void, I, A...>>(data_ptr, func),
+                                     sizeof(func::capref_target_t<void, I, A...>) );
     }
 
     /**
@@ -1365,13 +1240,14 @@ namespace jau {
      * @param func free-function with `R` return value and `A...` arguments.
      * @return anonymous function
      * @see @ref function_ctor_std "function constructor for std::function"
-     * @see @ref function_overview "function Overview" etc.
+     * @see @ref function_overview "function Overview"
      * @see @ref function_usage "function Usage"
      */
     template<typename R, typename... A>
     inline jau::function<R(A...)>
     bind_std(uint64_t id, std::function<R(A...)> func) noexcept {
-        return function<R(A...)>( nullptr, std::make_shared<func::std_target_t<R, A...>>(id, func) );
+        return function<R(A...)>( std::make_shared<func::std_target_t<R, A...>>(id, func),
+                                  sizeof(func::std_target_t<R, A...>) );
     }
 
     /**
@@ -1385,13 +1261,14 @@ namespace jau {
      * @param func free-function with `A...` arguments.
      * @return anonymous function
      * @see @ref function_ctor_std "function constructor for std::function"
-     * @see @ref function_overview "function Overview" etc.
+     * @see @ref function_overview "function Overview"
      * @see @ref function_usage "function Usage"
      */
     template<typename... A>
     inline jau::function<void(A...)>
     bind_std(uint64_t id, std::function<void(A...)> func) noexcept {
-        return function<void(A...)>( nullptr, std::make_shared<func::std_target_t<void, A...>>(id, func) );
+        return function<void(A...)>( std::make_shared<func::std_target_t<void, A...>>(id, func),
+                                     sizeof(func::std_target_t<void, A...>) );
     }
 
     /**@}*/

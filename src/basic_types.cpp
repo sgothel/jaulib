@@ -31,6 +31,7 @@
 
 #include <jau/debug.hpp>
 #include <jau/basic_types.hpp>
+#include <jau/functional.hpp>
 
 using namespace jau;
 
@@ -424,6 +425,19 @@ std::string jau::to_string(const endian& v) noexcept {
         case endian::pdp:  return "pdb";
         case endian::honeywell: return "honeywell";
         case endian::undefined: return "undefined";
+    }
+    return "unlisted";
+}
+
+std::string jau::to_string(const jau::func::target_type v) noexcept {
+    switch(v) {
+        case jau::func::target_type::null:  return "null";
+        case jau::func::target_type::member:  return "member";
+        case jau::func::target_type::free:  return "free";
+        case jau::func::target_type::lambda: return "lambda";
+        case jau::func::target_type::capval: return "capval";
+        case jau::func::target_type::capref: return "capref";
+        case jau::func::target_type::std: return "std";
     }
     return "unlisted";
 }
