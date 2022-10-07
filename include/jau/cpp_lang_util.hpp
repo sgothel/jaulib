@@ -166,18 +166,352 @@ namespace jau {
     #endif
 
     #if defined(__clang__)
+        /** Consider using [jau::ctti_name<R, L, A...>()](@ref ctti_name_lambda). */
         #define JAU_PRETTY_FUNCTION __PRETTY_FUNCTION__
     #elif defined(__GNUC__) && !defined(__clang__)
+        /** Consider using [jau::ctti_name<R, L, A...>()](@ref ctti_name_lambda). */
         #define JAU_PRETTY_FUNCTION __PRETTY_FUNCTION__
     #elif defined(_MSC_VER)
+        /** Consider using [jau::ctti_name<R, L, A...>()](@ref ctti_name_lambda). */
         #define JAU_PRETTY_FUNCTION __FUNCSIG__
     #else
         #error "JAU_PRETTY_FUNCTION not available"
     #endif
 
+    /**
+     * @anchor ctti_name_type
+     * Returns the type name of given type `T`
+     * using template *Compile Time Type Information (CTTI)* only
+     * with static constant storage duration.
+     *
+     * @tparam T the type
+     * @return instance of jau::type_info
+     * @see @ref make_ctti_type "jau::make_ctti<T>"
+     * @see @ref ctti_name_lambda
+     */
     template<typename T>
-    constexpr const char* pretty_function() {
+    constexpr const char* ctti_name() noexcept {
         return JAU_PRETTY_FUNCTION;
+    }
+
+    /**
+     * @anchor ctti_name_lambda
+     * Returns the type name of given function types `R(*L)(A...)`
+     * using template *Compile Time Type Information (CTTI)* only
+     * with static constant storage duration.
+     *
+     * @anchor ctti_name_lambda_limitations
+     * #### Limitations
+     *
+     * ##### Non unique function pointer type names with same prototype
+     * With RTTI or wihout, c-alike function pointer type names like `int(*)(int)` do not expose their
+     * source location like lambda functions do.
+     * Hence they can't be used to compare code identity, but lambda functions can be used.
+     *
+     * ##### Non unique lambda type names without RTTI using `gcc` or non `clang` compiler
+     * Due to the lack of standardized *Compile-Time Type Information (CTTI)*,
+     * we rely on the non-standardized macro extensions
+     * - `__PRETTY_FUNCTION__`
+     *   - `clang` produces a unique tag using filename and line number, compatible.
+     *   - `gcc` produces a non-unique tag using the parent function of the lambda location and its too brief signature, not fully compatible.
+     * - `__FUNCSIG__`
+     *   - `msvc++` not tested
+     * - Any other compiler is not supported yet
+     *
+     * Due to these restrictions, *not using RTTI on `gcc` or non `clang` compiler* will *erroneously mistake* different lambda
+     * *functions defined within one function and using same function prototype `R<A...>`* to be the same.
+     *
+     * jau::type_info::limited_lambda_id exposes the potential limitation.
+     *
+     * @tparam R function return type
+     * @tparam L main function type, e.g. a lambda type.
+     * @tparam A function argument types
+     * @return instance of jau::type_info
+     * @see @ref make_ctti_lambda "jau::make_ctti<R, L, A...>"
+     * @see @ref ctti_name_type
+     * @see jau::type_info::limited_lambda_id
+     */
+    template<typename R, typename L, typename...A>
+    constexpr const char* ctti_name() noexcept {
+        return JAU_PRETTY_FUNCTION;
+    }
+
+    /**
+     * @anchor type_info
+     * jau::type_info exposes same properties as std::type_index,
+     * i.e. can be used as index in associative and unordered associative containers
+     * and is CopyConstructible and CopyAssignable.
+     *
+     * jau::type_info is compatible with std::type_index operations.
+     *
+     * jau::type_info can be utilized w/o RTTI using
+     * Compile time type information (CTTI) information, i.e. JAU_PRETTY_FUNCTION via [jau::ctti_name<R, L, A...>()](@ref ctti_name_lambda).
+     *
+     * Consider using [jau::make_ctti<R, L, A...>()](@ref make_ctti_lambda) for construction,
+     * as it removes the RTTI and CTTI code path differences.
+     *
+     * ### RTTI and Compile time type information (CTTI) Natures
+     *
+     * If RTTI is being used, see __cxx_rtti_available__,
+     * jau::type_info may be instantiated with a std::type_info reference as returned from typeid(T).
+     *
+     * Without RTTI jau::type_info may be instantiated using JAU_PRETTY_FUNCTION.
+     * Hence utilizes Compile time type information (CTTI) only.
+     *
+     * In both cases, jau::type_info will solely operate on the `const char* signature`
+     * and its hash value, aligning memory footprint and operations.
+     *
+     * Use [jau::make_ctti<R, L, A...>()](@ref make_ctti_lambda) for construction,
+     * as it removes the RTTI and CTTI code path differences.
+     *
+     * @anchor type_info_identity
+     * ### Notes about lifecycle and identity
+     *
+     * #### Prologue
+     * We assume block scope and static storage duration (runtime lifecycle) of
+     * - (1) [typeid(T)]((https://en.cppreference.com/w/cpp/language/typeid)
+     *   - (1.1) The typeid expression is an lvalue expression which refers to an object with static storage duration.
+     *   - (1.2) There is no guarantee that the same std::type_info instance will be referred to by all evaluations
+     *           of the typeid expression on the same type, although they would compare equal.
+     * - (2) JAU_PRETTY_FUNCTION, aka __PRETTY_FUNCTION__ with properties of [__func__](https://en.cppreference.com/w/cpp/language/function)
+     *   - (2.1) This variable has block scope and static storage duration.
+     *
+     * #### Equality Comparison
+     *
+     * - compare the static name storage references (pointer) and return `true` if equal (fast path)
+     * - due to (1.2), see above, the static name storage strings must be compared
+     *   - compare the names' hash value and return `false` if not matching (fast path)
+     *   - compare the static names' string and return the result (slow `strcmp()` equality)
+     *     - this avoids a potential hash collision.
+     *
+     * @anchor type_info_limitations
+     * #### Limitations
+     *
+     * ##### Non unique lambda type names without RTTI using `gcc` or non `clang` compiler
+     *
+     * Due to [limitations of jau::make_ctti<R, L, A...>()](@ref ctti_name_lambda_limitations),
+     * *not using RTTI on `gcc` or non `clang` compiler* will *erroneously mistake* different lambda
+     * *functions defined within one function and using same function prototype `R<A...>`* to be the same.
+     *
+     * jau::type_info::limited_lambda_id exposes the potential limitation.
+     *
+     * @see @ref type_info_identity "Identity"
+     * @see @ref make_ctti_lambda "jau::make_ctti<R, L, A...>"
+     */
+    class type_info {
+        private:
+            const char* signature;
+            size_t hash_value;
+
+        public:
+            /**
+             * Static constexpr boolean indicating whether RTTI is available or not.
+             */
+            static constexpr const bool rtti_available =
+                #if defined(__cxx_rtti_available__)
+                    true;
+                #else
+                    false;
+                #endif
+
+            /**
+             * Static constexpr boolean indicating whether resulting type_info
+             * uniqueness is limited for lambda function types.
+             *
+             * Always is `false` if rtti_available == `true`,
+             * i.e. lambda function types are always unique using RTTI.
+             *
+             * May return `true` if:
+             * - no RTTI and using `gcc`
+             * - no RTTI and not using `clang`
+             *
+             * @see @ref ctti_name_lambda_limitations "CTTI lambda name limitations"
+             */
+            static constexpr const bool limited_lambda_id =
+                #if defined(__cxx_rtti_available__)
+                    false;
+                #else
+                    #if defined(__clang__)
+                        false;
+                    #elif defined(__GNUC__) && !defined(__clang__)
+                        true;
+                    #else
+                        true; // unknown
+                    #endif
+                #endif
+
+            /** Returns true if given signature is not nullptr and has a string length > 0, otherwise false. */
+            static constexpr bool is_valid(const char* signature) noexcept {
+                return nullptr != signature && 0 < strlen(signature);
+            }
+
+            /** Aborts program execution if given signature is nullptr or has a string length == 0. */
+            static void abort_invalid(const char* signature) noexcept {
+                if( nullptr == signature ) {
+                    fprintf(stderr, "ABORT @ %s:%d %s: CTTI signature nullptr\n", __FILE__, __LINE__, __func__);
+                    ::abort();
+                } else if( 0 == strlen(signature) ) {
+                    fprintf(stderr, "ABORT @ %s:%d %s: CTTI signature zero sized\n", __FILE__, __LINE__, __func__);
+                    ::abort();
+                }
+            }
+
+            /**
+             * Constructor for an empty type_info instance, i.e. empty name() signature.
+             */
+            type_info() noexcept
+            : signature(""), hash_value( std::hash<std::string_view>{}(std::string_view(signature)) )
+            { }
+
+            /**
+             * Constructor using an RTTI std::type_info reference, i.e. typeid(T) result.
+             *
+             * Consider using [jau::make_ctti<R, L, A...>()](@ref make_ctti_lambda) for construction,
+             * as it removes the RTTI and CTTI code path differences.
+             *
+             * @param info_ RTTI std::type_info reference
+             *
+             * @see @ref make_ctti_lambda "jau::make_ctti<R, L, A...>"
+             */
+            type_info(const std::type_info& info_) noexcept
+            : signature(info_.name()), hash_value( info_.hash_code() )
+            { }
+
+            /**
+             * Constructor using a `const char*` signature with a static storage duration
+             *
+             * Aborts program execution if given signature is nullptr or has a string length == 0.
+             *
+             * @param signature_ valid string signature of type with length > 0 with static storage duration.
+             *
+             * @see @ref make_ctti_lambda "jau::make_ctti<R, L, A...>"
+             */
+            constexpr type_info(const char* signature_) noexcept
+            : signature( signature_ ), hash_value( nullptr != signature ? std::hash<std::string_view>{}(std::string_view(signature)) : 0 )
+            { abort_invalid(signature); }
+
+            /**
+             * Return true if both instances are equal.
+             *
+             * @param rhs
+             * @return
+             * @see @ref type_info_identity "Identity"
+             */
+            constexpr bool operator==(const type_info& rhs) const noexcept {
+                if( &rhs == this ) {
+                    return true;
+                }
+                return signature == rhs.signature ||               // fast: pointer comparison, which may fail on same types, _or_
+                       (
+                         hash_value == rhs.hash_value &&           // fast: wrong hash value -> false, otherwise avoid hash collision case ...
+                         0 == ::strcmp(signature, rhs.signature)   // slow: string comparison
+                       );
+            }
+
+            bool operator!=(const type_info& rhs) const noexcept
+            { return !operator==(rhs); }
+
+            /**
+             * Returns an unspecified hash code of this instance.
+             *
+             * @anchor type_info_hash_code
+             * Properties
+             * - for all type_info objects referring to the same type, their hash code is the same.
+             * - type_info objects referring to different types may have the same hash code, i.e. due to hash collision.
+             *
+             * Compatible with std::type_info definition.
+             *
+             * @return Unspecified hash code of this instance.
+             * @see @ref type_info_identity "Identity"
+             */
+            size_t hash_code() const noexcept { return hash_value; }
+
+            /** Returns the type name, compiler implementation specific.  */
+            const char* name() const noexcept
+            { return signature; }
+    };
+
+    /**
+     * Constructs a jau::type_info instance based on given type `T`
+     * using template *Compile Time Type Information (CTTI)* only.
+     *
+     * @anchor make_ctti_type
+     * This construction function either uses `typeid(T)` if jau::type_info::rtti_available == true
+     * or [jau::ctti_name<T>()](@ref ctti_name_type) otherwise.
+     *
+     * @tparam T type for which the type_info is generated
+     * @return instance of jau::type_info
+     * @see @ref ctti_name_type "jau::ctti_name<T>"
+     */
+    template<typename T>
+    jau::type_info make_ctti() noexcept {
+#if defined(__cxx_rtti_available__)
+        return jau::type_info( typeid(T) );
+#else
+        return jau::type_info(ctti_name<T>());
+#endif
+    }
+
+    /**
+     * Constructs a jau::type_info instance based on given function types `R(*L)(A...)`
+     * using template *Compile Time Type Information (CTTI)* only
+     * via RTTI's `typeid(L) if available or [jau::ctti_name<R, L, A...>()](@ref ctti_name_lambda) otherwise.
+     *
+     * @anchor make_ctti_lambda
+     * This construction function either uses `typeid(L)` if jau::type_info::rtti_available == true
+     * or [jau::ctti_name<R, L, A...>()](@ref ctti_name_lambda) otherwise.
+     *
+     * @tparam R function return type used for type_info in case of jau::type_info::rtti_available == false
+     * @tparam L main function type for which the type_info is generated, e.g. a lambda type.
+     * @tparam A function argument types used for type_info in case of jau::type_info::rtti_available == false
+     * @return instance of jau::type_info
+     * @see @ref ctti_name_lambda "jau::ctti_name<R, L, A...>"
+     */
+    template<typename R, typename L, typename...A>
+    jau::type_info make_ctti() noexcept {
+#if defined(__cxx_rtti_available__)
+        return jau::type_info( typeid(L) );
+#else
+        return jau::type_info(ctti_name<R, L, A...>());
+#endif
+    }
+
+    /**
+     * Returns the type name of given type `T`
+     * using template *Compile Time Type Information (CTTI)* only
+     * via RTTI's `typeid(T).name()` if available or [jau::ctti_name<T>()](@ref ctti_name_type) otherwise.
+     *
+     * @tparam T type for which the type_info is generated
+     * @return type name
+     * @see @ref ctti_name_type "jau::ctti_name<T>"
+     */
+    template<typename T>
+    const char* type_name() noexcept {
+#if defined(__cxx_rtti_available__)
+        return typeid(T).name();
+#else
+        return ctti_name<T>();
+#endif
+    }
+
+    /**
+     * Returns the type name of given function types `R(*L)(A...)`
+     * using template *Compile Time Type Information (CTTI)* only
+     * via RTTI's `typeid(L).name()` if available or [jau::ctti_name<R, L, A...>()](@ref ctti_name_lambda) otherwise.
+     *
+     * @tparam R function return type used for type_info in case of jau::type_info::rtti_available == false
+     * @tparam L main function type for which the type_info is generated, e.g. a lambda type.
+     * @tparam A function argument types used for type_info in case of jau::type_info::rtti_available == false
+     * @return type name
+     * @see @ref ctti_name_lambda "jau::ctti_name<R, L, A...>"
+     */
+    template<typename R, typename L, typename...A>
+    const char* type_name() noexcept {
+#if defined(__cxx_rtti_available__)
+        return typeid(L).name();
+#else
+        return ctti_name<R, L, A...>();
+#endif
     }
 
     /**
