@@ -137,6 +137,19 @@ namespace jau {
      */
     #define constexpr_atomic inline
 
+    /**
+     * Wrap C++ extension `__restrict__` covering C99's `restrict` feature keyword.
+     */
+#if defined(__clang__)
+    #define __restrict_cxx__ __restrict__
+#elif defined(__GNUC__) && !defined(__clang__)
+    #define __restrict_cxx__ __restrict__
+#elif defined(_MSC_VER)
+    #define __restrict_cxx__ __restrict
+#else
+    #define __restrict_cxx__
+#endif
+
     #if defined(__clang__)
         #if __has_feature(cxx_rtti)
             /**
