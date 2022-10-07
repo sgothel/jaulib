@@ -27,6 +27,7 @@
 
 #if !FUNCTIONAL_PROVIDED
     #include <jau/functional.hpp>
+    static std::string impl_name = "jau/functional.hpp";
 #endif
 
 #include <jau/test/catch2_ext.hpp>
@@ -41,6 +42,8 @@ class TestFunction01 {
      * Unit test covering most variants of jau::function<R(A...)
      */
     void test00_usage() {
+        INFO("Test 00_usage: START: Implementation = "+impl_name);
+        fprintf(stderr, "Implementation: %s\n", impl_name.c_str());
         {
             // Test capturing lambdas
             volatile int i = 100;

@@ -1,0 +1,86 @@
+argc 3 -> 5, auto_run 0, perf_analysis 0
+Implementation: jau/functional.hpp
+lambda.ref:    function<lambda, int (int)>( sz net 24 / ( delegate_t 48 + target_vdata 0 -> 48 ) ) 
+lambda.copy:   function<lambda, int (int)>( sz net 24 / ( delegate_t 48 + target_vdata 0 -> 48 ) ) 
+lambda.plain   function<lambda, int (int)>( sz net 24 / ( delegate_t 48 + target_vdata 0 -> 48 ) ) 
+freeA.0        function<free, void ()>( sz net 8 / ( delegate_t 48 + target_vdata 0 -> 48 ) ) 
+member:        function<member, int (int)>( sz net 16 / ( delegate_t 48 + target_vdata 0 -> 48 ) ) 
+member:        function<member, void (int&, int)>( sz net 16 / ( delegate_t 48 + target_vdata 0 -> 48 ) ) 
+capval.small:  function<capval, int (int)>( sz net 16 / ( delegate_t 48 + target_vdata 0 -> 48 ) ) 
+capval.big:    function<capval, int (int)>( sz net 48 / ( delegate_t 48 + target_vdata 48 -> 96 ) ) 
+capref:        function<capref, int (int)>( sz net 16 / ( delegate_t 48 + target_vdata 0 -> 48 ) ) 
+std.lambda:    function<std, int (int)>( sz net 40 / ( delegate_t 48 + target_vdata 64 -> 112 ) ) 
+  (net std.lambda):    sizeof 32
+[0] ./test_functional1_perf
+[1] --benchmark-samples
+[2] 600
+[3] --colour-mode
+[4] none
+Randomness seeded to: 260060816
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+test_functional1_perf is a Catch2 v3.0.1 host application.
+Run with -? for options
+
+-------------------------------------------------------------------------------
+10_perf
+-------------------------------------------------------------------------------
+/test/test_functional_perf.hpp:445
+...............................................................................
+
+benchmark name                       samples       iterations    estimated
+                                     mean          low mean      high mean
+                                     std dev       low std dev   high std dev
+-------------------------------------------------------------------------------
+free_rawfunc                                   600             1    396.488 ms 
+                                        869.653 us    808.353 us    933.543 us 
+                                        781.489 us    766.188 us    791.868 us 
+                                                                               
+free_cfuncptr                                  600             1     1.10754 s 
+                                        1.84954 ms    1.84872 ms    1.85044 ms 
+                                        10.6978 us    9.75172 us    11.8244 us 
+                                                                               
+free_stdfunc                                   600             1     1.11264 s 
+                                        1.85566 ms    1.85492 ms    1.85649 ms 
+                                        9.81082 us    8.79149 us     11.062 us 
+                                                                               
+free_jaufunc                                   600             1     1.08841 s 
+                                        1.85358 ms    1.85045 ms    1.85857 ms 
+                                        48.3912 us    31.4427 us    77.3268 us 
+                                                                               
+member_rawfunc                                 600             1    138.558 ms 
+                                        232.482 us     231.87 us    233.394 us 
+                                        9.21231 us    6.78378 us    12.4712 us 
+                                                                               
+member_stdbind_unspec                          600             1     1.16838 s 
+                                        1.88023 ms    1.87801 ms    1.88255 ms 
+                                        28.5023 us      27.09 us    30.0643 us 
+                                                                               
+member_jaufunc                                 600             1     1.13945 s 
+                                        1.84792 ms    1.83825 ms    1.86577 ms 
+                                        159.198 us    97.2521 us    239.952 us 
+                                                                               
+capval_small_jaufunc                           600             1     1.09578 s 
+                                        1.83118 ms    1.82629 ms    1.84001 ms 
+                                        79.8141 us    50.0558 us    118.918 us 
+                                                                               
+capval_big_jaufunc                             600             1     1.09174 s 
+                                        1.82715 ms    1.82547 ms    1.82911 ms 
+                                        22.5245 us    20.3042 us    24.9746 us 
+                                                                               
+capref_jaufunc                                 600             1     1.09131 s 
+                                        1.81717 ms    1.81601 ms    1.81913 ms 
+                                        18.4131 us    12.9244 us    32.3738 us 
+                                                                               
+lambda_std_function                            600             1     1.09597 s 
+                                        1.82796 ms    1.82582 ms    1.83062 ms 
+                                        29.7986 us     25.351 us    36.9587 us 
+                                                                               
+lambda_jaufunc                                 600             1     1.08838 s 
+                                        1.85083 ms    1.84928 ms    1.85461 ms 
+                                        27.9239 us    8.47037 us    50.4862 us 
+                                                                               
+
+===============================================================================
+All tests passed (9 assertions in 2 test cases)
+

@@ -31,4 +31,4 @@
 static std::string impl_name = "jau/functional.hpp";
 
 #define FUNCTIONAL_PROVIDED 1
-#include "test_functional_perf.hpp"
+#include "test_functional.hpp"

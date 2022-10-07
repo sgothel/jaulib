@@ -27,8 +27,8 @@
 
 #include <jau/test/catch2_ext.hpp>
 
-#include <jau/functional.hpp>
-static std::string impl_name = "jau/functional.hpp";
+#include "functional2.hpp"
+static std::string impl_name = "test/functional2.hpp";
 
 #define FUNCTIONAL_PROVIDED 1
-#include "test_functional_perf.hpp"
+#include "test_functional.hpp"
