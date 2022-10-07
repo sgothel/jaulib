@@ -68,22 +68,22 @@ class TestFunction01 {
             function<int(int)> fa0 = [&](int a) -> int {
                 return i + a;
             };
-            fprintf(stderr, "lambda.0: %s\n", fa0.toString().c_str());
+            fprintf(stderr, "lambda.0: %s, signature %s\n", fa0.toString().c_str(), fa0.signature().name());
             REQUIRE( jau::func::target_type::lambda == fa0.type() );
 
             function<int(int)> fa1 = lambda_01();
-            fprintf(stderr, "lambda.1: %s\n", fa1.toString().c_str());
+            fprintf(stderr, "lambda.1: %s, signature %s\n", fa1.toString().c_str(), fa1.signature().name());
             REQUIRE( jau::func::target_type::lambda == fa1.type() );
 
             auto fa2_stub = [&](int a) -> int {
                 return i + a;
             };
             function<int(int)> fa2_a = fa2_stub;
-            fprintf(stderr, "lambda.2_a: %s\n", fa2_a.toString().c_str());
+            fprintf(stderr, "lambda.2_a: %s, signature %s\n", fa2_a.toString().c_str(), fa2_a.signature().name());
             REQUIRE( jau::func::target_type::lambda == fa2_a.type() );
 
             function<int(int)> fa2_b = fa2_stub;
-            fprintf(stderr, "lambda.2_b: %s\n", fa2_b.toString().c_str());
+            fprintf(stderr, "lambda.2_b: %s, signature %s\n", fa2_b.toString().c_str(), fa2_b.signature().name());
             REQUIRE( jau::func::target_type::lambda == fa2_b.type() );
 
             test_function0_result_____("lambda.0_1_",       1, 101, fa0, fa1);
@@ -116,7 +116,7 @@ class TestFunction01 {
                 // return i + a;
                 return a + 100;
             } ;
-            fprintf(stderr, "lambda.3_1 (plain)%s\n", fl3_1.toString().c_str());
+            fprintf(stderr, "lambda.3_1 (plain) %s, signature %s\n", fl3_1.toString().c_str(), fl3_1.signature().name());
             REQUIRE( jau::func::target_type::lambda == fl3_1.type() );
             test_function0_result_type("lambda.3131", true, 1, 101, fl3_1, fl3_1);
         }

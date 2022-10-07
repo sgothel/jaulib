@@ -1225,17 +1225,12 @@ namespace jau {
             explicit constexpr operator bool() const noexcept { return !is_null(); }
 
             /** Returns signature of this function prototype R(A...) w/o underlying target function details. */
-            std::string signature() const noexcept {
-                const char* s = jau::type_name<R(A...)>();
-                if constexpr ( jau::type_info::rtti_available ) {
-                    return jau::demangle_name( s );
-                } else {
-                    return std::string( s );
-                }
+            jau::type_info signature() const noexcept {
+                return jau::make_ctti<R(A...)>();
             }
 
             std::string toString() const {
-                return "function<" + to_string( type() ) + ", " + signature() + ">( sz net " +
+                return "function<" + to_string( type() ) + ", " + signature().demangled_name() + ">( sz net " +
                         std::to_string( target.data_size() ) + " / ( delegate_t " +
                         std::to_string( sizeof( target ) ) + " + target_vdata " +
                         std::to_string( target.vdata_size() ) + " -> "+

@@ -819,20 +819,15 @@ namespace jau {
             explicit constexpr operator bool() const noexcept { return !is_null(); }
 
             /** Returns signature of this function prototype R(A...) w/o underlying target function details. */
-            std::string signature() const noexcept {
-                const char* s = jau::type_name<R(A...)>();
-                if constexpr ( jau::type_info::rtti_available ) {
-                    return jau::demangle_name( s );
-                } else {
-                    return std::string( s );
-                }
+            jau::type_info signature() const noexcept {
+                return jau::make_ctti<R(A...)>();
             }
 
             /** Returns the size of the target type  */
             constexpr size_t target_size() const noexcept { return target_func_size; }
 
             std::string toString() const {
-                return "function<" + to_string( type() ) + ", " + signature() + ">( sz target_data " +
+                return "function<" + to_string( type() ) + ", " + signature().demangled_name() + ">( sz target_data " +
                         std::to_string( target_func_size ) + " + shared_ptr " +
                         std::to_string( sizeof( target_func ) ) + " + extra " +
                         std::to_string( sizeof( target_func_size ) ) + " -> " +

@@ -250,6 +250,25 @@ namespace jau {
     }
 
     /**
+     * Returns the demangled given mangled_name if successful,
+     * otherwise the mangled_name.
+     *
+     * Implementation utilizes the [cross-vendor C++ ABI abi::__cxa_demangle()](https://gcc.gnu.org/onlinedocs/libstdc++/libstdc++-html-USERS-4.3/a01696.html)
+     * as supported at least on on `gcc` and `clang`.
+     *
+     * May be used to demangle the result of jau::type_name() or jau::type_info::name() if jau::type_info::rtti_available == true,
+     * i.e. RTTI typeif(T) symbols are being used.
+     *
+     * See also [gcc libstdc++ FAQ, Chapter 28](https://gcc.gnu.org/onlinedocs/libstdc++/manual/ext_demangling.html).
+     *
+     * Further, implementation also checks whether the mangled_name results from [jau::ctti_name<T>()](@ref ctti_name_type)
+     * and cleans up the known `gcc` and `clang` variant of JAU_PRETTY_FUNCTION.
+     *
+     * @param mangled_name mangled name
+     */
+    std::string demangle_name(const char* mangled_name) noexcept;
+
+    /**
      * @anchor type_info
      * jau::type_info exposes same properties as std::type_index,
      * i.e. can be used as index in associative and unordered associative containers
@@ -442,6 +461,11 @@ namespace jau {
             /** Returns the type name, compiler implementation specific.  */
             const char* name() const noexcept
             { return signature; }
+
+            /** Return the demangle_name() of name(). */
+            std::string demangled_name() const noexcept {
+                return demangle_name( signature );
+            }
     };
 
     /**
@@ -526,22 +550,6 @@ namespace jau {
         return ctti_name<R, L, A...>();
 #endif
     }
-
-    /**
-     * Returns the demangled given mangled_name if successful,
-     * otherwise the mangled_name.
-     *
-     * Implementation utilizes the [cross-vendor C++ ABI abi::__cxa_demangle()](https://gcc.gnu.org/onlinedocs/libstdc++/libstdc++-html-USERS-4.3/a01696.html)
-     * as supported at least on on `gcc` and `clang`.
-     *
-     * May be used to demangle the result of jau::type_name() or jau::type_info::name() if jau::type_info::rtti_available == true,
-     * i.e. RTTI typeif(T) symbols are being used.
-     *
-     * See also [gcc libstdc++ FAQ, Chapter 28](https://gcc.gnu.org/onlinedocs/libstdc++/manual/ext_demangling.html).
-     *
-     * @param mangled_name mangled name
-     */
-    std::string demangle_name(const char* mangled_name) noexcept;
 
     /**
     // *************************************************
