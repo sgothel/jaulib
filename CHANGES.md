@@ -8,8 +8,17 @@
 
 * First stable release (TODO)
 
+**0.17.0**
+* functional: Revised implementation using static polymorphism.
+  - 14-25% less memory footprint
+  - Performance gain on linux-arm64, Raspberry Pi 4 Model B Rev 1.4
+      - 19% using plain and capturing lambdas
+      - 27% using member functions
+  - No significant performance gain on linux-amd64, AMD Ryzen 9 3950X 16-Core
+  - See commit f1059912dfd633cf90d14b688b1cc3f225a434f5
+
 **0.16.3**
-* functional: Add general lambda support, revise API doc, have native target function size accessible
+* functional: Add general lambda support incl. captures, revise API doc, have native target function size accessible
 
 **0.16.2**
 * Fix `jau::service_runner::start()`: Case `set_shall_stop()` occurs fast by worker callback -> infinite loop.

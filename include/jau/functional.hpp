@@ -1062,22 +1062,17 @@ namespace jau {
             { }
 
             /**
-             * \brief target_type constructor
+             * \brief Internally used delegate_t<R(A...)> constructor
              *
-             * @anchor function_ctor_target_type
-             * Constructs an instance with the given shared target function pointer.
+             * May utilize [copy elision](https://en.cppreference.com/w/cpp/language/copy_elision)
+             * and/or named return value optimization (NRVO).
+             *
              * @see @ref function_overview "function Overview"
              * @see @ref function_usage "function Usage"
              */
             explicit function(delegate_t_ _delegate, int dummy ) noexcept
             : target( _delegate )
             { (void) dummy; }
-
-#if 0
-            explicit function(delegate_t_&& _delegate, int dummy_t ) noexcept
-            : target( std::move(_delegate) )
-            { (void) dummy_t; }
-#endif
 
             /**
              * \brief Free function constructor
