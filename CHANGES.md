@@ -10,6 +10,8 @@
 
 **0.17.0**
 * functional: Revised implementation using static polymorphism.
+  - Deep copy of target function detail
+    - Works with mutable lambda states, i.e. mutating a field (by-copy captured)
   - 14-25% less memory footprint
   - Performance gain on linux-arm64, Raspberry Pi 4 Model B Rev 1.4
       - 19% using plain and capturing lambdas

@@ -1258,6 +1258,185 @@ class TestFunction01 {
             }
             CHECK(fa2_1 != f_e);                                                      // NOTE-D: Diff function prototype
         }
+        {
+            // lambda capture by reference-1, plain
+            int i = 100;
+            int j = 100;
+            function<int(int)> f_1 = [&i](int a) -> int {
+                return i + a;
+            };
+            fprintf(stderr, "l6 f_1 ref: %s\n", f_1.toString().c_str());
+            REQUIRE( jau::func::target_type::lambda == f_1.type() );
+
+            // NOTE-C: f_1 != f_1: Different code type and different capture than f_1!
+            // !RTTI GCC: OK (different capture)
+            function<int(int)> f_2 = [&j](int a) -> int {
+                return j + a;
+            };
+            fprintf(stderr, "l6 f_2 ref:   %s\n", f_2.toString().c_str());
+            REQUIRE( jau::func::target_type::lambda == f_2.type() );
+
+            test_function0_result_____("lambda.6",        1, 101, f_1, f_2);
+            test_function0________type("lambda.6", false,         f_1, f_2);
+            test_function0________type("lambda.6", true,          f_1, f_1);
+        }
+        {
+            // lambda capture by reference-2, state-test: mutate used captured reference field
+            int i = 100;
+            int j = 100;
+            function<int(int)> f_1 = [&i](int a) -> int {
+                int res = i + a;
+                i+=1;
+                return res;
+            };
+            fprintf(stderr, "l7 f_1 ref: %s\n", f_1.toString().c_str());
+            REQUIRE( jau::func::target_type::lambda == f_1.type() );
+
+            // NOTE-C: f_1 != f_1: Different code type and different capture than f_1!
+            // !RTTI GCC: OK (different capture)
+            function<int(int)> f_2 = [&j](int a) -> int {
+                int res = j + a;
+                j+=1;
+                return res;
+            };
+            fprintf(stderr, "l7 f_2 ref:   %s\n", f_2.toString().c_str());
+            REQUIRE( jau::func::target_type::lambda == f_2.type() );
+
+            test_function0_result_copy("lambda.7.1a",        1, 101, f_1, f_2); // increment of referenced i,j, f_x passed by copy!
+            test_function0_result_copy("lambda.7.1b",        1, 102, f_1, f_2); // increment of referenced i,j, f_x passed by copy!
+            test_function0_result_copy("lambda.7.1c",        1, 103, f_1, f_2); // increment of referenced i,j, f_x passed by copy!
+
+            test_function0_result_____("lambda.7.2a",        1, 104, f_1, f_2); // increment of referenced i,j, f_x passed by ref
+            test_function0_result_____("lambda.7.2b",        1, 105, f_1, f_2); // increment of referenced i,j, f_x passed by ref
+            test_function0_result_____("lambda.7.2c",        1, 106, f_1, f_2); // increment of referenced i,j, f_x passed by ref
+
+            test_function0________type("lambda.7.5", false,         f_1, f_2);
+            test_function0________type("lambda.7.5", true,          f_1, f_1);
+        }
+        {
+            // lambda capture by copy, plain
+            int i = 100;
+            int j = 100;
+            function<int(int)> f_1 = [i](int a) -> int {
+                return i + a;
+            };
+            fprintf(stderr, "l8 f_1 cpy: %s\n", f_1.toString().c_str());
+            REQUIRE( jau::func::target_type::lambda == f_1.type() );
+
+            // NOTE-C: f_1 != f_1: Different code type and different capture than f_1!
+            // !RTTI GCC: OK (different capture)
+            function<int(int)> f_2 = [j](int a) -> int {
+                return j + a;
+            };
+            fprintf(stderr, "l8 f_2 cpy: %s\n", f_2.toString().c_str());
+            REQUIRE( jau::func::target_type::lambda == f_2.type() );
+
+            test_function0_result_____("lambda.8.1",        1, 101, f_1, f_2);
+            if constexpr ( !jau::type_info::limited_lambda_id ) {
+                test_function0________type("lambda.8.2", false,         f_1, f_2);
+            } else {
+                if( f_1 == f_2 ) {
+                    fprintf(stderr, "INFO: limited_lambda_id: %s:%d\n", __FILE__, __LINE__);
+                } else {
+                    fprintf(stderr, "INFO: limited_lambda_id FIXED: %s:%d\n", __FILE__, __LINE__);
+                    test_function0________type("lambda.8.2", false,         f_1, f_2); // NOTE-2: Diff code
+                }
+            }
+            test_function0________type("lambda.8.3", true,          f_1, f_1);
+        }
+        {
+            // lambda capture by copy-2, state-test: mutate a static variable
+            int i = 100;
+            int j = 100;
+            function<int(int)> f_1 = [i](int a) -> int {
+                static int store = i;
+                int res = store + a;
+                store+=1;
+                return res;
+            };
+            fprintf(stderr, "l9 f_1 cpy: %s\n", f_1.toString().c_str());
+            REQUIRE( jau::func::target_type::lambda == f_1.type() );
+
+            // NOTE-C: f_1 != f_1: Different code type and different capture than f_1!
+            // !RTTI GCC: OK (different capture)
+            function<int(int)> f_2 = [j](int a) -> int {
+                static int store = j;
+                int res = store + a;
+                store+=1;
+                return res;
+            };
+            fprintf(stderr, "l9 f_2 cpy: %s\n", f_2.toString().c_str());
+            REQUIRE( jau::func::target_type::lambda == f_2.type() );
+
+            test_function0_result_copy("lambda.9.1a",        1, 101, f_1, f_2); // increment of static, f_x passed by copy!
+            test_function0_result_copy("lambda.9.1b",        1, 102, f_1, f_2); // increment of static, f_x passed by copy!
+            test_function0_result_copy("lambda.9.1c",        1, 103, f_1, f_2); // increment of static, f_x passed by copy!
+
+            test_function0_result_____("lambda.9.2a",        1, 104, f_1, f_2); // increment of static, f_x passed by ref
+            test_function0_result_____("lambda.9.2b",        1, 105, f_1, f_2); // increment of static, f_x passed by ref
+            test_function0_result_____("lambda.9.2c",        1, 106, f_1, f_2); // increment of static, f_x passed by ref
+
+            if constexpr ( !jau::type_info::limited_lambda_id ) {
+                test_function0________type("lambda.9.5", false,         f_1, f_2);
+            } else {
+                if( f_1 == f_2 ) {
+                    fprintf(stderr, "INFO: limited_lambda_id: %s:%d\n", __FILE__, __LINE__);
+                } else {
+                    fprintf(stderr, "INFO: limited_lambda_id FIXED: %s:%d\n", __FILE__, __LINE__);
+                    test_function0________type("lambda.9.5", false,         f_1, f_2); // NOTE-2: Diff code
+                }
+            }
+            test_function0________type("lambda.9.5", true,          f_1, f_1);
+        }
+        {
+            // lambda capture by copy-3, state-test: mutate used captured copied field, lambda marked as mutable!
+            //
+            // Note: This fails w/ old implementation functional2.hpp, i.e. FUNCTIONAL_BROKEN_COPY_WITH_MUTATING_CAPTURE
+            //
+            int i = 100;
+            int j = 100;
+            function<int(int)> f_1 = [i](int a) mutable -> int {
+                int res = i + a;
+                i+=1;
+                return res;
+            };
+            fprintf(stderr, "l10 f_1 cpy: %s\n", f_1.toString().c_str());
+            REQUIRE( jau::func::target_type::lambda == f_1.type() );
+
+            // NOTE-C: f_1 != f_1: Different code type and different capture than f_1!
+            // !RTTI GCC: OK (different capture)
+            function<int(int)> f_2 = [j](int a) mutable -> int {
+                int res = j + a;
+                j+=1;
+                return res;
+            };
+            fprintf(stderr, "l10 f_2 cpy: %s\n", f_2.toString().c_str());
+            REQUIRE( jau::func::target_type::lambda == f_2.type() );
+
+#ifndef FUNCTIONAL_BROKEN_COPY_WITH_MUTABLE_LAMBDA
+            test_function0_result_copy("lambda.10.1a",        1, 101, f_1, f_2); // increment of copied i,j, f_x passed by copy!
+            test_function0_result_copy("lambda.10.1b",        1, 101, f_1, f_2); // increment of copied i,j, f_x passed by copy!
+            test_function0_result_copy("lambda.10.1c",        1, 101, f_1, f_2); // increment of copied i,j, f_x passed by copy!
+#else
+            fprintf(stderr, "l10 f_2 cpy: FUNCTIONAL_BROKEN_COPY_WITH_MUTABLE_LAMBDA\n");
+#endif
+
+            test_function0_result_____("lambda.10.2a",        1, 101, f_1, f_2); // increment of copied i,j, f_x passed by ref
+            test_function0_result_____("lambda.10.2b",        1, 102, f_1, f_2); // increment of copied i,j, f_x passed by ref
+            test_function0_result_____("lambda.10.2c",        1, 103, f_1, f_2); // increment of copied i,j, f_x passed by ref
+
+            if constexpr ( !jau::type_info::limited_lambda_id ) {
+                test_function0________type("lambda.10.5", false,         f_1, f_2);
+            } else {
+                if( f_1 == f_2 ) {
+                    fprintf(stderr, "INFO: limited_lambda_id: %s:%d\n", __FILE__, __LINE__);
+                } else {
+                    fprintf(stderr, "INFO: limited_lambda_id FIXED: %s:%d\n", __FILE__, __LINE__);
+                    test_function0________type("lambda.10.5", false,         f_1, f_2); // NOTE-2: Diff code
+                }
+            }
+            test_function0________type("lambda.10.5", true,          f_1, f_1);
+        }
     }
 
   private:
@@ -1307,7 +1486,7 @@ class TestFunction01 {
         // nop
     }
 
-    void test_function0_result_type(std::string msg, bool expEqual, const int value, int expRes, MyClassFunction0 & f1, MyClassFunction0 &f2) {
+    void test_function0_result_type(std::string msg, bool expEqual, const int value, int expRes, MyClassFunction0& f1, MyClassFunction0& f2) {
         // test std::function identity
         INFO(msg+": Func0.rt Func f1p == f2p : " + std::to_string( f1 == f2 ) + ", f1p: " + f1.toString() + ", f2 "+f2.toString() );
         int f1r = f1(value);
@@ -1321,7 +1500,7 @@ class TestFunction01 {
             REQUIRE(f1 != f2);
         }
     }
-    void test_function0________type(std::string msg, bool expEqual, MyClassFunction0 & f1, MyClassFunction0 &f2) {
+    void test_function0________type(std::string msg, bool expEqual, MyClassFunction0& f1, MyClassFunction0& f2) {
         // test std::function identity
         INFO(msg+": Func0._t Func f1p == f2p : " + std::to_string( f1 == f2 ) + ", f1p: " + f1.toString() + ", f2 "+f2.toString() );
         {
@@ -1336,23 +1515,32 @@ class TestFunction01 {
             CHECK(f1 != f2);
         }
     }
-    void test_function0_result_____(std::string msg, const int value, int expRes, MyClassFunction0 & f1, MyClassFunction0 &f2) {
+    void test_function0_result_____(std::string msg, const int value, int expRes, MyClassFunction0& f1, MyClassFunction0& f2) {
         // test std::function identity
-        INFO(msg+": Func0.r_ Func f1p == f2p : " + std::to_string( f1 == f2 ) + ", f1p: " + f1.toString() + ", f2 "+f2.toString() );
+        INFO(msg+": Func0.ref.r_ Func f1p == f2p : " + std::to_string( f1 == f2 ) + ", f1p: " + f1.toString() + ", f2 "+f2.toString() );
         int f1r = f1(value);
         int f2r = f2(value);
-        INFO(msg+": Func0.r_ Res_ f1r == f2r : " + std::to_string( f1r == f2r ) + ", f1r: " + std::to_string( f1r ) + ", f2r "+std::to_string( f2r ) );
+        INFO(msg+": Func0.ref.r_ Res_ f1r == f2r : " + std::to_string( f1r == f2r ) + ", f1r: " + std::to_string( f1r ) + ", f2r "+std::to_string( f2r ) );
+        REQUIRE(f1r == expRes);
+        REQUIRE(f2r == expRes);
+    }
+    void test_function0_result_copy(std::string msg, const int value, int expRes, MyClassFunction0 f1, MyClassFunction0 f2) {
+        // test std::function identity
+        INFO(msg+": Func0.cpy.r_ Func f1p == f2p : " + std::to_string( f1 == f2 ) + ", f1p: " + f1.toString() + ", f2 "+f2.toString() );
+        int f1r = f1(value);
+        int f2r = f2(value);
+        INFO(msg+": Func0.cpy.r_ Res_ f1r == f2r : " + std::to_string( f1r == f2r ) + ", f1r: " + std::to_string( f1r ) + ", f2r "+std::to_string( f2r ) );
         REQUIRE(f1r == expRes);
         REQUIRE(f2r == expRes);
     }
 
-    void test_function1_result_type(std::string msg, bool expEqual, const int value, int expRes, MyClassFunction1 & f1, MyClassFunction1 &f2) noexcept {
+    void test_function1_result_type(std::string msg, bool expEqual, const int value, int expRes, MyClassFunction1& f1, MyClassFunction1& f2) noexcept {
         // test std::function identity
-        INFO(msg+": Func1.rt Func f1p == f2p : " + std::to_string( f1 == f2 ) + ", f1p: " + f1.toString() + ", f2 "+f2.toString() );
+        INFO(msg+": Func1.ref.rt Func f1p == f2p : " + std::to_string( f1 == f2 ) + ", f1p: " + f1.toString() + ", f2 "+f2.toString() );
         int f1r, f2r;
         f1(f1r, value);
         f2(f2r, value);
-        INFO(msg+": Func1.rt Res_ f1r == f2r : " + std::to_string( f1r == f2r ) + ", f1r: " + std::to_string( f1r ) + ", f2r "+std::to_string( f2r ) );
+        INFO(msg+": Func1.ref.rt Res_ f1r == f2r : " + std::to_string( f1r == f2r ) + ", f1r: " + std::to_string( f1r ) + ", f2r "+std::to_string( f2r ) );
         if( expEqual ) {
             REQUIRE(f1r == expRes);
             REQUIRE(f2r == expRes);
@@ -1361,9 +1549,9 @@ class TestFunction01 {
             REQUIRE(f1 != f2);
         }
     }
-    void test_function1________type(std::string msg, bool expEqual, MyClassFunction1 & f1, MyClassFunction1 &f2) noexcept {
+    void test_function1________type(std::string msg, bool expEqual, MyClassFunction1& f1, MyClassFunction1& f2) noexcept {
         // test std::function identity
-        INFO(msg+": Func1._t Func f1p == f2p : " + std::to_string( f1 == f2 ) + ", f1p: " + f1.toString() + ", f2 "+f2.toString() );
+        INFO(msg+": Func1.ref._t Func f1p == f2p : " + std::to_string( f1 == f2 ) + ", f1p: " + f1.toString() + ", f2 "+f2.toString() );
         {
             int f1r, f2r;
             f1(f1r, 0);
@@ -1378,9 +1566,9 @@ class TestFunction01 {
         }
     }
 
-    void test_function2________type(std::string msg, bool expEqual, MyClassFunction2 & f1, MyClassFunction2 &f2) noexcept {
+    void test_function2________type(std::string msg, bool expEqual, MyClassFunction2& f1, MyClassFunction2& f2) noexcept {
         // test std::function identity
-        INFO(msg+": Func2._t Func f1p == f2p : " + std::to_string( f1 == f2 ) + ", f1p: " + f1.toString() + ", f2 "+f2.toString() );
+        INFO(msg+": Func2.ref._t Func f1p == f2p : " + std::to_string( f1 == f2 ) + ", f1p: " + f1.toString() + ", f2 "+f2.toString() );
         {
             f1();
             f2();

@@ -31,4 +31,5 @@
 static std::string impl_name = "test/functional2.hpp";
 
 #define FUNCTIONAL_PROVIDED 1
+#define FUNCTIONAL_BROKEN_COPY_WITH_MUTABLE_LAMBDA 1
 #include "test_functional.hpp"
