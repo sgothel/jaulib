@@ -369,18 +369,19 @@ nsize_t jau::hexStringBytes(std::vector<uint8_t>& out, const std::string& hexstr
 static const char* HEX_ARRAY_LOW = "0123456789abcdef";
 static const char* HEX_ARRAY_BIG = "0123456789ABCDEF";
 
-std::string jau::bytesHexString(const uint8_t * bytes, const nsize_t offset, const nsize_t length,
+std::string jau::bytesHexString(const void* data, const nsize_t offset, const nsize_t length,
                                 const bool lsbFirst, const bool lowerCase) noexcept
 {
     const char* hex_array = lowerCase ? HEX_ARRAY_LOW : HEX_ARRAY_BIG;
     std::string str;
 
-    if( nullptr == bytes ) {
+    if( nullptr == data ) {
         return "null";
     }
     if( 0 == length ) {
         return "nil";
     }
+    const uint8_t * const bytes = static_cast<const uint8_t*>(data);
     if( lsbFirst ) {
         // LSB left -> MSB right, no leading `0x`
         str.reserve(length * 2 +1);

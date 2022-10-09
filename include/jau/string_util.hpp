@@ -90,7 +90,7 @@ namespace jau {
      * If lsbFirst is true, orders LSB left -> MSB right, usual for byte streams. Result will not have a leading `0x`.<br>
      * Otherwise orders MSB left -> LSB right, usual for readable integer values. Result will have a leading `0x`.
      * </p>
-     * @param bytes pointer to the first byte to print, less offset
+     * @param data pointer to the first byte to print, less offset
      * @param offset offset to bytes pointer to the first byte to print
      * @param length number of bytes to print
      * @param lsbFirst true having the least significant byte printed first (lowest addressed byte to highest),
@@ -99,7 +99,7 @@ namespace jau {
      * @param lowerCase true to use lower case hex-chars, otherwise capital letters are being used.
      * @return the hex-string representation of the data
      */
-    std::string bytesHexString(const uint8_t * bytes, const nsize_t offset, const nsize_t length,
+    std::string bytesHexString(const void* data, const nsize_t offset, const nsize_t length,
                                const bool lsbFirst, const bool lowerCase=true) noexcept;
 
     template< class uint8_container_type,
