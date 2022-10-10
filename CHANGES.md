@@ -8,6 +8,13 @@
 
 * First stable release (TODO)
 
+**0.17.1**
+* functional: Refinements ..
+  - Hide `delegate_t` union details using a non-anonymous type.
+  - Rename `function<R(A...)>::delegate_t_` to `function<R(A...)>::delegate_type`
+  - Add ylambda example using `function<R(A...)>::delegate_type` instead of `auto`
+  - Fix link to example
+
 **0.17.0**
 * functional: Added [ylambda_target_t](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/classjau_1_1func_1_1ylambda__target__t.html#ylambda_target),
   a [Y combinator](https://en.wikipedia.org/wiki/Fixed-point_combinator#Strict_functional_implementation)

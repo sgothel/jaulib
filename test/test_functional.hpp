@@ -132,7 +132,7 @@ class TestFunction01 {
             test_function0_result_type("lambda.3232", true, 1, 101, f_2, f_2);
         }
         {
-            // Test non-capturing y-lambdas
+            // Test non-capturing y-lambdas, using auto
             function<int(int)> f_1 = function<int(int)>::bind_ylambda( [](auto& self, int x) -> int {
                 if( 0 == x ) {
                     return 1;
@@ -141,6 +141,19 @@ class TestFunction01 {
                 }
             } );
             fprintf(stderr, "ylambda.1_1 (plain) %s, signature %s\n", f_1.toString().c_str(), f_1.signature().name());
+            REQUIRE( jau::func::target_type::ylambda == f_1.type() );
+            test_function0_result_type("ylambda.1111", true, 4, 24, f_1, f_1);
+        }
+        {
+            // Test non-capturing y-lambdas, using explicit function<int(int)>::delegate_type
+            function<int(int)> f_1 = function<int(int)>::bind_ylambda( [](function<int(int)>::delegate_type& self, int x) -> int {
+                if( 0 == x ) {
+                    return 1;
+                } else {
+                    return x * self(x-1);
+                }
+            } );
+            fprintf(stderr, "ylambda.1_2 (plain) %s, signature %s\n", f_1.toString().c_str(), f_1.signature().name());
             REQUIRE( jau::func::target_type::ylambda == f_1.type() );
             test_function0_result_type("ylambda.1111", true, 4, 24, f_1, f_1);
         }
@@ -1473,7 +1486,7 @@ class TestFunction01 {
             } );
             fprintf(stderr, "ylambda 1 f_1: %s\n", f_1.toString().c_str());
             REQUIRE( jau::func::target_type::ylambda == f_1.type() );
-            REQUIRE( 24 == f_1(4) ); // `self` is bound to delegate<R(A...)> `f_1.target`, `x` is 4
+            REQUIRE( 24 == f_1(4) ); // `self` is bound to function<R(A...)>::delegate_type `f_1.target`, `x` is 4
 
             // f_1 != f_2 since both reference a different `self`
             function<int(int)> f_2 = function<int(int)>::bind_ylambda( [](auto& self, int x) -> int {
@@ -1547,7 +1560,7 @@ class TestFunction01 {
             REQUIRE( 24 == f_1(4) );
         }
         {
-            function<int(int)> f_1 = function<int(int)>::bind_ylambda( [](auto& self, int x) -> int {
+            function<int(int)> f_1 = function<int(int)>::bind_ylambda( [](function<int(int)>::delegate_type& self, int x) -> int {
                 if( 0 == x ) {
                     return 1;
                 } else {
@@ -1555,9 +1568,9 @@ class TestFunction01 {
                 }
             } );
 
-            fprintf(stderr, "ylambda 2 f_1: %s\n", f_1.toString().c_str());
+            fprintf(stderr, "ylambda 3 f_1: %s\n", f_1.toString().c_str());
             REQUIRE( jau::func::target_type::ylambda == f_1.type() );
-            REQUIRE( 24 == f_1(4) ); // `self` is bound to delegate<R(A...)> `f_1.target`, `x` is 4
+            REQUIRE( 24 == f_1(4) ); // `self` is bound to function<R(A...)>::delegate_type `f_1.target`, `x` is 4
         }
 #endif
     }
