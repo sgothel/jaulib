@@ -17,6 +17,7 @@ issues/
 *.swo
 *~
 *.log
+documentation.tar.xz
 
 # Eclipse files
 #.cproject

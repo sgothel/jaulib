@@ -436,6 +436,7 @@ std::string jau::to_string(const jau::func::target_type v) noexcept {
         case jau::func::target_type::member:  return "member";
         case jau::func::target_type::free:  return "free";
         case jau::func::target_type::lambda: return "lambda";
+        case jau::func::target_type::ylambda: return "ylambda";
         case jau::func::target_type::capval: return "capval";
         case jau::func::target_type::capref: return "capref";
         case jau::func::target_type::std: return "std";

@@ -24,6 +24,7 @@
 #include <cassert>
 #include <cinttypes>
 #include <cstring>
+#include <string>
 
 #if !FUNCTIONAL_PROVIDED
     #include <jau/functional.hpp>
@@ -42,8 +43,8 @@ class TestFunction01 {
      * Unit test covering most variants of jau::function<R(A...)
      */
     void test00_usage() {
-        INFO("Test 00_usage: START: Implementation = "+impl_name);
-        fprintf(stderr, "Implementation: %s\n", impl_name.c_str());
+        INFO("Test 00_usage: START: Implementation = functional "+std::to_string( FUNCTIONAL_IMPL ));
+        fprintf(stderr, "Implementation: functional %d\n", FUNCTIONAL_IMPL);
         {
             // Test capturing lambdas
             volatile int i = 100;
@@ -63,16 +64,29 @@ class TestFunction01 {
                 fprintf(stderr, "lambda.copy:   %s\n", fa0.toString().c_str());
                 REQUIRE( jau::func::target_type::lambda == fa0.type() );
             }
-
-            {
-                // and this non-capturing lambda is also detected as lambda
-                jau::function<int(int)> fl3_1 = [](int a) -> int {
-                    return a + 100;
-                } ;
-                fprintf(stderr, "lambda.plain   %s\n", fl3_1.toString().c_str());
-                REQUIRE( jau::func::target_type::lambda == fl3_1.type() );
-            }
         }
+        {
+            // Test non-capturing lambdas
+            jau::function<int(int)> f_1 = [](int a) -> int {
+                return a + 100;
+            } ;
+            fprintf(stderr, "lambda.plain:  %s\n", f_1.toString().c_str());
+            REQUIRE( jau::func::target_type::lambda == f_1.type() );
+        }
+#if ( FUNCTIONAL_IMPL == 1 )
+        {
+            // Test non-capturing y-lambdas
+            jau::function<int(int)> f_1 = jau::function<int(int)>::bind_ylambda( [](auto& self, int x) -> int {
+                if( 0 == x ) {
+                    return 1;
+                } else {
+                    return x * self(x-1);
+                }
+            } );
+            fprintf(stderr, "ylambda.plain: %s\n", f_1.toString().c_str());
+            REQUIRE( jau::func::target_type::ylambda == f_1.type() );
+        }
+#endif
         {
             // free, result void and no params
             typedef void(*cfunc)();
@@ -351,7 +365,19 @@ class TestFunction01 {
         }
 #endif
 
-#if !SKIP_JAU_LAMBDAS
+        {
+            jau::function<int(int)> f = [](int a) -> int {
+                return 100+ a;
+            };
+
+            BENCHMARK("lambda_none_jaufunc") {
+                volatile int r=0;
+                for(int i=0; i<loops; ++i) {
+                    r += f(i);
+                }
+                return r;
+            };
+        }
         {
             volatile int captured = 100;
 
@@ -359,13 +385,29 @@ class TestFunction01 {
                 return captured + a;
             };
 
-            BENCHMARK("lambda_jaufunc") {
+            BENCHMARK("lambda_refe_jaufunc") {
                 volatile int r=0;
                 for(int i=0; i<loops; ++i) {
                     r += f(i);
                 }
                 return r;
             };
+        }
+#if ( FUNCTIONAL_IMPL == 1 )
+        {
+            jau::function<int(int)> f = jau::function<int(int)>::bind_ylambda( [](auto& self, int x) -> int {
+                (void)self; // no-use
+                return 100+x;
+            } );
+
+            BENCHMARK("ylambda_none_jaufunc") {
+                volatile int r=0;
+                for(int i=0; i<loops; ++i) {
+                    r += f(i);
+                }
+                return r;
+            };
+
         }
 #endif
 

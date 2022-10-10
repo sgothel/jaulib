@@ -24,9 +24,11 @@
 #include <cassert>
 #include <cinttypes>
 #include <cstring>
+#include <string>
 #include <typeindex>
 
-#if !FUNCTIONAL_PROVIDED
+#ifndef FUNCTIONAL_PROVIDED
+    #define FUNCTIONAL_IMPL 1
     #include <jau/functional.hpp>
     static std::string impl_name = "jau/functional.hpp";
 #endif
@@ -59,8 +61,8 @@ class TestFunction01 {
      * Unit test covering most variants of jau::function<R(A...)
      */
     void test00_usage() {
-        INFO("Test 00_usage: START: Implementation = "+impl_name);
-        fprintf(stderr, "Implementation: %s\n", impl_name.c_str());
+        INFO("Test 00_usage: START: Implementation = functional "+std::to_string( FUNCTIONAL_IMPL )+".hpp");
+        fprintf(stderr, "Implementation: functional %d\n", FUNCTIONAL_IMPL);
         {
             // Test capturing lambdas
             volatile int i = 100;
@@ -110,18 +112,41 @@ class TestFunction01 {
             }
             test_function0_result_____("lambda.2a2b",       1, 101, fa2_a, fa2_b);
             test_function0________type("lambda.2a2b", true,         fa2_a, fa2_b);
+        }
 
-            // and this non-capturing lambda is also detected as lambda
-            function<int(int)> fl3_1 = [](int a) -> int {
-                // return i + a;
+#if ( FUNCTIONAL_IMPL == 1 )
+        {
+            // Test non-capturing lambdas
+            function<int(int)> f_1 = [](int a) -> int {
                 return a + 100;
             } ;
-            fprintf(stderr, "lambda.3_1 (plain) %s, signature %s\n", fl3_1.toString().c_str(), fl3_1.signature().name());
-            REQUIRE( jau::func::target_type::lambda == fl3_1.type() );
-            test_function0_result_type("lambda.3131", true, 1, 101, fl3_1, fl3_1);
+            fprintf(stderr, "lambda.3_1 (plain) %s, signature %s\n", f_1.toString().c_str(), f_1.signature().name());
+            REQUIRE( jau::func::target_type::lambda == f_1.type() );
+            test_function0_result_type("lambda.3131", true, 1, 101, f_1, f_1);
+
+            function<int(int)> f_2 = function<int(int)>::bind_lambda( [](int x) -> int {
+                return x + 100;
+            } );
+            fprintf(stderr, "lambda.3_2 (plain) %s, signature %s\n", f_2.toString().c_str(), f_2.signature().name());
+            REQUIRE( jau::func::target_type::lambda == f_2.type() );
+            test_function0_result_type("lambda.3232", true, 1, 101, f_2, f_2);
         }
         {
-            // Test non-capturing lambdas -> free functions
+            // Test non-capturing y-lambdas
+            function<int(int)> f_1 = function<int(int)>::bind_ylambda( [](auto& self, int x) -> int {
+                if( 0 == x ) {
+                    return 1;
+                } else {
+                    return x * self(x-1);
+                }
+            } );
+            fprintf(stderr, "ylambda.1_1 (plain) %s, signature %s\n", f_1.toString().c_str(), f_1.signature().name());
+            REQUIRE( jau::func::target_type::ylambda == f_1.type() );
+            test_function0_result_type("ylambda.1111", true, 4, 24, f_1, f_1);
+        }
+#endif
+        {
+            // Test non-capturing lambdas -> forced free functions
             typedef int(*cfunc)(int); // to force non-capturing lambda into a free function template type deduction
             volatile int i = 100;
 
@@ -1413,7 +1438,7 @@ class TestFunction01 {
             fprintf(stderr, "l10 f_2 cpy: %s\n", f_2.toString().c_str());
             REQUIRE( jau::func::target_type::lambda == f_2.type() );
 
-#ifndef FUNCTIONAL_BROKEN_COPY_WITH_MUTABLE_LAMBDA
+#if FUNCTIONAL_IMPL == 1
             test_function0_result_copy("lambda.10.1a",        1, 101, f_1, f_2); // increment of copied i,j, f_x passed by copy!
             test_function0_result_copy("lambda.10.1b",        1, 101, f_1, f_2); // increment of copied i,j, f_x passed by copy!
             test_function0_result_copy("lambda.10.1c",        1, 101, f_1, f_2); // increment of copied i,j, f_x passed by copy!
@@ -1437,6 +1462,104 @@ class TestFunction01 {
             }
             test_function0________type("lambda.10.5", true,          f_1, f_1);
         }
+#if ( FUNCTIONAL_IMPL == 1 )
+        {
+            function<int(int)> f_1 = function<int(int)>::bind_ylambda( [](auto& self, int x) -> int {
+                if( 0 == x ) {
+                    return 1;
+                } else {
+                    return x * self(x-1);
+                }
+            } );
+            fprintf(stderr, "ylambda 1 f_1: %s\n", f_1.toString().c_str());
+            REQUIRE( jau::func::target_type::ylambda == f_1.type() );
+            REQUIRE( 24 == f_1(4) ); // `self` is bound to delegate<R(A...)> `f_1.target`, `x` is 4
+
+            // f_1 != f_2 since both reference a different `self`
+            function<int(int)> f_2 = function<int(int)>::bind_ylambda( [](auto& self, int x) -> int {
+                if( 0 == x ) {
+                    return 1;
+                } else {
+                    return x * self(x-1);
+                }
+            } );
+            test_function0________type("ylambda.1.1", true,          f_1, f_1);
+            test_function0________type("ylambda.1.2", false,         f_1, f_2);
+        }
+#endif
+    }
+
+    template<typename R, typename L, typename... A>
+    class y_combinator_lambda {
+        private:
+            L f;
+        public:
+            // template<typename L>
+            y_combinator_lambda(L func) noexcept
+            : f( func )
+            { }
+
+            static constexpr y_combinator_lambda make(L func) {
+                return y_combinator_lambda<R, L, A...>(func);
+            }
+
+            constexpr R operator()(A... args) const {
+                return f(*this, args...);
+            }
+            constexpr R operator()(A... args) {
+                return f(*this, args...);
+            }
+    };
+
+    void test15_ylambda() {
+        {
+            // Using the manual template type y_combinator_lambda, 1st-try
+            auto stub = [](auto& self, int x) -> int {
+                if( 0 == x ) {
+                    return 1;
+                } else {
+                    return x * self(x-1);
+                }
+            };
+            jau::type_cue<decltype(stub)>::print("y_combinator.0.stub", TypeTraitGroup::ALL);
+            y_combinator_lambda<int, decltype(stub), int> f_1 = stub;
+            REQUIRE( 24 == f_1(4) );
+        }
+#if ( FUNCTIONAL_IMPL == 1 )
+        {
+            // Using an auto stub taking the lambda first, then assign to explicit template typed function<R(A...)>
+            // Notable: While the `auto stub` is TriviallyCopyable, the delegated jau::func::ylambda_target_t::data_type is not.
+            //          However, direct assignment in the next example is all TriviallyCopyable and hence efficient.
+            auto stub = [](auto& self, int x) -> int {
+                if( 0 == x ) {
+                    return 1;
+                } else {
+                    return x * self(x-1);
+                }
+            };
+            typedef decltype(stub) stub_type;
+            jau::type_cue<stub_type>::print("ylambda 1.stub", TypeTraitGroup::ALL);
+
+            function<int(int)> f_1( jau::func::ylambda_target_t<int, stub_type, int>::delegate(stub), 0 );
+
+            fprintf(stderr, "ylambda 1 f_1: %s\n", f_1.toString().c_str());
+            REQUIRE( jau::func::target_type::ylambda == f_1.type() );
+            REQUIRE( 24 == f_1(4) );
+        }
+        {
+            function<int(int)> f_1 = function<int(int)>::bind_ylambda( [](auto& self, int x) -> int {
+                if( 0 == x ) {
+                    return 1;
+                } else {
+                    return x * self(x-1);
+                }
+            } );
+
+            fprintf(stderr, "ylambda 2 f_1: %s\n", f_1.toString().c_str());
+            REQUIRE( jau::func::target_type::ylambda == f_1.type() );
+            REQUIRE( 24 == f_1(4) ); // `self` is bound to delegate<R(A...)> `f_1.target`, `x` is 4
+        }
+#endif
     }
 
   private:
@@ -1660,6 +1783,7 @@ class TestFunction01 {
     };
 };
 
+
 METHOD_AS_TEST_CASE( TestFunction01::test00_usage,               "00_usage");
 
 METHOD_AS_TEST_CASE( TestFunction01::test01_memberfunc_this,     "01_memberfunc");
@@ -1677,3 +1801,5 @@ METHOD_AS_TEST_CASE( TestFunction01::test11_memberfunc_this,     "11_memberfunc"
 METHOD_AS_TEST_CASE( TestFunction01::test12_freefunc_static,     "12_freefunc");
 METHOD_AS_TEST_CASE( TestFunction01::test13_stdfunc_lambda,      "13_stdfunc");
 METHOD_AS_TEST_CASE( TestFunction01::test14_capval_lambda,       "14_capval");
+
+METHOD_AS_TEST_CASE( TestFunction01::test15_ylambda,             "15_ylambda");

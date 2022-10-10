@@ -9,6 +9,10 @@
 * First stable release (TODO)
 
 **0.17.0**
+* functional: Added [ylambda_target_t](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/classjau_1_1func_1_1ylambda__target__t.html#ylambda_target),
+  a [Y combinator](https://en.wikipedia.org/wiki/Fixed-point_combinator#Strict_functional_implementation)
+  and [Deducing this](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2021/p0847r7.html) implementation for lambda closures
+  usable for recursive algorithms.
 * functional: Revised implementation using static polymorphism.
   - Deep copy of target function detail
     - Works with mutable lambda states, i.e. mutating a field (by-copy captured)

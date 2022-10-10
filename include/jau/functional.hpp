@@ -39,7 +39,7 @@
 namespace jau {
 
     /** @defgroup FunctionWrap Function Wrapper
-     *  Supporting general-purpose polymorphic function wrapper via jau::function<R(A...)>.
+     * A general-purpose static-polymorphic function wrapper via [jau::function<R(A...)>](@ref function_def).
      *
      * @anchor function_overview
      * ### Function Overview
@@ -48,50 +48,52 @@ namespace jau {
      * e.g. free functions, capturing and non-capturing lambda function, member functions,
      *
      * [jau::function<R(A...)>](@ref function_def) supports equality operations for all func::target_t source types,
-     * allowing to manage container of [jau::function](@ref function_def)s.
-     *
-     * See [limitations](@ref function_limitations) below.
+     * allowing to manage container of [jau::function](@ref function_def)s, see [limitations](@ref function_limitations) below.
      *
      * If a [jau::function](@ref function_def) contains no target, see jau::function<R(A...)>::is_null(), it is empty.
      * Invoking the target of an empty [jau::function](@ref function_def) is a no-operation and has no side effects.
      *
-     * [jau::function](@ref function_def) satisfies the requirements of CopyConstructible and CopyAssignable.
+     * [jau::function](@ref function_def) satisfies the requirements of CopyConstructible, CopyAssignable, MoveConstructible and MoveAssignable.
      *
      * Compared to `std::function<R(A...)>`, `jau::function<R(A...)>`
      * - supports equality operations,
      * - supports capturing lambda functions
      *   - See [limitations on their equality operator w/o RTTI on `gcc`](@ref function_limitations).
+     * - supports [Y combinator and deducing this lambda functions](@ref ylambda_target).
      * - most operations are `noexcept`, except for the user given function invocation.
      * - exposes the target function signature jau::type_info via jau::function::signature()
      *
      * Implementation utilizes a fast path target function [delegate](@ref delegate_class).
      *
-     * Instances of [jau::function](@ref function_def) can store, copy, and invoke any of its callable targets
+     * Instances of [jau::function](@ref function_def) can store, copy, move and invoke any of its callable targets
      * - free functions
-     *   - bind_free()
+     *   - factory bind_free()
      *     - includes non-capturing lambda
      *   - constructor [jau::function<R(A...)>::function(R(*func)(A...))](@ref function_ctor_free)
      * - member functions
-     *   - bind_member()
+     *   - factory bind_member()
      *   - constructor [`function(C *base, R(C::*mfunc)(A...))`](@ref function_ctor_member)
      * - lambda functions
      *   - constructor [`template<typename L> function(L func)`](@ref function_ctor_lambda)
      *   - see [limitations on their equality operator w/o RTTI on `gcc`](@ref function_limitations).
-     * - lambda alike functions using a captured data type by reference
-     *   - bind_capref()
+     * - [Y combinator and deducing this lambda functions](@ref ylambda_target)
+     *   - factory [bind_ylambda()](@ref function_bind_ylambda)
+     * - lambda alike functions using a captured data type by-reference
+     *   - factory bind_capref()
      *   - constructor [function(I* data_ptr, R(*func)(I*, A...))](@ref function_ctor_capref)
      * - lambda alike functions using a captured data type by value
-     *   - bind_capval()
+     *   - factory bind_capval()
      *   - constructor copy [function(const I& data, R(*func)(I&, A...))](@ref function_ctor_capval_copy)
      *   - constructor move [function(I&& data, R(*func)(I&, A...))](@ref function_ctor_capval_move)
      * - std::function
-     *   - bind_std()
+     *   - factory bind_std()
      *   - constructor [function(uint64_t id, std::function<R(A...)> func)](@ref function_ctor_std)
      *
      * @anchor function_usage
      * #### Function Usage
      *
-     * A detailed API usage is covered within [test_functional01.cpp](test_functional01_8cpp-example.html), see function `test00_usage()`.
+     * A detailed API usage is covered within [test_functional.hpp](test_functional_8hpp-example.html)
+     * and [test_functional_perf.hpp](test_functional__perf_8hpp-example.html), see function `test00_usage()`.
      *
      * Let's assume we like to bind to the following
      * function prototype `bool func(int)`, which results to `jau::function<bool(int)>`:
@@ -120,7 +122,7 @@ namespace jau {
      *
      *   ```
      *
-     *   - Bind `jau::function<R(A...)> jau::bind_free(R(*func)(A...))`
+     *   - Factory `jau::bind_free(R(*func)(A...))`
      *   ```
      *   jau::function<bool(int)> func0 = jau::bind_free(&MyClass:func);
      *
@@ -141,7 +143,7 @@ namespace jau {
      *   jau::function<bool(int)> func(&i1, &MyClass::m_func);
      *   ```
      *
-     *   - Bind `jau::function<R(A...)> jau::bind_member(C *base, R(C::*mfunc)(A...))`
+     *   - Factory `jau::bind_member(C *base, R(C::*mfunc)(A...))`
      *   ```
      *   jau::function<bool(int)> func = jau::bind_member(&i1, &MyClass::m_func);
      *   ```
@@ -152,26 +154,61 @@ namespace jau {
      *   int sum = 0;
      *   ```
      *
-     *   - Constructor [template<typename L> function(L func)](@ref function_ctor_lambda)
+     *   - Stateless lambda, equivalent to `bool(*)(int)` function
      *   ```
      *   jau::function<bool(int)> func0 = [](int v) -> bool {
      *          return 0 == v;
      *      };
-     *
-     *   jau::function<bool(int)> func1 = [&](int v) -> bool {
-     *           sum += v;
-     *           return 0 == v;
-     *       };
-     *
-     *   auto func2_stub = [&](int v) -> bool {
-     *           sum += v;
-     *           return 0 == v;
-     *       };
-     *
-     *   jau::function<bool(int)> func2 = func2_stub;
      *   ```
      *
-     * - Lambda alike capture by reference to value via [constructor](@ref function_ctor_capref) and jau::bind_capref()
+     *   - Stateless by-value capturing lambda
+     *   ```
+     *   jau::function<bool(int)> func1 = [sum](int v) -> bool {
+     *           return sum == v;
+     *       };
+     *   ```
+     *
+     *   - Stateful by-value capturing lambda mutating captured field
+     *   ```
+     *   jau::function<bool(int)> func1 = [sum](int v) mutable -> bool {
+     *           sum += v;
+     *           return 0 == v;
+     *       };
+     *   ```
+     *
+     *   - Stateless by-reference capturing lambda
+     *   ```
+     *   jau::function<bool(int)> func1 = [&sum](int v) -> bool {
+     *           sum += v;
+     *           return 0 == v;
+     *       };
+     *   ```
+     *
+     *   - Stateless by-reference capturing lambda assigning an auto lambda
+     *   ```
+     *   auto lambda_func = [&](int v) -> bool {
+     *           sum += v;
+     *           return 0 == v;
+     *       };
+     *
+     *   jau::function<bool(int)> func1 = lambda_func;
+     *   jau::function<bool(int)> func2 = lambda_func;
+     *   assert( func1 == func2 );
+     *   ```
+     *
+     * - [Y combinator and deducing this lambda functions](@ref ylambda_target) via factory [bind_ylambda()](@ref function_bind_ylambda)
+     *   - Stateless lambda receiving explicit this object parameter reference used for recursion
+     *   ```
+     *   function<int(int)> f = function<int(int)>::bind_ylambda( [](auto& self, int x) -> int {
+     *       if( 0 == x ) {
+     *           return 1;
+     *       } else {
+     *           return x * self(x-1); // recursion, calling itself w/o explicitly passing `self`
+     *       }
+     *   } );
+     *   assert( 24 == f(4) ); // `self` is bound to delegate<R(A...)> `f.target`, `x` is 4
+     *   ```
+     * - Lambda alike capture by-reference to value via [constructor](@ref function_ctor_capref) and jau::bind_capref()
      *   - Prologue
      *   ```
      *   struct big_data {
@@ -191,7 +228,7 @@ namespace jau {
      *             } ) );
      *   ```
      *
-     *   - Bind `jau::function<R(A...)> jau::bind_capref(I* data_ptr, R(*func)(I*, A...))`
+     *   - Factory `jau::bind_capref(I* data_ptr, R(*func)(I*, A...))`
      *   ```
      *   jau::function<bool(int)> func = jau::bind_capref(&data,
      *       (cfunc) ( [](big_data* data, int v) -> bool {
@@ -200,12 +237,12 @@ namespace jau {
      *             } ) );
      *   ```
      *
-     * - Lambda alike capture by copy of value via constructor and jau::bind_capval()
+     * - Lambda alike capture by-copy of value via constructor and jau::bind_capval()
      *   - Constructor copy [function(const I& data, R(*func)(I&, A...))](@ref function_ctor_capval_copy)
      *   - Constructor move [function(I&& data, R(*func)(I&, A...))](@ref function_ctor_capval_move)
-     *   - Bind copy `jau::function<R(A...)> jau::bind_capval(const I& data, R(*func)(I&, A...))`
-     *   - Bind move `jau::function<R(A...)> jau::bind_capval(I&& data, R(*func)(I&, A...))` <br />
-     *   See example of *Capture by reference to value* above.
+     *   - Factory copy `jau::bind_capval(const I& data, R(*func)(I&, A...))`
+     *   - Factory move `jau::bind_capval(I&& data, R(*func)(I&, A...))` <br />
+     *   See example of *Capture by-reference to value* above.
      *
      * - std::function function via [constructor](@ref function_ctor_std) and jau::bind_std()
      *   - Prologue
@@ -220,7 +257,7 @@ namespace jau {
      *   jau::function<bool(int)> func(100, func_stdlambda);
      *   ```
      *
-     *   - Bind `function<R(A...)> jau::bind_std(uint64_t id, std::function<R(A...)> func)`
+     *   - Factory `jau::bind_std(uint64_t id, std::function<R(A...)> func)`
      *   ```
      *   jau::function<bool(int)> func = jau::bind_std(100, func_stdlambda);
      *   ```
@@ -285,20 +322,22 @@ namespace jau {
             free = 2,
             /** Denotes a func::lambda_target_t */
             lambda = 3,
+            /** Denotes a func::ylambda_target_t */
+            ylambda = 4,
             /** Denotes a func::capval_target_t */
-            capval = 4,
+            capval = 5,
             /** Denotes a func::capref_target_t */
-            capref = 5,
+            capref = 6,
             /** Denotes a func::std_target_t */
-            std = 6
+            std = 7
         };
 
         /**
-         * @anchor delegate_class Delegated target function details, allowing a fast path target function invocation.
+         * Delegated target function details, allowing a fast path target function invocation.
          *
-         * This static polymorphous object, delegates invocation specific user template-type data and callbacks
+         * @anchor delegate_class This static polymorphic object, delegates invocation specific user template-type data and callbacks
          * and allows to:
-         * - be maintained within function<R(A...)> instance as a member
+         * - be maintained within [function<R(A...)>](@ref function_def) instance as a member
          *   - avoiding need for dynamic polymorphism, i.e. heap allocated specialization referenced by base type
          *   - hence supporting good cache performance
          * - avoid using virtual function table indirection
@@ -363,9 +402,10 @@ namespace jau {
                 : m_cb(cb_), m_eqop(eqop_), m_size( size_ ), m_type(type_)
                 {
                     if( static_cast<size_type>( sizeof(sdata) ) >= m_size ) {
+                        // using sdata
                         m_size *= -1;
-                        ::bzero(sdata, size_);
                     } else {
+                        // using vdata
                         vdata.anon = ::malloc(m_size);
                         vdata.non_trivial = nullptr;
                     }
@@ -593,15 +633,6 @@ namespace jau {
                     return static_cast<T*>( vdata.anon );
                 }
 
-                constexpr size_t callback_size() const noexcept { return sizeof(invocation_t) + sizeof(equal_op_t); }
-
-                constexpr size_t vdata_size() const noexcept { return 0 >= m_size ? 0 : ( m_size + ( nullptr != vdata.non_trivial ? sizeof(*vdata.non_trivial) : 0 ) ); }
-                constexpr size_t sdata_size() const noexcept { return 0 >= m_size ? std::abs(m_size) : 0; }
-                constexpr size_t data_size() const noexcept { return std::abs(m_size); }
-
-                /** Return the func::target_type of this invocation function wrapper */
-                constexpr target_type type() const noexcept { return m_type; }
-
                 /**
                  * \brief Delegated fast path target function invocation, [see above](@ref delegate_class)
                  *
@@ -621,6 +652,18 @@ namespace jau {
                 constexpr bool operator==(const delegate_t<R, A...>& rhs) const noexcept {
                     return m_eqop(*this, rhs);
                 }
+
+                /** Returns true if the underlying target function is trivially copyable. */
+                constexpr bool is_trivially_copyable() const noexcept { return 0 >= m_size || nullptr == vdata.non_trivial; }
+
+                constexpr size_t vdata_size() const noexcept { return 0 >= m_size ? 0 : ( m_size + ( nullptr != vdata.non_trivial ? sizeof(*vdata.non_trivial) : 0 ) ); }
+                constexpr size_t sdata_size() const noexcept { return 0 >= m_size ? std::abs(m_size) : 0; }
+
+                /** Returns the size of underlying target function */
+                constexpr size_t target_size() const noexcept { return std::abs(m_size); }
+
+                /** Return the func::target_type of this invocation function wrapper */
+                constexpr target_type type() const noexcept { return m_type; }
         };
 
         /**
@@ -819,8 +862,8 @@ namespace jau {
                     L function;
                     jau::type_info sig;
 
-                    data_type(jau::type_info _sig, L _function) noexcept
-                    : function(_function), sig(_sig) {}
+                    data_type(L _function) noexcept
+                    : function( _function ), sig( jau::make_ctti<R, L, A...>() ) {}
 
                     constexpr size_t detail_size() const noexcept { return sizeof(function); }
                 };
@@ -842,7 +885,84 @@ namespace jau {
 
             public:
                 static delegate_t_ delegate(L function) noexcept {
-                    return delegate_t_::template make<data_type>( target_type::lambda, invoke_impl, equal_op_impl, jau::make_ctti<R, L, A...>(), function );
+                    return delegate_t_::template make<data_type>( target_type::lambda, invoke_impl, equal_op_impl, function );
+                }
+        };
+
+        /**
+         * func::ylambda_target_t is a [Y combinator](https://en.wikipedia.org/wiki/Fixed-point_combinator#Strict_functional_implementation)
+         * and [deducing this](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2021/p0847r7.html) implementation for lambda closures
+         * usable for recursive algorithms.
+         *
+         * @anchor ylambda_target  The [Y combinator](https://en.wikipedia.org/wiki/Fixed-point_combinator#Strict_functional_implementation)
+         * allows passing the unnamed lambda instance itself, enabling recursive invocation from within the lambda. <br />
+         * In other words, a `this` reference of the unnamed lambda is passed to the lambda, similar to [`Deducing this`](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2021/p0847r7.html).
+         *
+         * The ylambda [function<R(A...)>](@ref function_def) is invoked w/o explicitly passing the object parameter,
+         * as it is implicitly passed down to the user's lambda implementation.
+         *
+         * Example implementing a recursive lambda factorial function
+         *
+         * ```
+         * function<int(int)> f = function<int(int)>::bind_ylambda( [](auto& self, int x) -> int {
+         *        if( 0 == x ) {
+         *            return 1;
+         *        } else {
+         *            return x * self(x-1); // recursion, calling itself w/o explicitly passing `self`
+         *        }
+         *   } );
+         *   assert( 24 == f(4) ); // `self` is bound to delegate<R(A...)> `f.target`, `x` is 4
+         * ```
+         *
+         * An instance is identifiable as func::target_type::ylambda via jau::function<R(A...)>::type().
+         *
+         * @tparam R function return type
+         * @tparam L typename holding the lambda closure
+         * @tparam A function arguments
+         * @see @ref function_overview "Function Overview"
+         * @see [Deducing this](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2021/p0847r7.html)
+         * @see [Explicit object parameter](https://en.cppreference.com/w/cpp/language/member_functions#Explicit_object_parameter)
+         * @see [Curiously Recurring Template Pattern](https://en.cppreference.com/w/cpp/language/crtp)
+         */
+        template<typename R, typename L, typename...A>
+        class ylambda_target_t final {
+            public:
+                typedef delegate_t<R, A...> delegate_t_;
+
+            private:
+                struct data_type final {
+                    L function;
+                    jau::type_info sig;
+
+                    data_type(L _function) noexcept
+                    : function( _function ), sig( jau::make_ctti<R, L, A...>() ) {
+                        // jau::type_cue<L>::print("ylambda_target_t.lambda", TypeTraitGroup::ALL);
+                        // jau::type_cue<data_type>::print("ylambda_target_t.data_type", TypeTraitGroup::ALL);
+                        // fprintf(stderr, "ylambda_target: %s\n\t\tsize %zu, %p: %s\n",
+                        //         sig.name(), sizeof(L), &function, jau::bytesHexString(&function, 0, sizeof(L), true).c_str());
+                    }
+
+                    constexpr size_t detail_size() const noexcept { return sizeof(function); }
+                };
+
+                constexpr static R invoke_impl(delegate_t_* __restrict_cxx__ const data, A... args) {
+                    return ( data->template data<data_type>()->function )(*data, args...);
+                }
+
+                constexpr static bool equal_op_impl(const delegate_t_& lhs_, const delegate_t_& rhs_) noexcept {
+                    const data_type* lhs = lhs_.template data<const data_type>();
+                    const data_type* rhs = rhs_.template data<const data_type>();
+                    return lhs == rhs ||
+                           ( lhs_.type() == rhs_.type() &&
+                             lhs->detail_size() == rhs->detail_size() &&                                        // fast:  wrong size -> false, otherwise ...
+                             lhs->sig == rhs->sig &&                                                            // mixed: wrong jau::type_info -> false, otherwise ...
+                             0 == ::memcmp((void*)&lhs->function, (void*)&rhs->function, sizeof(lhs->function)) // slow:  compare the anonymous data chunk of the lambda
+                           );
+                }
+
+            public:
+                static delegate_t_ delegate(L function) noexcept {
+                    return delegate_t_::template make<data_type>( target_type::ylambda, invoke_impl, equal_op_impl, function );
                 }
         };
 
@@ -1002,7 +1122,7 @@ namespace jau {
      std::string to_string(const func::target_type v) noexcept;
 
     /**
-     * Class template [jau::function](@ref function_def) is a general-purpose polymorphic function wrapper.
+     * Class template [jau::function](@ref function_def) is a general-purpose static-polymorphic function wrapper.
      *
      * See @ref function_overview "Function Overview".
      *
@@ -1014,8 +1134,7 @@ namespace jau {
     class function;
 
     /**
-     * @anchor function_def
-     * Class template [jau::function](@ref function_def) is a general-purpose polymorphic function wrapper.
+     * @anchor function_def Class template [jau::function](@ref function_def) is a general-purpose static-polymorphic function wrapper.
      *
      * See @ref function_overview "Function Overview".
      *
@@ -1091,6 +1210,7 @@ namespace jau {
              *
              * @anchor function_ctor_lambda
              * Constructs an instance by taking a lambda function.
+             *
              * @tparam L typename holding the lambda closure
              * @param func the lambda reference
              * @see @ref function_overview "function Overview"
@@ -1105,6 +1225,44 @@ namespace jau {
             function(L func) noexcept
             : target( func::lambda_target_t<R, L, A...>::delegate(func) )
             { }
+
+            /**
+             * \brief Lambda function bind factory
+             *
+             * @anchor function_bind_lambda
+             * Constructs an instance by taking a lambda function.
+             *
+             * @tparam L typename holding the lambda closure
+             * @param func the lambda reference
+             * @see @ref function_overview "function Overview"
+             * @see @ref function_usage "function Usage"
+             */
+            template<typename L>
+            static constexpr function<R(A...)> bind_lambda(L func) noexcept
+            {
+                return function<R(A...)>( jau::func::lambda_target_t<R, L, A...>::delegate(func), 0 );
+            }
+
+            /**
+             * \brief Y combinator Lambda function bind factory
+             *
+             * @anchor function_bind_ylambda
+             * Constructs an instance by taking a lambda function,
+             * implementing a [Y combinator](https://en.wikipedia.org/wiki/Fixed-point_combinator#Strict_functional_implementation)
+             * and [deducing this](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2021/p0847r7.html) lambda closure,
+             * see [ylambda_target_t](@ref ylambda_target).
+             *
+             * @tparam L typename holding the lambda closure
+             * @param func the lambda reference
+             * @see @ref ylambda_target "ylambda_target_t"
+             * @see @ref function_overview "function Overview"
+             * @see @ref function_usage "function Usage"
+             */
+            template<typename L>
+            static constexpr function<R(A...)> bind_ylambda(L func) noexcept
+            {
+                return function<R(A...)>( jau::func::ylambda_target_t<R, L, A...>::delegate(func), 0 );
+            }
 
             /**
              * \brief Member function constructor
@@ -1130,7 +1288,7 @@ namespace jau {
              * Constructs an instance by copying the captured value and the given non-void function to
              * an anonymous function using func::capval_target_t.
              *
-             * `const I& data` will be copied into func::capval_target_t and hence captured by copy.
+             * `const I& data` will be copied into func::capval_target_t and hence captured by-copy.
              *
              * The function invocation will have the reference of the copied data being passed to the target function for efficiency.
              *
@@ -1168,7 +1326,7 @@ namespace jau {
             { }
 
             /**
-             * \brief Capture by reference function constructor
+             * \brief Capture by-reference function constructor
              *
              * @anchor function_ctor_capref
              * Constructs an instance by passing the captured reference (pointer) to the value and non-void function to
@@ -1224,12 +1382,22 @@ namespace jau {
                 return jau::make_ctti<R(A...)>();
             }
 
+            /** Returns true if the underlying target function is trivially copyable. */
+            constexpr bool is_target_trivially_copyable() const noexcept { return target.is_trivially_copyable(); }
+
+            /** Return the total size of this instance, may include heap allocated by delegate for bigger target functions. */
+            constexpr size_t size() const noexcept { return target.vdata_size() + sizeof(*this); }
+
+            /** Returns the size of underlying target function */
+            constexpr size_t target_size() const noexcept { return target.target_size(); }
+
             std::string toString() const {
                 return "function<" + to_string( type() ) + ", " + signature().demangled_name() + ">( sz net " +
-                        std::to_string( target.data_size() ) + " / ( delegate_t " +
+                        std::to_string( target_size() ) + " / ( delegate_t " +
                         std::to_string( sizeof( target ) ) + " + target_vdata " +
                         std::to_string( target.vdata_size() ) + " -> "+
-                        std::to_string( sizeof( *this ) + target.vdata_size() ) + " ) ) ";
+                        std::to_string( size() ) + " ), trivial_cpy "+
+                        std::to_string( target.is_trivially_copyable() ) + " ) ";
             }
 
             constexpr R operator()(A... args) const {
@@ -1429,52 +1597,11 @@ namespace jau {
         return function<void(A...)>( func::free_target_t<void, A...>::delegate(func), 0 );
     }
 
-#if 0
-    // Lacks proper template type deduction, sadly
-
-    /**
-     * Bind given capturing non-void returning lambda by copying the it to
-     * an anonymous function using func::lambda_target_t.
-     *
-     * @tparam R function return type
-     * @tparam L typename holding the lambda closure
-     * @tparam A function arguments
-     * @param func the lambda reference
-     * @return anonymous function
-     * @see @ref function_ctor_lambda "function constructor for lambda"
-     * @see @ref function_overview "function Overview"
-     * @see @ref function_usage "function Usage"
-     */
-    template<typename R, typename L, typename... A>
-    inline jau::function<R(A...)>
-    bind_lambda(L func) noexcept {
-        return function<R(A...)>( func::lambda_target_t<R, L, A...>::delegate(func), 0 );
-    }
-
-    /**
-     * Bind given capturing void returning lambda by copying the it to
-     * an anonymous function using func::lambda_target_t.
-     *
-     * @tparam L typename holding the lambda closure
-     * @tparam A function arguments
-     * @param func the lambda reference
-     * @return anonymous function
-     * @see @ref function_ctor_lambda "function constructor for lambda"
-     * @see @ref function_overview "function Overview"
-     * @see @ref function_usage "function Usage"
-     */
-    template<typename L, typename... A>
-    inline jau::function<void(A...)>
-    bind_lambda(L func) noexcept {
-        return function<void(A...)>( func::lambda_target_t<void, L, A...>::delegate(func), 0 );
-    }
-#endif
-
     /**
      * Bind given data by copying the captured value and the given non-void function to
      * an anonymous function using func::capval_target_t.
      *
-     * `const I& data` will be copied into func::capval_target_t and hence captured by copy.
+     * `const I& data` will be copied into func::capval_target_t and hence captured by-copy.
      *
      * The function invocation will have the reference of the copied data being passed to the target function for efficiency.
      *
@@ -1498,7 +1625,7 @@ namespace jau {
      * Bind given data by copying the captured value and the given void function to
      * an anonymous function using func::capval_target_t.
      *
-     * `const I& data` will be copied into func::capval_target_t and hence captured by copy.
+     * `const I& data` will be copied into func::capval_target_t and hence captured by-copy.
      *
      * The function invocation will have the reference of the copied data being passed to the target function for efficiency.
      *
@@ -1652,7 +1779,7 @@ namespace jau {
 
 } // namespace jau
 
-/** \example test_functional01.cpp
+/** \example test_functional.hpp
  * This C++ unit test validates the jau::function<R(A...)> and all its jau::func::target_t specializations.
  */
 
