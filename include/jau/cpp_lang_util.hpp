@@ -26,6 +26,7 @@
 #define CPP_LANG_EXT_HPP_
 
 #include <type_traits>
+#include <typeinfo>
 
 namespace jau {
 
