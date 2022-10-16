@@ -18,6 +18,9 @@ case "$os" in
     "GNU/Linux") 
         os_name="linux"
     ;;
+    "Linux") 
+        os_name="linux"
+    ;;
     *) 
         echo "Unsupported os $os"
         exit 1
