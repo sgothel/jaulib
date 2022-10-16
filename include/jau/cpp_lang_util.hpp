@@ -179,6 +179,33 @@ namespace jau {
         #endif
     #endif
 
+#if defined(__cxx_rtti_available__)
+    /**
+     * Template type trait evaluating std::true_type{} if RTTI is available, otherwise std::false_type{}
+     * @tparam _Dummy unused dummy type to satisfy SFINAE
+     */
+    template<typename _Dummy> struct is_rtti_available_t : std::true_type {};
+#else
+    /**
+     * Template type trait evaluating std::true_type{} if RTTI is available, otherwise std::false_type{}
+     * @tparam _Dummy unused dummy type to satisfy SFINAE
+     */
+    template<typename _Dummy> struct is_rtti_available_t : std::false_type {};
+#endif
+
+    /**
+     * Template type trait helper evaluating true if RTTI is available, otherwise false
+     * @tparam _Dummy unused dummy type to satisfy SFINAE
+     */
+    template <typename _Dummy> inline constexpr bool is_rtti_available_v = is_rtti_available_t<_Dummy>::value;
+
+    /**
+     * constexpr template function returning true if RTTI is available, otherwise false.
+     * @tparam _Dummy unused dummy type to satisfy SFINAE, defaults to void
+     */
+    template <typename _Dummy=void>
+    inline constexpr bool is_rtti_available() { return is_rtti_available_v<_Dummy>; }
+
     #if defined(__clang__)
         /** Consider using [jau::ctti_name<R, L, A...>()](@ref ctti_name_lambda). */
         #define JAU_PRETTY_FUNCTION __PRETTY_FUNCTION__
@@ -337,16 +364,6 @@ namespace jau {
             size_t hash_value;
 
         public:
-            /**
-             * Static constexpr boolean indicating whether RTTI is available or not.
-             */
-            static constexpr const bool rtti_available =
-                #if defined(__cxx_rtti_available__)
-                    true;
-                #else
-                    false;
-                #endif
-
             /**
              * Static constexpr boolean indicating whether resulting type_info
              * uniqueness is limited for lambda function types.

@@ -62,7 +62,8 @@ class TestFunction01 {
      */
     void test00_usage() {
         INFO("Test 00_usage: START: Implementation = functional "+std::to_string( FUNCTIONAL_IMPL )+".hpp");
-        fprintf(stderr, "Implementation: functional %d\n", FUNCTIONAL_IMPL);
+        fprintf(stderr, "Implementation: functional %d, is_rtti_available %d, limited_lambda_id %d\n",
+                FUNCTIONAL_IMPL, jau::is_rtti_available(), jau::type_info::limited_lambda_id);
         {
             // Test capturing lambdas
             volatile int i = 100;
