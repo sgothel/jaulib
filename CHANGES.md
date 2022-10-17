@@ -8,8 +8,20 @@
 
 * First stable release (TODO)
 
-**0.18.0** *WIP*
+**0.18.0**
 * Add support for *Alpine Linux* using [musl](https://musl.libc.org/) C library
+* API changes:
+  - Unique lower-case Un-Mountflags w/o prefix in
+      - C++ jau::fs::[u]mountflags_linux: Also use 'enum class'
+      - Java jau.fs.linux.[Unm|M]outFlags
+* Passed [platforms](PLATFORMS.md) testing:
+  - Debian 11
+  - Debian 12
+      - gcc 12.2.0
+      - clang 14.0.6
+  - Ubuntu 22.04
+  - FreeBSD 13.1
+  - Alpine Linux 3.16
 
 **0.17.1**
 * functional: Refinements ..
