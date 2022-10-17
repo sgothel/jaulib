@@ -315,7 +315,7 @@ class TestFileUtil02 : TestFileUtilBase {
 
                 jau::fs::mountflags_t flags = 0;
 #ifdef __linux__
-                flags |= jau::fs::mountflags_linux::MS_RDONLY;
+                flags |= jau::fs::mountflags_linux::rdonly;
 #endif
                 jau::fprintf_td(stderr, "MountFlags %" PRIu64 "\n", flags);
                 mctx = jau::fs::mount_image(image_stats.path(), mount_point, "squashfs", flags, "");
@@ -343,7 +343,7 @@ class TestFileUtil02 : TestFileUtilBase {
 
                 jau::fs::umountflags_t flags = 0;
 #ifdef __linux__
-                flags |= jau::fs::umountflags_linux::MNT_DETACH; // lazy
+                flags |= jau::fs::umountflags_linux::detach; // lazy
 #endif
                 jau::fprintf_td(stderr, "UnmountFlags %d\n", flags);
                 umount_ok = jau::fs::umount(mctx, flags);

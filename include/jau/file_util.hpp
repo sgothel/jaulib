@@ -1156,35 +1156,83 @@ namespace jau {
          *
          * See mount(2) for a detailed description.
          */
-        enum mountflags_linux : mountflags_t {
+        enum class mountflags_linux : mountflags_t {
             none = 0,
-            MS_RDONLY = 1,
-            MS_NOSUID = 2,
-            MS_NODEV = 4,
-            MS_NOEXEC = 8,
-            MS_SYNCHRONOUS = 16,
-            MS_REMOUNT = 32,
-            MS_MANDLOCK = 64,
-            MS_DIRSYNC = 128,
-            MS_NOATIME = 1024,
-            MS_NODIRATIME = 2048,
-            MS_BIND = 4096,
-            MS_MOVE = 8192,
-            MS_REC = 16384,
-            MS_SILENT = 32768,
-            MS_POSIXACL = 1 << 16,
-            MS_UNBINDABLE = 1 << 17,
-            MS_PRIVATE = 1 << 18,
-            MS_SLAVE = 1 << 19,
-            MS_SHARED = 1 << 20,
-            MS_RELATIME = 1 << 21,
-            MS_KERNMOUNT = 1 << 22,
-            MS_I_VERSION =  1 << 23,
-            MS_STRICTATIME = 1 << 24,
-            MS_LAZYTIME = 1 << 25,
-            MS_ACTIVE = 1 << 30,
-            MS_NOUSER = 1UL << 31
+            rdonly = 1,
+            nosuid = 2,
+            nodev = 4,
+            noexec = 8,
+            synchronous = 16,
+            remount = 32,
+            mandlock = 64,
+            dirsync = 128,
+            noatime = 1024,
+            nodiratime = 2048,
+            bind = 4096,
+            move = 8192,
+            rec = 16384,
+            silent = 32768,
+            posixacl = 1 << 16,
+            unbindable = 1 << 17,
+            private_ = 1 << 18,
+            slave = 1 << 19,
+            shared = 1 << 20,
+            relatime = 1 << 21,
+            kernmount = 1 << 22,
+            i_version =  1 << 23,
+            strictatime = 1 << 24,
+            lazytime = 1 << 25,
+            active = 1 << 30,
+            nouser = 1UL << 31
         };
+        constexpr mountflags_t number(const mountflags_linux rhs) noexcept {
+            return static_cast<mountflags_t>(rhs);
+        }
+        constexpr mountflags_linux operator ~(const mountflags_linux rhs) noexcept {
+            return static_cast<mountflags_linux> ( ~number(rhs) );
+        }
+        constexpr mountflags_linux operator ^(const mountflags_linux lhs, const mountflags_linux rhs) noexcept {
+            return static_cast<mountflags_linux> ( number(lhs) ^ number(rhs) );
+        }
+        constexpr mountflags_linux operator |(const mountflags_linux lhs, const mountflags_linux rhs) noexcept {
+            return static_cast<mountflags_linux> ( number(lhs) | number(rhs) );
+        }
+        constexpr mountflags_linux operator &(const mountflags_linux lhs, const mountflags_linux rhs) noexcept {
+            return static_cast<mountflags_linux> ( number(lhs) & number(rhs) );
+        }
+        constexpr mountflags_linux& operator |=(mountflags_linux& lhs, const mountflags_linux rhs) noexcept {
+            lhs = static_cast<mountflags_linux> ( number(lhs) | number(rhs) );
+            return lhs;
+        }
+        constexpr mountflags_linux& operator &=(mountflags_linux& lhs, const mountflags_linux rhs) noexcept {
+            lhs = static_cast<mountflags_linux> ( number(lhs) & number(rhs) );
+            return lhs;
+        }
+        constexpr mountflags_linux& operator ^=(mountflags_linux& lhs, const mountflags_linux rhs) noexcept {
+            lhs = static_cast<mountflags_linux> ( number(lhs) ^ number(rhs) );
+            return lhs;
+        }
+        constexpr bool operator ==(const mountflags_linux lhs, const mountflags_linux rhs) noexcept {
+            return number(lhs) == number(rhs);
+        }
+        constexpr bool operator !=(const mountflags_linux lhs, const mountflags_linux rhs) noexcept {
+            return !( lhs == rhs );
+        }
+        constexpr bool is_set(const mountflags_linux mask, const mountflags_linux bit) noexcept {
+            return bit == ( mask & bit );
+        }
+        constexpr mountflags_t& operator |=(mountflags_t& lhs, const mountflags_linux rhs) noexcept {
+            lhs |= number(rhs);
+            return lhs;
+        }
+        constexpr mountflags_t& operator &=(mountflags_t& lhs, const mountflags_linux rhs) noexcept {
+            lhs &= number(rhs);
+            return lhs;
+        }
+        constexpr mountflags_t& operator ^=(mountflags_t& lhs, const mountflags_linux rhs) noexcept {
+            lhs ^= number(rhs);
+            return lhs;
+        }
 
         /**
          * Attach the filesystem image named in `image_path` to `target`
@@ -1245,12 +1293,60 @@ namespace jau {
          *
          * See umount(2) for a detailed description.
          */
-        enum umountflags_linux : umountflags_t {
-            MNT_FORCE = 1,
-            MNT_DETACH = 2,
-            MNT_EXPIRE = 4,
-            UMOUNT_NOFOLLOW = 8
+        enum class umountflags_linux : umountflags_t {
+            force = 1,
+            detach = 2,
+            expire = 4,
+            nofollow = 8
         };
+        constexpr umountflags_t number(const umountflags_linux rhs) noexcept {
+            return static_cast<umountflags_t>(rhs);
+        }
+        constexpr umountflags_linux operator ~(const umountflags_linux rhs) noexcept {
+            return static_cast<umountflags_linux> ( ~number(rhs) );
+        }
+        constexpr umountflags_linux operator ^(const umountflags_linux lhs, const umountflags_linux rhs) noexcept {
+            return static_cast<umountflags_linux> ( number(lhs) ^ number(rhs) );
+        }
+        constexpr umountflags_linux operator |(const umountflags_linux lhs, const umountflags_linux rhs) noexcept {
+            return static_cast<umountflags_linux> ( number(lhs) | number(rhs) );
+        }
+        constexpr umountflags_linux operator &(const umountflags_linux lhs, const umountflags_linux rhs) noexcept {
+            return static_cast<umountflags_linux> ( number(lhs) & number(rhs) );
+        }
+        constexpr umountflags_linux& operator |=(umountflags_linux& lhs, const umountflags_linux rhs) noexcept {
+            lhs = static_cast<umountflags_linux> ( number(lhs) | number(rhs) );
+            return lhs;
+        }
+        constexpr umountflags_linux& operator &=(umountflags_linux& lhs, const umountflags_linux rhs) noexcept {
+            lhs = static_cast<umountflags_linux> ( number(lhs) & number(rhs) );
+            return lhs;
+        }
+        constexpr umountflags_linux& operator ^=(umountflags_linux& lhs, const umountflags_linux rhs) noexcept {
+            lhs = static_cast<umountflags_linux> ( number(lhs) ^ number(rhs) );
+            return lhs;
+        }
+        constexpr bool operator ==(const umountflags_linux lhs, const umountflags_linux rhs) noexcept {
+            return number(lhs) == number(rhs);
+        }
+        constexpr bool operator !=(const umountflags_linux lhs, const umountflags_linux rhs) noexcept {
+            return !( lhs == rhs );
+        }
+        constexpr bool is_set(const umountflags_linux mask, const umountflags_linux bit) noexcept {
+            return bit == ( mask & bit );
+        }
+        constexpr umountflags_t& operator |=(umountflags_t& lhs, const umountflags_linux rhs) noexcept {
+            lhs |= number(rhs);
+            return lhs;
+        }
+        constexpr umountflags_t& operator &=(umountflags_t& lhs, const umountflags_linux rhs) noexcept {
+            lhs &= number(rhs);
+            return lhs;
+        }
+        constexpr umountflags_t& operator ^=(umountflags_t& lhs, const umountflags_linux rhs) noexcept {
+            lhs ^= number(rhs);
+            return lhs;
+        }
 
         /**
          * Detach the given mount_ctx `context`
