@@ -436,7 +436,7 @@ namespace jau {
              *
              * @see @ref make_ctti_lambda "jau::make_ctti<R, L, A...>"
              */
-            constexpr type_info(const char* signature_) noexcept
+            type_info(const char* signature_) noexcept
             : signature( signature_ ), hash_value( nullptr != signature ? std::hash<std::string_view>{}(std::string_view(signature)) : 0 )
             { abort_invalid(signature); }
 
