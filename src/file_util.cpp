@@ -42,7 +42,7 @@ extern "C" {
     #include <sys/types.h>
     #include <sys/wait.h>
     #include <sys/mount.h>
-#ifdef __linux__
+#if defined(__linux__)
     #include <sys/sendfile.h>
     #include <linux/loop.h>
 #endif
@@ -60,8 +60,10 @@ inline constexpr const int _open_dir_flags = O_RDONLY|O_BINARY|O_NOCTTY|O_DIRECT
 using namespace jau;
 using namespace jau::fs;
 
-#if defined(__linux__)
+#if defined(__linux__) && defined(__GLIBC__)
     #define _USE_STATX_ 1
+    #define _USE_SENDFILE_ 1
+#elif defined(__linux__)
     #define _USE_SENDFILE_ 1
 #endif
 
@@ -1580,12 +1582,12 @@ static bool copy_push_mkdir(const file_stats& dst_stats, copy_context_t& ctx) no
         return false;
     }
     if( new_dir ) {
-#if defined(__linux__)
+#if defined(__linux__) && defined(__GLIBC__)
         const int rename_flags = 0; // Not supported on all fs: RENAME_NOREPLACE
         const int rename_res = ::renameat2(dest_dirfd, basename_.c_str(), dest_dirfd, dst_stats.item().basename().c_str(), rename_flags);
-#else /* defined(__linux__) */
+#else /* defined(__linux__) && defined(__GLIBC__) */
         const int rename_res = ::renameat(dest_dirfd, basename_.c_str(), dest_dirfd, dst_stats.item().basename().c_str());
-#endif /* defined(__linux__) */
+#endif /* defined(__linux__) && defined(__GLIBC__) */
         if( 0 != rename_res ) {
             ERR_PRINT("rename temp to dest, temp '%s', dest %s", basename_.c_str(), dst_stats.to_string().c_str());
             ::unlinkat(dest_dirfd, basename_.c_str(), AT_REMOVEDIR);
@@ -1881,7 +1883,7 @@ jau::fs::mount_ctx jau::fs::mount_image(const std::string& image_path, const std
         ERR_PRINT("Couldn't open image-file '%s': res %d", image_stats.to_string().c_str(), backingfile);
         return mount_ctx();
     }
-#ifdef __linux__
+#if defined(__linux__)
     const ::uid_t caller_uid = ::geteuid();
     int loop_device_id = -1;
 
@@ -2019,7 +2021,7 @@ mount_ctx jau::fs::mount(const std::string& source, const std::string& target, c
         if( fs_options.size() > 0 ) {
             fs_options_cstr = (void*) fs_options.data();
         }
-#ifdef __linux__
+#if defined(__linux__)
         const int mount_res = ::mount(source_stats.path().c_str(), target_path.c_str(), fs_type.c_str(), flags, fs_options_cstr);
 #elif defined(__FreeBSD__)
         /**
@@ -2120,7 +2122,7 @@ bool jau::fs::umount(const mount_ctx& context, const umountflags_t flags)
         // No loop-device handling for OS
         ::_exit( EXIT_FAILURE );
 
-#ifdef __linux__
+#if defined(__linux__)
 errout_child:
         if( 0 <= loop_device_fd ) {
             ::close(loop_device_fd);
