@@ -196,9 +196,33 @@ class TestFileUtil02 : TestFileUtilBase {
         ::cap_free(caps);
     }
 
-    /** default group cdrom for all user, usually set to 24 in Debian and Ubuntu */
-    /** default group video for most user, usually set to 44 in FreeBSD, Debian and Ubuntu */
-    static const ::gid_t extra_test_group = 44;
+    /**
+     * Get group-id by groupname using system commands `getent` and `cut`.
+     *
+     * Known group-ids are
+     * - Ubuntu, Debian group 24: cdrom
+     * - FreeBSD, Ubuntu, Debian group 44: video
+     * - Alpine/Linux group 27: video
+     */
+    static ::gid_t get_gid(const std::string& groupname) {
+        static const ::gid_t default_group = 44;
+        std::string cmd("getent group "+groupname+" | cut -d: -f3");
+        FILE* fp = ::popen(cmd.c_str(), "r");
+        if (fp == NULL) {
+            fprintf(stderr, "Command failed (1) '%s'\n", cmd.c_str() );
+            return default_group;
+        }
+        char result[100];
+        ::gid_t result_int = default_group;
+        if( NULL != ::fgets(result, sizeof(result), fp) ) {
+            result_int = static_cast<::gid_t>( ::atoi(result) );
+            jau::PLAIN_PRINT(true, "get_gid(%s) -> %s (%d)", groupname.c_str(), result, (int)result_int);
+        } else {
+            fprintf(stderr, "Command failed (2) '%s'\n", cmd.c_str() );
+        }
+        ::pclose(fp);
+        return result_int;
+    }
 
     void test50_mount_copy_r_p() {
         INFO_STR("\n\ntest50_mount_copy_r_p\n");
@@ -215,7 +239,7 @@ class TestFileUtil02 : TestFileUtilBase {
             ERR_PRINT("couldn't fetch [SUDO_]UID");
             return;
         }
-        ::gid_t group_list[] = { user_id, group_id, extra_test_group };
+        ::gid_t group_list[] = { user_id, group_id, get_gid("video") };
 
         const bool setuid_user_to_root = super_uid != caller_uid;
         if( setuid_user_to_root ) {

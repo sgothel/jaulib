@@ -19,9 +19,10 @@ add_custom_command (OUTPUT ${ownership_fix_tag}
     # FreeBSD,Ubuntu `/usr/bin/chgrp`, Debian `/bin/chgrp`
     # Ubuntu, Debian group 24: cdrom
     # FreeBSD, Ubuntu, Debian group 44: video
-    COMMAND chgrp -f 44 file_01.txt
-    COMMAND chgrp -f 44 dir_01/dir_01_02
-    COMMENT "changed group ownership of 2 test_data entries to 44(video)"
+    # Alpine/Linux group 27: video
+    COMMAND chgrp -f video file_01.txt
+    COMMAND chgrp -f video dir_01/dir_01_02
+    COMMENT "changed group ownership of 2 test_data entries to video(??)"
     VERBATIM
 )
 add_custom_target (ownership_fix ALL DEPENDS ${ownership_fix_tag})
@@ -44,7 +45,7 @@ IF( ( TEST_WITH_SUDO ) AND ( "${OS_NAME}" STREQUAL "linux" ) )
 
     add_custom_command (OUTPUT ${test_data_sqfs_file}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..
-        COMMAND /usr/bin/mksquashfs test_data ${CMAKE_CURRENT_BINARY_DIR}/test_data.sqfs -comp lzo
+        COMMAND mksquashfs test_data ${CMAKE_CURRENT_BINARY_DIR}/test_data.sqfs -comp lzo
         COMMENT "producing test_data sqfs image file"
         VERBATIM
     )
