@@ -77,7 +77,7 @@ public class TestsudoFileUtils02 extends FileUtilBaseTest {
             final MountFlags mount_flags;
             if( PlatformProps.OS == PlatformTypes.OSType.LINUX ) {
                 mount_flags = new org.jau.fs.linux.MountFlags();
-                mount_flags.set(org.jau.fs.linux.MountFlags.Bit.MS_RDONLY);
+                mount_flags.set(org.jau.fs.linux.MountFlags.Bit.rdonly);
             } else {
                 mount_flags = new MountFlags();
             }
@@ -100,7 +100,7 @@ public class TestsudoFileUtils02 extends FileUtilBaseTest {
             final UnmountFlags umount_flags;
             if( PlatformProps.OS == PlatformTypes.OSType.LINUX ) {
                 umount_flags = new org.jau.fs.linux.UnmountFlags();
-                umount_flags.set(org.jau.fs.linux.UnmountFlags.Bit.MNT_DETACH); // lazy
+                umount_flags.set(org.jau.fs.linux.UnmountFlags.Bit.detach); // lazy
             } else {
                 umount_flags = new UnmountFlags();
             }
@@ -138,7 +138,7 @@ public class TestsudoFileUtils02 extends FileUtilBaseTest {
             final MountFlags mount_flags;
             if( PlatformProps.OS == PlatformTypes.OSType.LINUX ) {
                 mount_flags = new org.jau.fs.linux.MountFlags();
-                mount_flags.set(org.jau.fs.linux.MountFlags.Bit.MS_RDONLY); // failed: MS_PRIVATE, MS_UNBINDABLE
+                mount_flags.set(org.jau.fs.linux.MountFlags.Bit.rdonly); // failed: MS_PRIVATE, MS_UNBINDABLE
             } else {
                 mount_flags = new MountFlags();
             }
@@ -160,7 +160,7 @@ public class TestsudoFileUtils02 extends FileUtilBaseTest {
                 final UnmountFlags umount_flags;
                 if( PlatformProps.OS == PlatformTypes.OSType.LINUX ) {
                     umount_flags = new org.jau.fs.linux.UnmountFlags();
-                    umount_flags.set(org.jau.fs.linux.UnmountFlags.Bit.MNT_DETACH); // lazy
+                    umount_flags.set(org.jau.fs.linux.UnmountFlags.Bit.detach); // lazy
                 } else {
                     umount_flags = new UnmountFlags();
                 }

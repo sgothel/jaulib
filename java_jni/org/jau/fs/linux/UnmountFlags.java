@@ -37,10 +37,10 @@ public class UnmountFlags extends org.jau.fs.UnmountFlags {
 
     public static enum Bit implements org.jau.fs.UnmountFlags.Bit {
         none ( 0 ),
-        MNT_FORCE ( 1 ),
-        MNT_DETACH ( 2 ),
-        MNT_EXPIRE ( 4 ),
-        UMOUNT_NOFOLLOW ( 8 );
+        force ( 1 ),
+        detach ( 2 ),
+        expire ( 4 ),
+        nofollow ( 8 );
 
         Bit(final int v) { _value = v; }
 
