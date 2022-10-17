@@ -62,8 +62,10 @@ namespace jau {
     #define PRAGMA_DISABLE_WARNING_FORMAT_NONLITERAL                PRAGMA_DISABLE_WARNING(-Wformat-nonliteral)
     #if defined(__GNUC__) && !defined(__clang__)
         #define PRAGMA_DISABLE_WARNING_PMF_CONVERSIONS              PRAGMA_DISABLE_WARNING(-Wpmf-conversions)
+        #define PRAGMA_DISABLE_WARNING_STRINGOP_OVERFLOW            PRAGMA_DISABLE_WARNING(-Wstringop-overflow)
     #else
         #define PRAGMA_DISABLE_WARNING_PMF_CONVERSIONS
+        #define PRAGMA_DISABLE_WARNING_STRINGOP_OVERFLOW
     #endif
 
 #else
@@ -77,6 +79,7 @@ namespace jau {
     #define PRAGMA_DISABLE_WARNING_FORMAT_OVERFLOW
     #define PRAGMA_DISABLE_WARNING_FORMAT_NONLITERAL
     #define PRAGMA_DISABLE_WARNING_PMF_CONVERSIONS
+    #define PRAGMA_DISABLE_WARNING_STRINGOP_OVERFLOW
 
 #endif
 

@@ -401,7 +401,21 @@ namespace jau {
                         } else {
                             // move elems right
                             JAU_DARRAY_PRINTF0("move_elements.mmm.right [%zd .. %zd] -> %zd, dist %zd, size %zu\n", (first-begin_), ((first + count)-begin_)-1, (dest-begin_), (dest-first), (dest-first)*sizeof(value_type));
+                            /**
+                             * g++ (Debian 12.2.0-3) 12.2.0, Debian 12 Bookworm 2022-10-17
+                             * g++ bug: False positive of '-Werror=stringop-overflow=' using ::explicit_bzero(..)
+                             *
+                             * In member function ‘constexpr void jau::darray<Value_type, Alloc_type, Size_type, use_memmove, use_secmem>::move_elements(iterator, const_iterator, difference_type) [with Value_type = DataType02_Memmove_Secmem; Alloc_type = jau::callocator<DataType02_Memmove_Secmem>; Size_type = long unsigned int; bool use_memmove = true; bool use_secmem = true]’,
+    inlined from ‘constexpr jau::darray<Value_type, Alloc_type, Size_type, use_memmove, use_secmem>::value_type* jau::darray<Value_type, Alloc_type, Size_type, use_memmove, use_secmem>::erase(const_iterator) [with Value_type = DataType02_Memmove_Secmem; Alloc_type = jau::callocator<DataType02_Memmove_Secmem>; Size_type = long unsigned int; bool use_memmove = true; bool use_secmem = true]’ at include/jau/darray.hpp:911:38,
+    inlined from ‘void testDArrayValueType(const std::string&) [with Payload = DataType02_Memmove_Secmem]’ at test/test_darray_01.cpp:337:28:
+    include/jau/darray.hpp:406:45: error: ‘void explicit_bzero(void*, size_t)’ specified size 18446744073709551600 exceeds maximum object size 9223372036854775807 [-Werror=stringop-overflow=]
+  406 |                             ::explicit_bzero(voidptr_cast(first), (dest-first)*sizeof(value_type));
+      |                             ~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                             */
+                            PRAGMA_DISABLE_WARNING_PUSH
+                            PRAGMA_DISABLE_WARNING_STRINGOP_OVERFLOW
                             ::explicit_bzero(voidptr_cast(first), (dest-first)*sizeof(value_type));
+                            PRAGMA_DISABLE_WARNING_POP
                         }
                     }
                 } else {
