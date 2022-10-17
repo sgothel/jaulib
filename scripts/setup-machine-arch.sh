@@ -114,10 +114,18 @@ if [ -z "$JAVA_HOME" -o ! -e "$JAVA_HOME" ] ; then
     if [ $quiet -eq 0 ] ; then
         echo "JAVA_HOME: Searching for OpenJDK"
     fi
-    if [ -e /usr/lib/jvm/java-17-openjdk-$archabi ] ; then
+    if [ -e /usr/lib/jvm/default-jvm-$archabi ] ; then
+        export JAVA_HOME=/usr/lib/jvm/default-jvm-$archabi
+    elif [ -e /usr/lib/jvm/java-17-openjdk-$archabi ] ; then
         export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-$archabi
     elif [ -e /usr/lib/jvm/java-11-openjdk-$archabi ] ; then
         export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-$archabi
+    elif [ -e /usr/lib/jvm/default-jvm ] ; then
+        export JAVA_HOME=/usr/lib/jvm/default-jvm
+    elif [ -e /usr/lib/jvm/java-17-openjdk ] ; then
+        export JAVA_HOME=/usr/lib/jvm/java-17-openjdk
+    elif [ -e /usr/lib/jvm/java-11-openjdk ] ; then
+        export JAVA_HOME=/usr/lib/jvm/java-11-openjdk
     elif [ -e /usr/local/openjdk17 ] ; then
         export JAVA_HOME=/usr/local/openjdk17
     elif [ -e /usr/local/openjdk11 ] ; then
