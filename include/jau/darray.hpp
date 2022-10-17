@@ -275,7 +275,7 @@ namespace jau {
 
             constexpr size_type dtor_range(iterator first, const_iterator last) {
                 size_type count=0;
-                JAU_DARRAY_PRINTF0("dtor [%zd .. %zd], count %zd\n", (first-begin_), (last-begin_)-1, (last-first));
+                JAU_DARRAY_PRINTF0("dtor [%zd .. %zd], count %zd\n", (first-begin_), (last-begin_)-1, (last-first)-1);
                 for(; first < last; ++first, ++count ) {
                     ( first )->~value_type(); // placement new -> manual destruction!
                 }
@@ -286,25 +286,25 @@ namespace jau {
             }
 
             constexpr void ctor_copy_range(pointer dest, iterator first, const_iterator last) {
-                JAU_DARRAY_PRINTF0("ctor_copy_range [%zd .. %zd] -> ??, dist %zd\n", (first-begin_), (last-begin_)-1, (last-first));
+                JAU_DARRAY_PRINTF0("ctor_copy_range [%zd .. %zd] -> ??, dist %zd\n", (first-begin_), (last-begin_)-1, (last-first)-1);
                 for(; first < last; ++dest, ++first) {
                     new (const_cast<pointer_mutable>(dest)) value_type( *first ); // placement new
                 }
             }
             constexpr pointer clone_range(iterator first, const_iterator last) {
-                JAU_DARRAY_PRINTF0("clone_range [%zd .. %zd], count %zd\n", (first-begin_), (last-begin_)-1, (last-first));
+                JAU_DARRAY_PRINTF0("clone_range [0 .. %zd], count %zd\n", (last-first)-1, (last-first)-1);
                 pointer dest = allocStore(size_type(last-first));
                 ctor_copy_range(dest, first, last);
                 return dest;
             }
             constexpr pointer clone_range(const size_type dest_capacity, iterator first, const_iterator last) {
-                JAU_DARRAY_PRINTF0("clone_range [%zd .. %zd], count %zd -> %d\n", (first-begin_), (last-begin_)-1, (last-first), (int)dest_capacity);
+                JAU_DARRAY_PRINTF0("clone_range [0 .. %zd], count %zd -> %d\n", (last-begin_)-1, (last-first)-1, (int)dest_capacity);
                 pointer dest = allocStore(dest_capacity);
                 ctor_copy_range(dest, first, last);
                 return dest;
             }
             constexpr void ctor_copy_range_check(pointer dest, iterator first, const_iterator last) {
-                JAU_DARRAY_PRINTF0("ctor_copy_range_check [%zd .. %zd] -> ??, dist %zd\n", (first-begin_), (last-begin_)-1, (last-first));
+                JAU_DARRAY_PRINTF0("ctor_copy_range_check [%zd .. %zd] -> ??, dist %zd\n", (first-begin_), (last-begin_)-1, (last-first)-1);
                 if( first > last ) {
                     throw jau::IllegalArgumentException("first "+to_hexstring(first)+" > last "+to_hexstring(last), E_FILE_LINE);
                 }
@@ -313,7 +313,7 @@ namespace jau {
                 }
             }
             constexpr pointer clone_range_check(const size_type dest_capacity, iterator first, const_iterator last) {
-                JAU_DARRAY_PRINTF0("clone_range_check [%zd .. %zd], count %zd -> %d\n", (first-begin_), (last-begin_)-1, (last-first), (int)dest_capacity);
+                JAU_DARRAY_PRINTF0("clone_range_check [%zd .. %zd], count %zd -> %d\n", (first-begin_), (last-begin_)-1, (last-first)-1, (int)dest_capacity);
                 if( dest_capacity < size_type(last-first) ) {
                     throw jau::IllegalArgumentException("capacity "+std::to_string(dest_capacity)+" < source range "+
                                                         std::to_string(difference_type(last-first)), E_FILE_LINE);
@@ -400,7 +400,7 @@ namespace jau {
                             ::explicit_bzero(voidptr_cast(dest+count), (first-dest)*sizeof(value_type));
                         } else {
                             // move elems right
-                            JAU_DARRAY_PRINTF0("move_elements.mmm.right [%zd .. %zd] -> %zd, dist %zd\n", (first-begin_), ((first + count)-begin_)-1, (dest-begin_), (dest-first));
+                            JAU_DARRAY_PRINTF0("move_elements.mmm.right [%zd .. %zd] -> %zd, dist %zd, size %zu\n", (first-begin_), ((first + count)-begin_)-1, (dest-begin_), (dest-first), (dest-first)*sizeof(value_type));
                             ::explicit_bzero(voidptr_cast(first), (dest-first)*sizeof(value_type));
                         }
                     }
