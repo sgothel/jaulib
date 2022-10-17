@@ -5,6 +5,10 @@
 ## Supported Platforms
 Minimum language requirements
 - C++17
+- Standard C Libraries
+  - [FreeBSD libc](https://www.freebsd.org/)
+  - [GNU glibc](https://www.gnu.org/software/libc/)
+  - [musl](https://musl.libc.org/)
 - Java 11 (optional)
 
 The following **platforms** are tested and hence supported
@@ -13,6 +17,16 @@ The following **platforms** are tested and hence supported
 - libc++ 13.0.0
 - compiler
   - clang 13.0.0
+  - openjdk 17
+- architectures
+  - amd64 (validated, Generic)
+
+**Alpine Linux 3.16 (Linux)**
+- linux 5.15
+- [musl 1.2.3](https://musl.libc.org/)
+- compiler
+  - gcc 11.2.1
+  - clang 13.0.1
   - openjdk 17
 - architectures
   - amd64 (validated, Generic)

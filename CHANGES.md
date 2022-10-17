@@ -8,6 +8,9 @@
 
 * First stable release (TODO)
 
+**0.18.0** *WIP*
+* Add support for *Alpine Linux* using [musl](https://musl.libc.org/) C library
+
 **0.17.1**
 * functional: Refinements ..
   - Hide `delegate_t` union details using a non-anonymous type.

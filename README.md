@@ -40,6 +40,10 @@ See *Direct-BT* [C++ API Doc](https://jausoft.com/projects/direct_bt/build/docum
 ## Supported Platforms
 Minimum language requirements
 - C++17
+- Standard C Libraries
+  - [FreeBSD libc](https://www.freebsd.org/)
+  - [GNU glibc](https://www.gnu.org/software/libc/)
+  - [musl](https://musl.libc.org/)
 - Java 11 (optional)
 
 See [supported platforms](PLATFORMS.md) for details.
