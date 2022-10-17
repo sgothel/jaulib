@@ -29,6 +29,13 @@
 
 #include <jau/basic_types.hpp>
 
+extern "C" {
+    // to test jau::endian::native against BYTE_ORDER macro
+    #ifndef BYTE_ORDER
+        #include <endian.h>
+    #endif
+}
+
 static constexpr inline bool VERBOSE = false;
 
 using namespace jau::int_literals;
