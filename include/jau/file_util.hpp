@@ -31,6 +31,12 @@
 #include <jau/fraction_type.hpp>
 #include <jau/functional.hpp>
 
+extern "C" {
+    // #include <sys/stat.h>
+    // for ::mode_t posix protection bits
+    #include <sys/types.h>
+}
+
 namespace jau {
 
     namespace fs {
