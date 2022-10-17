@@ -3,10 +3,12 @@
 find_jar(JUNIT_JAR
   NAMES junit4 junit
   PATHS "/usr/share/java" "/usr/local/share/java/classes" )
+message (STATUS "JUNIT_JAR ${JUNIT_JAR}")
 
 find_jar(HAMCREST_JAR
   NAMES hamcrest-all hamcrest
   PATHS "/usr/share/java" "/usr/local/share/java/classes" )
+message (STATUS "HAMCREST_JAR ${HAMCREST_JAR}")
 
 set(jaulib_test_jar_file ${CMAKE_CURRENT_BINARY_DIR}/jaulib-test.jar CACHE FILEPATH "jaulib test jar file" FORCE)
 

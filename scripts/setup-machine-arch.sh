@@ -145,15 +145,17 @@ if [ -z "$JUNIT_CP" -o ! -e "$JUNIT_CP" ] ; then
         echo "JUNIT_CP: Searching for junit"
     fi
     for prefix_spath in /usr/share/java /usr/local/share/java/classes ; do
-        if [ -e $prefix_spath/junit4.jar ] ; then
-            JUNIT_CP=$prefix_spath/junit4.jar
-            for jarfile in hamcrest-all.jar hamcrest.jar ; do
-                if [ -e $prefix_spath/$jarfile ] ; then
-                    JUNIT_CP=$JUNIT_CP:$prefix_spath/$jarfile
-                fi
-            done
-            break
-        fi
+        for junit_jarfile in junit4.jar junit.jar ; do
+            if [ -e $prefix_spath/$junit_jarfile ] ; then
+                JUNIT_CP=$prefix_spath/$junit_jarfile
+                for hamcrest_jarfile in hamcrest-all.jar hamcrest.jar ; do
+                    if [ -e $prefix_spath/$hamcrest_jarfile ] ; then
+                        JUNIT_CP=$JUNIT_CP:$prefix_spath/$hamcrest_jarfile
+                    fi
+                done
+                break
+            fi
+        done
     done
     if [ $quiet -eq 0 ] ; then
         if [ -z "$JUNIT_CP" ] ; then
