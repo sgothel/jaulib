@@ -287,9 +287,27 @@ namespace jau {
 
             constexpr void ctor_copy_range(pointer dest, iterator first, const_iterator last) {
                 JAU_DARRAY_PRINTF0("ctor_copy_range [%zd .. %zd] -> ??, dist %zd\n", (first-begin_), (last-begin_)-1, (last-first)-1);
+                /**
+                 * TODO
+                 *
+                 * g++ (Debian 12.2.0-3) 12.2.0, Debian 12 Bookworm 2022-10-17
+                 * g++ bug: False positive of '-Wnull-dereference'
+                 *
+In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__shared_count<_Lp>&) [with __gnu_cxx::_Lock_policy _Lp = __gnu_cxx::_S_atomic]’,
+    inlined from ‘std::__shared_ptr<_Tp, _Lp>::__shared_ptr(const std::__shared_ptr<_Tp, _Lp>&) [with _Tp = direct_bt::BTDevice; __gnu_cxx::_Lock_policy _Lp = __gnu_cxx::_S_atomic]’ at /usr/include/c++/12/bits/shared_ptr_base.h:1522:7,
+    inlined from ‘std::shared_ptr<_Tp>::shared_ptr(const std::shared_ptr<_Tp>&) [with _Tp = direct_bt::BTDevice]’ at /usr/include/c++/12/bits/shared_ptr.h:204:7,
+    inlined from ‘constexpr void jau::darray<Value_type, Alloc_type, Size_type, use_memmove, use_secmem>::ctor_copy_range(pointer, iterator, const_iterator) [with Value_type = std::shared_ptr<direct_bt::BTDevice>; Alloc_type = jau::callocator<std::shared_ptr<direct_bt::BTDevice> >; Size_type = long unsigned int; bool use_memmove = false; bool use_secmem = false]’ at direct_bt/jaulib/include/jau/darray.hpp:300:21,
+    ...
+/usr/include/c++/12/bits/shared_ptr_base.h:1075:9: warning: potential null pointer dereference [-Wnull-dereference]
+ 1075 |       : _M_pi(__r._M_pi)
+      |         ^~~~~~~~~~~~~~~~
+                 */
+                PRAGMA_DISABLE_WARNING_PUSH
+                PRAGMA_DISABLE_WARNING_NULL_DEREFERENCE
                 for(; first < last; ++dest, ++first) {
-                    new (const_cast<pointer_mutable>(dest)) value_type( *first ); // placement new
+                    new (const_cast<pointer_mutable>(dest)) value_type( *first ); // placement new / TODO: See above
                 }
+                PRAGMA_DISABLE_WARNING_POP
             }
             constexpr pointer clone_range(iterator first, const_iterator last) {
                 JAU_DARRAY_PRINTF0("clone_range [0 .. %zd], count %zd\n", (last-first)-1, (last-first)-1);
@@ -402,6 +420,8 @@ namespace jau {
                             // move elems right
                             JAU_DARRAY_PRINTF0("move_elements.mmm.right [%zd .. %zd] -> %zd, dist %zd, size %zu\n", (first-begin_), ((first + count)-begin_)-1, (dest-begin_), (dest-first), (dest-first)*sizeof(value_type));
                             /**
+                             * TODO
+                             *
                              * g++ (Debian 12.2.0-3) 12.2.0, Debian 12 Bookworm 2022-10-17
                              * g++ bug: False positive of '-Werror=stringop-overflow=' using ::explicit_bzero(..)
                              *
@@ -414,7 +434,7 @@ namespace jau {
                              */
                             PRAGMA_DISABLE_WARNING_PUSH
                             PRAGMA_DISABLE_WARNING_STRINGOP_OVERFLOW
-                            ::explicit_bzero(voidptr_cast(first), (dest-first)*sizeof(value_type));
+                            ::explicit_bzero(voidptr_cast(first), (dest-first)*sizeof(value_type)); // TODO: See above
                             PRAGMA_DISABLE_WARNING_POP
                         }
                     }
