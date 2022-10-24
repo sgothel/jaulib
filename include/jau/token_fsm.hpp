@@ -206,8 +206,6 @@ namespace jau::lang {
      *
      * Implemented initially by Sven Gothel in July 1992 using early C++ with and brought to a clean C++17 template.
      *
-     * Basic separator (whitespace) are: SPACE, TAB, LF, CR.
-     *
      * @tparam State_type used for token name and internal FSM, hence memory sensitive.
      *         Must be an unsigned integral type with minimum size of sizeof(alphabet::code_point_t), i.e. uint16_t.
      */
@@ -295,9 +293,6 @@ namespace jau::lang {
                 }
             }
 
-            /** Basic separator: SPACE, TAB, LF, CR */
-            static inline constexpr const std::string_view m_basic_separators = "\040\011\012\015";
-
             alphabet m_alphabet;
             uint_t  m_row_len;
             uint_t  m_end;
@@ -321,19 +316,15 @@ namespace jau::lang {
             /**
              * Constructs an empty instance.
              * @param alphabet the used alphabet
-             * @param separators additional separator, defaults to none
+             * @param separators separator, defaults to SPACE, TAB, LF, CR
              * @see add()
              */
-            token_fsm ( const alphabet& alphabet, const std::string_view separators = "")
+            token_fsm ( const alphabet& alphabet, const std::string_view separators = "\040\011\012\015")
             : m_alphabet(alphabet),
               m_row_len(m_alphabet.base()), m_end(m_row_len-1),
-              m_separators(),
+              m_separators(separators),
               m_matrix(), m_next_state(1), m_token_names()
-            {
-                // Seperate chars eintragen ...
-                m_separators.append(m_basic_separators);
-                m_separators.append( separators );
-            }
+            { }
 
             /**
              * Constructs a new instance w/ given token_value_t name and value pairs.
@@ -349,10 +340,10 @@ namespace jau::lang {
              *
              * @param alphabet the used alphabet
              * @param key_words vector of to be added token_value_t name and values
-             * @param separators additional separator, defaults to none
+             * @param separators separator, defaults to SPACE, TAB, LF, CR
              * @see add()
              */
-            token_fsm ( const alphabet& alphabet, const std::vector<token_value_t>& key_words, const std::string_view separators = "")
+            token_fsm ( const alphabet& alphabet, const std::vector<token_value_t>& key_words, const std::string_view separators = "\040\011\012\015")
             : token_fsm(alphabet, separators)
             {
                 const uint_t  max_state = (uint_t) std::numeric_limits<uint_t>::max();
