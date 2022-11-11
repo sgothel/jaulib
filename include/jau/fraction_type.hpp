@@ -39,10 +39,9 @@
 #include <jau/int_math.hpp>
 #include <jau/ordered_atomic.hpp>
 #include <jau/cpp_pragma.hpp>
+#include <jau/backtrace.hpp>
 
 namespace jau {
-
-    extern void print_backtrace(const bool skip_anon_frames, const jau::snsize_t max_frames, const jau::snsize_t skip_frames) noexcept;
 
     // Remember: constexpr specifier used in a function or static data member (since C++17) declaration implies inline.
 
