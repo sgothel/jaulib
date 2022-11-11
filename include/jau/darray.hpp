@@ -963,6 +963,22 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
             }
 
             /**
+             * Similar to std::vector::erase() using an index, removes the elements at pos_idx.
+             * @return iterator following the last removed element.
+             */
+            constexpr iterator erase (const size_type pos_idx) {
+                return erase(begin_ + pos_idx);
+            }
+
+            /**
+             * Similar to std::vector::erase() using indices, removes the elements in the range [first_idx, last_idx).
+             * @return iterator following the last removed element.
+             */
+            constexpr iterator erase (const size_type first_idx, const size_type last_idx) {
+                return erase(begin_ + first_idx, begin_ + last_idx);
+            }
+
+            /**
              * Like std::vector::insert(), copy
              * <p>
              * Inserts the element before pos
@@ -976,22 +992,31 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              */
             constexpr iterator insert(const_iterator pos, const value_type& x) {
                 if( begin_ <= pos && pos <= end_ ) {
-                    const size_type pos_idx = pos - begin_;
                     if( end_ == storage_end_ ) {
+                        const size_type pos_idx = pos - begin_;
                         grow_storage_move();
+                        pos = begin_ + pos_idx;
                     }
-                    iterator pos_new = begin_ + pos_idx;
-                    const difference_type right_count = end_ - pos_new; // include original element at 'pos_new'
+                    const difference_type right_count = end_ - pos; // include original element at 'pos_new'
                     if( 0 < right_count ) {
-                        move_elements(pos_new+1, pos_new, right_count); // move elems one right
+                        move_elements(const_cast<iterator>(pos+1), pos, right_count); // move elems one right
                     }
-                    new (const_cast<pointer_mutable>(pos_new)) value_type( x ); // placement new
+                    new (const_cast<pointer_mutable>(pos)) value_type( x ); // placement new
                     ++end_;
 
-                    return begin_ <= pos_new && pos_new <= end_ ? pos_new : end_;
+                    return begin_ <= pos && pos <= end_ ? const_cast<iterator>(pos) : end_;
                 } else {
                     throw jau::IndexOutOfBoundsException(std::to_string(difference_type(pos - begin_)), std::to_string(size()), E_FILE_LINE);
                 }
+            }
+
+            /**
+             * Similar to std::vector::insert() using an index, copy
+             * @param pos_idx index before which the content will be inserted. index may be the end size() index
+             * @param x element value to insert
+             */
+            constexpr iterator insert(const size_type pos_idx, const value_type& x) {
+                return insert(begin_ + pos_idx, x);
             }
 
             /**
@@ -1111,6 +1136,22 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                 }
                 new (const_cast<pointer_mutable>(end_)) value_type( std::move(x) ); // placement new, just one element - no optimization
                 ++end_;
+            }
+
+            /**
+             * Like std::vector::push_front(), copy
+             * @param x the value to be added at the front.
+             */
+            constexpr void push_front(const value_type& x) {
+                insert(0, x);
+            }
+
+            /**
+             * Like std::vector::push_front(), move
+             * @param x the value to be added at the front.
+             */
+            constexpr void push_front(value_type&& x) {
+                insert(0, std::move(x));
             }
 
             /**
