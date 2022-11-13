@@ -112,6 +112,26 @@ namespace jau {
     }
 
     /**
+     * Return true if `value` is contained in `array`.
+     * @tparam InputArray array type
+     * @tparam T value_type of value
+     * @param array the array to search
+     * @param value the value to search for
+     * @return true if contained, otherwise false
+     */
+    template<class InputArray, class T>
+    constexpr bool contains(InputArray &array, const T& value)
+    {
+        const typename InputArray::size_type size = array.size();
+        for (typename InputArray::size_type i = 0; i < size; ++i) {
+            if( value == array[i] ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Like std::find_if() of 'algorithm'
      * <p>
      * Only exists here as performance analysis over O(n*n) complexity
@@ -297,8 +317,8 @@ namespace jau {
     template<class InputArray, class UnaryFunction>
     constexpr UnaryFunction for_each_idx(InputArray &array, UnaryFunction f)
     {
-        const size_t size = array.size();
-        for (size_t i = 0; i < size; ++i) {
+        const typename InputArray::size_type size = array.size();
+        for (typename InputArray::size_type i = 0; i < size; ++i) {
             f(array[i]);
         }
         return f; // implicit move since C++11
@@ -321,8 +341,8 @@ namespace jau {
     {
         const std::lock_guard<Mutex> lock(mtx); // RAII-style acquire and relinquish via destructor
 
-        const size_t size = array.size();
-        for (size_t i = 0; i < size; ++i) {
+        const typename InputArray::size_type size = array.size();
+        for (typename InputArray::size_type i = 0; i < size; ++i) {
             f(array[i]);
         }
         return f; // implicit move since C++11
