@@ -1,6 +1,7 @@
 build*/
 dist*/
 issues/
+/compile_commands.json
 
 # Object files
 *.o

@@ -1,0 +1,26 @@
+{
+    "makefile.launchConfigurations": [
+        {
+            "cwd": "/usr/local/projects/gentech/bin",
+            "binaryPath": "/usr/local/projects/gentech/bin/rivergen",
+            "binaryArgs": []
+        }
+    ],
+    "files.associations": {
+        "*.hpp": "cpp"
+    },
+    "cmake.configureOnOpen": true,
+    "cmake.configureArgs": [
+        "-DCMAKE_INSTALL_PREFIX=${workspaceFolder}/dist-vscode",
+        "-DBUILD_TESTING=ON",
+        "-DCMAKE_EXPORT_COMPILE_COMMANDS=1"
+    ],
+    "cmake.copyCompileCommands": "${workspaceFolder}/compile_commands.json",
+    "cmake.sourceDirectory": "${workspaceFolder}",
+    "cmake.buildDirectory": "${workspaceFolder}/build-vscode",
+    "clangd.arguments": [
+        "--background-index",
+        "--project-root=${workspaceFolder}"
+    ],
+    "workbench.editor.labelFormat": "medium"
+}
