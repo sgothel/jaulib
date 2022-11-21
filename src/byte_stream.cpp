@@ -68,7 +68,7 @@ using namespace jau::int_literals;
 #endif
 
 #ifdef USE_LIBCURL
-    const size_t jau::io::BEST_URLSTREAM_RINGBUFFER_SIZE = 2_uz * CURL_MAX_WRITE_SIZE_uz;
+    const size_t jau::io::BEST_URLSTREAM_RINGBUFFER_SIZE = 2_uz * (size_t)CURL_MAX_WRITE_SIZE;
 #else
     const size_t jau::io::BEST_URLSTREAM_RINGBUFFER_SIZE = 2_uz * 16384_uz;
 #endif
