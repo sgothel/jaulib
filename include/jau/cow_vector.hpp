@@ -42,6 +42,7 @@
 #include <jau/basic_types.hpp>
 #include <jau/ordered_atomic.hpp>
 #include <jau/cow_iterator.hpp>
+#include <jau/basic_algos.hpp>
 
 namespace jau {
 
@@ -259,7 +260,7 @@ namespace jau {
             : store_ref(std::make_shared<storage_t>(initlist, alloc)), sync_atomic(false)
             { }
 
-            ~cow_vector() noexcept { }
+            ~cow_vector() noexcept = default;
 
             /**
              * Returns <code>std::numeric_limits<difference_type>::max()</code> as the maximum array size.

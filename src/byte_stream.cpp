@@ -56,6 +56,7 @@ extern "C" {
 
 using namespace jau::io;
 using namespace jau::fractions_i64_literals;
+using namespace jau::int_literals;
 
 #if defined(__FreeBSD__)
     typedef off_t off64_t;
@@ -67,9 +68,9 @@ using namespace jau::fractions_i64_literals;
 #endif
 
 #ifdef USE_LIBCURL
-    const size_t jau::io::BEST_URLSTREAM_RINGBUFFER_SIZE = 2*CURL_MAX_WRITE_SIZE;
+    const size_t jau::io::BEST_URLSTREAM_RINGBUFFER_SIZE = 2_uz * CURL_MAX_WRITE_SIZE_uz;
 #else
-    const size_t jau::io::BEST_URLSTREAM_RINGBUFFER_SIZE = 2*16384;
+    const size_t jau::io::BEST_URLSTREAM_RINGBUFFER_SIZE = 2_uz * 16384_uz;
 #endif
 
 inline constexpr void copy_mem(void* out, const void* in, size_t n) noexcept {

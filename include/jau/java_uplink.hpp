@@ -49,7 +49,7 @@ namespace jau::jni {
      */
     class JavaAnon {
         public:
-            virtual ~JavaAnon() noexcept { }
+            virtual ~JavaAnon() noexcept = default;
             virtual std::string toString() const noexcept { return "JavaAnon[???]"; }
     };
     typedef std::shared_ptr<JavaAnon> JavaAnonRef;

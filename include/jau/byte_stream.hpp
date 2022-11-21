@@ -121,7 +121,7 @@ namespace jau::io {
             iostate_func& operator=(const iostate_func &o) noexcept = default;
             iostate_func& operator=(iostate_func &&o) noexcept = default;
 
-            virtual ~iostate_func() noexcept {}
+            virtual ~iostate_func() noexcept = default;
 
             /** Clears state flags by assignment to the given value. */
             virtual void clear(const iostate state = iostate::goodbit) noexcept { m_state = state; }
@@ -191,7 +191,7 @@ namespace jau::io {
             ByteInStream() noexcept
             : iostate_func() {}
 
-            virtual ~ByteInStream() noexcept = default;
+            ~ByteInStream() noexcept override = default;
             ByteInStream& operator=(const ByteInStream&) = delete;
             ByteInStream(const ByteInStream&) = delete;
 
@@ -450,7 +450,7 @@ namespace jau::io {
 
           void close() noexcept override;
 
-          virtual ~ByteInStream_File() noexcept override { close(); }
+          ~ByteInStream_File() noexcept override { close(); }
 
           uint64_t tellg() const noexcept override { return m_bytes_consumed; }
 
@@ -793,7 +793,7 @@ namespace jau::io {
     {
         public:
             ByteOutStream() = default;
-            virtual ~ByteOutStream() noexcept = default;
+            ~ByteOutStream() noexcept override = default;
             ByteOutStream& operator=(const ByteOutStream&) = delete;
             ByteOutStream(const ByteOutStream&) = delete;
 

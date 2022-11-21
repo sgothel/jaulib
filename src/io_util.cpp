@@ -754,26 +754,26 @@ void jau::io::print_stats(const std::string& prefix, const uint64_t& out_bytes_t
 
     if( out_bytes_total >= 100'000'000 ) {
         jau::PLAIN_PRINT(true, "%s: Size %s MB", prefix.c_str(),
-                jau::to_decstring(std::llround(out_bytes_total/1'000'000.0)).c_str());
+                jau::to_decstring(std::llround((double)out_bytes_total/1'000'000.0)).c_str());
     } else if( out_bytes_total >= 100'000 ) {
         jau::PLAIN_PRINT(true, "%s: Size %s KB", prefix.c_str(),
-                jau::to_decstring(std::llround(out_bytes_total/1'000.0)).c_str());
+                jau::to_decstring(std::llround((double)out_bytes_total/1'000.0)).c_str());
     } else {
         jau::PLAIN_PRINT(true, "%s: Size %s B", prefix.c_str(),
                 jau::to_decstring(out_bytes_total).c_str());
     }
 
-    const uint64_t _rate_bps = std::llround( out_bytes_total / td.to_double() ); // bytes per second
-    const uint64_t _rate_bitps = std::llround( ( out_bytes_total * 8.0 ) / td.to_double() ); // bits per second
+    const uint64_t _rate_bps = std::llround( (double)out_bytes_total / td.to_double() ); // bytes per second
+    const uint64_t _rate_bitps = std::llround( ( (double)out_bytes_total * 8.0 ) / td.to_double() ); // bits per second
 
     if( _rate_bitps >= 100'000'000 ) {
         jau::PLAIN_PRINT(true, "%s: Bitrate %s Mbit/s, %s MB/s", prefix.c_str(),
-                jau::to_decstring(std::llround(_rate_bitps/1'000'000.0)).c_str(),
-                jau::to_decstring(std::llround(_rate_bps/1'000'000.0)).c_str());
+                jau::to_decstring(std::llround((double)_rate_bitps/1'000'000.0)).c_str(),
+                jau::to_decstring(std::llround((double)_rate_bps/1'000'000.0)).c_str());
     } else if( _rate_bitps >= 100'000 ) {
         jau::PLAIN_PRINT(true, "%s: Bitrate %s kbit/s, %s kB/s", prefix.c_str(),
-                jau::to_decstring(std::llround(_rate_bitps/1'000.0)).c_str(),
-                jau::to_decstring(std::llround(_rate_bps/1'000.0)).c_str());
+                jau::to_decstring(std::llround((double)_rate_bitps/1'000.0)).c_str(),
+                jau::to_decstring(std::llround((double)_rate_bps/1'000.0)).c_str());
     } else {
         jau::PLAIN_PRINT(true, "%s: Bitrate %s bit/s, %s B/s", prefix.c_str(),
                 jau::to_decstring(_rate_bitps).c_str(),

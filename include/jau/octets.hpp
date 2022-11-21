@@ -158,7 +158,7 @@ namespace jau {
             TROOctets& operator=(const TROOctets &o) noexcept = default;
             TROOctets& operator=(TROOctets &&o) noexcept = default;
 
-            virtual ~TROOctets() noexcept {}
+            virtual ~TROOctets() noexcept = default;
 
             inline void check_range(const nsize_t i, const nsize_t count, const char *file, int line) const {
                 if( i+count > _size ) {
@@ -335,7 +335,7 @@ namespace jau {
             TOctets& operator=(const TOctets &o) noexcept = default;
             TOctets& operator=(TOctets &&o) noexcept = default;
 
-            virtual ~TOctets() noexcept override {}
+            ~TOctets() noexcept override = default;
 
             void put_int8(const nsize_t i, const int8_t v) {
                 check_range(i, 1);
@@ -756,7 +756,7 @@ namespace jau {
                 return *this;
             }
 
-            virtual ~POctets() noexcept override {
+            ~POctets() noexcept override {
                 freeData();
                 setData(nullptr, 0, byte_order());
                 _capacity=0;

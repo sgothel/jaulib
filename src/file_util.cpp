@@ -42,10 +42,10 @@ extern "C" {
     #include <sys/types.h>
     #include <sys/wait.h>
     #include <sys/mount.h>
-#if defined(__linux__)
-    #include <sys/sendfile.h>
-    #include <linux/loop.h>
-#endif
+    #if defined(__linux__)
+        #include <sys/sendfile.h>
+        #include <linux/loop.h>
+    #endif
 }
 
 #ifndef O_BINARY
@@ -921,7 +921,7 @@ bool jau::fs::touch(const std::string& path, const fmode_t mode) noexcept {
         return false;
     }
     bool res;
-    if( 0 != ::futimens(fd, NULL /* current time */) ) {
+    if( 0 != ::futimens(fd, nullptr /* current time */) ) {
         ERR_PRINT("Couldn't update time of file '%s'", path.c_str());
         res = false;
     } else {
@@ -936,7 +936,7 @@ bool jau::fs::get_dir_content(const std::string& path, const consume_dir_item& d
     struct dirent *ent;
 
     if( ( dir = ::opendir( path.c_str() ) ) != nullptr ) {
-        while ( ( ent = ::readdir( dir ) ) != NULL ) {
+        while ( ( ent = ::readdir( dir ) ) != nullptr ) {
             std::string fname( ent->d_name );
             if( _dot != fname && _dotdot != fname ) { // avoid '.' and '..'
                 digest( dir_item( path, fname ) );
@@ -958,7 +958,7 @@ bool jau::fs::get_dir_content(const int dirfd, const std::string& path, const co
         return false;
     }
     if( ( dir = ::fdopendir( dirfd2 ) ) != nullptr ) {
-        while ( ( ent = ::readdir( dir ) ) != NULL ) {
+        while ( ( ent = ::readdir( dir ) ) != nullptr ) {
             std::string fname( ent->d_name );
             if( _dot != fname && _dotdot != fname ) { // avoid '.' and '..'
                 digest( dir_item( path, fname ) );
@@ -1084,7 +1084,7 @@ bool jau::fs::visit(const file_stats& item_stats, const traverse_options topts, 
         dirfds = new std::vector<int>();
     }
     if( 0 != dirfds->size() ) {
-        ERR_PRINT("dirfd stack error: count %zu] @ %s", dirfds->size(), item_stats.to_string().c_str());
+        ERR_PRINT("dirfd stack error: count %zu @ %s", dirfds->size(), item_stats.to_string().c_str());
         return false;
     }
     // initial parent directory dirfd of initial item_stats (a directory)

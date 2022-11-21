@@ -103,7 +103,7 @@ bool environment::getBooleanProperty(const std::string & name, const bool defaul
     }
 }
 
-#include <limits.h>
+#include <climits>
 
 int32_t environment::getInt32Property(const std::string & name, const int32_t default_value,
                                  const int32_t min_allowed, const int32_t max_allowed) noexcept
@@ -114,7 +114,7 @@ int32_t environment::getInt32Property(const std::string & name, const int32_t de
         return default_value;
     } else {
         int32_t res = default_value;
-        char *endptr = NULL;
+        char *endptr = nullptr;
         const long int res0 = strtol(value.c_str(), &endptr, 10);
         if( *endptr == '\0' ) {
             // string value completely valid
@@ -154,7 +154,7 @@ uint32_t environment::getUint32Property(const std::string & name, const uint32_t
         return default_value;
     } else {
         uint32_t res = default_value;
-        char *endptr = NULL;
+        char *endptr = nullptr;
         unsigned long int res0 = strtoul(value.c_str(), &endptr, 10);
         if( *endptr == '\0' ) {
             // string value completely valid
