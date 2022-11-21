@@ -79,7 +79,7 @@ class TestRingbuffer12 {
     std::vector<TrivialType> createIntArray(const jau::nsize_t capacity, const IntegralType startValue) {
         std::vector<TrivialType> array(capacity);
         for(jau::nsize_t i=0; i<capacity; i++) {
-            array[i] = TrivialType(startValue+i);
+            array[i] = TrivialType(static_cast<IntegralType>(startValue+i));
         }
         return array;
     }
@@ -123,7 +123,7 @@ class TestRingbuffer12 {
 
         // INFO_STR(msg+": Created / " + rb->toString());
         for(jau::nsize_t i=0; i<len; i++) {
-            Integer vI(startValue+i);
+            Integer vI(static_cast<IntegralType>(startValue+i));
             // INFO_STR("Putting "+std::to_string(vI->intValue())+" ... / " + rb->toString());
             rb->putBlocking( vI, 0_s );
         }

@@ -56,7 +56,6 @@ void test00_hello() {
         token_fsm_u17::uint_t res = token.get(tkey_words[count].value);
         fprintf(stderr, "%2zu: %s -> %zu (token)\n", count, std::string(tkey_words[count].value).c_str(), (size_t)res);
         REQUIRE( tkey_words[count].name == res );
-        ++count;
     }
     REQUIRE( 6 == token.get("heaven") );
     {
@@ -191,9 +190,8 @@ void test10_cpp_token() {
 
     for(size_t count=0; count < tkey_words.size(); ++count) {
         token_fsm_u17::uint_t res = token.get(tkey_words[count].value);
-        // fprintf(stderr, "%2zu: %s -> %zu (token)\n", count, std::string(tkey_words[count].value).c_str(), (size_t)res);
+        fprintf(stderr, "%2zu: %s -> %zu (token)\n", count, std::string(tkey_words[count].value).c_str(), (size_t)res);
         REQUIRE( tkey_words[count].name == res );
-        ++count;
     }
 }
 

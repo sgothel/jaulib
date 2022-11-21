@@ -45,6 +45,7 @@ extern "C" {
 }
 
 using namespace jau::fractions_i64_literals;
+using namespace jau::int_literals;
 
 class TestIOStream01 {
     public:
@@ -62,7 +63,7 @@ class TestIOStream01 {
                 REQUIRE( ofs.good() == true );
                 REQUIRE( ofs.is_open() == true );
 
-                for(int i=0; i < 1024*10; i+=one_line.size()) { // 10kiB
+                for(size_t i=0; i < 1024_uz * 10_uz; i+=one_line.size()) { // 10kiB
                     REQUIRE( one_line.size() == ofs.write(one_line.data(), one_line.size()) );
                 }
             }
@@ -136,7 +137,7 @@ class TestIOStream01 {
                 // async read_url_stream w/ unknown protocol
                 const std::string url = "lala://localhost:8080/" + basename_10kiB;
 
-                jau::io::ByteRingbuffer rb(0x00, jau::io::BEST_URLSTREAM_RINGBUFFER_SIZE);
+                jau::io::ByteRingbuffer rb(jau::io::BEST_URLSTREAM_RINGBUFFER_SIZE);
                 jau::io::url_header_sync url_header_sync;
                 jau::relaxed_atomic_bool url_has_content_length;
                 jau::relaxed_atomic_uint64 url_content_length;
@@ -235,7 +236,7 @@ class TestIOStream01 {
             REQUIRE( outfile.is_open() );
 
             constexpr const size_t buffer_size = 4096;
-            jau::io::ByteRingbuffer rb(0x00, jau::io::BEST_URLSTREAM_RINGBUFFER_SIZE);
+            jau::io::ByteRingbuffer rb(jau::io::BEST_URLSTREAM_RINGBUFFER_SIZE);
             jau::io::url_header_sync url_header_sync;
             jau::relaxed_atomic_bool url_has_content_length;
             jau::relaxed_atomic_uint64 url_content_length;
@@ -287,7 +288,7 @@ class TestIOStream01 {
             REQUIRE( outfile.is_open() );
 
             constexpr const size_t buffer_size = 4096;
-            jau::io::ByteRingbuffer rb(0x00, jau::io::BEST_URLSTREAM_RINGBUFFER_SIZE);
+            jau::io::ByteRingbuffer rb(jau::io::BEST_URLSTREAM_RINGBUFFER_SIZE);
             jau::io::url_header_sync url_header_sync;
             jau::relaxed_atomic_bool url_has_content_length;
             jau::relaxed_atomic_uint64 url_content_length;

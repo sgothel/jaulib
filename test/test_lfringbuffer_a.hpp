@@ -34,6 +34,7 @@
 
 using namespace jau;
 using namespace jau::fractions_i64_literals;
+using namespace jau::int_literals;
 
 template<typename Value_type>
 Value_type getDefault();
@@ -367,7 +368,7 @@ class TestRingbuffer_A {
 
     void testS03a_RangeRW01() {
         {
-            jau::nsize_t capacity = 2*11;
+            jau::nsize_t capacity = 2_unz * 11_unz;
             ringbuffer_t rb = createEmpty(capacity);
             INFO( std::string("testS03a_RangeRW01: Created / ") + rb.toString().c_str());
             REQUIRE_MSG("zero size "+rb.toString(), 0 == rb.size());
@@ -394,7 +395,7 @@ class TestRingbuffer_A {
             REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
         }
         {
-            jau::nsize_t capacity = 2*11;
+            jau::nsize_t capacity = 2_unz * 11_unz;
             ringbuffer_t rb = createEmpty(capacity);
             INFO( std::string("testS03a_RangeRW01: Created / ") + rb.toString().c_str());
             REQUIRE_MSG("zero size "+rb.toString(), 0 == rb.size());
@@ -517,7 +518,7 @@ class TestRingbuffer_A {
 
     void testS03b_RangeRW02() {
         {
-            jau::nsize_t capacity = 2*11;
+            jau::nsize_t capacity = 2_unz * 11_unz;
             ringbuffer_t rb = createEmpty(capacity);
             INFO( std::string("testS03b_RangeRW02: Created / ") + rb.toString().c_str());
             REQUIRE_MSG("zero size "+rb.toString(), 0 == rb.size());
@@ -543,7 +544,7 @@ class TestRingbuffer_A {
             REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
         }
         {
-            jau::nsize_t capacity = 2*11;
+            jau::nsize_t capacity = 2_unz * 11_unz;
 
             ringbuffer_t rb = createEmpty(capacity);
             INFO( std::string("testS03b_RangeRW02: Created / ") + rb.toString().c_str());
@@ -579,7 +580,7 @@ class TestRingbuffer_A {
             REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
         }
         {
-            jau::nsize_t capacity = 2*11;
+            jau::nsize_t capacity = 2_unz * 11_unz;
             ringbuffer_t rb = createEmpty(capacity);
             INFO( std::string("testS03b_RangeRW02: Created / ") + rb.toString().c_str());
             REQUIRE_MSG("zero size "+rb.toString(), 0 == rb.size());
@@ -623,7 +624,7 @@ class TestRingbuffer_A {
             REQUIRE_MSG("empty "+rb.toString(), rb.isEmpty());
         }
         {
-            jau::nsize_t capacity = 2*11;
+            jau::nsize_t capacity = 2_unz * 11_unz;
             ringbuffer_t rb = createEmpty(capacity);
             INFO( std::string("testS03b_RangeRW02: Created / ") + rb.toString().c_str());
             REQUIRE_MSG("zero size "+rb.toString(), 0 == rb.size());

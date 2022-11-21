@@ -628,7 +628,7 @@ class TestFunction01 {
                 c1_t() : offset(10) {}
                 c1_t(int v) : offset(v) {}
 
-                virtual ~c1_t() noexcept {}
+                virtual ~c1_t() noexcept = default;
 
                 virtual int f(int i) noexcept {
                     int res = i+offset;

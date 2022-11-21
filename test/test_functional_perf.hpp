@@ -31,6 +31,10 @@
     static std::string impl_name = "jau/functional.hpp";
 #endif
 
+#ifndef FUNCTIONAL_IMPL
+  #define FUNCTIONAL_IMPL 88
+#endif
+
 #include <jau/test/catch2_ext.hpp>
 
 // Test examples.

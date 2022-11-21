@@ -37,10 +37,11 @@ using namespace jau::fractions_i64_literals;
 using namespace jau::int_literals;
 
 class TestSimpleTimer01 {
-  private:
+  public:
     // install it once ..
-    bool sighandler_once = jau::service_runner::singleton_sighandler();;
+    const bool sighandler_once = jau::service_runner::singleton_sighandler();
 
+  private:
     int dog_count = 0;
     const jau::fraction_i64 dog_period = 10_ms;
     const jau::fraction_i64 test_period = 100_ms;

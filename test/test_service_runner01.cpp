@@ -38,10 +38,11 @@ using namespace jau::fractions_i64_literals;
 using namespace jau::int_literals;
 
 class TestServiceRunner01 {
-  private:
+  public:
     // install it once ..
-    bool sighandler_once = jau::service_runner::singleton_sighandler();;
+    const bool sighandler_once = jau::service_runner::singleton_sighandler();
 
+  private:
     jau::sc_atomic_int ping_count = 0;
 
     jau::latch serviceInitDone;

@@ -93,7 +93,7 @@ template< class Iter >
 static void print_iterator_info(const std::string& typedefname,
         typename std::enable_if<
                 std::is_class<Iter>::value
-            >::type* = 0
+            >::type* = nullptr
 ) {
     jau::type_cue<Iter>::print(typedefname);
     jau::type_cue<typename Iter::iterator_category>::print(typedefname+"::iterator_category");
@@ -107,7 +107,7 @@ template<class Iter>
 static void print_iterator_info(const std::string& typedefname,
         typename std::enable_if<
                 !std::is_class<Iter>::value
-            >::type* = 0
+            >::type* = nullptr
 ) {
     jau::type_cue<Iter>::print(typedefname);
 }
@@ -764,10 +764,8 @@ static bool test_mutable_iterator_ops(const std::string& type_id,
         iter -= 10;
         REQUIRE( iter == iter.end()-10 );
         {
-            int count = 0;
             while( iter != iter.end() ) {
                 iter.erase();
-                count++;
             }
             REQUIRE( iter.size() == size_pre - 10 );
         }
@@ -1074,10 +1072,8 @@ static bool test_mutable_iterator_ops(const std::string& type_id,
         iter -= 10;
         REQUIRE( iter == data.end()-10 );
         {
-            int count = 0;
             while( iter != data.end() ) {
                 iter = data.erase(iter);
-                count++;
             }
             REQUIRE( data.size() == size_pre - 10 );
             REQUIRE( iter == data.end() );

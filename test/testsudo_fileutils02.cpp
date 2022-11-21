@@ -208,13 +208,13 @@ class TestFileUtil02 : TestFileUtilBase {
         static const ::gid_t default_group = 44;
         std::string cmd("getent group "+groupname+" | cut -d: -f3");
         FILE* fp = ::popen(cmd.c_str(), "r");
-        if (fp == NULL) {
+        if (fp == nullptr) {
             fprintf(stderr, "Command failed (1) '%s'\n", cmd.c_str() );
             return default_group;
         }
         char result[100];
         ::gid_t result_int = default_group;
-        if( NULL != ::fgets(result, sizeof(result), fp) ) {
+        if( nullptr != ::fgets(result, sizeof(result), fp) ) {
             result_int = static_cast<::gid_t>( ::atoi(result) );
             jau::PLAIN_PRINT(true, "get_gid(%s) -> %s (%d)", groupname.c_str(), result, (int)result_int);
         } else {

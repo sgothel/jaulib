@@ -264,7 +264,7 @@ static void test_00_seq_fill_unique_itr(T& data, const Size_type size,
 
 template<class T, typename Size_type>
 static void test_00_seq_fill_unique_itr(T& data, const Size_type size,
-        std::enable_if_t< !is_cow_type<T>::value, bool> = true) noexcept
+        std::enable_if_t< !is_cow_type<T>::value, bool> = true) 
 {
     Addr48Bit a0(start_addr);
     Size_type i=0, fi=0;

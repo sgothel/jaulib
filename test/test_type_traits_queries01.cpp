@@ -41,7 +41,7 @@ struct One {
     static constexpr bool v = true;
     type x;
     One(type x_ = 0): x(x_) {}
-    ~One() {}
+    ~One() = default;
     type get() { return x; }
     type add(type x_, type y_) { return x_+y_; }
 };
