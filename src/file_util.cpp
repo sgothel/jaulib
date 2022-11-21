@@ -550,12 +550,11 @@ file_stats::file_stats(const ctor_cookie& cc, int dirfd, const dir_item& item, c
             // follow symbolic link recursively until !exists(), is_file() or is_dir()
             std::string link_path;
             {
-                const ssize_t path_link_max_len = 0 < s.stx_size ? s.stx_size + 1 : PATH_MAX;
+                const size_t path_link_max_len = 0 < s.stx_size ? s.stx_size + 1 : PATH_MAX;
                 std::vector<char> buffer;
                 buffer.reserve(path_link_max_len);
                 buffer.resize(path_link_max_len);
-                ssize_t path_link_len = 0;;
-                path_link_len = ::readlinkat(dirfd, dirfd_path.c_str(), buffer.data(), path_link_max_len);
+                const ssize_t path_link_len = ::readlinkat(dirfd, dirfd_path.c_str(), buffer.data(), path_link_max_len);
                 if( 0 > path_link_len ) {
                     errno_res_ = errno;
                     link_target_ = std::make_shared<file_stats>();
@@ -685,12 +684,11 @@ file_stats::file_stats(const ctor_cookie& cc, int dirfd, const dir_item& item, c
             // follow symbolic link recursively until !exists(), is_file() or is_dir()
             std::string link_path;
             {
-                const ssize_t path_link_max_len = 0 < s.st_size ? s.st_size + 1 : PATH_MAX;
+                const size_t path_link_max_len = 0 < s.st_size ? s.st_size + 1 : PATH_MAX;
                 std::vector<char> buffer;
                 buffer.reserve(path_link_max_len);
                 buffer.resize(path_link_max_len);
-                ssize_t path_link_len = 0;;
-                path_link_len = ::readlinkat(dirfd, dirfd_path.c_str(), buffer.data(), path_link_max_len);
+                const ssize_t path_link_len = ::readlinkat(dirfd, dirfd_path.c_str(), buffer.data(), path_link_max_len);
                 if( 0 > path_link_len ) {
                     errno_res_ = errno;
                     link_target_ = std::make_shared<file_stats>();
@@ -1081,7 +1079,12 @@ static bool _visit(const file_stats& item_stats, const traverse_options topts, c
 bool jau::fs::visit(const file_stats& item_stats, const traverse_options topts, const path_visitor& visitor, std::vector<int>* dirfds) noexcept {
     const bool user_dirfds = nullptr != dirfds;
     if( !user_dirfds ) {
-        dirfds = new std::vector<int>();
+        try {
+            dirfds = new std::vector<int>();
+        } catch (const std::bad_alloc &e) {
+            ERR_PRINT("dirfd allocation error: bad_alloc @ %s:%d", E_FILE_LINE);
+            return false;
+        }
     }
     if( 0 != dirfds->size() ) {
         ERR_PRINT("dirfd stack error: count %zu @ %s", dirfds->size(), item_stats.to_string().c_str());

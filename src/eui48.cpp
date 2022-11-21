@@ -43,18 +43,19 @@ std::string EUI48Sub::toString() const noexcept {
 
         static_assert(isLittleOrBigEndian()); // one static_assert is sufficient for whole compilation unit
         if( isLittleEndian() ) {
-            for(int i=length-1; 0 <= i; --i) {
-                jau::byteHexString(str, b[i], false /* lowerCase */);
-                if( 0 < i ) {
+            for(jau::nsize_t i=0; i < length; ++i) {
+                const jau::nsize_t idx = length - 1 - i;
+                jau::byteHexString(str, b[idx], false /* lowerCase */);
+                if( 0 < idx ) {
                     str.push_back(':');
                 }
             }
         } else {
-            for(int i=0; 0 < length; ++i) {
-                if( 0 < i ) {
+            for(jau::nsize_t idx=0; idx < length; ++idx) {
+                if( 0 < idx ) {
                     str.push_back(':');
                 }
-                jau::byteHexString(str, b[i], false /* lowerCase */);
+                jau::byteHexString(str, b[idx], false /* lowerCase */);
             }
         }
     } else {
@@ -154,9 +155,9 @@ jau::snsize_t EUI48Sub::indexOf(const uint8_t haystack_b[], const jau::nsize_t h
                 if( ++j == innerEnd ) {
                     // gotcha
                     if( endian::native == byte_order ) {
-                        return i;
+                        return static_cast<jau::snsize_t>(i);
                     } else {
-                        return 5 - i - ( needle_length - 1 );
+                        return static_cast<jau::snsize_t>(5 - i - ( needle_length - 1 ));
                     }
                 }
             } while( haystack_b[j] == needle_b[++k] );
