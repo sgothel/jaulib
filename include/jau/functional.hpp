@@ -1352,7 +1352,7 @@ namespace jau {
              */
             template<typename I>
             function(I&& data, R(*func)(I&, A...)) noexcept
-            : target( func::capval_target_t<R, I, A...>::delegate(std::move(data), func) )
+            : target( func::capval_target_t<R, I, A...>::delegate(std::forward<I>(data), func) )
             { }
 
             /**
@@ -1695,7 +1695,7 @@ namespace jau {
     template<typename R, typename I, typename... A>
     inline jau::function<R(A...)>
     bind_capval(I&& data, R(*func)(I&, A...)) noexcept {
-        return function<R(A...)>( func::capval_target_t<R, I, A...>::delegate(std::move(data), func), 0 );
+        return function<R(A...)>( func::capval_target_t<R, I, A...>::delegate(std::forward<I>(data), func), 0 );
     }
 
     /**
@@ -1718,7 +1718,7 @@ namespace jau {
     template<typename I, typename... A>
     inline jau::function<void(A...)>
     bind_capval(I&& data, void(*func)(I&, A...)) noexcept {
-        return function<void(A...)>( func::capval_target_t<void, I, A...>::delegate(std::move(data), func), 0 );
+        return function<void(A...)>( func::capval_target_t<void, I, A...>::delegate(std::forward<I>(data), func), 0 );
     }
 
     /**
