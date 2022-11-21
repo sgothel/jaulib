@@ -272,8 +272,8 @@ dir_item::dir_item(std::unique_ptr<backed_string_view> cleanpath) noexcept
     }
 }
 
-dir_item::dir_item(const std::string& dirname__, const std::string& basename__) noexcept
-: dirname_(dirname__), basename_(basename__), empty_(false) {
+dir_item::dir_item(std::string dirname__, std::string basename__) noexcept
+: dirname_(std::move(dirname__)), basename_(std::move(basename__)), empty_(false) {
 }
 
 dir_item::dir_item() noexcept

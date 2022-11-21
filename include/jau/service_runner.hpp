@@ -125,8 +125,8 @@ namespace jau {
              * @param service_init_locked optional service init function, lifecycle mutex is locked
              * @param service_end_locked optional service end function, lifecycle mutex is locked
              */
-            service_runner(const std::string& name,
-                           const fraction_i64& service_shutdown_timeout,
+            service_runner(std::string name,
+                           fraction_i64 service_shutdown_timeout,
                            Callback service_work,
                            Callback service_init_locked = Callback(),
                            Callback service_end_locked = Callback()) noexcept;

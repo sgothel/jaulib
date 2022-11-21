@@ -121,10 +121,10 @@ namespace jau {
         std::string what_;
 
       protected:
-        ExceptionBase(std::string const type, std::string const m, const char* file, int line) noexcept;
+        ExceptionBase(std::string type, std::string const& m, const char* file, int line) noexcept;
 
       public:
-        virtual ~ExceptionBase() noexcept { }
+        virtual ~ExceptionBase() noexcept = default;
 
         ExceptionBase(const ExceptionBase &o) = default;
         ExceptionBase(ExceptionBase &&o) = default;
@@ -141,68 +141,68 @@ namespace jau {
 
     class OutOfMemoryError : public std::bad_alloc, public ExceptionBase {
       public:
-        OutOfMemoryError(std::string const m, const char* file, int line)
+        OutOfMemoryError(std::string const& m, const char* file, int line)
         : bad_alloc(), ExceptionBase("OutOfMemoryError", m, file, line) {}
 
-        virtual const char* what() const noexcept override {
+        const char* what() const noexcept override {
             return ExceptionBase::what(); // return std::runtime_error::what();
         }
     };
 
     class RuntimeException : public std::exception, public ExceptionBase {
       protected:
-        RuntimeException(std::string const type, std::string const m, const char* file, int line) noexcept
-        : exception(), ExceptionBase(type, m, file, line) {}
+        RuntimeException(std::string type, std::string const& m, const char* file, int line) noexcept
+        : exception(), ExceptionBase(std::move(type), m, file, line) {}
 
       public:
-        RuntimeException(std::string const m, const char* file, int line) noexcept
+        RuntimeException(std::string const& m, const char* file, int line) noexcept
         : RuntimeException("RuntimeException", m, file, line) {}
 
-        virtual ~RuntimeException() noexcept { }
+        ~RuntimeException() noexcept override = default;
 
-        RuntimeException(const RuntimeException &o) = default;
-        RuntimeException(RuntimeException &&o) = default;
-        RuntimeException& operator=(const RuntimeException &o) = default;
-        RuntimeException& operator=(RuntimeException &&o) = default;
+        RuntimeException(const RuntimeException& o) = default;
+        RuntimeException(RuntimeException&& o) = default;
+        RuntimeException& operator=(const RuntimeException& o) = default;
+        RuntimeException& operator=(RuntimeException&& o) = default;
 
-        virtual const char* what() const noexcept override {
+        const char* what() const noexcept override {
             return ExceptionBase::what();
         }
     };
 
     class InternalError : public RuntimeException {
       public:
-        InternalError(std::string const m, const char* file, int line) noexcept
+        InternalError(std::string const& m, const char* file, int line) noexcept
         : RuntimeException("InternalError", m, file, line) {}
     };
 
     class NotImplementedError : public RuntimeException {
       public:
-        NotImplementedError(std::string const m, const char* file, int line) noexcept
+        NotImplementedError(std::string const& m, const char* file, int line) noexcept
         : RuntimeException("NotImplementedError", m, file, line) {}
     };
 
     class NullPointerException : public RuntimeException {
       public:
-        NullPointerException(std::string const m, const char* file, int line) noexcept
+        NullPointerException(std::string const& m, const char* file, int line) noexcept
         : RuntimeException("NullPointerException", m, file, line) {}
     };
 
     class IllegalArgumentException : public RuntimeException {
       public:
-        IllegalArgumentException(std::string const m, const char* file, int line) noexcept
+        IllegalArgumentException(std::string const& m, const char* file, int line) noexcept
         : RuntimeException("IllegalArgumentException", m, file, line) {}
     };
 
     class IllegalStateException : public RuntimeException {
       public:
-        IllegalStateException(std::string const m, const char* file, int line) noexcept
+        IllegalStateException(std::string const& m, const char* file, int line) noexcept
         : RuntimeException("IllegalStateException", m, file, line) {}
     };
 
     class UnsupportedOperationException : public RuntimeException {
       public:
-        UnsupportedOperationException(std::string const m, const char* file, int line) noexcept
+        UnsupportedOperationException(std::string const& m, const char* file, int line) noexcept
         : RuntimeException("UnsupportedOperationException", m, file, line) {}
     };
 
@@ -211,7 +211,7 @@ namespace jau {
         IndexOutOfBoundsException(const std::size_t index, const std::size_t length, const char* file, int line) noexcept
         : RuntimeException("IndexOutOfBoundsException", "Index "+std::to_string(index)+", data length "+std::to_string(length), file, line) {}
 
-        IndexOutOfBoundsException(const std::string index_s, const std::string length_s, const char* file, int line) noexcept
+        IndexOutOfBoundsException(const std::string& index_s, const std::string& length_s, const char* file, int line) noexcept
         : RuntimeException("IndexOutOfBoundsException", "Index "+index_s+", data length "+length_s, file, line) {}
 
         IndexOutOfBoundsException(const std::size_t index, const std::size_t count, const std::size_t length, const char* file, int line) noexcept
@@ -220,7 +220,7 @@ namespace jau {
 
     class IOError : public RuntimeException {
       public:
-        IOError(std::string const m, const char* file, int line) noexcept
+        IOError(std::string const& m, const char* file, int line) noexcept
         : RuntimeException("IOError", m, file, line) {}
     };
 

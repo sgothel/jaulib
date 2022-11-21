@@ -65,8 +65,8 @@ namespace jau::codec::base {
             code_point_func cpf;
 
         public:
-            alphabet(const std::string& _name, int _base, std::string_view _symbols, char _padding64, code_point_func _cpf) noexcept
-            : name_(_name), base_(_base), symbols_(_symbols), padding64_(_padding64), cpf(_cpf) {}
+            alphabet(std::string  _name, int _base, std::string_view _symbols, char _padding64, code_point_func _cpf) noexcept
+            : name_(std::move(_name)), base_(_base), symbols_(_symbols), padding64_(_padding64), cpf(_cpf) {}
 
             /** Human readable name for this alphabet instance. */
             constexpr const std::string& name() const noexcept { return name_; }

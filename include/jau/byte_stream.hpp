@@ -348,8 +348,8 @@ namespace jau::io {
           * Construct a secure memory source that reads from a secure_vector
           * @param in the MemoryRegion to read from
           */
-          explicit ByteInStream_SecMemory(const io::secure_vector<uint8_t>& in)
-          : m_source(in), m_offset(0) {}
+          explicit ByteInStream_SecMemory(io::secure_vector<uint8_t>  in)
+          : m_source(std::move(in)), m_offset(0) {}
 
           /**
           * Construct a secure memory source that reads from a std::vector
@@ -513,7 +513,7 @@ namespace jau::io {
              * @param url the URL of the data to read
              * @param timeout maximum duration in fractions of seconds to wait @ available() for next bytes, where fractions_i64::zero waits infinitely
              */
-            ByteInStream_URL(const std::string& url, const jau::fraction_i64& timeout) noexcept;
+            ByteInStream_URL(std::string url, const jau::fraction_i64& timeout) noexcept;
 
             ByteInStream_URL(const ByteInStream_URL&) = delete;
 
@@ -611,7 +611,7 @@ namespace jau::io {
              * @param id_name arbitrary identifier for this instance
              * @param timeout maximum duration in fractions of seconds to wait @ available() and write(), where fractions_i64::zero waits infinitely
              */
-            ByteInStream_Feed(const std::string& id_name, const jau::fraction_i64& timeout) noexcept;
+            ByteInStream_Feed(std::string id_name, const jau::fraction_i64& timeout) noexcept;
 
             ByteInStream_Feed(const ByteInStream_Feed&) = delete;
 

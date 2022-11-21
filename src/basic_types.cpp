@@ -213,8 +213,8 @@ std::cv_status jau::wait_for(std::condition_variable& cv, std::unique_lock<std::
 }
 
 
-jau::ExceptionBase::ExceptionBase(std::string const type, std::string const m, const char* file, int line) noexcept
-: msg_(std::string(type).append(" @ ").append(file).append(":").append(std::to_string(line)).append(": ").append(m)),
+jau::ExceptionBase::ExceptionBase(std::string type, std::string const& m, const char* file, int line) noexcept
+: msg_( std::move( type.append(" @ ").append(file).append(":").append(std::to_string(line)).append(": ").append(m) ) ),
   backtrace_( jau::get_backtrace(true /* skip_anon_frames */) )
 {
     what_ = msg_;
