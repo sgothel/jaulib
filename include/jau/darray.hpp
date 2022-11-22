@@ -1143,7 +1143,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              * @param x the value to be added at the front.
              */
             constexpr void push_front(const value_type& x) {
-                insert(0, x);
+                insert(begin_, x);
             }
 
             /**
@@ -1151,7 +1151,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              * @param x the value to be added at the front.
              */
             constexpr void push_front(value_type&& x) {
-                insert(0, std::move(x));
+                insert(begin_, std::move(x));
             }
 
             /**

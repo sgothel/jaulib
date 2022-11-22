@@ -213,8 +213,8 @@ std::cv_status jau::wait_for(std::condition_variable& cv, std::unique_lock<std::
 }
 
 
-jau::ExceptionBase::ExceptionBase(std::string const type, std::string const m, const char* file, int line) noexcept
-: msg_(std::string(type).append(" @ ").append(file).append(":").append(std::to_string(line)).append(": ").append(m)),
+jau::ExceptionBase::ExceptionBase(std::string type, std::string const& m, const char* file, int line) noexcept
+: msg_( std::move( type.append(" @ ").append(file).append(":").append(std::to_string(line)).append(": ").append(m) ) ),
   backtrace_( jau::get_backtrace(true /* skip_anon_frames */) )
 {
     what_ = msg_;
@@ -331,18 +331,18 @@ static snsize_t hexCharByte_(const char c)
 }
 
 nsize_t jau::hexStringBytes(std::vector<uint8_t>& out, const std::string& hexstr, const bool lsbFirst, const bool checkLeading0x) noexcept {
-    ssize_t offset;
+    size_t offset;
     if( checkLeading0x && hexstr.size() >= 2 && hexstr[0] == '0' && hexstr[1] == 'x' ) {
         offset = 2;
     } else {
         offset = 0;
     }
-    const ssize_t size = ( hexstr.size() - offset ) / 2;
+    const size_t size = ( hexstr.size() - offset ) / 2;
     out.clear();
     out.reserve(size);
     if( lsbFirst ) {
-        for (ssize_t i = 0; i < size; i++) {
-            const nsize_t idx = i * 2;
+        for (size_t i = 0; i < size; ++i) {
+            const size_t idx = i * 2;
             const snsize_t h = hexCharByte_( hexstr[ offset + idx ] );
             const snsize_t l = hexCharByte_( hexstr[ offset + idx + 1 ] );
             if( 0 <= h && 0 <= l ) {
@@ -353,7 +353,8 @@ nsize_t jau::hexStringBytes(std::vector<uint8_t>& out, const std::string& hexstr
             }
         }
     } else {
-        for(ssize_t idx = (size-1)*2; idx >= 0; idx-=2) {
+        for (size_t i = 0; i < size; ++i) { 
+            const size_t idx = (size-1-i)*2;
             const snsize_t h = hexCharByte_( hexstr[ offset + idx ] );
             const snsize_t l = hexCharByte_( hexstr[ offset + idx + 1 ] );
             if( 0 <= h && 0 <= l ) {
@@ -492,7 +493,7 @@ bool jau::to_fraction_i64(fraction_i64& result, const std::string & value, const
     static constexpr const bool _debug = false;
     const char * str = const_cast<const char*>(value.c_str());
     const size_t str_len = value.length();
-    const char *divptr = NULL;
+    const char *divptr = nullptr;
 
     divptr = std::strstr(str, "/");
     if( nullptr == divptr ) {

@@ -146,7 +146,7 @@ struct counting_callocator : public jau::callocator<T>
 #if __cplusplus > 201703L
     constexpr ~counting_callocator() {} // C++20
 #else
-    ~counting_callocator() {}
+    ~counting_callocator() = default;
 #endif
 
 #if __cplusplus <= 201703L

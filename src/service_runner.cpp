@@ -93,7 +93,7 @@ bool service_runner::install_sighandler() noexcept {
     sa_setup.sa_sigaction = sigaction_handler;
     ::sigemptyset(&(sa_setup.sa_mask));
     sa_setup.sa_flags = SA_SIGINFO;
-    if( 0 != ::sigaction( SIGALRM, &sa_setup, NULL ) ) {
+    if( 0 != ::sigaction( SIGALRM, &sa_setup, nullptr ) ) {
         ERR_PRINT("service_runner::install_sighandler: Setting sighandler");
         return false;
     }
@@ -107,7 +107,7 @@ bool service_runner::remove_sighandler() noexcept {
     sa_setup.sa_handler = SIG_DFL;
     ::sigemptyset(&(sa_setup.sa_mask));
     sa_setup.sa_flags = 0;
-    if( 0 != ::sigaction( SIGALRM, &sa_setup, NULL ) ) {
+    if( 0 != ::sigaction( SIGALRM, &sa_setup, nullptr ) ) {
         ERR_PRINT("service_runner::remove_sighandler: Resetting sighandler");
         return false;
     }
@@ -115,16 +115,16 @@ bool service_runner::remove_sighandler() noexcept {
     return true;
 }
 
-service_runner::service_runner(const std::string& name__,
-                               const fraction_i64& service_shutdown_timeout,
+service_runner::service_runner(std::string name__,
+                               fraction_i64 service_shutdown_timeout,
                                Callback service_work_,
                                Callback service_init_locked_,
                                Callback service_end_locked_) noexcept
-: name_(name__),
-  service_shutdown_timeout_(service_shutdown_timeout),
-  service_work(service_work_),
-  service_init_locked(service_init_locked_),
-  service_end_locked(service_end_locked_),
+: name_( std::move(name__) ),
+  service_shutdown_timeout_( std::move(service_shutdown_timeout) ),
+  service_work( std::move(service_work_) ),
+  service_init_locked( std::move(service_init_locked_) ),
+  service_end_locked( std::move(service_end_locked_) ),
   shall_stop_(true), running(false),
   thread_id_(0)
 {

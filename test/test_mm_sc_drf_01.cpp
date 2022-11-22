@@ -69,8 +69,8 @@ class TestMemModelSCDRF01 {
     void reset(int v1, int array_value) {
         std::unique_lock<std::mutex> lock(mtx_value); // SC-DRF acquire and release @ scope exit
         value1 = v1;
-        for(int i=0; i<array_size; i++) {
-            array[i] = array_value;
+        for(int & i : array) {
+            i = array_value;
         }
     }
 

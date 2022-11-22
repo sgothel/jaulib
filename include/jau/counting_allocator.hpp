@@ -143,7 +143,7 @@ struct counting_allocator : public std::allocator<T>
 #if __cplusplus > 201703L
     constexpr ~counting_allocator() {} // C++20
 #else
-    ~counting_allocator() {}
+    ~counting_allocator() = default;
 #endif
 
 #if __cplusplus <= 201703L

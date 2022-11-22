@@ -71,8 +71,7 @@ struct callocator
     typedef value_type_mutable*    pointer_mutable;
 
   public:
-    callocator() noexcept
-    { } // C++11
+    callocator() noexcept = default; // C++11
 
 #if __cplusplus > 201703L
     constexpr callocator(const callocator& other) noexcept
@@ -95,7 +94,7 @@ struct callocator
 #if __cplusplus > 201703L
     constexpr ~callocator() {} // C++20
 #else
-    ~callocator() {}
+    ~callocator() = default;
 #endif
 
 #if __cplusplus <= 201703L

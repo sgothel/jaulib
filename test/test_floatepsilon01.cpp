@@ -40,7 +40,7 @@ TEST_CASE( "Float Epsilon Test 01", "[datatype][float][epsilon]" ) {
     static double epsilon_d1 = jau::machineEpsilon<double>();
 
     float epsilon_fd = epsilon_f1 - epsilon_f0;
-    float epsilon_dd = epsilon_d1 - epsilon_d0;
+    double epsilon_dd = epsilon_d1 - epsilon_d0;
 
     fprintf(stderr, "std::numeric_limits<float>::epsilon()  : %e\n", epsilon_f0);
     fprintf(stderr, "std::numeric_limits<double>::epsilon() : %le\n", epsilon_d0);

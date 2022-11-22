@@ -71,8 +71,8 @@ class TestMemModelSCDRF00 {
         int _sync_value = sync_value; // SC-DRF acquire atomic
         (void) _sync_value;
         value1 = v1;
-        for(int i=0; i<array_size; i++) {
-            array[i] = array_value;
+        for(int & i : array) {
+            i = array_value;
         }
         sync_value = v1; // SC-DRF release atomic
     }

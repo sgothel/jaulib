@@ -121,7 +121,7 @@ namespace jau::io {
             iostate_func& operator=(const iostate_func &o) noexcept = default;
             iostate_func& operator=(iostate_func &&o) noexcept = default;
 
-            virtual ~iostate_func() noexcept {}
+            virtual ~iostate_func() noexcept = default;
 
             /** Clears state flags by assignment to the given value. */
             virtual void clear(const iostate state = iostate::goodbit) noexcept { m_state = state; }
@@ -191,7 +191,7 @@ namespace jau::io {
             ByteInStream() noexcept
             : iostate_func() {}
 
-            virtual ~ByteInStream() noexcept = default;
+            ~ByteInStream() noexcept override = default;
             ByteInStream& operator=(const ByteInStream&) = delete;
             ByteInStream(const ByteInStream&) = delete;
 
@@ -348,8 +348,8 @@ namespace jau::io {
           * Construct a secure memory source that reads from a secure_vector
           * @param in the MemoryRegion to read from
           */
-          explicit ByteInStream_SecMemory(const io::secure_vector<uint8_t>& in)
-          : m_source(in), m_offset(0) {}
+          explicit ByteInStream_SecMemory(io::secure_vector<uint8_t>  in)
+          : m_source(std::move(in)), m_offset(0) {}
 
           /**
           * Construct a secure memory source that reads from a std::vector
@@ -450,7 +450,7 @@ namespace jau::io {
 
           void close() noexcept override;
 
-          virtual ~ByteInStream_File() noexcept override { close(); }
+          ~ByteInStream_File() noexcept override { close(); }
 
           uint64_t tellg() const noexcept override { return m_bytes_consumed; }
 
@@ -513,7 +513,7 @@ namespace jau::io {
              * @param url the URL of the data to read
              * @param timeout maximum duration in fractions of seconds to wait @ available() for next bytes, where fractions_i64::zero waits infinitely
              */
-            ByteInStream_URL(const std::string& url, const jau::fraction_i64& timeout) noexcept;
+            ByteInStream_URL(std::string url, const jau::fraction_i64& timeout) noexcept;
 
             ByteInStream_URL(const ByteInStream_URL&) = delete;
 
@@ -611,7 +611,7 @@ namespace jau::io {
              * @param id_name arbitrary identifier for this instance
              * @param timeout maximum duration in fractions of seconds to wait @ available() and write(), where fractions_i64::zero waits infinitely
              */
-            ByteInStream_Feed(const std::string& id_name, const jau::fraction_i64& timeout) noexcept;
+            ByteInStream_Feed(std::string id_name, const jau::fraction_i64& timeout) noexcept;
 
             ByteInStream_Feed(const ByteInStream_Feed&) = delete;
 
@@ -793,7 +793,7 @@ namespace jau::io {
     {
         public:
             ByteOutStream() = default;
-            virtual ~ByteOutStream() noexcept = default;
+            ~ByteOutStream() noexcept override = default;
             ByteOutStream& operator=(const ByteOutStream&) = delete;
             ByteOutStream(const ByteOutStream&) = delete;
 

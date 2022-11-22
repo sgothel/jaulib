@@ -42,10 +42,10 @@ extern "C" {
     #include <sys/types.h>
     #include <sys/wait.h>
     #include <sys/mount.h>
-#if defined(__linux__)
-    #include <sys/sendfile.h>
-    #include <linux/loop.h>
-#endif
+    #if defined(__linux__)
+        #include <sys/sendfile.h>
+        #include <linux/loop.h>
+    #endif
 }
 
 #ifndef O_BINARY
@@ -272,8 +272,8 @@ dir_item::dir_item(std::unique_ptr<backed_string_view> cleanpath) noexcept
     }
 }
 
-dir_item::dir_item(const std::string& dirname__, const std::string& basename__) noexcept
-: dirname_(dirname__), basename_(basename__), empty_(false) {
+dir_item::dir_item(std::string dirname__, std::string basename__) noexcept
+: dirname_(std::move(dirname__)), basename_(std::move(basename__)), empty_(false) {
 }
 
 dir_item::dir_item() noexcept
@@ -550,12 +550,11 @@ file_stats::file_stats(const ctor_cookie& cc, int dirfd, const dir_item& item, c
             // follow symbolic link recursively until !exists(), is_file() or is_dir()
             std::string link_path;
             {
-                const ssize_t path_link_max_len = 0 < s.stx_size ? s.stx_size + 1 : PATH_MAX;
+                const size_t path_link_max_len = 0 < s.stx_size ? s.stx_size + 1 : PATH_MAX;
                 std::vector<char> buffer;
                 buffer.reserve(path_link_max_len);
                 buffer.resize(path_link_max_len);
-                ssize_t path_link_len = 0;;
-                path_link_len = ::readlinkat(dirfd, dirfd_path.c_str(), buffer.data(), path_link_max_len);
+                const ssize_t path_link_len = ::readlinkat(dirfd, dirfd_path.c_str(), buffer.data(), path_link_max_len);
                 if( 0 > path_link_len ) {
                     errno_res_ = errno;
                     link_target_ = std::make_shared<file_stats>();
@@ -685,12 +684,11 @@ file_stats::file_stats(const ctor_cookie& cc, int dirfd, const dir_item& item, c
             // follow symbolic link recursively until !exists(), is_file() or is_dir()
             std::string link_path;
             {
-                const ssize_t path_link_max_len = 0 < s.st_size ? s.st_size + 1 : PATH_MAX;
+                const size_t path_link_max_len = 0 < s.st_size ? s.st_size + 1 : PATH_MAX;
                 std::vector<char> buffer;
                 buffer.reserve(path_link_max_len);
                 buffer.resize(path_link_max_len);
-                ssize_t path_link_len = 0;;
-                path_link_len = ::readlinkat(dirfd, dirfd_path.c_str(), buffer.data(), path_link_max_len);
+                const ssize_t path_link_len = ::readlinkat(dirfd, dirfd_path.c_str(), buffer.data(), path_link_max_len);
                 if( 0 > path_link_len ) {
                     errno_res_ = errno;
                     link_target_ = std::make_shared<file_stats>();
@@ -921,7 +919,7 @@ bool jau::fs::touch(const std::string& path, const fmode_t mode) noexcept {
         return false;
     }
     bool res;
-    if( 0 != ::futimens(fd, NULL /* current time */) ) {
+    if( 0 != ::futimens(fd, nullptr /* current time */) ) {
         ERR_PRINT("Couldn't update time of file '%s'", path.c_str());
         res = false;
     } else {
@@ -936,7 +934,7 @@ bool jau::fs::get_dir_content(const std::string& path, const consume_dir_item& d
     struct dirent *ent;
 
     if( ( dir = ::opendir( path.c_str() ) ) != nullptr ) {
-        while ( ( ent = ::readdir( dir ) ) != NULL ) {
+        while ( ( ent = ::readdir( dir ) ) != nullptr ) {
             std::string fname( ent->d_name );
             if( _dot != fname && _dotdot != fname ) { // avoid '.' and '..'
                 digest( dir_item( path, fname ) );
@@ -958,7 +956,7 @@ bool jau::fs::get_dir_content(const int dirfd, const std::string& path, const co
         return false;
     }
     if( ( dir = ::fdopendir( dirfd2 ) ) != nullptr ) {
-        while ( ( ent = ::readdir( dir ) ) != NULL ) {
+        while ( ( ent = ::readdir( dir ) ) != nullptr ) {
             std::string fname( ent->d_name );
             if( _dot != fname && _dotdot != fname ) { // avoid '.' and '..'
                 digest( dir_item( path, fname ) );
@@ -1081,10 +1079,15 @@ static bool _visit(const file_stats& item_stats, const traverse_options topts, c
 bool jau::fs::visit(const file_stats& item_stats, const traverse_options topts, const path_visitor& visitor, std::vector<int>* dirfds) noexcept {
     const bool user_dirfds = nullptr != dirfds;
     if( !user_dirfds ) {
-        dirfds = new std::vector<int>();
+        try {
+            dirfds = new std::vector<int>();
+        } catch (const std::bad_alloc &e) {
+            ERR_PRINT("dirfd allocation error: bad_alloc @ %s:%d", E_FILE_LINE);
+            return false;
+        }
     }
     if( 0 != dirfds->size() ) {
-        ERR_PRINT("dirfd stack error: count %zu] @ %s", dirfds->size(), item_stats.to_string().c_str());
+        ERR_PRINT("dirfd stack error: count %zu @ %s", dirfds->size(), item_stats.to_string().c_str());
         return false;
     }
     // initial parent directory dirfd of initial item_stats (a directory)

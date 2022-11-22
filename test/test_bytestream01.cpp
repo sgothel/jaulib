@@ -83,8 +83,8 @@ class TestByteStream01 {
                     return true;
                 }
                 data() {
-                    REQUIRE( true == add_test_file("testfile_blob_01_11kiB.bin", 1024*11) );
-                    REQUIRE( true == add_test_file("testfile_blob_02_65MiB.bin", 1024*1024*65) );
+                    REQUIRE( true == add_test_file("testfile_blob_01_11kiB.bin", (size_t)(1024*11)) );
+                    REQUIRE( true == add_test_file("testfile_blob_02_65MiB.bin", (size_t)(1024*1024*65)) );
                 }
             public:
                 static const data& get() {

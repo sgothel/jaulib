@@ -64,7 +64,8 @@ namespace jau {
      */
     template<class T>
     typename std::enable_if<!std::numeric_limits<T>::is_integer, T>::type
-        machineEpsilon() {
+        machineEpsilon() 
+    {
       const T one(1);
       const T two(2);
       T x = one, res;

@@ -27,6 +27,8 @@
 
 #include <type_traits>
 #include <typeinfo>
+#include <string>
+#include <cstring>
 
 namespace jau {
 
@@ -392,7 +394,7 @@ namespace jau {
 
             /** Returns true if given signature is not nullptr and has a string length > 0, otherwise false. */
             static constexpr bool is_valid(const char* signature) noexcept {
-                return nullptr != signature && 0 < strlen(signature);
+                return nullptr != signature && 0 < ::strlen(signature);
             }
 
             /** Aborts program execution if given signature is nullptr or has a string length == 0. */
@@ -400,7 +402,7 @@ namespace jau {
                 if( nullptr == signature ) {
                     fprintf(stderr, "ABORT @ %s:%d %s: CTTI signature nullptr\n", __FILE__, __LINE__, __func__);
                     ::abort();
-                } else if( 0 == strlen(signature) ) {
+                } else if( 0 == ::strlen(signature) ) {
                     fprintf(stderr, "ABORT @ %s:%d %s: CTTI signature zero sized\n", __FILE__, __LINE__, __func__);
                     ::abort();
                 }

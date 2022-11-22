@@ -26,6 +26,7 @@
 
 #include <cassert>
 #include <cinttypes>
+#include <cstdint>
 #include <cstring>
 #include <random>
 
@@ -71,8 +72,8 @@ __pack ( struct Addr48Bit {
     }
     void random(std::default_random_engine& e) {
         std::uniform_int_distribution<uint8_t> d(0, 255);
-        for(int i=0; i<6; ++i) {
-            b[i] = static_cast<uint8_t>( d(e) );
+        for(uint8_t & i : b) {
+            i = static_cast<uint8_t>( d(e) );
         }
     }
 

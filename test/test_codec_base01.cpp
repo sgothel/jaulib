@@ -73,23 +73,23 @@ static void testRadix_3digits_int32(const jau::codec::base::alphabet& aspec) {
     REQUIRE(std::string()+min_cp+min_cp+max_cp == jau::codec::base::encode(max_s, aspec, 3));
 
     {
-        const int v0_d = jau::codec::base::decode(r1_max, aspec);
+        const int64_t v0_d = jau::codec::base::decode(r1_max, aspec);
         const std::string v1_s = jau::codec::base::encode(base-1, aspec, 3);
         REQUIRE(r1_max == v1_s);
         REQUIRE(base-1 == v0_d);
     }
     {
-        const int v0_d = jau::codec::base::decode(r3_max, aspec);
+        const int64_t v0_d = jau::codec::base::decode(r3_max, aspec);
         const std::string v1_s = jau::codec::base::encode(max, aspec, 3);
         REQUIRE(r3_max == v1_s);
         REQUIRE(max == v0_d);
     }
     for(int iter=min; iter<=max; ++iter) {
         const std::string rad = jau::codec::base::encode(iter, aspec, 3);
-        const int dec = jau::codec::base::decode(rad, aspec);
+        const int64_t dec = jau::codec::base::decode(rad, aspec);
 #if 0
-        fprintf(stderr, "test base %d: iter %d, rad '%s' %03d %03d %03d, dec %d\n",
-                base, iter, rad.c_str(), (int)(0xFF & rad[0]), (int)(0xFF & rad[1]), (int)(0xFF & rad[2]), dec);
+        fprintf(stderr, "test base %d: iter %d, rad '%s' %03d %03d %03d, dec %zd\n",
+                base, iter, rad.c_str(), (int)(0xFF & rad[0]), (int)(0xFF & rad[1]), (int)(0xFF & rad[2]), (ssize_t)dec);
 #endif
         REQUIRE(iter == dec);
     }

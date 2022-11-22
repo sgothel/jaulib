@@ -1091,6 +1091,9 @@ class ringbuffer {
         }
 
         ringbuffer& operator=(const ringbuffer &_source) noexcept {
+            if( this == &_source ) {
+                return *this;
+            }
             if( multi_pc_enabled ) {
                 std::unique_lock<std::mutex> lockMultiReadS(_source.syncMultiRead, std::defer_lock); // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
                 std::unique_lock<std::mutex> lockMultiWriteS(_source.syncMultiWrite, std::defer_lock); // otherwise RAII-style relinquish via destructor

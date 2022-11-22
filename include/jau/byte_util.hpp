@@ -424,7 +424,7 @@ namespace jau {
         } else if constexpr ( isBigEndian() ) {
             return n;
         } else {
-            return uint128_t(); // unreachable -> static_assert(..) above
+            return {}; // unreachable -> static_assert(..) above
         }
     }
     constexpr uint128_t cpu_to_be(uint128_t const & h) noexcept {
@@ -433,7 +433,7 @@ namespace jau {
         } else if constexpr ( isBigEndian() ) {
             return h;
         } else {
-            return uint128_t(); // unreachable -> static_assert(..) above
+            return {}; // unreachable -> static_assert(..) above
         }
     }
     constexpr uint128_t le_to_cpu(uint128_t const & l) noexcept {
@@ -442,7 +442,7 @@ namespace jau {
         } else if constexpr ( isBigEndian() ) {
             return bswap(l);
         } else {
-            return uint128_t(); // unreachable -> static_assert(..) above
+            return {}; // unreachable -> static_assert(..) above
         }
     }
     constexpr uint128_t cpu_to_le(uint128_t const & h) noexcept {
@@ -451,7 +451,7 @@ namespace jau {
         } else if constexpr ( isBigEndian() ) {
             return bswap(h);
         } else {
-            return uint128_t(); // unreachable -> static_assert(..) above
+            return {}; // unreachable -> static_assert(..) above
         }
     }
 
@@ -461,7 +461,7 @@ namespace jau {
         } else if constexpr ( isBigEndian() ) {
             return n;
         } else {
-            return uint192_t(); // unreachable -> static_assert(..) above
+            return {}; // unreachable -> static_assert(..) above
         }
     }
     constexpr uint192_t cpu_to_be(uint192_t const & h) noexcept {
@@ -470,7 +470,7 @@ namespace jau {
         } else if constexpr ( isBigEndian() ) {
             return h;
         } else {
-            return uint192_t(); // unreachable -> static_assert(..) above
+            return {}; // unreachable -> static_assert(..) above
         }
     }
     constexpr uint192_t le_to_cpu(uint192_t const & l) noexcept {
@@ -479,7 +479,7 @@ namespace jau {
         } else if constexpr ( isBigEndian() ) {
             return bswap(l);
         } else {
-            return uint192_t(); // unreachable -> static_assert(..) above
+            return {}; // unreachable -> static_assert(..) above
         }
     }
     constexpr uint192_t cpu_to_le(uint192_t const & h) noexcept {
@@ -488,7 +488,7 @@ namespace jau {
         } else if constexpr ( isBigEndian() ) {
             return bswap(h);
         } else {
-            return uint192_t(); // unreachable -> static_assert(..) above
+            return {}; // unreachable -> static_assert(..) above
         }
     }
 
@@ -498,7 +498,7 @@ namespace jau {
         } else if constexpr ( isBigEndian() ) {
             return n;
         } else {
-            return uint256_t(); // unreachable -> static_assert(..) above
+            return {}; // unreachable -> static_assert(..) above
         }
     }
     constexpr uint256_t cpu_to_be(uint256_t const & h) noexcept {
@@ -507,7 +507,7 @@ namespace jau {
         } else if constexpr ( isBigEndian() ) {
             return h;
         } else {
-            return uint256_t(); // unreachable -> static_assert(..) above
+            return {}; // unreachable -> static_assert(..) above
         }
     }
     constexpr uint256_t le_to_cpu(uint256_t const & l) noexcept {
@@ -516,7 +516,7 @@ namespace jau {
         } else if constexpr ( isBigEndian() ) {
             return bswap(l);
         } else {
-            return uint256_t(); // unreachable -> static_assert(..) above
+            return {}; // unreachable -> static_assert(..) above
         }
     }
     constexpr uint256_t cpu_to_le(uint256_t const & h) noexcept {
@@ -525,7 +525,7 @@ namespace jau {
         } else if constexpr ( isBigEndian() ) {
             return bswap(h);
         } else {
-            return uint256_t(); // unreachable -> static_assert(..) above
+            return {}; // unreachable -> static_assert(..) above
         }
 
     }

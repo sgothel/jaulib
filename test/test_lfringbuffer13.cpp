@@ -64,16 +64,16 @@ class TestRingbuffer13 {
   private:
 
     std::shared_ptr<SharedTypeRingbuffer> createEmpty(jau::nsize_t initialCapacity) {
-        return std::shared_ptr<SharedTypeRingbuffer>(new SharedTypeRingbuffer(initialCapacity));
+        return std::make_shared<SharedTypeRingbuffer>(initialCapacity);
     }
     std::shared_ptr<SharedTypeRingbuffer> createFull(const std::vector<std::shared_ptr<Integer>> & source) {
-        return std::shared_ptr<SharedTypeRingbuffer>(new SharedTypeRingbuffer(source));
+        return std::make_shared<SharedTypeRingbuffer>(source);
     }
 
     std::vector<SharedType> createIntArray(const jau::nsize_t capacity, const IntegralType startValue) {
         std::vector<SharedType> array(capacity);
         for(jau::nsize_t i=0; i<capacity; i++) {
-            array[i] = SharedType(new Integer(startValue+i));
+            array[i] = std::make_shared<Integer>(startValue+i);
         }
         return array;
     }
@@ -117,7 +117,7 @@ class TestRingbuffer13 {
 
         // INFO_STR(msg+": Created / " + rb->toString());
         for(jau::nsize_t i=0; i<len; i++) {
-            Integer * vI = new Integer(startValue+i);
+            Integer * vI = new Integer(static_cast<IntegralType>(startValue+i));
             // INFO_STR("Putting "+std::to_string(vI->intValue())+" ... / " + rb->toString());
             rb->putBlocking( SharedType( vI ), 0_s );
         }

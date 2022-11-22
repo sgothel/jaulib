@@ -76,9 +76,9 @@ class TestLatch01 {
         REQUIRE(0 == completion.value());
         REQUIRE(0 == my_counter);
 
-        for(size_t i=0; i<count; i++) {
-            if( tasks[i].joinable() ) {
-                tasks[i].join();
+        for(auto & task : tasks) {
+            if( task.joinable() ) {
+                task.join();
             }
         }
     }
@@ -105,9 +105,9 @@ class TestLatch01 {
         REQUIRE(0 == completion.value());
         REQUIRE(0 == my_counter);
 
-        for(size_t i=0; i<count; i++) {
-            if( tasks[i].joinable() ) {
-                tasks[i].join();
+        for(auto & task : tasks) {
+            if( task.joinable() ) {
+                task.join();
             }
         }
     }
@@ -137,9 +137,9 @@ class TestLatch01 {
         REQUIRE(0 == completion.value());
         REQUIRE(0 == my_counter);
 
-        for(size_t i=0; i<count; i++) {
-            if( tasks[i].joinable() ) {
-                tasks[i].join();
+        for(auto & task : tasks) {
+            if( task.joinable() ) {
+                task.join();
             }
         }
     }
@@ -171,9 +171,9 @@ class TestLatch01 {
             }
             REQUIRE(count == completion.value());
             REQUIRE(count == my_counter);
-            for(size_t i=0; i<count; i++) {
-                if( tasks[i].joinable() ) {
-                    tasks[i].join();
+            for(auto & task : tasks) {
+                if( task.joinable() ) {
+                    task.join();
                 }
             }
         }
@@ -187,9 +187,9 @@ class TestLatch01 {
             REQUIRE(0 == completion.value());
             REQUIRE(0 == my_counter);
 
-            for(size_t i=0; i<count; i++) {
-                if( tasks[i].joinable() ) {
-                    tasks[i].join();
+            for(auto & task : tasks) {
+                if( task.joinable() ) {
+                    task.join();
                 }
             }
         }

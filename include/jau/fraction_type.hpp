@@ -29,7 +29,7 @@
 #include <chrono>
 #include <condition_variable>
 
-#include <stdio.h>
+#include <cstdio>
 #include <cinttypes>
 
 #include <cstdint>

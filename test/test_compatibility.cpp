@@ -41,7 +41,7 @@
  * GLIBC macros have to be included from the <features.h> header file.
  * Include <limits.h> header file instead, which included <features.h> on GLIBC (see e.g. paragraph 4/6 in ISO/IEC 9899:1999).
  */
-#include <limits.h>
+#include <climits>
 
 /**
  * [glibc 1.3.4 Feature Test Macros](https://www.gnu.org/software/libc/manual/html_node/Feature-Test-Macros.html)
@@ -158,7 +158,7 @@ void print_libc() {
 
 #include <jau/basic_types.hpp>
 
-#include <string.h>
+#include <cstring>
 
 int my_strcmp(const char *s1, const char *s2) {
     return ::strcmp(s1, s2);
