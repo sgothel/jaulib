@@ -738,10 +738,6 @@ std::unique_ptr<std::thread> jau::io::read_url_stream(const std::string& url,
     }
     result = io::async_io_result_t::NONE;
 
-    if( buffer.capacity() < BEST_URLSTREAM_RINGBUFFER_SIZE ) {
-        buffer.recapacity( BEST_URLSTREAM_RINGBUFFER_SIZE );
-    }
-
     std::unique_ptr<curl_glue2_t> cg ( std::make_unique<curl_glue2_t>(nullptr, header_sync, has_content_length, content_length, total_read, buffer, result ) );
 
     return std::make_unique<std::thread>(&::read_url_stream_thread, url.c_str(), std::move(cg)); // @suppress("Invalid arguments")
