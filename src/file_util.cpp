@@ -1082,8 +1082,8 @@ bool jau::fs::visit(const file_stats& item_stats, const traverse_options topts, 
         try {
             dirfds = new std::vector<int>();
         } catch (const std::bad_alloc &e) {
-            ERR_PRINT("dirfd allocation error: bad_alloc @ %s:%d", E_FILE_LINE);
-            return false;
+            ABORT("Error: bad_alloc: dirfds allocation failed");
+            return false; // unreachable
         }
     }
     if( 0 != dirfds->size() ) {

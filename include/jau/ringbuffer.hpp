@@ -227,7 +227,7 @@ class ringbuffer {
                 value_type * m = alloc_inst.allocate(count);
                 if( nullptr == m ) {
                     // Avoid exception, abort!
-                    ABORT("alloc %zu  elements * %zu bytes/element = %zu  bytes -> nullptr",
+                    ABORT("Error: bad_alloc: alloc %zu  elements * %zu bytes/element = %zu  bytes failed",
                           count, sizeof(value_type), (count * sizeof(value_type)));
                 }
                 _DEBUG_DUMP("newArray ...");
