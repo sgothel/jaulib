@@ -164,7 +164,7 @@ std::vector<std::string_view> jau::io::uri_tk::supported_protocols() noexcept {
         return res;
     }
     for(int i=0; nullptr != cvid->protocols[i]; ++i) {
-        res.push_back( std::string_view(cvid->protocols[i]) );
+        res.emplace_back( cvid->protocols[i] );
     }
 #endif // USE_LIBCURL
     return res;

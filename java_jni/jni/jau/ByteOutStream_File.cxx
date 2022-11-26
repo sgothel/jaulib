@@ -197,7 +197,7 @@ jint Java_org_jau_io_ByteOutStream_1File_write(JNIEnv *env, jobject obj, jbyteAr
         }
         jau::jni::JNICriticalArray<uint8_t, jbyteArray> criticalArray(env); // RAII - release
         uint8_t * in_ptr = criticalArray.get(jin, criticalArray.Mode::NO_UPDATE_AND_RELEASE);
-        if( NULL == in_ptr ) {
+        if( nullptr == in_ptr ) {
             throw jau::InternalError("GetPrimitiveArrayCritical(address byte array) is null", E_FILE_LINE);
         }
         return (jint) ref->write(in_ptr + joffset, jlength);

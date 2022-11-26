@@ -31,7 +31,7 @@ buildit() {
     echo build_dir $build_dir
 
     cd $rootdir/$build_dir
-    make -j $CPU_COUNT install
+    time make -j $CPU_COUNT install
     if [ $? -eq 0 ] ; then
         echo "REBUILD SUCCESS $bname $os_name $archabi"
         cd $rootdir

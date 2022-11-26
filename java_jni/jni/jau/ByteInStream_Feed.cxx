@@ -167,7 +167,7 @@ jint Java_org_jau_io_ByteInStream_1Feed_read(JNIEnv *env, jobject obj, jbyteArra
         }
         jau::jni::JNICriticalArray<uint8_t, jbyteArray> criticalArray(env); // RAII - release
         uint8_t * out_ptr = criticalArray.get(jout, criticalArray.Mode::UPDATE_AND_RELEASE);
-        if( NULL == out_ptr ) {
+        if( nullptr == out_ptr ) {
             throw jau::InternalError("GetPrimitiveArrayCritical(address byte array) is null", E_FILE_LINE);
         }
         return (jint) ref->read(out_ptr + joffset, jlength);
@@ -209,7 +209,7 @@ jint Java_org_jau_io_ByteInStream_1Feed_peek(JNIEnv *env, jobject obj, jbyteArra
         }
         jau::jni::JNICriticalArray<uint8_t, jbyteArray> criticalArray(env); // RAII - release
         uint8_t * out_ptr = criticalArray.get(jout, criticalArray.Mode::UPDATE_AND_RELEASE);
-        if( NULL == out_ptr ) {
+        if( nullptr == out_ptr ) {
             throw jau::InternalError("GetPrimitiveArrayCritical(address byte array) is null", E_FILE_LINE);
         }
         const size_t res = ref->peek(out_ptr + joffset, jlength, jpeek_offset);
@@ -294,7 +294,7 @@ void Java_org_jau_io_ByteInStream_1Feed_write(JNIEnv *env, jobject obj, jbyteArr
         }
         jau::jni::JNICriticalArray<uint8_t, jbyteArray> criticalArray(env); // RAII - release
         uint8_t * in_ptr = criticalArray.get(jin, criticalArray.Mode::NO_UPDATE_AND_RELEASE);
-        if( NULL == in_ptr ) {
+        if( nullptr == in_ptr ) {
             throw jau::InternalError("GetPrimitiveArrayCritical(address byte array) is null", E_FILE_LINE);
         }
         ref->write(in_ptr + joffset, jlength);

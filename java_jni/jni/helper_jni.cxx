@@ -328,7 +328,7 @@ std::string jau::jni::from_jstring_to_string(JNIEnv *env, jstring jstr) {
     if (!jstr) {
         throw jau::IllegalArgumentException("String argument should not be null", E_FILE_LINE);
     }
-    const char *str_chars = (char *)env->GetStringUTFChars(jstr, NULL);
+    const char *str_chars = (char *)env->GetStringUTFChars(jstr, nullptr);
     if (!str_chars) {
             throw jau::OutOfMemoryError("GetStringUTFChars returned null", E_FILE_LINE);
     }

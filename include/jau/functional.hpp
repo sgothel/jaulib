@@ -544,6 +544,9 @@ namespace jau {
 
                 delegate_t& operator=(const delegate_t &o) noexcept
                 {
+                    if( this == &o ) {
+                        return *this;
+                    }
                     m_cb = o.m_cb;
                     m_eqop = o.m_eqop;
                     m_type = o.m_type;
@@ -594,6 +597,9 @@ namespace jau {
 
                 delegate_t& operator=(delegate_t &&o) noexcept
                 {
+                    if( this == &o ) {
+                        return *this;
+                    }
                     clear();
 
                     m_cb = std::move( o.m_cb );
@@ -1113,7 +1119,7 @@ namespace jau {
                     uint64_t id;
 
                     data_type(uint64_t id_, std::function<R(A...)> function_) noexcept
-                    : function(function_), id(id_) {}
+                    : function(std::move(function_)), id(id_) {}
 
                     constexpr size_t detail_size() const noexcept { return sizeof(id)+sizeof(function); }
                 };
@@ -1220,7 +1226,7 @@ namespace jau {
              * @see @ref function_usage "function Usage"
              */
             explicit function(delegate_type _delegate, int dummy ) noexcept
-            : target( _delegate )
+            : target( std::move(_delegate) )
             { (void) dummy; }
 
             /**

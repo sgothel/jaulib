@@ -132,7 +132,7 @@ std::string jau::get_backtrace(const bool skip_anon_frames, const jau::snsize_t 
             INFO_PRINT("unw_get_reg(SP): frame %zd, ERR %d\n", frame, res);
             sp = 0;
         }
-        if( 0 == ( res = unw_get_proc_name(&cursor, cstr, sizeof(cstr), &offset) ) ) {
+        if( 0 == unw_get_proc_name(&cursor, cstr, sizeof(cstr), &offset) ) {
             int status;
             char *real_name;
             cstr[sizeof(cstr) -1] = 0; // fail safe

@@ -7,9 +7,8 @@ set (catch2_LIB_SRCS
 )
 
 add_library (catch2 STATIC ${catch2_LIB_SRCS})
-
-target_compile_options(catch2 PUBLIC "-DCATCH_AMALGAMATED_CUSTOM_MAIN=1")
-
+target_compile_options(catch2 PRIVATE -DCATCH_AMALGAMATED_CUSTOM_MAIN=1 -Wno-error=unused-but-set-variable -Wno-unused-but-set-variable)
+set_target_properties(catch2 PROPERTIES CXX_CLANG_TIDY "")
 # install(TARGETS catch2 LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 set(ownership_fix_tag ${CMAKE_CURRENT_SOURCE_DIR}/../test_data/ownership_fix_tag CACHE FILEPATH "test_data ownership fix" FORCE)

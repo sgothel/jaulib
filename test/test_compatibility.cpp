@@ -106,6 +106,10 @@ void print_unix_std() {
 
     PRINT_COND(sun);
     PRINT_COND(__sun);
+
+    PRINT_COND(__CYGWIN__);
+    PRINT_COND(_WIN32); // for 32- and 64-bit environments
+    PRINT_COND(_WIN64); // for 64-bit environments only
     printf("\n");
 
     printf("Unix Standards Inputs\n");

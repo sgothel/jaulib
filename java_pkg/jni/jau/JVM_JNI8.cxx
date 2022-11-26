@@ -26,7 +26,7 @@
  * or implied, of JogAmp Community.
  */
 
-#include <stdio.h> //required by android to identify NULL
+#include <cstdio> //required by android to identify NULL
 #include <jni.h>
 
 #if defined (JNI_VERSION_1_8)

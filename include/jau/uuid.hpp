@@ -76,7 +76,7 @@ public:
     static std::unique_ptr<uuid_t> create(TypeSize const t, uint8_t const * const buffer, jau::nsize_t const byte_offset, bool const littleEndian);
     static std::unique_ptr<uuid_t> create(const std::string& str);
 
-    virtual ~uuid_t() noexcept {}
+    virtual ~uuid_t() noexcept = default;
 
     uuid_t(const uuid_t &o) noexcept = default;
     uuid_t(uuid_t &&o) noexcept = default;

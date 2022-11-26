@@ -1,0 +1,19 @@
+Checks:  'clang-diagnostic-*, clang-analyzer-*, 
+          modernize-*, bugprone-*,
+          -clang-diagnostic-unknown-warning-option,
+          -clang-analyzer-security.insecureAPI.bzero,
+          -modernize-use-auto, -modernize-use-nodiscard, -modernize-use-using, -modernize-use-trailing-return-type, 
+          -modernize-avoid-c-arrays, -modernize-use-default-member-init, -modernize-return-braced-init-list, 
+          -modernize-avoid-bind, -modernize-use-transparent-functors,
+          -bugprone-reserved-identifier, -bugprone-easily-swappable-parameters, -bugprone-assignment-in-if-condition,
+          -bugprone-misplaced-widening-cast, -bugprone-branch-clone'
+
+CheckOptions:
+  - key:             modernize-use-default-member-init.UseAssignment
+    value:           'true'
+
+WarningsAsErrors: '*'
+HeaderFilterRegex: '(include/jau/[a-zA-Z0-0]*|include/jau/jni/[a-zA-Z0-0]*)\.hpp'
+AnalyzeTemporaryDtors: false
+FormatStyle:     none
+User:            sven

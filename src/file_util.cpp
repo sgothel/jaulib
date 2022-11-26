@@ -1944,7 +1944,6 @@ jau::fs::mount_ctx jau::fs::mount_image(const std::string& image_path, const std
             goto errout_child;
         }
         ::close(loop_device_fd);
-        loop_device_fd = -1;
         ::_exit(loop_device_id+1);
 
 errout_child:
@@ -1980,7 +1979,6 @@ errout_child:
     }
     if( 0 <= backingfile ) {
         ::close(backingfile);
-        backingfile = -1;
     }
     return mount_ctx(target_path, loop_device_id);
 
@@ -2118,7 +2116,6 @@ bool jau::fs::umount(const mount_ctx& context, const umountflags_t flags)
             goto errout_child;
         }
         ::close(loop_device_fd);
-        loop_device_fd = -1;
         ::_exit(0 == umount_res ? EXIT_SUCCESS : EXIT_FAILURE);
 #endif
 

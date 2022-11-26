@@ -1,7 +1,7 @@
 
 #include <jni.h>
 
-#include <assert.h>
+#include <cassert>
 
 #include "jau_sys_MachineDataInfoRuntime.h"
 

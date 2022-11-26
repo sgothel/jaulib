@@ -109,8 +109,8 @@ struct callocator
         return reinterpret_cast<value_type*>( malloc( n * sizeof(value_type) ) );
     }
 #else
-    value_type* allocate(std::size_t n) { // C++17
-        return reinterpret_cast<value_type*>( ::malloc( n * sizeof(value_type) ) );
+    value_type* allocate(std::size_t n) { // C++17        
+        return reinterpret_cast<value_type*>( ::malloc( n * sizeof(value_type) ) ); // NOLINT(bugprone-sizeof-expression)
     }
 #endif
 

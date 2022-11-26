@@ -26,8 +26,9 @@
 #define JAU_DYN_ARRAY_HPP_
 
 #include <cstring>
-#include <string>
 #include <cstdint>
+#include <cmath>
+#include <string>
 #include <limits>
 #include <atomic>
 #include <memory>
@@ -208,9 +209,11 @@ namespace jau {
                     }
                     value_type * m = alloc_inst.allocate(size_);
                     if( nullptr == m ) {
+                        // NOLINTBEGIN(bugprone-sizeof-expression)
                         throw jau::OutOfMemoryError("alloc "+std::to_string(size_)+" elements * "+
                                 std::to_string(sizeof(value_type))+" bytes/element = "+
                                 std::to_string(size_ * sizeof(value_type))+" bytes -> nullptr", E_FILE_LINE);
+                        // NOLINTEND(bugprone-sizeof-expression)
                     }
                     return m;
                 }
@@ -395,7 +398,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                 const size_type old_capacity = capacity();
                 const size_type grown_capacity = std::max<size_type>(
                                                          std::max<size_type>( MIN_SIZE_AT_GROW, new_capacity ),
-                                                         std::max<size_type>( new_capacity, static_cast<size_type>(old_capacity * growth_factor_ + 0.5f) )
+                                                         std::max<size_type>( new_capacity, static_cast<size_type>( ::roundf(old_capacity * growth_factor()) ) )
                                                      );
                 realloc_storage_move( grown_capacity );
             }
@@ -403,12 +406,13 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                 realloc_storage_move( get_grown_capacity() );
             }
 
-            constexpr void move_elements(iterator dest, const_iterator first, const difference_type count) noexcept {
+            constexpr void move_elements(iterator dest, const_iterator first, const difference_type count) {
                 // Debatable here: "Moved source array has been taken over, flush sources' pointer to avoid value_type dtor releasing taken resources!"
                 // Debatable, b/c is this even possible for user to hold an instance the way, that a dtor gets called? Probably not.
                 // Hence we leave it to 'uses_secmem' to bzero...
                 if constexpr ( uses_memmove ) {
                     // handles overlap
+                    // NOLINTNEXTLINE(bugprone-undefined-memory-manipulation)
                     ::memmove(voidptr_cast(dest),
                               first, sizeof(value_type)*count);
                     if constexpr ( uses_secmem ) {
@@ -740,7 +744,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
             constexpr size_type get_grown_capacity() const noexcept {
                 const size_type a_capacity = capacity();
                 return std::max<size_type>( std::max<size_type>( MIN_SIZE_AT_GROW, a_capacity+1 ),
-                                            static_cast<size_type>(a_capacity * growth_factor_ + 0.5f) );
+                                            static_cast<size_type>( ::roundf(a_capacity * growth_factor()) ) );
             }
 
             /**

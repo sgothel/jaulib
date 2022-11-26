@@ -250,9 +250,10 @@ TEST_CASE( "Fraction Types Test 00", "[fraction][type]" ) {
     }
     {
         // move-ctor
-        fraction<int> a(1, 6);
-        fraction<int> b( std::move(a) );
-        REQUIRE( a == b );
+        fraction<int> a0(1, 6);
+        fraction<int> a1(a0);
+        fraction<int> b( std::move(a0) );
+        REQUIRE( a1 == b );
     }
     {
         // assignment

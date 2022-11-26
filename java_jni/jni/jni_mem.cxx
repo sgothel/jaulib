@@ -52,7 +52,7 @@ JNIEnv *JNIEnvContainer::operator->() {
     return env;
 }
 
-JNIEnvContainer::JNIEnvContainer() {}
+JNIEnvContainer::JNIEnvContainer() = default;
 
 JNIEnvContainer::~JNIEnvContainer() {
     detach();
@@ -67,7 +67,7 @@ void JNIEnvContainer::attach() {
 
     envRes = vm->GetEnv((void **) &env, JNI_VERSION_1_8) ;
     if( JNI_EDETACHED == envRes ) {
-        envRes = vm->AttachCurrentThreadAsDaemon((void**) &newEnv, NULL);
+        envRes = vm->AttachCurrentThreadAsDaemon((void**) &newEnv, nullptr);
         if( JNI_OK != envRes ) {
             throw jau::RuntimeException("Attach to VM failed, error "+std::to_string(envRes), E_FILE_LINE);
         }
@@ -75,10 +75,10 @@ void JNIEnvContainer::attach() {
     } else if( JNI_OK != envRes ) {
         throw jau::RuntimeException("GetEnv of VM failed, error "+std::to_string(envRes), E_FILE_LINE);
     }
-    if (env==NULL) {
+    if (env==nullptr) {
         throw jau::RuntimeException("GetEnv of VM is NULL", E_FILE_LINE);
     }
-    needsDetach = NULL != newEnv;
+    needsDetach = nullptr != newEnv;
 }
 
 void JNIEnvContainer::detach() {

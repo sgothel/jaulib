@@ -438,10 +438,12 @@ namespace jau::jni {
 
             /** Assignment operator. */
             shared_ptr_ref& operator=(const shared_ptr_ref& o) {
-                if( nullptr != ref_ptr ) {
-                    *ref_ptr = o.shared_ptr();
-                } else {
-                    ref_ptr = new std::shared_ptr<T>( o.shared_ptr() );
+                if( this != &o ) {
+                    if( nullptr != ref_ptr ) {
+                        *ref_ptr = o.shared_ptr();
+                    } else {
+                        ref_ptr = new std::shared_ptr<T>( o.shared_ptr() );
+                    }
                 }
                 return *this;
             }

@@ -27,7 +27,7 @@
 #include <cstdint>
 #include <cinttypes>
 
-#include <time.h>
+#include <ctime>
 
 #include <jau/environment.hpp>
 

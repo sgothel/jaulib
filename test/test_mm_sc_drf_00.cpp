@@ -81,6 +81,7 @@ class TestMemModelSCDRF00 {
         const int len = std::min(number(array_size), _len);
         {
             int _sync_value = sync_value; // SC-DRF acquire atomic
+            (void) _sync_value;
             _sync_value = startValue;
             for(int i=0; i<len; i++) {
                 array[i] = _sync_value+i;

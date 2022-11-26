@@ -105,8 +105,8 @@ namespace jau {
             storage_ref_t                           store_ref_;
             iterator_type                           iterator_;
 
-            constexpr explicit cow_rw_iterator(cow_container_t& cow_parent, const storage_ref_t& store, iterator_type iter) noexcept
-            : cow_parent_(cow_parent), lock_(cow_parent_.get_write_mutex()), store_ref_(store),
+            constexpr explicit cow_rw_iterator(cow_container_t& cow_parent, storage_ref_t store, iterator_type iter) noexcept
+            : cow_parent_(cow_parent), lock_(cow_parent_.get_write_mutex()), store_ref_(std::move(store)),
               iterator_(iter) { }
 
             constexpr explicit cow_rw_iterator(cow_container_t& cow_parent)
@@ -671,7 +671,7 @@ namespace jau {
             iterator_type  iterator_;
 
             constexpr cow_ro_iterator(storage_ref_t store, iterator_type it) noexcept
-            : store_ref_(store), iterator_(it) { }
+            : store_ref_(std::move(store)), iterator_(std::move(it)) { }
 
         public:
             typedef typename sub_traits_t::iterator_category    iterator_category;  // random_access_iterator_tag

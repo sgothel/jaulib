@@ -28,7 +28,7 @@
 #include <cstdint>
 #include <cinttypes>
 
-#include <time.h>
+#include <ctime>
 
 #include <jau/environment.hpp>
 
@@ -50,7 +50,7 @@ void Java_org_jau_sys_Clock_getMonotonicTimeImpl(JNIEnv *env, jclass clazz, jlon
         }
         jau::jni::JNICriticalArray<int64_t, jlongArray> criticalArray(env); // RAII - release
         int64_t * val_ptr = criticalArray.get(jval, criticalArray.Mode::UPDATE_AND_RELEASE);
-        if( NULL == val_ptr ) {
+        if( nullptr == val_ptr ) {
             throw jau::InternalError("GetPrimitiveArrayCritical(address val array) is null", E_FILE_LINE);
         }
         struct timespec t { 0, 0 };
@@ -74,7 +74,7 @@ void Java_org_jau_sys_Clock_getWallClockTimeImpl(JNIEnv *env, jclass clazz, jlon
         }
         jau::jni::JNICriticalArray<int64_t, jlongArray> criticalArray(env); // RAII - release
         int64_t * val_ptr = criticalArray.get(jval, criticalArray.Mode::UPDATE_AND_RELEASE);
-        if( NULL == val_ptr ) {
+        if( nullptr == val_ptr ) {
             throw jau::InternalError("GetPrimitiveArrayCritical(address val array) is null", E_FILE_LINE);
         }
         struct timespec t { 0, 0 };
@@ -118,6 +118,6 @@ jlong Java_org_jau_sys_Clock_startupTimeMillisImpl(JNIEnv *env, jclass clazz) {
     (void)env;
     (void)clazz;
 
-    return jau::environment::startupTimeMilliseconds;
+    return (jlong)( static_cast<int64_t>( jau::environment::startupTimeMilliseconds ) );
 }
 
