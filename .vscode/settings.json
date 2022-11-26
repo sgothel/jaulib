@@ -13,7 +13,10 @@
     "cmake.configureArgs": [
         "-DCMAKE_INSTALL_PREFIX=${workspaceFolder}/dist-vscode",
         "-DBUILD_TESTING=ON",
-        "-DCMAKE_EXPORT_COMPILE_COMMANDS=1"
+        "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+        "-DBUILDJAVA=ON",
+        "-DUSE_LIBUNWIND=ON",
+        "-DUSE_LIBCURL=ON"
     ],
     "cmake.copyCompileCommands": "${workspaceFolder}/compile_commands.json",
     "cmake.sourceDirectory": "${workspaceFolder}",
@@ -22,5 +25,5 @@
         "--background-index",
         "--project-root=${workspaceFolder}"
     ],
-    "workbench.editor.labelFormat": "medium"
+    "workbench.editor.labelFormat": "medium",
 }

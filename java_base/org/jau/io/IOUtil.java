@@ -57,7 +57,6 @@ import org.jau.sys.MachineDataInfo;
 import org.jau.sys.PlatformProps;
 import org.jau.sys.PlatformTypes;
 import org.jau.sys.PropertyAccess;
-import org.jau.sys.PlatformTypes.OSType;
 
 public class IOUtil {
     public static final boolean DEBUG;

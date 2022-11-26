@@ -130,6 +130,7 @@ public class SecurityUtil {
      * Throws an {@link SecurityException} if an installed {@link SecurityManager}
      * does not permit the requested {@link Permission}.
      */
+    @SuppressWarnings({ "deprecation", "removal" })
     public static final void checkPermission(final Permission perm) throws SecurityException {
         if( null != securityManager ) {
             securityManager.checkPermission(perm);
@@ -154,6 +155,7 @@ public class SecurityUtil {
      * Throws an {@link SecurityException} if an installed {@link SecurityManager}
      * does not permit to dynamically link the given libName.
      */
+    @SuppressWarnings({ "deprecation", "removal" })
     public static final void checkLinkPermission(final String libName) throws SecurityException {
         if( null != securityManager ) {
             securityManager.checkLink(libName);
@@ -164,6 +166,7 @@ public class SecurityUtil {
      * Throws an {@link SecurityException} if an installed {@link SecurityManager}
      * does not permit to dynamically link to all libraries.
      */
+    @SuppressWarnings({ "deprecation", "removal" })
     public static final void checkAllLinkPermission() throws SecurityException {
         if( null != securityManager ) {
             securityManager.checkPermission(allLinkPermission);

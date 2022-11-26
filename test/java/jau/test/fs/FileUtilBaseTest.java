@@ -23,8 +23,6 @@
  */
 package jau.test.fs;
 
-import java.time.temporal.ChronoUnit;
-
 import org.jau.fs.CopyOptions;
 import org.jau.fs.FileStats;
 import org.jau.fs.FileUtil;

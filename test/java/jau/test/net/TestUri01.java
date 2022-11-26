@@ -37,7 +37,7 @@ public class TestUri01 extends JunitTracer {
             final Uri uri1 = Uri.create(Uri.FILE_SCHEME, null, s2, null);
             final boolean equalEncoded= uri0.getEncoded().equals(uri1.getEncoded());
             final boolean equalPath = uri0.path.decode().equals(uri1.path.decode());
-            final boolean equalASCII= uri0.toASCIIString().equals(uri1.toASCIIString().get());
+            final boolean equalASCII= uri0.toASCIIString().equals(uri1.toASCIIString());
             System.err.println("uri2.enc   : "+uri1.getEncoded()+" - "+(equalEncoded?"OK":"ERROR"));
             System.err.println("uri2.pathD : "+uri1.path.decode()+" - "+(equalPath?"OK":"ERROR"));
             System.err.println("uri2.asciiE: "+uri1.toASCIIString()+" - "+(equalASCII?"OK":"ERROR"));

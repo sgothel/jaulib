@@ -106,22 +106,23 @@ public class TestByteStream01 extends JunitTracer {
             final byte[] one_line_bytes = one_line.getBytes(charset);
 
             Assert.assertFalse( file_exists(name) );
-            final ByteOutStream_File out = new ByteOutStream_File(name, FMode.def_file);
-            Assert.assertTrue( out.good() );
-            Assert.assertTrue( out.is_open() );
-            {
-                final int line_len = one_line_bytes.length;
-                for(size=0; size < size_limit; size+=line_len) {
-                    if( line_len != out.write( one_line_bytes, 0, line_len ) ) {
-                        PrintUtil.fprintf_td(System.err, "Write %d bytes to test file failed: %s", line_len, out.toString());
+            try (ByteOutStream_File out = new ByteOutStream_File(name, FMode.def_file)) {
+                Assert.assertTrue( out.good() );
+                Assert.assertTrue( out.is_open() );
+                {
+                    final int line_len = one_line_bytes.length;
+                    for(size=0; size < size_limit; size+=line_len) {
+                        if( line_len != out.write( one_line_bytes, 0, line_len ) ) {
+                            PrintUtil.fprintf_td(System.err, "Write %d bytes to test file failed: %s", line_len, out.toString());
+                            return false;
+                        }
+                    }
+                    if( 1 != out.write( one_line_bytes, 0, 1 ) ) { // make it odd
+                        PrintUtil.fprintf_td(System.err, "Write %d bytes to test file failed: %s", 1, out.toString());
                         return false;
                     }
+                    size += 1;
                 }
-                if( 1 != out.write( one_line_bytes, 0, 1 ) ) { // make it odd
-                    PrintUtil.fprintf_td(System.err, "Write %d bytes to test file failed: %s", 1, out.toString());
-                    return false;
-                }
-                size += 1;
             }
         }
         fname_payload_lst.add(name);

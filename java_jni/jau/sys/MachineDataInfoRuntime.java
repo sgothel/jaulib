@@ -27,9 +27,7 @@
 package jau.sys;
 
 import org.jau.sys.MachineDataInfo;
-import org.jau.sys.MachineDataInfo.StaticConfig;
 import org.jau.sys.PlatformProps;
-import org.jau.sys.PlatformTypes;
 
 /**
  * Runtime operations of {@link MachineDataInfo}.

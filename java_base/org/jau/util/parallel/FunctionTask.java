@@ -52,6 +52,7 @@ public class FunctionTask<R,A> extends TaskBase implements Function<R,A> {
      * @return the newly created and invoked {@link FunctionTask}
      * @since 0.3.0
      */
+    @SafeVarargs
     public static <U,V> FunctionTask<U,V> invokeOnCurrentThread(final Function<U,V> func, final V... args) {
         final FunctionTask<U,V> rt = new FunctionTask<U,V>( func, null, false, null);
         rt.args = args;
@@ -74,6 +75,7 @@ public class FunctionTask<R,A> extends TaskBase implements Function<R,A> {
      * @return the newly created and invoked {@link FunctionTask}
      * @since 0.3.0
      */
+    @SafeVarargs
     public static <U,V> FunctionTask<U,V> invokeOnNewThread(final ThreadGroup tg, final String threadName,
                                                             final boolean waitUntilDone, final Function<U,V> func, final V... args) {
         final FunctionTask<U,V> rt;
@@ -133,6 +135,7 @@ public class FunctionTask<R,A> extends TaskBase implements Function<R,A> {
      * Sets the arguments for {@link #run()}.
      * They will be cleared after calling {@link #run()} or {@link #eval(Object...)}.
      */
+    @SafeVarargs
     public final void setArgs(final A... args) {
         this.args = args;
     }
@@ -207,6 +210,7 @@ public class FunctionTask<R,A> extends TaskBase implements Function<R,A> {
     }
 
     @Override
+    @SafeVarargs
     public final R eval(final A... args) {
         this.args = args;
         run();

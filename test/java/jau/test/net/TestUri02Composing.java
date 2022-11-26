@@ -79,7 +79,6 @@ public class TestUri02Composing extends JunitTracer {
         System.err.println("scheme <"+uri1.scheme+">, ssp <"+uri1.schemeSpecificPart+">, fragment <"+uri1.fragment+">");
         final Uri uri2 = uri1.getRelativeOf(null);
 
-        System.err.println("URL-equals(1): "+refURL.toURI().equals(uri2));
         System.err.println("URL-equals(2): "+refURL.equals(uri2.toURL()));
         System.err.println("URL-same  : "+refURL.sameFile(uri2.toURL()));
         System.err.println("URL-ref   : <"+refURL+">");

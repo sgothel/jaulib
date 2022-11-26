@@ -64,7 +64,7 @@ import java.util.ListIterator;
  *
 */
 public class ArrayHashSet<E>
-    implements Cloneable, Collection<E>, List<E>
+    implements Cloneable, List<E>
 {
     /**
      * Default load factor: {@value}

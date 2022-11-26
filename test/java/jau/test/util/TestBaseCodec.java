@@ -164,9 +164,9 @@ public class TestBaseCodec {
             ++iter;
             final String rad = BaseCodec.encode(iter, aspec, int64_max_enc_width);
             final long dec = BaseCodec.decode(rad, aspec);
-            if( false ) {
-                System.err.printf("test base %d: iter %d, rad '%s', dec %d\n", base, iter, rad, dec);
-            }
+            // if( false ) {
+            //    System.err.printf("test base %d: iter %d, rad '%s', dec %d\n", base, iter, rad, dec);
+            // }
             Assert.assertEquals(iter, dec);
         }
     }

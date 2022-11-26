@@ -292,7 +292,7 @@ public class TestUri03Resolving extends JunitTracer {
             System.err.println("XXX: "+con);
         }
 
-        if( uri0.scheme.equals(Uri.JAR_SCHEME) ) {
+        if( uri0.scheme.toString().equals(Uri.JAR_SCHEME) ) {
             // Extended tests on JAR Uri
             final Uri uriSub0 = uri0.getContainedUri();
             Assert.assertNotNull(uriSub0);
@@ -352,7 +352,7 @@ public class TestUri03Resolving extends JunitTracer {
 
         boolean ok = true;
 
-        if( uri0.scheme.equals(Uri.JAR_SCHEME) ) {
+        if( uri0.scheme.toString().equals(Uri.JAR_SCHEME) ) {
             // Extended tests on JAR Uri
             final Uri uriSub0 = uri0.getContainedUri();
             Assert.assertNotNull(uriSub0);

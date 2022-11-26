@@ -1,6 +1,7 @@
 build*/
 dist*/
 issues/
+/.cache/
 /compile_commands.json
 
 # Object files

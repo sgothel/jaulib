@@ -43,5 +43,6 @@ public interface Function<R,A> {
      * @param args variable argument list, <code>A[]</code>, maybe null
      * @return the result.
      */
+    @SuppressWarnings({"unchecked"})
     R eval(A... args);
 }

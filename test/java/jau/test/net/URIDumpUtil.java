@@ -78,7 +78,7 @@ public class URIDumpUtil {
         final URI recomposedURI = uri.toURIReencoded();
         showURI("YYYYYY Recomposed URI "+recomposedURI+", isOpaque "+recomposedURI.isOpaque()+", isAbs "+recomposedURI.isAbsolute(), recomposedURI);
         final String recomposedURIStr = recomposedURI.toString();
-        final boolean equalsRecompURI = uri.input.equals(recomposedURIStr);
+        final boolean equalsRecompURI = uri.input.toString().equals(recomposedURIStr);
         System.err.println("source   Uri: "+uri.input);
         System.err.println("recomp   URI: "+recomposedURIStr+" - "+(equalsRecompURI?"EQUAL":"UNEQUAL"));
     }
