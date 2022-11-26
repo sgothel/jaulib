@@ -214,9 +214,16 @@ JNIGlobalRef::~JNIGlobalRef() noexcept {
 }
 
 jobjectRefType JNIGlobalRef::getObjectRefType() const noexcept {
-    JNIEnv * env = *jni_env;
-    std::unique_lock<std::mutex> lock(mtx);
-    return env->GetObjectRefType(object);
+    try {
+        JNIEnv * env = *jni_env;
+        std::unique_lock<std::mutex> lock(mtx);
+        return env->GetObjectRefType(object);
+    } catch (const jau::ExceptionBase &e) {
+        ERR_PRINT("%s", e.message().c_str());
+    } catch (...) {
+        ERR_PRINT("Unknown exception");
+    }
+    return jobjectRefType::JNIInvalidRefType;
 }
 
 jobject JNIGlobalRef::operator*() noexcept {
@@ -235,12 +242,19 @@ bool JNIGlobalRef::operator==(const JNIGlobalRef& rhs) const noexcept {
         DBG_JNI_PRINT("JNIGlobalRef::== true: %p == %p (ptr)", object, rhs.object);
         return true;
     }
-    JNIEnv * env = *jni_env;
-    std::unique_lock<std::mutex> lockThis(mtx, std::defer_lock);     // utilize std::lock(r, w), allowing mixed order w/o deadlock
-    std::unique_lock<std::mutex> lockThat(rhs.mtx, std::defer_lock); // otherwise RAII-style relinquish via destructor
-    std::lock(lockThis, lockThat);
+    bool res = false;
+    try {
+        JNIEnv * env = *jni_env;
+        std::unique_lock<std::mutex> lockThis(mtx, std::defer_lock);     // utilize std::lock(r, w), allowing mixed order w/o deadlock
+        std::unique_lock<std::mutex> lockThat(rhs.mtx, std::defer_lock); // otherwise RAII-style relinquish via destructor
+        std::lock(lockThis, lockThat);
 
-    bool res = JNI_TRUE == env->IsSameObject(object, rhs.object);
-    DBG_JNI_PRINT("JNIGlobalRef::== %d: %p == %p (IsSameObject)", res, object, rhs.object);
+        res = JNI_TRUE == env->IsSameObject(object, rhs.object);
+        DBG_JNI_PRINT("JNIGlobalRef::== %d: %p == %p (IsSameObject)", res, object, rhs.object);
+    } catch (const jau::ExceptionBase &e) {
+        ERR_PRINT("%s", e.message().c_str());
+    } catch (...) {
+        ERR_PRINT("Unknown exception");
+    }
     return res;
 }
