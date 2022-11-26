@@ -25,6 +25,7 @@
 #ifndef JAU_FRACTION_TYPE_HPP_
 #define JAU_FRACTION_TYPE_HPP_
 
+#include <limits>
 #include <ratio>
 #include <chrono>
 #include <condition_variable>
@@ -230,17 +231,22 @@ namespace jau {
                 // const uint_type _lcm = lcm<uint_type>( denom, new_base.denom );
                 // return ( num * (int_type)( _lcm / denom ) ) / new_base.num;
                 //
-                int_type r;
-                if( mul_overflow(num, (int_type)new_base.denom, r) ) {
-                    if( nullptr != overflow_ptr ) {
-                        *overflow_ptr = true;
+                if( 0 != denom && 0 != new_base.num ) {
+                    int_type r;
+                    if( mul_overflow(num, (int_type)new_base.denom, r) ) {
+                        if( nullptr != overflow_ptr ) {
+                            *overflow_ptr = true;
+                        }
+                        return std::numeric_limits<int_type>::max();
+                    } else {
+                        if( nullptr != overflow_ptr ) {
+                            *overflow_ptr = false;
+                        }
+                        return r / (int_type)denom / new_base.num;
                     }
-                    return std::numeric_limits<int_type>::max();
                 } else {
-                    if( nullptr != overflow_ptr ) {
-                        *overflow_ptr = false;
-                    }
-                    return r / (int_type)denom / new_base.num;
+                    // div-by-zero -> max value as we don't throw
+                    return std::numeric_limits<int_type>::max();
                 }
             }
 
@@ -256,17 +262,22 @@ namespace jau {
              * @return numerator representing this fraction on the new base, or std::numeric_limits<int_type>::max() if an overflow occurred.
              */
             constexpr int_type to_num_of(const int_type& new_base_num, const uint_type& new_base_denom, bool * overflow_ptr=nullptr) const noexcept {
-                int_type r;
-                if( mul_overflow(num, (int_type)new_base_denom, r) ) {
-                    if( nullptr != overflow_ptr ) {
-                        *overflow_ptr = true;
+                if( 0 != denom && 0 != new_base_num ) {
+                    int_type r;
+                    if( mul_overflow(num, (int_type)new_base_denom, r) ) {
+                        if( nullptr != overflow_ptr ) {
+                            *overflow_ptr = true;
+                        }
+                        return std::numeric_limits<int_type>::max();
+                    } else {
+                        if( nullptr != overflow_ptr ) {
+                            *overflow_ptr = false;
+                        }
+                        return r / (int_type)denom / new_base_num;
                     }
-                    return std::numeric_limits<int_type>::max();
                 } else {
-                    if( nullptr != overflow_ptr ) {
-                        *overflow_ptr = false;
-                    }
-                    return r / (int_type)denom / new_base_num;
+                    // div-by-zero -> max value as we don't throw
+                    return std::numeric_limits<int_type>::max();
                 }
             }
 
@@ -469,7 +480,7 @@ namespace jau {
             constexpr fraction<int_type>& operator-=(const fraction<int_type>& rhs ) noexcept {
                 if( denom == rhs.denom ) {
                     num -= rhs.num;
-                } else {
+                } else if( 0 != denom && 0 != rhs.denom ) {
                     uint_type _lcm;
                     if( lcm_overflow<uint_type>(denom, rhs.denom, _lcm) ) {
                         set_overflow();
@@ -479,6 +490,16 @@ namespace jau {
                         num = num_new;
                         denom = _lcm;
                     }
+                } else {
+                    // div-by-zero -> max value as we don't throw
+                    if( 0 == denom && 0 == rhs.denom ) {
+                        num = 0; // 0 = inf - inf 
+                    } else if( 0 == denom ) {
+                        num = std::numeric_limits<int_type>::max(); // inf = inf - x
+                    } else /* if( 0 == rhs.denom ) */ {
+                        num = std::numeric_limits<int_type>::min(); // -inf = x - inf
+                    }
+                    denom = 1;
                 }
                 return reduce();
             }
