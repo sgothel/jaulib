@@ -26,6 +26,7 @@
 #ifndef JAU_HELPER_JNI_HPP_
 #define JAU_HELPER_JNI_HPP_
 
+#include <limits>
 #include <vector>
 #include <memory>
 #include <functional>
@@ -723,12 +724,17 @@ namespace jau::jni {
     jobject convert_vector_sharedptr_to_jarraylist(JNIEnv *env, T& array,
             const char *ctor_prototype, std::function<jobject(JNIEnv*, jclass, jmethodID, const std::shared_ptr<U>&)> ctor)
     {
-        unsigned int array_size = array.size();
+        const size_t array_size = array.size();
+        if( array_size > std::numeric_limits<jsize>::max() ) {
+            throw jau::RuntimeException("Native array size "+std::to_string(array_size)+
+                " exceeds max jsize "+std::to_string(std::numeric_limits<jsize>::max()), E_FILE_LINE);
+        }
+        const jsize jarray_size = array_size;
 
         jmethodID arraylist_add;
-        jobject result = get_new_arraylist(env, array_size, &arraylist_add);
+        jobject result = get_new_arraylist(env, jarray_size, &arraylist_add);
 
-        if (array_size == 0)
+        if (jarray_size == 0)
         {
             return result;
         }
@@ -736,7 +742,7 @@ namespace jau::jni {
         jclass clazz = search_class(env, U::java_class().c_str());
         jmethodID clazz_ctor = search_method(env, clazz, "<init>", ctor_prototype, false);
 
-        for (unsigned int i = 0; i < array_size; ++i)
+        for (jsize i = 0; i < jarray_size; ++i)
         {
             jobject object = ctor(env, clazz, clazz_ctor, array[i] /* const std::shared_ptr<U>& */);
             if (!object)
@@ -752,17 +758,22 @@ namespace jau::jni {
     template <typename T, typename U>
     jobject convert_vector_sharedptr_to_jarraylist(JNIEnv *env, T& array, std::function<jobject(JNIEnv*, const std::shared_ptr<U>&)> ctor)
     {
-        unsigned int array_size = array.size();
+        const size_t array_size = array.size();
+        if( array_size > std::numeric_limits<jsize>::max() ) {
+            throw jau::RuntimeException("Native array size "+std::to_string(array_size)+
+                " exceeds max jsize "+std::to_string(std::numeric_limits<jsize>::max()), E_FILE_LINE);
+        }
+        const jsize jarray_size = array_size;
 
         jmethodID arraylist_add;
-        jobject result = get_new_arraylist(env, array_size, &arraylist_add);
+        jobject result = get_new_arraylist(env, jarray_size, &arraylist_add);
 
-        if (array_size == 0)
+        if (jarray_size == 0)
         {
             return result;
         }
 
-        for (unsigned int i = 0; i < array_size; ++i)
+        for (jsize i = 0; i < jarray_size; ++i)
         {
             jobject object = ctor(env, array[i] /* const std::shared_ptr<U>& */);
             if (!object)
@@ -778,17 +789,22 @@ namespace jau::jni {
     template <typename T, typename U>
     jobject convert_vector_to_jarraylist(JNIEnv *env, T& array, std::function<jobject(JNIEnv*, const U&)> ctor)
     {
-        unsigned int array_size = array.size();
+        const size_t array_size = array.size();
+        if( array_size > std::numeric_limits<jsize>::max() ) {
+            throw jau::RuntimeException("Native array size "+std::to_string(array_size)+
+                " exceeds max jsize "+std::to_string(std::numeric_limits<jsize>::max()), E_FILE_LINE);
+        }
+        const jsize jarray_size = array_size;
 
         jmethodID arraylist_add;
-        jobject result = get_new_arraylist(env, array_size, &arraylist_add);
+        jobject result = get_new_arraylist(env, jarray_size, &arraylist_add);
 
-        if (array_size == 0)
+        if (jarray_size == 0)
         {
             return result;
         }
 
-        for (unsigned int i = 0; i < array_size; ++i)
+        for (jsize i = 0; i < jarray_size; ++i)
         {
             jobject object = ctor(env, array[i] /* const U& */);
             if (!object)
