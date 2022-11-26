@@ -1,11 +1,4 @@
 {
-    "makefile.launchConfigurations": [
-        {
-            "cwd": "/usr/local/projects/gentech/bin",
-            "binaryPath": "/usr/local/projects/gentech/bin/rivergen",
-            "binaryArgs": []
-        }
-    ],
     "files.associations": {
         "*.hpp": "cpp"
     },
