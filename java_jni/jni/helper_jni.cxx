@@ -237,7 +237,7 @@ jint jau::jni::getIntFieldValue(JNIEnv *env, jobject obj, const char* field_name
     {
         throw jau::InternalError(std::string("no field found: I ")+field_name, E_FILE_LINE);
     }
-    jlong v = env->GetIntField(obj, f);
+    jint v = env->GetIntField(obj, f);
     java_exception_check_and_throw(env, E_FILE_LINE);
     return v;
 }
@@ -307,7 +307,7 @@ jfieldID jau::jni::search_field(JNIEnv *env, jclass clazz, const char *field_nam
 
     if (!field)
     {
-        jau::InternalError(std::string("no field found: ")+field_name, E_FILE_LINE);
+        throw jau::InternalError(std::string("no field found: ")+field_name, E_FILE_LINE);
     }
 
     return field;
