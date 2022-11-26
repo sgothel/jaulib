@@ -37,30 +37,28 @@
  * Method:    dlclose
  * Signature: (J)I
  */
-JNIEXPORT jint JNICALL 
+JNIEXPORT jint JNICALL
 Java_jau_sys_dl_UnixDynamicLinkerImpl_dlclose(JNIEnv *env, jclass _unused, jlong arg0) {
-  (void)env;
-  (void)_unused;
+    (void)env;
+    (void)_unused;
 
-  int _res;
-  _res = dlclose((void *) (intptr_t) arg0);
-  return _res;
+    return dlclose((void *)(intptr_t)arg0);
 }
-
 
 /*
  * Class:     jau_sys_dl_UnixDynamicLinkerImpl
  * Method:    dlerror
  * Signature: ()Ljava/lang/String;
  */
-JNIEXPORT jstring JNICALL 
+JNIEXPORT jstring JNICALL
 Java_jau_sys_dl_UnixDynamicLinkerImpl_dlerror(JNIEnv *env, jclass _unused) {
-  (void)_unused;
+    (void)_unused;
 
-  char *  _res;
-  _res = dlerror();
-  if (_res == NULL) return NULL;  
-  return env->NewStringUTF(_res);
+    char *_res = dlerror();
+    if (_res == nullptr) {
+        return nullptr;
+    }
+    return env->NewStringUTF(_res);
 }
 
 /*
@@ -68,42 +66,41 @@ Java_jau_sys_dl_UnixDynamicLinkerImpl_dlerror(JNIEnv *env, jclass _unused) {
  * Method:    dlopen
  * Signature: (Ljava/lang/String;I)J
  */
-JNIEXPORT jlong JNICALL 
+JNIEXPORT jlong JNICALL
 Java_jau_sys_dl_UnixDynamicLinkerImpl_dlopen(JNIEnv *env, jclass _unused, jstring arg0, jint arg1) {
-  (void)_unused;
+    (void)_unused;
 
-  const char* _UTF8arg0 = NULL;
-  void *  _res;
+    const char *_UTF8arg0 = nullptr;
+    void *_res;
 #ifdef DEBUG_DLOPEN
-  DLOPEN_FPTR_TYPE dlopenFunc = NULL;
-  DBG_PRINT("XXX dlopen.0\n");
+    DLOPEN_FPTR_TYPE dlopenFunc = NULL;
+    DBG_PRINT("XXX dlopen.0\n");
 #endif
 
-  if (arg0 != NULL) {
-    if (arg0 != NULL) {
-      _UTF8arg0 = env->GetStringUTFChars(arg0, (jboolean*)NULL);
-    if (_UTF8arg0 == NULL) {
-      env->ThrowNew(env->FindClass("java/lang/OutOfMemoryError"),
-                       "Failed to get UTF-8 chars for argument \"arg0\" in native dispatcher for \"dlopen\"");
-      return 0;
+    if (arg0 != nullptr) {
+        _UTF8arg0 = env->GetStringUTFChars(arg0, (jboolean *)nullptr);
+        if (_UTF8arg0 == nullptr) {
+            env->ThrowNew(env->FindClass("java/lang/OutOfMemoryError"),
+                            R"(Failed to get UTF-8 chars for argument "arg0" in native dispatcher for "dlopen")");
+            return 0;
+        }
     }
-    }
-  }
+    
 #ifdef DEBUG_DLOPEN
-  dlopenFunc = (DLOPEN_FPTR_TYPE) dlsym(RTLD_DEFAULT, "dlopen");
-  DBG_PRINT("XXX dlopen.1: lib %s, dlopen-fptr %p %p (%d)\n", _UTF8arg0, dlopen, dlopenFunc, dlopen==dlopenFunc);
-  _res = dlopen((char *) _UTF8arg0, (int) arg1);
-  DBG_PRINT("XXX dlopen.2: %p\n", _res);
+    dlopenFunc = (DLOPEN_FPTR_TYPE)dlsym(RTLD_DEFAULT, "dlopen");
+    DBG_PRINT("XXX dlopen.1: lib %s, dlopen-fptr %p %p (%d)\n", _UTF8arg0, dlopen, dlopenFunc, dlopen == dlopenFunc);
+    _res = dlopen((char *)_UTF8arg0, (int)arg1);
+    DBG_PRINT("XXX dlopen.2: %p\n", _res);
 #else
-  _res = dlopen((char *) _UTF8arg0, (int) arg1);
+    _res = dlopen((char *)_UTF8arg0, (int)arg1);
 #endif
-  if (arg0 != NULL) {
-    env->ReleaseStringUTFChars(arg0, _UTF8arg0);
-  }
+    if (arg0 != nullptr) {
+        env->ReleaseStringUTFChars(arg0, _UTF8arg0);
+    }
 #ifdef DEBUG_DLOPEN
-  DBG_PRINT("XXX dlopen.X\n");
+    DBG_PRINT("XXX dlopen.X\n");
 #endif
-  return (jlong) (intptr_t) _res;
+    return (jlong)(intptr_t)_res;
 }
 
 /*
@@ -111,28 +108,25 @@ Java_jau_sys_dl_UnixDynamicLinkerImpl_dlopen(JNIEnv *env, jclass _unused, jstrin
  * Method:    dlsym
  * Signature: (JLjava/lang/String;)J
  */
-JNIEXPORT jlong JNICALL 
+JNIEXPORT jlong JNICALL
 Java_jau_sys_dl_UnixDynamicLinkerImpl_dlsym(JNIEnv *env, jclass _unused, jlong arg0, jstring arg1) {
-  (void)_unused;
+    (void)_unused;
 
-  const char* _UTF8arg1 = NULL;
-  void *  _res;
-  if (arg1 != NULL) {
-    if (arg1 != NULL) {
-      _UTF8arg1 = env->GetStringUTFChars(arg1, (jboolean*)NULL);
-    if (_UTF8arg1 == NULL) {
-      env->ThrowNew(env->FindClass("java/lang/OutOfMemoryError"),
-                       "Failed to get UTF-8 chars for argument \"arg1\" in native dispatcher for \"dlsym\"");
-      return 0;
-    }
-    }
-  }
-  _res = dlsym((void *) (intptr_t) arg0, (char *) _UTF8arg1);
-  DBG_PRINT("XXX dlsym: handle %p, symbol %s -> %p\n", (void *) (intptr_t) arg0, _UTF8arg1, _res);
-
-  if (arg1 != NULL) {
-    env->ReleaseStringUTFChars(arg1, _UTF8arg1);
-  }
-  return (jlong) (intptr_t) _res;
+    if (arg1 != nullptr) {
+        const char * _UTF8arg1 = env->GetStringUTFChars(arg1, (jboolean *)nullptr);
+        if (_UTF8arg1 != nullptr) {
+            const void *_res = dlsym((void *)(intptr_t)arg0, (char *)_UTF8arg1);
+            DBG_PRINT("XXX dlsym: handle %p, symbol %s -> %p\n", (void *)(intptr_t)arg0, _UTF8arg1, _res);
+            env->ReleaseStringUTFChars(arg1, _UTF8arg1);
+            return (jlong)(intptr_t)_res;
+        } else {
+            env->ThrowNew(env->FindClass("java/lang/OutOfMemoryError"),
+                          R"(Failed to get UTF-8 chars for argument "arg1" in native dispatcher for "dlsym")");
+            return 0;
+        }
+    } else {
+        env->ThrowNew(env->FindClass("java/lang/IllegalArgumentException"),
+                      R"(Argument "arg1" is null in native dispatcher for "dlsym")");
+        return 0;
+    }    
 }
-
