@@ -1303,8 +1303,8 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              * @param comparator the equal comparator to return true if both given elements are equal
              * @return number of erased elements
              */
-            constexpr int erase_matching(const value_type& x, const bool all_matching, equal_comparator comparator) {
-                int count = 0;
+            constexpr size_type erase_matching(const value_type& x, const bool all_matching, equal_comparator comparator) {
+                size_type count = 0;
                 for(auto it = end_-1; begin_ <= it; --it) {
                     if( comparator( *it, x ) ) {
                         erase(it);

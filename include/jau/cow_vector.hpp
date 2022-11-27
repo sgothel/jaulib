@@ -612,8 +612,8 @@ namespace jau {
              * @return number of erased elements
              */
             constexpr_atomic
-            int erase_matching(const value_type& x, const bool all_matching, equal_comparator comparator) {
-                int count = 0;
+            size_type erase_matching(const value_type& x, const bool all_matching, equal_comparator comparator) {
+                size_type count = 0;
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 storage_ref_t new_store_ref = std::make_shared<storage_t>( *store_ref, store_ref->get_allocator() );
                 for(auto it = new_store_ref->begin(); it != new_store_ref->end(); ) {

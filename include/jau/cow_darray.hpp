@@ -1051,8 +1051,8 @@ namespace jau {
              * @return number of erased elements
              */
             constexpr_atomic
-            int erase_matching(const value_type& x, const bool all_matching, equal_comparator comparator) {
-                int count = 0;
+            size_type erase_matching(const value_type& x, const bool all_matching, equal_comparator comparator) {
+                size_type count = 0;
 
                 iterator it = begin(); // lock mutex and copy_store
                 while( !it.is_end() ) {
