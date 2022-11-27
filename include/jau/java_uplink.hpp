@@ -91,6 +91,12 @@ namespace jau::jni {
              */
             virtual void checkValidInstance() const {}
 
+            JavaUplink() noexcept = default;
+            JavaUplink(const JavaUplink &o) noexcept = default;
+            JavaUplink(JavaUplink &&o) noexcept = default;
+            JavaUplink& operator=(const JavaUplink &o) noexcept = default;
+            JavaUplink& operator=(JavaUplink &&o) noexcept = default;
+
             virtual ~JavaUplink() noexcept {
                 javaObjectRef = nullptr;
             }
