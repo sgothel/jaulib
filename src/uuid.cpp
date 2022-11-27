@@ -55,11 +55,11 @@ uuid_t::TypeSize uuid_t::toTypeSize(const jau::nsize_t size) {
 
 std::unique_ptr<uuid_t> uuid_t::create(TypeSize t, uint8_t const * const buffer, jau::nsize_t const byte_offset, bool littleEndian) {
     if( TypeSize::UUID16_SZ == t ) {
-        return std::unique_ptr<uuid_t>(new uuid16_t(buffer, byte_offset, littleEndian));
+        return std::make_unique<uuid16_t>(buffer, byte_offset, littleEndian);
     } else if( TypeSize::UUID32_SZ == t ) {
-        return std::unique_ptr<uuid_t>(new uuid32_t(buffer, byte_offset, littleEndian));
+        return std::make_unique<uuid32_t>(buffer, byte_offset, littleEndian);
     } else if( TypeSize::UUID128_SZ == t ) {
-        return std::unique_ptr<uuid_t>(new uuid128_t(buffer, byte_offset, littleEndian));
+        return std::make_unique<uuid128_t>(buffer, byte_offset, littleEndian);
     }
     throw jau::IllegalArgumentException("Unknown Type "+std::to_string(static_cast<jau::nsize_t>(t)), E_FILE_LINE);
 }
@@ -67,11 +67,11 @@ std::unique_ptr<uuid_t> uuid_t::create(const std::string& str) {
     const size_t len = str.length();
     switch( len ) {
         case 4: // 16
-            return std::unique_ptr<uuid_t>(new uuid16_t(str));
+            return std::make_unique<uuid16_t>(str);
         case 8: // 32
-            return std::unique_ptr<uuid_t>(new uuid32_t(str));
+            return std::make_unique<uuid32_t>(str);
         case 36: // 128
-            return std::unique_ptr<uuid_t>(new uuid128_t(str));
+            return std::make_unique<uuid128_t>(str);
         default: {
             std::string msg("UUID string not of length 4, 8 or 36 but ");
             msg.append(std::to_string(str.length()));
