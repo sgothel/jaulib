@@ -81,7 +81,7 @@ std::string environment::getProperty(const std::string & name) noexcept {
 }
 
 std::string environment::getProperty(const std::string & name, const std::string & default_value) noexcept {
-    const std::string value = getProperty(name);
+    std::string value = getProperty(name);
     if( 0 == value.length() ) {
         COND_PRINT(local_debug, "env::getProperty1 %s: null -> %s (default)", name.c_str(), default_value.c_str());
         return default_value;
@@ -201,7 +201,7 @@ fraction_i64 environment::getFractionProperty(const std::string & name, const fr
     }
 }
 
-void environment::envSet(std::string prefix_domain, std::string basepair) noexcept {
+void environment::envSet(const std::string& prefix_domain, std::string basepair) noexcept {
     trimInPlace(basepair);
     if( basepair.length() > 0 ) {
         size_t pos = 0, start = 0;
@@ -228,7 +228,7 @@ void environment::envSet(std::string prefix_domain, std::string basepair) noexce
     }
 }
 
-void environment::envExplodeProperties(std::string prefix_domain, std::string list) noexcept {
+void environment::envExplodeProperties(const std::string& prefix_domain, const std::string& list) noexcept {
     size_t pos = 0, start = 0;
     while( (pos = list.find(',', start)) != std::string::npos ) {
         const size_t elem_len = pos-start; // excluding ','
@@ -243,7 +243,7 @@ void environment::envExplodeProperties(std::string prefix_domain, std::string li
     ::setenv(prefix_domain.c_str(), "true", 1 /* overwrite */);
 }
 
-bool environment::getExplodingPropertiesImpl(const std::string & root_prefix_domain, const std::string & prefix_domain) noexcept {
+bool environment::getExplodingPropertiesImpl(const std::string& root_prefix_domain, const std::string & prefix_domain) noexcept {
     std::string value = environment::getProperty(prefix_domain, s_false);
     if( s_false == value ) {
         return false;

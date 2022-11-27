@@ -100,7 +100,7 @@ namespace jau::io {
      */
     uint64_t read_file(const std::string& input_file,
             secure_vector<uint8_t>& buffer,
-            StreamConsumerFunc consumer_fn) noexcept;
+            const StreamConsumerFunc& consumer_fn) noexcept;
 
     class ByteInStream; // fwd
 
@@ -119,7 +119,7 @@ namespace jau::io {
      */
     uint64_t read_stream(ByteInStream& in,
             secure_vector<uint8_t>& buffer,
-            StreamConsumerFunc consumer_fn) noexcept;
+            const StreamConsumerFunc& consumer_fn) noexcept;
 
     /**
      * Synchronous double-buffered byte input stream reader using the given StreamConsumerFunc consumer_fn.
@@ -145,7 +145,7 @@ namespace jau::io {
      */
     uint64_t read_stream(ByteInStream& in,
             secure_vector<uint8_t>& buffer1, secure_vector<uint8_t>& buffer2,
-            StreamConsumerFunc consumer_fn) noexcept;
+            const StreamConsumerFunc& consumer_fn) noexcept;
 
     /**
      * Synchronous URL stream reader using the given StreamConsumerFunc consumer_fn.
@@ -166,7 +166,7 @@ namespace jau::io {
      */
     uint64_t read_url_stream(const std::string& url,
             secure_vector<uint8_t>& buffer,
-            StreamConsumerFunc consumer_fn) noexcept;
+            const StreamConsumerFunc& consumer_fn) noexcept;
 
     /**
      * Synchronization for URL header completion

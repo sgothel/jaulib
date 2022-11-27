@@ -1256,7 +1256,7 @@ namespace jau::fs {
      * @see umount()
      */
     mount_ctx mount_image(const std::string& image_path, const std::string& target, const std::string& fs_type,
-                          const mountflags_t flags, const std::string fs_options = "");
+                          const mountflags_t flags, const std::string& fs_options = "");
 
     /**
      * Attach the filesystem named in `source` to `target`
@@ -1278,7 +1278,7 @@ namespace jau::fs {
      * @see umount()
      */
     mount_ctx mount(const std::string& source, const std::string& target, const std::string& fs_type,
-                    const mountflags_t flags, const std::string fs_options = "");
+                    const mountflags_t flags, const std::string& fs_options = "");
 
     /**
      * Generic flag bit values for umount() `flags`.

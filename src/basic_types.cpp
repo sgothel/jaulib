@@ -521,6 +521,6 @@ bool jau::to_fraction_i64(fraction_i64& result, const std::string & value, const
         }
         return false;
     }
-    result = std::move(temp);
+    result = temp;
     return true;
 }

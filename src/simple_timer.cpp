@@ -67,7 +67,7 @@ bool simple_timer::start(const fraction_i64& duration_, Timer_func tofunc) noexc
     if( is_running() ) {
         return false;
     }
-    timer_func = tofunc;
+    timer_func = std::move(tofunc);
     duration = duration_;
     timer_service.start();
     return true;
@@ -76,10 +76,10 @@ bool simple_timer::start(const fraction_i64& duration_, Timer_func tofunc) noexc
 void simple_timer::start_or_update(const fraction_i64& duration_, Timer_func tofunc) noexcept {
     if( is_running() ) {
         std::unique_lock<std::mutex> lockReader(mtx_timerfunc); // RAII-style acquire and relinquish via destructor
-        timer_func = tofunc;
+        timer_func = std::move(tofunc);
         duration = duration_;
     } else {
-        timer_func = tofunc;
+        timer_func = std::move(tofunc);
         duration = duration_;
         timer_service.start();
     }

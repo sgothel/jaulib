@@ -42,7 +42,7 @@ Java_jau_sys_dl_UnixDynamicLinkerImpl_dlclose(JNIEnv *env, jclass _unused, jlong
     (void)env;
     (void)_unused;
 
-    return dlclose((void *)(intptr_t)arg0);
+    return dlclose((void *)(intptr_t)arg0); // NOLINT(performance-no-int-to-ptr)
 }
 
 /*
@@ -115,7 +115,7 @@ Java_jau_sys_dl_UnixDynamicLinkerImpl_dlsym(JNIEnv *env, jclass _unused, jlong a
     if (arg1 != nullptr) {
         const char * _UTF8arg1 = env->GetStringUTFChars(arg1, (jboolean *)nullptr);
         if (_UTF8arg1 != nullptr) {
-            const void *_res = dlsym((void *)(intptr_t)arg0, (char *)_UTF8arg1);
+            const void *_res = dlsym((void *)(intptr_t)arg0, (char *)_UTF8arg1); // NOLINT(performance-no-int-to-ptr)
             DBG_PRINT("XXX dlsym: handle %p, symbol %s -> %p\n", (void *)(intptr_t)arg0, _UTF8arg1, _res);
             env->ReleaseStringUTFChars(arg1, _UTF8arg1);
             return (jlong)(intptr_t)_res;

@@ -987,7 +987,7 @@ class ringbuffer {
         }
 
         /** Debug functionality - Dumps the contents of the internal array. */
-        void dump(FILE *stream, std::string prefix) const noexcept {
+        void dump(FILE *stream, const std::string& prefix) const noexcept {
             fprintf(stream, "%s %s, array %p\n", prefix.c_str(), toString().c_str(), array);
         }
 

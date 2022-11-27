@@ -52,7 +52,7 @@ class TestByteStream01 {
 
         class data {
             private:
-                static bool add_test_file(const std::string name, const size_t size_limit) {
+                static bool add_test_file(const std::string& name, const size_t size_limit) {
                     jau::fs::remove(name);
                     jau::fs::remove(name+".enc");
                     jau::fs::remove(name+".enc.dec");

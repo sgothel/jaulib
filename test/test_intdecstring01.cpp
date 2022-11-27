@@ -69,7 +69,7 @@ using namespace jau;
     }
 #endif
 
-static void test_int32_t(const std::string msg, const int32_t v, const size_t expStrLen, const std::string expStr) {
+static void test_int32_t(const std::string& msg, const int32_t v, const size_t expStrLen, const std::string& expStr) {
 #if SHOW_DECIMAL_STRING_STATS
     show_decimal_string_stats<int32_t>(msg, v, true /* use_separator */, 0 /* min_width */);
 #endif
@@ -80,7 +80,7 @@ static void test_int32_t(const std::string msg, const int32_t v, const size_t ex
     REQUIRE_THAT(str, Catch::Matchers::Equals(expStr, Catch::CaseSensitive::Yes));
 }
 
-static void test_uint32_t(const std::string msg, const uint32_t v, const size_t expStrLen, const std::string expStr) {
+static void test_uint32_t(const std::string& msg, const uint32_t v, const size_t expStrLen, const std::string& expStr) {
 #if SHOW_DECIMAL_STRING_STATS
     show_decimal_string_stats<uint32_t>(msg, v, true /* use_separator */, 0 /* min_width */);
 #endif
@@ -92,7 +92,7 @@ static void test_uint32_t(const std::string msg, const uint32_t v, const size_t 
     REQUIRE_THAT(str, Catch::Matchers::Equals(expStr, Catch::CaseSensitive::Yes));
 }
 
-static void test_uint64_t(const std::string msg, const uint64_t v, const size_t expStrLen, const std::string expStr) {
+static void test_uint64_t(const std::string& msg, const uint64_t v, const size_t expStrLen, const std::string& expStr) {
 #if SHOW_DECIMAL_STRING_STATS
     show_decimal_string_stats<uint64_t>(msg, v, true /* use_separator */, 0 /* min_width */);
 #endif

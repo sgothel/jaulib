@@ -45,7 +45,7 @@ using namespace jau::fractions_i64_literals;
 
 uint64_t jau::io::read_file(const std::string& input_file,
                             secure_vector<uint8_t>& buffer,
-                            StreamConsumerFunc consumer_fn) noexcept
+                            const StreamConsumerFunc& consumer_fn) noexcept
 {
     if(input_file == "-") {
         ByteInStream_File in(0); // stdin
@@ -58,7 +58,7 @@ uint64_t jau::io::read_file(const std::string& input_file,
 
 uint64_t jau::io::read_stream(ByteInStream& in,
                               secure_vector<uint8_t>& buffer,
-                              StreamConsumerFunc consumer_fn) noexcept {
+                              const StreamConsumerFunc& consumer_fn) noexcept {
     uint64_t total = 0;
     bool has_more;
     do {
@@ -99,7 +99,7 @@ static uint64_t _read_buffer(ByteInStream& in,
 
 uint64_t jau::io::read_stream(ByteInStream& in,
                               secure_vector<uint8_t>& buffer1, secure_vector<uint8_t>& buffer2,
-                              StreamConsumerFunc consumer_fn) noexcept {
+                              const StreamConsumerFunc& consumer_fn) noexcept {
     secure_vector<uint8_t>* buffers[] = { &buffer1, &buffer2 };
     bool eof[] = { false, false };
 
@@ -308,7 +308,7 @@ static size_t consume_data_curl1(char *ptr, size_t size, size_t nmemb, void *use
 
 uint64_t jau::io::read_url_stream(const std::string& url,
                                   secure_vector<uint8_t>& buffer,
-                                  StreamConsumerFunc consumer_fn) noexcept {
+                                  const StreamConsumerFunc& consumer_fn) noexcept {
 #ifdef USE_LIBCURL
     std::vector<char> errorbuffer;
     errorbuffer.reserve(CURL_ERROR_SIZE);

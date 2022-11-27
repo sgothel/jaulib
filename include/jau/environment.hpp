@@ -79,10 +79,10 @@ namespace jau {
 
             static bool local_debug;
 
-            static void envSet(std::string prefix_domain, std::string basepair) noexcept;
-            static void envExplodeProperties(std::string prefix_domain, std::string list) noexcept;
+            static void envSet(const std::string& prefix_domain, std::string basepair) noexcept;
+            static void envExplodeProperties(const std::string& prefix_domain, const std::string& list) noexcept;
 
-            static bool getExplodingPropertiesImpl(const std::string & root_prefix_domain, const std::string & prefix_domain) noexcept;
+            static bool getExplodingPropertiesImpl(const std::string& root_prefix_domain, const std::string & prefix_domain) noexcept;
 
         public:
             /**
@@ -288,7 +288,7 @@ namespace jau {
              *        Initial call shall utilize the actual project's root_prefix_domain!
              * @return the static singleton instance.
              */
-            static environment& get(const std::string root_prefix_domain="jau") noexcept {
+            static environment& get(const std::string& root_prefix_domain="jau") noexcept {
                 /**
                  * Thread safe starting with C++11 6.7:
                  *

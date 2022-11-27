@@ -142,12 +142,12 @@ std::string jau::get_backtrace(const bool skip_anon_frames, const jau::snsize_t 
                 line.append(real_name);
                 free( real_name );
             }
-            snprintf(cstr, sizeof(cstr), " + 0x%lx @ ip %p, sp %p", (unsigned long)offset, (void*)ip, (void*)sp);
+            snprintf(cstr, sizeof(cstr), " + 0x%lx @ ip %p, sp %p", (unsigned long)offset, (void*)ip, (void*)sp); // NOLINT(performance-no-int-to-ptr)
             append_line = true;
             last_frame_anon = false;
         } else {
             // anon frame w/o proc-name
-            snprintf(cstr, sizeof(cstr), "__no_proc_name__ @ ip %p, sp %p", (void*)ip, (void*)sp);
+            snprintf(cstr, sizeof(cstr), "__no_proc_name__ @ ip %p, sp %p", (void*)ip, (void*)sp); // NOLINT(performance-no-int-to-ptr)
             append_line = !skip_anon_frames || !last_frame_anon;
             last_frame_anon = true;
         }

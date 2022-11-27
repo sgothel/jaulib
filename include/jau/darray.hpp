@@ -575,7 +575,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
 
             constexpr explicit darray(darray && x, const float growth_factor, const allocator_type& alloc) noexcept
             : alloc_inst( std::move(alloc) ), begin_( std::move(x.begin_) ), end_( std::move(x.end_) ),
-              storage_end_( std::move(x.storage_end_) ), growth_factor_( std::move(growth_factor) )
+              storage_end_( std::move(x.storage_end_) ), growth_factor_( growth_factor )
             {
                 JAU_DARRAY_PRINTF("ctor move1: this %s\n", get_info().c_str());
                 JAU_DARRAY_PRINTF("ctor move1:    x %s\n", x.get_info().c_str());

@@ -141,7 +141,7 @@ namespace jau {
 
 
     template<class List>
-    inline void printSharedPtrList(std::string prefix, List & list) noexcept {
+    inline void printSharedPtrList(const std::string& prefix, List & list) noexcept {
         fprintf(stderr, "%s: Start: %zu elements\n", prefix.c_str(), (size_t)list.size());
         int idx = 0;
         for (auto it = list.begin(); it != list.end(); idx++) {

@@ -85,7 +85,7 @@ class TestMemModelSCDRF01 {
             cvRead.notify_all(); // notify waiting getter
         }
     }
-    void getThreadType01(const std::string msg, int _len, int startValue) {
+    void getThreadType01(const std::string& msg, int _len, int startValue) {
         const int len = std::min(number(array_size), _len);
 
         std::unique_lock<std::mutex> lock(mtx_value); // SC-DRF acquire and release @ scope exit
@@ -117,7 +117,7 @@ class TestMemModelSCDRF01 {
             cvRead.notify_all();
         }
     }
-    void getThreadType11(const std::string msg, int _idx) {
+    void getThreadType11(const std::string& msg, int _idx) {
         const int idx = std::min(number(array_size)-1, _idx);
 
         // idx is encoded on sync_value (v) as follows

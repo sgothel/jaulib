@@ -84,7 +84,7 @@ class TestRingbuffer12 {
         return array;
     }
 
-    void getThreadType01(const std::string msg, TrivialTypeRingbuffer* rb, jau::nsize_t len) {
+    void getThreadType01(const std::string& msg, TrivialTypeRingbuffer* rb, jau::nsize_t len) {
         // std::thread::id this_id = std::this_thread::get_id();
         // pthread_t this_id = pthread_self();
 
@@ -99,7 +99,7 @@ class TestRingbuffer12 {
         (void)msg;
     }
 
-    void getRangeThreadType02(const std::string msg, TrivialTypeRingbuffer* rb, jau::nsize_t len) {
+    void getRangeThreadType02(const std::string& msg, TrivialTypeRingbuffer* rb, jau::nsize_t len) {
         // std::thread::id this_id = std::this_thread::get_id();
         // pthread_t this_id = pthread_self();
 
@@ -117,7 +117,7 @@ class TestRingbuffer12 {
         (void)msg;
     }
 
-    void putThreadType01(const std::string msg, TrivialTypeRingbuffer* rb, jau::nsize_t len, IntegralType startValue) {
+    void putThreadType01(const std::string& msg, TrivialTypeRingbuffer* rb, jau::nsize_t len, IntegralType startValue) {
         // std::thread::id this_id = std::this_thread::get_id();
         // pthread_t this_id = pthread_self();
 
@@ -131,7 +131,7 @@ class TestRingbuffer12 {
         (void)msg;
     }
 
-    void putRangeThreadType02(const std::string msg, TrivialTypeRingbuffer* rb, jau::nsize_t len, IntegralType startValue) {
+    void putRangeThreadType02(const std::string& msg, TrivialTypeRingbuffer* rb, jau::nsize_t len, IntegralType startValue) {
         // std::thread::id this_id = std::this_thread::get_id();
         // pthread_t this_id = pthread_self();
 

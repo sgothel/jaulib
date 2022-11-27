@@ -121,7 +121,7 @@ service_runner::service_runner(std::string name__,
                                Callback service_init_locked_,
                                Callback service_end_locked_) noexcept
 : name_( std::move(name__) ),
-  service_shutdown_timeout_( std::move(service_shutdown_timeout) ),
+  service_shutdown_timeout_( service_shutdown_timeout ),
   service_work( std::move(service_work_) ),
   service_init_locked( std::move(service_init_locked_) ),
   service_end_locked( std::move(service_end_locked_) ),
@@ -181,7 +181,7 @@ bool service_runner::stop() noexcept {
     const ::pthread_t tid_service = thread_id_;
     const bool is_service = tid_service == ::pthread_self();
     DBG_PRINT("%s::stop: service[running %d, shall_stop %d, is_service %d, tid %p)",
-              name_.c_str(), running.load(), shall_stop_.load(), is_service, (void*)tid_service);
+              name_.c_str(), running.load(), shall_stop_.load(), is_service, (void*)tid_service); // NOLINT(performance-no-int-to-ptr)
     set_shall_stop();
     bool result;
     if( running ) {
@@ -189,7 +189,7 @@ bool service_runner::stop() noexcept {
             if( 0 != tid_service ) {
                 int kerr;
                 if( 0 != ( kerr = ::pthread_kill(tid_service, SIGALRM) ) ) {
-                    ERR_PRINT("%s::stop: pthread_kill %p FAILED: %d", name_.c_str(), (void*)tid_service, kerr);
+                    ERR_PRINT("%s::stop: pthread_kill %p FAILED: %d", name_.c_str(), (void*)tid_service, kerr); // NOLINT(performance-no-int-to-ptr)
                 }
             }
             // Ensure the reader thread has ended, no runaway-thread using *this instance after destruction
@@ -254,5 +254,6 @@ bool service_runner::join() noexcept {
 }
 
 std::string service_runner::toString() const noexcept {
-    return "ServiceRunner["+name_+", running "+std::to_string(is_running())+", shall_stop "+std::to_string(shall_stop_)+", thread_id "+to_hexstring((void*)thread_id_)+"]";
+    return "ServiceRunner["+name_+", running "+std::to_string(is_running())+", shall_stop "+std::to_string(shall_stop_)+
+           ", thread_id "+to_hexstring((void*)thread_id_)+"]"; // NOLINT(performance-no-int-to-ptr)
 }

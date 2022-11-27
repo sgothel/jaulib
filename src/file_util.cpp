@@ -1338,7 +1338,7 @@ static bool copy_file(const int src_dirfd, const file_stats& src_stats,
 
     // copy as symbolic link
     if( src_stats.is_link() && !is_set(copts, copy_options::follow_symlinks) ) {
-        const std::shared_ptr<std::string> link_target_path = src_stats.link_target_path();
+        const std::shared_ptr<std::string>& link_target_path = src_stats.link_target_path();
         if( nullptr == link_target_path || 0 == link_target_path->size() ) {
             ERR_PRINT("Symbolic link-path is empty %s", src_stats.to_string().c_str());
             return false;
@@ -1868,7 +1868,7 @@ static bool set_effective_uid(::uid_t user_id) {
 }
 
 jau::fs::mount_ctx jau::fs::mount_image(const std::string& image_path, const std::string& target, const std::string& fs_type,
-                                        const mountflags_t flags, const std::string fs_options)
+                                        const mountflags_t flags, const std::string& fs_options)
 {
     file_stats image_stats(image_path);
     if( !image_stats.is_file()) {
@@ -1995,7 +1995,7 @@ errout:
 }
 
 mount_ctx jau::fs::mount(const std::string& source, const std::string& target, const std::string& fs_type,
-                         const mountflags_t flags, const std::string fs_options)
+                         const mountflags_t flags, const std::string& fs_options)
 {
     if( source.empty() ) {
         ERR_PRINT("source is an empty string ");
