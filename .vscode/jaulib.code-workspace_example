@@ -25,7 +25,7 @@
     "workbench.editor.labelFormat": "medium",
     "java.jdt.ls.java.home": "/usr/lib/jvm/java-17-openjdk-amd64",
     // "java.format.settings.url": "/usr/local/projects/jausoft/eclipse/settings/org.eclipse.my.java.prefs",
-    // "java.settings.url": "/usr/local/projects/jausoft/eclipse/settings/org.eclipse.my.java.prefs",
+    // "java.settings.url": "/usr/local/projects/jausoft/eclipse/settings/org.eclipse.jdt.core.prefs",
     // "java.format.settings.profile": "GoogleStyle",
     "java.codeGeneration.useBlocks": true,
     "java.inlayHints.parameterNames.enabled": "literals",
