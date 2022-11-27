@@ -119,7 +119,7 @@ namespace jau {
      * @see jau::cow_rw_iterator
      * @see jau::cow_rw_iterator::write_back()
      */
-    template <typename Value_type, typename Alloc_type = jau::callocator<Value_type>, typename Size_type = jau::nsize_t,
+    template <typename Value_type, typename Size_type = jau::nsize_t, typename Alloc_type = jau::callocator<Value_type>,
               bool use_memmove = std::is_trivially_copyable_v<Value_type> || is_container_memmove_compliant_v<Value_type>,
               bool use_secmem  = is_enforcing_secmem_v<Value_type>
              >
@@ -144,17 +144,17 @@ namespace jau {
             typedef typename std::make_signed<size_type>::type  difference_type;
             typedef Alloc_type                                  allocator_type;
 
-            typedef darray<value_type, allocator_type,
-                           size_type,
+            typedef darray<value_type, size_type, 
+                           allocator_type,
                            use_memmove, use_secmem>             storage_t;
             typedef std::shared_ptr<storage_t>                  storage_ref_t;
 
             /** Used to determine whether this type is a darray or has a darray, see ::is_darray_type<T> */
             typedef bool                                        darray_tag;
 
-            typedef cow_darray<value_type, allocator_type,
-                               size_type, use_memmove,
-                               use_secmem>                      cow_container_t;
+            typedef cow_darray<value_type, size_type, 
+                               allocator_type, 
+                               use_memmove, use_secmem>         cow_container_t;
 
             /**
              * Immutable, read-only const_iterator, lock-free,
@@ -1144,8 +1144,8 @@ namespace jau {
     /****************************************************************************************
      ****************************************************************************************/
 
-    template<typename Value_type, typename Alloc_type>
-    std::ostream & operator << (std::ostream &out, const cow_darray<Value_type, Alloc_type> &c) {
+    template<typename Value_type, typename Size_type, typename Alloc_type>
+    std::ostream & operator << (std::ostream &out, const cow_darray<Value_type, Size_type, Alloc_type> &c) {
         out << c.toString();
         return out;
     }
@@ -1153,43 +1153,43 @@ namespace jau {
     /****************************************************************************************
      ****************************************************************************************/
 
-    template<typename Value_type, typename Alloc_type>
-    inline bool operator==(const cow_darray<Value_type, Alloc_type>& rhs, const cow_darray<Value_type, Alloc_type>& lhs) {
+    template<typename Value_type, typename Size_type, typename Alloc_type>
+    inline bool operator==(const cow_darray<Value_type, Size_type, Alloc_type>& rhs, const cow_darray<Value_type, Size_type, Alloc_type>& lhs) {
         if( &rhs == &lhs ) {
             return true;
         }
-        typename cow_darray<Value_type, Alloc_type>::const_iterator rhs_cend = rhs.cbegin();
+        typename cow_darray<Value_type, Size_type, Alloc_type>::const_iterator rhs_cend = rhs.cbegin();
         rhs_cend += rhs.size();
         return (rhs.size() == lhs.size() && std::equal(rhs.cbegin(), rhs_cend, lhs.cbegin()));
     }
-    template<typename Value_type, typename Alloc_type>
-    inline bool operator!=(const cow_darray<Value_type, Alloc_type>& rhs, const cow_darray<Value_type, Alloc_type>& lhs) {
+    template<typename Value_type, typename Size_type, typename Alloc_type>
+    inline bool operator!=(const cow_darray<Value_type, Size_type, Alloc_type>& rhs, const cow_darray<Value_type, Size_type, Alloc_type>& lhs) {
         return !(rhs==lhs);
     }
 
-    template<typename Value_type, typename Alloc_type>
-    inline bool operator<(const cow_darray<Value_type, Alloc_type>& rhs, const cow_darray<Value_type, Alloc_type>& lhs) {
-        typename cow_darray<Value_type, Alloc_type>::const_iterator rhs_cend = rhs.cbegin();
+    template<typename Value_type, typename Size_type, typename Alloc_type>
+    inline bool operator<(const cow_darray<Value_type, Size_type, Alloc_type>& rhs, const cow_darray<Value_type, Size_type, Alloc_type>& lhs) {
+        typename cow_darray<Value_type, Size_type, Alloc_type>::const_iterator rhs_cend = rhs.cbegin();
         rhs_cend += rhs.size();
-        typename cow_darray<Value_type, Alloc_type>::const_iterator lhs_cend = lhs.cbegin();
+        typename cow_darray<Value_type, Size_type, Alloc_type>::const_iterator lhs_cend = lhs.cbegin();
         lhs_cend += lhs.size();
         return std::lexicographical_compare(rhs.cbegin(), rhs_cend, lhs.begin(), lhs_cend);
     }
 
-    template<typename Value_type, typename Alloc_type>
-    inline bool operator>(const cow_darray<Value_type, Alloc_type>& rhs, const cow_darray<Value_type, Alloc_type>& lhs)
+    template<typename Value_type, typename Size_type, typename Alloc_type>
+    inline bool operator>(const cow_darray<Value_type, Size_type, Alloc_type>& rhs, const cow_darray<Value_type, Size_type, Alloc_type>& lhs)
     { return lhs < rhs; }
 
-    template<typename Value_type, typename Alloc_type>
-    inline bool operator<=(const cow_darray<Value_type, Alloc_type>& rhs, const cow_darray<Value_type, Alloc_type>& lhs)
+    template<typename Value_type, typename Size_type, typename Alloc_type>
+    inline bool operator<=(const cow_darray<Value_type, Size_type, Alloc_type>& rhs, const cow_darray<Value_type, Size_type, Alloc_type>& lhs)
     { return !(lhs < rhs); }
 
-    template<typename Value_type, typename Alloc_type>
-    inline bool operator>=(const cow_darray<Value_type, Alloc_type>& rhs, const cow_darray<Value_type, Alloc_type>& lhs)
+    template<typename Value_type, typename Size_type, typename Alloc_type>
+    inline bool operator>=(const cow_darray<Value_type, Size_type, Alloc_type>& rhs, const cow_darray<Value_type, Size_type, Alloc_type>& lhs)
     { return !(rhs < lhs); }
 
-    template<typename Value_type, typename Alloc_type>
-    inline void swap(cow_darray<Value_type, Alloc_type>& rhs, cow_darray<Value_type, Alloc_type>& lhs) noexcept
+    template<typename Value_type, typename Size_type, typename Alloc_type>
+    inline void swap(cow_darray<Value_type, Size_type, Alloc_type>& rhs, cow_darray<Value_type, Size_type, Alloc_type>& lhs) noexcept
     { rhs.swap(lhs); }
 
     /**@}*/

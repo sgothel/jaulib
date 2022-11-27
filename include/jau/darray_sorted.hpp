@@ -56,13 +56,13 @@ namespace jau {
      * @tparam use_memmove
      * @tparam use_secmem
      */
-    template <typename Value_type, typename Alloc_type = jau::callocator<Value_type>, typename Size_type = jau::nsize_t,
+    template <typename Value_type, typename Size_type = jau::nsize_t, typename Alloc_type = jau::callocator<Value_type>,
               bool use_memmove = std::is_trivially_copyable_v<Value_type> || is_container_memmove_compliant_v<Value_type>,
               bool use_secmem  = is_enforcing_secmem_v<Value_type>
              >
-    class darray_sorted : protected darray<Value_type, Alloc_type, Size_type, use_memmove, use_secmem> {
+    class darray_sorted : protected darray<Value_type, Size_type, Alloc_type, use_memmove, use_secmem> {
         public:
-            typedef darray<Value_type, Alloc_type, Size_type, use_memmove, use_secmem> darray_type;
+            typedef darray<Value_type, Size_type, Alloc_type, use_memmove, use_secmem> darray_type;
             using typename darray_type::value_type;
             using typename darray_type::size_type;
 

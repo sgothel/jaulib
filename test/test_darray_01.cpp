@@ -118,7 +118,7 @@ TEST_CASE( "JAU DArray Test 02 - jau::darray immutable type (const)", "[const][j
 /**********************************************************************************************************************************************/
 
 template<class Payload>
-using SharedPayloadListMemMove = jau::darray<std::shared_ptr<Payload>, jau::callocator<std::shared_ptr<Payload>>, jau::nsize_t, true /* use_memmove */>;
+using SharedPayloadListMemMove = jau::darray<std::shared_ptr<Payload>, jau::nsize_t, jau::callocator<std::shared_ptr<Payload>>, true /* use_memmove */>;
 // JAU_TYPENAME_CUE_ALL(SharedPayloadListMemMove)
 
 template<class Payload>
@@ -168,7 +168,7 @@ struct NamedSharedPayloadListMemMove {
 // JAU_TYPENAME_CUE_ALL(NamedSharedPayloadListMemMove)
 
 template<class Payload>
-using PayloadListMemMove = jau::darray<Payload, jau::callocator<Payload>, jau::nsize_t, true /* use_memmove */>;
+using PayloadListMemMove = jau::darray<Payload, jau::nsize_t, jau::callocator<Payload>, true /* use_memmove */>;
 // JAU_TYPENAME_CUE_ALL(PayloadListMemMove)
 
 template<class Payload>

@@ -141,7 +141,7 @@ namespace jau {
      *
      * @see cow_darray
      */
-    template <typename Value_type, typename Alloc_type = jau::callocator<Value_type>, typename Size_type = jau::nsize_t,
+    template <typename Value_type, typename Size_type = jau::nsize_t, typename Alloc_type = jau::callocator<Value_type>,
               bool use_memmove = std::is_trivially_copyable_v<Value_type> || is_container_memmove_compliant_v<Value_type>,
               bool use_secmem  = is_enforcing_secmem_v<Value_type>
              >
@@ -299,7 +299,7 @@ namespace jau {
 In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__shared_count<_Lp>&) [with __gnu_cxx::_Lock_policy _Lp = __gnu_cxx::_S_atomic]’,
     inlined from ‘std::__shared_ptr<_Tp, _Lp>::__shared_ptr(const std::__shared_ptr<_Tp, _Lp>&) [with _Tp = direct_bt::BTDevice; __gnu_cxx::_Lock_policy _Lp = __gnu_cxx::_S_atomic]’ at /usr/include/c++/12/bits/shared_ptr_base.h:1522:7,
     inlined from ‘std::shared_ptr<_Tp>::shared_ptr(const std::shared_ptr<_Tp>&) [with _Tp = direct_bt::BTDevice]’ at /usr/include/c++/12/bits/shared_ptr.h:204:7,
-    inlined from ‘constexpr void jau::darray<Value_type, Alloc_type, Size_type, use_memmove, use_secmem>::ctor_copy_range(pointer, iterator, const_iterator) [with Value_type = std::shared_ptr<direct_bt::BTDevice>; Alloc_type = jau::callocator<std::shared_ptr<direct_bt::BTDevice> >; Size_type = long unsigned int; bool use_memmove = false; bool use_secmem = false]’ at direct_bt/jaulib/include/jau/darray.hpp:300:21,
+    inlined from ‘constexpr void jau::darray<Value_type, Size_type, Alloc_type, Size_type, use_memmove, use_secmem>::ctor_copy_range(pointer, iterator, const_iterator) [with Value_type = std::shared_ptr<direct_bt::BTDevice>; Alloc_type = jau::callocator<std::shared_ptr<direct_bt::BTDevice> >; Size_type = long unsigned int; bool use_memmove = false; bool use_secmem = false]’ at direct_bt/jaulib/include/jau/darray.hpp:300:21,
     ...
 /usr/include/c++/12/bits/shared_ptr_base.h:1075:9: warning: potential null pointer dereference [-Wnull-dereference]
  1075 |       : _M_pi(__r._M_pi)
@@ -429,8 +429,8 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                              * g++ (Debian 12.2.0-3) 12.2.0, Debian 12 Bookworm 2022-10-17
                              * g++ bug: False positive of '-Werror=stringop-overflow=' using ::explicit_bzero(..)
                              *
-                             * In member function ‘constexpr void jau::darray<Value_type, Alloc_type, Size_type, use_memmove, use_secmem>::move_elements(iterator, const_iterator, difference_type) [with Value_type = DataType02_Memmove_Secmem; Alloc_type = jau::callocator<DataType02_Memmove_Secmem>; Size_type = long unsigned int; bool use_memmove = true; bool use_secmem = true]’,
-    inlined from ‘constexpr jau::darray<Value_type, Alloc_type, Size_type, use_memmove, use_secmem>::value_type* jau::darray<Value_type, Alloc_type, Size_type, use_memmove, use_secmem>::erase(const_iterator) [with Value_type = DataType02_Memmove_Secmem; Alloc_type = jau::callocator<DataType02_Memmove_Secmem>; Size_type = long unsigned int; bool use_memmove = true; bool use_secmem = true]’ at include/jau/darray.hpp:911:38,
+                             * In member function ‘constexpr void jau::darray<Value_type, Size_type, Alloc_type, Size_type, use_memmove, use_secmem>::move_elements(iterator, const_iterator, difference_type) [with Value_type = DataType02_Memmove_Secmem; Alloc_type = jau::callocator<DataType02_Memmove_Secmem>; Size_type = long unsigned int; bool use_memmove = true; bool use_secmem = true]’,
+    inlined from ‘constexpr jau::darray<Value_type, Size_type, Alloc_type, Size_type, use_memmove, use_secmem>::value_type* jau::darray<Value_type, Size_type, Alloc_type, Size_type, use_memmove, use_secmem>::erase(const_iterator) [with Value_type = DataType02_Memmove_Secmem; Alloc_type = jau::callocator<DataType02_Memmove_Secmem>; Size_type = long unsigned int; bool use_memmove = true; bool use_secmem = true]’ at include/jau/darray.hpp:911:38,
     inlined from ‘void testDArrayValueType(const std::string&) [with Payload = DataType02_Memmove_Secmem]’ at test/test_darray_01.cpp:337:28:
     include/jau/darray.hpp:406:45: error: ‘void explicit_bzero(void*, size_t)’ specified size 18446744073709551600 exceeds maximum object size 9223372036854775807 [-Werror=stringop-overflow=]
   406 |                             ::explicit_bzero(voidptr_cast(first), (dest-first)*sizeof(value_type));
@@ -1401,8 +1401,8 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
     /****************************************************************************************
      ****************************************************************************************/
 
-    template<typename Value_type, typename Alloc_type>
-    std::ostream & operator << (std::ostream &out, const darray<Value_type, Alloc_type> &c) {
+    template<typename Value_type, typename Size_type, typename Alloc_type>
+    std::ostream & operator << (std::ostream &out, const darray<Value_type, Size_type, Alloc_type> &c) {
         out << c.toString();
         return out;
     }
@@ -1410,36 +1410,36 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
     /****************************************************************************************
      ****************************************************************************************/
 
-    template<typename Value_type, typename Alloc_type>
-    inline bool operator==(const darray<Value_type, Alloc_type>& rhs, const darray<Value_type, Alloc_type>& lhs) {
+    template<typename Value_type, typename Size_type, typename Alloc_type>
+    inline bool operator==(const darray<Value_type, Size_type, Alloc_type>& rhs, const darray<Value_type, Size_type, Alloc_type>& lhs) {
         if( &rhs == &lhs ) {
             return true;
         }
         return (rhs.size() == lhs.size() && std::equal(rhs.cbegin(), rhs.cend(), lhs.cbegin()));
     }
-    template<typename Value_type, typename Alloc_type>
-    inline bool operator!=(const darray<Value_type, Alloc_type>& rhs, const darray<Value_type, Alloc_type>& lhs) {
+    template<typename Value_type, typename Size_type, typename Alloc_type>
+    inline bool operator!=(const darray<Value_type, Size_type, Alloc_type>& rhs, const darray<Value_type, Size_type, Alloc_type>& lhs) {
         return !(rhs==lhs);
     }
 
-    template<typename Value_type, typename Alloc_type>
-    inline bool operator<(const darray<Value_type, Alloc_type>& rhs, const darray<Value_type, Alloc_type>& lhs)
+    template<typename Value_type, typename Size_type, typename Alloc_type>
+    inline bool operator<(const darray<Value_type, Size_type, Alloc_type>& rhs, const darray<Value_type, Size_type, Alloc_type>& lhs)
     { return std::lexicographical_compare(rhs.cbegin(), rhs.cend(), lhs.cbegin(), lhs.cend()); }
 
-    template<typename Value_type, typename Alloc_type>
-    inline bool operator>(const darray<Value_type, Alloc_type>& rhs, const darray<Value_type, Alloc_type>& lhs)
+    template<typename Value_type, typename Size_type, typename Alloc_type>
+    inline bool operator>(const darray<Value_type, Size_type, Alloc_type>& rhs, const darray<Value_type, Size_type, Alloc_type>& lhs)
     { return lhs < rhs; }
 
-    template<typename Value_type, typename Alloc_type>
-    inline bool operator<=(const darray<Value_type, Alloc_type>& rhs, const darray<Value_type, Alloc_type>& lhs)
+    template<typename Value_type, typename Size_type, typename Alloc_type>
+    inline bool operator<=(const darray<Value_type, Size_type, Alloc_type>& rhs, const darray<Value_type, Size_type, Alloc_type>& lhs)
     { return !(lhs < rhs); }
 
-    template<typename Value_type, typename Alloc_type>
-    inline bool operator>=(const darray<Value_type, Alloc_type>& rhs, const darray<Value_type, Alloc_type>& lhs)
+    template<typename Value_type, typename Size_type, typename Alloc_type>
+    inline bool operator>=(const darray<Value_type, Size_type, Alloc_type>& rhs, const darray<Value_type, Size_type, Alloc_type>& lhs)
     { return !(rhs < lhs); }
 
-    template<typename Value_type, typename Alloc_type>
-    inline void swap(darray<Value_type, Alloc_type>& rhs, darray<Value_type, Alloc_type>& lhs) noexcept
+    template<typename Value_type, typename Size_type, typename Alloc_type>
+    inline void swap(darray<Value_type, Size_type, Alloc_type>& rhs, darray<Value_type, Size_type, Alloc_type>& lhs) noexcept
     { rhs.swap(lhs); }
 
     /****************************************************************************************
