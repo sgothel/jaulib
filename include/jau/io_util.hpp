@@ -28,13 +28,13 @@
 
 #include <string>
 #include <cstdint>
-#include <functional>
 #include <thread>
 #include <vector>
 
 #include <jau/basic_types.hpp>
 #include <jau/callocator_sec.hpp>
 #include <jau/ringbuffer.hpp>
+#include <jau/functional.hpp>
 
 namespace jau::io {
     /** @defgroup IOUtils IO Utilities
@@ -83,7 +83,7 @@ namespace jau::io {
      *
      * Returns true to signal continuation, false to end streaming.
      */
-    typedef std::function<bool (secure_vector<uint8_t>& /* data */, bool /* is_final */)> StreamConsumerFunc;
+    typedef jau::function<bool(secure_vector<uint8_t>& /* data */, bool /* is_final */)> StreamConsumerFunc;
 
     /**
      * Synchronous byte input stream reader from given file path using the given StreamConsumerFunc consumer_fn.
