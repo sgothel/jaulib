@@ -165,7 +165,6 @@ namespace jau {
                     throw IndexOutOfBoundsException(i, count, _size, file, line);
                 }
             }
-            #define check_range(I,C) check_range((I), (C), E_FILE_LINE)
 
             constexpr bool is_range_valid(const nsize_t i, const nsize_t count) const noexcept {
                 return i+count <= _size;
@@ -178,7 +177,7 @@ namespace jau {
             constexpr nsize_t size() const noexcept { return _size; }
 
             uint8_t get_uint8(const nsize_t i) const {
-                check_range(i, 1);
+                check_range(i, 1, E_FILE_LINE);
                 return _data[i];
             }
             constexpr uint8_t get_uint8_nc(const nsize_t i) const noexcept {
@@ -186,7 +185,7 @@ namespace jau {
             }
 
             int8_t get_int8(const nsize_t i) const {
-                check_range(i, 1);
+                check_range(i, 1, E_FILE_LINE);
                 return jau::get_int8(_data, i);
             }
             constexpr int8_t get_int8_nc(const nsize_t i) const noexcept {
@@ -194,7 +193,7 @@ namespace jau {
             }
 
             uint16_t get_uint16(const nsize_t i) const {
-                check_range(i, 2);
+                check_range(i, 2, E_FILE_LINE);
                 return jau::get_uint16(_data, i, _little_endian);
             }
             constexpr uint16_t get_uint16_nc(const nsize_t i) const noexcept {
@@ -202,7 +201,7 @@ namespace jau {
             }
 
             uint32_t get_uint32(const nsize_t i) const {
-                check_range(i, 4);
+                check_range(i, 4, E_FILE_LINE);
                 return jau::get_uint32(_data, i, _little_endian);
             }
             constexpr uint32_t get_uint32_nc(const nsize_t i) const noexcept {
@@ -210,7 +209,7 @@ namespace jau {
             }
 
             EUI48 get_eui48(const nsize_t i) const {
-                check_range(i, sizeof(EUI48));
+                check_range(i, sizeof(EUI48), E_FILE_LINE);
                 return EUI48(_data+i, byte_order());
             }
             inline EUI48 get_eui48_nc(const nsize_t i) const noexcept {
@@ -218,7 +217,7 @@ namespace jau {
             }
 
             uint64_t get_uint64(const nsize_t i) const {
-                check_range(i, 8);
+                check_range(i, 8, E_FILE_LINE);
                 return jau::get_uint64(_data, i, _little_endian);
             }
             constexpr uint64_t get_uint64_nc(const nsize_t i) const noexcept {
@@ -226,7 +225,7 @@ namespace jau {
             }
 
             uint128_t get_uint128(const nsize_t i) const {
-                check_range(i, 8);
+                check_range(i, 8, E_FILE_LINE);
                 return jau::get_uint128(_data, i, _little_endian);
             }
             constexpr uint128_t get_uint128_nc(const nsize_t i) const noexcept {
@@ -234,7 +233,7 @@ namespace jau {
             }
 
             uint192_t get_uint192(const nsize_t i) const {
-                check_range(i, 8);
+                check_range(i, 8, E_FILE_LINE);
                 return jau::get_uint192(_data, i, _little_endian);
             }
             constexpr uint192_t get_uint192_nc(const nsize_t i) const noexcept {
@@ -242,7 +241,7 @@ namespace jau {
             }
 
             uint256_t get_uint256(const nsize_t i) const {
-                check_range(i, 8);
+                check_range(i, 8, E_FILE_LINE);
                 return jau::get_uint256(_data, i, _little_endian);
             }
             constexpr uint256_t get_uint256_nc(const nsize_t i) const noexcept {
@@ -251,7 +250,7 @@ namespace jau {
 
             /** Assumes a null terminated string */
             std::string get_string(const nsize_t i) const {
-                check_range(i, 1); // minimum size
+                check_range(i, 1, E_FILE_LINE); // minimum size
                 return std::string( (const char*)(_data+i) );
             }
             /** Assumes a null terminated string */
@@ -261,7 +260,7 @@ namespace jau {
 
             /** Assumes a string with defined length, not necessarily null terminated */
             inline std::string get_string(const nsize_t i, const nsize_t length) const {
-                check_range(i, length);
+                check_range(i, length, E_FILE_LINE);
                 return std::string( (const char*)(_data+i), length );
             }
 
@@ -273,7 +272,7 @@ namespace jau {
             }
 
             uuid128_t get_uuid128(const nsize_t i) const {
-                check_range(i, uuid_t::number(uuid_t::TypeSize::UUID128_SZ));
+                check_range(i, uuid_t::number(uuid_t::TypeSize::UUID128_SZ), E_FILE_LINE);
                 return jau::get_uuid128(_data, i, _little_endian);
             }
             inline uuid128_t get_uuid128_nc(const nsize_t i) const noexcept {
@@ -281,13 +280,13 @@ namespace jau {
             }
 
             std::unique_ptr<const uuid_t> get_uuid(const nsize_t i, const uuid_t::TypeSize tsize) const {
-                check_range(i, uuid_t::number(tsize));
+                check_range(i, uuid_t::number(tsize), E_FILE_LINE);
                 return uuid_t::create(tsize, _data, i, _little_endian);
             }
 
             constexpr uint8_t const * get_ptr() const noexcept { return _data; }
             uint8_t const * get_ptr(const nsize_t i) const {
-                check_range(i, 1);
+                check_range(i, 1, E_FILE_LINE);
                 return _data + i;
             }
             constexpr uint8_t const * get_ptr_nc(const nsize_t i) const noexcept {
@@ -338,7 +337,7 @@ namespace jau {
             ~TOctets() noexcept override = default;
 
             void put_int8(const nsize_t i, const int8_t v) {
-                check_range(i, 1);
+                check_range(i, 1, E_FILE_LINE);
                 data()[i] = static_cast<uint8_t>(v);
             }
             constexpr void put_int8_nc(const nsize_t i, const int8_t v) noexcept {
@@ -346,7 +345,7 @@ namespace jau {
             }
 
             void put_uint8(const nsize_t i, const uint8_t v) {
-                check_range(i, 1);
+                check_range(i, 1, E_FILE_LINE);
                 data()[i] = v;
             }
             constexpr void put_uint8_nc(const nsize_t i, const uint8_t v) noexcept {
@@ -354,7 +353,7 @@ namespace jau {
             }
 
             void put_uint16(const nsize_t i, const uint16_t v) {
-                check_range(i, 2);
+                check_range(i, 2, E_FILE_LINE);
                 jau::put_uint16(data(), i, v, little_endian());
             }
             constexpr void put_uint16_nc(const nsize_t i, const uint16_t v) noexcept {
@@ -362,7 +361,7 @@ namespace jau {
             }
 
             void put_uint32(const nsize_t i, const uint32_t v) {
-                check_range(i, 4);
+                check_range(i, 4, E_FILE_LINE);
                 jau::put_uint32(data(), i, v, little_endian());
             }
             constexpr void put_uint32_nc(const nsize_t i, const uint32_t v) noexcept {
@@ -370,7 +369,7 @@ namespace jau {
             }
 
             void put_eui48(const nsize_t i, const EUI48 & v) {
-                check_range(i, sizeof(v.b));
+                check_range(i, sizeof(v.b), E_FILE_LINE);
                 v.put(data(), i, byte_order());
             }
             inline void put_eui48_nc(const nsize_t i, const EUI48 & v) noexcept {
@@ -378,7 +377,7 @@ namespace jau {
             }
 
             void put_uint64(const nsize_t i, const uint64_t & v) {
-                check_range(i, 8);
+                check_range(i, 8, E_FILE_LINE);
                 jau::put_uint64(data(), i, v, little_endian());
             }
             constexpr void put_uint64_nc(const nsize_t i, const uint64_t & v) noexcept {
@@ -386,7 +385,7 @@ namespace jau {
             }
 
             void put_uint128(const nsize_t i, const uint128_t & v) {
-                check_range(i, 8);
+                check_range(i, 8, E_FILE_LINE);
                 jau::put_uint128(data(), i, v, little_endian());
             }
             constexpr void put_uint128_nc(const nsize_t i, const uint128_t & v) noexcept {
@@ -394,7 +393,7 @@ namespace jau {
             }
 
             void put_uint192(const nsize_t i, const uint192_t & v) {
-                check_range(i, 8);
+                check_range(i, 8, E_FILE_LINE);
                 jau::put_uint192(data(), i, v, little_endian());
             }
             constexpr void put_uint192_nc(const nsize_t i, const uint192_t & v) noexcept {
@@ -402,7 +401,7 @@ namespace jau {
             }
 
             void put_uint256(const nsize_t i, const uint256_t & v) {
-                check_range(i, 8);
+                check_range(i, 8, E_FILE_LINE);
                 jau::put_uint256(data(), i, v, little_endian());
             }
             constexpr void put_uint256_nc(const nsize_t i, const uint256_t & v) noexcept {
@@ -410,7 +409,7 @@ namespace jau {
             }
 
             void put_octets(const nsize_t i, const TROOctets & v) {
-                check_range(i, v.size());
+                check_range(i, v.size(), E_FILE_LINE);
                 std::memcpy(data() + i, v.get_ptr(), v.size());
             }
             void put_octets_nc(const nsize_t i, const TROOctets & v) noexcept {
@@ -418,7 +417,7 @@ namespace jau {
             }
 
             void put_bytes(const nsize_t i, const uint8_t *source, const nsize_t byte_count) {
-                check_range(i, byte_count);
+                check_range(i, byte_count, E_FILE_LINE);
                 std::memcpy(data() + i, source, byte_count);
             }
             void put_bytes_nc(const nsize_t i, const uint8_t *source, const nsize_t byte_count) noexcept {
@@ -426,7 +425,7 @@ namespace jau {
             }
 
             void memmove(const nsize_t i, const uint8_t *source, const nsize_t byte_count) {
-                check_range(i, byte_count);
+                check_range(i, byte_count, E_FILE_LINE);
                 std::memmove(data() + i, source, byte_count);
             }
             void memmove_nc(const nsize_t i, const uint8_t *source, const nsize_t byte_count) noexcept {
@@ -434,14 +433,14 @@ namespace jau {
             }
 
             void memset(const nsize_t i, const uint8_t c, const nsize_t byte_count) {
-                check_range(i, byte_count);
+                check_range(i, byte_count, E_FILE_LINE);
                 std::memset(data() + i, c, byte_count);
             }
             void memset_nc(const nsize_t i, const uint8_t c, const nsize_t byte_count) noexcept {
                 std::memset(data() + i, c, byte_count);
             }
             void bzero(const nsize_t i, const nsize_t byte_count) {
-                check_range(i, byte_count);
+                check_range(i, byte_count, E_FILE_LINE);
                 ::bzero(data() + i, byte_count);
             }
             void bzero_nc(const nsize_t i, const nsize_t byte_count) noexcept {
@@ -456,7 +455,7 @@ namespace jau {
             void put_string(const nsize_t i, const std::string & v, const nsize_t max_len, const bool includeEOS) {
                 const nsize_t size1 = v.size() + ( includeEOS ? 1 : 0 );
                 const nsize_t size = std::min(size1, max_len);
-                check_range(i, size);
+                check_range(i, size, E_FILE_LINE);
                 std::memcpy(data() + i, v.c_str(), size);
                 if( size < size1 && includeEOS ) {
                     *(data() + i + size - 1) = 0; // ensure EOS
@@ -472,7 +471,7 @@ namespace jau {
             }
 
             void put_uuid(const nsize_t i, const uuid_t & v) {
-                check_range(i, v.getTypeSizeInt());
+                check_range(i, v.getTypeSizeInt(), E_FILE_LINE);
                 v.put(data(), i, little_endian());
             }
             void put_uuid_nc(const nsize_t i, const uuid_t & v) noexcept {
@@ -482,7 +481,7 @@ namespace jau {
             inline uint8_t * get_wptr() noexcept { return data(); }
 
             uint8_t * get_wptr(const nsize_t i) {
-                check_range(i, 1);
+                check_range(i, 1, E_FILE_LINE);
                 return data() + i;
             }
             inline uint8_t * get_wptr_nc(const nsize_t i) noexcept {
