@@ -73,7 +73,7 @@ Java_jau_sys_dl_UnixDynamicLinkerImpl_dlopen(JNIEnv *env, jclass _unused, jstrin
     const char *_UTF8arg0 = nullptr;
     void *_res;
 #ifdef DEBUG_DLOPEN
-    DLOPEN_FPTR_TYPE dlopenFunc = NULL;
+    DLOPEN_FPTR_TYPE dlopenFunc = nullptr;
     DBG_PRINT("XXX dlopen.0\n");
 #endif
 

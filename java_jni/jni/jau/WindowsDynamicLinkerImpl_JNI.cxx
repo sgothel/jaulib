@@ -61,18 +61,18 @@ JNIEXPORT jlong JNICALL
 Java_jau_sys_dl_WindowsDynamicLinkerImpl_GetProcAddressA(JNIEnv *env, jclass _unused, jlong hModule, jstring lpProcName) {
   (void)_unused;
 
-  const char* _strchars_lpProcName = NULL;
+  const char* _strchars_lpProcName = nullptr;
   PROC _res;
-  if (lpProcName != NULL) {
-    _strchars_lpProcName = env->GetStringUTFChars(lpProcName, (jboolean*)NULL);
-    if (_strchars_lpProcName == NULL) {
+  if (lpProcName != nullptr) {
+    _strchars_lpProcName = env->GetStringUTFChars(lpProcName, (jboolean*)nullptr);
+    if (_strchars_lpProcName == nullptr) {
       env->ThrowNew(env->FindClass("java/lang/OutOfMemoryError"),
                        "Failed to get UTF-8 chars for argument \"lpProcName\" in native dispatcher for \"GetProcAddressA\"");
       return 0;
     }
   }
   _res = GetProcAddressA((HANDLE) (intptr_t) hModule, (LPCSTR) _strchars_lpProcName);
-  if (lpProcName != NULL) {
+  if (lpProcName != nullptr) {
     env->ReleaseStringUTFChars(lpProcName, _strchars_lpProcName);
   }
   return (jlong) (intptr_t) _res;
@@ -88,11 +88,11 @@ JNIEXPORT jlong JNICALL
 Java_jau_sys_dl_WindowsDynamicLinkerImpl_LoadLibraryW(JNIEnv *env, jclass _unused, jstring lpLibFileName) {
   (void)_unused;
 
-  jchar* _strchars_lpLibFileName = NULL;
+  jchar* _strchars_lpLibFileName = nullptr;
   HANDLE _res;
-  if (lpLibFileName != NULL) {
+  if (lpLibFileName != nullptr) {
     _strchars_lpLibFileName = (jchar *) calloc(env->GetStringLength(lpLibFileName) + 1, sizeof(jchar));
-    if (_strchars_lpLibFileName == NULL) {
+    if (_strchars_lpLibFileName == nullptr) {
       env->ThrowNew(env->FindClass("java/lang/OutOfMemoryError"),
                        "Could not allocate temporary buffer for copying string argument \"lpLibFileName\" in native dispatcher for \"LoadLibraryW\"");
       return 0;
@@ -100,7 +100,7 @@ Java_jau_sys_dl_WindowsDynamicLinkerImpl_LoadLibraryW(JNIEnv *env, jclass _unuse
     env->GetStringRegion(lpLibFileName, 0, env->GetStringLength(lpLibFileName), _strchars_lpLibFileName);
   }
   _res = LoadLibraryW((LPCWSTR) _strchars_lpLibFileName);
-  if (lpLibFileName != NULL) {
+  if (lpLibFileName != nullptr) {
     free((void*) _strchars_lpLibFileName);
   }
   return (jlong) (intptr_t) _res;

@@ -81,7 +81,7 @@ jboolean Java_org_jau_io_MemUtil_zeroString(JNIEnv *env, jclass clazz, jstring j
             jau::jni::JNICriticalArray<uint8_t, jbyteArray> criticalArray(env); // RAII - release
             uint8_t * ptr = criticalArray.get(jstr_value, criticalArray.Mode::UPDATE_AND_RELEASE);
             DBG_PRINT("zeroString.1: value: %p, len %zu, is_copy %d", ptr, jstr_value_size, criticalArray.getIsCopy());
-            if( NULL == ptr ) {
+            if( nullptr == ptr ) {
                 ERR_PRINT("GetPrimitiveArrayCritical(address byte array) is null");
                 return JNI_FALSE;
             }
