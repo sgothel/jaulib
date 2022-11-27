@@ -92,8 +92,8 @@ namespace jau::lang {
             code_point_func cpf;
 
         public:
-            alphabet(const std::string& _name, code_point_t _base, code_point_func _cpf) noexcept
-            : name_(_name), base_(_base), cpf(_cpf) {}
+            alphabet(std::string _name, code_point_t _base, code_point_func _cpf) noexcept
+            : name_( std::move(_name) ), base_(_base), cpf(_cpf) {}
 
             /** Human readable name for this alphabet instance. */
             constexpr const std::string& name() const noexcept { return name_; }
@@ -283,7 +283,7 @@ namespace jau::lang {
             }
 
         private:
-            typedef jau::darray<uint_t, jau::callocator<uint_t>, jau::nsize_t> matrix_t;
+            typedef jau::darray<uint_t, jau::nsize_t> matrix_t;
 
             void grow(const uint_t required_sz) {
                 while( m_matrix.size() < required_sz ) {
@@ -319,8 +319,8 @@ namespace jau::lang {
              * @param separators separator, defaults to SPACE, TAB, LF, CR
              * @see add()
              */
-            token_fsm ( const alphabet& alphabet, const std::string_view separators = "\040\011\012\015")
-            : m_alphabet(alphabet),
+            token_fsm (alphabet alphabet, const std::string_view separators = "\040\011\012\015")
+            : m_alphabet( std::move(alphabet) ),
               m_row_len(m_alphabet.base()), m_end(m_row_len-1),
               m_separators(separators),
               m_matrix(), m_next_state(1), m_token_names()
