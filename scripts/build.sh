@@ -17,6 +17,12 @@ export LC_MEASUREMENT=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
 export LANG=en_US.UTF-8
 
+if ! type time &> /dev/null ; then 
+    time_cmd=""
+else 
+    time_cmd="time"
+fi
+
 buildit() {
     if [ -z "$JAVA_HOME" -o ! -e "$JAVA_HOME" ] ; then
         echo "WARNING: JAVA_HOME $JAVA_HOME does not exist"
@@ -58,10 +64,10 @@ buildit() {
     # cmake $CLANG_ARGS -DCMAKE_INSTALL_PREFIX=$rootdir/$dist_dir -DBUILDJAVA=ON -DBUILD_TESTING=ON -DDEBUG=ON -DINSTRUMENTATION=ON ..
     # cmake $CLANG_ARGS -DCMAKE_INSTALL_PREFIX=$rootdir/$dist_dir -DBUILDJAVA=ON -DBUILD_TESTING=ON -DDEBUG=ON -DINSTRUMENTATION_UNDEFINED=ON ..
     # cmake $CLANG_ARGS -DCMAKE_INSTALL_PREFIX=$rootdir/$dist_dir -DBUILDJAVA=ON -DBUILD_TESTING=ON -DDEBUG=ON -DINSTRUMENTATION_THREAD=ON ..
-    time make -j $CPU_COUNT install
+    ${time_cmd} make -j $CPU_COUNT install
     if [ $? -eq 0 ] ; then
         echo "BUILD SUCCESS $bname $os_name $archabi"
-        time make test
+        ${time_cmd} make test
         if [ $? -eq 0 ] ; then
             echo "TEST SUCCESS $bname $os_name $archabi"
             cd $rootdir
