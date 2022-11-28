@@ -371,7 +371,7 @@ jobject Java_org_jau_fs_FileUtil_get_1dir_1content(JNIEnv *env, jclass cls, jstr
             static const std::string _dirItemClazzCtorArgs("(Ljava/lang/String;Ljava/lang/String;)V");
             jclass dirItemClazz = jau::jni::search_class(env, _dirItemClassName.c_str());
             jmethodID dirItemClazzCtor = jau::jni::search_method(env, dirItemClazz, "<init>", _dirItemClazzCtorArgs.c_str(), false);
-            std::function<jobject(JNIEnv*, const jau::fs::dir_item&)> ctor_diritem =
+            jau::function<jobject(JNIEnv*, const jau::fs::dir_item&)> ctor_diritem =
                     [&](JNIEnv *env_, const jau::fs::dir_item& di)->jobject {
                         jstring dname = jau::jni::from_string_to_jstring(env_, di.dirname());
                         jstring bname = jau::jni::from_string_to_jstring(env_, di.basename());

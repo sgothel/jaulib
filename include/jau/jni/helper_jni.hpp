@@ -29,7 +29,6 @@
 #include <limits>
 #include <vector>
 #include <memory>
-#include <functional>
 #include <jni.h>
 
 #include <jau/java_uplink.hpp>
@@ -37,6 +36,7 @@
 #include <jau/basic_types.hpp>
 #include <jau/darray.hpp>
 #include <jau/io_util.hpp>
+#include <jau/functional.hpp>
 
 #include <jau/jni/jni_mem.hpp>
 
@@ -450,7 +450,7 @@ namespace jau::jni {
             }
 
             /** Move assignment operator. */
-            shared_ptr_ref& operator=(shared_ptr_ref&& o) {
+            shared_ptr_ref& operator=(shared_ptr_ref&& o)  noexcept {
                 if( nullptr != ref_ptr ) {
                     safe_delete();
                 }
@@ -666,7 +666,7 @@ namespace jau::jni {
 
     template <typename T>
     jobject convert_instance_to_jobject(JNIEnv *env, const std::shared_ptr<T>& elem,
-            const char *ctor_prototype, std::function<jobject(JNIEnv*, jclass, jmethodID, const std::shared_ptr<T>&)> ctor)
+            const char *ctor_prototype, jau::function<jobject(JNIEnv*, jclass, jmethodID, const std::shared_ptr<T>&)> ctor)
     {
         jclass clazz = search_class(env, T::java_class().c_str());
         jmethodID clazz_ctor = search_method(env, clazz, "<init>", ctor_prototype, false);
@@ -683,7 +683,7 @@ namespace jau::jni {
 
     template <typename T>
     jobject convert_instance_to_jobject(JNIEnv *env, jclass clazz,
-            const char *ctor_prototype, std::function<jobject(JNIEnv*, jclass, jmethodID, const std::shared_ptr<T>&)> ctor,
+            const char *ctor_prototype, jau::function<jobject(JNIEnv*, jclass, jmethodID, const std::shared_ptr<T>&)> ctor,
             const std::shared_ptr<T>& elem)
     {
         jmethodID clazz_ctor = search_method(env, clazz, "<init>", ctor_prototype, false);
@@ -722,7 +722,7 @@ namespace jau::jni {
 
     template <typename T, typename U>
     jobject convert_vector_sharedptr_to_jarraylist(JNIEnv *env, T& array,
-            const char *ctor_prototype, std::function<jobject(JNIEnv*, jclass, jmethodID, const std::shared_ptr<U>&)> ctor)
+            const char *ctor_prototype, jau::function<jobject(JNIEnv*, jclass, jmethodID, const std::shared_ptr<U>&)> ctor)
     {
         const size_t array_size = array.size();
         if( array_size > std::numeric_limits<jsize>::max() ) {
@@ -756,7 +756,7 @@ namespace jau::jni {
     }
 
     template <typename T, typename U>
-    jobject convert_vector_sharedptr_to_jarraylist(JNIEnv *env, T& array, std::function<jobject(JNIEnv*, const std::shared_ptr<U>&)> ctor)
+    jobject convert_vector_sharedptr_to_jarraylist(JNIEnv *env, T& array, jau::function<jobject(JNIEnv*, const std::shared_ptr<U>&)> ctor)
     {
         const size_t array_size = array.size();
         if( array_size > std::numeric_limits<jsize>::max() ) {
@@ -787,7 +787,7 @@ namespace jau::jni {
     }
 
     template <typename T, typename U>
-    jobject convert_vector_to_jarraylist(JNIEnv *env, T& array, std::function<jobject(JNIEnv*, const U&)> ctor)
+    jobject convert_vector_to_jarraylist(JNIEnv *env, T& array, jau::function<jobject(JNIEnv*, const U&)> ctor)
     {
         const size_t array_size = array.size();
         if( array_size > std::numeric_limits<jsize>::max() ) {
