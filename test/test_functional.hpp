@@ -1576,6 +1576,48 @@ class TestFunction01 {
 #endif
     }
 
+    void test20_misc() {
+        // std::function
+        {
+            std::function<int(int i)> f = [](int i)->int {
+                int res = i+100;
+                return res;;
+            };
+
+            REQUIRE( true == static_cast<bool>( f ) );
+            REQUIRE( nullptr != f );
+            REQUIRE( f != nullptr );
+        }
+        {
+            std::function<int(int i)> f;
+
+            REQUIRE( false == static_cast<bool>( f ) );
+            REQUIRE( nullptr == f );
+            REQUIRE( f == nullptr );
+        }
+
+        // jau::function
+#if ( FUNCTIONAL_IMPL == 1 )
+        {
+            jau::function<int(int i)> f = [](int i)->int {
+                int res = i+100;
+                return res;;
+            };
+
+            REQUIRE( true == static_cast<bool>( f ) );
+            REQUIRE( nullptr != f );
+            REQUIRE( f != nullptr );
+        }
+        {
+            jau::function<int(int i)> f;
+
+            REQUIRE( false == static_cast<bool>( f ) );
+            REQUIRE( nullptr == f );
+            REQUIRE( f == nullptr );
+        }
+#endif        
+    }
+
   private:
 
     // template<typename R, typename... A>
@@ -1817,3 +1859,5 @@ METHOD_AS_TEST_CASE( TestFunction01::test13_stdfunc_lambda,      "13_stdfunc");
 METHOD_AS_TEST_CASE( TestFunction01::test14_capval_lambda,       "14_capval");
 
 METHOD_AS_TEST_CASE( TestFunction01::test15_ylambda,             "15_ylambda");
+
+METHOD_AS_TEST_CASE( TestFunction01::test20_misc,                "20_misc");

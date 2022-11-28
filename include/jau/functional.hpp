@@ -1551,6 +1551,50 @@ namespace jau {
     { return !( lhs == rhs ); }
 
     /**
+     * Equal operator of jau::function<R(A...)> with a right-hand-side nullptr
+     * @tparam R left function return type
+     * @tparam A left function arguments
+     * @param lhs left function
+     * @return true if function instance contains no function, i.e. `!lhs` negated function bool operator.
+     */
+    template< class R, class... A>
+    bool operator==(const function<R(A...)>& lhs, std::nullptr_t) noexcept
+    { return !lhs; }
+
+    /**
+     * Unequal operator of jau::function<R(A...)> with a right-hand-side nullptr
+     * @tparam R left function return type
+     * @tparam A left function arguments
+     * @param lhs left function
+     * @return true if function instance contains a function, i.e. `lhs` function bool operator.
+     */
+    template< class R, class... A>
+    bool operator!=(const function<R(A...)>& lhs, std::nullptr_t) noexcept
+    { return !( lhs == nullptr ); }
+
+    /**
+     * Equal operator of jau::function<R(A...)> with a left-hand-side nullptr
+     * @tparam R right function return type
+     * @tparam A right function arguments
+     * @param rhs right function
+     * @return true if function instance contains no function, i.e. `!lhs` negated function bool operator.
+     */
+    template< class R, class... A>
+    bool operator==(std::nullptr_t, const function<R(A...)>& rhs) noexcept
+    { return !rhs; }
+
+    /**
+     * Unequal operator of jau::function<R(A...)> with a left-hand-side nullptr
+     * @tparam R right function return type
+     * @tparam A right function arguments
+     * @param rhs right function
+     * @return true if function instance contains a function, i.e. `lhs` function bool operator.
+     */
+    template< class R, class... A>
+    bool operator!=(std::nullptr_t, const function<R(A...)>& rhs) noexcept
+    { return !( nullptr == rhs ); }
+
+    /**
      * Bind given class instance and non-void member function to
      * an anonymous function using func_member_targer_t.
      *
