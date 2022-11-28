@@ -6,7 +6,13 @@
 
 **1.0.0**
 
-* First stable release (TODO)
+* First stable release
+  - Added and passed clang-tidy diagnostics
+    - Fixed multiple issues revealed by review
+    - fraction_type divison by zero
+    - explicitly abort on heap alloc failure, maintaining noexcept
+    - performance and API cleansiness
+  - Added IDE vscode (vscodium) multi root-workspace config
 
 **0.18.0**
 * Add support for *Alpine Linux* using [musl](https://musl.libc.org/) C library
