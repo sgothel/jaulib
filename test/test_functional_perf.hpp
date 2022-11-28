@@ -32,7 +32,7 @@
 #endif
 
 #ifndef FUNCTIONAL_IMPL
-  #define FUNCTIONAL_IMPL 88
+  #define FUNCTIONAL_IMPL 1
 #endif
 
 #include <jau/test/catch2_ext.hpp>
@@ -184,15 +184,26 @@ class TestFunction01 {
             REQUIRE( jau::func::target_type::capref == f7_o100_1.type() );
         }
         {
-            // std::function lambda
+            // std::function lambda plain
             std::function<int(int i)> func4a_stdlambda = [](int i)->int {
                 int res = i+100;
                 return res;;
             };
             jau::function<int(int)> f = jau::bind_std(100, func4a_stdlambda);
-            fprintf(stderr, "std.lambda:    %s\n", f.toString().c_str());
+            fprintf(stderr, "std.lambda pl: %s\n", f.toString().c_str());
             fprintf(stderr, "  (net std.lambda):    sizeof %zu\n", sizeof(func4a_stdlambda));
             REQUIRE( jau::func::target_type::std == f.type() );
+        }
+        {
+            // std::function lambda capture
+            volatile int i = 100;
+            std::function<int(int)> func4a_stdlambda = [&](int a) -> int {
+                return i + a;
+            };
+            jau::function<int(int)> f = jau::bind_std(100, func4a_stdlambda);
+
+            fprintf(stderr, "std.lambda cp: %s\n", f.toString().c_str());
+            fprintf(stderr, "  (net std.lambda):    sizeof %zu\n", sizeof(func4a_stdlambda));
         }
     }
 
@@ -345,7 +356,6 @@ class TestFunction01 {
             };
         }
 
-#if 1
         // lambda w/ explicit capture by reference, jau::function
         {
             int offset100 = 100;
@@ -365,14 +375,14 @@ class TestFunction01 {
             };
         }
 
-        // std::function lambda
+        // plain std::function lambda
         {
             std::function<int(int i)> f = [](int i)->int {
                 int res = i+100;
                 return res;;
             };
 
-            BENCHMARK("lambda_std_function") {
+            BENCHMARK("lambda_plain_std_function") {
                 volatile int r=0;
                 for(int i=0; i<loops; ++i) {
                     r += f(i);
@@ -380,14 +390,14 @@ class TestFunction01 {
                 return r;
             };
         }
-#endif
 
+        // plain jau::function lambda
         {
             jau::function<int(int)> f = [](int a) -> int {
                 return 100+ a;
             };
 
-            BENCHMARK("lambda_none_jaufunc") {
+            BENCHMARK("lambda_plain_jaufunc") {
                 volatile int r=0;
                 for(int i=0; i<loops; ++i) {
                     r += f(i);
@@ -395,6 +405,25 @@ class TestFunction01 {
                 return r;
             };
         }
+
+        // capture std::function lambda
+        {
+            volatile int captured = 100;
+
+            std::function<int(int)> f = [&](int a) -> int {
+                return captured + a;
+            };
+
+            BENCHMARK("lambda_capt_std_function") {
+                volatile int r=0;
+                for(int i=0; i<loops; ++i) {
+                    r += f(i);
+                }
+                return r;
+            };
+        }
+
+        // capture jau::function lambda
         {
             volatile int captured = 100;
 
@@ -402,7 +431,7 @@ class TestFunction01 {
                 return captured + a;
             };
 
-            BENCHMARK("lambda_refe_jaufunc") {
+            BENCHMARK("lambda_capt_jaufunc") {
                 volatile int r=0;
                 for(int i=0; i<loops; ++i) {
                     r += f(i);
