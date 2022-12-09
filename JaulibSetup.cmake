@@ -32,8 +32,9 @@ message (STATUS "OS_NAME ${OS_NAME}")
 message (STATUS "OS_ARCH ${OS_ARCH} (${CMAKE_SYSTEM_PROCESSOR})")
 message (STATUS "OS_AND_ARCH ${OS_AND_ARCH}")
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 if(DEFINED CMAKE_CXX_CLANG_TIDY)
-    set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
     message(STATUS "clang-tidy preset: ${CMAKE_CXX_CLANG_TIDY}")
 else()
     message(STATUS "clang-tidy not used")
