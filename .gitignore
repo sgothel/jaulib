@@ -1,3 +1,5 @@
+/Debug*/
+/Release*/
 build*/
 dist*/
 issues/
@@ -27,7 +29,4 @@ documentation.tar.xz
 
 # Archive files
 *.jar
-/Debug/
-/Debug test_cow_darray_perf01/
 /Profiling test_cow_darray_perf01/
-/bin/

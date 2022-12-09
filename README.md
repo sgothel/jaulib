@@ -61,8 +61,15 @@ but currently only intended to support unit testing and to produce a Doxygen API
 
 ### Build Dependencies
 - CMake 3.13+ but >= 3.18 is recommended
-- gcc >= 8.3.0
-  - or clang >= 10.0
+- C++17 compiler
+  - gcc >= 8.3.0
+  - clang >= 15
+- Optional for `lint` validation
+  - clang-tidy >= 15
+- Optional for `vscodium` integration
+  - clangd >= 15
+  - clang-tools >= 15
+  - clang-format >= 15
 - Optional
   - libunwind8 >= 1.2.1
   - libcurl4 >= 7.74 (tested, lower may work)
@@ -117,10 +124,16 @@ Installing build dependencies on Debian >= 11 and Ubuntu >= 20.04:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}
 apt install git
 apt install build-essential g++ gcc libc-dev libpthread-stubs0-dev 
+apt install clang-15 clang-tidy-15 clangd-15 clang-tools-15 clang-format-15
 apt install libunwind8 libunwind-dev
 apt install cmake cmake-extras extra-cmake-modules
 apt install doxygen graphviz
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Perhaps change the clang version-suffix of above clang install line to the appropriate version.
+
+After complete clang installation, you might want to setup the latest version as your default.
+For Debian you can use this [clang alternatives setup script](https://jausoft.com/cgit/jaulib.git/tree/scripts/setup_clang_alternatives.sh).
 
 Install optional Java dependencies:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}
@@ -202,6 +215,13 @@ Covered unit test requiring `sudo` are currently
 -DTEST_WITH_SUDO=ON
 ~~~~~~~~~~~~~
 
+Building with clang and clang-tidy `lint` validation
+~~~~~~~~~~~~~
+-DCMAKE_C_COMPILER=/usr/bin/clang 
+-DCMAKE_CXX_COMPILER=/usr/bin/clang++ 
+-DCMAKE_CXX_CLANG_TIDY=/usr/bin/clang-tidy;-p;$rootdir/$build_dir
+~~~~~~~~~~~~~
+
 Disable stripping native lib even in non debug build:
 ~~~~~~~~~~~~~
 -DUSE_STRIP=OFF
@@ -265,6 +285,51 @@ See [Build Procedure](#build-procedure) for general overview.
 
 You may use [our pi-gen branch](https://jausoft.com/cgit/pi-gen.git/about/) to produce 
 a Raspi-arm64, Raspi-armhf or PC-amd64 target image.
+
+### IDE Integration
+
+#### Eclipse 
+IDE integration configuration files are provided for 
+- [Eclipse](https://download.eclipse.org/eclipse/downloads/) with extensions
+  - [CDT](https://github.com/eclipse-cdt/) or [CDT @ eclipse.org](https://projects.eclipse.org/projects/tools.cdt)
+  - Not used due to lack of subproject include file and symbol resolution:
+    - `CMake Support`, install `C/C++ CMake Build Support` with ID `org.eclipse.cdt.cmake.feature.group`
+
+From the project root directory, prepare the `Debug` folder using `cmake`
+~~~~~~~~~~~~~
+./scripts/eclipse-cmake-prepare.sh
+~~~~~~~~~~~~~
+
+The existing project setup is just using `external build` via `make`.
+
+You can import the project to your workspace via `File . Import...` and `Existing Projects into Workspace` menu item.
+
+For Eclipse one might need to adjust some setting in the `.project` and `.cproject` (CDT) 
+via Eclipse settings UI, but it should just work out of the box.
+
+#### VSCodium or VS Code
+
+IDE integration configuration files are provided for 
+- [VSCodium](https://vscodium.com/) or [VS Code](https://code.visualstudio.com/) with extensions
+  - [vscode-clangd](https://github.com/clangd/vscode-clangd)
+    - Notable, `.settings/org.eclipse.cdt.core.prefs` describes the clang-format setup for this extension.
+  - [twxs.cmake](https://github.com/twxs/vs.language.cmake)
+  - [ms-vscode.cmake-tools](https://github.com/microsoft/vscode-cmake-tools)
+  - [notskm.clang-tidy](https://github.com/notskm/vscode-clang-tidy)
+  - [cschlosser.doxdocgen](https://github.com/cschlosser/doxdocgen)
+  - [jerrygoyal.shortcut-menu-bar](https://github.com/GorvGoyl/Shortcut-Menu-Bar-VSCode-Extension)
+
+For VSCodium one might copy the [example root-workspace file](https://jausoft.com/cgit/jaulib.git/tree/.vscode/jaulib.code-workspace_example)
+to the parent folder of this project (*note the filename change*) and adjust the `path` to your filesystem.
+~~~~~~~~~~~~~
+cp .vscode/jaulib.code-workspace_example ../jaulib.code-workspace
+vi ../jaulib.code-workspace
+~~~~~~~~~~~~~
+Then you can open it via `File . Open Workspace from File...` menu item.
+- All listed extensions are referenced in this workspace file to be installed via the IDE
+- The [local settings.json](.vscode/settings.json) has `clang-tidy` enabled
+  - If using `clang-tidy` is too slow, just remove it from the settings file.
+  - `clangd` will still contain a good portion of `clang-tidy` checks
 
 ## Changes
 
