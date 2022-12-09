@@ -28,7 +28,6 @@
 #include <cstddef>
 #include <limits>
 #include <mutex>
-#include <utility>
 
 #include <type_traits>
 

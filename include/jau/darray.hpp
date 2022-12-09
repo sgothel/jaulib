@@ -36,7 +36,6 @@
 #include <condition_variable>
 #include <initializer_list>
 #include <algorithm>
-#include <utility>
 
 #include <jau/debug.hpp>
 #include <jau/basic_types.hpp>
