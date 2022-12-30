@@ -76,39 +76,38 @@ struct callocator_sec
     callocator_sec() noexcept = default; // C++11
 
 #if __cplusplus > 201703L
-    constexpr callocator_sec(const callocator_sec& other) noexcept
+    constexpr callocator_sec(const callocator_sec&) noexcept // NOLINT(modernize-use-equals-default)
     {} // C++20
 #else
-    callocator_sec(const callocator_sec& other) noexcept
-    { (void)other; }
+    callocator_sec(const callocator_sec&) noexcept // NOLINT(modernize-use-equals-default)
+    { }
 #endif
 
 #if __cplusplus > 201703L
     template <typename U>
-    constexpr callocator_sec(const callocator_sec<U>& other) noexcept
-    { (void)other; } // C++20
+    constexpr callocator_sec(const callocator_sec<U>&) noexcept // NOLINT(modernize-use-equals-default)
+    { } // C++20
 #else
     template <typename U>
-    callocator_sec(const callocator_sec<U>& other) noexcept
-    { (void)other; }
+    callocator_sec(const callocator_sec<U>&) noexcept // NOLINT(modernize-use-equals-default)
+    { }
 #endif
 
 #if __cplusplus > 201703L
-    constexpr ~callocator_sec() {} // C++20
+    constexpr ~callocator_sec() = default; // C++20
 #else
     ~callocator_sec() = default;
 #endif
 
 #if __cplusplus <= 201703L
-    value_type* allocate(std::size_t n, const void * hint) { // C++17 deprecated; C++20 removed
-        (void)hint;
+    value_type* allocate(std::size_t n, const void*) { // C++17 deprecated; C++20 removed
         return reinterpret_cast<value_type*>( ::malloc( n * sizeof(value_type) ) );
     }
 #endif
 
 #if __cplusplus > 201703L
     [[nodiscard]] constexpr value_type* allocate(std::size_t n) { // C++20
-        return reinterpret_cast<value_type*>( malloc( n * sizeof(value_type) ) );
+        return reinterpret_cast<value_type*>( ::malloc( n * sizeof(value_type) ) );
     }
 #else
     value_type* allocate(std::size_t n) { // C++17
@@ -118,13 +117,11 @@ struct callocator_sec
 
 #if __cplusplus > 201703L
     constexpr void deallocate(value_type* p, std::size_t n ) {
-        (void)n;
         ::explicit_bzero(p, n); // non-optomized away bzero
-        free( reinterpret_cast<void*>( p ) );
+        ::free( reinterpret_cast<void*>( const_cast<pointer_mutable>(p) ) );
     }
 #else
     void deallocate(value_type* p, std::size_t n ) {
-        (void)n;
         ::explicit_bzero(p, n); // non-optomized away bzero
         ::free( reinterpret_cast<void*>( const_cast<pointer_mutable>(p) ) );
     }
