@@ -4,8 +4,11 @@
 
 ## Changes
 
-**1.0.0**
+**1.0.1**
+* C++20 clean
+* Fix certain C++17 and C++20 compiler and clang-tidy warnings
 
+**1.0.0**
 * First stable release
   - Added and passed clang-tidy diagnostics
     - Fixed multiple issues revealed by review

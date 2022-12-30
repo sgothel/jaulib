@@ -10,6 +10,9 @@ This project aims to provide general C++ and Java collections, algorithms and ut
 
 This project was extracted from [Direct-BT](https://jausoft.com/cgit/direct_bt.git/about/) to enable general use and enforce better encapsulation.
 
+### Status
+Build and clang-tidy clean on C++17 and C++20, passing all unit tests.
+
 ## API Documentation
 Up to date API documentation can be found:
 
@@ -38,13 +41,13 @@ Up to date API documentation can be found:
 See *Direct-BT* [C++ API Doc](https://jausoft.com/projects/direct_bt/build/documentation/cpp/html/examples.html).
 
 ## Supported Platforms
-Minimum language requirements
-- C++17
+Language requirements
+- C++17 or C++20
 - Standard C Libraries
   - [FreeBSD libc](https://www.freebsd.org/)
   - [GNU glibc](https://www.gnu.org/software/libc/)
   - [musl](https://musl.libc.org/)
-- Java 11 (optional)
+- Java 11, 17+ (optional)
 
 See [supported platforms](PLATFORMS.md) for details.
 
@@ -61,9 +64,10 @@ but currently only intended to support unit testing and to produce a Doxygen API
 
 ### Build Dependencies
 - CMake 3.13+ but >= 3.18 is recommended
-- C++17 compiler
-  - gcc >= 8.3.0
-  - clang >= 15
+- C++ compiler
+  - gcc >= 8.3.0 (C++17)
+  - gcc >= 10.2.1 (C++17 and C++20)
+  - clang >= 15 (C++17 and C++20)
 - Optional for `lint` validation
   - clang-tidy >= 15
 - Optional for `vscodium` integration
