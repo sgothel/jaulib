@@ -91,6 +91,21 @@ std::unique_ptr<uuid_t> uuid_t::clone() const noexcept {
     abort(); // never reached
 }
 
+bool uuid_t::operator==(uuid_t const &o) const noexcept {
+    if( this == &o ) {
+        return true;
+    }
+    if( type != o.getTypeSize() ) {
+        return false;
+    }
+    switch( static_cast<TypeSize>(type) ) {
+        case TypeSize::UUID16_SZ: return static_cast<uuid16_t const *>(this)->value == static_cast<uuid16_t const *>(&o)->value;
+        case TypeSize::UUID32_SZ: return static_cast<uuid32_t const *>(this)->value == static_cast<uuid32_t const *>(&o)->value;
+        case TypeSize::UUID128_SZ: return static_cast<uuid128_t const *>(this)->value == static_cast<uuid128_t const *>(&o)->value;
+    }
+    return false; // dead code
+}
+
 bool uuid_t::equivalent(uuid_t const &o) const noexcept {
     if( this == &o ) {
         return true;

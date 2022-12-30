@@ -93,7 +93,7 @@ public:
      * @param o other comparison argument
      * @return true if equal, otherwise false.
      */
-    virtual bool operator==(uuid_t const &o) const noexcept  = 0;
+    virtual bool operator==(uuid_t const &o) const noexcept;
 
     /**
      * Strict not-equal operator.
@@ -165,21 +165,6 @@ public:
     uuid16_t& operator=(const uuid16_t &o) noexcept = default;
     uuid16_t& operator=(uuid16_t &&o) noexcept = default;
 
-    /**
-     * Strict equality operator.
-     *
-     * Only returns true if type and value are equal.
-     *
-     * @param o other comparison argument
-     * @return true if equal, otherwise false.
-     */
-    bool operator==(uuid_t const &o) const noexcept override {
-        if( this == &o ) {
-            return true;
-        }
-        return getTypeSize() == o.getTypeSize() && value == static_cast<uuid16_t const *>(&o)->value;
-    }
-
     const uint8_t * data() const noexcept override { return static_cast<uint8_t*>(static_cast<void*>(const_cast<uint16_t*>(&value))); }
     std::string toString() const noexcept override;
     std::string toUUID128String(uuid128_t const & base_uuid=BT_BASE_UUID, jau::nsize_t const le_octet_index=12) const noexcept override;
@@ -206,21 +191,6 @@ public:
     uuid32_t(uuid32_t &&o) noexcept = default;
     uuid32_t& operator=(const uuid32_t &o) noexcept = default;
     uuid32_t& operator=(uuid32_t &&o) noexcept = default;
-
-    /**
-     * Strict equality operator.
-     *
-     * Only returns true if type and value are equal.
-     *
-     * @param o other comparison argument
-     * @return true if equal, otherwise false.
-     */
-    bool operator==(uuid_t const &o) const noexcept override {
-        if( this == &o ) {
-            return true;
-        }
-        return getTypeSize() == o.getTypeSize() && value == static_cast<uuid32_t const *>(&o)->value;
-    }
 
     const uint8_t * data() const noexcept override { return static_cast<uint8_t*>(static_cast<void*>(const_cast<uint32_t*>(&value))); }
     std::string toString() const noexcept override;
@@ -254,21 +224,6 @@ public:
     uuid128_t(uuid128_t &&o) noexcept = default;
     uuid128_t& operator=(const uuid128_t &o) noexcept = default;
     uuid128_t& operator=(uuid128_t &&o) noexcept = default;
-
-    /**
-     * Strict equality operator.
-     *
-     * Only returns true if type and value are equal.
-     *
-     * @param o other comparison argument
-     * @return true if equal, otherwise false.
-     */
-    bool operator==(uuid_t const &o) const noexcept override {
-        if( this == &o ) {
-            return true;
-        }
-        return getTypeSize() == o.getTypeSize() && value == static_cast<uuid128_t const *>(&o)->value;
-    }
 
     const uint8_t * data() const noexcept override { return value.data; }
     std::string toString() const noexcept override;
