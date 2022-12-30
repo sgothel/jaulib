@@ -215,7 +215,7 @@ class TestFunction01 {
             BENCHMARK("free_rawfunc") {
                 volatile int r=0;
                 for(int i=0; i<loops; ++i) {
-                    r += TestFunction01::Func03a_static(i);
+                    r = r + TestFunction01::Func03a_static(i);
                 }
                 return r;
             };
@@ -228,7 +228,7 @@ class TestFunction01 {
             BENCHMARK("free_cfuncptr") {
                 volatile int r=0;
                 for(int i=0; i<loops; ++i) {
-                    r += f(i);
+                    r = r + f(i);
                 }
                 return r;
             };
@@ -241,7 +241,7 @@ class TestFunction01 {
             BENCHMARK("free_stdfunc") {
                 volatile int r=0;
                 for(int i=0; i<loops; ++i) {
-                    r += f(i);
+                    r = r + f(i);
                 }
                 return r;
             };
@@ -254,7 +254,7 @@ class TestFunction01 {
             BENCHMARK("free_jaufunc") {
                 volatile int r=0;
                 for(int i=0; i<loops; ++i) {
-                    r += f(i);
+                    r = r + f(i);
                 }
                 return r;
             };
@@ -265,7 +265,7 @@ class TestFunction01 {
             BENCHMARK("member_rawfunc") {
                 volatile int r=0;
                 for(int i=0; i<loops; ++i) {
-                    r += func02a_member(i);
+                    r = r + func02a_member(i);
                 }
                 return r;
             };
@@ -279,7 +279,7 @@ class TestFunction01 {
             BENCHMARK("member_stdbind_unspec") {
                 volatile int r=0;
                 for(int i=0; i<loops; ++i) {
-                    r += f(i);
+                    r = r + f(i);
                 }
                 return r;
             };
@@ -292,7 +292,7 @@ class TestFunction01 {
             BENCHMARK("member_jaufunc") {
                 volatile int r=0;
                 for(int i=0; i<loops; ++i) {
-                    r += f(i);
+                    r = r + f(i);
                 }
                 return r;
             };
@@ -311,7 +311,7 @@ class TestFunction01 {
             BENCHMARK("capval_small_jaufunc") {
                 volatile int r=0;
                 for(int i=0; i<loops; ++i) {
-                    r += f(i);
+                    r = r + f(i);
                 }
                 return r;
             };
@@ -350,7 +350,7 @@ class TestFunction01 {
             BENCHMARK("capval_big_jaufunc") {
                 volatile int r=0;
                 for(int i=0; i<loops; ++i) {
-                    r += f(i);
+                    r = r + f(i);
                 }
                 return r;
             };
@@ -369,7 +369,7 @@ class TestFunction01 {
             BENCHMARK("capref_jaufunc") {
                 volatile int r=0;
                 for(int i=0; i<loops; ++i) {
-                    r += f(i);
+                    r = r + f(i);
                 }
                 return r;
             };
@@ -385,7 +385,7 @@ class TestFunction01 {
             BENCHMARK("lambda_plain_std_function") {
                 volatile int r=0;
                 for(int i=0; i<loops; ++i) {
-                    r += f(i);
+                    r = r + f(i);
                 }
                 return r;
             };
@@ -400,7 +400,7 @@ class TestFunction01 {
             BENCHMARK("lambda_plain_jaufunc") {
                 volatile int r=0;
                 for(int i=0; i<loops; ++i) {
-                    r += f(i);
+                    r = r + f(i);
                 }
                 return r;
             };
@@ -417,7 +417,7 @@ class TestFunction01 {
             BENCHMARK("lambda_capt_std_function") {
                 volatile int r=0;
                 for(int i=0; i<loops; ++i) {
-                    r += f(i);
+                    r = r + f(i);
                 }
                 return r;
             };
@@ -434,7 +434,7 @@ class TestFunction01 {
             BENCHMARK("lambda_capt_jaufunc") {
                 volatile int r=0;
                 for(int i=0; i<loops; ++i) {
-                    r += f(i);
+                    r = r + f(i);
                 }
                 return r;
             };
@@ -449,7 +449,7 @@ class TestFunction01 {
             BENCHMARK("ylambda_none_jaufunc") {
                 volatile int r=0;
                 for(int i=0; i<loops; ++i) {
-                    r += f(i);
+                    r = r + f(i);
                 }
                 return r;
             };
