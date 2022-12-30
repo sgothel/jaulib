@@ -191,10 +191,10 @@ class ringbuffer {
         static constexpr void* voidptr_cast(const_pointer p) { return reinterpret_cast<void*>( const_cast<pointer_mutable>( p ) ); }
 
         /** SC atomic integral scalar jau::nsize_t. Memory-Model (MM) guaranteed sequential consistency (SC) between acquire (read) and release (write) */
-        typedef ordered_atomic<Size_type, std::memory_order::memory_order_seq_cst> sc_atomic_Size_type;
+        typedef ordered_atomic<Size_type, std::memory_order_seq_cst> sc_atomic_Size_type;
 
         /** Relaxed non-SC atomic integral scalar jau::nsize_t. Memory-Model (MM) only guarantees the atomic value, _no_ sequential consistency (SC) between acquire (read) and release (write). */
-        typedef ordered_atomic<Size_type, std::memory_order::memory_order_relaxed> relaxed_atomic_Size_type;
+        typedef ordered_atomic<Size_type, std::memory_order_relaxed> relaxed_atomic_Size_type;
 
         /**
          * Flagging whether multiple-producer and -consumer are enabled,

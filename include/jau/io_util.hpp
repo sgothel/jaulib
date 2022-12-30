@@ -75,7 +75,7 @@ namespace jau::io {
         /** Operation succeeded. */
         SUCCESS =  1
     };
-    typedef jau::ordered_atomic<async_io_result_t, std::memory_order::memory_order_relaxed> relaxed_atomic_async_io_result_t;
+    typedef jau::ordered_atomic<async_io_result_t, std::memory_order_relaxed> relaxed_atomic_async_io_result_t;
 
     /**
      * Stream consumer function
