@@ -312,10 +312,15 @@ via Eclipse settings UI, but it should just work out of the box.
 IDE integration configuration files are provided for 
 - [VSCodium](https://vscodium.com/) or [VS Code](https://code.visualstudio.com/) with extensions
   - [vscode-clangd](https://github.com/clangd/vscode-clangd)
-    - Notable, `.settings/org.eclipse.cdt.core.prefs` describes the clang-format setup for this extension.
   - [twxs.cmake](https://github.com/twxs/vs.language.cmake)
   - [ms-vscode.cmake-tools](https://github.com/microsoft/vscode-cmake-tools)
   - [notskm.clang-tidy](https://github.com/notskm/vscode-clang-tidy)
+  - Java Support
+    - [redhat.java](https://github.com/redhat-developer/vscode-java#readme)
+      - Notable, `.settings/org.eclipse.jdt.core.prefs` describes the `lint` behavior
+    - [vscjava.vscode-java-test](https://github.com/Microsoft/vscode-java-test)
+    - [vscjava.vscode-java-debug](https://github.com/Microsoft/java-debug)
+    - [vscjava.vscode-maven](https://github.com/Microsoft/vscode-maven/)
   - [cschlosser.doxdocgen](https://github.com/cschlosser/doxdocgen)
   - [jerrygoyal.shortcut-menu-bar](https://github.com/GorvGoyl/Shortcut-Menu-Bar-VSCode-Extension)
 

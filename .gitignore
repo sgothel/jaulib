@@ -30,3 +30,4 @@ documentation.tar.xz
 # Archive files
 *.jar
 /Profiling test_cow_darray_perf01/
+/bin/
