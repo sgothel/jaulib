@@ -65,6 +65,22 @@ class TestFunction01 {
         fprintf(stderr, "Implementation: functional %d, is_rtti_available %d, limited_lambda_id %d\n",
                 FUNCTIONAL_IMPL, jau::is_rtti_available(), jau::type_info::limited_lambda_id);
         {
+            // Test null
+            {
+                function<int(int)> fa0;
+                function<int(int)> fa1 = nullptr;
+                REQUIRE( jau::func::target_type::null == fa0.type() );
+                REQUIRE( jau::func::target_type::null == fa1.type() );
+            }
+            {
+                typedef jau::function<bool(std::vector<uint8_t>& /* data */, bool /* is_final */)> SomeFunc;
+                SomeFunc fa0;
+                SomeFunc fa1 = nullptr;
+                REQUIRE( jau::func::target_type::null == fa0.type() );
+                REQUIRE( jau::func::target_type::null == fa1.type() );
+            }
+        }
+        {
             // Test capturing lambdas
             volatile int i = 100;
 

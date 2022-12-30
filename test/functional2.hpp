@@ -340,8 +340,7 @@ namespace jau {
                 : target_t<R, A...>( target_type::null )
                 { }
 
-                R operator()(A... args) override {
-                    (void)(... , args);
+                R operator()(A...) override {
                     return R();
                 }
 

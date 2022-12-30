@@ -740,9 +740,7 @@ namespace jau {
                 typedef delegate_t<R, A...> delegate_type;
 
             private:
-                constexpr static R invoke_impl(delegate_type* __restrict_cxx__ const vdata, A... args) {
-                    (void)vdata;
-                    (void)(... , args);
+                constexpr static R invoke_impl(delegate_type* __restrict_cxx__ const, A...) {
                     return R();
                 }
 
