@@ -77,9 +77,9 @@ but currently only intended to support unit testing and to produce a Doxygen API
 - Optional
   - libunwind8 >= 1.2.1
   - libcurl4 >= 7.74 (tested, lower may work)
-  - For Java support
-    - OpenJDK >= 11
-    - junit4 >= 4.12
+- Optional Java support
+  - OpenJDK >= 11
+  - junit4 >= 4.12
 
 #### Install on FreeBSD
 
@@ -134,7 +134,8 @@ apt install cmake cmake-extras extra-cmake-modules
 apt install doxygen graphviz
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Perhaps change the clang version-suffix of above clang install line to the appropriate version.
+If using the optional clang toolchain, 
+perhaps change the clang version-suffix of above clang install line to the appropriate version.
 
 After complete clang installation, you might want to setup the latest version as your default.
 For Debian you can use this [clang alternatives setup script](https://jausoft.com/cgit/jaulib.git/tree/scripts/setup_clang_alternatives.sh).
@@ -219,6 +220,11 @@ Covered unit test requiring `sudo` are currently
 -DTEST_WITH_SUDO=ON
 ~~~~~~~~~~~~~
 
+Using clang instead of gcc:
+~~~~~~~~~~~~~
+-DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++
+~~~~~~~~~~~~~
+
 Building with clang and clang-tidy `lint` validation
 ~~~~~~~~~~~~~
 -DCMAKE_C_COMPILER=/usr/bin/clang 
@@ -258,11 +264,6 @@ Building debug and instrumentation (sanitizer) build:
 -DDEBUG=ON -DINSTRUMENTATION=ON
 ~~~~~~~~~~~~~
 
-Using clang instead of gcc:
-~~~~~~~~~~~~~
--DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++
-~~~~~~~~~~~~~
-
 Cross-compiling on a different system:
 ~~~~~~~~~~~~~
 -DCMAKE_CXX_FLAGS:STRING=-m32 -march=i586
@@ -290,9 +291,9 @@ See [Build Procedure](#build-procedure) for general overview.
 You may use [our pi-gen branch](https://jausoft.com/cgit/pi-gen.git/about/) to produce 
 a Raspi-arm64, Raspi-armhf or PC-amd64 target image.
 
-### IDE Integration
+## IDE Integration
 
-#### Eclipse 
+### Eclipse 
 IDE integration configuration files are provided for 
 - [Eclipse](https://download.eclipse.org/eclipse/downloads/) with extensions
   - [CDT](https://github.com/eclipse-cdt/) or [CDT @ eclipse.org](https://projects.eclipse.org/projects/tools.cdt)
@@ -311,7 +312,7 @@ You can import the project to your workspace via `File . Import...` and `Existin
 For Eclipse one might need to adjust some setting in the `.project` and `.cproject` (CDT) 
 via Eclipse settings UI, but it should just work out of the box.
 
-#### VSCodium or VS Code
+### VSCodium or VS Code
 
 IDE integration configuration files are provided for 
 - [VSCodium](https://vscodium.com/) or [VS Code](https://code.visualstudio.com/) with extensions
