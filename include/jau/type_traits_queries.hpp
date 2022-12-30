@@ -165,7 +165,7 @@ namespace jau {
                 printf("    trivial         %d\n", std::is_trivial_v<T>);
                 printf("    trivially_copy. %d\n", std::is_trivially_copyable_v<T>);
                 printf("    standard_layout %d\n", std::is_standard_layout_v<T>);
-                printf("    pod             %d\n", std::is_pod_v<T>);
+                printf("    pod             %d\n", std::is_standard_layout_v<T> && std::is_trivial_v<T>); // is_pod<>() is deprecated
                 printf("    unique_obj_rep  %d\n", std::has_unique_object_representations_v<T>);
                 printf("    empty           %d\n", std::is_empty_v<T>);
                 printf("    polymorphic     %d\n", std::is_polymorphic_v<T>);
