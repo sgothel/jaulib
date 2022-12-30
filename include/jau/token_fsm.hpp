@@ -58,9 +58,8 @@ namespace jau::lang {
      *  Supported
      *  - jau::lang::token_fsm A lexical analyzer (tokenizer) using a tabular finite-state-machine (FSM), aka `endlicher automat` (EA)
      *
-     *  Future ideas
-     *  - Add regular expressions to token_fsm
-     *  - EBNF parser, compiler
+     *  For serious applications w/ regular expressions and more, as well as a `lex` C++ alternative to `flex`,
+     *  consider using [Re-flex](https://github.com/Genivia/RE-flex).
      *
      *  @{
      */
