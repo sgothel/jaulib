@@ -89,7 +89,7 @@ __pack ( struct Addr48Bit {
         return h;
     }
 
-    constexpr_cxx20 std::string toString() const noexcept {
+    std::string toString() const noexcept {
         std::string str;
         str.reserve(17);
 
@@ -186,7 +186,7 @@ class DataType01 {
 
         void clearHash() { hash = 0; }
 
-        constexpr_cxx20 std::string toString() const noexcept {
+        std::string toString() const noexcept {
             return "["+address.toString()+", "+std::to_string(type)+"]";
         }
 #if 0
@@ -265,7 +265,7 @@ class DataType02_Memmove_Secmem {
 
         void clearHash() { hash = 0; }
 
-        constexpr_cxx20 std::string toString() const noexcept {
+        std::string toString() const noexcept {
             return "["+address.toString()+", "+std::to_string(type)+"]";
         }
 #if 0

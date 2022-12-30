@@ -1072,7 +1072,7 @@ namespace jau {
                 return count;
             }
 
-            constexpr_cxx20 std::string toString() const noexcept {
+            std::string toString() const noexcept {
                 std::string res("{ " + std::to_string( size() ) + ": ");
                 int i=0;
                 jau::for_each_const(*this, [&res, &i](const value_type & e) {
@@ -1083,7 +1083,7 @@ namespace jau {
                 return res;
             }
 
-            constexpr_cxx20 std::string get_info() const noexcept {
+            std::string get_info() const noexcept {
                 return ("cow_darray[this "+jau::to_hexstring(this)+
                         ", "+store_ref->get_info()+
                         "]");

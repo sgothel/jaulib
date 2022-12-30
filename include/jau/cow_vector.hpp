@@ -634,7 +634,7 @@ namespace jau {
                 return count;
             }
 
-            constexpr_cxx20 std::string toString() const noexcept {
+            std::string toString() const noexcept {
                 std::string res("{ " + std::to_string( size() ) + ": ");
                 int i=0;
                 jau::for_each_const(*this, [&res, &i](const value_type & e) {

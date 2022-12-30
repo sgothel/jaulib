@@ -459,15 +459,15 @@ namespace jau {
             constexpr difference_type operator-(const cow_rw_iterator& rhs) const noexcept
             { return iterator_ - rhs.iterator_; }
 
-            constexpr_cxx20 std::string toString() const noexcept {
+            inline std::string toString() const noexcept {
                 return jau::to_string(iterator_);
             }
 #if 0
-            constexpr_cxx20 operator std::string() const noexcept {
+            inline operator std::string() const noexcept {
                 return toString();
             }
 #endif
-            constexpr_cxx20 std::string get_info() const noexcept {
+            std::string get_info() const noexcept {
                 return "cow_rw_iterator[this "+jau::to_hexstring(this)+", CoW "+jau::to_hexstring(&cow_parent_)+
                         ", store "+jau::to_hexstring(&store_ref_)+
                        ", "+jau::to_string(iterator_)+"]";
@@ -925,15 +925,15 @@ namespace jau {
             constexpr difference_type distance(const cow_rw_iterator<storage_t, storage_ref_t, cow_container_t>& rhs) const noexcept
             { return iterator_ - rhs.iterator_; }
 
-            constexpr_cxx20 std::string toString() const noexcept {
+            inline std::string toString() const noexcept {
                 return jau::to_string(iterator_);
             }
 #if 0
-            constexpr_cxx20 operator std::string() const noexcept {
+            inline operator std::string() const noexcept {
                 return toString();
             }
 #endif
-            constexpr_cxx20 std::string get_info() const noexcept {
+            std::string get_info() const noexcept {
                 return "cow_ro_iterator[this "+jau::to_hexstring(this)+
                         ", store "+jau::to_hexstring(&store_ref_)+
                        ", "+jau::to_string(iterator_)+"]";

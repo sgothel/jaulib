@@ -1316,7 +1316,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                 return count;
             }
 
-            constexpr_cxx20 std::string toString() const noexcept {
+            std::string toString() const noexcept {
                 std::string res("{ " + std::to_string( size() ) + ": ");
                 int i=0;
                 jau::for_each_const(*this, [&res, &i](const value_type & e) {
@@ -1327,7 +1327,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                 return res;
             }
 
-            constexpr_cxx20 std::string get_info() const noexcept {
+            std::string get_info() const noexcept {
                 difference_type cap_ = (storage_end_-begin_);
                 difference_type size_ = (end_-begin_);
                 std::string res("darray[this "+jau::to_hexstring(this)+

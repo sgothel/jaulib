@@ -991,7 +991,7 @@ class ringbuffer {
             fprintf(stream, "%s %s, array %p\n", prefix.c_str(), toString().c_str(), array);
         }
 
-        constexpr_cxx20 std::string get_info() const noexcept {
+        std::string get_info() const noexcept {
             const std::string e_s = isEmpty() ? ", empty" : "";
             const std::string f_s = isFull() ? ", full" : "";
             const std::string mode_s = getMultiPCEnabled() ? ", mpc" : ", one";
