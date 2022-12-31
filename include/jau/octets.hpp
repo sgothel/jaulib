@@ -254,12 +254,12 @@ namespace jau {
                 return std::string( (const char*)(_data+i) );
             }
             /** Assumes a null terminated string */
-            constexpr_cxx20 std::string get_string_nc(const nsize_t i) const noexcept {
+            inline std::string get_string_nc(const nsize_t i) const noexcept {
                 return std::string( (const char*)(_data+i) );
             }
 
             /** Assumes a string with defined length, not necessarily null terminated */
-            inline std::string get_string(const nsize_t i, const nsize_t length) const {
+            std::string get_string(const nsize_t i, const nsize_t length) const {
                 check_range(i, length, E_FILE_LINE);
                 return std::string( (const char*)(_data+i), length );
             }
