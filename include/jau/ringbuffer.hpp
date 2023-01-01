@@ -1593,7 +1593,7 @@ class ringbuffer {
          * @param max_count maximum number of elements to drop from ringbuffer.
          * @return number of elements dropped
          */
-        [[nodiscard]] Size_type drop(const Size_type max_count) noexcept {
+        Size_type drop(const Size_type max_count) noexcept {
             bool timeout_occured_dummy;
             if( multi_pc_enabled ) {
                 std::unique_lock<std::mutex> lockMultiRead(syncMultiRead, std::defer_lock);          // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
@@ -1617,7 +1617,7 @@ class ringbuffer {
          * @param timeout_occurred result value set to true if a timeout has occurred
          * @return true if successful, otherwise false
          */
-        [[nodiscard]] bool dropBlocking(const Size_type count, const fraction_i64& timeout, bool& timeout_occurred) noexcept {
+        bool dropBlocking(const Size_type count, const fraction_i64& timeout, bool& timeout_occurred) noexcept {
             if( multi_pc_enabled ) {
                 std::unique_lock<std::mutex> lockMultiRead(syncMultiRead, std::defer_lock);          // utilize std::lock(r, w), allowing mixed order waiting on read/write ops
                 std::unique_lock<std::mutex> lockMultiWrite(syncMultiWrite, std::defer_lock);        // otherwise RAII-style relinquish via destructor
@@ -1639,7 +1639,7 @@ class ringbuffer {
          * @param timeout maximum duration in fractions of seconds to wait, where fractions_i64::zero waits infinitely
          * @return true if successful, otherwise false
          */
-        [[nodiscard]] bool dropBlocking(const Size_type count, const fraction_i64& timeout) noexcept {
+        bool dropBlocking(const Size_type count, const fraction_i64& timeout) noexcept {
             bool timeout_occurred;
             return dropBlocking(count, timeout, timeout_occurred);
         }
