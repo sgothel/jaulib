@@ -594,12 +594,15 @@ public class TestByteStream01 extends JunitTracer {
                 final int count = data_stream.read(buffer, 0, buffer.length);
                 if( 0 < count ) {
                     // xfer_total += count;
-                    data_feed.write(buffer, 0, count);
-                    try { Thread.sleep(16); } catch (final Throwable t) {}
+                    if( data_feed.write(buffer, 0, count) ) {
+                        try { Thread.sleep(16); } catch (final Throwable t) {}
+                    } else {
+                        break;
+                    }
                 }
             }
             // probably set after transfering due to above sleep, which also ends when total size has been reached.
-            data_feed.set_eof( 1 /* SUCCESS */ );
+            data_feed.set_eof( data_feed.fail() ? -1 /* FAIL */ : 1 /* SUCCESS */ );
         }
     }
 
@@ -614,12 +617,15 @@ public class TestByteStream01 extends JunitTracer {
                 final int count = data_stream.read(buffer, 0, buffer.length);
                 if( 0 < count ) {
                     xfer_total += count;
-                    data_feed.write(buffer, 0, count);
-                    try { Thread.sleep(16); } catch (final Throwable t) {}
+                    if( data_feed.write(buffer, 0, count) ) {
+                        try { Thread.sleep(16); } catch (final Throwable t) {}
+                    } else {
+                        break;
+                    }
                 }
             }
             // probably set after transfering due to above sleep, which also ends when total size has been reached.
-            data_feed.set_eof( xfer_total == file_size ? 1 /* SUCCESS */ : -1 /* FAILED */);
+            data_feed.set_eof( !data_feed.fail() && xfer_total == file_size ? 1 /* SUCCESS */ : -1 /* FAILED */);
         }
     }
 
@@ -634,10 +640,12 @@ public class TestByteStream01 extends JunitTracer {
                 final int count = data_stream.read(buffer);
                 if( 0 < count ) {
                     xfer_total += count;
-                    data_feed.write(buffer);
+                    if( !data_feed.write(buffer) ) {
+                        break;
+                    }
                 }
             }
-            data_feed.set_eof( xfer_total == file_size ? 1 /* SUCCESS */ : -1 /* FAILED */);
+            data_feed.set_eof( !data_feed.fail() && xfer_total == file_size ? 1 /* SUCCESS */ : -1 /* FAILED */);
         }
     }
 
@@ -652,10 +660,12 @@ public class TestByteStream01 extends JunitTracer {
                 final int count = data_stream.read(buffer, 0, buffer.length);
                 if( 0 < count ) {
                     xfer_total += count;
-                    data_feed.write(buffer, 0, count);
+                    if( !data_feed.write(buffer, 0, count) ) {
+                        break;
+                    }
                 }
             }
-            data_feed.set_eof( xfer_total == file_size ? 1 /* SUCCESS */ : -1 /* FAILED */);
+            data_feed.set_eof( !data_feed.fail() && xfer_total == file_size ? 1 /* SUCCESS */ : -1 /* FAILED */);
         }
     }
 
@@ -668,15 +678,18 @@ public class TestByteStream01 extends JunitTracer {
                 final int count = data_stream.read(buffer, 0, buffer.length);
                 if( 0 < count ) {
                     xfer_total += count;
-                    data_feed.write(buffer, 0, count);
-                    if( xfer_total >= 1024 ) {
-                        data_feed.set_eof( -1 /* FAILED */ ); // calls data_feed->interruptReader();
-                        return;
+                    if( data_feed.write(buffer, 0, count) ) {
+                        if( xfer_total >= 1024 ) {
+                            data_feed.set_eof( -1 /* FAILED */ ); // calls data_feed->interruptReader();
+                            return;
+                        }
+                    } else {
+                        break;
                     }
                 }
             }
             // probably set after transfering due to above sleep, which also ends when total size has been reached.
-            data_feed.set_eof( 1 /* SUCCESS */ );
+            // data_feed.set_eof( 1 /* SUCCESS */ );
         }
     }
 
@@ -691,15 +704,18 @@ public class TestByteStream01 extends JunitTracer {
                 final int count = data_stream.read(buffer, 0, buffer.length);
                 if( 0 < count ) {
                     xfer_total += count;
-                    data_feed.write(buffer, 0, count);
-                    if( xfer_total >= file_size/4 ) {
-                        data_feed.set_eof( -1 /* FAILED */ ); // calls data_feed->interruptReader();
-                        return;
+                    if( data_feed.write(buffer, 0, count) ) {
+                        if( xfer_total >= file_size/4 ) {
+                            data_feed.set_eof( -1 /* FAILED */ ); // calls data_feed->interruptReader();
+                            return;
+                        }
+                    } else {
+                        break;
                     }
                 }
             }
             // probably set after transfering due to above sleep, which also ends when total size has been reached.
-            data_feed.set_eof( 1 /* SUCCESS */ );
+            // data_feed.set_eof( 1 /* SUCCESS */ );
         }
     }
 

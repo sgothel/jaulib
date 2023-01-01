@@ -291,7 +291,7 @@ void Java_org_jau_io_ByteInStream_1Feed_interruptReader(JNIEnv *env, jobject obj
     }
 }
 
-void Java_org_jau_io_ByteInStream_1Feed_write(JNIEnv *env, jobject obj, jbyteArray jin, jint joffset, jint jlength) {
+jboolean Java_org_jau_io_ByteInStream_1Feed_write0Impl(JNIEnv *env, jobject obj, jbyteArray jin, jint joffset, jint jlength, jlong jtimeoutMS) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_Feed> ref(env, obj); // hold until done
 
@@ -307,13 +307,38 @@ void Java_org_jau_io_ByteInStream_1Feed_write(JNIEnv *env, jobject obj, jbyteArr
         if( nullptr == in_ptr ) {
             throw jau::InternalError("GetPrimitiveArrayCritical(address byte array) is null", E_FILE_LINE);
         }
-        ref->write(in_ptr + joffset, jlength);
+        const jau::fraction_i64 timeout = (int64_t)jtimeoutMS * 1_ms;
+        return ref->write(in_ptr + joffset, jlength, timeout) ? JNI_TRUE : JNI_FALSE;
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }
+    return JNI_FALSE;
 }
 
-void Java_org_jau_io_ByteInStream_1Feed_write2Impl(JNIEnv *env, jobject obj, jobject jout, jint out_offset, jint out_limit) {
+jboolean Java_org_jau_io_ByteInStream_1Feed_write1Impl(JNIEnv *env, jobject obj, jbyteArray jin, jint joffset, jint jlength) {
+    try {
+        jau::jni::shared_ptr_ref<jau::io::ByteInStream_Feed> ref(env, obj); // hold until done
+
+        if( nullptr == jin ) {
+            throw jau::IllegalArgumentException("address null", E_FILE_LINE);
+        }
+        const size_t in_size = env->GetArrayLength(jin);
+        if( (size_t)joffset + (size_t)jlength > in_size ) {
+            throw jau::IllegalArgumentException("input byte size "+std::to_string(in_size)+" < "+std::to_string(joffset)+" + "+std::to_string(jlength), E_FILE_LINE);
+        }
+        jau::jni::JNICriticalArray<uint8_t, jbyteArray> criticalArray(env); // RAII - release
+        uint8_t * in_ptr = criticalArray.get(jin, criticalArray.Mode::NO_UPDATE_AND_RELEASE);
+        if( nullptr == in_ptr ) {
+            throw jau::InternalError("GetPrimitiveArrayCritical(address byte array) is null", E_FILE_LINE);
+        }
+        return ref->write(in_ptr + joffset, jlength) ? JNI_TRUE : JNI_FALSE;
+    } catch(...) {
+        rethrow_and_raise_java_exception_jau(env);
+    }
+    return JNI_FALSE;
+}
+
+jboolean Java_org_jau_io_ByteInStream_1Feed_write2Impl(JNIEnv *env, jobject obj, jobject jout, jint out_offset, jint out_limit) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_Feed> ref(env, obj); // hold until done
 
@@ -324,10 +349,11 @@ void Java_org_jau_io_ByteInStream_1Feed_write2Impl(JNIEnv *env, jobject obj, job
         if( nullptr == out_ptr ) {
             throw jau::IllegalArgumentException("out buffer access failure", E_FILE_LINE);
         }
-        ref->write(out_ptr + out_offset, out_limit - out_offset);
+        return ref->write(out_ptr + out_offset, out_limit - out_offset) ? JNI_TRUE : JNI_FALSE;
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }
+    return JNI_FALSE;
 }
 
 void Java_org_jau_io_ByteInStream_1Feed_set_1content_1size(JNIEnv *env, jobject obj, jlong jcontent_size) {

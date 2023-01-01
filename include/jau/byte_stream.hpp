@@ -469,7 +469,7 @@ namespace jau::io {
             /**
              * Check whether n bytes are available in the input stream.
              *
-             * Wait up to timeout duration given in constructor until n bytes become available, where fractions_i64::zero waits infinitely.
+             * Wait up to timeout duration set in constructor until n bytes become available, where fractions_i64::zero waits infinitely.
              *
              * This method is blocking.
              *
@@ -567,7 +567,7 @@ namespace jau::io {
             /**
              * Check whether n bytes are available in the input stream.
              *
-             * Wait up to timeout duration given in constructor until n bytes become available, where fractions_i64::zero waits infinitely.
+             * Wait up to timeout duration set in constructor until n bytes become available, where fractions_i64::zero waits infinitely.
              *
              * This method is blocking.
              *
@@ -638,17 +638,35 @@ namespace jau::io {
             }
 
             /**
-             * Write given bytes to the async ringbuffer.
+             * Write given bytes to the async ringbuffer using explicit given timeout.
              *
-             * Wait up to timeout duration given in constructor until ringbuffer space is available, where fractions_i64::zero waits infinitely.
+             * Wait up to explicit given timeout duration until ringbuffer space is available, where fractions_i64::zero waits infinitely.
              *
              * This method is blocking.
              *
              * @param n byte count to wait for
              * @param in the byte array to transfer to the async ringbuffer
              * @param length the length of the byte array in
+             * @param timeout explicit given timeout for async ringbuffer put operation
+             * @return true if successful, otherwise false on timeout or stopped feeder and subsequent calls to good() will return false.
              */
-            void write(uint8_t in[], size_t length) noexcept;
+            [[nodiscard]] bool write(uint8_t in[], size_t length, const jau::fraction_i64& timeout) noexcept;
+
+            /**
+             * Write given bytes to the async ringbuffer.
+             *
+             * Wait up to timeout duration set in constructor until ringbuffer space is available, where fractions_i64::zero waits infinitely.
+             *
+             * This method is blocking.
+             *
+             * @param n byte count to wait for
+             * @param in the byte array to transfer to the async ringbuffer
+             * @param length the length of the byte array in
+             * @return true if successful, otherwise false on timeout or stopped feeder and subsequent calls to good() will return false.
+             */
+            [[nodiscard]] bool write(uint8_t in[], size_t length) noexcept {
+                return write(in, length, m_timeout);
+            }
 
             /**
              * Set known content size, informal only.

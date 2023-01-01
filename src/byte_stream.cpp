@@ -511,16 +511,32 @@ iostate ByteInStream_Feed::rdstate() const noexcept {
     return rdstate_impl();
 }
 
-void ByteInStream_Feed::write(uint8_t in[], size_t length) noexcept {
-    if( 0 < length && async_io_result_t::NONE == m_result ) { // feeder still running
-        m_buffer.putBlocking(in, in+length, m_timeout);
-        m_total_xfered.fetch_add(length);
+bool ByteInStream_Feed::write(uint8_t in[], size_t length, const jau::fraction_i64& timeout) noexcept {
+    if( 0 < length && ( good() && async_io_result_t::NONE == m_result ) ) { // feeder still running
+        bool timeout_occured;
+        if( m_buffer.putBlocking(in, in+length, timeout, timeout_occured) ) {
+            m_total_xfered.fetch_add(length);
+            return true;
+        } else {
+            if( timeout_occured ) {
+                setstate_impl( iostate::timeout );
+                m_buffer.interruptWriter();
+            } else {
+                setstate_impl( iostate::failbit );
+            }
+            if( async_io_result_t::NONE == m_result ) {
+                m_result = async_io_result_t::FAILED;
+            }
+            return false;
+        }
+    } else {
+        return false;
     }
 }
 
 void ByteInStream_Feed::set_eof(const async_io_result_t result) noexcept {
     m_result = result;
-    interruptReader();
+    interruptReader(); // FIXME: ???
 }
 
 std::string ByteInStream_Feed::to_string_int() const noexcept {

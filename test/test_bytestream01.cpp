@@ -449,12 +449,15 @@ class TestByteStream01 {
                 size_t count = data_stream.read(buffer, sizeof(buffer));
                 if( 0 < count ) {
                     xfer_total += count;
-                    data_feed->write(buffer, count);
-                    jau::sleep_for( 16_ms );
+                    if( data_feed->write(buffer, count) ) {
+                        jau::sleep_for( 16_ms );
+                    } else {
+                        break;
+                    }
                 }
             }
             // probably set after transfering due to above sleep, which also ends when total size has been reached.
-            data_feed->set_eof( jau::io::async_io_result_t::SUCCESS );
+            data_feed->set_eof( data_feed->fail() ? jau::io::async_io_result_t::FAILED : jau::io::async_io_result_t::SUCCESS );
             (void)xfer_total; // not used yet ..
         }
 
@@ -469,12 +472,15 @@ class TestByteStream01 {
                 size_t count = data_stream.read(buffer, sizeof(buffer));
                 if( 0 < count ) {
                     xfer_total += count;
-                    data_feed->write(buffer, count);
-                    jau::sleep_for( 16_ms );
+                    if( data_feed->write(buffer, count) ) {
+                        jau::sleep_for( 16_ms );
+                    } else {
+                        break;
+                    }
                 }
             }
             // probably set after transfering due to above sleep, which also ends when total size has been reached.
-            data_feed->set_eof( xfer_total == file_size ? jau::io::async_io_result_t::SUCCESS : jau::io::async_io_result_t::FAILED );
+            data_feed->set_eof( !data_feed->fail() && xfer_total == file_size ? jau::io::async_io_result_t::SUCCESS : jau::io::async_io_result_t::FAILED );
         }
 
         // full speed, with content size
@@ -488,10 +494,12 @@ class TestByteStream01 {
                 size_t count = data_stream.read(buffer, sizeof(buffer));
                 if( 0 < count ) {
                     xfer_total += count;
-                    data_feed->write(buffer, count);
+                    if( !data_feed->write(buffer, count) ) {
+                        break;
+                    }
                 }
             }
-            data_feed->set_eof( xfer_total == file_size ? jau::io::async_io_result_t::SUCCESS : jau::io::async_io_result_t::FAILED );
+            data_feed->set_eof( !data_feed->fail() && xfer_total == file_size ? jau::io::async_io_result_t::SUCCESS : jau::io::async_io_result_t::FAILED );
         }
 
         // full speed, no content size, interrupting @ 1024 bytes within our header
@@ -503,10 +511,13 @@ class TestByteStream01 {
                 size_t count = data_stream.read(buffer, sizeof(buffer));
                 if( 0 < count ) {
                     xfer_total += count;
-                    data_feed->write(buffer, count);
-                    if( xfer_total >= 1024 ) {
-                        data_feed->set_eof( jau::io::async_io_result_t::FAILED ); // calls data_feed->interruptReader();
-                        return;
+                    if( data_feed->write(buffer, count) ) {
+                        if( xfer_total >= 1024 ) {
+                            data_feed->set_eof( jau::io::async_io_result_t::FAILED ); // calls data_feed->interruptReader();
+                            return;
+                        }
+                    } else {
+                        break;
                     }
                 }
             }
@@ -525,10 +536,13 @@ class TestByteStream01 {
                 size_t count = data_stream.read(buffer, sizeof(buffer));
                 if( 0 < count ) {
                     xfer_total += count;
-                    data_feed->write(buffer, count);
-                    if( xfer_total >= file_size/4 ) {
-                        data_feed->set_eof( jau::io::async_io_result_t::FAILED ); // calls data_feed->interruptReader();
-                        return;
+                    if( data_feed->write(buffer, count) ) {
+                        if( xfer_total >= file_size/4 ) {
+                            data_feed->set_eof( jau::io::async_io_result_t::FAILED ); // calls data_feed->interruptReader();
+                            return;
+                        }
+                    } else {
+                        break;
                     }
                 }
             }

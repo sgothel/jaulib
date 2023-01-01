@@ -152,36 +152,63 @@ public final class ByteInStream_Feed implements ByteInStream  {
     public native void interruptReader();
 
     /**
+     * Write given bytes to the async ringbuffer using explicit given timeout.
+     *
+     * Wait up to explicit given timeout duration until ringbuffer space is available, where fractions_i64::zero waits infinitely.
+     *
+     * This method is blocking.
+     *
+     * @param n byte count to wait for
+     * @param in the byte array to transfer to the async ringbuffer
+     * @param length the length of the byte array in
+     * @param timeout explicit given timeout for async ringbuffer put operation
+     * @return true if successful, otherwise false on timeout or stopped feeder and subsequent calls to good() will return false.
+     */
+    public boolean write(final byte[] in, final int offset, final int length, final long timeoutMS) {
+        return write0Impl(in, offset, length, timeoutMS);
+    }
+    private native boolean write0Impl(final byte[] in, final int offset, final int length, final long timeoutMS);
+
+    /**
      * Write given bytes to the async ringbuffer.
      *
-     * Wait up to timeout duration given in constructor until ringbuffer space is available, where fractions_i64::zero waits infinitely.
+     * Wait up to timeout duration set in constructor until ringbuffer space is available, where fractions_i64::zero waits infinitely.
      *
      * This method is blocking.
      *
      * @param in the byte array to transfer to the async ringbuffer
      * @param offset offset to in byte array to write
      * @param length number of in bytes to write starting at offset
+     * @return true if successful, otherwise false on timeout or stopped feeder and subsequent calls to good() will return false.
      */
-    public native void write(final byte[] in, final int offset, final int length);
+    public boolean write(final byte[] in, final int offset, final int length) {
+        return write1Impl(in, offset, length);
+    }
+    private native boolean write1Impl(final byte[] in, final int offset, final int length);
 
     /**
      * Write given bytes to the async ringbuffer.
      *
-     * Wait up to timeout duration given in constructor until ringbuffer space is available, where fractions_i64::zero waits infinitely.
+     * Wait up to timeout duration set in constructor until ringbuffer space is available, where fractions_i64::zero waits infinitely.
      *
      * This method is blocking.
      *
      * @param in the direct {@link ByteBuffer} to transfer to the async ringbuffer starting at its {@link ByteBuffer#position() position} up to its {@link ByteBuffer#limit() limit}.
      *            {@link ByteBuffer#limit() Limit} will be reset to {@link ByteBuffer#position() position}.
+     * @return true if successful, otherwise false on timeout or stopped feeder and subsequent calls to good() will return false.
      */
-    public void write(final ByteBuffer in) {
+    public boolean write(final ByteBuffer in) {
         if( !Buffers.isDirect(in) ) {
             throw new IllegalArgumentException("out buffer not direct");
         }
-        write2Impl(in, (int)Buffers.getDirectBufferByteOffset(in), in.limit());
-        in.limit(in.position());
+        if( write2Impl(in, (int)Buffers.getDirectBufferByteOffset(in), in.limit()) ) {
+            in.limit(in.position());
+            return true;
+        } else {
+            return false;
+        }
     }
-    private native void write2Impl(ByteBuffer out, int out_offset, int out_limit);
+    private native boolean write2Impl(ByteBuffer out, int out_offset, int out_limit);
 
     /**
      * Set known content size, informal only.
