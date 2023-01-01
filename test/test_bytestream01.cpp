@@ -233,7 +233,7 @@ class TestByteStream01 {
                     REQUIRE( nullptr != in );
                     jau::sleep_for( 100_ms ); // time to read 404 response
                     jau::PLAIN_PRINT(true, "test00_protocols: not_exiting_http_uri: %s", in->to_string().c_str());
-                    REQUIRE( true == in->end_of_data() );
+                    REQUIRE( false == in->good() );
                     REQUIRE( true == in->fail() );
                     REQUIRE( 0 == in->content_size() );
                 } else {
@@ -445,7 +445,7 @@ class TestByteStream01 {
             uint64_t xfer_total = 0;
             jau::io::ByteInStream_File data_stream(data_feed->id());
             uint8_t buffer[feed_size];
-            while( !data_stream.end_of_data() ) {
+            while( data_stream.good() ) {
                 size_t count = data_stream.read(buffer, sizeof(buffer));
                 if( 0 < count ) {
                     xfer_total += count;
@@ -465,7 +465,7 @@ class TestByteStream01 {
             const uint64_t file_size = data_stream.content_size();
             data_feed->set_content_size( file_size );
             uint8_t buffer[feed_size];
-            while( !data_stream.end_of_data() && xfer_total < file_size ) {
+            while( data_stream.good() && xfer_total < file_size ) {
                 size_t count = data_stream.read(buffer, sizeof(buffer));
                 if( 0 < count ) {
                     xfer_total += count;
@@ -484,7 +484,7 @@ class TestByteStream01 {
             const uint64_t file_size = data_stream.content_size();
             data_feed->set_content_size( data_stream.content_size() );
             uint8_t buffer[feed_size];
-            while( !data_stream.end_of_data() && xfer_total < file_size ) {
+            while( data_stream.good() && xfer_total < file_size ) {
                 size_t count = data_stream.read(buffer, sizeof(buffer));
                 if( 0 < count ) {
                     xfer_total += count;
@@ -499,7 +499,7 @@ class TestByteStream01 {
             uint64_t xfer_total = 0;
             jau::io::ByteInStream_File data_stream(data_feed->id());
             uint8_t buffer[feed_size];
-            while( !data_stream.end_of_data() ) {
+            while( data_stream.good() ) {
                 size_t count = data_stream.read(buffer, sizeof(buffer));
                 if( 0 < count ) {
                     xfer_total += count;
@@ -521,7 +521,7 @@ class TestByteStream01 {
             const uint64_t file_size = data_stream.content_size();
             data_feed->set_content_size( data_stream.content_size() );
             uint8_t buffer[feed_size];
-            while( !data_stream.end_of_data() ) {
+            while( data_stream.good() ) {
                 size_t count = data_stream.read(buffer, sizeof(buffer));
                 if( 0 < count ) {
                     xfer_total += count;

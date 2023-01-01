@@ -160,9 +160,6 @@ public final class ByteInStream_File implements ByteInStream {
     public native boolean timeout();
 
     @Override
-    public boolean end_of_data() { return !good(); }
-
-    @Override
     public native boolean available(final long n);
 
     @Override

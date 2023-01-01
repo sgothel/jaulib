@@ -75,13 +75,13 @@ public interface ByteInStreamUtil {
                                    final StreamConsumer1 consumer)
     {
         long total = 0;
-        boolean has_more = !in.end_of_data();
+        boolean has_more = in.good();
         while( has_more ) {
             if( in.available(1) ) { // at least one byte to stream ..
                 final int got = in.read(buffer, 0, buffer.length);
 
                 total += got;
-                has_more = 1 <= got && !in.end_of_data() && ( !in.has_content_size() || total < in.content_size() );
+                has_more = 1 <= got && in.good() && ( !in.has_content_size() || total < in.content_size() );
                 try {
                     if( !consumer.consume(buffer, got, !has_more) ) {
                         break; // end streaming
@@ -126,13 +126,13 @@ public interface ByteInStreamUtil {
                                    final StreamConsumer2 consumer)
     {
         long total = 0;
-        boolean has_more = !in.end_of_data();
+        boolean has_more = in.good();
         while( has_more ) {
             if( in.available(1) ) { // at least one byte to stream ..
                 final int got = in.read(buffer);
 
                 total += got;
-                has_more = 1 <= got && !in.end_of_data() && ( !in.has_content_size() || total < in.content_size() );
+                has_more = 1 <= got && in.good() && ( !in.has_content_size() || total < in.content_size() );
                 try {
                     if( !consumer.consume(buffer, !has_more) ) {
                         break; // end streaming

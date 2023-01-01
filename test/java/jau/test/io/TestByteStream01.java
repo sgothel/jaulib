@@ -340,7 +340,7 @@ public class TestByteStream01 extends JunitTracer {
                     Assert.assertNotNull(in);
                     try { Thread.sleep(100); } catch (final Throwable t) {} // time to read 404 response
                     PrintUtil.fprintf_td(System.err, "test00_protocols: not_exiting_http_uri: %s%n", in);
-                    Assert.assertTrue( in.end_of_data() );
+                    Assert.assertFalse( in.good() );
                     Assert.assertTrue( in.fail() );
                     Assert.assertEquals( 0, in.content_size() );
                 } else {
@@ -590,7 +590,7 @@ public class TestByteStream01 extends JunitTracer {
         // long xfer_total = 0;
         try( final ByteInStream_File data_stream = new ByteInStream_File(data_feed.id() ) ) {
             final byte buffer[] = new byte[feed_size];
-            while( !data_stream.end_of_data() ) {
+            while( data_stream.good() ) {
                 final int count = data_stream.read(buffer, 0, buffer.length);
                 if( 0 < count ) {
                     // xfer_total += count;
@@ -610,7 +610,7 @@ public class TestByteStream01 extends JunitTracer {
             final long file_size = data_stream.content_size();
             data_feed.set_content_size( file_size );
             final byte buffer[] = new byte[feed_size];
-            while( !data_stream.end_of_data() && xfer_total < file_size ) {
+            while( data_stream.good() && xfer_total < file_size ) {
                 final int count = data_stream.read(buffer, 0, buffer.length);
                 if( 0 < count ) {
                     xfer_total += count;
@@ -630,7 +630,7 @@ public class TestByteStream01 extends JunitTracer {
             final long file_size = data_stream.content_size();
             data_feed.set_content_size( file_size );
             final ByteBuffer buffer = Buffers.newDirectByteBuffer(feed_size);
-            while( !data_stream.end_of_data() && xfer_total < file_size ) {
+            while( data_stream.good() && xfer_total < file_size ) {
                 final int count = data_stream.read(buffer);
                 if( 0 < count ) {
                     xfer_total += count;
@@ -648,7 +648,7 @@ public class TestByteStream01 extends JunitTracer {
             final long file_size = data_stream.content_size();
             data_feed.set_content_size( file_size );
             final byte buffer[] = new byte[feed_size];
-            while( !data_stream.end_of_data() && xfer_total < file_size ) {
+            while( data_stream.good() && xfer_total < file_size ) {
                 final int count = data_stream.read(buffer, 0, buffer.length);
                 if( 0 < count ) {
                     xfer_total += count;
@@ -664,7 +664,7 @@ public class TestByteStream01 extends JunitTracer {
         long xfer_total = 0;
         try( final ByteInStream_File data_stream = new ByteInStream_File(data_feed.id() ) ) {
             final byte buffer[] = new byte[feed_size];
-            while( !data_stream.end_of_data() ) {
+            while( data_stream.good() ) {
                 final int count = data_stream.read(buffer, 0, buffer.length);
                 if( 0 < count ) {
                     xfer_total += count;
@@ -687,7 +687,7 @@ public class TestByteStream01 extends JunitTracer {
             final long file_size = data_stream.content_size();
             data_feed.set_content_size( file_size );
             final byte buffer[] = new byte[feed_size];
-            while( !data_stream.end_of_data() ) {
+            while( data_stream.good() ) {
                 final int count = data_stream.read(buffer, 0, buffer.length);
                 if( 0 < count ) {
                     xfer_total += count;

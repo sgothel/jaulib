@@ -113,7 +113,7 @@ size_t ByteInStream::discard(size_t n) noexcept {
 }
 
 size_t ByteInStream_SecMemory::read(void* out, size_t length) noexcept {
-    if( 0 == length || end_of_data() ) {
+    if( 0 == length || !good() ) {
         return 0;
     }
     const size_t got = std::min<size_t>(m_source.size() - m_offset, length);
@@ -185,7 +185,7 @@ std::string jau::io::to_string(const iostate mask) noexcept {
 }
 
 size_t ByteInStream_File::read(void* out, size_t length) noexcept {
-    if( 0 == length || end_of_data() ) {
+    if( 0 == length || !good() ) {
         return 0;
     }
     uint8_t* out_u8 = static_cast<uint8_t*>(out);
@@ -216,7 +216,7 @@ size_t ByteInStream_File::read(void* out, size_t length) noexcept {
 }
 
 size_t ByteInStream_File::peek(void* out, size_t length, size_t offset) noexcept {
-    if( 0 == length || end_of_data() || offset > std::numeric_limits<off64_t>::max() ||
+    if( 0 == length || !good() || offset > std::numeric_limits<off64_t>::max() ||
         ( m_has_content_length && m_content_size - m_bytes_consumed < offset + 1 /* min number of bytes to read */ ) ) {
         return 0;
     }
@@ -386,7 +386,7 @@ bool ByteInStream_URL::is_open() const noexcept {
 
 size_t ByteInStream_URL::read(void* out, size_t length) noexcept {
     m_header_sync.wait_until_completion(m_timeout);
-    if( 0 == length || end_of_data() ) {
+    if( 0 == length || !good() ) {
         return 0;
     }
     const size_t got = m_has_content_length ?
@@ -480,7 +480,7 @@ bool ByteInStream_Feed::is_open() const noexcept {
 }
 
 size_t ByteInStream_Feed::read(void* out, size_t length) noexcept {
-    if( 0 == length || end_of_data() ) {
+    if( 0 == length || !good() ) {
         return 0;
     }
     const size_t got = m_has_content_length ?

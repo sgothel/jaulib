@@ -916,7 +916,7 @@ class TestFileUtil01 : TestFileUtilBase {
             ::bzero(buffer, sizeof(buffer));
             size_t total_read = 0;
             {
-                while( !infile.end_of_data() && total_read < sizeof(buffer) ) {
+                while( infile.good() && total_read < sizeof(buffer) ) {
                     const size_t got = infile.read(buffer+total_read, sizeof(buffer)-total_read);
                     jau::fprintf_td(stderr, "Parent: infile.a_ %s\n", infile.to_string().c_str());
                     REQUIRE( !infile.fail() );

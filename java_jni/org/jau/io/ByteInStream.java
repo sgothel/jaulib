@@ -75,17 +75,6 @@ public interface ByteInStream extends IOStateFunc, AutoCloseable  {
     void close();
 
     /**
-     * Test whether the source still has data that can be read, synonym for !good().
-     *
-     * Hence this includes errors in the underlying implementation, see fail()
-     *
-     * @return true if there is no more data to read, false otherwise
-     * @see good()
-     * @see fail()
-     */
-    boolean end_of_data();
-
-    /**
      * Return whether n bytes are available in the input stream,
      * if has_content_size() or using an asynchronous source.
      *

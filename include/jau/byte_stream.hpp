@@ -288,17 +288,6 @@ namespace jau::io {
             [[nodiscard]] size_t discard(size_t N) noexcept;
 
             /**
-             * Test whether the source still has data that can be read, synonym for !good().
-             *
-             * Hence this includes errors in the underlying implementation, see fail()
-             *
-             * @return true if there is no more data to read, false otherwise
-             * @see good()
-             * @see fail()
-             */
-            bool end_of_data() const noexcept  { return !good(); }
-
-            /**
              * return the id of this data source
              * @return std::string representing the id of this data source
              */
