@@ -368,7 +368,7 @@ void ByteInStream_URL::close() noexcept {
 }
 
 bool ByteInStream_URL::available(size_t n) noexcept {
-    if( async_io_result_t::NONE != m_result ) {
+    if( !good() || async_io_result_t::NONE != m_result ) {
         // url thread ended, only remaining bytes in buffer available left
         return m_buffer.size() >= n;
     }
@@ -377,7 +377,20 @@ bool ByteInStream_URL::available(size_t n) noexcept {
         return false;
     }
     // I/O still in progress, we have to poll until data is available or timeout
-    return m_buffer.waitForElements(n, m_timeout) >= n;
+    bool timeout_occured;
+    const size_t avail = m_buffer.waitForElements(n, m_timeout, timeout_occured);
+    if( avail < n ) {
+        if( timeout_occured ) {
+            setstate_impl( iostate::timeout );
+            if( async_io_result_t::NONE == m_result ) {
+                m_result = async_io_result_t::FAILED;
+            }
+            m_buffer.interruptWriter();
+        }
+        return false;
+    } else {
+        return true;
+    }
 }
 
 bool ByteInStream_URL::is_open() const noexcept {
@@ -390,10 +403,18 @@ size_t ByteInStream_URL::read(void* out, size_t length) noexcept {
     if( 0 == length || !good() ) {
         return 0;
     }
+    bool timeout_occured = false;
     const size_t got = m_has_content_length ?
-                        m_buffer.getBlocking(static_cast<uint8_t*>(out), length, 1, m_timeout) :
+                        m_buffer.getBlocking(static_cast<uint8_t*>(out), length, 1, m_timeout, timeout_occured) :
                         m_buffer.get(static_cast<uint8_t*>(out), length, 1);
     m_bytes_consumed += got;
+    if( timeout_occured ) {
+        setstate_impl( iostate::timeout );
+        if( async_io_result_t::NONE == m_result ) {
+            m_result = async_io_result_t::FAILED;
+        }
+        m_buffer.interruptWriter();
+    }
     // DBG_PRINT("ByteInStream_URL::read: size %zu/%zu bytes, %s", got, length, to_string_int().c_str() );
     return got;
 }
@@ -464,7 +485,7 @@ void ByteInStream_Feed::close() noexcept {
 }
 
 bool ByteInStream_Feed::available(size_t n) noexcept {
-    if( async_io_result_t::NONE != m_result ) {
+    if( !good() || async_io_result_t::NONE != m_result ) {
         // feeder completed, only remaining bytes in buffer available left
         return m_buffer.size() >= n;
     }
@@ -472,7 +493,20 @@ bool ByteInStream_Feed::available(size_t n) noexcept {
         return false;
     }
     // I/O still in progress, we have to poll until data is available or timeout
-    return m_buffer.waitForElements(n, m_timeout) >= n;
+    bool timeout_occured;
+    const size_t avail = m_buffer.waitForElements(n, m_timeout, timeout_occured);
+    if( avail < n ) {
+        if( timeout_occured ) {
+            setstate_impl( iostate::timeout );
+            if( async_io_result_t::NONE == m_result ) {
+                m_result = async_io_result_t::FAILED;
+            }
+            m_buffer.interruptWriter();
+        }
+        return false;
+    } else {
+        return true;
+    }
 }
 
 bool ByteInStream_Feed::is_open() const noexcept {
@@ -484,10 +518,18 @@ size_t ByteInStream_Feed::read(void* out, size_t length) noexcept {
     if( 0 == length || !good() ) {
         return 0;
     }
+    bool timeout_occured = false;
     const size_t got = m_has_content_length ?
-                        m_buffer.getBlocking(static_cast<uint8_t*>(out), length, 1, m_timeout) :
+                        m_buffer.getBlocking(static_cast<uint8_t*>(out), length, 1, m_timeout, timeout_occured) :
                         m_buffer.get(static_cast<uint8_t*>(out), length, 1);
     m_bytes_consumed += got;
+    if( timeout_occured ) {
+        setstate_impl( iostate::timeout );
+        if( async_io_result_t::NONE == m_result ) {
+            m_result = async_io_result_t::FAILED;
+        }
+        m_buffer.interruptWriter();
+    }
     // DBG_PRINT("ByteInStream_Feed::read: size %zu/%zu bytes, %s", got, length, to_string_int().c_str() );
     return got;
 }
