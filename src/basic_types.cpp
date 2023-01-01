@@ -27,6 +27,8 @@
 #include <cinttypes>
 #include <cstring>
 
+#include <ctime>
+
 #include <algorithm>
 
 #include <jau/debug.hpp>
@@ -48,26 +50,26 @@ static constexpr const uint64_t MilliPerOne  =     1'000UL;
  */
 fraction_timespec jau::getMonotonicTime() noexcept {
     struct timespec t;
-    clock_gettime(CLOCK_MONOTONIC, &t);
+    ::clock_gettime(CLOCK_MONOTONIC, &t);
     return fraction_timespec( (int64_t)t.tv_sec, (int64_t)t.tv_nsec );
 }
 
 fraction_timespec jau::getWallClockTime() noexcept {
     struct timespec t { 0, 0 };
-    clock_gettime(CLOCK_REALTIME, &t);
+    ::clock_gettime(CLOCK_REALTIME, &t);
     return fraction_timespec( (int64_t)t.tv_sec, (int64_t)t.tv_nsec );
 }
 
 uint64_t jau::getCurrentMilliseconds() noexcept {
     struct timespec t { 0, 0 };
-    clock_gettime(CLOCK_MONOTONIC, &t);
+    ::clock_gettime(CLOCK_MONOTONIC, &t);
     return static_cast<uint64_t>( t.tv_sec ) * MilliPerOne +
            static_cast<uint64_t>( t.tv_nsec ) / NanoPerMilli;
 }
 
 uint64_t jau::getWallClockSeconds() noexcept {
     struct timespec t { 0, 0 };
-    clock_gettime(CLOCK_REALTIME, &t);
+    ::clock_gettime(CLOCK_REALTIME, &t);
     return static_cast<uint64_t>( t.tv_sec );
 }
 
@@ -86,13 +88,13 @@ std::string fraction_timespec::to_iso8601_string() const noexcept {
         // 1655994850s + 228978909ns
         // 2022-06-23T14:34:10.228978909Z 30+1
         char b[30+1];
-        size_t p = strftime(b, sizeof(b), "%Y-%m-%dT%H:%M:%S", &tm_0);
+        size_t p = ::strftime(b, sizeof(b), "%Y-%m-%dT%H:%M:%S", &tm_0);
         if( 0 < p && p < sizeof(b)-1 ) {
             const size_t remaining = sizeof(b) - p;
             if( 0 < tv_nsec ) {
-                snprintf(b+p, remaining, ".%09" PRIi64 "Z", tv_nsec);
+                ::snprintf(b+p, remaining, ".%09" PRIi64 "Z", tv_nsec);
             } else {
-                snprintf(b+p, remaining, "Z");
+                ::snprintf(b+p, remaining, "Z");
             }
         }
         return std::string(b);
@@ -148,7 +150,7 @@ void jau::sleep_for(const fraction_i64& relative_time, const bool monotonic) noe
 
     static bool __jau__has_pthread_cond_clockwait() noexcept {
         const bool r = nullptr != pthread_cond_clockwait;
-        fprintf(stderr, "INFO: jau::has_pthread_cond_clockwait: %d\n", r);
+        ::fprintf(stderr, "INFO: jau::has_pthread_cond_clockwait: %d\n", r);
         return r;
     }
     static bool jau_has_pthread_cond_clockwait() noexcept {
@@ -184,7 +186,7 @@ std::cv_status jau::wait_until(std::condition_variable& cv, std::unique_lock<std
         pthread_cond_clockwait(cv.native_handle(), lock.mutex()->native_handle(),
                                monotonic ? CLOCK_MONOTONIC : CLOCK_REALTIME, &ts);
     } else {
-        pthread_cond_timedwait(cv.native_handle(), lock.mutex()->native_handle(), &ts);
+        ::pthread_cond_timedwait(cv.native_handle(), lock.mutex()->native_handle(), &ts);
     }
 
     const fraction_timespec now = monotonic ? getMonotonicTime() : getWallClockTime();

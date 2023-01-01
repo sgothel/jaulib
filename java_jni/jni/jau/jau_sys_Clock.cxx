@@ -54,7 +54,7 @@ void Java_org_jau_sys_Clock_getMonotonicTimeImpl(JNIEnv *env, jclass clazz, jlon
             throw jau::InternalError("GetPrimitiveArrayCritical(address val array) is null", E_FILE_LINE);
         }
         struct timespec t { 0, 0 };
-        clock_gettime(CLOCK_MONOTONIC, &t);
+        ::clock_gettime(CLOCK_MONOTONIC, &t);
         val_ptr[0] = (int64_t)t.tv_sec;
         val_ptr[1] = (int64_t)t.tv_nsec;
     } catch(...) {
@@ -78,7 +78,7 @@ void Java_org_jau_sys_Clock_getWallClockTimeImpl(JNIEnv *env, jclass clazz, jlon
             throw jau::InternalError("GetPrimitiveArrayCritical(address val array) is null", E_FILE_LINE);
         }
         struct timespec t { 0, 0 };
-        clock_gettime(CLOCK_REALTIME, &t);
+        ::clock_gettime(CLOCK_REALTIME, &t);
         val_ptr[0] = (int64_t)t.tv_sec;
         val_ptr[1] = (int64_t)t.tv_nsec;
     } catch(...) {
@@ -99,7 +99,7 @@ jlong Java_org_jau_sys_Clock_currentTimeMillis(JNIEnv *env, jclass clazz) {
     (void)clazz;
 
     struct timespec t { 0, 0 };
-    clock_gettime(CLOCK_MONOTONIC, &t);
+    ::clock_gettime(CLOCK_MONOTONIC, &t);
     int64_t res = static_cast<int64_t>( t.tv_sec ) * MilliPerOne +
                   static_cast<int64_t>( t.tv_nsec ) / NanoPerMilli;
     return (jlong)res;
@@ -110,7 +110,7 @@ jlong Java_org_jau_sys_Clock_wallClockSeconds(JNIEnv *env, jclass clazz) {
     (void)clazz;
 
     struct timespec t { 0, 0 };
-    clock_gettime(CLOCK_REALTIME, &t);
+    ::clock_gettime(CLOCK_REALTIME, &t);
     return (jlong)( static_cast<int64_t>( t.tv_sec ) );
 }
 
