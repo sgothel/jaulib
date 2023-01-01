@@ -68,7 +68,7 @@ uint64_t jau::io::read_stream(ByteInStream& in,
 
             buffer.resize(got);
             total += got;
-            has_more = 1 <= got && !in.end_of_data() && ( !in.has_content_size() || total < in.content_size() );
+            has_more = 1 <= got && in.good() && ( !in.has_content_size() || total < in.content_size() );
             try {
                 if( !consumer_fn(buffer, !has_more) ) {
                     break; // end streaming
@@ -111,7 +111,7 @@ uint64_t jau::io::read_stream(ByteInStream& in,
     {
         uint64_t got = _read_buffer(in, *buffers[idx]);
         total_read += got;
-        eof_read = 0 == got || in.end_of_data() || ( in.has_content_size() && total_read >= in.content_size() );
+        eof_read = 0 == got || !in.good() || ( in.has_content_size() && total_read >= in.content_size() );
         eof[idx] = eof_read;
         ++idx;
     }
@@ -131,7 +131,7 @@ uint64_t jau::io::read_stream(ByteInStream& in,
         if( !eof_read ) {
             uint64_t got = _read_buffer(in, *buffers[idx]);
             total_read += got;
-            eof_read = 0 == got || in.end_of_data() || ( in.has_content_size() && total_read >= in.content_size() );
+            eof_read = 0 == got || !in.good() || ( in.has_content_size() && total_read >= in.content_size() );
             eof[idx] = eof_read;
             if( 0 == got ) {
                 // read-ahead eof propagation if read zero bytes,
@@ -552,11 +552,6 @@ static size_t consume_data_curl2(char *ptr, size_t size, size_t nmemb, void *use
         return 0;
     }
 
-    // Ensure header completion is being sent
-    if( !cg->header_sync.completed() ) {
-        cg->header_sync.notify_complete();
-    }
-
     if( !cg->has_content_length ) {
         curl_off_t v = 0;
         const CURLcode r = curl_easy_getinfo(cg->curl_handle, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, &v);
@@ -567,10 +562,24 @@ static size_t consume_data_curl2(char *ptr, size_t size, size_t nmemb, void *use
             }
         }
     }
+
+    // Ensure header completion is being sent
+    if( !cg->header_sync.completed() ) {
+        cg->header_sync.notify_complete();
+    }
+
     const size_t realsize = size * nmemb;
     DBG_PRINT("consume_data_curl2.0 realsize %zu, rb %s", realsize, cg->buffer.toString().c_str() );
-    cg->buffer.putBlocking(reinterpret_cast<uint8_t*>(ptr),
-                           reinterpret_cast<uint8_t*>(ptr)+realsize, 0_s);
+    bool timeout_occured;
+    if( !cg->buffer.putBlocking(reinterpret_cast<uint8_t*>(ptr),
+                                reinterpret_cast<uint8_t*>(ptr)+realsize, 0_s, timeout_occured) ) {
+        DBG_PRINT("consume_data_curl2 Failed put: total %" PRIi64 ", result %d, timeout %d, rb %s",
+                cg->total_read.load(), cg->result.load(), timeout_occured, cg->buffer.toString().c_str() );
+        if( timeout_occured ) {
+            cg->interrupt_all();
+        }
+        return 0;
+    }
 
     cg->total_read.fetch_add(realsize);
     const bool is_final = 0 == realsize ||
