@@ -172,7 +172,8 @@ static void append_bitstr(std::string& out, T mask, T bit, const std::string& bi
 #define IOSTATE_ENUM(X,M) \
     X(iostate,badbit,bad,M) \
     X(iostate,eofbit,eof,M) \
-    X(iostate,failbit,fail,M)
+    X(iostate,failbit,fail,M) \
+    X(iostate,timeout,timeout,M)
 
 std::string jau::io::to_string(const iostate mask) noexcept {
     if( iostate::goodbit == mask ) {
