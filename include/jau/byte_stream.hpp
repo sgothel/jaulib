@@ -1,6 +1,6 @@
 /*
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2021 Gothel Software e.K.
+ * Copyright (c) 2021-2023 Gothel Software e.K.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -64,7 +64,10 @@ namespace jau::io {
       eofbit  = 1 << 1,
 
       /** Input or output operation failed (formatting or extraction error). */
-      failbit = 1 << 2
+      failbit = 1 << 2,
+
+      /** Input or output operation failed due to timeout. */
+      timeout = 1 << 3
     };
     constexpr uint32_t number(const iostate rhs) noexcept {
         return static_cast<uint32_t>(rhs);
@@ -150,7 +153,7 @@ namespace jau::io {
 
             /** Checks if an error has occurred. */
             bool fail() const noexcept
-            { return iostate::none != ( rdstate() & ( iostate::badbit | iostate::failbit ) ); }
+            { return iostate::none != ( rdstate() & ( iostate::badbit | iostate::failbit | iostate::timeout) ); }
 
             /** Checks if an error has occurred, synonym of fail(). */
             bool operator!() const noexcept { return fail(); }
@@ -161,6 +164,10 @@ namespace jau::io {
             /** Checks if a non-recoverable error has occurred. */
             bool bad() const noexcept
             { return iostate::none != ( rdstate() & iostate::badbit ); }
+
+            /** Checks if a timeout (non-recoverable) has occurred. */
+            bool timeout() const noexcept
+            { return iostate::none != ( rdstate() & iostate::timeout ); }
     };
 
     /**

@@ -1,6 +1,6 @@
 /**
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2022 Gothel Software e.K.
+ * Copyright (c) 2022-2023 Gothel Software e.K.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -102,6 +102,9 @@ public final class ByteInStream_Feed implements ByteInStream  {
 
     @Override
     public native boolean bad();
+
+    @Override
+    public native boolean timeout();
 
     @Override
     public boolean end_of_data() { return !good(); }

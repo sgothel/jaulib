@@ -1,6 +1,6 @@
 /**
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2022 Gothel Software e.K.
+ * Copyright (c) 2021-2023 Gothel Software e.K.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -45,7 +45,10 @@ public class IOState {
         eofbit  ( 1 << 1 ),
 
         /** Input or output operation failed (formatting or extraction error). */
-        failbit ( 1 << 2 );
+        failbit ( 1 << 2 ),
+
+        /** Input or output operation failed due to timeout. */
+        timeout ( 1 << 3 );
 
         Bit(final int v) { value = v; }
         public final int value;

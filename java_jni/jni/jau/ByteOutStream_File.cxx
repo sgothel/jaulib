@@ -1,6 +1,6 @@
 /*
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2022 Gothel Software e.K.
+ * Copyright (c) 2022-2023 Gothel Software e.K.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -178,6 +178,16 @@ jboolean Java_org_jau_io_ByteOutStream_1File_bad(JNIEnv *env, jobject obj) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteOutStream_File> ref(env, obj); // hold until done
         return ref->bad() ? JNI_TRUE : JNI_FALSE;
+    } catch(...) {
+        rethrow_and_raise_java_exception_jau(env);
+    }
+    return JNI_FALSE;
+}
+
+jboolean Java_org_jau_io_ByteOutStream_1File_timeout(JNIEnv *env, jobject obj) {
+    try {
+        jau::jni::shared_ptr_ref<jau::io::ByteOutStream_File> ref(env, obj); // hold until done
+        return ref->timeout() ? JNI_TRUE : JNI_FALSE;
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }
