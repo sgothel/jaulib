@@ -125,7 +125,7 @@ class TestRingbuffer12 {
         for(jau::nsize_t i=0; i<len; i++) {
             Integer vI(static_cast<IntegralType>(startValue+i));
             // INFO_STR("Putting "+std::to_string(vI->intValue())+" ... / " + rb->toString());
-            rb->putBlocking( vI, 0_s );
+            REQUIRE( true == rb->putBlocking( vI, 0_s ) );
         }
         // INFO_STR(msg+": Dies / " + rb->toString());
         (void)msg;

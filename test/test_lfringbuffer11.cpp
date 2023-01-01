@@ -106,7 +106,7 @@ class TestRingbuffer11 {
         for(jau::nsize_t i=0; i<len; i++) {
             IntegralType vI( ( startValue + (IntegralType)i ) % integral_modulus );
             // INFO_STR("Putting "+std::to_string(vI)+" ... / " + rb->toString());
-            rb->putBlocking( vI, 0_s );
+            REQUIRE( true == rb->putBlocking( vI, 0_s ) );
         }
         // INFO_STR(msg+": Dies / " + rb->toString());
         (void)msg;

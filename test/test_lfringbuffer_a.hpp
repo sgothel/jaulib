@@ -557,10 +557,10 @@ class TestRingbuffer_A {
              * Empty [ ][ ][ ][RW][ ][ ][ ][ ][ ][ ][ ]
              */
             Value_type dummy = getDefault<Value_type>();
-            rb.put(dummy);
-            rb.put(dummy);
-            rb.put(dummy);
-            rb.drop(3);
+            REQUIRE( true == rb.put(dummy) );
+            REQUIRE( true == rb.put(dummy) );
+            REQUIRE( true == rb.put(dummy) );
+            REQUIRE( 3 == rb.drop(3) );
 
             std::vector<Value_type> new_data = createIntArray(capacity, 0);
             writeRangeTestImpl(rb, capacity, new_data);
@@ -592,11 +592,11 @@ class TestRingbuffer_A {
              * Avail [ ][ ][R][.][W][ ][ ][ ][ ][ ][ ] ; W > R
              */
             Value_type dummy = getDefault<Value_type>();
-            rb.put(dummy); // r idx 0 -> 1
-            rb.put(dummy);
-            rb.put(dummy);
-            rb.put(dummy); // r idx 3 -> 4
-            rb.drop(2);    // r idx 0 -> 2
+            REQUIRE( true == rb.put(dummy) ); // r idx 0 -> 1
+            REQUIRE( true == rb.put(dummy) );
+            REQUIRE( true == rb.put(dummy) );
+            REQUIRE( true == rb.put(dummy) ); // r idx 3 -> 4
+            REQUIRE( 2 == rb.drop(2) );    // r idx 0 -> 2
 
             // left = 22 - 2
             REQUIRE_MSG("size 2 "+rb.toString(), 2 == rb.size());
@@ -611,7 +611,7 @@ class TestRingbuffer_A {
             REQUIRE_MSG("full "+rb.toString(), rb.isFull());
 
             // take off 2 remaining dummies
-            rb.drop(2);
+            REQUIRE( 2 == rb.drop(2) );
             REQUIRE_MSG("size capacity-2 "+rb.toString(), capacity-2 == rb.size());
 
             readRangeTestImpl(rb, capacity, capacity/2-2, 0);
@@ -636,14 +636,14 @@ class TestRingbuffer_A {
              * Avail [.][W][ ][ ][ ][ ][ ][ ][ ][R][.] ; W < R - 1
              */
             Value_type dummy = getDefault<Value_type>();
-            for(jau::nsize_t i=0; i<capacity; i++) { rb.put(dummy); } // fill all
+            for(jau::nsize_t i=0; i<capacity; i++) { REQUIRE( true == rb.put(dummy) ); } // fill all
             REQUIRE_MSG("full "+rb.toString(), rb.isFull());
 
             // for(int i=0; i<10; i++) { rb.get(); } // pull
-            rb.drop(capacity-1); // pull
+            REQUIRE( capacity-1 == rb.drop(capacity-1) ); // pull
             REQUIRE_MSG("size 1"+rb.toString(), 1 == rb.size());
 
-            for(int i=0; i<2; i++) { rb.put(dummy); } // fill 2 more
+            for(int i=0; i<2; i++) { REQUIRE( true == rb.put(dummy) ); } // fill 2 more
             REQUIRE_MSG("size 3"+rb.toString(), 3 == rb.size());
 
             // left = 22 - 3
@@ -658,7 +658,7 @@ class TestRingbuffer_A {
             REQUIRE_MSG("full "+rb.toString(), rb.isFull());
 
             // take off 3 remaining dummies
-            rb.drop(3); // pull
+            REQUIRE( 3 == rb.drop(3) ); // pull
             // for(int i=0; i<3; i++) { rb.get(); } // pull
             REQUIRE_MSG("size capacity-3 "+rb.toString(), capacity-3 == rb.size());
 
