@@ -36,10 +36,26 @@ using namespace jau::jni;
 JavaVM* jau::jni::vm;
 thread_local JNIEnvContainer jau::jni::jni_env;
 
-jint JNI_OnLoad(JavaVM *initVM, void *reserved) {
-    (void)reserved; // warning
+JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *initVM, void *reserved) {
+    (void)reserved;
     vm = initVM;
     return JNI_VERSION_1_8;
+}
+
+JNIEXPORT jint JNICALL JNI_OnLoad_jaulib_jni_jni(JavaVM *initVM, void *reserved) {
+    (void)reserved;
+    vm = initVM;
+    return JNI_VERSION_1_8;
+}
+
+JNIEXPORT void JNICALL JNI_OnUnload(JavaVM *vm, void *reserved) {
+    (void)vm;
+    (void)reserved;
+}
+
+JNIEXPORT void JNICALL JNI_OnUnload_jaulib_jni_jni(JavaVM *vm, void *reserved) {
+    (void)vm;
+    (void)reserved;
 }
 
 JNIEnv *JNIEnvContainer::operator*() {
