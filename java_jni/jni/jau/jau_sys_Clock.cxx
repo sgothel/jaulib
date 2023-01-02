@@ -44,19 +44,16 @@ void Java_org_jau_sys_Clock_getMonotonicTimeImpl(JNIEnv *env, jclass clazz, jlon
         if( nullptr == jval ) {
             throw jau::IllegalArgumentException("val null", E_FILE_LINE);
         }
-        const size_t in_size = env->GetArrayLength(jval);
-        if( 2 > in_size ) {
-            throw jau::IllegalArgumentException("val size "+std::to_string(in_size)+" < 2", E_FILE_LINE);
+        const size_t jval_size = env->GetArrayLength(jval);
+        if( 2 > jval_size ) {
+            throw jau::IllegalArgumentException("val size "+std::to_string(jval_size)+" < 2", E_FILE_LINE);
         }
-        jau::jni::JNICriticalArray<int64_t, jlongArray> criticalArray(env); // RAII - release
-        int64_t * val_ptr = criticalArray.get(jval, criticalArray.Mode::UPDATE_AND_RELEASE);
-        if( nullptr == val_ptr ) {
-            throw jau::InternalError("GetPrimitiveArrayCritical(address val array) is null", E_FILE_LINE);
-        }
+        // Avoid GetPrimitiveArrayCritical(), which occasionally hangs on system call ::clock_gettime()
         struct timespec t { 0, 0 };
         ::clock_gettime(CLOCK_MONOTONIC, &t);
-        val_ptr[0] = (int64_t)t.tv_sec;
-        val_ptr[1] = (int64_t)t.tv_nsec;
+        const jlong val[] = { (jlong)t.tv_sec, (jlong)t.tv_nsec };
+        env->SetLongArrayRegion(jval, 0, (jsize)jval_size, val);
+        jau::jni::java_exception_check_and_throw(env, E_FILE_LINE);
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }
@@ -68,19 +65,16 @@ void Java_org_jau_sys_Clock_getWallClockTimeImpl(JNIEnv *env, jclass clazz, jlon
         if( nullptr == jval ) {
             throw jau::IllegalArgumentException("val null", E_FILE_LINE);
         }
-        const size_t in_size = env->GetArrayLength(jval);
-        if( 2 > in_size ) {
-            throw jau::IllegalArgumentException("val size "+std::to_string(in_size)+" < 2", E_FILE_LINE);
+        const size_t jval_size = env->GetArrayLength(jval);
+        if( 2 > jval_size ) {
+            throw jau::IllegalArgumentException("val size "+std::to_string(jval_size)+" < 2", E_FILE_LINE);
         }
-        jau::jni::JNICriticalArray<int64_t, jlongArray> criticalArray(env); // RAII - release
-        int64_t * val_ptr = criticalArray.get(jval, criticalArray.Mode::UPDATE_AND_RELEASE);
-        if( nullptr == val_ptr ) {
-            throw jau::InternalError("GetPrimitiveArrayCritical(address val array) is null", E_FILE_LINE);
-        }
+        // Avoid GetPrimitiveArrayCritical(), which occasionally hangs on system call ::clock_gettime()
         struct timespec t { 0, 0 };
         ::clock_gettime(CLOCK_REALTIME, &t);
-        val_ptr[0] = (int64_t)t.tv_sec;
-        val_ptr[1] = (int64_t)t.tv_nsec;
+        const jlong val[] = { (jlong)t.tv_sec, (jlong)t.tv_nsec };
+        env->SetLongArrayRegion(jval, 0, (jsize)jval_size, val);
+        jau::jni::java_exception_check_and_throw(env, E_FILE_LINE);
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }
