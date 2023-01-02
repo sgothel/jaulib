@@ -722,7 +722,7 @@ namespace jau::io {
                 return m_parent.available(n);
             }
 
-            void clear(iostate state = iostate::goodbit) noexcept override { m_parent.clear( state ); }
+            void clear(const iostate state = iostate::goodbit) noexcept override { m_parent.clear( state ); }
             iostate rdstate() const noexcept override { return m_parent.rdstate(); }
 
             std::string id() const noexcept override { return m_parent.id(); }

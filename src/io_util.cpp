@@ -1,6 +1,6 @@
 /*
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2021 Gothel Software e.K.
+ * Copyright (c) 2021-2023 Gothel Software e.K.
  * Copyright (c) 2021 ZAFENA AB
  *
  * Permission is hereby granted, free of charge, to any person obtaining
@@ -62,13 +62,13 @@ uint64_t jau::io::read_stream(ByteInStream& in,
     uint64_t total = 0;
     bool has_more;
     do {
-        if( in.available(1) ) { // at least one byte to stream ..
+        if( in.available(1) ) { // at least one byte to stream, also considers eof
             buffer.resize(buffer.capacity());
             const uint64_t got = in.read(buffer.data(), buffer.capacity());
 
             buffer.resize(got);
             total += got;
-            has_more = 1 <= got && in.good() && ( !in.has_content_size() || total < in.content_size() );
+            has_more = 1 <= got && !in.fail() && ( !in.has_content_size() || total < in.content_size() );
             try {
                 if( !consumer_fn(buffer, !has_more) ) {
                     break; // end streaming
@@ -88,7 +88,7 @@ uint64_t jau::io::read_stream(ByteInStream& in,
 
 static uint64_t _read_buffer(ByteInStream& in,
                              secure_vector<uint8_t>& buffer) noexcept {
-    if( in.available(1) ) { // at least one byte to stream ..
+    if( in.available(1) ) { // at least one byte to stream, also considers eof
         buffer.resize(buffer.capacity());
         const uint64_t got = in.read(buffer.data(), buffer.capacity());
         buffer.resize(got);
@@ -111,7 +111,7 @@ uint64_t jau::io::read_stream(ByteInStream& in,
     {
         uint64_t got = _read_buffer(in, *buffers[idx]);
         total_read += got;
-        eof_read = 0 == got || !in.good() || ( in.has_content_size() && total_read >= in.content_size() );
+        eof_read = 0 == got || in.fail() || ( in.has_content_size() && total_read >= in.content_size() );
         eof[idx] = eof_read;
         ++idx;
     }
@@ -131,7 +131,7 @@ uint64_t jau::io::read_stream(ByteInStream& in,
         if( !eof_read ) {
             uint64_t got = _read_buffer(in, *buffers[idx]);
             total_read += got;
-            eof_read = 0 == got || !in.good() || ( in.has_content_size() && total_read >= in.content_size() );
+            eof_read = 0 == got || in.fail() || ( in.has_content_size() && total_read >= in.content_size() );
             eof[idx] = eof_read;
             if( 0 == got ) {
                 // read-ahead eof propagation if read zero bytes,
@@ -486,6 +486,10 @@ struct curl_glue2_t {
         buffer.interruptReader();
         header_sync.notify_complete();
     }
+    void set_end_of_input() noexcept {
+        buffer.set_end_of_input(true);
+        header_sync.notify_complete();
+    }
 };
 
 static size_t consume_header_curl2(char *buffer, size_t size, size_t nmemb, void *userdata) noexcept {
@@ -495,7 +499,7 @@ static size_t consume_header_curl2(char *buffer, size_t size, size_t nmemb, void
         // user abort!
         DBG_PRINT("consume_header_curl2 ABORT by User: total %" PRIi64 ", result %d, rb %s",
                 cg->total_read.load(), cg->result.load(), cg->buffer.toString().c_str() );
-        cg->interrupt_all();
+        cg->set_end_of_input();
         return 0;
     }
 
@@ -506,7 +510,7 @@ static size_t consume_header_curl2(char *buffer, size_t size, size_t nmemb, void
             if( 400 <= v ) {
                 IRQ_PRINT("response_code: %ld", v);
                 cg->result = async_io_result_t::FAILED;
-                cg->interrupt_all();
+                cg->set_end_of_input();
                 return 0;
             } else {
                 DBG_PRINT("consume_header_curl2.0 response_code: %ld", v);
@@ -548,7 +552,7 @@ static size_t consume_data_curl2(char *ptr, size_t size, size_t nmemb, void *use
         // user abort!
         DBG_PRINT("consume_data_curl2 ABORT by User: total %" PRIi64 ", result %d, rb %s",
                 cg->total_read.load(), cg->result.load(), cg->buffer.toString().c_str() );
-        cg->interrupt_all();
+        cg->set_end_of_input();
         return 0;
     }
 
@@ -576,7 +580,7 @@ static size_t consume_data_curl2(char *ptr, size_t size, size_t nmemb, void *use
         DBG_PRINT("consume_data_curl2 Failed put: total %" PRIi64 ", result %d, timeout %d, rb %s",
                 cg->total_read.load(), cg->result.load(), timeout_occured, cg->buffer.toString().c_str() );
         if( timeout_occured ) {
-            cg->interrupt_all();
+            cg->set_end_of_input();
         }
         return 0;
     }
@@ -586,6 +590,7 @@ static size_t consume_data_curl2(char *ptr, size_t size, size_t nmemb, void *use
                           cg->has_content_length ? cg->total_read >= cg->content_length : false;
     if( is_final ) {
         cg->result = async_io_result_t::SUCCESS;
+        cg->set_end_of_input();
     }
 
     if( false ) {
@@ -710,7 +715,7 @@ static void read_url_stream_thread(const char *url, std::unique_ptr<curl_glue2_t
 
 errout:
     cg->result = async_io_result_t::FAILED;
-    cg->interrupt_all();
+    cg->set_end_of_input();
 
 cleanup:
     if( nullptr != curl_handle ) {
@@ -738,7 +743,7 @@ std::unique_ptr<std::thread> jau::io::read_url_stream(const std::string& url,
 #endif // USE_LIBCURL
         result = io::async_io_result_t::FAILED;
         header_sync.notify_complete();
-        buffer.interruptReader();
+        buffer.set_end_of_input(true);
         const std::string_view scheme = uri_tk::get_scheme(url);
         DBG_PRINT("Protocol of given uri-scheme '%s' not supported. Supported protocols [%s].",
                 std::string(scheme).c_str(), jau::to_string(uri_tk::supported_protocols(), ",").c_str());

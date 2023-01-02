@@ -4,6 +4,12 @@
 
 ## Changes
 
+**1.1.1**
+* Fixes
+  - `jau::io::ByteInStream_[URL|Feed]` utilize blocking read-operations w/o knowledge of content-size until producer (curl consumer, manual feeder) signals EOS, see ringbuffer changes.
+* Features
+  - `jau::ringbuffer`: Add 'End of Stream' (EOS) concept to unblock all read-operations from this point onwards and unblocking a potentially currently blocked reader thread.
+
 **1.1.0**
 * Fixes
   - JNI: `Java_org_jau_sys_Clock_get[Monotonic|WallClock]TimeImpl()`: Avoid GetPrimitiveArrayCritical(), which occasionally hangs on system call `::clock_gettime()`

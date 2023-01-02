@@ -1,6 +1,6 @@
 /*
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2021 Gothel Software e.K.
+ * Copyright (c) 2021-2023 Gothel Software e.K.
  *
  * ByteInStream, ByteInStream_SecMemory and ByteInStream_istream are derived from Botan under same license:
  * - Copyright (c) 1999-2007 Jack Lloyd
@@ -377,6 +377,7 @@ bool ByteInStream_URL::available(size_t n) noexcept {
         return false;
     }
     // I/O still in progress, we have to poll until data is available or timeout
+    // set_eof() unblocks ringbuffer via set_end_of_input(true) permanently, hence blocking call on !m_has_content_length is OK.
     bool timeout_occured;
     const size_t avail = m_buffer.waitForElements(n, m_timeout, timeout_occured);
     if( avail < n ) {
@@ -404,9 +405,8 @@ size_t ByteInStream_URL::read(void* out, size_t length) noexcept {
         return 0;
     }
     bool timeout_occured = false;
-    const size_t got = m_has_content_length ?
-                        m_buffer.getBlocking(static_cast<uint8_t*>(out), length, 1, m_timeout, timeout_occured) :
-                        m_buffer.get(static_cast<uint8_t*>(out), length, 1);
+    // set_eof() unblocks ringbuffer via set_end_of_input(true) permanently, hence blocking call on !m_has_content_length is OK.
+    const size_t got = m_buffer.getBlocking(static_cast<uint8_t*>(out), length, 1, m_timeout, timeout_occured);
     m_bytes_consumed += got;
     if( timeout_occured ) {
         setstate_impl( iostate::timeout );
@@ -493,6 +493,7 @@ bool ByteInStream_Feed::available(size_t n) noexcept {
         return false;
     }
     // I/O still in progress, we have to poll until data is available or timeout
+    // set_eof() unblocks ringbuffer via set_end_of_input(true) permanently, hence blocking call on !m_has_content_length is OK.
     bool timeout_occured;
     const size_t avail = m_buffer.waitForElements(n, m_timeout, timeout_occured);
     if( avail < n ) {
@@ -519,9 +520,8 @@ size_t ByteInStream_Feed::read(void* out, size_t length) noexcept {
         return 0;
     }
     bool timeout_occured = false;
-    const size_t got = m_has_content_length ?
-                        m_buffer.getBlocking(static_cast<uint8_t*>(out), length, 1, m_timeout, timeout_occured) :
-                        m_buffer.get(static_cast<uint8_t*>(out), length, 1);
+    // set_eof() unblocks ringbuffer via set_end_of_input(true) permanently, hence blocking call on !m_has_content_length is OK.
+    const size_t got = m_buffer.getBlocking(static_cast<uint8_t*>(out), length, 1, m_timeout, timeout_occured);
     m_bytes_consumed += got;
     if( timeout_occured ) {
         setstate_impl( iostate::timeout );
@@ -530,7 +530,7 @@ size_t ByteInStream_Feed::read(void* out, size_t length) noexcept {
         }
         m_buffer.interruptWriter();
     }
-    // DBG_PRINT("ByteInStream_Feed::read: size %zu/%zu bytes, %s", got, length, to_string_int().c_str() );
+    // DBG_PRINT("ByteInStream_Feed::read: size %zu/%zu bytes, timeout_occured %d, %s", got, length, timeout_occured, to_string_int().c_str() );
     return got;
 }
 
@@ -579,7 +579,7 @@ bool ByteInStream_Feed::write(uint8_t in[], size_t length, const jau::fraction_i
 
 void ByteInStream_Feed::set_eof(const async_io_result_t result) noexcept {
     m_result = result;
-    interruptReader(); // FIXME: ???
+    m_buffer.set_end_of_input(true); // still considering last data, also irqs blocking ringbuffer reader
 }
 
 std::string ByteInStream_Feed::to_string_int() const noexcept {
