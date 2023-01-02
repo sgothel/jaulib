@@ -4,6 +4,18 @@
 
 ## Changes
 
+**1.1.0**
+* Fixes
+  - JNI: `Java_org_jau_sys_Clock_get[Monotonic|WallClock]TimeImpl()`: Avoid GetPrimitiveArrayCritical(), which occasionally hangs on system call `::clock_gettime()`
+  - JNI: Consolidate static and dynamic OnLoad for `jaulib_jni_jni`, static variant also requires to cache the JavaVM ref
+* API Change
+  - `jau::ringbuffer`: Add `nodiscard` attribute for *put*, *get*, *peek* and *waitFor* methods; Add overloads w/ result param 'timeout_occured' for all blocking methods.
+  - `jau::io::ByteInStream_Feed::write()` returns boolean denoting success w/ `nodiscard` attribute, failure due to timeout etc causing `!good()`
+  - `jau::io::ByteInStream*`: Remove redundant `end_of_data()`, use `!good()` instead.
+* Misc
+    * `jau::io::ByteInStream_Feed::write()`: Added explicit timeout value write method.
+    * `jau::io::ByteInStream_[URL|Feed]`: Consider `timeout_occured` in ringbuffer operation and check `good()` in available() upfront
+
 **1.0.1**
 * C++20 clean
 * Fix certain C++17 and C++20 compiler and clang-tidy warnings
