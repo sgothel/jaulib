@@ -46,9 +46,9 @@ namespace jau {
      * ### Function Overview
      * Similar to std::function, [jau::function<R(A...)>](@ref function_def) stores any callable target function
      * solely described by its return type `R` and arguments types `A...` from any source,
-     * e.g. free functions, capturing and non-capturing lambda function, member functions,
+     * e.g. free functions, capturing and non-capturing lambda function, member functions.
      *
-     * [jau::function<R(A...)>](@ref function_def) supports equality operations for all func::target_t source types,
+     * [jau::function<R(A...)>](@ref function_def) supports equality operations for all func::target_type source types,
      * allowing to manage container of [jau::function](@ref function_def)s, see [limitations](@ref function_limitations) below.
      *
      * If a [jau::function](@ref function_def) contains no target, see jau::function<R(A...)>::is_null(), it is empty.
@@ -57,14 +57,12 @@ namespace jau {
      * [jau::function](@ref function_def) satisfies the requirements of CopyConstructible, CopyAssignable, MoveConstructible and MoveAssignable.
      *
      * Compared to `std::function<R(A...)>`, `jau::function<R(A...)>`
-     * - supports equality operations,
-     * - supports capturing lambda functions
-     *   - See [limitations on their equality operator w/o RTTI on `gcc`](@ref function_limitations).
-     * - supports [Y combinator and deducing this lambda functions](@ref ylambda_target).
-     * - most operations are `noexcept`, except for the user given function invocation.
-     * - exposes the target function signature jau::type_info via jau::function::signature()
-     *
-     * Implementation utilizes a fast path target function [delegate_t<R, A...>](@ref delegate_class).
+     * - exposes the target function signature [jau::type_info](@ref type_info) via jau::function::signature()
+     * - supports equality operations
+     * - supports [Y combinator and deducing this lambda functions](@ref ylambda_target)
+     * - self contained low memory, cache friendly, static polymorphic target function [delegate_t<R, A...>](@ref delegate_class) storage,
+     *   see [implementation details](@ref function_impl)
+     * - most operations are `noexcept`, except for the user given function invocation
      *
      * Instances of [jau::function](@ref function_def) can store, copy, move and invoke any of its callable targets
      * - free functions
@@ -75,6 +73,7 @@ namespace jau {
      *   - factory bind_member()
      *   - constructor [`function(C *base, R(C::*mfunc)(A...))`](@ref function_ctor_member)
      * - lambda functions
+     *   - capturing and non-capturing lambdas as jau::function using func::lambda_target_t
      *   - constructor [`template<typename L> function(L func)`](@ref function_ctor_lambda)
      *   - see [limitations on their equality operator w/o RTTI on `gcc`](@ref function_limitations).
      * - [Y combinator and deducing this lambda functions](@ref ylambda_target)
@@ -89,6 +88,41 @@ namespace jau {
      * - std::function
      *   - factory bind_std()
      *   - constructor [function(uint64_t id, std::function<R(A...)> func)](@ref function_ctor_std)
+     *
+     * @anchor function_impl
+     * #### Implementation Details
+     *
+     * `jau::function<R(A...)>` holds the static polymorphic target function [delegate_t<R, A...>](@ref delegate_class),<br />
+     *  which itself completely holds up to 24 bytes sized `TriviallyCopyable` target function objects to avoiding cache misses.
+     *
+     *  The following table shows the full memory footprint of the target function [delegate_t<R, A...>](@ref delegate_class) storage,<br />
+     *  which equals to `jau::function<R(A...)>` memory size as it only contains the instance of delegate_t<R, A...>.
+     *
+     *  | Type           | Signature                    | Target Function Size    | `%delegate_t<R, A...>` Size | Heap Size | Total Size | `TriviallyCopyable` |
+     *  |:---------------|:-----------------------------|------------------------:|----------------------------:|----------:|-----------:|:-------------------:|
+     *  | free           | function<free, void ()>      |  8                      | 48                          |  0        | 48         | true                |
+     *  | member         | function<member, int (int)>  | 16                      | 48                          |  0        | 48         | true                |
+     *  | lambda_plain   | function<lambda, int (int)>  | 24                      | 48                          |  0        | 48         | true                |
+     *  | lambda_ref     | function<lambda, int (int)>  | 24                      | 48                          |  0        | 48         | true                |
+     *  | lambda_copy    | function<lambda, int (int)>  | 24                      | 48                          |  0        | 48         | true                |
+     *  | ylambda_plain  | function<ylambda, int (int)> | 24                      | 48                          |  0        | 48         | true                |
+     *  | capval (small) | function<capval, int (int)>  | 16                      | 48                          |  0        | 48         | true                |
+     *  | capval (big)   | function<capval, int (int)>  | 48                      | 48                          | 48        | 96         | true                |
+     *  | capref         | function<capref, int (int)>  | 16                      | 48                          |  0        | 48         | true                |
+     *
+     * Memory sizes are in bytes, data collected on a GNU/Linux arm64 system.
+     *
+     * The detailed memory footprint can queried at runtime, see implementation of [jau::function<R(A...)>::function::toString()](@ref function_toString).
+     *
+     * Static polymorphism is achieved by constructing the delegate_t<R, A...> instance via their func::target_type specific factories, see mapping at func::target_type.
+     *
+     * For example the static func::member_target_t::delegate constructs its specific delegate_t<R, A...> by passing its data and required functions
+     * to func::delegate_t<R, A...>::make.<br />
+     * The latter is an overloaded template for trivial and non-trivial types and decides which memory is being used,
+     * e.g. the internal 24 bytes memory cache or heap if not fitting.
+     *
+     * To support lambda identity for the equality operator, [jau::type_info](@ref type_info) is being used either with *Runtime Type Information* (RTTI) if enabled
+     * or using *Compile time type information* (CTTI), see [limitations](@ref function_limitations) below.
      *
      * @anchor function_usage
      * #### Function Usage
@@ -288,29 +322,6 @@ namespace jau {
      *
      * See [CTTI lambda name limitations](@ref ctti_name_lambda_limitations) and [limitations of jau::type_info](@ref type_info_limitations).
      *
-     * #### C++11 Capturing Lambda Restrictions using std::function
-     * A capturing lambda in C++11 produces decoration code accessing the captured elements,<br />
-     * i.e. an anonymous helper class.<br />
-     * Due to this fact, the return type is an undefined lambda specific
-     * and hence `std::function` didn't support it when specified, probably.
-     *
-     * <pre>
-        template<typename R, typename C, typename... A>
-        inline function<R(A...)>
-        bind_member(C *base, R(C::*mfunc)(A...)) {
-            return ClassFunction<R, A...>(
-                    (void*)base,
-                    (void*)(*((void**)&mfunc)),
-                    [&](A... args)->R{ (base->*mfunc)(args...); });
-                     ^
-                     | Capturing lambda function-pointer are undefined!
-        }
-        </pre>
-     *
-     * Capturing lambdas are supported by jau::function using func::lambda_target_t
-     * via constructor [`template<typename L> function(L func)`](@ref function_ctor_lambda), see above.
-     *
-     *
      *  @{
      */
 
@@ -322,8 +333,8 @@ namespace jau {
          */
 
         /**
-         * func::target_type identifier for specializations of func::target_t
-         * used by jau::function<R(A...)>::type().
+         * func::target_type identifier for the target function [delegate_t<R, A...>](@ref delegate_class) object,
+         * exposed by jau::function<R(A...)>::type().
          *
          * @see @ref function_overview "Function Overview"
          */
@@ -347,15 +358,15 @@ namespace jau {
         };
 
         /**
-         * Delegated target function details, allowing a fast path target function invocation.
+         * Delegated target function object, providing a fast path target function invocation.
          *
-         * @anchor delegate_class This static polymorphic object, delegates invocation specific user template-type data and callbacks
-         * and allows to:
-         * - be maintained within [function<R(A...)>](@ref function_def) instance as a member
+         * @anchor delegate_class This static polymorphic target function delegate_t<R, A...> is contained by [function<R(A...)>](@ref function_def)
+         * and completely holds up to 24 bytes sized `TriviallyCopyable` target function objects to avoiding cache misses.
+         * - contained within [function<R(A...)>](@ref function_def) instance as a member
          *   - avoiding need for dynamic polymorphism, i.e. heap allocated specialization referenced by base type
-         *   - utilizing limited 24 bytes cache usage for `TriviallyCopyable` target function types
-         *   - hence enhancing CPU cache performance on most target function types
-         * - avoid using virtual function table indirection
+         *   - using non-heap cache for up to 24 bytes sized `TriviallyCopyable` target function objects
+         *     - enhancing performance on most target function types by avoiding cache misses
+         * - not using virtual function table indirection
          * - utilize constexpr inline for function invocation (callbacks)
          *
          * @tparam R function return type
@@ -849,7 +860,7 @@ namespace jau {
                  *
                  * @param base this base-pointer of class C1 derived from C0 or C0 used to invoke the member-function
                  * @param method member-function of class C0
-                 * @return delegate_t<R, A...> instance holding the target-function details.
+                 * @return delegate_t<R, A...> instance holding the target-function object.
                  */
                 static delegate_type delegate(C1 *base, R(C0::*method)(A...),
                                             std::enable_if_t<std::is_base_of_v<C0, C1>, bool> = true) noexcept
@@ -1443,7 +1454,7 @@ namespace jau {
             /** Returns true if this instance holds a callable target function, i.e. is not of func::target_type::null.  */
             explicit constexpr operator bool() const noexcept { return !is_null(); }
 
-            /** Returns signature of this function prototype R(A...) w/o underlying target function details. */
+            /** Returns signature of this function prototype R(A...) w/o underlying target function object. */
             jau::type_info signature() const noexcept {
                 return jau::make_ctti<R(A...)>();
             }
@@ -1457,6 +1468,10 @@ namespace jau {
             /** Returns the size of underlying target function */
             constexpr size_t target_size() const noexcept { return target.target_size(); }
 
+            /**
+             * Return a string representation of this instance.
+             * @anchor function_toString The string representation contains the complete signature and detailed memory footprint.
+             */
             std::string toString() const {
                 return "function<" + to_string( type() ) + ", " + signature().demangled_name() + ">( sz net " +
                         std::to_string( target_size() ) + " / ( delegate_t " +

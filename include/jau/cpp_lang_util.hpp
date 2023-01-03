@@ -299,15 +299,16 @@ namespace jau {
     std::string demangle_name(const char* mangled_name) noexcept;
 
     /**
-     * @anchor type_info
-     * jau::type_info exposes same properties as std::type_index,
+     * Generic type information using either *Runtime type information* (RTTI) or *Compile time type information* (CTTI)
+     *
+     * @anchor type_info  jau::type_info exposes same properties as RTTI std::type_index,
      * i.e. can be used as index in associative and unordered associative containers
      * and is CopyConstructible and CopyAssignable.
      *
      * jau::type_info is compatible with std::type_index operations.
      *
      * jau::type_info can be utilized w/o RTTI using
-     * Compile time type information (CTTI) information, i.e. JAU_PRETTY_FUNCTION via [jau::ctti_name<R, L, A...>()](@ref ctti_name_lambda).
+     * *Compile time type information* (CTTI) information, i.e. JAU_PRETTY_FUNCTION via [jau::ctti_name<R, L, A...>()](@ref ctti_name_lambda).
      *
      * Consider using [jau::make_ctti<R, L, A...>()](@ref make_ctti_lambda) for construction,
      * as it removes the RTTI and CTTI code path differences.
