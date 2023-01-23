@@ -26,8 +26,9 @@
 
 package jau.sys;
 
-import org.jau.sys.MachineDataInfo;
 import org.jau.sys.PlatformProps;
+import org.jau.sys.MachineDataInfo;
+import org.jau.sys.RuntimeProps;
 
 /**
  * Runtime operations of {@link MachineDataInfo}.
@@ -96,7 +97,7 @@ public class MachineDataInfoRuntime {
 
   private static MachineDataInfo getRuntimeImpl() {
         try {
-            PlatformProps.initSingleton();
+            RuntimeProps.initSingleton();
         } catch (final Throwable err) {
             return null;
         }

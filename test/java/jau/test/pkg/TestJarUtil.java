@@ -44,7 +44,7 @@ import org.jau.pkg.cache.TempCacheReg;
 import org.jau.pkg.cache.TempFileCache;
 import org.jau.pkg.cache.TempJarCache;
 import org.jau.sys.AndroidVersion;
-import org.jau.sys.PlatformProps;
+import org.jau.sys.RuntimeProps;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
@@ -154,7 +154,7 @@ public class TestJarUtil extends JunitTracer {
         final ClassLoader rootCL = this.getClass().getClassLoader();
 
         // Get containing JAR file "TestJarsInJar.jar" and add it to the TempJarCache
-        TempJarCache.addAll(PlatformProps.class, JarUtil.getJarFileUri("ClassInJar0", rootCL));
+        TempJarCache.addAll(RuntimeProps.class, JarUtil.getJarFileUri("ClassInJar0", rootCL));
 
         // Fetch and load the contained "ClassInJar1.jar"
         final URL ClassInJar1_jarFileURL = JarUtil.getJarFileUri(TempJarCache.getResourceUri("ClassInJar1.jar")).toURL();
@@ -175,7 +175,7 @@ public class TestJarUtil extends JunitTracer {
         final ClassLoader rootCL = this.getClass().getClassLoader();
 
         // Get containing JAR file "TestJarsInJar.jar" and add it to the TempJarCache
-        TempJarCache.addAll(PlatformProps.class, JarUtil.getJarFileUri("ClassInJar0", rootCL));
+        TempJarCache.addAll(RuntimeProps.class, JarUtil.getJarFileUri("ClassInJar0", rootCL));
 
         // Fetch and load the contained "ClassInJar1.jar"
         final URL ClassInJar2_jarFileURL = JarUtil.getJarFileUri(TempJarCache.getResourceUri("sub/ClassInJar2.jar")).toURL();
@@ -254,7 +254,7 @@ public class TestJarUtil extends JunitTracer {
         final ClassLoader rootCL = new CustomClassLoader();
 
         // Get containing JAR file "TestJarsInJar.jar" and add it to the TempJarCache
-        TempJarCache.addAll(PlatformProps.class, JarUtil.getJarFileUri("ClassInJar0", rootCL));
+        TempJarCache.addAll(RuntimeProps.class, JarUtil.getJarFileUri("ClassInJar0", rootCL));
 
         // Fetch and load the contained "ClassInJar1.jar"
         final URL ClassInJar2_jarFileURL = JarUtil.getJarFileUri(TempJarCache.getResourceUri("sub/ClassInJar2.jar")).toURL();

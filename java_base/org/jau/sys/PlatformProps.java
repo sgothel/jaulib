@@ -1,7 +1,6 @@
 /**
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2020 Gothel Software e.K.
- * Copyright (c) 2010 Gothel Software e.K.
+ * Copyright (c) 2010-2023 Gothel Software e.K.
  * Copyright (c) 2010 JogAmp Community.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
@@ -39,7 +38,6 @@ import java.security.PrivilegedAction;
 import java.util.List;
 
 import org.jau.io.Buffers;
-import org.jau.lang.ReflectionUtil;
 import org.jau.sec.SecurityUtil;
 import org.jau.sys.PlatformTypes.ABIType;
 import org.jau.sys.PlatformTypes.CPUType;
@@ -50,20 +48,9 @@ import org.jau.sys.elf.SectionArmAttributes;
 import org.jau.util.VersionNumber;
 
 /**
- * Runtime platform properties.
+ * Platform Properties derived from Java properties
  */
 public class PlatformProps {
-    private static final String prt_name = "jau.pkg.PlatformRuntime";
-
-    public static final boolean DEBUG = Debug.debug("Platform");
-
-    /**
-     * Returns {@code true} if the given {@link CPUType}s and {@link ABIType}s are compatible.
-     */
-    private static final boolean isCompatible(final CPUType cpu1, final ABIType abi1, final CPUType cpu2, final ABIType abi2) {
-        return cpu1.isCompatible(cpu2) && abi1.isCompatible(abi2);
-    }
-
     //
     // static initialization order:
     //
@@ -99,35 +86,26 @@ public class PlatformProps {
 
     public static final String JAVA_VENDOR;
     public static final String JAVA_VM_NAME;
+
+    public static final boolean DEBUG;
     public static final String JAVA_RUNTIME_NAME;
 
+    /** Lower case system property derived from '{@code os.name}'. */
+    public static final String os_name;
+
+    /** Lower case system property derived from ELF or '{@code os.arch}' */
+    public static final String os_arch;
+
     public static final VersionNumber os_version;
+
     public static final OSType OS;
 
     public static final boolean LITTLE_ENDIAN;
     public static final CPUType CPU;
     public static final ABIType ABI;
 
-    /** Lower case system property '{@code os.name}'. */
-    public static final String os_name;
-
-    /** Lower case system property '{@code os.arch}' */
-    public static final String os_arch;
-
     /** Static (not runtime) determined {@link MachineDataInfo}. */
     public static final MachineDataInfo MACH_DESC_STAT;
-
-    /** Runtime determined {@link MachineDataInfo}, null if not available (i.e. no JNI libs loaded). */
-    public static final MachineDataInfo MACH_DESC_RT;
-
-    /**
-     * true if enabled and in use.
-     * <p>
-     * System property: 'jau.pkg.UseTempJarCache',
-     * defaults to true if {@link #OS_TYPE} is not {@link OSType#ANDROID}.
-     * </p>
-     */
-    public static final boolean USE_TEMP_JAR_CACHE;
 
     /**
      * Unique platform denominator composed as '{@link #os_name}' + '-' + '{@link #os_arch}'.
@@ -158,6 +136,10 @@ public class PlatformProps {
 
         JAVA_VENDOR = System.getProperty("java.vendor");
         JAVA_VM_NAME = System.getProperty("java.vm.name");
+    }
+
+    static {
+        DEBUG = Debug.debug("Platform");
 
         final String os_name_prop;
         final String os_arch_prop;
@@ -298,81 +280,23 @@ public class PlatformProps {
             strategy = 220;
         }
         {
-            final String _os_name2 = getOSName(OS);
+            final String _os_name2 = PlatformTypes.getOSName(OS);
             os_name = null != _os_name2 ? _os_name2 : os_name_prop;
         }
         {
-            final String _os_arch2 = getArchName(CPU, ABI, LITTLE_ENDIAN);
+            final String _os_arch2 = PlatformTypes.getArchName(CPU, ABI, LITTLE_ENDIAN);
             os_arch = null != _os_arch2 ? _os_arch2 : os_arch_prop;
         }
         os_and_arch = os_name+"-"+os_arch;
 
         MACH_DESC_STAT = MachineDataInfo.guessStaticMachineDataInfo(OS, CPU).md;
-        {
-            boolean _USE_TEMP_JAR_CACHE = false;
-            Class<?> prt = null;
-            try {
-                prt = ReflectionUtil.getClass(prt_name, true /* initializeClazz */, PlatformProps.class.getClassLoader());
-            } catch (final Throwable t) {
-                if( DEBUG ) {
-                    System.err.println("Platform.RT: Exception: "+t.getMessage());
-                    t.printStackTrace();
-                }
-            }
-            if( null != prt ) {
-                final ReflectionUtil.MethodAccessor prtGetMachDesc = new ReflectionUtil.MethodAccessor(prt, "getMachineDataInfo");
-                final ReflectionUtil.MethodAccessor prtGetUseTempJarCache = new ReflectionUtil.MethodAccessor(prt, "getUseTempJarCache");
-                if( null != prtGetMachDesc && prtGetMachDesc.available() ) {
-                    MACH_DESC_RT = prtGetMachDesc.callStaticMethod();
-                    _USE_TEMP_JAR_CACHE = null != MACH_DESC_RT;
-                    if( DEBUG ) {
-                        System.err.println("Platform.RT: Available <"+prt_name+".getMachineDataInfo()>");
-                    }
-                } else {
-                    MACH_DESC_RT = null;
-                    if( DEBUG ) {
-                        System.err.println("Platform.RT: Not available (2) <"+prt_name+".getMachineDataInfo()>");
-                    }
-                }
-                if( null != prtGetUseTempJarCache && prtGetUseTempJarCache.available() ) {
-                    _USE_TEMP_JAR_CACHE = prtGetUseTempJarCache.callStaticMethod();
-                    if( DEBUG ) {
-                        System.err.println("Platform.RT: Available <"+prt_name+".getUseTempJarCache()> = "+_USE_TEMP_JAR_CACHE);
-                    }
-                } else {
-                    if( DEBUG ) {
-                        System.err.println("Platform.RT: Not available (3) <"+prt_name+".getUseTempJarCache()>");
-                    }
-                }
-            } else {
-                MACH_DESC_RT = null;
-                if( DEBUG ) {
-                    System.err.println("Platform.RT: Not available (1) <"+prt_name+">");
-                }
-            }
-            USE_TEMP_JAR_CACHE = _USE_TEMP_JAR_CACHE;
-        }
 
         if( DEBUG ) {
             System.err.println("Platform.OS: os_name "+os_name+", os_arch "+os_arch+", os_version "+os_version);
             System.err.println("Platform.Hard: CPU_ARCH "+CPU+", ABI_TYPE "+ABI+" - strategy "+strategy+"(elfValid "+elfValid+"), little "+LITTLE_ENDIAN);
             System.err.println("Platform.MD.ST: "+MACH_DESC_STAT);
-            System.err.println("Platform.MD.RT: "+MACH_DESC_RT);
-            System.err.println("Platform.sys: USE_TEMP_JAR_CACHE "+USE_TEMP_JAR_CACHE);
         }
     }
-    public static void initSingleton() { }
-
-    /**
-     * Returns true if enabled and in use.
-     * <p>
-     * System property: 'jau.pkg.UseTempJarCache',
-     * defaults to true if {@link #O} is not {@link OSType#ANDROID}.
-     * </p>
-     */
-    public static final boolean getUseTempJarCache() { return USE_TEMP_JAR_CACHE; }
-
-    protected PlatformProps() {}
 
     /**
      * Returns the {@link ABIType} of the current platform using given {@link CPUType cpuType}
@@ -461,12 +385,14 @@ public class PlatformProps {
         }
         return res;
     }
+
     private static boolean checkFileReadAccess(final File file) {
         try {
             return file.isFile() && file.canRead();
         } catch (final Throwable t) { }
         return false;
     }
+
     private static File findSysLib(final String libName) {
         final ClassLoader cl = PlatformProps.class.getClassLoader();
         final List<String> possibleLibPaths = JNILibrary.enumerateLibraryPaths(libName,
@@ -487,71 +413,6 @@ public class PlatformProps {
         return null;
     }
 
-    private static final String getArchName(final CPUType cpuType, final ABIType abiType, final boolean littleEndian) {
-        switch( abiType ) {
-            case EABI_GNU_ARMEL:
-                return "arm"; // actually not supported!
-            case EABI_GNU_ARMHF:
-                return "armhf";
-            case EABI_AARCH64:
-                return "arm64";
-            default:
-                break;
-        }
-
-        switch( cpuType ) {
-            case X86_32:
-                return "i386";
-            case PPC:
-                return "ppc";
-            case MIPS_32:
-                return littleEndian ? "mipsel" : "mips";
-            case SuperH:
-                return "superh";
-            case SPARC_32:
-                return "sparc";
-
-            case X86_64:
-                return "amd64";
-            case PPC64:
-                return littleEndian ? "ppc64le" : "ppc64";
-            case MIPS_64:
-                return "mips64";
-            case IA64:
-                return "ia64";
-            case SPARCV9_64:
-                return "sparcv9";
-            case PA_RISC2_0:
-                return "risc2.0";
-            default:
-                return null;
-        }
-    }
-
-    private static final String getOSName(final OSType osType) {
-        switch( osType ) {
-            case ANDROID:
-              return "android";
-            case MACOS:
-              return "macosx";
-            case IOS:
-              return "ios";
-            case WINDOWS:
-              return "windows";
-            case OPENKODE:
-              return "openkode";
-            case LINUX:
-              return "linux";
-            case FREEBSD:
-              return "freebsd";
-            case SUNOS:
-              return "solaris";
-            case HPUX:
-              return "hpux";
-            default:
-              return "undefined";
-        }
-    }
     private static final boolean queryIsLittleEndianImpl() {
         final ByteBuffer tst_b = ByteBuffer.allocate(Buffers.SIZEOF_INT).order(ByteOrder.nativeOrder());
         // NIO Buffer not required for LE detection: final ByteBuffer tst_b = Buffers.newDirectByteBuffer(Buffers.SIZEOF_INT); // 32bit in native order
@@ -559,5 +420,12 @@ public class PlatformProps {
         final ShortBuffer tst_s = tst_b.asShortBuffer();
         tst_i.put(0, 0x0A0B0C0D);
         return 0x0C0D == tst_s.get(0);
+    }
+
+    /**
+     * Returns {@code true} if the given {@link CPUType}s and {@link ABIType}s are compatible.
+     */
+    private static final boolean isCompatible(final CPUType cpu1, final ABIType abi1, final CPUType cpu2, final ABIType abi2) {
+        return cpu1.isCompatible(cpu2) && abi1.isCompatible(abi2);
     }
 }

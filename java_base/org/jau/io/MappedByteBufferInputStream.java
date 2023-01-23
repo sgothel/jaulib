@@ -134,7 +134,6 @@ public class MappedByteBufferInputStream extends InputStream {
     static final boolean DEBUG;
 
     static {
-        PlatformProps.initSingleton();
         if( PlatformProps.CPU.is32Bit ) {
             DEFAULT_SLICE_SHIFT = 29;
         } else {

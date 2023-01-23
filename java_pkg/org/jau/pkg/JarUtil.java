@@ -82,8 +82,8 @@ public class JarUtil {
      * @throws IllegalStateException if the resolver has already been set.
      * @throws SecurityException if the security manager doesn't have the setFactory
      * permission
-     */ 
-    @SuppressWarnings({ "removal" })   
+     */
+    @SuppressWarnings({ "removal" })
     public static void setResolver(final Resolver r) throws IllegalArgumentException, IllegalStateException, SecurityException {
         if(r == null) {
             throw new IllegalArgumentException("Null Resolver passed");
@@ -94,7 +94,7 @@ public class JarUtil {
         }
 
         final SecurityManager security = SecurityUtil.getSecurityManager();
-        if(security != null) {            
+        if(security != null) {
             security.checkSetFactory();
         }
 

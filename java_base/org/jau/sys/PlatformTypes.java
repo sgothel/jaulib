@@ -65,6 +65,30 @@ public final class PlatformTypes {
             }
         }
     }
+    public static final String getOSName(final OSType osType) {
+        switch( osType ) {
+            case ANDROID:
+              return "android";
+            case MACOS:
+              return "macosx";
+            case IOS:
+              return "ios";
+            case WINDOWS:
+              return "windows";
+            case OPENKODE:
+              return "openkode";
+            case LINUX:
+              return "linux";
+            case FREEBSD:
+              return "freebsd";
+            case SUNOS:
+              return "solaris";
+            case HPUX:
+              return "hpux";
+            default:
+              return "undefined";
+        }
+    }
 
     public enum CPUFamily {
         /** AMD/Intel */
@@ -276,6 +300,47 @@ public final class PlatformTypes {
             } else {
                 return GENERIC_ABI;
             }
+        }
+    }
+
+    public static final String getArchName(final CPUType cpuType, final ABIType abiType, final boolean littleEndian) {
+        switch( abiType ) {
+            case EABI_GNU_ARMEL:
+                return "arm"; // actually not supported!
+            case EABI_GNU_ARMHF:
+                return "armhf";
+            case EABI_AARCH64:
+                return "arm64";
+            default:
+                break;
+        }
+
+        switch( cpuType ) {
+            case X86_32:
+                return "i386";
+            case PPC:
+                return "ppc";
+            case MIPS_32:
+                return littleEndian ? "mipsel" : "mips";
+            case SuperH:
+                return "superh";
+            case SPARC_32:
+                return "sparc";
+
+            case X86_64:
+                return "amd64";
+            case PPC64:
+                return littleEndian ? "ppc64le" : "ppc64";
+            case MIPS_64:
+                return "mips64";
+            case IA64:
+                return "ia64";
+            case SPARCV9_64:
+                return "sparcv9";
+            case PA_RISC2_0:
+                return "risc2.0";
+            default:
+                return null;
         }
     }
 }

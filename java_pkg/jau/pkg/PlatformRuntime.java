@@ -9,8 +9,8 @@ import org.jau.pkg.JarUtil;
 import org.jau.pkg.cache.TempJarCache;
 import org.jau.sec.SecurityUtil;
 import org.jau.sys.JNILibrary;
-import org.jau.sys.MachineDataInfo;
 import org.jau.sys.PlatformProps;
+import org.jau.sys.MachineDataInfo;
 import org.jau.sys.PlatformTypes.OSType;
 
 import org.jau.sys.PropertyAccess;
@@ -18,7 +18,7 @@ import org.jau.sys.PropertyAccess;
 import jau.sys.MachineDataInfoRuntime;
 
 /**
- * Initialized by {@link org.jau.sys.PlatformProps}
+ * Initialized by {@link org.jau.sys.RuntimeProps}
  */
 public class PlatformRuntime {
     private static final String useTempJarCachePropName = "jau.pkg.UseTempJarCache";

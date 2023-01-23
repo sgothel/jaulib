@@ -33,7 +33,7 @@ package org.jau.sys;
  * <p>
  * {@code little-endian} / {@code big/endian} description is left,
  * allowing re-using instances in {@link MachineDataInfo.StaticConfig StaticConfig}.
- * Use {@link {@link PlatformProps#LITTLE_ENDIAN}.
+ * Use {@link {@link RuntimeProps#LITTLE_ENDIAN}.
  * </p>
  * <p>
  * Further more, the value {@ MachineDataInfo#pageSizeInBytes} shall be ignored
@@ -389,5 +389,5 @@ public class MachineDataInfo {
               return StaticConfig.LP64_UNIX;
           }
       }
-  }  
+  }
 }

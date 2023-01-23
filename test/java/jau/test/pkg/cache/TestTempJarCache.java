@@ -43,7 +43,7 @@ import org.jau.pkg.cache.TempFileCache;
 import org.jau.pkg.cache.TempJarCache;
 import org.jau.sys.AndroidVersion;
 import org.jau.sys.JNILibrary;
-import org.jau.sys.PlatformProps;
+import org.jau.sys.RuntimeProps;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
@@ -143,12 +143,12 @@ public class TestTempJarCache extends JunitTracer {
     @Test
     public void testJarUtil01a() throws IOException, IllegalArgumentException, URISyntaxException {
         if(AndroidVersion.isAvailable) { System.err.println("n/a on Android"); return; }
-        final JarFile jarFile = JarUtil.getJarFile(PlatformProps.class.getName(), this.getClass().getClassLoader());
+        final JarFile jarFile = JarUtil.getJarFile(RuntimeProps.class.getName(), this.getClass().getClassLoader());
         Assert.assertNotNull(jarFile);
         JarUtil.extract(fileCache.getTempDir(), null, jarFile, null, false, true, true);
         File f = new File(fileCache.getTempDir(), "META-INF/MANIFEST.MF");
         Assert.assertTrue(f.exists());
-        f = new File(fileCache.getTempDir(), IOUtil.getClassFileName(PlatformProps.class.getName()));
+        f = new File(fileCache.getTempDir(), IOUtil.getClassFileName(RuntimeProps.class.getName()));
         Assert.assertTrue(f.exists());
     }
 
@@ -157,7 +157,7 @@ public class TestTempJarCache extends JunitTracer {
         if(AndroidVersion.isAvailable) { System.err.println("n/a on Android"); return; }
         File f = new File(fileCache.getTempDir(), "META-INF/MANIFEST.MF");
         Assert.assertTrue(f.exists());
-        f = new File(fileCache.getTempDir(), IOUtil.getClassFileName(PlatformProps.class.getName()));
+        f = new File(fileCache.getTempDir(), IOUtil.getClassFileName(RuntimeProps.class.getName()));
         Assert.assertTrue(f.exists());
     }
 
@@ -176,7 +176,7 @@ public class TestTempJarCache extends JunitTracer {
         if(AndroidVersion.isAvailable) { System.err.println("n/a on Android"); return; }
 
         final ClassLoader cl = getClass().getClassLoader();
-        TempJarCache.addAll(PlatformProps.class, JarUtil.getJarFileUri(PlatformProps.class.getName(), cl));
+        TempJarCache.addAll(RuntimeProps.class, JarUtil.getJarFileUri(RuntimeProps.class.getName(), cl));
 
         File f0 = new File(TempJarCache.getTempFileCache().getTempDir(), "META-INF/MANIFEST.MF");
         Assert.assertTrue(f0.exists());
@@ -185,10 +185,10 @@ public class TestTempJarCache extends JunitTracer {
         Assert.assertTrue(f1.exists());
         Assert.assertEquals(f0, f1);
 
-        f0 = new File(TempJarCache.getTempFileCache().getTempDir(), IOUtil.getClassFileName(PlatformProps.class.getName()));
+        f0 = new File(TempJarCache.getTempFileCache().getTempDir(), IOUtil.getClassFileName(RuntimeProps.class.getName()));
         Assert.assertTrue(f0.exists());
 
-        f1 = new File(TempJarCache.findResource(IOUtil.getClassFileName(PlatformProps.class.getName())));
+        f1 = new File(TempJarCache.findResource(IOUtil.getClassFileName(RuntimeProps.class.getName())));
         Assert.assertTrue(f1.exists());
         Assert.assertEquals(f0, f1);
     }

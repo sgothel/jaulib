@@ -38,6 +38,7 @@ import java.util.List;
 
 import org.jau.sys.JNILibrary;
 import org.jau.sys.PlatformProps;
+import org.jau.sys.RuntimeProps;
 import org.jau.sys.PlatformTypes.OSType;
 import org.jau.sys.elf.ElfHeaderPart1;
 import org.jau.sys.elf.ElfHeaderPart2;
@@ -130,7 +131,7 @@ public class TestElfReader01 extends JunitTracer {
     }
 
     void testElfHeaderImpl(final File file, final boolean fileOutSections) throws IOException {
-        PlatformProps.initSingleton();
+        RuntimeProps.initSingleton();
         System.err.println("Test file "+file.getAbsolutePath());
         final RandomAccessFile in = new RandomAccessFile(file, "r");
         try {

@@ -34,6 +34,7 @@ import java.util.List;
 import org.jau.lang.ExceptionUtils;
 import org.jau.sys.JNILibrary;
 import org.jau.sys.PlatformProps;
+import org.jau.sys.RuntimeProps;
 
 import jau.sys.dl.BionicDynamicLinker32bitImpl;
 import jau.sys.dl.BionicDynamicLinker64BitImpl;
@@ -154,7 +155,7 @@ public final class NativeLibrary implements DynamicLookupHelper {
                                                        macOSXLibName,
                                                        searchSystemPath, searchSystemPathFirst,
                                                        loader);
-    PlatformProps.initSingleton(); // loads native gluegen_rt library
+    RuntimeProps.initSingleton(); // loads native jaulib library
 
     final DynamicLinker dynLink = getDynamicLinker();
 

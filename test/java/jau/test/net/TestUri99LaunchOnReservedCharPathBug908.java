@@ -36,7 +36,7 @@ import org.jau.lang.ReflectionUtil;
 import org.jau.net.Uri;
 import org.jau.pkg.JarUtil;
 import org.jau.sys.AndroidVersion;
-import org.jau.sys.PlatformProps;
+import org.jau.sys.RuntimeProps;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -119,7 +119,7 @@ public class TestUri99LaunchOnReservedCharPathBug908 extends JunitTracer {
         System.err.println("0 Encoded:               "+reservedCharPathEncoded);
 
         // jar:file:/dir1/dir2/gluegen-rt.jar!/
-        final Uri jarFileURI = JarUtil.getJarFileUri(PlatformProps.class.getName(), getClass().getClassLoader());
+        final Uri jarFileURI = JarUtil.getJarFileUri(RuntimeProps.class.getName(), getClass().getClassLoader());
         System.err.println("1 jarFileURI:            "+jarFileURI.toString());
         // gluegen-rt.jar
         final Uri.Encoded jarBasename = JarUtil.getJarBasename(jarFileURI);
@@ -153,7 +153,7 @@ public class TestUri99LaunchOnReservedCharPathBug908 extends JunitTracer {
             System.err.println("url: "+urls[0]);
 
             final ClassLoader cl = new TestClassLoader(urls, null);
-            ReflectionUtil.callStaticMethod(PlatformProps.class.getName(), "initSingleton", null, null, cl);
+            ReflectionUtil.callStaticMethod(RuntimeProps.class.getName(), "initSingleton", null, null, cl);
         } finally {
             // cleanup ? Skip this for now ..
             // dstFolder.delete();

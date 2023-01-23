@@ -26,8 +26,9 @@
 
 package jau.test.sys;
 
-import org.jau.sys.MachineDataInfo;
 import org.jau.sys.PlatformProps;
+import org.jau.sys.MachineDataInfo;
+import org.jau.sys.RuntimeProps;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -48,11 +49,11 @@ public class TestPlatform01 extends JunitTracer {
         System.err.println("Arch, CPU: "+PlatformProps.os_arch+", "+PlatformProps.CPU+"/"+PlatformProps.CPU.family);
         System.err.println("OS/Arch: "+PlatformProps.os_and_arch);
         System.err.println();
-        System.err.println("Java runtime: ");
+        System.err.println("Java runtime: "+PlatformProps.JAVA_RUNTIME_NAME);
         System.err.println("Java version, vm: "+PlatformProps.JAVA_VERSION_NUMBER);
         System.err.println();
         System.err.println("MD.ST: "+PlatformProps.MACH_DESC_STAT);
-        System.err.println("MD.RT: "+PlatformProps.MACH_DESC_RT);
+        System.err.println("MD.RT: "+RuntimeProps.MACH_DESC_RT);
         System.err.println();
         System.err.println();
     }

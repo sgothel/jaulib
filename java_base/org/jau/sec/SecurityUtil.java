@@ -1,6 +1,6 @@
 /**
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2021 Gothel Software e.K.
+ * Copyright (c) 2021-2023 Gothel Software e.K.
  * Copyright (c) 2012 Gothel Software e.K.
  * Copyright (c) 2012 JogAmp Community.
  *

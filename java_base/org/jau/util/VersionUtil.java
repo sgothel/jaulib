@@ -38,6 +38,7 @@ import java.util.jar.Manifest;
 import org.jau.io.IOUtil;
 import org.jau.sys.AndroidVersion;
 import org.jau.sys.PlatformProps;
+import org.jau.sys.RuntimeProps;
 import org.jau.sys.PlatformTypes;
 
 public class VersionUtil {
@@ -65,8 +66,8 @@ public class VersionUtil {
             sb.append(PlatformProps.NEWLINE);
         }
 
-        if( null != PlatformProps.MACH_DESC_RT ) {
-            PlatformProps.MACH_DESC_RT.toString(sb).append("; (runtime)").append(PlatformProps.NEWLINE);
+        if( null != RuntimeProps.MACH_DESC_RT ) {
+            RuntimeProps.MACH_DESC_RT.toString(sb).append("; (runtime)").append(PlatformProps.NEWLINE);
         } else {
             PlatformProps.MACH_DESC_STAT.toString(sb).append("; (static)").append(PlatformProps.NEWLINE);
         }
