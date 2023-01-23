@@ -93,7 +93,7 @@ public:
      * @param o other comparison argument
      * @return true if equal, otherwise false.
      */
-    virtual bool operator==(uuid_t const &o) const noexcept;
+    bool operator==(uuid_t const &o) const noexcept;
 
     /**
      * Strict not-equal operator.
