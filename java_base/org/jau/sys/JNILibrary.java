@@ -27,9 +27,11 @@
 package org.jau.sys;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -49,6 +51,7 @@ public class JNILibrary {
   private static final String[] prefixes;
   private static final String[] suffixes;
   private static final boolean isOSX;
+  private static String sys_env_lib_path_varname;
 
   private static final String tjc_name = "org.jau.pkg.cache.TempJarCache";
   private static final ReflectionUtil.MethodAccessor tjcIsInit;
@@ -64,6 +67,7 @@ public class JNILibrary {
           case WINDOWS:
               prefixes = new String[] { "" };
               suffixes = new String[] { ".dll" };
+              sys_env_lib_path_varname = "PATH";
               isOSX = false;
               break;
 
@@ -71,6 +75,7 @@ public class JNILibrary {
           case IOS:
               prefixes = new String[] { "lib" };
               suffixes = new String[] { ".dylib" };
+              sys_env_lib_path_varname = "DYLD_LIBRARY_PATH";
               isOSX = true;
               break;
 
@@ -84,6 +89,7 @@ public class JNILibrary {
           default:
               prefixes = new String[] { "lib" };
               suffixes = new String[] { ".so" };
+              sys_env_lib_path_varname = "LD_LIBRARY_PATH";
               isOSX = false;
               break;
       }
@@ -114,6 +120,35 @@ public class JNILibrary {
   protected static long perfCount = 0;
 
   private static final HashSet<String> loaded = new HashSet<String>();
+
+  /**
+   * Returns the system's environment variable name used for the dynamic linker to resolve library locations, e.g.
+   * - Windows: PATH
+   * - MacOS: DYLD_LIBRARY_PATH
+   * - Unix: LD_LIBRARY_PATH
+   */
+  public static final String getSystemEnvLibraryPathVarname() { return sys_env_lib_path_varname; }
+
+  /**
+   * Returns a list of system paths, from the {@link #getSystemEnvLibraryPathVarname()} variable.
+   */
+  public static final List<String> getSystemEnvLibraryPaths() {
+      final String paths =
+              SecurityUtil.doPrivileged(new PrivilegedAction<String>() {
+                  @Override
+                  public String run() {
+                      return System.getenv(getSystemEnvLibraryPathVarname());
+                  }
+              });
+      final List<String> res = new ArrayList<String>();
+      if( null != paths && paths.length() > 0 ) {
+          final StringTokenizer st = new StringTokenizer(paths, File.pathSeparator);
+          while (st.hasMoreTokens()) {
+              res.add(st.nextToken());
+          }
+      }
+      return res;
+  }
 
   public static synchronized boolean isLoaded(final String libName) {
     return loaded.contains(libName);
@@ -196,17 +231,16 @@ public class JNILibrary {
           mode = 2;
       } else {
           if(DEBUG) {
-              System.err.println("JNILibrary: System.loadLibrary("+libraryName+") - mode 3");
+              System.err.println("JNILibrary: System.loadLibrary("+libraryName+") - mode 3: SystemEnvLibraryPaths: "+getSystemEnvLibraryPaths());
           }
           try {
               System.loadLibrary(libraryName);
               mode = 3;
           } catch (final UnsatisfiedLinkError ex1) {
               if(DEBUG) {
-                  System.err.println("ERROR (retry w/ enumLibPath) - "+ex1.getMessage());
+                  System.err.println("ERROR mode 3 - "+ex1.getMessage());
               }
-              final List<String> possiblePaths = enumerateLibraryPaths(libraryName,
-                      false /* searchSystemPath */, false /* searchSystemPathFirst */, cl);
+              final List<String> possiblePaths = enumerateLibraryPaths(libraryName, false /* sys */, false /* sys */, cl);
               // Iterate down these and see which one if any we can actually find.
               for (final Iterator<String> iter = possiblePaths.iterator(); 0 == mode && iter.hasNext(); ) {
                   final String path = iter.next();
@@ -221,7 +255,10 @@ public class JNILibrary {
                           System.err.println("n/a - "+ex2.getMessage());
                       }
                       if(!iter.hasNext()) {
-                          throw ex2;
+                          // Avoid misleading final exception, use our own
+                          throw new UnsatisfiedLinkError("Couldn't load library '"+libraryName+
+                                  "' generically including "+getSystemEnvLibraryPaths()+ // mode 3
+                                  ", nor as "+possiblePaths); // mode 4
                       }
                   }
               }
@@ -305,35 +342,53 @@ public class JNILibrary {
     final List<String> paths = new ArrayList<String>();
     final String libName = selectName(windowsLibName, unixLibName, macOSXLibName);
     if (libName == null) {
-      return paths;
+        if (DEBUG) {
+            System.err.println("JNILibrary.enumerateLibraryPaths: empty, no libName selected");
+        }
+        return paths;
+    }
+    if (DEBUG) {
+        System.err.println("JNILibrary.enumerateLibraryPaths: libName '"+libName+"'");
     }
 
     // Allow user's full path specification to override our building of paths
     final File file = new File(libName);
     if (file.isAbsolute()) {
         paths.add(libName);
+        if (DEBUG) {
+            System.err.println("JNILibrary.enumerateLibraryPaths: done, absolute path found '"+libName+"'");
+        }
         return paths;
     }
 
     final String[] baseNames = buildNames(libName);
+    if (DEBUG) {
+        System.err.println("JNILibrary.enumerateLibraryPaths: baseNames: "+Arrays.toString(baseNames));
+    }
 
     if( searchSystemPath && searchSystemPathFirst ) {
         // Add just the library names to use the OS's search algorithm
         for (int i = 0; i < baseNames.length; i++) {
+            if (DEBUG) {
+                System.err.println("JNILibrary.enumerateLibraryPaths: add.ssp_1st: "+baseNames[i]);
+            }
             paths.add(baseNames[i]);
         }
         // Add probable Mac OS X-specific paths
         if ( isOSX ) {
             // Add historical location
-            addPaths("/Library/Frameworks/" + libName + ".framework", baseNames, paths);
+            addAbsPaths("add.ssp_1st_macos_old", "/Library/Frameworks/" + libName + ".framework", baseNames, paths);
             // Add current location
-            addPaths("/System/Library/Frameworks/" + libName + ".framework", baseNames, paths);
+            addAbsPaths("add.ssp_1st_macos_cur", "/System/Library/Frameworks/" + libName + ".framework", baseNames, paths);
         }
     }
 
     final String clPath = findLibrary(libName, loader);
     if (clPath != null) {
-      paths.add(clPath);
+        if (DEBUG) {
+            System.err.println("JNILibrary.enumerateLibraryPaths: add.clp: "+clPath);
+        }
+        paths.add(clPath);
     }
 
     // Add entries from java.library.path
@@ -373,7 +428,7 @@ public class JNILibrary {
         for( int i=0; i < javaLibraryPaths.length; i++ ) {
             final StringTokenizer tokenizer = new StringTokenizer(javaLibraryPaths[i], File.pathSeparator);
             while (tokenizer.hasMoreTokens()) {
-                addPaths(tokenizer.nextToken(), baseNames, paths);
+                addRelPaths("add.java.library.path", tokenizer.nextToken(), baseNames, paths);
             }
         }
     }
@@ -386,26 +441,31 @@ public class JNILibrary {
             return System.getProperty("user.dir");
           }
         });
-    addPaths(userDir, baseNames, paths);
+    addAbsPaths("add.user.dir.std", userDir, baseNames, paths);
 
     // Add current working directory + natives/os-arch/ + library names
     // to handle Bug 1145 cc1 using an unpacked fat-jar
-    addPaths(userDir+File.separator+"natives"+File.separator+PlatformProps.os_and_arch+File.separator, baseNames, paths);
+    addAbsPaths("add.user.dir.fat", userDir+File.separator+"natives"+File.separator+PlatformProps.os_and_arch, baseNames, paths);
 
     if( searchSystemPath && !searchSystemPathFirst ) {
         // Add just the library names to use the OS's search algorithm
         for (int i = 0; i < baseNames.length; i++) {
+            if (DEBUG) {
+                System.err.println("JNILibrary.enumerateLibraryPaths: add.ssp_lst: "+baseNames[i]);
+            }
             paths.add(baseNames[i]);
         }
         // Add probable Mac OS X-specific paths
         if ( isOSX ) {
             // Add historical location
-            addPaths("/Library/Frameworks/" + libName + ".Framework", baseNames, paths);
+            addAbsPaths("add.ssp_lst_macos_old", "/Library/Frameworks/" + libName + ".Framework", baseNames, paths);
             // Add current location
-            addPaths("/System/Library/Frameworks/" + libName + ".Framework", baseNames, paths);
+            addAbsPaths("add.ssp_lst_macos_cur", "/System/Library/Frameworks/" + libName + ".Framework", baseNames, paths);
         }
     }
-
+    if (DEBUG) {
+        System.err.println("JNILibrary.enumerateLibraryPaths: done: "+paths.toString());
+    }
     return paths;
   }
 
@@ -485,9 +545,26 @@ public class JNILibrary {
       return res;
   }
 
-  private static final void addPaths(final String path, final String[] baseNames, final List<String> paths) {
-    for (int j = 0; j < baseNames.length; j++) {
-      paths.add(path + File.separator + baseNames[j]);
-    }
+  private static final void addRelPaths(final String cause, final String path, final String[] baseNames, final List<String> paths) {
+      final String abs_path;
+      try {
+          final File fpath = new File(path);
+          abs_path = fpath.getCanonicalPath();
+      } catch( final IOException ioe ) {
+          if (DEBUG) {
+              System.err.println("JNILibrary.enumerateLibraryPaths: "+cause+": Exception "+ioe.getMessage()+", from path "+path);
+          }
+          return;
+      }
+      addAbsPaths(cause, abs_path, baseNames, paths);
+  }
+  private static final void addAbsPaths(final String cause, final String abs_path, final String[] baseNames, final List<String> paths) {
+      for (int j = 0; j < baseNames.length; j++) {
+          final String p = abs_path + File.separator + baseNames[j];
+          if (DEBUG) {
+              System.err.println("JNILibrary.enumerateLibraryPaths: "+cause+": "+p+", from path "+abs_path);
+          }
+          paths.add(p);
+      }
   }
 }
