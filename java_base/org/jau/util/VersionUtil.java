@@ -75,7 +75,13 @@ public class VersionUtil {
         sb.append("Platform: Java Version: ").append(PlatformProps.JAVA_VERSION_NUMBER).append(", VM: ").append(PlatformProps.JAVA_VM_NAME);
         sb.append(", Runtime: ").append(PlatformProps.JAVA_RUNTIME_NAME).append(PlatformProps.NEWLINE);
         sb.append("Platform: Java Vendor: ").append(PlatformProps.JAVA_VENDOR);
-        sb.append(", Java9: ").append(PlatformProps.JAVA_9);
+        if( PlatformProps.JAVA_21 ) {
+            sb.append(", Java21");
+        } else if( PlatformProps.JAVA_17 ) {
+            sb.append(", Java17");
+        } else if( PlatformProps.JAVA_9 ) {
+            sb.append(", Java9");
+        }
         // sb.append(", dynamicLib: ").append(PlatformProps.useDynamicLibraries);
         sb.append(PlatformProps.NEWLINE).append(SEPERATOR);
 

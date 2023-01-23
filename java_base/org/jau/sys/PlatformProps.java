@@ -79,6 +79,22 @@ public class PlatformProps {
      */
     public static final boolean JAVA_9;
 
+    /**
+     * True only if being compatible w/ language level 17, e.g. JRE 17 (LTS).
+     * <p>
+     * Implies {@link #JAVA_9}
+     * </p>
+     */
+    public static final boolean JAVA_17;
+
+    /**
+     * True only if being compatible w/ language level 21, e.g. JRE 21 (LTS).
+     * <p>
+     * Implies {@link #JAVA_17}, {@link #JAVA_9}
+     * </p>
+     */
+    public static final boolean JAVA_21;
+
     public static final String NEWLINE;
 
     public static final String JAVA_VENDOR;
@@ -119,10 +135,25 @@ public class PlatformProps {
     public static final String os_and_arch;
 
     static {
-        final VersionNumber _version9 = new VersionNumber(9, 0, 0);
         JAVA_VERSION_NUMBER = new VersionNumber(System.getProperty("java.version"));
-        JAVA_9 = JAVA_VERSION_NUMBER.compareTo(_version9) >= 0;
-
+        if( JAVA_VERSION_NUMBER.compareTo(new VersionNumber(21, 0, 0)) >= 0 ) {
+            JAVA_21 = true;
+            JAVA_17 = true;
+            JAVA_9 = true;
+        } else if( JAVA_VERSION_NUMBER.compareTo(new VersionNumber(17, 0, 0)) >= 0 ) {
+            JAVA_21 = false;
+            JAVA_17 = true;
+            JAVA_9 = true;
+        } else if( JAVA_VERSION_NUMBER.compareTo(new VersionNumber(9, 0, 0)) >= 0 ) {
+            JAVA_21 = false;
+            JAVA_17 = false;
+            JAVA_9 = true;
+        } else {
+            // we probably don't support anything below 9
+            JAVA_21 = false;
+            JAVA_17 = false;
+            JAVA_9 = false;
+        }
         NEWLINE = System.getProperty("line.separator");
 
         JAVA_VENDOR = System.getProperty("java.vendor");
