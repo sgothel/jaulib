@@ -415,6 +415,15 @@ namespace jau {
             void put_octets_nc(const nsize_t i, const TROOctets & v) noexcept {
                 std::memcpy(data() + i, v.get_ptr(), v.size());
             }
+            void put_octets(const nsize_t i, const TROOctets & v, const nsize_t v_off, const nsize_t v_len) noexcept {
+                const nsize_t size = std::min(v.size()-v_off, v_len);
+                check_range(i, size, E_FILE_LINE);
+                std::memcpy(data() + i, v.get_ptr() + v_off, size);
+            }
+            void put_octets_nc(const nsize_t i, const TROOctets & v, const nsize_t v_off, const nsize_t v_len) noexcept {
+                const nsize_t size = std::min(v.size()-v_off, v_len);
+                std::memcpy(data() + i, v.get_ptr() + v_off, size);
+            }
 
             void put_bytes(const nsize_t i, const uint8_t *source, const nsize_t byte_count) {
                 check_range(i, byte_count, E_FILE_LINE);
