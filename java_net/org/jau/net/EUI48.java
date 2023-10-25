@@ -144,15 +144,7 @@ public class EUI48 {
      * @param byte_order {@link ByteOrder#LITTLE_ENDIAN} or {@link ByteOrder#BIG_ENDIAN} byte order of given address bytes, one may pass {@link ByteOrder#nativeOrder()}.
      */
     public EUI48(final byte address[], final ByteOrder byte_order) {
-        if( byte_size != address.length ) {
-            throw new IllegalArgumentException("EUI48 stream "+address.length+" != "+byte_size+" bytes");
-        }
-        b = new byte[byte_size];
-        if( byte_order == ByteOrder.nativeOrder() ) {
-            System.arraycopy(address, 0, b, 0,  byte_size);
-        } else {
-            BasicTypes.bswap_6bytes(address, 0, b, 0);
-        }
+        this(address, 0, byte_order);
     }
 
     /** Construct empty unset instance. */
