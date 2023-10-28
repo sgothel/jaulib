@@ -30,6 +30,7 @@
 #include <string>
 #include <memory>
 #include <cstdint>
+#include <initializer_list>
 #include <algorithm>
 
 #include <mutex>
@@ -603,8 +604,11 @@ namespace jau {
             }
 
         public:
-            /** Returns the memory capacity, never zero, greater or equal {@link #getSize()}. */
+            /** Returns the memory capacity, never zero, greater or equal size(). */
             constexpr nsize_t capacity() const noexcept { return _capacity; }
+
+            /** Returns the remaining octets for put left, i.e. capacity() - size(). */
+            constexpr nsize_t remaining() const noexcept { return _capacity - size(); }
 
             /**
              * Zero sized POctets instance.
@@ -643,6 +647,28 @@ namespace jau {
                         throw IllegalArgumentException("source nullptr with size "+std::to_string(size_)+" > 0", E_FILE_LINE);
                     }
                     std::memcpy(data(), source_, size_);
+                }
+                JAU_TRACE_OCTETS_PRINT("POctets ctor1: %p", data());
+            }
+
+            /**
+             * Takes ownership (malloc(size) and copy, free) ..
+             *
+             * Aborts if byte_order not endian::little nor endian::big, see abort().
+             *
+             * Capacity and size will be of given source size.
+             *
+             * @param sourcelist source initializer list data to be copied into this new instance with implied size
+             * @param byte_order endian::little or endian::big byte order, one may pass endian::native.
+             * @throws IllegalArgumentException if source_ is nullptr and size_ > 0
+             * @throws OutOfMemoryError if allocation fails
+             */
+            POctets(std::initializer_list<uint8_t> sourcelist, const endian byte_order)
+            : TOctets( allocData(sourcelist.size()), sourcelist.size(), byte_order),
+              _capacity( sourcelist.size() )
+            {
+                if( 0 < _capacity ) {
+                    std::memcpy(data(), sourcelist.begin(), _capacity);
                 }
                 JAU_TRACE_OCTETS_PRINT("POctets ctor1: %p", data());
             }
