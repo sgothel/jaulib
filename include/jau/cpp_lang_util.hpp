@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef CPP_LANG_EXT_HPP_
-#define CPP_LANG_EXT_HPP_
+#ifndef JAU_CPP_LANG_EXT_HPP_
+#define JAU_CPP_LANG_EXT_HPP_
 
 #include <type_traits>
 #include <typeinfo>
@@ -722,8 +722,27 @@ namespace jau {
         }
     }
 
+    constexpr bool is_builtin_int128_available() noexcept {
+        #if defined(__SIZEOF_INT128__)
+            return true;
+        #else
+            return false;
+        #endif
+    }
+
+    #if defined(__SIZEOF_INT128__)
+       // Prefer TI mode over __int128 as GCC rejects the latter in pendantic mode
+       #if defined(__GNUG__)
+         typedef          int  int128_t __attribute__((mode(TI)));
+         typedef unsigned int uint128_t __attribute__((mode(TI)));
+       #else
+         typedef          __int128  int128_t;
+         typedef unsigned __int128 uint128_t;
+       #endif
+    #endif
+
     /**@}*/
 
 } // namespace jau
 
-#endif /* CPP_LANG_EXT_HPP_ */
+#endif /* JAU_CPP_LANG_EXT_HPP_ */
