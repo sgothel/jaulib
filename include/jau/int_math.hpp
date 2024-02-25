@@ -128,7 +128,7 @@ namespace jau {
                                !std::is_unsigned_v<T>, bool> = true>
     constexpr T abs(const T x) noexcept
     {
-        return sign<T>(x) < 0 ? invert_sign<T>( x ) : x;
+        return jau::sign<T>(x) < 0 ? jau::invert_sign<T>( x ) : x;
     }
 
     template <typename T,
@@ -139,6 +139,7 @@ namespace jau {
         return x;
     }
 
+#if defined(JAU_INT_MATH_EXPERIMENTAL)
     /**
      * Returns the absolute value of an arithmetic number (w/o branching),
      * while not covering INT_MIN -> INT_MAX conversion as abs(), see above.
@@ -150,6 +151,8 @@ namespace jau {
      * - unsigned just returns the value
      *
      * This implementation uses 2-complement branch-less conversion, [bithacks Integer-Abs](http://www.graphics.stanford.edu/~seander/bithacks.html#IntegerAbs)
+     *
+     * Note: On an x86_64 architecture abs() w/ branching is of equal speed or even faster.
      *
      * @tparam T an arithmetic number type
      * @param x the number
@@ -172,7 +175,7 @@ namespace jau {
                                !std::is_unsigned_v<T>, bool> = true>
     constexpr T abs2(const T x) noexcept
     {
-        return x * sign<T>(x);
+        return x * jau::sign<T>(x);
     }
     template <typename T,
               std::enable_if_t< std::is_arithmetic_v<T> &&
@@ -181,6 +184,109 @@ namespace jau {
     {
         return x;
     }
+#endif // defined(JAU_INT_MATH_EXPERIMENTAL)
+
+    /**
+     * Returns the minimum of two integrals (w/ branching).
+     *
+     * @tparam T an integral number type
+     * @param x one number
+     * @param x the other number
+     */
+    template <typename T,
+              std::enable_if_t< std::is_integral_v<T>, bool> = true>
+    constexpr T min(const T x, const T y) noexcept
+    {
+        return x < y ? x : y;
+    }
+
+    /**
+     * Returns the maximum of two integrals (w/ branching).
+     *
+     * @tparam T an integral number type
+     * @param x one number
+     * @param x the other number
+     */
+    template <typename T,
+              std::enable_if_t< std::is_integral_v<T>, bool> = true>
+    constexpr T max(const T x, const T y) noexcept
+    {
+        return x > y ? x : y;
+    }
+
+    /**
+     * Returns constrained integral value to lie between given min- and maximum value (w/ branching).
+     *
+     * Implementation returns `min(max(x, min_val), max_val)`, analog to GLSL's clamp()
+     *
+     * @tparam T an integral number type
+     * @param x one number
+     * @param min_val the minimum limes, inclusive
+     * @param max_val the maximum limes, inclusive
+     */
+    template <typename T,
+              std::enable_if_t< std::is_integral_v<T>, bool> = true>
+    constexpr T clamp(const T x, const T min_val, const T max_val) noexcept
+    {
+        return jau::min<T>(jau::max<T>(x, min_val), max_val);
+    }
+
+#if defined(JAU_INT_MATH_EXPERIMENTAL)
+    /**
+     * Returns the minimum of two integrals for `MIN <= x - y <= MAX` (w/o branching).
+     *
+     * Source: [bithacks Test PowerOf2](http://www.graphics.stanford.edu/~seander/bithacks.html#IntegerMinOrMax)
+     *
+     * Note: On an x86_64 architecture min() w/ branching is of equal speed or even faster.
+     *
+     * @tparam T an integral number type
+     * @param x one number
+     * @param x the other number
+     */
+    template <typename T,
+              std::enable_if_t< std::is_integral_v<T>, bool> = true>
+    constexpr T min2(const T x, const T y) noexcept
+    {
+        return y + ( (x - y) & ( (x - y) >> ( sizeof(T) * CHAR_BIT - 1 ) ) );
+    }
+
+    /**
+     * Returns the maximum of two integrals for `MIN <= x - y <= MAX` (w/o branching).
+     *
+     * Source: [bithacks Test PowerOf2](http://www.graphics.stanford.edu/~seander/bithacks.html#IntegerMinOrMax)
+     *
+     * Note: On an x86_64 architecture max() w/ branching is of equal speed or even faster.
+     *
+     * @tparam T an integral number type
+     * @param x one number
+     * @param x the other number
+     */
+    template <typename T,
+              std::enable_if_t< std::is_integral_v<T>, bool> = true>
+    constexpr T max2(const T x, const T y) noexcept
+    {
+        return x - ( (x - y) & ( (x - y) >> ( sizeof(T) * CHAR_BIT - 1 ) ) );
+    }
+
+    /**
+     * Returns constrained integral value to lie between given min- and maximum value for `MIN <= x - y <= MAX` (w/o branching).
+     *
+     * Implementation returns `min2(max2(x, min_val), max_val)`, analog to GLSL's clamp()
+     *
+     * Note: On an x86_64 architecture clamp() w/ branching is of equal speed or even faster.
+     *
+     * @tparam T an integral number type
+     * @param x one number
+     * @param min_val the minimum limes, inclusive
+     * @param max_val the maximum limes, inclusive
+     */
+    template <typename T,
+              std::enable_if_t< std::is_integral_v<T>, bool> = true>
+    constexpr T clamp2(const T x, const T min_val, const T max_val) noexcept
+    {
+        return jau::min2<T>(jau::max2<T>(x, min_val), max_val);
+    }
+#endif // defined(JAU_INT_MATH_EXPERIMENTAL)
 
     /**
      * Power of 2 test (w/o branching).
@@ -219,7 +325,7 @@ namespace jau {
               std::enable_if_t< std::is_integral_v<T> && std::is_unsigned_v<T>, bool> = true>
     inline constexpr T ct_is_zero(T x)
     {
-       return expand_top_bit<T>( ~x & (x - 1) );
+       return jau::expand_top_bit<T>( ~x & (x - 1) );
     }
 
     /**
@@ -234,7 +340,7 @@ namespace jau {
     {
         nsize_t hb = 0;
         for(nsize_t s = ( CHAR_BIT * sizeof(T) ) >> 1; s > 0; s >>= 1) {
-            const nsize_t z = s * ( ( ~ct_is_zero( x >> s ) ) & 1 );
+            const nsize_t z = s * ( ( ~jau::ct_is_zero( x >> s ) ) & 1 );
             hb += z;
             x >>= z;
         }
