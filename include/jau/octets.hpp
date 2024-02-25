@@ -225,27 +225,27 @@ namespace jau {
                 return jau::get_uint64(_data, i, _little_endian);
             }
 
-            uint128_t get_uint128(const nsize_t i) const {
+            uint128dp_t get_uint128(const nsize_t i) const {
                 check_range(i, 8, E_FILE_LINE);
                 return jau::get_uint128(_data, i, _little_endian);
             }
-            constexpr uint128_t get_uint128_nc(const nsize_t i) const noexcept {
+            constexpr uint128dp_t get_uint128_nc(const nsize_t i) const noexcept {
                 return jau::get_uint128(_data, i, _little_endian);
             }
 
-            uint192_t get_uint192(const nsize_t i) const {
+            uint192dp_t get_uint192(const nsize_t i) const {
                 check_range(i, 8, E_FILE_LINE);
                 return jau::get_uint192(_data, i, _little_endian);
             }
-            constexpr uint192_t get_uint192_nc(const nsize_t i) const noexcept {
+            constexpr uint192dp_t get_uint192_nc(const nsize_t i) const noexcept {
                 return jau::get_uint192(_data, i, _little_endian);
             }
 
-            uint256_t get_uint256(const nsize_t i) const {
+            uint256dp_t get_uint256(const nsize_t i) const {
                 check_range(i, 8, E_FILE_LINE);
                 return jau::get_uint256(_data, i, _little_endian);
             }
-            constexpr uint256_t get_uint256_nc(const nsize_t i) const noexcept {
+            constexpr uint256dp_t get_uint256_nc(const nsize_t i) const noexcept {
                 return jau::get_uint256(_data, i, _little_endian);
             }
 
@@ -385,27 +385,27 @@ namespace jau {
                 jau::put_uint64(data(), i, v, little_endian());
             }
 
-            void put_uint128(const nsize_t i, const uint128_t & v) {
+            void put_uint128(const nsize_t i, const uint128dp_t & v) {
                 check_range(i, 8, E_FILE_LINE);
                 jau::put_uint128(data(), i, v, little_endian());
             }
-            constexpr void put_uint128_nc(const nsize_t i, const uint128_t & v) noexcept {
+            constexpr void put_uint128_nc(const nsize_t i, const uint128dp_t & v) noexcept {
                 jau::put_uint128(data(), i, v, little_endian());
             }
 
-            void put_uint192(const nsize_t i, const uint192_t & v) {
+            void put_uint192(const nsize_t i, const uint192dp_t & v) {
                 check_range(i, 8, E_FILE_LINE);
                 jau::put_uint192(data(), i, v, little_endian());
             }
-            constexpr void put_uint192_nc(const nsize_t i, const uint192_t & v) noexcept {
+            constexpr void put_uint192_nc(const nsize_t i, const uint192dp_t & v) noexcept {
                 jau::put_uint192(data(), i, v, little_endian());
             }
 
-            void put_uint256(const nsize_t i, const uint256_t & v) {
+            void put_uint256(const nsize_t i, const uint256dp_t & v) {
                 check_range(i, 8, E_FILE_LINE);
                 jau::put_uint256(data(), i, v, little_endian());
             }
-            constexpr void put_uint256_nc(const nsize_t i, const uint256_t & v) noexcept {
+            constexpr void put_uint256_nc(const nsize_t i, const uint256dp_t & v) noexcept {
                 jau::put_uint256(data(), i, v, little_endian());
             }
 

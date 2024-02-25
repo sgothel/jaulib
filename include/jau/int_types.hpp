@@ -70,69 +70,69 @@ namespace jau {
     // *************************************************
      */
 
-    __pack( struct uint128_t {
+    __pack( /** A 128-bit packed uint8_t data array */ struct uint128dp_t {
         uint8_t data[16];
 
-        constexpr uint128_t() noexcept : data{0} {}
-        constexpr uint128_t(const uint8_t v[16]) noexcept : data{0} { *this = pointer_cast<packed_t<uint128_t>*>( v )->store; }
-        constexpr uint128_t(const uint128_t &o) noexcept = default;
-        uint128_t(uint128_t &&o) noexcept = default;
-        constexpr uint128_t& operator=(const uint128_t &o) noexcept = default;
-        uint128_t& operator=(uint128_t &&o) noexcept = default;
+        constexpr uint128dp_t() noexcept : data{0} {}
+        constexpr uint128dp_t(const uint8_t v[16]) noexcept : data{0} { *this = pointer_cast<packed_t<uint128dp_t>*>( v )->store; }
+        constexpr uint128dp_t(const uint128dp_t &o) noexcept = default;
+        uint128dp_t(uint128dp_t &&o) noexcept = default;
+        constexpr uint128dp_t& operator=(const uint128dp_t &o) noexcept = default;
+        uint128dp_t& operator=(uint128dp_t &&o) noexcept = default;
 
         void clear() noexcept { ::bzero(data, sizeof(data)); }
 
-        constexpr bool operator==(uint128_t const &o) const noexcept {
+        constexpr bool operator==(uint128dp_t const &o) const noexcept {
             if( this == &o ) {
                 return true;
             }
             return !std::memcmp(data, o.data, sizeof(data));
         }
-        constexpr bool operator!=(uint128_t const &o) const noexcept
+        constexpr bool operator!=(uint128dp_t const &o) const noexcept
         { return !(*this == o); }
     } ) ;
 
-    __pack( struct uint192_t {
+    __pack( /** A 196-bit packed uint8_t data array */ struct uint192dp_t {
         uint8_t data[24];
 
-        constexpr uint192_t() noexcept : data{0} {}
-        constexpr uint192_t(const uint8_t v[24]) noexcept : data{0} { *this = pointer_cast<packed_t<uint192_t>*>( v )->store; }
-        constexpr uint192_t(const uint192_t &o) noexcept = default;
-        uint192_t(uint192_t &&o) noexcept = default;
-        constexpr uint192_t& operator=(const uint192_t &o) noexcept = default;
-        uint192_t& operator=(uint192_t &&o) noexcept = default;
+        constexpr uint192dp_t() noexcept : data{0} {}
+        constexpr uint192dp_t(const uint8_t v[24]) noexcept : data{0} { *this = pointer_cast<packed_t<uint192dp_t>*>( v )->store; }
+        constexpr uint192dp_t(const uint192dp_t &o) noexcept = default;
+        uint192dp_t(uint192dp_t &&o) noexcept = default;
+        constexpr uint192dp_t& operator=(const uint192dp_t &o) noexcept = default;
+        uint192dp_t& operator=(uint192dp_t &&o) noexcept = default;
 
         void clear() noexcept { ::bzero(data, sizeof(data)); }
 
-        constexpr bool operator==(uint192_t const &o) const noexcept {
+        constexpr bool operator==(uint192dp_t const &o) const noexcept {
             if( this == &o ) {
                 return true;
             }
             return !std::memcmp(data, o.data, sizeof(data));
         }
-        constexpr bool operator!=(uint192_t const &o) const noexcept
+        constexpr bool operator!=(uint192dp_t const &o) const noexcept
         { return !(*this == o); }
     } );
 
-    __pack( struct uint256_t {
+    __pack( /** A 256-bit packed uint8_t data array */ struct uint256dp_t {
         uint8_t data[32];
 
-        constexpr uint256_t() noexcept : data{0} {}
-        constexpr uint256_t(const uint8_t v[32]) noexcept : data{0} { *this = pointer_cast<packed_t<uint256_t>*>( v )->store; }
-        constexpr uint256_t(const uint256_t &o) noexcept = default;
-        uint256_t(uint256_t &&o) noexcept = default;
-        constexpr uint256_t& operator=(const uint256_t &o) noexcept = default;
-        uint256_t& operator=(uint256_t &&o) noexcept = default;
+        constexpr uint256dp_t() noexcept : data{0} {}
+        constexpr uint256dp_t(const uint8_t v[32]) noexcept : data{0} { *this = pointer_cast<packed_t<uint256dp_t>*>( v )->store; }
+        constexpr uint256dp_t(const uint256dp_t &o) noexcept = default;
+        uint256dp_t(uint256dp_t &&o) noexcept = default;
+        constexpr uint256dp_t& operator=(const uint256dp_t &o) noexcept = default;
+        uint256dp_t& operator=(uint256dp_t &&o) noexcept = default;
 
         void clear() noexcept { ::bzero(data, sizeof(data)); }
 
-        constexpr bool operator==(uint256_t const &o) const noexcept {
+        constexpr bool operator==(uint256dp_t const &o) const noexcept {
             if( this == &o ) {
                 return true;
             }
             return !std::memcmp(data, o.data, sizeof(data));
         }
-        constexpr bool operator!=(uint256_t const &o) const noexcept
+        constexpr bool operator!=(uint256dp_t const &o) const noexcept
         { return !(*this == o); }
     } );
 

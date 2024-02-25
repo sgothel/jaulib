@@ -128,20 +128,20 @@ namespace jau {
         }
     }
 
-    constexpr uint128_t bswap(uint128_t const & source) noexcept {
-        uint128_t dest;
+    constexpr uint128dp_t bswap(uint128dp_t const & source) noexcept {
+        uint128dp_t dest;
         bswap(dest.data, source.data, 16);
         return dest;
     }
 
-    constexpr uint192_t bswap(uint192_t const & source) noexcept {
-        uint192_t dest;
+    constexpr uint192dp_t bswap(uint192dp_t const & source) noexcept {
+        uint192dp_t dest;
         bswap(dest.data, source.data, 24);
         return dest;
     }
 
-    constexpr uint256_t bswap(uint256_t const & source) noexcept {
-        uint256_t dest;
+    constexpr uint256dp_t bswap(uint256dp_t const & source) noexcept {
+        uint256dp_t dest;
         bswap(dest.data, source.data, 32);
         return dest;
     }
@@ -418,7 +418,7 @@ namespace jau {
         }
     }
 
-    constexpr uint128_t be_to_cpu(uint128_t const & n) noexcept {
+    constexpr uint128dp_t be_to_cpu(uint128dp_t const & n) noexcept {
         if constexpr ( isLittleEndian() ) {
             return bswap(n);
         } else if constexpr ( isBigEndian() ) {
@@ -427,7 +427,7 @@ namespace jau {
             return {}; // unreachable -> static_assert(..) above
         }
     }
-    constexpr uint128_t cpu_to_be(uint128_t const & h) noexcept {
+    constexpr uint128dp_t cpu_to_be(uint128dp_t const & h) noexcept {
         if constexpr ( isLittleEndian() ) {
             return bswap(h);
         } else if constexpr ( isBigEndian() ) {
@@ -436,7 +436,7 @@ namespace jau {
             return {}; // unreachable -> static_assert(..) above
         }
     }
-    constexpr uint128_t le_to_cpu(uint128_t const & l) noexcept {
+    constexpr uint128dp_t le_to_cpu(uint128dp_t const & l) noexcept {
         if constexpr ( isLittleEndian() ) {
             return l;
         } else if constexpr ( isBigEndian() ) {
@@ -445,7 +445,7 @@ namespace jau {
             return {}; // unreachable -> static_assert(..) above
         }
     }
-    constexpr uint128_t cpu_to_le(uint128_t const & h) noexcept {
+    constexpr uint128dp_t cpu_to_le(uint128dp_t const & h) noexcept {
         if constexpr ( isLittleEndian() ) {
             return h;
         } else if constexpr ( isBigEndian() ) {
@@ -455,7 +455,7 @@ namespace jau {
         }
     }
 
-    constexpr uint192_t be_to_cpu(uint192_t const & n) noexcept {
+    constexpr uint192dp_t be_to_cpu(uint192dp_t const & n) noexcept {
         if constexpr ( isLittleEndian() ) {
             return bswap(n);
         } else if constexpr ( isBigEndian() ) {
@@ -464,7 +464,7 @@ namespace jau {
             return {}; // unreachable -> static_assert(..) above
         }
     }
-    constexpr uint192_t cpu_to_be(uint192_t const & h) noexcept {
+    constexpr uint192dp_t cpu_to_be(uint192dp_t const & h) noexcept {
         if constexpr ( isLittleEndian() ) {
             return bswap(h);
         } else if constexpr ( isBigEndian() ) {
@@ -473,7 +473,7 @@ namespace jau {
             return {}; // unreachable -> static_assert(..) above
         }
     }
-    constexpr uint192_t le_to_cpu(uint192_t const & l) noexcept {
+    constexpr uint192dp_t le_to_cpu(uint192dp_t const & l) noexcept {
         if constexpr ( isLittleEndian() ) {
             return l;
         } else if constexpr ( isBigEndian() ) {
@@ -482,7 +482,7 @@ namespace jau {
             return {}; // unreachable -> static_assert(..) above
         }
     }
-    constexpr uint192_t cpu_to_le(uint192_t const & h) noexcept {
+    constexpr uint192dp_t cpu_to_le(uint192dp_t const & h) noexcept {
         if constexpr ( isLittleEndian() ) {
             return h;
         } else if constexpr ( isBigEndian() ) {
@@ -492,7 +492,7 @@ namespace jau {
         }
     }
 
-    constexpr uint256_t be_to_cpu(uint256_t const & n) noexcept {
+    constexpr uint256dp_t be_to_cpu(uint256dp_t const & n) noexcept {
         if constexpr ( isLittleEndian() ) {
             return bswap(n);
         } else if constexpr ( isBigEndian() ) {
@@ -501,7 +501,7 @@ namespace jau {
             return {}; // unreachable -> static_assert(..) above
         }
     }
-    constexpr uint256_t cpu_to_be(uint256_t const & h) noexcept {
+    constexpr uint256dp_t cpu_to_be(uint256dp_t const & h) noexcept {
         if constexpr ( isLittleEndian() ) {
             return bswap(h);
         } else if constexpr ( isBigEndian() ) {
@@ -510,7 +510,7 @@ namespace jau {
             return {}; // unreachable -> static_assert(..) above
         }
     }
-    constexpr uint256_t le_to_cpu(uint256_t const & l) noexcept {
+    constexpr uint256dp_t le_to_cpu(uint256dp_t const & l) noexcept {
         if constexpr ( isLittleEndian() ) {
             return l;
         } else if constexpr ( isBigEndian() ) {
@@ -519,7 +519,7 @@ namespace jau {
             return {}; // unreachable -> static_assert(..) above
         }
     }
-    constexpr uint256_t cpu_to_le(uint256_t const & h) noexcept {
+    constexpr uint256dp_t cpu_to_le(uint256dp_t const & h) noexcept {
         if constexpr ( isLittleEndian() ) {
             return h;
         } else if constexpr ( isBigEndian() ) {
@@ -676,99 +676,99 @@ namespace jau {
      * See put_uint16() for reference.
      * @see \ref packed_t_alignment_cast
      */
-    constexpr void put_uint128(uint8_t * buffer, nsize_t const byte_offset, const uint128_t & v) noexcept
+    constexpr void put_uint128(uint8_t * buffer, nsize_t const byte_offset, const uint128dp_t & v) noexcept
     {
-        pointer_cast<packed_t<uint128_t>*>( buffer + byte_offset )->store = v;
+        pointer_cast<packed_t<uint128dp_t>*>( buffer + byte_offset )->store = v;
     }
     /**
      * See put_uint16() for reference.
      * @see \ref packed_t_alignment_cast
      */
-    constexpr void put_uint128(uint8_t * buffer, nsize_t const byte_offset, const uint128_t & v, const bool littleEndian) noexcept
+    constexpr void put_uint128(uint8_t * buffer, nsize_t const byte_offset, const uint128dp_t & v, const bool littleEndian) noexcept
     {
-        pointer_cast<packed_t<uint128_t>*>( buffer + byte_offset )->store = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
+        pointer_cast<packed_t<uint128dp_t>*>( buffer + byte_offset )->store = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
     }
     /**
      * See get_uint16() for reference.
      * @see \ref packed_t_alignment_cast
      */
-    constexpr uint128_t get_uint128(uint8_t const * buffer, nsize_t const byte_offset) noexcept
+    constexpr uint128dp_t get_uint128(uint8_t const * buffer, nsize_t const byte_offset) noexcept
     {
-        return pointer_cast<const packed_t<uint128_t>*>( buffer + byte_offset )->store;
+        return pointer_cast<const packed_t<uint128dp_t>*>( buffer + byte_offset )->store;
     }
     /**
      * See get_uint16() for reference.
      * @see \ref packed_t_alignment_cast
      */
-    constexpr uint128_t get_uint128(uint8_t const * buffer, nsize_t const byte_offset, const bool littleEndian) noexcept
+    constexpr uint128dp_t get_uint128(uint8_t const * buffer, nsize_t const byte_offset, const bool littleEndian) noexcept
     {
-        return get_packed_value(pointer_cast<const packed_t<uint128_t>*>( buffer + byte_offset ), littleEndian);
+        return get_packed_value(pointer_cast<const packed_t<uint128dp_t>*>( buffer + byte_offset ), littleEndian);
     }
 
     /**
      * See put_uint16() for reference.
      * @see \ref packed_t_alignment_cast
      */
-    constexpr void put_uint192(uint8_t * buffer, nsize_t const byte_offset, const uint192_t & v) noexcept
+    constexpr void put_uint192(uint8_t * buffer, nsize_t const byte_offset, const uint192dp_t & v) noexcept
     {
-        pointer_cast<packed_t<uint192_t>*>( buffer + byte_offset )->store = v;
+        pointer_cast<packed_t<uint192dp_t>*>( buffer + byte_offset )->store = v;
     }
     /**
      * See put_uint16() for reference.
      * @see \ref packed_t_alignment_cast
      */
-    constexpr void put_uint192(uint8_t * buffer, nsize_t const byte_offset, const uint192_t & v, const bool littleEndian) noexcept
+    constexpr void put_uint192(uint8_t * buffer, nsize_t const byte_offset, const uint192dp_t & v, const bool littleEndian) noexcept
     {
-        pointer_cast<packed_t<uint192_t>*>( buffer + byte_offset )->store = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
+        pointer_cast<packed_t<uint192dp_t>*>( buffer + byte_offset )->store = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
     }
     /**
      * See get_uint16() for reference.
      * @see \ref packed_t_alignment_cast
      */
-    constexpr uint192_t get_uint192(uint8_t const * buffer, nsize_t const byte_offset) noexcept
+    constexpr uint192dp_t get_uint192(uint8_t const * buffer, nsize_t const byte_offset) noexcept
     {
-        return pointer_cast<const packed_t<uint192_t>*>( buffer + byte_offset )->store;
+        return pointer_cast<const packed_t<uint192dp_t>*>( buffer + byte_offset )->store;
     }
     /**
      * See get_uint16() for reference.
      * @see \ref packed_t_alignment_cast
      */
-    constexpr uint192_t get_uint192(uint8_t const * buffer, nsize_t const byte_offset, const bool littleEndian) noexcept
+    constexpr uint192dp_t get_uint192(uint8_t const * buffer, nsize_t const byte_offset, const bool littleEndian) noexcept
     {
-        return get_packed_value(pointer_cast<const packed_t<uint192_t>*>( buffer + byte_offset ), littleEndian);
+        return get_packed_value(pointer_cast<const packed_t<uint192dp_t>*>( buffer + byte_offset ), littleEndian);
     }
 
     /**
      * See put_uint16() for reference.
      * @see \ref packed_t_alignment_cast
      */
-    constexpr void put_uint256(uint8_t * buffer, nsize_t const byte_offset, const uint256_t & v) noexcept
+    constexpr void put_uint256(uint8_t * buffer, nsize_t const byte_offset, const uint256dp_t & v) noexcept
     {
-        pointer_cast<packed_t<uint256_t>*>( buffer + byte_offset )->store = v;
+        pointer_cast<packed_t<uint256dp_t>*>( buffer + byte_offset )->store = v;
     }
     /**
      * See put_uint16() for reference.
      * @see \ref packed_t_alignment_cast
      */
-    constexpr void put_uint256(uint8_t * buffer, nsize_t const byte_offset, const uint256_t & v, const bool littleEndian) noexcept
+    constexpr void put_uint256(uint8_t * buffer, nsize_t const byte_offset, const uint256dp_t & v, const bool littleEndian) noexcept
     {
-        pointer_cast<packed_t<uint256_t>*>( buffer + byte_offset )->store = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
+        pointer_cast<packed_t<uint256dp_t>*>( buffer + byte_offset )->store = littleEndian ? cpu_to_le(v) : cpu_to_be(v);
     }
     /**
      * See get_uint16() for reference.
      * @see \ref packed_t_alignment_cast
      */
-    constexpr uint256_t get_uint256(uint8_t const * buffer, nsize_t const byte_offset) noexcept
+    constexpr uint256dp_t get_uint256(uint8_t const * buffer, nsize_t const byte_offset) noexcept
     {
-        return pointer_cast<const packed_t<uint256_t>*>( buffer + byte_offset )->store;
+        return pointer_cast<const packed_t<uint256dp_t>*>( buffer + byte_offset )->store;
     }
     /**
      * See get_uint16() for reference.
      * @see \ref packed_t_alignment_cast
      */
-    constexpr uint256_t get_uint256(uint8_t const * buffer, nsize_t const byte_offset, const bool littleEndian) noexcept
+    constexpr uint256dp_t get_uint256(uint8_t const * buffer, nsize_t const byte_offset, const bool littleEndian) noexcept
     {
-        return get_packed_value(pointer_cast<const packed_t<uint256_t>*>( buffer + byte_offset ), littleEndian);
+        return get_packed_value(pointer_cast<const packed_t<uint256dp_t>*>( buffer + byte_offset ), littleEndian);
     }
 
     /**

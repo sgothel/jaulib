@@ -304,7 +304,7 @@ namespace jau {
      * BE: uuid16 -> value.data[2+3]
      * </pre>
      */
-    uint128_t merge_uint128(uint16_t const uuid16, uint128_t const & base_uuid, nsize_t const uuid16_le_octet_index);
+    uint128dp_t merge_uint128(uint16_t const uuid16, uint128dp_t const & base_uuid, nsize_t const uuid16_le_octet_index);
 
     /**
      * Merge the given 'uuid32' into a 'base_uuid' copy at the given little endian 'uuid32_le_octet_index' position.
@@ -326,7 +326,7 @@ namespace jau {
      * BE: uuid32 -> value.data[0..3]
      * </pre>
      */
-    uint128_t merge_uint128(uint32_t const uuid32, uint128_t const & base_uuid, nsize_t const uuid32_le_octet_index);
+    uint128dp_t merge_uint128(uint32_t const uuid32, uint128dp_t const & base_uuid, nsize_t const uuid32_le_octet_index);
 
     /**@}*/
 

@@ -204,11 +204,11 @@ public:
 
 class uuid128_t : public uuid_t {
 public:
-    jau::uint128_t value;
+    jau::uint128dp_t value;
 
     uuid128_t() noexcept : uuid_t(TypeSize::UUID128_SZ) { bzero(value.data, sizeof(value)); }
 
-    uuid128_t(jau::uint128_t const v) noexcept
+    uuid128_t(jau::uint128dp_t const v) noexcept
     : uuid_t(TypeSize::UUID128_SZ), value(v) {}
 
     uuid128_t(const std::string& str);

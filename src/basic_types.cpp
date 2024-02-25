@@ -245,7 +245,7 @@ std::string jau::trimCopy(const std::string &_s) noexcept {
     return s;
 }
 
-uint128_t jau::merge_uint128(uint16_t const uuid16, uint128_t const & base_uuid, nsize_t const uuid16_le_octet_index)
+uint128dp_t jau::merge_uint128(uint16_t const uuid16, uint128dp_t const & base_uuid, nsize_t const uuid16_le_octet_index)
 {
     if( uuid16_le_octet_index > 14 ) {
         std::string msg("uuid16_le_octet_index ");
@@ -253,7 +253,7 @@ uint128_t jau::merge_uint128(uint16_t const uuid16, uint128_t const & base_uuid,
         msg.append(", not within [0..14]");
         throw IllegalArgumentException(msg, E_FILE_LINE);
     }
-    uint128_t dest = base_uuid;
+    uint128dp_t dest = base_uuid;
 
     // base_uuid: 00000000-0000-1000-8000-00805F9B34FB
     //    uuid16: DCBA
@@ -281,7 +281,7 @@ uint128_t jau::merge_uint128(uint16_t const uuid16, uint128_t const & base_uuid,
     return dest;
 }
 
-uint128_t jau::merge_uint128(uint32_t const uuid32, uint128_t const & base_uuid, nsize_t const uuid32_le_octet_index)
+uint128dp_t jau::merge_uint128(uint32_t const uuid32, uint128dp_t const & base_uuid, nsize_t const uuid32_le_octet_index)
 {
     if( uuid32_le_octet_index > 12 ) {
         std::string msg("uuid32_le_octet_index ");
@@ -289,7 +289,7 @@ uint128_t jau::merge_uint128(uint32_t const uuid32, uint128_t const & base_uuid,
         msg.append(", not within [0..12]");
         throw IllegalArgumentException(msg, E_FILE_LINE);
     }
-    uint128_t dest = base_uuid;
+    uint128dp_t dest = base_uuid;
 
     // base_uuid: 00000000-0000-1000-8000-00805F9B34FB
     //    uuid32: 87654321
