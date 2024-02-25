@@ -63,9 +63,9 @@ namespace jau {
      */
     template <typename T,
               std::enable_if_t< std::is_arithmetic_v<T>, bool> = true>
-    constexpr snsize_t sign(const T x) noexcept
+    constexpr int sign(const T x) noexcept
     {
-        return (T(0) < x) - (x < T(0));
+        return (int) ( (T(0) < x) - (x < T(0)) );
     }
 
     /**
@@ -108,6 +108,40 @@ namespace jau {
     constexpr T invert_sign(const T x) noexcept
     {
         return x;
+    }
+
+    /**
+     * Round up
+     *
+     * @tparam T an unsigned integral number type
+     * @param n to be aligned number
+     * @param align_to alignment boundary, must not be 0
+     * @return n rounded up to a multiple of align_to
+     */
+    template <typename T,
+              std::enable_if_t< std::is_integral_v<T> && std::is_unsigned_v<T>, bool> = true>
+    constexpr T round_up(const T n, const T align_to) {
+       assert(align_to != 0); // align_to must not be 0
+
+       if(n % align_to) {
+          return n + ( align_to - ( n % align_to ) );
+       } else {
+           return n;
+       }
+    }
+
+    /**
+     * Round down
+     *
+     * @tparam T an unsigned integral number type
+     * @param n to be aligned number
+     * @param align_to alignment boundary
+     * @return n rounded down to a multiple of align_to
+     */
+    template <typename T,
+              std::enable_if_t< std::is_integral_v<T> && std::is_unsigned_v<T>, bool> = true>
+    inline constexpr T round_down(T n, T align_to) {
+       return align_to == 0 ? n : ( n - ( n % align_to ) );
     }
 
     /**
@@ -302,6 +336,38 @@ namespace jau {
     constexpr bool is_power_of_2(const T x) noexcept
     {
        return 0<x && 0 == ( x & static_cast<T>( x - 1 ) );
+    }
+
+    /**
+     * Returns the number of set bits within given 32bit integer in O(1)
+     * using a <i>HAKEM 169 Bit Count</i> inspired implementation:
+     * <pre>
+     *   http://www.inwap.com/pdp10/hbaker/hakmem/hakmem.html
+     *   http://home.pipeline.com/~hbaker1/hakmem/hacks.html#item169
+     *   http://tekpool.wordpress.com/category/bit-count/
+     *   https://github.com/aistrate/HackersDelight/blob/master/Original/HDcode/pop.c.txt
+     *   https://github.com/aistrate/HackersDelight/blob/master/Original/HDcode/newCode/popDiff.c.txt
+     * </pre>
+     */
+    constexpr uint32_t bit_count(uint32_t n) noexcept {
+        // Note: Original used 'unsigned int',
+        // hence we use the unsigned right-shift '>>>'
+        /**
+         * Original using 'unsigned' right-shift and modulo
+         *
+        const uint32_t c = n
+                         - ( (n >> 1) & 033333333333 )
+                         - ( (n >> 2) & 011111111111 );
+        return ( ( c + ( c >> 3 ) ) & 030707070707 ) % 63;
+         *
+         */
+        // Hackers Delight, Figure 5-2, pop1 of pop.c.txt (or popDiff.c.txt in git repo)
+        n = n - ((n >> 1) & 0x55555555);
+        n = (n & 0x33333333) + ((n >> 2) & 0x33333333);
+        n = (n + (n >> 4)) & 0x0f0f0f0f;
+        n = n + (n >> 8);
+        n = n + (n >> 16);
+        return n & 0x3f;
     }
 
     /**
