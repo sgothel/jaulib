@@ -28,6 +28,7 @@
 
 #include <cstdint>
 #include <cmath>
+#include <climits>
 
 #include <jau/int_types.hpp>
 
@@ -49,7 +50,7 @@ namespace jau {
     // Remember: constexpr specifier used in a function or static data member (since C++17) declaration implies inline.
 
     /**
-     * Returns the value of the sign function.
+     * Returns the value of the sign function (w/o branching).
      * <pre>
      * -1 for x < 0
      *  0 for x = 0
@@ -89,8 +90,8 @@ namespace jau {
      * jau::invert_sign<int32_t>(x) = -x
      * </pre>
      *
-     * @tparam T an arithmetic number type
-     * @param x the arithmetic number
+     * @tparam T an unsigned arithmetic number type
+     * @param x the number
      * @return function result
      */
     template <typename T,
@@ -110,12 +111,16 @@ namespace jau {
     }
 
     /**
-     * Returns the absolute value of an arithmetic number
+     * Returns the absolute value of an arithmetic number (w/ branching)
      *
-     * Implementation uses jau::invert_sign() to have a safe absolute value conversion, if required.
+     * - signed uses jau::invert_sign() to have a safe absolute value conversion
+     * - unsigned just returns the value
+     * - 2-complement branch-less is not used due to lack of INT_MIN -> INT_MAX conversion, [bithacks Integer-Abs](http://www.graphics.stanford.edu/~seander/bithacks.html#IntegerAbs)
+     *
+     * This implementation uses jau::invert_sign() to have a safe absolute value conversion, if required.
      *
      * @tparam T an arithmetic number type
-     * @param x the arithmetic number
+     * @param x the number
      * @return function result
      */
     template <typename T,
@@ -123,7 +128,7 @@ namespace jau {
                                !std::is_unsigned_v<T>, bool> = true>
     constexpr T abs(const T x) noexcept
     {
-        return sign(x) < 0 ? invert_sign<T>( x ) : x;
+        return sign<T>(x) < 0 ? invert_sign<T>( x ) : x;
     }
 
     template <typename T,
@@ -132,6 +137,108 @@ namespace jau {
     constexpr T abs(const T x) noexcept
     {
         return x;
+    }
+
+    /**
+     * Returns the absolute value of an arithmetic number (w/o branching),
+     * while not covering INT_MIN -> INT_MAX conversion as abs(), see above.
+     *
+     * This implementation is equivalent to std::abs(), i.e. unsafe
+     *
+     * - signed integral uses 2-complement branch-less conversion, [bithacks Integer-Abs](http://www.graphics.stanford.edu/~seander/bithacks.html#IntegerAbs)
+     * - signed floating-point uses x * sign(x)
+     * - unsigned just returns the value
+     *
+     * This implementation uses 2-complement branch-less conversion, [bithacks Integer-Abs](http://www.graphics.stanford.edu/~seander/bithacks.html#IntegerAbs)
+     *
+     * @tparam T an arithmetic number type
+     * @param x the number
+     * @return function result
+     */
+    template <typename T,
+              std::enable_if_t< std::is_arithmetic_v<T> &&
+                                std::is_integral_v<T> &&
+                               !std::is_unsigned_v<T>, bool> = true>
+    constexpr T abs2(const T x) noexcept
+    {
+        using unsigned_T = std::make_unsigned_t<T>;
+        const T mask = x >> ( sizeof(T) * CHAR_BIT - 1 );
+        const unsigned_T r = static_cast<unsigned_T>( ( x + mask ) ^ mask );
+        return r;
+    }
+    template <typename T,
+              std::enable_if_t< std::is_arithmetic_v<T> &&
+                               !std::is_integral_v<T> &&
+                               !std::is_unsigned_v<T>, bool> = true>
+    constexpr T abs2(const T x) noexcept
+    {
+        return x * sign<T>(x);
+    }
+    template <typename T,
+              std::enable_if_t< std::is_arithmetic_v<T> &&
+                                std::is_unsigned_v<T>, bool> = true>
+    constexpr T abs2(const T x) noexcept
+    {
+        return x;
+    }
+
+    /**
+     * Power of 2 test (w/o branching).
+     *
+     * Source: [bithacks Test PowerOf2](http://www.graphics.stanford.edu/~seander/bithacks.html#DetermineIfPowerOf2)
+     *
+     * @tparam T an unsigned integral number type
+     * @param x the unsigned integral number
+     * @return true if arg is 2^n for some n > 0
+     */
+    template <typename T,
+              std::enable_if_t< std::is_integral_v<T> && std::is_unsigned_v<T>, bool> = true>
+    constexpr bool is_power_of_2(const T x) noexcept
+    {
+       return 0<x && 0 == ( x & static_cast<T>( x - 1 ) );
+    }
+
+    /**
+     * Returns ~0 (2-complement) if top bit of arg is set, otherwise 0 (w/o branching).
+     *
+     * @tparam T an unsigned integral number type
+     */
+    template <typename T,
+              std::enable_if_t< std::is_integral_v<T> && std::is_unsigned_v<T>, bool> = true>
+    inline constexpr T expand_top_bit(T x)
+    {
+       return T(0) - ( x >> ( sizeof(T) * CHAR_BIT - 1 ) );
+    }
+
+    /**
+     * Returns ~0 (2-complement) if arg is zero, otherwise 0 (w/o branching).
+     *
+     * @tparam T an unsigned integral number type
+     */
+    template <typename T,
+              std::enable_if_t< std::is_integral_v<T> && std::is_unsigned_v<T>, bool> = true>
+    inline constexpr T ct_is_zero(T x)
+    {
+       return expand_top_bit<T>( ~x & (x - 1) );
+    }
+
+    /**
+     * Return the index of the highest set bit within O(n/2).
+     *
+     * @tparam T an unsigned integral number type
+     * @param x value
+     */
+    template <typename T,
+              std::enable_if_t< std::is_integral_v<T> && std::is_unsigned_v<T>, bool> = true>
+    inline constexpr nsize_t high_bit(T x)
+    {
+        nsize_t hb = 0;
+        for(nsize_t s = ( CHAR_BIT * sizeof(T) ) >> 1; s > 0; s >>= 1) {
+            const nsize_t z = s * ( ( ~ct_is_zero( x >> s ) ) & 1 );
+            hb += z;
+            x >>= z;
+        }
+        return hb + x;
     }
 
     /**
@@ -153,19 +260,19 @@ namespace jau {
     constexpr bool add_overflow(const T a, const T b, T& res) noexcept
     {
 #if JAU_USE_BUILDIN_OVERFLOW && ( defined(__GNUC__) || defined(__clang__) )
-        if ( __builtin_add_overflow(a, b, &res) )
+        return __builtin_add_overflow(a, b, &res);
 #else
         // overflow:  a + b > R+ -> a > R+ - b, with b >= 0
         // underflow: a + b < R- -> a < R- - b, with b < 0
         if ( ( b >= 0 && a > std::numeric_limits<T>::max() - b ) ||
              ( b  < 0 && a < std::numeric_limits<T>::min() - b ) )
-#endif
         {
             return true;
         } else {
-            res = a * b;
+            res = a + b;
             return false;
         }
+#endif
     }
 
     /**
@@ -187,19 +294,19 @@ namespace jau {
     constexpr bool sub_overflow(const T a, const T b, T& res) noexcept
     {
 #if JAU_USE_BUILDIN_OVERFLOW && ( defined(__GNUC__) || defined(__clang__) )
-        if ( __builtin_sub_overflow(a, b, &res) )
+        return __builtin_sub_overflow(a, b, &res);
 #else
         // overflow:  a - b > R+ -> a > R+ + b, with b < 0
         // underflow: a - b < R- -> a < R- + b, with b >= 0
         if ( ( b  < 0 && a > std::numeric_limits<T>::max() + b ) ||
              ( b >= 0 && a < std::numeric_limits<T>::min() + b ) )
-#endif
         {
             return true;
         } else {
-            res = a * b;
+            res = a - b;
             return false;
         }
+#endif
     }
 
     /**
@@ -221,18 +328,18 @@ namespace jau {
     constexpr bool mul_overflow(const T a, const T b, T& res) noexcept
     {
 #if JAU_USE_BUILDIN_OVERFLOW && ( defined(__GNUC__) || defined(__clang__) )
-        if ( __builtin_mul_overflow(a, b, &res) )
+        return __builtin_mul_overflow(a, b, &res);
 #else
         // overflow: a * b > R+ -> a > R+ / b
         if ( ( b > 0 && abs(a) > std::numeric_limits<T>::max() / b ) ||
              ( b < 0 && abs(a) > std::numeric_limits<T>::min() / b ) )
-#endif
         {
             return true;
         } else {
             res = a * b;
             return false;
         }
+#endif
     }
 
     /**
