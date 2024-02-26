@@ -131,8 +131,11 @@ namespace jau {
         ExceptionBase& operator=(const ExceptionBase &o) = default;
         ExceptionBase& operator=(ExceptionBase &&o) = default;
 
-        std::string message() const noexcept { return msg_; }
-        std::string backtrace() const noexcept { return backtrace_; }
+        const std::string& message() const noexcept { return msg_; }
+        const std::string& backtrace() const noexcept { return backtrace_; }
+
+        /** Allow conversion to `const std::string&`, as required by Catch2's `REQUIRE_THROWS_MATCHES` */
+        operator const std::string&  () const {return message(); };
 
         virtual const char* what() const noexcept {
             return what_.c_str(); // return std::runtime_error::what();
