@@ -511,6 +511,40 @@ namespace jau::mp {
             }
 
             /**
+             * Returns (*this)^e, or pow(*this, e)
+             *
+             * Implementation is not optimized and naive, i.e. O(n)
+             *
+             * @param e the exponent
+             */
+            big_int_t pow(big_int_t e) {
+                const big_int_t& b = *this;
+                if( b.is_zero() ) {
+                    return big_int_t::zero();
+                }
+                const big_int_t one_v = big_int_t::one();
+                big_int_t r = one_v;
+                bool negative;
+                if( e.is_negative() ) {
+                    negative = true;
+                    e.flip_sign();
+                } else {
+                    negative = false;
+                }
+
+                while( e.is_nonzero() ) {
+                    r *= b;
+                    e -= one_v;
+                }
+
+                if( negative ) {
+                    return one_v / r;
+                } else {
+                    return r;
+                }
+            }
+
+            /**
             * Square value of *this
             * @param ws a temp workspace
             */

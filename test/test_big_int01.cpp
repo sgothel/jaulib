@@ -119,6 +119,13 @@ TEST_CASE( "MP Big Int Test 02", "[big_int_t][arithmetic][math]" ) {
     REQUIRE( big_int_t(10) == big_int_t( 2) * big_int_t(5) );
     REQUIRE( big_int_t( 5) == big_int_t(10) / big_int_t(2) );
     REQUIRE( big_int_t( 1) == big_int_t(10) % big_int_t(3) );
+
+    REQUIRE( big_int_t(  1) == big_int_t(10).pow( big_int_t( 0) ) );
+    REQUIRE( big_int_t( 10) == big_int_t(10).pow( big_int_t( 1) ) );
+    REQUIRE( big_int_t(  100000000_u64 ) == big_int_t(10).pow( big_int_t( 8) ) );
+    REQUIRE( big_int_t( 4294967296_u64 ) == big_int_t( 2).pow( big_int_t(32) ) );
+
+    REQUIRE( big_int_t(  0) == big_int_t(10).pow( big_int_t::from_s32(-1) ) );
 }
 TEST_CASE( "MP Big Int Error Handling Test 88", "[big_int_t][error][arithmetic][math]" ) {
     {
