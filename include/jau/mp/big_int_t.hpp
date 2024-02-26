@@ -195,7 +195,7 @@ namespace jau::mp {
              * Return the sign of the integer
              * @result the sign of the integer
              */
-            Sign sign() const noexcept { return (m_signedness); }
+            Sign sign() const noexcept { return m_signedness; }
 
             /**
              * @result the opposite sign of the represented integer value
@@ -476,7 +476,7 @@ namespace jau::mp {
                 return (*this);
             }
 
-            big_int_t operator/(const big_int_t& y) {
+            big_int_t operator/(const big_int_t& y) const {
                 if(y.sig_words() == 1) {
                     return *this / y.word_at(0);
                 }
@@ -518,11 +518,10 @@ namespace jau::mp {
 
             /**
             * Set *this to y - *this
-            * @param y the big_int_t to subtract from as a sequence of words
-            * @param y_words length of y in words
+            * @param y the big_int_t to subtract from
             * @param ws a temp workspace
             */
-            big_int_t& rev_sub(const mp_word_t y[], size_t y_words, std::vector<mp_word_t>& ws); // TODO
+            big_int_t& rev_sub(const big_int_t& y, std::vector<mp_word_t>& ws); // TODO
 
             /**
             * Set *this to (*this + y) % mod
@@ -1176,7 +1175,7 @@ namespace jau::mp {
                 q_out = q;
             }
 
-            big_int_t operator/(mp_word_t y) {
+            big_int_t operator/(const mp_word_t& y) const {
                 if(y == 0) {
                     throw jau::MathDivByZeroError("y == 0", E_FILE_LINE);
                 }
