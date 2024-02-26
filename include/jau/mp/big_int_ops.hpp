@@ -24,7 +24,7 @@
 #include <cassert>
 
 #include <jau/cpp_lang_util.hpp>
-#include <jau/int_math.hpp>
+#include <jau/math.hpp>
 #include <jau/ct_utils.hpp>
 
 namespace jau::mp {
@@ -47,6 +47,8 @@ namespace jau::mp {
 }
 
 namespace jau::mp::ops {
+
+    int bigint_cmp(const mp_word_t x[], nsize_t x_size, const mp_word_t y[], nsize_t y_size) noexcept;
 
     inline mp_word_t word_add(const mp_word_t x, const mp_word_t y, mp_word_t& carry) noexcept {
        mp_word_t z = x + y;
@@ -254,47 +256,6 @@ namespace jau::mp::ops {
         z[6] = word_madd2(x[6], y, carry);
         z[7] = word_madd2(x[7], y, carry);
         return carry;
-    }
-
-    /**
-     * Compare unsigned x and y mp_word_t
-     *
-     * Returns
-     * - -1 if x < y
-     * -  0 if x == y
-     * -  1 if x > y
-     */
-    inline int bigint_cmp(const mp_word_t x[], nsize_t x_size, const mp_word_t y[], nsize_t y_size) noexcept
-    {
-        constexpr const mp_word_t LT = static_cast<mp_word_t>(-1);
-        constexpr const mp_word_t EQ = 0;
-        constexpr const mp_word_t GT = 1;
-        const nsize_t common_elems = jau::min(x_size, y_size);
-
-        mp_word_t result = EQ; // until found otherwise
-
-        for(nsize_t i = 0; i != common_elems; i++) {
-            const auto is_eq = CT::Mask<mp_word_t>::is_equal(x[i], y[i]);
-            const auto is_lt = CT::Mask<mp_word_t>::is_lt(x[i], y[i]);
-            result = is_eq.select(result, is_lt.select(LT, GT));
-        }
-        if(x_size < y_size) {
-            mp_word_t mask = 0;
-            for(nsize_t i = x_size; i != y_size; i++) {
-                mask |= y[i];
-            }
-            // If any bits were set in high part of y, then x < y
-            result = CT::Mask<mp_word_t>::is_zero(mask).select(result, LT);
-        } else if(y_size < x_size) {
-            mp_word_t mask = 0;
-            for(nsize_t i = y_size; i != x_size; i++) {
-                mask |= x[i];
-            }
-            // If any bits were set in high part of x, then x > y
-            result = CT::Mask<mp_word_t>::is_zero(mask).select(result, GT);
-        }
-        CT::unpoison(result);
-        return static_cast<int>(result);
     }
 
     /** Two operand addition with carry out */
@@ -556,9 +517,9 @@ namespace jau::mp::ops {
     }
 
     /** Computes ((n1<<bits) + n0) / d */
-    inline mp_word_t bigint_divop(mp_word_t n1, mp_word_t n0, mp_word_t d) noexcept {
+    inline mp_word_t bigint_divop(mp_word_t n1, mp_word_t n0, mp_word_t d) {
         if(d == 0) {
-            return 0; // FIXME divide by zero
+            throw jau::MathDivByZeroError("d == 0", E_FILE_LINE);
         }
         if constexpr ( has_mp_dword ) {
             return static_cast<mp_word_t>( ( ( static_cast<mp_dword_t>(n1) << mp_word_bits ) | n0 ) / d );
@@ -582,6 +543,21 @@ namespace jau::mp::ops {
         }
     }
 
+    /** Compute ((n1<<bits) + n0) % d */
+    inline mp_word_t bigint_modop(mp_word_t n1, mp_word_t n0, mp_word_t d) {
+        if(d == 0) {
+            throw jau::MathDivByZeroError("d == 0", E_FILE_LINE);
+        }
+        if constexpr ( has_mp_dword ) {
+            return ( ( static_cast<mp_dword_t>(n1) << mp_word_bits) | n0 ) % d;
+        } else {
+            mp_word_t z = bigint_divop(n1, n0, d);
+            mp_word_t dummy = 0;
+            z = word_madd2(z, d, dummy);
+            return (n0-z);
+        }
+    }
+
     inline CT::Mask<mp_word_t>
     bigint_ct_is_eq(const mp_word_t x[], nsize_t x_size, const mp_word_t y[], nsize_t y_size) noexcept {
         const nsize_t common_elems = std::min(x_size, y_size);
@@ -594,11 +570,13 @@ namespace jau::mp::ops {
         // If any bits were set in high part of x/y, then they are not equal
         if(x_size < y_size)
         {
-            for(nsize_t i = x_size; i != y_size; i++)
+            for(nsize_t i = x_size; i != y_size; i++) {
                 diff |= y[i];
+            }
         } else if(y_size < x_size) {
-            for(nsize_t i = y_size; i != x_size; i++)
+            for(nsize_t i = y_size; i != x_size; i++) {
                 diff |= x[i];
+            }
         }
         return CT::Mask<mp_word_t>::is_zero(diff);
     }
@@ -640,6 +618,47 @@ namespace jau::mp::ops {
         }
 
         return is_lt;
+    }
+
+    /**
+     * Compare unsigned x and y mp_word_t
+     *
+     * Returns
+     * - -1 if x < y
+     * -  0 if x == y
+     * -  1 if x > y
+     */
+    inline int bigint_cmp(const mp_word_t x[], nsize_t x_size, const mp_word_t y[], nsize_t y_size) noexcept
+    {
+        constexpr const mp_word_t LT = static_cast<mp_word_t>(-1);
+        constexpr const mp_word_t EQ = 0;
+        constexpr const mp_word_t GT = 1;
+        const nsize_t common_elems = jau::min(x_size, y_size);
+
+        mp_word_t result = EQ; // until found otherwise
+
+        for(nsize_t i = 0; i != common_elems; i++) {
+            const auto is_eq = CT::Mask<mp_word_t>::is_equal(x[i], y[i]);
+            const auto is_lt = CT::Mask<mp_word_t>::is_lt(x[i], y[i]);
+            result = is_eq.select(result, is_lt.select(LT, GT));
+        }
+        if(x_size < y_size) {
+            mp_word_t mask = 0;
+            for(nsize_t i = x_size; i != y_size; i++) {
+                mask |= y[i];
+            }
+            // If any bits were set in high part of y, then x < y
+            result = CT::Mask<mp_word_t>::is_zero(mask).select(result, LT);
+        } else if(y_size < x_size) {
+            mp_word_t mask = 0;
+            for(nsize_t i = y_size; i != x_size; i++) {
+                mask |= x[i];
+            }
+            // If any bits were set in high part of x, then x > y
+            result = CT::Mask<mp_word_t>::is_zero(mask).select(result, GT);
+        }
+        CT::unpoison(result);
+        return static_cast<int>(result);
     }
 
 } // namespace jau::mp::ops

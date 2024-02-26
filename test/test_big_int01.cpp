@@ -114,3 +114,20 @@ TEST_CASE( "MP Big Int Test 01", "[big_int_t][arithmetic][math]" ) {
         std::cout << "big_int a*b:: " << ab.to_hex_string(true) << std::endl;
     }
 }
+TEST_CASE( "MP Big Int Test 02", "[big_int_t][arithmetic][math]" ) {
+    REQUIRE( big_int_t(10) == big_int_t( 5) + big_int_t(5) );
+    REQUIRE( big_int_t(10) == big_int_t( 2) * big_int_t(5) );
+    REQUIRE( big_int_t( 5) == big_int_t(10) / big_int_t(2) );
+    REQUIRE( big_int_t( 1) == big_int_t(10) % big_int_t(3) );
+}
+TEST_CASE( "MP Big Int Error Handling Test 88", "[big_int_t][error][arithmetic][math]" ) {
+    {
+        big_int_t a = 1, b = 0, r;
+        REQUIRE_THROWS_MATCHES( r = a / b, MathDivByZeroError, Catch::Matchers::ContainsSubstring("div_by_zero") );
+        REQUIRE_THROWS_MATCHES( r = a % b, MathDivByZeroError, Catch::Matchers::ContainsSubstring("div_by_zero") );
+    }
+    {
+        big_int_t a = big_int_t::from_s32(-1), b = big_int_t::from_s32(-1), r;
+        REQUIRE_THROWS_MATCHES( r = a % b, MathDomainError, Catch::Matchers::ContainsSubstring("invalid") );
+    }
+}
