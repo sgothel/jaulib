@@ -114,13 +114,15 @@ namespace jau {
      * Round up
      *
      * @tparam T an unsigned integral number type
+     * @tparam U an unsigned integral number type
      * @param n to be aligned number
      * @param align_to alignment boundary, must not be 0
      * @return n rounded up to a multiple of align_to
      */
-    template <typename T,
-              std::enable_if_t< std::is_integral_v<T> && std::is_unsigned_v<T>, bool> = true>
-    constexpr T round_up(const T n, const T align_to) {
+    template <typename T, typename U,
+              std::enable_if_t< std::is_integral_v<T> && std::is_unsigned_v<T> &&
+                                std::is_integral_v<U> && std::is_unsigned_v<U>, bool> = true>
+    constexpr T round_up(const T n, const U align_to) {
        assert(align_to != 0); // align_to must not be 0
 
        if(n % align_to) {
@@ -134,13 +136,15 @@ namespace jau {
      * Round down
      *
      * @tparam T an unsigned integral number type
+     * @tparam U an unsigned integral number type
      * @param n to be aligned number
      * @param align_to alignment boundary
      * @return n rounded down to a multiple of align_to
      */
-    template <typename T,
-              std::enable_if_t< std::is_integral_v<T> && std::is_unsigned_v<T>, bool> = true>
-    inline constexpr T round_down(T n, T align_to) {
+    template <typename T, typename U,
+              std::enable_if_t< std::is_integral_v<T> && std::is_unsigned_v<T> &&
+                                std::is_integral_v<U> && std::is_unsigned_v<U>, bool> = true>
+    constexpr T round_down(T n, U align_to) {
        return align_to == 0 ? n : ( n - ( n % align_to ) );
     }
 
