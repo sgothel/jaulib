@@ -273,7 +273,7 @@ namespace jau {
     /**
      * Returns the minimum of two integrals for `MIN <= x - y <= MAX` (w/o branching).
      *
-     * Source: [bithacks Test PowerOf2](http://www.graphics.stanford.edu/~seander/bithacks.html#IntegerMinOrMax)
+     * Source: [bithacks Test IntegerMinOrMax](http://www.graphics.stanford.edu/~seander/bithacks.html#IntegerMinOrMax)
      *
      * Note: On an x86_64 architecture min() w/ branching is of equal speed or even faster.
      *
@@ -291,7 +291,7 @@ namespace jau {
     /**
      * Returns the maximum of two integrals for `MIN <= x - y <= MAX` (w/o branching).
      *
-     * Source: [bithacks Test PowerOf2](http://www.graphics.stanford.edu/~seander/bithacks.html#IntegerMinOrMax)
+     * Source: [bithacks Test IntegerMinOrMax](http://www.graphics.stanford.edu/~seander/bithacks.html#IntegerMinOrMax)
      *
      * Note: On an x86_64 architecture max() w/ branching is of equal speed or even faster.
      *
@@ -340,6 +340,33 @@ namespace jau {
     constexpr bool is_power_of_2(const T x) noexcept
     {
        return 0<x && 0 == ( x & static_cast<T>( x - 1 ) );
+    }
+
+    /**
+     * Returns the next higher power of 2 of given unsigned 32-bit {@code n}
+     * <p>
+     * Source: [bithacks RoundUpPowerOf2](http://www.graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2)
+     * </p>
+     */
+    constexpr uint32_t next_power_of_2(uint32_t n) {
+        n--;
+        n |= n >> 1;
+        n |= n >> 2;
+        n |= n >> 4;
+        n |= n >> 8;
+        n |= n >> 16;
+        return n + 1;
+    }
+
+    /**
+     * If the given {@code n} is not is_power_of_2() return next_power_of_2(),
+     * otherwise return {@code n} unchanged.
+     * <pre>
+     * return is_power_of_2(n) ? n : next_power_of_2(n);
+     * </pre>
+     */
+    constexpr uint32_t round_to_power_of_2(const uint32_t n) {
+        return is_power_of_2(n) ? n : next_power_of_2(n);
     }
 
     /**

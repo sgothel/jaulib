@@ -144,6 +144,13 @@ TEST_CASE( "Int Math Test 10", "[bits][arithmetic][math]" ) {
         REQUIRE( true == is_power_of_2( 64_u32 ) );
     }
     {
+        REQUIRE( 0 == round_to_power_of_2(0) );
+        REQUIRE( 1 == round_to_power_of_2(1) );
+        REQUIRE( 2 == round_to_power_of_2(2) );
+        REQUIRE( 4 == round_to_power_of_2(3) );
+        REQUIRE(64 == round_to_power_of_2(63) );
+    }
+    {
         REQUIRE(  0 == bit_count( 0b00000000000000000000000000000000UL ) );
         REQUIRE(  1 == bit_count( 0b00000000000000000000000000000001UL ) );
         REQUIRE(  1 == bit_count( 0b10000000000000000000000000000000UL ) );
