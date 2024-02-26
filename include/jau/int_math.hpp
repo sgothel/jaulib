@@ -327,6 +327,22 @@ namespace jau {
 #endif // defined(JAU_INT_MATH_EXPERIMENTAL)
 
     /**
+     * Returns merged `a_if_masked` bits selected by `mask` `1` bits and `b_if_unmasked` bits selected by `mask` `0` bits
+     *
+     * Source: [bithacks MaskedMerge](http://www.graphics.stanford.edu/~seander/bithacks.html#MaskedMerge)
+     *
+     * @tparam T an unsigned integral number type
+     * @param mask 1 where bits from `a_if_masked` should be selected; 0 where from `b_if_unmasked`.
+     * @param a_if_masked value to merge in masked bits
+     * @param b_if_unmasked value to merge in non-masked bits
+     */
+    template <typename T,
+              std::enable_if_t< std::is_integral_v<T> && std::is_unsigned_v<T>, bool> = true>
+    constexpr T masked_merge(T mask, T a_if_masked, T b_if_unmasked) {
+        return b_if_unmasked ^ ( mask & ( a_if_masked ^ b_if_unmasked ) );
+    }
+
+    /**
      * Power of 2 test (w/o branching).
      *
      * Source: [bithacks Test PowerOf2](http://www.graphics.stanford.edu/~seander/bithacks.html#DetermineIfPowerOf2)

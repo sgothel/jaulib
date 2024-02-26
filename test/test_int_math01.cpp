@@ -139,6 +139,12 @@ TEST_CASE( "Int Math Test 03b", "[min2][max2][clip2][arithmetic][math]" ) {
 
 TEST_CASE( "Int Math Test 10", "[bits][arithmetic][math]" ) {
     {
+        REQUIRE(  0b0000000000000000U == masked_merge( 0b0000000000000000U, 0b0000000000000000U, 0b0000000000000000U ) );
+        REQUIRE(  0b1100000000000011U == masked_merge( 0b1111111100000000U, 0b1100000000000000U, 0b0000000000000011U ) );
+        REQUIRE(               64_u32 == masked_merge( 0b1111111111111111U,              64_u32, 256_u32 ) );
+        REQUIRE(              256_u32 == masked_merge( 0b0000000000000000U,              64_u32, 256_u32 ) );
+    }
+    {
         REQUIRE( true == is_power_of_2(  2_u32 ) );
         REQUIRE( true == is_power_of_2(  4_u32 ) );
         REQUIRE( true == is_power_of_2( 64_u32 ) );
