@@ -28,8 +28,6 @@
 
 #include <jau/test/catch2_ext.hpp>
 
-#define JAU_INT_MATH_EXPERIMENTAL 1
-
 #include <jau/int_math.hpp>
 
 using namespace jau;
@@ -90,20 +88,20 @@ TEST_CASE( "Int Math Test 02", "[abs][arithmetic][math]" ) {
         // abs signed integral
         REQUIRE( 1 == jau::abs( 1) );
         REQUIRE( 1 == jau::abs(-1) );
-        REQUIRE( 1 == jau::abs2( 1) );
-        REQUIRE( 1 == jau::abs2(-1) );
+        REQUIRE( 1 == jau::ct_abs( 1) );
+        REQUIRE( 1 == jau::ct_abs(-1) );
         REQUIRE( 1_i64 == jau::abs( 1_i64) );
         REQUIRE( 1_i64 == jau::abs(-1_i64) );
-        REQUIRE( 1_i64 == jau::abs2( 1_i64) );
-        REQUIRE( 1_i64 == jau::abs2(-1_i64) );
+        REQUIRE( 1_i64 == jau::ct_abs( 1_i64) );
+        REQUIRE( 1_i64 == jau::ct_abs(-1_i64) );
         REQUIRE( std::numeric_limits<int64_t>::max()  == jau::abs( std::numeric_limits<int64_t>::max() ) );
         REQUIRE( std::numeric_limits<int64_t>::max()  == jau::abs( std::numeric_limits<int64_t>::min() ) );
-        REQUIRE( std::numeric_limits<int64_t>::max()  == jau::abs2( std::numeric_limits<int64_t>::max() ) );
-        REQUIRE( std::numeric_limits<int64_t>::min()  == jau::abs2( std::numeric_limits<int64_t>::min() ) );
+        REQUIRE( std::numeric_limits<int64_t>::max()  == jau::ct_abs( std::numeric_limits<int64_t>::max() ) );
+        REQUIRE( std::numeric_limits<int64_t>::min()  == jau::ct_abs( std::numeric_limits<int64_t>::min() ) );
         REQUIRE( std::numeric_limits<int64_t>::max()  == std::abs( std::numeric_limits<int64_t>::max() ) );
         REQUIRE( std::numeric_limits<int64_t>::min()  == std::abs( std::numeric_limits<int64_t>::min() ) );
         REQUIRE( INT32_MAX  == jau::abs( INT32_MIN ) );
-        REQUIRE( INT32_MIN  == jau::abs2( INT32_MIN ) );
+        REQUIRE( INT32_MIN  == jau::ct_abs( INT32_MIN ) );
         REQUIRE( INT32_MIN  == std::abs( INT32_MIN ) );
     }
 }
@@ -122,27 +120,27 @@ TEST_CASE( "Int Math Test 03a", "[min][max][clip][arithmetic][math]" ) {
     REQUIRE(        10  == jau::clamp( INT32_MAX, -10, 10 ) );
 }
 
-TEST_CASE( "Int Math Test 03b", "[min2][max2][clip2][arithmetic][math]" ) {
-    REQUIRE(         0  == jau::min2( 0, INT32_MAX ) );
-    REQUIRE( INT32_MAX  == jau::max2( 0, INT32_MAX ) );
-    REQUIRE( INT32_MAX-1== jau::min2( INT32_MAX-1, INT32_MAX ) );
-    REQUIRE( INT32_MAX  == jau::max2( INT32_MAX-1, INT32_MAX ) );
-    REQUIRE( INT32_MIN+1  == jau::min2( 0, INT32_MIN+1 ) ); // limitation: `MIN <= x - y <= MAX`
-    REQUIRE(         0  == jau::max2( 0, INT32_MIN+1 ) );   // limitation: `MIN <= x - y <= MAX`
-    REQUIRE( INT32_MIN  == jau::min2( INT32_MIN+1, INT32_MIN ) );
-    REQUIRE( INT32_MIN+1== jau::max2( INT32_MIN+1, INT32_MIN ) );
-    REQUIRE(         0  == jau::clamp2( 0, -10, 10 ) );
-    REQUIRE(       -10  == jau::clamp2( INT32_MIN+11, -10, 10 ) ); // limitation: `MIN <= x - y <= MAX`
-    REQUIRE(        10  == jau::clamp2( INT32_MAX-11, -10, 10 ) ); // limitation: `MIN <= x - y <= MAX`
+TEST_CASE( "Int Math Test 03b", "[ct_min][ct_max][clip2][arithmetic][math]" ) {
+    REQUIRE(         0  == jau::ct_min( 0, INT32_MAX ) );
+    REQUIRE( INT32_MAX  == jau::ct_max( 0, INT32_MAX ) );
+    REQUIRE( INT32_MAX-1== jau::ct_min( INT32_MAX-1, INT32_MAX ) );
+    REQUIRE( INT32_MAX  == jau::ct_max( INT32_MAX-1, INT32_MAX ) );
+    REQUIRE( INT32_MIN+1  == jau::ct_min( 0, INT32_MIN+1 ) ); // limitation: `MIN <= x - y <= MAX`
+    REQUIRE(         0  == jau::ct_max( 0, INT32_MIN+1 ) );   // limitation: `MIN <= x - y <= MAX`
+    REQUIRE( INT32_MIN  == jau::ct_min( INT32_MIN+1, INT32_MIN ) );
+    REQUIRE( INT32_MIN+1== jau::ct_max( INT32_MIN+1, INT32_MIN ) );
+    REQUIRE(         0  == jau::ct_clamp( 0, -10, 10 ) );
+    REQUIRE(       -10  == jau::ct_clamp( INT32_MIN+11, -10, 10 ) ); // limitation: `MIN <= x - y <= MAX`
+    REQUIRE(        10  == jau::ct_clamp( INT32_MAX-11, -10, 10 ) ); // limitation: `MIN <= x - y <= MAX`
 }
 
 
 TEST_CASE( "Int Math Test 10", "[bits][arithmetic][math]" ) {
     {
-        REQUIRE(  0b0000000000000000U == masked_merge( 0b0000000000000000U, 0b0000000000000000U, 0b0000000000000000U ) );
-        REQUIRE(  0b1100000000000011U == masked_merge( 0b1111111100000000U, 0b1100000000000000U, 0b0000000000000011U ) );
-        REQUIRE(               64_u32 == masked_merge( 0b1111111111111111U,              64_u32, 256_u32 ) );
-        REQUIRE(              256_u32 == masked_merge( 0b0000000000000000U,              64_u32, 256_u32 ) );
+        REQUIRE(  0b0000000000000000U == ct_masked_merge( 0b0000000000000000U, 0b0000000000000000U, 0b0000000000000000U ) );
+        REQUIRE(  0b1100000000000011U == ct_masked_merge( 0b1111111100000000U, 0b1100000000000000U, 0b0000000000000011U ) );
+        REQUIRE(               64_u32 == ct_masked_merge( 0b1111111111111111U,              64_u32, 256_u32 ) );
+        REQUIRE(              256_u32 == ct_masked_merge( 0b0000000000000000U,              64_u32, 256_u32 ) );
     }
     {
         REQUIRE( true == is_power_of_2(  2_u32 ) );
@@ -157,12 +155,12 @@ TEST_CASE( "Int Math Test 10", "[bits][arithmetic][math]" ) {
         REQUIRE(64 == round_to_power_of_2(63) );
     }
     {
-        REQUIRE(  0 == bit_count( 0b00000000000000000000000000000000UL ) );
-        REQUIRE(  1 == bit_count( 0b00000000000000000000000000000001UL ) );
-        REQUIRE(  1 == bit_count( 0b10000000000000000000000000000000UL ) );
-        REQUIRE( 16 == bit_count( 0b10101010101010101010101010101010UL ) );
-        REQUIRE( 16 == bit_count( 0b01010101010101010101010101010101UL ) );
-        REQUIRE( 32 == bit_count( 0b11111111111111111111111111111111UL ) );
+        REQUIRE(  0 == ct_bit_count( 0b00000000000000000000000000000000UL ) );
+        REQUIRE(  1 == ct_bit_count( 0b00000000000000000000000000000001UL ) );
+        REQUIRE(  1 == ct_bit_count( 0b10000000000000000000000000000000UL ) );
+        REQUIRE( 16 == ct_bit_count( 0b10101010101010101010101010101010UL ) );
+        REQUIRE( 16 == ct_bit_count( 0b01010101010101010101010101010101UL ) );
+        REQUIRE( 32 == ct_bit_count( 0b11111111111111111111111111111111UL ) );
     }
     {
         REQUIRE( 0 == high_bit( 0b00000000U ) );

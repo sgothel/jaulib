@@ -1,7 +1,6 @@
 /*
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2020 Gothel Software e.K.
- * Copyright (c) 2020 ZAFENA AB
+ * Copyright (c) 2020-2024 Gothel Software e.K.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -23,14 +22,15 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef JAU_BASIC_INT_MATH_HPP_
-#define JAU_BASIC_INT_MATH_HPP_
+#ifndef JAU_INT_MATH_HPP_
+#define JAU_INT_MATH_HPP_
 
 #include <cstdint>
 #include <cmath>
 #include <climits>
 
 #include <jau/int_types.hpp>
+#include <jau/int_math_ct.hpp>
 
 namespace jau {
 
@@ -50,13 +50,16 @@ namespace jau {
     // Remember: constexpr specifier used in a function or static data member (since C++17) declaration implies inline.
 
     /**
-     * Returns the value of the sign function (w/o branching).
+     * Returns the value of the sign function (w/o branching ?) in O(1).
      * <pre>
      * -1 for x < 0
      *  0 for x = 0
      *  1 for x > 0
      * </pre>
      * Implementation is type safe.
+     *
+     * Branching may occur due to relational operator.
+     *
      * @tparam T an arithmetic number type
      * @param x the arithmetic number
      * @return function result
@@ -69,7 +72,7 @@ namespace jau {
     }
 
     /**
-     * Safely inverts the sign of an arithmetic number.
+     * Safely inverts the sign of an arithmetic number w/ branching in O(1)
      *
      * Implementation takes special care to have T_MIN, i.e. std::numeric_limits<T>::min(),
      * converted to T_MAX, i.e. std::numeric_limits<T>::max().<br>
@@ -111,7 +114,7 @@ namespace jau {
     }
 
     /**
-     * Round up
+     * Round up w/ branching in O(1)
      *
      * @tparam T an unsigned integral number type
      * @tparam U an unsigned integral number type
@@ -133,7 +136,7 @@ namespace jau {
     }
 
     /**
-     * Round down
+     * Round down w/ branching in O(1)
      *
      * @tparam T an unsigned integral number type
      * @tparam U an unsigned integral number type
@@ -149,7 +152,7 @@ namespace jau {
     }
 
     /**
-     * Returns the absolute value of an arithmetic number (w/ branching)
+     * Returns the absolute value of an arithmetic number (w/ branching) in O(1)
      *
      * - signed uses jau::invert_sign() to have a safe absolute value conversion
      * - unsigned just returns the value
@@ -177,55 +180,8 @@ namespace jau {
         return x;
     }
 
-#if defined(JAU_INT_MATH_EXPERIMENTAL)
     /**
-     * Returns the absolute value of an arithmetic number (w/o branching),
-     * while not covering INT_MIN -> INT_MAX conversion as abs(), see above.
-     *
-     * This implementation is equivalent to std::abs(), i.e. unsafe
-     *
-     * - signed integral uses 2-complement branch-less conversion, [bithacks Integer-Abs](http://www.graphics.stanford.edu/~seander/bithacks.html#IntegerAbs)
-     * - signed floating-point uses x * sign(x)
-     * - unsigned just returns the value
-     *
-     * This implementation uses 2-complement branch-less conversion, [bithacks Integer-Abs](http://www.graphics.stanford.edu/~seander/bithacks.html#IntegerAbs)
-     *
-     * Note: On an x86_64 architecture abs() w/ branching is of equal speed or even faster.
-     *
-     * @tparam T an arithmetic number type
-     * @param x the number
-     * @return function result
-     */
-    template <typename T,
-              std::enable_if_t< std::is_arithmetic_v<T> &&
-                                std::is_integral_v<T> &&
-                               !std::is_unsigned_v<T>, bool> = true>
-    constexpr T abs2(const T x) noexcept
-    {
-        using unsigned_T = std::make_unsigned_t<T>;
-        const T mask = x >> ( sizeof(T) * CHAR_BIT - 1 );
-        const unsigned_T r = static_cast<unsigned_T>( ( x + mask ) ^ mask );
-        return r;
-    }
-    template <typename T,
-              std::enable_if_t< std::is_arithmetic_v<T> &&
-                               !std::is_integral_v<T> &&
-                               !std::is_unsigned_v<T>, bool> = true>
-    constexpr T abs2(const T x) noexcept
-    {
-        return x * jau::sign<T>(x);
-    }
-    template <typename T,
-              std::enable_if_t< std::is_arithmetic_v<T> &&
-                                std::is_unsigned_v<T>, bool> = true>
-    constexpr T abs2(const T x) noexcept
-    {
-        return x;
-    }
-#endif // defined(JAU_INT_MATH_EXPERIMENTAL)
-
-    /**
-     * Returns the minimum of two integrals (w/ branching).
+     * Returns the minimum of two integrals (w/ branching) in O(1)
      *
      * @tparam T an integral number type
      * @param x one number
@@ -239,7 +195,7 @@ namespace jau {
     }
 
     /**
-     * Returns the maximum of two integrals (w/ branching).
+     * Returns the maximum of two integrals (w/ branching) in O(1)
      *
      * @tparam T an integral number type
      * @param x one number
@@ -253,7 +209,7 @@ namespace jau {
     }
 
     /**
-     * Returns constrained integral value to lie between given min- and maximum value (w/ branching).
+     * Returns constrained integral value to lie between given min- and maximum value (w/ branching) in O(1).
      *
      * Implementation returns `min(max(x, min_val), max_val)`, analog to GLSL's clamp()
      *
@@ -269,83 +225,12 @@ namespace jau {
         return jau::min<T>(jau::max<T>(x, min_val), max_val);
     }
 
-#if defined(JAU_INT_MATH_EXPERIMENTAL)
     /**
-     * Returns the minimum of two integrals for `MIN <= x - y <= MAX` (w/o branching).
-     *
-     * Source: [bithacks Test IntegerMinOrMax](http://www.graphics.stanford.edu/~seander/bithacks.html#IntegerMinOrMax)
-     *
-     * Note: On an x86_64 architecture min() w/ branching is of equal speed or even faster.
-     *
-     * @tparam T an integral number type
-     * @param x one number
-     * @param x the other number
-     */
-    template <typename T,
-              std::enable_if_t< std::is_integral_v<T>, bool> = true>
-    constexpr T min2(const T x, const T y) noexcept
-    {
-        return y + ( (x - y) & ( (x - y) >> ( sizeof(T) * CHAR_BIT - 1 ) ) );
-    }
-
-    /**
-     * Returns the maximum of two integrals for `MIN <= x - y <= MAX` (w/o branching).
-     *
-     * Source: [bithacks Test IntegerMinOrMax](http://www.graphics.stanford.edu/~seander/bithacks.html#IntegerMinOrMax)
-     *
-     * Note: On an x86_64 architecture max() w/ branching is of equal speed or even faster.
-     *
-     * @tparam T an integral number type
-     * @param x one number
-     * @param x the other number
-     */
-    template <typename T,
-              std::enable_if_t< std::is_integral_v<T>, bool> = true>
-    constexpr T max2(const T x, const T y) noexcept
-    {
-        return x - ( (x - y) & ( (x - y) >> ( sizeof(T) * CHAR_BIT - 1 ) ) );
-    }
-
-    /**
-     * Returns constrained integral value to lie between given min- and maximum value for `MIN <= x - y <= MAX` (w/o branching).
-     *
-     * Implementation returns `min2(max2(x, min_val), max_val)`, analog to GLSL's clamp()
-     *
-     * Note: On an x86_64 architecture clamp() w/ branching is of equal speed or even faster.
-     *
-     * @tparam T an integral number type
-     * @param x one number
-     * @param min_val the minimum limes, inclusive
-     * @param max_val the maximum limes, inclusive
-     */
-    template <typename T,
-              std::enable_if_t< std::is_integral_v<T>, bool> = true>
-    constexpr T clamp2(const T x, const T min_val, const T max_val) noexcept
-    {
-        return jau::min2<T>(jau::max2<T>(x, min_val), max_val);
-    }
-#endif // defined(JAU_INT_MATH_EXPERIMENTAL)
-
-    /**
-     * Returns merged `a_if_masked` bits selected by `mask` `1` bits and `b_if_unmasked` bits selected by `mask` `0` bits
-     *
-     * Source: [bithacks MaskedMerge](http://www.graphics.stanford.edu/~seander/bithacks.html#MaskedMerge)
-     *
-     * @tparam T an unsigned integral number type
-     * @param mask 1 where bits from `a_if_masked` should be selected; 0 where from `b_if_unmasked`.
-     * @param a_if_masked value to merge in masked bits
-     * @param b_if_unmasked value to merge in non-masked bits
-     */
-    template <typename T,
-              std::enable_if_t< std::is_integral_v<T> && std::is_unsigned_v<T>, bool> = true>
-    constexpr T masked_merge(T mask, T a_if_masked, T b_if_unmasked) {
-        return b_if_unmasked ^ ( mask & ( a_if_masked ^ b_if_unmasked ) );
-    }
-
-    /**
-     * Power of 2 test (w/o branching).
+     * Power of 2 test (w/o branching ?) in O(1)
      *
      * Source: [bithacks Test PowerOf2](http://www.graphics.stanford.edu/~seander/bithacks.html#DetermineIfPowerOf2)
+     *
+     * Branching may occur due to relational operator.
      *
      * @tparam T an unsigned integral number type
      * @param x the unsigned integral number
@@ -359,22 +244,6 @@ namespace jau {
     }
 
     /**
-     * Returns the next higher power of 2 of given unsigned 32-bit {@code n}
-     * <p>
-     * Source: [bithacks RoundUpPowerOf2](http://www.graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2)
-     * </p>
-     */
-    constexpr uint32_t next_power_of_2(uint32_t n) {
-        n--;
-        n |= n >> 1;
-        n |= n >> 2;
-        n |= n >> 4;
-        n |= n >> 8;
-        n |= n >> 16;
-        return n + 1;
-    }
-
-    /**
      * If the given {@code n} is not is_power_of_2() return next_power_of_2(),
      * otherwise return {@code n} unchanged.
      * <pre>
@@ -382,67 +251,11 @@ namespace jau {
      * </pre>
      */
     constexpr uint32_t round_to_power_of_2(const uint32_t n) {
-        return is_power_of_2(n) ? n : next_power_of_2(n);
+        return is_power_of_2(n) ? n : ct_next_power_of_2(n);
     }
 
     /**
-     * Returns the number of set bits within given 32bit integer in O(1)
-     * using a <i>HAKEM 169 Bit Count</i> inspired implementation:
-     * <pre>
-     *   http://www.inwap.com/pdp10/hbaker/hakmem/hakmem.html
-     *   http://home.pipeline.com/~hbaker1/hakmem/hacks.html#item169
-     *   http://tekpool.wordpress.com/category/bit-count/
-     *   https://github.com/aistrate/HackersDelight/blob/master/Original/HDcode/pop.c.txt
-     *   https://github.com/aistrate/HackersDelight/blob/master/Original/HDcode/newCode/popDiff.c.txt
-     * </pre>
-     */
-    constexpr uint32_t bit_count(uint32_t n) noexcept {
-        // Note: Original used 'unsigned int',
-        // hence we use the unsigned right-shift '>>>'
-        /**
-         * Original using 'unsigned' right-shift and modulo
-         *
-        const uint32_t c = n
-                         - ( (n >> 1) & 033333333333 )
-                         - ( (n >> 2) & 011111111111 );
-        return ( ( c + ( c >> 3 ) ) & 030707070707 ) % 63;
-         *
-         */
-        // Hackers Delight, Figure 5-2, pop1 of pop.c.txt (or popDiff.c.txt in git repo)
-        n = n - ((n >> 1) & 0x55555555);
-        n = (n & 0x33333333) + ((n >> 2) & 0x33333333);
-        n = (n + (n >> 4)) & 0x0f0f0f0f;
-        n = n + (n >> 8);
-        n = n + (n >> 16);
-        return n & 0x3f;
-    }
-
-    /**
-     * Returns ~0 (2-complement) if top bit of arg is set, otherwise 0 (w/o branching).
-     *
-     * @tparam T an unsigned integral number type
-     */
-    template <typename T,
-              std::enable_if_t< std::is_integral_v<T> && std::is_unsigned_v<T>, bool> = true>
-    inline constexpr T expand_top_bit(T x)
-    {
-       return T(0) - ( x >> ( sizeof(T) * CHAR_BIT - 1 ) );
-    }
-
-    /**
-     * Returns ~0 (2-complement) if arg is zero, otherwise 0 (w/o branching).
-     *
-     * @tparam T an unsigned integral number type
-     */
-    template <typename T,
-              std::enable_if_t< std::is_integral_v<T> && std::is_unsigned_v<T>, bool> = true>
-    inline constexpr T ct_is_zero(T x)
-    {
-       return jau::expand_top_bit<T>( ~x & (x - 1) );
-    }
-
-    /**
-     * Return the index of the highest set bit within O(n/2).
+     * Return the index of the highest set bit w/ branching (loop) in O(n), actually O(n/2).
      *
      * @tparam T an unsigned integral number type
      * @param x value
@@ -693,4 +506,4 @@ namespace jau {
 
 } // namespace jau
 
-#endif /* JAU_BASIC_INT_MATH_HPP_ */
+#endif /* JAU_INT_MATH_HPP_ */

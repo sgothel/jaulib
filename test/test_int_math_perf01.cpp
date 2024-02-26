@@ -46,15 +46,15 @@ TEST_CASE( "Int Math Bench 01a", "[abs][benchmark][arithmetic][math]" ) {
         REQUIRE( INT32_MAX  == jau::abs( INT32_MIN ) );
     };
 }
-TEST_CASE( "Int Math Bench 01b", "[abs2][benchmark][arithmetic][math]" ) {
-    BENCHMARK("abs2 Benchmark") {
-        REQUIRE( 1 == jau::abs2( 1) );
-        REQUIRE( 1 == jau::abs2(-1) );
-        REQUIRE( 1_i64 == jau::abs2( 1_i64) );
-        REQUIRE( 1_i64 == jau::abs2(-1_i64) );
-        REQUIRE( std::numeric_limits<int64_t>::max()  == jau::abs2( std::numeric_limits<int64_t>::max() ) );
-        REQUIRE( std::numeric_limits<int64_t>::min()  == jau::abs2( std::numeric_limits<int64_t>::min() ) );
-        REQUIRE( INT32_MIN  == jau::abs2( INT32_MIN ) );
+TEST_CASE( "Int Math Bench 01b", "[ct_abs][benchmark][arithmetic][math]" ) {
+    BENCHMARK("ct_abs Benchmark") {
+        REQUIRE( 1 == jau::ct_abs( 1) );
+        REQUIRE( 1 == jau::ct_abs(-1) );
+        REQUIRE( 1_i64 == jau::ct_abs( 1_i64) );
+        REQUIRE( 1_i64 == jau::ct_abs(-1_i64) );
+        REQUIRE( std::numeric_limits<int64_t>::max()  == jau::ct_abs( std::numeric_limits<int64_t>::max() ) );
+        REQUIRE( std::numeric_limits<int64_t>::min()  == jau::ct_abs( std::numeric_limits<int64_t>::min() ) );
+        REQUIRE( INT32_MIN  == jau::ct_abs( INT32_MIN ) );
     };
 }
 
@@ -70,15 +70,15 @@ TEST_CASE( "Int Math Bench 02a", "[min][max][benchmark][arithmetic][math]" ) {
         REQUIRE( INT32_MIN+1== jau::max( INT32_MIN+1, INT32_MIN ) );
     };
 }
-TEST_CASE( "Int Math Bench 03a", "[min2][max2][benchmark][arithmetic][math]" ) {
+TEST_CASE( "Int Math Bench 03a", "[ct_min][ct_max][benchmark][arithmetic][math]" ) {
     BENCHMARK("Min2Max2 Benchmark") {
-        REQUIRE(         0  == jau::min2( 0, INT32_MAX ) );
-        REQUIRE( INT32_MAX  == jau::max2( 0, INT32_MAX ) );
-        REQUIRE( INT32_MAX-1== jau::min2( INT32_MAX-1, INT32_MAX ) );
-        REQUIRE( INT32_MAX  == jau::max2( INT32_MAX-1, INT32_MAX ) );
-        REQUIRE( INT32_MIN+1  == jau::min2( 0, INT32_MIN+1 ) ); // limitation: `MIN <= x - y <= MAX`
-        REQUIRE(         0  == jau::max2( 0, INT32_MIN+1 ) );   // limitation: `MIN <= x - y <= MAX`
-        REQUIRE( INT32_MIN  == jau::min2( INT32_MIN+1, INT32_MIN ) );
-        REQUIRE( INT32_MIN+1== jau::max2( INT32_MIN+1, INT32_MIN ) );
+        REQUIRE(         0  == jau::ct_min( 0, INT32_MAX ) );
+        REQUIRE( INT32_MAX  == jau::ct_max( 0, INT32_MAX ) );
+        REQUIRE( INT32_MAX-1== jau::ct_min( INT32_MAX-1, INT32_MAX ) );
+        REQUIRE( INT32_MAX  == jau::ct_max( INT32_MAX-1, INT32_MAX ) );
+        REQUIRE( INT32_MIN+1  == jau::ct_min( 0, INT32_MIN+1 ) ); // limitation: `MIN <= x - y <= MAX`
+        REQUIRE(         0  == jau::ct_max( 0, INT32_MIN+1 ) );   // limitation: `MIN <= x - y <= MAX`
+        REQUIRE( INT32_MIN  == jau::ct_min( INT32_MIN+1, INT32_MIN ) );
+        REQUIRE( INT32_MIN+1== jau::ct_max( INT32_MIN+1, INT32_MIN ) );
     };
 }
