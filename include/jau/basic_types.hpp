@@ -1,7 +1,6 @@
 /*
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2020 Gothel Software e.K.
- * Copyright (c) 2020 ZAFENA AB
+ * Copyright (c) 2020-2024 Gothel Software e.K.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -135,7 +134,7 @@ namespace jau {
         const std::string& backtrace() const noexcept { return backtrace_; }
 
         /** Allow conversion to `const std::string&`, as required by Catch2's `REQUIRE_THROWS_MATCHES` */
-        operator const std::string&  () const {return message(); };
+        operator const std::string&  () const noexcept { return message(); };
 
         virtual const char* what() const noexcept {
             return what_.c_str(); // return std::runtime_error::what();
