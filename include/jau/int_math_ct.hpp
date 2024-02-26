@@ -33,7 +33,8 @@
 
 namespace jau {
 
-    /** \addtogroup Constant Time (CT) Integral Operations
+    /** @defgroup ConstantTime Constant Time (CT) Integral Operations
+     * Integral integer operations in constant time (CT), see also and meta-group \ref Math
      *
      *  @{
      */

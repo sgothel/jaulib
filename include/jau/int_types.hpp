@@ -35,7 +35,7 @@ namespace jau {
     /** @defgroup Integer Integer types and arithmetic
      * Integral integer types and arithmetic.
      *
-     * Further support is coming from \ref ByteUtils.
+     * Further support is coming from \ref ByteUtils and meta-group \ref Math
      *
      *  @{
      */

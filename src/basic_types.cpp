@@ -34,6 +34,7 @@
 #include <jau/debug.hpp>
 #include <jau/basic_types.hpp>
 #include <jau/functional.hpp>
+#include <jau/math.hpp>
 
 using namespace jau;
 
@@ -525,4 +526,15 @@ bool jau::to_fraction_i64(fraction_i64& result, const std::string & value, const
     }
     result = temp;
     return true;
+}
+
+std::string jau::to_string(const jau::math_error_t v) noexcept {
+    switch(v) {
+        case jau::math_error_t::invalid: return "invalid";
+        case jau::math_error_t::div_by_zero: return "div_by_zero";
+        case jau::math_error_t::overflow: return "overflow";
+        case jau::math_error_t::underflow: return "underflow";
+        case jau::math_error_t::inexact: return "inexact";
+    }
+    return "unknown";
 }

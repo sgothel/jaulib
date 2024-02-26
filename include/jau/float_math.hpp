@@ -31,7 +31,7 @@
 
 namespace jau {
     /** @defgroup Floats Float types and arithmetic
-     *  Float types and arithmetic
+     *  Float types and arithmetic, see also and meta-group \ref Math
      *  @{
      */
 
