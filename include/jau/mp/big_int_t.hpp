@@ -23,24 +23,34 @@
 
 namespace jau::mp {
 
+    /** \addtogroup Integer
+     *
+     *  @{
+     */
+
+    /**
+     * Arbitrary precision integer type
+     *
+     * @anchor bigint_storage_format
+     * ### Local storage format
+     * Internally the big integer is stored in an array of mp_word_t ordered little-endian alike,
+     * with the least significant word at the array-bottom and most significant word at the array-top.
+     *
+     * The mp_word_t itself is stored in jau::endian::native!
+     */
     class big_int_t {
         public:
-            static constexpr const nsize_t base = (nsize_t)std::numeric_limits<mp_word_t>::max() + (nsize_t)1;
-
             /**
              * Sign symbol definitions for positive and negative numbers
              */
             enum sign_t { negative = 0, positive = 1 };
-
 
         public:
             big_int_t() noexcept = default;
 
             big_int_t(const big_int_t& o) noexcept = default;
 
-            ~big_int_t() noexcept {
-                clear();
-            }
+            ~big_int_t() noexcept = default;
 
             /**
             * Create a 0-value big_int
@@ -102,7 +112,7 @@ namespace jau::mp {
             /**
             * Create a power of two
             * @param n the power of two to create
-            * @return bigint representing 2^n
+            * @return big_int_t representing 2^n
             */
             static big_int_t power_of_2(size_t n) {
                 big_int_t b;
@@ -123,11 +133,59 @@ namespace jau::mp {
                 }
             }
 
-            big_int_t(big_int_t&& other) {
+            /**
+             * Construct a big_int_t from a string encoded as hexadecimal or decimal.
+             *
+             * Both number bases may lead a `-`, denoting a negative number.
+             *
+             * Hexadecimal is detected by a leading `0x`.
+             */
+            big_int_t(const std::string& str) {
+                size_t markers = 0;
+                bool is_negative = false;
+
+                if(str.length() > 0 && str[0] == '-')
+                {
+                    markers += 1;
+                    is_negative = true;
+                }
+
+                if(str.length() > markers + 2 && str[markers    ] == '0' &&
+                   str[markers + 1] == 'x')
+                {
+                    markers += 2;
+                    *this = hex_decode(cast_char_ptr_to_uint8(str.data()) + markers, str.length() - markers, lb_endian::big);
+                } else {
+                    *this = dec_decode(cast_char_ptr_to_uint8(str.data()) + markers, str.length() - markers);
+                }
+
+                if(is_negative) set_sign(negative);
+                else            set_sign(positive);
+            }
+
+            /**
+             * Create a big_int_t from an integer in a byte array with given byte_len,
+             * considering the given byte_order.
+             *
+             * The value is stored in the local storage format, see \ref bigint_storage_format
+             *
+             * @param buf the byte array holding the value
+             * @param byte_len size of buf in bytes
+             * @param littleEndian
+             */
+            big_int_t(const uint8_t buf[], size_t byte_len, const lb_endian byte_order) {
+                binary_decode(buf, byte_len, byte_order);
+            }
+
+            big_int_t(std::vector<mp_word_t>&& other_reg) noexcept {
+                this->swap_reg(other_reg);
+            }
+
+            big_int_t(big_int_t&& other) noexcept {
                 this->swap(other);
             }
 
-            big_int_t& operator=(const big_int_t& r) noexcept = default;
+            big_int_t& operator=(const big_int_t& r) = default;
 
             big_int_t& operator=(big_int_t&& other) noexcept {
                 if(this != &other) {
@@ -145,11 +203,13 @@ namespace jau::mp {
                std::swap(m_signedness, other.m_signedness);
             }
 
+        private:
             void swap_reg(std::vector<mp_word_t>& reg) noexcept {
                m_data.swap(reg);
                // sign left unchanged
             }
 
+        public:
             /** Unary negation operator, returns new negative instance of this. */
             big_int_t operator-() const noexcept { return big_int_t(*this).flip_sign(); }
 
@@ -531,6 +591,41 @@ namespace jau::mp {
             }
 
             /**
+             * Returns (*this)^e % m, or pow(*this, e) % m
+             *
+             * Implementation is not optimized and naive, i.e. O(n)
+             *
+             * @param e the exponent
+             */
+            big_int_t mod_pow(big_int_t e, big_int_t m) {
+                const big_int_t& b = *this;
+                if( b.is_zero() ) {
+                    return big_int_t::zero();
+                }
+                const big_int_t one_v = big_int_t::one();
+                big_int_t r = one_v;
+                bool is_negative;
+                if( e.is_negative() ) {
+                    is_negative = true;
+                    e.flip_sign();
+                } else {
+                    is_negative = false;
+                }
+
+                while( e.is_nonzero() ) {
+                    r *= b;
+                    r %= m;
+                    --e;
+                }
+
+                if( is_negative ) {
+                    return one_v / r;
+                } else {
+                    return r;
+                }
+            }
+
+            /**
             * Square value of *this
             * @param ws a temp workspace
             */
@@ -860,13 +955,22 @@ namespace jau::mp {
             sign_t m_signedness = positive;
 
             /**
-            * Byte extraction
+            * Byte extraction of big-endian value
             * @param byte_num which byte to extract, 0 == highest byte
             * @param input the value to extract from
             * @return byte byte_num of input
             */
-            template<typename T> static inline constexpr uint8_t get_byte_var(nsize_t byte_num, T input) noexcept {
+            template<typename T> static inline constexpr uint8_t get_byte_var_be(size_t byte_num, T input) noexcept {
                return static_cast<uint8_t>( input >> (((~byte_num)&(sizeof(T)-1)) << 3) );
+            }
+            /**
+            * Byte extraction of little-endian value
+            * @param byte_num which byte to extract, 0 == lowest byte
+            * @param input the value to extract from
+            * @return byte byte_num of input
+            */
+            template<typename T> static inline constexpr uint8_t get_byte_var_le(size_t byte_num, T input) noexcept {
+               return static_cast<uint8_t>( input >> ( byte_num << 3 ) );
             }
 
             /**
@@ -918,6 +1022,129 @@ namespace jau::mp {
             */
             mp_word_t* mutable_data() { return m_data.mutable_data(); }
 
+            /**
+             * Set this number to the value in buf with given byte_len,
+             * considering the given byte_order.
+             *
+             * The value is stored in the local storage format, see \ref bigint_storage_format
+             */
+            void binary_decode(const uint8_t buf[], size_t byte_len, const lb_endian byte_order) {
+                const size_t full_words = byte_len / sizeof(mp_word_t);
+                const size_t extra_bytes = byte_len % sizeof(mp_word_t);
+
+                // clear() + setting size
+                m_signedness = positive;
+                m_data.set_size( jau::round_up(full_words + (extra_bytes > 0 ? 1U : 0U), 8U) );
+
+                mp_word_t* sink = m_data.mutable_data();
+                if( is_little_endian(byte_order) ) {
+                    // little-endian to local (words arranged as little-endian w/ word itself in native-endian)
+                    for(size_t i = 0; i < full_words; ++i) {
+                        sink[i] = jau::get_value<mp_word_t>(buf + sizeof(mp_word_t)*i, byte_order);
+                    }
+                } else {
+                    // big-endian to local (words arranged as little-endian w/ word itself in native-endian)
+                    for(size_t i = 0; i < full_words; ++i) {
+                        sink[i] = jau::get_value<mp_word_t>(buf + byte_len - sizeof(mp_word_t)*(i+1), byte_order);
+                    }
+                }
+                mp_word_t le_w = 0;
+                if( is_little_endian(byte_order) ) {
+                    for(size_t i = 0; i < extra_bytes; ++i) {
+                        le_w |= mp_word_t( buf[full_words*sizeof(mp_word_t) + i] ) << ( i * 8 ); // next lowest byte
+                    }
+                } else {
+                    for(size_t i = 0; i < extra_bytes; ++i) {
+                        le_w = (le_w << 8) | mp_word_t( buf[i] ); // buf[0] highest byte
+                    }
+                }
+                sink[full_words] = jau::le_to_cpu( le_w );
+            }
+
+            /**
+             * Set this number to the decoded hex-string value of buf with given str_len,
+             * considering the given byte_order.
+             *
+             * The value is stored in the local storage format, see \ref bigint_storage_format
+             */
+            static big_int_t hex_decode(const uint8_t buf[], size_t str_len, const lb_endian byte_order) {
+                big_int_t r;
+
+                std::vector<uint8_t> bin_out;
+                const size_t exp_blen = str_len / 2 + str_len % 2;
+                const size_t blen = jau::hexStringBytes(bin_out, buf, str_len, is_little_endian(byte_order), false /* checkLeading0x */);
+                if( exp_blen != blen ) {
+                    throw jau::MathDomainError("invalid hexadecimal char @ "+std::to_string(blen)+"/"+std::to_string(exp_blen)+" of '"+
+                            std::string(cast_uint8_ptr_to_char(buf), str_len)+"'", E_FILE_LINE);
+                }
+                r.binary_decode(bin_out.data(), bin_out.size(), lb_endian::little);
+                return r;
+            }
+
+            static big_int_t dec_decode(const uint8_t buf[], size_t str_len) {
+                big_int_t r;
+
+                // This could be made faster using the same trick as to_dec_string
+                for(size_t i = 0; i < str_len; ++i) {
+                    const char c = buf[i];
+
+                    if(c < '0' || c > '9') {
+                        throw jau::MathDomainError("invalid decimal char", E_FILE_LINE);
+                    }
+                    const uint8_t x = c - '0';
+                    assert(x < 10);
+
+                    r *= 10;
+                    r += x;
+                }
+                return r;
+            }
+
+        public:
+            /**
+             * Stores this number to the value in buf with given byte_len,
+             * considering the given byte_order.
+             *
+             * The value is read from the local storage in its format, see \ref bigint_storage_format
+             *
+             * If byte_len is less than the byt-esize of this integer, i.e. bytes(),
+             * then it will be truncated.
+             *
+             * If byte_len is greater than the byte-size of this integer, i.e. bytes(), it will be zero-padded.
+             *
+             * @return actual number of bytes copied, i.e. min(byte_len, bytes());
+             */
+            size_t binary_encode(uint8_t output[], size_t byte_len, const lb_endian byte_order) const noexcept {
+                const size_t full_words = byte_len / sizeof(mp_word_t);
+                const size_t extra_bytes = byte_len % sizeof(mp_word_t);
+
+                if( is_little_endian( byte_order ) ) {
+                    // to little-endian from local (words arranged as little-endian w/ word itself in native-endian)
+                    for(size_t i = 0; i < full_words; ++i) {
+                        jau::put_value<mp_word_t>(output + i*sizeof(mp_word_t), word_at(i), byte_order);
+                    }
+                } else {
+                    // to big-endian from local (words arranged as little-endian w/ word itself in native-endian)
+                    for(size_t i = 0; i < full_words; ++i) {
+                        jau::put_value<mp_word_t>(output + byte_len - (i+1)*sizeof(mp_word_t), word_at(i), byte_order);
+                    }
+                }
+                if(extra_bytes > 0) {
+                    const mp_word_t le_w = jau::cpu_to_le( word_at(full_words) );
+                    if( is_little_endian( byte_order ) ) {
+                        for(size_t i = 0; i < extra_bytes; ++i) {
+                            output[full_words*sizeof(mp_word_t) + i] = get_byte_var_le(i, le_w); // next lowest byte
+                        }
+                    } else {
+                        for(size_t i = 0; i < extra_bytes; ++i) {
+                            output[extra_bytes-1-i] = get_byte_var_le(i, le_w); // output[0] highest byte
+                        }
+                    }
+                }
+                return extra_bytes + full_words * sizeof(mp_word_t);
+            }
+
+        private:
             size_t top_bits_free() const noexcept {
                 const size_t words = sig_words();
 
@@ -1317,7 +1544,54 @@ namespace jau::mp {
             }
     };
 
-    std::ostream& operator<<(std::ostream& out, const big_int_t& v) {
+    /**@}*/
+}
+
+namespace jau {
+
+    /** \addtogroup Integer
+     *
+     *  @{
+     */
+
+    inline mp::big_int_t abs(mp::big_int_t x) noexcept { return x.abs(); }
+    inline mp::big_int_t pow(mp::big_int_t b, mp::big_int_t e) { return b.pow(e); }
+
+    constexpr const mp::big_int_t& min(const mp::big_int_t& x, const mp::big_int_t& y) noexcept {
+        return x < y ? x : y;
+    }
+    constexpr const mp::big_int_t& max(const mp::big_int_t& x, const mp::big_int_t& y) noexcept {
+        return x > y ? x : y;
+    }
+    constexpr const mp::big_int_t& clamp(const mp::big_int_t& x, const mp::big_int_t& min_val, const mp::big_int_t& max_val) noexcept {
+        return min(max(x, min_val), max_val);
+    }
+
+    constexpr mp::big_int_t& min(mp::big_int_t& x, mp::big_int_t& y) noexcept {
+        return x < y ? x : y;
+    }
+    constexpr mp::big_int_t max(mp::big_int_t& x, mp::big_int_t& y) noexcept {
+        return x > y ? x : y;
+    }
+    constexpr mp::big_int_t& clamp(mp::big_int_t& x, mp::big_int_t& min_val, mp::big_int_t& max_val) noexcept {
+        return min(max(x, min_val), max_val);
+    }
+
+
+    inline mp::big_int_t gcd(const mp::big_int_t& a, const mp::big_int_t& b) noexcept {
+        mp::big_int_t a_ = abs(a);
+        mp::big_int_t b_ = abs(b);
+        while( b_.is_nonzero() ) {
+            const mp::big_int_t t = b_;
+            b_ = a_ % b_;
+            a_ = t;
+        }
+        return a_;
+    }
+
+    std::ostream& operator<<(std::ostream& out, const mp::big_int_t& v) {
         return out << v.to_dec_string();
     }
+
+    /**@}*/
 }
