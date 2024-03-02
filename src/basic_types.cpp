@@ -332,39 +332,49 @@ static snsize_t hexCharByte_(const char c)
   return -1;
 }
 
-nsize_t jau::hexStringBytes(std::vector<uint8_t>& out, const std::string& hexstr, const bool lsbFirst, const bool checkLeading0x) noexcept {
+size_t jau::hexStringBytes(std::vector<uint8_t>& out, const std::string& hexstr, const bool lsbFirst, const bool checkLeading0x) noexcept {
+    return jau::hexStringBytes(out, cast_char_ptr_to_uint8(hexstr.data()), hexstr.size(), lsbFirst, checkLeading0x);
+}
+size_t jau::hexStringBytes(std::vector<uint8_t>& out, const uint8_t hexstr[], const size_t hexstr_len, const bool lsbFirst, const bool checkLeading0x) noexcept {
     size_t offset;
-    if( checkLeading0x && hexstr.size() >= 2 && hexstr[0] == '0' && hexstr[1] == 'x' ) {
+    if( checkLeading0x && hexstr_len >= 2 && hexstr[0] == '0' && hexstr[1] == 'x' ) {
         offset = 2;
     } else {
         offset = 0;
     }
-    const size_t size = ( hexstr.size() - offset ) / 2;
-    out.clear();
-    out.reserve(size);
+    size_t lsb, msb;
     if( lsbFirst ) {
-        for (size_t i = 0; i < size; ++i) {
-            const size_t idx = i * 2;
-            const snsize_t h = hexCharByte_( hexstr[ offset + idx ] );
-            const snsize_t l = hexCharByte_( hexstr[ offset + idx + 1 ] );
-            if( 0 <= h && 0 <= l ) {
-                out.push_back( static_cast<uint8_t>( (h << 4) + l ) );
-            } else {
-                // invalid char
-                return out.size();
-            }
-        }
+        lsb = 1; msb = 0;
     } else {
-        for (size_t i = 0; i < size; ++i) { 
-            const size_t idx = (size-1-i)*2;
-            const snsize_t h = hexCharByte_( hexstr[ offset + idx ] );
-            const snsize_t l = hexCharByte_( hexstr[ offset + idx + 1 ] );
-            if( 0 <= h && 0 <= l ) {
-                out.push_back( static_cast<uint8_t>( (h << 4) + l ) );
-            } else {
-                // invalid char
-                return out.size();
-            }
+        lsb = 0; msb = 1;
+    }
+    const size_t hexlen_in = hexstr_len - offset;
+    const size_t bsize = hexlen_in / 2;
+    out.clear();
+    out.reserve(bsize);
+
+    size_t i = 0;
+    if( 0 < hexlen_in % 2 ) {
+        // no leading '0', digest a single digit
+        const size_t idx = ( lsb*i + msb*(bsize-1-i) ) * 2;
+        const snsize_t l = hexCharByte_( hexstr[ offset + idx + 1 ] );
+        if( 0 <= l ) {
+            out.push_back( static_cast<uint8_t>( l ) );
+        } else {
+            // invalid char
+            return out.size();
+        }
+        ++i;
+    }
+    for (; i < bsize; ++i) {
+        const size_t idx = ( lsb*i + msb*(bsize-1-i) ) * 2;
+        const snsize_t h = hexCharByte_( hexstr[ offset + idx ] );
+        const snsize_t l = hexCharByte_( hexstr[ offset + idx + 1 ] );
+        if( 0 <= h && 0 <= l ) {
+            out.push_back( static_cast<uint8_t>( (h << 4) + l ) );
+        } else {
+            // invalid char
+            return out.size();
         }
     }
     return out.size();

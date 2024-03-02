@@ -82,7 +82,10 @@ namespace jau {
      * @param checkLeading0x if true, checks for a leading `0x` and removes it, otherwise not.
      * @return the length of the matching byte vector
      */
-    nsize_t hexStringBytes(std::vector<uint8_t>& out, const std::string& hexstr, const bool lsbFirst, const bool checkLeading0x) noexcept;
+    size_t hexStringBytes(std::vector<uint8_t>& out, const std::string& hexstr, const bool lsbFirst, const bool checkLeading0x) noexcept;
+
+    /** See hexStringBytes() */
+    size_t hexStringBytes(std::vector<uint8_t>& out, const uint8_t hexstr[], const size_t hexstr_len, const bool lsbFirst, const bool checkLeading0x) noexcept;
 
     /**
      * Produce a hexadecimal string representation of the given byte values.
