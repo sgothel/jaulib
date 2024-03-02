@@ -30,7 +30,7 @@ namespace jau::mp {
             /**
              * Sign symbol definitions for positive and negative numbers
              */
-            enum Sign { Negative = 0, Positive = 1 };
+            enum sign_t { negative = 0, positive = 1 };
 
 
         public:
@@ -93,7 +93,7 @@ namespace jau::mp {
             * Create big_int of specified size, all zeros
             * @param n size of the internal register in words
             */
-            static big_int_t with_capacity(nsize_t n) {
+            static big_int_t with_capacity(size_t n) {
                 big_int_t bn;
                 bn.grow_to(n);
                 return bn;
@@ -157,9 +157,9 @@ namespace jau::mp {
              * @param n the offset to get a byte from
              * @result byte at offset n
              */
-            uint8_t byte_at(nsize_t n) const noexcept {
-                return get_byte_var(sizeof(mp_word_t) - (n % sizeof(mp_word_t)) - 1,
-                                    word_at(n / sizeof(mp_word_t)));
+            uint8_t byte_at(size_t n) const noexcept {
+                return get_byte_var_be(sizeof(mp_word_t) - (n % sizeof(mp_word_t)) - 1,
+                                       word_at(n / sizeof(mp_word_t)));
             }
 
             /**
@@ -167,44 +167,42 @@ namespace jau::mp {
              * @param n position in the register
              * @return value at position n
              */
-            mp_word_t word_at(nsize_t n) const noexcept {
+            mp_word_t word_at(size_t n) const noexcept {
                 return m_data.get_word_at(n);
             }
 
-            void set_word_at(nsize_t i, mp_word_t w) {
-                m_data.set_word_at(i, w);
-            }
-
-            void set_words(const mp_word_t w[], nsize_t len) {
-                m_data.set_words(w, len);
-            }
+            /**
+            * Return a const pointer to the register
+            * @result a pointer to the start of the internal register
+            */
+            const mp_word_t* data() const { return m_data.const_data(); }
 
             /**
              * Tests if the sign of the integer is negative
              * @result true, iff the integer has a negative sign
              */
-            bool is_negative() const noexcept { return sign() == Negative; }
+            bool is_negative() const noexcept { return sign() == negative; }
 
             /**
              * Tests if the sign of the integer is positive
              * @result true, iff the integer has a positive sign
              */
-            bool is_positive() const noexcept { return sign() == Positive; }
+            bool is_positive() const noexcept { return sign() == positive; }
 
             /**
              * Return the sign of the integer
              * @result the sign of the integer
              */
-            Sign sign() const noexcept { return m_signedness; }
+            sign_t sign() const noexcept { return m_signedness; }
 
             /**
              * @result the opposite sign of the represented integer value
              */
-            Sign reverse_sign() const noexcept {
-                if(sign() == Positive) {
-                    return Negative;
+            sign_t reverse_sign() const noexcept {
+                if(sign() == positive) {
+                    return negative;
                 }
-                return Positive;
+                return positive;
             }
 
             /**
@@ -218,9 +216,9 @@ namespace jau::mp {
              * Set sign of the integer
              * @param sign new Sign to set
              */
-            big_int_t& set_sign(Sign sign) noexcept {
-                if(sign == Negative && is_zero()) {
-                    sign = Positive;
+            big_int_t& set_sign(sign_t sign) noexcept {
+                if(sign == negative && is_zero()) {
+                    sign = positive;
                 }
                 m_signedness = sign;
                 return *this;
@@ -228,52 +226,40 @@ namespace jau::mp {
 
             /** Returns absolute (positive) value of this instance */
             big_int_t abs() const noexcept {
-                return big_int_t(*this).set_sign(Positive);
+                return big_int_t(*this).set_sign(positive);
             }
 
             /**
              * Give size of internal register
              * @result size of internal register in words
              */
-            nsize_t size() const noexcept { return m_data.size(); }
+            size_t size() const noexcept { return m_data.size(); }
 
             /**
              * Return how many words we need to hold this value
              * @result significant words of the represented integer value
              */
-            nsize_t sig_words() const noexcept { return m_data.sig_words(); }
+            size_t sig_words() const noexcept { return m_data.sig_words(); }
 
-            /** Returns byte length of the integer */
-            nsize_t bytes() const { return jau::round_up(bits(), 8U) / 8U; }
+            /** Returns byte length of this integer */
+            size_t bytes() const { return jau::round_up(bits(), 8U) / 8U; }
 
-            /** Returns bit length of the integer */
-            nsize_t bits() const noexcept {
-                const nsize_t words = sig_words();
+            /** Returns bit length of this integer */
+            size_t bits() const noexcept {
+                const size_t words = sig_words();
                 if(words == 0) {
                     return 0;
                 }
-                const nsize_t full_words = (words - 1) * mp_word_bits;
-                const nsize_t top_bits = mp_word_bits - top_bits_free();
+                const size_t full_words = (words - 1) * mp_word_bits;
+                const size_t top_bits = mp_word_bits - top_bits_free();
                 return full_words + top_bits;
             }
-
-            /**
-            * Return a mutable pointer to the register
-            * @result a pointer to the start of the internal register
-            */
-            mp_word_t* mutable_data() { return m_data.mutable_data(); }
-
-            /**
-            * Return a const pointer to the register
-            * @result a pointer to the start of the internal register
-            */
-            const mp_word_t* data() const { return m_data.const_data(); }
 
             /**
             * Zeroize the big_int. The size of the underlying register is not
             * modified.
             */
-            void clear() { m_data.set_to_zero(); m_signedness = Positive; }
+            void clear() { m_data.set_to_zero(); m_signedness = positive; }
 
             /**
              * Compares this instance against other considering both sign() value
@@ -317,7 +303,7 @@ namespace jau::mp {
              * @param n the bit offset to test
              * @result true, if the bit at position n is set, false otherwise
              */
-            bool get_bit(nsize_t n) const noexcept {
+            bool get_bit(size_t n) const noexcept {
                 return (word_at(n / mp_word_bits) >> (n % mp_word_bits)) & 1;
             }
 
@@ -325,7 +311,7 @@ namespace jau::mp {
              * Set bit at specified position
              * @param n bit position to set
              */
-            void set_bit(nsize_t n) noexcept {
+            void set_bit(size_t n) noexcept {
                 conditionally_set_bit(n, true);
             }
 
@@ -337,8 +323,8 @@ namespace jau::mp {
              * @param n bit position to set
              * @param set_it if the bit should be set
              */
-            void conditionally_set_bit(nsize_t n, bool set_it) noexcept {
-                const nsize_t which = n / mp_word_bits;
+            void conditionally_set_bit(size_t n, bool set_it) noexcept {
+                const size_t which = n / mp_word_bits;
                 const mp_word_t mask = static_cast<mp_word_t>(set_it) << (n % mp_word_bits);
                 m_data.set_word_at(which, word_at(which) | mask);
             }
@@ -372,25 +358,25 @@ namespace jau::mp {
             }
 
             big_int_t& operator-=(const big_int_t& y ) noexcept {
-                return add(y.data(), y.sig_words(), y.sign() == Positive ? Negative : Positive);
+                return add(y.data(), y.sig_words(), y.sign() == positive ? negative : positive);
             }
 
-            big_int_t operator+(const big_int_t& y ) noexcept {
+            big_int_t operator+(const big_int_t& y ) const noexcept {
                 return add2(*this, y.data(), y.sig_words(), y.sign());
             }
 
-            big_int_t operator-(const big_int_t& y ) noexcept {
+            big_int_t operator-(const big_int_t& y ) const noexcept {
                 return add2(*this, y.data(), y.sig_words(), y.reverse_sign());
             }
 
-            big_int_t& operator<<=(nsize_t shift) noexcept {
-                const nsize_t shift_words = shift / mp_word_bits;
-                const nsize_t shift_bits  = shift % mp_word_bits;
-                const nsize_t size = sig_words();
+            big_int_t& operator<<=(size_t shift) noexcept {
+                const size_t shift_words = shift / mp_word_bits;
+                const size_t shift_bits  = shift % mp_word_bits;
+                const size_t size = sig_words();
 
-                const nsize_t bits_free = top_bits_free();
+                const size_t bits_free = top_bits_free();
 
-                const nsize_t new_size = size + shift_words + (bits_free < shift_bits);
+                const size_t new_size = size + shift_words + (bits_free < shift_bits);
 
                 m_data.grow_to(new_size);
 
@@ -399,22 +385,22 @@ namespace jau::mp {
                 return *this;
             }
 
-            big_int_t& operator>>=(nsize_t shift) noexcept {
-                const nsize_t shift_words = shift / mp_word_bits;
-                const nsize_t shift_bits  = shift % mp_word_bits;
+            big_int_t& operator>>=(size_t shift) noexcept {
+                const size_t shift_words = shift / mp_word_bits;
+                const size_t shift_bits  = shift % mp_word_bits;
 
                 ops::bigint_shr1(m_data.mutable_data(), m_data.size(), shift_words, shift_bits);
 
                 if(is_negative() && is_zero()) {
-                   set_sign(Positive);
+                   set_sign(positive);
                 }
                 return *this;
             }
 
-            big_int_t operator<<(nsize_t shift) const {
-               const nsize_t shift_words = shift / mp_word_bits;
-               const nsize_t shift_bits  = shift % mp_word_bits;
-               const nsize_t x_sw = sig_words();
+            big_int_t operator<<(size_t shift) const {
+               const size_t shift_words = shift / mp_word_bits;
+               const size_t shift_bits  = shift % mp_word_bits;
+               const size_t x_sw = sig_words();
 
                big_int_t y = big_int_t::with_capacity(x_sw + shift_words + (shift_bits ? 1 : 0));
                ops::bigint_shl2(y.mutable_data(), data(), x_sw, shift_words, shift_bits);
@@ -422,10 +408,10 @@ namespace jau::mp {
                return y;
             }
 
-            big_int_t operator>>(nsize_t shift) const {
-                const nsize_t shift_words = shift / mp_word_bits;
-                const nsize_t shift_bits  = shift % mp_word_bits;
-                const nsize_t x_sw = sig_words();
+            big_int_t operator>>(size_t shift) const {
+                const size_t shift_words = shift / mp_word_bits;
+                const size_t shift_bits  = shift % mp_word_bits;
+                const size_t x_sw = sig_words();
 
                 if(shift_words >= x_sw) {
                    return big_int_t::zero();
@@ -435,7 +421,7 @@ namespace jau::mp {
                 ops::bigint_shr2(y.mutable_data(), data(), x_sw, shift_words, shift_bits);
 
                 if(is_negative() && y.is_zero()) {
-                   y.set_sign(big_int_t::Positive);
+                   y.set_sign(big_int_t::positive);
                 } else {
                    y.set_sign(sign());
                 }
@@ -450,8 +436,8 @@ namespace jau::mp {
 
             big_int_t operator*(const big_int_t& y) noexcept
             {
-                const nsize_t x_sw = sig_words();
-                const nsize_t y_sw = y.sig_words();
+                const size_t x_sw = sig_words();
+                const size_t y_sw = y.sig_words();
 
                 big_int_t z;
                 z.resize(size() + y.size());
@@ -524,20 +510,20 @@ namespace jau::mp {
                 }
                 const big_int_t one_v = big_int_t::one();
                 big_int_t r = one_v;
-                bool negative;
+                bool is_negative;
                 if( e.is_negative() ) {
-                    negative = true;
+                    is_negative = true;
                     e.flip_sign();
                 } else {
-                    negative = false;
+                    is_negative = false;
                 }
 
                 while( e.is_nonzero() ) {
                     r *= b;
-                    e -= one_v;
+                    --e;
                 }
 
-                if( negative ) {
+                if( is_negative ) {
                     return one_v / r;
                 } else {
                     return r;
@@ -607,18 +593,18 @@ namespace jau::mp {
                 }
 
                 // (over-)estimate of the number of digits needed; log2(10) ~ 3.3219
-                const nsize_t digit_estimate = static_cast<nsize_t>(1 + (this->bits() / 3.32));
+                const size_t digit_estimate = static_cast<size_t>(1 + (this->bits() / 3.32));
 
                 // (over-)estimate of db such that conversion_radix^db > *this
-                const nsize_t digit_blocks = (digit_estimate + radix_digits - 1) / radix_digits;
+                const size_t digit_blocks = (digit_estimate + radix_digits - 1) / radix_digits;
 
                 big_int_t value = *this;
-                value.set_sign(Positive);
+                value.set_sign(positive);
 
                 // Extract groups of digits into words
                 std::vector<mp_word_t> digit_groups(digit_blocks);
 
-                for(nsize_t i = 0; i != digit_blocks; ++i) {
+                for(size_t i = 0; i != digit_blocks; ++i) {
                     mp_word_t remainder = 0;
                     ct_divide_word(value, conversion_radix, value, remainder);
                     digit_groups[i] = remainder;
@@ -628,9 +614,9 @@ namespace jau::mp {
                 // Extract digits from the groups
                 std::vector<uint8_t> digits(digit_blocks * radix_digits);
 
-                for(nsize_t i = 0; i != digit_blocks; ++i) {
+                for(size_t i = 0; i != digit_blocks; ++i) {
                     mp_word_t remainder = digit_groups[i];
-                    for(nsize_t j = 0; j != radix_digits; ++j)
+                    for(size_t j = 0; j != radix_digits; ++j)
                     {
                         // Compiler should convert div/mod by 10 into mul by magic constant
                         const mp_word_t digit = remainder % 10;
@@ -671,7 +657,7 @@ namespace jau::mp {
             std::string to_hex_string(bool add_details=false) const noexcept {
                 std::vector<uint8_t> bits;
                 const uint8_t* data;
-                nsize_t data_len;
+                size_t data_len;
 
                 if( is_zero() ) {
                     bits.push_back(0);
@@ -695,9 +681,38 @@ namespace jau::mp {
             }
 
         private:
-            class Data
+            class data_t
             {
                 public:
+                    data_t() noexcept
+                    : m_reg(), m_sig_words(sig_words_npos) {}
+
+                    data_t(const data_t& o) noexcept = default;
+
+                    data_t(data_t&& o) noexcept {
+                        swap(o);
+                    }
+                    data_t(std::vector<mp_word_t>&& reg) noexcept {
+                        swap(reg);
+                    }
+
+                    ~data_t() noexcept = default;
+
+                    data_t& operator=(const data_t& r) noexcept = default;
+
+                    data_t& operator=(data_t&& other) noexcept {
+                        if(this != &other) {
+                            this->swap(other);
+                        }
+                        return *this;
+                    }
+                    data_t& operator=(std::vector<mp_word_t>&& other_reg) noexcept {
+                        if(&m_reg != &other_reg) {
+                            this->swap(other_reg);
+                        }
+                        return *this;
+                    }
+
                     mp_word_t* mutable_data() noexcept {
                         invalidate_sig_words();
                         return m_reg.data();
@@ -716,14 +731,14 @@ namespace jau::mp {
                         return m_reg;
                     }
 
-                    mp_word_t get_word_at(nsize_t n) const noexcept {
+                    mp_word_t get_word_at(size_t n) const noexcept {
                         if(n < m_reg.size()) {
                             return m_reg[n];
                         }
                         return 0;
                     }
 
-                    void set_word_at(nsize_t i, mp_word_t w) {
+                    void set_word_at(size_t i, mp_word_t w) {
                         invalidate_sig_words();
                         if(i >= m_reg.size()) {
                             if(w == 0) {
@@ -734,7 +749,7 @@ namespace jau::mp {
                         m_reg[i] = w;
                     }
 
-                    void set_words(const mp_word_t w[], nsize_t len) {
+                    void set_words(const mp_word_t w[], size_t len) {
                         invalidate_sig_words();
                         m_reg.assign(w, w + len);
                     }
@@ -745,22 +760,22 @@ namespace jau::mp {
                         m_sig_words = 0;
                     }
 
-                    void set_size(nsize_t s) {
+                    void set_size(size_t s) {
                         invalidate_sig_words();
                         clear_mem(m_reg.data(), m_reg.size());
                         m_reg.resize(s + (8 - (s % 8)));
                     }
 
-                    void mask_bits(nsize_t n) noexcept {
+                    void mask_bits(size_t n) noexcept {
                         if(n == 0) { return set_to_zero(); }
 
-                        const nsize_t top_word = n / mp_word_bits;
+                        const size_t top_word = n / mp_word_bits;
 
                         // if(top_word < sig_words()) ?
                                 if(top_word < size())
                                 {
                                     const mp_word_t mask = (static_cast<mp_word_t>(1) << (n % mp_word_bits)) - 1;
-                                    const nsize_t len = size() - (top_word + 1);
+                                    const size_t len = size() - (top_word + 1);
                                     if(len > 0)
                                     {
                                         clear_mem(&m_reg[top_word+1], len);
@@ -770,7 +785,7 @@ namespace jau::mp {
                                 }
                     }
 
-                    void grow_to(nsize_t n) const {
+                    void grow_to(size_t n) const {
                         if(n > size()) {
                             if(n <= m_reg.capacity()) {
                                 m_reg.resize(n);
@@ -780,18 +795,18 @@ namespace jau::mp {
                         }
                     }
 
-                    nsize_t size() const noexcept { return m_reg.size(); }
+                    size_t size() const noexcept { return m_reg.size(); }
 
-                    void shrink_to_fit(nsize_t min_size = 0) {
-                        const nsize_t words = std::max(min_size, sig_words());
+                    void shrink_to_fit(size_t min_size = 0) {
+                        const size_t words = std::max(min_size, sig_words());
                         m_reg.resize(words);
                     }
 
-                    void resize(nsize_t s) {
+                    void resize(size_t s) {
                         m_reg.resize(s);
                     }
 
-                    void swap(Data& other) noexcept {
+                    void swap(data_t& other) noexcept {
                         m_reg.swap(other.m_reg);
                         std::swap(m_sig_words, other.m_sig_words);
                     }
@@ -805,7 +820,7 @@ namespace jau::mp {
                         m_sig_words = sig_words_npos;
                     }
 
-                    nsize_t sig_words() const noexcept {
+                    size_t sig_words() const noexcept {
                         if(m_sig_words == sig_words_npos) {
                             m_sig_words = calc_sig_words();
                         } else {
@@ -814,15 +829,15 @@ namespace jau::mp {
                         return m_sig_words;
                     }
                 private:
-                    static const nsize_t sig_words_npos = static_cast<nsize_t>(-1);
+                    static const size_t sig_words_npos = static_cast<size_t>(-1);
 
-                    nsize_t calc_sig_words() const noexcept {
-                        const nsize_t sz = m_reg.size();
-                        nsize_t sig = sz;
+                    size_t calc_sig_words() const noexcept {
+                        const size_t sz = m_reg.size();
+                        size_t sig = sz;
 
                         mp_word_t sub = 1;
 
-                        for(nsize_t i = 0; i != sz; ++i)
+                        for(size_t i = 0; i != sz; ++i)
                         {
                             const mp_word_t w = m_reg[sz - i - 1];
                             sub &= ct_is_zero(w);
@@ -839,10 +854,10 @@ namespace jau::mp {
                     }
 
                     mutable std::vector<mp_word_t> m_reg;
-                    mutable nsize_t m_sig_words = sig_words_npos;
+                    mutable size_t m_sig_words = sig_words_npos;
             };
-            Data m_data;
-            Sign m_signedness = Positive;
+            data_t m_data;
+            sign_t m_signedness = positive;
 
             /**
             * Byte extraction
@@ -862,7 +877,7 @@ namespace jau::mp {
             * @param ptr a pointer to memory to zero
             * @param bytes the number of bytes to zero in ptr
             */
-            static inline constexpr void clear_bytes(void* ptr, nsize_t bytes) noexcept {
+            static inline constexpr void clear_bytes(void* ptr, size_t bytes) noexcept {
                 if(bytes > 0) {
                     std::memset(ptr, 0, bytes);
                 }
@@ -878,7 +893,7 @@ namespace jau::mp {
             * @param ptr a pointer to an array of Ts to zero
             * @param n the number of Ts pointed to by ptr
             */
-            template<typename T> static inline constexpr void clear_mem(T* ptr, nsize_t n) noexcept {
+            template<typename T> static inline constexpr void clear_mem(T* ptr, size_t n) noexcept {
                clear_bytes(ptr, sizeof(T)*n);
             }
 
@@ -886,15 +901,28 @@ namespace jau::mp {
             * Increase internal register buffer to at least n words
             * @param n new size of register
             */
-            void grow_to(nsize_t n) const { m_data.grow_to(n); }
+            void grow_to(size_t n) const { m_data.grow_to(n); }
 
-            void resize(nsize_t s) { m_data.resize(s); }
+            void resize(size_t s) { m_data.resize(s); }
 
-            nsize_t top_bits_free() const noexcept {
-                const nsize_t words = sig_words();
+            void set_word_at(size_t i, mp_word_t w) {
+                m_data.set_word_at(i, w);
+            }
+
+            void set_words(const mp_word_t w[], size_t len) {
+                m_data.set_words(w, len);
+            }
+            /**
+            * Return a mutable pointer to the register
+            * @result a pointer to the start of the internal register
+            */
+            mp_word_t* mutable_data() { return m_data.mutable_data(); }
+
+            size_t top_bits_free() const noexcept {
+                const size_t words = sig_words();
 
                 const mp_word_t top_word = word_at(words - 1);
-                const nsize_t bits_used = jau::high_bit(top_word);
+                const size_t bits_used = jau::high_bit(top_word);
                 CT::unpoison(bits_used);
                 return mp_word_bits - bits_used;
             }
@@ -946,8 +974,8 @@ namespace jau::mp {
                                             other.data(), other.sig_words()).is_set();
             }
 
-            big_int_t& add(const mp_word_t y[], nsize_t y_words, Sign y_sign) {
-                const nsize_t x_sw = sig_words();
+            big_int_t& add(const mp_word_t y[], size_t y_words, sign_t y_sign) {
+                const size_t x_sw = sig_words();
                 grow_to(std::max(x_sw, y_words) + 1);
 
                 if(sign() == y_sign)
@@ -968,21 +996,21 @@ namespace jau::mp {
                     if(relative_size < 0) {
                         set_sign(y_sign);
                     } else if(relative_size == 0) {
-                        set_sign(Positive);
+                        set_sign(positive);
                     }
                 }
                 return (*this);
             }
 
             big_int_t& operator+=(mp_word_t y) noexcept {
-                return add(&y, 1, Sign::Positive);
+                return add(&y, 1, sign_t::positive);
             }
             big_int_t& operator-=(mp_word_t y) noexcept {
-                return add(&y, 1, Sign::Negative);
+                return add(&y, 1, sign_t::negative);
             }
 
-            static big_int_t add2(const big_int_t& x, const mp_word_t y[], nsize_t y_words, Sign y_sign) {
-                const nsize_t x_sw = x.sig_words();
+            static big_int_t add2(const big_int_t& x, const mp_word_t y[], size_t y_words, sign_t y_sign) {
+                const size_t x_sw = x.sig_words();
 
                 big_int_t z = big_int_t::with_capacity(std::max(x_sw, y_words) + 1);
 
@@ -996,7 +1024,7 @@ namespace jau::mp {
                     if(relative_size < 0) {
                         z.set_sign(y_sign);
                     } else if(relative_size == 0) {
-                        z.set_sign(Positive);
+                        z.set_sign(positive);
                     } else {
                         z.set_sign(x.sign());
                     }
@@ -1005,14 +1033,14 @@ namespace jau::mp {
             }
 
             big_int_t& mul(const big_int_t& y, std::vector<mp_word_t>& ws) noexcept {
-                const nsize_t x_sw = sig_words();
-                const nsize_t y_sw = y.sig_words();
-                set_sign((sign() == y.sign()) ? Positive : Negative);
+                const size_t x_sw = sig_words();
+                const size_t y_sw = y.sig_words();
+                set_sign((sign() == y.sign()) ? positive : negative);
 
                 if(x_sw == 0 || y_sw == 0)
                 {
                     clear();
-                    set_sign(Positive);
+                    set_sign(positive);
                 }
                 else if(x_sw == 1 && y_sw)
                 {
@@ -1026,7 +1054,7 @@ namespace jau::mp {
                 }
                 else
                 {
-                    const nsize_t new_size = x_sw + y_sw + 1;
+                    const size_t new_size = x_sw + y_sw + 1;
                     // ws.resize(new_size);
                     (void)ws;
                     std::vector<mp_word_t> z_reg(new_size);
@@ -1040,7 +1068,7 @@ namespace jau::mp {
             }
 
             big_int_t operator*(mp_word_t y) {
-                const nsize_t x_sw = sig_words();
+                const size_t x_sw = sig_words();
                 big_int_t z = big_int_t::with_capacity(x_sw + 1);
 
                 if(x_sw && y) {
@@ -1055,7 +1083,7 @@ namespace jau::mp {
                 const auto mask = CT::Mask<uint8_t>::expand(predicate);
                 const uint8_t current_sign = static_cast<uint8_t>(sign());
                 const uint8_t new_sign = mask.select(current_sign ^ 1, current_sign);
-                set_sign(static_cast<Sign>(new_sign));
+                set_sign(static_cast<sign_t>(new_sign));
             }
 
             /**
@@ -1065,7 +1093,7 @@ namespace jau::mp {
              * mod and performs repeated subtractions. It should not be used if
              * *this is much larger than mod, instead use modulo operator.
              */
-            inline nsize_t reduce_below(const big_int_t& p, std::vector<mp_word_t>& ws) {
+            inline size_t reduce_below(const big_int_t& p, std::vector<mp_word_t>& ws) {
                 if(p.is_negative() || this->is_negative()) {
                     std::string msg;
                     if( p.is_negative() ) {
@@ -1079,7 +1107,7 @@ namespace jau::mp {
                     }
                     throw jau::MathDomainError(msg, E_FILE_LINE);
                 }
-                const nsize_t p_words = p.sig_words();
+                const size_t p_words = p.sig_words();
 
                 if(size() < p_words + 1) {
                     grow_to(p_words + 1);
@@ -1089,7 +1117,7 @@ namespace jau::mp {
                 }
                 clear_mem(ws.data(), ws.size());
 
-                nsize_t reductions = 0;
+                size_t reductions = 0;
 
                 for(;;)
                 {
@@ -1139,7 +1167,7 @@ namespace jau::mp {
                 if( y_arg.is_zero() ) {
                     throw jau::MathDivByZeroError("y_arg == 0", E_FILE_LINE);
                 }
-                const nsize_t y_words = y_arg.sig_words();
+                const size_t y_words = y_arg.sig_words();
 
                 assert(y_words > 0);
 
@@ -1149,18 +1177,18 @@ namespace jau::mp {
                 big_int_t q = big_int_t::zero();
                 std::vector<mp_word_t> ws;
 
-                r.set_sign(big_int_t::Positive);
-                y.set_sign(big_int_t::Positive);
+                r.set_sign(big_int_t::positive);
+                y.set_sign(big_int_t::positive);
 
                 // Calculate shifts needed to normalize y with high bit set
-                const nsize_t shifts = y.top_bits_free();
+                const size_t shifts = y.top_bits_free();
 
                 y <<= shifts;
                 r <<= shifts;
 
                 // we know y has not changed size, since we only shifted up to set high bit
-                const nsize_t t = y_words - 1;
-                const nsize_t n = std::max(y_words, r.sig_words()) - 1; // r may have changed size however
+                const size_t t = y_words - 1;
+                const size_t n = std::max(y_words, r.sig_words()) - 1; // r may have changed size however
                 assert(n >= t);
 
                 q.grow_to(n - t + 1);
@@ -1176,7 +1204,7 @@ namespace jau::mp {
                 const mp_word_t y_t1  = y.word_at(t-1);
                 assert((y_t0 >> (mp_word_bits-1)) == 1);
 
-                for(nsize_t j = n; j != t; --j) {
+                for(size_t j = n; j != t; --j) {
                     const mp_word_t x_j0  = r.word_at(j);
                     const mp_word_t x_j1 = r.word_at(j-1);
                     const mp_word_t x_j2 = r.word_at(j-2);
@@ -1223,15 +1251,15 @@ namespace jau::mp {
                 if(y == 0) {
                     throw jau::MathDivByZeroError("y == 0", E_FILE_LINE);
                 }
-                const nsize_t x_words = x.sig_words();
-                const nsize_t x_bits = x.bits();
+                const size_t x_words = x.sig_words();
+                const size_t x_bits = x.bits();
 
                 big_int_t q = big_int_t::with_capacity(x_words);
                 mp_word_t r = 0;
 
-                for(nsize_t i = 0; i != x_bits; ++i)
+                for(size_t i = 0; i != x_bits; ++i)
                 {
-                    const nsize_t b = x_bits - 1 - i;
+                    const size_t b = x_bits - 1 - i;
                     const bool x_b = x.get_bit(b);
 
                     const auto r_carry = CT::Mask<mp_word_t>::expand(r >> (mp_word_bits - 1));
@@ -1273,7 +1301,7 @@ namespace jau::mp {
                        remainder = ops::bigint_modop(remainder, word_at(i-1), mod);
                    }
                }
-               if(remainder && sign() == big_int_t::Negative) {
+               if(remainder && sign() == big_int_t::negative) {
                   return mod - remainder;
                }
                return remainder;
@@ -1281,7 +1309,7 @@ namespace jau::mp {
 
             void append_detail(std::string& s) const noexcept {
                 s.append(", bits ").append(std::to_string(bits())).append(", ").append(std::to_string(sig_words())).append(" word(s): ");
-                for(nsize_t i=0; i<sig_words(); ++i) {
+                for(size_t i=0; i<sig_words(); ++i) {
                     const mp_word_t w = word_at(i);
                     s.append( jau::bytesHexString(&w, 0, mp_word_bits/CHAR_BIT, false /* lsbFirst */, true /* lowerCase */) )
                      .append(", ");
@@ -1293,5 +1321,3 @@ namespace jau::mp {
         return out << v.to_dec_string();
     }
 }
-
-

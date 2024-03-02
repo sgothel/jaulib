@@ -48,7 +48,7 @@ namespace jau::mp {
 
 namespace jau::mp::ops {
 
-    int bigint_cmp(const mp_word_t x[], nsize_t x_size, const mp_word_t y[], nsize_t y_size) noexcept;
+    int bigint_cmp(const mp_word_t x[], size_t x_size, const mp_word_t y[], size_t y_size) noexcept;
 
     inline mp_word_t word_add(const mp_word_t x, const mp_word_t y, mp_word_t& carry) noexcept {
        mp_word_t z = x + y;
@@ -139,7 +139,7 @@ namespace jau::mp::ops {
              * some adds and shifts. Last resort for CPUs like UltraSPARC (with
              * 64-bit registers/ALU, but no 64x64->128 multiply) or 32-bit CPUs.
              */
-            constexpr const nsize_t HWORD_BITS = 32;
+            constexpr const size_t HWORD_BITS = 32;
             constexpr const uint32_t HWORD_MASK = 0xFFFFFFFFU;
 
             const uint32_t a_hi = (a >> HWORD_BITS);
@@ -259,101 +259,101 @@ namespace jau::mp::ops {
     }
 
     /** Two operand addition with carry out */
-    inline mp_word_t bigint_add2(mp_word_t x[], nsize_t x_size, const mp_word_t y[], nsize_t y_size) noexcept {
+    inline mp_word_t bigint_add2(mp_word_t x[], size_t x_size, const mp_word_t y[], size_t y_size) noexcept {
         mp_word_t carry = 0;
 
         assert(x_size >= y_size);
 
-        const nsize_t blocks = y_size - (y_size % 8);
+        const size_t blocks = y_size - (y_size % 8);
 
-        for(nsize_t i = 0; i != blocks; i += 8) {
+        for(size_t i = 0; i != blocks; i += 8) {
             carry = word8_add2(x + i, y + i, carry);
         }
-        for(nsize_t i = blocks; i != y_size; ++i) {
+        for(size_t i = blocks; i != y_size; ++i) {
             x[i] = word_add(x[i], y[i], carry);
         }
-        for(nsize_t i = y_size; i != x_size; ++i) {
+        for(size_t i = y_size; i != x_size; ++i) {
             x[i] = word_add(x[i], 0, carry);
         }
         return carry;
     }
 
     /** Three operand addition with carry out */
-    inline mp_word_t bigint_add3_nc(mp_word_t z[], const mp_word_t x[], nsize_t x_size, const mp_word_t y[], nsize_t y_size) noexcept {
+    inline mp_word_t bigint_add3_nc(mp_word_t z[], const mp_word_t x[], size_t x_size, const mp_word_t y[], size_t y_size) noexcept {
         if(x_size < y_size)
         { return bigint_add3_nc(z, y, y_size, x, x_size); }
 
         mp_word_t carry = 0;
 
-        const nsize_t blocks = y_size - (y_size % 8);
+        const size_t blocks = y_size - (y_size % 8);
 
-        for(nsize_t i = 0; i != blocks; i += 8) {
+        for(size_t i = 0; i != blocks; i += 8) {
             carry = word8_add3(z + i, x + i, y + i, carry);
         }
-        for(nsize_t i = blocks; i != y_size; ++i) {
+        for(size_t i = blocks; i != y_size; ++i) {
             z[i] = word_add(x[i], y[i], carry);
         }
-        for(nsize_t i = y_size; i != x_size; ++i) {
+        for(size_t i = y_size; i != x_size; ++i) {
             z[i] = word_add(x[i], 0, carry);
         }
         return carry;
     }
     /** Three operand addition */
-    inline void bigint_add3(mp_word_t z[], const mp_word_t x[], nsize_t x_size, const mp_word_t y[], nsize_t y_size) noexcept {
+    inline void bigint_add3(mp_word_t z[], const mp_word_t x[], size_t x_size, const mp_word_t y[], size_t y_size) noexcept {
         z[x_size > y_size ? x_size : y_size] +=
                 bigint_add3_nc(z, x, x_size, y, y_size);
     }
 
     /** Two operand subtraction */
-    inline mp_word_t bigint_sub2(mp_word_t x[], nsize_t x_size, const mp_word_t y[], nsize_t y_size) noexcept {
+    inline mp_word_t bigint_sub2(mp_word_t x[], size_t x_size, const mp_word_t y[], size_t y_size) noexcept {
         mp_word_t borrow = 0;
 
         assert(x_size >= y_size);
 
-        const nsize_t blocks = y_size - (y_size % 8);
+        const size_t blocks = y_size - (y_size % 8);
 
-        for(nsize_t i = 0; i != blocks; i += 8) {
+        for(size_t i = 0; i != blocks; i += 8) {
             borrow = word8_sub2(x + i, y + i, borrow);
         }
-        for(nsize_t i = blocks; i != y_size; ++i) {
+        for(size_t i = blocks; i != y_size; ++i) {
             x[i] = word_sub(x[i], y[i], borrow);
         }
-        for(nsize_t i = y_size; i != x_size; ++i) {
+        for(size_t i = y_size; i != x_size; ++i) {
             x[i] = word_sub(x[i], 0, borrow);
         }
         return borrow;
     }
 
     /** Two operand subtraction, x = y - x; assumes y >= x */
-    inline void bigint_sub2_rev(mp_word_t x[], const mp_word_t y[], nsize_t y_size) noexcept {
+    inline void bigint_sub2_rev(mp_word_t x[], const mp_word_t y[], size_t y_size) noexcept {
         mp_word_t borrow = 0;
 
-        const nsize_t blocks = y_size - (y_size % 8);
+        const size_t blocks = y_size - (y_size % 8);
 
-        for(nsize_t i = 0; i != blocks; i += 8) {
+        for(size_t i = 0; i != blocks; i += 8) {
             borrow = word8_sub2_rev(x + i, y + i, borrow);
         }
-        for(nsize_t i = blocks; i != y_size; ++i) {
+        for(size_t i = blocks; i != y_size; ++i) {
             x[i] = word_sub(y[i], x[i], borrow);
         }
         assert(borrow == 0); // y must be greater than x
     }
 
     /** Three operand subtraction */
-    inline mp_word_t bigint_sub3(mp_word_t z[], const mp_word_t x[], nsize_t x_size, const mp_word_t y[], nsize_t y_size) noexcept {
+    inline mp_word_t bigint_sub3(mp_word_t z[], const mp_word_t x[], size_t x_size, const mp_word_t y[], size_t y_size) noexcept {
         mp_word_t borrow = 0;
 
         assert(x_size >= y_size); // Expected sizes
 
-        const nsize_t blocks = y_size - (y_size % 8);
+        const size_t blocks = y_size - (y_size % 8);
 
-        for(nsize_t i = 0; i != blocks; i += 8) {
+        for(size_t i = 0; i != blocks; i += 8) {
             borrow = word8_sub3(z + i, x + i, y + i, borrow);
         }
-        for(nsize_t i = blocks; i != y_size; ++i) {
+        for(size_t i = blocks; i != y_size; ++i) {
             z[i] = word_sub(x[i], y[i], borrow);
         }
-        for(nsize_t i = y_size; i != x_size; ++i) {
+        for(size_t i = y_size; i != x_size; ++i) {
             z[i] = word_sub(x[i], 0, borrow);
         }
         return borrow;
@@ -373,7 +373,7 @@ namespace jau::mp::ops {
     * @param y_size length of y
     */
     inline int32_t
-    bigint_sub_abs(mp_word_t z[], const mp_word_t x[], nsize_t x_size, const mp_word_t y[], nsize_t y_size) noexcept {
+    bigint_sub_abs(mp_word_t z[], const mp_word_t x[], size_t x_size, const mp_word_t y[], size_t y_size) noexcept {
         const int32_t relative_size = bigint_cmp(x, x_size, y, y_size);
 
         // Swap if relative_size == -1
@@ -396,51 +396,51 @@ namespace jau::mp::ops {
     /*
      * Linear Multiply - returns the carry
      */
-    [[nodiscard]] inline mp_word_t bigint_linmul2(mp_word_t x[], nsize_t x_size, mp_word_t y) noexcept {
-        const nsize_t blocks = x_size - (x_size % 8);
+    [[nodiscard]] inline mp_word_t bigint_linmul2(mp_word_t x[], size_t x_size, mp_word_t y) noexcept {
+        const size_t blocks = x_size - (x_size % 8);
 
         mp_word_t carry = 0;
 
-        for(nsize_t i = 0; i != blocks; i += 8) {
+        for(size_t i = 0; i != blocks; i += 8) {
             carry = word8_linmul2(x + i, y, carry);
         }
-        for(nsize_t i = blocks; i != x_size; ++i) {
+        for(size_t i = blocks; i != x_size; ++i) {
             x[i] = word_madd2(x[i], y, carry);
         }
         return carry;
     }
 
-    inline void bigint_linmul3(mp_word_t z[], const mp_word_t x[], nsize_t x_size, mp_word_t y) noexcept {
-        const nsize_t blocks = x_size - (x_size % 8);
+    inline void bigint_linmul3(mp_word_t z[], const mp_word_t x[], size_t x_size, mp_word_t y) noexcept {
+        const size_t blocks = x_size - (x_size % 8);
 
         mp_word_t carry = 0;
 
-        for(nsize_t i = 0; i != blocks; i += 8) {
+        for(size_t i = 0; i != blocks; i += 8) {
             carry = word8_linmul3(z + i, x + i, y, carry);
         }
-        for(nsize_t i = blocks; i != x_size; ++i) {
+        for(size_t i = blocks; i != x_size; ++i) {
             z[i] = word_madd2(x[i], y, carry);
         }
         z[x_size] = carry;
     }
 
-    inline void bigint_shl1(mp_word_t x[], nsize_t x_size, nsize_t x_words, nsize_t word_shift, nsize_t bit_shift) noexcept {
+    inline void bigint_shl1(mp_word_t x[], size_t x_size, size_t x_words, size_t word_shift, size_t bit_shift) noexcept {
         std::memmove(x + word_shift, x, sizeof(mp_word_t)*x_words);
         std::memset(x, 0, sizeof(mp_word_t)*word_shift);
 
         const auto carry_mask = CT::Mask<mp_word_t>::expand(bit_shift);
-        const nsize_t carry_shift = carry_mask.if_set_return(mp_word_bits - bit_shift);
+        const size_t carry_shift = carry_mask.if_set_return(mp_word_bits - bit_shift);
 
         mp_word_t carry = 0;
-        for(nsize_t i = word_shift; i != x_size; ++i) {
+        for(size_t i = word_shift; i != x_size; ++i) {
             const mp_word_t w = x[i];
             x[i] = (w << bit_shift) | carry;
             carry = carry_mask.if_set_return(w >> carry_shift);
         }
     }
 
-    inline void bigint_shr1(mp_word_t x[], nsize_t x_size, nsize_t word_shift, nsize_t bit_shift) noexcept {
-        const nsize_t top = x_size >= word_shift ? (x_size - word_shift) : 0;
+    inline void bigint_shr1(mp_word_t x[], size_t x_size, size_t word_shift, size_t bit_shift) noexcept {
+        const size_t top = x_size >= word_shift ? (x_size - word_shift) : 0;
 
         if(top > 0) {
             std::memmove(x, x + word_shift, sizeof(mp_word_t)*top);
@@ -448,40 +448,40 @@ namespace jau::mp::ops {
         std::memset(x + top, 0, sizeof(mp_word_t)*jau::min(word_shift, x_size));
 
         const auto carry_mask = CT::Mask<mp_word_t>::expand(bit_shift);
-        const nsize_t carry_shift = carry_mask.if_set_return(mp_word_bits - bit_shift);
+        const size_t carry_shift = carry_mask.if_set_return(mp_word_bits - bit_shift);
 
         mp_word_t carry = 0;
-        for(nsize_t i = 0; i != top; ++i) {
+        for(size_t i = 0; i != top; ++i) {
             const mp_word_t w = x[top - i - 1];
             x[top-i-1] = (w >> bit_shift) | carry;
             carry = carry_mask.if_set_return(w << carry_shift);
         }
     }
 
-    inline void bigint_shl2(mp_word_t y[], const mp_word_t x[], nsize_t x_size, nsize_t word_shift, nsize_t bit_shift) noexcept {
+    inline void bigint_shl2(mp_word_t y[], const mp_word_t x[], size_t x_size, size_t word_shift, size_t bit_shift) noexcept {
         std::memmove(y + word_shift, x, sizeof(mp_word_t)*x_size);
 
         const auto carry_mask = CT::Mask<mp_word_t>::expand(bit_shift);
-        const nsize_t carry_shift = carry_mask.if_set_return(mp_word_bits - bit_shift);
+        const size_t carry_shift = carry_mask.if_set_return(mp_word_bits - bit_shift);
 
         mp_word_t carry = 0;
-        for(nsize_t i = word_shift; i != x_size + word_shift + 1; ++i) {
+        for(size_t i = word_shift; i != x_size + word_shift + 1; ++i) {
             const mp_word_t w = y[i];
             y[i] = (w << bit_shift) | carry;
             carry = carry_mask.if_set_return(w >> carry_shift);
         }
     }
-    inline void bigint_shr2(mp_word_t y[], const mp_word_t x[], nsize_t x_size, nsize_t word_shift, nsize_t bit_shift) noexcept {
-        const nsize_t new_size = x_size < word_shift ? 0 : (x_size - word_shift);
+    inline void bigint_shr2(mp_word_t y[], const mp_word_t x[], size_t x_size, size_t word_shift, size_t bit_shift) noexcept {
+        const size_t new_size = x_size < word_shift ? 0 : (x_size - word_shift);
 
         if(new_size > 0) {
             std::memmove(y, x + word_shift, sizeof(mp_word_t)*new_size);
         }
         const auto carry_mask = CT::Mask<mp_word_t>::expand(bit_shift);
-        const nsize_t carry_shift = carry_mask.if_set_return(mp_word_bits - bit_shift);
+        const size_t carry_shift = carry_mask.if_set_return(mp_word_bits - bit_shift);
 
         mp_word_t carry = 0;
-        for(nsize_t i = new_size; i > 0; --i) {
+        for(size_t i = new_size; i > 0; --i) {
             mp_word_t w = y[i-1];
             y[i-1] = (w >> bit_shift) | carry;
             carry = carry_mask.if_set_return(w << carry_shift);
@@ -491,25 +491,25 @@ namespace jau::mp::ops {
     /*
      * O(n*n) multiplication
      */
-    void basecase_mul(mp_word_t z[], nsize_t z_size,
-                      const mp_word_t x[], nsize_t x_size,
-                      const mp_word_t y[], nsize_t y_size) noexcept
+    void basecase_mul(mp_word_t z[], size_t z_size,
+                      const mp_word_t x[], size_t x_size,
+                      const mp_word_t y[], size_t y_size) noexcept
     {
         assert(z_size >= x_size + y_size); // z_size too small
 
-        const nsize_t x_size_8 = x_size - (x_size % 8);
+        const size_t x_size_8 = x_size - (x_size % 8);
 
-        for(nsize_t i=0; i<z_size; ++i) { z[i]=0; }
+        for(size_t i=0; i<z_size; ++i) { z[i]=0; }
 
-        for(nsize_t i = 0; i != y_size; ++i) {
+        for(size_t i = 0; i != y_size; ++i) {
             const mp_word_t y_i = y[i];
 
             mp_word_t carry = 0;
 
-            for(nsize_t j = 0; j != x_size_8; j += 8) {
+            for(size_t j = 0; j != x_size_8; j += 8) {
                 carry = word8_madd3(z + i + j, x + j, y_i, carry);
             }
-            for(nsize_t j = x_size_8; j != x_size; ++j) {
+            for(size_t j = x_size_8; j != x_size; ++j) {
                 z[i+j] = word_madd3(x[j], y_i, z[i+j], carry);
             }
             z[x_size+i] = carry;
@@ -527,7 +527,7 @@ namespace jau::mp::ops {
             mp_word_t high = n1 % d;
             mp_word_t quotient = 0;
 
-            for(nsize_t i = 0; i != mp_word_bits; ++i) {
+            for(size_t i = 0; i != mp_word_bits; ++i) {
                 const mp_word_t high_top_bit = high >> ( mp_word_bits - 1 );
 
                 high <<= 1;
@@ -559,22 +559,22 @@ namespace jau::mp::ops {
     }
 
     inline CT::Mask<mp_word_t>
-    bigint_ct_is_eq(const mp_word_t x[], nsize_t x_size, const mp_word_t y[], nsize_t y_size) noexcept {
-        const nsize_t common_elems = std::min(x_size, y_size);
+    bigint_ct_is_eq(const mp_word_t x[], size_t x_size, const mp_word_t y[], size_t y_size) noexcept {
+        const size_t common_elems = std::min(x_size, y_size);
         mp_word_t diff = 0;
 
-        for(nsize_t i = 0; i != common_elems; i++) {
+        for(size_t i = 0; i != common_elems; i++) {
             diff |= (x[i] ^ y[i]);
         }
 
         // If any bits were set in high part of x/y, then they are not equal
         if(x_size < y_size)
         {
-            for(nsize_t i = x_size; i != y_size; i++) {
+            for(size_t i = x_size; i != y_size; i++) {
                 diff |= y[i];
             }
         } else if(y_size < x_size) {
-            for(nsize_t i = y_size; i != x_size; i++) {
+            for(size_t i = y_size; i != x_size; i++) {
                 diff |= x[i];
             }
         }
@@ -587,13 +587,13 @@ namespace jau::mp::ops {
      * If lt_or_equal is true, returns ~0 also for x == y
      */
     inline CT::Mask<mp_word_t>
-    bigint_ct_is_lt(const mp_word_t x[], nsize_t x_size, const mp_word_t y[], nsize_t y_size, bool lt_or_equal = false) noexcept
+    bigint_ct_is_lt(const mp_word_t x[], size_t x_size, const mp_word_t y[], size_t y_size, bool lt_or_equal = false) noexcept
     {
-        const nsize_t common_elems = jau::min(x_size, y_size);
+        const size_t common_elems = jau::min(x_size, y_size);
 
         auto is_lt = CT::Mask<mp_word_t>::expand(lt_or_equal);
 
-        for(nsize_t i = 0; i != common_elems; i++)
+        for(size_t i = 0; i != common_elems; i++)
         {
             const auto eq = CT::Mask<mp_word_t>::is_equal(x[i], y[i]);
             const auto lt = CT::Mask<mp_word_t>::is_lt(x[i], y[i]);
@@ -602,14 +602,14 @@ namespace jau::mp::ops {
 
         if(x_size < y_size) {
             mp_word_t mask = 0;
-            for(nsize_t i = x_size; i != y_size; i++) {
+            for(size_t i = x_size; i != y_size; i++) {
                 mask |= y[i];
             }
             // If any bits were set in high part of y, then is_lt should be forced true
             is_lt |= CT::Mask<mp_word_t>::expand(mask);
         } else if(y_size < x_size) {
             mp_word_t mask = 0;
-            for(nsize_t i = y_size; i != x_size; i++) {
+            for(size_t i = y_size; i != x_size; i++) {
                 mask |= x[i];
             }
 
@@ -628,30 +628,30 @@ namespace jau::mp::ops {
      * -  0 if x == y
      * -  1 if x > y
      */
-    inline int bigint_cmp(const mp_word_t x[], nsize_t x_size, const mp_word_t y[], nsize_t y_size) noexcept
+    inline int bigint_cmp(const mp_word_t x[], size_t x_size, const mp_word_t y[], size_t y_size) noexcept
     {
         constexpr const mp_word_t LT = static_cast<mp_word_t>(-1);
         constexpr const mp_word_t EQ = 0;
         constexpr const mp_word_t GT = 1;
-        const nsize_t common_elems = jau::min(x_size, y_size);
+        const size_t common_elems = jau::min(x_size, y_size);
 
         mp_word_t result = EQ; // until found otherwise
 
-        for(nsize_t i = 0; i != common_elems; i++) {
+        for(size_t i = 0; i != common_elems; i++) {
             const auto is_eq = CT::Mask<mp_word_t>::is_equal(x[i], y[i]);
             const auto is_lt = CT::Mask<mp_word_t>::is_lt(x[i], y[i]);
             result = is_eq.select(result, is_lt.select(LT, GT));
         }
         if(x_size < y_size) {
             mp_word_t mask = 0;
-            for(nsize_t i = x_size; i != y_size; i++) {
+            for(size_t i = x_size; i != y_size; i++) {
                 mask |= y[i];
             }
             // If any bits were set in high part of y, then x < y
             result = CT::Mask<mp_word_t>::is_zero(mask).select(result, LT);
         } else if(y_size < x_size) {
             mp_word_t mask = 0;
-            for(nsize_t i = y_size; i != x_size; i++) {
+            for(size_t i = y_size; i != x_size; i++) {
                 mask |= x[i];
             }
             // If any bits were set in high part of x, then x > y

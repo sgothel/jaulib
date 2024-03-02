@@ -43,7 +43,7 @@ namespace jau::CT {
 * doesn't require a custom patched valgrind.
 */
 template<typename T>
-inline void poison([[maybe_unused]] const T* p, [[maybe_unused]] nsize_t n)
+inline void poison([[maybe_unused]] const T* p, [[maybe_unused]] size_t n)
    {
 #if defined(JAU_HAS_VALGRIND)
    VALGRIND_MAKE_MEM_UNDEFINED(p, n * sizeof(T));
@@ -51,7 +51,7 @@ inline void poison([[maybe_unused]] const T* p, [[maybe_unused]] nsize_t n)
    }
 
 template<typename T>
-inline void unpoison([[maybe_unused]] const T* p, [[maybe_unused]] nsize_t n)
+inline void unpoison([[maybe_unused]] const T* p, [[maybe_unused]] size_t n)
    {
 #if defined(JAU_HAS_VALGRIND)
    VALGRIND_MAKE_MEM_DEFINED(p, n * sizeof(T));
@@ -305,18 +305,18 @@ class Mask
       * Conditionally set output to x or y, depending on if mask is set or
       * cleared (resp)
       */
-      void select_n(T output[], const T x[], const T y[], nsize_t len) const noexcept
+      void select_n(T output[], const T x[], const T y[], size_t len) const noexcept
          {
-         for(nsize_t i = 0; i != len; ++i)
+         for(size_t i = 0; i != len; ++i)
             output[i] = this->select(x[i], y[i]);
          }
 
       /**
       * If this mask is set, zero out buf, otherwise do nothing
       */
-      void if_set_zero_out(T buf[], nsize_t elems) noexcept
+      void if_set_zero_out(T buf[], size_t elems) noexcept
          {
-         for(nsize_t i = 0; i != elems; ++i)
+         for(size_t i = 0; i != elems; ++i)
             {
             buf[i] = this->if_not_set_return(buf[i]);
             }
@@ -359,7 +359,7 @@ inline Mask<T> conditional_copy_mem(T cnd,
                                     T* to,
                                     const T* from0,
                                     const T* from1,
-                                    nsize_t elems) noexcept
+                                    size_t elems) noexcept
    {
    const auto mask = CT::Mask<T>::expand(cnd);
    mask.select_n(to, from0, from1, elems);
