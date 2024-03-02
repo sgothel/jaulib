@@ -113,6 +113,30 @@ TEST_CASE( "MP Big Int Test 01", "[big_int_t][arithmetic][math]" ) {
         std::cout << "big_int a*b:: " << ab.to_dec_string(true) << std::endl;
         std::cout << "big_int a*b:: " << ab.to_hex_string(true) << std::endl;
     }
+    {
+        big_int_t zero, ten(10), thirty(30), forty(40);
+        REQUIRE( zero < ten );
+        REQUIRE( zero < thirty );
+        REQUIRE( ten < thirty );
+
+        REQUIRE( ten > zero );
+        REQUIRE( thirty > ten );
+        REQUIRE( thirty > zero );
+
+        REQUIRE( ten <= ten );
+        REQUIRE( ten <= thirty );
+
+        REQUIRE( thirty >= thirty );
+        REQUIRE( thirty >= ten );
+
+        REQUIRE( thirty == thirty );
+        REQUIRE( thirty != ten );
+
+        REQUIRE( zero   == min(zero, ten) );
+        REQUIRE( ten    == max(zero, ten) );
+        REQUIRE( ten    == clamp(zero,  ten, thirty) );
+        REQUIRE( thirty == clamp(forty, ten, thirty) );
+    }
 }
 TEST_CASE( "MP Big Int Test 02", "[big_int_t][arithmetic][math]" ) {
     REQUIRE( big_int_t(10) == big_int_t( 5) + big_int_t(5) );
@@ -135,13 +159,15 @@ TEST_CASE( "MP Big Int Dec Test 10", "[big_int_t][inout][math]" ) {
 
                          };
         big_int_t a(a_u8, sizeof(a_u8), lb_endian::little);
-        std::cout << "big_int a:: " << a.to_dec_string(true) << std::endl;
-        std::cout << "big_int a:: " << a.to_hex_string(true) << std::endl;
+        std::cout << "big_int zero:: " << a.to_dec_string(true) << std::endl;
+        std::cout << "big_int zero:: " << a.to_hex_string(true) << std::endl;
         REQUIRE( 23 == sizeof(a_u8) );
-        for(size_t i=0; i<sizeof(a_u8); ++i) {
-            std::string s1;
-            jau::byteHexString(s1, a.byte_at(i), true);
-            std::cout << "a.buf[" << std::to_string(i) << "]: 0x" << s1 << std::endl;
+        if ( false ) {
+            for(size_t i=0; i<sizeof(a_u8); ++i) {
+                std::string s1;
+                jau::byteHexString(s1, a.byte_at(i), true);
+                std::cout << "zero.buf[" << std::to_string(i) << "]: 0x" << s1 << std::endl;
+            }
         }
         REQUIRE( sizeof(a_u8)*8 == a.bits() );
         REQUIRE( sizeof(a_u8) == a.bytes() );
@@ -152,10 +178,12 @@ TEST_CASE( "MP Big Int Dec Test 10", "[big_int_t][inout][math]" ) {
                 buf[i] = 0;
             }
             REQUIRE( sizeof(a_u8) == a.binary_encode(buf, sizeof(buf), jau::lb_endian::little) );
-            for(size_t i=0; i<sizeof(a_u8); ++i) {
-                std::string s1;
-                jau::byteHexString(s1, buf[i], true);
-                std::cout << "le.buf[" << std::to_string(i) << "]: 0x" << s1 << std::endl;
+            if ( false ) {
+                for(size_t i=0; i<sizeof(a_u8); ++i) {
+                    std::string s1;
+                    jau::byteHexString(s1, buf[i], true);
+                    std::cout << "le.buf[" << std::to_string(i) << "]: 0x" << s1 << std::endl;
+                }
             }
             for(size_t i=0; i<sizeof(a_u8); ++i) {
                 REQUIRE( (uint32_t)a_u8[i] == (uint32_t)buf[i] );
@@ -170,10 +198,12 @@ TEST_CASE( "MP Big Int Dec Test 10", "[big_int_t][inout][math]" ) {
                 buf[i] = 0;
             }
             REQUIRE( sizeof(a_u8) == a.binary_encode(buf, sizeof(buf), jau::lb_endian::big) );
-            for(size_t i=0; i<sizeof(a_u8); ++i) {
-                std::string s1;
-                jau::byteHexString(s1, buf[i], true);
-                std::cout << "be.buf[" << std::to_string(i) << "]: 0x" << s1 << std::endl;
+            if ( false ) {
+                for(size_t i=0; i<sizeof(a_u8); ++i) {
+                    std::string s1;
+                    jau::byteHexString(s1, buf[i], true);
+                    std::cout << "be.buf[" << std::to_string(i) << "]: 0x" << s1 << std::endl;
+                }
             }
             for(size_t i=0; i<sizeof(a_u8); ++i) {
                 REQUIRE( (uint32_t)a_u8[sizeof(a_u8)-i-1] == (uint32_t)buf[i] );
@@ -193,8 +223,8 @@ TEST_CASE( "MP Big Int Dec Test 11", "[big_int_t][inout][math]" ) {
 
                          };
         big_int_t a("0xffeeddccbbaa998877665544332211fedcba9876543210");
-        std::cout << "big_int a:: " << a.to_dec_string(true) << std::endl;
-        std::cout << "big_int a:: " << a.to_hex_string(true) << std::endl;
+        std::cout << "big_int zero:: " << a.to_dec_string(true) << std::endl;
+        std::cout << "big_int zero:: " << a.to_hex_string(true) << std::endl;
         REQUIRE( 23 == sizeof(a_u8) );
         REQUIRE( sizeof(a_u8)*8 == a.bits() );
         REQUIRE( sizeof(a_u8) == a.bytes() );

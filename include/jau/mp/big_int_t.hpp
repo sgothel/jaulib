@@ -1557,26 +1557,25 @@ namespace jau {
     inline mp::big_int_t abs(mp::big_int_t x) noexcept { return x.abs(); }
     inline mp::big_int_t pow(mp::big_int_t b, mp::big_int_t e) { return b.pow(e); }
 
-    constexpr const mp::big_int_t& min(const mp::big_int_t& x, const mp::big_int_t& y) noexcept {
+    inline const mp::big_int_t& min(const mp::big_int_t& x, const mp::big_int_t& y) noexcept {
         return x < y ? x : y;
     }
-    constexpr const mp::big_int_t& max(const mp::big_int_t& x, const mp::big_int_t& y) noexcept {
+    inline const mp::big_int_t& max(const mp::big_int_t& x, const mp::big_int_t& y) noexcept {
         return x > y ? x : y;
     }
-    constexpr const mp::big_int_t& clamp(const mp::big_int_t& x, const mp::big_int_t& min_val, const mp::big_int_t& max_val) noexcept {
+    inline const mp::big_int_t& clamp(const mp::big_int_t& x, const mp::big_int_t& min_val, const mp::big_int_t& max_val) noexcept {
         return min(max(x, min_val), max_val);
     }
 
-    constexpr mp::big_int_t& min(mp::big_int_t& x, mp::big_int_t& y) noexcept {
+    inline mp::big_int_t& min(mp::big_int_t& x, mp::big_int_t& y) noexcept {
         return x < y ? x : y;
     }
-    constexpr mp::big_int_t max(mp::big_int_t& x, mp::big_int_t& y) noexcept {
+    inline mp::big_int_t& max(mp::big_int_t& x, mp::big_int_t& y) noexcept {
         return x > y ? x : y;
     }
-    constexpr mp::big_int_t& clamp(mp::big_int_t& x, mp::big_int_t& min_val, mp::big_int_t& max_val) noexcept {
+    inline mp::big_int_t& clamp(mp::big_int_t& x, mp::big_int_t& min_val, mp::big_int_t& max_val) noexcept {
         return min(max(x, min_val), max_val);
     }
-
 
     inline mp::big_int_t gcd(const mp::big_int_t& a, const mp::big_int_t& b) noexcept {
         mp::big_int_t a_ = abs(a);
@@ -1589,9 +1588,11 @@ namespace jau {
         return a_;
     }
 
-    std::ostream& operator<<(std::ostream& out, const mp::big_int_t& v) {
+    /**@}*/
+}
+
+namespace std {
+    inline std::ostream& operator<<(std::ostream& out, const jau::mp::big_int_t& v) {
         return out << v.to_dec_string();
     }
-
-    /**@}*/
 }
