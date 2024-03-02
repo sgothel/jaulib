@@ -46,7 +46,7 @@ namespace jau {
     /**
      * A 48 bit EUI-48 sub-identifier, see EUI48.
      *
-     * Stores value in endian::native byte order.
+     * Stores value in lb_endian::native byte order.
      */
     struct EUI48Sub {
       public:
@@ -71,13 +71,13 @@ namespace jau {
 
         /**
          * Copy len_ address bytes from given source and byte_order,
-         * while converting them to endian::native byte order.
+         * while converting them to lb_endian::native byte order.
          *
-         * @param b_ sub address bytes in endian::native byte order
+         * @param b_ sub address bytes in lb_endian::native byte order
          * @param len_ length
-         * @param byte_order endian::little or endian::big byte order of given sub_address, one may pass endian::native.
+         * @param byte_order lb_endian::little or lb_endian::big byte order of given sub_address, one may pass lb_endian::native.
          */
-        EUI48Sub(const uint8_t * b_, const jau::nsize_t len_, const endian byte_order) noexcept;
+        EUI48Sub(const uint8_t * b_, const jau::nsize_t len_, const lb_endian byte_order) noexcept;
 
         /**
          * Fills given EUI48Sub instance via given string representation.
@@ -134,33 +134,33 @@ namespace jau {
          * Find index of needle within haystack in the given byte order.
          *
          * The returned index will be adjusted for the desired byte order.
-         * - endian::big will return index 0 for the leading byte like the toString() representation from left (MSB) to right (LSB).
-         * - endian::little will return index 5 for the leading byte
+         * - lb_endian::big will return index 0 for the leading byte like the toString() representation from left (MSB) to right (LSB).
+         * - lb_endian::little will return index 5 for the leading byte
          *
          * @param haystack_b haystack data
          * @param haystack_length haystack length
          * @param needle_b needle data
          * @param needle_length needle length
-         * @param byte_order byte order will adjust the returned index, endian::big is equivalent with toString() representation from left (MSB) to right (LSB).
+         * @param byte_order byte order will adjust the returned index, lb_endian::big is equivalent with toString() representation from left (MSB) to right (LSB).
          * @return index of first element of needle within haystack or -1 if not found. If the needle length is zero, 0 (found) is returned.
          */
         static jau::snsize_t indexOf(const uint8_t haystack_b[], const jau::nsize_t haystack_length,
                                      const uint8_t needle_b[], const jau::nsize_t needle_length,
-                                     const endian byte_order) noexcept;
+                                     const lb_endian byte_order) noexcept;
 
         /**
          * Finds the index of given EUI48Sub needle within this instance haystack in the given byte order.
          *
          * The returned index will be adjusted for the desired byte order.
-         * - endian::big will return index 0 for the leading byte like the toString() representation from left (MSB) to right (LSB).
-         * - endian::little will return index 5 for the leading byte
+         * - lb_endian::big will return index 0 for the leading byte like the toString() representation from left (MSB) to right (LSB).
+         * - lb_endian::little will return index 5 for the leading byte
          *
          * @param needle
-         * @param byte_order byte order will adjust the returned index, endian::big is equivalent with toString() representation from left (MSB) to right (LSB).
+         * @param byte_order byte order will adjust the returned index, lb_endian::big is equivalent with toString() representation from left (MSB) to right (LSB).
          * @return index of first element of needle within this instance haystack or -1 if not found. If the needle length is zero, 0 (found) is returned.
          * @see indexOf()
          */
-        jau::snsize_t indexOf(const EUI48Sub& needle, const endian byte_order) const noexcept {
+        jau::snsize_t indexOf(const EUI48Sub& needle, const lb_endian byte_order) const noexcept {
             return indexOf(b, length, needle.b, needle.length, byte_order);
         }
 
@@ -171,11 +171,11 @@ namespace jau {
          * </p>
          */
         bool contains(const EUI48Sub& needle) const noexcept {
-            return 0 <= indexOf(needle, endian::native);
+            return 0 <= indexOf(needle, lb_endian::native);
         }
 
         /**
-         * Returns the EUI48 sub-string representation with MSB first (endian::big),
+         * Returns the EUI48 sub-string representation with MSB first (lb_endian::big),
          * less or equal 17 characters representing less or equal 6 bytes as upper case hexadecimal numbers separated via colon,
          * e.g. `01:02:03:0A:0B:0C`, `01:02:03:0A`, `:`, (empty).
          */
@@ -201,7 +201,7 @@ namespace jau {
      * A packed 48 bit EUI-48 identifier, formerly known as MAC-48
      * or simply network device MAC address (Media Access Control address).
      *
-     * Stores value in endian::native byte order.
+     * Stores value in lb_endian::native byte order.
      */
     __pack ( struct EUI48 {
         /** EUI48 MAC address matching any device, i.e. `0:0:0:0:0:0`. */
@@ -220,12 +220,12 @@ namespace jau {
 
         /**
          * Copy address bytes from given source and byte_order,
-         * while converting them to endian::native byte order.
+         * while converting them to lb_endian::native byte order.
          *
          * @param source address bytes
-         * @param byte_order endian::little or endian::big byte order of given source, one may pass endian::native.
+         * @param byte_order lb_endian::little or lb_endian::big byte order of given source, one may pass lb_endian::native.
          */
-        EUI48(const uint8_t * source, const endian byte_order) noexcept;
+        EUI48(const uint8_t * source, const lb_endian byte_order) noexcept;
 
         /**
          * Fills given EUI48 instance via given string representation.
@@ -281,15 +281,15 @@ namespace jau {
          * Finds the index of given EUI48Sub needle within this instance haystack.
          *
          * The returned index will be adjusted for the desired byte order.
-         * - endian::big will return index 0 for the leading byte like the string representation from left (MSB) to right (LSB).
-         * - endian::little will return index 5 for the leading byte
+         * - lb_endian::big will return index 0 for the leading byte like the string representation from left (MSB) to right (LSB).
+         * - lb_endian::little will return index 5 for the leading byte
          *
          * @param needle
-         * @param byte_order byte order will adjust the returned index, endian::big is equivalent to the string representation from left (MSB) to right (LSB).
+         * @param byte_order byte order will adjust the returned index, lb_endian::big is equivalent to the string representation from left (MSB) to right (LSB).
          * @return index of first element of needle within this instance haystack or -1 if not found. If the needle length is zero, 0 (found) is returned.
          * @see indexOf()
          */
-        jau::snsize_t indexOf(const EUI48Sub& needle, const endian byte_order) const noexcept {
+        jau::snsize_t indexOf(const EUI48Sub& needle, const lb_endian byte_order) const noexcept {
             return EUI48Sub::indexOf(b, sizeof(b), needle.b, needle.length, byte_order);
         }
 
@@ -300,11 +300,11 @@ namespace jau {
          * </p>
          */
         bool contains(const EUI48Sub& needle) const noexcept {
-            return 0 <= indexOf(needle, endian::native);
+            return 0 <= indexOf(needle, lb_endian::native);
         }
 
         /**
-         * Returns the EUI48 string representation with MSB first (endian::big),
+         * Returns the EUI48 string representation with MSB first (lb_endian::big),
          * exactly 17 characters representing 6 bytes as upper case hexadecimal numbers separated via colon `01:02:03:0A:0B:0C`.
          * @see EUI48::EUI48()
          */
@@ -317,11 +317,10 @@ namespace jau {
          * Implementation is consistent with {@link #EUI48(byte[], int, ByteOrder)}.
          * </p>
          * @param sink the destination array
-         * @param sink_pos starting position in the destination array
          * @param byte_order destination buffer byte order
          * @see #EUI48(byte[], int, ByteOrder)
          */
-        jau::nsize_t put(uint8_t * const sink, jau::nsize_t const sink_pos, const endian byte_order) const noexcept;
+        jau::nsize_t put(uint8_t * const sink, const lb_endian byte_order) const noexcept;
     } );
     inline std::string to_string(const EUI48& a) noexcept { return a.toString(); }
 
@@ -359,29 +358,29 @@ namespace jau {
     }
 
     constexpr EUI48 be_to_cpu(EUI48 const & n) noexcept {
-        static_assert(isLittleOrBigEndian()); // one static_assert is sufficient for whole compilation unit
-        if( isLittleEndian() ) {
+        static_assert(is_little_or_big_endian()); // one static_assert is sufficient for whole compilation unit
+        if( is_little_endian() ) {
             return bswap(n);
         } else {
             return n;
         }
     }
     constexpr EUI48 cpu_to_be(EUI48 const & h) noexcept {
-        if( isLittleEndian() ) {
+        if( is_little_endian() ) {
             return bswap(h);
         } else {
             return h;
         }
     }
     constexpr EUI48 le_to_cpu(EUI48 const & l) noexcept {
-        if( isLittleEndian() ) {
+        if( is_little_endian() ) {
             return l;
         } else {
             return bswap(l);
         }
     }
     constexpr EUI48 cpu_to_le(EUI48 const & h) noexcept {
-        if( isLittleEndian() ) {
+        if( is_little_endian() ) {
             return h;
         } else {
             return bswap(h);

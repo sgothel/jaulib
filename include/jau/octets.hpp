@@ -1,7 +1,6 @@
 /*
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2020 Gothel Software e.K.
- * Copyright (c) 2020 ZAFENA AB
+ * Copyright (c) 2020-2024 Gothel Software e.K.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -71,8 +70,8 @@ namespace jau {
             nsize_t _size;
             /** Memory pointer, might be nullptr. Actual capacity known by owner, e.g. POctets. */
             uint8_t * _data;
-            /** byte-order flag */
-            bool _little_endian;
+            /** byte-order flag, little or big endian */
+            lb_endian _byte_order;
 
         protected:
             /**
@@ -90,38 +89,24 @@ namespace jau {
                 }
             }
 
-            static inline bool is_little_endian(const endian v) noexcept {
-                switch(v) {
-                    case endian::little: return true;
-                    case endian::big: return false;
-                    default: {
-                        ABORT("TROOctets: endian choice must be little or big, given: %s", jau::to_string(v).c_str());
-                        abort(); // never reached
-                    }
-                }
-            }
-
-            constexpr bool little_endian() const noexcept { return _little_endian; }
-
             constexpr uint8_t * data() noexcept { return _data; }
 
             /**
              * Internally sets the _size and _data fields after validation.
              *
-             * Aborts if data_ is nullptr and size_ > 0
-             * or byte_order not endian::little nor endian::big, see abort().
+             * Aborts if data_ is nullptr and size_ > 0.
              *
              * @param data_ a memory pointer
              * @param size_ used memory size
-             * @param byte_order endian::little or endian::big byte order, one may pass endian::native.
+             * @param byte_order lb_endian::little or lb_endian::big byte order, one may pass lb_endian::native.
              */
-            inline void setData(uint8_t *data_, nsize_t size_, const endian byte_order) noexcept {
+            inline void setData(uint8_t *data_, nsize_t size_, const lb_endian byte_order) noexcept {
                 JAU_TRACE_OCTETS_PRINT("POctets setData: %zu bytes @ %p -> %zu bytes @ %p",
                         _size, _data, size_, data_);
                 checkPtr(data_, size_);
                 _size = size_;
                 _data = data_;
-                _little_endian = is_little_endian(byte_order);
+                _byte_order = byte_order;
             }
             constexpr void setSize(nsize_t s) noexcept { _size = s; }
 
@@ -129,29 +114,28 @@ namespace jau {
             /**
              * Transient passthrough read-only memory, w/o ownership ..
              *
-             * Aborts if source is nullptr and len > 0
-             * or byte_order not endian::little nor endian::big, see abort().
+             * Aborts if source is nullptr and len > 0.
              *
              * @param source a non nullptr memory, otherwise throws exception. Actual capacity known by owner.
              * @param len readable size of the memory, may be zero
-             * @param byte_order endian::little or endian::big byte order, one may pass endian::native.
+             * @param byte_order lb_endian::little or lb_endian::big byte order, one may pass lb_endian::native.
              */
-            TROOctets(const uint8_t *source, const nsize_t len, const endian byte_order) noexcept
+            TROOctets(const uint8_t *source, const nsize_t len, const lb_endian byte_order_val ) noexcept
             : _size( len ), _data( const_cast<uint8_t *>(source) ),
-              _little_endian( is_little_endian(byte_order) )
+              _byte_order( byte_order_val )
             {
                 checkPtr(_data, _size);
             }
 
             /**
-             * Default constructor with nullptr memory, zero size and endian::native byte order.
+             * Default constructor with nullptr memory, zero size and lb_endian::native byte order.
              *
              * Conveniently exists to allow instantiation of variables
              * intended for later assignment.
              */
             TROOctets() noexcept
             : _size( 0 ), _data( nullptr ),
-              _little_endian( is_little_endian(endian::native) )
+              _byte_order( lb_endian::native )
             { }
 
             TROOctets(const TROOctets &o) noexcept = default;
@@ -172,7 +156,7 @@ namespace jau {
             }
 
             /** Returns byte order of this octet store. */
-            constexpr endian byte_order() const noexcept { return _little_endian ? endian::little : endian::big; }
+            constexpr lb_endian byte_order() const noexcept { return _byte_order; }
 
             /** Returns the used memory size for read and write operations, may be zero. */
             constexpr nsize_t size() const noexcept { return _size; }
@@ -187,66 +171,66 @@ namespace jau {
 
             int8_t get_int8(const nsize_t i) const {
                 check_range(i, 1, E_FILE_LINE);
-                return jau::get_int8(_data, i);
+                return jau::get_int8(_data + i);
             }
             constexpr int8_t get_int8_nc(const nsize_t i) const noexcept {
-                return jau::get_int8(_data, i);
+                return jau::get_int8(_data + i);
             }
 
             uint16_t get_uint16(const nsize_t i) const {
                 check_range(i, 2, E_FILE_LINE);
-                return jau::get_uint16(_data, i, _little_endian);
+                return jau::get_uint16(_data + i, byte_order());
             }
             constexpr uint16_t get_uint16_nc(const nsize_t i) const noexcept {
-                return jau::get_uint16(_data, i, _little_endian);
+                return jau::get_uint16(_data + i, byte_order());
             }
 
             uint32_t get_uint32(const nsize_t i) const {
                 check_range(i, 4, E_FILE_LINE);
-                return jau::get_uint32(_data, i, _little_endian);
+                return jau::get_uint32(_data + i, byte_order());
             }
             constexpr uint32_t get_uint32_nc(const nsize_t i) const noexcept {
-                return jau::get_uint32(_data, i, _little_endian);
+                return jau::get_uint32(_data + i, byte_order());
             }
 
             EUI48 get_eui48(const nsize_t i) const {
                 check_range(i, sizeof(EUI48), E_FILE_LINE);
-                return EUI48(_data+i, byte_order());
+                return EUI48(_data+i, byte_order() );
             }
             inline EUI48 get_eui48_nc(const nsize_t i) const noexcept {
-                return EUI48(_data+i, byte_order());
+                return EUI48(_data+i, byte_order() );
             }
 
             uint64_t get_uint64(const nsize_t i) const {
                 check_range(i, 8, E_FILE_LINE);
-                return jau::get_uint64(_data, i, _little_endian);
+                return jau::get_uint64(_data + i, byte_order());
             }
             constexpr uint64_t get_uint64_nc(const nsize_t i) const noexcept {
-                return jau::get_uint64(_data, i, _little_endian);
+                return jau::get_uint64(_data + i, byte_order());
             }
 
             uint128dp_t get_uint128(const nsize_t i) const {
                 check_range(i, 8, E_FILE_LINE);
-                return jau::get_uint128(_data, i, _little_endian);
+                return jau::get_uint128(_data + i, byte_order());
             }
             constexpr uint128dp_t get_uint128_nc(const nsize_t i) const noexcept {
-                return jau::get_uint128(_data, i, _little_endian);
+                return jau::get_uint128(_data + i, byte_order());
             }
 
             uint192dp_t get_uint192(const nsize_t i) const {
                 check_range(i, 8, E_FILE_LINE);
-                return jau::get_uint192(_data, i, _little_endian);
+                return jau::get_uint192(_data + i, byte_order());
             }
             constexpr uint192dp_t get_uint192_nc(const nsize_t i) const noexcept {
-                return jau::get_uint192(_data, i, _little_endian);
+                return jau::get_uint192(_data + i, byte_order());
             }
 
             uint256dp_t get_uint256(const nsize_t i) const {
                 check_range(i, 8, E_FILE_LINE);
-                return jau::get_uint256(_data, i, _little_endian);
+                return jau::get_uint256(_data + i, byte_order());
             }
             constexpr uint256dp_t get_uint256_nc(const nsize_t i) const noexcept {
-                return jau::get_uint256(_data, i, _little_endian);
+                return jau::get_uint256(_data + i, byte_order());
             }
 
             /** Assumes a null terminated string */
@@ -274,15 +258,15 @@ namespace jau {
 
             uuid128_t get_uuid128(const nsize_t i) const {
                 check_range(i, uuid_t::number(uuid_t::TypeSize::UUID128_SZ), E_FILE_LINE);
-                return jau::get_uuid128(_data, i, _little_endian);
+                return jau::get_uuid128(_data + i, byte_order());
             }
             inline uuid128_t get_uuid128_nc(const nsize_t i) const noexcept {
-                return jau::get_uuid128(_data, i, _little_endian);
+                return jau::get_uuid128(_data + i, byte_order());
             }
 
             std::unique_ptr<const uuid_t> get_uuid(const nsize_t i, const uuid_t::TypeSize tsize) const {
                 check_range(i, uuid_t::number(tsize), E_FILE_LINE);
-                return uuid_t::create(tsize, _data, i, _little_endian);
+                return uuid_t::create(tsize, _data + i, byte_order());
             }
 
             constexpr uint8_t const * get_ptr() const noexcept { return _data; }
@@ -302,7 +286,7 @@ namespace jau {
             }
 
             std::string toString() const noexcept {
-                return "size "+std::to_string(_size)+", ro: "+bytesHexString(_data, 0, _size, true /* lsbFirst */);
+                return "size "+std::to_string(_size)+", ["+to_string( byte_order() )+", "+to_string( byte_order() )+"], ro: "+bytesHexString(_data, 0, _size, true /* lsbFirst */);
             }
     };
 
@@ -320,14 +304,13 @@ namespace jau {
             /**
              * Transient passthrough r/w memory, w/o ownership ..
              *
-             * Aborts if source is nullptr and len > 0
-             * or byte_order not endian::little nor endian::big, see abort().
+             * Aborts if source is nullptr and len > 0.
              *
              * @param source transient data source
              * @param len length of transient data source
-             * @param byte_order endian::little or endian::big byte order, one may pass endian::native.
+             * @param byte_order lb_endian::little or lb_endian::big byte order, one may pass lb_endian::native.
              */
-            TOctets(uint8_t *source, const nsize_t len, const endian byte_order) noexcept
+            TOctets(uint8_t *source, const nsize_t len, const lb_endian byte_order) noexcept
             : TROOctets(source, len, byte_order) {}
 
             TOctets(const TOctets &o) noexcept = default;
@@ -355,58 +338,58 @@ namespace jau {
 
             void put_uint16(const nsize_t i, const uint16_t v) {
                 check_range(i, 2, E_FILE_LINE);
-                jau::put_uint16(data(), i, v, little_endian());
+                jau::put_uint16(data() + i, v, byte_order());
             }
             constexpr void put_uint16_nc(const nsize_t i, const uint16_t v) noexcept {
-                jau::put_uint16(data(), i, v, little_endian());
+                jau::put_uint16(data() + i, v, byte_order());
             }
 
             void put_uint32(const nsize_t i, const uint32_t v) {
                 check_range(i, 4, E_FILE_LINE);
-                jau::put_uint32(data(), i, v, little_endian());
+                jau::put_uint32(data() + i, v, byte_order());
             }
             constexpr void put_uint32_nc(const nsize_t i, const uint32_t v) noexcept {
-                jau::put_uint32(data(), i, v, little_endian());
+                jau::put_uint32(data() + i, v, byte_order());
             }
 
             void put_eui48(const nsize_t i, const EUI48 & v) {
                 check_range(i, sizeof(v.b), E_FILE_LINE);
-                v.put(data(), i, byte_order());
+                v.put(data() + i, byte_order() );
             }
             inline void put_eui48_nc(const nsize_t i, const EUI48 & v) noexcept {
-                v.put(data(), i, byte_order());
+                v.put(data() + i, byte_order() );
             }
 
             void put_uint64(const nsize_t i, const uint64_t & v) {
                 check_range(i, 8, E_FILE_LINE);
-                jau::put_uint64(data(), i, v, little_endian());
+                jau::put_uint64(data() + i, v, byte_order());
             }
             constexpr void put_uint64_nc(const nsize_t i, const uint64_t & v) noexcept {
-                jau::put_uint64(data(), i, v, little_endian());
+                jau::put_uint64(data() + i, v, byte_order());
             }
 
             void put_uint128(const nsize_t i, const uint128dp_t & v) {
                 check_range(i, 8, E_FILE_LINE);
-                jau::put_uint128(data(), i, v, little_endian());
+                jau::put_uint128(data() + i, v, byte_order());
             }
             constexpr void put_uint128_nc(const nsize_t i, const uint128dp_t & v) noexcept {
-                jau::put_uint128(data(), i, v, little_endian());
+                jau::put_uint128(data() + i, v, byte_order());
             }
 
             void put_uint192(const nsize_t i, const uint192dp_t & v) {
                 check_range(i, 8, E_FILE_LINE);
-                jau::put_uint192(data(), i, v, little_endian());
+                jau::put_uint192(data() + i, v, byte_order());
             }
             constexpr void put_uint192_nc(const nsize_t i, const uint192dp_t & v) noexcept {
-                jau::put_uint192(data(), i, v, little_endian());
+                jau::put_uint192(data() + i, v, byte_order());
             }
 
             void put_uint256(const nsize_t i, const uint256dp_t & v) {
                 check_range(i, 8, E_FILE_LINE);
-                jau::put_uint256(data(), i, v, little_endian());
+                jau::put_uint256(data() + i, v, byte_order());
             }
             constexpr void put_uint256_nc(const nsize_t i, const uint256dp_t & v) noexcept {
-                jau::put_uint256(data(), i, v, little_endian());
+                jau::put_uint256(data() + i, v, byte_order());
             }
 
             void put_octets(const nsize_t i, const TROOctets & v) {
@@ -482,10 +465,10 @@ namespace jau {
 
             void put_uuid(const nsize_t i, const uuid_t & v) {
                 check_range(i, v.getTypeSizeInt(), E_FILE_LINE);
-                v.put(data(), i, little_endian());
+                v.put(data() + i, byte_order());
             }
             void put_uuid_nc(const nsize_t i, const uuid_t & v) noexcept {
-                v.put(data(), i, little_endian());
+                v.put(data() + i, byte_order());
             }
 
             inline uint8_t * get_wptr() noexcept { return data(); }
@@ -533,7 +516,7 @@ namespace jau {
             }
 
             /** Returns byte order of this octet store. */
-            constexpr endian byte_order() const noexcept { return _parent.byte_order(); }
+            constexpr lb_endian byte_order() const noexcept { return _parent.byte_order(); }
 
             constexpr nsize_t size() const noexcept { return _size; }
             constexpr nsize_t offset() const noexcept { return _offset; }
@@ -613,13 +596,11 @@ namespace jau {
             /**
              * Zero sized POctets instance.
              *
-             * Aborts if byte_order not endian::little nor endian::big, see abort().
-             *
              * Will not throw an OutOfMemoryError exception due to no allocation.
              *
-             * @param byte_order endian::little or endian::big byte order, one may pass endian::native.
+             * @param byte_order lb_endian::little or lb_endian::big byte order, one may pass lb_endian::native.
              */
-            POctets(const endian byte_order) noexcept
+            POctets(const lb_endian byte_order) noexcept
             : TOctets(nullptr, 0, byte_order), _capacity(0)
             {
                 JAU_TRACE_OCTETS_PRINT("POctets ctor0: zero-sized");
@@ -628,17 +609,15 @@ namespace jau {
             /**
              * Takes ownership (malloc(size) and copy, free) ..
              *
-             * Aborts if byte_order not endian::little nor endian::big, see abort().
-             *
              * Capacity and size will be of given source size.
              *
              * @param source_ source data to be copied into this new instance
              * @param size_ length of source data
-             * @param byte_order endian::little or endian::big byte order, one may pass endian::native.
+             * @param byte_order lb_endian::little or lb_endian::big byte order, one may pass lb_endian::native.
              * @throws IllegalArgumentException if source_ is nullptr and size_ > 0
              * @throws OutOfMemoryError if allocation fails
              */
-            POctets(const uint8_t *source_, const nsize_t size_, const endian byte_order)
+            POctets(const uint8_t *source_, const nsize_t size_, const lb_endian byte_order)
             : TOctets( allocData(size_), size_, byte_order),
               _capacity( size_ )
             {
@@ -654,16 +633,14 @@ namespace jau {
             /**
              * Takes ownership (malloc(size) and copy, free) ..
              *
-             * Aborts if byte_order not endian::little nor endian::big, see abort().
-             *
              * Capacity and size will be of given source size.
              *
              * @param sourcelist source initializer list data to be copied into this new instance with implied size
-             * @param byte_order endian::little or endian::big byte order, one may pass endian::native.
+             * @param byte_order lb_endian::little or lb_endian::big byte order, one may pass lb_endian::native.
              * @throws IllegalArgumentException if source_ is nullptr and size_ > 0
              * @throws OutOfMemoryError if allocation fails
              */
-            POctets(std::initializer_list<uint8_t> sourcelist, const endian byte_order)
+            POctets(std::initializer_list<uint8_t> sourcelist, const lb_endian byte_order)
             : TOctets( allocData(sourcelist.size()), sourcelist.size(), byte_order),
               _capacity( sourcelist.size() )
             {
@@ -676,15 +653,13 @@ namespace jau {
             /**
              * New buffer (malloc(capacity), free)
              *
-             * Aborts if byte_order not endian::little nor endian::big, see abort().
-             *
              * @param capacity_ new capacity
              * @param size_ new size with size <= capacity
-             * @param byte_order endian::little or endian::big byte order, one may pass endian::native.
+             * @param byte_order lb_endian::little or lb_endian::big byte order, one may pass lb_endian::native.
              * @throws IllegalArgumentException if capacity_ < size_
              * @throws OutOfMemoryError if allocation fails
              */
-            POctets(const nsize_t capacity_, const nsize_t size_, const endian byte_order)
+            POctets(const nsize_t capacity_, const nsize_t size_, const lb_endian byte_order)
             : TOctets( allocData( capacity_ ), size_, byte_order ),
               _capacity( capacity_ )
             {
@@ -697,13 +672,11 @@ namespace jau {
             /**
              * New buffer (malloc, free)
              *
-             * Aborts if byte_order not endian::little nor endian::big, see abort().
-             *
              * @param size new size and capacity
-             * @param byte_order endian::little or endian::big byte order, one may pass endian::native.
+             * @param byte_order lb_endian::little or lb_endian::big byte order, one may pass lb_endian::native.
              * @throws OutOfMemoryError if allocation fails
              */
-            POctets(const nsize_t size, const endian byte_order)
+            POctets(const nsize_t size, const lb_endian byte_order)
             : POctets(size, size, byte_order)
             {
                 JAU_TRACE_OCTETS_PRINT("POctets ctor3: %p", data());

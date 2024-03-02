@@ -40,7 +40,6 @@ extern "C" {
 }
 
 #include <jau/environment.hpp>
-#include <jau/int_types.hpp>
 #include <jau/backtrace.hpp>
 
 // #define PERF_PRINT_ON 1

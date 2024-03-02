@@ -41,8 +41,8 @@ std::string EUI48Sub::toString() const noexcept {
     if( 0 < length ) {
         str.reserve(3 * length - 1);
 
-        static_assert(isLittleOrBigEndian()); // one static_assert is sufficient for whole compilation unit
-        if( isLittleEndian() ) {
+        static_assert(is_little_or_big_endian()); // one static_assert is sufficient for whole compilation unit
+        if( is_little_endian() ) {
             for(jau::nsize_t i=0; i < length; ++i) {
                 const jau::nsize_t idx = length - 1 - i;
                 jau::byteHexString(str, b[idx], false /* lowerCase */);
@@ -95,8 +95,8 @@ bool EUI48Sub::scanEUI48Sub(const std::string& str, EUI48Sub& dest, std::string&
             exp_colon = true;
         }
     }
-    static_assert(isLittleOrBigEndian()); // one static_assert is sufficient for whole compilation unit
-    if( isLittleEndian() ) {
+    static_assert(is_little_or_big_endian()); // one static_assert is sufficient for whole compilation unit
+    if( is_little_endian() ) {
         for(j=0; j<dest.length; ++j) { // swap to low->high
             dest.b[j] = b_[dest.length-1-j];
         }
@@ -113,12 +113,12 @@ EUI48Sub::EUI48Sub(const std::string& str) {
     }
 }
 
-EUI48Sub::EUI48Sub(const uint8_t * b_, const jau::nsize_t len_, const endian byte_order) noexcept {
+EUI48Sub::EUI48Sub(const uint8_t * b_, const jau::nsize_t len_, const lb_endian byte_order) noexcept {
     length = len_;
     const jau::nsize_t cpsz = std::max<jau::nsize_t>(sizeof(b), len_);
     const jau::nsize_t bzsz = sizeof(b) - cpsz;
 
-    if( endian::native == byte_order ) {
+    if( lb_endian::native == byte_order ) {
         memcpy(b, b_, cpsz);
     } else {
         bswap(b, b_, cpsz);
@@ -130,7 +130,7 @@ EUI48Sub::EUI48Sub(const uint8_t * b_, const jau::nsize_t len_, const endian byt
 
 jau::snsize_t EUI48Sub::indexOf(const uint8_t haystack_b[], const jau::nsize_t haystack_length,
                                 const uint8_t needle_b[], const jau::nsize_t needle_length,
-                                const endian byte_order) noexcept {
+                                const lb_endian byte_order) noexcept {
     if( 0 == needle_length ) {
         return 0;
     }
@@ -154,7 +154,7 @@ jau::snsize_t EUI48Sub::indexOf(const uint8_t haystack_b[], const jau::nsize_t h
             do {
                 if( ++j == innerEnd ) {
                     // gotcha
-                    if( endian::native == byte_order ) {
+                    if( lb_endian::native == byte_order ) {
                         return static_cast<jau::snsize_t>(i);
                     } else {
                         return static_cast<jau::snsize_t>(5 - i - ( needle_length - 1 ));
@@ -173,7 +173,7 @@ std::string EUI48::toString() const noexcept {
     std::string str;
     str.reserve(17); // 6 * 2 + ( 6 - 1 )
 
-    if( isLittleEndian() ) {
+    if( is_little_endian() ) {
         jau::byteHexString(str, b[5], false /* lowerCase */);
         str.push_back(':');
         jau::byteHexString(str, b[4], false /* lowerCase */);
@@ -208,9 +208,9 @@ bool EUI48::scanEUI48(const std::string& str, EUI48& dest, std::string& errmsg) 
         errmsg.append(": "+str);
         return false;
     }
-    static_assert(isLittleOrBigEndian()); // one static_assert is sufficient for whole compilation unit
+    static_assert(is_little_or_big_endian()); // one static_assert is sufficient for whole compilation unit
     int scanres;
-    if( isLittleEndian() ) {
+    if( is_little_endian() ) {
         scanres = sscanf(str.c_str(), "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx",
                         &dest.b[5], &dest.b[4], &dest.b[3], &dest.b[2], &dest.b[1], &dest.b[0]);
     } else {
@@ -233,20 +233,20 @@ EUI48::EUI48(const std::string& str) {
     }
 }
 
-EUI48::EUI48(const uint8_t * source, const endian byte_order) noexcept {
-    static_assert(isLittleOrBigEndian()); // one static_assert is sufficient for whole compilation unit
-    if( endian::native == byte_order ) {
+EUI48::EUI48(const uint8_t * source, const lb_endian byte_order) noexcept {
+    static_assert(is_little_or_big_endian()); // one static_assert is sufficient for whole compilation unit
+    if( lb_endian::native == byte_order ) {
         memcpy(b, source, sizeof(b));
     } else {
         bswap_6bytes(b, source);
     }
 }
 
-jau::nsize_t EUI48::put(uint8_t * const sink, jau::nsize_t const sink_pos, const endian byte_order) const noexcept {
-    if( endian::native == byte_order ) {
-        memcpy(sink + sink_pos, b, sizeof(b));
+jau::nsize_t EUI48::put(uint8_t * const sink, const lb_endian byte_order) const noexcept {
+    if( lb_endian::native == byte_order ) {
+        memcpy(sink, b, sizeof(b));
     } else {
-        bswap_6bytes(sink + sink_pos, b);
+        bswap_6bytes(sink, b);
     }
     return 6;
 }
@@ -255,10 +255,10 @@ static uint8_t _EUI48_ALL_DEVICE[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 static uint8_t _EUI48_LOCAL_DEVICE[] = {0x00, 0x00, 0x00, 0xff, 0xff, 0xff};
 
 const EUI48Sub jau::EUI48Sub::ANY_DEVICE; // default ctor is zero bytes!
-const EUI48Sub jau::EUI48Sub::ALL_DEVICE( _EUI48_ALL_DEVICE, 6, endian::little );
-const EUI48Sub jau::EUI48Sub::LOCAL_DEVICE( _EUI48_LOCAL_DEVICE, 6, endian::little );
+const EUI48Sub jau::EUI48Sub::ALL_DEVICE( _EUI48_ALL_DEVICE, 6, lb_endian::little );
+const EUI48Sub jau::EUI48Sub::LOCAL_DEVICE( _EUI48_LOCAL_DEVICE, 6, lb_endian::little );
 
 const EUI48 jau::EUI48::ANY_DEVICE; // default ctor is zero bytes!
-const EUI48 jau::EUI48::ALL_DEVICE( _EUI48_ALL_DEVICE, endian::little );
-const EUI48 jau::EUI48::LOCAL_DEVICE( _EUI48_LOCAL_DEVICE, endian::little );
+const EUI48 jau::EUI48::ALL_DEVICE( _EUI48_ALL_DEVICE, lb_endian::little );
+const EUI48 jau::EUI48::LOCAL_DEVICE( _EUI48_LOCAL_DEVICE, lb_endian::little );
 

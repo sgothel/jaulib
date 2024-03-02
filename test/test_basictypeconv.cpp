@@ -85,7 +85,7 @@ TEST_CASE( "Endianess Test 00", "[endian]" ) {
     const bool is_little = jau::endian::little == jau::endian::native;
     const bool is_big = jau::endian::big == jau::endian::native;
     REQUIRE( cpp_is_little == is_little );
-    REQUIRE( cpp_is_little == jau::isLittleEndian() );
+    REQUIRE( cpp_is_little == jau::is_little_endian() );
     REQUIRE( cpp_is_big == is_big );
     REQUIRE( is_little == isLittleEndian2());
 }
@@ -118,7 +118,7 @@ static void test_byteorder(const Value_type v_cpu,
                            const Value_type v_be)
 {
     if( VERBOSE ) {
-        fprintf(stderr, "test_byteorder: sizeof %zu; platform littleEndian %d", sizeof(Value_type), jau::isLittleEndian());
+        fprintf(stderr, "test_byteorder: sizeof %zu; platform littleEndian %d", sizeof(Value_type), jau::is_little_endian());
         fprintf(stderr, "\ncpu: %s: ", jau::to_hexstring(v_cpu).c_str()); print(v_cpu);
         fprintf(stderr, "\nle_: %s: ", jau::to_hexstring(v_le).c_str()); print(v_le);
         fprintf(stderr, "\nbe_: %s: ", jau::to_hexstring(v_be).c_str()); print(v_be);
@@ -181,11 +181,11 @@ static uint64_t compose(const uint8_t n1, const uint8_t n2, const uint8_t n3, co
 }
 
 template<typename Value_type>
-static Value_type compose(const uint8_t lowest_value, const bool little_endian) {
+static Value_type compose(const uint8_t lowest_value, const jau::lb_endian le_or_be) {
     Value_type dest;
     uint8_t * p_dest = reinterpret_cast<uint8_t*>(&dest);
     uint8_t byte_value = lowest_value;
-    if( little_endian ) {
+    if( jau::is_little_endian( le_or_be ) ) {
         for(size_t i=0; i<sizeof(dest); i++, byte_value++) {
             p_dest[i] = byte_value;
         }
@@ -195,6 +195,10 @@ static Value_type compose(const uint8_t lowest_value, const bool little_endian) 
         }
     }
     return dest;
+}
+template<typename Value_type>
+static Value_type compose(const uint8_t lowest_value, const jau::endian le_or_be) {
+    return compose<Value_type>(lowest_value, to_lb_endian( le_or_be ) );
 }
 
 TEST_CASE( "Integer Type Byte Order Test 01", "[byteorder][bswap]" ) {
@@ -217,21 +221,21 @@ TEST_CASE( "Integer Type Byte Order Test 01", "[byteorder][bswap]" ) {
         test_byteorder(cpu, le, be);
     }
     {
-        jau::uint128dp_t le = compose<jau::uint128dp_t>(0x01, true /* little_endian */);
-        jau::uint128dp_t be = compose<jau::uint128dp_t>(0x01, false /* little_endian */);
-        jau::uint128dp_t cpu = jau::isLittleEndian() ? le : be;
+        jau::uint128dp_t le = compose<jau::uint128dp_t>(0x01, jau::lb_endian::little);
+        jau::uint128dp_t be = compose<jau::uint128dp_t>(0x01, jau::lb_endian::big);
+        jau::uint128dp_t cpu = jau::is_little_endian() ? le : be;
         test_byteorder(cpu, le, be);
     }
     {
-        jau::uint192dp_t le = compose<jau::uint192dp_t>(0x01, true /* little_endian */);
-        jau::uint192dp_t be = compose<jau::uint192dp_t>(0x01, false /* little_endian */);
-        jau::uint192dp_t cpu = jau::isLittleEndian() ? le : be;
+        jau::uint192dp_t le = compose<jau::uint192dp_t>(0x01, jau::lb_endian::little);
+        jau::uint192dp_t be = compose<jau::uint192dp_t>(0x01, jau::lb_endian::big);
+        jau::uint192dp_t cpu = jau::is_little_endian() ? le : be;
         test_byteorder(cpu, le, be);
     }
     {
-        jau::uint256dp_t le = compose<jau::uint256dp_t>(0x01, true /* little_endian */);
-        jau::uint256dp_t be = compose<jau::uint256dp_t>(0x01, false /* little_endian */);
-        jau::uint256dp_t cpu = jau::isLittleEndian() ? le : be;
+        jau::uint256dp_t le = compose<jau::uint256dp_t>(0x01, jau::lb_endian::little);
+        jau::uint256dp_t be = compose<jau::uint256dp_t>(0x01, jau::lb_endian::big);
+        jau::uint256dp_t cpu = jau::is_little_endian() ? le : be;
         test_byteorder(cpu, le, be);
     }
 }
@@ -239,12 +243,12 @@ TEST_CASE( "Integer Type Byte Order Test 01", "[byteorder][bswap]" ) {
 template<typename Value_type>
 static void test_value_cpu(const Value_type v1, const Value_type v2, const Value_type v3) {
     uint8_t buffer[3 * sizeof(Value_type)];
-    jau::put_value(buffer, sizeof(Value_type)*0, v1);
-    jau::put_value(buffer, sizeof(Value_type)*1, v2);
-    jau::put_value(buffer, sizeof(Value_type)*2, v3);
-    const Value_type r1 = jau::get_value<Value_type>(buffer, sizeof(Value_type)*0);
-    const Value_type r2 = jau::get_value<Value_type>(buffer, sizeof(Value_type)*1);
-    const Value_type r3 = jau::get_value<Value_type>(buffer, sizeof(Value_type)*2);
+    jau::put_value(buffer + sizeof(Value_type)*0, v1);
+    jau::put_value(buffer + sizeof(Value_type)*1, v2);
+    jau::put_value(buffer + sizeof(Value_type)*2, v3);
+    const Value_type r1 = jau::get_value<Value_type>(buffer + sizeof(Value_type)*0);
+    const Value_type r2 = jau::get_value<Value_type>(buffer + sizeof(Value_type)*1);
+    const Value_type r3 = jau::get_value<Value_type>(buffer + sizeof(Value_type)*2);
     REQUIRE( r1 == v1);
     REQUIRE( r2 == v2);
     REQUIRE( r3 == v3);
@@ -268,21 +272,21 @@ TEST_CASE( "Integer Get/Put in CPU Byte Order Test 02", "[byteorder][get][put]" 
         test_value_cpu(a, b, c);
     }
     {
-        jau::uint128dp_t a = compose<jau::uint128dp_t>(0x01, jau::isLittleEndian());
-        jau::uint128dp_t b = compose<jau::uint128dp_t>(0x20, jau::isLittleEndian());
-        jau::uint128dp_t c = compose<jau::uint128dp_t>(0x40, jau::isLittleEndian());
+        jau::uint128dp_t a = compose<jau::uint128dp_t>(0x01, jau::endian::native);
+        jau::uint128dp_t b = compose<jau::uint128dp_t>(0x20, jau::endian::native);
+        jau::uint128dp_t c = compose<jau::uint128dp_t>(0x40, jau::endian::native);
         test_value_cpu(a, b, c);
     }
     {
-        jau::uint192dp_t a = compose<jau::uint192dp_t>(0x01, jau::isLittleEndian());
-        jau::uint192dp_t b = compose<jau::uint192dp_t>(0x20, jau::isLittleEndian());
-        jau::uint192dp_t c = compose<jau::uint192dp_t>(0x40, jau::isLittleEndian());
+        jau::uint192dp_t a = compose<jau::uint192dp_t>(0x01, jau::endian::native);
+        jau::uint192dp_t b = compose<jau::uint192dp_t>(0x20, jau::endian::native);
+        jau::uint192dp_t c = compose<jau::uint192dp_t>(0x40, jau::endian::native);
         test_value_cpu(a, b, c);
     }
     {
-        jau::uint256dp_t a = compose<jau::uint256dp_t>(0x01, jau::isLittleEndian());
-        jau::uint256dp_t b = compose<jau::uint256dp_t>(0x20, jau::isLittleEndian());
-        jau::uint256dp_t c = compose<jau::uint256dp_t>(0x40, jau::isLittleEndian());
+        jau::uint256dp_t a = compose<jau::uint256dp_t>(0x01, jau::endian::native);
+        jau::uint256dp_t b = compose<jau::uint256dp_t>(0x20, jau::endian::native);
+        jau::uint256dp_t c = compose<jau::uint256dp_t>(0x40, jau::endian::native);
         test_value_cpu(a, b, c);
     }
 }
@@ -290,7 +294,7 @@ TEST_CASE( "Integer Get/Put in CPU Byte Order Test 02", "[byteorder][get][put]" 
 template<typename Value_type>
 static void test_value_littlebig(const Value_type v_cpu, const Value_type v_le, const Value_type v_be) {
     if( VERBOSE ) {
-        fprintf(stderr, "test_value_littlebig: sizeof %zu; platform littleEndian %d", sizeof(Value_type), jau::isLittleEndian());
+        fprintf(stderr, "test_value_littlebig: sizeof %zu; platform littleEndian %d", sizeof(Value_type), jau::is_little_endian());
         fprintf(stderr, "\ncpu: %s: ", jau::to_hexstring(v_cpu).c_str()); print(v_cpu);
         fprintf(stderr, "\nle_: %s: ", jau::to_hexstring(v_le).c_str()); print(v_le);
         fprintf(stderr, "\nbe_: %s: ", jau::to_hexstring(v_be).c_str()); print(v_be);
@@ -298,16 +302,16 @@ static void test_value_littlebig(const Value_type v_cpu, const Value_type v_le, 
     }
     uint8_t buffer[2 * sizeof(Value_type)];
 
-    jau::put_value(buffer, sizeof(Value_type)*0, v_cpu, true /* little_endian */);
-    jau::put_value(buffer, sizeof(Value_type)*1, v_cpu, false /* little_endian */);
+    jau::put_value(buffer + sizeof(Value_type)*0, v_cpu, jau::lb_endian::little);
+    jau::put_value(buffer + sizeof(Value_type)*1, v_cpu, jau::lb_endian::big);
 
-    const Value_type rle_raw = jau::get_value<Value_type>(buffer, sizeof(Value_type)*0);
-    const Value_type rle_cpu = jau::get_value<Value_type>(buffer, sizeof(Value_type)*0, true /* little_endian */);
+    const Value_type rle_raw = jau::get_value<Value_type>(buffer + sizeof(Value_type)*0);
+    const Value_type rle_cpu = jau::get_value<Value_type>(buffer + sizeof(Value_type)*0, jau::lb_endian::little);
     REQUIRE( rle_raw == v_le);
     REQUIRE( rle_cpu == v_cpu);
 
-    const Value_type rbe_raw = jau::get_value<Value_type>(buffer, sizeof(Value_type)*1);
-    const Value_type rbe_cpu = jau::get_value<Value_type>(buffer, sizeof(Value_type)*1, false /* little_endian */);
+    const Value_type rbe_raw = jau::get_value<Value_type>(buffer + sizeof(Value_type)*1);
+    const Value_type rbe_cpu = jau::get_value<Value_type>(buffer + sizeof(Value_type)*1, jau::lb_endian::big);
     REQUIRE( rbe_raw == v_be);
     REQUIRE( rbe_cpu == v_cpu);
 }
@@ -332,21 +336,21 @@ TEST_CASE( "Integer Get/Put in explicit Byte Order Test 03", "[byteorder][get][p
         test_value_littlebig(cpu, le, be);
     }
     {
-        jau::uint128dp_t le = compose<jau::uint128dp_t>(0x01, true /* little_endian */);
-        jau::uint128dp_t be = compose<jau::uint128dp_t>(0x01, false /* little_endian */);
-        jau::uint128dp_t cpu = jau::isLittleEndian() ? le : be;
+        jau::uint128dp_t le = compose<jau::uint128dp_t>(0x01, jau::lb_endian::little);
+        jau::uint128dp_t be = compose<jau::uint128dp_t>(0x01, jau::lb_endian::big);
+        jau::uint128dp_t cpu = jau::is_little_endian() ? le : be;
         test_value_littlebig(cpu, le, be);
     }
     {
-        jau::uint192dp_t le = compose<jau::uint192dp_t>(0x01, true /* little_endian */);
-        jau::uint192dp_t be = compose<jau::uint192dp_t>(0x01, false /* little_endian */);
-        jau::uint192dp_t cpu = jau::isLittleEndian() ? le : be;
+        jau::uint192dp_t le = compose<jau::uint192dp_t>(0x01, jau::lb_endian::little);
+        jau::uint192dp_t be = compose<jau::uint192dp_t>(0x01, jau::lb_endian::big);
+        jau::uint192dp_t cpu = jau::is_little_endian() ? le : be;
         test_value_littlebig(cpu, le, be);
     }
     {
-        jau::uint256dp_t le = compose<jau::uint256dp_t>(0x01, true /* little_endian */);
-        jau::uint256dp_t be = compose<jau::uint256dp_t>(0x01, false /* little_endian */);
-        jau::uint256dp_t cpu = jau::isLittleEndian() ? le : be;
+        jau::uint256dp_t le = compose<jau::uint256dp_t>(0x01, jau::lb_endian::little);
+        jau::uint256dp_t be = compose<jau::uint256dp_t>(0x01, jau::lb_endian::big);
+        jau::uint256dp_t cpu = jau::is_little_endian() ? le : be;
         test_value_littlebig(cpu, le, be);
     }
 }

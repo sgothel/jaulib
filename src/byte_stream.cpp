@@ -79,14 +79,6 @@ inline constexpr void copy_mem(void* out, const void* in, size_t n) noexcept {
     }
 }
 
-inline char* cast_uint8_ptr_to_char(uint8_t* b) noexcept {
-    return reinterpret_cast<char*>(b);
-}
-
-inline const uint8_t* cast_char_ptr_to_uint8(const char* s) noexcept {
-   return reinterpret_cast<const uint8_t*>(s);
-}
-
 bool ByteInStream::read(uint8_t& out) noexcept {
     return 1 == read(&out, 1);
 }

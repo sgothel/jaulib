@@ -33,7 +33,7 @@ using namespace jau;
 // BASE_UUID '00000000-0000-1000-8000-00805F9B34FB'
 static uint8_t bt_base_uuid_be[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00,
                                      0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB };
-uuid128_t jau::BT_BASE_UUID( bt_base_uuid_be, 0, false );
+uuid128_t jau::BT_BASE_UUID( bt_base_uuid_be, lb_endian::big );
 
 std::string uuid_t::getTypeSizeString(const TypeSize v) noexcept {
     switch( static_cast<TypeSize>(v) ) {
@@ -53,13 +53,13 @@ uuid_t::TypeSize uuid_t::toTypeSize(const jau::nsize_t size) {
     throw jau::IllegalArgumentException("Given size "+std::to_string(size)+", not matching uuid16_t, uuid32_t or uuid128_t", E_FILE_LINE);
 }
 
-std::unique_ptr<uuid_t> uuid_t::create(TypeSize t, uint8_t const * const buffer, jau::nsize_t const byte_offset, bool littleEndian) {
+std::unique_ptr<uuid_t> uuid_t::create(TypeSize t, uint8_t const * const buffer, lb_endian const le_or_be) {
     if( TypeSize::UUID16_SZ == t ) {
-        return std::make_unique<uuid16_t>(buffer, byte_offset, littleEndian);
+        return std::make_unique<uuid16_t>(buffer, le_or_be);
     } else if( TypeSize::UUID32_SZ == t ) {
-        return std::make_unique<uuid32_t>(buffer, byte_offset, littleEndian);
+        return std::make_unique<uuid32_t>(buffer, le_or_be);
     } else if( TypeSize::UUID128_SZ == t ) {
-        return std::make_unique<uuid128_t>(buffer, byte_offset, littleEndian);
+        return std::make_unique<uuid128_t>(buffer, le_or_be);
     }
     throw jau::IllegalArgumentException("Unknown Type "+std::to_string(static_cast<jau::nsize_t>(t)), E_FILE_LINE);
 }
@@ -188,21 +188,21 @@ std::string uuid128_t::toString() const noexcept {
 
     // snprintf uses host data type, in which values are stored,
     // hence no endian conversion
-    static_assert(isLittleOrBigEndian()); // one static_assert is sufficient for whole compilation unit
-    if( isBigEndian() ) {
-        part0 = jau::get_uint32(value.data,  0);
-        part1 = jau::get_uint16(value.data,  4);
-        part2 = jau::get_uint16(value.data,  6);
-        part3 = jau::get_uint16(value.data,  8);
-        part4 = jau::get_uint32(value.data, 10);
-        part5 = jau::get_uint16(value.data, 14);
+    static_assert(is_little_or_big_endian()); // one static_assert is sufficient for whole compilation unit
+    if( is_big_endian() ) {
+        part0 = jau::get_uint32(value.data+  0);
+        part1 = jau::get_uint16(value.data+  4);
+        part2 = jau::get_uint16(value.data+  6);
+        part3 = jau::get_uint16(value.data+  8);
+        part4 = jau::get_uint32(value.data+ 10);
+        part5 = jau::get_uint16(value.data+ 14);
     } else {
-        part5 = jau::get_uint16(value.data,  0);
-        part4 = jau::get_uint32(value.data,  2);
-        part3 = jau::get_uint16(value.data,  6);
-        part2 = jau::get_uint16(value.data,  8);
-        part1 = jau::get_uint16(value.data, 10);
-        part0 = jau::get_uint32(value.data, 12);
+        part5 = jau::get_uint16(value.data+  0);
+        part4 = jau::get_uint32(value.data+  2);
+        part3 = jau::get_uint16(value.data+  6);
+        part2 = jau::get_uint16(value.data+  8);
+        part1 = jau::get_uint16(value.data+ 10);
+        part0 = jau::get_uint32(value.data+ 12);
     }
     const jau::nsize_t count = snprintf(&str[0], str.capacity(), "%.8x-%.4x-%.4x-%.4x-%.8x%.4x",
                                 part0, part1, part2, part3, part4, part5);
@@ -274,21 +274,21 @@ uuid128_t::uuid128_t(const std::string& str)
 
     // sscanf provided host data type, in which we store the values,
     // hence no endian conversion
-    static_assert(isLittleOrBigEndian()); // one static_assert is sufficient for whole compilation unit
-    if( isBigEndian() ) {
-        jau::put_uint32(value.data,  0, part0);
-        jau::put_uint16(value.data,  4, part1);
-        jau::put_uint16(value.data,  6, part2);
-        jau::put_uint16(value.data,  8, part3);
-        jau::put_uint32(value.data, 10, part4);
-        jau::put_uint16(value.data, 14, part5);
+    static_assert(is_little_or_big_endian()); // one static_assert is sufficient for whole compilation unit
+    if( is_big_endian() ) {
+        jau::put_uint32(value.data +  0, part0);
+        jau::put_uint16(value.data +  4, part1);
+        jau::put_uint16(value.data +  6, part2);
+        jau::put_uint16(value.data +  8, part3);
+        jau::put_uint32(value.data + 10, part4);
+        jau::put_uint16(value.data + 14, part5);
     } else {
-        jau::put_uint16(value.data,  0, part5);
-        jau::put_uint32(value.data,  2, part4);
-        jau::put_uint16(value.data,  6, part3);
-        jau::put_uint16(value.data,  8, part2);
-        jau::put_uint16(value.data, 10, part1);
-        jau::put_uint32(value.data, 12, part0);
+        jau::put_uint16(value.data +  0, part5);
+        jau::put_uint32(value.data +  2, part4);
+        jau::put_uint16(value.data +  6, part3);
+        jau::put_uint16(value.data +  8, part2);
+        jau::put_uint16(value.data + 10, part1);
+        jau::put_uint32(value.data + 12, part0);
     }
 }
 

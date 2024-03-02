@@ -1,7 +1,6 @@
 /*
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2020 Gothel Software e.K.
- * Copyright (c) 2020 ZAFENA AB
+ * Copyright (c) 2020-2024 Gothel Software e.K.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -269,9 +268,9 @@ uint128dp_t jau::merge_uint128(uint16_t const uuid16, uint128dp_t const & base_u
     //                   ^ index 2
     // BE: uuid16 -> value.data[2+3]
     //
-    static_assert(isLittleOrBigEndian()); // one static_assert is sufficient for whole compilation unit
+    static_assert(is_little_or_big_endian()); // one static_assert is sufficient for whole compilation unit
     nsize_t offset;
-    if( isBigEndian() ) {
+    if( is_big_endian() ) {
         offset = 15 - 1 - uuid16_le_octet_index;
     } else {
         offset = uuid16_le_octet_index;
@@ -305,9 +304,9 @@ uint128dp_t jau::merge_uint128(uint32_t const uuid32, uint128dp_t const & base_u
     //               ^ index 0
     // BE: uuid32 -> value.data[0..3]
     //
-    static_assert(isLittleOrBigEndian()); // one static_assert is sufficient for whole compilation unit
+    static_assert(is_little_or_big_endian()); // one static_assert is sufficient for whole compilation unit
     nsize_t offset;;
-    if( isBigEndian() ) {
+    if( is_big_endian() ) {
         offset = 15 - 3 - uuid32_le_octet_index;
     } else {
         offset = uuid32_le_octet_index;
@@ -432,6 +431,14 @@ std::string jau::to_string(const endian& v) noexcept {
         case endian::pdp:  return "pdb";
         case endian::honeywell: return "honeywell";
         case endian::undefined: return "undefined";
+    }
+    return "unlisted";
+}
+
+std::string jau::to_string(const lb_endian& v) noexcept {
+    switch(v) {
+        case lb_endian::little:  return "little";
+        case lb_endian::big:  return "big";
     }
     return "unlisted";
 }
