@@ -24,17 +24,39 @@
 #include <cassert>
 
 #include <jau/cpp_lang_util.hpp>
+#include <jau/cpuid.hpp>
 #include <jau/math.hpp>
 #include <jau/ct_utils.hpp>
 
 namespace jau::mp {
-    #if 1
-        constexpr const nsize_t mp_word_bits = 32;
+    namespace impl {
+        constexpr size_t best_word_bit_size() {
+            if constexpr ( 64 == jau::cpu::get_arch_psize() && is_builtin_int128_available() ) {
+                return 64;
+            } else {
+                return 32;
+            }
+        }
+        template <int bitsize> struct word_bits;
+        template <> struct word_bits<32>{ using type = uint32_t; };
+        template <> struct word_bits<64>{ using type = uint64_t; };
+
+        template <int bitsize> struct dword_bits;
+        template <> struct dword_bits<32>{ using type = uint64_t; };
+        template <> struct dword_bits<64>{ using type = uint128_t; };
+    }
+    #if !defined( JAU_FORCE_MP_WORD_32_BITS )
+        constexpr const size_t mp_word_bits = impl::best_word_bit_size();
+        typedef typename impl::word_bits<impl::best_word_bit_size()>::type mp_word_t;
+        typedef typename impl::dword_bits<impl::best_word_bit_size()>::type mp_dword_t;
+        constexpr const bool has_mp_dword = is_builtin_int128_available();
+    #elif 1
+        constexpr const size_t mp_word_bits = 32;
         typedef uint32_t mp_word_t;
         constexpr const bool has_mp_dword = true;
         typedef uint64_t mp_dword_t;
-    #else
-        constexpr const nsize_t mp_word_bits = 64;
+    #elif 0
+        constexpr const size_t mp_word_bits = 64;
         typedef uint64_t mp_word_t;
         #if defined(__SIZEOF_INT128__)
             constexpr const bool has_mp_dword = true;
