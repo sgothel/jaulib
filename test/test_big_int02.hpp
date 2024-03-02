@@ -37,7 +37,7 @@ using namespace jau::mp;
 using namespace jau::int_literals;
 
 static big_int_t phi(const big_int_t& P, const big_int_t& Q) {
-    const big_int_t& one(big_int_t::one());
+    const big_int_t one(big_int_t::one());
     return (P-one)*(Q-one);
 }
 /**
@@ -46,7 +46,7 @@ static big_int_t phi(const big_int_t& P, const big_int_t& Q) {
  * e must be co-prime to phi and smaller than phi
  */
 static big_int_t eval_e(big_int_t e, const big_int_t& phi) {
-    const big_int_t& one(big_int_t::one());
+    const big_int_t one(big_int_t::one());
     while (e < phi && gcd(e, phi) != one ) {
         ++e;
     }
