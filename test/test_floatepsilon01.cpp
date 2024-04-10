@@ -50,8 +50,8 @@ TEST_CASE( "Float Epsilon Test 01", "[datatype][float][epsilon]" ) {
     fprintf(stderr, "float:  approximation - numeric_limits : %e\n", epsilon_fd);
     fprintf(stderr, "double: approximation - numeric_limits : %le\n", epsilon_dd);
 
-    REQUIRE(jau::machine_equal(epsilon_f1, epsilon_f0, 5));
-    REQUIRE(jau::machine_equal(epsilon_d1, epsilon_d0, 5));
+    REQUIRE(jau::equals(epsilon_f1, epsilon_f0, 5));
+    REQUIRE(jau::equals(epsilon_d1, epsilon_d0, 5));
 }
 
 

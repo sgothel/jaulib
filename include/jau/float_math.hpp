@@ -42,18 +42,15 @@ namespace jau {
      */
 
     /**
-     * Returns true, if both integer point values differ less than the given delta.
+     * Returns true, if both integer point values differ less than the given range.
      * @tparam T an integral type
      * @param a value to compare
      * @param b value to compare
-     * @param delta the maximum difference both values may differ
+     * @param range the maximum difference both values may differ
      */
     template<class T>
-    bool in_range(const T& a, const T& b, const T& delta)
-    {
-        const T diff = std::fabs(a-b);
-        return diff <= delta ||
-               diff < std::numeric_limits<T>::min(); // subnormal limit
+    bool in_range(const T& a, const T& b, const T& range) {
+        return std::abs(a-b) <= range;
     }
 
     /**
@@ -64,7 +61,7 @@ namespace jau {
      */
     template<class T>
     typename std::enable_if<!std::numeric_limits<T>::is_integer, T>::type
-        machineEpsilon() 
+    machineEpsilon() noexcept
     {
       const T one(1);
       const T two(2);
@@ -76,21 +73,55 @@ namespace jau {
     }
 
     /**
+     * Return zero if both values are equal, i.e. their absolute delta is less than float epsilon,
+     * -1 if a < b and 1 otherwise.
+     */
+    template<class T,
+             std::enable_if_t<!std::numeric_limits<T>::is_integer, bool> = true>
+    constexpr int compare(const T a, const T b) noexcept {
+        if( std::abs(a - b) < std::numeric_limits<T>::epsilon() ) {
+            return 0;
+        } else if (a < b) {
+            return -1;
+        } else {
+            return 1;
+        }
+    }
+
+    /** Returns true of the given value is less than epsilon. */
+    template<class T>
+    typename std::enable_if<!std::numeric_limits<T>::is_integer, bool>::type
+    constexpr is_zero(const T& a, const T& epsilon=std::numeric_limits<T>::epsilon()) noexcept {
+        return std::abs(a) < epsilon;
+    }
+
+    /**
      * Returns true, if both floating point values are equal
      * in the sense that their potential difference is less or equal <code>epsilon * ulp</code>.
      * @tparam T a non integer float type
      * @param a value to compare
      * @param b value to compare
-     * @param ulp desired precision in ULPs (units in the last place), defaults to 1
      * @param epsilon the machine epsilon of type T, defaults to <code>std::numeric_limits<T>::epsilon()</code>
      */
     template<class T>
     typename std::enable_if<!std::numeric_limits<T>::is_integer, bool>::type
-        machine_equal(const T& a, const T& b, int ulp=1, const T& epsilon=std::numeric_limits<T>::epsilon())
-    {
-        const T diff = std::fabs(a-b);
-        return diff <= epsilon * ulp ||
-               diff < std::numeric_limits<T>::min(); // subnormal limit
+    constexpr equals(const T& a, const T& b, const T& epsilon=std::numeric_limits<T>::epsilon()) noexcept {
+        return std::abs(a-b) < epsilon;
+    }
+
+    /**
+     * Returns true, if both floating point values are equal
+     * in the sense that their potential difference is less or equal <code>epsilon * ulp</code>.
+     * @tparam T a non integer float type
+     * @param a value to compare
+     * @param b value to compare
+     * @param ulp desired precision in ULPs (units in the last place)
+     * @param epsilon the machine epsilon of type T, defaults to <code>std::numeric_limits<T>::epsilon()</code>
+     */
+    template<class T>
+    typename std::enable_if<!std::numeric_limits<T>::is_integer, bool>::type
+    constexpr equals(const T& a, const T& b, int ulp, const T& epsilon=std::numeric_limits<T>::epsilon()) noexcept {
+        return std::abs(a-b) < epsilon * ulp;
     }
 
     /**
@@ -105,11 +136,32 @@ namespace jau {
      */
     template<class T>
     typename std::enable_if<!std::numeric_limits<T>::is_integer, bool>::type
-        almost_equal(const T& a, const T& b, int ulp=1, const T& epsilon=std::numeric_limits<T>::epsilon())
+    almost_equal(const T& a, const T& b, int ulp=1, const T& epsilon=std::numeric_limits<T>::epsilon()) noexcept
     {
         const T diff = std::fabs(a-b);
         return diff <= epsilon * std::fabs(a+b) * ulp ||
                diff < std::numeric_limits<T>::min(); // subnormal limit
+    }
+
+    /** Returns the rounded value cast to int. */
+    template<class T,
+             std::enable_if_t<!std::numeric_limits<T>::is_integer, bool> = true>
+    constexpr int round_to_int(const T v) noexcept {
+        return (int)std::round(v);
+    }
+
+    /** Converts arc-degree to radians */
+    template<class T>
+    typename std::enable_if<!std::numeric_limits<T>::is_integer, bool>::type
+    constexpr adeg_to_rad(const T arc_degree) noexcept {
+        return arc_degree * (T)M_PI / (T)180.0;
+    }
+
+    /** Converts radians to arc-degree */
+    template<class T>
+    typename std::enable_if<!std::numeric_limits<T>::is_integer, bool>::type
+    constexpr rad_to_adeg(const T rad) noexcept {
+        return rad * (T)180.0 / (T)M_PI;
     }
 
     /**@}*/
