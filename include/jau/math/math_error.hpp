@@ -31,8 +31,8 @@
 
 namespace jau {
 
-    /** @defgroup Math Mathematical Operations
-     * Mathematical operations, meta group
+    /** @defgroup Math Specific Mathematical Operations and Functionality
+     * Specific mathematical operations and functionality, e.g. linear algebra, meta group
      *
      * Further support is coming from
      * - \ref Integer
@@ -60,11 +60,13 @@ namespace jau {
 
     class MathError : public RuntimeException {
       private:
-        math_error_t error;
+        math_error_t m_error;
 
       public:
         MathError(math_error_t err, std::string const& m, const char* file, int line) noexcept
-        : RuntimeException("MathError("+to_string(err)+")", m, file, line), error(err) {}
+        : RuntimeException("MathError("+to_string(err)+")", m, file, line), m_error(err) {}
+
+        math_error_t error() const noexcept;
     };
     /** math_error_t::invalid */
     class MathDomainError : public MathError {

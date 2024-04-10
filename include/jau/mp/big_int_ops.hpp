@@ -19,14 +19,12 @@
 #define JAU_BIG_INT_OPS_HPP_
 
 #include <cstdint>
-#include <cstdarg>
-#include <limits>
 #include <cassert>
 
 #include <jau/cpp_lang_util.hpp>
 #include <jau/cpuid.hpp>
-#include <jau/math.hpp>
 #include <jau/ct_utils.hpp>
+#include <jau/math/math_error.hpp>
 
 namespace jau::mp {
     namespace impl {
