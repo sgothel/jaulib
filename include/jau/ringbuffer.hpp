@@ -353,7 +353,7 @@ class ringbuffer {
                 } else {
                     Size_type localReadPos = readPos;
                     for(Size_type i=0; i<size_; i++) {
-                        localReadPos = (localReadPos + 1) % capacityPlusOne;
+                        localReadPos = (localReadPos + 1) % capacityPlusOne; // NOLINT(clang-analyzer-core.DivideZero): always capacityPlusOne > 0
                         ( array + localReadPos )->~value_type(); // placement new -> manual destruction!
                     }
                     if( writePos != localReadPos ) {
@@ -376,7 +376,7 @@ class ringbuffer {
                 const Size_type size_ = size();
                 Size_type localReadPos = readPos;
                 for(Size_type i=0; i<size_; i++) {
-                    localReadPos = (localReadPos + 1) % capacityPlusOne;
+                    localReadPos = (localReadPos + 1) % capacityPlusOne; // NOLINT(clang-analyzer-core.DivideZero): always capacityPlusOne > 0
                     ( array + localReadPos )->~value_type(); // placement new -> manual destruction!
                 }
                 if( writePos != localReadPos ) {
@@ -413,7 +413,7 @@ class ringbuffer {
                 const Size_type size_ = size();
                 Size_type localWritePos = readPos;
                 for(Size_type i=0; i<size_; i++) {
-                    localWritePos = (localWritePos + 1) % capacityPlusOne;
+                    localWritePos = (localWritePos + 1) % capacityPlusOne; // NOLINT(clang-analyzer-core.DivideZero): always capacityPlusOne > 0
                     new (const_cast<pointer_mutable>(array + localWritePos)) value_type( source.array[localWritePos] ); // placement new
                 }
                 if( writePos != localWritePos ) {
@@ -462,7 +462,7 @@ class ringbuffer {
                 } else {
                     Size_type localWritePos = writePos;
                     for(Size_type i=0; i<copyFromCount; i++) {
-                        localWritePos = (localWritePos + 1) % capacityPlusOne;
+                        localWritePos = (localWritePos + 1) % capacityPlusOne; // NOLINT(clang-analyzer-core.DivideZero): always capacityPlusOne > 0
                         new (const_cast<pointer_mutable>(array + localWritePos)) value_type( copyFrom[i] ); // placement new
                     }
                     writePos = localWritePos;
@@ -509,7 +509,7 @@ class ringbuffer {
                     return false;
                 }
             }
-            localReadPos = (localReadPos + 1) % capacityPlusOne;
+            localReadPos = (localReadPos + 1) % capacityPlusOne; // NOLINT(clang-analyzer-core.DivideZero): always capacityPlusOne > 0
             if constexpr ( !is_integral && uses_memmove ) {
                 // must not dtor after memcpy; memcpy OK, not overlapping
                 ::memcpy(voidptr_cast(&dest),
@@ -555,7 +555,7 @@ class ringbuffer {
                     return false;
                 }
             }
-            localReadPos = (localReadPos + 1) % capacityPlusOne;
+            localReadPos = (localReadPos + 1) % capacityPlusOne; // NOLINT(clang-analyzer-core.DivideZero): always capacityPlusOne > 0
             if constexpr ( is_integral ) {
                 dest = array[localReadPos];
                 if constexpr ( uses_secmem ) {
@@ -638,7 +638,7 @@ class ringbuffer {
             const Size_type localWritePos = writePos;
             if( localReadPos > localWritePos ) {
                 // we have a tail
-                localReadPos = ( localReadPos + 1 ) % capacityPlusOne; // next-read-pos
+                localReadPos = ( localReadPos + 1 ) % capacityPlusOne; // next-read-pos // NOLINT(clang-analyzer-core.DivideZero): always capacityPlusOne > 0
                 const Size_type tail_count = std::min(togo_count, capacityPlusOne - localReadPos);
                 if constexpr ( uses_memmove ) {
                     // must not dtor after memcpy; memcpy OK, not overlapping
@@ -654,13 +654,13 @@ class ringbuffer {
                         dtor_one( localReadPos + i ); // manual destruction, even after std::move (object still exists)
                     }
                 }
-                localReadPos = ( localReadPos + tail_count - 1 ) % capacityPlusOne; // last read-pos
+                localReadPos = ( localReadPos + tail_count - 1 ) % capacityPlusOne; // last read-pos // NOLINT(clang-analyzer-core.DivideZero): always capacityPlusOne > 0
                 togo_count -= tail_count;
                 iter_out += tail_count;
             }
             if( togo_count > 0 ) {
                 // we have a head
-                localReadPos = ( localReadPos + 1 ) % capacityPlusOne; // next-read-pos
+                localReadPos = ( localReadPos + 1 ) % capacityPlusOne; // next-read-pos // NOLINT(clang-analyzer-core.DivideZero): always capacityPlusOne > 0
                 if constexpr ( uses_memmove ) {
                     // must not dtor after memcpy; memcpy OK, not overlapping
                     ::memcpy(voidptr_cast(iter_out),
@@ -675,7 +675,7 @@ class ringbuffer {
                         dtor_one( localReadPos + i ); // manual destruction, even after std::move (object still exists)
                     }
                 }
-                localReadPos = ( localReadPos + togo_count - 1 ) % capacityPlusOne; // last read-pos
+                localReadPos = ( localReadPos + togo_count - 1 ) % capacityPlusOne; // last read-pos // NOLINT(clang-analyzer-core.DivideZero): always capacityPlusOne > 0
             }
             {
                 std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ putImpl via same lock
@@ -740,7 +740,7 @@ class ringbuffer {
             const Size_type localWritePos = writePos;
             if( localReadPos > localWritePos ) {
                 // we have a tail
-                localReadPos = ( localReadPos + 1 ) % capacityPlusOne; // next-read-pos
+                localReadPos = ( localReadPos + 1 ) % capacityPlusOne; // next-read-pos // NOLINT(clang-analyzer-core.DivideZero): always capacityPlusOne > 0
                 const Size_type tail_count = std::min(togo_count, capacityPlusOne - localReadPos);
                 if constexpr ( uses_memcpy ) {
                     if constexpr ( uses_secmem ) {
@@ -751,12 +751,12 @@ class ringbuffer {
                         dtor_one( localReadPos+i );
                     }
                 }
-                localReadPos = ( localReadPos + tail_count - 1 ) % capacityPlusOne; // last read-pos
+                localReadPos = ( localReadPos + tail_count - 1 ) % capacityPlusOne; // last read-pos // NOLINT(clang-analyzer-core.DivideZero): always capacityPlusOne > 0
                 togo_count -= tail_count;
             }
             if( togo_count > 0 ) {
                 // we have a head
-                localReadPos = ( localReadPos + 1 ) % capacityPlusOne; // next-read-pos
+                localReadPos = ( localReadPos + 1 ) % capacityPlusOne; // next-read-pos // NOLINT(clang-analyzer-core.DivideZero): always capacityPlusOne > 0
                 if constexpr ( uses_memcpy ) {
                     if constexpr ( uses_secmem ) {
                         ::explicit_bzero(voidptr_cast(&array[localReadPos]), togo_count*sizeof(Value_type));
@@ -766,7 +766,7 @@ class ringbuffer {
                         dtor_one( localReadPos+i );
                     }
                 }
-                localReadPos = ( localReadPos + togo_count - 1 ) % capacityPlusOne; // last read-pos
+                localReadPos = ( localReadPos + togo_count - 1 ) % capacityPlusOne; // last read-pos // NOLINT(clang-analyzer-core.DivideZero): always capacityPlusOne > 0
             }
             {
                 std::unique_lock<std::mutex> lockRead(syncRead); // SC-DRF w/ putImpl via same lock
@@ -782,7 +782,7 @@ class ringbuffer {
                 return false;
             }
             Size_type localWritePos = writePos; // SC-DRF acquire atomic writePos, sync'ing with getImpl
-            localWritePos = (localWritePos + 1) % capacityPlusOne;
+            localWritePos = (localWritePos + 1) % capacityPlusOne; // NOLINT(clang-analyzer-core.DivideZero): always capacityPlusOne > 0
             if( localWritePos == readPos ) {
                 if( blocking ) {
                     interrupted_write = false;
@@ -834,7 +834,7 @@ class ringbuffer {
                 return false;
             }
             Size_type localWritePos = writePos; // SC-DRF acquire atomic writePos, sync'ing with getImpl
-            localWritePos = (localWritePos + 1) % capacityPlusOne;
+            localWritePos = (localWritePos + 1) % capacityPlusOne; // NOLINT(clang-analyzer-core.DivideZero): always capacityPlusOne > 0
             if( localWritePos == readPos ) {
                 if( blocking ) {
                     interrupted_write = false;
@@ -932,7 +932,7 @@ class ringbuffer {
             const Size_type localReadPos = readPos;
             if( localWritePos >= localReadPos ) { // Empty at any position or W > R case
                 // we have a tail
-                localWritePos = ( localWritePos + 1 ) % capacityPlusOne; // next-write-pos
+                localWritePos = ( localWritePos + 1 ) % capacityPlusOne; // next-write-pos // NOLINT(clang-analyzer-core.DivideZero): always capacityPlusOne > 0
                 const Size_type tail_count = std::min(togo_count, capacityPlusOne - localWritePos);
                 if constexpr ( uses_memcpy ) {
                     ::memcpy(voidptr_cast(&array[localWritePos]),
@@ -943,13 +943,13 @@ class ringbuffer {
                         new (const_cast<pointer_mutable>(array + localWritePos + i)) value_type( iter_in[i] ); // placement new
                     }
                 }
-                localWritePos = ( localWritePos + tail_count - 1 ) % capacityPlusOne; // last write-pos
+                localWritePos = ( localWritePos + tail_count - 1 ) % capacityPlusOne; // last write-pos // NOLINT(clang-analyzer-core.DivideZero): always capacityPlusOne > 0
                 togo_count -= tail_count;
                 iter_in += tail_count;
             }
             if( togo_count > 0 ) {
                 // we have a head
-                localWritePos = ( localWritePos + 1 ) % capacityPlusOne; // next-write-pos
+                localWritePos = ( localWritePos + 1 ) % capacityPlusOne; // next-write-pos // NOLINT(clang-analyzer-core.DivideZero): always capacityPlusOne > 0
                 if constexpr ( uses_memcpy ) {
                     memcpy(voidptr_cast(&array[localWritePos]),
                            iter_in,
@@ -959,7 +959,7 @@ class ringbuffer {
                         new (const_cast<pointer_mutable>(array + localWritePos + i)) value_type( iter_in[i] ); // placement new
                     }
                 }
-                localWritePos = ( localWritePos + togo_count - 1 ) % capacityPlusOne; // last write-pos
+                localWritePos = ( localWritePos + togo_count - 1 ) % capacityPlusOne; // last write-pos // NOLINT(clang-analyzer-core.DivideZero): always capacityPlusOne > 0
             }
             {
                 std::unique_lock<std::mutex> lockWrite(syncWrite); // SC-DRF w/ getImpl via same lock
@@ -994,7 +994,7 @@ class ringbuffer {
             if( nullptr != oldArray && 0 < size_ ) {
                 Size_type localWritePos = writePos;
                 for(Size_type i=0; i<size_; i++) {
-                    localWritePos = (localWritePos + 1) % capacityPlusOne;
+                    localWritePos = (localWritePos + 1) % capacityPlusOne; // NOLINT(clang-analyzer-core.DivideZero): always capacityPlusOne > 0
                     oldReadPos = (oldReadPos + 1) % oldCapacityPlusOne;
                     new (const_cast<pointer_mutable>( array + localWritePos )) value_type( std::move( oldArray[oldReadPos] ) ); // placement new
                     dtor_one( oldArray + oldReadPos ); // manual destruction, even after std::move (object still exists)
@@ -1213,7 +1213,9 @@ class ringbuffer {
         bool isEmpty() const noexcept { return writePos == readPos; /* 0 == size */ }
 
         /** Returns true if this ring buffer is full, otherwise false. */
-        bool isFull() const noexcept { return ( writePos + 1 ) % capacityPlusOne == readPos; /* W == R - 1 */; }
+        bool isFull() const noexcept { 
+            return ( writePos + 1 ) % capacityPlusOne == readPos; /* W == R - 1 */ // NOLINT(clang-analyzer-core.DivideZero): always capacityPlusOne > 0
+        }
 
         /** Returns the number of elements in this ring buffer. */
         Size_type size() const noexcept {
