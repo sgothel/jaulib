@@ -99,7 +99,7 @@ static void print(const Value_type a) {
 }
 
 template<typename Value_type>
-static bool compare(const Value_type a, const Value_type b) {
+static bool compare_values(const Value_type a, const Value_type b) {
     const uint8_t * pa = reinterpret_cast<const uint8_t *>(&a);
     const uint8_t * pb = reinterpret_cast<const uint8_t *>(&b);
     bool res = true;
@@ -132,7 +132,7 @@ static void test_byteorder(const Value_type v_cpu,
     }
     {
         #if BYTE_ORDER == LITTLE_ENDIAN
-            REQUIRE( compare(v_le, v_cpu) == true );
+            REQUIRE( compare_values(v_le, v_cpu) == true );
             Value_type r1_cpu = jau::bswap(v_be);
             REQUIRE( r1_cpu == v_cpu );
         #else
