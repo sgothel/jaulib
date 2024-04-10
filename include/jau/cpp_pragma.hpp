@@ -63,9 +63,13 @@ namespace jau {
     #if defined(__GNUC__) && !defined(__clang__)
         #define PRAGMA_DISABLE_WARNING_PMF_CONVERSIONS              PRAGMA_DISABLE_WARNING(-Wpmf-conversions)
         #define PRAGMA_DISABLE_WARNING_STRINGOP_OVERFLOW            PRAGMA_DISABLE_WARNING(-Wstringop-overflow)
+        #define PRAGMA_DISABLE_WARNING_INT_OVERFLOW
+        #define PRAGMA_DISABLE_WARNING_RESTRICT                     PRAGMA_DISABLE_WARNING(-Wrestrict)
     #else
         #define PRAGMA_DISABLE_WARNING_PMF_CONVERSIONS
         #define PRAGMA_DISABLE_WARNING_STRINGOP_OVERFLOW
+        #define PRAGMA_DISABLE_WARNING_INT_OVERFLOW                 PRAGMA_DISABLE_WARNING(-Winteger-overflow)
+        #define PRAGMA_DISABLE_WARNING_RESTRICT
     #endif
 
 #else
