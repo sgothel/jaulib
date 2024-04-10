@@ -33,7 +33,7 @@
 #include <jau/debug.hpp>
 #include <jau/basic_types.hpp>
 #include <jau/functional.hpp>
-#include <jau/math.hpp>
+#include <jau/math/math_error.hpp>
 
 using namespace jau;
 
@@ -318,7 +318,7 @@ uint128dp_t jau::merge_uint128(uint32_t const uuid32, uint128dp_t const & base_u
 }
 
 
-static snsize_t hexCharByte_(const char c)
+static snsize_t hexCharByte_(const uint8_t c)
 {
   if('0' <= c && c <= '9') {
       return c - '0';
