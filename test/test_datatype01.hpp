@@ -187,7 +187,8 @@ class DataType01 {
         void clearHash() { hash = 0; }
 
         std::string toString() const noexcept {
-            return "["+address.toString()+", "+std::to_string(type)+"]";
+            std::string res;
+            return res.append("[").append(address.toString()).append(", ").append(std::to_string(type)).append("]");
         }
 #if 0
         constexpr_cxx20 operator std::string() const noexcept {
@@ -266,7 +267,8 @@ class DataType02_Memmove_Secmem {
         void clearHash() { hash = 0; }
 
         std::string toString() const noexcept {
-            return "["+address.toString()+", "+std::to_string(type)+"]";
+            std::string res;
+            return res.append("[").append(address.toString()).append(", ").append(std::to_string(type)).append("]");
         }
 #if 0
         constexpr_cxx20 operator std::string() const noexcept {

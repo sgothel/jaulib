@@ -24,6 +24,7 @@
 
 #include <jau/base_codec.hpp>
 #include <jau/basic_algos.hpp>
+#include <jau/cpp_pragma.hpp>
 #include <jau/debug.hpp>
 
 using namespace jau;
@@ -211,7 +212,10 @@ std::vector<uint8_t> jau::codec::base::decode64(const std::string_view& in_code,
 size_t jau::codec::base::insert_lf(std::string& str, const size_t period) noexcept {
     size_t count = 0;
     for(size_t i = period; i < str.length(); i += period + 1) {
-        str.insert(i, "\n");
+        PRAGMA_DISABLE_WARNING_PUSH
+        PRAGMA_DISABLE_WARNING_RESTRICT
+        str.insert(i, "\n"); // bogus gcc 12.2 'may overlap'
+        PRAGMA_DISABLE_WARNING_POP
         ++count;
     }
     return count;

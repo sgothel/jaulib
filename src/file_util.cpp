@@ -1532,7 +1532,7 @@ static bool copy_push_mkdir(const file_stats& dst_stats, copy_context_t& ctx) no
         if( is_set(ctx.copts, copy_options::verbose) ) {
             jau::fprintf_td(stderr, "copy: mkdir directory already exist: %s\n", dst_stats.to_string().c_str());
         }
-        basename_ = dst_stats.item().basename();
+        basename_.append( dst_stats.item().basename() );
     } else if( !dst_stats.exists() ) {
         new_dir = true;
         constexpr const int32_t val_min = 888;
@@ -1544,7 +1544,8 @@ static bool copy_push_mkdir(const file_stats& dst_stats, copy_context_t& ctx) no
         do {
             ++mkdir_cntr;
             const int32_t val_d = prng_dist(prng);
-            basename_ = "."+jau::codec::base::encode(val_d, jau::codec::base::ascii38_alphabet(), 6); // base 38, 6 digits
+            basename_.clear();
+            basename_.append(".").append( jau::codec::base::encode(val_d, jau::codec::base::ascii38_alphabet(), 6) ); // base 38, 6 digits
             if( 0 == ::mkdirat(dest_dirfd, basename_.c_str(), jau::fs::posix_protection_bits(fmode_t::rwx_usr)) ) {
                 mkdir_ok = true;
             } else if (errno != EINTR && errno != EEXIST) {

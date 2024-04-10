@@ -135,12 +135,12 @@ struct NamedSharedPayloadListDefault {
         int i=0;
         jau::for_each(payload.cbegin(), payload.cend(), [&](const std::shared_ptr<Payload>& e) {
             if(0<i) {
-                res += ", ";
+                res.append(", ");
             }
-            res += "["+jau::to_string(e)+"]";
+            res.append("[").append(jau::to_string(e)).append("]");
             ++i;
         } );
-        res += "]";
+        res.append("]");
         return res;
     }
 };
@@ -156,12 +156,12 @@ struct NamedSharedPayloadListMemMove {
         int i=0;
         jau::for_each(payload.cbegin(), payload.cend(), [&](const std::shared_ptr<Payload>& e) {
             if(0<i) {
-                res += ", ";
+                res.append(", ");
             }
-            res += "["+jau::to_string(e)+"]";
+            res.append("[").append(jau::to_string(e)).append("]");
             ++i;
         } );
-        res += "]";
+        res.append("]");
         return res;
     }
 };
@@ -208,7 +208,7 @@ struct NamedPayloadListMemMove {
             if(0<i) {
                 res += ", ";
             }
-            res += "["+jau::to_string(e)+"]";
+            res.append("[").append(jau::to_string(e)).append("]");
             ++i;
         } );
         res += "]";
