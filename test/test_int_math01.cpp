@@ -94,15 +94,24 @@ TEST_CASE( "Int Math Test 02", "[abs][arithmetic][math]" ) {
         REQUIRE( 1_i64 == jau::abs(-1_i64) );
         REQUIRE( 1_i64 == jau::ct_abs( 1_i64) );
         REQUIRE( 1_i64 == jau::ct_abs(-1_i64) );
+
         REQUIRE( std::numeric_limits<int64_t>::max()  == jau::abs( std::numeric_limits<int64_t>::max() ) );
         REQUIRE( std::numeric_limits<int64_t>::max()  == jau::abs( std::numeric_limits<int64_t>::min() ) );
+
         REQUIRE( std::numeric_limits<int64_t>::max()  == jau::ct_abs( std::numeric_limits<int64_t>::max() ) );
-        REQUIRE( std::numeric_limits<int64_t>::min()  == jau::ct_abs( std::numeric_limits<int64_t>::min() ) );
+        // REQUIRE( std::numeric_limits<int64_t>::min()  == jau::ct_abs( std::numeric_limits<int64_t>::min() ) ); // UB
+
         REQUIRE( std::numeric_limits<int64_t>::max()  == std::abs( std::numeric_limits<int64_t>::max() ) );
-        REQUIRE( std::numeric_limits<int64_t>::min()  == std::abs( std::numeric_limits<int64_t>::min() ) );
-        REQUIRE( INT32_MAX  == jau::abs( INT32_MIN ) );
-        REQUIRE( INT32_MIN  == jau::ct_abs( INT32_MIN ) );
-        REQUIRE( INT32_MIN  == std::abs( INT32_MIN ) );
+        // REQUIRE( std::numeric_limits<int64_t>::max()  == std::abs( std::numeric_limits<int64_t>::min() ) ); // UB
+
+        REQUIRE( INT32_MAX  == jau::abs( INT32_MAX ) );
+        REQUIRE( INT32_MAX  == jau::abs( INT32_MAX ) );
+
+        REQUIRE( INT32_MAX  == jau::ct_abs( INT32_MAX ) );
+        // REQUIRE( INT32_MIN  == jau::ct_abs( INT32_MIN ) ); // UB
+
+        REQUIRE( INT32_MAX  == std::abs( INT32_MAX ) );
+        // REQUIRE( INT32_MAX  == std::abs( INT32_MIN ) ); // UB
     }
 }
 

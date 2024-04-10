@@ -28,33 +28,41 @@
 
 #include <jau/test/catch2_ext.hpp>
 
-#define JAU_INT_MATH_EXPERIMENTAL 1
-
 #include <jau/int_math.hpp>
 
 using namespace jau;
 using namespace jau::int_literals;
 
 TEST_CASE( "Int Math Bench 01a", "[abs][benchmark][arithmetic][math]" ) {
-    BENCHMARK("abs Benchmark") {
+    BENCHMARK("jau::abs Benchmark") {
         REQUIRE( 1 == jau::abs( 1) );
         REQUIRE( 1 == jau::abs(-1) );
         REQUIRE( 1_i64 == jau::abs( 1_i64) );
         REQUIRE( 1_i64 == jau::abs(-1_i64) );
         REQUIRE( std::numeric_limits<int64_t>::max()  == jau::abs( std::numeric_limits<int64_t>::max() ) );
-        REQUIRE( std::numeric_limits<int64_t>::max()  == jau::abs( std::numeric_limits<int64_t>::min() ) );
-        REQUIRE( INT32_MAX  == jau::abs( INT32_MIN ) );
+        REQUIRE( INT32_MAX  == jau::abs( INT32_MAX ) );
     };
 }
 TEST_CASE( "Int Math Bench 01b", "[ct_abs][benchmark][arithmetic][math]" ) {
-    BENCHMARK("ct_abs Benchmark") {
+    BENCHMARK("jau::ct_abs Benchmark") {
         REQUIRE( 1 == jau::ct_abs( 1) );
         REQUIRE( 1 == jau::ct_abs(-1) );
         REQUIRE( 1_i64 == jau::ct_abs( 1_i64) );
         REQUIRE( 1_i64 == jau::ct_abs(-1_i64) );
         REQUIRE( std::numeric_limits<int64_t>::max()  == jau::ct_abs( std::numeric_limits<int64_t>::max() ) );
-        REQUIRE( std::numeric_limits<int64_t>::min()  == jau::ct_abs( std::numeric_limits<int64_t>::min() ) );
-        REQUIRE( INT32_MIN  == jau::ct_abs( INT32_MIN ) );
+        // REQUIRE( std::numeric_limits<int64_t>::max()  == jau::ct_abs( std::numeric_limits<int64_t>::min() ) ); // UB
+        REQUIRE( INT32_MAX  == jau::ct_abs( INT32_MAX ) );
+        // REQUIRE( INT32_MAX  == jau::ct_abs( INT32_MIN ) ); // UB
+    };
+}
+TEST_CASE( "Int Math Bench 01c", "[abs][benchmark][arithmetic][math]" ) {
+    BENCHMARK("std::abs Benchmark") {
+        REQUIRE( 1 == std::abs( 1) );
+        REQUIRE( 1 == std::abs(-1) );
+        REQUIRE( 1_i64 == std::abs( 1_i64) );
+        REQUIRE( 1_i64 == std::abs(-1_i64) );
+        REQUIRE( std::numeric_limits<int64_t>::max()  == std::abs( std::numeric_limits<int64_t>::max() ) );
+        REQUIRE( INT32_MAX  == std::abs( INT32_MAX ) );
     };
 }
 

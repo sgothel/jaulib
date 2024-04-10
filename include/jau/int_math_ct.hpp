@@ -26,10 +26,10 @@
 #define JAU_INT_MATH_CT_HPP_
 
 #include <cstdint>
-#include <cmath>
 #include <climits>
 
 #include <jau/int_types.hpp>
+#include <jau/cpp_pragma.hpp>
 
 namespace jau {
 
@@ -72,7 +72,7 @@ namespace jau {
 
     /**
      * Returns the absolute value of an arithmetic number (w/o branching) in O(1) and constant time (CT),
-     * while not covering INT_MIN -> INT_MAX conversion as abs(), see above.
+     * while ct_abs(INT_MIN) is undefined behavior (UB) instead of being mapped correctly to INT_MAX like jau::abs() does, see above.
      *
      * This implementation is equivalent to std::abs(), i.e. unsafe
      *
@@ -96,8 +96,10 @@ namespace jau {
     {
         using unsigned_T = std::make_unsigned_t<T>;
         const T mask = x >> ( sizeof(T) * CHAR_BIT - 1 );
-        const unsigned_T r = static_cast<unsigned_T>( ( x + mask ) ^ mask );
-        return r;
+        PRAGMA_DISABLE_WARNING_PUSH
+        PRAGMA_DISABLE_WARNING_INT_OVERFLOW
+        return static_cast<unsigned_T>( ( x + mask ) ^ mask ); // clang 15: int overflow on UB (constrained in API doc)
+        PRAGMA_DISABLE_WARNING_POP
     }
     template <typename T,
               std::enable_if_t< std::is_arithmetic_v<T> &&
