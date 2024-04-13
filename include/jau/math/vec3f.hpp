@@ -252,7 +252,7 @@ namespace jau::math {
              * @param vec1 vector 1
              * @param vec2 vector 2
              */
-            float angle(const Vec3f& o) noexcept {
+            float angle(const Vec3f& o) const noexcept {
                 return std::acos( cos_angle(o) );
             }
 

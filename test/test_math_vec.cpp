@@ -65,3 +65,69 @@ TEST_CASE( "Math Vec Normalize Test 01", "[vec][linear_algebra][math]" ) {
     REQUIRE( 1 < v1.length() );
     REQUIRE( true == jau::equals( 1.0f, v1.normalize().length() ) );
 }
+
+TEST_CASE( "Math Vec Angle Test 02", "[vec][linear_algebra][math]" ) {
+    // test 0 deg
+    {
+        std::cout << "Test 0-deg, UNIT_X vecs" << std::endl;
+        Vec3f v0(1, 0, 0);
+        Vec3f v1(1, 0, 0);
+        std::cout << "v0 " << v0 << std::endl;
+        std::cout << "v1 " << v1 << std::endl;
+
+        const float a0_v0_v1 = v0.angle(v1);
+        std::cout << "a0(v0, v1) = " << a0_v0_v1 << " rad, " << jau::rad_to_adeg(a0_v0_v1) << " deg, via dot, acos" << std::endl;
+        REQUIRE(true == jau::equals(0.0f, a0_v0_v1));
+    }
+    // test 0 deg
+    {
+        std::cout << "Test 0-deg, free vecs" << std::endl;
+        const Vec3f v0(0.14f, 0.07f, 0.0f);
+        const Vec3f v1(0.33f, 0.07f, 0.0f);
+        const Vec3f v0_1 = v1 - v0;
+        std::cout << "v0 " << v0 << std::endl;
+        std::cout << "v1 " << v1 << std::endl;
+        std::cout << "v0_1 " << v0_1 << std::endl;
+
+        const float a0_x_v0_1 = Vec3f(1, 0, 0).angle(v0_1);
+        std::cout << "a0(X, v0_1) = " << a0_x_v0_1 << " rad, " << jau::rad_to_adeg(a0_x_v0_1) << " deg, via dot, acos" << std::endl;
+        REQUIRE(true == jau::equals(0.0f, a0_x_v0_1));
+    }
+    // test 180 deg
+    {
+        std::cout << "Test 180-deg, free vecs" << std::endl;
+        const Vec3f v0(0.33f, 0.07f, 0.0f);
+        const Vec3f v1(0.14f, 0.07f, 0.0f);
+        const Vec3f v0_1 = v1 - v0;
+        std::cout << "v0 " << v0 << std::endl;
+        std::cout << "v1 " << v1 << std::endl;
+        std::cout << "v0_1 " << v0_1 << std::endl;
+
+        const float a0_x_v0_1 = Vec3f(1, 0, 0).angle(v0_1);
+        std::cout << "a0(X, v0_1) = " << a0_x_v0_1 << " rad, " << jau::rad_to_adeg(a0_x_v0_1) << " deg, via dot, acos" << std::endl;
+        REQUIRE(true == jau::equals((float)M_PI, a0_x_v0_1));
+    }
+    // test 90 deg
+    {
+        std::cout << "Test 90-deg, UNIT_X, UNIT_Y vecs" << std::endl;
+        const Vec3f v0(1, 0, 0);
+        const Vec3f v1(0, 1, 0);
+        std::cout << "v0 " << v0 << std::endl;
+        std::cout << "v1 " << v1 << std::endl;
+        const float a0_v0_v1 = v0.angle(v1);
+        std::cout << "a0(v0, v1) = " << a0_v0_v1 << " rad, " << jau::rad_to_adeg(a0_v0_v1) << " deg, via dot, acos" << std::endl;
+        REQUIRE(true == jau::equals((float)M_PI_2, a0_v0_v1));
+    }
+    // test 180 deg
+    {
+        std::cout << "Test 180-deg, UNIT_X, UNIT_X_NEG vecs" << std::endl;
+        const Vec3f v0(1, 0, 0);
+        const Vec3f v1(-1, 0, 0);
+        std::cout << "v0 " << v0 << std::endl;
+        std::cout << "v1 " << v1 << std::endl;
+        const float a0_v0_v1 = v0.angle(v1);
+        std::cout << "a0(v0, v1) = " << a0_v0_v1 << " rad, " << jau::rad_to_adeg(a0_v0_v1) << " deg, via dot, acos" << std::endl;
+        REQUIRE(true == jau::equals((float)M_PI, a0_v0_v1));
+    }
+
+}
