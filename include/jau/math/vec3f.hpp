@@ -41,6 +41,8 @@ namespace jau::math {
      *  @{
      */
 
+    class Vec4f; // forward
+
     /**
      * 3D vector using three float components.
      */
@@ -71,6 +73,14 @@ namespace jau::math {
                 return reinterpret_cast<float*>(this)[i];
             }
 
+            /** xyz = this, returns xyz. */
+            float* get(float xyz[/*3*/]) const noexcept {
+                xyz[0] = x;
+                xyz[1] = y;
+                xyz[2] = z;
+                return xyz;
+            }
+
             constexpr bool equals(const Vec3f& o, const float epsilon=std::numeric_limits<float>::epsilon()) const noexcept {
                 if( this == &o ) {
                     return true;
@@ -95,6 +105,9 @@ namespace jau::math {
                 z = z_;
                 return *this;
             }
+
+            /** this = o while dropping w, returns this. */
+            Vec3f& set(const Vec4f& o) noexcept;
 
             constexpr Vec3f& set(const float vx, const float vy, const float vz) noexcept
             { x=vx; y=vy; z=vz; return *this; }

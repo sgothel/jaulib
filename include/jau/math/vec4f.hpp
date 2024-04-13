@@ -72,6 +72,15 @@ namespace jau::math {
                 return reinterpret_cast<float*>(this)[i];
             }
 
+            /** xyzw = this, returns xyzw. */
+            float* get(float xyzw[/*4*/]) const noexcept {
+                xyzw[0] = x;
+                xyzw[1] = y;
+                xyzw[2] = z;
+                xyzw[3] = w;
+                return xyzw;
+            }
+
             constexpr bool operator==(const Vec4f& rhs ) const noexcept {
                 if( this == &rhs ) {
                     return true;

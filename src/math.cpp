@@ -32,11 +32,19 @@
 
 #include <jau/debug.hpp>
 #include <jau/string_util.hpp>
+#include <jau/math/vec3f.hpp>
 #include <jau/math/mat4f.hpp>
 #include <jau/math/aabbox3f.hpp>
 #include <jau/math/quaternion.hpp>
 #include <jau/math/geom/frustum.hpp>
 #include <jau/math/geom/plane/affine_transform.hpp>
+
+jau::math::Vec3f& jau::math::Vec3f::set(const Vec4f& o) noexcept {
+    x = o.x;
+    y = o.y;
+    z = o.z;
+    return *this;
+}
 
 jau::math::Mat4f& jau::math::Mat4f::setToRotation(const jau::math::Quaternion& q) noexcept {
     // pre-multiply scaled-reciprocal-magnitude to reduce multiplications

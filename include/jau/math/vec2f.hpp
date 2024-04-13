@@ -73,6 +73,13 @@ namespace jau::math {
             return reinterpret_cast<float*>(this)[i];
         }
 
+        /** xy = this, returns xy. */
+        float* get(float xy[/*2*/]) const noexcept {
+            xy[0] = x;
+            xy[1] = y;
+            return xy;
+        }
+
         constexpr bool operator==(const Vec2f& rhs ) const noexcept {
             if( this == &rhs ) {
                 return true;
