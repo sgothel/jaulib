@@ -24,6 +24,8 @@
 #ifndef RECTI2F_HPP_
 #define RECTI2F_HPP_
 
+#include <iostream>
+
 #include <jau/int_math.hpp>
 
 namespace jau::math {
@@ -118,6 +120,10 @@ namespace jau::math {
         std::string toString() const noexcept
         { return std::to_string(m_x)+"/"+std::to_string(m_y)+" "+std::to_string(m_width)+"x"+std::to_string(m_height); }
     };
+
+    std::ostream& operator<<(std::ostream& out, const Recti& v) noexcept {
+        return out << v.toString();
+    }
 
 /**@}*/
 

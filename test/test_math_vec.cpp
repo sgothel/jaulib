@@ -32,6 +32,7 @@
 #include <jau/math/vec2i.hpp>
 #include <jau/math/vec3f.hpp>
 #include <jau/math/vec4f.hpp>
+#include <jau/math/mat4f.hpp>
 #include <jau/math/quaternion.hpp>
 #include <jau/math/aabbox2f.hpp>
 #include <jau/math/aabbox3f.hpp>
@@ -42,32 +43,24 @@
 using namespace jau;
 using namespace jau::math;
 
-// static const Quaternion QUAT_IDENT = Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
-
-static const Vec2f v2ZERO       = Vec2f();
-// static const vec2f v2ONE        = vec2f (  1.0f,  1.0f );
-// static const vec2f v2NEG_ONE    = vec2f ( -1.0f, -1.0f );
-// static const vec2f v2UNIT_X     = vec2f (  1.0f,  0.0f );
-// static const vec2f v2UNIT_X_NEG = vec2f ( -1.0f,  0.0f );
-// static const vec2f v2UNIT_Y     = vec2f (  1.0f,  0.0f );
-// static const vec2f v2UNIT_Z     = vec2f (  1.0f,  0.0f );
-
-static const Vec3f v3ZERO       = Vec3f();
-// static const vec3f v3ONE        = vec3f (  1.0f,  1.0f,  1.0f );
-// static const vec3f v3NEG_ONE    = vec3f ( -1.0f, -1.0f, -1.0f );
-static const Vec3f v3UNIT_X     = Vec3f (  1.0f,  0.0f,  0.0f );
-// static const vec3f v3UNIT_X_NEG = vec3f ( -1.0f,  0.0f,  0.0f );
-// static const vec3f v3UNIT_Y     = vec3f (  1.0f,  0.0f,  0.0f );
-// static const vec3f v3UNIT_Z     = vec3f (  1.0f,  0.0f,  0.0f );
-
 TEST_CASE( "Math Vec Test 00", "[vec][linear_algebra][math]" ) {
-    REQUIRE( Vec2f() == v2ZERO );
-    REQUIRE( Vec3f() == v3ZERO );
+    std::cout << "A v2 " << Vec2f(1, 2) << std::endl;
+    std::cout << "A v3 " << Vec3f(1, 2, 3) << std::endl;
+    std::cout << "A v4 " << Vec4f(1, 2, 3, 4) << std::endl;
+    {
+        const float mf[] = { 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f };
+        std::cout << "A mat4 " << Mat4f(mf) << std::endl;
+    }
+
+    REQUIRE( Vec2f() == Vec2f(0, 0) );
+    REQUIRE( Vec3f() == Vec3f(0, 0, 0) );
+    REQUIRE( 0.0f == Vec2f().length() );
+    REQUIRE( 0.0f == Vec3f().length() );
 }
 
 TEST_CASE( "Math Vec Normalize Test 01", "[vec][linear_algebra][math]" ) {
-    const Vec3f v0 = v3UNIT_X;
-    Vec3f v1 = Vec3f(1, 2, 3);
+    const Vec3f v0(1, 0, 0);
+    Vec3f v1(1, 2, 3);
     REQUIRE( true == jau::equals( 1.0f, v0.length() ) );
     REQUIRE( 1 < v1.length() );
     REQUIRE( true == jau::equals( 1.0f, v1.normalize().length() ) );

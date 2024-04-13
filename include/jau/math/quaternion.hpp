@@ -29,6 +29,7 @@
 #include <cstdint>
 #include <limits>
 #include <string>
+#include <iostream>
 
 #include <jau/float_math.hpp>
 #include <jau/math/vec3f.hpp>
@@ -1061,6 +1062,10 @@ class Quaternion {
 
 constexpr bool operator==(const Quaternion& lhs, const Quaternion& rhs ) noexcept {
     return lhs.equals(rhs);
+}
+
+std::ostream& operator<<(std::ostream& out, const Quaternion& v) noexcept {
+    return out << v.toString();
 }
 
 /**@}*/

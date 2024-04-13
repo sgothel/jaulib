@@ -31,6 +31,7 @@
 #include <cstdint>
 #include <vector>
 #include <type_traits>
+#include <iostream>
 
 #include <jau/cpp_lang_util.hpp>
 #include <jau/packed_attribute.hpp>
@@ -138,6 +139,10 @@ namespace jau {
 
         virtual const char* what() const noexcept {
             return what_.c_str(); // return std::runtime_error::what();
+        }
+
+        std::ostream& operator<<(std::ostream& out) noexcept {
+            return out << what_;
         }
     };
 

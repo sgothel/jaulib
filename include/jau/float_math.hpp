@@ -498,6 +498,37 @@ namespace jau {
         return rad * (T)180.0 / (T)M_PI;
     }
 
+    /**
+     * Appends a row of floating points to the given string `sb`
+     * @param sb string buffer to appends to
+     * @param f format string for each float element, e.g. "%10.5f"
+     * @param a the float data of size rows x columns
+     * @param rows float data `a` size row factor
+     * @param columns float data `a` size column factor
+     * @param rowMajorOrder if true floats are laid out in row-major-order, otherwise column-major-order (OpenGL)
+     * @param row selected row of float data `a`
+     * @return given string buffer `sb` for chaining
+     */
+    std::string& row_to_string(std::string& sb, const std::string& f,
+                               const float a[],
+                               const jau::nsize_t rows, const jau::nsize_t columns,
+                               const bool rowMajorOrder, const jau::nsize_t row) noexcept;
+
+    /**
+     * Appends a matrix of floating points to the given string `sb`
+     * @param sb string buffer to appends to
+     * @param rowPrefix prefix for each row
+     * @param f format string for each float element, e.g. "%10.5f"
+     * @param a the float data of size rows x columns
+     * @param rows float data `a` size row factor
+     * @param columns float data `a` size column factor
+     * @param rowMajorOrder if true floats are laid out in row-major-order, otherwise column-major-order (OpenGL)
+     * @return given string buffer `sb` for chaining
+     */
+    std::string& mat_to_string(std::string& sb, const std::string& rowPrefix, const std::string& f,
+                               const float a[], const jau::nsize_t rows, const jau::nsize_t columns,
+                               const bool rowMajorOrder) noexcept;
+
     /**@}*/
 
 } // namespace jau

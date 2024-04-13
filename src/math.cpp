@@ -31,6 +31,7 @@
 #include <algorithm>
 
 #include <jau/debug.hpp>
+#include <jau/string_util.hpp>
 #include <jau/math/mat4f.hpp>
 #include <jau/math/aabbox3f.hpp>
 #include <jau/math/quaternion.hpp>
@@ -97,6 +98,46 @@ jau::math::Quaternion& jau::math::Mat4f::getRotation(jau::math::Quaternion& res)
 
 jau::math::geom::Frustum& jau::math::Mat4f::getFrustum(jau::math::geom::Frustum& frustum) noexcept {
     return frustum.setFromMat4(*this);
+}
+
+std::string& jau::row_to_string(std::string& sb, const std::string& f,
+                                const float a[],
+                                const jau::nsize_t rows, const jau::nsize_t columns,
+                                const bool rowMajorOrder, const jau::nsize_t row) noexcept {
+  if(rowMajorOrder) {
+      for(jau::nsize_t c=0; c<columns; ++c) {
+          sb.append( jau::format_string(f.c_str(), a[ row*columns + c ] ) );
+          sb.append(", ");
+      }
+  } else {
+      for(jau::nsize_t r=0; r<columns; ++r) {
+          sb.append( jau::format_string(f.c_str(), a[ row + r*rows ] ) );
+          sb.append(", ");
+      }
+  }
+  return sb;
+}
+
+std::string& jau::mat_to_string(std::string& sb, const std::string& rowPrefix, const std::string& f,
+                                const float a[], const jau::nsize_t rows, const jau::nsize_t columns,
+                                const bool rowMajorOrder) noexcept {
+    sb.append(rowPrefix).append("{ ");
+    for(jau::nsize_t i=0; i<rows; ++i) {
+        if( 0 < i ) {
+            sb.append(rowPrefix).append("  ");
+        }
+        row_to_string(sb, f, a, rows, columns, rowMajorOrder, i);
+        sb.append("\n");
+    }
+    sb.append(rowPrefix).append("}").append("\n");
+    return sb;
+}
+
+std::string jau::math::Mat4f::toString(const std::string& rowPrefix, const std::string& f) const noexcept {
+    std::string sb;
+    float tmp[16];
+    get(tmp);
+    return jau::mat_to_string(sb, rowPrefix, f, tmp, 4, 4, false /* rowMajorOrder */); // creates a copy-out!
 }
 
 jau::math::AABBox3f& jau::math::AABBox3f::resize(const jau::math::AABBox3f& newBox, const jau::math::geom::plane::AffineTransform& t, Vec3f& tmpV3) noexcept {

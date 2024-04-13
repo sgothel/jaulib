@@ -28,6 +28,7 @@
 #include <cstdint>
 #include <cstring>
 #include <string>
+#include <cstdarg>
 #include <memory>
 #include <type_traits>
 
@@ -198,6 +199,27 @@ namespace jau {
         }
         return res;
     }
+
+    /**
+    // *************************************************
+    // *************************************************
+    // *************************************************
+     */
+
+    /**
+     * Returns a string according to `vprintf()` formatting rules
+     * using `va_list` instead of a variable number of arguments.
+     * @param format `printf()` compliant format string
+     * @param ap `va_list` arguments
+     */
+    std::string vformat_string(const char* format, va_list ap) noexcept;
+
+    /**
+     * Returns a string according to `printf()` formatting rules
+     * and variable number of arguments following the `format` argument.
+     * @param format `printf()` compliant format string
+     */
+    std::string format_string(const char* format, ...) noexcept;
 
     /**
     // *************************************************

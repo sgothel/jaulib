@@ -29,6 +29,7 @@
 #include <cstdint>
 #include <limits>
 #include <string>
+#include <iostream>
 
 #include <jau/float_math.hpp>
 
@@ -153,6 +154,10 @@ namespace jau::math {
 
     constexpr Vec2i operator/(const Vec2i& lhs, const float s ) noexcept {
         return Vec2i(lhs) /= s;
+    }
+
+    std::ostream& operator<<(std::ostream& out, const Vec2i& v) noexcept {
+        return out << v.toString();
     }
 
     /**@}*/

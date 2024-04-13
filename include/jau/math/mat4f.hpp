@@ -30,6 +30,7 @@
 #include <limits>
 #include <string>
 #include <vector>
+#include <iostream>
 
 #include <jau/float_math.hpp>
 #include <jau/math/math_error.hpp>
@@ -2074,7 +2075,21 @@ class Mat4f {
         return toString(null, null, "%10.5f").toString();
     }
 #endif
+
+    /**
+     * Returns a formatted string representation of this matrix
+     * @param rowPrefix prefix for each row
+     * @param f format string for each float element, e.g. "%10.5f"
+     * @return matrix
+     */
+    std::string toString(const std::string& rowPrefix, const std::string& f) const noexcept;
+
+    std::string toString() const noexcept { return toString("", "%10.5f"); }
 };
+
+std::ostream& operator<<(std::ostream& out, const Mat4f& v) noexcept {
+    return out << v.toString();
+}
 
 /**@}*/
 

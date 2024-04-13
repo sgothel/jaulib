@@ -29,6 +29,7 @@
 #include <cstdint>
 #include <limits>
 #include <string>
+#include <iostream>
 
 #include <jau/float_math.hpp>
 
@@ -278,6 +279,10 @@ namespace jau::math {
         return Vec2f(lhs) /= s;
     }
 
+    std::ostream& operator<<(std::ostream& out, const Vec2f& v) noexcept {
+        return out << v.toString();
+    }
+
     /**
      * Simple compound denoting a ray.
      * <p>
@@ -299,6 +304,10 @@ namespace jau::math {
 
         std::string toString() const noexcept { return "Ray[orig "+orig.toString()+", dir "+dir.toString() +"]"; }
     };
+
+    std::ostream& operator<<(std::ostream& out, const Ray2f& v) noexcept {
+        return out << v.toString();
+    }
 
     /**@}*/
 
