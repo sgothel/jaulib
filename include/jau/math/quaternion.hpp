@@ -895,22 +895,20 @@ class Quaternion {
         const float sqz = m_z*m_z;
         const float unit = sqx + sqy + sqz + sqw; // if normalized is one, otherwise, is correction factor
         const float test = m_x*m_y + m_z*m_w;
-        Vec3f result;
 
         if (test > 0.499f * unit) { // singularity at north pole
-            result.set( 0.0f,                        // m_x-bank
-                        2.0f * std::atan2(m_x, m_w), // y-heading
-                        M_PI_2 );                    // z-attitude
+            return Vec3f( 0.0f,                        // m_x-bank
+                          2.0f * std::atan2(m_x, m_w), // y-heading
+                          M_PI_2 );                    // z-attitude
         } else if (test < -0.499f * unit) { // singularity at south pole
-            result.set( 0.0f,                        // m_x-bank
-                       -2.0 * std::atan2(m_x, m_w),  // m_y-heading
-                       -M_PI_2 );                    // m_z-attitude
+            return Vec3f( 0.0f,                        // m_x-bank
+                         -2.0 * std::atan2(m_x, m_w),  // m_y-heading
+                         -M_PI_2 );                    // m_z-attitude
         } else {
-            result.set( std::atan2(2.0f * m_x * m_w - 2.0f * m_y * m_z, -sqx + sqy - sqz + sqw), // m_x-bank
-                        std::atan2(2.0f * m_y * m_w - 2.0f * m_x * m_z,  sqx - sqy - sqz + sqw), // m_y-heading
-                        std::asin( 2.0f * test / unit) );                                        // z-attitude
+            return Vec3f( std::atan2(2.0f * m_x * m_w - 2.0f * m_y * m_z, -sqx + sqy - sqz + sqw), // m_x-bank
+                          std::atan2(2.0f * m_y * m_w - 2.0f * m_x * m_z,  sqx - sqy - sqz + sqw), // m_y-heading
+                          std::asin( 2.0f * test / unit) );                                        // z-attitude
         }
-        return result;
     }
 
     /**
@@ -995,10 +993,20 @@ class Quaternion {
      * @see #setFromMatrix(float, float, float, float, float, float, float, float, float)
      * @see Matrix4f#setToRotation(Quaternion)
      */
-    Mat4f toMatrix() noexcept {
+    Mat4f toMatrix() const noexcept {
         Mat4f m;
         m.setToRotation(*this);
         return m;
+    }
+    /**
+     * Transform this quaternion to a normalized 4x4 column matrix representing the rotation,
+     * see toMatrix().
+     *
+     * @param out store for the resulting normalized column matrix 4x4
+     * @return the given matrix store
+     */
+    Mat4f& toMatrix(Mat4f& out) const noexcept {
+        return out.setToRotation(*this);
     }
 
     /**
