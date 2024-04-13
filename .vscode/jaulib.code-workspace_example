@@ -31,12 +31,13 @@
     "java.inlayHints.parameterNames.enabled": "literals",
     "java.configuration.runtimes": [    
       { 
-        "name": "JavaSE-11",
-        "path": "/usr/lib/jvm/java-11-openjdk-amd64",
-      },
-      { 
         "name": "JavaSE-17",
         "path": "/usr/lib/jvm/java-17-openjdk-amd64",
+        "default": true
+      },
+      { 
+        "name": "JavaSE-21",
+        "path": "/opt-linux-x86_64/jdk21",
         "default": true
       },
     ],
