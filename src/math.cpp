@@ -51,7 +51,7 @@ jau::math::Mat4f& jau::math::Mat4f::setToRotation(const jau::math::Quaternion& q
     const float norm = q.magnitudeSquared();
     if ( jau::is_zero(norm) ) {
         // identity matrix -> srecip = 0f
-        load_identity();
+        loadIdentity();
         return *this;
     }
     float srecip;

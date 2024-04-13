@@ -288,7 +288,7 @@ class Mat4f {
      * </pre>
      * @return this matrix for chaining
      */
-    Mat4f& load_identity() noexcept {
+    Mat4f& loadIdentity() noexcept {
        m00 = m11 = m22 = m33 = 1.0f;
        m01 = m02 = m03 =
        m10 = m12 = m13 =
@@ -418,6 +418,20 @@ class Mat4f {
                    get(3+column*4) );
         return v_out;
     }
+    /**
+     * Get the named column of the given column-major matrix to v_out w/ boundary check.
+     * @param column named column to copy
+     * @return result vector holding the requested column
+     */
+    Vec4f getColumn(const jau::nsize_t column) const {
+        if( column > 3 ) {
+            throw jau::IndexOutOfBoundsException(2+column*4, 16, E_FILE_LINE);
+        }
+        return Vec4f( get(0+column*4),
+                      get(1+column*4),
+                      get(2+column*4),
+                      get(3+column*4) );
+    }
 
     /**
      * Get the named column of the given column-major matrix to v_out w/ boundary check.
@@ -450,6 +464,20 @@ class Mat4f {
                    get(row+2*4),
                    get(row+3*4) );
         return v_out;
+    }
+    /**
+     * Get the named column of the given column-major matrix to v_out w/ boundary check.
+     * @param row named row to copy
+     * @return result vector holding the requested row
+     */
+    Vec4f getRow(const jau::nsize_t row) const {
+        if( row > 3 ) {
+            throw jau::IndexOutOfBoundsException(row+3*4, 16, E_FILE_LINE);
+        }
+        return Vec4f( get(row+0*4),
+                      get(row+1*4),
+                      get(row+2*4),
+                      get(row+3*4) );
     }
 
     /**
@@ -915,6 +943,18 @@ class Mat4f {
                    x * m20 + y * m21 + z * m22 + w * m23,
                    x * m30 + y * m31 + z * m32 + w * m33 );
         return v_out;
+    }
+    /**
+     * Returns new Vec4f holding this * v_in result
+     * @param v_in 4-component column-vector
+     */
+    Vec4f operator*(const Vec4f& rhs) const noexcept {
+        // (one matrix row in column-major order) X (column vector)
+        const float x = rhs.x, y = rhs.y, z = rhs.z, w = rhs.w;
+        return Vec4f( x * m00 + y * m01 + z * m02 + w * m03,
+                      x * m10 + y * m11 + z * m12 + w * m13,
+                      x * m20 + y * m21 + z * m22 + w * m23,
+                      x * m30 + y * m31 + z * m32 + w * m33 );
     }
 
     /**
