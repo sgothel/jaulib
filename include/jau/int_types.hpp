@@ -1,6 +1,6 @@
 /*
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2021 Gothel Software e.K.
+ * Copyright (c) 2021-2024 Gothel Software e.K.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -63,6 +63,22 @@ namespace jau {
      * </p>
      */
     typedef int_fast32_t snsize_t;
+
+    // Remember: constexpr specifier used in a function or static data member (since C++17) declaration implies inline.
+
+    template <int bytesize> struct uint_bytes;
+    template <> struct uint_bytes<4>{ using type = uint32_t; };
+    template <> struct uint_bytes<8>{ using type = uint64_t; };
+    #if defined(__SIZEOF_INT128__)
+        template <> struct uint_bytes<16>{ using type = uint128_t; };
+    #endif
+
+    template <int bytesize> struct sint_bytes;
+    template <> struct sint_bytes<4>{ using type = int32_t; };
+    template <> struct sint_bytes<8>{ using type = int64_t; };
+    #if defined(__SIZEOF_INT128__)
+        template <> struct sint_bytes<16>{ using type = int128_t; };
+    #endif
 
     /**
     // *************************************************

@@ -14,6 +14,7 @@ set (jaulib_LIB_SRCS
   cpuid.cpp
   debug.cpp
   basic_types.cpp
+  math.cpp
   base_codec.cpp
   byte_stream.cpp
   eui48.cpp

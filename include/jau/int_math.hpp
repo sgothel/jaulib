@@ -49,6 +49,13 @@ namespace jau {
 
     // Remember: constexpr specifier used in a function or static data member (since C++17) declaration implies inline.
 
+    /** Returns true of the given integer value is zero. */
+    template<class T>
+    typename std::enable_if<std::numeric_limits<T>::is_integer, bool>::type
+    constexpr is_zero(const T& a) noexcept {
+        return 0 == a;
+    }
+
     /**
      * Returns the value of the sign function (w/o branching ?) in O(1).
      * <pre>

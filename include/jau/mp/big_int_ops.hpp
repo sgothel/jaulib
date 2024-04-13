@@ -28,25 +28,19 @@
 
 namespace jau::mp {
     namespace impl {
-        constexpr size_t best_word_bit_size() {
+        constexpr size_t best_word_byte_size() {
             if constexpr ( 64 == jau::cpu::get_arch_psize() && is_builtin_int128_available() ) {
-                return 64;
+                return 8;
             } else {
-                return 32;
+                return 4;
             }
         }
-        template <int bitsize> struct word_bits;
-        template <> struct word_bits<32>{ using type = uint32_t; };
-        template <> struct word_bits<64>{ using type = uint64_t; };
-
-        template <int bitsize> struct dword_bits;
-        template <> struct dword_bits<32>{ using type = uint64_t; };
-        template <> struct dword_bits<64>{ using type = uint128_t; };
     }
+    #undef JAU_FORCE_MP_WORD_32_BITS
     #if !defined( JAU_FORCE_MP_WORD_32_BITS )
-        constexpr const size_t mp_word_bits = impl::best_word_bit_size();
-        typedef typename impl::word_bits<impl::best_word_bit_size()>::type mp_word_t;
-        typedef typename impl::dword_bits<impl::best_word_bit_size()>::type mp_dword_t;
+        constexpr const size_t mp_word_bits = impl::best_word_byte_size() * CHAR_BIT;
+        typedef typename jau::uint_bytes<impl::best_word_byte_size()>::type mp_word_t;
+        typedef typename jau::uint_bytes<impl::best_word_byte_size()*2>::type mp_dword_t;
         constexpr const bool has_mp_dword = is_builtin_int128_available();
     #elif 1
         constexpr const size_t mp_word_bits = 32;
