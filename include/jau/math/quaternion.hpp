@@ -234,7 +234,7 @@ class Quaternion {
      * Set all values of this quaternion using the given components.
      * @return this quaternion for chaining.
      */
-    Quaternion& set(float x, float y, float z, float w) noexcept {
+    constexpr Quaternion& set(const float x, const float y, const float z, const float w) noexcept {
         m_x = x;
         m_y = y;
         m_z = z;
