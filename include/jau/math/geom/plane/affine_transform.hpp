@@ -176,13 +176,12 @@ namespace jau::math::geom::plane {
                 return type;
             }
 
-            if (m02 != 0.0f || m12 != 0.0f) {
+            if ( !jau::is_zero(m02) || !jau::is_zero(m12) ) {
                 type |= AffineTransformType::TRANSLATION;
-            } else {
-                if (m00 == 1.0f && m11 == 1.0f && m01 == 0.0f && m10 == 0.0f) {
-                    type = AffineTransformType::IDENTITY;
-                    return type;
-                }
+            } else if ( jau::equals(m00, 1.0f) && jau::equals(m11, 1.0f) &&
+                        jau::is_zero(m01) && jau::is_zero(m10) ) {
+                type = AffineTransformType::IDENTITY;
+                return type;
             }
 
             if (m00 * m11 - m01 * m10 < 0.0f) {
@@ -191,22 +190,19 @@ namespace jau::math::geom::plane {
 
             const float dx = m00 * m00 + m10 * m10;
             const float dy = m01 * m01 + m11 * m11;
-            if (dx != dy) {
+            if ( !jau::equals(dx, dy) ) {
                 type |= AffineTransformType::GENERAL_SCALE;
-            } else
-                if (dx != 1.0f) {
-                    type |= AffineTransformType::UNIFORM_SCALE;
-                }
+            } else if ( !jau::equals(dx, 1.0f) ) {
+                type |= AffineTransformType::UNIFORM_SCALE;
+            }
 
-            if ((m00 == 0.0f && m11 == 0.0f) ||
-                (m10 == 0.0f && m01 == 0.0f && (m00 < 0.0f || m11 < 0.0f)))
+            if ( ( jau::is_zero( m00 ) && jau::is_zero( m11 ) ) ||
+                 ( jau::is_zero( m10 ) && jau::is_zero( m01 ) && (m00 < 0.0f || m11 < 0.0f) ) )
             {
                 type |= AffineTransformType::QUADRANT_ROTATION;
-            } else
-                if (m01 != 0.0f || m10 != 0.0f) {
-                    type |= AffineTransformType::GENERAL_ROTATION;
-                }
-
+            } else if ( !jau::is_zero( m01 ) || !jau::is_zero( m10 ) ) {
+                type |= AffineTransformType::GENERAL_ROTATION;
+            }
             return type;
         }
 
@@ -264,7 +260,7 @@ namespace jau::math::geom::plane {
             m01 = m10 = 0.0f;
             m02 = mx;
             m12 = my;
-            if (mx == 0.0f && my == 0.0f) {
+            if ( jau::is_zero(mx) && jau::is_zero(my) ) {
                 m_type = AffineTransformType::IDENTITY;
             } else {
                 m_type = AffineTransformType::TRANSLATION;
@@ -276,7 +272,7 @@ namespace jau::math::geom::plane {
             m00 = scx;
             m11 = scy;
             m10 = m01 = m02 = m12 = 0.0f;
-            if (scx != 1.0f || scy != 1.0f) {
+            if ( !jau::equals(scx, 1.0f) || !jau::equals(scy, 1.0f) ) {
                 m_type = AffineTransformType::UNKNOWN;
             } else {
                 m_type = AffineTransformType::IDENTITY;
@@ -289,7 +285,7 @@ namespace jau::math::geom::plane {
             m02 = m12 = 0.0f;
             m01 = shx;
             m10 = shy;
-            if (shx != 0.0f || shy != 0.0f) {
+            if ( !jau::is_zero(shx) || !jau::is_zero(shy) ) {
                 m_type = AffineTransformType::UNKNOWN;
             } else {
                 m_type = AffineTransformType::IDENTITY;
@@ -303,11 +299,10 @@ namespace jau::math::geom::plane {
             if (std::abs(cos) < ZERO) {
                 cos = 0.0f;
                 sin = sin > 0.0f ? 1.0f : -1.0f;
-            } else
-                if (std::abs(sin) < ZERO) {
-                    sin = 0.0f;
-                    cos = cos > 0.0f ? 1.0f : -1.0f;
-                }
+            } else if (std::abs(sin) < ZERO) {
+                sin = 0.0f;
+                cos = cos > 0.0f ? 1.0f : -1.0f;
+            }
             m00 = m11 = cos;
             m01 = -sin;
             m10 = sin;
@@ -585,18 +580,21 @@ namespace jau::math::geom::plane {
                                        + std::to_string(m10) + ", " + std::to_string(m11) + ", " + std::to_string(m12) + "]]";
         }
 
-        constexpr bool operator==(const AffineTransform& rhs ) noexcept {
-            if( this == &rhs ) {
+        constexpr bool equals(const AffineTransform& o, const float epsilon=std::numeric_limits<float>::epsilon()) const noexcept {
+            if( this == &o ) {
                 return true;
+            } else {
+                return jau::equals(m00, o.m00, epsilon) &&
+                       jau::equals(m01, o.m01, epsilon) &&
+                       jau::equals(m02, o.m02, epsilon) &&
+                       jau::equals(m10, o.m10, epsilon) &&
+                       jau::equals(m11, o.m11, epsilon) &&
+                       jau::equals(m12, o.m12, epsilon);
             }
-            return m00 == rhs.m00 && m01 == rhs.m01 &&
-                   m02 == rhs.m02 && m10 == rhs.m10 &&
-                   m11 == rhs.m11 && m12 == rhs.m12;
         }
-        /** TODO
-        constexpr bool operator<=>(const vec3f_t& rhs ) noexcept {
-            return ...
-        } */
+        constexpr bool operator==(const AffineTransform& rhs) const noexcept {
+            return equals(rhs);
+        }
     };
 
 /**@}*/

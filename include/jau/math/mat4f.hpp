@@ -238,10 +238,6 @@ class Mat4f {
     constexpr bool operator==(const Mat4f& rhs) const noexcept {
         return equals(rhs);
     }
-    /** TODO
-    constexpr bool operator<=>(const mat4f_t& rhs ) const noexcept {
-        return ...
-    } */
 
     //
     // Write to Matrix via set(..) or load(..)
