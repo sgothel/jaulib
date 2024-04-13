@@ -109,20 +109,20 @@ namespace jau {
      * i.e. reversible to double via float_value() or double via double_value() depending on type `T`,
      *
      * See specific semantics of IEEE 754 (IEC 559) single floating-point bit layout:
-     * - float_ieee754_sign_bit
-     * - float_ieee754_exp_mask
-     * - float_ieee754_mant_mask
-     * - float_ieee754_positive_inf_val
-     * - float_ieee754_negative_inf_val
-     * - float_ieee754_nan_val
+     * - float_iec559_sign_bit
+     * - float_iec559_exp_mask
+     * - float_iec559_mant_mask
+     * - float_iec559_positive_inf_bitval
+     * - float_iec559_negative_inf_bitval
+     * - float_iec559_nan_bitval
      *
      * See specific semantics of IEEE 754 (IEC 559) double doubleing-point bit layout:
-     * - double_ieee754_sign_bit
-     * - double_ieee754_exp_mask
-     * - double_ieee754_mant_mask
-     * - double_ieee754_positive_inf_val
-     * - double_ieee754_negative_inf_val
-     * - double_ieee754_nan_val
+     * - double_iec559_sign_bit
+     * - double_iec559_exp_mask
+     * - double_iec559_mant_mask
+     * - double_iec559_positive_inf_bitval
+     * - double_iec559_negative_inf_bitval
+     * - double_iec559_nan_bitval
      *
      * @tparam T floating point type, e.g. float or double
      * @tparam matching floating point unsigned integer type, e.g. float_uint_t or double_uint_t
@@ -137,8 +137,8 @@ namespace jau {
     bit_value_raw(const T a) noexcept
     {
         typedef typename jau::uint_bytes<sizeof(T)>::type T_uint;
-        union { T_uint u; T f; } ieee754 = { .f = a };
-        return ieee754.u;
+        union { T_uint u; T f; } iec559 = { .f = a };
+        return iec559.u;
     }
 
     /**
@@ -147,11 +147,11 @@ namespace jau {
      *
      * See bit_value() for details.
      *
-     * This raw method does not collapse all NaN values to float_ieee754_nan_val.
+     * This raw method does not collapse all NaN values to float_iec559_nan_bitval.
      */
     constexpr uint32_t bit_value_raw(const float a) noexcept {
-        union { uint32_t u; float f; } ieee754 = { .f = a };
-        return ieee754.u;
+        union { uint32_t u; float f; } iec559 = { .f = a };
+        return iec559.u;
     }
     /**
      * Returns the unsigned integer representation
@@ -159,20 +159,20 @@ namespace jau {
      *
      * Meaningful semantics are only given if `true == std::numeric_limits<float>::is_iec559`.
      *
-     * All NaN values which are represented by float_ieee754_nan_val.
+     * All NaN values which are represented by float_iec559_nan_bitval.
      *
      * The result is a functional unsigned integer that, i.e. reversible to double via float_value().
      *
      * See specific semantics of IEEE 754 (IEC 559) single floating-point bit layout:
-     * - float_ieee754_sign_bit
-     * - float_ieee754_exp_mask
-     * - float_ieee754_mant_mask
-     * - float_ieee754_positive_inf_val
-     * - float_ieee754_negative_inf_val
-     * - float_ieee754_nan_val
+     * - float_iec559_sign_bit
+     * - float_iec559_exp_mask
+     * - float_iec559_mant_mask
+     * - float_iec559_positive_inf_bitval
+     * - float_iec559_negative_inf_bitval
+     * - float_iec559_nan_bitval
      *
      * The result is a functional unsigned integer that, i.e. reversible to float via float_value(),
-     * except all NaN values which are represented by float_ieee754_nan_val.
+     * except all NaN values which are represented by float_iec559_nan_bitval.
      *
      * @param a single float value
      * @return unsigned integer representation of IEEE 754 (IEC 559) single floating-point bit layout
@@ -188,8 +188,8 @@ namespace jau {
 
     /** Converting IEEE 754 (IEC 559) single floating-point bit layout to float, see bit_value() */
     constexpr float float_value(const uint32_t a) noexcept {
-        union { uint32_t u; float f; } ieee754 = { .u = a };
-        return ieee754.f;
+        union { uint32_t u; float f; } iec559 = { .u = a };
+        return iec559.f;
     }
     /**
      * Returns the unsigned integer representation
@@ -197,11 +197,11 @@ namespace jau {
      *
      * See bit_value() for details.
      *
-     * This raw method does not collapse all NaN values to double_ieee754_nan_val.
+     * This raw method does not collapse all NaN values to double_iec559_nan_bitval.
      */
     constexpr uint64_t bit_value_raw(const double a) noexcept {
-        union { uint64_t u; double f; } ieee754 = { .f = a };
-        return ieee754.u;
+        union { uint64_t u; double f; } iec559 = { .f = a };
+        return iec559.u;
     }
     /**
      * Returns the unsigned integer representation
@@ -209,17 +209,17 @@ namespace jau {
      *
      * Meaningful semantics are only given if `true == std::numeric_limits<double>::is_iec559`.
      *
-     * All NaN values which are represented by double_ieee754_nan_val.
+     * All NaN values which are represented by double_iec559_nan_bitval.
      *
      * The result is a functional unsigned integer that, i.e. reversible to double via double_value().
      *
      * See specific semantics of IEEE 754 (IEC 559) double floating-point bit layout:
-     * - double_ieee754_sign_bit
-     * - double_ieee754_exp_mask
-     * - double_ieee754_mant_mask
-     * - double_ieee754_positive_inf_val
-     * - double_ieee754_negative_inf_val
-     * - double_ieee754_nan_val
+     * - double_iec559_sign_bit
+     * - double_iec559_exp_mask
+     * - double_iec559_mant_mask
+     * - double_iec559_positive_inf_bitval
+     * - double_iec559_negative_inf_bitval
+     * - double_iec559_nan_bitval
      *
      * @param a double float value
      * @return unsigned integer representation of IEEE 754 (IEC 559) double floating-point bit layout
@@ -234,8 +234,8 @@ namespace jau {
     }
     /** Converting IEEE 754 (IEC 559) double floating-point bit layout to double, see bit_value() */
     constexpr double double_value(const uint64_t a) noexcept {
-        union { uint64_t u; double f; } ieee754 = { .u = a };
-        return ieee754.f;
+        union { uint64_t u; double f; } iec559 = { .u = a };
+        return iec559.f;
     }
 
     /**
