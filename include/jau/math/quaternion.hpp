@@ -136,7 +136,7 @@ class Quaternion {
      * Returns the dot product of this quaternion with the given x,y,z and m_w components.
      */
     float dot(float x, float y, float z, float w) const noexcept {
-        return m_x * x + m_y * y + m_z * z + w * w;
+        return m_x * x + m_y * y + m_z * z + m_w * w;
     }
 
     /**
