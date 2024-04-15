@@ -80,6 +80,11 @@ namespace jau {
         template <> struct sint_bytes<16>{ using type = int128_t; };
     #endif
 
+    template <int bytesize> struct float_bytes;
+    template <> struct float_bytes<sizeof(float)>{ using type = float; };
+    template <> struct float_bytes<sizeof(double)>{ using type = double; };
+    template <> struct float_bytes<sizeof(long double)>{ using type = long double; };
+
     /**
     // *************************************************
     // *************************************************
