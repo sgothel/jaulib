@@ -507,6 +507,17 @@ namespace jau::math::geom::plane {
 
         /**
          * @param src source of transformation
+         * @return resulting Vec2f
+         */
+        Vec2f transform(const Vec2f& src) const noexcept {
+            const float x = src.x;
+            const float y = src.y;
+            return Vec2f( x * m00 + y * m01 + m02,
+                          x * m10 + y * m11 + m12 );
+        }
+
+        /**
+         * @param src source of transformation
          * @param dst destination of transformation, maybe be equal to <code>src</code>
          * @return dst for chaining
          */
@@ -517,6 +528,39 @@ namespace jau::math::geom::plane {
             dst.y = x * m10 + y * m11 + m12;
             dst.z = src.z; // just copy z
             return dst;
+        }
+
+      private:
+        Vec3f transformVec3f(const Vec3f& src) const noexcept {
+            const float x = src.x;
+            const float y = src.y;
+            return Vec3f( x * m00 + y * m01 + m02,
+                          x * m10 + y * m11 + m12,
+                          src.z
+                        ); // just copy z
+        }
+
+      public:
+        /**
+         * @param src source of transformation
+         * @param dst destination of transformation, maybe be equal to <code>src</code>
+         * @return resulting Vec3f
+         */
+        Vec3f transform(const Vec3f& src) const noexcept {
+            return transformVec3f(src);
+        }
+
+        /**
+         * Resize the aabbox3f to encapsulate another AABox, which will be <i>transformed</i> on the fly first.
+         * @param newBox aabbox3f to be encapsulated in
+         * @param t the {@link AffineTransform} applied on <i>newBox</i> on the fly
+         * @param tmpV3 temporary storage
+         * @return this aabbox3f for chaining
+         */
+        AABBox3f& resizeBox(AABBox3f& box, const AABBox3f& newBox) noexcept {
+            AABBox3f::transform_vec3f_func transform(this, &AffineTransform::transformVec3f);
+            return box.resize(newBox, transform);
+
         }
 
         /**

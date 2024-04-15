@@ -48,7 +48,7 @@ static const float HALF_PI = (float)M_PI_2;
 static const float QUARTER_PI = (float)M_PI_4;
 static const float EPSILON = std::numeric_limits<float>::epsilon();
 
-static const Quaternion QUAT_IDENT = Quaternion(0, 0, 0, 1);
+static const Quat4f QUAT_IDENT = Quat4f(0, 0, 0, 1);
 
 static const Vec3f ZERO       = Vec3f (  0,  0,  0 );
 static const Vec3f ONE        = Vec3f (  1,  1,  1 );
@@ -68,14 +68,14 @@ static const Vec4f ONE_v4     = Vec4f (  1,  1,  1, 0 );
 //
 
 TEST_CASE( "Test 01 Normalize", "[quaternion][linear_algebra][math]" ) {
-    const Quaternion quat(0, 1, 2, 3);
-    const Quaternion quat2 = Quaternion(quat).normalize();
+    const Quat4f quat(0, 1, 2, 3);
+    const Quat4f quat2 = Quat4f(quat).normalize();
     // Assert.assertTrue(Math.abs(1 - quat2.magnitude()) <= MACH_EPSILON);
     REQUIRE( true == jau::equals( 0.0f, std::abs( 1 - quat2.magnitude() ) ) ) ;
 }
 
 TEST_CASE( "Test 02 Rotate Zero Vector", "[quaternion][linear_algebra][math]" ) {
-    Quaternion quat;
+    Quat4f quat;
     const Vec3f rotVec0 = quat.rotateVector(ZERO);
     REQUIRE( ZERO == rotVec0 );
 }
@@ -83,22 +83,22 @@ TEST_CASE( "Test 02 Rotate Zero Vector", "[quaternion][linear_algebra][math]" ) 
 TEST_CASE( "Test 03 Invert and Conugate", "[quaternion][linear_algebra][math]" ) {
     // inversion check
     {
-        const Quaternion quat0(0, 1, 2, 3);
-        Quaternion quat0Inv = Quaternion(quat0).invert();
+        const Quat4f quat0(0, 1, 2, 3);
+        Quat4f quat0Inv = Quat4f(quat0).invert();
         REQUIRE( quat0 == quat0Inv.invert() );
     }
     // conjugate check
     {
-        const Quaternion quat0(-1, -2, -3, 4);
-        const Quaternion quat0Conj = Quaternion( 1,  2,  3, 4).conjugate();
+        const Quat4f quat0(-1, -2, -3, 4);
+        const Quat4f quat0Conj = Quat4f( 1,  2,  3, 4).conjugate();
         REQUIRE( quat0 == quat0Conj );
     }
 }
 
 TEST_CASE( "Test 04 Dot", "[quaternion][linear_algebra][math]" ) {
-    const Quaternion quat(7, 2, 5, -1);
+    const Quat4f quat(7, 2, 5, -1);
     REQUIRE( 35.0f == quat.dot(3, 1, 2, -2));
-    REQUIRE( -11.0f == quat.dot(Quaternion(-1, 1, -1, 1)));
+    REQUIRE( -11.0f == quat.dot(Quat4f(-1, 1, -1, 1)));
 }
 
 //
@@ -106,8 +106,8 @@ TEST_CASE( "Test 04 Dot", "[quaternion][linear_algebra][math]" ) {
 //
 
 TEST_CASE( "Test 10 Angle Axis", "[quaternion][linear_algebra][math]" ) {
-    Quaternion quat1 = Quaternion().setFromAngleAxis(HALF_PI, Vec3f ( 2, 0, 0 ));
-    Quaternion quat2 = Quaternion().setFromAngleNormalAxis(HALF_PI, Vec3f ( 1, 0, 0 ) );
+    Quat4f quat1 = Quat4f().setFromAngleAxis(HALF_PI, Vec3f ( 2, 0, 0 ));
+    Quat4f quat2 = Quat4f().setFromAngleNormalAxis(HALF_PI, Vec3f ( 1, 0, 0 ) );
 
     REQUIRE( quat2 == quat1 );
     REQUIRE( true == jau::equals(0.0f, 1 - quat2.magnitude()));
@@ -136,10 +136,10 @@ TEST_CASE( "Test 10 Angle Axis", "[quaternion][linear_algebra][math]" ) {
 
 TEST_CASE( "Test 11 From Vec to Vec", "[quaternion][linear_algebra][math]" ) {
     Vec3f vecOut;
-    Quaternion quat;
+    Quat4f quat;
     quat.setFromVectors(UNIT_Z, UNIT_X);
 
-    Quaternion quat2;
+    Quat4f quat2;
     quat2.setFromNormalVectors(UNIT_Z, UNIT_X);
     REQUIRE( quat == quat2 );
 
@@ -148,19 +148,19 @@ TEST_CASE( "Test 11 From Vec to Vec", "[quaternion][linear_algebra][math]" ) {
 
     quat.setFromVectors(UNIT_Z, UNIT_Z_NEG);
     vecOut = quat.rotateVector(UNIT_Z);
-    REQUIRE_THAT( std::abs( UNIT_Z_NEG.dist(vecOut) ), Catch::Matchers::WithinAbs(0.0f, Quaternion::ALLOWED_DEVIANCE) );
+    REQUIRE_THAT( std::abs( UNIT_Z_NEG.dist(vecOut) ), Catch::Matchers::WithinAbs(0.0f, Quat4f::allowed_deviation) );
 
     quat.setFromVectors(UNIT_X, UNIT_X_NEG);
     vecOut = quat.rotateVector(UNIT_X);
-    REQUIRE_THAT( std::abs( UNIT_X_NEG.dist(vecOut) ), Catch::Matchers::WithinAbs(0.0f, Quaternion::ALLOWED_DEVIANCE) );
+    REQUIRE_THAT( std::abs( UNIT_X_NEG.dist(vecOut) ), Catch::Matchers::WithinAbs(0.0f, Quat4f::allowed_deviation) );
 
     quat.setFromVectors(UNIT_Y, UNIT_Y_NEG);
     vecOut = quat.rotateVector(UNIT_Y);
-    REQUIRE_THAT( std::abs( UNIT_Y_NEG.dist(vecOut) ), Catch::Matchers::WithinAbs(0.0f, Quaternion::ALLOWED_DEVIANCE) );
+    REQUIRE_THAT( std::abs( UNIT_Y_NEG.dist(vecOut) ), Catch::Matchers::WithinAbs(0.0f, Quat4f::allowed_deviation) );
 
     quat.setFromVectors(ONE, ONE_NEG);
     vecOut = quat.rotateVector(ONE);
-    REQUIRE_THAT( std::abs( ONE_NEG.dist(vecOut) ), Catch::Matchers::WithinAbs(0.0f, Quaternion::ALLOWED_DEVIANCE) );
+    REQUIRE_THAT( std::abs( ONE_NEG.dist(vecOut) ), Catch::Matchers::WithinAbs(0.0f, Quat4f::allowed_deviation) );
 
     quat.setFromVectors(ZERO, ZERO);
     REQUIRE( QUAT_IDENT == quat );
@@ -169,7 +169,7 @@ TEST_CASE( "Test 11 From Vec to Vec", "[quaternion][linear_algebra][math]" ) {
 
 TEST_CASE( "Test 12 From and to Euler Angles", "[quaternion][linear_algebra][math]" ) {
     // Y.Z.X -> X.Y.Z
-    Quaternion quat;
+    Quat4f quat;
     Vec3f angles0Exp( 0, HALF_PI, 0 );
     quat.setFromEuler(angles0Exp);
     REQUIRE_THAT( quat.magnitude(), Catch::Matchers::WithinAbs(1.0f, EPSILON) );
@@ -177,7 +177,7 @@ TEST_CASE( "Test 12 From and to Euler Angles", "[quaternion][linear_algebra][mat
     Vec3f angles0Has = quat.toEuler();
     REQUIRE( angles0Exp == angles0Has );
 
-    Quaternion quat2;
+    Quat4f quat2;
     quat2.setFromEuler(angles0Has);
     REQUIRE( quat == quat2 );
 
@@ -207,7 +207,7 @@ TEST_CASE( "Test 12 From and to Euler Angles", "[quaternion][linear_algebra][mat
 }
 
 TEST_CASE( "Test 13 From Euler Angles and Rotate Vec", "[quaternion][linear_algebra][math]" ) {
-    Quaternion quat;
+    Quat4f quat;
     quat.setFromEuler(0, HALF_PI, 0); // 90 degrees y-axis
     REQUIRE_THAT( quat.magnitude(), Catch::Matchers::WithinAbs(1.0f, EPSILON) );
 
@@ -231,14 +231,15 @@ TEST_CASE( "Test 14 Matrix", "[matrix][quaternion][linear_algebra][math]" ) {
     // Vec4f vecOut4;
     Mat4f mat1;
     Mat4f mat2;
-    Quaternion quat;
+    Quat4f quat1;
+    Quat4f quat2;
 
     //
     // IDENTITY CHECK
     //
     mat1.loadIdentity();
-    quat.set(0, 0, 0, 0);
-    quat.toMatrix(mat2);
+    quat1.set(0, 0, 0, 0);
+    quat1.toMatrix(mat2);
     // mat2 = quat.toMatrix();
     REQUIRE( mat1 == mat2 );
 
@@ -261,11 +262,13 @@ TEST_CASE( "Test 14 Matrix", "[matrix][quaternion][linear_algebra][math]" ) {
     }
     {
         // Validate Matrix via Euler rotation on Quaternion!
-        quat.setFromEuler(a, 0, 0);
+        quat1.setFromEuler(a, 0, 0);
         {
-            quat.toMatrix(mat2);
+            quat1.toMatrix(mat2);
             // mat2 = quat.toMatrix();
             REQUIRE( mat1 == mat2 );
+            quat2.setFromMat(mat1);
+            REQUIRE( quat1 == quat2 );
 
             float mat2_0[16];
             mat2.get(mat2_0);
@@ -274,32 +277,32 @@ TEST_CASE( "Test 14 Matrix", "[matrix][quaternion][linear_algebra][math]" ) {
             REQUIRE( mat2 == mat2c );
             REQUIRE( mat1 == mat2c );
         }
-        vecHas = quat.rotateVector(UNIT_Y);
-        REQUIRE_THAT( std::abs( UNIT_Z.dist(vecHas) ), Catch::Matchers::WithinAbs(0.0f, Quaternion::ALLOWED_DEVIANCE) );
+        vecHas = quat1.rotateVector(UNIT_Y);
+        REQUIRE_THAT( std::abs( UNIT_Z.dist(vecHas) ), Catch::Matchers::WithinAbs(0.0f, Quat4f::allowed_deviation) );
     }
-    mat1.getRotation(quat);
-    quat.setFromMat3(mat1);
-    vecHas = quat.rotateVector(UNIT_Y);
-    REQUIRE_THAT( std::abs( UNIT_Z.dist(vecHas) ), Catch::Matchers::WithinAbs(0.0f, Quaternion::ALLOWED_DEVIANCE) );
+    {
+        quat1.toMatrix(mat1);
+        quat2.setFromMat(mat1);
+        REQUIRE( quat1 == quat2 );
+    }
+    vecHas = quat1.rotateVector(UNIT_Y);
+    REQUIRE_THAT( std::abs( UNIT_Z.dist(vecHas) ), Catch::Matchers::WithinAbs(0.0f, Quat4f::allowed_deviation) );
 
-    quat.toMatrix(mat2);
+    quat1.toMatrix(mat2);
     REQUIRE( mat1 == mat2 );
 
-    vecHas = quat.rotateVector(ONE_NEG);
+    vecHas = quat1.rotateVector(ONE_NEG);
     {
         // use Vec3f math
         mat2.mulVec3f(ONE_NEG, vecOut3);
-        REQUIRE_THAT( std::abs( vecHas.dist(vecOut3) ), Catch::Matchers::WithinAbs(0.0f, Quaternion::ALLOWED_DEVIANCE) );
+        REQUIRE_THAT( std::abs( vecHas.dist(vecOut3) ), Catch::Matchers::WithinAbs(0.0f, Quat4f::allowed_deviation) );
         REQUIRE( vecHas == vecOut3);
     }
     {
         // use Vec4f math
+        (mat2 * ONE_NEG_v4).getVec3(vecOut3);
 
-        // mat2.mulVec4f(ONE_NEG_v4, vecOut4);
-        // vecOut3.set(vecOut4);
-        vecOut3.set( mat2 * ONE_NEG_v4 ); // simpler
-
-        REQUIRE_THAT( std::abs( vecHas.dist(vecOut3) ), Catch::Matchers::WithinAbs(0.0f, Quaternion::ALLOWED_DEVIANCE) );
+        REQUIRE_THAT( std::abs( vecHas.dist(vecOut3) ), Catch::Matchers::WithinAbs(0.0f, Quat4f::allowed_deviation) );
         REQUIRE( vecHas == vecOut3);
     }
 
@@ -317,24 +320,22 @@ TEST_CASE( "Test 14 Matrix", "[matrix][quaternion][linear_algebra][math]" ) {
     }
     {
         // Validate Matrix via Euler rotation on Quaternion!
-        quat.setFromEuler(a, 0, 0);
-        quat.toMatrix(mat2);
+        quat1.setFromEuler(a, 0, 0);
+        quat1.toMatrix(mat2);
         REQUIRE(mat1 == mat2);
-        vecHas = quat.rotateVector(UNIT_Y);
-        REQUIRE_THAT( std::abs( UNIT_Y_NEG.dist(vecHas) ), Catch::Matchers::WithinAbs(0.0f, Quaternion::ALLOWED_DEVIANCE) );
+        vecHas = quat1.rotateVector(UNIT_Y);
+        REQUIRE_THAT( std::abs( UNIT_Y_NEG.dist(vecHas) ), Catch::Matchers::WithinAbs(0.0f, Quat4f::allowed_deviation) );
     }
-    quat.setFromMat3(mat1);
-    vecHas = quat.rotateVector(UNIT_Y);
-    REQUIRE_THAT( std::abs( UNIT_Y_NEG.dist(vecHas) ), Catch::Matchers::WithinAbs(0.0f, Quaternion::ALLOWED_DEVIANCE) );
+    quat1.setFromMat(mat1);
+    vecHas = quat1.rotateVector(UNIT_Y);
+    REQUIRE_THAT( std::abs( UNIT_Y_NEG.dist(vecHas) ), Catch::Matchers::WithinAbs(0.0f, Quat4f::allowed_deviation) );
 
-    quat.toMatrix(mat2);
+    quat1.toMatrix(mat2);
     REQUIRE(mat1 == mat2);
 
-    vecHas = quat.rotateVector(ONE);
-    // mat2.mulVec4f(ONE_v4, vecOut4);
-    // vecOut3.set(vecOut4);
-    vecOut3.set( mat2 * ONE_v4 ); // simpler
-    REQUIRE_THAT( std::abs( vecHas.dist(vecOut3) ), Catch::Matchers::WithinAbs(0.0f, Quaternion::ALLOWED_DEVIANCE) );
+    vecHas = quat1.rotateVector(ONE);
+    (mat2 * ONE_v4).getVec3(vecOut3);
+    REQUIRE_THAT( std::abs( vecHas.dist(vecOut3) ), Catch::Matchers::WithinAbs(0.0f, Quat4f::allowed_deviation) );
 
     //
     // 180 degrees rotation on Y
@@ -350,25 +351,23 @@ TEST_CASE( "Test 14 Matrix", "[matrix][quaternion][linear_algebra][math]" ) {
     }
     {
         // Validate Matrix via Euler rotation on Quaternion!
-        quat.setFromEuler(0, a, 0);
-        quat.toMatrix(mat2);
+        quat1.setFromEuler(0, a, 0);
+        quat1.toMatrix(mat2);
         REQUIRE(mat1 == mat2);
 
-        vecHas = quat.rotateVector(UNIT_X);
-        REQUIRE_THAT( std::abs( UNIT_X_NEG.dist(vecHas) ), Catch::Matchers::WithinAbs(0.0f, Quaternion::ALLOWED_DEVIANCE) );
+        vecHas = quat1.rotateVector(UNIT_X);
+        REQUIRE_THAT( std::abs( UNIT_X_NEG.dist(vecHas) ), Catch::Matchers::WithinAbs(0.0f, Quat4f::allowed_deviation) );
     }
-    quat.setFromMat3(mat1);
-    vecHas = quat.rotateVector(UNIT_X);
-    REQUIRE_THAT( std::abs( UNIT_X_NEG.dist(vecHas) ), Catch::Matchers::WithinAbs(0.0f, Quaternion::ALLOWED_DEVIANCE) );
+    quat1.setFromMat(mat1);
+    vecHas = quat1.rotateVector(UNIT_X);
+    REQUIRE_THAT( std::abs( UNIT_X_NEG.dist(vecHas) ), Catch::Matchers::WithinAbs(0.0f, Quat4f::allowed_deviation) );
 
-    quat.toMatrix(mat2);
+    quat1.toMatrix(mat2);
     REQUIRE(mat1 == mat2);
 
-    vecHas = quat.rotateVector(ONE_NEG);
-    // mat2.mulVec4f(ONE_NEG_v4, vecOut4);
-    // vecOut3.set(vecOut4);
-    vecOut3.set( mat2 * ONE_NEG_v4 ); // simpler
-    REQUIRE_THAT( std::abs( vecHas.dist(vecOut3) ), Catch::Matchers::WithinAbs(0.0f, Quaternion::ALLOWED_DEVIANCE) );
+    vecHas = quat1.rotateVector(ONE_NEG);
+    (mat2 * ONE_NEG_v4).getVec3(vecOut3);
+    REQUIRE_THAT( std::abs( vecHas.dist(vecOut3) ), Catch::Matchers::WithinAbs(0.0f, Quat4f::allowed_deviation) );
 
     //
     // 180 degrees rotation on Z
@@ -384,24 +383,23 @@ TEST_CASE( "Test 14 Matrix", "[matrix][quaternion][linear_algebra][math]" ) {
     }
     {
         // Validate Matrix via Euler rotation on Quaternion!
-        quat.setFromEuler(0, 0, a);
-        quat.toMatrix(mat2);
+        quat1.setFromEuler(0, 0, a);
+        quat1.toMatrix(mat2);
         REQUIRE(mat1 == mat2);
-        vecHas = quat.rotateVector(UNIT_X);
-        REQUIRE_THAT( std::abs( UNIT_X_NEG.dist(vecHas) ), Catch::Matchers::WithinAbs(0.0f, Quaternion::ALLOWED_DEVIANCE) );
+        vecHas = quat1.rotateVector(UNIT_X);
+        REQUIRE_THAT( std::abs( UNIT_X_NEG.dist(vecHas) ), Catch::Matchers::WithinAbs(0.0f, Quat4f::allowed_deviation) );
     }
-    quat.setFromMat3(mat1);
-    vecHas = quat.rotateVector(UNIT_X);
-    REQUIRE_THAT( std::abs( UNIT_X_NEG.dist(vecHas) ), Catch::Matchers::WithinAbs(0.0f, Quaternion::ALLOWED_DEVIANCE) );
+    quat1.setFromMat(mat1);
+    vecHas = quat1.rotateVector(UNIT_X);
+    REQUIRE_THAT( std::abs( UNIT_X_NEG.dist(vecHas) ), Catch::Matchers::WithinAbs(0.0f, Quat4f::allowed_deviation) );
 
-    quat.toMatrix(mat2);
+    quat1.toMatrix(mat2);
     REQUIRE(mat1 == mat2);
 
-    vecHas = quat.rotateVector(ONE);
-    // mat2.mulVec4f(ONE_v4, vecOut4);
-    // vecOut3.set(vecOut4);
-    vecOut3.set( mat2 * ONE_v4 ); // simpler
-    REQUIRE_THAT( std::abs( vecHas.dist(vecOut3) ), Catch::Matchers::WithinAbs(0.0f, Quaternion::ALLOWED_DEVIANCE) );
+    vecHas = quat1.rotateVector(ONE);
+    vecOut3 = to_vec3( mat2 * ONE_v4 );
+    // (mat2 * ONE_v4).getVec3(vecOut3);
+    REQUIRE_THAT( std::abs( vecHas.dist(vecOut3) ), Catch::Matchers::WithinAbs(0.0f, Quat4f::allowed_deviation) );
 
     //
     // Test Matrix-Columns

@@ -27,6 +27,7 @@
 #include <cmath>
 #include <cstdarg>
 #include <cstdint>
+#include <cassert>
 #include <limits>
 #include <string>
 #include <iostream>
@@ -41,46 +42,64 @@ namespace jau::math {
      */
 
     /**
-     * 2D vector using two float components.
+     * 2D vector using two value_type components.
      */
-    class Vec2f {
-    public:
-        float x;
-        float y;
+    template<typename Value_type,
+             std::enable_if_t<std::is_floating_point_v<Value_type>, bool> = true>
+    class alignas(Value_type) Vector2F {
+      public:
+        typedef Value_type                  value_type;
+        typedef value_type*                 pointer;
+        typedef const value_type*           const_pointer;
+        typedef value_type&                 reference;
+        typedef const value_type&           const_reference;
+        typedef value_type*                 iterator;
+        typedef const value_type*           const_iterator;
 
-        static constexpr Vec2f from_length_angle(const float magnitude, const float radians) noexcept {
-            return Vec2f(magnitude * std::cos(radians), magnitude * std::sin(radians));
+        constexpr static const value_type zero = value_type(0);
+        constexpr static const value_type one  = value_type(1);
+
+        value_type x;
+        value_type y;
+
+        static constexpr_cxx26 Vector2F from_length_angle(const value_type magnitude, const value_type radians) noexcept {
+            return Vector2F(magnitude * std::cos(radians), magnitude * std::sin(radians));
         }
 
-        constexpr Vec2f() noexcept
-        : x(0), y(0) {}
+        constexpr Vector2F() noexcept
+        : x(zero), y(zero) {}
 
-        constexpr Vec2f(const float x_, const float y_) noexcept
+        constexpr Vector2F(const value_type v) noexcept
+        : x(v), y(v) {}
+
+        constexpr Vector2F(const value_type x_, const value_type y_) noexcept
         : x(x_), y(y_) {}
 
-        constexpr Vec2f(const Vec2f& o) noexcept = default;
-        constexpr Vec2f(Vec2f&& o) noexcept = default;
-        constexpr Vec2f& operator=(const Vec2f&) noexcept = default;
-        constexpr Vec2f& operator=(Vec2f&&) noexcept = default;
+        constexpr Vector2F(const Vector2F& o) noexcept = default;
+        constexpr Vector2F(Vector2F&& o) noexcept = default;
+        constexpr Vector2F& operator=(const Vector2F&) noexcept = default;
+        constexpr Vector2F& operator=(Vector2F&&) noexcept = default;
 
-        /** Returns read-only component w/o boundary check */
-        float operator[](size_t i) const noexcept {
-            return reinterpret_cast<const float*>(this)[i];
+        /** Returns read-only component */
+        constexpr value_type operator[](size_t i) const noexcept {
+            assert(i < 2);
+            return (&x)[i];
         }
 
-        /** Returns writeable reference to component w/o boundary check */
-        float& operator[](size_t i) noexcept {
-            return reinterpret_cast<float*>(this)[i];
+        /** Returns writeable reference to component */
+        constexpr reference operator[](size_t i) noexcept {
+            assert(i < 2);
+            return (&x)[i];
         }
 
         /** xy = this, returns xy. */
-        float* get(float xy[/*2*/]) const noexcept {
+        constexpr iterator get(iterator xy) const noexcept {
             xy[0] = x;
             xy[1] = y;
             return xy;
         }
 
-        constexpr bool operator==(const Vec2f& rhs ) const noexcept {
+        constexpr bool operator==(const Vector2F& rhs ) const noexcept {
             if( this == &rhs ) {
                 return true;
             }
@@ -91,18 +110,22 @@ namespace jau::math {
             return ...
         } */
 
-        constexpr Vec2f& set(const float vx, const float vy) noexcept
+        constexpr Vector2F& set(const value_type vx, const value_type vy) noexcept
         { x=vx; y=vy; return *this; }
 
-        constexpr Vec2f& add(const float dx, const float dy) noexcept
+        /** this = xy, returns this. */
+        constexpr Vector2F& set(const_iterator xy) noexcept
+        { x=xy[0]; y=xy[1]; return *this; }
+
+        constexpr Vector2F& add(const value_type dx, const value_type dy) noexcept
         { x+=dx; y+=dy; return *this; }
 
-        constexpr Vec2f& operator+=(const Vec2f& rhs ) noexcept {
+        constexpr Vector2F& operator+=(const Vector2F& rhs ) noexcept {
             x+=rhs.x; y+=rhs.y;
             return *this;
         }
 
-        constexpr Vec2f& operator-=(const Vec2f& rhs ) noexcept {
+        constexpr Vector2F& operator-=(const Vector2F& rhs ) noexcept {
             x-=rhs.x; y-=rhs.y;
             return *this;
         }
@@ -112,7 +135,7 @@ namespace jau::math {
          * @param s scale factor
          * @return this instance
          */
-        constexpr Vec2f& operator*=(const float s ) noexcept {
+        constexpr Vector2F& operator*=(const value_type s ) noexcept {
             x*=s; y*=s;
             return *this;
         }
@@ -122,33 +145,33 @@ namespace jau::math {
          * @param s scale factor
          * @return this instance
          */
-        constexpr Vec2f& operator/=(const float s ) noexcept {
+        constexpr Vector2F& operator/=(const value_type s ) noexcept {
             x/=s; y/=s;
             return *this;
         }
 
         /** Rotates this vector in place, returns *this */
-        Vec2f& rotate(const float radians, const Vec2f& ctr) noexcept {
+        constexpr_cxx26 Vector2F& rotate(const value_type radians, const Vector2F& ctr) noexcept {
             return rotate(std::sin(radians), std::cos(radians), ctr);
         }
 
         /** Rotates this vector in place, returns *this */
-        constexpr Vec2f& rotate(const float sin, const float cos, const Vec2f& ctr) noexcept {
-            const float x0 = x - ctr.x;
-            const float y0 = y - ctr.y;
+        constexpr Vector2F& rotate(const value_type sin, const value_type cos, const Vector2F& ctr) noexcept {
+            const value_type x0 = x - ctr.x;
+            const value_type y0 = y - ctr.y;
             x = x0 * cos - y0 * sin + ctr.x;
             y = x0 * sin + y0 * cos + ctr.y;
             return *this;
         }
 
         /** Rotates this vector in place, returns *this */
-        Vec2f& rotate(const float radians) noexcept {
+        constexpr_cxx26 Vector2F& rotate(const value_type radians) noexcept {
             return rotate(std::sin(radians), std::cos(radians));
         }
 
         /** Rotates this vector in place, returns *this */
-        constexpr Vec2f& rotate(const float sin, const float cos) noexcept {
-            const float x0 = x;
+        constexpr Vector2F& rotate(const value_type sin, const value_type cos) noexcept {
+            const value_type x0 = x;
             x = x0 * cos - y * sin;
             y = x0 * sin + y * cos;
             return *this;
@@ -163,37 +186,37 @@ namespace jau::math {
         /**
          * Return the squared length of this vector, a.k.a the squared <i>norm</i> or squared <i>magnitude</i>
          */
-        constexpr float length_sq() const noexcept {
+        constexpr value_type length_sq() const noexcept {
             return x*x + y*y;
         }
 
         /**
          * Return the length of this vector, a.k.a the <i>norm</i> or <i>magnitude</i>
          */
-        constexpr float length() const noexcept {
+        constexpr value_type length() const noexcept {
             return std::sqrt(length_sq());
+        }
+
+        /** Normalize this vector in place, returns *this */
+        constexpr Vector2F& normalize() noexcept {
+            const value_type lengthSq = length_sq();
+            if ( jau::is_zero( lengthSq ) ) {
+                x = zero;
+                y = zero;
+            } else {
+                const value_type invSqr = one / std::sqrt(lengthSq);
+                x *= invSqr;
+                y *= invSqr;
+            }
+            return *this;
         }
 
         /**
          * Return the direction angle of this vector in radians
          */
-        float angle() const noexcept {
+        constexpr_cxx26 value_type angle() const noexcept {
             // Utilize atan2 taking y=sin(a) and x=cos(a), resulting in proper direction angle for all quadrants.
             return std::atan2( y, x );
-        }
-
-        /** Normalize this vector in place, returns *this */
-        constexpr Vec2f& normalize() noexcept {
-            const float lengthSq = length_sq();
-            if ( jau::is_zero( lengthSq ) ) {
-                x = 0.0f;
-                y = 0.0f;
-            } else {
-                const float invSqr = 1.0f / std::sqrt(lengthSq);
-                x *= invSqr;
-                y *= invSqr;
-            }
-            return *this;
         }
 
         /**
@@ -203,24 +226,24 @@ namespace jau::math {
          * distances, thus avoiding an expensive square root operation.
          * </p>
          */
-        constexpr float dist_sq(const Vec2f& o) const noexcept {
-            const float dx = x - o.x;
-            const float dy = y - o.y;
+        constexpr value_type dist_sq(const Vector2F& o) const noexcept {
+            const value_type dx = x - o.x;
+            const value_type dy = y - o.y;
             return dx*dx + dy*dy;
         }
 
         /**
          * Return the distance between this vector and the given one.
          */
-        constexpr float dist(const Vec2f& o) const noexcept {
+        constexpr value_type dist(const Vector2F& o) const noexcept {
             return std::sqrt(dist_sq(o));
         }
 
         /**
          * Return the dot product of this vector and the given one
-         * @return the dot product as float
+         * @return the dot product as value_type
          */
-        constexpr float dot(const Vec2f& o) const noexcept {
+        constexpr value_type dot(const Vector2F& o) const noexcept {
             return x*o.x + y*o.y;
         }
 
@@ -231,64 +254,94 @@ namespace jau::math {
          *
          * @return the resulting scalar
          */
-        constexpr float cross(const Vec2f& o) const noexcept {
+        constexpr value_type cross(const Vector2F& o) const noexcept {
             return x * o.y - y * o.x;
         }
 
         /**
          * Return the cosines of the angle between two vectors
          */
-        constexpr float cos_angle(const Vec2f& o) const noexcept {
+        constexpr value_type cos_angle(const Vector2F& o) const noexcept {
             return dot(o) / ( length() * o.length() ) ;
         }
 
         /**
          * Return the angle between two vectors in radians
          */
-        float angle(const Vec2f& o) const noexcept {
+        constexpr_cxx26 value_type angle(const Vector2F& o) const noexcept {
             return std::acos( cos_angle(o) );
         }
 
         /**
          * Return the counter-clock-wise (CCW) normal of this vector, i.e. perp(endicular) vector
          */
-        Vec2f normal_ccw() const noexcept {
-            return Vec2f(-y, x);
+        constexpr Vector2F normal_ccw() const noexcept {
+            return Vector2F(-y, x);
         }
 
-        bool intersects(const Vec2f& o) const noexcept {
-            const float eps = std::numeric_limits<float>::epsilon();
+        constexpr_cxx23 bool intersects(const Vector2F& o) const noexcept {
+            const value_type eps = std::numeric_limits<value_type>::epsilon();
             if( std::abs(x-o.x) >= eps || std::abs(y-o.y) >= eps ) {
                 return false;
             }
             return true;
         }
     };
-    typedef Vec2f Point2f;
 
-    constexpr Vec2f operator+(const Vec2f& lhs, const Vec2f& rhs ) noexcept {
-        return Vec2f(lhs) += rhs;
+    template<typename T,
+             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    constexpr Vector2F<T> operator+(const Vector2F<T>& lhs, const Vector2F<T>& rhs ) noexcept {
+        // Returning a Vector2F<T> object from the returned reference of operator+=()
+        // may hinder copy-elision or "named return value optimization" (NRVO).
+        // return Vector2F<T>(lhs) += rhs;
+
+        // Returning named object allows copy-elision (NRVO),
+        // only one object is created 'on target'.
+        Vector2F<T> r(lhs); r += rhs; return r;
     }
 
-    constexpr Vec2f operator-(const Vec2f& lhs, const Vec2f& rhs ) noexcept {
-        return Vec2f(lhs) -= rhs;
+    template<typename T,
+             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    constexpr Vector2F<T> operator-(const Vector2F<T>& lhs, const Vector2F<T>& rhs ) noexcept {
+        Vector2F<T> r(lhs); r -= rhs; return r;
     }
 
-    constexpr Vec2f operator*(const Vec2f& lhs, const float s ) noexcept {
-        return Vec2f(lhs) *= s;
+    template<typename T,
+             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    constexpr Vector2F<T> operator*(const Vector2F<T>& lhs, const T s ) noexcept {
+        Vector2F<T> r(lhs); r *= s; return r;
     }
 
-    constexpr Vec2f operator*(const float s, const Vec2f& rhs) noexcept {
-        return Vec2f(rhs) *= s;
+    template<typename T,
+             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    constexpr Vector2F<T> operator*(const T s, const Vector2F<T>& rhs) noexcept {
+        Vector2F<T> r(rhs); r *= s; return r;
     }
 
-    constexpr Vec2f operator/(const Vec2f& lhs, const float s ) noexcept {
-        return Vec2f(lhs) /= s;
+    template<typename T,
+             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    constexpr Vector2F<T> operator/(const Vector2F<T>& lhs, const T s ) noexcept {
+        Vector2F<T> r(lhs); r /= s; return r;
     }
 
-    std::ostream& operator<<(std::ostream& out, const Vec2f& v) noexcept {
+    template<typename T,
+             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    std::ostream& operator<<(std::ostream& out, const Vector2F<T>& v) noexcept {
         return out << v.toString();
     }
+
+    typedef Vector2F<float> Vec2f;
+    static_assert(alignof(float) == alignof(Vec2f));
+
+    /**
+     * Point2F alias of Vector2F
+     */
+    template<typename T,
+             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    using Point2F = Vector2F<T>;
+
+    typedef Point2F<float> Point2f;
+    static_assert(alignof(float) == alignof(Point2f));
 
     /**
      * Simple compound denoting a ray.
@@ -301,20 +354,27 @@ namespace jau::math {
      * </pre>
      * </p>
      */
-    class Ray2f {
+    template<typename T,
+             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    class alignas(T) Ray2F {
     public:
         /** Origin of Ray. */
-        Point2f orig;
+        Point2F<T> orig;
 
         /** Normalized direction vector of ray. */
-        Vec2f dir;
+        Vector2F<T> dir;
 
         std::string toString() const noexcept { return "Ray[orig "+orig.toString()+", dir "+dir.toString() +"]"; }
     };
 
-    std::ostream& operator<<(std::ostream& out, const Ray2f& v) noexcept {
+    template<typename T,
+             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    std::ostream& operator<<(std::ostream& out, const Ray2F<T>& v) noexcept {
         return out << v.toString();
     }
+
+    typedef Ray2F<float> Ray2f;
+    static_assert(alignof(float) == alignof(Ray2f));
 
     /**@}*/
 

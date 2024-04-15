@@ -27,9 +27,11 @@
 #include <cmath>
 #include <cstdarg>
 #include <cstdint>
+#include <cassert>
 #include <limits>
 #include <string>
 #include <vector>
+#include <initializer_list>
 #include <iostream>
 
 #include <jau/float_math.hpp>
@@ -50,10 +52,12 @@ namespace jau::math {
      *  @{
      */
 
+    template<typename Value_type,
+             std::enable_if_t<std::is_floating_point_v<Value_type>, bool>>
     class Quaternion; // forward
 
 /**
- * Basic 4x4 float matrix implementation using fields for intensive use-cases (host operations).
+ * Basic 4x4 value_type matrix implementation using fields for intensive use-cases (host operations).
  * <p>
  * Implementation covers {@link FloatUtil} matrix functionality, exposed in an object oriented manner.
  * </p>
@@ -102,111 +106,86 @@ namespace jau::math {
  * </ul>
  * </p>
  */
-class Mat4f {
-    private:
-        float m00, m10, m20, m30;
-        float m01, m11, m21, m31;
-        float m02, m12, m22, m32;
-        float m03, m13, m23, m33;
 
-        friend geom::Frustum;
-        friend Quaternion;
+template<typename Value_type,
+         std::enable_if_t<std::is_floating_point_v<Value_type>, bool> = true>
+class alignas(Value_type) Matrix4 {
+  public:
+    typedef Value_type               value_type;
+    typedef value_type*              pointer;
+    typedef const value_type*        const_pointer;
+    typedef value_type&              reference;
+    typedef const value_type&        const_reference;
+    typedef value_type*              iterator;
+    typedef const value_type*        const_iterator;
 
-        class Stack {
-            private:
-                int growSize;
-                std::vector<float> buffer;
+    typedef Vector4F<value_type, std::is_floating_point_v<Value_type>> Vec4;
 
-            public:
-                /**
-                 * @param initialSize initial size
-                 * @param growSize grow size if {@link #position()} is reached, maybe <code>0</code>
-                 */
-                Stack(int initialSize, int growSize_)
-                : growSize(growSize_), buffer(initialSize) {}
+    constexpr static const value_type zero = value_type(0);
+    constexpr static const value_type one  = value_type(1);
+    constexpr static const value_type two  = value_type(2);
+    constexpr static const value_type half = one/two;
 
-                size_t growIfNecessary(int length) {
-                    const size_t p = buffer.size();
-                    const size_t nsz = buffer.size() + length;
-                    if( nsz > buffer.capacity() ) {
-                        buffer.reserve(buffer.size() + std::max(length, growSize));
-                    }
-                    buffer.resize(nsz);
-                    return p;
-                }
+  private:
+    //     RC
+    value_type m00, m10, m20, m30; // column 0
+    value_type m01, m11, m21, m31; // column 1
+    value_type m02, m12, m22, m32; // column 2
+    value_type m03, m13, m23, m33; // column 3
 
-                Mat4f& push(Mat4f& src) {
-                    size_t p = growIfNecessary(16);
-                    src.get(buffer, p);
-                    return src;
-                }
-
-                Mat4f& pop(Mat4f& dest) {
-                    size_t sz = buffer.size();
-                    if( sz < 16 ) {
-                        throw jau::IndexOutOfBoundsException(0, sz, E_FILE_LINE);
-                    }
-                    size_t p = sz - 16;
-                    dest.load(buffer, p);
-                    buffer.resize(p);
-                    return dest;
-                }
-        };
-
-        Stack stack; // start w/ zero size, growSize is half GL-min size (32)
+    friend geom::Frustum;
+    friend Quaternion<value_type, std::is_floating_point_v<Value_type>>;
 
   public:
 
     /**
      * Creates a new identity matrix.
      */
-    Mat4f() noexcept
-    : m00(1.0f), m10(0.0f), m20(0.0f), m30(0.0f),
-      m01(0.0f), m11(1.0f), m21(0.0f), m31(0.0f),
-      m02(0.0f), m12(0.0f), m22(1.0f), m32(0.0f),
-      m03(0.0f), m13(0.0f), m23(0.0f), m33(1.0f),
-      stack(0, 16*16)
+    constexpr Matrix4() noexcept
+    : m00(one), m10(zero), m20(zero), m30(zero),
+      m01(zero), m11(one), m21(zero), m31(zero),
+      m02(zero), m12(zero), m22(one), m32(zero),
+      m03(zero), m13(zero), m23(zero), m33(one)
     { }
 
     /**
-     * Creates a new matrix based on given float[4*4] column major order.
+     * Creates a new matrix based on given value_type[4*4] column major order.
      * @param m 4x4 matrix in column-major order
      */
-    Mat4f(const float m[]) noexcept
-    : stack(0, 16*16)
-    {
-        load(m);
-    }
+    constexpr Matrix4(const_iterator m) noexcept
+    : m00(m[0+0*4]), m10(m[1+0*4]), m20(m[2+0*4]), m30(m[3+0*4]), // column 0
+      m01(m[0+1*4]), m11(m[1+1*4]), m21(m[2+1*4]), m31(m[3+1*4]), // column 1
+      m02(m[0+2*4]), m12(m[1+2*4]), m22(m[2+2*4]), m32(m[3+2*4]), // column 2
+      m03(m[0+3*4]), m13(m[1+3*4]), m23(m[2+3*4]), m33(m[3+3*4])  // column 3
+    {}
 
     /**
-     * Creates a new matrix based on given std::vector 4x4 column major order.
-     * @param m 4x4 matrix std::vector in column-major order starting at {@code src_off}
-     * @param m_off offset for matrix {@code src}
+     * Creates a new matrix based on given value_type initializer list in column major order.
+     * @param m source initializer list value_type data to be copied into this new instance, implied size must be >= 16
      */
-    Mat4f(const std::vector<float>& m, const size_t m_off) noexcept
-    : stack(0, 16*16)
+    constexpr Matrix4(std::initializer_list<value_type> m) noexcept
+    : m00(m.begin()[0+0*4]), m10(m.begin()[1+0*4]), m20(m.begin()[2+0*4]), m30(m.begin()[3+0*4]), // column 0
+      m01(m.begin()[0+1*4]), m11(m.begin()[1+1*4]), m21(m.begin()[2+1*4]), m31(m.begin()[3+1*4]), // column 1
+      m02(m.begin()[0+2*4]), m12(m.begin()[1+2*4]), m22(m.begin()[2+2*4]), m32(m.begin()[3+2*4]), // column 2
+      m03(m.begin()[0+3*4]), m13(m.begin()[1+3*4]), m23(m.begin()[2+3*4]), m33(m.begin()[3+3*4])  // column 3
     {
-        load(m, m_off);
+        assert(m.size() >= 16 );
     }
 
     /**
      * Creates a new matrix copying the values of the given {@code src} matrix.
-     *
-     * The stack is not copied.
      */
-    Mat4f(const Mat4f& o) noexcept
+    constexpr Matrix4(const Matrix4& o) noexcept
     : m00(o.m00), m10(o.m10), m20(o.m20), m30(o.m30),
       m01(o.m01), m11(o.m11), m21(o.m21), m31(o.m31),
       m02(o.m02), m12(o.m12), m22(o.m22), m32(o.m32),
-      m03(o.m03), m13(o.m13), m23(o.m23), m33(o.m33),
-      stack(0, 16*16) { }
+      m03(o.m03), m13(o.m13), m23(o.m23), m33(o.m33)
+    { }
 
     /**
      * Copy assignment using the the values of the given {@code src} matrix.
-     *
-     * The stack is not copied.
      */
-    Mat4f& operator=(const Mat4f& o) noexcept {
+    constexpr Matrix4& operator=(const Matrix4& o) noexcept {
         m00 = o.m00; m10 = o.m10; m20 = o.m20; m30 = o.m30;
         m01 = o.m01; m11 = o.m11; m21 = o.m21; m31 = o.m31;
         m02 = o.m02; m12 = o.m12; m22 = o.m22; m32 = o.m32;
@@ -214,7 +193,7 @@ class Mat4f {
         return *this;
     }
 
-    constexpr bool equals(const Mat4f& o, const float epsilon=std::numeric_limits<float>::epsilon()) const noexcept {
+    constexpr bool equals(const Matrix4& o, const value_type epsilon=std::numeric_limits<value_type>::epsilon()) const noexcept {
         if( this == &o ) {
             return true;
         } else {
@@ -236,7 +215,7 @@ class Mat4f {
                    jau::equals(m33, o.m33, epsilon);
         }
     }
-    constexpr bool operator==(const Mat4f& rhs) const noexcept {
+    constexpr bool operator==(const Matrix4& rhs) const noexcept {
         return equals(rhs);
     }
 
@@ -245,37 +224,21 @@ class Mat4f {
     //
 
     /**
-     * Returns writable reference to the {@code i}th component of the given column-major order matrix, 0 <= i < 16 w/o boundary check
+     * Returns writable reference to the {@code i}th component of this column-major order matrix, 0 <= i < 16 w/o boundary check
      */
-    float& operator[](size_t i) noexcept {
-        return reinterpret_cast<float*>(this)[i];
+    constexpr reference operator[](size_t i) noexcept {
+        assert( i < 16 );
+        return (&m00)[i];
     }
 
-    /** Sets the {@code i}th component with float {@code v} 0 <= i < 16 w/ boundary check*/
-    void set(const jau::nsize_t i, const float v) {
-        switch (i) {
-            case 0+4*0: m00 = v; break;
-            case 1+4*0: m10 = v; break;
-            case 2+4*0: m20 = v; break;
-            case 3+4*0: m30 = v; break;
-
-            case 0+4*1: m01 = v; break;
-            case 1+4*1: m11 = v; break;
-            case 2+4*1: m21 = v; break;
-            case 3+4*1: m31 = v; break;
-
-            case 0+4*2: m02 = v; break;
-            case 1+4*2: m12 = v; break;
-            case 2+4*2: m22 = v; break;
-            case 3+4*2: m32 = v; break;
-
-            case 0+4*3: m03 = v; break;
-            case 1+4*3: m13 = v; break;
-            case 2+4*3: m23 = v; break;
-            case 3+4*3: m33 = v; break;
-            default: throw jau::IndexOutOfBoundsException(i, 16, E_FILE_LINE);
-        }
+    /** Sets the {@code i}th component of this column-major order matrix with value_type {@code v}, 0 <= i < 16 w/o boundary check*/
+    constexpr void set(const jau::nsize_t i, const value_type v) noexcept {
+        assert( i < 16 );
+        (&m00)[i] = v;
     }
+
+    explicit operator pointer() noexcept { return &m00; }
+    constexpr iterator begin() noexcept { return &m00; }
 
     /**
      * Set this matrix to identity.
@@ -288,12 +251,12 @@ class Mat4f {
      * </pre>
      * @return this matrix for chaining
      */
-    Mat4f& loadIdentity() noexcept {
-       m00 = m11 = m22 = m33 = 1.0f;
+    constexpr Matrix4& loadIdentity() noexcept {
+       m00 = m11 = m22 = m33 = one;
        m01 = m02 = m03 =
        m10 = m12 = m13 =
        m20 = m21 = m23 =
-       m30 = m31 = m32 = 0.0f;
+       m30 = m31 = m32 = zero;
        return *this;
     }
 
@@ -302,7 +265,7 @@ class Mat4f {
      * @param src the source values
      * @return this matrix for chaining
      */
-    Mat4f& load(const Mat4f& src) noexcept {
+    constexpr Matrix4& load(const Matrix4& src) noexcept {
         m00 = src.m00; m10 = src.m10; m20 = src.m20; m30 = src.m30;
         m01 = src.m01; m11 = src.m11; m21 = src.m21; m31 = src.m31;
         m02 = src.m02; m12 = src.m12; m22 = src.m22; m32 = src.m32;
@@ -312,10 +275,11 @@ class Mat4f {
 
     /**
      * Load the values of the given matrix {@code src} to this matrix w/o boundary check.
-     * @param src 4x4 matrix float[16] in column-major order
+     * @param src 4x4 matrix value_type[16] in column-major order
      * @return this matrix for chaining
      */
-    Mat4f& load(const float src[]) noexcept {
+    constexpr Matrix4& load(const_iterator src) noexcept {
+      // RC
         m00 = src[0+0*4]; // column 0
         m10 = src[1+0*4];
         m20 = src[2+0*4];
@@ -335,35 +299,6 @@ class Mat4f {
         return *this;
     }
 
-    /**
-     * Load the values of the given matrix {@code src} to this matrix w/ boundary check.
-     * @param src 4x4 matrix std::vector in column-major order starting at {@code src_off}
-     * @param src_off offset for matrix {@code src}
-     * @return this matrix for chaining
-     */
-    Mat4f& load(const std::vector<float>& src, const size_t src_off) {
-        if( src.size() < src_off+16 || src_off > std::numeric_limits<size_t>::max() - 15) {
-            throw jau::IndexOutOfBoundsException(src_off, 16, E_FILE_LINE);
-        }
-        m00 = src[src_off+0+0*4];
-        m10 = src[src_off+1+0*4];
-        m20 = src[src_off+2+0*4];
-        m30 = src[src_off+3+0*4];
-        m01 = src[src_off+0+1*4];
-        m11 = src[src_off+1+1*4];
-        m21 = src[src_off+2+1*4];
-        m31 = src[src_off+3+1*4];
-        m02 = src[src_off+0+2*4];
-        m12 = src[src_off+1+2*4];
-        m22 = src[src_off+2+2*4];
-        m32 = src[src_off+3+2*4];
-        m03 = src[src_off+0+3*4];
-        m13 = src[src_off+1+3*4];
-        m23 = src[src_off+2+3*4];
-        m33 = src[src_off+3+3*4];
-        return *this;
-    }
-
     //
     // Read out Matrix via get(..)
     //
@@ -371,82 +306,57 @@ class Mat4f {
     /**
      * Returns read-only {@code i}th component of the given column-major order matrix, 0 <= i < 16 w/o boundary check
      */
-    float operator[](size_t i) const noexcept {
-        return reinterpret_cast<const float*>(this)[i];
+    constexpr value_type operator[](size_t i) const noexcept {
+        assert( i < 16 );
+        return (&m00)[i];
     }
 
-    /** Returns the {@code i}th component of the given column-major order matrix, 0 <= i < 16, w/ boundary check */
-    float get(const jau::nsize_t i) const {
-        switch (i) {
-            case 0+4*0: return m00;
-            case 1+4*0: return m10;
-            case 2+4*0: return m20;
-            case 3+4*0: return m30;
-
-            case 0+4*1: return m01;
-            case 1+4*1: return m11;
-            case 2+4*1: return m21;
-            case 3+4*1: return m31;
-
-            case 0+4*2: return m02;
-            case 1+4*2: return m12;
-            case 2+4*2: return m22;
-            case 3+4*2: return m32;
-
-            case 0+4*3: return m03;
-            case 1+4*3: return m13;
-            case 2+4*3: return m23;
-            case 3+4*3: return m33;
-
-            default: throw jau::IndexOutOfBoundsException(i, 16, E_FILE_LINE);
-        }
+    /** Returns the {@code i}th component of the given column-major order matrix, 0 <= i < 16, w/o boundary check */
+    constexpr value_type get(const jau::nsize_t i) const noexcept {
+        assert( i < 16 );
+        return (&m00)[i];
     }
+
+    explicit operator const_pointer() const noexcept { return &m00; }
+    constexpr const_iterator cbegin() const noexcept { return &m00; }
 
     /**
-     * Get the named column of the given column-major matrix to v_out w/ boundary check.
+     * Get the named column of the given column-major matrix to v_out w/o boundary check.
      * @param column named column to copy
      * @param v_out the column-vector storage
      * @return given result vector <i>v_out</i> for chaining
      */
-    Vec4f& getColumn(const jau::nsize_t column, Vec4f& v_out) const {
-        if( column > 3 ) {
-            throw jau::IndexOutOfBoundsException(3+column*4, 16, E_FILE_LINE);
-        }
-        v_out.set( get(0+column*4),
-                   get(1+column*4),
-                   get(2+column*4),
-                   get(3+column*4) );
-        return v_out;
+    constexpr Vec4& getColumn(const jau::nsize_t column, Vec4& v_out) const noexcept {
+        assert( column < 4 );
+        return v_out.set( get(0+column*4),
+                          get(1+column*4),
+                          get(2+column*4),
+                          get(3+column*4) );
     }
+
     /**
-     * Get the named column of the given column-major matrix to v_out w/ boundary check.
+     * Get the named column of the given column-major matrix to v_out w/o boundary check.
      * @param column named column to copy
      * @return result vector holding the requested column
      */
-    Vec4f getColumn(const jau::nsize_t column) const {
-        if( column > 3 ) {
-            throw jau::IndexOutOfBoundsException(2+column*4, 16, E_FILE_LINE);
-        }
-        return Vec4f( get(0+column*4),
-                      get(1+column*4),
-                      get(2+column*4),
-                      get(3+column*4) );
+    constexpr Vec4 getColumn(const jau::nsize_t column) const noexcept {
+        assert( column < 4 );
+        return Vec4( get(0+column*4),
+                     get(1+column*4),
+                     get(2+column*4),
+                     get(3+column*4) );
     }
 
     /**
-     * Get the named column of the given column-major matrix to v_out w/ boundary check.
+     * Get the named column of the given column-major matrix to v_out w/o boundary check.
      * @param column named column to copy
      * @param v_out the column-vector storage
      * @return given result vector <i>v_out</i> for chaining
      */
-    Vec3f& getColumn(const jau::nsize_t column, Vec3f& v_out) const {
-        if( column > 3 ) {
-            throw jau::IndexOutOfBoundsException(2+column*4, 16, E_FILE_LINE);
-        }
-        v_out.set( get(0+column*4),
-                   get(1+column*4),
-                   get(2+column*4) );
-        return v_out;
+    constexpr Vec3f& getColumn(const jau::nsize_t column, Vec3f& v_out) const noexcept {
+        return v_out.set( get(0+column*4),
+                          get(1+column*4),
+                          get(2+column*4) );
     }
 
     /**
@@ -455,84 +365,44 @@ class Mat4f {
      * @param v_out the row-vector storage
      * @return given result vector <i>v_out</i> for chaining
      */
-    Vec4f& getRow(const jau::nsize_t row, Vec4f& v_out) const {
-        if( row > 3 ) {
-            throw jau::IndexOutOfBoundsException(row+3*4, 16, E_FILE_LINE);
-        }
-        v_out.set( get(row+0*4),
-                   get(row+1*4),
-                   get(row+2*4),
-                   get(row+3*4) );
-        return v_out;
+    constexpr Vec4& getRow(const jau::nsize_t row, Vec4& v_out) const noexcept {
+        return v_out.set( get(row+0*4),
+                          get(row+1*4),
+                          get(row+2*4),
+                          get(row+3*4) );
     }
     /**
-     * Get the named column of the given column-major matrix to v_out w/ boundary check.
+     * Get the named column of the given column-major matrix to v_out w/o boundary check.
      * @param row named row to copy
      * @return result vector holding the requested row
      */
-    Vec4f getRow(const jau::nsize_t row) const {
-        if( row > 3 ) {
-            throw jau::IndexOutOfBoundsException(row+3*4, 16, E_FILE_LINE);
-        }
-        return Vec4f( get(row+0*4),
-                      get(row+1*4),
-                      get(row+2*4),
-                      get(row+3*4) );
+    constexpr Vec4 getRow(const jau::nsize_t row) const noexcept {
+        return Vec4( get(row+0*4),
+                     get(row+1*4),
+                     get(row+2*4),
+                     get(row+3*4) );
     }
 
     /**
-     * Get the named row of the given column-major matrix to v_out w/ boundary check.
+     * Get the named row of the given column-major matrix to v_out w/o boundary check.
      * @param row named row to copy
-     * @param v_out the row-vector storage
+     * @param v_out the row-vector assert( i < 16 )e
      * @return given result vector <i>v_out</i> for chaining
      */
-    Vec3f& getRow(const jau::nsize_t row, Vec3f& v_out) const {
-        if( row > 3 ) {
-            throw jau::IndexOutOfBoundsException(row+2*4, 16, E_FILE_LINE);
-        }
-        v_out.set( get(row+0*4),
-                   get(row+1*4),
-                   get(row+2*4) );
-        return v_out;
+    constexpr Vec3f& getRow(const jau::nsize_t row, Vec3f& v_out) const noexcept {
+        assert( row <= 2 );
+        return v_out.set( get(row+0*4),
+                          get(row+1*4),
+                          get(row+2*4) );
     }
 
     /**
-     * Get this matrix into the given float[16] array at {@code dst_off} in column major order w/ boundary check.
+     * Get this matrix into the given value_type[16] array in column major order w/o boundary check.
      *
-     * @param dst float[16] array storage in column major order
-     * @param dst_off offset
+     * @param dst value_type[16] array storage in column major order
      * @return {@code dst} for chaining
      */
-    float* get(float* dst, size_t dst_off) const {
-        if( dst_off > std::numeric_limits<size_t>::max() - 15) {
-            throw jau::IndexOutOfBoundsException(dst_off, 16, E_FILE_LINE);
-        }
-        dst[dst_off++] = m00;
-        dst[dst_off++] = m10;
-        dst[dst_off++] = m20;
-        dst[dst_off++] = m30;
-        dst[dst_off++] = m01;
-        dst[dst_off++] = m11;
-        dst[dst_off++] = m21;
-        dst[dst_off++] = m31;
-        dst[dst_off++] = m02;
-        dst[dst_off++] = m12;
-        dst[dst_off++] = m22;
-        dst[dst_off++] = m32;
-        dst[dst_off++] = m03;
-        dst[dst_off++] = m13;
-        dst[dst_off++] = m23;
-        dst[dst_off++] = m33;
-        return dst;
-    }
-
-    /**
-     * Get this matrix into the given float[16] array in column major order w/o boundary check.
-     *
-     * @param dst float[16] array storage in column major order
-     * @return {@code dst} for chaining
-     */
-    float* get(float* dst) const noexcept {
+    constexpr iterator get(iterator dst) const noexcept {
         dst[0+0*4] = m00;
         dst[1+0*4] = m10;
         dst[2+0*4] = m20;
@@ -553,16 +423,14 @@ class Mat4f {
     }
 
     /**
-     * Get this matrix into the given {@link FloatBuffer} in column major order w/ boundary check.
+     * Get this matrix into the given {@link FloatBuffer} in column major order.
      *
      * @param dst 4x4 matrix std::vector in column-major order starting at {@code dst_off}
      * @param dst_off offset for matrix {@code dst}
      * @return {@code dst} for chaining
      */
-    std::vector<float>& get(std::vector<float>& dst, size_t dst_off) const {
-        if( dst.size() < dst_off+16 || dst_off > std::numeric_limits<size_t>::max() - 15) {
-            throw jau::IndexOutOfBoundsException(dst_off, 16, E_FILE_LINE);
-        }
+    constexpr std::vector<value_type>& get(std::vector<value_type>& dst, size_t dst_off) const noexcept {
+        assert( dst.size() >= dst_off+16 && dst_off <= std::numeric_limits<size_t>::max() - 15 );
         dst[dst_off++] = m00;
         dst[dst_off++] = m10;
         dst[dst_off++] = m20;
@@ -590,8 +458,8 @@ class Mat4f {
      * Returns the determinant of this matrix
      * @return the matrix determinant
      */
-    float determinant() const noexcept {
-        float ret = 0;
+    value_type determinant() const noexcept {
+        value_type ret = 0;
         ret += m00 * ( + m11*(m22*m33 - m23*m32) - m12*(m21*m33 - m23*m31) + m13*(m21*m32 - m22*m31));
         ret -= m01 * ( + m10*(m22*m33 - m23*m32) - m12*(m20*m33 - m23*m30) + m13*(m20*m32 - m22*m30));
         ret += m02 * ( + m10*(m21*m33 - m23*m31) - m11*(m20*m33 - m23*m30) + m13*(m20*m31 - m21*m30));
@@ -604,8 +472,8 @@ class Mat4f {
      *
      * @return this matrix for chaining
      */
-    Mat4f& transpose() noexcept {
-        float tmp;
+    Matrix4& transpose() noexcept {
+        value_type tmp;
 
         tmp = m10;
         m10 = m01;
@@ -640,7 +508,7 @@ class Mat4f {
      * @param src source 4x4 matrix
      * @return this matrix (result) for chaining
      */
-    Mat4f& transpose(const Mat4f& src) noexcept {
+    Matrix4& transpose(const Matrix4& src) noexcept {
         if( &src == this ) {
             return transpose();
         }
@@ -671,56 +539,56 @@ class Mat4f {
      * @return false if this matrix is singular and inversion not possible, otherwise true
      */
     bool invert() noexcept {
-        const float amax = absMax();
-        if( 0.0f == amax ) {
+        const value_type amax = absMax();
+        if( zero == amax ) {
             return false;
         }
-        const float scale = 1.0f/amax;
-        const float a00 = m00*scale;
-        const float a10 = m10*scale;
-        const float a20 = m20*scale;
-        const float a30 = m30*scale;
+        const value_type scale = one/amax;
+        const value_type a00 = m00*scale;
+        const value_type a10 = m10*scale;
+        const value_type a20 = m20*scale;
+        const value_type a30 = m30*scale;
 
-        const float a01 = m01*scale;
-        const float a11 = m11*scale;
-        const float a21 = m21*scale;
-        const float a31 = m31*scale;
+        const value_type a01 = m01*scale;
+        const value_type a11 = m11*scale;
+        const value_type a21 = m21*scale;
+        const value_type a31 = m31*scale;
 
-        const float a02 = m02*scale;
-        const float a12 = m12*scale;
-        const float a22 = m22*scale;
-        const float a32 = m32*scale;
+        const value_type a02 = m02*scale;
+        const value_type a12 = m12*scale;
+        const value_type a22 = m22*scale;
+        const value_type a32 = m32*scale;
 
-        const float a03 = m03*scale;
-        const float a13 = m13*scale;
-        const float a23 = m23*scale;
-        const float a33 = m33*scale;
+        const value_type a03 = m03*scale;
+        const value_type a13 = m13*scale;
+        const value_type a23 = m23*scale;
+        const value_type a33 = m33*scale;
 
-        const float b00 = + a11*(a22*a33 - a23*a32) - a12*(a21*a33 - a23*a31) + a13*(a21*a32 - a22*a31);
-        const float b01 = -( + a10*(a22*a33 - a23*a32) - a12*(a20*a33 - a23*a30) + a13*(a20*a32 - a22*a30));
-        const float b02 = + a10*(a21*a33 - a23*a31) - a11*(a20*a33 - a23*a30) + a13*(a20*a31 - a21*a30);
-        const float b03 = -( + a10*(a21*a32 - a22*a31) - a11*(a20*a32 - a22*a30) + a12*(a20*a31 - a21*a30));
+        const value_type b00 = + a11*(a22*a33 - a23*a32) - a12*(a21*a33 - a23*a31) + a13*(a21*a32 - a22*a31);
+        const value_type b01 = -( + a10*(a22*a33 - a23*a32) - a12*(a20*a33 - a23*a30) + a13*(a20*a32 - a22*a30));
+        const value_type b02 = + a10*(a21*a33 - a23*a31) - a11*(a20*a33 - a23*a30) + a13*(a20*a31 - a21*a30);
+        const value_type b03 = -( + a10*(a21*a32 - a22*a31) - a11*(a20*a32 - a22*a30) + a12*(a20*a31 - a21*a30));
 
-        const float b10 = -( + a01*(a22*a33 - a23*a32) - a02*(a21*a33 - a23*a31) + a03*(a21*a32 - a22*a31));
-        const float b11 = + a00*(a22*a33 - a23*a32) - a02*(a20*a33 - a23*a30) + a03*(a20*a32 - a22*a30);
-        const float b12 = -( + a00*(a21*a33 - a23*a31) - a01*(a20*a33 - a23*a30) + a03*(a20*a31 - a21*a30));
-        const float b13 = + a00*(a21*a32 - a22*a31) - a01*(a20*a32 - a22*a30) + a02*(a20*a31 - a21*a30);
+        const value_type b10 = -( + a01*(a22*a33 - a23*a32) - a02*(a21*a33 - a23*a31) + a03*(a21*a32 - a22*a31));
+        const value_type b11 = + a00*(a22*a33 - a23*a32) - a02*(a20*a33 - a23*a30) + a03*(a20*a32 - a22*a30);
+        const value_type b12 = -( + a00*(a21*a33 - a23*a31) - a01*(a20*a33 - a23*a30) + a03*(a20*a31 - a21*a30));
+        const value_type b13 = + a00*(a21*a32 - a22*a31) - a01*(a20*a32 - a22*a30) + a02*(a20*a31 - a21*a30);
 
-        const float b20 = + a01*(a12*a33 - a13*a32) - a02*(a11*a33 - a13*a31) + a03*(a11*a32 - a12*a31);
-        const float b21 = -( + a00*(a12*a33 - a13*a32) - a02*(a10*a33 - a13*a30) + a03*(a10*a32 - a12*a30));
-        const float b22 = + a00*(a11*a33 - a13*a31) - a01*(a10*a33 - a13*a30) + a03*(a10*a31 - a11*a30);
-        const float b23 = -( + a00*(a11*a32 - a12*a31) - a01*(a10*a32 - a12*a30) + a02*(a10*a31 - a11*a30));
+        const value_type b20 = + a01*(a12*a33 - a13*a32) - a02*(a11*a33 - a13*a31) + a03*(a11*a32 - a12*a31);
+        const value_type b21 = -( + a00*(a12*a33 - a13*a32) - a02*(a10*a33 - a13*a30) + a03*(a10*a32 - a12*a30));
+        const value_type b22 = + a00*(a11*a33 - a13*a31) - a01*(a10*a33 - a13*a30) + a03*(a10*a31 - a11*a30);
+        const value_type b23 = -( + a00*(a11*a32 - a12*a31) - a01*(a10*a32 - a12*a30) + a02*(a10*a31 - a11*a30));
 
-        const float b30 = -( + a01*(a12*a23 - a13*a22) - a02*(a11*a23 - a13*a21) + a03*(a11*a22 - a12*a21));
-        const float b31 = + a00*(a12*a23 - a13*a22) - a02*(a10*a23 - a13*a20) + a03*(a10*a22 - a12*a20);
-        const float b32 = -( + a00*(a11*a23 - a13*a21) - a01*(a10*a23 - a13*a20) + a03*(a10*a21 - a11*a20));
-        const float b33 = + a00*(a11*a22 - a12*a21) - a01*(a10*a22 - a12*a20) + a02*(a10*a21 - a11*a20);
+        const value_type b30 = -( + a01*(a12*a23 - a13*a22) - a02*(a11*a23 - a13*a21) + a03*(a11*a22 - a12*a21));
+        const value_type b31 = + a00*(a12*a23 - a13*a22) - a02*(a10*a23 - a13*a20) + a03*(a10*a22 - a12*a20);
+        const value_type b32 = -( + a00*(a11*a23 - a13*a21) - a01*(a10*a23 - a13*a20) + a03*(a10*a21 - a11*a20));
+        const value_type b33 = + a00*(a11*a22 - a12*a21) - a01*(a10*a22 - a12*a20) + a02*(a10*a21 - a11*a20);
 
-        const float det = (a00*b00 + a01*b01 + a02*b02 + a03*b03) / scale;
+        const value_type det = (a00*b00 + a01*b01 + a02*b02 + a03*b03) / scale;
         if( 0 == det ) {
             return false;
         }
-        const float invdet = 1.0f / det;
+        const value_type invdet = one / det;
 
         m00 = b00 * invdet;
         m10 = b01 * invdet;
@@ -749,58 +617,58 @@ class Mat4f {
      * @param src the source matrix, which values are to be inverted
      * @return false if {@code src} matrix is singular and inversion not possible, otherwise true
      */
-    bool invert(const Mat4f& src) noexcept {
-        const float amax = src.absMax();
-        if( 0.0f == amax ) {
+    bool invert(const Matrix4& src) noexcept {
+        const value_type amax = src.absMax();
+        if( zero == amax ) {
             return false;
         }
-        const float scale = 1.0f/amax;
-        const float a00 = src.m00*scale;
-        const float a10 = src.m10*scale;
-        const float a20 = src.m20*scale;
-        const float a30 = src.m30*scale;
+        const value_type scale = one/amax;
+        const value_type a00 = src.m00*scale;
+        const value_type a10 = src.m10*scale;
+        const value_type a20 = src.m20*scale;
+        const value_type a30 = src.m30*scale;
 
-        const float a01 = src.m01*scale;
-        const float a11 = src.m11*scale;
-        const float a21 = src.m21*scale;
-        const float a31 = src.m31*scale;
+        const value_type a01 = src.m01*scale;
+        const value_type a11 = src.m11*scale;
+        const value_type a21 = src.m21*scale;
+        const value_type a31 = src.m31*scale;
 
-        const float a02 = src.m02*scale;
-        const float a12 = src.m12*scale;
-        const float a22 = src.m22*scale;
-        const float a32 = src.m32*scale;
+        const value_type a02 = src.m02*scale;
+        const value_type a12 = src.m12*scale;
+        const value_type a22 = src.m22*scale;
+        const value_type a32 = src.m32*scale;
 
-        const float a03 = src.m03*scale;
-        const float a13 = src.m13*scale;
-        const float a23 = src.m23*scale;
-        const float a33 = src.m33*scale;
+        const value_type a03 = src.m03*scale;
+        const value_type a13 = src.m13*scale;
+        const value_type a23 = src.m23*scale;
+        const value_type a33 = src.m33*scale;
 
-        const float b00 = + a11*(a22*a33 - a23*a32) - a12*(a21*a33 - a23*a31) + a13*(a21*a32 - a22*a31);
-        const float b01 = -( + a10*(a22*a33 - a23*a32) - a12*(a20*a33 - a23*a30) + a13*(a20*a32 - a22*a30));
-        const float b02 = + a10*(a21*a33 - a23*a31) - a11*(a20*a33 - a23*a30) + a13*(a20*a31 - a21*a30);
-        const float b03 = -( + a10*(a21*a32 - a22*a31) - a11*(a20*a32 - a22*a30) + a12*(a20*a31 - a21*a30));
+        const value_type b00 = + a11*(a22*a33 - a23*a32) - a12*(a21*a33 - a23*a31) + a13*(a21*a32 - a22*a31);
+        const value_type b01 = -( + a10*(a22*a33 - a23*a32) - a12*(a20*a33 - a23*a30) + a13*(a20*a32 - a22*a30));
+        const value_type b02 = + a10*(a21*a33 - a23*a31) - a11*(a20*a33 - a23*a30) + a13*(a20*a31 - a21*a30);
+        const value_type b03 = -( + a10*(a21*a32 - a22*a31) - a11*(a20*a32 - a22*a30) + a12*(a20*a31 - a21*a30));
 
-        const float b10 = -( + a01*(a22*a33 - a23*a32) - a02*(a21*a33 - a23*a31) + a03*(a21*a32 - a22*a31));
-        const float b11 = + a00*(a22*a33 - a23*a32) - a02*(a20*a33 - a23*a30) + a03*(a20*a32 - a22*a30);
-        const float b12 = -( + a00*(a21*a33 - a23*a31) - a01*(a20*a33 - a23*a30) + a03*(a20*a31 - a21*a30));
-        const float b13 = + a00*(a21*a32 - a22*a31) - a01*(a20*a32 - a22*a30) + a02*(a20*a31 - a21*a30);
+        const value_type b10 = -( + a01*(a22*a33 - a23*a32) - a02*(a21*a33 - a23*a31) + a03*(a21*a32 - a22*a31));
+        const value_type b11 = + a00*(a22*a33 - a23*a32) - a02*(a20*a33 - a23*a30) + a03*(a20*a32 - a22*a30);
+        const value_type b12 = -( + a00*(a21*a33 - a23*a31) - a01*(a20*a33 - a23*a30) + a03*(a20*a31 - a21*a30));
+        const value_type b13 = + a00*(a21*a32 - a22*a31) - a01*(a20*a32 - a22*a30) + a02*(a20*a31 - a21*a30);
 
-        const float b20 = + a01*(a12*a33 - a13*a32) - a02*(a11*a33 - a13*a31) + a03*(a11*a32 - a12*a31);
-        const float b21 = -( + a00*(a12*a33 - a13*a32) - a02*(a10*a33 - a13*a30) + a03*(a10*a32 - a12*a30));
-        const float b22 = + a00*(a11*a33 - a13*a31) - a01*(a10*a33 - a13*a30) + a03*(a10*a31 - a11*a30);
-        const float b23 = -( + a00*(a11*a32 - a12*a31) - a01*(a10*a32 - a12*a30) + a02*(a10*a31 - a11*a30));
+        const value_type b20 = + a01*(a12*a33 - a13*a32) - a02*(a11*a33 - a13*a31) + a03*(a11*a32 - a12*a31);
+        const value_type b21 = -( + a00*(a12*a33 - a13*a32) - a02*(a10*a33 - a13*a30) + a03*(a10*a32 - a12*a30));
+        const value_type b22 = + a00*(a11*a33 - a13*a31) - a01*(a10*a33 - a13*a30) + a03*(a10*a31 - a11*a30);
+        const value_type b23 = -( + a00*(a11*a32 - a12*a31) - a01*(a10*a32 - a12*a30) + a02*(a10*a31 - a11*a30));
 
-        const float b30 = -( + a01*(a12*a23 - a13*a22) - a02*(a11*a23 - a13*a21) + a03*(a11*a22 - a12*a21));
-        const float b31 = + a00*(a12*a23 - a13*a22) - a02*(a10*a23 - a13*a20) + a03*(a10*a22 - a12*a20);
-        const float b32 = -( + a00*(a11*a23 - a13*a21) - a01*(a10*a23 - a13*a20) + a03*(a10*a21 - a11*a20));
-        const float b33 = + a00*(a11*a22 - a12*a21) - a01*(a10*a22 - a12*a20) + a02*(a10*a21 - a11*a20);
+        const value_type b30 = -( + a01*(a12*a23 - a13*a22) - a02*(a11*a23 - a13*a21) + a03*(a11*a22 - a12*a21));
+        const value_type b31 = + a00*(a12*a23 - a13*a22) - a02*(a10*a23 - a13*a20) + a03*(a10*a22 - a12*a20);
+        const value_type b32 = -( + a00*(a11*a23 - a13*a21) - a01*(a10*a23 - a13*a20) + a03*(a10*a21 - a11*a20));
+        const value_type b33 = + a00*(a11*a22 - a12*a21) - a01*(a10*a22 - a12*a20) + a02*(a10*a21 - a11*a20);
 
-        const float det = (a00*b00 + a01*b01 + a02*b02 + a03*b03) / scale;
+        const value_type det = (a00*b00 + a01*b01 + a02*b02 + a03*b03) / scale;
 
         if( 0 == det ) {
             return false;
         }
-        const float invdet = 1.0f / det;
+        const value_type invdet = one / det;
 
         m00 = b00 * invdet;
         m10 = b01 * invdet;
@@ -825,8 +693,8 @@ class Mat4f {
     }
 
   private:
-    float absMax() const noexcept {
-        float max = std::abs(m00);
+    value_type absMax() const noexcept {
+        value_type max = std::abs(m00);
         max = std::max(max, std::abs(m01));
         max = std::max(max, std::abs(m02));
         max = std::max(max, std::abs(m03));
@@ -850,17 +718,30 @@ class Mat4f {
 
   public:
     /**
+     * Multiply matrix with scalar: [this] = [this] x [s]
+     * @param s a scalar
+     * @return this matrix for chaining
+     */
+    constexpr Matrix4& operator*=( const value_type s ) noexcept {
+        m00 *= s; m10 *= s; m20 *= s; m30 *= s;
+        m01 *= s; m11 *= s; m21 *= s; m31 *= s;
+        m02 *= s; m12 *= s; m22 *= s; m32 *= s;
+        m03 *= s; m13 *= s; m23 *= s; m33 *= s;
+        return *this;
+    }
+
+    /**
      * Multiply matrix: [this] = [this] x [b]
      * @param b 4x4 matrix
      * @return this matrix for chaining
      * @see #mul(mat4f, mat4f)
      */
-    Mat4f& mul(const Mat4f& b) noexcept {
+    constexpr Matrix4& mul(const Matrix4& b) noexcept {
         // return mul(new mat4f(this), b); // <- roughly half speed
-        float ai0=m00; // row-0, m[0+0*4]
-        float ai1=m01;
-        float ai2=m02;
-        float ai3=m03;
+        value_type ai0=m00; // row-0, m[0+0*4]
+        value_type ai1=m01;
+        value_type ai2=m02;
+        value_type ai3=m03;
         m00 = ai0 * b.m00  +  ai1 * b.m10  +  ai2 * b.m20  +  ai3 * b.m30 ;
         m01 = ai0 * b.m01  +  ai1 * b.m11  +  ai2 * b.m21  +  ai3 * b.m31 ;
         m02 = ai0 * b.m02  +  ai1 * b.m12  +  ai2 * b.m22  +  ai3 * b.m32 ;
@@ -894,6 +775,15 @@ class Mat4f {
         m33 = ai0 * b.m03  +  ai1 * b.m13  +  ai2 * b.m23  +  ai3 * b.m33 ;
         return *this;
     }
+    /**
+     * Multiply matrix: [this] = [this] x [b]
+     * @param b 4x4 matrix
+     * @return this matrix for chaining
+     * @see #mul(mat4f, mat4f)
+     */
+    constexpr Matrix4& operator*=( const Matrix4& rhs ) noexcept {
+        return mul( rhs );
+    }
 
     /**
      * Multiply matrix: [this] = [a] x [b]
@@ -902,7 +792,7 @@ class Mat4f {
      * @return this matrix for chaining
      * @see #mul(mat4f)
      */
-    Mat4f& mul(const Mat4f& a, const Mat4f& b) noexcept {
+    constexpr Matrix4& mul(const Matrix4& a, const Matrix4& b) noexcept {
         // row-0, m[0+0*4]
         m00 = a.m00 * b.m00  +  a.m01 * b.m10  +  a.m02 * b.m20  +  a.m03 * b.m30 ;
         m01 = a.m00 * b.m01  +  a.m01 * b.m11  +  a.m02 * b.m21  +  a.m03 * b.m31 ;
@@ -935,23 +825,24 @@ class Mat4f {
      * @param v_out this * v_in
      * @returns v_out for chaining
      */
-    Vec4f& mulVec4f(const Vec4f& v_in, Vec4f& v_out) const noexcept {
+    constexpr Vec4& mulVec4(const Vec4& v_in, Vec4& v_out) const noexcept {
         // (one matrix row in column-major order) X (column vector)
-        const float x = v_in.x, y = v_in.y, z = v_in.z, w = v_in.w;
+        const value_type x = v_in.x, y = v_in.y, z = v_in.z, w = v_in.w;
         v_out.set( x * m00 + y * m01 + z * m02 + w * m03,
                    x * m10 + y * m11 + z * m12 + w * m13,
                    x * m20 + y * m21 + z * m22 + w * m23,
                    x * m30 + y * m31 + z * m32 + w * m33 );
         return v_out;
     }
+
     /**
-     * Returns new Vec4f holding this * v_in result
+     * Returns new Vec4, with this * v_in
      * @param v_in 4-component column-vector
      */
-    Vec4f operator*(const Vec4f& rhs) const noexcept {
+    constexpr Vec4 operator*(const Vec4& rhs) const noexcept {
         // (one matrix row in column-major order) X (column vector)
-        const float x = rhs.x, y = rhs.y, z = rhs.z, w = rhs.w;
-        return Vec4f( x * m00 + y * m01 + z * m02 + w * m03,
+        const value_type x = rhs.x, y = rhs.y, z = rhs.z, w = rhs.w;
+        return Vec4( x * m00 + y * m01 + z * m02 + w * m03,
                       x * m10 + y * m11 + z * m12 + w * m13,
                       x * m20 + y * m21 + z * m22 + w * m23,
                       x * m30 + y * m31 + z * m32 + w * m33 );
@@ -961,9 +852,9 @@ class Mat4f {
      * @param v_inout 4-component column-vector input and output, i.e. in-place transformation
      * @returns v_inout for chaining
      */
-    Vec4f& mulVec4f(Vec4f& v_inout) const noexcept {
+    constexpr Vec4& mulVec4(Vec4& v_inout) const noexcept {
         // (one matrix row in column-major order) X (column vector)
-        const float x = v_inout.x, y = v_inout.y, z = v_inout.z, w = v_inout.w;
+        const value_type x = v_inout.x, y = v_inout.y, z = v_inout.z, w = v_inout.w;
         v_inout.set( x * m00 + y * m01 + z * m02 + w * m03,
                      x * m10 + y * m11 + z * m12 + w * m13,
                      x * m20 + y * m21 + z * m22 + w * m23,
@@ -982,13 +873,29 @@ class Mat4f {
      * @param v_out m_in * v_in, 3-component column-vector {@link vec3f}
      * @returns v_out for chaining
      */
-    Vec3f& mulVec3f(const Vec3f& v_in, Vec3f& v_out) const noexcept {
+    constexpr Vec3f& mulVec3f(const Vec3f& v_in, Vec3f& v_out) const noexcept {
         // (one matrix row in column-major order) X (column vector)
-        const float x = v_in.x, y = v_in.y, z = v_in.z;
-        v_out.set( x * m00 + y * m01 + z * m02 + 1.0f * m03,
-                   x * m10 + y * m11 + z * m12 + 1.0f * m13,
-                   x * m20 + y * m21 + z * m22 + 1.0f * m23 );
+        const value_type x = v_in.x, y = v_in.y, z = v_in.z;
+        v_out.set( x * m00 + y * m01 + z * m02 + one * m03,
+                   x * m10 + y * m11 + z * m12 + one * m13,
+                   x * m20 + y * m21 + z * m22 + one * m23 );
         return v_out;
+    }
+    /**
+     * Returns new Vec3f, with affine 3f-vector transformation by this 4x4 matrix: this * v_in
+     *
+     * 4x4 matrix multiplication with 3-component vector,
+     * using {@code 1} for for {@code v_in.w()} and dropping {@code v_out.w()},
+     * which shall be {@code 1}.
+     *
+     * @param v_in 3-component column-vector {@link vec3f}
+     */
+    constexpr Vec3f operator*(const Vec3f& rhs) const noexcept {
+        // (one matrix row in column-major order) X (column vector)
+        const value_type x = rhs.x, y = rhs.y, z = rhs.z;
+        return Vec3f( x * m00 + y * m01 + z * m02 + one * m03,
+                      x * m10 + y * m11 + z * m12 + one * m13,
+                      x * m20 + y * m21 + z * m22 + one * m23 );
     }
 
     /**
@@ -1001,12 +908,12 @@ class Mat4f {
      * @param v_inout 3-component column-vector {@link vec3f} input and output, i.e. in-place transformation
      * @returns v_inout for chaining
      */
-    Vec3f& mulVec3f(Vec3f& v_inout) const noexcept {
+    constexpr Vec3f& mulVec3f(Vec3f& v_inout) const noexcept {
         // (one matrix row in column-major order) X (column vector)
-        const float x = v_inout.x, y = v_inout.y, z = v_inout.z;
-        v_inout.set( x * m00 + y * m01 + z * m02 + 1.0f * m03,
-                     x * m10 + y * m11 + z * m12 + 1.0f * m13,
-                     x * m20 + y * m21 + z * m22 + 1.0f * m23 );
+        const value_type x = v_inout.x, y = v_inout.y, z = v_inout.z;
+        v_inout.set( x * m00 + y * m01 + z * m02 + one * m03,
+                     x * m10 + y * m11 + z * m12 + one * m13,
+                     x * m20 + y * m21 + z * m22 + one * m23 );
         return v_inout;
     }
 
@@ -1028,15 +935,15 @@ class Mat4f {
      * @param z z-axis translate
      * @return this matrix for chaining
      */
-    Mat4f& setToTranslation(const float x, const float y, const float z) noexcept {
-        m00 = m11 = m22 = m33 = 1.0f;
+    Matrix4& setToTranslation(const value_type x, const value_type y, const value_type z) noexcept {
+        m00 = m11 = m22 = m33 = one;
         m03 = x;
         m13 = y;
         m23 = z;
         m01 = m02 =
         m10 = m12 =
         m20 = m21 =
-        m30 = m31 = m32 = 0.0f;
+        m30 = m31 = m32 = zero;
         return *this;
     }
 
@@ -1052,7 +959,7 @@ class Mat4f {
      * @param t translate vec3f
      * @return this matrix for chaining
      */
-    Mat4f& setToTranslation(const Vec3f& t) noexcept {
+    Matrix4& setToTranslation(const Vec3f& t) noexcept {
         return setToTranslation(t.x, t.y, t.z);
     }
 
@@ -1070,15 +977,15 @@ class Mat4f {
      * @param z z-axis scale
      * @return this matrix for chaining
      */
-    Mat4f& setToScale(const float x, const float y, const float z) noexcept {
-        m33 = 1.0f;
+    constexpr Matrix4& setToScale(const value_type x, const value_type y, const value_type z) noexcept {
+        m33 = one;
         m00 = x;
         m11 = y;
         m22 = z;
         m01 = m02 = m03 =
         m10 = m12 = m13 =
         m20 = m21 = m23 =
-        m30 = m31 = m32 = 0.0f;
+        m30 = m31 = m32 = zero;
         return *this;
     }
 
@@ -1094,7 +1001,7 @@ class Mat4f {
      * @param s scale vec3f
      * @return this matrix for chaining
      */
-    Mat4f& setToScale(const Vec3f& s) noexcept {
+    constexpr Matrix4& setToScale(const Vec3f& s) noexcept {
         return setToScale(s.x, s.y, s.z);
     }
 
@@ -1114,39 +1021,39 @@ class Mat4f {
      * @param z z of rotation axis
      * @return this matrix for chaining
      */
-    Mat4f& setToRotationAxis(const float ang_rad, float x, float y, float z) noexcept {
-        const float c = std::cos(ang_rad);
-        const float ic= 1.0f - c;
-        const float s = std::sin(ang_rad);
+    Matrix4& setToRotationAxis(const value_type ang_rad, value_type x, value_type y, value_type z) noexcept {
+        const value_type c = std::cos(ang_rad);
+        const value_type ic= one - c;
+        const value_type s = std::sin(ang_rad);
 
         Vec3f tmp(x, y, z); tmp.normalize();
         x = tmp.x; y = tmp.y; z = tmp.z;
 
-        const float xy = x*y;
-        const float xz = x*z;
-        const float xs = x*s;
-        const float ys = y*s;
-        const float yz = y*z;
-        const float zs = z*s;
+        const value_type xy = x*y;
+        const value_type xz = x*z;
+        const value_type xs = x*s;
+        const value_type ys = y*s;
+        const value_type yz = y*z;
+        const value_type zs = z*s;
         m00 = x*x*ic+c;
         m10 = xy*ic+zs;
         m20 = xz*ic-ys;
-        m30 = 0.0f;
+        m30 = zero;
 
         m01 = xy*ic-zs;
         m11 = y*y*ic+c;
         m21 = yz*ic+xs;
-        m31 = 0.0f;
+        m31 = zero;
 
         m02 = xz*ic+ys;
         m12 = yz*ic-xs;
         m22 = z*z*ic+c;
-        m32 = 0.0f;
+        m32 = zero;
 
         m03 = 0.9f;
-        m13 = 0.0f;
-        m23 = 0.0f;
-        m33 = 1.0f;
+        m13 = zero;
+        m23 = zero;
+        m33 = one;
 
         return *this;
     }
@@ -1165,7 +1072,7 @@ class Mat4f {
      * @param axis rotation axis
      * @return this matrix for chaining
      */
-    Mat4f& setToRotationAxis(const float ang_rad, const Vec3f& axis) noexcept {
+    Matrix4& setToRotationAxis(const value_type ang_rad, const Vec3f& axis) noexcept {
         return setToRotationAxis(ang_rad, axis.x, axis.y, axis.z);
     }
 
@@ -1192,34 +1099,34 @@ class Mat4f {
      * @see <a href="http://www.euclideanspace.com/maths/geometry/rotations/conversions/eulerToMatrix/index.htm">euclideanspace.com-eulerToMatrix</a>
      * @see #setToRotation(Quaternion)
      */
-    Mat4f& setToRotationEuler(const float bankX, const float headingY, const float attitudeZ) noexcept {
+    Matrix4& setToRotationEuler(const value_type bankX, const value_type headingY, const value_type attitudeZ) noexcept {
         // Assuming the angles are in radians.
-        const float ch = std::cos(headingY);
-        const float sh = std::sin(headingY);
-        const float ca = std::cos(attitudeZ);
-        const float sa = std::sin(attitudeZ);
-        const float cb = std::cos(bankX);
-        const float sb = std::sin(bankX);
+        const value_type ch = std::cos(headingY);
+        const value_type sh = std::sin(headingY);
+        const value_type ca = std::cos(attitudeZ);
+        const value_type sa = std::sin(attitudeZ);
+        const value_type cb = std::cos(bankX);
+        const value_type sb = std::sin(bankX);
 
         m00 =  ch*ca;
         m10 =  sa;
         m20 = -sh*ca;
-        m30 =  0.0f;
+        m30 =  zero;
 
         m01 =  sh*sb    - ch*sa*cb;
         m11 =  ca*cb;
         m21 =  sh*sa*cb + ch*sb;
-        m31 =  0.0f;
+        m31 =  zero;
 
         m02 =  ch*sa*sb + sh*cb;
         m12 = -ca*sb;
         m22 = -sh*sa*sb + ch*cb;
-        m32 =  0.0f;
+        m32 =  zero;
 
-        m03 =  0.0f;
-        m13 =  0.0f;
-        m23 =  0.0f;
-        m33 =  1.0f;
+        m03 =  zero;
+        m13 =  zero;
+        m23 =  zero;
+        m33 =  one;
 
         return *this;
     }
@@ -1245,36 +1152,9 @@ class Mat4f {
      * @see <a href="http://www.euclideanspace.com/maths/geometry/rotations/conversions/eulerToMatrix/index.htm">euclideanspace.com-eulerToMatrix</a>
      * @see #setToRotation(Quaternion)
      */
-    Mat4f& setToRotationEuler(const Vec3f& angradXYZ) noexcept {
+    Matrix4& setToRotationEuler(const Vec3f& angradXYZ) noexcept {
         return setToRotationEuler(angradXYZ.x, angradXYZ.y, angradXYZ.z);
     }
-
-    /**
-     * Set this matrix to rotation using the given Quaternion.
-     * <p>
-     * Implementation Details:
-     * <ul>
-     *   <li> makes identity matrix if {@link #magnitudeSquared()} is {@link FloatUtil#isZero(float, float) is zero} using {@link FloatUtil#EPSILON epsilon}</li>
-     *   <li> The fields [m00 .. m22] define the rotation</li>
-     * </ul>
-     * </p>
-     *
-     * @param q the Quaternion representing the rotation
-     * @return this matrix for chaining
-     * @see <a href="http://web.archive.org/web/20041029003853/http://www.j3d.org/matrix_faq/matrfaq_latest.html#Q54">Matrix-FAQ Q54</a>
-     * @see Quaternion#toMatrix(float[])
-     * @see #getRotation()
-     */
-    Mat4f& setToRotation(const Quaternion& q) noexcept;
-
-    /**
-     * Returns the rotation [m00 .. m22] fields converted to a Quaternion.
-     * @param res resulting Quaternion
-     * @return the resulting Quaternion for chaining.
-     * @see Quaternion#setFromMatrix(float, float, float, float, float, float, float, float, float)
-     * @see #setToRotation(Quaternion)
-     */
-    Quaternion& getRotation(Quaternion& res) const noexcept;
 
     /**
      * Set this matrix to orthogonal projection.
@@ -1293,31 +1173,31 @@ class Mat4f {
      * @param zFar
      * @return this matrix for chaining
      */
-    Mat4f& setToOrtho(const float left, const float right,
-                      const float bottom, const float top,
-                      const float zNear, const float zFar) noexcept {
+    Matrix4& setToOrtho(const value_type left, const value_type right,
+                      const value_type bottom, const value_type top,
+                      const value_type zNear, const value_type zFar) noexcept {
         {
-            // m00 = m11 = m22 = m33 = 1.0f;
-            m10 = m20 = m30 = 0.0f;
-            m01 = m21 = m31 = 0.0f;
-            m02 = m12 = m32 = 0.0f;
-            // m03 = m13 = m23 = 0.0f;
+            // m00 = m11 = m22 = m33 = one;
+            m10 = m20 = m30 = zero;
+            m01 = m21 = m31 = zero;
+            m02 = m12 = m32 = zero;
+            // m03 = m13 = m23 = zero;
         }
-        const float dx=right-left;
-        const float dy=top-bottom;
-        const float dz=zFar-zNear;
-        const float tx=-1.0f*(right+left)/dx;
-        const float ty=-1.0f*(top+bottom)/dy;
-        const float tz=-1.0f*(zFar+zNear)/dz;
+        const value_type dx=right-left;
+        const value_type dy=top-bottom;
+        const value_type dz=zFar-zNear;
+        const value_type tx=-one*(right+left)/dx;
+        const value_type ty=-one*(top+bottom)/dy;
+        const value_type tz=-one*(zFar+zNear)/dz;
 
-        m00 =  2.0f/dx;
-        m11 =  2.0f/dy;
-        m22 = -2.0f/dz;
+        m00 =  two/dx;
+        m11 =  two/dy;
+        m22 = -two/dz;
 
         m03 = tx;
         m13 = ty;
         m23 = tz;
-        m33 = 1.0f;
+        m33 = one;
 
         return *this;
     }
@@ -1341,10 +1221,10 @@ class Mat4f {
      * @throws IllegalArgumentException if {@code zNear <= 0} or {@code zFar <= zNear}
      *                                  or {@code left == right}, or {@code bottom == top}.
      */
-    Mat4f& setToFrustum(const float left, const float right,
-                        const float bottom, const float top,
-                        const float zNear, const float zFar) {
-        if( zNear <= 0.0f || zFar <= zNear ) {
+    Matrix4& setToFrustum(const value_type left, const value_type right,
+                        const value_type bottom, const value_type top,
+                        const value_type zNear, const value_type zFar) {
+        if( zNear <= zero || zFar <= zNear ) {
             throw jau::IllegalArgumentException("Requirements zNear > 0 and zFar > zNear, but zNear "+std::to_string(zNear)+", zFar "+std::to_string(zFar), E_FILE_LINE);
         }
         if( left == right || top == bottom) {
@@ -1352,18 +1232,18 @@ class Mat4f {
         }
         {
             // m00 = m11 = m22 = m33 = 1f;
-            m10 = m20 = m30 = 0.0f;
-            m01 = m21 = m31 = 0.0f;
-            m03 = m13 = 0.0f;
+            m10 = m20 = m30 = zero;
+            m01 = m21 = m31 = zero;
+            m03 = m13 = zero;
         }
-        const float zNear2 = 2.0f*zNear;
-        const float dx=right-left;
-        const float dy=top-bottom;
-        const float dz=zFar-zNear;
-        const float A=(right+left)/dx;
-        const float B=(top+bottom)/dy;
-        const float C=-1.0f*(zFar+zNear)/dz;
-        const float D=-2.0f*(zFar*zNear)/dz;
+        const value_type zNear2 = two*zNear;
+        const value_type dx=right-left;
+        const value_type dy=top-bottom;
+        const value_type dz=zFar-zNear;
+        const value_type A=(right+left)/dx;
+        const value_type B=(top+bottom)/dy;
+        const value_type C=-one*(zFar+zNear)/dz;
+        const value_type D=-two*(zFar*zNear)/dz;
 
         m00 = zNear2/dx;
         m11 = zNear2/dy;
@@ -1371,16 +1251,16 @@ class Mat4f {
         m02 = A;
         m12 = B;
         m22 = C;
-        m32 = -1.0f;
+        m32 = -one;
 
         m23 = D;
-        m33 = 0.0f;
+        m33 = zero;
 
         return *this;
     }
 
     /**
-     * Set this matrix to perspective {@link #setToFrustum(float, float, float, float, float, float) frustum} projection.
+     * Set this matrix to perspective {@link #setToFrustum(value_type, value_type, value_type, value_type, value_type, value_type) frustum} projection.
      *
      * @param fovy_rad angle in radians
      * @param aspect aspect ratio width / height
@@ -1388,48 +1268,35 @@ class Mat4f {
      * @param zFar
      * @return this matrix for chaining
      * @throws IllegalArgumentException if {@code zNear <= 0} or {@code zFar <= zNear}
-     * @see #setToFrustum(float, float, float, float, float, float)
+     * @see #setToFrustum(value_type, value_type, value_type, value_type, value_type, value_type)
      */
-    Mat4f& setToPerspective(const float fovy_rad, const float aspect, const float zNear, const float zFar) {
-        const float top    =  std::tan(fovy_rad/2.0f) * zNear; // use tangent of half-fov !
-        const float bottom =  -1.0f * top;    //          -1f * fovhvTan.top * zNear
-        const float left   = aspect * bottom; // aspect * -1f * fovhvTan.top * zNear
-        const float right  = aspect * top;    // aspect * fovhvTan.top * zNear
+    Matrix4& setToPerspective(const value_type fovy_rad, const value_type aspect, const value_type zNear, const value_type zFar) {
+        const value_type top    =  std::tan(fovy_rad/two) * zNear; // use tangent of half-fov !
+        const value_type bottom =  -one * top;    //          -1f * fovhvTan.top * zNear
+        const value_type left   = aspect * bottom; // aspect * -1f * fovhvTan.top * zNear
+        const value_type right  = aspect * top;    // aspect * fovhvTan.top * zNear
         return setToFrustum(left, right, bottom, top, zNear, zFar);
     }
 
     /**
-     * Set this matrix to perspective {@link #setToFrustum(float, float, float, float, float, float) frustum} projection.
+     * Set this matrix to perspective {@link #setToFrustum(value_type, value_type, value_type, value_type, value_type, value_type) frustum} projection.
      *
      * @param fovhv {@link FovHVHalves} field of view in both directions, may not be centered, either in radians or tangent
      * @param zNear
      * @param zFar
      * @return this matrix for chaining
      * @throws IllegalArgumentException if {@code zNear <= 0} or {@code zFar <= zNear}
-     * @see #setToFrustum(float, float, float, float, float, float)
+     * @see #setToFrustum(value_type, value_type, value_type, value_type, value_type, value_type)
      * @see Frustum#updateByFovDesc(mat4f, com.jogamp.math.geom.Frustum.FovDesc)
      */
-    Mat4f& setToPerspective(const FovHVHalves& fovhv, const float zNear, const float zFar) {
+    Matrix4& setToPerspective(const FovHVHalves& fovhv, const value_type zNear, const value_type zFar) {
         const FovHVHalves fovhvTan = fovhv.toTangents();  // use tangent of half-fov !
-        const float top    =         fovhvTan.top    * zNear;
-        const float bottom = -1.0f * fovhvTan.bottom * zNear;
-        const float left   = -1.0f * fovhvTan.left   * zNear;
-        const float right  =         fovhvTan.right  * zNear;
+        const value_type top    =         fovhvTan.top    * zNear;
+        const value_type bottom = -one * fovhvTan.bottom * zNear;
+        const value_type left   = -one * fovhvTan.left   * zNear;
+        const value_type right  =         fovhvTan.right  * zNear;
         return setToFrustum(left, right, bottom, top, zNear, zFar);
     }
-
-    /**
-     * Calculate the frustum planes in world coordinates
-     * using this column major order matrix, usually a projection (P) or premultiplied P*MV matrix.
-     *
-     * Frustum plane's normals will point to the inside of the viewing frustum,
-     * as required by the {@link Frustum} class.
-     *
-     * May use geom::Frustum::setFromMat4() directly.
-     *
-     * @see geom::Frustum::setFromMat4()
-     */
-    geom::Frustum& getFrustum(geom::Frustum& frustum) noexcept;
 
     /**
      * Set this matrix to the <i>look-at</i> matrix based on given parameters.
@@ -1451,7 +1318,7 @@ class Mat4f {
      * @param tmp temporary mat4f used for multiplication
      * @return this matrix for chaining
      */
-    Mat4f& setToLookAt(const Vec3f& eye, const Vec3f& center, const Vec3f& up, Mat4f& tmp) noexcept {
+    Matrix4& setToLookAt(const Vec3f& eye, const Vec3f& center, const Vec3f& up, Matrix4& tmp) noexcept {
         // normalized forward!
         const Vec3f fwd = ( center - eye ).normalize();
 
@@ -1503,8 +1370,8 @@ class Mat4f {
      * </p>
      * <p>
      * To effectively use the generated pick matrix for picking,
-     * call {@link #setToPick(float, float, float, float, Recti, mat4f) setToPick(..)}
-     * and multiply a {@link #setToPerspective(float, float, float, float) custom perspective matrix}
+     * call {@link #setToPick(value_type, value_type, value_type, value_type, Recti, mat4f) setToPick(..)}
+     * and multiply a {@link #setToPerspective(value_type, value_type, value_type, value_type) custom perspective matrix}
      * by this pick matrix. Then you may load the result onto the perspective matrix stack.
      * </p>
      * @param x the center x-component of a picking region in window coordinates
@@ -1515,16 +1382,16 @@ class Mat4f {
      * @param mat4Tmp temp storage
      * @return true if successful or false if either delta value is <= zero.
      */
-    bool setToPick(const float x, const float y, const float deltaX, const float deltaY,
-                   const Recti& viewport, Mat4f& mat4Tmp) noexcept {
+    bool setToPick(const value_type x, const value_type y, const value_type deltaX, const value_type deltaY,
+                   const Recti& viewport, Matrix4& mat4Tmp) noexcept {
         if (deltaX <= 0 || deltaY <= 0) {
             return false;
         }
         /* Translate and scale the picked region to the entire window */
-        setToTranslation( ( viewport.width()  - 2.0f * ( x - viewport.x() ) ) / deltaX,
-                          ( viewport.height() - 2.0f * ( y - viewport.y() ) ) / deltaY,
+        setToTranslation( ( viewport.width()  - two * ( x - viewport.x() ) ) / deltaX,
+                          ( viewport.height() - two * ( y - viewport.y() ) ) / deltaY,
                           0);
-        mat4Tmp.setToScale( viewport.width() / deltaX, viewport.height() / deltaY, 1.0f );
+        mat4Tmp.setToScale( viewport.width() / deltaX, viewport.height() / deltaY, one );
         mul(mat4Tmp);
         return true;
     }
@@ -1534,7 +1401,7 @@ class Mat4f {
     //
 
     /**
-     * Rotate this matrix about give axis and angle in radians, i.e. multiply by {@link #setToRotationAxis(float, float, float, float) axis-rotation matrix}.
+     * Rotate this matrix about give axis and angle in radians, i.e. multiply by {@link #setToRotationAxis(value_type, value_type, value_type, value_type) axis-rotation matrix}.
      * @see <a href="http://web.archive.org/web/20041029003853/http://www.j3d.org/matrix_faq/matrfaq_latest.html#Q38">Matrix-FAQ Q38</a>
      * @param angrad angle in radians
      * @param x x of rotation axis
@@ -1543,40 +1410,31 @@ class Mat4f {
      * @param tmp temporary mat4f used for multiplication
      * @return this matrix for chaining
      */
-    Mat4f& rotate(const float ang_rad, const float x, const float y, const float z, Mat4f& tmp) noexcept {
+    Matrix4& rotate(const value_type ang_rad, const value_type x, const value_type y, const value_type z, Matrix4& tmp) noexcept {
         return mul( tmp.setToRotationAxis(ang_rad, x, y, z) );
     }
 
     /**
-     * Rotate this matrix about give axis and angle in radians, i.e. multiply by {@link #setToRotationAxis(float, vec3f) axis-rotation matrix}.
+     * Rotate this matrix about give axis and angle in radians, i.e. multiply by {@link #setToRotationAxis(value_type, vec3f) axis-rotation matrix}.
      * @see <a href="http://web.archive.org/web/20041029003853/http://www.j3d.org/matrix_faq/matrfaq_latest.html#Q38">Matrix-FAQ Q38</a>
      * @param angrad angle in radians
      * @param axis rotation axis
      * @param tmp temporary mat4f used for multiplication
      * @return this matrix for chaining
      */
-    Mat4f& rotate(const float ang_rad, const Vec3f& axis, Mat4f& tmp) noexcept {
+    Matrix4& rotate(const value_type ang_rad, const Vec3f& axis, Matrix4& tmp) noexcept {
         return mul( tmp.setToRotationAxis(ang_rad, axis) );
     }
 
     /**
-     * Rotate this matrix with the given {@link Quaternion}, i.e. multiply by {@link #setToRotation(Quaternion) Quaternion's rotation matrix}.
-     * @param tmp temporary mat4f used for multiplication
-     * @return this matrix for chaining
-     */
-    Mat4f& rotate(const Quaternion& quat, Mat4f& tmp) noexcept {
-        return mul( tmp.setToRotation(quat) );
-    }
-
-    /**
-     * Translate this matrix, i.e. multiply by {@link #setToTranslation(float, float, float) translation matrix}.
+     * Translate this matrix, i.e. multiply by {@link #setToTranslation(value_type, value_type, value_type) translation matrix}.
      * @param x x translation
      * @param y y translation
      * @param z z translation
      * @param tmp temporary mat4f used for multiplication
      * @return this matrix for chaining
      */
-    Mat4f& translate(const float x, const float y, const float z, Mat4f& tmp) noexcept {
+    Matrix4& translate(const value_type x, const value_type y, const value_type z, Matrix4& tmp) noexcept {
         return mul( tmp.setToTranslation(x, y, z) );
     }
 
@@ -1587,29 +1445,29 @@ class Mat4f {
      * @param tmp temporary mat4f used for multiplication
      * @return this matrix for chaining
      */
-    public final Mat4f translate(final Vec3f t, final Mat4f tmp) {
+    public final Matrix4 translate(final Vec3f t, final Matrix4 tmp) {
         return mul( tmp.setToTranslation(t) );
     }
 
     /**
-     * Scale this matrix, i.e. multiply by {@link #setToScale(float, float, float) scale matrix}.
+     * Scale this matrix, i.e. multiply by {@link #setToScale(value_type, value_type, value_type) scale matrix}.
      * @param x x scale
      * @param y y scale
      * @param z z scale
      * @param tmp temporary mat4f used for multiplication
      * @return this matrix for chaining
      */
-    public final Mat4f scale(const float x, const float y, const float z, final Mat4f tmp) {
+    public final Matrix4 scale(const value_type x, const value_type y, const value_type z, final Matrix4 tmp) {
         return mul( tmp.setToScale(x, y, z) );
     }
 
     /**
-     * Scale this matrix, i.e. multiply by {@link #setToScale(float, float, float) scale matrix}.
+     * Scale this matrix, i.e. multiply by {@link #setToScale(value_type, value_type, value_type) scale matrix}.
      * @param s scale for x-, y- and z-axis
      * @param tmp temporary mat4f used for multiplication
      * @return this matrix for chaining
      */
-    public final Mat4f scale(const float s, final Mat4f tmp) {
+    public final Matrix4 scale(const value_type s, final Matrix4 tmp) {
         return mul( tmp.setToScale(s, s, s) );
     }
 
@@ -1638,7 +1496,7 @@ class Mat4f {
     //
 
     /**
-     * Equals check using a given {@link FloatUtil#EPSILON} value and {@link FloatUtil#isEqual(float, float, float)}.
+     * Equals check using a given {@link FloatUtil#EPSILON} value and {@link FloatUtil#isEqual(value_type, value_type, value_type)}.
      * <p>
      * Implementation considers following corner cases:
      * <ul>
@@ -1650,7 +1508,7 @@ class Mat4f {
      * @param epsilon consider using {@link FloatUtil#EPSILON}
      * @return true if all components differ less than {@code epsilon}, otherwise false.
      */
-    public boolean isEqual(final Mat4f o, const float epsilon) {
+    public boolean isEqual(final Matrix4 o, const value_type epsilon) {
         if( this == o ) {
             return true;
         } else {
@@ -1674,7 +1532,7 @@ class Mat4f {
     }
 
     /**
-     * Equals check using {@link FloatUtil#EPSILON} value and {@link FloatUtil#isEqual(float, float, float)}.
+     * Equals check using {@link FloatUtil#EPSILON} value and {@link FloatUtil#isEqual(value_type, value_type, value_type)}.
      * <p>
      * Implementation considers following corner cases:
      * <ul>
@@ -1685,14 +1543,14 @@ class Mat4f {
      * @param o comparison value
      * @return true if all components differ less than {@link FloatUtil#EPSILON}, otherwise false.
      */
-    public boolean isEqual(final Mat4f o) {
+    public boolean isEqual(final Matrix4 o) {
         return isEqual(o, FloatUtil.EPSILON);
     }
 
     @Override
     public boolean equals(final Object o) {
-        if( o instanceof Mat4f ) {
-            return isEqual((Mat4f)o, FloatUtil.EPSILON);
+        if( o instanceof Matrix4 ) {
+            return isEqual((Matrix4)o, FloatUtil.EPSILON);
         } else {
             return false;
         }
@@ -1715,26 +1573,26 @@ class Mat4f {
      * @param winPos 3 component window coordinate, the result
      * @return true if successful, otherwise false (z is 1)
      */
-    public static boolean mapObjToWin(final Vec3f obj, final Mat4f mMv, final Mat4f mP,
+    public static boolean mapObjToWin(final Vec3f obj, final Matrix4 mMv, final Matrix4 mP,
                                       final Recti viewport, final Vec3f winPos)
     {
-        final Vec4f vec4Tmp1 = new Vec4f(obj, 1f);
+        final Vec4 vec4Tmp1 = new Vec4(obj, 1f);
 
         // vec4Tmp2 = Mv * o
         // rawWinPos = P  * vec4Tmp2
         // rawWinPos = P * ( Mv * o )
         // rawWinPos = P * Mv * o
-        final Vec4f vec4Tmp2 = mMv.mulVec4f(vec4Tmp1, new Vec4f());
-        final Vec4f rawWinPos = mP.mulVec4f(vec4Tmp2, vec4Tmp1);
+        final Vec4 vec4Tmp2 = mMv.mulVec4(vec4Tmp1, new Vec4());
+        final Vec4 rawWinPos = mP.mulVec4(vec4Tmp2, vec4Tmp1);
 
-        if (rawWinPos.w() == 0.0f) {
+        if (rawWinPos.w() == zero) {
             return false;
         }
 
-        const float s = ( 1.0f / rawWinPos.w() ) * 0.5f;
+        const value_type s = ( one / rawWinPos.w() ) * half;
 
         // Map x, y and z to range 0-1 (w is ignored)
-        rawWinPos.scale(s).add(0.5f, 0.5f, 0.5f, 0f);
+        rawWinPos.scale(s).add(half, half, half, 0f);
 
         // Map x,y to viewport
         winPos.set( rawWinPos.x() * viewport.width() +  viewport.x(),
@@ -1756,22 +1614,22 @@ class Mat4f {
      * @param winPos 3 component window coordinate, the result
      * @return true if successful, otherwise false (z is 1)
      */
-    public static boolean mapObjToWin(final Vec3f obj, final Mat4f mPMv,
+    public static boolean mapObjToWin(final Vec3f obj, final Matrix4 mPMv,
                                       final Recti viewport, final Vec3f winPos)
     {
-        final Vec4f vec4Tmp2 = new Vec4f(obj, 1f);
+        final Vec4 vec4Tmp2 = new Vec4(obj, 1f);
 
         // rawWinPos = P * Mv * o
-        final Vec4f rawWinPos = mPMv.mulVec4f(vec4Tmp2, new Vec4f());
+        final Vec4 rawWinPos = mPMv.mulVec4(vec4Tmp2, new Vec4());
 
-        if (rawWinPos.w() == 0.0f) {
+        if (rawWinPos.w() == zero) {
             return false;
         }
 
-        const float s = ( 1.0f / rawWinPos.w() ) * 0.5f;
+        const value_type s = ( one / rawWinPos.w() ) * half;
 
         // Map x, y and z to range 0-1 (w is ignored)
-        rawWinPos.scale(s).add(0.5f, 0.5f, 0.5f, 0f);
+        rawWinPos.scale(s).add(half, half, half, 0f);
 
         // Map x,y to viewport
         winPos.set( rawWinPos.x() * viewport.width() +  viewport.x(),
@@ -1797,19 +1655,19 @@ class Mat4f {
      * @param mat4Tmp 16 component matrix for temp storage
      * @return true if successful, otherwise false (failed to invert matrix, or becomes infinity due to zero z)
      */
-    public static boolean mapWinToObj(const float winx, const float winy, const float winz,
-                                      final Mat4f mMv, final Mat4f mP,
+    public static boolean mapWinToObj(const value_type winx, const value_type winy, const value_type winz,
+                                      final Matrix4 mMv, final Matrix4 mP,
                                       final Recti viewport,
                                       final Vec3f objPos,
-                                      final Mat4f mat4Tmp)
+                                      final Matrix4 mat4Tmp)
     {
         // invPMv = Inv(P x Mv)
-        final Mat4f invPMv = mat4Tmp.mul(mP, mMv);
+        final Matrix4 invPMv = mat4Tmp.mul(mP, mMv);
         if( !invPMv.invert() ) {
             return false;
         }
 
-        final Vec4f winPos = new Vec4f(winx, winy, winz, 1f);
+        final Vec4 winPos = new Vec4(winx, winy, winz, 1f);
 
         // Map x and y from window coordinates
         winPos.add(-viewport.x(), -viewport.y(), 0f, 0f).mul(1f/viewport.width(), 1f/viewport.height(), 1f, 1f);
@@ -1818,9 +1676,9 @@ class Mat4f {
         winPos.mul(2f, 2f, 2f, 1f).add(-1f, -1f, -1f, 0f);
 
         // rawObjPos = Inv(P x Mv) *  winPos
-        final Vec4f rawObjPos = invPMv.mulVec4f(winPos, new Vec4f());
+        final Vec4 rawObjPos = invPMv.mulVec4(winPos, new Vec4());
 
-        if ( rawObjPos.w() == 0.0f ) {
+        if ( rawObjPos.w() == zero ) {
             return false;
         }
         objPos.set( rawObjPos.scale( 1f / rawObjPos.w() ) );
@@ -1842,15 +1700,15 @@ class Mat4f {
      * @param objPos 3 component object coordinate, the result
      * @return true if successful, otherwise false (null invert matrix, or becomes infinity due to zero z)
      */
-    public static boolean mapWinToObj(const float winx, const float winy, const float winz,
-                                      final Mat4f invPMv,
+    public static boolean mapWinToObj(const value_type winx, const value_type winy, const value_type winz,
+                                      final Matrix4 invPMv,
                                       final Recti viewport,
                                       final Vec3f objPos)
     {
         if( null == invPMv ) {
             return false;
         }
-        final Vec4f winPos = new Vec4f(winx, winy, winz, 1f);
+        final Vec4 winPos = new Vec4(winx, winy, winz, 1f);
 
         // Map x and y from window coordinates
         winPos.add(-viewport.x(), -viewport.y(), 0f, 0f).mul(1f/viewport.width(), 1f/viewport.height(), 1f, 1f);
@@ -1859,9 +1717,9 @@ class Mat4f {
         winPos.mul(2f, 2f, 2f, 1f).add(-1f, -1f, -1f, 0f);
 
         // rawObjPos = Inv(P x Mv) *  winPos
-        final Vec4f rawObjPos = invPMv.mulVec4f(winPos, new Vec4f());
+        final Vec4 rawObjPos = invPMv.mulVec4(winPos, new Vec4());
 
-        if ( rawObjPos.w() == 0.0f ) {
+        if ( rawObjPos.w() == zero ) {
             return false;
         }
         objPos.set( rawObjPos.scale( 1f / rawObjPos.w() ) );
@@ -1885,15 +1743,15 @@ class Mat4f {
      * @param objPos1 3 component object coordinate, the result
      * @return true if successful, otherwise false (null invert matrix, or becomes infinity due to zero z)
      */
-    public static boolean mapWinToObj(const float winx, const float winy, const float winz1, const float winz2,
-                                      final Mat4f invPMv,
+    public static boolean mapWinToObj(const value_type winx, const value_type winy, const value_type winz1, const value_type winz2,
+                                      final Matrix4 invPMv,
                                       final Recti viewport,
                                       final Vec3f objPos1, final Vec3f objPos2)
     {
         if( null == invPMv ) {
             return false;
         }
-        final Vec4f winPos = new Vec4f(winx, winy, winz1, 1f);
+        final Vec4 winPos = new Vec4(winx, winy, winz1, 1f);
 
         // Map x and y from window coordinates
         winPos.add(-viewport.x(), -viewport.y(), 0f, 0f).mul(1f/viewport.width(), 1f/viewport.height(), 1f, 1f);
@@ -1902,9 +1760,9 @@ class Mat4f {
         winPos.mul(2f, 2f, 2f, 1f).add(-1f, -1f, -1f, 0f);
 
         // rawObjPos = Inv(P x Mv) *  winPos1
-        final Vec4f rawObjPos = invPMv.mulVec4f(winPos, new Vec4f());
+        final Vec4 rawObjPos = invPMv.mulVec4(winPos, new Vec4());
 
-        if ( rawObjPos.w() == 0.0f ) {
+        if ( rawObjPos.w() == zero ) {
             return false;
         }
         objPos1.set( rawObjPos.scale( 1f / rawObjPos.w() ) );
@@ -1916,9 +1774,9 @@ class Mat4f {
         winPos.setZ( winz2 * 2f - 1f );
 
         // rawObjPos = Inv(P x Mv) *  winPos2
-        invPMv.mulVec4f(winPos, rawObjPos);
+        invPMv.mulVec4(winPos, rawObjPos);
 
-        if ( rawObjPos.w() == 0.0f ) {
+        if ( rawObjPos.w() == zero ) {
             return false;
         }
         objPos2.set( rawObjPos.scale( 1f / rawObjPos.w() ) );
@@ -1945,20 +1803,20 @@ class Mat4f {
      * @param mat4Tmp 16 component matrix for temp storage
      * @return true if successful, otherwise false (failed to invert matrix, or becomes infinity due to zero z)
      */
-    public static boolean mapWinToObj4(const float winx, const float winy, const float winz, const float clipw,
-                                       final Mat4f mMv, final Mat4f mP,
+    public static boolean mapWinToObj4(const value_type winx, const value_type winy, const value_type winz, const value_type clipw,
+                                       final Matrix4 mMv, final Matrix4 mP,
                                        final Recti viewport,
-                                       const float near, const float far,
-                                       final Vec4f objPos,
-                                       final Mat4f mat4Tmp)
+                                       const value_type near, const value_type far,
+                                       final Vec4 objPos,
+                                       final Matrix4 mat4Tmp)
     {
         // invPMv = Inv(P x Mv)
-        final Mat4f invPMv = mat4Tmp.mul(mP, mMv);
+        final Matrix4 invPMv = mat4Tmp.mul(mP, mMv);
         if( !invPMv.invert() ) {
             return false;
         }
 
-        final Vec4f winPos = new Vec4f(winx, winy, winz, clipw);
+        final Vec4 winPos = new Vec4(winx, winy, winz, clipw);
 
         // Map x and y from window coordinates
         winPos.add(-viewport.x(), -viewport.y(), -near, 0f).mul(1f/viewport.width(), 1f/viewport.height(), 1f/(far-near), 1f);
@@ -1967,9 +1825,9 @@ class Mat4f {
         winPos.mul(2f, 2f, 2f, 1f).add(-1f, -1f, -1f, 0f);
 
         // objPos = Inv(P x Mv) *  winPos
-        invPMv.mulVec4f(winPos, objPos);
+        invPMv.mulVec4(winPos, objPos);
 
-        if ( objPos.w() == 0.0f ) {
+        if ( objPos.w() == zero ) {
             return false;
         }
         return true;
@@ -1992,16 +1850,16 @@ class Mat4f {
      * @param obj_pos 4 component object coordinate, the result
      * @return true if successful, otherwise false (null invert matrix, or becomes infinity due to zero z)
      */
-    public static boolean mapWinToObj4(const float winx, const float winy, const float winz, const float clipw,
-                                       final Mat4f invPMv,
+    public static boolean mapWinToObj4(const value_type winx, const value_type winy, const value_type winz, const value_type clipw,
+                                       final Matrix4 invPMv,
                                        final Recti viewport,
-                                       const float near, const float far,
-                                       final Vec4f objPos)
+                                       const value_type near, const value_type far,
+                                       final Vec4 objPos)
     {
         if( null == invPMv ) {
             return false;
         }
-        final Vec4f winPos = new Vec4f(winx, winy, winz, clipw);
+        final Vec4 winPos = new Vec4(winx, winy, winz, clipw);
 
         // Map x and y from window coordinates
         winPos.add(-viewport.x(), -viewport.y(), -near, 0f).mul(1f/viewport.width(), 1f/viewport.height(), 1f/(far-near), 1f);
@@ -2010,9 +1868,9 @@ class Mat4f {
         winPos.mul(2f, 2f, 2f, 1f).add(-1f, -1f, -1f, 0f);
 
         // objPos = Inv(P x Mv) *  winPos
-        invPMv.mulVec4f(winPos, objPos);
+        invPMv.mulVec4(winPos, objPos);
 
-        if ( objPos.w() == 0.0f ) {
+        if ( objPos.w() == zero ) {
             return false;
         }
         return true;
@@ -2021,13 +1879,13 @@ class Mat4f {
     /**
      * Map two window coordinates w/ shared X/Y and distinctive Z
      * to a {@link Ray}. The resulting {@link Ray} maybe used for <i>picking</i>
-     * using a {@link AABBox#getRayIntersection(vec3f, Ray, float, boolean)}.
+     * using a {@link AABBox#getRayIntersection(vec3f, Ray, value_type, boolean)}.
      * <p>
      * Notes for picking <i>winz0</i> and <i>winz1</i>:
      * <ul>
-     *   <li>see {@link FloatUtil#getZBufferEpsilon(int, float, float)}</li>
-     *   <li>see {@link FloatUtil#getZBufferValue(int, float, float, float)}</li>
-     *   <li>see {@link FloatUtil#getOrthoWinZ(float, float, float)}</li>
+     *   <li>see {@link FloatUtil#getZBufferEpsilon(int, value_type, value_type)}</li>
+     *   <li>see {@link FloatUtil#getZBufferValue(int, value_type, value_type, value_type)}</li>
+     *   <li>see {@link FloatUtil#getOrthoWinZ(value_type, value_type, value_type)}</li>
      * </ul>
      * </p>
      * @param winx
@@ -2042,13 +1900,13 @@ class Mat4f {
      * @param mat4Tmp2 16 component matrix for temp storage
      * @return true if successful, otherwise false (failed to invert matrix, or becomes z is infinity)
      */
-    public static boolean mapWinToRay(const float winx, const float winy, const float winz0, const float winz1,
-                                      final Mat4f mMv, final Mat4f mP,
+    public static boolean mapWinToRay(const value_type winx, const value_type winy, const value_type winz0, const value_type winz1,
+                                      final Matrix4 mMv, final Matrix4 mP,
                                       final Recti viewport,
                                       final Ray ray,
-                                      final Mat4f mat4Tmp1, final Mat4f mat4Tmp2) {
+                                      final Matrix4 mat4Tmp1, final Matrix4 mat4Tmp2) {
         // invPMv = Inv(P x Mv)
-        final Mat4f invPMv = mat4Tmp1.mul(mP, mMv);
+        final Matrix4 invPMv = mat4Tmp1.mul(mP, mMv);
         if( !invPMv.invert() ) {
             return false;
         }
@@ -2064,13 +1922,13 @@ class Mat4f {
     /**
      * Map two window coordinates w/ shared X/Y and distinctive Z
      * to a {@link Ray}. The resulting {@link Ray} maybe used for <i>picking</i>
-     * using a {@link AABBox#getRayIntersection(vec3f, Ray, float, boolean)}.
+     * using a {@link AABBox#getRayIntersection(vec3f, Ray, value_type, boolean)}.
      * <p>
      * Notes for picking <i>winz0</i> and <i>winz1</i>:
      * <ul>
-     *   <li>see {@link FloatUtil#getZBufferEpsilon(int, float, float)}</li>
-     *   <li>see {@link FloatUtil#getZBufferValue(int, float, float, float)}</li>
-     *   <li>see {@link FloatUtil#getOrthoWinZ(float, float, float)}</li>
+     *   <li>see {@link FloatUtil#getZBufferEpsilon(int, value_type, value_type)}</li>
+     *   <li>see {@link FloatUtil#getZBufferValue(int, value_type, value_type, value_type)}</li>
+     *   <li>see {@link FloatUtil#getOrthoWinZ(value_type, value_type, value_type)}</li>
      * </ul>
      * </p>
      * @param winx
@@ -2082,8 +1940,8 @@ class Mat4f {
      * @param ray storage for the resulting {@link Ray}
      * @return true if successful, otherwise false (null invert matrix, or becomes z is infinity)
      */
-    public static boolean mapWinToRay(const float winx, const float winy, const float winz0, const float winz1,
-                                      final Mat4f invPMv,
+    public static boolean mapWinToRay(const value_type winx, const value_type winy, const value_type winz0, const value_type winz1,
+                                      final Matrix4 invPMv,
                                       final Recti viewport,
                                       final Ray ray) {
         if( mapWinToObj(winx, winy, winz0, winz1, invPMv, viewport, ray.orig, ray.dir) ) {
@@ -2101,11 +1959,11 @@ class Mat4f {
     /**
      * @param sb optional passed StringBuilder instance to be used
      * @param rowPrefix optional prefix for each row
-     * @param f the format string of one floating point, i.e. "%10.5f", see {@link java.util.Formatter}
+     * @param f the format string of one value_typeing point, i.e. "%10.5f", see {@link java.util.Formatter}
      * @return matrix string representation
      */
     public StringBuilder toString(final StringBuilder sb, final String rowPrefix, final String f) {
-        const float[] tmp = new float[16];
+        const value_type[] tmp = new value_type[16];
         this.get(tmp);
         return FloatUtil.matrixToString(sb, rowPrefix, f,tmp, 0, 4, 4, false /* rowMajorOrder */);
     }
@@ -2119,17 +1977,46 @@ class Mat4f {
     /**
      * Returns a formatted string representation of this matrix
      * @param rowPrefix prefix for each row
-     * @param f format string for each float element, e.g. "%10.5f"
+     * @param f format string for each value_type element, e.g. "%10.5f"
      * @return matrix
      */
-    std::string toString(const std::string& rowPrefix, const std::string& f) const noexcept;
+    std::string toString(const std::string& rowPrefix, const std::string& f) const noexcept {
+        std::string sb;
+        value_type tmp[16];
+        get(tmp);
+        return jau::mat_to_string(sb, rowPrefix, f, tmp, 4, 4, false /* rowMajorOrder */); // creates a copy-out!
+    }
 
     std::string toString() const noexcept { return toString("", "%10.5f"); }
 };
 
-std::ostream& operator<<(std::ostream& out, const Mat4f& v) noexcept {
+template<typename T,
+         std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+constexpr Matrix4<T> operator*(const Matrix4<T>& lhs, const Matrix4<T>& rhs ) noexcept {
+    Matrix4<T> r(lhs); r *= rhs; return r;
+}
+
+template<typename T,
+         std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+constexpr Matrix4<T> operator*(const Matrix4<T>& lhs, const T s ) noexcept {
+    Matrix4<T> r(lhs); r *= s; return r;
+}
+
+template<typename T,
+         std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+constexpr Matrix4<T> operator*(const T s, const Matrix4<T>& rhs) noexcept {
+    Matrix4<T> r(rhs); r *= s; return r;
+}
+
+template<typename T,
+         std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+std::ostream& operator<<(std::ostream& out, const Matrix4<T>& v) noexcept {
     return out << v.toString();
 }
+
+typedef Matrix4<float> Mat4f;
+
+static_assert(alignof(float) == alignof(Mat4f));
 
 /**@}*/
 

@@ -57,11 +57,24 @@ namespace jau::math {
  * See <a href="http://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/index.htm">euclideanspace.com-Quaternion</a>
  * </p>
  */
-class Quaternion {
-  private:
-    float m_x, m_y, m_z, m_w;
-
+template<typename Value_type,
+         std::enable_if_t<std::is_floating_point_v<Value_type>, bool> = true>
+class alignas(Value_type) Quaternion {
   public:
+    typedef Value_type               value_type;
+    typedef value_type*              pointer;
+    typedef const value_type*        const_pointer;
+    typedef value_type&              reference;
+    typedef const value_type&        const_reference;
+    typedef value_type*              iterator;
+    typedef const value_type*        const_iterator;
+
+    typedef Vector3F<value_type, std::is_floating_point_v<Value_type>> Vec3;
+
+    constexpr static const value_type zero = value_type(0);
+    constexpr static const value_type one  = value_type(1);
+    constexpr static const value_type two  = value_type(2);
+    constexpr static const value_type half = one/two;
 
     /**
      * Quaternion Epsilon, used with equals method to determine if two Quaternions are close enough to be considered equal.
@@ -69,12 +82,17 @@ class Quaternion {
      * Using {@value}, which is ~10 times {@link FloatUtil#EPSILON}.
      * </p>
      */
-    constexpr static const float ALLOWED_DEVIANCE = 1.0E-6f; // FloatUtil.EPSILON == 1.1920929E-7f; double ALLOWED_DEVIANCE: 1.0E-8f
+    constexpr static const value_type allowed_deviation = 1.0E-6f; // FIXME: float EPSILON == 1.1920929E-7f; double ALLOWED_DEVIANCE: 1.0E-8f
+
+  private:
+    value_type m_x, m_y, m_z, m_w;
+
+  public:
 
     constexpr Quaternion() noexcept
     : m_x(0), m_y(0), m_z(0), m_w(1) {}
 
-    constexpr Quaternion(const float x, const float y, const float z, const float w) noexcept
+    constexpr Quaternion(const value_type x, const value_type y, const value_type z, const value_type w) noexcept
     : m_x(x), m_y(y), m_z(z), m_w(w) {}
 
     constexpr Quaternion(const Quaternion& o) noexcept = default;
@@ -87,7 +105,7 @@ class Quaternion {
      * which is not applied here.
      * @return the squared magnitude of this quaternion.
      */
-    float magnitudeSquared() const noexcept {
+    constexpr value_type magnitudeSquared() const noexcept {
         return m_w*m_w + m_x*m_x + m_y*m_y + m_z*m_z;
     }
 
@@ -100,13 +118,13 @@ class Quaternion {
      * <p>
      * Implementation Details:
      * <ul>
-     *   <li> returns 0f if {@link #magnitudeSquared()} is {@link jau::is_zero(float, float) is zero} using {@link FloatUtil#EPSILON epsilon}</li>
-     *   <li> returns 1f if {@link #magnitudeSquared()} is {@link FloatUtil#isEqual(float, float, float) equals 1f} using {@link FloatUtil#EPSILON epsilon}</li>
+     *   <li> returns 0f if {@link #magnitudeSquared()} is {@link jau::is_zero(value_type, value_type) is zero} using {@link FloatUtil#EPSILON epsilon}</li>
+     *   <li> returns 1f if {@link #magnitudeSquared()} is {@link FloatUtil#isEqual(value_type, value_type, value_type) equals 1f} using {@link FloatUtil#EPSILON epsilon}</li>
      * </ul>
      * </p>
      */
-    float magnitude() const noexcept {
-        const float magnitudeSQ = magnitudeSquared();
+    constexpr_cxx26 value_type magnitude() const noexcept {
+        const value_type magnitudeSQ = magnitudeSquared();
         if ( jau::is_zero(magnitudeSQ) ) {
             return 0.0f;
         }
@@ -116,33 +134,33 @@ class Quaternion {
         return std::sqrt(magnitudeSQ);
     }
 
-    float w() const noexcept { return m_w; }
+    constexpr value_type w() const noexcept { return m_w; }
 
-    void set_w(float w) noexcept { m_w = w; }
+    constexpr void set_w(value_type w) noexcept { m_w = w; }
 
-    float x() const noexcept { return m_x; }
+    constexpr value_type x() const noexcept { return m_x; }
 
-    void set_x(float x) noexcept { m_x = x; }
+    constexpr void set_x(value_type x) noexcept { m_x = x; }
 
-    float y() const noexcept { return m_y; }
+    constexpr value_type y() const noexcept { return m_y; }
 
-    void set_y(float y) noexcept { m_y = y; }
+    constexpr void set_y(value_type y) noexcept { m_y = y; }
 
-    float z() const noexcept { return m_z; }
+    constexpr value_type z() const noexcept { return m_z; }
 
-    void set_z(float z) noexcept { m_z = z; }
+    constexpr void set_z(value_type z) noexcept { m_z = z; }
 
     /**
      * Returns the dot product of this quaternion with the given x,y,z and m_w components.
      */
-    float dot(float x, float y, float z, float w) const noexcept {
+    constexpr value_type dot(value_type x, value_type y, value_type z, value_type w) const noexcept {
         return m_x * x + m_y * y + m_z * z + m_w * w;
     }
 
     /**
      * Returns the dot product of this quaternion with the given quaternion
      */
-    float dot(const Quaternion& quat) const noexcept {
+    constexpr value_type dot(const Quaternion& quat) const noexcept {
         return dot(quat.x(), quat.y(), quat.z(), quat.w());
     }
 
@@ -155,7 +173,7 @@ class Quaternion {
      * {@link jau::is_zero3f() against zero}.
      * </p>
      */
-    bool is_identity() const noexcept {
+    constexpr bool is_identity() const noexcept {
         return jau::equals(1.0f, m_w) && jau::is_zero3f(m_x, m_y, m_z);
         // return m_w == 1f && m_x == 0f && m_y == 0f && m_z == 0f;
     }
@@ -164,7 +182,7 @@ class Quaternion {
      * Set this quaternion to identity (x=0,y=0,z=0,w=1)
      * @return this quaternion for chaining.
      */
-    Quaternion& set_identity() noexcept {
+    constexpr Quaternion& set_identity() noexcept {
         m_x = m_y = m_z = 0.0f; m_w = 1.0f;
         return *this;
     }
@@ -179,12 +197,12 @@ class Quaternion {
      * </p>
      * @return this quaternion for chaining.
      */
-    Quaternion& normalize() noexcept {
-        const float norm = magnitude();
+    constexpr Quaternion& normalize() noexcept {
+        const value_type norm = magnitude();
         if ( jau::is_zero(norm) ) {
             set_identity();
         } else {
-            const float invNorm = 1.0f/norm;
+            const value_type invNorm = 1.0f/norm;
             m_w *= invNorm;
             m_x *= invNorm;
             m_y *= invNorm;
@@ -198,7 +216,7 @@ class Quaternion {
      * @return this quaternion for chaining.
      * @see <a href="http://web.archive.org/web/20041029003853/http://www.j3d.org/matrix_faq/matrfaq_latest.html#Q49">Matrix-FAQ Q49</a>
      */
-    Quaternion& conjugate() noexcept {
+    constexpr Quaternion& conjugate() noexcept {
         m_x = -m_x;
         m_y = -m_y;
         m_z = -m_z;
@@ -210,18 +228,18 @@ class Quaternion {
      * <p>
      * Implementation Details:
      * <ul>
-     *   <li> {@link #conjugate() conjugates} if {@link #magnitudeSquared()} is is {@link FloatUtil#isEqual(float, float, float) equals 1f} using {@link FloatUtil#EPSILON epsilon}</li>
+     *   <li> {@link #conjugate() conjugates} if {@link #magnitudeSquared()} is is {@link FloatUtil#isEqual(value_type, value_type, value_type) equals 1f} using {@link FloatUtil#EPSILON epsilon}</li>
      * </ul>
      * </p>
      * @return this quaternion for chaining.
      * @see <a href="http://web.archive.org/web/20041029003853/http://www.j3d.org/matrix_faq/matrfaq_latest.html#Q50">Matrix-FAQ Q50</a>
      */
-    Quaternion& invert() noexcept {
-        const float magnitudeSQ = magnitudeSquared();
+    constexpr Quaternion& invert() noexcept {
+        const value_type magnitudeSQ = magnitudeSquared();
         if ( jau::equals(1.0f, magnitudeSQ) ) {
             conjugate();
         } else {
-            const float invmsq = 1.0f/magnitudeSQ;
+            const value_type invmsq = 1.0f/magnitudeSQ;
             m_w *= invmsq;
             m_x = -m_x * invmsq;
             m_y = -m_y * invmsq;
@@ -234,7 +252,7 @@ class Quaternion {
      * Set all values of this quaternion using the given components.
      * @return this quaternion for chaining.
      */
-    constexpr Quaternion& set(const float x, const float y, const float z, const float w) noexcept {
+    constexpr Quaternion& set(const value_type x, const value_type y, const value_type z, const value_type w) noexcept {
         m_x = x;
         m_y = y;
         m_z = z;
@@ -290,11 +308,11 @@ class Quaternion {
     /**
      * Scale this quaternion by a scalar: this = this * rhs, returns this
      *
-     * @param n a float constant
+     * @param n a value_type constant
      * @return this quaternion for chaining.
      * @see <a href="http://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/code/index.htm#scale">euclideanspace.com-QuaternionScale</a>
      */
-    constexpr Quaternion& operator*=(const float rhs) noexcept {
+    constexpr Quaternion& operator*=(const value_type rhs) noexcept {
         m_x *= rhs;
         m_y *= rhs;
         m_z *= rhs;
@@ -317,17 +335,17 @@ class Quaternion {
      * @param axisZ m_z-coord of rotation axis
      * @return this quaternion for chaining.
      */
-    Quaternion& rotateByAngleNormalAxis(float angle, float axisX, float axisY, float axisZ) noexcept {
+    constexpr_cxx26 Quaternion& rotateByAngleNormalAxis(const value_type angle, const value_type axisX, const value_type axisY, const value_type axisZ) noexcept {
         if( jau::is_zero3f(axisX, axisY, axisZ) ) {
             // no change
             return *this;
         }
-        const float halfAngle = 0.5f * angle;
-        const float sin = std::sin(halfAngle);
-        const float qw = std::cos(halfAngle);
-        const float qx = sin * axisX;
-        const float qy = sin * axisY;
-        const float qz = sin * axisZ;
+        const value_type halfAngle = 0.5f * angle;
+        const value_type sin = std::sin(halfAngle);
+        const value_type qw = std::cos(halfAngle);
+        const value_type qx = sin * axisX;
+        const value_type qy = sin * axisY;
+        const value_type qz = sin * axisZ;
         return set( m_x * qw + m_y * qz - m_z * qy + m_w * qx,
                    -m_x * qz + m_y * qw + m_z * qx + m_w * qy,
                     m_x * qy - m_y * qx + m_z * qw + m_w * qz,
@@ -344,10 +362,10 @@ class Quaternion {
      * </p>
      *
      * @param angle in radians
-     * @param axis  Vec3f coord of rotation axis
+     * @param axis  Vec3 coord of rotation axis
      * @return this quaternion for chaining.
      */
-    Quaternion& rotateByAngleNormalAxis(float angle, const Vec3f& axis) noexcept {
+    constexpr_cxx26 Quaternion& rotateByAngleNormalAxis(const value_type angle, const Vec3& axis) noexcept {
         return rotateByAngleNormalAxis(angle, axis.x, axis.y, axis.z);
     }
 
@@ -357,10 +375,12 @@ class Quaternion {
      * @param angle in radians
      * @return this quaternion for chaining.
      */
-    Quaternion& rotateByAngleX(float angle) noexcept {
-        const float halfAngle = 0.5f * angle;
-        const float sin = std::sin(halfAngle);
-        const float cos = std::cos(halfAngle);
+    constexpr_cxx26 Quaternion& rotateByAngleX(const value_type angle) noexcept {
+        const value_type halfAngle = 0.5f * angle;
+        return rotateByAngleX(std::sin(halfAngle), std::cos(halfAngle));
+    }
+    /** Rotate this quaternion around X axis with the given angle's sin + cos values */
+    constexpr Quaternion& rotateByAngleX(const value_type sin, const value_type cos) noexcept {
         return set( m_x * cos + m_w * sin,
                     m_y * cos + m_z * sin,
                    -m_y * sin + m_z * cos,
@@ -373,10 +393,12 @@ class Quaternion {
      * @param angle in radians
      * @return this quaternion for chaining.
      */
-    Quaternion& rotateByAngleY(float angle) noexcept {
-        const float halfAngle = 0.5f * angle;
-        const float sin = std::sin(halfAngle);
-        const float cos = std::cos(halfAngle);
+    constexpr_cxx26 Quaternion& rotateByAngleY(value_type angle) noexcept {
+        const value_type halfAngle = 0.5f * angle;
+        return rotateByAngleY(std::sin(halfAngle), std::cos(halfAngle));
+    }
+    /** Rotate this quaternion around Y axis with the given angle's sin + cos values */
+    constexpr Quaternion& rotateByAngleY(const value_type sin, const value_type cos) noexcept {
         return set( m_x * cos - m_z * sin,
                     m_y * cos + m_w * sin,
                     m_x * sin + m_z * cos,
@@ -389,10 +411,12 @@ class Quaternion {
      * @param angle in radians
      * @return this quaternion for chaining.
      */
-    Quaternion& rotateByAngleZ(float angle) noexcept {
-        const float halfAngle = 0.5f * angle;
-        const float sin = std::sin(halfAngle);
-        const float cos = std::cos(halfAngle);
+    constexpr_cxx26 Quaternion& rotateByAngleZ(value_type angle) noexcept {
+        const value_type halfAngle = 0.5f * angle;
+        return rotateByAngleZ(std::sin(halfAngle), std::cos(halfAngle));
+    }
+    /** Rotate this quaternion around Y axis with the given angle's sin + cos values */
+    constexpr Quaternion& rotateByAngleZ(const value_type sin, const value_type cos) noexcept {
         return set( m_x * cos + m_y * sin,
                    -m_x * sin + m_y * cos,
                     m_z * cos + m_w * sin,
@@ -409,12 +433,12 @@ class Quaternion {
      *  <li>z - attitude</li>
      * </ul>
      * </p>
-     * For details see {@link #rotateByEuler(float, float, float)}.
+     * For details see {@link #rotateByEuler(value_type, value_type, value_type)}.
      * @param angradXYZ euler angle array in radians
      * @return this quaternion for chaining.
-     * @see #rotateByEuler(float, float, float)
+     * @see #rotateByEuler(value_type, value_type, value_type)
      */
-    Quaternion& rotateByEuler(const Vec3f& angradXYZ) noexcept {
+    Quaternion& rotateByEuler(const Vec3& angradXYZ) noexcept {
         return rotateByEuler(angradXYZ.x, angradXYZ.y, angradXYZ.z);
     }
 
@@ -423,15 +447,15 @@ class Quaternion {
      * <p>
      * The rotations are applied in the given order and using chained rotation per axis:
      * <ul>
-     *  <li>y - heading  - {@link #rotateByAngleY(float)}</li>
-     *  <li>z - attitude - {@link #rotateByAngleZ(float)}</li>
-     *  <li>x - bank     - {@link #rotateByAngleX(float)}</li>
+     *  <li>y - heading  - {@link #rotateByAngleY(value_type)}</li>
+     *  <li>z - attitude - {@link #rotateByAngleZ(value_type)}</li>
+     *  <li>x - bank     - {@link #rotateByAngleX(value_type)}</li>
      * </ul>
      * </p>
      * <p>
      * Implementation Details:
      * <ul>
-     *   <li> NOP if all angles are {@link jau::is_zero(float, float) is zero} using {@link FloatUtil#EPSILON epsilon}</li>
+     *   <li> NOP if all angles are {@link jau::is_zero(value_type, value_type) is zero} using {@link FloatUtil#EPSILON epsilon}</li>
      *   <li> result is {@link #normalize()}ed</li>
      * </ul>
      * </p>
@@ -439,12 +463,12 @@ class Quaternion {
      * @param headingY the Euler yaw angle in radians. (rotation about the Y axis)
      * @param attitudeZ the Euler roll angle in radians. (rotation about the Z axis)
      * @return this quaternion for chaining.
-     * @see #rotateByAngleY(float)
-     * @see #rotateByAngleZ(float)
-     * @see #rotateByAngleX(float)
-     * @see #setFromEuler(float, float, float)
+     * @see #rotateByAngleY(value_type)
+     * @see #rotateByAngleZ(value_type)
+     * @see #rotateByAngleX(value_type)
+     * @see #setFromEuler(value_type, value_type, value_type)
      */
-    Quaternion& rotateByEuler(float bankX, float headingY, float attitudeZ) noexcept {
+    constexpr_cxx26 Quaternion& rotateByEuler(const value_type bankX, const value_type headingY, const value_type attitudeZ) noexcept {
         if ( jau::is_zero3f(bankX, headingY, attitudeZ) ) {
             return *this;
         } else {
@@ -461,18 +485,18 @@ class Quaternion {
      * @return the given out store for chaining
      * @see <a href="http://web.archive.org/web/20041029003853/http://www.j3d.org/matrix_faq/matrfaq_latest.html#Q63">Matrix-FAQ Q63</a>
      */
-    Vec3f rotateVector(const Vec3f& in) noexcept {
-        Vec3f out;
+    Vec3 rotateVector(const Vec3& in) noexcept {
+        Vec3 out;
         if( in.is_zero() ) {
             out.set(0, 0, 0);
         } else {
-            const float vecX = in.x;
-            const float vecY = in.y;
-            const float vecZ = in.z;
-            const float x_x = m_x*m_x;
-            const float y_y = m_y*m_y;
-            const float z_z = m_z*m_z;
-            const float w_w = m_w*m_w;
+            const value_type vecX = in.x;
+            const value_type vecY = in.y;
+            const value_type vecZ = in.z;
+            const value_type x_x = m_x*m_x;
+            const value_type y_y = m_y*m_y;
+            const value_type z_z = m_z*m_z;
+            const value_type w_w = m_w*m_w;
 
             out.x =     w_w * vecX
                          + x_x * vecX
@@ -505,26 +529,26 @@ class Quaternion {
      *
      * @param a start quaternion
      * @param b end  quaternion
-     * @param changeAmnt float between 0 and 1 representing interpolation.
+     * @param changeAmnt value_type between 0 and 1 representing interpolation.
      * @return this quaternion for chaining.
      * @see <a href="http://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/slerp/">euclideanspace.com-QuaternionSlerp</a>
      */
-    Quaternion& set_slerp(const Quaternion& a, const Quaternion& b, const float changeAmnt) noexcept {
+    constexpr_cxx26 Quaternion& set_slerp(const Quaternion& a, const Quaternion& b, const value_type changeAmnt) noexcept {
         // std::cerr << "Slerp.0: A " << a << ", B " << b << ", t " << changeAmnt << std::endl;
         if (changeAmnt == 0.0f) {
             *this = a;
         } else if (changeAmnt == 1.0f) {
             *this = b;
         } else {
-            float bx = b.m_x;
-            float by = b.m_y;
-            float bz = b.m_z;
-            float bw = b.m_w;
+            value_type bx = b.m_x;
+            value_type by = b.m_y;
+            value_type bz = b.m_z;
+            value_type bw = b.m_w;
 
             // Calculate angle between them (quat dot product)
-            float cosHalfTheta = a.m_x * bx + a.m_y * by + a.m_z * bz + a.m_w * bw;
+            value_type cosHalfTheta = a.m_x * bx + a.m_y * by + a.m_z * bz + a.m_w * bw;
 
-            float scale0, scale1;
+            value_type scale0, scale1;
 
             if( cosHalfTheta >= 0.95f ) {
                 // quaternions are close, just use linear interpolation
@@ -536,7 +560,7 @@ class Quaternion {
                 scale0 = 0.5f;
                 scale1 = 0.5f;
             } else {
-                if( cosHalfTheta <= -std::numeric_limits<float>::epsilon() ) { // FIXME: .. or shall we use the upper bound 'cosHalfTheta < EPSILON' ?
+                if( cosHalfTheta <= -std::numeric_limits<value_type>::epsilon() ) { // FIXME: .. or shall we use the upper bound 'cosHalfTheta < EPSILON' ?
                     // Negate the second quaternion and the result of the dot product (Inversion)
                     bx *= -1.0f;
                     by *= -1.0f;
@@ -544,8 +568,8 @@ class Quaternion {
                     bw *= -1.0f;
                     cosHalfTheta *= -1.0f;
                 }
-                const float halfTheta = std::acos(cosHalfTheta);
-                const float sinHalfTheta = std::sqrt(1.0f - cosHalfTheta*cosHalfTheta);
+                const value_type halfTheta = std::acos(cosHalfTheta);
+                const value_type sinHalfTheta = std::sqrt(1.0f - cosHalfTheta*cosHalfTheta);
                 // if theta = 180 degrees then result is not fully defined
                 // we could rotate around any axis normal to qa or qb
                 if ( std::abs(sinHalfTheta) < 0.001f ){ // fabs is floating point absolute
@@ -588,8 +612,8 @@ class Quaternion {
      * @return this quaternion for chaining.
      * @see <a href="http://www.euclideanspace.com/maths/algebra/vectors/lookat/index.htm">euclideanspace.com-LookUp</a>
      */
-    Quaternion& setLookAt(const Vec3f& directionIn, const Vec3f& upIn,
-                          Vec3f& xAxisOut, Vec3f& yAxisOut, Vec3f& zAxisOut) noexcept {
+    Quaternion& setLookAt(const Vec3& directionIn, const Vec3& upIn,
+                          Vec3& xAxisOut, Vec3& yAxisOut, Vec3& zAxisOut) noexcept {
         // Z = norm(dir)
         (zAxisOut = directionIn).normalize();
 
@@ -603,15 +627,15 @@ class Quaternion {
         yAxisOut.cross(zAxisOut, xAxisOut).normalize();
 
         /**
-            const float m00 = xAxisOut[0];
-            const float m01 = yAxisOut[0];
-            const float m02 = zAxisOut[0];
-            const float m10 = xAxisOut[1];
-            const float m11 = yAxisOut[1];
-            const float m12 = zAxisOut[1];
-            const float m20 = xAxisOut[2];
-            const float m21 = yAxisOut[2];
-            const float m22 = zAxisOut[2];
+            const value_type m00 = xAxisOut[0];
+            const value_type m01 = yAxisOut[0];
+            const value_type m02 = zAxisOut[0];
+            const value_type m10 = xAxisOut[1];
+            const value_type m11 = yAxisOut[1];
+            const value_type m12 = zAxisOut[1];
+            const value_type m20 = xAxisOut[2];
+            const value_type m21 = yAxisOut[2];
+            const value_type m22 = zAxisOut[2];
          */
         return setFromAxes(xAxisOut, yAxisOut, zAxisOut).normalize();
     }
@@ -630,22 +654,22 @@ class Quaternion {
      * <p>
      * Implementation Details:
      * <ul>
-     *   <li> set_identity() if square vector-length is jau::is_zero2f(float, float) using epsilon</li>
+     *   <li> set_identity() if square vector-length is jau::is_zero2f(value_type, value_type) using epsilon</li>
      * </ul>
      * </p>
      * @param v1 not normalized
      * @param v2 not normalized
      * @return this quaternion for chaining.
      */
-    Quaternion& setFromVectors(const Vec3f& v1, const Vec3f& v2) noexcept {
-        const float factor = v1.length() * v2.length();
+    constexpr_cxx26 Quaternion& setFromVectors(const Vec3& v1, const Vec3& v2) noexcept {
+        const value_type factor = v1.length() * v2.length();
         if ( jau::is_zero(factor) ) {
             return set_identity();
         } else {
-            const float dot = v1.dot(v2) / factor; // normalize
-            const float theta = std::acos(std::max(-1.0f, std::min(dot, 1.0f))); // clipping [-1..1]
+            const value_type dot = v1.dot(v2) / factor; // normalize
+            const value_type theta = std::acos(std::max(-1.0f, std::min(dot, 1.0f))); // clipping [-1..1]
 
-            Vec3f tmpPivotVec = v1.cross(v2);
+            Vec3 tmpPivotVec = v1.cross(v2);
 
             if ( dot < 0.0f && jau::is_zero( tmpPivotVec.length() ) ) {
                 // Vectors parallel and opposite direction, therefore a rotation of 180 degrees about any vector
@@ -684,22 +708,22 @@ class Quaternion {
      * <p>
      * Implementation Details:
      * <ul>
-     *   <li> {@link #setIdentity()} if square vector-length is {@link jau::is_zero(float, float) is zero} using {@link FloatUtil#EPSILON epsilon}</li>
+     *   <li> {@link #setIdentity()} if square vector-length is {@link jau::is_zero(value_type, value_type) is zero} using {@link FloatUtil#EPSILON epsilon}</li>
      * </ul>
      * </p>
      * @param v1 normalized
      * @param v2 normalized
      * @return this quaternion for chaining.
      */
-    Quaternion& setFromNormalVectors(const Vec3f& v1, const Vec3f& v2) noexcept {
-        const float factor = v1.length() * v2.length();
+    constexpr_cxx26 Quaternion& setFromNormalVectors(const Vec3& v1, const Vec3& v2) noexcept {
+        const value_type factor = v1.length() * v2.length();
         if ( jau::is_zero(factor) ) {
             return set_identity();
         } else {
-            const float dot = v1.dot(v2) / factor; // normalize
-            const float theta = std::acos(std::max(-1.0f, std::min(dot, 1.0f))); // clipping [-1..1]
+            const value_type dot = v1.dot(v2) / factor; // normalize
+            const value_type theta = std::acos(std::max(-1.0f, std::min(dot, 1.0f))); // clipping [-1..1]
 
-            Vec3f tmpPivotVec = v1.cross(v2);
+            Vec3 tmpPivotVec = v1.cross(v2);
 
             if ( dot < 0.0f && jau::is_zero( tmpPivotVec.length() ) ) {
                 // Vectors parallel and opposite direction, therefore a rotation of 180 degrees about any vector
@@ -733,7 +757,7 @@ class Quaternion {
      * <p>
      * Implementation Details:
      * <ul>
-     *   <li> {@link #setIdentity()} if axis is {@link jau::is_zero(float, float) is zero} using {@link FloatUtil#EPSILON epsilon}</li>
+     *   <li> {@link #setIdentity()} if axis is {@link jau::is_zero(value_type, value_type) is zero} using {@link FloatUtil#EPSILON epsilon}</li>
      * </ul>
      * </p>
      * @param angle rotation angle (rads)
@@ -741,10 +765,10 @@ class Quaternion {
      * @return this quaternion for chaining.
      *
      * @see <a href="http://web.archive.org/web/20041029003853/http://www.j3d.org/matrix_faq/matrfaq_latest.html#Q56">Matrix-FAQ Q56</a>
-     * @see #toAngleAxis(Vec3f)
+     * @see #toAngleAxis(Vec3)
      */
-    Quaternion& setFromAngleAxis(const float angle, const Vec3f& vector) noexcept {
-        return setFromAngleNormalAxis(angle, Vec3f(vector).normalize());
+    Quaternion& setFromAngleAxis(const value_type angle, const Vec3& vector) noexcept {
+        return setFromAngleNormalAxis(angle, Vec3(vector).normalize());
     }
 
     /***
@@ -752,7 +776,7 @@ class Quaternion {
      * <p>
      * Implementation Details:
      * <ul>
-     *   <li> {@link #setIdentity()} if axis is {@link jau::is_zero(float, float) is zero} using {@link FloatUtil#EPSILON epsilon}</li>
+     *   <li> {@link #setIdentity()} if axis is {@link jau::is_zero(value_type, value_type) is zero} using {@link FloatUtil#EPSILON epsilon}</li>
      * </ul>
      * </p>
      * @param angle rotation angle (rads)
@@ -760,14 +784,14 @@ class Quaternion {
      * @return this quaternion for chaining.
      *
      * @see <a href="http://web.archive.org/web/20041029003853/http://www.j3d.org/matrix_faq/matrfaq_latest.html#Q56">Matrix-FAQ Q56</a>
-     * @see #toAngleAxis(Vec3f)
+     * @see #toAngleAxis(Vec3)
      */
-    Quaternion& setFromAngleNormalAxis(const float angle, const Vec3f& vector) noexcept {
+    constexpr_cxx26 Quaternion& setFromAngleNormalAxis(const value_type angle, const Vec3& vector) noexcept {
         if( vector.is_zero() ) {
             set_identity();
         } else {
-            const float halfangle = angle * 0.5f;
-            const float sin = std::sin(halfangle);
+            const value_type halfangle = angle * 0.5f;
+            const value_type sin = std::sin(halfangle);
             m_x = vector.x * sin;
             m_y = vector.y * sin;
             m_z = vector.z * sin;
@@ -781,17 +805,17 @@ class Quaternion {
      *
      * @param axis storage for computed axis
      * @return the rotation angle in radians
-     * @see #setFromAngleAxis(float, Vec3f, Vec3f)
+     * @see #setFromAngleAxis(value_type, Vec3, Vec3)
      */
-    float toAngleAxis(Vec3f& axis) const noexcept {
-        const float sqrLength = m_x*m_x + m_y*m_y + m_z*m_z;
-        float angle;
+    constexpr_cxx26 value_type toAngleAxis(Vec3& axis) const noexcept {
+        const value_type sqrLength = m_x*m_x + m_y*m_y + m_z*m_z;
+        value_type angle;
         if ( jau::is_zero(sqrLength) ) { // length is ~0
             angle = 0.0f;
             axis.set( 1.0f, 0.0f, 0.0f );
         } else {
             angle = std::acos(m_w) * 2.0f;
-            const float invLength = 1.0f / std::sqrt(sqrLength);
+            const value_type invLength = 1.0f / std::sqrt(sqrLength);
             axis.set( m_x * invLength,
                       m_y * invLength,
                       m_z * invLength );
@@ -809,12 +833,12 @@ class Quaternion {
      *  <li>z - attitude</li>
      * </ul>
      * </p>
-     * For details see {@link #setFromEuler(float, float, float)}.
+     * For details see {@link #setFromEuler(value_type, value_type, value_type)}.
      * @param angradXYZ euler angle vector in radians holding x-bank, m_y-heading and m_z-attitude
      * @return this quaternion for chaining.
-     * @see #setFromEuler(float, float, float)
+     * @see #setFromEuler(value_type, value_type, value_type)
      */
-    Quaternion& setFromEuler(const Vec3f& angradXYZ) noexcept {
+    constexpr_cxx26 Quaternion& setFromEuler(const Vec3& angradXYZ) noexcept {
         return setFromEuler(angradXYZ.x, angradXYZ.y, angradXYZ.z);
     }
 
@@ -831,7 +855,7 @@ class Quaternion {
      * <p>
      * Implementation Details:
      * <ul>
-     *   <li> {@link #setIdentity()} if all angles are {@link jau::is_zero(float, float) is zero} using {@link FloatUtil#EPSILON epsilon}</li>
+     *   <li> {@link #setIdentity()} if all angles are {@link jau::is_zero(value_type, value_type) is zero} using {@link FloatUtil#EPSILON epsilon}</li>
      *   <li> result is {@link #normalize()}ed</li>
      * </ul>
      * </p>
@@ -843,27 +867,27 @@ class Quaternion {
      * @see <a href="http://web.archive.org/web/20041029003853/http://www.j3d.org/matrix_faq/matrfaq_latest.html#Q60">Matrix-FAQ Q60</a>
      * @see <a href="http://vered.rose.utoronto.ca/people/david_dir/GEMS/GEMS.html">Gems</a>
      * @see <a href="http://www.euclideanspace.com/maths/geometry/rotations/conversions/eulerToQuaternion/index.htm">euclideanspace.com-eulerToQuaternion</a>
-     * @see #toEuler(Vec3f)
+     * @see #toEuler(Vec3)
      */
-    Quaternion& setFromEuler(const float bankX, const float headingY, const float attitudeZ) noexcept {
+    constexpr_cxx26 Quaternion& setFromEuler(const value_type bankX, const value_type headingY, const value_type attitudeZ) noexcept {
         if ( jau::is_zero3f(bankX, headingY, attitudeZ) ) {
             return set_identity();
         } else {
-            float angle = headingY * 0.5f;
-            const float sinHeadingY = std::sin(angle);
-            const float cosHeadingY = std::cos(angle);
+            value_type angle = headingY * 0.5f;
+            const value_type sinHeadingY = std::sin(angle);
+            const value_type cosHeadingY = std::cos(angle);
             angle = attitudeZ * 0.5f;
-            const float sinAttitudeZ = std::sin(angle);
-            const float cosAttitudeZ = std::cos(angle);
+            const value_type sinAttitudeZ = std::sin(angle);
+            const value_type cosAttitudeZ = std::cos(angle);
             angle = bankX * 0.5f;
-            const float sinBankX = std::sin(angle);
-            const float cosBankX = std::cos(angle);
+            const value_type sinBankX = std::sin(angle);
+            const value_type cosBankX = std::cos(angle);
 
             // variables used to reduce multiplication calls.
-            const float cosHeadingXcosAttitude = cosHeadingY * cosAttitudeZ;
-            const float sinHeadingXsinAttitude = sinHeadingY * sinAttitudeZ;
-            const float cosHeadingXsinAttitude = cosHeadingY * sinAttitudeZ;
-            const float sinHeadingXcosAttitude = sinHeadingY * cosAttitudeZ;
+            const value_type cosHeadingXcosAttitude = cosHeadingY * cosAttitudeZ;
+            const value_type sinHeadingXsinAttitude = sinHeadingY * sinAttitudeZ;
+            const value_type cosHeadingXsinAttitude = cosHeadingY * sinAttitudeZ;
+            const value_type sinHeadingXcosAttitude = sinHeadingY * cosAttitudeZ;
 
             m_w = cosHeadingXcosAttitude * cosBankX - sinHeadingXsinAttitude * sinBankX;
             m_x = cosHeadingXcosAttitude * sinBankX + sinHeadingXsinAttitude * cosBankX;
@@ -884,28 +908,28 @@ class Quaternion {
      * </ul>
      * </p>
      *
-     * @return new Vec3f euler angle result vector filled with x-bank, y-heading and m_z-attitude
+     * @return new Vec3 euler angle result vector filled with x-bank, y-heading and m_z-attitude
      * @see <a href="http://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToEuler/index.htm">euclideanspace.com-quaternionToEuler</a>
-     * @see #setFromEuler(float, float, float)
+     * @see #setFromEuler(value_type, value_type, value_type)
      */
-    Vec3f toEuler() noexcept {
-        const float sqw = m_w*m_w;
-        const float sqx = m_x*m_x;
-        const float sqy = m_y*m_y;
-        const float sqz = m_z*m_z;
-        const float unit = sqx + sqy + sqz + sqw; // if normalized is one, otherwise, is correction factor
-        const float test = m_x*m_y + m_z*m_w;
+    constexpr_cxx26 Vec3 toEuler() noexcept {
+        const value_type sqw = m_w*m_w;
+        const value_type sqx = m_x*m_x;
+        const value_type sqy = m_y*m_y;
+        const value_type sqz = m_z*m_z;
+        const value_type unit = sqx + sqy + sqz + sqw; // if normalized is one, otherwise, is correction factor
+        const value_type test = m_x*m_y + m_z*m_w;
 
         if (test > 0.499f * unit) { // singularity at north pole
-            return Vec3f( 0.0f,                        // m_x-bank
+            return Vec3( 0.0f,                        // m_x-bank
                           2.0f * std::atan2(m_x, m_w), // y-heading
                           M_PI_2 );                    // z-attitude
         } else if (test < -0.499f * unit) { // singularity at south pole
-            return Vec3f( 0.0f,                        // m_x-bank
+            return Vec3( 0.0f,                        // m_x-bank
                          -2.0 * std::atan2(m_x, m_w),  // m_y-heading
                          -M_PI_2 );                    // m_z-attitude
         } else {
-            return Vec3f( std::atan2(2.0f * m_x * m_w - 2.0f * m_y * m_z, -sqx + sqy - sqz + sqw), // m_x-bank
+            return Vec3( std::atan2(2.0f * m_x * m_w - 2.0f * m_y * m_z, -sqx + sqy - sqz + sqw), // m_x-bank
                           std::atan2(2.0f * m_y * m_w - 2.0f * m_x * m_z,  sqx - sqy - sqz + sqw), // m_y-heading
                           std::asin( 2.0f * test / unit) );                                        // z-attitude
         }
@@ -924,35 +948,35 @@ class Quaternion {
      * @return this quaternion for chaining.
      * @see #setFromMatrix(Matrix4f)
      */
-    Quaternion& setFromMat3(const float m00, const float m01, const float m02,
-                            const float m10, const float m11, const float m12,
-                            const float m20, const float m21, const float m22) noexcept {
+    constexpr Quaternion& setFromMat(const value_type m00, const value_type m01, const value_type m02,
+                                     const value_type m10, const value_type m11, const value_type m12,
+                                     const value_type m20, const value_type m21, const value_type m22) noexcept {
         // Note: Other implementations uses 'T' w/o '+1f' and compares 'T >= 0' while adding missing 1f in sqrt expr.
         //       However .. this causes setLookAt(..) to fail and actually violates the 'trace definition'.
 
         // The trace T is the sum of the diagonal elements; see
         // http://mathworld.wolfram.com/MatrixTrace.html
-        const float T = m00 + m11 + m22 + 1.0f;
+        const value_type T = m00 + m11 + m22 + 1.0f;
         if ( T > 0.0f ) {
-            const float S = 0.5f / std::sqrt(T);  // S = 1 / ( 2 t )
+            const value_type S = 0.5f / std::sqrt(T);  // S = 1 / ( 2 t )
             m_w = 0.25f / S;                      // m_w = 1 / ( 4 S ) = t / 2
             m_x = ( m21 - m12 ) * S;
             m_y = ( m02 - m20 ) * S;
             m_z = ( m10 - m01 ) * S;
         } else if ( m00 > m11 && m00 > m22) {
-            const float S = 0.5f / std::sqrt(1.0f + m00 - m11 - m22); // S=4*qx
+            const value_type S = 0.5f / std::sqrt(1.0f + m00 - m11 - m22); // S=4*qx
             m_w = ( m21 - m12 ) * S;
             m_x = 0.25f / S;
             m_y = ( m10 + m01 ) * S;
             m_z = ( m02 + m20 ) * S;
         } else if ( m11 > m22 ) {
-            const float S = 0.5f / std::sqrt(1.0f + m11 - m00 - m22); // S=4*qy
+            const value_type S = 0.5f / std::sqrt(1.0f + m11 - m00 - m22); // S=4*qy
             m_w = ( m02 - m20 ) * S;
             m_x = ( m20 + m01 ) * S;
             m_y = 0.25f / S;
             m_z = ( m21 + m12 ) * S;
         } else {
-            const float S = 0.5f / std::sqrt(1.0f + m22 - m00 - m11); // S=4*qz
+            const value_type S = 0.5f / std::sqrt(1.0f + m22 - m00 - m11); // S=4*qz
             m_w = ( m10 - m01 ) * S;
             m_x = ( m02 + m20 ) * S;
             m_y = ( m21 + m12 ) * S;
@@ -973,40 +997,10 @@ class Quaternion {
      *
      * @return this quaternion for chaining.
      * @see Matrix4f#getRotation(Quaternion)
-     * @see #setFromMatrix(float, float, float, float, float, float, float, float, float)
+     * @see #setFromMatrix(value_type, value_type, value_type, value_type, value_type, value_type, value_type, value_type, value_type)
      */
-    Quaternion& setFromMat3(const Mat4f& m) noexcept {
-        return setFromMat3(m.m00, m.m01, m.m02, m.m10, m.m11, m.m12, m.m20, m.m21, m.m22);
-    }
-
-    /**
-     * Transform this quaternion to a normalized 4x4 column matrix representing the rotation.
-     * <p>
-     * Implementation Details:
-     * <ul>
-     *   <li> makes identity matrix if {@link #magnitudeSquared()} is {@link jau::is_zero(float, float) is zero} using {@link FloatUtil#EPSILON epsilon}</li>
-     * </ul>
-     * </p>
-     *
-     * @return resulting normalized column matrix 4x4
-     * @see <a href="http://web.archive.org/web/20041029003853/http://www.j3d.org/matrix_faq/matrfaq_latest.html#Q54">Matrix-FAQ Q54</a>
-     * @see #setFromMatrix(float, float, float, float, float, float, float, float, float)
-     * @see Matrix4f#setToRotation(Quaternion)
-     */
-    Mat4f toMatrix() const noexcept {
-        Mat4f m;
-        m.setToRotation(*this);
-        return m;
-    }
-    /**
-     * Transform this quaternion to a normalized 4x4 column matrix representing the rotation,
-     * see toMatrix().
-     *
-     * @param out store for the resulting normalized column matrix 4x4
-     * @return the given matrix store
-     */
-    Mat4f& toMatrix(Mat4f& out) const noexcept {
-        return out.setToRotation(*this);
+    constexpr Quaternion& setFromMat(const Mat4f& m) noexcept {
+        return setFromMat(m.m00, m.m01, m.m02, m.m10, m.m11, m.m12, m.m20, m.m21, m.m22);
     }
 
     /**
@@ -1020,10 +1014,103 @@ class Quaternion {
      * @param zAxis vector representing the <i>orthogonal</i> m_z-axis of the coordinate system.
      * @return this quaternion for chaining.
      */
-    Quaternion& setFromAxes(const Vec3f& xAxis, const Vec3f& yAxis, const Vec3f& zAxis) noexcept {
-        return setFromMat3(xAxis.x, yAxis.x, zAxis.x,
-                           xAxis.y, yAxis.y, zAxis.y,
-                           xAxis.z, yAxis.z, zAxis.z);
+    constexpr Quaternion& setFromAxes(const Vec3& xAxis, const Vec3& yAxis, const Vec3& zAxis) noexcept {
+        return setFromMat(xAxis.x, yAxis.x, zAxis.x,
+                          xAxis.y, yAxis.y, zAxis.y,
+                          xAxis.z, yAxis.z, zAxis.z);
+    }
+
+    /**
+     * Transform this quaternion to a normalized 4x4 column matrix representing the rotation.
+     * <p>
+     * Implementation Details:
+     * <ul>
+     *   <li> makes identity matrix if {@link #magnitudeSquared()} is {@link jau::is_zero(value_type, value_type) is zero} using {@link FloatUtil#EPSILON epsilon}</li>
+     * </ul>
+     * </p>
+     *
+     * @return resulting normalized column matrix 4x4
+     * @see <a href="http://web.archive.org/web/20041029003853/http://www.j3d.org/matrix_faq/matrfaq_latest.html#Q54">Matrix-FAQ Q54</a>
+     * @see #setFromMatrix(value_type, value_type, value_type, value_type, value_type, value_type, value_type, value_type, value_type)
+     * @see Matrix4f#setToRotation(Quaternion)
+     */
+    Mat4f toMatrix() const noexcept {
+        Mat4f m; toMatrix(m); return m;
+    }
+
+    /**
+     * Transform this quaternion to a normalized 4x4 column matrix representing the rotation,
+     * see toMatrix().
+     *
+     * @param out store for the resulting normalized column matrix 4x4
+     * @return the given matrix store
+     */
+    Mat4f& toMatrix(Mat4f& m) const noexcept {
+        // pre-multiply scaled-reciprocal-magnitude to reduce multiplications
+        const value_type norm = magnitudeSquared();
+        if ( jau::is_zero(norm) ) {
+            // identity matrix -> srecip = 0f
+            m.loadIdentity();
+            return m;
+        }
+        value_type srecip;
+        if ( jau::equals(1.0f, norm) ) {
+            srecip = 2.0f;
+        } else {
+            srecip = 2.0f / norm;
+        }
+        const value_type x = m_x;
+        const value_type y = m_y;
+        const value_type z = m_z;
+        const value_type w = m_w;
+
+        const value_type xs = srecip * x;
+        const value_type ys = srecip * y;
+        const value_type zs = srecip * z;
+
+        const value_type xx = x  * xs;
+        const value_type xy = x  * ys;
+        const value_type xz = x  * zs;
+        const value_type xw = xs * w;
+        const value_type yy = y  * ys;
+        const value_type yz = y  * zs;
+        const value_type yw = ys * w;
+        const value_type zz = z  * zs;
+        const value_type zw = zs * w;
+
+        m.m00 = 1.0f - ( yy + zz );
+        m.m01 =        ( xy - zw );
+        m.m02 =        ( xz + yw );
+        m.m03 = 0.0f;
+
+        m.m10 =        ( xy + zw );
+        m.m11 = 1.0f - ( xx + zz );
+        m.m12 =        ( yz - xw );
+        m.m13 = 0.0f;
+
+        m.m20 =        ( xz - yw );
+        m.m21 =        ( yz + xw );
+        m.m22 = 1.0f - ( xx + yy );
+        m.m23 = 0.0f;
+
+        m.m30 = m.m31 = m.m32 = 0.0f;
+        m.m33 = 1.0f;
+        return m;
+    }
+
+    /**
+     * Extracts this quaternion's <i>orthogonal</i> rotation axes.
+     *
+     * @param xAxis vector representing the <i>orthogonal</i> x-axis of the coordinate system.
+     * @param yAxis vector representing the <i>orthogonal</i> y-axis of the coordinate system.
+     * @param zAxis vector representing the <i>orthogonal</i> m_z-axis of the coordinate system.
+     * @param tmp temporary Matrix4 used for toMatrix()
+     */
+    void toAxes(Vec3& xAxis, Vec3& yAxis, Vec3& zAxis, Matrix4<value_type>& tmp) const noexcept {
+        toMatrix(tmp);
+        tmp.getColumn(2, zAxis);
+        tmp.getColumn(1, yAxis);
+        tmp.getColumn(0, xAxis);
     }
 
     /**
@@ -1033,12 +1120,9 @@ class Quaternion {
      * @param yAxis vector representing the <i>orthogonal</i> y-axis of the coordinate system.
      * @param zAxis vector representing the <i>orthogonal</i> m_z-axis of the coordinate system.
      */
-    void toAxes(Vec3f& xAxis, Vec3f& yAxis, Vec3f& zAxis) const noexcept {
-        Mat4f tmpMat4;
-        tmpMat4.setToRotation(*this);
-        tmpMat4.getColumn(2, zAxis);
-        tmpMat4.getColumn(1, yAxis);
-        tmpMat4.getColumn(0, xAxis);
+    void toAxes(Vec3& xAxis, Vec3& yAxis, Vec3& zAxis) const noexcept {
+        Matrix4<value_type> tmp;
+        toAxes(xAxis, yAxis, zAxis, tmp);
     }
 
     //
@@ -1049,14 +1133,14 @@ class Quaternion {
      * @param o the object to compare for equality
      * @return true if this quaternion and the provided quaternion have roughly the same x, m_y, m_z and m_w values.
      */
-    constexpr bool equals(const Quaternion& o) const noexcept {
+    constexpr bool operator==(const Quaternion& o) const noexcept {
         if (this == &o) {
             return true;
         }
-        return std::abs(m_x - o.m_x) <= ALLOWED_DEVIANCE &&
-               std::abs(m_y - o.m_y) <= ALLOWED_DEVIANCE &&
-               std::abs(m_z - o.m_z) <= ALLOWED_DEVIANCE &&
-               std::abs(m_w - o.m_w) <= ALLOWED_DEVIANCE;
+        return std::abs(m_x - o.m_x) <= allowed_deviation &&
+               std::abs(m_y - o.m_y) <= allowed_deviation &&
+               std::abs(m_z - o.m_z) <= allowed_deviation &&
+               std::abs(m_w - o.m_w) <= allowed_deviation;
     }
 
     std::string toString() const noexcept {
@@ -1064,34 +1148,44 @@ class Quaternion {
     }
 };
 
-constexpr bool operator==(const Quaternion& lhs, const Quaternion& rhs ) noexcept {
-    return lhs.equals(rhs);
+template<typename T,
+         std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+constexpr Quaternion<T> operator+(const Quaternion<T>& lhs, const Quaternion<T>& rhs ) noexcept {
+    Quaternion<T> r(lhs); r += rhs; return r;
 }
 
-constexpr Quaternion operator+(const Quaternion& lhs, const Quaternion& rhs ) noexcept {
-    return Quaternion(lhs) += rhs;
+template<typename T,
+         std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+constexpr Quaternion<T> operator-(const Quaternion<T>& lhs, const Quaternion<T>& rhs ) noexcept {
+    Quaternion<T> r(lhs); r -= rhs; return r;
 }
 
-constexpr Quaternion operator-(const Quaternion& lhs, const Quaternion& rhs ) noexcept {
-    return Quaternion(lhs) -= rhs;
+template<typename T,
+         std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+constexpr Quaternion<T> operator*(const Quaternion<T>& lhs, const Quaternion<T>& rhs ) noexcept {
+    Quaternion<T> r(lhs); r *= rhs; return r;
 }
 
-constexpr Quaternion operator*(const Quaternion& lhs, const Quaternion& rhs ) noexcept {
-    return Quaternion(lhs) *= rhs;
+template<typename T,
+         std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+constexpr Quaternion<T> operator*(const Quaternion<T>& lhs, const T s ) noexcept {
+    Quaternion<T> r(lhs); r *= s; return r;
 }
 
-constexpr Quaternion operator*(const Quaternion& lhs, const float s ) noexcept {
-    return Quaternion(lhs) *= s;
+template<typename T,
+         std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+constexpr Quaternion<T> operator*(const T s, const Quaternion<T>& rhs) noexcept {
+    Quaternion<T> r(rhs); r *= s; return r;
 }
 
-constexpr Quaternion operator*(const float s, const Quaternion& rhs) noexcept {
-    return Quaternion(rhs) *= s;
-}
-
-
-std::ostream& operator<<(std::ostream& out, const Quaternion& v) noexcept {
+template<typename T,
+         std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+std::ostream& operator<<(std::ostream& out, const Quaternion<T>& v) noexcept {
     return out << v.toString();
 }
+
+typedef Quaternion<float> Quat4f;
+static_assert(alignof(float) == alignof(Quat4f));
 
 /**@}*/
 

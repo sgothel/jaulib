@@ -24,11 +24,8 @@
 #ifndef JAU_AABBOX3F_HPP_
 #define JAU_AABBOX3F_HPP_
 
+#include <jau/functional.hpp>
 #include <jau/math/vec3f.hpp>
-
-namespace jau::math::geom::plane {
-    class AffineTransform; // forward
-}
 
 namespace jau::math {
 
@@ -260,13 +257,48 @@ namespace jau::math {
             }
 
             /**
+             * General purpose Vec3f transform function
+             */
+            typedef jau::function<jau::math::Vec3f(const jau::math::Vec3f&)> transform_vec3f_func;
+
+            /**
              * Resize the aabbox3f to encapsulate another AABox, which will be <i>transformed</i> on the fly first.
              * @param newBox aabbox3f to be encapsulated in
-             * @param t the {@link AffineTransform} applied on <i>newBox</i> on the fly
+             * @param transform the transform function, applied on <i>newBox</i> on the fly
              * @param tmpV3 temporary storage
              * @return this aabbox3f for chaining
              */
-            AABBox3f& resize(const AABBox3f& newBox, const geom::plane::AffineTransform& t, Vec3f& tmpV3) noexcept;
+            AABBox3f& resize(const AABBox3f& newBox, transform_vec3f_func& transform) noexcept {
+                /** test low */
+                {
+                    const jau::math::Vec3f newBL = transform(newBox.low());
+                    if (newBL.x < m_lo.x) {
+                        m_lo.x = newBL.x;
+                    }
+                    if (newBL.y < m_lo.y) {
+                        m_lo.y = newBL.y;
+                    }
+                    if (newBL.z < m_lo.z) {
+                        m_lo.z = newBL.z;
+                    }
+                }
+
+                /** test high */
+                {
+                    const jau::math::Vec3f newTR = transform(newBox.high());
+                    if (newTR.x > m_hi.x) {
+                        m_hi.x = newTR.x;
+                    }
+                    if (newTR.y > m_hi.y) {
+                        m_hi.y = newTR.y;
+                    }
+                    if (newTR.z > m_hi.z) {
+                        m_hi.z = newTR.z;
+                    }
+                }
+                computeCenter();
+                return *this;
+            }
 
             /**
              * Resize the aabbox3f to encapsulate the passed

@@ -38,31 +38,42 @@ namespace jau::math {
     /**
      * Rectangle with x, y, width and height integer components.
      */
-    class Recti {
+    template<typename Value_type,
+             std::enable_if_t<std::is_integral_v<Value_type>, bool> = true>
+    class RectI {
+      public:
+        typedef Value_type                  value_type;
+        typedef value_type*                 pointer;
+        typedef const value_type*           const_pointer;
+        typedef value_type&                 reference;
+        typedef const value_type&           const_reference;
+        typedef value_type*                 iterator;
+        typedef const value_type*           const_iterator;
+
       private:
-        int m_x;
-        int m_y;
-        int m_width;
-        int m_height;
+        value_type m_x;
+        value_type m_y;
+        value_type m_width;
+        value_type m_height;
 
       public:
-        constexpr Recti() noexcept
+        constexpr RectI() noexcept
         : m_x(0), m_y(0), m_width(0), m_height(0) {}
 
-        constexpr Recti(const int xywh[/*4*/]) noexcept{
+        constexpr RectI(const value_type xywh[/*4*/]) noexcept{
             set(xywh);
         }
 
-        constexpr Recti(const int x, const int y, const int width, const int height) noexcept {
+        constexpr RectI(const value_type x, const value_type y, const value_type width, const value_type height) noexcept {
             set(x, y, width, height);
         }
 
-        constexpr Recti(const Recti& o) noexcept = default;
-        constexpr Recti(Recti&& o) noexcept = default;
-        constexpr Recti& operator=(const Recti&) noexcept = default;
-        constexpr Recti& operator=(Recti&&) noexcept = default;
+        constexpr RectI(const RectI& o) noexcept = default;
+        constexpr RectI(RectI&& o) noexcept = default;
+        constexpr RectI& operator=(const RectI&) noexcept = default;
+        constexpr RectI& operator=(RectI&&) noexcept = default;
 
-        constexpr bool operator==(const Recti& rhs ) const noexcept {
+        constexpr bool operator==(const RectI& rhs ) const noexcept {
             if( this == &rhs ) {
                 return true;
             }
@@ -76,41 +87,26 @@ namespace jau::math {
         } */
 
         /** this = { x, y, width, height }, returns this. */
-        constexpr Recti& set(const int x, const int y, const int width, const int height) noexcept {
-            m_x = x;
-            m_y = y;
-            m_width = width;
-            m_height= height;
-            return *this;
-        }
+        constexpr RectI& set(const value_type x, const value_type y, const value_type width, const value_type height) noexcept
+        { m_x = x; m_y = y; m_width = width; m_height= height; return *this; }
 
         /** this = xywh, returns this. */
-        constexpr Recti& set(const int xywh[/*4*/]) noexcept {
-            m_x = xywh[0];
-            m_y = xywh[1];
-            m_width = xywh[2];
-            m_height= xywh[3];
-            return *this;
-        }
+        constexpr RectI& set(const_iterator xywh) noexcept
+        { m_x = xywh[0]; m_y = xywh[1]; m_width = xywh[2]; m_height= xywh[3]; return *this; }
 
         /** xywh = this, returns xywh. */
-        int* get(int xywh[/*4*/]) const noexcept {
-            xywh[0] = m_x;
-            xywh[1] = m_y;
-            xywh[2] = m_width;
-            xywh[3] = m_height;
-            return xywh;
-        }
+        iterator get(iterator xywh) const noexcept
+        { xywh[0] = m_x; xywh[1] = m_y; xywh[2] = m_width; xywh[3] = m_height; return xywh; }
 
-        int x() const noexcept { return m_x; }
-        int y() const noexcept { return m_y; }
-        int width() const noexcept { return m_width; }
-        int height() const noexcept { return m_height; }
+        value_type x() const noexcept { return m_x; }
+        value_type y() const noexcept { return m_y; }
+        value_type width() const noexcept { return m_width; }
+        value_type height() const noexcept { return m_height; }
 
-        void setX(const int x) noexcept { m_x = x; }
-        void setY(const int y) noexcept { m_y = y; }
-        void setWidth(const int width) noexcept { m_width = width; }
-        void setHeight(const int height) noexcept { m_height = height; }
+        void setX(const value_type x) noexcept { m_x = x; }
+        void setY(const value_type y) noexcept { m_y = y; }
+        void setWidth(const value_type width) noexcept { m_width = width; }
+        void setHeight(const value_type height) noexcept { m_height = height; }
 
         /** Return true if area is zero. */
         bool is_zero() const noexcept {
@@ -121,9 +117,14 @@ namespace jau::math {
         { return std::to_string(m_x)+"/"+std::to_string(m_y)+" "+std::to_string(m_width)+"x"+std::to_string(m_height); }
     };
 
-    std::ostream& operator<<(std::ostream& out, const Recti& v) noexcept {
+    template<typename T,
+             std::enable_if_t<std::numeric_limits<T>::is_integer, bool> = true>
+    std::ostream& operator<<(std::ostream& out, const RectI<T>& v) noexcept {
         return out << v.toString();
     }
+
+    typedef RectI<int> Recti;
+    static_assert(alignof(int) == alignof(Recti));
 
 /**@}*/
 

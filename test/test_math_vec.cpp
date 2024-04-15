@@ -28,6 +28,8 @@
 
 #include <jau/test/catch2_ext.hpp>
 
+#include <jau/int_math.hpp>
+#include <jau/float_math.hpp>
 #include <jau/math/vec2f.hpp>
 #include <jau/math/vec2i.hpp>
 #include <jau/math/vec3f.hpp>
@@ -39,16 +41,59 @@
 #include <jau/math/mat4f.hpp>
 #include <jau/math/recti.hpp>
 #include <jau/math/math_error.hpp>
+#include <jau/math/util/sstack.hpp>
 
 using namespace jau;
 using namespace jau::math;
+using namespace jau::math::util;
+
+template<class T, class U>
+void test_vec(std::ostream& out, const char* prefix) {
+    out << "Test: " << std::string(prefix) << ", sizeof(U) = " << sizeof(U) << std::endl;
+    T a( U(1) ), b( U(2) );
+    out << "- a: " << a << ", len = " << std::to_string(a.length()) << ", len(normal(a)) = " << std::to_string(T(a).normalize().length()) << std::endl;
+    out << "- b: " << b << ", len = " << std::to_string(b.length()) << ", len(normal(b)) = " << std::to_string(T(b).normalize().length()) << std::endl;
+
+    REQUIRE( T(U(2)) == a * U(2) );
+    REQUIRE( T(U(1)) == b / U(2) );
+
+    a.normalize();
+    b.normalize();
+
+    REQUIRE( jau::equals(U(1), a.length() ) );
+    REQUIRE( jau::equals(U(1), b.length() ) );
+}
+
+template<class T>
+void dump_align_props(std::ostream& out, const char* prefix) {
+    out << std::string(prefix) << "{size " << std::to_string( sizeof(T) ) << ", alignment " << std::to_string( alignof(T) )
+               << " }" << std::endl;
+}
 
 TEST_CASE( "Math Vec Test 00", "[vec][linear_algebra][math]" ) {
+    static_assert(alignof(int) == alignof(Vec2i));
+    static_assert(alignof(float) == alignof(Vec2f));
+    static_assert(alignof(float) == alignof(Vec3f));
+    static_assert(alignof(float) == alignof(Vec4f));
+    static_assert(alignof(float) == alignof(Mat4f));
+
+    dump_align_props<int>(std::cout, "int");
+    dump_align_props<float>(std::cout, "float");
+    dump_align_props<Vec2i>(std::cout, "Vec2i");
+    dump_align_props<Vec2f>(std::cout, "Vec2f");
+    dump_align_props<Vec3f>(std::cout, "Vec3f");
+    dump_align_props<Vec4f>(std::cout, "Vec4f");
+    dump_align_props<Mat4f>(std::cout, "Mat4f");
+
     std::cout << "A v2 " << Vec2f(1, 2) << std::endl;
     std::cout << "A v3 " << Vec3f(1, 2, 3) << std::endl;
     std::cout << "A v4 " << Vec4f(1, 2, 3, 4) << std::endl;
     {
-        const float mf[] = { 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f };
+        const float mf[] = {  1.0f,  2.0f,  3.0f,  4.0f, // column 0
+                              5.0f,  6.0f,  7.0f,  8.0f, // column 1
+                              9.0f, 10.0f, 11.0f, 12.0f, // column 2
+                             13.0f, 14.0f, 15.0f, 16.0f  // column 3
+                           };
         std::cout << "A mat4 " << Mat4f(mf) << std::endl;
     }
 
@@ -56,6 +101,18 @@ TEST_CASE( "Math Vec Test 00", "[vec][linear_algebra][math]" ) {
     REQUIRE( Vec3f() == Vec3f(0, 0, 0) );
     REQUIRE( 0.0f == Vec2f().length() );
     REQUIRE( 0.0f == Vec3f().length() );
+
+    test_vec<Vector2I<int>, int>(std::cout, "Vector2I<int>");
+    test_vec<Vector2I<long>, long>(std::cout, "Vector2I<long>");
+
+    test_vec<Vector2F<float>, float>(std::cout, "Vector2F<float>");
+    test_vec<Vector2F<double>, double>(std::cout, "Vector2F<double>");
+
+    test_vec<Vector3F<float>, float>(std::cout, "Vector3F<float>");
+    test_vec<Vector3F<double>, double>(std::cout, "Vector3F<double>");
+
+    test_vec<Vector4F<float>, float>(std::cout, "Vector4F<float>");
+    test_vec<Vector4F<double>, double>(std::cout, "Vector4F<double>");
 }
 
 TEST_CASE( "Math Vec Normalize Test 01", "[vec][linear_algebra][math]" ) {
