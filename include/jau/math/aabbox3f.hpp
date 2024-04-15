@@ -21,8 +21,8 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef AABBOX3F_HPP_
-#define AABBOX3F_HPP_
+#ifndef JAU_AABBOX3F_HPP_
+#define JAU_AABBOX3F_HPP_
 
 #include <jau/math/vec3f.hpp>
 
@@ -655,4 +655,4 @@ namespace jau::math {
 
 } // namespace jau::math
 
-#endif /*  AABBOX3F_HPP_ */
+#endif /*  JAU_AABBOX3F_HPP_ */

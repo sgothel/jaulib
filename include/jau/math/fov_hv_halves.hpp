@@ -21,8 +21,8 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef FOV_HV_HALVES_HPP_
-#define FOV_HV_HALVES_HPP_
+#ifndef JAU_FOV_HV_HALVES_HPP_
+#define JAU_FOV_HV_HALVES_HPP_
 
 #include <cmath>
 #include <cstdarg>
@@ -199,5 +199,5 @@ class FovHVHalves {
 
 } // namespace jau::math
 
-#endif // FOV_HV_HALVES_HPP_
+#endif // JAU_FOV_HV_HALVES_HPP_
 

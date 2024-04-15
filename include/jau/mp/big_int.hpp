@@ -12,6 +12,10 @@
  * jaulib including this code is released under the MIT License (see COPYING)
  * Botan itself is released under the Simplified BSD License (see COPYING)
  */
+
+#ifndef JAU_BIG_INT_HPP_
+#define JAU_BIG_INT_HPP_
+
 #include <cstdint>
 #include <cassert>
 
@@ -1594,3 +1598,5 @@ namespace std {
         return out << v.to_dec_string();
     }
 }
+
+#endif /** JAU_BIG_INT_HPP_ */

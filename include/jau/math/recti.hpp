@@ -21,8 +21,8 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef RECTI2F_HPP_
-#define RECTI2F_HPP_
+#ifndef JAU_RECTI2F_HPP_
+#define JAU_RECTI2F_HPP_
 
 #include <iostream>
 
@@ -129,5 +129,5 @@ namespace jau::math {
 
 } // namespace jau::math
 
-#endif /*  RECTI2F_HPP_ */
+#endif /*  JAU_RECTI2F_HPP_ */
 

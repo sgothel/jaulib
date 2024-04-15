@@ -21,8 +21,8 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef FRUSTUM_HPP_
-#define FRUSTUM_HPP_
+#ifndef JAU_FRUSTUM_HPP_
+#define JAU_FRUSTUM_HPP_
 
 #include <cmath>
 #include <cstdarg>
@@ -559,7 +559,5 @@ class Frustum {
 
 } // namespace jau::math::geom
 
-#endif // FRUSTUM_HPP_
-
-#include <jau/math/mat4f.hpp>
+#endif // JAU_FRUSTUM_HPP_
 

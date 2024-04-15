@@ -21,8 +21,8 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef GEOM2F_HPP_
-#define GEOM2F_HPP_
+#ifndef JAU_GEOM2F_HPP_
+#define JAU_GEOM2F_HPP_
 
 #include <vector>
 #include <memory>
@@ -902,4 +902,4 @@ namespace jau::math::geom {
 
 } // namespace jau::math::geom
 
-#endif /*  GEOM2F_HPP_ */
+#endif /*  JAU_GEOM2F_HPP_ */

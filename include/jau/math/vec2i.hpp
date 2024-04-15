@@ -21,8 +21,8 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef VEC2I_HPP_
-#define VEC2I_HPP_
+#ifndef JAU_VEC2I_HPP_
+#define JAU_VEC2I_HPP_
 
 #include <cmath>
 #include <cstdarg>
@@ -164,5 +164,5 @@ namespace jau::math {
 
 } // namespace jau::math
 
-#endif /*  VEC2I_HPP_ */
+#endif /*  JAU_VEC2I_HPP_ */
 

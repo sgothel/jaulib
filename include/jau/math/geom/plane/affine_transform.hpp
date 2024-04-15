@@ -21,8 +21,8 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef AFFINETRANSFORM_HPP_
-#define AFFINETRANSFORM_HPP_
+#ifndef JAU_AFFINETRANSFORM_HPP_
+#define JAU_AFFINETRANSFORM_HPP_
 
 #include <jau/float_math.hpp>
 #include <jau/math/math_error.hpp>
@@ -601,5 +601,5 @@ namespace jau::math::geom::plane {
 
 } // namespace jau::math::geom::plane
 
-#endif /*  AFFINETRANSFORM_HPP_ */
+#endif /*  JAU_AFFINETRANSFORM_HPP_ */
 

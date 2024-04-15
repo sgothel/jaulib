@@ -21,8 +21,8 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef MAT4f_HPP_
-#define MAT4f_HPP_
+#ifndef JAU_MAT4f_HPP_
+#define JAU_MAT4f_HPP_
 
 #include <cmath>
 #include <cstdarg>
@@ -2135,4 +2135,4 @@ std::ostream& operator<<(std::ostream& out, const Mat4f& v) noexcept {
 
 } // namespace jau::math
 
-#endif // MAT4f_HPP_
+#endif // JAU_MAT4f_HPP_

@@ -21,8 +21,8 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef QUATERNION_HPP_
-#define QUATERNION_HPP_
+#ifndef JAU_QUATERNION_HPP_
+#define JAU_QUATERNION_HPP_
 
 #include <cmath>
 #include <cstdarg>
@@ -1097,4 +1097,4 @@ std::ostream& operator<<(std::ostream& out, const Quaternion& v) noexcept {
 
 } // namespace jau::math
 
-#endif // QUATERNION_HPP_
+#endif // JAU_QUATERNION_HPP_
