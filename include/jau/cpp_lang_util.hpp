@@ -35,6 +35,20 @@ namespace jau {
     /** @defgroup CppLang C++ Language Utilities
      *  C++ language utilities, language feature alignment, type trails, data alignment and intrinsics.
      *
+     * Used predefined `__cplusplus` macro identifier for C++ language specs:
+     * - `199711L`: pre C++11
+     * - `201103L`: C++11
+     * - `201402L`: C++14
+     * - `201703L`: C++17
+     * - `202002L`: C++20
+     * - `202302L`: C++23
+     * - `??????L`: C++26 ??
+     *
+     * Used predefined macros denoting the compiler:
+     * - `__clang__`: LLVM's clang, clang++
+     * - `__GNUC__` : GNU Compiler Collection (GCC)'s gcc, g++
+     * - `_MSC_VER` : Microsoft Compiler
+     *
      *  @{
      */
 
@@ -103,6 +117,19 @@ namespace jau {
 #else
     #define constexpr_cxx20 inline
 #endif
+
+#if __cplusplus > 202002L
+    #define constexpr_cxx23 constexpr
+#else
+    #define constexpr_cxx23 inline
+#endif
+
+#if __cplusplus > 202302L
+    #define constexpr_cxx26 constexpr
+#else
+    #define constexpr_cxx26 inline
+#endif
+
 
     /**
      * Used when designed to declare a function `constexpr`,
