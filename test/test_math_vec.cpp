@@ -186,5 +186,24 @@ TEST_CASE( "Math Vec Angle Test 02", "[vec][linear_algebra][math]" ) {
         std::cout << "a0(v0, v1) = " << a0_v0_v1 << " rad, " << jau::rad_to_adeg(a0_v0_v1) << " deg, via dot, acos" << std::endl;
         REQUIRE(true == jau::equals((float)M_PI, a0_v0_v1));
     }
-
 }
+
+TEST_CASE( "Math Float16Stack Test 80", "[stack][math]" ) {
+    Stack16f s1;
+    Mat4f m1( {  1.0f,  2.0f,  3.0f,  4.0f,  // column 0
+                 5.0f,  6.0f,  7.0f,  8.0f,  // column 1
+                 9.0f, 10.0f, 11.0f, 12.0f,  // column 2
+                 13.0f, 14.0f, 15.0f, 16.0f  // column 3
+              } );
+    Mat4f m2 = m1 * 2.0f;
+    std::cout << "mat4 m1 " << m1 << std::endl;
+    std::cout << "mat4 m2 " << m2 << std::endl;
+    s1.push(m1.cbegin());
+    s1.push(m2.cbegin());
+    Mat4f m20, m10;
+    s1.pop(m20.begin());
+    s1.pop(m10.begin());
+    REQUIRE( m2 == m20 );
+    REQUIRE( m1 == m10 );
+}
+
