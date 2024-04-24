@@ -25,6 +25,10 @@
 #ifndef JAU_FLOAT_TYPES_HPP_
 #define JAU_FLOAT_TYPES_HPP_
 
+#if __cplusplus > 202002L
+    #include <stdfloat>
+#endif
+
 namespace jau {
 
     /** \addtogroup Floats
@@ -32,31 +36,20 @@ namespace jau {
      *  @{
      */
 
-    /** Time in fractions of seconds using float. */
-    typedef float si_timef_t;
-    /** Length in fractions of meter using float. */
-    typedef float si_lengthf_t;
-    /** Mass in fractions of kilograms using float. */
-    typedef float si_massf_t;
-    /** Speed in fractions of meter/seconds using float. */
-    typedef float si_speedf_t;
+    #if __cplusplus > 202002L
+        /** https://en.cppreference.com/w/cpp/types/floating-point */
+        typedef std::float32_t float32_t;
+        typedef std::float64_t float64_t;
+    #else
+        static_assert(32 == sizeof(float));
+        static_assert(64 == sizeof(double));
+        typedef float float32_t;
+        typedef double float64_t;
+    #endif
 
     namespace float_literals {
-        constexpr si_timef_t operator ""_h(unsigned long long int __v)   { return (si_timef_t)__v*3600.0; }
-        constexpr si_timef_t operator ""_min(unsigned long long int __v)   { return (si_timef_t)__v*60.0; }
-        constexpr si_timef_t operator ""_s(unsigned long long int __v)   { return (si_timef_t)__v; }
-        constexpr si_timef_t operator ""_ms(unsigned long long int __v)   { return (si_timef_t)__v/1000.0; }
-
-        constexpr si_lengthf_t operator ""_km(unsigned long long int __v)   { return (si_lengthf_t)__v*1000.0; }
-        constexpr si_lengthf_t operator ""_m(unsigned long long int __v)   { return (si_lengthf_t)__v; }
-        constexpr si_lengthf_t operator ""_cm(unsigned long long int __v)   { return (si_lengthf_t)__v/100.0; }
-        constexpr si_lengthf_t operator ""_mm(unsigned long long int __v)   { return (si_lengthf_t)__v/1000.0; }
-
-        constexpr si_massf_t operator ""_kg(unsigned long long int __v)   { return (si_massf_t)__v; }
-        constexpr si_massf_t operator ""_g(unsigned long long int __v)   { return (si_massf_t)__v/1000.0; }
-
-        constexpr si_massf_t operator ""_m_s(unsigned long long int __v)   { return (si_massf_t)__v; }
-        constexpr si_massf_t operator ""_km_h(unsigned long long int __v)   { return (si_massf_t)__v / 3.6; }
+        constexpr float32_t operator ""_f32(float32_t __v)   { return (float32_t)__v; }
+        constexpr float64_t operator ""_f64(float64_t __v)   { return (float64_t)__v; }
     } // float_literals
 
     /**@}*/
