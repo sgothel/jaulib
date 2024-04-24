@@ -255,8 +255,8 @@ namespace jau::math {
              */
             constexpr Vector3F cross(const Vector3F& b) const noexcept {
                 return Vector3F( y * b.z - z * b.y,
-                              z * b.x - x * b.z,
-                              x * b.y - y * b.y);
+                                 z * b.x - x * b.z,
+                                 x * b.y - y * b.x);
             }
 
             /**
@@ -266,7 +266,7 @@ namespace jau::math {
             constexpr Vector3F& cross(const Vector3F& a, const Vector3F& b) noexcept {
                 x = a.y * b.z - a.z * b.y;
                 y = a.z * b.x - a.x * b.z;
-                z = a.x * b.y - a.y * b.y;
+                z = a.x * b.y - a.y * b.x;
                 return *this;
             }
 
