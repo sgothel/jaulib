@@ -1144,7 +1144,7 @@ class alignas(Value_type) Quaternion {
     }
 
     std::string toString() const noexcept {
-        return "Quat[m_x "+std::to_string(m_x)+", y "+std::to_string(m_y)+", z "+std::to_string(m_z)+", w "+std::to_string(m_w)+"]";
+        return "Quat[x "+std::to_string(m_x)+", y "+std::to_string(m_y)+", z "+std::to_string(m_z)+", w "+std::to_string(m_w)+"]";
     }
 };
 

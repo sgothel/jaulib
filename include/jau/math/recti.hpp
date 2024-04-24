@@ -114,7 +114,7 @@ namespace jau::math {
         }
 
         std::string toString() const noexcept
-        { return std::to_string(m_x)+"/"+std::to_string(m_y)+" "+std::to_string(m_width)+"x"+std::to_string(m_height); }
+        { return std::to_string(m_x)+" / "+std::to_string(m_y)+" "+std::to_string(m_width)+" x "+std::to_string(m_height); }
     };
 
     template<typename T,
