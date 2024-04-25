@@ -289,6 +289,13 @@ namespace jau {
             constexpr int_type to_ms() const noexcept { return to_num_of(1l, 1'000lu); }
 
             /**
+             * Convenient shortcut to `to_num_of(1_us)`
+             * @return time in microseconds
+             * @see to_num_of()
+             */
+            constexpr int_type to_us() const noexcept { return to_num_of(1l, 1'000'000lu); }
+
+            /**
              * Convenient shortcut to `to_num_of(1_ns)`
              * @return time in nanoseconds
              * @see to_num_of()
