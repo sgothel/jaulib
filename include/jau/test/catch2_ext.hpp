@@ -56,6 +56,22 @@
     } while( (void)0, (false) && static_cast<bool>( !!(__VA_ARGS__) ) )
 
     #define REQUIRE_MSG(MSG, ... ) INTERNAL_CATCH_TEST_M( MSG, "REQUIRE: ", Catch::ResultDisposition::Normal, __VA_ARGS__  )
+
+#define INTERNAL_CHECK_THAT_M( msg, macroName, matcher, resultDisposition, arg ) \
+    do { \
+        std::string s1( macroName##_catch_sr ); \
+        s1.append(": "); \
+        s1.append(msg); \
+        s1.append(": "); \
+        Catch::AssertionHandler catchAssertionHandler( s1, CATCH_INTERNAL_LINEINFO, CATCH_INTERNAL_STRINGIFY(arg) ", " CATCH_INTERNAL_STRINGIFY(matcher), resultDisposition ); \
+        INTERNAL_CATCH_TRY { \
+            catchAssertionHandler.handleExpr( Catch::makeMatchExpr( arg, matcher, #matcher##_catch_sr ) ); \
+        } INTERNAL_CATCH_CATCH( catchAssertionHandler ) \
+        INTERNAL_CATCH_REACT( catchAssertionHandler ) \
+    } while( false )
+
+    #define REQUIRE_THAT_MSG(MSG, arg, matcher ) INTERNAL_CHECK_THAT_M( MSG, "REQUIRE_THAT", matcher, Catch::ResultDisposition::Normal, arg )
+
     #define INFO_STR( msg ) INTERNAL_CATCH_INFO( "INFO", static_cast<std::string>(msg) )
 
     #define REQUIRE_EPSI(a,b)           INTERNAL_CATCH_TEST( "REQUIRE: ", Catch::ResultDisposition::Normal, jau::machine_equal(a, b))
@@ -64,6 +80,41 @@
     #define REQUIRE_DIFF(a,b,d)         INTERNAL_CATCH_TEST( "REQUIRE: ", Catch::ResultDisposition::Normal, jau::machine_equal(a, b, 1, d))
     #define REQUIRE_DIFF_MSG(m,a,b,d)   INTERNAL_CATCH_TEST_M( m, "REQUIRE: ", Catch::ResultDisposition::Normal, jau::machine_equal(a, b, 1, d))
 
+
+    #define COMPARE_SARRAYS(lhs, rhs) compareStdArrays(Catch::getResultCapture().getCurrentTestName(), __LINE__, lhs, rhs)
+    #define COMPARE_SARRAYS_EPS(lhs, rhs, eps) compareStdArrays(Catch::getResultCapture().getCurrentTestName(), __LINE__, lhs, rhs, eps)
+
+    template < typename T, size_t N >
+    void compareStdArrays(const std::string & test, unsigned line, const std::array<T, N>& lhs, const std::array<T, N>& rhs) {
+      std::vector<T> lv(lhs.begin(), lhs.end());
+      std::vector<T> rv(rhs.begin(), rhs.end());
+      REQUIRE_MSG("["+test+"] at line "+std::to_string(line), lv == rv);
+    }
+    template < typename T, size_t N >
+    void compareStdArrays(const std::string & test, unsigned line, const std::array<T, N>& lhs, const std::array<T, N>& rhs, const T epsilon) {
+      const std::string m = "["+test+"] at line "+std::to_string(line);
+      for(size_t i=0; i<N; ++i) {
+          REQUIRE_THAT_MSG(m, lhs[i], Catch::Matchers::WithinAbs(rhs[i], epsilon) );
+      }
+    }
+
+    #define COMPARE_NARRAYS(lhs, rhs, len) compareNativeArrays(Catch::getResultCapture().getCurrentTestName(), __LINE__, lhs, rhs, len)
+    #define COMPARE_NARRAYS_EPS(lhs, rhs, len, eps) compareNativeArrays(Catch::getResultCapture().getCurrentTestName(), __LINE__, lhs, rhs, len, eps)
+
+    template < typename T >
+    void compareNativeArrays(const std::string & test, unsigned line, const T lhs[], const T rhs[], const size_t len) {
+      const std::string m = "["+test+"] at line "+std::to_string(line);
+      for(size_t i=0; i<len; ++i) {
+          REQUIRE_MSG(m, rhs[i] == lhs[i] );
+      }
+    }
+    template < typename T >
+    void compareNativeArrays(const std::string & test, unsigned line, const T lhs[], const T rhs[], const size_t len, const T epsilon) {
+      const std::string m = "["+test+"] at line "+std::to_string(line);
+      for(size_t i=0; i<len; ++i) {
+          REQUIRE_THAT_MSG(m, lhs[i], Catch::Matchers::WithinAbs(rhs[i], epsilon) );
+      }
+    }
 // }
 
 #if !defined(CATCH_CONFIG_MAIN)
