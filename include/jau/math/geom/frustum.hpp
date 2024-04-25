@@ -354,7 +354,7 @@ class Frustum {
      */
     Mat4f& updateByFovDesc(jau::math::Mat4f& m, const FovDesc& fovDesc) noexcept {
         m.setToPerspective(fovDesc.fovhv, fovDesc.zNear, fovDesc.zFar);
-        setFromMat4(m);
+        setFromMat(m);
         return m;
     }
 
@@ -366,7 +366,7 @@ class Frustum {
      * as required by this class.
      * </p>
      */
-    Frustum& setFromMat4(const jau::math::Mat4f& m) noexcept {
+    Frustum& setFromMat(const jau::math::Mat4f& m) noexcept {
         // Left:   a = m41 + m11, b = m42 + m12, c = m43 + m13, d = m44 + m14  - [1..4] column-major
         // Left:   a = m30 + m00, b = m31 + m01, c = m32 + m02, d = m33 + m03  - [0..3] column-major
         {
