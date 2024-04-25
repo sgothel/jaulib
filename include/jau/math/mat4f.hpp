@@ -693,6 +693,7 @@ class alignas(Value_type) Matrix4 {
     }
 
   private:
+    /** Returns the maximum abs(mxy) field */
     value_type absMax() const noexcept {
         value_type max = std::abs(m00);
         max = std::max(max, std::abs(m01));
