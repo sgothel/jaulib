@@ -495,7 +495,15 @@ TEST_CASE( "Test 15c Axes And Matrix", "[matrix][quaternion][linear_algebra][mat
     Quat4f quat1;
     quat1.setFromEuler(eulerExp1);
     quat1.toMatrix(matHas);
-    REQUIRE(matExp == matHas);
+    printf("float epsilon %.20f\n", EPSILON);
+    std::cout << "matExp " << matExp << std::endl;
+    std::cout << "matHas " << matHas << std::endl;
+    // REQUIRE(matExp == matHas);
+    REQUIRE( matExp.equals(matHas, 2*EPSILON) ); // due to clang -O3 math optimizations, gcc -O3 OK
+    // eps  0.00000011920928955078
+    // exp -0.000000044
+    // has  0.000000000 (gcc -O3, ok)
+    // has  0.000000119 (clang -O3, err)
 
     Quat4f quat2;
     quat2.setFromMat(matExp);
