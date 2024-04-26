@@ -117,41 +117,43 @@ TEST_CASE( "Test 05 Perf01", "[mat4f][linear_algebra][math]" ) {
     tI4b = (getMonotonicTime() - t_0).to_fraction_i64();
     REQUIRE( dr > 0 );
 
-    tI5a = fractions_i64::zero;
-    t_0 = jau::getMonotonicTime();
-    uint64_t t_5 = jau::getCurrentMilliseconds();
-    uint64_t td_5=0;
-    while( td_5 < tI5Max ) {
-        res_m = m1 * m2;
-        dr += res_m.determinant();
-        res_m = m2 * m1;
-        dr += res_m.determinant();
-        ++loops5a;
-        // if( 0 == loops5a % 1000000 ) {
-            td_5 = jau::getCurrentMilliseconds() - t_5;
-        // }
-    }
-    tI5a = (getMonotonicTime() - t_0).to_fraction_i64();
-    REQUIRE( dr > 0 );
+    if( catch_perf_analysis ) {
+        tI5a = fractions_i64::zero;
+        t_0 = jau::getMonotonicTime();
+        uint64_t t_5 = jau::getCurrentMilliseconds();
+        uint64_t td_5=0;
+        while( td_5 < tI5Max ) {
+            res_m = m1 * m2;
+            dr += res_m.determinant();
+            res_m = m2 * m1;
+            dr += res_m.determinant();
+            ++loops5a;
+            // if( 0 == loops5a % 1000000 ) {
+                td_5 = jau::getCurrentMilliseconds() - t_5;
+            // }
+        }
+        tI5a = (getMonotonicTime() - t_0).to_fraction_i64();
+        REQUIRE( dr > 0 );
 
-    tI5b = fractions_i64::zero;
-    t_0 = jau::getMonotonicTime();
-    t_5 = jau::getCurrentMilliseconds();
-    td_5=0;
-    while( td_5 < tI5Max ) {
-        res_m.load(m1);
-        res_m.mul(m2);
-        dr += res_m.determinant();
-        res_m.load(m2);
-        res_m.mul(m1);
-        dr += res_m.determinant();
-        ++loops5b;
-        // if( 0 == loops5b % 1000000 ) {
-            td_5 = jau::getCurrentMilliseconds() - t_5;
-        // }
+        tI5b = fractions_i64::zero;
+        t_0 = jau::getMonotonicTime();
+        t_5 = jau::getCurrentMilliseconds();
+        td_5=0;
+        while( td_5 < tI5Max ) {
+            res_m.load(m1);
+            res_m.mul(m2);
+            dr += res_m.determinant();
+            res_m.load(m2);
+            res_m.mul(m1);
+            dr += res_m.determinant();
+            ++loops5b;
+            // if( 0 == loops5b % 1000000 ) {
+                td_5 = jau::getCurrentMilliseconds() - t_5;
+            // }
+        }
+        tI5b = (getMonotonicTime() - t_0).to_fraction_i64();
+        REQUIRE( dr > 0 );
     }
-    tI5b = (getMonotonicTime() - t_0).to_fraction_i64();
-    REQUIRE( dr > 0 );
 
     printf("Checkmark %f\n", dr);
     printf("Summary loops %6zu: I4a %6s ms total (%s us), %f ns/mul, I4a / I4b %f%%\n", loops,
@@ -161,10 +163,12 @@ TEST_CASE( "Test 05 Perf01", "[mat4f][linear_algebra][math]" ) {
             jau::to_decstring(tI4b.to_ms()).c_str(), jau::to_decstring(tI4b.to_us()).c_str(),
             (double)tI4b.to_ns()/2.0/(double)loops, tI4b.to_double()/tI4a.to_double()*100.0);
 
-    printf("Summary loops %6zu: I5a %6s ms total, %f ns/mul, I5a / I5b %f%%\n", loops5a,
-            jau::to_decstring(tI5a.to_ms()).c_str(),
-            (double)tI5a.to_ns()/2.0/(double)loops5a, tI5a.to_double()/tI5b.to_double()*100.0);
-    printf("Summary loops %6zu: I5b %6s ms total, %f ns/mul, I5b / I5a %f%%\n", loops5b,
-            jau::to_decstring(tI5b.to_ms()).c_str(),
-            (double)tI5b.to_ns()/2.0/(double)loops5b, tI5b.to_double()/tI5a.to_double()*100.0);
+    if( catch_perf_analysis ) {
+        printf("Summary loops %6zu: I5a %6s ms total, %f ns/mul, I5a / I5b %f%%\n", loops5a,
+                jau::to_decstring(tI5a.to_ms()).c_str(),
+                (double)tI5a.to_ns()/2.0/(double)loops5a, tI5a.to_double()/tI5b.to_double()*100.0);
+        printf("Summary loops %6zu: I5b %6s ms total, %f ns/mul, I5b / I5a %f%%\n", loops5b,
+                jau::to_decstring(tI5b.to_ms()).c_str(),
+                (double)tI5b.to_ns()/2.0/(double)loops5b, tI5b.to_double()/tI5a.to_double()*100.0);
+    }
 }
