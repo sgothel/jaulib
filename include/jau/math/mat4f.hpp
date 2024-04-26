@@ -194,11 +194,7 @@ class alignas(Value_type) Matrix4 {
      * Copy assignment using the the values of the given {@code src} matrix.
      */
     constexpr Matrix4& operator=(const Matrix4& o) noexcept {
-        m00 = o.m00; m10 = o.m10; m20 = o.m20; m30 = o.m30;
-        m01 = o.m01; m11 = o.m11; m21 = o.m21; m31 = o.m31;
-        m02 = o.m02; m12 = o.m12; m22 = o.m22; m32 = o.m32;
-        m03 = o.m03; m13 = o.m13; m23 = o.m23; m33 = o.m33;
-        return *this;
+        return load(o);
     }
 
     constexpr bool equals(const Matrix4& o, const value_type epsilon=std::numeric_limits<value_type>::epsilon()) const noexcept {
@@ -1996,7 +1992,7 @@ class alignas(Value_type) Matrix4 {
         return jau::mat_to_string(sb, rowPrefix, f, tmp, 4, 4, false /* rowMajorOrder */); // creates a copy-out!
     }
 
-    std::string toString() const noexcept { return toString("", "%10.5f"); }
+    std::string toString() const noexcept { return toString("", "%13.9f"); }
 };
 
 template<typename T,
