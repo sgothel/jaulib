@@ -120,6 +120,9 @@ namespace jau::math {
         constexpr Vector2F& add(const value_type dx, const value_type dy) noexcept
         { x+=dx; y+=dy; return *this; }
 
+        constexpr Vector2F& mul(const value_type sx, const value_type sy) noexcept
+        { x*=sx; y*=sy; return *this; }
+
         constexpr Vector2F& operator+=(const Vector2F& rhs ) noexcept {
             x+=rhs.x; y+=rhs.y;
             return *this;

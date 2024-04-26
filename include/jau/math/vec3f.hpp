@@ -58,6 +58,8 @@ namespace jau::math {
             typedef value_type*                 iterator;
             typedef const value_type*           const_iterator;
 
+            typedef Vector2F<value_type, std::is_floating_point_v<Value_type>> Vec2;
+
             constexpr static const value_type zero = value_type(0);
             constexpr static const value_type one  = value_type(1);
 
@@ -73,6 +75,9 @@ namespace jau::math {
 
             constexpr Vector3F(const value_type x_, const value_type y_, const value_type z_) noexcept
             : x(x_), y(y_), z(z_) {}
+
+            constexpr Vector3F(const Vec2& o2, const value_type z_) noexcept
+            : x(o2.x), y(o2.y), z(z_) {}
 
             constexpr Vector3F(const_iterator v) noexcept
             : x(v[0]), y(v[1]), z(v[2]) {}
@@ -137,7 +142,11 @@ namespace jau::math {
             constexpr Vector3F& set(const_iterator xyz) noexcept
             { x=xyz[0]; y=xyz[1]; z=xyz[2]; return *this; }
 
-            constexpr void add(const value_type dx, const value_type dy, const value_type dz) noexcept { x+=dx; y+=dy; z+=dz; }
+            constexpr Vector3F& add(const value_type dx, const value_type dy, const value_type dz) noexcept
+            { x+=dx; y+=dy; z+=dz; return *this; }
+
+            constexpr Vector3F& mul(const value_type sx, const value_type sy, const value_type sz) noexcept
+            { x*=sx; y*=sy; z*=sz; return *this; }
 
             constexpr Vector3F& operator+=(const Vector3F& rhs ) noexcept {
                 x+=rhs.x; y+=rhs.y; z+=rhs.z;

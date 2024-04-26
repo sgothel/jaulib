@@ -77,6 +77,9 @@ namespace jau::math {
             constexpr Vector4F(const value_type x_, const value_type y_, const value_type z_, const value_type w_) noexcept
             : x(x_), y(y_), z(z_), w(w_) {}
 
+            constexpr Vector4F(const Vec3& o3, const value_type w_) noexcept
+            : x(o3.x), y(o3.y), z(o3.z), w(w_) {}
+
             constexpr Vector4F(const_iterator v) noexcept
             : x(v[0]), y(v[1]), z(v[2]), w(v[3]) {}
 
@@ -140,9 +143,11 @@ namespace jau::math {
             constexpr Vector4F& set(const_iterator xyzw) noexcept
             { x=xyzw[0]; y=xyzw[1]; z=xyzw[2]; z=xyzw[3]; return *this; }
 
-            constexpr void add(const value_type dx, const value_type dy, const value_type dz, const value_type dw) noexcept {
-                x+=dx; y+=dy; z+=dz; w+=dw;
-            }
+            constexpr Vector4F& add(const value_type dx, const value_type dy, const value_type dz, const value_type dw) noexcept
+            { x+=dx; y+=dy; z+=dz; w+=dw; return *this; }
+
+            constexpr Vector4F& mul(const value_type sx, const value_type sy, const value_type sz, const value_type sw) noexcept
+            { x*=sx; y*=sy; z*=sz; w*=sw; return *this; }
 
             constexpr Vector4F& operator+=(const Vector4F& rhs ) noexcept {
                 x+=rhs.x; y+=rhs.y; z+=rhs.z; w+=rhs.w;
