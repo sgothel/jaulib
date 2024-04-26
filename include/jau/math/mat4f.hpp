@@ -126,6 +126,14 @@ class alignas(Value_type) Matrix4 {
     constexpr static const value_type two  = value_type(2);
     constexpr static const value_type half = one/two;
 
+    /**
+     * Inversion Epsilon, used with equals method to determine if two inverted matrices are close enough to be considered equal.
+     * <p>
+     * Using {@value}, which is ~84 times `std::numeric_limits<value_type>::epsilon()`.
+     * </p>
+     */
+    constexpr static const value_type inv_deviation = value_type(84) * std::numeric_limits<value_type>::epsilon(); // 84 * EPSILON(1.1920929E-7f) = 1.0E-5f
+
   private:
     //     RC
     value_type m00, m10, m20, m30; // column 0

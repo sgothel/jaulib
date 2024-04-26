@@ -79,10 +79,10 @@ class alignas(Value_type) Quaternion {
     /**
      * Quaternion Epsilon, used with equals method to determine if two Quaternions are close enough to be considered equal.
      * <p>
-     * Using {@value}, which is ~10 times {@link FloatUtil#EPSILON}.
+     * Using {@value}, which is ~8.4 times `std::numeric_limits<value_type>::epsilon()`.
      * </p>
      */
-    constexpr static const value_type allowed_deviation = 1.0E-6f; // FIXME: float EPSILON == 1.1920929E-7f; double ALLOWED_DEVIANCE: 1.0E-8f
+    constexpr static const value_type allowed_deviation = value_type(8.4) * std::numeric_limits<value_type>::epsilon();  // 8.4 * EPSILON(1.1920929E-7f) = 1.0E-6f; double deviation: 1.0E-8f
 
   private:
     value_type m_x, m_y, m_z, m_w;
