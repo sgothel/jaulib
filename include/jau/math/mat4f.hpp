@@ -940,7 +940,7 @@ class alignas(Value_type) Matrix4 {
      * @param z z-axis translate
      * @return this matrix for chaining
      */
-    Matrix4& setToTranslation(const value_type x, const value_type y, const value_type z) noexcept {
+    constexpr Matrix4& setToTranslation(const value_type x, const value_type y, const value_type z) noexcept {
         m00 = m11 = m22 = m33 = one;
         m03 = x;
         m13 = y;
@@ -964,7 +964,7 @@ class alignas(Value_type) Matrix4 {
      * @param t translate vec3f
      * @return this matrix for chaining
      */
-    Matrix4& setToTranslation(const Vec3f& t) noexcept {
+    constexpr Matrix4& setToTranslation(const Vec3f& t) noexcept {
         return setToTranslation(t.x, t.y, t.z);
     }
 
@@ -1026,7 +1026,7 @@ class alignas(Value_type) Matrix4 {
      * @param z z of rotation axis
      * @return this matrix for chaining
      */
-    Matrix4& setToRotationAxis(const value_type ang_rad, value_type x, value_type y, value_type z) noexcept {
+    constexpr_cxx26 Matrix4& setToRotationAxis(const value_type ang_rad, value_type x, value_type y, value_type z) noexcept {
         const value_type c = std::cos(ang_rad);
         const value_type ic= one - c;
         const value_type s = std::sin(ang_rad);
@@ -1077,7 +1077,7 @@ class alignas(Value_type) Matrix4 {
      * @param axis rotation axis
      * @return this matrix for chaining
      */
-    Matrix4& setToRotationAxis(const value_type ang_rad, const Vec3f& axis) noexcept {
+    constexpr_cxx26 Matrix4& setToRotationAxis(const value_type ang_rad, const Vec3f& axis) noexcept {
         return setToRotationAxis(ang_rad, axis.x, axis.y, axis.z);
     }
 
@@ -1104,7 +1104,7 @@ class alignas(Value_type) Matrix4 {
      * @see <a href="http://www.euclideanspace.com/maths/geometry/rotations/conversions/eulerToMatrix/index.htm">euclideanspace.com-eulerToMatrix</a>
      * @see #setToRotation(Quaternion)
      */
-    Matrix4& setToRotationEuler(const value_type bankX, const value_type headingY, const value_type attitudeZ) noexcept {
+    constexpr_cxx26 Matrix4& setToRotationEuler(const value_type bankX, const value_type headingY, const value_type attitudeZ) noexcept {
         // Assuming the angles are in radians.
         const value_type ch = std::cos(headingY);
         const value_type sh = std::sin(headingY);
@@ -1157,7 +1157,7 @@ class alignas(Value_type) Matrix4 {
      * @see <a href="http://www.euclideanspace.com/maths/geometry/rotations/conversions/eulerToMatrix/index.htm">euclideanspace.com-eulerToMatrix</a>
      * @see #setToRotation(Quaternion)
      */
-    Matrix4& setToRotationEuler(const Vec3f& angradXYZ) noexcept {
+    constexpr_cxx26 Matrix4& setToRotationEuler(const Vec3f& angradXYZ) noexcept {
         return setToRotationEuler(angradXYZ.x, angradXYZ.y, angradXYZ.z);
     }
 
@@ -1178,9 +1178,9 @@ class alignas(Value_type) Matrix4 {
      * @param zFar
      * @return this matrix for chaining
      */
-    Matrix4& setToOrtho(const value_type left, const value_type right,
-                      const value_type bottom, const value_type top,
-                      const value_type zNear, const value_type zFar) noexcept {
+    constexpr Matrix4& setToOrtho(const value_type left, const value_type right,
+                                  const value_type bottom, const value_type top,
+                                  const value_type zNear, const value_type zFar) noexcept {
         {
             // m00 = m11 = m22 = m33 = one;
             m10 = m20 = m30 = zero;
@@ -1227,8 +1227,8 @@ class alignas(Value_type) Matrix4 {
      *                                  or {@code left == right}, or {@code bottom == top}.
      */
     Matrix4& setToFrustum(const value_type left, const value_type right,
-                        const value_type bottom, const value_type top,
-                        const value_type zNear, const value_type zFar) {
+                          const value_type bottom, const value_type top,
+                          const value_type zNear, const value_type zFar) {
         if( zNear <= zero || zFar <= zNear ) {
             throw jau::IllegalArgumentException("Requirements zNear > 0 and zFar > zNear, but zNear "+std::to_string(zNear)+", zFar "+std::to_string(zFar), E_FILE_LINE);
         }
@@ -1323,7 +1323,7 @@ class alignas(Value_type) Matrix4 {
      * @param tmp temporary mat4f used for multiplication
      * @return this matrix for chaining
      */
-    Matrix4& setToLookAt(const Vec3f& eye, const Vec3f& center, const Vec3f& up, Matrix4& tmp) noexcept {
+    constexpr Matrix4& setToLookAt(const Vec3f& eye, const Vec3f& center, const Vec3f& up, Matrix4& tmp) noexcept {
         // normalized forward!
         const Vec3f fwd = ( center - eye ).normalize();
 
@@ -1387,8 +1387,8 @@ class alignas(Value_type) Matrix4 {
      * @param mat4Tmp temp storage
      * @return true if successful or false if either delta value is <= zero.
      */
-    bool setToPick(const value_type x, const value_type y, const value_type deltaX, const value_type deltaY,
-                   const Recti& viewport, Matrix4& mat4Tmp) noexcept {
+    constexpr bool setToPick(const value_type x, const value_type y, const value_type deltaX, const value_type deltaY,
+                             const Recti& viewport, Matrix4& mat4Tmp) noexcept {
         if (deltaX <= 0 || deltaY <= 0) {
             return false;
         }
@@ -1415,7 +1415,7 @@ class alignas(Value_type) Matrix4 {
      * @param tmp temporary mat4f used for multiplication
      * @return this matrix for chaining
      */
-    Matrix4& rotate(const value_type ang_rad, const value_type x, const value_type y, const value_type z, Matrix4& tmp) noexcept {
+    constexpr_cxx26 Matrix4& rotate(const value_type ang_rad, const value_type x, const value_type y, const value_type z, Matrix4& tmp) noexcept {
         return mul( tmp.setToRotationAxis(ang_rad, x, y, z) );
     }
 
@@ -1427,7 +1427,7 @@ class alignas(Value_type) Matrix4 {
      * @param tmp temporary mat4f used for multiplication
      * @return this matrix for chaining
      */
-    Matrix4& rotate(const value_type ang_rad, const Vec3f& axis, Matrix4& tmp) noexcept {
+    constexpr_cxx26 Matrix4& rotate(const value_type ang_rad, const Vec3f& axis, Matrix4& tmp) noexcept {
         return mul( tmp.setToRotationAxis(ang_rad, axis) );
     }
 
@@ -1439,18 +1439,17 @@ class alignas(Value_type) Matrix4 {
      * @param tmp temporary mat4f used for multiplication
      * @return this matrix for chaining
      */
-    Matrix4& translate(const value_type x, const value_type y, const value_type z, Matrix4& tmp) noexcept {
+    constexpr Matrix4& translate(const value_type x, const value_type y, const value_type z, Matrix4& tmp) noexcept {
         return mul( tmp.setToTranslation(x, y, z) );
     }
 
-#if 0
     /**
      * Translate this matrix, i.e. multiply by {@link #setToTranslation(vec3f) translation matrix}.
      * @param t translation vec3f
      * @param tmp temporary mat4f used for multiplication
      * @return this matrix for chaining
      */
-    public final Matrix4 translate(final Vec3f t, final Matrix4 tmp) {
+    constexpr Matrix4& translate(const Vec3f& t, Matrix4& tmp) noexcept {
         return mul( tmp.setToTranslation(t) );
     }
 
@@ -1462,7 +1461,7 @@ class alignas(Value_type) Matrix4 {
      * @param tmp temporary mat4f used for multiplication
      * @return this matrix for chaining
      */
-    public final Matrix4 scale(const value_type x, const value_type y, const value_type z, final Matrix4 tmp) {
+    constexpr Matrix4& scale(const value_type x, const value_type y, const value_type z, Matrix4& tmp) noexcept {
         return mul( tmp.setToScale(x, y, z) );
     }
 
@@ -1472,95 +1471,11 @@ class alignas(Value_type) Matrix4 {
      * @param tmp temporary mat4f used for multiplication
      * @return this matrix for chaining
      */
-    public final Matrix4 scale(const value_type s, final Matrix4 tmp) {
+    constexpr Matrix4& scale(const value_type s, Matrix4& tmp) noexcept {
         return mul( tmp.setToScale(s, s, s) );
     }
 
-    //
-    // Matrix Stack
-    //
-
-    /**
-     * Push the matrix to it's stack, while preserving this matrix values.
-     * @see #pop()
-     */
-    public final void push() {
-        stack.push(this);
-    }
-
-    /**
-     * Pop the current matrix from it's stack, replacing this matrix values.
-     * @see #push()
-     */
-    public final void pop() {
-        stack.pop(this);
-    }
-
-    //
-    // equals
-    //
-
-    /**
-     * Equals check using a given {@link FloatUtil#EPSILON} value and {@link FloatUtil#isEqual(value_type, value_type, value_type)}.
-     * <p>
-     * Implementation considers following corner cases:
-     * <ul>
-     *    <li>NaN == NaN</li>
-     *    <li>+Inf == +Inf</li>
-     *    <li>-Inf == -Inf</li>
-     * </ul>
-     * @param o comparison value
-     * @param epsilon consider using {@link FloatUtil#EPSILON}
-     * @return true if all components differ less than {@code epsilon}, otherwise false.
-     */
-    public boolean isEqual(final Matrix4 o, const value_type epsilon) {
-        if( this == o ) {
-            return true;
-        } else {
-            return FloatUtil.isEqual(m00, o.m00, epsilon) &&
-                   FloatUtil.isEqual(m01, o.m01, epsilon) &&
-                   FloatUtil.isEqual(m02, o.m02, epsilon) &&
-                   FloatUtil.isEqual(m03, o.m03, epsilon) &&
-                   FloatUtil.isEqual(m10, o.m10, epsilon) &&
-                   FloatUtil.isEqual(m11, o.m11, epsilon) &&
-                   FloatUtil.isEqual(m12, o.m12, epsilon) &&
-                   FloatUtil.isEqual(m13, o.m13, epsilon) &&
-                   FloatUtil.isEqual(m20, o.m20, epsilon) &&
-                   FloatUtil.isEqual(m21, o.m21, epsilon) &&
-                   FloatUtil.isEqual(m22, o.m22, epsilon) &&
-                   FloatUtil.isEqual(m23, o.m23, epsilon) &&
-                   FloatUtil.isEqual(m30, o.m30, epsilon) &&
-                   FloatUtil.isEqual(m31, o.m31, epsilon) &&
-                   FloatUtil.isEqual(m32, o.m32, epsilon) &&
-                   FloatUtil.isEqual(m33, o.m33, epsilon);
-        }
-    }
-
-    /**
-     * Equals check using {@link FloatUtil#EPSILON} value and {@link FloatUtil#isEqual(value_type, value_type, value_type)}.
-     * <p>
-     * Implementation considers following corner cases:
-     * <ul>
-     *    <li>NaN == NaN</li>
-     *    <li>+Inf == +Inf</li>
-     *    <li>-Inf == -Inf</li>
-     * </ul>
-     * @param o comparison value
-     * @return true if all components differ less than {@link FloatUtil#EPSILON}, otherwise false.
-     */
-    public boolean isEqual(final Matrix4 o) {
-        return isEqual(o, FloatUtil.EPSILON);
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if( o instanceof Matrix4 ) {
-            return isEqual((Matrix4)o, FloatUtil.EPSILON);
-        } else {
-            return false;
-        }
-    }
-
+#if 0
     //
     // Static multi Matrix ops
     //
@@ -1957,26 +1872,6 @@ class alignas(Value_type) Matrix4 {
         }
     }
 
-    //
-    // String and internals
-    //
-
-    /**
-     * @param sb optional passed StringBuilder instance to be used
-     * @param rowPrefix optional prefix for each row
-     * @param f the format string of one value_typeing point, i.e. "%10.5f", see {@link java.util.Formatter}
-     * @return matrix string representation
-     */
-    public StringBuilder toString(final StringBuilder sb, final String rowPrefix, final String f) {
-        const value_type[] tmp = new value_type[16];
-        this.get(tmp);
-        return FloatUtil.matrixToString(sb, rowPrefix, f,tmp, 0, 4, 4, false /* rowMajorOrder */);
-    }
-
-    @Override
-    public String toString() {
-        return toString(null, null, "%10.5f").toString();
-    }
 #endif
 
     /**
