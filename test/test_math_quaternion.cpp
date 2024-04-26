@@ -296,7 +296,7 @@ TEST_CASE( "Test 14 Matrix", "[matrix][quaternion][linear_algebra][math]" ) {
     vecHas = quat1.rotateVector(NEG_ONE);
     {
         // use Vec3f math
-        mat2.mulVec3f(NEG_ONE, vecOut3);
+        mat2.mulVec3(NEG_ONE, vecOut3);
         REQUIRE_THAT( std::abs( vecHas.dist(vecOut3) ), Catch::Matchers::WithinAbs(0.0f, Quat4f::allowed_deviation) );
         REQUIRE( vecHas == vecOut3);
     }

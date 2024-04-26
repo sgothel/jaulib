@@ -119,6 +119,7 @@ class alignas(Value_type) Matrix4 {
     typedef value_type*              iterator;
     typedef const value_type*        const_iterator;
 
+    typedef Vector3F<value_type, std::is_floating_point_v<Value_type>> Vec3;
     typedef Vector4F<value_type, std::is_floating_point_v<Value_type>> Vec4;
 
     constexpr static const value_type zero = value_type(0);
@@ -357,7 +358,7 @@ class alignas(Value_type) Matrix4 {
      * @param v_out the column-vector storage
      * @return given result vector <i>v_out</i> for chaining
      */
-    constexpr Vec3f& getColumn(const jau::nsize_t column, Vec3f& v_out) const noexcept {
+    constexpr Vec3& getColumn(const jau::nsize_t column, Vec3& v_out) const noexcept {
         return v_out.set( get(0+column*4),
                           get(1+column*4),
                           get(2+column*4) );
@@ -393,7 +394,7 @@ class alignas(Value_type) Matrix4 {
      * @param v_out the row-vector assert( i < 16 )e
      * @return given result vector <i>v_out</i> for chaining
      */
-    constexpr Vec3f& getRow(const jau::nsize_t row, Vec3f& v_out) const noexcept {
+    constexpr Vec3& getRow(const jau::nsize_t row, Vec3& v_out) const noexcept {
         assert( row <= 2 );
         return v_out.set( get(row+0*4),
                           get(row+1*4),
@@ -848,9 +849,9 @@ class alignas(Value_type) Matrix4 {
         // (one matrix row in column-major order) X (column vector)
         const value_type x = rhs.x, y = rhs.y, z = rhs.z, w = rhs.w;
         return Vec4( x * m00 + y * m01 + z * m02 + w * m03,
-                      x * m10 + y * m11 + z * m12 + w * m13,
-                      x * m20 + y * m21 + z * m22 + w * m23,
-                      x * m30 + y * m31 + z * m32 + w * m33 );
+                     x * m10 + y * m11 + z * m12 + w * m13,
+                     x * m20 + y * m21 + z * m22 + w * m23,
+                     x * m30 + y * m31 + z * m32 + w * m33 );
     }
 
     /**
@@ -871,14 +872,14 @@ class alignas(Value_type) Matrix4 {
      * Affine 3f-vector transformation by 4x4 matrix
      *
      * 4x4 matrix multiplication with 3-component vector,
-     * using {@code 1} for for {@code v_in.w()} and dropping {@code v_out.w()},
+     * using {@code 1} for for {@code v_in.w} and dropping {@code v_out.w},
      * which shall be {@code 1}.
      *
      * @param v_in 3-component column-vector {@link vec3f}, can be v_out for in-place transformation
      * @param v_out m_in * v_in, 3-component column-vector {@link vec3f}
      * @returns v_out for chaining
      */
-    constexpr Vec3f& mulVec3f(const Vec3f& v_in, Vec3f& v_out) const noexcept {
+    constexpr Vec3& mulVec3(const Vec3& v_in, Vec3& v_out) const noexcept {
         // (one matrix row in column-major order) X (column vector)
         const value_type x = v_in.x, y = v_in.y, z = v_in.z;
         v_out.set( x * m00 + y * m01 + z * m02 + one * m03,
@@ -887,33 +888,33 @@ class alignas(Value_type) Matrix4 {
         return v_out;
     }
     /**
-     * Returns new Vec3f, with affine 3f-vector transformation by this 4x4 matrix: this * v_in
+     * Returns new Vec3, with affine 3f-vector transformation by this 4x4 matrix: this * v_in
      *
      * 4x4 matrix multiplication with 3-component vector,
-     * using {@code 1} for for {@code v_in.w()} and dropping {@code v_out.w()},
+     * using {@code 1} for for {@code v_in.w} and dropping {@code v_out.w},
      * which shall be {@code 1}.
      *
      * @param v_in 3-component column-vector {@link vec3f}
      */
-    constexpr Vec3f operator*(const Vec3f& rhs) const noexcept {
+    constexpr Vec3 operator*(const Vec3& rhs) const noexcept {
         // (one matrix row in column-major order) X (column vector)
         const value_type x = rhs.x, y = rhs.y, z = rhs.z;
-        return Vec3f( x * m00 + y * m01 + z * m02 + one * m03,
-                      x * m10 + y * m11 + z * m12 + one * m13,
-                      x * m20 + y * m21 + z * m22 + one * m23 );
+        return Vec3( x * m00 + y * m01 + z * m02 + one * m03,
+                     x * m10 + y * m11 + z * m12 + one * m13,
+                     x * m20 + y * m21 + z * m22 + one * m23 );
     }
 
     /**
      * Affine 3f-vector transformation by 4x4 matrix
      *
      * 4x4 matrix multiplication with 3-component vector,
-     * using {@code 1} for for {@code v_inout.w()} and dropping {@code v_inout.w()},
+     * using {@code 1} for for {@code v_inout.w} and dropping {@code v_inout.w},
      * which shall be {@code 1}.
      *
      * @param v_inout 3-component column-vector {@link vec3f} input and output, i.e. in-place transformation
      * @returns v_inout for chaining
      */
-    constexpr Vec3f& mulVec3f(Vec3f& v_inout) const noexcept {
+    constexpr Vec3& mulVec3(Vec3& v_inout) const noexcept {
         // (one matrix row in column-major order) X (column vector)
         const value_type x = v_inout.x, y = v_inout.y, z = v_inout.z;
         v_inout.set( x * m00 + y * m01 + z * m02 + one * m03,
@@ -964,7 +965,7 @@ class alignas(Value_type) Matrix4 {
      * @param t translate vec3f
      * @return this matrix for chaining
      */
-    constexpr Matrix4& setToTranslation(const Vec3f& t) noexcept {
+    constexpr Matrix4& setToTranslation(const Vec3& t) noexcept {
         return setToTranslation(t.x, t.y, t.z);
     }
 
@@ -1006,7 +1007,7 @@ class alignas(Value_type) Matrix4 {
      * @param s scale vec3f
      * @return this matrix for chaining
      */
-    constexpr Matrix4& setToScale(const Vec3f& s) noexcept {
+    constexpr Matrix4& setToScale(const Vec3& s) noexcept {
         return setToScale(s.x, s.y, s.z);
     }
 
@@ -1031,7 +1032,7 @@ class alignas(Value_type) Matrix4 {
         const value_type ic= one - c;
         const value_type s = std::sin(ang_rad);
 
-        Vec3f tmp(x, y, z); tmp.normalize();
+        Vec3 tmp(x, y, z); tmp.normalize();
         x = tmp.x; y = tmp.y; z = tmp.z;
 
         const value_type xy = x*y;
@@ -1077,7 +1078,7 @@ class alignas(Value_type) Matrix4 {
      * @param axis rotation axis
      * @return this matrix for chaining
      */
-    constexpr_cxx26 Matrix4& setToRotationAxis(const value_type ang_rad, const Vec3f& axis) noexcept {
+    constexpr_cxx26 Matrix4& setToRotationAxis(const value_type ang_rad, const Vec3& axis) noexcept {
         return setToRotationAxis(ang_rad, axis.x, axis.y, axis.z);
     }
 
@@ -1157,7 +1158,7 @@ class alignas(Value_type) Matrix4 {
      * @see <a href="http://www.euclideanspace.com/maths/geometry/rotations/conversions/eulerToMatrix/index.htm">euclideanspace.com-eulerToMatrix</a>
      * @see #setToRotation(Quaternion)
      */
-    constexpr_cxx26 Matrix4& setToRotationEuler(const Vec3f& angradXYZ) noexcept {
+    constexpr_cxx26 Matrix4& setToRotationEuler(const Vec3& angradXYZ) noexcept {
         return setToRotationEuler(angradXYZ.x, angradXYZ.y, angradXYZ.z);
     }
 
@@ -1323,15 +1324,15 @@ class alignas(Value_type) Matrix4 {
      * @param tmp temporary mat4f used for multiplication
      * @return this matrix for chaining
      */
-    constexpr Matrix4& setToLookAt(const Vec3f& eye, const Vec3f& center, const Vec3f& up, Matrix4& tmp) noexcept {
+    constexpr Matrix4& setToLookAt(const Vec3& eye, const Vec3& center, const Vec3& up, Matrix4& tmp) noexcept {
         // normalized forward!
-        const Vec3f fwd = ( center - eye ).normalize();
+        const Vec3 fwd = ( center - eye ).normalize();
 
         /* Side = forward x up, normalized */
-        const Vec3f side = fwd.cross(up).normalize();
+        const Vec3 side = fwd.cross(up).normalize();
 
         /* Recompute up as: up = side x forward */
-        const Vec3f up2 = side.cross(fwd);
+        const Vec3 up2 = side.cross(fwd);
 
         m00 = side.x;
         m10 = up2.x;
@@ -1427,7 +1428,7 @@ class alignas(Value_type) Matrix4 {
      * @param tmp temporary mat4f used for multiplication
      * @return this matrix for chaining
      */
-    constexpr_cxx26 Matrix4& rotate(const value_type ang_rad, const Vec3f& axis, Matrix4& tmp) noexcept {
+    constexpr_cxx26 Matrix4& rotate(const value_type ang_rad, const Vec3& axis, Matrix4& tmp) noexcept {
         return mul( tmp.setToRotationAxis(ang_rad, axis) );
     }
 
@@ -1449,7 +1450,7 @@ class alignas(Value_type) Matrix4 {
      * @param tmp temporary mat4f used for multiplication
      * @return this matrix for chaining
      */
-    constexpr Matrix4& translate(const Vec3f& t, Matrix4& tmp) noexcept {
+    constexpr Matrix4& translate(const Vec3& t, Matrix4& tmp) noexcept {
         return mul( tmp.setToTranslation(t) );
     }
 
@@ -1475,7 +1476,6 @@ class alignas(Value_type) Matrix4 {
         return mul( tmp.setToScale(s, s, s) );
     }
 
-#if 0
     //
     // Static multi Matrix ops
     //
@@ -1493,26 +1493,25 @@ class alignas(Value_type) Matrix4 {
      * @param winPos 3 component window coordinate, the result
      * @return true if successful, otherwise false (z is 1)
      */
-    public static boolean mapObjToWin(final Vec3f obj, final Matrix4 mMv, final Matrix4 mP,
-                                      final Recti viewport, final Vec3f winPos)
+    static bool mapObjToWin(const Vec3& obj, const Matrix4& mMv, const Matrix4& mP,
+                            const Recti& viewport, Vec3& winPos) noexcept
     {
-        final Vec4 vec4Tmp1 = new Vec4(obj, 1f);
-
         // vec4Tmp2 = Mv * o
         // rawWinPos = P  * vec4Tmp2
         // rawWinPos = P * ( Mv * o )
         // rawWinPos = P * Mv * o
-        final Vec4 vec4Tmp2 = mMv.mulVec4(vec4Tmp1, new Vec4());
-        final Vec4 rawWinPos = mP.mulVec4(vec4Tmp2, vec4Tmp1);
+        Vec4 vec4Tmp2 = mMv * Vec4(obj, 1.0f);
 
-        if (rawWinPos.w() == zero) {
+        const Vec4 rawWinPos = mP * vec4Tmp2;
+
+        if ( zero == rawWinPos.w ) {
             return false;
         }
 
-        const value_type s = ( one / rawWinPos.w() ) * half;
+        const value_type s = ( one / rawWinPos.w ) * half;
 
         // Map x, y and z to range 0-1 (w is ignored)
-        rawWinPos.scale(s).add(half, half, half, 0f);
+        rawWinPos.scale(s).add(half, half, half, 0.0f);
 
         // Map x,y to viewport
         winPos.set( rawWinPos.x() * viewport.width() +  viewport.x(),
@@ -1534,22 +1533,20 @@ class alignas(Value_type) Matrix4 {
      * @param winPos 3 component window coordinate, the result
      * @return true if successful, otherwise false (z is 1)
      */
-    public static boolean mapObjToWin(final Vec3f obj, final Matrix4 mPMv,
-                                      final Recti viewport, final Vec3f winPos)
+    static bool mapObjToWin(const Vec3& obj, const Matrix4& mPMv,
+                            const Recti& viewport, Vec3& winPos) noexcept
     {
-        final Vec4 vec4Tmp2 = new Vec4(obj, 1f);
-
         // rawWinPos = P * Mv * o
-        final Vec4 rawWinPos = mPMv.mulVec4(vec4Tmp2, new Vec4());
+        const Vec4 rawWinPos = mPMv * Vec4(obj, 1);
 
-        if (rawWinPos.w() == zero) {
+        if ( zero == rawWinPos.w ) {
             return false;
         }
 
-        const value_type s = ( one / rawWinPos.w() ) * half;
+        const value_type s = ( one / rawWinPos.w ) * half;
 
         // Map x, y and z to range 0-1 (w is ignored)
-        rawWinPos.scale(s).add(half, half, half, 0f);
+        rawWinPos.scale(s).add(half, half, half, 0.0f);
 
         // Map x,y to viewport
         winPos.set( rawWinPos.x() * viewport.width() +  viewport.x(),
@@ -1575,34 +1572,34 @@ class alignas(Value_type) Matrix4 {
      * @param mat4Tmp 16 component matrix for temp storage
      * @return true if successful, otherwise false (failed to invert matrix, or becomes infinity due to zero z)
      */
-    public static boolean mapWinToObj(const value_type winx, const value_type winy, const value_type winz,
-                                      final Matrix4 mMv, final Matrix4 mP,
-                                      final Recti viewport,
-                                      final Vec3f objPos,
-                                      final Matrix4 mat4Tmp)
+    static bool mapWinToObj(const value_type winx, const value_type winy, const value_type winz,
+                            const Matrix4& mMv, const Matrix4& mP,
+                            const Recti& viewport,
+                            Vec3& objPos,
+                            Matrix4& mat4Tmp) noexcept
     {
         // invPMv = Inv(P x Mv)
-        final Matrix4 invPMv = mat4Tmp.mul(mP, mMv);
+        const Matrix4& invPMv = mat4Tmp.mul(mP, mMv);
         if( !invPMv.invert() ) {
             return false;
         }
 
-        final Vec4 winPos = new Vec4(winx, winy, winz, 1f);
+        Vec4 winPos(winx, winy, winz, 1.0f);
 
         // Map x and y from window coordinates
-        winPos.add(-viewport.x(), -viewport.y(), 0f, 0f).mul(1f/viewport.width(), 1f/viewport.height(), 1f, 1f);
+        winPos.add(-viewport.x(), -viewport.y(), 0.0f, 0.0f).mul(1.0f/viewport.width(), 1.0f/viewport.height(), 1.0f, 1.0f);
 
         // Map to range -1 to 1
-        winPos.mul(2f, 2f, 2f, 1f).add(-1f, -1f, -1f, 0f);
+        winPos.mul(2.0f, 2.0f, 2.0f, 1.0f).add(-1.0f, -1.0f, -1.0f, 0.0f);
 
         // rawObjPos = Inv(P x Mv) *  winPos
-        final Vec4 rawObjPos = invPMv.mulVec4(winPos, new Vec4());
+        Vec4 rawObjPos = invPMv * winPos;
 
-        if ( rawObjPos.w() == zero ) {
+        if ( zero == rawObjPos.w ) {
             return false;
         }
-        objPos.set( rawObjPos.scale( 1f / rawObjPos.w() ) );
 
+        ( rawObjPos *= ( 1.0f / rawObjPos.w ) ).getVec3(objPos);
         return true;
     }
 
@@ -1620,30 +1617,27 @@ class alignas(Value_type) Matrix4 {
      * @param objPos 3 component object coordinate, the result
      * @return true if successful, otherwise false (null invert matrix, or becomes infinity due to zero z)
      */
-    public static boolean mapWinToObj(const value_type winx, const value_type winy, const value_type winz,
-                                      final Matrix4 invPMv,
-                                      final Recti viewport,
-                                      final Vec3f objPos)
+    static bool mapWinToObj(const value_type winx, const value_type winy, const value_type winz,
+                            const Matrix4& invPMv,
+                            const Recti& viewport,
+                            Vec3& objPos) noexcept
     {
-        if( null == invPMv ) {
-            return false;
-        }
-        final Vec4 winPos = new Vec4(winx, winy, winz, 1f);
+        Vec4 winPos(winx, winy, winz, 1.0f);
 
         // Map x and y from window coordinates
-        winPos.add(-viewport.x(), -viewport.y(), 0f, 0f).mul(1f/viewport.width(), 1f/viewport.height(), 1f, 1f);
+        winPos.add(-viewport.x(), -viewport.y(), 0.0f, 0.0f).mul(1.0f/viewport.width(), 1.0f/viewport.height(), 1.0f, 1.0f);
 
         // Map to range -1 to 1
-        winPos.mul(2f, 2f, 2f, 1f).add(-1f, -1f, -1f, 0f);
+        winPos.mul(2.0f, 2.0f, 2.0f, 1.0f).add(-1.0f, -1.0f, -1.0f, 0.0f);
 
         // rawObjPos = Inv(P x Mv) *  winPos
-        final Vec4 rawObjPos = invPMv.mulVec4(winPos, new Vec4());
+        Vec4 rawObjPos = invPMv * winPos;
 
-        if ( rawObjPos.w() == zero ) {
+        if ( zero == rawObjPos.w ) {
             return false;
         }
-        objPos.set( rawObjPos.scale( 1f / rawObjPos.w() ) );
 
+        ( rawObjPos *= ( 1.0f / rawObjPos.w ) ).getVec3(objPos);
         return true;
     }
 
@@ -1663,47 +1657,45 @@ class alignas(Value_type) Matrix4 {
      * @param objPos1 3 component object coordinate, the result
      * @return true if successful, otherwise false (null invert matrix, or becomes infinity due to zero z)
      */
-    public static boolean mapWinToObj(const value_type winx, const value_type winy, const value_type winz1, const value_type winz2,
-                                      final Matrix4 invPMv,
-                                      final Recti viewport,
-                                      final Vec3f objPos1, final Vec3f objPos2)
+    static bool mapWinToObj(const value_type winx, const value_type winy, const value_type winz1, const value_type winz2,
+                            const Matrix4& invPMv,
+                            const Recti& viewport,
+                            Vec3& objPos1, Vec3& objPos2) noexcept
     {
-        if( null == invPMv ) {
-            return false;
-        }
-        final Vec4 winPos = new Vec4(winx, winy, winz1, 1f);
+        Vec4 winPos(winx, winy, winz1, 1.0f);
 
         // Map x and y from window coordinates
-        winPos.add(-viewport.x(), -viewport.y(), 0f, 0f).mul(1f/viewport.width(), 1f/viewport.height(), 1f, 1f);
+        winPos.add(-viewport.x(), -viewport.y(), 0.0f, 0.0f).mul(1.0f/viewport.width(), 1.0f/viewport.height(), 1.0f, 1.0f);
 
         // Map to range -1 to 1
-        winPos.mul(2f, 2f, 2f, 1f).add(-1f, -1f, -1f, 0f);
+        winPos.mul(2.0f, 2.0f, 2.0f, 1.0f).add(-1.0f, -1.0f, -1.0f, 0.0f);
 
         // rawObjPos = Inv(P x Mv) *  winPos1
-        final Vec4 rawObjPos = invPMv.mulVec4(winPos, new Vec4());
+        Vec4 rawObjPos = invPMv * winPos;
 
-        if ( rawObjPos.w() == zero ) {
+        if ( zero == rawObjPos.w ) {
             return false;
         }
-        objPos1.set( rawObjPos.scale( 1f / rawObjPos.w() ) );
+        ( rawObjPos *= ( 1.0f / rawObjPos.w ) ).getVec3(objPos1);
 
         //
         // winz2
         //
         // Map Z to range -1 to 1
-        winPos.setZ( winz2 * 2f - 1f );
+        winPos.z = winz2 * 2.0f - 1.0f;
 
         // rawObjPos = Inv(P x Mv) *  winPos2
         invPMv.mulVec4(winPos, rawObjPos);
 
-        if ( rawObjPos.w() == zero ) {
+        if ( zero == rawObjPos.w ) {
             return false;
         }
-        objPos2.set( rawObjPos.scale( 1f / rawObjPos.w() ) );
+        ( rawObjPos *= ( 1.0f / rawObjPos.w ) ).getVec3(objPos2);
 
         return true;
     }
 
+#if 0
     /**
      * Map window coordinates to object coordinates.
      * <p>
@@ -1747,7 +1739,7 @@ class alignas(Value_type) Matrix4 {
         // objPos = Inv(P x Mv) *  winPos
         invPMv.mulVec4(winPos, objPos);
 
-        if ( objPos.w() == zero ) {
+        if ( zero == objPos.w ) {
             return false;
         }
         return true;
@@ -1790,7 +1782,7 @@ class alignas(Value_type) Matrix4 {
         // objPos = Inv(P x Mv) *  winPos
         invPMv.mulVec4(winPos, objPos);
 
-        if ( objPos.w() == zero ) {
+        if ( zero == objPos.w ) {
             return false;
         }
         return true;
