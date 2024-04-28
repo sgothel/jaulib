@@ -34,7 +34,7 @@ using namespace jau;
 using namespace jau::math;
 using namespace jau::math::util;
 
-// static const float EPSILON = std::numeric_limits<float>::epsilon();
+static const float EPSILON = std::numeric_limits<float>::epsilon();
 
 // Simple 10 x 10 view port
 static Recti viewport(0,0,10,10);
@@ -151,4 +151,69 @@ TEST_CASE( "Test 02 PMVMatrixToMatrix4f 2", "[mat4f][linear_algebra][math]" ) {
     REQUIRE_MSG("A/B 0.1 Project 0,0 failure", winB01 == winA01);
     REQUIRE_MSG("A/B 1.0 Project 1,0 failure", winB10 == winA10);
     REQUIRE_MSG("A/B 1.1 Project 0,0 failure", winB11 == winA11);
+}
+
+TEST_CASE( "Test 10 Matrix4f 1", "[mat4f][linear_algebra][math]" ) {
+    Vec3f winHas;
+    Vec2f winExp( 297, 360 );
+
+    Recti viewport(0, 0, 1280, 720);
+
+    Mat4f mat4Mv ({
+            0.40000000596046450000f,    0.00000000000000000000f,    0.00000000000000000000f,    0.00000000000000000000f,
+            0.00000000000000000000f,    0.40000000596046450000f,    0.00000000000000000000f,    0.00000000000000000000f,
+            0.00000000000000000000f,    0.00000000000000000000f,    1.00000000000000000000f,    0.00000000000000000000f,
+           -0.09278385341167450000f,   -0.00471283448860049250f,   -0.20000000298023224000f,    1.00000000000000000000f });
+
+    Mat4f mat4P ({
+            1.35799503326416020000f,    0.00000000000000000000f,    0.00000000000000000000f,    0.00000000000000000000f,
+            0.00000000000000000000f,    2.41421341896057130000f,    0.00000000000000000000f,    0.00000000000000000000f,
+            0.00000000000000000000f,    0.00000000000000000000f,   -1.00002861022949220000f,   -1.00000000000000000000f,
+            0.00000000000000000000f,    0.00000000000000000000f,   -0.20000286400318146000f,    0.00000000000000000000f });
+
+    Vec3f objPos(0.02945519052445888500f,    0.01178207620978355400f,   -0.00499999988824129100f);
+
+    std::cout << "pMv" << std::endl;
+    std::cout << mat4Mv.toString("", "%25.20f") << std::endl;
+    std::cout << "pP" << std::endl;
+    std::cout << mat4P.toString("", "%25.20f") << std::endl;
+
+    Mat4f::mapObjToWin(objPos, mat4Mv, mat4P, viewport, winHas);
+    std::cout << "B.0.0 - Project 1,0 -->" << winHas << std::endl;
+
+    REQUIRE_THAT( winExp.x, Catch::Matchers::WithinAbs(std::round(winHas.x), EPSILON) );
+    REQUIRE_THAT( winExp.y, Catch::Matchers::WithinAbs(std::round(winHas.y), EPSILON) );
+}
+
+TEST_CASE( "Test 11 Matrix4f 2", "[mat4f][linear_algebra][math]" ) {
+    Vec3f winHas;
+    Vec2f winExp( 136, 360 );
+
+    Recti viewport(0, 0, 1280, 720);
+
+    // m30 (row 3, column 0) differs from test01
+    Mat4f mat4Mv({
+            0.40000000596046450000f,    0.00000000000000000000f,    0.00000000000000000000f,    0.00000000000000000000f,
+            0.00000000000000000000f,    0.40000000596046450000f,    0.00000000000000000000f,    0.00000000000000000000f,
+            0.00000000000000000000f,    0.00000000000000000000f,    1.00000000000000000000f,    0.00000000000000000000f,
+           -0.13065303862094880000f,   -0.00471283448860049250f,   -0.20000000298023224000f,    1.00000000000000000000f });
+
+    Mat4f mat4P({
+            1.35799503326416020000f,    0.00000000000000000000f,    0.00000000000000000000f,    0.00000000000000000000f,
+            0.00000000000000000000f,    2.41421341896057130000f,    0.00000000000000000000f,    0.00000000000000000000f,
+            0.00000000000000000000f,    0.00000000000000000000f,   -1.00002861022949220000f,   -1.00000000000000000000f,
+            0.00000000000000000000f,    0.00000000000000000000f,   -0.20000286400318146000f,    0.00000000000000000000f });
+
+    Vec3f objPos(0.02945519052445888500f,    0.01178207620978355400f,   -0.00499999988824129100f);
+
+    std::cout << "pMv" << std::endl;
+    std::cout << mat4Mv.toString("", "%25.20ff") << std::endl;
+    std::cout << "pP" << std::endl;
+    std::cout << mat4P.toString("", "%25.20ff") << std::endl;
+
+    Mat4f::mapObjToWin(objPos, mat4Mv, mat4P, viewport, winHas);
+    std::cout << "B.0.0 - Project 1,0 -->" << winHas << std::endl;
+
+    REQUIRE_THAT( winExp.x, Catch::Matchers::WithinAbs(std::round(winHas.x), EPSILON) );
+    REQUIRE_THAT( winExp.y, Catch::Matchers::WithinAbs(std::round(winHas.y), EPSILON) );
 }
