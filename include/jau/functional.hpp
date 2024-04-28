@@ -429,7 +429,7 @@ namespace jau {
                 /**
                  * For `TriviallyCopyable` only, using sdata or vdata.
                  */
-                constexpr delegate_t(target_type type_, size_type size_, invocation_t cb_, equal_op_t eqop_) noexcept
+                delegate_t(target_type type_, size_type size_, invocation_t cb_, equal_op_t eqop_) noexcept
                 : m_cb(cb_), m_eqop(eqop_), m_size( size_ ), m_type(type_)
                 {
                     if( static_cast<size_type>( sizeof(udata.cache) ) >= m_size ) {
@@ -472,7 +472,7 @@ namespace jau {
 
             public:
                 // null type
-                static constexpr delegate_t make(invocation_t cb_, equal_op_t eqop_) noexcept
+                static delegate_t make(invocation_t cb_, equal_op_t eqop_) noexcept
                 {
                     return delegate_t(target_type::null, 0, cb_, eqop_);
                 }
@@ -482,7 +482,7 @@ namespace jau {
                          std::enable_if_t<std::is_trivially_copyable_v<T> &&
                                           sizeof(T) <= std::numeric_limits<size_type>::max(),
                                           bool> = true>
-                static constexpr delegate_t make(target_type type_, invocation_t cb_, equal_op_t eqop_, P... params) noexcept
+                static delegate_t make(target_type type_, invocation_t cb_, equal_op_t eqop_, P... params) noexcept
                 {
                     delegate_t target(type_, static_cast<size_type>( sizeof(T) ), cb_, eqop_);
                     new( target.template data<T>() ) T(params...); // placement new
@@ -497,7 +497,7 @@ namespace jau {
                                            std::is_copy_constructible_v<T> &&
                                            std::is_move_constructible_v<T>,
                                            bool> = true>
-                static constexpr delegate_t make(target_type type_, invocation_t cb_, equal_op_t eqop_, P... params) noexcept
+                static delegate_t make(target_type type_, invocation_t cb_, equal_op_t eqop_, P... params) noexcept
                 {
                     non_trivial_t nt;
                     nt.dtor = [](delegate_t* i) -> void {
@@ -1315,7 +1315,7 @@ namespace jau {
              * @see @ref function_usage "function Usage"
              */
             template<typename L>
-            static constexpr function<R(A...)> bind_lambda(L func) noexcept
+            static function<R(A...)> bind_lambda(L func) noexcept
             {
                 return function<R(A...)>( jau::func::lambda_target_t<R, L, A...>::delegate(func), 0 );
             }
@@ -1336,7 +1336,7 @@ namespace jau {
              * @see @ref function_usage "function Usage"
              */
             template<typename L>
-            static constexpr function<R(A...)> bind_ylambda(L func) noexcept
+            static function<R(A...)> bind_ylambda(L func) noexcept
             {
                 return function<R(A...)>( jau::func::ylambda_target_t<R, L, A...>::delegate(func), 0 );
             }
