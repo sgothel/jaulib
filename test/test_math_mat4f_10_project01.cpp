@@ -41,7 +41,7 @@ static const float EPSILON = std::numeric_limits<float>::epsilon();
  *
  * Both using same Mat4f::mapObjToWin(..).
  */
-TEST_CASE( "Test 01 PMVMatrixToMatrix4f", "[mat4f][linear_algebra][math]" ) {
+TEST_CASE( "Test 01 Project PMVMatrixToMatrix4f", "[project][mat4f][linear_algebra][math]" ) {
     // Simple 10 x 10 view port
     const Recti viewport(0,0,10,10);
 
@@ -90,7 +90,7 @@ TEST_CASE( "Test 01 PMVMatrixToMatrix4f", "[mat4f][linear_algebra][math]" ) {
  *
  * Both using same Mat4f::mapObjToWin().
  */
-TEST_CASE( "Test 02 PMVMatrixToMatrix4f 2", "[mat4f][linear_algebra][math]" ) {
+TEST_CASE( "Test 02 Project PMVMatrixToMatrix4f 2", "[project][mat4f][linear_algebra][math]" ) {
     // Simple 10 x 10 view port
     const Recti viewport(0,0,10,10);
 
@@ -155,7 +155,7 @@ TEST_CASE( "Test 02 PMVMatrixToMatrix4f 2", "[mat4f][linear_algebra][math]" ) {
     REQUIRE_MSG("A/B 1.1 Project 0,0 failure", winB11 == winA11);
 }
 
-TEST_CASE( "Test 10 Matrix4f 1", "[mat4f][linear_algebra][math]" ) {
+TEST_CASE( "Test 10 Project Matrix4f 1", "[project][mat4f][linear_algebra][math]" ) {
     Vec3f winHas;
     Vec2f winExp( 297, 360 );
 
@@ -187,7 +187,7 @@ TEST_CASE( "Test 10 Matrix4f 1", "[mat4f][linear_algebra][math]" ) {
     REQUIRE_THAT( winExp.y, Catch::Matchers::WithinAbs(std::round(winHas.y), EPSILON) );
 }
 
-TEST_CASE( "Test 11 Matrix4f 2", "[mat4f][linear_algebra][math]" ) {
+TEST_CASE( "Test 11 Project Matrix4f 2", "[project][mat4f][linear_algebra][math]" ) {
     Vec3f winHas;
     Vec2f winExp( 136, 360 );
 

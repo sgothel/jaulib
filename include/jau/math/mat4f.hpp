@@ -1551,7 +1551,7 @@ class alignas(Value_type) Matrix4 {
                             Matrix4& mat4Tmp) noexcept
     {
         // invPMv = Inv(P x Mv)
-        const Matrix4& invPMv = mat4Tmp.mul(mP, mMv);
+        Matrix4& invPMv = mat4Tmp.mul(mP, mMv);
         if( !invPMv.invert() ) {
             return false;
         }
@@ -1694,7 +1694,7 @@ class alignas(Value_type) Matrix4 {
                              Matrix4& mat4Tmp) noexcept
     {
         // invPMv = Inv(P x Mv)
-        const Matrix4& invPMv = mat4Tmp.mul(mP, mMv);
+        Matrix4& invPMv = mat4Tmp.mul(mP, mMv);
         if( !invPMv.invert() ) {
             return false;
         }
