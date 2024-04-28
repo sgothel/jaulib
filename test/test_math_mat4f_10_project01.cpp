@@ -36,16 +36,15 @@ using namespace jau::math::util;
 
 static const float EPSILON = std::numeric_limits<float>::epsilon();
 
-// Simple 10 x 10 view port
-static Recti viewport(0,0,10,10);
-// static int viewport_i4[] = { 0, 0, 10, 10 };
-
 /**
  * PMVMatrix w/ separate P + Mv vs Mat4f::mapObjToWin() w/ single PMv
  *
  * Both using same Mat4f::mapObjToWin(..).
  */
 TEST_CASE( "Test 01 PMVMatrixToMatrix4f", "[mat4f][linear_algebra][math]" ) {
+    // Simple 10 x 10 view port
+    const Recti viewport(0,0,10,10);
+
     Vec3f winA00, winA01, winA10, winA11;
     Vec3f winB00, winB01, winB10, winB11;
 
@@ -92,6 +91,9 @@ TEST_CASE( "Test 01 PMVMatrixToMatrix4f", "[mat4f][linear_algebra][math]" ) {
  * Both using same Mat4f::mapObjToWin().
  */
 TEST_CASE( "Test 02 PMVMatrixToMatrix4f 2", "[mat4f][linear_algebra][math]" ) {
+    // Simple 10 x 10 view port
+    const Recti viewport(0,0,10,10);
+
     Vec3f winA00, winA01, winA10, winA11;
     Vec3f winB00, winB01, winB10, winB11;
 
