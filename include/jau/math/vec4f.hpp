@@ -143,17 +143,25 @@ namespace jau::math {
             constexpr Vector4F& set(const_iterator xyzw) noexcept
             { x=xyzw[0]; y=xyzw[1]; z=xyzw[2]; z=xyzw[3]; return *this; }
 
+            /** this = this + {dx, dy, dz, dw}, returns this. */
             constexpr Vector4F& add(const value_type dx, const value_type dy, const value_type dz, const value_type dw) noexcept
             { x+=dx; y+=dy; z+=dz; w+=dw; return *this; }
 
+            /** this = this * {sx, sy, sz, sw}, returns this. */
             constexpr Vector4F& mul(const value_type sx, const value_type sy, const value_type sz, const value_type sw) noexcept
             { x*=sx; y*=sy; z*=sz; w*=sw; return *this; }
 
+            /** this = this * s, returns this. */
+            constexpr Vector4F& scale(const value_type s) noexcept
+            { x*=s; y*=s; z*=s; w*=s; return *this; }
+
+            /** this = this + rhs, returns this. */
             constexpr Vector4F& operator+=(const Vector4F& rhs ) noexcept {
                 x+=rhs.x; y+=rhs.y; z+=rhs.z; w+=rhs.w;
                 return *this;
             }
 
+            /** this = this - rhs, returns this. */
             constexpr Vector4F& operator-=(const Vector4F& rhs ) noexcept {
                 x-=rhs.x; y-=rhs.y; z-=rhs.z; w-=rhs.w;
                 return *this;
@@ -302,6 +310,7 @@ namespace jau::math {
 
     typedef Vector4F<float> Vec4f;
     static_assert(alignof(float) == alignof(Vec4f));
+    static_assert(sizeof(float)*4 == sizeof(Vec4f));
 
     /**
      * Point4F alias of Vector4F
@@ -312,6 +321,7 @@ namespace jau::math {
 
     typedef Point4F<float> Point4f;
     static_assert(alignof(float) == alignof(Point4f));
+    static_assert(sizeof(float)*4 == sizeof(Point4f));
 
     /**@}*/
 

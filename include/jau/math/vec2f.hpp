@@ -117,17 +117,25 @@ namespace jau::math {
         constexpr Vector2F& set(const_iterator xy) noexcept
         { x=xy[0]; y=xy[1]; return *this; }
 
+        /** this = this + {sx, sy}, returns this. */
         constexpr Vector2F& add(const value_type dx, const value_type dy) noexcept
         { x+=dx; y+=dy; return *this; }
 
+        /** this = this * {sx, sy}, returns this. */
         constexpr Vector2F& mul(const value_type sx, const value_type sy) noexcept
         { x*=sx; y*=sy; return *this; }
 
+        /** this = this * s, returns this. */
+        constexpr Vector2F& scale(const value_type s) noexcept
+        { x*=s; y*=s; return *this; }
+
+        /** this = this + rhs, returns this. */
         constexpr Vector2F& operator+=(const Vector2F& rhs ) noexcept {
             x+=rhs.x; y+=rhs.y;
             return *this;
         }
 
+        /** this = this - rhs, returns this. */
         constexpr Vector2F& operator-=(const Vector2F& rhs ) noexcept {
             x-=rhs.x; y-=rhs.y;
             return *this;
@@ -335,6 +343,7 @@ namespace jau::math {
 
     typedef Vector2F<float> Vec2f;
     static_assert(alignof(float) == alignof(Vec2f));
+    static_assert(sizeof(float)*2 == sizeof(Vec2f));
 
     /**
      * Point2F alias of Vector2F
@@ -345,6 +354,7 @@ namespace jau::math {
 
     typedef Point2F<float> Point2f;
     static_assert(alignof(float) == alignof(Point2f));
+    static_assert(sizeof(float)*2 == sizeof(Point2f));
 
     /**
      * Simple compound denoting a ray.
@@ -378,6 +388,7 @@ namespace jau::math {
 
     typedef Ray2F<float> Ray2f;
     static_assert(alignof(float) == alignof(Ray2f));
+    static_assert(sizeof(float)*4 == sizeof(Ray2f));
 
     /**@}*/
 

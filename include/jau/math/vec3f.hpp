@@ -142,17 +142,25 @@ namespace jau::math {
             constexpr Vector3F& set(const_iterator xyz) noexcept
             { x=xyz[0]; y=xyz[1]; z=xyz[2]; return *this; }
 
+            /** this = this + {dx, dy, dz}, returns this. */
             constexpr Vector3F& add(const value_type dx, const value_type dy, const value_type dz) noexcept
             { x+=dx; y+=dy; z+=dz; return *this; }
 
+            /** this = this * {sx, sy, sz}, returns this. */
             constexpr Vector3F& mul(const value_type sx, const value_type sy, const value_type sz) noexcept
             { x*=sx; y*=sy; z*=sz; return *this; }
 
+            /** this = this * s, returns this. */
+            constexpr Vector3F& scale(const value_type s) noexcept
+            { x*=s; y*=s; z*=s; return *this; }
+
+            /** this = this + rhs, returns this. */
             constexpr Vector3F& operator+=(const Vector3F& rhs ) noexcept {
                 x+=rhs.x; y+=rhs.y; z+=rhs.z;
                 return *this;
             }
 
+            /** this = this - rhs, returns this. */
             constexpr Vector3F& operator-=(const Vector3F& rhs ) noexcept {
                 x-=rhs.x; y-=rhs.y; z-=rhs.z;
                 return *this;
@@ -350,6 +358,7 @@ namespace jau::math {
 
     typedef Vector3F<float> Vec3f;
     static_assert(alignof(float) == alignof(Vec3f));
+    static_assert(sizeof(float)*3 == sizeof(Vec3f));
 
     /**
      * Point3F alias of Vector3F
@@ -360,6 +369,7 @@ namespace jau::math {
 
     typedef Point3F<float> Point3f;
     static_assert(alignof(float) == alignof(Point3f));
+    static_assert(sizeof(float)*3 == sizeof(Point3f));
 
     /**
      * Simple compound denoting a ray.
@@ -392,6 +402,7 @@ namespace jau::math {
 
     typedef Ray3F<float> Ray3f;
     static_assert(alignof(float) == alignof(Ray3f));
+    static_assert(sizeof(float)*6 == sizeof(Ray3f));
 
     /**@}*/
 

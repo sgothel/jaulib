@@ -114,18 +114,25 @@ namespace jau::math {
         constexpr Vector2I& set(const_iterator xy) noexcept
         { x=xy[0]; y=xy[1]; return *this; }
 
-
+        /** this = this + {sx, sy}, returns this. */
         constexpr Vector2I& add(const value_type dx, const value_type dy) noexcept
         { x+=dx; y+=dy; return *this; }
 
+        /** this = this * {sx, sy}, returns this. */
         constexpr Vector2I& mul(const value_type sx, const value_type sy) noexcept
         { x*=sx; y*=sy; return *this; }
 
+        /** this = this * s, returns this. */
+        constexpr Vector2I& scale(const value_type s) noexcept
+        { x*=s; y*=s; return *this; }
+
+        /** this = this + rhs, returns this. */
         constexpr Vector2I& operator+=(const Vector2I& rhs ) noexcept {
             x+=rhs.x; y+=rhs.y;
             return *this;
         }
 
+        /** this = this - rhs, returns this. */
         constexpr Vector2I& operator-=(const Vector2I& rhs ) noexcept {
             x-=rhs.x; y-=rhs.y;
             return *this;
@@ -249,6 +256,7 @@ namespace jau::math {
 
     typedef Vector2I<int> Vec2i;
     static_assert(alignof(int) == alignof(Vec2i));
+    static_assert(sizeof(int)*2 == sizeof(Vec2i));
 
     /**@}*/
 

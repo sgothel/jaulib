@@ -98,18 +98,18 @@ namespace jau::math {
         iterator get(iterator xywh) const noexcept
         { xywh[0] = m_x; xywh[1] = m_y; xywh[2] = m_width; xywh[3] = m_height; return xywh; }
 
-        value_type x() const noexcept { return m_x; }
-        value_type y() const noexcept { return m_y; }
-        value_type width() const noexcept { return m_width; }
-        value_type height() const noexcept { return m_height; }
+        constexpr value_type x() const noexcept { return m_x; }
+        constexpr value_type y() const noexcept { return m_y; }
+        constexpr value_type width() const noexcept { return m_width; }
+        constexpr value_type height() const noexcept { return m_height; }
 
-        void setX(const value_type x) noexcept { m_x = x; }
-        void setY(const value_type y) noexcept { m_y = y; }
-        void setWidth(const value_type width) noexcept { m_width = width; }
-        void setHeight(const value_type height) noexcept { m_height = height; }
+        constexpr void setX(const value_type x) noexcept { m_x = x; }
+        constexpr void setY(const value_type y) noexcept { m_y = y; }
+        constexpr void setWidth(const value_type width) noexcept { m_width = width; }
+        constexpr void setHeight(const value_type height) noexcept { m_height = height; }
 
         /** Return true if area is zero. */
-        bool is_zero() const noexcept {
+        constexpr bool is_zero() const noexcept {
             return 0 == m_width || 0 == m_height;
         }
 
@@ -125,6 +125,7 @@ namespace jau::math {
 
     typedef RectI<int> Recti;
     static_assert(alignof(int) == alignof(Recti));
+    static_assert(sizeof(int)*4 == sizeof(Recti));
 
 /**@}*/
 
