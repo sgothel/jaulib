@@ -92,9 +92,9 @@
     }
     template < typename T, size_t N >
     void compareStdArrays(const std::string & test, unsigned line, const std::array<T, N>& lhs, const std::array<T, N>& rhs, const T epsilon) {
-      const std::string m = "["+test+"] at line "+std::to_string(line);
+      const std::string m = "["+test+"] at line "+std::to_string(line)+", element ";
       for(size_t i=0; i<N; ++i) {
-          REQUIRE_THAT_MSG(m, lhs[i], Catch::Matchers::WithinAbs(rhs[i], epsilon) );
+          REQUIRE_THAT_MSG(m+std::to_string(i)+"/"+std::to_string(N-1), lhs[i], Catch::Matchers::WithinAbs(rhs[i], epsilon) );
       }
     }
 
@@ -103,16 +103,16 @@
 
     template < typename T >
     void compareNativeArrays(const std::string & test, unsigned line, const T lhs[], const T rhs[], const size_t len) {
-      const std::string m = "["+test+"] at line "+std::to_string(line);
+      const std::string m = "["+test+"] at line "+std::to_string(line)+", element ";
       for(size_t i=0; i<len; ++i) {
-          REQUIRE_MSG(m, rhs[i] == lhs[i] );
+          REQUIRE_MSG(m+std::to_string(i)+"/"+std::to_string(len-1), rhs[i] == lhs[i] );
       }
     }
     template < typename T >
     void compareNativeArrays(const std::string & test, unsigned line, const T lhs[], const T rhs[], const size_t len, const T epsilon) {
-      const std::string m = "["+test+"] at line "+std::to_string(line);
+      const std::string m = "["+test+"] at line "+std::to_string(line)+", element ";
       for(size_t i=0; i<len; ++i) {
-          REQUIRE_THAT_MSG(m, lhs[i], Catch::Matchers::WithinAbs(rhs[i], epsilon) );
+          REQUIRE_THAT_MSG(m+std::to_string(i)+"/"+std::to_string(len-1), lhs[i], Catch::Matchers::WithinAbs(rhs[i], epsilon) );
       }
     }
 // }

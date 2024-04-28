@@ -28,17 +28,8 @@
 
 #include <jau/test/catch2_ext.hpp>
 
-#include <jau/math/vec2f.hpp>
-#include <jau/math/vec2i.hpp>
-#include <jau/math/vec3f.hpp>
-#include <jau/math/vec4f.hpp>
 #include <jau/math/mat4f.hpp>
 #include <jau/math/quaternion.hpp>
-#include <jau/math/aabbox2f.hpp>
-#include <jau/math/aabbox3f.hpp>
-#include <jau/math/mat4f.hpp>
-#include <jau/math/recti.hpp>
-#include <jau/math/math_error.hpp>
 
 using namespace jau;
 using namespace jau::math;

@@ -27,19 +27,7 @@
 
 #include <jau/test/catch2_ext.hpp>
 
-#include <jau/int_math.hpp>
-#include <jau/float_math.hpp>
-#include <jau/math/vec2f.hpp>
-#include <jau/math/vec2i.hpp>
-#include <jau/math/vec3f.hpp>
-#include <jau/math/vec4f.hpp>
 #include <jau/math/mat4f.hpp>
-#include <jau/math/quaternion.hpp>
-#include <jau/math/aabbox2f.hpp>
-#include <jau/math/aabbox3f.hpp>
-#include <jau/math/mat4f.hpp>
-#include <jau/math/recti.hpp>
-#include <jau/math/math_error.hpp>
 
 using namespace jau;
 using namespace jau::math;
@@ -159,6 +147,11 @@ static void testImpl(float matrix[]) {
     Mat4f inv2_4a(inv1_4a);
     REQUIRE( true == inv2_4a.invert() );
 
+    {
+        Mat4f a(inv1_0), b( inv1_4a.get(temp) );
+        std::cout << "A: " << a << std::endl;
+        std::cout << "B: " << b << std::endl;
+    }
     COMPARE_NARRAYS_EPS(inv1_0, inv1_4a.get(temp), 16, Mat4f::inv_deviation);
     COMPARE_NARRAYS_EPS(inv2_0, inv2_4a.get(temp), 16, Mat4f::inv_deviation);
     REQUIRE_MSG( "I4 failure: "+matrix_m.toString()+" != "+inv2_4a.toString(), matrix_m.equals(inv2_4a, Mat4f::inv_deviation));
