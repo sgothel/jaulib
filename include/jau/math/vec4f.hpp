@@ -97,11 +97,17 @@ namespace jau::math {
                 return (&x)[i];
             }
 
+            explicit operator const_pointer() const noexcept { return &x; }
+            constexpr const_iterator cbegin() const noexcept { return &x; }
+
             /** Returns writeable reference to component */
             constexpr reference operator[](size_t i) noexcept {
                 assert(i < 4);
                 return (&x)[i];
             }
+
+            explicit operator pointer() noexcept { return &x; }
+            constexpr iterator begin() noexcept { return &x; }
 
             /** xyzw = this, returns xyzw. */
             constexpr iterator get(iterator xyzw) const noexcept {
