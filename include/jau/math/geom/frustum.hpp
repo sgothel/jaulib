@@ -156,13 +156,13 @@ class Frustum {
         /** Distance to origin */
         float d;
 
-        Plane() noexcept
+        constexpr Plane() noexcept
         : n(), d(0) {}
 
-        Plane(const Plane& o) noexcept = default;
-        Plane(Plane&& o) noexcept = default;
-        Plane& operator=(const Plane&) noexcept = default;
-        Plane& operator=(Plane&&) noexcept = default;
+        constexpr Plane(const Plane& o) noexcept = default;
+        constexpr Plane(Plane&& o) noexcept = default;
+        constexpr Plane& operator=(const Plane&) noexcept = default;
+        constexpr Plane& operator=(Plane&&) noexcept = default;
 
         /**
          * Setup of plane using 3 points. None of the three points are mutated.
@@ -175,7 +175,7 @@ class Frustum {
          * @param p2 point on plane
          * @return this plane for chaining
          */
-        Plane& set(const jau::math::Vec3f& p0, const jau::math::Vec3f& p1, const jau::math::Vec3f& p2) noexcept {
+        constexpr Plane& set(const jau::math::Vec3f& p0, const jau::math::Vec3f& p1, const jau::math::Vec3f& p2) noexcept {
             const jau::math::Vec3f v = p1 - p0;
             const jau::math::Vec3f u = p2 - p0;
             n.cross(v, u).normalize();
@@ -189,14 +189,14 @@ class Frustum {
          * @param p0 point on plane, consider choosing the closest point to origin
          * @return this plane for chaining
          */
-        Plane& set(const jau::math::Vec3f& n_, const jau::math::Vec3f& p0) noexcept {
+        constexpr Plane& set(const jau::math::Vec3f& n_, const jau::math::Vec3f& p0) noexcept {
             n = n_;
             d = (n * -1.0f).dot(p0);
             return *this;
         }
 
         /** Sets the given vec4f {@code out} to {@code ( n, d )}. Returns {@code out} for chaining. */
-        jau::math::Vec4f& toVec4f(jau::math::Vec4f& out) const noexcept {
+        constexpr jau::math::Vec4f& toVec4f(jau::math::Vec4f& out) const noexcept {
             out.set(n, d);
             return out;
         }
@@ -205,11 +205,11 @@ class Frustum {
          * Sets the given {@code [float[off]..float[off+4])} {@code out} to {@code ( n, d )}.
          * @param out the {@code float[off+4]} output array
          */
-        void toFloats(float out[/* off+4] */], const size_t off) const noexcept {
-            out[off+0] = n.x;
-            out[off+1] = n.y;
-            out[off+2] = n.z;
-            out[off+3] = d;
+        constexpr void toFloats(float out[/* off+4] */]) const noexcept {
+            out[0] = n.x;
+            out[1] = n.y;
+            out[2] = n.z;
+            out[3] = d;
         }
 
         /**
@@ -227,12 +227,12 @@ class Frustum {
          * Negative halfspace is the <i>other side</i> of the plane, i.e. *-1
          * </p>
          **/
-        float distanceTo(const float x, const float y, const float z) const noexcept {
+        constexpr float distanceTo(const float x, const float y, const float z) const noexcept {
             return n.x * x + n.y * y + n.z * z + d;
         }
 
         /** Return distance of plane to given point, see {@link #distanceTo(float, float, float)}. */
-        float distanceTo(const jau::math::Vec3f& p) const noexcept {
+        constexpr float distanceTo(const jau::math::Vec3f& p) const noexcept {
             return n.dot(p) + d;
         }
 
@@ -245,6 +245,7 @@ class Frustum {
     /** Normalized planes[l, r, b, t, n, f] */
 	Plane planes[6];
 
+  public:
 	/**
 	 * Creates an undefined instance w/o calculating the frustum.
 	 * <p>
@@ -253,12 +254,12 @@ class Frustum {
 	 * @see #updateByPlanes(Plane[])
 	 * @see #updateFrustumPlanes(float[], int)
 	 */
-    Frustum() noexcept = default;
+	constexpr Frustum() noexcept = default;
 
-    Frustum(const Frustum& o) noexcept = default;
-    Frustum(Frustum&& o) noexcept = default;
-    Frustum& operator=(const Frustum&) noexcept = default;
-    Frustum& operator=(Frustum&&) noexcept = default;
+	constexpr Frustum(const Frustum& o) noexcept = default;
+	constexpr Frustum(Frustum&& o) noexcept = default;
+	constexpr Frustum& operator=(const Frustum&) noexcept = default;
+	constexpr Frustum& operator=(Frustum&&) noexcept = default;
 
     /**
      * Sets each of the given {@link Vec4f}[6] {@code out} to {@link Plane#toVec4f(Vec4f)}
@@ -266,7 +267,7 @@ class Frustum {
      * @param out the jau::math::vec4f[6] output array
      * @return {@code out} for chaining
      */
-    jau::math::Vec4f* getPlanes(jau::math::Vec4f out[/*6*/]) const noexcept {
+	constexpr jau::math::Vec4f* getPlanes(jau::math::Vec4f out[/*6*/]) const noexcept {
         planes[LEFT  ].toVec4f(out[0]);
         planes[RIGHT ].toVec4f(out[1]);
         planes[BOTTOM].toVec4f(out[2]);
@@ -286,20 +287,20 @@ class Frustum {
      * @param out the {@code float[off+4*6]} output array
      * @return {@code out} for chaining
      */
-    void getPlanes(float out[/* off+4*6] */], const size_t off) const noexcept {
-        planes[LEFT  ].toFloats(out, off+4*0);
-        planes[RIGHT ].toFloats(out, off+4*1);
-        planes[BOTTOM].toFloats(out, off+4*2);
-        planes[TOP   ].toFloats(out, off+4*3);
-        planes[NEAR  ].toFloats(out, off+4*4);
-        planes[FAR   ].toFloats(out, off+4*5);
+	constexpr void getPlanes(float out[/* off+4*6] */]) const noexcept {
+        planes[LEFT  ].toFloats(out+4*0);
+        planes[RIGHT ].toFloats(out+4*1);
+        planes[BOTTOM].toFloats(out+4*2);
+        planes[TOP   ].toFloats(out+4*3);
+        planes[NEAR  ].toFloats(out+4*4);
+        planes[FAR   ].toFloats(out+4*5);
     }
 
     /**
      * Copy the given <code>src</code> planes into this this instance's planes.
      * @param src the 6 source planes
      */
-    void updateByPlanes(const Plane src[/*6*/]) noexcept {
+	constexpr void updateByPlanes(const Plane src[/*6*/]) noexcept {
         planes[0] = src[0];
         planes[1] = src[1];
         planes[2] = src[2];
@@ -308,7 +309,6 @@ class Frustum {
         planes[5] = src[5];
     }
 
-  public:
     /**
      * {@link Plane}s are ordered in the returned array as follows:
      * <ul>
@@ -326,7 +326,7 @@ class Frustum {
      *
      * @return array of normalized {@link Plane}s, order see above.
      */
-    Plane* getPlanes() noexcept { return planes; }
+	constexpr Plane* getPlanes() noexcept { return planes; }
 
     /**
      * Calculate the frustum planes in world coordinates
