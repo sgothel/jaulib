@@ -41,6 +41,7 @@
 #include <jau/math/mat4f.hpp>
 #include <jau/math/recti.hpp>
 #include <jau/math/math_error.hpp>
+#include <jau/math/util/sstack.hpp>
 
 using namespace jau;
 using namespace jau::math;
@@ -117,7 +118,7 @@ TEST_CASE( "Test 02 Transpose", "[mat4f][linear_algebra][math]" ) {
     REQUIRE(m1T == Mat4f().transpose(m1));
 }
 
-TEST_CASE( "Test 80 LookAtNegZ", "[mat4f][linear_algebra][math]" ) {
+TEST_CASE( "Test 10 LookAtNegZ", "[mat4f][linear_algebra][math]" ) {
     Mat4f tmp;
     Mat4f m;
     // Look towards -z
@@ -138,7 +139,7 @@ TEST_CASE( "Test 80 LookAtNegZ", "[mat4f][linear_algebra][math]" ) {
     REQUIRE(exp == m);
 }
 
-TEST_CASE( "Test 81 LookAtPosY", "[mat4f][linear_algebra][math]" ) {
+TEST_CASE( "Test 11 LookAtPosY", "[mat4f][linear_algebra][math]" ) {
     Mat4f tmp;
     Mat4f m;
     // Look towards -z
@@ -160,3 +161,40 @@ TEST_CASE( "Test 81 LookAtPosY", "[mat4f][linear_algebra][math]" ) {
     REQUIRE(exp == m);
 }
 
+TEST_CASE( "Test 20 Float16Stack", "[stack][mat4f][math]" ) {
+    jau::math::util::Stack16f s1;
+    Mat4f m1( {  1.0f,  2.0f,  3.0f,  4.0f,  // column 0
+                 5.0f,  6.0f,  7.0f,  8.0f,  // column 1
+                 9.0f, 10.0f, 11.0f, 12.0f,  // column 2
+                 13.0f, 14.0f, 15.0f, 16.0f  // column 3
+              } );
+    Mat4f m2 = m1 * 2.0f;
+    std::cout << "mat4 m1 " << m1 << std::endl;
+    std::cout << "mat4 m2 " << m2 << std::endl;
+    s1.push(m1.cbegin());
+    s1.push(m2.cbegin());
+    Mat4f m20, m10;
+    s1.pop(m20.begin());
+    s1.pop(m10.begin());
+    REQUIRE( m2 == m20 );
+    REQUIRE( m1 == m10 );
+}
+
+TEST_CASE( "Test 21 Mat4fStack", "[stack][mat4f][math]" ) {
+    jau::math::util::Mat4fStack s1;
+    Mat4f m1( {  1.0f,  2.0f,  3.0f,  4.0f,  // column 0
+                 5.0f,  6.0f,  7.0f,  8.0f,  // column 1
+                 9.0f, 10.0f, 11.0f, 12.0f,  // column 2
+                 13.0f, 14.0f, 15.0f, 16.0f  // column 3
+              } );
+    Mat4f m2 = m1 * 2.0f;
+    std::cout << "mat4 m1 " << m1 << std::endl;
+    std::cout << "mat4 m2 " << m2 << std::endl;
+    s1.push(m1);
+    s1.push(m2);
+    Mat4f m20, m10;
+    s1.pop(m20);
+    s1.pop(m10);
+    REQUIRE( m2 == m20 );
+    REQUIRE( m1 == m10 );
+}
