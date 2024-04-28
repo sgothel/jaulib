@@ -1046,7 +1046,7 @@ class alignas(Value_type) Quaternion {
      * @see #setFromMatrix(value_type, value_type, value_type, value_type, value_type, value_type, value_type, value_type, value_type)
      * @see Matrix4f#setToRotation(Quaternion)
      */
-    Mat4f toMatrix() const noexcept {
+    constexpr Mat4f toMatrix() const noexcept {
         Mat4f m; toMatrix(m); return m;
     }
 
@@ -1057,7 +1057,7 @@ class alignas(Value_type) Quaternion {
      * @param out store for the resulting normalized column matrix 4x4
      * @return the given matrix store
      */
-    Mat4f& toMatrix(Mat4f& m) const noexcept {
+    constexpr Mat4f& toMatrix(Mat4f& m) const noexcept {
         // pre-multiply scaled-reciprocal-magnitude to reduce multiplications
         const value_type norm = magnitudeSquared();
         if ( jau::is_zero(norm) ) {
@@ -1118,7 +1118,7 @@ class alignas(Value_type) Quaternion {
      * @param zAxis vector representing the <i>orthogonal</i> m_z-axis of the coordinate system.
      * @param tmp temporary Matrix4 used for toMatrix()
      */
-    void toAxes(Vec3& xAxis, Vec3& yAxis, Vec3& zAxis, Matrix4<value_type>& tmp) const noexcept {
+    constexpr void toAxes(Vec3& xAxis, Vec3& yAxis, Vec3& zAxis, Matrix4<value_type>& tmp) const noexcept {
         toMatrix(tmp);
         tmp.getColumn(2, zAxis);
         tmp.getColumn(1, yAxis);
@@ -1132,7 +1132,7 @@ class alignas(Value_type) Quaternion {
      * @param yAxis vector representing the <i>orthogonal</i> y-axis of the coordinate system.
      * @param zAxis vector representing the <i>orthogonal</i> m_z-axis of the coordinate system.
      */
-    void toAxes(Vec3& xAxis, Vec3& yAxis, Vec3& zAxis) const noexcept {
+    constexpr void toAxes(Vec3& xAxis, Vec3& yAxis, Vec3& zAxis) const noexcept {
         Matrix4<value_type> tmp;
         toAxes(xAxis, yAxis, zAxis, tmp);
     }
