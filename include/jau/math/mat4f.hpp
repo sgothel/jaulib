@@ -121,6 +121,7 @@ class alignas(Value_type) Matrix4 {
 
     typedef Vector3F<value_type, std::is_floating_point_v<Value_type>> Vec3;
     typedef Vector4F<value_type, std::is_floating_point_v<Value_type>> Vec4;
+    typedef Ray3F<value_type, std::is_floating_point_v<Value_type>> Ray3;
 
     constexpr static const value_type zero = value_type(0);
     constexpr static const value_type one  = value_type(1);
@@ -1099,11 +1100,11 @@ class alignas(Value_type) Matrix4 {
      * <p>
      * Implementation does not use Quaternion and hence is exposed to
      * <a href="http://web.archive.org/web/20041029003853/http://www.j3d.org/matrix_faq/matrfaq_latest.html#Q34">Gimbal-Lock</a>,
-     * consider using {@link #setToRotation(Quaternion)}.
+     * consider using Quaternion::toMatrix().
      * </p>
      * @see <a href="http://web.archive.org/web/20041029003853/http://www.j3d.org/matrix_faq/matrfaq_latest.html#Q36">Matrix-FAQ Q36</a>
      * @see <a href="http://www.euclideanspace.com/maths/geometry/rotations/conversions/eulerToMatrix/index.htm">euclideanspace.com-eulerToMatrix</a>
-     * @see #setToRotation(Quaternion)
+     * @see Quaternion::toMatrix()
      */
     constexpr_cxx26 Matrix4& setToRotationEuler(const value_type bankX, const value_type headingY, const value_type attitudeZ) noexcept {
         // Assuming the angles are in radians.
@@ -1152,11 +1153,11 @@ class alignas(Value_type) Matrix4 {
      * <p>
      * Implementation does not use Quaternion and hence is exposed to
      * <a href="http://web.archive.org/web/20041029003853/http://www.j3d.org/matrix_faq/matrfaq_latest.html#Q34">Gimbal-Lock</a>,
-     * consider using {@link #setToRotation(Quaternion)}.
+     * consider using Quaternion::toMatrix().
      * </p>
      * @see <a href="http://web.archive.org/web/20041029003853/http://www.j3d.org/matrix_faq/matrfaq_latest.html#Q36">Matrix-FAQ Q36</a>
      * @see <a href="http://www.euclideanspace.com/maths/geometry/rotations/conversions/eulerToMatrix/index.htm">euclideanspace.com-eulerToMatrix</a>
-     * @see #setToRotation(Quaternion)
+     * @see Quaternion::toMatrix()
      */
     constexpr_cxx26 Matrix4& setToRotationEuler(const Vec3& angradXYZ) noexcept {
         return setToRotationEuler(angradXYZ.x, angradXYZ.y, angradXYZ.z);
@@ -1502,7 +1503,7 @@ class alignas(Value_type) Matrix4 {
         // rawWinPos = P * Mv * o
         Vec4 vec4Tmp2 = mMv * Vec4(obj, 1.0f);
 
-        const Vec4 rawWinPos = mP * vec4Tmp2;
+        Vec4 rawWinPos = mP * vec4Tmp2;
 
         if ( zero == rawWinPos.w ) {
             return false;
@@ -1514,9 +1515,9 @@ class alignas(Value_type) Matrix4 {
         rawWinPos.scale(s).add(half, half, half, 0.0f);
 
         // Map x,y to viewport
-        winPos.set( rawWinPos.x() * viewport.width() +  viewport.x(),
-                    rawWinPos.y() * viewport.height() + viewport.y(),
-                    rawWinPos.z() );
+        winPos.set( rawWinPos.x * viewport.width() +  viewport.x(),
+                    rawWinPos.y * viewport.height() + viewport.y(),
+                    rawWinPos.z );
 
         return true;
     }
@@ -1537,7 +1538,7 @@ class alignas(Value_type) Matrix4 {
                             const Recti& viewport, Vec3& winPos) noexcept
     {
         // rawWinPos = P * Mv * o
-        const Vec4 rawWinPos = mPMv * Vec4(obj, 1);
+        Vec4 rawWinPos = mPMv * Vec4(obj, 1);
 
         if ( zero == rawWinPos.w ) {
             return false;
@@ -1549,9 +1550,9 @@ class alignas(Value_type) Matrix4 {
         rawWinPos.scale(s).add(half, half, half, 0.0f);
 
         // Map x,y to viewport
-        winPos.set( rawWinPos.x() * viewport.width() +  viewport.x(),
-                    rawWinPos.y() * viewport.height() + viewport.y(),
-                    rawWinPos.z() );
+        winPos.set( rawWinPos.x * viewport.width() +  viewport.x(),
+                    rawWinPos.y * viewport.height() + viewport.y(),
+                    rawWinPos.z );
 
         return true;
     }
@@ -1599,7 +1600,7 @@ class alignas(Value_type) Matrix4 {
             return false;
         }
 
-        ( rawObjPos *= ( 1.0f / rawObjPos.w ) ).getVec3(objPos);
+        rawObjPos.scale(1.0f / rawObjPos.w).getVec3(objPos);
         return true;
     }
 
@@ -1637,7 +1638,7 @@ class alignas(Value_type) Matrix4 {
             return false;
         }
 
-        ( rawObjPos *= ( 1.0f / rawObjPos.w ) ).getVec3(objPos);
+        rawObjPos.scale(1.0f / rawObjPos.w).getVec3(objPos);
         return true;
     }
 
@@ -1676,7 +1677,7 @@ class alignas(Value_type) Matrix4 {
         if ( zero == rawObjPos.w ) {
             return false;
         }
-        ( rawObjPos *= ( 1.0f / rawObjPos.w ) ).getVec3(objPos1);
+        rawObjPos.scale(1.0f / rawObjPos.w).getVec3(objPos1);
 
         //
         // winz2
@@ -1690,12 +1691,11 @@ class alignas(Value_type) Matrix4 {
         if ( zero == rawObjPos.w ) {
             return false;
         }
-        ( rawObjPos *= ( 1.0f / rawObjPos.w ) ).getVec3(objPos2);
+        rawObjPos.scale(1.0f / rawObjPos.w).getVec3(objPos2);
 
         return true;
     }
 
-#if 0
     /**
      * Map window coordinates to object coordinates.
      * <p>
@@ -1715,26 +1715,25 @@ class alignas(Value_type) Matrix4 {
      * @param mat4Tmp 16 component matrix for temp storage
      * @return true if successful, otherwise false (failed to invert matrix, or becomes infinity due to zero z)
      */
-    public static boolean mapWinToObj4(const value_type winx, const value_type winy, const value_type winz, const value_type clipw,
-                                       final Matrix4 mMv, final Matrix4 mP,
-                                       final Recti viewport,
-                                       const value_type near, const value_type far,
-                                       final Vec4 objPos,
-                                       final Matrix4 mat4Tmp)
+    static bool mapWinToObj4(const value_type winx, const value_type winy, const value_type winz, const value_type clipw,
+                             const Matrix4& mMv, const Matrix4& mP,
+                             const Recti& viewport,
+                             const value_type near, const value_type far,
+                             Vec4& objPos,
+                             Matrix4& mat4Tmp) noexcept
     {
         // invPMv = Inv(P x Mv)
-        final Matrix4 invPMv = mat4Tmp.mul(mP, mMv);
+        const Matrix4& invPMv = mat4Tmp.mul(mP, mMv);
         if( !invPMv.invert() ) {
             return false;
         }
-
-        final Vec4 winPos = new Vec4(winx, winy, winz, clipw);
+        Vec4 winPos(winx, winy, winz, clipw);
 
         // Map x and y from window coordinates
-        winPos.add(-viewport.x(), -viewport.y(), -near, 0f).mul(1f/viewport.width(), 1f/viewport.height(), 1f/(far-near), 1f);
+        winPos.add(-viewport.x(), -viewport.y(), -near, 0.0f).mul(1.0f/viewport.width(), 1.0f/viewport.height(), 1.0f/(far-near), 1.0f);
 
         // Map to range -1 to 1
-        winPos.mul(2f, 2f, 2f, 1f).add(-1f, -1f, -1f, 0f);
+        winPos.mul(2.0f, 2.0f, 2.0f, 1.0f).add(-1.0f, -1.0f, -1.0f, 0.0f);
 
         // objPos = Inv(P x Mv) *  winPos
         invPMv.mulVec4(winPos, objPos);
@@ -1762,22 +1761,19 @@ class alignas(Value_type) Matrix4 {
      * @param obj_pos 4 component object coordinate, the result
      * @return true if successful, otherwise false (null invert matrix, or becomes infinity due to zero z)
      */
-    public static boolean mapWinToObj4(const value_type winx, const value_type winy, const value_type winz, const value_type clipw,
-                                       final Matrix4 invPMv,
-                                       final Recti viewport,
-                                       const value_type near, const value_type far,
-                                       final Vec4 objPos)
+    static bool mapWinToObj4(const value_type winx, const value_type winy, const value_type winz, const value_type clipw,
+                             const Matrix4& invPMv,
+                             const Recti& viewport,
+                             const value_type near, const value_type far,
+                             Vec4& objPos) noexcept
     {
-        if( null == invPMv ) {
-            return false;
-        }
-        final Vec4 winPos = new Vec4(winx, winy, winz, clipw);
+        Vec4 winPos(winx, winy, winz, clipw);
 
         // Map x and y from window coordinates
-        winPos.add(-viewport.x(), -viewport.y(), -near, 0f).mul(1f/viewport.width(), 1f/viewport.height(), 1f/(far-near), 1f);
+        winPos.add(-viewport.x(), -viewport.y(), -near, 0.0f).mul(1.0f/viewport.width(), 1.0f/viewport.height(), 1.0f/(far-near), 1.0f);
 
         // Map to range -1 to 1
-        winPos.mul(2f, 2f, 2f, 1f).add(-1f, -1f, -1f, 0f);
+        winPos.mul(2.0f, 2.0f, 2.0f, 1.0f).add(-1.0f, -1.0f, -1.0f, 0.0f);
 
         // objPos = Inv(P x Mv) *  winPos
         invPMv.mulVec4(winPos, objPos);
@@ -1812,13 +1808,14 @@ class alignas(Value_type) Matrix4 {
      * @param mat4Tmp2 16 component matrix for temp storage
      * @return true if successful, otherwise false (failed to invert matrix, or becomes z is infinity)
      */
-    public static boolean mapWinToRay(const value_type winx, const value_type winy, const value_type winz0, const value_type winz1,
-                                      final Matrix4 mMv, final Matrix4 mP,
-                                      final Recti viewport,
-                                      final Ray ray,
-                                      final Matrix4 mat4Tmp1, final Matrix4 mat4Tmp2) {
+    static bool mapWinToRay(const value_type winx, const value_type winy, const value_type winz0, const value_type winz1,
+                            const Matrix4& mMv, const Matrix4& mP,
+                            const Recti& viewport,
+                            Ray3& ray,
+                            Matrix4& mat4Tmp1) noexcept
+    {
         // invPMv = Inv(P x Mv)
-        final Matrix4 invPMv = mat4Tmp1.mul(mP, mMv);
+        const Matrix4 invPMv = mat4Tmp1.mul(mP, mMv);
         if( !invPMv.invert() ) {
             return false;
         }
@@ -1852,19 +1849,18 @@ class alignas(Value_type) Matrix4 {
      * @param ray storage for the resulting {@link Ray}
      * @return true if successful, otherwise false (null invert matrix, or becomes z is infinity)
      */
-    public static boolean mapWinToRay(const value_type winx, const value_type winy, const value_type winz0, const value_type winz1,
-                                      final Matrix4 invPMv,
-                                      final Recti viewport,
-                                      final Ray ray) {
+    static bool mapWinToRay(const value_type winx, const value_type winy, const value_type winz0, const value_type winz1,
+                            const Matrix4& invPMv,
+                            const Recti& viewport,
+                            Ray3& ray) noexcept
+    {
         if( mapWinToObj(winx, winy, winz0, winz1, invPMv, viewport, ray.orig, ray.dir) ) {
-            ray.dir.sub(ray.orig).normalize();
+            (ray.dir -= ray.orig).normalize();
             return true;
         } else {
             return false;
         }
     }
-
-#endif
 
     /**
      * Returns a formatted string representation of this matrix
@@ -1909,6 +1905,7 @@ std::ostream& operator<<(std::ostream& out, const Matrix4<T>& v) noexcept {
 typedef Matrix4<float> Mat4f;
 
 static_assert(alignof(float) == alignof(Mat4f));
+static_assert(sizeof(float)*16 == sizeof(Mat4f));
 
 /**@}*/
 
