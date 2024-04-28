@@ -27,7 +27,8 @@
 #include <jau/functional.hpp>
 #include <jau/math/vec3f.hpp>
 
-namespace jau::math {
+namespace jau::math::geom {
+
 
     /** \addtogroup Math
      *
@@ -685,6 +686,6 @@ namespace jau::math {
 
     /**@}*/
 
-} // namespace jau::math
+} // namespace jau::math::geom
 
 #endif /*  JAU_AABBOX3F_HPP_ */

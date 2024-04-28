@@ -25,7 +25,7 @@
 #define JAU_GEOM3F_HPP_
 
 #include <jau/math/vec3f.hpp>
-#include <jau/math/aabbox3f.hpp>
+#include <jau/math/geom/aabbox3f.hpp>
 
 namespace jau::math::geom {
 

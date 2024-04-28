@@ -29,7 +29,7 @@
 #include <jau/math/vec2f.hpp>
 #include <jau/math/vec3f.hpp>
 #include <jau/math/vec4f.hpp>
-#include <jau/math/aabbox3f.hpp>
+#include <jau/math/geom/aabbox3f.hpp>
 
 namespace jau::math::geom::plane {
 

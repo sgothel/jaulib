@@ -27,9 +27,9 @@
 #include <vector>
 #include <memory>
 
-#include <jau/math/geom/geom.hpp>
 #include <jau/math/vec2f.hpp>
-#include <jau/math/aabbox2f.hpp>
+#include <jau/math/geom/geom.hpp>
+#include <jau/math/geom/aabbox2f.hpp>
 
 namespace jau::math::geom {
 

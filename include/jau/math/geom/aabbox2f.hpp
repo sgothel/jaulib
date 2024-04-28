@@ -26,7 +26,7 @@
 
 #include <jau/math/vec2f.hpp>
 
-namespace jau::math {
+namespace jau::math::geom {
 
     /** \addtogroup Math
      *
@@ -185,6 +185,6 @@ namespace jau::math {
 
     /**@}*/
 
-} // namespace jau::math
+} // namespace jau::math::geom
 
 #endif /*  JAU_AABBOX2F_HPP_ */

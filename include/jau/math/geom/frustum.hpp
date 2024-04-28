@@ -35,8 +35,8 @@
 #include <jau/math/vec3f.hpp>
 #include <jau/math/vec4f.hpp>
 #include <jau/math/mat4f.hpp>
-#include <jau/math/aabbox3f.hpp>
 #include <jau/math/fov_hv_halves.hpp>
+#include <jau/math/geom/aabbox3f.hpp>
 
 namespace jau::math::geom {
 
@@ -438,7 +438,7 @@ class Frustum {
     }
 
   private:
-    static bool intersects(const Plane& p, const jau::math::AABBox3f& box) noexcept {
+    static bool intersects(const Plane& p, const AABBox3f& box) noexcept {
 	    const Vec3f& lo = box.low();
 	    const Vec3f& hi = box.high();
 
