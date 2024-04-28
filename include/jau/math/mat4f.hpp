@@ -152,9 +152,9 @@ class alignas(Value_type) Matrix4 {
      * Creates a new identity matrix.
      */
     constexpr Matrix4() noexcept
-    : m00(one), m10(zero), m20(zero), m30(zero),
-      m01(zero), m11(one), m21(zero), m31(zero),
-      m02(zero), m12(zero), m22(one), m32(zero),
+    : m00(one),  m10(zero), m20(zero), m30(zero),
+      m01(zero), m11(one),  m21(zero), m31(zero),
+      m02(zero), m12(zero), m22(one),  m32(zero),
       m03(zero), m13(zero), m23(zero), m33(one)
     { }
 
@@ -163,10 +163,10 @@ class alignas(Value_type) Matrix4 {
      * @param m 4x4 matrix in column-major order
      */
     constexpr Matrix4(const_iterator m) noexcept
-    : m00(m[0+0*4]), m10(m[1+0*4]), m20(m[2+0*4]), m30(m[3+0*4]), // column 0
-      m01(m[0+1*4]), m11(m[1+1*4]), m21(m[2+1*4]), m31(m[3+1*4]), // column 1
-      m02(m[0+2*4]), m12(m[1+2*4]), m22(m[2+2*4]), m32(m[3+2*4]), // column 2
-      m03(m[0+3*4]), m13(m[1+3*4]), m23(m[2+3*4]), m33(m[3+3*4])  // column 3
+    : m00(*m),     m10(*(++m)), m20(*(++m)), m30(*(++m)), // column 0
+      m01(*(++m)), m11(*(++m)), m21(*(++m)), m31(*(++m)), // column 1
+      m02(*(++m)), m12(*(++m)), m22(*(++m)), m32(*(++m)), // column 2
+      m03(*(++m)), m13(*(++m)), m23(*(++m)), m33(*(++m))  // column 3
     {}
 
     /**
@@ -174,10 +174,7 @@ class alignas(Value_type) Matrix4 {
      * @param m source initializer list value_type data to be copied into this new instance, implied size must be >= 16
      */
     constexpr Matrix4(std::initializer_list<value_type> m) noexcept
-    : m00(m.begin()[0+0*4]), m10(m.begin()[1+0*4]), m20(m.begin()[2+0*4]), m30(m.begin()[3+0*4]), // column 0
-      m01(m.begin()[0+1*4]), m11(m.begin()[1+1*4]), m21(m.begin()[2+1*4]), m31(m.begin()[3+1*4]), // column 1
-      m02(m.begin()[0+2*4]), m12(m.begin()[1+2*4]), m22(m.begin()[2+2*4]), m32(m.begin()[3+2*4]), // column 2
-      m03(m.begin()[0+3*4]), m13(m.begin()[1+3*4]), m23(m.begin()[2+3*4]), m33(m.begin()[3+3*4])  // column 3
+    : Matrix4( m.begin() )
     {
         assert(m.size() >= 16 );
     }
@@ -186,18 +183,13 @@ class alignas(Value_type) Matrix4 {
      * Creates a new matrix copying the values of the given {@code src} matrix.
      */
     constexpr Matrix4(const Matrix4& o) noexcept
-    : m00(o.m00), m10(o.m10), m20(o.m20), m30(o.m30),
-      m01(o.m01), m11(o.m11), m21(o.m21), m31(o.m31),
-      m02(o.m02), m12(o.m12), m22(o.m22), m32(o.m32),
-      m03(o.m03), m13(o.m13), m23(o.m23), m33(o.m33)
+    : Matrix4( o.cbegin() )
     { }
 
     /**
      * Copy assignment using the the values of the given {@code src} matrix.
      */
-    constexpr Matrix4& operator=(const Matrix4& o) noexcept {
-        return load(o);
-    }
+    constexpr Matrix4& operator=(const Matrix4& o) noexcept { return load(o); }
 
     constexpr bool equals(const Matrix4& o, const value_type epsilon=std::numeric_limits<value_type>::epsilon()) const noexcept {
         if( this == &o ) {
@@ -221,9 +213,7 @@ class alignas(Value_type) Matrix4 {
                    jau::equals(m33, o.m33, epsilon);
         }
     }
-    constexpr bool operator==(const Matrix4& rhs) const noexcept {
-        return equals(rhs);
-    }
+    constexpr bool operator==(const Matrix4& rhs) const noexcept { return equals(rhs); }
 
     //
     // Write to Matrix via set(..) or load(..)
@@ -251,7 +241,7 @@ class alignas(Value_type) Matrix4 {
      * <pre>
       Translation matrix (Column Order):
       1 0 0 0
-      0o.m00 0 0
+      0 1 0 0
       0 0 1 0
       0 0 0 1
      * </pre>
@@ -267,42 +257,37 @@ class alignas(Value_type) Matrix4 {
     }
 
     /**
-     * Load the values of the given matrix {@code src} to this matrix w/o boundary check
-     * @param src the source values
-     * @return this matrix for chaining
-     */
-    constexpr Matrix4& load(const Matrix4& src) noexcept {
-        m00 = src.m00; m10 = src.m10; m20 = src.m20; m30 = src.m30;
-        m01 = src.m01; m11 = src.m11; m21 = src.m21; m31 = src.m31;
-        m02 = src.m02; m12 = src.m12; m22 = src.m22; m32 = src.m32;
-        m03 = src.m03; m13 = src.m13; m23 = src.m23; m33 = src.m33;
-        return *this;
-    }
-
-    /**
      * Load the values of the given matrix {@code src} to this matrix w/o boundary check.
      * @param src 4x4 matrix value_type[16] in column-major order
      * @return this matrix for chaining
      */
     constexpr Matrix4& load(const_iterator src) noexcept {
       // RC
-        m00 = src[0+0*4]; // column 0
-        m10 = src[1+0*4];
-        m20 = src[2+0*4];
-        m30 = src[3+0*4];
-        m01 = src[0+1*4]; // column 1
-        m11 = src[1+1*4];
-        m21 = src[2+1*4];
-        m31 = src[3+1*4];
-        m02 = src[0+2*4]; // column 2
-        m12 = src[1+2*4];
-        m22 = src[2+2*4];
-        m32 = src[3+2*4];
-        m03 = src[0+3*4]; // column 3
-        m13 = src[1+3*4];
-        m23 = src[2+3*4];
-        m33 = src[3+3*4];
+        m00 = *src;     // column 0
+        m10 = *(++src);
+        m20 = *(++src);
+        m30 = *(++src);
+        m01 = *(++src); // column 1
+        m11 = *(++src);
+        m21 = *(++src);
+        m31 = *(++src);
+        m02 = *(++src); // column 2
+        m12 = *(++src);
+        m22 = *(++src);
+        m32 = *(++src);
+        m03 = *(++src); // column 3
+        m13 = *(++src);
+        m23 = *(++src);
+        m33 = *(++src);
         return *this;
+    }
+    /**
+     * Load the values of the given matrix {@code src} to this matrix w/o boundary check
+     * @param src the source values
+     * @return this matrix for chaining
+     */
+    constexpr Matrix4& load(const Matrix4& src) noexcept {
+        return load( src.cbegin() );
     }
 
     //
@@ -409,22 +394,23 @@ class alignas(Value_type) Matrix4 {
      * @return {@code dst} for chaining
      */
     constexpr iterator get(iterator dst) const noexcept {
-        dst[0+0*4] = m00;
-        dst[1+0*4] = m10;
-        dst[2+0*4] = m20;
-        dst[3+0*4] = m30;
-        dst[0+1*4] = m01;
-        dst[1+1*4] = m11;
-        dst[2+1*4] = m21;
-        dst[3+1*4] = m31;
-        dst[0+2*4] = m02;
-        dst[1+2*4] = m12;
-        dst[2+2*4] = m22;
-        dst[3+2*4] = m32;
-        dst[0+3*4] = m03;
-        dst[1+3*4] = m13;
-        dst[2+3*4] = m23;
-        dst[3+3*4] = m33;
+        iterator dst_i = dst;
+        *dst_i     = m00; // column 0
+        *(++dst_i) = m10;
+        *(++dst_i) = m20;
+        *(++dst_i) = m30;
+        *(++dst_i) = m01; // column 1
+        *(++dst_i) = m11;
+        *(++dst_i) = m21;
+        *(++dst_i) = m31;
+        *(++dst_i) = m02; // column 2
+        *(++dst_i) = m12;
+        *(++dst_i) = m22;
+        *(++dst_i) = m32;
+        *(++dst_i) = m03; // column 3
+        *(++dst_i) = m13;
+        *(++dst_i) = m23;
+        *(++dst_i) = m33;
         return dst;
     }
 
@@ -437,22 +423,7 @@ class alignas(Value_type) Matrix4 {
      */
     constexpr std::vector<value_type>& get(std::vector<value_type>& dst, size_t dst_off) const noexcept {
         assert( dst.size() >= dst_off+16 && dst_off <= std::numeric_limits<size_t>::max() - 15 );
-        dst[dst_off++] = m00;
-        dst[dst_off++] = m10;
-        dst[dst_off++] = m20;
-        dst[dst_off++] = m30;
-        dst[dst_off++] = m01;
-        dst[dst_off++] = m11;
-        dst[dst_off++] = m21;
-        dst[dst_off++] = m31;
-        dst[dst_off++] = m02;
-        dst[dst_off++] = m12;
-        dst[dst_off++] = m22;
-        dst[dst_off++] = m32;
-        dst[dst_off++] = m03;
-        dst[dst_off++] = m13;
-        dst[dst_off++] = m23;
-        dst[dst_off++] = m33;
+        get( &dst[dst_off++] );
         return dst;
     }
 
@@ -1866,7 +1837,6 @@ class alignas(Value_type) Matrix4 {
      * Returns a formatted string representation of this matrix
      * @param rowPrefix prefix for each row
      * @param f format string for each value_type element, e.g. "%10.5f"
-     * @return matrix
      */
     std::string toString(const std::string& rowPrefix, const std::string& f) const noexcept {
         std::string sb;
@@ -1875,13 +1845,19 @@ class alignas(Value_type) Matrix4 {
         return jau::mat_to_string(sb, rowPrefix, f, tmp, 4, 4, false /* rowMajorOrder */); // creates a copy-out!
     }
 
+    /**
+     * Returns a formatted string representation of this matrix
+     * @param rowPrefix prefix for each row
+     */
+    std::string toString(const std::string& rowPrefix) const noexcept { return toString(rowPrefix, "%13.9f"); }
+
     std::string toString() const noexcept { return toString("", "%13.9f"); }
 };
 
 template<typename T,
          std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
 constexpr Matrix4<T> operator*(const Matrix4<T>& lhs, const Matrix4<T>& rhs ) noexcept {
-    Matrix4<T> r(lhs); r *= rhs; return r;
+    Matrix4<T> r(lhs); r.mul(rhs); return r;
 }
 
 template<typename T,
