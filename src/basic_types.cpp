@@ -239,12 +239,34 @@ void jau::trimInPlace(std::string &s) noexcept {
     }).base(), s.end());
 }
 
-std::string jau::trimCopy(const std::string &_s) noexcept {
+std::string jau::trim(const std::string &_s) noexcept {
     std::string s(_s);
     trimInPlace(s);
     return s;
 }
 
+std::vector<std::string> jau::split_string(const std::string& str, const std::string& separator) noexcept {
+    std::vector<std::string> res;
+    size_t p0 = 0;
+    while( p0 != std::string::npos && p0 < str.size() ) {
+        size_t p1 = str.find(separator, p0);
+        res.push_back(str.substr(p0, p1)); // incl. npos
+        if( p1 != std::string::npos ) {
+            p1 += separator.length();
+        }
+        p0 = p1;
+    }
+    return res;
+}
+
+std::string& jau::toLowerInPlace(std::string& s) noexcept {
+    std::transform(s.begin(), s.end(), s.begin(),
+        [](unsigned char c){ return std::tolower(c); });
+    return s;
+}
+std::string jau::toLower(const std::string& s) noexcept {
+    std::string t(s); toLowerInPlace(t); return t;
+}
 
 // one static_assert is sufficient for whole compilation unit
 static_assert( is_defined_endian(endian::native) );

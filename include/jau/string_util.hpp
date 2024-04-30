@@ -63,7 +63,14 @@ namespace jau {
     void trimInPlace(std::string &s) noexcept;
 
     /** trim copy */
-    std::string trimCopy(const std::string &s) noexcept;
+    std::string trim(const std::string &s) noexcept;
+
+    /** Split given string `str` at `separator` into the resulting std::vector excluding the separator sequence . */
+    std::vector<std::string> split_string(const std::string& str, const std::string& separator) noexcept;
+
+    std::string& toLowerInPlace(std::string& s) noexcept;
+
+    std::string toLower(const std::string& s) noexcept;
 
     /**
     // *************************************************
