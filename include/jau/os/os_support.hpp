@@ -145,7 +145,7 @@ namespace jau::os {
 
     /**
      * Evaluates `true` if the given \ref os_type is defined,
-     * i.e. `Unix`, `Windows`, `Linux` or `Android`, etc.
+     * i.e. `Unix`, `Windows`, `Linux`, `Android`, ...
      */
     constexpr bool is_defined_os_type(const os_type v) noexcept {
         switch(v) {
@@ -160,6 +160,10 @@ namespace jau::os {
             case os_type::FreeBSD:
                 [[fallthrough]];
             case os_type::Darwin:
+                [[fallthrough]];
+            case os_type::QnxNTO:
+                [[fallthrough]];
+            case os_type::WebAsm:
                 return true;
             default:
                 return false;
@@ -171,6 +175,9 @@ namespace jau::os {
 
     /** Evaluates `true` if platform os_type::native contains os_type::Unix */
     constexpr bool is_unix() noexcept { return is_set(os_type::native, os_type::Unix); }
+
+    /** Evaluates `true` if platform os_type::native contains os_type::Windows */
+    constexpr bool is_windows() noexcept { return is_set(os_type::native, os_type::Windows); }
 
     /** Evaluates `true` if platform os_type::native contains os_type::Linux */
     constexpr bool is_linux() noexcept { return is_set(os_type::native, os_type::Linux); }
@@ -184,8 +191,8 @@ namespace jau::os {
     /** Evaluates `true` if platform os_type::native contains os_type::Darwin */
     constexpr bool is_darwin() noexcept { return is_set(os_type::native, os_type::Darwin); }
 
-    /** Evaluates `true` if platform os_type::native contains os_type::Windows */
-    constexpr bool is_windows() noexcept { return is_set(os_type::native, os_type::Windows); }
+    /** Evaluates `true` if platform os_type::native contains os_type::QnxNTO */
+    constexpr bool is_qnxnto() noexcept { return is_set(os_type::native, os_type::QnxNTO); }
 
     /** Evaluates `true` if platform os_type::native contains os_type::WebAsm */
     constexpr bool is_wasm() noexcept { return is_set(os_type::native, os_type::WebAsm); }
