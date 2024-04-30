@@ -281,16 +281,7 @@ static void DynamicLinker_addRelPaths(const std::string& cause, const std::strin
   }
 }
 #endif
-static std::string DynamicLinker_to_string(const std::vector<std::string>& sv) noexcept {
-    std::string res;
-    for(const std::string& s : sv) {
-        if( res.size() > 0 ) {
-            res.append(", ");
-        }
-        res.append(s);
-    }
-    return res;
-}
+
 std::vector<std::string> jau::os::DynamicLinker::enumerateLibraryPaths(const std::string& libName,
                                                                        bool searchSystemPath,
                                                                        bool searchSystemPathFirst) noexcept {
@@ -308,7 +299,7 @@ std::vector<std::string> jau::os::DynamicLinker::enumerateLibraryPaths(const std
     }
 
     std::vector<std::string> baseNames = DynamicLinker_buildNames(libName);
-    DBG_PRINT("NativeLibrary.enumerateLibraryPaths: baseNames: %s", DynamicLinker_to_string(baseNames).c_str());
+    DBG_PRINT("NativeLibrary.enumerateLibraryPaths: baseNames: %s", jau::to_string(baseNames).c_str());
 
     if( searchSystemPath && searchSystemPathFirst ) {
         // Add just the library names to use the OS's search algorithm
@@ -414,7 +405,7 @@ std::vector<std::string> jau::os::DynamicLinker::enumerateLibraryPaths(const std
             DynamicLinker_addAbsPaths("add.ssp_lst_macos_cur", "/System/Library/Frameworks/" + libName + ".framework", baseNames, paths);
         }
     }
-    DBG_PRINT("NativeLibrary.enumerateLibraryPaths: done: %s", DynamicLinker_to_string(paths).c_str());
+    DBG_PRINT("NativeLibrary.enumerateLibraryPaths: done: %s", jau::to_string(paths).c_str());
     return paths;
 }
 

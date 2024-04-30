@@ -41,11 +41,8 @@ TEST_CASE( "Test 01 Global Open dlsym ..", "[dll][os]" ) {
         std::vector<std::string> lib_paths = jau::os::DynamicLinker::getSystemEnvLibraryPaths();
         std::cout << "- lib_path_var_name: " << lib_path_var_name << std::endl;
         std::cout << "- lib_path_var     : " << lib_path_var << std::endl;
-        std::cout << "- lib_paths: count " << lib_paths.size() << std::endl;
-        int i = 0;
-        for(const std::string& s : lib_paths) {
-            std::cout << "  - path[" << i << "]: " << s << std::endl;
-        }
+        std::cout << "- lib_paths: count " << lib_paths.size() << std::endl << "  - path: ";
+        std::cout << jau::to_string(lib_paths, "\n  - path: ") << std::endl;
     }
     const std::string libBasename = "jaulib";
     const std::string symbolName = "jaulib_id_entryfunc";
