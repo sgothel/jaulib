@@ -33,7 +33,7 @@
 namespace jau::os {
 
     /** @defgroup OSSup OS Support
-     *  Low level OS Support
+     *  OS Support Functionality
      *
      * Available predefined macros denoting the [Operating Systems](https://sourceforge.net/p/predef/wiki/OperatingSystems/)
      * - `__FreeBSD__`      : FreeBSD

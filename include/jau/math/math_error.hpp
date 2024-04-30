@@ -31,8 +31,8 @@
 
 namespace jau {
 
-    /** @defgroup Math Specific Mathematical Operations and Functionality
-     * Specific mathematical operations and functionality, e.g. linear algebra, meta group
+    /** @defgroup Math Math Support
+     * Math Support Functionality, e.g. linear algebra, meta group
      *
      * Further support is coming from
      * - \ref Integer
