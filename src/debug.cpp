@@ -285,3 +285,7 @@ void jau::COND_PRINT_impl(const char * format, ...) noexcept {
     fprintf(stderr, "\n");
     fflush(stderr);
 }
+
+extern "C" {
+    int jaulib_id_entryfunc() { return 1; }
+}
