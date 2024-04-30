@@ -134,12 +134,54 @@ constexpr bool operator !=(const visitor_stats& lhs, const visitor_stats& rhs) n
 }
 
 class TestFileUtilBase {
-  public:
-    const std::string root = "test_data";
+  private:
+    const std::string image_file = "test_data.sqfs";
     // normal location with jaulib as sole project
     const std::string project_root1 = "../../test_data";
     // submodule location with jaulib directly hosted below main project
     const std::string project_root2 = "../../../jaulib/test_data";
+
+  public:
+    const std::string temp_root = "test_data_temp";
+
+    jau::fs::file_stats getTestDataDirStats(const std::string& test_exe_path) noexcept {
+        const std::string test_exe_dir = jau::fs::dirname(test_exe_path);
+        std::string path = test_exe_dir + "/" + project_root1;
+        jau::fs::file_stats path_stats(path);
+        if( path_stats.exists() ) {
+            return path_stats;
+        }
+        path = test_exe_dir + "/" + project_root2;
+        path_stats = jau::fs::file_stats(path);
+        if( path_stats.exists() ) {
+            return path_stats;
+        }
+        return jau::fs::file_stats();
+    }
+    std::string getTestDataRelDir(const std::string& test_exe_path) noexcept {
+        const std::string test_exe_dir = jau::fs::dirname(test_exe_path);
+        std::string path = test_exe_dir + "/" + project_root1;
+        jau::fs::file_stats path_stats(path);
+        if( path_stats.exists() ) {
+            return project_root1;
+        }
+        path = test_exe_dir + "/" + project_root2;
+        path_stats = jau::fs::file_stats(path);
+        if( path_stats.exists() ) {
+            return project_root2;
+        }
+        return "";
+    }
+    jau::fs::file_stats getTestDataImageFile(const std::string& test_exe_path) noexcept {
+        const std::string test_exe_dir = jau::fs::dirname(test_exe_path);
+        std::string path = test_exe_dir + "/" + image_file;
+        jau::fs::file_stats path_stats(path);
+        if( path_stats.exists() ) {
+            return path_stats;
+        }
+        return jau::fs::file_stats();
+    }
+
     // external filesystem source to test ...
     const std::string project_root_ext = "/mnt/ssd0/data/test_data";
     // external vfat filesystem destination to test ...

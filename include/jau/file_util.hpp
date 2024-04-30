@@ -72,6 +72,15 @@ namespace jau::fs {
     std::string basename(const std::string_view& path) noexcept;
 
     /**
+     * Returns the absolute path of given `relpath`.
+     * @param relpath a path, might be relative
+     */
+    std::string absolute(const std::string_view& relpath) noexcept;
+
+    /** Returns true if first character is `/` or - in case of Windows - `\\`. */
+    bool isAbsolute(const std::string_view& path) noexcept;
+
+    /**
      * Representing a directory item split into dirname() and basename().
      */
     class dir_item {

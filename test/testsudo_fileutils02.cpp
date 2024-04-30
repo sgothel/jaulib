@@ -323,11 +323,10 @@ class TestFileUtil02 : TestFileUtilBase {
         REQUIRE( user_id == ::geteuid() );
 
         {
-            std::string image_file = root + ".sqfs";
-            jau::fs::file_stats image_stats(image_file);
+            jau::fs::file_stats image_stats = getTestDataImageFile(executable_path);
             REQUIRE( true == image_stats.exists() );
 
-            const std::string mount_point = root+"_mount";
+            const std::string mount_point = temp_root+"_mount";
             jau::fs::remove(mount_point, jau::fs::traverse_options::recursive); // start fresh
             REQUIRE( true == jau::fs::mkdir(mount_point, jau::fs::fmode_t::def_dir_prot) );
 
@@ -354,7 +353,7 @@ class TestFileUtil02 : TestFileUtilBase {
                                                 jau::fs::copy_options::preserve_all |
                                                 jau::fs::copy_options::sync |
                                                 jau::fs::copy_options::verbose;
-            const std::string root_copy = root+"_copy_test50";
+            const std::string root_copy = temp_root+"_copy_test50";
             jau::fs::remove(root_copy, jau::fs::traverse_options::recursive);
             testxx_copy_r_p("test50_mount_copy_r_p", mount_point, 1 /* source_added_dead_links */, root_copy, copts, false /* dest_is_vfat */);
             REQUIRE( true == jau::fs::remove(root_copy, jau::fs::traverse_options::recursive) );

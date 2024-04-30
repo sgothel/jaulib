@@ -25,6 +25,7 @@
 #include <jau/debug.hpp>
 #include <jau/file_util.hpp>
 #include <jau/base_codec.hpp>
+#include <jau/os/os_support.hpp>
 
 #include <cstdint>
 #include <cstdlib>
@@ -95,6 +96,7 @@ std::string jau::fs::get_cwd() noexcept {
 }
 
 static const char c_slash('/');
+static const char c_backslash('\\');
 static const std::string s_slash("/");
 static const std::string s_slash_dot_slash("/./");
 static const std::string s_slash_dot("/.");
@@ -145,6 +147,27 @@ std::string jau::fs::basename(const std::string_view& path) noexcept {
     } else {
         return std::string( path.substr(idx+1, end_pos-idx) );
     }
+}
+
+std::string jau::fs::absolute(const std::string_view& relpath) noexcept {
+    const size_t bsz = PATH_MAX; // including EOS
+    std::string str;
+    str.reserve(bsz);  // incl. EOS
+    str.resize(bsz-1); // excl. EOS
+
+    char *res = ::realpath(&relpath[0], &str[0]);
+    if( res == &str[0] ) {
+        str.resize(::strnlen(res, bsz));
+        str.shrink_to_fit();
+        return str;
+    } else {
+        return std::string();
+    }
+}
+
+bool jau::fs::isAbsolute(const std::string_view& path) noexcept {
+    return path.size() > 0 &&
+           ( c_slash == path[0] || ( jau::os::is_windows() && c_backslash == path[0] ) );
 }
 
 std::unique_ptr<dir_item::backed_string_view> dir_item::reduce(const std::string_view& path_) noexcept {

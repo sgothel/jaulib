@@ -36,6 +36,9 @@
 #define CATCH_AMALGAMATED_CUSTOM_MAIN 1
 #include <catch2/catch_amalgamated.hpp>
 
+/** The main argv[0] test executable path */
+std::string executable_path;
+
 /** Run w/o command-line args, i.e. default CI unit test. */
 bool catch_auto_run;
 
@@ -48,6 +51,12 @@ static int extra_args_c = sizeof(extra_args) / sizeof(const char *);
 int main( int argc, char* argv[] )
 {
   Catch::Session session; // There must be exactly one instance
+
+  if( 1 <= argc ) {
+      executable_path = std::string(argv[0]);
+  } else {
+      executable_path = "undef";
+  }
 
   catch_auto_run = ( 1 >= argc );
 
