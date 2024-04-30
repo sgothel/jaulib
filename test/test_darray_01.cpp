@@ -187,7 +187,7 @@ struct NamedPayloadListDefault {
             if(0<i) {
                 res += ", ";
             }
-            res += "["+jau::to_string(e)+"]";
+            res.append("[").append(jau::to_string(e)).append("]");
             ++i;
         } );
         res += "]";
