@@ -6,7 +6,9 @@ bname=`basename $0 .sh`
 
 . $sdir/setup-machine-arch.sh
 
-logfile=$rootdir/$bname-$os_name-$archabi.log
+tripleid="$os_name-$archabi-gcc"
+
+logfile=$rootdir/$bname-$tripleid.log
 rm -f $logfile
 
 CPU_COUNT=`getconf _NPROCESSORS_ONLN`
@@ -25,8 +27,8 @@ buildit() {
     echo logfile $logfile
     echo CPU_COUNT $CPU_COUNT
 
-    dist_dir="dist-$os_name-$archabi"
-    build_dir="build-$os_name-$archabi"
+    dist_dir="dist-$tripleid"
+    build_dir="build-$tripleid"
     echo dist_dir $dist_dir
     echo build_dir $build_dir
 
@@ -34,13 +36,13 @@ buildit() {
     rm -rf documentation
     make -j $CPU_COUNT doc_jau
     if [ $? -eq 0 ] ; then
-        echo "REBUILD SUCCESS $bname $os_name $archabi"
+        echo "REBUILD SUCCESS $bname $tripleid"
         rm -f $rootdir/documentation.tar.xz
         tar caf $rootdir/documentation.tar.xz documentation
         cd $rootdir
         return 0
     else
-        echo "REBUILD FAILURE $bname $os_name $archabi"
+        echo "REBUILD FAILURE $bname $tripleid"
         cd $rootdir
         return 1
     fi
