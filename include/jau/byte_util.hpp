@@ -240,14 +240,14 @@ namespace jau {
      * @param v the \ref endian value
      * @return the std::string representation
      */
-    std::string to_string(const endian& v) noexcept;
+    std::string to_string(const endian v) noexcept;
 
     /**
      * Return std::string representation of the given \ref lb_endian.
      * @param v the \ref lb_endian value
      * @return the std::string representation
      */
-    std::string to_string(const lb_endian& v) noexcept;
+    std::string to_string(const lb_endian v) noexcept;
 
     constexpr lb_endian to_lb_endian(const endian v) noexcept {
         switch(v) {
@@ -371,8 +371,11 @@ namespace jau {
     // *************************************************
      */
 
+    // one static_assert is sufficient for whole compilation unit
+    static_assert( is_defined_endian(endian::native) );
+    static_assert( is_little_or_big_endian() );
+
     constexpr uint16_t be_to_cpu(uint16_t const n) noexcept {
-        static_assert(is_little_or_big_endian()); // one static_assert is sufficient for whole compilation unit
         if constexpr ( is_little_endian() ) {
             return bswap(n);
         } else if constexpr ( is_big_endian() ) {

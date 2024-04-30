@@ -245,6 +245,11 @@ std::string jau::trimCopy(const std::string &_s) noexcept {
     return s;
 }
 
+
+// one static_assert is sufficient for whole compilation unit
+static_assert( is_defined_endian(endian::native) );
+static_assert( is_little_or_big_endian() );
+
 uint128dp_t jau::merge_uint128(uint16_t const uuid16, uint128dp_t const & base_uuid, nsize_t const uuid16_le_octet_index)
 {
     if( uuid16_le_octet_index > 14 ) {
@@ -268,7 +273,6 @@ uint128dp_t jau::merge_uint128(uint16_t const uuid16, uint128dp_t const & base_u
     //                   ^ index 2
     // BE: uuid16 -> value.data[2+3]
     //
-    static_assert(is_little_or_big_endian()); // one static_assert is sufficient for whole compilation unit
     nsize_t offset;
     if( is_big_endian() ) {
         offset = 15 - 1 - uuid16_le_octet_index;
@@ -304,7 +308,6 @@ uint128dp_t jau::merge_uint128(uint32_t const uuid32, uint128dp_t const & base_u
     //               ^ index 0
     // BE: uuid32 -> value.data[0..3]
     //
-    static_assert(is_little_or_big_endian()); // one static_assert is sufficient for whole compilation unit
     nsize_t offset;;
     if( is_big_endian() ) {
         offset = 15 - 3 - uuid32_le_octet_index;
@@ -466,7 +469,7 @@ std::string& jau::byteHexString(std::string& dest, const uint8_t value, const bo
     return dest;
 }
 
-std::string jau::to_string(const endian& v) noexcept {
+std::string jau::to_string(const endian v) noexcept {
     switch(v) {
         case endian::little:  return "little";
         case endian::big:  return "big";
@@ -474,15 +477,15 @@ std::string jau::to_string(const endian& v) noexcept {
         case endian::honeywell: return "honeywell";
         case endian::undefined: return "undefined";
     }
-    return "unlisted";
+    return "undef";
 }
 
-std::string jau::to_string(const lb_endian& v) noexcept {
+std::string jau::to_string(const lb_endian v) noexcept {
     switch(v) {
         case lb_endian::little:  return "little";
         case lb_endian::big:  return "big";
     }
-    return "unlisted";
+    return "undef";
 }
 
 std::string jau::to_string(const jau::func::target_type v) noexcept {
@@ -496,7 +499,7 @@ std::string jau::to_string(const jau::func::target_type v) noexcept {
         case jau::func::target_type::capref: return "capref";
         case jau::func::target_type::std: return "std";
     }
-    return "unlisted";
+    return "undef";
 }
 
 bool jau::to_integer(long long & result, const char * str, size_t str_len, const char limiter, const char *limiter_pos) {

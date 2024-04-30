@@ -170,6 +170,10 @@ std::string uuid32_t::toUUID128String(uuid128_t const & base_uuid, jau::nsize_t 
     return u128.toString();
 }
 
+// one static_assert is sufficient for whole compilation unit
+static_assert( is_defined_endian(endian::native) );
+static_assert( is_little_or_big_endian() );
+
 std::string uuid128_t::toString() const noexcept {
     //               87654321-0000-1000-8000-00805F9B34FB
     //                   0      1    2    3      4    5
@@ -188,7 +192,6 @@ std::string uuid128_t::toString() const noexcept {
 
     // snprintf uses host data type, in which values are stored,
     // hence no endian conversion
-    static_assert(is_little_or_big_endian()); // one static_assert is sufficient for whole compilation unit
     if( is_big_endian() ) {
         part0 = jau::get_uint32(value.data+  0);
         part1 = jau::get_uint16(value.data+  4);
@@ -274,7 +277,6 @@ uuid128_t::uuid128_t(const std::string& str)
 
     // sscanf provided host data type, in which we store the values,
     // hence no endian conversion
-    static_assert(is_little_or_big_endian()); // one static_assert is sufficient for whole compilation unit
     if( is_big_endian() ) {
         jau::put_uint32(value.data +  0, part0);
         jau::put_uint16(value.data +  4, part1);

@@ -357,8 +357,11 @@ namespace jau {
         return dest;
     }
 
+    // one static_assert is sufficient for whole compilation unit
+    static_assert( is_defined_endian(endian::native) );
+    static_assert( is_little_or_big_endian() );
+
     constexpr EUI48 be_to_cpu(EUI48 const & n) noexcept {
-        static_assert(is_little_or_big_endian()); // one static_assert is sufficient for whole compilation unit
         if( is_little_endian() ) {
             return bswap(n);
         } else {
