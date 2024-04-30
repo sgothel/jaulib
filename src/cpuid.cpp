@@ -49,34 +49,24 @@ static void append_bitstr(std::string& out, T mask, T bit, const std::string& bi
 }
 #define APPEND_BITSTR(U,V,M) append_bitstr(out, M, U::V, #V, comma);
 
-cpu_family jau::cpu::get_cpu_family() noexcept {
-    #if defined(__i386__)
-        return cpu_family::X86_32;
-    #elif defined(__x86_64__)
-        return cpu_family::x86_64;
-    #elif defined(__arm__)
-        return cpu_family::arm32;
-    #elif defined(__aarch64__)
-        return cpu_family::arm64;
-    #else
-        return cpu_family::UNDEF;
-    #endif
-}
-
 #define CASE_TO_STRING(U,V) case U::V: return #V;
 
 #define CPUFAMILY_ENUM(X) \
     X(cpu_family,none) \
-    X(cpu_family,x86_32) \
-    X(cpu_family,x86_64) \
     X(cpu_family,arm32) \
     X(cpu_family,arm64) \
-    X(cpu_family,ppc) \
-    X(cpu_family,sparc) \
-    X(cpu_family,mips) \
-    X(cpu_family,pa_risc) \
+    X(cpu_family,x86_32) \
+    X(cpu_family,x86_64) \
     X(cpu_family,ia64) \
-    X(cpu_family,superh)
+    X(cpu_family,ppc_32) \
+    X(cpu_family,ppc_64) \
+    X(cpu_family,sparc_32) \
+    X(cpu_family,sparc_64) \
+    X(cpu_family,mips_32) \
+    X(cpu_family,mips_64) \
+    X(cpu_family,superh_32) \
+    X(cpu_family,superh_64) \
+    X(cpu_family,wasm)
 
 std::string jau::cpu::to_string(const cpu_family v) noexcept {
     switch(v) {
@@ -246,25 +236,30 @@ bool jau::cpu::get_arm64_hwcap(arm64_hwcap& hwcap) noexcept {
 #endif
 }
 
-void jau::cpu::print_cpu_info(FILE* stream) noexcept {
+std::string jau::cpu::get_cpu_info(const std::string& line_prefix, std::string& sb) noexcept {
     cpu_family cpu = get_cpu_family();
 
-    jau::fprintf_td(stream, "cpu info: family '%s', endian '%s', arch-pointer-bits %zu\n",
-            to_string(cpu).c_str(), to_string(endian::native).c_str(), get_arch_psize());
+    sb.append(line_prefix);
+    sb.append( jau::format_string("family '%s', endian '%s', arch-pointer-bits %zu\n",
+            to_string(cpu).c_str(), to_string(endian::native).c_str(), get_arch_psize()) );
 
     if( cpu_family::arm32 == cpu ) {
         arm32_hwcap1 hwcap1;
         arm32_hwcap2 hwcap2;
         if( get_arm32_hwcap(hwcap1, hwcap2) ) {
-            jau::fprintf_td(stream, "cpu info: hwcap1 0x%" PRIx64 ": '%s'\n", number(hwcap1), to_string(hwcap1).c_str());
+            sb.append(line_prefix);
+            sb.append( jau::format_string("hwcap1 0x%" PRIx64 ": '%s'\n", number(hwcap1), to_string(hwcap1).c_str()) );
             if( arm32_hwcap2::none != hwcap2 ) {
-                jau::fprintf_td(stream, "cpu info: hwcap2 0x%" PRIx64 ": '%s'\n", number(hwcap2), to_string(hwcap2).c_str());
+                sb.append(line_prefix);
+                sb.append( jau::format_string("hwcap2 0x%" PRIx64 ": '%s'\n", number(hwcap2), to_string(hwcap2).c_str()) );
             }
         }
     } else if( cpu_family::arm64 == cpu ) {
         arm64_hwcap hwcap;
         if( get_arm64_hwcap(hwcap) ) {
-            jau::fprintf_td(stream, "cpu info: hwcap 0x%" PRIx64 ": '%s'\n", number(hwcap), to_string(hwcap).c_str());
+            sb.append(line_prefix);
+            sb.append( jau::format_string("hwcap 0x%" PRIx64 ": '%s'\n", number(hwcap), to_string(hwcap).c_str()) );
         }
     }
+    return sb;
 }

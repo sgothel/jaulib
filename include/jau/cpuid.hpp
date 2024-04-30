@@ -46,26 +46,42 @@ namespace jau::cpu {
     enum class cpu_family : uint16_t {
         /** Undefined */
         none = 0,
-        /** AMD/Intel 32-bit */
-        x86_32 = 1,
-        /** AMD/Intel 64-bit */
-        x86_64 = 2,
+
         /** ARM 32bit */
-        arm32 = 3,
+        arm32 = 1,
         /** ARM 64bit */
-        arm64 = 4,
-        /** Power PC */
-        ppc = 5,
-        /** SPARC */
-        sparc = 6,
-        /** Mips */
-        mips = 7,
-        /** PA RISC */
-        pa_risc = 8,
+        arm64 = 2,
+
+        /** AMD/Intel 32-bit */
+        x86_32 = 10,
+        /** AMD/Intel 64-bit */
+        x86_64 = 11,
         /** Itanium */
-        ia64 = 9,
-        /** Hitachi SuperH */
-        superh = 10
+        ia64 = 12,
+
+        /** Power PC 32bit */
+        ppc_32 = 20,
+        /** Power PC 32bit */
+        ppc_64 = 21,
+
+        /** SPARC 32bit */
+        sparc_32 = 30,
+        /** SPARC 32bit */
+        sparc_64 = 31,
+
+        /** Mips 32bit */
+        mips_32 = 40,
+        /** Mips 64bit */
+        mips_64 = 41,
+
+        /** Hitachi SuperH 32bit */
+        superh_32 = 50,
+        /** Hitachi SuperH 64bit */
+        superh_64 = 51,
+
+        /** WebAssembly */
+        wasm = 60
+
     };
     constexpr uint16_t number(const cpu_family rhs) noexcept {
         return static_cast<uint16_t>(rhs);
@@ -103,7 +119,63 @@ namespace jau::cpu {
     constexpr bool is_set(const cpu_family mask, const cpu_family bit) noexcept {
         return bit == ( mask & bit );
     }
-    cpu_family get_cpu_family() noexcept;
+    /** Returns cpu_family derived from [Architectures](https://sourceforge.net/p/predef/wiki/Architectures/) predefined compiler macros. */
+    constexpr cpu_family get_cpu_family() noexcept {
+        #if defined(__EMSCRIPTEN__)
+            // FIXME: static_assert( 64 == get_arch_psize() );
+            return cpu_family::wasm;
+        #elif defined(__aarch64__)
+            static_assert( 64 == get_arch_psize() );
+            return cpu_family::arm64;
+        #elif defined(__arm__)
+            static_assert( 32 == get_arch_psize() );
+            return cpu_family::arm32;
+        #elif defined(__x86_64__)
+            static_assert( 64 == get_arch_psize() );
+            return cpu_family::x86_64;
+        #elif defined(__ia64__)
+            static_assert( 64 == get_arch_psize() );
+            return cpu_family::ia64;
+        #elif defined(__i386__)
+            static_assert( 32 == get_arch_psize() );
+            return cpu_family::X86_32;
+        #elif defined(__powerpc__)
+            #if defined(__LP64__)
+                static_assert( 64 == get_arch_psize() );
+                return cpu_family::ppc_64;
+            #else
+                static_assert( 32 == get_arch_psize() );
+                return cpu_family::ppc_32;
+            #endif
+        #elif defined(__sparc__)
+            #if defined(__LP64__)
+                static_assert( 64 == get_arch_psize() );
+                return cpu_family::sparc_64;
+            #else
+                static_assert( 32 == get_arch_psize() );
+                return cpu_family::sparc_32;
+            #endif
+        #elif defined(__mips__)
+            #if defined(__LP64__)
+                static_assert( 64 == get_arch_psize() );
+                return cpu_family::mips_64;
+            #else
+                static_assert( 32 == get_arch_psize() );
+                return cpu_family::mips_32;
+            #endif
+        #elif defined(__sh__)
+            #if defined(__LP64__)
+                static_assert( 64 == get_arch_psize() );
+                return cpu_family::superh_64;
+            #else
+                static_assert( 32 == get_arch_psize() );
+                return cpu_family::superh_32;
+            #endif
+        #else
+            return cpu_family::UNDEF;
+        #endif
+    }
+
     std::string to_string(const cpu_family v) noexcept;
 
     enum class arm32_hwcap1 : uint64_t {
@@ -298,7 +370,10 @@ namespace jau::cpu {
 
     bool get_arm64_hwcap(arm64_hwcap& hwcap) noexcept;
 
-    void print_cpu_info(FILE* stream) noexcept;
+    std::string get_cpu_info(const std::string& line_prefix, std::string& sb) noexcept;
+    inline std::string get_cpu_info() noexcept {
+        std::string sb; get_cpu_info("cpu info: ", sb); return sb;
+    }
 
     /**@}*/
 
