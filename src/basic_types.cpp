@@ -602,13 +602,13 @@ bool jau::to_fraction_i64(fraction_i64& result, const std::string & value, const
     return true;
 }
 
-std::string jau::to_string(const jau::math_error_t v) noexcept {
+std::string jau::math::to_string(const jau::math::math_error_t v) noexcept {
     switch(v) {
-        case jau::math_error_t::invalid: return "invalid";
-        case jau::math_error_t::div_by_zero: return "div_by_zero";
-        case jau::math_error_t::overflow: return "overflow";
-        case jau::math_error_t::underflow: return "underflow";
-        case jau::math_error_t::inexact: return "inexact";
+        case jau::math::math_error_t::invalid: return "invalid";
+        case jau::math::math_error_t::div_by_zero: return "div_by_zero";
+        case jau::math::math_error_t::overflow: return "overflow";
+        case jau::math::math_error_t::underflow: return "underflow";
+        case jau::math::math_error_t::inexact: return "inexact";
     }
     return "unknown";
 }

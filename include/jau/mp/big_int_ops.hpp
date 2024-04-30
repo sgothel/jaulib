@@ -533,7 +533,7 @@ namespace jau::mp::ops {
     /** Computes ((n1<<bits) + n0) / d */
     inline mp_word_t bigint_divop(mp_word_t n1, mp_word_t n0, mp_word_t d) {
         if(d == 0) {
-            throw jau::MathDivByZeroError("d == 0", E_FILE_LINE);
+            throw jau::math::MathDivByZeroError("d == 0", E_FILE_LINE);
         }
         if constexpr ( has_mp_dword ) {
             return static_cast<mp_word_t>( ( ( static_cast<mp_dword_t>(n1) << mp_word_bits ) | n0 ) / d );
@@ -560,7 +560,7 @@ namespace jau::mp::ops {
     /** Compute ((n1<<bits) + n0) % d */
     inline mp_word_t bigint_modop(mp_word_t n1, mp_word_t n0, mp_word_t d) {
         if(d == 0) {
-            throw jau::MathDivByZeroError("d == 0", E_FILE_LINE);
+            throw jau::math::MathDivByZeroError("d == 0", E_FILE_LINE);
         }
         if constexpr ( has_mp_dword ) {
             return ( ( static_cast<mp_dword_t>(n1) << mp_word_bits) | n0 ) % d;

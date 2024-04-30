@@ -258,11 +258,11 @@ TEST_CASE( "MP Big Int Dec Test 11", "[big_int_t][inout][math]" ) {
 TEST_CASE( "MP Big Int Error Handling Test 88", "[big_int_t][error][arithmetic][math]" ) {
     {
         BigInt a = 1, b = 0, r;
-        REQUIRE_THROWS_MATCHES( r = a / b, MathDivByZeroError, Catch::Matchers::ContainsSubstring("div_by_zero") );
-        REQUIRE_THROWS_MATCHES( r = a % b, MathDivByZeroError, Catch::Matchers::ContainsSubstring("div_by_zero") );
+        REQUIRE_THROWS_MATCHES( r = a / b, jau::math::MathDivByZeroError, Catch::Matchers::ContainsSubstring("div_by_zero") );
+        REQUIRE_THROWS_MATCHES( r = a % b, jau::math::MathDivByZeroError, Catch::Matchers::ContainsSubstring("div_by_zero") );
     }
     {
         BigInt a = BigInt::from_s32(-1), b = BigInt::from_s32(-1), r;
-        REQUIRE_THROWS_MATCHES( r = a % b, MathDomainError, Catch::Matchers::ContainsSubstring("invalid") );
+        REQUIRE_THROWS_MATCHES( r = a % b, jau::math::MathDomainError, Catch::Matchers::ContainsSubstring("invalid") );
     }
 }

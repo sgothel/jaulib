@@ -542,10 +542,10 @@ namespace jau::mp {
 
             BigInt operator%(const BigInt& mod) {
                 if(mod.is_zero()) {
-                    throw jau::MathDivByZeroError("mod == 0", E_FILE_LINE);
+                    throw jau::math::MathDivByZeroError("mod == 0", E_FILE_LINE);
                 }
                 if(mod.is_negative()) {
-                    throw jau::MathDomainError("mod < 0", E_FILE_LINE);
+                    throw jau::math::MathDomainError("mod < 0", E_FILE_LINE);
                 }
                 if(is_positive() && mod.is_positive() && *this < mod) {
                     return *this;
@@ -1076,7 +1076,7 @@ namespace jau::mp {
                 const size_t exp_blen = str_len / 2 + str_len % 2;
                 const size_t blen = jau::hexStringBytes(bin_out, buf, str_len, is_little_endian(byte_order), false /* checkLeading0x */);
                 if( exp_blen != blen ) {
-                    throw jau::MathDomainError("invalid hexadecimal char @ "+std::to_string(blen)+"/"+std::to_string(exp_blen)+" of '"+
+                    throw jau::math::MathDomainError("invalid hexadecimal char @ "+std::to_string(blen)+"/"+std::to_string(exp_blen)+" of '"+
                             std::string(cast_uint8_ptr_to_char(buf), str_len)+"'", E_FILE_LINE);
                 }
                 r.binary_decode(bin_out.data(), bin_out.size(), lb_endian::little);
@@ -1091,7 +1091,7 @@ namespace jau::mp {
                     const char c = buf[i];
 
                     if(c < '0' || c > '9') {
-                        throw jau::MathDomainError("invalid decimal char", E_FILE_LINE);
+                        throw jau::math::MathDomainError("invalid decimal char", E_FILE_LINE);
                     }
                     const uint8_t x = c - '0';
                     assert(x < 10);
@@ -1334,7 +1334,7 @@ namespace jau::mp {
                         }
                         msg.append("*this < 0");
                     }
-                    throw jau::MathDomainError(msg, E_FILE_LINE);
+                    throw jau::math::MathDomainError(msg, E_FILE_LINE);
                 }
                 const size_t p_words = p.sig_words();
 
@@ -1394,7 +1394,7 @@ namespace jau::mp {
              */
             static void vartime_divide(const BigInt& x, const BigInt& y_arg, BigInt& q_out, BigInt& r_out) {
                 if( y_arg.is_zero() ) {
-                    throw jau::MathDivByZeroError("y_arg == 0", E_FILE_LINE);
+                    throw jau::math::MathDivByZeroError("y_arg == 0", E_FILE_LINE);
                 }
                 const size_t y_words = y_arg.sig_words();
 
@@ -1468,7 +1468,7 @@ namespace jau::mp {
 
             BigInt operator/(const mp_word_t& y) const {
                 if(y == 0) {
-                    throw jau::MathDivByZeroError("y == 0", E_FILE_LINE);
+                    throw jau::math::MathDivByZeroError("y == 0", E_FILE_LINE);
                 }
                 BigInt q;
                 mp_word_t r;
@@ -1478,7 +1478,7 @@ namespace jau::mp {
 
             static void ct_divide_word(const BigInt& x, mp_word_t y, BigInt& q_out, mp_word_t& r_out) {
                 if(y == 0) {
-                    throw jau::MathDivByZeroError("y == 0", E_FILE_LINE);
+                    throw jau::math::MathDivByZeroError("y == 0", E_FILE_LINE);
                 }
                 const size_t x_words = x.sig_words();
                 const size_t x_bits = x.bits();
@@ -1515,7 +1515,7 @@ namespace jau::mp {
 
             mp_word_t operator%(mp_word_t mod) {
                if(mod == 0) {
-                   throw jau::MathDivByZeroError("mod == 0", E_FILE_LINE);
+                   throw jau::math::MathDivByZeroError("mod == 0", E_FILE_LINE);
                }
                if(mod == 1) {
                   return 0;

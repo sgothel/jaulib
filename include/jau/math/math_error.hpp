@@ -29,7 +29,7 @@
 #include <jau/int_math.hpp>
 #include <jau/basic_types.hpp>
 
-namespace jau {
+namespace jau::math {
 
     /** @defgroup Math Math Support
      * Math Support Functionality, e.g. linear algebra, meta group
