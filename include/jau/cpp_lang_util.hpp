@@ -45,9 +45,18 @@ namespace jau {
      * - `??????L`: C++26 ??
      *
      * Used predefined macros denoting the compiler:
-     * - `__clang__`: LLVM's clang, clang++
-     * - `__GNUC__` : GNU Compiler Collection (GCC)'s gcc, g++
-     * - `_MSC_VER` : Microsoft Compiler
+     * - `__clang__`     : LLVM's clang, clang++
+     * - `__GNUC__`      : GNU Compiler Collection (GCC)'s gcc, g++
+     * - `_MSC_VER`      : Microsoft Compiler
+     * - `__MINGW32__`   : MinGW 32
+     * - `__MINGW64__`   : MinGW 64
+     * - `__EMSCRIPTEN__`: emscripten for asm.js and WebAssembly
+     *
+     * Further infos:
+     * - [Unix standards](https://sourceforge.net/p/predef/wiki/Standards/)
+     * - [GNU glibc](https://sourceforge.net/p/predef/wiki/Libraries/)
+     * - [glibc 1.3.4 Feature Test Macros](https://www.gnu.org/software/libc/manual/html_node/Feature-Test-Macros.html)
+     * - [Architectures](https://sourceforge.net/p/predef/wiki/Architectures/)
      *
      *  @{
      */
@@ -672,6 +681,7 @@ namespace jau {
      *  :--------- | -------: | :------------------ | :-------- |
      *  GCC        |   8.3.0  | amd64, arm64, arm32 | no        |
      *  GCC        |  10.2.1  | amd64               | no        |
+     *  GCC        |  12.2.0  | amd64               | yes       |
      *  clang      |   9.0.1  | amd64, arm64        | yes       |
      *  clang      |  11.0.1  | amd64               | yes       |
      *
