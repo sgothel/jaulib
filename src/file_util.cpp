@@ -79,30 +79,37 @@ using namespace jau::fs;
 #endif
 
 std::string jau::fs::get_cwd() noexcept {
-    char path[PATH_MAX];
-    char* res = ::getcwd(path, PATH_MAX);
-    if( res == path ) {
-        return std::string(path);
+    const size_t bsz = PATH_MAX; // including EOS
+    std::string str;
+    str.reserve(bsz);  // incl. EOS
+    str.resize(bsz-1); // excl. EOS
+
+    char* res = ::getcwd(&str[0], bsz);
+    if( res == &str[0] ) {
+        str.resize(::strnlen(res, bsz));
+        str.shrink_to_fit();
+        return str;
     } else {
         return std::string();
     }
 }
 
-static const std::string _slash("/");
-static const std::string _slash_dot_slash("/./");
-static const std::string _slash_dot("/.");
-static const std::string _dot_slash("./");
-static const std::string _dot(".");
-static const std::string _slash_dotdot_slash("/../");
-static const std::string _slash_dotdot("/..");
-static const std::string _dotdot("..");
+static const char c_slash('/');
+static const std::string s_slash("/");
+static const std::string s_slash_dot_slash("/./");
+static const std::string s_slash_dot("/.");
+static const std::string s_dot_slash("./");
+static const std::string s_dot(".");
+static const std::string s_slash_dotdot_slash("/../");
+static const std::string s_slash_dotdot("/..");
+static const std::string s_dotdot("..");
 
 std::string jau::fs::dirname(const std::string_view& path) noexcept {
     if( 0 == path.size() ) {
-        return _dot;
+        return s_dot;
     }
     size_t end_pos;
-    if( '/' == path[path.size()-1] ) {
+    if( c_slash == path[path.size()-1] ) {
         if( 1 == path.size() ) { // maintain a single '/'
             return std::string(path);
         }
@@ -110,9 +117,9 @@ std::string jau::fs::dirname(const std::string_view& path) noexcept {
     } else {
         end_pos = path.size()-1;
     }
-    size_t idx = path.find_last_of('/', end_pos);
+    size_t idx = path.find_last_of(c_slash, end_pos);
     if( idx == std::string_view::npos ) {
-        return _dot;
+        return s_dot;
     } else {
         // ensure `/lala` -> '/', i.e. don't cut off single '/'
         return std::string( path.substr(0, std::max<size_t>(1, idx)) );
@@ -121,10 +128,10 @@ std::string jau::fs::dirname(const std::string_view& path) noexcept {
 
 std::string jau::fs::basename(const std::string_view& path) noexcept {
     if( 0 == path.size() ) {
-        return _dot;
+        return s_dot;
     }
     size_t end_pos;
-    if( '/' == path[path.size()-1] ) {
+    if( c_slash == path[path.size()-1] ) {
         if( 1 == path.size() ) { // maintain a single '/'
             return std::string(path);
         }
@@ -132,7 +139,7 @@ std::string jau::fs::basename(const std::string_view& path) noexcept {
     } else {
         end_pos = path.size()-1;
     }
-    size_t idx = path.find_last_of('/', end_pos);
+    size_t idx = path.find_last_of(c_slash, end_pos);
     if( idx == std::string_view::npos ) {
         return std::string( path.substr(0, end_pos+1));
     } else {
@@ -149,29 +156,29 @@ std::unique_ptr<dir_item::backed_string_view> dir_item::reduce(const std::string
 
     std::unique_ptr<dir_item::backed_string_view> path2 = std::make_unique<dir_item::backed_string_view>(path_);
 
-    if( _dot == path_ || _slash == path_ ) {
+    if( s_dot == path_ || s_slash == path_ ) {
         return path2;
     }
 
     // remove initial './'
-    while( 0 == path2->view.find(_dot_slash) ) {
+    while( 0 == path2->view.find(s_dot_slash) ) {
         path2->view = path2->view.substr(2, path2->view.size()-2);
     }
 
     // remove trailing slash if not ending with '/./' or '/../'
-    if( '/' == path2->view[path2->view.size()-1] &&
-        ( path2->view.size() < 3 || std::string_view::npos == path2->view.find(_slash_dot_slash, path2->view.size()-3) ) &&
-        ( path2->view.size() < 4 || std::string_view::npos == path2->view.find(_slash_dotdot_slash, path2->view.size()-4) )
+    if( c_slash == path2->view[path2->view.size()-1] &&
+        ( path2->view.size() < 3 || std::string_view::npos == path2->view.find(s_slash_dot_slash, path2->view.size()-3) ) &&
+        ( path2->view.size() < 4 || std::string_view::npos == path2->view.find(s_slash_dotdot_slash, path2->view.size()-4) )
       )
     {
         path2->view = path2->view.substr(0, path2->view.size()-1);
     }
 
     // append final '/' to complete '/../' or '/./' sequence
-    if( ( path2->view.size() >= 3 && std::string_view::npos != path2->view.find(_slash_dotdot, path2->view.size()-3) ) ||
-        ( path2->view.size() >= 2 && std::string_view::npos != path2->view.find(_slash_dot, path2->view.size()-2) ) ) {
+    if( ( path2->view.size() >= 3 && std::string_view::npos != path2->view.find(s_slash_dotdot, path2->view.size()-3) ) ||
+        ( path2->view.size() >= 2 && std::string_view::npos != path2->view.find(s_slash_dot, path2->view.size()-2) ) ) {
         path2->backup();
-        path2->view = path2->backing.append(_slash);
+        path2->view = path2->backing.append(s_slash);
     }
 
     if constexpr ( _debug ) {
@@ -182,7 +189,7 @@ std::unique_ptr<dir_item::backed_string_view> dir_item::reduce(const std::string
     size_t spos=0;
     size_t idx;
     do {
-        idx = path2->view.find(_slash_dot_slash, spos);
+        idx = path2->view.find(s_slash_dot_slash, spos);
         if constexpr ( _debug ) {
             jau::fprintf_td(stderr, "X.2.1: path2: spos %zu, idx %zu, '%s'\n", spos, idx, path2->to_string(true).c_str());
         }
@@ -211,7 +218,7 @@ std::unique_ptr<dir_item::backed_string_view> dir_item::reduce(const std::string
     // resolve '/../'
     spos=0;
     do {
-        idx = path2->view.find(_slash_dotdot_slash, spos);
+        idx = path2->view.find(s_slash_dotdot_slash, spos);
         if constexpr ( _debug ) {
             jau::fprintf_td(stderr, "X.3.1: path2: spos %zu, idx %zu, '%s'\n", spos, idx, path2->to_string(true).c_str());
         }
@@ -224,19 +231,19 @@ std::unique_ptr<dir_item::backed_string_view> dir_item::reduce(const std::string
             return path2;
         }
         std::string_view pre = path2->view.substr(0, idx);
-        if( 2 == idx && _dotdot == pre ) {
+        if( 2 == idx && s_dotdot == pre ) {
             // case '../../bbb' -> '../../bbb' unchanged
             spos = idx+4;
-        } else if( 3 <= idx && _slash_dotdot == path2->view.substr(idx-3, 3) ) {
+        } else if( 3 <= idx && s_slash_dotdot == path2->view.substr(idx-3, 3) ) {
             // case '../../../bbb' -> '../../../bbb' unchanged
             spos = idx+4;
         } else {
             std::string pre_str = jau::fs::dirname( pre );
-            if( _slash == pre_str ) {
+            if( s_slash == pre_str ) {
                 // case '/aaa/../bbb' -> '/bbb'
                 path2->view = path2->view.substr(idx+3);
                 spos = 0;
-            } else if( _dot == pre_str ) {
+            } else if( s_dot == pre_str ) {
                 // case 'aaa/../bbb' -> 'bbb'
                 path2->view = path2->view.substr(idx+4);
                 spos = 0;
@@ -256,7 +263,7 @@ std::unique_ptr<dir_item::backed_string_view> dir_item::reduce(const std::string
     }
 
     // remove trailing slash in path2
-    if( '/' == path2->view[path2->view.size()-1] ) {
+    if( c_slash == path2->view[path2->view.size()-1] ) {
         path2->view = path2->view.substr(0, path2->view.size()-1);
     }
     if constexpr ( _debug ) {
@@ -267,8 +274,8 @@ std::unique_ptr<dir_item::backed_string_view> dir_item::reduce(const std::string
 
 dir_item::dir_item(std::unique_ptr<backed_string_view> cleanpath) noexcept
 : dirname_(jau::fs::dirname(cleanpath->view)), basename_(jau::fs::basename(cleanpath->view)), empty_(false) {
-    if( _slash == dirname_ && _slash == basename_ ) { // remove duplicate '/' in basename
-        basename_ = _dot;
+    if( s_slash == dirname_ && s_slash == basename_ ) { // remove duplicate '/' in basename
+        basename_ = s_dot;
     }
 }
 
@@ -277,7 +284,7 @@ dir_item::dir_item(std::string dirname__, std::string basename__) noexcept
 }
 
 dir_item::dir_item() noexcept
-: dirname_(_dot), basename_(_dot), empty_(true) {}
+: dirname_(s_dot), basename_(s_dot), empty_(true) {}
 
 dir_item::dir_item(const std::string_view& path_) noexcept
 : dir_item( reduce(path_) )
@@ -285,16 +292,16 @@ dir_item::dir_item(const std::string_view& path_) noexcept
 
 
 std::string dir_item::path() const noexcept {
-    if( _dot ==  dirname_ ) {
+    if( s_dot ==  dirname_ ) {
         return basename_;
     }
-    if( _dot ==  basename_ ) {
+    if( s_dot ==  basename_ ) {
         return dirname_;
     }
-    if( _slash == dirname_ ) {
+    if( s_slash == dirname_ ) {
         return dirname_ + basename_;
     }
-    return dirname_ + _slash + basename_;
+    return dirname_ + s_slash + basename_;
 }
 
 std::string dir_item::to_string() const noexcept {
@@ -590,7 +597,7 @@ file_stats::file_stats(const ctor_cookie& cc, int dirfd, const dir_item& item, c
                     goto errorout;
                 }
             }
-            if( 0 < link_path.size() && '/' == link_path[0] ) {
+            if( 0 < link_path.size() && c_slash == link_path[0] ) {
                 link_target_ = std::make_shared<file_stats>(ctor_cookie(cc.rec_level+1), dirfd, dir_item( link_path ), false /* dirfd_is_item_dirname */); // absolute link_path
             } else {
                 link_target_ = std::make_shared<file_stats>(ctor_cookie(cc.rec_level+1), dirfd, dir_item( jau::fs::dirname(full_path), link_path ), dirfd_is_item_dirname );
@@ -724,7 +731,7 @@ file_stats::file_stats(const ctor_cookie& cc, int dirfd, const dir_item& item, c
                     goto errorout;
                 }
             }
-            if( 0 < link_path.size() && '/' == link_path[0] ) {
+            if( 0 < link_path.size() && c_slash == link_path[0] ) {
                 link_target_ = std::make_shared<file_stats>(ctor_cookie(cc.rec_level+1), dirfd, dir_item( link_path ), false /* dirfd_is_item_dirname */); // absolute link_path
             } else {
                 link_target_ = std::make_shared<file_stats>(ctor_cookie(cc.rec_level+1), dirfd, dir_item( jau::fs::dirname(full_path), link_path ), dirfd_is_item_dirname );
@@ -936,7 +943,7 @@ bool jau::fs::get_dir_content(const std::string& path, const consume_dir_item& d
     if( ( dir = ::opendir( path.c_str() ) ) != nullptr ) {
         while ( ( ent = ::readdir( dir ) ) != nullptr ) {
             std::string fname( ent->d_name );
-            if( _dot != fname && _dotdot != fname ) { // avoid '.' and '..'
+            if( s_dot != fname && s_dotdot != fname ) { // avoid '.' and '..'
                 digest( dir_item( path, fname ) );
             }
         }
@@ -958,7 +965,7 @@ bool jau::fs::get_dir_content(const int dirfd, const std::string& path, const co
     if( ( dir = ::fdopendir( dirfd2 ) ) != nullptr ) {
         while ( ( ent = ::readdir( dir ) ) != nullptr ) {
             std::string fname( ent->d_name );
-            if( _dot != fname && _dotdot != fname ) { // avoid '.' and '..'
+            if( s_dot != fname && s_dotdot != fname ) { // avoid '.' and '..'
                 digest( dir_item( path, fname ) );
             }
         }
