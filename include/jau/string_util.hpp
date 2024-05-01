@@ -143,7 +143,7 @@ namespace jau {
                                bool> = true>
     inline std::string to_hexstring(value_type const & v) noexcept
     {
-        const uint64_t v2 = reinterpret_cast<uint64_t>(v);
+        const uintptr_t v2 = reinterpret_cast<uintptr_t>(v);
         return bytesHexString(pointer_cast<const uint8_t*>(&v2), 0, sizeof(v), false /* lsbFirst */);
     }
 
