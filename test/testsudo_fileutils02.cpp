@@ -24,6 +24,8 @@
 
 #include "test_fileutils_copy_r_p.hpp"
 
+#include "jau/os/user_info.hpp"
+
 extern "C" {
     #include <unistd.h>
     #include <grp.h>
@@ -80,73 +82,6 @@ class TestFileUtil02 : TestFileUtilBase {
         }
 
   public:
-
-    static bool get_env_uid(::uid_t& res_uid, const bool try_sudo) noexcept {
-        char *env_str = nullptr;
-        long long env_val = 0;
-        if( try_sudo ) {
-            env_str = ::getenv("SUDO_UID");
-            if( nullptr != env_str ) {
-                if( jau::to_integer(env_val, env_str, strlen(env_str)) ) {
-                    res_uid = (::uid_t) env_val;
-                    return true;
-                }
-            }
-        }
-        env_str = ::getenv("UID");
-        if( nullptr != env_str ) {
-            if( jau::to_integer(env_val, env_str, strlen(env_str)) ) {
-                res_uid = (::uid_t) env_val;
-                return true;
-            }
-        }
-        return false;
-    }
-
-    static bool get_env_username(std::string& username, const bool try_sudo) noexcept {
-        char *env_str = nullptr;
-        if( try_sudo ) {
-            env_str = ::getenv("SUDO_USER");
-            if( nullptr != env_str ) {
-                username = std::string(env_str);
-                return true;
-            }
-        }
-        env_str = ::getenv("USER");
-        if( nullptr != env_str ) {
-            username = std::string(env_str);
-            return true;
-        }
-        return false;
-    }
-
-    static bool get_env_creds(::uid_t& res_uid, ::gid_t& res_gid) noexcept {
-        std::string username;
-        struct passwd pwd;
-        char buffer[1024];
-        const bool is_root = 0 == res_uid;
-
-        if( !is_root || get_env_uid(res_uid, is_root) ) {
-            struct passwd* pwd_res = nullptr;
-            if( 0 != ::getpwuid_r(res_uid, &pwd, buffer, sizeof(buffer), &pwd_res) || nullptr == pwd_res ) {
-                ERR_PRINT("getpwuid(%" PRIu32 ") failed", res_uid);
-                return false;
-            }
-            jau::fprintf_td(stderr, "getpwuid(%" PRIu32 "): name '%s', uid %" PRIu32 ", gid %" PRIu32 "\n", res_uid, pwd_res->pw_name, pwd_res->pw_uid, pwd_res->pw_gid);
-            res_gid = pwd_res->pw_gid;
-            return true;
-        } else if( get_env_username(username, is_root) ) {
-            struct passwd* pwd_res = nullptr;
-            if( 0 != ::getpwnam_r(username.c_str(), &pwd, buffer, sizeof(buffer), &pwd_res) || nullptr == pwd_res ) {
-                ERR_PRINT("getpwnam(%s) failed\n", username.c_str());
-                return false;
-            }
-            jau::fprintf_td(stderr, "getpwnam(%s): name '%s', uid %" PRIu32 ", gid %" PRIu32 "\n", username.c_str(), pwd_res->pw_name, pwd_res->pw_uid, pwd_res->pw_gid);
-            res_gid = pwd_res->pw_gid;
-            return true;
-        }
-        return false;
-    }
 
     static bool cap_get_flag(cap_t cap_p, cap_value_t cap, cap_flag_t flag, cap_flag_value_t *value_p) noexcept {
         if( 0 != ::cap_get_flag(cap_p, cap, flag, value_p) ) {
@@ -234,11 +169,12 @@ class TestFileUtil02 : TestFileUtilBase {
         ::uid_t caller_uid = ::getuid();
 
         ::uid_t user_id = caller_uid;
-        ::gid_t group_id = 1000;
-        if( !get_env_creds(user_id, group_id) ) {
+        jau::os::UserInfo user_info(user_id);
+        if( !user_info.isValid() ) {
             ERR_PRINT("couldn't fetch [SUDO_]UID");
             return;
         }
+        ::gid_t group_id = (::gid_t)user_info.gid();
         ::gid_t group_list[] = { user_id, group_id, get_gid("video") };
 
         const bool setuid_user_to_root = super_uid != caller_uid;

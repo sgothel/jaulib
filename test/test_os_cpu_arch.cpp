@@ -33,6 +33,7 @@
 #include <jau/file_util.hpp>
 #include <jau/cpuid.hpp>
 #include <jau/os/os_support.hpp>
+#include <jau/os/user_info.hpp>
 
 TEST_CASE( "Test 00 Platform Info - os_and_arch", "[endian][abi][cpu][os]" ) {
     std::cout << jau::os::get_platform_info() << std::endl;
@@ -59,4 +60,18 @@ TEST_CASE( "Test 01 OS CPU ABI ENDIAN - os_and_arch", "[endian][abi][cpu][os]" )
 
     REQUIRE( true == jau::is_defined_endian(jau::endian::native) );
     REQUIRE( true == jau::is_little_or_big_endian() );
+}
+
+TEST_CASE( "Test 10 User Info", "[user][os]" ) {
+    {
+        jau::os::UserInfo uinfo;
+        std::cout << "User-Current: " << uinfo.toString() << std::endl;
+        REQUIRE( true == uinfo.isValid() );
+    }
+    {
+        jau::os::UserInfo uinfo("root");
+        std::cout << "User 'root':  " << uinfo.toString() << std::endl;
+        // REQUIRE( true == uinfo.isValid() );
+    }
+
 }
