@@ -68,11 +68,11 @@ TEST_CASE( "Test 01 Global Open dlsym ..", "[dll][os]" ) {
     jau::os::DynamicLinker::libhandle_t libHandle = dl.openLibraryGlobal(libPath);
     std::cout << "- Path: " << libPath << std::endl;
     std::cout << "- LibHandle: " << jau::to_hexstring(libHandle) << std::endl;
-    REQUIRE( 0 != libHandle );
+    REQUIRE( nullptr != libHandle );
 
     jau::os::DynamicLinker::symhandle_t symHandle = dl.lookupSymbol(libHandle, symbolName);
     std::cout << "- Symbol '" << symbolName << "': Handle = " << jau::to_hexstring(symHandle) << std::endl;
-    REQUIRE( 0 != symHandle );
+    REQUIRE( nullptr != symHandle );
 
     const char* nativePath = dl.lookupLibraryPathname(libHandle, symbolName);
     if( nullptr == nativePath ) {

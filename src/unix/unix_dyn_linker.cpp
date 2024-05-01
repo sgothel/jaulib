@@ -67,19 +67,19 @@
             }
 
             libhandle_t openLibraryGlobalImpl(const std::string& pathname) noexcept override {
-                return reinterpret_cast<libhandle_t>( ::dlopen((char *) pathname.c_str(), m_flag_lazy | m_flag_global) );
+                return ::dlopen((char *) pathname.c_str(), m_flag_lazy | m_flag_global);
 
             }
             libhandle_t openLibraryLocalImpl(const std::string& pathname) noexcept override {
-                return reinterpret_cast<libhandle_t>( ::dlopen((char *) pathname.c_str(), m_flag_lazy | m_flag_local) );
+                return ::dlopen((char *) pathname.c_str(), m_flag_lazy | m_flag_local);
             }
 
             const char* lookupLibraryPathnameImpl(libhandle_t handle, const std::string& symbolName) noexcept override {
-                if( 0 != handle && symbolName.length() > 0 ) {
-                    symhandle_t addr = reinterpret_cast<symhandle_t>( ::dlsym(reinterpret_cast<void*>(handle), symbolName.c_str()) ); // NOLINT(performance-no-int-to-ptr,-warnings-as-errors)
-                    if( 0 != addr ) {
+                if( nullptr != handle && symbolName.length() > 0 ) {
+                    symhandle_t addr = ::dlsym(handle, symbolName.c_str());
+                    if( nullptr != addr ) {
                         Dl_info info;
-                        if( 0 != ::dladdr(reinterpret_cast<void*>(addr), &info) ) { // NOLINT(performance-no-int-to-ptr,-warnings-as-errors)
+                        if( 0 != ::dladdr(addr, &info) ) {
                             return info.dli_fname;
                         } else {
                             return nullptr;
@@ -90,16 +90,20 @@
             }
 
             symhandle_t lookupSymbolGlobalImpl(const std::string& symbolName) noexcept override {
-                return reinterpret_cast<symhandle_t>( ::dlsym(m_lib_default, symbolName.c_str()) );
+                return ::dlsym(m_lib_default, symbolName.c_str());
             }
 
             symhandle_t lookupSymbolLocalImpl(libhandle_t handle, const std::string& symbolName) noexcept override {
-                return 0 != handle ? reinterpret_cast<symhandle_t>( ::dlsym(reinterpret_cast<void*>(handle), symbolName.c_str()) ) : 0; // NOLINT(performance-no-int-to-ptr,-warnings-as-errors)
+                if( nullptr != handle ) {
+                    return ::dlsym(handle, symbolName.c_str());
+                } else {
+                    return nullptr;
+                }
             }
 
             void closeLibraryImpl(libhandle_t handle) noexcept override {
-                if( 0 != handle ) {
-                    ::dlclose(reinterpret_cast<void *>(handle)); // NOLINT(performance-no-int-to-ptr,-warnings-as-errors)
+                if( nullptr != handle ) {
+                    ::dlclose(handle);
                 }
             }
 

@@ -45,9 +45,9 @@ namespace jau::os {
     class DynamicLinker {
       public:
         /** library handle */
-        typedef intptr_t libhandle_t;
+        typedef void* libhandle_t;
         /** symbol handle within a library */
-        typedef intptr_t symhandle_t;
+        typedef void* symhandle_t;
 
       protected:
         constexpr static const bool DEBUG_LOOKUP = false;
@@ -255,7 +255,7 @@ namespace jau::os {
          */
         libhandle_t openLibraryGlobal(const std::string& pathname) noexcept {
             libhandle_t handle = openLibraryGlobalImpl(pathname);
-            if( 0 != handle ) {
+            if( nullptr != handle ) {
                 LibRef_ref libRef = incrLibRefCount(handle, pathname);
                 DBG_PRINT("DynamicLinkerImpl.openLibraryGlobal \"%s\": %s -> %s",
                         pathname.c_str(), jau::to_hexstring(handle).c_str(), libRef->toString().c_str());
@@ -274,7 +274,7 @@ namespace jau::os {
          */
         libhandle_t openLibraryLocal(const std::string& pathname) noexcept {
             libhandle_t handle = openLibraryLocalImpl(pathname);
-            if( 0 != handle ) {
+            if( nullptr != handle ) {
                 LibRef_ref libRef = incrLibRefCount(handle, pathname);
                 DBG_PRINT("DynamicLinkerImpl.openLibraryLocal \"%s\": %s -> %s",
                         pathname.c_str(), jau::to_hexstring(handle).c_str(), libRef->toString().c_str());
@@ -304,7 +304,7 @@ namespace jau::os {
          * @return the symbol handle, maybe nullptr if not found.
          */
         symhandle_t lookupSymbolGlobal(const std::string& symbolName) noexcept {
-            intptr_t addr = lookupSymbolGlobalImpl(symbolName);
+            symhandle_t addr = lookupSymbolGlobalImpl(symbolName);
             if(DEBUG_LOOKUP) {
                 jau::INFO_PRINT("DynamicLinkerImpl.lookupSymbolGlobal(%s) -> %s",
                         symbolName.c_str(), jau::to_hexstring(addr).c_str());
@@ -318,7 +318,7 @@ namespace jau::os {
          * @return the symbol handle, maybe nullptr if not found.
          */
         symhandle_t lookupSymbol(libhandle_t handle, const std::string& symbolName) noexcept {
-            intptr_t addr = lookupSymbolLocalImpl(handle, symbolName);
+            symhandle_t addr = lookupSymbolLocalImpl(handle, symbolName);
             if(DEBUG_LOOKUP) {
                 jau::INFO_PRINT("DynamicLinkerImpl.lookupSymbol(%s, %s) -> %s",
                         jau::to_hexstring(handle).c_str(), symbolName.c_str(), jau::to_hexstring(addr).c_str());
@@ -341,7 +341,7 @@ namespace jau::os {
             } else {
                 DBG_PRINT("DynamicLinkerImpl.closeLibrary(%s -> null)", jau::to_hexstring(handle).c_str());
             }
-            if( 0 != handle ) {
+            if( nullptr != handle ) {
                 closeLibraryImpl(handle);
             }
         }
