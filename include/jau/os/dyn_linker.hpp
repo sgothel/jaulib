@@ -73,8 +73,8 @@ namespace jau::os {
             LibRef(const std::string& name) noexcept
             : m_name(name), m_count(1) {}
 
-            constexpr LibRef(const LibRef& o) noexcept = default;
-            constexpr LibRef(LibRef&& o) noexcept = default;
+            constexpr_cxx20 LibRef(const LibRef& o) noexcept = default;
+            constexpr_cxx20 LibRef(LibRef&& o) noexcept = default;
             LibRef& operator=(const LibRef&) noexcept = default;
             LibRef& operator=(LibRef&&) noexcept = default;
 
@@ -140,7 +140,7 @@ namespace jau::os {
         virtual ~DynamicLinker() noexcept = default;
 
         /** Returns the environment library path variable name, e.g. `LD_LIBRARY_PATH` */
-        constexpr static std::string getEnvLibPathVarName() noexcept {
+        constexpr_cxx20 static std::string getEnvLibPathVarName() noexcept {
             if constexpr ( jau::os::is_darwin() ) {
                 return "DYLD_LIBRARY_PATH";
             } else if constexpr ( jau::os::is_windows() ) {
@@ -157,7 +157,7 @@ namespace jau::os {
         }
 
         /** Returns the native library prefix, e.g. `lib` */
-        constexpr static std::string getDefaultPrefix() noexcept {
+        constexpr_cxx20 static std::string getDefaultPrefix() noexcept {
             if constexpr ( jau::os::is_windows() ) {
                 return "";
             } else {
@@ -165,7 +165,7 @@ namespace jau::os {
             }
         }
         /** Returns the native library suffix including the dot, e.g. `.so` */
-        constexpr static std::string getDefaultSuffix() noexcept {
+        constexpr_cxx20 static std::string getDefaultSuffix() noexcept {
             if constexpr ( jau::os::is_darwin() ) {
                 return ".dylib";
             } else if constexpr ( jau::os::is_windows() ) {
@@ -183,7 +183,7 @@ namespace jau::os {
          * @see getBaseName()
          * @see jau::fs::basename()
          */
-        constexpr static std::string getCanonicalName(const std::string& basename, const bool checkIsCanonical=true) noexcept {
+        constexpr_cxx20 static std::string getCanonicalName(const std::string& basename, const bool checkIsCanonical=true) noexcept {
             if( !checkIsCanonical || !isCanonicalName(basename, true) ) {
                 return getDefaultPrefix()+basename+getDefaultSuffix();
             } else {
