@@ -1172,6 +1172,21 @@ bool jau::fs::visit(const std::string& path, const traverse_options topts, const
 
 bool jau::fs::remove(const std::string& path, const traverse_options topts) noexcept {
     file_stats path_stats(path);
+    if( is_set(topts, traverse_options::verbose) ) {
+        jau::fprintf_td(stderr, "remove: '%s' -> %s\n", path.c_str(), path_stats.to_string().c_str());
+    }
+    if( !path_stats.exists() ) {
+        if( is_set(topts, traverse_options::verbose) ) {
+            jau::fprintf_td(stderr, "remove: failed: path doesn't exist: %s\n", path_stats.to_string().c_str());
+        }
+        return false;
+    }
+    if( path_stats.has_fd() ) {
+        if( is_set(topts, traverse_options::verbose) ) {
+            jau::fprintf_td(stderr, "remove: failed: path is fd: %s\n", path_stats.to_string().c_str());
+        }
+        return false;
+    }
     if( path_stats.is_file() ||
         ( path_stats.is_dir() && path_stats.is_link() && !is_set(topts, traverse_options::follow_symlinks) )
       )
@@ -1181,16 +1196,20 @@ bool jau::fs::remove(const std::string& path, const traverse_options topts) noex
             ERR_PRINT("remove failed: %s, res %d", path_stats.to_string().c_str(), res);
             return false;
         }
+        if( is_set(topts, traverse_options::verbose) ) {
+            jau::fprintf_td(stderr, "removed: %s\n", path_stats.to_string().c_str());
+        }
         return true;
     }
-    if( path_stats.is_dir() && !is_set(topts, traverse_options::recursive) ) {
+    if( !path_stats.is_dir() ) {
+        ERR_PRINT("remove: Error: path is neither file nor dir: %s\n", path_stats.to_string().c_str());
+        return false;
+    }
+    // directory ...
+    if( !is_set(topts, traverse_options::recursive) ) {
         if( is_set(topts, traverse_options::verbose) ) {
             jau::fprintf_td(stderr, "remove: Error: path is dir but !recursive, %s\n", path_stats.to_string().c_str());
         }
-        return false;
-    }
-    if( path_stats.has_fd() ) {
-        ERR_PRINT("remove: failed: path is fd: %s", path_stats.to_string().c_str());
         return false;
     }
     struct remove_context_t {
@@ -1232,7 +1251,7 @@ bool jau::fs::remove(const std::string& path, const traverse_options topts) noex
                             return false;
                         }
                         if( is_set(ctx_ptr->topts, traverse_options::verbose) ) {
-                            jau::fprintf_td(stderr, "remove: %s removed\n", element_stats.to_string().c_str());
+                            jau::fprintf_td(stderr, "removed: %s\n", element_stats.to_string().c_str());
                         }
                     }
                     return true;
@@ -1897,7 +1916,7 @@ bool jau::fs::copy(const std::string& source_path, const std::string& target_pat
 bool jau::fs::rename(const std::string& oldpath, const std::string& newpath) noexcept {
     file_stats oldpath_stats(oldpath);
     file_stats newpath_stats(newpath);
-    if( !oldpath_stats.exists() ) {
+    if( !oldpath_stats.is_link() && !oldpath_stats.exists() ) {
         ERR_PRINT("oldpath doesn't exist, oldpath %s, newpath %s\n",
                 oldpath_stats.to_string().c_str(), newpath_stats.to_string().c_str());
         return false;
