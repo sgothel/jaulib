@@ -369,7 +369,7 @@ jobject jau::jni::get_new_arraylist(JNIEnv *env, jsize size, jmethodID *add)
     jobject result = env->NewObject(arraylist_class, arraylist_ctor, size);
     if (!result)
     {
-        throw jau::InternalError("Cannot create instance of class ArrayList", E_FILE_LINE);
+        throw jau::InternalError("Cannot create instance of class ArrayList with size "+std::to_string(size), E_FILE_LINE);
     }
 
     *add = search_method(env, arraylist_class, "add", "(Ljava/lang/Object;)Z", false);
