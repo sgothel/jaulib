@@ -338,7 +338,7 @@ namespace jau {
         std::string res;
         for(const T& e : list) {
             if( need_delim ) {
-                res.append( delim ).append( " " );
+                res.append( delim );
             }
             res.append( to_string( e ) );
             need_delim = true;
@@ -346,7 +346,7 @@ namespace jau {
         return res;
     }
     template<typename T>
-    std::string to_string(std::vector<T> const &list) { return to_string<T>(list, ","); }
+    std::string to_string(std::vector<T> const &list) { return to_string<T>(list, ", "); }
 
     bool to_integer(long long & result, const std::string& str, const char limiter='\0', const char *limiter_pos=nullptr);
     bool to_integer(long long & result, const char * str, size_t str_len, const char limiter='\0', const char *limiter_pos=nullptr);
