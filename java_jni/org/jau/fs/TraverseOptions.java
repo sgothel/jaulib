@@ -48,6 +48,9 @@ public class TraverseOptions {
         /** Traverse through elements in lexicographical order. This might be required when computing an order dependent outcome like a hash value. */
         lexicographical_order ( (short) ( 1 << 2 ) ),
 
+        /** Call path_visitor at directory entry, allowing path_visitor to skip traversal of this directory if returning false. */
+        dir_check_entry ( (short) ( 1 << 7 ) ),
+
         /** Visit the content's parent directory at entry. Both, dir_entry and dir_exit can be set, only one or none. */
         dir_entry ( (short) ( 1 << 8 ) ),
 

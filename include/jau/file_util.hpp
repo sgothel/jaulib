@@ -168,6 +168,8 @@ namespace jau::fs {
             /**
              * Create a dir_item where path is split into dirname and basename after `.` and `..` has been reduced.
              *
+             * empty() will return true if given path_ is empty
+             *
              * @param path_ the raw path
              */
             dir_item(const std::string_view& path_) noexcept;
@@ -175,6 +177,8 @@ namespace jau::fs {
             /**
              * Create a dir_item with already cleaned dirname and basename
              * without any further processing nor validation.
+             *
+             * empty() will return true if both, given dirname_ and basename_ is empty
              *
              * @param dirname__
              * @param basename__
@@ -770,6 +774,19 @@ namespace jau::fs {
         file_symlink = symlink | file,
 
         /**
+         * Visiting a symbolic-link to a directory which is not followed, i.e. traverse_options::follow_symlinks not set.
+         */
+        dir_symlink = 1 << 2,
+
+        /**
+         * Visiting a directory on entry, see traverse_options::dir_check_entry.
+         *
+         * This allows the path_visitor to deny traversal into the directory by returning false,
+         * otherwise continuing traversal.
+         */
+        dir_check_entry = 1 << 7,
+
+        /**
          * Visiting a directory on entry, see traverse_options::dir_entry.
          *
          * If a directory is visited non-recursive, i.e. traverse_options::recursive not set,
@@ -778,7 +795,7 @@ namespace jau::fs {
          * If a directory is a symbolic link which is not followed, i.e. traverse_options::follow_symlinks not set,
          * dir_symlink is used instead.
          */
-        dir_entry = 1 << 2,
+        dir_entry = 1 << 8,
 
         /**
          * Visiting a directory on exit, see traverse_options::dir_exit.
@@ -789,12 +806,7 @@ namespace jau::fs {
          * If a directory is a symbolic link which is not followed, i.e. traverse_options::follow_symlinks not set,
          * dir_symlink is used instead.
          */
-        dir_exit = 1 << 3,
-
-        /**
-         * Visiting a symbolic-link to a directory which is not followed, i.e. traverse_options::follow_symlinks not set.
-         */
-        dir_symlink = 1 << 4,
+        dir_exit = 1 << 9,
 
         /**
          * Visiting a directory non-recursive, i.e. traverse_options::recursive not set.
@@ -843,9 +855,14 @@ namespace jau::fs {
 
     /**
      * path_visitor jau::FunctionDef definition
-     * - `bool visitor(traverse_event tevt, const file_stats& item_stats)`
+     * - `bool visitor(traverse_event tevt, const file_stats& item_stats, size_t depth)`
+     *
+     * Depth being the recursive directory depth starting with 1 for the initial directory.
+     *
+     * Returning `false` stops traversal in general but traverse_options::dir_check_entry
+     * will only skip traversing the denied directory.
      */
-    typedef jau::function<bool(traverse_event, const file_stats&)> path_visitor;
+    typedef jau::function<bool(traverse_event, const file_stats&, size_t)> path_visitor;
 
     /**
      * Filesystem traverse options used to visit() path elements.
@@ -868,10 +885,13 @@ namespace jau::fs {
         /** Traverse through elements in lexicographical order. This might be required when computing an order dependent outcome like a hash value. */
         lexicographical_order = 1 << 2,
 
-        /** Visit the content's parent directory at entry. Both, dir_entry and dir_exit can be set, only one or none. */
+        /** Call path_visitor at directory entry, allowing path_visitor to skip traversal of this directory if returning false. */
+        dir_check_entry = 1 << 7,
+
+        /** Call path_visitor at directory entry. Both, dir_entry and dir_exit can be set, only one or none. */
         dir_entry = 1 << 8,
 
-        /** Visit the content's parent directory at exit. Both, dir_entry and dir_exit can be set, only one or none. */
+        /** Call path_visitor at directory exit. Both, dir_entry and dir_exit can be set, only one or none. */
         dir_exit = 1 << 9,
 
         /** Enable verbosity mode, potentially used by a path_visitor implementation like remove(). */
@@ -921,15 +941,19 @@ namespace jau::fs {
      * All elements of type fmode_t::file, fmode_t::dir and fmode_t::no_access or fmode_t::not_existing
      * will be visited by the given path_visitor `visitor`.
      *
-     * Processing ends if the `visitor returns `false`.
+     * Depth passed to path_visitor is the recursive directory depth and starts with 1 for the initial directory.
+     *
+     * path_visitor returning `false` stops traversal in general but traverse_options::dir_check_entry
+     * will only skip traversing the denied directory.
      *
      * @param path the starting path
      * @param topts given traverse_options for this operation
-     * @param visitor path_visitor function `bool visitor(const file_stats& item_stats)`.
+     * @param visitor path_visitor function `bool visitor(const file_stats& item_stats, size_t depth)`.
      * @param dirfds optional empty `dirfd` stack pointer defaults to nullptr.
-     *        If user provided, exposes the used `dirfd` stack, which last entry represents the current visitor parent directory.
+     *        If user provided, exposes the used `dirfd` stack, which last entry represents the currently visited directory.
      *        The `dirfd` stack starts and ends empty, i.e. all directory file descriptor are closed.
-     * @return true if all visitor invocations returned true, otherwise false
+     *        In case of recursive directory traversion, the initial dir_entry visit starts with depth 1 and 2 fds, its parent and current directory.
+     * @return true if successful including no path_visitor stopped traversal by returning `false` excluding traverse_options::dir_check_entry.
      */
     bool visit(const std::string& path, const traverse_options topts, const path_visitor& visitor, std::vector<int>* dirfds = nullptr) noexcept;
 
@@ -939,15 +963,19 @@ namespace jau::fs {
      * All elements of type fmode_t::file, fmode_t::dir and fmode_t::no_access or fmode_t::not_existing
      * will be visited by the given path_visitor `visitor`.
      *
-     * Processing ends if the `visitor returns `false`.
+     * Depth passed to path_visitor is the recursive directory depth and starts with 1 for the initial directory.
+     *
+     * path_visitor returning `false` stops traversal in general but traverse_options::dir_check_entry
+     * will only skip traversing the denied directory.
      *
      * @param item_stats pre-fetched file_stats for a given dir_item, used for efficiency
      * @param topts given traverse_options for this operation
-     * @param visitor path_visitor function `bool visitor(const file_stats& item_stats)`.
+     * @param visitor path_visitor function `bool visitor(const file_stats& item_stats, size_t depth)`.
      * @param dirfds optional empty `dirfd` stack pointer defaults to nullptr.
-     *        If user provided, exposes the used `dirfd` stack, which last entry represents the current visitor parent directory.
+     *        If user provided, exposes the used `dirfd` stack, which last entry represents the currently visited directory.
      *        The `dirfd` stack starts and ends empty, i.e. all directory file descriptor are closed.
-     * @return true if all visitor invocations returned true, otherwise false
+     *        In case of recursive directory traversion, the initial dir_entry visit starts with depth 1 and 2 fds, its parent and current directory.
+     * @return true if successful including no path_visitor stopped traversal by returning `false` excluding traverse_options::dir_check_entry.
      */
     bool visit(const file_stats& item_stats, const traverse_options topts, const path_visitor& visitor, std::vector<int>* dirfds = nullptr) noexcept;
 

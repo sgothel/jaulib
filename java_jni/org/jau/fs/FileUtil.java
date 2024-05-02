@@ -163,9 +163,22 @@ public final class FileUtil {
 
     /**
      * Path visitor for {@link FileUtil#visit(FileStats, TraverseOptions, PathVisitor)}
+     *
+     * Depth being the recursive directory depth starting with 1 for the initial directory.
+     *
+     * Returning `false` stops traversal in general but {@link TraverseOptions.Bit#dir_check_entry}
+     * will only skip traversing the denied directory.
      */
     public static interface PathVisitor {
-        boolean visit(TraverseEvent tevt, final FileStats item_stats);
+        /**
+         *
+         * @param tevt
+         * @param item_stats
+         * @param depth being the recursive directory depth starting with 1 for the initial directory
+         * @return `false` stops traversal in general but at {@link TraverseOptions.Bit#dir_check_entry}
+         *         will only skip traversing the denied directory.
+         */
+        boolean visit(TraverseEvent tevt, final FileStats item_stats, final long depth);
     }
 
     /**
@@ -174,12 +187,16 @@ public final class FileUtil {
      * All elements of type fmode_t::file, fmode_t::dir and fmode_t::no_access or fmode_t::not_existing
      * will be visited by the given path_visitor `visitor`.
      *
-     * Processing ends if the `visitor returns `false`.
+     * Depth passed to path_visitor is the recursive directory depth and starts with 1 for the initial directory.
+     *
+     * {@link PathVisitor#visit(TraverseEvent, FileStats, long) path_visitor}
+     * returning `false` stops traversal in general but {@link TraverseOptions.Bit#dir_check_entry}
+     * will only skip traversing the denied directory.
      *
      * @param path the starting path
      * @param topts given traverse_options for this operation
-     * @param visitor path_visitor function `bool visitor(const file_stats& item_stats)`.
-     * @return true if all visitor invocations returned true, otherwise false
+     * @param visitor path_visitor function `bool visitor(const file_stats& item_stats, size_t depth)`.
+     * @return true if successful including no path_visitor stopped traversal by returning `false` excluding {@link TraverseOptions.Bit#dir_check_entry}.
      */
     public static boolean visit(final String path, final TraverseOptions topts, final PathVisitor visitor) {
         return visit(new FileStats(path), topts, visitor);
@@ -191,23 +208,36 @@ public final class FileUtil {
      * All elements of type fmode_t::file, fmode_t::dir and fmode_t::no_access or fmode_t::not_existing
      * will be visited by the given path_visitor `visitor`.
      *
-     * Processing ends if the `visitor returns `false`.
+     * Depth passed to path_visitor is the recursive directory depth and starts with 1 for the initial directory.
+     *
+     * {@link PathVisitor#visit(TraverseEvent, FileStats, long) path_visitor}
+     * returning `false` stops traversal in general but {@link TraverseOptions.Bit#dir_check_entry}
+     * will only skip traversing the denied directory.
      *
      * @param item_stats pre-fetched file_stats for a given dir_item, used for efficiency
      * @param topts given traverse_options for this operation
-     * @param visitor path_visitor function `bool visitor(const file_stats& item_stats)`.
-     * @return true if all visitor invocations returned true, otherwise false
+     * @param visitor path_visitor function `bool visitor(const file_stats& item_stats, size_t depth)`.
+     * @return true if successful including no path_visitor stopped traversal by returning `false` excluding {@link TraverseOptions.Bit#dir_check_entry}.
      */
     public static boolean visit(final FileStats item_stats, final TraverseOptions topts, final PathVisitor visitor) {
+        return visitImpl(item_stats, topts, visitor, new long[] { 0 });
+    }
+    private static boolean visitImpl(final FileStats item_stats, final TraverseOptions topts, final PathVisitor visitor, final long[] depth) {
+        depth[0]++;
         if( item_stats.is_dir() ) {
             if( item_stats.is_link() && !topts.isSet(TraverseOptions.Bit.follow_symlinks) ) {
-                return visitor.visit( TraverseEvent.dir_symlink, item_stats );
+                return visitor.visit( TraverseEvent.dir_symlink, item_stats, depth[0] );
             }
             if( !topts.isSet(TraverseOptions.Bit.recursive) ) {
-                return visitor.visit( TraverseEvent.dir_non_recursive, item_stats );
+                return visitor.visit( TraverseEvent.dir_non_recursive, item_stats, depth[0] );
+            }
+            if( topts.isSet(TraverseOptions.Bit.dir_check_entry) ) {
+                if( !visitor.visit( TraverseEvent.dir_check_entry, item_stats, depth[0] ) ) {
+                    return true; // keep traversing in parent, but skip this directory
+                }
             }
             if( topts.isSet(TraverseOptions.Bit.dir_entry) ) {
-                if( !visitor.visit( TraverseEvent.dir_entry, item_stats ) ) {
+                if( !visitor.visit( TraverseEvent.dir_entry, item_stats, depth[0] ) ) {
                     return false;
                 }
             }
@@ -228,29 +258,28 @@ public final class FileUtil {
                     final FileStats element_stats = new FileStats( element );
                     if( element_stats.is_dir() ) { // an OK dir
                         if( element_stats.is_link() && !topts.isSet(TraverseOptions.Bit.follow_symlinks) ) {
-                            if( !visitor.visit( TraverseEvent.dir_symlink, element_stats ) ) {
+                            if( !visitor.visit( TraverseEvent.dir_symlink, element_stats, depth[0] ) ) {
                                 return false;
                             }
-                        } else if( !visit(element_stats, topts, visitor) ) { // recursive
+                        } else if( !visitImpl(element_stats, topts, visitor, depth) ) { // recursive
                             return false;
                         }
                     } else if( !visitor.visit( element_stats.is_file() && element_stats.is_link() ? TraverseEvent.file_symlink :
                                                ( element_stats.is_file() ? TraverseEvent.file :
                                                  ( element_stats.is_link() ? TraverseEvent.symlink : TraverseEvent.none ) ),
-                                               element_stats ) )
-                    {
+                                               element_stats, depth[0] ) ) {
                         return false;
                     }
                 }
             }
         }
         if( item_stats.is_dir() && topts.isSet(TraverseOptions.Bit.dir_exit) ) {
-            return visitor.visit( TraverseEvent.dir_exit, item_stats );
+            return visitor.visit( TraverseEvent.dir_exit, item_stats, depth[0] );
         } else if( item_stats.is_file() || !item_stats.ok() ) { // file or error-alike
             return visitor.visit( item_stats.is_file() && item_stats.is_link() ? TraverseEvent.file_symlink :
                                   ( item_stats.is_file() ? TraverseEvent.file :
                                     ( item_stats.is_link() ? TraverseEvent.symlink : TraverseEvent.none ) ),
-                                  item_stats );
+                                  item_stats, depth[0] );
         } else {
             return true;
         }

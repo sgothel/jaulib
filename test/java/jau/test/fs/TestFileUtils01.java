@@ -33,6 +33,7 @@ import org.jau.fs.DirItem;
 import org.jau.fs.FMode;
 import org.jau.fs.FileStats;
 import org.jau.fs.FileUtil;
+import org.jau.fs.TraverseEvent;
 import org.jau.fs.TraverseOptions;
 import org.jau.io.ByteOutStream_File;
 import org.jau.io.PrintUtil;
@@ -1031,6 +1032,7 @@ public class TestFileUtils01 extends FileUtilBaseTest {
         Assert.assertTrue( true == proot_stats.exists() );
         Assert.assertTrue( true == proot_stats.is_dir() );
 
+        // recursive without symlinks
         {
             final TraverseOptions topts = new TraverseOptions();
             topts.set(TraverseOptions.Bit.recursive);
@@ -1052,6 +1054,7 @@ public class TestFileUtils01 extends FileUtilBaseTest {
             Assert.assertTrue(  1 == stats.dirs_sym_link );
         }
 
+        // recursive with symlinks
         {
             final TraverseOptions topts = new TraverseOptions();
             topts.set(TraverseOptions.Bit.recursive);
@@ -1072,6 +1075,40 @@ public class TestFileUtils01 extends FileUtilBaseTest {
             Assert.assertTrue( 10 == stats.files_sym_link );
             Assert.assertTrue(  3 == stats.dirs_real );
             Assert.assertTrue(  1 == stats.dirs_sym_link );
+        }
+        // flat with symlinks
+        {
+            final TraverseOptions topts = new TraverseOptions();
+            topts.set(TraverseOptions.Bit.recursive);
+            topts.set(TraverseOptions.Bit.dir_check_entry);
+            topts.set(TraverseOptions.Bit.dir_entry);
+            topts.set(TraverseOptions.Bit.follow_symlinks);
+            final VisitorStats stats = new VisitorStats(topts);
+
+            final PathStatsVisitor pv_flat = new PathStatsVisitor(stats) {
+                @Override
+                public boolean visit(final TraverseEvent tevt, final FileStats item_stats, final long depth) {
+                    // PrintUtil.fprintf_td(System.err, "add: item_stats "+item_stats+", tevt "+tevt+"\n");
+                    if( TraverseEvent.dir_check_entry == tevt && depth > 1 ) {
+                        return false;
+                    }
+                    stats.add(item_stats);
+                    return true;
+                }
+            };
+
+            Assert.assertTrue( true == FileUtil.visit(proot_stats, topts, pv_flat) );
+            PrintUtil.fprintf_td(System.err, "test22_visit[F, FSL]: %s\n%s\n", topts, stats);
+            Assert.assertTrue(  3 == stats.total_real );
+            Assert.assertTrue(  5 == stats.total_sym_links_existing );
+            Assert.assertTrue(  4 == stats.total_sym_links_not_existing );
+            Assert.assertTrue(  0 == stats.total_no_access );
+            Assert.assertTrue(  4 == stats.total_not_existing );
+            Assert.assertTrue( 60 <  stats.total_file_bytes ); // some followed symlink files are of unknown size, e.g. /etc/fstab
+            Assert.assertTrue(  1 == stats.files_real );
+            Assert.assertTrue(  5 == stats.files_sym_link );
+            Assert.assertTrue(  2 == stats.dirs_real );
+            Assert.assertTrue(  0 == stats.dirs_sym_link );
         }
     }
 

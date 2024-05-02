@@ -54,7 +54,7 @@ void testxx_copy_r_p(const std::string& title,
             dest_root = dest;
         }
     }
-    jau::fprintf_td(stderr, "%s: source %s, dest[arg %s, is_parent %d, dest_root %s], copts %s, dest_is_vfat %d\n",
+    jau::fprintf_td(stdout, "%s: source %s, dest[arg %s, is_parent %d, dest_root %s], copts %s, dest_is_vfat %d\n",
             title.c_str(), source.to_string().c_str(),
             dest.c_str(), dest_is_parent, dest_root.c_str(),
             to_string(copts).c_str(), dest_is_vfat);
@@ -69,9 +69,10 @@ void testxx_copy_r_p(const std::string& title,
     REQUIRE( true == dest_stats.ok() );
     REQUIRE( true == dest_stats.is_dir() );
 
-    bool(*pv_capture)(visitor_stats*, jau::fs::traverse_event, const jau::fs::file_stats&) =
-        ( [](visitor_stats* stats_ptr, jau::fs::traverse_event tevt, const jau::fs::file_stats& element_stats) -> bool {
+    bool(*pv_capture)(visitor_stats*, jau::fs::traverse_event, const jau::fs::file_stats&, size_t) =
+        ( [](visitor_stats* stats_ptr, jau::fs::traverse_event tevt, const jau::fs::file_stats& element_stats, size_t depth) -> bool {
             (void)tevt;
+            (void)depth;
             stats_ptr->add(element_stats);
             return true;
           } );
@@ -86,11 +87,11 @@ void testxx_copy_r_p(const std::string& title,
         REQUIRE( true == jau::fs::visit(source, topts, pv_orig) );
         REQUIRE( true == jau::fs::visit(dest_stats, topts, pv_copy) );
 
-        jau::fprintf_td(stderr, "%s: copy %s, traverse %s\n",
+        jau::fprintf_td(stdout, "%s: copy %s, traverse %s\n",
                 title.c_str(), to_string(copts).c_str(), to_string(topts).c_str());
 
-        jau::fprintf_td(stderr, "%s: source      visitor stats\n%s\n", title.c_str(), stats.to_string().c_str());
-        jau::fprintf_td(stderr, "%s: destination visitor stats\n%s\n", title.c_str(), stats_copy.to_string().c_str());
+        jau::fprintf_td(stdout, "%s: source      visitor stats\n%s\n", title.c_str(), stats.to_string().c_str());
+        jau::fprintf_td(stdout, "%s: destination visitor stats\n%s\n", title.c_str(), stats_copy.to_string().c_str());
 
         REQUIRE(  7 == stats.total_real );
         REQUIRE( 10 - source_added_dead_links == stats.total_sym_links_existing );
@@ -165,15 +166,17 @@ void testxx_copy_r_p(const std::string& title,
                 bool match;
         };
         source_visitor_params svp { title, source.path(), dest_stats, dest_is_vfat, opt_drop_dest_links };
-        const jau::fs::path_visitor pv1 = jau::bind_capref<bool, source_visitor_params, jau::fs::traverse_event, const jau::fs::file_stats&>(&svp,
-                ( bool(*)(source_visitor_params*, jau::fs::traverse_event, const jau::fs::file_stats&) ) /* help template type deduction of function-ptr */
-                    ( [](source_visitor_params* _svp, jau::fs::traverse_event tevt1, const jau::fs::file_stats& element_stats1) -> bool {
+        const jau::fs::path_visitor pv1 = jau::bind_capref<bool, source_visitor_params, jau::fs::traverse_event, const jau::fs::file_stats&, size_t>(&svp,
+                ( bool(*)(source_visitor_params*, jau::fs::traverse_event, const jau::fs::file_stats&, size_t) ) /* help template type deduction of function-ptr */
+                    ( [](source_visitor_params* _svp, jau::fs::traverse_event tevt1, const jau::fs::file_stats& element_stats1, size_t depth) -> bool {
                         (void)tevt1;
+                        (void)depth;
                         dest_visitor_params dvp { _svp->title, _svp->source_folder_path, _svp->dest.path(), jau::fs::basename( element_stats1.path() ), element_stats1, _svp->dest_is_vfat, false };
-                        const jau::fs::path_visitor pv2 = jau::bind_capref<bool, dest_visitor_params, jau::fs::traverse_event, const jau::fs::file_stats&>(&dvp,
-                                ( bool(*)(dest_visitor_params*, jau::fs::traverse_event, const jau::fs::file_stats&) ) /* help template type deduction of function-ptr */
-                                    ( [](dest_visitor_params* _dvp, jau::fs::traverse_event tevt2, const jau::fs::file_stats& element_stats2) -> bool {
+                        const jau::fs::path_visitor pv2 = jau::bind_capref<bool, dest_visitor_params, jau::fs::traverse_event, const jau::fs::file_stats&, size_t>(&dvp,
+                                ( bool(*)(dest_visitor_params*, jau::fs::traverse_event, const jau::fs::file_stats&, size_t depth) ) /* help template type deduction of function-ptr */
+                                    ( [](dest_visitor_params* _dvp, jau::fs::traverse_event tevt2, const jau::fs::file_stats& element_stats2, size_t depth2) -> bool {
                                         (void)tevt2;
+                                        (void)depth2;
                                         const std::string path2 = element_stats2.path();
                                         const std::string basename2 = jau::fs::basename( path2 );
                                         const std::string source_folder_basename = jau::fs::basename( _dvp->source_folder_path );
@@ -212,7 +215,7 @@ void testxx_copy_r_p(const std::string& title,
                                                             element_stats2.size() == _dvp->stats.size();
                                                 }
                                                 if( !attr_equal ) {
-                                                    jau::fprintf_td(stderr, "%s.check: '%s'\n  mode %s == %s\n  mtime %s == %s, d %s\n  uid %s == %s\n  gid %s == %s\n  size %s == %s\n",
+                                                    jau::fprintf_td(stdout, "%s.check: '%s'\n  mode %s == %s\n  mtime %s == %s, d %s\n  uid %s == %s\n  gid %s == %s\n  size %s == %s\n",
                                                             _dvp->title.c_str(), basename2.c_str(),
                                                             jau::fs::to_string(element_stats2.mode()).c_str(), jau::fs::to_string(_dvp->stats.mode()).c_str(),
                                                             // element_stats2.atime().to_string().c_str(), _dvp->stats.atime().to_string().c_str(),
@@ -230,7 +233,7 @@ void testxx_copy_r_p(const std::string& title,
                                                 }
                                             }
                                             _dvp->match = attr_equal && bit_equal;
-                                            jau::fprintf_td(stderr, "%s.check: '%s', match [attr %d, bit %d -> %d]\n\t source %s\n\t dest__ %s\n\n",
+                                            jau::fprintf_td(stdout, "%s.check: '%s', match [attr %d, bit %d -> %d]\n\t source %s\n\t dest__ %s\n\n",
                                                     _dvp->title.c_str(), basename2.c_str(), attr_equal, bit_equal, _dvp->match,
                                                     _dvp->stats.to_string().c_str(),
                                                     element_stats2.to_string().c_str());
@@ -242,7 +245,7 @@ void testxx_copy_r_p(const std::string& title,
                         if( jau::fs::visit(_svp->dest, topts, pv2) ) {
                             // not found
                             const bool ignore = element_stats1.is_link() && _svp->opt_drop_dest_links;
-                            jau::fprintf_td(stderr, "%s.check: %s: '%s', not found!\n\t source %s\n\n",
+                            jau::fprintf_td(stdout, "%s.check: %s: '%s', not found!\n\t source %s\n\n",
                                     _svp->title.c_str(), ignore ? "Ignored" : "Error", dvp.source_basename.c_str(),
                                     element_stats1.to_string().c_str());
                             return ignore;

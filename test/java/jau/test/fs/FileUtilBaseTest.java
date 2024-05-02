@@ -153,7 +153,7 @@ public class FileUtilBaseTest extends JunitTracer {
         }
 
         @Override
-        public boolean visit(final TraverseEvent tevt, final FileStats item_stats) {
+        public boolean visit(final TraverseEvent tevt, final FileStats item_stats, final long depth) {
             // PrintUtil.fprintf_td(System.err, "add: item_stats "+item_stats+", tevt "+tevt+"\n");
             stats.add(item_stats);
             return true;
@@ -315,11 +315,11 @@ public class FileUtilBaseTest extends JunitTracer {
             final source_visitor_params svp = new source_visitor_params(title, source.path(), dest_stats, dest_is_vfat, opt_drop_dest_links);
             final FileUtil.PathVisitor pv1 = new FileUtil.PathVisitor() {
                 @Override
-                public boolean visit(final TraverseEvent tevt1, final FileStats element_stats1) {
+                public boolean visit(final TraverseEvent tevt1, final FileStats element_stats1, final long depth) {
                     final dest_visitor_params dvp = new dest_visitor_params(svp.title, svp.source_folder_path, svp.dest.path(), FileUtil.basename(element_stats1.path() ), element_stats1, svp.dest_is_vfat);
                     final FileUtil.PathVisitor pv2 = new FileUtil.PathVisitor() {
                         @Override
-                        public boolean visit(final TraverseEvent tevt2, final FileStats element_stats2) {
+                        public boolean visit(final TraverseEvent tevt2, final FileStats element_stats2, final long depth2) {
                             final String path2 = element_stats2.path();
                             final String basename2 = FileUtil.basename( path2 );
                             final String source_folder_basename = FileUtil.basename( dvp.source_folder_path );

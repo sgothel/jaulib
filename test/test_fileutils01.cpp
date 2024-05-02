@@ -189,31 +189,31 @@ class TestFileUtil01 : TestFileUtilBase {
         {
             std::string rel_project_root = getTestDataRelDir(executable_path);
             jau::fs::file_stats proot_stats(rel_project_root);
-            jau::fprintf_td(stderr, "test03b_absolute: 01: %s\n", rel_project_root.c_str());
-            jau::fprintf_td(stderr, "test03b_absolute: 01: %s\n", proot_stats.to_string().c_str());
-            jau::fprintf_td(stderr, "test03b_absolute: 01: fields %s\n", jau::fs::to_string( proot_stats.fields() ).c_str());
+            jau::fprintf_td(stdout, "test03b_absolute: 01: %s\n", rel_project_root.c_str());
+            jau::fprintf_td(stdout, "test03b_absolute: 01: %s\n", proot_stats.to_string().c_str());
+            jau::fprintf_td(stdout, "test03b_absolute: 01: fields %s\n", jau::fs::to_string( proot_stats.fields() ).c_str());
             REQUIRE( true == proot_stats.exists() );
             REQUIRE( true == proot_stats.is_dir() );
 
             std::string abs_project_root;
             {
                 abs_project_root = jau::fs::absolute(rel_project_root);
-                jau::fprintf_td(stderr, "test03b_absolute: 02: %s\n", abs_project_root.c_str());
+                jau::fprintf_td(stdout, "test03b_absolute: 02: %s\n", abs_project_root.c_str());
                 REQUIRE( 0 < abs_project_root.size() );
                 REQUIRE( false == jau::fs::isAbsolute(rel_project_root) );
                 REQUIRE( true == jau::fs::isAbsolute(abs_project_root) );
 
                 jau::fs::file_stats stats(abs_project_root);
-                jau::fprintf_td(stderr, "test03b_absolute: 02: %s\n", stats.to_string().c_str());
-                jau::fprintf_td(stderr, "test03b_absolute: 02: fields %s\n", jau::fs::to_string( stats.fields() ).c_str());
+                jau::fprintf_td(stdout, "test03b_absolute: 02: %s\n", stats.to_string().c_str());
+                jau::fprintf_td(stdout, "test03b_absolute: 02: fields %s\n", jau::fs::to_string( stats.fields() ).c_str());
                 REQUIRE(  stats.exists() );
                 REQUIRE(  stats.is_dir() );
             }
             {
                 std::string bname0 = jau::fs::basename(rel_project_root);
                 std::string bname1 = jau::fs::basename(abs_project_root);
-                jau::fprintf_td(stderr, "test03b_absolute: 03.0: %s\n", bname0.c_str());
-                jau::fprintf_td(stderr, "test03b_absolute: 03.1: %s\n", bname1.c_str());
+                jau::fprintf_td(stdout, "test03b_absolute: 03.0: %s\n", bname0.c_str());
+                jau::fprintf_td(stdout, "test03b_absolute: 03.1: %s\n", bname1.c_str());
                 REQUIRE( bname0 == bname1 );
             }
         }
@@ -221,12 +221,21 @@ class TestFileUtil01 : TestFileUtilBase {
 
     void test04_dir_item() {
         {
+            const jau::fs::dir_item di;
+            INFO_STR("\n\ntest04_dir_item: 00 "+di.to_string()+" -> '"+di.path()+"'\n");
+            REQUIRE( "." == di.dirname() );
+            REQUIRE( "." == di.basename() );
+            REQUIRE( "." == di.path() );
+            REQUIRE( true == di.empty() );
+        }
+        {
             const std::string dirname_;
             const jau::fs::dir_item di(dirname_);
             INFO_STR("\n\ntest04_dir_item: 01 '"+dirname_+"' -> "+di.to_string()+" -> '"+di.path()+"'\n");
             REQUIRE( "." == di.dirname() );
             REQUIRE( "." == di.basename() );
             REQUIRE( "." == di.path() );
+            REQUIRE( true == di.empty() );
         }
         {
             const std::string dirname_(".");
@@ -235,6 +244,7 @@ class TestFileUtil01 : TestFileUtilBase {
             REQUIRE( "." == di.dirname() );
             REQUIRE( "." == di.basename() );
             REQUIRE( "." == di.path() );
+            REQUIRE( false == di.empty() );
         }
         {
             const std::string dirname_("/");
@@ -243,6 +253,7 @@ class TestFileUtil01 : TestFileUtilBase {
             REQUIRE( "/" == di.dirname() );
             REQUIRE( "." == di.basename() );
             REQUIRE( "/" == di.path() );
+            REQUIRE( false == di.empty() );
         }
 
         {
@@ -252,6 +263,7 @@ class TestFileUtil01 : TestFileUtilBase {
             REQUIRE( "." == di.dirname() );
             REQUIRE( "lala" == di.basename() );
             REQUIRE( "lala" == di.path() );
+            REQUIRE( false == di.empty() );
         }
         {
             const std::string path1_ = "lala/";
@@ -260,6 +272,7 @@ class TestFileUtil01 : TestFileUtilBase {
             REQUIRE( "." == di.dirname() );
             REQUIRE( "lala" == di.basename() );
             REQUIRE( "lala" == di.path() );
+            REQUIRE( false == di.empty() );
         }
 
         {
@@ -269,6 +282,7 @@ class TestFileUtil01 : TestFileUtilBase {
             REQUIRE( "/" == di.dirname() );
             REQUIRE( "lala" == di.basename() );
             REQUIRE( "/lala" == di.path() );
+            REQUIRE( false == di.empty() );
         }
 
         {
@@ -495,9 +509,21 @@ class TestFileUtil01 : TestFileUtilBase {
         INFO_STR("\n\ntest05_file_stat\n");
 
         {
+            jau::fs::file_stats stats;
+            jau::fprintf_td(stdout, "test05_file_stat: 0a: %s\n", stats.to_string().c_str());
+            jau::fprintf_td(stdout, "test05_file_stat: 0a: fields %s\n", jau::fs::to_string( stats.fields() ).c_str());
+            REQUIRE( false == stats.exists() );
+        }
+        {
+            jau::fs::file_stats stats("");
+            jau::fprintf_td(stdout, "test05_file_stat: 0b: %s\n", stats.to_string().c_str());
+            jau::fprintf_td(stdout, "test05_file_stat: 0b: fields %s\n", jau::fs::to_string( stats.fields() ).c_str());
+            REQUIRE( false == stats.exists() );
+        }
+        {
             jau::fs::file_stats stats(project_root_ext+"/file_01.txt");
-            jau::fprintf_td(stderr, "test05_file_stat: 01: %s\n", stats.to_string().c_str());
-            jau::fprintf_td(stderr, "test05_file_stat: 01: fields %s\n", jau::fs::to_string( stats.fields() ).c_str());
+            jau::fprintf_td(stdout, "test05_file_stat: 01: %s\n", stats.to_string().c_str());
+            jau::fprintf_td(stdout, "test05_file_stat: 01: fields %s\n", jau::fs::to_string( stats.fields() ).c_str());
             if( stats.exists() ) {
                 REQUIRE(  stats.has_access() );
                 REQUIRE( !stats.is_dir() );
@@ -508,14 +534,14 @@ class TestFileUtil01 : TestFileUtilBase {
         }
 
         jau::fs::file_stats proot_stats = getTestDataDirStats(executable_path);
-        jau::fprintf_td(stderr, "test05_file_stat: 11: %s\n", proot_stats.to_string().c_str());
-        jau::fprintf_td(stderr, "test05_file_stat: 11: fields %s\n", jau::fs::to_string( proot_stats.fields() ).c_str());
+        jau::fprintf_td(stdout, "test05_file_stat: 11: %s\n", proot_stats.to_string().c_str());
+        jau::fprintf_td(stdout, "test05_file_stat: 11: fields %s\n", jau::fs::to_string( proot_stats.fields() ).c_str());
         REQUIRE( true == proot_stats.exists() );
         REQUIRE( true == proot_stats.is_dir() );
         {
             jau::fs::file_stats stats(proot_stats.path()+"/file_01.txt");
-            jau::fprintf_td(stderr, "test05_file_stat: 12: %s\n", stats.to_string().c_str());
-            jau::fprintf_td(stderr, "test05_file_stat: 12: fields %s\n", jau::fs::to_string( stats.fields() ).c_str());
+            jau::fprintf_td(stdout, "test05_file_stat: 12: %s\n", stats.to_string().c_str());
+            jau::fprintf_td(stdout, "test05_file_stat: 12: fields %s\n", jau::fs::to_string( stats.fields() ).c_str());
             REQUIRE(  stats.exists() );
             REQUIRE(  stats.has_access() );
             REQUIRE( !stats.is_dir() );
@@ -525,7 +551,7 @@ class TestFileUtil01 : TestFileUtilBase {
 
             size_t link_count;
             const jau::fs::file_stats* final_target = stats.final_target(&link_count);
-            jau::fprintf_td(stderr, "test05_file_stat: 12: final_target (%zu link count): %s\n", link_count, final_target->to_string().c_str());
+            jau::fprintf_td(stdout, "test05_file_stat: 12: final_target (%zu link count): %s\n", link_count, final_target->to_string().c_str());
             REQUIRE( 0 == link_count );
             REQUIRE( final_target == &stats );
 
@@ -551,8 +577,8 @@ class TestFileUtil01 : TestFileUtilBase {
         }
         {
             jau::fs::file_stats stats(proot_stats.path()+"/dir_01");
-            jau::fprintf_td(stderr, "test05_file_stat: 13: %s\n", stats.to_string().c_str());
-            jau::fprintf_td(stderr, "test05_file_stat: 13: fields %s\n", jau::fs::to_string( stats.fields() ).c_str());
+            jau::fprintf_td(stdout, "test05_file_stat: 13: %s\n", stats.to_string().c_str());
+            jau::fprintf_td(stdout, "test05_file_stat: 13: fields %s\n", jau::fs::to_string( stats.fields() ).c_str());
             REQUIRE(  stats.exists() );
             REQUIRE(  stats.has_access() );
             REQUIRE(  stats.is_dir() );
@@ -562,14 +588,14 @@ class TestFileUtil01 : TestFileUtilBase {
 
             size_t link_count;
             const jau::fs::file_stats* final_target = stats.final_target(&link_count);
-            jau::fprintf_td(stderr, "test05_file_stat: 13: final_target (%zu link count): %s\n", link_count, final_target->to_string().c_str());
+            jau::fprintf_td(stdout, "test05_file_stat: 13: final_target (%zu link count): %s\n", link_count, final_target->to_string().c_str());
             REQUIRE( 0 == link_count );
             REQUIRE( final_target == &stats );
         }
         {
             jau::fs::file_stats stats(proot_stats.path()+"/does_not_exist");
-            jau::fprintf_td(stderr, "test05_file_stat: 14: %s\n", stats.to_string().c_str());
-            jau::fprintf_td(stderr, "test05_file_stat: 14: fields %s\n", jau::fs::to_string( stats.fields() ).c_str());
+            jau::fprintf_td(stdout, "test05_file_stat: 14: %s\n", stats.to_string().c_str());
+            jau::fprintf_td(stdout, "test05_file_stat: 14: fields %s\n", jau::fs::to_string( stats.fields() ).c_str());
             REQUIRE( !stats.exists() );
             REQUIRE(  stats.has_access() );
             REQUIRE( !stats.is_dir() );
@@ -579,7 +605,7 @@ class TestFileUtil01 : TestFileUtilBase {
 
             size_t link_count;
             const jau::fs::file_stats* final_target = stats.final_target(&link_count);
-            jau::fprintf_td(stderr, "test05_file_stat: 14: final_target (%zu link count): %s\n", link_count, final_target->to_string().c_str());
+            jau::fprintf_td(stdout, "test05_file_stat: 14: final_target (%zu link count): %s\n", link_count, final_target->to_string().c_str());
             REQUIRE( 0 == link_count );
             REQUIRE( final_target == &stats );
         }
@@ -594,8 +620,8 @@ class TestFileUtil01 : TestFileUtilBase {
         REQUIRE( true == proot_stats.is_dir() );
         {
             jau::fs::file_stats stats(proot_stats.path()+"/file_01_slink01.txt");
-            jau::fprintf_td(stderr, "test06_file_stat_symlinks: 13: %s\n", stats.to_string().c_str());
-            jau::fprintf_td(stderr, "test06_file_stat_symlinks: 13: fields %s\n", jau::fs::to_string( stats.fields() ).c_str());
+            jau::fprintf_td(stdout, "test06_file_stat_symlinks: 13: %s\n", stats.to_string().c_str());
+            jau::fprintf_td(stdout, "test06_file_stat_symlinks: 13: fields %s\n", jau::fs::to_string( stats.fields() ).c_str());
             REQUIRE(  stats.exists() );
             REQUIRE(  stats.has_access() );
             REQUIRE( !stats.is_dir() );
@@ -607,7 +633,7 @@ class TestFileUtil01 : TestFileUtilBase {
 
             size_t link_count;
             const jau::fs::file_stats* final_target = stats.final_target(&link_count);
-            jau::fprintf_td(stderr, "- final_target (%zu link count): %s\n", link_count, final_target->to_string().c_str());
+            jau::fprintf_td(stdout, "- final_target (%zu link count): %s\n", link_count, final_target->to_string().c_str());
             REQUIRE( 1 == link_count );
             REQUIRE( final_target != &stats );
             REQUIRE( proot_stats.path()+"/file_01.txt" == final_target->path() );
@@ -615,7 +641,7 @@ class TestFileUtil01 : TestFileUtilBase {
             REQUIRE( nullptr != stats.link_target() );
             const jau::fs::file_stats* link_target = stats.link_target().get();
             REQUIRE( nullptr != link_target );
-            jau::fprintf_td(stderr, "- link_target %s\n", link_target->to_string().c_str());
+            jau::fprintf_td(stdout, "- link_target %s\n", link_target->to_string().c_str());
             REQUIRE( final_target == link_target );
             REQUIRE( !link_target->is_dir() );
             REQUIRE(  link_target->is_file() );
@@ -625,8 +651,8 @@ class TestFileUtil01 : TestFileUtilBase {
         }
         {
             jau::fs::file_stats stats(proot_stats.path()+"/fstab_slink07_absolute");
-            jau::fprintf_td(stderr, "test06_file_stat_symlinks: 14: %s\n", stats.to_string().c_str());
-            jau::fprintf_td(stderr, "test06_file_stat_symlinks: 14: fields %s\n", jau::fs::to_string( stats.fields() ).c_str());
+            jau::fprintf_td(stdout, "test06_file_stat_symlinks: 14: %s\n", stats.to_string().c_str());
+            jau::fprintf_td(stdout, "test06_file_stat_symlinks: 14: fields %s\n", jau::fs::to_string( stats.fields() ).c_str());
             REQUIRE(  stats.exists() );
             REQUIRE(  stats.has_access() );
             REQUIRE( !stats.is_dir() );
@@ -638,7 +664,7 @@ class TestFileUtil01 : TestFileUtilBase {
 
             size_t link_count;
             const jau::fs::file_stats* final_target = stats.final_target(&link_count);
-            jau::fprintf_td(stderr, "- final_target (%zu link count): %s\n", link_count, final_target->to_string().c_str());
+            jau::fprintf_td(stdout, "- final_target (%zu link count): %s\n", link_count, final_target->to_string().c_str());
             REQUIRE( 1 == link_count );
             REQUIRE( final_target != &stats );
             REQUIRE( "/etc/fstab" == final_target->path() );
@@ -646,7 +672,7 @@ class TestFileUtil01 : TestFileUtilBase {
             REQUIRE( nullptr != stats.link_target() );
             const jau::fs::file_stats* link_target = stats.link_target().get();
             REQUIRE( nullptr != link_target );
-            jau::fprintf_td(stderr, "- link_target %s\n", link_target->to_string().c_str());
+            jau::fprintf_td(stdout, "- link_target %s\n", link_target->to_string().c_str());
             REQUIRE( final_target == link_target );
             REQUIRE( !link_target->is_dir() );
             REQUIRE(  link_target->is_file() );
@@ -656,8 +682,8 @@ class TestFileUtil01 : TestFileUtilBase {
         }
         {
             jau::fs::file_stats stats(proot_stats.path()+"/file_01_slink10R2.txt"); // -> file_01_slink09R1.txt -> file_01_slink01.txt -> file_01.txt
-            jau::fprintf_td(stderr, "test06_file_stat_symlinks: 20: %s\n", stats.to_string().c_str());
-            jau::fprintf_td(stderr, "test06_file_stat_symlinks: 20: fields %s\n", jau::fs::to_string( stats.fields() ).c_str());
+            jau::fprintf_td(stdout, "test06_file_stat_symlinks: 20: %s\n", stats.to_string().c_str());
+            jau::fprintf_td(stdout, "test06_file_stat_symlinks: 20: fields %s\n", jau::fs::to_string( stats.fields() ).c_str());
             REQUIRE(  stats.exists() );
             REQUIRE(  stats.has_access() );
             REQUIRE( !stats.is_dir() );
@@ -669,14 +695,14 @@ class TestFileUtil01 : TestFileUtilBase {
 
             size_t link_count;
             const jau::fs::file_stats* final_target = stats.final_target(&link_count);
-            jau::fprintf_td(stderr, "- final_target (%zu link count): %s\n", link_count, final_target->to_string().c_str());
+            jau::fprintf_td(stdout, "- final_target (%zu link count): %s\n", link_count, final_target->to_string().c_str());
             REQUIRE( 3 == link_count );
             REQUIRE( final_target != &stats );
             REQUIRE( proot_stats.path()+"/file_01.txt" == final_target->path() );
 
             REQUIRE( nullptr != stats.link_target() );
             const jau::fs::file_stats* link_target1 = stats.link_target().get();
-            jau::fprintf_td(stderr, "- link_target1 %s\n", link_target1->to_string().c_str());
+            jau::fprintf_td(stdout, "- link_target1 %s\n", link_target1->to_string().c_str());
             REQUIRE( final_target != link_target1 );
             REQUIRE( proot_stats.path()+"/file_01_slink09R1.txt" == link_target1->path() );
             REQUIRE( 15 == link_target1->size() );
@@ -688,7 +714,7 @@ class TestFileUtil01 : TestFileUtilBase {
             {
                 const jau::fs::file_stats* link_target2 = link_target1->link_target().get();
                 REQUIRE( nullptr != link_target2 );
-                jau::fprintf_td(stderr, "  - link_target2 %s\n", link_target2->to_string().c_str());
+                jau::fprintf_td(stdout, "  - link_target2 %s\n", link_target2->to_string().c_str());
                 REQUIRE( final_target != link_target2 );
                 REQUIRE( link_target1 != link_target2 );
                 REQUIRE( proot_stats.path()+"/file_01_slink01.txt" == link_target2->path() );
@@ -701,7 +727,7 @@ class TestFileUtil01 : TestFileUtilBase {
 
                 const jau::fs::file_stats* link_target3 = link_target2->link_target().get();
                 REQUIRE( nullptr != link_target3 );
-                jau::fprintf_td(stderr, "    - link_target3 %s\n", link_target3->to_string().c_str());
+                jau::fprintf_td(stdout, "    - link_target3 %s\n", link_target3->to_string().c_str());
                 REQUIRE( final_target == link_target3 );
                 REQUIRE( link_target1 != link_target3 );
                 REQUIRE( link_target2 != link_target3 );
@@ -715,8 +741,8 @@ class TestFileUtil01 : TestFileUtilBase {
         }
         {
             jau::fs::file_stats stats(proot_stats.path()+"/dead_link23"); // -> not_existing_file
-            jau::fprintf_td(stderr, "test06_file_stat_symlinks: 30: %s\n", stats.to_string().c_str());
-            jau::fprintf_td(stderr, "test06_file_stat_symlinks: 30: fields %s\n", jau::fs::to_string( stats.fields() ).c_str());
+            jau::fprintf_td(stdout, "test06_file_stat_symlinks: 30: %s\n", stats.to_string().c_str());
+            jau::fprintf_td(stdout, "test06_file_stat_symlinks: 30: fields %s\n", jau::fs::to_string( stats.fields() ).c_str());
             REQUIRE( !stats.exists() );
             REQUIRE(  stats.has_access() );
             REQUIRE( !stats.is_dir() );
@@ -729,14 +755,14 @@ class TestFileUtil01 : TestFileUtilBase {
 
             size_t link_count;
             const jau::fs::file_stats* final_target = stats.final_target(&link_count);
-            jau::fprintf_td(stderr, "- final_target (%zu link count): %s\n", link_count, final_target->to_string().c_str());
+            jau::fprintf_td(stdout, "- final_target (%zu link count): %s\n", link_count, final_target->to_string().c_str());
             REQUIRE( 0 == link_count );
             REQUIRE( final_target == &stats );
         }
         {
             jau::fs::file_stats stats(proot_stats.path()+"/dead_link22"); // LOOP: dead_link22 -> dead_link21 -> dead_link20 -> dead_link22 ...
-            jau::fprintf_td(stderr, "test06_file_stat_symlinks: 31: %s\n", stats.to_string().c_str());
-            jau::fprintf_td(stderr, "test06_file_stat_symlinks: 31: fields %s\n", jau::fs::to_string( stats.fields() ).c_str());
+            jau::fprintf_td(stdout, "test06_file_stat_symlinks: 31: %s\n", stats.to_string().c_str());
+            jau::fprintf_td(stdout, "test06_file_stat_symlinks: 31: fields %s\n", jau::fs::to_string( stats.fields() ).c_str());
             REQUIRE( !stats.exists() );
             REQUIRE(  stats.has_access() );
             REQUIRE( !stats.is_dir() );
@@ -749,7 +775,7 @@ class TestFileUtil01 : TestFileUtilBase {
 
             size_t link_count;
             const jau::fs::file_stats* final_target = stats.final_target(&link_count);
-            jau::fprintf_td(stderr, "- final_target (%zu link count): %s\n", link_count, final_target->to_string().c_str());
+            jau::fprintf_td(stdout, "- final_target (%zu link count): %s\n", link_count, final_target->to_string().c_str());
             REQUIRE( 0 == link_count );
             REQUIRE( *final_target == stats );
             REQUIRE( final_target == &stats );
@@ -757,62 +783,62 @@ class TestFileUtil01 : TestFileUtilBase {
     }
 
     static void test_file_stat_fd_item(const jau::fs::fmode_t exp_type, const int fd, const std::string& named_fd1, const std::string& named_fd_link) {
-        jau::fprintf_td(stderr, "test_file_stat_fd_item: expect '%s', fd %d, name_fd1 '%s', make_fd_link '%s'\n",
+        jau::fprintf_td(stdout, "test_file_stat_fd_item: expect '%s', fd %d, name_fd1 '%s', make_fd_link '%s'\n",
                 jau::fs::to_string(exp_type).c_str(), fd, named_fd1.c_str(), named_fd_link.c_str());
         {
             errno = 0;
-            jau::fprintf_td(stderr, "test_file_stat_fd_item.1: expect '%s', fd %d\n", jau::fs::to_string(exp_type).c_str(), fd);
+            jau::fprintf_td(stdout, "test_file_stat_fd_item.1: expect '%s', fd %d\n", jau::fs::to_string(exp_type).c_str(), fd);
             jau::fs::file_stats stats(fd);
-            jau::fprintf_td(stderr, "fd: %s\n", stats.to_string().c_str());
+            jau::fprintf_td(stdout, "fd: %s\n", stats.to_string().c_str());
             REQUIRE(  stats.exists() );
             REQUIRE(  stats.has_access() );
             REQUIRE( !stats.is_socket() );
             REQUIRE( !stats.is_block() );
             REQUIRE( !stats.is_dir() );
             if( jau::fs::fmode_t::none == ( stats.type_mode() & exp_type ) ) {
-                jau::fprintf_td(stderr, "INFO: Not matching expected type '%s': fd: %s\n", jau::fs::to_string(exp_type).c_str(), stats.to_string().c_str());
+                jau::fprintf_td(stdout, "INFO: Not matching expected type '%s': fd: %s\n", jau::fs::to_string(exp_type).c_str(), stats.to_string().c_str());
             }
             REQUIRE(  stats.has_fd() );
             REQUIRE(  fd == stats.fd() );
             if( !stats.is_file() ) {
                 REQUIRE( 0 == stats.size() );
             }
-            jau::fprintf_td(stderr, "test_file_stat_fd_item.1: X\n\n");
+            jau::fprintf_td(stdout, "test_file_stat_fd_item.1: X\n\n");
         }
         if( !named_fd1.empty() ) {
             errno = 0;
-            jau::fprintf_td(stderr, "test_file_stat_fd_item.2: expect '%s', fd %d, name_fd1 '%s'\n",
+            jau::fprintf_td(stdout, "test_file_stat_fd_item.2: expect '%s', fd %d, name_fd1 '%s'\n",
                     jau::fs::to_string(exp_type).c_str(), fd, named_fd1.c_str());
             jau::fs::file_stats stats(named_fd1);
-            jau::fprintf_td(stderr, "fd_1: %s\n", stats.to_string().c_str());
+            jau::fprintf_td(stdout, "fd_1: %s\n", stats.to_string().c_str());
             REQUIRE(  stats.exists() );
             REQUIRE(  stats.has_access() );
             REQUIRE( !stats.is_socket() );
             REQUIRE( !stats.is_block() );
             REQUIRE( !stats.is_dir() );
             if( jau::fs::fmode_t::none == ( stats.type_mode() & exp_type ) ) {
-                jau::fprintf_td(stderr, "INFO: Not matching expected type '%s': fd: %s\n", jau::fs::to_string(exp_type).c_str(), stats.to_string().c_str());
+                jau::fprintf_td(stdout, "INFO: Not matching expected type '%s': fd: %s\n", jau::fs::to_string(exp_type).c_str(), stats.to_string().c_str());
             }
             REQUIRE(  stats.has_fd() );
             REQUIRE(  fd == stats.fd() );
             if( !stats.is_file() ) {
                 REQUIRE( 0 == stats.size() );
             }
-            jau::fprintf_td(stderr, "test_file_stat_fd_item.2: X\n\n");
+            jau::fprintf_td(stdout, "test_file_stat_fd_item.2: X\n\n");
         }
         if( !named_fd_link.empty() ) {
             errno = 0;
-            jau::fprintf_td(stderr, "test_file_stat_fd_item.3: expect '%s', fd %d, make_fd_link '%s'\n",
+            jau::fprintf_td(stdout, "test_file_stat_fd_item.3: expect '%s', fd %d, make_fd_link '%s'\n",
                     jau::fs::to_string(exp_type).c_str(), fd, named_fd_link.c_str());
             jau::fs::file_stats stats(named_fd_link);
-            jau::fprintf_td(stderr, "fd_link: %s\n", stats.to_string().c_str());
+            jau::fprintf_td(stdout, "fd_link: %s\n", stats.to_string().c_str());
             REQUIRE(  stats.exists() );
             REQUIRE(  stats.has_access() );
             REQUIRE( !stats.is_socket() );
             REQUIRE( !stats.is_block() );
             REQUIRE( !stats.is_dir() );
             if( jau::fs::fmode_t::none == ( stats.type_mode() & exp_type ) ) {
-                jau::fprintf_td(stderr, "INFO: Not matching expected type '%s': fd: %s\n", jau::fs::to_string(exp_type).c_str(), stats.to_string().c_str());
+                jau::fprintf_td(stdout, "INFO: Not matching expected type '%s': fd: %s\n", jau::fs::to_string(exp_type).c_str(), stats.to_string().c_str());
             }
             REQUIRE(  stats.has_fd() );
             REQUIRE(  fd == stats.fd() );
@@ -823,15 +849,15 @@ class TestFileUtil01 : TestFileUtilBase {
             size_t link_count;
             const jau::fs::file_stats* final_target = stats.final_target(&link_count);
             REQUIRE( nullptr != final_target );
-            jau::fprintf_td(stderr, "- final_target (%zu link count): %s\n", link_count, final_target->to_string().c_str());
+            jau::fprintf_td(stdout, "- final_target (%zu link count): %s\n", link_count, final_target->to_string().c_str());
             REQUIRE( 1 <= link_count );
             REQUIRE( 2 >= link_count );
-            jau::fprintf_td(stderr, "test_file_stat_fd_item.3: X\n\n");
+            jau::fprintf_td(stdout, "test_file_stat_fd_item.3: X\n\n");
         }
     }
 
     void test07_file_stat_fd() {
-        jau::fprintf_td(stderr, "test07_file_stat_fd\n");
+        jau::fprintf_td(stdout, "test07_file_stat_fd\n");
 
         const std::string fd_stdin_1 = "/dev/fd/0";
         const std::string fd_stdout_1 = "/dev/fd/1";
@@ -867,7 +893,7 @@ class TestFileUtil01 : TestFileUtilBase {
 
     void test08_pipe_01() {
         errno = 0;
-        jau::fprintf_td(stderr, "test08_pipe_01\n");
+        jau::fprintf_td(stdout, "test08_pipe_01\n");
 
         int pipe_fds[2];
         REQUIRE( 0 == ::pipe(pipe_fds) );
@@ -880,14 +906,14 @@ class TestFileUtil01 : TestFileUtilBase {
             const std::string fd_stdout = jau::fs::to_named_fd(new_stdout);
 
             jau::fs::file_stats stats_stdout(fd_stdout);
-            jau::fprintf_td(stderr, "Child: stats_stdout %s\n", stats_stdout.to_string().c_str());
+            jau::fprintf_td(stdout, "Child: stats_stdout %s\n", stats_stdout.to_string().c_str());
             if( !stats_stdout.exists() || !stats_stdout.has_fd() || new_stdout != stats_stdout.fd() ) {
-                jau::fprintf_td(stderr, "Child: Error: stats_stdout %s\n", stats_stdout.to_string().c_str());
+                jau::fprintf_td(stdout, "Child: Error: stats_stdout %s\n", stats_stdout.to_string().c_str());
                 ::_exit(EXIT_FAILURE);
             }
             jau::io::ByteOutStream_File outfile(fd_stdout);
             if( !outfile.good() || !outfile.is_open() ) {
-                jau::fprintf_td(stderr, "Child: Error: outfile bad: %s\n", outfile.to_string().c_str());
+                jau::fprintf_td(stdout, "Child: Error: outfile bad: %s\n", outfile.to_string().c_str());
                 ::_exit(EXIT_FAILURE);
             }
 
@@ -910,10 +936,10 @@ class TestFileUtil01 : TestFileUtilBase {
             ::close(pipe_fds[1]);
 
             if( outfile.fail() ) {
-                jau::fprintf_td(stderr, "Child: Error: outfile failed after write/closure: %s\n", outfile.to_string().c_str());
+                jau::fprintf_td(stdout, "Child: Error: outfile failed after write/closure: %s\n", outfile.to_string().c_str());
                 ::_exit(EXIT_FAILURE);
             }
-            jau::fprintf_td(stderr, "Child: Done\n");
+            jau::fprintf_td(stdout, "Child: Done\n");
             ::_exit(EXIT_SUCCESS);
 
         } else if( 0 < pid ) {
@@ -923,7 +949,7 @@ class TestFileUtil01 : TestFileUtilBase {
             const std::string fd_stdin = jau::fs::to_named_fd(new_stdin);
 
             jau::fs::file_stats stats_stdin(fd_stdin);
-            jau::fprintf_td(stderr, "Parent: stats_stdin %s\n", stats_stdin.to_string().c_str());
+            jau::fprintf_td(stdout, "Parent: stats_stdin %s\n", stats_stdin.to_string().c_str());
             REQUIRE(  stats_stdin.exists() );
             REQUIRE(  stats_stdin.has_access() );
             REQUIRE( !stats_stdin.is_socket() );
@@ -938,7 +964,7 @@ class TestFileUtil01 : TestFileUtilBase {
 
             // capture stdin
             jau::io::ByteInStream_File infile(fd_stdin);
-            jau::fprintf_td(stderr, "Parent: infile %s\n", infile.to_string().c_str());
+            jau::fprintf_td(stdout, "Parent: infile %s\n", infile.to_string().c_str());
             REQUIRE( !infile.fail() );
 
             uint8_t buffer[pipe_msg_count * pipe_msg_len + 512];
@@ -947,16 +973,16 @@ class TestFileUtil01 : TestFileUtilBase {
             {
                 while( infile.good() && total_read < sizeof(buffer) ) {
                     const size_t got = infile.read(buffer+total_read, sizeof(buffer)-total_read);
-                    jau::fprintf_td(stderr, "Parent: infile.a_ %s\n", infile.to_string().c_str());
+                    jau::fprintf_td(stdout, "Parent: infile.a_ %s\n", infile.to_string().c_str());
                     REQUIRE( !infile.fail() );
                     total_read += got;
-                    jau::fprintf_td(stderr, "Parent: Got %zu -> %zu\n", got, total_read);
+                    jau::fprintf_td(stdout, "Parent: Got %zu -> %zu\n", got, total_read);
                 }
-                jau::fprintf_td(stderr, "Parent: infile.a_1 %s\n", infile.to_string().c_str());
+                jau::fprintf_td(stdout, "Parent: infile.a_1 %s\n", infile.to_string().c_str());
                 infile.close();
-                jau::fprintf_td(stderr, "Parent: infile.a_2 %s\n", infile.to_string().c_str());
+                jau::fprintf_td(stdout, "Parent: infile.a_2 %s\n", infile.to_string().c_str());
                 ::close(pipe_fds[0]);
-                jau::fprintf_td(stderr, "Parent: infile.a_3 %s\n", infile.to_string().c_str());
+                jau::fprintf_td(stdout, "Parent: infile.a_3 %s\n", infile.to_string().c_str());
                 REQUIRE( !infile.fail() );
             }
             // check actual transmitted content
@@ -968,25 +994,25 @@ class TestFileUtil01 : TestFileUtilBase {
             int pid_status = 0;
             ::pid_t child_pid = ::waitpid(pid, &pid_status, 0);
             if( 0 > child_pid ) {
-                jau::fprintf_td(stderr, "Parent: Error: wait(%d) failed: child_pid %d\n", pid, child_pid);
+                jau::fprintf_td(stdout, "Parent: Error: wait(%d) failed: child_pid %d\n", pid, child_pid);
                 REQUIRE_MSG("wait for child failed", false);
             } else {
                 if( child_pid != pid ) {
-                    jau::fprintf_td(stderr, "Parent: Error: wait(%d) terminated child_pid pid %d\n", pid, child_pid);
+                    jau::fprintf_td(stdout, "Parent: Error: wait(%d) terminated child_pid pid %d\n", pid, child_pid);
                     REQUIRE(child_pid == pid);
                 }
                 if( !WIFEXITED(pid_status) ) {
-                    jau::fprintf_td(stderr, "Parent: Error: wait(%d) terminated abnormally child_pid %d, pid_status %d\n", pid, child_pid, pid_status);
+                    jau::fprintf_td(stdout, "Parent: Error: wait(%d) terminated abnormally child_pid %d, pid_status %d\n", pid, child_pid, pid_status);
                     REQUIRE(true == WIFEXITED(pid_status));
                 }
                 if( EXIT_SUCCESS != WEXITSTATUS(pid_status) ) {
-                    jau::fprintf_td(stderr, "Parent: Error: wait(%d) exit with failure child_pid %d, exit_code %d\n", pid, child_pid, WEXITSTATUS(pid_status));
+                    jau::fprintf_td(stdout, "Parent: Error: wait(%d) exit with failure child_pid %d, exit_code %d\n", pid, child_pid, WEXITSTATUS(pid_status));
                     REQUIRE(EXIT_SUCCESS == WEXITSTATUS(pid_status));
                 }
             }
         } else {
             // fork failed
-            jau::fprintf_td(stderr, "fork failed %d, %s\n", errno, ::strerror(errno));
+            jau::fprintf_td(stdout, "fork failed %d, %s\n", errno, ::strerror(errno));
             REQUIRE_MSG( "fork failed", false );
         }
     }
@@ -1030,7 +1056,7 @@ class TestFileUtil01 : TestFileUtilBase {
         REQUIRE( true == jau::fs::mkdir(temp_root, jau::fs::fmode_t::def_dir_prot) );
         {
             jau::fs::file_stats root_stats(temp_root);
-            jau::fprintf_td(stderr, "root_stats1.post: %s\n", root_stats.to_string().c_str());
+            jau::fprintf_td(stdout, "root_stats1.post: %s\n", root_stats.to_string().c_str());
             REQUIRE( root_stats.exists() );
             REQUIRE( root_stats.has_access() );
             REQUIRE( root_stats.is_dir() );
@@ -1042,17 +1068,17 @@ class TestFileUtil01 : TestFileUtilBase {
         {
             const jau::fraction_timespec now = jau::getWallClockTime();
             jau::fs::file_stats file_stats(file_01);
-            jau::fprintf_td(stderr, "file_stats2.post: %s\n", file_stats.to_string().c_str());
+            jau::fprintf_td(stdout, "file_stats2.post: %s\n", file_stats.to_string().c_str());
             const jau::fraction_timespec btime = file_stats.btime();
             const jau::fraction_timespec atime = file_stats.atime();
             const jau::fraction_timespec atime_td = jau::abs(now - atime);
             const jau::fraction_timespec mtime = file_stats.mtime();
             const jau::fraction_timespec mtime_td = jau::abs(now - mtime);
-            jau::fprintf_td(stderr, "now:   %s, %s\n", now.to_iso8601_string().c_str(), now.to_string().c_str());
-            jau::fprintf_td(stderr, "btime: %s, %s\n", btime.to_iso8601_string().c_str(), btime.to_string().c_str());
-            jau::fprintf_td(stderr, "atime: %s, %s, td_now %s\n",
+            jau::fprintf_td(stdout, "now:   %s, %s\n", now.to_iso8601_string().c_str(), now.to_string().c_str());
+            jau::fprintf_td(stdout, "btime: %s, %s\n", btime.to_iso8601_string().c_str(), btime.to_string().c_str());
+            jau::fprintf_td(stdout, "atime: %s, %s, td_now %s\n",
                     atime.to_iso8601_string().c_str(), atime.to_string().c_str(), atime_td.to_string().c_str());
-            jau::fprintf_td(stderr, "mtime: %s, %s, td_now %s\n",
+            jau::fprintf_td(stdout, "mtime: %s, %s, td_now %s\n",
                     mtime.to_iso8601_string().c_str(), mtime.to_string().c_str(), mtime_td.to_string().c_str());
             REQUIRE( file_stats.exists() );
             REQUIRE( file_stats.has_access() );
@@ -1076,11 +1102,11 @@ class TestFileUtil01 : TestFileUtilBase {
             const jau::fraction_timespec atime_td = jau::abs(now - atime_pre);
             const jau::fraction_timespec mtime_pre = file_stats_pre.mtime();
             const jau::fraction_timespec mtime_td = jau::abs(now - mtime_pre);
-            jau::fprintf_td(stderr, "now      : %s, %s\n", now.to_iso8601_string().c_str(), now.to_string().c_str());
-            jau::fprintf_td(stderr, "btime.pre: %s, %s\n", btime_pre.to_iso8601_string().c_str(), btime_pre.to_string().c_str());
-            jau::fprintf_td(stderr, "atime.pre: %s, %s, td_now %s\n",
+            jau::fprintf_td(stdout, "now      : %s, %s\n", now.to_iso8601_string().c_str(), now.to_string().c_str());
+            jau::fprintf_td(stdout, "btime.pre: %s, %s\n", btime_pre.to_iso8601_string().c_str(), btime_pre.to_string().c_str());
+            jau::fprintf_td(stdout, "atime.pre: %s, %s, td_now %s\n",
                     atime_pre.to_iso8601_string().c_str(), atime_pre.to_string().c_str(), atime_td.to_string().c_str());
-            jau::fprintf_td(stderr, "mtime.pre: %s, %s, td_now %s\n",
+            jau::fprintf_td(stdout, "mtime.pre: %s, %s, td_now %s\n",
                     mtime_pre.to_iso8601_string().c_str(), mtime_pre.to_string().c_str(), mtime_td.to_string().c_str());
             if( file_stats_pre.has( jau::fs::file_stats::field_t::atime ) ) {
                 REQUIRE( td_1s >= atime_td );
@@ -1101,7 +1127,7 @@ class TestFileUtil01 : TestFileUtilBase {
             const jau::fraction_timespec mtime_post = file_stats_post.mtime();
             INFO_STR("atime.post: "+atime_post.to_iso8601_string()+", "+atime_post.to_string()+"\n");
             INFO_STR("mtime.post: "+mtime_post.to_iso8601_string()+", "+mtime_post.to_string()+"\n");
-            jau::fprintf_td(stderr, "test11_touch: 03: %s\n", file_stats_post.to_string().c_str());
+            jau::fprintf_td(stdout, "test11_touch: 03: %s\n", file_stats_post.to_string().c_str());
             {
                 REQUIRE( file_stats_post.exists() );
                 REQUIRE( file_stats_post.has_access() );
@@ -1120,6 +1146,10 @@ class TestFileUtil01 : TestFileUtilBase {
         REQUIRE( true == jau::fs::remove(temp_root, jau::fs::traverse_options::recursive) );
     }
 
+
+    void test21_visit_error() {
+        INFO_STR("\n\ntest21_visit_error\n");
+    }
 
     void test20_visit() {
         INFO_STR("\n\ntest20_visit\n");
@@ -1146,15 +1176,15 @@ class TestFileUtil01 : TestFileUtilBase {
                                                           jau::fs::traverse_options::dir_exit;
         visitor_stats stats_R_FSL_PDL(topts_R_FSL_PDL);
         {
-            const jau::fs::path_visitor pv = jau::bind_capref(&stats_R_FSL_PDL,
-                    ( bool(*)(visitor_stats*, jau::fs::traverse_event, const jau::fs::file_stats&) ) /* help template type deduction of function-ptr */
-                        ( [](visitor_stats* stats_ptr, jau::fs::traverse_event tevt, const jau::fs::file_stats& element_stats) -> bool {
+            // Use an easy-code capturing lambda visitor
+            const jau::fs::path_visitor pv = [&](jau::fs::traverse_event tevt, const jau::fs::file_stats& element_stats, size_t depth) -> bool {
                             (void)tevt;
-                            stats_ptr->add(element_stats);
+                            (void)depth;
+                            stats_R_FSL_PDL.add(element_stats);
                             return true;
-                          } ) );
+                          };
             REQUIRE( true == jau::fs::visit(temp_root, topts_R_FSL_PDL, pv) );
-            jau::fprintf_td(stderr, "test20_visit[R, FSL, PDL]: %s\n%s\n", to_string(topts_R_FSL_PDL).c_str(), stats_R_FSL_PDL.to_string().c_str());
+            jau::fprintf_td(stdout, "test20_visit[R, FSL, PDL]: %s\n%s\n", to_string(topts_R_FSL_PDL).c_str(), stats_R_FSL_PDL.to_string().c_str());
             REQUIRE( 12 == stats_R_FSL_PDL.total_real );
             REQUIRE(  0 == stats_R_FSL_PDL.total_sym_links_existing );
             REQUIRE(  0 == stats_R_FSL_PDL.total_sym_links_not_existing );
@@ -1171,15 +1201,17 @@ class TestFileUtil01 : TestFileUtilBase {
                                                       jau::fs::traverse_options::dir_entry;
         visitor_stats stats_R_FSL(topts_R_FSL);
         {
+            // Use a harder to code internal capturing-reference type visitor
             const jau::fs::path_visitor pv = jau::bind_capref(&stats_R_FSL,
-                    ( bool(*)(visitor_stats*, jau::fs::traverse_event, const jau::fs::file_stats&) ) /* help template type deduction of function-ptr */
-                        ( [](visitor_stats* stats_ptr, jau::fs::traverse_event tevt, const jau::fs::file_stats& element_stats) -> bool {
+                    ( bool(*)(visitor_stats*, jau::fs::traverse_event, const jau::fs::file_stats&, size_t) ) /* help template type deduction of function-ptr */
+                        ( [](visitor_stats* stats_ptr, jau::fs::traverse_event tevt, const jau::fs::file_stats& element_stats, size_t depth) -> bool {
                             (void)tevt;
+                            (void)depth;
                             stats_ptr->add(element_stats);
                             return true;
                           } ) );
             REQUIRE( true == jau::fs::visit(temp_root, topts_R_FSL, pv) );
-            jau::fprintf_td(stderr, "test20_visit[R, FSL]: %s\n%s\n", to_string(topts_R_FSL).c_str(), stats_R_FSL.to_string().c_str());
+            jau::fprintf_td(stdout, "test20_visit[R, FSL]: %s\n%s\n", to_string(topts_R_FSL).c_str(), stats_R_FSL.to_string().c_str());
             REQUIRE( stats_R_FSL_PDL == stats_R_FSL );
         }
 
@@ -1191,19 +1223,21 @@ class TestFileUtil01 : TestFileUtilBase {
 
         jau::fs::file_stats proot_stats = getTestDataDirStats(executable_path);
         REQUIRE( true == proot_stats.exists() );
+        // recursive without symlinks
         {
             const jau::fs::traverse_options topts = jau::fs::traverse_options::recursive |
                                                     jau::fs::traverse_options::dir_entry;
             visitor_stats stats(topts);
-            const jau::fs::path_visitor pv = jau::bind_capref(&stats,
-                    ( bool(*)(visitor_stats*, jau::fs::traverse_event, const jau::fs::file_stats&) ) /* help template type deduction of function-ptr */
-                        ( [](visitor_stats* stats_ptr, jau::fs::traverse_event tevt, const jau::fs::file_stats& element_stats) -> bool {
-                            (void)tevt;
-                            stats_ptr->add(element_stats);
-                            return true;
-                          } ) );
+
+            // Use an easy-code capturing lambda visitor
+            const jau::fs::path_visitor pv = [&](jau::fs::traverse_event tevt, const jau::fs::file_stats& element_stats, size_t depth) -> bool {
+                (void)tevt;
+                (void)depth;
+                stats.add(element_stats);
+                return true;
+            };
             REQUIRE( true == jau::fs::visit(proot_stats, topts, pv) );
-            jau::fprintf_td(stderr, "test22_visit[R]: %s\n%s\n", to_string(topts).c_str(), stats.to_string().c_str());
+            jau::fprintf_td(stdout, "test22_visit[R]: %s\n%s\n", to_string(topts).c_str(), stats.to_string().c_str());
             REQUIRE(  7 == stats.total_real );
             REQUIRE( 10 == stats.total_sym_links_existing );
             REQUIRE(  4 == stats.total_sym_links_not_existing );
@@ -1215,20 +1249,22 @@ class TestFileUtil01 : TestFileUtilBase {
             REQUIRE(  3 == stats.dirs_real );
             REQUIRE(  1 == stats.dirs_sym_link );
         }
+        // recursive with symlinks
         {
             const jau::fs::traverse_options topts = jau::fs::traverse_options::recursive |
                                                     jau::fs::traverse_options::dir_entry |
                                                     jau::fs::traverse_options::follow_symlinks;
             visitor_stats stats(topts);
-            const jau::fs::path_visitor pv = jau::bind_capref(&stats,
-                    ( bool(*)(visitor_stats*, jau::fs::traverse_event, const jau::fs::file_stats&) ) /* help template type deduction of function-ptr */
-                        ( [](visitor_stats* stats_ptr, jau::fs::traverse_event tevt, const jau::fs::file_stats& element_stats) -> bool {
-                            (void)tevt;
-                            stats_ptr->add(element_stats);
-                            return true;
-                          } ) );
+
+            // Use an easy-code capturing lambda visitor
+            const jau::fs::path_visitor pv = [&](jau::fs::traverse_event tevt, const jau::fs::file_stats& element_stats, size_t depth) -> bool {
+                (void)tevt;
+                (void)depth;
+                stats.add(element_stats);
+                return true;
+            };
             REQUIRE( true == jau::fs::visit(proot_stats, topts, pv) );
-            jau::fprintf_td(stderr, "test22_visit[R, FSL]: %s\n%s\n", to_string(topts).c_str(), stats.to_string().c_str());
+            jau::fprintf_td(stdout, "test22_visit[R, FSL]: %s\n%s\n", to_string(topts).c_str(), stats.to_string().c_str());
             REQUIRE(  9 == stats.total_real );
             REQUIRE( 11 == stats.total_sym_links_existing );
             REQUIRE(  4 == stats.total_sym_links_not_existing );
@@ -1239,6 +1275,36 @@ class TestFileUtil01 : TestFileUtilBase {
             REQUIRE( 10 == stats.files_sym_link );
             REQUIRE(  3 == stats.dirs_real );
             REQUIRE(  1 == stats.dirs_sym_link );
+        }
+        // flat with symlinks
+        {
+            const jau::fs::traverse_options topts = jau::fs::traverse_options::recursive |
+                                                    jau::fs::traverse_options::dir_check_entry |
+                                                    jau::fs::traverse_options::dir_entry |
+                                                    jau::fs::traverse_options::follow_symlinks;
+            visitor_stats stats(topts);
+
+            // Use an easy-code capturing lambda visitor
+            const jau::fs::path_visitor pv = [&](jau::fs::traverse_event tevt, const jau::fs::file_stats& element_stats, size_t depth) -> bool {
+                (void)tevt;
+                if( jau::fs::is_set(tevt, jau::fs::traverse_event::dir_check_entry) && depth > 1 ) {
+                    return false;
+                }
+                stats.add(element_stats);
+                return true;
+            };
+            REQUIRE( true == jau::fs::visit(proot_stats, topts, pv) );
+            jau::fprintf_td(stdout, "test22_visit[F, FSL]: %s\n%s\n", to_string(topts).c_str(), stats.to_string().c_str());
+            REQUIRE(  3 == stats.total_real );
+            REQUIRE(  5 == stats.total_sym_links_existing );
+            REQUIRE(  4 == stats.total_sym_links_not_existing );
+            REQUIRE(  0 == stats.total_no_access );
+            REQUIRE(  4 == stats.total_not_existing );
+            REQUIRE( 60 <  stats.total_file_bytes ); // some followed symlink files are of unknown size, e.g. /etc/fstab
+            REQUIRE(  1 == stats.files_real );
+            REQUIRE(  5 == stats.files_sym_link );
+            REQUIRE(  2 == stats.dirs_real );
+            REQUIRE(  0 == stats.dirs_sym_link );
         }
     }
 
@@ -1262,7 +1328,7 @@ class TestFileUtil01 : TestFileUtilBase {
             }
         }
         jau::fs::file_stats source1_stats(root_orig_stats.path()+"/file_01.txt");
-        jau::fprintf_td(stderr, "test30_copy_file2dir: source1: %s\n", source1_stats.to_string().c_str());
+        jau::fprintf_td(stdout, "test30_copy_file2dir: source1: %s\n", source1_stats.to_string().c_str());
         {
             REQUIRE( true == source1_stats.exists() );
             REQUIRE( true == source1_stats.ok() );
@@ -1274,13 +1340,13 @@ class TestFileUtil01 : TestFileUtilBase {
                                                 jau::fs::copy_options::verbose;
             {
                 jau::fs::file_stats dest_stats(root_copy+"/file_01.txt");
-                jau::fprintf_td(stderr, "test30_copy_file2dir: 01: dest.pre: %s\n", dest_stats.to_string().c_str());
+                jau::fprintf_td(stdout, "test30_copy_file2dir: 01: dest.pre: %s\n", dest_stats.to_string().c_str());
                 REQUIRE( false == dest_stats.exists() );
             }
             REQUIRE( true == jau::fs::copy(source1_stats.path(), root_copy, copts) );
             {
                 jau::fs::file_stats dest_stats(root_copy+"/file_01.txt");
-                jau::fprintf_td(stderr, "test30_copy_file2dir: 01: dest.post: %s\n", dest_stats.to_string().c_str());
+                jau::fprintf_td(stdout, "test30_copy_file2dir: 01: dest.post: %s\n", dest_stats.to_string().c_str());
                 REQUIRE( true == dest_stats.exists() );
                 REQUIRE( true == dest_stats.ok() );
                 REQUIRE( true == dest_stats.is_file() );
@@ -1294,7 +1360,7 @@ class TestFileUtil01 : TestFileUtilBase {
                                                 jau::fs::copy_options::verbose;
             {
                 jau::fs::file_stats dest_stats(root_copy+"/file_01.txt");
-                jau::fprintf_td(stderr, "test30_copy_file2dir: 02: dest.pre: %s\n", dest_stats.to_string().c_str());
+                jau::fprintf_td(stdout, "test30_copy_file2dir: 02: dest.pre: %s\n", dest_stats.to_string().c_str());
                 REQUIRE( true == dest_stats.exists() );
                 REQUIRE( true == dest_stats.ok() );
                 REQUIRE( true == dest_stats.is_file() );
@@ -1307,10 +1373,10 @@ class TestFileUtil01 : TestFileUtilBase {
                                                 jau::fs::copy_options::overwrite |
                                                 jau::fs::copy_options::verbose;
 
-            jau::fprintf_td(stderr, "test30_copy_file2dir: 03: source: %s\n", source1_stats.to_string().c_str());
+            jau::fprintf_td(stdout, "test30_copy_file2dir: 03: source: %s\n", source1_stats.to_string().c_str());
             {
                 jau::fs::file_stats dest_stats(root_copy+"/file_01.txt");
-                jau::fprintf_td(stderr, "test30_copy_file2dir: 03: dest.pre: %s\n", dest_stats.to_string().c_str());
+                jau::fprintf_td(stdout, "test30_copy_file2dir: 03: dest.pre: %s\n", dest_stats.to_string().c_str());
                 REQUIRE( true == dest_stats.exists() );
                 REQUIRE( true == dest_stats.ok() );
                 REQUIRE( true == dest_stats.is_file() );
@@ -1320,7 +1386,7 @@ class TestFileUtil01 : TestFileUtilBase {
             REQUIRE( true == jau::fs::copy(source1_stats.path(), root_copy, copts) );
             {
                 jau::fs::file_stats dest_stats(root_copy+"/file_01.txt");
-                jau::fprintf_td(stderr, "test30_copy_file2dir: 03: dest.post: %s\n", dest_stats.to_string().c_str());
+                jau::fprintf_td(stdout, "test30_copy_file2dir: 03: dest.post: %s\n", dest_stats.to_string().c_str());
                 REQUIRE( true == dest_stats.exists() );
                 REQUIRE( true == dest_stats.ok() );
                 REQUIRE( true == dest_stats.is_file() );
@@ -1353,14 +1419,14 @@ class TestFileUtil01 : TestFileUtilBase {
             }
         }
         jau::fs::file_stats source1_stats(root_orig_stats.path()+"/file_01.txt");
-        jau::fprintf_td(stderr, "test31_copy_file2file: source1: %s\n", source1_stats.to_string().c_str());
+        jau::fprintf_td(stdout, "test31_copy_file2file: source1: %s\n", source1_stats.to_string().c_str());
         {
             REQUIRE( true == source1_stats.exists() );
             REQUIRE( true == source1_stats.ok() );
             REQUIRE( true == source1_stats.is_file() );
         }
         jau::fs::file_stats source2_stats(root_orig_stats.path()+"/README_slink08_relext.txt");
-        jau::fprintf_td(stderr, "test31_copy_file2file: source2: %s\n", source2_stats.to_string().c_str());
+        jau::fprintf_td(stdout, "test31_copy_file2file: source2: %s\n", source2_stats.to_string().c_str());
         {
             REQUIRE( true == source2_stats.exists() );
             REQUIRE( true == source2_stats.ok() );
@@ -1373,14 +1439,14 @@ class TestFileUtil01 : TestFileUtilBase {
                                                 jau::fs::copy_options::verbose;
             {
                 jau::fs::file_stats dest_stats(root_copy+"/file_10.txt");
-                jau::fprintf_td(stderr, "test31_copy_file2file: 10: dest.pre: %s\n", dest_stats.to_string().c_str());
+                jau::fprintf_td(stdout, "test31_copy_file2file: 10: dest.pre: %s\n", dest_stats.to_string().c_str());
                 REQUIRE( false == dest_stats.exists() );
             }
             REQUIRE( true == jau::fs::copy(source1_stats.path(), root_copy+"/file_10.txt", copts) );
             jau::fs::sync(); // just check API
             {
                 jau::fs::file_stats dest_stats(root_copy+"/file_10.txt");
-                jau::fprintf_td(stderr, "test31_copy_file2file: 10: dest.post: %s\n", dest_stats.to_string().c_str());
+                jau::fprintf_td(stdout, "test31_copy_file2file: 10: dest.post: %s\n", dest_stats.to_string().c_str());
                 REQUIRE( true == dest_stats.exists() );
                 REQUIRE( true == dest_stats.ok() );
                 REQUIRE( true == dest_stats.is_file() );
@@ -1394,7 +1460,7 @@ class TestFileUtil01 : TestFileUtilBase {
                                                 jau::fs::copy_options::verbose;
             {
                 jau::fs::file_stats dest_stats(root_copy+"/file_10.txt");
-                jau::fprintf_td(stderr, "test31_copy_file2file: 11: dest.pre: %s\n", dest_stats.to_string().c_str());
+                jau::fprintf_td(stdout, "test31_copy_file2file: 11: dest.pre: %s\n", dest_stats.to_string().c_str());
                 REQUIRE( true == dest_stats.exists() );
                 REQUIRE( true == dest_stats.ok() );
                 REQUIRE( true == dest_stats.is_file() );
@@ -1411,7 +1477,7 @@ class TestFileUtil01 : TestFileUtilBase {
 
             {
                 jau::fs::file_stats dest_stats(root_copy+"/file_10.txt");
-                jau::fprintf_td(stderr, "test31_copy_file2file: 12: dest.pre: %s\n", dest_stats.to_string().c_str());
+                jau::fprintf_td(stdout, "test31_copy_file2file: 12: dest.pre: %s\n", dest_stats.to_string().c_str());
                 REQUIRE( true == dest_stats.exists() );
                 REQUIRE( true == dest_stats.ok() );
                 REQUIRE( true == dest_stats.is_file() );
@@ -1422,7 +1488,7 @@ class TestFileUtil01 : TestFileUtilBase {
             jau::fs::sync(); // just check API
             {
                 jau::fs::file_stats dest_stats(root_copy+"/file_10.txt");
-                jau::fprintf_td(stderr, "test31_copy_file2file: 12: dest.post: %s\n", dest_stats.to_string().c_str());
+                jau::fprintf_td(stdout, "test31_copy_file2file: 12: dest.post: %s\n", dest_stats.to_string().c_str());
                 REQUIRE( true  == dest_stats.exists() );
                 REQUIRE( true  == dest_stats.ok() );
                 REQUIRE( true  == dest_stats.is_file() );
@@ -1463,7 +1529,7 @@ class TestFileUtil01 : TestFileUtilBase {
                                             jau::fs::copy_options::sync |
                                             jau::fs::copy_options::verbose;
         const std::string root_copy_parent = temp_root+"_copy_test41_parent";
-        jau::fs::remove(root_copy_parent, jau::fs::traverse_options::recursive);
+        jau::fs::remove(root_copy_parent, jau::fs::traverse_options::recursive | jau::fs::traverse_options::verbose);
         REQUIRE( true == jau::fs::mkdir(root_copy_parent, jau::fs::fmode_t::def_dir_prot) );
         testxx_copy_r_p("test41_copy_ext_r_p_below", root_orig_stats, 0 /* source_added_dead_links */, root_copy_parent, copts, false /* dest_is_vfat */);
         REQUIRE( true == jau::fs::remove(root_copy_parent, jau::fs::traverse_options::recursive) );
@@ -1512,13 +1578,13 @@ class TestFileUtil01 : TestFileUtilBase {
         // Query and prepare vfat data sink
         jau::fs::file_stats dest_fs_vfat_stats(dest_fs_vfat);
         if( !dest_fs_vfat_stats.is_dir() ) {
-            jau::fprintf_td(stderr, "test49_copy_ext_r_p_vfat: Skipped, no vfat dest-dir %s\n", dest_fs_vfat_stats.to_string().c_str());
+            jau::fprintf_td(stdout, "test49_copy_ext_r_p_vfat: Skipped, no vfat dest-dir %s\n", dest_fs_vfat_stats.to_string().c_str());
             return;
         }
         const std::string dest_vfat_parent = dest_fs_vfat+"/test49_data_sink";
         jau::fs::remove(dest_vfat_parent, jau::fs::traverse_options::recursive);
         if( !jau::fs::mkdir(dest_vfat_parent, jau::fs::fmode_t::def_dir_prot) ) {
-            jau::fprintf_td(stderr, "test49_copy_ext_r_p_vfat: Skipped, couldn't create vfat dest folder %s\n", dest_vfat_parent.c_str());
+            jau::fprintf_td(stdout, "test49_copy_ext_r_p_vfat: Skipped, couldn't create vfat dest folder %s\n", dest_vfat_parent.c_str());
             return;
         }
 
@@ -1559,9 +1625,10 @@ class TestFileUtil01 : TestFileUtilBase {
         REQUIRE( true == root_copy_stats.ok() );
         REQUIRE( true == root_copy_stats.is_dir() );
 
-        bool(*pv_capture)(visitor_stats*, jau::fs::traverse_event, const jau::fs::file_stats&) =
-            ( [](visitor_stats* stats_ptr, jau::fs::traverse_event tevt, const jau::fs::file_stats& element_stats) -> bool {
+        bool(*pv_capture)(visitor_stats*, jau::fs::traverse_event, const jau::fs::file_stats&, size_t) =
+            ( [](visitor_stats* stats_ptr, jau::fs::traverse_event tevt, const jau::fs::file_stats& element_stats, size_t depth) -> bool {
                 (void)tevt;
+                (void)depth;
                 stats_ptr->add(element_stats);
                 return true;
               } );
@@ -1579,11 +1646,11 @@ class TestFileUtil01 : TestFileUtilBase {
             REQUIRE( true == jau::fs::visit(root_orig_stats, topts_orig, pv_orig) );
             REQUIRE( true == jau::fs::visit(root_copy_stats, topts_copy, pv_copy) );
 
-            jau::fprintf_td(stderr, "test50_copy_ext_r_p_fsl: copy %s, traverse_orig %s, traverse_copy %s\n",
+            jau::fprintf_td(stdout, "test50_copy_ext_r_p_fsl: copy %s, traverse_orig %s, traverse_copy %s\n",
                     to_string(copts).c_str(), to_string(topts_orig).c_str(), to_string(topts_copy).c_str());
 
-            jau::fprintf_td(stderr, "test50_copy_ext_r_p_fsl: source      visitor stats\n%s\n", stats.to_string().c_str());
-            jau::fprintf_td(stderr, "test50_copy_ext_r_p_fsl: destination visitor stats\n%s\n", stats_copy.to_string().c_str());
+            jau::fprintf_td(stdout, "test50_copy_ext_r_p_fsl: source      visitor stats\n%s\n", stats.to_string().c_str());
+            jau::fprintf_td(stdout, "test50_copy_ext_r_p_fsl: destination visitor stats\n%s\n", stats_copy.to_string().c_str());
 
             REQUIRE(  9 == stats.total_real );
             REQUIRE( 11 == stats.total_sym_links_existing );
@@ -1627,9 +1694,9 @@ class TestFileUtil01 : TestFileUtilBase {
             const jau::fs::path_visitor pv_copy = jau::bind_capref(&stats_copy, pv_capture);
             REQUIRE( true == jau::fs::visit(root_copy_renamed_stats, topts_copy, pv_copy) );
 
-            jau::fprintf_td(stderr, "test50_copy_ext_r_p_fsl: renamed: traverse_copy %s\n", to_string(topts_copy).c_str());
+            jau::fprintf_td(stdout, "test50_copy_ext_r_p_fsl: renamed: traverse_copy %s\n", to_string(topts_copy).c_str());
 
-            jau::fprintf_td(stderr, "test50_copy_ext_r_p_fsl: renamed: visitor stats\n%s\n", stats_copy.to_string().c_str());
+            jau::fprintf_td(stdout, "test50_copy_ext_r_p_fsl: renamed: visitor stats\n%s\n", stats_copy.to_string().c_str());
 
             REQUIRE( 20 == stats_copy.total_real );
             REQUIRE(  0 == stats_copy.total_sym_links_existing );

@@ -296,14 +296,14 @@ std::unique_ptr<dir_item::backed_string_view> dir_item::reduce(const std::string
 }
 
 dir_item::dir_item(std::unique_ptr<backed_string_view> cleanpath) noexcept
-: dirname_(jau::fs::dirname(cleanpath->view)), basename_(jau::fs::basename(cleanpath->view)), empty_(false) {
+: dirname_(jau::fs::dirname(cleanpath->view)), basename_(jau::fs::basename(cleanpath->view)), empty_( cleanpath->view.empty() ) {
     if( s_slash == dirname_ && s_slash == basename_ ) { // remove duplicate '/' in basename
         basename_ = s_dot;
     }
 }
 
 dir_item::dir_item(std::string dirname__, std::string basename__) noexcept
-: dirname_(std::move(dirname__)), basename_(std::move(basename__)), empty_(false) {
+: dirname_(std::move(dirname__)), basename_(std::move(basename__)), empty_(dirname_.empty() && basename_.empty()) {
 }
 
 dir_item::dir_item() noexcept
@@ -1002,6 +1002,7 @@ bool jau::fs::get_dir_content(const int dirfd, const std::string& path, const co
 #define TRAVERSEEVENT_ENUM(X,M) \
     X(traverse_event,symlink,M) \
     X(traverse_event,file,M) \
+    X(traverse_event,dir_check_entry,M) \
     X(traverse_event,dir_entry,M) \
     X(traverse_event,dir_exit,M) \
     X(traverse_event,dir_symlink,M)
@@ -1019,6 +1020,7 @@ std::string jau::fs::to_string(const traverse_event mask) noexcept {
     X(traverse_options,recursive,M) \
     X(traverse_options,follow_symlinks,M) \
     X(traverse_options,lexicographical_order,M) \
+    X(traverse_options,dir_check_entry,M) \
     X(traverse_options,dir_entry,M) \
     X(traverse_options,dir_exit,M)
 
@@ -1035,12 +1037,13 @@ static bool _dir_item_basename_compare(const dir_item& a, const dir_item& b) {
 }
 
 static bool _visit(const file_stats& item_stats, const traverse_options topts, const path_visitor& visitor, std::vector<int>& dirfds) noexcept {
+    const size_t depth = dirfds.size();
     if( item_stats.is_dir() ) {
         if( item_stats.is_link() && !is_set(topts, traverse_options::follow_symlinks) ) {
-            return visitor( traverse_event::dir_symlink, item_stats );
+            return visitor( traverse_event::dir_symlink, item_stats, depth );
         }
         if( !is_set(topts, traverse_options::recursive) ) {
-            return visitor( traverse_event::dir_non_recursive, item_stats );
+            return visitor( traverse_event::dir_non_recursive, item_stats, depth );
         }
         if( dirfds.size() < 1 ) {
             ERR_PRINT("dirfd stack error: count %zu] @ %s", dirfds.size(), item_stats.to_string().c_str());
@@ -1054,8 +1057,17 @@ static bool _visit(const file_stats& item_stats, const traverse_options topts, c
         }
         dirfds.push_back(this_dirfd);
 
+        if( is_set(topts, traverse_options::dir_check_entry) ) {
+            if( !visitor( traverse_event::dir_check_entry, item_stats, depth ) ) {
+                ::close(this_dirfd);
+                dirfds.pop_back();
+                return true; // keep traversing in parent, but skip this directory
+            }
+        }
         if( is_set(topts, traverse_options::dir_entry) ) {
-            if( !visitor( traverse_event::dir_entry, item_stats ) ) {
+            if( !visitor( traverse_event::dir_entry, item_stats, depth ) ) {
+                ::close(this_dirfd);
+                dirfds.pop_back();
                 return false;
             }
         }
@@ -1072,16 +1084,22 @@ static bool _visit(const file_stats& item_stats, const traverse_options topts, c
                 const file_stats element_stats( this_dirfd, element, true /* dirfd_is_item_dirname */ );
                 if( element_stats.is_dir() ) { // an OK dir
                     if( element_stats.is_link() && !is_set(topts, traverse_options::follow_symlinks) ) {
-                        if( !visitor( traverse_event::dir_symlink, element_stats ) ) {
+                        if( !visitor( traverse_event::dir_symlink, element_stats, depth ) ) {
+                            ::close(this_dirfd);
+                            dirfds.pop_back();
                             return false;
                         }
                     } else if( !_visit(element_stats, topts, visitor, dirfds) ) { // recursive
+                        ::close(this_dirfd);
+                        dirfds.pop_back();
                         return false;
                     }
                 } else if( !visitor( ( element_stats.is_file() ? traverse_event::file : traverse_event::none ) |
                                      ( element_stats.is_link() ? traverse_event::symlink : traverse_event::none),
-                                     element_stats ) )
+                                     element_stats, depth ) )
                 {
+                    ::close(this_dirfd);
+                    dirfds.pop_back();
                     return false;
                 }
             }
@@ -1092,7 +1110,7 @@ static bool _visit(const file_stats& item_stats, const traverse_options topts, c
         }
         bool res = true;
         if( is_set(topts, traverse_options::dir_exit) ) {
-            res = visitor( traverse_event::dir_exit, item_stats );
+            res = visitor( traverse_event::dir_exit, item_stats, depth ); // keep traversing in parent
         }
         ::close(this_dirfd);
         dirfds.pop_back();
@@ -1101,7 +1119,7 @@ static bool _visit(const file_stats& item_stats, const traverse_options topts, c
     else if( item_stats.is_file() || !item_stats.ok() ) { // file or error-alike
         return visitor( ( item_stats.is_file() ? traverse_event::file : traverse_event::none ) |
                         ( item_stats.is_link() ? traverse_event::symlink : traverse_event::none),
-                        item_stats );
+                        item_stats, depth);
     }
     return true;
 }
@@ -1177,10 +1195,11 @@ bool jau::fs::remove(const std::string& path, const traverse_options topts) noex
     };
     remove_context_t ctx = { topts | jau::fs::traverse_options::dir_exit, std::vector<int>() };
 
-    const path_visitor pv = jau::bind_capref<bool, remove_context_t, traverse_event, const file_stats&>(&ctx,
-            ( bool(*)(remove_context_t*, traverse_event, const file_stats&) ) /* help template type deduction of function-ptr */
-                ( [](remove_context_t* ctx_ptr, traverse_event tevt, const file_stats& element_stats) -> bool {
+    const path_visitor pv = jau::bind_capref<bool, remove_context_t, traverse_event, const file_stats&, size_t>(&ctx,
+            ( bool(*)(remove_context_t*, traverse_event, const file_stats&, size_t) ) /* help template type deduction of function-ptr */
+                ( [](remove_context_t* ctx_ptr, traverse_event tevt, const file_stats& element_stats, size_t depth) -> bool {
                     (void)tevt;
+                    (void)depth;
 
                     if( !element_stats.has_access() ) {
                         if( is_set(ctx_ptr->topts, traverse_options::verbose) ) {
@@ -1818,9 +1837,10 @@ bool jau::fs::copy(const std::string& source_path, const std::string& target_pat
         }
         ctx.skip_dst_dir_mkdir = 1;
     }
-    const path_visitor pv = jau::bind_capref<bool, copy_context_t, traverse_event, const file_stats&>(&ctx,
-            ( bool(*)(copy_context_t*, traverse_event, const file_stats&) ) /* help template type deduction of function-ptr */
-                ( [](copy_context_t* ctx_ptr, traverse_event tevt, const file_stats& element_stats) -> bool {
+    const path_visitor pv = jau::bind_capref<bool, copy_context_t, traverse_event, const file_stats&, size_t>(&ctx,
+            ( bool(*)(copy_context_t*, traverse_event, const file_stats&, size_t) ) /* help template type deduction of function-ptr */
+                ( [](copy_context_t* ctx_ptr, traverse_event tevt, const file_stats& element_stats, size_t depth) -> bool {
+                    (void)depth;
                     if( !element_stats.has_access() ) {
                         if( is_set(ctx_ptr->copts, copy_options::verbose) ) {
                             jau::fprintf_td(stderr, "copy: Error: remove failed: no access, %s\n", element_stats.to_string().c_str());

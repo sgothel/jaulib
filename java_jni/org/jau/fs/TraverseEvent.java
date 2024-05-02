@@ -49,6 +49,19 @@ public enum TraverseEvent {
     file_symlink ( (short) ( 1 << 0 /* symmlink */ | 1 << 1 /* file */ ) ),
 
     /**
+     * Visiting a symbolic-link to a directory which is not followed, i.e. traverse_options::follow_symlinks not set.
+     */
+    dir_symlink ( (short) (1 << 2) ),
+
+    /**
+     * Visiting a directory on entry, see traverse_options::dir_check_entry.
+     *
+     * This allows the path_visitor to deny traversal into the directory by returning false,
+     * otherwise continuing traversal.
+     */
+    dir_check_entry ( (short) (1 << 7) ),
+
+    /**
      * Visiting a directory on entry, see traverse_options::dir_entry.
      *
      * If a directory is visited non-recursive, i.e. traverse_options::recursive not set,
@@ -57,7 +70,7 @@ public enum TraverseEvent {
      * If a directory is a symbolic link which is not followed, i.e. traverse_options::follow_symlinks not set,
      * dir_symlink is used instead.
      */
-    dir_entry ( (short) (1 << 2) ),
+    dir_entry ( (short) (1 << 8) ),
 
     /**
      * Visiting a directory on exit, see traverse_options::dir_exit.
@@ -68,19 +81,14 @@ public enum TraverseEvent {
      * If a directory is a symbolic link which is not followed, i.e. traverse_options::follow_symlinks not set,
      * dir_symlink is used instead.
      */
-    dir_exit ( (short) (1 << 3) ),
-
-    /**
-     * Visiting a symbolic-link to a directory which is not followed, i.e. traverse_options::follow_symlinks not set.
-     */
-    dir_symlink ( (short) (1 << 4) ),
+    dir_exit ( (short) (1 << 9) ),
 
     /**
      * Visiting a directory non-recursive, i.e. traverse_options::recursive not set.
      *
      * Value is a bit-mask of dir_entry | dir_exit
      */
-    dir_non_recursive ( (short) ( 1 << 2 /* dir_entry */ | 1 << 3 /* dir_exit */ ) );
+    dir_non_recursive ( (short) ( 1 << 8 /* dir_entry */ | 1 << 9 /* dir_exit */ ) );
 
     TraverseEvent(final short v) { value = v; }
     public final short value;

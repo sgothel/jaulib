@@ -109,7 +109,6 @@ public class TestsudoFileUtils02 extends FileUtilBaseTest {
             Assert.assertTrue( true == umount_ok );
             Assert.assertTrue(isFolderEmpty(mount_point));
 
-            Assert.assertTrue( true == FileUtil.remove(root_copy, TraverseOptions.recursive) );
             Assert.assertTrue( true == FileUtil.remove(mount_point, TraverseOptions.recursive) );
         }
     }
