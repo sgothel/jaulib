@@ -14,8 +14,8 @@ bname=`basename $0 .sh`
 
 . $sdir/setup-machine-arch.sh "-quiet"
 
-dist_dir=$rootdir/"dist-$os_name-$archabi"
-build_dir=$rootdir/"build-$os_name-$archabi"
+dist_dir=$rootdir/"dist-$os_name-$archabi-gcc"
+build_dir=$rootdir/"build-$os_name-$archabi-gcc"
 echo dist_dir $dist_dir
 echo build_dir $build_dir
 
