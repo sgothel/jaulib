@@ -95,6 +95,26 @@ std::string jau::fs::get_cwd() noexcept {
     }
 }
 
+bool jau::fs::chdir(const std::string& path) noexcept {
+    return 0 == ::chdir(path.c_str());
+}
+
+std::string jau::fs::absolute(const std::string_view& relpath) noexcept {
+    const size_t bsz = PATH_MAX; // including EOS
+    std::string str;
+    str.reserve(bsz);  // incl. EOS
+    str.resize(bsz-1); // excl. EOS
+
+    char *res = ::realpath(&relpath[0], &str[0]);
+    if( res == &str[0] ) {
+        str.resize(::strnlen(res, bsz));
+        str.shrink_to_fit();
+        return str;
+    } else {
+        return std::string();
+    }
+}
+
 static const char c_slash('/');
 static const char c_backslash('\\');
 static const std::string s_slash("/");
@@ -146,22 +166,6 @@ std::string jau::fs::basename(const std::string_view& path) noexcept {
         return std::string( path.substr(0, end_pos+1));
     } else {
         return std::string( path.substr(idx+1, end_pos-idx) );
-    }
-}
-
-std::string jau::fs::absolute(const std::string_view& relpath) noexcept {
-    const size_t bsz = PATH_MAX; // including EOS
-    std::string str;
-    str.reserve(bsz);  // incl. EOS
-    str.resize(bsz-1); // excl. EOS
-
-    char *res = ::realpath(&relpath[0], &str[0]);
-    if( res == &str[0] ) {
-        str.resize(::strnlen(res, bsz));
-        str.shrink_to_fit();
-        return str;
-    } else {
-        return std::string();
     }
 }
 
