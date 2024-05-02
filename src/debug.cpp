@@ -179,7 +179,7 @@ void jau::DBG_PRINT_impl(const char * format, ...) noexcept {
     fprintf(stderr, "[%s] Debug: ", jau::to_decstring(environment::getElapsedMillisecond(), ',', 9).c_str());
     va_list args;
     va_start (args, format);
-    vfprintf(stderr, format, args);
+    vfprintf(stderr, format, args); // NOLINT(clang-analyzer-valist.Uninitialized): clang-tidy bug
     va_end (args);
     fprintf(stderr, "\n");
     fflush(stderr);
@@ -189,7 +189,7 @@ void jau::WORDY_PRINT_impl(const char * format, ...) noexcept {
     fprintf(stderr, "[%s] Wordy: ", jau::to_decstring(environment::getElapsedMillisecond(), ',', 9).c_str());
     va_list args;
     va_start (args, format);
-    vfprintf(stderr, format, args);
+    vfprintf(stderr, format, args); // NOLINT(clang-analyzer-valist.Uninitialized): clang-tidy bug
     va_end (args);
     fprintf(stderr, "\n");
     fflush(stderr);
@@ -199,7 +199,7 @@ void jau::ABORT_impl(const char *func, const char *file, const int line, const c
     fprintf(stderr, "[%s] ABORT @ %s:%d %s: ", jau::to_decstring(environment::getElapsedMillisecond(), ',', 9).c_str(), file, line, func);
     va_list args;
     va_start (args, format);
-    vfprintf(stderr, format, args);
+    vfprintf(stderr, format, args); // NOLINT(clang-analyzer-valist.Uninitialized): clang-tidy bug
     va_end (args);
     fprintf(stderr, "; last errno %d %s\n", errno, strerror(errno));
     fflush(stderr);
@@ -219,7 +219,7 @@ void jau::ERR_PRINT_impl(const char *prefix, const bool backtrace, const char *f
     fprintf(stderr, "[%s] %s @ %s:%d %s: ", jau::to_decstring(environment::getElapsedMillisecond(), ',', 9).c_str(), prefix, file, line, func);
     va_list args;
     va_start (args, format);
-    vfprintf(stderr, format, args);
+    vfprintf(stderr, format, args); // NOLINT(clang-analyzer-valist.Uninitialized): clang-tidy bug
     va_end (args);
     fprintf(stderr, "; last errno %d %s\n", errno, strerror(errno));
     fflush(stderr);
@@ -239,7 +239,7 @@ void jau::WARN_PRINT_impl(const char *func, const char *file, const int line, co
     fprintf(stderr, "[%s] Warning @ %s:%d %s: ", jau::to_decstring(environment::getElapsedMillisecond(), ',', 9).c_str(), file, line, func);
     va_list args;
     va_start (args, format);
-    vfprintf(stderr, format, args);
+    vfprintf(stderr, format, args); // NOLINT(clang-analyzer-valist.Uninitialized): clang-tidy bug
     va_end (args);
     fprintf(stderr, "\n");
     fflush(stderr);
@@ -249,7 +249,7 @@ void jau::INFO_PRINT(const char * format, ...) noexcept {
     fprintf(stderr, "[%s] Info: ", jau::to_decstring(environment::getElapsedMillisecond(), ',', 9).c_str());
     va_list args;
     va_start (args, format);
-    vfprintf(stderr, format, args);
+    vfprintf(stderr, format, args); // NOLINT(clang-analyzer-valist.Uninitialized): clang-tidy bug
     va_end (args);
     fprintf(stderr, "\n");
     fflush(stderr);
@@ -261,7 +261,7 @@ void jau::PLAIN_PRINT(const bool printPrefix, const char * format, ...) noexcept
     }
     va_list args;
     va_start (args, format);
-    vfprintf(stderr, format, args);
+    vfprintf(stderr, format, args); // NOLINT(clang-analyzer-valist.Uninitialized): clang-tidy bug
     va_end (args);
     fprintf(stderr, "\n");
     fflush(stderr);
@@ -271,7 +271,7 @@ int jau::fprintf_td(FILE* stream, const char * format, ...) noexcept {
     int res = ::fprintf(stderr, "[%s] ", jau::to_decstring(environment::getElapsedMillisecond(), ',', 9).c_str());
     va_list args;
     va_start (args, format);
-    res += ::vfprintf(stream, format, args);
+    res += ::vfprintf(stream, format, args); // NOLINT(clang-analyzer-valist.Uninitialized): clang-tidy bug
     va_end (args);
     return res;
 }
@@ -280,7 +280,7 @@ void jau::COND_PRINT_impl(const char * format, ...) noexcept {
     fprintf(stderr, "[%s] ", jau::to_decstring(environment::getElapsedMillisecond(), ',', 9).c_str());
     va_list args;
     va_start (args, format);
-    vfprintf(stderr, format, args);
+    vfprintf(stderr, format, args); // NOLINT(clang-analyzer-valist.Uninitialized): clang-tidy bug
     va_end (args);
     fprintf(stderr, "\n");
     fflush(stderr);
