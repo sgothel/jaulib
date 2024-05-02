@@ -11,6 +11,26 @@ target_compile_options(catch2 PRIVATE -DCATCH_AMALGAMATED_CUSTOM_MAIN=1 -Wno-err
 set_target_properties(catch2 PROPERTIES CXX_CLANG_TIDY "")
 # install(TARGETS catch2 LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
+#
+# testlib is produced for test_os_dynlink
+# and has the proper SONAME to be found by dlopen w/ system path
+#
+set (testlib_VERSION_MAJOR "1")
+set (testlib_VERSION_SHORT "${VERSION_MAJOR}.0.2")
+set (testlib_LIB_SRCS
+  ${CMAKE_CURRENT_SOURCE_DIR}/../src/debug.cpp
+)
+add_library (testlib SHARED ${testlib_LIB_SRCS})
+target_link_libraries (
+  testlib
+)
+set_target_properties(
+   testlib
+   PROPERTIES
+   SOVERSION ${testlib_VERSION_MAJOR}
+   VERSION ${testlib_VERSION_SHORT}
+)
+
 set(ownership_fix_tag ${CMAKE_CURRENT_SOURCE_DIR}/../test_data/ownership_fix_tag CACHE FILEPATH "test_data ownership fix" FORCE)
 add_custom_command (OUTPUT ${ownership_fix_tag}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../test_data

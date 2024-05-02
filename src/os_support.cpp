@@ -31,9 +31,10 @@
 #include <algorithm>
 
 #include <jau/debug.hpp>
-#include <jau/os/os_support.hpp>
-#include <jau/os/dyn_linker.hpp>
 #include <jau/file_util.hpp>
+#include <jau/os/dyn_linker.hpp>
+#include <jau/os/os_support.hpp>
+#include <jau/os/user_info.hpp>
 
 #if !defined(_WIN32)
     #include <sys/utsname.h>
@@ -246,14 +247,12 @@ bool jau::os::DynamicLinker::isCanonicalName(const std::string& filename, const 
 }
 
 static std::vector<std::string> DynamicLinker_buildNames(const std::string& libName) noexcept {
-  // If the library name already has the prefix / suffix added
-  // (principally because we want to force a version number on Unix
-  // operating systems) then just return the library name.
   std::vector<std::string> res;
 
   const std::string libBaseName = jau::fs::basename(libName);
   if( jau::os::DynamicLinker::isCanonicalName(libBaseName, true) ) {
-      res.push_back(libBaseName);
+      // basename is canonical, so use the original with leading path
+      res.push_back(libName);
       return res;
   }
 
@@ -265,12 +264,28 @@ static std::vector<std::string> DynamicLinker_buildNames(const std::string& libN
   return res;
 }
 
+static void DynamicLinker_addBasenames(const std::string& cause, const std::vector<std::string>& baseNames, std::vector<std::string>& paths) noexcept {
+  for (const std::string& baseName : baseNames) {
+      DBG_PRINT("NativeLibrary.enumerateLibraryPaths: %s: '%s'", cause.c_str(), baseName.c_str());
+      paths.push_back(baseName);
+  }
+}
 static void DynamicLinker_addAbsPaths(const std::string& cause, const std::string& abs_path, const std::vector<std::string>& baseNames, std::vector<std::string>& paths) noexcept {
   for (const std::string& baseName : baseNames) {
       std::string p(abs_path); p.append("/").append(baseName);
       DBG_PRINT("NativeLibrary.enumerateLibraryPaths: %s: '%s', from path '%s'", cause.c_str(), p.c_str(), abs_path.c_str());
       paths.push_back(p);
   }
+}
+static void DynamicLinker_addSysPaths(const std::string& cause, const std::vector<std::string>& baseNames, std::vector<std::string>& paths) noexcept {
+    // First add just the library names to use the OS's search algorithm
+    DynamicLinker_addBasenames(cause, baseNames, paths);
+
+    // Second add full path for each sys-folder to overcome SONAME mismatch (OS's search algorithm)
+    std::vector<std::string> lib_paths = jau::os::DynamicLinker::getSystemEnvLibraryPaths();
+    for(const std::string& p : lib_paths) {
+        DynamicLinker_addAbsPaths(cause, p, baseNames, paths);
+    }
 }
 #if 0
 static void DynamicLinker_addRelPaths(const std::string& cause, const std::string& path, const std::vector<std::string>& baseNames, std::vector<std::string>& paths) noexcept {
@@ -302,11 +317,8 @@ std::vector<std::string> jau::os::DynamicLinker::enumerateLibraryPaths(const std
     DBG_PRINT("NativeLibrary.enumerateLibraryPaths: baseNames: %s", jau::to_string(baseNames).c_str());
 
     if( searchSystemPath && searchSystemPathFirst ) {
-        // Add just the library names to use the OS's search algorithm
-        for (const std::string& baseName : baseNames) {
-            DBG_PRINT("NativeLibrary.enumerateLibraryPaths: add.ssp_1st: '%s'", baseName.c_str());
-            paths.push_back(baseName);
-        }
+        DynamicLinker_addSysPaths("add.ssp_1st", baseNames, paths);
+
         // Add probable Mac OS X-specific paths
         if ( jau::os::is_darwin() ) {
             // Add historical location
@@ -316,87 +328,37 @@ std::vector<std::string> jau::os::DynamicLinker::enumerateLibraryPaths(const std
         }
     }
 
-#if 0
-    // The idea to ask the ClassLoader to find the library is borrowed
-    // from the LWJGL library
-    final std::string clPath = findLibrary(libName, loader);
-    if (clPath != null) {
-        if (DEBUG) {
-            System.err.println("NativeLibrary.enumerateLibraryPaths: add.clp: "+clPath);
-        }
-        paths.add(clPath);
-    }
-
-    // Add entries from java.library.path
-    final std::string[] javaLibraryPaths =
-      SecurityUtil.doPrivileged(new PrivilegedAction<std::string[]>() {
-          @Override
-          public std::string[] run() {
-            int count = 0;
-            final std::string usrPath = System.getProperty("java.library.path");
-            if(null != usrPath) {
-                count++;
-            }
-            final std::string sysPath;
-            if( searchSystemPath ) {
-                sysPath = System.getProperty("sun.boot.library.path");
-                if(null != sysPath) {
-                    count++;
-                }
-            } else {
-                sysPath = null;
-            }
-            final std::string[] res = new std::string[count];
-            int i=0;
-            if( null != sysPath && searchSystemPathFirst ) {
-                res[i++] = sysPath;
-            }
-            if(null != usrPath) {
-                res[i++] = usrPath;
-            }
-            if( null != sysPath && !searchSystemPathFirst ) {
-                res[i++] = sysPath;
-            }
-            return res;
-          }
-        });
-    if ( null != javaLibraryPaths ) {
-        for( int i=0; i < javaLibraryPaths.length; i++ ) {
-            final std::stringTokenizer tokenizer = new std::stringTokenizer(javaLibraryPaths[i], File.pathSeparator);
-            while (tokenizer.hasMoreTokens()) {
-                addRelPaths("add.java.library.path", tokenizer.nextToken(), baseNames, paths);
-            }
-        }
-    }
-#endif
-
     // Add current working directory
     {
         std::string cwd = jau::fs::get_cwd();
         DynamicLinker_addAbsPaths("add.cwd", cwd, baseNames, paths);
+
+        // Add current working directory + natives/os-arch/ + library names (for unpacked archives, if exists)
+        const std::string cwd_bin = cwd+"/natives/"+jau::os::get_os_and_arch();
+        jau::fs::file_stats fstats(cwd_bin);
+        if( fstats.exists() ) {
+            DynamicLinker_addAbsPaths("add.cwd.natives.os_arch", cwd_bin, baseNames, paths);
+        }
     }
 
-#if 0
-    final std::string userDir =
-      SecurityUtil.doPrivileged(new PrivilegedAction<std::string>() {
-          @Override
-          public std::string run() {
-            return System.getProperty("user.dir");
-          }
-        });
-    addAbsPaths("add.user.dir.std", userDir, baseNames, paths);
+    // Add user directory
+    {
+        jau::os::UserInfo user;
+        if( user.isValid() ) {
+            DynamicLinker_addAbsPaths("add.home.std", user.homedir(), baseNames, paths);
 
-    // Add current working directory + natives/os-arch/ + library names
-    // to handle Bug 1145 cc1 using an unpacked fat-jar
-    addAbsPaths("add.user.dir.fat", userDir+File.separator+"natives"+File.separator+PlatformPropsImpl.os_and_arch, baseNames, paths);
-#endif
+            // Add current home + bin/os-arch/ + library names (if exists)
+            const std::string home_bin = user.homedir()+"/bin/"+jau::os::get_os_and_arch();
+            jau::fs::file_stats fstats(home_bin);
+            if( fstats.exists() ) {
+                DynamicLinker_addAbsPaths("add.home.bin.os_arch", home_bin, baseNames, paths);
+            }
+        }
+    }
 
     if( searchSystemPath && !searchSystemPathFirst ) {
-        // Add just the library names to use the OS's search algorithm
-        for (const std::string& baseName : baseNames) {
-            DBG_PRINT("NativeLibrary.enumerateLibraryPaths: add.ssp_lst: '%s'", baseName.c_str());
-            paths.push_back(baseName);
-        }
+        DynamicLinker_addSysPaths("add.ssp_lst", baseNames, paths);
+
         // Add probable Mac OS X-specific paths
         if ( jau::os::is_darwin() ) {
             // Add historical location
