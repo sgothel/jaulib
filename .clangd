@@ -20,7 +20,7 @@ Diagnostics:
   UnusedIncludes: Strict
 
 InlayHints:
-  Enabled: Yes
+  Enabled: No
   BlockEnd: Yes
   Designators: No
   ParameterNames: Yes
