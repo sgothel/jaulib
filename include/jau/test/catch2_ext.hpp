@@ -74,11 +74,11 @@
 
     #define INFO_STR( msg ) INTERNAL_CATCH_INFO( "INFO", static_cast<std::string>(msg) )
 
-    #define REQUIRE_EPSI(a,b)           INTERNAL_CATCH_TEST( "REQUIRE: ", Catch::ResultDisposition::Normal, jau::machine_equal(a, b))
-    #define REQUIRE_EPSI_MSG(m,a,b)     INTERNAL_CATCH_TEST_M( m, "REQUIRE: ", Catch::ResultDisposition::Normal, jau::machine_equal(a, b))
+    #define REQUIRE_EPSI(a,b)           INTERNAL_CATCH_TEST( "REQUIRE: ", Catch::ResultDisposition::Normal, jau::equals(a, b))
+    #define REQUIRE_EPSI_MSG(m,a,b)     INTERNAL_CATCH_TEST_M( m, "REQUIRE: ", Catch::ResultDisposition::Normal, jau::equals(a, b))
 
-    #define REQUIRE_DIFF(a,b,d)         INTERNAL_CATCH_TEST( "REQUIRE: ", Catch::ResultDisposition::Normal, jau::machine_equal(a, b, 1, d))
-    #define REQUIRE_DIFF_MSG(m,a,b,d)   INTERNAL_CATCH_TEST_M( m, "REQUIRE: ", Catch::ResultDisposition::Normal, jau::machine_equal(a, b, 1, d))
+    #define REQUIRE_DIFF(a,b,d)         INTERNAL_CATCH_TEST( "REQUIRE: ", Catch::ResultDisposition::Normal, jau::equals(a, b, 1, d))
+    #define REQUIRE_DIFF_MSG(m,a,b,d)   INTERNAL_CATCH_TEST_M( m, "REQUIRE: ", Catch::ResultDisposition::Normal, jau::equals(a, b, 1, d))
 
 
     #define COMPARE_SARRAYS(lhs, rhs) compareStdArrays(Catch::getResultCapture().getCurrentTestName(), __LINE__, lhs, rhs)

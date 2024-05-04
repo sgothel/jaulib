@@ -31,6 +31,7 @@
 #include <cstdarg>
 #include <memory>
 #include <type_traits>
+#include <vector>
 
 #include <jau/cpp_lang_util.hpp>
 #include <jau/packed_attribute.hpp>

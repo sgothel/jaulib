@@ -350,7 +350,7 @@ std::string jau::vformat_string(const char* format, va_list ap) noexcept {
         str.reserve(bsz);  // incl. EOS
         str.resize(bsz-1); // excl. EOS
 
-        nchars = vsnprintf(&str[0], bsz, format, ap);
+        nchars = vsnprintf(&str[0], bsz, format, ap); // NOLINT(clang-analyzer-valist.Uninitialized): clang-tidy bug
         if( nchars < bsz ) {
             str.resize(nchars);
             str.shrink_to_fit();
@@ -361,7 +361,7 @@ std::string jau::vformat_string(const char* format, va_list ap) noexcept {
         const size_t bsz = std::min<size_t>(nchars+1, str.max_size()+1); // limit incl. EOS
         str.reserve(bsz);  // incl. EOS
         str.resize(bsz-1); // excl. EOS
-        nchars = vsnprintf(&str[0], bsz, format, ap);
+        nchars = vsnprintf(&str[0], bsz, format, ap); // NOLINT(clang-analyzer-valist.Uninitialized): clang-tidy bug
         str.resize(nchars);
         return str;
     }
