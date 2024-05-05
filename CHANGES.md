@@ -4,6 +4,25 @@
 
 ## Changes
 
+**1.2.0**
+* Last C++17 release, moving to C++20 as minimum requirement because
+  - Moving metaprogramming to C++20 concepts and constrains
+    - `SFINAE` and its utilization in `type_traits` for C++ metaprogramming are great
+    - C++20 constaints add an easier to read and code alternative using the same idea
+    - C++20 concepts declare a set of C++20 constrains and can be reused, guarantees of same concept
+    - `C++ Named Requirements` are defined as concepts next to `type traits` counterpart
+    - Hence moving step by step to C++20 concepts helps with maintainability
+  - Lack of C++17 `constexpr` completeness in the `STL` (e.g. `std::string`)
+  - Used compiler `gcc` and `clang` have matured enough for C++20 in 2024
+* Added 
+  - `jau::os` Operation system support (OS and user information complementing `jau::cpu`, dynamic library handling, ..)
+  - `jau::math` (mostly linear algebra for graphics etc) 
+  - `jau::mp` (BigInt) multi-precision for cryptograpy etc
+  - Constant time (CT) functionality for cryptography etc
+  - Misc `jau::fs` fixes (`visitor`, `dir_item`)
+* Fixes
+  - clang-16 toolchain and gcc 12.2 fixes using `C++20`
+
 **1.1.1**
 * Fixes
   - `jau::io::ByteInStream_[URL|Feed]` utilize blocking read-operations w/o knowledge of content-size until producer (curl consumer, manual feeder) signals EOS, see ringbuffer changes.
