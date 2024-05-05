@@ -6,12 +6,18 @@
 This project's canonical repositories is hosted on [Gothel Software](https://jausoft.com/cgit/jaulib.git/).
 
 ## Goals
-This project aims to provide general C++ and Java collections, algorithms and utilities - as well as basic concepts to support a Java JNI binding.
+This project provides general C++ collections, algorithms and utilities.
 
-This project was extracted from [Direct-BT](https://jausoft.com/cgit/direct_bt.git/about/) to enable general use and enforce better encapsulation.
+`jaulib` was extracted from [Direct-BT](https://jausoft.com/cgit/direct_bt.git/about/) to enable general use and enforce better encapsulation,
+now it is utilized in multiple projects ranging from cryptography, over-the-air (OTA) updates to computer graphics.
+
+It also provides a basic mechanisms to create a thin Java JNI binding 
+as well as some Java JNI bindings for a subset of `jaulib`.
 
 ### Status
-Build and clang-tidy clean on C++17 and C++20, passing all unit tests.
+Build and clang-tidy clean on C++20, passing all unit tests.
+
+See [C++ Minimum Requirements](#cpp_min_req) and [Supported Platforms](#sup_platforms) for details.
 
 ## API Documentation
 Up to date API documentation can be found:
@@ -43,9 +49,30 @@ Up to date API documentation can be found:
 ## Examples
 See *Direct-BT* [C++ API Doc](https://jausoft.com/projects/direct_bt/build/documentation/cpp/html/examples.html).
 
+<a name="cpp_min_req"></a>
+
+## C++ Minimum Requirements
+C++20 is the minimum requirement for releases > 1.2.0.
+
+Release 1.2.0 is the last version supporting C++17, see [Changes](CHANGES.md).
+
+Support for C++23 and C++26 is added step by step.
+
+### Rational for C++20 Minimum
+- Moving metaprogramming to C++20 concepts and constrains
+  - `SFINAE` and its utilization in `type_traits` for C++ metaprogramming are great
+  - C++20 constrains add an easier to read and code alternative using the same idea
+  - C++20 concepts declare a set of C++20 constrains and can be reused, guarantees of same concept
+  - `C++ Named Requirements` are defined as concepts next to `type traits` counterpart
+  - Hence moving step by step to C++20 concepts helps with maintainability
+- Lack of C++17 `constexpr` completeness in the `STL` (e.g. `std::string`)
+- Used compiler `gcc` and `clang` have matured enough for C++20 in 2024
+
+<a name="sup_platforms"></a>
+
 ## Supported Platforms
 Language requirements
-- C++17 or C++20
+- C++20 or better
 - Standard C Libraries
   - [FreeBSD libc](https://www.freebsd.org/)
   - [GNU glibc](https://www.gnu.org/software/libc/)
@@ -68,9 +95,8 @@ but currently only intended to support unit testing and to produce a Doxygen API
 ### Build Dependencies
 - CMake 3.13+ but >= 3.18 is recommended
 - C++ compiler
-  - gcc >= 8.3.0 (C++17)
-  - gcc >= 10.2.1 (C++17 and C++20)
-  - clang >= 16 (C++17 and C++20)
+  - gcc >= 10.2.1 (C++20 minimum)
+  - clang >= 16 (C++20 minimum)
 - Optional for `lint` validation
   - clang-tidy >= 16
 - Optional for `eclipse` and `vscodium` integration
