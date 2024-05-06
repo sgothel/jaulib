@@ -56,7 +56,12 @@ C++20 is the minimum requirement for releases > 1.2.0.
 
 Release 1.2.0 is the last version supporting C++17, see [Changes](CHANGES.md).
 
-Support for C++23 and C++26 is added step by step.
+Support for C++23 and C++26 will be added step by step.
+
+### C++ Compiler Support
+- C++20, see [C++20 compiler support](https://en.cppreference.com/w/cpp/compiler_support#cpp20)
+  - gcc >= 11, recommended >= 12
+  - clang >= 13, recommended >= 16
 
 ### Rational for C++20 Minimum
 - Moving metaprogramming to C++20 concepts and constrains
@@ -72,7 +77,7 @@ Support for C++23 and C++26 is added step by step.
 
 ## Supported Platforms
 Language requirements
-- C++20 or better
+- C++20 or better, see [C++ Minimum Requirements](#cpp_min_req)
 - Standard C Libraries
   - [FreeBSD libc](https://www.freebsd.org/)
   - [GNU glibc](https://www.gnu.org/software/libc/)
@@ -93,10 +98,10 @@ This library's build recipe are functional though,
 but currently only intended to support unit testing and to produce a Doxygen API doc.
 
 ### Build Dependencies
-- CMake 3.13+ but >= 3.18 is recommended
+- CMake >= 3.19
 - C++ compiler
-  - gcc >= 10.2.1 (C++20 minimum)
-  - clang >= 16 (C++20 minimum)
+  - gcc >= 11 (C++20), recommended >= 12
+  - clang >= 13 (C++20), recommended >= 16
 - Optional for `lint` validation
   - clang-tidy >= 16
 - Optional for `eclipse` and `vscodium` integration
