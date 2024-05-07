@@ -387,6 +387,8 @@ a Raspi-arm64, Raspi-armhf or PC-amd64 target image.
 ## IDE Integration
 
 ### Eclipse 
+Tested Eclipse 2024-03 (4.31).
+
 IDE integration configuration files are provided for 
 - [Eclipse](https://download.eclipse.org/eclipse/downloads/) with extensions
   - [CDT](https://github.com/eclipse-cdt/) or [CDT @ eclipse.org](https://projects.eclipse.org/projects/tools.cdt)
