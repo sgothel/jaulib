@@ -1,6 +1,24 @@
 #
 # jaulib cmake build settings, modularized to be optionally included by parent projects
 #
+# JaulibPreset Cached variables are
+# - CMAKE_BUILD_TYPE
+# - BUILD_TESTING
+# - CMAKE_CXX_COMPILER_ID
+# - CMAKE_C_COMPILER
+# - CMAKE_CXX_COMPILER
+# - CMAKE_CXX_CLANG_TIDY
+#
+# JaulibSetup Cached variables are
+# - DEBUG
+# - CMAKE_INSTALL_PREFIX
+# - CMAKE_CXX_STANDARD_REQUIRED
+# - CMAKE_CXX_STANDARD
+# - LIB_INSTALL_DIR
+# - USE_LIBCURL
+# - USE_LIBUNWIND
+# - BUILDJAVA
+#
 
 include_guard(GLOBAL)
 
