@@ -268,9 +268,29 @@ cmake --build build/default --target test install doc_jau
 The install target of the last command will create the include/ and lib/ directories with a copy of
 the headers and library objects respectively in your dist location.
 
+<a name="cmake_variables"></a>
+
 #### CMake Variables
 Our cmake configure has a number of options, *cmake-gui* or *ccmake* can show
 you all the options. The interesting ones are detailed below:
+
+`JaulibPreset` cached variables for hardcoded presets are
+- `CMAKE_BUILD_TYPE`
+- `BUILD_TESTING`
+- `CMAKE_CXX_COMPILER_ID`
+- `CMAKE_C_COMPILER`
+- `CMAKE_CXX_COMPILER`
+- `CMAKE_CXX_CLANG_TIDY`
+
+`JaulibSetup` cached variables for regular builds are
+- `DEBUG`
+- `CMAKE_INSTALL_PREFIX`
+- `CMAKE_CXX_STANDARD_REQUIRED`
+- `CMAKE_CXX_STANDARD`
+- `LIB_INSTALL_DIR`
+- `USE_LIBCURL`
+- `USE_LIBUNWIND`
+- `BUILDJAVA`
 
 Changing install path
 ~~~~~~~~~~~~~
