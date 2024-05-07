@@ -398,17 +398,17 @@ IDE integration configuration files are provided for
   - `CMake Support`, install `C/C++ CMake Build Support` with ID `org.eclipse.cdt.cmake.feature.group`
     - Usable via via [Hardcoded CMake Presets](README.md#cmake_presets_hardcoded) with `debug-clang`
 
-From the project root directory, prepare the `Debug` folder using `cmake`
-~~~~~~~~~~~~~
-./scripts/eclipse-cmake-prepare.sh
-~~~~~~~~~~~~~
-
-The existing project setup is just using `external build` via `make`.
+The [Hardcoded CMake Presets](README.md#cmake_presets_hardcoded) will 
+use `build/default` as the default build folder with debug enabled.
 
 You can import the project to your workspace via `File . Import...` and `Existing Projects into Workspace` menu item.
 
 For Eclipse one might need to adjust some setting in the `.project` and `.cproject` (CDT) 
 via Eclipse settings UI, but it should just work out of the box.
+
+Otherwise recreate the Eclipse project by 
+- delete `.project` and `.cproject` 
+- `File . New . C/C++ Project` and `Empty or Existing CMake Project` while using this project folder.
 
 ### VSCodium or VS Code
 
