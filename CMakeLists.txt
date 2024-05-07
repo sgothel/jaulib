@@ -1,15 +1,13 @@
-cmake_minimum_required (VERSION 3.13.0 FATAL_ERROR)
+cmake_minimum_required (VERSION 3.21.0 FATAL_ERROR)
+include(JaulibSetup.cmake)
+JaulibPreset()
+
 project (jaulib LANGUAGES C CXX)
 
-if(${CMAKE_VERSION} VERSION_LESS "3.18.0")
-    message(STATUS "CMake ${CMAKE_VERSION}, please consider to switch to CMake 3.18.0 or later")
-else()
-    message(STATUS "CMake ${CMAKE_VERSION} >= 3.18.0, good.")
-endif()
+message(STATUS "CMake ${CMAKE_VERSION}")
 
 FIND_PACKAGE (Threads REQUIRED)
 
-include(JaulibSetup.cmake)
 JaulibSetup()
 
 # this is the library version, derived from git tag and revision

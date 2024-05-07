@@ -136,22 +136,36 @@ constexpr bool operator !=(const visitor_stats& lhs, const visitor_stats& rhs) n
 class TestFileUtilBase {
   private:
     const std::string image_file = "test_data.sqfs";
-    // normal location with jaulib as sole project
-    const std::string project_root1 = "../../test_data";
-    // submodule location with jaulib directly hosted below main project
-    const std::string project_root2 = "../../../jaulib/test_data";
+    // normal location with jaulib as sole project (a)
+    const std::string project_root1a = "../../test_data";
+    // normal location with jaulib as sole project (b)
+    const std::string project_root1b = "../../../test_data";
+    // submodule location with jaulib directly hosted below main project (a)
+    const std::string project_root2a = "../../../jaulib/test_data";
+    // submodule location with jaulib directly hosted below main project (b)
+    const std::string project_root2b = "../../../../jaulib/test_data";
 
   public:
     const std::string temp_root = "test_data_temp";
 
     jau::fs::file_stats getTestDataDirStats(const std::string& test_exe_path) noexcept {
         const std::string test_exe_dir = jau::fs::dirname(test_exe_path);
-        std::string path = test_exe_dir + "/" + project_root1;
+        std::string path = test_exe_dir + "/" + project_root1a;
         jau::fs::file_stats path_stats(path);
         if( path_stats.exists() ) {
             return path_stats;
         }
-        path = test_exe_dir + "/" + project_root2;
+        path = test_exe_dir + "/" + project_root1b;
+        path_stats = jau::fs::file_stats(path);
+        if( path_stats.exists() ) {
+            return path_stats;
+        }
+        path = test_exe_dir + "/" + project_root2a;
+        path_stats = jau::fs::file_stats(path);
+        if( path_stats.exists() ) {
+            return path_stats;
+        }
+        path = test_exe_dir + "/" + project_root2b;
         path_stats = jau::fs::file_stats(path);
         if( path_stats.exists() ) {
             return path_stats;
@@ -160,15 +174,25 @@ class TestFileUtilBase {
     }
     std::string getTestDataRelDir(const std::string& test_exe_path) noexcept {
         const std::string test_exe_dir = jau::fs::dirname(test_exe_path);
-        std::string path = test_exe_dir + "/" + project_root1;
+        std::string path = test_exe_dir + "/" + project_root1a;
         jau::fs::file_stats path_stats(path);
         if( path_stats.exists() ) {
-            return project_root1;
+            return project_root1a;
         }
-        path = test_exe_dir + "/" + project_root2;
+        path = test_exe_dir + "/" + project_root1b;
         path_stats = jau::fs::file_stats(path);
         if( path_stats.exists() ) {
-            return project_root2;
+            return project_root1b;
+        }
+        path = test_exe_dir + "/" + project_root2a;
+        path_stats = jau::fs::file_stats(path);
+        if( path_stats.exists() ) {
+            return project_root2a;
+        }
+        path = test_exe_dir + "/" + project_root2b;
+        path_stats = jau::fs::file_stats(path);
+        if( path_stats.exists() ) {
+            return project_root2b;
         }
         return "";
     }

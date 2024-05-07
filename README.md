@@ -98,7 +98,7 @@ This library's build recipe are functional though,
 but currently only intended to support unit testing and to produce a Doxygen API doc.
 
 ### Build Dependencies
-- CMake >= 3.19
+- CMake >= 3.21 (2021-07-14)
 - C++ compiler
   - gcc >= 11 (C++20), recommended >= 12
   - clang >= 13 (C++20), recommended >= 16
@@ -198,48 +198,95 @@ Note: `mini-httpd` is being used for unit testing URL streaming only.
 
 ### Build Procedure
 
-For a generic build use:
+#### Build preparations
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}
-CPU_COUNT=`getconf _NPROCESSORS_ONLN`
 git clone https://jausoft.com/cgit/jaulib.git
 cd jaulib
-mkdir build
-cd build
-cmake -DBUILDJAVA=ON -DBUILDEXAMPLES=ON -DBUILD_TESTING=ON ..
-make -j $CPU_COUNT install
-make test
-make doc
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+<a name="cmake_presets_optional"></a>
+
+#### CMake Build via Presets
+Following debug presets are defined in `CMakePresets.json`
+- `debug`
+  - default generator
+  - default compiler
+  - C++20
+  - debug enabled
+  - java (if available)
+  - libunwind (if available)
+  - libcurl (if available)
+  - testing on
+  - testing with sudo off
+- `debug-gcc`
+  - inherits from `debug`
+  - compiler: `gcc`
+  - disabled `clang-tidy`
+- `debug-clang`
+  - inherits from `debug`
+  - compiler: `clang`
+  - enabled `clang-tidy`
+- `release`
+  - inherits from `debug`
+  - debug disabled
+  - testing with sudo on
+- `release-gcc`
+  - compiler: `gcc`
+  - disabled `clang-tidy`
+- `release-clang`
+  - compiler: `clang`
+  - enabled `clang-tidy`
+
+Kick-off the workflow by e.g. using preset `release-gcc` to configure, build, test, install and building documentation.
+You may skip `install` and `doc_jau` by dropping it from `--target`.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}
+cmake --preset release-gcc
+cmake --build --preset release-gcc --parallel
+cmake --build --preset release-gcc --target test install doc_jau
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+<a name="cmake_presets_hardcoded"></a>
+
+#### CMake Build via Hardcoded Presets
+Besides above `CMakePresets.json` presets, 
+`JaulibSetup.cmake` contains hardcoded presets for *undefined variables* if
+- `CMAKE_INSTALL_PREFIX` and `CMAKE_CXX_CLANG_TIDY` cmake variables are unset, or 
+- `JAU_CMAKE_ENFORCE_PRESETS` cmake- or environment-variable is set to `TRUE` or `ON`
+
+The hardcoded presets resemble `debug-clang` [presets](README.md#cmake_presets_optional).
+
+Kick-off the workflow to configure, build, test, install and building documentation.
+You may skip `install` and `doc_jau` by dropping it from `--target`.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}
+rm -rf build/default
+cmake -B build/default
+cmake --build build/default --parallel
+cmake --build build/default --target test install doc_jau
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The install target of the last command will create the include/ and lib/ directories with a copy of
-the headers and library objects respectively in your build location. Note that
-doing an out-of-source build may cause issues when rebuilding later on.
+the headers and library objects respectively in your build location.
 
-You may also invoke `scripts/build.sh`,
-which resolves installed environment variables like `JAVA_HOME` and `JUNIT_CP`
-as well as building and distributing using `os_arch` type folders.
-- `scripts/setup-machine-arch.sh` .. generic setup for all scripts
-- `scripts/build.sh` .. initial build incl. install and unit testing
-- `scripts/rebuild.sh` .. rebuild
-- `scripts/build-cross.sh` .. [cross-build](#cross-build)
-- `scripts/rebuild-cross.sh` .. [cross-build](#cross-build)
-- `scripts/test_java.sh` .. invoke a java unit test
-- `scripts/test_exe_template.sh` .. invoke the symlink'ed files to invoke native unit tests
-
+#### CMake Variables
 Our cmake configure has a number of options, *cmake-gui* or *ccmake* can show
 you all the options. The interesting ones are detailed below:
 
-Changing install path from /usr/local to /usr
+Changing install path
 ~~~~~~~~~~~~~
--DCMAKE_INSTALL_PREFIX=/usr
+- -DCMAKE_INSTALL_PREFIX=/somewhere/dist-jaulib
 ~~~~~~~~~~~~~
 
 Building debug build:
 ~~~~~~~~~~~~~
 -DDEBUG=ON
 ~~~~~~~~~~~~~
+or
+~~~~~~~~~~~~~
+-DCMAKE_BUILD_TYPE=Debug
+~~~~~~~~~~~~~
 
-Add unit tests to build (default: disabled)
+Enable/disable unit tests to build
 ~~~~~~~~~~~~~
 -DBUILD_TESTING=ON
 ~~~~~~~~~~~~~
@@ -286,13 +333,6 @@ Disable using `C++ Runtime Type Information` (*RTTI*) (default: enabled)
 -DDONT_USE_RTTI=ON
 ~~~~~~~~~~~~~
 
-Override default javac debug arguments `source,lines`:
-~~~~~~~~~~~~~
--DJAVAC_DEBUG_ARGS="source,lines,vars"
-
--DJAVAC_DEBUG_ARGS="none"
-~~~~~~~~~~~~~
-
 Building debug and instrumentation (sanitizer) build:
 ~~~~~~~~~~~~~
 -DDEBUG=ON -DINSTRUMENTATION=ON
@@ -304,15 +344,34 @@ Cross-compiling on a different system:
 -DCMAKE_C_FLAGS:STRING=-m32 -march=i586
 ~~~~~~~~~~~~~
 
+To build documentation run: 
+~~~~~~~~~~~~~
+make doc
+~~~~~~~~~~~~~
+
 To build Java bindings:
 ~~~~~~~~~~~~~
 -DBUILDJAVA=ON
 ~~~~~~~~~~~~~
 
-To build documentation run: 
+Override default javac debug arguments `source,lines`:
 ~~~~~~~~~~~~~
-make doc
+-DJAVAC_DEBUG_ARGS="source,lines,vars"
+
+-DJAVAC_DEBUG_ARGS="none"
 ~~~~~~~~~~~~~
+
+#### Deprecated Build Scripts
+You may also invoke `scripts/build.sh`,
+which resolves installed environment variables like `JAVA_HOME` and `JUNIT_CP`
+as well as building and distributing using `os_arch` type folders.
+- `scripts/setup-machine-arch.sh` .. generic setup for all scripts
+- `scripts/build.sh` .. initial build incl. install and unit testing
+- `scripts/rebuild.sh` .. rebuild
+- `scripts/build-cross.sh` .. [cross-build](#cross-build)
+- `scripts/rebuild-cross.sh` .. [cross-build](#cross-build)
+- `scripts/test_java.sh` .. invoke a java unit test
+- `scripts/test_exe_template.sh` .. invoke the symlink'ed files to invoke native unit tests
 
 ### Cross Build
 Also provided is a [cross-build script](https://jausoft.com/cgit/jaulib.git/tree/scripts/build-cross.sh)
@@ -337,8 +396,7 @@ IDE integration configuration files are provided for
     - Add to available software site: `https://download.eclipse.org/tools/cdt/releases/cdt-lsp-latest`
     - Install `C/C++ LSP Support` in the `Eclipse CDT LSP Category`
   - `CMake Support`, install `C/C++ CMake Build Support` with ID `org.eclipse.cdt.cmake.feature.group`
-  - Not used due to lack of passing properties to `cmake` as well as subproject include file and symbol resolution:
-    - `CMake Support`, install `C/C++ CMake Build Support` with ID `org.eclipse.cdt.cmake.feature.group`
+    - Usable via via [Hardcoded CMake Presets](README.md#cmake_presets_hardcoded) with `debug-clang`
 
 From the project root directory, prepare the `Debug` folder using `cmake`
 ~~~~~~~~~~~~~

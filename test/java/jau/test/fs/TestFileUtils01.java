@@ -490,10 +490,7 @@ public class TestFileUtils01 extends FileUtilBaseTest {
             }
         }
 
-        FileStats proot_stats = new FileStats(project_root1);
-        if( !proot_stats.exists() ) {
-            proot_stats = new FileStats(project_root2);
-        }
+        final FileStats proot_stats = getTestDataDirStats();
         PrintUtil.fprintf_td(System.err, "test05_file_stat: 11: %s\n", proot_stats);
         PrintUtil.fprintf_td(System.err, "test05_file_stat: 11: fields %s\n", proot_stats.fields());
         Assert.assertTrue( true == proot_stats.exists() );
@@ -577,10 +574,7 @@ public class TestFileUtils01 extends FileUtilBaseTest {
         PlatformRuntime.checkInitialized();
         PrintUtil.println(System.err, "test06_file_stat_symlinks\n");
 
-        FileStats proot_stats = new FileStats(project_root1);
-        if( !proot_stats.exists() ) {
-            proot_stats = new FileStats(project_root2);
-        }
+        final FileStats proot_stats = getTestDataDirStats();
         Assert.assertTrue( true == proot_stats.exists() );
         Assert.assertTrue( true == proot_stats.is_dir() );
 
@@ -1025,10 +1019,7 @@ public class TestFileUtils01 extends FileUtilBaseTest {
         PlatformRuntime.checkInitialized();
         PrintUtil.println(System.err, "test22_visit_symlinks\n");
 
-        FileStats proot_stats = new FileStats(project_root1);
-        if( !proot_stats.exists() ) {
-            proot_stats = new FileStats(project_root2);
-        }
+        final FileStats proot_stats = getTestDataDirStats();
         Assert.assertTrue( true == proot_stats.exists() );
         Assert.assertTrue( true == proot_stats.is_dir() );
 
@@ -1117,10 +1108,7 @@ public class TestFileUtils01 extends FileUtilBaseTest {
         PlatformRuntime.checkInitialized();
         PrintUtil.println(System.err, "test30_copy_file2dir\n");
 
-        FileStats root_orig_stats = new FileStats(project_root1);
-        if( !root_orig_stats.exists() ) {
-            root_orig_stats = new FileStats(project_root2);
-        }
+        final FileStats root_orig_stats = getTestDataDirStats();
         Assert.assertTrue( true == root_orig_stats.exists() );
         Assert.assertTrue( true == root_orig_stats.is_dir() );
 
@@ -1215,10 +1203,7 @@ public class TestFileUtils01 extends FileUtilBaseTest {
         PlatformRuntime.checkInitialized();
         PrintUtil.println(System.err, "test31_copy_file2file\n");
 
-        FileStats root_orig_stats = new FileStats(project_root1);
-        if( !root_orig_stats.exists() ) {
-            root_orig_stats = new FileStats(project_root2);
-        }
+        final FileStats root_orig_stats = getTestDataDirStats();
         Assert.assertTrue( true == root_orig_stats.exists() );
         Assert.assertTrue( true == root_orig_stats.is_dir() );
 
@@ -1324,10 +1309,7 @@ public class TestFileUtils01 extends FileUtilBaseTest {
         PlatformRuntime.checkInitialized();
         PrintUtil.println(System.err, "test40_copy_ext_r_p\n");
 
-        FileStats root_orig_stats = new FileStats(project_root1);
-        if( !root_orig_stats.exists() ) {
-            root_orig_stats = new FileStats(project_root2);
-        }
+        final FileStats root_orig_stats = getTestDataDirStats();
         Assert.assertTrue( true == root_orig_stats.exists() );
         Assert.assertTrue( true == root_orig_stats.is_dir() );
 
@@ -1348,10 +1330,7 @@ public class TestFileUtils01 extends FileUtilBaseTest {
         PlatformRuntime.checkInitialized();
         PrintUtil.println(System.err, "test41_copy_ext_r_p_below\n");
 
-        FileStats root_orig_stats = new FileStats(project_root1);
-        if( !root_orig_stats.exists() ) {
-            root_orig_stats = new FileStats(project_root2);
-        }
+        final FileStats root_orig_stats = getTestDataDirStats();
         Assert.assertTrue( true == root_orig_stats.exists() );
         Assert.assertTrue( true == root_orig_stats.is_dir() );
 
@@ -1373,10 +1352,7 @@ public class TestFileUtils01 extends FileUtilBaseTest {
         PlatformRuntime.checkInitialized();
         PrintUtil.println(System.err, "test42_copy_ext_r_p_into\n");
 
-        FileStats root_orig_stats = new FileStats(project_root1);
-        if( !root_orig_stats.exists() ) {
-            root_orig_stats = new FileStats(project_root2);
-        }
+        final FileStats root_orig_stats = getTestDataDirStats();
         Assert.assertTrue( true == root_orig_stats.exists() );
         Assert.assertTrue( true == root_orig_stats.is_dir() );
 
@@ -1399,10 +1375,7 @@ public class TestFileUtils01 extends FileUtilBaseTest {
         PlatformRuntime.checkInitialized();
         PrintUtil.println(System.err, "test43_copy_ext_r_p_over\n");
 
-        FileStats root_orig_stats = new FileStats(project_root1);
-        if( !root_orig_stats.exists() ) {
-            root_orig_stats = new FileStats(project_root2);
-        }
+        final FileStats root_orig_stats = getTestDataDirStats();
         Assert.assertTrue( true == root_orig_stats.exists() );
         Assert.assertTrue( true == root_orig_stats.is_dir() );
 
@@ -1440,10 +1413,7 @@ public class TestFileUtils01 extends FileUtilBaseTest {
         }
 
         // Source
-        FileStats root_orig_stats = new FileStats(project_root1);
-        if( !root_orig_stats.exists() ) {
-            root_orig_stats = new FileStats(project_root2);
-        }
+        final FileStats root_orig_stats = getTestDataDirStats();
         Assert.assertTrue( true == root_orig_stats.exists() );
         Assert.assertTrue( true == root_orig_stats.is_dir() );
 
@@ -1464,10 +1434,7 @@ public class TestFileUtils01 extends FileUtilBaseTest {
         PlatformRuntime.checkInitialized();
         PrintUtil.println(System.err, "test50_copy_ext_r_p_fsl\n");
 
-        FileStats root_orig_stats = new FileStats(project_root1);
-        if( !root_orig_stats.exists() ) {
-            root_orig_stats = new FileStats(project_root2);
-        }
+        final FileStats root_orig_stats = getTestDataDirStats();
         Assert.assertTrue( true == root_orig_stats.exists() );
         Assert.assertTrue( true == root_orig_stats.is_dir() );
 

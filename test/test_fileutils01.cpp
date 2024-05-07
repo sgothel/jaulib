@@ -22,6 +22,7 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include "jau/file_util.hpp"
 #include "test_fileutils_copy_r_p.hpp"
 
 extern "C" {
@@ -35,6 +36,21 @@ extern "C" {
 class TestFileUtil01 : TestFileUtilBase {
   public:
 
+    void test00_testfiles() {
+        std::string cwd = jau::fs::get_cwd();
+        jau::fs::file_stats image_stats = getTestDataImageFile(executable_path); // optional
+        jau::fs::file_stats proot_stats_01 = getTestDataDirStats(executable_path);        
+        std::string rel_project_root = getTestDataRelDir(executable_path);
+        jau::fs::file_stats proot_stats_02(rel_project_root);
+        jau::fprintf_td(stdout, "test00: cwd:               %s\n", cwd.c_str());
+        jau::fprintf_td(stdout, "test00: 00: image.stat:    %s\n", image_stats.to_string().c_str());
+        jau::fprintf_td(stdout, "test00: 02: proot01.stats: %s\n", proot_stats_01.to_string().c_str());
+        jau::fprintf_td(stdout, "test00: 02: proot02.rel:   %s\n", rel_project_root.c_str());
+        jau::fprintf_td(stdout, "test00: 02: proot02.stats: %s\n", proot_stats_02.to_string().c_str());
+        REQUIRE( proot_stats_01.exists() );
+        REQUIRE( proot_stats_02.exists() );
+    }
+    
     /**
      *
      */
@@ -189,8 +205,9 @@ class TestFileUtil01 : TestFileUtilBase {
         {
             std::string rel_project_root = getTestDataRelDir(executable_path);
             jau::fs::file_stats proot_stats(rel_project_root);
-            jau::fprintf_td(stdout, "test03b_absolute: 01: %s\n", rel_project_root.c_str());
-            jau::fprintf_td(stdout, "test03b_absolute: 01: %s\n", proot_stats.to_string().c_str());
+            jau::fprintf_td(stdout, "test03b_absolute: 01: cwd: %s\n", jau::fs::get_cwd().c_str());
+            jau::fprintf_td(stdout, "test03b_absolute: 01: rel_project_root %s\n", rel_project_root.c_str());
+            jau::fprintf_td(stdout, "test03b_absolute: 01: proot_stats %s\n", proot_stats.to_string().c_str());
             jau::fprintf_td(stdout, "test03b_absolute: 01: fields %s\n", jau::fs::to_string( proot_stats.fields() ).c_str());
             REQUIRE( true == proot_stats.exists() );
             REQUIRE( true == proot_stats.is_dir() );
@@ -1716,6 +1733,7 @@ class TestFileUtil01 : TestFileUtilBase {
     }
 };
 
+METHOD_AS_TEST_CASE( TestFileUtil01::test00_testfiles,          "Test TestFileUtil01 - test00_testfiles");
 METHOD_AS_TEST_CASE( TestFileUtil01::test01_cwd,                "Test TestFileUtil01 - test01_cwd");
 METHOD_AS_TEST_CASE( TestFileUtil01::test02_dirname,            "Test TestFileUtil01 - test02_dirname");
 METHOD_AS_TEST_CASE( TestFileUtil01::test03_basename,           "Test TestFileUtil01 - test03_basename");

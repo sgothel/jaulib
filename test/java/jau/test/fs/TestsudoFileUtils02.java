@@ -58,16 +58,13 @@ public class TestsudoFileUtils02 extends FileUtilBaseTest {
         PlatformRuntime.checkInitialized();
         PrintUtil.println(System.err, "test50_mount_copy_r_p\n");
 
-        FileStats root_orig_stats = new FileStats(project_root1);
-        if( !root_orig_stats.exists() ) {
-            root_orig_stats = new FileStats(project_root2);
-        }
+        final FileStats root_orig_stats = getTestDataDirStats();
         Assert.assertTrue( true == root_orig_stats.exists() );
         Assert.assertTrue( true == root_orig_stats.is_dir() );
 
         {
-            final String image_file = "../" + root + ".sqfs";
-            final FileStats image_stats = new FileStats(image_file);
+
+            final FileStats image_stats = getTestDataImageFile();
             Assert.assertTrue( true == image_stats.exists() );
 
             final String mount_point = root+"_mount";

@@ -34,15 +34,70 @@ import org.junit.Assert;
 import jau.test.junit.util.JunitTracer;
 
 public class FileUtilBaseTest extends JunitTracer {
+    public static final String image_file = "test_data.sqfs";
     public static final String root = "test_data";
-    // normal location with jaulib as sole project
-    public static final String project_root1 = "../../../test_data";
-    // submodule location with jaulib directly hosted below main project
-    public static final String project_root2 = "../../../../jaulib/test_data";
+    // normal location with jaulib as sole project (a)
+    public static final String project_root1a = "../../../test_data";
+    // normal location with jaulib as sole project (b)
+    public static final String project_root1b = "../../../../test_data";
+    // submodule location with jaulib directly hosted below main project (a)
+    public static final String project_root2a = "../../../../jaulib/test_data";
+    // submodule location with jaulib directly hosted below main project (b)
+    public static final String project_root2b = "../../../../../jaulib/test_data";
     // external filesystem to test ...
     public static final String project_root_ext = "/mnt/ssd0/data/test_data";
     // external vfat filesystem destination to test ...
     public static final String dest_fs_vfat = "/mnt/vfat";
+
+    public static final FileStats getTestDataDirStats() {
+        FileStats path_stats = new FileStats(project_root1a);
+        if( path_stats.exists() ) {
+            return path_stats;
+        }
+        path_stats = new FileStats(project_root1b);
+        if( path_stats.exists() ) {
+            return path_stats;
+        }
+        path_stats = new FileStats(project_root2a);
+        if( path_stats.exists() ) {
+            return path_stats;
+        }
+        path_stats = new FileStats(project_root2b);
+        if( path_stats.exists() ) {
+            return path_stats;
+        }
+        return new FileStats();
+    }
+    public static String getTestDataRelDir() {
+        FileStats path_stats = new FileStats(project_root1a);
+        if( path_stats.exists() ) {
+            return project_root1a;
+        }
+        path_stats = new FileStats(project_root1b);
+        if( path_stats.exists() ) {
+            return project_root1b;
+        }
+        path_stats = new FileStats(project_root2a);
+        if( path_stats.exists() ) {
+            return project_root2a;
+        }
+        path_stats = new FileStats(project_root2b);
+        if( path_stats.exists() ) {
+            return project_root2b;
+        }
+        return "";
+    }
+    public static final FileStats getTestDataImageFile() {
+        FileStats path_stats = new FileStats("../"+image_file);
+        if( path_stats.exists() ) {
+            return path_stats;
+        }
+        path_stats = new FileStats("../../"+image_file);
+        if( path_stats.exists() ) {
+            return path_stats;
+        }
+        return new FileStats();
+    }
 
     public static class VisitorStats {
         public TraverseOptions topts;
