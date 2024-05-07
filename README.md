@@ -205,10 +205,6 @@ git clone https://jausoft.com/cgit/jaulib.git
 cd jaulib
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You may want to set the environment variable `CMAKE_BUILD_PARALLEL_LEVEL`
-to a suitable high number, best to your CPU core count.
-This will enable parallel build per default and you can drop the `--parallel` argument below.
-
 <a name="cmake_presets_optional"></a>
 
 #### CMake Build via Presets
@@ -270,7 +266,7 @@ cmake --build build/default --target test install doc_jau
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The install target of the last command will create the include/ and lib/ directories with a copy of
-the headers and library objects respectively in your build location.
+the headers and library objects respectively in your dist location.
 
 #### CMake Variables
 Our cmake configure has a number of options, *cmake-gui* or *ccmake* can show
