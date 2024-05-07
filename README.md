@@ -205,6 +205,10 @@ git clone https://jausoft.com/cgit/jaulib.git
 cd jaulib
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+You may want to set the environment variable `CMAKE_BUILD_PARALLEL_LEVEL`
+to a suitable high number, best to your CPU core count.
+This will enable parallel build per default and you can drop the `--parallel` argument below.
+
 <a name="cmake_presets_optional"></a>
 
 #### CMake Build via Presets
@@ -402,6 +406,10 @@ IDE integration configuration files are provided for
 
 The [Hardcoded CMake Presets](README.md#cmake_presets_hardcoded) will 
 use `build/default` as the default build folder with debug enabled.
+
+Make sure to set the environment variable `CMAKE_BUILD_PARALLEL_LEVEL`
+to a suitable high number, best to your CPU core count.
+This will enable parallel build with the IDE.
 
 You can import the project to your workspace via `File . Import...` and `Existing Projects into Workspace` menu item.
 
