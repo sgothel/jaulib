@@ -47,8 +47,8 @@ static const Mat4f m2(m2_0);
 TEST_CASE( "Test 05 Perf01", "[mat4f][linear_algebra][math]" ) {
     Mat4f res_m;
 
-    const size_t warmups = 1000_u64;
-    const size_t loops = 300_u64*1000000_u64;
+    const size_t warmups = debug_enabled ? 100_u64 : 1000_u64;
+    const size_t loops = debug_enabled ? 1_u64*1000000_u64 : 300_u64*1000000_u64;
     jau::fraction_i64 tI4a = fractions_i64::zero;
     jau::fraction_i64 tI4b = fractions_i64::zero;
 

@@ -778,6 +778,12 @@ namespace jau {
        #endif
     #endif
 
+    #if defined(NDEBUG) && !defined(DEBUG)
+        inline constexpr const bool debug_enabled = false;
+    #else
+        inline constexpr const bool debug_enabled = true;
+    #endif
+    
     /**@}*/
 
 } // namespace jau
