@@ -280,6 +280,7 @@ you all the options. The interesting ones are detailed below:
 - `CMAKE_C_COMPILER`
 - `CMAKE_CXX_COMPILER`
 - `CMAKE_CXX_CLANG_TIDY`
+- `CMAKE_CXX_STANDARD`
 
 `JaulibSetup` cached variables for regular builds are
 - `DEBUG`
