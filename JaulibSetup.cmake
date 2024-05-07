@@ -4,7 +4,6 @@
 # JaulibPreset Cached variables are
 # - CMAKE_BUILD_TYPE
 # - BUILD_TESTING
-# - CMAKE_CXX_COMPILER_ID
 # - CMAKE_C_COMPILER
 # - CMAKE_CXX_COMPILER
 # - CMAKE_CXX_CLANG_TIDY
@@ -12,9 +11,7 @@
 # JaulibSetup Cached variables are
 # - DEBUG
 # - CMAKE_INSTALL_PREFIX
-# - CMAKE_CXX_STANDARD_REQUIRED
 # - CMAKE_CXX_STANDARD
-# - LIB_INSTALL_DIR
 # - USE_LIBCURL
 # - USE_LIBUNWIND
 # - BUILDJAVA
@@ -62,7 +59,7 @@ macro(JaulibPreset)
             message(STATUS "JaulibPreset: Setting BUILD_TESTING ${BUILD_TESTING}")
         endif()
         if(NOT DEFINED CMAKE_CXX_COMPILER)
-            set(CMAKE_CXX_COMPILER_ID "Clang" CACHE STRING "" FORCE)
+            set(CMAKE_CXX_COMPILER_ID "Clang")
             set(CMAKE_C_COMPILER "clang" CACHE STRING "" FORCE)
             set(CMAKE_CXX_COMPILER "clang++" CACHE STRING "" FORCE)
             message(STATUS "JaulibPreset: Setting CMAKE_CXX_COMPILER ${CMAKE_CXX_COMPILER}")
@@ -191,7 +188,7 @@ else()
     message(STATUS "JaulibSetup: clang-tidy not used")
 endif()
 
-set (CMAKE_CXX_STANDARD_REQUIRED ON CACHE BOOL "" FORCE)
+set (CMAKE_CXX_STANDARD_REQUIRED ON)
 if(DEFINED CMAKE_CXX_STANDARD)
     message(STATUS "JaulibSetup: CMAKE_CXX_STANDARD (preset): ${CMAKE_CXX_STANDARD}, CMAKE_CXX_STANDARD_REQUIRED: ${CMAKE_CXX_STANDARD_REQUIRED}")
 else()
@@ -308,16 +305,12 @@ if(${OS_NAME} STREQUAL "linux")
     endif()
 endif()
 
-set (LIB_INSTALL_DIR "lib${LIB_SUFFIX}" CACHE PATH "Installation path for libraries")
-
 message(STATUS "JaulibSetup: CMAKE_CXX_FLAGS = ${CMAKE_CXX_FLAGS}")
 message(STATUS "JaulibSetup: CMAKE_SHARED_LINKER_FLAGS = ${CMAKE_SHARED_LINKER_FLAGS}")
 message(STATUS "JaulibSetup: CMAKE_EXE_LINKER_FLAGS = ${CMAKE_EXE_LINKER_FLAGS}")
 message(STATUS "JaulibSetup: CMAKE_CXX_STANDARD_LIBRARIES = ${CMAKE_CXX_STANDARD_LIBRARIES}")
-message(STATUS "JaulibSetup: LIB_INSTALL_DIR = ${LIB_INSTALL_DIR}")
 
 # Set CMAKE_INSTALL_XXXDIR (XXX {BIN LIB ..} if not defined
-# (was: CMAKE_LIB_INSTALL_DIR)
 include(GNUInstallDirs)
 
 # Appends the cmake/modules path to MAKE_MODULE_PATH variable.

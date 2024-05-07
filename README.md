@@ -277,7 +277,6 @@ you all the options. The interesting ones are detailed below:
 `JaulibPreset` cached variables for hardcoded presets are
 - `CMAKE_BUILD_TYPE`
 - `BUILD_TESTING`
-- `CMAKE_CXX_COMPILER_ID`
 - `CMAKE_C_COMPILER`
 - `CMAKE_CXX_COMPILER`
 - `CMAKE_CXX_CLANG_TIDY`
@@ -285,16 +284,14 @@ you all the options. The interesting ones are detailed below:
 `JaulibSetup` cached variables for regular builds are
 - `DEBUG`
 - `CMAKE_INSTALL_PREFIX`
-- `CMAKE_CXX_STANDARD_REQUIRED`
 - `CMAKE_CXX_STANDARD`
-- `LIB_INSTALL_DIR`
 - `USE_LIBCURL`
 - `USE_LIBUNWIND`
 - `BUILDJAVA`
 
 Changing install path
 ~~~~~~~~~~~~~
-- -DCMAKE_INSTALL_PREFIX=/somewhere/dist-jaulib
+-DCMAKE_INSTALL_PREFIX=/somewhere/dist-jaulib
 ~~~~~~~~~~~~~
 
 Building debug build:
