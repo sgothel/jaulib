@@ -79,10 +79,19 @@ namespace jau {
      * @return function result
      */
     template <typename T,
-              std::enable_if_t< std::is_arithmetic_v<T>, bool> = true>
+              std::enable_if_t< std::is_arithmetic_v<T> &&
+                               !std::is_unsigned_v<T>, bool> = true>
     constexpr int sign(const T x) noexcept
     {
         return (int) ( (T(0) < x) - (x < T(0)) );
+    }
+    
+    template <typename T,
+              std::enable_if_t< std::is_arithmetic_v<T> &&
+                                std::is_unsigned_v<T>, bool> = true>
+    constexpr int sign(const T x) noexcept
+    {
+        return (int) ( T(0) < x );
     }
 
     /**
