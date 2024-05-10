@@ -1028,7 +1028,7 @@ class alignas(Value_type) Matrix4 {
         m22 = z*z*ic+c;
         m32 = zero;
 
-        m03 = 0.9f;
+        m03 = zero;
         m13 = zero;
         m23 = zero;
         m33 = one;
