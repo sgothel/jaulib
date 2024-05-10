@@ -84,6 +84,39 @@ namespace jau {
     #define consteval_cxx20 constexpr
 #endif
 
+    /** Returns true if compiled with >= C++17 */
+    consteval_cxx20 bool is_cxx17() noexcept {
+        #if __cplusplus > 201402L
+            return true;
+        #else
+            return false;
+        #endif
+    }
+    /** Returns true if compiled with >= C++20 */
+    consteval_cxx20 bool is_cxx20() noexcept {
+        #if __cplusplus > 201703L
+            return true;
+        #else
+            return false;
+        #endif
+    }
+    /** Returns true if compiled with >= C++23 */
+    consteval_cxx20 bool is_cxx23() noexcept {
+        #if __cplusplus > 202002L
+            return true;
+        #else
+            return false;
+        #endif
+    }
+    /** Returns true if compiled with >= C++26 */
+    consteval_cxx20 bool is_cxx26() noexcept {
+        #if __cplusplus > 202302L
+            return true;
+        #else
+            return false;
+        #endif
+    }
+    
     /**
      * `constinit` qualifier replacement for C++20 `constinit`.
      *
@@ -237,13 +270,15 @@ namespace jau {
      */
     template <typename _Dummy> inline constexpr bool is_rtti_available_v = is_rtti_available_t<_Dummy>::value;
 
-    /**
-     * constexpr template function returning true if RTTI is available, otherwise false.
-     * @tparam _Dummy unused dummy type to satisfy SFINAE, defaults to void
-     */
-    template <typename _Dummy=void>
-    inline constexpr bool is_rtti_available() { return is_rtti_available_v<_Dummy>; }
-
+    /** Returns true if compiled with RTTI available */
+    consteval_cxx20 bool is_rtti_available() noexcept {
+        #if defined(__cxx_rtti_available__)
+            return true;
+        #else
+            return false;
+        #endif
+    }
+    
     #if defined(__clang__)
         /** Consider using [jau::ctti_name<R, L, A...>()](@ref ctti_name_lambda). */
         #define JAU_PRETTY_FUNCTION __PRETTY_FUNCTION__
@@ -654,14 +689,14 @@ namespace jau {
 
     namespace impl {
         template<class Dummy_type>
-        constexpr bool has_builtin_bit_cast_impl(
+        consteval_cxx20 bool has_builtin_bit_cast_impl(
                 std::enable_if_t< has_builtin_bit_cast_v<Dummy_type>, bool> = true ) noexcept
         {
             return true;
         }
 
         template<class Dummy_type>
-        constexpr bool has_builtin_bit_cast_impl(
+        consteval_cxx20 bool has_builtin_bit_cast_impl(
                 std::enable_if_t< !has_builtin_bit_cast_v<Dummy_type>, bool> = true ) noexcept
         {
             return false;
@@ -690,7 +725,7 @@ namespace jau {
      * @see bit_cast()
      * @see pointer_cast()
      */
-    constexpr bool is_builtin_bit_cast_available() noexcept {
+    consteval_cxx20 bool is_builtin_bit_cast_available() noexcept {
         return impl::has_builtin_bit_cast_impl<bool>();
     }
 
@@ -759,7 +794,7 @@ namespace jau {
         }
     }
 
-    constexpr bool is_builtin_int128_available() noexcept {
+    consteval_cxx20 bool is_builtin_int128_available() noexcept {
         #if defined(__SIZEOF_INT128__)
             return true;
         #else
@@ -778,11 +813,14 @@ namespace jau {
        #endif
     #endif
 
-    #if defined(NDEBUG) && !defined(DEBUG)
-        inline constexpr const bool debug_enabled = false;
-    #else
-        inline constexpr const bool debug_enabled = true;
-    #endif
+    /** Returns true if compiled with debug information and w/o optimization, i.e. not `defined(NDEBUG) && !defined(DEBUG)`. */
+    consteval_cxx20 bool is_debug_enabled() noexcept {
+        #if defined(NDEBUG) && !defined(DEBUG)
+            return false;
+        #else
+            return true;
+        #endif
+    }
     
     /**@}*/
 
