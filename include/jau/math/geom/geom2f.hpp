@@ -454,8 +454,6 @@ namespace jau::math::geom {
      */
     class AGeom2f : public Geom2f {
     public:
-        virtual ~AGeom2f() = default;
-
         virtual void rotate(const float rad) noexcept = 0;
         virtual void move_dir(const float d) noexcept = 0;
         virtual void move(const Point2f& d) noexcept = 0;
@@ -788,7 +786,7 @@ namespace jau::math::geom {
                 c += p_list[p_list.size()-1];
                 n++;
             }
-            this->p_center = c / n;
+            this->p_center = c / static_cast<float>(n);
         }
 
         AABBox2f box() const noexcept override {

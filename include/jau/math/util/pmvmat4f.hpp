@@ -113,8 +113,8 @@ class PMVMatrix4 {
             : m_mat(m), m_sync( jau::bind_free(sync_action_fptr(nullptr)) )
             { }
 
-            virtual sync_action_t& action() noexcept override { return m_sync; }
-            virtual const Mat4& matrix() const noexcept override { return m_mat; }
+            sync_action_t& action() noexcept override { return m_sync; }
+            const Mat4& matrix() const noexcept override { return m_mat; }
         };
 
         class PMVSyncN : public SyncMats4 {
@@ -131,9 +131,9 @@ class PMVMatrix4 {
             : m_mat(m), m_count(count), m_sync( jau::bind_free(sync_action_fptr(nullptr)) )
             { }
 
-            virtual sync_action_t& action() noexcept override { return m_sync; }
-            virtual const Mat4* matrices() const noexcept override { return m_mat; }
-            virtual size_t matrixCount() const noexcept override { return m_count; }
+            sync_action_t& action() noexcept override { return m_sync; }
+            const Mat4* matrices() const noexcept override { return m_mat; }
+            size_t matrixCount() const noexcept override { return m_count; }
         };
 
         Mat4 matP;
@@ -258,6 +258,7 @@ class PMVMatrix4 {
      * </p>
      */
     constexpr Mat4& getT() noexcept { return matTex; }
+    constexpr const Mat4& getT() const noexcept { return matTex; }
 
     /**
      * Returns the {@link SyncMatrix} of {@link GLMatrixFunc#GL_TEXTURE_MATRIX texture matrix} (T).
@@ -266,6 +267,7 @@ class PMVMatrix4 {
      * </p>
      */
     constexpr SyncMat4& getSyncT() noexcept { return syncTex; }
+    constexpr const SyncMats4& getSyncT() const noexcept { return syncTex; }
 
     /**
      * Returns the {@link GLMatrixFunc#GL_PROJECTION_MATRIX projection matrix} (P).
@@ -277,6 +279,7 @@ class PMVMatrix4 {
      * </p>
      */
     constexpr Mat4& getP() noexcept { return matP; }
+    constexpr const Mat4& getP() const noexcept { return matP; }
 
     /**
      * Returns the {@link SyncMatrix} of {@link GLMatrixFunc#GL_PROJECTION_MATRIX projection matrix} (P).
@@ -285,6 +288,7 @@ class PMVMatrix4 {
      * </p>
      */
     constexpr SyncMat4& getSyncP() noexcept { return syncP; }
+    constexpr const SyncMats4& getSyncP() const noexcept { return syncP; }
 
     /**
      * Returns the {@link GLMatrixFunc#GL_MODELVIEW_MATRIX modelview matrix} (Mv).
@@ -296,6 +300,7 @@ class PMVMatrix4 {
      * </p>
      */
     constexpr Mat4& getMv() noexcept { return matMv; }
+    constexpr const Mat4& getMv() const noexcept { return matMv; }
 
     /**
      * Returns the {@link SyncMatrix} of {@link GLMatrixFunc#GL_MODELVIEW_MATRIX modelview matrix} (Mv).
@@ -304,6 +309,7 @@ class PMVMatrix4 {
      * </p>
      */
     constexpr SyncMat4& getSyncMv() noexcept { return syncMv; }
+    constexpr const SyncMats4& getSyncMv() const noexcept { return syncMv; }
 
     /**
      * Returns {@link SyncMatrices4f} of 2 matrices within one FloatBuffer: {@link #getP() P} and {@link #getMv() Mv}.
@@ -311,7 +317,8 @@ class PMVMatrix4 {
      * See <a href="#storageDetails"> matrix storage details</a>.
      * </p>
      */
-    constexpr SyncMats4f& getSyncPMv() noexcept { return syncP_Mv; }
+    constexpr SyncMats4f& getSyncPMv() noexcept { return syncP_Mv; }    
+    constexpr const SyncMats4f& getSyncPMv() const noexcept { return syncP_Mv; }
 
     /**
      * Returns the inverse {@link GLMatrixFunc#GL_MODELVIEW_MATRIX modelview matrix} (Mvi) if requested.

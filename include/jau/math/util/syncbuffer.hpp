@@ -92,17 +92,15 @@ namespace jau::math::util {
         typedef Value_type               value_type;
         typedef Matrix4<value_type, std::is_floating_point_v<Value_type>> Mat4;
 
-        virtual ~SyncMatrix4() noexcept = default;
-
         /** Return the underlying Mat4, used to synchronize via action() to the buffer(). */
         virtual const Mat4& matrix() const noexcept = 0;
 
         /** Return the underlying float data buffer. */
         const value_type* floats() const noexcept { return matrix().cbegin(); }
 
-        virtual const void* buffer() const noexcept override { return floats(); }
-        virtual size_t elementSize() const noexcept override { return sizeof(float); }
-        virtual size_t elementCount() const noexcept override { return 16; }
+        const void* buffer() const noexcept override { return floats(); }
+        size_t elementSize() const noexcept override { return sizeof(float); }
+        size_t elementCount() const noexcept override { return 16; }
     };
     typedef SyncMatrix4<float> SyncMat4f;
 
@@ -115,17 +113,15 @@ namespace jau::math::util {
         typedef Value_type               value_type;
         typedef Matrix4<value_type, std::is_floating_point_v<Value_type>> Mat4;
 
-        virtual ~SyncMatrices4() noexcept = default;
-
         /** Return the underlying Mat4 pointer, used to synchronize via action() to the buffer(). */
         virtual const Mat4* matrices() const noexcept = 0;
         /** Return the number of Mat4 referenced by matrices() */
         virtual size_t matrixCount() const noexcept = 0;
 
         const float* floats() const noexcept { return matrices()[0].cbegin(); }
-        virtual const void* buffer() const noexcept override { return floats(); }
-        virtual size_t elementSize() const noexcept override { return sizeof(float); }
-        virtual size_t elementCount() const noexcept override { return 16 * matrixCount(); }
+        const void* buffer() const noexcept override { return floats(); }
+        size_t elementSize() const noexcept override { return sizeof(float); }
+        size_t elementCount() const noexcept override { return 16 * matrixCount(); }
     };
     typedef SyncMatrices4<float> SyncMats4f;
 
