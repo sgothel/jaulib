@@ -79,8 +79,10 @@ namespace jau::cpu {
         /** Hitachi SuperH 64bit */
         superh_64 = 51,
 
-        /** WebAssembly */
-        wasm = 60
+        /** WebAssembly 32-bit */
+        wasm_32 = 60,
+        /** WebAssembly 64-bit */
+        wasm_64 = 61
 
     };
     constexpr uint16_t number(const cpu_family rhs) noexcept {
@@ -122,8 +124,8 @@ namespace jau::cpu {
     /** Returns cpu_family derived from [Architectures](https://sourceforge.net/p/predef/wiki/Architectures/) predefined compiler macros. */
     constexpr cpu_family get_cpu_family() noexcept {
         #if defined(__EMSCRIPTEN__)
-            // FIXME: static_assert( 64 == get_arch_psize() );
-            return cpu_family::wasm;
+            static_assert( 32 == get_arch_psize() );
+            return cpu_family::wasm_32;
         #elif defined(__aarch64__)
             static_assert( 64 == get_arch_psize() );
             return cpu_family::arm64;

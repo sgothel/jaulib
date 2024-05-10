@@ -124,9 +124,10 @@ namespace jau {
             typedef typename sub_traits_t::reference            reference;          // 'value_type &'
             typedef typename sub_traits_t::pointer              pointer;            // 'value_type *'
 
-#if __cplusplus > 201703L && __cpp_lib_concepts
+// FIXME
+#if __cplusplus > 201703L && __cpp_lib_concepts && 0
             using iterator_concept = std::__detail::__iter_concept<iterator_type>;
-#endif
+ #endif
 
         public:
 
@@ -684,7 +685,8 @@ namespace jau {
             typedef typename sub_traits_t::reference            reference;          // 'const value_type &'
             typedef typename sub_traits_t::pointer              pointer;            // 'const value_type *'
 
-#if __cplusplus > 201703L && __cpp_lib_concepts
+// FIXME
+#if __cplusplus > 201703L && __cpp_lib_concepts && 0
             using iterator_concept = std::__detail::__iter_concept<iterator_type>;
 #endif
 

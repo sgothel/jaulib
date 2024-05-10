@@ -66,8 +66,9 @@ static void append_bitstr(std::string& out, T mask, T bit, const std::string& bi
     X(cpu_family,mips_64) \
     X(cpu_family,superh_32) \
     X(cpu_family,superh_64) \
-    X(cpu_family,wasm)
-
+    X(cpu_family,wasm_32) \
+    X(cpu_family,wasm_64)
+    
 std::string jau::cpu::to_string(const cpu_family v) noexcept {
     switch(v) {
     CPUFAMILY_ENUM(CASE_TO_STRING)

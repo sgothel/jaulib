@@ -31,9 +31,6 @@
         #include <grp.h>
         #include <pwd.h>
         #include <sys/types.h>
-        #include <sys/mount.h>
-        #include <sys/capability.h>
-        #include <sys/prctl.h>
     }
 
     using namespace jau;
@@ -58,12 +55,12 @@
     }
 
     bool UserInfo::set_groups(const std::vector<id_t>& list) noexcept {
-        ::gid_t n_list[list.size()+1];
-        size_t i=0;
+        std::vector<::gid_t> n_list;
+        n_list.reserve(list.size()+1);
         for(const id_t& gid : list) {
-            n_list[i++] = (::gid_t)gid;
+            n_list.push_back( (::gid_t)gid );
         }
-        if( 0 > ::setgroups(list.size(), n_list) ) {
+        if( 0 > ::setgroups(n_list.size(), n_list.data()) ) {
             ERR_PRINT("setgroups failed");
             return false;
         }

@@ -27,6 +27,7 @@
 
 #include <cstdint>
 
+#include <jau/byte_util.hpp>
 #include "jau/cpp_lang_util.hpp"
 #include "jau/cpuid.hpp"
 
@@ -60,20 +61,34 @@ namespace jau::os {
     namespace impl {
         constexpr uint32_t get_host_os_id() noexcept {
             #if defined(__EMSCRIPTEN__)
-                return 0b00000001000000000000000000000000U; // WebAsm
+                #define JAU_OS_TYPE_UNIX 1
+                #define JAU_OS_TYPE_WASM 1
+                return 0b00000001000000000000000000000001U; // UnixWasm
             #elif defined(__QNXNTO__)
+                #define JAU_OS_TYPE_UNIX 1
+                #define JAU_OS_TYPE_QNXNTO 1
                 return 0b00000000000000000001000000000001U; // QnxNTO
             #elif defined(__APPLE__) && defined(__MACH__)
+                #define JAU_OS_TYPE_UNIX 1
+                #define JAU_OS_TYPE_DARWIN 1
                 return 0b00000000000000000000100000000001U; // Darwin
             #elif defined(__FreeBSD__)
+                #define JAU_OS_TYPE_UNIX 1
+                #define JAU_OS_TYPE_FREEBSD 1
                 return 0b00000000000000000000010000000001U; // FreeBSD
             #elif defined(__ANDROID__)
+                #define JAU_OS_TYPE_UNIX 1
+                #define JAU_OS_TYPE_ANDROID 1
                 return 0b00000000000000000000001100000001U; // Android
             #elif defined(__linux__)
+                #define JAU_OS_TYPE_UNIX 1
+                #define JAU_OS_TYPE_LINUX 1
                 return 0b00000000000000000000000100000001U; // Linux
             #elif defined(_WIN32)
+                #define JAU_OS_TYPE_WINDOWS 1
                 return 0b00000000000000000000000000000010U; // Windows
             #else
+                #define JAU_OS_TYPE_UNIX 1
                 return 0b00000000000000000000000000000001U; // Unix
             #endif
         }
@@ -95,8 +110,10 @@ namespace jau::os {
         Darwin  = 0b00000000000000000000100000000001U,
         /** QNX NTO (>= 6) bit, includes: unix  */
         QnxNTO  = 0b00000000000000000001000000000001U,
-        /** WebAssembly bit */
+        /** Generic WebAssembly bit */
         WebAsm  = 0b00000001000000000000000000000000U,
+        /** WebAssembly with Unix/Posix suport bit (emscripten) */
+        UnixWasm= 0b00000001000000000000000000000001U,
         /** Identifier for native OS type, one of the above. */
         native      = impl::get_host_os_id()
     };
@@ -165,6 +182,8 @@ namespace jau::os {
                 [[fallthrough]];
             case os_type::WebAsm:
                 return true;
+            case os_type::UnixWasm:
+                return true;
             default:
                 return false;
         }
@@ -197,6 +216,9 @@ namespace jau::os {
     /** Evaluates `true` if platform os_type::native contains os_type::WebAsm */
     constexpr bool is_wasm() noexcept { return is_set(os_type::native, os_type::WebAsm); }
 
+    /** Evaluates `true` if platform os_type::native contains os_type::UnixWasm */
+    constexpr bool is_unixwasm() noexcept { return is_set(os_type::native, os_type::UnixWasm); }
+    
     struct rt_os_info {
         std::string sysname;
         std::string nodename;
@@ -226,21 +248,31 @@ namespace jau::os {
         eabi_gnu_armhf = 0x02,
         /** ARM EABI AARCH64 (64bit) */
         eabi_aarch64   = 0x03,
-        /** WASM Undefined  */
-        wasm_abi_undef = 0x20,
-        /** WASM Emscripten  */
-        wasm_abi_emscripten = 0x21
+        /** WASM Undefined (32bit) */
+        wasm32_abi_undef = 0x20,
+        /** WASM Emscripten (32bit) */
+        wasm32_abi_emscripten = 0x21,
+        /** WASM Undefined (64bit) */
+        wasm64_abi_undef = 0x2a,
+        /** WASM Emscripten (64bit) */
+        wasm64_abi_emscripten = 0x2b
     };
     constexpr abi_type get_abi_type(const jau::cpu::cpu_family cpu) noexcept {
         if ( jau::cpu::cpu_family::arm64 == cpu ) {
             return abi_type::eabi_aarch64;
         } else if ( jau::cpu::cpu_family::arm32 == cpu ) {
             return abi_type::eabi_gnu_armhf; // FIXME?
-        } else if ( jau::cpu::cpu_family::wasm == cpu ) {
+        } else if ( jau::cpu::cpu_family::wasm_32 == cpu ) {
             #if defined(__EMSCRIPTEN__)
-                return abi_type::wasm_abi_emscripten;
+                return abi_type::wasm32_abi_emscripten;
             #else
-                return abi_type::wasm_abi_undef;
+                return abi_type::wasm32_abi_undef;
+            #endif
+        } else if ( jau::cpu::cpu_family::wasm_64 == cpu ) {
+            #if defined(__EMSCRIPTEN__)
+                return abi_type::wasm64_abi_emscripten;
+            #else
+                return abi_type::wasm64_abi_undef;
             #endif
         }
         return abi_type::generic_abi;

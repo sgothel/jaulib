@@ -2108,7 +2108,11 @@ mount_ctx jau::fs::mount(const std::string& source, const std::string& target, c
         (void)fs_options_cstr;
         const int mount_res = -1;
 #else
-        #warning Add OS support
+        #if !defined(JAU_OS_TYPE_WASM)
+            #warning Add OS support
+        #endif
+        (void)flags;
+        (void)fs_options_cstr;
         const int mount_res = -1;
 #endif
         if( 0 != mount_res ) {
@@ -2163,7 +2167,9 @@ bool jau::fs::umount(const mount_ctx& context, const umountflags_t flags)
 #elif defined(__FreeBSD__)
         const int umount_res = ::unmount(target_stats.path().c_str(), flags);
 #else
-        #warning Add OS support
+        #if !defined(JAU_OS_TYPE_WASM)
+            #warning Add OS support
+        #endif
         const int umount_res = -1;
 #endif
         if( 0 != umount_res ) {
@@ -2247,7 +2253,9 @@ bool jau::fs::umount(const std::string& target, const umountflags_t flags)
 #elif defined(__FreeBSD__)
         const int umount_res = ::unmount(target_stats.path().c_str(), flags);
 #else
-        #warning Add OS support
+        #if !defined(JAU_OS_TYPE_WASM)
+            #warning Add OS support
+        #endif
         const int umount_res = -1;
 #endif
         if( 0 == umount_res ) {

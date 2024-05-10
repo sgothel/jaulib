@@ -52,6 +52,7 @@ std::string jau::os::to_string(const os_type v) noexcept {
         case os_type::Darwin: return "Darwin";
         case os_type::QnxNTO: return "QNX-NTO";
         case os_type::WebAsm: return "WebAsm";
+        case os_type::UnixWasm: return "UnixWasm";
     }
     return "undef";
 }
@@ -80,8 +81,10 @@ std::string jau::os::to_string(const abi_type v) noexcept {
         case abi_type::eabi_gnu_armel: return "gnu_armel_abi";
         case abi_type::eabi_gnu_armhf: return "gnu_armhf_abi";
         case abi_type::eabi_aarch64: return "aarch64_abi";
-        case abi_type::wasm_abi_undef: return "wasm_undef_abi";
-        case abi_type::wasm_abi_emscripten: return "wasm_emscripten_abi";
+        case abi_type::wasm32_abi_undef: return "wasm32_undef_abi";
+        case abi_type::wasm32_abi_emscripten: return "wasm32_emscripten_abi";
+        case abi_type::wasm64_abi_undef: return "wasm64_undef_abi";
+        case abi_type::wasm64_abi_emscripten: return "wasm64_emscripten_abi";
     }
     return "undef";
 }
@@ -135,6 +138,12 @@ std::string jau::os::get_os_and_arch(const os_type os, const jau::cpu::cpu_famil
         case jau::cpu::cpu_family::superh_64:
             _and_arch_tmp = "superh64";
             break;
+        case jau::cpu::cpu_family::wasm_32:
+            _and_arch_tmp = "wasm32";
+            break;
+        case jau::cpu::cpu_family::wasm_64:
+            _and_arch_tmp = "wasm64";
+            break;
         default:
             _and_arch_tmp = "undef_arch";
             break;
@@ -167,6 +176,10 @@ std::string jau::os::get_os_and_arch(const os_type os, const jau::cpu::cpu_famil
           break;
         case os_type::WebAsm:
           os_ = "webasm";
+          _and_arch_final = _and_arch_tmp;
+          break;
+        case os_type::UnixWasm:
+          os_ = "unixwasm";
           _and_arch_final = _and_arch_tmp;
           break;
         default:

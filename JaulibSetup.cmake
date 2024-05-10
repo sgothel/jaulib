@@ -106,7 +106,9 @@ set(ENV{LC_MEASUREMENT} en_US.UTF-8)
 # Determine OS_AND_ARCH as library appendix, e.g. 'direct_bt-linux-amd64'
 string(TOLOWER ${CMAKE_SYSTEM_NAME} OS_NAME)
 string(TOLOWER ${CMAKE_SYSTEM_PROCESSOR} OS_ARCH0)
-if(${OS_ARCH0} STREQUAL "arm")
+if(EMSCRIPTEN)
+    set(OS_ARCH "wasm")
+elseif(${OS_ARCH0} STREQUAL "arm")
     set(OS_ARCH "armhf")
 elseif(${OS_ARCH0} STREQUAL "armv7l")
     set(OS_ARCH "armhf")
@@ -286,16 +288,18 @@ else()
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -frtti")
 endif(DONT_USE_RTTI)
 
-if(${OS_NAME} STREQUAL "freebsd")
+if(NOT EMSCRIPTEN)
+  if(${OS_NAME} STREQUAL "freebsd")
     set (SYS_INCLUDE_DIRS
       /usr/include
       /usr/local/include
     )
     set(CMAKE_SYSTEM_PREFIX_PATH "/usr;/usr/local")
-else()
+  else()
     set (SYS_INCLUDE_DIRS
       /usr/include
     )
+  endif()
 endif()
 
 if(${OS_NAME} STREQUAL "linux")
