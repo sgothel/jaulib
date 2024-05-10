@@ -63,6 +63,12 @@ namespace jau::math {
             constexpr static const value_type zero = value_type(0);
             constexpr static const value_type one  = value_type(1);
 
+            /** Number of components  */
+            constexpr static const size_t components = 4;
+            
+            /** Size in bytes (aligned) */
+            constexpr static const size_t byte_size = components * sizeof(value_type);
+            
             value_type x;
             value_type y;
             value_type z;
