@@ -39,6 +39,7 @@ using namespace jau;
 
 static constexpr const uint64_t NanoPerMilli =  1000'000UL;
 static constexpr const uint64_t MilliPerOne  =     1'000UL;
+inline constexpr const uint64_t NanoPerOne = NanoPerMilli*MilliPerOne;
 
 /**
  * See <http://man7.org/linux/man-pages/man2/clock_gettime.2.html>
@@ -101,36 +102,58 @@ std::string fraction_timespec::to_iso8601_string() const noexcept {
     }
 }
 
-void jau::sleep_until(const fraction_timespec& absolute_time, const bool monotonic) noexcept {
+bool jau::milli_sleep(uint64_t td_ms, const bool ignore_irq) noexcept {
+    const int64_t td_ns_0 = static_cast<int64_t>( (td_ms * NanoPerMilli) % NanoPerOne );
+    struct timespec ts;
+    ts.tv_sec = static_cast<decltype(ts.tv_sec)>(td_ms/MilliPerOne); // signed 32- or 64-bit integer
+    ts.tv_nsec = td_ns_0;
+    int res;
+    do {
+        res = ::clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, &ts); 
+    } while( ignore_irq && EINTR == res );
+    return 0 == res;
+}
+bool jau::sleep(const fraction_timespec& relative_time, const bool ignore_irq) noexcept {
+    struct timespec ts = relative_time.to_timespec();
+    int res;
+    do {
+        res = ::clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, &ts); 
+    } while( ignore_irq && EINTR == res );
+    return 0 == res;
+}
+
+bool jau::sleep_until(const fraction_timespec& absolute_time, const bool monotonic, const bool ignore_irq) noexcept {
     if( absolute_time <= fraction_tv::zero ) {
-        return;
+        return false;
     }
     // typedef struct timespec __gthread_time_t;
     struct timespec ts = absolute_time.to_timespec();
-
-    while ( -1 == ::clock_nanosleep(monotonic ? CLOCK_MONOTONIC : CLOCK_REALTIME,
-                                    TIMER_ABSTIME,
-                                    &ts, &ts) && EINTR == errno ) { }
+    int res;
+    do { 
+        res = ::clock_nanosleep(monotonic ? CLOCK_MONOTONIC : CLOCK_REALTIME,
+                                TIMER_ABSTIME, &ts, &ts);
+    } while( ignore_irq && EINTR == res );
+    return 0 == res;
 }
 
-void jau::sleep_for(const fraction_timespec& relative_time, const bool monotonic) noexcept {
+bool jau::sleep_for(const fraction_timespec& relative_time, const bool monotonic, const bool ignore_irq) noexcept {
     if( relative_time <= fraction_tv::zero ) {
-        return;
+        return false;
     }
     const fraction_timespec now = monotonic ? getMonotonicTime() : getWallClockTime();
-    sleep_until( now + relative_time );
+    return sleep_until( now + relative_time, monotonic, ignore_irq );
 }
 
-void jau::sleep_for(const fraction_i64& relative_time, const bool monotonic) noexcept {
+bool jau::sleep_for(const fraction_i64& relative_time, const bool monotonic, const bool ignore_irq) noexcept {
     if( relative_time <= fractions_i64::zero ) {
-        return;
+        return false;
     }
     bool overflow = false;
     const fraction_timespec atime = ( monotonic ? getMonotonicTime() : getWallClockTime() ) + fraction_timespec(relative_time, &overflow);
     if( overflow ) {
-        return;
+        return false;
     } else {
-        sleep_until( atime );
+        return sleep_until( atime, monotonic, ignore_irq );
     }
 }
 
@@ -213,7 +236,6 @@ std::cv_status jau::wait_for(std::condition_variable& cv, std::unique_lock<std::
         return wait_until(cv, lock, atime, monotonic);
     }
 }
-
 
 jau::ExceptionBase::ExceptionBase(std::string type, std::string const& m, const char* file, int line) noexcept
 : msg_( std::move( type.append(" @ ").append(file).append(":").append(std::to_string(line)).append(": ").append(m) ) ),
