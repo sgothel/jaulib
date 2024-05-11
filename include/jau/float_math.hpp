@@ -477,16 +477,16 @@ namespace jau {
     }
 
     /** Converts arc-degree to radians */
-    template<class T>
-    typename std::enable_if<std::is_floating_point_v<T>, bool>::type
-    constexpr adeg_to_rad(const T arc_degree) noexcept {
+    template<typename T,
+        std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    constexpr T adeg_to_rad(const T arc_degree) noexcept {
         return arc_degree * (T)M_PI / (T)180.0;
     }
 
     /** Converts radians to arc-degree */
-    template<class T>
-    typename std::enable_if<std::is_floating_point_v<T>, bool>::type
-    constexpr rad_to_adeg(const T rad) noexcept {
+    template<typename T,
+        std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    constexpr T rad_to_adeg(const T rad) noexcept {
         return rad * (T)180.0 / (T)M_PI;
     }
 
