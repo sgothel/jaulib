@@ -267,8 +267,16 @@ void jau::PLAIN_PRINT(const bool printPrefix, const char * format, ...) noexcept
     fflush(stderr);
 }
 
+int jau::fprintf_td(const uint64_t elapsed_ms, FILE* stream, const char * format, ...) noexcept {
+    int res = ::fprintf(stream, "[%s] ", jau::to_decstring(elapsed_ms, ',', 9).c_str());
+    va_list args;
+    va_start (args, format);
+    res += ::vfprintf(stream, format, args); // NOLINT(clang-analyzer-valist.Uninitialized): clang-tidy bug
+    va_end (args);
+    return res;
+}
 int jau::fprintf_td(FILE* stream, const char * format, ...) noexcept {
-    int res = ::fprintf(stderr, "[%s] ", jau::to_decstring(environment::getElapsedMillisecond(), ',', 9).c_str());
+    int res = ::fprintf(stream, "[%s] ", jau::to_decstring(environment::getElapsedMillisecond(), ',', 9).c_str());
     va_list args;
     va_start (args, format);
     res += ::vfprintf(stream, format, args); // NOLINT(clang-analyzer-valist.Uninitialized): clang-tidy bug

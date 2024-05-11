@@ -129,6 +129,15 @@ namespace jau {
     void PLAIN_PRINT(const bool printPrefix, const char * format, ...) noexcept;
 
     /**
+     * Convenient fprintf() invocation, prepending the given elapsed_ms timestamp.
+     * @param elapsed_ms the given elapsed time in milliseconds
+     * @param stream the output stream
+     * @param format the format
+     * @param args the optional arguments
+     */
+    int fprintf_td(const uint64_t elapsed_ms, FILE* stream, const char * format, ...) noexcept;
+    
+    /**
      * Convenient fprintf() invocation, prepending the environment::getElapsedMillisecond() timestamp.
      * @param stream the output stream
      * @param format the format
