@@ -153,7 +153,7 @@ namespace jau::os {
          * Returns a list of system paths, from the {@link #getSystemEnvLibraryPathVarname()} variable.
          */
         static std::vector<std::string> getSystemEnvLibraryPaths() {
-            return jau::split_string(jau::environment::getProperty( getEnvLibPathVarName() ), jau::os::getPathSeparator());
+            return jau::split_string(jau::environment::getProperty( getEnvLibPathVarName() ), jau::os::path_separator());
         }
 
         /** Returns the native library prefix, e.g. `lib` */

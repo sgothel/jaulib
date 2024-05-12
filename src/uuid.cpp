@@ -33,7 +33,7 @@ using namespace jau;
 // BASE_UUID '00000000-0000-1000-8000-00805F9B34FB'
 static uint8_t bt_base_uuid_be[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00,
                                      0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB };
-uuid128_t jau::BT_BASE_UUID( bt_base_uuid_be, lb_endian::big );
+uuid128_t jau::BT_BASE_UUID( bt_base_uuid_be, lb_endian_t::big );
 
 std::string uuid_t::getTypeSizeString(const TypeSize v) noexcept {
     switch( static_cast<TypeSize>(v) ) {
@@ -53,7 +53,7 @@ uuid_t::TypeSize uuid_t::toTypeSize(const jau::nsize_t size) {
     throw jau::IllegalArgumentException("Given size "+std::to_string(size)+", not matching uuid16_t, uuid32_t or uuid128_t", E_FILE_LINE);
 }
 
-std::unique_ptr<uuid_t> uuid_t::create(TypeSize t, uint8_t const * const buffer, lb_endian const le_or_be) {
+std::unique_ptr<uuid_t> uuid_t::create(TypeSize t, uint8_t const * const buffer, lb_endian_t const le_or_be) {
     if( TypeSize::UUID16_SZ == t ) {
         return std::make_unique<uuid16_t>(buffer, le_or_be);
     } else if( TypeSize::UUID32_SZ == t ) {
@@ -171,7 +171,7 @@ std::string uuid32_t::toUUID128String(uuid128_t const & base_uuid, jau::nsize_t 
 }
 
 // one static_assert is sufficient for whole compilation unit
-static_assert( is_defined_endian(endian::native) );
+static_assert( is_defined_endian(endian_t::native) );
 static_assert( is_little_or_big_endian() );
 
 std::string uuid128_t::toString() const noexcept {

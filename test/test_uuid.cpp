@@ -14,14 +14,14 @@ TEST_CASE( "UUID Test 01", "[datatype][uuid]" ) {
                                        0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB };
 
     {
-        const uuid128_t v01 = uuid128_t(uuid128_bytes, jau::lb_endian::little);
+        const uuid128_t v01 = uuid128_t(uuid128_bytes, jau::lb_endian_t::little);
         REQUIRE(v01.getTypeSizeInt() == 16);
         REQUIRE(v01.getTypeSizeInt() == sizeof(v01.value));
         REQUIRE(v01.getTypeSizeInt() == sizeof(v01.value.data));
         REQUIRE( 0 == memcmp(uuid128_bytes, v01.data(), 16) );
 
-        v01.put(buffer, jau::lb_endian::little);
-        std::shared_ptr<const uuid_t> v02 = uuid_t::create(uuid_t::TypeSize::UUID128_SZ, buffer, jau::lb_endian::little);
+        v01.put(buffer, jau::lb_endian_t::little);
+        std::shared_ptr<const uuid_t> v02 = uuid_t::create(uuid_t::TypeSize::UUID128_SZ, buffer, jau::lb_endian_t::little);
         REQUIRE(v02->getTypeSizeInt() == 16);
         REQUIRE( 0 == memcmp(v01.data(), v02->data(), 16) );
         REQUIRE( v01.toString() == v02->toString() );
@@ -33,8 +33,8 @@ TEST_CASE( "UUID Test 01", "[datatype][uuid]" ) {
         REQUIRE(v01.getTypeSizeInt() == sizeof(v01.value));
         REQUIRE(0x12345678 == v01.value);
 
-        v01.put(buffer, jau::lb_endian::little);
-        std::shared_ptr<const uuid_t> v02 = uuid_t::create(uuid_t::TypeSize::UUID32_SZ, buffer, jau::lb_endian::little);
+        v01.put(buffer, jau::lb_endian_t::little);
+        std::shared_ptr<const uuid_t> v02 = uuid_t::create(uuid_t::TypeSize::UUID32_SZ, buffer, jau::lb_endian_t::little);
         REQUIRE(v02->getTypeSizeInt() == 4);
         REQUIRE( 0 == memcmp(v01.data(), v02->data(), 4) );
         REQUIRE( v01.toString() == v02->toString() );
@@ -46,8 +46,8 @@ TEST_CASE( "UUID Test 01", "[datatype][uuid]" ) {
         REQUIRE(v01.getTypeSizeInt() == sizeof(v01.value));
         REQUIRE(0x1234 == v01.value);
 
-        v01.put(buffer, jau::lb_endian::little);
-        std::shared_ptr<const uuid_t> v02 = uuid_t::create(uuid_t::TypeSize::UUID16_SZ, buffer, jau::lb_endian::little);
+        v01.put(buffer, jau::lb_endian_t::little);
+        std::shared_ptr<const uuid_t> v02 = uuid_t::create(uuid_t::TypeSize::UUID16_SZ, buffer, jau::lb_endian_t::little);
         REQUIRE(v02->getTypeSizeInt() == 2);
         REQUIRE( 0 == memcmp(v01.data(), v02->data(), 2) );
         REQUIRE( v01.toString() == v02->toString() );

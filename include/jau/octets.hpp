@@ -71,7 +71,7 @@ namespace jau {
             /** Memory pointer, might be nullptr. Actual capacity known by owner, e.g. POctets. */
             uint8_t * _data;
             /** byte-order flag, little or big endian */
-            lb_endian _byte_order;
+            lb_endian_t _byte_order;
 
         protected:
             /**
@@ -100,7 +100,7 @@ namespace jau {
              * @param size_ used memory size
              * @param byte_order lb_endian::little or lb_endian::big byte order, one may pass lb_endian::native.
              */
-            inline void setData(uint8_t *data_, nsize_t size_, const lb_endian byte_order) noexcept {
+            inline void setData(uint8_t *data_, nsize_t size_, const lb_endian_t byte_order) noexcept {
                 JAU_TRACE_OCTETS_PRINT("POctets setData: %zu bytes @ %p -> %zu bytes @ %p",
                         _size, _data, size_, data_);
                 checkPtr(data_, size_);
@@ -120,7 +120,7 @@ namespace jau {
              * @param len readable size of the memory, may be zero
              * @param byte_order lb_endian::little or lb_endian::big byte order, one may pass lb_endian::native.
              */
-            TROOctets(const uint8_t *source, const nsize_t len, const lb_endian byte_order_val ) noexcept
+            TROOctets(const uint8_t *source, const nsize_t len, const lb_endian_t byte_order_val ) noexcept
             : _size( len ), _data( const_cast<uint8_t *>(source) ),
               _byte_order( byte_order_val )
             {
@@ -135,7 +135,7 @@ namespace jau {
              */
             TROOctets() noexcept
             : _size( 0 ), _data( nullptr ),
-              _byte_order( lb_endian::native )
+              _byte_order( lb_endian_t::native )
             { }
 
             TROOctets(const TROOctets &o) noexcept = default;
@@ -156,7 +156,7 @@ namespace jau {
             }
 
             /** Returns byte order of this octet store. */
-            constexpr lb_endian byte_order() const noexcept { return _byte_order; }
+            constexpr lb_endian_t byte_order() const noexcept { return _byte_order; }
 
             /** Returns the used memory size for read and write operations, may be zero. */
             constexpr nsize_t size() const noexcept { return _size; }
@@ -310,7 +310,7 @@ namespace jau {
              * @param len length of transient data source
              * @param byte_order lb_endian::little or lb_endian::big byte order, one may pass lb_endian::native.
              */
-            TOctets(uint8_t *source, const nsize_t len, const lb_endian byte_order) noexcept
+            TOctets(uint8_t *source, const nsize_t len, const lb_endian_t byte_order) noexcept
             : TROOctets(source, len, byte_order) {}
 
             TOctets(const TOctets &o) noexcept = default;
@@ -516,7 +516,7 @@ namespace jau {
             }
 
             /** Returns byte order of this octet store. */
-            constexpr lb_endian byte_order() const noexcept { return _parent.byte_order(); }
+            constexpr lb_endian_t byte_order() const noexcept { return _parent.byte_order(); }
 
             constexpr nsize_t size() const noexcept { return _size; }
             constexpr nsize_t offset() const noexcept { return _offset; }
@@ -600,7 +600,7 @@ namespace jau {
              *
              * @param byte_order lb_endian::little or lb_endian::big byte order, one may pass lb_endian::native.
              */
-            POctets(const lb_endian byte_order) noexcept
+            POctets(const lb_endian_t byte_order) noexcept
             : TOctets(nullptr, 0, byte_order), _capacity(0)
             {
                 JAU_TRACE_OCTETS_PRINT("POctets ctor0: zero-sized");
@@ -617,7 +617,7 @@ namespace jau {
              * @throws IllegalArgumentException if source_ is nullptr and size_ > 0
              * @throws OutOfMemoryError if allocation fails
              */
-            POctets(const uint8_t *source_, const nsize_t size_, const lb_endian byte_order)
+            POctets(const uint8_t *source_, const nsize_t size_, const lb_endian_t byte_order)
             : TOctets( allocData(size_), size_, byte_order),
               _capacity( size_ )
             {
@@ -640,7 +640,7 @@ namespace jau {
              * @throws IllegalArgumentException if source_ is nullptr and size_ > 0
              * @throws OutOfMemoryError if allocation fails
              */
-            POctets(std::initializer_list<uint8_t> sourcelist, const lb_endian byte_order)
+            POctets(std::initializer_list<uint8_t> sourcelist, const lb_endian_t byte_order)
             : TOctets( allocData(sourcelist.size()), sourcelist.size(), byte_order),
               _capacity( sourcelist.size() )
             {
@@ -659,7 +659,7 @@ namespace jau {
              * @throws IllegalArgumentException if capacity_ < size_
              * @throws OutOfMemoryError if allocation fails
              */
-            POctets(const nsize_t capacity_, const nsize_t size_, const lb_endian byte_order)
+            POctets(const nsize_t capacity_, const nsize_t size_, const lb_endian_t byte_order)
             : TOctets( allocData( capacity_ ), size_, byte_order ),
               _capacity( capacity_ )
             {
@@ -676,7 +676,7 @@ namespace jau {
              * @param byte_order lb_endian::little or lb_endian::big byte order, one may pass lb_endian::native.
              * @throws OutOfMemoryError if allocation fails
              */
-            POctets(const nsize_t size, const lb_endian byte_order)
+            POctets(const nsize_t size, const lb_endian_t byte_order)
             : POctets(size, size, byte_order)
             {
                 JAU_TRACE_OCTETS_PRINT("POctets ctor3: %p", data());

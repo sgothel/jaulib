@@ -29,6 +29,8 @@
 #include <ctime>
 
 #include <algorithm>
+#include <jau/cpuid.hpp>
+#include <jau/string_util.hpp>
 
 #include <jau/debug.hpp>
 #include <jau/file_util.hpp>
@@ -42,22 +44,29 @@
 
 using namespace jau;
 
-std::string jau::os::to_string(const os_type v) noexcept {
+#define CASE_TO_STRING(U,V) case U::V: return #V;
+
+#define OSTYPE_ENUM(X) \
+    X(os_type_t,Unix) \
+    X(os_type_t,Windows) \
+    X(os_type_t,Linux) \
+    X(os_type_t,Android) \
+    X(os_type_t,FreeBSD) \
+    X(os_type_t,Darwin) \
+    X(os_type_t,QnxNTO) \
+    X(os_type_t,GenWasm) \
+    X(os_type_t,Emscripten)
+    
+std::string jau::os::to_string(const os_type_t v) noexcept {
     switch(v) {
-        case os_type::Unix: return "Unix";
-        case os_type::Windows: return "Windows";
-        case os_type::Linux: return "Linux";
-        case os_type::Android: return "Android";
-        case os_type::FreeBSD: return "FreeBSD";
-        case os_type::Darwin: return "Darwin";
-        case os_type::QnxNTO: return "QNX-NTO";
-        case os_type::WebAsm: return "WebAsm";
-        case os_type::UnixWasm: return "UnixWasm";
+    OSTYPE_ENUM(CASE_TO_STRING)
+        default: ; // fall through intended
     }
     return "undef";
 }
 
-bool jau::os::get_rt_os_info(rt_os_info& info) noexcept {
+
+bool jau::os::get_rt_os_info(RuntimeOSInfo& info) noexcept {
     #if !defined(_WIN32)
         struct utsname uinfo;
         if( 0 == ::uname(&uinfo) ) {
@@ -75,73 +84,77 @@ bool jau::os::get_rt_os_info(rt_os_info& info) noexcept {
     return false;
 }
 
-std::string jau::os::to_string(const abi_type v) noexcept {
+#define ABITYPE_ENUM(X) \
+    X(abi_type_t,generic) \
+    X(abi_type_t,gnu_armel) \
+    X(abi_type_t,gnu_armhf) \
+    X(abi_type_t,aarch64) \
+    X(abi_type_t,wasm32_gen) \
+    X(abi_type_t,wasm32_ems) \
+    X(abi_type_t,wasm64_gen) \
+    X(abi_type_t,wasm64_ems)
+    
+std::string jau::os::to_string(const abi_type_t v) noexcept {
     switch(v) {
-        case abi_type::generic_abi: return "generic_abi";
-        case abi_type::eabi_gnu_armel: return "gnu_armel_abi";
-        case abi_type::eabi_gnu_armhf: return "gnu_armhf_abi";
-        case abi_type::eabi_aarch64: return "aarch64_abi";
-        case abi_type::wasm32_abi_undef: return "wasm32_undef_abi";
-        case abi_type::wasm32_abi_emscripten: return "wasm32_emscripten_abi";
-        case abi_type::wasm64_abi_undef: return "wasm64_undef_abi";
-        case abi_type::wasm64_abi_emscripten: return "wasm64_emscripten_abi";
+    ABITYPE_ENUM(CASE_TO_STRING)
+        default: ; // fall through intended
     }
     return "undef";
 }
 
-std::string jau::os::get_os_and_arch(const os_type os, const jau::cpu::cpu_family cpu, const abi_type abi, const endian e) noexcept {
+std::string jau::os::get_os_and_arch(const os_type_t os, const jau::cpu::cpu_family_t cpu, const abi_type_t abi, const endian_t e) noexcept {
     std::string os_;
     std::string _and_arch_tmp, _and_arch_final;
 
     switch( cpu ) {
-        case jau::cpu::cpu_family::arm32:
-            if( abi_type::eabi_gnu_armhf == abi ) {
+        case jau::cpu::cpu_family_t::arm32:
+            if( abi_type_t::gnu_armhf == abi ) {
                 _and_arch_tmp = "armv6hf";
             } else {
                 _and_arch_tmp = "armv6";
             }
             break;
-        case jau::cpu::cpu_family::x86_32:
+        case jau::cpu::cpu_family_t::x86_32:
             _and_arch_tmp = "i586";
             break;
-        case jau::cpu::cpu_family::ppc_32:
+        case jau::cpu::cpu_family_t::ppc32:
             _and_arch_tmp = "ppc";
             break;
-        case jau::cpu::cpu_family::mips_32:
+        case jau::cpu::cpu_family_t::mips32:
             _and_arch_tmp = jau::is_little_endian(e) ? "mipsel" : "mips";
             break;
-        case jau::cpu::cpu_family::sparc_32:
+        case jau::cpu::cpu_family_t::sparc32:
             _and_arch_tmp = "sparc";
             break;
-        case jau::cpu::cpu_family::superh_32:
+        case jau::cpu::cpu_family_t::superh32:
             _and_arch_tmp = "superh";
             break;
 
-        case jau::cpu::cpu_family::arm64:
+        case jau::cpu::cpu_family_t::arm64:
             _and_arch_tmp = "aarch64";
             break;
-        case jau::cpu::cpu_family::x86_64:
+        case jau::cpu::cpu_family_t::x86_64:
             _and_arch_tmp = "amd64";
             break;
-        case jau::cpu::cpu_family::ppc_64:
+        case jau::cpu::cpu_family_t::ppc64:
             _and_arch_tmp = jau::is_little_endian(e) ? "ppc64le" : "ppc64";
             break;
-        case jau::cpu::cpu_family::mips_64:
+        case jau::cpu::cpu_family_t::mips64:
             _and_arch_tmp = "mips64";
             break;
-        case jau::cpu::cpu_family::ia64:
+        case jau::cpu::cpu_family_t::ia64:
             _and_arch_tmp = "ia64";
             break;
-        case jau::cpu::cpu_family::sparc_64:
+        case jau::cpu::cpu_family_t::sparc64:
             _and_arch_tmp = "sparcv9";
             break;
-        case jau::cpu::cpu_family::superh_64:
+        case jau::cpu::cpu_family_t::superh64:
             _and_arch_tmp = "superh64";
             break;
-        case jau::cpu::cpu_family::wasm_32:
+        case jau::cpu::cpu_family_t::wasm32:
             _and_arch_tmp = "wasm32";
             break;
-        case jau::cpu::cpu_family::wasm_64:
+        case jau::cpu::cpu_family_t::wasm64:
             _and_arch_tmp = "wasm64";
             break;
         default:
@@ -150,36 +163,36 @@ std::string jau::os::get_os_and_arch(const os_type os, const jau::cpu::cpu_famil
     }
 
     switch( os ) {
-        case os_type::Android:
+        case os_type_t::Android:
           os_ = "android";
           _and_arch_final = _and_arch_tmp;
           break;
-        case os_type::Darwin:
+        case os_type_t::Darwin:
           os_ = "darwin";
           _and_arch_final = "universal";
           break;
-        case os_type::Windows:
+        case os_type_t::Windows:
           os_ = "windows";
           _and_arch_final = _and_arch_tmp;
           break;
-        case os_type::Linux:
+        case os_type_t::Linux:
           os_ = "linux";
           _and_arch_final = _and_arch_tmp;
           break;
-        case os_type::FreeBSD:
+        case os_type_t::FreeBSD:
           os_ = "freebsd";
           _and_arch_final = _and_arch_tmp;
           break;
-        case os_type::QnxNTO:
+        case os_type_t::QnxNTO:
           os_ = "qnxnto";
           _and_arch_final = _and_arch_tmp;
           break;
-        case os_type::WebAsm:
+        case os_type_t::GenWasm:
           os_ = "webasm";
           _and_arch_final = _and_arch_tmp;
           break;
-        case os_type::UnixWasm:
-          os_ = "unixwasm";
+        case os_type_t::Emscripten:
+          os_ = "emscripten";
           _and_arch_final = _and_arch_tmp;
           break;
         default:
@@ -190,28 +203,23 @@ std::string jau::os::get_os_and_arch(const os_type os, const jau::cpu::cpu_famil
     return os_ + "-" + _and_arch_final;
 }
 
-std::string jau::os::get_platform_info(std::string& sb) noexcept {
-    const jau::os::os_type os = jau::os::os_type::native;
-    const jau::cpu::cpu_family cpu = jau::cpu::get_cpu_family();
-    const jau::os::abi_type abi = jau::os::get_abi_type();
-    const jau::endian byte_order = jau::endian::native;
-    jau::os::rt_os_info rti;
-    bool rti_ok = jau::os::get_rt_os_info(rti);
 
-    size_t cores = 0;
-    sb.append( jau::format_string("Platform: %s %s, %s (%s, %s endian, %zu bits), %zu cores, %s\n",
+std::string jau::os::get_platform_info(std::string& sb) noexcept {
+    const jau::os::os_type_t os = jau::os::os_type_t::native;
+    const jau::os::abi_type_t abi = jau::os::get_abi_type();    
+    jau::os::RuntimeOSInfo rti;
+    bool rti_ok = jau::os::get_rt_os_info(rti);
+    const jau::cpu::CpuInfo& cpu = jau::cpu::CpuInfo::get();
+
+    sb.append( jau::format_string("Platform: %s %s, %s (",    
             jau::os::to_string(os).c_str(),
             ( rti_ok ? rti.release.c_str() : ""),
-            jau::cpu::to_string(cpu).c_str(),
-            jau::os::to_string(abi).c_str(),
-            jau::to_string(byte_order).c_str(),
-            jau::cpu::get_arch_psize(),
-            cores,
-            jau::os::get_os_and_arch(os, cpu, abi, byte_order).c_str()) );
-    jau::cpu::get_cpu_info("- cpu_info: ", sb);
-
+            jau::cpu::to_string(cpu.family).c_str() ) );
+    cpu.toString(sb, true);
+    sb.append( jau::format_string("), abi %s, ", jau::os::to_string(abi).c_str()) );
+    sb.append( jau::os::get_os_and_arch(os, cpu.family, abi, cpu.byte_order) );                
     if( rti_ok ) {
-        sb.append("- runtime: ").append(rti.to_string()).append("\n");
+        sb.append(", runtime: ").append(rti.to_string()).append("\n");
     }
     return sb;
 }

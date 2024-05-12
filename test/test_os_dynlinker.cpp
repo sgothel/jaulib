@@ -275,7 +275,7 @@ void test10NativeLibrary(const std::string& libBasename, const std::string& libD
         std::cout << "Sys-Path: '" << lib_path_var_name << "': Variant 1: With libDirAbs" << std::endl;
         std::string lib_path_var2;
         if( lib_path_var0.size() > 0 ) {
-            lib_path_var2 = lib_path_var0+jau::os::getPathSeparator()+libDirAbs;
+            lib_path_var2 = lib_path_var0+jau::os::path_separator()+libDirAbs;
         } else {
             lib_path_var2 = libDirAbs;
         }
@@ -323,7 +323,7 @@ void test10NativeLibrary(const std::string& libBasename, const std::string& libD
         std::cout << "Sys-Path: '" << lib_path_var_name << "': Variant 2: With test_exe path" << std::endl;
         std::string lib_path_var2;
         if( lib_path_var0.size() > 0 ) {
-            lib_path_var2 = lib_path_var0+jau::os::getPathSeparator()+exe_dir;
+            lib_path_var2 = lib_path_var0+jau::os::path_separator()+exe_dir;
         } else {
             lib_path_var2 = exe_dir;
         }

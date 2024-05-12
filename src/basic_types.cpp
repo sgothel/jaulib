@@ -291,7 +291,7 @@ std::string jau::toLower(const std::string& s) noexcept {
 }
 
 // one static_assert is sufficient for whole compilation unit
-static_assert( is_defined_endian(endian::native) );
+static_assert( is_defined_endian(endian_t::native) );
 static_assert( is_little_or_big_endian() );
 
 uint128dp_t jau::merge_uint128(uint16_t const uuid16, uint128dp_t const & base_uuid, nsize_t const uuid16_le_octet_index)
@@ -513,21 +513,21 @@ std::string& jau::byteHexString(std::string& dest, const uint8_t value, const bo
     return dest;
 }
 
-std::string jau::to_string(const endian v) noexcept {
+std::string jau::to_string(const endian_t v) noexcept {
     switch(v) {
-        case endian::little:  return "little";
-        case endian::big:  return "big";
-        case endian::pdp:  return "pdb";
-        case endian::honeywell: return "honeywell";
-        case endian::undefined: return "undefined";
+        case endian_t::little:  return "little";
+        case endian_t::big:  return "big";
+        case endian_t::pdp:  return "pdb";
+        case endian_t::honeywell: return "honeywell";
+        case endian_t::undefined: return "undefined";
     }
     return "undef";
 }
 
-std::string jau::to_string(const lb_endian v) noexcept {
+std::string jau::to_string(const lb_endian_t v) noexcept {
     switch(v) {
-        case lb_endian::little:  return "little";
-        case lb_endian::big:  return "big";
+        case lb_endian_t::little:  return "little";
+        case lb_endian_t::big:  return "big";
     }
     return "undef";
 }

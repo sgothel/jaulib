@@ -73,7 +73,7 @@ protected:
 
 public:
     static TypeSize toTypeSize(const jau::nsize_t size);
-    static std::unique_ptr<uuid_t> create(TypeSize const t, uint8_t const * const buffer, lb_endian const le_or_be);
+    static std::unique_ptr<uuid_t> create(TypeSize const t, uint8_t const * const buffer, lb_endian_t const le_or_be);
     static std::unique_ptr<uuid_t> create(const std::string& str);
 
     virtual ~uuid_t() noexcept = default;
@@ -141,7 +141,7 @@ public:
      */
     virtual std::string toUUID128String(uuid128_t const & base_uuid=BT_BASE_UUID, jau::nsize_t const le_octet_index=12) const noexcept = 0;
 
-    virtual jau::nsize_t put(uint8_t * const buffer, lb_endian const le_or_be) const noexcept = 0;
+    virtual jau::nsize_t put(uint8_t * const buffer, lb_endian_t const le_or_be) const noexcept = 0;
 };
 
 inline std::string to_string(const uuid_t::TypeSize v) noexcept {
@@ -157,7 +157,7 @@ public:
 
     uuid16_t(const std::string& str);
 
-    uuid16_t(uint8_t const * const buffer, lb_endian const le_or_be) noexcept
+    uuid16_t(uint8_t const * const buffer, lb_endian_t const le_or_be) noexcept
     : uuid_t(TypeSize::UUID16_SZ), value(jau::get_uint16(buffer, le_or_be)) { }
 
     uuid16_t(const uuid16_t &o) noexcept = default;
@@ -169,7 +169,7 @@ public:
     std::string toString() const noexcept override;
     std::string toUUID128String(uuid128_t const & base_uuid=BT_BASE_UUID, jau::nsize_t const le_octet_index=12) const noexcept override;
 
-    jau::nsize_t put(uint8_t * const buffer, lb_endian const le_or_be) const noexcept override {
+    jau::nsize_t put(uint8_t * const buffer, lb_endian_t const le_or_be) const noexcept override {
         jau::put_uint16(buffer, value, le_or_be);
         return 2;
     }
@@ -184,7 +184,7 @@ public:
 
     uuid32_t(const std::string& str);
 
-    uuid32_t(uint8_t const * const buffer, lb_endian const le_or_be) noexcept
+    uuid32_t(uint8_t const * const buffer, lb_endian_t const le_or_be) noexcept
     : uuid_t(TypeSize::UUID32_SZ), value(jau::get_uint32(buffer, le_or_be)) { }
 
     uuid32_t(const uuid32_t &o) noexcept = default;
@@ -196,7 +196,7 @@ public:
     std::string toString() const noexcept override;
     std::string toUUID128String(uuid128_t const & base_uuid=BT_BASE_UUID, jau::nsize_t const le_octet_index=12) const noexcept override;
 
-    jau::nsize_t put(uint8_t * const buffer, lb_endian const le_or_be) const noexcept override {
+    jau::nsize_t put(uint8_t * const buffer, lb_endian_t const le_or_be) const noexcept override {
         jau::put_uint32(buffer, value, le_or_be);
         return 4;
     }
@@ -213,7 +213,7 @@ public:
 
     uuid128_t(const std::string& str);
 
-    uuid128_t(uint8_t const * const buffer, lb_endian const le_or_be) noexcept
+    uuid128_t(uint8_t const * const buffer, lb_endian_t const le_or_be) noexcept
     : uuid_t(TypeSize::UUID128_SZ), value(jau::get_uint128(buffer, le_or_be)) { }
 
     uuid128_t(uuid16_t const & uuid16, uuid128_t const & base_uuid=BT_BASE_UUID, jau::nsize_t const uuid16_le_octet_index=12) noexcept;
@@ -233,7 +233,7 @@ public:
         return toString();
     }
 
-    jau::nsize_t put(uint8_t * const buffer, lb_endian const le_or_be) const noexcept override {
+    jau::nsize_t put(uint8_t * const buffer, lb_endian_t const le_or_be) const noexcept override {
         jau::put_uint128(buffer, value, le_or_be);
         return 16;
     }
@@ -243,7 +243,7 @@ inline uuid16_t get_uuid16(uint8_t const * buffer) noexcept
 {
     return uuid16_t(jau::get_uint16(buffer));
 }
-inline uuid16_t get_uuid16(uint8_t const * buffer, lb_endian const le_or_be) noexcept
+inline uuid16_t get_uuid16(uint8_t const * buffer, lb_endian_t const le_or_be) noexcept
 {
     return uuid16_t(jau::get_uint16(buffer, le_or_be));
 }
@@ -251,7 +251,7 @@ inline uuid32_t get_uuid32(uint8_t const * buffer) noexcept
 {
     return uuid32_t(jau::get_uint32(buffer));
 }
-inline uuid32_t get_uuid32(uint8_t const * buffer, lb_endian const le_or_be) noexcept
+inline uuid32_t get_uuid32(uint8_t const * buffer, lb_endian_t const le_or_be) noexcept
 {
     return uuid32_t(jau::get_uint32(buffer, le_or_be));
 }
@@ -259,7 +259,7 @@ inline uuid128_t get_uuid128(uint8_t const * buffer) noexcept
 {
     return uuid128_t(jau::get_uint128(buffer));
 }
-inline uuid128_t get_uuid128(uint8_t const * buffer, lb_endian const le_or_be) noexcept
+inline uuid128_t get_uuid128(uint8_t const * buffer, lb_endian_t const le_or_be) noexcept
 {
     return uuid128_t(jau::get_uint128(buffer, le_or_be));
 }

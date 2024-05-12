@@ -199,7 +199,7 @@ namespace jau {
      *
      * See \ref lb_endian
      */
-    enum class endian : uint32_t
+    enum class endian_t : uint32_t
     {
         /** Identifier for little endian. */
         little      = 0x41424344U, // h->l: 41 42 43 44 = 'ABCD' hex ASCII code
@@ -223,16 +223,16 @@ namespace jau {
     PRAGMA_DISABLE_WARNING_POP
 
     /** Simplified reduced \ref endian type only covering little- and big-endian. See \ref endian for details. */
-    enum class lb_endian : uint32_t
+    enum class lb_endian_t : uint32_t
     {
         /** Identifier for little endian, equivalent to endian::little. */
-        little      = static_cast<uint32_t>( endian::little ),
+        little      = static_cast<uint32_t>( endian_t::little ),
 
         /** Identifier for big endian, equivalent to endian::big. */
-        big         = static_cast<uint32_t>( endian::big ),
+        big         = static_cast<uint32_t>( endian_t::big ),
 
         /** Identifier for native platform type, one of the above. */
-        native = static_cast<uint32_t>( endian::native )
+        native = static_cast<uint32_t>( endian_t::native )
     };
 
     /**
@@ -240,28 +240,28 @@ namespace jau {
      * @param v the \ref endian value
      * @return the std::string representation
      */
-    std::string to_string(const endian v) noexcept;
+    std::string to_string(const endian_t v) noexcept;
 
     /**
      * Return std::string representation of the given \ref lb_endian.
      * @param v the \ref lb_endian value
      * @return the std::string representation
      */
-    std::string to_string(const lb_endian v) noexcept;
+    std::string to_string(const lb_endian_t v) noexcept;
 
-    constexpr lb_endian to_lb_endian(const endian v) noexcept {
+    constexpr lb_endian_t to_lb_endian(const endian_t v) noexcept {
         switch(v) {
-            case endian::little: return lb_endian::little;
-            case endian::big: return lb_endian::big;
+            case endian_t::little: return lb_endian_t::little;
+            case endian_t::big: return lb_endian_t::big;
             default: {
                 abort(); // never reached
             }
         }
     }
-    constexpr endian to_endian(const lb_endian v) noexcept {
+    constexpr endian_t to_endian(const lb_endian_t v) noexcept {
         switch(v) {
-            case lb_endian::little: return endian::little;
-            case lb_endian::big: return endian::big;
+            case lb_endian_t::little: return endian_t::little;
+            case lb_endian_t::big: return endian_t::big;
             default: {
                 abort(); // never reached
             }
@@ -272,15 +272,15 @@ namespace jau {
      * Evaluates `true` if the given \ref endian is defined,
      * i.e. `little`, `big`, `pdp` or `honeywell`.
      */
-    constexpr bool is_defined_endian(const endian &v) noexcept {
+    constexpr bool is_defined_endian(const endian_t &v) noexcept {
         switch(v) {
-            case endian::little:
+            case endian_t::little:
                 [[fallthrough]];
-            case endian::big:
+            case endian_t::big:
                 [[fallthrough]];
-            case endian::pdp:
+            case endian_t::pdp:
                 [[fallthrough]];
-            case endian::honeywell:
+            case endian_t::honeywell:
                 return true;
             default:
                 return false;
@@ -290,15 +290,15 @@ namespace jau {
     /**
      * Returns `true` if given `byte_order` equals endian::little, otherwise false.
      */
-    constexpr bool is_little_endian(const endian byte_order) noexcept {
-        return endian::little == byte_order;
+    constexpr bool is_little_endian(const endian_t byte_order) noexcept {
+        return endian_t::little == byte_order;
     }
 
     /**
      * Returns `true` if given `byte_order` equals lb_endian::little, otherwise false.
      */
-    constexpr bool is_little_endian(const lb_endian byte_order) noexcept {
-        return lb_endian::little == byte_order;
+    constexpr bool is_little_endian(const lb_endian_t byte_order) noexcept {
+        return lb_endian_t::little == byte_order;
     }
 
     /**
@@ -306,7 +306,7 @@ namespace jau {
      * i.e. `jau::endian::little == jau::endian::native`.
      */
     constexpr bool is_little_endian() noexcept {
-        return endian::little == endian::native;
+        return endian_t::little == endian_t::native;
     }
 
     /**
@@ -314,7 +314,7 @@ namespace jau {
      * i.e. `jau::endian::big == jau::endian::native`.
      */
     constexpr bool is_big_endian() noexcept {
-        return endian::big == endian::native;
+        return endian_t::big == endian_t::native;
     }
 
     /**
@@ -322,7 +322,7 @@ namespace jau {
      * i.e. `jau::endian::little == jau::endian::native || jau::endian::big == jau::endian::native`.
      */
     constexpr bool is_little_or_big_endian() noexcept {
-        return jau::endian::little == jau::endian::native || jau::endian::big == jau::endian::native;
+        return jau::endian_t::little == jau::endian_t::native || jau::endian_t::big == jau::endian_t::native;
     }
 
     /**
@@ -333,7 +333,7 @@ namespace jau {
      * </p>
      * @tparam Dummy_type just to make template `SFINAE` happy
      */
-    template <typename Dummy_type> struct has_endian_little : std::integral_constant<bool, endian::little == endian::native> {};
+    template <typename Dummy_type> struct has_endian_little : std::integral_constant<bool, endian_t::little == endian_t::native> {};
 
     /**
      * Value access of little-endian type trait for convenience ..
@@ -353,7 +353,7 @@ namespace jau {
      * </p>
      * @tparam Dummy_type just to make template `SFINAE` happy
      */
-    template <typename Dummy_type> struct has_endian_big : std::integral_constant<bool, endian::big == endian::native> {};
+    template <typename Dummy_type> struct has_endian_big : std::integral_constant<bool, endian_t::big == endian_t::native> {};
 
     /**
      * Value access of big-endian type trait for convenience ..
@@ -372,7 +372,7 @@ namespace jau {
      */
 
     // one static_assert is sufficient for whole compilation unit
-    static_assert( is_defined_endian(endian::native) );
+    static_assert( is_defined_endian(endian_t::native) );
     static_assert( is_little_or_big_endian() );
 
     constexpr uint16_t be_to_cpu(uint16_t const n) noexcept {
@@ -625,7 +625,7 @@ namespace jau {
      * @param byte_order
      */
     template<typename T>
-    constexpr T get_packed_value(const packed_t<T>* source, const lb_endian byte_order) noexcept {
+    constexpr T get_packed_value(const packed_t<T>* source, const lb_endian_t byte_order) noexcept {
         return is_little_endian(byte_order) ? le_to_cpu(source->store) : be_to_cpu(source->store);
     }
 
@@ -648,7 +648,7 @@ namespace jau {
      *
      * @see \ref packed_t_alignment_cast
      */
-    constexpr void put_uint16(uint8_t * buffer, const uint16_t v, const lb_endian byte_order) noexcept
+    constexpr void put_uint16(uint8_t * buffer, const uint16_t v, const lb_endian_t byte_order) noexcept
     {
         pointer_cast<packed_t<uint16_t>*>( buffer )->store = is_little_endian(byte_order) ? cpu_to_le(v) : cpu_to_be(v);
     }
@@ -671,7 +671,7 @@ namespace jau {
      *
      * @see \ref packed_t_alignment_cast
      */
-    constexpr uint16_t get_uint16(uint8_t const * buffer, const lb_endian byte_order) noexcept
+    constexpr uint16_t get_uint16(uint8_t const * buffer, const lb_endian_t byte_order) noexcept
     {
         return get_packed_value(pointer_cast<const packed_t<uint16_t>*>( buffer ), byte_order);
     }
@@ -688,7 +688,7 @@ namespace jau {
      * See put_uint16() for reference.
      * @see \ref packed_t_alignment_cast
      */
-    constexpr void put_uint32(uint8_t * buffer, const uint32_t v, const lb_endian byte_order) noexcept
+    constexpr void put_uint32(uint8_t * buffer, const uint32_t v, const lb_endian_t byte_order) noexcept
     {
         pointer_cast<packed_t<uint32_t>*>( buffer )->store = is_little_endian(byte_order) ? cpu_to_le(v) : cpu_to_be(v);
     }
@@ -704,7 +704,7 @@ namespace jau {
      * See get_uint16() for reference.
      * @see \ref packed_t_alignment_cast
      */
-    constexpr uint32_t get_uint32(uint8_t const * buffer, const lb_endian byte_order) noexcept
+    constexpr uint32_t get_uint32(uint8_t const * buffer, const lb_endian_t byte_order) noexcept
     {
         return get_packed_value(pointer_cast<const packed_t<uint32_t>*>( buffer ), byte_order);
     }
@@ -721,7 +721,7 @@ namespace jau {
      * See put_uint16() for reference.
      * @see \ref packed_t_alignment_cast
      */
-    constexpr void put_uint64(uint8_t * buffer, const uint64_t & v, const lb_endian byte_order) noexcept
+    constexpr void put_uint64(uint8_t * buffer, const uint64_t & v, const lb_endian_t byte_order) noexcept
     {
         pointer_cast<packed_t<uint64_t>*>( buffer )->store = is_little_endian(byte_order) ? cpu_to_le(v) : cpu_to_be(v);
     }
@@ -737,7 +737,7 @@ namespace jau {
      * See get_uint16() for reference.
      * @see \ref packed_t_alignment_cast
      */
-    constexpr uint64_t get_uint64(uint8_t const * buffer, const lb_endian byte_order) noexcept
+    constexpr uint64_t get_uint64(uint8_t const * buffer, const lb_endian_t byte_order) noexcept
     {
         return get_packed_value(pointer_cast<const packed_t<uint64_t>*>( buffer ), byte_order);
     }
@@ -754,7 +754,7 @@ namespace jau {
      * See put_uint16() for reference.
      * @see \ref packed_t_alignment_cast
      */
-    constexpr void put_uint128(uint8_t * buffer, const uint128dp_t & v, const lb_endian byte_order) noexcept
+    constexpr void put_uint128(uint8_t * buffer, const uint128dp_t & v, const lb_endian_t byte_order) noexcept
     {
         pointer_cast<packed_t<uint128dp_t>*>( buffer )->store = is_little_endian(byte_order) ? cpu_to_le(v) : cpu_to_be(v);
     }
@@ -770,7 +770,7 @@ namespace jau {
      * See get_uint16() for reference.
      * @see \ref packed_t_alignment_cast
      */
-    constexpr uint128dp_t get_uint128(uint8_t const * buffer, const lb_endian byte_order) noexcept
+    constexpr uint128dp_t get_uint128(uint8_t const * buffer, const lb_endian_t byte_order) noexcept
     {
         return get_packed_value(pointer_cast<const packed_t<uint128dp_t>*>( buffer ), byte_order);
     }
@@ -787,7 +787,7 @@ namespace jau {
      * See put_uint16() for reference.
      * @see \ref packed_t_alignment_cast
      */
-    constexpr void put_uint192(uint8_t * buffer, const uint192dp_t & v, const lb_endian byte_order) noexcept
+    constexpr void put_uint192(uint8_t * buffer, const uint192dp_t & v, const lb_endian_t byte_order) noexcept
     {
         pointer_cast<packed_t<uint192dp_t>*>( buffer )->store = is_little_endian(byte_order) ? cpu_to_le(v) : cpu_to_be(v);
     }
@@ -803,7 +803,7 @@ namespace jau {
      * See get_uint16() for reference.
      * @see \ref packed_t_alignment_cast
      */
-    constexpr uint192dp_t get_uint192(uint8_t const * buffer, const lb_endian byte_order) noexcept
+    constexpr uint192dp_t get_uint192(uint8_t const * buffer, const lb_endian_t byte_order) noexcept
     {
         return get_packed_value(pointer_cast<const packed_t<uint192dp_t>*>( buffer ), byte_order);
     }
@@ -820,7 +820,7 @@ namespace jau {
      * See put_uint16() for reference.
      * @see \ref packed_t_alignment_cast
      */
-    constexpr void put_uint256(uint8_t * buffer, const uint256dp_t & v, const lb_endian byte_order) noexcept
+    constexpr void put_uint256(uint8_t * buffer, const uint256dp_t & v, const lb_endian_t byte_order) noexcept
     {
         pointer_cast<packed_t<uint256dp_t>*>( buffer )->store = is_little_endian(byte_order) ? cpu_to_le(v) : cpu_to_be(v);
     }
@@ -836,7 +836,7 @@ namespace jau {
      * See get_uint16() for reference.
      * @see \ref packed_t_alignment_cast
      */
-    constexpr uint256dp_t get_uint256(uint8_t const * buffer, const lb_endian byte_order) noexcept
+    constexpr uint256dp_t get_uint256(uint8_t const * buffer, const lb_endian_t byte_order) noexcept
     {
         return get_packed_value(pointer_cast<const packed_t<uint256dp_t>*>( buffer ), byte_order);
     }
@@ -885,7 +885,7 @@ namespace jau {
     typename std::enable_if_t<
         std::is_standard_layout_v<T>,
         void>
-    put_value(uint8_t * buffer, const T& v, const lb_endian byte_order) noexcept
+    put_value(uint8_t * buffer, const T& v, const lb_endian_t byte_order) noexcept
     {
         pointer_cast<packed_t<T>*>( buffer )->store = is_little_endian(byte_order) ? cpu_to_le(v) : cpu_to_be(v);
     }
@@ -927,7 +927,7 @@ namespace jau {
     typename std::enable_if_t<
         std::is_standard_layout_v<T>,
         T>
-    get_value(uint8_t const * buffer, const lb_endian byte_order) noexcept
+    get_value(uint8_t const * buffer, const lb_endian_t byte_order) noexcept
     {
         return get_packed_value(pointer_cast<const packed_t<T>*>( buffer ), byte_order);
     }

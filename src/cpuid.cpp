@@ -26,10 +26,14 @@
 #include <string>
 #include <cstdint>
 #include <cstdlib>
+#include <unistd.h>
+#include <thread>
+#include <new>
 
 #include <jau/cpuid.hpp>
 #include <jau/byte_util.hpp>
 #include <jau/debug.hpp>
+#include <jau/os/os_support.hpp>
 
 #ifdef __linux__
     extern "C" {
@@ -39,6 +43,71 @@
 
 using namespace jau;
 using namespace jau::cpu;
+
+static bool get_cache_line_size(size_t& l1_share_max, size_t& l1_apart_min) noexcept {
+    #ifdef __cpp_lib_hardware_interference_size
+        l1_share_max = std::hardware_constructive_interference_size;
+        l1_apart_min = std::hardware_destructive_interference_size;
+        return true;
+    #else
+        l1_share_max = 0;
+        l1_apart_min = 0;
+        return false;
+    #endif    
+}
+
+static size_t get_page_size() noexcept {
+    #if defined(JAU_OS_TYPE_UNIX) && defined(_SC_PAGESIZE)
+        return sysconf(_SC_PAGESIZE);
+    #else
+        return 1; // FIXME
+    #endif
+}
+static size_t get_concurrent_thread_count() noexcept {
+    return std::thread::hardware_concurrency();
+}
+
+static size_t get_sys_online_core_count() noexcept {
+    #if defined(_WIN32)
+        SYSTEM_INFO sysinfo;
+        GetSystemInfo(&sysinfo);
+        return static_cast<size_t>( sysinfo.dwNumberOfProcessors );
+    #elif defined(JAU_OS_TYPE_UNIX) && defined(_SC_NPROCESSORS_ONLN)
+        return static_cast<size_t>( sysconf(_SC_NPROCESSORS_ONLN) );
+    #elif defined(JAU_OS_TYPE_UNIX) && defined(HW_NCPU)
+        int mib[] { CTL_HW, HW_NCPU }; // set the mib for hw.ncpu
+        int numCPU;
+        size_t len = sizeof(numCPU);    
+        if( sysctl(mib, 2, &numCPU, &len, NULL, 0) || 0 >= numCPU ) {
+            return 1; // minimum ;-)
+        } else {
+            return static_cast<size_t>(numCPU);
+        }   
+    #else
+        return 1; // minimum ;-)
+    #endif    
+}
+
+static size_t get_sys_max_core_count() noexcept {
+    #if defined(_WIN32)
+        SYSTEM_INFO sysinfo;
+        GetSystemInfo(&sysinfo);
+        return static_cast<size_t>( sysinfo.dwNumberOfProcessors ); // FIXME?
+    #elif defined(JAU_OS_TYPE_UNIX) && defined(_SC_NPROCESSORS_CONF)
+        return static_cast<size_t>( sysconf(_SC_NPROCESSORS_CONF) );
+    #elif defined(JAU_OS_TYPE_UNIX) && defined(HW_NCPU)
+        int mib[] { CTL_HW, HW_AVAILCPU }; // set the mib for hw.availcpu FIXME?
+        int numCPU;
+        size_t len = sizeof(numCPU);    
+        if( sysctl(mib, 2, &numCPU, &len, NULL, 0) || 0 >= numCPU ) {
+            return 1; // minimum ;-)
+        } else {
+            return static_cast<size_t>(numCPU);
+        }   
+    #else
+        return 1; // minimum ;-)
+    #endif    
+}
 
 template<typename T>
 static void append_bitstr(std::string& out, T mask, T bit, const std::string& bitstr, bool& comma) {
@@ -52,24 +121,24 @@ static void append_bitstr(std::string& out, T mask, T bit, const std::string& bi
 #define CASE_TO_STRING(U,V) case U::V: return #V;
 
 #define CPUFAMILY_ENUM(X) \
-    X(cpu_family,none) \
-    X(cpu_family,arm32) \
-    X(cpu_family,arm64) \
-    X(cpu_family,x86_32) \
-    X(cpu_family,x86_64) \
-    X(cpu_family,ia64) \
-    X(cpu_family,ppc_32) \
-    X(cpu_family,ppc_64) \
-    X(cpu_family,sparc_32) \
-    X(cpu_family,sparc_64) \
-    X(cpu_family,mips_32) \
-    X(cpu_family,mips_64) \
-    X(cpu_family,superh_32) \
-    X(cpu_family,superh_64) \
-    X(cpu_family,wasm_32) \
-    X(cpu_family,wasm_64)
+    X(cpu_family_t,none) \
+    X(cpu_family_t,arm32) \
+    X(cpu_family_t,arm64) \
+    X(cpu_family_t,x86_32) \
+    X(cpu_family_t,x86_64) \
+    X(cpu_family_t,ia64) \
+    X(cpu_family_t,ppc32) \
+    X(cpu_family_t,ppc64) \
+    X(cpu_family_t,sparc32) \
+    X(cpu_family_t,sparc64) \
+    X(cpu_family_t,mips32) \
+    X(cpu_family_t,mips64) \
+    X(cpu_family_t,superh32) \
+    X(cpu_family_t,superh64) \
+    X(cpu_family_t,wasm32) \
+    X(cpu_family_t,wasm64)
     
-std::string jau::cpu::to_string(const cpu_family v) noexcept {
+std::string jau::cpu::to_string(const cpu_family_t v) noexcept {
     switch(v) {
     CPUFAMILY_ENUM(CASE_TO_STRING)
         default: ; // fall through intended
@@ -79,30 +148,30 @@ std::string jau::cpu::to_string(const cpu_family v) noexcept {
 
 
 #define ARM32HWCAP1_ENUM(X,M) \
-    X(arm32_hwcap1,swp,M) \
-    X(arm32_hwcap1,half,M) \
-    X(arm32_hwcap1,thumb,M) \
-    X(arm32_hwcap1,bits26,M) \
-    X(arm32_hwcap1,fmult,M) \
-    X(arm32_hwcap1,fpa,M) \
-    X(arm32_hwcap1,vfp,M) \
-    X(arm32_hwcap1,edsp,M) \
-    X(arm32_hwcap1,java,M) \
-    X(arm32_hwcap1,iwmmxt,M) \
-    X(arm32_hwcap1,crunch,M) \
-    X(arm32_hwcap1,thumbee,M) \
-    X(arm32_hwcap1,neon,M) \
-    X(arm32_hwcap1,vfp_v3,M) \
-    X(arm32_hwcap1,vfp_v3_d16,M) \
-    X(arm32_hwcap1,tls,M) \
-    X(arm32_hwcap1,vfp_v4,M) \
-    X(arm32_hwcap1,idiva,M) \
-    X(arm32_hwcap1,idivt,M) \
-    X(arm32_hwcap1,vfp_d32,M) \
-    X(arm32_hwcap1,lpae,M) \
-    X(arm32_hwcap1,evtstrm,M)
+    X(arm32_hwcap1_t,swp,M) \
+    X(arm32_hwcap1_t,half,M) \
+    X(arm32_hwcap1_t,thumb,M) \
+    X(arm32_hwcap1_t,bits26,M) \
+    X(arm32_hwcap1_t,fmult,M) \
+    X(arm32_hwcap1_t,fpa,M) \
+    X(arm32_hwcap1_t,vfp,M) \
+    X(arm32_hwcap1_t,edsp,M) \
+    X(arm32_hwcap1_t,java,M) \
+    X(arm32_hwcap1_t,iwmmxt,M) \
+    X(arm32_hwcap1_t,crunch,M) \
+    X(arm32_hwcap1_t,thumbee,M) \
+    X(arm32_hwcap1_t,neon,M) \
+    X(arm32_hwcap1_t,vfp_v3,M) \
+    X(arm32_hwcap1_t,vfp_v3_d16,M) \
+    X(arm32_hwcap1_t,tls,M) \
+    X(arm32_hwcap1_t,vfp_v4,M) \
+    X(arm32_hwcap1_t,idiva,M) \
+    X(arm32_hwcap1_t,idivt,M) \
+    X(arm32_hwcap1_t,vfp_d32,M) \
+    X(arm32_hwcap1_t,lpae,M) \
+    X(arm32_hwcap1_t,evtstrm,M)
 
-std::string jau::cpu::to_string(const arm32_hwcap1 hwcaps) noexcept {
+std::string jau::cpu::to_string(const arm32_hwcap1_t hwcaps) noexcept {
     std::string out;
     bool comma = false;
     ARM32HWCAP1_ENUM(APPEND_BITSTR,hwcaps)
@@ -110,13 +179,13 @@ std::string jau::cpu::to_string(const arm32_hwcap1 hwcaps) noexcept {
 }
 
 #define ARM32HWCAP2_ENUM(X,M) \
-    X(arm32_hwcap2,aes,M) \
-    X(arm32_hwcap2,pmull,M) \
-    X(arm32_hwcap2,sha1,M) \
-    X(arm32_hwcap2,sha2,M) \
-    X(arm32_hwcap2,crc32,M)
+    X(arm32_hwcap2_t,aes,M) \
+    X(arm32_hwcap2_t,pmull,M) \
+    X(arm32_hwcap2_t,sha1,M) \
+    X(arm32_hwcap2_t,sha2,M) \
+    X(arm32_hwcap2_t,crc32,M)
 
-std::string jau::cpu::to_string(const arm32_hwcap2 hwcaps) noexcept {
+std::string jau::cpu::to_string(const arm32_hwcap2_t hwcaps) noexcept {
     std::string out;
     bool comma = false;
     ARM32HWCAP2_ENUM(APPEND_BITSTR,hwcaps)
@@ -124,44 +193,106 @@ std::string jau::cpu::to_string(const arm32_hwcap2 hwcaps) noexcept {
 }
 
 #define ARM64HWCAP_ENUM(X,M) \
-    X(arm64_hwcap,fp,M) \
-    X(arm64_hwcap,asimd,M) \
-    X(arm64_hwcap,evtstrm,M) \
-    X(arm64_hwcap,aes,M) \
-    X(arm64_hwcap,pmull,M) \
-    X(arm64_hwcap,sha1,M) \
-    X(arm64_hwcap,sha2,M) \
-    X(arm64_hwcap,crc32,M) \
-    X(arm64_hwcap,atomics,M) \
-    X(arm64_hwcap,fphp,M) \
-    X(arm64_hwcap,asimdhp,M) \
-    X(arm64_hwcap,cpuid,M) \
-    X(arm64_hwcap,asimdrdm,M) \
-    X(arm64_hwcap,jscvt,M) \
-    X(arm64_hwcap,fcma,M) \
-    X(arm64_hwcap,lrcpc,M) \
-    X(arm64_hwcap,dcpop,M) \
-    X(arm64_hwcap,sha3,M) \
-    X(arm64_hwcap,sm3,M) \
-    X(arm64_hwcap,sm4,M) \
-    X(arm64_hwcap,asimddp,M) \
-    X(arm64_hwcap,sha512,M) \
-    X(arm64_hwcap,sve,M) \
-    X(arm64_hwcap,asimdfhm,M) \
-    X(arm64_hwcap,dit,M) \
-    X(arm64_hwcap,uscat,M) \
-    X(arm64_hwcap,ilrcpc,M) \
-    X(arm64_hwcap,flagm,M) \
-    X(arm64_hwcap,ssbs,M) \
-    X(arm64_hwcap,sb,M) \
-    X(arm64_hwcap,paca,M) \
-    X(arm64_hwcap,pacg,M)
+    X(arm64_hwcap_t,fp,M) \
+    X(arm64_hwcap_t,asimd,M) \
+    X(arm64_hwcap_t,evtstrm,M) \
+    X(arm64_hwcap_t,aes,M) \
+    X(arm64_hwcap_t,pmull,M) \
+    X(arm64_hwcap_t,sha1,M) \
+    X(arm64_hwcap_t,sha2,M) \
+    X(arm64_hwcap_t,crc32,M) \
+    X(arm64_hwcap_t,atomics,M) \
+    X(arm64_hwcap_t,fphp,M) \
+    X(arm64_hwcap_t,asimdhp,M) \
+    X(arm64_hwcap_t,cpuid,M) \
+    X(arm64_hwcap_t,asimdrdm,M) \
+    X(arm64_hwcap_t,jscvt,M) \
+    X(arm64_hwcap_t,fcma,M) \
+    X(arm64_hwcap_t,lrcpc,M) \
+    X(arm64_hwcap_t,dcpop,M) \
+    X(arm64_hwcap_t,sha3,M) \
+    X(arm64_hwcap_t,sm3,M) \
+    X(arm64_hwcap_t,sm4,M) \
+    X(arm64_hwcap_t,asimddp,M) \
+    X(arm64_hwcap_t,sha512,M) \
+    X(arm64_hwcap_t,sve,M) \
+    X(arm64_hwcap_t,asimdfhm,M) \
+    X(arm64_hwcap_t,dit,M) \
+    X(arm64_hwcap_t,uscat,M) \
+    X(arm64_hwcap_t,ilrcpc,M) \
+    X(arm64_hwcap_t,flagm,M) \
+    X(arm64_hwcap_t,ssbs,M) \
+    X(arm64_hwcap_t,sb,M) \
+    X(arm64_hwcap_t,paca,M) \
+    X(arm64_hwcap_t,pacg,M)
 
-std::string jau::cpu::to_string(const arm64_hwcap hwcaps) noexcept {
+std::string jau::cpu::to_string(const arm64_hwcap_t hwcaps) noexcept {
     std::string out;
     bool comma = false;
     ARM64HWCAP_ENUM(APPEND_BITSTR,hwcaps)
     return out;
+}
+
+/** Returns cpu_family derived from [Architectures](https://sourceforge.net/p/predef/wiki/Architectures/) predefined compiler macros. Consider using singleton CpuInfo. */
+static cpu_family_t get_cpu_family() noexcept {
+    #if defined(__EMSCRIPTEN__)
+        if( 32 == pointer_bit_size() ) {
+            return cpu_family_t::wasm32;
+        } else if( 64 == pointer_bit_size() ) {
+            return cpu_family_t::wasm64;
+        } else {
+            return cpu_family_t::wasm64; // FIXME?
+        }
+    #elif defined(__aarch64__)
+        static_assert( 64 == pointer_bit_size() );
+        return cpu_family_t::arm64;
+    #elif defined(__arm__)
+        static_assert( 32 == pointer_bit_size() );
+        return cpu_family_t::arm32;
+    #elif defined(__x86_64__)
+        static_assert( 64 == pointer_bit_size() );
+        return cpu_family_t::x86_64;
+    #elif defined(__ia64__)
+        static_assert( 64 == pointer_bit_size() );
+        return cpu_family_t::ia64;
+    #elif defined(__i386__)
+        static_assert( 32 == pointer_bit_size() );
+        return cpu_family_t::X86_32;
+    #elif defined(__powerpc__)
+        #if defined(__LP64__)
+            static_assert( 64 == pointer_bit_size() );
+            return cpu_family_t::ppc64;
+        #else
+            static_assert( 32 == pointer_bit_size() );
+            return cpu_family_t::ppc32;
+        #endif
+    #elif defined(__sparc__)
+        #if defined(__LP64__)
+            static_assert( 64 == pointer_bit_size() );
+            return cpu_family_t::sparc64;
+        #else
+            static_assert( 32 == pointer_bit_size() );
+            return cpu_family_t::sparc32;
+        #endif
+    #elif defined(__mips__)
+        #if defined(__LP64__)
+            static_assert( 64 == pointer_bit_size() );
+            return cpu_family_t::mips64;
+        #else
+            static_assert( 32 == pointer_bit_size() );
+            return cpu_family_t::mips32;
+        #endif
+    #elif defined(__sh__)
+        #if defined(__LP64__)
+            static_assert( 64 == pointer_bit_size() );
+            return cpu_family_t::superh64;
+        #else
+            static_assert( 32 == pointer_bit_size() );
+            return cpu_family_t::superh32;
+        #endif
+    #else
+        return cpu_family_t::UNDEF;
+    #endif
 }
 
 #if 0
@@ -200,67 +331,81 @@ static void invoke_cpuid_sublevel(uint32_t type, uint32_t level, uint32_t out[4]
 #endif // #if defined(__i386__) || defined(__x86_64__)
 #endif // disabled
 
-bool jau::cpu::get_arm32_hwcap(arm32_hwcap1& hwcap1, arm32_hwcap2& hwcap2) noexcept {
+static bool get_arm32_hwcap(arm32_hwcap1_t& hwcap1, arm32_hwcap2_t& hwcap2) noexcept {
 #ifdef __linux__
-    if( cpu_family::arm32 == get_cpu_family() ) {
-        hwcap1 = (arm32_hwcap1) ::getauxval(number(arm32_hwcap1::at_hwcap_1));
-        if( arm32_hwcap1::neon == ( hwcap1 & arm32_hwcap1::neon ) ) {
-            hwcap2 = (arm32_hwcap2) ::getauxval(number(arm32_hwcap2::at_hwcap_2));
+    if( cpu_family_t::arm32 == get_cpu_family() ) {
+        hwcap1 = (arm32_hwcap1_t) ::getauxval(number(arm32_hwcap1_t::at_hwcap_1));
+        if( arm32_hwcap1_t::neon == ( hwcap1 & arm32_hwcap1_t::neon ) ) {
+            hwcap2 = (arm32_hwcap2_t) ::getauxval(number(arm32_hwcap2_t::at_hwcap_2));
         } else {
-            hwcap2 = arm32_hwcap2::none;
+            hwcap2 = arm32_hwcap2_t::none;
         }
         return true;
     } else {
-        hwcap1 = arm32_hwcap1::none;
-        hwcap2 = arm32_hwcap2::none;
+        hwcap1 = arm32_hwcap1_t::none;
+        hwcap2 = arm32_hwcap2_t::none;
         return false;
     }
 #else
-    hwcap1 = arm32_hwcap1::none;
-    hwcap2 = arm32_hwcap2::none;
+    hwcap1 = arm32_hwcap1_t::none;
+    hwcap2 = arm32_hwcap2_t::none;
     return false;
 #endif
 }
 
-bool jau::cpu::get_arm64_hwcap(arm64_hwcap& hwcap) noexcept {
+static bool get_arm64_hwcap(arm64_hwcap_t& hwcap) noexcept {
 #ifdef __linux__
-    if( cpu_family::arm64 == get_cpu_family() ) {
-        hwcap = (arm64_hwcap) ::getauxval(number(arm64_hwcap::at_hwcap));
+    if( cpu_family_t::arm64 == get_cpu_family() ) {
+        hwcap = (arm64_hwcap_t) ::getauxval(number(arm64_hwcap_t::at_hwcap));
         return true;
     } else {
-        hwcap = arm64_hwcap::none;
+        hwcap = arm64_hwcap_t::none;
         return false;
     }
 #else
-    hwcap = arm64_hwcap::none;
+    hwcap = arm64_hwcap_t::none;
     return false;
 #endif
 }
 
-std::string jau::cpu::get_cpu_info(const std::string& line_prefix, std::string& sb) noexcept {
-    cpu_family cpu = get_cpu_family();
+jau::cpu::CpuInfo::CpuInfo() noexcept
+: pointer_bits(pointer_bit_size()),
+  page_size(get_page_size()),
+  has_l1_minmax(false), l1_share_max(0), l1_apart_min(0),
+  concurrent_threads(get_concurrent_thread_count()),
+  sys_online_cores(get_sys_online_core_count()),
+  sys_max_cores(get_sys_max_core_count()),
+  family(get_cpu_family()), byte_order(jau::endian_t::native),
+  has_arm32_hwcap(cpu_family_t::arm32 == family ? get_arm32_hwcap(arm32_hwcap1, arm32_hwcap2) : false),
+  has_arm64_hwcap(cpu_family_t::arm64 == family ? get_arm64_hwcap(arm64_hwcap) : false)
+{
+    has_l1_minmax = get_cache_line_size(l1_share_max, l1_apart_min);    
+}
 
-    sb.append(line_prefix);
-    sb.append( jau::format_string("family '%s', endian '%s', arch-pointer-bits %zu\n",
-            to_string(cpu).c_str(), to_string(endian::native).c_str(), get_arch_psize()) );
-
-    if( cpu_family::arm32 == cpu ) {
-        arm32_hwcap1 hwcap1;
-        arm32_hwcap2 hwcap2;
-        if( get_arm32_hwcap(hwcap1, hwcap2) ) {
-            sb.append(line_prefix);
-            sb.append( jau::format_string("hwcap1 0x%" PRIx64 ": '%s'\n", number(hwcap1), to_string(hwcap1).c_str()) );
-            if( arm32_hwcap2::none != hwcap2 ) {
-                sb.append(line_prefix);
-                sb.append( jau::format_string("hwcap2 0x%" PRIx64 ": '%s'\n", number(hwcap2), to_string(hwcap2).c_str()) );
-            }
+std::string jau::cpu::CpuInfo::toString(std::string& sb, bool details_only) const noexcept {
+    if( !details_only ) {
+        sb.append(to_string(family)).append(" (");
+    }
+    sb.append( jau::format_string("%s endian, %zu bits, %zu cores, page-sz %zu", 
+        to_string(byte_order).c_str(), pointer_bits, online_core_count(), page_size) );
+    if( has_l1_minmax ) {
+        sb.append( jau::format_string(", l1[shared-max %zu, apart-min %zu]", l1_share_max, l1_apart_min) ); 
+    }
+    if( has_arm32_hwcap ) {
+        if( arm32_hwcap1_t::none != arm32_hwcap1 ) {            
+            sb.append( jau::format_string(", hwcap1 0x%" PRIx64 ": '%s'", number(arm32_hwcap1), to_string(arm32_hwcap1).c_str()) );
         }
-    } else if( cpu_family::arm64 == cpu ) {
-        arm64_hwcap hwcap;
-        if( get_arm64_hwcap(hwcap) ) {
-            sb.append(line_prefix);
-            sb.append( jau::format_string("hwcap 0x%" PRIx64 ": '%s'\n", number(hwcap), to_string(hwcap).c_str()) );
+        if( arm32_hwcap2_t::none != arm32_hwcap2 ) {
+            sb.append( jau::format_string(", hwcap2 0x%" PRIx64 ": '%s'", number(arm32_hwcap2), to_string(arm32_hwcap2).c_str()) );
+        }
+    } else if( has_arm64_hwcap ) {
+        if( arm64_hwcap_t::none != arm64_hwcap ) {
+            sb.append( jau::format_string(", hwcap 0x%" PRIx64 ": '%s'", number(arm64_hwcap), to_string(arm64_hwcap).c_str()) );
         }
     }
-    return sb;
+    if( !details_only ) {
+        sb.append(")");
+    }
+    return sb;    
 }
+  

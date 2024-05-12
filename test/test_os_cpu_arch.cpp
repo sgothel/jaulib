@@ -40,25 +40,21 @@ TEST_CASE( "Test 00 Platform Info - os_and_arch", "[endian][abi][cpu][os]" ) {
 }
 
 TEST_CASE( "Test 01 OS CPU ABI ENDIAN - os_and_arch", "[endian][abi][cpu][os]" ) {
-    const jau::os::os_type os = jau::os::os_type::native;
-    const jau::cpu::cpu_family cpu = jau::cpu::get_cpu_family();
-    const jau::os::abi_type abi = jau::os::get_abi_type();
-    const jau::endian byte_order = jau::endian::native;
+    const jau::cpu::CpuInfo& cpu = jau::cpu::CpuInfo::get();
+    const jau::os::os_type_t os = jau::os::os_type_t::native;
+    const jau::os::abi_type_t abi = jau::os::get_abi_type();
+    const jau::endian_t byte_order = jau::endian_t::native;
 
-    std::string os_and_arch = jau::os::get_os_and_arch(os, cpu, abi, byte_order);
+    std::cout << "CpuInfo: " << cpu.toString() << std::endl;
+    std::string os_and_arch = jau::os::get_os_and_arch(os, cpu.family, abi, byte_order);
     std::cout << "- os_type:    " << jau::os::to_string(os) << std::endl;
-    std::cout << "- cpu_family: " << jau::cpu::to_string(cpu) << std::endl;
     std::cout << "- abi_type:   " << jau::os::to_string(abi) << std::endl;
-    std::cout << "- endian:     " << jau::to_string(byte_order) << std::endl;
-    std::cout << "- ptr-bits:   " << std::to_string(jau::cpu::get_arch_psize()) << std::endl;
     std::cout << "- os_and_arch " << os_and_arch << std::endl << std::endl;
 
-    std::cout << jau::cpu::get_cpu_info() << std::endl << std::endl;
-
-    REQUIRE( true == jau::os::is_defined_os_type(jau::os::os_type::native) );
+    REQUIRE( true == jau::os::is_defined_os_type(os) );
     REQUIRE( std::string::npos == os_and_arch.find("undef") );
 
-    REQUIRE( true == jau::is_defined_endian(jau::endian::native) );
+    REQUIRE( true == jau::is_defined_endian(jau::endian_t::native) );
     REQUIRE( true == jau::is_little_or_big_endian() );
 }
 

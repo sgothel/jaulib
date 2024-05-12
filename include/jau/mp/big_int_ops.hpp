@@ -29,7 +29,7 @@
 namespace jau::mp {
     namespace impl {
         constexpr size_t best_word_byte_size() {
-            if constexpr ( 64 == jau::cpu::get_arch_psize() && is_builtin_int128_available() ) {
+            if constexpr ( 64 == jau::cpu::pointer_bit_size() && is_builtin_int128_available() ) {
                 return 8;
             } else {
                 return 4;

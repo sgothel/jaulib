@@ -176,7 +176,7 @@
     } // namespace jau::os::impl
 
     jau::os::DynamicLinker* jau::os::DynamicLinker::create() {
-        if constexpr ( jau::os::is_android() && 32 == jau::cpu::get_arch_psize() ) {
+        if constexpr ( jau::os::is_android() && 32 == jau::cpu::pointer_bit_size() ) {
             return new jau::os::impl::Bionic32DynamicLinker();
         } else if constexpr ( jau::os::is_darwin() ) {
             return new jau::os::impl::DarwinDynamicLinker();

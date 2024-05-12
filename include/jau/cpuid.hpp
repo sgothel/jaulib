@@ -25,6 +25,7 @@
 #ifndef JAU_CPUID_HPP_
 #define JAU_CPUID_HPP_
 
+#include <jau/byte_util.hpp>
 #include <string>
 
 namespace jau::cpu {
@@ -41,9 +42,9 @@ namespace jau::cpu {
      * Implementations uses `sizeof(void*)`, i.e. the address bus size,
      * the common denominator across all LP64, ILP64 and LLP64 for 64-bit.
      */
-    constexpr size_t get_arch_psize() noexcept { return sizeof(void*) * 8; }
+    constexpr size_t pointer_bit_size() noexcept { return sizeof(void*) * 8; }
 
-    enum class cpu_family : uint16_t {
+    enum class cpu_family_t : uint16_t {
         /** Undefined */
         none = 0,
 
@@ -60,127 +61,70 @@ namespace jau::cpu {
         ia64 = 12,
 
         /** Power PC 32bit */
-        ppc_32 = 20,
+        ppc32 = 20,
         /** Power PC 32bit */
-        ppc_64 = 21,
+        ppc64 = 21,
 
         /** SPARC 32bit */
-        sparc_32 = 30,
+        sparc32 = 30,
         /** SPARC 32bit */
-        sparc_64 = 31,
+        sparc64 = 31,
 
         /** Mips 32bit */
-        mips_32 = 40,
+        mips32 = 40,
         /** Mips 64bit */
-        mips_64 = 41,
+        mips64 = 41,
 
         /** Hitachi SuperH 32bit */
-        superh_32 = 50,
+        superh32 = 50,
         /** Hitachi SuperH 64bit */
-        superh_64 = 51,
+        superh64 = 51,
 
         /** WebAssembly 32-bit */
-        wasm_32 = 60,
+        wasm32 = 60,
         /** WebAssembly 64-bit */
-        wasm_64 = 61
+        wasm64 = 61
 
     };
-    constexpr uint16_t number(const cpu_family rhs) noexcept {
+    constexpr uint16_t number(const cpu_family_t rhs) noexcept {
         return static_cast<uint16_t>(rhs);
     }
-    constexpr cpu_family operator ~(const cpu_family rhs) noexcept {
-        return static_cast<cpu_family> ( ~number(rhs) );
+    constexpr cpu_family_t operator ~(const cpu_family_t rhs) noexcept {
+        return static_cast<cpu_family_t> ( ~number(rhs) );
     }
-    constexpr cpu_family operator ^(const cpu_family lhs, const cpu_family rhs) noexcept {
-        return static_cast<cpu_family> ( number(lhs) ^ number(rhs) );
+    constexpr cpu_family_t operator ^(const cpu_family_t lhs, const cpu_family_t rhs) noexcept {
+        return static_cast<cpu_family_t> ( number(lhs) ^ number(rhs) );
     }
-    constexpr cpu_family operator |(const cpu_family lhs, const cpu_family rhs) noexcept {
-        return static_cast<cpu_family> ( number(lhs) | number(rhs) );
+    constexpr cpu_family_t operator |(const cpu_family_t lhs, const cpu_family_t rhs) noexcept {
+        return static_cast<cpu_family_t> ( number(lhs) | number(rhs) );
     }
-    constexpr cpu_family operator &(const cpu_family lhs, const cpu_family rhs) noexcept {
-        return static_cast<cpu_family> ( number(lhs) & number(rhs) );
+    constexpr cpu_family_t operator &(const cpu_family_t lhs, const cpu_family_t rhs) noexcept {
+        return static_cast<cpu_family_t> ( number(lhs) & number(rhs) );
     }
-    constexpr cpu_family& operator |=(cpu_family& lhs, const cpu_family rhs) noexcept {
-        lhs = static_cast<cpu_family> ( number(lhs) | number(rhs) );
+    constexpr cpu_family_t& operator |=(cpu_family_t& lhs, const cpu_family_t rhs) noexcept {
+        lhs = static_cast<cpu_family_t> ( number(lhs) | number(rhs) );
         return lhs;
     }
-    constexpr cpu_family& operator &=(cpu_family& lhs, const cpu_family rhs) noexcept {
-        lhs = static_cast<cpu_family> ( number(lhs) & number(rhs) );
+    constexpr cpu_family_t& operator &=(cpu_family_t& lhs, const cpu_family_t rhs) noexcept {
+        lhs = static_cast<cpu_family_t> ( number(lhs) & number(rhs) );
         return lhs;
     }
-    constexpr cpu_family& operator ^=(cpu_family& lhs, const cpu_family rhs) noexcept {
-        lhs = static_cast<cpu_family> ( number(lhs) ^ number(rhs) );
+    constexpr cpu_family_t& operator ^=(cpu_family_t& lhs, const cpu_family_t rhs) noexcept {
+        lhs = static_cast<cpu_family_t> ( number(lhs) ^ number(rhs) );
         return lhs;
     }
-    constexpr bool operator ==(const cpu_family lhs, const cpu_family rhs) noexcept {
+    constexpr bool operator ==(const cpu_family_t lhs, const cpu_family_t rhs) noexcept {
         return number(lhs) == number(rhs);
     }
-    constexpr bool operator !=(const cpu_family lhs, const cpu_family rhs) noexcept {
+    constexpr bool operator !=(const cpu_family_t lhs, const cpu_family_t rhs) noexcept {
         return !( lhs == rhs );
     }
-    constexpr bool is_set(const cpu_family mask, const cpu_family bit) noexcept {
+    constexpr bool is_set(const cpu_family_t mask, const cpu_family_t bit) noexcept {
         return bit == ( mask & bit );
     }
-    /** Returns cpu_family derived from [Architectures](https://sourceforge.net/p/predef/wiki/Architectures/) predefined compiler macros. */
-    constexpr cpu_family get_cpu_family() noexcept {
-        #if defined(__EMSCRIPTEN__)
-            static_assert( 32 == get_arch_psize() );
-            return cpu_family::wasm_32;
-        #elif defined(__aarch64__)
-            static_assert( 64 == get_arch_psize() );
-            return cpu_family::arm64;
-        #elif defined(__arm__)
-            static_assert( 32 == get_arch_psize() );
-            return cpu_family::arm32;
-        #elif defined(__x86_64__)
-            static_assert( 64 == get_arch_psize() );
-            return cpu_family::x86_64;
-        #elif defined(__ia64__)
-            static_assert( 64 == get_arch_psize() );
-            return cpu_family::ia64;
-        #elif defined(__i386__)
-            static_assert( 32 == get_arch_psize() );
-            return cpu_family::X86_32;
-        #elif defined(__powerpc__)
-            #if defined(__LP64__)
-                static_assert( 64 == get_arch_psize() );
-                return cpu_family::ppc_64;
-            #else
-                static_assert( 32 == get_arch_psize() );
-                return cpu_family::ppc_32;
-            #endif
-        #elif defined(__sparc__)
-            #if defined(__LP64__)
-                static_assert( 64 == get_arch_psize() );
-                return cpu_family::sparc_64;
-            #else
-                static_assert( 32 == get_arch_psize() );
-                return cpu_family::sparc_32;
-            #endif
-        #elif defined(__mips__)
-            #if defined(__LP64__)
-                static_assert( 64 == get_arch_psize() );
-                return cpu_family::mips_64;
-            #else
-                static_assert( 32 == get_arch_psize() );
-                return cpu_family::mips_32;
-            #endif
-        #elif defined(__sh__)
-            #if defined(__LP64__)
-                static_assert( 64 == get_arch_psize() );
-                return cpu_family::superh_64;
-            #else
-                static_assert( 32 == get_arch_psize() );
-                return cpu_family::superh_32;
-            #endif
-        #else
-            return cpu_family::UNDEF;
-        #endif
-    }
+    std::string to_string(const cpu_family_t v) noexcept;
 
-    std::string to_string(const cpu_family v) noexcept;
-
-    enum class arm32_hwcap1 : uint64_t {
+    enum class arm32_hwcap1_t : uint64_t {
         none         = 0,
         swp          = (1 << 0),
         half         = (1 << 1),
@@ -207,45 +151,45 @@ namespace jau::cpu {
 
         at_hwcap_1   = 16
     };
-    constexpr uint64_t number(const arm32_hwcap1 rhs) noexcept {
+    constexpr uint64_t number(const arm32_hwcap1_t rhs) noexcept {
         return static_cast<uint64_t>(rhs);
     }
-    constexpr arm32_hwcap1 operator ~(const arm32_hwcap1 rhs) noexcept {
-        return static_cast<arm32_hwcap1> ( ~number(rhs) );
+    constexpr arm32_hwcap1_t operator ~(const arm32_hwcap1_t rhs) noexcept {
+        return static_cast<arm32_hwcap1_t> ( ~number(rhs) );
     }
-    constexpr arm32_hwcap1 operator ^(const arm32_hwcap1 lhs, const arm32_hwcap1 rhs) noexcept {
-        return static_cast<arm32_hwcap1> ( number(lhs) ^ number(rhs) );
+    constexpr arm32_hwcap1_t operator ^(const arm32_hwcap1_t lhs, const arm32_hwcap1_t rhs) noexcept {
+        return static_cast<arm32_hwcap1_t> ( number(lhs) ^ number(rhs) );
     }
-    constexpr arm32_hwcap1 operator |(const arm32_hwcap1 lhs, const arm32_hwcap1 rhs) noexcept {
-        return static_cast<arm32_hwcap1> ( number(lhs) | number(rhs) );
+    constexpr arm32_hwcap1_t operator |(const arm32_hwcap1_t lhs, const arm32_hwcap1_t rhs) noexcept {
+        return static_cast<arm32_hwcap1_t> ( number(lhs) | number(rhs) );
     }
-    constexpr arm32_hwcap1 operator &(const arm32_hwcap1 lhs, const arm32_hwcap1 rhs) noexcept {
-        return static_cast<arm32_hwcap1> ( number(lhs) & number(rhs) );
+    constexpr arm32_hwcap1_t operator &(const arm32_hwcap1_t lhs, const arm32_hwcap1_t rhs) noexcept {
+        return static_cast<arm32_hwcap1_t> ( number(lhs) & number(rhs) );
     }
-    constexpr arm32_hwcap1& operator |=(arm32_hwcap1& lhs, const arm32_hwcap1 rhs) noexcept {
-        lhs = static_cast<arm32_hwcap1> ( number(lhs) | number(rhs) );
+    constexpr arm32_hwcap1_t& operator |=(arm32_hwcap1_t& lhs, const arm32_hwcap1_t rhs) noexcept {
+        lhs = static_cast<arm32_hwcap1_t> ( number(lhs) | number(rhs) );
         return lhs;
     }
-    constexpr arm32_hwcap1& operator &=(arm32_hwcap1& lhs, const arm32_hwcap1 rhs) noexcept {
-        lhs = static_cast<arm32_hwcap1> ( number(lhs) & number(rhs) );
+    constexpr arm32_hwcap1_t& operator &=(arm32_hwcap1_t& lhs, const arm32_hwcap1_t rhs) noexcept {
+        lhs = static_cast<arm32_hwcap1_t> ( number(lhs) & number(rhs) );
         return lhs;
     }
-    constexpr arm32_hwcap1& operator ^=(arm32_hwcap1& lhs, const arm32_hwcap1 rhs) noexcept {
-        lhs = static_cast<arm32_hwcap1> ( number(lhs) ^ number(rhs) );
+    constexpr arm32_hwcap1_t& operator ^=(arm32_hwcap1_t& lhs, const arm32_hwcap1_t rhs) noexcept {
+        lhs = static_cast<arm32_hwcap1_t> ( number(lhs) ^ number(rhs) );
         return lhs;
     }
-    constexpr bool operator ==(const arm32_hwcap1 lhs, const arm32_hwcap1 rhs) noexcept {
+    constexpr bool operator ==(const arm32_hwcap1_t lhs, const arm32_hwcap1_t rhs) noexcept {
         return number(lhs) == number(rhs);
     }
-    constexpr bool operator !=(const arm32_hwcap1 lhs, const arm32_hwcap1 rhs) noexcept {
+    constexpr bool operator !=(const arm32_hwcap1_t lhs, const arm32_hwcap1_t rhs) noexcept {
         return !( lhs == rhs );
     }
-    constexpr bool is_set(const arm32_hwcap1 mask, const arm32_hwcap1 bit) noexcept {
+    constexpr bool is_set(const arm32_hwcap1_t mask, const arm32_hwcap1_t bit) noexcept {
         return bit == ( mask & bit );
     }
-    std::string to_string(const arm32_hwcap1 hwcaps) noexcept;
+    std::string to_string(const arm32_hwcap1_t hwcaps) noexcept;
 
-    enum class arm32_hwcap2 : uint64_t {
+    enum class arm32_hwcap2_t : uint64_t {
         none  = 0,
         aes   = (1 << 0),
         pmull = (1 << 1),
@@ -255,47 +199,45 @@ namespace jau::cpu {
 
         at_hwcap_2 = 26
     };
-    constexpr uint64_t number(const arm32_hwcap2 rhs) noexcept {
+    constexpr uint64_t number(const arm32_hwcap2_t rhs) noexcept {
         return static_cast<uint64_t>(rhs);
     }
-    constexpr arm32_hwcap2 operator ~(const arm32_hwcap2 rhs) noexcept {
-        return static_cast<arm32_hwcap2> ( ~number(rhs) );
+    constexpr arm32_hwcap2_t operator ~(const arm32_hwcap2_t rhs) noexcept {
+        return static_cast<arm32_hwcap2_t> ( ~number(rhs) );
     }
-    constexpr arm32_hwcap2 operator ^(const arm32_hwcap2 lhs, const arm32_hwcap2 rhs) noexcept {
-        return static_cast<arm32_hwcap2> ( number(lhs) ^ number(rhs) );
+    constexpr arm32_hwcap2_t operator ^(const arm32_hwcap2_t lhs, const arm32_hwcap2_t rhs) noexcept {
+        return static_cast<arm32_hwcap2_t> ( number(lhs) ^ number(rhs) );
     }
-    constexpr arm32_hwcap2 operator |(const arm32_hwcap2 lhs, const arm32_hwcap2 rhs) noexcept {
-        return static_cast<arm32_hwcap2> ( number(lhs) | number(rhs) );
+    constexpr arm32_hwcap2_t operator |(const arm32_hwcap2_t lhs, const arm32_hwcap2_t rhs) noexcept {
+        return static_cast<arm32_hwcap2_t> ( number(lhs) | number(rhs) );
     }
-    constexpr arm32_hwcap2 operator &(const arm32_hwcap2 lhs, const arm32_hwcap2 rhs) noexcept {
-        return static_cast<arm32_hwcap2> ( number(lhs) & number(rhs) );
+    constexpr arm32_hwcap2_t operator &(const arm32_hwcap2_t lhs, const arm32_hwcap2_t rhs) noexcept {
+        return static_cast<arm32_hwcap2_t> ( number(lhs) & number(rhs) );
     }
-    constexpr arm32_hwcap2& operator |=(arm32_hwcap2& lhs, const arm32_hwcap2 rhs) noexcept {
-        lhs = static_cast<arm32_hwcap2> ( number(lhs) | number(rhs) );
+    constexpr arm32_hwcap2_t& operator |=(arm32_hwcap2_t& lhs, const arm32_hwcap2_t rhs) noexcept {
+        lhs = static_cast<arm32_hwcap2_t> ( number(lhs) | number(rhs) );
         return lhs;
     }
-    constexpr arm32_hwcap2& operator &=(arm32_hwcap2& lhs, const arm32_hwcap2 rhs) noexcept {
-        lhs = static_cast<arm32_hwcap2> ( number(lhs) & number(rhs) );
+    constexpr arm32_hwcap2_t& operator &=(arm32_hwcap2_t& lhs, const arm32_hwcap2_t rhs) noexcept {
+        lhs = static_cast<arm32_hwcap2_t> ( number(lhs) & number(rhs) );
         return lhs;
     }
-    constexpr arm32_hwcap2& operator ^=(arm32_hwcap2& lhs, const arm32_hwcap2 rhs) noexcept {
-        lhs = static_cast<arm32_hwcap2> ( number(lhs) ^ number(rhs) );
+    constexpr arm32_hwcap2_t& operator ^=(arm32_hwcap2_t& lhs, const arm32_hwcap2_t rhs) noexcept {
+        lhs = static_cast<arm32_hwcap2_t> ( number(lhs) ^ number(rhs) );
         return lhs;
     }
-    constexpr bool operator ==(const arm32_hwcap2 lhs, const arm32_hwcap2 rhs) noexcept {
+    constexpr bool operator ==(const arm32_hwcap2_t lhs, const arm32_hwcap2_t rhs) noexcept {
         return number(lhs) == number(rhs);
     }
-    constexpr bool operator !=(const arm32_hwcap2 lhs, const arm32_hwcap2 rhs) noexcept {
+    constexpr bool operator !=(const arm32_hwcap2_t lhs, const arm32_hwcap2_t rhs) noexcept {
         return !( lhs == rhs );
     }
-    constexpr bool is_set(const arm32_hwcap2 mask, const arm32_hwcap2 bit) noexcept {
+    constexpr bool is_set(const arm32_hwcap2_t mask, const arm32_hwcap2_t bit) noexcept {
         return bit == ( mask & bit );
     }
-    std::string to_string(const arm32_hwcap2 hwcaps) noexcept;
+    std::string to_string(const arm32_hwcap2_t hwcaps) noexcept;
 
-    bool get_arm32_hwcap(arm32_hwcap1& hwcap1, arm32_hwcap2& hwcap2) noexcept;
-
-    enum class arm64_hwcap : uint64_t {
+    enum class arm64_hwcap_t : uint64_t {
         none     = 0,
         fp       = (1 << 0),
         asimd    = (1 << 1),
@@ -332,49 +274,106 @@ namespace jau::cpu {
 
         at_hwcap = 16
     };
-    constexpr uint64_t number(const arm64_hwcap rhs) noexcept {
+    constexpr uint64_t number(const arm64_hwcap_t rhs) noexcept {
         return static_cast<uint64_t>(rhs);
     }
-    constexpr arm64_hwcap operator ~(const arm64_hwcap rhs) noexcept {
-        return static_cast<arm64_hwcap> ( ~number(rhs) );
+    constexpr arm64_hwcap_t operator ~(const arm64_hwcap_t rhs) noexcept {
+        return static_cast<arm64_hwcap_t> ( ~number(rhs) );
     }
-    constexpr arm64_hwcap operator ^(const arm64_hwcap lhs, const arm64_hwcap rhs) noexcept {
-        return static_cast<arm64_hwcap> ( number(lhs) ^ number(rhs) );
+    constexpr arm64_hwcap_t operator ^(const arm64_hwcap_t lhs, const arm64_hwcap_t rhs) noexcept {
+        return static_cast<arm64_hwcap_t> ( number(lhs) ^ number(rhs) );
     }
-    constexpr arm64_hwcap operator |(const arm64_hwcap lhs, const arm64_hwcap rhs) noexcept {
-        return static_cast<arm64_hwcap> ( number(lhs) | number(rhs) );
+    constexpr arm64_hwcap_t operator |(const arm64_hwcap_t lhs, const arm64_hwcap_t rhs) noexcept {
+        return static_cast<arm64_hwcap_t> ( number(lhs) | number(rhs) );
     }
-    constexpr arm64_hwcap operator &(const arm64_hwcap lhs, const arm64_hwcap rhs) noexcept {
-        return static_cast<arm64_hwcap> ( number(lhs) & number(rhs) );
+    constexpr arm64_hwcap_t operator &(const arm64_hwcap_t lhs, const arm64_hwcap_t rhs) noexcept {
+        return static_cast<arm64_hwcap_t> ( number(lhs) & number(rhs) );
     }
-    constexpr arm64_hwcap& operator |=(arm64_hwcap& lhs, const arm64_hwcap rhs) noexcept {
-        lhs = static_cast<arm64_hwcap> ( number(lhs) | number(rhs) );
+    constexpr arm64_hwcap_t& operator |=(arm64_hwcap_t& lhs, const arm64_hwcap_t rhs) noexcept {
+        lhs = static_cast<arm64_hwcap_t> ( number(lhs) | number(rhs) );
         return lhs;
     }
-    constexpr arm64_hwcap& operator &=(arm64_hwcap& lhs, const arm64_hwcap rhs) noexcept {
-        lhs = static_cast<arm64_hwcap> ( number(lhs) & number(rhs) );
+    constexpr arm64_hwcap_t& operator &=(arm64_hwcap_t& lhs, const arm64_hwcap_t rhs) noexcept {
+        lhs = static_cast<arm64_hwcap_t> ( number(lhs) & number(rhs) );
         return lhs;
     }
-    constexpr arm64_hwcap& operator ^=(arm64_hwcap& lhs, const arm64_hwcap rhs) noexcept {
-        lhs = static_cast<arm64_hwcap> ( number(lhs) ^ number(rhs) );
+    constexpr arm64_hwcap_t& operator ^=(arm64_hwcap_t& lhs, const arm64_hwcap_t rhs) noexcept {
+        lhs = static_cast<arm64_hwcap_t> ( number(lhs) ^ number(rhs) );
         return lhs;
     }
-    constexpr bool operator ==(const arm64_hwcap lhs, const arm64_hwcap rhs) noexcept {
+    constexpr bool operator ==(const arm64_hwcap_t lhs, const arm64_hwcap_t rhs) noexcept {
         return number(lhs) == number(rhs);
     }
-    constexpr bool operator !=(const arm64_hwcap lhs, const arm64_hwcap rhs) noexcept {
+    constexpr bool operator !=(const arm64_hwcap_t lhs, const arm64_hwcap_t rhs) noexcept {
         return !( lhs == rhs );
     }
-    constexpr bool is_set(const arm64_hwcap mask, const arm64_hwcap bit) noexcept {
+    constexpr bool is_set(const arm64_hwcap_t mask, const arm64_hwcap_t bit) noexcept {
         return bit == ( mask & bit );
     }
-    std::string to_string(const arm64_hwcap hwcaps) noexcept;
+    std::string to_string(const arm64_hwcap_t hwcaps) noexcept;
 
-    bool get_arm64_hwcap(arm64_hwcap& hwcap) noexcept;
-
-    std::string get_cpu_info(const std::string& line_prefix, std::string& sb) noexcept;
+    /** Singleton CpuInfo caching all jau::cpu information */
+    class CpuInfo {
+        public:
+            /** See pointer_bit_size() */
+            size_t pointer_bits;
+            /** Size of a page in bytes */
+            size_t page_size;
+            /** True if successfully queried l1_share_max and l1_apart_min. */
+            bool has_l1_minmax;
+            /** Maximum size of contiguous memory to promote true sharing if has_l1_minmax, or zero */
+            size_t l1_share_max;
+            /** Minimum offset between two objects to avoid false sharing if has_l1_minmax, or zero */
+            size_t l1_apart_min;
+            /** Number of available concurrent threads (cores) or zero if information is not available, using C++11 std::thread::hardware_concurrency() */
+            size_t concurrent_threads;
+            /** Number of available/online cores from system call */
+            size_t sys_online_cores;
+            /** Number of installed/configured cores from system call */
+            size_t sys_max_cores;
+            /** cpu_family_t derived from [Architectures](https://sourceforge.net/p/predef/wiki/Architectures/) predefined compiler macros. */
+            cpu_family_t family;
+            jau::endian_t byte_order;
+            /** True if successfully queried arm32_hwcap1 and arm32_hwcap1 on cpu_family_t::arm32. */
+            bool has_arm32_hwcap;
+            /** arm32_hwcap1_t info if available, i.e. has_arm32_hwcap */
+            arm32_hwcap1_t arm32_hwcap1;
+            /** arm32_hwcap2_t info if available, i.e. has_arm32_hwcap */
+            arm32_hwcap2_t arm32_hwcap2;
+            /** True if successfully queried arm64_hwcap on cpu_family_t::arm64. */
+            bool has_arm64_hwcap;
+            /** arm64_hwcap_t info if available, i.e. has_arm64_hwcap */
+            arm64_hwcap_t arm64_hwcap;
+        
+        private:
+            CpuInfo() noexcept;
+                
+        public:
+            CpuInfo(const CpuInfo&) = delete;
+            void operator=(const CpuInfo&) = delete;
+            
+            /** Returns reference to const singleton instance */
+            static inline const CpuInfo& get() noexcept {
+                static CpuInfo ci;
+                return ci;
+            } 
+        
+            /** Returns maximum number of available/online cores, i.e. max(sys_online_cores, concurrent_threads). */
+            inline size_t online_core_count() const noexcept {
+                return std::max(sys_online_cores, concurrent_threads);
+            }
+            
+            std::string toString(std::string& sb, bool details_only=false) const noexcept;
+            std::string toString() const noexcept {
+                std::string sb; toString(sb); return sb;
+            }
+    };
+    
+    inline std::string get_cpu_info(std::string& sb) noexcept {
+        return CpuInfo::get().toString(sb);
+    }
     inline std::string get_cpu_info() noexcept {
-        std::string sb; get_cpu_info("cpu info: ", sb); return sb;
+        std::string sb; CpuInfo::get().toString(sb); return sb;
     }
 
     /**@}*/

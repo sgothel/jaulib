@@ -28,6 +28,7 @@
 #include <cstdint>
 
 #include <jau/byte_util.hpp>
+#include <jau/int_types.hpp>
 #include "jau/cpp_lang_util.hpp"
 #include "jau/cpuid.hpp"
 
@@ -63,7 +64,7 @@ namespace jau::os {
             #if defined(__EMSCRIPTEN__)
                 #define JAU_OS_TYPE_UNIX 1
                 #define JAU_OS_TYPE_WASM 1
-                return 0b00000001000000000000000000000001U; // UnixWasm
+                return 0b00000001000000000000000000000001U; // Emscripten
             #elif defined(__QNXNTO__)
                 #define JAU_OS_TYPE_UNIX 1
                 #define JAU_OS_TYPE_QNXNTO 1
@@ -95,7 +96,7 @@ namespace jau::os {
     }
 
     /** OS type bits and unique IDs */
-    enum class os_type : uint32_t {
+    enum class os_type_t : uint32_t {
         /** Unix bit, contained by: linux, android, freebsd, darwin. */
         Unix    = 0b00000000000000000000000000000001U,
         /** Windows bit */
@@ -111,46 +112,46 @@ namespace jau::os {
         /** QNX NTO (>= 6) bit, includes: unix  */
         QnxNTO  = 0b00000000000000000001000000000001U,
         /** Generic WebAssembly bit */
-        WebAsm  = 0b00000001000000000000000000000000U,
+        GenWasm = 0b00000001000000000000000000000000U,
         /** WebAssembly with Unix/Posix suport bit (emscripten) */
-        UnixWasm= 0b00000001000000000000000000000001U,
+        Emscripten = 0b00000001000000000000000000000001U,
         /** Identifier for native OS type, one of the above. */
         native      = impl::get_host_os_id()
     };
-    constexpr uint32_t number(const os_type rhs) noexcept {
+    constexpr uint32_t number(const os_type_t rhs) noexcept {
         return static_cast<uint32_t>(rhs);
     }
-    constexpr os_type operator~(const os_type rhs) noexcept {
-        return static_cast<os_type>(~number(rhs));
+    constexpr os_type_t operator~(const os_type_t rhs) noexcept {
+        return static_cast<os_type_t>(~number(rhs));
     }
-    constexpr os_type operator^(const os_type lhs, const os_type rhs) noexcept {
-        return static_cast<os_type>(number(lhs) ^ number(rhs));
+    constexpr os_type_t operator^(const os_type_t lhs, const os_type_t rhs) noexcept {
+        return static_cast<os_type_t>(number(lhs) ^ number(rhs));
     }
-    constexpr os_type operator|(const os_type lhs, const os_type rhs) noexcept {
-        return static_cast<os_type>(number(lhs) | number(rhs));
+    constexpr os_type_t operator|(const os_type_t lhs, const os_type_t rhs) noexcept {
+        return static_cast<os_type_t>(number(lhs) | number(rhs));
     }
-    constexpr os_type operator&(const os_type lhs, const os_type rhs) noexcept {
-        return static_cast<os_type>(number(lhs) & number(rhs));
+    constexpr os_type_t operator&(const os_type_t lhs, const os_type_t rhs) noexcept {
+        return static_cast<os_type_t>(number(lhs) & number(rhs));
     }
-    constexpr os_type& operator|=(os_type& lhs, const os_type rhs) noexcept {
-        lhs = static_cast<os_type>(number(lhs) | number(rhs));
+    constexpr os_type_t& operator|=(os_type_t& lhs, const os_type_t rhs) noexcept {
+        lhs = static_cast<os_type_t>(number(lhs) | number(rhs));
         return lhs;
     }
-    constexpr os_type& operator&=(os_type& lhs, const os_type rhs) noexcept {
-        lhs = static_cast<os_type>(number(lhs) & number(rhs));
+    constexpr os_type_t& operator&=(os_type_t& lhs, const os_type_t rhs) noexcept {
+        lhs = static_cast<os_type_t>(number(lhs) & number(rhs));
         return lhs;
     }
-    constexpr os_type& operator^=(os_type& lhs, const os_type rhs) noexcept {
-        lhs = static_cast<os_type>(number(lhs) ^ number(rhs));
+    constexpr os_type_t& operator^=(os_type_t& lhs, const os_type_t rhs) noexcept {
+        lhs = static_cast<os_type_t>(number(lhs) ^ number(rhs));
         return lhs;
     }
-    constexpr bool operator==(const os_type lhs, const os_type rhs) noexcept {
+    constexpr bool operator==(const os_type_t lhs, const os_type_t rhs) noexcept {
         return number(lhs) == number(rhs);
     }
-    constexpr bool operator!=(const os_type lhs, const os_type rhs) noexcept {
+    constexpr bool operator!=(const os_type_t lhs, const os_type_t rhs) noexcept {
         return !(lhs == rhs);
     }
-    constexpr bool is_set(const os_type mask, const os_type bits) noexcept {
+    constexpr bool is_set(const os_type_t mask, const os_type_t bits) noexcept {
         return bits == (mask & bits);
     }
     /**
@@ -158,31 +159,31 @@ namespace jau::os {
      * @param mask the os_type to convert
      * @return the string representation.
      */
-    std::string to_string(const os_type mask) noexcept;
+    std::string to_string(const os_type_t mask) noexcept;
 
     /**
      * Evaluates `true` if the given \ref os_type is defined,
      * i.e. `Unix`, `Windows`, `Linux`, `Android`, ...
      */
-    constexpr bool is_defined_os_type(const os_type v) noexcept {
+    constexpr bool is_defined_os_type(const os_type_t v) noexcept {
         switch(v) {
-            case os_type::Unix:
+            case os_type_t::Unix:
                 [[fallthrough]];
-            case os_type::Windows:
+            case os_type_t::Windows:
                 [[fallthrough]];
-            case os_type::Linux:
+            case os_type_t::Linux:
                 [[fallthrough]];
-            case os_type::Android:
+            case os_type_t::Android:
                 [[fallthrough]];
-            case os_type::FreeBSD:
+            case os_type_t::FreeBSD:
                 [[fallthrough]];
-            case os_type::Darwin:
+            case os_type_t::Darwin:
                 [[fallthrough]];
-            case os_type::QnxNTO:
+            case os_type_t::QnxNTO:
                 [[fallthrough]];
-            case os_type::WebAsm:
+            case os_type_t::GenWasm:
                 return true;
-            case os_type::UnixWasm:
+            case os_type_t::Emscripten:
                 return true;
             default:
                 return false;
@@ -190,36 +191,36 @@ namespace jau::os {
     }
 
     // one static_assert is sufficient for whole compilation unit
-    static_assert( is_defined_os_type(os_type::native) ); // Enhance os_type to match your platform!
+    static_assert( is_defined_os_type(os_type_t::native) ); // Enhance os_type to match your platform!
 
     /** Evaluates `true` if platform os_type::native contains os_type::Unix */
-    constexpr bool is_unix() noexcept { return is_set(os_type::native, os_type::Unix); }
+    constexpr bool is_unix() noexcept { return is_set(os_type_t::native, os_type_t::Unix); }
 
     /** Evaluates `true` if platform os_type::native contains os_type::Windows */
-    constexpr bool is_windows() noexcept { return is_set(os_type::native, os_type::Windows); }
+    constexpr bool is_windows() noexcept { return is_set(os_type_t::native, os_type_t::Windows); }
 
     /** Evaluates `true` if platform os_type::native contains os_type::Linux */
-    constexpr bool is_linux() noexcept { return is_set(os_type::native, os_type::Linux); }
+    constexpr bool is_linux() noexcept { return is_set(os_type_t::native, os_type_t::Linux); }
 
     /** Evaluates `true` if platform os_type::native contains os_type::Android */
-    constexpr bool is_android() noexcept { return is_set(os_type::native, os_type::Android); }
+    constexpr bool is_android() noexcept { return is_set(os_type_t::native, os_type_t::Android); }
 
     /** Evaluates `true` if platform os_type::native contains os_type::FreeBSD */
-    constexpr bool is_freebsd() noexcept { return is_set(os_type::native, os_type::FreeBSD); }
+    constexpr bool is_freebsd() noexcept { return is_set(os_type_t::native, os_type_t::FreeBSD); }
 
     /** Evaluates `true` if platform os_type::native contains os_type::Darwin */
-    constexpr bool is_darwin() noexcept { return is_set(os_type::native, os_type::Darwin); }
+    constexpr bool is_darwin() noexcept { return is_set(os_type_t::native, os_type_t::Darwin); }
 
     /** Evaluates `true` if platform os_type::native contains os_type::QnxNTO */
-    constexpr bool is_qnxnto() noexcept { return is_set(os_type::native, os_type::QnxNTO); }
+    constexpr bool is_qnxnto() noexcept { return is_set(os_type_t::native, os_type_t::QnxNTO); }
 
-    /** Evaluates `true` if platform os_type::native contains os_type::WebAsm */
-    constexpr bool is_wasm() noexcept { return is_set(os_type::native, os_type::WebAsm); }
+    /** Evaluates `true` if platform os_type::native contains os_type::GenWasm */
+    constexpr bool is_generic_wasm() noexcept { return is_set(os_type_t::native, os_type_t::GenWasm); }
 
-    /** Evaluates `true` if platform os_type::native contains os_type::UnixWasm */
-    constexpr bool is_unixwasm() noexcept { return is_set(os_type::native, os_type::UnixWasm); }
+    /** Evaluates `true` if platform os_type::native contains os_type::Emscripten */
+    constexpr bool is_emscripten() noexcept { return is_set(os_type_t::native, os_type_t::Emscripten); }
     
-    struct rt_os_info {
+    struct RuntimeOSInfo {
         std::string sysname;
         std::string nodename;
         std::string release;
@@ -238,49 +239,49 @@ namespace jau::os {
             return sb;
         }
     };
-    bool get_rt_os_info(rt_os_info& info) noexcept;
+    bool get_rt_os_info(RuntimeOSInfo& info) noexcept;
 
-    enum class abi_type : uint16_t {
-        generic_abi =  0x00,
+    enum class abi_type_t : uint16_t {
+        generic =  0x00,
         /** ARM GNU-EABI ARMEL -mfloat-abi=softfp */
-        eabi_gnu_armel = 0x01,
+        gnu_armel = 0x01,
         /** ARM GNU-EABI ARMHF -mfloat-abi=hard */
-        eabi_gnu_armhf = 0x02,
+        gnu_armhf = 0x02,
         /** ARM EABI AARCH64 (64bit) */
-        eabi_aarch64   = 0x03,
-        /** WASM Undefined (32bit) */
-        wasm32_abi_undef = 0x20,
+        aarch64   = 0x03,
+        /** WASM Generic (32bit) */
+        wasm32_gen = 0x20,
         /** WASM Emscripten (32bit) */
-        wasm32_abi_emscripten = 0x21,
-        /** WASM Undefined (64bit) */
-        wasm64_abi_undef = 0x2a,
+        wasm32_ems = 0x21,
+        /** WASM Generic (64bit) */
+        wasm64_gen = 0x2a,
         /** WASM Emscripten (64bit) */
-        wasm64_abi_emscripten = 0x2b
+        wasm64_ems = 0x2b
     };
-    constexpr abi_type get_abi_type(const jau::cpu::cpu_family cpu) noexcept {
-        if ( jau::cpu::cpu_family::arm64 == cpu ) {
-            return abi_type::eabi_aarch64;
-        } else if ( jau::cpu::cpu_family::arm32 == cpu ) {
-            return abi_type::eabi_gnu_armhf; // FIXME?
-        } else if ( jau::cpu::cpu_family::wasm_32 == cpu ) {
+    constexpr abi_type_t get_abi_type(const jau::cpu::cpu_family_t cpu) noexcept {
+        if ( jau::cpu::cpu_family_t::arm64 == cpu ) {
+            return abi_type_t::aarch64;
+        } else if ( jau::cpu::cpu_family_t::arm32 == cpu ) {
+            return abi_type_t::gnu_armhf; // FIXME?
+        } else if ( jau::cpu::cpu_family_t::wasm32 == cpu ) {
             #if defined(__EMSCRIPTEN__)
-                return abi_type::wasm32_abi_emscripten;
+                return abi_type_t::wasm32_ems;
             #else
-                return abi_type::wasm32_abi_undef;
+                return abi_type_t::wasm32_gen;
             #endif
-        } else if ( jau::cpu::cpu_family::wasm_64 == cpu ) {
+        } else if ( jau::cpu::cpu_family_t::wasm64 == cpu ) {
             #if defined(__EMSCRIPTEN__)
-                return abi_type::wasm64_abi_emscripten;
+                return abi_type_t::wasm64_ems;
             #else
-                return abi_type::wasm64_abi_undef;
+                return abi_type_t::wasm64_gen;
             #endif
         }
-        return abi_type::generic_abi;
+        return abi_type_t::generic;
     }
-    constexpr abi_type get_abi_type() noexcept {
-        return get_abi_type( jau::cpu::get_cpu_family() );
+    inline abi_type_t get_abi_type() noexcept {
+        return get_abi_type( jau::cpu::CpuInfo::get().family );
     }
-    std::string to_string(const abi_type abi) noexcept;
+    std::string to_string(const abi_type_t abi) noexcept;
 
     /**
      * Returns the common name for the given
@@ -315,29 +316,38 @@ namespace jau::os {
      * </ul>
      * @return The <i>os.and.arch</i> value.
      */
-    std::string get_os_and_arch(const os_type os, const jau::cpu::cpu_family cpu, const abi_type abi, const endian e) noexcept;
+    std::string get_os_and_arch(const os_type_t os, const jau::cpu::cpu_family_t cpu, const abi_type_t abi, const endian_t e) noexcept;
 
     /** Returns this hosts's common name, see get_os_and_arch() */
     inline std::string get_os_and_arch() noexcept {
-        return get_os_and_arch(os_type::native, jau::cpu::get_cpu_family(), get_abi_type(), endian::native);
+        return get_os_and_arch(os_type_t::native, jau::cpu::CpuInfo::get().family, get_abi_type(), endian_t::native);
     }
 
     /** Returns the OS's path separator character, e.g. `;` for Windows and `:` for Unix (rest of the world) */
-    inline char getPathSeparatorChar() noexcept {
-        return jau::os::is_windows() ? ';' : ':';
+    constexpr char path_separator_char() noexcept {
+        if constexpr (jau::os::is_windows()) {
+            return ';';
+        } else {
+            return ':';
+        }
     }
     /** Returns the OS's path separator as a string, e.g. `;` for Windows and `:` for Unix (rest of the world) */
-    inline std::string getPathSeparator() noexcept {
-        return std::string(1, getPathSeparatorChar());
+    constexpr_cxx20 std::string path_separator() noexcept {
+        return std::string(1, path_separator_char());
     }
 
     /** Returns the OS's path separator character, e.g. `\\` for Windows and `/` for Unix (rest of the world) */
-    inline char getDirSeparatorChar() noexcept {
-        return jau::os::is_windows() ? '\\' : '/';
+    constexpr char dir_separator_char() noexcept {
+        if constexpr (jau::os::is_windows()) {
+            return '\\';
+        } else {
+            return '/';
+        }
     }
+    
     /** Returns the OS's path separator as a string, e.g. `\\` for Windows and `/` for Unix (rest of the world) */
-    inline std::string getDirSeparator() noexcept {
-        return std::string(1, getDirSeparatorChar());
+    constexpr_cxx20 std::string dir_separator() noexcept {
+        return std::string(1, dir_separator_char());
     }
 
     std::string get_platform_info(std::string& sb) noexcept;
