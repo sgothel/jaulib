@@ -4,6 +4,15 @@
 
 ## Changes
 
+**1.3.0**
+* WebAssembly / Emscripten fixes
+* Better cmake build support with presets and clangd setup
+  - Works well with Eclipse CDT-LSP (and all client projects) 
+* Misc. math function fixes
+* Misc. API renames, i.e. free enum types to be lower-case with `_t` ending.
+  - Classes *may* use CamelCase
+* TODO: Code test coverage test
+
 **1.2.0**
 * Last C++17 release, moving to C++20 as minimum requirement because
   - Moving metaprogramming to C++20 concepts and constrains

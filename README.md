@@ -9,7 +9,8 @@ This project's canonical repositories is hosted on [Gothel Software](https://jau
 This project provides general C++ collections, algorithms and utilities.
 
 `jaulib` was extracted from [Direct-BT](https://jausoft.com/cgit/direct_bt.git/about/) to enable general use and enforce better encapsulation,
-now it is utilized in multiple projects ranging from cryptography, over-the-air (OTA) updates to computer graphics.
+now it is utilized in multiple projects ranging from cryptography with [Cipherpack](https://jausoft.com/cgit/cipherpack.git/about/), 
+over-the-air (OTA) updates to computer graphics with [Gamp](https://jausoft.com/cgit/gamp.git/about/).
 
 It also provides a basic mechanisms to create a thin Java JNI binding 
 as well as some Java JNI bindings for a subset of `jaulib`.
@@ -48,6 +49,11 @@ Up to date API documentation can be found:
 
 ## Examples
 See *Direct-BT* [C++ API Doc](https://jausoft.com/projects/direct_bt/build/documentation/cpp/html/examples.html).
+
+# Usage
+* [Direct-BT](https://jausoft.com/cgit/direct_bt.git/about/)
+* [Cipherpack](https://jausoft.com/cgit/cipherpack.git/about/)
+* [Gamp](https://jausoft.com/cgit/gamp.git/about/)
 
 <a name="cpp_min_req"></a>
 
