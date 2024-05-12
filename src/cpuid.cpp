@@ -26,7 +26,6 @@
 #include <string>
 #include <cstdint>
 #include <cstdlib>
-#include <unistd.h>
 #include <thread>
 #include <new>
 
@@ -35,10 +34,15 @@
 #include <jau/debug.hpp>
 #include <jau/os/os_support.hpp>
 
-#ifdef __linux__
-    extern "C" {
-        #include <sys/auxv.h>
-    }
+#if defined(_WIN32)
+    #include <windows.h>
+#else /* assume POSIX sysconf() availability */
+    #include <unistd.h>    
+    #ifdef __linux__
+        extern "C" {
+            #include <sys/auxv.h>
+        }
+    #endif
 #endif
 
 using namespace jau;
@@ -57,10 +61,14 @@ static bool get_cache_line_size(size_t& l1_share_max, size_t& l1_apart_min) noex
 }
 
 static size_t get_page_size() noexcept {
-    #if defined(JAU_OS_TYPE_UNIX) && defined(_SC_PAGESIZE)
+    #if defined(_WIN32)
+        SYSTEM_INFO si;
+        GetSystemInfo(&si);
+        return (jlong) si.dwPageSize;
+    #elif defined(JAU_OS_TYPE_UNIX) && defined(_SC_PAGESIZE)
         return sysconf(_SC_PAGESIZE);
     #else
-        return 1; // FIXME
+        return 0;
     #endif
 }
 static size_t get_concurrent_thread_count() noexcept {

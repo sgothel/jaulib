@@ -317,7 +317,7 @@ namespace jau::cpu {
         public:
             /** See pointer_bit_size() */
             size_t pointer_bits;
-            /** Size of a page in bytes */
+            /** Size of a page in bytes or zero if not available */
             size_t page_size;
             /** True if successfully queried l1_share_max and l1_apart_min. */
             bool has_l1_minmax;
