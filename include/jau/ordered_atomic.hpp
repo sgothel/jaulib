@@ -115,7 +115,7 @@ template <typename _Tp, std::memory_order _MO> struct ordered_atomic : private s
     _Tp operator--(int) volatile noexcept // postfix --
     { return super::fetch_sub(1, _MO); }
 
-#if 0 /* def _GLIBCXX_ATOMIC_BASE_H */
+#if 0 && __has_builtin(__atomic_add_fetch) && __has_builtin(__atomic_sub_fetch)
 
     // prefix ++, -- impossible w/o using GCC __atomic builtins and access to _M_i .. etc
 
@@ -126,7 +126,7 @@ template <typename _Tp, std::memory_order _MO> struct ordered_atomic : private s
     CXX_ALWAYS_INLINE
     _Tp operator++() volatile noexcept // prefix ++
     { return __atomic_add_fetch(&_M_i, 1, int(_MO)); }
-
+    
     CXX_ALWAYS_INLINE
     _Tp operator--() noexcept // prefix --
     { return __atomic_sub_fetch(&_M_i, 1, int(_MO)); }
@@ -135,7 +135,27 @@ template <typename _Tp, std::memory_order _MO> struct ordered_atomic : private s
     _Tp operator--() volatile noexcept // prefix --
     { return __atomic_sub_fetch(&_M_i, 1, int(_MO)); }
 
-#endif /* 0 _GLIBCXX_ATOMIC_BASE_H */
+#else /* __has_builtin(__atomic_add_fetch) && __has_builtin(__atomic_sub_fetch) */
+
+    // prefix ++, -- .. alternative
+
+    CXX_ALWAYS_INLINE
+    _Tp operator++() noexcept // prefix ++
+    { return super::fetch_add(1, _MO) + 1; }
+
+    CXX_ALWAYS_INLINE
+    _Tp operator++() volatile noexcept // prefix ++
+    { return super::fetch_add(1, _MO) + 1; }
+
+    CXX_ALWAYS_INLINE
+    _Tp operator--() noexcept // prefix --
+    { return super::fetch_sub(1, _MO) - 1; }
+
+    CXX_ALWAYS_INLINE
+    _Tp operator--() volatile noexcept // prefix --
+    { return super::fetch_sub(1, _MO) - 1; }
+
+#endif /* __has_builtin(__atomic_add_fetch) && __has_builtin(__atomic_sub_fetch) */
 
     CXX_ALWAYS_INLINE
     bool is_lock_free() const noexcept 
