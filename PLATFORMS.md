@@ -36,7 +36,7 @@ The following **platforms** are tested and hence supported
 - glibc 2.35
 - compiler
   - gcc 12.2.0
-  - clang 14.0.6
+  - clang 16.0.6 (or 18.1.6 via apt.llvm.org)
   - openjdk 17
 - architectures
   - amd64 (validated, Generic)
