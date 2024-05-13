@@ -42,11 +42,15 @@ namespace jau::math {
      */
 
     /**
-     * 2D vector using two value_type components.
+     * 2D vector using two value_type components. 
+     * 
+     * Component and overall alignment is natural as sizeof(value_type),
+     * i.e. sizeof(value_type) == alignof(value_type)
      */
     template<typename Value_type,
-             std::enable_if_t<std::is_floating_point_v<Value_type>, bool> = true>
-    class alignas(Value_type) Vector2F {
+             std::enable_if_t<std::is_floating_point_v<Value_type> &&
+                              sizeof(Value_type) == alignof(Value_type), bool> = true>
+    class alignas(sizeof(Value_type)) Vector2F {
       public:
         typedef Value_type                  value_type;
         typedef value_type*                 pointer;
@@ -56,15 +60,18 @@ namespace jau::math {
         typedef value_type*                 iterator;
         typedef const value_type*           const_iterator;
 
-        constexpr static const value_type zero = value_type(0);
-        constexpr static const value_type one  = value_type(1);
+        /** value alignment is sizeof(value_type) */
+        constexpr static int value_alignment = sizeof(value_type);
 
-        /** Number of components  */
+        /** Number of value_type components  */
         constexpr static const size_t components = 2;
-        
-        /** Size in bytes (aligned) */
+
+        /** Size in bytes with value_alignment */
         constexpr static const size_t byte_size = components * sizeof(value_type);
-        
+
+        constexpr static const value_type zero = value_type(0);
+        constexpr static const value_type one = value_type(1);
+
         value_type x;
         value_type y;
 
@@ -353,41 +360,65 @@ namespace jau::math {
         return out << v.toString();
     }
 
+    static_assert(sizeof(float) == alignof(float)); // natural alignment (reconsider otherwise)
+     
     typedef Vector2F<float> Vec2f;
-    static_assert(alignof(float) == alignof(Vec2f));
+    static_assert(2 == Vec2f::components);
+    static_assert(sizeof(float) == Vec2f::value_alignment);
+    static_assert(sizeof(float) == alignof(Vec2f));
+    static_assert(sizeof(float)*2 == Vec2f::byte_size);
     static_assert(sizeof(float)*2 == sizeof(Vec2f));
 
     /**
      * Point2F alias of Vector2F
      */
-    template<typename T,
-             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
-    using Point2F = Vector2F<T>;
+    template<typename Value_type,
+             std::enable_if_t<std::is_floating_point_v<Value_type> &&
+                              sizeof(Value_type) == alignof(Value_type), bool> = true>
+    using Point2F = Vector2F<Value_type>;
 
     typedef Point2F<float> Point2f;
-    static_assert(alignof(float) == alignof(Point2f));
+    static_assert(2 == Point2f::components);
+    static_assert(sizeof(float) == Point2f::value_alignment);
+    static_assert(sizeof(float) == alignof(Point2f));
+    static_assert(sizeof(float)*2 == Point2f::byte_size);
     static_assert(sizeof(float)*2 == sizeof(Point2f));
 
     /**
      * Simple compound denoting a ray.
-     * <p>
+     * 
+     * Component and overall alignment is as sizeof(value_type), i.e. packed.
+     *
      * A ray, also known as a half line, consists out of it's <i>origin</i>
      * and <i>direction</i>. Hence it is bound to only the <i>origin</i> side,
      * where the other end is +infinitive.
      * <pre>
      * R(t) = R0 + Rd * t with R0 origin, Rd direction and t > 0.0
      * </pre>
-     * </p>
      */
-    template<typename T,
-             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
-    class alignas(T) Ray2F {
-    public:
+    template<typename Value_type,
+             std::enable_if_t<std::is_floating_point_v<Value_type> &&
+                              sizeof(Value_type) == alignof(Value_type), bool> = true>
+    class alignas(sizeof(Value_type)) Ray2F {
+      public:
+        typedef Value_type                  value_type;
+        typedef value_type*                 pointer;
+        typedef const value_type*           const_pointer;
+        
+        /** value alignment is sizeof(value_type) */
+        constexpr static int value_alignment = sizeof(value_type);
+        
+        /** Number of value_type components  */
+        constexpr static const size_t components = 4;
+        
+        /** Size in bytes with value_alignment */
+        constexpr static const size_t byte_size = components * sizeof(value_type);
+        
         /** Origin of Ray. */
-        Point2F<T> orig;
+        alignas(value_alignment) Point2F<value_type> orig;
 
         /** Normalized direction vector of ray. */
-        Vector2F<T> dir;
+        alignas(value_alignment) Vector2F<value_type> dir;
 
         std::string toString() const noexcept { return "Ray[orig "+orig.toString()+", dir "+dir.toString() +"]"; }
     };
@@ -399,9 +430,12 @@ namespace jau::math {
     }
 
     typedef Ray2F<float> Ray2f;
-    static_assert(alignof(float) == alignof(Ray2f));
+    static_assert(4 == Ray2f::components);
+    static_assert(sizeof(float) == Ray2f::value_alignment);
+    static_assert(sizeof(float) == alignof(Ray2f));
+    static_assert(sizeof(float)*4 == Ray2f::byte_size);
     static_assert(sizeof(float)*4 == sizeof(Ray2f));
-
+    
     /**@}*/
 
 } // namespace jau::math

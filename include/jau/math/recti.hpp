@@ -36,11 +36,15 @@ namespace jau::math {
      */
 
     /**
-     * Rectangle with x, y, width and height integer components.
+     * Rectangle with x, y, width and height value_type components.
+     * 
+     * Component and overall alignment is natural as sizeof(value_type),
+     * i.e. sizeof(value_type) == alignof(value_type)
      */
     template<typename Value_type,
-             std::enable_if_t<std::is_integral_v<Value_type>, bool> = true>
-    class RectI {
+             std::enable_if_t<std::is_integral_v<Value_type> &&
+                              sizeof(Value_type) == alignof(Value_type), bool> = true>
+    class alignas(sizeof(Value_type)) RectI {
       public:
         typedef Value_type                  value_type;
         typedef value_type*                 pointer;
@@ -50,6 +54,15 @@ namespace jau::math {
         typedef value_type*                 iterator;
         typedef const value_type*           const_iterator;
 
+        /** value alignment is sizeof(value_type) */
+        constexpr static int value_alignment = sizeof(value_type);
+        
+        /** Number of value_type components  */
+        constexpr static const size_t components = 4;
+        
+        /** Size in bytes with value_alignment */
+        constexpr static const size_t byte_size = components * sizeof(value_type);
+        
       private:
         value_type m_x;
         value_type m_y;
@@ -124,7 +137,9 @@ namespace jau::math {
     }
 
     typedef RectI<int> Recti;
-    static_assert(alignof(int) == alignof(Recti));
+    static_assert(4 == Recti::components);
+    static_assert(sizeof(int) == Recti::value_alignment);
+    static_assert(sizeof(int) == alignof(Recti));
     static_assert(sizeof(int)*4 == sizeof(Recti));
 
 /**@}*/

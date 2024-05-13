@@ -31,9 +31,11 @@
 #include <limits>
 #include <string>
 #include <initializer_list>
-#include <iostream>
 
 #include <jau/float_math.hpp>
+
+#include <iostream>
+
 #include <jau/math/vec3f.hpp>
 
 namespace jau::math {
@@ -45,10 +47,14 @@ namespace jau::math {
 
     /**
      * 4D vector using four value_type components.
+     *
+     * Component and overall alignment is natural as sizeof(value_type),
+     * i.e. sizeof(value_type) == alignof(value_type)
      */
-    template<typename Value_type,
-             std::enable_if_t<std::is_floating_point_v<Value_type>, bool> = true>
-    class alignas(Value_type) Vector4F {
+    template <typename Value_type,
+              std::enable_if_t<std::is_floating_point_v<Value_type> &&
+                               sizeof(Value_type) == alignof(Value_type), bool> = true>
+    class alignas(sizeof(Value_type)) Vector4F {
         public:
             typedef Value_type               value_type;
             typedef value_type*              pointer;
@@ -58,17 +64,20 @@ namespace jau::math {
             typedef value_type*              iterator;
             typedef const value_type*        const_iterator;
 
+            /** value alignment is sizeof(value_type) */
+            constexpr static int value_alignment = sizeof(value_type);
+
+            /** Number of value_type components  */
+            constexpr static const size_t components = 4;
+
+            /** Size in bytes with value_alignment */
+            constexpr static const size_t byte_size = components * sizeof(value_type);
+
             typedef Vector3F<value_type, std::is_floating_point_v<Value_type>> Vec3;
 
             constexpr static const value_type zero = value_type(0);
-            constexpr static const value_type one  = value_type(1);
+            constexpr static const value_type one = value_type(1);
 
-            /** Number of components  */
-            constexpr static const size_t components = 4;
-            
-            /** Size in bytes (aligned) */
-            constexpr static const size_t byte_size = components * sizeof(value_type);
-            
             value_type x;
             value_type y;
             value_type z;
@@ -116,24 +125,15 @@ namespace jau::math {
             constexpr iterator begin() noexcept { return &x; }
 
             /** xyzw = this, returns xyzw. */
-            constexpr iterator get(iterator xyzw) const noexcept {
-                xyzw[0] = x;
-                xyzw[1] = y;
-                xyzw[2] = z;
-                xyzw[3] = w;
-                return xyzw;
-            }
+            constexpr iterator get(iterator xyzw) const noexcept 
+            { xyzw[0] = x; xyzw[1] = y; xyzw[2] = z; xyzw[3] = w; return xyzw; }
 
             /** out = { this.x, this.y, this.z } dropping w, returns out. */
-            constexpr Vec3& getVec3(Vec3& out) const noexcept {
-                out.x = x;
-                out.y = y;
-                out.z = z;
-                return out;
-            }
+            constexpr Vec3& getVec3(Vec3& out) const noexcept 
+            { out.x = x; out.y = y; out.z = z; return out; }
 
-            constexpr bool operator==(const Vector4F& rhs ) const noexcept {
-                if( this == &rhs ) {
+            constexpr bool operator==(const Vector4F& rhs) const noexcept {
+                if (this == &rhs) {
                     return true;
                 }
                 return jau::is_zero(x - rhs.x) && jau::is_zero(y - rhs.y) &&
@@ -174,9 +174,8 @@ namespace jau::math {
             }
 
             /** this = this - rhs, returns this. */
-            constexpr Vector4F& operator-=(const Vector4F& rhs ) noexcept {
-                x-=rhs.x; y-=rhs.y; z-=rhs.z; w-=rhs.w;
-                return *this;
+            constexpr Vector4F& operator-=(const Vector4F& rhs ) noexcept 
+            { x-=rhs.x; y-=rhs.y; z-=rhs.z; w-=rhs.w; return *this;
             }
 
             /**
@@ -184,22 +183,18 @@ namespace jau::math {
              * @param s scale factor
              * @return this instance
              */
-            constexpr Vector4F& operator*=(const value_type s ) noexcept {
-                x*=s; y*=s; z*=s; w*=s;
-                return *this;
-            }
+            constexpr Vector4F& operator*=(const value_type s ) noexcept 
+            { x*=s; y*=s; z*=s; w*=s; return *this; }
 
             /**
              * Divide this vector with given scale factor
              * @param s scale factor
              * @return this instance
              */
-            constexpr Vector4F& operator/=(const value_type s ) noexcept {
-                x/=s; y/=s; z/=s; w/=s;
-                return *this;
-            }
+            constexpr Vector4F& operator/=(const value_type s ) noexcept 
+            { x/=s; y/=s; z/=s; w/=s; return *this; }
 
-            std::string toString() const noexcept { return std::to_string(x)+" / "+std::to_string(y)+" / "+std::to_string(z)+" / "+std::to_string(w); }
+            std::string toString() const noexcept { return std::to_string(x) + " / " + std::to_string(y) + " / " + std::to_string(z) + " / " + std::to_string(w); }
 
             constexpr bool is_zero() const noexcept {
                 return jau::is_zero(x) && jau::is_zero(y) && jau::is_zero(z) && jau::is_zero(w);
@@ -224,7 +219,7 @@ namespace jau::math {
              */
             constexpr Vector4F& normalize() noexcept {
                 const value_type lengthSq = length_sq();
-                if ( jau::is_zero( lengthSq ) ) {
+                if (jau::is_zero(lengthSq)) {
                     x = zero;
                     y = zero;
                     z = zero;
@@ -263,17 +258,17 @@ namespace jau::math {
 
             constexpr_cxx23 bool intersects(const Vector4F& o) const noexcept {
                 const value_type eps = std::numeric_limits<value_type>::epsilon();
-                if( std::abs(x-o.x) >= eps || std::abs(y-o.y) >= eps ||
-                    std::abs(z-o.z) >= eps || std::abs(w-o.w) >= eps ) {
+                if (std::abs(x - o.x) >= eps || std::abs(y - o.y) >= eps ||
+                    std::abs(z - o.z) >= eps || std::abs(w - o.w) >= eps) {
                     return false;
                 }
                 return true;
             }
     };
 
-    template<typename T,
-             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
-    constexpr Vector4F<T> operator+(const Vector4F<T>& lhs, const Vector4F<T>& rhs ) noexcept {
+    template <typename T,
+              std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    constexpr Vector4F<T> operator+(const Vector4F<T>& lhs, const Vector4F<T>& rhs) noexcept {
         // Returning a Vector4 object from the returned reference of operator+=()
         // may hinder copy-elision or "named return value optimization" (NRVO).
         // return Vector4<T>(lhs) += rhs;
@@ -314,29 +309,42 @@ namespace jau::math {
         Vector3F<T> r; v.getVec3(r); return r;
     }
 
-    template<typename T,
-             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    template <typename T,
+              std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
     std::ostream& operator<<(std::ostream& out, const Vector4F<T>& v) noexcept {
         return out << v.toString();
     }
 
+    static_assert(4 == Vector4F<double>::components);
+    static_assert(sizeof(double) == Vector4F<double>::value_alignment);
+    static_assert(sizeof(double) == alignof(Vector4F<double>));
+    static_assert(sizeof(double) * 4 == Vector4F<double>::byte_size);
+    static_assert(sizeof(double) * 4 == sizeof(Vector4F<double>));
+
     typedef Vector4F<float> Vec4f;
-    static_assert(alignof(float) == alignof(Vec4f));
-    static_assert(sizeof(float)*4 == sizeof(Vec4f));
+    static_assert(4 == Vec4f::components);
+    static_assert(sizeof(float) == Vec4f::value_alignment);
+    static_assert(sizeof(float) == alignof(Vec4f));
+    static_assert(sizeof(float) * 4 == Vec4f::byte_size);
+    static_assert(sizeof(float) * 4 == sizeof(Vec4f));
 
     /**
      * Point4F alias of Vector4F
      */
-    template<typename T,
-             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
-    using Point4F = Vector4F<T>;
+    template <typename Value_type,
+              std::enable_if_t<std::is_floating_point_v<Value_type> &&
+                               sizeof(Value_type) == alignof(Value_type), bool> = true>
+    using Point4F = Vector4F<Value_type>;
 
     typedef Point4F<float> Point4f;
-    static_assert(alignof(float) == alignof(Point4f));
-    static_assert(sizeof(float)*4 == sizeof(Point4f));
+    static_assert(4 == Point4f::components);
+    static_assert(sizeof(float) == Point4f::value_alignment);
+    static_assert(sizeof(float) == alignof(Point4f));
+    static_assert(sizeof(float) * 4 == Point4f::byte_size);
+    static_assert(sizeof(float) * 4 == sizeof(Point4f));
 
     /**@}*/
 
-} // namespace jau::math
+}  // namespace jau::math
 
 #endif /*  JAU_VEC4F_HPP_ */

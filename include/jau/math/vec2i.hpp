@@ -42,11 +42,16 @@ namespace jau::math {
      */
 
     /**
-     * 2D vector using two integer components.
+     * 2D vector using two value_type components.
+     * 
+     * Component and overall alignment is natural as sizeof(value_type),
+     * i.e. sizeof(value_type) == alignof(value_type)
      */
     template<typename Value_type,
-             std::enable_if_t<std::is_integral_v<Value_type>, bool> = true>
-    struct alignas(Value_type) Vector2I {
+             std::enable_if_t<std::is_integral_v<Value_type> &&
+                              sizeof(Value_type) == alignof(Value_type), bool> = true>
+    class alignas(sizeof(Value_type)) Vector2I {
+      public:
         typedef Value_type                  value_type;
         typedef value_type*                 pointer;
         typedef const value_type*           const_pointer;
@@ -55,16 +60,19 @@ namespace jau::math {
         typedef value_type*                 iterator;
         typedef const value_type*           const_iterator;
 
+        /** value alignment is sizeof(value_type) */
+        constexpr static int value_alignment = sizeof(value_type);
+        
+        /** Number of value_type components  */
+        constexpr static const size_t components = 2;
+        
+        /** Size in bytes with value_alignment */
+        constexpr static const size_t byte_size = components * sizeof(value_type);
+
         typedef typename jau::float_bytes<sizeof(value_type)>::type float_type;
 
         constexpr static const value_type zero = value_type(0);
         constexpr static const value_type one  = value_type(1);
-
-        /** Number of components  */
-        constexpr static const size_t components = 2;
-        
-        /** Size in bytes (aligned) */
-        constexpr static const size_t byte_size = components * sizeof(value_type);
 
         value_type x;
         value_type y;
@@ -267,7 +275,10 @@ namespace jau::math {
     }
 
     typedef Vector2I<int> Vec2i;
-    static_assert(alignof(int) == alignof(Vec2i));
+    static_assert(2 == Vec2i::components);
+    static_assert(sizeof(int) == Vec2i::value_alignment);
+    static_assert(sizeof(int) == alignof(Vec2i));
+    static_assert(sizeof(int)*2 == Vec2i::byte_size);
     static_assert(sizeof(int)*2 == sizeof(Vec2i));
 
     /**@}*/

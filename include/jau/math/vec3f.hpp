@@ -30,10 +30,12 @@
 #include <cassert>
 #include <limits>
 #include <string>
+
+#include <jau/float_math.hpp>
+
 #include <initializer_list>
 #include <iostream>
 
-#include <jau/float_math.hpp>
 #include <jau/math/vec2f.hpp>
 
 namespace jau::math {
@@ -45,10 +47,14 @@ namespace jau::math {
 
     /**
      * 3D vector using three value_type components.
+     * 
+     * Component and overall alignment is natural as sizeof(value_type),
+     * i.e. sizeof(value_type) == alignof(value_type)
      */
-    template<typename Value_type,
-             std::enable_if_t<std::is_floating_point_v<Value_type>, bool> = true>
-    class alignas(Value_type) Vector3F {
+    template <typename Value_type,
+              std::enable_if_t<std::is_floating_point_v<Value_type> &&
+                               sizeof(Value_type) == alignof(Value_type), bool> = true>
+    class alignas(sizeof(Value_type)) Vector3F {
         public:
             typedef Value_type                  value_type;
             typedef value_type*                 pointer;
@@ -58,17 +64,20 @@ namespace jau::math {
             typedef value_type*                 iterator;
             typedef const value_type*           const_iterator;
 
+            /** value alignment is sizeof(value_type) */
+            constexpr static int value_alignment = sizeof(value_type);
+
+            /** Number of value_type components  */
+            constexpr static const size_t components = 3;
+
+            /** Size in bytes with value_alignment */
+            constexpr static const size_t byte_size = components * sizeof(value_type);
+
             typedef Vector2F<value_type, std::is_floating_point_v<Value_type>> Vec2;
 
             constexpr static const value_type zero = value_type(0);
-            constexpr static const value_type one  = value_type(1);
+            constexpr static const value_type one = value_type(1);
 
-            /** Number of components  */
-            constexpr static const size_t components = 3;
-            
-            /** Size in bytes (aligned) */
-            constexpr static const size_t byte_size = components * sizeof(value_type);
-            
             value_type x;
             value_type y;
             value_type z;
@@ -115,12 +124,8 @@ namespace jau::math {
             constexpr iterator begin() noexcept { return &x; }
 
             /** xyz = this, returns xyz. */
-            constexpr iterator get(iterator xyz) const noexcept {
-                xyz[0] = x;
-                xyz[1] = y;
-                xyz[2] = z;
-                return xyz;
-            }
+            constexpr iterator get(iterator xyz) const noexcept 
+            { xyz[0] = x; xyz[1] = y; xyz[2] = z; return xyz; }
 
             constexpr bool equals(const Vector3F& o, const value_type epsilon=std::numeric_limits<value_type>::epsilon()) const noexcept {
                 if( this == &o ) {
@@ -368,40 +373,68 @@ namespace jau::math {
         return out << v.toString();
     }
 
+    static_assert(3 == Vector3F<double>::components);
+    static_assert(sizeof(double) == Vector3F<double>::value_alignment);
+    static_assert(sizeof(double) == alignof(Vector3F<double>));
+    static_assert(sizeof(double)*3 == Vector3F<double>::byte_size);
+    static_assert(sizeof(double)*3 == sizeof(Vector3F<double>));
+    
     typedef Vector3F<float> Vec3f;
-    static_assert(alignof(float) == alignof(Vec3f));
+    static_assert(3 == Vec3f::components);
+    static_assert(sizeof(float) == Vec3f::value_alignment);
+    static_assert(sizeof(float) == alignof(Vec3f));
+    static_assert(sizeof(float)*3 == Vec3f::byte_size);
     static_assert(sizeof(float)*3 == sizeof(Vec3f));
 
     /**
      * Point3F alias of Vector3F
      */
-    template<typename T,
-             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
-    using Point3F = Vector3F<T>;
+    template<typename Value_type,
+             std::enable_if_t<std::is_floating_point_v<Value_type> &&
+                              sizeof(Value_type) == alignof(Value_type), bool> = true>
+    using Point3F = Vector3F<Value_type>;
 
     typedef Point3F<float> Point3f;
-    static_assert(alignof(float) == alignof(Point3f));
+    static_assert(3 == Point3f::components);
+    static_assert(sizeof(float) == Point3f::value_alignment);
+    static_assert(sizeof(float) == alignof(Point3f));
+    static_assert(sizeof(float)*3 == Point3f::byte_size);
     static_assert(sizeof(float)*3 == sizeof(Point3f));
 
     /**
      * Simple compound denoting a ray.
-     * <p>
+     * 
+     * Component and overall alignment is as sizeof(value_type), i.e. packed.
+     *
      * A ray, also known as a half line, consists out of it's <i>origin</i>
      * and <i>direction</i>. Hence it is bound to only the <i>origin</i> side,
      * where the other end is +infinitive.
      * <pre>
      * R(t) = R0 + Rd * t with R0 origin, Rd direction and t > 0.0
      * </pre>
-     * </p>
      */
-    template<typename T,
-             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
-    struct alignas(T) Ray3F {
+    template<typename Value_type,
+             std::enable_if_t<std::is_floating_point_v<Value_type>, bool> = true>
+    class alignas(sizeof(Value_type)) Ray3F {
+      public:
+        typedef Value_type                  value_type;
+        typedef value_type*                 pointer;
+        typedef const value_type*           const_pointer;
+        
+        /** value alignment is sizeof(value_type) */
+        constexpr static int value_alignment = sizeof(value_type);
+        
+        /** Number of value_type components  */
+        constexpr static const size_t components = 6;
+        
+        /** Size in bytes with value_alignment */
+        constexpr static const size_t byte_size = components * sizeof(value_type);
+        
         /** Origin of Ray. */
-        Point3F<T> orig;
+        alignas(value_alignment) Point3F<value_type> orig;
 
         /** Normalized direction vector of ray. */
-        Vector3F<T> dir;
+        alignas(value_alignment) Vector3F<value_type> dir;
 
         std::string toString() const noexcept { return "Ray[orig "+orig.toString()+", dir "+dir.toString() +"]"; }
     };
@@ -413,9 +446,12 @@ namespace jau::math {
     }
 
     typedef Ray3F<float> Ray3f;
-    static_assert(alignof(float) == alignof(Ray3f));
+    static_assert(6 == Ray3f::components);
+    static_assert(sizeof(float) == Ray3f::value_alignment);
+    static_assert(sizeof(float) == alignof(Ray3f));
+    static_assert(sizeof(float)*6 == Ray3f::byte_size);
     static_assert(sizeof(float)*6 == sizeof(Ray3f));
-
+    
     /**@}*/
 
 } // namespace jau::math
