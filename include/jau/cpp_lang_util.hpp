@@ -177,8 +177,8 @@ namespace jau {
      * Used when designed to declare a function `constexpr`,
      * but prohibited by its specific implementation.
      * <p>
-     * Evaluated using the alternative qualifier `inline` for C++ < 20,
-     * as it is implied for `constexpr` functions or static member variables, see constexpr_cxx20.
+     * Evaluated using the alternative qualifier `inline` for C++ < 23,
+     * as it is implied for `constexpr` functions or static member variables, see constexpr_cxx23.
      * </p>
      * <p>
      * Here it but uses non-literal variables, such as std::lock_guard etc.
@@ -188,26 +188,26 @@ namespace jau {
      * <p>
      * Empty until standard defines otherwise.
      * </p>
-     * @see constexpr_cxx20
+     * @see constexpr_cxx23
      */
-    #define constexpr_non_literal_var inline
+    #define constexpr_non_literal_var constexpr_cxx23
 
     /**
      * Used when designed to declare a function `constexpr`,
      * but prohibited by its specific implementation.
      * <p>
-     * Evaluated using the alternative qualifier `inline` for C++ < 20,
-     * as it is implied for `constexpr` functions or static member variables, see constexpr_cxx20.
+     * Evaluated using the alternative qualifier `inline` for C++ < 23,
+     * as it is implied for `constexpr` functions or static member variables, see constexpr_cxx23.
      * </p>
      * <p>
      * Here it uses thread-safety related measures like atomic storage
      * or mutex locks, which are non-literal variables and hence
      * prohibit the use of `constexpr`.
      * </p>
-     * @see constexpr_cxx20
+     * @see constexpr_cxx23
      * @see constexpr_non_literal_var
      */
-    #define constexpr_atomic inline
+    #define constexpr_atomic constexpr_cxx23
 
     /**
      * Wrap C++ extension `__restrict__` covering C99's `restrict` feature keyword.
