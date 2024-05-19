@@ -30,6 +30,7 @@
 #include <cstdio>
 
 #include <jau/eui48.hpp>
+#include <jau/secmem.hpp>
 
 using namespace jau;
 
@@ -122,7 +123,7 @@ EUI48Sub::EUI48Sub(const uint8_t * b_, const jau::nsize_t len_, const lb_endian_
         bswap(b, b_, cpsz);
     }
     if( bzsz > 0 ) {
-        bzero(b+cpsz, bzsz);
+        zero_bytes_sec(b+cpsz, bzsz);
     }
 }
 

@@ -30,6 +30,7 @@
 #include <cstring>
 
 #include <jau/basic_types.hpp>
+#include <jau/secmem.hpp>
 
 namespace jau {
 
@@ -38,7 +39,7 @@ namespace jau {
  *
  * callocator_sec is similar to callocator, but
  * - only works for integral types
- * - deallocate explicitly bzero's the memory before free for secure scrubbing.
+ * - deallocate explicitly zero_bytes_sec() the memory before free for secure scrubbing.
  * - dropped realloc() for security reasons, since realloc() could free old memory block w/o scrubbing.
  *
  * This class shall be compliant with <i>C++ named requirements for Allocator</i>.
@@ -117,12 +118,12 @@ struct callocator_sec
 
 #if __cplusplus > 201703L
     constexpr void deallocate(value_type* p, std::size_t n ) {
-        ::explicit_bzero(p, n); // non-optomized away bzero
+        zero_bytes_sec(p, n);
         ::free( reinterpret_cast<void*>( const_cast<pointer_mutable>(p) ) );
     }
 #else
     void deallocate(value_type* p, std::size_t n ) {
-        ::explicit_bzero(p, n); // non-optomized away bzero
+        zero_bytes_sec(p, n);
         ::free( reinterpret_cast<void*>( const_cast<pointer_mutable>(p) ) );
     }
 #endif

@@ -30,6 +30,7 @@
 
 #include <jau/cpp_lang_util.hpp>
 #include <jau/packed_attribute.hpp>
+#include <jau/secmem.hpp>
 
 namespace jau {
     /** @defgroup Integer Integer types and arithmetic
@@ -101,7 +102,7 @@ namespace jau {
         constexpr uint128dp_t& operator=(const uint128dp_t &o) noexcept = default;
         uint128dp_t& operator=(uint128dp_t &&o) noexcept = default;
 
-        void clear() noexcept { ::bzero(data, sizeof(data)); }
+        void clear() noexcept { zero_bytes_sec(data, sizeof(data)); }
 
         constexpr bool operator==(uint128dp_t const &o) const noexcept {
             if( this == &o ) {
@@ -123,7 +124,7 @@ namespace jau {
         constexpr uint192dp_t& operator=(const uint192dp_t &o) noexcept = default;
         uint192dp_t& operator=(uint192dp_t &&o) noexcept = default;
 
-        void clear() noexcept { ::bzero(data, sizeof(data)); }
+        void clear() noexcept { zero_bytes_sec(data, sizeof(data)); }
 
         constexpr bool operator==(uint192dp_t const &o) const noexcept {
             if( this == &o ) {
@@ -145,7 +146,7 @@ namespace jau {
         constexpr uint256dp_t& operator=(const uint256dp_t &o) noexcept = default;
         uint256dp_t& operator=(uint256dp_t &&o) noexcept = default;
 
-        void clear() noexcept { ::bzero(data, sizeof(data)); }
+        void clear() noexcept { zero_bytes_sec(data, sizeof(data)); }
 
         constexpr bool operator==(uint256dp_t const &o) const noexcept {
             if( this == &o ) {

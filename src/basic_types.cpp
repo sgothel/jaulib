@@ -33,9 +33,19 @@
 #include <jau/debug.hpp>
 #include <jau/basic_types.hpp>
 #include <jau/functional.hpp>
+#include <jau/secmem.hpp>
 #include <jau/math/math_error.hpp>
 
 using namespace jau;
+
+void jau::zero_bytes_sec(void *s, size_t n) noexcept __attrdef_no_optimize__ 
+{
+    // asm asm-qualifiers ( AssemblerTemplate : OutputOperands [ : InputOperands [ : Clobbers ] ] )
+    asm volatile("" : "+r,m"(s), "+r,m"(n) : : "memory"); // a nop asm, usually guaranteeing synchronized order and non-optimization
+    ::explicit_bzero(s, n);
+    // ::bzero(s, n);
+    // ::memset(s, 0, n);
+}
 
 static constexpr const uint64_t NanoPerMilli =  1000'000UL;
 static constexpr const uint64_t MilliPerOne  =     1'000UL;

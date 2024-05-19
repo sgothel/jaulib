@@ -25,21 +25,20 @@
 #ifndef JAU_OCTETS_HPP_
 #define JAU_OCTETS_HPP_
 
-#include <cstring>
-#include <string>
-#include <memory>
-#include <cstdint>
-#include <initializer_list>
 #include <algorithm>
-
-#include <mutex>
 #include <atomic>
+#include <cstdint>
+#include <cstring>
+#include <initializer_list>
+#include <memory>
+#include <mutex>
+#include <string>
 
 #include <jau/basic_types.hpp>
-#include <jau/uuid.hpp>
-#include <jau/eui48.hpp>
-
 #include <jau/debug.hpp>
+#include <jau/eui48.hpp>
+#include <jau/secmem.hpp>
+#include <jau/uuid.hpp>
 
 // #define JAU_TRACE_OCTETS 1
 #ifdef JAU_TRACE_OCTETS
@@ -434,14 +433,14 @@ namespace jau {
             }
             void bzero(const nsize_t i, const nsize_t byte_count) {
                 check_range(i, byte_count, E_FILE_LINE);
-                ::bzero(data() + i, byte_count);
+                zero_bytes_sec(data() + i, byte_count);
             }
             void bzero_nc(const nsize_t i, const nsize_t byte_count) noexcept {
-                ::bzero(data() + i, byte_count);
+                zero_bytes_sec(data() + i, byte_count);
             }
             void bzero() noexcept {
                 if( size() > 0 ) {
-                    ::bzero(data(), size());
+                    zero_bytes_sec(data(), size());
                 }
             }
 

@@ -22,8 +22,10 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "jau/file_util.hpp"
 #include "test_fileutils_copy_r_p.hpp"
+
+#include <jau/file_util.hpp>
+#include <jau/secmem.hpp>
 
 extern "C" {
     #include <sys/types.h>
@@ -985,7 +987,7 @@ class TestFileUtil01 : TestFileUtilBase {
             REQUIRE( !infile.fail() );
 
             uint8_t buffer[pipe_msg_count * pipe_msg_len + 512];
-            ::bzero(buffer, sizeof(buffer));
+            jau::zero_bytes_sec(buffer, sizeof(buffer));
             size_t total_read = 0;
             {
                 while( infile.good() && total_read < sizeof(buffer) ) {

@@ -35,6 +35,7 @@ extern "C" {
 #include <jau/debug.hpp>
 
 #include <jau/basic_algos.hpp>
+#include <jau/secmem.hpp>
 
 using namespace jau;
 
@@ -89,7 +90,7 @@ static void sigaction_handler(int sig, siginfo_t *info, void *ucontext) noexcept
 
 bool service_runner::install_sighandler() noexcept {
     struct sigaction sa_setup;
-    ::bzero(&sa_setup, sizeof(sa_setup));
+    jau::zero_bytes_sec(&sa_setup, sizeof(sa_setup));
     sa_setup.sa_sigaction = sigaction_handler;
     ::sigemptyset(&(sa_setup.sa_mask));
     sa_setup.sa_flags = SA_SIGINFO;
@@ -103,7 +104,7 @@ bool service_runner::install_sighandler() noexcept {
 
 bool service_runner::remove_sighandler() noexcept {
     struct sigaction sa_setup;
-    ::bzero(&sa_setup, sizeof(sa_setup));
+    jau::zero_bytes_sec(&sa_setup, sizeof(sa_setup));
     sa_setup.sa_handler = SIG_DFL;
     ::sigemptyset(&(sa_setup.sa_mask));
     sa_setup.sa_flags = 0;

@@ -36,13 +36,14 @@
 #ifndef JAU_TOKEN_FSM_HPP_
 #define JAU_TOKEN_FSM_HPP_
 
-#include <vector>
 #include <string>
 #include <type_traits>
+#include <vector>
 
-#include <jau/int_types.hpp>
-#include <jau/darray.hpp>
 #include <jau/basic_algos.hpp>
+#include <jau/darray.hpp>
+#include <jau/int_types.hpp>
+#include <jau/secmem.hpp>
 
 // #define JAU_DO_JAU_TRACE_PRINT 1
 #ifdef JAU_DO_JAU_TRACE_PRINT
@@ -287,7 +288,7 @@ namespace jau::lang {
             void grow(const uint_t required_sz) {
                 while( m_matrix.size() < required_sz ) {
                     uint_t line[m_row_len];
-                    ::bzero(line, sizeof(line));
+                    zero_bytes_sec(line, sizeof(line));
                     m_matrix.push_back(&line[0], &line[m_row_len]);
                 }
             }

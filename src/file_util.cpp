@@ -26,6 +26,7 @@
 #include <jau/file_util.hpp>
 #include <jau/base_codec.hpp>
 #include <jau/os/os_support.hpp>
+#include <jau/secmem.hpp>
 
 #include <cstdint>
 #include <cstdlib>
@@ -493,7 +494,7 @@ file_stats::file_stats(const ctor_cookie& cc, int dirfd, const dir_item& item, c
 
 #if _USE_STATX_
     struct ::statx s;
-    ::bzero(&s, sizeof(s));
+    jau::zero_bytes_sec(&s, sizeof(s));
     int stat_res = ::statx(dirfd, dirfd_path.c_str(),
                            ( AT_NO_AUTOMOUNT | AT_SYMLINK_NOFOLLOW | ( has( field_t::fd ) ? AT_EMPTY_PATH : 0 ) ),
                            ( STATX_BASIC_STATS | STATX_BTIME ), &s);
@@ -600,7 +601,7 @@ file_stats::file_stats(const ctor_cookie& cc, int dirfd, const dir_item& item, c
             link_target_path_ = std::make_shared<std::string>(link_path);
             if( 0 == cc.rec_level ) {
                 // Initial symbolic followed: Test recursive loop-error
-                ::bzero(&s, sizeof(s));
+                jau::zero_bytes_sec(&s, sizeof(s));
                 stat_res = ::statx(dirfd, dirfd_path.c_str(), AT_NO_AUTOMOUNT | ( has( field_t::fd ) ? AT_EMPTY_PATH : 0 ), STATX_BASIC_STATS, &s);
                 if( 0 != stat_res ) {
                     if constexpr ( _debug ) {
@@ -661,7 +662,7 @@ file_stats::file_stats(const ctor_cookie& cc, int dirfd, const dir_item& item, c
     }
 #else /* _USE_STATX_ */
     struct_stat64 s;
-    ::bzero(&s, sizeof(s));
+    jau::zero_bytes_sec(&s, sizeof(s));
     int stat_res = __posix_fstatat64(dirfd, dirfd_path.c_str(), &s, AT_SYMLINK_NOFOLLOW | ( has( field_t::fd ) ? AT_EMPTY_PATH : 0 )); // lstat64 compatible
     if( 0 != stat_res ) {
         if constexpr ( _debug ) {
@@ -734,7 +735,7 @@ file_stats::file_stats(const ctor_cookie& cc, int dirfd, const dir_item& item, c
             link_target_path_ = std::make_shared<std::string>(link_path);
             if( 0 == cc.rec_level ) {
                 // Initial symbolic followed: Test recursive loop-error
-                ::bzero(&s, sizeof(s));
+                jau::zero_bytes_sec(&s, sizeof(s));
                 stat_res = __posix_fstatat64(dirfd, dirfd_path.c_str(), &s, has( field_t::fd ) ? AT_EMPTY_PATH : 0); // stat64 compatible
                 if( 0 != stat_res ) {
                     if constexpr ( _debug ) {

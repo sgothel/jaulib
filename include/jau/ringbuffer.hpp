@@ -26,23 +26,23 @@
 #ifndef JAU_RINGBUFFER_HPP_
 #define JAU_RINGBUFFER_HPP_
 
-#include <type_traits>
+#include <algorithm>
 #include <atomic>
+#include <chrono>
+#include <condition_variable>
+#include <cstdint>
+#include <cstring>
 #include <memory>
 #include <mutex>
-#include <condition_variable>
-#include <chrono>
-#include <algorithm>
-
-#include <cstring>
 #include <string>
-#include <cstdint>
+#include <type_traits>
 
-#include <jau/debug.hpp>
 #include <jau/basic_types.hpp>
-#include <jau/ordered_atomic.hpp>
-#include <jau/fraction_type.hpp>
 #include <jau/callocator.hpp>
+#include <jau/debug.hpp>
+#include <jau/fraction_type.hpp>
+#include <jau/ordered_atomic.hpp>
+#include <jau/secmem.hpp>
 
 namespace jau {
 
@@ -271,13 +271,13 @@ class ringbuffer {
         constexpr void dtor_one(const Size_type pos) {
             ( array + pos )->~value_type(); // placement new -> manual destruction!
             if constexpr ( uses_secmem ) {
-                ::explicit_bzero(voidptr_cast(array + pos), sizeof(value_type));
+                zero_bytes_sec(voidptr_cast(array + pos), sizeof(value_type));
             }
         }
         constexpr void dtor_one(pointer elem) {
             ( elem )->~value_type(); // placement new -> manual destruction!
             if constexpr ( uses_secmem ) {
-                ::explicit_bzero(voidptr_cast(elem), sizeof(value_type));
+                zero_bytes_sec(voidptr_cast(elem), sizeof(value_type));
             }
         }
 
@@ -347,7 +347,7 @@ class ringbuffer {
             if( 0 < size_ ) {
                 if constexpr ( use_memcpy ) {
                     if constexpr ( uses_secmem ) {
-                        ::explicit_bzero(voidptr_cast(&array[0]), capacityPlusOne*sizeof(Value_type));
+                        zero_bytes_sec(voidptr_cast(&array[0]), capacityPlusOne*sizeof(Value_type));
                     }
                     readPos = writePos.load();
                 } else {
@@ -361,7 +361,7 @@ class ringbuffer {
                         ABORT("copy segment error: this %s, readPos %d/%d; writePos %d", toString().c_str(), readPos.load(), localReadPos, writePos.load());
                     }
                     if constexpr ( uses_secmem ) {
-                        ::explicit_bzero(voidptr_cast(&array[0]), capacityPlusOne*sizeof(Value_type));
+                        zero_bytes_sec(voidptr_cast(&array[0]), capacityPlusOne*sizeof(Value_type));
                     }
                     readPos = localReadPos;
                 }
@@ -370,7 +370,7 @@ class ringbuffer {
 
         constexpr void clearAndZeroMemImpl() noexcept {
             if constexpr ( use_memcpy ) {
-                ::explicit_bzero(voidptr_cast(&array[0]), capacityPlusOne*sizeof(Value_type));
+                zero_bytes_sec(voidptr_cast(&array[0]), capacityPlusOne*sizeof(Value_type));
                 readPos = writePos.load();
             } else {
                 const Size_type size_ = size();
@@ -383,7 +383,7 @@ class ringbuffer {
                     // Avoid exception, abort!
                     ABORT("copy segment error: this %s, readPos %d/%d; writePos %d", toString().c_str(), readPos.load(), localReadPos, writePos.load());
                 }
-                ::explicit_bzero(voidptr_cast(&array[0]), capacityPlusOne*sizeof(Value_type));
+                zero_bytes_sec(voidptr_cast(&array[0]), capacityPlusOne*sizeof(Value_type));
                 readPos = localReadPos;
             }
         }
@@ -559,7 +559,7 @@ class ringbuffer {
             if constexpr ( is_integral ) {
                 dest = array[localReadPos];
                 if constexpr ( uses_secmem ) {
-                    ::explicit_bzero(voidptr_cast(&array[localReadPos]), sizeof(Value_type));
+                    zero_bytes_sec(voidptr_cast(&array[localReadPos]), sizeof(Value_type));
                 }
             } else if constexpr ( uses_memmove ) {
                 // must not dtor after memcpy; memcpy OK, not overlapping
@@ -567,7 +567,7 @@ class ringbuffer {
                          &array[localReadPos],
                          sizeof(Value_type));
                 if constexpr ( uses_secmem ) {
-                    ::explicit_bzero(voidptr_cast(&array[localReadPos]), sizeof(Value_type));
+                    zero_bytes_sec(voidptr_cast(&array[localReadPos]), sizeof(Value_type));
                 }
             } else {
                 dest = std::move( array[localReadPos] );
@@ -646,7 +646,7 @@ class ringbuffer {
                              &array[localReadPos],
                              tail_count*sizeof(Value_type));
                     if constexpr ( uses_secmem ) {
-                        ::explicit_bzero(voidptr_cast(&array[localReadPos]), tail_count*sizeof(Value_type));
+                        zero_bytes_sec(voidptr_cast(&array[localReadPos]), tail_count*sizeof(Value_type));
                     }
                 } else {
                     for(Size_type i=0; i<tail_count; i++) {
@@ -667,7 +667,7 @@ class ringbuffer {
                              &array[localReadPos],
                              togo_count*sizeof(Value_type));
                     if constexpr ( uses_secmem ) {
-                        ::explicit_bzero(voidptr_cast(&array[localReadPos]), togo_count*sizeof(Value_type));
+                        zero_bytes_sec(voidptr_cast(&array[localReadPos]), togo_count*sizeof(Value_type));
                     }
                 } else {
                     for(Size_type i=0; i<togo_count; i++) {
@@ -744,7 +744,7 @@ class ringbuffer {
                 const Size_type tail_count = std::min(togo_count, capacityPlusOne - localReadPos);
                 if constexpr ( uses_memcpy ) {
                     if constexpr ( uses_secmem ) {
-                        ::explicit_bzero(voidptr_cast(&array[localReadPos]), tail_count*sizeof(Value_type));
+                        zero_bytes_sec(voidptr_cast(&array[localReadPos]), tail_count*sizeof(Value_type));
                     }
                 } else {
                     for(Size_type i=0; i<tail_count; i++) {
@@ -759,7 +759,7 @@ class ringbuffer {
                 localReadPos = ( localReadPos + 1 ) % capacityPlusOne; // next-read-pos // NOLINT(clang-analyzer-core.DivideZero): always capacityPlusOne > 0
                 if constexpr ( uses_memcpy ) {
                     if constexpr ( uses_secmem ) {
-                        ::explicit_bzero(voidptr_cast(&array[localReadPos]), togo_count*sizeof(Value_type));
+                        zero_bytes_sec(voidptr_cast(&array[localReadPos]), togo_count*sizeof(Value_type));
                     }
                 } else {
                     for(Size_type i=0; i<togo_count; i++) {
