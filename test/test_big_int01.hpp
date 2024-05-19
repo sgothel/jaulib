@@ -255,7 +255,7 @@ TEST_CASE( "MP Big Int Dec Test 11", "[big_int_t][inout][math]" ) {
         }
     }
 }
-TEST_CASE( "MP Big Int Error Handling Test 88", "[big_int_t][error][arithmetic][math]" ) {
+TEST_CASE( "MP Big Int Error Handling Test 88", "[big_int_t][exceptions][error][arithmetic][math]" ) {
     {
         BigInt a = 1, b = 0, r;
         REQUIRE_THROWS_MATCHES( r = a / b, jau::math::MathDivByZeroError, Catch::Matchers::ContainsSubstring("div_by_zero") );

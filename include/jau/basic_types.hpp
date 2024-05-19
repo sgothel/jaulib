@@ -26,12 +26,13 @@
 #define JAU_BASIC_TYPES_HPP_
 
 #include <cstring>
+#include <ios>
+#include <ratio>
+#include <stdexcept>
 #include <string>
-#include <memory>
 #include <cstdint>
-#include <vector>
-#include <type_traits>
 #include <iostream>
+#include <system_error>
 
 #include <jau/cpp_lang_util.hpp>
 #include <jau/packed_attribute.hpp>
@@ -306,50 +307,98 @@ namespace jau {
 
     class ExceptionBase {
       private:
+        // brief message
         std::string msg_;
+        // optional whole backtrace
         std::string backtrace_;
+        // brief message + optional whole backtrace
         std::string what_;
 
-      protected:
-        ExceptionBase(std::string type, std::string const& m, const char* file, int line) noexcept;
+      protected:        
+        ExceptionBase(const std::string &type, std::string const& m, const char* file, int line) noexcept;
 
       public:
         virtual ~ExceptionBase() noexcept = default;
-
         ExceptionBase(const ExceptionBase &o) = default;
         ExceptionBase(ExceptionBase &&o) = default;
         ExceptionBase& operator=(const ExceptionBase &o) = default;
         ExceptionBase& operator=(ExceptionBase &&o) = default;
 
-        const std::string& message() const noexcept { return msg_; }
+        /** Returns brief message. */
+        const std::string& brief_message() const noexcept { return msg_; }
+        /** Returns optional whole backtrace. */
         const std::string& backtrace() const noexcept { return backtrace_; }
-
-        /** Allow conversion to `const std::string&`, as required by Catch2's `REQUIRE_THROWS_MATCHES` */
-        operator const std::string&  () const noexcept { return message(); };
-
-        virtual const char* what() const noexcept {
-            return what_.c_str(); // return std::runtime_error::what();
-        }
+        /** Returns brief message and optional whole backtrace, i.e. std::exception::what() string. */
+        const std::string& whole_message() const noexcept { return what_; }
+        
+        /** Allow conversion to `const std::string&` using brief_message(), as required by Catch2's `REQUIRE_THROWS_MATCHES` */
+        operator const std::string&  () const noexcept { return brief_message(); };
 
         std::ostream& operator<<(std::ostream& out) noexcept {
             return out << what_;
         }
+                
+        virtual const char* what() const noexcept {
+            return whole_message().c_str();
+        }
+    };    
+    class RuntimeExceptionBase : public ExceptionBase {
+      protected:
+        RuntimeExceptionBase(const std::string &type, std::string const& m, const char* file, int line) noexcept
+        : ExceptionBase(type, m, file, line) {}
+        
+      public:
+        ~RuntimeExceptionBase() noexcept override = default;
+
+        RuntimeExceptionBase(const RuntimeExceptionBase& o) = default;
+        RuntimeExceptionBase(RuntimeExceptionBase&& o) = default;
+        RuntimeExceptionBase& operator=(const RuntimeExceptionBase& o) = default;
+        RuntimeExceptionBase& operator=(RuntimeExceptionBase&& o) = default;        
+    };
+    class LogicErrorBase : public ExceptionBase {
+      protected:
+        LogicErrorBase(const std::string &type, std::string const& m, const char* file, int line) noexcept
+        : ExceptionBase(type, m, file, line) {}
+
+      public:
+        ~LogicErrorBase() noexcept override = default;
+
+        LogicErrorBase(const LogicErrorBase& o) = default;
+        LogicErrorBase(LogicErrorBase&& o) = default;
+        LogicErrorBase& operator=(const LogicErrorBase& o) = default;
+        LogicErrorBase& operator=(LogicErrorBase&& o) = default;                
+    };
+    class RuntimeSystemExceptionBase : public RuntimeExceptionBase {      
+      protected:
+        std::error_code m_ec;
+        RuntimeSystemExceptionBase(const std::string &type, const std::error_code& ec, std::string const& m, const char* file, int line) noexcept
+        : RuntimeExceptionBase(type, m, file, line), m_ec(ec) {}          
+
+      public:
+        ~RuntimeSystemExceptionBase() noexcept override = default;
+
+        RuntimeSystemExceptionBase(const RuntimeSystemExceptionBase& o) = default;
+        RuntimeSystemExceptionBase(RuntimeSystemExceptionBase&& o) = default;
+        RuntimeSystemExceptionBase& operator=(const RuntimeSystemExceptionBase& o) = default;
+        RuntimeSystemExceptionBase& operator=(RuntimeSystemExceptionBase&& o) = default;
+        
+        const std::error_code& code() const noexcept { return m_ec; }
     };
 
-    class OutOfMemoryError : public std::bad_alloc, public ExceptionBase {
+    class OutOfMemoryError : public ExceptionBase, public std::bad_alloc {
       public:
         OutOfMemoryError(std::string const& m, const char* file, int line)
-        : bad_alloc(), ExceptionBase("OutOfMemoryError", m, file, line) {}
-
+        : ExceptionBase("OutOfMemoryError", m, file, line), bad_alloc() {}        
+        
         const char* what() const noexcept override {
-            return ExceptionBase::what(); // return std::runtime_error::what();
+            return whole_message().c_str();
         }
     };
-
-    class RuntimeException : public std::exception, public ExceptionBase {
+            
+    class RuntimeException : public RuntimeExceptionBase, public std::runtime_error {
       protected:
-        RuntimeException(std::string type, std::string const& m, const char* file, int line) noexcept
-        : exception(), ExceptionBase(std::move(type), m, file, line) {}
+        RuntimeException(const std::string &type, std::string const& m, const char* file, int line) noexcept
+        : RuntimeExceptionBase(type, m, file, line), runtime_error(whole_message()) {}
 
       public:
         RuntimeException(std::string const& m, const char* file, int line) noexcept
@@ -361,22 +410,121 @@ namespace jau {
         RuntimeException(RuntimeException&& o) = default;
         RuntimeException& operator=(const RuntimeException& o) = default;
         RuntimeException& operator=(RuntimeException&& o) = default;
-
+        
+        // base class std::exception:
         const char* what() const noexcept override {
-            return ExceptionBase::what();
+            return whole_message().c_str();
+        }
+    };        
+    class LogicError : public LogicErrorBase, public std::logic_error {
+      protected:
+        LogicError(const std::string &type, std::string const& m, const char* file, int line) noexcept
+        : LogicErrorBase(type, m, file, line), logic_error(whole_message()) {}
+
+      public:
+        LogicError(std::string const& m, const char* file, int line) noexcept
+        : LogicError("LogicErrorStd", m, file, line) {}
+
+        ~LogicError() noexcept override = default;
+
+        LogicError(const LogicError& o) = default;
+        LogicError(LogicError&& o) = default;
+        LogicError& operator=(const LogicError& o) = default;
+        LogicError& operator=(LogicError&& o) = default;
+                
+        const char* what() const noexcept override {
+            return whole_message().c_str();
+        }
+    };
+    class RuntimeSystemException : public RuntimeSystemExceptionBase, public std::system_error {
+      protected:
+        RuntimeSystemException(const std::string &type, const std::error_code& ec, std::string const& m, const char* file, int line) noexcept
+        : RuntimeSystemExceptionBase(type, ec, m, file, line), system_error(ec, whole_message()) {}
+
+      public:
+        RuntimeSystemException(const std::error_code& ec, std::string const& m, const char* file, int line) noexcept
+        : RuntimeSystemException("RuntimeSystemExceptionStd", ec, m, file, line) {}
+
+        ~RuntimeSystemException() noexcept override = default;
+
+        RuntimeSystemException(const RuntimeSystemException& o) = default;
+        RuntimeSystemException(RuntimeSystemException&& o) = default;
+        RuntimeSystemException& operator=(const RuntimeSystemException& o) = default;
+        RuntimeSystemException& operator=(RuntimeSystemException&& o) = default;
+        
+        const char* what() const noexcept override {
+            return whole_message().c_str();
+        }
+    };
+    
+    class IndexOutOfBoundsError : public LogicErrorBase, public std::out_of_range {
+      protected:
+        IndexOutOfBoundsError(const char* file, int line, const std::string &type, std::string const& m) noexcept
+        : LogicErrorBase(type, m, file, line), out_of_range(whole_message()) {}
+          
+      public:
+        IndexOutOfBoundsError(const std::size_t index, const std::size_t length, const char* file, int line) noexcept
+        : IndexOutOfBoundsError(file, line, "IndexOutOfBoundsError", "Index "+std::to_string(index)+", data length "+std::to_string(length)) {}
+
+        IndexOutOfBoundsError(const std::string& index_s, const std::string& length_s, const char* file, int line) noexcept
+        : IndexOutOfBoundsError(file, line, "IndexOutOfBoundsError", "Index "+index_s+", data length "+length_s) {}
+
+        IndexOutOfBoundsError(const std::size_t index, const std::size_t count, const std::size_t length, const char* file, int line) noexcept
+        : IndexOutOfBoundsError(file, line, "IndexOutOfBoundsError", "Index "+std::to_string(index)+", count "+std::to_string(count)+", data length "+std::to_string(length)) {}
+                
+        const char* what() const noexcept override {
+            return whole_message().c_str();
+        }
+    };
+
+    class IllegalArgumentError : public LogicErrorBase, public std::invalid_argument {
+      protected:
+        IllegalArgumentError(std::string const& type, std::string const& m, const char* file, int line) noexcept
+        : LogicErrorBase(type, m, file, line), invalid_argument(whole_message()) {}
+          
+      public:
+        IllegalArgumentError(std::string const& m, const char* file, int line) noexcept
+        : IllegalArgumentError("IllegalArgumentError", m, file, line) {}
+                        
+        const char* what() const noexcept override {
+            return whole_message().c_str();
+        }
+    };
+
+    class IllegalStateError : public LogicErrorBase, public std::domain_error {
+      protected:
+        IllegalStateError(std::string const& type, std::string const& m, const char* file, int line) noexcept
+        : LogicErrorBase(type, m, file, line), domain_error(whole_message()) {}
+          
+      public:
+        IllegalStateError(std::string const& m, const char* file, int line) noexcept
+        : IllegalStateError("IllegalStateError", m, file, line) {}
+                        
+        const char* what() const noexcept override {
+            return whole_message().c_str();
+        }
+    };
+
+    class IOError : public RuntimeSystemExceptionBase, public std::ios_base::failure {
+      public:
+        IOError(std::string const& m, const char* file, int line, const std::error_code& ec = std::io_errc::stream) noexcept
+        : RuntimeSystemExceptionBase("IOError", ec, m, file, line), failure(whole_message(), ec) {}        
+                        
+        const char* what() const noexcept override {
+            return whole_message().c_str();
         }
     };
 
     class InternalError : public RuntimeException {
       public:
         InternalError(std::string const& m, const char* file, int line) noexcept
-        : RuntimeException("InternalError", m, file, line) {}
+        : RuntimeException("InternalError", m, file, line) {}        
     };
 
-    class NotImplementedError : public RuntimeException {
+    class NotImplementedException : public RuntimeException {
       public:
-        NotImplementedError(std::string const& m, const char* file, int line) noexcept
-        : RuntimeException("NotImplementedError", m, file, line) {}
+        NotImplementedException(std::string const& m, const char* file, int line) noexcept
+        : RuntimeException("NotImplementedException", m, file, line) {}
     };
 
     class NullPointerException : public RuntimeException {
@@ -385,42 +533,11 @@ namespace jau {
         : RuntimeException("NullPointerException", m, file, line) {}
     };
 
-    class IllegalArgumentException : public RuntimeException {
-      public:
-        IllegalArgumentException(std::string const& m, const char* file, int line) noexcept
-        : RuntimeException("IllegalArgumentException", m, file, line) {}
-    };
-
-    class IllegalStateException : public RuntimeException {
-      public:
-        IllegalStateException(std::string const& m, const char* file, int line) noexcept
-        : RuntimeException("IllegalStateException", m, file, line) {}
-    };
-
     class UnsupportedOperationException : public RuntimeException {
       public:
         UnsupportedOperationException(std::string const& m, const char* file, int line) noexcept
         : RuntimeException("UnsupportedOperationException", m, file, line) {}
     };
-
-    class IndexOutOfBoundsException : public RuntimeException {
-      public:
-        IndexOutOfBoundsException(const std::size_t index, const std::size_t length, const char* file, int line) noexcept
-        : RuntimeException("IndexOutOfBoundsException", "Index "+std::to_string(index)+", data length "+std::to_string(length), file, line) {}
-
-        IndexOutOfBoundsException(const std::string& index_s, const std::string& length_s, const char* file, int line) noexcept
-        : RuntimeException("IndexOutOfBoundsException", "Index "+index_s+", data length "+length_s, file, line) {}
-
-        IndexOutOfBoundsException(const std::size_t index, const std::size_t count, const std::size_t length, const char* file, int line) noexcept
-        : RuntimeException("IndexOutOfBoundsException", "Index "+std::to_string(index)+", count "+std::to_string(count)+", data length "+std::to_string(length), file, line) {}
-    };
-
-    class IOError : public RuntimeException {
-      public:
-        IOError(std::string const& m, const char* file, int line) noexcept
-        : RuntimeException("IOError", m, file, line) {}
-    };
-
 
     /**
     // *************************************************
@@ -436,42 +553,42 @@ namespace jau {
     inline void set_bit_uint32(const uint8_t nr, uint32_t &mask)
     {
         using namespace jau::int_literals;
-        if( nr > 31 ) { throw IndexOutOfBoundsException(nr, 32, E_FILE_LINE); }
+        if( nr > 31 ) { throw IndexOutOfBoundsError(nr, 32, E_FILE_LINE); }
         mask |= 1_u32 << (nr & 31);
     }
 
     inline void clear_bit_uint32(const uint8_t nr, uint32_t &mask)
     {
         using namespace jau::int_literals;
-        if( nr > 31 ) { throw IndexOutOfBoundsException(nr, 32, E_FILE_LINE); }
+        if( nr > 31 ) { throw IndexOutOfBoundsError(nr, 32, E_FILE_LINE); }
         mask |= ~(1_u32 << (nr & 31));
     }
 
     inline uint32_t test_bit_uint32(const uint8_t nr, const uint32_t mask)
     {
         using namespace jau::int_literals;
-        if( nr > 31 ) { throw IndexOutOfBoundsException(nr, 32, E_FILE_LINE); }
+        if( nr > 31 ) { throw IndexOutOfBoundsError(nr, 32, E_FILE_LINE); }
         return mask & (1_u32 << (nr & 31));
     }
 
     inline void set_bit_uint64(const uint8_t nr, uint64_t &mask)
     {
         using namespace jau::int_literals;
-        if( nr > 63 ) { throw IndexOutOfBoundsException(nr, 64, E_FILE_LINE); }
+        if( nr > 63 ) { throw IndexOutOfBoundsError(nr, 64, E_FILE_LINE); }
         mask |= 1_u64 << (nr & 63);
     }
 
     inline void clear_bit_uint64(const uint8_t nr, uint64_t &mask)
     {
         using namespace jau::int_literals;
-        if( nr > 63 ) { throw IndexOutOfBoundsException(nr, 64, E_FILE_LINE); }
+        if( nr > 63 ) { throw IndexOutOfBoundsError(nr, 64, E_FILE_LINE); }
         mask |= ~(1_u64 << (nr & 63));
     }
 
     inline uint64_t test_bit_uint64(const uint8_t nr, const uint64_t mask)
     {
         using namespace jau::int_literals;
-        if( nr > 63 ) { throw IndexOutOfBoundsException(nr, 64, E_FILE_LINE); }
+        if( nr > 63 ) { throw IndexOutOfBoundsError(nr, 64, E_FILE_LINE); }
         return mask & (1_u64 << (nr & 63));
     }
 

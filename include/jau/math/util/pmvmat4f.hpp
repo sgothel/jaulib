@@ -329,7 +329,7 @@ class PMVMatrix4 {
      */
     Mat4& getMvi() {
         if( 0 == ( INVERSE_MODELVIEW & requestBits ) ) { // FIXME
-            throw jau::IllegalArgumentException("Not requested in ctor", E_FILE_LINE);
+            throw jau::IllegalArgumentError("Not requested in ctor", E_FILE_LINE);
         }
         updateImpl(false);
         return matMvi;
@@ -344,7 +344,7 @@ class PMVMatrix4 {
      */
     SyncMat4& getSyncMvi() {
         if( 0 == ( INVERSE_MODELVIEW & requestBits ) ) { // FIXME
-            throw jau::IllegalArgumentException("Not requested in ctor", E_FILE_LINE);
+            throw jau::IllegalArgumentError("Not requested in ctor", E_FILE_LINE);
         }
         return syncMvi;
     }
@@ -358,7 +358,7 @@ class PMVMatrix4 {
      */
     Mat4& getMvit() {
         if( 0 == ( INVERSE_TRANSPOSED_MODELVIEW & requestBits ) ) { // FIXME
-            throw jau::IllegalArgumentException("Not requested in ctor", E_FILE_LINE);
+            throw jau::IllegalArgumentError("Not requested in ctor", E_FILE_LINE);
         }
         updateImpl(false);
         return matMvit;
@@ -373,7 +373,7 @@ class PMVMatrix4 {
      */
     SyncMat4& getSyncMvit() {
         if( 0 == ( INVERSE_TRANSPOSED_MODELVIEW & requestBits ) ) { // FIXME
-            throw jau::IllegalArgumentException("Not requested in ctor", E_FILE_LINE);
+            throw jau::IllegalArgumentError("Not requested in ctor", E_FILE_LINE);
         }
         return syncMvit;
     }
@@ -387,7 +387,7 @@ class PMVMatrix4 {
      */
     SyncMats4f& getSyncPMvMvi() {
         if( 0 == ( INVERSE_MODELVIEW & requestBits ) ) { // FIXME
-            throw jau::IllegalArgumentException("Not requested in ctor", E_FILE_LINE);
+            throw jau::IllegalArgumentError("Not requested in ctor", E_FILE_LINE);
         }
         return syncP_Mv_Mvi;
     }
@@ -401,7 +401,7 @@ class PMVMatrix4 {
      */
     SyncMats4f& getSyncPMvMviMvit() {
         if( 0 == ( INVERSE_TRANSPOSED_MODELVIEW & requestBits ) ) { // FIXME
-            throw jau::IllegalArgumentException("Not requested in ctor", E_FILE_LINE);
+            throw jau::IllegalArgumentError("Not requested in ctor", E_FILE_LINE);
         }
         return syncP_Mv_Mvi_Mvit;
     }

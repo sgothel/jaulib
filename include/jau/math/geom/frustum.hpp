@@ -127,7 +127,7 @@ class Frustum {
         : fovhv(fovhv_), zNear(zNear_), zFar(zFar_)
         {
             if( zNear <= 0.0f || zFar <= zNear ) {
-                throw IllegalArgumentException("Requirements zNear > 0 and zFar > zNear, but zNear "+std::to_string(zNear)+", zFar "+std::to_string(zFar), E_FILE_LINE);
+                throw IllegalArgumentError("Requirements zNear > 0 and zFar > zNear, but zNear "+std::to_string(zNear)+", zFar "+std::to_string(zFar), E_FILE_LINE);
             }
         }
 

@@ -207,13 +207,13 @@ JNIGlobalRef::~JNIGlobalRef() noexcept {
     } catch (jau::ExceptionBase &e0) {
         if( root_environment::is_terminating() ) {
             if( jau::environment::get().debug ) {
-                fprintf(stderr, "JNIGlobalRef::dtor: Caught at exit %s\n", e0.what());
+                fprintf(stderr, "JNIGlobalRef::dtor: Caught at exit %s\n", e0.whole_message().c_str());
             } else {
                 // Be brief @ exit, as its expected at JVM shutdown
-                fprintf(stderr, "JNIGlobalRef::dtor: Caught at exit %s\n", e0.message().c_str());
+                fprintf(stderr, "JNIGlobalRef::dtor: Caught at exit %s\n", e0.brief_message().c_str());
             }
         } else {
-            fprintf(stderr, "JNIGlobalRef::dtor: Caught %s\n", e0.what());
+            fprintf(stderr, "JNIGlobalRef::dtor: Caught %s\n", e0.whole_message().c_str());
         }
     } catch (std::exception &e) {
         if( root_environment::is_terminating() ) {
@@ -235,7 +235,7 @@ jobjectRefType JNIGlobalRef::getObjectRefType() const noexcept {
         std::unique_lock<std::mutex> lock(mtx);
         return env->GetObjectRefType(object);
     } catch (const jau::ExceptionBase &e) {
-        ERR_PRINT("%s", e.message().c_str());
+        ERR_PRINT("%s", e.brief_message().c_str());
     } catch (...) {
         ERR_PRINT("Unknown exception");
     }
@@ -268,7 +268,7 @@ bool JNIGlobalRef::operator==(const JNIGlobalRef& rhs) const noexcept {
         res = JNI_TRUE == env->IsSameObject(object, rhs.object);
         DBG_JNI_PRINT("JNIGlobalRef::== %d: %p == %p (IsSameObject)", res, object, rhs.object);
     } catch (const jau::ExceptionBase &e) {
-        ERR_PRINT("%s", e.message().c_str());
+        ERR_PRINT("%s", e.brief_message().c_str());
     } catch (...) {
         ERR_PRINT("Unknown exception");
     }

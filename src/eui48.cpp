@@ -108,7 +108,7 @@ bool EUI48Sub::scanEUI48Sub(const std::string& str, EUI48Sub& dest, std::string&
 EUI48Sub::EUI48Sub(const std::string& str) {
     std::string errmsg;
     if( !scanEUI48Sub(str, *this, errmsg) ) {
-        throw jau::IllegalArgumentException(errmsg, E_FILE_LINE);
+        throw jau::IllegalArgumentError(errmsg, E_FILE_LINE);
     }
 }
 
@@ -227,7 +227,7 @@ bool EUI48::scanEUI48(const std::string& str, EUI48& dest, std::string& errmsg) 
 EUI48::EUI48(const std::string& str) {
     std::string errmsg;
     if( !scanEUI48(str, *this, errmsg) ) {
-        throw jau::IllegalArgumentException(errmsg, E_FILE_LINE);
+        throw jau::IllegalArgumentError(errmsg, E_FILE_LINE);
     }
 }
 

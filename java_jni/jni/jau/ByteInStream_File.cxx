@@ -223,11 +223,11 @@ jint Java_org_jau_io_ByteInStream_1File_read(JNIEnv *env, jobject obj, jbyteArra
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_File> ref(env, obj); // hold until done
 
         if( nullptr == jout ) {
-            throw jau::IllegalArgumentException("out buffer null", E_FILE_LINE);
+            throw jau::IllegalArgumentError("out buffer null", E_FILE_LINE);
         }
         const size_t in_size = env->GetArrayLength(jout);
         if( (size_t)joffset + (size_t)jlength > in_size ) {
-            throw jau::IllegalArgumentException("output byte size "+std::to_string(in_size)+" < "+std::to_string(joffset)+" + "+std::to_string(jlength), E_FILE_LINE);
+            throw jau::IllegalArgumentError("output byte size "+std::to_string(in_size)+" < "+std::to_string(joffset)+" + "+std::to_string(jlength), E_FILE_LINE);
         }
         jau::jni::JNICriticalArray<uint8_t, jbyteArray> criticalArray(env); // RAII - release
         uint8_t * out_ptr = criticalArray.get(jout, criticalArray.Mode::UPDATE_AND_RELEASE);
@@ -246,12 +246,12 @@ jint Java_org_jau_io_ByteInStream_1File_read2Impl(JNIEnv *env, jobject obj, jobj
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_File> ref(env, obj); // hold until done
 
         if( nullptr == jout ) {
-            throw jau::IllegalArgumentException("out buffer null", E_FILE_LINE);
+            throw jau::IllegalArgumentError("out buffer null", E_FILE_LINE);
         }
         const jlong out_cap = env->GetDirectBufferCapacity(jout);
         uint8_t * out_ptr = static_cast<uint8_t *>( env->GetDirectBufferAddress(jout) );
         if( 0 > out_cap || nullptr == out_ptr ) {
-            throw jau::IllegalArgumentException("out buffer access failure", E_FILE_LINE);
+            throw jau::IllegalArgumentError("out buffer access failure", E_FILE_LINE);
         }
         return (jint) ref->read(out_ptr + out_offset, out_cap - out_offset);
     } catch(...) {
@@ -265,11 +265,11 @@ jint Java_org_jau_io_ByteInStream_1File_peek(JNIEnv *env, jobject obj, jbyteArra
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_File> ref(env, obj); // hold until done
 
         if( nullptr == jout ) {
-            throw jau::IllegalArgumentException("out buffer null", E_FILE_LINE);
+            throw jau::IllegalArgumentError("out buffer null", E_FILE_LINE);
         }
         const size_t in_size = env->GetArrayLength(jout);
         if( (size_t)joffset + (size_t)jlength > in_size ) {
-            throw jau::IllegalArgumentException("output byte size "+std::to_string(in_size)+" < "+std::to_string(joffset)+" + "+std::to_string(jlength), E_FILE_LINE);
+            throw jau::IllegalArgumentError("output byte size "+std::to_string(in_size)+" < "+std::to_string(joffset)+" + "+std::to_string(jlength), E_FILE_LINE);
         }
         jau::jni::JNICriticalArray<uint8_t, jbyteArray> criticalArray(env); // RAII - release
         uint8_t * out_ptr = criticalArray.get(jout, criticalArray.Mode::UPDATE_AND_RELEASE);

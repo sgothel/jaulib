@@ -60,7 +60,7 @@ jlong Java_org_jau_fs_FileStats_ctorImpl1(JNIEnv *env, jclass clazz, jstring jpa
     (void)clazz;
     try {
         if( nullptr == jpath ) {
-            throw jau::IllegalArgumentException("path null", E_FILE_LINE);
+            throw jau::IllegalArgumentError("path null", E_FILE_LINE);
         }
         std::string path = jau::jni::from_jstring_to_string(env, jpath);
 
@@ -78,7 +78,7 @@ jlong Java_org_jau_fs_FileStats_ctorImpl2(JNIEnv *env, jclass clazz, jstring jdi
     (void)clazz;
     try {
         if( nullptr == jdirname || nullptr == jbasename ) {
-            throw jau::IllegalArgumentException("path null", E_FILE_LINE);
+            throw jau::IllegalArgumentError("path null", E_FILE_LINE);
         }
         std::string dirname = jau::jni::from_jstring_to_string(env, jdirname);
         std::string basename = jau::jni::from_jstring_to_string(env, jbasename);

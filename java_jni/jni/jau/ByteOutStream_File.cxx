@@ -199,11 +199,11 @@ jint Java_org_jau_io_ByteOutStream_1File_write(JNIEnv *env, jobject obj, jbyteAr
         jau::jni::shared_ptr_ref<jau::io::ByteOutStream_File> ref(env, obj); // hold until done
 
         if( nullptr == jin ) {
-            throw jau::IllegalArgumentException("in buffer null", E_FILE_LINE);
+            throw jau::IllegalArgumentError("in buffer null", E_FILE_LINE);
         }
         const size_t in_size = env->GetArrayLength(jin);
         if( (size_t)joffset + (size_t)jlength > in_size ) {
-            throw jau::IllegalArgumentException("input byte size "+std::to_string(in_size)+" < "+std::to_string(joffset)+" + "+std::to_string(jlength), E_FILE_LINE);
+            throw jau::IllegalArgumentError("input byte size "+std::to_string(in_size)+" < "+std::to_string(joffset)+" + "+std::to_string(jlength), E_FILE_LINE);
         }
         jau::jni::JNICriticalArray<uint8_t, jbyteArray> criticalArray(env); // RAII - release
         uint8_t * in_ptr = criticalArray.get(jin, criticalArray.Mode::NO_UPDATE_AND_RELEASE);
@@ -222,14 +222,14 @@ jint Java_org_jau_io_ByteOutStream_1File_write2Impl(JNIEnv *env, jobject obj, jo
         jau::jni::shared_ptr_ref<jau::io::ByteOutStream_File> ref(env, obj); // hold until done
 
         if( nullptr == jin ) {
-            throw jau::IllegalArgumentException("in buffer null", E_FILE_LINE);
+            throw jau::IllegalArgumentError("in buffer null", E_FILE_LINE);
         }
         if( 0 > in_limit) {
-            throw jau::IllegalArgumentException("invalid negative limit", E_FILE_LINE);
+            throw jau::IllegalArgumentError("invalid negative limit", E_FILE_LINE);
         }
         uint8_t * in_ptr = static_cast<uint8_t *>( env->GetDirectBufferAddress(jin) );
         if( nullptr == in_ptr ) {
-            throw jau::IllegalArgumentException("in buffer access failure", E_FILE_LINE);
+            throw jau::IllegalArgumentError("in buffer access failure", E_FILE_LINE);
         }
         return (jint) ref->write(in_ptr + out_offset, in_limit - out_offset);
     } catch(...) {

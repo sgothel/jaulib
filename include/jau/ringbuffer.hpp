@@ -976,7 +976,7 @@ class ringbuffer {
                 return;
             }
             if( size_ > newCapacity ) {
-                throw IllegalArgumentException("amount "+std::to_string(newCapacity)+" < size, "+toString(), E_FILE_LINE);
+                throw IllegalArgumentError("amount "+std::to_string(newCapacity)+" < size, "+toString(), E_FILE_LINE);
             }
 
             // save current data

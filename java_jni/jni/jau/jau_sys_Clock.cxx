@@ -42,11 +42,11 @@ void Java_org_jau_sys_Clock_getMonotonicTimeImpl(JNIEnv *env, jclass clazz, jlon
     (void)clazz;
     try {
         if( nullptr == jval ) {
-            throw jau::IllegalArgumentException("val null", E_FILE_LINE);
+            throw jau::IllegalArgumentError("val null", E_FILE_LINE);
         }
         const size_t jval_size = env->GetArrayLength(jval);
         if( 2 > jval_size ) {
-            throw jau::IllegalArgumentException("val size "+std::to_string(jval_size)+" < 2", E_FILE_LINE);
+            throw jau::IllegalArgumentError("val size "+std::to_string(jval_size)+" < 2", E_FILE_LINE);
         }
         // Avoid GetPrimitiveArrayCritical(), which occasionally hangs on system call ::clock_gettime()
         struct timespec t { 0, 0 };
@@ -63,11 +63,11 @@ void Java_org_jau_sys_Clock_getWallClockTimeImpl(JNIEnv *env, jclass clazz, jlon
     (void)clazz;
     try {
         if( nullptr == jval ) {
-            throw jau::IllegalArgumentException("val null", E_FILE_LINE);
+            throw jau::IllegalArgumentError("val null", E_FILE_LINE);
         }
         const size_t jval_size = env->GetArrayLength(jval);
         if( 2 > jval_size ) {
-            throw jau::IllegalArgumentException("val size "+std::to_string(jval_size)+" < 2", E_FILE_LINE);
+            throw jau::IllegalArgumentError("val size "+std::to_string(jval_size)+" < 2", E_FILE_LINE);
         }
         // Avoid GetPrimitiveArrayCritical(), which occasionally hangs on system call ::clock_gettime()
         struct timespec t { 0, 0 };

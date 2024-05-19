@@ -247,10 +247,11 @@ std::cv_status jau::wait_for(std::condition_variable& cv, std::unique_lock<std::
     }
 }
 
-jau::ExceptionBase::ExceptionBase(std::string type, std::string const& m, const char* file, int line) noexcept
-: msg_( std::move( type.append(" @ ").append(file).append(":").append(std::to_string(line)).append(": ").append(m) ) ),
+jau::ExceptionBase::ExceptionBase(const std::string &type, std::string const& m, const char* file, int line) noexcept // NOLINT(modernize-pass-by-value)
+: msg_( type ),
   backtrace_( jau::get_backtrace(true /* skip_anon_frames */) )
 {
+    msg_.append(" @ ").append(file).append(":").append(std::to_string(line)).append(": ").append(m);
     what_ = msg_;
     what_.append("\nNative backtrace:\n");
     what_.append(backtrace_);
@@ -310,7 +311,7 @@ uint128dp_t jau::merge_uint128(uint16_t const uuid16, uint128dp_t const & base_u
         std::string msg("uuid16_le_octet_index ");
         msg.append(std::to_string(uuid16_le_octet_index));
         msg.append(", not within [0..14]");
-        throw IllegalArgumentException(msg, E_FILE_LINE);
+        throw IllegalArgumentError(msg, E_FILE_LINE);
     }
     uint128dp_t dest = base_uuid;
 
@@ -345,7 +346,7 @@ uint128dp_t jau::merge_uint128(uint32_t const uuid32, uint128dp_t const & base_u
         std::string msg("uuid32_le_octet_index ");
         msg.append(std::to_string(uuid32_le_octet_index));
         msg.append(", not within [0..12]");
-        throw IllegalArgumentException(msg, E_FILE_LINE);
+        throw IllegalArgumentError(msg, E_FILE_LINE);
     }
     uint128dp_t dest = base_uuid;
 
@@ -636,11 +637,13 @@ bool jau::to_fraction_i64(fraction_i64& result, const std::string & value, const
 
 std::string jau::math::to_string(const jau::math::math_error_t v) noexcept {
     switch(v) {
+        case jau::math::math_error_t::none: return "none";
         case jau::math::math_error_t::invalid: return "invalid";
         case jau::math::math_error_t::div_by_zero: return "div_by_zero";
         case jau::math::math_error_t::overflow: return "overflow";
         case jau::math::math_error_t::underflow: return "underflow";
         case jau::math::math_error_t::inexact: return "inexact";
+        case jau::math::math_error_t::undefined: return "undefined";
     }
-    return "unknown";
+    return "undef";
 }

@@ -30,7 +30,6 @@
 #define JAU_JNIMEM__HPP_
 
 #include <jni.h>
-#include <stdexcept>
 #include <mutex>
 
 #include <jau/basic_types.hpp>

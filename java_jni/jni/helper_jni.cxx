@@ -24,7 +24,6 @@
  */
 
 #include <jni.h>
-#include <memory>
 #include <stdexcept>
 #include <vector>
 
@@ -80,7 +79,10 @@ void jau::jni::java_exception_check_and_throw(JNIEnv *env, const char* file, int
 void jau::jni::print_native_caught_exception_fwd2java(const jau::OutOfMemoryError &e, const char* file, int line) {
     fprintf(stderr, "Native exception caught @ %s:%d and forward to Java: %s\n", file, line, e.what()); fflush(stderr);
 }
-void jau::jni::print_native_caught_exception_fwd2java(const jau::RuntimeException &e, const char* file, int line) {
+void jau::jni::print_native_caught_exception_fwd2java(const jau::LogicErrorBase &e, const char* file, int line) {
+    fprintf(stderr, "Native exception caught @ %s:%d and forward to Java: %s\n", file, line, e.what()); fflush(stderr);
+}
+void jau::jni::print_native_caught_exception_fwd2java(const jau::RuntimeExceptionBase &e, const char* file, int line) {
     fprintf(stderr, "Native exception caught @ %s:%d and forward to Java: %s\n", file, line, e.what()); fflush(stderr);
 }
 void jau::jni::print_native_caught_exception_fwd2java(const std::exception &e, const char* file, int line) {
@@ -101,36 +103,40 @@ void jau::jni::raise_java_exception(JNIEnv *env, const std::runtime_error &e, co
     print_native_caught_exception_fwd2java(e, file, line);
     env->ThrowNew(env->FindClass("java/lang/RuntimeException"), e.what());
 }
-void jau::jni::raise_java_exception(JNIEnv *env, const jau::RuntimeException &e, const char* file, int line) {
+void jau::jni::raise_java_exception(JNIEnv *env, const jau::LogicErrorBase &e, const char* file, int line) {
+    print_native_caught_exception_fwd2java(e, file, line);
+    env->ThrowNew(env->FindClass("java/lang/Exception"), e.what());    
+}
+void jau::jni::raise_java_exception(JNIEnv *env, const jau::RuntimeExceptionBase &e, const char* file, int line) {
     print_native_caught_exception_fwd2java(e, file, line);
     env->ThrowNew(env->FindClass("java/lang/RuntimeException"), e.what());
 }
 void jau::jni::raise_java_exception(JNIEnv *env, const jau::InternalError &e, const char* file, int line) {
-    print_native_caught_exception_fwd2java(e, file, line);
+    print_native_caught_exception_fwd2java(static_cast<const jau::RuntimeExceptionBase&>(e), file, line);
     env->ThrowNew(env->FindClass("java/lang/InternalError"), e.what());
 }
 void jau::jni::raise_java_exception(JNIEnv *env, const jau::NullPointerException &e, const char* file, int line) {
-    print_native_caught_exception_fwd2java(e, file, line);
+    print_native_caught_exception_fwd2java(static_cast<const jau::RuntimeExceptionBase&>(e), file, line);
     env->ThrowNew(env->FindClass("java/lang/NullPointerException"), e.what());
 }
-void jau::jni::raise_java_exception(JNIEnv *env, const jau::IllegalArgumentException &e, const char* file, int line) {
-    print_native_caught_exception_fwd2java(e, file, line);
+void jau::jni::raise_java_exception(JNIEnv *env, const jau::IllegalArgumentError &e, const char* file, int line) {
+    print_native_caught_exception_fwd2java(static_cast<const jau::LogicErrorBase&>(e), file, line);
     env->ThrowNew(env->FindClass("java/lang/IllegalArgumentException"), e.what());
 }
 void jau::jni::raise_java_exception(JNIEnv *env, const std::invalid_argument &e, const char* file, int line) {
     print_native_caught_exception_fwd2java(e, file, line);
     env->ThrowNew(env->FindClass("java/lang/IllegalArgumentException"), e.what());
 }
-void jau::jni::raise_java_exception(JNIEnv *env, const jau::IllegalStateException &e, const char* file, int line) {
-    print_native_caught_exception_fwd2java(e, file, line);
+void jau::jni::raise_java_exception(JNIEnv *env, const jau::IllegalStateError &e, const char* file, int line) {
+    print_native_caught_exception_fwd2java(static_cast<const jau::LogicErrorBase&>(e), file, line);
     env->ThrowNew(env->FindClass("java/lang/IllegalStateException"), e.what());
 }
 void jau::jni::raise_java_exception(JNIEnv *env, const jau::UnsupportedOperationException &e, const char* file, int line) {
-    print_native_caught_exception_fwd2java(e, file, line);
+    print_native_caught_exception_fwd2java(static_cast<const jau::RuntimeExceptionBase&>(e), file, line);
     env->ThrowNew(env->FindClass("java/lang/UnsupportedOperationException"), e.what());
 }
-void jau::jni::raise_java_exception(JNIEnv *env, const jau::IndexOutOfBoundsException &e, const char* file, int line) {
-    print_native_caught_exception_fwd2java(e, file, line);
+void jau::jni::raise_java_exception(JNIEnv *env, const jau::IndexOutOfBoundsError &e, const char* file, int line) {
+    print_native_caught_exception_fwd2java(static_cast<const jau::LogicErrorBase&>(e), file, line);
     env->ThrowNew(env->FindClass("java/lang/IndexOutOfBoundsException"), e.what());
 }
 void jau::jni::raise_java_exception(JNIEnv *env, const std::bad_alloc &e, const char* file, int line) {
@@ -153,17 +159,19 @@ void jau::jni::rethrow_and_raise_java_exception_jauimpl(JNIEnv *env, const char*
         jau::jni::raise_java_exception(env, e, file, line);
     } catch (const jau::InternalError &e) {
         jau::jni::raise_java_exception(env, e, file, line);
-    } catch (const jau::NullPointerException &e) {
+    } catch (const jau::IndexOutOfBoundsError &e) {
         jau::jni::raise_java_exception(env, e, file, line);
-    } catch (const jau::IllegalArgumentException &e) {
+    } catch (const jau::IllegalArgumentError &e) {
         jau::jni::raise_java_exception(env, e, file, line);
-    } catch (const jau::IllegalStateException &e) {
+    } catch (const jau::IllegalStateError &e) {
         jau::jni::raise_java_exception(env, e, file, line);
     } catch (const jau::UnsupportedOperationException &e) {
         jau::jni::raise_java_exception(env, e, file, line);
-    } catch (const jau::IndexOutOfBoundsException &e) {
+    } catch (const jau::NullPointerException &e) {
         jau::jni::raise_java_exception(env, e, file, line);
-    } catch (const jau::RuntimeException &e) {
+    } catch (const jau::RuntimeExceptionBase &e) {
+        jau::jni::raise_java_exception(env, e, file, line);
+    } catch (const jau::LogicErrorBase &e) {
         jau::jni::raise_java_exception(env, e, file, line);
     } catch (const std::runtime_error &e) {
         jau::jni::raise_java_exception(env, e, file, line);
@@ -326,7 +334,7 @@ bool jau::jni::from_jboolean_to_bool(jboolean val)
 
 std::string jau::jni::from_jstring_to_string(JNIEnv *env, jstring jstr) {
     if (!jstr) {
-        throw jau::IllegalArgumentException("String argument should not be null", E_FILE_LINE);
+        throw jau::IllegalArgumentError("String argument should not be null", E_FILE_LINE);
     }
     const char *str_chars = (char *)env->GetStringUTFChars(jstr, nullptr);
     if (!str_chars) {
@@ -343,7 +351,7 @@ jstring jau::jni::from_string_to_jstring(JNIEnv *env, const std::string & str) {
 
 jau::io::secure_string jau::jni::from_jbytebuffer_to_sstring(JNIEnv *env, jobject jbytebuffer) {
     if (!jbytebuffer) {
-        throw jau::IllegalArgumentException("ByteBuffer argument should not be null", E_FILE_LINE);
+        throw jau::IllegalArgumentError("ByteBuffer argument should not be null", E_FILE_LINE);
     }
     const char* address = (const char*)env->GetDirectBufferAddress(jbytebuffer);
     size_t capacity = (size_t)env->GetDirectBufferCapacity(jbytebuffer);
@@ -466,7 +474,7 @@ std::vector<std::string> jau::jni::convert_jlist_string_to_vector(JNIEnv *env, j
 // C++ java_anon implementation
 //
 
-jau::jni::JavaGlobalObj::~JavaGlobalObj() noexcept {
+jau::jni::JavaGlobalObj::~JavaGlobalObj() noexcept { // NOLINT(bugprone-exception-escape): handled
     try {
         JNIEnv *env = *jni_env;
         if( nullptr == env ) {

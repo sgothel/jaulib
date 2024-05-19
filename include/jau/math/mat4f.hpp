@@ -1203,10 +1203,10 @@ class alignas(Value_type) Matrix4 {
                           const value_type bottom, const value_type top,
                           const value_type zNear, const value_type zFar) {
         if( zNear <= zero || zFar <= zNear ) {
-            throw jau::IllegalArgumentException("Requirements zNear > 0 and zFar > zNear, but zNear "+std::to_string(zNear)+", zFar "+std::to_string(zFar), E_FILE_LINE);
+            throw jau::IllegalArgumentError("Requirements zNear > 0 and zFar > zNear, but zNear "+std::to_string(zNear)+", zFar "+std::to_string(zFar), E_FILE_LINE);
         }
         if( left == right || top == bottom) {
-            throw jau::IllegalArgumentException("GL_INVALID_VALUE: top,bottom and left,right must not be equal", E_FILE_LINE);
+            throw jau::IllegalArgumentError("GL_INVALID_VALUE: top,bottom and left,right must not be equal", E_FILE_LINE);
         }
         {
             // m00 = m11 = m22 = m33 = 1f;

@@ -204,7 +204,7 @@ namespace jau {
             constexpr value_type * allocStore(const size_type size_) {
                 if( 0 != size_ ) {
                     if( size_ > DIFF_MAX ) {
-                        throw jau::IllegalArgumentException("alloc "+std::to_string(size_)+" > difference_type max "+
+                        throw jau::IllegalArgumentError("alloc "+std::to_string(size_)+" > difference_type max "+
                                 std::to_string(DIFF_MAX), E_FILE_LINE);
                     }
                     value_type * m = alloc_inst.allocate(size_);
@@ -327,7 +327,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
             constexpr void ctor_copy_range_check(pointer dest, iterator first, const_iterator last) {
                 JAU_DARRAY_PRINTF0("ctor_copy_range_check [%zd .. %zd] -> ??, dist %zd\n", (first-begin_), (last-begin_)-1, (last-first)-1);
                 if( first > last ) {
-                    throw jau::IllegalArgumentException("first "+to_hexstring(first)+" > last "+to_hexstring(last), E_FILE_LINE);
+                    throw jau::IllegalArgumentError("first "+to_hexstring(first)+" > last "+to_hexstring(last), E_FILE_LINE);
                 }
                 for(; first < last; ++dest, ++first) {
                     new (const_cast<pointer_mutable>(dest)) value_type( *first ); // placement new
@@ -336,7 +336,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
             constexpr pointer clone_range_check(const size_type dest_capacity, iterator first, const_iterator last) {
                 JAU_DARRAY_PRINTF0("clone_range_check [%zd .. %zd], count %zd -> %d\n", (first-begin_), (last-begin_)-1, (last-first)-1, (int)dest_capacity);
                 if( dest_capacity < size_type(last-first) ) {
-                    throw jau::IllegalArgumentException("capacity "+std::to_string(dest_capacity)+" < source range "+
+                    throw jau::IllegalArgumentError("capacity "+std::to_string(dest_capacity)+" < source range "+
                                                         std::to_string(difference_type(last-first)), E_FILE_LINE);
                 }
                 pointer dest = allocStore(dest_capacity);
@@ -347,7 +347,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
             template< class InputIt >
             constexpr static void ctor_copy_range_foreign(pointer dest, InputIt first, InputIt last) {
                 if( first > last ) {
-                    throw jau::IllegalArgumentException("first "+jau::to_string( first )+" > last "+
+                    throw jau::IllegalArgumentError("first "+jau::to_string( first )+" > last "+
                                                                  jau::to_string( last ), E_FILE_LINE);
                 }
                 for(; first != last; ++dest, ++first) {
@@ -357,7 +357,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
             template< class InputIt >
             constexpr pointer clone_range_foreign(const size_type dest_capacity, InputIt first, InputIt last) {
                 if( dest_capacity < size_type(last-first) ) {
-                    throw jau::IllegalArgumentException("capacity "+std::to_string(dest_capacity)+" < source range "+
+                    throw jau::IllegalArgumentError("capacity "+std::to_string(dest_capacity)+" < source range "+
                                                         std::to_string(difference_type(last-first)), E_FILE_LINE);
                 }
                 pointer dest = allocStore(dest_capacity);
@@ -803,7 +803,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                 if( 0 <= i && i < size() ) {
                     return *(begin_+i);
                 }
-                throw jau::IndexOutOfBoundsException(i, size(), E_FILE_LINE);
+                throw jau::IndexOutOfBoundsError(i, size(), E_FILE_LINE);
             }
 
             /**
@@ -813,7 +813,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                 if( 0 <= i && i < size() ) {
                     return *(begin_+i);
                 }
-                throw jau::IndexOutOfBoundsException(i, size(), E_FILE_LINE);
+                throw jau::IndexOutOfBoundsError(i, size(), E_FILE_LINE);
             }
 
             // write access, mutable array operations
@@ -997,7 +997,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
 
                     return begin_ <= pos && pos <= end_ ? const_cast<iterator>(pos) : end_;
                 } else {
-                    throw jau::IndexOutOfBoundsException(std::to_string(difference_type(pos - begin_)), std::to_string(size()), E_FILE_LINE);
+                    throw jau::IndexOutOfBoundsError(std::to_string(difference_type(pos - begin_)), std::to_string(size()), E_FILE_LINE);
                 }
             }
 
@@ -1038,7 +1038,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
 
                     return begin_ <= pos_new && pos_new <= end_ ? pos_new : end_;
                 } else {
-                    throw jau::IndexOutOfBoundsException(std::to_string(difference_type(pos - begin_)), std::to_string(size()), E_FILE_LINE);
+                    throw jau::IndexOutOfBoundsError(std::to_string(difference_type(pos - begin_)), std::to_string(size()), E_FILE_LINE);
                 }
             }
 
@@ -1071,7 +1071,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
 
                     return begin_ <= pos_new && pos_new <= end_ ? pos_new : end_;
                 } else {
-                    throw jau::IndexOutOfBoundsException(std::to_string(difference_type(pos - begin_)), std::to_string(size()), E_FILE_LINE);
+                    throw jau::IndexOutOfBoundsError(std::to_string(difference_type(pos - begin_)), std::to_string(size()), E_FILE_LINE);
                 }
             }
 
@@ -1101,7 +1101,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
 
                     return begin_ <= pos_new && pos_new <= end_ ? pos_new : end_;
                 } else {
-                    throw jau::IndexOutOfBoundsException(std::to_string(difference_type(pos - begin_)), std::to_string(size()), E_FILE_LINE);
+                    throw jau::IndexOutOfBoundsError(std::to_string(difference_type(pos - begin_)), std::to_string(size()), E_FILE_LINE);
                 }
             }
 
