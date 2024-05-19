@@ -33,6 +33,8 @@
 #ifndef CATCH2_MY_MAIN_H
 #define CATCH2_MY_MAIN_H
 
+#include <vector>
+
 #define CATCH_AMALGAMATED_CUSTOM_MAIN 1
 #include <catch2/catch_amalgamated.hpp>
 
@@ -60,29 +62,29 @@ int main( int argc, char* argv[] )
 
   catch_auto_run = ( 1 >= argc );
 
-  int argc_2=0;
-  char* argv_2[argc+extra_args_c];
+  std::vector<char*> argv_2;
+  argv_2.reserve(argc+extra_args_c);
 
   for(int i=0; i<argc; i++) {
       if( 0 == strcmp("--perf_analysis", argv[i]) ) {
           catch_perf_analysis = true;
       } else {
-          argv_2[argc_2++] = argv[i];
+          argv_2.push_back(argv[i]);
       }
   }
   for(int i=0; i<extra_args_c; i++) {
-      argv_2[argc_2++] = extra_args[i];
+      argv_2.push_back(extra_args[i]);
   }
-  fprintf(stderr, "argc %d -> %d, auto_run %d, perf_analysis %d\n",
-          argc, argc_2, catch_auto_run, catch_perf_analysis);
-  for(int i=0; i<argc_2; i++) {
-      printf("[%d] %s\n", i, argv_2[i]);
+  fprintf(stderr, "argc %d -> %zu, auto_run %d, perf_analysis %d\n",
+          argc, argv_2.size(), catch_auto_run, catch_perf_analysis);
+  for(size_t i=0; i<argv_2.size(); ++i) {
+      printf("[%zu] %s\n", i, argv_2[i]);
   }
 
   // writing to session.configData() here sets defaults
   // this is the preferred way to set them
 
-  int returnCode = session.applyCommandLine( argc_2, argv_2 );
+  int returnCode = session.applyCommandLine( argv_2.size(), argv_2.data() );
 
   if( returnCode != 0 ) { // Indicates a command line error
       return returnCode;

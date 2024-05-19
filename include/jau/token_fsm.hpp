@@ -283,13 +283,12 @@ namespace jau::lang {
             }
 
         private:
-            typedef jau::darray<uint_t, jau::nsize_t> matrix_t;
+            typedef jau::darray<uint_t, jau::nsize_t> darray_t;
 
             void grow(const uint_t required_sz) {
+                m_matrix.reserve( required_sz + 100 );
                 while( m_matrix.size() < required_sz ) {
-                    uint_t line[m_row_len];
-                    zero_bytes_sec(line, sizeof(line));
-                    m_matrix.push_back(&line[0], &line[m_row_len]);
+                    m_matrix.resize(m_matrix.size() + m_row_len, 0);
                 }
             }
 
@@ -298,9 +297,9 @@ namespace jau::lang {
             uint_t  m_end;
             std::string m_separators;
 
-            matrix_t m_matrix;
+            darray_t m_matrix;
             uint_t  m_next_state;
-            std::vector<uint_t> m_token_names;
+            darray_t m_token_names;
 
         public:
 

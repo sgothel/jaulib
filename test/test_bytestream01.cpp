@@ -24,7 +24,9 @@
 
 #include <cassert>
 #include <cinttypes>
+#include <cstdint>
 #include <cstring>
+#include <vector>
 
 #include <jau/test/catch2_ext.hpp>
 
@@ -444,12 +446,13 @@ class TestByteStream01 {
         static void feed_source_00(jau::io::ByteInStream_Feed * data_feed, const size_t feed_size=1024) {
             uint64_t xfer_total = 0;
             jau::io::ByteInStream_File data_stream(data_feed->id());
-            uint8_t buffer[feed_size];
+            std::vector<uint8_t> buffer;
+            buffer.resize(feed_size);
             while( data_stream.good() ) {
-                size_t count = data_stream.read(buffer, sizeof(buffer));
+                size_t count = data_stream.read(buffer.data(), buffer.size());
                 if( 0 < count ) {
                     xfer_total += count;
-                    if( data_feed->write(buffer, count) ) {
+                    if( data_feed->write(buffer.data(), count) ) {
                         jau::sleep_for( 16_ms );
                     } else {
                         break;
@@ -467,12 +470,13 @@ class TestByteStream01 {
             jau::io::ByteInStream_File data_stream(data_feed->id());
             const uint64_t file_size = data_stream.content_size();
             data_feed->set_content_size( file_size );
-            uint8_t buffer[feed_size];
+            std::vector<uint8_t> buffer;
+            buffer.resize(feed_size);
             while( data_stream.good() && xfer_total < file_size ) {
-                size_t count = data_stream.read(buffer, sizeof(buffer));
+                size_t count = data_stream.read(buffer.data(), buffer.size());
                 if( 0 < count ) {
                     xfer_total += count;
-                    if( data_feed->write(buffer, count) ) {
+                    if( data_feed->write(buffer.data(), count) ) {
                         jau::sleep_for( 16_ms );
                     } else {
                         break;
@@ -489,12 +493,13 @@ class TestByteStream01 {
             jau::io::ByteInStream_File data_stream(data_feed->id());
             const uint64_t file_size = data_stream.content_size();
             data_feed->set_content_size( data_stream.content_size() );
-            uint8_t buffer[feed_size];
+            std::vector<uint8_t> buffer;
+            buffer.resize(feed_size);            
             while( data_stream.good() && xfer_total < file_size ) {
-                size_t count = data_stream.read(buffer, sizeof(buffer));
+                size_t count = data_stream.read(buffer.data(), buffer.size());
                 if( 0 < count ) {
                     xfer_total += count;
-                    if( !data_feed->write(buffer, count) ) {
+                    if( !data_feed->write(buffer.data(), count) ) {
                         break;
                     }
                 }
@@ -506,12 +511,13 @@ class TestByteStream01 {
         static void feed_source_20(jau::io::ByteInStream_Feed * data_feed, const size_t feed_size=1024) {
             uint64_t xfer_total = 0;
             jau::io::ByteInStream_File data_stream(data_feed->id());
-            uint8_t buffer[feed_size];
+            std::vector<uint8_t> buffer;
+            buffer.resize(feed_size);
             while( data_stream.good() ) {
-                size_t count = data_stream.read(buffer, sizeof(buffer));
+                size_t count = data_stream.read(buffer.data(), buffer.size());
                 if( 0 < count ) {
                     xfer_total += count;
-                    if( data_feed->write(buffer, count) ) {
+                    if( data_feed->write(buffer.data(), count) ) {
                         if( xfer_total >= 1024 ) {
                             data_feed->set_eof( jau::io::async_io_result_t::FAILED ); // calls data_feed->interruptReader();
                             return;
@@ -531,12 +537,13 @@ class TestByteStream01 {
             jau::io::ByteInStream_File data_stream(data_feed->id());
             const uint64_t file_size = data_stream.content_size();
             data_feed->set_content_size( data_stream.content_size() );
-            uint8_t buffer[feed_size];
+            std::vector<uint8_t> buffer;
+            buffer.resize(feed_size);
             while( data_stream.good() ) {
-                size_t count = data_stream.read(buffer, sizeof(buffer));
+                size_t count = data_stream.read(buffer.data(), buffer.size());
                 if( 0 < count ) {
                     xfer_total += count;
-                    if( data_feed->write(buffer, count) ) {
+                    if( data_feed->write(buffer.data(), count) ) {
                         if( xfer_total >= file_size/4 ) {
                             data_feed->set_eof( jau::io::async_io_result_t::FAILED ); // calls data_feed->interruptReader();
                             return;
