@@ -193,7 +193,7 @@ class ringbuffer {
         typedef value_type&                                 reference;
         typedef const value_type&                           const_reference;
         typedef Size_type                                   size_type;
-        typedef typename std::make_signed<size_type>::type  difference_type;
+        typedef std::make_signed_t<size_type>               difference_type;
 
         typedef jau::callocator<Value_type>                 allocator_type;
 

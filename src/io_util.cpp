@@ -202,7 +202,7 @@ bool jau::io::uri_tk::protocol_supported(const std::string_view& uri) noexcept {
 }
 
 bool jau::io::uri_tk::is_local_file_protocol(const std::string_view& uri) noexcept {
-    return 0 == uri.find("file://");
+    return uri.starts_with("file://");
 }
 
 bool jau::io::uri_tk::is_httpx_protocol(const std::string_view& uri) noexcept {

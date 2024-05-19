@@ -674,7 +674,8 @@ namespace jau {
                                           sizeof(udata.cache) >= sizeof(T),
                                           bool> = true>
                 constexpr const T* data() const noexcept {
-                    return static_cast<const T*>( static_cast<const void*>( udata.cache ) );
+                    // Alignment OK, udata.cache at start of delegate_t
+                    return static_cast<const T*>( static_cast<const void*>( udata.cache ) ); // NOLINT(bugprone-casting-through-void): Same as reinterpret_cast<T*>( p )
                 }
 
                 template<typename T,
@@ -690,7 +691,8 @@ namespace jau {
                                           sizeof(udata.cache) >= sizeof(T),
                                           bool> = true>
                 constexpr T* data() noexcept {
-                    return static_cast<T*>( static_cast<void*>( udata.cache ) );
+                    // Alignment OK, udata.cache at start of delegate_t
+                    return static_cast<T*>( static_cast<void*>( udata.cache ) ); // NOLINT(bugprone-casting-through-void): Same as reinterpret_cast<T*>( p )
                 }
 
                 template<typename T,

@@ -21,9 +21,8 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include <thread>
+#include <numbers>
 #include <cassert>
-#include <cinttypes>
 #include <cstring>
 
 #include <jau/test/catch2_ext.hpp>
@@ -34,7 +33,7 @@
 using namespace jau;
 using namespace jau::math;
 
-static const float PI = (float)M_PI;
+static const float PI = std::numbers::pi_v<float>;
 static const float HALF_PI = (float)M_PI_2;
 static const float QUARTER_PI = (float)M_PI_4;
 static const float EPSILON = std::numeric_limits<float>::epsilon();

@@ -189,7 +189,7 @@ std::unique_ptr<dir_item::backed_string_view> dir_item::reduce(const std::string
     }
 
     // remove initial './'
-    while( 0 == path2->view.find(s_dot_slash) ) {
+    while( path2->view.starts_with(s_dot_slash) ) {
         path2->view = path2->view.substr(2, path2->view.size()-2);
     }
 
@@ -476,7 +476,7 @@ file_stats::file_stats(const ctor_cookie& cc, int dirfd, const dir_item& item, c
             has_fields_ |= field_t::fd;
             dirfd = scan_value; // intentional overwrite
             fd_ = dirfd;
-        } else if( 0 == full_path.find("/dev/fd/pipe:") ) {
+        } else if( full_path.starts_with("/dev/fd/pipe:") ) {
             // Last resort and should-be unreachable,
             // since above `jau::fs::from_named_fd()` shall hit!
             //

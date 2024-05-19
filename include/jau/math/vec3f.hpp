@@ -26,7 +26,6 @@
 
 #include <cmath>
 #include <cstdarg>
-#include <cstdint>
 #include <cassert>
 #include <limits>
 #include <string>

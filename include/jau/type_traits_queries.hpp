@@ -281,68 +281,68 @@ namespace jau {
     /// Checker for typedef with given name and convertible type
     #define TYPEDEF_CHECKER(checker, name) \
     template<class C, typename T, typename = void> struct checker : std::false_type {}; \
-    template<class C, typename T> struct checker<C, T, typename std::enable_if< \
-      std::is_convertible<typename C::name, T>::value>::type> : std::true_type {}
+    template<class C, typename T> struct checker<C, T, typename std::enable_if_t< \
+      std::is_convertible_v<typename C::name, T>>> : std::true_type {}
 
     /// Checker for typedef with given name and exact type
     #define TYPEDEF_CHECKER_STRICT(checker, name) \
     template<class C, typename T, typename = void> struct checker : std::false_type {}; \
-    template<class C, typename T> struct checker<C, T, typename std::enable_if< \
-      std::is_same<typename C::name, T>::value>::type> : std::true_type {}
+    template<class C, typename T> struct checker<C, T, typename std::enable_if_t< \
+      std::is_same_v<typename C::name, T>>> : std::true_type {}
 
     /// Checker for typedef with given name and any type
     #define TYPEDEF_CHECKER_ANY(checker, name) \
     template<class C, typename = void> struct checker : std::false_type {}; \
-    template<class C> struct checker<C, typename std::enable_if< \
-      !std::is_same<typename C::name*, void>::value>::type> : std::true_type {}
+    template<class C> struct checker<C, typename std::enable_if_t< \
+      !std::is_same_v<typename C::name*, void>>> : std::true_type {}
 
     /// Checker for static const variable with given name and value
     #define MVALUE_CHECKER(checker, name, val) \
     template<class C, typename = void> struct checker : std::false_type {}; \
-    template<class C> struct checker<C, typename std::enable_if< \
-      std::is_convertible<decltype(C::name), const decltype(val)>::value && C::name == val>::type> : std::true_type {}
+    template<class C> struct checker<C, typename std::enable_if_t< \
+      std::is_convertible_v<decltype(C::name), const decltype(val)> && C::name == val>> : std::true_type {}
     /// Checker for static const variable with given name, value and type
     #define MVALUE_CHECKER_STRICT(checker, name, val) \
     template<class C, typename = void> struct checker : std::false_type {}; \
-    template<class C> struct checker<C, typename std::enable_if< \
-      std::is_same<decltype(C::name), const decltype(val)>::value && C::name == val>::type> : std::true_type {}
+    template<class C> struct checker<C, typename std::enable_if_t< \
+      std::is_same_v<decltype(C::name), const decltype(val)> && C::name == val>> : std::true_type {}
 #endif
 
     /// Checker for member with given name and convertible type
     #define MTYPE_CHECKER(checker, name) \
     template<class C, typename T, typename = void> struct checker : std::false_type {}; \
-    template<class C, typename T> struct checker<C, T, typename std::enable_if< \
-      std::is_convertible<decltype(C::name), T>::value>::type> : std::true_type {}
+    template<class C, typename T> struct checker<C, T, typename std::enable_if_t< \
+      std::is_convertible_v<decltype(C::name), T>>> : std::true_type {}
 
     /// Checker for member with given name and exact type
     #define MTYPE_CHECKER_STRICT(checker, name) \
     template<class C, typename T, typename = void> struct checker : std::false_type {}; \
-    template<class C, typename T> struct checker<C, T, typename std::enable_if< \
-      std::is_same<decltype(C::name), T>::value>::type> : std::true_type {}
+    template<class C, typename T> struct checker<C, T, typename std::enable_if_t< \
+      std::is_same_v<decltype(C::name), T>>> : std::true_type {}
 
     /// Checker for member with given name and any type
     #define MTYPE_CHECKER_ANY(checker, name) \
     template<class C, typename = void> struct checker : std::false_type {}; \
-    template<class C> struct checker<C, typename std::enable_if< \
-      !std::is_same<decltype(C::name)*, void>::value>::type> : std::true_type {}
+    template<class C> struct checker<C, typename std::enable_if_t< \
+      !std::is_same_v<decltype(C::name)*, void>>> : std::true_type {}
 
     /// Checker for member function with convertible return type and accepting given arguments
     #define METHOD_CHECKER(checker, name, ret, args) \
     template<class C, typename=void> struct checker : std::false_type {}; \
-    template<class C> struct checker<C, typename std::enable_if< \
-      std::is_convertible<decltype(std::declval<C>().name args), ret>::value>::type> : std::true_type {};
+    template<class C> struct checker<C, typename std::enable_if_t< \
+      std::is_convertible_v<decltype(std::declval<C>().name args), ret>>> : std::true_type {};
 
     /// Checker for member function with exact retutn type and accepting given arguments
     #define METHOD_CHECKER_STRICT_RET(name, fn, ret, args) \
     template<class C, typename=void> struct name : std::false_type {}; \
-    template<class C> struct name<C, typename std::enable_if< \
-      std::is_same<decltype(std::declval<C>().fn args), ret>::value>::type> : std::true_type {};
+    template<class C> struct name<C, typename std::enable_if_t< \
+      std::is_same_v<decltype(std::declval<C>().fn args), ret>>> : std::true_type {};
 
     /// Checker for member function accepting given arguments
     #define METHOD_CHECKER_ANY(name, fn, args) \
     template<class C, typename=void> struct name : std::false_type {}; \
-    template<class C> struct name<C, typename std::enable_if< \
-      !std::is_same<decltype(std::declval<C>().fn args)*, void>::value>::type> : std::true_type {};
+    template<class C> struct name<C, typename std::enable_if_t< \
+      !std::is_same_v<decltype(std::declval<C>().fn args)*, void>>> : std::true_type {};
 
     METHOD_CHECKER(has_toString, toString, std::string, ())
     template <typename _Tp> inline constexpr bool has_toString_v = has_toString<_Tp>::value;
@@ -354,8 +354,8 @@ namespace jau {
 
     /// Checker for member of pointer '->' operator with convertible pointer return, no arguments
     template<class C, typename=void> struct has_member_of_pointer : std::false_type {};
-    template<class C> struct has_member_of_pointer<C, typename std::enable_if<
-      std::is_pointer<decltype(std::declval<C>().operator->())>::value>::type> : std::true_type {};
+    template<class C> struct has_member_of_pointer<C, typename std::enable_if_t<
+      std::is_pointer_v<decltype(std::declval<C>().operator->())>>> : std::true_type {};
 
     template <typename _Tp> inline constexpr bool has_member_of_pointer_v = has_member_of_pointer<_Tp>::value;
 

@@ -22,10 +22,7 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <cassert>
-#include <cinttypes>
 #include <cstring>
-#include <memory>
-#include <thread>
 #include <pthread.h>
 
 #include <jau/test/catch2_ext.hpp>
@@ -64,7 +61,6 @@ TEST_CASE( "Test00", "[dll][os]" ) {
     const std::string libName = jau::os::DynamicLinker::getCanonicalName(libBasename);
     const std::string libPathBuild = jau::fs::absolute( jau::fs::dirname(executable_path) ) + "/"+libName;
     const std::string libPathOrig = jau::fs::absolute( jau::fs::dirname(executable_path) ) + "/orig/"+libName;
-    const std::string symbolName = "jaulib_id_entryfunc";
     if( !existsPath(libPathBuild) ) {
         if( !existsPath(libPathOrig) ) {
             std::cout << "Warning: library '" << libBasename << "' doesn't exist at: build '" << libPathBuild << "', nor at orig '" << libPathOrig << "'" << std::endl;
@@ -96,7 +92,7 @@ TEST_CASE( "Test00", "[dll][os]" ) {
                 }
                 if( jau::fs::traverse_event::none != ( tevt & ( jau::fs::traverse_event::file | jau::fs::traverse_event::symlink ) ) ) { // at least one of: file + link
                     std::string bname = element_stats.item().basename();
-                    if( 0 == bname.find(libName) ) { // starts-with
+                    if( bname.starts_with(libName) ) {
                         const std::string p = libDirOrig + "/" + bname;
                         std::cout << "- move: depth[" << depth << "]: '" << element_stats.path() << "' to '" << p << "'" << std::endl;
                         jau::fs::rename(element_stats.path(), p);
@@ -117,7 +113,6 @@ TEST_CASE( "Test00", "[dll][os]" ) {
                                             jau::fs::copy_options::verbose;
         jau::fs::file_stats path_stats(libPathOrig);
         const std::string libPathOrigFile = path_stats.final_target()->path();
-        const std::string libDirOrig = jau::fs::dirname(libPathOrigFile);
 
         const std::string libBasenameCopy = "testlib2";
         const std::string libNameCopy = jau::os::DynamicLinker::getCanonicalName(libBasenameCopy);

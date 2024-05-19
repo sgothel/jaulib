@@ -22,9 +22,7 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <cassert>
-#include <cinttypes>
 #include <cstring>
-#include <random>
 #include <vector>
 #include <type_traits>
 
@@ -91,9 +89,9 @@ static void fill_list(T& data, const std::size_t size) {
 
 template< class Iter >
 static void print_iterator_info(const std::string& typedefname,
-        typename std::enable_if<
-                std::is_class<Iter>::value
-            >::type* = nullptr
+        typename std::enable_if_t<
+                std::is_class_v<Iter>
+            >* = nullptr
 ) {
     jau::type_cue<Iter>::print(typedefname);
     jau::type_cue<typename Iter::iterator_category>::print(typedefname+"::iterator_category");
@@ -105,9 +103,9 @@ static void print_iterator_info(const std::string& typedefname,
 
 template<class Iter>
 static void print_iterator_info(const std::string& typedefname,
-        typename std::enable_if<
-                !std::is_class<Iter>::value
-            >::type* = nullptr
+        typename std::enable_if_t<
+                !std::is_class_v<Iter>
+            >* = nullptr
 ) {
     jau::type_cue<Iter>::print(typedefname);
 }

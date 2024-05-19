@@ -22,9 +22,7 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <cassert>
-#include <cinttypes>
 #include <cstring>
-#include <random>
 #include <vector>
 
 #include <jau/test/catch2_ext.hpp>
@@ -58,9 +56,9 @@ static void print_container_info(const std::string& type_id, const Cont &c,
     printf("\nContainer Type %s (a darray, a cow %d):\n  - Uses memmove %d (trivially_copyable %d); realloc %d; base_of jau::callocator %d; secmem %d; size %d bytes\n",
                 type_id.c_str(), jau::is_cow_type<Cont>::value,
                 Cont::uses_memmove,
-                std::is_trivially_copyable<typename Cont::value_type>::value,
+                std::is_trivially_copyable_v<typename Cont::value_type>,
                 Cont::uses_realloc,
-                std::is_base_of<jau::callocator<typename Cont::value_type>, typename Cont::allocator_type>::value,
+                std::is_base_of_v<jau::callocator<typename Cont::value_type>, typename Cont::allocator_type>,
                 Cont::uses_secmem,
                 (int)sizeof(c));
 }
