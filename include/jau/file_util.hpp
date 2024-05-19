@@ -881,25 +881,25 @@ namespace jau::fs {
         none = 0,
 
         /** Traverse through directories, i.e. perform visit, copy, remove etc actions recursively throughout the directory structure. */
-        recursive = 1 << 0,
+        recursive = 1U << 0,
 
         /** Traverse through symbolic linked directories if traverse_options::recursive is set, i.e. directories with property fmode_t::link set. */
-        follow_symlinks = 1 << 1,
+        follow_symlinks = 1U << 1,
 
         /** Traverse through elements in lexicographical order. This might be required when computing an order dependent outcome like a hash value. */
-        lexicographical_order = 1 << 2,
+        lexicographical_order = 1U << 2,
 
         /** Call path_visitor at directory entry, allowing path_visitor to skip traversal of this directory if returning false. */
-        dir_check_entry = 1 << 7,
+        dir_check_entry = 1U << 7,
 
         /** Call path_visitor at directory entry. Both, dir_entry and dir_exit can be set, only one or none. */
-        dir_entry = 1 << 8,
+        dir_entry = 1U << 8,
 
         /** Call path_visitor at directory exit. Both, dir_entry and dir_exit can be set, only one or none. */
-        dir_exit = 1 << 9,
+        dir_exit = 1U << 9,
 
         /** Enable verbosity mode, potentially used by a path_visitor implementation like remove(). */
-        verbose = 1 << 15
+        verbose = 1U << 15
     };
     constexpr uint16_t number(const traverse_options rhs) noexcept {
         return static_cast<uint16_t>(rhs);

@@ -338,7 +338,7 @@ namespace jau {
          *
          * @see @ref function_overview "Function Overview"
          */
-        enum class target_type : uint32_t {
+        enum class target_type : uint16_t {
             /** Denotes a func::null_target_t */
             null = 0,
             /** Denotes a func::member_target_t */

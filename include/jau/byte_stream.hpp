@@ -45,7 +45,7 @@ namespace jau::io {
      *  @{
      */
 
-    /**
+    /*
      * Mimic std::ios_base::iostate for state functionality, see iostate_func.
      *
      * This `enum class` type fulfills `C++ named requirements: BitmaskType`.
@@ -58,16 +58,16 @@ namespace jau::io {
       goodbit = 0,
 
       /** Irrecoverable stream error, including loss of integrity of the underlying stream or media. */
-      badbit  = 1 << 0,
+      badbit  = 1U << 0,
 
       /** An input operation reached the end of its stream. */
-      eofbit  = 1 << 1,
+      eofbit  = 1U << 1,
 
       /** Input or output operation failed (formatting or extraction error). */
-      failbit = 1 << 2,
+      failbit = 1U << 2,
 
       /** Input or output operation failed due to timeout. */
-      timeout = 1 << 3
+      timeout = 1U << 3
     };
     constexpr uint32_t number(const iostate rhs) noexcept {
         return static_cast<uint32_t>(rhs);
