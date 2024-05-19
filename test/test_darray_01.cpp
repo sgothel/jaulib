@@ -1,6 +1,6 @@
 /*
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2020 Gothel Software e.K.
+ * Copyright (c) 2020-2024 Gothel Software e.K.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -22,10 +22,7 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <cassert>
-#include <cinttypes>
 #include <cstring>
-#include <random>
-#include <vector>
 
 #include <jau/test/catch2_ext.hpp>
 
@@ -131,7 +128,7 @@ struct NamedSharedPayloadListDefault {
     SharedPayloadListDefault<Payload> payload;
 
     std::string toString() const noexcept {
-        std::string res = "NSPL-Default-"+std::to_string(name)+"[sz"+std::to_string(payload.size())+": ";
+        std::string res = "NSPL-Default-"+std::to_string(name)+"[sz "+std::to_string(payload.size())+"/"+std::to_string(payload.capacity())+": ";
         int i=0;
         jau::for_each(payload.cbegin(), payload.cend(), [&](const std::shared_ptr<Payload>& e) {
             if(0<i) {
@@ -152,7 +149,7 @@ struct NamedSharedPayloadListMemMove {
     SharedPayloadListMemMove<Payload> payload;
 
     std::string toString() const noexcept {
-        std::string res = "NSPL-MemMove-"+std::to_string(name)+"[sz"+std::to_string(payload.size())+": ";
+        std::string res = "NSPL-MemMove-"+std::to_string(name)+"[sz "+std::to_string(payload.size())+"/"+std::to_string(payload.capacity())+": ";
         int i=0;
         jau::for_each(payload.cbegin(), payload.cend(), [&](const std::shared_ptr<Payload>& e) {
             if(0<i) {
@@ -181,7 +178,7 @@ struct NamedPayloadListDefault {
     PayloadListDefault<Payload> payload;
 
     std::string toString() const noexcept {
-        std::string res = "NPL-Default-"+std::to_string(name)+"[sz"+std::to_string(payload.size())+": ";
+        std::string res = "NPL-Default-"+std::to_string(name)+"[sz "+std::to_string(payload.size())+"/"+std::to_string(payload.capacity())+": ";
         int i=0;
         jau::for_each(payload.cbegin(), payload.cend(), [&](const typename PayloadListDefault<Payload>::value_type & e) {
             if(0<i) {
@@ -202,7 +199,7 @@ struct NamedPayloadListMemMove {
     PayloadListMemMove<Payload> payload;
 
     std::string toString() const noexcept {
-        std::string res = "NPL-MemMove-"+std::to_string(name)+"[sz"+std::to_string(payload.size())+": ";
+        std::string res = "NPL-MemMove-"+std::to_string(name)+"[sz "+std::to_string(payload.size())+"/"+std::to_string(payload.capacity())+": ";
         int i=0;
         jau::for_each(payload.cbegin(), payload.cend(), [&](const Payload& e) {
             if(0<i) {
@@ -225,17 +222,21 @@ static NamedSharedPayloadListDefault<Payload> makeNamedSharedPayloadListDefault(
         std::shared_ptr<Payload> sp(std::make_shared<Payload>( name+i )); // copy-elision + make_shared in-place
         data.push_back( sp );
     }
+    CHECK( 2 == data.size() );
     for(i=2; i<4; i++) {
         std::shared_ptr<Payload> sp(new Payload( name+i )); // double malloc: 1 Payload, 2 shared_ptr
         data.push_back( std::move( sp ) ); // move the less efficient into
     }
+    CHECK( 4 == data.size() );
     return NamedSharedPayloadListDefault<Payload>{name, data};
 }
 template<class Payload>
 static NamedSharedPayloadListDefault<Payload> modifyCopyOfNamedSharedPayloadListDefault(NamedSharedPayloadListDefault<Payload> src) {
     printf("XXX1: %s\n", src.toString().c_str());
+    const size_t sz0 = src.payload.size();
     src.payload.pop_back();
     src.payload.erase(src.payload.cbegin());
+    CHECK( sz0 - 2 == src.payload.size() );
     printf("XXX2: %s\n", src.toString().c_str());
     return src;
 }
@@ -248,10 +249,12 @@ static NamedSharedPayloadListMemMove<Payload> makeNamedSharedPayloadListMemMove(
         std::shared_ptr<Payload> sp(std::make_shared<Payload>( name+i )); // copy-elision + make_shared in-place
         data.push_back( sp );
     }
+    CHECK( 2 == data.size() );
     for(i=2; i<4; i++) {
         std::shared_ptr<Payload> sp(new Payload( name+i )); // double malloc: 1 Payload, 2 shared_ptr
         data.push_back( std::move( sp ) ); // move the less efficient into
     }
+    CHECK( 4 == data.size() );
     return NamedSharedPayloadListMemMove<Payload>{name, data};
 }
 template<class Payload>
@@ -262,10 +265,12 @@ static NamedPayloadListDefault<Payload> makeNamedPayloadListDefault(int name) {
         Payload sp( name+i ); // copy-elision
         data.push_back( sp );
     }
+    CHECK( 2 == data.size() );
     for(i=2; i<4; i++) {
         Payload sp( name+i );
         data.push_back( std::move( sp ) ); // move the less efficient into
     }
+    CHECK( 4 == data.size() );
     return NamedPayloadListDefault<Payload>{name, data};
 }
 template<class Payload>
@@ -276,10 +281,12 @@ static NamedPayloadListMemMove<Payload> makeNamedPayloadListMemMove(int name) {
         Payload sp( name+i ); // copy-elision
         data.push_back( sp );
     }
+    CHECK( 2 == data.size() );
     for(i=2; i<4; i++) {
         Payload sp( name+i );
         data.push_back( std::move( sp ) ); // move the less efficient into
     }
+    CHECK( 4 == data.size() );
     return NamedPayloadListMemMove<Payload>{name, data};
 }
 
@@ -300,9 +307,9 @@ static void print_container_info(const std::string& type_id, const Cont &c,
     printf("\nContainer Type %s (a darray, a cow %d):\n  - Uses memmove %d (trivially_copyable %d); realloc %d; base_of jau::callocator %d; secmem %d; size %d bytes\n",
                 type_id.c_str(), jau::is_cow_type<Cont>::value,
                 Cont::uses_memmove,
-                std::is_trivially_copyable<typename Cont::value_type>::value,
+                std::is_trivially_copyable_v<typename Cont::value_type>,
                 Cont::uses_realloc,
-                std::is_base_of<jau::callocator<typename Cont::value_type>, typename Cont::allocator_type>::value,
+                std::is_base_of_v<jau::callocator<typename Cont::value_type>, typename Cont::allocator_type>,
                 Cont::uses_secmem,
                 (int)sizeof(c));
 }
@@ -332,20 +339,122 @@ static void testDArrayValueType(const std::string& type_id) {
 
         NamedPayloadListDefault<Payload> data = makeNamedPayloadListDefault<Payload>(1);
         print_container_info("NamedPayloadListDefault<"+type_id+">", data.payload);
+        size_t sz0 = data.payload.size();
+        printf("COPY-0.0: %s\n\n", data.toString().c_str());
+        CHECK( sz0 == data.payload.capacity() );        
 
-        NamedPayloadListDefault<Payload> data2 = data;
-        data2.payload.erase(data2.payload.cbegin());
-
-        NamedPayloadListDefault<Payload> data3(data);
-        data3.payload.erase(data3.payload.begin(), data3.payload.cbegin()+data3.payload.size()/2);
-
-        NamedPayloadListDefault<Payload> data8 = makeNamedPayloadListDefault<Payload>(8);
-        data8.payload.insert(data8.payload.begin(), data.payload.cbegin(), data.payload.cend());
-
-        printf("COPY-0: %s\n\n", data.toString().c_str());
-        printf("COPY-1: %s\n\n", data2.toString().c_str());
-        printf("COPY-2: %s\n\n", data3.toString().c_str());
-        printf("COPY+2: %s\n\n", data8.toString().c_str());
+        {
+            Payload def_value(1);
+            NamedPayloadListDefault<Payload> data2;
+            printf("COPY-0.1: %s\n\n", data2.toString().c_str());
+            CHECK( 0 == data2.payload.size() );
+            CHECK( 0 == data2.payload.capacity() );
+            data2.payload.reserve(2);
+            printf("COPY-0.1a: %s\n\n", data2.toString().c_str());
+            CHECK( 0 == data2.payload.size() );
+            CHECK( 2 == data2.payload.capacity() );
+            data2.payload.resize(2, def_value);
+            printf("COPY-0.1b: %s\n\n", data2.toString().c_str());
+            CHECK( 2 == data2.payload.size() );
+            CHECK( 2 == data2.payload.capacity() );
+            for(Payload p : data2.payload) {
+                CHECK(def_value == p);
+            }
+            data2.payload.resize(4, def_value);
+            printf("COPY-0.2: %s\n\n", data2.toString().c_str());
+            CHECK( 4 == data2.payload.size() );
+            CHECK( 4 == data2.payload.capacity() );
+            for(Payload p : data2.payload) {
+                CHECK(def_value == p);
+            }
+                    
+            data2.payload.erase(data2.payload.cbegin());
+            printf("COPY-0.3: %s\n\n", data2.toString().c_str());
+            CHECK( 3 == data2.payload.size() );
+            CHECK( sz0 == data2.payload.capacity() );
+            
+            data2.payload.shrink_to_fit();
+            printf("COPY-0.4: %s\n\n", data2.toString().c_str());
+            CHECK( 3 == data2.payload.size() );
+            CHECK( 3 == data2.payload.capacity() );
+        }        
+        {
+            Payload def_value(1);
+            NamedPayloadListDefault<Payload> data2 = data;
+            printf("COPY-1.0: %s\n\n", data2.toString().c_str());
+            CHECK( sz0 == data2.payload.size() );
+            CHECK( sz0 == data2.payload.capacity() );        
+            data2.payload.erase(data2.payload.cbegin());
+            printf("COPY-1.1: %s\n\n", data2.toString().c_str());
+            CHECK( sz0-1 == data2.payload.size() );
+            CHECK( sz0 == data2.payload.capacity() );        
+            data2.payload.resize(sz0, def_value);
+            printf("COPY-1.2: %s\n\n", data2.toString().c_str());
+            CHECK( sz0 == data2.payload.size() );
+            CHECK( sz0 == data2.payload.capacity() );        
+            size_t j=0;                
+            for(Payload p : data2.payload) {
+                if( j++ < sz0-1 ) {
+                    CHECK(def_value != p);
+                } else {
+                    CHECK(def_value == p);
+                }
+            }
+            data2.payload.resize(sz0*2, def_value);
+            printf("COPY-1.2: %s\n\n", data2.toString().c_str());
+            CHECK( sz0*2 == data2.payload.size() );
+            CHECK( sz0*2 == data2.payload.capacity() );
+            j=0;                
+            for(Payload p : data2.payload) {
+                if( j++ < sz0-1 ) {
+                    CHECK(def_value != p);
+                } else {
+                    CHECK(def_value == p);
+                }
+            }
+        }        
+        {
+            Payload def_value(1);
+            NamedPayloadListDefault<Payload> data3(data);
+            printf("COPY-2.0: %s\n\n", data3.toString().c_str());
+            CHECK( sz0 == data3.payload.size() );
+            CHECK( sz0 == data3.payload.capacity() );                
+            data3.payload.erase(data3.payload.begin(), data3.payload.cbegin()+data3.payload.size()/2);
+            printf("COPY-2.1: %s\n\n", data3.toString().c_str());
+            CHECK( sz0/2 == data3.payload.size() );
+            CHECK( sz0 == data3.payload.capacity() );                
+            data3.payload.resize(sz0, def_value);
+            printf("COPY-2.2: %s\n\n", data3.toString().c_str());
+            CHECK( sz0 == data3.payload.size() );
+            CHECK( sz0 == data3.payload.capacity() );
+            size_t j=0;                
+            for(Payload p : data3.payload) {
+                if( j++ < sz0/2 ) {
+                    CHECK(def_value != p);
+                } else {
+                    CHECK(def_value == p);
+                }
+            }
+            data3.payload.resize(sz0*2, def_value);
+            printf("COPY-2.3: %s\n\n", data3.toString().c_str());
+            CHECK( sz0*2 == data3.payload.size() );
+            CHECK( sz0*2 == data3.payload.capacity() );
+            j=0;                
+            for(Payload p : data3.payload) {
+                if( j++ < sz0/2 ) {
+                    CHECK(def_value != p);
+                } else {
+                    CHECK(def_value == p);
+                }
+            }
+        }
+        {        
+            NamedPayloadListDefault<Payload> data8 = makeNamedPayloadListDefault<Payload>(8);
+            CHECK( sz0 == data8.payload.size() );
+            data8.payload.insert(data8.payload.begin(), data.payload.cbegin(), data.payload.cend());
+            CHECK( 2*sz0 == data8.payload.size() );
+            printf("COPY+2: %s\n\n", data8.toString().c_str());
+        }
     }
     {
 #if CHECK_TRAITS

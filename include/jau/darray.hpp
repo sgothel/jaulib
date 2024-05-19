@@ -1,6 +1,6 @@
 /*
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2020 Gothel Software e.K.
+ * Copyright (c) 2020-2024 Gothel Software e.K.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -26,15 +26,11 @@
 #define JAU_DYN_ARRAY_HPP_
 
 #include <algorithm>
-#include <atomic>
 #include <cmath>
-#include <condition_variable>
 #include <cstdint>
 #include <cstring>
 #include <initializer_list>
 #include <limits>
-#include <memory>
-#include <mutex>
 #include <string>
 
 #include <jau/basic_algos.hpp>
@@ -149,7 +145,7 @@ namespace jau {
     {
         public:
             /** Default growth factor using the golden ratio 1.618 */
-            constexpr static const float DEFAULT_GROWTH_FACTOR = 1.618f;
+            constexpr static const float DEFAULT_GROWTH_FACTOR = std::numbers::phi_v<float>; // 1.618f;
 
             constexpr static const bool uses_memmove = use_memmove;
             constexpr static const bool uses_secmem  = use_secmem;
@@ -165,7 +161,7 @@ namespace jau {
             typedef value_type*                                 iterator;
             typedef const value_type*                           const_iterator;
             typedef Size_type                                   size_type;
-            typedef typename std::make_signed<size_type>::type  difference_type;
+            typedef std::make_signed_t<size_type>               difference_type;
             // typedef std::reverse_iterator<iterator>          reverse_iterator;
             // typedef std::reverse_iterator<const_iterator>    const_reverse_iterator;
             typedef Alloc_type                                  allocator_type;
@@ -208,7 +204,7 @@ namespace jau {
                                 std::to_string(DIFF_MAX), E_FILE_LINE);
                     }
                     value_type * m = alloc_inst.allocate(size_);
-                    if( nullptr == m ) {
+                    if( nullptr == m && size_ > 0 ) {
                         // NOLINTBEGIN(bugprone-sizeof-expression)
                         throw jau::OutOfMemoryError("alloc "+std::to_string(size_)+" elements * "+
                                 std::to_string(sizeof(value_type))+" bytes/element = "+
@@ -222,14 +218,14 @@ namespace jau {
 
             template<class _Alloc_type>
             constexpr value_type * reallocStore(const size_type new_capacity_,
-                    std::enable_if_t< std::is_base_of<jau::callocator<value_type>, _Alloc_type>::value, bool > = true )
+                    std::enable_if_t< std::is_base_of_v<jau::callocator<value_type>, _Alloc_type>, bool > = true )
             {
                 if( new_capacity_ > DIFF_MAX ) {
-                    throw jau::IllegalArgumentException("realloc "+std::to_string(new_capacity_)+" > difference_type max "+
+                    throw jau::IllegalArgumentError("realloc "+std::to_string(new_capacity_)+" > difference_type max "+
                             std::to_string(DIFF_MAX), E_FILE_LINE);
-                }
+                }                
                 value_type * m = alloc_inst.reallocate(begin_, storage_end_-begin_, new_capacity_);
-                if( nullptr == m ) {
+                if( nullptr == m && new_capacity_ > 0 ) {
                     free(const_cast<pointer_mutable>(begin_)); // has not been touched by realloc
                     throw jau::OutOfMemoryError("realloc "+std::to_string(new_capacity_)+" elements * "+
                             std::to_string(sizeof(value_type))+" bytes/element = "+
@@ -239,7 +235,7 @@ namespace jau {
             }
             template<class _Alloc_type>
             constexpr value_type * reallocStore(const size_type new_capacity_,
-                    std::enable_if_t< !std::is_base_of<jau::callocator<value_type>, _Alloc_type>::value, bool > = true )
+                    std::enable_if_t< !std::is_base_of_v<jau::callocator<value_type>, _Alloc_type>, bool > = true )
             {
                 (void)new_capacity_;
                 throw jau::UnsupportedOperationException("realloc not supported on non allocator_type not based upon jau::callocator", E_FILE_LINE);
@@ -344,6 +340,17 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                 return dest;
             }
 
+            constexpr void ctor_copy_value(pointer dest, size_type count, const value_type& val) {
+                if( begin_ > dest || dest + count > end_ ) {
+                    throw jau::IllegalArgumentError("dest "+jau::to_string( dest )+" + "+jau::to_string( count )+" not within ["+
+                                                                 jau::to_string( begin_ )+".."+jau::to_string( end_ )+")", E_FILE_LINE);
+                }
+                if( 0 < count ) {
+                    for(size_type i=0; i < count; ++i, ++dest) {
+                        new (const_cast<pointer_mutable>(dest)) value_type( val ); // placement new // NOLINT(bugprone-multi-level-implicit-pointer-conversion): OK and intended
+                    }
+                }
+            }
             template< class InputIt >
             constexpr static void ctor_copy_range_foreign(pointer dest, InputIt first, InputIt last) {
                 if( first > last ) {
@@ -351,7 +358,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                                                                  jau::to_string( last ), E_FILE_LINE);
                 }
                 for(; first != last; ++dest, ++first) {
-                    new (const_cast<pointer_mutable>(dest)) value_type( *first ); // placement new
+                    new (const_cast<pointer_mutable>(dest)) value_type( *first ); // placement new // NOLINT(bugprone-multi-level-implicit-pointer-conversion): OK and intended
                 }
             }
             template< class InputIt >
@@ -785,21 +792,21 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
             /**
              * Like std::vector::operator[](size_type), immutable reference.
              */
-            const_reference operator[](size_type i) const noexcept {
+            constexpr_cxx20 const_reference operator[](size_type i) const noexcept {
                 return *(begin_+i);
             }
 
             /**
              * Like std::vector::operator[](size_type), mutable reference.
              */
-            reference operator[](size_type i) noexcept {
+            constexpr_cxx20 reference operator[](size_type i) noexcept {
                 return *(begin_+i);
             }
 
             /**
              * Like std::vector::at(size_type), immutable reference.
              */
-            const_reference at(size_type i) const {
+            constexpr_cxx20 const_reference at(size_type i) const {
                 if( 0 <= i && i < size() ) {
                     return *(begin_+i);
                 }
@@ -809,7 +816,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
             /**
              * Like std::vector::at(size_type), mutable reference.
              */
-            reference at(size_type i) {
+            constexpr_cxx20 reference at(size_type i) {
                 if( 0 <= i && i < size() ) {
                     return *(begin_+i);
                 }
@@ -825,13 +832,36 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              * is greater than the current jau::darray::capacity().
              * </p>
              */
-            void reserve(size_type new_capacity) {
-                const size_type capacity_ = capacity();
-                if( new_capacity > capacity_ ) {
-                    grow_storage_move(new_capacity);
+            constexpr void reserve(size_type new_capacity) {
+                if( new_capacity > capacity() ) {
+                    realloc_storage_move(new_capacity);
                 }
             }
-            
+
+            /**
+             * Like std::vector::resize(size_type, const value_type&)
+             */
+            constexpr void resize(size_type new_size, const value_type& val) {
+                const size_type sz = size();
+                if( new_size > sz ) {
+                    if( new_size > capacity() ) {
+                        realloc_storage_move(new_size);
+                    }
+                    const size_type new_elem_count = new_size - sz;
+                    end_ += new_elem_count;
+                    ctor_copy_value(begin_ + sz, new_elem_count, val);
+                } else if( new_size < sz ) {
+                    const size_type del_elem_count = dtor_range(begin_ + new_size, end_);
+                    assert(sz - new_size == del_elem_count);
+                    end_ -= del_elem_count;
+                }
+            }
+
+            /**
+             * Like std::vector::resize(size_type)
+             */
+            constexpr void resize(size_type new_size) { resize(new_size, value_type()); }
+        
             /**
              * Like std::vector::shrink_to_fit(), but ensured `constexpr`.
              *
@@ -839,8 +869,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              */
             constexpr void shrink_to_fit() {
                 const size_type size_ = size();
-                const size_type capacity_ = capacity();
-                if( capacity_ > size_ ) {
+                if( capacity() > size_ ) {
                     realloc_storage_move(size_);
                 }                
             }
@@ -925,32 +954,34 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              * Like std::vector::erase(), removes the elements at pos.
              * @return iterator following the last removed element.
              */
-            constexpr iterator erase (const_iterator pos) {
+            constexpr iterator erase (const_iterator cpos) {
+                iterator pos = const_cast<iterator>(cpos);
                 if( begin_ <= pos && pos < end_ ) {
-                    dtor_one( const_cast<value_type*>( pos ) );
+                    dtor_one( pos );
                     const difference_type right_count = end_ - ( pos + 1 ); // pos is exclusive
                     if( 0 < right_count ) {
-                        move_elements(const_cast<value_type*>(pos), pos+1, right_count); // move right elems one left
+                        move_elements(pos, pos+1, right_count); // move right elems one left
                     }
                     --end_;
                 }
-                return begin_ <= const_cast<iterator>(pos) && const_cast<iterator>(pos) <= end_ ? const_cast<iterator>(pos) : end_;
+                return begin_ <= pos && pos <= end_ ? pos : end_;
             }
 
             /**
              * Like std::vector::erase(), removes the elements in the range [first, last).
              * @return iterator following the last removed element.
              */
-            constexpr iterator erase (iterator first, const_iterator last) {
-                const size_type count = dtor_range(first, last);
+            constexpr iterator erase (const_iterator cfirst, const_iterator clast) {
+                iterator first = const_cast<iterator>(cfirst);
+                const size_type count = dtor_range(first, clast);
                 if( count > 0 ) {
-                    const difference_type right_count = end_ - last;  // last is exclusive
+                    const difference_type right_count = end_ - clast;  // last is exclusive
                     if( 0 < right_count ) {
-                        move_elements(first, last, right_count); // move right elems count left
+                        move_elements(first, clast, right_count); // move right elems count left
                     }
                     end_ -= count;
                 }
-                return begin_ <= const_cast<iterator>(first) && const_cast<iterator>(first) <= end_ ? const_cast<iterator>(first) : end_;
+                return begin_ <= first && first <= end_ ? first : end_;
             }
 
             /**
@@ -1305,7 +1336,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
             }
 
             std::string toString() const noexcept {
-                std::string res("{ " + std::to_string( size() ) + ": ");
+                std::string res("{ " + std::to_string( size() ) + "/" + std::to_string( capacity() ) + ": ");
                 int i=0;
                 jau::for_each_const(*this, [&res, &i](const value_type & e) {
                     if( 1 < ++i ) { res.append(", "); }

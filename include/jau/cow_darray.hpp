@@ -731,7 +731,7 @@ namespace jau {
              * This write operation uses a mutex lock and is blocking this instances' write operations only.
              * </p>
              */
-            void reserve(size_type new_capacity) {
+            constexpr_atomic void reserve(size_type new_capacity) {
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 if( new_capacity > store_ref->capacity() ) {
                     storage_ref_t new_store_ref = std::make_shared<storage_t>( *store_ref, new_capacity,

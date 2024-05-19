@@ -25,7 +25,6 @@
 #define TEST_DATATYPE01_HPP_
 
 #include <cassert>
-#include <cinttypes>
 #include <cstdint>
 #include <cstring>
 #include <random>
@@ -154,8 +153,8 @@ class DataType01 {
         constexpr DataType01() noexcept : address(), type{0} { }
         DataType01(const DataType01 &o) noexcept : address(o.address), type(o.type) { }
         DataType01(DataType01 &&o) noexcept {
-            address = std::move(o.address);
-            type = std::move(o.type);
+            address = o.address;
+            type = o.type;
         }
         constexpr DataType01& operator=(const DataType01 &o) noexcept {
             address = o.address;
@@ -163,8 +162,8 @@ class DataType01 {
             return *this;
         }
         DataType01& operator=(DataType01 &&o) noexcept {
-            address = std::move(o.address);
-            type = std::move(o.type);
+            address = o.address;
+            type = o.type;
             return *this;
         }
 
@@ -234,8 +233,8 @@ class DataType02_Memmove_Secmem {
         constexpr DataType02_Memmove_Secmem() noexcept : address(), type{0} { }
         DataType02_Memmove_Secmem(const DataType02_Memmove_Secmem &o) noexcept : address(o.address), type(o.type) { }
         DataType02_Memmove_Secmem(DataType02_Memmove_Secmem &&o) noexcept {
-            address = std::move(o.address);
-            type = std::move(o.type);
+            address = o.address;
+            type = o.type;
         }
         constexpr DataType02_Memmove_Secmem& operator=(const DataType02_Memmove_Secmem &o) noexcept {
             address = o.address;
@@ -243,8 +242,8 @@ class DataType02_Memmove_Secmem {
             return *this;
         }
         DataType02_Memmove_Secmem& operator=(DataType02_Memmove_Secmem &&o) noexcept {
-            address = std::move(o.address);
-            type = std::move(o.type);
+            address = o.address;
+            type = o.type;
             return *this;
         }
 
