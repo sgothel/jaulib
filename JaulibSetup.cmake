@@ -68,9 +68,9 @@ macro(JaulibPreset)
         endif()
         if( (NOT DEFINED CMAKE_CXX_CLANG_TIDY) 
             AND
-            ( (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang") 
+            ( (CMAKE_CXX_COMPILER_ID STREQUAL "Clang") 
               OR 
-              (${CMAKE_CXX_COMPILER} STREQUAL "clang++") 
+              (CMAKE_CXX_COMPILER STREQUAL "clang++") 
             ) 
           ) 
             set(CMAKE_CXX_CLANG_TIDY "clang-tidy;-p;${CMAKE_BINARY_DIR}" CACHE STRING "" FORCE)
@@ -153,9 +153,9 @@ else()
     set(DEBUG OFF CACHE BOOL "" FORCE)
 endif()
 
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     set(TOOLSET "clang")
-elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     set(TOOLSET "gcc")
 else()
     string(TOLOWER ${CMAKE_CXX_COMPILER_ID} TOOLSET)
@@ -216,6 +216,8 @@ set (GCC_FLAGS_WARNING_NO_ERROR "-Wno-error=array-bounds -Wno-error=null-derefer
 # too pedantic, but nice to check once in a while
 # set (DISABLED_CC_FLAGS_WARNING "-Wsign-conversion")
 
+set (CLANG_FLAGS_WARNING_NO_ERROR "")
+
 # debug only
 set (GCC_FLAGS_STACK "-fstack-protector-strong")
 set (GCC_FLAGS_SANITIZE_ALL "-fsanitize-address-use-after-scope -fsanitize=address -fsanitize=pointer-compare -fsanitize=pointer-subtract -fsanitize=undefined -fsanitize=leak -fsanitize-recover=address")
@@ -228,6 +230,10 @@ set (GCC_FLAGS_SANITIZE_THREAD "-fsanitize-address-use-after-scope -fsanitize=un
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     # shorten __FILE__ string and the like ..
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_FLAGS_WARNING} ${GCC_FLAGS_WARNING_NO_ERROR} -fmacro-prefix-map=${CMAKE_SOURCE_DIR}/=/")
+
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CC_FLAGS_WARNING} ${CLANG_FLAGS_WARNING_NO_ERROR}")
+
 else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CC_FLAGS_WARNING}")
 endif()
