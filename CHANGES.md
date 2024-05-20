@@ -4,6 +4,9 @@
 
 ## Changes
 
+**1.3.1**
+* clang-18 fixes
+
 **1.3.0**
 * WebAssembly / Emscripten fixes
 * Better cmake build support with presets and clangd setup
