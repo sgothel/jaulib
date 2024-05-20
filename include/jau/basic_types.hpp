@@ -315,7 +315,7 @@ namespace jau {
         std::string what_;
 
       protected:        
-        ExceptionBase(const std::string &type, std::string const& m, const char* file, int line) noexcept;
+        ExceptionBase(std::string &&type, std::string const& m, const char* file, int line) noexcept;
 
       public:
         virtual ~ExceptionBase() noexcept = default;
@@ -344,8 +344,8 @@ namespace jau {
     };    
     class RuntimeExceptionBase : public ExceptionBase {
       protected:
-        RuntimeExceptionBase(const std::string &type, std::string const& m, const char* file, int line) noexcept
-        : ExceptionBase(type, m, file, line) {}
+        RuntimeExceptionBase(std::string &&type, std::string const& m, const char* file, int line) noexcept
+        : ExceptionBase(std::move(type), m, file, line) {}
         
       public:
         ~RuntimeExceptionBase() noexcept override = default;
@@ -357,8 +357,8 @@ namespace jau {
     };
     class LogicErrorBase : public ExceptionBase {
       protected:
-        LogicErrorBase(const std::string &type, std::string const& m, const char* file, int line) noexcept
-        : ExceptionBase(type, m, file, line) {}
+        LogicErrorBase(std::string &&type, std::string const& m, const char* file, int line) noexcept
+        : ExceptionBase(std::move(type), m, file, line) {}
 
       public:
         ~LogicErrorBase() noexcept override = default;
@@ -371,8 +371,8 @@ namespace jau {
     class RuntimeSystemExceptionBase : public RuntimeExceptionBase {      
       protected:
         std::error_code m_ec;
-        RuntimeSystemExceptionBase(const std::string &type, const std::error_code& ec, std::string const& m, const char* file, int line) noexcept
-        : RuntimeExceptionBase(type, m, file, line), m_ec(ec) {}          
+        RuntimeSystemExceptionBase(std::string &&type, const std::error_code& ec, std::string const& m, const char* file, int line) noexcept
+        : RuntimeExceptionBase(std::move(type), m, file, line), m_ec(ec) {}          
 
       public:
         ~RuntimeSystemExceptionBase() noexcept override = default;
@@ -397,8 +397,8 @@ namespace jau {
             
     class RuntimeException : public RuntimeExceptionBase, public std::runtime_error {
       protected:
-        RuntimeException(const std::string &type, std::string const& m, const char* file, int line) noexcept
-        : RuntimeExceptionBase(type, m, file, line), runtime_error(whole_message()) {}
+        RuntimeException(std::string &&type, std::string const& m, const char* file, int line) noexcept
+        : RuntimeExceptionBase(std::move(type), m, file, line), runtime_error(whole_message()) {}
 
       public:
         RuntimeException(std::string const& m, const char* file, int line) noexcept
@@ -418,8 +418,8 @@ namespace jau {
     };        
     class LogicError : public LogicErrorBase, public std::logic_error {
       protected:
-        LogicError(const std::string &type, std::string const& m, const char* file, int line) noexcept
-        : LogicErrorBase(type, m, file, line), logic_error(whole_message()) {}
+        LogicError(std::string &&type, std::string const& m, const char* file, int line) noexcept
+        : LogicErrorBase(std::move(type), m, file, line), logic_error(whole_message()) {}
 
       public:
         LogicError(std::string const& m, const char* file, int line) noexcept
@@ -438,8 +438,8 @@ namespace jau {
     };
     class RuntimeSystemException : public RuntimeSystemExceptionBase, public std::system_error {
       protected:
-        RuntimeSystemException(const std::string &type, const std::error_code& ec, std::string const& m, const char* file, int line) noexcept
-        : RuntimeSystemExceptionBase(type, ec, m, file, line), system_error(ec, whole_message()) {}
+        RuntimeSystemException(std::string &&type, const std::error_code& ec, std::string const& m, const char* file, int line) noexcept
+        : RuntimeSystemExceptionBase(std::move(type), ec, m, file, line), system_error(ec, whole_message()) {}
 
       public:
         RuntimeSystemException(const std::error_code& ec, std::string const& m, const char* file, int line) noexcept
@@ -459,8 +459,8 @@ namespace jau {
     
     class IndexOutOfBoundsError : public LogicErrorBase, public std::out_of_range {
       protected:
-        IndexOutOfBoundsError(const char* file, int line, const std::string &type, std::string const& m) noexcept
-        : LogicErrorBase(type, m, file, line), out_of_range(whole_message()) {}
+        IndexOutOfBoundsError(const char* file, int line, std::string &&type, std::string const& m) noexcept
+        : LogicErrorBase(std::move(type), m, file, line), out_of_range(whole_message()) {}
           
       public:
         IndexOutOfBoundsError(const std::size_t index, const std::size_t length, const char* file, int line) noexcept
@@ -479,8 +479,8 @@ namespace jau {
 
     class IllegalArgumentError : public LogicErrorBase, public std::invalid_argument {
       protected:
-        IllegalArgumentError(std::string const& type, std::string const& m, const char* file, int line) noexcept
-        : LogicErrorBase(type, m, file, line), invalid_argument(whole_message()) {}
+        IllegalArgumentError(std::string &&type, std::string const& m, const char* file, int line) noexcept
+        : LogicErrorBase(std::move(type), m, file, line), invalid_argument(whole_message()) {}
           
       public:
         IllegalArgumentError(std::string const& m, const char* file, int line) noexcept
@@ -493,8 +493,8 @@ namespace jau {
 
     class IllegalStateError : public LogicErrorBase, public std::domain_error {
       protected:
-        IllegalStateError(std::string const& type, std::string const& m, const char* file, int line) noexcept
-        : LogicErrorBase(type, m, file, line), domain_error(whole_message()) {}
+        IllegalStateError(std::string &&type, std::string const& m, const char* file, int line) noexcept
+        : LogicErrorBase(std::move(type), m, file, line), domain_error(whole_message()) {}
           
       public:
         IllegalStateError(std::string const& m, const char* file, int line) noexcept

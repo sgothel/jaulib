@@ -35,6 +35,7 @@
 #include <jau/functional.hpp>
 #include <jau/secmem.hpp>
 #include <jau/math/math_error.hpp>
+#include <utility>
 
 using namespace jau;
 
@@ -247,8 +248,8 @@ std::cv_status jau::wait_for(std::condition_variable& cv, std::unique_lock<std::
     }
 }
 
-jau::ExceptionBase::ExceptionBase(const std::string &type, std::string const& m, const char* file, int line) noexcept // NOLINT(modernize-pass-by-value)
-: msg_( type ),
+jau::ExceptionBase::ExceptionBase(std::string &&type, std::string const& m, const char* file, int line) noexcept // NOLINT(modernize-pass-by-value)
+: msg_( std::move(type) ),
   backtrace_( jau::get_backtrace(true /* skip_anon_frames */) )
 {
     msg_.append(" @ ").append(file).append(":").append(std::to_string(line)).append(": ").append(m);

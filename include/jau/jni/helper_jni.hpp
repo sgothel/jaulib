@@ -75,26 +75,24 @@ namespace jau::jni {
      */
     void java_exception_check_and_throw(JNIEnv *env, const char* file, int line);
 
-    void print_native_caught_exception_fwd2java(const jau::OutOfMemoryError &e, const char* file, int line);
-    void print_native_caught_exception_fwd2java(const jau::LogicErrorBase &e, const char* file, int line);
-    void print_native_caught_exception_fwd2java(const jau::RuntimeExceptionBase &e, const char* file, int line);
+    void print_native_caught_exception_fwd2java(const jau::ExceptionBase &e, const char* file, int line);
     void print_native_caught_exception_fwd2java(const std::exception &e, const char* file, int line);
     void print_native_caught_exception_fwd2java(const std::string &msg, const char* file, int line);
     void print_native_caught_exception_fwd2java(const char * cmsg, const char* file, int line);
 
-    void raise_java_exception(JNIEnv *env, const std::exception &e, const char* file, int line);
-    void raise_java_exception(JNIEnv *env, const std::runtime_error &e, const char* file, int line);
-    void raise_java_exception(JNIEnv *env, const jau::LogicErrorBase &e, const char* file, int line);
+    void raise_java_exception(JNIEnv *env, const jau::ExceptionBase &e, const char* file, int line);
     void raise_java_exception(JNIEnv *env, const jau::RuntimeExceptionBase &e, const char* file, int line);
     void raise_java_exception(JNIEnv *env, const jau::InternalError &e, const char* file, int line);
     void raise_java_exception(JNIEnv *env, const jau::NullPointerException &e, const char* file, int line);
     void raise_java_exception(JNIEnv *env, const jau::IllegalArgumentError &e, const char* file, int line);
-    void raise_java_exception(JNIEnv *env, const std::invalid_argument &e, const char* file, int line);
     void raise_java_exception(JNIEnv *env, const jau::IllegalStateError &e, const char* file, int line);
     void raise_java_exception(JNIEnv *env, const jau::UnsupportedOperationException &e, const char* file, int line);
     void raise_java_exception(JNIEnv *env, const jau::IndexOutOfBoundsError &e, const char* file, int line);
+    void raise_java_exception(JNIEnv *env, const jau::OutOfMemoryError &e, const char* file, int line);    
+    void raise_java_exception(JNIEnv *env, const std::exception &e, const char* file, int line);
+    void raise_java_exception(JNIEnv *env, const std::runtime_error &e, const char* file, int line);
+    void raise_java_exception(JNIEnv *env, const std::invalid_argument &e, const char* file, int line);
     void raise_java_exception(JNIEnv *env, const std::bad_alloc &e, const char* file, int line);
-    void raise_java_exception(JNIEnv *env, const jau::OutOfMemoryError &e, const char* file, int line);
 
     /**
      * Re-throw current exception and raise respective java exception
