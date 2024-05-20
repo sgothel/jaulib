@@ -26,12 +26,10 @@
 #define JAU_OCTETS_HPP_
 
 #include <algorithm>
-#include <atomic>
 #include <cstdint>
 #include <cstring>
 #include <initializer_list>
 #include <memory>
-#include <mutex>
 #include <string>
 
 #include <jau/basic_types.hpp>
@@ -146,7 +144,7 @@ namespace jau {
 
             inline void check_range(const nsize_t i, const nsize_t count, const char *file, int line) const {
                 if( i+count > _size ) {
-                    throw IndexOutOfBoundsException(i, count, _size, file, line);
+                    throw IndexOutOfBoundsError(i, count, _size, file, line);
                 }
             }
 
@@ -398,7 +396,7 @@ namespace jau {
             void put_octets_nc(const nsize_t i, const TROOctets & v) noexcept {
                 std::memcpy(data() + i, v.get_ptr(), v.size());
             }
-            void put_octets(const nsize_t i, const TROOctets & v, const nsize_t v_off, const nsize_t v_len) noexcept {
+            void put_octets(const nsize_t i, const TROOctets & v, const nsize_t v_off, const nsize_t v_len) {
                 const nsize_t size = std::min(v.size()-v_off, v_len);
                 check_range(i, size, E_FILE_LINE);
                 std::memcpy(data() + i, v.get_ptr() + v_off, size);
@@ -510,7 +508,7 @@ namespace jau {
             : _parent(buffer_), _offset(offset_), _size(size_)
             {
                 if( offset_+_size > buffer_.size() ) {
-                    throw IndexOutOfBoundsException(offset_, _size, buffer_.size(), E_FILE_LINE);
+                    throw IndexOutOfBoundsError(offset_, _size, buffer_.size(), E_FILE_LINE);
                 }
             }
 
@@ -548,7 +546,7 @@ namespace jau {
     };
 
     /**
-     * Persistent endian aware octet data, i.e. owned memory allocation.
+     * Persistent endian aware octet data, i.e. owned dynamic heap memory allocation.
      *
      * Endian byte order is passed at construction.
      *
@@ -574,7 +572,7 @@ namespace jau {
              * @return
              * @throws OutOfMemoryError if running out of memory
              */
-            static uint8_t * allocData(const nsize_t size) {
+            [[nodiscard]] static uint8_t * allocData(const nsize_t size) {
                 if( size <= 0 ) {
                     return nullptr;
                 }
@@ -622,7 +620,7 @@ namespace jau {
             {
                 if( 0 < size_ ) {
                     if( nullptr == source_ ) {
-                        throw IllegalArgumentException("source nullptr with size "+std::to_string(size_)+" > 0", E_FILE_LINE);
+                        throw IllegalArgumentError("source nullptr with size "+std::to_string(size_)+" > 0", E_FILE_LINE);
                     }
                     std::memcpy(data(), source_, size_);
                 }
@@ -663,7 +661,7 @@ namespace jau {
               _capacity( capacity_ )
             {
                 if( capacity() < size() ) {
-                    throw IllegalArgumentException("capacity "+std::to_string(capacity())+" < size "+std::to_string(size()), E_FILE_LINE);
+                    throw IllegalArgumentError("capacity "+std::to_string(capacity())+" < size "+std::to_string(size()), E_FILE_LINE);
                 }
                 JAU_TRACE_OCTETS_PRINT("POctets ctor2: %p", data());
             }
@@ -837,7 +835,7 @@ namespace jau {
              */
             POctets & resize(const nsize_t newCapacity, const nsize_t newSize) {
                 if( newCapacity < newSize ) {
-                    throw IllegalArgumentException("newCapacity "+std::to_string(newCapacity)+" < newSize "+std::to_string(newSize), E_FILE_LINE);
+                    throw IllegalArgumentError("newCapacity "+std::to_string(newCapacity)+" < newSize "+std::to_string(newSize), E_FILE_LINE);
                 }
                 if( newCapacity != _capacity ) {
                     if( newSize > size() ) {
@@ -861,7 +859,7 @@ namespace jau {
              */
             POctets & resize(const nsize_t newSize) {
                 if( _capacity < newSize ) {
-                    throw IllegalArgumentException("capacity "+std::to_string(_capacity)+" < newSize "+std::to_string(newSize), E_FILE_LINE);
+                    throw IllegalArgumentError("capacity "+std::to_string(_capacity)+" < newSize "+std::to_string(newSize), E_FILE_LINE);
                 }
                 setSize(newSize);
                 return *this;
@@ -877,7 +875,7 @@ namespace jau {
              */
             POctets & recapacity(const nsize_t newCapacity) {
                 if( newCapacity < size() ) {
-                    throw IllegalArgumentException("newCapacity "+std::to_string(newCapacity)+" < size "+std::to_string(size()), E_FILE_LINE);
+                    throw IllegalArgumentError("newCapacity "+std::to_string(newCapacity)+" < size "+std::to_string(size()), E_FILE_LINE);
                 }
                 if( newCapacity == _capacity ) {
                     return *this;
@@ -930,6 +928,144 @@ namespace jau {
 
             std::string toString() const {
                 return "size "+std::to_string(size())+", capacity "+std::to_string(capacity())+", "+bytesHexString(get_ptr(), 0, size(), true /* lsbFirst */);
+            }
+    };
+
+    /**
+     * Persistent endian aware octet data, i.e. owned automatic fixed size memory allocation.
+     *
+     * Endian byte order is passed at construction.
+     *
+     * Constructor and assignment operations are **not** completely `noexcept` and may throw exceptions.
+     * This is a design choice based on dynamic resource allocation performed by this class.
+     */
+    template<jau::nsize_t FixedSize>
+    class AOctets : public TOctets
+    {
+        public:
+            /** Fixed maximum size */
+            constexpr static const jau::nsize_t fixed_size = FixedSize;
+            
+        private:
+            uint8_t smem[fixed_size];
+
+        public:
+            /**
+             * Sized AOctets instance.
+             *
+             * @param byte_order lb_endian::little or lb_endian::big byte order, one may pass lb_endian::native.
+             */
+            AOctets(const lb_endian_t byte_order) noexcept
+            : TOctets(smem, fixed_size, byte_order)
+            {
+                JAU_TRACE_OCTETS_PRINT("AOctets ctor0: sized");
+            }
+            
+            /**
+             * Takes ownership (malloc(size) and copy, free) ..
+             *
+             * Capacity and size will be of given source size.
+             *
+             * @param source_ source data to be copied into this new instance
+             * @param size_ length of source data
+             * @param byte_order lb_endian::little or lb_endian::big byte order, one may pass lb_endian::native.
+             * @throws IllegalArgumentException if fixed_size < source_size_
+             * @throws IllegalArgumentException if source_ is nullptr and size_ > 0
+             */
+            AOctets(const uint8_t *source_, const nsize_t source_size_, const lb_endian_t byte_order)
+            : TOctets( smem, std::min(fixed_size, source_size_), byte_order)
+            {
+                if( source_size_ > fixed_size ) {
+                    throw IllegalArgumentError("source size "+std::to_string(source_size_)+" > capacity "+std::to_string(fixed_size), E_FILE_LINE);
+                } else if( 0 < source_size_ ) {
+                    if( nullptr == source_ ) {
+                        throw IllegalArgumentError("source nullptr with size "+std::to_string(source_size_)+" > 0", E_FILE_LINE);
+                    }
+                    std::memcpy(data(), source_, source_size_);
+                }
+                JAU_TRACE_OCTETS_PRINT("AOctets ctor1: %p", data());
+            }
+
+            /**
+             * Takes ownership (malloc(size) and copy, free) ..
+             *
+             * Capacity and size will be of given source size.
+             *
+             * @param sourcelist source initializer list data to be copied into this new instance with implied size
+             * @param byte_order lb_endian::little or lb_endian::big byte order, one may pass lb_endian::native.
+             * @throws IllegalArgumentException if fixed_size < source size
+             */
+            AOctets(std::initializer_list<uint8_t> sourcelist, const lb_endian_t byte_order)
+            : TOctets( smem, std::min(fixed_size, sourcelist.size()), byte_order)
+            {
+                if( sourcelist.size() > fixed_size ) {
+                    throw IllegalArgumentError("source size "+std::to_string(sourcelist.size())+" > capacity "+std::to_string(fixed_size), E_FILE_LINE);
+                } else if( 0 < sourcelist.size() ) {
+                    std::memcpy(data(), sourcelist.begin(), sourcelist.size());
+                }
+                JAU_TRACE_OCTETS_PRINT("AOctets ctor1: %p", data());
+            }
+
+            /**
+             * Copy constructor
+             *
+             * Capacity of this new instance will be of source.size() only.
+             *
+             * @param source POctet source to be copied
+             * @throws IllegalArgumentException if fixed_size < source size
+             */
+            AOctets(const TROOctets &source)
+            : TOctets( smem, std::min(fixed_size, source.size()), source.byte_order() )
+            {
+                if( source.size() > fixed_size ) {
+                    throw IllegalArgumentError("source size "+std::to_string(source.size())+" > capacity "+std::to_string(fixed_size), E_FILE_LINE);
+                } else if( 0 < source.size() ) {
+                    std::memcpy(data(), source.get_ptr(), source.size());
+                }
+                JAU_TRACE_OCTETS_PRINT("AOctets ctor-cpy0: %p -> %p", source.get_ptr(), data());
+            }
+
+            /**
+             * Assignment operator
+             * @param _source POctet source to be copied
+             * @return
+             * @throws IllegalArgumentException if fixed_size < source size
+             */
+            AOctets& operator=(const TROOctets &_source) {
+                if( this == &_source ) {
+                    return *this;
+                }
+                if( _source.size() > fixed_size ) {
+                    throw IllegalArgumentError("source size "+std::to_string(_source.size())+" > capacity "+std::to_string(fixed_size), E_FILE_LINE);
+                } else if( 0 < _source.size() ) {
+                    std::memcpy(smem, _source.get_ptr(), _source.size());
+                }
+                setData(smem, _source.size(), _source.byte_order());
+                JAU_TRACE_OCTETS_PRINT("AOctets assign0: %p", data());
+                return *this;
+            }
+
+
+            ~AOctets() noexcept override {
+                setData(nullptr, 0, byte_order());
+            }
+
+            /**
+             * Sets a new size for this instance.
+             * @param newSize new size, must be <= current capacity()
+             * @return
+             * @throws IllegalArgumentException if fixed_size < newSize
+             */
+            AOctets & resize(const nsize_t newSize) {
+                if( fixed_size < newSize ) {
+                    throw IllegalArgumentError("capacity "+std::to_string(fixed_size)+" < newSize "+std::to_string(newSize), E_FILE_LINE);
+                }
+                setSize(newSize);
+                return *this;
+            }
+
+            std::string toString() const {
+                return "size "+std::to_string(size())+", fixed_size "+std::to_string(fixed_size)+", "+bytesHexString(get_ptr(), 0, size(), true /* lsbFirst */);
             }
     };
 
