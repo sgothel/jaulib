@@ -42,11 +42,21 @@ using namespace jau;
 void service_runner::service_thread() {
     {
         const std::lock_guard<std::mutex> lock(mtx_lifecycle); // RAII-style acquire and relinquish via destructor
-        service_init_locked(*this);
-        running = true;
-        DBG_PRINT("%s::worker Started", name_.c_str());
+        try {
+            service_init_locked(*this);
+            running = true;
+            DBG_PRINT("%s::worker Started", name_.c_str());
+        } catch(const std::exception &e) {
+            thread_id_ = 0;
+            running = false;
+            ERR_PRINT2("%s::worker Exception @ service_init_locked: %s", name_.c_str(), e.what());
+        }
     }
     cv_init.notify_all(); // have mutex unlocked before notify_all to avoid pessimistic re-block of notified wait() thread.
+    
+    if( !running ) {
+        return;
+    }
 
     thread_local jau::call_on_release thread_cleanup([&]() {
         DBG_PRINT("%s::worker::ThreadCleanup: serviceRunning %d -> 0", name_.c_str(), running.load());
@@ -55,12 +65,21 @@ void service_runner::service_thread() {
     });
 
     while( !shall_stop_ ) {
-        service_work(*this);
+        try {
+            service_work(*this);
+        } catch(const std::exception &e) {
+            shall_stop_ = true;
+            ERR_PRINT2("%s::worker Exception @ service_work: %s", name_.c_str(), e.what());
+        }
     }
     {
         const std::lock_guard<std::mutex> lock(mtx_lifecycle); // RAII-style acquire and relinquish via destructor
         WORDY_PRINT("%s::worker: Ended", name_.c_str());
-        service_end_locked(*this);
+        try {
+            service_end_locked(*this);
+        } catch(const std::exception &e) {
+            ERR_PRINT2("%s::worker Exception @ service_end_locked: %s", name_.c_str(), e.what());
+        }
         thread_id_ = 0;
         running = false;
         thread_cleanup.set_released();
