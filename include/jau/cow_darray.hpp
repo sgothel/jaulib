@@ -536,7 +536,7 @@ namespace jau {
 
             /**
              * Returns a new shared_ptr copy of the underlying store,
-             * i.e. using a new copy-constructed vectore.
+             * i.e. using a new copy-constructed vector.
              * <p>
              * See example in jau::cow_darray::set_store()
              * </p>
@@ -986,7 +986,7 @@ namespace jau {
              * @param b the other element of the equality test.
              * @return true if both are equal
              */
-            typedef bool(*equal_comparator)(const value_type& a, const value_type& b);
+            typedef bool(*equal_comparator)(const value_type& a, const value_type& b) noexcept;
 
             /**
              * Like std::vector::push_back(), but only if the newly added element does not yet exist.

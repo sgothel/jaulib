@@ -221,7 +221,7 @@ static void test_00_seq_fill_unique_idx(T& data, const Size_type size) {
 }
 
 template<class value_type>
-static bool equal_comparator(const value_type& a, const value_type& b) {
+static bool equal_comparator(const value_type& a, const value_type& b) noexcept {
     return a == b;
 }
 
