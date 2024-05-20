@@ -197,7 +197,7 @@ namespace jau {
              * @param size_ the element count, must be <= <code>std::numeric_limits<difference_type>::max()</code>
              * @return nullptr if given <code>0 == size_</code> or the newly allocated memory
              */
-            constexpr value_type * allocStore(const size_type size_) {
+            [[nodiscard]] constexpr value_type * allocStore(const size_type size_) {
                 if( 0 != size_ ) {
                     if( size_ > DIFF_MAX ) {
                         throw jau::IllegalArgumentError("alloc "+std::to_string(size_)+" > difference_type max "+
@@ -217,7 +217,7 @@ namespace jau {
             }
 
             template<class _Alloc_type>
-            constexpr value_type * reallocStore(const size_type new_capacity_,
+            [[nodiscard]] constexpr value_type * reallocStore(const size_type new_capacity_,
                     std::enable_if_t< std::is_base_of_v<jau::callocator<value_type>, _Alloc_type>, bool > = true )
             {
                 if( new_capacity_ > DIFF_MAX ) {
@@ -234,7 +234,7 @@ namespace jau {
                 return m;
             }
             template<class _Alloc_type>
-            constexpr value_type * reallocStore(const size_type new_capacity_,
+            [[nodiscard]] constexpr value_type * reallocStore(const size_type new_capacity_,
                     std::enable_if_t< !std::is_base_of_v<jau::callocator<value_type>, _Alloc_type>, bool > = true )
             {
                 (void)new_capacity_;
