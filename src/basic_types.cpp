@@ -35,6 +35,7 @@
 #include <jau/functional.hpp>
 #include <jau/secmem.hpp>
 #include <jau/math/math_error.hpp>
+#include <jau/string_util.hpp>
 #include <utility>
 
 using namespace jau;
@@ -246,6 +247,17 @@ std::cv_status jau::wait_for(std::condition_variable& cv, std::unique_lock<std::
     } else {
         return wait_until(cv, lock, atime, monotonic);
     }
+}
+
+std::string jau::threadName(const std::thread::id id) noexcept {
+    #if 1
+        return "Thread 0x"+jau::to_hexstring( std::hash<std::thread::id>{}(id) );
+    #else
+        std::stringstream ss;
+        ss.setf(std::ios_base::hex | std::ios_base::showbase);
+        ss << "Thread " << id;
+        return ss.str();
+    #endif
 }
 
 jau::ExceptionBase::ExceptionBase(std::string &&type, std::string const& m, const char* file, int line) noexcept // NOLINT(modernize-pass-by-value)

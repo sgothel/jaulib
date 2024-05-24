@@ -297,6 +297,8 @@ namespace jau {
     std::cv_status wait_for(std::condition_variable& cv, std::unique_lock<std::mutex>& lock, const fraction_i64& relative_time, 
                             const bool monotonic=true) noexcept;
 
+    std::string threadName(const std::thread::id id) noexcept;
+    
     /**
     // *************************************************
     // *************************************************
