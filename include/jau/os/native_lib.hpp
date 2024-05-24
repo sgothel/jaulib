@@ -23,10 +23,8 @@
  */
 #pragma once
 
-#include <cstdint>
 #include <string>
 
-#include "jau/debug.hpp"
 #include "jau/string_util.hpp"
 
 #include "jau/os/func_resolver.hpp"
@@ -194,7 +192,7 @@ namespace jau::os {
                   } else {
                       res = m_dynLink.openLibraryLocal(path);
                   }
-                  if ( 0 != res ) {
+                  if ( nullptr != res ) {
                       NativeLibrary nl(m_dynLink, res, path, global, symbolName);
                       DBG_PRINT("NativeLibrary.open: Opened: %s", nl.toString().c_str());
                       return nl;

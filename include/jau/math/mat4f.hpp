@@ -40,6 +40,7 @@
 #include <jau/math/vec4f.hpp>
 #include <jau/math/recti.hpp>
 #include <jau/math/fov_hv_halves.hpp>
+#include <jau/int_types.hpp>
 
 namespace jau::math::geom {
     class Frustum; // forward
@@ -357,10 +358,11 @@ class alignas(Value_type) Matrix4 {
      * @return given result vector <i>v_out</i> for chaining
      */
     constexpr Vec4& getRow(const jau::nsize_t row, Vec4& v_out) const noexcept {
-        return v_out.set( get(row+0*4),
-                          get(row+1*4),
-                          get(row+2*4),
-                          get(row+3*4) );
+        using namespace jau::int_literals;
+        return v_out.set( get( row + 0*4_unz),
+                          get( row + 1*4_unz),
+                          get( row + 2*4_unz),
+                          get( row + 3*4_unz) );
     }
     /**
      * Get the named column of the given column-major matrix to v_out w/o boundary check.
@@ -368,10 +370,11 @@ class alignas(Value_type) Matrix4 {
      * @return result vector holding the requested row
      */
     constexpr Vec4 getRow(const jau::nsize_t row) const noexcept {
-        return Vec4( get(row+0*4),
-                     get(row+1*4),
-                     get(row+2*4),
-                     get(row+3*4) );
+        using namespace jau::int_literals;
+        return Vec4( get(row+0*4_unz),
+                     get(row+1*4_unz),
+                     get(row+2*4_unz),
+                     get(row+3*4_unz) );
     }
 
     /**
@@ -381,10 +384,11 @@ class alignas(Value_type) Matrix4 {
      * @return given result vector <i>v_out</i> for chaining
      */
     constexpr Vec3& getRow(const jau::nsize_t row, Vec3& v_out) const noexcept {
+        using namespace jau::int_literals;
         assert( row <= 2 );
-        return v_out.set( get(row+0*4),
-                          get(row+1*4),
-                          get(row+2*4) );
+        return v_out.set( get(row+0*4_unz),
+                          get(row+1*4_unz),
+                          get(row+2*4_unz) );
     }
 
     /**
@@ -1472,7 +1476,7 @@ class alignas(Value_type) Matrix4 {
         // rawWinPos = P  * vec4Tmp2
         // rawWinPos = P * ( Mv * o )
         // rawWinPos = P * Mv * o
-        Vec4 vec4Tmp2 = mMv * Vec4(obj, 1.0f);
+        Vec4 vec4Tmp2 = mMv * Vec4(obj, one);
 
         Vec4 rawWinPos = mP * vec4Tmp2;
 
@@ -1483,7 +1487,7 @@ class alignas(Value_type) Matrix4 {
         const value_type s = ( one / rawWinPos.w ) * half;
 
         // Map x, y and z to range 0-1 (w is ignored)
-        rawWinPos.scale(s).add(half, half, half, 0.0f);
+        rawWinPos.scale(s).add(half, half, half, zero);
 
         // Map x,y to viewport
         winPos.set( rawWinPos.x * viewport.width() +  viewport.x(),
@@ -1518,7 +1522,7 @@ class alignas(Value_type) Matrix4 {
         const value_type s = ( one / rawWinPos.w ) * half;
 
         // Map x, y and z to range 0-1 (w is ignored)
-        rawWinPos.scale(s).add(half, half, half, 0.0f);
+        rawWinPos.scale(s).add(half, half, half, zero);
 
         // Map x,y to viewport
         winPos.set( rawWinPos.x * viewport.width() +  viewport.x(),
@@ -1556,13 +1560,13 @@ class alignas(Value_type) Matrix4 {
             return false;
         }
 
-        Vec4 winPos(winx, winy, winz, 1.0f);
+        Vec4 winPos(winx, winy, winz, one);
 
         // Map x and y from window coordinates
-        winPos.add(-viewport.x(), -viewport.y(), 0.0f, 0.0f).mul(1.0f/viewport.width(), 1.0f/viewport.height(), 1.0f, 1.0f);
+        winPos.add(-viewport.x(), -viewport.y(), zero, zero).mul(one/viewport.width(), one/viewport.height(), one, one);
 
         // Map to range -1 to 1
-        winPos.mul(2.0f, 2.0f, 2.0f, 1.0f).add(-1.0f, -1.0f, -1.0f, 0.0f);
+        winPos.mul(two, two, two, one).add(-one, -one, -one, zero);
 
         // rawObjPos = Inv(P x Mv) *  winPos
         Vec4 rawObjPos = invPMv * winPos;
@@ -1571,7 +1575,7 @@ class alignas(Value_type) Matrix4 {
             return false;
         }
 
-        rawObjPos.scale(1.0f / rawObjPos.w).getVec3(objPos);
+        rawObjPos.scale(one / rawObjPos.w).getVec3(objPos);
         return true;
     }
 
@@ -1594,13 +1598,13 @@ class alignas(Value_type) Matrix4 {
                             const Recti& viewport,
                             Vec3& objPos) noexcept
     {
-        Vec4 winPos(winx, winy, winz, 1.0f);
+        Vec4 winPos(winx, winy, winz, one);
 
         // Map x and y from window coordinates
-        winPos.add(-viewport.x(), -viewport.y(), 0.0f, 0.0f).mul(1.0f/viewport.width(), 1.0f/viewport.height(), 1.0f, 1.0f);
+        winPos.add(-viewport.x(), -viewport.y(), zero, zero).mul(one/viewport.width(), one/viewport.height(), one, one);
 
         // Map to range -1 to 1
-        winPos.mul(2.0f, 2.0f, 2.0f, 1.0f).add(-1.0f, -1.0f, -1.0f, 0.0f);
+        winPos.mul(two, two, two, one).add(-one, -one, -one, zero);
 
         // rawObjPos = Inv(P x Mv) *  winPos
         Vec4 rawObjPos = invPMv * winPos;
@@ -1609,7 +1613,7 @@ class alignas(Value_type) Matrix4 {
             return false;
         }
 
-        rawObjPos.scale(1.0f / rawObjPos.w).getVec3(objPos);
+        rawObjPos.scale(one / rawObjPos.w).getVec3(objPos);
         return true;
     }
 
@@ -1634,13 +1638,13 @@ class alignas(Value_type) Matrix4 {
                             const Recti& viewport,
                             Vec3& objPos1, Vec3& objPos2) noexcept
     {
-        Vec4 winPos(winx, winy, winz1, 1.0f);
+        Vec4 winPos(winx, winy, winz1, one);
 
         // Map x and y from window coordinates
-        winPos.add(-viewport.x(), -viewport.y(), 0.0f, 0.0f).mul(1.0f/viewport.width(), 1.0f/viewport.height(), 1.0f, 1.0f);
+        winPos.add(-viewport.x(), -viewport.y(), zero, zero).mul(one/viewport.width(), one/viewport.height(), one, one);
 
         // Map to range -1 to 1
-        winPos.mul(2.0f, 2.0f, 2.0f, 1.0f).add(-1.0f, -1.0f, -1.0f, 0.0f);
+        winPos.mul(two, two, two, one).add(-one, -one, -one, zero);
 
         // rawObjPos = Inv(P x Mv) *  winPos1
         Vec4 rawObjPos = invPMv * winPos;
@@ -1648,13 +1652,13 @@ class alignas(Value_type) Matrix4 {
         if ( zero == rawObjPos.w ) {
             return false;
         }
-        rawObjPos.scale(1.0f / rawObjPos.w).getVec3(objPos1);
+        rawObjPos.scale(one / rawObjPos.w).getVec3(objPos1);
 
         //
         // winz2
         //
         // Map Z to range -1 to 1
-        winPos.z = winz2 * 2.0f - 1.0f;
+        winPos.z = winz2 * two - one;
 
         // rawObjPos = Inv(P x Mv) *  winPos2
         invPMv.mulVec4(winPos, rawObjPos);
@@ -1662,7 +1666,7 @@ class alignas(Value_type) Matrix4 {
         if ( zero == rawObjPos.w ) {
             return false;
         }
-        rawObjPos.scale(1.0f / rawObjPos.w).getVec3(objPos2);
+        rawObjPos.scale(one / rawObjPos.w).getVec3(objPos2);
 
         return true;
     }
@@ -1701,10 +1705,10 @@ class alignas(Value_type) Matrix4 {
         Vec4 winPos(winx, winy, winz, clipw);
 
         // Map x and y from window coordinates
-        winPos.add(-viewport.x(), -viewport.y(), -near, 0.0f).mul(1.0f/viewport.width(), 1.0f/viewport.height(), 1.0f/(far-near), 1.0f);
+        winPos.add(-viewport.x(), -viewport.y(), -near, zero).mul(one/viewport.width(), one/viewport.height(), one/(far-near), one);
 
         // Map to range -1 to 1
-        winPos.mul(2.0f, 2.0f, 2.0f, 1.0f).add(-1.0f, -1.0f, -1.0f, 0.0f);
+        winPos.mul(two, two, two, one).add(-one, -one, -one, zero);
 
         // objPos = Inv(P x Mv) *  winPos
         invPMv.mulVec4(winPos, objPos);
@@ -1741,10 +1745,10 @@ class alignas(Value_type) Matrix4 {
         Vec4 winPos(winx, winy, winz, clipw);
 
         // Map x and y from window coordinates
-        winPos.add(-viewport.x(), -viewport.y(), -near, 0.0f).mul(1.0f/viewport.width(), 1.0f/viewport.height(), 1.0f/(far-near), 1.0f);
+        winPos.add(-viewport.x(), -viewport.y(), -near, zero).mul(one/viewport.width(), one/viewport.height(), one/(far-near), one);
 
         // Map to range -1 to 1
-        winPos.mul(2.0f, 2.0f, 2.0f, 1.0f).add(-1.0f, -1.0f, -1.0f, 0.0f);
+        winPos.mul(two, two, two, one).add(-one, -one, -one, zero);
 
         // objPos = Inv(P x Mv) *  winPos
         invPMv.mulVec4(winPos, objPos);

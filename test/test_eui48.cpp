@@ -19,7 +19,7 @@ static void test_sub01(const lb_endian_t byte_order, const std::string& mac_str,
     PRAGMA_DISABLE_WARNING_PUSH
     PRAGMA_DISABLE_WARNING_RESTRICT
     // bogus gcc 12.2 'may overlap'
-    jau::for_each_const(mac_sub_strs, [&byte_order, &i, &mac, &indices](const std::string &mac_sub_str) {
+    jau::for_each_const(mac_sub_strs, [&byte_order, &i, &mac, &indices](const std::string &mac_sub_str) noexcept { // NOLINT(bugprone-exception-escape)
         const EUI48Sub mac_sub(mac_sub_str);
         printf("EUI48Sub mac02_sub: '%s' -> '%s'\n", mac_sub_str.c_str(), mac_sub.toString().c_str());
         {

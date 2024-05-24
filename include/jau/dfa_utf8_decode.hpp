@@ -27,14 +27,13 @@
 #ifndef JAU_DFA_UTF8_DECODE_HPP_
 #define JAU_DFA_UTF8_DECODE_HPP_
 
-#define DFA_UTF8_ACCEPT 0
-#define DFA_UTF8_REJECT 12
-
 #include <string>
 #include <cstdint>
-#include <cinttypes>
 
 namespace jau {
+    constexpr static const uint32_t DFA_UTF8_ACCEPT = 0;
+    constexpr static const uint32_t DFA_UTF8_REJECT = 12;
+
     /**
      * \ingroup ByteUtils
      *

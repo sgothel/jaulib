@@ -354,39 +354,37 @@ class Mask
       T m_mask;
    };
 
-template<typename T>
-inline Mask<T> conditional_copy_mem(T cnd,
-                                    T* to,
-                                    const T* from0,
-                                    const T* from1,
-                                    size_t elems) noexcept
-   {
-   const auto mask = CT::Mask<T>::expand(cnd);
-   mask.select_n(to, from0, from1, elems);
-   return mask;
+   template <typename T>
+   inline Mask<T> conditional_copy_mem(T        cnd,
+                                       T*       to,
+                                       const T* from0,
+                                       const T* from1,
+                                       size_t   elems) noexcept {
+       const auto mask = CT::Mask<T>::expand(cnd);
+       mask.select_n(to, from0, from1, elems);
+       return mask;
    }
 
-template<typename T>
-inline void conditional_swap(bool cnd, T& x, T& y) noexcept
-   {
-   const auto swap = CT::Mask<T>::expand(cnd);
+   template <typename T>
+   inline void conditional_swap(bool cnd, T& x, T& y) noexcept {
+       const auto swap = CT::Mask<T>::expand(cnd);
 
-   T t0 = swap.select(y, x);
-   T t1 = swap.select(x, y);
-   x = t0;
-   y = t1;
+       T t0 = swap.select(y, x);
+       T t1 = swap.select(x, y);
+       x    = t0;
+       y    = t1;
    }
 
-template<typename T>
-inline void conditional_swap_ptr(bool cnd, T& x, T& y) noexcept
-   {
-   uintptr_t xp = reinterpret_cast<uintptr_t>(x);
-   uintptr_t yp = reinterpret_cast<uintptr_t>(y);
+   template <typename T,
+             std::enable_if_t<std::is_pointer_v<T>, bool> = true>
+   inline void conditional_swap_ptr(bool cnd, T& x, T& y) noexcept {
+       uintptr_t xp = reinterpret_cast<uintptr_t>(x);
+       uintptr_t yp = reinterpret_cast<uintptr_t>(y);
 
-   conditional_swap<uintptr_t>(cnd, xp, yp);
+       conditional_swap<uintptr_t>(cnd, xp, yp);
 
-   x = reinterpret_cast<T>(xp);
-   y = reinterpret_cast<T>(yp);
+       x = reinterpret_cast<T>(xp);  // NOLINT(performance-no-int-to-ptr): Intended
+       y = reinterpret_cast<T>(yp);  // NOLINT(performance-no-int-to-ptr): Intended
    }
 
 } // jau::ct

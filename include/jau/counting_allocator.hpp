@@ -159,7 +159,7 @@ struct counting_allocator : public std::allocator<T>
 #if __cplusplus > 201703L
     [[nodiscard]] constexpr value_type* allocate(std::size_t n) { // C++20
         flush_stats();
-        memory_usage += n * sizeof(value_type);
+        memory_usage += n * sizeof(value_type); // NOLINT(bugprone-sizeof-expression): Intended pointer type if so chosen 
         alloc_count++;
         alloc_balance++;
         return std::allocator<value_type>::allocate(n);
@@ -167,7 +167,7 @@ struct counting_allocator : public std::allocator<T>
 #else
     value_type* allocate(std::size_t n) { // C++17
         flush_stats();
-        memory_usage += n * sizeof(value_type);
+        memory_usage += n * sizeof(value_type); // NOLINT(bugprone-sizeof-expression): Intended pointer type if so chosen
         alloc_count++;
         alloc_balance++;
         return std::allocator<value_type>::allocate(n);
@@ -177,7 +177,7 @@ struct counting_allocator : public std::allocator<T>
 #if __cplusplus > 201703L
     constexpr void deallocate(value_type* p, std::size_t n ) {
         flush_stats();
-        memory_usage -= n * sizeof(value_type);
+        memory_usage -= n * sizeof(value_type); // NOLINT(bugprone-sizeof-expression): Intended pointer type if so chosen
         dealloc_count++;
         alloc_balance--;
         std::allocator<value_type>::deallocate(p, n);
@@ -185,7 +185,7 @@ struct counting_allocator : public std::allocator<T>
 #else
     void deallocate(value_type* p, std::size_t n ) {
         flush_stats();
-        memory_usage -= n * sizeof(value_type);
+        memory_usage -= n * sizeof(value_type); // NOLINT(bugprone-sizeof-expression): Intended pointer type if so chosen
         dealloc_count++;
         alloc_balance--;
         std::allocator<value_type>::deallocate(p, n);

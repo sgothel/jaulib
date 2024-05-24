@@ -780,7 +780,7 @@ namespace jau {
     template <class Dest, class Source>
     constexpr
     typename std::enable_if_t<
-        sizeof(Dest) == sizeof(Source) &&
+        sizeof(Dest) == sizeof(Source) &&   // NOLINT(bugprone-sizeof-expression): Intended, same pointer size
         std::is_pointer_v<Source> &&
         std::is_pointer_v<Dest>,
         Dest>

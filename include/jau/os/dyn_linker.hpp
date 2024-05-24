@@ -70,8 +70,8 @@ namespace jau::os {
             std::string m_name;
             ssize_t m_count;
           public:
-            LibRef(const std::string& name) noexcept
-            : m_name(name), m_count(1) {}
+            LibRef(std::string name) noexcept
+            : m_name(std::move(name)), m_count(1) {}
 
             constexpr_cxx20 LibRef(const LibRef& o) noexcept = default;
             constexpr_cxx20 LibRef(LibRef&& o) noexcept = default;

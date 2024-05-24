@@ -9,8 +9,8 @@ include_directories(
 )
 
 set (jaulib_LIB_SRCS
-  basic_types.cpp
   base_codec.cpp
+  basic_types.cpp
   byte_stream.cpp
   cpuid.cpp
   debug.cpp

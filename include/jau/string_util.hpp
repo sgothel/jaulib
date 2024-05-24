@@ -144,7 +144,7 @@ namespace jau {
     inline std::string to_hexstring(value_type const & v) noexcept
     {
         const uintptr_t v2 = reinterpret_cast<uintptr_t>(v);
-        return bytesHexString(pointer_cast<const uint8_t*>(&v2), 0, sizeof(v), false /* lsbFirst */);
+        return bytesHexString(pointer_cast<const uint8_t*>(&v2), 0, sizeof(v), false /* lsbFirst */); // NOLINT(bugprone-sizeof-expression): Intended
     }
 
     /**
@@ -271,7 +271,7 @@ namespace jau {
                                bool> = true>
     inline std::string to_string(const value_type & ref)
     {
-        return to_hexstring((void*)ref);
+        return to_hexstring((void*)ref); // NOLINT(bugprone-multi-level-implicit-pointer-conversion)
     }
 
     template< class value_type,

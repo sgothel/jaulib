@@ -224,8 +224,10 @@ namespace jau::lang {
             /**
              * token_error value, denoting an invalid token or alphabet code-point.
              */
-            static inline constexpr const uint_t token_error = std::numeric_limits<uint_t>::max();
+            constexpr static const uint_t token_error = std::numeric_limits<uint_t>::max();
 
+            constexpr static uint_t to_symbol(char c) noexcept { return static_cast<unsigned char>(c); }
+             
             /**
              * Terminal token name and ASCII string value pair, provided by user.
              */
@@ -373,7 +375,7 @@ namespace jau::lang {
              * @param tkey_word the given token name and value pair
              * @return true if successful, otherwise false
              */
-            bool add(const token_value_t& tkey_word) noexcept {
+            bool add(const token_value_t& tkey_word) {
                 if( 0 == tkey_word.name || token_error == tkey_word.name ) {
                     // invalid token name
                     return false;
@@ -397,7 +399,7 @@ namespace jau::lang {
                      ++char_num
                    )
                 {
-                    c = key_word[char_num];
+                    c = to_symbol(key_word[char_num]);
                     JAU_TRACE_PRINT("   [%c, ", (char)c);
 
                     if( is_separator( c ) ) {
@@ -481,7 +483,7 @@ namespace jau::lang {
                             if( i2 == haystack.size() ) {
                                 // position after token end
                                 c = m_end;
-                            } else if( is_separator( c = haystack[i2++] ) ) {
+                            } else if( is_separator( c = to_symbol( haystack[i2++] ) ) ) {
                                 i2--; // position after token end
                                 c = m_end;
                             } else {
@@ -532,7 +534,7 @@ namespace jau::lang {
                     if( i2 == word.size() ) {
                         c = m_end;
                     } else {
-                        c = word[i2++];
+                        c = to_symbol( word[i2++] );
                         const alphabet::code_point_t cp = m_alphabet.code_point(c);
                         if( alphabet::code_error == cp ) {
                             c = token_error;

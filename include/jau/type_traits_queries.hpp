@@ -226,7 +226,7 @@ namespace jau {
         }
     };
     #define JAU_TYPENAME_CUE(A) template<> struct jau::type_name_cue<A> { static const char * name() { return #A; } };
-    #define JAU_TYPENAME_CUE_ALL(A) JAU_TYPENAME_CUE(A) JAU_TYPENAME_CUE(A*) JAU_TYPENAME_CUE(const A*) JAU_TYPENAME_CUE(A&) JAU_TYPENAME_CUE(const A&)
+    #define JAU_TYPENAME_CUE_ALL(A) JAU_TYPENAME_CUE(A) JAU_TYPENAME_CUE(A*) JAU_TYPENAME_CUE(const A*) JAU_TYPENAME_CUE(A&) JAU_TYPENAME_CUE(const A&) // NOLINT(bugprone-macro-parentheses)
 
     /**
     // *************************************************
@@ -330,13 +330,13 @@ namespace jau {
     #define METHOD_CHECKER(checker, name, ret, args) \
     template<class C, typename=void> struct checker : std::false_type {}; \
     template<class C> struct checker<C, typename std::enable_if_t< \
-      std::is_convertible_v<decltype(std::declval<C>().name args), ret>>> : std::true_type {};
+      std::is_convertible_v<decltype(std::declval<C>().name args), ret>>> : std::true_type {}; // NOLINT(bugprone-macro-parentheses)
 
     /// Checker for member function with exact retutn type and accepting given arguments
     #define METHOD_CHECKER_STRICT_RET(name, fn, ret, args) \
     template<class C, typename=void> struct name : std::false_type {}; \
     template<class C> struct name<C, typename std::enable_if_t< \
-      std::is_same_v<decltype(std::declval<C>().fn args), ret>>> : std::true_type {};
+      std::is_same_v<decltype(std::declval<C>().fn args), ret>>> : std::true_type {};  // NOLINT(bugprone-macro-parentheses)
 
     /// Checker for member function accepting given arguments
     #define METHOD_CHECKER_ANY(name, fn, args) \

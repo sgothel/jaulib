@@ -26,13 +26,11 @@
 #define JAU_COW_DARRAY_HPP_
 
 #include <cstring>
+#include <numbers>
 #include <string>
-#include <cstdint>
 #include <limits>
-#include <atomic>
 #include <memory>
 #include <mutex>
-#include <condition_variable>
 #include <algorithm>
 
 #include <jau/cpp_lang_util.hpp>
@@ -127,7 +125,7 @@ namespace jau {
     {
         public:
             /** Default growth factor using the golden ratio 1.618 */
-            constexpr static const float DEFAULT_GROWTH_FACTOR = 1.618f;
+            constexpr static const float DEFAULT_GROWTH_FACTOR = std::numbers::phi_v<float>; // 1.618f;
 
             constexpr static const bool uses_memmove = use_memmove;
             constexpr static const bool uses_secmem  = use_secmem;
@@ -141,7 +139,7 @@ namespace jau {
             typedef value_type&                                 reference;
             typedef const value_type&                           const_reference;
             typedef Size_type                                   size_type;
-            typedef typename std::make_signed<size_type>::type  difference_type;
+            typedef typename std::make_signed_t<size_type>      difference_type;
             typedef Alloc_type                                  allocator_type;
 
             typedef darray<value_type, size_type, 

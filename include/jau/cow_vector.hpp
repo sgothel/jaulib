@@ -115,7 +115,7 @@ namespace jau {
             typedef value_type&                                 reference;
             typedef const value_type&                           const_reference;
             typedef std::size_t                                 size_type;
-            typedef typename std::make_signed<size_type>::type  difference_type;
+            typedef typename std::make_signed_t<size_type>      difference_type;
             typedef Alloc_type                                  allocator_type;
 
             typedef std::vector<value_type, allocator_type>     storage_t;
@@ -216,7 +216,7 @@ namespace jau {
              * </p>
              */
             constexpr_atomic
-            cow_vector& operator=(cow_vector&& x) {
+            cow_vector& operator=(cow_vector&& x) noexcept {
                 // Strategy-2: Acquire locks of both, blocking
                 // - If somebody else holds the lock, we wait.
                 // - Then we own the lock for both instances

@@ -26,12 +26,9 @@
 
 #include <cmath>
 #include <cstdarg>
-#include <cstdint>
-#include <limits>
 #include <string>
 
 #include <jau/float_math.hpp>
-#include <jau/math/math_error.hpp>
 #include <jau/math/vec3f.hpp>
 #include <jau/math/vec4f.hpp>
 #include <jau/math/mat4f.hpp>
@@ -288,12 +285,12 @@ class Frustum {
      * @return {@code out} for chaining
      */
 	constexpr void getPlanes(float out[/* off+4*6] */]) const noexcept {
-        planes[LEFT  ].toFloats(out+4*0);
-        planes[RIGHT ].toFloats(out+4*1);
-        planes[BOTTOM].toFloats(out+4*2);
-        planes[TOP   ].toFloats(out+4*3);
-        planes[NEAR  ].toFloats(out+4*4);
-        planes[FAR   ].toFloats(out+4*5);
+        planes[LEFT  ].toFloats( out + static_cast<ptrdiff_t>(4*0) );
+        planes[RIGHT ].toFloats( out + static_cast<ptrdiff_t>(4*1) );
+        planes[BOTTOM].toFloats( out + static_cast<ptrdiff_t>(4*2) );
+        planes[TOP   ].toFloats( out + static_cast<ptrdiff_t>(4*3) );
+        planes[NEAR  ].toFloats( out + static_cast<ptrdiff_t>(4*4) );
+        planes[FAR   ].toFloats( out + static_cast<ptrdiff_t>(4*5) );
     }
 
     /**
@@ -352,7 +349,7 @@ class Frustum {
      * @see Matrix4f#updateFrustumPlanes(Frustum)
      * @see Matrix4f#getFrustum(Frustum, FovDesc)
      */
-    Mat4f& updateByFovDesc(jau::math::Mat4f& m, const FovDesc& fovDesc) noexcept {
+    Mat4f& updateByFovDesc(jau::math::Mat4f& m, const FovDesc& fovDesc) {
         m.setToPerspective(fovDesc.fovhv, fovDesc.zNear, fovDesc.zFar);
         setFromMat(m);
         return m;
@@ -428,7 +425,7 @@ class Frustum {
         }
 
         // Normalize all planes
-        for (int i = 0; i < 6; ++i) {
+        for (int i = 0; i < 6; ++i) { // NOLINT(modernize-loop-convert)
             geom::Frustum::Plane& p = planes[i];
             const float invLen = 1.0f / p.n.length();
             p.n *= invLen;
@@ -480,7 +477,7 @@ class Frustum {
     location_t classifyPoint(const Vec3f& p) const noexcept {
         location_t res = location_t::INSIDE;
 
-        for (int i = 0; i < 6; ++i) {
+        for (int i = 0; i < 6; ++i) { // NOLINT(modernize-loop-convert)
             const float d = planes[i].distanceTo(p);
             if ( d < 0.0f ) {
                 return location_t::OUTSIDE;
@@ -516,7 +513,7 @@ class Frustum {
     location_t classifySphere(const Vec3f& p, const float radius) const noexcept {
         location_t res = location_t::INSIDE; // fully inside
 
-        for (int i = 0; i < 6; ++i) {
+        for (int i = 0; i < 6; ++i) { // NOLINT(modernize-loop-convert)
             const float d = planes[i].distanceTo(p);
             if ( d < -radius ) {
                 // fully outside

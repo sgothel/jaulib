@@ -126,10 +126,10 @@ class alignas(Value_type) Quaternion {
     constexpr_cxx26 value_type magnitude() const noexcept {
         const value_type magnitudeSQ = magnitudeSquared();
         if ( jau::is_zero(magnitudeSQ) ) {
-            return 0.0f;
+            return zero;
         }
-        if ( jau::equals(1.0f, magnitudeSQ) ) {
-            return 1.0f;
+        if ( jau::equals(one, magnitudeSQ) ) {
+            return one;
         }
         return std::sqrt(magnitudeSQ);
     }
@@ -174,7 +174,7 @@ class alignas(Value_type) Quaternion {
      * </p>
      */
     constexpr bool isIdentity() const noexcept {
-        return jau::equals(1.0f, m_w) && jau::is_zero3f(m_x, m_y, m_z);
+        return jau::equals(one, m_w) && jau::is_zero3f(m_x, m_y, m_z);
         // return m_w == 1f && m_x == 0f && m_y == 0f && m_z == 0f;
     }
 
@@ -183,7 +183,7 @@ class alignas(Value_type) Quaternion {
      * @return this quaternion for chaining.
      */
     constexpr Quaternion& setIdentity() noexcept {
-        m_x = m_y = m_z = 0.0f; m_w = 1.0f;
+        m_x = m_y = m_z = zero; m_w = one;
         return *this;
     }
 
@@ -202,7 +202,7 @@ class alignas(Value_type) Quaternion {
         if ( jau::is_zero(norm) ) {
             setIdentity();
         } else {
-            const value_type invNorm = 1.0f/norm;
+            const value_type invNorm = one/norm;
             m_w *= invNorm;
             m_x *= invNorm;
             m_y *= invNorm;
@@ -236,10 +236,10 @@ class alignas(Value_type) Quaternion {
      */
     constexpr Quaternion& invert() noexcept {
         const value_type magnitudeSQ = magnitudeSquared();
-        if ( jau::equals(1.0f, magnitudeSQ) ) {
+        if ( jau::equals(one, magnitudeSQ) ) {
             conjugate();
         } else {
-            const value_type invmsq = 1.0f/magnitudeSQ;
+            const value_type invmsq = one/magnitudeSQ;
             m_w *= invmsq;
             m_x = -m_x * invmsq;
             m_y = -m_y * invmsq;
@@ -340,7 +340,7 @@ class alignas(Value_type) Quaternion {
             // no change
             return *this;
         }
-        const value_type halfAngle = 0.5f * angle;
+        const value_type halfAngle = half * angle;
         const value_type sin = std::sin(halfAngle);
         const value_type qw = std::cos(halfAngle);
         const value_type qx = sin * axisX;
@@ -376,7 +376,7 @@ class alignas(Value_type) Quaternion {
      * @return this quaternion for chaining.
      */
     constexpr_cxx26 Quaternion& rotateByAngleX(const value_type angle) noexcept {
-        const value_type halfAngle = 0.5f * angle;
+        const value_type halfAngle = half * angle;
         return rotateByAngleX(std::sin(halfAngle), std::cos(halfAngle));
     }
     /** Rotate this quaternion around X axis with the given angle's sin + cos values */
@@ -394,7 +394,7 @@ class alignas(Value_type) Quaternion {
      * @return this quaternion for chaining.
      */
     constexpr_cxx26 Quaternion& rotateByAngleY(value_type angle) noexcept {
-        const value_type halfAngle = 0.5f * angle;
+        const value_type halfAngle = half * angle;
         return rotateByAngleY(std::sin(halfAngle), std::cos(halfAngle));
     }
     /** Rotate this quaternion around Y axis with the given angle's sin + cos values */
@@ -412,7 +412,7 @@ class alignas(Value_type) Quaternion {
      * @return this quaternion for chaining.
      */
     constexpr_cxx26 Quaternion& rotateByAngleZ(value_type angle) noexcept {
-        const value_type halfAngle = 0.5f * angle;
+        const value_type halfAngle = half * angle;
         return rotateByAngleZ(std::sin(halfAngle), std::cos(halfAngle));
     }
     /** Rotate this quaternion around Y axis with the given angle's sin + cos values */
@@ -514,20 +514,20 @@ class alignas(Value_type) Quaternion {
                       + x_x * vecX
                       - z_z * vecX
                       - y_y * vecX
-                      + 2.0f * ( m_y*m_w*vecZ - m_z*m_w*vecY + m_y*m_x*vecY + m_z*m_x*vecZ );
+                      + two * ( m_y*m_w*vecZ - m_z*m_w*vecY + m_y*m_x*vecY + m_z*m_x*vecZ );
                                      ;
 
             out.y =     y_y * vecY
                       - z_z * vecY
                       + w_w * vecY
                       - x_x * vecY
-                      + 2.0f * ( m_x*m_y*vecX + m_z*m_y*vecZ + m_w*m_z*vecX - m_x*m_w*vecZ );
+                      + two * ( m_x*m_y*vecX + m_z*m_y*vecZ + m_w*m_z*vecX - m_x*m_w*vecZ );
 
             out.z =     z_z * vecZ
                       - y_y * vecZ
                       - x_x * vecZ
                       + w_w * vecZ
-                      + 2.0f * ( m_x*m_z*vecX + m_y*m_z*vecY - m_w*m_y*vecX + m_w*m_x*vecY );
+                      + two * ( m_x*m_z*vecX + m_y*m_z*vecY - m_w*m_y*vecX + m_w*m_x*vecY );
         }
         return out;
     }
@@ -547,9 +547,9 @@ class alignas(Value_type) Quaternion {
      */
     constexpr_cxx26 Quaternion& setSlerp(const Quaternion& a, const Quaternion& b, const value_type changeAmnt) noexcept {
         // std::cerr << "Slerp.0: A " << a << ", B " << b << ", t " << changeAmnt << std::endl;
-        if (changeAmnt == 0.0f) {
+        if (changeAmnt == zero) {
             *this = a;
-        } else if (changeAmnt == 1.0f) {
+        } else if (changeAmnt == one) {
             *this = b;
         } else {
             value_type bx = b.m_x;
@@ -564,34 +564,34 @@ class alignas(Value_type) Quaternion {
 
             if( cosHalfTheta >= 0.95f ) {
                 // quaternions are close, just use linear interpolation
-                scale0 = 1.0f - changeAmnt;
+                scale0 = one - changeAmnt;
                 scale1 = changeAmnt;
             } else if ( cosHalfTheta <= -0.99f ) {
                 // the quaternions are nearly opposite,
                 // we can pick any axis normal to a,b to do the rotation
-                scale0 = 0.5f;
-                scale1 = 0.5f;
+                scale0 = half;
+                scale1 = half;
             } else {
                 if( cosHalfTheta <= -std::numeric_limits<value_type>::epsilon() ) { // FIXME: .. or shall we use the upper bound 'cosHalfTheta < EPSILON' ?
                     // Negate the second quaternion and the result of the dot product (Inversion)
-                    bx *= -1.0f;
-                    by *= -1.0f;
-                    bz *= -1.0f;
-                    bw *= -1.0f;
-                    cosHalfTheta *= -1.0f;
+                    bx *= -one;
+                    by *= -one;
+                    bz *= -one;
+                    bw *= -one;
+                    cosHalfTheta *= -one;
                 }
                 const value_type halfTheta = std::acos(cosHalfTheta);
-                const value_type sinHalfTheta = std::sqrt(1.0f - cosHalfTheta*cosHalfTheta);
+                const value_type sinHalfTheta = std::sqrt(one - cosHalfTheta*cosHalfTheta);
                 // if theta = 180 degrees then result is not fully defined
                 // we could rotate around any axis normal to qa or qb
                 if ( std::abs(sinHalfTheta) < 0.001f ){ // fabs is floating point absolute
-                    scale0 = 0.5f;
-                    scale1 = 0.5f;
+                    scale0 = half;
+                    scale1 = half;
                     // throw new InternalError("XXX"); // FIXME should not be reached due to above inversion ?
                 } else {
                     // Calculate the scale for q1 and q2, according to the angle and
                     // it's sine value
-                    scale0 = std::sin((1.0f - changeAmnt) * halfTheta) / sinHalfTheta;
+                    scale0 = std::sin((one - changeAmnt) * halfTheta) / sinHalfTheta;
                     scale1 = std::sin(changeAmnt * halfTheta) / sinHalfTheta;
                 }
             }
@@ -679,11 +679,11 @@ class alignas(Value_type) Quaternion {
             return setIdentity();
         } else {
             const value_type dot = v1.dot(v2) / factor; // normalize
-            const value_type theta = std::acos(std::max(-1.0f, std::min(dot, 1.0f))); // clipping [-1..1]
+            const value_type theta = std::acos(std::max(-one, std::min(dot, one))); // clipping [-1..1]
 
             Vec3 tmpPivotVec = v1.cross(v2);
 
-            if ( dot < 0.0f && jau::is_zero( tmpPivotVec.length() ) ) {
+            if ( dot < zero && jau::is_zero( tmpPivotVec.length() ) ) {
                 // Vectors parallel and opposite direction, therefore a rotation of 180 degrees about any vector
                 // perpendicular to this vector will rotate vector a onto vector b.
                 //
@@ -704,7 +704,7 @@ class alignas(Value_type) Quaternion {
                 }
                 tmpPivotVec[dominantIndex]           = -v1[ (dominantIndex + 1) % 3 ];
                 tmpPivotVec[(dominantIndex + 1) % 3] =  v1[ dominantIndex ];
-                tmpPivotVec[(dominantIndex + 2) % 3] =  0.0f;
+                tmpPivotVec[(dominantIndex + 2) % 3] =  zero;
             }
             return setFromAngleAxis(theta, tmpPivotVec);
         }
@@ -733,11 +733,11 @@ class alignas(Value_type) Quaternion {
             return setIdentity();
         } else {
             const value_type dot = v1.dot(v2) / factor; // normalize
-            const value_type theta = std::acos(std::max(-1.0f, std::min(dot, 1.0f))); // clipping [-1..1]
+            const value_type theta = std::acos(std::max(-one, std::min(dot, one))); // clipping [-1..1]
 
             Vec3 tmpPivotVec = v1.cross(v2);
 
-            if ( dot < 0.0f && jau::is_zero( tmpPivotVec.length() ) ) {
+            if ( dot < zero && jau::is_zero( tmpPivotVec.length() ) ) {
                 // Vectors parallel and opposite direction, therefore a rotation of 180 degrees about any vector
                 // perpendicular to this vector will rotate vector a onto vector b.
                 //
@@ -758,7 +758,7 @@ class alignas(Value_type) Quaternion {
                 }
                 tmpPivotVec[dominantIndex]           = -v1[ (dominantIndex + 1) % 3 ];
                 tmpPivotVec[(dominantIndex + 1) % 3] =  v1[ dominantIndex ];
-                tmpPivotVec[(dominantIndex + 2) % 3] =  0.0f;
+                tmpPivotVec[(dominantIndex + 2) % 3] =  zero;
             }
             return setFromAngleNormalAxis(theta, tmpPivotVec);
         }
@@ -802,7 +802,7 @@ class alignas(Value_type) Quaternion {
         if( vector.is_zero() ) {
             setIdentity();
         } else {
-            const value_type halfangle = angle * 0.5f;
+            const value_type halfangle = angle * half;
             const value_type sin = std::sin(halfangle);
             m_x = vector.x * sin;
             m_y = vector.y * sin;
@@ -823,11 +823,11 @@ class alignas(Value_type) Quaternion {
         const value_type sqrLength = m_x*m_x + m_y*m_y + m_z*m_z;
         value_type angle;
         if ( jau::is_zero(sqrLength) ) { // length is ~0
-            angle = 0.0f;
-            axis.set( 1.0f, 0.0f, 0.0f );
+            angle = zero;
+            axis.set( one, zero, zero );
         } else {
-            angle = std::acos(m_w) * 2.0f;
-            const value_type invLength = 1.0f / std::sqrt(sqrLength);
+            angle = std::acos(m_w) * two;
+            const value_type invLength = one / std::sqrt(sqrLength);
             axis.set( m_x * invLength,
                       m_y * invLength,
                       m_z * invLength );
@@ -885,13 +885,13 @@ class alignas(Value_type) Quaternion {
         if ( jau::is_zero3f(bankX, headingY, attitudeZ) ) {
             return setIdentity();
         } else {
-            value_type angle = headingY * 0.5f;
+            value_type angle = headingY * half;
             const value_type sinHeadingY = std::sin(angle);
             const value_type cosHeadingY = std::cos(angle);
-            angle = attitudeZ * 0.5f;
+            angle = attitudeZ * half;
             const value_type sinAttitudeZ = std::sin(angle);
             const value_type cosAttitudeZ = std::cos(angle);
-            angle = bankX * 0.5f;
+            angle = bankX * half;
             const value_type sinBankX = std::sin(angle);
             const value_type cosBankX = std::cos(angle);
 
@@ -933,17 +933,17 @@ class alignas(Value_type) Quaternion {
         const value_type test = m_x*m_y + m_z*m_w;
 
         if (test > 0.499f * unit) { // singularity at north pole
-            return Vec3( 0.0f,                        // m_x-bank
-                         2.0f * std::atan2(m_x, m_w), // y-heading
+            return Vec3( zero,                        // m_x-bank
+                         two * std::atan2(m_x, m_w),  // y-heading
                          M_PI_2 );                    // z-attitude
         } else if (test < -0.499f * unit) { // singularity at south pole
-            return Vec3( 0.0f,                        // m_x-bank
-                        -2.0 * std::atan2(m_x, m_w),  // m_y-heading
+            return Vec3( zero,                        // m_x-bank
+                        -two * std::atan2(m_x, m_w),  // m_y-heading
                         -M_PI_2 );                    // m_z-attitude
         } else {
-            return Vec3( std::atan2(2.0f * m_x * m_w - 2.0f * m_y * m_z, -sqx + sqy - sqz + sqw), // m_x-bank
-                         std::atan2(2.0f * m_y * m_w - 2.0f * m_x * m_z,  sqx - sqy - sqz + sqw), // m_y-heading
-                         std::asin( 2.0f * test / unit) );                                        // z-attitude
+            return Vec3( std::atan2(two * m_x * m_w - two * m_y * m_z, -sqx + sqy - sqz + sqw), // m_x-bank
+                         std::atan2(two * m_y * m_w - two * m_x * m_z,  sqx - sqy - sqz + sqw), // m_y-heading
+                         std::asin( two * test / unit) );                                        // z-attitude
         }
     }
 
@@ -968,27 +968,27 @@ class alignas(Value_type) Quaternion {
 
         // The trace T is the sum of the diagonal elements; see
         // http://mathworld.wolfram.com/MatrixTrace.html
-        const value_type T = m00 + m11 + m22 + 1.0f;
-        if ( T > 0.0f ) {
-            const value_type S = 0.5f / std::sqrt(T);  // S = 1 / ( 2 t )
+        const value_type T = m00 + m11 + m22 + one;
+        if ( T > zero ) {
+            const value_type S = half / std::sqrt(T);  // S = 1 / ( 2 t )
             m_w = 0.25f / S;                      // m_w = 1 / ( 4 S ) = t / 2
             m_x = ( m21 - m12 ) * S;
             m_y = ( m02 - m20 ) * S;
             m_z = ( m10 - m01 ) * S;
         } else if ( m00 > m11 && m00 > m22) {
-            const value_type S = 0.5f / std::sqrt(1.0f + m00 - m11 - m22); // S=4*qx
+            const value_type S = half / std::sqrt(one + m00 - m11 - m22); // S=4*qx
             m_w = ( m21 - m12 ) * S;
             m_x = 0.25f / S;
             m_y = ( m10 + m01 ) * S;
             m_z = ( m02 + m20 ) * S;
         } else if ( m11 > m22 ) {
-            const value_type S = 0.5f / std::sqrt(1.0f + m11 - m00 - m22); // S=4*qy
+            const value_type S = half / std::sqrt(one + m11 - m00 - m22); // S=4*qy
             m_w = ( m02 - m20 ) * S;
             m_x = ( m20 + m01 ) * S;
             m_y = 0.25f / S;
             m_z = ( m21 + m12 ) * S;
         } else {
-            const value_type S = 0.5f / std::sqrt(1.0f + m22 - m00 - m11); // S=4*qz
+            const value_type S = half / std::sqrt(one + m22 - m00 - m11); // S=4*qz
             m_w = ( m10 - m01 ) * S;
             m_x = ( m02 + m20 ) * S;
             m_y = ( m21 + m12 ) * S;
@@ -1066,10 +1066,10 @@ class alignas(Value_type) Quaternion {
             return m;
         }
         value_type srecip;
-        if ( jau::equals(1.0f, norm) ) {
-            srecip = 2.0f;
+        if ( jau::equals(one, norm) ) {
+            srecip = two;
         } else {
-            srecip = 2.0f / norm;
+            srecip = two / norm;
         }
         const value_type x = m_x;
         const value_type y = m_y;
@@ -1090,23 +1090,23 @@ class alignas(Value_type) Quaternion {
         const value_type zz = z  * zs;
         const value_type zw = zs * w;
 
-        m.m00 = 1.0f - ( yy + zz );
+        m.m00 = one - ( yy + zz );
         m.m01 =        ( xy - zw );
         m.m02 =        ( xz + yw );
-        m.m03 = 0.0f;
+        m.m03 = zero;
 
         m.m10 =        ( xy + zw );
-        m.m11 = 1.0f - ( xx + zz );
+        m.m11 = one - ( xx + zz );
         m.m12 =        ( yz - xw );
-        m.m13 = 0.0f;
+        m.m13 = zero;
 
         m.m20 =        ( xz - yw );
         m.m21 =        ( yz + xw );
-        m.m22 = 1.0f - ( xx + yy );
-        m.m23 = 0.0f;
+        m.m22 = one - ( xx + yy );
+        m.m23 = zero;
 
-        m.m30 = m.m31 = m.m32 = 0.0f;
-        m.m33 = 1.0f;
+        m.m30 = m.m31 = m.m32 = zero;
+        m.m33 = one;
         return m;
     }
 

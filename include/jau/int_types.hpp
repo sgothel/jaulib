@@ -73,6 +73,9 @@ namespace jau {
     #if defined(__SIZEOF_INT128__)
         template <> struct uint_bytes<16>{ using type = uint128_t; };
     #endif
+    /// Alias template for uint_bytes
+    template <int bytesize>
+      using uint_bytes_t = typename uint_bytes<bytesize>::type;
 
     template <int bytesize> struct sint_bytes;
     template <> struct sint_bytes<4>{ using type = int32_t; };
@@ -80,11 +83,17 @@ namespace jau {
     #if defined(__SIZEOF_INT128__)
         template <> struct sint_bytes<16>{ using type = int128_t; };
     #endif
+    /// Alias template for sint_bytes
+    template <int bytesize>
+      using sint_bytes_t = typename sint_bytes<bytesize>::type;
 
     template <int bytesize> struct float_bytes;
     template <> struct float_bytes<sizeof(float)>{ using type = float; };
     template <> struct float_bytes<sizeof(double)>{ using type = double; };
     template <> struct float_bytes<sizeof(long double)>{ using type = long double; };
+    /// Alias template for float_bytes
+    template <int bytesize>
+      using float_bytes_t = typename float_bytes<bytesize>::type;
 
     /**
     // *************************************************

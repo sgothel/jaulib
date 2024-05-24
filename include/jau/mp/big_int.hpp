@@ -599,7 +599,7 @@ namespace jau::mp {
              *
              * @param e the exponent
              */
-            BigInt mod_pow(BigInt e, BigInt m) {
+            BigInt mod_pow(BigInt e, const BigInt& m) {
                 const BigInt& b = *this;
                 if( b.is_zero() ) {
                     return BigInt::zero();
@@ -678,7 +678,7 @@ namespace jau::mp {
                                          const big_int_t& max); // TODO
             */
 
-            std::string to_dec_string(bool add_details=false) const noexcept {
+            std::string to_dec_string(bool add_details=false) const {
                 // Use the largest power of 10 that fits in a mp_word_t
                 mp_word_t conversion_radix, radix_digits;
                 if constexpr ( 64 == mp_word_bits ) {
@@ -690,7 +690,7 @@ namespace jau::mp {
                 }
 
                 // (over-)estimate of the number of digits needed; log2(10) ~ 3.3219
-                const size_t digit_estimate = static_cast<size_t>(1 + (this->bits() / 3.32));
+                const size_t digit_estimate = static_cast<size_t>(1 + (static_cast<double>(this->bits()) / 3.32));
 
                 // (over-)estimate of db such that conversion_radix^db > *this
                 const size_t digit_blocks = (digit_estimate + radix_digits - 1) / radix_digits;
@@ -738,8 +738,8 @@ namespace jau::mp {
                 }
 
                 // Reverse and convert to textual digits
-                for(auto i = digits.rbegin(); i != digits.rend(); ++i) {
-                    s.push_back(*i + '0'); // assumes ASCII
+                for(uint8_t d : digits) {
+                    s.push_back(static_cast<char>(d + '0')); // assumes ASCII
                 }
 
                 if(s.empty()) {
@@ -1088,7 +1088,7 @@ namespace jau::mp {
 
                 // This could be made faster using the same trick as to_dec_string
                 for(size_t i = 0; i < str_len; ++i) {
-                    const char c = buf[i];
+                    const char c = static_cast<char>(buf[i]);
 
                     if(c < '0' || c > '9') {
                         throw jau::math::MathDomainError("invalid decimal char", E_FILE_LINE);
@@ -1556,8 +1556,8 @@ namespace jau {
      *  @{
      */
 
-    inline mp::BigInt abs(mp::BigInt x) noexcept { return x.abs(); }
-    inline mp::BigInt pow(mp::BigInt b, mp::BigInt e) { return b.pow(e); }
+    inline mp::BigInt abs(const mp::BigInt& x) noexcept { return x.abs(); }
+    inline mp::BigInt pow(mp::BigInt b, const mp::BigInt& e) { return b.pow(e); }
 
     inline const mp::BigInt& min(const mp::BigInt& x, const mp::BigInt& y) noexcept {
         return x < y ? x : y;

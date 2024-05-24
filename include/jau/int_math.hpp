@@ -54,7 +54,7 @@ namespace jau {
 
     /** Returns true of the given integer value is zero. */
     template<class T>
-    typename std::enable_if<std::is_integral_v<T>, bool>::type
+    typename std::enable_if_t<std::is_integral_v<T>, bool>
     constexpr is_zero(const T& a) noexcept {
         return 0 == a;
     }
@@ -67,7 +67,7 @@ namespace jau {
      * @param b value to compare
      */
     template<class T>
-    typename std::enable_if<std::is_integral_v<T>, bool>::type
+    typename std::enable_if_t<std::is_integral_v<T>, bool>
     constexpr equals(const T& a, const T& b) noexcept {
         return a == b;
     }
@@ -81,7 +81,7 @@ namespace jau {
      * @param allowed_deviation allowed deviation
      */
     template<class T>
-    typename std::enable_if<std::is_integral_v<T>, bool>::type
+    typename std::enable_if_t<std::is_integral_v<T>, bool>
     constexpr equals(const T& a, const T& b, const T& allowed_deviation) noexcept {
         return std::abs(a - b) <= allowed_deviation;
     }

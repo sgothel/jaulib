@@ -54,7 +54,7 @@ namespace jau::os {
            * Queries whether function 'funcName' is available.
            */
           bool isFunctionAvailable(const std::string& funcName) const noexcept {
-              return 0 != dynamicLookupFunction(funcName);
+              return nullptr != dynamicLookupFunction(funcName);
           }
     };
     
