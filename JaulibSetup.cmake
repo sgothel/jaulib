@@ -200,6 +200,17 @@ else()
     message(STATUS "JaulibSetup: CMAKE_CXX_STANDARD (default): ${CMAKE_CXX_STANDARD}, CMAKE_CXX_STANDARD_REQUIRED: ${CMAKE_CXX_STANDARD_REQUIRED}")
 endif()
 
+if(CMAKE_CXX_STANDARD STREQUAL "26")
+    set(cxx_clangd_flags "-std=c++26")
+elseif(CMAKE_CXX_STANDARD STREQUAL "23")
+    set(cxx_clangd_flags "-std=c++23")
+elseif(CMAKE_CXX_STANDARD STREQUAL "20")
+    set(cxx_clangd_flags "-std=c++20")
+else()
+    set(cxx_clangd_flags "-std=c++17")
+endif()
+message(STATUS "JaulibSetup: cxx_clangd_flags: ${cxx_clangd_flags}")
+
 #
 # Post initial setup / var-check
 #

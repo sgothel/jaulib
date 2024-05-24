@@ -16,7 +16,7 @@ CheckOptions:
     value:           'true'
 
 WarningsAsErrors: '*'
-HeaderFilterRegex: '(include/jau/[a-zA-Z0-0]*|include/jau/jni/[a-zA-Z0-0]*)\.hpp'
+HeaderFilterRegex: '(include/jau/.*)\.hpp'
 # AnalyzeTemporaryDtors: false
 FormatStyle:     none
 InheritParentConfig: false

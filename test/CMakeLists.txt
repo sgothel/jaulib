@@ -1,5 +1,6 @@
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/../include
+  ${CMAKE_CURRENT_SOURCE_DIR}/../include/catch2_jau
 )
 
 set (catch2_LIB_SRCS
