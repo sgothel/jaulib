@@ -27,9 +27,18 @@
 
 #include <jau/test/catch2_ext.hpp>
 
+#include <jau/version.hpp>
 #include <jau/util/VersionNumber.hpp>
 
 using namespace jau::util;
+
+TEST_CASE( "VersionNumber Test 00", "[version][util]" ) {
+    std::cout << "jaulib version: " << jau::VERSION << std::endl;
+    REQUIRE(true == jau::VERSION.hasMajor());
+    REQUIRE(true == jau::VERSION.hasMinor());
+    REQUIRE(true == jau::VERSION.hasSub());
+    REQUIRE(true == jau::VERSION.hasString());
+}
 
 TEST_CASE( "VersionNumber Test 01a", "[version][util]" ) {
     std::string vs00 = "1.0.16";
@@ -41,12 +50,15 @@ TEST_CASE( "VersionNumber Test 01a", "[version][util]" ) {
     REQUIRE(true == vn0.hasMajor());
     REQUIRE(true == vn0.hasMinor());
     REQUIRE(true == vn0.hasSub());
+    REQUIRE(false == vn0.hasGitInfo());
 
     VersionNumber vn(vs00);
     std::cout << "vn.00: " << vn << std::endl;    
     REQUIRE(true == vn.hasMajor());
     REQUIRE(true == vn.hasMinor());
     REQUIRE(true == vn.hasSub());
+    REQUIRE(false == vn.hasGitInfo());
+    REQUIRE(true == vn.hasString());
     REQUIRE(vn0 == vn);
 
     vn = VersionNumber(vs01);
@@ -54,6 +66,7 @@ TEST_CASE( "VersionNumber Test 01a", "[version][util]" ) {
     REQUIRE(true == vn.hasMajor());
     REQUIRE(true == vn.hasMinor());
     REQUIRE(true == vn.hasSub());
+    REQUIRE(false == vn.hasGitInfo());
     REQUIRE(vn0 == vn);
 
     vn = VersionNumber(vs02);
@@ -61,6 +74,7 @@ TEST_CASE( "VersionNumber Test 01a", "[version][util]" ) {
     REQUIRE(true == vn.hasMajor());
     REQUIRE(true == vn.hasMinor());
     REQUIRE(true == vn.hasSub());
+    REQUIRE(false == vn.hasGitInfo());
     REQUIRE(vn0 == vn);    
 }
 
@@ -75,6 +89,7 @@ TEST_CASE( "VersionNumber Test 01b", "[version][util]" ) {
     REQUIRE(true == vn0.hasMajor());
     REQUIRE(true == vn0.hasMinor());
     REQUIRE(true == vn0.hasSub());
+    REQUIRE(false == vn0.hasGitInfo());
 
     VersionNumber vn;
     vn = VersionNumber(vs00, delim);
@@ -82,6 +97,7 @@ TEST_CASE( "VersionNumber Test 01b", "[version][util]" ) {
     REQUIRE(true == vn.hasMajor());
     REQUIRE(true == vn.hasMinor());
     REQUIRE(true == vn.hasSub());
+    REQUIRE(false == vn.hasGitInfo());
     REQUIRE(vn0 == vn);
 
     vn = VersionNumber(vs01, delim);
@@ -89,6 +105,7 @@ TEST_CASE( "VersionNumber Test 01b", "[version][util]" ) {
     REQUIRE(true == vn.hasMajor());
     REQUIRE(true == vn.hasMinor());
     REQUIRE(true == vn.hasSub());
+    REQUIRE(false == vn.hasGitInfo());
     REQUIRE(vn0 == vn);
 
     vn = VersionNumber(vs02, delim);
@@ -96,6 +113,7 @@ TEST_CASE( "VersionNumber Test 01b", "[version][util]" ) {
     REQUIRE(true == vn.hasMajor());
     REQUIRE(true == vn.hasMinor());
     REQUIRE(true == vn.hasSub());
+    REQUIRE(false == vn.hasGitInfo());
     REQUIRE(vn0 == vn);        
 }
 
@@ -108,6 +126,7 @@ TEST_CASE( "VersionNumber Test 02a", "[version][util]" ) {
     REQUIRE(true == vn0.hasMajor());
     REQUIRE(true == vn0.hasMinor());
     REQUIRE(true == vn0.hasSub());
+    REQUIRE(false == vn0.hasGitInfo());
 
     VersionNumber vn;
     vn = VersionNumber(vs00);
@@ -115,6 +134,7 @@ TEST_CASE( "VersionNumber Test 02a", "[version][util]" ) {
     REQUIRE(true == vn.hasMajor());
     REQUIRE(true == vn.hasMinor());
     REQUIRE(true == !vn.hasSub());
+    REQUIRE(false == vn.hasGitInfo());
     REQUIRE(vn0 == vn);
 
     vn = VersionNumber(vs01);
@@ -122,6 +142,7 @@ TEST_CASE( "VersionNumber Test 02a", "[version][util]" ) {
     REQUIRE(true == vn.hasMajor());
     REQUIRE(true == vn.hasMinor());
     REQUIRE(true == !vn.hasSub());
+    REQUIRE(false == vn.hasGitInfo());
     REQUIRE(vn0 == vn);
 
     vn = VersionNumber(vs02);
@@ -129,6 +150,7 @@ TEST_CASE( "VersionNumber Test 02a", "[version][util]" ) {
     REQUIRE(true == vn.hasMajor());
     REQUIRE(true == vn.hasMinor());
     REQUIRE(true == !vn.hasSub());
+    REQUIRE(false == vn.hasGitInfo());
     REQUIRE(vn0 == vn);
 }
 
@@ -142,6 +164,7 @@ TEST_CASE( "VersionNumber Test 02b", "[version][util]" ) {
     REQUIRE(true == vn0.hasMajor());
     REQUIRE(true == vn0.hasMinor());
     REQUIRE(true == vn0.hasSub());
+    REQUIRE(false == vn0.hasGitInfo());
 
     VersionNumber vn;
 
@@ -149,18 +172,21 @@ TEST_CASE( "VersionNumber Test 02b", "[version][util]" ) {
     REQUIRE(true == vn.hasMajor());
     REQUIRE(true == vn.hasMinor());
     REQUIRE(true == !vn.hasSub());
+    REQUIRE(false == vn.hasGitInfo());
     REQUIRE(vn0 == vn);
 
     vn = VersionNumber(vs01, delim);
     REQUIRE(true == vn.hasMajor());
     REQUIRE(true == vn.hasMinor());
     REQUIRE(true == !vn.hasSub());
+    REQUIRE(false == vn.hasGitInfo());
     REQUIRE(vn0 == vn);
 
     vn = VersionNumber(vs02, delim);
     REQUIRE(true == vn.hasMajor());
     REQUIRE(true == vn.hasMinor());
     REQUIRE(true == !vn.hasSub());
+    REQUIRE(false == vn.hasGitInfo());
     REQUIRE(vn0 == vn);
 }
 
@@ -172,6 +198,7 @@ TEST_CASE( "VersionNumber Test 03a", "[version][util]" ) {
     REQUIRE(true == vn0.hasMajor());
     REQUIRE(true == vn0.hasMinor());
     REQUIRE(true == vn0.hasSub());
+    REQUIRE(false == vn0.hasGitInfo());
 
     VersionNumber vn;
 
@@ -179,18 +206,21 @@ TEST_CASE( "VersionNumber Test 03a", "[version][util]" ) {
     REQUIRE(true == vn.hasMajor());
     REQUIRE(true == vn.hasMinor());
     REQUIRE(true == vn.hasSub());
+    REQUIRE(false == vn.hasGitInfo());
     REQUIRE(vn0 == vn);
 
     vn = VersionNumber(vs01);
     REQUIRE(true == vn.hasMajor());
     REQUIRE(true == vn.hasMinor());
     REQUIRE(true == vn.hasSub());
+    REQUIRE(false == vn.hasGitInfo());
     REQUIRE(vn0 == vn);
 
     vn = VersionNumber(vs02);
     REQUIRE(true == vn.hasMajor());
     REQUIRE(true == vn.hasMinor());
     REQUIRE(true == vn.hasSub());
+    REQUIRE(false == vn.hasGitInfo());
     REQUIRE(vn0 == vn);
 }
 
@@ -204,6 +234,7 @@ TEST_CASE( "VersionNumber Test 03b", "[version][util]" ) {
     REQUIRE(true == vn0.hasMajor());
     REQUIRE(true == vn0.hasMinor());
     REQUIRE(true == vn0.hasSub());
+    REQUIRE(false == vn0.hasGitInfo());
 
     VersionNumber vn;
 
@@ -211,79 +242,58 @@ TEST_CASE( "VersionNumber Test 03b", "[version][util]" ) {
     REQUIRE(true == vn.hasMajor());
     REQUIRE(true == vn.hasMinor());
     REQUIRE(true == vn.hasSub());
+    REQUIRE(false == vn.hasGitInfo());
     REQUIRE(vn0 == vn);
 
     vn = VersionNumber(vs01, delim);
     REQUIRE(true == vn.hasMajor());
     REQUIRE(true == vn.hasMinor());
     REQUIRE(true == vn.hasSub());
+    REQUIRE(false == vn.hasGitInfo());
     REQUIRE(vn0 == vn);
 
     vn = VersionNumber(vs02, delim);
     REQUIRE(true == vn.hasMajor());
     REQUIRE(true == vn.hasMinor());
     REQUIRE(true == vn.hasSub());
+    REQUIRE(false == vn.hasGitInfo());
     REQUIRE(vn0 == vn);
 }
 
 TEST_CASE( "VersionNumber Test 04a", "[version][util]" ) {
-    const std::string vs00 = "A10.11.12b (git-d6c318e)";
-    const std::string vs01 = "Prelim Text 10.Funny11.Weird12 Something is odd (git-d6c318e)";
-    const std::string vs02 = "Prelim Text 10.Funny11l1.Weird12 2 Something is odd (git-d6c318e)";
-    const VersionNumber vn0 = VersionNumber(10, 11, 12);
+    const std::string vs00 = "v1.2.3-10-gabcdef-dirty";
+    const std::string vs01 = "v1.2.3-11-g1abcdef";
+    const VersionNumber vn0 = VersionNumber(1, 2, 3, 10, 0xabcdef, true);
+    const VersionNumber vn1 = VersionNumber(1, 2, 3, 11, 0x1abcdef, false);
+    std::cout << "vn0: " << vn0 << std::endl;
+    std::cout << "vn1: " << vn1 << std::endl;
+    REQUIRE(vn1 > vn0);
+    REQUIRE(vn1.hash() != vn0.hash());
     REQUIRE(true == vn0.hasMajor());
     REQUIRE(true == vn0.hasMinor());
     REQUIRE(true == vn0.hasSub());
-
+    REQUIRE(true == vn0.hasGitInfo());
+    REQUIRE(true == vn1.hasMajor());
+    REQUIRE(true == vn1.hasMinor());
+    REQUIRE(true == vn1.hasSub());
+    REQUIRE(true == vn1.hasGitInfo());
+    
     VersionNumber vn;
 
     vn = VersionNumber(vs00);
+    std::cout << "vn.00: " << vn << std::endl;
     REQUIRE(true == vn.hasMajor());
     REQUIRE(true == vn.hasMinor());
     REQUIRE(true == vn.hasSub());
+    REQUIRE(true == vn.hasGitInfo());
     REQUIRE(vn0 == vn);
 
     vn = VersionNumber(vs01);
+    std::cout << "vn.01: " << vn << std::endl;
     REQUIRE(true == vn.hasMajor());
     REQUIRE(true == vn.hasMinor());
     REQUIRE(true == vn.hasSub());
-    REQUIRE(vn0 == vn);
-
-    vn = VersionNumber(vs02);
-    REQUIRE(true == vn.hasMajor());
-    REQUIRE(true == vn.hasMinor());
-    REQUIRE(true == vn.hasSub());
-    REQUIRE(vn0 == vn);
+    REQUIRE(true == vn.hasGitInfo());
+    REQUIRE(vn1 == vn);
 }
 
-TEST_CASE( "VersionNumber Test 04b", "[version][util]" ) {
-    const std::string delim = ",";
-
-    const std::string vs00 = "A10,11,12b (git-d6c318e)";
-    const std::string vs01 = "Prelim Text 10,Funny11,Weird12 Something is odd (git-d6c318e)";
-    const std::string vs02 = "Prelim Text 10,Funny11l1,Weird12 2 Something is odd (git-d6c318e)";
-    const VersionNumber vn0 = VersionNumber(10, 11, 12);
-    REQUIRE(true == vn0.hasMajor());
-    REQUIRE(true == vn0.hasMinor());
-    REQUIRE(true == vn0.hasSub());
-
-    VersionNumber vn;
-
-    vn = VersionNumber(vs00, delim);
-    REQUIRE(true == vn.hasMajor());
-    REQUIRE(true == vn.hasMinor());
-    REQUIRE(true == vn.hasSub());
-    REQUIRE(vn0 == vn);
-
-    vn = VersionNumber(vs01, delim);
-    REQUIRE(true == vn.hasMajor());
-    REQUIRE(true == vn.hasMinor());
-    REQUIRE(true == vn.hasSub());
-    REQUIRE(vn0 == vn);
-
-    vn = VersionNumber(vs02, delim);
-    REQUIRE(true == vn.hasMajor());
-    REQUIRE(true == vn.hasMinor());
-    REQUIRE(true == vn.hasSub());
-    REQUIRE(vn0 == vn);
-}
