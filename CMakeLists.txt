@@ -13,7 +13,7 @@ JaulibSetup()
 if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.clangd)
 # Fixup clangd w/ absolute path
 set (jaulib_clangd_source_args "-isystem, ${CMAKE_CURRENT_SOURCE_DIR}/include, -isystem, ${CMAKE_CURRENT_SOURCE_DIR}/src, -isystem, ${CMAKE_CURRENT_SOURCE_DIR}/java_jni/jni, -isystem, ${CMAKE_CURRENT_SOURCE_DIR}/java_jni/jni/jau")
-set (gamp_clangd_source_args "${gamp_clangd_source_args}, -isystem, ${CMAKE_CURRENT_SOURCE_DIR}/include/catch2_jau, -isystem, ${CMAKE_CURRENT_SOURCE_DIR}/test")
+set (jaulib_clangd_source_args "${jaulib_clangd_source_args}, -isystem, ${CMAKE_CURRENT_SOURCE_DIR}/include/catch2_jau, -isystem, ${CMAKE_CURRENT_SOURCE_DIR}/test")
 configure_file (${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/clangd.in
                 ${CMAKE_CURRENT_SOURCE_DIR}/.clangd)
 endif()
