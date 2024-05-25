@@ -410,7 +410,7 @@ namespace jau {
              * @return function result
              */
             constexpr snsize_t sign() const noexcept {
-                return sign(num);
+                return jau::sign(num);
             }
 
             /**
@@ -608,7 +608,7 @@ namespace jau {
      */
     template<typename int_type>
     constexpr snsize_t sign(const fraction<int_type>& rhs) noexcept {
-        return sign(rhs.num);
+        return jau::sign(rhs.num);
     }
 
     /**
@@ -1088,7 +1088,7 @@ namespace jau {
      * @return function result
      */
     constexpr snsize_t sign(const fraction_timespec& rhs) noexcept {
-        return 0 != rhs.tv_sec ? sign(rhs.tv_sec) : sign(rhs.tv_nsec);
+        return 0 != rhs.tv_sec ? jau::sign(rhs.tv_sec) : jau::sign(rhs.tv_nsec);
     }
 
     /**
