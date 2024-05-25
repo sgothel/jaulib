@@ -25,6 +25,7 @@
 #include <cinttypes>
 #include <cstring>
 
+#include <jau/string_util.hpp>
 #include <jau/test/catch2_ext.hpp>
 
 #include <jau/basic_types.hpp>
@@ -356,26 +357,212 @@ TEST_CASE( "Integer Get/Put in explicit Byte Order Test 03", "[byteorder][get][p
 }
 
 TEST_CASE( "HexString from and to byte vector conversion - Test 04", "[hexstring]" ) {
-    const std::vector<uint8_t> lalaSink1 = { 0x1a, 0x1b, 0x2a, 0x2b, 0xff };
     {
-        const std::string value_s0 = "1a1b2a2bff";
-        const std::string value_s1 = jau::bytesHexString(lalaSink1.data(), 0, lalaSink1.size(), true /* lsbFirst */);
+        std::cout << "Little Endian Representation: " << std::endl;
+        const std::vector<uint8_t> lalaSink1 = { 0x1a, 0x1b, 0x2a, 0x2b, 0xff };
+        const uint64_t v0_be = 0x000000ff2b2a1b1aU;
+        const uint64_t v0_le = 0x0000001a1b2a2bffU;
+        
+        const std::string value_s0 = "1a1b2a2bff"; // LE
+        const std::string value_s1 = jau::bytesHexString(lalaSink1.data(), lalaSink1.size(), true /* lsbFirst */);
+        const uint64_t v1_le = jau::from_hexstring(value_s1, !jau::is_little_endian() /* lsbFirst */); // LE -> LE on native
+        const uint64_t v1_be = jau::from_hexstring(value_s1,  jau::is_little_endian() /* lsbFirst */); // LE -> BE on native
+        
         std::vector<uint8_t> lalaSink2;
         jau::hexStringBytes(lalaSink2, value_s1, true /* lsbFirst */, false);
-        const std::string value_s2 = jau::bytesHexString(lalaSink2.data(), 0, lalaSink2.size(), true /* lsbFirst */);
+        const std::string value_s2 = jau::bytesHexString(lalaSink2.data(), lalaSink2.size(), true /* lsbFirst */);
+        const uint64_t v2_le = jau::from_hexstring(value_s2, !jau::is_little_endian() /* lsbFirst */); // LE -> LE on native
+        const uint64_t v2_be = jau::from_hexstring(value_s2,  jau::is_little_endian() /* lsbFirst */); // LE -> BE on native
+        
         REQUIRE( value_s0 == value_s1 );
         REQUIRE( value_s0 == value_s2 );
-        // Assert.assertArrayEquals(lalaSink1, lalaSink2);
+        
+        std::cout << "v0_le " << value_s1 << " (2) " << value_s2 << std::endl;
+        {
+            std::string v0_be_s = jau::to_hexstring(v0_be);
+            std::cout << "v0_be_s " << v0_be_s << std::endl;            
+            std::string v1_be_s = jau::to_hexstring(v1_be);
+            std::string v2_be_s = jau::to_hexstring(v2_be);
+            std::cout << "v1_be_s " << v1_be_s << std::endl;
+            std::cout << "v2_be_s " << v2_be_s << std::endl;
+            
+            std::string v0_le_s = jau::to_hexstring(v0_le);
+            std::cout << "v0_le_s " << v0_le_s << std::endl;            
+            std::string v1_le_s = jau::to_hexstring(v1_le);
+            std::string v2_le_s = jau::to_hexstring(v2_le);
+            std::cout << "v1_le_s " << v1_le_s << std::endl;
+            std::cout << "v2_le_s " << v2_le_s << std::endl;
+        }          
+        REQUIRE( v0_le == v1_le );
+        REQUIRE( v0_le == v2_le );
+        REQUIRE( v0_be == v1_be );
+        REQUIRE( v0_be == v2_be );
+        
+        REQUIRE(lalaSink1 == lalaSink2);
+        std::cout << std::endl;
     }
     {
+        std::cout << "Big Endian Representation: " << std::endl;
+        const std::vector<uint8_t> lalaSink1 = { 0x1a, 0x1b, 0x2a, 0x2b, 0xff };
+        const uint64_t v0_be = 0x000000ff2b2a1b1aU;
+        const uint64_t v0_le = 0x0000001a1b2a2bffU;
+        
         const std::string value_s0 = "0xff2b2a1b1a";
-        const std::string value_s1 = jau::bytesHexString(lalaSink1.data(), 0, lalaSink1.size(), false /* lsbFirst */);
+        const std::string value_s1 = jau::bytesHexString(lalaSink1.data(), lalaSink1.size(), false /* lsbFirst */);
+        const uint64_t v1_le = jau::from_hexstring(value_s1,  jau::is_little_endian() /* lsbFirst */); // BE -> LE on native
+        const uint64_t v1_be = jau::from_hexstring(value_s1, !jau::is_little_endian() /* lsbFirst */); // BE -> BE on native
+        
         std::vector<uint8_t> lalaSink2;
         jau::hexStringBytes(lalaSink2, value_s1, false /* lsbFirst */, true);
-        const std::string value_s2 = jau::bytesHexString(lalaSink2.data(), 0, lalaSink2.size(), false /* lsbFirst */);
+        const std::string value_s2 = jau::bytesHexString(lalaSink2.data(), lalaSink2.size(), false /* lsbFirst */);
+        const uint64_t v2_le = jau::from_hexstring(value_s2,  jau::is_little_endian() /* lsbFirst */); // BE -> LE on native
+        const uint64_t v2_be = jau::from_hexstring(value_s2, !jau::is_little_endian() /* lsbFirst */); // BE -> BE on native
         REQUIRE( value_s0 == value_s1 );
         REQUIRE( value_s0 == value_s2 );
-        // Assert.assertArrayEquals(lalaSink1, lalaSink2);
+        
+        std::cout << "v0_be " << value_s1 << " (2) " << value_s2 << std::endl;
+        {
+            std::string v0_be_s = jau::to_hexstring(v0_be);
+            std::cout << "v0_be_s " << v0_be_s << std::endl;            
+            std::string v1_be_s = jau::to_hexstring(v1_be);
+            std::string v2_be_s = jau::to_hexstring(v2_be);
+            std::cout << "v1_be_s " << v1_be_s << std::endl;
+            std::cout << "v2_be_s " << v2_be_s << std::endl;
+            
+            std::string v0_le_s = jau::to_hexstring(v0_le);
+            std::cout << "v0_le_s " << v0_le_s << std::endl;            
+            std::string v1_le_s = jau::to_hexstring(v1_le);
+            std::string v2_le_s = jau::to_hexstring(v2_le);
+            std::cout << "v1_le_s " << v1_le_s << std::endl;
+            std::cout << "v2_le_s " << v2_le_s << std::endl;
+        }          
+        REQUIRE( v0_le == v1_le );
+        REQUIRE( v0_le == v2_le );
+        REQUIRE( v0_be == v1_be );
+        REQUIRE( v0_be == v2_be );
+        
+        REQUIRE(lalaSink1 == lalaSink2);
+        std::cout << std::endl;                
+    }
+    {
+        // even digits
+        std::cout << "Even digits (1): " << std::endl;
+        const std::vector<uint8_t> v0_b = { 0x1a, 0x1b, 0x2a, 0x2b, 0xff };
+        const uint64_t v0 = 0xff2b2a1b1aU;        
+        const std::string v0_s_msb = "0xff2b2a1b1a";
+        const std::string v0_s_lsb =   "1a1b2a2bff";
+        std::cout << "v0   " << jau::to_hexstring(v0) << std::endl;
+        std::cout << "v0_b " << jau::to_string(v0_b) << std::endl;
+        std::cout << "v0_s (msb) " << v0_s_msb << std::endl;
+        std::cout << "v0_s (lsb)   " << v0_s_lsb << std::endl;
+        
+        std::vector<uint8_t> v1_b_msb_str;
+        std::vector<uint8_t> v1_b_lsb_str;
+        jau::hexStringBytes(v1_b_msb_str, v0_s_msb, false /* lsbFirst */, true);
+        jau::hexStringBytes(v1_b_lsb_str, v0_s_lsb, true  /* lsbFirst */, true);
+        const std::string v1_bs_msb_str = jau::bytesHexString(v1_b_msb_str, false /* lsbFirst */);
+        const std::string v1_bs_lsb_str = jau::bytesHexString(v1_b_lsb_str, false /* lsbFirst */);
+        std::cout << "v1_b  (msb str) " << jau::to_string(v1_b_msb_str) << std::endl;
+        std::cout << "v1_bs (msb str) " << v1_bs_msb_str << std::endl;
+        std::cout << "v1_b  (lsb str) " << jau::to_string(v1_b_lsb_str) << std::endl;
+        std::cout << "v1_bs (lsb str) " << v1_bs_lsb_str << std::endl;
+        
+        const uint64_t v1_msb_str = jau::from_hexstring(v0_s_msb, false);
+        const uint64_t v1_lsb_str = jau::from_hexstring(v0_s_lsb, true);
+        std::cout << "v1   (msb) " << jau::to_hexstring(v1_msb_str) << std::endl;
+        std::cout << "v1   (lsb) " << jau::to_hexstring(v1_lsb_str) << std::endl;
+        
+        REQUIRE( v0 == v1_msb_str );
+        REQUIRE( v0 == v1_lsb_str );
+        REQUIRE( v0_b == v1_b_msb_str );
+        REQUIRE( v0_b == v1_b_lsb_str );
+        std::cout << std::endl;                
+    }
+    {
+        // odd digits
+        std::cout << "Odd digits (1): " << std::endl;
+        const std::vector<uint8_t> v0_b_msb = { 0x1a, 0x1b, 0x2a, 0x2b, 0x0f };
+        const std::vector<uint8_t> v0_b_lsb = { 0x1a, 0x1b, 0x2a, 0x2b, 0xf0 };
+        const uint64_t v0_msb = 0x0f2b2a1b1aU;        
+        const uint64_t v0_lsb = 0xf02b2a1b1aU;
+        const std::string v0_s_msb = "0xf2b2a1b1a";
+        const std::string v0_s_lsb =   "1a1b2a2bf";
+        std::cout << "v0   (msb) " << jau::to_hexstring(v0_msb) << std::endl;
+        std::cout << "v0_b (msb) " << jau::to_string(v0_b_msb) << std::endl;
+        std::cout << "v0_s (msb) " << v0_s_msb << std::endl;
+        std::cout << "v0   (lsb) " << jau::to_hexstring(v0_lsb) << std::endl;
+        std::cout << "v0_b (lsb) " << jau::to_string(v0_b_lsb) << std::endl;
+        std::cout << "v0_s (lsb) " << v0_s_lsb << std::endl;
+        
+        std::vector<uint8_t> v1_b_msb_str;
+        std::vector<uint8_t> v1_b_lsb_str;
+        jau::hexStringBytes(v1_b_msb_str, v0_s_msb, false /* lsbFirst */, true);
+        jau::hexStringBytes(v1_b_lsb_str, v0_s_lsb, true  /* lsbFirst */, true);
+        const std::string v1_bs_msb_str = jau::bytesHexString(v1_b_msb_str, false /* lsbFirst */);
+        const std::string v1_bs_lsb_str = jau::bytesHexString(v1_b_lsb_str, false /* lsbFirst */);
+        std::cout << "v1_b  (msb str) " << jau::to_string(v1_b_msb_str) << std::endl;
+        std::cout << "v1_bs (msb str) " << v1_bs_msb_str << std::endl;
+        std::cout << "v1_b  (lsb str) " << jau::to_string(v1_b_lsb_str) << std::endl;
+        std::cout << "v1_bs (lsb str) " << v1_bs_lsb_str << std::endl;
+        
+        const uint64_t v1_msb_str = jau::from_hexstring(v0_s_msb, false);
+        const uint64_t v1_lsb_str = jau::from_hexstring(v0_s_lsb, true);
+        std::cout << "v1   (msb) " << jau::to_hexstring(v1_msb_str) << std::endl;
+        std::cout << "v1   (lsb) " << jau::to_hexstring(v1_lsb_str) << std::endl;
+        
+        REQUIRE( v0_msb == v1_msb_str );
+        REQUIRE( v0_lsb == v1_lsb_str );
+        REQUIRE( v0_b_msb == v1_b_msb_str );
+        REQUIRE( v0_b_lsb == v1_b_lsb_str );
+        std::cout << std::endl;                
+    }
+    {
+        std::cout << "Even digits (2): " << std::endl;
+        const uint64_t v0 = 0x000000ff2b2a1b1aU;
+        std::string v0_s = jau::to_hexstring(v0);
+        const uint64_t v0_2 = jau::from_hexstring(v0_s);
+        std::cout << "v0_s " << v0_s << std::endl;
+        std::cout << "v0_2  " << jau::to_hexstring(v0_2) << std::endl;
+        REQUIRE( v0 == v0_2 );
+        std::cout << std::endl;
+    }
+    {
+        std::cout << "Even digits (3): " << std::endl;
+        std::string v0_0s1 = "0xff2b2a1b1a";
+        const uint64_t v0_0 = 0xff2b2a1b1aU;
+        std::string v0_0s2 = jau::to_hexstring(v0_0);
+        
+        const uint64_t i0_0s1 = jau::from_hexstring(v0_0s1);        
+        const uint64_t i0_0s2 = jau::from_hexstring(v0_0s2);
+        
+        std::cout << "v0_0s  " << v0_0s1 << std::endl;
+        std::cout << "v0_0s2 " << v0_0s2 << std::endl;
+        
+        std::cout << "i0_0s1 " << jau::to_hexstring(i0_0s1) << std::endl;
+        std::cout << "i0_0s2 " << jau::to_hexstring(i0_0s2) << std::endl;
+        
+        REQUIRE( v0_0 == i0_0s1 );
+        REQUIRE( v0_0 == i0_0s2 );
+        std::cout << std::endl;
+    }
+    {
+        std::cout << "Odd digits (3): " << std::endl;
+        std::string v0_0s1 = "0xf2b2a1b1a";
+        const uint64_t v0_0 = 0xf2b2a1b1aU;
+        std::string v0_0s2 = jau::to_hexstring(v0_0);
+        
+        const uint64_t i0_0s1 = jau::from_hexstring(v0_0s1);        
+        const uint64_t i0_0s2 = jau::from_hexstring(v0_0s2);
+        
+        std::cout << "v0_0s  " << v0_0s1 << std::endl;
+        std::cout << "v0_0s2 " << v0_0s2 << std::endl;
+        
+        std::cout << "i0_0s1 " << jau::to_hexstring(i0_0s1) << std::endl;
+        std::cout << "i0_0s2 " << jau::to_hexstring(i0_0s2) << std::endl;
+        
+        REQUIRE( v0_0 == i0_0s1 );
+        REQUIRE( v0_0 == i0_0s2 );
+        std::cout << std::endl;
     }
 }
 

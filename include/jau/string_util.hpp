@@ -85,6 +85,13 @@ namespace jau {
      * In case a non valid hexadecimal digit appears in the given string,
      * conversion ends and fills the byte vector up until the violation.
      *
+     * If string is in MSB first (default w/ leading 0x) and platform jau::is_little_endian(),
+     * lsbFirst = false shall be passed.
+     *
+     * In case hexstr contains an odd number of hex-nibbles, it will be interpreted as follows
+     * - 0xf12 = 0x0f12 = { 0x12, 0x0f } - msb, 1st single low-nibble is most significant 
+     * -   12f = 0xf012 = { 0x12, 0xf0 } - lsb, last single high-nibble is most significant
+     *
      * @param out the byte vector sink
      * @param hexstr the hexadecimal string representation
      * @param lsbFirst low significant byte first
@@ -96,6 +103,21 @@ namespace jau {
     /** See hexStringBytes() */
     size_t hexStringBytes(std::vector<uint8_t>& out, const uint8_t hexstr[], const size_t hexstr_len, const bool lsbFirst, const bool checkLeading0x) noexcept;
 
+    /**
+     * Converts a given hexadecimal string representation into a uint64_t value according to hexStringBytes().
+     * 
+     * If string is in MSB first (default w/ leading 0x) and platform jau::is_little_endian(),
+     * lsbFirst = false shall be passed (default).
+     *
+     * @param s the hexadecimal string representation
+     * @param lsbFirst low significant byte first
+     * @param checkLeading0x if true, checks for a leading `0x` and removes it, otherwise not.
+     * @return the uint64_t value
+     * @see hexStringBytes()
+     * @see to_hexstring()
+     */
+    uint64_t from_hexstring(std::string const & s, const bool lsbFirst=!jau::is_little_endian(), const bool checkLeading0x=true) noexcept;
+    
     /**
      * Produce a hexadecimal string representation of the given byte values.
      * <p>

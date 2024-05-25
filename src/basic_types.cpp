@@ -30,6 +30,7 @@
 
 #include <algorithm>
 
+#include <jau/byte_util.hpp>
 #include <jau/debug.hpp>
 #include <jau/basic_types.hpp>
 #include <jau/functional.hpp>
@@ -438,6 +439,7 @@ static snsize_t hexCharByte_(const uint8_t c)
 size_t jau::hexStringBytes(std::vector<uint8_t>& out, const std::string& hexstr, const bool lsbFirst, const bool checkLeading0x) noexcept {
     return jau::hexStringBytes(out, cast_char_ptr_to_uint8(hexstr.data()), hexstr.size(), lsbFirst, checkLeading0x);
 }
+#include <cassert>
 size_t jau::hexStringBytes(std::vector<uint8_t>& out, const uint8_t hexstr[], const size_t hexstr_len, const bool lsbFirst, const bool checkLeading0x) noexcept {
     size_t offset;
     if( checkLeading0x && hexstr_len >= 2 && hexstr[0] == '0' && hexstr[1] == 'x' ) {
@@ -454,23 +456,31 @@ size_t jau::hexStringBytes(std::vector<uint8_t>& out, const uint8_t hexstr[], co
     const size_t hexlen_in = hexstr_len - offset;
     const size_t bsize = hexlen_in / 2;
     out.clear();
-    out.reserve(bsize);
+    out.reserve(bsize + hexlen_in % 2);
 
-    size_t i = 0;
-    if( 0 < hexlen_in % 2 ) {
-        // no leading '0', digest a single digit
-        const size_t idx = ( lsb*i + msb*(bsize-1-i) ) * 2;
-        const snsize_t l = hexCharByte_( hexstr[ offset + idx + 1 ] );
+    // Odd nibbles:
+    // - 0xf12 = 0x0f12 = { 0x12, 0x0f } - msb, 1st single low-nibble is most significant 
+    // -   12f = 0xf012 = { 0x12, 0xf0 } - lsb, last single high-nibble is most significant
+    //
+    const bool has_single_nibble = 0 < hexlen_in % 2;
+    uint8_t high_msb_nibble = 0;
+    if( !lsbFirst && has_single_nibble ) {
+        // consume single MSB nibble        
+        const size_t idx = 0;
+        assert( hexstr_len - 1 >= offset + idx );
+        const snsize_t l = hexCharByte_( hexstr[ offset + idx ] );
         if( 0 <= l ) {
-            out.push_back( static_cast<uint8_t>( l ) );
+            high_msb_nibble = static_cast<uint8_t>( l );
         } else {
             // invalid char
             return out.size();
         }
-        ++i;
+        ++offset;
     }
+    size_t i = 0;
     for (; i < bsize; ++i) {
         const size_t idx = ( lsb*i + msb*(bsize-1-i) ) * 2;
+        assert( hexstr_len - 1 >= offset + idx + 1 );
         const snsize_t h = hexCharByte_( hexstr[ offset + idx ] );
         const snsize_t l = hexCharByte_( hexstr[ offset + idx + 1 ] );
         if( 0 <= h && 0 <= l ) {
@@ -480,9 +490,39 @@ size_t jau::hexStringBytes(std::vector<uint8_t>& out, const uint8_t hexstr[], co
             return out.size();
         }
     }
+    if( has_single_nibble ) {
+        if( lsbFirst ) {
+            assert( hexstr_len - 1 == offset + i*2 );
+            const snsize_t h = hexCharByte_( hexstr[ offset + i*2 ] );
+            if( 0 <= h ) {
+                out.push_back( static_cast<uint8_t>( (h << 4) + 0 ) );
+            } else {
+                // invalid char
+                return out.size();
+            }            
+        } else {
+            out.push_back( high_msb_nibble );
+        }
+    }
+    assert( hexlen_in/2 + hexlen_in%2 == out.size() );
     return out.size();
 }
 
+uint64_t jau::from_hexstring(std::string const & s, const bool lsbFirst, const bool checkLeading0x) noexcept
+{
+    std::vector<uint8_t> out;
+    hexStringBytes(out, s, lsbFirst, checkLeading0x);
+    if constexpr ( jau::is_little_endian() ) {
+        while( out.size() < sizeof(uint64_t) ) {
+            out.push_back(0);
+        }
+    } else {
+        while( out.size() < sizeof(uint64_t) ) {
+            out.insert(out.cbegin(), 0);
+        }
+    }
+    return *pointer_cast<const uint64_t*>( out.data() );
+}
 
 static const char* HEX_ARRAY_LOW = "0123456789abcdef";
 static const char* HEX_ARRAY_BIG = "0123456789ABCDEF";
