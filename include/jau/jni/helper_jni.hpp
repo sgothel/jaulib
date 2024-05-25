@@ -221,8 +221,7 @@ namespace jau::jni {
             ~JavaGlobalObj() noexcept override;
 
             std::string toString() const noexcept override {
-                const uint64_t ref = (uint64_t)(void*)javaObjectRef.getObject();
-                return "JavaGlobalObj["+to_hexstring(ref)+"]";
+                return "JavaGlobalObj["+jau::to_hexstring(javaObjectRef.getObject())+"]";
             }
 
             const JNIGlobalRef & getJavaObject() const noexcept { return javaObjectRef; }
@@ -285,7 +284,7 @@ namespace jau::jni {
     template <typename T>
     std::shared_ptr<T> * castInstance(jlong instance, const bool throw_on_nullptr=true)
     {
-        std::shared_ptr<T> * ref_ptr = reinterpret_cast<std::shared_ptr<T> *>(instance);
+        std::shared_ptr<T> * ref_ptr = reinterpret_cast<std::shared_ptr<T> *>(instance); // NOLINT(performance-no-int-to-ptr): Required and intended
         if( throw_on_nullptr ) {
             if (nullptr == ref_ptr) {
                 throw jau::RuntimeException("null reference store", E_FILE_LINE);
@@ -309,7 +308,7 @@ namespace jau::jni {
     std::shared_ptr<T>* getInstance(JNIEnv *env, jobject obj, const bool throw_on_nullptr=true) {
         const jlong nativeInstance = env->GetLongField(obj, getInstanceField(env, obj));
         java_exception_check_and_throw(env, E_FILE_LINE);
-        std::shared_ptr<T>* ref_ptr = reinterpret_cast<std::shared_ptr<T> *>(nativeInstance);
+        std::shared_ptr<T>* ref_ptr = reinterpret_cast<std::shared_ptr<T> *>(nativeInstance); // NOLINT(performance-no-int-to-ptr): Required and intended
         if( throw_on_nullptr ) {
             if (nullptr == ref_ptr) {
                 throw jau::RuntimeException("null reference store", E_FILE_LINE);
@@ -343,7 +342,7 @@ namespace jau::jni {
          {
              const jlong nativeInstance = env->GetLongField(obj, instance_field);
              java_exception_check_and_throw(env, E_FILE_LINE);
-             std::shared_ptr<T>* other = reinterpret_cast<std::shared_ptr<T> *>(nativeInstance);
+             std::shared_ptr<T>* other = reinterpret_cast<std::shared_ptr<T> *>(nativeInstance); // NOLINT(performance-no-int-to-ptr): Required and intended
              if( nullptr != other ) {
                  delete other;
              }
@@ -368,7 +367,7 @@ namespace jau::jni {
         {
             const jlong nativeInstance = env->GetLongField(obj, instance_field);
             java_exception_check_and_throw(env, E_FILE_LINE);
-            std::shared_ptr<T>* other = reinterpret_cast<std::shared_ptr<T> *>(nativeInstance);
+            std::shared_ptr<T>* other = reinterpret_cast<std::shared_ptr<T> *>(nativeInstance); // NOLINT(performance-no-int-to-ptr): Required and intended
             if( nullptr != other ) {
                 delete other;
             }
@@ -466,12 +465,12 @@ namespace jau::jni {
             }
 
             /** Constructs a new instance, taking ownership of the given T pointer. */
-            shared_ptr_ref(T * ptr) noexcept
+            shared_ptr_ref(T * ptr)
             : ref_ptr( new std::shared_ptr<T>( ptr ) )
             { }
 
             /** Constructs a new instance, copying the given std::shared_ptr<T>. */
-            shared_ptr_ref(const std::shared_ptr<T>& ref) noexcept
+            shared_ptr_ref(const std::shared_ptr<T>& ref)
             : ref_ptr( new std::shared_ptr<T>( ref ) )
             { }
 
@@ -529,7 +528,7 @@ namespace jau::jni {
             shared_ptr_ref(jlong nativeInstance, const bool throw_on_nullptr=true)
             : ref_ptr( new std::shared_ptr<T>() )
             {
-                std::shared_ptr<T> * other = reinterpret_cast<std::shared_ptr<T> *>(nativeInstance);
+                std::shared_ptr<T> * other = reinterpret_cast<std::shared_ptr<T> *>(nativeInstance); // NOLINT(performance-no-int-to-ptr): Required and intended
                 if( nullptr != other  && nullptr != *other ) {
                     *ref_ptr = *other;
                 }
@@ -598,7 +597,7 @@ namespace jau::jni {
                 jfieldID instance_field = getInstanceField(env, obj);
                 java_exception_check_and_throw(env, E_FILE_LINE);
                 {
-                    std::shared_ptr<T> * other = reinterpret_cast<std::shared_ptr<T> *>( get_instance(env, obj, instance_field) );
+                    std::shared_ptr<T> * other = reinterpret_cast<std::shared_ptr<T> *>( get_instance(env, obj, instance_field) ); // NOLINT(performance-no-int-to-ptr): Required and intended
                     if( nullptr != other ) {
                         delete other;
                     }

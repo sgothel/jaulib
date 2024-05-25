@@ -97,7 +97,7 @@ namespace jau::jni {
             JavaUplink& operator=(const JavaUplink &o) noexcept = default;
             JavaUplink& operator=(JavaUplink &&o) noexcept = default;
 
-            virtual ~JavaUplink() noexcept {
+            virtual ~JavaUplink() noexcept { // NOLINT(modernize-use-equals-default): Intended
                 javaObjectRef = nullptr;
             }
     };

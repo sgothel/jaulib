@@ -64,8 +64,7 @@ namespace jau {
              *
              * Extension of std::latch.
              */
-            latch() noexcept
-            : count(0) {}
+            latch() noexcept = default;
 
             /**
              * Initialize instance with given counter.
