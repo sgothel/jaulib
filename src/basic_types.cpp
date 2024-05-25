@@ -487,8 +487,8 @@ size_t jau::hexStringBytes(std::vector<uint8_t>& out, const uint8_t hexstr[], co
 static const char* HEX_ARRAY_LOW = "0123456789abcdef";
 static const char* HEX_ARRAY_BIG = "0123456789ABCDEF";
 
-std::string jau::bytesHexString(const void* data, const nsize_t offset, const nsize_t length,
-                                const bool lsbFirst, const bool lowerCase) noexcept
+std::string jau::bytesHexString(const void* data, const nsize_t length,
+                                const bool lsbFirst, const bool lowerCase, const bool skipLeading0x) noexcept
 {
     const char* hex_array = lowerCase ? HEX_ARRAY_LOW : HEX_ARRAY_BIG;
     std::string str;
@@ -502,23 +502,32 @@ std::string jau::bytesHexString(const void* data, const nsize_t offset, const ns
     const uint8_t * const bytes = static_cast<const uint8_t*>(data);
     if( lsbFirst ) {
         // LSB left -> MSB right, no leading `0x`
+        // TODO: skip tail all-zeros?
         str.reserve(length * 2 +1);
         for (nsize_t j = 0; j < length; j++) {
-            const int v = bytes[offset+j] & 0xFF;
+            const int v = bytes[j] & 0xFF;
             str.push_back(hex_array[v >> 4]);
             str.push_back(hex_array[v & 0x0F]);
         }
     } else {
         // MSB left -> LSB right, with leading `0x`
-        str.reserve(2 + length * 2 +1);
-        str.push_back('0');
-        str.push_back('x');
+        if( skipLeading0x ) {
+            str.reserve(length * 2 +1);
+        } else {
+            str.reserve(length * 2 +1 +2);
+            str.push_back('0');
+            str.push_back('x');
+        }
+        bool skip = true; // skip leading zeros
         nsize_t j = length;
         do {
             j--;
-            const int v = bytes[offset+j] & 0xFF;
-            str.push_back(hex_array[v >> 4]);
-            str.push_back(hex_array[v & 0x0F]);
+            const int v = bytes[j] & 0xFF;
+            if( 0 != v || !skip ) { 
+                str.push_back(hex_array[v >> 4]);
+                str.push_back(hex_array[v & 0x0F]);
+                skip = false;
+            }
         } while( j != 0);
     }
     return str;

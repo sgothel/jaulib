@@ -769,7 +769,7 @@ namespace jau::mp {
                 if(is_negative()) {
                     s += "-";
                 }
-                s.append( jau::bytesHexString(data, 0, data_len,
+                s.append( jau::bytesHexString(data, data_len,
                                               false /* lsbFirst */, true /* lowerCase */) );
                 if( add_details ) {
                     append_detail(s);
@@ -1540,7 +1540,7 @@ namespace jau::mp {
                 s.append(", bits ").append(std::to_string(bits())).append(", ").append(std::to_string(sig_words())).append(" word(s): ");
                 for(size_t i=0; i<sig_words(); ++i) {
                     const mp_word_t w = word_at(i);
-                    s.append( jau::bytesHexString(&w, 0, mp_word_bits/CHAR_BIT, false /* lsbFirst */, true /* lowerCase */) )
+                    s.append( jau::bytesHexString(&w, mp_word_bits/CHAR_BIT, false /* lsbFirst */, true /* lowerCase */) )
                      .append(", ");
                 }
             }

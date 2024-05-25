@@ -32,6 +32,7 @@
 #include <type_traits>
 #include <vector>
 
+#include <jau/byte_util.hpp>
 #include <jau/cpp_lang_util.hpp>
 #include <jau/packed_attribute.hpp>
 #include <jau/type_traits_queries.hpp>
@@ -99,27 +100,27 @@ namespace jau {
      * Produce a hexadecimal string representation of the given byte values.
      * <p>
      * If lsbFirst is true, orders LSB left -> MSB right, usual for byte streams. Result will not have a leading `0x`.<br>
-     * Otherwise orders MSB left -> LSB right, usual for readable integer values. Result will have a leading `0x`.
+     * Otherwise orders MSB left -> LSB right, usual for readable integer values. Result will have a leading `0x` if !skipLeading0x (default).
      * </p>
-     * @param data pointer to the first byte to print, less offset
-     * @param offset offset to bytes pointer to the first byte to print
+     * @param data pointer to the first byte to print
      * @param length number of bytes to print
      * @param lsbFirst true having the least significant byte printed first (lowest addressed byte to highest),
      *                 otherwise have the most significant byte printed first (highest addressed byte to lowest).
      *                 A leading `0x` will be prepended if `lsbFirst == false`.
-     * @param lowerCase true to use lower case hex-chars, otherwise capital letters are being used.
+     * @param lowerCase true to use lower case hex-chars (default), otherwise capital letters are being used.
+     * @param skipLeading0x false to add leading `0x` if !lsbFirst (default), true to not add (skip).. 
      * @return the hex-string representation of the data
      */
-    std::string bytesHexString(const void* data, const nsize_t offset, const nsize_t length,
-                               const bool lsbFirst, const bool lowerCase=true) noexcept;
+    std::string bytesHexString(const void* data, const nsize_t length,
+                               const bool lsbFirst, const bool lowerCase=true, const bool skipLeading0x=false) noexcept;
 
     template< class uint8_container_type,
               std::enable_if_t<std::is_integral_v<typename uint8_container_type::value_type> &&
                                std::is_convertible_v<typename uint8_container_type::value_type, uint8_t>,
                                bool> = true>
     std::string bytesHexString(const uint8_container_type& bytes,
-                               const bool lsbFirst, const bool lowerCase=true) noexcept {
-            return bytesHexString((const uint8_t *)bytes.data(), 0, bytes.size(), lsbFirst, lowerCase);
+                               const bool lsbFirst, const bool lowerCase=true, const bool skipLeading0x=false) noexcept {
+            return bytesHexString((const uint8_t *)bytes.data(), bytes.size(), lsbFirst, lowerCase, skipLeading0x);
     }
 
     /**
@@ -132,35 +133,47 @@ namespace jau {
     std::string& byteHexString(std::string& dest, const uint8_t value, const bool lowerCase) noexcept;
 
     /**
-     * Produce a lower-case hexadecimal string representation of the given pointer.
+     * Produce a lower-case hexadecimal string representation with leading `0x` in MSB of the given pointer.
      * @tparam value_type a pointer type
      * @param v the pointer of given pointer type
+     * @param skipLeading0x false to add leading `0x` (default), true to not add (skip).. 
      * @return the hex-string representation of the value
      * @see bytesHexString()
+     * @see from_hexstring()
      */
     template< class value_type,
               std::enable_if_t<std::is_pointer_v<value_type>,
                                bool> = true>
-    inline std::string to_hexstring(value_type const & v) noexcept
-    {
-        const uintptr_t v2 = reinterpret_cast<uintptr_t>(v);
-        return bytesHexString(pointer_cast<const uint8_t*>(&v2), 0, sizeof(v), false /* lsbFirst */); // NOLINT(bugprone-sizeof-expression): Intended
+    inline std::string to_hexstring(value_type const & v, const bool skipLeading0x=false) noexcept
+    {        
+        const uintptr_t v_le = jau::cpu_to_le( reinterpret_cast<uintptr_t>(v) );
+        return bytesHexString(pointer_cast<const uint8_t*>(&v_le), sizeof(v),              // NOLINT(bugprone-sizeof-expression): Intended
+                              false /* lsbFirst */, true /* lowerCase */, skipLeading0x); 
     }
 
     /**
-     * Produce a lower-case hexadecimal string representation of the given value with standard layout.
+     * Produce a lower-case hexadecimal string representation with leading `0x` in MSB of the given value with standard layout.
      * @tparam value_type a standard layout value type
      * @param v the value of given standard layout type
+     * @param skipLeading0x false to add leading `0x` (default), true to not add (skip).. 
      * @return the hex-string representation of the value
      * @see bytesHexString()
+     * @see from_hexstring()
      */
     template< class value_type,
               std::enable_if_t<!std::is_pointer_v<value_type> &&
                                std::is_standard_layout_v<value_type>,
                                bool> = true>
-    inline std::string to_hexstring(value_type const & v) noexcept
+    inline std::string to_hexstring(value_type const & v, const bool skipLeading0x=false) noexcept
     {
-        return bytesHexString(pointer_cast<const uint8_t*>(&v), 0, sizeof(v), false /* lsbFirst */);
+        if constexpr( is_little_endian() ) {
+            return bytesHexString(pointer_cast<const uint8_t*>(&v), sizeof(v), 
+                                  false /* lsbFirst */, true /* lowerCase */, skipLeading0x);
+        } else {
+            const value_type v_le = jau::bswap(v);
+            return bytesHexString(pointer_cast<const uint8_t*>(&v_le), sizeof(v), 
+                                  false /* lsbFirst */, true /* lowerCase */, skipLeading0x);
+        }
     }
 
     /**
