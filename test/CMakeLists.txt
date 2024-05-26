@@ -21,7 +21,12 @@ set (testlib_VERSION_SHORT "${VERSION_MAJOR}.0.2")
 set (testlib_LIB_SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/../src/debug.cpp
 )
-add_library (testlib SHARED ${testlib_LIB_SRCS})
+if (EMSCRIPTEN)
+  add_library (testlib STATIC ${testlib_LIB_SRCS})
+else()
+  add_library (testlib SHARED ${testlib_LIB_SRCS})
+endif()
+
 target_link_libraries (
   testlib
 )

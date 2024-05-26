@@ -30,7 +30,12 @@ set (jaulib_LIB_SRCS
   ${CMAKE_CURRENT_BINARY_DIR}/version.cpp
 )
 
-add_library (jaulib SHARED ${jaulib_LIB_SRCS})
+if (EMSCRIPTEN)
+  add_library (jaulib STATIC ${jaulib_LIB_SRCS})
+else()
+  add_library (jaulib SHARED ${jaulib_LIB_SRCS})
+endif()
+
 target_link_libraries (
   jaulib
   ${LIBCURL_LIBNAME}
@@ -38,13 +43,13 @@ target_link_libraries (
   ${CMAKE_THREAD_LIBS_INIT}
 )
 
-if(USE_STRIP)
+if( (USE_STRIP) AND (NOT EMSCRIPTEN) )
 add_custom_command(TARGET jaulib POST_BUILD
                    COMMAND ${STRIP} ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}jaulib${CMAKE_SHARED_LIBRARY_SUFFIX}.${jaulib_VERSION_SHORT}
                    COMMENT "stripping jaulib"
                    VERBATIM
                    )
-endif(USE_STRIP)
+endif()
 
 set_target_properties(
    jaulib
