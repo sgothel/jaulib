@@ -218,19 +218,22 @@ message(STATUS "JaulibSetup: cxx_clangd_flags: ${cxx_clangd_flags}")
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# for all
+# for ALL
 set (CC_FLAGS_WARNING "-pedantic -pedantic-errors -Wall -Wextra -Werror")
+
+# for GCC
 set (GCC_FLAGS_WARNING_FORMAT "-Wformat=2 -Wformat-overflow=2 -Wformat-nonliteral -Wformat-security -Wformat-signedness -Wformat-y2k")
-set (GCC_FLAGS_WARNING "-Wall -Wextra -Wshadow -Wtype-limits -Wsign-compare -Wcast-align=strict -Wnull-dereference -Winit-self ${GCC_FLAGS_WARNING_FORMAT} -Werror")
+set (GCC_FLAGS_WARNING "${CC_FLAGS_WARNING} -Wshadow -Wtype-limits -Wsign-compare -Wcast-align=strict -Wnull-dereference -Winit-self ${GCC_FLAGS_WARNING_FORMAT}")
 # causes issues in jau::get_int8(..): "-Wnull-dereference"
 set (GCC_FLAGS_WARNING_NO_ERROR "-Wno-error=array-bounds -Wno-error=null-dereference -Wno-multichar")
 
 # too pedantic, but nice to check once in a while
 # set (DISABLED_CC_FLAGS_WARNING "-Wsign-conversion")
 
+# for CLANG
 set (CLANG_FLAGS_WARNING_NO_ERROR "")
 
-# debug only
+# debug only GCC
 set (GCC_FLAGS_STACK "-fstack-protector-strong")
 set (GCC_FLAGS_SANITIZE_ALL "-fsanitize-address-use-after-scope -fsanitize=address -fsanitize=pointer-compare -fsanitize=pointer-subtract -fsanitize=undefined -fsanitize=leak -fsanitize-recover=address")
 set (GCC_FLAGS_SANITIZE_UNDEFINED "-fsanitize=undefined -fsanitize-recover=address")
@@ -244,7 +247,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_FLAGS_WARNING} ${GCC_FLAGS_WARNING_NO_ERROR} -fmacro-prefix-map=${CMAKE_SOURCE_DIR}/=/")
 
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CC_FLAGS_WARNING} ${CLANG_FLAGS_WARNING_NO_ERROR}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CC_FLAGS_WARNING} ${CLANG_FLAGS_WARNING_NO_ERROR} -fmacro-prefix-map=${CMAKE_SOURCE_DIR}/=/")
 
 else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CC_FLAGS_WARNING}")

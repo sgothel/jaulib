@@ -807,6 +807,7 @@ namespace jau {
                     {
                         PRAGMA_DISABLE_WARNING_PUSH
                         PRAGMA_DISABLE_WARNING_PMF_CONVERSIONS
+                        PRAGMA_DISABLE_WARNING_PEDANTIC
                         function = (function_t)(_base->*_method);
                         PRAGMA_DISABLE_WARNING_POP
                     }
