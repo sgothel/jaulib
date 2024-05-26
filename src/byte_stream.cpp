@@ -30,6 +30,7 @@
 
 // #include <botan_all.h>
 
+#include <jau/cpuid.hpp>
 #include <jau/debug.hpp>
 #include <jau/byte_stream.hpp>
 
@@ -209,7 +210,8 @@ size_t ByteInStream_File::read(void* out, size_t length) noexcept {
 }
 
 size_t ByteInStream_File::peek(void* out, size_t length, size_t offset) noexcept {
-    if( 0 == length || !good() || offset > std::numeric_limits<off64_t>::max() ||
+    if( 0 == length || !good() ||
+        ( sizeof(size_t) >= sizeof(off64_t) && offset > std::numeric_limits<off64_t>::max() ) ||
         ( m_has_content_length && m_content_size - m_bytes_consumed < offset + 1 /* min number of bytes to read */ ) ) {
         return 0;
     }
