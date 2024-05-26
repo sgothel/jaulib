@@ -25,21 +25,21 @@
 #ifndef JAU_COW_DARRAY_HPP_
 #define JAU_COW_DARRAY_HPP_
 
+#include <algorithm>
 #include <cstring>
-#include <numbers>
-#include <string>
 #include <limits>
 #include <memory>
 #include <mutex>
-#include <algorithm>
+#include <numbers>
+#include <string>
 
-#include <jau/cpp_lang_util.hpp>
-#include <jau/debug.hpp>
-#include <jau/darray.hpp>
 #include <jau/basic_types.hpp>
-#include <jau/ordered_atomic.hpp>
-#include <jau/cow_iterator.hpp>
 #include <jau/callocator.hpp>
+#include <jau/cow_iterator.hpp>
+#include <jau/cpp_lang_util.hpp>
+#include <jau/darray.hpp>
+#include <jau/debug.hpp>
+#include <jau/ordered_atomic.hpp>
 
 namespace jau {
 

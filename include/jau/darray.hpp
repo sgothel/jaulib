@@ -31,6 +31,7 @@
 #include <cstring>
 #include <initializer_list>
 #include <limits>
+#include <numbers>
 #include <string>
 
 #include <jau/basic_algos.hpp>
