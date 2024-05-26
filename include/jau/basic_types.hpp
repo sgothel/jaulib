@@ -33,6 +33,7 @@
 #include <cstdint>
 #include <iostream>
 #include <system_error>
+#include <thread>
 
 #include <jau/cpp_lang_util.hpp>
 #include <jau/packed_attribute.hpp>
