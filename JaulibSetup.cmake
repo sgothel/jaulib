@@ -209,6 +209,7 @@ elseif(CMAKE_CXX_STANDARD STREQUAL "20")
 else()
     set(cxx_clangd_flags "-std=c++17")
 endif()
+set(cxx_clangd_flags "-pedantic, -pedantic-errors, -Wall, -Wextra, -Werror, -DDEBUG, ${cxx_clangd_flags}")
 message(STATUS "JaulibSetup: cxx_clangd_flags: ${cxx_clangd_flags}")
 
 #
@@ -218,7 +219,7 @@ message(STATUS "JaulibSetup: cxx_clangd_flags: ${cxx_clangd_flags}")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # for all
-set (CC_FLAGS_WARNING "-Wall -Wextra -Werror")
+set (CC_FLAGS_WARNING "-pedantic -pedantic-errors -Wall -Wextra -Werror")
 set (GCC_FLAGS_WARNING_FORMAT "-Wformat=2 -Wformat-overflow=2 -Wformat-nonliteral -Wformat-security -Wformat-signedness -Wformat-y2k")
 set (GCC_FLAGS_WARNING "-Wall -Wextra -Wshadow -Wtype-limits -Wsign-compare -Wcast-align=strict -Wnull-dereference -Winit-self ${GCC_FLAGS_WARNING_FORMAT} -Werror")
 # causes issues in jau::get_int8(..): "-Wnull-dereference"
