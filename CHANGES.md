@@ -4,6 +4,12 @@
 
 ## Changes
 
+**1.3.2**
+* Increased C++20 validation
+* Increased pedantic C++ settings across compiler and clangd
+* Better clangd/cland-tidy integration
+* Misc fixes, added VersionNumber (w/ git describe parsing)
+
 **1.3.1**
 * clang-18 fixes
 
