@@ -321,10 +321,10 @@ namespace jau {
 
       public:
         virtual ~ExceptionBase() noexcept = default;
-        ExceptionBase(const ExceptionBase &o) = default;
-        ExceptionBase(ExceptionBase &&o) = default;
-        ExceptionBase& operator=(const ExceptionBase &o) = default;
-        ExceptionBase& operator=(ExceptionBase &&o) = default;
+        ExceptionBase(const ExceptionBase &o) noexcept = default;
+        ExceptionBase(ExceptionBase &&o) noexcept = default;
+        ExceptionBase& operator=(const ExceptionBase &o) noexcept = default;
+        ExceptionBase& operator=(ExceptionBase &&o) noexcept = default;
 
         /** Returns brief message. */
         const std::string& brief_message() const noexcept { return msg_; }
@@ -352,10 +352,10 @@ namespace jau {
       public:
         ~RuntimeExceptionBase() noexcept override = default;
 
-        RuntimeExceptionBase(const RuntimeExceptionBase& o) = default;
-        RuntimeExceptionBase(RuntimeExceptionBase&& o) = default;
-        RuntimeExceptionBase& operator=(const RuntimeExceptionBase& o) = default;
-        RuntimeExceptionBase& operator=(RuntimeExceptionBase&& o) = default;        
+        RuntimeExceptionBase(const RuntimeExceptionBase& o) noexcept = default;
+        RuntimeExceptionBase(RuntimeExceptionBase&& o) noexcept = default;
+        RuntimeExceptionBase& operator=(const RuntimeExceptionBase& o) noexcept = default;
+        RuntimeExceptionBase& operator=(RuntimeExceptionBase&& o) noexcept = default;        
     };
     class LogicErrorBase : public ExceptionBase {
       protected:
@@ -365,10 +365,10 @@ namespace jau {
       public:
         ~LogicErrorBase() noexcept override = default;
 
-        LogicErrorBase(const LogicErrorBase& o) = default;
-        LogicErrorBase(LogicErrorBase&& o) = default;
-        LogicErrorBase& operator=(const LogicErrorBase& o) = default;
-        LogicErrorBase& operator=(LogicErrorBase&& o) = default;                
+        LogicErrorBase(const LogicErrorBase& o) noexcept = default;
+        LogicErrorBase(LogicErrorBase&& o) noexcept = default;
+        LogicErrorBase& operator=(const LogicErrorBase& o) noexcept = default;
+        LogicErrorBase& operator=(LogicErrorBase&& o) noexcept = default;                
     };
     class RuntimeSystemExceptionBase : public RuntimeExceptionBase {      
       protected:
@@ -379,10 +379,10 @@ namespace jau {
       public:
         ~RuntimeSystemExceptionBase() noexcept override = default;
 
-        RuntimeSystemExceptionBase(const RuntimeSystemExceptionBase& o) = default;
-        RuntimeSystemExceptionBase(RuntimeSystemExceptionBase&& o) = default;
-        RuntimeSystemExceptionBase& operator=(const RuntimeSystemExceptionBase& o) = default;
-        RuntimeSystemExceptionBase& operator=(RuntimeSystemExceptionBase&& o) = default;
+        RuntimeSystemExceptionBase(const RuntimeSystemExceptionBase& o) noexcept = default;
+        RuntimeSystemExceptionBase(RuntimeSystemExceptionBase&& o) noexcept = default;
+        RuntimeSystemExceptionBase& operator=(const RuntimeSystemExceptionBase& o) noexcept = default;
+        RuntimeSystemExceptionBase& operator=(RuntimeSystemExceptionBase&& o) noexcept = default;
         
         const std::error_code& code() const noexcept { return m_ec; }
     };
@@ -408,10 +408,10 @@ namespace jau {
 
         ~RuntimeException() noexcept override = default;
 
-        RuntimeException(const RuntimeException& o) = default;
-        RuntimeException(RuntimeException&& o) = default;
-        RuntimeException& operator=(const RuntimeException& o) = default;
-        RuntimeException& operator=(RuntimeException&& o) = default;
+        RuntimeException(const RuntimeException& o) noexcept = default;
+        RuntimeException(RuntimeException&& o) noexcept = default;
+        RuntimeException& operator=(const RuntimeException& o) noexcept = default;
+        RuntimeException& operator=(RuntimeException&& o) noexcept = default;
         
         // base class std::exception:
         const char* what() const noexcept override {
@@ -429,10 +429,10 @@ namespace jau {
 
         ~LogicError() noexcept override = default;
 
-        LogicError(const LogicError& o) = default;
-        LogicError(LogicError&& o) = default;
-        LogicError& operator=(const LogicError& o) = default;
-        LogicError& operator=(LogicError&& o) = default;
+        LogicError(const LogicError& o) noexcept = default;
+        LogicError(LogicError&& o) noexcept = default;
+        LogicError& operator=(const LogicError& o) noexcept = default;
+        LogicError& operator=(LogicError&& o) noexcept = default;
                 
         const char* what() const noexcept override {
             return whole_message().c_str();
@@ -449,10 +449,10 @@ namespace jau {
 
         ~RuntimeSystemException() noexcept override = default;
 
-        RuntimeSystemException(const RuntimeSystemException& o) = default;
-        RuntimeSystemException(RuntimeSystemException&& o) = default;
-        RuntimeSystemException& operator=(const RuntimeSystemException& o) = default;
-        RuntimeSystemException& operator=(RuntimeSystemException&& o) = default;
+        RuntimeSystemException(const RuntimeSystemException& o) noexcept = default;
+        RuntimeSystemException(RuntimeSystemException&& o) noexcept = default;
+        RuntimeSystemException& operator=(const RuntimeSystemException& o) noexcept = default;
+        RuntimeSystemException& operator=(RuntimeSystemException&& o) noexcept = default;
         
         const char* what() const noexcept override {
             return whole_message().c_str();
