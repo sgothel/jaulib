@@ -3,7 +3,7 @@
  *                   Sven Gothel <sgothel@jausoft.com>
  *
  * Editor: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2021 Gothel Software e.K.
+ * Copyright (c) 2021-2024 Gothel Software e.K.
  * Copyright (c) 2021 The Authors (see above)
  *
  * Permission is hereby granted, free of charge, to any person obtaining
@@ -69,39 +69,47 @@ METHOD_CHECKER_ANY(any_get, get, ());
 METHOD_CHECKER_STRICT_RET(int_get, get, int, ())
 METHOD_CHECKER_STRICT_RET(long_get, get, long, ())
 
-TEST_CASE( "01 Type Traits Queries") {
-    #define CHECK_2(name, desc, ...) std::cout << std::endl; \
-    std::cout << "One " << (name<One, ##__VA_ARGS__>() ? "has " : "does not have ") << desc << std::endl; \
-    std::cout << "Two " << (name<Two, ##__VA_ARGS__>() ? "has " : "does not have ") << desc << std::endl; \
-    std::cout << "Not " << (name<Not, ##__VA_ARGS__>() ? "has " : "does not have ") << desc << std::endl; \
-    std::cout << "int " << (name<int, ##__VA_ARGS__>() ? "has " : "does not have ") << desc << std::endl
+template<template<typename, typename...> class TT, class U, typename... V>
+void check_2_sub(const std::string &tname, const std::string &desc) {
+	std::cout << tname << " " << (TT<U, V...>() ? "has " : "does not have ") << desc << std::endl;
+}
 
+template<template<typename, typename...> class T, typename... V>
+void check_2(const std::string &desc) {
+	std::cout << std::endl;
+	check_2_sub<T, One, V...>("One", desc);
+	check_2_sub<T, Two, V...>("Two", desc);
+	check_2_sub<T, Not, V...>("Not", desc);
+	check_2_sub<T, int, V...>("int", desc);
+}
+
+TEST_CASE( "01 Type Traits Queries") {    
     std::string sep = std::string(60, '-');
 #if 0
     std::cout << sep;
-    CHECK_2(any_type, "typedef type");
-    CHECK_2(has_type, "typedef type convertible to long", long);
-    CHECK_2(exact_type, "typedef type = int", int);
-    CHECK_2(exact_type, "typedef type = long", long);
+    check_2<any_type>("typedef type");
+    check_2<has_type, long>("typedef type convertible to long");
+    check_2<exact_type, int>("typedef type = int");
+    check_2<exact_type, long>("typedef type = long");
 
     std::cout << sep;
-    CHECK_2(true_v, "var v with value equal to true");
-    CHECK_2(true_z, "var z with value equal to true");
-    CHECK_2(false_v, "var v with value equal to false");
-    CHECK_2(one_v, "var v with value equal to 1");
-    CHECK_2(exact_v, "var v with value equal to 1 of type int");
+    check_2<true_v>("var v with value equal to true");
+    check_2<true_z>("var z with value equal to true");
+    check_2<false_v>("var v with value equal to false");
+    check_2<one_v>("var v with value equal to 1");
+    check_2<exact_v>("var v with value equal to 1 of type int");
 #endif
 
     std::cout << sep;
-    CHECK_2(any_x, "var x");
-    CHECK_2(has_x, "var x of type convertible to long", long);
-    CHECK_2(exact_x, "var x of type int", int);
-    CHECK_2(exact_x, "var x of type long", long);
+ 	check_2<any_x>("var x");
+    check_2<has_x, long>("var x of type convertible to long");
+    check_2<exact_x, int>("var x of type int");
+    check_2<exact_x, long>("var x of type long");
 
     std::cout << sep;
-    CHECK_2(has_get, "get()");
-    CHECK_2(has_get, "get() with return type covertible to long");
-    CHECK_2(has_add, "add() accepting two ints and returning ~ long");
-    CHECK_2(int_get, "int get()");
-    CHECK_2(long_get, "long get()");
+    check_2<has_get>("get()");
+    check_2<has_get>("get() with return type covertible to long");
+    check_2<has_add>("add() accepting two ints and returning ~ long");
+    check_2<int_get>("int get()");
+    check_2<long_get>("long get()");    
 }

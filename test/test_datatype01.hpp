@@ -101,11 +101,7 @@ __pack ( struct Addr48Bit {
         return str;
     }
 
-#if 0
-    constexpr_cxx20 operator std::string() const noexcept {
-        return toString();
-    }
-#endif
+    // constexpr_cxx20 operator std::string() const noexcept { return toString(); }
 
 } );
 
