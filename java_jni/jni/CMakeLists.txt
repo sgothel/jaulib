@@ -42,6 +42,9 @@ endif()
 set (CMAKE_SHARED_LINKER_FLAGS "-Wl,--as-needed")
 
 add_library (jaulib_jni_jni SHARED ${jaulib_jni_JNI_SRCS})
+target_link_options(jaulib_jni_jni PUBLIC "${jaulib_SHARED_LINKER_FLAGS}")
+target_compile_options(jaulib_jni_jni PUBLIC "${jaulib_CXX_FLAGS}")
+
 target_link_libraries(
     jaulib_jni_jni 
     ${JNI_LIBRARIES} 

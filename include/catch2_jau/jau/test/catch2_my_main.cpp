@@ -35,6 +35,52 @@
 
 #include <vector>
 
+#if defined(__EMSCRIPTEN__)
+extern "C" {
+    #include <unistd.h>
+    #include <sys/random.h>
+    #include <errno.h>
+
+    ssize_t getrandom(void* buffer, size_t len, unsigned int flags) {
+        (void)flags;
+        char *pos = (char*)buffer;
+        for(size_t i=0; i<len; ++i) {
+            *pos = (char)(i%255);
+            pos++;
+        }
+        return len;
+    }
+    int getentropy(void *buffer, size_t len)
+    {
+        // int cs;
+        int ret = 0;
+        char *pos = (char*)buffer;
+
+        if (len > 256) {
+            errno = EIO;
+            return -1;
+        }
+
+        // pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &cs);
+
+        while (len) {
+            ret = getrandom(pos, len, 0);
+            if (ret < 0) {
+                if (errno == EINTR) continue;
+                else break;
+            }
+            pos += ret;
+            len -= ret;
+            ret = 0;
+        }
+
+        // pthread_setcancelstate(cs, 0);
+
+        return ret;
+    }
+}
+#endif // __EMSCRIPTEN__
+
 #define CATCH_AMALGAMATED_CUSTOM_MAIN 1
 #include <catch2/catch_amalgamated.hpp>
 

@@ -13,6 +13,7 @@ set(jaulib_jar_file ${CMAKE_CURRENT_BINARY_DIR}/jaulib.jar CACHE FILEPATH "jauli
 set(jaulib_fat_jar_file ${CMAKE_CURRENT_BINARY_DIR}/jaulib-fat.jar CACHE FILEPATH "jaulib fat jar file" FORCE)
 set(jaulib_java_src_file ${CMAKE_CURRENT_BINARY_DIR}/jaulib-java-src.zip CACHE FILEPATH "jaulib java source file" FORCE)
 
+set(CMAKE_JAVA_COMPILE_FLAGS ${jaulib_JAVA_COMPILE_FLAGS})
 add_custom_command (OUTPUT ${jaulib_jar_file} ${jaulib_fat_jar_file} ${jaulib_java_src_file}
                     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
                     COMMAND ${CMAKE_COMMAND}

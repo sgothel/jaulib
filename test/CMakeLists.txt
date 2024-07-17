@@ -23,9 +23,13 @@ set (testlib_LIB_SRCS
 )
 if (EMSCRIPTEN)
   add_library (testlib STATIC ${testlib_LIB_SRCS})
+  target_link_options(testlib PUBLIC "${jaulib_STATIC_LINKER_FLAGS}")
 else()
   add_library (testlib SHARED ${testlib_LIB_SRCS})
+  target_link_options(testlib PUBLIC "${jaulib_SHARED_LINKER_FLAGS}")
 endif()
+
+target_compile_options(testlib PUBLIC "${jaulib_CXX_FLAGS}")
 
 target_link_libraries (
   testlib
@@ -60,6 +64,9 @@ set( TARGETS_IDIOMATIC_TEST ${BASENAMES_IDIOMATIC_TEST} )
 
 foreach( name ${TARGETS_IDIOMATIC_TEST} )
     add_executable(${name} ${name}.cpp)
+    target_compile_options(${name} PUBLIC "${jaulib_CXX_FLAGS}")
+    target_link_options(${name} PUBLIC "${jaulib_EXE_LINKER_FLAGS}")
+
     target_link_libraries(${name} jaulib catch2)
     add_dependencies(${name} jaulib catch2)
     add_test (NAME ${name} COMMAND ${name})
@@ -88,6 +95,9 @@ IF( ( TEST_WITH_SUDO ) AND ( "${OS_NAME}" STREQUAL "linux" ) )
 
     foreach( name ${TARGETS_IDIOMATIC_TESTSUDO} )
         add_executable(${name} ${name}.cpp)
+        target_compile_options(${name} PUBLIC "${jaulib_CXX_FLAGS}")
+        target_link_options(${name} PUBLIC "${jaulib_EXE_LINKER_FLAGS}")
+
         target_link_libraries(${name} jaulib catch2 cap)
         add_dependencies(${name} jaulib catch2 test_data_sqfs)
         add_test (NAME ${name} COMMAND sudo -E /sbin/capsh --caps=cap_sys_admin,cap_setuid,cap_setgid+eip\ cap_setpcap+ep

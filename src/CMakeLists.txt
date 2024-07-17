@@ -32,9 +32,32 @@ set (jaulib_LIB_SRCS
 
 if (EMSCRIPTEN)
   add_library (jaulib STATIC ${jaulib_LIB_SRCS})
+  target_link_options(jaulib PUBLIC ${jaulib_STATIC_LINKER_FLAGS})
 else()
   add_library (jaulib SHARED ${jaulib_LIB_SRCS})
+  target_link_options(jaulib PUBLIC ${jaulib_SHARED_LINKER_FLAGS})
 endif()
+
+# Notable project variables set
+#
+# - ${PROJECT_NAME}_CXX_FLAGS
+# - ${PROJECT_NAME}_C_FLAGS
+# - ${PROJECT_NAME}_EXE_LINKER_FLAGS
+# - ${PROJECT_NAME}_SHARED_LINKER_FLAGS
+# - ${PROJECT_NAME}_STATIC_LINKER_FLAGS
+#
+# - ${PROJECT_NAME}_EMS_FLAGS
+# - ${PROJECT_NAME}_EMS_EXE_FLAGS
+# - ${PROJECT_NAME}_EMS_STATIC_LD_FLAGS
+#
+# - ${PROJECT_NAME}_JAVA_COMPILE_FLAGS
+#
+# Global variables set
+# - CMAKE_CXX_STANDARD_LIBRARIES
+#
+#target_compile_options(jaulib PUBLIC "$<$<CONFIG:DEBUG>:${jaulib_CXX_FLAGS}>")
+#target_compile_options(jaulib PUBLIC "$<$<CONFIG:RELEASE>:${jaulib_CXX_FLAGS}>")
+target_compile_options(jaulib PUBLIC ${jaulib_CXX_FLAGS})
 
 target_link_libraries (
   jaulib

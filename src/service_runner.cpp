@@ -36,6 +36,7 @@ extern "C" {
 
 #include <jau/basic_algos.hpp>
 #include <jau/secmem.hpp>
+#include <jau/os/os_support.hpp>
 
 using namespace jau;
 
@@ -207,9 +208,16 @@ bool service_runner::stop() noexcept {
     if( running ) {
         if( !is_service ) {
             if( 0 != tid_service ) {
-                int kerr;
-                if( 0 != ( kerr = ::pthread_kill(tid_service, SIGALRM) ) ) {
-                    ERR_PRINT("%s::stop: pthread_kill %p FAILED: %d", name_.c_str(), (void*)tid_service, kerr); // NOLINT(performance-no-int-to-ptr)
+                #if JAU_OS_HAS_PTHREAD
+                if constexpr ( jau::os::has_pthread() ) {
+                    int kerr;
+                    if( 0 != ( kerr = ::pthread_kill(tid_service, SIGALRM) ) ) {
+                        ERR_PRINT("%s::stop: pthread_kill %p FAILED: %d", name_.c_str(), (void*)tid_service, kerr); // NOLINT(performance-no-int-to-ptr)
+                    }
+                } else
+                #endif
+                {
+                    INFO_PRINT("%s::stop: pthread_kill n/a, service %p running", name_.c_str(), (void*)tid_service); // NOLINT(performance-no-int-to-ptr)
                 }
             }
             // Ensure the reader thread has ended, no runaway-thread using *this instance after destruction

@@ -62,7 +62,9 @@ TEST_CASE( "Test 10 User Info", "[user][os]" ) {
     {
         jau::os::UserInfo uinfo;
         std::cout << "User-Current: " << uinfo.toString() << std::endl;
-        REQUIRE( true == uinfo.isValid() );
+        if( !jau::os::is_generic_wasm() ) {
+            REQUIRE( true == uinfo.isValid() );
+        }
     }
     {
         jau::os::UserInfo uinfo("root");

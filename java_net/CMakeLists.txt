@@ -4,6 +4,7 @@ set(jaulib_net_jar_file ${CMAKE_CURRENT_BINARY_DIR}/jaulib_net.jar CACHE FILEPAT
 
 set(CMAKE_JNI_TARGET TRUE)
 file(GLOB_RECURSE JAVA_SOURCES "*.java")
+set(CMAKE_JAVA_COMPILE_FLAGS ${jaulib_JAVA_COMPILE_FLAGS})
 add_jar(jaulib_net_jar 
         ${JAVA_SOURCES}
         INCLUDE_JARS jaulib_base_jar jaulib_jni_jar

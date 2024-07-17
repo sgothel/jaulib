@@ -4,6 +4,8 @@ set(jaulib_base_jar_file ${CMAKE_CURRENT_BINARY_DIR}/jaulib_base.jar CACHE FILEP
 
 set(CMAKE_JNI_TARGET TRUE)
 file(GLOB_RECURSE JAVA_SOURCES "*.java")
+
+set(CMAKE_JAVA_COMPILE_FLAGS ${jaulib_JAVA_COMPILE_FLAGS})
 add_jar(jaulib_base_jar 
         ${JAVA_SOURCES} jau/info.txt
         MANIFEST ${CMAKE_CURRENT_BINARY_DIR}/manifest.txt

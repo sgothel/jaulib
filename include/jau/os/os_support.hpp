@@ -64,32 +64,44 @@ namespace jau::os {
             #if defined(__EMSCRIPTEN__)
                 #define JAU_OS_TYPE_UNIX 1
                 #define JAU_OS_TYPE_WASM 1
+                #if defined(__EMSCRIPTEN_PTHREADS__)
+                    #define JAU_OS_HAS_PTHREAD 1
+                #else
+                    #define JAU_OS_HAS_PTHREAD 0
+                #endif    
                 return 0b00000001000000000000000000000001U; // Emscripten
             #elif defined(__QNXNTO__)
                 #define JAU_OS_TYPE_UNIX 1
                 #define JAU_OS_TYPE_QNXNTO 1
+                #define JAU_OS_HAS_PTHREAD 1
                 return 0b00000000000000000001000000000001U; // QnxNTO
             #elif defined(__APPLE__) && defined(__MACH__)
                 #define JAU_OS_TYPE_UNIX 1
                 #define JAU_OS_TYPE_DARWIN 1
+                #define JAU_OS_HAS_PTHREAD 1
                 return 0b00000000000000000000100000000001U; // Darwin
             #elif defined(__FreeBSD__)
                 #define JAU_OS_TYPE_UNIX 1
                 #define JAU_OS_TYPE_FREEBSD 1
+                #define JAU_OS_HAS_PTHREAD 1
                 return 0b00000000000000000000010000000001U; // FreeBSD
             #elif defined(__ANDROID__)
                 #define JAU_OS_TYPE_UNIX 1
                 #define JAU_OS_TYPE_ANDROID 1
+                #define JAU_OS_HAS_PTHREAD 1
                 return 0b00000000000000000000001100000001U; // Android
             #elif defined(__linux__)
                 #define JAU_OS_TYPE_UNIX 1
                 #define JAU_OS_TYPE_LINUX 1
+                #define JAU_OS_HAS_PTHREAD 1
                 return 0b00000000000000000000000100000001U; // Linux
             #elif defined(_WIN32)
                 #define JAU_OS_TYPE_WINDOWS 1
+                #define JAU_OS_HAS_PTHREAD 1
                 return 0b00000000000000000000000000000010U; // Windows
             #else
                 #define JAU_OS_TYPE_UNIX 1
+                #define JAU_OS_HAS_PTHREAD 1
                 return 0b00000000000000000000000000000001U; // Unix
             #endif
         }
@@ -219,6 +231,15 @@ namespace jau::os {
 
     /** Evaluates `true` if platform os_type::native contains os_type::Emscripten */
     constexpr bool is_emscripten() noexcept { return is_set(os_type_t::native, os_type_t::Emscripten); }
+    
+    /** Evaluates `true` if platform supports posix compatible threading. */
+    constexpr bool has_pthread() noexcept {
+        #if JAU_OS_HAS_PTHREAD
+            return true;
+        #else
+            return false;
+        #endif 
+    }
     
     struct RuntimeOSInfo {
         std::string sysname;

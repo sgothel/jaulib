@@ -8,6 +8,30 @@ message(STATUS "CMake ${CMAKE_VERSION}")
 
 FIND_PACKAGE (Threads REQUIRED)
 
+if(EMSCRIPTEN)
+    message(STATUS "Jaulib: EMSCRIPTEN (wasm)")
+    # See https://emscripten.org/docs/tools_reference/settings_reference.html
+    #
+    set(jaulib_EMS_FLAGS "-Wno-unused-command-line-argument")
+    set(jaulib_EMS_FLAGS ${${PROJECT_NAME}_EMS_FLAGS} "SHELL:-s STANDALONE_WASM")
+    # set(jaulib_EMS_FLAGS ${${PROJECT_NAME}_EMS_FLAGS} "SHELL:-s WASM=1" "SHELL:-s LZ4=1" "SHELL:-s EXPORTED_RUNTIME_METHODS=cwrap")
+    # set(jaulib_EMS_FLAGS ${${PROJECT_NAME}_EMS_FLAGS} "SHELL:-s ALLOW_MEMORY_GROWTH=1")
+    # set(jaulib_EMS_FLAGS ${jaulib_EMS_FLAGS} "-pthread") # fights w/ ALLOW_MEMORY_GROWTH
+    # set(jaulib_EMS_FLAGS ${jaulib_EMS_FLAGS} "SHELL:-s MEMORY64=1") # wasm64 end-to-end: wasm32 object file can't be linked in wasm64 mode
+    # set(jaulib_EMS_FLAGS ${jaulib_EMS_FLAGS} "SHELL:-s ASSERTIONS=1")
+    # set(jaulib_EMS_FLAGS ${jaulib_EMS_FLAGS} "SHELL:-s STACK_OVERFLOW_CHECK=1") # cheap cockie magic, enables CHECK_NULL_WRITES
+
+    #
+    # set(EMS_EXE_LD_FLAGS "SHELL:-s SIDE_MODULE=1")
+    set(jaulib_EMS_EXE_LD_FLAGS ${jaulib_EMS_FLAGS})
+    set(jaulib_EMS_STATIC_LD_FLAGS )
+    message(STATUS "Jaulib: jaulib_EMS_FLAGS = ${jaulib_EMS_FLAGS}")
+    message(STATUS "Jaulib: jaulib_EMS_EXE_LD_FLAGS = ${jaulib_EMS_EXE_LD_FLAGS}")
+    message(STATUS "Jaulib: jaulib_EMS_STATIC_LD_FLAGS = ${jaulib_EMS_STATIC_LD_FLAGS}")
+else()
+    message(STATUS "Jaulib: No EMSCRIPTEN (wasm)")
+endif()
+
 JaulibSetup()
 
 if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.clangd)
@@ -32,8 +56,6 @@ set (jaulib_VERSION_API        ${VERSION_API})
 
 configure_file (${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/version.cpp.in
                 ${CMAKE_CURRENT_BINARY_DIR}/src/version.cpp)
-
-set (CMAKE_SWIG_FLAGS "")
 
 set (jaulib_DOCS_DIR documentation)
 
