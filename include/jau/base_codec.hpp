@@ -27,7 +27,6 @@
 
 #include <string>
 #include <vector>
-#include <type_traits>
 
 #include <jau/int_types.hpp>
 

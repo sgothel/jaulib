@@ -27,13 +27,13 @@
 
 #include <cstring>
 #include <ios>
-#include <ratio>
 #include <stdexcept>
 #include <string>
 #include <cstdint>
 #include <iostream>
 #include <system_error>
 #include <thread>
+#include <condition_variable>
 
 #include <jau/cpp_lang_util.hpp>
 #include <jau/packed_attribute.hpp>

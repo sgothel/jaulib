@@ -26,12 +26,9 @@
 #define JAU_FRACTION_TYPE_HPP_
 
 #include <limits>
-#include <ratio>
 #include <chrono>
-#include <condition_variable>
 
 #include <cstdio>
-#include <cinttypes>
 
 #include <cstdint>
 #include <cmath>
