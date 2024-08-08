@@ -4,6 +4,9 @@
 
 ## Changes
 
+**1.3.3**
+* Full cmake presets build and test incl. vscode
+
 **1.3.2**
 * Increased C++20 validation
 * Increased pedantic C++ settings across compiler and clangd
