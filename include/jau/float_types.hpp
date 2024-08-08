@@ -41,15 +41,15 @@ namespace jau {
         typedef std::float32_t float32_t;
         typedef std::float64_t float64_t;
     #else
-        static_assert(32 == sizeof(float));
-        static_assert(64 == sizeof(double));
+        static_assert(32 == sizeof(float)<<3);
+        static_assert(64 == sizeof(double)<<3);
         typedef float float32_t;
         typedef double float64_t;
     #endif
 
     namespace float_literals {
-        constexpr float32_t operator ""_f32(float32_t __v)   { return (float32_t)__v; }
-        constexpr float64_t operator ""_f64(float64_t __v)   { return (float64_t)__v; }
+        constexpr float32_t operator ""_f32(long double __v)   { return (float32_t)__v; }
+        constexpr float64_t operator ""_f64(long double __v)   { return (float64_t)__v; }
     } // float_literals
 
     /**@}*/
