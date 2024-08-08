@@ -238,24 +238,40 @@ Following debug presets are defined in `CMakePresets.json`
   - libcurl (if available)
   - testing on
   - testing with sudo off
-- `debug-gcc`
-  - inherits from `debug`
-  - compiler: `gcc`
-  - disabled `clang-tidy`
+  - binary-dir `build/preset-debug`
+  - install-dir `dist/preset-debug`
 - `debug-clang`
   - inherits from `debug`
   - compiler: `clang`
   - enabled `clang-tidy`
+  - binary-dir `build/preset-debug-clang`
+  - install-dir `dist/preset-debug-clang`
+- `debug-gcc`
+  - inherits from `debug`
+  - compiler: `gcc`
+  - disabled `clang-tidy`
+  - binary-dir `build/preset-debug-gcc`
+  - install-dir `dist/preset-debug-gcc`
 - `release`
   - inherits from `debug`
   - debug disabled
   - testing with sudo on
-- `release-gcc`
-  - compiler: `gcc`
-  - disabled `clang-tidy`
+  - binary-dir `build/preset-release`
+  - install-dir `dist/preset-release`
 - `release-clang`
   - compiler: `clang`
   - enabled `clang-tidy`
+  - binary-dir `build/preset-release-gcc`
+  - install-dir `dist/preset-release-gcc`
+- `release-gcc`
+  - compiler: `gcc`
+  - disabled `clang-tidy`
+  - binary-dir `build/preset-release-gcc`
+  - install-dir `dist/preset-release-gcc`
+- **`default`**
+  - inherits from `debug-clang`
+  - binary-dir `build/default`
+  - install-dir `dist/default`
 
 Kick-off the workflow by e.g. using preset `release-gcc` to configure, build, test, install and building documentation.
 You may skip `install` and `doc_jau` by dropping it from `--target`.
@@ -264,6 +280,8 @@ cmake --preset release-gcc
 cmake --build --preset release-gcc --parallel
 cmake --build --preset release-gcc --target test install doc_jau
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You may utilize `scripts/build-preset.sh` for an initial build, install and test workflow.
 
 <a name="cmake_presets_hardcoded"></a>
 
@@ -398,20 +416,21 @@ Override default javac debug arguments `source,lines`:
 -DJAVAC_DEBUG_ARGS="none"
 ~~~~~~~~~~~~~
 
-#### Deprecated Build Scripts
-You may also invoke `scripts/build.sh`,
-which resolves installed environment variables like `JAVA_HOME` and `JUNIT_CP`
-as well as building and distributing using `os_arch` type folders.
+#### Build Scripts
+Build scripts use the recommended [cmake presets](README.md#cmake_presets_optional),
+supported via e.g. `scripts/build-preset.sh`.
+
 - `scripts/setup-machine-arch.sh` .. generic setup for all scripts
-- `scripts/build.sh` .. initial build incl. install and unit testing
-- `scripts/rebuild.sh` .. rebuild
-- `scripts/build-cross.sh` .. [cross-build](#cross-build)
-- `scripts/rebuild-cross.sh` .. [cross-build](#cross-build)
+- `scripts/setup-emscripten.sh` .. emscripten setup
+- `scripts/build-preset.sh` .. initial build incl. install and unit testing using [presets](README.md#cmake_presets_optional)
+- `scripts/rebuild-preset.sh` .. rebuild using [presets](README.md#cmake_presets_optional)
+- `scripts/build-preset-cross.sh` .. [cross-build](#cross-build) using [presets](README.md#cmake_presets_optional)
+- `scripts/rebuild-preset-cross.sh` .. [cross-build](#cross-build) using [presets](README.md#cmake_presets_optional)
 - `scripts/test_java.sh` .. invoke a java unit test
 - `scripts/test_exe_template.sh` .. invoke the symlink'ed files to invoke native unit tests
 
 ### Cross Build
-Also provided is a [cross-build script](https://jausoft.com/cgit/jaulib.git/tree/scripts/build-cross.sh)
+Also provided is a [cross-build script](https://jausoft.com/cgit/jaulib.git/tree/scripts/build-preset-cross.sh)
 using chroot into a target system using [QEMU User space emulation](https://qemu-project.gitlab.io/qemu/user/main.html)
 and [Linux kernel binfmt_misc](https://wiki.debian.org/QemuUserEmulation)
 to run on other architectures than the host.
@@ -478,9 +497,10 @@ vi ../jaulib.code-workspace
 ~~~~~~~~~~~~~
 Then you can open it via `File . Open Workspace from File...` menu item.
 - All listed extensions are referenced in this workspace file to be installed via the IDE
-- The [local settings.json](.vscode/settings.json) has `clang-tidy` enabled
-  - If using `clang-tidy` is too slow, just remove it from the settings file.
-  - `clangd` will still contain a good portion of `clang-tidy` checks
+- Select one of the [CMake Presets](README.md#cmake_presets_optional) for
+  - Configuration
+  - Build
+  - Test
 
 ## Changes
 

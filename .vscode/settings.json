@@ -7,18 +7,8 @@
     "cmake.configureOnOpen": true,
     "cmake.copyCompileCommands": "${workspaceFolder}/compile_commands.json",
     "cmake.sourceDirectory": "${workspaceFolder}",
-    "cmake.buildDirectory": "${workspaceFolder}/build-vscode",
     "cmake.configureArgs": [
-        "-DCMAKE_INSTALL_PREFIX=${workspaceFolder}/dist-vscode",
-        "-DCMAKE_C_COMPILER=/usr/bin/clang",
-        "-DCMAKE_CXX_COMPILER=/usr/bin/clang++",
-        "-DCMAKE_CXX_STANDARD=20",
-        "-DCMAKE_CXX_CLANG_TIDY=/usr/bin/clang-tidy;-p;${workspaceFolder}/build-vscode",
-        "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
-        "-DBUILD_TESTING=ON",
-        "-DBUILDJAVA=ON",
-        "-DUSE_LIBUNWIND=ON",
-        "-DUSE_LIBCURL=ON"
+        "-DJAU_CMAKE_ENFORCE_PRESETS=ON"
     ],
     "clangd.arguments": [
         "--background-index",
