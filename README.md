@@ -233,6 +233,7 @@ Following debug presets are defined in `CMakePresets.json`
   - default compiler
   - C++20
   - debug enabled
+  - disabled `clang-tidy`
   - java (if available)
   - libunwind (if available)
   - libcurl (if available)
@@ -255,6 +256,7 @@ Following debug presets are defined in `CMakePresets.json`
 - `release`
   - inherits from `debug`
   - debug disabled
+  - disabled `clang-tidy`
   - testing with sudo on
   - binary-dir `build/preset-release`
   - install-dir `dist/preset-release`
