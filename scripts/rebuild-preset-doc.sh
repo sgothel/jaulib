@@ -6,7 +6,7 @@ bname=`basename $0 .sh`
 
 . $sdir/setup-machine-arch.sh
 
-tripleid="$os_name-$archabi-gcc"
+tripleid="$os_name-$archabi"
 
 if [ ! -z "$1" ] ; then
     preset_name=$1
@@ -38,8 +38,8 @@ buildit() {
     echo logfile $logfile
     echo CPU_COUNT $CPU_COUNT
 
-    dist_dir="dist/preset-${preset_name}"
-    build_dir="build/preset-${preset_name}"
+    dist_dir="dist/${preset_name}-${tripleid}"
+    build_dir="build/${preset_name}"
     echo dist_dir $dist_dir
     echo build_dir $build_dir
 
@@ -53,16 +53,16 @@ buildit() {
 
     cd $rootdir
 
-    ${time_cmd} cmake --build --preset ${preset_name} --parallel $CPU_COUNT --target doc_jau
+    ${time_cmd} cmake --build --preset ${preset_name} --target doc_jau --parallel
     if [ $? -eq 0 ] ; then
-        echo "REBUILD SUCCESS $bname $tripleid"
+        echo "REBUILD SUCCESS $bname, preset $preset_name, $tripleid"
         cd ${build_dir}
         rm -f $rootdir/documentation.tar.xz
         tar caf $rootdir/documentation.tar.xz documentation
         cd $rootdir
         return 0
     else
-        echo "REBUILD FAILURE $bname $tripleid"
+        echo "REBUILD FAILURE $bname, preset $preset_name, $tripleid"
         return 1
     fi
 }

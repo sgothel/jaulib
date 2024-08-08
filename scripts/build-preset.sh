@@ -6,7 +6,7 @@ bname=`basename $0 .sh`
 
 . $sdir/setup-machine-arch.sh
 
-tripleid="$os_name-$archabi-gcc"
+tripleid="$os_name-$archabi"
 
 if [ ! -z "$1" ] ; then
     preset_name=$1
@@ -38,8 +38,8 @@ buildit() {
     echo logfile $logfile
     echo CPU_COUNT $CPU_COUNT
 
-    dist_dir="dist/preset-${preset_name}"
-    build_dir="build/preset-${preset_name}"
+    dist_dir="dist/${preset_name}-${tripleid}"
+    build_dir="build/${preset_name}"
     echo dist_dir $dist_dir
     echo build_dir $build_dir
 
@@ -52,28 +52,27 @@ buildit() {
     fi
 
     cd $rootdir
-    rm -rf $dist_dir
-    mkdir -p $dist_dir
+    rm -rf $dist_dir dist/${preset_name}
     rm -rf $build_dir
     mkdir -p $build_dir
 
     cmake --preset ${preset_name}
 
-    # ${time_cmd} cmake --build --preset ${preset_name} --parallel $CPU_COUNT --target test install doc_jau
-    # ${time_cmd} cmake --build --preset ${preset_name} --parallel $CPU_COUNT
-    ${time_cmd} cmake --build --preset ${preset_name} --parallel $CPU_COUNT --target install
+    # ${time_cmd} cmake --build --preset ${preset_name} --target test install doc_jau --parallel
+    # ${time_cmd} cmake --build --preset ${preset_name} --parallel
+    ${time_cmd} cmake --build --preset ${preset_name} --target install --parallel
     if [ $? -eq 0 ] ; then
-        echo "BUILD SUCCESS $bname $tripleid"
+        echo "BUILD SUCCESS $bname, preset $preset_name, $tripleid"
         ${time_cmd} cmake --build --preset ${preset_name} --target test
         if [ $? -eq 0 ] ; then
-            echo "TEST SUCCESS $bname $tripleid"
+            echo "TEST SUCCESS $bname, preset $preset_name, $tripleid"
             return 0
         else
-            echo "TEST FAILURE $bname $tripleid"
+            echo "TEST FAILURE $bname, preset $preset_name, $tripleid"
             return 1
         fi
     else
-        echo "BUILD FAILURE $bname $tripleid"
+        echo "BUILD FAILURE $bname, preset $preset_name, $tripleid"
         return 1
     fi
 }

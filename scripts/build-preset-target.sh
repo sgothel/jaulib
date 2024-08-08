@@ -17,7 +17,15 @@ else
     return 1
 fi
 
-logfile=$rootdir/${bname}-${preset_name}-${tripleid}.log
+if [ ! -z "$1" ] ; then
+    target_name=$1
+    shift 1
+else
+    echo "ERROR: No target passed as 2nd argument, use one of: [clean, all, install, doc_jau, test]"
+    return 1
+fi
+
+logfile=$rootdir/${bname}-${preset_name}-${target_name}-${tripleid}.log
 rm -f $logfile
 
 CPU_COUNT=`getconf _NPROCESSORS_ONLN`
@@ -39,7 +47,7 @@ buildit() {
     echo CPU_COUNT $CPU_COUNT
 
     dist_dir="dist/${preset_name}-${tripleid}"
-    build_dir="build/preset_name}"
+    build_dir="build/${preset_name}"
     echo dist_dir $dist_dir
     echo build_dir $build_dir
 
@@ -53,12 +61,12 @@ buildit() {
 
     cd $rootdir
 
-    ${time_cmd} cmake --build --preset ${preset_name} --target install --parallel
+    ${time_cmd} cmake --build --preset ${preset_name} --target ${target_name} --parallel
     if [ $? -eq 0 ] ; then
-        echo "REBUILD SUCCESS $bname, preset $preset_name, $tripleid"
+        echo "REBUILD SUCCESS $bname, preset $preset_name, target $target_name, $tripleid"
         return 0
     else
-        echo "REBUILD FAILURE $bname, preset $preset_name, $tripleid"
+        echo "REBUILD FAILURE $bname, preset $preset_name, target $target_name, $tripleid"
         return 1
     fi
 }

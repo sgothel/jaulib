@@ -239,37 +239,37 @@ Following debug presets are defined in `CMakePresets.json`
   - libcurl (if available)
   - testing on
   - testing with sudo off
-  - binary-dir `build/preset-debug`
-  - install-dir `dist/preset-debug`
+  - binary-dir `build/debug`
+  - install-dir `dist/debug`
 - `debug-clang`
   - inherits from `debug`
   - compiler: `clang`
   - enabled `clang-tidy`
-  - binary-dir `build/preset-debug-clang`
-  - install-dir `dist/preset-debug-clang`
+  - binary-dir `build/debug-clang`
+  - install-dir `dist/debug-clang`
 - `debug-gcc`
   - inherits from `debug`
   - compiler: `gcc`
   - disabled `clang-tidy`
-  - binary-dir `build/preset-debug-gcc`
-  - install-dir `dist/preset-debug-gcc`
+  - binary-dir `build/debug-gcc`
+  - install-dir `dist/debug-gcc`
 - `release`
   - inherits from `debug`
   - debug disabled
   - disabled `clang-tidy`
   - testing with sudo on
-  - binary-dir `build/preset-release`
-  - install-dir `dist/preset-release`
+  - binary-dir `build/release`
+  - install-dir `dist/release`
 - `release-clang`
   - compiler: `clang`
   - enabled `clang-tidy`
-  - binary-dir `build/preset-release-gcc`
-  - install-dir `dist/preset-release-gcc`
+  - binary-dir `build/release-clang`
+  - install-dir `dist/release-clang`
 - `release-gcc`
   - compiler: `gcc`
   - disabled `clang-tidy`
-  - binary-dir `build/preset-release-gcc`
-  - install-dir `dist/preset-release-gcc`
+  - binary-dir `build/release-gcc`
+  - install-dir `dist/release-gcc`
 - **`default`**
   - inherits from `debug-clang`
   - binary-dir `build/default`
