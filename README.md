@@ -64,6 +64,8 @@ Release 1.2.0 is the last version supporting C++17, see [Changes](CHANGES.md).
 
 Support for C++23 and C++26 will be added step by step.
 
+Optional WebAssembly (Wasm) builds via [emscripten](https://emscripten.org/).
+
 ### C++ Compiler Support
 - C++20, see [C++20 compiler support](https://en.cppreference.com/w/cpp/compiler_support#cpp20)
   - gcc >= 11, recommended >= 12.2.0
@@ -88,6 +90,7 @@ Language requirements
   - [FreeBSD libc](https://www.freebsd.org/)
   - [GNU glibc](https://www.gnu.org/software/libc/)
   - [musl](https://musl.libc.org/)
+- [emscripten >= 3.1.59](https://emscripten.org/) **optional** for WebAssembly (Wasm)
 - Java 11, 17+ (optional)
 
 See [supported platforms](PLATFORMS.md) for details.
@@ -201,6 +204,16 @@ apt install libcurl4 libcurl4-gnutls-dev
 apt install mini-httpd
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Note: `mini-httpd` is being used for unit testing URL streaming only.
+
+#### WebAssembly (via emscripten)
+At time of writing (Debian 12), it is recommended to install
+[emscripten >= 3.1.59](https://emscripten.org/) for WebAssembly (Wasm)
+from [its upstream source](https://emscripten.org/docs/getting_started/downloads.html).
+
+At a later time (more recent Debian > 12 deployment) the Debian default may be functional:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}
+apt install emscripten
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ### Build Procedure
 
