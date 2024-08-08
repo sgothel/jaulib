@@ -323,6 +323,11 @@ endif(DEBUG)
 
 message(STATUS "JaulibSetup: USE_STRIP = ${USE_STRIP} (final)")
 
+set(${PROJECT_NAME}_C_FLAGS ${${PROJECT_NAME}_CXX_FLAGS})
+
+# 
+# CXX_FLAGS mods
+#
 if(DONT_USE_RTTI)
     message(STATUS "JaulibSetup: RTTI disabled")
     set(${PROJECT_NAME}_CXX_FLAGS ${${PROJECT_NAME}_CXX_FLAGS} "-fno-rtti")
