@@ -53,9 +53,13 @@ buildit() {
 
     cd $rootdir
 
-    ${time_cmd} cmake --build --preset ${preset_name} --parallel $CPU_COUNT --target install
+    ${time_cmd} cmake --build --preset ${preset_name} --parallel $CPU_COUNT --target doc_jau
     if [ $? -eq 0 ] ; then
         echo "REBUILD SUCCESS $bname $tripleid"
+        cd ${build_dir}
+        rm -f $rootdir/documentation.tar.xz
+        tar caf $rootdir/documentation.tar.xz documentation
+        cd $rootdir
         return 0
     else
         echo "REBUILD FAILURE $bname $tripleid"
