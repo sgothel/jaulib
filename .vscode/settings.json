@@ -15,12 +15,12 @@
         // "CMAKE_BUILD_PARALLEL_LEVEL": "16"
     },
     "cmake.buildArgs": [
-        "--parallel",
+        "--parallel"
     ],
     "clangd.arguments": [
         "--background-index",
         "--project-root=${workspaceFolder}"
     ],
     "workbench.editor.labelFormat": "medium",
-    "C_Cpp.errorSquiggles": "disabled",
+    "C_Cpp.errorSquiggles": "disabled"
 }
