@@ -39,7 +39,7 @@
         "name": "JavaSE-21",
         "path": "/opt-linux-x86_64/jdk21",
         "default": true
-      },
+      }
     ],
     "[cpp]": {
       "breadcrumbs.showKeys": true,
