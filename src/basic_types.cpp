@@ -389,7 +389,7 @@ uint128dp_t jau::merge_uint128(uint32_t const uuid32, uint128dp_t const & base_u
     return dest;
 }
 
-std::string jau::vformat_string(const char* format, va_list ap) noexcept {
+std::string jau::vformat_string(const char* format, va_list ap) {
     size_t nchars;
     std::string str;
     {
@@ -397,7 +397,7 @@ std::string jau::vformat_string(const char* format, va_list ap) noexcept {
         str.reserve(bsz);  // incl. EOS
         str.resize(bsz-1); // excl. EOS
 
-        nchars = vsnprintf(&str[0], bsz, format, ap); // NOLINT(clang-analyzer-valist.Uninitialized): clang-tidy bug
+        nchars = std::vsnprintf(&str[0], bsz, format, ap); // NOLINT(clang-analyzer-valist.Uninitialized): clang-tidy bug
         if( nchars < bsz ) {
             str.resize(nchars);
             str.shrink_to_fit();
@@ -408,13 +408,13 @@ std::string jau::vformat_string(const char* format, va_list ap) noexcept {
         const size_t bsz = std::min<size_t>(nchars+1, str.max_size()+1); // limit incl. EOS
         str.reserve(bsz);  // incl. EOS
         str.resize(bsz-1); // excl. EOS
-        nchars = vsnprintf(&str[0], bsz, format, ap); // NOLINT(clang-analyzer-valist.Uninitialized): clang-tidy bug
+        nchars = std::vsnprintf(&str[0], bsz, format, ap); // NOLINT(clang-analyzer-valist.Uninitialized): clang-tidy bug
         str.resize(nchars);
         return str;
     }
 }
 
-std::string jau::format_string(const char* format, ...) noexcept {
+std::string jau::format_string(const char* format, ...) {
     va_list args;
     va_start (args, format);
     std::string str = vformat_string(format, args);

@@ -261,14 +261,14 @@ namespace jau {
      * @param format `printf()` compliant format string
      * @param ap `va_list` arguments
      */
-    std::string vformat_string(const char* format, va_list ap) noexcept;
+    std::string vformat_string(const char* format, va_list ap);
 
     /**
      * Returns a string according to `printf()` formatting rules
      * and variable number of arguments following the `format` argument.
      * @param format `printf()` compliant format string
      */
-    std::string format_string(const char* format, ...) noexcept;
+    std::string format_string(const char* format, ...);
 
     /**
     // *************************************************
