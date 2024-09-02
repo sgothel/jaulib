@@ -39,6 +39,7 @@
 
 #include <jau/int_types.hpp>
 #include <jau/int_math.hpp>
+#include <jau/string_cfmt.hpp>
 
 namespace jau {
 
@@ -269,6 +270,41 @@ namespace jau {
      * @param format `printf()` compliant format string
      */
     std::string format_string(const char* format, ...);
+
+    /**
+     * Safely returns a string according to `printf()` formatting rules
+     * and variable number of arguments following the `format` argument.
+     *
+     * jau::cfmt2::check() is utilize to pre-validate the given arguments
+     * against the format string. If invalid, method returns an empty string.
+     * Otherwise std::snprintf() is being utilized.
+     *
+     * @param maxStrLen maximum resulting string length
+     * @param format `printf()` compliant format string
+     * @param args optional arguments matching the format string
+     */
+    template <typename... Args>
+    constexpr std::string format_string_v(const std::size_t maxStrLen, const std::string_view format, const Args &...args) {
+        if ( jau::cfmt::check2<Args...>(format) ) {
+            std::string str;
+            str.reserve(maxStrLen + 1);  // incl. EOS
+            str.resize(maxStrLen);       // excl. EOS
+    
+            // -Wformat=2 -> -Wformat -Wformat-nonliteral -Wformat-security -Wformat-y2k
+            // -Wformat=2 -Wformat-overflow=2 -Wformat-signedness
+            PRAGMA_DISABLE_WARNING_PUSH
+            PRAGMA_DISABLE_WARNING_FORMAT_NONLITERAL
+            const size_t nchars = std::snprintf(&str[0], maxStrLen + 1, format.data(), args...);
+            PRAGMA_DISABLE_WARNING_POP
+            if( nchars < maxStrLen + 1 ) {
+                str.resize(nchars);
+                str.shrink_to_fit();
+            }  // else truncated w/ nchars > MaxStrLen
+            return str;
+        } else {
+            return "";
+        }
+    }
 
     /**
     // *************************************************
