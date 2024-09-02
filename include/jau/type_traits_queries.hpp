@@ -37,6 +37,9 @@
 
 namespace jau {
 
+    // #include "jau/string_util.hpp"
+    std::string format_string(const char* format, ...);
+    
     /** \addtogroup CppLang
      *
      *  @{
@@ -113,7 +116,7 @@ namespace jau {
          * or <code>"unnamed_type"</code> if RTTI is disabled.
          * </p>
          */
-        static const char * name() {
+        static const char * name() noexcept {
 #if defined(__cxx_rtti_available__)
             return typeid(T).name();
 #else
@@ -132,98 +135,116 @@ namespace jau {
     struct type_cue : public type_name_cue<T>
     {
 
+        static std::string to_string(const bool withSize=true) noexcept {
+            if( withSize ) {
+                return jau::format_string("%s[%zu bytes]", type_name_cue<T>::name(), sizeof(T));
+            } else {
+                return type_name_cue<T>::name();
+            } 
+        }
+        
+        /**
+         * Print information of this type to stdout, potentially with all <i>Type traits</i> known.
+         * @param stream output stream
+         * @param typedefname the code typedefname (or typename) as a string, should match T
+         * @param verbose if true, prints all <i>Type traits</i> known for this type. Be aware of the long output. Defaults to false.
+         */
+        static void fprint(std::FILE *stream, const std::string& typedefname, const TypeTraitGroup verbosity=TypeTraitGroup::NONE) {
+            std::fprintf(stream, "Type: %s -> %s, %zu bytes\n", typedefname.c_str(), type_name_cue<T>::name(), sizeof(T));
+
+            if( isTypeTraitBitSet(verbosity, TypeTraitGroup::PRIMARY_TYPE_CAT) ) {
+                std::fprintf(stream, "  Primary Type Categories\n");
+                std::fprintf(stream, "    void            %d\n", std::is_void_v<T>);
+                std::fprintf(stream, "    null ptr        %d\n", std::is_null_pointer_v<T>);
+                std::fprintf(stream, "    integral        %d\n", std::is_integral_v<T>);
+                std::fprintf(stream, "    floating point  %d\n", std::is_floating_point_v<T>);
+                std::fprintf(stream, "    array           %d\n", std::is_array_v<T>);
+                std::fprintf(stream, "    enum            %d\n", std::is_enum_v<T>);
+                std::fprintf(stream, "    union           %d\n", std::is_union_v<T>);
+                std::fprintf(stream, "    class           %d\n", std::is_class_v<T>);
+                std::fprintf(stream, "    function        %d\n", std::is_function_v<T>);
+                std::fprintf(stream, "    pointer         %d\n", std::is_pointer_v<T>);
+                std::fprintf(stream, "    lvalue ref      %d\n", std::is_lvalue_reference_v<T>);
+                std::fprintf(stream, "    rvalue ref      %d\n", std::is_rvalue_reference_v<T>);
+                std::fprintf(stream, "    member obj ptr  %d\n", std::is_member_object_pointer_v<T>);
+                std::fprintf(stream, "    member func ptr %d\n", std::is_member_function_pointer_v<T>);
+                std::fprintf(stream, "\n");
+            }
+            if( isTypeTraitBitSet(verbosity, TypeTraitGroup::TYPE_PROPERTIES) ) {
+                std::fprintf(stream, "  Type Properties\n");
+                std::fprintf(stream, "    const           %d\n", std::is_const_v<T>);
+                std::fprintf(stream, "    volatile        %d\n", std::is_volatile_v<T>);
+                std::fprintf(stream, "    trivial         %d\n", std::is_trivial_v<T>);
+                std::fprintf(stream, "    trivially_copy. %d\n", std::is_trivially_copyable_v<T>);
+                std::fprintf(stream, "    standard_layout %d\n", std::is_standard_layout_v<T>);
+                std::fprintf(stream, "    pod             %d\n", std::is_standard_layout_v<T> && std::is_trivial_v<T>); // is_pod<>() is deprecated
+                std::fprintf(stream, "    unique_obj_rep  %d\n", std::has_unique_object_representations_v<T>);
+                std::fprintf(stream, "    empty           %d\n", std::is_empty_v<T>);
+                std::fprintf(stream, "    polymorphic     %d\n", std::is_polymorphic_v<T>);
+                std::fprintf(stream, "    abstract        %d\n", std::is_abstract_v<T>);
+                std::fprintf(stream, "    final           %d\n", std::is_final_v<T>);
+                std::fprintf(stream, "    aggregate       %d\n", std::is_aggregate_v<T>);
+                std::fprintf(stream, "    signed          %d\n", std::is_signed_v<T>);
+                std::fprintf(stream, "    unsigned        %d\n", std::is_unsigned_v<T>);
+    #if __cplusplus > 202002L
+                // C++ 23
+                std::fprintf(stream, "    bounded_array   %d\n", std::is_bounded_array_v<T>);
+                std::fprintf(stream, "    unbounded_array %d\n", std::is_unbounded_array_v<T>);
+                std::fprintf(stream, "    scoped enum     %d\n", std::is_scoped_enum_v<T>);
+    #endif
+                std::fprintf(stream, "\n");
+            }
+            if( isTypeTraitBitSet(verbosity, TypeTraitGroup::COMPOSITE_TYPE_CAT) ) {
+                std::fprintf(stream, "  Composite Type Categories\n");
+                std::fprintf(stream, "    fundamental     %d\n", std::is_fundamental_v<T>);
+                std::fprintf(stream, "    arithmetic      %d\n", std::is_arithmetic_v<T>);
+                std::fprintf(stream, "    scalar          %d\n", std::is_scalar_v<T>);
+                std::fprintf(stream, "    object          %d\n", std::is_object_v<T>);
+                std::fprintf(stream, "    compound        %d\n", std::is_compound_v<T>);
+                std::fprintf(stream, "    reference       %d\n", std::is_reference_v<T>);
+                std::fprintf(stream, "    member ptr      %d\n", std::is_member_pointer_v<T>);
+                std::fprintf(stream, "\n");
+            }
+            if( isTypeTraitBitSet(verbosity, TypeTraitGroup::SUPPORTED_OPERATIONS) ) {
+                std::fprintf(stream, "  Supported Operations\n");
+                std::fprintf(stream, "    constructible         %d {trivially %d, nothrow %d}\n",
+                        std::is_constructible_v<T>,
+                        std::is_trivially_constructible_v<T>, std::is_nothrow_constructible_v<T>);
+                std::fprintf(stream, "    default_constructible %d {trivially %d, nothrow %d}\n",
+                        std::is_default_constructible_v<T>,
+                        std::is_trivially_default_constructible_v<T>, std::is_nothrow_default_constructible_v<T>);
+                std::fprintf(stream, "    copy_constructible    %d {trivially %d, nothrow %d}\n",
+                        std::is_copy_constructible_v<T>,
+                        std::is_trivially_copy_constructible_v<T>, std::is_nothrow_copy_constructible_v<T>);
+                std::fprintf(stream, "    move_constructible    %d {trivially %d, nothrow %d}\n",
+                        std::is_move_constructible_v<T>,
+                        std::is_trivially_move_constructible_v<T>, std::is_nothrow_move_constructible_v<T>);
+                std::fprintf(stream, "    assignable            %d {trivially %d, nothrow %d}\n",
+                        std::is_assignable_v<T, T>,
+                        std::is_trivially_assignable_v<T, T>, std::is_nothrow_assignable_v<T, T>);
+                std::fprintf(stream, "    copy_assignable       %d {trivially %d, nothrow %d}\n",
+                        std::is_copy_assignable_v<T>,
+                        std::is_trivially_copy_assignable_v<T>, std::is_nothrow_copy_assignable_v<T>);
+                std::fprintf(stream, "    move_assignable       %d {trivially %d, nothrow %d}\n",
+                        std::is_move_assignable_v<T>,
+                        std::is_trivially_move_assignable_v<T>, std::is_nothrow_move_assignable_v<T>);
+                std::fprintf(stream, "    destructible          %d {trivially %d, nothrow %d, virtual %d}\n",
+                        std::is_destructible_v<T>,
+                        std::is_trivially_destructible_v<T>, std::is_nothrow_destructible_v<T>,
+                        std::has_virtual_destructor_v<T>);
+                std::fprintf(stream, "    swappable             %d {nothrow %d}\n",
+                        std::is_swappable_v<T>, std::is_nothrow_swappable_v<T>);
+            }
+        }
         /**
          * Print information of this type to stdout, potentially with all <i>Type traits</i> known.
          * @param typedefname the code typedefname (or typename) as a string, should match T
          * @param verbose if true, prints all <i>Type traits</i> known for this type. Be aware of the long output. Defaults to false.
          */
         static void print(const std::string& typedefname, const TypeTraitGroup verbosity=TypeTraitGroup::NONE) {
-            printf("Type: %s -> %s, %zu bytes\n", typedefname.c_str(), type_name_cue<T>::name(), sizeof(T));
-
-            if( isTypeTraitBitSet(verbosity, TypeTraitGroup::PRIMARY_TYPE_CAT) ) {
-                printf("  Primary Type Categories\n");
-                printf("    void            %d\n", std::is_void_v<T>);
-                printf("    null ptr        %d\n", std::is_null_pointer_v<T>);
-                printf("    integral        %d\n", std::is_integral_v<T>);
-                printf("    floating point  %d\n", std::is_floating_point_v<T>);
-                printf("    array           %d\n", std::is_array_v<T>);
-                printf("    enum            %d\n", std::is_enum_v<T>);
-                printf("    union           %d\n", std::is_union_v<T>);
-                printf("    class           %d\n", std::is_class_v<T>);
-                printf("    function        %d\n", std::is_function_v<T>);
-                printf("    pointer         %d\n", std::is_pointer_v<T>);
-                printf("    lvalue ref      %d\n", std::is_lvalue_reference_v<T>);
-                printf("    rvalue ref      %d\n", std::is_rvalue_reference_v<T>);
-                printf("    member obj ptr  %d\n", std::is_member_object_pointer_v<T>);
-                printf("    member func ptr %d\n", std::is_member_function_pointer_v<T>);
-                printf("\n");
-            }
-            if( isTypeTraitBitSet(verbosity, TypeTraitGroup::TYPE_PROPERTIES) ) {
-                printf("  Type Properties\n");
-                printf("    const           %d\n", std::is_const_v<T>);
-                printf("    volatile        %d\n", std::is_volatile_v<T>);
-                printf("    trivial         %d\n", std::is_trivial_v<T>);
-                printf("    trivially_copy. %d\n", std::is_trivially_copyable_v<T>);
-                printf("    standard_layout %d\n", std::is_standard_layout_v<T>);
-                printf("    pod             %d\n", std::is_standard_layout_v<T> && std::is_trivial_v<T>); // is_pod<>() is deprecated
-                printf("    unique_obj_rep  %d\n", std::has_unique_object_representations_v<T>);
-                printf("    empty           %d\n", std::is_empty_v<T>);
-                printf("    polymorphic     %d\n", std::is_polymorphic_v<T>);
-                printf("    abstract        %d\n", std::is_abstract_v<T>);
-                printf("    final           %d\n", std::is_final_v<T>);
-                printf("    aggregate       %d\n", std::is_aggregate_v<T>);
-                printf("    signed          %d\n", std::is_signed_v<T>);
-                printf("    unsigned        %d\n", std::is_unsigned_v<T>);
-    #if __cplusplus > 202002L
-                // C++ 23
-                printf("    bounded_array   %d\n", std::is_bounded_array_v<T>);
-                printf("    unbounded_array %d\n", std::is_unbounded_array_v<T>);
-                printf("    scoped enum     %d\n", std::is_scoped_enum_v<T>);
-    #endif
-                printf("\n");
-            }
-            if( isTypeTraitBitSet(verbosity, TypeTraitGroup::COMPOSITE_TYPE_CAT) ) {
-                printf("  Composite Type Categories\n");
-                printf("    fundamental     %d\n", std::is_fundamental_v<T>);
-                printf("    arithmetic      %d\n", std::is_arithmetic_v<T>);
-                printf("    scalar          %d\n", std::is_scalar_v<T>);
-                printf("    object          %d\n", std::is_object_v<T>);
-                printf("    compound        %d\n", std::is_compound_v<T>);
-                printf("    reference       %d\n", std::is_reference_v<T>);
-                printf("    member ptr      %d\n", std::is_member_pointer_v<T>);
-                printf("\n");
-            }
-            if( isTypeTraitBitSet(verbosity, TypeTraitGroup::SUPPORTED_OPERATIONS) ) {
-                printf("  Supported Operations\n");
-                printf("    constructible         %d {trivially %d, nothrow %d}\n",
-                        std::is_constructible_v<T>,
-                        std::is_trivially_constructible_v<T>, std::is_nothrow_constructible_v<T>);
-                printf("    default_constructible %d {trivially %d, nothrow %d}\n",
-                        std::is_default_constructible_v<T>,
-                        std::is_trivially_default_constructible_v<T>, std::is_nothrow_default_constructible_v<T>);
-                printf("    copy_constructible    %d {trivially %d, nothrow %d}\n",
-                        std::is_copy_constructible_v<T>,
-                        std::is_trivially_copy_constructible_v<T>, std::is_nothrow_copy_constructible_v<T>);
-                printf("    move_constructible    %d {trivially %d, nothrow %d}\n",
-                        std::is_move_constructible_v<T>,
-                        std::is_trivially_move_constructible_v<T>, std::is_nothrow_move_constructible_v<T>);
-                printf("    assignable            %d {trivially %d, nothrow %d}\n",
-                        std::is_assignable_v<T, T>,
-                        std::is_trivially_assignable_v<T, T>, std::is_nothrow_assignable_v<T, T>);
-                printf("    copy_assignable       %d {trivially %d, nothrow %d}\n",
-                        std::is_copy_assignable_v<T>,
-                        std::is_trivially_copy_assignable_v<T>, std::is_nothrow_copy_assignable_v<T>);
-                printf("    move_assignable       %d {trivially %d, nothrow %d}\n",
-                        std::is_move_assignable_v<T>,
-                        std::is_trivially_move_assignable_v<T>, std::is_nothrow_move_assignable_v<T>);
-                printf("    destructible          %d {trivially %d, nothrow %d, virtual %d}\n",
-                        std::is_destructible_v<T>,
-                        std::is_trivially_destructible_v<T>, std::is_nothrow_destructible_v<T>,
-                        std::has_virtual_destructor_v<T>);
-                printf("    swappable             %d {nothrow %d}\n",
-                        std::is_swappable_v<T>, std::is_nothrow_swappable_v<T>);
-            }
+            fprint(stdout, typedefname, verbosity);
         }
+        
     };
     #define JAU_TYPENAME_CUE(A) template<> struct jau::type_name_cue<A> { static const char * name() { return #A; } };
     #define JAU_TYPENAME_CUE_ALL(A) JAU_TYPENAME_CUE(A) JAU_TYPENAME_CUE(A*) JAU_TYPENAME_CUE(const A*) JAU_TYPENAME_CUE(A&) JAU_TYPENAME_CUE(const A&) // NOLINT(bugprone-macro-parentheses)

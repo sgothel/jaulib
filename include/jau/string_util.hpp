@@ -403,7 +403,7 @@ namespace jau {
                                bool> = true>
     inline std::string to_string(const value_type & ref) {
         (void)ref;
-        return "jau::to_string<T> not available for "+type_cue<value_type>::print("unknown", TypeTraitGroup::ALL);
+        return "jau::to_string<T> n/a for type "+type_cue<value_type>::to_string();
     }
 
     template<typename T>
