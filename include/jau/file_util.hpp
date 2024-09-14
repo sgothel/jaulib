@@ -322,15 +322,15 @@ namespace jau::fs {
         return static_cast<fmode_t>(number(lhs) & number(rhs));
     }
     constexpr fmode_t& operator|=(fmode_t& lhs, const fmode_t rhs) noexcept {
-        lhs = static_cast<fmode_t>(number(lhs) | number(rhs));
+        lhs = lhs | rhs;
         return lhs;
     }
     constexpr fmode_t& operator&=(fmode_t& lhs, const fmode_t rhs) noexcept {
-        lhs = static_cast<fmode_t>(number(lhs) & number(rhs));
+        lhs = lhs & rhs;
         return lhs;
     }
     constexpr fmode_t& operator^=(fmode_t& lhs, const fmode_t rhs) noexcept {
-        lhs = static_cast<fmode_t>(number(lhs) ^ number(rhs));
+        lhs = lhs ^ rhs;
         return lhs;
     }
     constexpr bool operator==(const fmode_t lhs, const fmode_t rhs) noexcept {
@@ -674,15 +674,15 @@ namespace jau::fs {
         return static_cast<file_stats::field_t>(number(lhs) & number(rhs));
     }
     constexpr file_stats::field_t& operator|=(file_stats::field_t& lhs, const file_stats::field_t rhs) noexcept {
-        lhs = static_cast<file_stats::field_t>(number(lhs) | number(rhs));
+        lhs = lhs | rhs;
         return lhs;
     }
     constexpr file_stats::field_t& operator&=(file_stats::field_t& lhs, const file_stats::field_t rhs) noexcept {
-        lhs = static_cast<file_stats::field_t>(number(lhs) & number(rhs));
+        lhs = lhs & rhs;
         return lhs;
     }
     constexpr file_stats::field_t& operator^=(file_stats::field_t& lhs, const file_stats::field_t rhs) noexcept {
-        lhs = static_cast<file_stats::field_t>(number(lhs) ^ number(rhs));
+        lhs = lhs ^ rhs;
         return lhs;
     }
     constexpr bool operator==(const file_stats::field_t lhs, const file_stats::field_t rhs) noexcept {
@@ -835,15 +835,15 @@ namespace jau::fs {
         return static_cast<traverse_event>(number(lhs) & number(rhs));
     }
     constexpr traverse_event& operator|=(traverse_event& lhs, const traverse_event rhs) noexcept {
-        lhs = static_cast<traverse_event>(number(lhs) | number(rhs));
+        lhs = lhs | rhs;
         return lhs;
     }
     constexpr traverse_event& operator&=(traverse_event& lhs, const traverse_event rhs) noexcept {
-        lhs = static_cast<traverse_event>(number(lhs) & number(rhs));
+        lhs = lhs & rhs;
         return lhs;
     }
     constexpr traverse_event& operator^=(traverse_event& lhs, const traverse_event rhs) noexcept {
-        lhs = static_cast<traverse_event>(number(lhs) ^ number(rhs));
+        lhs = lhs ^ rhs;
         return lhs;
     }
     constexpr bool operator==(const traverse_event lhs, const traverse_event rhs) noexcept {
@@ -917,15 +917,15 @@ namespace jau::fs {
         return static_cast<traverse_options>(number(lhs) & number(rhs));
     }
     constexpr traverse_options& operator|=(traverse_options& lhs, const traverse_options rhs) noexcept {
-        lhs = static_cast<traverse_options>(number(lhs) | number(rhs));
+        lhs = lhs | rhs;
         return lhs;
     }
     constexpr traverse_options& operator&=(traverse_options& lhs, const traverse_options rhs) noexcept {
-        lhs = static_cast<traverse_options>(number(lhs) & number(rhs));
+        lhs = lhs & rhs;
         return lhs;
     }
     constexpr traverse_options& operator^=(traverse_options& lhs, const traverse_options rhs) noexcept {
-        lhs = static_cast<traverse_options>(number(lhs) ^ number(rhs));
+        lhs = lhs ^ rhs;
         return lhs;
     }
     constexpr bool operator==(const traverse_options lhs, const traverse_options rhs) noexcept {
@@ -1087,15 +1087,15 @@ namespace jau::fs {
         return static_cast<copy_options>(number(lhs) & number(rhs));
     }
     constexpr copy_options& operator|=(copy_options& lhs, const copy_options rhs) noexcept {
-        lhs = static_cast<copy_options>(number(lhs) | number(rhs));
+        lhs = lhs | rhs;
         return lhs;
     }
     constexpr copy_options& operator&=(copy_options& lhs, const copy_options rhs) noexcept {
-        lhs = static_cast<copy_options>(number(lhs) & number(rhs));
+        lhs = lhs & rhs;
         return lhs;
     }
     constexpr copy_options& operator^=(copy_options& lhs, const copy_options rhs) noexcept {
-        lhs = static_cast<copy_options>(number(lhs) ^ number(rhs));
+        lhs = lhs ^ rhs;
         return lhs;
     }
     constexpr bool operator==(const copy_options lhs, const copy_options rhs) noexcept {
@@ -1240,15 +1240,15 @@ namespace jau::fs {
         return static_cast<mountflags_linux>(number(lhs) & number(rhs));
     }
     constexpr mountflags_linux& operator|=(mountflags_linux& lhs, const mountflags_linux rhs) noexcept {
-        lhs = static_cast<mountflags_linux>(number(lhs) | number(rhs));
+        lhs = lhs | rhs;
         return lhs;
     }
     constexpr mountflags_linux& operator&=(mountflags_linux& lhs, const mountflags_linux rhs) noexcept {
-        lhs = static_cast<mountflags_linux>(number(lhs) & number(rhs));
+        lhs = lhs & rhs;
         return lhs;
     }
     constexpr mountflags_linux& operator^=(mountflags_linux& lhs, const mountflags_linux rhs) noexcept {
-        lhs = static_cast<mountflags_linux>(number(lhs) ^ number(rhs));
+        lhs = lhs ^ rhs;
         return lhs;
     }
     constexpr bool operator==(const mountflags_linux lhs, const mountflags_linux rhs) noexcept {
@@ -1354,15 +1354,15 @@ namespace jau::fs {
         return static_cast<umountflags_linux>(number(lhs) & number(rhs));
     }
     constexpr umountflags_linux& operator|=(umountflags_linux& lhs, const umountflags_linux rhs) noexcept {
-        lhs = static_cast<umountflags_linux>(number(lhs) | number(rhs));
+        lhs = lhs | rhs;
         return lhs;
     }
     constexpr umountflags_linux& operator&=(umountflags_linux& lhs, const umountflags_linux rhs) noexcept {
-        lhs = static_cast<umountflags_linux>(number(lhs) & number(rhs));
+        lhs = lhs & rhs;
         return lhs;
     }
     constexpr umountflags_linux& operator^=(umountflags_linux& lhs, const umountflags_linux rhs) noexcept {
-        lhs = static_cast<umountflags_linux>(number(lhs) ^ number(rhs));
+        lhs = lhs ^ rhs;
         return lhs;
     }
     constexpr bool operator==(const umountflags_linux lhs, const umountflags_linux rhs) noexcept {
