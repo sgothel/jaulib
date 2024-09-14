@@ -32,6 +32,7 @@
 
 #include <cstdint>
 #include <cmath>
+#include "jau/cpp_lang_util.hpp"
 
 #include <jau/int_types.hpp>
 #include <jau/int_math.hpp>
@@ -889,6 +890,13 @@ namespace jau {
         : tv_sec(s), tv_nsec(ns) { normalize(); }
 
         /**
+         * Constructs a fraction_timespec instance with given floating point seconds, normalized.
+         */
+        explicit constexpr fraction_timespec(const double seconds) noexcept
+        : tv_sec( static_cast<int64_t>(seconds) ),
+          tv_nsec( static_cast<int64_t>( (seconds - static_cast<double>(tv_sec)) * 1e+9) ) { }
+
+        /**
          * Conversion constructor of fraction_timespec for a fraction_i64 value.
          *
          * If overflow_ptr is not nullptr, true is stored if an overflow occurred, otherwise false.
@@ -932,6 +940,44 @@ namespace jau {
         }
 
         /**
+         * Conversion constructor from an ISO8601 time string,
+         * as produced via to_iso8601_string().
+         *
+         * Implementation allows having space instead of specified delimiters like `T` and `Z`.
+         *
+         * @param datestr the ISO8601 time string to parse
+         * @param utcOffsetSec storage for UTC offset in seconds
+         * @param consumedChars number of consumed chars successfully parsed
+         * @param returns the fraction_timespec in UTC 
+         */
+        static fraction_timespec from(const std::string_view datestr, int64_t &utcOffsetSec, size_t &consumedChars) noexcept;
+
+        /**
+         * Conversion constructor from an ISO8601 time string,
+         * as produced via to_iso8601_string().
+         *
+         * Implementation allows having space instead of specified delimiters like `T` and `Z`.
+         *
+         * @param datestr the ISO8601 time string to parse
+         * @param addUTCOffset if true, add UTC offset to the resulting time, otherwise return UTC only
+         */
+        static fraction_timespec from(const std::string_view datestr, Bool addUTCOffset = Bool::False) noexcept;
+
+        /**
+         * Conversion constructor from broken down values assuming UTC
+         * @param year year number, 0 as 0 A.D.
+         * @param month month number [1-12]
+         * @param day day of the month [1-31]
+         * @param hour hours since midnight [0-23]
+         * @param minute minutes after the hour [0-59]
+         * @param seconds seconds after the minute including one leap second [0-60]
+         * @param nano_seconds nanoseconds [0, 1'000'000'000)
+        */
+        static fraction_timespec from(int year, unsigned month, unsigned day,
+                                      unsigned hour=0, unsigned minute=0,
+                                      unsigned seconds=0, uint64_t nano_seconds=0) noexcept;
+
+        /**
          * Returns the sum of both components.
          *
          * If applied to relative duration, i.e. difference of two time points,
@@ -962,22 +1008,26 @@ namespace jau {
          * @returns reference to this instance
          */
         constexpr fraction_timespec& normalize() noexcept {
-            using namespace jau::int_literals;
-            const int64_t ns_per_sec = 1'000'000'000_i64;
-            if( abs(tv_nsec) >= ns_per_sec ) {
-                const int64_t c = tv_nsec / ns_per_sec;
-                tv_nsec -= c * ns_per_sec;
-                tv_sec += c;
-            }
-            if( tv_nsec < 0 && tv_sec >= 1 ) {
-                tv_nsec += ns_per_sec;
-                tv_sec -= 1;
-            } else if( tv_nsec > 0 && tv_sec <= -1 ) {
-                tv_nsec -= ns_per_sec;
-                tv_sec += 1;
+            if( 0 != tv_nsec ) {
+                const int64_t ns_per_sec = 1000000000L;
+                if( std::abs(tv_nsec) >= ns_per_sec ) {
+                    const int64_t c = tv_nsec / ns_per_sec;
+                    tv_nsec -= c * ns_per_sec;
+                    tv_sec += c;
+                }
+                if( tv_nsec < 0 && tv_sec >= 1 ) {
+                    tv_nsec += ns_per_sec;
+                    tv_sec -= 1;
+                } else if( tv_nsec > 0 && tv_sec <= -1 ) {
+                    tv_nsec -= ns_per_sec;
+                    tv_sec += 1;
+                }
             }
             return *this;
         }
+
+        constexpr bool isZero() noexcept { return 0 == tv_sec && 0 == tv_nsec; }
+        constexpr void clear() noexcept { tv_sec=0; tv_nsec=0; }
 
         /**
          * Compound assignment (addition)
@@ -1017,12 +1067,6 @@ namespace jau {
             return { static_cast<std::time_t>( tv_sec ), static_cast<ns_type>( tv_nsec ) };
         }
 
-        /** Returns tv_nsec portion converted to milliseconds */
-        constexpr int64_t to_ms() const noexcept { return tv_nsec / 1'000'000l; }
-
-        /** Returns tv_nsec portion converted to microseconds */
-        constexpr int64_t to_us() const noexcept { return tv_nsec / 1'000l; }
-
         /**
          * Return simple string representation in seconds and nanoseconds.
          */
@@ -1034,8 +1078,15 @@ namespace jau {
          *
          * Implementation uses `strftime()` with format `%Y-%m-%dT%H:%M:%S`
          * and adds 9 digits nanoseconds as fractions of seconds if not zero and the final `Z`.
+         *
+         * Time will be dropped if hours, minutes, seconds and fractions of a seconds are all zero.
+         *
+         * @param space_separator if true, use simple space separator instead of `T` and drop `Z`,
+         *        otherwise use ISO 8601 as described above. Defaults to `false`.
+         *
+         * @param muteTime if true, always mute time
          */
-        std::string to_iso8601_string() const noexcept;
+        std::string to_iso8601_string(bool space_separator=false, bool muteTime=false) const noexcept;
     };
 
     inline std::string to_string(const fraction_timespec& v) noexcept { return v.to_string(); }

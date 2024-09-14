@@ -22,6 +22,7 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <cmath>
 #include <cstdint>
 #include <cinttypes>
 #include <cstring>
@@ -33,7 +34,10 @@
 #include <jau/byte_util.hpp>
 #include <jau/debug.hpp>
 #include <jau/basic_types.hpp>
+#include <jau/float_math.hpp>
 #include <jau/functional.hpp>
+#include <jau/int_math.hpp>
+#include <jau/int_types.hpp>
 #include <jau/secmem.hpp>
 #include <jau/math/math_error.hpp>
 #include <jau/string_util.hpp>
@@ -91,28 +95,224 @@ std::string fraction_timespec::to_string() const noexcept {
     return std::to_string(tv_sec) + "s + " + std::to_string(tv_nsec) + "ns";
 }
 
-std::string fraction_timespec::to_iso8601_string() const noexcept {
+std::string fraction_timespec::to_iso8601_string(bool space_separator, bool muteTime) const noexcept {
     std::time_t t0 = static_cast<std::time_t>(tv_sec);
     struct std::tm tm_0;
-    if( nullptr == ::gmtime_r( &t0, &tm_0 ) ) {
-        return "1970-01-01T00:00:00.0Z"; // 22 + 1
+    if( nullptr == ::gmtime_r(&t0, &tm_0) ) {
+        if( muteTime ) {
+            if( space_separator ) {
+                return "1970-01-01";
+            } else {
+                return "1970-01-01Z";
+            }
+        } else {
+            if( space_separator ) {
+                return "1970-01-01 00:00:00";
+            } else {
+                return "1970-01-01T00:00:00Z";
+            }
+        }
     } else {
         // 2022-05-28T23:23:50Z 20+1
         //
         // 1655994850s + 228978909ns
         // 2022-06-23T14:34:10.228978909Z 30+1
-        char b[30+1];
-        size_t p = ::strftime(b, sizeof(b), "%Y-%m-%dT%H:%M:%S", &tm_0);
-        if( 0 < p && p < sizeof(b)-1 ) {
-            const size_t remaining = sizeof(b) - p;
-            if( 0 < tv_nsec ) {
-                ::snprintf(b+p, remaining, ".%09" PRIi64 "Z", tv_nsec);
+        char b[30 + 1];
+        size_t p;
+        if( muteTime || ( 0 == tm_0.tm_hour && 0 == tm_0.tm_min && 0 == tm_0.tm_sec && 0 == tv_nsec ) ) {
+            p = ::strftime(b, sizeof(b), "%Y-%m-%d", &tm_0);
+        } else {
+            if( space_separator ) {
+                p = ::strftime(b, sizeof(b), "%Y-%m-%d %H:%M:%S", &tm_0);
             } else {
-                ::snprintf(b+p, remaining, "Z");
+                p = ::strftime(b, sizeof(b), "%Y-%m-%dT%H:%M:%S", &tm_0);
+            }
+        }
+        if( 0 < p && p < sizeof(b) - 1 ) {
+            size_t q = 0;
+            const size_t remaining = sizeof(b) - p;
+            if( !muteTime && 0 < tv_nsec ) {
+                q = ::snprintf(b + p, remaining, ".%09" PRIi64, tv_nsec);
+            }
+            if( !space_separator ) {
+                ::snprintf(b + p + q, remaining-q, "Z");
             }
         }
         return std::string(b);
     }
+}
+
+fraction_timespec fraction_timespec::from(int year, unsigned month, unsigned day,
+                                          unsigned hour, unsigned minute,
+                                          unsigned seconds, uint64_t nano_seconds) noexcept {
+    fraction_timespec res;
+    if( !( 1<=month && month<=12 &&
+           1<=day && day<=31 &&
+           hour<=23 &&
+           minute<=59 && seconds<=60 ) ) {
+        return res; // error
+    }
+    struct std::tm tm_0;
+    ::memset(&tm_0, 0, sizeof(tm_0));
+    tm_0.tm_year = year - 1900; // years since 1900
+    tm_0.tm_mon = static_cast<int>(month) - 1; // months since Janurary [0-11]
+    tm_0.tm_mday = static_cast<int>(day);      // day of the month [1-31]
+    tm_0.tm_hour = static_cast<int>(hour);     // hours since midnight [0-23]
+    tm_0.tm_min = static_cast<int>(minute);    // minutes after the hour [0-59]
+    tm_0.tm_sec = static_cast<int>(seconds);   // seconds after the minute [0-60], including one leap second
+    std::time_t t1 = ::timegm (&tm_0);
+    res.tv_sec = static_cast<int64_t>(t1);
+    res.tv_nsec = static_cast<int64_t>(nano_seconds);
+    return res;
+}
+
+fraction_timespec fraction_timespec::from(const std::string_view datestr, Bool addUTCOffset) noexcept {
+    int64_t utcOffsetSec;
+    size_t consumedChars;
+    fraction_timespec res = from(datestr, utcOffsetSec, consumedChars);
+    if( value(addUTCOffset) ) {
+        res.tv_sec += utcOffsetSec;
+    }
+    (void)consumedChars;
+    return res;
+}
+
+fraction_timespec fraction_timespec::from(const std::string_view datestr, int64_t &utcOffsetSec, size_t &consumedChars) noexcept {
+    consumedChars = 0;
+    utcOffsetSec = 0;
+    if( nullptr == datestr.data() || 0 == datestr.length() ) {
+        return fraction_timespec(); // error
+    }
+    const char * const str = datestr.data();
+    const size_t len = datestr.length();
+    int idx=0;
+    int y=0;
+    unsigned M=0, d=0;
+    int items = std::sscanf(str, "%4d-%2u-%2u%n", &y, &M, &d, &idx);
+    // INFO_PRINT("X01: items %d, chars %d, len %zu, str: '%s'", items, count, len, str);
+    if( 3 != items || !(5 <= idx && static_cast<size_t>(idx) <= len) ) {
+        return fraction_timespec(); // error
+    }
+    consumedChars = idx;
+    fraction_timespec res = fraction_timespec::from(y, M, d);
+    if( static_cast<size_t>(idx) == len) {
+        return res; // EOS
+    }
+    if( str[idx] == 'Z' ) {
+        ++consumedChars;
+        return res; // EOS
+    }
+    if( str[idx] == 'T' ) {
+        ++idx;
+    } else if( str[idx] == ' ' ) {
+        // eat up space before time
+        do {
+            ++idx;
+        } while( static_cast<size_t>(idx) < len && str[idx] == ' ' );
+    } else {
+        return res; // remainder not matching
+    }
+    if( static_cast<size_t>(idx) == len ) {
+        return res; // EOS post 'T' or ' '
+    }
+
+    unsigned h=0,m=0,s=0;
+    {
+        int count=0;
+        items = std::sscanf(str+idx, "%2u:%2u:%2u%n", &h, &m, &s, &count);
+        // INFO_PRINT("X02: items %d, chars %d, len %zu, str: '%s'", items, count, len-idx, str+idx);
+        if( 3 != items || !(5 <= count && static_cast<size_t>(count) <= len - idx) ) {
+            return res; // error in remainder
+        }
+        idx += count;
+    }
+    consumedChars = idx;
+    res = fraction_timespec::from(y, M, d, h, m, s, 0);
+
+    if( static_cast<size_t>(idx) == len) {
+        return res; // EOS
+    }
+    if( str[idx] == 'Z' ) {
+        ++consumedChars;
+        return res; // EOS
+    }
+    if( str[idx] == '.' ) {
+        ++idx;
+        if( static_cast<size_t>(idx) == len) {
+            return res; // EOS
+        }
+        unsigned long fs=0;
+        {
+            int count=0;
+            items = std::sscanf(str+idx, "%9lu%n", &fs, &count);
+            // INFO_PRINT("X03: items %d, chars %d, len %zu, str: '%s'", items, count, len-idx, str+idx);
+            if( 1 != items || !(0 <= count && static_cast<size_t>(count) <= len - idx) ) {
+                return res; // error in remainder
+            }
+            idx += count;
+        }
+        const jau::nsize_t fs_digits = jau::digits10(fs, 1, true);
+        if( 9 < fs_digits ) {
+            return res; // error in remainder
+        }
+        res.tv_nsec = static_cast<int64_t>(fs) * static_cast<int64_t>( std::pow(10, 9 - fs_digits) );
+        consumedChars = idx;
+    }
+    if( static_cast<size_t>(idx) == len) {
+        return res; // EOS
+    }
+    if( str[idx] == 'Z' ) {
+        ++consumedChars;
+        return res; // EOS
+    }
+    // Offset parsing...
+
+    // Eat up space before offset
+    while( static_cast<size_t>(idx) < len && str[idx] == ' ' ) {
+        ++idx;
+    }
+    if( static_cast<size_t>(idx) == len) {
+        return res; // EOS
+    }
+    int64_t offset_sign = 1;
+    if( str[idx] == '+' ) {
+        ++idx;
+    } else if( str[idx] == '-' ) {
+        ++idx;
+        offset_sign = -1;
+    }
+    if( static_cast<size_t>(idx) == len) {
+        return res; // EOS or done (no offset)
+    }
+
+    unsigned oh=0,om=0;
+    {
+        int count=0;
+        items = std::sscanf(str+idx, "%2u%n", &oh, &count);
+        // INFO_PRINT("X04: items %d, chars %d, len %zu, str: '%s'", items, count, len-idx, str+idx);
+        if( 1 != items || !(1 <= count && static_cast<size_t>(count) <= len - idx) ) {
+            return res; // error in remainder
+        }
+        idx += count;
+    }
+    if( static_cast<size_t>(idx) < len ) {
+        // make `:` separator optional
+        if( str[idx] == ':' ) {
+            ++idx;
+        }
+        if( static_cast<size_t>(idx) < len ) {
+            int count=0;
+            items = std::sscanf(str+idx, "%2u%n", &om, &count);
+            // INFO_PRINT("X05: items %d, chars %d, len %zu, str: '%s'", items, count, len-idx, str+idx);
+            if( 1 == items ) {
+                idx += count;
+            } // else tolerate missing minutes
+        }
+    }
+    consumedChars = idx;
+    // add the timezone offset if desired, rendering result non-UTC
+    utcOffsetSec = offset_sign * ( ( oh * 60_i64 * 60_i64 ) + ( om * 60_i64 ) );
+    return res;
 }
 
 bool jau::milli_sleep(uint64_t td_ms, const bool ignore_irq) noexcept {

@@ -26,6 +26,8 @@
 #include <cinttypes>
 #include <cstring>
 
+#include <jau/cpp_lang_util.hpp>
+#include <jau/debug.hpp>
 #include <jau/test/catch2_ext.hpp>
 
 #include <jau/basic_types.hpp>
@@ -924,4 +926,279 @@ TEST_CASE( "Fraction Time Measurement Test 04.01", "[fraction][fraction_timespec
         // Check accuracy
         REQUIRE( terr <= accuracy );
     }
+}
+
+TEST_CASE( "Fraction Time Conversion Test 05.01", "[fraction_timespec][time]" ) {
+    fraction_timespec zero;
+    fraction_timespec onesec(1, 0);
+    fraction_timespec onesec_onemilli(1, 100000000_i64);
+    {
+        fraction_timespec t0 = fraction_timespec::from(1968, 1, 1);
+        jau::INFO_PRINT( "a - 1968-1-1 -> %s, %s", t0.to_string().c_str(), t0.to_iso8601_string().c_str());
+        REQUIRE(zero > t0);
+    }
+    {
+        fraction_timespec t0 = fraction_timespec::from(1970, 1, 1);
+        jau::INFO_PRINT( "a - 1970-1-1 -> %s, %s", t0.to_string().c_str(), t0.to_iso8601_string().c_str());
+        REQUIRE(zero == t0);
+    }
+    {
+        fraction_timespec exp(24_i64*3600_i64, 0);
+        fraction_timespec t0 = fraction_timespec::from(1970, 1, 2);
+        jau::INFO_PRINT( "a - 1970-1-2 -> %s, %s", t0.to_string().c_str(), t0.to_iso8601_string().c_str());
+        REQUIRE(exp == t0);
+    }
+    {
+        fraction_timespec t0 = fraction_timespec::from(2024, 1, 1);
+        jau::INFO_PRINT( "a - 2024-1-1 -> %s, %s", t0.to_string().c_str(), t0.to_iso8601_string().c_str());
+    }
+    {
+        int64_t utcOffsetSec; size_t consumedChars;
+        fraction_timespec t00 = fraction_timespec::from("2024-1-1", utcOffsetSec, consumedChars);
+        REQUIRE(0 == utcOffsetSec); REQUIRE( 8 == consumedChars);
+        REQUIRE(t00 == fraction_timespec::from("2024-1-1"));
+        fraction_timespec t00a = fraction_timespec::from("2024-01-01T00:00:01Z", utcOffsetSec, consumedChars);
+        REQUIRE(0 == utcOffsetSec); REQUIRE(20 == consumedChars);
+        REQUIRE(t00a == fraction_timespec::from("2024-01-01T00:00:01Z"));
+        fraction_timespec t00b = fraction_timespec::from("2024-01-01T00:00:01.1Z", utcOffsetSec, consumedChars);
+        REQUIRE(0 == utcOffsetSec); REQUIRE(22 == consumedChars);
+        REQUIRE(t00b == fraction_timespec::from("2024-01-01T00:00:01.1Z"));
+        fraction_timespec t01 = fraction_timespec::from("2024-01-01T12:34:56Z", utcOffsetSec, consumedChars);
+        REQUIRE(0 == utcOffsetSec); REQUIRE(20 == consumedChars);
+        REQUIRE(t01 == fraction_timespec::from("2024-01-01T12:34:56Z"));
+        fraction_timespec t02 = fraction_timespec::from("2024-01-01T12:34:56.789Z", utcOffsetSec, consumedChars);
+        REQUIRE(0 == utcOffsetSec); REQUIRE(24 == consumedChars);
+        REQUIRE(t02 == fraction_timespec::from("2024-01-01T12:34:56.789Z"));
+        fraction_timespec t03 = fraction_timespec::from("2024-01-01 12:34:56", utcOffsetSec, consumedChars);
+        REQUIRE(0 == utcOffsetSec); REQUIRE(19 == consumedChars);
+        REQUIRE(t03 == fraction_timespec::from("2024-01-01 12:34:56"));
+        fraction_timespec t04 = fraction_timespec::from("2024-01-01  12:34:56.789", utcOffsetSec, consumedChars);
+        REQUIRE(0 == utcOffsetSec); REQUIRE(24 == consumedChars);
+        REQUIRE(t04 == fraction_timespec::from("2024-01-01  12:34:56.789"));
+
+        jau::INFO_PRINT( "b - t00 %s, %s", t00.to_string().c_str(), t00.to_iso8601_string().c_str());
+        jau::INFO_PRINT( "b - t00 %s, %s", t00.to_string().c_str(), t00.to_iso8601_string(true).c_str());
+        jau::INFO_PRINT( "b - t01 %s, %s", t01.to_string().c_str(), t01.to_iso8601_string().c_str());
+        jau::INFO_PRINT( "b - t01 %s, %s", t01.to_string().c_str(), t01.to_iso8601_string(true).c_str());
+        jau::INFO_PRINT( "b - t02 %s, %s", t02.to_string().c_str(), t02.to_iso8601_string().c_str());
+        jau::INFO_PRINT( "b - t02 %s, %s", t02.to_string().c_str(), t02.to_iso8601_string(true).c_str());
+        jau::INFO_PRINT( "b - t03 %s, %s", t03.to_string().c_str(), t03.to_iso8601_string(true).c_str());
+        jau::INFO_PRINT( "b - t04 %s, %s", t04.to_string().c_str(), t04.to_iso8601_string(true).c_str());
+        jau::INFO_PRINT( "b - t04 %s, %s", t04.to_string().c_str(), t04.to_iso8601_string(true, true).c_str());
+
+        fraction_timespec tX0 = fraction_timespec::from(2024, 1, 1);
+        fraction_timespec tX1 = fraction_timespec::from(2024, 1, 1, 12, 34, 56, 0);
+        fraction_timespec tX2 = fraction_timespec::from(2024, 1, 1, 12, 34, 56, 789000000_u64);
+        REQUIRE(tX0 == t00);
+        REQUIRE(tX1 == t01);
+        REQUIRE(tX1 == t03);
+        REQUIRE(tX2 == t02);
+        REQUIRE(tX2 == t04);
+        REQUIRE(t00a - onesec == t00);
+        REQUIRE(t00b - onesec_onemilli == t00);
+
+        REQUIRE(tX0 == fraction_timespec::from(tX0.to_iso8601_string()));
+        REQUIRE(tX1 == fraction_timespec::from(tX1.to_iso8601_string()));
+        jau::INFO_PRINT( "c - tX2 %s, %s", tX2.to_string().c_str(), tX2.to_iso8601_string().c_str());
+        jau::INFO_PRINT( "c - tX2 %s, %s", tX2.to_string().c_str(), tX2.to_iso8601_string(true).c_str());
+        REQUIRE(tX2 == fraction_timespec::from(tX2.to_iso8601_string()));
+        REQUIRE(tX0 == fraction_timespec::from(tX0.to_iso8601_string(true)));
+        REQUIRE(tX1 == fraction_timespec::from(tX1.to_iso8601_string(true)));
+        REQUIRE(tX2 == fraction_timespec::from(tX2.to_iso8601_string(true)));
+        REQUIRE(tX0 == fraction_timespec::from("2024-01-01T"));
+        REQUIRE(tX0 == fraction_timespec::from("2024-01-01Z"));
+        REQUIRE(tX0 == fraction_timespec::from("2024-01-01T00:00:00"));
+        REQUIRE(tX0 == fraction_timespec::from("2024-01-01 00:00:00"));
+        REQUIRE(tX0 == fraction_timespec::from("2024-01-01 00:00:00.0"));
+        REQUIRE(tX0 == fraction_timespec::from("2024-01-01 00:00:00.00"));
+        REQUIRE(tX0 == fraction_timespec::from("2024-01-01 00:00:00.0Z"));
+        REQUIRE(tX0 == fraction_timespec::from("2024-01-01 00:00:00.00Z"));
+        REQUIRE(tX0 == fraction_timespec::from("2024-01-01T00:00:00Z"));
+        REQUIRE(tX0 == fraction_timespec::from("2024-01-01 00:00:00Z"));
+        REQUIRE(tX0 == fraction_timespec::from("2024-01-01T00:00:00.00Z"));
+        REQUIRE(tX0 == fraction_timespec::from("2024-01-01 00:00:00.0Z"));
+
+        REQUIRE(tX2 == fraction_timespec::from("2024-01-01 12:34:56.789"));
+        REQUIRE(tX2 == fraction_timespec::from("2024-01-01 12:34:56.7890"));
+        REQUIRE(tX2 == fraction_timespec::from("2024-01-01 12:34:56.78900"));
+        REQUIRE(tX2 == fraction_timespec::from("2024-01-01 12:34:56.789Z"));
+        REQUIRE(tX2 == fraction_timespec::from("2024-01-01 12:34:56.7890Z"));
+        REQUIRE(tX2 == fraction_timespec::from("2024-01-01 12:34:56.78900Z"));
+        REQUIRE(tX2 == fraction_timespec::from("2024-01-01T12:34:56.789"));
+        REQUIRE(tX2 == fraction_timespec::from("2024-01-01T12:34:56.7890"));
+        REQUIRE(tX2 == fraction_timespec::from("2024-01-01T12:34:56.78900"));
+        REQUIRE(tX2 == fraction_timespec::from("2024-01-01T12:34:56.789Z"));
+        REQUIRE(tX2 == fraction_timespec::from("2024-01-01T12:34:56.7890Z"));
+        REQUIRE(tX2 == fraction_timespec::from("2024-01-01T12:34:56.78900Z"));
+    }
+    {
+        fraction_timespec p1h(60*60_i64, 0);
+        fraction_timespec p2m( 2*60_i64, 0);
+        fraction_timespec tX0 = fraction_timespec::from(2024, 1, 1, 1, 2, 3, 456789000_i64);
+        fraction_timespec tX1 = fraction_timespec::from(2024, 1, 1, 2, 4, 3, 456789000_i64);
+        fraction_timespec tX2 = fraction_timespec::from(2024, 1, 1, 0, 0, 3, 456789000_i64);
+        REQUIRE(tX0 + p1h + p2m == tX1);
+        REQUIRE(tX0 - p1h - p2m == tX2);
+
+        REQUIRE(tX0         == fraction_timespec::from("2024-01-01T01:02:03.456789+00:00"));
+        REQUIRE(tX0         == fraction_timespec::from("2024-01-01T01:02:03.456789+00:00", Bool::True));
+        REQUIRE(tX0         == fraction_timespec::from("2024-01-01T01:02:03.456789+01:02"));
+
+        if ( false ) {
+            int64_t t0_offset; size_t consumedChars;
+            fraction_timespec t0 = fraction_timespec::from("2024-01-01T01:02:03.456789+01:02", t0_offset, consumedChars);
+            jau::INFO_PRINT( "d - 1t0 %s, %s, offset %" PRId64 "s, chars %zu", t0.to_string().c_str(), t0.to_iso8601_string().c_str(), t0_offset, consumedChars);
+            fraction_timespec t1 = fraction_timespec::from("2024-01-01T01:02:03.456789+01:02", Bool::True);
+            jau::INFO_PRINT( "d - 1t1 %s, %s", t1.to_string().c_str(), t1.to_iso8601_string().c_str());
+        }
+        REQUIRE(tX0+p1h+p2m == fraction_timespec::from("2024-01-01T01:02:03.456789+01:02", Bool::True));
+        REQUIRE(tX0         == fraction_timespec::from("2024-01-01T01:02:03.456789-01:02"));
+        REQUIRE(tX0-p1h-p2m == fraction_timespec::from("2024-01-01T01:02:03.456789-01:02", Bool::True));
+
+        REQUIRE(tX0         == fraction_timespec::from("2024-01-01 01:02:03.456789+00:00"));
+        REQUIRE(tX0         == fraction_timespec::from("2024-01-01 01:02:03.456789+00:00", Bool::True));
+        REQUIRE(tX0         == fraction_timespec::from("2024-01-01 01:02:03.456789+01:02"));
+        REQUIRE(tX0+p1h+p2m == fraction_timespec::from("2024-01-01 01:02:03.456789+01:02", Bool::True));
+        REQUIRE(tX0         == fraction_timespec::from("2024-01-01 01:02:03.456789-01:02"));
+        REQUIRE(tX0-p1h-p2m == fraction_timespec::from("2024-01-01 01:02:03.456789-01:02", Bool::True));
+
+        REQUIRE(tX0         == fraction_timespec::from("2024-01-01 01:02:03.456789+0000"));
+        REQUIRE(tX0         == fraction_timespec::from("2024-01-01 01:02:03.456789+0000", Bool::True));
+        REQUIRE(tX0         == fraction_timespec::from("2024-01-01 01:02:03.456789+0102"));
+        REQUIRE(tX0+p1h+p2m == fraction_timespec::from("2024-01-01 01:02:03.456789+0102", Bool::True));
+        REQUIRE(tX0         == fraction_timespec::from("2024-01-01 01:02:03.456789-0102"));
+        REQUIRE(tX0-p1h-p2m == fraction_timespec::from("2024-01-01 01:02:03.456789-0102", Bool::True));
+
+        REQUIRE(tX0         == fraction_timespec::from("2024-01-01 01:02:03.456789 +0000"));
+        REQUIRE(tX0         == fraction_timespec::from("2024-01-01 01:02:03.456789 +0000", Bool::True));
+        REQUIRE(tX0         == fraction_timespec::from("2024-01-01 01:02:03.456789 +0102"));
+        REQUIRE(tX0+p1h+p2m == fraction_timespec::from("2024-01-01 01:02:03.456789 +0102", Bool::True));
+        REQUIRE(tX0         == fraction_timespec::from("2024-01-01 01:02:03.456789 -0102"));
+        REQUIRE(tX0-p1h-p2m == fraction_timespec::from("2024-01-01 01:02:03.456789 -0102", Bool::True));
+
+        REQUIRE(tX0         == fraction_timespec::from("2024-01-01 01:02:03.456789+00"));
+        REQUIRE(tX0         == fraction_timespec::from("2024-01-01 01:02:03.456789+00", Bool::True));
+        REQUIRE(tX0         == fraction_timespec::from("2024-01-01 01:02:03.456789+01"));
+        REQUIRE(tX0+p1h     == fraction_timespec::from("2024-01-01 01:02:03.456789+01", Bool::True));
+        REQUIRE(tX0         == fraction_timespec::from("2024-01-01 01:02:03.456789-01"));
+        REQUIRE(tX0-p1h     == fraction_timespec::from("2024-01-01 01:02:03.456789-01", Bool::True));
+
+
+        REQUIRE(tX0 == fraction_timespec::from(tX0.to_iso8601_string()));
+        REQUIRE(tX1 == fraction_timespec::from(tX1.to_iso8601_string()));
+        REQUIRE(tX2 == fraction_timespec::from(tX2.to_iso8601_string()));
+        REQUIRE(tX0 == fraction_timespec::from(tX0.to_iso8601_string(true)));
+        REQUIRE(tX1 == fraction_timespec::from(tX1.to_iso8601_string(true)));
+        REQUIRE(tX2 == fraction_timespec::from(tX2.to_iso8601_string(true)));
+
+        REQUIRE(tX0 == fraction_timespec::from("2024-01-01T01:02:03.456789+00:00", Bool::True));
+        REQUIRE(tX1 == fraction_timespec::from("2024-01-01T01:02:03.456789+01:02", Bool::True));
+        REQUIRE(tX2 == fraction_timespec::from("2024-01-01T01:02:03.456789-01:02", Bool::True));
+    }
+    {
+        fraction_timespec tX0 = fraction_timespec::from(1, 2, 3, 4, 5, 6, 456789000_i64);
+        int64_t t0_offset=987654321_i64; size_t consumedChars=2783964772;
+        fraction_timespec t0 = fraction_timespec::from("1-02-3T4:05:6.456789Z", t0_offset, consumedChars);
+        jau::INFO_PRINT( "e - 0t0 %s, %s, offset %" PRId64 "s", t0.to_string().c_str(), t0.to_iso8601_string().c_str(), t0_offset);
+        REQUIRE(tX0         == t0);
+        REQUIRE(0 == t0_offset);
+        REQUIRE(21 == consumedChars);        
+        REQUIRE(tX0         == fraction_timespec::from("1-02-3T4:05:6.456789Z"));
+    }
+    {
+        int64_t t0_offset=987654321_i64; size_t consumedChars=2783964772;
+        fraction_timespec t0 = fraction_timespec::from("2024-01-01 01:02:03.456789+01:02", t0_offset, consumedChars);
+        jau::INFO_PRINT( "e - 1t0 %s, %s, offset %" PRId64 "s", t0.to_string().c_str(), t0.to_iso8601_string().c_str(), t0_offset);
+        REQUIRE(t0 == fraction_timespec::from(2024, 1, 1, 1, 2, 3, 456789000_i64));
+        REQUIRE(t0_offset == 60*60_i64 + 2*60_i64);
+        REQUIRE(32 == consumedChars);
+    }
+    {
+        int64_t t0_offset=987654321_i64; size_t consumedChars=2783964772;
+        fraction_timespec t0 = fraction_timespec::from("2024-01-01 01:02:03.456789-01:02", t0_offset, consumedChars);
+        jau::INFO_PRINT( "e - 2t0 %s, %s, offset %" PRId64 "s", t0.to_string().c_str(), t0.to_iso8601_string().c_str(), t0_offset);
+        REQUIRE(t0 == fraction_timespec::from(2024, 1, 1, 1, 2, 3, 456789000_i64));
+        REQUIRE(t0_offset == -60*60_i64 - 2*60_i64);
+        REQUIRE(32 == consumedChars);
+    }
+    {
+        // early Z after y-m-d
+        fraction_timespec tX0 = fraction_timespec::from(1, 2, 3, 0, 0, 0, 0_i64);
+        int64_t t0_offset=987654321_i64; size_t consumedChars=2783964772;
+        fraction_timespec t0 = fraction_timespec::from("1-02-3Z4:05:6.456789+01:02", t0_offset, consumedChars);
+        jau::INFO_PRINT( "e - 3t0 %s, %s, offset %" PRId64 "s", t0.to_string().c_str(), t0.to_iso8601_string().c_str(), t0_offset);
+        REQUIRE(tX0         == t0);
+        REQUIRE(0 == t0_offset);
+        REQUIRE(7 == consumedChars);        
+    }
+    {
+        // early Z after y-m-d h:m:s
+        fraction_timespec tX0 = fraction_timespec::from(1, 2, 3, 4, 5, 6, 0_i64);
+        int64_t t0_offset=987654321_i64; size_t consumedChars=2783964772;
+        fraction_timespec t0 = fraction_timespec::from("1-02-3T4:05:6Z.456789+01:02", t0_offset, consumedChars);
+        jau::INFO_PRINT( "e - 4t0 %s, %s, offset %" PRId64 "s", t0.to_string().c_str(), t0.to_iso8601_string().c_str(), t0_offset);
+        REQUIRE(tX0         == t0);
+        REQUIRE(0 == t0_offset);
+        REQUIRE(14 == consumedChars);        
+    }
+    {
+        // early Z after y-m-d h:m:s.fs
+        fraction_timespec tX0 = fraction_timespec::from(1, 2, 3, 4, 5, 6, 456789000_i64);
+        int64_t t0_offset=987654321_i64; size_t consumedChars=2783964772;
+        fraction_timespec t0 = fraction_timespec::from("1-02-3T4:05:6.456789Z+01:02", t0_offset, consumedChars);
+        jau::INFO_PRINT( "e - 5t0 %s, %s, offset %" PRId64 "s", t0.to_string().c_str(), t0.to_iso8601_string().c_str(), t0_offset);
+        REQUIRE(tX0         == t0);
+        REQUIRE(0 == t0_offset);
+        REQUIRE(21 == consumedChars);        
+    }
+    {
+        int64_t offset=987654321_i64; size_t consumedChars=2783964772;
+        fraction_timespec t0 = fraction_timespec::from("2024-01-01     01:02:03.456789   +01:02HALLO SJKSJSJKSJ", offset, consumedChars);
+        REQUIRE(t0 == fraction_timespec::from(2024, 1, 1, 1, 2, 3, 456789000_i64));
+        REQUIRE(offset == 60*60_i64 + 2*60_i64);
+        REQUIRE(39 == consumedChars);
+    }
+    {
+        int64_t offset=987654321_i64; size_t consumedChars=2783964772;
+        fraction_timespec t0 = fraction_timespec::from("2024-01-01     01:02:03.456789   +0102HALLO SJKSJSJKSJ", offset, consumedChars);
+        REQUIRE(t0 == fraction_timespec::from(2024, 1, 1, 1, 2, 3, 456789000_i64));
+        REQUIRE(offset == 60*60_i64 + 2*60_i64);
+        REQUIRE(38 == consumedChars);
+    }
+    {
+        int64_t offset=987654321_i64; size_t consumedChars=2783964772;
+        fraction_timespec t0 = fraction_timespec::from("Error01 2024-01-01     01:02:03.456789   +01:02HALLO SJKSJSJKSJ", offset, consumedChars);
+        REQUIRE(true == t0.isZero());
+        REQUIRE(offset == 0);
+        REQUIRE(0 == consumedChars);
+    }
+    {
+        int64_t offset=987654321_i64; size_t consumedChars=2783964772;
+        fraction_timespec t0 = fraction_timespec::from("2024-EEE01-01     01:02:03.456789   +01:02HALLO SJKSJSJKSJ", offset, consumedChars);
+        REQUIRE(true == t0.isZero());
+        REQUIRE(offset == 0);
+        REQUIRE(0 == consumedChars);
+    }
+    {
+        int64_t offset=987654321_i64; size_t consumedChars=2783964772;
+        fraction_timespec t0 = fraction_timespec::from("2024-01-01     01:02:03.456789 Ooops  +01:02HALLO SJKSJSJKSJ", offset, consumedChars);
+        REQUIRE(t0 == fraction_timespec::from(2024, 1, 1, 1, 2, 3, 456789000_i64));
+        REQUIRE(offset == 0);
+        REQUIRE(30 == consumedChars);
+    }
+    {
+        int64_t offset=987654321_i64; size_t consumedChars=2783964772;
+        fraction_timespec t0 = fraction_timespec::from("2024-01-01  Ooops   01:02:03.456789 +01:02HALLO SJKSJSJKSJ", offset, consumedChars);
+        REQUIRE(t0 == fraction_timespec::from(2024, 1, 1, 0, 0, 0, 0_i64));
+        REQUIRE(offset == 0);
+        REQUIRE(10 == consumedChars);
+    }
+    {
+        int64_t offset=987654321_i64; size_t consumedChars=2783964772;
+        fraction_timespec t0 = fraction_timespec::from("2024-01-01     01:02:03.456789   +01Ooops:02HALLO SJKSJSJKSJ", offset, consumedChars);
+        REQUIRE(t0 == fraction_timespec::from(2024, 1, 1, 1, 2, 3, 456789000_i64));
+        REQUIRE(offset == 60*60_i64);
+        REQUIRE(36 == consumedChars);
+    }
+
 }
