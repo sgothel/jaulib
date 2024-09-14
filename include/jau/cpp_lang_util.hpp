@@ -116,7 +116,7 @@ namespace jau {
             return false;
         #endif
     }
-    
+
     /**
      * `constinit` qualifier replacement for C++20 `constinit`.
      *
@@ -278,7 +278,7 @@ namespace jau {
             return false;
         #endif
     }
-    
+
     #if defined(__clang__)
         /** Consider using [jau::ctti_name<R, L, A...>()](@ref ctti_name_lambda). */
         #define JAU_PRETTY_FUNCTION __PRETTY_FUNCTION__
@@ -821,7 +821,7 @@ namespace jau {
             return true;
         #endif
     }
-    
+
     #if defined(__clang__)
         #define __attrdecl_no_optimize__ __attribute__ ((optnone))  
         #define __attrdef_no_optimize__ __attribute__ ((optnone))  
@@ -843,7 +843,7 @@ namespace jau {
         asm volatile("" : "+r,m"(f) : : "memory"); // a nop asm, usually guaranteeing synchronized order and non-optimization
         f();
     }
-    
+
     /**@}*/
 
 } // namespace jau

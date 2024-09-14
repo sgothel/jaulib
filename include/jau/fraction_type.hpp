@@ -497,7 +497,7 @@ namespace jau {
                 } else {
                     // div-by-zero -> max value as we don't throw
                     if( 0 == denom && 0 == rhs.denom ) {
-                        num = 0; // 0 = inf - inf 
+                        num = 0; // 0 = inf - inf
                     } else if( 0 == denom ) {
                         num = std::numeric_limits<int_type>::max(); // inf = inf - x
                     } else /* if( 0 == rhs.denom ) */ {

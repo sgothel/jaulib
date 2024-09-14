@@ -41,7 +41,7 @@
 
 using namespace jau;
 
-void jau::zero_bytes_sec(void *s, size_t n) noexcept __attrdef_no_optimize__ 
+void jau::zero_bytes_sec(void *s, size_t n) noexcept __attrdef_no_optimize__
 {
     // asm asm-qualifiers ( AssemblerTemplate : OutputOperands [ : InputOperands [ : Clobbers ] ] )
     asm volatile("" : "+r,m"(s), "+r,m"(n) : : "memory"); // a nop asm, usually guaranteeing synchronized order and non-optimization
@@ -122,7 +122,7 @@ bool jau::milli_sleep(uint64_t td_ms, const bool ignore_irq) noexcept {
     ts.tv_nsec = td_ns_0;
     int res;
     do {
-        res = ::clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, &ts); 
+        res = ::clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, &ts);
     } while( ignore_irq && EINTR == res );
     return 0 == res;
 }
@@ -130,7 +130,7 @@ bool jau::sleep(const fraction_timespec& relative_time, const bool ignore_irq) n
     struct timespec ts = relative_time.to_timespec();
     int res;
     do {
-        res = ::clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, &ts); 
+        res = ::clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, &ts);
     } while( ignore_irq && EINTR == res );
     return 0 == res;
 }
@@ -142,7 +142,7 @@ bool jau::sleep_until(const fraction_timespec& absolute_time, const bool monoton
     // typedef struct timespec __gthread_time_t;
     struct timespec ts = absolute_time.to_timespec();
     int res;
-    do { 
+    do {
         res = ::clock_nanosleep(monotonic ? CLOCK_MONOTONIC : CLOCK_REALTIME,
                                 TIMER_ABSTIME, &ts, &ts);
     } while( ignore_irq && EINTR == res );
@@ -459,13 +459,13 @@ size_t jau::hexStringBytes(std::vector<uint8_t>& out, const uint8_t hexstr[], co
     out.reserve(bsize + hexlen_in % 2);
 
     // Odd nibbles:
-    // - 0xf12 = 0x0f12 = { 0x12, 0x0f } - msb, 1st single low-nibble is most significant 
+    // - 0xf12 = 0x0f12 = { 0x12, 0x0f } - msb, 1st single low-nibble is most significant
     // -   12f = 0xf012 = { 0x12, 0xf0 } - lsb, last single high-nibble is most significant
     //
     const bool has_single_nibble = 0 < hexlen_in % 2;
     uint8_t high_msb_nibble = 0;
     if( !lsbFirst && has_single_nibble ) {
-        // consume single MSB nibble        
+        // consume single MSB nibble
         const size_t idx = 0;
         assert( hexstr_len - 1 >= offset + idx );
         const snsize_t l = hexCharByte_( hexstr[ offset + idx ] );
@@ -499,7 +499,7 @@ size_t jau::hexStringBytes(std::vector<uint8_t>& out, const uint8_t hexstr[], co
             } else {
                 // invalid char
                 return out.size();
-            }            
+            }
         } else {
             out.push_back( high_msb_nibble );
         }
@@ -563,7 +563,7 @@ std::string jau::bytesHexString(const void* data, const nsize_t length,
         do {
             j--;
             const int v = bytes[j] & 0xFF;
-            if( 0 != v || !skip ) { 
+            if( 0 != v || !skip ) {
                 str.push_back(hex_array[v >> 4]);
                 str.push_back(hex_array[v & 0x0F]);
                 skip = false;

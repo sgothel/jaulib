@@ -90,7 +90,7 @@ namespace jau {
      * lsbFirst = false shall be passed.
      *
      * In case hexstr contains an odd number of hex-nibbles, it will be interpreted as follows
-     * - 0xf12 = 0x0f12 = { 0x12, 0x0f } - msb, 1st single low-nibble is most significant 
+     * - 0xf12 = 0x0f12 = { 0x12, 0x0f } - msb, 1st single low-nibble is most significant
      * -   12f = 0xf012 = { 0x12, 0xf0 } - lsb, last single high-nibble is most significant
      *
      * @param out the byte vector sink
@@ -106,7 +106,7 @@ namespace jau {
 
     /**
      * Converts a given hexadecimal string representation into a uint64_t value according to hexStringBytes().
-     * 
+     *
      * If string is in MSB first (default w/ leading 0x) and platform jau::is_little_endian(),
      * lsbFirst = false shall be passed (default).
      *
@@ -118,7 +118,7 @@ namespace jau {
      * @see to_hexstring()
      */
     uint64_t from_hexstring(std::string const & s, const bool lsbFirst=!jau::is_little_endian(), const bool checkLeading0x=true) noexcept;
-    
+
     /**
      * Produce a hexadecimal string representation of the given byte values.
      * <p>
@@ -131,7 +131,7 @@ namespace jau {
      *                 otherwise have the most significant byte printed first (highest addressed byte to lowest).
      *                 A leading `0x` will be prepended if `lsbFirst == false`.
      * @param lowerCase true to use lower case hex-chars (default), otherwise capital letters are being used.
-     * @param skipLeading0x false to add leading `0x` if !lsbFirst (default), true to not add (skip).. 
+     * @param skipLeading0x false to add leading `0x` if !lsbFirst (default), true to not add (skip)..
      * @return the hex-string representation of the data
      */
     std::string bytesHexString(const void* data, const nsize_t length,
@@ -159,7 +159,7 @@ namespace jau {
      * Produce a lower-case hexadecimal string representation with leading `0x` in MSB of the given pointer.
      * @tparam value_type a pointer type
      * @param v the pointer of given pointer type
-     * @param skipLeading0x false to add leading `0x` (default), true to not add (skip).. 
+     * @param skipLeading0x false to add leading `0x` (default), true to not add (skip)..
      * @return the hex-string representation of the value
      * @see bytesHexString()
      * @see from_hexstring()
@@ -169,23 +169,23 @@ namespace jau {
                                bool> = true>
     inline std::string to_hexstring(value_type const & v, const bool skipLeading0x=false) noexcept
     {
-        #if defined(__EMSCRIPTEN__) // jau::os::is_generic_wasm()            
+        #if defined(__EMSCRIPTEN__) // jau::os::is_generic_wasm()
             static_assert( is_little_endian() ); // Bug in emscripten, unable to deduce uint16_t, uint32_t or uint64_t override of cpu_to_le() or bswap()
             const uintptr_t v_le = reinterpret_cast<uintptr_t>(v);
             return bytesHexString(pointer_cast<const uint8_t*>(&v_le), sizeof(v),              // NOLINT(bugprone-sizeof-expression): Intended
-                                  false /* lsbFirst */, true /* lowerCase */, skipLeading0x);             
+                                  false /* lsbFirst */, true /* lowerCase */, skipLeading0x);
         #else
             const uintptr_t v_le = jau::cpu_to_le( reinterpret_cast<uintptr_t>(v) );
             return bytesHexString(pointer_cast<const uint8_t*>(&v_le), sizeof(v),              // NOLINT(bugprone-sizeof-expression): Intended
-                                  false /* lsbFirst */, true /* lowerCase */, skipLeading0x); 
-        #endif     
+                                  false /* lsbFirst */, true /* lowerCase */, skipLeading0x);
+        #endif
     }
 
     /**
      * Produce a lower-case hexadecimal string representation with leading `0x` in MSB of the given value with standard layout.
      * @tparam value_type a standard layout value type
      * @param v the value of given standard layout type
-     * @param skipLeading0x false to add leading `0x` (default), true to not add (skip).. 
+     * @param skipLeading0x false to add leading `0x` (default), true to not add (skip)..
      * @return the hex-string representation of the value
      * @see bytesHexString()
      * @see from_hexstring()
@@ -197,11 +197,11 @@ namespace jau {
     inline std::string to_hexstring(value_type const & v, const bool skipLeading0x=false) noexcept
     {
         if constexpr( is_little_endian() ) {
-            return bytesHexString(pointer_cast<const uint8_t*>(&v), sizeof(v), 
+            return bytesHexString(pointer_cast<const uint8_t*>(&v), sizeof(v),
                                   false /* lsbFirst */, true /* lowerCase */, skipLeading0x);
         } else {
             const value_type v_le = jau::bswap(v);
-            return bytesHexString(pointer_cast<const uint8_t*>(&v_le), sizeof(v), 
+            return bytesHexString(pointer_cast<const uint8_t*>(&v_le), sizeof(v),
                                   false /* lsbFirst */, true /* lowerCase */, skipLeading0x);
         }
     }
@@ -289,7 +289,7 @@ namespace jau {
             std::string str;
             str.reserve(maxStrLen + 1);  // incl. EOS
             str.resize(maxStrLen);       // excl. EOS
-    
+
             // -Wformat=2 -> -Wformat -Wformat-nonliteral -Wformat-security -Wformat-y2k
             // -Wformat=2 -Wformat-overflow=2 -Wformat-signedness
             PRAGMA_DISABLE_WARNING_PUSH

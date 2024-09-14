@@ -136,7 +136,7 @@ namespace jau {
      * @param args the optional arguments
      */
     int fprintf_td(const uint64_t elapsed_ms, FILE* stream, const char * format, ...) noexcept;
-    
+
     /**
      * Convenient fprintf() invocation, prepending the environment::getElapsedMillisecond() timestamp.
      * @param stream the output stream
