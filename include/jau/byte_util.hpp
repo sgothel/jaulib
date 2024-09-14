@@ -27,9 +27,7 @@
 
 #include <cstring>
 #include <string>
-#include <memory>
 #include <cstdint>
-#include <vector>
 #include <type_traits>
 
 #include <jau/cpp_lang_util.hpp>

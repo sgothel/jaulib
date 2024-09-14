@@ -505,9 +505,9 @@ namespace jau::mp::ops {
     /*
      * O(n*n) multiplication
      */
-    void basecase_mul(mp_word_t z[], size_t z_size,
-                      const mp_word_t x[], size_t x_size,
-                      const mp_word_t y[], size_t y_size) noexcept
+    inline void basecase_mul(mp_word_t z[], size_t z_size,
+                             const mp_word_t x[], size_t x_size,
+                             const mp_word_t y[], size_t y_size) noexcept
     {
         assert(z_size >= x_size + y_size); // z_size too small
 

@@ -823,21 +823,21 @@ namespace jau {
     }
 
     #if defined(__clang__)
-        #define __attrdecl_no_optimize__ __attribute__ ((optnone))  
-        #define __attrdef_no_optimize__ __attribute__ ((optnone))  
+        #define __attrdecl_no_optimize__ __attribute__ ((optnone))
+        #define __attrdef_no_optimize__ __attribute__ ((optnone))
     #elif defined(__GNUC__) && !defined(__clang__)
         #define __attrdecl_no_optimize__ __attribute__((optimize("O0")))
         // #define __attrdecl_no_optimize__ [[gnu::optimize("O0")]]
-        #define __attrdef_no_optimize__  
+        #define __attrdef_no_optimize__
     #else
-        #define __attrdecl_no_optimize__  
-        #define __attrdef_no_optimize__  
+        #define __attrdecl_no_optimize__
+        #define __attrdef_no_optimize__
     #endif
-    
-    /** 
-     * Simple unary function wrapper which ensures function call to happen in order and not optimized away. 
+
+    /**
+     * Simple unary function wrapper which ensures function call to happen in order and not optimized away.
      */
-    template <typename UnaryFunc> 
+    template <typename UnaryFunc>
     inline void callNotOptimize(UnaryFunc f) __attrdef_no_optimize__ {
         // asm asm-qualifiers ( AssemblerTemplate : OutputOperands [ : InputOperands [ : Clobbers ] ] )
         asm volatile("" : "+r,m"(f) : : "memory"); // a nop asm, usually guaranteeing synchronized order and non-optimization

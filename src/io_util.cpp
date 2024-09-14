@@ -721,7 +721,6 @@ cleanup:
     if( nullptr != curl_handle ) {
         curl_easy_cleanup(curl_handle);
     }
-    return;
 }
 
 #endif // USE_LIBCURL

@@ -1983,7 +1983,7 @@ jau::fs::mount_ctx jau::fs::mount_image(const std::string& image_path, const std
             goto errout_child;
         }
 
-        loop_device_id = (int) ::ioctl(loop_ctl_fd, LOOP_CTL_GET_FREE);
+        loop_device_id = ::ioctl(loop_ctl_fd, LOOP_CTL_GET_FREE);
         if( 0 > loop_device_id ) {
             ERR_PRINT("Couldn't get free loop-device: res %d", loop_device_id);
             goto errout_child;
