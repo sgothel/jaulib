@@ -29,6 +29,7 @@
 #include <typeinfo>
 #include <string>
 #include <cstring>
+#include <ostream>
 
 namespace jau {
 
@@ -842,6 +843,64 @@ namespace jau {
         // asm asm-qualifiers ( AssemblerTemplate : OutputOperands [ : InputOperands [ : Clobbers ] ] )
         asm volatile("" : "+r,m"(f) : : "memory"); // a nop asm, usually guaranteeing synchronized order and non-optimization
         f();
+    }
+
+    enum class Bool : bool {
+        False = false,
+        True = true
+    };
+    constexpr Bool True() noexcept { return Bool::True; }
+    constexpr Bool False() noexcept { return Bool::False; }
+
+    constexpr bool value(const Bool rhs) noexcept {
+        return static_cast<bool>(rhs);
+    }
+    constexpr Bool operator!(const Bool rhs) noexcept {
+        return static_cast<Bool>(!value(rhs));
+    }
+    constexpr Bool operator&&(const Bool lhs, const Bool rhs) noexcept {
+        return static_cast<Bool>(value(lhs) && value(rhs));
+    }
+    constexpr Bool operator||(const Bool lhs, const Bool rhs) noexcept {
+        return static_cast<Bool>(value(lhs) || value(rhs));
+    }
+    constexpr Bool operator^(const Bool lhs, const Bool rhs) noexcept {
+        return static_cast<Bool>(value(lhs) ^ value(rhs));
+    }
+    constexpr Bool operator|(const Bool lhs, const Bool rhs) noexcept {
+        return static_cast<Bool>(value(lhs) || value(rhs));
+    }
+    constexpr Bool operator&(const Bool lhs, const Bool rhs) noexcept {
+        return static_cast<Bool>(value(lhs) && value(rhs));
+    }
+    constexpr Bool& operator|=(Bool& lhs, const Bool rhs) noexcept {
+        lhs = lhs | rhs;
+        return lhs;
+    }
+    constexpr Bool& operator&=(Bool& lhs, const Bool rhs) noexcept {
+        lhs = lhs & rhs;
+        return lhs;
+    }
+    constexpr Bool& operator^=(Bool& lhs, const Bool rhs) noexcept {
+        lhs = lhs ^ rhs;
+        return lhs;
+    }
+    constexpr bool operator==(const Bool lhs, const Bool rhs) noexcept {
+        return value(lhs) == value(rhs);
+    }
+    constexpr bool operator!=(const Bool lhs, const Bool rhs) noexcept {
+        return !(lhs == rhs);
+    }
+    constexpr const char* to_string(const Bool v) noexcept {
+        if( value(v) ) {
+            return "true";
+        } else {
+            return "false";
+        }
+    }
+    inline std::ostream & operator << (std::ostream &out, const Bool c) {
+        out << to_string(c);
+        return out;
     }
 
     /**@}*/
