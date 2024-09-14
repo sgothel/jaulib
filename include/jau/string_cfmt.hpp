@@ -274,7 +274,7 @@ namespace jau::cfmt {
              * @return true if no error _and_ not complete, i.e. further calls with subsequent parameter required. Otherwise parsing is done due to error or completeness.
              */
             template <typename T>
-            constexpr bool parseOne(PResult &pc) const {
+            constexpr bool parseOne(PResult &pc) const noexcept {
                 if( !pc.hasNext() ) {
                     return false;  // done or error
                 }
@@ -306,7 +306,7 @@ namespace jau::cfmt {
                     pc.state = pstate_t::precision;
                     if( c == '.' ) {
                         if( !parsePrecision<T>(pc, c) ) {
-                            return !pc.error();  // error or continue with next argument for same conversion -> field_width
+                            return !pc.error();  // error or continue with next argument for same conversion -> precision
                         }
                     }
                 }
@@ -398,6 +398,7 @@ namespace jau::cfmt {
                 return true;  // continue with current argument
             }
 
+            /* parse length modifier, returns true if parsing can continue or false on error. */
             constexpr bool parseLengthMods(PResult &pc, char &c) const noexcept {
                 if( 'h' == c ) {
                     if( !pc.nextSymbol(c) ) { return false; }
@@ -441,28 +442,16 @@ namespace jau::cfmt {
                     case '%':
                     case 'c':
                     case 's':
-                        if( !parseStringFmtSpec<T>(pc, fmt_literal) ) {
-                            return false;
-                        }
-                        break;
+                        return parseStringFmtSpec<T>(pc, fmt_literal);
                     case 'p':
-                        if( !parseAPointerFmtSpec<T>(pc) ) {
-                            return false;
-                        }
-                        break;
+                        return parseAPointerFmtSpec<T>(pc);
                     case 'd':
-                        if( !parseSignedFmtSpec<T>(pc) ) {
-                            return false;
-                        }
-                        break;
+                        return parseSignedFmtSpec<T>(pc);
                     case 'o':
                     case 'x':
                     case 'X':
                     case 'u':
-                        if( !parseUnsignedFmtSpec<T>(pc, fmt_literal) ) {
-                            return false;
-                        }
-                        break;
+                        return parseUnsignedFmtSpec<T>(pc, fmt_literal);
                     case 'f':
                     case 'e':
                     case 'E':
@@ -470,15 +459,11 @@ namespace jau::cfmt {
                     case 'A':
                     case 'g':
                     case 'G':
-                        if( !parseFloatFmtSpec<T>(pc, fmt_literal) ) {
-                            return false;
-                        }
-                        break;
+                        return parseFloatFmtSpec<T>(pc, fmt_literal);
                     default:
                         pc.setError(__LINE__);
                         return false;
                 }  // switch( fmt_literal )
-                return true;
             }
 
             constexpr char unaliasFmtSpec(const char fmt_literal) const noexcept {
@@ -491,7 +476,6 @@ namespace jau::cfmt {
 
             template <typename T>
             constexpr bool parseStringFmtSpec(PResult &pc, const char fmt_literal) const noexcept {
-                pc.length_mod = plength_t::none;
                 if constexpr( std::is_same_v<no_type_t, T> ) {
                     pc.setError(__LINE__);
                     return false;
@@ -546,7 +530,9 @@ namespace jau::cfmt {
                                 return false;
                         }
                         break;
-                    default: break;
+                    default:
+                        pc.setError(__LINE__);
+                        return false;
                 }
                 return true;
             }
@@ -754,7 +740,7 @@ namespace jau::cfmt {
      * @see @ref jau_cfmt_header
      */
     template <typename... Targs>
-    constexpr bool check(std::string_view fmt, const Targs &...) {
+    constexpr bool check(const std::string_view fmt, const Targs &...) noexcept {
         PResult ctx(fmt);
         constexpr const impl::Parser p;
         if constexpr( 0 < sizeof...(Targs) ) {
@@ -774,7 +760,18 @@ namespace jau::cfmt {
      * @see @ref jau_cfmt_header
      */
     template <typename... Targs>
-    constexpr bool check2(std::string_view fmt) {
+    constexpr bool check2(const std::string_view fmt) noexcept {
+        PResult ctx(fmt);
+        constexpr const impl::Parser p;
+        if constexpr( 0 < sizeof...(Targs) ) {
+            ((p.template parseOne<Targs>(ctx)), ...);
+        }
+        p.template parseOne<impl::no_type_t>(ctx);
+        return !ctx.error();
+    }
+
+    template <typename StrView, typename... Targs>
+    constexpr bool check3(StrView fmt) noexcept {
         PResult ctx(fmt);
         constexpr const impl::Parser p;
         if constexpr( 0 < sizeof...(Targs) ) {
@@ -796,7 +793,7 @@ namespace jau::cfmt {
      * @see @ref jau_cfmt_header
      */
     template <typename... Targs>
-    constexpr PResult checkR(std::string_view fmt, const Targs &...) {
+    constexpr PResult checkR(const std::string_view fmt, const Targs &...) noexcept {
         PResult ctx(fmt);
         constexpr const impl::Parser p;
         if constexpr( 0 < sizeof...(Targs) ) {
@@ -817,7 +814,7 @@ namespace jau::cfmt {
      * @see @ref jau_cfmt_header
      */
     template <typename... Targs>
-    constexpr PResult checkR2(std::string_view fmt) {
+    constexpr PResult checkR2(const std::string_view fmt) noexcept {
         PResult ctx(fmt);
         constexpr const impl::Parser p;
         if constexpr( 0 < sizeof...(Targs) ) {

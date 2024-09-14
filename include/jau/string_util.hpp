@@ -29,6 +29,7 @@
 #include <cstring>
 #include <string>
 #include <cstdarg>
+#include <string_view>
 #include <type_traits>
 #include <vector>
 
@@ -432,6 +433,10 @@ namespace jau {
     /**@}*/
 
 } // namespace jau
+
+#define jau_format_string_static(...) \
+    jau::format_string(__VA_ARGS__);     \
+    static_assert( 0 <= jau::cfmt::checkR(__VA_ARGS__).argCount() ); // compile time validation!
 
 /** \example test_intdecstring01.cpp
  * This C++ unit test validates the jau::to_decstring implementation
