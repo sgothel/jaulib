@@ -185,17 +185,21 @@ fraction_timespec fraction_timespec::from(const std::string_view datestr, int64_
     }
     const char * const str = datestr.data();
     const size_t len = datestr.length();
-    int idx=0;
+    size_t idx;
     int y=0;
     unsigned M=0, d=0;
-    int items = std::sscanf(str, "%4d-%2u-%2u%n", &y, &M, &d, &idx);
-    // INFO_PRINT("X01: items %d, chars %d, len %zu, str: '%s'", items, count, len, str);
-    if( 3 != items || !(5 <= idx && static_cast<size_t>(idx) <= len) ) {
-        return fraction_timespec(); // error
+    {
+        int count=0;
+        const int items = std::sscanf(str, "%4d-%2u-%2u%n", &y, &M, &d, &count);
+        // INFO_PRINT("X01: items %d, chars %d, len %zu, str: '%s'", items, count, len, str);
+        if( 3 != items || !(5 <= count && static_cast<size_t>(count) <= len) ) {
+            return fraction_timespec(); // error
+        }
+        idx = count;
     }
     consumedChars = idx;
     fraction_timespec res = fraction_timespec::from(y, M, d);
-    if( static_cast<size_t>(idx) == len) {
+    if( idx == len) {
         return res; // EOS
     }
     if( str[idx] == 'Z' ) {
@@ -208,18 +212,18 @@ fraction_timespec fraction_timespec::from(const std::string_view datestr, int64_
         // eat up space before time
         do {
             ++idx;
-        } while( static_cast<size_t>(idx) < len && str[idx] == ' ' );
+        } while( idx < len && str[idx] == ' ' );
     } else {
         return res; // remainder not matching
     }
-    if( static_cast<size_t>(idx) == len ) {
+    if( idx == len ) {
         return res; // EOS post 'T' or ' '
     }
 
     unsigned h=0,m=0,s=0;
     {
         int count=0;
-        items = std::sscanf(str+idx, "%2u:%2u:%2u%n", &h, &m, &s, &count);
+        const int items = std::sscanf(str+idx, "%2u:%2u:%2u%n", &h, &m, &s, &count);
         // INFO_PRINT("X02: items %d, chars %d, len %zu, str: '%s'", items, count, len-idx, str+idx);
         if( 3 != items || !(5 <= count && static_cast<size_t>(count) <= len - idx) ) {
             return res; // error in remainder
@@ -229,7 +233,7 @@ fraction_timespec fraction_timespec::from(const std::string_view datestr, int64_
     consumedChars = idx;
     res = fraction_timespec::from(y, M, d, h, m, s, 0);
 
-    if( static_cast<size_t>(idx) == len) {
+    if( idx == len) {
         return res; // EOS
     }
     if( str[idx] == 'Z' ) {
@@ -238,13 +242,13 @@ fraction_timespec fraction_timespec::from(const std::string_view datestr, int64_
     }
     if( str[idx] == '.' ) {
         ++idx;
-        if( static_cast<size_t>(idx) == len) {
+        if( idx == len) {
             return res; // EOS
         }
         unsigned long fs=0;
         {
             int count=0;
-            items = std::sscanf(str+idx, "%9lu%n", &fs, &count);
+            const int items = std::sscanf(str+idx, "%9lu%n", &fs, &count);
             // INFO_PRINT("X03: items %d, chars %d, len %zu, str: '%s'", items, count, len-idx, str+idx);
             if( 1 != items || !(0 <= count && static_cast<size_t>(count) <= len - idx) ) {
                 return res; // error in remainder
@@ -258,7 +262,7 @@ fraction_timespec fraction_timespec::from(const std::string_view datestr, int64_
         res.tv_nsec = static_cast<int64_t>(fs) * static_cast<int64_t>( std::pow(10, 9 - fs_digits) );
         consumedChars = idx;
     }
-    if( static_cast<size_t>(idx) == len) {
+    if( idx == len) {
         return res; // EOS
     }
     if( str[idx] == 'Z' ) {
@@ -268,10 +272,10 @@ fraction_timespec fraction_timespec::from(const std::string_view datestr, int64_
     // Offset parsing...
 
     // Eat up space before offset
-    while( static_cast<size_t>(idx) < len && str[idx] == ' ' ) {
+    while( idx < len && str[idx] == ' ' ) {
         ++idx;
     }
-    if( static_cast<size_t>(idx) == len) {
+    if( idx == len) {
         return res; // EOS
     }
     int64_t offset_sign = 1;
@@ -281,28 +285,28 @@ fraction_timespec fraction_timespec::from(const std::string_view datestr, int64_
         ++idx;
         offset_sign = -1;
     }
-    if( static_cast<size_t>(idx) == len) {
+    if( idx == len) {
         return res; // EOS or done (no offset)
     }
 
     unsigned oh=0,om=0;
     {
         int count=0;
-        items = std::sscanf(str+idx, "%2u%n", &oh, &count);
+        const int items = std::sscanf(str+idx, "%2u%n", &oh, &count);
         // INFO_PRINT("X04: items %d, chars %d, len %zu, str: '%s'", items, count, len-idx, str+idx);
         if( 1 != items || !(1 <= count && static_cast<size_t>(count) <= len - idx) ) {
             return res; // error in remainder
         }
         idx += count;
     }
-    if( static_cast<size_t>(idx) < len ) {
+    if( idx < len ) {
         // make `:` separator optional
         if( str[idx] == ':' ) {
             ++idx;
         }
-        if( static_cast<size_t>(idx) < len ) {
+        if( idx < len ) {
             int count=0;
-            items = std::sscanf(str+idx, "%2u%n", &om, &count);
+            const int items = std::sscanf(str+idx, "%2u%n", &om, &count);
             // INFO_PRINT("X05: items %d, chars %d, len %zu, str: '%s'", items, count, len-idx, str+idx);
             if( 1 == items ) {
                 idx += count;
