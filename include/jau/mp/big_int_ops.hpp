@@ -197,7 +197,7 @@ namespace jau::mp::ops {
             c = hi;
             return lo;
         } else {
-            assert( has_mp_dword || 64 == mp_word_bits );
+            static_assert( has_mp_dword || 64 == mp_word_bits );
             return 0;
         }
     }
@@ -222,7 +222,7 @@ namespace jau::mp::ops {
             d = hi;
             return lo;
         } else {
-            assert( has_mp_dword || 64 == mp_word_bits );
+            static_assert( has_mp_dword || 64 == mp_word_bits );
             return 0;
         }
     }
