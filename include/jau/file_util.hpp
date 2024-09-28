@@ -25,8 +25,10 @@
 #ifndef JAU_FILE_UTIL_HPP_
 #define JAU_FILE_UTIL_HPP_
 
+#include <sys/mount.h>
 #include <jau/fraction_type.hpp>
 #include <jau/functional.hpp>
+#include <jau/enum_util.hpp>
 #include <memory>
 #include <string>
 
@@ -37,6 +39,8 @@ extern "C" {
 }
 
 namespace jau::fs {
+
+    using namespace jau::enums;
 
     /** @defgroup FileUtils File Utilities
      *  File types and functionality.
@@ -306,49 +310,15 @@ namespace jau::fs {
         /** Type mask for sock | blk | chr | fifo | dir | file | link | no_access | not_existing. */
         type_mask = 0b01100000000001111111000000000000,
     };
-    constexpr uint32_t number(const fmode_t rhs) noexcept {
-        return static_cast<uint32_t>(rhs);
-    }
-    constexpr fmode_t operator~(const fmode_t rhs) noexcept {
-        return static_cast<fmode_t>(~number(rhs));
-    }
-    constexpr fmode_t operator^(const fmode_t lhs, const fmode_t rhs) noexcept {
-        return static_cast<fmode_t>(number(lhs) ^ number(rhs));
-    }
-    constexpr fmode_t operator|(const fmode_t lhs, const fmode_t rhs) noexcept {
-        return static_cast<fmode_t>(number(lhs) | number(rhs));
-    }
-    constexpr fmode_t operator&(const fmode_t lhs, const fmode_t rhs) noexcept {
-        return static_cast<fmode_t>(number(lhs) & number(rhs));
-    }
-    constexpr fmode_t& operator|=(fmode_t& lhs, const fmode_t rhs) noexcept {
-        lhs = lhs | rhs;
-        return lhs;
-    }
-    constexpr fmode_t& operator&=(fmode_t& lhs, const fmode_t rhs) noexcept {
-        lhs = lhs & rhs;
-        return lhs;
-    }
-    constexpr fmode_t& operator^=(fmode_t& lhs, const fmode_t rhs) noexcept {
-        lhs = lhs ^ rhs;
-        return lhs;
-    }
-    constexpr bool operator==(const fmode_t lhs, const fmode_t rhs) noexcept {
-        return number(lhs) == number(rhs);
-    }
-    constexpr bool operator!=(const fmode_t lhs, const fmode_t rhs) noexcept {
-        return !(lhs == rhs);
-    }
-    constexpr bool is_set(const fmode_t mask, const fmode_t bits) noexcept {
-        return bits == (mask & bits);
-    }
+    JAU_MAKE_BITFIELD_ENUM_IMPL(fmode_t, sock, blk, chr, fifo, dir, file, link, no_access, not_existing);
+
     /**
      * Return the string representation of fmode_t
      * @param mask the fmode_t to convert
      * @param show_rwx if true, return verbose POSIX protection bit string representation using `rwx` for user, group and others. Otherwise simply show the octal representation (default)
      * @return the string representation.
      */
-    std::string to_string(const fmode_t mask, const bool show_rwx = false) noexcept;
+    std::string to_string(const fmode_t mask, const bool show_rwx) noexcept;
 
     /** Returns the POSIX protection bits: rwx_all | set_uid | set_gid | sticky, i.e. fmode_t masked with fmode_t::protection_mask. */
     constexpr ::mode_t posix_protection_bits(const fmode_t mask) noexcept { return static_cast<::mode_t>(mask & fmode_t::protection_mask); }
@@ -658,43 +628,7 @@ namespace jau::fs {
              */
             std::string to_string() const noexcept;
     };
-    constexpr uint32_t number(const file_stats::field_t rhs) noexcept {
-        return static_cast<uint32_t>(rhs);
-    }
-    constexpr file_stats::field_t operator~(const file_stats::field_t rhs) noexcept {
-        return static_cast<file_stats::field_t>(~number(rhs));
-    }
-    constexpr file_stats::field_t operator^(const file_stats::field_t lhs, const file_stats::field_t rhs) noexcept {
-        return static_cast<file_stats::field_t>(number(lhs) ^ number(rhs));
-    }
-    constexpr file_stats::field_t operator|(const file_stats::field_t lhs, const file_stats::field_t rhs) noexcept {
-        return static_cast<file_stats::field_t>(number(lhs) | number(rhs));
-    }
-    constexpr file_stats::field_t operator&(const file_stats::field_t lhs, const file_stats::field_t rhs) noexcept {
-        return static_cast<file_stats::field_t>(number(lhs) & number(rhs));
-    }
-    constexpr file_stats::field_t& operator|=(file_stats::field_t& lhs, const file_stats::field_t rhs) noexcept {
-        lhs = lhs | rhs;
-        return lhs;
-    }
-    constexpr file_stats::field_t& operator&=(file_stats::field_t& lhs, const file_stats::field_t rhs) noexcept {
-        lhs = lhs & rhs;
-        return lhs;
-    }
-    constexpr file_stats::field_t& operator^=(file_stats::field_t& lhs, const file_stats::field_t rhs) noexcept {
-        lhs = lhs ^ rhs;
-        return lhs;
-    }
-    constexpr bool operator==(const file_stats::field_t lhs, const file_stats::field_t rhs) noexcept {
-        return number(lhs) == number(rhs);
-    }
-    constexpr bool operator!=(const file_stats::field_t lhs, const file_stats::field_t rhs) noexcept {
-        return !(lhs == rhs);
-    }
-    constexpr bool is_set(const file_stats::field_t mask, const file_stats::field_t bits) noexcept {
-        return bits == (mask & bits);
-    }
-    std::string to_string(const file_stats::field_t mask) noexcept;
+    JAU_MAKE_BITFIELD_ENUM_IMPL2(file_stats::field_t, field_t, type, mode, nlink, uid, gid, atime, mtime, ctime, ino, size, blocks, btime);
 
     /**
      * Create directory
@@ -819,43 +753,7 @@ namespace jau::fs {
          */
         dir_non_recursive = dir_entry | dir_exit
     };
-    constexpr uint16_t number(const traverse_event rhs) noexcept {
-        return static_cast<uint16_t>(rhs);
-    }
-    constexpr traverse_event operator~(const traverse_event rhs) noexcept {
-        return static_cast<traverse_event>(~number(rhs));
-    }
-    constexpr traverse_event operator^(const traverse_event lhs, const traverse_event rhs) noexcept {
-        return static_cast<traverse_event>(number(lhs) ^ number(rhs));
-    }
-    constexpr traverse_event operator|(const traverse_event lhs, const traverse_event rhs) noexcept {
-        return static_cast<traverse_event>(number(lhs) | number(rhs));
-    }
-    constexpr traverse_event operator&(const traverse_event lhs, const traverse_event rhs) noexcept {
-        return static_cast<traverse_event>(number(lhs) & number(rhs));
-    }
-    constexpr traverse_event& operator|=(traverse_event& lhs, const traverse_event rhs) noexcept {
-        lhs = lhs | rhs;
-        return lhs;
-    }
-    constexpr traverse_event& operator&=(traverse_event& lhs, const traverse_event rhs) noexcept {
-        lhs = lhs & rhs;
-        return lhs;
-    }
-    constexpr traverse_event& operator^=(traverse_event& lhs, const traverse_event rhs) noexcept {
-        lhs = lhs ^ rhs;
-        return lhs;
-    }
-    constexpr bool operator==(const traverse_event lhs, const traverse_event rhs) noexcept {
-        return number(lhs) == number(rhs);
-    }
-    constexpr bool operator!=(const traverse_event lhs, const traverse_event rhs) noexcept {
-        return !(lhs == rhs);
-    }
-    constexpr bool is_set(const traverse_event mask, const traverse_event bit) noexcept {
-        return bit == (mask & bit);
-    }
-    std::string to_string(const traverse_event mask) noexcept;
+    JAU_MAKE_BITFIELD_ENUM_IMPL(traverse_event, symlink, file, dir_check_entry, dir_entry, dir_exit, dir_symlink);
 
     /**
      * path_visitor jau::FunctionDef definition
@@ -901,43 +799,7 @@ namespace jau::fs {
         /** Enable verbosity mode, potentially used by a path_visitor implementation like remove(). */
         verbose = 1U << 15
     };
-    constexpr uint16_t number(const traverse_options rhs) noexcept {
-        return static_cast<uint16_t>(rhs);
-    }
-    constexpr traverse_options operator~(const traverse_options rhs) noexcept {
-        return static_cast<traverse_options>(~number(rhs));
-    }
-    constexpr traverse_options operator^(const traverse_options lhs, const traverse_options rhs) noexcept {
-        return static_cast<traverse_options>(number(lhs) ^ number(rhs));
-    }
-    constexpr traverse_options operator|(const traverse_options lhs, const traverse_options rhs) noexcept {
-        return static_cast<traverse_options>(number(lhs) | number(rhs));
-    }
-    constexpr traverse_options operator&(const traverse_options lhs, const traverse_options rhs) noexcept {
-        return static_cast<traverse_options>(number(lhs) & number(rhs));
-    }
-    constexpr traverse_options& operator|=(traverse_options& lhs, const traverse_options rhs) noexcept {
-        lhs = lhs | rhs;
-        return lhs;
-    }
-    constexpr traverse_options& operator&=(traverse_options& lhs, const traverse_options rhs) noexcept {
-        lhs = lhs & rhs;
-        return lhs;
-    }
-    constexpr traverse_options& operator^=(traverse_options& lhs, const traverse_options rhs) noexcept {
-        lhs = lhs ^ rhs;
-        return lhs;
-    }
-    constexpr bool operator==(const traverse_options lhs, const traverse_options rhs) noexcept {
-        return number(lhs) == number(rhs);
-    }
-    constexpr bool operator!=(const traverse_options lhs, const traverse_options rhs) noexcept {
-        return !(lhs == rhs);
-    }
-    constexpr bool is_set(const traverse_options mask, const traverse_options bit) noexcept {
-        return bit == (mask & bit);
-    }
-    std::string to_string(const traverse_options mask) noexcept;
+    JAU_MAKE_BITFIELD_ENUM_IMPL(traverse_options, recursive, follow_symlinks, lexicographical_order, dir_check_entry, dir_entry, dir_exit);
 
     /**
      * Visit element(s) of a given path, see traverse_options for detailed settings.
@@ -1071,43 +933,7 @@ namespace jau::fs {
         /** Enable verbosity mode, show error messages on stderr. */
         verbose = 1 << 15
     };
-    constexpr uint16_t number(const copy_options rhs) noexcept {
-        return static_cast<uint16_t>(rhs);
-    }
-    constexpr copy_options operator~(const copy_options rhs) noexcept {
-        return static_cast<copy_options>(~number(rhs));
-    }
-    constexpr copy_options operator^(const copy_options lhs, const copy_options rhs) noexcept {
-        return static_cast<copy_options>(number(lhs) ^ number(rhs));
-    }
-    constexpr copy_options operator|(const copy_options lhs, const copy_options rhs) noexcept {
-        return static_cast<copy_options>(number(lhs) | number(rhs));
-    }
-    constexpr copy_options operator&(const copy_options lhs, const copy_options rhs) noexcept {
-        return static_cast<copy_options>(number(lhs) & number(rhs));
-    }
-    constexpr copy_options& operator|=(copy_options& lhs, const copy_options rhs) noexcept {
-        lhs = lhs | rhs;
-        return lhs;
-    }
-    constexpr copy_options& operator&=(copy_options& lhs, const copy_options rhs) noexcept {
-        lhs = lhs & rhs;
-        return lhs;
-    }
-    constexpr copy_options& operator^=(copy_options& lhs, const copy_options rhs) noexcept {
-        lhs = lhs ^ rhs;
-        return lhs;
-    }
-    constexpr bool operator==(const copy_options lhs, const copy_options rhs) noexcept {
-        return number(lhs) == number(rhs);
-    }
-    constexpr bool operator!=(const copy_options lhs, const copy_options rhs) noexcept {
-        return !(lhs == rhs);
-    }
-    constexpr bool is_set(const copy_options mask, const copy_options bit) noexcept {
-        return bit == (mask & bit);
-    }
-    std::string to_string(const copy_options mask) noexcept;
+    JAU_MAKE_BITFIELD_ENUM_IMPL(copy_options, recursive, follow_symlinks, into_existing_dir, ignore_symlink_errors, overwrite, preserve_all, sync);
 
     /**
      * Copy the given source_path to dest_path using copy_options.
@@ -1224,54 +1050,9 @@ namespace jau::fs {
         active = 1 << 30,
         nouser = 1UL << 31
     };
-    constexpr mountflags_t number(const mountflags_linux rhs) noexcept {
-        return static_cast<mountflags_t>(rhs);
-    }
-    constexpr mountflags_linux operator~(const mountflags_linux rhs) noexcept {
-        return static_cast<mountflags_linux>(~number(rhs));
-    }
-    constexpr mountflags_linux operator^(const mountflags_linux lhs, const mountflags_linux rhs) noexcept {
-        return static_cast<mountflags_linux>(number(lhs) ^ number(rhs));
-    }
-    constexpr mountflags_linux operator|(const mountflags_linux lhs, const mountflags_linux rhs) noexcept {
-        return static_cast<mountflags_linux>(number(lhs) | number(rhs));
-    }
-    constexpr mountflags_linux operator&(const mountflags_linux lhs, const mountflags_linux rhs) noexcept {
-        return static_cast<mountflags_linux>(number(lhs) & number(rhs));
-    }
-    constexpr mountflags_linux& operator|=(mountflags_linux& lhs, const mountflags_linux rhs) noexcept {
-        lhs = lhs | rhs;
-        return lhs;
-    }
-    constexpr mountflags_linux& operator&=(mountflags_linux& lhs, const mountflags_linux rhs) noexcept {
-        lhs = lhs & rhs;
-        return lhs;
-    }
-    constexpr mountflags_linux& operator^=(mountflags_linux& lhs, const mountflags_linux rhs) noexcept {
-        lhs = lhs ^ rhs;
-        return lhs;
-    }
-    constexpr bool operator==(const mountflags_linux lhs, const mountflags_linux rhs) noexcept {
-        return number(lhs) == number(rhs);
-    }
-    constexpr bool operator!=(const mountflags_linux lhs, const mountflags_linux rhs) noexcept {
-        return !(lhs == rhs);
-    }
-    constexpr bool is_set(const mountflags_linux mask, const mountflags_linux bit) noexcept {
-        return bit == (mask & bit);
-    }
-    constexpr mountflags_t& operator|=(mountflags_t& lhs, const mountflags_linux rhs) noexcept {
-        lhs |= number(rhs);
-        return lhs;
-    }
-    constexpr mountflags_t& operator&=(mountflags_t& lhs, const mountflags_linux rhs) noexcept {
-        lhs &= number(rhs);
-        return lhs;
-    }
-    constexpr mountflags_t& operator^=(mountflags_t& lhs, const mountflags_linux rhs) noexcept {
-        lhs ^= number(rhs);
-        return lhs;
-    }
+    JAU_MAKE_BITFIELD_ENUM_IMPL(mountflags_linux, rdonly, nosuid, nodev, noexec, synchronous, remount, mandlock, dirsync, noatime,
+                                nodiratime, bind, move, rec, silent, posixacl, unbindable, private_, slave, shared, relatime,
+                                kernmount, i_version, strictatime, lazytime, active, nouser);
 
     /**
      * Attach the filesystem image named in `image_path` to `target`
@@ -1338,54 +1119,7 @@ namespace jau::fs {
         expire = 4,
         nofollow = 8
     };
-    constexpr umountflags_t number(const umountflags_linux rhs) noexcept {
-        return static_cast<umountflags_t>(rhs);
-    }
-    constexpr umountflags_linux operator~(const umountflags_linux rhs) noexcept {
-        return static_cast<umountflags_linux>(~number(rhs));
-    }
-    constexpr umountflags_linux operator^(const umountflags_linux lhs, const umountflags_linux rhs) noexcept {
-        return static_cast<umountflags_linux>(number(lhs) ^ number(rhs));
-    }
-    constexpr umountflags_linux operator|(const umountflags_linux lhs, const umountflags_linux rhs) noexcept {
-        return static_cast<umountflags_linux>(number(lhs) | number(rhs));
-    }
-    constexpr umountflags_linux operator&(const umountflags_linux lhs, const umountflags_linux rhs) noexcept {
-        return static_cast<umountflags_linux>(number(lhs) & number(rhs));
-    }
-    constexpr umountflags_linux& operator|=(umountflags_linux& lhs, const umountflags_linux rhs) noexcept {
-        lhs = lhs | rhs;
-        return lhs;
-    }
-    constexpr umountflags_linux& operator&=(umountflags_linux& lhs, const umountflags_linux rhs) noexcept {
-        lhs = lhs & rhs;
-        return lhs;
-    }
-    constexpr umountflags_linux& operator^=(umountflags_linux& lhs, const umountflags_linux rhs) noexcept {
-        lhs = lhs ^ rhs;
-        return lhs;
-    }
-    constexpr bool operator==(const umountflags_linux lhs, const umountflags_linux rhs) noexcept {
-        return number(lhs) == number(rhs);
-    }
-    constexpr bool operator!=(const umountflags_linux lhs, const umountflags_linux rhs) noexcept {
-        return !(lhs == rhs);
-    }
-    constexpr bool is_set(const umountflags_linux mask, const umountflags_linux bit) noexcept {
-        return bit == (mask & bit);
-    }
-    constexpr umountflags_t& operator|=(umountflags_t& lhs, const umountflags_linux rhs) noexcept {
-        lhs |= number(rhs);
-        return lhs;
-    }
-    constexpr umountflags_t& operator&=(umountflags_t& lhs, const umountflags_linux rhs) noexcept {
-        lhs &= number(rhs);
-        return lhs;
-    }
-    constexpr umountflags_t& operator^=(umountflags_t& lhs, const umountflags_linux rhs) noexcept {
-        lhs ^= number(rhs);
-        return lhs;
-    }
+    JAU_MAKE_BITFIELD_ENUM_IMPL(umountflags_linux, force, detach, expire, nofollow);
 
     /**
      * Detach the given mount_ctx `context`

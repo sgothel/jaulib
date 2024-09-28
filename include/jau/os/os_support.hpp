@@ -30,6 +30,7 @@
 #include <jau/byte_util.hpp>
 #include <jau/int_types.hpp>
 #include "jau/cpp_lang_util.hpp"
+#include "jau/enum_util.hpp"
 #include "jau/cpuid.hpp"
 
 namespace jau::os {
@@ -68,7 +69,7 @@ namespace jau::os {
                     #define JAU_OS_HAS_PTHREAD 1
                 #else
                     #define JAU_OS_HAS_PTHREAD 0
-                #endif    
+                #endif
                 return 0b00000001000000000000000000000001U; // Emscripten
             #elif defined(__QNXNTO__)
                 #define JAU_OS_TYPE_UNIX 1
@@ -107,6 +108,8 @@ namespace jau::os {
         }
     }
 
+    using namespace jau::enums;
+
     /** OS type bits and unique IDs */
     enum class os_type_t : uint32_t {
         /** Unix bit, contained by: linux, android, freebsd, darwin. */
@@ -130,48 +133,7 @@ namespace jau::os {
         /** Identifier for native OS type, one of the above. */
         native      = impl::get_host_os_id()
     };
-    constexpr uint32_t number(const os_type_t rhs) noexcept {
-        return static_cast<uint32_t>(rhs);
-    }
-    constexpr os_type_t operator~(const os_type_t rhs) noexcept {
-        return static_cast<os_type_t>(~number(rhs));
-    }
-    constexpr os_type_t operator^(const os_type_t lhs, const os_type_t rhs) noexcept {
-        return static_cast<os_type_t>(number(lhs) ^ number(rhs));
-    }
-    constexpr os_type_t operator|(const os_type_t lhs, const os_type_t rhs) noexcept {
-        return static_cast<os_type_t>(number(lhs) | number(rhs));
-    }
-    constexpr os_type_t operator&(const os_type_t lhs, const os_type_t rhs) noexcept {
-        return static_cast<os_type_t>(number(lhs) & number(rhs));
-    }
-    constexpr os_type_t& operator|=(os_type_t& lhs, const os_type_t rhs) noexcept {
-        lhs = static_cast<os_type_t>(number(lhs) | number(rhs));
-        return lhs;
-    }
-    constexpr os_type_t& operator&=(os_type_t& lhs, const os_type_t rhs) noexcept {
-        lhs = static_cast<os_type_t>(number(lhs) & number(rhs));
-        return lhs;
-    }
-    constexpr os_type_t& operator^=(os_type_t& lhs, const os_type_t rhs) noexcept {
-        lhs = static_cast<os_type_t>(number(lhs) ^ number(rhs));
-        return lhs;
-    }
-    constexpr bool operator==(const os_type_t lhs, const os_type_t rhs) noexcept {
-        return number(lhs) == number(rhs);
-    }
-    constexpr bool operator!=(const os_type_t lhs, const os_type_t rhs) noexcept {
-        return !(lhs == rhs);
-    }
-    constexpr bool is_set(const os_type_t mask, const os_type_t bits) noexcept {
-        return bits == (mask & bits);
-    }
-    /**
-     * Return the string representation of os_type
-     * @param mask the os_type to convert
-     * @return the string representation.
-     */
-    std::string to_string(const os_type_t mask) noexcept;
+    JAU_MAKE_BITFIELD_ENUM_IMPL(os_type_t, Unix, Windows, Linux, Android, FreeBSD, Darwin, QnxNTO, GenWasm, Emscripten);
 
     /**
      * Evaluates `true` if the given \ref os_type is defined,
@@ -231,16 +193,16 @@ namespace jau::os {
 
     /** Evaluates `true` if platform os_type::native contains os_type::Emscripten */
     constexpr bool is_emscripten() noexcept { return is_set(os_type_t::native, os_type_t::Emscripten); }
-    
+
     /** Evaluates `true` if platform supports posix compatible threading. */
     constexpr bool has_pthread() noexcept {
         #if JAU_OS_HAS_PTHREAD
             return true;
         #else
             return false;
-        #endif 
+        #endif
     }
-    
+
     struct RuntimeOSInfo {
         std::string sysname;
         std::string nodename;
@@ -302,7 +264,7 @@ namespace jau::os {
     inline abi_type_t get_abi_type() noexcept {
         return get_abi_type( jau::cpu::CpuInfo::get().family );
     }
-    std::string to_string(const abi_type_t abi) noexcept;
+    JAU_MAKE_ENUM_IMPL(abi_type_t, generic, gnu_armel, gnu_armhf, aarch64, wasm32_gen, wasm32_ems, wasm64_gen, wasm64_ems);
 
     /**
      * Returns the common name for the given
@@ -365,7 +327,7 @@ namespace jau::os {
             return '/';
         }
     }
-    
+
     /** Returns the OS's path separator as a string, e.g. `\\` for Windows and `/` for Unix (rest of the world) */
     constexpr_cxx20 std::string dir_separator() noexcept {
         return std::string(1, dir_separator_char());

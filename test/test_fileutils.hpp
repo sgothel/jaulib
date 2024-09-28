@@ -22,10 +22,7 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <cassert>
-#include <cinttypes>
 #include <cstring>
-#include <memory>
-#include <thread>
 #include <pthread.h>
 
 #include <jau/test/catch2_ext.hpp>
@@ -34,6 +31,7 @@
 #include <jau/file_util.hpp>
 #include <jau/byte_stream.hpp>
 
+using namespace jau::enums;
 using namespace jau::fractions_i64_literals;
 
 static constexpr const bool _remove_target_test_dir = true;

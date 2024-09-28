@@ -32,6 +32,8 @@
 #include <jau/os/dyn_linker.hpp>
 #include <jau/os/native_lib.hpp>
 
+using namespace jau::enums;
+
 static bool existsPath(const std::string& libPath) noexcept {
     jau::fs::file_stats path_stats(libPath);
     return path_stats.exists();

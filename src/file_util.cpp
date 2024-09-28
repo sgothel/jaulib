@@ -23,6 +23,7 @@
  */
 
 #include <jau/debug.hpp>
+#include <jau/enum_util.hpp>
 #include <jau/file_util.hpp>
 #include <jau/base_codec.hpp>
 #include <jau/os/os_support.hpp>
@@ -337,28 +338,7 @@ std::string dir_item::to_string() const noexcept {
 }
 
 
-template<typename T>
-static void append_bitstr(std::string& out, T mask, T bit, const std::string& bitstr, bool& comma) {
-    if( is_set( mask, bit )) {
-        if( comma ) { out.append(", "); }
-        out.append(bitstr); comma = true;
-    }
-}
-
-#define APPEND_BITSTR(U,V,M) append_bitstr(out, M, U::V, #V, comma);
-
-#define FMODEBITS_ENUM(X,M) \
-    X(fmode_t,sock,M) \
-    X(fmode_t,blk,M) \
-    X(fmode_t,chr,M) \
-    X(fmode_t,fifo,M) \
-    X(fmode_t,dir,M) \
-    X(fmode_t,file,M) \
-    X(fmode_t,link,M) \
-    X(fmode_t,no_access,M) \
-    X(fmode_t,not_existing,M)
-
-static void append_bitstr(std::string& out, fmode_t mask, fmode_t bit, const std::string& bitstr) {
+static void _append_bitstr(std::string& out, fmode_t mask, fmode_t bit, const std::string& bitstr) {
     if( is_set( mask, bit )) {
         out.append(bitstr);
     } else {
@@ -367,29 +347,27 @@ static void append_bitstr(std::string& out, fmode_t mask, fmode_t bit, const std
 }
 
 std::string jau::fs::to_string(const fmode_t mask, const bool show_rwx) noexcept {
-    std::string out;
-    bool comma = false;
-    FMODEBITS_ENUM(APPEND_BITSTR,mask)
-    if( fmode_t::none != ( mask & fmode_t::protection_mask ) ) {
+    std::string out = jau::fs::to_string(mask);
+    if( has_any( mask, jau::fs::fmode_t::protection_mask ) ) {
         out.append(", ");
         if( show_rwx ) {
-            if( fmode_t::none != ( mask & fmode_t::ugs_set ) ) {
-                append_bitstr(out, mask, fmode_t::set_uid, "u");
-                append_bitstr(out, mask, fmode_t::set_gid, "g");
-                append_bitstr(out, mask, fmode_t::sticky,  "s");
+            if( has_any( mask, fmode_t::ugs_set ) ) {
+                _append_bitstr(out, mask, fmode_t::set_uid, "u");
+                _append_bitstr(out, mask, fmode_t::set_gid, "g");
+                _append_bitstr(out, mask, fmode_t::sticky,  "s");
             }
             const std::string r("r");
             const std::string w("w");
             const std::string x("x");
-            append_bitstr(out, mask, fmode_t::read_usr,  r);
-            append_bitstr(out, mask, fmode_t::write_usr, w);
-            append_bitstr(out, mask, fmode_t::exec_usr,  x);
-            append_bitstr(out, mask, fmode_t::read_grp,  r);
-            append_bitstr(out, mask, fmode_t::write_grp, w);
-            append_bitstr(out, mask, fmode_t::exec_grp,  x);
-            append_bitstr(out, mask, fmode_t::read_oth,  r);
-            append_bitstr(out, mask, fmode_t::write_oth, w);
-            append_bitstr(out, mask, fmode_t::exec_oth,  x);
+            _append_bitstr(out, mask, fmode_t::read_usr,  r);
+            _append_bitstr(out, mask, fmode_t::write_usr, w);
+            _append_bitstr(out, mask, fmode_t::exec_usr,  x);
+            _append_bitstr(out, mask, fmode_t::read_grp,  r);
+            _append_bitstr(out, mask, fmode_t::write_grp, w);
+            _append_bitstr(out, mask, fmode_t::exec_grp,  x);
+            _append_bitstr(out, mask, fmode_t::read_oth,  r);
+            _append_bitstr(out, mask, fmode_t::write_oth, w);
+            _append_bitstr(out, mask, fmode_t::exec_oth,  x);
         } else {
             char buf[8];
             int len = snprintf(buf, sizeof(buf), "0%o", (unsigned int)(mask & fmode_t::protection_mask));
@@ -418,28 +396,6 @@ int jau::fs::from_named_fd(const std::string& named_fd) noexcept {
         return scan_value;
     }
     return -1;
-}
-
-#define FILESTATS_FIELD_ENUM(X,M) \
-    X(file_stats::field_t,type,M) \
-    X(file_stats::field_t,mode,M) \
-    X(file_stats::field_t,nlink,M) \
-    X(file_stats::field_t,uid,M) \
-    X(file_stats::field_t,gid,M) \
-    X(file_stats::field_t,atime,M) \
-    X(file_stats::field_t,mtime,M) \
-    X(file_stats::field_t,ctime,M) \
-    X(file_stats::field_t,ino,M) \
-    X(file_stats::field_t,size,M) \
-    X(file_stats::field_t,blocks,M) \
-    X(file_stats::field_t,btime,M)
-
-std::string jau::fs::to_string(const file_stats::field_t mask) noexcept {
-    std::string out("[");
-    bool comma = false;
-    FILESTATS_FIELD_ENUM(APPEND_BITSTR,mask)
-    out.append("]");
-    return out;
 }
 
 file_stats::file_stats() noexcept
@@ -1004,39 +960,6 @@ bool jau::fs::get_dir_content(const int dirfd, const std::string& path, const co
     }
 }
 
-#define TRAVERSEEVENT_ENUM(X,M) \
-    X(traverse_event,symlink,M) \
-    X(traverse_event,file,M) \
-    X(traverse_event,dir_check_entry,M) \
-    X(traverse_event,dir_entry,M) \
-    X(traverse_event,dir_exit,M) \
-    X(traverse_event,dir_symlink,M)
-
-std::string jau::fs::to_string(const traverse_event mask) noexcept {
-    std::string out("[");
-    bool comma = false;
-    TRAVERSEEVENT_ENUM(APPEND_BITSTR,mask)
-    out.append("]");
-    return out;
-}
-
-
-#define TRAVERSEOPTIONS_ENUM(X,M) \
-    X(traverse_options,recursive,M) \
-    X(traverse_options,follow_symlinks,M) \
-    X(traverse_options,lexicographical_order,M) \
-    X(traverse_options,dir_check_entry,M) \
-    X(traverse_options,dir_entry,M) \
-    X(traverse_options,dir_exit,M)
-
-std::string jau::fs::to_string(const traverse_options mask) noexcept {
-    std::string out("[");
-    bool comma = false;
-    TRAVERSEOPTIONS_ENUM(APPEND_BITSTR,mask)
-    out.append("]");
-    return out;
-}
-
 static bool _dir_item_basename_compare(const dir_item& a, const dir_item& b) {
     return a.basename() < b.basename();
 }
@@ -1362,23 +1285,6 @@ errout:
         ::close(src2);
     }
     return res;
-}
-
-#define COPYOPTIONS_BIT_ENUM(X,M) \
-    X(copy_options,recursive,M) \
-    X(copy_options,follow_symlinks,M) \
-    X(copy_options,into_existing_dir,M) \
-    X(copy_options,ignore_symlink_errors,M) \
-    X(copy_options,overwrite,M) \
-    X(copy_options,preserve_all,M) \
-    X(copy_options,sync,M)
-
-std::string jau::fs::to_string(const copy_options mask) noexcept {
-    std::string out("[");
-    bool comma = false;
-    COPYOPTIONS_BIT_ENUM(APPEND_BITSTR,mask)
-    out.append("]");
-    return out;
 }
 
 struct copy_context_t {
