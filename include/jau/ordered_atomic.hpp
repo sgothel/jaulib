@@ -71,7 +71,7 @@ namespace jau {
 template <typename _Tp, std::memory_order _MO> struct ordered_atomic : private std::atomic<_Tp> {
   private:
     typedef std::atomic<_Tp> super;
-    
+
   public:
     ordered_atomic() noexcept = default;
     ~ordered_atomic() noexcept = default;
@@ -126,7 +126,7 @@ template <typename _Tp, std::memory_order _MO> struct ordered_atomic : private s
     CXX_ALWAYS_INLINE
     _Tp operator++() volatile noexcept // prefix ++
     { return __atomic_add_fetch(&_M_i, 1, int(_MO)); }
-    
+
     CXX_ALWAYS_INLINE
     _Tp operator--() noexcept // prefix --
     { return __atomic_sub_fetch(&_M_i, 1, int(_MO)); }
@@ -158,7 +158,7 @@ template <typename _Tp, std::memory_order _MO> struct ordered_atomic : private s
 #endif /* __has_builtin(__atomic_add_fetch) && __has_builtin(__atomic_sub_fetch) */
 
     CXX_ALWAYS_INLINE
-    bool is_lock_free() const noexcept 
+    bool is_lock_free() const noexcept
     { return super::is_lock_free(); }
 
     CXX_ALWAYS_INLINE

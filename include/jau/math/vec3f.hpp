@@ -46,7 +46,7 @@ namespace jau::math {
 
     /**
      * 3D vector using three value_type components.
-     * 
+     *
      * Component and overall alignment is natural as sizeof(value_type),
      * i.e. sizeof(value_type) == alignof(value_type)
      */
@@ -123,7 +123,7 @@ namespace jau::math {
             constexpr iterator begin() noexcept { return &x; }
 
             /** xyz = this, returns xyz. */
-            constexpr iterator get(iterator xyz) const noexcept 
+            constexpr iterator get(iterator xyz) const noexcept
             { xyz[0] = x; xyz[1] = y; xyz[2] = z; return xyz; }
 
             constexpr bool equals(const Vector3F& o, const value_type epsilon=std::numeric_limits<value_type>::epsilon()) const noexcept {
@@ -377,7 +377,7 @@ namespace jau::math {
     static_assert(sizeof(double) == alignof(Vector3F<double>));
     static_assert(sizeof(double)*3 == Vector3F<double>::byte_size);
     static_assert(sizeof(double)*3 == sizeof(Vector3F<double>));
-    
+
     typedef Vector3F<float> Vec3f;
     static_assert(3 == Vec3f::components);
     static_assert(sizeof(float) == Vec3f::value_alignment);
@@ -402,7 +402,7 @@ namespace jau::math {
 
     /**
      * Simple compound denoting a ray.
-     * 
+     *
      * Component and overall alignment is as sizeof(value_type), i.e. packed.
      *
      * A ray, also known as a half line, consists out of it's <i>origin</i>
@@ -419,16 +419,16 @@ namespace jau::math {
         typedef Value_type                  value_type;
         typedef value_type*                 pointer;
         typedef const value_type*           const_pointer;
-        
+
         /** value alignment is sizeof(value_type) */
         constexpr static int value_alignment = sizeof(value_type);
-        
+
         /** Number of value_type components  */
         constexpr static const size_t components = 6;
-        
+
         /** Size in bytes with value_alignment */
         constexpr static const size_t byte_size = components * sizeof(value_type);
-        
+
         /** Origin of Ray. */
         alignas(value_alignment) Point3F<value_type> orig;
 
@@ -450,7 +450,7 @@ namespace jau::math {
     static_assert(sizeof(float) == alignof(Ray3f));
     static_assert(sizeof(float)*6 == Ray3f::byte_size);
     static_assert(sizeof(float)*6 == sizeof(Ray3f));
-    
+
     /**@}*/
 
 } // namespace jau::math

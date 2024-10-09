@@ -615,7 +615,7 @@ namespace jau {
                                 ABORT("Error: bad_alloc: heap.memory allocation failed");
                                 return *this; // unreachable
                             }
-                            if( nullptr != o.udata.heap.non_trivial ) {                                
+                            if( nullptr != o.udata.heap.non_trivial ) {
                                 try {
                                     udata.heap.non_trivial = new non_trivial_t( *o.udata.heap.non_trivial );
                                 } catch (const std::bad_alloc &e) {

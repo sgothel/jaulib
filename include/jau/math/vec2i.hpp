@@ -43,7 +43,7 @@ namespace jau::math {
 
     /**
      * 2D vector using two value_type components.
-     * 
+     *
      * Component and overall alignment is natural as sizeof(value_type),
      * i.e. sizeof(value_type) == alignof(value_type)
      */
@@ -62,10 +62,10 @@ namespace jau::math {
 
         /** value alignment is sizeof(value_type) */
         constexpr static int value_alignment = sizeof(value_type);
-        
+
         /** Number of value_type components  */
         constexpr static const size_t components = 2;
-        
+
         /** Size in bytes with value_alignment */
         constexpr static const size_t byte_size = components * sizeof(value_type);
 

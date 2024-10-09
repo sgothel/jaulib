@@ -341,7 +341,7 @@ static void testDArrayValueType(const std::string& type_id) {
         print_container_info("NamedPayloadListDefault<"+type_id+">", data.payload);
         size_t sz0 = data.payload.size();
         printf("COPY-0.0: %s\n\n", data.toString().c_str());
-        CHECK( sz0 == data.payload.capacity() );        
+        CHECK( sz0 == data.payload.capacity() );
 
         {
             Payload def_value(1);
@@ -367,32 +367,32 @@ static void testDArrayValueType(const std::string& type_id) {
             for(Payload p : data2.payload) {
                 CHECK(def_value == p);
             }
-                    
+
             data2.payload.erase(data2.payload.cbegin());
             printf("COPY-0.3: %s\n\n", data2.toString().c_str());
             CHECK( 3 == data2.payload.size() );
             CHECK( sz0 == data2.payload.capacity() );
-            
+
             data2.payload.shrink_to_fit();
             printf("COPY-0.4: %s\n\n", data2.toString().c_str());
             CHECK( 3 == data2.payload.size() );
             CHECK( 3 == data2.payload.capacity() );
-        }        
+        }
         {
             Payload def_value(1);
             NamedPayloadListDefault<Payload> data2 = data;
             printf("COPY-1.0: %s\n\n", data2.toString().c_str());
             CHECK( sz0 == data2.payload.size() );
-            CHECK( sz0 == data2.payload.capacity() );        
+            CHECK( sz0 == data2.payload.capacity() );
             data2.payload.erase(data2.payload.cbegin());
             printf("COPY-1.1: %s\n\n", data2.toString().c_str());
             CHECK( sz0-1 == data2.payload.size() );
-            CHECK( sz0 == data2.payload.capacity() );        
+            CHECK( sz0 == data2.payload.capacity() );
             data2.payload.resize(sz0, def_value);
             printf("COPY-1.2: %s\n\n", data2.toString().c_str());
             CHECK( sz0 == data2.payload.size() );
-            CHECK( sz0 == data2.payload.capacity() );        
-            size_t j=0;                
+            CHECK( sz0 == data2.payload.capacity() );
+            size_t j=0;
             for(Payload p : data2.payload) {
                 if( j++ < sz0-1 ) {
                     CHECK(def_value != p);
@@ -404,7 +404,7 @@ static void testDArrayValueType(const std::string& type_id) {
             printf("COPY-1.2: %s\n\n", data2.toString().c_str());
             CHECK( sz0*2 == data2.payload.size() );
             CHECK( sz0*2 == data2.payload.capacity() );
-            j=0;                
+            j=0;
             for(Payload p : data2.payload) {
                 if( j++ < sz0-1 ) {
                     CHECK(def_value != p);
@@ -412,22 +412,22 @@ static void testDArrayValueType(const std::string& type_id) {
                     CHECK(def_value == p);
                 }
             }
-        }        
+        }
         {
             Payload def_value(1);
             NamedPayloadListDefault<Payload> data3(data);
             printf("COPY-2.0: %s\n\n", data3.toString().c_str());
             CHECK( sz0 == data3.payload.size() );
-            CHECK( sz0 == data3.payload.capacity() );                
+            CHECK( sz0 == data3.payload.capacity() );
             data3.payload.erase(data3.payload.begin(), data3.payload.cbegin()+data3.payload.size()/2);
             printf("COPY-2.1: %s\n\n", data3.toString().c_str());
             CHECK( sz0/2 == data3.payload.size() );
-            CHECK( sz0 == data3.payload.capacity() );                
+            CHECK( sz0 == data3.payload.capacity() );
             data3.payload.resize(sz0, def_value);
             printf("COPY-2.2: %s\n\n", data3.toString().c_str());
             CHECK( sz0 == data3.payload.size() );
             CHECK( sz0 == data3.payload.capacity() );
-            size_t j=0;                
+            size_t j=0;
             for(Payload p : data3.payload) {
                 if( j++ < sz0/2 ) {
                     CHECK(def_value != p);
@@ -439,7 +439,7 @@ static void testDArrayValueType(const std::string& type_id) {
             printf("COPY-2.3: %s\n\n", data3.toString().c_str());
             CHECK( sz0*2 == data3.payload.size() );
             CHECK( sz0*2 == data3.payload.capacity() );
-            j=0;                
+            j=0;
             for(Payload p : data3.payload) {
                 if( j++ < sz0/2 ) {
                     CHECK(def_value != p);
@@ -448,7 +448,7 @@ static void testDArrayValueType(const std::string& type_id) {
                 }
             }
         }
-        {        
+        {
             NamedPayloadListDefault<Payload> data8 = makeNamedPayloadListDefault<Payload>(8);
             CHECK( sz0 == data8.payload.size() );
             data8.payload.insert(data8.payload.begin(), data.payload.cbegin(), data.payload.cend());

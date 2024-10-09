@@ -1102,7 +1102,7 @@ TEST_CASE( "Fraction Time Conversion Test 05.01", "[fraction_timespec][time]" ) 
         jau::INFO_PRINT( "e - 0t0 %s, %s, offset %" PRId64 "s", t0.to_string().c_str(), t0.to_iso8601_string().c_str(), t0_offset);
         REQUIRE(tX0         == t0);
         REQUIRE(0 == t0_offset);
-        REQUIRE(21 == consumedChars);        
+        REQUIRE(21 == consumedChars);
         REQUIRE(tX0         == fraction_timespec::from("1-02-3T4:05:6.456789Z"));
     }
     {
@@ -1129,7 +1129,7 @@ TEST_CASE( "Fraction Time Conversion Test 05.01", "[fraction_timespec][time]" ) 
         jau::INFO_PRINT( "e - 3t0 %s, %s, offset %" PRId64 "s", t0.to_string().c_str(), t0.to_iso8601_string().c_str(), t0_offset);
         REQUIRE(tX0         == t0);
         REQUIRE(0 == t0_offset);
-        REQUIRE(7 == consumedChars);        
+        REQUIRE(7 == consumedChars);
     }
     {
         // early Z after y-m-d h:m:s
@@ -1139,7 +1139,7 @@ TEST_CASE( "Fraction Time Conversion Test 05.01", "[fraction_timespec][time]" ) 
         jau::INFO_PRINT( "e - 4t0 %s, %s, offset %" PRId64 "s", t0.to_string().c_str(), t0.to_iso8601_string().c_str(), t0_offset);
         REQUIRE(tX0         == t0);
         REQUIRE(0 == t0_offset);
-        REQUIRE(14 == consumedChars);        
+        REQUIRE(14 == consumedChars);
     }
     {
         // early Z after y-m-d h:m:s.fs
@@ -1149,7 +1149,7 @@ TEST_CASE( "Fraction Time Conversion Test 05.01", "[fraction_timespec][time]" ) 
         jau::INFO_PRINT( "e - 5t0 %s, %s, offset %" PRId64 "s", t0.to_string().c_str(), t0.to_iso8601_string().c_str(), t0_offset);
         REQUIRE(tX0         == t0);
         REQUIRE(0 == t0_offset);
-        REQUIRE(21 == consumedChars);        
+        REQUIRE(21 == consumedChars);
     }
     {
         int64_t offset=987654321_i64; size_t consumedChars=2783964772;

@@ -89,7 +89,7 @@ namespace jau::cpu {
         wasm64 = 61
 
     };
-    JAU_MAKE_BITFIELD_ENUM_IMPL(cpu_family_t, arm32, arm64, x86_32, x86_64, ia64, ppc32, ppc64, sparc32, sparc64, mips32, mips64, superh32, superh64, wasm32, wasm64);
+    JAU_MAKE_BITFIELD_ENUM_STRING(cpu_family_t, arm32, arm64, x86_32, x86_64, ia64, ppc32, ppc64, sparc32, sparc64, mips32, mips64, superh32, superh64, wasm32, wasm64);
 
     enum class arm32_hwcap1_t : uint64_t {
         none         = 0,
@@ -118,7 +118,7 @@ namespace jau::cpu {
 
         at_hwcap_1   = 16
     };
-    JAU_MAKE_BITFIELD_ENUM_IMPL(arm32_hwcap1_t, swp, half, thumb, bits26, fmult, fpa, vfp, edsp, java, iwmmxt,
+    JAU_MAKE_BITFIELD_ENUM_STRING(arm32_hwcap1_t, swp, half, thumb, bits26, fmult, fpa, vfp, edsp, java, iwmmxt,
                                                 crunch, thumbee, neon, vfp_v3, vfp_v3_d16, tls, vfp_v4, idiva,
                                                 idivt, vfp_d32, lpae, evtstrm);
 
@@ -132,7 +132,7 @@ namespace jau::cpu {
 
         at_hwcap_2 = 26
     };
-    JAU_MAKE_BITFIELD_ENUM_IMPL(arm32_hwcap2_t, aes, pmull, sha1, sha2, crc32);
+    JAU_MAKE_BITFIELD_ENUM_STRING(arm32_hwcap2_t, aes, pmull, sha1, sha2, crc32);
 
     enum class arm64_hwcap_t : uint64_t {
         none     = 0,
@@ -171,7 +171,7 @@ namespace jau::cpu {
 
         at_hwcap = 16
     };
-    JAU_MAKE_BITFIELD_ENUM_IMPL(arm64_hwcap_t, fp, asimd, evtstrm, aes, pmull, sha1, sha2, crc32, atomics, fphp,
+    JAU_MAKE_BITFIELD_ENUM_STRING(arm64_hwcap_t, fp, asimd, evtstrm, aes, pmull, sha1, sha2, crc32, atomics, fphp,
                                                asimdhp, cpuid, asimdrdm, jscvt, fcma, lrcpc, dcpop, sha3, sm3, sm4,
                                                asimddp, sha512, sve, asimdfhm, dit, uscat, ilrcpc, flagm, ssbs, sb, paca, pacg);
 

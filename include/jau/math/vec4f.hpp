@@ -125,11 +125,11 @@ namespace jau::math {
             constexpr iterator begin() noexcept { return &x; }
 
             /** xyzw = this, returns xyzw. */
-            constexpr iterator get(iterator xyzw) const noexcept 
+            constexpr iterator get(iterator xyzw) const noexcept
             { xyzw[0] = x; xyzw[1] = y; xyzw[2] = z; xyzw[3] = w; return xyzw; }
 
             /** out = { this.x, this.y, this.z } dropping w, returns out. */
-            constexpr Vec3& getVec3(Vec3& out) const noexcept 
+            constexpr Vec3& getVec3(Vec3& out) const noexcept
             { out.x = x; out.y = y; out.z = z; return out; }
 
             constexpr bool operator==(const Vector4F& rhs) const noexcept {
@@ -174,7 +174,7 @@ namespace jau::math {
             }
 
             /** this = this - rhs, returns this. */
-            constexpr Vector4F& operator-=(const Vector4F& rhs ) noexcept 
+            constexpr Vector4F& operator-=(const Vector4F& rhs ) noexcept
             { x-=rhs.x; y-=rhs.y; z-=rhs.z; w-=rhs.w; return *this;
             }
 
@@ -183,7 +183,7 @@ namespace jau::math {
              * @param s scale factor
              * @return this instance
              */
-            constexpr Vector4F& operator*=(const value_type s ) noexcept 
+            constexpr Vector4F& operator*=(const value_type s ) noexcept
             { x*=s; y*=s; z*=s; w*=s; return *this; }
 
             /**
@@ -191,7 +191,7 @@ namespace jau::math {
              * @param s scale factor
              * @return this instance
              */
-            constexpr Vector4F& operator/=(const value_type s ) noexcept 
+            constexpr Vector4F& operator/=(const value_type s ) noexcept
             { x/=s; y/=s; z/=s; w/=s; return *this; }
 
             std::string toString() const noexcept { return std::to_string(x) + " / " + std::to_string(y) + " / " + std::to_string(z) + " / " + std::to_string(w); }

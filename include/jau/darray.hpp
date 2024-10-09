@@ -224,7 +224,7 @@ namespace jau {
                 if( new_capacity_ > DIFF_MAX ) {
                     throw jau::IllegalArgumentError("realloc "+std::to_string(new_capacity_)+" > difference_type max "+
                             std::to_string(DIFF_MAX), E_FILE_LINE);
-                }                
+                }
                 value_type * m = alloc_inst.reallocate(begin_, storage_end_-begin_, new_capacity_);
                 if( nullptr == m && new_capacity_ > 0 ) {
                     free(const_cast<pointer_mutable>(begin_)); // has not been touched by realloc
@@ -862,7 +862,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              * Like std::vector::resize(size_type)
              */
             constexpr void resize(size_type new_size) { resize(new_size, value_type()); }
-        
+
             /**
              * Like std::vector::shrink_to_fit(), but ensured `constexpr`.
              *
@@ -872,9 +872,9 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                 const size_type size_ = size();
                 if( capacity() > size_ ) {
                     realloc_storage_move(size_);
-                }                
+                }
             }
-            
+
             /**
              * Like std::vector::assign()
              * @tparam InputIt foreign input-iterator to range of value_type [first, last)

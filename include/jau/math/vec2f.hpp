@@ -42,8 +42,8 @@ namespace jau::math {
      */
 
     /**
-     * 2D vector using two value_type components. 
-     * 
+     * 2D vector using two value_type components.
+     *
      * Component and overall alignment is natural as sizeof(value_type),
      * i.e. sizeof(value_type) == alignof(value_type)
      */
@@ -361,7 +361,7 @@ namespace jau::math {
     }
 
     static_assert(sizeof(float) == alignof(float)); // natural alignment (reconsider otherwise)
-     
+
     typedef Vector2F<float> Vec2f;
     static_assert(2 == Vec2f::components);
     static_assert(sizeof(float) == Vec2f::value_alignment);
@@ -386,7 +386,7 @@ namespace jau::math {
 
     /**
      * Simple compound denoting a ray.
-     * 
+     *
      * Component and overall alignment is as sizeof(value_type), i.e. packed.
      *
      * A ray, also known as a half line, consists out of it's <i>origin</i>
@@ -404,16 +404,16 @@ namespace jau::math {
         typedef Value_type                  value_type;
         typedef value_type*                 pointer;
         typedef const value_type*           const_pointer;
-        
+
         /** value alignment is sizeof(value_type) */
         constexpr static int value_alignment = sizeof(value_type);
-        
+
         /** Number of value_type components  */
         constexpr static const size_t components = 4;
-        
+
         /** Size in bytes with value_alignment */
         constexpr static const size_t byte_size = components * sizeof(value_type);
-        
+
         /** Origin of Ray. */
         alignas(value_alignment) Point2F<value_type> orig;
 
@@ -435,7 +435,7 @@ namespace jau::math {
     static_assert(sizeof(float) == alignof(Ray2f));
     static_assert(sizeof(float)*4 == Ray2f::byte_size);
     static_assert(sizeof(float)*4 == sizeof(Ray2f));
-    
+
     /**@}*/
 
 } // namespace jau::math

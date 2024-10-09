@@ -142,7 +142,7 @@ namespace jau {
             typedef typename std::make_signed_t<size_type>      difference_type;
             typedef Alloc_type                                  allocator_type;
 
-            typedef darray<value_type, size_type, 
+            typedef darray<value_type, size_type,
                            allocator_type,
                            use_memmove, use_secmem>             storage_t;
             typedef std::shared_ptr<storage_t>                  storage_ref_t;
@@ -150,8 +150,8 @@ namespace jau {
             /** Used to determine whether this type is a darray or has a darray, see ::is_darray_type<T> */
             typedef bool                                        darray_tag;
 
-            typedef cow_darray<value_type, size_type, 
-                               allocator_type, 
+            typedef cow_darray<value_type, size_type,
+                               allocator_type,
                                use_memmove, use_secmem>         cow_container_t;
 
             /**
