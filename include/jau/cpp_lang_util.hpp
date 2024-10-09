@@ -650,22 +650,16 @@ namespace jau {
     // *************************************************
      */
 
-    #if defined __has_builtin
-        #if __has_builtin(__builtin_bit_cast)
-            #define __has_builtin_bit_cast 1
-        #endif
-    #endif
-
     /**
      * Convenience type trait for `__has_builtin(__builtin_bit_cast)`.
      * @tparam Dummy_type just to make template `SFINAE` happy
-     * @see jau::is_builtin_bit_cast_available()
+     * @see jau::has_builtin_bit_cast()
      * @see jau::bit_cast()
      * @see jau::pointer_cast()
      */
     template <typename Dummy_type>
-    struct has_builtin_bit_cast
-        #if defined __has_builtin_bit_cast
+    struct has_builtin_bit_cast_t
+        #if defined __has_builtin && __has_builtin(__builtin_bit_cast)
             : std::true_type
         #else
             : std::false_type
@@ -676,36 +670,11 @@ namespace jau {
      * @tparam Dummy_type just to make template `SFINAE` happy
      * @see has_builtin_bit_cast
      */
-    template <typename Dummy_type> constexpr bool has_builtin_bit_cast_v = has_builtin_bit_cast<Dummy_type>::value;
-
-    #if !defined __has_builtin_bit_cast
-        /**
-         * Dummy definition in the absence of this builtin function
-         * as required to have this compilation unit compile clean.
-         * @param Dest_type the target type
-         * @param Value_arg the source value argument
-         */
-        #define __builtin_bit_cast(Dest_type,Value_arg) 0
-    #endif
-
-    namespace impl {
-        template<class Dummy_type>
-        consteval_cxx20 bool has_builtin_bit_cast_impl(
-                std::enable_if_t< has_builtin_bit_cast_v<Dummy_type>, bool> = true ) noexcept
-        {
-            return true;
-        }
-
-        template<class Dummy_type>
-        consteval_cxx20 bool has_builtin_bit_cast_impl(
-                std::enable_if_t< !has_builtin_bit_cast_v<Dummy_type>, bool> = true ) noexcept
-        {
-            return false;
-        }
-    }
+    template <typename Dummy_type> constexpr bool has_builtin_bit_cast_v = has_builtin_bit_cast_t<Dummy_type>::value;
 
     /**
-     * Query whether `__builtin_bit_cast(Dest_type, arg)` is available, using jau::has_builtin_bit_cast.
+     * Query whether `__builtin_bit_cast(Dest_type, arg)` is available
+     * via `__has_builtin(__builtin_bit_cast)`.
      *
      * - - - - - - - - - - - - - - -
      *
@@ -722,12 +691,16 @@ namespace jau {
      *  clang      |  11.0.1  | amd64               | yes       |
      *
      * @return `true` if query subject is available, otherwise not.
-     * @see has_builtin_bit_cast
+     * @see has_builtin_bit_cast_t
      * @see bit_cast()
      * @see pointer_cast()
      */
-    consteval_cxx20 bool is_builtin_bit_cast_available() noexcept {
-        return impl::has_builtin_bit_cast_impl<bool>();
+    consteval_cxx20 bool has_builtin_bit_cast() noexcept {
+        #if defined __has_builtin && __has_builtin(__builtin_bit_cast)
+            return true;
+        #else
+            return false;
+        #endif
     }
 
     /**
@@ -752,7 +725,7 @@ namespace jau {
         Dest>
     bit_cast(const Source& src) noexcept
     {
-        if constexpr ( is_builtin_bit_cast_available() ) {
+        if constexpr ( has_builtin_bit_cast() ) {
             return __builtin_bit_cast(Dest, src);
         } else {
             (void)src;
@@ -787,7 +760,7 @@ namespace jau {
         Dest>
     pointer_cast(const Source& src) noexcept
     {
-        if constexpr ( is_builtin_bit_cast_available() ) {
+        if constexpr ( has_builtin_bit_cast() ) {
             return __builtin_bit_cast(Dest, src);
         } else {
             // not 'really' constexpr .. oops, working though

@@ -67,7 +67,7 @@ constexpr bool isLittleEndian2() noexcept {
 
 TEST_CASE( "Endianess Test 00", "[endian]" ) {
     fprintf(stderr, "********************************************************************************\n");
-    fprintf(stderr, "is_builtin_bit_cast_available: %d\n", jau::is_builtin_bit_cast_available());
+    fprintf(stderr, "is_builtin_bit_cast_available: %d\n", jau::has_builtin_bit_cast());
     fprintf(stderr, "endian: %s\n", jau::to_string(jau::endian_t::native).c_str());
     fprintf(stderr, "********************************************************************************\n");
 

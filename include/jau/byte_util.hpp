@@ -165,7 +165,7 @@ namespace jau {
 
     namespace impl {
         constexpr uint32_t get_host_order() noexcept {
-            if constexpr ( jau::is_builtin_bit_cast_available() ) {
+            if constexpr ( jau::has_builtin_bit_cast() ) {
                 constexpr uint8_t b[4] { 0x44, 0x43, 0x42, 0x41 }; // h->l: 41 42 43 44 = 'ABCD' hex ASCII code
                 return jau::bit_cast<uint32_t, uint8_t[4]>( b );
             } else {
