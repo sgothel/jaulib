@@ -133,7 +133,7 @@ namespace jau::os {
         /** Identifier for native OS type, one of the above. */
         native      = impl::get_host_os_id()
     };
-    JAU_MAKE_BITFIELD_ENUM_IMPL(os_type_t, Unix, Windows, Linux, Android, FreeBSD, Darwin, QnxNTO, GenWasm, Emscripten);
+    JAU_MAKE_BITFIELD_ENUM_STRING(os_type_t, Unix, Windows, Linux, Android, FreeBSD, Darwin, QnxNTO, GenWasm, Emscripten);
 
     /**
      * Evaluates `true` if the given \ref os_type is defined,
@@ -264,7 +264,7 @@ namespace jau::os {
     inline abi_type_t get_abi_type() noexcept {
         return get_abi_type( jau::cpu::CpuInfo::get().family );
     }
-    JAU_MAKE_ENUM_IMPL(abi_type_t, generic, gnu_armel, gnu_armhf, aarch64, wasm32_gen, wasm32_ems, wasm64_gen, wasm64_ems);
+    JAU_MAKE_ENUM_STRING(abi_type_t, generic, gnu_armel, gnu_armhf, aarch64, wasm32_gen, wasm32_ems, wasm64_gen, wasm64_ems);
 
     /**
      * Returns the common name for the given
