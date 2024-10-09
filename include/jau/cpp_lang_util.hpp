@@ -818,6 +818,7 @@ namespace jau {
         f();
     }
 
+    /// Boolean type without implicit conversion, safe for function parameter
     enum class Bool : bool {
         False = false,
         True = true
@@ -828,23 +829,26 @@ namespace jau {
     constexpr bool value(const Bool rhs) noexcept {
         return static_cast<bool>(rhs);
     }
+    constexpr bool operator*(const Bool rhs) noexcept {
+        return static_cast<bool>(rhs);
+    }
     constexpr Bool operator!(const Bool rhs) noexcept {
-        return static_cast<Bool>(!value(rhs));
+        return Bool(!*rhs);
     }
     constexpr Bool operator&&(const Bool lhs, const Bool rhs) noexcept {
-        return static_cast<Bool>(value(lhs) && value(rhs));
+        return Bool(*lhs && *rhs);
     }
     constexpr Bool operator||(const Bool lhs, const Bool rhs) noexcept {
-        return static_cast<Bool>(value(lhs) || value(rhs));
+        return Bool(*lhs || *rhs);
     }
     constexpr Bool operator^(const Bool lhs, const Bool rhs) noexcept {
-        return static_cast<Bool>(value(lhs) ^ value(rhs));
+        return Bool(*lhs ^ *rhs);
     }
     constexpr Bool operator|(const Bool lhs, const Bool rhs) noexcept {
-        return static_cast<Bool>(value(lhs) || value(rhs));
+        return Bool(*lhs || *rhs);
     }
     constexpr Bool operator&(const Bool lhs, const Bool rhs) noexcept {
-        return static_cast<Bool>(value(lhs) && value(rhs));
+        return Bool(*lhs && *rhs);
     }
     constexpr Bool& operator|=(Bool& lhs, const Bool rhs) noexcept {
         lhs = lhs | rhs;
@@ -859,18 +863,16 @@ namespace jau {
         return lhs;
     }
     constexpr bool operator==(const Bool lhs, const Bool rhs) noexcept {
-        return value(lhs) == value(rhs);
+        return *lhs == *rhs;
     }
-    constexpr bool operator!=(const Bool lhs, const Bool rhs) noexcept {
-        return !(lhs == rhs);
-    }
-    constexpr const char* to_string(const Bool v) noexcept {
-        if( value(v) ) {
+    constexpr std::string_view name(const Bool v) noexcept {
+        if( *v ) {
             return "true";
         } else {
             return "false";
         }
     }
+    constexpr std::string to_string(const Bool v) noexcept { return std::string(name(v)); }
     inline std::ostream & operator << (std::ostream &out, const Bool c) {
         out << to_string(c);
         return out;
