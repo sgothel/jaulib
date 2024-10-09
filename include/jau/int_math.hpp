@@ -34,8 +34,6 @@
 
 namespace jau {
 
-    #define JAU_USE_BUILDIN_OVERFLOW 1
-
     /** \addtogroup Integer
      *
      *  @{
@@ -173,6 +171,40 @@ namespace jau {
     }
 
     /**
+     * Query whether `__builtin_add_overflow` is available
+     * via `__has_builtin(__builtin_add_overflow)`.
+     */
+    consteval_cxx20 bool has_builtin_add_overflow() noexcept {
+        #if defined __has_builtin && __has_builtin(__builtin_add_overflow)
+            return true;
+        #else
+            return false;
+        #endif
+    }
+    /**
+     * Query whether `__builtin_sub_overflow` is available
+     * via `__has_builtin(__builtin_sub_overflow)`.
+     */
+    consteval_cxx20 bool has_builtin_sub_overflow() noexcept {
+        #if defined __has_builtin && __has_builtin(__builtin_sub_overflow)
+            return true;
+        #else
+            return false;
+        #endif
+    }
+    /**
+     * Query whether `__builtin_mul_overflow` is available
+     * via `__has_builtin(__builtin_mul_overflow)`.
+     */
+    consteval_cxx20 bool has_builtin_mul_overflow() noexcept {
+        #if defined __has_builtin && __has_builtin(__builtin_mul_overflow)
+            return true;
+        #else
+            return false;
+        #endif
+    }
+
+    /**
      * Integer overflow aware addition returning true if overflow occurred,
      * otherwise false having the result stored in res.
      *
@@ -190,20 +222,20 @@ namespace jau {
               std::enable_if_t< std::is_integral_v<T>, bool> = true>
     constexpr bool add_overflow(const T a, const T b, T& res) noexcept
     {
-#if JAU_USE_BUILDIN_OVERFLOW && ( defined(__GNUC__) || defined(__clang__) )
-        return __builtin_add_overflow(a, b, &res);
-#else
-        // overflow:  a + b > R+ -> a > R+ - b, with b >= 0
-        // underflow: a + b < R- -> a < R- - b, with b < 0
-        if ( ( b >= 0 && a > std::numeric_limits<T>::max() - b ) ||
-             ( b  < 0 && a < std::numeric_limits<T>::min() - b ) )
-        {
-            return true;
+        if constexpr( has_builtin_add_overflow() ) {
+            return __builtin_add_overflow(a, b, &res);
         } else {
-            res = a + b;
-            return false;
+            // overflow:  a + b > R+ -> a > R+ - b, with b >= 0
+            // underflow: a + b < R- -> a < R- - b, with b < 0
+            if ( ( b >= 0 && a > std::numeric_limits<T>::max() - b ) ||
+                 ( b  < 0 && a < std::numeric_limits<T>::min() - b ) )
+            {
+                return true;
+            } else {
+                res = a + b;
+                return false;
+            }
         }
-#endif
     }
 
     /**
@@ -224,20 +256,20 @@ namespace jau {
               std::enable_if_t< std::is_integral_v<T>, bool> = true>
     constexpr bool sub_overflow(const T a, const T b, T& res) noexcept
     {
-#if JAU_USE_BUILDIN_OVERFLOW && ( defined(__GNUC__) || defined(__clang__) )
-        return __builtin_sub_overflow(a, b, &res);
-#else
-        // overflow:  a - b > R+ -> a > R+ + b, with b < 0
-        // underflow: a - b < R- -> a < R- + b, with b >= 0
-        if ( ( b  < 0 && a > std::numeric_limits<T>::max() + b ) ||
-             ( b >= 0 && a < std::numeric_limits<T>::min() + b ) )
-        {
-            return true;
+        if constexpr( has_builtin_sub_overflow() ) {
+            return __builtin_sub_overflow(a, b, &res);
         } else {
-            res = a - b;
-            return false;
+            // overflow:  a - b > R+ -> a > R+ + b, with b < 0
+            // underflow: a - b < R- -> a < R- + b, with b >= 0
+            if ( ( b  < 0 && a > std::numeric_limits<T>::max() + b ) ||
+                 ( b >= 0 && a < std::numeric_limits<T>::min() + b ) )
+            {
+                return true;
+            } else {
+                res = a - b;
+                return false;
+            }
         }
-#endif
     }
 
     /**
@@ -258,19 +290,19 @@ namespace jau {
               std::enable_if_t< std::is_integral_v<T>, bool> = true>
     constexpr bool mul_overflow(const T a, const T b, T& res) noexcept
     {
-#if JAU_USE_BUILDIN_OVERFLOW && ( defined(__GNUC__) || defined(__clang__) )
-        return __builtin_mul_overflow(a, b, &res);
-#else
-        // overflow: a * b > R+ -> a > R+ / b
-        if ( ( b > 0 && abs(a) > std::numeric_limits<T>::max() / b ) ||
-             ( b < 0 && abs(a) > std::numeric_limits<T>::min() / b ) )
-        {
-            return true;
+        if constexpr( has_builtin_mul_overflow() ) {
+            return __builtin_mul_overflow(a, b, &res);
         } else {
-            res = a * b;
-            return false;
+            // overflow: a * b > R+ -> a > R+ / b
+            if ( ( b > 0 && abs(a) > std::numeric_limits<T>::max() / b ) ||
+                 ( b < 0 && abs(a) > std::numeric_limits<T>::min() / b ) )
+            {
+                return true;
+            } else {
+                res = a * b;
+                return false;
+            }
         }
-#endif
     }
 
     /**
