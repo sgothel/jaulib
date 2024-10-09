@@ -1,25 +1,12 @@
 /*
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2022-2024 Gothel Software e.K.
+ * Copyright Gothel Software e.K.
  *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
+ * SPDX-License-Identifier: MIT
  *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * This Source Code Form is subject to the terms of the MIT License
+ * If a copy of the MIT was not distributed with this file,
+ * you can obtain one at https://opensource.org/license/mit/.
  */
 #ifndef JAU_AABBOX3F_HPP_
 #define JAU_AABBOX3F_HPP_
@@ -375,9 +362,9 @@ namespace jau::math::geom {
              * @return true if {x, y, z} belongs to {low, high}
              */
             bool contains(const float x, const float y, const float z) const noexcept {
-                return !( x<m_lo.x || x>m_hi.x ||
-                          y<m_lo.y || y>m_hi.y ||
-                          z<m_lo.z || z>m_hi.z );
+                return m_lo.x<=x && x<=m_hi.x &&
+                       m_lo.y<=y && y<=m_hi.y &&
+                       m_lo.z<=z && z<=m_hi.z;
             }
 
             /**
@@ -388,12 +375,20 @@ namespace jau::math::geom {
 
             /** Returns whether this aabbox3f intersects (partially contains) given aabbox3f. */
             bool intersects(const AABBox3f& o) const noexcept {
-                return !( m_hi.x < o.m_lo.x ||
-                          m_hi.y < o.m_lo.y ||
-                          m_hi.z < o.m_lo.z ||
-                          m_lo.x > o.m_hi.x ||
-                          m_lo.y > o.m_hi.y ||
-                          m_lo.z > o.m_hi.z );
+                /**
+                 * Traditional boolean equation leads to multiple branches,
+                 * using max/min approach allowing for branch-less optimizations.
+                 *
+                    return !( m_hi.x < o.m_lo.x ||
+                              m_hi.y < o.m_lo.y ||
+                              m_hi.z < o.m_lo.z ||
+                              m_lo.x > o.m_hi.x ||
+                              m_lo.y > o.m_hi.y ||
+                              m_lo.z > o.m_hi.z );
+                */
+                const Point3f lo = max(m_lo, o.m_lo);
+                const Point3f hi = min(m_hi, o.m_hi);
+                return lo.x <= hi.x && lo.y <= hi.y && lo.z <= hi.z;
             }
 
             /** Returns whether this aabbox3f fully contains given aabbox3f. */

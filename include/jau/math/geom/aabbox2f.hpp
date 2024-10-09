@@ -1,25 +1,12 @@
 /*
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2022-2024 Gothel Software e.K.
+ * Copyright Gothel Software e.K.
  *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
+ * SPDX-License-Identifier: MIT
  *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * This Source Code Form is subject to the terms of the MIT License
+ * If a copy of the MIT was not distributed with this file,
+ * you can obtain one at https://opensource.org/license/mit/.
  */
 #ifndef JAU_AABBOX2F_HPP_
 #define JAU_AABBOX2F_HPP_
@@ -151,8 +138,8 @@ namespace jau::math::geom {
          * @return true if {x, y} belongs to (low.x, high.x) and y belong to (low.y, high.y)
          */
         bool contains(const float x, const float y) const noexcept {
-            return !( x<bl.x || x>tr.x ||
-                      y<bl.y || y>tr.y );
+            return bl.x<=x && x<=tr.x &&
+                   bl.y<=y && y<=tr.y;
         }
 
         /**
@@ -162,10 +149,18 @@ namespace jau::math::geom {
         bool contains(const Point2f& p) const noexcept { return contains(p.x, p.y); }
 
         bool intersects(const AABBox2f& o) const noexcept {
-            return !( tr.x < o.bl.x ||
-                      tr.y < o.bl.y ||
-                      bl.x > o.tr.x ||
-                      bl.y > o.tr.y );
+            /**
+             * Traditional boolean equation leads to multiple branches,
+             * using max/min approach allowing for branch-less optimizations.
+             *
+                return !( tr.x < o.bl.x ||
+                          tr.y < o.bl.y ||
+                          bl.x > o.tr.x ||
+                          bl.y > o.tr.y );
+             */
+            const Point2f lo = max(bl, o.bl);
+            const Point2f hi = min(tr, o.tr);
+            return lo.x <= hi.x && lo.y <= hi.y;
         }
 
 #if 0
@@ -177,6 +172,13 @@ namespace jau::math::geom {
         }
 #endif
 
+        /** Returns whether this aabbox2f fully contains given aabbox2f. */
+        bool contains(const AABBox2f& o) const noexcept {
+            return tr.x >= o.tr.x &&
+                   tr.y >= o.tr.y &&
+                   bl.x <= o.bl.x &&
+                   bl.y <= o.bl.y;
+        }
         std::string toString() const noexcept {
             return "aabb[bl " + bl.toString() +
                     ", tr " + tr.toString() +
