@@ -29,6 +29,7 @@
 #include <cassert>
 #include <limits>
 #include <string>
+#include <algorithm>
 
 #include <jau/float_math.hpp>
 
@@ -364,6 +365,18 @@ namespace jau::math {
              std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
     constexpr Vector3F<T> operator/(const Vector3F<T>& lhs, const T s ) noexcept {
         Vector3F<T> r(lhs); r /= s; return r;
+    }
+
+    template<typename T,
+             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    constexpr Vector3F<T> min(const Vector3F<T>& lhs, const Vector3F<T>& rhs) noexcept {
+        return Vector3F<T>(std::min(lhs.x, rhs.x), std::min(lhs.y, rhs.y), std::min(lhs.z, rhs.z));
+    }
+
+    template<typename T,
+             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    constexpr Vector3F<T> max(const Vector3F<T>& lhs, const Vector3F<T>& rhs) noexcept {
+        return Vector3F<T>(std::max(lhs.x, rhs.x), std::max(lhs.y, rhs.y), std::max(lhs.z, rhs.z));
     }
 
     template<typename T,

@@ -26,10 +26,10 @@
 
 #include <cmath>
 #include <cstdarg>
-#include <cstdint>
 #include <cassert>
 #include <limits>
 #include <string>
+#include <algorithm>
 #include <initializer_list>
 
 #include <jau/float_math.hpp>
@@ -300,6 +300,18 @@ namespace jau::math {
              std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
     constexpr Vector4F<T> operator/(const Vector4F<T>& lhs, const T s ) noexcept {
         Vector4F<T> r(lhs); r /= s; return r;
+    }
+
+    template<typename T,
+             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    constexpr Vector4F<T> min(const Vector4F<T>& lhs, const Vector4F<T>& rhs) noexcept {
+        return Vector4F<T>(std::min(lhs.x, rhs.x), std::min(lhs.y, rhs.y), std::min(lhs.z, rhs.z), std::min(lhs.w, rhs.w));
+    }
+
+    template<typename T,
+             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    constexpr Vector4F<T> max(const Vector4F<T>& lhs, const Vector4F<T>& rhs) noexcept {
+        return Vector4F<T>(std::max(lhs.x, rhs.x), std::max(lhs.y, rhs.y), std::max(lhs.z, rhs.z), std::max(lhs.w, rhs.w));
     }
 
     /** out = { this.x, this.y, this.z } dropping w, returns out. */

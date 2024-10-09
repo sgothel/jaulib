@@ -26,10 +26,10 @@
 
 #include <cmath>
 #include <cstdarg>
-#include <cstdint>
 #include <cassert>
 #include <limits>
 #include <string>
+#include <algorithm>
 #include <iostream>
 
 #include <jau/float_math.hpp>
@@ -270,6 +270,18 @@ namespace jau::math {
 
     template<typename T,
              std::enable_if_t<std::numeric_limits<T>::is_integer, bool> = true>
+    constexpr Vector2I<T> min(const Vector2I<T>& lhs, const Vector2I<T>& rhs) noexcept {
+        return Vector2I<T>(std::min(lhs.x, rhs.x), std::min(lhs.y, rhs.y));
+    }
+
+    template<typename T,
+             std::enable_if_t<std::numeric_limits<T>::is_integer, bool> = true>
+    constexpr Vector2I<T> max(const Vector2I<T>& lhs, const Vector2I<T>& rhs) noexcept {
+        return Vector2I<T>(std::max(lhs.x, rhs.x), std::max(lhs.y, rhs.y));
+    }
+
+    template<typename T,
+             std::enable_if_t<std::numeric_limits<T>::is_integer, bool> = true>
     std::ostream& operator<<(std::ostream& out, const Vector2I<T>& v) noexcept {
         return out << v.toString();
     }
@@ -280,6 +292,21 @@ namespace jau::math {
     static_assert(sizeof(int) == alignof(Vec2i));
     static_assert(sizeof(int)*2 == Vec2i::byte_size);
     static_assert(sizeof(int)*2 == sizeof(Vec2i));
+
+    /**
+     * Point2I alias of Vector2I
+     */
+    template<typename Value_type,
+             std::enable_if_t<std::numeric_limits<Value_type>::is_integer &&
+                              sizeof(Value_type) == alignof(Value_type), bool> = true>
+    using Point2I = Vector2I<Value_type>;
+
+    typedef Point2I<int> Point2i;
+    static_assert(2 == Point2i::components);
+    static_assert(sizeof(int) == Point2i::value_alignment);
+    static_assert(sizeof(int) == alignof(Point2i));
+    static_assert(sizeof(int)*2 == Point2i::byte_size);
+    static_assert(sizeof(int)*2 == sizeof(Point2i));
 
     /**@}*/
 

@@ -26,10 +26,10 @@
 
 #include <cmath>
 #include <cstdarg>
-#include <cstdint>
 #include <cassert>
 #include <limits>
 #include <string>
+#include <algorithm>
 #include <iostream>
 
 #include <jau/float_math.hpp>
@@ -352,6 +352,18 @@ namespace jau::math {
              std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
     constexpr Vector2F<T> operator/(const Vector2F<T>& lhs, const T s ) noexcept {
         Vector2F<T> r(lhs); r /= s; return r;
+    }
+
+    template<typename T,
+             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    constexpr Vector2F<T> min(const Vector2F<T>& lhs, const Vector2F<T>& rhs) noexcept {
+        return Vector2F<T>(std::min(lhs.x, rhs.x), std::min(lhs.y, rhs.y));
+    }
+
+    template<typename T,
+             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    constexpr Vector2F<T> max(const Vector2F<T>& lhs, const Vector2F<T>& rhs) noexcept {
+        return Vector2F<T>(std::max(lhs.x, rhs.x), std::max(lhs.y, rhs.y));
     }
 
     template<typename T,
