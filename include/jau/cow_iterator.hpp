@@ -25,8 +25,6 @@
 #ifndef JAU_COW_ITERATOR_HPP_
 #define JAU_COW_ITERATOR_HPP_
 
-#include <cstddef>
-#include <limits>
 #include <mutex>
 
 #include <type_traits>
@@ -351,25 +349,15 @@ namespace jau {
                        : ( iterator_ < rhs.iterator_ ? -1 : 1);
             }
 
+             /** Two way comparison operator, `!=` is implicit, C++20 */
             constexpr bool operator==(const cow_rw_iterator& rhs) const noexcept
-            { return compare(rhs) == 0; }
+            { return store_ref_ == rhs.store_ref_ && iterator_ == rhs.iterator_; }
 
-            constexpr bool operator!=(const cow_rw_iterator& rhs) const noexcept
-            { return compare(rhs) != 0; }
-
-            // Relation
-
-            constexpr bool operator<=(const cow_rw_iterator& rhs) const noexcept
-            { return compare(rhs) <= 0; }
-
-            constexpr bool operator<(const cow_rw_iterator& rhs) const noexcept
-            { return compare(rhs) < 0; }
-
-            constexpr bool operator>=(const cow_rw_iterator& rhs) const noexcept
-            { return compare(rhs) >= 0; }
-
-            constexpr bool operator>(const cow_rw_iterator& rhs) const noexcept
-            { return compare(rhs) > 0; }
+            /** Three way std::strong_ordering comparison operator, C++20 */
+            std::strong_ordering operator<=>(const cow_rw_iterator& rhs) const noexcept {
+                return store_ref_ == rhs.store_ref_ && iterator_ == rhs.iterator_ ? std::strong_ordering::equal :
+                       ( iterator_ < rhs.iterator_ ? std::strong_ordering::less : std::strong_ordering::greater );
+            }
 
             // Forward iterator requirements
 
@@ -844,25 +832,15 @@ namespace jau {
                        : ( iterator_ < rhs.iterator_ ? -1 : 1);
             }
 
+             /** Two way comparison operator, `!=` is implicit, C++20 */
             constexpr bool operator==(const cow_ro_iterator& rhs) const noexcept
-            { return compare(rhs) == 0; }
+            { return store_ref_ == rhs.store_ref_ && iterator_ == rhs.iterator_; }
 
-            constexpr bool operator!=(const cow_ro_iterator& rhs) const noexcept
-            { return compare(rhs) != 0; }
-
-            // Relation
-
-            constexpr bool operator<=(const cow_ro_iterator& rhs) const noexcept
-            { return compare(rhs) <= 0; }
-
-            constexpr bool operator<(const cow_ro_iterator& rhs) const noexcept
-            { return compare(rhs) < 0; }
-
-            constexpr bool operator>=(const cow_ro_iterator& rhs) const noexcept
-            { return compare(rhs) >= 0; }
-
-            constexpr bool operator>(const cow_ro_iterator& rhs) const noexcept
-            { return compare(rhs) > 0; }
+            /** Three way std::strong_ordering comparison operator, C++20 */
+            std::strong_ordering operator<=>(const cow_ro_iterator& rhs) const noexcept {
+                return store_ref_ == rhs.store_ref_ && iterator_ == rhs.iterator_ ? std::strong_ordering::equal :
+                       ( iterator_ < rhs.iterator_ ? std::strong_ordering::less : std::strong_ordering::greater );
+            }
 
             // Forward iterator requirements
 
