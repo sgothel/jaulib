@@ -88,6 +88,18 @@ namespace jau::fs {
     /** Returns true if first character is `/` or - in case of Windows - `\\`. */
     bool isAbsolute(const std::string_view& path) noexcept;
 
+    /** Returns true if path exists _and_ is accessible. */
+    bool exists(const std::string& path, bool verbose_on_error=false) noexcept;
+
+    /**
+     * Returns located asset directory if found, otherwise an empty string.
+     *
+     * The asset dir is attempted as follows (cwd is current working dir)
+     * - cwd/`resources`/asset_file -> cwd/`resources`
+     * - dirname(exe_path)/../share/"+asset_install_subdir/asset_file -> dirname(exe_path)/../share/"+asset_install_subdir
+     */
+    std::string lookup_asset_dir(const char* exe_path, const char* asset_file, const char* asset_install_subdir) noexcept;
+
     /**
      * Representing a directory item split into dirname() and basename().
      */
