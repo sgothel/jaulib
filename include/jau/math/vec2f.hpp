@@ -93,6 +93,8 @@ namespace jau::math {
         constexpr Vector2F& operator=(const Vector2F&) noexcept = default;
         constexpr Vector2F& operator=(Vector2F&&) noexcept = default;
 
+        constexpr Vector2F copy() noexcept { return Vector2F(*this); }
+
         /** Returns read-only component */
         constexpr value_type operator[](size_t i) const noexcept {
             assert(i < 2);
@@ -334,6 +336,14 @@ namespace jau::math {
              std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
     constexpr Vector2F<T> operator-(const Vector2F<T>& lhs, const Vector2F<T>& rhs ) noexcept {
         Vector2F<T> r(lhs); r -= rhs; return r;
+    }
+
+    template<typename T,
+             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    constexpr Vector2F<T> operator-(const Vector2F<T>& lhs) noexcept {
+        Vector2F<T> r(lhs);
+        r *= -1;
+        return r;
     }
 
     template<typename T,
