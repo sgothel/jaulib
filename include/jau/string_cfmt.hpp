@@ -1,14 +1,6 @@
 /**
- * Copyright the Collabora Online contributors.
- * Copyright Gothel Software e.K.
- *
- * ***
- *
- * SPDX-License-Identifier: MPL-2.0
- *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ * Author: Sven Gothel <sgothel@jausoft.com>
+ * Copyright (c) 2021 Gothel Software e.K.
  *
  * ***
  *
@@ -23,7 +15,6 @@
 #ifndef JAU_STRING_CFMT_HPP_
 #define JAU_STRING_CFMT_HPP_
 
-#include <bits/types/wint_t.h>
 #include <sys/types.h>
 #include <cassert>
 #include <cerrno>

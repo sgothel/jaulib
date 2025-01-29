@@ -1,14 +1,6 @@
 /**
- * Copyright the Collabora Online contributors.
- * Copyright Gothel Software e.K.
- *
- * ***
- *
- * SPDX-License-Identifier: MPL-2.0
- *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ * Author: Sven Gothel <sgothel@jausoft.com>
+ * Copyright (c) 2024 Gothel Software e.K.
  *
  * ***
  *
@@ -23,7 +15,6 @@
 #ifndef JAU_STRING_CFMT2_HPP_
 #define JAU_STRING_CFMT2_HPP_
 
-#include <bits/types/wint_t.h>
 #include <sys/types.h>
 #include <cassert>
 #include <cerrno>
@@ -54,8 +45,8 @@
  *   removing safety concerns of the latter and benefit from its formatting and performance.
  * - Follows [C++ Reference](https://en.cppreference.com/w/cpp/io/c/fprintf)
  *
- * ### Type Conversion 
- * Implementation follows type conversion rules as described 
+ * ### Type Conversion
+ * Implementation follows type conversion rules as described
  * in [Variadic Default Conversion](https://en.cppreference.com/w/cpp/language/variadic_arguments#Default_conversions)
  *   - float to double promotion
  *   - bool, char, short, and unscoped enumerations are converted to int or wider integer types
@@ -64,8 +55,8 @@
  *   - void pointer tolerance
  *
  * ### Implementation Details
- * - Validates arguments against format string at compile time or runtime, 
- *   depending whether passed arguments are of constexpr nature (compile time).  
+ * - Validates arguments against format string at compile time or runtime,
+ *   depending whether passed arguments are of constexpr nature (compile time).
  * - Written in C++20 using template argument pack w/ save argument type checks
  * - Written as constexpr, capable to be utilized at compile-time.
  *
@@ -73,7 +64,7 @@
  *
  * The following conversion specifiers are supported:
  * - `c`, `s`, `d`, `o`, `x`, `X`, `u`, `f`, `e`, `E`, `a`, `A`, `g`, `G`, `p`
- * - Their synonyms 
+ * - Their synonyms
  *   - `i` -> `d`
  *   - `F` -> `f`
  * - Flags `-`, `+`, ` `, `0` and `#`
@@ -89,9 +80,9 @@
  * - 't' ptrdiff_t
  * - 'L' long double
  *
- * See [C++ Reference](https://en.cppreference.com/w/cpp/io/c/fprintf) for details. 
+ * See [C++ Reference](https://en.cppreference.com/w/cpp/io/c/fprintf) for details.
  *
- * ### Further Documentation 
+ * ### Further Documentation
  * - [C++ Reference](https://en.cppreference.com/w/cpp/io/c/fprintf)
  * - [Linux snprintf(3) man page](https://www.man7.org/linux/man-pages/man3/snprintf.3p.html)
  * - [FreeBSD snprintf(3) man page](https://man.freebsd.org/cgi/man.cgi?snprintf(3))
@@ -151,7 +142,7 @@ namespace jau::cfmt2 {
         template <typename T>
         class Parser;  // fwd
     }
-    
+
     struct PResult {
         const std::string_view fmt;
         const size_t pos;
@@ -160,14 +151,14 @@ namespace jau::cfmt2 {
         const pstate_t state;
         const plength_t length_mod;
         const bool precision_set;
-        
+
         template <size_t N>
         constexpr PResult(const char (&fmt_)[N]) noexcept
         : fmt(fmt_, N), pos(0), arg_count(0), line(0), state(pstate_t::outside), length_mod(plength_t::none), precision_set(false) { }
 
         constexpr PResult(const std::string_view fmt_) noexcept
         : fmt(fmt_), pos(0), arg_count(0), line(0), state(pstate_t::outside), length_mod(plength_t::none), precision_set(false) { }
-        
+
         constexpr PResult(const PResult &pre) noexcept = default;
 
         constexpr PResult &operator=(const PResult &x) noexcept = delete;
@@ -207,23 +198,23 @@ namespace jau::cfmt2 {
         friend class impl::Parser;
 
         constexpr PResult(const PResult &pre, size_t pos2) noexcept
-        : fmt(pre.fmt), pos(pos2), arg_count(pre.arg_count), line(pre.line), state(pre.state), length_mod(pre.length_mod), precision_set(pre.precision_set) {} 
-        
+        : fmt(pre.fmt), pos(pos2), arg_count(pre.arg_count), line(pre.line), state(pre.state), length_mod(pre.length_mod), precision_set(pre.precision_set) {}
+
         constexpr PResult(const PResult &pre, size_t pos2, ssize_t arg_count2) noexcept
         : fmt(pre.fmt), pos(pos2), arg_count(arg_count2), line(pre.line), state(pre.state), length_mod(pre.length_mod), precision_set(pre.precision_set) {}
-        
+
         constexpr PResult(const PResult &pre, pstate_t state2) noexcept
-        : fmt(pre.fmt), pos(pre.pos), arg_count(pre.arg_count), line(pre.line), state(state2), length_mod(pre.length_mod), precision_set(pre.precision_set) {} 
-        
+        : fmt(pre.fmt), pos(pre.pos), arg_count(pre.arg_count), line(pre.line), state(state2), length_mod(pre.length_mod), precision_set(pre.precision_set) {}
+
         constexpr PResult(const PResult &pre, pstate_t state2, size_t pos2) noexcept
-        : fmt(pre.fmt), pos(pos2), arg_count(pre.arg_count), line(pre.line), state(state2), length_mod(pre.length_mod), precision_set(pre.precision_set) {} 
-        
+        : fmt(pre.fmt), pos(pos2), arg_count(pre.arg_count), line(pre.line), state(state2), length_mod(pre.length_mod), precision_set(pre.precision_set) {}
+
         constexpr PResult(const PResult &pre, pstate_t state2, size_t pos2, ssize_t arg_count2, int line2) noexcept
-        : fmt(pre.fmt), pos(pos2), arg_count(arg_count2), line(line2), state(state2), length_mod(pre.length_mod), precision_set(pre.precision_set) {} 
-         
+        : fmt(pre.fmt), pos(pos2), arg_count(arg_count2), line(line2), state(state2), length_mod(pre.length_mod), precision_set(pre.precision_set) {}
+
         constexpr PResult(const PResult &pre, plength_t length_mod2, bool precision_set2) noexcept
-        : fmt(pre.fmt), pos(pre.pos), arg_count(pre.arg_count), line(pre.line), state(pre.state), length_mod(length_mod2), precision_set(precision_set2) {} 
-        
+        : fmt(pre.fmt), pos(pre.pos), arg_count(pre.arg_count), line(pre.line), state(pre.state), length_mod(length_mod2), precision_set(precision_set2) {}
+
         constexpr PResult nextSymbol() const noexcept {
             if( pos < fmt.length() - 1 ) {
                 return PResult(*this, pos+1);
@@ -297,9 +288,9 @@ namespace jau::cfmt2 {
                 if( !pc2.hasNext() ) {
                     return pc2; // done
                 }
-                
+
                 // pstate_t::outside != _state
-                
+
                 /* skip '%' or previous `*` */
                 const PResult pc3 = pc2.nextSymbol();
 
@@ -319,7 +310,7 @@ namespace jau::cfmt2 {
             }
 
           private:
-            
+
             static constexpr const PResult parseP2(const PResult pc) noexcept {
                 if( pstate_t::field_width == pc.state ) {
                     /* parse precision */
@@ -339,7 +330,7 @@ namespace jau::cfmt2 {
                     return parseP3(pc);
                 }
             }
-            
+
             static constexpr const PResult parseP3(const PResult pc) noexcept {
                 const PResult pc2 = parseLengthMods(pc);
                 if( pc2.error() ) {
@@ -358,7 +349,7 @@ namespace jau::cfmt2 {
                 }
                 return PResult(pc4.nextSymbol(), plength_t::none, false); // clear length_mod and precision_set
             }
-          
+
             static constexpr const PResult parseFlags(const PResult pc) noexcept {
                 switch( pc.sym() ) {
                     case '0':  break;
@@ -380,8 +371,8 @@ namespace jau::cfmt2 {
                 if( !pc.hasNext() || !isDigit(pc.sym()) ) { return pc; }
                 return parseDigit( pc.nextSymbol() );
             }
-            
-            /* parse field width, returns true if parsing can continue or false if next argument is required or error */            
+
+            /* parse field width, returns true if parsing can continue or false if next argument is required or error */
             static constexpr const PResult parseFieldWidth(const PResult pc, bool& next_arg) noexcept {
                 next_arg = false;
                 if( pc.sym() == '*' ) {
@@ -401,13 +392,13 @@ namespace jau::cfmt2 {
                     return pc3; // next argument is required
                 } else {
                     // continue with current argument
-                    return parseDigit(pc);                    
+                    return parseDigit(pc);
                 }
             }
 
-            /* parse precision, returns true if parsing can continue or false if next argument is required or error */            
+            /* parse precision, returns true if parsing can continue or false if next argument is required or error */
             static constexpr const PResult parsePrecision(const PResult pc, bool &next_arg) noexcept {
-                next_arg = false;                
+                next_arg = false;
                 if( !pc.hasNext() ) { return pc; }
                 const PResult pc2 = pc.nextSymbol();
                 const char c = pc.fmt[pc.pos];
@@ -428,7 +419,7 @@ namespace jau::cfmt2 {
                     return pc4;  // next argument is required
                 } else {
                     // continue with current argument
-                    return parseDigit(pc2);                    
+                    return parseDigit(pc2);
                 }
             }
 
@@ -468,7 +459,7 @@ namespace jau::cfmt2 {
                     return PResult(pc, plength_t::none, pc.precision_set);
                 }
             }
-            
+
             static constexpr const PResult parseFmtSpec(const PResult pc) noexcept {
                 const char fmt_literal = unaliasFmtSpec( pc.sym() );
 
@@ -506,7 +497,7 @@ namespace jau::cfmt2 {
                     default:  return fmt_literal;
                 }
             }
-            
+
             static constexpr const PResult parseStringFmtSpec(const PResult pc, const char fmt_literal) noexcept {
                 if constexpr( std::is_same_v<no_type_t, T> ) {
                     return pc.setError(__LINE__);
@@ -559,7 +550,7 @@ namespace jau::cfmt2 {
                 }
                 return pc;
             }
-            
+
             static constexpr const PResult parseAPointerFmtSpec(const PResult pc) noexcept {
                 const PResult pc2 = PResult(pc, plength_t::none, pc.precision_set);
                 if constexpr( std::is_same_v<no_type_t, T> ) {
@@ -571,7 +562,7 @@ namespace jau::cfmt2 {
                 }
                 return pc3;
             }
-            
+
             static constexpr const PResult parseSignedFmtSpec(const PResult pc) noexcept {
                 if constexpr( std::is_same_v<no_type_t, T> ) {
                     return pc.setError(__LINE__);
@@ -628,7 +619,7 @@ namespace jau::cfmt2 {
                 }
                 return pc2;
             }
-            
+
             static constexpr const PResult parseUnsignedFmtSpec(const PResult pc, const char /*fmt_literal*/) noexcept {
                 if constexpr( std::is_same_v<no_type_t, T> ) {
                     return pc.setError(__LINE__);
@@ -687,7 +678,7 @@ namespace jau::cfmt2 {
                 }
                 return pc2;
             }
-            
+
             static constexpr const PResult parseFloatFmtSpec(const PResult pc, const char /*fmt_literal*/) noexcept {
                 if constexpr( std::is_same_v<no_type_t, T> ) {
                     return pc.setError(__LINE__);
@@ -722,7 +713,7 @@ namespace jau::cfmt2 {
         constexpr const PResult checkRec(const PResult ctx) noexcept {
             return Parser<no_type_t>::parseOne(ctx);
         }
-        
+
         template <typename Targ, typename... Tnext>
         constexpr const PResult checkRec(const PResult ctx) noexcept {
             if constexpr( 0 < sizeof...(Tnext) ) {
@@ -749,7 +740,7 @@ namespace jau::cfmt2 {
     constexpr bool check(const std::string_view fmt, const Targs &...) noexcept {
         return !impl::checkRec<Targs...>( PResult(fmt) ).error();
     }
-    
+
     /**
      * Strict type validation of arguments against the format string.
      *
@@ -764,7 +755,7 @@ namespace jau::cfmt2 {
     constexpr bool check2(const std::string_view fmt) noexcept {
         return !impl::checkRec<Targs...>( PResult(fmt) ).error();
     }
-    
+
     /**
      * Strict type validation of arguments against the format string.
      *

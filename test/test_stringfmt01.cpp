@@ -1,14 +1,6 @@
 /**
- * Copyright the Collabora Online contributors.
- * Copyright Gothel Software e.K.
- *
- * ***
- *
- * SPDX-License-Identifier: MPL-2.0
- *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ * Author: Sven Gothel <sgothel@jausoft.com>
+ * Copyright (c) 2024 Gothel Software e.K.
  *
  * ***
  *
@@ -317,7 +309,9 @@ TEST_CASE("jau::cfmt_00", "[jau][std::string][jau::cfmt]") {
         static_assert(true == jau::cfmt::check("unsigned int -> unsigned int %u", (unsigned int)1));
         static_assert(true == jau::cfmt::check("         int -> unsigned int %u", 1));
         static_assert(true == jau::cfmt::check("        char -> int %d", (char)1)); // integral target type > given type
-        static_assert(false == jau::cfmt::check(" error long -> int %d", (long)1)); // error: integral target type < given type
+        #if !defined(__EMSCRIPTEN__)
+            static_assert(false == jau::cfmt::check(" error long -> int %d", (long)1)); // error: integral target type < given type
+        #endif
 
         static_assert(true == jau::cfmt::check(" %d", i));
         static_assert(true == jau::cfmt::check(" %f", fa));
@@ -346,7 +340,9 @@ TEST_CASE("jau::cfmt_00", "[jau][std::string][jau::cfmt]") {
         static_assert(0 > jau::cfmt::checkR("Hello World %").argCount());
         static_assert(0 > jau::cfmt::checkR("Hello 1 %d").argCount());
         static_assert(-1 == jau::cfmt::checkR("Hello 1 %d", fa).argCount());
-        static_assert(-1 == jau::cfmt::checkR("Hello 1 %d", sz1).argCount());
+        #if !defined(__EMSCRIPTEN__)
+            static_assert(-1 == jau::cfmt::checkR("Hello 1 %d", sz1).argCount());
+        #endif
         static_assert(-6 == jau::cfmt::checkR("Hello 1 %.2f, 2 %2.2f, 3 %zu, 4 %" PRIi64 ", 5 %03d, 6 %p - end",
                                               fa, fb, sz1, sz2, i, i).argCount());
         static_assert(false == jau::cfmt::check("Hello 1 %.2f, 2 %2.2f, 3 %zu, 4 %" PRIi64 ", 5 %03d, 6 %p - end",
