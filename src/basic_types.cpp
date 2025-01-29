@@ -54,10 +54,6 @@ void jau::zero_bytes_sec(void *s, size_t n) noexcept __attrdef_no_optimize__
     // ::memset(s, 0, n);
 }
 
-static constexpr const uint64_t NanoPerMilli =  1000'000UL;
-static constexpr const uint64_t MilliPerOne  =     1'000UL;
-inline constexpr const uint64_t NanoPerOne = NanoPerMilli*MilliPerOne;
-
 /**
  * See <http://man7.org/linux/man-pages/man2/clock_gettime.2.html>
  * <p>
@@ -79,10 +75,12 @@ fraction_timespec jau::getWallClockTime() noexcept {
 }
 
 uint64_t jau::getCurrentMilliseconds() noexcept {
+    constexpr uint64_t ms_per_sec =         1'000UL;
+    constexpr uint64_t ns_per_ms  =     1'000'000UL;
     struct timespec t { 0, 0 };
     ::clock_gettime(CLOCK_MONOTONIC, &t);
-    return static_cast<uint64_t>( t.tv_sec ) * MilliPerOne +
-           static_cast<uint64_t>( t.tv_nsec ) / NanoPerMilli;
+    return static_cast<uint64_t>( t.tv_sec ) * ms_per_sec +
+           static_cast<uint64_t>( t.tv_nsec ) / ns_per_ms;
 }
 
 uint64_t jau::getWallClockSeconds() noexcept {
@@ -320,9 +318,12 @@ fraction_timespec fraction_timespec::from(const std::string_view datestr, int64_
 }
 
 bool jau::milli_sleep(uint64_t td_ms, const bool ignore_irq) noexcept {
-    const int64_t td_ns_0 = static_cast<int64_t>( (td_ms * NanoPerMilli) % NanoPerOne );
+    constexpr uint64_t ms_per_sec =         1'000UL;
+    constexpr uint64_t ns_per_ms  =     1'000'000UL;
+    constexpr uint64_t ns_per_sec = 1'000'000'000UL;;
+    const int64_t td_ns_0 = static_cast<int64_t>( (td_ms * ns_per_ms) % ns_per_sec );
     struct timespec ts;
-    ts.tv_sec = static_cast<decltype(ts.tv_sec)>(td_ms/MilliPerOne); // signed 32- or 64-bit integer
+    ts.tv_sec = static_cast<decltype(ts.tv_sec)>(td_ms/ms_per_sec); // signed 32- or 64-bit integer
     ts.tv_nsec = td_ns_0;
     int res;
     do {
