@@ -1070,6 +1070,46 @@ namespace jau {
                 return count;
             }
 
+            /**
+             * Erase either the first matching element or all matching elements.
+             * <p>
+             * This write operation uses a mutex lock and is blocking this instances' write operations only.
+             * </p>
+             * <p>
+             * Examples
+             * <pre>
+             *     cow_darray<Thing> list;
+             *     int count = list.erase_if(true,
+             *                    [&element](const Thing &a) -> bool { return a == element; });
+             * </pre>
+             * </p>
+             * @param all_matching if true, erase all matching elements, otherwise only the first matching element.
+             * @param p the unary predicate test to return true if given elements shall be erased
+             * @return number of erased elements
+             */
+            template<class UnaryPredicate>
+            constexpr_atomic
+            size_type erase_if(const bool all_matching, UnaryPredicate p) {
+                size_type count = 0;
+
+                iterator it = begin(); // lock mutex and copy_store
+                while( !it.is_end() ) {
+                    if( p( *it ) ) {
+                        it.erase();
+                        ++count;
+                        if( !all_matching ) {
+                            break;
+                        }
+                    } else {
+                        ++it;
+                    }
+                }
+                if( 0 < count ) {
+                    it.write_back();
+                }
+                return count;
+            }
+
             std::string toString() const noexcept {
                 std::string res("{ " + std::to_string( size() ) + ": ");
                 int i=0;

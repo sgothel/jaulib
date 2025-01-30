@@ -1336,6 +1336,35 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                 return count;
             }
 
+            /**
+             * Erase either the first matching element or all matching elements.
+             * <p>
+             * Examples
+             * <pre>
+             *     darray<Thing> list;
+             *     int count = list.erase_if(true,
+             *                    [&element](const Thing &a) -> bool { return a == element; });
+             * </pre>
+             * </p>
+             * @param all_matching if true, erase all matching elements, otherwise only the first matching element.
+             * @param p the unary predicate test to return true if given elements shall be erased
+             * @return number of erased elements
+             */
+             template<class UnaryPredicate>
+             constexpr size_type erase_if(const bool all_matching, UnaryPredicate p) {
+                size_type count = 0;
+                for(auto it = end_-1; begin_ <= it; --it) {
+                    if( p( *it ) ) {
+                        erase(it);
+                        ++count;
+                        if( !all_matching ) {
+                            break;
+                        }
+                    }
+                }
+                return count;
+            }
+
             std::string toString() const noexcept {
                 std::string res("{ " + std::to_string( size() ) + "/" + std::to_string( capacity() ) + ": ");
                 int i=0;
