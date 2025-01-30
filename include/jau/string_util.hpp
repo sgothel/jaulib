@@ -50,6 +50,10 @@ namespace jau {
      *  @{
      */
 
+    inline bool is_ascii_code(int c) noexcept {
+        return 0 != std::iscntrl(c) || 0 != std::isprint(c);
+    }
+
     /**
      * Returns a C++ String taken from buffer with maximum length of min(max_len, max_len).
      * <p>
