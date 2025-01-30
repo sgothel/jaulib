@@ -209,7 +209,7 @@ namespace jau::math {
             return *this;
         }
 
-        std::string toString() const noexcept { return std::to_string(x)+" / "+std::to_string(y); }
+        std::string toString() const noexcept { return std::to_string(x)+", "+std::to_string(y); }
 
         constexpr bool is_zero() const noexcept {
             return jau::is_zero(x) && jau::is_zero(y);

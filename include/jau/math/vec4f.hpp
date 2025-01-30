@@ -196,7 +196,7 @@ namespace jau::math {
             constexpr Vector4F& operator/=(const value_type s ) noexcept
             { x/=s; y/=s; z/=s; w/=s; return *this; }
 
-            std::string toString() const noexcept { return std::to_string(x) + " / " + std::to_string(y) + " / " + std::to_string(z) + " / " + std::to_string(w); }
+            std::string toString() const noexcept { return std::to_string(x) + ", " + std::to_string(y) + ", " + std::to_string(z) + ", " + std::to_string(w); }
 
             constexpr bool is_zero() const noexcept {
                 return jau::is_zero(x) && jau::is_zero(y) && jau::is_zero(z) && jau::is_zero(w);

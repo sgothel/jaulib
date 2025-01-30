@@ -27,6 +27,7 @@
 #include <iostream>
 
 #include <jau/int_math.hpp>
+#include <jau/math/vec2i.hpp>
 
 namespace jau::math {
 
@@ -37,7 +38,7 @@ namespace jau::math {
 
     /**
      * Rectangle with x, y, width and height value_type components.
-     * 
+     *
      * Component and overall alignment is natural as sizeof(value_type),
      * i.e. sizeof(value_type) == alignof(value_type)
      */
@@ -56,13 +57,13 @@ namespace jau::math {
 
         /** value alignment is sizeof(value_type) */
         constexpr static int value_alignment = sizeof(value_type);
-        
+
         /** Number of value_type components  */
         constexpr static const size_t components = 4;
-        
+
         /** Size in bytes with value_alignment */
         constexpr static const size_t byte_size = components * sizeof(value_type);
-        
+
       private:
         value_type m_x;
         value_type m_y;
@@ -75,6 +76,10 @@ namespace jau::math {
 
         constexpr RectI(const value_type xywh[/*4*/]) noexcept{
             set(xywh);
+        }
+
+        constexpr RectI(const Vector2I<value_type>& pos, const Vector2I<value_type>& size) noexcept {
+            set(pos, size);
         }
 
         constexpr RectI(const value_type x, const value_type y, const value_type width, const value_type height) noexcept {
@@ -99,6 +104,9 @@ namespace jau::math {
             return ...
         } */
 
+        constexpr RectI& set(const Vector2I<value_type>& pos, const Vector2I<value_type>& size) noexcept
+        { m_x = pos.x; m_y = pos.y; m_width = size.x; m_height= size.y; return *this; }
+
         /** this = { x, y, width, height }, returns this. */
         constexpr RectI& set(const value_type x, const value_type y, const value_type width, const value_type height) noexcept
         { m_x = x; m_y = y; m_width = width; m_height= height; return *this; }
@@ -115,11 +123,15 @@ namespace jau::math {
         constexpr value_type y() const noexcept { return m_y; }
         constexpr value_type width() const noexcept { return m_width; }
         constexpr value_type height() const noexcept { return m_height; }
+        constexpr Vector2I<value_type> getPosition() const noexcept { return Vector2I<value_type>(m_x, m_y); }
+        constexpr Vector2I<value_type> getSize() const noexcept { return Vector2I<value_type>(m_width, m_height); }
 
         constexpr void setX(const value_type x) noexcept { m_x = x; }
         constexpr void setY(const value_type y) noexcept { m_y = y; }
         constexpr void setWidth(const value_type width) noexcept { m_width = width; }
         constexpr void setHeight(const value_type height) noexcept { m_height = height; }
+        constexpr void setPosition(const Vector2I<value_type>& pos) noexcept { m_x = pos.x; m_y = pos.y; }
+        constexpr void setSize(const Vector2I<value_type>& size) noexcept { m_width = size.x; m_height = size.y; }
 
         /** Return true if area is zero. */
         constexpr bool is_zero() const noexcept {
@@ -127,7 +139,7 @@ namespace jau::math {
         }
 
         std::string toString() const noexcept
-        { return std::to_string(m_x)+" / "+std::to_string(m_y)+" "+std::to_string(m_width)+" x "+std::to_string(m_height); }
+        { return std::to_string(m_x)+"/"+std::to_string(m_y)+" "+std::to_string(m_width)+"x"+std::to_string(m_height); }
     };
 
     template<typename T,
