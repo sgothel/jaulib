@@ -27,7 +27,7 @@ macro(JaulibPreset)
         set (JAU_CMAKE_ENFORCE_PRESETS $ENV{JAU_CMAKE_ENFORCE_PRESETS})
         message(STATUS "JaulibPreset: JAU_CMAKE_ENFORCE_PRESETS -> ${JAU_CMAKE_ENFORCE_PRESETS} (env)")
     endif()
-    if( JAU_CMAKE_ENFORCE_PRESETS OR 
+    if( JAU_CMAKE_ENFORCE_PRESETS OR
         ( (NOT DEFINED CMAKE_INSTALL_PREFIX) AND (NOT DEFINED CMAKE_CXX_CLANG_TIDY) ) )
         message(STATUS "JaulibPreset: Enforcing hardcoded CMake Presets!")
         if(JAU_CMAKE_ENFORCE_PRESETS)
@@ -42,7 +42,7 @@ macro(JaulibPreset)
             message(STATUS "JaulibPreset: Parallel build: Consider setting environment variable CMAKE_BUILD_PARALLEL_LEVEL.")
         endif()
         #
-        # Defaulting presets: clang, clang-tidy, C++20, CMAKE_BUILD_TYPE, +testing
+        # Defaulting presets: clang, clang-tidy, C++20, CMAKE_BUILD_TYPE, -testing
         #
         if( (NOT DEFINED CMAKE_INSTALL_PREFIX) )
             set(JAU_CMAKE_OVERRIDE_INSTALL_PREFIX ON)
@@ -57,7 +57,7 @@ macro(JaulibPreset)
             message(STATUS "JaulibPreset: Setting CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE}")
         endif()
         if( (NOT DEFINED BUILD_TESTING) )
-            set(BUILD_TESTING ON CACHE STRING "" FORCE)
+            set(BUILD_TESTING OFF CACHE STRING "" FORCE)
             message(STATUS "JaulibPreset: Setting BUILD_TESTING ${BUILD_TESTING}")
         endif()
         if(NOT DEFINED CMAKE_CXX_COMPILER)
@@ -66,13 +66,13 @@ macro(JaulibPreset)
             set(CMAKE_CXX_COMPILER "clang++" CACHE STRING "" FORCE)
             message(STATUS "JaulibPreset: Setting CMAKE_CXX_COMPILER ${CMAKE_CXX_COMPILER}")
         endif()
-        if( (NOT DEFINED CMAKE_CXX_CLANG_TIDY) 
+        if( (NOT DEFINED CMAKE_CXX_CLANG_TIDY)
             AND
-            ( (CMAKE_CXX_COMPILER_ID STREQUAL "Clang") 
-              OR 
-              (CMAKE_CXX_COMPILER STREQUAL "clang++") 
-            ) 
-          ) 
+            ( (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+              OR
+              (CMAKE_CXX_COMPILER STREQUAL "clang++")
+            )
+          )
             set(CMAKE_CXX_CLANG_TIDY "clang-tidy;-p;${CMAKE_BINARY_DIR}" CACHE STRING "" FORCE)
             message(STATUS "JaulibPreset: Setting CMAKE_CXX_CLANG_TIDY ${CMAKE_CXX_CLANG_TIDY}")
         endif()
@@ -325,7 +325,7 @@ message(STATUS "JaulibSetup: USE_STRIP = ${USE_STRIP} (final)")
 
 set(${PROJECT_NAME}_C_FLAGS ${${PROJECT_NAME}_CXX_FLAGS})
 
-# 
+#
 # CXX_FLAGS mods
 #
 if(DONT_USE_RTTI)
@@ -533,7 +533,7 @@ if ((NOT DEFINED BUILDJAVA) AND TRY_JAVA)
     find_package(Java 11)
     find_package(JNI)
     include(UseJava)
-    if(Java_FOUND) 
+    if(Java_FOUND)
         message (STATUS "JaulibSetup: TRY_JAVA Java: ${Java_VERSION} or '${Java_VERSION_STRING}'")
     else (Java_FOUND)
         message (STATUS "JaulibSetup: TRY_JAVA Java not found")
@@ -544,7 +544,7 @@ if ((NOT DEFINED BUILDJAVA) AND TRY_JAVA)
     else (JNI_FOUND)
         message (STATUS "JaulibSetup: TRY_JAVA JNI not found")
     endif (JNI_FOUND)
-    if(Java_FOUND AND JNI_FOUND) 
+    if(Java_FOUND AND JNI_FOUND)
         set(BUILDJAVA ON CACHE BOOL "" FORCE)
     else()
         set(BUILDJAVA OFF CACHE BOOL "" FORCE)
@@ -566,7 +566,7 @@ IF(BUILDJAVA)
     find_package(JNI REQUIRED)
     include(UseJava)
 
-    if(Java_FOUND) 
+    if(Java_FOUND)
         message (STATUS "JaulibSetup: Java: ${Java_VERSION} or '${Java_VERSION_STRING}'")
     else (Java_FOUND)
         message (STATUS "JaulibSetup: Error: Java not found")
