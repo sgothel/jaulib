@@ -617,8 +617,8 @@ namespace jau::enums {
 
 #define JAU_APPEND_BITSTR(U,V,M) jau::enums::append_bitstr(out, M, U::V, #V, comma);
 
-#define JAU_MAKE_BITFIELD_ENUM_STRING(type, ...)              \
-    JAU_MAKE_ENUM_STRING_SUB(type, type, __VA_ARGS__)         \
+#define JAU_MAKE_BITFIELD_ENUM_STRING(type, ...)            \
+    JAU_MAKE_ENUM_STRING_SUB(type, type, __VA_ARGS__)       \
                                                             \
     inline std::string                                      \
     to_string(const type mask) {                            \
@@ -629,8 +629,8 @@ namespace jau::enums {
         return out;                                         \
     }                                                       \
 
-#define JAU_MAKE_BITFIELD_ENUM_STRING2(type, stype, ...)      \
-    JAU_MAKE_ENUM_STRING_SUB(type, stype, __VA_ARGS__)        \
+#define JAU_MAKE_BITFIELD_ENUM_STRING2(type, stype, ...)    \
+    JAU_MAKE_ENUM_STRING_SUB(type, stype, __VA_ARGS__)      \
                                                             \
     inline std::string                                      \
     to_string(const type mask) {                            \

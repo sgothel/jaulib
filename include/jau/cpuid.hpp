@@ -89,7 +89,7 @@ namespace jau::cpu {
         wasm64 = 61
 
     };
-    JAU_MAKE_BITFIELD_ENUM_STRING(cpu_family_t, arm32, arm64, x86_32, x86_64, ia64, ppc32, ppc64, sparc32, sparc64, mips32, mips64, superh32, superh64, wasm32, wasm64);
+    JAU_MAKE_ENUM_STRING(cpu_family_t, arm32, arm64, x86_32, x86_64, ia64, ppc32, ppc64, sparc32, sparc64, mips32, mips64, superh32, superh64, wasm32, wasm64);
 
     enum class arm32_hwcap1_t : uint64_t {
         none         = 0,
