@@ -391,8 +391,8 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                     set_iterator(new_storage, size(), new_capacity);
                 } else {
                     pointer new_storage = allocStore(new_capacity);
-                    ::memmove(voidptr_cast(new_storage),
-                              begin_, (uint8_t*)end_-(uint8_t*)begin_); // we can simply copy the memory over, also no overlap
+                    ::memcpy(voidptr_cast(new_storage),
+                             begin_, (uint8_t*)end_-(uint8_t*)begin_); // we can simply copy the memory over, also no overlap
                     freeStore();
                     set_iterator(new_storage, size(), new_capacity);
                 }
