@@ -821,6 +821,53 @@ namespace jau {
     }
 
     /**
+     * Put the given int16_t value into the given byte address
+     * using \ref packed_t to resolve a potential memory alignment issue *free of costs*.
+     *
+     * @see \ref packed_t_alignment_cast
+     */
+    constexpr void put_int16(uint8_t * buffer, const int16_t v) noexcept
+    {
+        pointer_cast<packed_t<int16_t>*>( buffer )->store = v;
+    }
+    /**
+     * Put the given uint16_t value into the given byte address
+     * using \ref packed_t to resolve a potential memory alignment issue *free of costs*.
+     *
+     * The value is converted from lb_endian::native to either lb_endian::little or lb_endian::big depending on given `byte_order`
+     * before it is stored in memory.
+     *
+     * @see \ref packed_t_alignment_cast
+     */
+    constexpr void put_int16(uint8_t * buffer, const int16_t v, const lb_endian_t byte_order) noexcept
+    {
+        pointer_cast<packed_t<int16_t>*>( buffer )->store = is_little_endian(byte_order) ? cpu_to_le(v) : cpu_to_be(v);
+    }
+    /**
+     * Returns a int16_t value from the given byte address
+     * using \ref packed_t to resolve a potential memory alignment issue *free of costs*.
+     *
+     * @see \ref packed_t_alignment_cast
+     */
+    constexpr int16_t get_int16(uint8_t const * buffer) noexcept
+    {
+        return pointer_cast<const packed_t<int16_t>*>( buffer )->store;
+    }
+    /**
+     * Returns a int16_t value from the given byte address
+     * using \ref packed_t to resolve a potential memory alignment issue *free of costs*.
+     *
+     * The value is converted from either lb_endian::little or lb_endian::big depending on given `byte_order`
+     * to lb_endian::native before it is returned to the caller.
+     *
+     * @see \ref packed_t_alignment_cast
+     */
+    constexpr int16_t get_int16(uint8_t const * buffer, const lb_endian_t byte_order) noexcept
+    {
+        return get_packed_value(pointer_cast<const packed_t<int16_t>*>( buffer ), byte_order);
+    }
+
+    /**
      * See put_uint16() for reference.
      * @see \ref packed_t_alignment_cast
      */
@@ -854,6 +901,39 @@ namespace jau {
     }
 
     /**
+     * See put_int16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
+    constexpr void put_int32(uint8_t * buffer, const int32_t v) noexcept
+    {
+        pointer_cast<packed_t<int32_t>*>( buffer )->store = v;
+    }
+    /**
+     * See put_int16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
+    constexpr void put_int32(uint8_t * buffer, const int32_t v, const lb_endian_t byte_order) noexcept
+    {
+        pointer_cast<packed_t<int32_t>*>( buffer )->store = is_little_endian(byte_order) ? cpu_to_le(v) : cpu_to_be(v);
+    }
+    /**
+     * See get_int16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
+    constexpr int32_t get_int32(uint8_t const * buffer) noexcept
+    {
+        return pointer_cast<const packed_t<int32_t>*>( buffer )->store;
+    }
+    /**
+     * See get_int16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
+    constexpr int32_t get_int32(uint8_t const * buffer, const lb_endian_t byte_order) noexcept
+    {
+        return get_packed_value(pointer_cast<const packed_t<int32_t>*>( buffer ), byte_order);
+    }
+
+    /**
      * See put_uint16() for reference.
      * @see \ref packed_t_alignment_cast
      */
@@ -884,6 +964,39 @@ namespace jau {
     constexpr uint64_t get_uint64(uint8_t const * buffer, const lb_endian_t byte_order) noexcept
     {
         return get_packed_value(pointer_cast<const packed_t<uint64_t>*>( buffer ), byte_order);
+    }
+
+    /**
+     * See put_int16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
+    constexpr void put_int64(uint8_t * buffer, const int64_t & v) noexcept
+    {
+        pointer_cast<packed_t<int64_t>*>( buffer )->store = v;
+    }
+    /**
+     * See put_int16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
+    constexpr void put_int64(uint8_t * buffer, const int64_t & v, const lb_endian_t byte_order) noexcept
+    {
+        pointer_cast<packed_t<int64_t>*>( buffer )->store = is_little_endian(byte_order) ? cpu_to_le(v) : cpu_to_be(v);
+    }
+    /**
+     * See get_int16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
+    constexpr int64_t get_int64(uint8_t const * buffer) noexcept
+    {
+        return pointer_cast<const packed_t<int64_t>*>( buffer )->store;
+    }
+    /**
+     * See get_int16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
+    constexpr int64_t get_int64(uint8_t const * buffer, const lb_endian_t byte_order) noexcept
+    {
+        return get_packed_value(pointer_cast<const packed_t<int64_t>*>( buffer ), byte_order);
     }
 
     /**
