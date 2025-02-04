@@ -30,6 +30,7 @@
 #include <string>
 #include <cstring>
 #include <ostream>
+#include <jau/packed_attribute.hpp>
 
 namespace jau {
 
@@ -704,36 +705,6 @@ namespace jau {
     }
 
     /**
-     * C++20 `bit_cast<>(arg)` implementation for C++17.
-     * <p>
-     * Functional if is_builtin_bit_cast_available() evaluates `true`.
-     * </p>
-     * @tparam Dest the target type
-     * @tparam Source the source argument type
-     * @param src the value to convert to Dest type
-     * @return the converted Dest type value
-     * @see jau::has_builtin_bit_cast
-     * @see is_builtin_bit_cast_available()
-     * @see pointer_cast()
-     */
-    template <class Dest, class Source>
-    constexpr
-    typename std::enable_if_t<
-        sizeof(Dest) == sizeof(Source) &&
-        std::is_trivially_copyable_v<Dest> &&
-        std::is_trivially_copyable_v<Source>,
-        Dest>
-    bit_cast(const Source& src) noexcept
-    {
-        if constexpr ( has_builtin_bit_cast() ) {
-            return __builtin_bit_cast(Dest, src);
-        } else {
-            (void)src;
-            return 0;
-        }
-    }
-
-    /**
      * A `constexpr` pointer cast implementation for C++17,
      * inspired by C++20 `bit_cast<>(arg)`.
      * <p>
@@ -765,6 +736,35 @@ namespace jau {
         } else {
             // not 'really' constexpr .. oops, working though
             return reinterpret_cast<Dest>( const_cast< std::remove_const_t< std::remove_pointer_t<Source> >* >( src ) );
+        }
+    }
+
+    /**
+     * C++20 `bit_cast<>(arg)` implementation for C++17.
+     * <p>
+     * Utilizing native bit_cast if is_builtin_bit_cast_available(), otherwise `pointer_cast<const packed_t<Dest>*>( &src )->store`.
+     * </p>
+     * @tparam Dest the target type
+     * @tparam Source the source argument type
+     * @param src the value to convert to Dest type
+     * @return the converted Dest type value
+     * @see jau::has_builtin_bit_cast
+     * @see is_builtin_bit_cast_available()
+     * @see pointer_cast()
+     */
+    template <class Dest, class Source>
+    constexpr
+    typename std::enable_if_t<
+        sizeof(Dest) == sizeof(Source) &&
+        std::is_trivially_copyable_v<Dest> &&
+        std::is_trivially_copyable_v<Source>,
+        Dest>
+    bit_cast(const Source& src) noexcept
+    {
+        if constexpr ( has_builtin_bit_cast() ) {
+            return __builtin_bit_cast(Dest, src);
+        } else {
+            return pointer_cast<const packed_t<Dest>*>( &src )->store;
         }
     }
 

@@ -78,6 +78,8 @@ namespace jau {
      *
      * packed_t is used in \ref ByteUtils.
      *
+     * packet_t is also used to implement pre C++20 jau::bit_cast
+     *
      * @anchor packed_t_alignment_cast
      * Background for using packed_t:
      *
