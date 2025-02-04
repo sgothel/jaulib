@@ -27,18 +27,20 @@
 
 #include <string>
 #include <cstdint>
-#include <functional>
 #include <thread>
 
 #include <jau/basic_types.hpp>
 #include <jau/ringbuffer.hpp>
 #include <jau/file_util.hpp>
+#include <jau/enum_util.hpp>
 
 #include <jau/io_util.hpp>
 
 using namespace jau::fractions_i64_literals;
 
 namespace jau::io {
+
+    using namespace jau::enums;
 
     /** \addtogroup IOUtils
      *
@@ -69,40 +71,7 @@ namespace jau::io {
       /** Input or output operation failed due to timeout. */
       timeout = 1U << 3
     };
-    constexpr uint32_t number(const iostate rhs) noexcept {
-        return static_cast<uint32_t>(rhs);
-    }
-    constexpr iostate operator ~(const iostate rhs) noexcept {
-        return static_cast<iostate> ( ~number(rhs) );
-    }
-    constexpr iostate operator ^(const iostate lhs, const iostate rhs) noexcept {
-        return static_cast<iostate> ( number(lhs) ^ number(rhs) );
-    }
-    constexpr iostate operator |(const iostate lhs, const iostate rhs) noexcept {
-        return static_cast<iostate> ( number(lhs) | number(rhs) );
-    }
-    constexpr iostate operator &(const iostate lhs, const iostate rhs) noexcept {
-        return static_cast<iostate> ( number(lhs) & number(rhs) );
-    }
-    constexpr iostate& operator |=(iostate& lhs, const iostate rhs) noexcept {
-        lhs = static_cast<iostate> ( number(lhs) | number(rhs) );
-        return lhs;
-    }
-    constexpr iostate& operator &=(iostate& lhs, const iostate rhs) noexcept {
-        lhs = static_cast<iostate> ( number(lhs) & number(rhs) );
-        return lhs;
-    }
-    constexpr iostate& operator ^=(iostate& lhs, const iostate rhs) noexcept {
-        lhs = static_cast<iostate> ( number(lhs) ^ number(rhs) );
-        return lhs;
-    }
-    constexpr bool operator ==(const iostate lhs, const iostate rhs) noexcept {
-        return number(lhs) == number(rhs);
-    }
-    constexpr bool operator !=(const iostate lhs, const iostate rhs) noexcept {
-        return !( lhs == rhs );
-    }
-    std::string to_string(const iostate mask) noexcept;
+    JAU_MAKE_BITFIELD_ENUM_STRING(iostate, goodbit, badbit, eofbit, failbit, timeout);
 
     /**
      * Supporting std::basic_ios's iostate functionality for all ByteInStream implementations.

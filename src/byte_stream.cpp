@@ -26,8 +26,6 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <chrono>
-
 // #include <botan_all.h>
 
 #include <jau/cpuid.hpp>
@@ -150,32 +148,6 @@ std::string ByteInStream_SecMemory::to_string() const noexcept {
                             ", available "+jau::to_decstring(m_source.size()-m_offset)+
                             ", iostate["+jau::io::to_string(rdstate())+
                             "]]";
-}
-
-template<typename T>
-static void append_bitstr(std::string& out, T mask, T bit, const std::string& bitstr, bool& comma) {
-    if( bit == ( mask & bit ) ) {
-        if( comma ) { out.append(", "); }
-        out.append(bitstr); comma = true;
-    }
-}
-
-#define APPEND_BITSTR(U,V,W,M) append_bitstr(out, M, U::V, #W, comma);
-
-#define IOSTATE_ENUM(X,M) \
-    X(iostate,badbit,bad,M) \
-    X(iostate,eofbit,eof,M) \
-    X(iostate,failbit,fail,M) \
-    X(iostate,timeout,timeout,M)
-
-std::string jau::io::to_string(const iostate mask) noexcept {
-    if( iostate::goodbit == mask ) {
-        return "good";
-    }
-    std::string out;
-    bool comma = false;
-    IOSTATE_ENUM(APPEND_BITSTR,mask)
-    return out;
 }
 
 size_t ByteInStream_File::read(void* out, size_t length) noexcept {
