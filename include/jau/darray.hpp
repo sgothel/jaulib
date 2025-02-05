@@ -585,7 +585,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                 JAU_DARRAY_PRINTF("assignment move.0: this %s\n", get_info().c_str());
                 JAU_DARRAY_PRINTF("assignment move.0:    x %s\n", x.get_info().c_str());
                 if( this != &x ) {
-                    clear();
+                    clear(true);
                     alloc_inst = std::move(x.alloc_inst);
                     begin_ = std::move(x.begin_);
                     end_ = std::move(x.end_);
@@ -680,7 +680,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
 
             ~darray() noexcept {
                 JAU_DARRAY_PRINTF("dtor: %s\n", get_info().c_str());
-                clear();
+                clear(true);
             }
 
             /**
@@ -917,14 +917,33 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
             }
 
             /**
-             * Like std::vector::clear(), but ending with zero capacity.
+             * Like std::vector::clear(), calls destructor on all elements and leaving capacity unchanged.
+             *
+             * Use clear(true) or subsequently shrink_to_fit() to release capacity (storage).
+             *
+             * @see clear(bool)
+             * @see shrink_to_fit()
              */
             constexpr void clear() noexcept {
                 dtor_range(begin_, end_);
-                freeStore();
-                begin_ = nullptr;
-                end_ = nullptr;
-                storage_end_ = nullptr;
+                end_ = begin_;
+            }
+
+            /**
+             * Like std::vector::clear(), calls destructor on all elements.
+             *
+             * If `releaseMem` is `true`, releases capacity (memory), otherwise leaves capacity unchanged.
+             *
+             * @see clear()
+             */
+            constexpr void clear(bool releaseMem) noexcept {
+                clear();
+                if( releaseMem ) {
+                    freeStore();
+                    begin_ = nullptr;
+                    end_ = nullptr;
+                    storage_end_ = nullptr;
+                }
             }
 
             /**

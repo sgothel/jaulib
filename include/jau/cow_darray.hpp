@@ -741,18 +741,41 @@ namespace jau {
             }
 
             /**
-             * Like std::vector::clear(), but ending with zero capacity.
-             * <p>
+             * Like std::vector::clear(), calls destructor on all elements and leaving capacity unchanged.
+             *
+             * Use clear(true) to release capacity (storage).
+             *
              * This write operation uses a mutex lock and is blocking this instances' write operations.
-             * </p>
+             *
+             * @see clear(bool)
              */
             constexpr_atomic
             void clear() noexcept {
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
-                storage_ref_t new_store_ref = std::make_shared<storage_t>();
-                {
-                    sc_atomic_critical sync(sync_atomic);
-                    store_ref = std::move(new_store_ref);
+                sc_atomic_critical sync( sync_atomic );
+                store_ref->clear();
+            }
+
+            /**
+             * Like std::vector::clear(), calls destructor on all elements.
+             *
+             * If `releaseMem` is `true`, releases capacity (memory), otherwise leaves capacity unchanged.
+             *
+             * This write operation uses a mutex lock and is blocking this instances' write operations.
+             *
+             * @see clear()
+             */
+            constexpr_atomic
+            void clear(bool releaseMem) noexcept {
+                if( releaseMem ) {
+                    std::lock_guard<std::recursive_mutex> lock(mtx_write);
+                    storage_ref_t new_store_ref = std::make_shared<storage_t>();
+                    {
+                        sc_atomic_critical sync(sync_atomic);
+                        store_ref = std::move(new_store_ref);
+                    }
+                } else {
+                    clear();
                 }
             }
 
