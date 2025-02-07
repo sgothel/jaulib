@@ -553,11 +553,11 @@ namespace jau {
             size_t hash_code() const noexcept { return hash_value; }
 
             /** Returns the type name, compiler implementation specific.  */
-            const char* name() const noexcept
+            const char* internal_name() const noexcept
             { return signature; }
 
-            /** Return the demangle_name() of name(). */
-            std::string demangled_name() const noexcept {
+            /** Returns the demangled name of internal_name(). */
+            std::string name() const noexcept {
                 return demangle_name( signature );
             }
     };

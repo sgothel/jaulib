@@ -87,22 +87,22 @@ class TestFunction01 {
             function<int(int)> fa0 = [&](int a) -> int {
                 return i + a;
             };
-            fprintf(stderr, "lambda.0: %s, signature %s\n", fa0.toString().c_str(), fa0.signature().name());
+            fprintf(stderr, "lambda.0: %s, signature %s\n", fa0.toString().c_str(), fa0.signature().internal_name());
             REQUIRE( jau::func::target_type::lambda == fa0.type() );
 
             function<int(int)> fa1 = lambda_01();
-            fprintf(stderr, "lambda.1: %s, signature %s\n", fa1.toString().c_str(), fa1.signature().name());
+            fprintf(stderr, "lambda.1: %s, signature %s\n", fa1.toString().c_str(), fa1.signature().internal_name());
             REQUIRE( jau::func::target_type::lambda == fa1.type() );
 
             auto fa2_stub = [&](int a) -> int {
                 return i + a;
             };
             function<int(int)> fa2_a = fa2_stub;
-            fprintf(stderr, "lambda.2_a: %s, signature %s\n", fa2_a.toString().c_str(), fa2_a.signature().name());
+            fprintf(stderr, "lambda.2_a: %s, signature %s\n", fa2_a.toString().c_str(), fa2_a.signature().internal_name());
             REQUIRE( jau::func::target_type::lambda == fa2_a.type() );
 
             function<int(int)> fa2_b = fa2_stub;
-            fprintf(stderr, "lambda.2_b: %s, signature %s\n", fa2_b.toString().c_str(), fa2_b.signature().name());
+            fprintf(stderr, "lambda.2_b: %s, signature %s\n", fa2_b.toString().c_str(), fa2_b.signature().internal_name());
             REQUIRE( jau::func::target_type::lambda == fa2_b.type() );
 
             test_function0_result_____("lambda.0_1_",       1, 101, fa0, fa1);
@@ -137,14 +137,14 @@ class TestFunction01 {
             function<int(int)> f_1 = [](int a) -> int {
                 return a + 100;
             } ;
-            fprintf(stderr, "lambda.3_1 (plain) %s, signature %s\n", f_1.toString().c_str(), f_1.signature().name());
+            fprintf(stderr, "lambda.3_1 (plain) %s, signature %s\n", f_1.toString().c_str(), f_1.signature().internal_name());
             REQUIRE( jau::func::target_type::lambda == f_1.type() );
             test_function0_result_type("lambda.3131", true, 1, 101, f_1, f_1);
 
             function<int(int)> f_2 = function<int(int)>::bind_lambda( [](int x) -> int {
                 return x + 100;
             } );
-            fprintf(stderr, "lambda.3_2 (plain) %s, signature %s\n", f_2.toString().c_str(), f_2.signature().name());
+            fprintf(stderr, "lambda.3_2 (plain) %s, signature %s\n", f_2.toString().c_str(), f_2.signature().internal_name());
             REQUIRE( jau::func::target_type::lambda == f_2.type() );
             test_function0_result_type("lambda.3232", true, 1, 101, f_2, f_2);
         }
@@ -157,7 +157,7 @@ class TestFunction01 {
                     return x * self(x-1);
                 }
             } );
-            fprintf(stderr, "ylambda.1_1 (plain) %s, signature %s\n", f_1.toString().c_str(), f_1.signature().name());
+            fprintf(stderr, "ylambda.1_1 (plain) %s, signature %s\n", f_1.toString().c_str(), f_1.signature().internal_name());
             REQUIRE( jau::func::target_type::ylambda == f_1.type() );
             test_function0_result_type("ylambda.1111", true, 4, 24, f_1, f_1);
         }
@@ -170,7 +170,7 @@ class TestFunction01 {
                     return x * self(x-1);
                 }
             } );
-            fprintf(stderr, "ylambda.1_2 (plain) %s, signature %s\n", f_1.toString().c_str(), f_1.signature().name());
+            fprintf(stderr, "ylambda.1_2 (plain) %s, signature %s\n", f_1.toString().c_str(), f_1.signature().internal_name());
             REQUIRE( jau::func::target_type::ylambda == f_1.type() );
             test_function0_result_type("ylambda.1111", true, 4, 24, f_1, f_1);
         }
@@ -1132,7 +1132,7 @@ class TestFunction01 {
         {
             // Limitation: Non unique function pointer type names with same prototype
             jau::type_info f_b_type;
-            fprintf(stderr, "empty type: %s\n", f_b_type.name());
+            fprintf(stderr, "empty type: %s\n", f_b_type.internal_name());
 
             MyCFunc0 f_b = cfunction_00(f_b_type);
             // We must instantiate the ctti_name from its source location,
@@ -1140,7 +1140,7 @@ class TestFunction01 {
             //
             // const char* fb_name = jau::ctti_name<decltype(f_b)>();
             // REQUIRE( jau::type_info::is_valid( fb_name ) );
-            const char* fb_name = f_b_type.name();
+            const char* fb_name = f_b_type.internal_name();
             std::string fb_str(fb_name);
             fprintf(stderr, "f_b: %s\n", fb_name);
 
@@ -1164,9 +1164,9 @@ class TestFunction01 {
                 fprintf(stderr, "INFO: CTTI limitation on functions FIXED: f_b: %s\n", fb_str.c_str());
             }
             if( f_0_type == f_b_type ) {
-                fprintf(stderr, "INFO: CTTI limitation on functions exists: f_b_type: %s\n", f_b_type.name());
+                fprintf(stderr, "INFO: CTTI limitation on functions exists: f_b_type: %s\n", f_b_type.internal_name());
             } else {
-                fprintf(stderr, "INFO: CTTI limitation on functions FIXED: f_b_type: %s\n", f_b_type.name());
+                fprintf(stderr, "INFO: CTTI limitation on functions FIXED: f_b_type: %s\n", f_b_type.internal_name());
             }
         }
 
@@ -1631,7 +1631,7 @@ class TestFunction01 {
             REQUIRE( nullptr == f );
             REQUIRE( f == nullptr );
         }
-#endif        
+#endif
     }
 
   private:

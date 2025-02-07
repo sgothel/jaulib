@@ -1476,7 +1476,7 @@ namespace jau {
              * @anchor function_toString The string representation contains the complete signature and detailed memory footprint.
              */
             std::string toString() const {
-                return "function<" + to_string( type() ) + ", " + signature().demangled_name() + ">( sz net " +
+                return "function<" + to_string( type() ) + ", " + signature().name() + ">( sz net " +
                         std::to_string( target_size() ) + " / ( delegate_t " +
                         std::to_string( sizeof( target ) ) + " + target_vdata " +
                         std::to_string( target.heap_size() ) + " -> "+
