@@ -480,7 +480,7 @@ namespace jau {
         }
         dbuffer_t& d = *reinterpret_cast<DataBuffer<BufferValue_type>*>(&b);
         typename dbuffer_t::iterator it = d.begin() + b.m_position;
-        ( (*it++ = static_cast<BufferValue_type>(args)), ... );
+        ( (*it++ = static_cast<BufferValue_type>(args)), ... ); // NOLINT(bugprone-signed-char-misuse)
         b.m_position += sizeof...(args);
     }
 

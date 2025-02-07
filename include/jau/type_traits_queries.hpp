@@ -296,7 +296,7 @@ namespace jau {
     using is_all_same = std::conjunction<std::is_same<first_type<Ts...>, Ts>...>;
 
     template<typename... Ts>
-    inline constexpr bool is_all_same_v = is_all_same<Ts...>::value;
+    inline constexpr bool is_all_same_v = is_all_same<Ts...>::value; // NOLINT(modernize-type-traits)
 
     /**
     // *************************************************
