@@ -169,10 +169,21 @@ namespace jau {
         /** Returns whether position < limit, i.e. has remaining elements. */
         constexpr bool hasRemaining() const noexcept { return m_position < m_limit; }
 
+        /**
+         * Returns a duplicate slice starting from this buffers' current position.
+         *
+         * Returned buffer shares the same storage, its position is zero and limit set to this buffers' remaining elements.
+         */
         virtual base_ref slice() = 0;
 
+        /**
+         * Returns a duplicate slice starting from the given `idx`.
+         *
+         * Returned buffer shares the same storage, its position is zero and limit set to the given `length`.
+         */
         virtual base_ref slice(size_type idx, size_type length) = 0;
 
+        /** Returns a duplicate of this buffer if same mark, position and limit. */
         virtual base_ref clone() = 0;
 
         /**
@@ -297,7 +308,7 @@ namespace jau {
         }
 
         base_ref clone() override {
-            return std::make_unique<self_t>(Private(), m_storage, m_mark /* mark */, m_position /* pos */, m_limit /* limit */, m_capacity /* capacity */, 0 /* offset */);
+            return std::make_unique<self_t>(Private(), m_storage, m_mark /* mark */, m_position /* pos */, m_limit /* limit */, m_capacity /* capacity */, m_offset /* offset */);
         }
 
         /**
