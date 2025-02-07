@@ -763,15 +763,15 @@ std::string jau::bytesHexString(const void* data, const nsize_t length,
             str.push_back('0');
             str.push_back('x');
         }
-        bool skip = true; // skip leading zeros
+        bool skip_leading_zeros = true;
         nsize_t j = length;
         do {
             j--;
             const int v = bytes[j] & 0xFF;
-            if( 0 != v || !skip ) {
+            if( 0 != v || !skip_leading_zeros || j == 0 ) {
                 str.push_back(hex_array[v >> 4]);
                 str.push_back(hex_array[v & 0x0F]);
-                skip = false;
+                skip_leading_zeros = false;
             }
         } while( j != 0);
     }
