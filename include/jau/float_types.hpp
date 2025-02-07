@@ -29,6 +29,8 @@
     #include <stdfloat>
 #endif
 
+#include <jau/cpp_lang_util.hpp>
+
 namespace jau {
 
     /** \addtogroup Floats
@@ -51,6 +53,12 @@ namespace jau {
         constexpr float32_t operator ""_f32(long double __v)   { return (float32_t)__v; }
         constexpr float64_t operator ""_f64(long double __v)   { return (float64_t)__v; }
     } // float_literals
+
+    class float_ctti {
+      public:
+        static const jau::type_info& f32() { return jau::static_ctti<float32_t>(); }
+        static const jau::type_info& f64() { return jau::static_ctti<float64_t>(); }
+    };
 
     /**@}*/
 

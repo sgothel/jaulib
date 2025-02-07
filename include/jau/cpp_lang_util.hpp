@@ -436,8 +436,10 @@ namespace jau {
      */
     class type_info {
         private:
-            const char* signature;
-            size_t hash_value;
+            const char* m_signature;
+            size_t m_hash_value;
+            bool m_identity_obj;
+            bool m_identity_sig;
 
         public:
             /**
@@ -486,7 +488,8 @@ namespace jau {
              * Constructor for an empty type_info instance, i.e. empty name() signature.
              */
             type_info() noexcept
-            : signature(""), hash_value( std::hash<std::string_view>{}(std::string_view(signature)) )
+            : m_signature(""), m_hash_value( std::hash<std::string_view>{}(std::string_view(m_signature)) ),
+              m_identity_obj(false), m_identity_sig(true)
             { }
 
             /**
@@ -499,8 +502,10 @@ namespace jau {
              *
              * @see @ref make_ctti_lambda "jau::make_ctti<R, L, A...>"
              */
-            type_info(const std::type_info& info_) noexcept
-            : signature(info_.name()), hash_value( info_.hash_code() )
+            type_info(const std::type_info& info_, bool identity_instance=false) noexcept
+            : m_signature(info_.name()), m_hash_value( info_.hash_code() ),
+              m_identity_obj(identity_instance),
+              m_identity_sig(false) // RTTI type_info can't guarantee identity for name()
             { }
 
             /**
@@ -512,9 +517,12 @@ namespace jau {
              *
              * @see @ref make_ctti_lambda "jau::make_ctti<R, L, A...>"
              */
-            type_info(const char* signature_) noexcept
-            : signature( signature_ ), hash_value( nullptr != signature ? std::hash<std::string_view>{}(std::string_view(signature)) : 0 )
-            { abort_invalid(signature); }
+            type_info(const char* signature_, bool identity_instance=false, bool identity_signature=false) noexcept
+            : m_signature( signature_ ),
+              m_hash_value( nullptr != m_signature ? std::hash<std::string_view>{}(std::string_view(m_signature)) : 0 ),
+              m_identity_obj(identity_instance),
+              m_identity_sig(identity_signature)
+            { abort_invalid(m_signature); }
 
             /**
              * Return true if both instances are equal.
@@ -524,13 +532,16 @@ namespace jau {
              * @see @ref type_info_identity "Identity"
              */
             constexpr bool operator==(const type_info& rhs) const noexcept {
-                if( &rhs == this ) {
+                if( &rhs == this ) {                                     // fast: equal obj address
                     return true;
                 }
-                return signature == rhs.signature ||               // fast: pointer comparison, which may fail on same types, _or_
-                       (
-                         hash_value == rhs.hash_value &&           // fast: wrong hash value -> false, otherwise avoid hash collision case ...
-                         0 == ::strcmp(signature, rhs.signature)   // slow: string comparison
+                return ( !m_identity_obj || !rhs.m_identity_obj ) &&     // fast: fail if both instances use an identity obj address
+                       ( m_signature == rhs.m_signature ||               // fast: signature address comparison, which may fail on same types, _or_
+                         ( ( !m_identity_sig || !rhs.m_identity_sig ) && // fast: fail if both instances use an identity signature address
+                           ( m_hash_value == rhs.m_hash_value &&         // fast: wrong hash value -> false, otherwise avoid hash collision case ...
+                             0 == ::strcmp(m_signature, rhs.m_signature) // slow: string comparison if !m_use_hash_only
+                           )
+                         )
                        );
             }
 
@@ -550,17 +561,27 @@ namespace jau {
              * @return Unspecified hash code of this instance.
              * @see @ref type_info_identity "Identity"
              */
-            size_t hash_code() const noexcept { return hash_value; }
+            size_t hash_code() const noexcept { return m_hash_value; }
+
+            /** Returns true if this instance has a unique address (for same type_info). */
+            bool identityInstance() const noexcept { return m_identity_obj; }
+
+            /** Returns true if internal_name() has a unique identity address (for same strings). */
+            bool identityName() const noexcept { return m_identity_sig; }
 
             /** Returns the type name, compiler implementation specific.  */
             const char* internal_name() const noexcept
-            { return signature; }
+            { return m_signature; }
 
             /** Returns the demangled name of internal_name(). */
             std::string name() const noexcept {
-                return demangle_name( signature );
+                return demangle_name( m_signature );
             }
+            std::string toString() const noexcept;
     };
+    inline std::ostream& operator<<(std::ostream& out, const type_info& v) {
+        return out << v.toString();
+    }
 
     /**
      * Constructs a jau::type_info instance based on given type `T`
@@ -575,12 +596,19 @@ namespace jau {
      * @see @ref ctti_name_type "jau::ctti_name<T>"
      */
     template<typename T>
-    jau::type_info make_ctti() noexcept {
+    jau::type_info make_ctti(bool identity_instance=false) noexcept {
 #if defined(__cxx_rtti_available__)
-        return jau::type_info( typeid(T) );
+        return jau::type_info(typeid(T), identity_instance);
 #else
-        return jau::type_info(ctti_name<T>());
+        return jau::type_info(ctti_name<T>(), identity_instance, true /* identity_signature */);
 #endif
+    }
+
+    /** Returns a static global reference of make_ctti<T>(true) w/ identity instance */
+    template<typename T>
+    const jau::type_info& static_ctti() noexcept {
+        static const type_info sig = make_ctti<T>(true);
+        return sig;
     }
 
     /**
@@ -599,12 +627,19 @@ namespace jau {
      * @see @ref ctti_name_lambda "jau::ctti_name<R, L, A...>"
      */
     template<typename R, typename L, typename...A>
-    jau::type_info make_ctti() noexcept {
+    jau::type_info make_ctti(bool identity_instance=false) noexcept {
 #if defined(__cxx_rtti_available__)
-        return jau::type_info( typeid(L) );
+        return jau::type_info(typeid(L), identity_instance);
 #else
-        return jau::type_info(ctti_name<R, L, A...>());
+        return jau::type_info(ctti_name<R, L, A...>(), identity_instance, true /* identity_signature */);
 #endif
+    }
+
+    /** Returns a static global reference of make_ctti<R, L, A...>(true) w/ identity instance */
+    template<typename R, typename L, typename...A>
+    const jau::type_info& static_ctti() noexcept {
+        static const type_info sig = make_ctti<R, L, A...>(true);
+        return sig;
     }
 
     /**

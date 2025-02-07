@@ -32,6 +32,7 @@
 #include <algorithm>
 
 #include <jau/byte_util.hpp>
+#include <jau/cpp_lang_util.hpp>
 #include <jau/debug.hpp>
 #include <jau/basic_types.hpp>
 #include <jau/float_math.hpp>
@@ -914,3 +915,23 @@ std::string jau::math::to_string(const jau::math::math_error_t v) noexcept {
     }
     return "undef";
 }
+
+std::string jau::type_info::toString() const noexcept {
+    std::string r("TypeInfo[addr ");
+    r.append(jau::to_hexstring(this))
+     .append(", hash ").append(jau::to_hexstring(hash_code()))
+     .append(", `").append(name())
+     .append("`, ident[");
+    if( m_identity_obj ) {
+        r.append("obj");
+    }
+    if( m_identity_sig ) {
+        if( m_identity_obj ) {
+            r.append(", ");
+        }
+        r.append("sig");
+    }
+    r.append("]]");
+    return r;
+}
+
