@@ -30,7 +30,7 @@
 
 namespace jau {
 
-    extern const jau::util::VersionNumber VERSION;
+    extern const jau::util::VersionNumberString VERSION;
     extern const char* VERSION_SHORT;
     extern const char* VERSION_API;
 

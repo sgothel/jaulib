@@ -1,5 +1,5 @@
 #include <jau/version.hpp>
 
-const jau::util::VersionNumber jau::VERSION("@jaulib_VERSION_LONG@");
+const jau::util::VersionNumberString jau::VERSION("@jaulib_VERSION_LONG@");
 const char* jau::VERSION_SHORT = "@jaulib_VERSION_SHORT@";
 const char* jau::VERSION_API = "@jaulib_VERSION_API@";
