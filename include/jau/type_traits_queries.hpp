@@ -39,7 +39,7 @@ namespace jau {
 
     // #include "jau/string_util.hpp"
     std::string format_string(const char* format, ...);
-    
+
     /** \addtogroup CppLang
      *
      *  @{
@@ -140,9 +140,9 @@ namespace jau {
                 return jau::format_string("%s[%zu bytes]", type_name_cue<T>::name(), sizeof(T));
             } else {
                 return type_name_cue<T>::name();
-            } 
+            }
         }
-        
+
         /**
          * Print information of this type to stdout, potentially with all <i>Type traits</i> known.
          * @param stream output stream
@@ -244,7 +244,7 @@ namespace jau {
         static void print(const std::string& typedefname, const TypeTraitGroup verbosity=TypeTraitGroup::NONE) {
             fprint(stdout, typedefname, verbosity);
         }
-        
+
     };
     #define JAU_TYPENAME_CUE(A) template<> struct jau::type_name_cue<A> { static const char * name() { return #A; } };
     #define JAU_TYPENAME_CUE_ALL(A) JAU_TYPENAME_CUE(A) JAU_TYPENAME_CUE(A*) JAU_TYPENAME_CUE(const A*) JAU_TYPENAME_CUE(A&) JAU_TYPENAME_CUE(const A&) // NOLINT(bugprone-macro-parentheses)
@@ -289,6 +289,14 @@ namespace jau {
 
     template <typename T> inline constexpr bool is_enforcing_secmem_v = is_enforcing_secmem<T>::value;
 
+    template<typename... Ts>
+    using first_type = std::tuple_element_t<0, std::tuple<Ts...>>;
+
+    template<typename... Ts>
+    using is_all_same = std::conjunction<std::is_same<first_type<Ts...>, Ts>...>;
+
+    template<typename... Ts>
+    inline constexpr bool is_all_same_v = is_all_same<Ts...>::value; // NOLINT(modernize-type-traits)
 
     /**
     // *************************************************
