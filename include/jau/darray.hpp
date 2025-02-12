@@ -180,11 +180,11 @@ namespace jau {
             constexpr static const size_type DIFF_MAX = std::numeric_limits<difference_type>::max();
             constexpr static const size_type MIN_SIZE_AT_GROW = 10;
 
-            allocator_type alloc_inst;
-            pointer begin_;
-            pointer end_;
-            pointer storage_end_;
-            float growth_factor_;
+            allocator_type m_alloc_inst;
+            pointer m_begin;
+            pointer m_end;
+            pointer m_storage_end;
+            float m_growth_factor;
 
             /**
              * Allocates a new store using allocator_type.
@@ -204,7 +204,7 @@ namespace jau {
                         throw jau::IllegalArgumentError("alloc "+std::to_string(size_)+" > difference_type max "+
                                 std::to_string(DIFF_MAX), E_FILE_LINE);
                     }
-                    value_type * m = alloc_inst.allocate(size_);
+                    value_type * m = m_alloc_inst.allocate(size_);
                     if( nullptr == m && size_ > 0 ) {
                         // NOLINTBEGIN(bugprone-sizeof-expression)
                         throw jau::OutOfMemoryError("alloc "+std::to_string(size_)+" elements * "+
@@ -225,9 +225,9 @@ namespace jau {
                     throw jau::IllegalArgumentError("realloc "+std::to_string(new_capacity_)+" > difference_type max "+
                             std::to_string(DIFF_MAX), E_FILE_LINE);
                 }
-                value_type * m = alloc_inst.reallocate(begin_, storage_end_-begin_, new_capacity_);
+                value_type * m = m_alloc_inst.reallocate(m_begin, m_storage_end-m_begin, new_capacity_);
                 if( nullptr == m && new_capacity_ > 0 ) {
-                    free(const_cast<pointer_mutable>(begin_)); // has not been touched by realloc
+                    free(const_cast<pointer_mutable>(m_begin)); // has not been touched by realloc
                     throw jau::OutOfMemoryError("realloc "+std::to_string(new_capacity_)+" elements * "+
                             std::to_string(sizeof(value_type))+" bytes/element = "+
                             std::to_string(new_capacity_ * sizeof(value_type))+" bytes -> nullptr", E_FILE_LINE);
@@ -243,30 +243,30 @@ namespace jau {
             }
 
             constexpr void freeStore() {
-                if( nullptr != begin_ ) {
-                    alloc_inst.deallocate(begin_, storage_end_-begin_);
+                if( nullptr != m_begin ) {
+                    m_alloc_inst.deallocate(m_begin, m_storage_end-m_begin);
                 }
             }
 
             constexpr void clear_iterator() noexcept {
-                begin_       = nullptr;
-                end_         = nullptr;
-                storage_end_ = nullptr;
+                m_begin       = nullptr;
+                m_end         = nullptr;
+                m_storage_end = nullptr;
             }
 
             constexpr void set_iterator(pointer new_storage_, difference_type size_, difference_type capacity_) noexcept {
-                begin_       = new_storage_;
-                end_         = new_storage_+size_;
-                storage_end_ = new_storage_+capacity_;
+                m_begin       = new_storage_;
+                m_end         = new_storage_+size_;
+                m_storage_end = new_storage_+capacity_;
             }
 
             constexpr void set_iterator(difference_type size_, difference_type capacity_) noexcept {
-                end_         = begin_+size_;
-                storage_end_ = begin_+capacity_;
+                m_end         = m_begin+size_;
+                m_storage_end = m_begin+capacity_;
             }
 
             constexpr void dtor_one(iterator pos) {
-                JAU_DARRAY_PRINTF0("dtor [%zd], count 1\n", (pos-begin_));
+                JAU_DARRAY_PRINTF0("dtor [%zd], count 1\n", (pos-m_begin));
                 ( pos )->~value_type(); // placement new -> manual destruction!
                 if constexpr ( uses_secmem ) {
                     zero_bytes_sec(voidptr_cast(pos), sizeof(value_type));
@@ -275,7 +275,7 @@ namespace jau {
 
             constexpr size_type dtor_range(iterator first, const_iterator last) {
                 size_type count=0;
-                JAU_DARRAY_PRINTF0("dtor [%zd .. %zd], count %zd\n", (first-begin_), (last-begin_)-1, (last-first)-1);
+                JAU_DARRAY_PRINTF0("dtor [%zd .. %zd], count %zd\n", (first-m_begin), (last-m_begin)-1, (last-first)-1);
                 for(; first < last; ++first, ++count ) {
                     ( first )->~value_type(); // placement new -> manual destruction!
                 }
@@ -286,7 +286,7 @@ namespace jau {
             }
 
             constexpr void ctor_copy_range(pointer dest, iterator first, const_iterator last) {
-                JAU_DARRAY_PRINTF0("ctor_copy_range [%zd .. %zd] -> ??, dist %zd\n", (first-begin_), (last-begin_)-1, (last-first)-1);
+                JAU_DARRAY_PRINTF0("ctor_copy_range [%zd .. %zd] -> ??, dist %zd\n", (first-m_begin), (last-m_begin)-1, (last-first)-1);
                 /**
                  * TODO
                  *
@@ -316,13 +316,13 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                 return dest;
             }
             constexpr pointer clone_range(const size_type dest_capacity, iterator first, const_iterator last) {
-                JAU_DARRAY_PRINTF0("clone_range [0 .. %zd], count %zd -> %d\n", (last-begin_)-1, (last-first)-1, (int)dest_capacity);
+                JAU_DARRAY_PRINTF0("clone_range [0 .. %zd], count %zd -> %d\n", (last-m_begin)-1, (last-first)-1, (int)dest_capacity);
                 pointer dest = allocStore(dest_capacity);
                 ctor_copy_range(dest, first, last);
                 return dest;
             }
             constexpr void ctor_copy_range_check(pointer dest, iterator first, const_iterator last) {
-                JAU_DARRAY_PRINTF0("ctor_copy_range_check [%zd .. %zd] -> ??, dist %zd\n", (first-begin_), (last-begin_)-1, (last-first)-1);
+                JAU_DARRAY_PRINTF0("ctor_copy_range_check [%zd .. %zd] -> ??, dist %zd\n", (first-m_begin), (last-m_begin)-1, (last-first)-1);
                 if( first > last ) {
                     throw jau::IllegalArgumentError("first "+to_hexstring(first)+" > last "+to_hexstring(last), E_FILE_LINE);
                 }
@@ -331,7 +331,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                 }
             }
             constexpr pointer clone_range_check(const size_type dest_capacity, iterator first, const_iterator last) {
-                JAU_DARRAY_PRINTF0("clone_range_check [%zd .. %zd], count %zd -> %d\n", (first-begin_), (last-begin_)-1, (last-first)-1, (int)dest_capacity);
+                JAU_DARRAY_PRINTF0("clone_range_check [%zd .. %zd], count %zd -> %d\n", (first-m_begin), (last-m_begin)-1, (last-first)-1, (int)dest_capacity);
                 if( dest_capacity < size_type(last-first) ) {
                     throw jau::IllegalArgumentError("capacity "+std::to_string(dest_capacity)+" < source range "+
                                                         std::to_string(difference_type(last-first)), E_FILE_LINE);
@@ -342,9 +342,9 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
             }
 
             constexpr void ctor_copy_value(pointer dest, size_type count, const value_type& val) {
-                if( begin_ > dest || dest + count > end_ ) {
+                if( m_begin > dest || dest + count > m_end ) {
                     throw jau::IllegalArgumentError("dest "+jau::to_string( dest )+" + "+jau::to_string( count )+" not within ["+
-                                                                 jau::to_string( begin_ )+".."+jau::to_string( end_ )+")", E_FILE_LINE);
+                                                                 jau::to_string( m_begin )+".."+jau::to_string( m_end )+")", E_FILE_LINE);
                 }
                 if( 0 < count ) {
                     for(size_type i=0; i < count; ++i, ++dest) {
@@ -378,8 +378,8 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                     pointer new_storage = allocStore(new_capacity);
                     {
                         iterator dest = new_storage;
-                        iterator first = begin_;
-                        for(; first < end_; ++dest, ++first) {
+                        iterator first = m_begin;
+                        for(; first < m_end; ++dest, ++first) {
                             new (const_cast<pointer_mutable>(dest)) value_type( std::move( *first ) ); // placement new
                             dtor_one(first); // manual destruction, even after std::move (object still exists)
                         }
@@ -392,7 +392,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                 } else {
                     pointer new_storage = allocStore(new_capacity);
                     ::memcpy(voidptr_cast(new_storage),
-                             begin_, (uint8_t*)end_-(uint8_t*)begin_); // we can simply copy the memory over, also no overlap
+                             m_begin, (uint8_t*)m_end-(uint8_t*)m_begin); // we can simply copy the memory over, also no overlap
                     freeStore();
                     set_iterator(new_storage, size(), new_capacity);
                 }
@@ -426,11 +426,11 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                     if constexpr ( uses_secmem ) {
                         if( dest < first ) {
                             // move elems left
-                            JAU_DARRAY_PRINTF0("move_elements.mmm.left [%zd .. %zd] -> %zd, dist %zd\n", (first-begin_), ((first + count)-begin_)-1, (dest-begin_), (first-dest));
+                            JAU_DARRAY_PRINTF0("move_elements.mmm.left [%zd .. %zd] -> %zd, dist %zd\n", (first-m_begin), ((first + count)-m_begin)-1, (dest-m_begin), (first-dest));
                             zero_bytes_sec(voidptr_cast(dest+count), (first-dest)*sizeof(value_type));
                         } else {
                             // move elems right
-                            JAU_DARRAY_PRINTF0("move_elements.mmm.right [%zd .. %zd] -> %zd, dist %zd, size %zu\n", (first-begin_), ((first + count)-begin_)-1, (dest-begin_), (dest-first), (dest-first)*sizeof(value_type));
+                            JAU_DARRAY_PRINTF0("move_elements.mmm.right [%zd .. %zd] -> %zd, dist %zd, size %zu\n", (first-m_begin), ((first + count)-m_begin)-1, (dest-m_begin), (dest-first), (dest-first)*sizeof(value_type));
                             PRAGMA_DISABLE_WARNING_PUSH
                             PRAGMA_DISABLE_WARNING_STRINGOP_OVERFLOW
                             zero_bytes_sec(voidptr_cast(first), (dest-first)*sizeof(value_type)); // TODO: See above
@@ -441,7 +441,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                     if( dest < first ) {
                         // move elems left
                         const_iterator last = first + count;
-                        JAU_DARRAY_PRINTF0("move_elements.def.left [%zd .. %zd] -> %zd, dist %zd\n", (first-begin_), (last-begin_)-1, (dest-begin_), (first-dest));
+                        JAU_DARRAY_PRINTF0("move_elements.def.left [%zd .. %zd] -> %zd, dist %zd\n", (first-m_begin), (last-m_begin)-1, (dest-m_begin), (first-dest));
                         for(; first < last; ++dest, ++first ) {
                             new (const_cast<pointer_mutable>(dest)) value_type( std::move( *first ) ); // placement new
                             dtor_one( const_cast<value_type*>( first ) ); // manual destruction, even after std::move (object still exists)
@@ -449,7 +449,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                     } else {
                         // move elems right
                         iterator last = const_cast<iterator>(first + count);
-                        JAU_DARRAY_PRINTF0("move_elements.def.right [%zd .. %zd] -> %zd, dist %zd\n", (first-begin_), (last-begin_)-1, (dest-begin_), (dest-first));
+                        JAU_DARRAY_PRINTF0("move_elements.def.right [%zd .. %zd] -> %zd, dist %zd\n", (first-m_begin), (last-m_begin)-1, (dest-m_begin), (dest-first));
                         dest += count - 1;
                         for(--last; first <= last; --dest, --last ) {
                             new (const_cast<pointer_mutable>(dest)) value_type( std::move( *last ) ); // placement new
@@ -468,8 +468,8 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              * Default constructor, giving zero capacity and zero memory footprint.
              */
             constexpr darray() noexcept
-            : alloc_inst(), begin_( nullptr ), end_( nullptr ), storage_end_( nullptr ),
-              growth_factor_(DEFAULT_GROWTH_FACTOR) {
+            : m_alloc_inst(), m_begin( nullptr ), m_end( nullptr ), m_storage_end( nullptr ),
+              m_growth_factor(DEFAULT_GROWTH_FACTOR) {
                 JAU_DARRAY_PRINTF("ctor def: %s\n", get_info().c_str());
             }
 
@@ -480,8 +480,8 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              * @param alloc given allocator_type
              */
             constexpr explicit darray(size_type capacity, const float growth_factor=DEFAULT_GROWTH_FACTOR, const allocator_type& alloc = allocator_type())
-            : alloc_inst( alloc ), begin_( allocStore(capacity) ), end_( begin_ ), storage_end_( begin_ + capacity ),
-              growth_factor_( growth_factor ) {
+            : m_alloc_inst( alloc ), m_begin( allocStore(capacity) ), m_end( m_begin ), m_storage_end( m_begin + capacity ),
+              m_growth_factor( growth_factor ) {
                 JAU_DARRAY_PRINTF("ctor 1: %s\n", get_info().c_str());
             }
 
@@ -493,8 +493,8 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              * @param x the given darray, all elements will be copied into the new instance.
              */
             constexpr darray(const darray& x)
-            : alloc_inst( x.alloc_inst ), begin_( clone_range(x.begin_, x.end_) ), end_( begin_ + x.size() ),
-              storage_end_( begin_ + x.size() ), growth_factor_( x.growth_factor_ ) {
+            : m_alloc_inst( x.m_alloc_inst ), m_begin( clone_range(x.m_begin, x.m_end) ), m_end( m_begin + x.size() ),
+              m_storage_end( m_begin + x.size() ), m_growth_factor( x.m_growth_factor ) {
                 JAU_DARRAY_PRINTF("ctor copy0: this %s\n", get_info().c_str());
                 JAU_DARRAY_PRINTF("ctor copy0:    x %s\n", x.get_info().c_str());
             }
@@ -507,8 +507,8 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              * @param alloc custom allocator_type instance
              */
             constexpr explicit darray(const darray& x, const float growth_factor, const allocator_type& alloc)
-            : alloc_inst( alloc ), begin_( clone_range(x.begin_, x.end_) ), end_( begin_ + x.size() ),
-              storage_end_( begin_ + x.size() ), growth_factor_( growth_factor ) {
+            : m_alloc_inst( alloc ), m_begin( clone_range(x.m_begin, x.m_end) ), m_end( m_begin + x.size() ),
+              m_storage_end( m_begin + x.size() ), m_growth_factor( growth_factor ) {
                 JAU_DARRAY_PRINTF("ctor copy1: this %s\n", get_info().c_str());
                 JAU_DARRAY_PRINTF("ctor copy1:    x %s\n", x.get_info().c_str());
             }
@@ -525,8 +525,8 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              * @param alloc custom allocator_type instance
              */
             constexpr explicit darray(const darray& x, const size_type _capacity, const float growth_factor, const allocator_type& alloc)
-            : alloc_inst( alloc ), begin_( clone_range( _capacity, x.begin_, x.end_) ), end_( begin_ + x.size() ),
-              storage_end_( begin_ + _capacity ), growth_factor_( growth_factor ) {
+            : m_alloc_inst( alloc ), m_begin( clone_range( _capacity, x.m_begin, x.m_end) ), m_end( m_begin + x.size() ),
+              m_storage_end( m_begin + _capacity ), m_growth_factor( growth_factor ) {
                 JAU_DARRAY_PRINTF("ctor copy2: this %s\n", get_info().c_str());
                 JAU_DARRAY_PRINTF("ctor copy2:    x %s\n", x.get_info().c_str());
             }
@@ -540,14 +540,14 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                 if( this != &x ) {
                     const size_type capacity_ = capacity();
                     const size_type x_size_ = x.size();
-                    dtor_range(begin_, end_);
-                    growth_factor_ = x.growth_factor_;
+                    dtor_range(m_begin, m_end);
+                    m_growth_factor = x.m_growth_factor;
                     if( x_size_ > capacity_ ) {
                         freeStore();
-                        begin_ =  clone_range(x_size_, x.begin_, x.end_);
+                        m_begin =  clone_range(x_size_, x.m_begin, x.m_end);
                         set_iterator(x_size_, x_size_);
                     } else {
-                        ctor_copy_range(begin_, x.begin_, x.end_);
+                        ctor_copy_range(m_begin, x.m_begin, x.m_end);
                         set_iterator(x_size_, capacity_);
                     }
                 }
@@ -559,8 +559,8 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
             // move_ctor on darray elements
 
             constexpr darray(darray && x) noexcept
-            : alloc_inst( std::move(x.alloc_inst) ), begin_( std::move(x.begin_) ), end_( std::move(x.end_) ),
-              storage_end_( std::move(x.storage_end_) ), growth_factor_( std::move(x.growth_factor_) )
+            : m_alloc_inst( std::move(x.m_alloc_inst) ), m_begin( std::move(x.m_begin) ), m_end( std::move(x.m_end) ),
+              m_storage_end( std::move(x.m_storage_end) ), m_growth_factor( std::move(x.m_growth_factor) )
             {
                 JAU_DARRAY_PRINTF("ctor move0: this %s\n", get_info().c_str());
                 JAU_DARRAY_PRINTF("ctor move0:    x %s\n", x.get_info().c_str());
@@ -569,8 +569,8 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
             }
 
             constexpr explicit darray(darray && x, const float growth_factor, const allocator_type& alloc) noexcept
-            : alloc_inst( std::move(alloc) ), begin_( std::move(x.begin_) ), end_( std::move(x.end_) ),
-              storage_end_( std::move(x.storage_end_) ), growth_factor_( growth_factor )
+            : m_alloc_inst( std::move(alloc) ), m_begin( std::move(x.m_begin) ), m_end( std::move(x.m_end) ),
+              m_storage_end( std::move(x.m_storage_end) ), m_growth_factor( growth_factor )
             {
                 JAU_DARRAY_PRINTF("ctor move1: this %s\n", get_info().c_str());
                 JAU_DARRAY_PRINTF("ctor move1:    x %s\n", x.get_info().c_str());
@@ -586,11 +586,11 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                 JAU_DARRAY_PRINTF("assignment move.0:    x %s\n", x.get_info().c_str());
                 if( this != &x ) {
                     clear(true);
-                    alloc_inst = std::move(x.alloc_inst);
-                    begin_ = std::move(x.begin_);
-                    end_ = std::move(x.end_);
-                    storage_end_ = std::move(x.storage_end_);
-                    growth_factor_ = std::move( x.growth_factor_ );
+                    m_alloc_inst = std::move(x.m_alloc_inst);
+                    m_begin = std::move(x.m_begin);
+                    m_end = std::move(x.m_end);
+                    m_storage_end = std::move(x.m_storage_end);
+                    m_growth_factor = std::move( x.m_growth_factor );
 
                     // Moved source array has been taken over, flush sources' pointer to avoid value_type dtor releasing taken resources!
                     x.clear_iterator();
@@ -617,8 +617,8 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              */
             constexpr explicit darray(const size_type _capacity, const_iterator first, const_iterator last,
                                       const float growth_factor=DEFAULT_GROWTH_FACTOR, const allocator_type& alloc = allocator_type())
-            : alloc_inst( alloc ), begin_( clone_range_check(_capacity, first, last) ), end_(begin_ + size_type(last - first) ),
-              storage_end_( begin_ + _capacity ), growth_factor_( growth_factor ) {
+            : m_alloc_inst( alloc ), m_begin( clone_range_check(_capacity, first, last) ), m_end(m_begin + size_type(last - first) ),
+              m_storage_end( m_begin + _capacity ), m_growth_factor( growth_factor ) {
                 JAU_DARRAY_PRINTF("ctor iters0: %s\n", get_info().c_str());
             }
 
@@ -639,8 +639,8 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
             template< class InputIt >
             constexpr explicit darray(const size_type _capacity, InputIt first, InputIt last,
                                       const float growth_factor=DEFAULT_GROWTH_FACTOR, const allocator_type& alloc = allocator_type())
-            : alloc_inst( alloc ), begin_( clone_range_foreign(_capacity, first, last) ), end_(begin_ + size_type(last - first) ),
-              storage_end_( begin_ + _capacity ), growth_factor_( growth_factor ) {
+            : m_alloc_inst( alloc ), m_begin( clone_range_foreign(_capacity, first, last) ), m_end(m_begin + size_type(last - first) ),
+              m_storage_end( m_begin + _capacity ), m_growth_factor( growth_factor ) {
                 JAU_DARRAY_PRINTF("ctor iters1: %s\n", get_info().c_str());
             }
 
@@ -655,8 +655,8 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              */
             template< class InputIt >
             constexpr darray(InputIt first, InputIt last, const allocator_type& alloc = allocator_type())
-            : alloc_inst( alloc ), begin_( clone_range_foreign(size_type(last - first), first, last) ), end_(begin_ + size_type(last - first) ),
-              storage_end_( begin_ + size_type(last - first) ), growth_factor_( DEFAULT_GROWTH_FACTOR ) {
+            : m_alloc_inst( alloc ), m_begin( clone_range_foreign(size_type(last - first), first, last) ), m_end(m_begin + size_type(last - first) ),
+              m_storage_end( m_begin + size_type(last - first) ), m_growth_factor( DEFAULT_GROWTH_FACTOR ) {
                 JAU_DARRAY_PRINTF("ctor iters2: %s\n", get_info().c_str());
             }
 
@@ -673,8 +673,8 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              * @see jau::make_darray()
              */
             constexpr darray(std::initializer_list<value_type> initlist, const allocator_type& alloc = allocator_type())
-            : alloc_inst( alloc ), begin_( clone_range_foreign(initlist.size(), initlist.begin(), initlist.end()) ),
-              end_(begin_ + initlist.size() ), storage_end_( begin_ + initlist.size() ), growth_factor_( DEFAULT_GROWTH_FACTOR ) {
+            : m_alloc_inst( alloc ), m_begin( clone_range_foreign(initlist.size(), initlist.begin(), initlist.end()) ),
+              m_end(m_begin + initlist.size() ), m_storage_end( m_begin + initlist.size() ), m_growth_factor( DEFAULT_GROWTH_FACTOR ) {
                 JAU_DARRAY_PRINTF("ctor initlist: %s\n", get_info().c_str());
             }
 
@@ -694,44 +694,44 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
 
             // iterator
 
-            constexpr iterator begin() noexcept { return begin_; }
+            constexpr iterator begin() noexcept { return m_begin; }
 
-            constexpr const_iterator begin() const noexcept { return begin_; }
+            constexpr const_iterator begin() const noexcept { return m_begin; }
 
-            constexpr const_iterator cbegin() const noexcept { return begin_; }
+            constexpr const_iterator cbegin() const noexcept { return m_begin; }
 
-            constexpr iterator end() noexcept { return end_; }
+            constexpr iterator end() noexcept { return m_end; }
 
-            constexpr const_iterator end() const noexcept { return end_; }
+            constexpr const_iterator end() const noexcept { return m_end; }
 
-            constexpr const_iterator cend() const noexcept { return end_; }
+            constexpr const_iterator cend() const noexcept { return m_end; }
 
 #if 0
-            constexpr iterator storage_end() noexcept { return storage_end_; }
+            constexpr iterator storage_end() noexcept { return m_storage_end; }
 
-            constexpr const_iterator storage_end() const noexcept { return storage_end_; }
+            constexpr const_iterator storage_end() const noexcept { return m_storage_end; }
 
-            constexpr const_iterator cstorage_end() const noexcept { return storage_end_; }
+            constexpr const_iterator cstorage_end() const noexcept { return m_storage_end; }
 #endif
 
             // read access
 
             const allocator_type& get_allocator_ref() const noexcept {
-                return alloc_inst;
+                return m_alloc_inst;
             }
 
             allocator_type get_allocator() const noexcept {
-                return allocator_type(alloc_inst);
+                return allocator_type(m_alloc_inst);
             }
 
             constexpr float growth_factor() const noexcept {
-                return growth_factor_;
+                return m_growth_factor;
             }
 
             /**
              * Return the current capacity.
              */
-            constexpr size_type capacity() const noexcept { return size_type(storage_end_ - begin_); }
+            constexpr size_type capacity() const noexcept { return size_type(m_storage_end - m_begin); }
 
             /**
              * Return the current capacity() multiplied by the growth factor, minimum is max(capacity()+1, 10).
@@ -745,63 +745,63 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
             /**
              * Like std::vector::empty().
              */
-            constexpr bool empty() const noexcept { return begin_ == end_; }
+            constexpr bool empty() const noexcept { return m_begin == m_end; }
 
             /**
              * Returns true if capacity has been reached and the next push_back()
              * will grow the storage and invalidates all iterators and references.
              */
-            constexpr bool capacity_reached() const noexcept { return end_ >= storage_end_; }
+            constexpr bool capacity_reached() const noexcept { return m_end >= m_storage_end; }
 
             /**
              * Like std::vector::size().
              */
-            constexpr size_type size() const noexcept { return size_type(end_ - begin_); }
+            constexpr size_type size() const noexcept { return size_type(m_end - m_begin); }
 
             // mixed mutable/immutable element access
 
             /**
              * Like std::vector::front(), mutable access.
              */
-            constexpr reference front() { return *begin_; }
+            constexpr reference front() { return *m_begin; }
 
             /**
              * Like std::vector::front(), immutable access.
              */
-            constexpr const_reference front() const { return *begin_; }
+            constexpr const_reference front() const { return *m_begin; }
 
             /**
              * Like std::vector::back(), mutable access.
              */
-            constexpr reference back() { return *(end_-1); }
+            constexpr reference back() { return *(m_end-1); }
 
             /**
              * Like std::vector::back(), immutable access.
              */
-            constexpr const_reference back() const { return *(end_-1); }
+            constexpr const_reference back() const { return *(m_end-1); }
 
             /**
              * Like std::vector::data(), const immutable pointer
              */
-            constexpr const_pointer data() const noexcept { return begin_; }
+            constexpr const_pointer data() const noexcept { return m_begin; }
 
             /**
              * Like std::vector::data(), mutable pointer
              */
-            constexpr pointer data() noexcept { return begin_; }
+            constexpr pointer data() noexcept { return m_begin; }
 
             /**
              * Like std::vector::operator[](size_type), immutable reference.
              */
             constexpr_cxx20 const_reference operator[](size_type i) const noexcept {
-                return *(begin_+i);
+                return *(m_begin+i);
             }
 
             /**
              * Like std::vector::operator[](size_type), mutable reference.
              */
             constexpr_cxx20 reference operator[](size_type i) noexcept {
-                return *(begin_+i);
+                return *(m_begin+i);
             }
 
             /**
@@ -809,7 +809,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              */
             constexpr_cxx20 const_reference at(size_type i) const {
                 if( 0 <= i && i < size() ) {
-                    return *(begin_+i);
+                    return *(m_begin+i);
                 }
                 throw jau::IndexOutOfBoundsError(i, size(), E_FILE_LINE);
             }
@@ -819,7 +819,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              */
             constexpr_cxx20 reference at(size_type i) {
                 if( 0 <= i && i < size() ) {
-                    return *(begin_+i);
+                    return *(m_begin+i);
                 }
                 throw jau::IndexOutOfBoundsError(i, size(), E_FILE_LINE);
             }
@@ -849,12 +849,12 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                         realloc_storage_move(new_size);
                     }
                     const size_type new_elem_count = new_size - sz;
-                    end_ += new_elem_count;
-                    ctor_copy_value(begin_ + sz, new_elem_count, val);
+                    m_end += new_elem_count;
+                    ctor_copy_value(m_begin + sz, new_elem_count, val);
                 } else if( new_size < sz ) {
-                    const size_type del_elem_count = dtor_range(begin_ + new_size, end_);
+                    const size_type del_elem_count = dtor_range(m_begin + new_size, m_end);
                     assert(sz - new_size == del_elem_count);
-                    end_ -= del_elem_count;
+                    m_end -= del_elem_count;
                 }
             }
 
@@ -886,13 +886,13 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                 const size_type size_ = size();
                 const size_type capacity_ = capacity();
                 const size_type x_size_ = size_type(last - first);
-                dtor_range(begin_, end_);
+                dtor_range(m_begin, m_end);
                 if( x_size_ > capacity_ ) {
                     freeStore();
-                    begin_ =  clone_range_foreign(x_size_, first, last);
+                    m_begin =  clone_range_foreign(x_size_, first, last);
                     set_iterator(x_size_, x_size_);
                 } else {
-                    ctor_copy_range_foreign(begin_, first, last);
+                    ctor_copy_range_foreign(m_begin, first, last);
                     set_iterator(x_size_, capacity_);
                 }
             }
@@ -905,13 +905,13 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                 const size_type size_ = size();
                 const size_type capacity_ = capacity();
                 const size_type x_size_ = size_type(last - first);
-                dtor_range(begin_, end_);
+                dtor_range(m_begin, m_end);
                 if( x_size_ > capacity_ ) {
                     freeStore();
-                    begin_ =  clone_range_check(x_size_, first, last);
+                    m_begin =  clone_range_check(x_size_, first, last);
                     set_iterator(x_size_, x_size_);
                 } else {
-                    ctor_copy_range_check(begin_, first, last);
+                    ctor_copy_range_check(m_begin, first, last);
                     set_iterator(x_size_, capacity_);
                 }
             }
@@ -925,8 +925,8 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              * @see shrink_to_fit()
              */
             constexpr void clear() noexcept {
-                dtor_range(begin_, end_);
-                end_ = begin_;
+                dtor_range(m_begin, m_end);
+                m_end = m_begin;
             }
 
             /**
@@ -940,9 +940,9 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                 clear();
                 if( releaseMem ) {
                     freeStore();
-                    begin_ = nullptr;
-                    end_ = nullptr;
-                    storage_end_ = nullptr;
+                    m_begin = nullptr;
+                    m_end = nullptr;
+                    m_storage_end = nullptr;
                 }
             }
 
@@ -952,11 +952,11 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
             constexpr void swap(darray& x) noexcept {
                 JAU_DARRAY_PRINTF("swap.0: this %s\n", get_info().c_str());
                 JAU_DARRAY_PRINTF("swap.0:    x %s\n", x.get_info().c_str());
-                std::swap(alloc_inst, x.alloc_inst);
-                std::swap(begin_, x.begin_);
-                std::swap(end_, x.end_);
-                std::swap(storage_end_, x.storage_end_);
-                std::swap(growth_factor_, x.growth_factor_);
+                std::swap(m_alloc_inst, x.m_alloc_inst);
+                std::swap(m_begin, x.m_begin);
+                std::swap(m_end, x.m_end);
+                std::swap(m_storage_end, x.m_storage_end);
+                std::swap(m_growth_factor, x.m_growth_factor);
                 JAU_DARRAY_PRINTF("swap.X: this %s\n", get_info().c_str());
                 JAU_DARRAY_PRINTF("swap.X:    x %s\n", x.get_info().c_str());
             }
@@ -965,8 +965,8 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              * Like std::vector::pop_back().
              */
             constexpr void pop_back() noexcept {
-                if( begin_ != end_ ) {
-                    dtor_one( --end_ );
+                if( m_begin != m_end ) {
+                    dtor_one( --m_end );
                 }
             }
 
@@ -976,15 +976,15 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              */
             constexpr iterator erase (const_iterator cpos) {
                 iterator pos = const_cast<iterator>(cpos);
-                if( begin_ <= pos && pos < end_ ) {
+                if( m_begin <= pos && pos < m_end ) {
                     dtor_one( pos );
-                    const difference_type right_count = end_ - ( pos + 1 ); // pos is exclusive
+                    const difference_type right_count = m_end - ( pos + 1 ); // pos is exclusive
                     if( 0 < right_count ) {
                         move_elements(pos, pos+1, right_count); // move right elems one left
                     }
-                    --end_;
+                    --m_end;
                 }
-                return begin_ <= pos && pos <= end_ ? pos : end_;
+                return m_begin <= pos && pos <= m_end ? pos : m_end;
             }
 
             /**
@@ -995,13 +995,13 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                 iterator first = const_cast<iterator>(cfirst);
                 const size_type count = dtor_range(first, clast);
                 if( count > 0 ) {
-                    const difference_type right_count = end_ - clast;  // last is exclusive
+                    const difference_type right_count = m_end - clast;  // last is exclusive
                     if( 0 < right_count ) {
                         move_elements(first, clast, right_count); // move right elems count left
                     }
-                    end_ -= count;
+                    m_end -= count;
                 }
-                return begin_ <= first && first <= end_ ? first : end_;
+                return m_begin <= first && first <= m_end ? first : m_end;
             }
 
             /**
@@ -1009,7 +1009,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              * @return iterator following the last removed element.
              */
             constexpr iterator erase (const size_type pos_idx) {
-                return erase(begin_ + pos_idx);
+                return erase(m_begin + pos_idx);
             }
 
             /**
@@ -1017,7 +1017,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              * @return iterator following the last removed element.
              */
             constexpr iterator erase (const size_type first_idx, const size_type last_idx) {
-                return erase(begin_ + first_idx, begin_ + last_idx);
+                return erase(m_begin + first_idx, m_begin + last_idx);
             }
 
             /**
@@ -1033,22 +1033,22 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              * @param x element value to insert
              */
             constexpr iterator insert(const_iterator pos, const value_type& x) {
-                if( begin_ <= pos && pos <= end_ ) {
-                    if( end_ == storage_end_ ) {
-                        const size_type pos_idx = pos - begin_;
+                if( m_begin <= pos && pos <= m_end ) {
+                    if( m_end == m_storage_end ) {
+                        const size_type pos_idx = pos - m_begin;
                         grow_storage_move();
-                        pos = begin_ + pos_idx;
+                        pos = m_begin + pos_idx;
                     }
-                    const difference_type right_count = end_ - pos; // include original element at 'pos_new'
+                    const difference_type right_count = m_end - pos; // include original element at 'pos_new'
                     if( 0 < right_count ) {
                         move_elements(const_cast<iterator>(pos+1), pos, right_count); // move elems one right
                     }
                     new (const_cast<pointer_mutable>(pos)) value_type( x ); // placement new
-                    ++end_;
+                    ++m_end;
 
-                    return begin_ <= pos && pos <= end_ ? const_cast<iterator>(pos) : end_;
+                    return m_begin <= pos && pos <= m_end ? const_cast<iterator>(pos) : m_end;
                 } else {
-                    throw jau::IndexOutOfBoundsError(std::to_string(difference_type(pos - begin_)), std::to_string(size()), E_FILE_LINE);
+                    throw jau::IndexOutOfBoundsError(std::to_string(difference_type(pos - m_begin)), std::to_string(size()), E_FILE_LINE);
                 }
             }
 
@@ -1058,7 +1058,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              * @param x element value to insert
              */
             constexpr iterator insert(const size_type pos_idx, const value_type& x) {
-                return insert(begin_ + pos_idx, x);
+                return insert(m_begin + pos_idx, x);
             }
 
             /**
@@ -1074,22 +1074,22 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              * @param x element value to be moved into
              */
             constexpr iterator insert(const_iterator pos, value_type&& x) {
-                if( begin_ <= pos && pos <= end_ ) {
-                    const size_type pos_idx = pos - begin_;
-                    if( end_ == storage_end_ ) {
+                if( m_begin <= pos && pos <= m_end ) {
+                    const size_type pos_idx = pos - m_begin;
+                    if( m_end == m_storage_end ) {
                         grow_storage_move();
                     }
-                    iterator pos_new = begin_ + pos_idx;
-                    const difference_type right_count = end_ - pos_new; // include original element at 'pos_new'
+                    iterator pos_new = m_begin + pos_idx;
+                    const difference_type right_count = m_end - pos_new; // include original element at 'pos_new'
                     if( 0 < right_count ) {
                         move_elements(pos_new+1, pos_new, right_count); // move elems one right
                     }
                     new (const_cast<pointer_mutable>(pos_new)) value_type( std::move( x ) ); // placement new
-                    ++end_;
+                    ++m_end;
 
-                    return begin_ <= pos_new && pos_new <= end_ ? pos_new : end_;
+                    return m_begin <= pos_new && pos_new <= m_end ? pos_new : m_end;
                 } else {
-                    throw jau::IndexOutOfBoundsError(std::to_string(difference_type(pos - begin_)), std::to_string(size()), E_FILE_LINE);
+                    throw jau::IndexOutOfBoundsError(std::to_string(difference_type(pos - m_begin)), std::to_string(size()), E_FILE_LINE);
                 }
             }
 
@@ -1107,22 +1107,22 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              */
             template<typename... Args>
             constexpr iterator emplace(const_iterator pos, Args&&... args) {
-                if( begin_ <= pos && pos <= end_ ) {
-                    const size_type pos_idx = pos - begin_;
-                    if( end_ == storage_end_ ) {
+                if( m_begin <= pos && pos <= m_end ) {
+                    const size_type pos_idx = pos - m_begin;
+                    if( m_end == m_storage_end ) {
                         grow_storage_move();
                     }
-                    iterator pos_new = begin_ + pos_idx;
-                    const difference_type right_count = end_ - pos_new; // include original element at 'pos_new'
+                    iterator pos_new = m_begin + pos_idx;
+                    const difference_type right_count = m_end - pos_new; // include original element at 'pos_new'
                     if( 0 < right_count ) {
                         move_elements(pos_new+1, pos_new, right_count); // move elems one right
                     }
                     new (const_cast<pointer_mutable>(pos_new)) value_type( std::forward<Args>(args)... ); // placement new, construct in-place
-                    ++end_;
+                    ++m_end;
 
-                    return begin_ <= pos_new && pos_new <= end_ ? pos_new : end_;
+                    return m_begin <= pos_new && pos_new <= m_end ? pos_new : m_end;
                 } else {
-                    throw jau::IndexOutOfBoundsError(std::to_string(difference_type(pos - begin_)), std::to_string(size()), E_FILE_LINE);
+                    throw jau::IndexOutOfBoundsError(std::to_string(difference_type(pos - m_begin)), std::to_string(size()), E_FILE_LINE);
                 }
             }
 
@@ -1136,23 +1136,23 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              */
             template< class InputIt >
             constexpr iterator insert( const_iterator pos, InputIt first, InputIt last ) {
-                if( begin_ <= pos && pos <= end_ ) {
+                if( m_begin <= pos && pos <= m_end ) {
                     const size_type new_elem_count = size_type(last - first);
-                    const size_type pos_idx = pos - begin_;
-                    if( end_ + new_elem_count >= storage_end_ ) {
+                    const size_type pos_idx = pos - m_begin;
+                    if( m_end + new_elem_count >= m_storage_end ) {
                         grow_storage_move(size() + new_elem_count);
                     }
-                    iterator pos_new = begin_ + pos_idx;
-                    const difference_type right_count = end_ - pos_new; // include original element at 'pos_new'
+                    iterator pos_new = m_begin + pos_idx;
+                    const difference_type right_count = m_end - pos_new; // include original element at 'pos_new'
                     if( 0 < right_count ) {
                         move_elements(pos_new + new_elem_count, pos_new, right_count); // move elems count right
                     }
                     ctor_copy_range_foreign(pos_new, first, last);
-                    end_ += new_elem_count;
+                    m_end += new_elem_count;
 
-                    return begin_ <= pos_new && pos_new <= end_ ? pos_new : end_;
+                    return m_begin <= pos_new && pos_new <= m_end ? pos_new : m_end;
                 } else {
-                    throw jau::IndexOutOfBoundsError(std::to_string(difference_type(pos - begin_)), std::to_string(size()), E_FILE_LINE);
+                    throw jau::IndexOutOfBoundsError(std::to_string(difference_type(pos - m_begin)), std::to_string(size()), E_FILE_LINE);
                 }
             }
 
@@ -1161,11 +1161,11 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              * @param x the value to be added at the tail.
              */
             constexpr void push_back(const value_type& x) {
-                if( end_ == storage_end_ ) {
+                if( m_end == m_storage_end ) {
                     grow_storage_move();
                 }
-                new (const_cast<pointer_mutable>(end_)) value_type( x ); // placement new
-                ++end_;
+                new (const_cast<pointer_mutable>(m_end)) value_type( x ); // placement new
+                ++m_end;
             }
 
             /**
@@ -1173,11 +1173,11 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              * @param x the value to be added at the tail.
              */
             constexpr void push_back(value_type&& x) {
-                if( end_ == storage_end_ ) {
+                if( m_end == m_storage_end ) {
                     grow_storage_move();
                 }
-                new (const_cast<pointer_mutable>(end_)) value_type( std::move(x) ); // placement new, just one element - no optimization
-                ++end_;
+                new (const_cast<pointer_mutable>(m_end)) value_type( std::move(x) ); // placement new, just one element - no optimization
+                ++m_end;
             }
 
             /**
@@ -1185,7 +1185,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              * @param x the value to be added at the front.
              */
             constexpr void push_front(const value_type& x) {
-                insert(begin_, x);
+                insert(m_begin, x);
             }
 
             /**
@@ -1193,7 +1193,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              * @param x the value to be added at the front.
              */
             constexpr void push_front(value_type&& x) {
-                insert(begin_, std::move(x));
+                insert(m_begin, std::move(x));
             }
 
             /**
@@ -1208,12 +1208,12 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              */
             template<typename... Args>
             constexpr reference emplace_back(Args&&... args) {
-                if( end_ == storage_end_ ) {
+                if( m_end == m_storage_end ) {
                     grow_storage_move();
                 }
-                new (const_cast<pointer_mutable>(end_)) value_type( std::forward<Args>(args)... ); // placement new, construct in-place
-                reference res = *end_;
-                ++end_;
+                new (const_cast<pointer_mutable>(m_end)) value_type( std::forward<Args>(args)... ); // placement new, construct in-place
+                reference res = *m_end;
+                ++m_end;
                 return res;
             }
 
@@ -1227,11 +1227,11 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
             constexpr void push_back( InputIt first, InputIt last ) {
                 const size_type count = size_type(last - first);
 
-                if( end_ + count >= storage_end_ ) {
+                if( m_end + count >= m_storage_end ) {
                     grow_storage_move(size() + count);
                 }
-                ctor_copy_range_foreign(end_, first, last);
-                end_ += count;
+                ctor_copy_range_foreign(m_end, first, last);
+                m_end += count;
             }
 
             /**
@@ -1247,11 +1247,11 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
 
                 JAU_DARRAY_PRINTF("push_back_list.copy.0: %zu elems: this %s\n", count, get_info().c_str());
 
-                if( end_ + count >= storage_end_ ) {
+                if( m_end + count >= m_storage_end ) {
                     grow_storage_move(size() + count);
                 }
                 // C++17 fold expression on above C++11 template pack args
-                ( new (const_cast<pointer_mutable>(end_++)) value_type( args ), ... ); // @suppress("Syntax error")
+                ( new (const_cast<pointer_mutable>(m_end++)) value_type( args ), ... ); // @suppress("Syntax error")
 
                 JAU_DARRAY_PRINTF("push_back_list.copy.X: %zu elems: this %s\n", count, get_info().c_str());
             }
@@ -1270,11 +1270,11 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
 
                 JAU_DARRAY_PRINTF("push_back_list.move.0: %zu elems: this %s\n", count, get_info().c_str());
 
-                if( end_ + count >= storage_end_ ) {
+                if( m_end + count >= m_storage_end ) {
                     grow_storage_move(size() + count);
                 }
                 // C++17 fold expression on above C++11 template pack args
-                ( new (const_cast<pointer_mutable>(end_++)) value_type( std::move(args) ), ... ); // @suppress("Syntax error")
+                ( new (const_cast<pointer_mutable>(m_end++)) value_type( std::move(args) ), ... ); // @suppress("Syntax error")
 
                 JAU_DARRAY_PRINTF("push_back_list.move.X: %zu elems: this %s\n", count, get_info().c_str());
             }
@@ -1309,7 +1309,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              * @return true if the element has been uniquely added, otherwise false
              */
             constexpr bool push_back_unique(const value_type& x, equal_comparator comparator) {
-                for(auto it = begin_; it != end_; ) {
+                for(auto it = m_begin; it != m_end; ) {
                     if( comparator( *it, x ) ) {
                         return false; // already included
                     } else {
@@ -1343,7 +1343,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              */
             constexpr size_type erase_matching(const value_type& x, const bool all_matching, equal_comparator comparator) {
                 size_type count = 0;
-                for(auto it = end_-1; begin_ <= it; --it) {
+                for(auto it = m_end-1; m_begin <= it; --it) {
                     if( comparator( *it, x ) ) {
                         erase(it);
                         ++count;
@@ -1372,7 +1372,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              template<class UnaryPredicate>
              constexpr size_type erase_if(const bool all_matching, UnaryPredicate p) {
                 size_type count = 0;
-                for(auto it = end_-1; begin_ <= it; --it) {
+                for(auto it = m_end-1; m_begin <= it; --it) {
                     if( p( *it ) ) {
                         erase(it);
                         ++count;
@@ -1396,19 +1396,19 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
             }
 
             std::string get_info() const noexcept {
-                difference_type cap_ = (storage_end_-begin_);
-                difference_type size_ = (end_-begin_);
+                difference_type cap_ = (m_storage_end-m_begin);
+                difference_type size_ = (m_end-m_begin);
                 std::string res("darray[this "+jau::to_hexstring(this)+
                                 ", size "+std::to_string(size_)+" / "+std::to_string(cap_)+
-                                ", growth "+std::to_string(growth_factor_)+
+                                ", growth "+std::to_string(m_growth_factor)+
                                 ", type[integral "+std::to_string(std::is_integral_v<Value_type>)+
                                 ", trivialCpy "+std::to_string(std::is_trivially_copyable_v<Value_type>)+
                                 "], uses[mmove "+std::to_string(uses_memmove)+
                                 ", realloc "+std::to_string(uses_realloc)+
                                 ", smem "+std::to_string(uses_secmem)+
-                                "], begin "+jau::to_hexstring(begin_)+
-                                ", end "+jau::to_hexstring(end_)+
-                                ", send "+jau::to_hexstring(storage_end_)+
+                                "], begin "+jau::to_hexstring(m_begin)+
+                                ", end "+jau::to_hexstring(m_end)+
+                                ", send "+jau::to_hexstring(m_storage_end)+
                                 "]");
                 return res;
             }
