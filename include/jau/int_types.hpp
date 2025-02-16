@@ -29,6 +29,7 @@
 #include <cstring>
 
 #include <jau/cpp_lang_util.hpp>
+#include <jau/type_info.hpp>
 #include <jau/packed_attribute.hpp>
 #include <jau/secmem.hpp>
 

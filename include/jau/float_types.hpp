@@ -30,6 +30,7 @@
 #endif
 
 #include <jau/cpp_lang_util.hpp>
+#include <jau/type_info.hpp>
 
 namespace jau {
 

@@ -917,20 +917,13 @@ std::string jau::math::to_string(const jau::math::math_error_t v) noexcept {
 }
 
 std::string jau::type_info::toString() const noexcept {
+    using namespace jau::enums;
+
     std::string r("TypeInfo[addr ");
     r.append(jau::to_hexstring(this))
      .append(", hash ").append(jau::to_hexstring(hash_code()))
      .append(", `").append(name())
-     .append("`, ident[");
-    if( m_identity_obj ) {
-        r.append("obj");
-    }
-    if( m_identity_sig ) {
-        if( m_identity_obj ) {
-            r.append(", ");
-        }
-        r.append("sig");
-    }
+     .append("`, ident").append(to_string(m_idflags));
     r.append("]]");
     return r;
 }

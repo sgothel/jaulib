@@ -35,6 +35,7 @@
 
 #include <jau/basic_types.hpp>
 #include <jau/cpp_lang_util.hpp>
+#include <jau/type_info.hpp>
 #include <jau/debug.hpp>
 
 namespace jau {
