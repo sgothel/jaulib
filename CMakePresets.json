@@ -48,6 +48,18 @@
       }
     },
     {
+      "name": "debug2-gcc",
+      "inherits": "debug",
+      "displayName": "Debug (gcc, C++20, java)",
+      "binaryDir": "${sourceDir}/build/debug2-gcc",
+      "cacheVariables": {
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/dist/debug2-gcc",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "CC_INSTRUMENTATION": "on"
+      }
+    },
+    {
       "name": "release",
       "inherits": "debug",
       "displayName": "Release (cc, C++20, java)",
@@ -107,6 +119,10 @@
       "configurePreset": "debug-gcc"
     },
     {
+      "name": "debug2-gcc",
+      "configurePreset": "debug2-gcc"
+    },
+    {
       "name": "release",
       "configurePreset": "release"
     },
@@ -139,6 +155,12 @@
     {
       "name": "debug-gcc",
       "configurePreset": "debug-gcc",
+      "output": {"outputOnFailure": true},
+      "execution": {"noTestsAction": "error", "stopOnFailure": true}
+    },
+    {
+      "name": "debug2-gcc",
+      "configurePreset": "debug2-gcc",
       "output": {"outputOnFailure": true},
       "execution": {"noTestsAction": "error", "stopOnFailure": true}
     },
