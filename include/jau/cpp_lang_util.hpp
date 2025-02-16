@@ -255,6 +255,20 @@ namespace jau {
      */
     std::string demangle_name(const char* mangled_name) noexcept;
 
+    #if defined(__clang__)
+        /** Optional generic usage of final keyword w/o negative performance impact. (Disabled) */
+        #define final_opt
+    #elif defined(__GNUC__) && !defined(__clang__)
+        /** Optional generic usage of final keyword w/o negative performance impact. (Enabled) */
+        #define final_opt final
+    #elif defined(_MSC_VER)
+        /** Optional generic usage of final keyword w/o negative performance impact. (Enabled, OK?) */
+        #define final_opt final
+    #else
+        /** Optional generic usage of final keyword w/o negative performance impact. (Enabled, OK?) */
+        #define final_opt final
+    #endif
+
     /**
     // *************************************************
     // *************************************************
