@@ -27,10 +27,12 @@
 
 #include <cstdint>
 #include <cstring>
-#include <string>
 #include <cstdarg>
+#include <string>
 #include <string_view>
 #include <type_traits>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include <jau/byte_util.hpp>
@@ -433,6 +435,29 @@ namespace jau {
 
     bool to_integer(long long & result, const std::string& str, const char limiter='\0', const char *limiter_pos=nullptr);
     bool to_integer(long long & result, const char * str, size_t str_len, const char limiter='\0', const char *limiter_pos=nullptr);
+
+    /**
+     * C++20: Heterogeneous Lookup in (Un)ordered Containers
+     *
+     * @see https://www.cppstories.com/2021/heterogeneous-access-cpp20/
+     */
+    struct string_hash {
+        using is_transparent = void;
+        [[nodiscard]] size_t operator()(const char* txt) const {
+            return std::hash<std::string_view>{}(txt);
+        }
+        [[nodiscard]] size_t operator()(std::string_view txt) const {
+            return std::hash<std::string_view>{}(txt);
+        }
+        [[nodiscard]] size_t operator()(const std::string& txt) const {
+            return std::hash<std::string>{}(txt);
+        }
+    };
+
+    template<typename T>
+    using StringHashMap = std::unordered_map<std::string, T, string_hash, std::equal_to<>>;
+
+    using StringHashSet = std::unordered_set<std::string, string_hash, std::equal_to<>>;
 
     /**@}*/
 
