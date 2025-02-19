@@ -91,6 +91,8 @@ namespace jau::math {
         constexpr Vector2I& operator=(const Vector2I&) noexcept = default;
         constexpr Vector2I& operator=(Vector2I&&) noexcept = default;
 
+        constexpr Vector2I copy() noexcept { return Vector2I(*this); }
+
         /** Returns read-only component */
         constexpr value_type operator[](size_t i) const noexcept {
             assert(i < 2);
@@ -191,7 +193,7 @@ namespace jau::math {
             x = tmp;
         }
 
-        std::string toString() const noexcept { return std::to_string(x)+" / "+std::to_string(y); }
+        std::string toString() const noexcept { return std::to_string(x)+", "+std::to_string(y); }
 
         constexpr bool is_zero() const noexcept {
             return jau::is_zero(x) && jau::is_zero(y);
@@ -248,6 +250,14 @@ namespace jau::math {
              std::enable_if_t<std::numeric_limits<T>::is_integer, bool> = true>
     constexpr Vector2I<T> operator-(const Vector2I<T>& lhs, const Vector2I<T>& rhs ) noexcept {
         Vector2I<T> r(lhs); r -= rhs; return r;
+    }
+
+    template<typename T,
+             std::enable_if_t<std::numeric_limits<T>::is_integer, bool> = true>
+    constexpr Vector2I<T> operator-(const Vector2I<T>& lhs) noexcept {
+        Vector2I<T> r(lhs);
+        r *= -1;
+        return r;
     }
 
     template<typename T,

@@ -1,6 +1,6 @@
 /*
- * Author: Svenson Han Gothel <shg@jausoft.com>
- * Copyright (c) 2020-2024 Gothel Software e.K.
+ * Author: Sven Gothel <sgothel@jausoft.com>
+ * Copyright (c) 2025 Gothel Software e.K.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -22,13 +22,12 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef JAU_FLOAT_TYPES_HPP_
-#define JAU_FLOAT_TYPES_HPP_
+#ifndef JAU_STRING_TYPES_HPP_
+#define JAU_STRING_TYPES_HPP_
 
-#if __cplusplus > 202002L
-    #include <stdfloat>
-#endif
-
+#include <string>
+#include <string_view>
+#include <type_traits>
 #include <jau/cpp_lang_util.hpp>
 #include <jau/type_info.hpp>
 
@@ -39,30 +38,35 @@ namespace jau {
      *  @{
      */
 
-    #if __cplusplus > 202002L
-        /** https://en.cppreference.com/w/cpp/types/floating-point */
-        typedef std::float32_t float32_t;
-        typedef std::float64_t float64_t;
+    #if __cplusplus > 201703L
+        // C++20
+        typedef char8_t                          uchar8_t;
+        typedef std::u8string                    u8string;
+        typedef std::u8string_view               u8string_view;
     #else
-        static_assert(32 == sizeof(float)<<3);
-        static_assert(64 == sizeof(double)<<3);
-        typedef float float32_t;
-        typedef double float64_t;
+        typedef uint8_t                          uchar8_t;
+        typedef std::basic_string<uchar8_t>      u8string;
+        typedef std::basic_string_view<uchar8_t> u8string_view;
     #endif
+    static_assert(1 == sizeof(uchar8_t));
+    // static_assert(std::is_assignable_v<uint8_t, uchar8_t>);
+    // static_assert(std::is_same_v<uint8_t, uchar8_t>);
+    static_assert(std::is_same_v<unsigned char, uint8_t>);
 
-    namespace float_literals {
-        constexpr float32_t operator ""_f32(long double __v)   { return (float32_t)__v; }
-        constexpr float64_t operator ""_f64(long double __v)   { return (float64_t)__v; }
+    typedef std::basic_ostream<uchar8_t> u8ostream;
+
+    namespace string_literals {
+        constexpr uchar8_t operator ""_uc8(long double __v)   { return (uchar8_t)__v; }
+        // constexpr u8string operator ""_utf8(const uchar8_t* __v, size_t __n) { return u8string(__v, __n); }
     } // float_literals
 
-    class float_ctti {
+    class string_ctti {
       public:
-        static const jau::type_info& f32() { return jau::static_ctti<float32_t>(); }
-        static const jau::type_info& f64() { return jau::static_ctti<float64_t>(); }
+        static const jau::type_info& uc8() { return jau::static_ctti<uchar8_t>(); }
     };
 
     /**@}*/
 
 } // namespace jau
 
-#endif /* JAU_FLOAT_TYPES_HPP_ */
+#endif /* JAU_STRING_TYPES_HPP_ */

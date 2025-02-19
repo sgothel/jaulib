@@ -159,7 +159,7 @@ namespace jau {
      */
     template <typename T,
               std::enable_if_t< std::is_integral_v<T> && std::is_unsigned_v<T>, bool> = true>
-    inline constexpr nsize_t high_bit(T x)
+    constexpr nsize_t high_bit(T x)
     {
         nsize_t hb = 0;
         for(nsize_t s = ( CHAR_BIT * sizeof(T) ) >> 1; s > 0; s >>= 1) {

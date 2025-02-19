@@ -150,14 +150,21 @@ static void test_byteorder(const Value_type v_cpu,
     }
 }
 
-static uint16_t compose(const uint8_t n1, const uint8_t n2) {
+static uint16_t composeU16(const uint8_t n1, const uint8_t n2) {
     uint16_t dest;
     uint8_t * p_dest = reinterpret_cast<uint8_t*>(&dest);
     p_dest[0] = n1;
     p_dest[1] = n2;
     return dest;
 }
-static uint32_t compose(const uint8_t n1, const uint8_t n2, const uint8_t n3, const uint8_t n4) {
+static int16_t composeI16(const uint8_t n1, const uint8_t n2) {
+    int16_t dest;
+    uint8_t * p_dest = reinterpret_cast<uint8_t*>(&dest);
+    p_dest[0] = n1;
+    p_dest[1] = n2;
+    return dest;
+}
+static uint32_t composeU32(const uint8_t n1, const uint8_t n2, const uint8_t n3, const uint8_t n4) {
     uint32_t dest;
     uint8_t * p_dest = reinterpret_cast<uint8_t*>(&dest);
     p_dest[0] = n1;
@@ -166,9 +173,32 @@ static uint32_t compose(const uint8_t n1, const uint8_t n2, const uint8_t n3, co
     p_dest[3] = n4;
     return dest;
 }
-static uint64_t compose(const uint8_t n1, const uint8_t n2, const uint8_t n3, const uint8_t n4,
-                        const uint8_t n5, const uint8_t n6, const uint8_t n7, const uint8_t n8) {
+static int32_t composeI32(const uint8_t n1, const uint8_t n2, const uint8_t n3, const uint8_t n4) {
+    int32_t dest;
+    uint8_t * p_dest = reinterpret_cast<uint8_t*>(&dest);
+    p_dest[0] = n1;
+    p_dest[1] = n2;
+    p_dest[2] = n3;
+    p_dest[3] = n4;
+    return dest;
+}
+static uint64_t composeU64(const uint8_t n1, const uint8_t n2, const uint8_t n3, const uint8_t n4,
+                           const uint8_t n5, const uint8_t n6, const uint8_t n7, const uint8_t n8) {
     uint64_t dest;
+    uint8_t * p_dest = reinterpret_cast<uint8_t*>(&dest);
+    p_dest[0] = n1;
+    p_dest[1] = n2;
+    p_dest[2] = n3;
+    p_dest[3] = n4;
+    p_dest[4] = n5;
+    p_dest[5] = n6;
+    p_dest[6] = n7;
+    p_dest[7] = n8;
+    return dest;
+}
+static int64_t composeI64(const uint8_t n1, const uint8_t n2, const uint8_t n3, const uint8_t n4,
+                          const uint8_t n5, const uint8_t n6, const uint8_t n7, const uint8_t n8) {
+    int64_t dest;
     uint8_t * p_dest = reinterpret_cast<uint8_t*>(&dest);
     p_dest[0] = n1;
     p_dest[1] = n2;
@@ -204,21 +234,63 @@ static Value_type compose(const uint8_t lowest_value, const jau::endian_t le_or_
 
 TEST_CASE( "Integer Type Byte Order Test 01", "[byteorder][bswap]" ) {
     {
-        uint16_t cpu = 0x3210U;
-        uint16_t le = compose(0x10, 0x32); // stream: 1032
-        uint16_t be = compose(0x32, 0x10); // stream: 3210
+        constexpr uint16_t cpu = 0x3210U;
+        uint16_t le = composeU16(0x10, 0x32); // stream: 1032
+        uint16_t be = composeU16(0x32, 0x10); // stream: 3210
         test_byteorder(cpu, le, be);
     }
     {
-        uint32_t cpu = 0x76543210U;
-        uint32_t le = compose(0x10, 0x32, 0x54, 0x76); // stream: 10325476
-        uint32_t be = compose(0x76, 0x54, 0x32, 0x10); // stream: 76543210
+        constexpr uint16_t cpu = 0xFEDCU;
+        uint16_t le = composeU16(0xDC, 0xFE); // stream: DCFE
+        uint16_t be = composeU16(0xFE, 0xDC); // stream: FEDC
         test_byteorder(cpu, le, be);
     }
     {
-        uint64_t cpu = 0xfedcba9876543210ULL;
-        uint64_t le = compose(0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe); // stream: 1032547698badcfe
-        uint64_t be = compose(0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10); // stream: fedcba9876543210
+        constexpr int16_t cpu = 0x3210;
+        int16_t le = composeI16(0x10, 0x32); // stream: 1032
+        int16_t be = composeI16(0x32, 0x10); // stream: 3210
+        test_byteorder(cpu, le, be);
+    }
+    {
+        constexpr int16_t cpu = -292_i16; // int16_t(0xFEDC);
+        int16_t le = composeI16(0xDC, 0xFE); // stream: DCFE
+        int16_t be = composeI16(0xFE, 0xDC); // stream: FEDC
+        test_byteorder(cpu, le, be);
+    }
+    {
+        constexpr uint32_t cpu = 0x76543210U;
+        uint32_t le = composeU32(0x10, 0x32, 0x54, 0x76); // stream: 10325476
+        uint32_t be = composeU32(0x76, 0x54, 0x32, 0x10); // stream: 76543210
+        test_byteorder(cpu, le, be);
+    }
+    {
+        constexpr uint32_t cpu = 0xFEDCBA98U;
+        uint32_t le = composeU32(0x98, 0xBA, 0xDC, 0xFE); // stream: 98BADCFE
+        uint32_t be = composeU32(0xFE, 0xDC, 0xBA, 0x98); // stream: FEDCBA98
+        test_byteorder(cpu, le, be);
+    }
+    {
+        constexpr int32_t cpu = int32_t(0x76543210);
+        int32_t le = composeI32(0x10, 0x32, 0x54, 0x76); // stream: 10325476
+        int32_t be = composeI32(0x76, 0x54, 0x32, 0x10); // stream: 76543210
+        test_byteorder(cpu, le, be);
+    }
+    {
+        constexpr int32_t cpu = -19088744_i32; // int32_t(0xFEDCBA98U);
+        int32_t le = composeI32(0x98, 0xBA, 0xDC, 0xFE); // stream: 98BADCFE
+        int32_t be = composeI32(0xFE, 0xDC, 0xBA, 0x98); // stream: FEDCBA98
+        test_byteorder(cpu, le, be);
+    }
+    {
+        constexpr uint64_t cpu = 0xfedcba9876543210ULL;
+        uint64_t le = composeU64(0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe); // stream: 1032547698badcfe
+        uint64_t be = composeU64(0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10); // stream: fedcba9876543210
+        test_byteorder(cpu, le, be);
+    }
+    {
+        constexpr int64_t cpu = -81985529216486896_i64; // int64_t(0xfedcba9876543210ULL);
+        int64_t le = composeI64(0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe); // stream: 1032547698badcfe
+        int64_t be = composeI64(0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10); // stream: fedcba9876543210
         test_byteorder(cpu, le, be);
     }
     {
@@ -257,19 +329,31 @@ static void test_value_cpu(const Value_type v1, const Value_type v2, const Value
 
 TEST_CASE( "Integer Get/Put in CPU Byte Order Test 02", "[byteorder][get][put]" ) {
     {
-        uint8_t a = 0x01, b = 0x11, c = 0xff;
+        constexpr uint8_t a = 0x01, b = 0x11, c = 0xff;
         test_value_cpu(a, b, c);
     }
     {
-        uint16_t a = 0x0123, b = 0x1122, c = 0xffee;
+        constexpr uint16_t a = 0x0123, b = 0x1122, c = 0xffee;
         test_value_cpu(a, b, c);
     }
     {
-        uint32_t a = 0x01234567U, b = 0x11223344U, c = 0xffeeddccU;
+        constexpr int16_t a = 0x0123, b = 0x1122, c = -18_i16; // (int16_t)0xffee;
         test_value_cpu(a, b, c);
     }
     {
-        uint64_t a = 0x0123456789abcdefULL, b = 0x1122334455667788ULL, c = 0xffeeddcc99887766ULL;
+        constexpr uint32_t a = 0x01234567U, b = 0x11223344U, c = 0xffeeddccU;
+        test_value_cpu(a, b, c);
+    }
+    {
+        constexpr int32_t a = 0x01234567, b = 0x11223344, c = -1122868_i32; // (int32_t)0xffeeddcc;
+        test_value_cpu(a, b, c);
+    }
+    {
+        constexpr uint64_t a = 0x0123456789abcdefULL, b = 0x1122334455667788ULL, c = 0xffeeddcc99887766ULL;
+        test_value_cpu(a, b, c);
+    }
+    {
+        constexpr int64_t a = 0x0123456789abcdefLL, b = 0x1122334455667788LL, c = -4822678761867418_i64; // (int64_t)0xffeeddcc99887766LL;
         test_value_cpu(a, b, c);
     }
     {
@@ -319,21 +403,63 @@ static void test_value_littlebig(const Value_type v_cpu, const Value_type v_le, 
 
 TEST_CASE( "Integer Get/Put in explicit Byte Order Test 03", "[byteorder][get][put]" ) {
     {
-        uint16_t cpu = 0x3210U;
-        uint16_t le = compose(0x10, 0x32); // stream: 1032
-        uint16_t be = compose(0x32, 0x10); // stream: 3210
+        constexpr uint16_t cpu = 0x3210U;
+        uint16_t le = composeU16(0x10, 0x32); // stream: 1032
+        uint16_t be = composeU16(0x32, 0x10); // stream: 3210
         test_value_littlebig(cpu, le, be);
     }
     {
-        uint32_t cpu = 0x76543210U;
-        uint32_t le = compose(0x10, 0x32, 0x54, 0x76); // stream: 10325476
-        uint32_t be = compose(0x76, 0x54, 0x32, 0x10); // stream: 76543210
+        constexpr uint16_t cpu = 0xFEDCU;
+        uint16_t le = composeU16(0xDC, 0xFE); // stream: DCFE
+        uint16_t be = composeU16(0xFE, 0xDC); // stream: FEDC
         test_value_littlebig(cpu, le, be);
     }
     {
-        uint64_t cpu = 0xfedcba9876543210ULL;
-        uint64_t le = compose(0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe); // stream: 1032547698badcfe
-        uint64_t be = compose(0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10); // stream: fedcba9876543210
+        constexpr int16_t cpu = 0x3210;
+        int16_t le = composeI16(0x10, 0x32); // stream: 1032
+        int16_t be = composeI16(0x32, 0x10); // stream: 3210
+        test_value_littlebig(cpu, le, be);
+    }
+    {
+        constexpr int16_t cpu = -292_i16; // int16_t(0xFEDC);
+        int16_t le = composeI16(0xDC, 0xFE); // stream: DCFE
+        int16_t be = composeI16(0xFE, 0xDC); // stream: FEDC
+        test_value_littlebig(cpu, le, be);
+    }
+    {
+        constexpr uint32_t cpu = 0x76543210U;
+        uint32_t le = composeU32(0x10, 0x32, 0x54, 0x76); // stream: 10325476
+        uint32_t be = composeU32(0x76, 0x54, 0x32, 0x10); // stream: 76543210
+        test_value_littlebig(cpu, le, be);
+    }
+    {
+        constexpr uint32_t cpu = 0xFEDCBA98U;
+        uint32_t le = composeU32(0x98, 0xBA, 0xDC, 0xFE); // stream: 98BADCFE
+        uint32_t be = composeU32(0xFE, 0xDC, 0xBA, 0x98); // stream: FEDCBA98
+        test_value_littlebig(cpu, le, be);
+    }
+    {
+        constexpr int32_t cpu = int32_t(0x76543210);
+        int32_t le = composeI32(0x10, 0x32, 0x54, 0x76); // stream: 10325476
+        int32_t be = composeI32(0x76, 0x54, 0x32, 0x10); // stream: 76543210
+        test_value_littlebig(cpu, le, be);
+    }
+    {
+        constexpr int32_t cpu = -19088744_i32; // int32_t(0xFEDCBA98U);
+        int32_t le = composeI32(0x98, 0xBA, 0xDC, 0xFE); // stream: 98BADCFE
+        int32_t be = composeI32(0xFE, 0xDC, 0xBA, 0x98); // stream: FEDCBA98
+        test_value_littlebig(cpu, le, be);
+    }
+    {
+        constexpr uint64_t cpu = 0xfedcba9876543210ULL;
+        uint64_t le = composeU64(0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe); // stream: 1032547698badcfe
+        uint64_t be = composeU64(0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10); // stream: fedcba9876543210
+        test_value_littlebig(cpu, le, be);
+    }
+    {
+        constexpr int64_t cpu = -81985529216486896_i64; // int64_t(0xfedcba9876543210ULL);
+        int64_t le = composeI64(0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe); // stream: 1032547698badcfe
+        int64_t be = composeI64(0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10); // stream: fedcba9876543210
         test_value_littlebig(cpu, le, be);
     }
     {

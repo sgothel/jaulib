@@ -199,6 +199,22 @@ namespace jau::enums {
         return lhs = lhs & rhs;
     }
 
+    /**
+     * If `set==true`, sets the `bits` in `store`, i.e. equivalent to `store |= bits` operation.
+     *
+     * Otherwise clears the `bits` in `store`, i.e. equivalent to `store &= ~bits` operation.
+     *
+     * Returns store reference.
+     */
+    template<typename E, std::enable_if_t<std::is_enum_v<E>>* = nullptr>
+    constexpr E& write(E& store, const E bits, bool set) noexcept {
+        if( set ) {
+            return store = store | bits;
+        } else {
+            return store = store & ~bits;
+        }
+    }
+
     template<typename E, std::enable_if_t<std::is_enum_v<E>>* = nullptr>
     constexpr E& operator^=(E& lhs, const E rhs) noexcept {
         return lhs = lhs ^ rhs;
@@ -601,8 +617,8 @@ namespace jau::enums {
 
 #define JAU_APPEND_BITSTR(U,V,M) jau::enums::append_bitstr(out, M, U::V, #V, comma);
 
-#define JAU_MAKE_BITFIELD_ENUM_STRING(type, ...)              \
-    JAU_MAKE_ENUM_STRING_SUB(type, type, __VA_ARGS__)         \
+#define JAU_MAKE_BITFIELD_ENUM_STRING(type, ...)            \
+    JAU_MAKE_ENUM_STRING_SUB(type, type, __VA_ARGS__)       \
                                                             \
     inline std::string                                      \
     to_string(const type mask) {                            \
@@ -613,8 +629,8 @@ namespace jau::enums {
         return out;                                         \
     }                                                       \
 
-#define JAU_MAKE_BITFIELD_ENUM_STRING2(type, stype, ...)      \
-    JAU_MAKE_ENUM_STRING_SUB(type, stype, __VA_ARGS__)        \
+#define JAU_MAKE_BITFIELD_ENUM_STRING2(type, stype, ...)    \
+    JAU_MAKE_ENUM_STRING_SUB(type, stype, __VA_ARGS__)      \
                                                             \
     inline std::string                                      \
     to_string(const type mask) {                            \

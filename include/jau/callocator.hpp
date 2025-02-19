@@ -108,7 +108,7 @@ struct callocator
         return reinterpret_cast<value_type*>( ::malloc( n * sizeof(value_type) ) ); // NOLINT(bugprone-sizeof-expression)
     }
 #else
-    value_type* allocate(std::size_t n) { // C++17        
+    value_type* allocate(std::size_t n) { // C++17
         return reinterpret_cast<value_type*>( ::malloc( n * sizeof(value_type) ) ); // NOLINT(bugprone-sizeof-expression)
     }
 #endif
@@ -119,11 +119,11 @@ struct callocator
     }
 
 #if __cplusplus > 201703L
-    constexpr void deallocate(value_type* p, std::size_t) {
+    constexpr void deallocate(value_type* p, std::size_t) noexcept {
         ::free( reinterpret_cast<void*>( const_cast<pointer_mutable>( p ) ) );
     }
 #else
-    void deallocate(value_type* p, std::size_t) {
+    void deallocate(value_type* p, std::size_t) noexcept {
         ::free( reinterpret_cast<void*>( const_cast<pointer_mutable>( p ) ) );
     }
 #endif

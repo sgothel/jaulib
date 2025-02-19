@@ -28,10 +28,7 @@
 #include <cstdarg>
 #include <cstdint>
 #include <cassert>
-#include <limits>
 #include <string>
-#include <vector>
-#include <initializer_list>
 #include <iostream>
 
 #include <jau/functional.hpp>
@@ -101,15 +98,15 @@ class PMVMatrix4 {
     private:
         class PMVSync1 : public SyncMat4 {
           private:
-            Mat4& m_mat;
+            const Mat4& m_mat;
             sync_action_t m_sync;
 
           public:
-            PMVSync1(Mat4& m, sync_action_t s) noexcept
+            PMVSync1(const Mat4& m, sync_action_t s) noexcept
             : m_mat(m), m_sync( std::move(s) )
             { }
 
-            PMVSync1(Mat4& m) noexcept
+            PMVSync1(const Mat4& m) noexcept
             : m_mat(m), m_sync( jau::bind_free(sync_action_fptr(nullptr)) )
             { }
 
@@ -119,20 +116,20 @@ class PMVMatrix4 {
 
         class PMVSyncN : public SyncMats4 {
           private:
-            Mat4* m_mat;
+            const Mat4& m_mat;
             size_t m_count;
             sync_action_t m_sync;
 
           public:
-            PMVSyncN(Mat4* m, size_t count, sync_action_t s) noexcept
+            PMVSyncN(const Mat4& m, size_t count, sync_action_t s) noexcept
             : m_mat(m), m_count(count), m_sync( std::move(s) )
             { }
-            PMVSyncN(Mat4* m, size_t count) noexcept
+            PMVSyncN(const Mat4& m, size_t count) noexcept
             : m_mat(m), m_count(count), m_sync( jau::bind_free(sync_action_fptr(nullptr)) )
             { }
 
             sync_action_t& action() noexcept override { return m_sync; }
-            const Mat4* matrices() const noexcept override { return m_mat; }
+            const Mat4* matrices() const noexcept override { return &m_mat; }
             size_t matrixCount() const noexcept override { return m_count; }
         };
 
@@ -154,9 +151,9 @@ class PMVMatrix4 {
         PMVSync1 syncMvi = PMVSync1(matMvi, jau::bind_member(this, &PMVMatrix4::updateImpl0));
         PMVSync1 syncMvit = PMVSync1(matMvit, jau::bind_member(this, &PMVMatrix4::updateImpl0));
 
-        PMVSyncN syncP_Mv = PMVSyncN(&matP, 2);
-        PMVSyncN syncP_Mv_Mvi = PMVSyncN(&matP, 3, jau::bind_member(this, &PMVMatrix4::updateImpl0));
-        PMVSyncN syncP_Mv_Mvi_Mvit = PMVSyncN(&matP, 4, jau::bind_member(this, &PMVMatrix4::updateImpl0));
+        PMVSyncN syncP_Mv = PMVSyncN(matP, 2);
+        PMVSyncN syncP_Mv_Mvi = PMVSyncN(matP, 3, jau::bind_member(this, &PMVMatrix4::updateImpl0));
+        PMVSyncN syncP_Mv_Mvi_Mvit = PMVSyncN(matP, 4, jau::bind_member(this, &PMVMatrix4::updateImpl0));
 
         uint32_t modifiedBits = MODIFIED_ALL;
         uint32_t dirtyBits = 0; // contains the dirty bits, i.e. hinting for update operation
@@ -317,7 +314,7 @@ class PMVMatrix4 {
      * See <a href="#storageDetails"> matrix storage details</a>.
      * </p>
      */
-    constexpr SyncMats4f& getSyncPMv() noexcept { return syncP_Mv; }    
+    constexpr SyncMats4f& getSyncPMv() noexcept { return syncP_Mv; }
     constexpr const SyncMats4f& getSyncPMv() const noexcept { return syncP_Mv; }
 
     /**

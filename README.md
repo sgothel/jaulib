@@ -23,7 +23,7 @@ See [C++ Minimum Requirements](#cpp_min_req) and [Supported Platforms](#sup_plat
 ## API Documentation
 Up to date API documentation can be found:
 
-* [C++ API Doc](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/index.html) with [modules](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/modules.html):
+* [C++ API Doc](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/index.html) with [topics](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/topics.html):
   * [Basic Algorithms](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__Algorithms.html)
   * [Byte Utilities](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__ByteUtils.html)
   * [C++ Language Utilities](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__CppLang.html)

@@ -962,7 +962,7 @@ namespace jau::mp {
             * @param input the value to extract from
             * @return byte byte_num of input
             */
-            template<typename T> static inline constexpr uint8_t get_byte_var_be(size_t byte_num, T input) noexcept {
+            template<typename T> static constexpr uint8_t get_byte_var_be(size_t byte_num, T input) noexcept {
                return static_cast<uint8_t>( input >> (((~byte_num)&(sizeof(T)-1)) << 3) );
             }
             /**
@@ -971,7 +971,7 @@ namespace jau::mp {
             * @param input the value to extract from
             * @return byte byte_num of input
             */
-            template<typename T> static inline constexpr uint8_t get_byte_var_le(size_t byte_num, T input) noexcept {
+            template<typename T> static constexpr uint8_t get_byte_var_le(size_t byte_num, T input) noexcept {
                return static_cast<uint8_t>( input >> ( byte_num << 3 ) );
             }
 
@@ -983,7 +983,7 @@ namespace jau::mp {
             * @param ptr a pointer to memory to zero
             * @param bytes the number of bytes to zero in ptr
             */
-            static inline constexpr void clear_bytes(void* ptr, size_t bytes) noexcept {
+            static constexpr void clear_bytes(void* ptr, size_t bytes) noexcept {
                 if(bytes > 0) {
                     std::memset(ptr, 0, bytes);
                 }
@@ -999,7 +999,7 @@ namespace jau::mp {
             * @param ptr a pointer to an array of Ts to zero
             * @param n the number of Ts pointed to by ptr
             */
-            template<typename T> static inline constexpr void clear_mem(T* ptr, size_t n) noexcept {
+            template<typename T> static constexpr void clear_mem(T* ptr, size_t n) noexcept {
                clear_bytes(ptr, sizeof(T)*n);
             }
 

@@ -92,6 +92,15 @@ namespace jau {
         #endif
     }
 
+    constexpr int16_t bswap(int16_t const source) noexcept {
+        #if defined __has_builtin_bswap64
+            return jau::bit_cast<int16_t>( __builtin_bswap16(jau::bit_cast<uint16_t>(source)) );
+        #else
+            return (int16_t) ( ( ( (source) >> 8 ) & 0xff ) |
+                               ( ( (source) & 0xff) << 8 ) );
+        #endif
+    }
+
     constexpr uint32_t bswap(uint32_t const source) noexcept {
         #if defined __has_builtin_bswap32
             return __builtin_bswap32(source);
@@ -100,6 +109,17 @@ namespace jau {
                    ( ( source & 0x00ff0000U ) >>  8 ) |
                    ( ( source & 0x0000ff00U ) <<  8 ) |
                    ( ( source & 0x000000ffU ) << 24 );
+        #endif
+    }
+
+    constexpr int32_t bswap(int32_t const source) noexcept {
+        #if defined __has_builtin_bswap64
+            return jau::bit_cast<int32_t>( __builtin_bswap32(jau::bit_cast<uint32_t>(source)) );
+        #else
+            return jau::bit_cast<int32_t>( ( ( source & 0xff000000U ) >> 24 ) |
+                                           ( ( source & 0x00ff0000U ) >>  8 ) |
+                                           ( ( source & 0x0000ff00U ) <<  8 ) |
+                                           ( ( source & 0x000000ffU ) << 24 ) );
         #endif
     }
 
@@ -115,6 +135,21 @@ namespace jau {
                    ( ( source & 0x0000000000ff0000ULL ) << 24 ) |
                    ( ( source & 0x000000000000ff00ULL ) << 40 ) |
                    ( ( source & 0x00000000000000ffULL ) << 56 );
+        #endif
+    }
+
+    constexpr int64_t bswap(int64_t const & source) noexcept {
+        #if defined __has_builtin_bswap64
+            return jau::bit_cast<int64_t>( __builtin_bswap64(jau::bit_cast<uint64_t>(source)) );
+        #else
+            return jau::bit_cast<int64_t>( ( ( source & 0xff00000000000000ULL ) >> 56 ) |
+                                           ( ( source & 0x00ff000000000000ULL ) >> 40 ) |
+                                           ( ( source & 0x0000ff0000000000ULL ) >> 24 ) |
+                                           ( ( source & 0x000000ff00000000ULL ) >>  8 ) |
+                                           ( ( source & 0x00000000ff000000ULL ) <<  8 ) |
+                                           ( ( source & 0x0000000000ff0000ULL ) << 24 ) |
+                                           ( ( source & 0x000000000000ff00ULL ) << 40 ) |
+                                           ( ( source & 0x00000000000000ffULL ) << 56 ) );
         #endif
     }
 
@@ -410,6 +445,43 @@ namespace jau {
         }
     }
 
+    constexpr int16_t be_to_cpu(int16_t const n) noexcept {
+        if constexpr ( is_little_endian() ) {
+            return bswap(n);
+        } else if constexpr ( is_big_endian() ) {
+            return n;
+        } else {
+            return 0; // unreachable -> static_assert(..) above
+        }
+    }
+    constexpr int16_t cpu_to_be(int16_t const h) noexcept {
+        if constexpr ( is_little_endian() ) {
+            return bswap(h);
+        } else if constexpr ( is_big_endian() ) {
+            return h;
+        } else {
+            return 0; // unreachable -> static_assert(..) above
+        }
+    }
+    constexpr int16_t le_to_cpu(int16_t const l) noexcept {
+        if constexpr ( is_little_endian() ) {
+            return l;
+        } else if constexpr ( is_big_endian() ) {
+            return bswap(l);
+        } else {
+            return 0; // unreachable -> static_assert(..) above
+        }
+    }
+    constexpr int16_t cpu_to_le(int16_t const h) noexcept {
+        if constexpr ( is_little_endian() ) {
+            return h;
+        } else if constexpr ( is_big_endian() ) {
+            return bswap(h);
+        } else {
+            return 0; // unreachable -> static_assert(..) above
+        }
+    }
+
     constexpr uint32_t be_to_cpu(uint32_t const n) noexcept {
         if constexpr ( is_little_endian() ) {
             return bswap(n);
@@ -447,6 +519,43 @@ namespace jau {
         }
     }
 
+    constexpr int32_t be_to_cpu(int32_t const n) noexcept {
+        if constexpr ( is_little_endian() ) {
+            return bswap(n);
+        } else if constexpr ( is_big_endian() ) {
+            return n;
+        } else {
+            return 0; // unreachable -> static_assert(..) above
+        }
+    }
+    constexpr int32_t cpu_to_be(int32_t const h) noexcept {
+        if constexpr ( is_little_endian() ) {
+            return bswap(h);
+        } else if constexpr ( is_big_endian() ) {
+            return h;
+        } else {
+            return 0; // unreachable -> static_assert(..) above
+        }
+    }
+    constexpr int32_t le_to_cpu(int32_t const l) noexcept {
+        if constexpr ( is_little_endian() ) {
+            return l;
+        } else if constexpr ( is_big_endian() ) {
+            return bswap(l);
+        } else {
+            return 0; // unreachable -> static_assert(..) above
+        }
+    }
+    constexpr int32_t cpu_to_le(int32_t const h) noexcept {
+        if constexpr ( is_little_endian() ) {
+            return h;
+        } else if constexpr ( is_big_endian() ) {
+            return bswap(h);
+        } else {
+            return 0; // unreachable -> static_assert(..) above
+        }
+    }
+
     constexpr uint64_t be_to_cpu(uint64_t const & n) noexcept {
         if constexpr ( is_little_endian() ) {
             return bswap(n);
@@ -475,6 +584,43 @@ namespace jau {
         }
     }
     constexpr uint64_t cpu_to_le(uint64_t const & h) noexcept {
+        if constexpr ( is_little_endian() ) {
+            return h;
+        } else if constexpr ( is_big_endian() ) {
+            return bswap(h);
+        } else {
+            return 0; // unreachable -> static_assert(..) above
+        }
+    }
+
+    constexpr int64_t be_to_cpu(int64_t const & n) noexcept {
+        if constexpr ( is_little_endian() ) {
+            return bswap(n);
+        } else if constexpr ( is_big_endian() ) {
+            return n;
+        } else {
+            return 0; // unreachable -> static_assert(..) above
+        }
+    }
+    constexpr int64_t cpu_to_be(int64_t const & h) noexcept {
+        if constexpr ( is_little_endian() ) {
+            return bswap(h);
+        } else if constexpr ( is_big_endian() ) {
+            return h;
+        } else {
+            return 0; // unreachable -> static_assert(..) above
+        }
+    }
+    constexpr int64_t le_to_cpu(int64_t const & l) noexcept {
+        if constexpr ( is_little_endian() ) {
+            return l;
+        } else if constexpr ( is_big_endian() ) {
+            return bswap(l);
+        } else {
+            return 0; // unreachable -> static_assert(..) above
+        }
+    }
+    constexpr int64_t cpu_to_le(int64_t const & h) noexcept {
         if constexpr ( is_little_endian() ) {
             return h;
         } else if constexpr ( is_big_endian() ) {
@@ -675,6 +821,53 @@ namespace jau {
     }
 
     /**
+     * Put the given int16_t value into the given byte address
+     * using \ref packed_t to resolve a potential memory alignment issue *free of costs*.
+     *
+     * @see \ref packed_t_alignment_cast
+     */
+    constexpr void put_int16(uint8_t * buffer, const int16_t v) noexcept
+    {
+        pointer_cast<packed_t<int16_t>*>( buffer )->store = v;
+    }
+    /**
+     * Put the given uint16_t value into the given byte address
+     * using \ref packed_t to resolve a potential memory alignment issue *free of costs*.
+     *
+     * The value is converted from lb_endian::native to either lb_endian::little or lb_endian::big depending on given `byte_order`
+     * before it is stored in memory.
+     *
+     * @see \ref packed_t_alignment_cast
+     */
+    constexpr void put_int16(uint8_t * buffer, const int16_t v, const lb_endian_t byte_order) noexcept
+    {
+        pointer_cast<packed_t<int16_t>*>( buffer )->store = is_little_endian(byte_order) ? cpu_to_le(v) : cpu_to_be(v);
+    }
+    /**
+     * Returns a int16_t value from the given byte address
+     * using \ref packed_t to resolve a potential memory alignment issue *free of costs*.
+     *
+     * @see \ref packed_t_alignment_cast
+     */
+    constexpr int16_t get_int16(uint8_t const * buffer) noexcept
+    {
+        return pointer_cast<const packed_t<int16_t>*>( buffer )->store;
+    }
+    /**
+     * Returns a int16_t value from the given byte address
+     * using \ref packed_t to resolve a potential memory alignment issue *free of costs*.
+     *
+     * The value is converted from either lb_endian::little or lb_endian::big depending on given `byte_order`
+     * to lb_endian::native before it is returned to the caller.
+     *
+     * @see \ref packed_t_alignment_cast
+     */
+    constexpr int16_t get_int16(uint8_t const * buffer, const lb_endian_t byte_order) noexcept
+    {
+        return get_packed_value(pointer_cast<const packed_t<int16_t>*>( buffer ), byte_order);
+    }
+
+    /**
      * See put_uint16() for reference.
      * @see \ref packed_t_alignment_cast
      */
@@ -708,6 +901,39 @@ namespace jau {
     }
 
     /**
+     * See put_int16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
+    constexpr void put_int32(uint8_t * buffer, const int32_t v) noexcept
+    {
+        pointer_cast<packed_t<int32_t>*>( buffer )->store = v;
+    }
+    /**
+     * See put_int16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
+    constexpr void put_int32(uint8_t * buffer, const int32_t v, const lb_endian_t byte_order) noexcept
+    {
+        pointer_cast<packed_t<int32_t>*>( buffer )->store = is_little_endian(byte_order) ? cpu_to_le(v) : cpu_to_be(v);
+    }
+    /**
+     * See get_int16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
+    constexpr int32_t get_int32(uint8_t const * buffer) noexcept
+    {
+        return pointer_cast<const packed_t<int32_t>*>( buffer )->store;
+    }
+    /**
+     * See get_int16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
+    constexpr int32_t get_int32(uint8_t const * buffer, const lb_endian_t byte_order) noexcept
+    {
+        return get_packed_value(pointer_cast<const packed_t<int32_t>*>( buffer ), byte_order);
+    }
+
+    /**
      * See put_uint16() for reference.
      * @see \ref packed_t_alignment_cast
      */
@@ -738,6 +964,39 @@ namespace jau {
     constexpr uint64_t get_uint64(uint8_t const * buffer, const lb_endian_t byte_order) noexcept
     {
         return get_packed_value(pointer_cast<const packed_t<uint64_t>*>( buffer ), byte_order);
+    }
+
+    /**
+     * See put_int16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
+    constexpr void put_int64(uint8_t * buffer, const int64_t & v) noexcept
+    {
+        pointer_cast<packed_t<int64_t>*>( buffer )->store = v;
+    }
+    /**
+     * See put_int16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
+    constexpr void put_int64(uint8_t * buffer, const int64_t & v, const lb_endian_t byte_order) noexcept
+    {
+        pointer_cast<packed_t<int64_t>*>( buffer )->store = is_little_endian(byte_order) ? cpu_to_le(v) : cpu_to_be(v);
+    }
+    /**
+     * See get_int16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
+    constexpr int64_t get_int64(uint8_t const * buffer) noexcept
+    {
+        return pointer_cast<const packed_t<int64_t>*>( buffer )->store;
+    }
+    /**
+     * See get_int16() for reference.
+     * @see \ref packed_t_alignment_cast
+     */
+    constexpr int64_t get_int64(uint8_t const * buffer, const lb_endian_t byte_order) noexcept
+    {
+        return get_packed_value(pointer_cast<const packed_t<int64_t>*>( buffer ), byte_order);
     }
 
     /**

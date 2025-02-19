@@ -227,7 +227,7 @@ namespace jau::lang {
             constexpr static const uint_t token_error = std::numeric_limits<uint_t>::max();
 
             constexpr static uint_t to_symbol(char c) noexcept { return static_cast<unsigned char>(c); }
-             
+
             /**
              * Terminal token name and ASCII string value pair, provided by user.
              */
@@ -309,9 +309,9 @@ namespace jau::lang {
              * Clears the FSM. Afterwards, the FSM can be filled over again from scratch.
              */
             void clear() noexcept {
-                m_matrix.clear();
+                m_matrix.clear(true);
                 m_next_state = 1;
-                m_token_names.clear();
+                m_token_names.clear(true);
             }
 
             /**

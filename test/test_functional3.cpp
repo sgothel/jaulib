@@ -1,7 +1,6 @@
 /*
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2020 Gothel Software e.K.
- * Copyright (c) 2020 ZAFENA AB
+ * Copyright (c) 2022 Gothel Software e.K.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -22,18 +21,14 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include <cassert>
+#include <cinttypes>
+#include <cstring>
 
-#ifndef JAU_VERSION_HPP_
-#define JAU_VERSION_HPP_
+#include <jau/test/catch2_ext.hpp>
 
-#include <jau/util/VersionNumber.hpp>
+#include "functional3.hpp"
 
-namespace jau {
-
-    extern const jau::util::VersionNumberString VERSION;
-    extern const char* VERSION_SHORT;
-    extern const char* VERSION_API;
-
-} /* namespace jau */
-
-#endif /* JAU_VERSION_HPP_ */
+#define FUNCTIONAL_PROVIDED 1
+#define FUNCTIONAL_IMPL 3
+#include "test_functional.hpp"

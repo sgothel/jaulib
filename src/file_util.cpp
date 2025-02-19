@@ -176,6 +176,42 @@ bool jau::fs::isAbsolute(const std::string_view& path) noexcept {
            ( c_slash == path[0] || ( jau::os::is_windows() && c_backslash == path[0] ) );
 }
 
+bool jau::fs::exists(const std::string& path, bool verbose_on_error) noexcept {
+    struct_stat64 s;
+    ::memset(&s, 0, sizeof(s));
+    errno = 0;
+    int stat_res = __posix_fstatat64(AT_FDCWD, path.c_str(), &s, 0); // lstat64 compatible
+    if( 0 != stat_res && verbose_on_error ) {
+        fprintf(stderr, "exists '%s': %d: %d %s\n", path.c_str(), stat_res, errno, strerror(errno));
+    }
+    return 0 == stat_res; // errno EACCES=no access, ENOENT=not existing
+}
+
+std::string jau::fs::lookup_asset_dir(const char* exe_path, const char* asset_file, const char* asset_install_subdir) noexcept {
+    if( !asset_file ) {
+        return "";
+    }
+    // cwd in source root of developer directory - or - WASM (emscripten)
+    std::string assetdir0 = "resources";
+    if( exists( assetdir0+"/"+asset_file ) ) {
+        return assetdir0;
+    }
+    if( !exe_path || !asset_install_subdir ) {
+        return "";
+    }
+    // launched from installed package
+    std::string exedir = jau::fs::dirname(exe_path);
+    std::string cwd = jau::fs::get_cwd();
+    std::string adir = jau::fs::isAbsolute(exedir) ? exedir : cwd+"/"+exedir;
+    std::string assetdir1 = jau::fs::absolute( adir+"/../share/"+asset_install_subdir );
+    if( exists( assetdir1+"/"+asset_file ) ) {
+        return assetdir1;
+    }
+    fprintf(stderr, "asset_dir: Not found: dir '%s', file '%s', exe[path '%s', dir '%s'], cwd '%s', adir '%s'\n",
+        assetdir1.c_str(), asset_file, exe_path, exedir.c_str(), cwd.c_str(), adir.c_str());
+    return "";
+}
+
 std::unique_ptr<dir_item::backed_string_view> dir_item::reduce(const std::string_view& path_) noexcept {
     constexpr const bool _debug = false;
 

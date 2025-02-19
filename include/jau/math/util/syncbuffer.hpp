@@ -26,14 +26,9 @@
 
 #include <cmath>
 #include <cstdarg>
-#include <cstdint>
 #include <cassert>
-#include <limits>
-#include <string>
-#include <vector>
-#include <initializer_list>
-#include <iostream>
 
+#include <jau/float_types.hpp>
 #include <jau/functional.hpp>
 #include <jau/math/mat4f.hpp>
 
@@ -63,17 +58,22 @@ namespace jau::math::util {
       public:
         virtual ~SyncBuffer() noexcept = default;
 
+        /** Returns type signature of implementing class's stored value type. */
+        virtual const jau::type_info& valueSignature() const noexcept = 0;
+
         /** Return the defined sync_action_t */
         virtual sync_action_t& action() noexcept = 0;
 
-        /** Return the underlying data buffer. */
-        virtual const void* buffer() const noexcept = 0;
+        /** Return the underlying data buffer as bytes. */
+        virtual const void* data() const noexcept = 0;
 
         /** Returns element size in bytes */
         virtual size_t elementSize() const noexcept = 0;
 
         /** Returns element count, total byte size = elementSize() * elementCount() */
         virtual size_t elementCount() const noexcept = 0;
+
+        size_t byteSize() const noexcept { return elementSize() * elementCount(); }
 
         /**
          * Synchronizes the underlying data before usage.
@@ -82,6 +82,41 @@ namespace jau::math::util {
          * </p>
          */
         SyncBuffer& sync() noexcept { action()(); return *this; }
+
+        std::string toString() const {
+            return std::string("SyncBuffer[").append(valueSignature().name())
+                   .append(", count ").append(std::to_string(elementCount()))
+                   .append(" x ").append(std::to_string(elementSize())).append("]");
+        }
+
+        /** Return the underlying data buffer as int8_t if valueSignature() matches, otherwise throw. */
+        const int8_t* data_i8() const {
+            const jau::type_info& t = valueSignature();
+            if( t == jau::int_ctti::i8() ) {
+                return reinterpret_cast<const int8_t*>(data());
+            } else {
+                throw jau::IllegalArgumentError("Storage type `"+t.name()+"`, not matching requested type `"+jau::int_ctti::i8().name()+"`", E_FILE_LINE);
+            }
+        }
+        /** Return the underlying data buffer as int32_t if valueSignature() matches, otherwise throw. */
+        const int32_t* data_i32() const {
+            const jau::type_info& t = valueSignature();
+            if( t == jau::int_ctti::i32() ) {
+                return reinterpret_cast<const int32_t*>(data());
+            } else {
+                throw jau::IllegalArgumentError("Storage type `"+t.name()+"`, not matching requested type `"+jau::int_ctti::i32().name()+"`", E_FILE_LINE);
+            }
+        }
+        /** Return the underlying data buffer as float32_t if valueSignature() matches, otherwise throw. */
+        const float32_t* data_f32() const {
+            const jau::type_info& t = valueSignature();
+            if( t == jau::float_ctti::f32() ) {
+                return reinterpret_cast<const float32_t*>(data());
+            } else {
+                throw jau::IllegalArgumentError("Storage type `"+t.name()+"`, not matching requested type `"+jau::float_ctti::f32().name()+"`", E_FILE_LINE);
+            }
+        }
+
     };
 
     /** SyncBuffer interface with a single underlying Matrix4. */
@@ -90,7 +125,7 @@ namespace jau::math::util {
     class SyncMatrix4 : public SyncBuffer {
       public:
         typedef Value_type               value_type;
-        typedef Matrix4<value_type, std::is_floating_point_v<Value_type>> Mat4;
+        typedef Matrix4<value_type, std::is_floating_point_v<value_type>> Mat4;
 
         /** Return the underlying Mat4, used to synchronize via action() to the buffer(). */
         virtual const Mat4& matrix() const noexcept = 0;
@@ -98,7 +133,8 @@ namespace jau::math::util {
         /** Return the underlying float data buffer. */
         const value_type* floats() const noexcept { return matrix().cbegin(); }
 
-        const void* buffer() const noexcept override { return floats(); }
+        const jau::type_info& valueSignature() const noexcept override { return jau::static_ctti<value_type>(); }
+        const void* data() const noexcept override { return floats(); }
         size_t elementSize() const noexcept override { return sizeof(float); }
         size_t elementCount() const noexcept override { return 16; }
     };
@@ -111,15 +147,18 @@ namespace jau::math::util {
     class SyncMatrices4 : public SyncBuffer {
       public:
         typedef Value_type               value_type;
-        typedef Matrix4<value_type, std::is_floating_point_v<Value_type>> Mat4;
+        typedef Matrix4<value_type, std::is_floating_point_v<value_type>> Mat4;
 
         /** Return the underlying Mat4 pointer, used to synchronize via action() to the buffer(). */
         virtual const Mat4* matrices() const noexcept = 0;
         /** Return the number of Mat4 referenced by matrices() */
         virtual size_t matrixCount() const noexcept = 0;
 
-        const float* floats() const noexcept { return matrices()[0].cbegin(); }
-        const void* buffer() const noexcept override { return floats(); }
+        /** Return the underlying float data buffer. */
+        const value_type* floats() const noexcept { return matrices()[0].cbegin(); }
+
+        const jau::type_info& valueSignature() const noexcept override { return jau::static_ctti<value_type>(); }
+        const void* data() const noexcept override { return floats(); }
         size_t elementSize() const noexcept override { return sizeof(float); }
         size_t elementCount() const noexcept override { return 16 * matrixCount(); }
     };

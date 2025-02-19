@@ -866,14 +866,12 @@ namespace jau {
      */
     struct fraction_timespec {
         /**
-         * Seconds component, with its absolute value in range [0..inf[ or [0..inf),
-         * sharing same sign with tv_nsec.
+         * Seconds component, with its absolute value in range [0..inf[ or [0..inf).
          */
         int64_t tv_sec;
 
         /**
-         * Nanoseconds component with its absolute value in range [0..1'000'000'000[ or [0..1'000'000'000),
-         * sharing same sign with tv_nsec.
+         * Nanoseconds component with its absolute value in range [0..1'000'000'000[ or [0..1'000'000'000).
          */
         int64_t tv_nsec;
 
@@ -886,7 +884,7 @@ namespace jau {
         /**
          * Constructs a fraction_timespec instance with given components, normalized.
          */
-        constexpr fraction_timespec(const int64_t& s, const int64_t& ns) noexcept
+        constexpr fraction_timespec(const int64_t s, const int64_t ns) noexcept
         : tv_sec(s), tv_nsec(ns) { normalize(); }
 
         /**
@@ -1009,7 +1007,7 @@ namespace jau {
          */
         constexpr fraction_timespec& normalize() noexcept {
             if( 0 != tv_nsec ) {
-                const int64_t ns_per_sec = 1000000000L;
+                constexpr int64_t ns_per_sec = 1'000'000'000L;
                 if( std::abs(tv_nsec) >= ns_per_sec ) {
                     const int64_t c = tv_nsec / ns_per_sec;
                     tv_nsec -= c * ns_per_sec;
@@ -1028,6 +1026,21 @@ namespace jau {
 
         constexpr bool isZero() noexcept { return 0 == tv_sec && 0 == tv_nsec; }
         constexpr void clear() noexcept { tv_sec=0; tv_nsec=0; }
+        
+        /** Two way comparison operator */
+        constexpr bool operator==(const fraction_timespec& rhs ) const noexcept {
+            return tv_sec == rhs.tv_sec && tv_nsec == rhs.tv_nsec;
+        }
+
+        /** Three way std::strong_ordering comparison operator */
+        constexpr std::strong_ordering operator<=>(const fraction_timespec& rhs) const noexcept {
+            if( tv_sec == rhs.tv_sec ) {
+                return tv_nsec == rhs.tv_nsec ?
+                    std::strong_ordering::equal :
+                    ( tv_nsec < rhs.tv_nsec ? std::strong_ordering::less : std::strong_ordering::greater );
+            }
+            return tv_sec < rhs.tv_sec ? std::strong_ordering::less : std::strong_ordering::greater;
+        }
 
         /**
          * Compound assignment (addition)
@@ -1052,6 +1065,40 @@ namespace jau {
             tv_sec -= rhs.tv_sec;
             return normalize();
         }
+        
+        /**
+         * Compound product (multiplication)
+         *
+         * @param rhs a scalar
+         * @return reference to this instance, normalized
+         */
+        constexpr fraction_timespec& operator*=(const int64_t rhs ) noexcept {
+            tv_nsec *= rhs; // we allow the 'overflow' over 1'000'000'000, fitting into type and normalize() later
+            tv_sec *= rhs;
+            return normalize();
+        }
+
+        /**
+         * Compound fraction (division)
+         *
+         * @param rhs a scalar
+         * @return reference to this instance, normalized
+         */
+        constexpr fraction_timespec& operator/=(const int64_t rhs ) noexcept {
+            constexpr int64_t ns_per_sec  = 1'000'000'000L;
+            constexpr int64_t SecLimit  = std::numeric_limits<int64_t>::max() / ns_per_sec;
+            if( tv_sec < SecLimit-1 ) {
+                const int64_t ns = ( tv_sec * ns_per_sec + tv_nsec) / rhs;
+                tv_sec = ns / ns_per_sec;
+                tv_nsec = ns - ( tv_sec * ns_per_sec );  // we allow the 'overflow' over 1'000'000'000, fitting into type and normalize() later
+                return normalize();
+            } else {
+                const double sec = to_double() / double(rhs);
+                tv_sec = static_cast<int64_t>(sec);
+                tv_nsec = static_cast<int64_t>( (sec - static_cast<double>(tv_sec)) * 1e+9);
+                return *this;
+            }
+        }
 
         /**
          * Return conversion to POSIX `struct timespec`,
@@ -1066,6 +1113,47 @@ namespace jau {
             using ns_type = decltype(timespec::tv_nsec);
             return { static_cast<std::time_t>( tv_sec ), static_cast<ns_type>( tv_nsec ) };
         }
+
+        /**
+         * Returns time in milliseconds
+         *
+         * If either tv_sec or tv_nsec is negative, method return 0.
+         *
+         * In case of overflow tv_sec >= UINT64_MAX / 1'000, method returns UINT64_MAX.
+         */
+        constexpr uint64_t to_ms() const noexcept {
+            constexpr uint64_t ns_per_ms = 1'000'000UL;
+            constexpr uint64_t ms_per_sec  =   1'000UL;
+            constexpr int64_t SecLimit  = std::numeric_limits<uint64_t>::max() / ms_per_sec;
+            if( tv_sec < 0 || tv_nsec < 0 ) {
+                return 0;
+            }
+            return tv_sec < SecLimit ? tv_sec * ms_per_sec + tv_nsec / ns_per_ms : std::numeric_limits<uint64_t>::max();
+        }
+
+        /**
+         * Returns time in microseconds
+         *
+         * If either tv_sec or tv_nsec is negative, method return 0.
+         *
+         * In case of overflow tv_sec >= UINT64_MAX / 1'000'000, method returns UINT64_MAX.
+         */
+        constexpr uint64_t to_us() const noexcept {
+            constexpr uint64_t ns_per_us =       1'000UL;
+            constexpr uint64_t us_per_sec  = 1'000'000UL;
+            constexpr int64_t SecLimit  = std::numeric_limits<uint64_t>::max() / us_per_sec;
+            if( tv_sec < 0 || tv_nsec < 0 ) {
+                return 0;
+            }
+            return tv_sec < SecLimit ? tv_sec * us_per_sec + tv_nsec / ns_per_us : std::numeric_limits<uint64_t>::max();
+        }
+
+        /** Returns time in fractions of seconds of type double */
+        constexpr double to_double() const noexcept {
+            constexpr double ns_per_sec = 1'000'000'000.0;
+            return double(tv_sec) + double(tv_nsec) / ns_per_sec;
+        }
+
 
         /**
          * Return simple string representation in seconds and nanoseconds.
@@ -1091,39 +1179,14 @@ namespace jau {
 
     inline std::string to_string(const fraction_timespec& v) noexcept { return v.to_string(); }
 
-
-    constexpr bool operator!=(const fraction_timespec& lhs, const fraction_timespec& rhs ) noexcept {
-        return lhs.tv_sec != rhs.tv_sec || lhs.tv_nsec != rhs.tv_nsec;
-    }
-
-    constexpr bool operator==(const fraction_timespec& lhs, const fraction_timespec& rhs ) noexcept {
-        return !( lhs != rhs );
-    }
-
-    constexpr bool operator>(const fraction_timespec& lhs, const fraction_timespec& rhs ) noexcept {
-        return ( lhs.tv_sec > rhs.tv_sec ) || ( lhs.tv_sec == rhs.tv_sec && lhs.tv_nsec > rhs.tv_nsec );
-    }
-
-    constexpr bool operator>=(const fraction_timespec& lhs, const fraction_timespec& rhs ) noexcept {
-        return ( lhs.tv_sec > rhs.tv_sec ) || ( lhs.tv_sec == rhs.tv_sec && lhs.tv_nsec >= rhs.tv_nsec );
-    }
-
-    constexpr bool operator<(const fraction_timespec& lhs, const fraction_timespec& rhs ) noexcept {
-        return ( lhs.tv_sec < rhs.tv_sec ) || ( lhs.tv_sec == rhs.tv_sec && lhs.tv_nsec < rhs.tv_nsec );
-    }
-
-    constexpr bool operator<=(const fraction_timespec& lhs, const fraction_timespec& rhs ) noexcept {
-        return ( lhs.tv_sec < rhs.tv_sec ) || ( lhs.tv_sec == rhs.tv_sec && lhs.tv_nsec <= rhs.tv_nsec );
-    }
-
     /** Return the maximum of the two given fraction_timespec */
     constexpr const fraction_timespec& max(const fraction_timespec& lhs, const fraction_timespec& rhs ) noexcept {
-        return lhs >= rhs ? lhs : rhs;
+        return lhs > rhs ? lhs : rhs;
     }
 
     /** Return the minimum of the two given fraction_timespec */
     constexpr const fraction_timespec& min(const fraction_timespec& lhs, const fraction_timespec& rhs ) noexcept {
-        return lhs <= rhs ? lhs : rhs;
+        return lhs < rhs ? lhs : rhs;
     }
 
     /**
@@ -1174,6 +1237,55 @@ namespace jau {
     constexpr fraction_timespec operator-(const fraction_timespec& lhs, const fraction_timespec& rhs ) noexcept {
         fraction_timespec r(lhs);
         r -= rhs; // implicit normalize
+        return r;
+    }
+    
+    /**
+     * Returns product of fraction_timespec * scalar.
+     *
+     * @param lhs a fraction_timespec
+     * @param rhs a scalar
+     * @return resulting new fraction_timespec, each component reduced and both fraction_timespec::normalize() 'ed
+     */
+    constexpr fraction_timespec operator*(const fraction_timespec& lhs, const int64_t rhs ) noexcept {
+        fraction_timespec r(lhs);
+        r *= rhs; // implicit normalize
+        return r;
+    }
+    /**
+     * Returns product of scalar * fraction_timespec.
+     *
+     * @param lhs a scalar
+     * @param rhs a fraction_timespec
+     * @return resulting new fraction_timespec, each component reduced and both fraction_timespec::normalize() 'ed
+     */
+    constexpr fraction_timespec operator*(const int64_t lhs, const fraction_timespec& rhs ) noexcept {
+        fraction_timespec r(rhs);
+        r *= lhs; // implicit normalize
+        return r;
+    }
+    /**
+     * Returns fraction of fraction_timespec / scalar.
+     *
+     * @param lhs a fraction_timespec
+     * @param rhs a scalar
+     * @return resulting new fraction_timespec, each component reduced and both fraction_timespec::normalize() 'ed
+     */
+    constexpr fraction_timespec operator/(const fraction_timespec& lhs, const int64_t rhs ) noexcept {
+        fraction_timespec r(lhs);
+        r /= rhs; // implicit normalize
+        return r;
+    }
+    /**
+     * Returns fraction of scalar / fraction_timespec.
+     *
+     * @param lhs a scalar
+     * @param rhs a fraction_timespec
+     * @return resulting new fraction_timespec, each component reduced and both fraction_timespec::normalize() 'ed
+     */
+    constexpr fraction_timespec operator/(const int64_t lhs, const fraction_timespec& rhs ) noexcept {
+        fraction_timespec r(rhs);
+        r /= lhs; // implicit normalize
         return r;
     }
 

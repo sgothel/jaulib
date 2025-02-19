@@ -29,6 +29,7 @@
 #include <cstring>
 
 #include <jau/cpp_lang_util.hpp>
+#include <jau/type_info.hpp>
 #include <jau/packed_attribute.hpp>
 #include <jau/secmem.hpp>
 
@@ -204,6 +205,18 @@ namespace jau {
         /** Literal for unsigned jau::nsize_t */
         constexpr jau::nsize_t operator ""_unz(unsigned long long int __v)  { return (jau::nsize_t)__v; }
     }
+
+    class int_ctti {
+      public:
+        static const jau::type_info& u8() { return jau::static_ctti<uint8_t>(); }
+        static const jau::type_info& i8() { return jau::static_ctti<int8_t>(); }
+        static const jau::type_info& u16() { return jau::static_ctti<uint16_t>(); }
+        static const jau::type_info& i16() { return jau::static_ctti<int16_t>(); }
+        static const jau::type_info& u32() { return jau::static_ctti<uint32_t>(); }
+        static const jau::type_info& i32() { return jau::static_ctti<int32_t>(); }
+        static const jau::type_info& u64() { return jau::static_ctti<uint64_t>(); }
+        static const jau::type_info& i64() { return jau::static_ctti<int64_t>(); }
+    };
 
     /**@}*/
 

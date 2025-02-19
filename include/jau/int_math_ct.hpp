@@ -249,7 +249,7 @@ namespace jau {
      */
     template <typename T,
               std::enable_if_t< std::is_integral_v<T> && std::is_unsigned_v<T>, bool> = true>
-    inline constexpr T ct_expand_top_bit(T x)
+    constexpr T ct_expand_top_bit(T x)
     {
        return T(0) - ( x >> ( sizeof(T) * CHAR_BIT - 1 ) );
     }
@@ -262,7 +262,7 @@ namespace jau {
      */
     template <typename T,
               std::enable_if_t< std::is_integral_v<T> && std::is_unsigned_v<T>, bool> = true>
-    inline constexpr T ct_is_zero(T x)
+    constexpr T ct_is_zero(T x)
     {
        return jau::ct_expand_top_bit<T>( ~x & (x - 1) );
     }

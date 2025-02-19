@@ -117,12 +117,12 @@ struct callocator_sec
 #endif
 
 #if __cplusplus > 201703L
-    constexpr void deallocate(value_type* p, std::size_t n ) {
+    constexpr void deallocate(value_type* p, std::size_t n ) noexcept {
         zero_bytes_sec(p, n);
         ::free( reinterpret_cast<void*>( const_cast<pointer_mutable>(p) ) );
     }
 #else
-    void deallocate(value_type* p, std::size_t n ) {
+    void deallocate(value_type* p, std::size_t n ) noexcept {
         zero_bytes_sec(p, n);
         ::free( reinterpret_cast<void*>( const_cast<pointer_mutable>(p) ) );
     }

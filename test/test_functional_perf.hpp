@@ -78,7 +78,7 @@ class TestFunction01 {
             fprintf(stderr, "lambda.plain:  %s\n", f_1.toString().c_str());
             REQUIRE( jau::func::target_type::lambda == f_1.type() );
         }
-#if ( FUNCTIONAL_IMPL == 1 )
+#if ( FUNCTIONAL_IMPL == 1 || FUNCTIONAL_IMPL == 2 )
         {
             // Test non-capturing y-lambdas, using auto
             jau::function<int(int)> f_1 = jau::function<int(int)>::bind_ylambda( [](auto& self, int x) -> int {
@@ -439,7 +439,7 @@ class TestFunction01 {
                 return r;
             };
         }
-#if ( FUNCTIONAL_IMPL == 1 )
+#if ( FUNCTIONAL_IMPL == 1 || FUNCTIONAL_IMPL == 2 )
         {
             jau::function<int(int)> f = jau::function<int(int)>::bind_ylambda( [](auto& self, int x) -> int {
                 (void)self; // no-use

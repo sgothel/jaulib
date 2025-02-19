@@ -105,6 +105,8 @@ namespace jau::math {
             constexpr Vector3F& operator=(const Vector3F&) noexcept = default;
             constexpr Vector3F& operator=(Vector3F&&) noexcept = default;
 
+            constexpr Vector3F copy() noexcept { return Vector3F(*this); }
+
             /** Returns read-only component */
             constexpr value_type operator[](size_t i) const noexcept {
                 assert(i < 3);
@@ -216,7 +218,7 @@ namespace jau::math {
                 return *this;
             }
 
-            std::string toString() const noexcept { return std::to_string(x)+" / "+std::to_string(y)+" / "+std::to_string(z); }
+            std::string toString() const noexcept { return std::to_string(x)+", "+std::to_string(y)+", "+std::to_string(z); }
 
             constexpr bool is_zero() const noexcept {
                 return jau::is_zero(x) && jau::is_zero(y) && jau::is_zero(z);
@@ -347,6 +349,14 @@ namespace jau::math {
              std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
     constexpr Vector3F<T> operator-(const Vector3F<T>& lhs, const Vector3F<T>& rhs ) noexcept {
         Vector3F<T> r(lhs); r -= rhs; return r;
+    }
+
+    template<typename T,
+             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    constexpr Vector3F<T> operator-(const Vector3F<T>& lhs) noexcept {
+        Vector3F<T> r(lhs);
+        r *= -1;
+        return r;
     }
 
     template<typename T,

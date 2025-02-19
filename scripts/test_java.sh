@@ -14,8 +14,16 @@ bname=`basename $0 .sh`
 
 . $sdir/setup-machine-arch.sh "-quiet"
 
-dist_dir=$rootdir/"dist-$os_name-$archabi-gcc"
-build_dir=$rootdir/"build-$os_name-$archabi-gcc"
+#dist_dir=$rootdir/"dist-$os_name-$archabi-gcc"
+#build_dir=$rootdir/"build-$os_name-$archabi-gcc"
+if [ -z "$1" -o ! -e "$2" ] ; then
+    echo "ERROR: Using $0 <dist_dir> <build_dir>"
+    exit 1
+fi
+dist_dir=$(readlink -f "$1")
+shift
+build_dir=$(readlink -f "$1")
+shift
 echo dist_dir $dist_dir
 echo build_dir $build_dir
 
