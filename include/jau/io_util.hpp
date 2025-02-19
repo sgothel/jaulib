@@ -171,6 +171,10 @@ namespace jau::io {
      * If the uri-sheme doesn't match a supported protocol, see jau::io::uri::protocol_supported(),
      * function returns immediately with zero bytes.
      *
+     * Environment variables:
+     * - `jau_io_net_ssl_verifypeer=[true|false]` to enable or disable SSL peer verification. Defaults to `true`.
+     * - `jau_io_net_verbose=[true|false]` to enable or disable verbose on stderr stream communication. Defaults to `false`.
+     *
      * @param url the URL to open a connection to and stream bytes from
      * @param buffer secure std::vector buffer, passed down to consumer_fn
      * @param consumer_fn StreamConsumerFunc consumer for each received heap of bytes, returning true to continue stream of false to abort.
@@ -303,6 +307,10 @@ namespace jau::io {
      * If the uri-sheme doesn't match a supported protocol, see jau::io::uri::protocol_supported(),
      * SyncStreamResponse::failed() returns true.
      *
+     * Environment variables:
+     * - `jau_io_net_ssl_verifypeer=[true|false]` to enable or disable SSL peer verification. Defaults to `true`.
+     * - `jau_io_net_verbose=[true|false]` to enable or disable verbose on stderr stream communication. Defaults to `false`.
+     *
      * @param handle optional reused user-pooled net toolkit handle, see create_net_tk_handle(). Pass nullptr to use an own local handle.
      * @param url the URL to open a connection to and stream bytes from
      * @param httpPostReq optional HTTP POST request data, maybe nullptr
@@ -379,6 +387,10 @@ namespace jau::io {
      *
      * If the uri-sheme doesn't match a supported protocol, see jau::io::uri::protocol_supported(),
      * AsyncStreamResponse::failed() returns true.
+     *
+     * Environment variables:
+     * - `jau_io_net_ssl_verifypeer=[true|false]` to enable or disable SSL peer verification. Defaults to `true`.
+     * - `jau_io_net_verbose=[true|false]` to enable or disable verbose on stderr stream communication. Defaults to `false`.
      *
      * @param handle optional reused user-pooled net toolkit handle, see create_net_tk_handle(). Pass nullptr to use an own local handle.
      * @param url the URL to open a connection to and stream bytes from

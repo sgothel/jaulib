@@ -337,88 +337,98 @@ uint64_t jau::io::read_url_stream(const std::string& url,
 
     res = curl_easy_setopt(curl_handle, CURLOPT_ERRORBUFFER, errorbuffer.data());
     if( CURLE_OK != res ) {
-        ERR_PRINT("Error setting up url %s, error %d %d",
-                  url.c_str(), (int)res, curl_easy_strerror(res));
+        ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
+                  url.c_str(), (int)res, curl_easy_strerror(res), errorbuffer.data());
         goto errout;
     }
 
     /* set URL to get here */
     res = curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str());
     if( CURLE_OK != res ) {
-        ERR_PRINT("Error setting up url %s, error %d %d",
-                  url.c_str(), (int)res, errorbuffer.data());
+        ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
+                  url.c_str(), (int)res, curl_easy_strerror(res), errorbuffer.data());
         goto errout;
     }
 
     /* Switch on full protocol/debug output while testing */
-    res = curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 0L);
+    res = curl_easy_setopt(curl_handle, CURLOPT_VERBOSE,
+                           jau::environment::getBooleanProperty("jau_io_net_verbose", false) ? 1L : 0L );
     if( CURLE_OK != res ) {
-        ERR_PRINT("Error setting up url %s, error %d %d",
-                  url.c_str(), (int)res, errorbuffer.data());
+        ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
+                  url.c_str(), (int)res, curl_easy_strerror(res), errorbuffer.data());
         goto errout;
+    }
+
+    if( !jau::environment::getBooleanProperty("jau_io_net_ssl_verifypeer", true) ) {
+        res = curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYPEER, 0L);
+        if( CURLE_OK != res ) {
+            ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
+                      url.c_str(), (int)res, curl_easy_strerror(res), errorbuffer.data());
+            goto errout;
+        }
     }
 
     /* disable progress meter, set to 0L to enable it */
     res = curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 1L);
     if( CURLE_OK != res ) {
-        ERR_PRINT("Error setting up url %s, error %d %d",
-                  url.c_str(), (int)res, errorbuffer.data());
+        ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
+                  url.c_str(), (int)res, curl_easy_strerror(res), errorbuffer.data());
         goto errout;
     }
 
     /* Suppress proxy CONNECT response headers from user callbacks */
     res = curl_easy_setopt(curl_handle, CURLOPT_SUPPRESS_CONNECT_HEADERS, 1L);
     if( CURLE_OK != res ) {
-        ERR_PRINT("Error setting up url %s, error %d %d",
-                  url.c_str(), (int)res, errorbuffer.data());
+        ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
+                  url.c_str(), (int)res, curl_easy_strerror(res), errorbuffer.data());
         goto errout;
     }
 
     /* Don't pass headers to the data stream. */
     res = curl_easy_setopt(curl_handle, CURLOPT_HEADER, 0L);
     if( CURLE_OK != res ) {
-        ERR_PRINT("Error setting up url %s, error %d %d",
-                url.c_str(), (int)res, errorbuffer.data());
+        ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
+                  url.c_str(), (int)res, curl_easy_strerror(res), errorbuffer.data());
         goto errout;
     }
 
     /* send header data to this function  */
     res = curl_easy_setopt(curl_handle, CURLOPT_HEADERFUNCTION, consume_header_curl1);
     if( CURLE_OK != res ) {
-        ERR_PRINT("Error setting up url %s, error %d %d",
-                url.c_str(), (int)res, errorbuffer.data());
+        ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
+                  url.c_str(), (int)res, curl_easy_strerror(res), errorbuffer.data());
         goto errout;
     }
 
     /* set userdata for consume_header_curl2 */
     res = curl_easy_setopt(curl_handle, CURLOPT_HEADERDATA, (void*)&cg);
     if( CURLE_OK != res ) {
-        ERR_PRINT("Error setting up url %s, error %d %d",
-                url.c_str(), (int)res, errorbuffer.data());
+        ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
+                  url.c_str(), (int)res, curl_easy_strerror(res), errorbuffer.data());
         goto errout;
     }
 
     /* send all data to this function  */
     res = curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, consume_data_curl1);
     if( CURLE_OK != res ) {
-        ERR_PRINT("Error setting up url %s, error %d %d",
-                  url.c_str(), (int)res, errorbuffer.data());
+        ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
+                  url.c_str(), (int)res, curl_easy_strerror(res), errorbuffer.data());
         goto errout;
     }
 
     /* write the page body to this file handle */
     res = curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void*)&cg);
     if( CURLE_OK != res ) {
-        ERR_PRINT("Error setting up url %s, error %d %d",
-                  url.c_str(), (int)res, errorbuffer.data());
+        ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
+                  url.c_str(), (int)res, curl_easy_strerror(res), errorbuffer.data());
         goto errout;
     }
 
     /* performs the tast, blocking! */
     res = curl_easy_perform(curl_handle);
     if( CURLE_OK != res ) {
-        IRQ_PRINT("processing url %s, error %d %d",
-                  url.c_str(), (int)res, errorbuffer.data());
+        IRQ_PRINT("Error processing url %s, error %d '%s' '%s'",
+                  url.c_str(), (int)res, curl_easy_strerror(res), errorbuffer.data());
         goto errout;
     }
 
@@ -844,11 +854,21 @@ static bool read_url_stream_impl(CURL *curl_handle, std::vector<char>& errorbuff
         }
     }
     /* Switch on full protocol/debug output while testing */
-    res = curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 0L);
+    res = curl_easy_setopt(curl_handle, CURLOPT_VERBOSE,
+                           jau::environment::getBooleanProperty("jau_io_net_verbose", false) ? 1L : 0L );
     if( CURLE_OK != res ) {
         ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
                   url, (int)res, curl_easy_strerror(res), errorbuffer.data());
         goto errout;
+    }
+
+    if( !jau::environment::getBooleanProperty("jau_io_net_ssl_verifypeer", true) ) {
+        res = curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYPEER, 0L);
+        if( CURLE_OK != res ) {
+            ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
+                      url, (int)res, curl_easy_strerror(res), errorbuffer.data());
+            goto errout;
+        }
     }
 
     /* disable progress meter, set to 0L to enable it */
