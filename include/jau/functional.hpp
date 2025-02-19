@@ -460,7 +460,7 @@ namespace jau {
                 }
 
                 void clear() noexcept {
-                    if( useHeap() && udata.heap ) {
+                    if( useHeap() && udata.heap ) { // mark-1: clang-analyzer-core.uninitialized.Branch
                         if( m_tfunc->non_trivial ) {
                             m_tfunc->non_trivial->dtor(this);
                         }
@@ -470,10 +470,12 @@ namespace jau {
                 }
 
             public:
-                // null type
+                // null type: `TriviallyCopyable` using cache
                 static delegate_t make(const target_func_t& tfunc) noexcept
                 {
-                    return delegate_t(tfunc);
+                    delegate_t target(tfunc);
+                    std::memset(target.udata.cache, 0, sizeof(target.udata.cache)); // mark-1: clang-analyzer-core.uninitialized.Branch
+                    return target;
                 }
 
                 // `TriviallyCopyable` using cache
