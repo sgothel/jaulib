@@ -368,7 +368,7 @@ void Java_org_jau_io_ByteInStream_1Feed_set_1content_1size(JNIEnv *env, jobject 
 void Java_org_jau_io_ByteInStream_1Feed_set_1eof(JNIEnv *env, jobject obj, jint jresult) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_Feed> ref(env, obj); // hold until done
-        ref->set_eof(static_cast<jau::io::async_io_result_t>(jresult));
+        ref->set_eof(static_cast<jau::io::io_result_t>(jresult));
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }

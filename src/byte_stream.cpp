@@ -26,8 +26,6 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <chrono>
-
 // #include <botan_all.h>
 
 #include <jau/cpuid.hpp>
@@ -333,41 +331,35 @@ std::string ByteInStream_File::to_string() const noexcept {
 
 ByteInStream_URL::ByteInStream_URL(std::string url, const jau::fraction_i64& timeout) noexcept
 : m_url(std::move(url)), m_timeout(timeout), m_buffer(BEST_URLSTREAM_RINGBUFFER_SIZE),
-  m_header_sync(), m_has_content_length( false ), m_content_size( 0 ),
-  m_total_xfered( 0 ), m_result( io::async_io_result_t::NONE ),
+  m_stream_resp( read_url_stream_async(nullptr, m_url, /*httpPostReq=*/nullptr, &m_buffer, AsyncStreamConsumerFunc()) ),
   m_bytes_consumed(0)
 
-{
-    m_url_thread = read_url_stream(m_url, m_buffer, m_header_sync, m_has_content_length, m_content_size, m_total_xfered, m_result);
-    if( nullptr == m_url_thread ) {
-        // url protocol not supported
-        m_result = async_io_result_t::FAILED;
-    }
-}
+{ }
 
 void ByteInStream_URL::close() noexcept {
     DBG_PRINT("ByteInStream_URL: close.0 %s, %s", id().c_str(), to_string_int().c_str());
 
-    if( async_io_result_t::NONE == m_result ) {
-        m_result = async_io_result_t::SUCCESS; // signal end of streaming
+    if( m_stream_resp->processing() ) {
+        m_stream_resp->result = io_result_t::SUCCESS; // signal end of streaming
     }
 
     m_buffer.close( true /* zeromem */); // also unblocks all r/w ops
-    if( nullptr != m_url_thread && m_url_thread->joinable() ) {
+    if( m_stream_resp->thread.joinable() ) {
         DBG_PRINT("ByteInStream_URL: close.1 %s, %s", id().c_str(), m_buffer.toString().c_str());
-        m_url_thread->join();
+        m_stream_resp->thread.join();
     }
-    m_url_thread = nullptr;
+    std::thread none;
+    m_stream_resp->thread.swap(none);
     DBG_PRINT("ByteInStream_URL: close.X %s, %s", id().c_str(), to_string_int().c_str());
 }
 
 bool ByteInStream_URL::available(size_t n) noexcept {
-    if( !good() || async_io_result_t::NONE != m_result ) {
+    if( !good() || !m_stream_resp->processing() ) {
         // url thread ended, only remaining bytes in buffer available left
         return m_buffer.size() >= n;
     }
-    m_header_sync.wait_until_completion(m_timeout);
-    if( m_has_content_length && m_content_size - m_bytes_consumed < n ) {
+    m_stream_resp->header_resp.wait_until_completion(m_timeout);
+    if( m_stream_resp->has_content_length && m_stream_resp->content_length - m_bytes_consumed < n ) {
         return false;
     }
     // I/O still in progress, we have to poll until data is available or timeout
@@ -377,8 +369,8 @@ bool ByteInStream_URL::available(size_t n) noexcept {
     if( avail < n ) {
         if( timeout_occured ) {
             setstate_impl( iostate::timeout );
-            if( async_io_result_t::NONE == m_result ) {
-                m_result = async_io_result_t::FAILED;
+            if( m_stream_resp->processing() ) {
+                m_stream_resp->result = io_result_t::FAILED;
             }
             m_buffer.interruptWriter();
         }
@@ -390,11 +382,11 @@ bool ByteInStream_URL::available(size_t n) noexcept {
 
 bool ByteInStream_URL::is_open() const noexcept {
     // url thread has not ended or remaining bytes in buffer available left
-    return async_io_result_t::NONE == m_result || m_buffer.size() > 0;
+    return m_stream_resp->processing() || m_buffer.size() > 0;
 }
 
 size_t ByteInStream_URL::read(void* out, size_t length) noexcept {
-    m_header_sync.wait_until_completion(m_timeout);
+    m_stream_resp->header_resp.wait_until_completion(m_timeout);
     if( 0 == length || !good() ) {
         return 0;
     }
@@ -404,8 +396,8 @@ size_t ByteInStream_URL::read(void* out, size_t length) noexcept {
     m_bytes_consumed += got;
     if( timeout_occured ) {
         setstate_impl( iostate::timeout );
-        if( async_io_result_t::NONE == m_result ) {
-            m_result = async_io_result_t::FAILED;
+        if( m_stream_resp->processing() ) {
+            m_stream_resp->result = io_result_t::FAILED;
         }
         m_buffer.interruptWriter();
     }
@@ -422,21 +414,21 @@ size_t ByteInStream_URL::peek(void* out, size_t length, size_t peek_offset) noex
 }
 
 iostate ByteInStream_URL::rdstate() const noexcept {
-    if ( ( async_io_result_t::NONE != m_result && m_buffer.isEmpty() ) ||
-         ( m_has_content_length && m_bytes_consumed >= m_content_size ) )
+    if ( ( !m_stream_resp->processing() && m_buffer.isEmpty() ) ||
+         ( m_stream_resp->has_content_length && m_bytes_consumed >= m_stream_resp->content_length ) )
     {
         setstate_impl( iostate::eofbit );
     }
-    if( async_io_result_t::FAILED == m_result ) {
+    if( m_stream_resp->failed() ) {
         setstate_impl( iostate::failbit );
     }
     return rdstate_impl();
 }
 
 std::string ByteInStream_URL::to_string_int() const noexcept {
-    return m_url+", Url[content_length "+( has_content_size() ? jau::to_decstring(m_content_size.load()) : "n/a" )+
-                       ", xfered "+jau::to_decstring(m_total_xfered.load())+
-                       ", result "+std::to_string((int8_t)m_result.load())+
+    return m_url+", Url[content_length "+( has_content_size() ? jau::to_decstring(m_stream_resp->content_length.load()) : "n/a" )+
+                       ", xfered "+jau::to_decstring(m_stream_resp->total_read.load())+
+                       ", result "+std::to_string((int8_t)m_stream_resp->result.load())+
            "], consumed "+jau::to_decstring(m_bytes_consumed)+
            ", available "+jau::to_decstring(get_available())+
            ", iostate["+jau::io::to_string(rdstate())+
@@ -464,22 +456,22 @@ std::unique_ptr<ByteInStream> jau::io::to_ByteInStream(const std::string& path_o
 
 ByteInStream_Feed::ByteInStream_Feed(std::string id_name, const jau::fraction_i64& timeout) noexcept
 : m_id(std::move(id_name)), m_timeout(timeout), m_buffer(BEST_URLSTREAM_RINGBUFFER_SIZE),
-  m_has_content_length( false ), m_content_size( 0 ), m_total_xfered( 0 ), m_result( io::async_io_result_t::NONE ),
+  m_has_content_length( false ), m_content_size( 0 ), m_total_xfered( 0 ), m_result( io::io_result_t::NONE ),
   m_bytes_consumed(0)
 { }
 
 void ByteInStream_Feed::close() noexcept {
     DBG_PRINT("ByteInStream_Feed: close.0 %s, %s", id().c_str(), to_string_int().c_str());
 
-    if( async_io_result_t::NONE == m_result ) {
-        m_result = async_io_result_t::SUCCESS; // signal end of streaming
+    if( io_result_t::NONE == m_result ) {
+        m_result = io_result_t::SUCCESS; // signal end of streaming
     }
     m_buffer.close( true /* zeromem */); // also unblocks all r/w ops
     DBG_PRINT("ByteInStream_Feed: close.X %s, %s", id().c_str(), to_string_int().c_str());
 }
 
 bool ByteInStream_Feed::available(size_t n) noexcept {
-    if( !good() || async_io_result_t::NONE != m_result ) {
+    if( !good() || io_result_t::NONE != m_result ) {
         // feeder completed, only remaining bytes in buffer available left
         return m_buffer.size() >= n;
     }
@@ -493,8 +485,8 @@ bool ByteInStream_Feed::available(size_t n) noexcept {
     if( avail < n ) {
         if( timeout_occured ) {
             setstate_impl( iostate::timeout );
-            if( async_io_result_t::NONE == m_result ) {
-                m_result = async_io_result_t::FAILED;
+            if( io_result_t::NONE == m_result ) {
+                m_result = io_result_t::FAILED;
             }
             m_buffer.interruptWriter();
         }
@@ -506,7 +498,7 @@ bool ByteInStream_Feed::available(size_t n) noexcept {
 
 bool ByteInStream_Feed::is_open() const noexcept {
     // feeder has not ended or remaining bytes in buffer available left
-    return async_io_result_t::NONE == m_result || m_buffer.size() > 0;
+    return io_result_t::NONE == m_result || m_buffer.size() > 0;
 }
 
 size_t ByteInStream_Feed::read(void* out, size_t length) noexcept {
@@ -519,8 +511,8 @@ size_t ByteInStream_Feed::read(void* out, size_t length) noexcept {
     m_bytes_consumed += got;
     if( timeout_occured ) {
         setstate_impl( iostate::timeout );
-        if( async_io_result_t::NONE == m_result ) {
-            m_result = async_io_result_t::FAILED;
+        if( io_result_t::NONE == m_result ) {
+            m_result = io_result_t::FAILED;
         }
         m_buffer.interruptWriter();
     }
@@ -537,19 +529,19 @@ size_t ByteInStream_Feed::peek(void* out, size_t length, size_t peek_offset) noe
 }
 
 iostate ByteInStream_Feed::rdstate() const noexcept {
-    if ( ( async_io_result_t::NONE != m_result && m_buffer.isEmpty() ) ||
+    if ( ( io_result_t::NONE != m_result && m_buffer.isEmpty() ) ||
          ( m_has_content_length && m_bytes_consumed >= m_content_size ) )
     {
         setstate_impl( iostate::eofbit );
     }
-    if( async_io_result_t::FAILED == m_result ) {
+    if( io_result_t::FAILED == m_result ) {
         setstate_impl( iostate::failbit );
     }
     return rdstate_impl();
 }
 
 bool ByteInStream_Feed::write(uint8_t in[], size_t length, const jau::fraction_i64& timeout) noexcept {
-    if( 0 < length && ( good() && async_io_result_t::NONE == m_result ) ) { // feeder still running
+    if( 0 < length && ( good() && io_result_t::NONE == m_result ) ) { // feeder still running
         bool timeout_occured;
         if( m_buffer.putBlocking(in, in+length, timeout, timeout_occured) ) {
             m_total_xfered.fetch_add(length);
@@ -561,8 +553,8 @@ bool ByteInStream_Feed::write(uint8_t in[], size_t length, const jau::fraction_i
             } else {
                 setstate_impl( iostate::failbit );
             }
-            if( async_io_result_t::NONE == m_result ) {
-                m_result = async_io_result_t::FAILED;
+            if( io_result_t::NONE == m_result ) {
+                m_result = io_result_t::FAILED;
             }
             return false;
         }
@@ -571,7 +563,7 @@ bool ByteInStream_Feed::write(uint8_t in[], size_t length, const jau::fraction_i
     }
 }
 
-void ByteInStream_Feed::set_eof(const async_io_result_t result) noexcept {
+void ByteInStream_Feed::set_eof(const io_result_t result) noexcept {
     m_result = result;
     m_buffer.set_end_of_input(true); // still considering last data, also irqs blocking ringbuffer reader
 }

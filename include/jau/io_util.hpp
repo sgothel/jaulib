@@ -63,9 +63,9 @@ namespace jau::io {
     };
 
     /**
-     * Asynchronous I/O operation result value
+     * I/O operation result value
      */
-    enum class async_io_result_t : int8_t {
+    enum class io_result_t : int8_t {
         /** Operation failed. */
         FAILED  = -1,
 
@@ -75,7 +75,19 @@ namespace jau::io {
         /** Operation succeeded. */
         SUCCESS =  1
     };
-    typedef jau::ordered_atomic<async_io_result_t, std::memory_order_relaxed> relaxed_atomic_async_io_result_t;
+    typedef jau::ordered_atomic<io_result_t, std::memory_order_relaxed> relaxed_atomic_io_result_t;
+
+    inline std::string toString(io_result_t v) noexcept {
+        switch(v) {
+            case io_result_t::SUCCESS: return "SUCCESS";
+            case io_result_t::NONE: return "NONE";
+            default: return "FAILED";
+        }
+    }
+    inline std::ostream& operator<<(std::ostream& os, io_result_t v) {
+        os << toString(v);
+        return os;
+    }
 
     /**
      * Stream consumer function
@@ -169,19 +181,20 @@ namespace jau::io {
             const StreamConsumerFunc& consumer_fn) noexcept;
 
     /**
-     * Synchronization for URL header completion
+     * Synchronized URL header response completion
      * as used by asynchronous read_url_stream().
      *
      * @see url_header_sync::completed()
      */
-    class url_header_sync {
+    class url_header_resp {
         private:
             std::mutex m_sync;
             std::condition_variable m_cv;
             jau::relaxed_atomic_bool m_completed;
+            jau::relaxed_atomic_int32 m_response_code;
 
         public:
-            url_header_sync() noexcept
+            url_header_resp() noexcept
             : m_completed(false)
             { }
 
@@ -196,10 +209,12 @@ namespace jau::io {
              */
             bool completed() const noexcept { return m_completed; }
 
+            int32_t response_code() const noexcept { return m_response_code; }
+
             /**
              * Notify completion, see completed()
              */
-            void notify_complete() noexcept;
+            void notify_complete(const int32_t response_code=200) noexcept;
 
             /**
              * Wait until completed() has been reached.
@@ -209,34 +224,172 @@ namespace jau::io {
             bool wait_until_completion(const jau::fraction_i64& timeout) noexcept;
     };
 
+    namespace http {
+        struct PostRequest {
+            std::unordered_map<std::string, std::string> header;
+            std::string body;
+        };
+        using PostRequestPtr = std::unique_ptr<PostRequest>;
+    }
+
+    using net_tk_handle = void*;
+
+    /// creates a reusable handle, free with free_net_tk_handle() after use.
+    net_tk_handle create_net_tk_handle() noexcept;
+    /// frees a handle after use created by create_net_tk_handle()
+    void free_net_tk_handle(net_tk_handle handle) noexcept;
+
+    /** Synchronous stream response */
+    struct SyncStreamResponse {
+        SyncStreamResponse(net_tk_handle handle_)
+        : handle(handle_), header_resp(),
+          has_content_length(false),
+          content_length(0),
+          total_read(0),
+          result(io::io_result_t::NONE),
+          result_data(), result_text() {}
+
+        SyncStreamResponse()
+        : SyncStreamResponse(nullptr) {}
+
+        /** Stream failed and is aborted, i.e. io_result_t::FAILED == result */
+        constexpr_atomic bool failed() const noexcept { return io_result_t::FAILED == result; }
+        /** Stream processing in progress, i.e. io_result_t::NONE == result */
+        constexpr_atomic bool processing() const noexcept { return io_result_t::NONE == result; }
+        /** Stream completed successfully, i.e. io_result_t::SUCCESS == result */
+        constexpr_atomic bool success() const noexcept { return io_result_t::SUCCESS == result; }
+
+        /// used network tookit handle, if owned by caller
+        net_tk_handle handle;
+        /// synchronized URL header response completion
+        url_header_resp header_resp;
+        /// indicating whether content_length is known from server
+        bool has_content_length;
+        /// content_length tracking the content_length
+        uint64_t content_length;
+        /// tracking the total_read
+        uint64_t total_read;
+        /// tracking io_result_t. If set to other than io_result_t::NONE while streaming, streaming is aborted. See failed(), processing() and success()
+        relaxed_atomic_io_result_t result;
+        /// piggy-bag result data compiled by user, e.g. via AsyncStreamConsumerFunc
+        std::vector<uint8_t> result_data;
+        /// piggy-bag result data compiled by user, e.g. via AsyncStreamConsumerFunc
+        std::string result_text;
+    };
+    using SyncStreamResponseRef = std::shared_ptr<SyncStreamResponse>;
+
     /**
+     * Synchronous stream consumer function
+     * - `bool consumer(AsyncStreamResponse& resp, const uint8_t* data , size_t len, bool is_final)`
+     *
+     * Returns true to signal continuation, false to end streaming.
+     */
+    typedef jau::function<bool(SyncStreamResponse& /* resp */, const uint8_t* /* data */, size_t /* len */, bool /* is_final */)> SyncStreamConsumerFunc;
+
+    /**
+     * Synchronous URL stream reader using the given SyncStreamConsumerFunc consumer_fn.
+     *
+     * Function returns after completion.
+     *
+     * To abort streaming, (1) user may return `false` from the given `consumer_func`.
      * Asynchronous URL read content using the given byte jau::ringbuffer, allowing parallel reading.
      *
-     * To abort streaming, user may set given reference `results` to a value other than async_io_result_t::NONE.
+     * To abort streaming, (2) user may set given reference `results` to a value other than async_io_result_t::NONE.
      *
      * Standard implementation uses [curl](https://curl.se/),
      * hence all [*libcurl* network protocols](https://curl.se/docs/url-syntax.html) are supported,
      * see jau::io::uri::supported_protocols().
      *
      * If the uri-sheme doesn't match a supported protocol, see jau::io::uri::protocol_supported(),
-     * function returns with nullptr.
+     * SyncStreamResponse::failed() returns true.
      *
+     * @param handle optional reused user-pooled net toolkit handle, see create_net_tk_handle(). Pass nullptr to use an own local handle.
      * @param url the URL to open a connection to and stream bytes from
-     * @param buffer the ringbuffer destination to write into
-     * @param header_sync synchronization object for URL header completion
-     * @param has_content_length indicating whether content_length is known from server
-     * @param content_length tracking the content_length
-     * @param total_read tracking the total_read
-     * @param result reference to tracking async_io_result_t. If set to other than async_io_result_t::NONE while streaming, streaming is aborted.
-     * @return the url background reading thread unique-pointer or nullptr if protocol of given url is not supported
+     * @param httpPostReq optional HTTP POST request data, maybe nullptr
+     * @param buffer optional jau::ringbuffer<uint8_t>, if not nullptr will be synchronously filled with received data
+     * @param consumer_fn SyncStreamConsumerFunc consumer for each received heap of bytes, returning true to continue stream of false to abort.
+     * @return new SyncStreamResponse reference. If protocol of given url is not supported, SyncStreamResponse::failed() returns true.
      */
-    std::unique_ptr<std::thread> read_url_stream(const std::string& url,
-            ByteRingbuffer& buffer,
-            jau::io::url_header_sync& header_sync,
-            jau::relaxed_atomic_bool& has_content_length,
-            jau::relaxed_atomic_uint64& content_length,
-            jau::relaxed_atomic_uint64& total_read,
-            relaxed_atomic_async_io_result_t& result) noexcept;
+    SyncStreamResponseRef read_url_stream_sync(net_tk_handle handle, const std::string& url,
+            http::PostRequestPtr httpPostReq, ByteRingbuffer *buffer,
+            const SyncStreamConsumerFunc& consumer_fn) noexcept;
+
+    /** Asynchronous stream response */
+    struct AsyncStreamResponse {
+        AsyncStreamResponse(net_tk_handle handle_)
+        : handle(handle_), thread(), header_resp(),
+          has_content_length(false),
+          content_length(0),
+          total_read(0),
+          result(io::io_result_t::NONE),
+          result_data(), result_text() {}
+
+        AsyncStreamResponse()
+        : AsyncStreamResponse(nullptr) {}
+
+        /** Stream failed and is aborted, i.e. io_result_t::FAILED == result */
+        constexpr_atomic bool failed() const noexcept { return io_result_t::FAILED == result; }
+        /** Stream processing in progress, i.e. io_result_t::NONE == result */
+        constexpr_atomic bool processing() const noexcept { return io_result_t::NONE == result; }
+        /** Stream completed successfully, i.e. io_result_t::SUCCESS == result */
+        constexpr_atomic bool success() const noexcept { return io_result_t::SUCCESS == result; }
+
+        /// used network tookit handle, if owned by caller
+        net_tk_handle handle;
+        /// background reading thread unique-pointer
+        std::thread thread;
+        /// synchronized URL header response completion
+        url_header_resp header_resp;
+        /// indicating whether content_length is known from server
+        relaxed_atomic_bool has_content_length;
+        /// content_length tracking the content_length
+        relaxed_atomic_uint64 content_length;
+        /// tracking the total_read
+        relaxed_atomic_uint64 total_read;
+        /// tracking io_result_t. If set to other than io_result_t::NONE while streaming, streaming is aborted. See failed(), processing() and success()
+        relaxed_atomic_io_result_t result;
+        /// piggy-bag result data compiled by user, e.g. via AsyncStreamConsumerFunc
+        std::vector<uint8_t> result_data;
+        /// piggy-bag result data compiled by user, e.g. via AsyncStreamConsumerFunc
+        std::string result_text;
+    };
+    using AsyncStreamResponseRef = std::shared_ptr<AsyncStreamResponse>;
+
+    /**
+     * Asynchronous stream consumer function
+     * - `bool consumer(AsyncStreamResponse& resp, const uint8_t* data , size_t len, bool is_final)`
+     *
+     * Returns true to signal continuation, false to end streaming.
+     */
+    typedef jau::function<bool(AsyncStreamResponse& /* resp */, const uint8_t* /* data */, size_t /* len */, bool /* is_final */)> AsyncStreamConsumerFunc;
+
+    /**
+     * Asynchronous URL stream reader using the given AsyncStreamConsumerFunc consumer_fn.
+     *
+     * Function returns immediately.
+     *
+     * To abort streaming, (1) user may return `false` from the given `consumer_func`.
+     * Asynchronous URL read content using the given byte jau::ringbuffer, allowing parallel reading.
+     *
+     * To abort streaming, (2) user may set given reference `results` to a value other than async_io_result_t::NONE.
+     *
+     * Standard implementation uses [curl](https://curl.se/),
+     * hence all [*libcurl* network protocols](https://curl.se/docs/url-syntax.html) are supported,
+     * see jau::io::uri::supported_protocols().
+     *
+     * If the uri-sheme doesn't match a supported protocol, see jau::io::uri::protocol_supported(),
+     * AsyncStreamResponse::failed() returns true.
+     *
+     * @param handle optional reused user-pooled net toolkit handle, see create_net_tk_handle(). Pass nullptr to use an own local handle.
+     * @param url the URL to open a connection to and stream bytes from
+     * @param httpPostReq optional HTTP POST request data, maybe nullptr
+     * @param buffer optional jau::ringbuffer<uint8_t>, if not nullptr will be asynchronously filled with received data
+     * @param consumer_fn AsyncStreamConsumerFunc consumer for each received heap of bytes, returning true to continue stream of false to abort.
+     * @return new AsyncStreamResponse reference.  If protocol of given url is not supported, AsyncStreamResponse::failed() returns true.
+     */
+    AsyncStreamResponseRef read_url_stream_async(net_tk_handle handle, const std::string& url,
+            http::PostRequestPtr httpPostReq, ByteRingbuffer *buffer,
+            const AsyncStreamConsumerFunc& consumer_fn) noexcept;
 
     void print_stats(const std::string& prefix, const uint64_t& out_bytes_total, const jau::fraction_i64& td) noexcept;
 

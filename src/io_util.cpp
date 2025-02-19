@@ -24,6 +24,8 @@
  */
 
 #include <chrono>
+#include <memory>
+#include <unordered_map>
 
 // #include <botan_all.h>
 
@@ -219,6 +221,7 @@ struct curl_glue1_t {
     CURL *curl_handle;
     bool has_content_length;
     uint64_t content_length;
+    int32_t status_code;
     uint64_t total_read;
     secure_vector<uint8_t>& buffer;
     StreamConsumerFunc consumer_fn;
@@ -231,6 +234,7 @@ static size_t consume_header_curl1(char *buffer, size_t size, size_t nmemb, void
         long v;
         const CURLcode r = curl_easy_getinfo(cg->curl_handle, CURLINFO_RESPONSE_CODE, &v);
         if( CURLE_OK == r ) {
+            cg->status_code = static_cast<int32_t>(v);
             if( 400 <= v ) {
                 IRQ_PRINT("response_code: %ld", v);
                 return 0;
@@ -323,12 +327,13 @@ uint64_t jau::io::read_url_stream(const std::string& url,
 
     /* init the curl session */
     CURL *curl_handle = curl_easy_init();
+    DBG_PRINT("CURL: Create own handle %p", curl_handle);
     if( nullptr == curl_handle ) {
         ERR_PRINT("Error setting up url %s, null curl handle", url.c_str());
         return 0;
     }
 
-    curl_glue1_t cg = { curl_handle, false, 0, 0, buffer, consumer_fn };
+    curl_glue1_t cg = { curl_handle, false, 0, 0, 0, buffer, consumer_fn };
 
     res = curl_easy_setopt(curl_handle, CURLOPT_ERRORBUFFER, errorbuffer.data());
     if( CURLE_OK != res ) {
@@ -418,10 +423,12 @@ uint64_t jau::io::read_url_stream(const std::string& url,
     }
 
     /* cleanup curl stuff */
+    DBG_PRINT("CURL: Freeing own handle %p", curl_handle);
     curl_easy_cleanup(curl_handle);
     return cg.total_read;
 
 errout:
+    DBG_PRINT("CURL: Freeing own handle %p", curl_handle);
     curl_easy_cleanup(curl_handle);
 #else // USE_LIBCURL
     (void) url;
@@ -431,15 +438,16 @@ errout:
     return 0;
 }
 
-void jau::io::url_header_sync::notify_complete() noexcept {
+void jau::io::url_header_resp::notify_complete(const int32_t response_code) noexcept {
     {
         std::unique_lock<std::mutex> lockWrite(m_sync);
         m_completed = true;
+        m_response_code = response_code;
     }
     m_cv.notify_all(); // have mutex unlocked before notify_all to avoid pessimistic re-block of notified wait() thread.
 }
 
-bool jau::io::url_header_sync::wait_until_completion(const jau::fraction_i64& timeout) noexcept {
+bool jau::io::url_header_resp::wait_until_completion(const jau::fraction_i64& timeout) noexcept {
     std::unique_lock<std::mutex> lock(m_sync);
     const fraction_timespec timeout_time = getMonotonicTime() + fraction_timespec(timeout);
     while( !m_completed ) {
@@ -457,48 +465,84 @@ bool jau::io::url_header_sync::wait_until_completion(const jau::fraction_i64& ti
 
 #ifdef USE_LIBCURL
 
-struct curl_glue2_t {
-    curl_glue2_t(CURL *_curl_handle,
-                 jau::io::url_header_sync& _header_sync,
-                 jau::relaxed_atomic_bool& _has_content_length,
-                 jau::relaxed_atomic_uint64& _content_length,
-                 jau::relaxed_atomic_uint64& _total_read,
-                 ByteRingbuffer& _buffer,
-                 relaxed_atomic_async_io_result_t& _result)
-    : curl_handle(_curl_handle),
-      header_sync(_header_sync),
-      has_content_length(_has_content_length),
-      content_length(_content_length),
-      total_read(_total_read),
+struct curl_glue2_sync_t {
+    curl_glue2_sync_t(void *_curl_handle,
+                 http::PostRequestPtr _post_request,
+                 ByteRingbuffer *_buffer,
+                 SyncStreamResponseRef _response,
+                 SyncStreamConsumerFunc _consumer_fn)
+    : curl_handle(reinterpret_cast<CURL*>(_curl_handle)),
+      post_request(std::move(_post_request)),
       buffer(_buffer),
-      result(_result)
+      response_code(0),
+      response(std::move(_response)),
+      consumer_fn(std::move(_consumer_fn))
     {}
 
     CURL *curl_handle;
-    jau::io::url_header_sync& header_sync;
-    jau::relaxed_atomic_bool& has_content_length;
-    jau::relaxed_atomic_uint64& content_length;
-    jau::relaxed_atomic_uint64& total_read;
-    ByteRingbuffer& buffer;
-    relaxed_atomic_async_io_result_t& result;
+    http::PostRequestPtr post_request;
+    ByteRingbuffer *buffer;
+    int32_t response_code;
+    SyncStreamResponseRef response;
+    SyncStreamConsumerFunc consumer_fn;
 
     void interrupt_all() noexcept {
-        buffer.interruptReader();
-        header_sync.notify_complete();
+        if( buffer ) {
+            buffer->interruptReader();
+        }
+        response->header_resp.notify_complete(response_code);
     }
     void set_end_of_input() noexcept {
-        buffer.set_end_of_input(true);
-        header_sync.notify_complete();
+        if( buffer ) {
+            buffer->set_end_of_input(true);
+        }
+        response->header_resp.notify_complete(response_code);
     }
 };
 
-static size_t consume_header_curl2(char *buffer, size_t size, size_t nmemb, void *userdata) noexcept {
-    curl_glue2_t * cg = (curl_glue2_t*)userdata;
+struct curl_glue2_async_t {
+    curl_glue2_async_t(void *_curl_handle,
+                 http::PostRequestPtr _post_request,
+                 ByteRingbuffer *_buffer,
+                 AsyncStreamResponseRef _response,
+                 AsyncStreamConsumerFunc _consumer_fn)
+    : curl_handle(reinterpret_cast<CURL*>(_curl_handle)),
+      post_request(std::move(_post_request)),
+      buffer(_buffer),
+      response_code(0),
+      response(std::move(_response)),
+      consumer_fn(std::move(_consumer_fn))
+    {}
 
-    if( async_io_result_t::NONE != cg->result ) {
+    CURL *curl_handle;
+    http::PostRequestPtr post_request;
+    ByteRingbuffer *buffer;
+    int32_t response_code;
+    AsyncStreamResponseRef response;
+    AsyncStreamConsumerFunc consumer_fn;
+
+    void interrupt_all() noexcept {
+        if( buffer ) {
+            buffer->interruptReader();
+        }
+        response->header_resp.notify_complete(response_code);
+    }
+    void set_end_of_input() noexcept {
+        if( buffer ) {
+            buffer->set_end_of_input(true);
+        }
+        response->header_resp.notify_complete(response_code);
+    }
+};
+
+static size_t consume_header_curl2_sync(char *buffer, size_t size, size_t nmemb, void *userdata) noexcept {
+    curl_glue2_sync_t * cg = (curl_glue2_sync_t*)userdata;
+    SyncStreamResponse& response = *cg->response;
+
+    if( io_result_t::NONE != response.result ) {
         // user abort!
-        DBG_PRINT("consume_header_curl2 ABORT by User: total %" PRIi64 ", result %d, rb %s",
-                cg->total_read.load(), cg->result.load(), cg->buffer.toString().c_str() );
+        DBG_PRINT("consume_header_curl2_sync ABORT by User: total %" PRIi64 ", result %d, rb %s",
+                response.total_read, response.result.load() );
         cg->set_end_of_input();
         return 0;
     }
@@ -507,9 +551,10 @@ static size_t consume_header_curl2(char *buffer, size_t size, size_t nmemb, void
         long v;
         const CURLcode r = curl_easy_getinfo(cg->curl_handle, CURLINFO_RESPONSE_CODE, &v);
         if( CURLE_OK == r ) {
+            cg->response_code = static_cast<int32_t>(v);
             if( 400 <= v ) {
                 IRQ_PRINT("response_code: %ld", v);
-                cg->result = async_io_result_t::FAILED;
+                response.result = io_result_t::FAILED;
                 cg->set_end_of_input();
                 return 0;
             } else {
@@ -517,26 +562,26 @@ static size_t consume_header_curl2(char *buffer, size_t size, size_t nmemb, void
             }
         }
     }
-    if( !cg->has_content_length ) {
+    if( !response.has_content_length ) {
         curl_off_t v = 0;
         const CURLcode r = curl_easy_getinfo(cg->curl_handle, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, &v);
         if( CURLE_OK == r ) {
             if( 0 <= v ) { // curl returns -1 if the size is not known
-                cg->content_length = v;
-                cg->has_content_length = true;
+                response.content_length = v;
+                response.has_content_length = true;
             }
         }
     }
     const size_t realsize = size * nmemb;
 
     if( 2 == realsize && 0x0d == buffer[0] && 0x0a == buffer[1] ) {
-        cg->header_sync.notify_complete();
+        response.header_resp.notify_complete(cg->response_code);
         DBG_PRINT("consume_header_curl2.0 header_completed");
     }
 
     if( false ) {
-        DBG_PRINT("consume_header_curl2.X realsize %zu, total %" PRIu64 " / ( content_len has %d, size %" PRIu64 " ), result %d, rb %s",
-               realsize, cg->total_read.load(), cg->has_content_length.load(), cg->content_length.load(), cg->result.load(), cg->buffer.toString().c_str() );
+        DBG_PRINT("consume_header_curl2.X realsize %zu, total %" PRIu64 " / ( content_len has %d, size %" PRIu64 " ), result %d",
+               realsize, response.total_read, response.has_content_length, response.content_length, response.result.load() );
         std::string blob(buffer, realsize);
         jau::PLAIN_PRINT(true, "%s", jau::bytesHexString((uint8_t*)buffer, 0, realsize, true /* lsbFirst */).c_str());
         jau::PLAIN_PRINT(true, "%s", blob.c_str());
@@ -545,74 +590,219 @@ static size_t consume_header_curl2(char *buffer, size_t size, size_t nmemb, void
     return realsize;
 }
 
-static size_t consume_data_curl2(char *ptr, size_t size, size_t nmemb, void *userdata) noexcept {
-    curl_glue2_t * cg = (curl_glue2_t*)userdata;
+static size_t consume_header_curl2_async(char *buffer, size_t size, size_t nmemb, void *userdata) noexcept {
+    curl_glue2_async_t * cg = (curl_glue2_async_t*)userdata;
+    AsyncStreamResponse& response = *cg->response;
 
-    if( async_io_result_t::NONE != cg->result ) {
+    if( io_result_t::NONE != response.result ) {
         // user abort!
-        DBG_PRINT("consume_data_curl2 ABORT by User: total %" PRIi64 ", result %d, rb %s",
-                cg->total_read.load(), cg->result.load(), cg->buffer.toString().c_str() );
+        const std::string s = cg->buffer ? cg->buffer->toString() : "null";
+        DBG_PRINT("consume_header_curl2 ABORT by User: total %" PRIi64 ", result %d, rb %s",
+                response.total_read.load(), response.result.load(), s.c_str() );
         cg->set_end_of_input();
         return 0;
     }
 
-    if( !cg->has_content_length ) {
-        curl_off_t v = 0;
-        const CURLcode r = curl_easy_getinfo(cg->curl_handle, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, &v);
+    {
+        long v;
+        const CURLcode r = curl_easy_getinfo(cg->curl_handle, CURLINFO_RESPONSE_CODE, &v);
         if( CURLE_OK == r ) {
-            if( 0 <= v ) { // curl returns -1 if the size if not known
-                cg->content_length = v;
-                cg->has_content_length = true;
+            cg->response_code = static_cast<int32_t>(v);
+            if( 400 <= v ) {
+                IRQ_PRINT("response_code: %ld", v);
+                response.result = io_result_t::FAILED;
+                cg->set_end_of_input();
+                return 0;
+            } else {
+                DBG_PRINT("consume_header_curl2.0 response_code: %ld", v);
             }
         }
     }
-
-    // Ensure header completion is being sent
-    if( !cg->header_sync.completed() ) {
-        cg->header_sync.notify_complete();
-    }
-
-    const size_t realsize = size * nmemb;
-    DBG_PRINT("consume_data_curl2.0 realsize %zu, rb %s", realsize, cg->buffer.toString().c_str() );
-    bool timeout_occured;
-    if( !cg->buffer.putBlocking(reinterpret_cast<uint8_t*>(ptr),
-                                reinterpret_cast<uint8_t*>(ptr)+realsize, 0_s, timeout_occured) ) {
-        DBG_PRINT("consume_data_curl2 Failed put: total %" PRIi64 ", result %d, timeout %d, rb %s",
-                cg->total_read.load(), cg->result.load(), timeout_occured, cg->buffer.toString().c_str() );
-        if( timeout_occured ) {
-            cg->set_end_of_input();
+    if( !response.has_content_length ) {
+        curl_off_t v = 0;
+        const CURLcode r = curl_easy_getinfo(cg->curl_handle, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, &v);
+        if( CURLE_OK == r ) {
+            if( 0 <= v ) { // curl returns -1 if the size is not known
+                response.content_length = v;
+                response.has_content_length = true;
+            }
         }
-        return 0;
     }
+    const size_t realsize = size * nmemb;
 
-    cg->total_read.fetch_add(realsize);
-    const bool is_final = 0 == realsize ||
-                          cg->has_content_length ? cg->total_read >= cg->content_length : false;
-    if( is_final ) {
-        cg->result = async_io_result_t::SUCCESS;
-        cg->set_end_of_input();
+    if( 2 == realsize && 0x0d == buffer[0] && 0x0a == buffer[1] ) {
+        response.header_resp.notify_complete(cg->response_code);
+        DBG_PRINT("consume_header_curl2.0 header_completed");
     }
 
     if( false ) {
-        DBG_PRINT("consume_data_curl2.X realsize %zu, total %" PRIu64 " / ( content_len has %d, size %" PRIu64 " ), is_final %d, result %d, rb %s",
-               realsize, cg->total_read.load(), cg->has_content_length.load(), cg->content_length.load(), is_final, cg->result.load(), cg->buffer.toString().c_str() );
+        const std::string s = cg->buffer ? cg->buffer->toString() : "null";
+        DBG_PRINT("consume_header_curl2.X realsize %zu, total %" PRIu64 " / ( content_len has %d, size %" PRIu64 " ), result %d, rb %s",
+               realsize, response.total_read.load(), response.has_content_length.load(), response.content_length.load(), response.result.load(), s.c_str() );
+        std::string blob(buffer, realsize);
+        jau::PLAIN_PRINT(true, "%s", jau::bytesHexString((uint8_t*)buffer, 0, realsize, true /* lsbFirst */).c_str());
+        jau::PLAIN_PRINT(true, "%s", blob.c_str());
     }
 
     return realsize;
 }
 
-static void read_url_stream_thread(const char *url, std::unique_ptr<curl_glue2_t> && cg) noexcept {
-    std::vector<char> errorbuffer;
-    errorbuffer.reserve(CURL_ERROR_SIZE);
-    CURLcode res;
+static size_t consume_data_curl2_sync(char *ptr, size_t size, size_t nmemb, void *userdata) noexcept {
+    curl_glue2_sync_t * cg = (curl_glue2_sync_t*)userdata;
+    SyncStreamResponse& response = *cg->response;
 
-    /* init the curl session */
-    CURL *curl_handle = curl_easy_init();
-    if( nullptr == curl_handle ) {
-        ERR_PRINT("Error setting up url %s, null curl handle", url);
-        goto errout;
+    if( io_result_t::NONE != response.result ) {
+        // user abort!
+        // user abort!
+        const std::string s = cg->buffer ? cg->buffer->toString() : "null";
+        DBG_PRINT("consume_data_curl2 ABORT by User: total %" PRIi64 ", result %d, rb %s",
+                response.total_read, response.result.load(), s.c_str() );
+        cg->set_end_of_input();
+        return 0;
     }
-    cg->curl_handle = curl_handle;
+
+    if( !response.has_content_length ) {
+        curl_off_t v = 0;
+        const CURLcode r = curl_easy_getinfo(cg->curl_handle, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, &v);
+        if( CURLE_OK == r ) {
+            if( 0 <= v ) { // curl returns -1 if the size if not known
+                response.content_length = v;
+                response.has_content_length = true;
+            }
+        }
+    }
+
+    // Ensure header completion is being sent
+    if( !response.header_resp.completed() ) {
+        response.header_resp.notify_complete();
+    }
+
+    const size_t realsize = size * nmemb;
+    if( jau::environment::get().debug ) {
+        const std::string s = cg->buffer ? cg->buffer->toString() : "null";
+        DBG_PRINT("consume_data_curl2.0 realsize %zu, rb %s", realsize, s.c_str() );
+    }
+    if( cg->buffer ) {
+        bool timeout_occured;
+        if( !cg->buffer->putBlocking(reinterpret_cast<uint8_t*>(ptr),
+                                     reinterpret_cast<uint8_t*>(ptr)+realsize, 0_s, timeout_occured) ) {
+            DBG_PRINT("consume_data_curl2 Failed put: total %" PRIi64 ", result %d, timeout %d, rb %s",
+                    response.total_read, response.result.load(), timeout_occured, cg->buffer->toString().c_str() );
+            if( timeout_occured ) {
+                cg->set_end_of_input();
+            }
+            return 0;
+        }
+    }
+
+    response.total_read += realsize;
+    const bool is_final = 0 == realsize ||
+                          response.has_content_length ? response.total_read >= response.content_length : false;
+    if( is_final ) {
+        response.result = io_result_t::SUCCESS;
+        cg->set_end_of_input();
+    }
+    if( cg->consumer_fn ) {
+        try {
+            if( !cg->consumer_fn(*cg->response, reinterpret_cast<uint8_t*>(ptr), realsize, is_final) ) {
+                return 0; // end streaming
+            }
+        } catch (std::exception &e) {
+            ERR_PRINT("jau::io::read_url_stream: Caught exception: %s", e.what());
+            return 0; // end streaming
+        }
+    }
+
+    if( jau::environment::get().debug ) {
+        const std::string s = cg->buffer ? cg->buffer->toString() : "null";
+        DBG_PRINT("consume_data_curl2.X realsize %zu, total %" PRIu64 " / ( content_len has %d, size %" PRIu64 " ), is_final %d, result %d, rb %s",
+               realsize, response.total_read, response.has_content_length, response.content_length, is_final, response.result.load(), s.c_str() );
+    }
+
+    return realsize;
+}
+
+static size_t consume_data_curl2_async(char *ptr, size_t size, size_t nmemb, void *userdata) noexcept {
+    curl_glue2_async_t * cg = (curl_glue2_async_t*)userdata;
+    AsyncStreamResponse& response = *cg->response;
+
+    if( io_result_t::NONE != response.result ) {
+        // user abort!
+        const std::string s = cg->buffer ? cg->buffer->toString() : "null";
+        DBG_PRINT("consume_data_curl2 ABORT by User: total %" PRIi64 ", result %d, rb %s",
+                response.total_read.load(), response.result.load(), s.c_str() );
+        cg->set_end_of_input();
+        return 0;
+    }
+
+    if( !response.has_content_length ) {
+        curl_off_t v = 0;
+        const CURLcode r = curl_easy_getinfo(cg->curl_handle, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, &v);
+        if( CURLE_OK == r ) {
+            if( 0 <= v ) { // curl returns -1 if the size if not known
+                response.content_length = v;
+                response.has_content_length = true;
+            }
+        }
+    }
+
+    // Ensure header completion is being sent
+    if( !response.header_resp.completed() ) {
+        response.header_resp.notify_complete();
+    }
+
+    const size_t realsize = size * nmemb;
+    if( jau::environment::get().debug ) {
+        const std::string s = cg->buffer ? cg->buffer->toString() : "null";
+        DBG_PRINT("consume_data_curl2.0 realsize %zu, rb %s", realsize, s.c_str() );
+    }
+    if( cg->buffer ) {
+        bool timeout_occured;
+        if( !cg->buffer->putBlocking(reinterpret_cast<uint8_t*>(ptr),
+                                     reinterpret_cast<uint8_t*>(ptr)+realsize, 0_s, timeout_occured) ) {
+            DBG_PRINT("consume_data_curl2 Failed put: total %" PRIi64 ", result %d, timeout %d, rb %s",
+                    response.total_read.load(), response.result.load(), timeout_occured, cg->buffer->toString().c_str() );
+            if( timeout_occured ) {
+                cg->set_end_of_input();
+            }
+            return 0;
+        }
+    }
+
+    response.total_read.fetch_add(realsize);
+    const bool is_final = 0 == realsize ||
+                          response.has_content_length ? response.total_read >= response.content_length : false;
+    if( is_final ) {
+        response.result = io_result_t::SUCCESS;
+        cg->set_end_of_input();
+    }
+    if( cg->consumer_fn ) {
+        try {
+            if( !cg->consumer_fn(*cg->response, reinterpret_cast<uint8_t*>(ptr), realsize, is_final) ) {
+                return 0; // end streaming
+            }
+        } catch (std::exception &e) {
+            ERR_PRINT("jau::io::read_url_stream: Caught exception: %s", e.what());
+            return 0; // end streaming
+        }
+    }
+
+    if( jau::environment::get().debug ) {
+        const std::string s = cg->buffer ? cg->buffer->toString() : "null";
+        DBG_PRINT("consume_data_curl2.X realsize %zu, total %" PRIu64 " / ( content_len has %d, size %" PRIu64 " ), is_final %d, result %d, rb %s",
+               realsize, response.total_read.load(), response.has_content_length.load(), response.content_length.load(), is_final, response.result.load(), s.c_str() );
+    }
+
+    return realsize;
+}
+
+static bool read_url_stream_impl(CURL *curl_handle, std::vector<char>& errorbuffer,
+                                 const char *url, http::PostRequest *post_request,
+                                 relaxed_atomic_io_result_t& result,
+                                 curl_write_callback header_cb, curl_write_callback write_cb, void* ctx_data) noexcept
+{
+    struct curl_slist *header_slist = nullptr;
+    CURLcode res;
 
     res = curl_easy_setopt(curl_handle, CURLOPT_ERRORBUFFER, errorbuffer.data());
     if( CURLE_OK != res ) {
@@ -629,6 +819,30 @@ static void read_url_stream_thread(const char *url, std::unique_ptr<curl_glue2_t
         goto errout;
     }
 
+    if( nullptr != post_request ) {
+        http::PostRequest &post = *post_request;
+        // slist1 = curl_slist_append(slist1, "Content-Type: application/json");
+        // slist1 = curl_slist_append(slist1, "Accept: application/json");
+        if( post.header.size() > 0 ) {
+            for (const std::pair<const std::string, std::string>& n : post.header) {
+                std::string v = n.first+": "+n.second;
+                header_slist = curl_slist_append(header_slist, v.c_str());
+            }
+            curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, header_slist);
+            if( CURLE_OK != res ) {
+                ERR_PRINT("Error setting up POST header, error %d '%s' '%s'",
+                          (int)res, curl_easy_strerror(res), errorbuffer.data());
+                goto errout;
+            }
+        }
+
+        res = curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, post.body.data());
+        if( CURLE_OK != res ) {
+            ERR_PRINT("Error setting up POST fields, error %d '%s' '%s'",
+                      (int)res, curl_easy_strerror(res), errorbuffer.data());
+            goto errout;
+        }
+    }
     /* Switch on full protocol/debug output while testing */
     res = curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 0L);
     if( CURLE_OK != res ) {
@@ -662,7 +876,7 @@ static void read_url_stream_thread(const char *url, std::unique_ptr<curl_glue2_t
     }
 
     /* send header data to this function  */
-    res = curl_easy_setopt(curl_handle, CURLOPT_HEADERFUNCTION, consume_header_curl2);
+    res = curl_easy_setopt(curl_handle, CURLOPT_HEADERFUNCTION, header_cb);
     if( CURLE_OK != res ) {
         ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
                   url, (int)res, curl_easy_strerror(res), errorbuffer.data());
@@ -670,7 +884,7 @@ static void read_url_stream_thread(const char *url, std::unique_ptr<curl_glue2_t
     }
 
     /* set userdata for consume_header_curl2 */
-    res = curl_easy_setopt(curl_handle, CURLOPT_HEADERDATA, (void*)cg.get());
+    res = curl_easy_setopt(curl_handle, CURLOPT_HEADERDATA, ctx_data);
     if( CURLE_OK != res ) {
         ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
                   url, (int)res, curl_easy_strerror(res), errorbuffer.data());
@@ -678,7 +892,7 @@ static void read_url_stream_thread(const char *url, std::unique_ptr<curl_glue2_t
     }
 
     /* send received data to this function  */
-    res = curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, consume_data_curl2);
+    res = curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_cb);
     if( CURLE_OK != res ) {
         ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
                   url, (int)res, curl_easy_strerror(res), errorbuffer.data());
@@ -686,7 +900,7 @@ static void read_url_stream_thread(const char *url, std::unique_ptr<curl_glue2_t
     }
 
     /* set userdata for consume_data_curl2 */
-    res = curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void*)cg.get());
+    res = curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, ctx_data);
     if( CURLE_OK != res ) {
         ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
                   url, (int)res, curl_easy_strerror(res), errorbuffer.data());
@@ -696,7 +910,7 @@ static void read_url_stream_thread(const char *url, std::unique_ptr<curl_glue2_t
     /* performs the tast, blocking! */
     res = curl_easy_perform(curl_handle);
     if( CURLE_OK != res ) {
-        if( async_io_result_t::NONE == cg->result ) {
+        if( io_result_t::NONE == result ) {
             // Error during normal processing
             IRQ_PRINT("Error processing url %s, error %d '%s' '%s'",
                       url, (int)res, curl_easy_strerror(res), errorbuffer.data());
@@ -708,52 +922,207 @@ static void read_url_stream_thread(const char *url, std::unique_ptr<curl_glue2_t
         goto errout;
     }
 
-    /* cleanup curl stuff */
-    cg->result = async_io_result_t::SUCCESS;
-    cg->header_sync.notify_complete();
+    if( nullptr != header_slist ) {
+        curl_slist_free_all(header_slist);
+    }
+    return true;
+
+errout:
+    if( nullptr != header_slist ) {
+        curl_slist_free_all(header_slist);
+    }
+    return false;
+}
+
+static void read_url_stream_sync(const char *url, curl_glue2_sync_t& cg) noexcept {
+    std::vector<char> errorbuffer;
+    errorbuffer.reserve(CURL_ERROR_SIZE);
+
+    bool owns_curl_handle = false;
+    CURL *curl_handle;
+    if( nullptr == cg.curl_handle ) {
+        /* init the curl session */
+        owns_curl_handle = true;
+        curl_handle = curl_easy_init();
+        if( nullptr == curl_handle ) {
+            ERR_PRINT("Error setting up url %s, null curl handle", url);
+            goto errout;
+        }
+        cg.curl_handle = curl_handle;
+        DBG_PRINT("CURL: Created own handle %p", curl_handle);
+    } else {
+        curl_handle = cg.curl_handle;
+        DBG_PRINT("CURL: Reusing own handle %p", curl_handle);
+    }
+
+    if( !read_url_stream_impl(curl_handle, errorbuffer,
+                              url, cg.post_request.get(), cg.response->result,
+                              consume_header_curl2_sync, consume_data_curl2_sync, (void*)&cg) ) {
+        goto errout;
+    }
+
+    // Ensure header completion is being sent
+    if( !cg.response->header_resp.completed() ) {
+        cg.response->header_resp.notify_complete();
+    }
+    if( cg.response->result != io_result_t::SUCCESS ) {
+        cg.response->result = io_result_t::SUCCESS;
+        if( cg.consumer_fn ) {
+            try {
+                cg.consumer_fn(*cg.response, nullptr, 0, true);
+            } catch (std::exception &e) {
+                ERR_PRINT("jau::io::read_url_stream: Caught exception: %s", e.what());
+                goto errout;
+            }
+        }
+    }
     goto cleanup;
 
 errout:
-    cg->result = async_io_result_t::FAILED;
+    cg.response->result = io_result_t::FAILED;
+    cg.set_end_of_input();
+
+cleanup:
+    if( owns_curl_handle && nullptr != curl_handle ) {
+        DBG_PRINT("CURL: Freeing own handle %p", curl_handle);
+        curl_easy_cleanup(curl_handle);
+        cg.curl_handle = nullptr;
+    }
+}
+
+static void read_url_stream_async(const char *url, std::unique_ptr<curl_glue2_async_t> && cg) noexcept {
+    std::vector<char> errorbuffer;
+    errorbuffer.reserve(CURL_ERROR_SIZE);
+
+    bool owns_curl_handle = false;
+    CURL *curl_handle;
+    if( nullptr == cg->curl_handle ) {
+        /* init the curl session */
+        owns_curl_handle = true;
+        curl_handle = curl_easy_init();
+        if( nullptr == curl_handle ) {
+            ERR_PRINT("Error setting up url %s, null curl handle", url);
+            goto errout;
+        }
+        cg->curl_handle = curl_handle;
+        DBG_PRINT("CURL: Created own handle %p", curl_handle);
+    } else {
+        curl_handle = cg->curl_handle;
+        DBG_PRINT("CURL: Reusing own handle %p", curl_handle);
+    }
+
+    if( !read_url_stream_impl(curl_handle, errorbuffer,
+                              url, cg->post_request.get(), cg->response->result,
+                              consume_header_curl2_async, consume_data_curl2_async, (void*)cg.get()) ) {
+        goto errout;
+    }
+
+    // Ensure header completion is being sent
+    if( !cg->response->header_resp.completed() ) {
+        cg->response->header_resp.notify_complete();
+    }
+    if( cg->response->result != io_result_t::SUCCESS ) {
+        cg->response->result = io_result_t::SUCCESS;
+        if( cg->consumer_fn ) {
+            try {
+                cg->consumer_fn(*cg->response, nullptr, 0, true);
+            } catch (std::exception &e) {
+                ERR_PRINT("jau::io::read_url_stream: Caught exception: %s", e.what());
+                goto errout;
+            }
+        }
+    }
+    goto cleanup;
+
+errout:
+    cg->response->result = io_result_t::FAILED;
     cg->set_end_of_input();
 
 cleanup:
-    if( nullptr != curl_handle ) {
+    if( owns_curl_handle && nullptr != curl_handle ) {
+        DBG_PRINT("CURL: Freeing own handle %p", curl_handle);
         curl_easy_cleanup(curl_handle);
+        cg->curl_handle = nullptr;
     }
 }
 
 #endif // USE_LIBCURL
 
-std::unique_ptr<std::thread> jau::io::read_url_stream(const std::string& url,
-                                                      ByteRingbuffer& buffer,
-                                                      jau::io::url_header_sync& header_sync,
-                                                      jau::relaxed_atomic_bool& has_content_length,
-                                                      jau::relaxed_atomic_uint64& content_length,
-                                                      jau::relaxed_atomic_uint64& total_read,
-                                                      relaxed_atomic_async_io_result_t& result) noexcept {
+
+net_tk_handle jau::io::create_net_tk_handle() noexcept {
+#ifdef USE_LIBCURL
+    CURL* h = ::curl_easy_init();
+    DBG_PRINT("CURL: Created user handle %p", h);
+    return static_cast<jau::io::net_tk_handle>( h );
+#else
+    return static_cast<jau::io::net_tk_handle>( nullptr );
+#endif
+}
+void jau::io::free_net_tk_handle(net_tk_handle handle) noexcept {
+#ifdef USE_LIBCURL
+    CURL* h = static_cast<CURL*>(handle);
+    if( nullptr != h ) {
+        DBG_PRINT("CURL: Freeing user handle %p", h);
+        curl_easy_cleanup(h);
+    }
+#else
+    (void)handle;
+#endif
+}
+
+SyncStreamResponseRef jau::io::read_url_stream_sync(net_tk_handle handle, const std::string& url,
+                                                    http::PostRequestPtr httpPostReq, ByteRingbuffer *buffer,
+                                                    const SyncStreamConsumerFunc& consumer_fn) noexcept {
     /* init user referenced values */
-    has_content_length = false;
-    content_length = 0;
-    total_read = 0;
+    SyncStreamResponseRef res = std::make_shared<SyncStreamResponse>(handle);
 
 #ifdef USE_LIBCURL
     if( !uri_tk::protocol_supported(url) ) {
 #endif // USE_LIBCURL
-        result = io::async_io_result_t::FAILED;
-        header_sync.notify_complete();
-        buffer.set_end_of_input(true);
+        (void)httpPostReq;
+        (void)consumer_fn;
+        res->result = io::io_result_t::FAILED;
+        res->header_resp.notify_complete();
+        // buffer.set_end_of_input(true);
         const std::string_view scheme = uri_tk::get_scheme(url);
         DBG_PRINT("Protocol of given uri-scheme '%s' not supported. Supported protocols [%s].",
                 std::string(scheme).c_str(), jau::to_string(uri_tk::supported_protocols(), ",").c_str());
-        return nullptr;
+        return res;
 #ifdef USE_LIBCURL
     }
-    result = io::async_io_result_t::NONE;
+    curl_glue2_sync_t cg (handle, std::move(httpPostReq), buffer, res, consumer_fn );
+    read_url_stream_sync(url.c_str(), cg);
+    return res;
+#endif // USE_LIBCURL
+}
 
-    std::unique_ptr<curl_glue2_t> cg ( std::make_unique<curl_glue2_t>(nullptr, header_sync, has_content_length, content_length, total_read, buffer, result ) );
+AsyncStreamResponseRef jau::io::read_url_stream_async(net_tk_handle handle, const std::string& url,
+                                                      http::PostRequestPtr httpPostReq, ByteRingbuffer *buffer,
+                                                      const AsyncStreamConsumerFunc& consumer_fn) noexcept {
+    /* init user referenced values */
+    AsyncStreamResponseRef res = std::make_shared<AsyncStreamResponse>(handle);
 
-    return std::make_unique<std::thread>(&::read_url_stream_thread, url.c_str(), std::move(cg)); // @suppress("Invalid arguments")
+#ifdef USE_LIBCURL
+    if( !uri_tk::protocol_supported(url) ) {
+#endif // USE_LIBCURL
+        (void)httpPostReq;
+        (void)buffer;
+        (void)consumer_fn;
+        res->result = io::io_result_t::FAILED;
+        res->header_resp.notify_complete();
+        // buffer.set_end_of_input(true);
+        const std::string_view scheme = uri_tk::get_scheme(url);
+        DBG_PRINT("Protocol of given uri-scheme '%s' not supported. Supported protocols [%s].",
+                std::string(scheme).c_str(), jau::to_string(uri_tk::supported_protocols(), ",").c_str());
+        return res;
+#ifdef USE_LIBCURL
+    }
+
+    std::unique_ptr<curl_glue2_async_t> cg ( std::make_unique<curl_glue2_async_t>(handle, std::move(httpPostReq),
+                                                                                  buffer, res, consumer_fn ) );
+
+    res->thread = std::thread(&::read_url_stream_async, url.c_str(), std::move(cg)); // @suppress("Invalid arguments")
+    return res;
 #endif // USE_LIBCURL
 }
 

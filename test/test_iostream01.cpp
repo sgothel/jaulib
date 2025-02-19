@@ -135,23 +135,27 @@ class TestIOStream01 {
                 REQUIRE( 0 == consumed_calls );
             }
             {
+                // sync read_url_stream w/ unknown protocol
+                const std::string url = "lala://localhost:8080/" + basename_10kiB;
+
+                jau::io::ByteRingbuffer rb(jau::io::BEST_URLSTREAM_RINGBUFFER_SIZE);
+                jau::io::SyncStreamResponseRef res = jau::io::read_url_stream_sync(nullptr, url, nullptr, &rb, nullptr);
+                REQUIRE( res->header_resp.completed() == true );
+                REQUIRE( res->has_content_length == false );
+                REQUIRE( res->content_length == 0 );
+                REQUIRE( res->failed() == true );
+            }
+            {
                 // async read_url_stream w/ unknown protocol
                 const std::string url = "lala://localhost:8080/" + basename_10kiB;
 
                 jau::io::ByteRingbuffer rb(jau::io::BEST_URLSTREAM_RINGBUFFER_SIZE);
-                jau::io::url_header_sync url_header_sync;
-                jau::relaxed_atomic_bool url_has_content_length;
-                jau::relaxed_atomic_uint64 url_content_length;
-                jau::relaxed_atomic_uint64 url_total_read;
-                jau::io::relaxed_atomic_async_io_result_t result;
-
-                std::unique_ptr<std::thread> http_thread = jau::io::read_url_stream(url, rb, url_header_sync, url_has_content_length, url_content_length, url_total_read, result);
-                REQUIRE( nullptr == http_thread );
-                REQUIRE( url_header_sync.completed() == true );
-                REQUIRE( url_has_content_length == false );
-                REQUIRE( url_content_length == 0 );
-                REQUIRE( url_content_length == url_total_read );
-                REQUIRE( jau::io::async_io_result_t::FAILED == result );
+                jau::io::AsyncStreamResponseRef res = jau::io::read_url_stream_async(nullptr, url, nullptr, &rb, nullptr);
+                REQUIRE( !res->thread.joinable() );
+                REQUIRE( res->header_resp.completed() == true );
+                REQUIRE( res->has_content_length == false );
+                REQUIRE( res->content_length == 0 );
+                REQUIRE( res->failed() == true );
             }
         }
 
@@ -238,43 +242,37 @@ class TestIOStream01 {
 
             constexpr const size_t buffer_size = 4096;
             jau::io::ByteRingbuffer rb(jau::io::BEST_URLSTREAM_RINGBUFFER_SIZE);
-            jau::io::url_header_sync url_header_sync;
-            jau::relaxed_atomic_bool url_has_content_length;
-            jau::relaxed_atomic_uint64 url_content_length;
-            jau::relaxed_atomic_uint64 url_total_read;
-            jau::io::relaxed_atomic_async_io_result_t result;
 
-            std::unique_ptr<std::thread> http_thread = jau::io::read_url_stream(url_input, rb, url_header_sync, url_has_content_length, url_content_length, url_total_read, result);
-            REQUIRE( nullptr != http_thread );
+            jau::io::AsyncStreamResponseRef res = jau::io::read_url_stream_async(nullptr, url_input, nullptr, &rb, nullptr);
+            REQUIRE( res->failed() == false );
 
             jau::io::secure_vector<uint8_t> buffer(buffer_size);
             size_t consumed_loops = 0;
             uint64_t consumed_total_bytes = 0;
 
-            while( jau::io::async_io_result_t::NONE == result || !rb.isEmpty() ) {
+            while( res->processing() || !rb.isEmpty() ) {
                 consumed_loops++;
                 // const size_t consumed_bytes = content_length >= 0 ? std::min(buffer_size, content_length - consumed_total_bytes) : rb.getSize();
                 const size_t consumed_bytes = rb.getBlocking(buffer.data(), buffer_size, 1, 500_ms);
                 consumed_total_bytes += consumed_bytes;
                 jau::PLAIN_PRINT(true, "test11_async_ok.0 #%zu: consumed[this %zu, total %" PRIu64 ", result %d, rb %s",
-                        consumed_loops, consumed_bytes, consumed_total_bytes, result.load(), rb.toString().c_str() );
+                        consumed_loops, consumed_bytes, consumed_total_bytes, res->result.load(), rb.toString().c_str() );
                 if( consumed_bytes != outfile.write(buffer.data(), consumed_bytes) ) {
                     break;
                 }
             }
             const uint64_t out_bytes_total = outfile.tellp();
             jau::PLAIN_PRINT(true, "test11_async_ok.X Done: total %" PRIu64 ", result %d, rb %s",
-                    consumed_total_bytes, (int)result.load(), rb.toString().c_str() );
+                    consumed_total_bytes, (int)res->result.load(), rb.toString().c_str() );
 
-            http_thread->join();
+            res->thread.join();
 
-            REQUIRE( url_header_sync.completed() == true );
-            REQUIRE( url_has_content_length == true );
-            REQUIRE( url_content_length == file_size );
-            REQUIRE( url_content_length == consumed_total_bytes );
-            REQUIRE( url_content_length == url_total_read );
-            REQUIRE( url_content_length == out_bytes_total );
-            REQUIRE( jau::io::async_io_result_t::SUCCESS == result );
+            REQUIRE( res->header_resp.completed() == true );
+            REQUIRE( res->has_content_length == true );
+            REQUIRE( res->content_length == file_size );
+            REQUIRE( res->content_length == consumed_total_bytes );
+            REQUIRE( res->content_length == out_bytes_total );
+            REQUIRE( res->success() == true );
         }
 
         void test12_async_404() {
@@ -290,43 +288,38 @@ class TestIOStream01 {
 
             constexpr const size_t buffer_size = 4096;
             jau::io::ByteRingbuffer rb(jau::io::BEST_URLSTREAM_RINGBUFFER_SIZE);
-            jau::io::url_header_sync url_header_sync;
-            jau::relaxed_atomic_bool url_has_content_length;
-            jau::relaxed_atomic_uint64 url_content_length;
-            jau::relaxed_atomic_uint64 url_total_read;
-            jau::io::relaxed_atomic_async_io_result_t result;
 
-            std::unique_ptr<std::thread> http_thread = jau::io::read_url_stream(url_input, rb, url_header_sync, url_has_content_length, url_content_length, url_total_read, result);
-            REQUIRE( nullptr != http_thread );
+            jau::io::AsyncStreamResponseRef res = jau::io::read_url_stream_async(nullptr, url_input, nullptr, &rb, nullptr);
+            REQUIRE( res->failed() == false );
 
             jau::io::secure_vector<uint8_t> buffer(buffer_size);
             size_t consumed_loops = 0;
             uint64_t consumed_total_bytes = 0;
 
-            while( jau::io::async_io_result_t::NONE == result || !rb.isEmpty() ) {
+            while( res->processing() || !rb.isEmpty() ) {
                 consumed_loops++;
                 // const size_t consumed_bytes = content_length >= 0 ? std::min(buffer_size, content_length - consumed_total_bytes) : rb.getSize();
                 const size_t consumed_bytes = rb.getBlocking(buffer.data(), buffer_size, 1, 500_ms);
                 consumed_total_bytes += consumed_bytes;
                 jau::PLAIN_PRINT(true, "test12_async_404.0 #%zu: consumed[this %zu, total %" PRIu64 ", result %d, rb %s",
-                        consumed_loops, consumed_bytes, consumed_total_bytes, result.load(), rb.toString().c_str() );
+                        consumed_loops, consumed_bytes, consumed_total_bytes, res->result.load(), rb.toString().c_str() );
                 if( consumed_bytes != outfile.write(reinterpret_cast<char*>(buffer.data()), consumed_bytes) ) {
                     break;
                 }
             }
             const uint64_t out_bytes_total = outfile.tellp();
             jau::PLAIN_PRINT(true, "test12_async_404.X Done: total %" PRIu64 ", result %d, rb %s",
-                    consumed_total_bytes, (int)result.load(), rb.toString().c_str() );
+                    consumed_total_bytes, (int)res->result.load(), rb.toString().c_str() );
 
-            http_thread->join();
+            res->thread.join();
 
-            REQUIRE( url_header_sync.completed() == true );
-            REQUIRE( url_has_content_length == false );
-            REQUIRE( url_content_length == 0 );
-            REQUIRE( url_content_length == consumed_total_bytes );
-            REQUIRE( url_content_length == url_total_read );
-            REQUIRE( url_content_length == out_bytes_total );
-            REQUIRE( jau::io::async_io_result_t::FAILED == result );
+            REQUIRE( res->header_resp.completed() == true );
+            REQUIRE( res->has_content_length == false );
+            REQUIRE( res->content_length == 0 );
+            REQUIRE( res->content_length == consumed_total_bytes );
+            REQUIRE( res->content_length == out_bytes_total );
+            REQUIRE( res->failed() == true );
+            REQUIRE( res->header_resp.response_code() == 404 );
         }
 
 };

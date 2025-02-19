@@ -523,25 +523,21 @@ namespace jau::io {
 
             uint64_t tellg() const noexcept override { return m_bytes_consumed; }
 
-            bool has_content_size() const noexcept override { return m_has_content_length; }
+            bool has_content_size() const noexcept override { return m_stream_resp->has_content_length; }
 
-            uint64_t content_size() const noexcept override { return m_content_size; }
+            uint64_t content_size() const noexcept override { return m_stream_resp->content_length; }
 
             std::string to_string() const noexcept override;
 
         private:
-            uint64_t get_available() const noexcept { return m_has_content_length ? m_content_size - m_bytes_consumed : 0; }
+            uint64_t get_available() const noexcept { return m_stream_resp->has_content_length ? m_stream_resp->content_length - m_bytes_consumed : 0; }
             std::string to_string_int() const noexcept;
 
             const std::string m_url;
             jau::fraction_i64 m_timeout;
             ByteRingbuffer m_buffer;
-            jau::io::url_header_sync m_header_sync;
-            jau::relaxed_atomic_bool m_has_content_length;
-            jau::relaxed_atomic_uint64 m_content_size;
-            jau::relaxed_atomic_uint64 m_total_xfered;
-            relaxed_atomic_async_io_result_t m_result;
-            std::unique_ptr<std::thread> m_url_thread;
+            jau::io::AsyncStreamResponseRef m_stream_resp;
+
             uint64_t m_bytes_consumed;
     };
 
@@ -686,7 +682,7 @@ namespace jau::io {
              *
              * @see interruptReader()
              */
-            void set_eof(const async_io_result_t result) noexcept;
+            void set_eof(const io_result_t result) noexcept;
 
             std::string to_string() const noexcept override;
 
@@ -700,7 +696,7 @@ namespace jau::io {
             jau::relaxed_atomic_bool m_has_content_length;
             jau::relaxed_atomic_uint64 m_content_size;
             jau::relaxed_atomic_uint64 m_total_xfered;
-            relaxed_atomic_async_io_result_t m_result;
+            relaxed_atomic_io_result_t m_result;
             uint64_t m_bytes_consumed;
     };
 

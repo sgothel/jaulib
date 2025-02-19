@@ -460,7 +460,7 @@ class TestByteStream01 {
                 }
             }
             // probably set after transfering due to above sleep, which also ends when total size has been reached.
-            data_feed->set_eof( data_feed->fail() ? jau::io::async_io_result_t::FAILED : jau::io::async_io_result_t::SUCCESS );
+            data_feed->set_eof( data_feed->fail() ? jau::io::io_result_t::FAILED : jau::io::io_result_t::SUCCESS );
             (void)xfer_total; // not used yet ..
         }
 
@@ -484,7 +484,7 @@ class TestByteStream01 {
                 }
             }
             // probably set after transfering due to above sleep, which also ends when total size has been reached.
-            data_feed->set_eof( !data_feed->fail() && xfer_total == file_size ? jau::io::async_io_result_t::SUCCESS : jau::io::async_io_result_t::FAILED );
+            data_feed->set_eof( !data_feed->fail() && xfer_total == file_size ? jau::io::io_result_t::SUCCESS : jau::io::io_result_t::FAILED );
         }
 
         // full speed, with content size
@@ -494,7 +494,7 @@ class TestByteStream01 {
             const uint64_t file_size = data_stream.content_size();
             data_feed->set_content_size( data_stream.content_size() );
             std::vector<uint8_t> buffer;
-            buffer.resize(feed_size);            
+            buffer.resize(feed_size);
             while( data_stream.good() && xfer_total < file_size ) {
                 size_t count = data_stream.read(buffer.data(), buffer.size());
                 if( 0 < count ) {
@@ -504,7 +504,7 @@ class TestByteStream01 {
                     }
                 }
             }
-            data_feed->set_eof( !data_feed->fail() && xfer_total == file_size ? jau::io::async_io_result_t::SUCCESS : jau::io::async_io_result_t::FAILED );
+            data_feed->set_eof( !data_feed->fail() && xfer_total == file_size ? jau::io::io_result_t::SUCCESS : jau::io::io_result_t::FAILED );
         }
 
         // full speed, no content size, interrupting @ 1024 bytes within our header
@@ -519,7 +519,7 @@ class TestByteStream01 {
                     xfer_total += count;
                     if( data_feed->write(buffer.data(), count) ) {
                         if( xfer_total >= 1024 ) {
-                            data_feed->set_eof( jau::io::async_io_result_t::FAILED ); // calls data_feed->interruptReader();
+                            data_feed->set_eof( jau::io::io_result_t::FAILED ); // calls data_feed->interruptReader();
                             return;
                         }
                     } else {
@@ -545,7 +545,7 @@ class TestByteStream01 {
                     xfer_total += count;
                     if( data_feed->write(buffer.data(), count) ) {
                         if( xfer_total >= file_size/4 ) {
-                            data_feed->set_eof( jau::io::async_io_result_t::FAILED ); // calls data_feed->interruptReader();
+                            data_feed->set_eof( jau::io::io_result_t::FAILED ); // calls data_feed->interruptReader();
                             return;
                         }
                     } else {
