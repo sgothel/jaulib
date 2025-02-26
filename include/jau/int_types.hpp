@@ -208,13 +208,21 @@ namespace jau {
 
     class int_ctti {
       public:
+        /// uint8_t
         static const jau::type_info& u8() { return jau::static_ctti<uint8_t>(); }
+        /// int32_t
         static const jau::type_info& i8() { return jau::static_ctti<int8_t>(); }
+        /// uint16_t
         static const jau::type_info& u16() { return jau::static_ctti<uint16_t>(); }
+        /// int16_t
         static const jau::type_info& i16() { return jau::static_ctti<int16_t>(); }
+        /// uint32_t
         static const jau::type_info& u32() { return jau::static_ctti<uint32_t>(); }
+        /// int32_t
         static const jau::type_info& i32() { return jau::static_ctti<int32_t>(); }
+        /// uint64_t
         static const jau::type_info& u64() { return jau::static_ctti<uint64_t>(); }
+        /// int64_t
         static const jau::type_info& i64() { return jau::static_ctti<int64_t>(); }
     };
 

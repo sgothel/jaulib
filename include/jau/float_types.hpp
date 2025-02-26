@@ -57,7 +57,9 @@ namespace jau {
 
     class float_ctti {
       public:
+        /// jau::float_32_t or just float
         static const jau::type_info& f32() { return jau::static_ctti<float32_t>(); }
+        /// jau::float_64_t or just double
         static const jau::type_info& f64() { return jau::static_ctti<float64_t>(); }
     };
 
