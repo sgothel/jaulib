@@ -85,6 +85,30 @@ namespace jau::fs {
      */
     std::string basename(const std::string_view& path) noexcept;
 
+    /**
+     * Return stripped leading directory components from given path separated by `/`,
+     * as well as removing the given suffix, if existing at the end.
+     *
+     * If only the root path `/` is given, return `/`.
+     *
+     * @param path given path
+     * @param suffix suffix at end of path to be removed
+     * @return last non-slash component or `.`
+     */
+    std::string basename(const std::string_view& path, const std::string_view& suffix) noexcept;
+
+    /**
+     * Return stripped leading directory components from given path separated by `/`,
+     * as well as removing the given suffixes, if existing at the end.
+     *
+     * If only the root path `/` is given, return `/`.
+     *
+     * @param path given path
+     * @param suffixes suffixes at end of path to be removed
+     * @return last non-slash component or `.`
+     */
+    std::string basename(const std::string_view& path, const std::vector<std::string_view>& suffixes) noexcept;
+
     /** Returns true if first character is `/` or - in case of Windows - `\\`. */
     bool isAbsolute(const std::string_view& path) noexcept;
 

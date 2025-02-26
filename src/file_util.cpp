@@ -171,6 +171,34 @@ std::string jau::fs::basename(const std::string_view& path) noexcept {
     }
 }
 
+std::string jau::fs::basename(const std::string_view& path, const std::string_view& suffix) noexcept {
+    std::string res = basename(path);
+    if( res.length() < suffix.length() ) {
+        return res;
+    }
+    size_t n = res.length() - suffix.length();
+    size_t idx = res.find(suffix, n);
+    if( idx == std::string_view::npos ) {
+        return res;
+    } else {
+        return res.substr(0, n);
+    }
+}
+
+std::string jau::fs::basename(const std::string_view& path, const std::vector<std::string_view>& suffixes) noexcept {
+    std::string res = basename(path);
+    for(std::string_view suffix : suffixes) {
+        if( res.length() >= suffix.length() ) {
+            size_t n = res.length() - suffix.length();
+            size_t idx = res.find(suffix, n);
+            if( idx != std::string_view::npos ) {
+                return res.substr(0, n);
+            }
+        }
+    }
+    return res;
+}
+
 bool jau::fs::isAbsolute(const std::string_view& path) noexcept {
     return path.size() > 0 &&
            ( c_slash == path[0] || ( jau::os::is_windows() && c_backslash == path[0] ) );
