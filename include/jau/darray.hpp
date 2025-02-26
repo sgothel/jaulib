@@ -981,7 +981,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              *
              * This buffer is pinned() afterwards, to not allow storage mutation.
              *
-             * Returned buffer is shared() and pinned() and shares the same storage of this buffer.
+             * Returned buffer is shared() and pinned(), i.e.  shares the same storage of this buffer.
              * Its position is zero and limit set to this buffers' remaining elements.
              *
              * @see pinned()
@@ -998,7 +998,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              *
              * This buffer is pinned() afterwards, to not allow storage mutation.
              *
-             * Returned buffer is shared() and pinned() and shares the same storage of this buffer.
+             * Returned buffer is shared() and pinned(), i.e. shares the same storage of this buffer.
              * Its position is zero and limit set to the given `length`.
              */
             self_t slice(size_type idx, size_type length) {
@@ -1013,7 +1013,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              *
              * This buffer is pinned() afterwards, to not allow storage mutation.
              *
-             * Returned buffer is shared() and pinned() and shares the same storage of this buffer.
+             * Returned buffer is shared() and pinned(), i.e.  shares the same storage of this buffer.
              * Its position and limit are same as with this buffer.
              */
             self_t duplicate() {
