@@ -181,7 +181,7 @@ If using the optional clang toolchain,
 perhaps change the clang version-suffix of above clang install line to the appropriate version.
 
 After complete clang installation, you might want to setup the latest version as your default.
-For Debian you can use this [clang alternatives setup script](https://jausoft.com/cgit/jaulib.git/tree/scripts/setup_clang_alternatives.sh).
+For Debian you can use this [clang alternatives setup script](../tree/scripts/setup_clang_alternatives.sh).
 
 Install optional Java dependencies:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}
@@ -432,7 +432,7 @@ supported via e.g. `scripts/build-preset.sh`.
 - `scripts/test_exe_template.sh` .. invoke the symlink'ed files to invoke native unit tests
 
 ### Cross Build
-Also provided is a [cross-build script](https://jausoft.com/cgit/jaulib.git/tree/scripts/build-preset-cross.sh)
+Also provided is a [cross-build script](../tree/scripts/build-preset-cross.sh)
 using chroot into a target system using [QEMU User space emulation](https://qemu-project.gitlab.io/qemu/user/main.html)
 and [Linux kernel binfmt_misc](https://wiki.debian.org/QemuUserEmulation)
 to run on other architectures than the host.
@@ -491,7 +491,7 @@ IDE integration configuration files are provided for
   - [cschlosser.doxdocgen](https://github.com/cschlosser/doxdocgen)
   - [jerrygoyal.shortcut-menu-bar](https://github.com/GorvGoyl/Shortcut-Menu-Bar-VSCode-Extension)
 
-For VSCodium one might copy the [example root-workspace file](https://jausoft.com/cgit/jaulib.git/tree/.vscode/jaulib.code-workspace_example)
+For VSCodium one might copy the [example root-workspace file](../tree/.vscode/jaulib.code-workspace_example)
 to the parent folder of this project (*note the filename change*) and adjust the `path` to your filesystem.
 ~~~~~~~~~~~~~
 cp .vscode/jaulib.code-workspace_example ../jaulib.code-workspace
