@@ -1750,14 +1750,11 @@ class alignas(Value_type) Matrix4 {
      * Map two window coordinates w/ shared X/Y and distinctive Z
      * to a {@link Ray}. The resulting {@link Ray} maybe used for <i>picking</i>
      * using a {@link AABBox#getRayIntersection(vec3f, Ray, value_type, boolean)}.
-     * <p>
+     *
      * Notes for picking <i>winz0</i> and <i>winz1</i>:
-     * <ul>
-     *   <li>see {@link FloatUtil#getZBufferEpsilon(int, value_type, value_type)}</li>
-     *   <li>see {@link FloatUtil#getZBufferValue(int, value_type, value_type, value_type)}</li>
-     *   <li>see {@link FloatUtil#getOrthoWinZ(value_type, value_type, value_type)}</li>
-     * </ul>
-     * </p>
+     * - see jau::math::util::getZBufferEpsilon()
+     * - see jau::math::util::getZBufferValue()
+     * - see jau::math::util::getOrthoWinZ()
      * @param winx
      * @param winy
      * @param winz0
@@ -1794,14 +1791,11 @@ class alignas(Value_type) Matrix4 {
      * Map two window coordinates w/ shared X/Y and distinctive Z
      * to a {@link Ray}. The resulting {@link Ray} maybe used for <i>picking</i>
      * using a {@link AABBox#getRayIntersection(vec3f, Ray, value_type, boolean)}.
-     * <p>
+     *
      * Notes for picking <i>winz0</i> and <i>winz1</i>:
-     * <ul>
-     *   <li>see {@link FloatUtil#getZBufferEpsilon(int, value_type, value_type)}</li>
-     *   <li>see {@link FloatUtil#getZBufferValue(int, value_type, value_type, value_type)}</li>
-     *   <li>see {@link FloatUtil#getOrthoWinZ(value_type, value_type, value_type)}</li>
-     * </ul>
-     * </p>
+     * - see jau::math::util::getZBufferEpsilon()
+     * - see jau::math::util::getZBufferValue()
+     * - see jau::math::util::getOrthoWinZ()
      * @param winx
      * @param winy
      * @param winz0

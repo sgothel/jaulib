@@ -908,14 +908,11 @@ class PMVMatrix4 {
      * Map two window coordinates w/ shared X/Y and distinctive Z
      * to a {@link Ray}. The resulting {@link Ray} maybe used for <i>picking</i>
      * using a {@link AABBox#getRayIntersection(Vec3, Ray, float, bool) bounding box}.
-     * <p>
+     *
      * Notes for picking <i>winz0</i> and <i>winz1</i>:
-     * <ul>
-     *   <li>see {@link FloatUtil#getZBufferEpsilon(int, float, float)}</li>
-     *   <li>see {@link FloatUtil#getZBufferValue(int, float, float, float)}</li>
-     *   <li>see {@link FloatUtil#getOrthoWinZ(float, float, float)}</li>
-     * </ul>
-     * </p>
+     * - see jau::math::util::getZBufferEpsilon()
+     * - see jau::math::util::getZBufferValue()
+     * - see jau::math::util::getOrthoWinZ()
      * @param winx
      * @param winy
      * @param winz0
