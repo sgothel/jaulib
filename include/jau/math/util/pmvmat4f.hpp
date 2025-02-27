@@ -1,28 +1,16 @@
 /*
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2014-2024 Gothel Software e.K.
+ * Copyright Gothel Software e.K.
  *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
+ * SPDX-License-Identifier: MIT
  *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * This Source Code Form is subject to the terms of the MIT License
+ * If a copy of the MIT was not distributed with this file,
+ * you can obtain one at https://opensource.org/license/mit/.
  */
-#ifndef JAU_PMVMAT4f_HPP_
-#define JAU_PMVMAT4f_HPP_
+
+#ifndef JAU_MATH_UTIL_PMVMAT4f_HPP_
+#define JAU_MATH_UTIL_PMVMAT4f_HPP_
 
 #include <cmath>
 #include <cstdarg>
@@ -133,34 +121,34 @@ class PMVMatrix4 {
             size_t matrixCount() const noexcept override { return m_count; }
         };
 
-        Mat4 matP;
-        Mat4 matMv;
-        Mat4 matMvi;
-        Mat4 matMvit;
+        Mat4 m_matP;
+        Mat4 m_matMv;
+        Mat4 m_matMvi;
+        Mat4 m_matMvit;
 
-        Mat4 matTex;
+        Mat4 m_matTex;
 
-        MatrixStack<value_type> stackMv, stackP, stackTex;
+        MatrixStack<value_type> m_stackMv, m_stackP, m_stackTex;
 
-        uint32_t requestBits; // may contain the requested bits: INVERSE_MODELVIEW | INVERSE_TRANSPOSED_MODELVIEW
+        uint32_t m_requestBits; // may contain the requested bits: INVERSE_MODELVIEW | INVERSE_TRANSPOSED_MODELVIEW
 
-        PMVSync1 syncP = PMVSync1(matP);
-        PMVSync1 syncMv = PMVSync1(matMv);
-        PMVSync1 syncTex = PMVSync1(matTex);
+        PMVSync1 m_syncP = PMVSync1(m_matP);
+        PMVSync1 m_syncMv = PMVSync1(m_matMv);
+        PMVSync1 m_syncTex = PMVSync1(m_matTex);
 
-        PMVSync1 syncMvi = PMVSync1(matMvi, jau::bind_member(this, &PMVMatrix4::updateImpl0));
-        PMVSync1 syncMvit = PMVSync1(matMvit, jau::bind_member(this, &PMVMatrix4::updateImpl0));
+        PMVSync1 m_syncMvi = PMVSync1(m_matMvi, jau::bind_member(this, &PMVMatrix4::updateImpl0));
+        PMVSync1 m_syncMvit = PMVSync1(m_matMvit, jau::bind_member(this, &PMVMatrix4::updateImpl0));
 
-        PMVSyncN syncP_Mv = PMVSyncN(matP, 2);
-        PMVSyncN syncP_Mv_Mvi = PMVSyncN(matP, 3, jau::bind_member(this, &PMVMatrix4::updateImpl0));
-        PMVSyncN syncP_Mv_Mvi_Mvit = PMVSyncN(matP, 4, jau::bind_member(this, &PMVMatrix4::updateImpl0));
+        PMVSyncN m_syncP_Mv = PMVSyncN(m_matP, 2);
+        PMVSyncN m_syncP_Mv_Mvi = PMVSyncN(m_matP, 3, jau::bind_member(this, &PMVMatrix4::updateImpl0));
+        PMVSyncN m_syncP_Mv_Mvi_Mvit = PMVSyncN(m_matP, 4, jau::bind_member(this, &PMVMatrix4::updateImpl0));
 
-        uint32_t modifiedBits = MODIFIED_ALL;
-        uint32_t dirtyBits = 0; // contains the dirty bits, i.e. hinting for update operation
-        Mat4 matPMv;
-        Mat4 matPMvi;
-        bool matPMviOK;
-        geom::Frustum frustum;
+        uint32_t m_modifiedBits = MODIFIED_ALL;
+        uint32_t m_dirtyBits = 0; // contains the dirty bits, i.e. hinting for update operation
+        Mat4 m_matPMv;
+        Mat4 m_matPMvi;
+        bool m_matPMviOK;
+        geom::Frustum m_frustum;
 
         constexpr static uint32_t matToReq(uint32_t req) noexcept {
             int mask = 0;
@@ -223,9 +211,9 @@ class PMVMatrix4 {
      * @see #update()
      */
     PMVMatrix4(int derivedMatrices) noexcept
-    : requestBits( matToReq(derivedMatrices) )
+    : m_requestBits( matToReq(derivedMatrices) )
     {
-        matPMviOK = false;
+        m_matPMviOK = false;
         reset();
     }
 
@@ -233,12 +221,12 @@ class PMVMatrix4 {
      * Issues {@link Mat4#loadIdentity()} on all matrices and resets all internal states.
      */
     constexpr void reset() noexcept {
-        matP.loadIdentity();
-        matMv.loadIdentity();
-        matTex.loadIdentity();
+        m_matP.loadIdentity();
+        m_matMv.loadIdentity();
+        m_matTex.loadIdentity();
 
-        modifiedBits = MODIFIED_ALL;
-        dirtyBits = requestBits | MANUAL_BITS;
+        m_modifiedBits = MODIFIED_ALL;
+        m_dirtyBits = m_requestBits | MANUAL_BITS;
     }
 
     //
@@ -254,8 +242,8 @@ class PMVMatrix4 {
      * See <a href="#storageDetails"> matrix storage details</a>.
      * </p>
      */
-    constexpr Mat4& getT() noexcept { return matTex; }
-    constexpr const Mat4& getT() const noexcept { return matTex; }
+    constexpr Mat4& getT() noexcept { return m_matTex; }
+    constexpr const Mat4& getT() const noexcept { return m_matTex; }
 
     /**
      * Returns the {@link SyncMatrix} of {@link GLMatrixFunc#GL_TEXTURE_MATRIX texture matrix} (T).
@@ -263,8 +251,8 @@ class PMVMatrix4 {
      * See <a href="#storageDetails"> matrix storage details</a>.
      * </p>
      */
-    constexpr SyncMat4& getSyncT() noexcept { return syncTex; }
-    constexpr const SyncMats4& getSyncT() const noexcept { return syncTex; }
+    constexpr SyncMat4& getSyncT() noexcept { return m_syncTex; }
+    constexpr const SyncMats4& getSyncT() const noexcept { return m_syncTex; }
 
     /**
      * Returns the {@link GLMatrixFunc#GL_PROJECTION_MATRIX projection matrix} (P).
@@ -275,8 +263,8 @@ class PMVMatrix4 {
      * See <a href="#storageDetails"> matrix storage details</a>.
      * </p>
      */
-    constexpr Mat4& getP() noexcept { return matP; }
-    constexpr const Mat4& getP() const noexcept { return matP; }
+    constexpr Mat4& getP() noexcept { return m_matP; }
+    constexpr const Mat4& getP() const noexcept { return m_matP; }
 
     /**
      * Returns the {@link SyncMatrix} of {@link GLMatrixFunc#GL_PROJECTION_MATRIX projection matrix} (P).
@@ -284,8 +272,8 @@ class PMVMatrix4 {
      * See <a href="#storageDetails"> matrix storage details</a>.
      * </p>
      */
-    constexpr SyncMat4& getSyncP() noexcept { return syncP; }
-    constexpr const SyncMats4& getSyncP() const noexcept { return syncP; }
+    constexpr SyncMat4& getSyncP() noexcept { return m_syncP; }
+    constexpr const SyncMats4& getSyncP() const noexcept { return m_syncP; }
 
     /**
      * Returns the {@link GLMatrixFunc#GL_MODELVIEW_MATRIX modelview matrix} (Mv).
@@ -296,8 +284,8 @@ class PMVMatrix4 {
      * See <a href="#storageDetails"> matrix storage details</a>.
      * </p>
      */
-    constexpr Mat4& getMv() noexcept { return matMv; }
-    constexpr const Mat4& getMv() const noexcept { return matMv; }
+    constexpr Mat4& getMv() noexcept { return m_matMv; }
+    constexpr const Mat4& getMv() const noexcept { return m_matMv; }
 
     /**
      * Returns the {@link SyncMatrix} of {@link GLMatrixFunc#GL_MODELVIEW_MATRIX modelview matrix} (Mv).
@@ -305,8 +293,8 @@ class PMVMatrix4 {
      * See <a href="#storageDetails"> matrix storage details</a>.
      * </p>
      */
-    constexpr SyncMat4& getSyncMv() noexcept { return syncMv; }
-    constexpr const SyncMats4& getSyncMv() const noexcept { return syncMv; }
+    constexpr SyncMat4& getSyncMv() noexcept { return m_syncMv; }
+    constexpr const SyncMats4& getSyncMv() const noexcept { return m_syncMv; }
 
     /**
      * Returns {@link SyncMatrices4f} of 2 matrices within one FloatBuffer: {@link #getP() P} and {@link #getMv() Mv}.
@@ -314,8 +302,8 @@ class PMVMatrix4 {
      * See <a href="#storageDetails"> matrix storage details</a>.
      * </p>
      */
-    constexpr SyncMats4f& getSyncPMv() noexcept { return syncP_Mv; }
-    constexpr const SyncMats4f& getSyncPMv() const noexcept { return syncP_Mv; }
+    constexpr SyncMats4f& getSyncPMv() noexcept { return m_syncP_Mv; }
+    constexpr const SyncMats4f& getSyncPMv() const noexcept { return m_syncP_Mv; }
 
     /**
      * Returns the inverse {@link GLMatrixFunc#GL_MODELVIEW_MATRIX modelview matrix} (Mvi) if requested.
@@ -325,11 +313,11 @@ class PMVMatrix4 {
      * @throws IllegalArgumentException if {@link #INVERSE_MODELVIEW} has not been requested in ctor {@link #PMVMatrix4(int)}.
      */
     Mat4& getMvi() {
-        if( 0 == ( INVERSE_MODELVIEW & requestBits ) ) { // FIXME
+        if( 0 == ( INVERSE_MODELVIEW & m_requestBits ) ) { // FIXME
             throw jau::IllegalArgumentError("Not requested in ctor", E_FILE_LINE);
         }
         updateImpl(false);
-        return matMvi;
+        return m_matMvi;
     }
 
     /**
@@ -340,10 +328,10 @@ class PMVMatrix4 {
      * @throws IllegalArgumentException if {@link #INVERSE_MODELVIEW} has not been requested in ctor {@link #PMVMatrix4(int)}.
      */
     SyncMat4& getSyncMvi() {
-        if( 0 == ( INVERSE_MODELVIEW & requestBits ) ) { // FIXME
+        if( 0 == ( INVERSE_MODELVIEW & m_requestBits ) ) { // FIXME
             throw jau::IllegalArgumentError("Not requested in ctor", E_FILE_LINE);
         }
-        return syncMvi;
+        return m_syncMvi;
     }
 
     /**
@@ -354,11 +342,11 @@ class PMVMatrix4 {
      * @throws IllegalArgumentException if {@link #INVERSE_TRANSPOSED_MODELVIEW} has not been requested in ctor {@link #PMVMatrix4(int)}.
      */
     Mat4& getMvit() {
-        if( 0 == ( INVERSE_TRANSPOSED_MODELVIEW & requestBits ) ) { // FIXME
+        if( 0 == ( INVERSE_TRANSPOSED_MODELVIEW & m_requestBits ) ) { // FIXME
             throw jau::IllegalArgumentError("Not requested in ctor", E_FILE_LINE);
         }
         updateImpl(false);
-        return matMvit;
+        return m_matMvit;
     }
 
     /**
@@ -369,10 +357,10 @@ class PMVMatrix4 {
      * @throws IllegalArgumentException if {@link #INVERSE_TRANSPOSED_MODELVIEW} has not been requested in ctor {@link #PMVMatrix4(int)}.
      */
     SyncMat4& getSyncMvit() {
-        if( 0 == ( INVERSE_TRANSPOSED_MODELVIEW & requestBits ) ) { // FIXME
+        if( 0 == ( INVERSE_TRANSPOSED_MODELVIEW & m_requestBits ) ) { // FIXME
             throw jau::IllegalArgumentError("Not requested in ctor", E_FILE_LINE);
         }
-        return syncMvit;
+        return m_syncMvit;
     }
 
     /**
@@ -383,10 +371,10 @@ class PMVMatrix4 {
      * @throws IllegalArgumentException if {@link #INVERSE_MODELVIEW} has not been requested in ctor {@link #PMVMatrix4(int)}.
      */
     SyncMats4f& getSyncPMvMvi() {
-        if( 0 == ( INVERSE_MODELVIEW & requestBits ) ) { // FIXME
+        if( 0 == ( INVERSE_MODELVIEW & m_requestBits ) ) { // FIXME
             throw jau::IllegalArgumentError("Not requested in ctor", E_FILE_LINE);
         }
-        return syncP_Mv_Mvi;
+        return m_syncP_Mv_Mvi;
     }
 
     /**
@@ -397,10 +385,10 @@ class PMVMatrix4 {
      * @throws IllegalArgumentException if {@link #INVERSE_TRANSPOSED_MODELVIEW} has not been requested in ctor {@link #PMVMatrix4(int)}.
      */
     SyncMats4f& getSyncPMvMviMvit() {
-        if( 0 == ( INVERSE_TRANSPOSED_MODELVIEW & requestBits ) ) { // FIXME
+        if( 0 == ( INVERSE_TRANSPOSED_MODELVIEW & m_requestBits ) ) { // FIXME
             throw jau::IllegalArgumentError("Not requested in ctor", E_FILE_LINE);
         }
-        return syncP_Mv_Mvi_Mvit;
+        return m_syncP_Mv_Mvi_Mvit;
     }
 
     //
@@ -416,7 +404,7 @@ class PMVMatrix4 {
      * @return given result matrix for chaining
      */
     constexpr Mat4& getMulPMv(Mat4& result) noexcept {
-        return result.mul(matP, matMv);
+        return result.mul(m_matP, m_matMv);
     }
 
     /**
@@ -428,7 +416,7 @@ class PMVMatrix4 {
      * @return given result matrix for chaining
      */
     constexpr Mat4& getMulMvP(Mat4& result) noexcept {
-        return result.mul(matMv, matP);
+        return result.mul(m_matMv, m_matP);
     }
 
     /**
@@ -438,7 +426,7 @@ class PMVMatrix4 {
      * @returns v_out for chaining
      */
     constexpr Vec4& mulWithMv(const Vec4& v_in, Vec4& v_out) noexcept {
-        return matMv.mulVec4(v_in, v_out);
+        return m_matMv.mulVec4(v_in, v_out);
     }
 
     /**
@@ -447,7 +435,7 @@ class PMVMatrix4 {
      * @returns v_inout for chaining
      */
     constexpr Vec4& mulWithMv(Vec4& v_inout) noexcept {
-        return matMv.mulVec4(v_inout);
+        return m_matMv.mulVec4(v_inout);
     }
 
     /**
@@ -460,7 +448,7 @@ class PMVMatrix4 {
      * @returns v_out for chaining
      */
     constexpr Vec3& mulWithMv(const Vec3& v_in, Vec3& v_out) noexcept {
-        return matMv.mulVec3(v_in, v_out);
+        return m_matMv.mulVec3(v_in, v_out);
     }
 
     //
@@ -471,7 +459,7 @@ class PMVMatrix4 {
      * Load the {@link #getMv() modelview matrix} with the provided values.
      */
     constexpr PMVMatrix4& loadMv(float values[]) noexcept {
-        matMv.load(values);
+        m_matMv.load(values);
         setModelviewDirty();
         return *this;
     }
@@ -479,7 +467,7 @@ class PMVMatrix4 {
      * Load the {@link #getMv() modelview matrix} with the values of the given {@link Mat4}.
      */
     constexpr PMVMatrix4& loadMv(const Mat4& m) noexcept {
-        matMv.load(m);
+        m_matMv.load(m);
         setModelviewDirty();
         return *this;
     }
@@ -487,7 +475,7 @@ class PMVMatrix4 {
      * Load the {@link #getMv() modelview matrix} with the values of the given {@link Quaternion}'s rotation Quaternion::toMatrix() representation.
      */
     constexpr PMVMatrix4& loadMv(const Quat4f& quat) noexcept {
-        quat.toMatrix(matMv);
+        quat.toMatrix(m_matMv);
         setModelviewDirty();
         return *this;
     }
@@ -496,7 +484,7 @@ class PMVMatrix4 {
      * Load the {@link #getP() projection matrix} with the provided values.
      */
     constexpr PMVMatrix4& loadP(float values[]) noexcept {
-        matP.load(values);
+        m_matP.load(values);
         setProjectionDirty();
         return *this;
     }
@@ -504,7 +492,7 @@ class PMVMatrix4 {
      * Load the {@link #getP() projection matrix} with the values of the given {@link Mat4}.
      */
     constexpr PMVMatrix4& loadP(const Mat4& m) {
-        matP.load(m);
+        m_matP.load(m);
         setProjectionDirty();
         return *this;
     }
@@ -512,7 +500,7 @@ class PMVMatrix4 {
      * Load the {@link #getP() projection matrix} with the values of the given {@link Quaternion}'s rotation Quaternion::toMatrix() representation.
      */
     constexpr PMVMatrix4& loadP(const Quat4f& quat) noexcept {
-        quat.toMatrix(matP);
+        quat.toMatrix(m_matP);
         setProjectionDirty();
         return *this;
     }
@@ -521,7 +509,7 @@ class PMVMatrix4 {
      * Load the {@link #getT() texture matrix} with the provided values.
      */
     constexpr PMVMatrix4& loadT(float values[]) noexcept {
-        matTex.load(values);
+        m_matTex.load(values);
         setTextureDirty();
         return *this;
     }
@@ -529,7 +517,7 @@ class PMVMatrix4 {
      * Load the {@link #getT() texture matrix} with the values of the given {@link Mat4}.
      */
     constexpr PMVMatrix4& loadT(Mat4& m) noexcept {
-        matTex.load(m);
+        m_matTex.load(m);
         setTextureDirty();
         return *this;
     }
@@ -537,7 +525,7 @@ class PMVMatrix4 {
      * Load the {@link #getT() texture matrix} with the values of the given {@link Quaternion}'s rotation Quaternion::toMatrix() representation.
      */
     constexpr PMVMatrix4& loadT(const Quat4f& quat) noexcept {
-        quat.toMatrix(matTex);
+        quat.toMatrix(m_matTex);
         setTextureDirty();
         return *this;
     }
@@ -546,7 +534,7 @@ class PMVMatrix4 {
      * Load the {@link #getMv() modelview matrix} with the values of the given {@link Mat4}.
      */
     constexpr PMVMatrix4& loadMvIdentity() noexcept {
-        matMv.loadIdentity();
+        m_matMv.loadIdentity();
         setModelviewDirty();
         return *this;
     }
@@ -555,7 +543,7 @@ class PMVMatrix4 {
      * Load the {@link #getP() projection matrix} with the values of the given {@link Mat4}.
      */
     constexpr PMVMatrix4& loadPIdentity() noexcept {
-        matP.loadIdentity();
+        m_matP.loadIdentity();
         setProjectionDirty();
         return *this;
     }
@@ -564,7 +552,7 @@ class PMVMatrix4 {
      * Load the {@link #getT() texture matrix} with the values of the given {@link Mat4}.
      */
     constexpr PMVMatrix4& loadTIdentity() noexcept {
-        matTex.loadIdentity();
+        m_matTex.loadIdentity();
         setTextureDirty();
         return *this;
     }
@@ -575,7 +563,7 @@ class PMVMatrix4 {
      * @return *this instance of chaining
      */
     constexpr PMVMatrix4& mulMv(const Mat4& m) noexcept {
-        matMv.mul( m );
+        m_matMv.mul( m );
         setModelviewDirty();
         return *this;
     }
@@ -586,7 +574,7 @@ class PMVMatrix4 {
      * @return *this instance of chaining
      */
     constexpr PMVMatrix4& mulP(const Mat4& m) noexcept {
-        matP.mul( m );
+        m_matP.mul( m );
         setProjectionDirty();
         return *this;
     }
@@ -597,7 +585,7 @@ class PMVMatrix4 {
      * @return *this instance of chaining
      */
     constexpr PMVMatrix4& mulT(const Mat4& m) noexcept {
-        matTex.mul( m );
+        m_matTex.mul( m );
         setTextureDirty();
         return *this;
     }
@@ -764,35 +752,35 @@ class PMVMatrix4 {
 
     /** Pop the {@link #getMv() modelview matrix} from its stack. */
     constexpr_cxx20 PMVMatrix4& popMv() noexcept {
-        stackMv.pop(matMv);
+        m_stackMv.pop(m_matMv);
         setModelviewDirty();
         return *this;
     }
     /** Pop the {@link #getP() projection matrix} from its stack. */
     constexpr_cxx20 PMVMatrix4& popP() noexcept {
-        stackP.pop(matP);
+        m_stackP.pop(m_matP);
         setProjectionDirty();
         return *this;
     }
     /** Pop the {@link #getT() texture matrix} from its stack. */
     constexpr_cxx20 PMVMatrix4& popT() noexcept {
-        stackTex.pop(matTex);
+        m_stackTex.pop(m_matTex);
         setTextureDirty();
         return *this;
     }
     /** Push the {@link #getMv() modelview matrix} to its stack, while preserving its values. */
     constexpr_cxx20 PMVMatrix4& pushMv() noexcept {
-        stackMv.push(matMv);
+        m_stackMv.push(m_matMv);
         return *this;
     }
     /** Push the {@link #getP() projection matrix} to its stack, while preserving its values. */
     constexpr_cxx20 PMVMatrix4& pushP() noexcept {
-        stackP.push(matP);
+        m_stackP.push(m_matP);
         return *this;
     }
     /** Push the {@link #getT() texture matrix} to its stack, while preserving its values. */
     constexpr_cxx20 PMVMatrix4& pushT() noexcept {
-        stackTex.push(matTex);
+        m_stackTex.push(m_matTex);
         return *this;
     }
 
@@ -866,7 +854,7 @@ class PMVMatrix4 {
      * @return true if successful, otherwise false (z is 1)
      */
     bool mapObjToWin(const Vec3& objPos, const Recti& viewport, Vec3& winPos) noexcept {
-        return Mat4::mapObjToWin(objPos, matMv, matP, viewport, winPos);
+        return Mat4::mapObjToWin(objPos, m_matMv, m_matP, viewport, winPos);
     }
 
     /**
@@ -942,24 +930,24 @@ class PMVMatrix4 {
     }
 
     std::string& toString(std::string& sb, const std::string& f) const noexcept {
-        const bool pmvDirty  = 0 != (PREMUL_PMV & dirtyBits);
+        const bool pmvDirty  = 0 != (PREMUL_PMV & m_dirtyBits);
         const bool pmvUsed = true; // null != matPMv;
 
-        const bool pmviDirty  = 0 != (PREMUL_PMVI & dirtyBits);
+        const bool pmviDirty  = 0 != (PREMUL_PMVI & m_dirtyBits);
         const bool pmviUsed = true; // null != matPMvi;
 
-        const bool frustumDirty = 0 != (FRUSTUM & dirtyBits);
+        const bool frustumDirty = 0 != (FRUSTUM & m_dirtyBits);
         const bool frustumUsed = true; // null != frustum;
 
-        const bool mviDirty  = 0 != (INVERSE_MODELVIEW & dirtyBits);
-        const bool mviReq = 0 != (INVERSE_MODELVIEW & requestBits);
+        const bool mviDirty  = 0 != (INVERSE_MODELVIEW & m_dirtyBits);
+        const bool mviReq = 0 != (INVERSE_MODELVIEW & m_requestBits);
 
-        const bool mvitDirty = 0 != (INVERSE_TRANSPOSED_MODELVIEW & dirtyBits);
-        const bool mvitReq = 0 != (INVERSE_TRANSPOSED_MODELVIEW & requestBits);
+        const bool mvitDirty = 0 != (INVERSE_TRANSPOSED_MODELVIEW & m_dirtyBits);
+        const bool mvitReq = 0 != (INVERSE_TRANSPOSED_MODELVIEW & m_requestBits);
 
-        const bool modP = 0 != ( MODIFIED_PROJECTION & modifiedBits );
-        const bool modMv = 0 != ( MODIFIED_MODELVIEW & modifiedBits );
-        const bool modT = 0 != ( MODIFIED_TEXTURE & modifiedBits );
+        const bool modP = 0 != ( MODIFIED_PROJECTION & m_modifiedBits );
+        const bool modMv = 0 != ( MODIFIED_MODELVIEW & m_modifiedBits );
+        const bool modT = 0 != ( MODIFIED_TEXTURE & m_modifiedBits );
         int count = 3; // P, Mv, T
 
         sb.append("PMVMatrix4[modified[P ").append(std::to_string(modP)).append(", Mv ").append(std::to_string(modMv)).append(", T ").append(std::to_string(modT));
@@ -969,29 +957,29 @@ class PMVMatrix4 {
         sb.append("], dirty/req[Mvi ").append(std::to_string(mviDirty)).append("/").append(std::to_string(mviReq))
           .append(", Mvit ").append(std::to_string(mvitDirty)).append("/").append(std::to_string(mvitReq)).append("]\n");
         sb.append(", Projection\n");
-        matP.toString(sb, f);
+        m_matP.toString(sb, f);
         sb.append(", Modelview\n");
-        matMv.toString(sb, f);
+        m_matMv.toString(sb, f);
         sb.append(", Texture\n");
-        matTex.toString(sb, f);
+        m_matTex.toString(sb, f);
         if( pmvUsed ) {
             sb.append(", P * Mv\n");
-            matPMv.toString(sb, f);
+            m_matPMv.toString(sb, f);
             ++count;
         }
         if( pmviUsed ) {
             sb.append(", P * Mv\n");
-            matPMvi.toString(sb, f);
+            m_matPMvi.toString(sb, f);
             ++count;
         }
         if( mviReq ) {
             sb.append(", Inverse Modelview\n");
-            matMvi.toString(sb, f);
+            m_matMvi.toString(sb, f);
             ++count;
         }
         if( mvitReq ) {
             sb.append(", Inverse Transposed Modelview\n");
-            matMvit.toString(sb, f);
+            m_matMvit.toString(sb, f);
             ++count;
         }
         int tmpCount = 1;
@@ -1023,9 +1011,9 @@ class PMVMatrix4 {
      * @see #isReqDirty()
      */
     constexpr uint32_t getModifiedBits(const bool clear) noexcept {
-        const uint32_t r = modifiedBits;
+        const uint32_t r = m_modifiedBits;
         if(clear) {
-            modifiedBits = 0;
+            m_modifiedBits = 0;
         }
         return r;
     }
@@ -1056,7 +1044,7 @@ class PMVMatrix4 {
      * @see #getFrustum()
      */
     constexpr uint32_t getDirtyBits() noexcept {
-        return dirtyBits;
+        return m_dirtyBits;
     }
 
     /**
@@ -1081,7 +1069,7 @@ class PMVMatrix4 {
      * @see #getSyncPMvMviMvit()
      */
     constexpr bool isReqDirty() noexcept {
-        return 0 != ( requestBits & dirtyBits );
+        return 0 != ( m_requestBits & m_dirtyBits );
     }
 
     /**
@@ -1090,8 +1078,8 @@ class PMVMatrix4 {
      * @see #isReqDirty()
      */
     constexpr void setModelviewDirty() noexcept {
-        dirtyBits |= requestBits | MANUAL_BITS ;
-        modifiedBits |= MODIFIED_MODELVIEW;
+        m_dirtyBits |= m_requestBits | MANUAL_BITS ;
+        m_modifiedBits |= MODIFIED_MODELVIEW;
     }
 
     /**
@@ -1099,15 +1087,15 @@ class PMVMatrix4 {
      * i.e. adds {@link #MANUAL_BITS} to {@link #getDirtyBits() dirty bits}.
      */
     constexpr void setProjectionDirty() noexcept {
-        dirtyBits |= MANUAL_BITS ;
-        modifiedBits |= MODIFIED_PROJECTION;
+        m_dirtyBits |= MANUAL_BITS ;
+        m_modifiedBits |= MODIFIED_PROJECTION;
     }
 
     /**
      * Sets the {@link #getT() Texture (T)} matrix modified.
      */
     constexpr void setTextureDirty() noexcept {
-        modifiedBits |= MODIFIED_TEXTURE;
+        m_modifiedBits |= MODIFIED_TEXTURE;
     }
 
     /**
@@ -1129,7 +1117,7 @@ class PMVMatrix4 {
      * @see #getFrustum()
      */
     constexpr uint32_t getReqBits() noexcept {
-        return requestBits;
+        return m_requestBits;
     }
 
     /**
@@ -1146,11 +1134,11 @@ class PMVMatrix4 {
      * @see #update()
      */
     constexpr Mat4& getPMv() noexcept {
-        if( 0 != ( dirtyBits & PREMUL_PMV ) ) {
-            matPMv.mul(matP, matMv);
-            dirtyBits &= ~PREMUL_PMV;
+        if( 0 != ( m_dirtyBits & PREMUL_PMV ) ) {
+            m_matPMv.mul(m_matP, m_matMv);
+            m_dirtyBits &= ~PREMUL_PMV;
         }
-        return matPMv;
+        return m_matPMv;
     }
 
     /**
@@ -1168,12 +1156,12 @@ class PMVMatrix4 {
      * @see #update()
      */
     constexpr Mat4& getPMvi() noexcept {
-        if( 0 != ( dirtyBits & PREMUL_PMVI ) ) {
+        if( 0 != ( m_dirtyBits & PREMUL_PMVI ) ) {
             Mat4& mPMv = getPMv();
-            matPMviOK = matPMvi.invert(mPMv);
-            dirtyBits &= ~PREMUL_PMVI;
+            m_matPMviOK = m_matPMvi.invert(mPMv);
+            m_dirtyBits &= ~PREMUL_PMVI;
         }
-        return matPMvi; // matPMviOK ? matPMvi : null; // FIXME
+        return m_matPMvi; // matPMviOK ? matPMvi : null; // FIXME
     }
 
     /**
@@ -1190,11 +1178,11 @@ class PMVMatrix4 {
      * @see #update()
      */
     jau::math::geom::Frustum getFrustum() noexcept {
-        if( 0 != ( dirtyBits & FRUSTUM ) ) {
-            frustum.setFromMat(getPMv());
-            dirtyBits &= ~FRUSTUM;
+        if( 0 != ( m_dirtyBits & FRUSTUM ) ) {
+            m_frustum.setFromMat(getPMv());
+            m_dirtyBits &= ~FRUSTUM;
         }
-        return frustum;
+        return m_frustum;
     }
 
     /**
@@ -1254,20 +1242,20 @@ class PMVMatrix4 {
   private:
     void updateImpl0() { updateImpl(false); }
     bool updateImpl(bool clearModBits) {
-        bool mod = 0 != modifiedBits;
+        bool mod = 0 != m_modifiedBits;
         if( clearModBits ) {
-            modifiedBits = 0;
+            m_modifiedBits = 0;
         }
-        if( 0 != ( requestBits & ( ( dirtyBits & ( INVERSE_MODELVIEW | INVERSE_TRANSPOSED_MODELVIEW ) ) ) ) ) { // only if dirt requested & dirty
-            if( !matMvi.invert(matMv) ) {
+        if( 0 != ( m_requestBits & ( ( m_dirtyBits & ( INVERSE_MODELVIEW | INVERSE_TRANSPOSED_MODELVIEW ) ) ) ) ) { // only if dirt requested & dirty
+            if( !m_matMvi.invert(m_matMv) ) {
                 throw jau::math::MathDomainError("Invalid source Mv matrix, can't compute inverse", E_FILE_LINE);
             }
-            dirtyBits &= ~INVERSE_MODELVIEW;
+            m_dirtyBits &= ~INVERSE_MODELVIEW;
             mod = true;
         }
-        if( 0 != ( requestBits & ( dirtyBits & INVERSE_TRANSPOSED_MODELVIEW ) ) ) { // only if requested & dirty
-            matMvit.transpose(matMvi);
-            dirtyBits &= ~INVERSE_TRANSPOSED_MODELVIEW;
+        if( 0 != ( m_requestBits & ( m_dirtyBits & INVERSE_TRANSPOSED_MODELVIEW ) ) ) { // only if requested & dirty
+            m_matMvit.transpose(m_matMvi);
+            m_dirtyBits &= ~INVERSE_TRANSPOSED_MODELVIEW;
             mod = true;
         }
         return mod;
@@ -1286,4 +1274,4 @@ typedef PMVMatrix4<float> PMVMat4f;
 
  } // namespace jau::math::util
 
- #endif // JAU_PMVMAT4f_HPP_
+ #endif // JAU_MATH_UTIL_PMVMAT4f_HPP_

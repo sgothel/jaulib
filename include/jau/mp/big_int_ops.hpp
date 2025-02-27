@@ -13,6 +13,12 @@
  *
  * jaulib including this code is released under the MIT License (see COPYING)
  * Botan itself is released under the Simplified BSD License (see COPYING)
+ *
+ * SPDX-License-Identifier: MIT
+ *
+ * This Source Code Form is subject to the terms of the MIT License
+ * If a copy of the MIT was not distributed with this file,
+ * you can obtain one at https://opensource.org/license/mit/.
  */
 
 #ifndef JAU_BIG_INT_OPS_HPP_

@@ -1,28 +1,16 @@
 /*
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2022-2024 Gothel Software e.K.
+ * Copyright Gothel Software e.K.
  *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
+ * SPDX-License-Identifier: MIT
  *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * This Source Code Form is subject to the terms of the MIT License
+ * If a copy of the MIT was not distributed with this file,
+ * you can obtain one at https://opensource.org/license/mit/.
  */
-#ifndef JAU_VEC4F_HPP_
-#define JAU_VEC4F_HPP_
+
+#ifndef JAU_MATH_VEC4F_HPP_
+#define JAU_MATH_VEC4F_HPP_
 
 #include <cmath>
 #include <cstdarg>
@@ -369,4 +357,4 @@ namespace jau::math {
 
 }  // namespace jau::math
 
-#endif /*  JAU_VEC4F_HPP_ */
+#endif /*  JAU_MATH_VEC4F_HPP_ */

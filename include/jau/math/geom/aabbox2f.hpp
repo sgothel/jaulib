@@ -8,8 +8,8 @@
  * If a copy of the MIT was not distributed with this file,
  * you can obtain one at https://opensource.org/license/mit/.
  */
-#ifndef JAU_AABBOX2F_HPP_
-#define JAU_AABBOX2F_HPP_
+#ifndef JAU_MATH_GEOM_AABBOX2F_HPP_
+#define JAU_MATH_GEOM_AABBOX2F_HPP_
 
 #include <jau/math/vec2f.hpp>
 
@@ -189,4 +189,4 @@ namespace jau::math::geom {
 
 } // namespace jau::math::geom
 
-#endif /*  JAU_AABBOX2F_HPP_ */
+#endif /*  JAU_MATH_GEOM_AABBOX2F_HPP_ */
