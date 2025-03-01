@@ -48,6 +48,7 @@ html {
     --border-radius-medium: 6px;
 
     /* default spacings. Most components reference these values for spacing, to provide uniform spacing on the page. */
+    --spacing-tiny: 1px;
     --spacing-small: 5px;
     --spacing-medium: 10px;
     --spacing-large: 16px;
@@ -63,6 +64,7 @@ html {
      */
     --font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
     --font-family-monospace: ui-monospace,SFMono-Regular,SF Mono,Menlo,Consolas,Liberation Mono,monospace;
+    --font-family-monospace-small: Roboto,ui-monospace,SFMono-Regular,SF Mono,Menlo,Consolas,Liberation Mono,monospace;
 
     /* font sizes */
     --page-font-size: 15.6px;
@@ -1779,12 +1781,12 @@ table.memberdecls {
 }
 
 table.memberdecls tr[class^='memitem'] {
-    font-family: var(--font-family-monospace);
+    font-family: var(--font-family-monospace-small);
     font-size: var(--code-font-size);
 }
 
 table.memberdecls tr[class^='memitem'] .memTemplParams {
-    font-family: var(--font-family-monospace);
+    font-family: var(--font-family-monospace-small);
     font-size: var(--code-font-size);
     color: var(--primary-dark-color);
     white-space: normal;
@@ -1796,8 +1798,8 @@ table.memberdecls .memTemplItemLeft,
 table.memberdecls .memTemplItemRight,
 table.memberdecls .memTemplParams {
     transition: none;
-    padding-top: var(--spacing-small);
-    padding-bottom: var(--spacing-small);
+    padding-top: var(--spacing-tiny);
+    padding-bottom: var(--spacing-tiny);
     border-top: 1px solid var(--separator-color);
     border-bottom: 1px solid var(--separator-color);
     background-color: var(--fragment-background);
@@ -1857,7 +1859,7 @@ table.memberdecls .memTemplItemLeft {
 
 table.memberdecls .memSeparator {
     background: var(--page-background-color);
-    height: var(--spacing-large);
+    height: var(--spacing-small);
     border: 0;
     transition: none;
 }
