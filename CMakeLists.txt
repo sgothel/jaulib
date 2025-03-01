@@ -89,9 +89,11 @@ ENDIF(BUILDJAVA)
 # add a target to generate API documentation with Doxygen
 find_package (Doxygen)
 if (DOXYGEN_FOUND)
-  configure_file (${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile.cpp.out @ONLY)
+  configure_file (${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile.cpp.out @ONLY)
+  file (COPY ${CMAKE_CURRENT_SOURCE_DIR}/doc/doxygen-awesome.css DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
   if (BUILDJAVA)
-    configure_file (${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.java.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile.java.out @ONLY)
+    configure_file (${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.java.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile.java.out @ONLY)
+    file (COPY ${CMAKE_CURRENT_SOURCE_DIR}/doc/doxygen-awesome.css DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
     add_custom_command (OUTPUT ${jaulib_DOCS_DIR}/cpp ${jaulib_DOCS_DIR}/java
       COMMAND ${CMAKE_COMMAND} -E make_directory ${jaulib_DOCS_DIR}
       COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile.cpp.out
