@@ -88,7 +88,7 @@ namespace jau::math {
                    m_height == rhs.m_height;
         }
         /** TODO
-        constexpr bool operator<=>(const Recti_t& rhs ) const noexcept {
+        constexpr std::strong_ordering operator<=>(const Recti_t& rhs) const noexcept {
             return ...
         } */
 

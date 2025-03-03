@@ -130,7 +130,7 @@ namespace jau::math {
                        jau::is_zero(z - rhs.z) && jau::is_zero(w - rhs.w);
             }
             /** TODO
-            constexpr bool operator<=>(const vec4f_t& rhs ) const noexcept {
+            constexpr std::strong_ordering operator<=>(const vec4f_t& rhs) const noexcept {
                 return ...
             } */
 

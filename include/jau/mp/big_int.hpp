@@ -406,12 +406,12 @@ namespace jau::mp {
             bool operator>=(const BigInt& b) const noexcept { return cmp(b) >= 0; }
             bool operator<(const BigInt& b)  const noexcept { return is_less_than(b); }
             bool operator>(const BigInt& b)  const noexcept { return b.is_less_than(*this); }
-#if 0
-            std::strong_ordering operator<=>(const big_int_t& b) const noexcept {
+
+            /**
+            std::strong_ordering operator<=>(const BigInt& b) const noexcept {
                 const int r = cmp(b);
                 return 0 == r ? std::strong_ordering::equal : ( 0 > r ? std::strong_ordering::less : std::strong_ordering::greater);
-            }
-#endif
+            } */
 
             BigInt& operator++() noexcept { return *this += 1; }
 
