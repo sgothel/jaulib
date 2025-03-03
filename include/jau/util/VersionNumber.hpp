@@ -227,14 +227,20 @@ namespace jau::util {
           m_strEnd(strEnd), m_version_str(std::move(_version_str)) {}
 
       public:
-        static std::regex getPattern(const std::string& delim) {
+        static std::regex getNonGitPattern(const std::string& delim) {
+            // v0.0.1-3-gd55f8a3-dirty
+            // return std::regex( R"(\D*(\d+)[^\.\s]*(?:\.\D*(\d+)[^\.\s]*(?:\.\D*(\d+))?)?)");
+            return std::regex( R"(\D*(\d+)[^\)" + delim + R"(\s]*(?:\)" + delim + R"(\D*(\d+)[^\)" + delim + R"(\s]*(?:\)" + delim + R"(\D*(\d+))?)?)");
+        }
+
+        static std::regex getGitPattern(const std::string& delim) {
             // v0.0.1-3-gd55f8a3-dirty
             // return std::regex( R"(\D*(\d+)[^\.\s]*(?:\.\D*(\d+)[^\.\s]*(?:\.\D*(\d+)(?:\-(\d+)\-g([0-9a-f]+)(\-dirty)?)?)?)?)");
             return std::regex( R"(\D*(\d+)[^\)" + delim + R"(\s]*(?:\)" + delim + R"(\D*(\d+)[^\)" + delim + R"(\s]*(?:\)" + delim + R"(\D*(\d+)(?:\-(\d+)\-g([0-9a-f]+)(\-dirty)?)?)?)?)");
         }
 
         static const std::regex& getDefaultPattern() noexcept { // NOLINT(bugprone-exception-escape)
-            static std::regex defPattern = getPattern(".");
+            static std::regex defPattern = getGitPattern(".");
             return defPattern;
         }
 
@@ -357,7 +363,7 @@ namespace jau::util {
          * @see #hasSub()
          */
         VersionNumberString(const std::string& versionString, const std::string& delim) noexcept
-        : VersionNumberString(versionString, getPattern(delim))
+        : VersionNumberString(versionString, getGitPattern(delim))
         { }
 
 
