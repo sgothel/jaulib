@@ -149,46 +149,73 @@ namespace jau::math {
             constexpr Vector3F& set(const_iterator xyz) noexcept
             { x=xyz[0]; y=xyz[1]; z=xyz[2]; return *this; }
 
-            /** this = this + {dx, dy, dz}, returns this. */
+            /** this = this + {d.x, d.y, d.z}, component wise. Returns this. */
+            constexpr Vector3F& add(const Vector3F& d) noexcept
+            { x+=d.x; y+=d.y; z+=d.z; return *this; }
+
+            /** this = this + {dx, dy, dz}, component wise. Returns this. */
             constexpr Vector3F& add(const value_type dx, const value_type dy, const value_type dz) noexcept
             { x+=dx; y+=dy; z+=dz; return *this; }
 
-            /** this = this * {sx, sy, sz}, returns this. */
+            /** this = this * {s.x, s.y, s.z}, component wise. Returns this. */
+            constexpr Vector3F& mul(const Vector3F& s) noexcept
+            { x*=s.x; y*=s.y; z*=s.z; return *this; }
+
+            /** this = this * {sx, sy, sz}, component wise. Returns this. */
             constexpr Vector3F& mul(const value_type sx, const value_type sy, const value_type sz) noexcept
             { x*=sx; y*=sy; z*=sz; return *this; }
 
-            /** this = this * s, returns this. */
+            /** this = this * s, component wise. Returns this. */
             constexpr Vector3F& scale(const value_type s) noexcept
             { x*=s; y*=s; z*=s; return *this; }
 
-            /** this = this + rhs, returns this. */
-            constexpr Vector3F& operator+=(const Vector3F& rhs ) noexcept {
+            /** this = this + rhs, component wise. Returns this. */
+            constexpr Vector3F& operator+=(const Vector3F& rhs) noexcept {
                 x+=rhs.x; y+=rhs.y; z+=rhs.z;
                 return *this;
             }
 
-            /** this = this - rhs, returns this. */
-            constexpr Vector3F& operator-=(const Vector3F& rhs ) noexcept {
+            /** this = this - rhs, component wise. Returns this. */
+            constexpr Vector3F& operator-=(const Vector3F& rhs) noexcept {
                 x-=rhs.x; y-=rhs.y; z-=rhs.z;
                 return *this;
             }
 
             /**
-             * Scale this vector with given scale factor
+             * this = this * {s.x, s.y, s.z}, component wise.
              * @param s scale factor
              * @return this instance
              */
-            constexpr Vector3F& operator*=(const value_type s ) noexcept {
+            constexpr Vector3F& operator*=(const Vector3F& s) noexcept {
+                x*=s.x; y*=s.y; z*=s.z;
+                return *this;
+            }
+            /**
+             * this = this / {s.x, s.y, s.z}, component wise.
+             * @param s scale factor
+             * @return this instance
+             */
+            constexpr Vector3F& operator/=(const Vector3F& s) noexcept {
+                x/=s.x; y/=s.y; z/=s.z;
+                return *this;
+            }
+
+            /**
+             * this = this * s, component wise.
+             * @param s scale factor
+             * @return this instance
+             */
+            constexpr Vector3F& operator*=(const value_type s) noexcept {
                 x*=s; y*=s; z*=s;
                 return *this;
             }
 
             /**
-             * Divide this vector with given scale factor
+             * this = this / s, component wise.
              * @param s scale factor
              * @return this instance
              */
-            constexpr Vector3F& operator/=(const value_type s ) noexcept {
+            constexpr Vector3F& operator/=(const value_type s) noexcept {
                 x/=s; y/=s; z/=s;
                 return *this;
             }

@@ -145,31 +145,58 @@ namespace jau::math {
             constexpr Vector4F& set(const_iterator xyzw) noexcept
             { x=xyzw[0]; y=xyzw[1]; z=xyzw[2]; z=xyzw[3]; return *this; }
 
-            /** this = this + {dx, dy, dz, dw}, returns this. */
+            /** this = this + {d.x, d.y, d.z, d.w}, component wise. Returns this. */
+            constexpr Vector4F& add(const Vector4F& d) noexcept
+            { x+=d.x; y+=d.y; z+=d.z; w+=d.w; return *this; }
+
+            /** this = this + {dx, dy, dz, dw}, component wise. Returns this. */
             constexpr Vector4F& add(const value_type dx, const value_type dy, const value_type dz, const value_type dw) noexcept
             { x+=dx; y+=dy; z+=dz; w+=dw; return *this; }
 
-            /** this = this * {sx, sy, sz, sw}, returns this. */
+            /** this = this * {s.x, s.y, s.z}, component wise. Returns this. */
+            constexpr Vector4F& mul(const Vector4F& s) noexcept
+            { x*=s.x; y*=s.y; z*=s.z; w*=s.w; return *this; }
+
+            /** this = this * {sx, sy, sz, sw}, component wise. Returns this. */
             constexpr Vector4F& mul(const value_type sx, const value_type sy, const value_type sz, const value_type sw) noexcept
             { x*=sx; y*=sy; z*=sz; w*=sw; return *this; }
 
-            /** this = this * s, returns this. */
+            /** this = this * s, component wise. Returns this. */
             constexpr Vector4F& scale(const value_type s) noexcept
             { x*=s; y*=s; z*=s; w*=s; return *this; }
 
-            /** this = this + rhs, returns this. */
+            /** this = this + rhs, component wise. Returns this. */
             constexpr Vector4F& operator+=(const Vector4F& rhs ) noexcept {
                 x+=rhs.x; y+=rhs.y; z+=rhs.z; w+=rhs.w;
                 return *this;
             }
 
-            /** this = this - rhs, returns this. */
+            /** this = this - rhs, component wise. Returns this. */
             constexpr Vector4F& operator-=(const Vector4F& rhs ) noexcept
             { x-=rhs.x; y-=rhs.y; z-=rhs.z; w-=rhs.w; return *this;
             }
 
             /**
-             * Scale this vector with given scale factor
+             * this = this * {s.x, s.y, s.z, s.w}, component wise.
+             * @param s scale factor
+             * @return this instance
+             */
+            constexpr Vector4F& operator*=(const Vector4F& s) noexcept {
+                x*=s.x; y*=s.y; z*=s.z; w*=s.w;
+                return *this;
+            }
+            /**
+             * this = this / {s.x, s.y, s.z, s.w}, component wise.
+             * @param s scale factor
+             * @return this instance
+             */
+            constexpr Vector4F& operator/=(const Vector4F& s) noexcept {
+                x/=s.x; y/=s.y; z/=s.z; w/=s.w;
+                return *this;
+            }
+
+            /**
+             * this = this * s, component wise.
              * @param s scale factor
              * @return this instance
              */
@@ -177,7 +204,7 @@ namespace jau::math {
             { x*=s; y*=s; z*=s; w*=s; return *this; }
 
             /**
-             * Divide this vector with given scale factor
+             * this = this / s, component wise.
              * @param s scale factor
              * @return this instance
              */

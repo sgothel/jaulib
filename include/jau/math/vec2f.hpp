@@ -126,46 +126,73 @@ namespace jau::math {
         constexpr Vector2F& set(const_iterator xy) noexcept
         { x=xy[0]; y=xy[1]; return *this; }
 
-        /** this = this + {sx, sy}, returns this. */
+        /** this = this + {d.x, d.y}, component wise. Returns this. */
+        constexpr Vector2F& add(const Vector2F& d) noexcept
+        { x+=d.x; y+=d.y; return *this; }
+
+        /** this = this + {dx, dy}, component wise. Returns this. */
         constexpr Vector2F& add(const value_type dx, const value_type dy) noexcept
         { x+=dx; y+=dy; return *this; }
 
-        /** this = this * {sx, sy}, returns this. */
+        /** this = this * {s.x, s.y}, component wise. Returns this. */
+        constexpr Vector2F& mul(const Vector2F& s) noexcept
+        { x*=s.x; y*=s.y; return *this; }
+
+        /** this = this * {sx, sy}, component wise. Returns this. */
         constexpr Vector2F& mul(const value_type sx, const value_type sy) noexcept
         { x*=sx; y*=sy; return *this; }
 
-        /** this = this * s, returns this. */
+        /** this = this * s, component wise. Returns this. */
         constexpr Vector2F& scale(const value_type s) noexcept
         { x*=s; y*=s; return *this; }
 
-        /** this = this + rhs, returns this. */
+        /** this = this + rhs, component wise. Returns this. */
         constexpr Vector2F& operator+=(const Vector2F& rhs ) noexcept {
             x+=rhs.x; y+=rhs.y;
             return *this;
         }
 
-        /** this = this - rhs, returns this. */
+        /** this = this - rhs, component wise. Returns this. */
         constexpr Vector2F& operator-=(const Vector2F& rhs ) noexcept {
             x-=rhs.x; y-=rhs.y;
             return *this;
         }
 
         /**
-         * Scale this vector with given scale factor
+         * this = this * {s.x, s.y}, component wise.
          * @param s scale factor
          * @return this instance
          */
-        constexpr Vector2F& operator*=(const value_type s ) noexcept {
+        constexpr Vector2F& operator*=(const Vector2F& s) noexcept {
+            x*=s.x; y*=s.y;
+            return *this;
+        }
+        /**
+         * this = this / {s.x, s.y}, component wise.
+         * @param s scale factor
+         * @return this instance
+         */
+        constexpr Vector2F& operator/=(const Vector2F& s) noexcept {
+            x/=s.x; y/=s.y;
+            return *this;
+        }
+
+        /**
+         * this = this * s, component wise.
+         * @param s scale factor
+         * @return this instance
+         */
+        constexpr Vector2F& operator*=(const value_type s) noexcept {
             x*=s; y*=s;
             return *this;
         }
 
         /**
-         * Divide this vector with given scale factor
+         * this = this / s, component wise.
          * @param s scale factor
          * @return this instance
          */
-        constexpr Vector2F& operator/=(const value_type s ) noexcept {
+        constexpr Vector2F& operator/=(const value_type s) noexcept {
             x/=s; y/=s;
             return *this;
         }
