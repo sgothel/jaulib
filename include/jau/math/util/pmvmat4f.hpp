@@ -19,6 +19,7 @@
 #include <string>
 #include <iostream>
 
+#include <jau/debug.hpp>
 #include <jau/functional.hpp>
 #include <jau/basic_types.hpp>
 #include <jau/math/mat4f.hpp>
@@ -1228,7 +1229,7 @@ class PMVMatrix4 {
      * @see #getSyncPMvMvi()
      * @see #getSyncPMvMviMvit()
      */
-    bool update() {
+    bool update() noexcept {
         return updateImpl(true);
     }
 
@@ -1237,15 +1238,17 @@ class PMVMatrix4 {
     //
 
   private:
-    void updateImpl0() { updateImpl(false); }
-    bool updateImpl(bool clearModBits) {
+    void updateImpl0() noexcept { updateImpl(false); }
+    bool updateImpl(bool clearModBits) noexcept {
         bool mod = 0 != m_modifiedBits;
         if( clearModBits ) {
             m_modifiedBits = 0;
         }
         if( 0 != ( m_requestBits & ( ( m_dirtyBits & ( INVERSE_MODELVIEW | INVERSE_TRANSPOSED_MODELVIEW ) ) ) ) ) { // only if requested & dirty
             if( !m_matMvi.invert(m_matMv) ) {
-                throw jau::math::MathDomainError("Invalid source Mv matrix, can't compute inverse", E_FILE_LINE);
+                DBG_ERR_PRINT("Invalid source Mv matrix, can't compute inverse: %s", m_matMv.toString().c_str(), E_FILE_LINE);
+                m_dirtyBits &= ~(INVERSE_MODELVIEW | INVERSE_TRANSPOSED_MODELVIEW);
+                return false; // no successful update as we abort due to inversion failure
             }
             m_dirtyBits &= ~INVERSE_MODELVIEW;
             mod = true;
