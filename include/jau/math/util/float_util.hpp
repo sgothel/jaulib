@@ -14,9 +14,11 @@
 
 #include <cmath>
 #include <climits>
+#include <numbers>
 
 #include <jau/base_math.hpp>
 #include <jau/string_util.hpp>
+#include <jau/math/vec3f.hpp>
 
 namespace jau::math::util {
 
@@ -71,6 +73,22 @@ namespace jau::math::util {
        */
       constexpr float getOrthoWinZ(float orthoZ, float zNear, float zFar) noexcept {
           return (1.0f/zNear-1.0f/orthoZ) / (1.0f/zNear-1.0f/zFar);
+      }
+
+      /**
+       * Returns an orientation vector for given eurler X/Y/Z angles in radians.
+       *
+       * Returned vector reflect each axis and is either `1` for not-flipped or `-1` for flipped orientation..
+       */
+      constexpr jau::math::Vec3f getEulerAngleOrientation(const jau::math::Vec3f& eulerRotation) noexcept {
+          constexpr float half_pi = std::numbers::pi_v<float>/2.0f;
+          const float x_rot = std::abs(eulerRotation.x);
+          const float y_rot = std::abs(eulerRotation.y);
+          const float z_rot = std::abs(eulerRotation.z);
+          return jau::math::Vec3f(
+            half_pi <= y_rot && y_rot <= 3*half_pi ? -1 : 1,
+            half_pi <= x_rot && x_rot <= 3*half_pi ? -1 : 1,
+            half_pi <= z_rot && z_rot <= 3*half_pi ? -1 : 1);
       }
 
     /**@}*/
