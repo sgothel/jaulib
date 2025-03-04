@@ -853,7 +853,7 @@ namespace jau {
                 static delegate_type delegate(C1 *base, R(C0::*method)(A...),
                                             std::enable_if_t<std::is_base_of_v<C0, C1>, bool> = true) noexcept
                 {
-                    return delegate_type::template make<data_type>( get(), base, method );
+                    return base && method ? delegate_type::template make<data_type>( get(), base, method ) : func::null_target_t<R, A...>::delegate();
                 }
         };
 
@@ -900,7 +900,7 @@ namespace jau {
 
             public:
                 static delegate_type delegate(R(*function)(A...)) noexcept {
-                    return delegate_type::template make<data_type>( get(), function );
+                    return function ? delegate_type::template make<data_type>( get(), function ) : func::null_target_t<R, A...>::delegate();
                 }
         };
 
@@ -1102,11 +1102,11 @@ namespace jau {
 
             public:
                 static delegate_type delegate(const I& data, R(*function)(I&, A...)) noexcept {
-                    return delegate_type::template make<data_type>( get(), data, function );
+                    return function ? delegate_type::template make<data_type>( get(), data, function ) : func::null_target_t<R, A...>::delegate();
                 }
 
                 static delegate_type delegate(I&& data, R(*function)(I&, A...)) noexcept {
-                    return delegate_type::template make<data_type>( get(), std::move(data), function );
+                    return function ? delegate_type::template make<data_type>( get(), std::move(data), function ) : func::null_target_t<R, A...>::delegate();
                 }
         };
 
@@ -1158,7 +1158,7 @@ namespace jau {
 
             public:
                 static delegate_type delegate(I* data_ptr, R(*function)(I*, A...)) noexcept {
-                    return delegate_type::template make<data_type>( get(), data_ptr, function );
+                    return data_ptr && function ? delegate_type::template make<data_type>( get(), data_ptr, function ) : func::null_target_t<R, A...>::delegate();
                 }
         };
 
