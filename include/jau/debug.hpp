@@ -54,6 +54,9 @@ namespace jau {
     /** Use for environment-variable environment::DEBUG conditional warning messages, prefix '[elapsed_time] Warning @ FILE:LINE FUNC: ' */
     #define DBG_WARN_PRINT(...) { if( jau::environment::get().debug ) { jau::WARN_PRINT_impl(__func__, __FILE__, __LINE__, __VA_ARGS__); } }
 
+    /** Use for environment-variable environment::DEBUG conditional error messages, prefix '[elapsed_time] Warning @ FILE:LINE FUNC: '. Function also appends last errno, strerror(errno) and full backtrace*/
+    #define DBG_ERR_PRINT(...) { if( jau::environment::get().debug ) { jau::ERR_PRINT_impl("Debug", true /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); } }
+
     /** Use for environment-variable environment::DEBUG_JNI conditional debug messages, prefix '[elapsed_time] Debug: '. */
     #define DBG_JNI_PRINT(...) { if( jau::environment::get().debug_jni ) { jau::DBG_PRINT_impl(__VA_ARGS__); } }
 
