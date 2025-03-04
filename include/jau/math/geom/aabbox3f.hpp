@@ -11,6 +11,8 @@
 #ifndef JAU_MATH_GEOM_AABBOX3F_HPP_
 #define JAU_MATH_GEOM_AABBOX3F_HPP_
 
+#include "jau/basic_types.hpp"
+#include "jau/debug.hpp"
 #include <jau/functional.hpp>
 #include <jau/math/vec3f.hpp>
 
@@ -510,7 +512,7 @@ namespace jau::math::geom {
              * @return true with having intersection coordinates stored in result, or false if none exists
              */
             bool getRayIntersection(Vec3f& result, const Ray3f& ray, const float epsilon,
-                                    const bool assumeIntersection) {
+                                    const bool assumeIntersection) const noexcept {
                 float maxT[] = { -1.0f, -1.0f, -1.0f };
 
                 const Vec3f& origin = ray.orig;
@@ -650,7 +652,8 @@ namespace jau::math::geom {
                             if(result.y < m_lo.y - epsilon || result.y > m_hi.y + epsilon) { return false; }
                             break;
                         default:
-                            throw InternalError("XXX", E_FILE_LINE);
+                            ERR_PRINT("Internal Error", E_FILE_LINE);
+                            return false;
                     }
                 } else {
                     switch( whichPlane ) {
@@ -667,7 +670,8 @@ namespace jau::math::geom {
                             result.y = origin.y + maxT[whichPlane] * dir.y;
                             break;
                         default:
-                            throw InternalError("XXX", E_FILE_LINE);
+                            ERR_PRINT("Internal Error", E_FILE_LINE);
+                            return false;
                     }
                 }
                 return true; // ray hits box
