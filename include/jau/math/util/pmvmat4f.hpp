@@ -1243,7 +1243,7 @@ class PMVMatrix4 {
         if( clearModBits ) {
             m_modifiedBits = 0;
         }
-        if( 0 != ( m_requestBits & ( ( m_dirtyBits & ( INVERSE_MODELVIEW | INVERSE_TRANSPOSED_MODELVIEW ) ) ) ) ) { // only if dirt requested & dirty
+        if( 0 != ( m_requestBits & ( ( m_dirtyBits & ( INVERSE_MODELVIEW | INVERSE_TRANSPOSED_MODELVIEW ) ) ) ) ) { // only if requested & dirty
             if( !m_matMvi.invert(m_matMv) ) {
                 throw jau::math::MathDomainError("Invalid source Mv matrix, can't compute inverse", E_FILE_LINE);
             }

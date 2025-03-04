@@ -49,8 +49,11 @@ namespace jau::math::util {
         /** Return the defined sync_action_t */
         virtual sync_action_t& action() noexcept = 0;
 
-        /** Return the underlying data buffer as bytes. */
+        /** Return the underlying data buffer as bytes w/o sync action(). */
         virtual const void* data() const noexcept = 0;
+
+        /** Return the underlying data buffer as bytes after invoking sync action(). */
+        const void* syncedData()  noexcept { action()(); return data(); }
 
         /** Returns type signature of implementing class's stored component value type. */
         virtual const jau::type_info& compSignature() const noexcept = 0;
