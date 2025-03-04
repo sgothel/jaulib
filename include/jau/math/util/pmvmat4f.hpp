@@ -95,7 +95,7 @@ class PMVMatrix4 {
             { }
 
             PMVSync1(const Mat4& m) noexcept
-            : m_mat(m), m_sync( jau::bind_free(sync_action_fptr(nullptr)) )
+            : m_mat(m), m_sync( sync_action_t() )
             { }
 
             sync_action_t& action() noexcept override { return m_sync; }
@@ -113,7 +113,7 @@ class PMVMatrix4 {
             : m_mat(m), m_count(count), m_sync( std::move(s) )
             { }
             PMVSyncN(const Mat4& m, size_t count) noexcept
-            : m_mat(m), m_count(count), m_sync( jau::bind_free(sync_action_fptr(nullptr)) )
+            : m_mat(m), m_count(count), m_sync( sync_action_t() )
             { }
 
             sync_action_t& action() noexcept override { return m_sync; }
