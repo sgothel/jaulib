@@ -62,19 +62,19 @@ html {
      * font-family: the normal font for text, headlines, menus
      * font-family-monospace: used for preformatted text in memtitle, code, fragments
      */
-    --font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
-    --font-family-monospace: ui-monospace,SFMono-Regular,SF Mono,Menlo,Consolas,Liberation Mono,monospace;
-    --font-family-monospace-small: Roboto,ui-monospace,SFMono-Regular,SF Mono,Menlo,Consolas,Liberation Mono,monospace;
+    --font-family: Noto Sans,sans-serif;
+    --font-family-monospace: Noto Sans Mono,SFMono-Regular,SF Mono,Menlo,Consolas,Liberation Mono,monospace;
+    --font-family-monospace-small: Roboto,SFMono-Regular,SF Mono,Menlo,Consolas,Liberation Mono,monospace;
 
     /* font sizes */
-    --page-font-size: 15.6px;
-    --navigation-font-size: 14.4px;
+    --page-font-size: 14px;
+    --navigation-font-size: 13px;
     --toc-font-size: 13.4px;
-    --code-font-size: 14px; /* affects code, fragment */
+    --code-font-size: 13px; /* affects code, fragment */
     --title-font-size: 22px;
 
     /* content text properties. These only affect the page content, not the navigation or any other ui elements */
-    --content-line-height: 27px;
+    --content-line-height: 22.4px;
     /* The content is centered and constraint in it's width. To make the content fill the whole page, set the variable to auto.*/
     --content-maxwidth: 1050px;
     --table-line-height: 24px;
@@ -1021,7 +1021,7 @@ h2.groupheader {
 
 blockquote {
     margin: 0 var(--spacing-medium) 0 var(--spacing-medium);
-    padding: var(--spacing-small) var(--spacing-large);
+    padding: var(--spacing-tiny) var(--spacing-medium);
     background: var(--blockquote-background);
     color: var(--blockquote-foreground);
     border-left: 0;
@@ -1226,12 +1226,12 @@ code {
     display: inline;
     background: var(--code-background);
     color: var(--code-foreground);
-    padding: 2px 6px;
+    padding: 0px 2px;
 }
 
 div.fragment, pre.fragment {
     margin: var(--spacing-medium) 0;
-    padding: calc(var(--spacing-large) - (var(--spacing-large) / 6)) var(--spacing-large);
+    padding: calc(var(--spacing-small) + (var(--spacing-small)/5)) var(--spacing-medium);
     background: var(--fragment-background);
     color: var(--fragment-foreground);
     overflow-x: auto;
