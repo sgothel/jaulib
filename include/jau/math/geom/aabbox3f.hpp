@@ -554,27 +554,19 @@ namespace jau::math::geom {
             /**
              * Return intersection of a {@link Ray} with this bounding box,
              * or false if none exist.
-             * <p>
-             * <ul>
-             *  <li>Original code by Andrew Woo, from "Graphics Gems", Academic Press, 1990 [2]</li>
-             *  <li>Optimized code by Pierre Terdiman, 2000 (~20-30% faster on my Celeron 500)</li>
-             *  <li>Epsilon value added by Klaus Hartmann.</li>
-             * </ul>
-             * </p>
-             * <p>
+             * - >Original code by Andrew Woo, from "Graphics Gems", Academic Press, 1990 [2]
+             * - Optimized code by Pierre Terdiman, 2000 (~20-30% faster on my Celeron 500)
+             * - Epsilon value added by Klaus Hartmann.
+             *
              * Method is based on the requirements:
-             * <ul>
-             *  <li>the integer representation of 0.0f is 0x00000000</li>
-             *  <li>the sign bit of the float is the most significant one</li>
-             * </ul>
-             * </p>
-             * <p>
+             * - the integer representation of 0.0f is 0x00000000
+             * - the sign bit of the float is the most significant one
+             *
              * Report bugs: p.terdiman@codercorner.com (original author)
-             * </p>
-             * <pre>
-             * [1] http://www.codercorner.com/RayAABB.cpp
-             * [2] http://tog.acm.org/resources/GraphicsGems/gems/RayBox.c
-             * </pre>
+             *
+             * - [1] http://www.codercorner.com/RayAABB.cpp (Updated October 2001)
+             * - [2] http://tog.acm.org/resources/GraphicsGems/gems/RayBox.c
+             *
              * @param result vec3
              * @param ray
              * @param epsilon
@@ -592,34 +584,6 @@ namespace jau::math::geom {
 
                 bool inside = true;
 
-                /**
-                 * Use unrolled version below...
-                 *
-                 * Find candidate planes.
-                    for(int i=0; i<3; i++) {
-                        const float origin_i = origin.get(i);
-                        const float dir_i = dir.get(i);
-                        const float bl_i = bl.get(i);
-                        const float tr_i = tr.get(i);
-                        if(origin_i < bl_i) {
-                            result.set(i, bl_i);
-                            inside    = false;
-
-                            // Calculate T distances to candidate planes
-                            if( 0 != jau::bit_value(dir_i) ) {
-                                maxT[i] = (bl_i - origin_i) / dir_i;
-                            }
-                        } else if(origin_i > tr_i) {
-                            result.set(i, tr_i);
-                            inside    = false;
-
-                            // Calculate T distances to candidate planes
-                            if( 0 != jau::bit_value(dir_i) ) {
-                                maxT[i] = (tr_i - origin_i) / dir_i;
-                            }
-                        }
-                    }
-                */
                 // Find candidate planes, unrolled
                 {
                     if(origin.x < m_lo.x) {
@@ -627,7 +591,7 @@ namespace jau::math::geom {
                         inside    = false;
 
                         // Calculate T distances to candidate planes
-                        if( 0 != jau::bit_value(dir.x) ) {
+                        if( 0 != jau::bit_value_raw(dir.x) ) {
                             maxT[0] = (m_lo.x - origin.x) / dir.x;
                         }
                     } else if(origin.x > m_hi.x) {
@@ -635,7 +599,7 @@ namespace jau::math::geom {
                         inside    = false;
 
                         // Calculate T distances to candidate planes
-                        if( 0 != jau::bit_value(dir.x) ) {
+                        if( 0 != jau::bit_value_raw(dir.x) ) {
                             maxT[0] = (m_hi.x - origin.x) / dir.x;
                         }
                     }
@@ -646,7 +610,7 @@ namespace jau::math::geom {
                         inside    = false;
 
                         // Calculate T distances to candidate planes
-                        if( 0 != jau::bit_value(dir.y) ) {
+                        if( 0 != jau::bit_value_raw(dir.y) ) {
                             maxT[1] = (m_lo.y - origin.y) / dir.y;
                         }
                     } else if(origin.y > m_hi.y) {
@@ -654,7 +618,7 @@ namespace jau::math::geom {
                         inside    = false;
 
                         // Calculate T distances to candidate planes
-                        if( 0 != jau::bit_value(dir.y) ) {
+                        if( 0 != jau::bit_value_raw(dir.y) ) {
                             maxT[1] = (m_hi.y - origin.y) / dir.y;
                         }
                     }
@@ -665,7 +629,7 @@ namespace jau::math::geom {
                         inside    = false;
 
                         // Calculate T distances to candidate planes
-                        if( 0 != jau::bit_value(dir.z) ) {
+                        if( 0 != jau::bit_value_raw(dir.z) ) {
                             maxT[2] = (m_lo.z - origin.z) / dir.z;
                         }
                     } else if(origin.z > m_hi.z) {
@@ -673,7 +637,7 @@ namespace jau::math::geom {
                         inside    = false;
 
                         // Calculate T distances to candidate planes
-                        if( 0 != jau::bit_value(dir.z) ) {
+                        if( 0 != jau::bit_value_raw(dir.z) ) {
                             maxT[2] = (m_hi.z - origin.z) / dir.z;
                         }
                     }
@@ -684,26 +648,75 @@ namespace jau::math::geom {
                     result = origin;
                     return true;
                 }
-
                 // Get largest of the maxT's for final choice of intersection
-                int whichPlane = 0;
-                if(maxT[1] > maxT[whichPlane]) { whichPlane = 1; }
-                if(maxT[2] > maxT[whichPlane]) { whichPlane = 2; }
+                // - this version without FPU compares
+                // - but branch prediction might suffer
+                // - a bit faster on my Celeron, duno how it behaves on something like a P4
+                // (Updated October 2001)
+                int whichPlane;
+                if( jau::bit_value_raw(maxT[0]) & jau::float_iec559_sign_bit ) {
+                    // T[0]<0
+                    if( jau::bit_value_raw(maxT[1]) & jau::float_iec559_sign_bit ) {
+                        // T[0]<0  T[1]<0
+                        if( jau::bit_value_raw(maxT[2]) & jau::float_iec559_sign_bit ) {
+                            // T[0]<0  T[1]<0  T[2]<0
+                            return false;
+                        } else {
+                            whichPlane = 2;
+                        }
+                    } else if( jau::bit_value_raw(maxT[2]) & jau::float_iec559_sign_bit ) {
+                        // T[0]<0  T[1]>0  T[2]<0
+                        whichPlane = 1;
+                    } else {
+                        // T[0]<0  T[1]>0  T[2]>0
+                        if( jau::bit_value_raw(maxT[2]) > jau::bit_value_raw(maxT[1]) ) {
+                            whichPlane = 2;
+                        } else {
+                            whichPlane = 1;
+                        }
+                    }
+                } else {
+                    // T[0]>0
+                    if( jau::bit_value_raw(maxT[1]) & jau::float_iec559_sign_bit ) {
+                        // T[0]>0  T[1]<0
+                        if( jau::bit_value_raw(maxT[2]) & jau::float_iec559_sign_bit ) {
+                            // T[0]>0  T[1]<0 T[2]<0
+                            whichPlane = 0;
+                        } else {
+                            // T[0]>0  T[1]<0 T[2]>0
+                            if( jau::bit_value_raw(maxT[2]) > jau::bit_value_raw(maxT[0]) ) {
+                                whichPlane = 2;
+                            } else {
+                                whichPlane = 0;
+                            }
+                        }
+                    } else if( jau::bit_value_raw(maxT[2]) & jau::float_iec559_sign_bit ) {
+                        // T[0]>0  T[1]>0 T[2]<0
+                        if( jau::bit_value_raw(maxT[1]) > jau::bit_value_raw(maxT[0]) ) {
+                            whichPlane = 1;
+                        } else {
+                            whichPlane = 0;
+                        }
+                    } else {
+                        // T[0]>0  T[1]>0 T[2]>0
+                        whichPlane = 0;
+                        if( jau::bit_value_raw(maxT[1]) > jau::bit_value_raw(maxT[whichPlane]) ) whichPlane = 1;
+                        if( jau::bit_value_raw(maxT[2]) > jau::bit_value_raw(maxT[whichPlane]) ) whichPlane = 2;
+                    }
+                }
+
+                // Old code below:
+                /*
+                    // Get largest of the maxT's for final choice of intersection
+                    int whichPlane = 0;
+                    if(maxT[1] > maxT[whichPlane]) { whichPlane = 1; }
+                    if(maxT[2] > maxT[whichPlane]) { whichPlane = 2; }
+
+                    // Check final candidate actually inside box
+                    if(jau::bit_value_raw(maxT[WhichPlane])&jau::float_iec559_sign_bit) return false;
+                */
 
                 if( !assumeIntersection ) {
-                    // Check final candidate actually inside box
-                    if( 0 != ( jau::bit_value(maxT[whichPlane]) & jau::float_iec559_sign_bit ) ) {
-                        return false;
-                    }
-
-                    /** Use unrolled version below ..
-                    for(int i=0; i<3; i++) {
-                        if( i!=whichPlane ) {
-                            result[i] = origin[i] + maxT[whichPlane] * dir[i];
-                            if(result[i] < minB[i] - epsilon || result[i] > maxB[i] + epsilon) { return false; }
-                            // if(result[i] < minB[i] || result[i] > maxB[i] ) { return false; }
-                        }
-                    } */
                     switch( whichPlane ) {
                         case 0:
                             result.y = origin.y + maxT[whichPlane] * dir.y;
