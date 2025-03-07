@@ -394,6 +394,14 @@ namespace jau::math {
 
     template<typename T,
              std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    constexpr Vector3F<T> operator/(const T s, const Vector3F<T>& rhs) noexcept {
+        Vector3F<T> r(rhs);
+        r.x=s/r.x; r.y=s/r.y; r.z=s/r.z;
+        return r;
+    }
+
+    template<typename T,
+             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
     constexpr Vector3F<T> min(const Vector3F<T>& lhs, const Vector3F<T>& rhs) noexcept {
         return Vector3F<T>(std::min(lhs.x, rhs.x), std::min(lhs.y, rhs.y), std::min(lhs.z, rhs.z));
     }
@@ -402,6 +410,12 @@ namespace jau::math {
              std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
     constexpr Vector3F<T> max(const Vector3F<T>& lhs, const Vector3F<T>& rhs) noexcept {
         return Vector3F<T>(std::max(lhs.x, rhs.x), std::max(lhs.y, rhs.y), std::max(lhs.z, rhs.z));
+    }
+
+    template<typename T,
+             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    constexpr Vector3F<T> abs(const Vector3F<T>& lhs) noexcept {
+        return Vector3F<T>(std::abs(lhs.x), std::abs(lhs.y), std::abs(lhs.z));
     }
 
     template<typename T,

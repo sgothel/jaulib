@@ -294,6 +294,14 @@ namespace jau::math {
     }
 
     template<typename T,
+             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    constexpr Vector2I<T> operator/(const T s, const Vector2I<T>& rhs) noexcept {
+        Vector2I<T> r(rhs);
+        r.x=s/r.x; r.y=s/r.y;
+        return r;
+    }
+
+    template<typename T,
              std::enable_if_t<std::numeric_limits<T>::is_integer, bool> = true>
     constexpr Vector2I<T> min(const Vector2I<T>& lhs, const Vector2I<T>& rhs) noexcept {
         return Vector2I<T>(std::min(lhs.x, rhs.x), std::min(lhs.y, rhs.y));
@@ -303,6 +311,12 @@ namespace jau::math {
              std::enable_if_t<std::numeric_limits<T>::is_integer, bool> = true>
     constexpr Vector2I<T> max(const Vector2I<T>& lhs, const Vector2I<T>& rhs) noexcept {
         return Vector2I<T>(std::max(lhs.x, rhs.x), std::max(lhs.y, rhs.y));
+    }
+
+    template<typename T,
+             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    constexpr Vector2I<T> abs(const Vector2I<T>& lhs) noexcept {
+        return Vector2I<T>(std::abs(lhs.x), std::abs(lhs.y));
     }
 
     template<typename T,

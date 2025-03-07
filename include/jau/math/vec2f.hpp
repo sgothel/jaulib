@@ -381,6 +381,14 @@ namespace jau::math {
 
     template<typename T,
              std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    constexpr Vector2F<T> operator/(const T s, const Vector2F<T>& rhs) noexcept {
+        Vector2F<T> r(rhs);
+        r.x=s/r.x; r.y=s/r.y;
+        return r;
+    }
+
+    template<typename T,
+             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
     constexpr Vector2F<T> min(const Vector2F<T>& lhs, const Vector2F<T>& rhs) noexcept {
         return Vector2F<T>(std::min(lhs.x, rhs.x), std::min(lhs.y, rhs.y));
     }
@@ -389,6 +397,12 @@ namespace jau::math {
              std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
     constexpr Vector2F<T> max(const Vector2F<T>& lhs, const Vector2F<T>& rhs) noexcept {
         return Vector2F<T>(std::max(lhs.x, rhs.x), std::max(lhs.y, rhs.y));
+    }
+
+    template<typename T,
+             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    constexpr Vector2F<T> abs(const Vector2F<T>& lhs) noexcept {
+        return Vector2F<T>(std::abs(lhs.x), std::abs(lhs.y));
     }
 
     template<typename T,
