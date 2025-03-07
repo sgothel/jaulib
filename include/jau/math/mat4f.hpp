@@ -873,7 +873,7 @@ class alignas(Value_type) Matrix4 {
     }
 
     /**
-     * Affine 3f-vector transformation by 4x4 matrix: v_inout = this x v_inout
+     * Affine 3f-vector transformation by 4x4 matrix: v_inout = this * v_inout
      *
      * 4x4 matrix multiplication with 3-component vector,
      * using {@code 1} for for {@code v_inout.w} and dropping {@code v_inout.w},

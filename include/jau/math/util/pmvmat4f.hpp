@@ -51,6 +51,16 @@ namespace jau::math::util {
  * as specified in the OpenGL fixed function pipeline, i.e. compatibility profile.
  * See Matrix4.
  *
+ * Maintaining the inverse projection provides conversion to and from view space.
+ *
+ * Passing the view or inverse-view matrix to map-functions
+ * allows conversion to and from world space.
+ *
+ * - view = V x M x Obj = Mv x Obj
+ * - world = V' x Mv x Obj = V' x V x M x Obj = M x Obj
+ * - clip = P x V x M x Obj = P x Mv x Obj
+ * etc ..
+ *
  * PMVMatrix4 can supplement {@link com.jogamp.opengl.GL2ES2 GL2ES2} applications w/ the
  * lack of the described matrix functionality.
  *
@@ -127,11 +137,12 @@ class PMVMatrix4 {
         Mat4 m_matMvi;
         Mat4 m_matMvit;
 
+        Mat4 m_matPi;
         Mat4 m_matTex;
 
         MatrixStack<value_type> m_stackMv, m_stackP, m_stackTex;
 
-        uint32_t m_requestBits; // may contain the requested bits: INVERSE_MODELVIEW | INVERSE_TRANSPOSED_MODELVIEW
+        uint32_t m_requestBits; // may contain the requested bits: INVERSE_MODELVIEW | INVERSE_PROJECTION | INVERSE_TRANSPOSED_MODELVIEW
 
         PMVSync1 m_syncP = PMVSync1(m_matP);
         PMVSync1 m_syncMv = PMVSync1(m_matMv);
@@ -159,6 +170,9 @@ class PMVMatrix4 {
             if( 0 != ( req & INVERSE_TRANSPOSED_MODELVIEW ) ) {
                 mask |= INVERSE_TRANSPOSED_MODELVIEW;
             }
+            if( 0 != ( req & INVERSE_PROJECTION ) ) {
+                mask |= INVERSE_PROJECTION;
+            }
             return mask;
         }
 
@@ -176,19 +190,21 @@ class PMVMatrix4 {
     constexpr static const uint32_t INVERSE_MODELVIEW = 1 << 1;
     /** Bit value for {@link #getMvit() inverse transposed modelview matrix (Mvit)}, updated via {@link #update()}. */
     constexpr static const uint32_t INVERSE_TRANSPOSED_MODELVIEW = 1 << 2;
+    /** Bit value for {@link #getPi() inverse projection matrix (Pi)}, updated via {@link #update()}. */
+    constexpr static const uint32_t INVERSE_PROJECTION = 1 << 3;
     /** Bit value for {@link #getFrustum() frustum} and updated by {@link #getFrustum()}. */
-    constexpr static const uint32_t FRUSTUM = 1 << 3;
-    /** Bit value for {@link #getPMv() pre-multiplied P * Mv}, updated by {@link #getPMv()}. */
-    constexpr static const uint32_t PREMUL_PMV = 1 << 4;
-    /** Bit value for {@link #getPMvi() pre-multiplied invert(P * Mv)}, updated by {@link #getPMvi()}. */
-    constexpr static const uint32_t PREMUL_PMVI = 1 << 5;
+    constexpr static const uint32_t FRUSTUM = 1 << 4;
+    /** Bit value for {@link #getPMv() pre-multiplied P x Mv}, updated by {@link #getPMv()}. */
+    constexpr static const uint32_t PREMUL_PMV = 1 << 5;
+    /** Bit value for {@link #getPMvi() pre-multiplied invert(P x Mv)}, updated by {@link #getPMvi()}. */
+    constexpr static const uint32_t PREMUL_PMVI = 1 << 6;
     /** Manual bits not covered by {@link #update()} but {@link #getFrustum()}, {@link #FRUSTUM}, {@link #getPMv()}, {@link #PREMUL_PMV}, {@link #getPMvi()}, {@link #PREMUL_PMVI}, etc. */
     constexpr static const uint32_t MANUAL_BITS = FRUSTUM | PREMUL_PMV | PREMUL_PMVI;
 
     /**
      * Creates an instance of PMVMatrix4.
      *
-     * This constructor only sets up an instance w/o additional derived INVERSE_MODELVIEW or INVERSE_TRANSPOSED_MODELVIEW matrices.
+     * This constructor only sets up an instance w/o additional derived INVERSE_MODELVIEW, INVERSE_PROJECTION or INVERSE_TRANSPOSED_MODELVIEW matrices.
      *
      * @see #PMVMatrix4(int)
      */
@@ -200,12 +216,13 @@ class PMVMatrix4 {
      *
      * Additional derived matrices can be requested via `derivedMatrices`, i.e.
      * - INVERSE_MODELVIEW
+     * - INVERSE_PROJECTION
      * - INVERSE_TRANSPOSED_MODELVIEW
      *
      * Implementation uses native Matrix4 elements using column-order fields.
      * Derived matrices are updated at retrieval, e.g. getMvi(), or via synchronized access, e.g. getSyncMvi(), to the actual Mat4 instances.
      *
-     * @param derivedMatrices additional matrices can be requested by passing bits {@link #INVERSE_MODELVIEW} and {@link #INVERSE_TRANSPOSED_MODELVIEW}.
+     * @param derivedMatrices additional matrices can be requested by passing bits {@link #INVERSE_MODELVIEW}, INVERSE_PROJECTION and {@link #INVERSE_TRANSPOSED_MODELVIEW}.
      * @see #getReqBits()
      * @see #isReqDirty()
      * @see #getDirtyBits()
@@ -307,14 +324,29 @@ class PMVMatrix4 {
     constexpr const SyncMats4f& getSyncPMv() const noexcept { return m_syncP_Mv; }
 
     /**
+     * Returns the inverse {@link GLMatrixFunc#GL_MODELVIEW_MATRIX modelview matrix} (Pi) if requested.
+     * <p>
+     * See <a href="#storageDetails"> matrix storage details</a>.
+     * </p>
+     * @throws IllegalArgumentException if {@link #INVERSE_PROJECTION} has not been requested in ctor {@link #PMVMatrix4(int)}.
+     */
+    const Mat4& getPi() {
+        if( 0 == ( INVERSE_PROJECTION & m_requestBits ) ) {
+            throw jau::IllegalArgumentError("Not requested in ctor", E_FILE_LINE);
+        }
+        updateImpl(false);
+        return m_matPi;
+    }
+
+    /**
      * Returns the inverse {@link GLMatrixFunc#GL_MODELVIEW_MATRIX modelview matrix} (Mvi) if requested.
      * <p>
      * See <a href="#storageDetails"> matrix storage details</a>.
      * </p>
      * @throws IllegalArgumentException if {@link #INVERSE_MODELVIEW} has not been requested in ctor {@link #PMVMatrix4(int)}.
      */
-    Mat4& getMvi() {
-        if( 0 == ( INVERSE_MODELVIEW & m_requestBits ) ) { // FIXME
+    const Mat4& getMvi() {
+        if( 0 == ( INVERSE_MODELVIEW & m_requestBits ) ) {
             throw jau::IllegalArgumentError("Not requested in ctor", E_FILE_LINE);
         }
         updateImpl(false);
@@ -329,7 +361,7 @@ class PMVMatrix4 {
      * @throws IllegalArgumentException if {@link #INVERSE_MODELVIEW} has not been requested in ctor {@link #PMVMatrix4(int)}.
      */
     SyncMat4& getSyncMvi() {
-        if( 0 == ( INVERSE_MODELVIEW & m_requestBits ) ) { // FIXME
+        if( 0 == ( INVERSE_MODELVIEW & m_requestBits ) ) {
             throw jau::IllegalArgumentError("Not requested in ctor", E_FILE_LINE);
         }
         return m_syncMvi;
@@ -342,8 +374,8 @@ class PMVMatrix4 {
      * </p>
      * @throws IllegalArgumentException if {@link #INVERSE_TRANSPOSED_MODELVIEW} has not been requested in ctor {@link #PMVMatrix4(int)}.
      */
-    Mat4& getMvit() {
-        if( 0 == ( INVERSE_TRANSPOSED_MODELVIEW & m_requestBits ) ) { // FIXME
+    const Mat4& getMvit() {
+        if( 0 == ( INVERSE_TRANSPOSED_MODELVIEW & m_requestBits ) ) {
             throw jau::IllegalArgumentError("Not requested in ctor", E_FILE_LINE);
         }
         updateImpl(false);
@@ -358,7 +390,7 @@ class PMVMatrix4 {
      * @throws IllegalArgumentException if {@link #INVERSE_TRANSPOSED_MODELVIEW} has not been requested in ctor {@link #PMVMatrix4(int)}.
      */
     SyncMat4& getSyncMvit() {
-        if( 0 == ( INVERSE_TRANSPOSED_MODELVIEW & m_requestBits ) ) { // FIXME
+        if( 0 == ( INVERSE_TRANSPOSED_MODELVIEW & m_requestBits ) ) {
             throw jau::IllegalArgumentError("Not requested in ctor", E_FILE_LINE);
         }
         return m_syncMvit;
@@ -372,7 +404,7 @@ class PMVMatrix4 {
      * @throws IllegalArgumentException if {@link #INVERSE_MODELVIEW} has not been requested in ctor {@link #PMVMatrix4(int)}.
      */
     SyncMats4f& getSyncPMvMvi() {
-        if( 0 == ( INVERSE_MODELVIEW & m_requestBits ) ) { // FIXME
+        if( 0 == ( INVERSE_MODELVIEW & m_requestBits ) ) {
             throw jau::IllegalArgumentError("Not requested in ctor", E_FILE_LINE);
         }
         return m_syncP_Mv_Mvi;
@@ -386,7 +418,7 @@ class PMVMatrix4 {
      * @throws IllegalArgumentException if {@link #INVERSE_TRANSPOSED_MODELVIEW} has not been requested in ctor {@link #PMVMatrix4(int)}.
      */
     SyncMats4f& getSyncPMvMviMvit() {
-        if( 0 == ( INVERSE_TRANSPOSED_MODELVIEW & m_requestBits ) ) { // FIXME
+        if( 0 == ( INVERSE_TRANSPOSED_MODELVIEW & m_requestBits ) ) {
             throw jau::IllegalArgumentError("Not requested in ctor", E_FILE_LINE);
         }
         return m_syncP_Mv_Mvi_Mvit;
@@ -421,7 +453,7 @@ class PMVMatrix4 {
     }
 
     /**
-     * v_out = Mv * v_in
+     * v_out = Mv x v_in
      * @param v_in input vector, can be v_out for in-place transformation
      * @param v_out output vector
      * @returns v_out for chaining
@@ -431,7 +463,7 @@ class PMVMatrix4 {
     }
 
     /**
-     * v_inout = Mv * v_inout
+     * v_inout = Mv x v_inout
      * @param v_inout input and output vector, i.e. in-place transformation
      * @returns v_inout for chaining
      */
@@ -440,7 +472,7 @@ class PMVMatrix4 {
     }
 
     /**
-     * v_out = Mv * v_in
+     * v_out = Mv x v_in
      *
      * Affine 3f-vector transformation by 4x4 matrix, see {@link Mat4#mulVec3(Vec3, Vec3)}.
      *
@@ -845,17 +877,46 @@ class PMVMatrix4 {
 
     /**
      * Map object coordinates to window coordinates.
-     * <p>
+     *
      * Traditional <code>gluProject</code> implementation.
-     * </p>
      *
      * @param objPos 3 component object coordinate
      * @param viewport Rect4i viewport
      * @param winPos 3 component window coordinate, the result
      * @return true if successful, otherwise false (z is 1)
      */
-    bool mapObjToWin(const Vec3& objPos, const Recti& viewport, Vec3& winPos) noexcept {
+    bool mapObjToWin(const Vec3& objPos, const Recti& viewport, Vec3& winPos) const noexcept {
         return Mat4::mapObjToWin(objPos, m_matMv, m_matP, viewport, winPos);
+    }
+
+    /**
+     * Map world coordinates to window coordinates.
+     *
+     * - world = M x Obj
+     * - win   = P x V x World = P x V' x Mv
+     * - V' x V x M = M, with Mv = V x M
+     *
+     * @param objPos 3 component object coordinate
+     * @param matV the view matrix
+     * @param viewport Rect4i viewport
+     * @param winPos 3 component window coordinate, the result
+     * @return true if successful, otherwise false (z is 1)
+     */
+    bool mapWorldToWin(const Vec3& objPos, const Mat4& matV, const Recti& viewport, Vec3& winPos) const noexcept {
+        return Mat4::mapWorldToWin(objPos, matV, m_matP, viewport, winPos);
+    }
+
+    /**
+     * Map view coordinates ( Mv x object ) to window coordinates.
+     *
+     * @param view view position, 3 component vector
+     * @param mP projection matrix
+     * @param viewport Rect4i viewport
+     * @param winPos 3 component window coordinate, the result
+     * @return true if successful, otherwise false (z is 1)
+     */
+    bool mapViewToWin(const Vec3& view, const Recti& viewport, Vec3& winPos) const noexcept {
+        return Mat4::mapViewToWin(view, m_matP, viewport, winPos);
     }
 
     /**
@@ -873,7 +934,53 @@ class PMVMatrix4 {
      */
     bool mapWinToObj(const float winx, const float winy, const float winz,
                      const Recti& viewport, Vec3& objPos) noexcept {
-        if( Mat4::mapWinToObj(winx, winy, winz, getPMvi(), viewport, objPos) ) {
+        if( Mat4::mapWinToAny(winx, winy, winz, getPMvi(), viewport, objPos) ) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Map window coordinates to object coordinates.
+     *
+     * The INVERSE_PROJECTION must have been request in the constructor.
+     *
+     * - Pv' = P' x V', using getPi()
+     * - V' x V x M = M, with Mv = V x M
+     *
+     * @param winx
+     * @param winy
+     * @param winz
+     * @param matVi the inverse view matrix
+     * @param viewport Rect4i viewport
+     * @param objPos 3 component object coordinate, the result
+     * @return true if successful, otherwise false (failed to invert matrix, or becomes infinity due to zero z)
+     */
+    bool mapWinToWorld(const float winx, const float winy, const float winz,
+                       const Mat4& matVi, const Recti& viewport, Vec3& objPos) noexcept {
+        Mat4 invPv;
+        invPv.mul(getPi(), matVi);
+        if( Mat4::mapWinToAny(winx, winy, winz, invPv, viewport, objPos) ) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Map window coordinates to view coordinates.
+     *
+     * @param winx
+     * @param winy
+     * @param winz
+     * @param viewport Rect4i viewport
+     * @param objPos 3 component object coordinate, the result
+     * @return true if successful, otherwise false (failed to invert matrix, or becomes infinity due to zero z)
+     */
+    bool mapWinToView(const float winx, const float winy, const float winz,
+                       const Recti& viewport, Vec3& objPos) noexcept {
+        if( Mat4::mapWinToAny(winx, winy, winz, getPi(), viewport, objPos) ) {
             return true;
         } else {
             return false;
@@ -897,7 +1004,7 @@ class PMVMatrix4 {
      * @return true if successful, otherwise false (failed to invert matrix, or becomes infinity due to zero z)
      */
     bool mapWinToObj4(const float winx, const float winy, const float winz, const float clipw,
-                      const Recti& viewport, const float near, const float far, Vec4& objPos) noexcept {
+                      const Recti& viewport, const float near, const float far, Vec4& objPos) const noexcept {
         if( Mat4::mapWinToObj4(winx, winy, winz, clipw, getPMvi(), viewport, near, far, objPos) ) {
             return true;
         } else {
@@ -907,8 +1014,11 @@ class PMVMatrix4 {
 
     /**
      * Map two window coordinates w/ shared X/Y and distinctive Z
-     * to a {@link Ray}. The resulting {@link Ray} maybe used for <i>picking</i>
-     * using a {@link AABBox#getRayIntersection(Vec3, Ray, float, bool) bounding box}.
+     * to a {@link Ray} in object space.
+     *
+     * The resulting {@link Ray} maybe used for <i>picking</i>
+     * using a {@link AABBox#getRayIntersection(Vec3, Ray, float, bool) bounding box}
+     * of a shape also in object space.
      *
      * Notes for picking <i>winz0</i> and <i>winz1</i>:
      * - see jau::math::util::getZBufferEpsilon()
@@ -922,20 +1032,78 @@ class PMVMatrix4 {
      * @param ray storage for the resulting {@link Ray}
      * @return true if successful, otherwise false (failed to invert matrix, or becomes z is infinity)
      */
-    bool mapWinToRay(const float winx, const float winy, const float winz0, const float winz1,
-                     const Recti& viewport, Ray3f& ray) noexcept {
-        return Mat4::mapWinToRay(winx, winy, winz0, winz1, getPMvi(), viewport, ray);
+    bool mapWinToObjRay(const float winx, const float winy, const float winz0, const float winz1,
+                        const Recti& viewport, Ray3f& ray) noexcept {
+        return Mat4::mapWinToAnyRay(winx, winy, winz0, winz1, getPMvi(), viewport, ray);
+    }
+
+    /**
+     * Map two window coordinates w/ shared X/Y and distinctive Z
+     * to a {@link Ray} in world space.
+     *
+     * The resulting {@link Ray} maybe used for <i>picking</i>
+     * using a {@link AABBox#getRayIntersection(Vec3, Ray, float, bool) bounding box}
+     * of a shape also in world space.
+     *
+     * The INVERSE_PROJECTION must have been request in the constructor.
+     *
+     * - Pv' = P' x V', using getPi()
+     * - V' x V x M = M, with Mv = V x M
+     *
+     * Notes for picking <i>winz0</i> and <i>winz1</i>:
+     * - see jau::math::util::getZBufferEpsilon()
+     * - see jau::math::util::getZBufferValue()
+     * - see jau::math::util::getOrthoWinZ()
+     * @param winx
+     * @param winy
+     * @param winz0
+     * @param winz1
+     * @param matVi the inverse view matrix
+     * @param viewport
+     * @param ray storage for the resulting {@link Ray}
+     * @return true if successful, otherwise false (failed to invert matrix, or becomes z is infinity)
+     *
+     * @see INVERSE_PROJECTION
+     * @see setView()
+     */
+    bool mapWinToWorldRay(const float winx, const float winy, const float winz0, const float winz1,
+                          const Mat4& matVi, const Recti& viewport, Ray3f& ray) noexcept {
+        Mat4 invPv;
+        invPv.mul(getPi(), matVi);
+        return Mat4::mapWinToAnyRay(winx, winy, winz0, winz1, invPv, viewport, ray);
+    }
+
+    /**
+     * Map two window coordinates w/ shared X/Y and distinctive Z
+     * to a {@link Ray} in view space.
+     *
+     * The resulting {@link Ray} maybe used for <i>picking</i>
+     * using a {@link AABBox#getRayIntersection(Vec3, Ray, float, bool) bounding box}
+     * of a shape also in view space.
+     *
+     * Notes for picking <i>winz0</i> and <i>winz1</i>:
+     * - see jau::math::util::getZBufferEpsilon()
+     * - see jau::math::util::getZBufferValue()
+     * - see jau::math::util::getOrthoWinZ()
+     * @param winx
+     * @param winy
+     * @param winz0
+     * @param winz1
+     * @param viewport
+     * @param ray storage for the resulting {@link Ray}
+     * @return true if successful, otherwise false (failed to invert matrix, or becomes z is infinity)
+     */
+    bool mapWinToViewRay(const float winx, const float winy, const float winz0, const float winz1,
+                        const Recti& viewport, Ray3f& ray) noexcept {
+        return Mat4::mapWinToAnyRay(winx, winy, winz0, winz1, getPi(), viewport, ray);
     }
 
     std::string& toString(std::string& sb, const std::string& f) const noexcept {
         const bool pmvDirty  = 0 != (PREMUL_PMV & m_dirtyBits);
-        const bool pmvUsed = true; // null != matPMv;
 
         const bool pmviDirty  = 0 != (PREMUL_PMVI & m_dirtyBits);
-        const bool pmviUsed = true; // null != matPMvi;
 
         const bool frustumDirty = 0 != (FRUSTUM & m_dirtyBits);
-        const bool frustumUsed = true; // null != frustum;
 
         const bool mviDirty  = 0 != (INVERSE_MODELVIEW & m_dirtyBits);
         const bool mviReq = 0 != (INVERSE_MODELVIEW & m_requestBits);
@@ -943,16 +1111,20 @@ class PMVMatrix4 {
         const bool mvitDirty = 0 != (INVERSE_TRANSPOSED_MODELVIEW & m_dirtyBits);
         const bool mvitReq = 0 != (INVERSE_TRANSPOSED_MODELVIEW & m_requestBits);
 
+        const bool piDirty  = 0 != (INVERSE_PROJECTION & m_dirtyBits);
+        const bool piReq = 0 != (INVERSE_PROJECTION & m_requestBits);
+
         const bool modP = 0 != ( MODIFIED_PROJECTION & m_modifiedBits );
         const bool modMv = 0 != ( MODIFIED_MODELVIEW & m_modifiedBits );
         const bool modT = 0 != ( MODIFIED_TEXTURE & m_modifiedBits );
         int count = 3; // P, Mv, T
 
         sb.append("PMVMatrix4[modified[P ").append(std::to_string(modP)).append(", Mv ").append(std::to_string(modMv)).append(", T ").append(std::to_string(modT));
-        sb.append("], dirty/used[PMv ").append(std::to_string(pmvDirty)).append("/").append(std::to_string(pmvUsed))
-          .append(", Pmvi ").append(std::to_string(pmviDirty)).append("/").append(std::to_string(pmviUsed))
-          .append(", Frustum ").append(std::to_string(frustumDirty)).append("/").append(std::to_string(frustumUsed));
+        sb.append("], dirty[PMv ").append(std::to_string(pmvDirty))
+          .append(", Pmvi ").append(std::to_string(pmviDirty))
+          .append(", Frustum ").append(std::to_string(frustumDirty));
         sb.append("], dirty/req[Mvi ").append(std::to_string(mviDirty)).append("/").append(std::to_string(mviReq))
+          .append(", Pi ").append(std::to_string(piDirty)).append("/").append(std::to_string(piReq))
           .append(", Mvit ").append(std::to_string(mvitDirty)).append("/").append(std::to_string(mvitReq)).append("]\n");
         sb.append(", Projection\n");
         m_matP.toString(sb, f);
@@ -960,12 +1132,12 @@ class PMVMatrix4 {
         m_matMv.toString(sb, f);
         sb.append(", Texture\n");
         m_matTex.toString(sb, f);
-        if( pmvUsed ) {
+        {
             sb.append(", P * Mv\n");
             m_matPMv.toString(sb, f);
             ++count;
         }
-        if( pmviUsed ) {
+        {
             sb.append(", P * Mv\n");
             m_matPMvi.toString(sb, f);
             ++count;
@@ -1020,6 +1192,7 @@ class PMVMatrix4 {
      * Returns the dirty bits due to mutable operations,
      * i.e.
      * - {@link #INVERSE_MODELVIEW} (if requested)
+     * - {@link #INVERSE_PROJECTION} (if requested)
      * - {@link #INVERSE_TRANSPOSED_MODELVIEW} (if requested)
      * - {@link #FRUSTUM} (always, cleared via {@link #getFrustum()}
      * <p>
@@ -1032,6 +1205,7 @@ class PMVMatrix4 {
      *
      * @see #isReqDirty()
      * @see #INVERSE_MODELVIEW
+     * @see #INVERSE_PROJECTION
      * @see #INVERSE_TRANSPOSED_MODELVIEW
      * @see #FRUSTUM
      * @see #PMVMatrix4(int)
@@ -1049,6 +1223,7 @@ class PMVMatrix4 {
      * Returns true if the one of the {@link #getReqBits() requested bits} are are set dirty due to mutable operations,
      * i.e. at least one of
      * - {@link #INVERSE_MODELVIEW}
+     * - {@link #INVERSE_PROJECTION}
      * - {@link #INVERSE_TRANSPOSED_MODELVIEW}
      * <p>
      * A dirty bit is set, if the corresponding matrix had been modified by a mutable operation
@@ -1059,6 +1234,7 @@ class PMVMatrix4 {
      * </p>
      *
      * @see #INVERSE_MODELVIEW
+     * @see #INVERSE_PROJECTION
      * @see #INVERSE_TRANSPOSED_MODELVIEW
      * @see #PMVMatrix4(int)
      * @see #getMvi()
@@ -1072,20 +1248,20 @@ class PMVMatrix4 {
 
     /**
      * Sets the {@link #getMv() Modelview (Mv)} matrix dirty and modified,
-     * i.e. adds {@link #getReqBits() requested bits} and {@link #MANUAL_BITS} to {@link #getDirtyBits() dirty bits}.
+     * i.e. adds INVERSE_MODELVIEW | INVERSE_TRANSPOSED_MODELVIEW | MANUAL_BITS to {@link #getDirtyBits() dirty bits}.
      * @see #isReqDirty()
      */
     constexpr void setModelviewDirty() noexcept {
-        m_dirtyBits |= m_requestBits | MANUAL_BITS ;
+        m_dirtyBits |= INVERSE_MODELVIEW | INVERSE_TRANSPOSED_MODELVIEW | MANUAL_BITS ;
         m_modifiedBits |= MODIFIED_MODELVIEW;
     }
 
     /**
      * Sets the {@link #getP() Projection (P)} matrix dirty and modified,
-     * i.e. adds {@link #MANUAL_BITS} to {@link #getDirtyBits() dirty bits}.
+     * i.e. adds INVERSE_PROJECTION | MANUAL_BITS to {@link #getDirtyBits() dirty bits}.
      */
     constexpr void setProjectionDirty() noexcept {
-        m_dirtyBits |= MANUAL_BITS ;
+        m_dirtyBits |= INVERSE_PROJECTION | MANUAL_BITS ;
         m_modifiedBits |= MODIFIED_PROJECTION;
     }
 
@@ -1099,13 +1275,15 @@ class PMVMatrix4 {
     /**
      * Returns the request bit mask, which uses bit values equal to the dirty mask
      * and may contain
-     * - {@link #INVERSE_MODELVIEW}
-     * - {@link #INVERSE_TRANSPOSED_MODELVIEW}
+     * - INVERSE_MODELVIEW
+     * - INVERSE_PROJECTION
+     * - INVERSE_TRANSPOSED_MODELVIEW
      * <p>
      * The request bit mask is set by in the constructor {@link #PMVMatrix4(int)}.
      * </p>
      *
      * @see #INVERSE_MODELVIEW
+     * @see #INVERSE_PROJECTION
      * @see #INVERSE_TRANSPOSED_MODELVIEW
      * @see #PMVMatrix4(int)
      * @see #getMvi()
@@ -1190,6 +1368,7 @@ class PMVMatrix4 {
      * requested via the constructor {@link #PMVMatrix4(int)}.<br/>
      * Hence updates the following dirty bits.
      * - {@link #INVERSE_MODELVIEW}
+     * - {@link #INVERSE_PROJECTION}
      * - {@link #INVERSE_TRANSPOSED_MODELVIEW}
      * <p>
      * The {@link Frustum} is updated only via {@link #getFrustum()} separately.
@@ -1222,6 +1401,7 @@ class PMVMatrix4 {
      * @see #getModifiedBits(bool)
      * @see #isReqDirty()
      * @see #INVERSE_MODELVIEW
+     * @see #INVERSE_PROJECTION
      * @see #INVERSE_TRANSPOSED_MODELVIEW
      * @see #PMVMatrix4(int)
      * @see #getMvi()
@@ -1243,12 +1423,22 @@ class PMVMatrix4 {
         bool mod = 0 != m_modifiedBits;
         if( clearModBits ) {
             m_modifiedBits = 0;
+            mod = false;
+        }
+        if( 0 != ( m_requestBits & ( ( m_dirtyBits & ( INVERSE_PROJECTION ) ) ) ) ) { // only if requested & dirty
+            if( !m_matPi.invert(m_matP) ) {
+                DBG_ERR_PRINT("Invalid source P matrix, can't compute inverse: %s", m_matP.toString().c_str(), E_FILE_LINE);
+                // still continue with other derived matrices
+            } else {
+                mod = true;
+            }
+            m_dirtyBits &= ~INVERSE_PROJECTION;
         }
         if( 0 != ( m_requestBits & ( ( m_dirtyBits & ( INVERSE_MODELVIEW | INVERSE_TRANSPOSED_MODELVIEW ) ) ) ) ) { // only if requested & dirty
             if( !m_matMvi.invert(m_matMv) ) {
                 DBG_ERR_PRINT("Invalid source Mv matrix, can't compute inverse: %s", m_matMv.toString().c_str(), E_FILE_LINE);
                 m_dirtyBits &= ~(INVERSE_MODELVIEW | INVERSE_TRANSPOSED_MODELVIEW);
-                return false; // no successful update as we abort due to inversion failure
+                return mod; // no successful update as we abort due to inversion failure, skip INVERSE_TRANSPOSED_MODELVIEW as well
             }
             m_dirtyBits &= ~INVERSE_MODELVIEW;
             mod = true;
