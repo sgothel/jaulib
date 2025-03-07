@@ -762,6 +762,81 @@ namespace jau::math::geom {
                 return true; // ray hits box
             }
 
+            /**
+             * Transform this box using the given Mat4f into {@code out}
+             * @param mat transformation Mat4f
+             * @param out the resulting AABBox3f
+             * @return the resulting AABBox3f for chaining
+             */
+            AABBox3f& transform(const Mat4f& mat, AABBox3f& out) const noexcept {
+                Vec3f tmp;
+                out.reset();
+                out.resize( mat.mulVec3(m_lo, tmp) );
+                out.resize( mat.mulVec3(m_hi, tmp) );
+                return out;
+            }
+
+            /**
+             * Assume this bounding box as being in object space and
+             * compute the window bounding box.
+             * <p>
+             * If <code>useCenterZ</code> is <code>true</code>,
+             * only 4 {@link FloatUtil#mapObjToWin(float, float, float, float[], int[], float[], float[], float[]) mapObjToWinCoords}
+             * operations are made on points [1..4] using {@link #getCenter()}'s z-value.
+             * Otherwise 8 {@link FloatUtil#mapObjToWin(float, float, float, float[], int[], float[], float[], float[]) mapObjToWinCoords}
+             * operation on all 8 points are performed.
+             * </p>
+             * <pre>
+             *  .z() ------ [4]
+             *   |          |
+             *   |          |
+             *  .y() ------ [3]
+             * </pre>
+             * @param mat4PMv [projection] x [modelview] matrix, i.e. P x Mv
+             * @param viewport viewport rectangle
+             * @param useCenterZ
+             * @param vec3Tmp0 3 component vector for temp storage
+             * @param vec4Tmp1 4 component vector for temp storage
+             * @param vec4Tmp2 4 component vector for temp storage
+             * @return
+             */
+            AABBox3f& mapToWindow(AABBox3f& result, const Mat4f& mat4PMv, const Recti& viewport, bool useCenterZ) const noexcept {
+                Vec3f tmp, winPos;
+                {
+                    float objZ = useCenterZ ? m_center.z : m_lo.z;
+                    result.reset();
+
+                    Mat4f::mapObjToWin(tmp.set(m_lo.x, m_lo.y, objZ), mat4PMv, viewport, winPos);
+                    result.resize(winPos);
+
+                    Mat4f::mapObjToWin(tmp.set(m_lo.x, m_hi.y, objZ), mat4PMv, viewport, winPos);
+                    result.resize(winPos);
+
+                    Mat4f::mapObjToWin(tmp.set(m_hi.x, m_hi.y, objZ), mat4PMv, viewport, winPos);
+                    result.resize(winPos);
+
+                    Mat4f::mapObjToWin(tmp.set(m_hi.x, m_lo.y, objZ), mat4PMv, viewport, winPos);
+                    result.resize(winPos);
+                }
+
+                if( !useCenterZ ) {
+                    const float objZ = m_hi.z;
+
+                    Mat4f::mapObjToWin(tmp.set(m_lo.x, m_lo.y, objZ), mat4PMv, viewport, winPos);
+                    result.resize(winPos);
+
+                    Mat4f::mapObjToWin(tmp.set(m_lo.x, m_hi.y, objZ), mat4PMv, viewport, winPos);
+                    result.resize(winPos);
+
+                    Mat4f::mapObjToWin(tmp.set(m_hi.x, m_hi.y, objZ), mat4PMv, viewport, winPos);
+                    result.resize(winPos);
+
+                    Mat4f::mapObjToWin(tmp.set(m_hi.x, m_lo.y, objZ), mat4PMv, viewport, winPos);
+                    result.resize(winPos);
+                }
+                return result;
+            }
+
             std::string toString() const noexcept {
                 return "aabb[bl " + m_lo.toString() +
                        ", tr " + m_hi.toString() +
