@@ -11,10 +11,11 @@
 #ifndef JAU_MATH_GEOM_AABBOX3F_HPP_
 #define JAU_MATH_GEOM_AABBOX3F_HPP_
 
-#include "jau/basic_types.hpp"
-#include "jau/debug.hpp"
+#include <jau/basic_types.hpp>
+#include <jau/debug.hpp>
 #include <jau/functional.hpp>
 #include <jau/math/vec3f.hpp>
+#include <jau/math/mat4f.hpp>
 
 namespace jau::math::geom {
 
@@ -30,8 +31,12 @@ namespace jau::math::geom {
      * right corner of the box.
      *
      * A few references for collision detection, intersections:
+     * - Brian Smits: [Efficiency Issues for Ray Tracing.](http://www.cs.utah.edu/~bes/papers/fastRT/) Journal of Graphics Tools (1998).
+     * - Amy Williams. et al.: [An Efficient and Robust Ray-Box Intersection Algorithm.](http://www.cs.utah.edu/~awilliam/box/) Journal of Graphics Tools (2005).
+     * - Tavian Barnes: [Fast, Branchless Ray/Bounding Box Intersections](https://tavianator.com/2015/ray_box_nan.html)
+     * - http://www.codercorner.com/RayAABB.cpp (Updated October 2001)
      * - http://www.realtimerendering.com/intersections.html
-     * - http://www.codercorner.com/RayAABB.cpp
+     * - http://tog.acm.org/resources/GraphicsGems/gems/RayBox.c
      * - http://www.siggraph.org/education/materials/HyperGraph/raytrace/rtinter0.htm
      * - http://realtimecollisiondetection.net/files/levine_swept_sat.txt
      */
@@ -431,52 +436,119 @@ namespace jau::math::geom {
 
             /**
              * Check if {@link Ray} intersects this bounding box.
-             * <p>
-             * Versions uses the SAT[1], testing 6 axes.
+             *
+             * Versions uses the SAT[1], testing 6 axes with branching.
+             *
              * Original code for OBBs from MAGIC.
              * Rewritten for AABBs and reorganized for early exits[2].
-             * </p>
-             * <pre>
-             * [1] SAT = Separating Axis Theorem
-             * [2] http://www.codercorner.com/RayAABB.cpp
-             * </pre>
+             *
+             * - [1] SAT = Separating Axis Theorem
+             * - [2] http://www.codercorner.com/RayAABB.cpp
+             *
              * @param ray
-             * @return
+             * @return true if ray intersects with this box, otherwise false
              */
-            bool intersectsRay(const Ray3f ray) const noexcept {
+            bool intersectsRay0(const Ray3f ray) const noexcept {
                 // diff[XYZ] -> ray.orig - center
                 //  ext[XYZ] -> extend high - center
 
-                const float dirX  = ray.dir.x;
-                const float diffX = ray.orig.x - m_center.x;
-                const float extX  = m_hi.x - m_center.x;
-                if( std::abs(diffX) > extX && diffX*dirX >= 0.0f ) return false;
+                const Vec3f diff = ray.orig - m_center;
+                const Vec3f ext = m_hi - m_center;
+                if( std::abs(diff.x) > ext.x && diff.x * ray.dir.x >= 0.0f ) return false;
+                if( std::abs(diff.y) > ext.y && diff.y * ray.dir.y >= 0.0f ) return false;
+                if( std::abs(diff.z) > ext.z && diff.z * ray.dir.z >= 0.0f ) return false;
 
-                const float dirY  = ray.dir.y;
-                const float diffY = ray.orig.y - m_center.y;
-                const float extY  = m_hi.y - m_center.y;
-                if( std::abs(diffY) > extY && diffY*dirY >= 0.0f ) return false;
+                const Vec3f absDir = jau::math::abs(ray.dir);
+                float f = ray.dir.y * diff.z - ray.dir.z * diff.y;
+                if( std::abs(f) > ext.y * absDir.z + ext.z * absDir.y ) return false;
 
-                const float dirZ  = ray.dir.z;
-                const float diffZ = ray.orig.z - m_center.z;
-                const float extZ  = m_hi.z - m_center.z;
-                if( std::abs(diffZ) > extZ && diffZ*dirZ >= 0.0f ) return false;
+                f = ray.dir.z * diff.x - ray.dir.x * diff.z;
+                if( std::abs(f) > ext.x * absDir.z + ext.z * absDir.x ) return false;
 
-                const float absDirY = std::abs(dirY);
-                const float absDirZ = std::abs(dirZ);
-
-                float f = dirY * diffZ - dirZ * diffY;
-                if( std::abs(f) > extY*absDirZ + extZ*absDirY ) return false;
-
-                const float absDirX = std::abs(dirX);
-
-                f = dirZ * diffX - dirX * diffZ;
-                if( std::abs(f) > extX*absDirZ + extZ*absDirX ) return false;
-
-                f = dirX * diffY - dirY * diffX;
-                if( std::abs(f) > extX*absDirY + extY*absDirX ) return false;
-
+                f = ray.dir.x * diff.y - ray.dir.y * diff.x;
+                if( std::abs(f) > ext.x * absDir.y + ext.y * absDir.x ) return false;
                 return true;
+            }
+
+            /**
+             * Check if {@link Ray} intersects this bounding box.
+             *
+             * Fast, Branchless Ray/Bounding Box Intersections[3]
+             *
+             * This variant of intersectsRay() is a bit slower but handles NaNs more consistently.
+             *
+             * The idea to eliminate branches by relying on IEEE 754 floating point properties
+             * goes back to Brian Smits[1], and the implementation was fleshed out by Amy Williams. et al.[2].
+             *
+             * - [1] Brian Smits: [Efficiency Issues for Ray Tracing.](http://www.cs.utah.edu/~bes/papers/fastRT/) Journal of Graphics Tools (1998).
+             * - [2] Amy Williams. et al.: [An Efficient and Robust Ray-Box Intersection Algorithm.](http://www.cs.utah.edu/~awilliam/box/) Journal of Graphics Tools (2005).
+             * - [3] Tavian Barnes: [Fast, Branchless Ray/Bounding Box Intersections](https://tavianator.com/2015/ray_box_nan.html)
+             * - [4] SAT = Separating Axis Theorem
+             * - [5] http://www.codercorner.com/RayAABB.cpp
+             *
+             * @param ray
+             * @return true if ray intersects with this box, otherwise false
+             */
+            bool intersectsRay1(const Ray3f& r)  const noexcept {
+                const Vec3f dir_inv = 1.0f / r.dir;
+                float t1 = (m_lo.x - r.orig.x)*dir_inv.x;
+                float t2 = (m_hi.x - r.orig.x)*dir_inv.x;
+
+                float tmin = std::min(t1, t2);
+                float tmax = std::max(t1, t2);
+
+                t1 = (m_lo.y - r.orig.y)*dir_inv.y;
+                t2 = (m_hi.y - r.orig.y)*dir_inv.y;
+                tmin = std::max(tmin, std::min(std::min(t1, t2), tmax));
+                tmax = std::min(tmax, std::max(std::max(t1, t2), tmin));
+
+                t1 = (m_lo.z - r.orig.z)*dir_inv.z;
+                t2 = (m_hi.z - r.orig.z)*dir_inv.z;
+                tmin = std::max(tmin, std::min(std::min(t1, t2), tmax));
+                tmax = std::min(tmax, std::max(std::max(t1, t2), tmin));
+
+                return tmax > std::max(tmin, 0.0f);
+            }
+
+            /**
+             * Check if {@link Ray} intersects this bounding box.
+             *
+             * Fast, Branchless Ray/Bounding Box Intersections[3]
+             *
+             * This variant of intersectsRay0() is a faster and doesn't handles NaNs perfectly.
+             * However, it may only cause false positives, which will be checked later.
+             *
+             * The idea to eliminate branches by relying on IEEE 754 floating point properties
+             * goes back to Brian Smits[1], and the implementation was fleshed out by Amy Williams. et al.[2].
+             *
+             * - [1] Brian Smits: [Efficiency Issues for Ray Tracing.](http://www.cs.utah.edu/~bes/papers/fastRT/) Journal of Graphics Tools (1998).
+             * - [2] Amy Williams. et al.: [An Efficient and Robust Ray-Box Intersection Algorithm.](http://www.cs.utah.edu/~awilliam/box/) Journal of Graphics Tools (2005).
+             * - [3] Tavian Barnes: [Fast, Branchless Ray/Bounding Box Intersections](https://tavianator.com/2015/ray_box_nan.html)
+             * - [4] SAT = Separating Axis Theorem
+             * - [5] http://www.codercorner.com/RayAABB.cpp
+             *
+             * @param ray
+             * @return true if ray intersects with this box, otherwise false
+             */
+            bool intersectsRay(const Ray3f& r)  const noexcept {
+                const Vec3f dir_inv = 1.0f / r.dir;
+                float t1 = (m_lo.x - r.orig.x)*dir_inv.x;
+                float t2 = (m_hi.x - r.orig.x)*dir_inv.x;
+
+                float tmin = std::min(t1, t2);
+                float tmax = std::max(t1, t2);
+
+                t1 = (m_lo.y - r.orig.y)*dir_inv.y;
+                t2 = (m_hi.y - r.orig.y)*dir_inv.y;
+                tmin = std::max(tmin, std::min(t1, t2));
+                tmax = std::min(tmax, std::max(t1, t2));
+
+                t1 = (m_lo.z - r.orig.z)*dir_inv.z;
+                t2 = (m_hi.z - r.orig.z)*dir_inv.z;
+                tmin = std::max(tmin, std::min(t1, t2));
+                tmax = std::min(tmax, std::max(t1, t2));
+
+                return tmax > std::max(tmin, 0.0f);
             }
 
             /**
