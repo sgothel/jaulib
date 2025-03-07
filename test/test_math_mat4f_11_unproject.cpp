@@ -21,9 +21,7 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include <thread>
 #include <cassert>
-#include <cinttypes>
 #include <cstring>
 
 #include <jau/test/catch2_ext.hpp>
@@ -43,12 +41,11 @@ TEST_CASE( "Test 01 Unproject NaN", "[unproject][mat4f][linear_algebra][math]" )
     const float pick[] = { 400, 300, 0 };
 
     Vec3f objPos(NaN, NaN, NaN);
-    Mat4f tmp;
 
     // gluUnProject
     bool res = Mat4f::mapWinToObj(pick[0], pick[1], pick[2],
                                   mMv, mP, viewport,
-                                  objPos, tmp);
+                                  objPos);
 
     REQUIRE( false == std::isnan(objPos.x) );
     REQUIRE( false == std::isnan(objPos.y) );
@@ -69,17 +66,23 @@ TEST_CASE( "Test 10 Unproject Pick 1", "[unproject][mat4f][linear_algebra][math]
     const Recti viewport(0, 0, 1000, 1000);
     const float pick[] = { 250, 250, 0.5f };
 
-    const Vec3f expected(-4.2612f, -4.1417f, -19.9980f );
+    const Vec3f expObj(-4.2612f, -4.1417f, -19.9980f );
     Vec3f result;
-    Mat4f tmp;
 
     // gluUnProject
     bool res = Mat4f::mapWinToObj(pick[0], pick[1], pick[2],
                                   mMv, mP, viewport,
-                                  result, tmp);
+                                  result);
 
     REQUIRE( true == res );
-    COMPARE_NARRAYS_EPS(expected.cbegin(), result.cbegin(), 3, 0.0001f);
+    COMPARE_NARRAYS_EPS(expObj.cbegin(), result.cbegin(), 3, 0.0001f);
+
+    const Vec3f expView = mMv * expObj;
+    res = Mat4f::mapWinToView(pick[0], pick[1], pick[2],
+                              mP, viewport,
+                              result);
+    REQUIRE( true == res );
+    COMPARE_NARRAYS_EPS(expView.cbegin(), result.cbegin(), 3, 0.0001f);
 }
 
 TEST_CASE( "Test 11 Unproject Pick 2", "[unproject][mat4f][linear_algebra][math]" ) {
@@ -94,16 +97,22 @@ TEST_CASE( "Test 11 Unproject Pick 2", "[unproject][mat4f][linear_algebra][math]
     const Recti viewport(0, 0, 1000, 1000);
     const float pick[] = { 250, 250, 0.5f };
 
-    const Vec3f expected(-4.2612f, -4.1417f, 180.002f );
+    const Vec3f expObj(-4.2612f, -4.1417f, 180.002f );
     Vec3f result;
-    Mat4f tmp;
 
     // gluUnProject
     bool res = Mat4f::mapWinToObj(pick[0], pick[1], pick[2],
                                   mMv, mP, viewport,
-                                  result, tmp);
+                                  result);
 
     REQUIRE( true == res );
-    COMPARE_NARRAYS_EPS(expected.cbegin(), result.cbegin(), 3, 0.0001f);
+    COMPARE_NARRAYS_EPS(expObj.cbegin(), result.cbegin(), 3, 0.0001f);
+
+    const Vec3f expView = mMv * expObj;
+    res = Mat4f::mapWinToView(pick[0], pick[1], pick[2],
+                              mP, viewport,
+                              result);
+    REQUIRE( true == res );
+    COMPARE_NARRAYS_EPS(expView.cbegin(), result.cbegin(), 3, 0.0001f);
 }
 

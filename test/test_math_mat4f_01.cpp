@@ -105,14 +105,12 @@ TEST_CASE( "Test 02 Transpose", "[mat4f][linear_algebra][math]" ) {
 }
 
 TEST_CASE( "Test 10 LookAtNegZ", "[mat4f][linear_algebra][math]" ) {
-    Mat4f tmp;
     Mat4f m;
     // Look towards -z
     m.setToLookAt(
             Vec3f(0, 0,  0),  // eye
             Vec3f(0, 0, -1),  // center
-            Vec3f(0, 1,  0),  // up
-            tmp);
+            Vec3f(0, 1,  0)); // up
 
     /**
      * The 3 rows of the matrix (= the 3 columns of the array/buffer) should be: side, up, -forward.
@@ -126,14 +124,12 @@ TEST_CASE( "Test 10 LookAtNegZ", "[mat4f][linear_algebra][math]" ) {
 }
 
 TEST_CASE( "Test 11 LookAtPosY", "[mat4f][linear_algebra][math]" ) {
-    Mat4f tmp;
     Mat4f m;
     // Look towards -z
     m.setToLookAt(
             Vec3f(0, 0, 0),  // eye
             Vec3f(0, 1, 0),  // center
-            Vec3f(0, 0, 1),  // up
-            tmp);
+            Vec3f(0, 0, 1)); // up
 
     /**
      * The 3 rows of the matrix (= the 3 columns of the array/buffer) should be: side, up, -forward.

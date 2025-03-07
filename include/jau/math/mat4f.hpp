@@ -796,7 +796,7 @@ class alignas(Value_type) Matrix4 {
 
     /**
      * @param v_in 4-component column-vector, can be v_out for in-place transformation
-     * @param v_out this * v_in
+     * @param v_out this x v_in
      * @returns v_out for chaining
      */
     constexpr Vec4& mulVec4(const Vec4& v_in, Vec4& v_out) const noexcept {
@@ -810,7 +810,7 @@ class alignas(Value_type) Matrix4 {
     }
 
     /**
-     * Returns new Vec4, with this * v_in
+     * Returns new Vec4, with this x v_in
      * @param v_in 4-component column-vector
      */
     constexpr Vec4 operator*(const Vec4& rhs) const noexcept {
@@ -844,7 +844,7 @@ class alignas(Value_type) Matrix4 {
      * which shall be {@code 1}.
      *
      * @param v_in 3-component column-vector {@link vec3f}, can be v_out for in-place transformation
-     * @param v_out m_in * v_in, 3-component column-vector {@link vec3f}
+     * @param v_out m_in x v_in, 3-component column-vector {@link vec3f}
      * @returns v_out for chaining
      */
     constexpr Vec3& mulVec3(const Vec3& v_in, Vec3& v_out) const noexcept {
@@ -856,7 +856,7 @@ class alignas(Value_type) Matrix4 {
         return v_out;
     }
     /**
-     * Returns new Vec3, with affine 3f-vector transformation by this 4x4 matrix: this * v_in
+     * Returns new Vec3, with affine 3f-vector transformation by this 4x4 matrix: this x v_in
      *
      * 4x4 matrix multiplication with 3-component vector,
      * using {@code 1} for for {@code v_in.w} and dropping {@code v_out.w},
@@ -873,7 +873,7 @@ class alignas(Value_type) Matrix4 {
     }
 
     /**
-     * Affine 3f-vector transformation by 4x4 matrix
+     * Affine 3f-vector transformation by 4x4 matrix: v_inout = this x v_inout
      *
      * 4x4 matrix multiplication with 3-component vector,
      * using {@code 1} for for {@code v_inout.w} and dropping {@code v_inout.w},
@@ -1289,10 +1289,9 @@ class alignas(Value_type) Matrix4 {
      * @param eye 3 component eye vector
      * @param center 3 component center vector
      * @param up 3 component up vector
-     * @param tmp temporary mat4f used for multiplication
      * @return this matrix for chaining
      */
-    constexpr Matrix4& setToLookAt(const Vec3& eye, const Vec3& center, const Vec3& up, Matrix4& tmp) noexcept {
+    constexpr Matrix4& setToLookAt(const Vec3& eye, const Vec3& center, const Vec3& up) noexcept {
         // normalized forward!
         const Vec3 fwd = ( center - eye ).normalize();
 
@@ -1322,6 +1321,7 @@ class alignas(Value_type) Matrix4 {
         m23 = 0;
         m33 = 1;
 
+        Matrix4 tmp;
         return mul( tmp.setToTranslation( -eye.x, -eye.y, -eye.z ) );
     }
 
@@ -1353,11 +1353,10 @@ class alignas(Value_type) Matrix4 {
      * @param deltaX the width of the picking region in window coordinates.
      * @param deltaY the height of the picking region in window coordinates.
      * @param viewport Rect4i viewport
-     * @param mat4Tmp temp storage
      * @return true if successful or false if either delta value is <= zero.
      */
     constexpr bool setToPick(const value_type x, const value_type y, const value_type deltaX, const value_type deltaY,
-                             const Recti& viewport, Matrix4& mat4Tmp) noexcept {
+                             const Recti& viewport) noexcept {
         if (deltaX <= 0 || deltaY <= 0) {
             return false;
         }
@@ -1365,6 +1364,7 @@ class alignas(Value_type) Matrix4 {
         setToTranslation( ( viewport.width()  - two * ( x - viewport.x() ) ) / deltaX,
                           ( viewport.height() - two * ( y - viewport.y() ) ) / deltaY,
                           0);
+        Matrix4 mat4Tmp;
         mat4Tmp.setToScale( viewport.width() / deltaX, viewport.height() / deltaY, one );
         mul(mat4Tmp);
         return true;
@@ -1381,10 +1381,10 @@ class alignas(Value_type) Matrix4 {
      * @param x x of rotation axis
      * @param y y of rotation axis
      * @param z z of rotation axis
-     * @param tmp temporary mat4f used for multiplication
      * @return this matrix for chaining
      */
-    constexpr_cxx26 Matrix4& rotate(const value_type ang_rad, const value_type x, const value_type y, const value_type z, Matrix4& tmp) noexcept {
+    constexpr_cxx26 Matrix4& rotate(const value_type ang_rad, const value_type x, const value_type y, const value_type z) noexcept {
+        Matrix4 tmp;
         return mul( tmp.setToRotationAxis(ang_rad, x, y, z) );
     }
 
@@ -1393,10 +1393,10 @@ class alignas(Value_type) Matrix4 {
      * @see <a href="http://web.archive.org/web/20041029003853/http://www.j3d.org/matrix_faq/matrfaq_latest.html#Q38">Matrix-FAQ Q38</a>
      * @param angrad angle in radians
      * @param axis rotation axis
-     * @param tmp temporary mat4f used for multiplication
      * @return this matrix for chaining
      */
-    constexpr_cxx26 Matrix4& rotate(const value_type ang_rad, const Vec3& axis, Matrix4& tmp) noexcept {
+    constexpr_cxx26 Matrix4& rotate(const value_type ang_rad, const Vec3& axis) noexcept {
+        Matrix4 tmp;
         return mul( tmp.setToRotationAxis(ang_rad, axis) );
     }
 
@@ -1405,20 +1405,20 @@ class alignas(Value_type) Matrix4 {
      * @param x x translation
      * @param y y translation
      * @param z z translation
-     * @param tmp temporary mat4f used for multiplication
      * @return this matrix for chaining
      */
-    constexpr Matrix4& translate(const value_type x, const value_type y, const value_type z, Matrix4& tmp) noexcept {
+    constexpr Matrix4& translate(const value_type x, const value_type y, const value_type z) noexcept {
+        Matrix4 tmp;
         return mul( tmp.setToTranslation(x, y, z) );
     }
 
     /**
      * Translate this matrix, i.e. multiply by {@link #setToTranslation(vec3f) translation matrix}.
      * @param t translation vec3f
-     * @param tmp temporary mat4f used for multiplication
      * @return this matrix for chaining
      */
-    constexpr Matrix4& translate(const Vec3& t, Matrix4& tmp) noexcept {
+    constexpr Matrix4& translate(const Vec3& t) noexcept {
+        Matrix4 tmp;
         return mul( tmp.setToTranslation(t) );
     }
 
@@ -1427,20 +1427,20 @@ class alignas(Value_type) Matrix4 {
      * @param x x scale
      * @param y y scale
      * @param z z scale
-     * @param tmp temporary mat4f used for multiplication
      * @return this matrix for chaining
      */
-    constexpr Matrix4& scale(const value_type x, const value_type y, const value_type z, Matrix4& tmp) noexcept {
+    constexpr Matrix4& scale(const value_type x, const value_type y, const value_type z) noexcept {
+        Matrix4 tmp;
         return mul( tmp.setToScale(x, y, z) );
     }
 
     /**
      * Scale this matrix, i.e. multiply by {@link #setToScale(value_type, value_type, value_type) scale matrix}.
      * @param s scale for x-, y- and z-axis
-     * @param tmp temporary mat4f used for multiplication
      * @return this matrix for chaining
      */
-    constexpr Matrix4& scale(const value_type s, Matrix4& tmp) noexcept {
+    constexpr Matrix4& scale(const value_type s) noexcept {
+        Matrix4 tmp;
         return mul( tmp.setToScale(s, s, s) );
     }
 
@@ -1450,9 +1450,27 @@ class alignas(Value_type) Matrix4 {
 
     /**
      * Map object coordinates to window coordinates.
-     * <p>
+     *
      * Traditional <code>gluProject</code> implementation.
-     * </p>
+     *
+     * @param obj object position, 3 component vector
+     * @param mPMv [projection] x [modelview] matrix, i.e. P x Mv
+     * @param viewport Rect4i viewport
+     * @param winPos 3 component window coordinate, the result
+     * @return true if successful, otherwise false (z is 1)
+     */
+    static bool mapObjToWin(const Vec3& obj, const Matrix4& mPMv,
+                            const Recti& viewport, Vec3& winPos) noexcept
+    {
+        // rawWin = P * Mv * o = PMv * o
+        Vec4 rawWin = mPMv * Vec4(obj, one);
+        return mapToWinImpl(rawWin, viewport, winPos);
+    }
+
+    /**
+     * Map object coordinates to window coordinates.
+     *
+     * Traditional <code>gluProject</code> implementation.
      *
      * @param obj object position, 3 component vector
      * @param mMv modelview matrix
@@ -1464,71 +1482,69 @@ class alignas(Value_type) Matrix4 {
     static bool mapObjToWin(const Vec3& obj, const Matrix4& mMv, const Matrix4& mP,
                             const Recti& viewport, Vec3& winPos) noexcept
     {
-        // vec4Tmp2 = Mv * o
-        // rawWinPos = P  * vec4Tmp2
-        // rawWinPos = P * ( Mv * o )
-        // rawWinPos = P * Mv * o
-        Vec4 vec4Tmp2 = mMv * Vec4(obj, one);
-
-        Vec4 rawWinPos = mP * vec4Tmp2;
-
-        if ( zero == rawWinPos.w ) {
-            return false;
-        }
-
-        const value_type s = ( one / rawWinPos.w ) * half;
-
-        // Map x, y and z to range 0-1 (w is ignored)
-        rawWinPos.scale(s).add(half, half, half, zero);
-
-        // Map x,y to viewport
-        winPos.set( rawWinPos.x * viewport.width() +  viewport.x(),
-                    rawWinPos.y * viewport.height() + viewport.y(),
-                    rawWinPos.z );
-
-        return true;
+        Vec4 rawWin = mP * mMv * Vec4(obj, one);
+        return mapToWinImpl(rawWin, viewport, winPos);
     }
 
     /**
-     * Map object coordinates to window coordinates.
-     * <p>
-     * Traditional <code>gluProject</code> implementation.
-     * </p>
+     * Map world coordinates ( M x object ) to window coordinates.
      *
-     * @param obj object position, 3 component vector
-     * @param mPMv [projection] x [modelview] matrix, i.e. P x Mv
+     * @param world world position, 3 component vector
+     * @param mV view matrix
+     * @param mP projection matrix
      * @param viewport Rect4i viewport
      * @param winPos 3 component window coordinate, the result
      * @return true if successful, otherwise false (z is 1)
      */
-    static bool mapObjToWin(const Vec3& obj, const Matrix4& mPMv,
-                            const Recti& viewport, Vec3& winPos) noexcept
+    static bool mapWorldToWin(const Vec3& world, const Matrix4& mV, const Matrix4& mP,
+                              const Recti& viewport, Vec3& winPos) noexcept
     {
-        // rawWinPos = P * Mv * o
-        Vec4 rawWinPos = mPMv * Vec4(obj, 1);
+        Vec4 rawWin = mP * mV * Vec4(world, one);
+        return mapToWinImpl(rawWin, viewport, winPos);
+    }
 
-        if ( zero == rawWinPos.w ) {
+    /**
+     * Map view coordinates ( Mv x object ) to window coordinates.
+     *
+     * @param view view position, 3 component vector
+     * @param mP projection matrix
+     * @param viewport Rect4i viewport
+     * @param winPos 3 component window coordinate, the result
+     * @return true if successful, otherwise false (z is 1)
+     */
+    static bool mapViewToWin(const Vec3& view, const Matrix4& mP,
+                              const Recti& viewport, Vec3& winPos) noexcept
+    {
+        Vec4 rawWin = mP * Vec4(view, one);
+        return mapToWinImpl(rawWin, viewport, winPos);
+    }
+
+  private:
+    static bool mapToWinImpl(Vec4& rawWin,
+                             const Recti& viewport, Vec3& winPos) noexcept
+    {
+        if ( zero == rawWin.w ) {
             return false;
         }
 
-        const value_type s = ( one / rawWinPos.w ) * half;
+        const value_type s = ( one / rawWin.w ) * half;
 
         // Map x, y and z to range 0-1 (w is ignored)
-        rawWinPos.scale(s).add(half, half, half, zero);
+        rawWin.scale(s).add(half, half, half, zero);
 
         // Map x,y to viewport
-        winPos.set( rawWinPos.x * viewport.width() +  viewport.x(),
-                    rawWinPos.y * viewport.height() + viewport.y(),
-                    rawWinPos.z );
+        winPos.set( rawWin.x * viewport.width() +  viewport.x(),
+                    rawWin.y * viewport.height() + viewport.y(),
+                    rawWin.z );
 
         return true;
     }
 
+  public:
     /**
      * Map window coordinates to object coordinates.
-     * <p>
+     *
      * Traditional <code>gluUnProject</code> implementation.
-     * </p>
      *
      * @param winx
      * @param winy
@@ -1537,56 +1553,67 @@ class alignas(Value_type) Matrix4 {
      * @param mP 4x4 projection matrix
      * @param viewport Rect4i viewport
      * @param objPos 3 component object coordinate, the result
-     * @param mat4Tmp 16 component matrix for temp storage
      * @return true if successful, otherwise false (failed to invert matrix, or becomes infinity due to zero z)
      */
     static bool mapWinToObj(const value_type winx, const value_type winy, const value_type winz,
                             const Matrix4& mMv, const Matrix4& mP,
                             const Recti& viewport,
-                            Vec3& objPos,
-                            Matrix4& mat4Tmp) noexcept
+                            Vec3& objPos) noexcept
     {
         // invPMv = Inv(P x Mv)
-        Matrix4& invPMv = mat4Tmp.mul(mP, mMv);
+        Matrix4 invPMv;
+        invPMv.mul(mP, mMv);
         if( !invPMv.invert() ) {
             return false;
         }
-
-        Vec4 winPos(winx, winy, winz, one);
-
-        // Map x and y from window coordinates
-        winPos.add(-viewport.x(), -viewport.y(), zero, zero).mul(one/viewport.width(), one/viewport.height(), one, one);
-
-        // Map to range -1 to 1
-        winPos.mul(two, two, two, one).add(-one, -one, -one, zero);
-
-        // rawObjPos = Inv(P x Mv) *  winPos
-        Vec4 rawObjPos = invPMv * winPos;
-
-        if ( zero == rawObjPos.w ) {
-            return false;
-        }
-
-        rawObjPos.scale(one / rawObjPos.w).getVec3(objPos);
-        return true;
+        return mapWinToAny(winx, winy, winz, invPMv, viewport, objPos);
     }
 
     /**
-     * Map window coordinates to object coordinates.
-     * <p>
-     * Traditional <code>gluUnProject</code> implementation.
-     * </p>
+     * Map window coordinates to view coordinates.
      *
      * @param winx
      * @param winy
      * @param winz
-     * @param invPMv inverse [projection] x [modelview] matrix, i.e. Inv(P x Mv), if null method returns false
+     * @param mP 4x4 projection matrix
+     * @param viewport Rect4i viewport
+     * @param viewPos 3 component view coordinate, the result
+     * @return true if successful, otherwise false (failed to invert matrix, or becomes infinity due to zero z)
+     */
+    static bool mapWinToView(const value_type winx, const value_type winy, const value_type winz,
+                              const Matrix4& mP,
+                              const Recti& viewport,
+                              Vec3& viewPos) noexcept
+    {
+        // invP = Inv(P)
+        Matrix4 invP;
+        if( !invP.invert(mP) ) {
+            return false;
+        }
+        return mapWinToAny(winx, winy, winz, invP, viewport, viewPos);
+    }
+
+    /**
+     * Map window coordinates to object, world or view coordinates, depending on `invAny` argument.
+     *
+     * Traditional <code>gluUnProject</code> implementation.
+     *
+     * `invAny` maybe set as follows for
+     * - to object: inverse(P x Mv) = `([projection] x [modelview])'`
+     * - to  world: inverse(P x V)  = `([projection] x [view])'`
+     * - to   view: inverse(P)      = `[projection]'`
+     *
+     * @param winx
+     * @param winy
+     * @param winz
+     * @param invAny inverse matrix, either Inv(P x Mv) to object, Inv(P x V) to world or
+                     Inv(P) `[projection]'` to view
      * @param viewport Rect4i viewport
      * @param objPos 3 component object coordinate, the result
-     * @return true if successful, otherwise false (null invert matrix, or becomes infinity due to zero z)
+     * @return true if successful, otherwise false (can't invert matrix, or becomes infinity due to zero z)
      */
-    static bool mapWinToObj(const value_type winx, const value_type winy, const value_type winz,
-                            const Matrix4& invPMv,
+    static bool mapWinToAny(const value_type winx, const value_type winy, const value_type winz,
+                            const Matrix4& invAny,
                             const Recti& viewport,
                             Vec3& objPos) noexcept
     {
@@ -1599,7 +1626,7 @@ class alignas(Value_type) Matrix4 {
         winPos.mul(two, two, two, one).add(-one, -one, -one, zero);
 
         // rawObjPos = Inv(P x Mv) *  winPos
-        Vec4 rawObjPos = invPMv * winPos;
+        Vec4 rawObjPos = invAny * winPos;
 
         if ( zero == rawObjPos.w ) {
             return false;
@@ -1610,23 +1637,29 @@ class alignas(Value_type) Matrix4 {
     }
 
     /**
-     * Map two window coordinates to two object coordinates,
-     * distinguished by their z component.
-     * <p>
+     * Map two window coordinates to two to object, world or view coordinates, depending on `invAny` argument.
+     *
+     * Both coordinates are distinguished by their z component.
+     *
      * Traditional <code>gluUnProject</code> implementation.
-     * </p>
+     *
+     * `invAny` maybe set as follows for
+     * - to object: inverse(P x Mv) = `([projection] x [modelview])'`
+     * - to  world: inverse(P x V)  = `([projection] x [view])'`
+     * - to   view: inverse(P)      = `[projection]'`
      *
      * @param winx
      * @param winy
      * @param winz1
      * @param winz2
-     * @param invPMv inverse [projection] x [modelview] matrix, i.e. Inv(P x Mv), if null method returns false
+     * @param invAny inverse matrix, either Inv(P x Mv) to object, Inv(P x V) to world or
+                     Inv(P) `[projection]'` to view
      * @param viewport Rect4i viewport vector
      * @param objPos1 3 component object coordinate, the result
-     * @return true if successful, otherwise false (null invert matrix, or becomes infinity due to zero z)
+     * @return true if successful, otherwise false (can't invert matrix, or becomes infinity due to zero z)
      */
-    static bool mapWinToObj(const value_type winx, const value_type winy, const value_type winz1, const value_type winz2,
-                            const Matrix4& invPMv,
+    static bool mapWinToAny(const value_type winx, const value_type winy, const value_type winz1, const value_type winz2,
+                            const Matrix4& invAny,
                             const Recti& viewport,
                             Vec3& objPos1, Vec3& objPos2) noexcept
     {
@@ -1638,8 +1671,8 @@ class alignas(Value_type) Matrix4 {
         // Map to range -1 to 1
         winPos.mul(two, two, two, one).add(-one, -one, -one, zero);
 
-        // rawObjPos = Inv(P x Mv) *  winPos1
-        Vec4 rawObjPos = invPMv * winPos;
+        // rawObjPos = Inv(P x Mv) x  winPos1
+        Vec4 rawObjPos = invAny * winPos;
 
         if ( zero == rawObjPos.w ) {
             return false;
@@ -1652,8 +1685,8 @@ class alignas(Value_type) Matrix4 {
         // Map Z to range -1 to 1
         winPos.z = winz2 * two - one;
 
-        // rawObjPos = Inv(P x Mv) *  winPos2
-        invPMv.mulVec4(winPos, rawObjPos);
+        // rawObjPos = Inv(P x Mv) x  winPos2
+        invAny.mulVec4(winPos, rawObjPos);
 
         if ( zero == rawObjPos.w ) {
             return false;
@@ -1665,9 +1698,8 @@ class alignas(Value_type) Matrix4 {
 
     /**
      * Map window coordinates to object coordinates.
-     * <p>
+     *
      * Traditional <code>gluUnProject4</code> implementation.
-     * </p>
      *
      * @param winx
      * @param winy
@@ -1679,36 +1711,22 @@ class alignas(Value_type) Matrix4 {
      * @param near
      * @param far
      * @param obj_pos 4 component object coordinate, the result
-     * @param mat4Tmp 16 component matrix for temp storage
      * @return true if successful, otherwise false (failed to invert matrix, or becomes infinity due to zero z)
      */
     static bool mapWinToObj4(const value_type winx, const value_type winy, const value_type winz, const value_type clipw,
                              const Matrix4& mMv, const Matrix4& mP,
                              const Recti& viewport,
                              const value_type near, const value_type far,
-                             Vec4& objPos,
-                             Matrix4& mat4Tmp) noexcept
+                             Vec4& objPos) noexcept
     {
         // invPMv = Inv(P x Mv)
-        Matrix4& invPMv = mat4Tmp.mul(mP, mMv);
+        Matrix4 invPMv;
+        invPMv.mul(mP, mMv);
         if( !invPMv.invert() ) {
             return false;
         }
-        Vec4 winPos(winx, winy, winz, clipw);
-
-        // Map x and y from window coordinates
-        winPos.add(-viewport.x(), -viewport.y(), -near, zero).mul(one/viewport.width(), one/viewport.height(), one/(far-near), one);
-
-        // Map to range -1 to 1
-        winPos.mul(two, two, two, one).add(-one, -one, -one, zero);
-
-        // objPos = Inv(P x Mv) *  winPos
-        invPMv.mulVec4(winPos, objPos);
-
-        if ( zero == objPos.w ) {
-            return false;
-        }
-        return true;
+        return mapWinToObj4(winx, winy, winz, clipw,
+                            invPMv, viewport, near, far, objPos);
     }
 
     /**
@@ -1742,7 +1760,7 @@ class alignas(Value_type) Matrix4 {
         // Map to range -1 to 1
         winPos.mul(two, two, two, one).add(-one, -one, -one, zero);
 
-        // objPos = Inv(P x Mv) *  winPos
+        // objPos = Inv(P x Mv) x  winPos
         invPMv.mulVec4(winPos, objPos);
 
         if ( zero == objPos.w ) {
@@ -1753,8 +1771,11 @@ class alignas(Value_type) Matrix4 {
 
     /**
      * Map two window coordinates w/ shared X/Y and distinctive Z
-     * to a {@link Ray}. The resulting {@link Ray} maybe used for <i>picking</i>
-     * using a {@link AABBox#getRayIntersection(vec3f, Ray, value_type, boolean)}.
+     * to a {@link Ray} in object space.
+     *
+     * The resulting {@link Ray} maybe used for <i>picking</i>
+     * using a {@link AABBox#getRayIntersection(vec3f, Ray, value_type, boolean)}
+     * of a shape also in object space.
      *
      * Notes for picking <i>winz0</i> and <i>winz1</i>:
      * - see jau::math::util::getZBufferEpsilon()
@@ -1767,35 +1788,30 @@ class alignas(Value_type) Matrix4 {
      * @param mMv 4x4 modelview matrix
      * @param mP 4x4 projection matrix
      * @param viewport Rect4i viewport
-     * @param ray storage for the resulting {@link Ray}
-     * @param mat4Tmp1 16 component matrix for temp storage
-     * @param mat4Tmp2 16 component matrix for temp storage
+     * @param ray storage for the resulting {@link Ray} in object space
      * @return true if successful, otherwise false (failed to invert matrix, or becomes z is infinity)
      */
-    static bool mapWinToRay(const value_type winx, const value_type winy, const value_type winz0, const value_type winz1,
-                            const Matrix4& mMv, const Matrix4& mP,
-                            const Recti& viewport,
-                            Ray3& ray,
-                            Matrix4& mat4Tmp1) noexcept
+    static bool mapWinToObjRay(const value_type winx, const value_type winy, const value_type winz0, const value_type winz1,
+                               const Matrix4& mMv, const Matrix4& mP,
+                               const Recti& viewport,
+                               Ray3& ray) noexcept
     {
         // invPMv = Inv(P x Mv)
-        const Matrix4 invPMv = mat4Tmp1.mul(mP, mMv);
+        Matrix4 invPMv;
+        invPMv.mul(mP, mMv);
         if( !invPMv.invert() ) {
             return false;
         }
-
-        if( mapWinToObj(winx, winy, winz0, winz1, invPMv, viewport, ray.orig, ray.dir) ) {
-            ray.dir.sub(ray.orig).normalize();
-            return true;
-        } else {
-            return false;
-        }
+        return mapWinToAnyRay(winx, winy, winz0, winz1, invPMv, viewport, ray);
     }
 
     /**
      * Map two window coordinates w/ shared X/Y and distinctive Z
-     * to a {@link Ray}. The resulting {@link Ray} maybe used for <i>picking</i>
-     * using a {@link AABBox#getRayIntersection(vec3f, Ray, value_type, boolean)}.
+     * to a {@link Ray} in view space.
+     *
+     * The resulting {@link Ray} maybe used for <i>picking</i>
+     * using a {@link AABBox#getRayIntersection(vec3f, Ray, value_type, boolean)}
+     * of a shape also in view space.
      *
      * Notes for picking <i>winz0</i> and <i>winz1</i>:
      * - see jau::math::util::getZBufferEpsilon()
@@ -1805,17 +1821,58 @@ class alignas(Value_type) Matrix4 {
      * @param winy
      * @param winz0
      * @param winz1
-     * @param invPMv inverse [projection] x [modelview] matrix, i.e. Inv(P x Mv), if null method returns false
+     * @param mMv 4x4 modelview matrix
+     * @param mP 4x4 projection matrix
      * @param viewport Rect4i viewport
-     * @param ray storage for the resulting {@link Ray}
-     * @return true if successful, otherwise false (null invert matrix, or becomes z is infinity)
+     * @param ray storage for the resulting {@link Ray} in view space
+     * @return true if successful, otherwise false (failed to invert matrix, or becomes z is infinity)
      */
-    static bool mapWinToRay(const value_type winx, const value_type winy, const value_type winz0, const value_type winz1,
-                            const Matrix4& invPMv,
-                            const Recti& viewport,
-                            Ray3& ray) noexcept
+    static bool mapWinToViewRay(const value_type winx, const value_type winy, const value_type winz0, const value_type winz1,
+                                 const Matrix4& mP,
+                                 const Recti& viewport,
+                                 Ray3& ray) noexcept
     {
-        if( mapWinToObj(winx, winy, winz0, winz1, invPMv, viewport, ray.orig, ray.dir) ) {
+        // invP = Inv(P)
+        Matrix4 invP;
+        if( !invP.invert(mP) ) {
+            return false;
+        }
+        return mapWinToAnyRay(winx, winy, winz0, winz1, invP, viewport, ray);
+    }
+
+    /**
+     * Map two window coordinates w/ shared X/Y and distinctive Z
+     * to a {@link Ray} in object, world or view coordinates, depending on `invAny` argument.
+     *
+     * The resulting {@link Ray} maybe used for <i>picking</i>
+     * using a {@link AABBox#getRayIntersection(vec3f, Ray, value_type, boolean)}
+     * of a shape also in object, world or view space, see `invAny`.
+     *
+     * `invAny` maybe set as follows for
+     * - to object: inverse(P x Mv) = `([projection] x [modelview])'`
+     * - to  world: inverse(P x V)  = `([projection] x [view])'`
+     * - to   view: inverse(P)      = `[projection]'`
+     *
+     * Notes for picking <i>winz0</i> and <i>winz1</i>:
+     * - see jau::math::util::getZBufferEpsilon()
+     * - see jau::math::util::getZBufferValue()
+     * - see jau::math::util::getOrthoWinZ()
+     * @param winx
+     * @param winy
+     * @param winz0
+     * @param winz1
+     * @param invAny inverse matrix, either Inv(P x Mv) to object, Inv(P x V) to world or
+                     Inv(P) `[projection]'` to view
+     * @param viewport Rect4i viewport
+     * @param ray storage for the resulting {@link Ray} in object space
+     * @return true if successful, otherwise false (failed invert matrix, or becomes z is infinity)
+     */
+    static bool mapWinToAnyRay(const value_type winx, const value_type winy, const value_type winz0, const value_type winz1,
+                               const Matrix4& invAny,
+                               const Recti& viewport,
+                               Ray3& ray) noexcept
+    {
+        if( mapWinToAny(winx, winy, winz0, winz1, invAny, viewport, ray.orig, ray.dir) ) {
             (ray.dir -= ray.orig).normalize();
             return true;
         } else {
