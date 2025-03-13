@@ -45,7 +45,7 @@ namespace jau::math {
  * </p>
  */
 template<typename Value_type,
-         std::enable_if_t<std::is_floating_point_v<Value_type>, bool> = true>
+         std::enable_if_t<std::is_floating_point_v<Value_type>, bool> = true >
 class alignas(Value_type) Quaternion {
   public:
     typedef Value_type               value_type;
@@ -56,7 +56,8 @@ class alignas(Value_type) Quaternion {
     typedef value_type*              iterator;
     typedef const value_type*        const_iterator;
 
-    typedef Vector3F<value_type, std::is_floating_point_v<Value_type>> Vec3;
+    typedef Vector3F<value_type> Vec3;
+    typedef Matrix4<value_type> Mat4;
 
     constexpr static const value_type zero = value_type(0);
     constexpr static const value_type one  = value_type(1);
@@ -985,7 +986,7 @@ class alignas(Value_type) Quaternion {
     }
 
     /**
-     * Compute the quaternion from a 3x3 column rotation matrix from mat4f instance
+     * Compute the quaternion from a 3x3 column rotation matrix from Mat4 instance
      * <p>
      * See <a href="ftp://ftp.cis.upenn.edu/pub/graphics/shoemake/quatut.ps.Z">Graphics Gems Code</a>,<br/>
      * <a href="http://mathworld.wolfram.com/MatrixTrace.html">MatrixTrace</a>.
@@ -998,7 +999,7 @@ class alignas(Value_type) Quaternion {
      * @see Matrix4f#getRotation(Quaternion)
      * @see #setFromMatrix(value_type, value_type, value_type, value_type, value_type, value_type, value_type, value_type, value_type)
      */
-    constexpr Quaternion& setFromMat(const Mat4f& m) noexcept {
+    constexpr Quaternion& setFromMat(const Mat4& m) noexcept {
         return setFromMat(m.m00, m.m01, m.m02, m.m10, m.m11, m.m12, m.m20, m.m21, m.m22);
     }
 
@@ -1021,30 +1022,34 @@ class alignas(Value_type) Quaternion {
 
     /**
      * Transform this quaternion to a normalized 4x4 column matrix representing the rotation.
-     * <p>
+     *
      * Implementation Details:
-     * <ul>
-     *   <li> makes identity matrix if {@link #magnitudeSquared()} is {@link jau::is_zero(value_type, value_type) is zero} using {@link FloatUtil#EPSILON epsilon}</li>
-     * </ul>
-     * </p>
+     * - makes identity matrix if {@link #magnitudeSquared()} is {@link jau::is_zero(value_type, value_type) is zero} using {@link FloatUtil#EPSILON epsilon}
+     * - Mat4 fields [m00 .. m22] define the rotation
      *
      * @return resulting normalized column matrix 4x4
-     * @see <a href="http://web.archive.org/web/20041029003853/http://www.j3d.org/matrix_faq/matrfaq_latest.html#Q54">Matrix-FAQ Q54</a>
+     * @see [Matrix-FAQ Q54](http://web.archive.org/web/20041029003853/http://www.j3d.org/matrix_faq/matrfaq_latest.html#Q54)
      * @see #setFromMatrix(value_type, value_type, value_type, value_type, value_type, value_type, value_type, value_type, value_type)
      * @see Matrix4f#setToRotation(Quaternion)
      */
-    constexpr Mat4f toMatrix() const noexcept {
-        Mat4f m; toMatrix(m); return m;
+    constexpr Mat4 toMatrix() const noexcept {
+        Mat4 m; toMatrix(m); return m;
     }
 
     /**
-     * Transform this quaternion to a normalized 4x4 column matrix representing the rotation,
-     * see toMatrix().
+     * Transform this quaternion to a normalized 4x4 column matrix representing the rotation.
+     *
+     * Implementation Details:
+     * - makes identity matrix if {@link #magnitudeSquared()} is {@link jau::is_zero(value_type, value_type) is zero} using {@link FloatUtil#EPSILON epsilon}
+     * - Mat4 fields [m00 .. m22] define the rotation
      *
      * @param out store for the resulting normalized column matrix 4x4
      * @return the given matrix store
+     * @see [Matrix-FAQ Q54](http://web.archive.org/web/20041029003853/http://www.j3d.org/matrix_faq/matrfaq_latest.html#Q54)
+     * @see #setFromMatrix(value_type, value_type, value_type, value_type, value_type, value_type, value_type, value_type, value_type)
+     * @see Matrix4f#setToRotation(Quaternion)
      */
-    constexpr Mat4f& toMatrix(Mat4f& m) const noexcept {
+    constexpr Mat4& toMatrix(Mat4& m) const noexcept {
         // pre-multiply scaled-reciprocal-magnitude to reduce multiplications
         const value_type norm = magnitudeSquared();
         if ( jau::is_zero(norm) ) {
@@ -1058,37 +1063,32 @@ class alignas(Value_type) Quaternion {
         } else {
             srecip = two / norm;
         }
-        const value_type x = m_x;
-        const value_type y = m_y;
-        const value_type z = m_z;
-        const value_type w = m_w;
+        const value_type xs = srecip * m_x;
+        const value_type ys = srecip * m_y;
+        const value_type zs = srecip * m_z;
 
-        const value_type xs = srecip * x;
-        const value_type ys = srecip * y;
-        const value_type zs = srecip * z;
-
-        const value_type xx = x  * xs;
-        const value_type xy = x  * ys;
-        const value_type xz = x  * zs;
-        const value_type xw = xs * w;
-        const value_type yy = y  * ys;
-        const value_type yz = y  * zs;
-        const value_type yw = ys * w;
-        const value_type zz = z  * zs;
-        const value_type zw = zs * w;
+        const value_type xx = m_x * xs;
+        const value_type xy = m_x * ys;
+        const value_type xz = m_x * zs;
+        const value_type xw = xs  * m_w;
+        const value_type yy = m_y * ys;
+        const value_type yz = m_y * zs;
+        const value_type yw = ys  * m_w;
+        const value_type zz = m_z * zs;
+        const value_type zw = zs  * m_w;
 
         m.m00 = one - ( yy + zz );
-        m.m01 =        ( xy - zw );
-        m.m02 =        ( xz + yw );
+        m.m01 =       ( xy - zw );
+        m.m02 =       ( xz + yw );
         m.m03 = zero;
 
-        m.m10 =        ( xy + zw );
+        m.m10 =       ( xy + zw );
         m.m11 = one - ( xx + zz );
-        m.m12 =        ( yz - xw );
+        m.m12 =       ( yz - xw );
         m.m13 = zero;
 
-        m.m20 =        ( xz - yw );
-        m.m21 =        ( yz + xw );
+        m.m20 =       ( xz - yw );
+        m.m21 =       ( yz + xw );
         m.m22 = one - ( xx + yy );
         m.m23 = zero;
 
@@ -1185,6 +1185,36 @@ std::ostream& operator<<(std::ostream& out, const Quaternion<T>& v) noexcept {
 
 typedef Quaternion<float> Quat4f;
 static_assert(alignof(float) == alignof(Quat4f));
+
+
+template<typename Value_type,
+    typename std::enable_if_t<std::is_floating_point_v<Value_type>, bool> sf_type>
+Matrix4<Value_type, sf_type>&
+Matrix4<Value_type, sf_type>::setToRotation(const Matrix4<Value_type, sf_type>::Quat& q) {
+    Matrix4<Value_type> m0;
+    Quaternion<Value_type> r;
+    m0.setToRotation(r);
+    r.toMatrix(m0);
+
+    q.toMatrix(*this);
+    return *this;
+}
+
+
+template<typename Value_type,
+         typename std::enable_if_t<std::is_floating_point_v<Value_type>, bool> sf_type>
+Matrix4<Value_type, sf_type>::Quat&
+Matrix4<Value_type, sf_type>::getRotation(Matrix4<Value_type, sf_type>::Quat& res) const noexcept {
+    return res.setFromMat(m00, m01, m02, m10, m11, m12, m20, m21, m22);
+}
+
+template<typename Value_type,
+         typename std::enable_if_t<std::is_floating_point_v<Value_type>, bool> sf_type>
+Matrix4<Value_type, sf_type>&
+Matrix4<Value_type, sf_type>::rotate(const Matrix4<Value_type, sf_type>::Quat& quat) noexcept {
+    Matrix4<Value_type> tmp;
+    return mul( quat.toMatrix(tmp) );
+}
 
 /**@}*/
 

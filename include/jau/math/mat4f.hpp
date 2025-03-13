@@ -42,7 +42,7 @@ namespace jau::math {
      */
 
     template<typename Value_type,
-             std::enable_if_t<std::is_floating_point_v<Value_type>, bool>>
+             std::enable_if_t<std::is_floating_point_v<Value_type>, bool> >
     class Quaternion; // forward
 
 /**
@@ -108,9 +108,10 @@ class alignas(Value_type) Matrix4 {
     typedef value_type*              iterator;
     typedef const value_type*        const_iterator;
 
-    typedef Vector3F<value_type, std::is_floating_point_v<Value_type>> Vec3;
-    typedef Vector4F<value_type, std::is_floating_point_v<Value_type>> Vec4;
-    typedef Ray3F<value_type, std::is_floating_point_v<Value_type>> Ray3;
+    typedef Vector3F<value_type> Vec3;
+    typedef Vector4F<value_type> Vec4;
+    typedef Ray3F<value_type> Ray3;
+    typedef Quaternion<value_type, std::is_floating_point_v<Value_type>> Quat;
 
     constexpr static const value_type zero = value_type(0);
     constexpr static const value_type one  = value_type(1);
@@ -133,7 +134,7 @@ class alignas(Value_type) Matrix4 {
     value_type m03, m13, m23, m33; // column 3
 
     friend geom::Frustum;
-    friend Quaternion<value_type, std::is_floating_point_v<Value_type>>;
+    friend Quat;
 
   public:
 
@@ -1131,6 +1132,33 @@ class alignas(Value_type) Matrix4 {
     }
 
     /**
+     * Set this matrix to rotation using the given Quaternion.
+     * <p>
+     * Implementation Details:
+     * <ul>
+     *   <li> makes identity matrix if {@link #magnitudeSquared()} is {@link FloatUtil#isZero(float, float) is zero} using {@link FloatUtil#EPSILON epsilon}</li>
+     *   <li> The fields [m00 .. m22] define the rotation</li>
+     * </ul>
+     * </p>
+     *
+     * @param q the Quaternion representing the rotation
+     * @return this matrix for chaining
+     * @see <a href="http://web.archive.org/web/20041029003853/http://www.j3d.org/matrix_faq/matrfaq_latest.html#Q54">Matrix-FAQ Q54</a>
+     * @see Quaternion#toMatrix(float[])
+     * @see #getRotation()
+     */
+    Matrix4& setToRotation(const Quat& q);
+
+    /**
+     * Returns the rotation [m00 .. m22] fields converted to a Quaternion.
+     * @param res resulting Quaternion
+     * @return the resulting Quaternion for chaining.
+     * @see Quaternion#setFromMat(float, float, float, float, float, float, float, float, float)
+     * @see #setToRotation(Quaternion)
+     */
+    Quat& getRotation(Quat& res) const noexcept;
+
+    /**
      * Set this matrix to orthogonal projection.
      * <pre>
       Ortho matrix (Column Order):
@@ -1399,6 +1427,13 @@ class alignas(Value_type) Matrix4 {
         Matrix4 tmp;
         return mul( tmp.setToRotationAxis(ang_rad, axis) );
     }
+
+    /**
+     * Rotate this matrix with the given {@link Quaternion}, i.e. multiply by {@link #setToRotation(Quaternion) Quaternion's rotation matrix}.
+     * @param tmp temporary Matrix4f used for multiplication
+     * @return this matrix for chaining
+     */
+    Matrix4& rotate(const Quat& quat) noexcept;
 
     /**
      * Translate this matrix, i.e. multiply by {@link #setToTranslation(value_type, value_type, value_type) translation matrix}.
