@@ -12,6 +12,7 @@
 #define JAU_AFFINETRANSFORM_HPP_
 
 #include <jau/functional.hpp>
+#include <jau/enum_util.hpp>
 #include <jau/float_math.hpp>
 #include <jau/math/math_error.hpp>
 #include <jau/math/vec2f.hpp>
@@ -20,51 +21,28 @@
 #include <jau/math/geom/aabbox3f.hpp>
 
 namespace jau::math::geom::plane {
+    using namespace jau::enums;
 
     /** \addtogroup Math
      *
      *  @{
      */
 
-    enum class AffineTransformType : int {
-        /** The <code>AffineTransformType::TYPE_UNKNOWN</code> is an initial type_t value */
-        UNKNOWN = -1,
-        IDENTITY = 0,
-        TRANSLATION = 1,
-        UNIFORM_SCALE = 2,
-        GENERAL_SCALE = 4,
-        QUADRANT_ROTATION = 8,
-        GENERAL_ROTATION = 16,
-        GENERAL_TRANSFORM = 32,
-        FLIP = 64,
-        MASK_SCALE = UNIFORM_SCALE | GENERAL_SCALE,
-        MASK_ROTATION = QUADRANT_ROTATION | GENERAL_ROTATION
+    enum class AffineTransformType : uint16_t {
+        /** The <code>AffineTransformType::unknown</code> is the initial value */
+        unknown             = 0,
+        identity            = 1 << 0,
+        translation         = 1 << 1,
+        uniform_scale       = 1 << 2,
+        general_scale       = 1 << 3,
+        quadrant_rotation   = 1 << 4,
+        general_rotation    = 1 << 5,
+        general_transform   = 1 << 6,
+        flip                = 1 << 7,
+        mask_scale    = uniform_scale | general_scale,
+        mask_rotation = quadrant_rotation | general_rotation
     };
-    constexpr static int number(const AffineTransformType rhs) noexcept {
-        return static_cast<int>(rhs);
-    }
-    constexpr static AffineTransformType operator ^(const AffineTransformType lhs, const AffineTransformType rhs) noexcept {
-        return static_cast<AffineTransformType> ( number(lhs) ^ number(rhs) );
-    }
-    constexpr static AffineTransformType operator |(const AffineTransformType lhs, const AffineTransformType rhs) noexcept {
-        return static_cast<AffineTransformType> ( number(lhs) | number(rhs) );
-    }
-    constexpr static AffineTransformType& operator |=(AffineTransformType& lhs, const AffineTransformType rhs) noexcept {
-        lhs = static_cast<AffineTransformType> ( number(lhs) | number(rhs) );
-        return lhs;
-    }
-    constexpr static AffineTransformType operator &(const AffineTransformType lhs, const AffineTransformType rhs) noexcept {
-        return static_cast<AffineTransformType> ( number(lhs) & number(rhs) );
-    }
-    constexpr static bool operator ==(const AffineTransformType lhs, const AffineTransformType rhs) noexcept {
-        return number(lhs) == number(rhs);
-    }
-    constexpr static bool operator !=(const AffineTransformType lhs, const AffineTransformType rhs) noexcept {
-        return !( lhs == rhs );
-    }
-    constexpr static bool is_set(const AffineTransformType mask, const AffineTransformType bit) noexcept {
-        return bit == ( mask & bit );
-    }
+    JAU_MAKE_BITFIELD_ENUM_STRING(AffineTransformType, identity, translation, uniform_scale, general_scale, quadrant_rotation, general_rotation, general_transform, flip);
 
     /**
      * Represents a affine 2x3 transformation matrix in column major order (memory layout).
@@ -102,14 +80,14 @@ namespace jau::math::geom::plane {
         : m00(1.0f), m10(0.0f),
           m01(0.0f), m11(1.0f),
           m02(0.0f), m12(0.0f),
-          m_type(AffineTransformType::IDENTITY)
+          m_type(AffineTransformType::identity)
         { }
 
         constexpr AffineTransform(const float m00_, const float m10_, const float m01_, const float m11_, const float m02_, const float m12_) noexcept
         : m00(m00_), m10(m10_),
           m01(m01_), m11(m11_),
           m02(m02_), m12(m12_),
-          m_type(AffineTransformType::UNKNOWN)
+          m_type(AffineTransformType::unknown)
         { }
 
         /**
@@ -120,7 +98,7 @@ namespace jau::math::geom::plane {
         : m00(mat2xN[0]), m10(mat2xN[1]),
           m01(mat2xN[2]), m11(mat2xN[3]),
           m02(0.0f),      m12(0.0f),
-          m_type(AffineTransformType::UNKNOWN)
+          m_type(AffineTransformType::unknown)
         {
             if (mat_len > 4) {
                 m02 = mat2xN[4];
@@ -153,43 +131,43 @@ namespace jau::math::geom::plane {
          *   AffineTransformType::TYPE_GENERAL_TRANSFORM - transformation can't be inversed
          */
         AffineTransformType getType() const noexcept {
-            if (m_type != AffineTransformType::UNKNOWN) {
+            if (m_type != AffineTransformType::unknown) {
                 return m_type;
             }
 
-            AffineTransformType type = AffineTransformType::IDENTITY;
+            AffineTransformType type = AffineTransformType::identity;
 
             if (m00 * m01 + m10 * m11 != 0.0f) {
-                type |= AffineTransformType::GENERAL_TRANSFORM;
+                type |= AffineTransformType::general_transform;
                 return type;
             }
 
             if ( !jau::is_zero(m02) || !jau::is_zero(m12) ) {
-                type |= AffineTransformType::TRANSLATION;
+                type |= AffineTransformType::translation;
             } else if ( jau::equals(m00, 1.0f) && jau::equals(m11, 1.0f) &&
                         jau::is_zero(m01) && jau::is_zero(m10) ) {
-                type = AffineTransformType::IDENTITY;
+                type = AffineTransformType::identity;
                 return type;
             }
 
             if (m00 * m11 - m01 * m10 < 0.0f) {
-                type |= AffineTransformType::FLIP;
+                type |= AffineTransformType::flip;
             }
 
             const float dx = m00 * m00 + m10 * m10;
             const float dy = m01 * m01 + m11 * m11;
             if ( !jau::equals(dx, dy) ) {
-                type |= AffineTransformType::GENERAL_SCALE;
+                type |= AffineTransformType::general_scale;
             } else if ( !jau::equals(dx, 1.0f) ) {
-                type |= AffineTransformType::UNIFORM_SCALE;
+                type |= AffineTransformType::uniform_scale;
             }
 
             if ( ( jau::is_zero( m00 ) && jau::is_zero( m11 ) ) ||
                  ( jau::is_zero( m10 ) && jau::is_zero( m01 ) && (m00 < 0.0f || m11 < 0.0f) ) )
             {
-                type |= AffineTransformType::QUADRANT_ROTATION;
+                type |= AffineTransformType::quadrant_rotation;
             } else if ( !jau::is_zero( m01 ) || !jau::is_zero( m10 ) ) {
-                type |= AffineTransformType::GENERAL_ROTATION;
+                type |= AffineTransformType::general_rotation;
             }
             return type;
         }
@@ -206,7 +184,7 @@ namespace jau::math::geom::plane {
 
         float translateY() const noexcept { return m12; }
 
-        bool isIdentity() const noexcept { return getType() == AffineTransformType::IDENTITY; }
+        bool isIdentity() const noexcept { return getType() == AffineTransformType::identity; }
 
         /**
          * @param mat2xN either a 2x2 or 2x3 matrix depending on mat_len
@@ -226,7 +204,7 @@ namespace jau::math::geom::plane {
         float determinant() const noexcept { return m00 * m11 - m01 * m10; }
 
         AffineTransform& set(const float m00_, const float m10_, const float m01_, const float m11_, const float m02_, const float m12_) noexcept {
-            m_type = AffineTransformType::UNKNOWN;
+            m_type = AffineTransformType::unknown;
             m00 = m00_;
             m10 = m10_;
             m01 = m01_;
@@ -237,7 +215,7 @@ namespace jau::math::geom::plane {
         }
 
         AffineTransform& setToIdentity() noexcept {
-            m_type = AffineTransformType::IDENTITY;
+            m_type = AffineTransformType::identity;
             m00 = m11 = 1.0f;
             m10 = m01 = m02 = m12 = 0.0f;
             return *this;
@@ -249,9 +227,9 @@ namespace jau::math::geom::plane {
             m02 = mx;
             m12 = my;
             if ( jau::is_zero(mx) && jau::is_zero(my) ) {
-                m_type = AffineTransformType::IDENTITY;
+                m_type = AffineTransformType::identity;
             } else {
-                m_type = AffineTransformType::TRANSLATION;
+                m_type = AffineTransformType::translation;
             }
             return *this;
         }
@@ -261,9 +239,9 @@ namespace jau::math::geom::plane {
             m11 = scy;
             m10 = m01 = m02 = m12 = 0.0f;
             if ( !jau::equals(scx, 1.0f) || !jau::equals(scy, 1.0f) ) {
-                m_type = AffineTransformType::UNKNOWN;
+                m_type = AffineTransformType::unknown;
             } else {
-                m_type = AffineTransformType::IDENTITY;
+                m_type = AffineTransformType::identity;
             }
             return *this;
         }
@@ -274,9 +252,9 @@ namespace jau::math::geom::plane {
             m01 = shx;
             m10 = shy;
             if ( !jau::is_zero(shx) || !jau::is_zero(shy) ) {
-                m_type = AffineTransformType::UNKNOWN;
+                m_type = AffineTransformType::unknown;
             } else {
-                m_type = AffineTransformType::IDENTITY;
+                m_type = AffineTransformType::identity;
             }
             return *this;
         }
@@ -295,7 +273,7 @@ namespace jau::math::geom::plane {
             m01 = -sin;
             m10 = sin;
             m02 = m12 = 0.0f;
-            m_type = AffineTransformType::UNKNOWN;
+            m_type = AffineTransformType::unknown;
             return *this;
         }
 
@@ -303,7 +281,7 @@ namespace jau::math::geom::plane {
             setToRotation(angle);
             m02 = px * (1.0f - m00) + py * m10;
             m12 = py * (1.0f - m00) - px * m10;
-            m_type = AffineTransformType::UNKNOWN;
+            m_type = AffineTransformType::unknown;
             return *this;
         }
 
@@ -357,7 +335,7 @@ namespace jau::math::geom::plane {
          */
         AffineTransform& concat(const AffineTransform& tR) noexcept {
             // set(mul(this, tR));
-            m_type = AffineTransformType::UNKNOWN;
+            m_type = AffineTransformType::unknown;
             set( tR.m00 * m00 + tR.m10 * m01,       // m00
                  tR.m00 * m10 + tR.m10 * m11,       // m10
                  tR.m01 * m00 + tR.m11 * m01,       // m01
@@ -380,7 +358,7 @@ namespace jau::math::geom::plane {
          */
         AffineTransform& preConcat(const AffineTransform& tL) noexcept {
             // setTransform(multiply(tL, this));
-            m_type = AffineTransformType::UNKNOWN;
+            m_type = AffineTransformType::unknown;
             set( m00 * tL.m00 + m10 * tL.m01,          // m00
                  m00 * tL.m10 + m10 * tL.m11,          // m10
                  m01 * tL.m00 + m11 * tL.m01,          // m01
