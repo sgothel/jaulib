@@ -93,19 +93,19 @@ namespace jau::math::util {
         virtual const Mat4& matrix() const noexcept = 0;
 
         /** Return the underlying float data buffer. */
-        const value_type* floats() const noexcept { return matrix().cbegin(); }
+        constexpr const value_type* floats() const noexcept { return matrix().cbegin(); }
 
         const void* data() const noexcept override { return floats(); }
 
         const jau::type_info& compSignature() const noexcept override { return jau::static_ctti<value_type>(); }
         /** The component's size in bytes */
-        size_t bytesPerComp() const noexcept { return sizeof(value_type); }
+        constexpr size_t bytesPerComp() const noexcept { return sizeof(value_type); }
         /** The number of components per element */
-        size_t compsPerElem() const noexcept { return 16; }
+        constexpr size_t compsPerElem() const noexcept { return 16; }
         /** Returns element count. One element consist compsPerElem() components. */
-        size_t elementCount() const noexcept { return 1; }
+        constexpr size_t elementCount() const noexcept { return 1; }
         /** Returns the byte size of all elements, i.e. elementCount() * compsPerElem() * bytesPerComp(). */
-        size_t byteCount() const noexcept { return 1 * 16 * bytesPerComp(); }
+        constexpr size_t byteCount() const noexcept { return 1 * 16 * bytesPerComp(); }
 
         std::string toString() const override {
             return std::string("SyncMatrix4[").append(compSignature().name())
@@ -132,19 +132,19 @@ namespace jau::math::util {
         virtual size_t matrixCount() const noexcept = 0;
 
         /** Return the underlying float data buffer. */
-        const value_type* floats() const noexcept { return matrices()[0].cbegin(); }
+        constexpr const value_type* floats() const noexcept { return matrices()[0].cbegin(); }
 
         const void* data() const noexcept override { return floats(); }
 
         const jau::type_info& compSignature() const noexcept override { return jau::static_ctti<value_type>(); }
         /** The component's size in bytes */
-        size_t bytesPerComp() const noexcept { return sizeof(value_type); }
+        constexpr size_t bytesPerComp() const noexcept { return sizeof(value_type); }
         /** The number of components per element */
-        size_t compsPerElem() const noexcept { return 16; }
+        constexpr size_t compsPerElem() const noexcept { return 16; }
         /** Returns element count. One element consist compsPerElem() components. */
-        size_t elementCount() const noexcept { return matrixCount(); }
+        constexpr size_t elementCount() const noexcept { return matrixCount(); }
         /** Returns the byte size of all elements, i.e. elementCount() * compsPerElem() * bytesPerComp(). */
-        size_t byteCount() const noexcept { return matrixCount() * 16 * bytesPerComp(); }
+        constexpr size_t byteCount() const noexcept { return matrixCount() * 16 * bytesPerComp(); }
 
         std::string toString() const override {
             return std::string("SyncMatrices4[").append(compSignature().name())
