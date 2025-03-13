@@ -12,7 +12,9 @@
 #define JAU_MATH_GEOM_GEOM3F_HPP_
 
 #include <limits>
+#include <jau/darray.hpp>
 #include <jau/math/vec3f.hpp>
+#include <jau/math/geom/geom.hpp>
 #include <jau/math/geom/aabbox3f.hpp>
 
 namespace jau::math::geom {
@@ -120,6 +122,46 @@ namespace jau::math::geom {
         }
 
     };
+
+    typedef jau::darray<Vec3f> VertexList;
+
+    /**
+     * Computes the area of a list of vertices via shoelace formula.
+     *
+     * This method is utilized e.g. to reliably compute the {@link Winding} of complex shapes.
+     *
+     * Implementation uses double precision.
+     *
+     * @param vertices
+     * @return positive area if ccw else negative area value
+     * @see #getWinding()
+     */
+    constexpr double area2D(const VertexList& vertices) noexcept {
+        size_t n = vertices.size();
+        double area = 0.0;
+        for (size_t p = n - 1, q = 0; q < n; p = q++) {
+            const Vec3f& pCoord = vertices[p];
+            const Vec3f& qCoord = vertices[q];
+            area += (double)pCoord.x * (double)qCoord.y - (double)qCoord.x * (double)pCoord.y;
+        }
+        return area;
+    }
+
+    /**
+     * Compute the winding using the area2D() function over all vertices for complex shapes.
+     *
+     * Uses the {@link #area(List)} function over all points
+     * on complex shapes for a reliable result!
+     *
+     * Implementation uses double precision.
+     *
+     * @param vertices array of Vertices
+     * @return Winding::CCW or Winding::CLW
+     * @see area2D()
+     */
+    constexpr Winding getWinding(const VertexList& vertices) noexcept {
+        return area2D(vertices) >= 0 ? Winding::CCW : Winding::CW ;
+    }
 
     /**@}*/
 
