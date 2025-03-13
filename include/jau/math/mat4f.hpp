@@ -1470,6 +1470,16 @@ class alignas(Value_type) Matrix4 {
     }
 
     /**
+     * Scale this matrix, i.e. multiply by {@link #setToScale(const Vec3&) scale matrix}.
+     * @param sxyz scale factor for each component
+     * @return this matrix for chaining
+     */
+    constexpr Matrix4& scale(const Vec3& sxyz) noexcept {
+        Matrix4 tmp;
+        return mul( tmp.setToScale(sxyz) );
+    }
+
+    /**
      * Scale this matrix, i.e. multiply by {@link #setToScale(value_type, value_type, value_type) scale matrix}.
      * @param s scale for x-, y- and z-axis
      * @return this matrix for chaining
