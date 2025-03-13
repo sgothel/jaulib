@@ -54,32 +54,32 @@ namespace jau::math::geom {
              * Create an Axis Aligned bounding box (aabbox3f)
              * where the low and and high MAX float Values.
              */
-            AABBox3f() noexcept {
+            constexpr AABBox3f() noexcept {
                 reset();
             }
 
             /**
              * Create an aabbox3f with given bl (low) and tr (high)
              */
-            AABBox3f(const Point3f& bl_, const Point3f& tr_) noexcept
+            constexpr AABBox3f(const Point3f& bl_, const Point3f& tr_) noexcept
             : m_lo( bl_ ), m_hi( tr_ ) {
             }
 
             constexpr AABBox3f(const AABBox3f& o) noexcept = default;
             constexpr AABBox3f(AABBox3f&& o) noexcept = default;
-            AABBox3f& operator=(const AABBox3f&) noexcept = default;
-            AABBox3f& operator=(AABBox3f&&) noexcept = default;
+            constexpr AABBox3f& operator=(const AABBox3f&) noexcept = default;
+            constexpr AABBox3f& operator=(AABBox3f&&) noexcept = default;
 
         private:
-            void setHigh(const float hx, const float hy, const float hz) noexcept {
+            constexpr void setHigh(const float hx, const float hy, const float hz) noexcept {
                 m_hi.set(hx, hy, hz);
             }
 
-            void setLow(const float lx, const float ly, const float lz) noexcept {
+            constexpr void setLow(const float lx, const float ly, const float lz) noexcept {
                 m_lo.set(lx, ly, lz);
             }
 
-            void computeCenter() noexcept {
+            constexpr void computeCenter() noexcept {
                 ( ( m_center = m_hi ) += m_lo ) *= 0.5f;
             }
 
@@ -88,7 +88,7 @@ namespace jau::math::geom {
              * Reset this box to the inverse low/high, allowing the next {@link #resize(float, float, float)} command to hit.
              * @return this aabbox3f for chaining
              */
-            AABBox3f& reset() noexcept {
+            constexpr AABBox3f& reset() noexcept {
                 setLow(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
                 setHigh(-std::numeric_limits<float>::max(), -std::numeric_limits<float>::max(), -std::numeric_limits<float>::max());
                 m_center.set(0, 0, 0);
@@ -96,38 +96,38 @@ namespace jau::math::geom {
             }
 
             /** Returns the maximum right-top-near (xyz) coordinate */
-            const Point3f& high() const noexcept { return m_hi; }
+            constexpr const Point3f& high() const noexcept { return m_hi; }
 
             /** Returns the minimum left-bottom-far (xyz) coordinate */
-            const Point3f& low() const noexcept { return m_lo; }
+            constexpr const Point3f& low() const noexcept { return m_lo; }
 
             /** Returns computed center of this aabbox3f of low() and high(). */
-            const Point3f& center() const noexcept { return m_center; }
+            constexpr const Point3f& center() const noexcept { return m_center; }
 
             /**
              * Get the size of this aabbox3f where the size is represented by the
              * length of the vector between low and high.
              * @return a float representing the size of the aabbox3f
              */
-            float size() const noexcept { return m_lo.dist(m_hi); }
+            constexpr float size() const noexcept { return m_lo.dist(m_hi); }
 
-            float width() const noexcept { return m_hi.x - m_lo.x; }
+            constexpr float width() const noexcept { return m_hi.x - m_lo.x; }
 
-            float height() const noexcept { return m_hi.y - m_lo.y; }
+            constexpr float height() const noexcept { return m_hi.y - m_lo.y; }
 
-            float depth() const noexcept { return m_hi.z - m_lo.z; }
+            constexpr float depth() const noexcept { return m_hi.z - m_lo.z; }
 
             /** Returns the volume, i.e. width * height * depth */
-            float volume() const noexcept { return width() * height() * depth(); }
+            constexpr float volume() const noexcept { return width() * height() * depth(); }
 
             /** Return true if {@link #getVolume()} is {@link FloatUtil#isZero(float)}, considering epsilon. */
-            bool hasZeroVolume() const noexcept { return jau::is_zero( volume() ); }
+            constexpr bool hasZeroVolume() const noexcept { return jau::is_zero( volume() ); }
 
             /** Returns the assumed 2D area, i.e. width * height while assuming low and high lies on same plane. */
-            float area2D() const noexcept { return width() * height(); }
+            constexpr float area2D() const noexcept { return width() * height(); }
 
             /** Return true if {@link #get2DArea()} is {@link FloatUtil#isZero(float)}, considering epsilon. */
-            bool hasZeroArea2D() const noexcept { return jau::is_zero( area2D() ); }
+            constexpr bool hasZeroArea2D() const noexcept { return jau::is_zero( area2D() ); }
 
             /**
              * Set size of the aabbox3f specifying the coordinates
@@ -353,7 +353,7 @@ namespace jau::math::geom {
              * Check if the 2D point is bounded/contained by this aabbox3f
              * @return true if {x, y} belongs to {low, high}
              */
-            bool contains(const float x, const float y) const noexcept {
+            constexpr bool contains(const float x, const float y) const noexcept {
                 return !( x<m_lo.x || x>m_hi.x ||
                           y<m_lo.y || y>m_hi.y );
             }
@@ -362,13 +362,13 @@ namespace jau::math::geom {
              * Check if the 2D point is bounded/contained by this aabbox3f
              * @return true if p belongs to {low, high}
              */
-            bool contains(const Point2f& p) const noexcept { return contains(p.x, p.y); }
+            constexpr bool contains(const Point2f& p) const noexcept { return contains(p.x, p.y); }
 
             /**
              * Check if the 3D point is bounded/contained by this aabbox3f
              * @return true if {x, y, z} belongs to {low, high}
              */
-            bool contains(const float x, const float y, const float z) const noexcept {
+            constexpr bool contains(const float x, const float y, const float z) const noexcept {
                 return m_lo.x<=x && x<=m_hi.x &&
                        m_lo.y<=y && y<=m_hi.y &&
                        m_lo.z<=z && z<=m_hi.z;
@@ -378,10 +378,10 @@ namespace jau::math::geom {
              * Check if the 3D point is bounded/contained by this aabbox3f
              * @return true if p belongs to (low.x, high.x) and y belong to (low.y, high.y)
              */
-            bool contains(const Point3f& p) const noexcept { return contains(p.x, p.y, p.z); }
+            constexpr bool contains(const Point3f& p) const noexcept { return contains(p.x, p.y, p.z); }
 
             /** Returns whether this aabbox3f intersects (partially contains) given aabbox3f. */
-            bool intersects(const AABBox3f& o) const noexcept {
+            constexpr bool intersects(const AABBox3f& o) const noexcept {
                 /**
                  * Traditional boolean equation leads to multiple branches,
                  * using max/min approach allowing for branch-less optimizations.
@@ -399,7 +399,7 @@ namespace jau::math::geom {
             }
 
             /** Returns whether this aabbox3f fully contains given aabbox3f. */
-            bool contains(const AABBox3f& o) const noexcept {
+            constexpr bool contains(const AABBox3f& o) const noexcept {
                 return m_hi.x >= o.m_hi.x &&
                        m_hi.y >= o.m_hi.y &&
                        m_hi.z >= o.m_hi.z &&
@@ -417,7 +417,7 @@ namespace jau::math::geom {
              * @param h hight
              * @return true if this AABBox might have a common region with this 2D region
              */
-            bool intersects2DRegion(const float x, const float y, const float w, const float h) const noexcept {
+            constexpr bool intersects2DRegion(const float x, const float y, const float w, const float h) const noexcept {
                 if (w <= 0 || h <= 0) {
                     return false;
                 }
@@ -489,7 +489,7 @@ namespace jau::math::geom {
              * @param ray
              * @return true if ray intersects with this box, otherwise false
              */
-            bool intersectsRay1(const Ray3f& r)  const noexcept {
+            constexpr bool intersectsRay1(const Ray3f& r)  const noexcept {
                 const Vec3f dir_inv = 1.0f / r.dir;
                 float t1 = (m_lo.x - r.orig.x)*dir_inv.x;
                 float t2 = (m_hi.x - r.orig.x)*dir_inv.x;
@@ -530,7 +530,7 @@ namespace jau::math::geom {
              * @param ray
              * @return true if ray intersects with this box, otherwise false
              */
-            bool intersectsRay(const Ray3f& r)  const noexcept {
+            constexpr bool intersectsRay(const Ray3f& r)  const noexcept {
                 const Vec3f dir_inv = 1.0f / r.dir;
                 float t1 = (m_lo.x - r.orig.x)*dir_inv.x;
                 float t2 = (m_hi.x - r.orig.x)*dir_inv.x;
