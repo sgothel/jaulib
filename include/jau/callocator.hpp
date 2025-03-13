@@ -74,8 +74,9 @@ struct callocator
     callocator() noexcept = default; // C++11
 
 #if __cplusplus > 201703L
-    constexpr callocator(const callocator&) noexcept // NOLINT(modernize-use-equals-default)
-    {} // C++20
+    // implicitly-declared copy is deprecated
+    // constexpr callocator(const callocator&) noexcept // NOLINT(modernize-use-equals-default)
+    // {} // C++20
 #else
     callocator(const callocator&) noexcept // NOLINT(modernize-use-equals-default)
     {}
