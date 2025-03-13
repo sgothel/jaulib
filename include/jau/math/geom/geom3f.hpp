@@ -11,6 +11,7 @@
 #ifndef JAU_MATH_GEOM_GEOM3F_HPP_
 #define JAU_MATH_GEOM_GEOM3F_HPP_
 
+#include <limits>
 #include <jau/math/vec3f.hpp>
 #include <jau/math/geom/aabbox3f.hpp>
 
@@ -24,7 +25,6 @@ namespace jau::math::geom {
     struct LineSeg3f {
         Point3f p0;
         Point3f p1;
-        Point3f p2;
 
         /**
          * Scale this line segment with given scale factor
@@ -96,8 +96,8 @@ namespace jau::math::geom {
         bool intersects(const AABBox3f& box) const noexcept {
             // separating axis theorem.
             const Vec3f d = (p1 - p0) * 0.5f; // half lineseg direction
-            const Vec3f e = (box.tr - box.bl) * 0.5f;
-            const Vec3f aabb_center = (box.bl + box.tr) * 0.5f;
+            const Vec3f e = (box.high() - box.low()) * 0.5f;
+            const Vec3f aabb_center = (box.low() + box.high()) * 0.5f;
             const Vec3f lseg_center = p0 + d;
             const Vec3f c = lseg_center - aabb_center;
              Vec3f ad(std::abs(d.x), std::abs(d.y), std::abs(d.z));
