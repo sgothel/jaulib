@@ -11,6 +11,7 @@
 #ifndef JAU_AFFINETRANSFORM_HPP_
 #define JAU_AFFINETRANSFORM_HPP_
 
+#include <jau/functional.hpp>
 #include <jau/float_math.hpp>
 #include <jau/math/math_error.hpp>
 #include <jau/math/vec2f.hpp>
@@ -518,7 +519,7 @@ namespace jau::math::geom::plane {
         }
 
       private:
-        Vec3f transformVec3f(const Vec3f& src) const noexcept {
+        Vec3f transformVec3f(const Vec3f& src) noexcept {
             const float x = src.x;
             const float y = src.y;
             return Vec3f( x * m00 + y * m01 + m02,
@@ -534,7 +535,12 @@ namespace jau::math::geom::plane {
          * @return resulting Vec3f
          */
         Vec3f transform(const Vec3f& src) const noexcept {
-            return transformVec3f(src);
+            const float x = src.x;
+            const float y = src.y;
+            return Vec3f( x * m00 + y * m01 + m02,
+                          x * m10 + y * m11 + m12,
+                          src.z
+                        ); // just copy z
         }
 
         /**
@@ -545,9 +551,8 @@ namespace jau::math::geom::plane {
          * @return this aabbox3f for chaining
          */
         AABBox3f& resizeBox(AABBox3f& box, const AABBox3f& newBox) noexcept {
-            AABBox3f::transform_vec3f_func transform(this, &AffineTransform::transformVec3f);
+            AABBox3f::transform_vec3f_func transform = jau::bind_member(this, &AffineTransform::transformVec3f);
             return box.resize(newBox, transform);
-
         }
 
         /**
