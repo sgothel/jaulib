@@ -51,7 +51,7 @@ namespace jau::math::geom {
         if ( jau::is_zero( area ) ) {
             return orientation_t::COL;
         }
-        return ( area > 0.0f ) ? orientation_t::CCW : orientation_t::CLW;
+        return ( area > 0.0f ) ? orientation_t::CCW : orientation_t::CW;
     }
 
     class LineSeg2f; // fwd

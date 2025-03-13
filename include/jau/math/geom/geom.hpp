@@ -11,21 +11,34 @@
 #ifndef JAU_MATH_GEOM_GEOM_HPP_
 #define JAU_MATH_GEOM_GEOM_HPP_
 
+#include <cstdint>
+#include <jau/enum_util.hpp>
+
 namespace jau::math::geom {
+    using namespace jau::enums;
 
     /** \addtogroup Math
      *
      *  @{
      */
 
-    enum class orientation_t {
+    enum class orientation_t : uint16_t {
         /** Collinear **/
         COL,
         /** Clockwise **/
-        CLW,
+        CW,
         /** Counter-Clockwise **/
         CCW
     };
+    JAU_MAKE_ENUM_STRING(orientation_t, COL, CW, CCW);
+
+    enum class Winding : uint16_t {
+        /** Clockwise **/
+        CW,
+        /** Counter-Clockwise **/
+        CCW
+    };
+    JAU_MAKE_ENUM_STRING(Winding, CW, CCW);
 
     /**@}*/
 
