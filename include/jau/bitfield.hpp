@@ -75,6 +75,9 @@ namespace jau {
         }
 
         /*** Reads the bit value at position `bitnum`. */
+        constexpr bool operator[](size_t bitnum) const noexcept { return get(bitnum); }
+
+        /*** Reads the bit value at position `bitnum`. */
         constexpr bool get(size_t bitnum) const noexcept {
             if( !in_range(bitnum) ) {
                 return false;
