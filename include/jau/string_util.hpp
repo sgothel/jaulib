@@ -320,12 +320,20 @@ namespace jau {
      */
 
     template< class value_type,
-              std::enable_if_t< std::is_integral_v<value_type> ||
+              std::enable_if_t< ( std::is_integral_v<value_type> && !std::is_same_v<bool, value_type> ) ||
                                 std::is_floating_point_v<value_type>,
                                 bool> = true>
     inline std::string to_string(const value_type & ref)
     {
         return std::to_string(ref);
+    }
+
+    template< class value_type,
+              std::enable_if_t< std::is_same_v<bool, value_type>,
+                                bool> = true>
+    inline std::string to_string(const value_type & ref)
+    {
+        return ref ? "T" : "F";
     }
 
     template< class value_type,
