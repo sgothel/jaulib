@@ -188,8 +188,8 @@ namespace jau {
 
             static constexpr void* voidptr_cast(const_pointer p) { return reinterpret_cast<void*>( const_cast<pointer_mutable>( p ) ); }
 
-            constexpr static const size_type DIFF_MAX = std::numeric_limits<difference_type>::max();
-            constexpr static const size_type MIN_SIZE_AT_GROW = 10;
+            constexpr static size_type DIFF_MAX = std::numeric_limits<difference_type>::max();
+            constexpr static size_type MIN_SIZE_AT_GROW = 10;
 
             allocator_type m_alloc_inst;
             float m_growth_factor;
@@ -817,7 +817,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              * deducing ranges from iterator.
              * </p>
              */
-            constexpr size_type max_size() const noexcept { return DIFF_MAX; }
+            constexpr static size_type max_size() noexcept { return DIFF_MAX; }
 
             // iterator
 
