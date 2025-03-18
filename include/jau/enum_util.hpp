@@ -612,7 +612,7 @@ namespace jau::enums {
     JAU_MAKE_ENUM_STRING_SUB(type, type, __VA_ARGS__)         \
                                                             \
     constexpr std::string                                   \
-    to_string(const type e)                                 \
+    to_string(const type e) noexcept                        \
     { return std::string(name(e)); }                        \
 
 #define JAU_APPEND_BITSTR(U,V,M) jau::enums::append_bitstr(out, M, U::V, #V, comma);
@@ -621,7 +621,7 @@ namespace jau::enums {
     JAU_MAKE_ENUM_STRING_SUB(type, type, __VA_ARGS__)       \
                                                             \
     inline std::string                                      \
-    to_string(const type mask) {                            \
+    to_string(const type mask) noexcept {                   \
         std::string out("[");                               \
         bool comma = false;                                 \
         JAU_FOR_EACH_VALUE(JAU_APPEND_BITSTR, type, mask, __VA_ARGS__); \
@@ -633,7 +633,7 @@ namespace jau::enums {
     JAU_MAKE_ENUM_STRING_SUB(type, stype, __VA_ARGS__)      \
                                                             \
     inline std::string                                      \
-    to_string(const type mask) {                            \
+    to_string(const type mask) noexcept {                   \
         std::string out("[");                               \
         bool comma = false;                                 \
         JAU_FOR_EACH_VALUE(JAU_APPEND_BITSTR, type, mask, __VA_ARGS__); \
@@ -662,6 +662,45 @@ namespace jau::enums {
         }                                                   \
     }                                                       \
     constexpr std::string_view                              \
+    type_name(const type) noexcept                          \
+    {                                                       \
+        return #stype;                                      \
+    }                                                       \
+
+// static class member
+#define JAU_MAKE_BITFIELD_ENUM_STRING_MEMBER(type, ...)     \
+    JAU_MAKE_ENUM_STRING_SUB_MEMBER(type, type, __VA_ARGS__) \
+                                                            \
+    inline static std::string                               \
+    to_string(const type mask) noexcept {                   \
+        std::string out("[");                               \
+        bool comma = false;                                 \
+        JAU_FOR_EACH_VALUE(JAU_APPEND_BITSTR, type, mask, __VA_ARGS__); \
+        out.append("]");                                    \
+        return out;                                         \
+    }                                                       \
+
+// internal usage only (for static class member)
+#define JAU_MAKE_ENUM_STRING_SUB_MEMBER(type, stype, ...)   \
+    constexpr static std::string_view                       \
+    long_name(const type v) noexcept                        \
+    {                                                       \
+        switch (v) {                                        \
+            JAU_FOR_EACH(JAU_ENUM_CASE_LONG, type, __VA_ARGS__) \
+            default:                                        \
+                return "undef " #stype;                     \
+        }                                                   \
+    }                                                       \
+    constexpr static std::string_view                       \
+    name(const type v) noexcept                             \
+    {                                                       \
+        switch (v) {                                        \
+            JAU_FOR_EACH(JAU_ENUM_CASE_SHORT, type, __VA_ARGS__) \
+            default:                                        \
+                return "undef";                             \
+        }                                                   \
+    }                                                       \
+    constexpr static std::string_view                       \
     type_name(const type) noexcept                          \
     {                                                       \
         return #stype;                                      \
