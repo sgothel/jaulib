@@ -95,6 +95,9 @@ namespace jau::math {
 
             constexpr Vector3F copy() noexcept { return Vector3F(*this); }
 
+            /// Returns a Vec2 instance using x and y component, dropping z
+            constexpr Vec2 toVec2xy() const noexcept { return Vec2(x, y); }
+
             /** Returns read-only component */
             constexpr value_type operator[](size_t i) const noexcept {
                 assert(i < 3);
