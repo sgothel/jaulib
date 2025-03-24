@@ -101,7 +101,7 @@ namespace jau {
      * @return Iterator to the first element satisfying the condition or last if no such element is found.
      */
     template<class InputIt, class T>
-    constexpr InputIt find(InputIt first, InputIt last, const T& value)
+    constexpr InputIt find(InputIt first, InputIt last, const T& value) noexcept
     {
         for (; first != last; ++first) {
             if (*first == value) {
@@ -120,11 +120,24 @@ namespace jau {
      * @return true if contained, otherwise false
      */
     template<class InputArray, class T>
-    constexpr bool contains(InputArray &array, const T& value)
+    constexpr bool contains(InputArray &array, const T& value) noexcept
     {
         const typename InputArray::size_type size = array.size();
         for (typename InputArray::size_type i = 0; i < size; ++i) {
             if( value == array[i] ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    template<class InputArray, class T>
+    constexpr bool eraseFirst(InputArray &array, const T& value)
+    {
+        const typename InputArray::size_type size = array.size();
+        for (typename InputArray::size_type i = 0; i < size; ++i) {
+            if( value == array[i] ) {
+                array.erase(i);
                 return true;
             }
         }
@@ -146,7 +159,7 @@ namespace jau {
      * @return Iterator to the first element satisfying the condition or last if no such element is found.
      */
     template<class InputIt, class UnaryPredicate>
-    constexpr InputIt find_if(InputIt first, InputIt last, UnaryPredicate p)
+    constexpr InputIt find_if(InputIt first, InputIt last, UnaryPredicate p) noexcept
     {
         for (; first != last; ++first) {
             if (p(*first)) {
@@ -171,7 +184,7 @@ namespace jau {
      * @return Iterator to the first element satisfying the condition or last if no such element is found.
      */
     template<class InputIt, class UnaryPredicate>
-    constexpr InputIt find_if_not(InputIt first, InputIt last, UnaryPredicate q)
+    constexpr InputIt find_if_not(InputIt first, InputIt last, UnaryPredicate q) noexcept
     {
         for (; first != last; ++first) {
             if (!q(*first)) {
@@ -179,6 +192,30 @@ namespace jau {
             }
         }
         return last; // implicit move since C++11
+    }
+
+    /**
+     * Identical to C++20 std::remove() of `algorithm`
+     *
+     * @tparam ForwardIt the iterator type
+     * @tparam UnaryPredicate
+     * @param first range start of elements to examine
+     * @param last range end of elements to examine, exclusive
+     * @param value the value to remove
+     * @return past-the end iterator for the new range of values.
+     */
+    template<class ForwardIt, class T>
+    ForwardIt remove(ForwardIt first, ForwardIt last, const T& value)
+    {
+        first = jau::find(first, last, value);
+        if (first != last) {
+            for(ForwardIt i = first; ++i != last; ) {
+                if ( *i != value ) {
+                    *first++ = std::move(*i);
+                }
+            }
+        }
+        return first; // implicit move since C++11
     }
 
     /**
@@ -429,6 +466,26 @@ namespace jau {
         }
         return f; // implicit move since C++11
     }
+
+    /****************************************************************************************
+     ****************************************************************************************/
+
+    template<typename T>
+    class OptDeleter
+    {
+      private:
+        bool m_owning;
+      public:
+        constexpr OptDeleter() noexcept : m_owning(true) {}
+        constexpr OptDeleter(bool owner) noexcept : m_owning(owner) {}
+        constexpr OptDeleter(const OptDeleter&) noexcept = default;
+        constexpr OptDeleter(OptDeleter&&) noexcept = default;
+        void operator()(T* p) const {
+            if( m_owning ) {
+                delete p;
+            }
+        }
+    };
 
     /**@}*/
 
