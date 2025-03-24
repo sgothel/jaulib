@@ -762,6 +762,16 @@ namespace jau::math::geom {
                 return true; // ray hits box
             }
 
+            constexpr bool equals(const AABBox3f& o) const noexcept {
+                if( &o == this ) {
+                    return true;
+                }
+                return m_lo == o.m_lo && m_hi == o.m_hi;
+            }
+            constexpr bool operator==(const AABBox3f& rhs) const noexcept {
+                return equals(rhs);
+            }
+
             /**
              * Transform this box using the given Mat4f into {@code out}
              * @param mat transformation Mat4f
