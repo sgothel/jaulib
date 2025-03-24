@@ -54,6 +54,80 @@ namespace jau::math::geom {
         return ( area > 0.0f ) ? orientation_t::CCW : orientation_t::CW;
     }
 
+    /**
+     * See [p + t r = q + u s](https://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect/565282#565282)
+     * and [its terse C# implementation](https://www.codeproject.com/tips/862988/find-the-intersection-point-of-two-line-segments)
+     */
+    constexpr bool testSeg2SegIntersection2D(Vec2f* result, const Vec2f& p, const Vec2f& p2, const Vec2f& q, const Vec2f& q2, const bool do_collinear=false) noexcept
+    {
+        // Operations: 11+, 8*, 2 branches without collinear case
+        constexpr const float eps = std::numeric_limits<float>::epsilon();
+        const Vec2f r = p2 - p;
+        const Vec2f s = q2 - q;
+        const float rxs = r.cross(s);
+
+        if ( jau::is_zero(rxs) ) {
+            if ( do_collinear ) {
+                const Vec2f q_p = q - p;
+                const float qpxr = q_p.cross(r);
+                if ( jau::is_zero(qpxr) ) // disabled collinear case
+                {
+                    // 1) r x s = 0 and (q - p) x r = 0, the two lines are collinear.
+
+                    const Point2f p_q = p - q;
+                    const float qp_dot_r = q_p.dot(r);
+                    const float pq_dot_s = p_q.dot(s);
+                    // if ( ( 0 <= qp_dot_r && qp_dot_r <= r.dot(r) ) ||
+                    //      ( 0 <= pq_dot_s && pq_dot_s <= s.dot(s) ) )
+                    if ( ( eps <= qp_dot_r && qp_dot_r - r.dot(r) <= eps ) ||
+                         ( eps <= pq_dot_s && pq_dot_s - s.dot(s) <= eps ) )
+                    {
+                        // 1.1) 0 <= (q - p) · r <= r · r or 0 <= (p - q) · s <= s · s, the two lines are overlapping
+                        // FIXME: result set to q2 endpoint, OK?
+                        if( result ) {
+                            *result = q2;
+                        }
+                        return true;
+                    }
+
+                    // 1.2 the two lines are collinear but disjoint.
+                    return false;
+                } else {
+                    // 2) r × s = 0 and (q − p) × r ≠ 0, the two lines are parallel and non-intersecting.
+                    return false;
+                }
+            } else {
+                // Not considering collinear case as an intersection
+                return false;
+            }
+        } else {
+            // r x s != 0
+            const Vec2f q_p = q - p;
+            const float qpxr = q_p.cross(r);
+
+            // p + t r = q + u s
+            // (p + t r) × s = (q + u s) × s
+            // t (r × s) = (q − p) × s, with s x s = 0
+            // t = (q - p) x s / (r x s)
+            const float t = q_p.cross(s) / rxs;
+
+            // u = (p − q) × r / (s × r) = (q - p) x r / (r x s), with s × r = − r × s
+            const float u = qpxr / rxs;
+
+            // if ( (0 <= t && t <= 1) && (0 <= u && u <= 1) )
+            if ( (eps <= t && t - 1 <= eps) && (eps <= u && u - 1 <= eps) )
+            {
+                // 3) r × s ≠ 0 and 0 ≤ t ≤ 1 and 0 ≤ u ≤ 1, the two line segments meet at the point p + t * r = q + u * s.
+                if( result ) {
+                    *result = p + (t * r); // == q + (u * s)
+                }
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     class LineSeg2f; // fwd
 
     /**
@@ -177,79 +251,6 @@ namespace jau::math::geom {
             return is_on_line(p2);
         }
 
-    private:
-        /**
-         * See [p + t r = q + u s](https://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect/565282#565282)
-         * and [its terse C# implementation](https://www.codeproject.com/tips/862988/find-the-intersection-point-of-two-line-segments)
-         */
-        static bool intersects(Point2f& result,
-                const Point2f& p, const Point2f& p2,
-                const Point2f& q, const Point2f& q2, const bool do_collinear=false)
-        {
-            // Operations: 11+, 8*, 2 branches without collinear case
-            constexpr const float eps = std::numeric_limits<float>::epsilon();
-            const Vec2f r = p2 - p;
-            const Vec2f s = q2 - q;
-            const float rxs = r.cross(s);
-
-            if ( jau::is_zero(rxs) ) {
-                if ( do_collinear ) {
-                    const Vec2f q_p = q - p;
-                    const float qpxr = q_p.cross(r);
-                    if ( jau::is_zero(qpxr) ) // disabled collinear case
-                    {
-                        // 1) r x s = 0 and (q - p) x r = 0, the two lines are collinear.
-
-                        const Point2f p_q = p - q;
-                        const float qp_dot_r = q_p.dot(r);
-                        const float pq_dot_s = p_q.dot(s);
-                        // if ( ( 0 <= qp_dot_r && qp_dot_r <= r.dot(r) ) ||
-                        //      ( 0 <= pq_dot_s && pq_dot_s <= s.dot(s) ) )
-                        if ( ( eps <= qp_dot_r && qp_dot_r - r.dot(r) <= eps ) ||
-                             ( eps <= pq_dot_s && pq_dot_s - s.dot(s) <= eps ) )
-                        {
-                            // 1.1) 0 <= (q - p) · r <= r · r or 0 <= (p - q) · s <= s · s, the two lines are overlapping
-                            // FIXME: result set to q2 endpoint, OK?
-                            result = q2;
-                            return true;
-                        }
-
-                        // 1.2 the two lines are collinear but disjoint.
-                        return false;
-                    } else {
-                        // 2) r × s = 0 and (q − p) × r ≠ 0, the two lines are parallel and non-intersecting.
-                        return false;
-                    }
-                } else {
-                    // Not considering collinear case as an intersection
-                    return false;
-                }
-            } else {
-                // r x s != 0
-                const Vec2f q_p = q - p;
-                const float qpxr = q_p.cross(r);
-
-                // p + t r = q + u s
-                // (p + t r) × s = (q + u s) × s
-                // t (r × s) = (q − p) × s, with s x s = 0
-                // t = (q - p) x s / (r x s)
-                const float t = q_p.cross(s) / rxs;
-
-                // u = (p − q) × r / (s × r) = (q - p) x r / (r x s), with s × r = − r × s
-                const float u = qpxr / rxs;
-
-                // if ( (0 <= t && t <= 1) && (0 <= u && u <= 1) )
-                if ( (eps <= t && t - 1 <= eps) && (eps <= u && u - 1 <= eps) )
-                {
-                    // 3) r × s ≠ 0 and 0 ≤ t ≤ 1 and 0 ≤ u ≤ 1, the two line segments meet at the point p + t * r = q + u * s.
-                    result = p + (t * r); // == q + (u * s)
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
     public:
 
         /**
@@ -259,7 +260,7 @@ namespace jau::math::geom {
          * @return true if the line segments intersect, otherwise false
          */
         bool intersects(Point2f& result, const LineSeg2f & o) const noexcept {
-            return intersects(result, p0, p1, o.p0, o.p1);
+            return testSeg2SegIntersection2D(&result, p0, p1, o.p0, o.p1);
         }
 
         /**
@@ -268,50 +269,7 @@ namespace jau::math::geom {
          * @return true if both intersect, otherwise false
          */
         bool intersects(const LineSeg2f & o) const noexcept override {
-            Point2f result;
-            return intersects(result, p0, p1, o.p0, o.p1);
-#if 0
-            const pixel::orientation_t or_1 = orientation (p0, p1, o.p0);
-            const pixel::orientation_t or_2 = orientation (p0, p1, o.p1);
-            const pixel::orientation_t or_3 = orientation(o.p0, o.p1, p0);
-            const pixel::orientation_t or_4 = orientation(o.p0, o.p1, p1);
-
-            // General case : Points are non-collinear.
-            if (or_1 != or_2 && or_3 != or_4) {
-                pixel::log_printf("i-g-0: %s with %s\n", toString().c_str(), o.toString().c_str());
-                return true;
-            }
-
-#if 0
-            // Special case : Points are collinear.
-
-            // If points p0, p1 and o.p0 are collinear, check if point o.p0 lies on this segment p0-p1
-            if (or_1 == pixel::orientation_t::COL && is_on_line (o.p0)) {
-                pixel::log_printf("i-s-1: %s with %s\n", toString().c_str(), o.toString().c_str());
-                return true;
-            }
-
-            // If points p0, p1 and o.p1 are collinear, check if point o.p1 lies on this segment p0-p1
-            if (or_2 == pixel::orientation_t::COL && is_on_line (o.p1)) {
-                pixel::log_printf("i-s-2: %s with %s\n", toString().c_str(), o.toString().c_str());
-                return true;
-            }
-
-            // If points o.p0, o.p1 and p0 are collinear, check if point p0 lies on given segment o.p0-o.p1
-            if (or_3 == pixel::orientation_t::COL && o.is_on_line (p0)) {
-                pixel::log_printf("i-s-3: %s with %s\n", toString().c_str(), o.toString().c_str());
-                return true;
-            }
-
-            // If points o.p0, o.p1 and p1 are collinear, check if point p1 lies on given segment o.p0-o.p1
-            if (or_4 == pixel::orientation_t::COL && o.is_on_line (p1)) {
-                pixel::log_printf("i-s-4: %s with %s\n", toString().c_str(), o.toString().c_str());
-                return true;
-            }
-#endif
-
-            return false;
-#endif
+            return testSeg2SegIntersection2D(nullptr, p0, p1, o.p0, o.p1);
         }
 
         /**

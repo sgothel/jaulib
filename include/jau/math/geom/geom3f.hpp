@@ -123,44 +123,73 @@ namespace jau::math::geom {
 
     };
 
-    typedef jau::darray<Vec3f> VertexList;
-
-    /**
-     * Computes the area of a list of vertices via shoelace formula.
-     *
-     * This method is utilized e.g. to reliably compute the {@link Winding} of complex shapes.
-     *
-     * Implementation uses double precision.
-     *
-     * @param vertices
-     * @return positive area if ccw else negative area value
-     * @see #getWinding()
-     */
-    constexpr double area2D(const VertexList& vertices) noexcept {
-        size_t n = vertices.size();
-        double area = 0.0;
-        for (size_t p = n - 1, q = 0; q < n; p = q++) {
-            const Vec3f& pCoord = vertices[p];
-            const Vec3f& qCoord = vertices[q];
-            area += (double)pCoord.x * (double)qCoord.y - (double)qCoord.x * (double)pCoord.y;
-        }
-        return area;
+    constexpr Vec3f midpoint(const Vec3f& a, const Vec3f& b) noexcept {
+        Vec3f r(a); (r+=b)*=0.5f; return r;
     }
 
     /**
-     * Compute the winding using the area2D() function over all vertices for complex shapes.
-     *
-     * Uses the {@link #area(List)} function over all points
-     * on complex shapes for a reliable result!
-     *
-     * Implementation uses double precision.
-     *
-     * @param vertices array of Vertices
-     * @return Winding::CCW or Winding::CLW
-     * @see area2D()
+     * Check if one of three vertices are in triangle using barycentric coordinates computation.
+     * @param a first triangle vertex
+     * @param b second triangle vertex
+     * @param c third triangle vertex
+     * @param p1 the vertex in question
+     * @param p2 the vertex in question
+     * @param p3 the vertex in question
+     * @return true if p1 or p2 or p3 is in triangle (a, b, c), false otherwise.
      */
-    constexpr Winding getWinding(const VertexList& vertices) noexcept {
-        return area2D(vertices) >= 0 ? Winding::CCW : Winding::CW ;
+    constexpr bool isInTriangle3(const Vec3f& a, const Vec3f& b, const Vec3f& c,
+                                 const Vec3f& p1, const Vec3f& p2, const Vec3f& p3) noexcept
+    {
+        // Compute vectors
+        Vec3f ac = c - a; // v0
+        Vec3f ab = b - a; // v1
+
+        // Compute dot products
+        const float dotAC_AC = ac.dot(ac);
+        const float dotAC_AB = ac.dot(ab);
+        const float dotAB_AB = ab.dot(ab);
+
+        // Compute barycentric coordinates
+        const float invDenom = 1 / (dotAC_AC * dotAB_AB - dotAC_AB * dotAC_AB);
+        {
+            Vec3f ap = p1 - a; // v2
+            const float dotAC_AP1 = ac.dot(ap);
+            const float dotAB_AP1 = ab.dot(ap);
+            const float u = (dotAB_AB * dotAC_AP1 - dotAC_AB * dotAB_AP1) * invDenom;
+            const float v = (dotAC_AC * dotAB_AP1 - dotAC_AB * dotAC_AP1) * invDenom;
+
+            // Check if point is in triangle
+            if ( (u >= 0) && (v >= 0) && (u + v < 1) ) {
+                return true;
+            }
+        }
+
+        {
+            Vec3f ap = p2 - a; // v2
+            const float dotAC_AP2 = ac.dot(ap);
+            const float dotAB_AP2 = ab.dot(ap);
+            const float u = (dotAB_AB * dotAC_AP2 - dotAC_AB * dotAB_AP2) * invDenom;
+            const float v = (dotAC_AC * dotAB_AP2 - dotAC_AB * dotAC_AP2) * invDenom;
+
+            // Check if point is in triangle
+            if ( (u >= 0) && (v >= 0) && (u + v < 1) ) {
+                return true;
+            }
+        }
+
+        {
+            Vec3f ap = p3 - a; // v3
+            const float dotAC_AP3 = ac.dot(ap);
+            const float dotAB_AP3 = ab.dot(ap);
+            const float u = (dotAB_AB * dotAC_AP3 - dotAC_AB * dotAB_AP3) * invDenom;
+            const float v = (dotAC_AC * dotAB_AP3 - dotAC_AB * dotAC_AP3) * invDenom;
+
+            // Check if point is in triangle
+            if ( (u >= 0) && (v >= 0) && (u + v < 1) ) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**@}*/
