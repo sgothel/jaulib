@@ -668,6 +668,14 @@ namespace jau::enums {
     }                                                       \
 
 // static class member
+#define JAU_MAKE_ENUM_STRING_MEMBER(type, ...)              \
+    JAU_MAKE_ENUM_STRING_SUB_MEMBER(type, type, __VA_ARGS__) \
+                                                            \
+    constexpr static std::string                            \
+    to_string(const type e) noexcept                        \
+    { return std::string(name(e)); }                        \
+
+// static class member
 #define JAU_MAKE_BITFIELD_ENUM_STRING_MEMBER(type, ...)     \
     JAU_MAKE_ENUM_STRING_SUB_MEMBER(type, type, __VA_ARGS__) \
                                                             \
