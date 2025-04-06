@@ -227,7 +227,7 @@ class Frustum {
 
   private:
     /** Normalized planes[l, r, b, t, n, f] */
-	Plane planes[6];
+	Plane m_planes[6];
 
   public:
 	/**
@@ -252,12 +252,12 @@ class Frustum {
      * @return {@code out} for chaining
      */
 	constexpr jau::math::Vec4f* getPlanes(jau::math::Vec4f out[/*6*/]) const noexcept {
-        planes[LEFT  ].toVec4f(out[0]);
-        planes[RIGHT ].toVec4f(out[1]);
-        planes[BOTTOM].toVec4f(out[2]);
-        planes[TOP   ].toVec4f(out[3]);
-        planes[NEAR  ].toVec4f(out[4]);
-        planes[FAR   ].toVec4f(out[5]);
+        m_planes[LEFT  ].toVec4f(out[0]);
+        m_planes[RIGHT ].toVec4f(out[1]);
+        m_planes[BOTTOM].toVec4f(out[2]);
+        m_planes[TOP   ].toVec4f(out[3]);
+        m_planes[NEAR  ].toVec4f(out[4]);
+        m_planes[FAR   ].toVec4f(out[5]);
         return out;
     }
 
@@ -272,12 +272,12 @@ class Frustum {
      * @return {@code out} for chaining
      */
 	constexpr void getPlanes(float out[/* off+4*6] */]) const noexcept {
-        planes[LEFT  ].toFloats( out + static_cast<ptrdiff_t>(4*0) );
-        planes[RIGHT ].toFloats( out + static_cast<ptrdiff_t>(4*1) );
-        planes[BOTTOM].toFloats( out + static_cast<ptrdiff_t>(4*2) );
-        planes[TOP   ].toFloats( out + static_cast<ptrdiff_t>(4*3) );
-        planes[NEAR  ].toFloats( out + static_cast<ptrdiff_t>(4*4) );
-        planes[FAR   ].toFloats( out + static_cast<ptrdiff_t>(4*5) );
+        m_planes[LEFT  ].toFloats( out + static_cast<ptrdiff_t>(4*0) );
+        m_planes[RIGHT ].toFloats( out + static_cast<ptrdiff_t>(4*1) );
+        m_planes[BOTTOM].toFloats( out + static_cast<ptrdiff_t>(4*2) );
+        m_planes[TOP   ].toFloats( out + static_cast<ptrdiff_t>(4*3) );
+        m_planes[NEAR  ].toFloats( out + static_cast<ptrdiff_t>(4*4) );
+        m_planes[FAR   ].toFloats( out + static_cast<ptrdiff_t>(4*5) );
     }
 
     /**
@@ -285,12 +285,12 @@ class Frustum {
      * @param src the 6 source planes
      */
 	constexpr void updateByPlanes(const Plane src[/*6*/]) noexcept {
-        planes[0] = src[0];
-        planes[1] = src[1];
-        planes[2] = src[2];
-        planes[3] = src[3];
-        planes[4] = src[4];
-        planes[5] = src[5];
+        m_planes[0] = src[0];
+        m_planes[1] = src[1];
+        m_planes[2] = src[2];
+        m_planes[3] = src[3];
+        m_planes[4] = src[4];
+        m_planes[5] = src[5];
     }
 
     /**
@@ -310,7 +310,7 @@ class Frustum {
      *
      * @return array of normalized {@link Plane}s, order see above.
      */
-	constexpr Plane* getPlanes() noexcept { return planes; }
+	constexpr Plane* getPlanes() noexcept { return m_planes; }
 
     /**
      * Calculate the frustum planes in world coordinates
@@ -354,7 +354,7 @@ class Frustum {
         // Left:   a = m41 + m11, b = m42 + m12, c = m43 + m13, d = m44 + m14  - [1..4] column-major
         // Left:   a = m30 + m00, b = m31 + m01, c = m32 + m02, d = m33 + m03  - [0..3] column-major
         {
-            geom::Frustum::Plane& p = planes[geom::Frustum::LEFT];
+            geom::Frustum::Plane& p = m_planes[geom::Frustum::LEFT];
             p.n.set( m.m30 + m.m00,
                      m.m31 + m.m01,
                      m.m32 + m.m02 );
@@ -364,7 +364,7 @@ class Frustum {
         // Right:  a = m41 - m11, b = m42 - m12, c = m43 - m13, d = m44 - m14  - [1..4] column-major
         // Right:  a = m30 - m00, b = m31 - m01, c = m32 - m02, d = m33 - m03  - [0..3] column-major
         {
-            geom::Frustum::Plane& p = planes[geom::Frustum::RIGHT];
+            geom::Frustum::Plane& p = m_planes[geom::Frustum::RIGHT];
             p.n.set( m.m30 - m.m00,
                      m.m31 - m.m01,
                      m.m32 - m.m02 );
@@ -374,7 +374,7 @@ class Frustum {
         // Bottom: a = m41 + m21, b = m42 + m22, c = m43 + m23, d = m44 + m24  - [1..4] column-major
         // Bottom: a = m30 + m10, b = m31 + m11, c = m32 + m12, d = m33 + m13  - [0..3] column-major
         {
-            geom::Frustum::Plane& p = planes[geom::Frustum::BOTTOM];
+            geom::Frustum::Plane& p = m_planes[geom::Frustum::BOTTOM];
             p.n.set( m.m30 + m.m10,
                      m.m31 + m.m11,
                      m.m32 + m.m12 );
@@ -384,7 +384,7 @@ class Frustum {
         // Top:   a = m41 - m21, b = m42 - m22, c = m43 - m23, d = m44 - m24  - [1..4] column-major
         // Top:   a = m30 - m10, b = m31 - m11, c = m32 - m12, d = m33 - m13  - [0..3] column-major
         {
-            geom::Frustum::Plane& p = planes[geom::Frustum::TOP];
+            geom::Frustum::Plane& p = m_planes[geom::Frustum::TOP];
             p.n.set( m.m30 - m.m10,
                      m.m31 - m.m11,
                      m.m32 - m.m12 );
@@ -394,7 +394,7 @@ class Frustum {
         // Near:  a = m41m31, b = m42m32, c = m43m33, d = m44m34  - [1..4] column-major
         // Near:  a = m30m20, b = m31m21, c = m32m22, d = m33m23  - [0..3] column-major
         {
-            geom::Frustum::Plane& p = planes[geom::Frustum::NEAR];
+            geom::Frustum::Plane& p = m_planes[geom::Frustum::NEAR];
             p.n.set( m.m30 + m.m20,
                      m.m31 + m.m21,
                      m.m32 + m.m22 );
@@ -404,7 +404,7 @@ class Frustum {
         // Far:   a = m41 - m31, b = m42 - m32, c = m43 - m33, d = m44 - m34  - [1..4] column-major
         // Far:   a = m30 - m20, b = m31 - m21, c = m32m22, d = m33m23  - [0..3] column-major
         {
-            geom::Frustum::Plane& p = planes[geom::Frustum::FAR];
+            geom::Frustum::Plane& p = m_planes[geom::Frustum::FAR];
             p.n.set( m.m30 - m.m20,
                      m.m31 - m.m21,
                      m.m32 - m.m22 );
@@ -413,7 +413,7 @@ class Frustum {
 
         // Normalize all planes
         for (int i = 0; i < 6; ++i) { // NOLINT(modernize-loop-convert)
-            geom::Frustum::Plane& p = planes[i];
+            geom::Frustum::Plane& p = m_planes[i];
             const float invLen = 1.0f / p.n.length();
             p.n *= invLen;
             p.d *= invLen;
@@ -445,12 +445,12 @@ class Frustum {
 	 * </p>
 	 */
     bool isOutside(const AABBox3f&& box) const noexcept {
-        return !intersects(planes[0], box) ||
-               !intersects(planes[1], box) ||
-               !intersects(planes[2], box) ||
-               !intersects(planes[3], box) ||
-               !intersects(planes[4], box) ||
-               !intersects(planes[5], box);
+        return !intersects(m_planes[0], box) ||
+               !intersects(m_planes[1], box) ||
+               !intersects(m_planes[2], box) ||
+               !intersects(m_planes[3], box) ||
+               !intersects(m_planes[4], box) ||
+               !intersects(m_planes[5], box);
     }
 
     enum class location_t { OUTSIDE, INSIDE, INTERSECT };
@@ -465,7 +465,7 @@ class Frustum {
         location_t res = location_t::INSIDE;
 
         for (int i = 0; i < 6; ++i) { // NOLINT(modernize-loop-convert)
-            const float d = planes[i].distanceTo(p);
+            const float d = m_planes[i].distanceTo(p);
             if ( d < 0.0f ) {
                 return location_t::OUTSIDE;
             } else if ( d == 0.0f ) {
@@ -482,12 +482,12 @@ class Frustum {
      * @return true if outside of the frustum, otherwise inside or on a plane
      */
     bool isOutside(const Vec3f& p) const noexcept {
-        return planes[0].distanceTo(p) < 0.0f ||
-               planes[1].distanceTo(p) < 0.0f ||
-               planes[2].distanceTo(p) < 0.0f ||
-               planes[3].distanceTo(p) < 0.0f ||
-               planes[4].distanceTo(p) < 0.0f ||
-               planes[5].distanceTo(p) < 0.0f;
+        return m_planes[0].distanceTo(p) < 0.0f ||
+               m_planes[1].distanceTo(p) < 0.0f ||
+               m_planes[2].distanceTo(p) < 0.0f ||
+               m_planes[3].distanceTo(p) < 0.0f ||
+               m_planes[4].distanceTo(p) < 0.0f ||
+               m_planes[5].distanceTo(p) < 0.0f;
     }
 
     /**
@@ -501,7 +501,7 @@ class Frustum {
         location_t res = location_t::INSIDE; // fully inside
 
         for (int i = 0; i < 6; ++i) { // NOLINT(modernize-loop-convert)
-            const float d = planes[i].distanceTo(p);
+            const float d = m_planes[i].distanceTo(p);
             if ( d < -radius ) {
                 // fully outside
                 return location_t::OUTSIDE;
@@ -527,12 +527,12 @@ class Frustum {
     std::string toString() {
         std::string s;
         s.append("Frustum[Planes[").append("\n")
-        .append(" L: ").append(planes[0].toString()).append(",\n")
-        .append(" R: ").append(planes[1].toString()).append(",\n")
-        .append(" B: ").append(planes[2].toString()).append(",\n")
-        .append(" T: ").append(planes[3].toString()).append(",\n")
-        .append(" N: ").append(planes[4].toString()).append(",\n")
-        .append(" F: ").append(planes[5].toString()).append("],\n")
+        .append(" L: ").append(m_planes[0].toString()).append(",\n")
+        .append(" R: ").append(m_planes[1].toString()).append(",\n")
+        .append(" B: ").append(m_planes[2].toString()).append(",\n")
+        .append(" T: ").append(m_planes[3].toString()).append(",\n")
+        .append(" N: ").append(m_planes[4].toString()).append(",\n")
+        .append(" F: ").append(m_planes[5].toString()).append("],\n")
         .append("]");
         return s;
     }
