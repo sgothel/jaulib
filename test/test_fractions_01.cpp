@@ -1168,6 +1168,8 @@ TEST_CASE( "Fraction Time Conversion Test 05.01", "[fraction_timespec][time]" ) 
     {
         int64_t offset=987654321_i64; size_t consumedChars=2783964772;
         fraction_timespec t0 = fraction_timespec::from("Error01 2024-01-01     01:02:03.456789   +01:02HALLO SJKSJSJKSJ", offset, consumedChars);
+        jau::INFO_PRINT( "Error01 t0 %s, %s", t0.to_string().c_str(), t0.to_iso8601_string().c_str());
+        REQUIRE(fraction_timespec() == t0);
         REQUIRE(true == t0.isZero());
         REQUIRE(offset == 0);
         REQUIRE(0 == consumedChars);

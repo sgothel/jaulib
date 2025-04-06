@@ -946,9 +946,9 @@ namespace jau {
          * @param datestr the ISO8601 time string to parse
          * @param utcOffsetSec storage for UTC offset in seconds
          * @param consumedChars number of consumed chars successfully parsed
-         * @param returns the fraction_timespec in UTC 
+         * @param returns the fraction_timespec in UTC
          */
-        static fraction_timespec from(const std::string_view datestr, int64_t &utcOffsetSec, size_t &consumedChars) noexcept;
+        static fraction_timespec from(const std::string& datestr, int64_t &utcOffsetSec, size_t &consumedChars) noexcept;
 
         /**
          * Conversion constructor from an ISO8601 time string,
@@ -959,7 +959,7 @@ namespace jau {
          * @param datestr the ISO8601 time string to parse
          * @param addUTCOffset if true, add UTC offset to the resulting time, otherwise return UTC only
          */
-        static fraction_timespec from(const std::string_view datestr, Bool addUTCOffset = Bool::False) noexcept;
+        static fraction_timespec from(const std::string& datestr, Bool addUTCOffset = Bool::False) noexcept;
 
         /**
          * Conversion constructor from broken down values assuming UTC
@@ -1026,7 +1026,7 @@ namespace jau {
 
         constexpr bool isZero() noexcept { return 0 == tv_sec && 0 == tv_nsec; }
         constexpr void clear() noexcept { tv_sec=0; tv_nsec=0; }
-        
+
         /** Two way comparison operator */
         constexpr bool operator==(const fraction_timespec& rhs ) const noexcept {
             return tv_sec == rhs.tv_sec && tv_nsec == rhs.tv_nsec;
@@ -1065,7 +1065,7 @@ namespace jau {
             tv_sec -= rhs.tv_sec;
             return normalize();
         }
-        
+
         /**
          * Compound product (multiplication)
          *
@@ -1239,7 +1239,7 @@ namespace jau {
         r -= rhs; // implicit normalize
         return r;
     }
-    
+
     /**
      * Returns product of fraction_timespec * scalar.
      *

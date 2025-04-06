@@ -26,10 +26,11 @@
 #include <cstdint>
 #include <cinttypes>
 #include <cstring>
-
 #include <ctime>
 
 #include <algorithm>
+#include <regex>
+#include <string>
 
 #include <jau/byte_util.hpp>
 #include <jau/cpp_lang_util.hpp>
@@ -165,7 +166,7 @@ fraction_timespec fraction_timespec::from(int year, unsigned month, unsigned day
     return res;
 }
 
-fraction_timespec fraction_timespec::from(const std::string_view datestr, Bool addUTCOffset) noexcept {
+fraction_timespec fraction_timespec::from(const std::string& datestr, Bool addUTCOffset) noexcept {
     int64_t utcOffsetSec;
     size_t consumedChars;
     fraction_timespec res = from(datestr, utcOffsetSec, consumedChars);
@@ -176,146 +177,109 @@ fraction_timespec fraction_timespec::from(const std::string_view datestr, Bool a
     return res;
 }
 
-fraction_timespec fraction_timespec::from(const std::string_view datestr, int64_t &utcOffsetSec, size_t &consumedChars) noexcept {
+static std::regex jau_ISO8601_regex() noexcept {
+    try {
+        // 2024-01-02T12:34:56.789+11:00
+        // - g1: year 2024
+        // - g2: month 01
+        // - g3: day 03
+        // - g4: hour 12
+        // - optional:
+        //   -     T|\s+
+        //   - g5: minute 34
+        //   - g6: second 56
+        //   - g7: second-fraction 789  (optional)
+        //   - g8: UTC (Zulu) 'Z'       (optional)
+        //   - g9:  TZ +/-            (optional)
+        //   - g10: TZ hour 11        (optional)
+        //   - g11: TZ minute 00      (optional)
+        return
+            std::regex( R"(^\s*(-?(?:[1-9]\d*)?\d{1,4})-(1[0-2]|0?[1-9])-(3[01]|0?[1-9]|[12]\d))"
+                        //        g1                    g2              g3
+                        R"((?:(?:T|\s+)(2[0-3]|1\d|0?\d):([1-5]\d|0?\d):([1-5]\d|0?\d)(?:\.(\d+))?)?)"
+                        //                    g4               g5               g6           g7
+                        R"((?:(Z)|(?:\s*)([+-])(2[0-3]|1\d|0?\d):?([1-5]\d|0?\d)?)?)"
+                        //    g8           g9          g10              g11
+                      );
+
+    } catch (...) {
+        ERR_PRINT2("Caught unknown exception");
+        return std::regex();
+    }
+}
+
+fraction_timespec fraction_timespec::from(const std::string& datestr, int64_t &utcOffsetSec, size_t &consumedChars) noexcept {
+    static std::regex pattern = jau_ISO8601_regex();
+
     consumedChars = 0;
     utcOffsetSec = 0;
-    if( nullptr == datestr.data() || 0 == datestr.length() ) {
-        return fraction_timespec(); // error
-    }
-    const char * const str = datestr.data();
-    const size_t len = datestr.length();
-    size_t idx;
-    int y=0;
-    unsigned M=0, d=0;
-    {
-        int count=0;
-        const int items = std::sscanf(str, "%4d-%2u-%2u%n", &y, &M, &d, &count);
-        // INFO_PRINT("X01: items %d, chars %d, len %zu, str: '%s'", items, count, len, str);
-        if( 3 != items || !(5 <= count && static_cast<size_t>(count) <= len) ) {
-            return fraction_timespec(); // error
-        }
-        idx = count;
-    }
-    consumedChars = idx;
-    fraction_timespec res = fraction_timespec::from(y, M, d);
-    if( idx == len) {
-        return res; // EOS
-    }
-    if( str[idx] == 'Z' ) {
-        ++consumedChars;
-        return res; // EOS
-    }
-    if( str[idx] == 'T' ) {
-        ++idx;
-    } else if( str[idx] == ' ' ) {
-        // eat up space before time
-        do {
-            ++idx;
-        } while( idx < len && str[idx] == ' ' );
-    } else {
-        return res; // remainder not matching
-    }
-    if( idx == len ) {
-        return res; // EOS post 'T' or ' '
-    }
 
-    unsigned h=0,m=0,s=0;
-    {
-        int count=0;
-        const int items = std::sscanf(str+idx, "%2u:%2u:%2u%n", &h, &m, &s, &count);
-        // INFO_PRINT("X02: items %d, chars %d, len %zu, str: '%s'", items, count, len-idx, str+idx);
-        if( 3 != items || !(5 <= count && static_cast<size_t>(count) <= len - idx) ) {
-            return res; // error in remainder
-        }
-        idx += count;
-    }
-    consumedChars = idx;
-    res = fraction_timespec::from(y, M, d, h, m, s, 0);
-
-    if( idx == len) {
-        return res; // EOS
-    }
-    if( str[idx] == 'Z' ) {
-        ++consumedChars;
-        return res; // EOS
-    }
-    if( str[idx] == '.' ) {
-        ++idx;
-        if( idx == len) {
-            return res; // EOS
-        }
-        unsigned long fs=0;
-        {
-            int count=0;
-            const int items = std::sscanf(str+idx, "%9lu%n", &fs, &count);
-            // INFO_PRINT("X03: items %d, chars %d, len %zu, str: '%s'", items, count, len-idx, str+idx);
-            if( 1 != items || !(0 <= count && static_cast<size_t>(count) <= len - idx) ) {
-                return res; // error in remainder
+    std::smatch match;
+    try {
+        if( std::regex_search(datestr, match, pattern) ) {
+            consumedChars = match.length();
+            constexpr bool DBG_OUT = false;
+            if constexpr ( DBG_OUT ) {
+                std::cout << "XXX: " << datestr << std::endl;
+                std::cout << "XXX: match pos " << match.position() << ", len " << match.length() << ", sz " << match.size() << std::endl;
+                for(size_t i=0; i<match.size(); ++i) {
+                    const std::string& ms = match[i];
+                    std::cout << "- [" << i << "]: '" << ms << "', len " << ms.length() << std::endl;
+                }
             }
-            idx += count;
-        }
-        const jau::nsize_t fs_digits = jau::digits10(fs, 1, true);
-        if( 9 < fs_digits ) {
-            return res; // error in remainder
-        }
-        res.tv_nsec = static_cast<int64_t>(fs) * static_cast<int64_t>( std::pow(10, 9 - fs_digits) );
-        consumedChars = idx;
-    }
-    if( idx == len) {
-        return res; // EOS
-    }
-    if( str[idx] == 'Z' ) {
-        ++consumedChars;
-        return res; // EOS
-    }
-    // Offset parsing...
+            int y=0;
+            int M=0, d=0;
+            int h=0,m=0,s=0;
+            uint64_t ns=0;
+            int offset_sign=1, offset_h=0, offset_m=0;
 
-    // Eat up space before offset
-    while( idx < len && str[idx] == ' ' ) {
-        ++idx;
-    }
-    if( idx == len) {
-        return res; // EOS
-    }
-    int64_t offset_sign = 1;
-    if( str[idx] == '+' ) {
-        ++idx;
-    } else if( str[idx] == '-' ) {
-        ++idx;
-        offset_sign = -1;
-    }
-    if( idx == len) {
-        return res; // EOS or done (no offset)
-    }
-
-    unsigned oh=0,om=0;
-    {
-        int count=0;
-        const int items = std::sscanf(str+idx, "%2u%n", &oh, &count);
-        // INFO_PRINT("X04: items %d, chars %d, len %zu, str: '%s'", items, count, len-idx, str+idx);
-        if( 1 != items || !(1 <= count && static_cast<size_t>(count) <= len - idx) ) {
-            return res; // error in remainder
+            if( match.size() > 1 && match[1].length() > 0 ) {
+                y  = std::stoi(match[1]);
+                if( match.size() > 2 && match[2].length() > 0 ) {
+                    M = std::stoi(match[2]);
+                    if( match.size() > 3 && match[3].length() > 0 ) {
+                        d = std::stoi(match[3]);
+                        if( match.size() > 4 && match[4].length() > 0 ) {
+                            h = std::stoi(match[4]);
+                            if( match.size() > 5 && match[5].length() > 0 ) {
+                                m = std::stoi(match[5]);
+                                if( match.size() > 6 && match[6].length() > 0 ) {
+                                    s = std::stoi(match[6]);
+                                    if( match.size() > 7 && match[7].length() > 0 ) {
+                                        ns = std::stoul(match[7]);
+                                    }
+                                    if( match.size() > 8 && match[8].length() > 0 ) {
+                                        // UTC Zulu
+                                    } else if( match.size() > 10 && match[9].length() > 0 && match[10].length() > 0 ) {
+                                        if( match[9] == "-") {
+                                            offset_sign = -1;
+                                        }
+                                        offset_h = std::stoi(match[10]);
+                                        if( match.size() > 11 && match[11].length() > 0 ) {
+                                            offset_m = std::stoi(match[11]);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if( 0 < ns ) {
+                const jau::nsize_t ns_digits = jau::digits10(ns, 1, true);
+                if( 9 < ns_digits ) {
+                    ns = 0; // error in remainder
+                }
+                ns = ns * static_cast<uint64_t>( std::pow(10, 9 - ns_digits) );
+            }
+            // add the timezone offset if desired, rendering result non-UTC
+            utcOffsetSec = offset_sign * ( ( offset_h * 60_i64 * 60_i64 ) + ( offset_m * 60_i64 ) );
+            return fraction_timespec::from(y, M, d, h, m, s, ns);
         }
-        idx += count;
+    } catch (...) {
+        ERR_PRINT2("Caught unknown exception parsing %s", datestr.c_str());
     }
-    if( idx < len ) {
-        // make `:` separator optional
-        if( str[idx] == ':' ) {
-            ++idx;
-        }
-        if( idx < len ) {
-            int count=0;
-            const int items = std::sscanf(str+idx, "%2u%n", &om, &count);
-            // INFO_PRINT("X05: items %d, chars %d, len %zu, str: '%s'", items, count, len-idx, str+idx);
-            if( 1 == items ) {
-                idx += count;
-            } // else tolerate missing minutes
-        }
-    }
-    consumedChars = idx;
-    // add the timezone offset if desired, rendering result non-UTC
-    utcOffsetSec = offset_sign * ( ( oh * 60_i64 * 60_i64 ) + ( om * 60_i64 ) );
-    return res;
+    return fraction_timespec(); // error
 }
 
 bool jau::milli_sleep(uint64_t td_ms, const bool ignore_irq) noexcept {
