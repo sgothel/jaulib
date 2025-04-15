@@ -25,12 +25,12 @@
 
 #include <cstring>
 #include <string>
-#include <memory>
 #include <cstdint>
 #include <cstdio>
 
 #include <jau/eui48.hpp>
 #include <jau/secmem.hpp>
+#include <jau/string_util.hpp>
 
 using namespace jau;
 

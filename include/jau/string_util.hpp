@@ -25,6 +25,7 @@
 #ifndef JAU_STRING_UTIL_HPP_
 #define JAU_STRING_UTIL_HPP_
 
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <cstdarg>
@@ -34,6 +35,8 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include "jau/basic_types.hpp"
+#include "jau/type_info.hpp"
 
 #include <jau/byte_util.hpp>
 #include <jau/cpp_lang_util.hpp>
@@ -263,36 +266,9 @@ namespace jau {
     // *************************************************
      */
 
-    /**
-     * Returns a string according to `vprintf()` formatting rules
-     * using `va_list` instead of a variable number of arguments.
-     * @param format `printf()` compliant format string
-     * @param ap `va_list` arguments
-     */
-    std::string vformat_string(const char* format, va_list ap);
-
-    /**
-     * Returns a string according to `printf()` formatting rules
-     * and variable number of arguments following the `format` argument.
-     * @param format `printf()` compliant format string
-     */
-    std::string format_string(const char* format, ...);
-
-    /**
-     * Safely returns a string according to `printf()` formatting rules
-     * and variable number of arguments following the `format` argument.
-     *
-     * jau::cfmt2::check() is utilize to pre-validate the given arguments
-     * against the format string. If invalid, method returns an empty string.
-     * Otherwise std::snprintf() is being utilized.
-     *
-     * @param maxStrLen maximum resulting string length
-     * @param format `printf()` compliant format string
-     * @param args optional arguments matching the format string
-     */
-    template <typename... Args>
-    constexpr std::string format_string_v(const std::size_t maxStrLen, const std::string_view format, const Args &...args) {
-        if ( jau::cfmt::check2<Args...>(format) ) {
+    namespace impl {
+        template <typename... Args>
+        constexpr std::string format_string_n(const std::size_t maxStrLen, const std::string_view& format, const Args &...args) {
             std::string str;
             str.reserve(maxStrLen + 1);  // incl. EOS
             str.resize(maxStrLen);       // excl. EOS
@@ -301,16 +277,155 @@ namespace jau {
             // -Wformat=2 -Wformat-overflow=2 -Wformat-signedness
             PRAGMA_DISABLE_WARNING_PUSH
             PRAGMA_DISABLE_WARNING_FORMAT_NONLITERAL
-            const size_t nchars = std::snprintf(&str[0], maxStrLen + 1, format.data(), args...);
+            PRAGMA_DISABLE_WARNING_FORMAT_SECURITY
+            const size_t nchars = std::snprintf(&str[0], maxStrLen + 1, format.data(), args...); // NOLINT
             PRAGMA_DISABLE_WARNING_POP
             if( nchars < maxStrLen + 1 ) {
                 str.resize(nchars);
                 str.shrink_to_fit();
             }  // else truncated w/ nchars > MaxStrLen
             return str;
-        } else {
-            return "";
         }
+
+        template <typename... Args>
+        constexpr std::string format_string_h(const std::size_t strLenHint, const std::string_view format, const Args &...args) {
+            size_t nchars;
+            std::string str;
+            {
+                const size_t bsz = strLenHint+1; // including EOS
+                str.reserve(bsz);  // incl. EOS
+                str.resize(bsz-1); // excl. EOS
+
+                // -Wformat=2 -> -Wformat -Wformat-nonliteral -Wformat-security -Wformat-y2k
+                // -Wformat=2 -Wformat-overflow=2 -Wformat-signedness
+                PRAGMA_DISABLE_WARNING_PUSH
+                PRAGMA_DISABLE_WARNING_FORMAT_NONLITERAL
+                PRAGMA_DISABLE_WARNING_FORMAT_SECURITY
+                nchars = std::snprintf(&str[0], bsz, format.data(), args...); // NOLINT
+                PRAGMA_DISABLE_WARNING_POP
+                if( nchars < bsz ) {
+                    str.resize(nchars);
+                    str.shrink_to_fit();
+                    return str;
+                }
+            }
+            {
+                const size_t bsz = std::min<size_t>(nchars+1, str.max_size()+1); // limit incl. EOS
+                str.reserve(bsz);  // incl. EOS
+                str.resize(bsz-1); // excl. EOS
+
+                // -Wformat=2 -> -Wformat -Wformat-nonliteral -Wformat-security -Wformat-y2k
+                // -Wformat=2 -Wformat-overflow=2 -Wformat-signedness
+                PRAGMA_DISABLE_WARNING_PUSH
+                PRAGMA_DISABLE_WARNING_FORMAT_NONLITERAL
+                PRAGMA_DISABLE_WARNING_FORMAT_SECURITY
+                nchars = std::snprintf(&str[0], bsz, format.data(), args...); // NOLINT
+                PRAGMA_DISABLE_WARNING_POP
+
+                str.resize(nchars);
+                return str;
+            }
+        }
+    }
+
+    /**
+     * Safely returns a (potentially truncated) string according to `snprintf()` formatting rules
+     * and variable number of arguments following the `format` argument.
+     *
+     * jau::cfmt2::checkR2() is utilize to validate `format` against given arguments at *runtime*
+     * and throws jau::IllegalArgumentError on mismatch.
+     *
+     * Resulting string is truncated to `min(maxStrLen, formatLen)`,
+     * with `formatLen` being the given formatted string length of output w/o limitation.
+     *
+     * @param maxStrLen maximum resulting string length
+     * @param format `printf()` compliant format string
+     * @param args optional arguments matching the format string
+     */
+    template <typename... Args>
+    constexpr std::string format_string_n(const std::size_t maxStrLen, const std::string_view& format, const Args &...args) {
+        const jau::cfmt::PResult pr = jau::cfmt::checkR2<Args...>(format);
+        if ( pr.argCount() < 0 ) {
+            throw jau::IllegalArgumentError("format/arg mismatch `"+std::string(format)+"`: "+pr.toString(), E_FILE_LINE);
+        }
+        return impl::format_string_n(maxStrLen, format, args...);
+    }
+
+    /**
+     * Safely returns a (potentially truncated) string according to `snprintf()` formatting rules
+     * and variable number of arguments following the `format` argument.
+     *
+     * jau::cfmt2::checkR2() is utilize to validate `format` against given arguments at *compile time*
+     * and fails to compile on mismatch.
+     *
+     * Resulting string is truncated to `min(maxStrLen, formatLen)`,
+     * with `formatLen` being the given formatted string length of output w/o limitation.
+     *
+     * @tparam format `printf()` compliant format string
+     * @param maxStrLen maximum resulting string length
+     * @param args optional arguments matching the format string
+     */
+    template <StringLiteral format, typename... Args>
+    consteval_cxx20 std::string format_string_n(const std::size_t maxStrLen, const Args &...args) {
+        static_assert( 0 <= jau::cfmt::checkR2<Args...>(format.view()).argCount() );
+        return impl::format_string_n(maxStrLen, format.view(), args...);
+    }
+
+    /**
+     * Safely returns a (non-truncated) string according to `snprintf()` formatting rules
+     * and variable number of arguments following the `format` argument.
+     *
+     * jau::cfmt2::checkR2() is utilize to validate `format` against given arguments at *runtime*
+     * and throws jau::IllegalArgumentError on mismatch.
+     *
+     * Resulting string size matches formated output w/o limitation.
+     *
+     * @param strLenHint initially used string length w/o EOS
+     * @param format `printf()` compliant format string
+     * @param args optional arguments matching the format string
+     */
+    template <typename... Args>
+    constexpr std::string format_string_h(const std::size_t strLenHint, const std::string_view format, const Args &...args) {
+        const jau::cfmt::PResult pr = jau::cfmt::checkR2<Args...>(format);
+        if ( pr.argCount() < 0 ) {
+            throw jau::IllegalArgumentError("format/arg mismatch `"+std::string(format)+"`: "+pr.toString(), E_FILE_LINE);
+        }
+        return impl::format_string_h(strLenHint, format, args...);
+    }
+
+    /**
+     * Safely returns a (non-truncated) string according to `snprintf()` formatting rules
+     * and variable number of arguments following the `format` argument.
+     *
+     * jau::cfmt2::checkR2() is utilize to validate `format` against given arguments at *runtime*
+     * and throws jau::IllegalArgumentError on mismatch.
+     *
+     * Resulting string size matches formated output w/o limitation.
+     *
+     * @param format `printf()` compliant format string
+     * @param args optional arguments matching the format string
+     */
+    template <typename... Args>
+    constexpr std::string format_string(const std::string_view format, const Args &...args) {
+        return format_string_h(1023, format, args...);
+    }
+
+    /**
+     * Safely returns a (non-truncated) string according to `snprintf()` formatting rules
+     * and variable number of arguments following the `format` argument.
+     *
+     * jau::cfmt2::checkR2() is utilize to validate `format` against given arguments at *compile time*
+     * and fails to compile on mismatch.
+     *
+     * Resulting string size matches formated output w/o limitation.
+     *
+     * @tparam format `printf()` compliant format string
+     * @param args optional arguments matching the format string
+     */
+    template <StringLiteral format, typename... Args>
+    consteval_cxx20 std::string format_string(const Args &...args) {
+        static_assert( 0 <= jau::cfmt::checkR2<Args...>(format.view()).argCount() );
+        return impl::format_string_h(1023, format.view(), args...);
     }
 
     /**
@@ -418,7 +533,7 @@ namespace jau {
                                bool> = true>
     inline std::string to_string(const value_type & ref) {
         (void)ref;
-        return "jau::to_string<T> n/a for type "+type_cue<value_type>::to_string();
+        return "jau::to_string<T> n/a for type "+jau::static_ctti<value_type>().toString();
     }
 
     template<typename T>

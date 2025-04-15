@@ -151,11 +151,10 @@ namespace jau::cfmt {
         plength_t length_mod;
         bool precision_set;
 
-        constexpr PResult(const std::string_view fmt_) noexcept
+        constexpr PResult(std::string_view fmt_) noexcept
         : fmt(fmt_), pos(0), arg_count(0), line(0), state(pstate_t::outside), length_mod(plength_t::none), precision_set(false) { }
 
         constexpr PResult(const PResult &pre) noexcept = default;
-
         constexpr PResult &operator=(const PResult &x) noexcept = default;
 
         constexpr bool hasNext() const noexcept {
@@ -553,53 +552,53 @@ namespace jau::cfmt {
 
                 using T = std::remove_cv_t<S>;
                 // using U = std::conditional<std::is_integral_v<T> && std::is_unsigned_v<T>, std::make_signed<T>, T>::type; // triggers the instantiating the 'other' case and hence fails
-                using U = typename std::conditional_t<std::is_integral_v<T> && std::is_unsigned_v<T>, std::make_signed<T>, std::type_identity<T>>::type;  // NOLINT
+                using U = typename std::conditional_t<!std::is_same_v<bool, T> && std::is_integral_v<T> && std::is_unsigned_v<T>, std::make_signed<T>, std::type_identity<T>>::type;  // NOLINT
 
                 switch( pc.length_mod ) {
                     case plength_t::hh:
-                        if constexpr( !std::is_same_v<char, U> && (!std::is_integral_v<U> || sizeof(U) > sizeof(char)) ) {
+                        if constexpr( !std::is_same_v<char, U> && (!std::is_integral_v<U> || sizeof(U) > sizeof(char)) ) { // NOLINT(bugprone-sizeof-expression)
                             pc.setError(__LINE__);
                             return false;
                         }
                         break;
                     case plength_t::h:
-                        if constexpr( !std::is_same_v<short, U> && (!std::is_integral_v<U> || sizeof(U) > sizeof(short)) ) {
+                        if constexpr( !std::is_same_v<short, U> && (!std::is_integral_v<U> || sizeof(U) > sizeof(short)) ) { // NOLINT(bugprone-sizeof-expression)
                             pc.setError(__LINE__);
                             return false;
                         }
                         break;
                     case plength_t::none:
-                        if constexpr( !std::is_same_v<int, U> && (!std::is_integral_v<U> || sizeof(U) > sizeof(int)) ) {
+                        if constexpr( !std::is_same_v<int, U> && (!std::is_integral_v<U> || sizeof(U) > sizeof(int)) ) { // NOLINT(bugprone-sizeof-expression)
                             pc.setError(__LINE__);
                             return false;
                         }
                         break;
                     case plength_t::l:
-                        if constexpr( !std::is_same_v<long, U> && (!std::is_integral_v<U> || sizeof(U) > sizeof(long)) ) {
+                        if constexpr( !std::is_same_v<long, U> && (!std::is_integral_v<U> || sizeof(U) > sizeof(long)) ) { // NOLINT(bugprone-sizeof-expression)
                             pc.setError(__LINE__);
                             return false;
                         }
                         break;
                     case plength_t::ll:
-                        if constexpr( !std::is_same_v<long long, U> && (!std::is_integral_v<U> || sizeof(U) > sizeof(long long)) ) {
+                        if constexpr( !std::is_same_v<long long, U> && (!std::is_integral_v<U> || sizeof(U) > sizeof(long long)) ) { // NOLINT(bugprone-sizeof-expression)
                             pc.setError(__LINE__);
                             return false;
                         }
                         break;
                     case plength_t::j:
-                        if constexpr( !std::is_same_v<intmax_t, U> && (!std::is_integral_v<U> || sizeof(U) > sizeof(intmax_t)) ) {
+                        if constexpr( !std::is_same_v<intmax_t, U> && (!std::is_integral_v<U> || sizeof(U) > sizeof(intmax_t)) ) { // NOLINT(bugprone-sizeof-expression)
                             pc.setError(__LINE__);
                             return false;
                         }
                         break;
                     case plength_t::z:
-                        if constexpr( !std::is_same_v<ssize_t, U> && (!std::is_integral_v<U> || sizeof(U) > sizeof(ssize_t)) ) {
+                        if constexpr( !std::is_same_v<ssize_t, U> && (!std::is_integral_v<U> || sizeof(U) > sizeof(ssize_t)) ) { // NOLINT(bugprone-sizeof-expression)
                             pc.setError(__LINE__);
                             return false;
                         }
                         break;
                     case plength_t::t:
-                        if constexpr( !std::is_same_v<ptrdiff_t, U> && (!std::is_integral_v<U> || sizeof(U) > sizeof(ptrdiff_t)) ) {
+                        if constexpr( !std::is_same_v<ptrdiff_t, U> && (!std::is_integral_v<U> || sizeof(U) > sizeof(ptrdiff_t)) ) { // NOLINT(bugprone-sizeof-expression)
                             pc.setError(__LINE__);
                             return false;
                         }
@@ -625,43 +624,43 @@ namespace jau::cfmt {
 
                 switch( pc.length_mod ) {
                     case plength_t::hh:
-                        if constexpr( !std::is_same_v<unsigned char, U> && (!std::is_integral_v<U> || sizeof(U) > sizeof(unsigned char)) ) {
+                        if constexpr( !std::is_same_v<unsigned char, U> && (!std::is_integral_v<U> || sizeof(U) > sizeof(unsigned char)) ) { // NOLINT(bugprone-sizeof-expression)
                             pc.setError(__LINE__);
                             return false;
                         }
                         break;
                     case plength_t::h:
-                        if constexpr( !std::is_same_v<unsigned short, U> && (!std::is_integral_v<U> || sizeof(U) > sizeof(unsigned short)) ) {
+                        if constexpr( !std::is_same_v<unsigned short, U> && (!std::is_integral_v<U> || sizeof(U) > sizeof(unsigned short)) ) { // NOLINT(bugprone-sizeof-expression)
                             pc.setError(__LINE__);
                             return false;
                         }
                         break;
                     case plength_t::none:
-                        if constexpr( !std::is_same_v<unsigned int, U> && (!std::is_integral_v<U> || sizeof(U) > sizeof(unsigned int)) ) {
+                        if constexpr( !std::is_same_v<unsigned int, U> && (!std::is_integral_v<U> || sizeof(U) > sizeof(unsigned int)) ) { // NOLINT(bugprone-sizeof-expression)
                             pc.setError(__LINE__);
                             return false;
                         }
                         break;
                     case plength_t::l:
-                        if constexpr( !std::is_same_v<unsigned long, U> && (!std::is_integral_v<U> || sizeof(U) > sizeof(unsigned long)) ) {
+                        if constexpr( !std::is_same_v<unsigned long, U> && (!std::is_integral_v<U> || sizeof(U) > sizeof(unsigned long)) ) { // NOLINT(bugprone-sizeof-expression)
                             pc.setError(__LINE__);
                             return false;
                         }
                         break;
                     case plength_t::ll:
-                        if constexpr( !std::is_same_v<unsigned long long, U> && (!std::is_integral_v<U> || sizeof(U) > sizeof(unsigned long long)) ) {
+                        if constexpr( !std::is_same_v<unsigned long long, U> && (!std::is_integral_v<U> || sizeof(U) > sizeof(unsigned long long)) ) { // NOLINT(bugprone-sizeof-expression)
                             pc.setError(__LINE__);
                             return false;
                         }
                         break;
                     case plength_t::j:
-                        if constexpr( !std::is_same_v<uintmax_t, U> && (!std::is_integral_v<U> || sizeof(U) > sizeof(uintmax_t)) ) {
+                        if constexpr( !std::is_same_v<uintmax_t, U> && (!std::is_integral_v<U> || sizeof(U) > sizeof(uintmax_t)) ) { // NOLINT(bugprone-sizeof-expression)
                             pc.setError(__LINE__);
                             return false;
                         }
                         break;
                     case plength_t::z:
-                        if constexpr( !std::is_same_v<size_t, U> && (!std::is_integral_v<U> || sizeof(U) > sizeof(size_t)) ) {
+                        if constexpr( !std::is_same_v<size_t, U> && (!std::is_integral_v<U> || sizeof(U) > sizeof(size_t)) ) { // NOLINT(bugprone-sizeof-expression)
                             pc.setError(__LINE__);
                             return false;
                         }

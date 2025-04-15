@@ -30,6 +30,7 @@
 #include <memory>
 
 #include <jau/basic_types.hpp>
+#include <jau/string_util.hpp>
 
 namespace jau::jni {
 
