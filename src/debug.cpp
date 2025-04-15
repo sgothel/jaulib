@@ -175,7 +175,13 @@ void jau::print_backtrace(const bool skip_anon_frames, const jau::snsize_t max_f
     fflush(stderr);
 }
 
-void jau::DBG_PRINT_impl(const char * format, ...) noexcept {
+void jau::impl::dbgPrint2(const char * s) noexcept {
+    fprintf(stderr, "[%s] Debug: ", jau::to_decstring(environment::getElapsedMillisecond(), ',', 9).c_str());
+    fprintf(stderr, "%s\n", s);
+    fflush(stderr);
+}
+
+void jau::impl::dbgPrint1(const char * format, ...) noexcept {
     fprintf(stderr, "[%s] Debug: ", jau::to_decstring(environment::getElapsedMillisecond(), ',', 9).c_str());
     va_list args;
     va_start (args, format);
@@ -183,9 +189,9 @@ void jau::DBG_PRINT_impl(const char * format, ...) noexcept {
     va_end (args);
     fprintf(stderr, "\n");
     fflush(stderr);
-}
+ }
 
-void jau::WORDY_PRINT_impl(const char * format, ...) noexcept {
+void jau::impl::wordyPrint(const char * format, ...) noexcept {
     fprintf(stderr, "[%s] Wordy: ", jau::to_decstring(environment::getElapsedMillisecond(), ',', 9).c_str());
     va_list args;
     va_start (args, format);
@@ -195,7 +201,7 @@ void jau::WORDY_PRINT_impl(const char * format, ...) noexcept {
     fflush(stderr);
 }
 
-void jau::ABORT_impl(const char *func, const char *file, const int line, const char * format, ...) noexcept {
+void jau::impl::abortImpl(const char *func, const char *file, const int line, const char * format, ...) noexcept {
     fprintf(stderr, "[%s] ABORT @ %s:%d %s: ", jau::to_decstring(environment::getElapsedMillisecond(), ',', 9).c_str(), file, line, func);
     va_list args;
     va_start (args, format);
@@ -215,7 +221,7 @@ void jau::ERR_PRINTv(const char *func, const char *file, const int line, const c
     jau::print_backtrace(true /* skip_anon_frames */, 4 /* max_frames */, 3 /* skip_frames: this() + print_b*() + get_b*() */);
 }
 
-void jau::ERR_PRINT_impl(const char *prefix, const bool backtrace, const char *func, const char *file, const int line, const char * format, ...) noexcept {
+void jau::impl::errPrint(const char *prefix, const bool backtrace, const char *func, const char *file, const int line, const char * format, ...) noexcept {
     fprintf(stderr, "[%s] %s @ %s:%d %s: ", jau::to_decstring(environment::getElapsedMillisecond(), ',', 9).c_str(), prefix, file, line, func);
     va_list args;
     va_start (args, format);
@@ -235,7 +241,7 @@ void jau::WARN_PRINTv(const char *func, const char *file, const int line, const 
     fflush(stderr);
 }
 
-void jau::WARN_PRINT_impl(const char *func, const char *file, const int line, const char * format, ...) noexcept {
+void jau::impl::warnPrint(const char *func, const char *file, const int line, const char * format, ...) noexcept {
     fprintf(stderr, "[%s] Warning @ %s:%d %s: ", jau::to_decstring(environment::getElapsedMillisecond(), ',', 9).c_str(), file, line, func);
     va_list args;
     va_start (args, format);
