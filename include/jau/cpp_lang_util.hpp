@@ -25,10 +25,21 @@
 #ifndef JAU_CPP_LANG_EXT_HPP_
 #define JAU_CPP_LANG_EXT_HPP_
 
+#include <climits>
+#include <string_view>
 #include <type_traits>
 #include <string>
 #include <cstring>
 #include <ostream>
+#if __cplusplus > 201703L
+    // C++20
+    #include <bit>
+#endif
+#if __cplusplus > 202002L
+    // C++23
+    #include <stdbit>
+#endif
+
 #include <jau/packed_attribute.hpp>
 
 namespace jau {
@@ -355,7 +366,9 @@ namespace jau {
         Dest>
     pointer_cast(const Source& src) noexcept
     {
-        if constexpr ( has_builtin_bit_cast() ) {
+        if constexpr ( is_cxx20() ) {
+            return std::bit_cast<Dest, Source>(src);
+        } else if constexpr ( has_builtin_bit_cast() ) {
             return __builtin_bit_cast(Dest, src);
         } else {
             // not 'really' constexpr .. oops, working though
@@ -385,7 +398,9 @@ namespace jau {
         Dest>
     bit_cast(const Source& src) noexcept
     {
-        if constexpr ( has_builtin_bit_cast() ) {
+        if constexpr ( is_cxx20() ) {
+            return std::bit_cast<Dest, Source>(src);
+        } else if constexpr ( has_builtin_bit_cast() ) {
             return __builtin_bit_cast(Dest, src);
         } else {
             return pointer_cast<const packed_t<Dest>*>( &src )->store;
@@ -500,6 +515,43 @@ namespace jau {
     inline std::ostream & operator << (std::ostream &out, const Bool c) {
         out << to_string(c);
         return out;
+    }
+
+    /**
+     * Static compile-time string literal storage.
+     * @tparam N string length including EOS
+     */
+    template<size_t N>
+    class StringLiteral
+    {
+      // private:
+      public:
+        char buf[N];
+
+      public:
+        consteval_cxx20 StringLiteral(const char (&str)[N]) noexcept {
+            for (size_t i = 0; i < N; ++i) { buf[i] = str[i]; }
+        }
+        consteval_cxx20 StringLiteral(const StringLiteral& o) noexcept = delete; // violating pattern
+        consteval_cxx20 StringLiteral& operator=(const StringLiteral& o) noexcept = delete; // violating pattern
+
+        consteval_cxx20 StringLiteral(StringLiteral&& o) noexcept = default;
+        consteval_cxx20 StringLiteral& operator=(StringLiteral&& o) noexcept = default;
+
+        /// Returns string literal size w/o EOS.
+        consteval_cxx20 size_t size() const noexcept { return N-1; }
+        /// Returns c-string w/ EOS.
+        consteval_cxx20 char const* c_str() const noexcept { return buf; }
+        /// Returns string_view
+        consteval_cxx20 std::string_view view() const noexcept { return std::string_view(buf, N-1); }
+    };
+
+    namespace impl {
+        inline bool runtime_eval(bool v) { return v; }
+    }
+
+    consteval_cxx20 void consteval_assert(bool v) {
+        [[maybe_unused]] bool r = v ? true : impl::runtime_eval(v);
     }
 
     /**@}*/
