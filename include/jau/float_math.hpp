@@ -468,11 +468,18 @@ namespace jau {
         }
     }
 
-    /** Returns the rounded value cast to int. */
+    /** Returns the rounded value cast to signed int. */
     template<class T,
              std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
     constexpr typename jau::sint_bytes_t<sizeof(T)> round_to_int(const T v) noexcept {
         return static_cast<typename jau::sint_bytes_t<sizeof(T)>>( std::round(v) );
+    }
+
+    /** Returns the rounded value cast to unsigned int. */
+    template<class T,
+             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    constexpr typename jau::uint_bytes_t<sizeof(T)> round_to_uint(const T v) noexcept {
+        return static_cast<typename jau::uint_bytes_t<sizeof(T)>>( std::round(v) );
     }
 
     /** Converts arc-degree to radians */
