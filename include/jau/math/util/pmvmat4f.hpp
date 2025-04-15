@@ -163,7 +163,7 @@ class PMVMatrix4 {
         geom::Frustum m_frustum;
 
         constexpr static uint32_t matToReq(uint32_t req) noexcept {
-            int mask = 0;
+            uint32_t mask = 0;
             if( 0 != ( req & ( INVERSE_MODELVIEW | INVERSE_TRANSPOSED_MODELVIEW ) ) ) {
                 mask |= INVERSE_MODELVIEW;
             }
@@ -228,7 +228,7 @@ class PMVMatrix4 {
      * @see #getDirtyBits()
      * @see #update()
      */
-    PMVMatrix4(int derivedMatrices) noexcept
+    PMVMatrix4(uint32_t derivedMatrices) noexcept
     : m_requestBits( matToReq(derivedMatrices) )
     {
         m_matPMviOK = false;
