@@ -180,6 +180,19 @@ namespace jau {
             }
             return c;
         }
+        constexpr bool operator==(const bitfield& rhs ) const noexcept {
+            if( this == &rhs ) {
+                return true;
+            }
+            if( storage_size != rhs.storage_size ) {
+                return false;
+            }
+            size_t i = 0;
+            while( i < storage_size && storage[i] == rhs.storage[i] ) {
+                ++i;
+            }
+            return i == storage_size;
+        }
     };
 }
 
