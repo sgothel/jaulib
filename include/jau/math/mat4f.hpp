@@ -1930,7 +1930,7 @@ class alignas(Value_type) Matrix4 {
      * @param rowPrefix prefix for each row
      * @param f format string for each value_type element, e.g. "%10.5f"
      */
-    std::string toString(const std::string& rowPrefix, const std::string& f) const noexcept {
+    std::string toString(const std::string& rowPrefix, const std::string_view f) const noexcept {
         std::string sb;
         value_type tmp[16];
         get(tmp);

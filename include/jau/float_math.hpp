@@ -502,18 +502,18 @@ namespace jau {
      */
     template<typename T,
         std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
-    std::string& row_to_string(std::string& sb, const std::string& f,
+    std::string& row_to_string(std::string& sb, const std::string_view f,
                                const T a[],
                                const jau::nsize_t rows, const jau::nsize_t columns,
                                const bool rowMajorOrder, const jau::nsize_t row) noexcept {
       if(rowMajorOrder) {
           for(jau::nsize_t c=0; c<columns; ++c) {
-              sb.append( jau::format_string(f.c_str(), a[ row*columns + c ] ) );
+              sb.append( jau::format_string(f, a[ row*columns + c ] ) );
               sb.append(", ");
           }
       } else {
           for(jau::nsize_t c=0; c<columns; ++c) {
-              sb.append( jau::format_string(f.c_str(), a[ row + c*rows ] ) );
+              sb.append( jau::format_string(f, a[ row + c*rows ] ) );
               sb.append(", ");
           }
       }
@@ -533,7 +533,7 @@ namespace jau {
      */
     template<typename T,
         std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
-    std::string& mat_to_string(std::string& sb, const std::string& rowPrefix, const std::string& f,
+    std::string& mat_to_string(std::string& sb, const std::string& rowPrefix, const std::string_view f,
                                const T a[], const jau::nsize_t rows, const jau::nsize_t columns,
                                const bool rowMajorOrder) noexcept {
         sb.append(rowPrefix).append("{\n");
