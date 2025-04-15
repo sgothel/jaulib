@@ -33,7 +33,7 @@
     static std::string impl_name = "jau/functional.hpp";
 #endif
 
-#include <jau/type_traits_queries.hpp>
+#include <jau/type_cue.hpp>
 
 #include <jau/test/catch2_ext.hpp>
 

@@ -36,6 +36,7 @@
 #include <jau/counting_allocator.hpp>
 #include <jau/callocator.hpp>
 #include <jau/counting_callocator.hpp>
+#include <jau/type_cue.hpp>
 
 /**
  * Test jau:cow_[ro|rw]_iterator special properties from jau::cow_darray and jau::cow_vector in detail.
@@ -50,11 +51,6 @@ typedef std::vector<uint64_t, counting_allocator<uint64_t>> std_vector_uint64_t;
 typedef jau::darray<uint64_t, jau::nsize_t, counting_callocator<uint64_t>> jau_darray_uint64_t;
 typedef jau::cow_vector<uint64_t, counting_allocator<uint64_t>> jau_cow_vector_uint64_t;
 typedef jau::cow_darray<uint64_t, jau::nsize_t, counting_callocator<uint64_t>> jau_cow_darray_uint64_t;
-
-JAU_TYPENAME_CUE_ALL(std_vector_uint64_t)
-JAU_TYPENAME_CUE_ALL(jau_darray_uint64_t)
-JAU_TYPENAME_CUE_ALL(jau_cow_vector_uint64_t)
-JAU_TYPENAME_CUE_ALL(jau_cow_darray_uint64_t)
 
 template<class T>
 static void print_list(T& data) {

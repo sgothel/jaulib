@@ -116,11 +116,9 @@ TEST_CASE( "JAU DArray Test 02 - jau::darray immutable type (const)", "[const][j
 
 template<class Payload>
 using SharedPayloadListMemMove = jau::darray<std::shared_ptr<Payload>, jau::nsize_t, jau::callocator<std::shared_ptr<Payload>>, true /* use_memmove */>;
-// JAU_TYPENAME_CUE_ALL(SharedPayloadListMemMove)
 
 template<class Payload>
 using SharedPayloadListDefault = jau::darray<std::shared_ptr<Payload>>;
-// JAU_TYPENAME_CUE_ALL(SharedPayloadListDefault)
 
 template<class Payload>
 struct NamedSharedPayloadListDefault {
@@ -141,7 +139,6 @@ struct NamedSharedPayloadListDefault {
         return res;
     }
 };
-// JAU_TYPENAME_CUE_ALL(NamedSharedPayloadListDefault)
 
 template<class Payload>
 struct NamedSharedPayloadListMemMove {
@@ -162,15 +159,12 @@ struct NamedSharedPayloadListMemMove {
         return res;
     }
 };
-// JAU_TYPENAME_CUE_ALL(NamedSharedPayloadListMemMove)
 
 template<class Payload>
 using PayloadListMemMove = jau::darray<Payload, jau::nsize_t, jau::callocator<Payload>, true /* use_memmove */>;
-// JAU_TYPENAME_CUE_ALL(PayloadListMemMove)
 
 template<class Payload>
 using PayloadListDefault = jau::darray<Payload>;
-// JAU_TYPENAME_CUE_ALL(PayloadListDefault)
 
 template<class Payload>
 struct NamedPayloadListDefault {
@@ -191,7 +185,6 @@ struct NamedPayloadListDefault {
         return res;
     }
 };
-// JAU_TYPENAME_CUE_ALL(NamedPayloadListDefault)
 
 template<class Payload>
 struct NamedPayloadListMemMove {
@@ -212,7 +205,6 @@ struct NamedPayloadListMemMove {
         return res;
     }
 };
-// JAU_TYPENAME_CUE_ALL(NamedPayloadListMemMove)
 
 template<class Payload>
 static NamedSharedPayloadListDefault<Payload> makeNamedSharedPayloadListDefault(int name) {
@@ -289,14 +281,6 @@ static NamedPayloadListMemMove<Payload> makeNamedPayloadListMemMove(int name) {
     CHECK( 4 == data.size() );
     return NamedPayloadListMemMove<Payload>{name, data};
 }
-
-JAU_TYPENAME_CUE_ALL(std::shared_ptr<Addr48Bit>)
-JAU_TYPENAME_CUE_ALL(jau::darray<Addr48Bit>)
-JAU_TYPENAME_CUE_ALL(jau::darray<std::shared_ptr<Addr48Bit>>)
-
-JAU_TYPENAME_CUE_ALL(std::shared_ptr<DataType01>)
-JAU_TYPENAME_CUE_ALL(jau::darray<DataType01>)
-JAU_TYPENAME_CUE_ALL(jau::darray<std::shared_ptr<DataType01>>)
 
 #define CHECK_TRAITS 0
 

@@ -54,7 +54,6 @@ enum GattServiceType : uint16_t {
     /** This service exposes the state of a battery within a device. */
     BATTERY_SERVICE                             = 0x180F,
 };
-JAU_TYPENAME_CUE_ALL(GattServiceType)
 
 enum GattCharacteristicType : uint16_t {
     //
@@ -96,7 +95,6 @@ enum GattCharacteristicType : uint16_t {
     REGULATORY_CERT_DATA_LIST                   = 0x2A2A,
     PNP_ID                                      = 0x2A50,
 };
-JAU_TYPENAME_CUE_ALL(GattCharacteristicType)
 
 enum GattCharacteristicProperty : uint8_t {
     Broadcast = 0x01,
@@ -112,7 +110,6 @@ enum GattCharacteristicProperty : uint8_t {
     /** FIXME: extension? */
     AuxWriteExt = 0x82
 };
-JAU_TYPENAME_CUE_ALL(GattCharacteristicProperty)
 
 enum GattRequirementSpec : uint8_t {
     Excluded    = 0x00,
@@ -123,7 +120,6 @@ enum GattRequirementSpec : uint8_t {
     if_notify_or_indicate_supported = 0x12,
     C1 = 0x21,
 };
-JAU_TYPENAME_CUE_ALL(GattRequirementSpec)
 
 struct GattCharacteristicPropertySpec {
     const GattCharacteristicProperty property;
@@ -131,7 +127,6 @@ struct GattCharacteristicPropertySpec {
 
     std::string toString() const noexcept;
 };
-JAU_TYPENAME_CUE_ALL(GattCharacteristicPropertySpec)
 
 struct GattClientCharacteristicConfigSpec {
     GattRequirementSpec requirement;
@@ -140,7 +135,6 @@ struct GattClientCharacteristicConfigSpec {
 
     std::string toString() const noexcept;
 };
-JAU_TYPENAME_CUE_ALL(GattClientCharacteristicConfigSpec)
 
 struct GattCharacteristicSpec {
     GattCharacteristicType characteristic;
@@ -164,7 +158,6 @@ struct GattCharacteristicSpec {
 
     std::string toString() const noexcept;
 };
-JAU_TYPENAME_CUE_ALL(GattCharacteristicSpec)
 
 struct GattServiceCharacteristic {
     GattServiceType service;
@@ -172,7 +165,6 @@ struct GattServiceCharacteristic {
 
     std::string toString() const noexcept;
 };
-JAU_TYPENAME_CUE_ALL(GattServiceCharacteristic)
 
 const GattServiceCharacteristic GATT_GENERIC_ACCESS_SRVC = { GENERIC_ACCESS,
         { { DEVICE_NAME, Mandatory,

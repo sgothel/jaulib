@@ -105,8 +105,6 @@ __pack ( struct Addr48Bit {
 
 } );
 
-JAU_TYPENAME_CUE_ALL(Addr48Bit)
-
 std::ostream & operator << (std::ostream &out, const Addr48Bit &a) {
     out << a.toString();
     return out;
@@ -191,7 +189,6 @@ class DataType01 {
         }
 #endif
 };
-JAU_TYPENAME_CUE_ALL(DataType01)
 
 std::ostream & operator << (std::ostream &out, const DataType01 &a) {
     out << a.toString();
@@ -271,7 +268,6 @@ class DataType02_Memmove_Secmem {
         }
 #endif
 };
-JAU_TYPENAME_CUE_ALL(DataType02_Memmove_Secmem)
 
 std::ostream & operator << (std::ostream &out, const DataType02_Memmove_Secmem &a) {
     out << a.toString();

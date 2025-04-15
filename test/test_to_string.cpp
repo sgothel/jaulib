@@ -35,16 +35,12 @@
 using namespace jau;
 
 typedef std::vector<int> std_vec_int;
-JAU_TYPENAME_CUE_ALL(std_vec_int)
 
 typedef std_vec_int::iterator std_vec_int_iter;
-JAU_TYPENAME_CUE_ALL(std_vec_int_iter)
 
 typedef std_vec_int::const_iterator std_vec_int_citer;
-JAU_TYPENAME_CUE_ALL(std_vec_int_citer)
 
 typedef std_vec_int_citer::pointer std_vec_int_citer_pointer;
-JAU_TYPENAME_CUE_ALL(std_vec_int_citer_pointer)
 
 typedef decltype( std::declval<std_vec_int_citer>().operator->() ) std_vec_int_citer_ptrop_retval;
 
