@@ -92,6 +92,15 @@ namespace jau::math {
             return ...
         } */
 
+        size_t hashCode() const noexcept {
+            const size_t sum1 = size_t(m_x) + size_t(m_height);
+            const size_t sum2 = size_t(m_width) + size_t(m_y);
+            const size_t val1 = sum1 * (sum1 + 1)/2 + size_t(m_x);
+            const size_t val2 = sum2 * (sum2 + 1)/2 + size_t(m_y);
+            const size_t sum3 = val1 + val2;
+            return sum3 * (sum3 + 1)/2 + val2;
+        }
+
         constexpr RectI& set(const Vector2I<value_type>& pos, const Vector2I<value_type>& size) noexcept
         { m_x = pos.x; m_y = pos.y; m_width = size.x; m_height= size.y; return *this; }
 

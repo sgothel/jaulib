@@ -117,6 +117,12 @@ namespace jau::math {
             return ...
         } */
 
+        size_t hashCode() const noexcept {
+            // 31 * x == (x << 5) - x
+            const size_t hash = x;
+            return ((hash << 5) - hash) + y;
+        }
+
         constexpr Vector2I& set(const value_type vx, const value_type vy) noexcept
         { x=vx; y=vy; return *this; }
 
@@ -346,6 +352,20 @@ namespace jau::math {
     static_assert(sizeof(int) == alignof(Point2i));
     static_assert(sizeof(int)*2 == Point2i::byte_size);
     static_assert(sizeof(int)*2 == sizeof(Point2i));
+
+    typedef Point2I<int32_t> Point2i32;
+    static_assert(2 == Point2i32::components);
+    static_assert(sizeof(int32_t) == Point2i32::value_alignment);
+    static_assert(sizeof(int32_t) == alignof(Point2i32));
+    static_assert(sizeof(int32_t)*2 == Point2i32::byte_size);
+    static_assert(sizeof(int32_t)*2 == sizeof(Point2i32));
+
+    typedef Point2I<uint32_t> Point2u32;
+    static_assert(2 == Point2u32::components);
+    static_assert(sizeof(uint32_t) == Point2u32::value_alignment);
+    static_assert(sizeof(uint32_t) == alignof(Point2u32));
+    static_assert(sizeof(uint32_t)*2 == Point2u32::byte_size);
+    static_assert(sizeof(uint32_t)*2 == sizeof(Point2u32));
 
     /**@}*/
 
