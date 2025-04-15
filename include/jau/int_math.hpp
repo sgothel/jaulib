@@ -123,32 +123,42 @@ namespace jau {
     }
 
     /**
-     * Power of 2 test (w/o branching ?) in O(1)
+     * Power of 2 test (w/o branching ?) in O(1), i.e. test whether a single bit is set
      *
      * Source: [bithacks Test PowerOf2](http://www.graphics.stanford.edu/~seander/bithacks.html#DetermineIfPowerOf2)
      *
      * Branching may occur due to relational operator.
      *
-     * @tparam T an unsigned integral number type
-     * @param x the unsigned integral number
-     * @return true if arg is 2^n for some n > 0
+     * @tparam T an integral number type
+     * @param x the integral number
+     * @return true if arg is 2^n for some x > 0
+     * @see std::has_single_bit()
      */
     template <typename T,
-              std::enable_if_t< std::is_integral_v<T> && std::is_unsigned_v<T>, bool> = true>
+              std::enable_if_t< std::is_unsigned_v<T> && std::is_integral_v<T>, bool> = true>
     constexpr bool is_power_of_2(const T x) noexcept
     {
-       return 0<x && 0 == ( x & static_cast<T>( x - 1 ) );
+       return x && 0 == ( x & ( x - 1 ) );
     }
 
     /**
      * If the given {@code n} is not is_power_of_2() return next_power_of_2(),
      * otherwise return {@code n} unchanged.
-     * <pre>
-     * return is_power_of_2(n) ? n : next_power_of_2(n);
-     * </pre>
+     *
+     * Uses either
+     * - C++20: std::bit_ceil()
+     * - else: ct_next_power_of_2()
+     *
+     * @see std::bit_ceil()
      */
-    constexpr uint32_t round_to_power_of_2(const uint32_t n) {
-        return is_power_of_2(n) ? n : ct_next_power_of_2(n);
+    constexpr uint32_t bit_ceil(const uint32_t n) noexcept {
+        if constexpr ( is_cxx20() ) {
+            return std::bit_ceil(n);
+        } else if ( is_power_of_2(n) ) {
+            return n;
+        } else {
+            return ct_next_power_of_2(n);
+        }
     }
 
     /**

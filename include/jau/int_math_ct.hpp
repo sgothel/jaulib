@@ -28,6 +28,7 @@
 #include <cstdint>
 #include <climits>
 
+#include <jau/cpp_lang_util.hpp>
 #include <jau/int_types.hpp>
 #include <jau/cpp_pragma.hpp>
 
@@ -186,25 +187,35 @@ namespace jau {
      */
     template <typename T,
               std::enable_if_t< std::is_integral_v<T> && std::is_unsigned_v<T>, bool> = true>
-    constexpr T ct_masked_merge(T mask, T a_if_masked, T b_if_unmasked) {
+    constexpr T ct_masked_merge(T mask, T a_if_masked, T b_if_unmasked) noexcept {
         return b_if_unmasked ^ ( mask & ( a_if_masked ^ b_if_unmasked ) );
     }
 
     /**
      * Returns the next higher power of 2 of given unsigned 32-bit {@code n}
      * (w/o branching) in O(1) and constant time (CT).
-     * <p>
-     * Source: [bithacks RoundUpPowerOf2](http://www.graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2)
-     * </p>
+     *
+     * Uses either
+     * - C++20: std::has_single_bit and std::bit_ceil
+     * - else: [bithacks RoundUpPowerOf2](http://www.graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2)
+     *
+     * @see std::has_single_bit()
+     * @see std::bit_ceil()
      */
-    constexpr uint32_t ct_next_power_of_2(uint32_t n) {
-        n--;
-        n |= n >> 1;
-        n |= n >> 2;
-        n |= n >> 4;
-        n |= n >> 8;
-        n |= n >> 16;
-        return n + 1;
+    constexpr uint32_t ct_next_power_of_2(uint32_t n) noexcept {
+        if constexpr ( is_cxx20() ) {
+            return std::has_single_bit(n) ? std::bit_ceil(n+1) : std::bit_ceil(n);
+        } else {
+            --n;
+            n |= n >> 1;
+            n |= n >> 2;
+            n |= n >> 4;
+            n |= n >> 8;
+            n |= n >> 16;
+            ++n;
+            n += ( 0 == n ); // avoid 0 -> 0
+            return n;
+        }
     }
 
     /**
