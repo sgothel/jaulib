@@ -77,6 +77,7 @@ static int countGattCharacteristicSpecList02Copy(jau::darray<const GattCharacter
     return i;
 }
 
+// NOLINTBEGIN(modernize-use-designated-initializers)
 TEST_CASE( "JAU DArray Test 02 - jau::darray immutable type (const)", "[const][jau][darray]" ) {
     const GattCharacteristicSpec cs1 = { DEVICE_NAME, Mandatory,
             // GattCharacteristicPropertySpec[9]:
@@ -107,6 +108,7 @@ TEST_CASE( "JAU DArray Test 02 - jau::darray immutable type (const)", "[const][j
     REQUIRE(3 == countGattCharacteristicSpecList01ConstRef(clist));
     REQUIRE(3 == countGattCharacteristicSpecList02Copy(clist));
 }
+// NOLINTEND(modernize-use-designated-initializers)
 
 /**********************************************************************************************************************************************/
 /**********************************************************************************************************************************************/

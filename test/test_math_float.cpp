@@ -48,7 +48,7 @@ static const double POSITIVE_INFINITY_DBL =  std::numeric_limits<double>::infini
 static const double NEGATIVE_INFINITY_DBL = -std::numeric_limits<double>::infinity();
 static const double NaN_DBL =  std::numeric_limits<double>::quiet_NaN();
 
-void testIEC559FloatType() {
+static void testIEC559FloatType() {
     REQUIRE( jau::bit_value_raw( POSITIVE_INFINITY ) == jau::float_iec559_positive_inf_bitval );
     REQUIRE( jau::bit_value_raw( NEGATIVE_INFINITY ) == jau::float_iec559_negative_inf_bitval );
     REQUIRE( jau::bit_value_raw( NaN )               == jau::float_iec559_nan_bitval );
@@ -61,7 +61,7 @@ void testIEC559FloatType() {
     REQUIRE( true == std::isinf( jau::float_value( jau::float_iec559_negative_inf_bitval ) ) );
     REQUIRE( true == std::isnan( jau::float_value( jau::float_iec559_nan_bitval ) ) );
 }
-void testIEC559DoubleType() {
+static void testIEC559DoubleType() {
     REQUIRE( jau::bit_value_raw( POSITIVE_INFINITY_DBL ) == jau::double_iec559_positive_inf_bitval );
     REQUIRE( jau::bit_value_raw( NEGATIVE_INFINITY_DBL ) == jau::double_iec559_negative_inf_bitval );
     REQUIRE( jau::bit_value_raw( NaN_DBL )               == jau::double_iec559_nan_bitval );
@@ -76,14 +76,14 @@ void testIEC559DoubleType() {
 }
 template<class T,
          std::enable_if_t<!std::numeric_limits<T>::is_integer, bool> = true>
-void testFloatBits(const T a) {
+static void testFloatBits(const T a) {
     typename jau::uint_bytes<sizeof(T)>::type a_bits = jau::bit_value(a);
     const float a2 = jau::float_value(a_bits);
     REQUIRE( a == a2 );
 }
 template<class T,
          std::enable_if_t<!std::numeric_limits<T>::is_integer, bool> = true>
-void testFloatBits(const T a, const typename jau::uint_bytes<sizeof(T)>::type exp_a_bits) {
+static void testFloatBits(const T a, const typename jau::uint_bytes<sizeof(T)>::type exp_a_bits) {
     const typename jau::uint_bytes<sizeof(T)>::type a_bits = jau::bit_value(a);
     REQUIRE( exp_a_bits == a_bits );
     const float a2 = jau::float_value(a_bits);

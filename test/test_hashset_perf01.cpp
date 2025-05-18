@@ -47,7 +47,7 @@ static uint8_t start_addr_b[] = {0x20, 0x26, 0x2A, 0x01, 0x20, 0x10};
 static Addr48Bit start_addr(start_addr_b);
 
 template<class T>
-const DataType01 * findDataSet01_hash(T& data, DataType01 const & elem) noexcept {
+const static DataType01 * findDataSet01_hash(T& data, DataType01 const & elem) noexcept {
     auto search = data.find(elem);
     if( search != data.end() ) {
         return &(*search);

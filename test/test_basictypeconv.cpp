@@ -46,12 +46,12 @@ using namespace jau::int_literals;
  */
 namespace test_impl {
     template<class Dummy_type>
-    constexpr bool isLittleEndian2_impl(std::enable_if_t<jau::has_endian_little_v<Dummy_type>, bool> = true) noexcept {
+    constexpr static bool isLittleEndian2_impl(std::enable_if_t<jau::has_endian_little_v<Dummy_type>, bool> = true) noexcept {
         return true;
     }
 
     template<class Dummy_type>
-    constexpr bool isLittleEndian2_impl(std::enable_if_t<!jau::has_endian_little_v<Dummy_type>, bool> = true) noexcept {
+    constexpr static bool isLittleEndian2_impl(std::enable_if_t<!jau::has_endian_little_v<Dummy_type>, bool> = true) noexcept {
         return false;
     }
 }
@@ -60,7 +60,7 @@ namespace test_impl {
  * Just demonstrating usage of our type-traits
  * in a convenient API manner w/o requiring to add the dummy template type.
  */
-constexpr bool isLittleEndian2() noexcept {
+constexpr static bool isLittleEndian2() noexcept {
     return test_impl::isLittleEndian2_impl<bool>();
 }
 

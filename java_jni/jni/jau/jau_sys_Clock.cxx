@@ -49,7 +49,7 @@ void Java_org_jau_sys_Clock_getMonotonicTimeImpl(JNIEnv *env, jclass clazz, jlon
             throw jau::IllegalArgumentError("val size "+std::to_string(jval_size)+" < 2", E_FILE_LINE);
         }
         // Avoid GetPrimitiveArrayCritical(), which occasionally hangs on system call ::clock_gettime()
-        struct timespec t { 0, 0 };
+        struct timespec t { .tv_sec=0, .tv_nsec=0 };
         ::clock_gettime(CLOCK_MONOTONIC, &t);
         const jlong val[] = { (jlong)t.tv_sec, (jlong)t.tv_nsec };
         env->SetLongArrayRegion(jval, 0, (jsize)jval_size, val);
@@ -70,7 +70,7 @@ void Java_org_jau_sys_Clock_getWallClockTimeImpl(JNIEnv *env, jclass clazz, jlon
             throw jau::IllegalArgumentError("val size "+std::to_string(jval_size)+" < 2", E_FILE_LINE);
         }
         // Avoid GetPrimitiveArrayCritical(), which occasionally hangs on system call ::clock_gettime()
-        struct timespec t { 0, 0 };
+        struct timespec t { .tv_sec=0, .tv_nsec=0 };
         ::clock_gettime(CLOCK_REALTIME, &t);
         const jlong val[] = { (jlong)t.tv_sec, (jlong)t.tv_nsec };
         env->SetLongArrayRegion(jval, 0, (jsize)jval_size, val);
@@ -92,7 +92,7 @@ jlong Java_org_jau_sys_Clock_currentTimeMillis(JNIEnv *env, jclass clazz) {
     (void)env;
     (void)clazz;
 
-    struct timespec t { 0, 0 };
+    struct timespec t { .tv_sec=0, .tv_nsec=0 };
     ::clock_gettime(CLOCK_MONOTONIC, &t);
     int64_t res = static_cast<int64_t>( t.tv_sec ) * MilliPerOne +
                   static_cast<int64_t>( t.tv_nsec ) / NanoPerMilli;
@@ -103,7 +103,7 @@ jlong Java_org_jau_sys_Clock_wallClockSeconds(JNIEnv *env, jclass clazz) {
     (void)env;
     (void)clazz;
 
-    struct timespec t { 0, 0 };
+    struct timespec t { .tv_sec=0, .tv_nsec=0 };
     ::clock_gettime(CLOCK_REALTIME, &t);
     return (jlong)( static_cast<int64_t>( t.tv_sec ) );
 }

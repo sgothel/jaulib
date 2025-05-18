@@ -246,7 +246,7 @@ namespace jau {
              * @param alloc custom allocator_type instance
              */
             template< class InputIt >
-            constexpr cow_vector(InputIt first, InputIt last, const allocator_type& alloc = allocator_type())
+            constexpr cow_vector(InputIt first, InputIt last, const allocator_type& alloc = allocator_type()) // NOLINT(performance-unnecessary-value-param)
             : store_ref(std::make_shared<storage_t>(first, last, alloc)), sync_atomic(false)
             { }
 

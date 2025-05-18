@@ -70,7 +70,7 @@ TEST_CASE( "UUID Test 01", "[datatype][uuid]" ) {
         REQUIRE(0x1234 == v01.value);
         REQUIRE("1234" == v01.toString());
 
-        const uuid16_t v01_copy = v01;
+        const uuid16_t& v01_copy = v01;
         REQUIRE(v01_copy == v01);
         REQUIRE(uuid16_t("1235") != v01);
 
@@ -87,7 +87,7 @@ TEST_CASE( "UUID Test 01", "[datatype][uuid]" ) {
         REQUIRE(0x12345678 == v01.value);
         REQUIRE("12345678" == v01.toString());
 
-        const uuid32_t v01_copy = v01;
+        const uuid32_t& v01_copy = v01;
         REQUIRE(v01_copy == v01);
         REQUIRE(uuid32_t("12345679") != v01);
 

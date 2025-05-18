@@ -54,12 +54,12 @@ void service_runner::service_thread() {
         }
     }
     cv_init.notify_all(); // have mutex unlocked before notify_all to avoid pessimistic re-block of notified wait() thread.
-    
+
     if( !running ) {
         return;
     }
 
-    thread_local jau::call_on_release thread_cleanup([&]() {
+    thread_local jau::call_on_release thread_cleanup([&]() { // NOLINT(misc-use-internal-linkage)
         DBG_PRINT("%s::worker::ThreadCleanup: serviceRunning %d -> 0", name_.c_str(), running.load());
         running = false;
         cv_init.notify_all();

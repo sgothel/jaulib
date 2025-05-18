@@ -281,7 +281,7 @@ namespace jau::lang {
 
             /** Returns true if the given char is listed as a separator. */
             bool is_separator(const char c) const noexcept {
-                return m_separators.cend() != std::find(m_separators.cbegin(), m_separators.cend(), c);
+                return m_separators.cend() != std::find(m_separators.cbegin(), m_separators.cend(), c); // NOLINT(modernize-use-ranges)
             }
 
         private:

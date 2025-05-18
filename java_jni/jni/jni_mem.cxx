@@ -42,7 +42,7 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *initVM, void *reserved) {
     return JNI_VERSION_1_8;
 }
 
-JNIEXPORT jint JNICALL JNI_OnLoad_jaulib_jni_jni(JavaVM *initVM, void *reserved) {
+JNIEXPORT jint JNICALL JNI_OnLoad_jaulib_jni_jni(JavaVM *initVM, void *reserved) { // NOLINT(misc-use-internal-linkage)
     (void)reserved;
     vm = initVM;
     return JNI_VERSION_1_8;
@@ -53,7 +53,7 @@ JNIEXPORT void JNICALL JNI_OnUnload(JavaVM *vm, void *reserved) {
     (void)reserved;
 }
 
-JNIEXPORT void JNICALL JNI_OnUnload_jaulib_jni_jni(JavaVM *vm, void *reserved) {
+JNIEXPORT void JNICALL JNI_OnUnload_jaulib_jni_jni(JavaVM *vm, void *reserved) { // NOLINT(misc-use-internal-linkage)
     (void)vm;
     (void)reserved;
 }

@@ -430,7 +430,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                 }
             }
             template< class InputIt >
-            constexpr static void ctor_copy_range_foreign(pointer dest, InputIt first, InputIt last) {
+            constexpr static void ctor_copy_range_foreign(pointer dest, InputIt first, InputIt last) { // NOLINT(performance-unnecessary-value-param)
                 if( first > last ) {
                     throw jau::IllegalArgumentError("first "+jau::to_string( first )+" > last "+
                                                                  jau::to_string( last ), E_FILE_LINE);
@@ -440,7 +440,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                 }
             }
             template< class InputIt >
-            constexpr pointer clone_range_foreign(const size_type dest_capacity, InputIt first, InputIt last) {
+            constexpr pointer clone_range_foreign(const size_type dest_capacity, InputIt first, InputIt last) { // NOLINT(performance-unnecessary-value-param)
                 if( dest_capacity < size_type(last-first) ) {
                     throw jau::IllegalArgumentError("capacity "+std::to_string(dest_capacity)+" < source range "+
                                                         std::to_string(difference_type(last-first)), E_FILE_LINE);
@@ -672,7 +672,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
             // move_ctor on darray elements
 
             constexpr darray(darray && x) noexcept
-            : m_alloc_inst( std::move(x.m_alloc_inst) ), m_growth_factor( std::move(x.m_growth_factor) ),
+            : m_alloc_inst( std::move(x.m_alloc_inst) ), m_growth_factor( x.m_growth_factor ),
               m_begin( std::move(x.m_begin) ), m_end( std::move(x.m_end) ), m_storage_end( std::move(x.m_storage_end) ),
               m_position( std::move(x.m_position) ), m_limit( std::move(x.m_limit) )
             {
@@ -702,7 +702,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                 if( this != &x ) {
                     clear(true);
                     m_alloc_inst = std::move(x.m_alloc_inst);
-                    m_growth_factor = std::move( x.m_growth_factor );
+                    m_growth_factor = x.m_growth_factor;
                     m_begin = std::move(x.m_begin);
                     m_end = std::move(x.m_end);
                     m_storage_end = std::move(x.m_storage_end);
@@ -756,7 +756,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              * @param alloc custom allocator_type instance
              */
             template< class InputIt >
-            constexpr explicit darray(const size_type _capacity, InputIt first, InputIt last,
+            constexpr explicit darray(const size_type _capacity, InputIt first, InputIt last, // NOLINT(performance-unnecessary-value-param)
                                       const float growth_factor=DEFAULT_GROWTH_FACTOR, const allocator_type& alloc = allocator_type())
             : m_alloc_inst( alloc ), m_growth_factor( growth_factor ),
               m_begin( clone_range_foreign(_capacity, first, last) ), m_end(m_begin + size_type(last - first) ), m_storage_end( m_begin + _capacity ),
@@ -775,7 +775,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              * @param alloc custom allocator_type instance
              */
             template< class InputIt >
-            constexpr darray(InputIt first, InputIt last, const allocator_type& alloc = allocator_type())
+            constexpr darray(InputIt first, InputIt last, const allocator_type& alloc = allocator_type()) // NOLINT(performance-unnecessary-value-param)
             : m_alloc_inst( alloc ), m_growth_factor( DEFAULT_GROWTH_FACTOR ),
               m_begin( clone_range_foreign(size_type(last - first), first, last) ), m_end(m_begin + size_type(last - first) ),
               m_storage_end( m_begin + size_type(last - first) ),
@@ -1196,7 +1196,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              * @param last last foreign input-iterator to range of value_type [first, last)
              */
             template< class InputIt >
-            constexpr void assign( InputIt first, InputIt last ) {
+            constexpr void assign( InputIt first, InputIt last ) { // NOLINT(performance-unnecessary-value-param)
                 const size_type size_ = size();
                 const size_type capacity_ = capacity();
                 const size_type x_size_ = size_type(last - first);
@@ -1490,7 +1490,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              * @return Iterator pointing to the first element inserted, or pos if first==last.
              */
             template< class InputIt >
-            constexpr iterator insert( const_iterator pos, InputIt first, InputIt last ) {
+            constexpr iterator insert( const_iterator pos, InputIt first, InputIt last ) { // NOLINT(performance-unnecessary-value-param)
                 if( m_begin <= pos && pos <= m_end ) {
                     const size_type new_elem_count = size_type(last - first);
                     const size_type pos_idx = pos - m_begin;
@@ -1597,7 +1597,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              * @param last last foreign input-iterator to range of value_type [first, last)
              */
             template< class InputIt >
-            constexpr void push_back( InputIt first, InputIt last ) {
+            constexpr void push_back( InputIt first, InputIt last ) { // NOLINT(performance-unnecessary-value-param)
                 const size_type count = size_type(last - first);
 
                 if( m_end + count > m_storage_end ) {

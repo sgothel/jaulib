@@ -63,7 +63,7 @@ extern "C" {
     // don't include anything yes as we like to grab the vanilla values first
     extern int printf(const char * format, ...);
 }
-int my_strcmp(const char *, const char *);
+int my_strcmp(const char *, const char *); // NOLINT(misc-use-internal-linkage)
 
 #define MACRO_STRINGIFY(item) "" #item
 #define COND_CODE(macro, code)                           \
@@ -82,7 +82,7 @@ int my_strcmp(const char *, const char *);
         }                                                \
     } while (0)
 
-void print_unix_std() {
+static void print_unix_std() {
     printf("Operating System\n");
     PRINT_COND(BSD);
     PRINT_COND(__FreeBSD__);
@@ -128,7 +128,7 @@ void print_unix_std() {
     printf("\n");
 }
 
-void print_libc() {
+static void print_libc() {
     printf("GLIBC  C Library Outputs\n");
     PRINT_COND(__GNU_LIBRARY__);
     PRINT_COND(__GLIBC__);

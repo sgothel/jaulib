@@ -548,7 +548,7 @@ namespace jau {
              */
             template< class InputIt >
             constexpr void insert( InputIt first, InputIt last ) {
-                iterator_ = store_ref_->insert(iterator_, first, last);
+                iterator_ = store_ref_->insert(iterator_, first, last); // NOLINT(performance-unnecessary-value-param)
             }
 
             /**

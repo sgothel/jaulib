@@ -501,10 +501,10 @@ namespace jau {
                 // Non `TriviallyCopyable` using heap
                 template<typename T, typename... P,
                          std::enable_if_t<use_nontrivial_heap<T>(), bool> = true>
-                static delegate_t make(const target_func_t& tfunc, P... params) noexcept
+                static delegate_t make(const target_func_t& tfunc, P... params) noexcept // NOLINT(performance-unnecessary-value-param)
                 {
                     delegate_t target(tfunc, true);
-                    new( target.template data<T>() ) T(params...); // placement new
+                    new( target.template data<T>() ) T(params...); // placement new // NOLINT(performance-unnecessary-value-param)
                     return target;
                 }
 
@@ -1216,8 +1216,8 @@ namespace jau {
                 };
 
             public:
-                static delegate_type delegate(uint64_t id, std::function<R(A...)> function) noexcept {
-                    return delegate_type::template make<data_type>( get(), id, function );
+                static delegate_type delegate(uint64_t id, std::function<R(A...)>&& function) noexcept {
+                    return delegate_type::template make<data_type>( get(), id, std::move(function) );
                 }
         };
         /**@}*/
@@ -1494,7 +1494,7 @@ namespace jau {
             constexpr bool is_target_trivially_copyable() const noexcept { return target.is_trivially_copyable(); }
 
             /** Return the total size of this instance, may include heap allocated by delegate for bigger target functions. */
-            constexpr size_t size() const noexcept { return target.heap_size() + sizeof(*this); }
+            constexpr size_t size() const noexcept { return target.heap_size() + sizeof(*this); } // NOLINT(bugprone-sizeof-container)
 
             /** Returns the size of underlying target function */
             constexpr size_t target_size() const noexcept { return target.target_size(); }
@@ -1908,7 +1908,7 @@ namespace jau {
     template<typename R, typename... A>
     inline jau::function<R(A...)>
     bind_std(uint64_t id, std::function<R(A...)> func) noexcept {
-        return function<R(A...)>( func::std_target_t<R, A...>::delegate(id, func), 0 );
+        return function<R(A...)>( func::std_target_t<R, A...>::delegate(id, std::move(func)), 0 );
     }
 
     /**
@@ -1928,7 +1928,7 @@ namespace jau {
     template<typename... A>
     inline jau::function<void(A...)>
     bind_std(uint64_t id, std::function<void(A...)> func) noexcept {
-        return function<void(A...)>( func::std_target_t<void, A...>::delegate(id, func), 0 );
+        return function<void(A...)>( func::std_target_t<void, A...>::delegate(id, std::move(func)), 0 );
     }
 
     /**@}*/

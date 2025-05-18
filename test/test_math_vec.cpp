@@ -38,7 +38,7 @@ using namespace jau;
 using namespace jau::math;
 
 template<class T, class U>
-void test_vec(std::ostream& out, const char* prefix) {
+static void test_vec(std::ostream& out, const char* prefix) {
     out << "Test: " << std::string(prefix) << ", sizeof(U) = " << sizeof(U) << std::endl;
     T a( U(1) ), b( U(2) );
     out << "- a: " << a << ", len = " << std::to_string(a.length()) << ", len(normal(a)) = " << std::to_string(T(a).normalize().length()) << std::endl;
@@ -55,7 +55,7 @@ void test_vec(std::ostream& out, const char* prefix) {
 }
 
 template<class T>
-void dump_align_props(std::ostream& out, const char* prefix) {
+static void dump_align_props(std::ostream& out, const char* prefix) {
     out << std::string(prefix) << "{size " << std::to_string( sizeof(T) ) << ", alignment " << std::to_string( alignof(T) )
                << " }" << std::endl;
 }

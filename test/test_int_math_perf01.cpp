@@ -141,10 +141,6 @@ struct AABBox {
     }
 };
 
-std::ostream& operator<<(std::ostream& out, const AABBox& v) noexcept {
-    return out << "aabb[bl " << v.lo << ", tr " << v.hi << "]";
-}
-
 #include <random>
 
 TEST_CASE( "Int Math Bench 04a", "[intersect][benchmark][arithmetic][math]" ) {
@@ -159,10 +155,10 @@ TEST_CASE( "Int Math Bench 04a", "[intersect][benchmark][arithmetic][math]" ) {
     for(int i=0; i<loops; ++i) {
         Point2i lo(rint(rng), rint(rng));
         Point2i hi(lo.x+rint(rng), lo.y+rint(rng));
-        AABBox a { lo, hi };
+        AABBox a { .lo=lo, .hi=hi };
         lo = Point2i(rint(rng), rint(rng));
         hi = Point2i(lo.x+rint(rng), lo.y+rint(rng));
-        AABBox b { lo, hi };
+        AABBox b { .lo=lo, .hi=hi };
         va.push_back(a);
         vb.push_back(b);
         bool i1a = a.intersects1a(b);

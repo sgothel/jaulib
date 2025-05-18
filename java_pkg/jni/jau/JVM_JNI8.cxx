@@ -31,13 +31,13 @@
 
 #if defined (JNI_VERSION_1_8)
 
-JNIEXPORT jint JNICALL JNI_OnLoad_jaulib_pkg_jni(JavaVM *vm, void *reserved) {
+JNIEXPORT jint JNICALL JNI_OnLoad_jaulib_pkg_jni(JavaVM *vm, void *reserved) { // NOLINT(misc-use-internal-linkage)
     (void)vm;
     (void)reserved;
     return JNI_VERSION_1_8;
 }
 
-JNIEXPORT void JNICALL JNI_OnUnload_jaulib_pkg_jni(JavaVM *vm, void *reserved) {
+JNIEXPORT void JNICALL JNI_OnUnload_jaulib_pkg_jni(JavaVM *vm, void *reserved) { // NOLINT(misc-use-internal-linkage)
     (void)vm;
     (void)reserved;
 }

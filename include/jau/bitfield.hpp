@@ -35,7 +35,7 @@ namespace jau {
     /**
      * Simple bitfield template for efficient bit storage access in O(1).
      *
-     * Implementations utilizes an in-memory `std::array<uint32_t, (BitSize+31)/5>`.
+     * Implementations utilizes an in-memory `std::array<uint32_t, (BitSize+31)/32>`.
      */
     template <size_t BitSize>
     class bitfield {

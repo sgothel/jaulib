@@ -66,7 +66,7 @@ std::string environment::getProperty(const std::string & name) noexcept {
     if( std::string::npos != name.find('.', 0) ) {
         // Retry with '.' -> '_' to please unix shell
         std::string alt_name(name);
-        std::replace( alt_name.begin(), alt_name.end(), '.', '_');
+        std::replace( alt_name.begin(), alt_name.end(), '.', '_'); // NOLINT(modernize-use-ranges)
         value = ::getenv(alt_name.c_str());
         if( nullptr != value ) {
             COND_PRINT(local_debug, "env::getProperty0 '%s' -> '%s': '%s'", name.c_str(), alt_name.c_str(), value);

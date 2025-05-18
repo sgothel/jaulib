@@ -464,7 +464,7 @@ namespace jau {
              * @param alloc custom allocator_type instance
              */
             template< class InputIt >
-            constexpr explicit cow_darray(const size_type _capacity, InputIt first, InputIt last,
+            constexpr explicit cow_darray(const size_type _capacity, InputIt first, InputIt last,  // NOLINT(performance-unnecessary-value-param)
                                       const float growth_factor=DEFAULT_GROWTH_FACTOR, const allocator_type& alloc = allocator_type())
             : store_ref(std::make_shared<storage_t>(_capacity, first, last, growth_factor, alloc)), sync_atomic(false)
             {
@@ -481,7 +481,7 @@ namespace jau {
              * @param alloc custom allocator_type instance
              */
             template< class InputIt >
-            constexpr cow_darray(InputIt first, InputIt last, const allocator_type& alloc = allocator_type())
+            constexpr cow_darray(InputIt first, InputIt last, const allocator_type& alloc = allocator_type()) // NOLINT(performance-unnecessary-value-param)
             : store_ref(std::make_shared<storage_t>(first, last, alloc)), sync_atomic(false)
             {
                 JAU_DARRAY_PRINTF("ctor iters2: %s\n", getInfo().c_str());
@@ -923,7 +923,7 @@ namespace jau {
              */
             template< class InputIt >
             constexpr_atomic
-            void push_back( InputIt first, InputIt last ) {
+            void push_back( InputIt first, InputIt last ) {  // NOLINT(performance-unnecessary-value-param)
                 std::lock_guard<std::recursive_mutex> lock(mtx_write);
                 const size_type new_size_ = store_ref->size() + size_type(last - first);
 
@@ -1121,7 +1121,7 @@ namespace jau {
              */
             template<class UnaryPredicate>
             constexpr_atomic
-            size_type erase_if(const bool all_matching, UnaryPredicate p) {
+            size_type erase_if(const bool all_matching, const UnaryPredicate& p) {
                 size_type count = 0;
 
                 iterator it = begin(); // lock mutex and copy_store

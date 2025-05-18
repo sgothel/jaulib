@@ -70,12 +70,12 @@ METHOD_CHECKER_STRICT_RET(int_get, get, int, ())
 METHOD_CHECKER_STRICT_RET(long_get, get, long, ())
 
 template<template<typename, typename...> class TT, class U, typename... V>
-void check_2_sub(const std::string &tname, const std::string &desc) {
+static void check_2_sub(const std::string &tname, const std::string &desc) {
 	std::cout << tname << " " << (TT<U, V...>() ? "has " : "does not have ") << desc << std::endl;
 }
 
 template<template<typename, typename...> class T, typename... V>
-void check_2(const std::string &desc) {
+static void check_2(const std::string &desc) {
 	std::cout << std::endl;
 	check_2_sub<T, One, V...>("One", desc);
 	check_2_sub<T, Two, V...>("Two", desc);
@@ -83,7 +83,7 @@ void check_2(const std::string &desc) {
 	check_2_sub<T, int, V...>("int", desc);
 }
 
-TEST_CASE( "01 Type Traits Queries") {    
+TEST_CASE( "01 Type Traits Queries") {
     std::string sep = std::string(60, '-');
 #if 0
     std::cout << sep;
@@ -111,5 +111,5 @@ TEST_CASE( "01 Type Traits Queries") {
     check_2<has_get>("get() with return type covertible to long");
     check_2<has_add>("add() accepting two ints and returning ~ long");
     check_2<int_get>("int get()");
-    check_2<long_get>("long get()");    
+    check_2<long_get>("long get()");
 }

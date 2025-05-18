@@ -71,7 +71,7 @@ fraction_timespec jau::getMonotonicTime() noexcept {
 }
 
 fraction_timespec jau::getWallClockTime() noexcept {
-    struct timespec t { 0, 0 };
+    struct timespec t { .tv_sec=0, .tv_nsec=0 };
     ::clock_gettime(CLOCK_REALTIME, &t);
     return fraction_timespec( (int64_t)t.tv_sec, (int64_t)t.tv_nsec );
 }
@@ -79,14 +79,14 @@ fraction_timespec jau::getWallClockTime() noexcept {
 uint64_t jau::getCurrentMilliseconds() noexcept {
     constexpr uint64_t ms_per_sec =         1'000UL;
     constexpr uint64_t ns_per_ms  =     1'000'000UL;
-    struct timespec t { 0, 0 };
+    struct timespec t { .tv_sec=0, .tv_nsec=0 };
     ::clock_gettime(CLOCK_MONOTONIC, &t);
     return static_cast<uint64_t>( t.tv_sec ) * ms_per_sec +
            static_cast<uint64_t>( t.tv_nsec ) / ns_per_ms;
 }
 
 uint64_t jau::getWallClockSeconds() noexcept {
-    struct timespec t { 0, 0 };
+    struct timespec t { .tv_sec=0, .tv_nsec=0 };
     ::clock_gettime(CLOCK_REALTIME, &t);
     return static_cast<uint64_t>( t.tv_sec );
 }
@@ -448,10 +448,10 @@ std::string jau::get_string(const uint8_t *buffer, nsize_t const buffer_len, nsi
 }
 
 void jau::trimInPlace(std::string &s) noexcept {
-    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) { // NOLINT(modernize-use-ranges)
         return !std::isspace(ch);
     }));
-    s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) {
+    s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) { // NOLINT(modernize-use-ranges)
         return !std::isspace(ch);
     }).base(), s.end());
 }
@@ -477,7 +477,7 @@ std::vector<std::string> jau::split_string(const std::string& str, const std::st
 }
 
 std::string& jau::toLowerInPlace(std::string& s) noexcept {
-    std::transform(s.begin(), s.end(), s.begin(),
+    std::transform(s.begin(), s.end(), s.begin(),           // NOLINT(modernize-use-ranges)
         [](unsigned char c){ return std::tolower(c); });
     return s;
 }

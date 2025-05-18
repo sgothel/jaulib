@@ -71,10 +71,6 @@ struct AABBox {
     }
 };
 
-std::ostream& operator<<(std::ostream& out, const AABBox& v) noexcept {
-    return out << "aabb[bl " << v.lo << ", tr " << v.hi << "]";
-}
-
 #include <random>
 
 TEST_CASE( "Float Math Bench 04a", "[intersect][benchmark][arithmetic][math]" ) {
@@ -90,12 +86,12 @@ TEST_CASE( "Float Math Bench 04a", "[intersect][benchmark][arithmetic][math]" ) 
     for(int i=0; i<loops; ++i) {
         Point2f lo((float)rint(rng), (float)rint(rng));
         Point2f hi(lo.x+(float)rint(rng), lo.y+(float)rint(rng));
-        AABBox a { lo, hi };
+        AABBox a { .lo=lo, .hi=hi };
         AABBox2f a0 { lo, hi };
         lo = Point2f((float)rint(rng), (float)rint(rng));
         hi = Point2f(lo.x+(float)rint(rng), lo.y+(float)rint(rng));
         AABBox2f b0 { lo, hi };
-        AABBox b { lo, hi };
+        AABBox b { .lo=lo, .hi=hi };
         va0.push_back(a0);
         vb0.push_back(b0);
         va.push_back(a);

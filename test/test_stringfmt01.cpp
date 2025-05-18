@@ -45,7 +45,7 @@ using namespace jau::float_literals;
 using namespace jau::int_literals;
 
 template <typename... Args>
-constexpr std::string format_string000(const std::size_t maxStrLen, const std::string_view format, const Args &...args) {
+constexpr static std::string format_string000(const std::size_t maxStrLen, const std::string& format, const Args &...args) {
     std::string str;
     str.reserve(maxStrLen + 1);  // incl. EOS
     str.resize(maxStrLen);       // excl. EOS
@@ -63,7 +63,7 @@ constexpr std::string format_string000(const std::size_t maxStrLen, const std::s
     return str;
 }
 
-std::string format_000a_vsnprintf(float fa, float fb, size_t sz1, uint64_t a_u64, int i) {
+static std::string format_000a_vsnprintf(float fa, float fb, size_t sz1, uint64_t a_u64, int i) {
     size_t nchars;
     std::string str;
     {
@@ -85,17 +85,17 @@ std::string format_000a_vsnprintf(float fa, float fb, size_t sz1, uint64_t a_u64
     return str;
 }
 
-std::string format_010a_jaufmtstr(float fa, float fb, size_t sz1, uint64_t a_u64, int i) {
+static std::string format_010a_jaufmtstr(float fa, float fb, size_t sz1, uint64_t a_u64, int i) {
     return jau::format_string("format_010a: %f, %f, %zu, %" PRIu64 ", %d\n",
                               fa + 1.0_f32, fb + 1.0_f32, sz1 + 1, a_u64 + 1_u64, i + 1);
 }
 
-constexpr std::string format_020a_jaufmtstr_n(float fa, float fb, size_t sz1, uint64_t a_u64, int i) {
+static constexpr std::string format_020a_jaufmtstr_n(float fa, float fb, size_t sz1, uint64_t a_u64, int i) {
     return jau::format_string_n(1023, "format_020a: %f, %f, %zu, %" PRIu64 ", %d\n",
                                 fa + 1.0_f32, fb + 1.0_f32, sz1 + 1, a_u64 + 1_u64, i + 1);
 }
 
-std::string format_030a_strstream(float fa, float fb, size_t sz1, uint64_t a_u64, int i) {
+static std::string format_030a_strstream(float fa, float fb, size_t sz1, uint64_t a_u64, int i) {
     std::ostringstream ss1;
     ss1 << "format_030a: "
         << fa + 1.0_f32 << ", "
@@ -113,7 +113,7 @@ std::string format_040a_stdformat(float fa, float fb, size_t sz1, uint64_t a_u64
 }
 #endif
 
-std::string format_000b_vsnprintf(float fa, float fb, size_t sz1, uint64_t a_u64, int i) {
+static std::string format_000b_vsnprintf(float fa, float fb, size_t sz1, uint64_t a_u64, int i) {
     size_t nchars;
     std::string str;
     {
@@ -134,17 +134,17 @@ std::string format_000b_vsnprintf(float fa, float fb, size_t sz1, uint64_t a_u64
     str.clear();  // error
     return str;
 }
-std::string format_010b_jaufmtstr(float fa, float fb, size_t sz1, uint64_t a_u64, int i) {
+static std::string format_010b_jaufmtstr(float fa, float fb, size_t sz1, uint64_t a_u64, int i) {
     return jau::format_string("format_010b: %.2f, %2.2f, %zu, %" PRIu64 ", %03d\n",
                               fa + 1.0_f32, fb + 1.0_f32, sz1 + 1, a_u64 + 1_u64, i + 1);
 }
 
-std::string format_020b_jaufmtstr_n(float fa, float fb, size_t sz1, uint64_t a_u64, int i) {
+static std::string format_020b_jaufmtstr_n(float fa, float fb, size_t sz1, uint64_t a_u64, int i) {
     return jau::format_string_n(1023, "format_020b: %.2f, %2.2f, %zu, %" PRIu64 ", %03d\n",
                                 fa + 1.0_f32, fb + 1.0_f32, sz1 + 1, a_u64 + 1_u64, i + 1);
 }
 
-std::string format_030b_strstream(float fa, float fb, size_t sz1, uint64_t a_u64, int i) {
+static std::string format_030b_strstream(float fa, float fb, size_t sz1, uint64_t a_u64, int i) {
     std::ostringstream ss1;
     ss1.precision(3);
     ss1 << "format_030b: "
@@ -166,7 +166,7 @@ std::string format_040b_stdformat(float fa, float fb, size_t sz1, uint64_t a_u64
 #endif
 
 template <typename Func>
-size_t test_format(const Func func, bool output) {
+static size_t test_format(const Func func, bool output) {
     constexpr float fa = 1.1f, fb = 2.2f;
     constexpr size_t sz1 = 1;
     constexpr uint64_t sz2 = 2;
@@ -182,7 +182,7 @@ size_t test_format(const Func func, bool output) {
     return l;
 }
 
-void format_0a() {
+static void format_0a() {
     test_format(format_000a_vsnprintf, true);
     test_format(format_010a_jaufmtstr, true);
     test_format(format_020a_jaufmtstr_n, true);
@@ -192,7 +192,7 @@ void format_0a() {
     test_format(format_040a_stdformat, true);
 #endif
 }
-void format_0b() {
+static void format_0b() {
     test_format(format_000b_vsnprintf, true);
     test_format(format_010b_jaufmtstr, true);
     test_format(format_020b_jaufmtstr_n, true);
@@ -204,7 +204,7 @@ void format_0b() {
 }
 
 template <typename... Args>
-constexpr std::string format_string_static2(const std::string_view fmt, const Args &...) {
+static constexpr std::string format_string_static2(const std::string_view fmt, const Args &...) {
     // constexpr const std::string format2(format);
     // constexpr const bool b = jau::cfmt::check2<Args...>("Haus"sv);
     constexpr const bool b = jau::cfmt::check3<Args...>(fmt);
@@ -215,12 +215,12 @@ constexpr std::string format_string_static2(const std::string_view fmt, const Ar
 
 
 template <typename... Targs>
-constexpr jau::cfmt2::PResult check(const std::string_view fmt, const Targs &...) noexcept {
+static constexpr jau::cfmt2::PResult check(const std::string_view fmt, const Targs &...) noexcept {
     return jau::cfmt2::impl::checkRec<Targs...>( jau::cfmt2::PResult(fmt) );
 }
 
 template <typename... Targs>
-constexpr std::string format_string_static3(const std::string_view format, const Targs &...args) {
+static constexpr std::string format_string_static3(const std::string_view format, const Targs &...args) {
     // constexpr const jau::cfmt2::PResult ctx2 = jau::cfmt2::impl::checkRec<Targs...>( jau::cfmt2::PResult(format) );
     // static_assert( 0 <= jau::cfmt2::impl::checkRec<Targs...>( jau::cfmt2::PResult(format)).argCount() );
     if( 0 <= jau::cfmt2::impl::checkRec<Targs...>( jau::cfmt2::PResult(format)).argCount() ) {

@@ -206,7 +206,7 @@ class Mask
       /**
       * AND-combine two masks
       */
-      Mask<T>& operator&=(Mask<T> o) noexcept
+      Mask<T>& operator&=(const Mask<T>& o) noexcept
          {
          m_mask &= o.value();
          return (*this);
@@ -215,7 +215,7 @@ class Mask
       /**
       * XOR-combine two masks
       */
-      Mask<T>& operator^=(Mask<T> o) noexcept
+      Mask<T>& operator^=(const Mask<T>& o) noexcept
          {
          m_mask ^= o.value();
          return (*this);
@@ -224,7 +224,7 @@ class Mask
       /**
       * OR-combine two masks
       */
-      Mask<T>& operator|=(Mask<T> o) noexcept
+      Mask<T>& operator|=(const Mask<T>& o) noexcept
          {
          m_mask |= o.value();
          return (*this);
@@ -233,7 +233,7 @@ class Mask
       /**
       * AND-combine two masks
       */
-      friend Mask<T> operator&(Mask<T> x, Mask<T> y) noexcept
+      friend Mask<T> operator&(const Mask<T>& x, const Mask<T>& y) noexcept
          {
          return Mask<T>(x.value() & y.value());
          }
@@ -241,7 +241,7 @@ class Mask
       /**
       * XOR-combine two masks
       */
-      friend Mask<T> operator^(Mask<T> x, Mask<T> y) noexcept
+      friend Mask<T> operator^(const Mask<T>& x, const Mask<T>& y) noexcept
          {
          return Mask<T>(x.value() ^ y.value());
          }
@@ -249,7 +249,7 @@ class Mask
       /**
       * OR-combine two masks
       */
-      friend Mask<T> operator|(Mask<T> x, Mask<T> y) noexcept
+      friend Mask<T> operator|(const Mask<T>& x, const Mask<T>& y) noexcept
          {
          return Mask<T>(x.value() | y.value());
          }
@@ -296,7 +296,7 @@ class Mask
       /**
       * If this mask is set, return x, otherwise return y
       */
-      Mask<T> select_mask(Mask<T> x, Mask<T> y) const noexcept
+      Mask<T> select_mask(const Mask<T>& x, const Mask<T>& y) const noexcept
          {
          return Mask<T>(select(x.value(), y.value()));
          }

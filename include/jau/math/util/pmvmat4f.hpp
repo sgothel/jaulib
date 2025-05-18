@@ -164,13 +164,13 @@ class PMVMatrix4 {
 
         constexpr static uint32_t matToReq(uint32_t req) noexcept {
             uint32_t mask = 0;
-            if( 0 != ( req & ( INVERSE_MODELVIEW | INVERSE_TRANSPOSED_MODELVIEW ) ) ) {
+            if( req & ( INVERSE_MODELVIEW | INVERSE_TRANSPOSED_MODELVIEW ) ) {
                 mask |= INVERSE_MODELVIEW;
             }
-            if( 0 != ( req & INVERSE_TRANSPOSED_MODELVIEW ) ) {
+            if( req & INVERSE_TRANSPOSED_MODELVIEW ) {
                 mask |= INVERSE_TRANSPOSED_MODELVIEW;
             }
-            if( 0 != ( req & INVERSE_PROJECTION ) ) {
+            if( req & INVERSE_PROJECTION ) {
                 mask |= INVERSE_PROJECTION;
             }
             return mask;
@@ -331,7 +331,7 @@ class PMVMatrix4 {
      * @throws IllegalArgumentException if {@link #INVERSE_PROJECTION} has not been requested in ctor {@link #PMVMatrix4(int)}.
      */
     const Mat4& getPi() {
-        if( 0 == ( INVERSE_PROJECTION & m_requestBits ) ) {
+        if( !( INVERSE_PROJECTION & m_requestBits ) ) {
             throw jau::IllegalArgumentError("Not requested in ctor", E_FILE_LINE);
         }
         updateImpl(false);
@@ -346,7 +346,7 @@ class PMVMatrix4 {
      * @throws IllegalArgumentException if {@link #INVERSE_MODELVIEW} has not been requested in ctor {@link #PMVMatrix4(int)}.
      */
     const Mat4& getMvi() {
-        if( 0 == ( INVERSE_MODELVIEW & m_requestBits ) ) {
+        if( !( INVERSE_MODELVIEW & m_requestBits ) ) {
             throw jau::IllegalArgumentError("Not requested in ctor", E_FILE_LINE);
         }
         updateImpl(false);
@@ -361,7 +361,7 @@ class PMVMatrix4 {
      * @throws IllegalArgumentException if {@link #INVERSE_MODELVIEW} has not been requested in ctor {@link #PMVMatrix4(int)}.
      */
     SyncMat4& getSyncMvi() {
-        if( 0 == ( INVERSE_MODELVIEW & m_requestBits ) ) {
+        if( !( INVERSE_MODELVIEW & m_requestBits ) ) {
             throw jau::IllegalArgumentError("Not requested in ctor", E_FILE_LINE);
         }
         return m_syncMvi;
@@ -375,7 +375,7 @@ class PMVMatrix4 {
      * @throws IllegalArgumentException if {@link #INVERSE_TRANSPOSED_MODELVIEW} has not been requested in ctor {@link #PMVMatrix4(int)}.
      */
     const Mat4& getMvit() {
-        if( 0 == ( INVERSE_TRANSPOSED_MODELVIEW & m_requestBits ) ) {
+        if( !( INVERSE_TRANSPOSED_MODELVIEW & m_requestBits ) ) {
             throw jau::IllegalArgumentError("Not requested in ctor", E_FILE_LINE);
         }
         updateImpl(false);
@@ -390,7 +390,7 @@ class PMVMatrix4 {
      * @throws IllegalArgumentException if {@link #INVERSE_TRANSPOSED_MODELVIEW} has not been requested in ctor {@link #PMVMatrix4(int)}.
      */
     SyncMat4& getSyncMvit() {
-        if( 0 == ( INVERSE_TRANSPOSED_MODELVIEW & m_requestBits ) ) {
+        if( !( INVERSE_TRANSPOSED_MODELVIEW & m_requestBits ) ) {
             throw jau::IllegalArgumentError("Not requested in ctor", E_FILE_LINE);
         }
         return m_syncMvit;
@@ -404,7 +404,7 @@ class PMVMatrix4 {
      * @throws IllegalArgumentException if {@link #INVERSE_MODELVIEW} has not been requested in ctor {@link #PMVMatrix4(int)}.
      */
     SyncMats4f& getSyncPMvMvi() {
-        if( 0 == ( INVERSE_MODELVIEW & m_requestBits ) ) {
+        if( !( INVERSE_MODELVIEW & m_requestBits ) ) {
             throw jau::IllegalArgumentError("Not requested in ctor", E_FILE_LINE);
         }
         return m_syncP_Mv_Mvi;
@@ -418,10 +418,33 @@ class PMVMatrix4 {
      * @throws IllegalArgumentException if {@link #INVERSE_TRANSPOSED_MODELVIEW} has not been requested in ctor {@link #PMVMatrix4(int)}.
      */
     SyncMats4f& getSyncPMvMviMvit() {
-        if( 0 == ( INVERSE_TRANSPOSED_MODELVIEW & m_requestBits ) ) {
+        if( !( INVERSE_TRANSPOSED_MODELVIEW & m_requestBits ) ) {
             throw jau::IllegalArgumentError("Not requested in ctor", E_FILE_LINE);
         }
         return m_syncP_Mv_Mvi_Mvit;
+    }
+
+
+    /**
+     * Returns {@link SyncMatrices4f} of either 4 matrices getSyncPMvMviMvit(), 3 matrices getSyncPMvMvi() or 2 matrices getSyncPMv()
+     * depending on requestedBits().
+     *
+     * See <a href="#storageDetails"> matrix storage details</a>.
+     */
+    SyncMats4f& getSyncPMvReq() {
+        {
+            constexpr uint32_t m = INVERSE_MODELVIEW | INVERSE_TRANSPOSED_MODELVIEW;
+            if( m == ( m & m_requestBits ) ) {
+                return getSyncPMvMviMvit(); // P, Mv, Mvi and Mvit
+            }
+        }
+        {
+            constexpr uint32_t m = INVERSE_MODELVIEW;
+            if( m == ( m & m_requestBits ) ) {
+                return getSyncPMvMvi(); // P, Mv, Mvi
+            }
+        }
+        return getSyncPMv(); // P, Mv
     }
 
     //
@@ -1099,24 +1122,24 @@ class PMVMatrix4 {
     }
 
     std::string& toString(std::string& sb, const std::string& f) const noexcept {
-        const bool pmvDirty  = 0 != (PREMUL_PMV & m_dirtyBits);
+        const bool pmvDirty  = PREMUL_PMV & m_dirtyBits;
 
-        const bool pmviDirty  = 0 != (PREMUL_PMVI & m_dirtyBits);
+        const bool pmviDirty  = PREMUL_PMVI & m_dirtyBits;
 
-        const bool frustumDirty = 0 != (FRUSTUM & m_dirtyBits);
+        const bool frustumDirty = FRUSTUM & m_dirtyBits;
 
-        const bool mviDirty  = 0 != (INVERSE_MODELVIEW & m_dirtyBits);
-        const bool mviReq = 0 != (INVERSE_MODELVIEW & m_requestBits);
+        const bool mviDirty  = INVERSE_MODELVIEW & m_dirtyBits;
+        const bool mviReq = INVERSE_MODELVIEW & m_requestBits;
 
-        const bool mvitDirty = 0 != (INVERSE_TRANSPOSED_MODELVIEW & m_dirtyBits);
-        const bool mvitReq = 0 != (INVERSE_TRANSPOSED_MODELVIEW & m_requestBits);
+        const bool mvitDirty = INVERSE_TRANSPOSED_MODELVIEW & m_dirtyBits;
+        const bool mvitReq = INVERSE_TRANSPOSED_MODELVIEW & m_requestBits;
 
-        const bool piDirty  = 0 != (INVERSE_PROJECTION & m_dirtyBits);
-        const bool piReq = 0 != (INVERSE_PROJECTION & m_requestBits);
+        const bool piDirty  = INVERSE_PROJECTION & m_dirtyBits;
+        const bool piReq = INVERSE_PROJECTION & m_requestBits;
 
-        const bool modP = 0 != ( MODIFIED_PROJECTION & m_modifiedBits );
-        const bool modMv = 0 != ( MODIFIED_MODELVIEW & m_modifiedBits );
-        const bool modT = 0 != ( MODIFIED_TEXTURE & m_modifiedBits );
+        const bool modP = MODIFIED_PROJECTION & m_modifiedBits;
+        const bool modMv = MODIFIED_MODELVIEW & m_modifiedBits;
+        const bool modT = MODIFIED_TEXTURE & m_modifiedBits;
         int count = 3; // P, Mv, T
 
         sb.append("PMVMatrix4[modified[P ").append(std::to_string(modP)).append(", Mv ").append(std::to_string(modMv)).append(", T ").append(std::to_string(modT));
@@ -1243,7 +1266,7 @@ class PMVMatrix4 {
      * @see #getSyncPMvMviMvit()
      */
     constexpr bool isReqDirty() noexcept {
-        return 0 != ( m_requestBits & m_dirtyBits );
+        return m_requestBits & m_dirtyBits;
     }
 
     /**
@@ -1292,9 +1315,7 @@ class PMVMatrix4 {
      * @see #getSyncPMvMviMvit()
      * @see #getFrustum()
      */
-    constexpr uint32_t getReqBits() noexcept {
-        return m_requestBits;
-    }
+    constexpr uint32_t requestedBits() noexcept { return m_requestBits; }
 
     /**
      * Returns the pre-multiplied projection x modelview, P x Mv.
@@ -1310,7 +1331,7 @@ class PMVMatrix4 {
      * @see #update()
      */
     constexpr Mat4& getPMv() noexcept {
-        if( 0 != ( m_dirtyBits & PREMUL_PMV ) ) {
+        if( m_dirtyBits & PREMUL_PMV ) {
             m_matPMv.mul(m_matP, m_matMv);
             m_dirtyBits &= ~PREMUL_PMV;
         }
@@ -1332,7 +1353,7 @@ class PMVMatrix4 {
      * @see #update()
      */
     constexpr Mat4& getPMvi() noexcept {
-        if( 0 != ( m_dirtyBits & PREMUL_PMVI ) ) {
+        if( m_dirtyBits & PREMUL_PMVI ) {
             Mat4& mPMv = getPMv();
             m_matPMviOK = m_matPMvi.invert(mPMv);
             m_dirtyBits &= ~PREMUL_PMVI;
@@ -1354,7 +1375,7 @@ class PMVMatrix4 {
      * @see #update()
      */
     jau::math::geom::Frustum getFrustum() noexcept {
-        if( 0 != ( m_dirtyBits & FRUSTUM ) ) {
+        if( m_dirtyBits & FRUSTUM ) {
             m_frustum.setFromMat(getPMv());
             m_dirtyBits &= ~FRUSTUM;
         }
@@ -1425,7 +1446,7 @@ class PMVMatrix4 {
             m_modifiedBits = 0;
             mod = false;
         }
-        if( 0 != ( m_requestBits & ( ( m_dirtyBits & ( INVERSE_PROJECTION ) ) ) ) ) { // only if requested & dirty
+        if( m_requestBits & ( ( m_dirtyBits & ( INVERSE_PROJECTION ) ) ) ) { // only if requested & dirty
             if( !m_matPi.invert(m_matP) ) {
                 DBG_ERR_PRINT("Invalid source P matrix, can't compute inverse: %s", m_matP.toString().c_str(), E_FILE_LINE);
                 // still continue with other derived matrices
@@ -1434,7 +1455,7 @@ class PMVMatrix4 {
             }
             m_dirtyBits &= ~INVERSE_PROJECTION;
         }
-        if( 0 != ( m_requestBits & ( ( m_dirtyBits & ( INVERSE_MODELVIEW | INVERSE_TRANSPOSED_MODELVIEW ) ) ) ) ) { // only if requested & dirty
+        if( m_requestBits & ( ( m_dirtyBits & ( INVERSE_MODELVIEW | INVERSE_TRANSPOSED_MODELVIEW ) ) ) ) { // only if requested & dirty
             if( !m_matMvi.invert(m_matMv) ) {
                 DBG_ERR_PRINT("Invalid source Mv matrix, can't compute inverse: %s", m_matMv.toString().c_str(), E_FILE_LINE);
                 m_dirtyBits &= ~(INVERSE_MODELVIEW | INVERSE_TRANSPOSED_MODELVIEW);
@@ -1443,7 +1464,7 @@ class PMVMatrix4 {
             m_dirtyBits &= ~INVERSE_MODELVIEW;
             mod = true;
         }
-        if( 0 != ( m_requestBits & ( m_dirtyBits & INVERSE_TRANSPOSED_MODELVIEW ) ) ) { // only if requested & dirty
+        if( m_requestBits & ( m_dirtyBits & INVERSE_TRANSPOSED_MODELVIEW ) ) { // only if requested & dirty
             m_matMvit.transpose(m_matMvi);
             m_dirtyBits &= ~INVERSE_TRANSPOSED_MODELVIEW;
             mod = true;

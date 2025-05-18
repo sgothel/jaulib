@@ -2,7 +2,6 @@
 
 #include <cassert>
 
-#include "jau/jni/helper_jni.hpp"
 #include "org_jau_pkg_JarUtil.h"
 
 #if defined(__APPLE__)
@@ -15,7 +14,7 @@
  * Method:    fixNativeLibAttribs
  * Signature: (Ljava/lang/String;)Z
  */
-JNIEXPORT jboolean JNICALL Java_com_org_jau_pkg_JarUtil_fixNativeLibAttribs(JNIEnv* env, jclass _unused, jstring fname) {
+JNIEXPORT jboolean JNICALL Java_org_jau_pkg_JarUtil_fixNativeLibAttribs(JNIEnv* env, jclass _unused, jstring fname) {
     (void)_unused;
 
     const char* _UTF8fname = nullptr;

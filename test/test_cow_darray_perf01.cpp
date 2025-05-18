@@ -81,7 +81,7 @@ static Addr48Bit start_addr(start_addr_b);
  ****************************************************************************************/
 
 template<class T, typename Size_type>
-const DataType01 * findDataSet01_idx(T& data, DataType01 const & elem) noexcept {
+const static DataType01 * findDataSet01_idx(T& data, DataType01 const & elem) noexcept {
     const Size_type size = data.size();
     for (Size_type i = 0; i < size; ++i) {
         DataType01 & e = data[i];
@@ -105,7 +105,7 @@ static int test_00_list_idx(T& data) {
 }
 
 template<class T, typename Size_type>
-const DataType01 * findDataSet01_itr(T& data, DataType01 const & elem,
+const static DataType01 * findDataSet01_itr(T& data, DataType01 const & elem,
         std::enable_if_t< is_cow_type<T>::value, bool> = true) noexcept
 {
     typename T::const_iterator first = data.cbegin();
@@ -117,7 +117,7 @@ const DataType01 * findDataSet01_itr(T& data, DataType01 const & elem,
     return nullptr;
 }
 template<class T, typename Size_type>
-const DataType01 * findDataSet01_itr(T& data, DataType01 const & elem,
+const static DataType01 * findDataSet01_itr(T& data, DataType01 const & elem,
         std::enable_if_t< !is_cow_type<T>::value, bool> = true) noexcept
 {
     typename T::const_iterator first = data.cbegin();
@@ -262,7 +262,7 @@ static void test_00_seq_fill_unique_itr(T& data, const Size_type size,
 
 template<class T, typename Size_type>
 static void test_00_seq_fill_unique_itr(T& data, const Size_type size,
-        std::enable_if_t< !is_cow_type<T>::value, bool> = true) 
+        std::enable_if_t< !is_cow_type<T>::value, bool> = true)
 {
     Addr48Bit a0(start_addr);
     Size_type i=0, fi=0;
