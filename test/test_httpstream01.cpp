@@ -32,9 +32,9 @@
 
 #include <jau/test/catch2_ext.hpp>
 
-#include <jau/file_util.hpp>
-#include <jau/io_util.hpp>
-#include <jau/byte_stream.hpp>
+#include <jau/io/file_util.hpp>
+#include <jau/io/io_util.hpp>
+#include <jau/io/byte_stream.hpp>
 
 #include <jau/debug.hpp>
 
@@ -112,7 +112,7 @@ class TestHttpStream01 {
             REQUIRE( res->total_read == consumed_byte_count );
             REQUIRE( res->success() );
         }
-        
+
         void test11_post_async_ok() {
             if( !jau::io::uri_tk::protocol_supported("http:") ) {
                 jau::PLAIN_PRINT(true, "http not supported, abort\n");

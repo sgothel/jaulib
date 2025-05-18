@@ -260,25 +260,25 @@ class TestFileUtil02 : TestFileUtilBase {
         REQUIRE( user_id == ::geteuid() );
 
         {
-            jau::fs::file_stats image_stats = getTestDataImageFile(executable_path);
+            jau::io::fs::file_stats image_stats = getTestDataImageFile(executable_path);
             REQUIRE( true == image_stats.exists() );
 
             const std::string mount_point = temp_root+"_mount";
-            jau::fs::remove(mount_point, jau::fs::traverse_options::recursive); // start fresh
-            REQUIRE( true == jau::fs::mkdir(mount_point, jau::fs::fmode_t::def_dir_prot) );
+            jau::io::fs::remove(mount_point, jau::io::fs::traverse_options::recursive);  // start fresh
+            REQUIRE(true == jau::io::fs::mkdir(mount_point, jau::io::fs::fmode_t::def_dir_prot));
 
-            jau::fs::mount_ctx mctx;
+            jau::io::fs::mount_ctx mctx;
             {
                 REQUIRE( user_id == ::geteuid() );
                 print_creds("pre-mount");
                 print_caps("pre-mount");
 
-                jau::fs::mountflags_t flags = 0;
+                jau::io::fs::mountflags_t flags = 0;
 #ifdef __linux__
-                flags |= number(jau::fs::mountflags_linux::rdonly);
+                flags |= number(jau::io::fs::mountflags_linux::rdonly);
 #endif
                 jau::fprintf_td(stderr, "MountFlags %" PRIu64 "\n", flags);
-                mctx = jau::fs::mount_image(image_stats.path(), mount_point, "squashfs", flags, "");
+                mctx = jau::io::fs::mount_image(image_stats.path(), mount_point, "squashfs", flags, "");
 
                 print_creds("post-mount");
                 print_caps("post-mount");
@@ -286,14 +286,14 @@ class TestFileUtil02 : TestFileUtilBase {
             }
             REQUIRE( true == mctx.mounted );
 
-            const jau::fs::copy_options copts = jau::fs::copy_options::recursive |
-                                                jau::fs::copy_options::preserve_all |
-                                                jau::fs::copy_options::sync |
-                                                jau::fs::copy_options::verbose;
+            const jau::io::fs::copy_options copts = jau::io::fs::copy_options::recursive |
+                                                    jau::io::fs::copy_options::preserve_all |
+                                                    jau::io::fs::copy_options::sync |
+                                                    jau::io::fs::copy_options::verbose;
             const std::string root_copy = temp_root+"_copy_test50";
-            jau::fs::remove(root_copy, jau::fs::traverse_options::recursive);
+            jau::io::fs::remove(root_copy, jau::io::fs::traverse_options::recursive);
             testxx_copy_r_p("test50_mount_copy_r_p", mount_point, 1 /* source_added_dead_links */, root_copy, copts, false /* dest_is_vfat */);
-            REQUIRE( true == jau::fs::remove(root_copy, jau::fs::traverse_options::recursive) );
+            REQUIRE(true == jau::io::fs::remove(root_copy, jau::io::fs::traverse_options::recursive));
 
             bool umount_ok;
             {
@@ -301,12 +301,12 @@ class TestFileUtil02 : TestFileUtilBase {
                 print_creds("pre-umount");
                 print_caps("pre-umount");
 
-                jau::fs::umountflags_t flags = 0;
+                jau::io::fs::umountflags_t flags = 0;
 #ifdef __linux__
-                flags |= number(jau::fs::umountflags_linux::detach); // lazy
+                flags |= number(jau::io::fs::umountflags_linux::detach);  // lazy
 #endif
                 jau::fprintf_td(stderr, "UnmountFlags %d\n", flags);
-                umount_ok = jau::fs::umount(mctx, flags);
+                umount_ok = jau::io::fs::umount(mctx, flags);
 
                 print_creds("post-umount");
                 print_caps("post-umount");
@@ -315,7 +315,7 @@ class TestFileUtil02 : TestFileUtilBase {
             REQUIRE( true == umount_ok );
 
             if constexpr ( _remove_target_test_dir ) {
-                REQUIRE( true == jau::fs::remove(mount_point, jau::fs::traverse_options::recursive) );
+                REQUIRE(true == jau::io::fs::remove(mount_point, jau::io::fs::traverse_options::recursive));
             }
         }
     }

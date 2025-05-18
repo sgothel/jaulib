@@ -22,15 +22,11 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <cassert>
-#include <cinttypes>
 #include <cstring>
-#include <memory>
-#include <thread>
-#include <pthread.h>
 
 #include <jau/test/catch2_ext.hpp>
 
-#include <jau/file_util.hpp>
+#include <jau/io/file_util.hpp>
 #include <jau/cpuid.hpp>
 #include <jau/os/os_support.hpp>
 #include <jau/os/user_info.hpp>

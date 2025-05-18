@@ -31,7 +31,7 @@
 
 #include "jau/jni/helper_jni.hpp"
 
-#include "jau/file_util.hpp"
+#include "jau/io/file_util.hpp"
 
 extern "C" {
     #include <sys/stat.h>
@@ -44,7 +44,7 @@ extern "C" {
 jstring Java_org_jau_fs_FMode_to_1string(JNIEnv *env, jclass cls, jint mask, jboolean show_rwx) {
     (void)cls;
     try {
-        const std::string s = jau::fs::to_string(static_cast<jau::fs::fmode_t>(mask), JNI_TRUE == show_rwx);
+        const std::string s = jau::io::fs::to_string(static_cast<jau::io::fs::fmode_t>(mask), JNI_TRUE == show_rwx);
         return jau::jni::from_string_to_jstring(env, s);
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
@@ -65,7 +65,7 @@ jlong Java_org_jau_fs_FileStats_ctorImpl1(JNIEnv *env, jclass clazz, jstring jpa
         std::string path = jau::jni::from_jstring_to_string(env, jpath);
 
         // new instance
-        jau::jni::shared_ptr_ref<jau::fs::file_stats> ref( new jau::fs::file_stats( path ) );
+        jau::jni::shared_ptr_ref<jau::io::fs::file_stats> ref( new jau::io::fs::file_stats( path ) );
 
         return ref.release_to_jlong();
     } catch(...) {
@@ -82,10 +82,10 @@ jlong Java_org_jau_fs_FileStats_ctorImpl2(JNIEnv *env, jclass clazz, jstring jdi
         }
         std::string dirname = jau::jni::from_jstring_to_string(env, jdirname);
         std::string basename = jau::jni::from_jstring_to_string(env, jbasename);
-        jau::fs::dir_item item(dirname, basename);
+        jau::io::fs::dir_item item(dirname, basename);
 
         // new instance
-        jau::jni::shared_ptr_ref<jau::fs::file_stats> ref( new jau::fs::file_stats( item ) );
+        jau::jni::shared_ptr_ref<jau::io::fs::file_stats> ref( new jau::io::fs::file_stats( item ) );
 
         return ref.release_to_jlong();
     } catch(...) {
@@ -98,7 +98,7 @@ jlong Java_org_jau_fs_FileStats_ctorImpl3(JNIEnv *env, jclass clazz, jint fd) {
     (void)clazz;
     try {
         // new instance
-        jau::jni::shared_ptr_ref<jau::fs::file_stats> ref( new jau::fs::file_stats( fd ) );
+        jau::jni::shared_ptr_ref<jau::io::fs::file_stats> ref( new jau::io::fs::file_stats( fd ) );
 
         return ref.release_to_jlong();
     } catch(...) {
@@ -110,11 +110,11 @@ jlong Java_org_jau_fs_FileStats_ctorImpl3(JNIEnv *env, jclass clazz, jint fd) {
 jlong Java_org_jau_fs_FileStats_ctorLinkTargetImpl(JNIEnv *env, jclass clazz, jlong nativeInstance) {
     (void)clazz;
     try {
-        jau::jni::shared_ptr_ref<jau::fs::file_stats> sref(nativeInstance, true /* throw_on_nullptr */); // hold copy until done
+        jau::jni::shared_ptr_ref<jau::io::fs::file_stats> sref(nativeInstance, true /* throw_on_nullptr */); // hold copy until done
 
-        const std::shared_ptr<jau::fs::file_stats>& lt = sref->link_target();
+        const std::shared_ptr<jau::io::fs::file_stats>& lt = sref->link_target();
         if( nullptr != lt ) {
-            jau::jni::shared_ptr_ref<jau::fs::file_stats> ref( lt );
+            jau::jni::shared_ptr_ref<jau::io::fs::file_stats> ref( lt );
             return ref.release_to_jlong();
         }
     } catch(...) {
@@ -126,9 +126,9 @@ jlong Java_org_jau_fs_FileStats_ctorLinkTargetImpl(JNIEnv *env, jclass clazz, jl
 void Java_org_jau_fs_FileStats_dtorImpl(JNIEnv *env, jclass clazz, jlong nativeInstance) {
     (void)clazz;
     try {
-        jau::jni::shared_ptr_ref<jau::fs::file_stats> sref(nativeInstance, false /* throw_on_nullptr */); // hold copy until done
+        jau::jni::shared_ptr_ref<jau::io::fs::file_stats> sref(nativeInstance, false /* throw_on_nullptr */); // hold copy until done
         if( nullptr != sref.pointer() ) {
-            std::shared_ptr<jau::fs::file_stats>* sref_ptr = jau::jni::castInstance<jau::fs::file_stats>(nativeInstance);
+            std::shared_ptr<jau::io::fs::file_stats>* sref_ptr = jau::jni::castInstance<jau::io::fs::file_stats>(nativeInstance);
             delete sref_ptr;
         }
     } catch(...) {
@@ -139,7 +139,7 @@ void Java_org_jau_fs_FileStats_dtorImpl(JNIEnv *env, jclass clazz, jlong nativeI
 jintArray Java_org_jau_fs_FileStats_getInt6FieldsFModeFdUidGidErrno(JNIEnv *env, jclass clazz, jlong nativeInstance) {
     (void)clazz;
     try {
-        jau::jni::shared_ptr_ref<jau::fs::file_stats> sref(nativeInstance, true /* throw_on_nullptr */); // hold copy until done
+        jau::jni::shared_ptr_ref<jau::io::fs::file_stats> sref(nativeInstance, true /* throw_on_nullptr */); // hold copy until done
 
         const size_t array_size = 6;
         const jint values[] = { (jint)sref->fields(), (jint)sref->mode(), (jint)sref->fd(), (jint)sref->uid(), (jint)sref->gid(), (jint)sref->errno_res() };
@@ -167,7 +167,7 @@ jobjectArray Java_org_jau_fs_DirItem_getString2DirItem(JNIEnv *env, jclass clazz
         if (nullptr == jres) {
             throw jau::InternalError("Cannot create instance of jobjectArray", E_FILE_LINE);
         }
-        jau::fs::dir_item di(path);
+        jau::io::fs::dir_item di(path);
         {
             jstring jstr = jau::jni::from_string_to_jstring(env, di.dirname());
             env->SetObjectArrayElement(jres, 0, jstr);
@@ -190,7 +190,7 @@ jobjectArray Java_org_jau_fs_DirItem_getString2DirItem(JNIEnv *env, jclass clazz
 jobjectArray Java_org_jau_fs_FileStats_getString3DirItemLinkTargetPath(JNIEnv *env, jclass clazz, jlong nativeInstance) {
     (void)clazz;
     try {
-        jau::jni::shared_ptr_ref<jau::fs::file_stats> sref(nativeInstance, true /* throw_on_nullptr */); // hold copy until done
+        jau::jni::shared_ptr_ref<jau::io::fs::file_stats> sref(nativeInstance, true /* throw_on_nullptr */); // hold copy until done
 
         const size_t array_size = 3;
         jclass strclz = jau::jni::search_class(env, "java/lang/String");
@@ -229,7 +229,7 @@ jobjectArray Java_org_jau_fs_FileStats_getString3DirItemLinkTargetPath(JNIEnv *e
 jlongArray Java_org_jau_fs_FileStats_getLong9SizeTimes(JNIEnv *env, jclass clazz, jlong nativeInstance) {
     (void)clazz;
     try {
-        jau::jni::shared_ptr_ref<jau::fs::file_stats> sref(nativeInstance, true /* throw_on_nullptr */); // hold copy until done
+        jau::jni::shared_ptr_ref<jau::io::fs::file_stats> sref(nativeInstance, true /* throw_on_nullptr */); // hold copy until done
 
         const size_t array_size = 9;
         const jlong values[] = { (jlong)sref->size(),
@@ -257,7 +257,7 @@ jlongArray Java_org_jau_fs_FileStats_getLong9SizeTimes(JNIEnv *env, jclass clazz
 jstring Java_org_jau_fs_FileUtil_get_1cwd(JNIEnv *env, jclass cls) {
     (void)cls;
     try {
-        const std::string cwd = jau::fs::get_cwd();
+        const std::string cwd = jau::io::fs::get_cwd();
         return jau::jni::from_string_to_jstring(env, cwd);
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
@@ -269,7 +269,7 @@ jstring Java_org_jau_fs_FileUtil_dirname(JNIEnv *env, jclass cls, jstring jpath)
     (void)cls;
     try {
         const std::string path = jau::jni::from_jstring_to_string(env, jpath);
-        const std::string dir = jau::fs::dirname(path);
+        const std::string dir = jau::io::fs::dirname(path);
         return jau::jni::from_string_to_jstring(env, dir);
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
@@ -281,7 +281,7 @@ jstring Java_org_jau_fs_FileUtil_basename(JNIEnv *env, jclass cls, jstring jpath
     (void)cls;
     try {
         const std::string path = jau::jni::from_jstring_to_string(env, jpath);
-        const std::string bname = jau::fs::basename(path);
+        const std::string bname = jau::io::fs::basename(path);
         return jau::jni::from_string_to_jstring(env, bname);
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
@@ -292,7 +292,7 @@ jstring Java_org_jau_fs_FileUtil_basename(JNIEnv *env, jclass cls, jstring jpath
 jstring Java_org_jau_fs_FileUtil_to_1named_1fd(JNIEnv *env, jclass cls, jint fd) {
     (void)cls;
     try {
-        const std::string named_fd = jau::fs::to_named_fd(fd);
+        const std::string named_fd = jau::io::fs::to_named_fd(fd);
         return jau::jni::from_string_to_jstring(env, named_fd);
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
@@ -304,7 +304,7 @@ jint Java_org_jau_fs_FileUtil_from_1named_1fd(JNIEnv *env, jclass cls, jstring j
     (void)cls;
     try {
         const std::string named_fd = jau::jni::from_jstring_to_string(env, jnamed_fd);
-        return jau::fs::from_named_fd(named_fd);
+        return jau::io::fs::from_named_fd(named_fd);
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }
@@ -325,8 +325,8 @@ jboolean Java_org_jau_fs_FileUtil_mkdirImpl(JNIEnv *env, jclass cls, jstring jpa
     (void)cls;
     try {
         const std::string path = jau::jni::from_jstring_to_string(env, jpath);
-        const jau::fs::fmode_t mode = static_cast<jau::fs::fmode_t>(jmode);
-        return jau::fs::mkdir(path, mode) ? JNI_TRUE : JNI_FALSE;
+        const jau::io::fs::fmode_t mode = static_cast<jau::io::fs::fmode_t>(jmode);
+        return jau::io::fs::mkdir(path, mode) ? JNI_TRUE : JNI_FALSE;
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }
@@ -343,13 +343,13 @@ jboolean Java_org_jau_fs_FileUtil_touchImpl(JNIEnv *env, jclass cls, jstring jpa
     (void)cls;
     try {
         const std::string path = jau::jni::from_jstring_to_string(env, jpath);
-        const jau::fs::fmode_t mode = static_cast<jau::fs::fmode_t>(jmode);
+        const jau::io::fs::fmode_t mode = static_cast<jau::io::fs::fmode_t>(jmode);
         if( MY_UTIME_NOW == atime_ns || MY_UTIME_NOW == mtime_ns ) {
-            return jau::fs::touch(path, mode) ? JNI_TRUE : JNI_FALSE;
+            return jau::io::fs::touch(path, mode) ? JNI_TRUE : JNI_FALSE;
         } else {
             const jau::fraction_timespec atime((int64_t)atime_s, (int64_t)atime_ns);
             const jau::fraction_timespec mtime((int64_t)mtime_s, (int64_t)mtime_ns);
-            return jau::fs::touch(path, atime, mtime, mode) ? JNI_TRUE : JNI_FALSE;
+            return jau::io::fs::touch(path, atime, mtime, mode) ? JNI_TRUE : JNI_FALSE;
         }
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
@@ -361,25 +361,25 @@ jobject Java_org_jau_fs_FileUtil_get_1dir_1content(JNIEnv *env, jclass cls, jstr
     (void)cls;
     try {
         const std::string path = jau::jni::from_jstring_to_string(env, jpath);
-        std::vector<jau::fs::dir_item> content;
-        const jau::fs::consume_dir_item cs = jau::bind_capref<void, std::vector<jau::fs::dir_item>, const jau::fs::dir_item&>(&content,
-            ( void(*)(std::vector<jau::fs::dir_item>*, const jau::fs::dir_item&) ) /* help template type deduction of function-ptr */
-                ( [](std::vector<jau::fs::dir_item>* receiver, const jau::fs::dir_item& item) -> void { receiver->push_back( item ); } )
+        std::vector<jau::io::fs::dir_item> content;
+        const jau::io::fs::consume_dir_item cs = jau::bind_capref<void, std::vector<jau::io::fs::dir_item>, const jau::io::fs::dir_item&>(&content,
+            ( void(*)(std::vector<jau::io::fs::dir_item>*, const jau::io::fs::dir_item&) ) /* help template type deduction of function-ptr */
+                ( [](std::vector<jau::io::fs::dir_item>* receiver, const jau::io::fs::dir_item& item) -> void { receiver->push_back( item ); } )
         );
         if( get_dir_content(path, cs) ) {
             static const std::string _dirItemClassName("org/jau/fs/DirItem");
             static const std::string _dirItemClazzCtorArgs("(Ljava/lang/String;Ljava/lang/String;)V");
             jclass dirItemClazz = jau::jni::search_class(env, _dirItemClassName.c_str());
             jmethodID dirItemClazzCtor = jau::jni::search_method(env, dirItemClazz, "<init>", _dirItemClazzCtorArgs.c_str(), false);
-            jau::function<jobject(JNIEnv*, const jau::fs::dir_item&)> ctor_diritem =
-                    [&](JNIEnv *env_, const jau::fs::dir_item& di)->jobject {
+            jau::function<jobject(JNIEnv*, const jau::io::fs::dir_item&)> ctor_diritem =
+                    [&](JNIEnv *env_, const jau::io::fs::dir_item& di)->jobject {
                         jstring dname = jau::jni::from_string_to_jstring(env_, di.dirname());
                         jstring bname = jau::jni::from_string_to_jstring(env_, di.basename());
                         jobject jdirItem = env->NewObject(dirItemClazz, dirItemClazzCtor, dname, bname);
                         jau::jni::java_exception_check_and_throw(env, E_FILE_LINE);
                         return jdirItem;
                     };
-            return jau::jni::convert_vector_to_jarraylist<std::vector<jau::fs::dir_item>, jau::fs::dir_item>(env, content, ctor_diritem);
+            return jau::jni::convert_vector_to_jarraylist<std::vector<jau::io::fs::dir_item>, jau::io::fs::dir_item>(env, content, ctor_diritem);
         }
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
@@ -391,8 +391,8 @@ jboolean Java_org_jau_fs_FileUtil_remove_1impl(JNIEnv *env, jclass cls, jstring 
     (void)cls;
     try {
         const std::string path = jau::jni::from_jstring_to_string(env, jpath);
-        const jau::fs::traverse_options topts = static_cast<jau::fs::traverse_options>(jtopts);
-        return jau::fs::remove(path, topts) ? JNI_TRUE : JNI_FALSE;
+        const jau::io::fs::traverse_options topts = static_cast<jau::io::fs::traverse_options>(jtopts);
+        return jau::io::fs::remove(path, topts) ? JNI_TRUE : JNI_FALSE;
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }
@@ -404,7 +404,7 @@ jboolean Java_org_jau_fs_FileUtil_compare(JNIEnv *env, jclass cls, jstring jsour
     try {
         const std::string source1 = jau::jni::from_jstring_to_string(env, jsource1);
         const std::string source2 = jau::jni::from_jstring_to_string(env, jsource2);
-        return jau::fs::compare(source1, source2, JNI_TRUE == verbose) ? JNI_TRUE : JNI_FALSE;
+        return jau::io::fs::compare(source1, source2, JNI_TRUE == verbose) ? JNI_TRUE : JNI_FALSE;
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }
@@ -416,8 +416,8 @@ jboolean Java_org_jau_fs_FileUtil_copy_1impl(JNIEnv *env, jclass cls, jstring js
     try {
         const std::string source_path = jau::jni::from_jstring_to_string(env, jsource_path);
         const std::string dest_path = jau::jni::from_jstring_to_string(env, jdest_path);
-        const jau::fs::copy_options copts = static_cast<jau::fs::copy_options>(jcopts);
-        return jau::fs::copy(source_path, dest_path, copts) ? JNI_TRUE : JNI_FALSE;
+        const jau::io::fs::copy_options copts = static_cast<jau::io::fs::copy_options>(jcopts);
+        return jau::io::fs::copy(source_path, dest_path, copts) ? JNI_TRUE : JNI_FALSE;
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }
@@ -429,7 +429,7 @@ jboolean Java_org_jau_fs_FileUtil_rename(JNIEnv *env, jclass cls, jstring joldpa
     try {
         const std::string oldpath = jau::jni::from_jstring_to_string(env, joldpath);
         const std::string newpath = jau::jni::from_jstring_to_string(env, jnewpath);
-        return jau::fs::rename(oldpath, newpath) ? JNI_TRUE : JNI_FALSE;
+        return jau::io::fs::rename(oldpath, newpath) ? JNI_TRUE : JNI_FALSE;
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }
@@ -439,7 +439,7 @@ jboolean Java_org_jau_fs_FileUtil_rename(JNIEnv *env, jclass cls, jstring joldpa
 void Java_org_jau_fs_FileUtil_sync(JNIEnv *env, jclass cls) {
     (void)cls;
     try {
-        jau::fs::sync();
+        jau::io::fs::sync();
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }
@@ -453,14 +453,14 @@ jlong Java_org_jau_fs_FileUtil_mount_1image_1impl(JNIEnv *env, jclass cls,
         const std::string image_path = jau::jni::from_jstring_to_string(env, jimage_path);
         const std::string target = jau::jni::from_jstring_to_string(env, jtarget);
         const std::string fs_type = jau::jni::from_jstring_to_string(env, jfs_type);
-        const jau::fs::mountflags_t mountflags = static_cast<jau::fs::mountflags_t>(jmountflags);
+        const jau::io::fs::mountflags_t mountflags = static_cast<jau::io::fs::mountflags_t>(jmountflags);
         const std::string fs_options = jau::jni::from_jstring_to_string(env, jfs_options);
 
-        jau::fs::mount_ctx res = jau::fs::mount_image(image_path, target, fs_type,
+        jau::io::fs::mount_ctx res = jau::io::fs::mount_image(image_path, target, fs_type,
                                                       mountflags, fs_options);
 
         if( res.mounted ) {
-            jau::jni::shared_ptr_ref<jau::fs::mount_ctx> ref( new jau::fs::mount_ctx(res) );
+            jau::jni::shared_ptr_ref<jau::io::fs::mount_ctx> ref( new jau::io::fs::mount_ctx(res) );
             return ref.release_to_jlong();
         }
     } catch(...) {
@@ -477,14 +477,14 @@ jlong Java_org_jau_fs_FileUtil_mount_1impl(JNIEnv *env, jclass cls,
         const std::string source = jau::jni::from_jstring_to_string(env, jsource);
         const std::string target = jau::jni::from_jstring_to_string(env, jtarget);
         const std::string fs_type = jau::jni::from_jstring_to_string(env, jfs_type);
-        const jau::fs::mountflags_t mountflags = static_cast<jau::fs::mountflags_t>(jmountflags);
+        const jau::io::fs::mountflags_t mountflags = static_cast<jau::io::fs::mountflags_t>(jmountflags);
         const std::string fs_options = jau::jni::from_jstring_to_string(env, jfs_options);
 
-        jau::fs::mount_ctx res = jau::fs::mount(source, target, fs_type,
+        jau::io::fs::mount_ctx res = jau::io::fs::mount(source, target, fs_type,
                                                 mountflags, fs_options);
 
         if( res.mounted ) {
-            jau::jni::shared_ptr_ref<jau::fs::mount_ctx> ref( new jau::fs::mount_ctx(res) );
+            jau::jni::shared_ptr_ref<jau::io::fs::mount_ctx> ref( new jau::io::fs::mount_ctx(res) );
             return ref.release_to_jlong();
         }
     } catch(...) {
@@ -496,16 +496,16 @@ jlong Java_org_jau_fs_FileUtil_mount_1impl(JNIEnv *env, jclass cls,
 jboolean Java_org_jau_fs_FileUtil_umount1_1impl(JNIEnv *env, jclass cls, jlong jcontext, jint jumountflags) {
     (void)cls;
     try {
-        jau::jni::shared_ptr_ref<jau::fs::mount_ctx> sref(jcontext, false /* throw_on_nullptr */); // hold copy until done
+        jau::jni::shared_ptr_ref<jau::io::fs::mount_ctx> sref(jcontext, false /* throw_on_nullptr */); // hold copy until done
         if( nullptr != sref.pointer() ) {
             // delete original
-            std::shared_ptr<jau::fs::mount_ctx>* sref_ptr = jau::jni::castInstance<jau::fs::mount_ctx>(jcontext);
+            std::shared_ptr<jau::io::fs::mount_ctx>* sref_ptr = jau::jni::castInstance<jau::io::fs::mount_ctx>(jcontext);
             delete sref_ptr;
 
             // umount using copy if !null
             if( !sref.is_null() ) {
-                const jau::fs::umountflags_t umountflags = static_cast<jau::fs::umountflags_t>(jumountflags);
-                return jau::fs::umount(*sref, umountflags) ? JNI_TRUE : JNI_FALSE;
+                const jau::io::fs::umountflags_t umountflags = static_cast<jau::io::fs::umountflags_t>(jumountflags);
+                return jau::io::fs::umount(*sref, umountflags) ? JNI_TRUE : JNI_FALSE;
             }
         }
         // dtor copy
@@ -519,8 +519,8 @@ jboolean Java_org_jau_fs_FileUtil_umount2_1impl(JNIEnv *env, jclass cls, jstring
     (void)cls;
     try {
         const std::string target = jau::jni::from_jstring_to_string(env, jtarget);
-        const jau::fs::umountflags_t umountflags = static_cast<jau::fs::umountflags_t>(jumountflags);
-        return jau::fs::umount(target, umountflags) ? JNI_TRUE : JNI_FALSE;
+        const jau::io::fs::umountflags_t umountflags = static_cast<jau::io::fs::umountflags_t>(jumountflags);
+        return jau::io::fs::umount(target, umountflags) ? JNI_TRUE : JNI_FALSE;
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }

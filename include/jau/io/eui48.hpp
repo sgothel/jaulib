@@ -28,14 +28,12 @@
 
 #include <cstring>
 #include <string>
-#include <memory>
 #include <cstdint>
-#include <vector>
 
 #include <jau/basic_types.hpp>
 #include <jau/packed_attribute.hpp>
 
-namespace jau {
+namespace jau::io::net {
 
     /** @defgroup NetUtils Network Utilities
      *  Networking types and functionality.
@@ -392,7 +390,7 @@ namespace jau {
 
     /**@}*/
 
-} /* namespace jau */
+} /* namespace jau::io::net */
 
 // injecting specialization of std::hash to namespace std of our types above
 namespace std
@@ -401,14 +399,14 @@ namespace std
      *
      */
 
-    template<> struct hash<jau::EUI48Sub> {
-        std::size_t operator()(jau::EUI48Sub const& a) const noexcept {
+    template<> struct hash<jau::io::net::EUI48Sub> {
+        std::size_t operator()(jau::io::net::EUI48Sub const& a) const noexcept {
             return a.hash_code();
         }
     };
 
-    template<> struct hash<jau::EUI48> {
-        std::size_t operator()(jau::EUI48 const& a) const noexcept {
+    template<> struct hash<jau::io::net::EUI48> {
+        std::size_t operator()(jau::io::net::EUI48 const& a) const noexcept {
             return a.hash_code();
         }
     };

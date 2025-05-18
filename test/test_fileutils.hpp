@@ -28,8 +28,8 @@
 #include <jau/test/catch2_ext.hpp>
 
 #include <jau/debug.hpp>
-#include <jau/file_util.hpp>
-#include <jau/byte_stream.hpp>
+#include <jau/io/file_util.hpp>
+#include <jau/io/byte_stream.hpp>
 
 using namespace jau::enums;
 using namespace jau::fractions_i64_literals;
@@ -37,7 +37,7 @@ using namespace jau::fractions_i64_literals;
 static constexpr const bool _remove_target_test_dir = true;
 
 struct visitor_stats {
-    jau::fs::traverse_options topts;
+    jau::io::fs::traverse_options topts;
     int total_real;
     int total_sym_links_existing;
     int total_sym_links_not_existing;
@@ -49,7 +49,7 @@ struct visitor_stats {
     int dirs_real;
     int dirs_sym_link;
 
-    visitor_stats(jau::fs::traverse_options topts_)
+    visitor_stats(jau::io::fs::traverse_options topts_)
     : topts(topts_),
       total_real(0),
       total_sym_links_existing(0),
@@ -63,7 +63,7 @@ struct visitor_stats {
       dirs_sym_link(0)
     {}
 
-    void add(const jau::fs::file_stats& element_stats) {
+    void add(const jau::io::fs::file_stats& element_stats) {
         if( element_stats.is_link() ) {
             if( element_stats.exists() ) {
                 total_sym_links_existing++;
@@ -82,7 +82,7 @@ struct visitor_stats {
         if( element_stats.is_file() ) {
             if( element_stats.is_link() ) {
                 files_sym_link++;
-                if( is_set(topts, jau::fs::traverse_options::follow_symlinks) ) {
+                if( is_set(topts, jau::io::fs::traverse_options::follow_symlinks) ) {
                     total_file_bytes += element_stats.size();
                 }
             } else {
@@ -98,9 +98,9 @@ struct visitor_stats {
         }
     }
 
-    std::string to_string() const noexcept {
+    std::string toString() const noexcept {
         std::string res;
-        res += "- traverse_options              "+jau::fs::to_string(topts)+"\n";
+        res += "- traverse_options              "+jau::io::fs::to_string(topts)+"\n";
         res += "- total_real                    "+std::to_string(total_real)+"\n";
         res += "- total_sym_links_existing      "+std::to_string(total_sym_links_existing)+"\n";
         res += "- total_sym_links_not_existing  "+std::to_string(total_sym_links_not_existing)+"\n";
@@ -146,62 +146,62 @@ class TestFileUtilBase {
   public:
     const std::string temp_root = "test_data_temp";
 
-    jau::fs::file_stats getTestDataDirStats(const std::string& test_exe_path) noexcept {
-        const std::string test_exe_dir = jau::fs::dirname(test_exe_path);
+    jau::io::fs::file_stats getTestDataDirStats(const std::string& test_exe_path) noexcept {
+        const std::string test_exe_dir = jau::io::fs::dirname(test_exe_path);
         std::string path = test_exe_dir + "/" + project_root1a;
-        jau::fs::file_stats path_stats(path);
+        jau::io::fs::file_stats path_stats(path);
         if( path_stats.exists() ) {
             return path_stats;
         }
         path = test_exe_dir + "/" + project_root1b;
-        path_stats = jau::fs::file_stats(path);
+        path_stats = jau::io::fs::file_stats(path);
         if( path_stats.exists() ) {
             return path_stats;
         }
         path = test_exe_dir + "/" + project_root2a;
-        path_stats = jau::fs::file_stats(path);
+        path_stats = jau::io::fs::file_stats(path);
         if( path_stats.exists() ) {
             return path_stats;
         }
         path = test_exe_dir + "/" + project_root2b;
-        path_stats = jau::fs::file_stats(path);
+        path_stats = jau::io::fs::file_stats(path);
         if( path_stats.exists() ) {
             return path_stats;
         }
-        return jau::fs::file_stats();
+        return jau::io::fs::file_stats();
     }
     std::string getTestDataRelDir(const std::string& test_exe_path) noexcept {
-        const std::string test_exe_dir = jau::fs::dirname(test_exe_path);
+        const std::string test_exe_dir = jau::io::fs::dirname(test_exe_path);
         std::string path = test_exe_dir + "/" + project_root1a;
-        jau::fs::file_stats path_stats(path);
+        jau::io::fs::file_stats path_stats(path);
         if( path_stats.exists() ) {
             return project_root1a;
         }
         path = test_exe_dir + "/" + project_root1b;
-        path_stats = jau::fs::file_stats(path);
+        path_stats = jau::io::fs::file_stats(path);
         if( path_stats.exists() ) {
             return project_root1b;
         }
         path = test_exe_dir + "/" + project_root2a;
-        path_stats = jau::fs::file_stats(path);
+        path_stats = jau::io::fs::file_stats(path);
         if( path_stats.exists() ) {
             return project_root2a;
         }
         path = test_exe_dir + "/" + project_root2b;
-        path_stats = jau::fs::file_stats(path);
+        path_stats = jau::io::fs::file_stats(path);
         if( path_stats.exists() ) {
             return project_root2b;
         }
         return "";
     }
-    jau::fs::file_stats getTestDataImageFile(const std::string& test_exe_path) noexcept {
-        const std::string test_exe_dir = jau::fs::dirname(test_exe_path);
+    jau::io::fs::file_stats getTestDataImageFile(const std::string& test_exe_path) noexcept {
+        const std::string test_exe_dir = jau::io::fs::dirname(test_exe_path);
         std::string path = test_exe_dir + "/" + image_file;
-        jau::fs::file_stats path_stats(path);
+        jau::io::fs::file_stats path_stats(path);
         if( path_stats.exists() ) {
             return path_stats;
         }
-        return jau::fs::file_stats();
+        return jau::io::fs::file_stats();
     }
 
     // external filesystem source to test ...

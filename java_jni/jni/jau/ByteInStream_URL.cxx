@@ -28,7 +28,7 @@
 
 #include "jau/jni/helper_jni.hpp"
 
-#include "jau/byte_stream.hpp"
+#include "jau/io/byte_stream.hpp"
 
 jlong Java_org_jau_io_ByteInStream_1URL_ctorImpl(JNIEnv *env, jobject obj, jstring jurl, jlong jtimeoutMS) {
     try {
@@ -69,7 +69,7 @@ void Java_org_jau_io_ByteInStream_1URL_dtorImpl(JNIEnv *env, jclass clazz, jlong
 jboolean Java_org_jau_io_ByteInStream_1URL_is_1open(JNIEnv *env, jobject obj) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_URL> ref(env, obj); // hold until done
-        return ref->is_open() ? JNI_TRUE : JNI_FALSE;
+        return ref->isOpen() ? JNI_TRUE : JNI_FALSE;
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }
@@ -79,7 +79,7 @@ jboolean Java_org_jau_io_ByteInStream_1URL_is_1open(JNIEnv *env, jobject obj) {
 void Java_org_jau_io_ByteInStream_1URL_clearImpl(JNIEnv *env, jobject obj, jint mask) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_URL> ref(env, obj); // hold until done
-        ref->clear( static_cast<jau::io::iostate>(mask) );
+        ref->clear( static_cast<jau::io::iostate_t>(mask) );
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }
@@ -92,13 +92,13 @@ jint Java_org_jau_io_ByteInStream_1URL_rdStateImpl(JNIEnv *env, jobject obj) {
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }
-    return static_cast<jint>(jau::io::iostate::failbit);
+    return static_cast<jint>(jau::io::iostate_t::failbit);
 }
 
 void Java_org_jau_io_ByteInStream_1URL_setStateImpl(JNIEnv *env, jobject obj, jint mask) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_URL> ref(env, obj); // hold until done
-        ref->setstate( static_cast<jau::io::iostate>(mask) );
+        ref->setstate( static_cast<jau::io::iostate_t>(mask) );
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }
@@ -252,10 +252,10 @@ jlong Java_org_jau_io_ByteInStream_1URL_discard_1next(JNIEnv *env, jobject obj, 
     return 0;
 }
 
-jlong Java_org_jau_io_ByteInStream_1URL_tellg(JNIEnv *env, jobject obj) {
+jlong Java_org_jau_io_ByteInStream_1URL_position(JNIEnv *env, jobject obj) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_URL> ref(env, obj); // hold until done
-        return static_cast<jlong>( ref->tellg() );
+        return static_cast<jlong>( ref->position() );
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }
@@ -285,7 +285,7 @@ jlong Java_org_jau_io_ByteInStream_1URL_content_1size(JNIEnv *env, jobject obj) 
 jstring Java_org_jau_io_ByteInStream_1URL_toString(JNIEnv *env, jobject obj) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_URL> ref(env, obj, false /* throw_on_nullptr */); // hold until done
-        std::string str = ref.is_null() ? "null" : ref->to_string();
+        std::string str = ref.is_null() ? "null" : ref->toString();
         return jau::jni::from_string_to_jstring(env, str);
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);

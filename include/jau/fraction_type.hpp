@@ -371,7 +371,7 @@ namespace jau {
              * @param show_double true to show the double value, otherwise false (default)
              * @return
              */
-            std::string to_string(const bool show_double=false) const noexcept {
+            std::string toString(const bool show_double=false) const noexcept {
                 std::string r = std::to_string(num) + "/" + std::to_string(denom);
                 if( overflow ) {
                     r.append(" O! ");
@@ -551,7 +551,7 @@ namespace jau {
     };
 
     template<typename int_type>
-    inline std::string to_string(const fraction<int_type>& v) noexcept { return v.to_string(); }
+    inline std::string to_string(const fraction<int_type>& v) noexcept { return v.toString(); }
 
     template<typename int_type>
     constexpr bool operator!=(const fraction<int_type>& lhs, const fraction<int_type>& rhs ) noexcept {
@@ -1111,7 +1111,7 @@ namespace jau {
          */
         constexpr struct timespec to_timespec() const noexcept {
             using ns_type = decltype(timespec::tv_nsec);
-            return { static_cast<std::time_t>( tv_sec ), static_cast<ns_type>( tv_nsec ) };
+            return { .tv_sec=static_cast<std::time_t>( tv_sec ), .tv_nsec=static_cast<ns_type>( tv_nsec ) };
         }
 
         /**
@@ -1158,7 +1158,7 @@ namespace jau {
         /**
          * Return simple string representation in seconds and nanoseconds.
          */
-        std::string to_string() const noexcept;
+        std::string toString() const noexcept;
 
         /**
          * Convenience string conversion interpreted since Unix Epoch in UTC
@@ -1174,10 +1174,10 @@ namespace jau {
          *
          * @param muteTime if true, always mute time
          */
-        std::string to_iso8601_string(bool space_separator=false, bool muteTime=false) const noexcept;
+        std::string toISO8601String(bool space_separator=false, bool muteTime=false) const noexcept;
     };
 
-    inline std::string to_string(const fraction_timespec& v) noexcept { return v.to_string(); }
+    inline std::string to_string(const fraction_timespec& v) noexcept { return v.toString(); }
 
     /** Return the maximum of the two given fraction_timespec */
     constexpr const fraction_timespec& max(const fraction_timespec& lhs, const fraction_timespec& rhs ) noexcept {
@@ -1321,7 +1321,7 @@ namespace std {
      * Output stream operator for jau::fraction_timespec
      */
     inline std::ostream& operator<<(std::ostream& os, const jau::fraction_timespec& v) noexcept {
-        os << v.to_string();
+        os << v.toString();
         return os;
     }
 
@@ -1330,7 +1330,7 @@ namespace std {
      */
     template<typename int_type>
     inline std::ostream& operator<<(std::ostream& os, const jau::fraction<int_type>& v) noexcept {
-        os << v.to_string();
+        os << v.toString();
         return os;
     }
 

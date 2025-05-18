@@ -1,30 +1,17 @@
 /*
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2021-2023 Gothel Software e.K.
+ * Copyright (c) 2021-2025 Gothel Software e.K.
  * Copyright (c) 2021 ZAFENA AB
  *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
+ * SPDX-License-Identifier: MIT
  *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * This Source Code Form is subject to the terms of the MIT License
+ * If a copy of the MIT was not distributed with this file,
+ * you can obtain one at https://opensource.org/license/mit/.
  */
 
-#ifndef JAU_IO_UTIL_HPP_
-#define JAU_IO_UTIL_HPP_
+#ifndef JAU_IO_IO_UTIL_HPP_
+#define JAU_IO_IO_UTIL_HPP_
 
 #include <string>
 #include <cstdint>
@@ -84,10 +71,7 @@ namespace jau::io {
             default: return "FAILED";
         }
     }
-    inline std::ostream& operator<<(std::ostream& os, io_result_t v) {
-        os << toString(v);
-        return os;
-    }
+    inline std::ostream& operator<<(std::ostream& os, io_result_t v) { return os << toString(v); }
 
     /**
      * Stream consumer function
@@ -114,7 +98,7 @@ namespace jau::io {
             secure_vector<uint8_t>& buffer,
             const StreamConsumerFunc& consumer_fn) noexcept;
 
-    class ByteInStream; // fwd
+    class ByteStream; // fwd
 
     /**
      * Synchronous byte input stream reader using the given StreamConsumerFunc consumer_fn.
@@ -129,7 +113,7 @@ namespace jau::io {
      * @param consumer_fn StreamConsumerFunc consumer for each received heap of bytes, returning true to continue stream of false to abort.
      * @return total bytes read or 0 if error
      */
-    uint64_t read_stream(ByteInStream& in,
+    uint64_t read_stream(ByteStream& in,
             secure_vector<uint8_t>& buffer,
             const StreamConsumerFunc& consumer_fn) noexcept;
 
@@ -155,7 +139,7 @@ namespace jau::io {
      * @param consumer_fn StreamConsumerFunc consumer for each received heap of bytes, returning true to continue stream of false to abort.
      * @return total bytes read or 0 if error
      */
-    uint64_t read_stream(ByteInStream& in,
+    uint64_t read_stream(ByteStream& in,
             secure_vector<uint8_t>& buffer1, secure_vector<uint8_t>& buffer2,
             const StreamConsumerFunc& consumer_fn) noexcept;
 
@@ -198,7 +182,7 @@ namespace jau::io {
             jau::relaxed_atomic_int32 m_response_code;
 
         public:
-            url_header_resp() noexcept
+            url_header_resp() noexcept // NOLINT(modernize-use-equals-default)
             : m_completed(false)
             { }
 
@@ -466,6 +450,6 @@ namespace jau::io {
         /**@}*/
     }
 
-} // namespace elevator::io
+} // namespace jau::io
 
-#endif /* JAU_IO_UTIL_HPP_ */
+#endif /* JAU_IO_IO_UTIL_HPP_ */

@@ -89,12 +89,12 @@ static void test_comp_fract(const fraction<int_type>& a, const fraction<int_type
                             const fraction<int_type>& exp_mul, const fraction<int_type>& exp_div)
 {
     const bool show_double = true;
-    INFO_STR( "max(a "+a.to_string(show_double)+", b "+b.to_string(show_double)+") = "+max(a,b).to_string(show_double));
-    INFO_STR( "min(a "+a.to_string(show_double)+", b "+b.to_string(show_double)+") = "+min(a,b).to_string(show_double));
-    INFO_STR( "a "+a.to_string(show_double)+" + b "+b.to_string(show_double)+" = "+(a+b).to_string(show_double));
-    INFO_STR( "a "+a.to_string(show_double)+" - b "+b.to_string(show_double)+" = "+(a-b).to_string(show_double));
-    INFO_STR( "a "+a.to_string(show_double)+" * b "+b.to_string(show_double)+" = "+(a*b).to_string(show_double));
-    INFO_STR( "a "+a.to_string(show_double)+" / b "+b.to_string(show_double)+" = "+(a/b).to_string(show_double));
+    INFO_STR( "max(a "+a.toString(show_double)+", b "+b.toString(show_double)+") = "+max(a,b).toString(show_double));
+    INFO_STR( "min(a "+a.toString(show_double)+", b "+b.toString(show_double)+") = "+min(a,b).toString(show_double));
+    INFO_STR( "a "+a.toString(show_double)+" + b "+b.toString(show_double)+" = "+(a+b).toString(show_double));
+    INFO_STR( "a "+a.toString(show_double)+" - b "+b.toString(show_double)+" = "+(a-b).toString(show_double));
+    INFO_STR( "a "+a.toString(show_double)+" * b "+b.toString(show_double)+" = "+(a*b).toString(show_double));
+    INFO_STR( "a "+a.toString(show_double)+" / b "+b.toString(show_double)+" = "+(a/b).toString(show_double));
     {
         const double epsilon = std::numeric_limits<double>::epsilon();
         const double ad = a.to_double();
@@ -194,12 +194,12 @@ static void test_duration(const fraction<int_type>& a, const std::chrono::durati
     {
         const int64_t d_num = a.to_num_of( fraction_i64(Period::num, Period::den) );
         std::chrono::duration<Rep, Period> d = a.to_duration( dur_ref );
-        INFO_STR( " fraction-1 " + a.to_string(true) + " -> duration_count " + std::to_string( d_num ) + ", duration " + std::to_string( d.count() ) );
+        INFO_STR( " fraction-1 " + a.toString(true) + " -> duration_count " + std::to_string( d_num ) + ", duration " + std::to_string( d.count() ) );
         INFO_STR( " resulting duration-1: ( " + std::to_string(d.count()) + " * " + std::to_string(Period::num) + " = " + std::to_string(d.count() * Period::num) + " ) / " + std::to_string(Period::den) );
 
         // fully functional conversion check
         fraction<int_type> b(d);
-        INFO_STR( " reconverted fraction-2 " + b.to_string(true));
+        INFO_STR( " reconverted fraction-2 " + b.toString(true));
         REQUIRE( exp_count == d_num );
         REQUIRE( exp_count == d.count() );
         REQUIRE( a == b );
@@ -208,13 +208,13 @@ static void test_duration(const fraction<int_type>& a, const std::chrono::durati
     {
         typename std::chrono::duration<Rep, Period>::rep d_count = a.to_duration_count( dur_ref );
         auto d = a.to_auto_duration();
-        INFO_STR( " fraction-2 " + a.to_string(true) + " -> duration_count " + std::to_string( d_count ) + ", duration " + std::to_string( d.count() ) );
+        INFO_STR( " fraction-2 " + a.toString(true) + " -> duration_count " + std::to_string( d_count ) + ", duration " + std::to_string( d.count() ) );
         INFO_STR( " resulting duration-2: ( " + std::to_string(d.count()) + " * " + std::to_string(Period::num) + " = " + std::to_string(d.count() * Period::num) + " ) / " + std::to_string(Period::den) );
         INFO_STR( " resulting duration-2: ( " + std::to_string(d.count()) + " * " + std::to_string(decltype(d)::num) + " = " + std::to_string(d.count() * decltype(d)::num) + " ) / " + std::to_string(decltype(d)::den) );
 
         // fully functional conversion check
         fraction<int_type> b(d);
-        INFO_STR( " reconverted fraction-2 " + b.to_string(true));
+        INFO_STR( " reconverted fraction-2 " + b.toString(true));
         REQUIRE( exp_count == d_count );
         REQUIRE( exp_count == d.count() );
         REQUIRE( a == b );
@@ -313,8 +313,8 @@ TEST_CASE( "Fraction GCD and Modulo Test 00", "[integer][fraction][gcd]" ) {
 static void test_to_num_of(const int64_t exp, const fraction<int64_t>& v, const fraction<int64_t>& new_base, bool exp_overflow=false) noexcept {
     bool overflow = false;
     int64_t rr = v.to_num_of(new_base, &overflow);
-    INFO_STR(" value " + v.to_string() );
-    INFO_STR(" new_base " + new_base.to_string() );
+    INFO_STR(" value " + v.toString() );
+    INFO_STR(" new_base " + new_base.toString() );
     std::string rr_s = exp == rr ? " - OK " : " - ********* ERROR ";
     INFO_STR(" rr " + std::to_string(rr) + " =?= " + std::to_string(exp) + rr_s + ", overflow[exp " + std::to_string(exp_overflow) + ", has " + std::to_string(overflow) + "]");
     if constexpr ( false ) {
@@ -393,7 +393,7 @@ TEST_CASE( "Fraction String Test 01.2", "[integer][fraction][type][string]" ) {
         REQUIRE( exp == a );
         {
             fraction_i64 b;
-            REQUIRE( true  == to_fraction_i64(b, a.to_string(), a, a) );
+            REQUIRE( true  == to_fraction_i64(b, a.toString(), a, a) );
             REQUIRE( exp == b );
         }
 
@@ -401,7 +401,7 @@ TEST_CASE( "Fraction String Test 01.2", "[integer][fraction][type][string]" ) {
         REQUIRE( exp == a );
         {
             fraction_i64 b;
-            REQUIRE( true  == to_fraction_i64(b, a.to_string(), a, a) );
+            REQUIRE( true  == to_fraction_i64(b, a.toString(), a, a) );
             REQUIRE( exp == b );
         }
 
@@ -414,7 +414,7 @@ TEST_CASE( "Fraction String Test 01.2", "[integer][fraction][type][string]" ) {
         REQUIRE( 10_us == a );
         {
             fraction_i64 b;
-            REQUIRE( true  == to_fraction_i64(b, a.to_string(), a, a) );
+            REQUIRE( true  == to_fraction_i64(b, a.toString(), a, a) );
             REQUIRE( 10_us == b );
         }
 
@@ -622,9 +622,9 @@ TEST_CASE( "Fraction Time Arithmetic Add Test 03.1", "[fraction][fraction_timesp
         fraction_timespec a ( 10_i64, 2 * ns_per_sec + 400000000_i64 );
         fraction_timespec b ( 10_i64, 2 * ns_per_sec + 400000000_i64 );
         fraction_timespec exp_sum (  24_i64, 800000000_i64 );
-        INFO_STR(" a " + a.to_string() );
-        INFO_STR(" b " + b.to_string() );
-        INFO_STR(" a+b " + (a+b).to_string() );
+        INFO_STR(" a " + a.toString() );
+        INFO_STR(" b " + b.toString() );
+        INFO_STR(" a+b " + (a+b).toString() );
         REQUIRE( ( a + b ) == exp_sum );
     }
     // 13.4 - 3.4 = 10.0 w/ double overflow in tv_nsec
@@ -632,9 +632,9 @@ TEST_CASE( "Fraction Time Arithmetic Add Test 03.1", "[fraction][fraction_timesp
         fraction_timespec a ( 13_i64,                  400000000_i64 );
         fraction_timespec b (  1_i64, 2 * ns_per_sec + 400000000_i64 );
         fraction_timespec exp_sum (  10_i64, 0_i64 );
-        INFO_STR(" a " + a.to_string() );
-        INFO_STR(" b " + b.to_string() );
-        INFO_STR(" a-b " + (a-b).to_string() );
+        INFO_STR(" a " + a.toString() );
+        INFO_STR(" b " + b.toString() );
+        INFO_STR(" a-b " + (a-b).toString() );
         REQUIRE( ( a - b ) == exp_sum );
     }
     // 12.0 - 1.9 = 10.1 w/ double overflow in tv_nsec
@@ -642,9 +642,9 @@ TEST_CASE( "Fraction Time Arithmetic Add Test 03.1", "[fraction][fraction_timesp
         fraction_timespec a ( 12_i64,                           0_i64 );
         fraction_timespec b (  3_i64, -2 * ns_per_sec + 900000000_i64 );
         fraction_timespec exp_sum (  10_i64, 100000000_i64 );
-        INFO_STR(" a " + a.to_string() );
-        INFO_STR(" b " + b.to_string() );
-        INFO_STR(" a-b " + (a-b).to_string() );
+        INFO_STR(" a " + a.toString() );
+        INFO_STR(" b " + b.toString() );
+        INFO_STR(" a-b " + (a-b).toString() );
         REQUIRE( ( a - b ) == exp_sum );
     }
     // 10.4 + 0.4 = 10.8
@@ -659,9 +659,9 @@ TEST_CASE( "Fraction Time Arithmetic Add Test 03.1", "[fraction][fraction_timesp
         fraction_i64 a ( 10_s + 400_ms );
         fraction_i64 b (  0_s + 400_ms );
         fraction_i64 exp_sum (  10_s + 800_ms );
-        INFO_STR(" a " + a.to_string() );
-        INFO_STR(" b " + b.to_string() );
-        INFO_STR(" a+b " + (a+b).to_string() );
+        INFO_STR(" a " + a.toString() );
+        INFO_STR(" b " + b.toString() );
+        INFO_STR(" a+b " + (a+b).toString() );
         REQUIRE( ( a + b ) == exp_sum );
     }
     // 10.4 + 0.4 = 10.8
@@ -669,9 +669,9 @@ TEST_CASE( "Fraction Time Arithmetic Add Test 03.1", "[fraction][fraction_timesp
         fraction_timespec a ( 10_s + 400_ms );
         fraction_timespec b (  0_s + 400_ms );
         fraction_timespec exp_sum (  10_s + 800_ms );
-        INFO_STR(" a " + a.to_string() );
-        INFO_STR(" b " + b.to_string() );
-        INFO_STR(" a+b " + (a+b).to_string() );
+        INFO_STR(" a " + a.toString() );
+        INFO_STR(" b " + b.toString() );
+        INFO_STR(" a+b " + (a+b).toString() );
         REQUIRE( ( a + b ) == exp_sum );
     }
     // 10.4 + 0.7 = 11.1
@@ -679,9 +679,9 @@ TEST_CASE( "Fraction Time Arithmetic Add Test 03.1", "[fraction][fraction_timesp
         fraction_timespec a { 10_s + 400_ms };
         fraction_timespec b {  0_s + 700_ms };
         fraction_timespec exp_sum {  11_s + 100_ms };
-        INFO_STR(" a " + a.to_string() );
-        INFO_STR(" b " + b.to_string() );
-        INFO_STR(" a+b " + (a+b).to_string() );
+        INFO_STR(" a " + a.toString() );
+        INFO_STR(" b " + b.toString() );
+        INFO_STR(" a+b " + (a+b).toString() );
         REQUIRE( ( a + b ) == exp_sum );
     }
     // 10.4 + 2.7 (in denominator) = 13.1
@@ -689,9 +689,9 @@ TEST_CASE( "Fraction Time Arithmetic Add Test 03.1", "[fraction][fraction_timesp
         fraction_timespec a { 10_s +  400_ms };
         fraction_timespec b {  0_s + 2700_ms };
         fraction_timespec exp_sum {  13_s + 100_ms };
-        INFO_STR(" a " + a.to_string() );
-        INFO_STR(" b " + b.to_string() );
-        INFO_STR(" a+b " + (a+b).to_string() );
+        INFO_STR(" a " + a.toString() );
+        INFO_STR(" b " + b.toString() );
+        INFO_STR(" a+b " + (a+b).toString() );
         REQUIRE( ( a + b ) == exp_sum );
     }
     // 10.4 + -0.3 = 10.1
@@ -713,9 +713,9 @@ TEST_CASE( "Fraction Time Arithmetic Add Test 03.1", "[fraction][fraction_timesp
         fraction_timespec a { 10_s + 400_ms };
         fraction_timespec b {  0_s + -900_ms };
         fraction_timespec exp_sum {  9_s + 500_ms };
-        INFO_STR(" a " + a.to_string() );
-        INFO_STR(" b " + b.to_string() );
-        INFO_STR(" a+b " + (a+b).to_string() );
+        INFO_STR(" a " + a.toString() );
+        INFO_STR(" b " + b.toString() );
+        INFO_STR(" a+b " + (a+b).toString() );
         REQUIRE( ( a + b ) == exp_sum );
     }
     // 10.4 + -2.7 = 7.7
@@ -723,9 +723,9 @@ TEST_CASE( "Fraction Time Arithmetic Add Test 03.1", "[fraction][fraction_timesp
         fraction_timespec a { 10_s +   400_ms };
         fraction_timespec b {  0_s + -2700_ms };
         fraction_timespec exp_sum {  7_s + 700_ms };
-        INFO_STR(" a " + a.to_string() );
-        INFO_STR(" b " + b.to_string() );
-        INFO_STR(" a+b " + (a+b).to_string() );
+        INFO_STR(" a " + a.toString() );
+        INFO_STR(" b " + b.toString() );
+        INFO_STR(" a+b " + (a+b).toString() );
         REQUIRE( ( a + b ) == exp_sum );
     }
     // 10.-9 + 0.4 = 9.5
@@ -733,9 +733,9 @@ TEST_CASE( "Fraction Time Arithmetic Add Test 03.1", "[fraction][fraction_timesp
         fraction_timespec a { 10_s + -900_ms };
         fraction_timespec b {  0_s +  400_ms };
         fraction_timespec exp_sum {  9_s + 500_ms };
-        INFO_STR(" a " + a.to_string() );
-        INFO_STR(" b " + b.to_string() );
-        INFO_STR(" a+b " + (a+b).to_string() );
+        INFO_STR(" a " + a.toString() );
+        INFO_STR(" b " + b.toString() );
+        INFO_STR(" a+b " + (a+b).toString() );
         REQUIRE( ( a + b ) == exp_sum );
     }
 }
@@ -745,35 +745,35 @@ TEST_CASE( "Fraction Time Arithmetic Sub Test 03.2", "[fraction][fraction_timesp
     // normalize: 1 s + 4*1000000000 ns = 5s
     {
         fraction_timespec a( 1, 4000000000_i64 );
-        INFO_STR(" a " + a.to_string() );
+        INFO_STR(" a " + a.toString() );
         REQUIRE( a.tv_sec == 5 );
         REQUIRE( a.tv_nsec == 0_i64 );
     }
     // normalize: -1 s - 4*1000000000 ns = -5s
     {
         fraction_timespec a( -1, -4000000000_i64 );
-        INFO_STR(" a " + a.to_string() );
+        INFO_STR(" a " + a.toString() );
         REQUIRE( a.tv_sec == -5 );
         REQUIRE( a.tv_nsec == 0_i64 );
     }
     // normalize: -1 s + 4*1000000000 ns = 3s
     {
         fraction_timespec a( -1, 4000000000_i64 );
-        INFO_STR(" a " + a.to_string() );
+        INFO_STR(" a " + a.toString() );
         REQUIRE( a.tv_sec == 3 );
         REQUIRE( a.tv_nsec == 0_i64 );
     }
     // normalize: 1 - 0.4 = 0.6
     {
         fraction_timespec a( 1, -400000000_i64 );
-        INFO_STR(" a " + a.to_string() );
+        INFO_STR(" a " + a.toString() );
         REQUIRE( a.tv_sec == 0 );
         REQUIRE( a.tv_nsec == 600000000_i64 );
     }
     // normalize: -1 + 0.4 = -0.6
     {
         fraction_timespec a( -1, +400000000_i64 );
-        INFO_STR(" a " + a.to_string() );
+        INFO_STR(" a " + a.toString() );
         REQUIRE( a.tv_sec == 0 );
         REQUIRE( a.tv_nsec == -600000000_i64 );
     }
@@ -782,10 +782,10 @@ TEST_CASE( "Fraction Time Arithmetic Sub Test 03.2", "[fraction][fraction_timesp
         fraction_timespec a( 674, 0 );
         fraction_timespec b( 675, 547000000_i64 );
         fraction_timespec exp_sum( -1, -547000000_i64 );
-        INFO_STR(" a " + a.to_string() );
-        INFO_STR(" b " + b.to_string() );
-        INFO_STR(" exp " + exp_sum.to_string() );
-        INFO_STR(" a-b " + (a-b).to_string() );
+        INFO_STR(" a " + a.toString() );
+        INFO_STR(" b " + b.toString() );
+        INFO_STR(" exp " + exp_sum.toString() );
+        INFO_STR(" a-b " + (a-b).toString() );
         REQUIRE( ( a - b ) == exp_sum );
     }
     // 674.0 - 675.547 = -1.547
@@ -793,10 +793,10 @@ TEST_CASE( "Fraction Time Arithmetic Sub Test 03.2", "[fraction][fraction_timesp
         fraction_timespec a { 674_s + 0_ms };
         fraction_timespec b { 675_s + 547_ms };
         fraction_timespec exp_sum {  -1_s - 547_ms };
-        INFO_STR(" a " + a.to_string() );
-        INFO_STR(" b " + b.to_string() );
-        INFO_STR(" exp " + exp_sum.to_string() );
-        INFO_STR(" a-b " + (a-b).to_string() );
+        INFO_STR(" a " + a.toString() );
+        INFO_STR(" b " + b.toString() );
+        INFO_STR(" exp " + exp_sum.toString() );
+        INFO_STR(" a-b " + (a-b).toString() );
         REQUIRE( ( a - b ) == exp_sum );
     }
     // 10.4 - 0.3 = 10.1
@@ -818,9 +818,9 @@ TEST_CASE( "Fraction Time Arithmetic Sub Test 03.2", "[fraction][fraction_timesp
         fraction_timespec a { 10_s + 400_ms };
         fraction_timespec b {  0_s + 700_ms };
         fraction_timespec exp_sum {  9_s + 700_ms };
-        INFO_STR(" a " + a.to_string() );
-        INFO_STR(" b " + b.to_string() );
-        INFO_STR(" a-b " + (a-b).to_string() );
+        INFO_STR(" a " + a.toString() );
+        INFO_STR(" b " + b.toString() );
+        INFO_STR(" a-b " + (a-b).toString() );
         REQUIRE( ( a - b ) == exp_sum );
     }
     // 10.4 - 2.7 (in denominator) = 7.7
@@ -828,9 +828,9 @@ TEST_CASE( "Fraction Time Arithmetic Sub Test 03.2", "[fraction][fraction_timesp
         fraction_timespec a { 10_s +  400_ms };
         fraction_timespec b {  0_s + 2700_ms };
         fraction_timespec exp_sum {  7_s + 700_ms };
-        INFO_STR(" a " + a.to_string() );
-        INFO_STR(" b " + b.to_string() );
-        INFO_STR(" a-b " + (a-b).to_string() );
+        INFO_STR(" a " + a.toString() );
+        INFO_STR(" b " + b.toString() );
+        INFO_STR(" a-b " + (a-b).toString() );
         REQUIRE( ( a - b ) == exp_sum );
     }
 
@@ -846,9 +846,9 @@ TEST_CASE( "Fraction Time Arithmetic Sub Test 03.2", "[fraction][fraction_timesp
         fraction_timespec a { 10_s + -200_ms };
         fraction_timespec b {  0_s + 400_ms };
         fraction_timespec exp_sum {  9_s + 400_ms };
-        INFO_STR(" a " + a.to_string() );
-        INFO_STR(" b " + b.to_string() );
-        INFO_STR(" a-b " + (a-b).to_string() );
+        INFO_STR(" a " + a.toString() );
+        INFO_STR(" b " + b.toString() );
+        INFO_STR(" a-b " + (a-b).toString() );
         REQUIRE( ( a - b ) == exp_sum );
     }
     // 10.4 - -0.9 = 11.3
@@ -856,9 +856,9 @@ TEST_CASE( "Fraction Time Arithmetic Sub Test 03.2", "[fraction][fraction_timesp
         fraction_timespec a { 10_s + 400_ms };
         fraction_timespec b {  0_s + -900_ms };
         fraction_timespec exp_sum { 11_s + 300_ms };
-        INFO_STR(" a " + a.to_string() );
-        INFO_STR(" b " + b.to_string() );
-        INFO_STR(" a-b " + (a-b).to_string() );
+        INFO_STR(" a " + a.toString() );
+        INFO_STR(" b " + b.toString() );
+        INFO_STR(" a-b " + (a-b).toString() );
         REQUIRE( ( a - b ) == exp_sum );
     }
     // 10.-9 - 0.4 = 8.7
@@ -866,9 +866,9 @@ TEST_CASE( "Fraction Time Arithmetic Sub Test 03.2", "[fraction][fraction_timesp
         fraction_timespec a { 10_s + -900_ms };
         fraction_timespec b {  0_s +  400_ms };
         fraction_timespec exp_sum {  8_s + 700_ms };
-        INFO_STR(" a " + a.to_string() );
-        INFO_STR(" b " + b.to_string() );
-        INFO_STR(" a-b " + (a-b).to_string() );
+        INFO_STR(" a " + a.toString() );
+        INFO_STR(" b " + b.toString() );
+        INFO_STR(" a-b " + (a-b).toString() );
         REQUIRE( ( a - b ) == exp_sum );
     }
 }
@@ -890,10 +890,10 @@ TEST_CASE( "Fraction Time Measurement Test 04.01", "[fraction][fraction_timespec
         const fraction_i64 td_2 = td_1.to_fraction_i64();
         const fraction_i64 terr = abs( td_2 - fractions_i64::milli * sleep_ms );
         INFO_STR( " Test-1: sleep_for() getMonotonicTime:");
-        INFO_STR( " - t0 " + t0.to_string() );
-        INFO_STR( " - t1 " + t1.to_string() );
-        INFO_STR( " - td_1 " + td_1.to_string() );
-        INFO_STR( " - td_2 " + td_2.to_string(true) + ", " + std::to_string( td_2.to_num_of(1_ms) ) + "ms, err " + terr.to_string(true) + " <?= " + accuracy.to_string(true) );
+        INFO_STR( " - t0 " + t0.toString() );
+        INFO_STR( " - t1 " + t1.toString() );
+        INFO_STR( " - td_1 " + td_1.toString() );
+        INFO_STR( " - td_2 " + td_2.toString(true) + ", " + std::to_string( td_2.to_num_of(1_ms) ) + "ms, err " + terr.toString(true) + " <?= " + accuracy.toString(true) );
         REQUIRE( t0.tv_sec >= 0 );
         REQUIRE( t0.tv_nsec >= 0 );
         REQUIRE( t1.tv_sec >= 0 );
@@ -912,10 +912,10 @@ TEST_CASE( "Fraction Time Measurement Test 04.01", "[fraction][fraction_timespec
         const fraction_i64 td_2 = td_1.to_fraction_i64();
         const fraction_i64 terr = abs( td_2 - fractions_i64::milli * sleep_ms );
         INFO_STR( " Test-2: sleep_until() getMonotonicTime:");
-        INFO_STR( " - t0 " + t0.to_string() );
-        INFO_STR( " - t1 " + t1.to_string() );
-        INFO_STR( " - td_1 " + td_1.to_string() );
-        INFO_STR( " - td_2 " + td_2.to_string(true) + ", " + std::to_string( td_2.to_num_of(1_ms) ) + "ms, err " + terr.to_string(true) + " <?= " + accuracy.to_string(true) );
+        INFO_STR( " - t0 " + t0.toString() );
+        INFO_STR( " - t1 " + t1.toString() );
+        INFO_STR( " - td_1 " + td_1.toString() );
+        INFO_STR( " - td_2 " + td_2.toString(true) + ", " + std::to_string( td_2.to_num_of(1_ms) ) + "ms, err " + terr.toString(true) + " <?= " + accuracy.toString(true) );
         REQUIRE( t0.tv_sec >= 0 );
         REQUIRE( t0.tv_nsec >= 0 );
         REQUIRE( t1.tv_sec >= 0 );
@@ -934,23 +934,23 @@ TEST_CASE( "Fraction Time Conversion Test 05.01", "[fraction_timespec][time]" ) 
     fraction_timespec onesec_onemilli(1, 100000000_i64);
     {
         fraction_timespec t0 = fraction_timespec::from(1968, 1, 1);
-        jau::INFO_PRINT( "a - 1968-1-1 -> %s, %s", t0.to_string().c_str(), t0.to_iso8601_string().c_str());
+        jau::INFO_PRINT( "a - 1968-1-1 -> %s, %s", t0.toString().c_str(), t0.toISO8601String().c_str());
         REQUIRE(zero > t0);
     }
     {
         fraction_timespec t0 = fraction_timespec::from(1970, 1, 1);
-        jau::INFO_PRINT( "a - 1970-1-1 -> %s, %s", t0.to_string().c_str(), t0.to_iso8601_string().c_str());
+        jau::INFO_PRINT( "a - 1970-1-1 -> %s, %s", t0.toString().c_str(), t0.toISO8601String().c_str());
         REQUIRE(zero == t0);
     }
     {
         fraction_timespec exp(24_i64*3600_i64, 0);
         fraction_timespec t0 = fraction_timespec::from(1970, 1, 2);
-        jau::INFO_PRINT( "a - 1970-1-2 -> %s, %s", t0.to_string().c_str(), t0.to_iso8601_string().c_str());
+        jau::INFO_PRINT( "a - 1970-1-2 -> %s, %s", t0.toString().c_str(), t0.toISO8601String().c_str());
         REQUIRE(exp == t0);
     }
     {
         fraction_timespec t0 = fraction_timespec::from(2024, 1, 1);
-        jau::INFO_PRINT( "a - 2024-1-1 -> %s, %s", t0.to_string().c_str(), t0.to_iso8601_string().c_str());
+        jau::INFO_PRINT( "a - 2024-1-1 -> %s, %s", t0.toString().c_str(), t0.toISO8601String().c_str());
     }
     {
         int64_t utcOffsetSec; size_t consumedChars;
@@ -976,15 +976,15 @@ TEST_CASE( "Fraction Time Conversion Test 05.01", "[fraction_timespec][time]" ) 
         REQUIRE(0 == utcOffsetSec); REQUIRE(24 == consumedChars);
         REQUIRE(t04 == fraction_timespec::from("2024-01-01  12:34:56.789"));
 
-        jau::INFO_PRINT( "b - t00 %s, %s", t00.to_string().c_str(), t00.to_iso8601_string().c_str());
-        jau::INFO_PRINT( "b - t00 %s, %s", t00.to_string().c_str(), t00.to_iso8601_string(true).c_str());
-        jau::INFO_PRINT( "b - t01 %s, %s", t01.to_string().c_str(), t01.to_iso8601_string().c_str());
-        jau::INFO_PRINT( "b - t01 %s, %s", t01.to_string().c_str(), t01.to_iso8601_string(true).c_str());
-        jau::INFO_PRINT( "b - t02 %s, %s", t02.to_string().c_str(), t02.to_iso8601_string().c_str());
-        jau::INFO_PRINT( "b - t02 %s, %s", t02.to_string().c_str(), t02.to_iso8601_string(true).c_str());
-        jau::INFO_PRINT( "b - t03 %s, %s", t03.to_string().c_str(), t03.to_iso8601_string(true).c_str());
-        jau::INFO_PRINT( "b - t04 %s, %s", t04.to_string().c_str(), t04.to_iso8601_string(true).c_str());
-        jau::INFO_PRINT( "b - t04 %s, %s", t04.to_string().c_str(), t04.to_iso8601_string(true, true).c_str());
+        jau::INFO_PRINT( "b - t00 %s, %s", t00.toString().c_str(), t00.toISO8601String().c_str());
+        jau::INFO_PRINT( "b - t00 %s, %s", t00.toString().c_str(), t00.toISO8601String(true).c_str());
+        jau::INFO_PRINT( "b - t01 %s, %s", t01.toString().c_str(), t01.toISO8601String().c_str());
+        jau::INFO_PRINT( "b - t01 %s, %s", t01.toString().c_str(), t01.toISO8601String(true).c_str());
+        jau::INFO_PRINT( "b - t02 %s, %s", t02.toString().c_str(), t02.toISO8601String().c_str());
+        jau::INFO_PRINT( "b - t02 %s, %s", t02.toString().c_str(), t02.toISO8601String(true).c_str());
+        jau::INFO_PRINT( "b - t03 %s, %s", t03.toString().c_str(), t03.toISO8601String(true).c_str());
+        jau::INFO_PRINT( "b - t04 %s, %s", t04.toString().c_str(), t04.toISO8601String(true).c_str());
+        jau::INFO_PRINT( "b - t04 %s, %s", t04.toString().c_str(), t04.toISO8601String(true, true).c_str());
 
         fraction_timespec tX0 = fraction_timespec::from(2024, 1, 1);
         fraction_timespec tX1 = fraction_timespec::from(2024, 1, 1, 12, 34, 56, 0);
@@ -997,14 +997,14 @@ TEST_CASE( "Fraction Time Conversion Test 05.01", "[fraction_timespec][time]" ) 
         REQUIRE(t00a - onesec == t00);
         REQUIRE(t00b - onesec_onemilli == t00);
 
-        REQUIRE(tX0 == fraction_timespec::from(tX0.to_iso8601_string()));
-        REQUIRE(tX1 == fraction_timespec::from(tX1.to_iso8601_string()));
-        jau::INFO_PRINT( "c - tX2 %s, %s", tX2.to_string().c_str(), tX2.to_iso8601_string().c_str());
-        jau::INFO_PRINT( "c - tX2 %s, %s", tX2.to_string().c_str(), tX2.to_iso8601_string(true).c_str());
-        REQUIRE(tX2 == fraction_timespec::from(tX2.to_iso8601_string()));
-        REQUIRE(tX0 == fraction_timespec::from(tX0.to_iso8601_string(true)));
-        REQUIRE(tX1 == fraction_timespec::from(tX1.to_iso8601_string(true)));
-        REQUIRE(tX2 == fraction_timespec::from(tX2.to_iso8601_string(true)));
+        REQUIRE(tX0 == fraction_timespec::from(tX0.toISO8601String()));
+        REQUIRE(tX1 == fraction_timespec::from(tX1.toISO8601String()));
+        jau::INFO_PRINT( "c - tX2 %s, %s", tX2.toString().c_str(), tX2.toISO8601String().c_str());
+        jau::INFO_PRINT( "c - tX2 %s, %s", tX2.toString().c_str(), tX2.toISO8601String(true).c_str());
+        REQUIRE(tX2 == fraction_timespec::from(tX2.toISO8601String()));
+        REQUIRE(tX0 == fraction_timespec::from(tX0.toISO8601String(true)));
+        REQUIRE(tX1 == fraction_timespec::from(tX1.toISO8601String(true)));
+        REQUIRE(tX2 == fraction_timespec::from(tX2.toISO8601String(true)));
         REQUIRE(tX0 == fraction_timespec::from("2024-01-01T"));
         REQUIRE(tX0 == fraction_timespec::from("2024-01-01Z"));
         REQUIRE(tX0 == fraction_timespec::from("2024-01-01T00:00:00"));
@@ -1047,9 +1047,9 @@ TEST_CASE( "Fraction Time Conversion Test 05.01", "[fraction_timespec][time]" ) 
         if ( false ) {
             int64_t t0_offset; size_t consumedChars;
             fraction_timespec t0 = fraction_timespec::from("2024-01-01T01:02:03.456789+01:02", t0_offset, consumedChars);
-            jau::INFO_PRINT( "d - 1t0 %s, %s, offset %" PRId64 "s, chars %zu", t0.to_string().c_str(), t0.to_iso8601_string().c_str(), t0_offset, consumedChars);
+            jau::INFO_PRINT( "d - 1t0 %s, %s, offset %" PRId64 "s, chars %zu", t0.toString().c_str(), t0.toISO8601String().c_str(), t0_offset, consumedChars);
             fraction_timespec t1 = fraction_timespec::from("2024-01-01T01:02:03.456789+01:02", Bool::True);
-            jau::INFO_PRINT( "d - 1t1 %s, %s", t1.to_string().c_str(), t1.to_iso8601_string().c_str());
+            jau::INFO_PRINT( "d - 1t1 %s, %s", t1.toString().c_str(), t1.toISO8601String().c_str());
         }
         REQUIRE(tX0+p1h+p2m == fraction_timespec::from("2024-01-01T01:02:03.456789+01:02", Bool::True));
         REQUIRE(tX0         == fraction_timespec::from("2024-01-01T01:02:03.456789-01:02"));
@@ -1084,12 +1084,12 @@ TEST_CASE( "Fraction Time Conversion Test 05.01", "[fraction_timespec][time]" ) 
         REQUIRE(tX0-p1h     == fraction_timespec::from("2024-01-01 01:02:03.456789-01", Bool::True));
 
 
-        REQUIRE(tX0 == fraction_timespec::from(tX0.to_iso8601_string()));
-        REQUIRE(tX1 == fraction_timespec::from(tX1.to_iso8601_string()));
-        REQUIRE(tX2 == fraction_timespec::from(tX2.to_iso8601_string()));
-        REQUIRE(tX0 == fraction_timespec::from(tX0.to_iso8601_string(true)));
-        REQUIRE(tX1 == fraction_timespec::from(tX1.to_iso8601_string(true)));
-        REQUIRE(tX2 == fraction_timespec::from(tX2.to_iso8601_string(true)));
+        REQUIRE(tX0 == fraction_timespec::from(tX0.toISO8601String()));
+        REQUIRE(tX1 == fraction_timespec::from(tX1.toISO8601String()));
+        REQUIRE(tX2 == fraction_timespec::from(tX2.toISO8601String()));
+        REQUIRE(tX0 == fraction_timespec::from(tX0.toISO8601String(true)));
+        REQUIRE(tX1 == fraction_timespec::from(tX1.toISO8601String(true)));
+        REQUIRE(tX2 == fraction_timespec::from(tX2.toISO8601String(true)));
 
         REQUIRE(tX0 == fraction_timespec::from("2024-01-01T01:02:03.456789+00:00", Bool::True));
         REQUIRE(tX1 == fraction_timespec::from("2024-01-01T01:02:03.456789+01:02", Bool::True));
@@ -1099,7 +1099,7 @@ TEST_CASE( "Fraction Time Conversion Test 05.01", "[fraction_timespec][time]" ) 
         fraction_timespec tX0 = fraction_timespec::from(1, 2, 3, 4, 5, 6, 456789000_i64);
         int64_t t0_offset=987654321_i64; size_t consumedChars=2783964772;
         fraction_timespec t0 = fraction_timespec::from("1-02-3T4:05:6.456789Z", t0_offset, consumedChars);
-        jau::INFO_PRINT( "e - 0t0 %s, %s, offset %" PRId64 "s", t0.to_string().c_str(), t0.to_iso8601_string().c_str(), t0_offset);
+        jau::INFO_PRINT( "e - 0t0 %s, %s, offset %" PRId64 "s", t0.toString().c_str(), t0.toISO8601String().c_str(), t0_offset);
         REQUIRE(tX0         == t0);
         REQUIRE(0 == t0_offset);
         REQUIRE(21 == consumedChars);
@@ -1108,7 +1108,7 @@ TEST_CASE( "Fraction Time Conversion Test 05.01", "[fraction_timespec][time]" ) 
     {
         int64_t t0_offset=987654321_i64; size_t consumedChars=2783964772;
         fraction_timespec t0 = fraction_timespec::from("2024-01-01 01:02:03.456789+01:02", t0_offset, consumedChars);
-        jau::INFO_PRINT( "e - 1t0 %s, %s, offset %" PRId64 "s", t0.to_string().c_str(), t0.to_iso8601_string().c_str(), t0_offset);
+        jau::INFO_PRINT( "e - 1t0 %s, %s, offset %" PRId64 "s", t0.toString().c_str(), t0.toISO8601String().c_str(), t0_offset);
         REQUIRE(t0 == fraction_timespec::from(2024, 1, 1, 1, 2, 3, 456789000_i64));
         REQUIRE(t0_offset == 60*60_i64 + 2*60_i64);
         REQUIRE(32 == consumedChars);
@@ -1116,7 +1116,7 @@ TEST_CASE( "Fraction Time Conversion Test 05.01", "[fraction_timespec][time]" ) 
     {
         int64_t t0_offset=987654321_i64; size_t consumedChars=2783964772;
         fraction_timespec t0 = fraction_timespec::from("2024-01-01 01:02:03.456789-01:02", t0_offset, consumedChars);
-        jau::INFO_PRINT( "e - 2t0 %s, %s, offset %" PRId64 "s", t0.to_string().c_str(), t0.to_iso8601_string().c_str(), t0_offset);
+        jau::INFO_PRINT( "e - 2t0 %s, %s, offset %" PRId64 "s", t0.toString().c_str(), t0.toISO8601String().c_str(), t0_offset);
         REQUIRE(t0 == fraction_timespec::from(2024, 1, 1, 1, 2, 3, 456789000_i64));
         REQUIRE(t0_offset == -60*60_i64 - 2*60_i64);
         REQUIRE(32 == consumedChars);
@@ -1126,7 +1126,7 @@ TEST_CASE( "Fraction Time Conversion Test 05.01", "[fraction_timespec][time]" ) 
         fraction_timespec tX0 = fraction_timespec::from(1, 2, 3, 0, 0, 0, 0_i64);
         int64_t t0_offset=987654321_i64; size_t consumedChars=2783964772;
         fraction_timespec t0 = fraction_timespec::from("1-02-3Z4:05:6.456789+01:02", t0_offset, consumedChars);
-        jau::INFO_PRINT( "e - 3t0 %s, %s, offset %" PRId64 "s", t0.to_string().c_str(), t0.to_iso8601_string().c_str(), t0_offset);
+        jau::INFO_PRINT( "e - 3t0 %s, %s, offset %" PRId64 "s", t0.toString().c_str(), t0.toISO8601String().c_str(), t0_offset);
         REQUIRE(tX0         == t0);
         REQUIRE(0 == t0_offset);
         REQUIRE(7 == consumedChars);
@@ -1136,7 +1136,7 @@ TEST_CASE( "Fraction Time Conversion Test 05.01", "[fraction_timespec][time]" ) 
         fraction_timespec tX0 = fraction_timespec::from(1, 2, 3, 4, 5, 6, 0_i64);
         int64_t t0_offset=987654321_i64; size_t consumedChars=2783964772;
         fraction_timespec t0 = fraction_timespec::from("1-02-3T4:05:6Z.456789+01:02", t0_offset, consumedChars);
-        jau::INFO_PRINT( "e - 4t0 %s, %s, offset %" PRId64 "s", t0.to_string().c_str(), t0.to_iso8601_string().c_str(), t0_offset);
+        jau::INFO_PRINT( "e - 4t0 %s, %s, offset %" PRId64 "s", t0.toString().c_str(), t0.toISO8601String().c_str(), t0_offset);
         REQUIRE(tX0         == t0);
         REQUIRE(0 == t0_offset);
         REQUIRE(14 == consumedChars);
@@ -1146,7 +1146,7 @@ TEST_CASE( "Fraction Time Conversion Test 05.01", "[fraction_timespec][time]" ) 
         fraction_timespec tX0 = fraction_timespec::from(1, 2, 3, 4, 5, 6, 456789000_i64);
         int64_t t0_offset=987654321_i64; size_t consumedChars=2783964772;
         fraction_timespec t0 = fraction_timespec::from("1-02-3T4:05:6.456789Z+01:02", t0_offset, consumedChars);
-        jau::INFO_PRINT( "e - 5t0 %s, %s, offset %" PRId64 "s", t0.to_string().c_str(), t0.to_iso8601_string().c_str(), t0_offset);
+        jau::INFO_PRINT( "e - 5t0 %s, %s, offset %" PRId64 "s", t0.toString().c_str(), t0.toISO8601String().c_str(), t0_offset);
         REQUIRE(tX0         == t0);
         REQUIRE(0 == t0_offset);
         REQUIRE(21 == consumedChars);
@@ -1168,7 +1168,7 @@ TEST_CASE( "Fraction Time Conversion Test 05.01", "[fraction_timespec][time]" ) 
     {
         int64_t offset=987654321_i64; size_t consumedChars=2783964772;
         fraction_timespec t0 = fraction_timespec::from("Error01 2024-01-01     01:02:03.456789   +01:02HALLO SJKSJSJKSJ", offset, consumedChars);
-        jau::INFO_PRINT( "Error01 t0 %s, %s", t0.to_string().c_str(), t0.to_iso8601_string().c_str());
+        jau::INFO_PRINT( "Error01 t0 %s, %s", t0.toString().c_str(), t0.toISO8601String().c_str());
         REQUIRE(fraction_timespec() == t0);
         REQUIRE(true == t0.isZero());
         REQUIRE(offset == 0);

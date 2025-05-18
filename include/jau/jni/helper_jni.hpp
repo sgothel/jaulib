@@ -35,8 +35,8 @@
 #include <jau/basic_algos.hpp>
 #include <jau/basic_types.hpp>
 #include <jau/darray.hpp>
-#include <jau/io_util.hpp>
 #include <jau/functional.hpp>
+#include <jau/io/io_util.hpp>
 
 #include <jau/jni/jni_mem.hpp>
 
@@ -88,7 +88,7 @@ namespace jau::jni {
     void raise_java_exception(JNIEnv *env, const jau::IllegalStateError &e, const char* file, int line);
     void raise_java_exception(JNIEnv *env, const jau::UnsupportedOperationException &e, const char* file, int line);
     void raise_java_exception(JNIEnv *env, const jau::IndexOutOfBoundsError &e, const char* file, int line);
-    void raise_java_exception(JNIEnv *env, const jau::OutOfMemoryError &e, const char* file, int line);    
+    void raise_java_exception(JNIEnv *env, const jau::OutOfMemoryError &e, const char* file, int line);
     void raise_java_exception(JNIEnv *env, const std::exception &e, const char* file, int line);
     void raise_java_exception(JNIEnv *env, const std::runtime_error &e, const char* file, int line);
     void raise_java_exception(JNIEnv *env, const std::invalid_argument &e, const char* file, int line);
@@ -425,7 +425,7 @@ namespace jau::jni {
             { }
 
             /** Copy constructor */
-            shared_ptr_ref(const shared_ptr_ref& o) noexcept
+            shared_ptr_ref(const shared_ptr_ref& o)
             : ref_ptr( new std::shared_ptr<T>( o.shared_ptr() ) )
             { }
 

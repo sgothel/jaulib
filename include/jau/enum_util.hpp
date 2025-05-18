@@ -250,10 +250,7 @@ namespace jau::enums {
 
     template <typename T,
               std::enable_if_t<std::is_enum_v<T>>* = nullptr>
-    inline std::ostream& operator<<(std::ostream& os, const T v) {
-        os << name(v);
-        return os;
-    }
+    inline std::ostream& operator<<(std::ostream& os, const T v) { return os << name(v); }
 
     template <typename EnumType, auto... Vargs> class enum_iterator; // fwd
 

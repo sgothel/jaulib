@@ -186,7 +186,7 @@ public final class ByteInStream_File implements ByteInStream {
     public native long discard_next(long N);
 
     @Override
-    public native long tellg();
+    public native long position();
 
     @Override
     public native boolean has_content_size();

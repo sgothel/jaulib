@@ -28,7 +28,7 @@
 
 #include "jau/jni/helper_jni.hpp"
 
-#include "jau/io_util.hpp"
+#include "jau/io/io_util.hpp"
 
 jobject Java_org_jau_io_UriTk_supported_1protocols(JNIEnv *env, jclass cls) {
     (void)cls;

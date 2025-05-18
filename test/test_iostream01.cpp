@@ -32,9 +32,9 @@
 
 #include <jau/test/catch2_ext.hpp>
 
-#include <jau/file_util.hpp>
-#include <jau/io_util.hpp>
-#include <jau/byte_stream.hpp>
+#include <jau/io/file_util.hpp>
+#include <jau/io/io_util.hpp>
+#include <jau/io/byte_stream.hpp>
 
 #include <jau/debug.hpp>
 
@@ -55,13 +55,13 @@ class TestIOStream01 {
         TestIOStream01() {
             // produce fresh demo data
 
-            jau::fs::remove(basename_10kiB);
+            jau::io::fs::remove(basename_10kiB);
             {
                 std::string one_line = "Hello World, this is a test and I like it. Exactly 100 characters long. 0123456780 abcdefghjklmnop..";
-                jau::io::ByteOutStream_File ofs(basename_10kiB);
+                jau::io::ByteStream_File ofs(basename_10kiB, jau::io::iomode_t::write);
 
                 REQUIRE( ofs.good() == true );
-                REQUIRE( ofs.is_open() == true );
+                REQUIRE( ofs.isOpen() == true );
 
                 for(size_t i=0; i < 1024_uz * 10_uz; i+=one_line.size()) { // 10kiB
                     REQUIRE( one_line.size() == ofs.write(one_line.data(), one_line.size()) );
@@ -70,7 +70,7 @@ class TestIOStream01 {
             if( jau::io::uri_tk::protocol_supported("http:") ) {
                 int res = std::system("killall mini_httpd");
                 (void)res;
-                const std::string cwd = jau::fs::get_cwd();
+                const std::string cwd = jau::io::fs::get_cwd();
                 const std::string cmd = std::string(mini_httpd_exe)+" -p 8080 -l "+cwd+"/mini_httpd.log";
                 jau::PLAIN_PRINT(true, "%s", cmd.c_str());
                 res = std::system(cmd.c_str());
@@ -164,13 +164,13 @@ class TestIOStream01 {
                 jau::PLAIN_PRINT(true, "http not supported, abort\n");
                 return;
             }
-            const jau::fs::file_stats in_stats(basename_10kiB);
+            const jau::io::fs::file_stats in_stats(basename_10kiB);
             const size_t file_size = in_stats.size();
             const std::string url_input = url_input_root + basename_10kiB;
 
-            jau::io::ByteOutStream_File outfile("testfile01_01_out.bin");
+            jau::io::ByteStream_File outfile("testfile01_01_out.bin", jau::io::iomode_t::write);
             REQUIRE( outfile.good() );
-            REQUIRE( outfile.is_open() );
+            REQUIRE( outfile.isOpen() );
 
             jau::io::secure_vector<uint8_t> buffer(4096);
             size_t consumed_calls = 0;
@@ -186,7 +186,7 @@ class TestIOStream01 {
                 return true;
             };
             uint64_t http_total_bytes = jau::io::read_url_stream(url_input, buffer, consume);
-            const uint64_t out_bytes_total = outfile.tellp();
+            const uint64_t out_bytes_total = outfile.position();
             jau::PLAIN_PRINT(true, "test01_sync_ok Done: total %" PRIu64 ", capacity %zu", consumed_total_bytes, buffer.capacity());
 
             REQUIRE( file_size == http_total_bytes );
@@ -201,9 +201,9 @@ class TestIOStream01 {
             }
             const std::string url_input = url_input_root + "doesnt_exists.txt";
 
-            jau::io::ByteOutStream_File outfile("testfile02_01_out.bin");
+            jau::io::ByteStream_File outfile("testfile02_01_out.bin", jau::io::iomode_t::write);
             REQUIRE( outfile.good() );
-            REQUIRE( outfile.is_open() );
+            REQUIRE( outfile.isOpen() );
 
             jau::io::secure_vector<uint8_t> buffer(4096);
             size_t consumed_calls = 0;
@@ -219,7 +219,7 @@ class TestIOStream01 {
                 return true;
             };
             uint64_t http_total_bytes = jau::io::read_url_stream(url_input, buffer, consume);
-            const uint64_t out_bytes_total = outfile.tellp();
+            const uint64_t out_bytes_total = outfile.position();
             jau::PLAIN_PRINT(true, "test02_sync_404 Done: total %" PRIu64 ", capacity %zu", consumed_total_bytes, buffer.capacity());
 
             REQUIRE( 0 == http_total_bytes );
@@ -232,13 +232,13 @@ class TestIOStream01 {
                 jau::PLAIN_PRINT(true, "http not supported, abort\n");
                 return;
             }
-            const jau::fs::file_stats in_stats(basename_10kiB);
+            const jau::io::fs::file_stats in_stats(basename_10kiB);
             const size_t file_size = in_stats.size();
             const std::string url_input = url_input_root + basename_10kiB;
 
-            jau::io::ByteOutStream_File outfile("testfile11_01_out.bin");
+            jau::io::ByteStream_File outfile("testfile11_01_out.bin", jau::io::iomode_t::write);
             REQUIRE( outfile.good() );
-            REQUIRE( outfile.is_open() );
+            REQUIRE( outfile.isOpen() );
 
             constexpr const size_t buffer_size = 4096;
             jau::io::ByteRingbuffer rb(jau::io::BEST_URLSTREAM_RINGBUFFER_SIZE);
@@ -261,7 +261,7 @@ class TestIOStream01 {
                     break;
                 }
             }
-            const uint64_t out_bytes_total = outfile.tellp();
+            const uint64_t out_bytes_total = outfile.position();
             jau::PLAIN_PRINT(true, "test11_async_ok.X Done: total %" PRIu64 ", result %d, rb %s",
                     consumed_total_bytes, (int)res->result.load(), rb.toString().c_str() );
 
@@ -282,9 +282,9 @@ class TestIOStream01 {
             }
             const std::string url_input = url_input_root + "doesnt_exists.txt";
 
-            jau::io::ByteOutStream_File outfile("testfile12_01_out.bin");
+            jau::io::ByteStream_File outfile("testfile12_01_out.bin", jau::io::iomode_t::write);
             REQUIRE( outfile.good() );
-            REQUIRE( outfile.is_open() );
+            REQUIRE( outfile.isOpen() );
 
             constexpr const size_t buffer_size = 4096;
             jau::io::ByteRingbuffer rb(jau::io::BEST_URLSTREAM_RINGBUFFER_SIZE);
@@ -307,7 +307,7 @@ class TestIOStream01 {
                     break;
                 }
             }
-            const uint64_t out_bytes_total = outfile.tellp();
+            const uint64_t out_bytes_total = outfile.position();
             jau::PLAIN_PRINT(true, "test12_async_404.X Done: total %" PRIu64 ", result %d, rb %s",
                     consumed_total_bytes, (int)res->result.load(), rb.toString().c_str() );
 

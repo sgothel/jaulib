@@ -30,7 +30,7 @@
 #include <jau/string_util.hpp>
 
 #include <jau/debug.hpp>
-#include <jau/file_util.hpp>
+#include <jau/io/file_util.hpp>
 #include <jau/os/dyn_linker.hpp>
 #include <jau/os/os_support.hpp>
 #include <jau/os/user_info.hpp>
@@ -190,7 +190,7 @@ DynamicLinker_processCanonicalNameImpl(bool strip, const std::string& filename, 
 {
   const std::string prefix = jau::os::DynamicLinker::getDefaultPrefix();
   const std::string suffix = jau::os::DynamicLinker::getDefaultSuffix();
-  const std::string libBaseName = isBasename ? filename : jau::fs::basename(filename);
+  const std::string libBaseName = isBasename ? filename : jau::io::fs::basename(filename);
   const std::string libBaseNameLC = caseInsensitive ? jau::toLower(libBaseName) : libBaseName;
   const size_t pre_idx = libBaseNameLC.find(prefix);
   if( 0 == pre_idx ) { // starts-with
@@ -229,7 +229,7 @@ bool jau::os::DynamicLinker::isCanonicalName(const std::string& filename, const 
 static std::vector<std::string> DynamicLinker_buildNames(const std::string& libName) noexcept {
   std::vector<std::string> res;
 
-  const std::string libBaseName = jau::fs::basename(libName);
+  const std::string libBaseName = jau::io::fs::basename(libName);
   if( jau::os::DynamicLinker::isCanonicalName(libBaseName, true) ) {
       // basename is canonical, so use the original with leading path
       res.push_back(libName);
@@ -287,7 +287,7 @@ std::vector<std::string> jau::os::DynamicLinker::enumerateLibraryPaths(const std
     }
 
     // Allow user's full path specification to override our building of paths
-    if ( jau::fs::isAbsolute(libName) ) {
+    if ( jau::io::fs::isAbsolute(libName) ) {
         paths.push_back(libName);
         DBG_PRINT("NativeLibrary.enumerateLibraryPaths: done, absolute path found '%s'", libName.c_str());
         return paths;
@@ -310,12 +310,12 @@ std::vector<std::string> jau::os::DynamicLinker::enumerateLibraryPaths(const std
 
     // Add current working directory
     {
-        std::string cwd = jau::fs::get_cwd();
+        std::string cwd = jau::io::fs::get_cwd();
         DynamicLinker_addAbsPaths("add.cwd", cwd, baseNames, paths);
 
         // Add current working directory + natives/os-arch/ + library names (for unpacked archives, if exists)
         const std::string cwd_bin = cwd+"/natives/"+jau::os::get_os_and_arch();
-        jau::fs::file_stats fstats(cwd_bin);
+        jau::io::fs::file_stats fstats(cwd_bin);
         if( fstats.exists() ) {
             DynamicLinker_addAbsPaths("add.cwd.natives.os_arch", cwd_bin, baseNames, paths);
         }
@@ -329,7 +329,7 @@ std::vector<std::string> jau::os::DynamicLinker::enumerateLibraryPaths(const std
 
             // Add current home + bin/os-arch/ + library names (if exists)
             const std::string home_bin = user.homedir()+"/bin/"+jau::os::get_os_and_arch();
-            jau::fs::file_stats fstats(home_bin);
+            jau::io::fs::file_stats fstats(home_bin);
             if( fstats.exists() ) {
                 DynamicLinker_addAbsPaths("add.home.bin.os_arch", home_bin, baseNames, paths);
             }

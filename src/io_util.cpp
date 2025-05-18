@@ -23,15 +23,14 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <chrono>
 #include <memory>
 #include <unordered_map>
 
 // #include <botan_all.h>
 
 #include <jau/debug.hpp>
-#include <jau/io_util.hpp>
-#include <jau/byte_stream.hpp>
+#include <jau/io/io_util.hpp>
+#include <jau/io/byte_stream.hpp>
 #include <jau/string_util.hpp>
 
 #ifdef USE_LIBCURL
@@ -50,15 +49,15 @@ uint64_t jau::io::read_file(const std::string& input_file,
                             const StreamConsumerFunc& consumer_fn) noexcept
 {
     if(input_file == "-") {
-        ByteInStream_File in(0); // stdin
+        ByteStream_File in(0, jau::io::iomode_t::read); // stdin
         return read_stream(in, buffer, consumer_fn);
     } else {
-        ByteInStream_File in(input_file);
+        ByteStream_File in(input_file, jau::io::iomode_t::read);
         return read_stream(in, buffer, consumer_fn);
     }
 }
 
-uint64_t jau::io::read_stream(ByteInStream& in,
+uint64_t jau::io::read_stream(ByteStream& in,
                               secure_vector<uint8_t>& buffer,
                               const StreamConsumerFunc& consumer_fn) noexcept {
     uint64_t total = 0;
@@ -88,7 +87,7 @@ uint64_t jau::io::read_stream(ByteInStream& in,
     return total;
 }
 
-static uint64_t _read_buffer(ByteInStream& in,
+static uint64_t _read_buffer(ByteStream& in,
                              secure_vector<uint8_t>& buffer) noexcept {
     if( in.available(1) ) { // at least one byte to stream, also considers eof
         buffer.resize(buffer.capacity());
@@ -99,7 +98,7 @@ static uint64_t _read_buffer(ByteInStream& in,
     return 0;
 }
 
-uint64_t jau::io::read_stream(ByteInStream& in,
+uint64_t jau::io::read_stream(ByteStream& in,
                               secure_vector<uint8_t>& buffer1, secure_vector<uint8_t>& buffer2,
                               const StreamConsumerFunc& consumer_fn) noexcept {
     secure_vector<uint8_t>* buffers[] = { &buffer1, &buffer2 };
@@ -176,7 +175,7 @@ static bool _is_scheme_valid(const std::string_view& scheme) noexcept {
     if ( scheme.empty() ) {
         return false;
     }
-    auto pos = std::find_if_not(scheme.begin(), scheme.end(), [&](char c){
+    auto pos = std::find_if_not(scheme.begin(), scheme.end(), [&](char c) { // NOLINT(modernize-use-ranges)
         return std::isalnum(c) || c == '+' || c == '.' || c == '-';
     });
     return pos == scheme.end();
@@ -199,7 +198,7 @@ bool jau::io::uri_tk::protocol_supported(const std::string_view& uri) noexcept {
         return false;
     }
     const std::vector<std::string_view> protos = supported_protocols();
-    auto it = std::find(protos.cbegin(), protos.cend(), scheme);
+    auto it = std::find(protos.cbegin(), protos.cend(), scheme); // NOLINT(modernize-use-ranges)
     return protos.cend() != it;
 }
 
@@ -333,7 +332,8 @@ uint64_t jau::io::read_url_stream(const std::string& url,
         return 0;
     }
 
-    curl_glue1_t cg = { curl_handle, false, 0, 0, 0, buffer, consumer_fn };
+    curl_glue1_t cg = { .curl_handle=curl_handle, .has_content_length=false, .content_length=0,
+                        .status_code=0, .total_read=0, .buffer=buffer, .consumer_fn=consumer_fn };
 
     res = curl_easy_setopt(curl_handle, CURLOPT_ERRORBUFFER, errorbuffer.data());
     if( CURLE_OK != res ) {
@@ -1148,7 +1148,7 @@ AsyncStreamResponseRef jau::io::read_url_stream_async(net_tk_handle handle, cons
 
 void jau::io::print_stats(const std::string& prefix, const uint64_t& out_bytes_total, const jau::fraction_i64& td) noexcept {
     jau::PLAIN_PRINT(true, "%s: Duration %s s, %s ms", prefix.c_str(),
-            td.to_string().c_str(), jau::to_decstring(td.to_ms()).c_str());
+            td.toString().c_str(), jau::to_decstring(td.to_ms()).c_str());
 
     if( out_bytes_total >= 100'000'000 ) {
         jau::PLAIN_PRINT(true, "%s: Size %s MB", prefix.c_str(),

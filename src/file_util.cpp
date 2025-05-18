@@ -22,12 +22,13 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <algorithm>
 #include <jau/debug.hpp>
 #include <jau/enum_util.hpp>
-#include <jau/file_util.hpp>
 #include <jau/base_codec.hpp>
-#include <jau/os/os_support.hpp>
 #include <jau/secmem.hpp>
+#include <jau/io/file_util.hpp>
+#include <jau/os/os_support.hpp>
 
 #include <cstdint>
 #include <cstdlib>
@@ -61,7 +62,7 @@ extern "C" {
 inline constexpr const int _open_dir_flags = O_RDONLY|O_BINARY|O_NOCTTY|O_DIRECTORY;
 
 using namespace jau;
-using namespace jau::fs;
+using namespace jau::io::fs;
 
 #if defined(__linux__) && defined(__GLIBC__)
     #define _USE_STATX_ 1
@@ -81,7 +82,7 @@ using namespace jau::fs;
     #define __posix_openat64  ::openat64
 #endif
 
-std::string jau::fs::get_cwd() noexcept {
+std::string jau::io::fs::get_cwd() noexcept {
     const size_t bsz = PATH_MAX; // including EOS
     std::string str;
     str.reserve(bsz);  // incl. EOS
@@ -97,11 +98,11 @@ std::string jau::fs::get_cwd() noexcept {
     }
 }
 
-bool jau::fs::chdir(const std::string& path) noexcept {
+bool jau::io::fs::chdir(const std::string& path) noexcept {
     return 0 == ::chdir(path.c_str());
 }
 
-std::string jau::fs::absolute(const std::string_view& relpath) noexcept {
+std::string jau::io::fs::absolute(const std::string_view& relpath) noexcept {
     const size_t bsz = PATH_MAX; // including EOS
     std::string str;
     str.reserve(bsz);  // incl. EOS
@@ -128,7 +129,7 @@ static const std::string s_slash_dotdot_slash("/../");
 static const std::string s_slash_dotdot("/..");
 static const std::string s_dotdot("..");
 
-std::string jau::fs::dirname(const std::string_view& path) noexcept {
+std::string jau::io::fs::dirname(const std::string_view& path) noexcept {
     if( 0 == path.size() ) {
         return s_dot;
     }
@@ -150,7 +151,7 @@ std::string jau::fs::dirname(const std::string_view& path) noexcept {
     }
 }
 
-std::string jau::fs::basename(const std::string_view& path) noexcept {
+std::string jau::io::fs::basename(const std::string_view& path) noexcept {
     if( 0 == path.size() ) {
         return s_dot;
     }
@@ -171,7 +172,7 @@ std::string jau::fs::basename(const std::string_view& path) noexcept {
     }
 }
 
-std::string jau::fs::basename(const std::string_view& path, const std::string_view& suffix) noexcept {
+std::string jau::io::fs::basename(const std::string_view& path, const std::string_view& suffix) noexcept {
     std::string res = basename(path);
     if( res.length() < suffix.length() ) {
         return res;
@@ -185,7 +186,7 @@ std::string jau::fs::basename(const std::string_view& path, const std::string_vi
     }
 }
 
-std::string jau::fs::basename(const std::string_view& path, const std::vector<std::string_view>& suffixes) noexcept {
+std::string jau::io::fs::basename(const std::string_view& path, const std::vector<std::string_view>& suffixes) noexcept {
     std::string res = basename(path);
     for(std::string_view suffix : suffixes) {
         if( res.length() >= suffix.length() ) {
@@ -199,12 +200,12 @@ std::string jau::fs::basename(const std::string_view& path, const std::vector<st
     return res;
 }
 
-bool jau::fs::isAbsolute(const std::string_view& path) noexcept {
+bool jau::io::fs::isAbsolute(const std::string_view& path) noexcept {
     return path.size() > 0 &&
            ( c_slash == path[0] || ( jau::os::is_windows() && c_backslash == path[0] ) );
 }
 
-bool jau::fs::exists(const std::string& path, bool verbose_on_error) noexcept {
+bool jau::io::fs::exists(const std::string& path, bool verbose_on_error) noexcept {
     struct_stat64 s;
     ::memset(&s, 0, sizeof(s));
     errno = 0;
@@ -215,7 +216,7 @@ bool jau::fs::exists(const std::string& path, bool verbose_on_error) noexcept {
     return 0 == stat_res; // errno EACCES=no access, ENOENT=not existing
 }
 
-std::string jau::fs::lookup_asset_dir(const char* exe_path, const char* asset_file, const char* asset_install_subdir) noexcept {
+std::string jau::io::fs::lookup_asset_dir(const char* exe_path, const char* asset_file, const char* asset_install_subdir) noexcept {
     if( !asset_file ) {
         return "";
     }
@@ -228,10 +229,10 @@ std::string jau::fs::lookup_asset_dir(const char* exe_path, const char* asset_fi
         return "";
     }
     // launched from installed package
-    std::string exedir = jau::fs::dirname(exe_path);
-    std::string cwd = jau::fs::get_cwd();
-    std::string adir = jau::fs::isAbsolute(exedir) ? exedir : cwd+"/"+exedir;
-    std::string assetdir1 = jau::fs::absolute( adir+"/../share/"+asset_install_subdir );
+    std::string exedir = jau::io::fs::dirname(exe_path);
+    std::string cwd = jau::io::fs::get_cwd();
+    std::string adir = jau::io::fs::isAbsolute(exedir) ? exedir : cwd+"/"+exedir;
+    std::string assetdir1 = jau::io::fs::absolute( adir+"/../share/"+asset_install_subdir );
     if( exists( assetdir1+"/"+asset_file ) ) {
         return assetdir1;
     }
@@ -331,7 +332,7 @@ std::unique_ptr<dir_item::backed_string_view> dir_item::reduce(const std::string
             // case '../../../bbb' -> '../../../bbb' unchanged
             spos = idx+4;
         } else {
-            std::string pre_str = jau::fs::dirname( pre );
+            std::string pre_str = jau::io::fs::dirname( pre );
             if( s_slash == pre_str ) {
                 // case '/aaa/../bbb' -> '/bbb'
                 path2->view = path2->view.substr(idx+3);
@@ -366,7 +367,7 @@ std::unique_ptr<dir_item::backed_string_view> dir_item::reduce(const std::string
 }
 
 dir_item::dir_item(std::unique_ptr<backed_string_view> cleanpath) noexcept
-: dirname_(jau::fs::dirname(cleanpath->view)), basename_(jau::fs::basename(cleanpath->view)), empty_( cleanpath->view.empty() ) {
+: dirname_(jau::io::fs::dirname(cleanpath->view)), basename_(jau::io::fs::basename(cleanpath->view)), empty_( cleanpath->view.empty() ) {
     if( s_slash == dirname_ && s_slash == basename_ ) { // remove duplicate '/' in basename
         basename_ = s_dot;
     }
@@ -397,7 +398,7 @@ std::string dir_item::path() const noexcept {
     return dirname_ + s_slash + basename_;
 }
 
-std::string dir_item::to_string() const noexcept {
+std::string dir_item::toString() const noexcept {
     return "['"+dirname()+"', '"+basename()+"']";
 }
 
@@ -410,9 +411,9 @@ static void _append_bitstr(std::string& out, fmode_t mask, fmode_t bit, const st
     }
 }
 
-std::string jau::fs::to_string(const fmode_t mask, const bool show_rwx) noexcept {
-    std::string out = jau::fs::to_string(mask);
-    if( has_any( mask, jau::fs::fmode_t::protection_mask ) ) {
+std::string jau::io::fs::to_string(const fmode_t mask, const bool show_rwx) noexcept {
+    std::string out = jau::io::fs::to_string(mask);
+    if( has_any( mask, jau::io::fs::fmode_t::protection_mask ) ) {
         out.append(", ");
         if( show_rwx ) {
             if( has_any( mask, fmode_t::ugs_set ) ) {
@@ -441,7 +442,7 @@ std::string jau::fs::to_string(const fmode_t mask, const bool show_rwx) noexcept
     return out;
 }
 
-std::string jau::fs::to_named_fd(const int fd) noexcept {
+std::string jau::io::fs::to_named_fd(const int fd) noexcept {
     if( 0 > fd ) {
         return "";
     }
@@ -450,7 +451,7 @@ std::string jau::fs::to_named_fd(const int fd) noexcept {
     return res;
 }
 
-int jau::fs::from_named_fd(const std::string& named_fd) noexcept {
+int jau::io::fs::from_named_fd(const std::string& named_fd) noexcept {
     int scan_value = -1;
     if( 1 == sscanf(named_fd.c_str(), "/dev/fd/%d", &scan_value) ) {
         // GNU/Linux, FreeBSD, ... ?
@@ -483,29 +484,29 @@ file_stats::file_stats(const ctor_cookie& cc, int dirfd, const dir_item& item, c
         if( 0 <= dirfd ) {
             has_fields_ |= field_t::fd;
             fd_ = dirfd;
-            item_ = dir_item(jau::fs::to_named_fd(fd_));
+            item_ = dir_item(jau::io::fs::to_named_fd(fd_));
         } else {
             ERR_PRINT("rec_level %d, dirfd %d < 0, %s, dirfd_is_item_dirname %d, AT_EMPTY_PATH",
-                    (int)cc.rec_level, dirfd, item.to_string().c_str(), dirfd_is_item_dirname);
+                    (int)cc.rec_level, dirfd, item.toString().c_str(), dirfd_is_item_dirname);
             return;
         }
     } else {
         item_ = item;
-        int scan_value = jau::fs::from_named_fd(full_path);
+        int scan_value = jau::io::fs::from_named_fd(full_path);
         if( 0 <= scan_value ) {
             has_fields_ |= field_t::fd;
             dirfd = scan_value; // intentional overwrite
             fd_ = dirfd;
         } else if( full_path.starts_with("/dev/fd/pipe:") ) {
             // Last resort and should-be unreachable,
-            // since above `jau::fs::from_named_fd()` shall hit!
+            // since above `jau::io::fs::from_named_fd()` shall hit!
             //
             // fifo/pipe object used in GNU/Linux (at least),
             // which can't be stat'ed / accessed
             has_fields_ |= field_t::type;
             mode_ |= fmode_t::fifo;
             if constexpr ( _debug ) {
-                jau::fprintf_td(stderr, "file_stats(%d): FIFO: '%s', errno %d (%s)\n", (int)cc.rec_level, to_string().c_str(), errno, ::strerror(errno));
+                jau::fprintf_td(stderr, "file_stats(%d): FIFO: '%s', errno %d (%s)\n", (int)cc.rec_level, toString().c_str(), errno, ::strerror(errno));
             }
             return;
         }
@@ -648,7 +649,7 @@ file_stats::file_stats(const ctor_cookie& cc, int dirfd, const dir_item& item, c
             if( 0 < link_path.size() && c_slash == link_path[0] ) {
                 link_target_ = std::make_shared<file_stats>(ctor_cookie(cc.rec_level+1), dirfd, dir_item( link_path ), false /* dirfd_is_item_dirname */); // absolute link_path
             } else {
-                link_target_ = std::make_shared<file_stats>(ctor_cookie(cc.rec_level+1), dirfd, dir_item( jau::fs::dirname(full_path), link_path ), dirfd_is_item_dirname );
+                link_target_ = std::make_shared<file_stats>(ctor_cookie(cc.rec_level+1), dirfd, dir_item( jau::io::fs::dirname(full_path), link_path ), dirfd_is_item_dirname );
             }
             if( link_target_->has_fd() ) {
                 has_fields_ |= field_t::fd;
@@ -677,7 +678,7 @@ file_stats::file_stats(const ctor_cookie& cc, int dirfd, const dir_item& item, c
             }
         }
         if constexpr ( _debug ) {
-            jau::fprintf_td(stderr, "file_stats(%d): '%s', %d, errno %d (%s)\n", (int)cc.rec_level, to_string().c_str(), stat_res, errno, ::strerror(errno));
+            jau::fprintf_td(stderr, "file_stats(%d): '%s', %d, errno %d (%s)\n", (int)cc.rec_level, toString().c_str(), stat_res, errno, ::strerror(errno));
         }
     }
 #else /* _USE_STATX_ */
@@ -782,7 +783,7 @@ file_stats::file_stats(const ctor_cookie& cc, int dirfd, const dir_item& item, c
             if( 0 < link_path.size() && c_slash == link_path[0] ) {
                 link_target_ = std::make_shared<file_stats>(ctor_cookie(cc.rec_level+1), dirfd, dir_item( link_path ), false /* dirfd_is_item_dirname */); // absolute link_path
             } else {
-                link_target_ = std::make_shared<file_stats>(ctor_cookie(cc.rec_level+1), dirfd, dir_item( jau::fs::dirname(full_path), link_path ), dirfd_is_item_dirname );
+                link_target_ = std::make_shared<file_stats>(ctor_cookie(cc.rec_level+1), dirfd, dir_item( jau::io::fs::dirname(full_path), link_path ), dirfd_is_item_dirname );
             }
             if( link_target_->has_fd() ) {
                 has_fields_ |= field_t::fd;
@@ -877,7 +878,7 @@ bool file_stats::operator ==(const file_stats& rhs) const noexcept {
            );
 }
 
-std::string file_stats::to_string() const noexcept {
+std::string file_stats::toString() const noexcept {
     std::string stored_path, link_detail;
     {
         if( nullptr != link_target_path_ ) {
@@ -890,7 +891,7 @@ std::string file_stats::to_string() const noexcept {
         }
     }
     std::string res( "file_stats[");
-    res.append(jau::fs::to_string(mode_))
+    res.append(jau::io::fs::to_string(mode_))
        .append(", '"+item_.path()+"'"+stored_path+link_detail );
     if( 0 == errno_res_ ) {
         if( has( field_t::fd ) ) {
@@ -908,18 +909,18 @@ std::string file_stats::to_string() const noexcept {
             res.append( ", size n/a" );
         }
         if( has( field_t::btime ) ) {
-            res.append( ", btime " ).append( btime_.to_iso8601_string() );
+            res.append( ", btime " ).append( btime_.toISO8601String() );
         }
         if( has( field_t::atime ) ) {
-            res.append( ", atime " ).append( atime_.to_iso8601_string() );
+            res.append( ", atime " ).append( atime_.toISO8601String() );
         }
         if( has( field_t::ctime ) ) {
-            res.append( ", ctime " ).append( ctime_.to_iso8601_string() );
+            res.append( ", ctime " ).append( ctime_.toISO8601String() );
         }
         if( has( field_t::mtime ) ) {
-            res.append( ", mtime " ).append( mtime_.to_iso8601_string() );
+            res.append( ", mtime " ).append( mtime_.toISO8601String() );
         }
-        // res.append( ", fields ").append( jau::fs::to_string( has_fields_ ) );
+        // res.append( ", fields ").append( jau::io::fs::to_string( has_fields_ ) );
     } else {
         res.append( ", errno " ).append( std::to_string(errno_res_) ).append( ", " ).append( std::string(::strerror(errno_res_)) );
     }
@@ -927,29 +928,29 @@ std::string file_stats::to_string() const noexcept {
     return res;
 }
 
-bool jau::fs::mkdir(const std::string& path, const fmode_t mode, const bool verbose) noexcept {
+bool jau::io::fs::mkdir(const std::string& path, const fmode_t mode, const bool verbose) noexcept {
     file_stats stats(path);
 
     if( stats.is_dir() ) {
         if( verbose ) {
-            jau::fprintf_td(stderr, "mkdir: dir already exists: %s\n", stats.to_string().c_str());
+            jau::fprintf_td(stderr, "mkdir: dir already exists: %s\n", stats.toString().c_str());
         }
         return true;
     } else if( !stats.exists() ) {
         const int dir_err = ::mkdir(path.c_str(), posix_protection_bits(mode));
         if ( 0 != dir_err ) {
-            ERR_PRINT("%s, failure", stats.to_string().c_str());
+            ERR_PRINT("%s, failure", stats.toString().c_str());
             return false;
         } else {
             return true;
         }
     } else {
-        ERR_PRINT("%s, exists but is no dir", stats.to_string().c_str());
+        ERR_PRINT("%s, exists but is no dir", stats.toString().c_str());
         return false;
     }
 }
 
-bool jau::fs::touch(const std::string& path, const jau::fraction_timespec& atime, const jau::fraction_timespec& mtime, const fmode_t mode) noexcept {
+bool jau::io::fs::touch(const std::string& path, const jau::fraction_timespec& atime, const jau::fraction_timespec& mtime, const fmode_t mode) noexcept {
     int fd = ::open(path.c_str(), O_WRONLY|O_CREAT|O_NOCTTY|O_NONBLOCK, posix_protection_bits(mode));
     if( 0 > fd ) {
         ERR_PRINT("Couldn't open/create file '%s'", path.c_str());
@@ -967,7 +968,7 @@ bool jau::fs::touch(const std::string& path, const jau::fraction_timespec& atime
     return res;
 }
 
-bool jau::fs::touch(const std::string& path, const fmode_t mode) noexcept {
+bool jau::io::fs::touch(const std::string& path, const fmode_t mode) noexcept {
     int fd = ::open(path.c_str(), O_WRONLY|O_CREAT|O_NOCTTY|O_NONBLOCK, posix_protection_bits(mode));
     if( 0 > fd ) {
         ERR_PRINT("Couldn't open/create file '%s'", path.c_str());
@@ -984,7 +985,7 @@ bool jau::fs::touch(const std::string& path, const fmode_t mode) noexcept {
     return res;
 }
 
-bool jau::fs::get_dir_content(const std::string& path, const consume_dir_item& digest) noexcept {
+bool jau::io::fs::get_dir_content(const std::string& path, const consume_dir_item& digest) noexcept {
     DIR *dir;
     struct dirent *ent;
 
@@ -1002,7 +1003,7 @@ bool jau::fs::get_dir_content(const std::string& path, const consume_dir_item& d
     }
 }
 
-bool jau::fs::get_dir_content(const int dirfd, const std::string& path, const consume_dir_item& digest) noexcept {
+bool jau::io::fs::get_dir_content(const int dirfd, const std::string& path, const consume_dir_item& digest) noexcept {
     DIR *dir;
     struct dirent *ent;
     int dirfd2 = ::dup(dirfd);
@@ -1038,13 +1039,13 @@ static bool _visit(const file_stats& item_stats, const traverse_options topts, c
             return visitor( traverse_event::dir_non_recursive, item_stats, depth );
         }
         if( dirfds.size() < 1 ) {
-            ERR_PRINT("dirfd stack error: count %zu] @ %s", dirfds.size(), item_stats.to_string().c_str());
+            ERR_PRINT("dirfd stack error: count %zu] @ %s", dirfds.size(), item_stats.toString().c_str());
             return false;
         }
         const int parent_dirfd = dirfds.back();
         const int this_dirfd = __posix_openat64(parent_dirfd, item_stats.item().basename().c_str(), _open_dir_flags);
         if ( 0 > this_dirfd ) {
-            ERR_PRINT("entered path dir couldn't be opened, source %s", item_stats.to_string().c_str());
+            ERR_PRINT("entered path dir couldn't be opened, source %s", item_stats.toString().c_str());
             return false;
         }
         dirfds.push_back(this_dirfd);
@@ -1070,7 +1071,7 @@ static bool _visit(const file_stats& item_stats, const traverse_options topts, c
             );
         if( get_dir_content(this_dirfd, item_stats.path(), cs) && content.size() > 0 ) {
             if( is_set(topts, traverse_options::lexicographical_order) ) {
-                std::sort(content.begin(), content.end(), _dir_item_basename_compare);
+                std::sort(content.begin(), content.end(), _dir_item_basename_compare); // NOLINT(modernize-use-ranges)
             }
             for (const dir_item& element : content) {
                 const file_stats element_stats( this_dirfd, element, true /* dirfd_is_item_dirname */ );
@@ -1097,7 +1098,7 @@ static bool _visit(const file_stats& item_stats, const traverse_options topts, c
             }
         }
         if( dirfds.size() < 2 ) {
-            ERR_PRINT("dirfd stack error: count %zu] @ %s", dirfds.size(), item_stats.to_string().c_str());
+            ERR_PRINT("dirfd stack error: count %zu] @ %s", dirfds.size(), item_stats.toString().c_str());
             return false;
         }
         bool res = true;
@@ -1116,7 +1117,7 @@ static bool _visit(const file_stats& item_stats, const traverse_options topts, c
     return true;
 }
 
-bool jau::fs::visit(const file_stats& item_stats, const traverse_options topts, const path_visitor& visitor, std::vector<int>* dirfds) noexcept {
+bool jau::io::fs::visit(const file_stats& item_stats, const traverse_options topts, const path_visitor& visitor, std::vector<int>* dirfds) noexcept {
     const bool user_dirfds = nullptr != dirfds;
     if( !user_dirfds ) {
         try {
@@ -1127,13 +1128,13 @@ bool jau::fs::visit(const file_stats& item_stats, const traverse_options topts, 
         }
     }
     if( 0 != dirfds->size() ) {
-        ERR_PRINT("dirfd stack error: count %zu @ %s", dirfds->size(), item_stats.to_string().c_str());
+        ERR_PRINT("dirfd stack error: count %zu @ %s", dirfds->size(), item_stats.toString().c_str());
         return false;
     }
     // initial parent directory dirfd of initial item_stats (a directory)
     const int dirfd = __posix_openat64(AT_FDCWD, item_stats.item().dirname().c_str(), _open_dir_flags);
     if ( 0 > dirfd ) {
-        ERR_PRINT("path dirname couldn't be opened, source %s", item_stats.to_string().c_str());
+        ERR_PRINT("path dirname couldn't be opened, source %s", item_stats.toString().c_str());
         return false;
     }
     dirfds->push_back(dirfd);
@@ -1154,24 +1155,24 @@ bool jau::fs::visit(const file_stats& item_stats, const traverse_options topts, 
     return res;
 }
 
-bool jau::fs::visit(const std::string& path, const traverse_options topts, const path_visitor& visitor, std::vector<int>* dirfds) noexcept {
-    return jau::fs::visit(file_stats(path), topts, visitor, dirfds);
+bool jau::io::fs::visit(const std::string& path, const traverse_options topts, const path_visitor& visitor, std::vector<int>* dirfds) noexcept {
+    return jau::io::fs::visit(file_stats(path), topts, visitor, dirfds);
 }
 
-bool jau::fs::remove(const std::string& path, const traverse_options topts) noexcept {
+bool jau::io::fs::remove(const std::string& path, const traverse_options topts) noexcept {
     file_stats path_stats(path);
     if( is_set(topts, traverse_options::verbose) ) {
-        jau::fprintf_td(stderr, "remove: '%s' -> %s\n", path.c_str(), path_stats.to_string().c_str());
+        jau::fprintf_td(stderr, "remove: '%s' -> %s\n", path.c_str(), path_stats.toString().c_str());
     }
     if( !path_stats.exists() ) {
         if( is_set(topts, traverse_options::verbose) ) {
-            jau::fprintf_td(stderr, "remove: failed: path doesn't exist: %s\n", path_stats.to_string().c_str());
+            jau::fprintf_td(stderr, "remove: failed: path doesn't exist: %s\n", path_stats.toString().c_str());
         }
         return false;
     }
     if( path_stats.has_fd() ) {
         if( is_set(topts, traverse_options::verbose) ) {
-            jau::fprintf_td(stderr, "remove: failed: path is fd: %s\n", path_stats.to_string().c_str());
+            jau::fprintf_td(stderr, "remove: failed: path is fd: %s\n", path_stats.toString().c_str());
         }
         return false;
     }
@@ -1181,22 +1182,22 @@ bool jau::fs::remove(const std::string& path, const traverse_options topts) noex
     {
         int res = ::unlink( path_stats.path().c_str() );
         if( 0 != res ) {
-            ERR_PRINT("remove failed: %s, res %d", path_stats.to_string().c_str(), res);
+            ERR_PRINT("remove failed: %s, res %d", path_stats.toString().c_str(), res);
             return false;
         }
         if( is_set(topts, traverse_options::verbose) ) {
-            jau::fprintf_td(stderr, "removed: %s\n", path_stats.to_string().c_str());
+            jau::fprintf_td(stderr, "removed: %s\n", path_stats.toString().c_str());
         }
         return true;
     }
     if( !path_stats.is_dir() ) {
-        ERR_PRINT("remove: Error: path is neither file nor dir: %s\n", path_stats.to_string().c_str());
+        ERR_PRINT("remove: Error: path is neither file nor dir: %s\n", path_stats.toString().c_str());
         return false;
     }
     // directory ...
     if( !is_set(topts, traverse_options::recursive) ) {
         if( is_set(topts, traverse_options::verbose) ) {
-            jau::fprintf_td(stderr, "remove: Error: path is dir but !recursive, %s\n", path_stats.to_string().c_str());
+            jau::fprintf_td(stderr, "remove: Error: path is dir but !recursive, %s\n", path_stats.toString().c_str());
         }
         return false;
     }
@@ -1204,7 +1205,7 @@ bool jau::fs::remove(const std::string& path, const traverse_options topts) noex
         traverse_options topts;
         std::vector<int> dirfds;
     };
-    remove_context_t ctx = { topts | jau::fs::traverse_options::dir_exit, std::vector<int>() };
+    remove_context_t ctx = { .topts=topts | jau::io::fs::traverse_options::dir_exit, .dirfds=std::vector<int>() };
 
     const path_visitor pv = jau::bind_capref<bool, remove_context_t, traverse_event, const file_stats&, size_t>(&ctx,
             ( bool(*)(remove_context_t*, traverse_event, const file_stats&, size_t) ) /* help template type deduction of function-ptr */
@@ -1214,7 +1215,7 @@ bool jau::fs::remove(const std::string& path, const traverse_options topts) noex
 
                     if( !element_stats.has_access() ) {
                         if( is_set(ctx_ptr->topts, traverse_options::verbose) ) {
-                            jau::fprintf_td(stderr, "remove: Error: remove failed: no access, %s\n", element_stats.to_string().c_str());
+                            jau::fprintf_td(stderr, "remove: Error: remove failed: no access, %s\n", element_stats.toString().c_str());
                         }
                         return false;
                     }
@@ -1226,47 +1227,47 @@ bool jau::fs::remove(const std::string& path, const traverse_options topts) noex
                         const int dirfd2 = *( ctx_ptr->dirfds.end() - 2 );
                         const int res = ::unlinkat( dirfd2, basename_.c_str(), AT_REMOVEDIR );
                         if( 0 != res ) {
-                            ERR_PRINT("remove failed: %s, res %d", element_stats.to_string().c_str(), res);
+                            ERR_PRINT("remove failed: %s, res %d", element_stats.toString().c_str(), res);
                             return false;
                         }
                         if( is_set(ctx_ptr->topts, traverse_options::verbose) ) {
-                            jau::fprintf_td(stderr, "remove: %s removed\n", element_stats.to_string().c_str());
+                            jau::fprintf_td(stderr, "remove: %s removed\n", element_stats.toString().c_str());
                         }
                     } else if( is_set(tevt, traverse_event::file) || is_set(tevt, traverse_event::symlink) || is_set(tevt, traverse_event::dir_symlink) ) {
                         const int res = ::unlinkat( dirfd, basename_.c_str(), 0 );
                         if( 0 != res ) {
-                            ERR_PRINT("remove failed: %s, res %d", element_stats.to_string().c_str(), res);
+                            ERR_PRINT("remove failed: %s, res %d", element_stats.toString().c_str(), res);
                             return false;
                         }
                         if( is_set(ctx_ptr->topts, traverse_options::verbose) ) {
-                            jau::fprintf_td(stderr, "removed: %s\n", element_stats.to_string().c_str());
+                            jau::fprintf_td(stderr, "removed: %s\n", element_stats.toString().c_str());
                         }
                     }
                     return true;
                   } ) );
-    return jau::fs::visit(path_stats, ctx.topts, pv, &ctx.dirfds);
+    return jau::io::fs::visit(path_stats, ctx.topts, pv, &ctx.dirfds);
 }
 
-bool jau::fs::compare(const std::string& source1, const std::string& source2, const bool verbose) noexcept {
+bool jau::io::fs::compare(const std::string& source1, const std::string& source2, const bool verbose) noexcept {
     const file_stats s1(source1);
     const file_stats s2(source2);
     return compare(s1, s2, verbose);
 }
 
-bool jau::fs::compare(const file_stats& source1, const file_stats& source2, const bool verbose) noexcept {
+bool jau::io::fs::compare(const file_stats& source1, const file_stats& source2, const bool verbose) noexcept {
     if( !source1.is_file() ) {
-        ERR_PRINT("source1_stats is not a file: %s", source1.to_string().c_str());
+        ERR_PRINT("source1_stats is not a file: %s", source1.toString().c_str());
         return false;
     }
     if( !source2.is_file() ) {
-        ERR_PRINT("source2_stats is not a file: %s", source2.to_string().c_str());
+        ERR_PRINT("source2_stats is not a file: %s", source2.toString().c_str());
         return false;
     }
 
     if( source1.size() != source2.size() ) {
         if( verbose ) {
             jau::fprintf_td(stderr, "compare: Source files size mismatch, %s != %s\n",
-                    source1.to_string().c_str(), source2.to_string().c_str());
+                    source1.toString().c_str(), source2.toString().c_str());
         }
         return false;
     }
@@ -1278,12 +1279,12 @@ bool jau::fs::compare(const file_stats& source1, const file_stats& source2, cons
     bool res = false;
     src1 = __posix_openat64(AT_FDCWD, source1.path().c_str(), src_flags);
     if ( 0 > src1 ) {
-        ERR_PRINT("Failed to open source1 %s, errno %d, %s", source1.to_string().c_str());
+        ERR_PRINT("Failed to open source1 %s, errno %d, %s", source1.toString().c_str());
         goto errout;
     }
     src2 = __posix_openat64(AT_FDCWD, source2.path().c_str(), src_flags);
     if ( 0 > src2 ) {
-        ERR_PRINT("Failed to open source2 %s, errno %d, %s", source2.to_string().c_str());
+        ERR_PRINT("Failed to open source2 %s, errno %d, %s", source2.toString().c_str());
         goto errout;
     }
     while ( offset < source1.size()) {
@@ -1314,11 +1315,11 @@ bool jau::fs::compare(const file_stats& source1, const file_stats& source2, cons
             if ( 0 > rc1 ) {
                 ERR_PRINT("Failed to read source1 bytes @ %s / %s, %s",
                         jau::to_decstring(offset).c_str(), jau::to_decstring(source1.size()).c_str(),
-                        source1.to_string().c_str());
+                        source1.toString().c_str());
             } else if ( 0 > rc2 ) {
                 ERR_PRINT("Failed to read source2 bytes @ %s / %s, %s",
                         jau::to_decstring(offset).c_str(), jau::to_decstring(source2.size()).c_str(),
-                        source2.to_string().c_str());
+                        source2.toString().c_str());
             }
             goto errout;
         }
@@ -1326,7 +1327,7 @@ bool jau::fs::compare(const file_stats& source1, const file_stats& source2, cons
             if( verbose ) {
                 jau::fprintf_td(stderr, "compare: Difference within %s bytes @ %s / %s, %s != %s\n",
                         jau::to_decstring(rc1).c_str(), jau::to_decstring(offset-rc1).c_str(), jau::to_decstring(source1.size()).c_str(),
-                        source1.to_string().c_str(), source2.to_string().c_str());
+                        source1.toString().c_str(), source2.toString().c_str());
             }
             goto errout;
         }
@@ -1337,7 +1338,7 @@ bool jau::fs::compare(const file_stats& source1, const file_stats& source2, cons
     if( offset < source1.size() ) {
         ERR_PRINT("Incomplete transfer %s / %s, %s != %s\n",
                 jau::to_decstring(offset).c_str(), jau::to_decstring(source1.size()).c_str(),
-                source1.to_string().c_str(), source2.to_string().c_str());
+                source1.toString().c_str(), source2.toString().c_str());
         goto errout;
     }
     res = true;
@@ -1367,14 +1368,14 @@ static bool copy_file(const int src_dirfd, const file_stats& src_stats,
         if( !is_set(copts, copy_options::overwrite) ) {
             if( is_set(copts, copy_options::verbose) ) {
                 jau::fprintf_td(stderr, "copy: Error: dest_path exists but copy_options::overwrite not set: source %s, dest '%s', copts %s\n",
-                        src_stats.to_string().c_str(), dst_stats.to_string().c_str(), to_string( copts ).c_str());
+                        src_stats.toString().c_str(), dst_stats.toString().c_str(), to_string( copts ).c_str());
             }
             return false;
         }
         const int res = ::unlinkat(dst_dirfd, dst_basename.c_str(), 0);
         if( 0 != res ) {
             ERR_PRINT("remove existing dest_path for symbolic-link failed: source %s, dest '%s'",
-                    src_stats.to_string().c_str(), dst_stats.to_string().c_str());
+                    src_stats.toString().c_str(), dst_stats.toString().c_str());
             return false;
         }
     }
@@ -1383,7 +1384,7 @@ static bool copy_file(const int src_dirfd, const file_stats& src_stats,
     if( src_stats.is_link() && !is_set(copts, copy_options::follow_symlinks) ) {
         const std::shared_ptr<std::string>& link_target_path = src_stats.link_target_path();
         if( nullptr == link_target_path || 0 == link_target_path->size() ) {
-            ERR_PRINT("Symbolic link-path is empty %s", src_stats.to_string().c_str());
+            ERR_PRINT("Symbolic link-path is empty %s", src_stats.toString().c_str());
             return false;
         }
         // symlink
@@ -1392,18 +1393,18 @@ static bool copy_file(const int src_dirfd, const file_stats& src_stats,
             if( EPERM == errno && is_set(copts, copy_options::ignore_symlink_errors ) ) {
                 if( is_set(copts, copy_options::verbose) ) {
                     jau::fprintf_td(stderr, "copy: Ignored: Failed to create symink %s -> %s, %s, errno %d, %s\n",
-                            dst_basename.c_str(), link_target_path->c_str(), src_stats.to_string().c_str(), errno, ::strerror(errno));
+                            dst_basename.c_str(), link_target_path->c_str(), src_stats.toString().c_str(), errno, ::strerror(errno));
                 }
                 return true;
             }
-            ERR_PRINT("Creating symlink failed %s -> %s, %s", dst_basename.c_str(), link_target_path->c_str(), src_stats.to_string().c_str());
+            ERR_PRINT("Creating symlink failed %s -> %s, %s", dst_basename.c_str(), link_target_path->c_str(), src_stats.toString().c_str());
             return false;
         }
         if( is_set(copts, copy_options::preserve_all) ) {
             // preserve time
             struct timespec ts2[2] = { src_stats.atime().to_timespec(), src_stats.mtime().to_timespec() };
             if( 0 != ::utimensat(dst_dirfd, dst_basename.c_str(), ts2, AT_SYMLINK_NOFOLLOW) ) {
-                ERR_PRINT("Couldn't preserve time of symlink, source %s, dest '%s'", src_stats.to_string().c_str(), dst_basename.c_str());
+                ERR_PRINT("Couldn't preserve time of symlink, source %s, dest '%s'", src_stats.toString().c_str(), dst_basename.c_str());
                 return false;
             }
             // preserve ownership
@@ -1411,13 +1412,13 @@ static bool copy_file(const int src_dirfd, const file_stats& src_stats,
             const ::uid_t source_uid = 0 == caller_uid ? src_stats.uid() : -1;
             if( 0 != ::fchownat(dst_dirfd, dst_basename.c_str(), source_uid, src_stats.gid(), AT_SYMLINK_NOFOLLOW) ) {
                 if( errno != EPERM && errno != EINVAL ) {
-                    ERR_PRINT("Couldn't preserve ownership of symlink, source %s, dest '%s'", src_stats.to_string().c_str(), dst_basename.c_str());
+                    ERR_PRINT("Couldn't preserve ownership of symlink, source %s, dest '%s'", src_stats.toString().c_str(), dst_basename.c_str());
                     return false;
                 }
                 // OK to fail due to permissions
                 if( is_set(copts, copy_options::verbose) ) {
                     jau::fprintf_td(stderr, "copy: Warn: Couldn't preserve ownership of symlink, source %s, dest '%s', errno %d (%s)\n",
-                            src_stats.to_string().c_str(), dst_basename.c_str(), errno, ::strerror(errno));
+                            src_stats.toString().c_str(), dst_basename.c_str(), errno, ::strerror(errno));
                 }
             }
         }
@@ -1445,13 +1446,13 @@ static bool copy_file(const int src_dirfd, const file_stats& src_stats,
             res = is_set(copts, copy_options::ignore_symlink_errors);
         }
         if( !res ) {
-            ERR_PRINT("Failed to open source %s", src_stats.to_string().c_str());
+            ERR_PRINT("Failed to open source %s", src_stats.toString().c_str());
         } else if( is_set(copts, copy_options::verbose) ) {
-            jau::fprintf_td(stderr, "copy: Ignored: Failed to open source %s, errno %d, %s\n", src_stats.to_string().c_str(), errno, ::strerror(errno));
+            jau::fprintf_td(stderr, "copy: Ignored: Failed to open source %s, errno %d, %s\n", src_stats.toString().c_str(), errno, ::strerror(errno));
         }
         goto errout;
     }
-    dst = __posix_openat64 (dst_dirfd, dst_basename.c_str(), O_CREAT|O_EXCL|O_WRONLY|O_BINARY|O_NOCTTY, jau::fs::posix_protection_bits( dest_mode & ~omitted_permissions ) );
+    dst = __posix_openat64 (dst_dirfd, dst_basename.c_str(), O_CREAT|O_EXCL|O_WRONLY|O_BINARY|O_NOCTTY, jau::io::fs::posix_protection_bits( dest_mode & ~omitted_permissions ) );
     if ( 0 > dst ) {
         ERR_PRINT("Failed to open target_path '%s'", dst_basename.c_str());
         goto errout;
@@ -1490,7 +1491,7 @@ static bool copy_file(const int src_dirfd, const file_stats& src_stats,
 #ifdef _USE_SENDFILE_
             ERR_PRINT("Failed to copy bytes @ %s / %s, %s -> '%s'",
             jau::to_decstring(offset).c_str(), jau::to_decstring(src_stats.size()).c_str(),
-            src_stats.to_string().c_str(), dst_basename.c_str());
+            src_stats.toString().c_str(), dst_basename.c_str());
 #else /* _USE_SENDFILE_ */
             if ( 0 > rc1 ) {
                 ERR_PRINT("Failed to read bytes @ %s / %s, %s",
@@ -1511,15 +1512,15 @@ static bool copy_file(const int src_dirfd, const file_stats& src_stats,
     if( offset < src_stats.size() ) {
         ERR_PRINT("Incomplete transfer %s / %s, %s -> '%s'",
                 jau::to_decstring(offset).c_str(), jau::to_decstring(src_stats.size()).c_str(),
-                src_stats.to_string().c_str(), dst_basename.c_str());
+                src_stats.toString().c_str(), dst_basename.c_str());
         goto errout;
     }
     res = true;
     if( omitted_permissions != fmode_t::none ) {
         // restore omitted permissions
-        if( 0 != ::fchmod(dst, jau::fs::posix_protection_bits( dest_mode  )) ) {
+        if( 0 != ::fchmod(dst, jau::io::fs::posix_protection_bits( dest_mode  )) ) {
             ERR_PRINT("Couldn't restore omitted permissions, source %s, dest '%s'",
-                    src_stats.to_string().c_str(), dst_basename.c_str());
+                    src_stats.toString().c_str(), dst_basename.c_str());
             res = false;
         }
     }
@@ -1528,7 +1529,7 @@ static bool copy_file(const int src_dirfd, const file_stats& src_stats,
         struct timespec ts2[2] = { target_stats->atime().to_timespec(), target_stats->mtime().to_timespec() };
         if( 0 != ::futimens(dst, ts2) ) {
             ERR_PRINT("Couldn't preserve time of file, source %s, dest '%s'",
-                    src_stats.to_string().c_str(), dst_basename.c_str());
+                    src_stats.toString().c_str(), dst_basename.c_str());
             res = false;
         }
         // preserve ownership
@@ -1536,13 +1537,13 @@ static bool copy_file(const int src_dirfd, const file_stats& src_stats,
         if( 0 != ::fchown(dst, source_uid, target_stats->gid()) ) {
             if( errno != EPERM && errno != EINVAL ) {
                 ERR_PRINT("Couldn't preserve ownership of file, uid(caller %" PRIu32 ", chown %" PRIu32 "), source %s, dest '%s'",
-                        caller_uid, source_uid, src_stats.to_string().c_str(), dst_basename.c_str());
+                        caller_uid, source_uid, src_stats.toString().c_str(), dst_basename.c_str());
                 res = false;
             } else {
                 // OK to fail due to permissions
                 if( is_set(copts, copy_options::verbose) ) {
                     jau::fprintf_td(stderr, "copy: Ignored: Preserve ownership of file failed, uid(caller %" PRIu32 ", chown %" PRIu32 "), source %s, dest '%s', errno %d (%s)\n",
-                            caller_uid, source_uid, src_stats.to_string().c_str(), dst_stats.to_string().c_str(), errno, ::strerror(errno));
+                            caller_uid, source_uid, src_stats.toString().c_str(), dst_stats.toString().c_str(), errno, ::strerror(errno));
                 }
             }
         }
@@ -1550,7 +1551,7 @@ static bool copy_file(const int src_dirfd, const file_stats& src_stats,
     if( is_set(copts, copy_options::sync) ) {
         if( 0 != ::fsync(dst) ) {
             ERR_PRINT("Couldn't synchronize destination file, source %s, dest '%s'",
-                    src_stats.to_string().c_str(), dst_basename.c_str());
+                    src_stats.toString().c_str(), dst_basename.c_str());
             res = false;
         }
     }
@@ -1573,7 +1574,7 @@ static bool copy_push_mkdir(const file_stats& dst_stats, copy_context_t& ctx) no
     const int dest_dirfd = ctx.dst_dirfds.back();
     if( dst_stats.is_dir() ) {
         if( is_set(ctx.copts, copy_options::verbose) ) {
-            jau::fprintf_td(stderr, "copy: mkdir directory already exist: %s\n", dst_stats.to_string().c_str());
+            jau::fprintf_td(stderr, "copy: mkdir directory already exist: %s\n", dst_stats.toString().c_str());
         }
         basename_.append( dst_stats.item().basename() );
     } else if( !dst_stats.exists() ) {
@@ -1589,28 +1590,28 @@ static bool copy_push_mkdir(const file_stats& dst_stats, copy_context_t& ctx) no
             const int32_t val_d = prng_dist(prng);
             basename_.clear();
             basename_.append(".").append( jau::codec::base::encode(val_d, jau::codec::base::ascii38_alphabet(), 6) ); // base 38, 6 digits
-            if( 0 == ::mkdirat(dest_dirfd, basename_.c_str(), jau::fs::posix_protection_bits(fmode_t::rwx_usr)) ) {
+            if( 0 == ::mkdirat(dest_dirfd, basename_.c_str(), jau::io::fs::posix_protection_bits(fmode_t::rwx_usr)) ) {
                 mkdir_ok = true;
             } else if (errno != EINTR && errno != EEXIST) {
-                ERR_PRINT("mkdir failed: %s, temp '%s'", dst_stats.to_string().c_str(), basename_.c_str());
+                ERR_PRINT("mkdir failed: %s, temp '%s'", dst_stats.toString().c_str(), basename_.c_str());
                 return false;
             } // else continue on EINTR or EEXIST
         } while( !mkdir_ok && mkdir_cntr < val_max );
         if( !mkdir_ok ) {
-            ERR_PRINT("mkdir failed: %s", dst_stats.to_string().c_str());
+            ERR_PRINT("mkdir failed: %s", dst_stats.toString().c_str());
             return false;
         }
     } else {
-        ERR_PRINT("mkdir failed: %s, exists but is no dir", dst_stats.to_string().c_str());
+        ERR_PRINT("mkdir failed: %s, exists but is no dir", dst_stats.toString().c_str());
         return false;
     }
     // open dirfd
     const int new_dirfd = __posix_openat64(dest_dirfd, basename_.c_str(), _open_dir_flags);
     if ( 0 > new_dirfd ) {
         if( new_dir ) {
-            ERR_PRINT("Couldn't open new dir %s, temp '%s'", dst_stats.to_string().c_str(), basename_.c_str());
+            ERR_PRINT("Couldn't open new dir %s, temp '%s'", dst_stats.toString().c_str(), basename_.c_str());
         } else {
-            ERR_PRINT("Couldn't open new dir %s", dst_stats.to_string().c_str());
+            ERR_PRINT("Couldn't open new dir %s", dst_stats.toString().c_str());
         }
         if( new_dir ) {
             ::unlinkat(dest_dirfd, basename_.c_str(), AT_REMOVEDIR);
@@ -1618,12 +1619,12 @@ static bool copy_push_mkdir(const file_stats& dst_stats, copy_context_t& ctx) no
         return false;
     }
     // drop read permissions to render destination directory transaction safe until copy is done
-    if( 0 != ::fchmod(new_dirfd, jau::fs::posix_protection_bits(fmode_t::write_usr | fmode_t::exec_usr)) ) {
+    if( 0 != ::fchmod(new_dirfd, jau::io::fs::posix_protection_bits(fmode_t::write_usr | fmode_t::exec_usr)) ) {
         if( new_dir ) {
             ::unlinkat(dest_dirfd, basename_.c_str(), AT_REMOVEDIR);
-            ERR_PRINT("zero permissions on dest %s, temp '%s'", dst_stats.to_string().c_str(), basename_.c_str());
+            ERR_PRINT("zero permissions on dest %s, temp '%s'", dst_stats.toString().c_str(), basename_.c_str());
         } else {
-            ERR_PRINT("zero permissions on dest %s", dst_stats.to_string().c_str());
+            ERR_PRINT("zero permissions on dest %s", dst_stats.toString().c_str());
         }
         ::close(new_dirfd);
         return false;
@@ -1636,7 +1637,7 @@ static bool copy_push_mkdir(const file_stats& dst_stats, copy_context_t& ctx) no
         const int rename_res = ::renameat(dest_dirfd, basename_.c_str(), dest_dirfd, dst_stats.item().basename().c_str());
 #endif /* defined(__linux__) && defined(__GLIBC__) */
         if( 0 != rename_res ) {
-            ERR_PRINT("rename temp to dest, temp '%s', dest %s", basename_.c_str(), dst_stats.to_string().c_str());
+            ERR_PRINT("rename temp to dest, temp '%s', dest %s", basename_.c_str(), dst_stats.toString().c_str());
             ::unlinkat(dest_dirfd, basename_.c_str(), AT_REMOVEDIR);
             ::close(new_dirfd);
             return false;
@@ -1651,8 +1652,8 @@ static bool copy_dir_preserve(const file_stats& src_stats, const int dst_dirfd, 
 
     // restore permissions
     const fmode_t dest_mode = target_stats->prot_mode();
-    if( 0 != ::fchmod(dst_dirfd, jau::fs::posix_protection_bits( dest_mode  )) ) {
-        ERR_PRINT("restore permissions, source %s, dest '%s'", src_stats.to_string().c_str(), dst_basename.c_str());
+    if( 0 != ::fchmod(dst_dirfd, jau::io::fs::posix_protection_bits( dest_mode  )) ) {
+        ERR_PRINT("restore permissions, source %s, dest '%s'", src_stats.toString().c_str(), dst_basename.c_str());
         return false;
     }
 
@@ -1660,7 +1661,7 @@ static bool copy_dir_preserve(const file_stats& src_stats, const int dst_dirfd, 
         // preserve time
         struct timespec ts2[2] = { target_stats->atime().to_timespec(), target_stats->mtime().to_timespec() };
         if( 0 != ::futimens(dst_dirfd, ts2) ) {
-            ERR_PRINT("preserve time of file failed, source %s, dest '%s'", src_stats.to_string().c_str(), dst_basename.c_str());
+            ERR_PRINT("preserve time of file failed, source %s, dest '%s'", src_stats.toString().c_str(), dst_basename.c_str());
             return false;
         }
         // preserve ownership
@@ -1669,13 +1670,13 @@ static bool copy_dir_preserve(const file_stats& src_stats, const int dst_dirfd, 
         if( 0 != ::fchown(dst_dirfd, source_uid, target_stats->gid()) ) {
             if( errno != EPERM && errno != EINVAL ) {
                 ERR_PRINT("dir_preserve ownership of file failed, uid(caller %" PRIu32 ", chown %" PRIu32 "), source %s, dest '%s'",
-                        caller_uid, source_uid, src_stats.to_string().c_str(), dst_basename.c_str());
+                        caller_uid, source_uid, src_stats.toString().c_str(), dst_basename.c_str());
                 return false;
             }
             // OK to fail due to permissions
             if( is_set(copts, copy_options::verbose) ) {
                 jau::fprintf_td(stderr, "copy: Ignored: dir_preserve ownership of file failed, uid(caller %" PRIu32 ", chown %" PRIu32 "), source %s, dest '%s', errno %d (%s)\n",
-                        caller_uid, source_uid, src_stats.to_string().c_str(), dst_basename.c_str(), errno, ::strerror(errno));
+                        caller_uid, source_uid, src_stats.toString().c_str(), dst_basename.c_str(), errno, ::strerror(errno));
             }
         }
     }
@@ -1688,7 +1689,7 @@ static bool copy_dir_preserve(const file_stats& src_stats, const int dst_dirfd, 
     return true;
 }
 
-bool jau::fs::copy(const std::string& source_path, const std::string& target_path, const copy_options copts) noexcept {
+bool jau::io::fs::copy(const std::string& source_path, const std::string& target_path, const copy_options copts) noexcept {
     traverse_options topts = traverse_options::dir_entry | traverse_options::dir_exit;
     if( is_set(copts, copy_options::recursive) ) {
         topts |= traverse_options::recursive;
@@ -1711,7 +1712,7 @@ bool jau::fs::copy(const std::string& source_path, const std::string& target_pat
                 if( !is_set(copts, copy_options::overwrite)) {
                     if( is_set(copts, copy_options::verbose) ) {
                         jau::fprintf_td(stderr, "copy: Error: source_path is file, target_path existing file w/o overwrite, source %s, target %s\n",
-                                source_stats.to_string().c_str(), target_stats.to_string().c_str());
+                                source_stats.toString().c_str(), target_stats.toString().c_str());
                     }
                     return false;
                 }
@@ -1719,7 +1720,7 @@ bool jau::fs::copy(const std::string& source_path, const std::string& target_pat
         } // else file2file to explicit new file
         const int src_dirfd = __posix_openat64(AT_FDCWD, source_stats.item().dirname().c_str(), _open_dir_flags);
         if ( 0 > src_dirfd ) {
-            ERR_PRINT("source_path dir couldn't be opened, source %s", source_stats.to_string().c_str());
+            ERR_PRINT("source_path dir couldn't be opened, source %s", source_stats.toString().c_str());
             return false;
         }
 
@@ -1729,7 +1730,7 @@ bool jau::fs::copy(const std::string& source_path, const std::string& target_pat
             // file2file to directory
             dst_dirfd = __posix_openat64(AT_FDCWD, target_stats.path().c_str(), _open_dir_flags);
             if ( 0 > dst_dirfd ) {
-                ERR_PRINT("target dir couldn't be opened, target %s", target_stats.to_string().c_str());
+                ERR_PRINT("target dir couldn't be opened, target %s", target_stats.toString().c_str());
                 ::close(src_dirfd);
                 return false;
             }
@@ -1740,7 +1741,7 @@ bool jau::fs::copy(const std::string& source_path, const std::string& target_pat
             if( !target_parent_stats.is_dir() ) {
                 if( is_set(copts, copy_options::verbose) ) {
                     jau::fprintf_td(stderr, "copy: Error: target parent is not an existing directory, target %s, target_parent %s\n",
-                            target_stats.to_string().c_str(), target_parent_stats.to_string().c_str());
+                            target_stats.toString().c_str(), target_parent_stats.toString().c_str());
                 }
                 ::close(src_dirfd);
                 return false;
@@ -1748,7 +1749,7 @@ bool jau::fs::copy(const std::string& source_path, const std::string& target_pat
             dst_dirfd = __posix_openat64(AT_FDCWD, target_parent_stats.path().c_str(), _open_dir_flags);
             if ( 0 > dst_dirfd ) {
                 ERR_PRINT("target_parent dir couldn't be opened, target %s, target_parent %s",
-                        target_stats.to_string().c_str(), target_parent_stats.to_string().c_str());
+                        target_stats.toString().c_str(), target_parent_stats.toString().c_str());
                 ::close(src_dirfd);
                 return false;
             }
@@ -1764,7 +1765,7 @@ bool jau::fs::copy(const std::string& source_path, const std::string& target_pat
     if( !source_stats.is_dir() ) {
         if( is_set(copts, copy_options::verbose) ) {
             jau::fprintf_td(stderr, "copy: Error: source_path is neither file nor dir, source %s, target %s\n",
-                    source_stats.to_string().c_str(), target_stats.to_string().c_str());
+                    source_stats.toString().c_str(), target_stats.toString().c_str());
         }
         return false;
     }
@@ -1772,18 +1773,18 @@ bool jau::fs::copy(const std::string& source_path, const std::string& target_pat
     //
     // directory copy
     //
-    copy_context_t ctx { copts, 0, std::vector<int>(), std::vector<int>() };
+    copy_context_t ctx { .copts=copts, .skip_dst_dir_mkdir=0, .src_dirfds=std::vector<int>(), .dst_dirfds=std::vector<int>() };
 
     if( !is_set(copts, copy_options::recursive) ) {
         if( is_set(copts, copy_options::verbose) ) {
-            jau::fprintf_td(stderr, "copy: Error: source_path is dir but !recursive, %s\n", source_stats.to_string().c_str());
+            jau::fprintf_td(stderr, "copy: Error: source_path is dir but !recursive, %s\n", source_stats.toString().c_str());
         }
         return false;
     }
     if( target_stats.exists() && !target_stats.is_dir() ) {
         if( is_set(copts, copy_options::verbose) ) {
             jau::fprintf_td(stderr, "copy: Error: source_path is dir but target_path exist and is no dir, source %s, target %s\n",
-                    source_stats.to_string().c_str(), target_stats.to_string().c_str());
+                    source_stats.toString().c_str(), target_stats.toString().c_str());
         }
         return false;
     }
@@ -1793,7 +1794,7 @@ bool jau::fs::copy(const std::string& source_path, const std::string& target_pat
         //       _if_ copy_options::into_existing_dir is not set. Otherwise its content is copied into the existing dest_path.
         const int dst_dirfd = __posix_openat64(AT_FDCWD, target_stats.path().c_str(), _open_dir_flags);
         if ( 0 > dst_dirfd ) {
-            ERR_PRINT("target dir couldn't be opened, target %s", target_stats.to_string().c_str());
+            ERR_PRINT("target dir couldn't be opened, target %s", target_stats.toString().c_str());
             return false;
         }
         ctx.dst_dirfds.push_back(dst_dirfd);
@@ -1804,14 +1805,14 @@ bool jau::fs::copy(const std::string& source_path, const std::string& target_pat
         if( !target_parent_stats.is_dir() ) {
             if( is_set(copts, copy_options::verbose) ) {
                 jau::fprintf_td(stderr, "copy: Error: target parent is not an existing directory, target %s, target_parent %s\n",
-                        target_stats.to_string().c_str(), target_parent_stats.to_string().c_str());
+                        target_stats.toString().c_str(), target_parent_stats.toString().c_str());
             }
             return false;
         }
         const int dst_parent_dirfd = __posix_openat64(AT_FDCWD, target_parent_stats.path().c_str(), _open_dir_flags);
         if ( 0 > dst_parent_dirfd ) {
             ERR_PRINT("target dirname couldn't be opened, target %s, target_parent %s",
-                    target_stats.to_string().c_str(), target_parent_stats.to_string().c_str());
+                    target_stats.toString().c_str(), target_parent_stats.toString().c_str());
             return false;
         }
         ctx.dst_dirfds.push_back(dst_parent_dirfd);
@@ -1820,7 +1821,7 @@ bool jau::fs::copy(const std::string& source_path, const std::string& target_pat
             // Case: copy_options::into_existing_dir
             const int dst_dirfd = __posix_openat64(AT_FDCWD, target_stats.path().c_str(), _open_dir_flags);
             if ( 0 > dst_dirfd ) {
-                ERR_PRINT("target dir couldn't be opened, target %s", target_stats.to_string().c_str());
+                ERR_PRINT("target dir couldn't be opened, target %s", target_stats.toString().c_str());
                 return false;
             }
             ctx.dst_dirfds.push_back(dst_dirfd);
@@ -1837,13 +1838,13 @@ bool jau::fs::copy(const std::string& source_path, const std::string& target_pat
                     (void)depth;
                     if( !element_stats.has_access() ) {
                         if( is_set(ctx_ptr->copts, copy_options::verbose) ) {
-                            jau::fprintf_td(stderr, "copy: Error: remove failed: no access, %s\n", element_stats.to_string().c_str());
+                            jau::fprintf_td(stderr, "copy: Error: remove failed: no access, %s\n", element_stats.toString().c_str());
                         }
                         return false;
                     }
                     if( ctx_ptr->dst_dirfds.size() < 1 ) {
                         ERR_PRINT("dirfd stack error: count[src %zu, dst %zu, dst_skip %d] @ %s",
-                                ctx_ptr->src_dirfds.size(), ctx_ptr->dst_dirfds.size(), ctx_ptr->skip_dst_dir_mkdir, element_stats.to_string().c_str());
+                                ctx_ptr->src_dirfds.size(), ctx_ptr->dst_dirfds.size(), ctx_ptr->skip_dst_dir_mkdir, element_stats.toString().c_str());
                         return false;
                     }
                     const int src_dirfd = ctx_ptr->src_dirfds.back();
@@ -1861,7 +1862,7 @@ bool jau::fs::copy(const std::string& source_path, const std::string& target_pat
                     } else if( is_set(tevt, traverse_event::dir_exit) ) {
                         if( ctx_ptr->dst_dirfds.size() < 2 ) {
                             ERR_PRINT("dirfd stack error: count[src %zu, dst %zu] @ %s",
-                                    ctx_ptr->src_dirfds.size(), ctx_ptr->dst_dirfds.size(), element_stats.to_string().c_str());
+                                    ctx_ptr->src_dirfds.size(), ctx_ptr->dst_dirfds.size(), element_stats.toString().c_str());
                             return false;
                         }
                         if( !copy_dir_preserve( element_stats, dst_dirfd, basename_, ctx_ptr->copts ) ) {
@@ -1876,7 +1877,7 @@ bool jau::fs::copy(const std::string& source_path, const std::string& target_pat
                     }
                     return true;
                   } ) );
-    bool res = jau::fs::visit(source_stats, topts, pv, &ctx.src_dirfds);
+    bool res = jau::io::fs::visit(source_stats, topts, pv, &ctx.src_dirfds);
     while( !ctx.dst_dirfds.empty() ) {
         ::close(ctx.dst_dirfds.back());
         ctx.dst_dirfds.pop_back();
@@ -1884,23 +1885,23 @@ bool jau::fs::copy(const std::string& source_path, const std::string& target_pat
     return res;
 }
 
-bool jau::fs::rename(const std::string& oldpath, const std::string& newpath) noexcept {
+bool jau::io::fs::rename(const std::string& oldpath, const std::string& newpath) noexcept {
     file_stats oldpath_stats(oldpath);
     file_stats newpath_stats(newpath);
     if( !oldpath_stats.is_link() && !oldpath_stats.exists() ) {
         ERR_PRINT("oldpath doesn't exist, oldpath %s, newpath %s\n",
-                oldpath_stats.to_string().c_str(), newpath_stats.to_string().c_str());
+                oldpath_stats.toString().c_str(), newpath_stats.toString().c_str());
         return false;
     }
     if( 0 != ::rename(oldpath_stats.path().c_str(), newpath_stats.path().c_str()) ) {
         ERR_PRINT("rename failed, oldpath %s, newpath %s\n",
-                oldpath_stats.to_string().c_str(), newpath_stats.to_string().c_str());
+                oldpath_stats.toString().c_str(), newpath_stats.toString().c_str());
         return false;
     }
     return true;
 }
 
-void jau::fs::sync() noexcept {
+void jau::io::fs::sync() noexcept {
     ::sync();
 }
 
@@ -1912,23 +1913,23 @@ static bool set_effective_uid(::uid_t user_id) {
     return true;
 }
 
-jau::fs::mount_ctx jau::fs::mount_image(const std::string& image_path, const std::string& target, const std::string& fs_type,
+jau::io::fs::mount_ctx jau::io::fs::mount_image(const std::string& image_path, const std::string& target, const std::string& fs_type,
                                         const mountflags_t flags, const std::string& fs_options)
 {
     file_stats image_stats(image_path);
     if( !image_stats.is_file()) {
-        ERR_PRINT("image_path not a file: %s", image_stats.to_string().c_str());
+        ERR_PRINT("image_path not a file: %s", image_stats.toString().c_str());
         return mount_ctx();
     }
     file_stats target_stats(target);
     if( !target_stats.is_dir()) {
-        ERR_PRINT("target not a dir: %s", target_stats.to_string().c_str());
+        ERR_PRINT("target not a dir: %s", target_stats.toString().c_str());
         return mount_ctx();
     }
     const std::string target_path(target_stats.path());
     int backingfile = __posix_openat64(AT_FDCWD, image_stats.path().c_str(), O_RDWR);
     if( 0 > backingfile )  {
-        ERR_PRINT("Couldn't open image-file '%s': res %d", image_stats.to_string().c_str(), backingfile);
+        ERR_PRINT("Couldn't open image-file '%s': res %d", image_stats.toString().c_str(), backingfile);
         return mount_ctx();
     }
 #if defined(__linux__)
@@ -1974,7 +1975,7 @@ jau::fs::mount_ctx jau::fs::mount_image(const std::string& image_path, const std
             goto errout_child;
         }
         if( 0 > ::ioctl(loop_device_fd, LOOP_SET_FD, backingfile) ) {
-            ERR_PRINT("Couldn't attach image-file '%s' to loop-device '%s'", image_stats.to_string().c_str(), loopname);
+            ERR_PRINT("Couldn't attach image-file '%s' to loop-device '%s'", image_stats.toString().c_str(), loopname);
             goto errout_child;
         }
 
@@ -2039,7 +2040,7 @@ errout:
     return mount_ctx();
 }
 
-mount_ctx jau::fs::mount(const std::string& source, const std::string& target, const std::string& fs_type,
+mount_ctx jau::io::fs::mount(const std::string& source, const std::string& target, const std::string& fs_type,
                          const mountflags_t flags, const std::string& fs_options)
 {
     if( source.empty() ) {
@@ -2049,7 +2050,7 @@ mount_ctx jau::fs::mount(const std::string& source, const std::string& target, c
     file_stats source_stats(source);
     file_stats target_stats(target);
     if( !target_stats.is_dir()) {
-        ERR_PRINT("target not a dir: %s", target_stats.to_string().c_str());
+        ERR_PRINT("target not a dir: %s", target_stats.toString().c_str());
         return mount_ctx();
     }
     const std::string target_path(target_stats.path());
@@ -2115,7 +2116,7 @@ mount_ctx jau::fs::mount(const std::string& source, const std::string& target, c
     return mount_ctx();
 }
 
-bool jau::fs::umount(const mount_ctx& context, const umountflags_t flags)
+bool jau::io::fs::umount(const mount_ctx& context, const umountflags_t flags)
 {
     if( !context.mounted) {
         return false;
@@ -2144,7 +2145,7 @@ bool jau::fs::umount(const mount_ctx& context, const umountflags_t flags)
         const int umount_res = -1;
 #endif
         if( 0 != umount_res ) {
-            ERR_PRINT("Couldn't umount '%s', flags %d: res %d\n", target_stats.to_string().c_str(), flags, umount_res);
+            ERR_PRINT("Couldn't umount '%s', flags %d: res %d\n", target_stats.toString().c_str(), flags, umount_res);
         }
         if( 0 > context.loop_device_id ) {
             // mounted w/o loop-device, done
@@ -2201,7 +2202,7 @@ errout_child:
     return false;
 }
 
-bool jau::fs::umount(const std::string& target, const umountflags_t flags)
+bool jau::io::fs::umount(const std::string& target, const umountflags_t flags)
 {
     if( target.empty() ) {
         return false;
@@ -2232,7 +2233,7 @@ bool jau::fs::umount(const std::string& target, const umountflags_t flags)
         if( 0 == umount_res ) {
             ::_exit( EXIT_SUCCESS );
         } else {
-            ERR_PRINT("Couldn't umount '%s', flags %d: res %d\n", target_stats.to_string().c_str(), flags, umount_res);
+            ERR_PRINT("Couldn't umount '%s', flags %d: res %d\n", target_stats.toString().c_str(), flags, umount_res);
             ::_exit( EXIT_FAILURE );
         }
     } else if( 0 < pid ) {

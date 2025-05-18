@@ -10,10 +10,9 @@
  */
 #include <cassert>
 #include <cstring>
-#include <string_view>
 
 #include <jau/enum_util.hpp>
-#include <jau/file_util.hpp>
+#include <jau/io/file_util.hpp>
 #include <jau/test/catch2_ext.hpp>
 
 // Define the `enum class` yourself ...
@@ -49,7 +48,7 @@ enum class test_type3_t : uint8_t {
 JAU_MAKE_BITFIELD_ENUM_STRING(test_type3_t, one, two, three);
 JAU_MAKE_ENUM_INFO(test_type3_t, none, one, two, three);
 
-namespace jau::fs {
+namespace jau::io::fs {
     JAU_MAKE_ENUM_INFO(fmode_t, none, sock, blk, chr, fifo, dir, file, link, no_access, not_existing);
     JAU_MAKE_ENUM_INFO(mountflags_linux, none, rdonly, nosuid, nodev, noexec, synchronous, remount, mandlock, dirsync, noatime,
                        nodiratime, bind, move, rec, silent, posixacl, unbindable, private_, slave, shared, relatime,
@@ -57,7 +56,7 @@ namespace jau::fs {
 }
 
 template<typename enum_info_t>
-void test_enum_info(size_t size)
+static void test_enum_info(size_t size)
 {
     using namespace jau::enums;
 
@@ -135,8 +134,8 @@ TEST_CASE( "Enum Class Value Type Test 10", "[enum][type]" ) {
         test_enum_info<test_type1_t_info_t>(4);
         test_enum_info<test_type2_t_info_t>(4);
         test_enum_info<test_type3_t_info_t>(4);
-        test_enum_info<jau::fs::fmode_t_info_t>(10);
-        test_enum_info<jau::fs::mountflags_linux_info_t>(27);
+        test_enum_info<jau::io::fs::fmode_t_info_t>(10);
+        test_enum_info<jau::io::fs::mountflags_linux_info_t>(27);
 
     }
 }

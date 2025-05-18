@@ -185,6 +185,9 @@ namespace jau {
         constexpr int32_t operator ""_i32(unsigned long long int __v)   { return (int32_t)__v; }
 
         /** Literal for unsigned uint32_t */
+        constexpr unsigned operator ""_ui(unsigned long long int __v)  { return (unsigned)__v; }
+
+        /** Literal for unsigned uint32_t */
         constexpr uint32_t operator ""_u32(unsigned long long int __v)  { return (uint32_t)__v; }
 
         /** Literal for signed int64_t */

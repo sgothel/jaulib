@@ -1,14 +1,14 @@
 #include <cassert>
-#include <cinttypes>
 #include <cstring>
 
 #include <jau/test/catch2_ext.hpp>
 
 #include <jau/basic_types.hpp>
-#include <jau/eui48.hpp>
+#include <jau/io/eui48.hpp>
 #include <jau/darray.hpp>
 
 using namespace jau;
+using namespace jau::io::net;
 
 static void test_sub01(const lb_endian_t byte_order, const std::string& mac_str, const jau::darray<std::string>& mac_sub_strs, const jau::darray<jau::snsize_t>& indices) {
     const EUI48 mac(mac_str);

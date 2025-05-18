@@ -22,7 +22,7 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "jau/byte_stream.hpp"
+#include "jau/io/byte_stream.hpp"
 
 #include <jau/debug.hpp>
 
@@ -39,8 +39,8 @@ jlong Java_org_jau_io_ByteOutStream_1File_ctorImpl1(JNIEnv *env, jclass cls, jst
         (void)cls;
         // new instance
         const std::string _path = jau::jni::from_jstring_to_string(env, jpath);
-        const jau::fs::fmode_t mode = static_cast<jau::fs::fmode_t>(jmode);
-        jau::jni::shared_ptr_ref<jau::io::ByteOutStream_File> ref( new jau::io::ByteOutStream_File( _path, mode ) );
+        const jau::io::fs::fmode_t mode = static_cast<jau::io::fs::fmode_t>(jmode);
+        jau::jni::shared_ptr_ref<jau::io::ByteStream_File> ref( new jau::io::ByteStream_File( _path, jau::io::iomode_t::write, mode ) );
         return ref.release_to_jlong();
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
@@ -53,8 +53,8 @@ jlong Java_org_jau_io_ByteOutStream_1File_ctorImpl2(JNIEnv *env, jclass cls, jin
         (void)cls;
         // new instance
         const std::string path = jau::jni::from_jstring_to_string(env, jpath);
-        const jau::fs::fmode_t mode = static_cast<jau::fs::fmode_t>(jmode);
-        jau::jni::shared_ptr_ref<jau::io::ByteOutStream_File> ref( new jau::io::ByteOutStream_File(dirfd, path, mode) );
+        const jau::io::fs::fmode_t mode = static_cast<jau::io::fs::fmode_t>(jmode);
+        jau::jni::shared_ptr_ref<jau::io::ByteStream_File> ref( new jau::io::ByteStream_File(dirfd, path, jau::io::iomode_t::write, mode) );
         return ref.release_to_jlong();
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
@@ -66,7 +66,7 @@ jlong Java_org_jau_io_ByteOutStream_1File_ctorImpl3(JNIEnv *env, jclass cls, jin
     try {
         (void)cls;
         // new instance
-        jau::jni::shared_ptr_ref<jau::io::ByteOutStream_File> ref( new jau::io::ByteOutStream_File(fd) );
+        jau::jni::shared_ptr_ref<jau::io::ByteStream_File> ref( new jau::io::ByteStream_File(fd, jau::io::iomode_t::write) );
         return ref.release_to_jlong();
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
@@ -76,7 +76,7 @@ jlong Java_org_jau_io_ByteOutStream_1File_ctorImpl3(JNIEnv *env, jclass cls, jin
 
 void Java_org_jau_io_ByteOutStream_1File_closeStream(JNIEnv *env, jobject obj) {
     try {
-        jau::jni::shared_ptr_ref<jau::io::ByteOutStream_File> ref(env, obj); // hold until done
+        jau::jni::shared_ptr_ref<jau::io::ByteStream_File> ref(env, obj); // hold until done
         ref->close();
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
@@ -86,9 +86,9 @@ void Java_org_jau_io_ByteOutStream_1File_closeStream(JNIEnv *env, jobject obj) {
 void Java_org_jau_io_ByteOutStream_1File_dtorImpl(JNIEnv *env, jclass clazz, jlong nativeInstance) {
     (void)clazz;
     try {
-        jau::jni::shared_ptr_ref<jau::io::ByteOutStream_File> sref(nativeInstance, false /* throw_on_nullptr */); // hold copy until done
+        jau::jni::shared_ptr_ref<jau::io::ByteStream_File> sref(nativeInstance, false /* throw_on_nullptr */); // hold copy until done
         if( nullptr != sref.pointer() ) {
-            std::shared_ptr<jau::io::ByteOutStream_File>* sref_ptr = jau::jni::castInstance<jau::io::ByteOutStream_File>(nativeInstance);
+            std::shared_ptr<jau::io::ByteStream_File>* sref_ptr = jau::jni::castInstance<jau::io::ByteStream_File>(nativeInstance);
             delete sref_ptr;
         }
     } catch(...) {
@@ -98,8 +98,8 @@ void Java_org_jau_io_ByteOutStream_1File_dtorImpl(JNIEnv *env, jclass clazz, jlo
 
 jboolean Java_org_jau_io_ByteOutStream_1File_is_1open(JNIEnv *env, jobject obj) {
     try {
-        jau::jni::shared_ptr_ref<jau::io::ByteOutStream_File> ref(env, obj); // hold until done
-        return ref->is_open() ? JNI_TRUE : JNI_FALSE;
+        jau::jni::shared_ptr_ref<jau::io::ByteStream_File> ref(env, obj); // hold until done
+        return ref->isOpen() ? JNI_TRUE : JNI_FALSE;
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }
@@ -108,8 +108,8 @@ jboolean Java_org_jau_io_ByteOutStream_1File_is_1open(JNIEnv *env, jobject obj) 
 
 void Java_org_jau_io_ByteOutStream_1File_clearImpl(JNIEnv *env, jobject obj, jint mask) {
     try {
-        jau::jni::shared_ptr_ref<jau::io::ByteOutStream_File> ref(env, obj); // hold until done
-        ref->clear( static_cast<jau::io::iostate>(mask) );
+        jau::jni::shared_ptr_ref<jau::io::ByteStream_File> ref(env, obj); // hold until done
+        ref->clear( static_cast<jau::io::iostate_t>(mask) );
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }
@@ -117,7 +117,7 @@ void Java_org_jau_io_ByteOutStream_1File_clearImpl(JNIEnv *env, jobject obj, jin
 
 jint Java_org_jau_io_ByteOutStream_1File_fd(JNIEnv *env, jobject obj) {
     try {
-        jau::jni::shared_ptr_ref<jau::io::ByteOutStream_File> ref(env, obj); // hold until done
+        jau::jni::shared_ptr_ref<jau::io::ByteStream_File> ref(env, obj); // hold until done
         return ref->fd();
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
@@ -127,18 +127,18 @@ jint Java_org_jau_io_ByteOutStream_1File_fd(JNIEnv *env, jobject obj) {
 
 jint Java_org_jau_io_ByteOutStream_1File_rdStateImpl(JNIEnv *env, jobject obj) {
     try {
-        jau::jni::shared_ptr_ref<jau::io::ByteOutStream_File> ref(env, obj); // hold until done
+        jau::jni::shared_ptr_ref<jau::io::ByteStream_File> ref(env, obj); // hold until done
         return static_cast<jint>( ref->rdstate() );
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }
-    return static_cast<jint>(jau::io::iostate::failbit);
+    return static_cast<jint>(jau::io::iostate_t::failbit);
 }
 
 void Java_org_jau_io_ByteOutStream_1File_setStateImpl(JNIEnv *env, jobject obj, jint mask) {
     try {
-        jau::jni::shared_ptr_ref<jau::io::ByteOutStream_File> ref(env, obj); // hold until done
-        ref->setstate( static_cast<jau::io::iostate>(mask) );
+        jau::jni::shared_ptr_ref<jau::io::ByteStream_File> ref(env, obj); // hold until done
+        ref->setstate( static_cast<jau::io::iostate_t>(mask) );
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }
@@ -146,7 +146,7 @@ void Java_org_jau_io_ByteOutStream_1File_setStateImpl(JNIEnv *env, jobject obj, 
 
 jboolean Java_org_jau_io_ByteOutStream_1File_good(JNIEnv *env, jobject obj) {
     try {
-        jau::jni::shared_ptr_ref<jau::io::ByteOutStream_File> ref(env, obj); // hold until done
+        jau::jni::shared_ptr_ref<jau::io::ByteStream_File> ref(env, obj); // hold until done
         return ref->good() ? JNI_TRUE : JNI_FALSE;
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
@@ -156,7 +156,7 @@ jboolean Java_org_jau_io_ByteOutStream_1File_good(JNIEnv *env, jobject obj) {
 
 jboolean Java_org_jau_io_ByteOutStream_1File_eof(JNIEnv *env, jobject obj) {
     try {
-        jau::jni::shared_ptr_ref<jau::io::ByteOutStream_File> ref(env, obj); // hold until done
+        jau::jni::shared_ptr_ref<jau::io::ByteStream_File> ref(env, obj); // hold until done
         return ref->eof() ? JNI_TRUE : JNI_FALSE;
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
@@ -166,7 +166,7 @@ jboolean Java_org_jau_io_ByteOutStream_1File_eof(JNIEnv *env, jobject obj) {
 
 jboolean Java_org_jau_io_ByteOutStream_1File_fail(JNIEnv *env, jobject obj) {
     try {
-        jau::jni::shared_ptr_ref<jau::io::ByteOutStream_File> ref(env, obj); // hold until done
+        jau::jni::shared_ptr_ref<jau::io::ByteStream_File> ref(env, obj); // hold until done
         return ref->fail() ? JNI_TRUE : JNI_FALSE;
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
@@ -176,7 +176,7 @@ jboolean Java_org_jau_io_ByteOutStream_1File_fail(JNIEnv *env, jobject obj) {
 
 jboolean Java_org_jau_io_ByteOutStream_1File_bad(JNIEnv *env, jobject obj) {
     try {
-        jau::jni::shared_ptr_ref<jau::io::ByteOutStream_File> ref(env, obj); // hold until done
+        jau::jni::shared_ptr_ref<jau::io::ByteStream_File> ref(env, obj); // hold until done
         return ref->bad() ? JNI_TRUE : JNI_FALSE;
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
@@ -186,7 +186,7 @@ jboolean Java_org_jau_io_ByteOutStream_1File_bad(JNIEnv *env, jobject obj) {
 
 jboolean Java_org_jau_io_ByteOutStream_1File_timeout(JNIEnv *env, jobject obj) {
     try {
-        jau::jni::shared_ptr_ref<jau::io::ByteOutStream_File> ref(env, obj); // hold until done
+        jau::jni::shared_ptr_ref<jau::io::ByteStream_File> ref(env, obj); // hold until done
         return ref->timeout() ? JNI_TRUE : JNI_FALSE;
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
@@ -196,7 +196,7 @@ jboolean Java_org_jau_io_ByteOutStream_1File_timeout(JNIEnv *env, jobject obj) {
 
 jint Java_org_jau_io_ByteOutStream_1File_write(JNIEnv *env, jobject obj, jbyteArray jin, jint joffset, jint jlength) {
     try {
-        jau::jni::shared_ptr_ref<jau::io::ByteOutStream_File> ref(env, obj); // hold until done
+        jau::jni::shared_ptr_ref<jau::io::ByteStream_File> ref(env, obj); // hold until done
 
         if( nullptr == jin ) {
             throw jau::IllegalArgumentError("in buffer null", E_FILE_LINE);
@@ -219,7 +219,7 @@ jint Java_org_jau_io_ByteOutStream_1File_write(JNIEnv *env, jobject obj, jbyteAr
 
 jint Java_org_jau_io_ByteOutStream_1File_write2Impl(JNIEnv *env, jobject obj, jobject jin, jint out_offset, jint in_limit) {
     try {
-        jau::jni::shared_ptr_ref<jau::io::ByteOutStream_File> ref(env, obj); // hold until done
+        jau::jni::shared_ptr_ref<jau::io::ByteStream_File> ref(env, obj); // hold until done
 
         if( nullptr == jin ) {
             throw jau::IllegalArgumentError("in buffer null", E_FILE_LINE);
@@ -240,7 +240,7 @@ jint Java_org_jau_io_ByteOutStream_1File_write2Impl(JNIEnv *env, jobject obj, jo
 
 jstring Java_org_jau_io_ByteOutStream_1File_id(JNIEnv *env, jobject obj) {
     try {
-        jau::jni::shared_ptr_ref<jau::io::ByteOutStream_File> ref(env, obj); // hold until done
+        jau::jni::shared_ptr_ref<jau::io::ByteStream_File> ref(env, obj); // hold until done
         return jau::jni::from_string_to_jstring(env, ref->id());
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
@@ -248,10 +248,10 @@ jstring Java_org_jau_io_ByteOutStream_1File_id(JNIEnv *env, jobject obj) {
     return nullptr;
 }
 
-jlong Java_org_jau_io_ByteOutStream_1File_tellp(JNIEnv *env, jobject obj) {
+jlong Java_org_jau_io_ByteOutStream_1File_position(JNIEnv *env, jobject obj) {
     try {
-        jau::jni::shared_ptr_ref<jau::io::ByteOutStream_File> ref(env, obj); // hold until done
-        return static_cast<jlong>( ref->tellp() );
+        jau::jni::shared_ptr_ref<jau::io::ByteStream_File> ref(env, obj); // hold until done
+        return static_cast<jlong>( ref->position() );
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }
@@ -260,8 +260,8 @@ jlong Java_org_jau_io_ByteOutStream_1File_tellp(JNIEnv *env, jobject obj) {
 
 jstring Java_org_jau_io_ByteOutStream_1File_toString(JNIEnv *env, jobject obj) {
     try {
-        jau::jni::shared_ptr_ref<jau::io::ByteOutStream_File> ref(env, obj, false /* throw_on_nullptr */); // hold until done
-        std::string str = ref.is_null() ? "null" : ref->to_string();
+        jau::jni::shared_ptr_ref<jau::io::ByteStream_File> ref(env, obj, false /* throw_on_nullptr */); // hold until done
+        std::string str = ref.is_null() ? "null" : ref->toString();
         return jau::jni::from_string_to_jstring(env, str);
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);

@@ -170,7 +170,7 @@ public interface ByteInStream extends IOStateFunc, AutoCloseable  {
      *
      * @return number of bytes read so far.
      */
-    long tellg();
+    long position();
 
     /**
      * Returns true if implementation is aware of content_size(), otherwise false.

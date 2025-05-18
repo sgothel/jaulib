@@ -184,7 +184,7 @@ public final class ByteOutStream_File implements ByteOutStream {
     public native String id();
 
     @Override
-    public native long tellp();
+    public native long position();
 
     @Override
     public native String toString();

@@ -98,7 +98,7 @@ public interface ByteOutStream extends IOStateFunc, AutoCloseable  {
      *
      * @return number of bytes written so far.
      */
-    long tellp();
+    long position();
 
     @Override
     String toString();

@@ -28,11 +28,13 @@
 #include <cstdint>
 #include <cstdio>
 
-#include <jau/eui48.hpp>
 #include <jau/secmem.hpp>
 #include <jau/string_util.hpp>
+#include <jau/byte_util.hpp>
+#include <jau/io/eui48.hpp>
 
 using namespace jau;
+using namespace jau::io::net;
 
 std::string EUI48Sub::toString() const noexcept {
     // str_len = 2 * len + ( len - 1 )
@@ -118,9 +120,9 @@ EUI48Sub::EUI48Sub(const uint8_t * b_, const jau::nsize_t len_, const lb_endian_
     const jau::nsize_t bzsz = sizeof(b) - cpsz;
 
     if( lb_endian_t::native == byte_order ) {
-        memcpy(b, b_, cpsz);
+        std::memcpy(b, b_, cpsz);
     } else {
-        bswap(b, b_, cpsz);
+        jau::bswap(b, b_, cpsz);
     }
     if( bzsz > 0 ) {
         zero_bytes_sec(b+cpsz, bzsz);
@@ -251,11 +253,11 @@ jau::nsize_t EUI48::put(uint8_t * const sink, const lb_endian_t byte_order) cons
 static uint8_t _EUI48_ALL_DEVICE[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 static uint8_t _EUI48_LOCAL_DEVICE[] = {0x00, 0x00, 0x00, 0xff, 0xff, 0xff};
 
-const EUI48Sub jau::EUI48Sub::ANY_DEVICE; // default ctor is zero bytes!
-const EUI48Sub jau::EUI48Sub::ALL_DEVICE( _EUI48_ALL_DEVICE, 6, lb_endian_t::little );
-const EUI48Sub jau::EUI48Sub::LOCAL_DEVICE( _EUI48_LOCAL_DEVICE, 6, lb_endian_t::little );
+const EUI48Sub jau::io::net::EUI48Sub::ANY_DEVICE; // default ctor is zero bytes!
+const EUI48Sub jau::io::net::EUI48Sub::ALL_DEVICE( _EUI48_ALL_DEVICE, 6, lb_endian_t::little );
+const EUI48Sub jau::io::net::EUI48Sub::LOCAL_DEVICE( _EUI48_LOCAL_DEVICE, 6, lb_endian_t::little );
 
-const EUI48 jau::EUI48::ANY_DEVICE; // default ctor is zero bytes!
-const EUI48 jau::EUI48::ALL_DEVICE( _EUI48_ALL_DEVICE, lb_endian_t::little );
-const EUI48 jau::EUI48::LOCAL_DEVICE( _EUI48_LOCAL_DEVICE, lb_endian_t::little );
+const EUI48 jau::io::net::EUI48::ANY_DEVICE; // default ctor is zero bytes!
+const EUI48 jau::io::net::EUI48::ALL_DEVICE( _EUI48_ALL_DEVICE, lb_endian_t::little );
+const EUI48 jau::io::net::EUI48::LOCAL_DEVICE( _EUI48_LOCAL_DEVICE, lb_endian_t::little );
 

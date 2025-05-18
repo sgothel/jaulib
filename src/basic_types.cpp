@@ -91,11 +91,11 @@ uint64_t jau::getWallClockSeconds() noexcept {
     return static_cast<uint64_t>( t.tv_sec );
 }
 
-std::string fraction_timespec::to_string() const noexcept {
+std::string fraction_timespec::toString() const noexcept {
     return std::to_string(tv_sec) + "s + " + std::to_string(tv_nsec) + "ns";
 }
 
-std::string fraction_timespec::to_iso8601_string(bool space_separator, bool muteTime) const noexcept {
+std::string fraction_timespec::toISO8601String(bool space_separator, bool muteTime) const noexcept {
     std::time_t t0 = static_cast<std::time_t>(tv_sec);
     struct std::tm tm_0;
     if( nullptr == ::gmtime_r(&t0, &tm_0) ) {
@@ -826,7 +826,7 @@ bool jau::to_fraction_i64(fraction_i64& result, const std::string & value, const
     if( ! ( min_allowed <= temp && temp <= max_allowed ) ) {
         // invalid user value range
         if constexpr ( _debug ) {
-            INFO_PRINT("Numerator out of range, not %s <= %s <= %s, in: '%s'", min_allowed.to_string().c_str(), temp.to_string().c_str(), max_allowed.to_string().c_str(), str);
+            INFO_PRINT("Numerator out of range, not %s <= %s <= %s, in: '%s'", min_allowed.toString().c_str(), temp.toString().c_str(), max_allowed.toString().c_str(), str);
         }
         return false;
     }

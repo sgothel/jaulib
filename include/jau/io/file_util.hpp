@@ -22,8 +22,8 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef JAU_FILE_UTIL_HPP_
-#define JAU_FILE_UTIL_HPP_
+#ifndef JAU_IO_FS_FILE_UTIL_HPP_
+#define JAU_IO_FS_FILE_UTIL_HPP_
 
 #include <sys/mount.h>
 #include <jau/fraction_type.hpp>
@@ -38,7 +38,7 @@ extern "C" {
     #include <sys/types.h>
 }
 
-namespace jau::fs {
+namespace jau::io::fs {
 
     using namespace jau::enums;
 
@@ -259,7 +259,7 @@ namespace jau::fs {
             /**
              * Returns a comprehensive string representation of this item
              */
-            std::string to_string() const noexcept;
+            std::string toString() const noexcept;
     };
 
     /**
@@ -431,6 +431,7 @@ namespace jau::fs {
                 size = 0b0000001000000000,
                 blocks = 0b0000010000000000,
                 btime = 0b0000100000000000,
+                /** A generic file-descriptor not necessarily a file, possible pipe etc. */
                 fd = 0b0001000000000000
             };
 
@@ -647,7 +648,7 @@ namespace jau::fs {
             /** Returns true if entity is a symbolic link, might be in combination with is_file(), is_dir(), is_fifo(), is_char(), is_block(), is_socket(). */
             constexpr bool is_link() const noexcept { return is_set(mode_, fmode_t::link); }
 
-            /** Returns true if entity gives no access to user, exclusive bit. */
+            /** Returns true if entity allows access to user, exclusive bit. */
             constexpr bool has_access() const noexcept { return !is_set(mode_, fmode_t::no_access); }
 
             /** Returns true if entity does not exist, exclusive bit. */
@@ -662,9 +663,11 @@ namespace jau::fs {
             /**
              * Returns a comprehensive string representation of this element
              */
-            std::string to_string() const noexcept;
+            std::string toString() const noexcept;
     };
     JAU_MAKE_BITFIELD_ENUM_STRING2(file_stats::field_t, field_t, type, mode, nlink, uid, gid, atime, mtime, ctime, ino, size, blocks, btime);
+
+    inline std::ostream& operator<<(std::ostream& os, const file_stats& v) { return os << v.toString(); }
 
     /**
      * Create directory
@@ -673,7 +676,7 @@ namespace jau::fs {
      * @param verbose defaults to false
      * @return true if successful, otherwise false
      */
-    bool mkdir(const std::string& path, const fmode_t mode = jau::fs::fmode_t::def_dir_prot, const bool verbose = false) noexcept;
+    bool mkdir(const std::string& path, const fmode_t mode = fmode_t::def_dir_prot, const bool verbose = false) noexcept;
 
     /**
      * Touch the file with given atime and mtime and create file if not existing yet.
@@ -684,7 +687,7 @@ namespace jau::fs {
      * @return true if successful, otherwise false
      */
     bool touch(const std::string& path, const jau::fraction_timespec& atime, const jau::fraction_timespec& mtime,
-               const fmode_t mode = jau::fs::fmode_t::def_file_prot) noexcept;
+               const fmode_t mode = fmode_t::def_file_prot) noexcept;
 
     /**
      * Touch the file with current time and create file if not existing yet.
@@ -692,7 +695,7 @@ namespace jau::fs {
      * @param mode fmode_t POSIX protection bits used, defaults to jau::fs::fmode_t::def_file_prot
      * @return true if successful, otherwise false
      */
-    bool touch(const std::string& path, const fmode_t mode = jau::fs::fmode_t::def_file_prot) noexcept;
+    bool touch(const std::string& path, const fmode_t mode = fmode_t::def_file_prot) noexcept;
 
     /**
      * `void consume_dir_item(const dir_item& item)`
@@ -1194,6 +1197,6 @@ namespace jau::fs {
 
     /**@}*/
 
-}  // namespace jau::fs
+}  // namespace jau::io::fs
 
-#endif /* JAU_FILE_UTIL_HPP_ */
+#endif /* JAU_IO_FS_FILE_UTIL_HPP_ */
