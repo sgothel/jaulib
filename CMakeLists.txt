@@ -1,6 +1,11 @@
 cmake_minimum_required (VERSION 3.21.0 FATAL_ERROR)
 include(JaulibSetup.cmake)
+# set(DONT_USE_RTTI ON)
 JaulibPreset()
+
+if(JAU_CMAKE_HARD_PRESETS)
+    set(BUILD_TESTING ON)
+endif()
 
 project (jaulib LANGUAGES C CXX)
 
