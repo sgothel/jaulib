@@ -25,20 +25,19 @@
 #ifndef JAU_FRACTION_TYPE_HPP_
 #define JAU_FRACTION_TYPE_HPP_
 
-#include <limits>
 #include <chrono>
-
-#include <cstdio>
-
-#include <cstdint>
 #include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <limits>
+
 #include "jau/cpp_lang_util.hpp"
 
-#include <jau/int_types.hpp>
-#include <jau/int_math.hpp>
-#include <jau/ordered_atomic.hpp>
-#include <jau/cpp_pragma.hpp>
 #include <jau/backtrace.hpp>
+#include <jau/cpp_pragma.hpp>
+#include <jau/int_math.hpp>
+#include <jau/int_types.hpp>
+#include <jau/ordered_atomic.hpp>
 
 namespace jau {
 
@@ -103,84 +102,80 @@ namespace jau {
      * @tparam
      */
     template<typename Int_type,
-             std::enable_if_t< std::is_integral_v<Int_type>, bool> = true>
+             std::enable_if_t<std::is_integral_v<Int_type>, bool> = true>
     class fraction {
-        public:
-            /** User defined integral integer template type, used for numerator and may be signed. */
-            typedef Int_type                        int_type;
+      public:
+        /** User defined integral integer template type, used for numerator and may be signed. */
+        typedef Int_type int_type;
 
-            /** unsigned variant of template int_type, used for denominator. */
-            typedef std::make_unsigned_t<int_type> uint_type;
+        /** unsigned variant of template int_type, used for denominator. */
+        typedef std::make_unsigned_t<int_type> uint_type;
 
-            /** Numerator, carries the sign. */
-            int_type num;
-            /** Denominator, always positive. */
-            uint_type denom;
-            /** Overflow flag. If set, last arithmetic operation produced an overflow. Must be cleared manually. */
-            bool overflow;
+        /** Numerator, carries the sign. */
+        int_type num;
+        /** Denominator, always positive. */
+        uint_type denom;
+        /** Overflow flag. If set, last arithmetic operation produced an overflow. Must be cleared manually. */
+        bool overflow;
 
-        private:
-            void set_overflow() noexcept {
-                overflow = true;
-                print_backtrace(true /* skip_anon_frames */, 6 /* max_frames */, 2 /* skip_frames */);
-                num = std::numeric_limits<int_type>::max();
-                denom = std::numeric_limits<uint_type>::max();
+      private:
+        void set_overflow() noexcept {
+            overflow = true;
+            print_backtrace(true /* skip_anon_frames */, 6 /* max_frames */, 2 /* skip_frames */);
+            num = std::numeric_limits<int_type>::max();
+            denom = std::numeric_limits<uint_type>::max();
+        }
+
+      public:
+        /**
+         * Constructs a zero fraction instance { 0, 1 }
+         */
+        constexpr fraction() noexcept
+        : num(0), denom(1), overflow(false) { }
+
+        /**
+         * Constructs a fraction instance with smallest numerator and denominator using gcd()
+         *
+         * Note: sign is always stored in fraction's numerator, i.e. the denominator is always positive.
+         *
+         * @param n the given numerator
+         * @param d the given denominator
+         */
+        template<typename T,
+                 std::enable_if_t<std::is_same_v<int_type, T> &&
+                                  !std::is_unsigned_v<T>,
+                                  bool> = true>
+        constexpr fraction(const int_type& n, const T& d) noexcept
+        : num(0), denom(1), overflow(false) {
+            if ( n != 0 && d != 0 ) {
+                // calculate smallest num and denom, both arguments 'n' and 'd' may be negative
+                const uint_type abs_d = jau::abs(d);
+                const uint_type _gcd = gcd<uint_type>((uint_type)jau::abs(n), abs_d);
+                num = (n * jau::sign(d)) / (int_type)_gcd;
+                denom = abs_d / _gcd;
             }
+        }
 
-        public:
-
-            /**
-             * Constructs a zero fraction instance { 0, 1 }
-             */
-            constexpr fraction() noexcept
-            : num(0), denom(1), overflow(false) { }
-
-
-            /**
-             * Constructs a fraction instance with smallest numerator and denominator using gcd()
-             *
-             * Note: sign is always stored in fraction's numerator, i.e. the denominator is always positive.
-             *
-             * @param n the given numerator
-             * @param d the given denominator
-             */
-            template <typename T,
-                      std::enable_if_t<  std::is_same_v<int_type, T> &&
-                                        !std::is_unsigned_v<T>, bool> = true>
-            constexpr fraction(const int_type& n, const T& d) noexcept
-            : num(0), denom(1), overflow(false)
-            {
-                if( n != 0 && d != 0 ) {
-                    // calculate smallest num and denom, both arguments 'n' and 'd' may be negative
-                    const uint_type abs_d = jau::abs(d);
-                    const uint_type _gcd = gcd<uint_type>( (uint_type)jau::abs(n), abs_d );
-                    num = ( n * jau::sign(d) ) / (int_type)_gcd;
-                    denom = abs_d / _gcd;
-                }
+        /**
+         * Constructs a fraction instance with smallest numerator and denominator using gcd()
+         *
+         * Note: sign is always stored in fraction's numerator, i.e. the denominator is always positive and hence unsigned.
+         *
+         * @param n the given numerator
+         * @param d the given denominator
+         */
+        constexpr fraction(const int_type& n, const uint_type& abs_d) noexcept
+        : num(0), denom(1), overflow(false) {
+            if ( n != 0 && abs_d != 0 ) {
+                // calculate smallest num and denom, only given argument 'n' can be negative
+                const uint_type _gcd = gcd<uint_type>((uint_type)jau::abs(n), abs_d);
+                num = n / (int_type)_gcd;
+                denom = abs_d / _gcd;
             }
+        }
 
-
-            /**
-             * Constructs a fraction instance with smallest numerator and denominator using gcd()
-             *
-             * Note: sign is always stored in fraction's numerator, i.e. the denominator is always positive and hence unsigned.
-             *
-             * @param n the given numerator
-             * @param d the given denominator
-             */
-            constexpr fraction(const int_type& n, const uint_type& abs_d) noexcept
-            : num(0), denom(1), overflow(false)
-            {
-                if( n != 0 && abs_d != 0 ) {
-                    // calculate smallest num and denom, only given argument 'n' can be negative
-                    const uint_type _gcd = gcd<uint_type>( (uint_type)jau::abs(n), abs_d );
-                    num = n / (int_type)_gcd;
-                    denom = abs_d / _gcd;
-                }
-            }
-
-            // We use the implicit default copy- and move constructor and assignment operations,
-            // rendering fraction TriviallyCopyable
+        // We use the implicit default copy- and move constructor and assignment operations,
+        // rendering fraction TriviallyCopyable
 #if 0
             constexpr fraction(const fraction<int_type> &o) noexcept
             : num(o.num), denom(o.denom) { }
@@ -200,398 +195,396 @@ namespace jau {
             }
 #endif
 
-            /**
-             * Reduce this fraction to the lowest terms using the greatest common denominator, see gcd(), i.e. normalization.
-             *
-             * Might need to be called after manual modifications on numerator or denominator.
-             *
-             * Not required after applying any provided operation as they normalize the fraction.
-             */
-            constexpr fraction<int_type>& reduce() noexcept {
-                if( num != 0 && denom != 0 ) {
-                    const uint_type _gcd = gcd<uint_type>( (uint_type)jau::abs(num), denom );
-                    num /= static_cast<int_type>(_gcd);
-                    denom /= _gcd;
-                }
-                return *this;
+        /**
+         * Reduce this fraction to the lowest terms using the greatest common denominator, see gcd(), i.e. normalization.
+         *
+         * Might need to be called after manual modifications on numerator or denominator.
+         *
+         * Not required after applying any provided operation as they normalize the fraction.
+         */
+        constexpr fraction<int_type>& reduce() noexcept {
+            if ( num != 0 && denom != 0 ) {
+                const uint_type _gcd = gcd<uint_type>((uint_type)jau::abs(num), denom);
+                num /= static_cast<int_type>(_gcd);
+                denom /= _gcd;
             }
+            return *this;
+        }
 
-            /**
-             * Converts this this fraction to a numerator for the given new base fraction.
-             *
-             * If overflow_ptr is not nullptr, true is stored if an overflow occurred otherwise false.
-             *
-             * @param new_base the new base fraction for conversion
-             * @param overflow_ptr optional pointer to overflow result, defaults to nullptr
-             * @return numerator representing this fraction on the new base, or std::numeric_limits<int_type>::max() if an overflow occurred.
-             */
-            constexpr int_type to_num_of(const fraction<int_type>& new_base, bool * overflow_ptr=nullptr) const noexcept {
-                // const uint_type _lcm = lcm<uint_type>( denom, new_base.denom );
-                // return ( num * (int_type)( _lcm / denom ) ) / new_base.num;
-                //
-                if( 0 != denom && 0 != new_base.num ) {
-                    int_type r;
-                    if( mul_overflow(num, (int_type)new_base.denom, r) ) {
-                        if( nullptr != overflow_ptr ) {
-                            *overflow_ptr = true;
-                        }
-                        return std::numeric_limits<int_type>::max();
-                    } else {
-                        if( nullptr != overflow_ptr ) {
-                            *overflow_ptr = false;
-                        }
-                        return r / (int_type)denom / new_base.num;
-                    }
-                } else {
-                    // div-by-zero -> max value as we don't throw
-                    return std::numeric_limits<int_type>::max();
-                }
-            }
-
-            /**
-             * Converts this this fraction to a numerator for the given new base fraction.
-             *
-             * If overflow_ptr is not nullptr, true is stored if an overflow occurred otherwise false.
-             *
-             * @param new_base_num the new base numerator for conversion
-             * @param new_base_denom the new base denominator for conversion
-             * @param new_base the new base fraction for conversion
-             * @param overflow_ptr optional pointer to overflow result, defaults to nullptr
-             * @return numerator representing this fraction on the new base, or std::numeric_limits<int_type>::max() if an overflow occurred.
-             */
-            constexpr int_type to_num_of(const int_type& new_base_num, const uint_type& new_base_denom, bool * overflow_ptr=nullptr) const noexcept {
-                if( 0 != denom && 0 != new_base_num ) {
-                    int_type r;
-                    if( mul_overflow(num, (int_type)new_base_denom, r) ) {
-                        if( nullptr != overflow_ptr ) {
-                            *overflow_ptr = true;
-                        }
-                        return std::numeric_limits<int_type>::max();
-                    } else {
-                        if( nullptr != overflow_ptr ) {
-                            *overflow_ptr = false;
-                        }
-                        return r / (int_type)denom / new_base_num;
-                    }
-                } else {
-                    // div-by-zero -> max value as we don't throw
-                    return std::numeric_limits<int_type>::max();
-                }
-            }
-
-            /**
-             * Convenient shortcut to `to_num_of(1_ms)`
-             * @return time in milliseconds
-             * @see to_num_of()
-             */
-            constexpr int_type to_ms() const noexcept { return to_num_of(1l, 1'000lu); }
-
-            /**
-             * Convenient shortcut to `to_num_of(1_us)`
-             * @return time in microseconds
-             * @see to_num_of()
-             */
-            constexpr int_type to_us() const noexcept { return to_num_of(1l, 1'000'000lu); }
-
-            /**
-             * Convenient shortcut to `to_num_of(1_ns)`
-             * @return time in nanoseconds
-             * @see to_num_of()
-             */
-            constexpr int_type to_ns() const noexcept { return to_num_of(1l, 1'000'000'000lu); }
-
-            /** Returns the converted fraction to lossy float */
-            constexpr float to_float() const noexcept { return (float)num / (float)denom; }
-
-            /** Returns the converted fraction to lossy double */
-            constexpr double to_double() const noexcept { return (double)num / (double)denom; }
-
-            /** Returns the converted fraction to lossy long double */
-            constexpr long double to_ldouble() const noexcept { return (long double)num / (long double)denom; }
-
-            /**
-             * Constructs a fraction from the given std::chrono::duration and its Rep and Period
-             * with smallest numerator and denominator using gcd()
-             *
-             * Note: sign is always stored in fraction's numerator, i.e. the denominator is always positive and hence unsigned.
-             *
-             * @tparam Rep Rep of given std::chrono::duration
-             * @tparam Period Period of given std::chrono::duration
-             * @param dur std::chrono::duration reference to convert into a fraction
-             */
-            template<typename Rep, typename Period>
-            constexpr fraction(const std::chrono::duration<Rep, Period>& dur) noexcept
-            : num(0), denom(1), overflow(false)
-            {
-                if( dur.count()*Period::num != 0 && Period::den != 0 ) {
-                    // calculate smallest num and denom, both arguments 'n' and 'd' may be negative
-                    const int_type n = dur.count()*Period::num;
-                    const int_type d = Period::den;
-                    const uint_type abs_d = jau::abs(d);
-                    const uint_type _gcd = gcd<uint_type>( (uint_type)jau::abs(n), abs_d );
-                    num = ( n * jau::sign(d) ) / (int_type)_gcd;
-                    denom = abs_d / _gcd;
-                }
-            }
-
-            /**
-             * Convert this fraction into std::chrono::duration with given Rep and Period
-             *
-             * If overflow_ptr is not nullptr, true is stored if an overflow occurred otherwise false.
-             *
-             * @tparam Rep std::chrono::duration numerator type
-             * @tparam Period std::chrono::duration denominator type, i.e. a std::ratio
-             * @param dur_ref std::chrono::duration reference to please automated template type deduction and ease usage
-             * @param overflow_ptr optional pointer to overflow result, defaults to nullptr
-             * @return fraction converted into given std::chrono::duration Rep and Period, or using (Rep)std::numeric_limits<Rep>::max() if an overflow occurred
-             */
-            template<typename Rep, typename Period>
-            std::chrono::duration<Rep, Period> to_duration(const std::chrono::duration<Rep, Period>& dur_ref, bool * overflow_ptr=nullptr) const noexcept {
-                (void)dur_ref; // just to please template type deduction
-                bool overflow_ = false;
-                const int_type num_ = to_num_of( fraction<int_type>( (int_type)Period::num, (uint_type)Period::den ), &overflow_ );
-                if( overflow_ ) {
-                    if( nullptr != overflow_ptr ) {
+        /**
+         * Converts this this fraction to a numerator for the given new base fraction.
+         *
+         * If overflow_ptr is not nullptr, true is stored if an overflow occurred otherwise false.
+         *
+         * @param new_base the new base fraction for conversion
+         * @param overflow_ptr optional pointer to overflow result, defaults to nullptr
+         * @return numerator representing this fraction on the new base, or std::numeric_limits<int_type>::max() if an overflow occurred.
+         */
+        constexpr int_type to_num_of(const fraction<int_type>& new_base, bool* overflow_ptr = nullptr) const noexcept {
+            // const uint_type _lcm = lcm<uint_type>( denom, new_base.denom );
+            // return ( num * (int_type)( _lcm / denom ) ) / new_base.num;
+            //
+            if ( 0 != denom && 0 != new_base.num ) {
+                int_type r;
+                if ( mul_overflow(num, (int_type)new_base.denom, r) ) {
+                    if ( nullptr != overflow_ptr ) {
                         *overflow_ptr = true;
                     }
-                    return std::chrono::duration<Rep, Period>( (Rep)std::numeric_limits<Rep>::max() );
+                    return std::numeric_limits<int_type>::max();
                 } else {
-                    if( nullptr != overflow_ptr ) {
+                    if ( nullptr != overflow_ptr ) {
                         *overflow_ptr = false;
                     }
-                    return std::chrono::duration<Rep, Period>( (Rep)num_ );
+                    return r / (int_type)denom / new_base.num;
                 }
+            } else {
+                // div-by-zero -> max value as we don't throw
+                return std::numeric_limits<int_type>::max();
             }
+        }
 
-            /**
-             * Returns a string representation of this fraction.
-             *
-             * If the overflow flag is set, ` O! ` will be appended.
-             *
-             * @param show_double true to show the double value, otherwise false (default)
-             * @return
-             */
-            std::string toString(const bool show_double=false) const noexcept {
-                std::string r = std::to_string(num) + "/" + std::to_string(denom);
-                if( overflow ) {
-                    r.append(" O! ");
-                } else if( show_double ) {
-                    const int precision = std::max<int>( 6, digits10(denom, false /* sign_is_digit */) );
-                    std::string fmt("%.");
-                    fmt.append(std::to_string(precision)).append("f");
-                    char buf[96];
-                    PRAGMA_DISABLE_WARNING_PUSH
-                    PRAGMA_DISABLE_WARNING_FORMAT_NONLITERAL
-                    int res = ::snprintf(buf, sizeof(buf), fmt.c_str(), to_double());
-                    PRAGMA_DISABLE_WARNING_POP
-                    if( 0 < res ) {
-                        r.append(" ( " + std::string(buf) + " )");
+        /**
+         * Converts this this fraction to a numerator for the given new base fraction.
+         *
+         * If overflow_ptr is not nullptr, true is stored if an overflow occurred otherwise false.
+         *
+         * @param new_base_num the new base numerator for conversion
+         * @param new_base_denom the new base denominator for conversion
+         * @param new_base the new base fraction for conversion
+         * @param overflow_ptr optional pointer to overflow result, defaults to nullptr
+         * @return numerator representing this fraction on the new base, or std::numeric_limits<int_type>::max() if an overflow occurred.
+         */
+        constexpr int_type to_num_of(const int_type& new_base_num, const uint_type& new_base_denom, bool* overflow_ptr = nullptr) const noexcept {
+            if ( 0 != denom && 0 != new_base_num ) {
+                int_type r;
+                if ( mul_overflow(num, (int_type)new_base_denom, r) ) {
+                    if ( nullptr != overflow_ptr ) {
+                        *overflow_ptr = true;
                     }
+                    return std::numeric_limits<int_type>::max();
+                } else {
+                    if ( nullptr != overflow_ptr ) {
+                        *overflow_ptr = false;
+                    }
+                    return r / (int_type)denom / new_base_num;
                 }
-                return r;
+            } else {
+                // div-by-zero -> max value as we don't throw
+                return std::numeric_limits<int_type>::max();
             }
+        }
 
-            /**
-             * Returns true if numerator is zero.
-             */
-            constexpr bool is_zero() const noexcept {
-                return 0 == num;
+        /**
+         * Convenient shortcut to `to_num_of(1_ms)`
+         * @return time in milliseconds
+         * @see to_num_of()
+         */
+        constexpr int_type to_ms() const noexcept { return to_num_of(1l, 1'000lu); }
+
+        /**
+         * Convenient shortcut to `to_num_of(1_us)`
+         * @return time in microseconds
+         * @see to_num_of()
+         */
+        constexpr int_type to_us() const noexcept { return to_num_of(1l, 1'000'000lu); }
+
+        /**
+         * Convenient shortcut to `to_num_of(1_ns)`
+         * @return time in nanoseconds
+         * @see to_num_of()
+         */
+        constexpr int_type to_ns() const noexcept { return to_num_of(1l, 1'000'000'000lu); }
+
+        /** Returns the converted fraction to lossy float */
+        constexpr float to_float() const noexcept { return (float)num / (float)denom; }
+
+        /** Returns the converted fraction to lossy double */
+        constexpr double to_double() const noexcept { return (double)num / (double)denom; }
+
+        /** Returns the converted fraction to lossy long double */
+        constexpr long double to_ldouble() const noexcept { return (long double)num / (long double)denom; }
+
+        /**
+         * Constructs a fraction from the given std::chrono::duration and its Rep and Period
+         * with smallest numerator and denominator using gcd()
+         *
+         * Note: sign is always stored in fraction's numerator, i.e. the denominator is always positive and hence unsigned.
+         *
+         * @tparam Rep Rep of given std::chrono::duration
+         * @tparam Period Period of given std::chrono::duration
+         * @param dur std::chrono::duration reference to convert into a fraction
+         */
+        template<typename Rep, typename Period>
+        constexpr fraction(const std::chrono::duration<Rep, Period>& dur) noexcept
+        : num(0), denom(1), overflow(false) {
+            if ( dur.count() * Period::num != 0 && Period::den != 0 ) {
+                // calculate smallest num and denom, both arguments 'n' and 'd' may be negative
+                const int_type n = dur.count() * Period::num;
+                const int_type d = Period::den;
+                const uint_type abs_d = jau::abs(d);
+                const uint_type _gcd = gcd<uint_type>((uint_type)jau::abs(n), abs_d);
+                num = (n * jau::sign(d)) / (int_type)_gcd;
+                denom = abs_d / _gcd;
             }
+        }
 
-            /**
-             * Returns the value of the sign function applied to numerator.
-             * <pre>
-             * -1 for numerator < 0
-             *  0 for numerator = 0
-             *  1 for numerator > 0
-             * </pre>
-             * @return function result
-             */
-            constexpr snsize_t sign() const noexcept {
-                return jau::sign(num);
+        /**
+         * Convert this fraction into std::chrono::duration with given Rep and Period
+         *
+         * If overflow_ptr is not nullptr, true is stored if an overflow occurred otherwise false.
+         *
+         * @tparam Rep std::chrono::duration numerator type
+         * @tparam Period std::chrono::duration denominator type, i.e. a std::ratio
+         * @param dur_ref std::chrono::duration reference to please automated template type deduction and ease usage
+         * @param overflow_ptr optional pointer to overflow result, defaults to nullptr
+         * @return fraction converted into given std::chrono::duration Rep and Period, or using (Rep)std::numeric_limits<Rep>::max() if an overflow occurred
+         */
+        template<typename Rep, typename Period>
+        std::chrono::duration<Rep, Period> to_duration(const std::chrono::duration<Rep, Period>& dur_ref, bool* overflow_ptr = nullptr) const noexcept {
+            (void)dur_ref;  // just to please template type deduction
+            bool overflow_ = false;
+            const int_type num_ = to_num_of(fraction<int_type>((int_type)Period::num, (uint_type)Period::den), &overflow_);
+            if ( overflow_ ) {
+                if ( nullptr != overflow_ptr ) {
+                    *overflow_ptr = true;
+                }
+                return std::chrono::duration<Rep, Period>((Rep)std::numeric_limits<Rep>::max());
+            } else {
+                if ( nullptr != overflow_ptr ) {
+                    *overflow_ptr = false;
+                }
+                return std::chrono::duration<Rep, Period>((Rep)num_);
             }
+        }
 
-            /**
-             * Unary minus
-             *
-             * @return new instance with negated value, reduced
-             */
-            constexpr fraction<int_type> operator-() const noexcept {
-                fraction<int_type> r(*this);
-                r.num *= (int_type)-1;
-                return r;
+        /**
+         * Returns a string representation of this fraction.
+         *
+         * If the overflow flag is set, ` O! ` will be appended.
+         *
+         * @param show_double true to show the double value, otherwise false (default)
+         * @return
+         */
+        std::string toString(const bool show_double = false) const noexcept {
+            std::string r = std::to_string(num) + "/" + std::to_string(denom);
+            if ( overflow ) {
+                r.append(" O! ");
+            } else if ( show_double ) {
+                const int precision = (int)std::max<size_t>(6, digits10(denom, false /* sign_is_digit */));
+                std::string fmt("%.");
+                fmt.append(std::to_string(precision)).append("f");
+                char buf[96];
+                PRAGMA_DISABLE_WARNING_PUSH
+                PRAGMA_DISABLE_WARNING_FORMAT_NONLITERAL
+                int res = ::snprintf(buf, sizeof(buf), fmt.c_str(), to_double());
+                PRAGMA_DISABLE_WARNING_POP
+                if ( 0 < res ) {
+                    r.append(" ( " + std::string(buf) + " )");
+                }
             }
+            return r;
+        }
 
-            /**
-             * Multiplication of this fraction's numerator with scalar in place.
-             *
-             * Operation may set the overflow flag if occurring.
-             *
-             * @param rhs the scalar
-             * @return reference to this instance, reduced
-             */
-            constexpr fraction<int_type>& operator*=(const int_type& rhs ) noexcept {
-                if( mul_overflow(num, rhs, num) ) {
+        /**
+         * Returns true if numerator is zero.
+         */
+        constexpr bool is_zero() const noexcept {
+            return 0 == num;
+        }
+
+        /**
+         * Returns the value of the sign function applied to numerator.
+         * <pre>
+         * -1 for numerator < 0
+         *  0 for numerator = 0
+         *  1 for numerator > 0
+         * </pre>
+         * @return function result
+         */
+        constexpr snsize_t sign() const noexcept {
+            return jau::sign(num);
+        }
+
+        /**
+         * Unary minus
+         *
+         * @return new instance with negated value, reduced
+         */
+        constexpr fraction<int_type> operator-() const noexcept {
+            fraction<int_type> r(*this);
+            r.num *= (int_type)-1;
+            return r;
+        }
+
+        /**
+         * Multiplication of this fraction's numerator with scalar in place.
+         *
+         * Operation may set the overflow flag if occurring.
+         *
+         * @param rhs the scalar
+         * @return reference to this instance, reduced
+         */
+        constexpr fraction<int_type>& operator*=(const int_type& rhs) noexcept {
+            if ( mul_overflow(num, rhs, num) ) {
+                set_overflow();
+                return *this;
+            } else {
+                return reduce();
+            }
+        }
+
+        /**
+         * Division of this fraction's numerator with scalar in place.
+         *
+         * @param rhs the scalar
+         * @return reference to this instance, reduced
+         */
+        constexpr fraction<int_type>& operator/=(const int_type& rhs) noexcept {
+            return this->operator/=(fraction<int_type>(rhs, (int_type)1));
+        }
+
+        /**
+         * Compound assignment (addition)
+         *
+         * Operation may set the overflow flag if occurring.
+         *
+         * @param rhs the other fraction
+         * @return reference to this instance, reduced
+         */
+        constexpr fraction<int_type>& operator+=(const fraction<int_type>& rhs) noexcept {
+            if ( denom == rhs.denom ) {
+                num += rhs.num;
+            } else {
+                uint_type _lcm;
+                if ( lcm_overflow<uint_type>(denom, rhs.denom, _lcm) ) {
                     set_overflow();
                     return *this;
                 } else {
-                    return reduce();
+                    const int_type num_new = (num * (int_type)(_lcm / denom)) + (rhs.num * (int_type)(_lcm / rhs.denom));
+                    num = num_new;
+                    denom = _lcm;
                 }
             }
+            return reduce();
+        }
 
-            /**
-             * Division of this fraction's numerator with scalar in place.
-             *
-             * @param rhs the scalar
-             * @return reference to this instance, reduced
-             */
-            constexpr fraction<int_type>& operator/=(const int_type& rhs ) noexcept {
-                return this->operator/=(fraction<int_type>(rhs, (int_type)1));
-            }
-
-            /**
-             * Compound assignment (addition)
-             *
-             * Operation may set the overflow flag if occurring.
-             *
-             * @param rhs the other fraction
-             * @return reference to this instance, reduced
-             */
-            constexpr fraction<int_type>& operator+=(const fraction<int_type>& rhs ) noexcept {
-                if( denom == rhs.denom ) {
-                    num += rhs.num;
-                } else {
-                    uint_type _lcm;
-                    if( lcm_overflow<uint_type>(denom, rhs.denom, _lcm) ) {
-                        set_overflow();
-                        return *this;
-                    } else {
-                        const int_type num_new = ( num * (int_type)( _lcm / denom ) ) + ( rhs.num * (int_type)( _lcm / rhs.denom ) );
-                        num = num_new;
-                        denom = _lcm;
-                    }
-                }
-                return reduce();
-            }
-
-            /**
-             * Negative compound assignment (subtraction)
-             *
-             * Operation may set the overflow flag if occurring.
-             *
-             * @param rhs the other fraction
-             * @return reference to this instance, reduced
-             */
-            constexpr fraction<int_type>& operator-=(const fraction<int_type>& rhs ) noexcept {
-                if( denom == rhs.denom ) {
-                    num -= rhs.num;
-                } else if( 0 != denom && 0 != rhs.denom ) {
-                    uint_type _lcm;
-                    if( lcm_overflow<uint_type>(denom, rhs.denom, _lcm) ) {
-                        set_overflow();
-                        return *this;
-                    } else {
-                        const int_type num_new = ( num * (int_type)( _lcm / denom ) ) - ( rhs.num * (int_type)( _lcm / rhs.denom ) );
-                        num = num_new;
-                        denom = _lcm;
-                    }
-                } else {
-                    // div-by-zero -> max value as we don't throw
-                    if( 0 == denom && 0 == rhs.denom ) {
-                        num = 0; // 0 = inf - inf
-                    } else if( 0 == denom ) {
-                        num = std::numeric_limits<int_type>::max(); // inf = inf - x
-                    } else /* if( 0 == rhs.denom ) */ {
-                        num = std::numeric_limits<int_type>::min(); // -inf = x - inf
-                    }
-                    denom = 1;
-                }
-                return reduce();
-            }
-
-
-            /**
-             * Multiplication in place.
-             *
-             * Operation may set the overflow flag if occurring.
-             *
-             * @param rhs the other fraction
-             * @return reference to this instance, reduced
-             */
-            constexpr fraction<int_type>& operator*=(const fraction<int_type>& rhs ) noexcept {
-                const uint_type gcd1 = gcd<uint_type>( (uint_type)jau::abs(num),     rhs.denom );
-                const uint_type gcd2 = gcd<uint_type>( (uint_type)jau::abs(rhs.num), denom );
-                const int_type n1 = num / (int_type)gcd1;
-                const int_type n2 = rhs.num / (int_type)gcd2;
-                const uint_type d1 = denom / gcd2;
-                const uint_type d2 = rhs.denom / gcd1;
-
-                if( mul_overflow(n1, n2, num) || mul_overflow(d1, d2, denom) ) {
+        /**
+         * Negative compound assignment (subtraction)
+         *
+         * Operation may set the overflow flag if occurring.
+         *
+         * @param rhs the other fraction
+         * @return reference to this instance, reduced
+         */
+        constexpr fraction<int_type>& operator-=(const fraction<int_type>& rhs) noexcept {
+            if ( denom == rhs.denom ) {
+                num -= rhs.num;
+            } else if ( 0 != denom && 0 != rhs.denom ) {
+                uint_type _lcm;
+                if ( lcm_overflow<uint_type>(denom, rhs.denom, _lcm) ) {
                     set_overflow();
+                    return *this;
+                } else {
+                    const int_type num_new = (num * (int_type)(_lcm / denom)) - (rhs.num * (int_type)(_lcm / rhs.denom));
+                    num = num_new;
+                    denom = _lcm;
                 }
-                return *this;
+            } else {
+                // div-by-zero -> max value as we don't throw
+                if ( 0 == denom && 0 == rhs.denom ) {
+                    num = 0;  // 0 = inf - inf
+                } else if ( 0 == denom ) {
+                    num = std::numeric_limits<int_type>::max();  // inf = inf - x
+                } else /* if( 0 == rhs.denom ) */ {
+                    num = std::numeric_limits<int_type>::min();  // -inf = x - inf
+                }
+                denom = 1;
             }
+            return reduce();
+        }
 
-            /**
-             * Division in place.
-             *
-             * @param rhs the other fraction
-             * @return reference to this instance, reduced
-             */
-            constexpr fraction<int_type>& operator/=(const fraction<int_type>& rhs ) noexcept {
-                // flipped rhs num and denom as compared to multiply
-                const uint_type abs_num2 = jau::abs(rhs.num);
-                const uint_type gcd1 = gcd<uint_type>( (uint_type)jau::abs(num),  abs_num2 );
-                const uint_type gcd2 = gcd<uint_type>(          rhs.denom ,  denom );
+        /**
+         * Multiplication in place.
+         *
+         * Operation may set the overflow flag if occurring.
+         *
+         * @param rhs the other fraction
+         * @return reference to this instance, reduced
+         */
+        constexpr fraction<int_type>& operator*=(const fraction<int_type>& rhs) noexcept {
+            const uint_type gcd1 = gcd<uint_type>((uint_type)jau::abs(num), rhs.denom);
+            const uint_type gcd2 = gcd<uint_type>((uint_type)jau::abs(rhs.num), denom);
+            const int_type n1 = num / (int_type)gcd1;
+            const int_type n2 = rhs.num / (int_type)gcd2;
+            const uint_type d1 = denom / gcd2;
+            const uint_type d2 = rhs.denom / gcd1;
 
-                num = ( num / (int_type)gcd1 ) * jau::sign(rhs.num) * ( rhs.denom / (int_type)gcd2 );
-                denom = ( denom / gcd2 ) * ( abs_num2 / gcd1 );
-                return *this;
+            if ( mul_overflow(n1, n2, num) || mul_overflow(d1, d2, denom) ) {
+                set_overflow();
             }
+            return *this;
+        }
+
+        /**
+         * Division in place.
+         *
+         * @param rhs the other fraction
+         * @return reference to this instance, reduced
+         */
+        constexpr fraction<int_type>& operator/=(const fraction<int_type>& rhs) noexcept {
+            // flipped rhs num and denom as compared to multiply
+            const uint_type abs_num2 = jau::abs(rhs.num);
+            const uint_type gcd1 = gcd<uint_type>((uint_type)jau::abs(num), abs_num2);
+            const uint_type gcd2 = gcd<uint_type>(rhs.denom, denom);
+
+            num = (num / (int_type)gcd1) * jau::sign(rhs.num) * (rhs.denom / (int_type)gcd2);
+            denom = (denom / gcd2) * (abs_num2 / gcd1);
+            return *this;
+        }
     };
 
     template<typename int_type>
     inline std::string to_string(const fraction<int_type>& v) noexcept { return v.toString(); }
 
     template<typename int_type>
-    constexpr bool operator!=(const fraction<int_type>& lhs, const fraction<int_type>& rhs ) noexcept {
+    constexpr bool operator!=(const fraction<int_type>& lhs, const fraction<int_type>& rhs) noexcept {
         return lhs.denom != rhs.denom || lhs.num != rhs.num;
     }
 
     template<typename int_type>
-    constexpr bool operator==(const fraction<int_type>& lhs, const fraction<int_type>& rhs ) noexcept {
-        return !( lhs != rhs );
+    constexpr bool operator==(const fraction<int_type>& lhs, const fraction<int_type>& rhs) noexcept {
+        return !(lhs != rhs);
     }
 
     template<typename int_type>
-    constexpr bool operator>(const fraction<int_type>& lhs, const fraction<int_type>& rhs ) noexcept {
+    constexpr bool operator>(const fraction<int_type>& lhs, const fraction<int_type>& rhs) noexcept {
         return lhs.num * (int_type)rhs.denom > (int_type)lhs.denom * rhs.num;
     }
 
     template<typename int_type>
-    constexpr bool operator>=(const fraction<int_type>& lhs, const fraction<int_type>& rhs ) noexcept {
+    constexpr bool operator>=(const fraction<int_type>& lhs, const fraction<int_type>& rhs) noexcept {
         return lhs.num * (int_type)rhs.denom >= (int_type)lhs.denom * rhs.num;
     }
 
     template<typename int_type>
-    constexpr bool operator<(const fraction<int_type>& lhs, const fraction<int_type>& rhs ) noexcept {
+    constexpr bool operator<(const fraction<int_type>& lhs, const fraction<int_type>& rhs) noexcept {
         return lhs.num * (int_type)rhs.denom < (int_type)lhs.denom * rhs.num;
     }
 
     template<typename int_type>
-    constexpr bool operator<=(const fraction<int_type>& lhs, const fraction<int_type>& rhs ) noexcept {
+    constexpr bool operator<=(const fraction<int_type>& lhs, const fraction<int_type>& rhs) noexcept {
         return lhs.num * (int_type)rhs.denom <= (int_type)lhs.denom * rhs.num;
     }
 
     /** Return the maximum of the two given fractions */
     template<typename int_type>
-    constexpr const fraction<int_type>& max(const fraction<int_type>& lhs, const fraction<int_type>& rhs ) noexcept {
+    constexpr const fraction<int_type>& max(const fraction<int_type>& lhs, const fraction<int_type>& rhs) noexcept {
         return lhs >= rhs ? lhs : rhs;
     }
 
     /** Return the minimum of the two given fractions */
     template<typename int_type>
-    constexpr const fraction<int_type>& min(const fraction<int_type>& lhs, const fraction<int_type>& rhs ) noexcept {
+    constexpr const fraction<int_type>& min(const fraction<int_type>& lhs, const fraction<int_type>& rhs) noexcept {
         return lhs <= rhs ? lhs : rhs;
     }
 
@@ -614,7 +607,7 @@ namespace jau {
      */
     template<typename int_type>
     constexpr fraction<int_type> abs(const fraction<int_type>& rhs) noexcept {
-        fraction<int_type> copy(rhs); // skip normalize
+        fraction<int_type> copy(rhs);  // skip normalize
         copy.num = jau::abs(rhs.num);
         return copy;
     }
@@ -630,8 +623,8 @@ namespace jau {
      * @return resulting new fraction, reduced
      */
     template<typename int_type>
-    constexpr fraction<int_type> operator*(const fraction<int_type>& lhs, const int_type& rhs ) noexcept {
-        return fraction<int_type>( lhs.num*rhs, lhs.denom );
+    constexpr fraction<int_type> operator*(const fraction<int_type>& lhs, const int_type& rhs) noexcept {
+        return fraction<int_type>(lhs.num * rhs, lhs.denom);
     }
 
     /**
@@ -646,7 +639,7 @@ namespace jau {
      */
     template<typename int_type>
     constexpr fraction<int_type> operator*(const int_type& lhs, const fraction<int_type>& rhs) noexcept {
-        return fraction<int_type>( rhs.num*lhs, rhs.denom );
+        return fraction<int_type>(rhs.num * lhs, rhs.denom);
     }
 
     /**
@@ -657,7 +650,7 @@ namespace jau {
      * @return resulting new fraction, reduced
      */
     template<typename int_type>
-    constexpr fraction<int_type> operator/(const fraction<int_type>& lhs, const int_type& rhs ) noexcept {
+    constexpr fraction<int_type> operator/(const fraction<int_type>& lhs, const int_type& rhs) noexcept {
         fraction<int_type> r(lhs);
         return r /= rhs;
     }
@@ -671,7 +664,7 @@ namespace jau {
      */
     template<typename int_type>
     constexpr fraction<int_type> operator/(const int_type& lhs, const fraction<int_type>& rhs) noexcept {
-        fraction<int_type> r( lhs, (int_type)1 );
+        fraction<int_type> r(lhs, (int_type)1);
         return r /= rhs;
     }
 
@@ -686,9 +679,9 @@ namespace jau {
      * @return resulting new fraction, reduced
      */
     template<typename int_type>
-    constexpr fraction<int_type> operator+(const fraction<int_type>& lhs, const fraction<int_type>& rhs ) noexcept {
+    constexpr fraction<int_type> operator+(const fraction<int_type>& lhs, const fraction<int_type>& rhs) noexcept {
         fraction<int_type> r(lhs);
-        r += rhs; // implicit reduce
+        r += rhs;  // implicit reduce
         return r;
     }
 
@@ -703,9 +696,9 @@ namespace jau {
      * @return resulting new fraction, reduced
      */
     template<typename int_type>
-    constexpr fraction<int_type> operator-(const fraction<int_type>& lhs, const fraction<int_type>& rhs ) noexcept {
+    constexpr fraction<int_type> operator-(const fraction<int_type>& lhs, const fraction<int_type>& rhs) noexcept {
         fraction<int_type> r(lhs);
-        r -= rhs; // implicit reduce
+        r -= rhs;  // implicit reduce
         return r;
     }
 
@@ -720,9 +713,9 @@ namespace jau {
      * @return resulting new fraction, reduced
      */
     template<typename int_type>
-    constexpr fraction<int_type> operator*(const fraction<int_type>& lhs, const fraction<int_type>& rhs ) noexcept {
+    constexpr fraction<int_type> operator*(const fraction<int_type>& lhs, const fraction<int_type>& rhs) noexcept {
         fraction<int_type> r(lhs);
-        r *= rhs; // implicit reduce
+        r *= rhs;  // implicit reduce
         return r;
     }
 
@@ -734,9 +727,9 @@ namespace jau {
      * @return resulting new fraction, reduced
      */
     template<typename int_type>
-    constexpr fraction<int_type> operator/(const fraction<int_type>& lhs, const fraction<int_type>& rhs ) noexcept {
+    constexpr fraction<int_type> operator/(const fraction<int_type>& lhs, const fraction<int_type>& rhs) noexcept {
         fraction<int_type> r(lhs);
-        r /= rhs; // implicit reduce
+        r /= rhs;  // implicit reduce
         return r;
     }
 
@@ -765,8 +758,10 @@ namespace jau {
     /** fraction using uint64_t as integral type */
     typedef fraction<uint64_t> fraction_u64;
 
+    // clang-format off
+
     /** fractions namespace to provide fraction constants using int64_t as underlying integral integer type. */
-    namespace fractions_i64 { // Note: int64_t == intmax_t -> 10^18 or 19 digits (for intmax_t on 64bit platforms)
+    namespace fractions_i64 {  // Note: int64_t == intmax_t -> 10^18 or 19 digits (for intmax_t on 64bit platforms)
         /** tera is 10^12 */
         inline constexpr const jau::fraction_i64 tera ( 1'000'000'000'000l,                 1lu );
         /** giga is 10^9 */
@@ -797,7 +792,7 @@ namespace jau {
         inline constexpr const jau::fraction_i64 nano (                 1l,     1'000'000'000lu );
         /** pico is 10^-12 */
         inline constexpr const jau::fraction_i64 pico (                 1l, 1'000'000'000'000lu );
-    } // namespace fractions_i64
+    }  // namespace fractions_i64
 
     namespace fractions_i64_literals {
         /** Literal for fractions_i64::tera */
@@ -835,7 +830,9 @@ namespace jau {
         constexpr fraction_i64 operator ""_us(unsigned long long int __us)   { return (int64_t)__us   * fractions_i64::micro; }
         /** Literal for fractions_i64::nano */
         constexpr fraction_i64 operator ""_ns(unsigned long long int __ns)   { return (int64_t)__ns   * fractions_i64::nano; }
-    } // namespace fractions_i64_literals
+    }  // namespace fractions_i64_literals
+
+    // clang-format on
 
     /**
      * Timespec structure using int64_t for its components
@@ -891,8 +888,8 @@ namespace jau {
          * Constructs a fraction_timespec instance with given floating point seconds, normalized.
          */
         explicit constexpr fraction_timespec(const double seconds) noexcept
-        : tv_sec( static_cast<int64_t>(seconds) ),
-          tv_nsec( static_cast<int64_t>( (seconds - static_cast<double>(tv_sec)) * 1e+9) ) { }
+        : tv_sec(static_cast<int64_t>(seconds)),
+          tv_nsec(static_cast<int64_t>((seconds - static_cast<double>(tv_sec)) * 1e+9)) { }
 
         /**
          * Conversion constructor of fraction_timespec for a fraction_i64 value.
@@ -919,17 +916,16 @@ namespace jau {
          * @param r the conversion input
          * @param overflow_ptr optional pointer to overflow result, defaults to nullptr
          */
-        constexpr fraction_timespec(const fraction_i64& r, bool * overflow_ptr=nullptr) noexcept
-        : tv_sec(0), tv_nsec(0)
-        {
+        constexpr fraction_timespec(const fraction_i64& r, bool* overflow_ptr = nullptr) noexcept
+        : tv_sec(0), tv_nsec(0) {
             bool overflow = false;
             tv_sec = r.to_num_of(fractions_i64::seconds, &overflow);
-            if( !overflow ) {
+            if ( !overflow ) {
                 const fraction_i64 ns = r - tv_sec * fractions_i64::seconds;
                 tv_nsec = ns.to_num_of(fractions_i64::nano, &overflow);
             }
-            if( overflow ) {
-                if( nullptr != overflow_ptr ) {
+            if ( overflow ) {
+                if ( nullptr != overflow_ptr ) {
                     *overflow_ptr = true;
                 }
                 tv_sec = INT64_MAX;
@@ -948,7 +944,7 @@ namespace jau {
          * @param consumedChars number of consumed chars successfully parsed
          * @param returns the fraction_timespec in UTC
          */
-        static fraction_timespec from(const std::string& datestr, int64_t &utcOffsetSec, size_t &consumedChars) noexcept;
+        static fraction_timespec from(const std::string& datestr, int64_t& utcOffsetSec, size_t& consumedChars) noexcept;
 
         /**
          * Conversion constructor from an ISO8601 time string,
@@ -970,10 +966,10 @@ namespace jau {
          * @param minute minutes after the hour [0-59]
          * @param seconds seconds after the minute including one leap second [0-60]
          * @param nano_seconds nanoseconds [0, 1'000'000'000)
-        */
+         */
         static fraction_timespec from(int year, unsigned month, unsigned day,
-                                      unsigned hour=0, unsigned minute=0,
-                                      unsigned seconds=0, uint64_t nano_seconds=0) noexcept;
+                                      unsigned hour = 0, unsigned minute = 0,
+                                      unsigned seconds = 0, uint64_t nano_seconds = 0) noexcept;
 
         /**
          * Returns the sum of both components.
@@ -994,7 +990,7 @@ namespace jau {
          * @see getMonotonicTime()
          */
         constexpr fraction_i64 to_fraction_i64() const noexcept {
-            return ( tv_sec * fractions_i64::seconds ) + ( tv_nsec * fractions_i64::nano );
+            return (tv_sec * fractions_i64::seconds) + (tv_nsec * fractions_i64::nano);
         }
 
         /**
@@ -1006,17 +1002,17 @@ namespace jau {
          * @returns reference to this instance
          */
         constexpr fraction_timespec& normalize() noexcept {
-            if( 0 != tv_nsec ) {
+            if ( 0 != tv_nsec ) {
                 constexpr int64_t ns_per_sec = 1'000'000'000L;
-                if( std::abs(tv_nsec) >= ns_per_sec ) {
+                if ( std::abs(tv_nsec) >= ns_per_sec ) {
                     const int64_t c = tv_nsec / ns_per_sec;
                     tv_nsec -= c * ns_per_sec;
                     tv_sec += c;
                 }
-                if( tv_nsec < 0 && tv_sec >= 1 ) {
+                if ( tv_nsec < 0 && tv_sec >= 1 ) {
                     tv_nsec += ns_per_sec;
                     tv_sec -= 1;
-                } else if( tv_nsec > 0 && tv_sec <= -1 ) {
+                } else if ( tv_nsec > 0 && tv_sec <= -1 ) {
                     tv_nsec -= ns_per_sec;
                     tv_sec += 1;
                 }
@@ -1025,19 +1021,20 @@ namespace jau {
         }
 
         constexpr bool isZero() noexcept { return 0 == tv_sec && 0 == tv_nsec; }
-        constexpr void clear() noexcept { tv_sec=0; tv_nsec=0; }
+        constexpr void clear() noexcept {
+            tv_sec = 0;
+            tv_nsec = 0;
+        }
 
         /** Two way comparison operator */
-        constexpr bool operator==(const fraction_timespec& rhs ) const noexcept {
+        constexpr bool operator==(const fraction_timespec& rhs) const noexcept {
             return tv_sec == rhs.tv_sec && tv_nsec == rhs.tv_nsec;
         }
 
         /** Three way std::strong_ordering comparison operator */
         constexpr std::strong_ordering operator<=>(const fraction_timespec& rhs) const noexcept {
-            if( tv_sec == rhs.tv_sec ) {
-                return tv_nsec == rhs.tv_nsec ?
-                    std::strong_ordering::equal :
-                    ( tv_nsec < rhs.tv_nsec ? std::strong_ordering::less : std::strong_ordering::greater );
+            if ( tv_sec == rhs.tv_sec ) {
+                return tv_nsec == rhs.tv_nsec ? std::strong_ordering::equal : (tv_nsec < rhs.tv_nsec ? std::strong_ordering::less : std::strong_ordering::greater);
             }
             return tv_sec < rhs.tv_sec ? std::strong_ordering::less : std::strong_ordering::greater;
         }
@@ -1048,8 +1045,8 @@ namespace jau {
          * @param rhs the other fraction_timespec
          * @return reference to this instance, normalized
          */
-        constexpr fraction_timespec& operator+=(const fraction_timespec& rhs ) noexcept {
-            tv_nsec += rhs.tv_nsec; // we allow the 'overflow' over 1'000'000'000, fitting into type and normalize() later
+        constexpr fraction_timespec& operator+=(const fraction_timespec& rhs) noexcept {
+            tv_nsec += rhs.tv_nsec;  // we allow the 'overflow' over 1'000'000'000, fitting into type and normalize() later
             tv_sec += rhs.tv_sec;
             return normalize();
         }
@@ -1060,8 +1057,8 @@ namespace jau {
          * @param rhs the other fraction_timespec
          * @return reference to this instance, normalized
          */
-        constexpr fraction_timespec& operator-=(const fraction_timespec& rhs ) noexcept {
-            tv_nsec -= rhs.tv_nsec; // we allow the 'overflow' over 1'000'000'000, fitting into type and normalize() later
+        constexpr fraction_timespec& operator-=(const fraction_timespec& rhs) noexcept {
+            tv_nsec -= rhs.tv_nsec;  // we allow the 'overflow' over 1'000'000'000, fitting into type and normalize() later
             tv_sec -= rhs.tv_sec;
             return normalize();
         }
@@ -1072,8 +1069,8 @@ namespace jau {
          * @param rhs a scalar
          * @return reference to this instance, normalized
          */
-        constexpr fraction_timespec& operator*=(const int64_t rhs ) noexcept {
-            tv_nsec *= rhs; // we allow the 'overflow' over 1'000'000'000, fitting into type and normalize() later
+        constexpr fraction_timespec& operator*=(const int64_t rhs) noexcept {
+            tv_nsec *= rhs;  // we allow the 'overflow' over 1'000'000'000, fitting into type and normalize() later
             tv_sec *= rhs;
             return normalize();
         }
@@ -1084,18 +1081,18 @@ namespace jau {
          * @param rhs a scalar
          * @return reference to this instance, normalized
          */
-        constexpr fraction_timespec& operator/=(const int64_t rhs ) noexcept {
-            constexpr int64_t ns_per_sec  = 1'000'000'000L;
-            constexpr int64_t SecLimit  = std::numeric_limits<int64_t>::max() / ns_per_sec;
-            if( tv_sec < SecLimit-1 ) {
-                const int64_t ns = ( tv_sec * ns_per_sec + tv_nsec) / rhs;
+        constexpr fraction_timespec& operator/=(const int64_t rhs) noexcept {
+            constexpr int64_t ns_per_sec = 1'000'000'000L;
+            constexpr int64_t SecLimit = std::numeric_limits<int64_t>::max() / ns_per_sec;
+            if ( tv_sec < SecLimit - 1 ) {
+                const int64_t ns = (tv_sec * ns_per_sec + tv_nsec) / rhs;
                 tv_sec = ns / ns_per_sec;
-                tv_nsec = ns - ( tv_sec * ns_per_sec );  // we allow the 'overflow' over 1'000'000'000, fitting into type and normalize() later
+                tv_nsec = ns - (tv_sec * ns_per_sec);  // we allow the 'overflow' over 1'000'000'000, fitting into type and normalize() later
                 return normalize();
             } else {
                 const double sec = to_double() / double(rhs);
                 tv_sec = static_cast<int64_t>(sec);
-                tv_nsec = static_cast<int64_t>( (sec - static_cast<double>(tv_sec)) * 1e+9);
+                tv_nsec = static_cast<int64_t>((sec - static_cast<double>(tv_sec)) * 1e+9);
                 return *this;
             }
         }
@@ -1111,7 +1108,7 @@ namespace jau {
          */
         constexpr struct timespec to_timespec() const noexcept {
             using ns_type = decltype(timespec::tv_nsec);
-            return { .tv_sec=static_cast<std::time_t>( tv_sec ), .tv_nsec=static_cast<ns_type>( tv_nsec ) };
+            return { .tv_sec = static_cast<std::time_t>(tv_sec), .tv_nsec = static_cast<ns_type>(tv_nsec) };
         }
 
         /**
@@ -1123,9 +1120,9 @@ namespace jau {
          */
         constexpr uint64_t to_ms() const noexcept {
             constexpr uint64_t ns_per_ms = 1'000'000UL;
-            constexpr uint64_t ms_per_sec  =   1'000UL;
-            constexpr int64_t SecLimit  = std::numeric_limits<uint64_t>::max() / ms_per_sec;
-            if( tv_sec < 0 || tv_nsec < 0 ) {
+            constexpr uint64_t ms_per_sec = 1'000UL;
+            constexpr int64_t SecLimit = std::numeric_limits<uint64_t>::max() / ms_per_sec;
+            if ( tv_sec < 0 || tv_nsec < 0 ) {
                 return 0;
             }
             return tv_sec < SecLimit ? tv_sec * ms_per_sec + tv_nsec / ns_per_ms : std::numeric_limits<uint64_t>::max();
@@ -1139,10 +1136,10 @@ namespace jau {
          * In case of overflow tv_sec >= UINT64_MAX / 1'000'000, method returns UINT64_MAX.
          */
         constexpr uint64_t to_us() const noexcept {
-            constexpr uint64_t ns_per_us =       1'000UL;
-            constexpr uint64_t us_per_sec  = 1'000'000UL;
-            constexpr int64_t SecLimit  = std::numeric_limits<uint64_t>::max() / us_per_sec;
-            if( tv_sec < 0 || tv_nsec < 0 ) {
+            constexpr uint64_t ns_per_us = 1'000UL;
+            constexpr uint64_t us_per_sec = 1'000'000UL;
+            constexpr int64_t SecLimit = std::numeric_limits<uint64_t>::max() / us_per_sec;
+            if ( tv_sec < 0 || tv_nsec < 0 ) {
                 return 0;
             }
             return tv_sec < SecLimit ? tv_sec * us_per_sec + tv_nsec / ns_per_us : std::numeric_limits<uint64_t>::max();
@@ -1153,7 +1150,6 @@ namespace jau {
             constexpr double ns_per_sec = 1'000'000'000.0;
             return double(tv_sec) + double(tv_nsec) / ns_per_sec;
         }
-
 
         /**
          * Return simple string representation in seconds and nanoseconds.
@@ -1174,18 +1170,18 @@ namespace jau {
          *
          * @param muteTime if true, always mute time
          */
-        std::string toISO8601String(bool space_separator=false, bool muteTime=false) const noexcept;
+        std::string toISO8601String(bool space_separator = false, bool muteTime = false) const noexcept;
     };
 
     inline std::string to_string(const fraction_timespec& v) noexcept { return v.toString(); }
 
     /** Return the maximum of the two given fraction_timespec */
-    constexpr const fraction_timespec& max(const fraction_timespec& lhs, const fraction_timespec& rhs ) noexcept {
+    constexpr const fraction_timespec& max(const fraction_timespec& lhs, const fraction_timespec& rhs) noexcept {
         return lhs > rhs ? lhs : rhs;
     }
 
     /** Return the minimum of the two given fraction_timespec */
-    constexpr const fraction_timespec& min(const fraction_timespec& lhs, const fraction_timespec& rhs ) noexcept {
+    constexpr const fraction_timespec& min(const fraction_timespec& lhs, const fraction_timespec& rhs) noexcept {
         return lhs < rhs ? lhs : rhs;
     }
 
@@ -1206,9 +1202,9 @@ namespace jau {
      * Returns the absolute fraction_timespec
      */
     constexpr fraction_timespec abs(const fraction_timespec& rhs) noexcept {
-        fraction_timespec copy(rhs); // skip normalize
-        copy.tv_sec= jau::abs(rhs.tv_sec);
-        copy.tv_nsec= jau::abs(rhs.tv_nsec);
+        fraction_timespec copy(rhs);  // skip normalize
+        copy.tv_sec = jau::abs(rhs.tv_sec);
+        copy.tv_nsec = jau::abs(rhs.tv_nsec);
         return copy;
     }
 
@@ -1219,9 +1215,9 @@ namespace jau {
      * @param rhs a fraction_timespec
      * @return resulting new fraction_timespec, each component reduced and both fraction_timespec::normalize() 'ed
      */
-    constexpr fraction_timespec operator+(const fraction_timespec& lhs, const fraction_timespec& rhs ) noexcept {
+    constexpr fraction_timespec operator+(const fraction_timespec& lhs, const fraction_timespec& rhs) noexcept {
         fraction_timespec r(lhs);
-        r += rhs; // implicit normalize
+        r += rhs;  // implicit normalize
         return r;
     }
 
@@ -1234,9 +1230,9 @@ namespace jau {
      * @param rhs a fraction_timespec
      * @return resulting new fraction_timespec, each component reduced and both fraction_timespec::normalize() 'ed
      */
-    constexpr fraction_timespec operator-(const fraction_timespec& lhs, const fraction_timespec& rhs ) noexcept {
+    constexpr fraction_timespec operator-(const fraction_timespec& lhs, const fraction_timespec& rhs) noexcept {
         fraction_timespec r(lhs);
-        r -= rhs; // implicit normalize
+        r -= rhs;  // implicit normalize
         return r;
     }
 
@@ -1247,9 +1243,9 @@ namespace jau {
      * @param rhs a scalar
      * @return resulting new fraction_timespec, each component reduced and both fraction_timespec::normalize() 'ed
      */
-    constexpr fraction_timespec operator*(const fraction_timespec& lhs, const int64_t rhs ) noexcept {
+    constexpr fraction_timespec operator*(const fraction_timespec& lhs, const int64_t rhs) noexcept {
         fraction_timespec r(lhs);
-        r *= rhs; // implicit normalize
+        r *= rhs;  // implicit normalize
         return r;
     }
     /**
@@ -1259,9 +1255,9 @@ namespace jau {
      * @param rhs a fraction_timespec
      * @return resulting new fraction_timespec, each component reduced and both fraction_timespec::normalize() 'ed
      */
-    constexpr fraction_timespec operator*(const int64_t lhs, const fraction_timespec& rhs ) noexcept {
+    constexpr fraction_timespec operator*(const int64_t lhs, const fraction_timespec& rhs) noexcept {
         fraction_timespec r(rhs);
-        r *= lhs; // implicit normalize
+        r *= lhs;  // implicit normalize
         return r;
     }
     /**
@@ -1271,9 +1267,9 @@ namespace jau {
      * @param rhs a scalar
      * @return resulting new fraction_timespec, each component reduced and both fraction_timespec::normalize() 'ed
      */
-    constexpr fraction_timespec operator/(const fraction_timespec& lhs, const int64_t rhs ) noexcept {
+    constexpr fraction_timespec operator/(const fraction_timespec& lhs, const int64_t rhs) noexcept {
         fraction_timespec r(lhs);
-        r /= rhs; // implicit normalize
+        r /= rhs;  // implicit normalize
         return r;
     }
     /**
@@ -1283,9 +1279,9 @@ namespace jau {
      * @param rhs a fraction_timespec
      * @return resulting new fraction_timespec, each component reduced and both fraction_timespec::normalize() 'ed
      */
-    constexpr fraction_timespec operator/(const int64_t lhs, const fraction_timespec& rhs ) noexcept {
+    constexpr fraction_timespec operator/(const int64_t lhs, const fraction_timespec& rhs) noexcept {
         fraction_timespec r(rhs);
-        r /= lhs; // implicit normalize
+        r /= lhs;  // implicit normalize
         return r;
     }
 
@@ -1294,7 +1290,7 @@ namespace jau {
         /** jau::fraction_timespec zero is { 0, 0 } */
         inline constexpr const jau::fraction_timespec zero(0, 0);
 
-    } // namespace fraction_tv
+    }  // namespace fraction_tv
 
     /** SC atomic integral scalar jau::fraction_i64. Memory-Model (MM) guaranteed sequential consistency (SC) between acquire (read) and release (write). Requires libatomic with libstdc++10. */
     typedef ordered_atomic<jau::fraction_i64, std::memory_order_seq_cst> sc_atomic_fraction_i64;
@@ -1310,7 +1306,7 @@ namespace jau {
 
     /**@}*/
 
-} // namespace jau
+}  // namespace jau
 
 namespace std {
 
@@ -1336,7 +1332,6 @@ namespace std {
 
     /**@}*/
 
-} // namespace std
-
+}  // namespace std
 
 #endif /* JAU_FRACTION_TYPE_HPP_ */

@@ -26,26 +26,26 @@
 #define JAU_STRING_UTIL_HPP_
 
 #include <algorithm>
+#include <cstdarg>
 #include <cstdint>
 #include <cstring>
-#include <cstdarg>
 #include <string>
 #include <string_view>
 #include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
 #include "jau/basic_types.hpp"
 #include "jau/type_info.hpp"
 
 #include <jau/byte_util.hpp>
 #include <jau/cpp_lang_util.hpp>
-#include <jau/packed_attribute.hpp>
-#include <jau/type_traits_queries.hpp>
-
-#include <jau/int_types.hpp>
 #include <jau/int_math.hpp>
+#include <jau/int_types.hpp>
+#include <jau/packed_attribute.hpp>
 #include <jau/string_cfmt.hpp>
+#include <jau/type_traits_queries.hpp>
 
 namespace jau {
 
@@ -78,11 +78,11 @@ namespace jau {
     std::string trim(const std::string &s) noexcept;
 
     /** Split given string `str` at `separator` into the resulting std::vector excluding the separator sequence . */
-    std::vector<std::string> split_string(const std::string& str, const std::string& separator) noexcept;
+    std::vector<std::string> split_string(const std::string &str, const std::string &separator) noexcept;
 
-    std::string& toLowerInPlace(std::string& s) noexcept;
+    std::string &toLowerInPlace(std::string &s) noexcept;
 
-    std::string toLower(const std::string& s) noexcept;
+    std::string toLower(const std::string &s) noexcept;
 
     /**
     // *************************************************
@@ -163,7 +163,7 @@ namespace jau {
      * @param lowerCase true to use lower case hex-chars, otherwise capital letters are being used.
      * @return the given std::string reference for chaining
      */
-    std::string& byteHexString(std::string& dest, const uint8_t value, const bool lowerCase) noexcept;
+    std::string &byteHexString(std::string &dest, const uint8_t value, const bool lowerCase) noexcept;
 
     /**
      * Produce a lower-case hexadecimal string representation with leading `0x` in MSB of the given pointer.
@@ -267,8 +267,8 @@ namespace jau {
      */
 
     namespace impl {
-        template <typename... Args>
-        constexpr std::string format_string_n(const std::size_t maxStrLen, const std::string_view& format, const Args &...args) {
+        template<typename... Args>
+        constexpr std::string format_string_n(const std::size_t maxStrLen, const std::string_view &format, const Args &...args) {
             std::string str;
             str.reserve(maxStrLen + 1);  // incl. EOS
             str.resize(maxStrLen);       // excl. EOS
@@ -278,9 +278,9 @@ namespace jau {
             PRAGMA_DISABLE_WARNING_PUSH
             PRAGMA_DISABLE_WARNING_FORMAT_NONLITERAL
             PRAGMA_DISABLE_WARNING_FORMAT_SECURITY
-            const size_t nchars = std::snprintf(&str[0], maxStrLen + 1, format.data(), args...); // NOLINT
+            const size_t nchars = std::snprintf(&str[0], maxStrLen + 1, format.data(), args...);  // NOLINT
             PRAGMA_DISABLE_WARNING_POP
-            if( nchars < maxStrLen + 1 ) {
+            if ( nchars < maxStrLen + 1 ) {
                 str.resize(nchars);
                 str.shrink_to_fit();
             }  // else truncated w/ nchars > MaxStrLen
@@ -292,41 +292,41 @@ namespace jau {
             size_t nchars;
             std::string str;
             {
-                const size_t bsz = strLenHint+1; // including EOS
-                str.reserve(bsz);  // incl. EOS
-                str.resize(bsz-1); // excl. EOS
+                const size_t bsz = strLenHint + 1;  // including EOS
+                str.reserve(bsz);                   // incl. EOS
+                str.resize(bsz - 1);                // excl. EOS
 
                 // -Wformat=2 -> -Wformat -Wformat-nonliteral -Wformat-security -Wformat-y2k
                 // -Wformat=2 -Wformat-overflow=2 -Wformat-signedness
                 PRAGMA_DISABLE_WARNING_PUSH
                 PRAGMA_DISABLE_WARNING_FORMAT_NONLITERAL
                 PRAGMA_DISABLE_WARNING_FORMAT_SECURITY
-                nchars = std::snprintf(&str[0], bsz, format.data(), args...); // NOLINT
+                nchars = std::snprintf(&str[0], bsz, format.data(), args...);  // NOLINT
                 PRAGMA_DISABLE_WARNING_POP
-                if( nchars < bsz ) {
+                if ( nchars < bsz ) {
                     str.resize(nchars);
                     str.shrink_to_fit();
                     return str;
                 }
             }
             {
-                const size_t bsz = std::min<size_t>(nchars+1, str.max_size()+1); // limit incl. EOS
-                str.reserve(bsz);  // incl. EOS
-                str.resize(bsz-1); // excl. EOS
+                const size_t bsz = std::min<size_t>(nchars + 1, str.max_size() + 1);  // limit incl. EOS
+                str.reserve(bsz);                                                     // incl. EOS
+                str.resize(bsz - 1);                                                  // excl. EOS
 
                 // -Wformat=2 -> -Wformat -Wformat-nonliteral -Wformat-security -Wformat-y2k
                 // -Wformat=2 -Wformat-overflow=2 -Wformat-signedness
                 PRAGMA_DISABLE_WARNING_PUSH
                 PRAGMA_DISABLE_WARNING_FORMAT_NONLITERAL
                 PRAGMA_DISABLE_WARNING_FORMAT_SECURITY
-                nchars = std::snprintf(&str[0], bsz, format.data(), args...); // NOLINT
+                nchars = std::snprintf(&str[0], bsz, format.data(), args...);  // NOLINT
                 PRAGMA_DISABLE_WARNING_POP
 
                 str.resize(nchars);
                 return str;
             }
         }
-    }
+    }  // namespace impl
 
     /**
      * Safely returns a (potentially truncated) string according to `snprintf()` formatting rules
@@ -342,11 +342,11 @@ namespace jau {
      * @param format `printf()` compliant format string
      * @param args optional arguments matching the format string
      */
-    template <typename... Args>
-    constexpr std::string format_string_n(const std::size_t maxStrLen, const std::string_view& format, const Args &...args) {
+    template<typename... Args>
+    constexpr std::string format_string_n(const std::size_t maxStrLen, const std::string_view &format, const Args &...args) {
         const jau::cfmt::PResult pr = jau::cfmt::checkR2<Args...>(format);
         if ( pr.argCount() < 0 ) {
-            throw jau::IllegalArgumentError("format/arg mismatch `"+std::string(format)+"`: "+pr.toString(), E_FILE_LINE);
+            throw jau::IllegalArgumentError("format/arg mismatch `" + std::string(format) + "`: " + pr.toString(), E_FILE_LINE);
         }
         return impl::format_string_n(maxStrLen, format, args...);
     }
@@ -367,7 +367,7 @@ namespace jau {
      */
     template <StringLiteral format, typename... Args>
     consteval_cxx20 std::string format_string_n(const std::size_t maxStrLen, const Args &...args) {
-        static_assert( 0 <= jau::cfmt::checkR2<Args...>(format.view()).argCount() );
+        static_assert(0 <= jau::cfmt::checkR2<Args...>(format.view()).argCount());
         return impl::format_string_n(maxStrLen, format.view(), args...);
     }
 
@@ -388,7 +388,7 @@ namespace jau {
     constexpr std::string format_string_h(const std::size_t strLenHint, const std::string_view format, const Args &...args) {
         const jau::cfmt::PResult pr = jau::cfmt::checkR2<Args...>(format);
         if ( pr.argCount() < 0 ) {
-            throw jau::IllegalArgumentError("format/arg mismatch `"+std::string(format)+"`: "+pr.toString(), E_FILE_LINE);
+            throw jau::IllegalArgumentError("format/arg mismatch `" + std::string(format) + "`: " + pr.toString(), E_FILE_LINE);
         }
         return impl::format_string_h(strLenHint, format, args...);
     }
@@ -424,7 +424,7 @@ namespace jau {
      */
     template <StringLiteral format, typename... Args>
     consteval_cxx20 std::string format_string(const Args &...args) {
-        static_assert( 0 <= jau::cfmt::checkR2<Args...>(format.view()).argCount() );
+        static_assert(0 <= jau::cfmt::checkR2<Args...>(format.view()).argCount());
         return impl::format_string_h(1023, format.view(), args...);
     }
 
@@ -434,121 +434,117 @@ namespace jau {
     // *************************************************
      */
 
-    template< class value_type,
-              std::enable_if_t< ( std::is_integral_v<value_type> && !std::is_same_v<bool, value_type> ) ||
-                                std::is_floating_point_v<value_type>,
-                                bool> = true>
-    inline std::string to_string(const value_type & ref)
-    {
+    template<class value_type,
+             std::enable_if_t<(std::is_integral_v<value_type> && !std::is_same_v<bool, value_type>) ||
+                              std::is_floating_point_v<value_type>,
+                              bool> = true>
+    inline std::string to_string(const value_type &ref) {
         return std::to_string(ref);
     }
 
-    template< class value_type,
-              std::enable_if_t< std::is_same_v<bool, value_type>,
-                                bool> = true>
-    inline std::string to_string(const value_type & ref)
-    {
+    template<class value_type,
+             std::enable_if_t<std::is_same_v<bool, value_type>,
+                              bool> = true>
+    inline std::string to_string(const value_type &ref) {
         return ref ? "T" : "F";
     }
 
-    template< class value_type,
-              std::enable_if_t<!std::is_integral_v<value_type> &&
-                               !std::is_floating_point_v<value_type> &&
-                                std::is_base_of_v<std::string, value_type>,
-                               bool> = true>
-    inline std::string to_string(const value_type & ref) {
+    template<class value_type,
+             std::enable_if_t<!std::is_integral_v<value_type> &&
+                              !std::is_floating_point_v<value_type> &&
+                              std::is_base_of_v<std::string, value_type>,
+                              bool> = true>
+    inline std::string to_string(const value_type &ref) {
         return ref;
     }
 
-    template< class value_type,
-              std::enable_if_t<!std::is_integral_v<value_type> &&
-                               !std::is_floating_point_v<value_type> &&
-                               !std::is_base_of_v<std::string, value_type> &&
-                                std::is_base_of_v<std::string_view, value_type>,
-                               bool> = true>
-    inline std::string to_string(const value_type & ref) {
+    template<class value_type,
+             std::enable_if_t<!std::is_integral_v<value_type> &&
+                              !std::is_floating_point_v<value_type> &&
+                              !std::is_base_of_v<std::string, value_type> &&
+                              std::is_base_of_v<std::string_view, value_type>,
+                              bool> = true>
+    inline std::string to_string(const value_type &ref) {
         return std::string(ref);
     }
 
-    template< class value_type,
-              std::enable_if_t<!std::is_integral_v<value_type> &&
-                               !std::is_floating_point_v<value_type> &&
-                               !std::is_base_of_v<std::string, value_type> &&
-                               !std::is_base_of_v<std::string_view, value_type> &&
-                                std::is_pointer_v<value_type>,
-                               bool> = true>
-    inline std::string to_string(const value_type & ref)
-    {
-        return to_hexstring((void*)ref); // NOLINT(bugprone-multi-level-implicit-pointer-conversion)
+    template<class value_type,
+             std::enable_if_t<!std::is_integral_v<value_type> &&
+                              !std::is_floating_point_v<value_type> &&
+                              !std::is_base_of_v<std::string, value_type> &&
+                              !std::is_base_of_v<std::string_view, value_type> &&
+                              std::is_pointer_v<value_type>,
+                              bool> = true>
+    inline std::string to_string(const value_type &ref) {
+        return to_hexstring((void *)ref);  // NOLINT(bugprone-multi-level-implicit-pointer-conversion)
     }
 
-    template< class value_type,
-              std::enable_if_t<!std::is_integral_v<value_type> &&
-                               !std::is_floating_point_v<value_type> &&
-                               !std::is_base_of_v<std::string, value_type> &&
-                               !std::is_base_of_v<std::string_view, value_type> &&
-                               !std::is_pointer_v<value_type> &&
-                                jau::has_toString_v<value_type>,
-                               bool> = true>
-    inline std::string to_string(const value_type & ref) {
+    template<class value_type,
+             std::enable_if_t<!std::is_integral_v<value_type> &&
+                              !std::is_floating_point_v<value_type> &&
+                              !std::is_base_of_v<std::string, value_type> &&
+                              !std::is_base_of_v<std::string_view, value_type> &&
+                              !std::is_pointer_v<value_type> &&
+                              jau::has_toString_v<value_type>,
+                              bool> = true>
+    inline std::string to_string(const value_type &ref) {
         return ref.toString();
     }
 
-    template< class value_type,
-              std::enable_if_t<!std::is_integral_v<value_type> &&
-                               !std::is_floating_point_v<value_type> &&
-                               !std::is_base_of_v<std::string, value_type> &&
-                               !std::is_base_of_v<std::string_view, value_type> &&
-                               !std::is_pointer_v<value_type> &&
-                               !jau::has_toString_v<value_type> &&
-                                jau::has_to_string_v<value_type>,
-                               bool> = true>
-    inline std::string to_string(const value_type & ref) {
+    template<class value_type,
+             std::enable_if_t<!std::is_integral_v<value_type> &&
+                              !std::is_floating_point_v<value_type> &&
+                              !std::is_base_of_v<std::string, value_type> &&
+                              !std::is_base_of_v<std::string_view, value_type> &&
+                              !std::is_pointer_v<value_type> &&
+                              !jau::has_toString_v<value_type> &&
+                              jau::has_to_string_v<value_type>,
+                              bool> = true>
+    inline std::string to_string(const value_type &ref) {
         return ref.to_string();
     }
 
-    template< class value_type,
-              std::enable_if_t<!std::is_integral_v<value_type> &&
-                               !std::is_floating_point_v<value_type> &&
-                               !std::is_base_of_v<std::string, value_type> &&
-                               !std::is_base_of_v<std::string_view, value_type> &&
-                               !std::is_pointer_v<value_type> &&
-                               !jau::has_toString_v<value_type> &&
-                               !jau::has_to_string_v<value_type> &&
-                                jau::has_member_of_pointer_v<value_type>,
-                               bool> = true>
-    inline std::string to_string(const value_type & ref) {
-        return to_hexstring((void*)ref.operator->());
+    template<class value_type,
+             std::enable_if_t<!std::is_integral_v<value_type> &&
+                              !std::is_floating_point_v<value_type> &&
+                              !std::is_base_of_v<std::string, value_type> &&
+                              !std::is_base_of_v<std::string_view, value_type> &&
+                              !std::is_pointer_v<value_type> &&
+                              !jau::has_toString_v<value_type> &&
+                              !jau::has_to_string_v<value_type> &&
+                              jau::has_member_of_pointer_v<value_type>,
+                              bool> = true>
+    inline std::string to_string(const value_type &ref) {
+        return to_hexstring((void *)ref.operator->());
     }
 
-    template< class value_type,
-              std::enable_if_t<!std::is_integral_v<value_type> &&
-                               !std::is_floating_point_v<value_type> &&
-                               !std::is_base_of_v<std::string, value_type> &&
-                               !std::is_base_of_v<std::string_view, value_type> &&
-                               !std::is_pointer_v<value_type> &&
-                               !jau::has_toString_v<value_type> &&
-                               !jau::has_to_string_v<value_type> &&
-                               !jau::has_member_of_pointer_v<value_type>,
-                               bool> = true>
-    inline std::string to_string(const value_type & ref) {
+    template<class value_type,
+             std::enable_if_t<!std::is_integral_v<value_type> &&
+                              !std::is_floating_point_v<value_type> &&
+                              !std::is_base_of_v<std::string, value_type> &&
+                              !std::is_base_of_v<std::string_view, value_type> &&
+                              !std::is_pointer_v<value_type> &&
+                              !jau::has_toString_v<value_type> &&
+                              !jau::has_to_string_v<value_type> &&
+                              !jau::has_member_of_pointer_v<value_type>,
+                              bool> = true>
+    inline std::string to_string(const value_type &ref) {
         (void)ref;
-        return "jau::to_string<T> n/a for type "+jau::static_ctti<value_type>().toString();
+        return "jau::to_string<T> n/a for type " + jau::static_ctti<value_type>().toString();
     }
 
     template<typename T>
-    std::string to_string(std::vector<T> const &list, const std::string& delim)
-    {
+    std::string to_string(std::vector<T> const &list, const std::string &delim) {
         if ( list.empty() ) {
             return std::string();
         }
         bool need_delim = false;
         std::string res;
-        for(const T& e : list) {
-            if( need_delim ) {
-                res.append( delim );
+        for ( const T &e : list ) {
+            if ( need_delim ) {
+                res.append(delim);
             }
-            res.append( to_string( e ) );
+            res.append(to_string(e));
             need_delim = true;
         }
         return res;
@@ -566,13 +562,13 @@ namespace jau {
      */
     struct string_hash {
         using is_transparent = void;
-        [[nodiscard]] size_t operator()(const char* txt) const {
+        [[nodiscard]] size_t operator()(const char *txt) const {
             return std::hash<std::string_view>{}(txt);
         }
         [[nodiscard]] size_t operator()(std::string_view txt) const {
             return std::hash<std::string_view>{}(txt);
         }
-        [[nodiscard]] size_t operator()(const std::string& txt) const {
+        [[nodiscard]] size_t operator()(const std::string &txt) const {
             return std::hash<std::string>{}(txt);
         }
     };
@@ -584,11 +580,11 @@ namespace jau {
 
     /**@}*/
 
-} // namespace jau
+}  // namespace jau
 
 #define jau_format_string_static(...) \
-    jau::format_string(__VA_ARGS__);     \
-    static_assert( 0 <= jau::cfmt::checkR(__VA_ARGS__).argCount() ); // compile time validation!
+    jau::format_string(__VA_ARGS__);  \
+    static_assert(0 <= jau::cfmt::checkR(__VA_ARGS__).argCount());  // compile time validation!
 
 /** \example test_intdecstring01.cpp
  * This C++ unit test validates the jau::to_decstring implementation

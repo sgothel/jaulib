@@ -106,62 +106,62 @@
         }
         return false;
     }
-    bool UserInfo::get_env_uid(id_t& res_uid, const bool try_sudo) noexcept {
+    bool UserInfo::get_env_uid(id_t &res_uid, const bool try_sudo) noexcept {
         ::uid_t n_res_uid = 0;
-        if( UserInfo_get_env_uid(n_res_uid, try_sudo) ) {
+        if ( UserInfo_get_env_uid(n_res_uid, try_sudo) ) {
             res_uid = (id_t)n_res_uid;
             return true;
         }
         return false;
     }
 
-    bool UserInfo::get_env_username(std::string& username, const bool try_sudo) noexcept {
+    bool UserInfo::get_env_username(std::string &username, const bool try_sudo) noexcept {
         char *env_str = nullptr;
-        if( try_sudo ) {
+        if ( try_sudo ) {
             env_str = ::getenv("SUDO_USER");
-            if( nullptr != env_str ) {
+            if ( nullptr != env_str ) {
                 username = std::string(env_str);
                 return true;
             }
         }
         env_str = ::getenv("USER");
-        if( nullptr != env_str ) {
+        if ( nullptr != env_str ) {
             username = std::string(env_str);
             return true;
         }
         return false;
     }
 
-    bool UserInfo::get_creds(id_t& res_uid, id_t& res_gid, std::string& username, std::string& homedir, std::string& shell) noexcept {
+    bool UserInfo::get_creds(id_t &res_uid, id_t &res_gid, std::string &username, std::string &homedir, std::string &shell) noexcept {
         ::uid_t n_res_uid = (::uid_t)res_uid;
         const bool is_root = 0 == n_res_uid;
         struct passwd pwd;
         char buffer[1024];
 
-        if( !is_root || UserInfo_get_env_uid(n_res_uid, is_root) ) {
-            struct passwd* pwd_res = nullptr;
-            if( 0 != ::getpwuid_r(n_res_uid, &pwd, buffer, sizeof(buffer), &pwd_res) || nullptr == pwd_res ) {
+        if ( !is_root || UserInfo_get_env_uid(n_res_uid, is_root) ) {
+            struct passwd *pwd_res = nullptr;
+            if ( 0 != ::getpwuid_r(n_res_uid, &pwd, buffer, sizeof(buffer), &pwd_res) || nullptr == pwd_res ) {
                 DBG_PRINT("getpwuid(%" PRIu32 ") failed", n_res_uid);
                 return false;
             }
             DBG_PRINT("getpwuid(%" PRIu32 "): name '%s', uid %" PRIu32 ", gid %" PRIu32 "\n", n_res_uid, pwd_res->pw_name, pwd_res->pw_uid, pwd_res->pw_gid);
             res_uid = (id_t)n_res_uid;
-            res_gid = (id_t)(::gid_t)( pwd_res->pw_gid );
+            res_gid = (id_t)(::gid_t)(pwd_res->pw_gid);
             username = std::string(pwd_res->pw_name);
             homedir = std::string(pwd_res->pw_dir);
             shell = std::string(pwd_res->pw_shell);
             return true;
         } else {
             std::string tmp_username;
-            if( get_env_username(tmp_username, is_root) ) {
-                struct passwd* pwd_res = nullptr;
-                if( 0 != ::getpwnam_r(tmp_username.c_str(), &pwd, buffer, sizeof(buffer), &pwd_res) || nullptr == pwd_res ) {
+            if ( get_env_username(tmp_username, is_root) ) {
+                struct passwd *pwd_res = nullptr;
+                if ( 0 != ::getpwnam_r(tmp_username.c_str(), &pwd, buffer, sizeof(buffer), &pwd_res) || nullptr == pwd_res ) {
                     DBG_PRINT("getpwnam(%s) failed\n", tmp_username.c_str());
                     return false;
                 }
                 DBG_PRINT("getpwnam(%s): name '%s', uid %" PRIu32 ", gid %" PRIu32 "\n", tmp_username.c_str(), pwd_res->pw_name, pwd_res->pw_uid, pwd_res->pw_gid);
                 res_uid = (id_t)n_res_uid;
-                res_gid = (id_t)(::gid_t)( pwd_res->pw_gid );
+                res_gid = (id_t)(::gid_t)(pwd_res->pw_gid);
                 username = std::string(pwd_res->pw_name);
                 homedir = std::string(pwd_res->pw_dir);
                 shell = std::string(pwd_res->pw_shell);
@@ -171,17 +171,17 @@
         return false;
     }
 
-    bool UserInfo::get_creds(const std::string& username_lookup, id_t& res_uid, id_t& res_gid, std::string& username, std::string& homedir, std::string& shell) noexcept {
+    bool UserInfo::get_creds(const std::string &username_lookup, id_t &res_uid, id_t &res_gid, std::string &username, std::string &homedir, std::string &shell) noexcept {
         struct passwd pwd;
         char buffer[1024];
-        struct passwd* pwd_res = nullptr;
-        if( 0 != ::getpwnam_r(username_lookup.c_str(), &pwd, buffer, sizeof(buffer), &pwd_res) || nullptr == pwd_res ) {
+        struct passwd *pwd_res = nullptr;
+        if ( 0 != ::getpwnam_r(username_lookup.c_str(), &pwd, buffer, sizeof(buffer), &pwd_res) || nullptr == pwd_res ) {
             DBG_PRINT("getpwnam(%s) failed\n", username_lookup.c_str());
             return false;
         }
         DBG_PRINT("getpwnam(%s): name '%s', uid %" PRIu32 ", gid %" PRIu32 "\n", username_lookup.c_str(), pwd_res->pw_name, pwd_res->pw_uid, pwd_res->pw_gid);
-        res_uid = (id_t)(::uid_t)( pwd_res->pw_uid );
-        res_gid = (id_t)(::gid_t)( pwd_res->pw_gid );
+        res_uid = (id_t)(::uid_t)(pwd_res->pw_uid);
+        res_gid = (id_t)(::gid_t)(pwd_res->pw_gid);
         username = std::string(pwd_res->pw_name);
         homedir = std::string(pwd_res->pw_dir);
         shell = std::string(pwd_res->pw_shell);
@@ -191,23 +191,23 @@
     UserInfo::UserInfo() noexcept {
         m_uid = (id_t)::getuid();
         m_valid = get_creds(m_uid, m_gid, m_username, m_homedir, m_shell);
-        if( m_valid ) {
+        if ( m_valid ) {
             get_groups(m_gid_list);
         }
     }
     UserInfo::UserInfo(id_t uid) noexcept {
         m_uid = uid;
         m_valid = get_creds(m_uid, m_gid, m_username, m_homedir, m_shell);
-        if( m_valid ) {
+        if ( m_valid ) {
             get_groups(m_gid_list);
         }
     }
 
-    UserInfo::UserInfo(const std::string& username) noexcept {
+    UserInfo::UserInfo(const std::string &username) noexcept {
         m_valid = get_creds(username, m_uid, m_gid, m_username, m_homedir, m_shell);
-        if( m_valid ) {
+        if ( m_valid ) {
             get_groups(m_gid_list);
         }
     }
 
-#endif // !_WIN32
+#endif  // !_WIN32

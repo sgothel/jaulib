@@ -70,7 +70,7 @@ namespace jau::util {
                                 uint16_t _state) noexcept
         : m_major(majorRev), m_minor(minorRev), m_sub(subMinorRev),
           m_git_commits(gitCommits), m_git_ssha(gitSSHA), m_git_dirty(gitDirty),
-          m_state(_state) {}
+          m_state(_state) { }
 
       public:
         /**
@@ -83,8 +83,7 @@ namespace jau::util {
         constexpr VersionNumber(int majorRev, int minorRev, int subMinorRev, int gitCommits, uint64_t gitSSHA, bool gitDirty) noexcept
         : VersionNumber(majorRev, minorRev, subMinorRev,
                         gitCommits, gitSSHA, gitDirty,
-                        HAS_MAJOR | HAS_MINOR | HAS_SUB | HAS_GIT_INFO)
-        {}
+                        HAS_MAJOR | HAS_MINOR | HAS_SUB | HAS_GIT_INFO) { }
 
         /**
          * Explicit version number instantiation, with all components defined explicitly excluding git.
@@ -93,8 +92,7 @@ namespace jau::util {
          * @see #hasSub()
          */
         constexpr VersionNumber(int majorRev, int minorRev, int subMinorRev) noexcept
-        : VersionNumber(majorRev, minorRev, subMinorRev, 0, 0, false, HAS_MAJOR | HAS_MINOR | HAS_SUB)
-        {}
+        : VersionNumber(majorRev, minorRev, subMinorRev, 0, 0, false, HAS_MAJOR | HAS_MINOR | HAS_SUB) { }
 
         /**
          * Default ctor for zero version.
@@ -103,8 +101,7 @@ namespace jau::util {
          * @see #hasSub()
          */
         constexpr VersionNumber() noexcept
-        : VersionNumber(0, 0, 0, 0, 0, false, HAS_MAJOR | HAS_MINOR | HAS_SUB)
-        {}
+        : VersionNumber(0, 0, 0, 0, 0, false, HAS_MAJOR | HAS_MINOR | HAS_SUB) { }
 
         constexpr VersionNumber(const VersionNumber&)            noexcept = default;
         constexpr VersionNumber(VersionNumber&&)                 noexcept = default;
@@ -117,13 +114,13 @@ namespace jau::util {
         }
 
         /** Returns <code>true</code>, if the major component is defined explicitly, otherwise <code>false</code>. Undefined components has the value <code>0</code>. */
-        constexpr bool hasMajor() const noexcept { return 0 != ( HAS_MAJOR & m_state ); }
+        constexpr bool hasMajor() const noexcept { return 0 != (HAS_MAJOR & m_state); }
         /** Returns <code>true</code>, if the optional minor component is defined explicitly, otherwise <code>false</code>. Undefined components has the value <code>0</code>. */
-        constexpr bool hasMinor() const noexcept { return 0 != ( HAS_MINOR & m_state ); }
+        constexpr bool hasMinor() const noexcept { return 0 != (HAS_MINOR & m_state); }
         /** Returns <code>true</code>, if the optional sub component is defined explicitly, otherwise <code>false</code>. Undefined components has the value <code>0</code>. */
-        constexpr bool hasSub()   const noexcept { return 0 != ( HAS_SUB & m_state ); }
+        constexpr bool hasSub() const noexcept { return 0 != (HAS_SUB & m_state); }
         /** Returns <code>true</code>, if the optional git information is defined explicitly, otherwise <code>false</code>. */
-        constexpr bool hasGitInfo()  const noexcept { return 0 != ( HAS_GIT_INFO & m_state ); }
+        constexpr bool hasGitInfo() const noexcept { return 0 != (HAS_GIT_INFO & m_state); }
 
         constexpr int major() const noexcept { return m_major; }
         constexpr int minor() const noexcept { return m_minor; }
@@ -140,31 +137,31 @@ namespace jau::util {
 
         /** Three way std::strong_ordering comparison operator */
         constexpr std::strong_ordering operator<=>(const VersionNumber& vo) const noexcept {
-            if( m_major > vo.m_major ) {
+            if ( m_major > vo.m_major ) {
                 return std::strong_ordering::greater;
-            } else if( m_major < vo.m_major ) {
+            } else if ( m_major < vo.m_major ) {
                 return std::strong_ordering::less;
-            } else if( m_minor > vo.m_minor ) {
+            } else if ( m_minor > vo.m_minor ) {
                 return std::strong_ordering::greater;
-            } else if( m_minor < vo.m_minor ) {
+            } else if ( m_minor < vo.m_minor ) {
                 return std::strong_ordering::less;
-            } else if( m_sub > vo.m_sub ) {
+            } else if ( m_sub > vo.m_sub ) {
                 return std::strong_ordering::greater;
-            } else if( m_sub < vo.m_sub ) {
+            } else if ( m_sub < vo.m_sub ) {
                 return std::strong_ordering::less;
             }
-            if( hasGitInfo() ) {
-                if( m_git_commits > vo.m_git_commits ) {
+            if ( hasGitInfo() ) {
+                if ( m_git_commits > vo.m_git_commits ) {
                     return std::strong_ordering::greater;
-                } else if( m_git_commits < vo.m_git_commits ) {
+                } else if ( m_git_commits < vo.m_git_commits ) {
                     return std::strong_ordering::less;
-                } else if( !m_git_dirty && vo.m_git_dirty ) {
+                } else if ( !m_git_dirty && vo.m_git_dirty ) {
                     return std::strong_ordering::greater;
-                } else if( m_git_dirty && !vo.m_git_dirty ) {
+                } else if ( m_git_dirty && !vo.m_git_dirty ) {
                     return std::strong_ordering::less;
-                } else if( m_git_ssha > vo.m_git_ssha ) {  // no sane interpretation of m_git_ssha
+                } else if ( m_git_ssha > vo.m_git_ssha ) {  // no sane interpretation of m_git_ssha
                     return std::strong_ordering::greater;
-                } else if( m_git_ssha < vo.m_git_ssha ) {  // no sane interpretation of m_git_ssha
+                } else if ( m_git_ssha < vo.m_git_ssha ) {  // no sane interpretation of m_git_ssha
                     return std::strong_ordering::less;
                 }
             }
@@ -221,10 +218,10 @@ namespace jau::util {
 
       protected:
         constexpr VersionNumberString(int majorRev, int minorRev, int subMinorRev,
-                                int gitCommits, uint64_t gitSSHA, bool gitDirty,
-                                uint16_t _state, ssize_t strEnd, std::string _version_str) noexcept
+                                      int gitCommits, uint64_t gitSSHA, bool gitDirty,
+                                      uint16_t _state, ssize_t strEnd, std::string _version_str) noexcept
         : VersionNumber(majorRev, minorRev, subMinorRev, gitCommits, gitSSHA, gitDirty, _state),
-          m_strEnd(strEnd), m_version_str(std::move(_version_str)) {}
+          m_strEnd(strEnd), m_version_str(std::move(_version_str)) { }
 
       public:
         static std::regex getNonGitPattern(const std::string& delim) {
@@ -239,7 +236,7 @@ namespace jau::util {
             return std::regex( R"(\D*(\d+)[^\)" + delim + R"(\s]*(?:\)" + delim + R"(\D*(\d+)[^\)" + delim + R"(\s]*(?:\)" + delim + R"(\D*(\d+)(?:\-(\d+)\-g([0-9a-f]+)(\-dirty)?)?)?)?)");
         }
 
-        static const std::regex& getDefaultPattern() noexcept { // NOLINT(bugprone-exception-escape)
+        static const std::regex& getDefaultPattern() noexcept {  // NOLINT(bugprone-exception-escape)
             static std::regex defPattern = getGitPattern(".");
             return defPattern;
         }
@@ -251,8 +248,7 @@ namespace jau::util {
          * @see #hasSub()
          */
         constexpr VersionNumberString() noexcept
-        : VersionNumberString(0, 0, 0, 0, 0, false, -1, HAS_MAJOR | HAS_MINOR | HAS_SUB, "")
-        {}
+        : VersionNumberString(0, 0, 0, 0, 0, false, -1, HAS_MAJOR | HAS_MINOR | HAS_SUB, "") { }
 
         VersionNumberString(const VersionNumberString&)            noexcept = default;
         VersionNumberString(VersionNumberString&&)                 noexcept = default;
@@ -283,26 +279,26 @@ namespace jau::util {
             // group5: hex == hex short-sha
             // group6: str == dirty
             std::smatch match;
-            if( std::regex_search(versionString, match, versionPattern) ) {
+            if ( std::regex_search(versionString, match, versionPattern) ) {
                 m_strEnd = match.position() + match.length();
                 if constexpr ( DBG_OUT ) {
                     std::cout << "XXX: " << versionString << std::endl;
                     std::cout << "XXX: match pos " << match.position() << ", len " << match.length() << ", sz " << match.size() << std::endl;
-                    for(size_t i=0; i<match.size(); ++i) {
+                    for ( size_t i = 0; i < match.size(); ++i ) {
                         const std::string& s = match[i];
                         std::cout << "- [" << i << "]: '" << s << "', len " << s.length() << std::endl;
                     }
                 }
-                if( match.size() >= 2 && match[1].length() > 0 ) {
-                    m_major  = std::stoi(match[1]);
+                if ( match.size() >= 2 && match[1].length() > 0 ) {
+                    m_major = std::stoi(match[1]);
                     m_state |= HAS_MAJOR;
-                    if( match.size() >= 3 && match[2].length() > 0 ) {
-                        m_minor  = std::stoi(match[2]);
+                    if ( match.size() >= 3 && match[2].length() > 0 ) {
+                        m_minor = std::stoi(match[2]);
                         m_state |= HAS_MINOR;
-                        if( match.size() >= 4 && match[3].length() > 0 ) {
-                            m_sub    = std::stoi(match[3]);
+                        if ( match.size() >= 4 && match[3].length() > 0 ) {
+                            m_sub = std::stoi(match[3]);
                             m_state |= HAS_SUB;
-                            if( match.size() >= 5 && match[4].length() > 0 ) {
+                            if ( match.size() >= 5 && match[4].length() > 0 ) {
                                 m_git_commits = std::stoi(match[4]);
                                 m_state |= HAS_GIT_INFO;
                                 if constexpr ( DBG_OUT ) {
@@ -343,8 +339,7 @@ namespace jau::util {
          * @see #hasSub()
          */
         VersionNumberString(const std::string& versionString) noexcept
-        : VersionNumberString(versionString, getDefaultPattern())
-        { }
+        : VersionNumberString(versionString, getDefaultPattern()) { }
 
         /**
          * String derived version number instantiation.
@@ -363,9 +358,7 @@ namespace jau::util {
          * @see #hasSub()
          */
         VersionNumberString(const std::string& versionString, const std::string& delim) noexcept
-        : VersionNumberString(versionString, getGitPattern(delim))
-        { }
-
+        : VersionNumberString(versionString, getGitPattern(delim)) { }
 
         /** Returns true if constructed with a `version-string`, otherwise false. */
         constexpr bool hasString() const noexcept { return m_version_str.length() > 0; }
@@ -391,7 +384,7 @@ namespace jau::util {
                 }
                 res.append("]");
             }
-            if( hasString() ) {
+            if ( hasString() ) {
                 res.append(" (").append(m_version_str).append(")");
             }
             return res;
@@ -412,6 +405,6 @@ namespace std {
             return v.hash();
         }
     };
-}
+}  // namespace std
 
 #endif /* JAU_VERSIONNUMBER_HPP_ */

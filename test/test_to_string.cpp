@@ -25,12 +25,12 @@
 #include <cinttypes>
 #include <cstring>
 
-#include <jau/test/catch2_ext.hpp>
-
-#include <jau/type_traits_queries.hpp>
-#include <jau/basic_types.hpp>
-
 #include "test_datatype01.hpp"
+
+#include <jau/basic_types.hpp>
+#include <jau/cpp_lang_util.hpp>
+#include <jau/test/catch2_ext.hpp>
+#include <jau/type_traits_queries.hpp>
 
 using namespace jau;
 
@@ -85,13 +85,13 @@ TEST_CASE( "JAU to_string() Test 00 - jau::to_string() std::string conversion", 
     size_t vec_int_citer_1E_1B_itr_count = vec_int_citer_1E - vec_int_citer_1B;
 
     printf("vec_int_citer_1E - vec_int_citer_1B = itr_count %zu, ptr_count %zu\n",
-            vec_int_citer_1E_1B_itr_count, vec_int_citer_1E_1B_ptr_count);
+           vec_int_citer_1E_1B_itr_count, vec_int_citer_1E_1B_ptr_count);
     printf("vec_int_citer_1E - vec_int_citer_1B = %zu\n", vec_int_citer_1E_1B_itr_count);
     printf("vec_int_citer_1B_ptr %s, vec_int_citer_1E1_ptr = %s\n", vec_int_citer_1B_str.c_str(), vec_int_citer_1E_str.c_str());
 
     CHECK(vec_int_citer_1E_1B_itr_count == 3);
     CHECK(vec_int_citer_1E_1B_itr_count == vec_int_citer_1E_1B_ptr_count);
 
-    CHECK( vec_int_citer_1E_str == jau::to_string(vec_int_citer_1E) );
+    CHECK(vec_int_citer_1E_str == jau::to_string(vec_int_citer_1E));
 }
 

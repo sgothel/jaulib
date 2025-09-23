@@ -22,35 +22,34 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <algorithm>
+#include <cassert>
+#include <cinttypes>
 #include <cmath>
 #include <cstdint>
-#include <cinttypes>
 #include <cstring>
 #include <ctime>
-
-#include <algorithm>
 #include <regex>
 #include <string>
+#include <utility>
 
+#include <jau/basic_types.hpp>
 #include <jau/byte_util.hpp>
 #include <jau/cpp_lang_util.hpp>
 #include <jau/debug.hpp>
-#include <jau/basic_types.hpp>
 #include <jau/float_math.hpp>
 #include <jau/functional.hpp>
 #include <jau/int_math.hpp>
 #include <jau/int_types.hpp>
-#include <jau/secmem.hpp>
 #include <jau/math/math_error.hpp>
+#include <jau/secmem.hpp>
 #include <jau/string_util.hpp>
-#include <utility>
 
 using namespace jau;
 
-void jau::zero_bytes_sec(void *s, size_t n) noexcept __attrdef_no_optimize__
-{
+void jau::zero_bytes_sec(void *s, size_t n) noexcept __attrdef_no_optimize__ {
     // asm asm-qualifiers ( AssemblerTemplate : OutputOperands [ : InputOperands [ : Clobbers ] ] )
-    asm volatile("" : "+r,m"(s), "+r,m"(n) : : "memory"); // a nop asm, usually guaranteeing synchronized order and non-optimization
+    asm volatile("" : "+r,m"(s), "+r,m"(n) : : "memory");  // a nop asm, usually guaranteeing synchronized order and non-optimization
     ::explicit_bzero(s, n);
     // ::bzero(s, n);
     // ::memset(s, 0, n);
@@ -67,13 +66,13 @@ void jau::zero_bytes_sec(void *s, size_t n) noexcept __attrdef_no_optimize__
 fraction_timespec jau::getMonotonicTime() noexcept {
     struct timespec t;
     ::clock_gettime(CLOCK_MONOTONIC, &t);
-    return fraction_timespec( (int64_t)t.tv_sec, (int64_t)t.tv_nsec );
+    return fraction_timespec((int64_t)t.tv_sec, (int64_t)t.tv_nsec);
 }
 
 fraction_timespec jau::getWallClockTime() noexcept {
-    struct timespec t { .tv_sec=0, .tv_nsec=0 };
+    struct timespec t{ .tv_sec = 0, .tv_nsec = 0 };
     ::clock_gettime(CLOCK_REALTIME, &t);
-    return fraction_timespec( (int64_t)t.tv_sec, (int64_t)t.tv_nsec );
+    return fraction_timespec((int64_t)t.tv_sec, (int64_t)t.tv_nsec);
 }
 
 uint64_t jau::getCurrentMilliseconds() noexcept {
@@ -81,14 +80,14 @@ uint64_t jau::getCurrentMilliseconds() noexcept {
     constexpr uint64_t ns_per_ms  =     1'000'000UL;
     struct timespec t { .tv_sec=0, .tv_nsec=0 };
     ::clock_gettime(CLOCK_MONOTONIC, &t);
-    return static_cast<uint64_t>( t.tv_sec ) * ms_per_sec +
-           static_cast<uint64_t>( t.tv_nsec ) / ns_per_ms;
+    return static_cast<uint64_t>(t.tv_sec) * ms_per_sec +
+           static_cast<uint64_t>(t.tv_nsec) / ns_per_ms;
 }
 
 uint64_t jau::getWallClockSeconds() noexcept {
-    struct timespec t { .tv_sec=0, .tv_nsec=0 };
+    struct timespec t{ .tv_sec = 0, .tv_nsec = 0 };
     ::clock_gettime(CLOCK_REALTIME, &t);
-    return static_cast<uint64_t>( t.tv_sec );
+    return static_cast<uint64_t>(t.tv_sec);
 }
 
 std::string fraction_timespec::toString() const noexcept {
@@ -98,15 +97,15 @@ std::string fraction_timespec::toString() const noexcept {
 std::string fraction_timespec::toISO8601String(bool space_separator, bool muteTime) const noexcept {
     std::time_t t0 = static_cast<std::time_t>(tv_sec);
     struct std::tm tm_0;
-    if( nullptr == ::gmtime_r(&t0, &tm_0) ) {
-        if( muteTime ) {
-            if( space_separator ) {
+    if ( nullptr == ::gmtime_r(&t0, &tm_0) ) {
+        if ( muteTime ) {
+            if ( space_separator ) {
                 return "1970-01-01";
             } else {
                 return "1970-01-01Z";
             }
         } else {
-            if( space_separator ) {
+            if ( space_separator ) {
                 return "1970-01-01 00:00:00";
             } else {
                 return "1970-01-01T00:00:00Z";
@@ -119,23 +118,23 @@ std::string fraction_timespec::toISO8601String(bool space_separator, bool muteTi
         // 2022-06-23T14:34:10.228978909Z 30+1
         char b[30 + 1];
         size_t p;
-        if( muteTime || ( 0 == tm_0.tm_hour && 0 == tm_0.tm_min && 0 == tm_0.tm_sec && 0 == tv_nsec ) ) {
+        if ( muteTime || (0 == tm_0.tm_hour && 0 == tm_0.tm_min && 0 == tm_0.tm_sec && 0 == tv_nsec) ) {
             p = ::strftime(b, sizeof(b), "%Y-%m-%d", &tm_0);
         } else {
-            if( space_separator ) {
+            if ( space_separator ) {
                 p = ::strftime(b, sizeof(b), "%Y-%m-%d %H:%M:%S", &tm_0);
             } else {
                 p = ::strftime(b, sizeof(b), "%Y-%m-%dT%H:%M:%S", &tm_0);
             }
         }
-        if( 0 < p && p < sizeof(b) - 1 ) {
+        if ( 0 < p && p < sizeof(b) - 1 ) {
             size_t q = 0;
             const size_t remaining = sizeof(b) - p;
-            if( !muteTime && 0 < tv_nsec ) {
+            if ( !muteTime && 0 < tv_nsec ) {
                 q = ::snprintf(b + p, remaining, ".%09" PRIi64, tv_nsec);
             }
-            if( !space_separator ) {
-                ::snprintf(b + p + q, remaining-q, "Z");
+            if ( !space_separator ) {
+                ::snprintf(b + p + q, remaining - q, "Z");
             }
         }
         return std::string(b);
@@ -146,31 +145,31 @@ fraction_timespec fraction_timespec::from(int year, unsigned month, unsigned day
                                           unsigned hour, unsigned minute,
                                           unsigned seconds, uint64_t nano_seconds) noexcept {
     fraction_timespec res;
-    if( !( 1<=month && month<=12 &&
-           1<=day && day<=31 &&
-           hour<=23 &&
-           minute<=59 && seconds<=60 ) ) {
-        return res; // error
+    if ( !(1 <= month && month <= 12 &&
+           1 <= day && day <= 31 &&
+           hour <= 23 &&
+           minute <= 59 && seconds <= 60) ) {
+        return res;  // error
     }
     struct std::tm tm_0;
     ::memset(&tm_0, 0, sizeof(tm_0));
-    tm_0.tm_year = year - 1900; // years since 1900
-    tm_0.tm_mon = static_cast<int>(month) - 1; // months since Janurary [0-11]
-    tm_0.tm_mday = static_cast<int>(day);      // day of the month [1-31]
-    tm_0.tm_hour = static_cast<int>(hour);     // hours since midnight [0-23]
-    tm_0.tm_min = static_cast<int>(minute);    // minutes after the hour [0-59]
-    tm_0.tm_sec = static_cast<int>(seconds);   // seconds after the minute [0-60], including one leap second
-    std::time_t t1 = ::timegm (&tm_0);
+    tm_0.tm_year = year - 1900;                 // years since 1900
+    tm_0.tm_mon = static_cast<int>(month) - 1;  // months since Janurary [0-11]
+    tm_0.tm_mday = static_cast<int>(day);       // day of the month [1-31]
+    tm_0.tm_hour = static_cast<int>(hour);      // hours since midnight [0-23]
+    tm_0.tm_min = static_cast<int>(minute);     // minutes after the hour [0-59]
+    tm_0.tm_sec = static_cast<int>(seconds);    // seconds after the minute [0-60], including one leap second
+    std::time_t t1 = ::timegm(&tm_0);
     res.tv_sec = static_cast<int64_t>(t1);
     res.tv_nsec = static_cast<int64_t>(nano_seconds);
     return res;
 }
 
-fraction_timespec fraction_timespec::from(const std::string& datestr, Bool addUTCOffset) noexcept {
+fraction_timespec fraction_timespec::from(const std::string &datestr, Bool addUTCOffset) noexcept {
     int64_t utcOffsetSec;
     size_t consumedChars;
     fraction_timespec res = from(datestr, utcOffsetSec, consumedChars);
-    if( value(addUTCOffset) ) {
+    if ( value(addUTCOffset) ) {
         res.tv_sec += utcOffsetSec;
     }
     (void)consumedChars;
@@ -202,13 +201,13 @@ static std::regex jau_ISO8601_regex() noexcept {
                         //    g8           g9          g10              g11
                       );
 
-    } catch (...) {
+    } catch ( ... ) {
         ERR_PRINT2("Caught unknown exception");
         return std::regex();
     }
 }
 
-fraction_timespec fraction_timespec::from(const std::string& datestr, int64_t &utcOffsetSec, size_t &consumedChars) noexcept {
+fraction_timespec fraction_timespec::from(const std::string &datestr, int64_t &utcOffsetSec, size_t &consumedChars) noexcept {
     static std::regex pattern = jau_ISO8601_regex();
 
     consumedChars = 0;
@@ -216,46 +215,46 @@ fraction_timespec fraction_timespec::from(const std::string& datestr, int64_t &u
 
     std::smatch match;
     try {
-        if( std::regex_search(datestr, match, pattern) ) {
+        if ( std::regex_search(datestr, match, pattern) ) {
             consumedChars = match.length();
             constexpr bool DBG_OUT = false;
             if constexpr ( DBG_OUT ) {
                 std::cout << "XXX: " << datestr << std::endl;
                 std::cout << "XXX: match pos " << match.position() << ", len " << match.length() << ", sz " << match.size() << std::endl;
-                for(size_t i=0; i<match.size(); ++i) {
-                    const std::string& ms = match[i];
+                for ( size_t i = 0; i < match.size(); ++i ) {
+                    const std::string &ms = match[i];
                     std::cout << "- [" << i << "]: '" << ms << "', len " << ms.length() << std::endl;
                 }
             }
-            int y=0;
-            int M=0, d=0;
-            int h=0,m=0,s=0;
-            uint64_t ns=0;
-            int offset_sign=1, offset_h=0, offset_m=0;
+            int y = 0;
+            int M = 0, d = 0;
+            int h = 0, m = 0, s = 0;
+            uint64_t ns = 0;
+            int offset_sign = 1, offset_h = 0, offset_m = 0;
 
-            if( match.size() > 1 && match[1].length() > 0 ) {
-                y  = std::stoi(match[1]);
-                if( match.size() > 2 && match[2].length() > 0 ) {
+            if ( match.size() > 1 && match[1].length() > 0 ) {
+                y = std::stoi(match[1]);
+                if ( match.size() > 2 && match[2].length() > 0 ) {
                     M = std::stoi(match[2]);
-                    if( match.size() > 3 && match[3].length() > 0 ) {
+                    if ( match.size() > 3 && match[3].length() > 0 ) {
                         d = std::stoi(match[3]);
-                        if( match.size() > 4 && match[4].length() > 0 ) {
+                        if ( match.size() > 4 && match[4].length() > 0 ) {
                             h = std::stoi(match[4]);
-                            if( match.size() > 5 && match[5].length() > 0 ) {
+                            if ( match.size() > 5 && match[5].length() > 0 ) {
                                 m = std::stoi(match[5]);
-                                if( match.size() > 6 && match[6].length() > 0 ) {
+                                if ( match.size() > 6 && match[6].length() > 0 ) {
                                     s = std::stoi(match[6]);
-                                    if( match.size() > 7 && match[7].length() > 0 ) {
+                                    if ( match.size() > 7 && match[7].length() > 0 ) {
                                         ns = std::stoul(match[7]);
                                     }
-                                    if( match.size() > 8 && match[8].length() > 0 ) {
+                                    if ( match.size() > 8 && match[8].length() > 0 ) {
                                         // UTC Zulu
-                                    } else if( match.size() > 10 && match[9].length() > 0 && match[10].length() > 0 ) {
-                                        if( match[9] == "-") {
+                                    } else if ( match.size() > 10 && match[9].length() > 0 && match[10].length() > 0 ) {
+                                        if ( match[9] == "-" ) {
                                             offset_sign = -1;
                                         }
                                         offset_h = std::stoi(match[10]);
-                                        if( match.size() > 11 && match[11].length() > 0 ) {
+                                        if ( match.size() > 11 && match[11].length() > 0 ) {
                                             offset_m = std::stoi(match[11]);
                                         }
                                     }
@@ -265,21 +264,21 @@ fraction_timespec fraction_timespec::from(const std::string& datestr, int64_t &u
                     }
                 }
             }
-            if( 0 < ns ) {
-                const jau::nsize_t ns_digits = jau::digits10(ns, 1, true);
-                if( 9 < ns_digits ) {
-                    ns = 0; // error in remainder
+            if ( 0 < ns ) {
+                const size_t ns_digits = jau::digits10(ns, 1, true);
+                if ( 9 < ns_digits ) {
+                    ns = 0;  // error in remainder
                 }
-                ns = ns * static_cast<uint64_t>( std::pow(10, 9 - ns_digits) );
+                ns = ns * static_cast<uint64_t>(std::pow(10, 9 - ns_digits));
             }
             // add the timezone offset if desired, rendering result non-UTC
-            utcOffsetSec = offset_sign * ( ( offset_h * 60_i64 * 60_i64 ) + ( offset_m * 60_i64 ) );
+            utcOffsetSec = offset_sign * ((offset_h * 60_i64 * 60_i64) + (offset_m * 60_i64));
             return fraction_timespec::from(y, M, d, h, m, s, ns);
         }
-    } catch (...) {
+    } catch ( ... ) {
         ERR_PRINT2("Caught unknown exception parsing %s", datestr.c_str());
     }
-    return fraction_timespec(); // error
+    return fraction_timespec();  // error
 }
 
 bool jau::milli_sleep(uint64_t td_ms, const bool ignore_irq) noexcept {
@@ -288,25 +287,25 @@ bool jau::milli_sleep(uint64_t td_ms, const bool ignore_irq) noexcept {
     constexpr uint64_t ns_per_sec = 1'000'000'000UL;;
     const int64_t td_ns_0 = static_cast<int64_t>( (td_ms * ns_per_ms) % ns_per_sec );
     struct timespec ts;
-    ts.tv_sec = static_cast<decltype(ts.tv_sec)>(td_ms/ms_per_sec); // signed 32- or 64-bit integer
+    ts.tv_sec = static_cast<decltype(ts.tv_sec)>(td_ms / ms_per_sec);  // signed 32- or 64-bit integer
     ts.tv_nsec = td_ns_0;
     int res;
     do {
         res = ::clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, &ts);
-    } while( ignore_irq && EINTR == res );
+    } while ( ignore_irq && EINTR == res );
     return 0 == res;
 }
-bool jau::sleep(const fraction_timespec& relative_time, const bool ignore_irq) noexcept {
+bool jau::sleep(const fraction_timespec &relative_time, const bool ignore_irq) noexcept {
     struct timespec ts = relative_time.to_timespec();
     int res;
     do {
         res = ::clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, &ts);
-    } while( ignore_irq && EINTR == res );
+    } while ( ignore_irq && EINTR == res );
     return 0 == res;
 }
 
-bool jau::sleep_until(const fraction_timespec& absolute_time, const bool monotonic, const bool ignore_irq) noexcept {
-    if( absolute_time <= fraction_tv::zero ) {
+bool jau::sleep_until(const fraction_timespec &absolute_time, const bool monotonic, const bool ignore_irq) noexcept {
+    if ( absolute_time <= fraction_tv::zero ) {
         return false;
     }
     // typedef struct timespec __gthread_time_t;
@@ -315,28 +314,28 @@ bool jau::sleep_until(const fraction_timespec& absolute_time, const bool monoton
     do {
         res = ::clock_nanosleep(monotonic ? CLOCK_MONOTONIC : CLOCK_REALTIME,
                                 TIMER_ABSTIME, &ts, &ts);
-    } while( ignore_irq && EINTR == res );
+    } while ( ignore_irq && EINTR == res );
     return 0 == res;
 }
 
-bool jau::sleep_for(const fraction_timespec& relative_time, const bool monotonic, const bool ignore_irq) noexcept {
-    if( relative_time <= fraction_tv::zero ) {
+bool jau::sleep_for(const fraction_timespec &relative_time, const bool monotonic, const bool ignore_irq) noexcept {
+    if ( relative_time <= fraction_tv::zero ) {
         return false;
     }
     const fraction_timespec now = monotonic ? getMonotonicTime() : getWallClockTime();
-    return sleep_until( now + relative_time, monotonic, ignore_irq );
+    return sleep_until(now + relative_time, monotonic, ignore_irq);
 }
 
-bool jau::sleep_for(const fraction_i64& relative_time, const bool monotonic, const bool ignore_irq) noexcept {
-    if( relative_time <= fractions_i64::zero ) {
+bool jau::sleep_for(const fraction_i64 &relative_time, const bool monotonic, const bool ignore_irq) noexcept {
+    if ( relative_time <= fractions_i64::zero ) {
         return false;
     }
     bool overflow = false;
-    const fraction_timespec atime = ( monotonic ? getMonotonicTime() : getWallClockTime() ) + fraction_timespec(relative_time, &overflow);
-    if( overflow ) {
+    const fraction_timespec atime = (monotonic ? getMonotonicTime() : getWallClockTime()) + fraction_timespec(relative_time, &overflow);
+    if ( overflow ) {
         return false;
     } else {
-        return sleep_until( atime, monotonic, ignore_irq );
+        return sleep_until(atime, monotonic, ignore_irq);
     }
 }
 
@@ -381,14 +380,14 @@ bool jau::sleep_for(const fraction_i64& relative_time, const bool monotonic, con
     }
 #endif
 
-std::cv_status jau::wait_until(std::condition_variable& cv, std::unique_lock<std::mutex>& lock, const fraction_timespec& absolute_time, const bool monotonic) noexcept {
-    if( absolute_time <= fraction_tv::zero ) {
+std::cv_status jau::wait_until(std::condition_variable &cv, std::unique_lock<std::mutex> &lock, const fraction_timespec &absolute_time, const bool monotonic) noexcept {
+    if ( absolute_time <= fraction_tv::zero ) {
         return std::cv_status::no_timeout;
     }
     // typedef struct timespec __gthread_time_t;
     struct timespec ts = absolute_time.to_timespec();
 
-    if( jau_has_pthread_cond_clockwait() ) {
+    if ( jau_has_pthread_cond_clockwait() ) {
         pthread_cond_clockwait(cv.native_handle(), lock.mutex()->native_handle(),
                                monotonic ? CLOCK_MONOTONIC : CLOCK_REALTIME, &ts);
     } else {
@@ -399,21 +398,21 @@ std::cv_status jau::wait_until(std::condition_variable& cv, std::unique_lock<std
     return now < absolute_time ? std::cv_status::no_timeout : std::cv_status::timeout;
 }
 
-std::cv_status jau::wait_for(std::condition_variable& cv, std::unique_lock<std::mutex>& lock, const fraction_timespec& relative_time, const bool monotonic) noexcept {
-    if( relative_time <= fraction_tv::zero ) {
+std::cv_status jau::wait_for(std::condition_variable &cv, std::unique_lock<std::mutex> &lock, const fraction_timespec &relative_time, const bool monotonic) noexcept {
+    if ( relative_time <= fraction_tv::zero ) {
         return std::cv_status::no_timeout;
     }
     const fraction_timespec now = monotonic ? getMonotonicTime() : getWallClockTime();
     return wait_until(cv, lock, now + relative_time, monotonic);
 }
 
-std::cv_status jau::wait_for(std::condition_variable& cv, std::unique_lock<std::mutex>& lock, const fraction_i64& relative_time, const bool monotonic) noexcept {
-    if( relative_time <= fractions_i64::zero ) {
+std::cv_status jau::wait_for(std::condition_variable &cv, std::unique_lock<std::mutex> &lock, const fraction_i64 &relative_time, const bool monotonic) noexcept {
+    if ( relative_time <= fractions_i64::zero ) {
         return std::cv_status::no_timeout;
     }
     bool overflow = false;
-    const fraction_timespec atime = ( monotonic ? getMonotonicTime() : getWallClockTime() ) + fraction_timespec(relative_time, &overflow);
-    if( overflow ) {
+    const fraction_timespec atime = (monotonic ? getMonotonicTime() : getWallClockTime()) + fraction_timespec(relative_time, &overflow);
+    if ( overflow ) {
         return std::cv_status::timeout;
     } else {
         return wait_until(cv, lock, atime, monotonic);
@@ -462,13 +461,13 @@ std::string jau::trim(const std::string &_s) noexcept {
     return s;
 }
 
-std::vector<std::string> jau::split_string(const std::string& str, const std::string& separator) noexcept {
+std::vector<std::string> jau::split_string(const std::string &str, const std::string &separator) noexcept {
     std::vector<std::string> res;
     size_t p0 = 0;
-    while( p0 != std::string::npos && p0 < str.size() ) {
+    while ( p0 != std::string::npos && p0 < str.size() ) {
         size_t p1 = str.find(separator, p0);
-        res.push_back(str.substr(p0, p1)); // incl. npos
-        if( p1 != std::string::npos ) {
+        res.push_back(str.substr(p0, p1));  // incl. npos
+        if ( p1 != std::string::npos ) {
             p1 += separator.length();
         }
         p0 = p1;
@@ -476,9 +475,9 @@ std::vector<std::string> jau::split_string(const std::string& str, const std::st
     return res;
 }
 
-std::string& jau::toLowerInPlace(std::string& s) noexcept {
-    std::transform(s.begin(), s.end(), s.begin(),           // NOLINT(modernize-use-ranges)
-        [](unsigned char c){ return std::tolower(c); });
+std::string &jau::toLowerInPlace(std::string &s) noexcept {
+    std::transform(s.begin(), s.end(), s.begin(),  // NOLINT(modernize-use-ranges)
+                   [](unsigned char c) { return std::tolower(c); });
     return s;
 }
 std::string jau::toLower(const std::string& s) noexcept {
@@ -486,12 +485,11 @@ std::string jau::toLower(const std::string& s) noexcept {
 }
 
 // one static_assert is sufficient for whole compilation unit
-static_assert( is_defined_endian(endian_t::native) );
-static_assert( is_little_or_big_endian() );
+static_assert(is_defined_endian(endian_t::native));
+static_assert(is_little_or_big_endian());
 
-uint128dp_t jau::merge_uint128(uint16_t const uuid16, uint128dp_t const & base_uuid, nsize_t const uuid16_le_octet_index)
-{
-    if( uuid16_le_octet_index > 14 ) {
+uint128dp_t jau::merge_uint128(uint16_t const uuid16, uint128dp_t const &base_uuid, nsize_t const uuid16_le_octet_index) {
+    if ( uuid16_le_octet_index > 14 ) {
         std::string msg("uuid16_le_octet_index ");
         msg.append(std::to_string(uuid16_le_octet_index));
         msg.append(", not within [0..14]");
@@ -513,20 +511,19 @@ uint128dp_t jau::merge_uint128(uint16_t const uuid16, uint128dp_t const & base_u
     // BE: uuid16 -> value.data[2+3]
     //
     nsize_t offset;
-    if( is_big_endian() ) {
+    if ( is_big_endian() ) {
         offset = 15 - 1 - uuid16_le_octet_index;
     } else {
         offset = uuid16_le_octet_index;
     }
     // uint16_t * destu16 = (uint16_t*)(dest.data + offset);
     // *destu16 += uuid16;
-    reinterpret_cast<packed_t<uint16_t>*>( dest.data + offset )->store += uuid16;
+    reinterpret_cast<packed_t<uint16_t> *>(dest.data + offset)->store += uuid16;
     return dest;
 }
 
-uint128dp_t jau::merge_uint128(uint32_t const uuid32, uint128dp_t const & base_uuid, nsize_t const uuid32_le_octet_index)
-{
-    if( uuid32_le_octet_index > 12 ) {
+uint128dp_t jau::merge_uint128(uint32_t const uuid32, uint128dp_t const &base_uuid, nsize_t const uuid32_le_octet_index) {
+    if ( uuid32_le_octet_index > 12 ) {
         std::string msg("uuid32_le_octet_index ");
         msg.append(std::to_string(uuid32_le_octet_index));
         msg.append(", not within [0..12]");
@@ -547,36 +544,34 @@ uint128dp_t jau::merge_uint128(uint32_t const uuid32, uint128dp_t const & base_u
     //               ^ index 0
     // BE: uuid32 -> value.data[0..3]
     //
-    nsize_t offset;;
-    if( is_big_endian() ) {
+    nsize_t offset;
+    if ( is_big_endian() ) {
         offset = 15 - 3 - uuid32_le_octet_index;
     } else {
         offset = uuid32_le_octet_index;
     }
     // uint32_t * destu32 = (uint32_t*)(dest.data + offset);
     // *destu32 += uuid32;
-    reinterpret_cast<packed_t<uint32_t>*>( dest.data + offset )->store += uuid32;
+    reinterpret_cast<packed_t<uint32_t> *>(dest.data + offset)->store += uuid32;
     return dest;
 }
 
-static snsize_t hexCharByte_(const uint8_t c)
-{
-  if('0' <= c && c <= '9') {
-      return c - '0';
-  }
-  if('A' <= c && c <= 'F') {
-      return c - 'A' + 10;
-  }
-  if('a' <= c && c <= 'f') {
-      return c - 'a' + 10;
-  }
-  return -1;
+static snsize_t hexCharByte_(const uint8_t c) {
+    if ( '0' <= c && c <= '9' ) {
+        return c - '0';
+    }
+    if ( 'A' <= c && c <= 'F' ) {
+        return c - 'A' + 10;
+    }
+    if ( 'a' <= c && c <= 'f' ) {
+        return c - 'a' + 10;
+    }
+    return -1;
 }
 
 size_t jau::hexStringBytes(std::vector<uint8_t>& out, const std::string& hexstr, const bool lsbFirst, const bool checkLeading0x) noexcept {
     return jau::hexStringBytes(out, cast_char_ptr_to_uint8(hexstr.data()), hexstr.size(), lsbFirst, checkLeading0x);
 }
-#include <cassert>
 size_t jau::hexStringBytes(std::vector<uint8_t>& out, const uint8_t hexstr[], const size_t hexstr_len, const bool lsbFirst, const bool checkLeading0x) noexcept {
     size_t offset;
     if( checkLeading0x && hexstr_len >= 2 && hexstr[0] == '0' && hexstr[1] == 'x' ) {
@@ -664,58 +659,56 @@ uint64_t jau::from_hexstring(std::string const & s, const bool lsbFirst, const b
 static const char* HEX_ARRAY_LOW = "0123456789abcdef";
 static const char* HEX_ARRAY_BIG = "0123456789ABCDEF";
 
-std::string jau::bytesHexString(const void* data, const nsize_t length,
-                                const bool lsbFirst, const bool lowerCase, const bool skipLeading0x) noexcept
-{
-    const char* hex_array = lowerCase ? HEX_ARRAY_LOW : HEX_ARRAY_BIG;
+std::string jau::bytesHexString(const void *data, const nsize_t length,
+                                const bool lsbFirst, const bool lowerCase, const bool skipPrefix) noexcept {
+    const char *hex_array = lowerCase ? HexadecimalArray : HEX_ARRAY_BIG;
     std::string str;
 
-    if( nullptr == data ) {
+    if ( nullptr == data ) {
         return "null";
     }
-    if( 0 == length ) {
+    if ( 0 == length ) {
         return "nil";
     }
-    const uint8_t * const bytes = static_cast<const uint8_t*>(data);
-    if( lsbFirst ) {
+    const uint8_t *const bytes = static_cast<const uint8_t *>(data);
+    if ( lsbFirst ) {
         // LSB left -> MSB right, no leading `0x`
         // TODO: skip tail all-zeros?
-        str.reserve(length * 2 +1);
-        for (nsize_t j = 0; j < length; j++) {
-            const int v = bytes[j] & 0xFF;
+        str.reserve(length * 2 + 1);
+        for ( nsize_t i = 0; i < length; i++ ) {
+            const int v = bytes[i] & 0xFF;
             str.push_back(hex_array[v >> 4]);
             str.push_back(hex_array[v & 0x0F]);
         }
     } else {
         // MSB left -> LSB right, with leading `0x`
-        if( skipLeading0x ) {
-            str.reserve(length * 2 +1);
+        if ( skipPrefix ) {
+            str.reserve(length * 2 + 1);
         } else {
-            str.reserve(length * 2 +1 +2);
+            str.reserve(length * 2 + 1 + 2);
             str.push_back('0');
             str.push_back('x');
         }
         bool skip_leading_zeros = true;
-        nsize_t j = length;
+        nsize_t i = length;
         do {
-            j--;
-            const int v = bytes[j] & 0xFF;
-            if( 0 != v || !skip_leading_zeros || j == 0 ) {
+            i--;
+            const int v = bytes[i] & 0xFF;
+            if ( 0 != v || !skip_leading_zeros || i == 0 ) {
                 str.push_back(hex_array[v >> 4]);
                 str.push_back(hex_array[v & 0x0F]);
                 skip_leading_zeros = false;
             }
-        } while( j != 0);
+        } while ( i != 0 );
     }
     return str;
 }
 
-std::string& jau::byteHexString(std::string& dest, const uint8_t value, const bool lowerCase) noexcept
-{
-    const char* hex_array = lowerCase ? HEX_ARRAY_LOW : HEX_ARRAY_BIG;
+std::string &jau::byteHexString(std::string &dest, const uint8_t value, const bool lowerCase) noexcept {
+    const char *hex_array = lowerCase ? HexadecimalArray : HEX_ARRAY_BIG;
 
-    if( 2 > dest.capacity() - dest.size() ) { // Until C++20, then reserve is ignored if capacity > reserve
-        dest.reserve(dest.size()+2);
+    if ( 2 > dest.capacity() - dest.size() ) {  // Until C++20, then reserve is ignored if capacity > reserve
+        dest.reserve(dest.size() + 2);
     }
     const int v = value & 0xFF;
     dest.push_back(hex_array[v >> 4]);

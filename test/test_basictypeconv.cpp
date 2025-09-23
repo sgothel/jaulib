@@ -25,10 +25,11 @@
 #include <cinttypes>
 #include <cstring>
 
+#include <jau/basic_types.hpp>
+#include <jau/byte_util.hpp>
+#include <jau/cpp_lang_util.hpp>
 #include <jau/string_util.hpp>
 #include <jau/test/catch2_ext.hpp>
-
-#include <jau/basic_types.hpp>
 
 extern "C" {
     // to test jau::endian_t::native against BYTE_ORDER macro
@@ -54,7 +55,7 @@ namespace test_impl {
     constexpr static bool isLittleEndian2_impl(std::enable_if_t<!jau::has_endian_little_v<Dummy_type>, bool> = true) noexcept {
         return false;
     }
-}
+}  // namespace test_impl
 
 /**
  * Just demonstrating usage of our type-traits
@@ -93,20 +94,20 @@ TEST_CASE( "Endianess Test 00", "[endian]" ) {
 
 template<typename Value_type>
 static void print(const Value_type a) {
-    const uint8_t * pa = reinterpret_cast<const uint8_t *>(&a);
-    for(std::size_t i=0; i<sizeof(Value_type); i++) {
+    const uint8_t *pa = reinterpret_cast<const uint8_t *>(&a);
+    for ( std::size_t i = 0; i < sizeof(Value_type); i++ ) {
         fprintf(stderr, "a[%zu] 0x%X, ", i, pa[i]);
     }
 }
 
 template<typename Value_type>
 static bool compare_values(const Value_type a, const Value_type b) {
-    const uint8_t * pa = reinterpret_cast<const uint8_t *>(&a);
-    const uint8_t * pb = reinterpret_cast<const uint8_t *>(&b);
+    const uint8_t *pa = reinterpret_cast<const uint8_t *>(&a);
+    const uint8_t *pb = reinterpret_cast<const uint8_t *>(&b);
     bool res = true;
-    for(std::size_t i=0; i<sizeof(Value_type) && res; i++) {
+    for ( std::size_t i = 0; i < sizeof(Value_type) && res; i++ ) {
         res = pa[i] == pb[i];
-        if( !res ) {
+        if ( !res ) {
             fprintf(stderr, "pa[%zu] 0x%X != pb[%zu] 0x%X\n", i, pa[i], i, pb[i]);
         }
     }
@@ -152,21 +153,21 @@ static void test_byteorder(const Value_type v_cpu,
 
 static uint16_t composeU16(const uint8_t n1, const uint8_t n2) {
     uint16_t dest;
-    uint8_t * p_dest = reinterpret_cast<uint8_t*>(&dest);
+    uint8_t *p_dest = reinterpret_cast<uint8_t *>(&dest);
     p_dest[0] = n1;
     p_dest[1] = n2;
     return dest;
 }
 static int16_t composeI16(const uint8_t n1, const uint8_t n2) {
     int16_t dest;
-    uint8_t * p_dest = reinterpret_cast<uint8_t*>(&dest);
+    uint8_t *p_dest = reinterpret_cast<uint8_t *>(&dest);
     p_dest[0] = n1;
     p_dest[1] = n2;
     return dest;
 }
 static uint32_t composeU32(const uint8_t n1, const uint8_t n2, const uint8_t n3, const uint8_t n4) {
     uint32_t dest;
-    uint8_t * p_dest = reinterpret_cast<uint8_t*>(&dest);
+    uint8_t *p_dest = reinterpret_cast<uint8_t *>(&dest);
     p_dest[0] = n1;
     p_dest[1] = n2;
     p_dest[2] = n3;
@@ -175,7 +176,7 @@ static uint32_t composeU32(const uint8_t n1, const uint8_t n2, const uint8_t n3,
 }
 static int32_t composeI32(const uint8_t n1, const uint8_t n2, const uint8_t n3, const uint8_t n4) {
     int32_t dest;
-    uint8_t * p_dest = reinterpret_cast<uint8_t*>(&dest);
+    uint8_t *p_dest = reinterpret_cast<uint8_t *>(&dest);
     p_dest[0] = n1;
     p_dest[1] = n2;
     p_dest[2] = n3;
@@ -185,7 +186,7 @@ static int32_t composeI32(const uint8_t n1, const uint8_t n2, const uint8_t n3, 
 static uint64_t composeU64(const uint8_t n1, const uint8_t n2, const uint8_t n3, const uint8_t n4,
                            const uint8_t n5, const uint8_t n6, const uint8_t n7, const uint8_t n8) {
     uint64_t dest;
-    uint8_t * p_dest = reinterpret_cast<uint8_t*>(&dest);
+    uint8_t *p_dest = reinterpret_cast<uint8_t *>(&dest);
     p_dest[0] = n1;
     p_dest[1] = n2;
     p_dest[2] = n3;
@@ -199,7 +200,7 @@ static uint64_t composeU64(const uint8_t n1, const uint8_t n2, const uint8_t n3,
 static int64_t composeI64(const uint8_t n1, const uint8_t n2, const uint8_t n3, const uint8_t n4,
                           const uint8_t n5, const uint8_t n6, const uint8_t n7, const uint8_t n8) {
     int64_t dest;
-    uint8_t * p_dest = reinterpret_cast<uint8_t*>(&dest);
+    uint8_t *p_dest = reinterpret_cast<uint8_t *>(&dest);
     p_dest[0] = n1;
     p_dest[1] = n2;
     p_dest[2] = n3;
@@ -214,14 +215,14 @@ static int64_t composeI64(const uint8_t n1, const uint8_t n2, const uint8_t n3, 
 template<typename Value_type>
 static Value_type compose(const uint8_t lowest_value, const jau::lb_endian_t le_or_be) {
     Value_type dest;
-    uint8_t * p_dest = reinterpret_cast<uint8_t*>(&dest);
+    uint8_t *p_dest = reinterpret_cast<uint8_t *>(&dest);
     uint8_t byte_value = lowest_value;
-    if( jau::is_little_endian( le_or_be ) ) {
-        for(size_t i=0; i<sizeof(dest); i++, byte_value++) {
+    if ( jau::is_little_endian(le_or_be) ) {
+        for ( size_t i = 0; i < sizeof(dest); i++, byte_value++ ) {
             p_dest[i] = byte_value;
         }
     } else {
-        for(ssize_t i=sizeof(dest)-1; i>=0; i--, byte_value++) {
+        for ( ssize_t i = sizeof(dest) - 1; i >= 0; i--, byte_value++ ) {
             p_dest[i] = byte_value;
         }
     }
@@ -229,68 +230,68 @@ static Value_type compose(const uint8_t lowest_value, const jau::lb_endian_t le_
 }
 template<typename Value_type>
 static Value_type compose(const uint8_t lowest_value, const jau::endian_t le_or_be) {
-    return compose<Value_type>(lowest_value, to_lb_endian( le_or_be ) );
+    return compose<Value_type>(lowest_value, to_lb_endian(le_or_be));
 }
 
-TEST_CASE( "Integer Type Byte Order Test 01", "[byteorder][bswap]" ) {
+TEST_CASE("Integer Type Byte Order Test 01", "[byteorder][bswap]") {
     {
         constexpr uint16_t cpu = 0x3210U;
-        uint16_t le = composeU16(0x10, 0x32); // stream: 1032
-        uint16_t be = composeU16(0x32, 0x10); // stream: 3210
+        uint16_t le = composeU16(0x10, 0x32);  // stream: 1032
+        uint16_t be = composeU16(0x32, 0x10);  // stream: 3210
         test_byteorder(cpu, le, be);
     }
     {
         constexpr uint16_t cpu = 0xFEDCU;
-        uint16_t le = composeU16(0xDC, 0xFE); // stream: DCFE
-        uint16_t be = composeU16(0xFE, 0xDC); // stream: FEDC
+        uint16_t le = composeU16(0xDC, 0xFE);  // stream: DCFE
+        uint16_t be = composeU16(0xFE, 0xDC);  // stream: FEDC
         test_byteorder(cpu, le, be);
     }
     {
         constexpr int16_t cpu = 0x3210;
-        int16_t le = composeI16(0x10, 0x32); // stream: 1032
-        int16_t be = composeI16(0x32, 0x10); // stream: 3210
+        int16_t le = composeI16(0x10, 0x32);  // stream: 1032
+        int16_t be = composeI16(0x32, 0x10);  // stream: 3210
         test_byteorder(cpu, le, be);
     }
     {
-        constexpr int16_t cpu = -292_i16; // int16_t(0xFEDC);
-        int16_t le = composeI16(0xDC, 0xFE); // stream: DCFE
-        int16_t be = composeI16(0xFE, 0xDC); // stream: FEDC
+        constexpr int16_t cpu = -292_i16;     // int16_t(0xFEDC);
+        int16_t le = composeI16(0xDC, 0xFE);  // stream: DCFE
+        int16_t be = composeI16(0xFE, 0xDC);  // stream: FEDC
         test_byteorder(cpu, le, be);
     }
     {
         constexpr uint32_t cpu = 0x76543210U;
-        uint32_t le = composeU32(0x10, 0x32, 0x54, 0x76); // stream: 10325476
-        uint32_t be = composeU32(0x76, 0x54, 0x32, 0x10); // stream: 76543210
+        uint32_t le = composeU32(0x10, 0x32, 0x54, 0x76);  // stream: 10325476
+        uint32_t be = composeU32(0x76, 0x54, 0x32, 0x10);  // stream: 76543210
         test_byteorder(cpu, le, be);
     }
     {
         constexpr uint32_t cpu = 0xFEDCBA98U;
-        uint32_t le = composeU32(0x98, 0xBA, 0xDC, 0xFE); // stream: 98BADCFE
-        uint32_t be = composeU32(0xFE, 0xDC, 0xBA, 0x98); // stream: FEDCBA98
+        uint32_t le = composeU32(0x98, 0xBA, 0xDC, 0xFE);  // stream: 98BADCFE
+        uint32_t be = composeU32(0xFE, 0xDC, 0xBA, 0x98);  // stream: FEDCBA98
         test_byteorder(cpu, le, be);
     }
     {
         constexpr int32_t cpu = int32_t(0x76543210);
-        int32_t le = composeI32(0x10, 0x32, 0x54, 0x76); // stream: 10325476
-        int32_t be = composeI32(0x76, 0x54, 0x32, 0x10); // stream: 76543210
+        int32_t le = composeI32(0x10, 0x32, 0x54, 0x76);  // stream: 10325476
+        int32_t be = composeI32(0x76, 0x54, 0x32, 0x10);  // stream: 76543210
         test_byteorder(cpu, le, be);
     }
     {
-        constexpr int32_t cpu = -19088744_i32; // int32_t(0xFEDCBA98U);
-        int32_t le = composeI32(0x98, 0xBA, 0xDC, 0xFE); // stream: 98BADCFE
-        int32_t be = composeI32(0xFE, 0xDC, 0xBA, 0x98); // stream: FEDCBA98
+        constexpr int32_t cpu = -19088744_i32;            // int32_t(0xFEDCBA98U);
+        int32_t le = composeI32(0x98, 0xBA, 0xDC, 0xFE);  // stream: 98BADCFE
+        int32_t be = composeI32(0xFE, 0xDC, 0xBA, 0x98);  // stream: FEDCBA98
         test_byteorder(cpu, le, be);
     }
     {
         constexpr uint64_t cpu = 0xfedcba9876543210ULL;
-        uint64_t le = composeU64(0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe); // stream: 1032547698badcfe
-        uint64_t be = composeU64(0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10); // stream: fedcba9876543210
+        uint64_t le = composeU64(0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe);  // stream: 1032547698badcfe
+        uint64_t be = composeU64(0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10);  // stream: fedcba9876543210
         test_byteorder(cpu, le, be);
     }
     {
-        constexpr int64_t cpu = -81985529216486896_i64; // int64_t(0xfedcba9876543210ULL);
-        int64_t le = composeI64(0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe); // stream: 1032547698badcfe
-        int64_t be = composeI64(0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10); // stream: fedcba9876543210
+        constexpr int64_t cpu = -81985529216486896_i64;                           // int64_t(0xfedcba9876543210ULL);
+        int64_t le = composeI64(0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe);  // stream: 1032547698badcfe
+        int64_t be = composeI64(0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10);  // stream: fedcba9876543210
         test_byteorder(cpu, le, be);
     }
     {
@@ -316,18 +317,18 @@ TEST_CASE( "Integer Type Byte Order Test 01", "[byteorder][bswap]" ) {
 template<typename Value_type>
 static void test_value_cpu(const Value_type v1, const Value_type v2, const Value_type v3) {
     uint8_t buffer[3 * sizeof(Value_type)];
-    jau::put_value(buffer + sizeof(Value_type)*0, v1);
-    jau::put_value(buffer + sizeof(Value_type)*1, v2);
-    jau::put_value(buffer + sizeof(Value_type)*2, v3);
-    const Value_type r1 = jau::get_value<Value_type>(buffer + sizeof(Value_type)*0);
-    const Value_type r2 = jau::get_value<Value_type>(buffer + sizeof(Value_type)*1);
-    const Value_type r3 = jau::get_value<Value_type>(buffer + sizeof(Value_type)*2);
-    REQUIRE( r1 == v1);
-    REQUIRE( r2 == v2);
-    REQUIRE( r3 == v3);
+    jau::put_value(buffer + sizeof(Value_type) * 0, v1);
+    jau::put_value(buffer + sizeof(Value_type) * 1, v2);
+    jau::put_value(buffer + sizeof(Value_type) * 2, v3);
+    const Value_type r1 = jau::get_value<Value_type>(buffer + sizeof(Value_type) * 0);
+    const Value_type r2 = jau::get_value<Value_type>(buffer + sizeof(Value_type) * 1);
+    const Value_type r3 = jau::get_value<Value_type>(buffer + sizeof(Value_type) * 2);
+    REQUIRE(r1 == v1);
+    REQUIRE(r2 == v2);
+    REQUIRE(r3 == v3);
 }
 
-TEST_CASE( "Integer Get/Put in CPU Byte Order Test 02", "[byteorder][get][put]" ) {
+TEST_CASE("Integer Get/Put in CPU Byte Order Test 02", "[byteorder][get][put]") {
     {
         constexpr uint8_t a = 0x01, b = 0x11, c = 0xff;
         test_value_cpu(a, b, c);
@@ -337,7 +338,7 @@ TEST_CASE( "Integer Get/Put in CPU Byte Order Test 02", "[byteorder][get][put]" 
         test_value_cpu(a, b, c);
     }
     {
-        constexpr int16_t a = 0x0123, b = 0x1122, c = -18_i16; // (int16_t)0xffee;
+        constexpr int16_t a = 0x0123, b = 0x1122, c = -18_i16;  // (int16_t)0xffee;
         test_value_cpu(a, b, c);
     }
     {
@@ -345,7 +346,7 @@ TEST_CASE( "Integer Get/Put in CPU Byte Order Test 02", "[byteorder][get][put]" 
         test_value_cpu(a, b, c);
     }
     {
-        constexpr int32_t a = 0x01234567, b = 0x11223344, c = -1122868_i32; // (int32_t)0xffeeddcc;
+        constexpr int32_t a = 0x01234567, b = 0x11223344, c = -1122868_i32;  // (int32_t)0xffeeddcc;
         test_value_cpu(a, b, c);
     }
     {
@@ -353,7 +354,7 @@ TEST_CASE( "Integer Get/Put in CPU Byte Order Test 02", "[byteorder][get][put]" 
         test_value_cpu(a, b, c);
     }
     {
-        constexpr int64_t a = 0x0123456789abcdefLL, b = 0x1122334455667788LL, c = -4822678761867418_i64; // (int64_t)0xffeeddcc99887766LL;
+        constexpr int64_t a = 0x0123456789abcdefLL, b = 0x1122334455667788LL, c = -4822678761867418_i64;  // (int64_t)0xffeeddcc99887766LL;
         test_value_cpu(a, b, c);
     }
     {
@@ -378,7 +379,7 @@ TEST_CASE( "Integer Get/Put in CPU Byte Order Test 02", "[byteorder][get][put]" 
 
 template<typename Value_type>
 static void test_value_littlebig(const Value_type v_cpu, const Value_type v_le, const Value_type v_be) {
-    if( VERBOSE ) {
+    if ( VERBOSE ) {
         fprintf(stderr, "test_value_littlebig: sizeof %zu; platform littleEndian %d", sizeof(Value_type), jau::is_little_endian());
         fprintf(stderr, "\ncpu: %s: ", jau::to_hexstring(v_cpu).c_str()); print(v_cpu);
         fprintf(stderr, "\nle_: %s: ", jau::to_hexstring(v_le).c_str()); print(v_le);

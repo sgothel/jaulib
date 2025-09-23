@@ -16,6 +16,7 @@
 #include <string>
 
 #include <jau/basic_types.hpp>
+#include <jau/byte_util.hpp>
 #include <jau/enum_util.hpp>
 #include <jau/io/file_util.hpp>
 #include <jau/io/io_util.hpp>
@@ -448,7 +449,7 @@ namespace jau::io {
          * @param in the MemoryRegion to read from, this instance assumes ownership
          * @param iomode determines whether file should be opened iomode_t::read, iomode_t::write or iomode_t::rw
          */
-        explicit ByteStream_SecMemory(io::secure_vector<uint8_t> && in, iomode_t mode)
+        explicit ByteStream_SecMemory(io::secure_vector<uint8_t>&& in, iomode_t mode)
         : ByteStream(mode), m_source(std::move(in)), m_offset(0), m_mark(npos) { }
 
         /**
@@ -486,7 +487,7 @@ namespace jau::io {
         [[nodiscard]] size_t discard(size_t N) noexcept override;
 
         [[nodiscard]] size_t write(const void*, size_t) noexcept override;
-        void flush() noexcept override {}
+        void flush() noexcept override { }
 
       private:
         io::secure_vector<uint8_t> m_source;
@@ -573,7 +574,6 @@ namespace jau::io {
          */
         int fd() const noexcept { return m_fd; }
 
-
         bool isOpen() const noexcept override { return 0 <= m_fd; }
         void close() noexcept override;
         std::string id() const noexcept override { return m_stats.path(); }
@@ -627,35 +627,35 @@ namespace jau::io {
             RewindBuffer() noexcept : m_buffer(0), m_end(0) {}
 
             constexpr bool covered(const uint64_t m, uint64_t o) const noexcept {
-                return ByteStream::npos != m && m <= o && o < m+m_end;
+                return ByteStream::npos != m && m <= o && o < m + m_end;
             }
 
             constexpr uint64_t capacity() const noexcept { return m_buffer.size(); }
             constexpr uint64_t end() const noexcept { return m_end; }
             std::string toString() const noexcept {
-                return "Rew[end "+std::to_string(end())+", capacity "+std::to_string(capacity())+"]";
+                return "Rew[end " + std::to_string(end()) + ", capacity " + std::to_string(capacity()) + "]";
             }
 
             bool setMark(const uint64_t m, uint64_t o, uint64_t readLimit) noexcept {
                 // DBG_PRINT("RewindBuffer.setMark.0 mark %" PRIu64 ", offset %" PRIu64 ", %s", m, o, toString().c_str());
                 PRAGMA_DISABLE_WARNING_PUSH
                 PRAGMA_DISABLE_WARNING_TYPE_RANGE_LIMIT
-                if( readLimit > std::numeric_limits<size_t>::max() ) {
+                if ( readLimit > std::numeric_limits<size_t>::max() ) {
                     return false;
                 }
                 PRAGMA_DISABLE_WARNING_POP
-                if( covered(m, o) ) {
+                if ( covered(m, o) ) {
                     const size_t q = o - m;
                     const size_t l0 = m_end - q;
-                    if( q > 0 ) {
-                        std::memmove(m_buffer.data(), m_buffer.data()+q, l0);
+                    if ( q > 0 ) {
+                        std::memmove(m_buffer.data(), m_buffer.data() + q, l0);
                     }
                     m_end = l0;
                     // DBG_PRINT("RewindBuffer.setMark.1 src-q %" PRIu64 ", len %" PRIu64 ", %s.", q, l0, toString().c_str());
                 } else {
                     m_end = 0;
                 }
-                if( readLimit > m_buffer.size() ) {
+                if ( readLimit > m_buffer.size() ) {
                     m_buffer.resize(readLimit, 0);
                 }
                 return true;
@@ -663,21 +663,21 @@ namespace jau::io {
             size_t read(uint64_t& m, uint64_t& o, DataProvider newData, void* out, const size_t length) noexcept {
                 [[maybe_unused]] size_t l0 = length;
                 size_t g1 = 0, g2 = 0;
-                if( covered(m, o) ) {
+                if ( covered(m, o) ) {
                     const size_t p0 = o - m;
-                    g1 = std::min(m+m_end - o, l0);
-                    std::memcpy(out, m_buffer.data()+p0, g1);
+                    g1 = std::min(m + m_end - o, l0);
+                    std::memcpy(out, m_buffer.data() + p0, g1);
                     o += g1;
                     l0 -= g1;
                 }
-                if( l0 > 0 ) {
-                    g2 = newData((char*)out+g1, l0);
-                    if( g2 > 0 && ByteStream::npos != m ) {
-                        if( m_end + g2 > m_buffer.size() ) {
+                if ( l0 > 0 ) {
+                    g2 = newData((char*)out + g1, l0);
+                    if ( g2 > 0 && ByteStream::npos != m ) {
+                        if ( m_end + g2 > m_buffer.size() ) {
                             m = ByteStream::npos;
                             m_end = 0;
                         } else {
-                            std::memcpy(m_buffer.data()+m_end, (const char*)out+g1, g2);
+                            std::memcpy(m_buffer.data() + m_end, (const char*)out + g1, g2);
                             m_end += g2;
                         }
                     }
@@ -686,10 +686,10 @@ namespace jau::io {
                 }
                 // DBG_PRINT("ByteInStream::read.X: size (%zu + %zu = %zu) / %zu (-> %zu) bytes, %s",
                 //           g1, g2, g1+g2, length, l0, toString().c_str() );
-                return g1+g2;
+                return g1 + g2;
             }
         };
-    }
+    }  // namespace impl
 
     /**
      * Ringbuffer-Based byte input stream with a URL connection provisioned data feed.
@@ -789,9 +789,9 @@ namespace jau::io {
         impl::RewindBuffer::DataProvider newData = [&](void* out, size_t length) -> size_t {
             bool timeout_occured = false;
             const size_t g = m_buffer.getBlocking(static_cast<uint8_t*>(out), length, 1, m_timeout, timeout_occured);
-            if( timeout_occured ) {
-                addstate_impl( iostate_t::timeout );
-                if( m_stream_resp->processing() ) {
+            if ( timeout_occured ) {
+                addstate_impl(iostate_t::timeout);
+                if ( m_stream_resp->processing() ) {
                     m_stream_resp->result = io_result_t::FAILED;
                 }
                 m_buffer.interruptWriter();
@@ -956,7 +956,6 @@ namespace jau::io {
             return write(in, length, m_timeout);
         }
 
-
         void flush() noexcept override { }
 
       private:
@@ -979,9 +978,9 @@ namespace jau::io {
             bool timeout_occured = false;
             // set_eof() unblocks ringbuffer via set_end_of_input(true) permanently, hence blocking call on !m_has_content_length is OK.
             const size_t g = m_buffer.getBlocking(static_cast<uint8_t*>(out), length, 1, m_timeout, timeout_occured);
-            if( timeout_occured ) {
-                addstate_impl( iostate_t::timeout );
-                if( io_result_t::NONE == m_result ) {
+            if ( timeout_occured ) {
+                addstate_impl(iostate_t::timeout);
+                if ( io_result_t::NONE == m_result ) {
                     m_result = io_result_t::FAILED;
                 }
                 m_buffer.interruptWriter();
@@ -1004,7 +1003,7 @@ namespace jau::io {
          * @param buffer a user defined buffer for the recording
          */
         ByteStream_Recorder(ByteStream& parent, io::secure_vector<uint8_t>& buffer) noexcept
-        : ByteStream(iomode_t::read), m_parent(parent), m_offset(0), m_buffer(buffer), m_rec_offset(0), m_is_recording(false) {};
+        : ByteStream(iomode_t::read), m_parent(parent), m_offset(0), m_buffer(buffer), m_rec_offset(0), m_is_recording(false) { };
 
         ByteStream_Recorder(const ByteStream_Recorder&) = delete;
 
@@ -1067,13 +1066,17 @@ namespace jau::io {
             m_offset = m_parent.seek(newPos);
             return m_offset;
         }
-        [[nodiscard]] size_t discard(size_t N) noexcept override { size_t n = m_parent.discard(N); m_offset = m_parent.position(); return n; }
+        [[nodiscard]] size_t discard(size_t N) noexcept override {
+            size_t n = m_parent.discard(N);
+            m_offset = m_parent.position();
+            return n;
+        }
 
         [[nodiscard]] bool setMark(uint64_t readLimit) noexcept override { return m_parent.setMark(readLimit); }
         uint64_t mark() const noexcept override { return m_parent.mark(); }
         uint64_t markReadLimit() const noexcept override { return m_parent.markReadLimit(); }
         [[nodiscard]] bool seekMark() noexcept override {
-            if( m_parent.seekMark() ) {
+            if ( m_parent.seekMark() ) {
                 m_offset = m_parent.position();
                 return true;
             } else {

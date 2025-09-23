@@ -21,16 +21,15 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include <thread>
 #include <cassert>
 #include <cinttypes>
 #include <cstring>
+#include <thread>
 
+#include <jau/basic_types.hpp>
 #include <jau/cpp_lang_util.hpp>
 #include <jau/debug.hpp>
 #include <jau/test/catch2_ext.hpp>
-
-#include <jau/basic_types.hpp>
 
 using namespace jau;
 using namespace jau::fractions_i64_literals;
@@ -55,7 +54,6 @@ static fraction<int64_t> duration_common_type(const fraction<int64_t>& p1, const
     return fraction<int64_t>( gcd_num * jau::sign(p1.num) * jau::sign(p2.num), ( p1.denom / gcd_den ) * p2.denom );
 }
 #endif
-
 
 template<typename int_type>
 static void test_gcd_fract(const int_type n, const std::make_unsigned_t<int_type> d,
