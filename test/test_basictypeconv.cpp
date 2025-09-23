@@ -718,22 +718,243 @@ TEST_CASE("HexString from and to byte vector conversion - Test 04", "[hexstring]
     }
 }
 
-TEST_CASE( "Integer Type Test Test 05", "[integer][type]" ) {
-    REQUIRE( 3_i8 == (int8_t)3 );
-    REQUIRE( 3_u8 == (uint8_t)3 );
+TEST_CASE("BitString from and to byte vector conversion - Test 05", "[bitstring]") {
+    {
+        std::cout << "Little Endian Representation: " << std::endl;
+        const std::vector<uint8_t> source_le = { 0x1a, 0x1b, 0x2a, 0x2b, 0xff };
+        // const uint64_t v0_cpu = 0x000000ff2b2a1b1aU;
+        const uint64_t v0_cpu = 0b1111111100101011001010100001101100011010U;
 
-    REQUIRE( 3_i16 == (int16_t)3 );
-    REQUIRE( 3_u16 == (uint16_t)3 );
+        // const uint64_t v0_le = 0x1a1b2a2bff;
+        const std::string value_s0_le = "0001101000011011001010100010101111111111";  // LE
+        const std::string value_s1_le = jau::toBitString(source_le.data(), source_le.size(), true /* lsbFirst */);
+        {
+            std::vector<uint8_t> out;
+            jau::fromBitString(out, value_s1_le, true);
+            const uint64_t v_cpu = jau::le_to_cpu(*jau::pointer_cast<const uint64_t *>(out.data()));
+            std::string v_cpu_s1 = jau::toBitString(v_cpu);
+            std::string v_cpu_s2 = jau::to_string(v_cpu, 2);
+            std::cout << "v0_le " << value_s1_le << ", is_le " << jau::is_little_endian() << std::endl;
+            std::cout << "- out " << jau::to_string(out, 16) << std::endl;
+            std::cout << "- v_cpu1 " << v_cpu_s1 << std::endl;
+            std::cout << "- v_cpu2 " << v_cpu_s2 << std::endl;
+            REQUIRE(source_le == out);
+            REQUIRE(v0_cpu == v_cpu);
+            REQUIRE(v_cpu_s1 == v_cpu_s2);
+        }
+        const auto [v1_cpu, len1, ok1] = jau::fromBitString(value_s1_le, true /* lsbFirst */);
 
-    REQUIRE( 3_i32 == (int32_t)3 );
-    REQUIRE( 3_u32 == (uint32_t)3 );
+        std::vector<uint8_t> pass2_le;
+        jau::fromBitString(pass2_le, value_s1_le, true /* lsbFirst */, jau::False());
+        const std::string value_s2_le = jau::toBitString(pass2_le, true /* lsbFirst */);
+        const auto [v2_cpu, len2, ok2] = jau::fromBitString(value_s2_le, true /* lsbFirst */);
 
-    REQUIRE( 3_i64 == (int64_t)3 );
-    REQUIRE( 3_u64 == (uint64_t)3 );
+        REQUIRE(value_s0_le == value_s1_le);
+        REQUIRE(value_s0_le == value_s2_le);
 
-    REQUIRE( 3_iz == (ssize_t)3 );
-    REQUIRE( 3_uz == (size_t)3 );
+        std::cout << "v0_le " << value_s1_le << " (2) " << value_s2_le << std::endl;
+        {
+            std::string v1_cpu_s = jau::toBitString(v1_cpu);
+            std::cout << "v1_cpu_s " << v1_cpu_s << std::endl;
+            std::string v2_cpu_s = jau::toBitString(v2_cpu);
+            std::cout << "v2_cpu_s " << v2_cpu_s << std::endl;
+        }
+        REQUIRE(v0_cpu == v1_cpu);
+        REQUIRE(v0_cpu == v2_cpu);
 
-    REQUIRE( 3_inz == (jau::snsize_t)3 );
-    REQUIRE( 3_unz == (jau::nsize_t)3 );
+        REQUIRE(source_le == pass2_le);
+        std::cout << std::endl;
+    }
+    {
+        std::cout << "Big Endian Representation: " << std::endl;
+        const std::vector<uint8_t> source_le = { 0x1a, 0x1b, 0x2a, 0x2b, 0xff };
+        // const uint64_t v0_cpu = 0x000000ff2b2a1b1aU;
+        const uint64_t v0_cpu = 0b1111111100101011001010100001101100011010U;
+
+        const std::string value_s0_be = "0b1111111100101011001010100001101100011010";
+        const std::string value_s1_be = jau::toBitString(source_le.data(), source_le.size(), false /* lsbFirst */);
+        {
+            std::vector<uint8_t> out;
+            jau::fromBitString(out, value_s1_be, false);
+            const uint64_t v_cpu = jau::le_to_cpu(*jau::pointer_cast<const uint64_t *>(out.data()));
+            std::string v_cpu_s1 = jau::toBitString(v_cpu);
+            std::string v_cpu_s2 = jau::to_string(v_cpu, 2);
+            std::cout << "v0_be " << value_s1_be << ", is_le " << jau::is_little_endian() << std::endl;
+            std::cout << "- out " << jau::to_string(out, 16) << std::endl;
+            std::cout << "- v_cpu1 " << v_cpu_s1 << std::endl;
+            std::cout << "- v_cpu2 " << v_cpu_s2 << std::endl;
+            REQUIRE(source_le == out);
+            REQUIRE(v0_cpu == v_cpu);
+            REQUIRE(v_cpu_s1 == v_cpu_s2);
+        }
+        const auto [v1_cpu, len1, ok1] = jau::fromBitString(value_s1_be, false /* lsbFirst */);
+
+        std::vector<uint8_t> pass2_le;
+        jau::fromBitString(pass2_le, value_s1_be, false /* lsbFirst */);
+        const std::string value_s2_be = jau::toBitString(pass2_le.data(), pass2_le.size(), false /* lsbFirst */);
+        const auto [v2_cpu, len2, ok2] = jau::fromBitString(value_s2_be, false /* lsbFirst */);
+        REQUIRE(value_s0_be == value_s1_be);
+        REQUIRE(value_s0_be == value_s2_be);
+
+        std::cout << "v0_be " << value_s1_be << " (2) " << value_s2_be << std::endl;
+        {
+            std::string v1_cpu_s = jau::to_hexstring(v1_cpu);
+            std::cout << "v1_cpu_s " << v1_cpu_s << std::endl;
+            std::string v2_cpu_s = jau::to_hexstring(v2_cpu);
+            std::cout << "v2_cpu_s " << v2_cpu_s << std::endl;
+        }
+        REQUIRE(v0_cpu == v1_cpu);
+        REQUIRE(v0_cpu == v2_cpu);
+
+        REQUIRE(source_le == pass2_le);
+        std::cout << std::endl;
+    }
+    {
+        // even digits
+        std::cout << "Even digits (1): " << std::endl;
+        const std::vector<uint8_t> v0_b = { 0x1a, 0x1b, 0x2a, 0x2b, 0xff };
+        const uint64_t v0 = 0xff2b2a1b1aU;
+        const std::string v0_s_msb = "0b1111111100101011001010100001101100011010";
+        const std::string v0_s_lsb = "0001101000011011001010100010101111111111";
+        std::cout << "v0   " << jau::toBitString(v0) << std::endl;
+        std::cout << "v0_b " << jau::to_string(v0_b, 16) << std::endl;
+        std::cout << "v0_s (msb) " << v0_s_msb << std::endl;
+        std::cout << "v0_s (lsb)   " << v0_s_lsb << std::endl;
+
+        std::vector<uint8_t> v1_b_msb;
+        std::vector<uint8_t> v1_b_lsb;
+        jau::fromBitString(v1_b_msb, v0_s_msb, false /* lsbFirst */);
+        jau::fromBitString(v1_b_lsb, v0_s_lsb, true /* lsbFirst */);
+        const std::string v1_bs_msb_str = jau::toBitString(v1_b_msb, false /* lsbFirst */);
+        const std::string v1_bs_lsb_str = jau::toBitString(v1_b_lsb, false /* lsbFirst */);
+        std::cout << "v1_b  (msb str) " << jau::to_string(v1_b_msb, 16) << std::endl;
+        std::cout << "v1_bs (msb str) " << v1_bs_msb_str << std::endl;
+        std::cout << "v1_b  (lsb str) " << jau::to_string(v1_b_lsb, 16) << std::endl;
+        std::cout << "v1_bs (lsb str) " << v1_bs_lsb_str << std::endl;
+
+        const auto [v1_msb, len1, ok1] = jau::fromBitString(v0_s_msb, false);
+        const auto [v1_lsb, len2, ok2] = jau::fromBitString(v0_s_lsb, true);
+        std::cout << "v1   (msb) " << jau::toBitString(v1_msb) << std::endl;
+        std::cout << "v1   (lsb) " << jau::toBitString(v1_lsb) << std::endl;
+
+        REQUIRE(v0 == v1_msb);
+        REQUIRE(v0 == v1_lsb);
+        REQUIRE(v0_b == v1_b_msb);
+        REQUIRE(v0_b == v1_b_lsb);
+        std::cout << std::endl;
+    }
+    {
+        // odd digits
+        std::cout << "Odd digits (1): " << std::endl;
+        // 0x3F2B2A1B1A
+        const std::vector<uint8_t> v0_b_msb = { 0x1a, 0x1b, 0x2a, 0x2b, 0x3f };
+        const std::vector<uint8_t> v0_b_lsb = { 0xd0, 0xd9, 0x51, 0x59, 0xf8 };
+        const uint64_t v0_msb = 0x3F2B2A1B1AU;
+        const uint64_t v0_lsb = 0xf85951d9d0U;
+        const std::string v0_s_msb = "0b11111100101011001010100001101100011010";  // 0x3F2B2A1B1A
+        const std::string v0_s_lsb = "1101000011011001010100010101100111111";     // 0x1A1B2A2B3F -> 0xf85951d9d0 (due to odd nibbles)
+        // v0_s_msb:
+        // BE:   [111111] 00101011 00101010 00011011 00011010
+        // BE: [00111111] 00101011 00101010 00011011 00011010   11111100101011001010100001101100011010  0x3F2B2A1B1A
+        //
+        // v0_s_lsb:
+        // LE: 11010000 11011001 01010001 01011001 [11111]
+        // BE: [11111]000 01011001 01010001 11011001 11010000
+        std::cout << "v0   (msb) " << jau::toBitString(v0_msb) << std::endl;
+        std::cout << "v0_b (msb) " << jau::to_string(v0_b_msb) << std::endl;
+        std::cout << "v0_s (msb) " << v0_s_msb << std::endl;
+        std::cout << "v0   (lsb) " << jau::toBitString(v0_lsb) << std::endl;
+        std::cout << "v0_b (lsb) " << jau::to_string(v0_b_lsb) << std::endl;
+        std::cout << "v0_s (lsb) " << v0_s_lsb << std::endl;
+
+        std::vector<uint8_t> v1_b_msb;
+        std::vector<uint8_t> v1_b_lsb;
+        jau::fromBitString(v1_b_msb, v0_s_msb, false /* lsbFirst */);
+        jau::fromBitString(v1_b_lsb, v0_s_lsb, true /* lsbFirst */);
+        const std::string v1_bs_msb_str = jau::toBitString(v1_b_msb, false /* lsbFirst */);
+        const std::string v1_bs_lsb_str = jau::toBitString(v1_b_lsb, false /* lsbFirst */);
+        std::cout << "v1_b  (msb str) " << jau::to_string(v1_b_msb, 16) << std::endl;
+        std::cout << "v1_bs (msb str) " << v1_bs_msb_str << std::endl;
+        std::cout << "v1_b  (lsb str) " << jau::to_string(v1_b_lsb, 16) << std::endl;
+        std::cout << "v1_bs (lsb str) " << v1_bs_lsb_str << std::endl;
+
+        const auto [v1_msb, len1, ok1] = jau::fromBitString(v0_s_msb, false);
+        const auto [v1_lsb, len2, ok2] = jau::fromBitString(v0_s_lsb, true);
+        std::cout << "v1   (msb) " << jau::toBitString(v1_msb) << ", " << jau::to_hexstring(v1_msb, false) << std::endl;
+        std::cout << "v1   (lsb) " << jau::toBitString(v1_lsb) << ", " << jau::to_hexstring(v1_lsb, true) << std::endl;
+
+        REQUIRE(v0_msb == v1_msb);
+        REQUIRE(v0_lsb == v1_lsb);
+        REQUIRE(v0_b_msb == v1_b_msb);
+        REQUIRE(v0_b_lsb == v1_b_lsb);
+        std::cout << std::endl;
+    }
+    {
+        std::cout << "Even digits (2): " << std::endl;
+        const uint64_t v0 = 0b1111111100101011001010100001101100011010U;  // 0xFF2B2A1B1A
+        std::string v0_s = jau::toBitString(v0);
+        const auto [v0_2, len1, ok1] = jau::fromBitString(v0_s);
+        std::cout << "v0_s " << v0_s << std::endl;
+        std::cout << "v0_2  " << jau::toBitString(v0_2) << std::endl;
+        REQUIRE(v0 == v0_2);
+        std::cout << std::endl;
+    }
+    {
+        std::cout << "Even digits (3): " << std::endl;
+        std::string v0_0s1 = "0b1111111100101011001010100001101100011010";  // "0xff2b2a1b1a";
+        const uint64_t v0_0 = 0b1111111100101011001010100001101100011010U;  // 0xff2b2a1b1aU;
+        std::string v0_0s2 = jau::toBitString(v0_0);
+
+        const auto [i0_0s1, len1, ok1] = jau::fromBitString(v0_0s1);
+        const auto [i0_0s2, len2, ok2] = jau::fromBitString(v0_0s2);
+
+        std::cout << "v0_0s  " << v0_0s1 << std::endl;
+        std::cout << "v0_0s2 " << v0_0s2 << std::endl;
+
+        std::cout << "i0_0s1 " << jau::toBitString(i0_0s1) << std::endl;
+        std::cout << "i0_0s2 " << jau::toBitString(i0_0s2) << std::endl;
+
+        REQUIRE(v0_0 == i0_0s1);
+        REQUIRE(v0_0 == i0_0s2);
+        std::cout << std::endl;
+    }
+    {
+        std::cout << "Odd digits (3): " << std::endl;
+        std::string v0_0s1 = "0b111100101011001010100001101100011010";  // 0xf2b2a1b1a";
+        const uint64_t v0_0 = 0b111100101011001010100001101100011010U;  // 0xf2b2a1b1aU;
+        std::string v0_0s2 = jau::toBitString(v0_0);
+
+        const auto [i0_0s1, len1, ok1] = jau::fromBitString(v0_0s1);
+        const auto [i0_0s2, len2, ok2] = jau::fromBitString(v0_0s2);
+
+        std::cout << "v0_0s  " << v0_0s1 << std::endl;
+        std::cout << "v0_0s2 " << v0_0s2 << std::endl;
+
+        std::cout << "i0_0s1 " << jau::toBitString(i0_0s1) << std::endl;
+        std::cout << "i0_0s2 " << jau::toBitString(i0_0s2) << std::endl;
+
+        REQUIRE(v0_0 == i0_0s1);
+        REQUIRE(v0_0 == i0_0s2);
+        std::cout << std::endl;
+    }
+}
+
+TEST_CASE("Integer Type Test Test 06", "[integer][type]") {
+    REQUIRE(3_i8 == (int8_t)3);
+    REQUIRE(3_u8 == (uint8_t)3);
+
+    REQUIRE(3_i16 == (int16_t)3);
+    REQUIRE(3_u16 == (uint16_t)3);
+
+    REQUIRE(3_i32 == (int32_t)3);
+    REQUIRE(3_u32 == (uint32_t)3);
+
+    REQUIRE(3_i64 == (int64_t)3);
+    REQUIRE(3_u64 == (uint64_t)3);
+
+    REQUIRE(3_iz == (ssize_t)3);
+    REQUIRE(3_uz == (size_t)3);
+
+    REQUIRE(3_inz == (jau::snsize_t)3);
+    REQUIRE(3_unz == (jau::nsize_t)3);
 }

@@ -217,6 +217,106 @@ namespace jau {
                                   false /* lsbFirst */, true /* lowerCase */, skipPrefix);
         }
     }
+
+    /**
+    // *************************************************
+    // *************************************************
+    // *************************************************
+     */
+
+    /**
+     * Converts a given binary string representation into a byte vector, lsb-first.
+     *
+     * In case a non valid binary digit appears in the given string,
+     * conversion ends and fills the byte vector up until the violation.
+     *
+     * In case bitstr contains an incomplete number of bit-nibbles, it will be interpreted as follows
+     * - 0b11[00000001] = 0x0301 = { 0x01, 0x03 } - msb, 1st single low-nibble is most significant
+     * - 0b[01000000]11 = 0xC040 = { 0x40, 0xC0 } - lsb, last single high-nibble is most significant
+     *   - 11 -> 11000000 -> C0
+     *
+     * Even if complete==false, result holds the partial value if consumed_chars>0.
+     *
+     * You may use C++17 structured bindings to handle the pair.
+     *
+     * @param out the byte vector sink, lsb-first
+     * @param bitstr the binary string representation
+     * @param bitstr_len length of bitstr
+     * @param lsbFirst low significant byte in `bitstr` first
+     * @param checkPrefix if True, checks for a leading `0b` and removes it, otherwise not.
+     * @return pair [size_t consumed_chars, bool complete], i.e. consumed characters of string and completed=false if not fully consumed.
+     */
+    SizeBoolPair fromBitString(std::vector<uint8_t> &out, const uint8_t bitstr[], const size_t bitstr_len, const bool lsbFirst, const Bool checkPrefix = Bool::True) noexcept;
+
+    /** See fromBitString() */
+    inline SizeBoolPair fromBitString(std::vector<uint8_t> &out, const std::string &bitstr, const bool lsbFirst, const Bool checkPrefix = Bool::True) noexcept {
+        return jau::fromBitString(out, cast_char_ptr_to_uint8(bitstr.data()), bitstr.size(), lsbFirst, checkPrefix);
+    }
+
+    /**
+     * Converts a given binary string representation into a uint64_t value according to bitStringBytes().
+     *
+     * Even if complete==false, result holds the partial value if consumed_chars>0.
+     *
+     * You may use C++17 structured bindings to handle the tuple.
+     *
+     * @param bitstr the binary string representation
+     * @param checkPrefix if true, checks for a leading `0b` and removes it, otherwise not.
+     * @param lsbFirst low significant byte in `bitstr` first
+     * @return tuple [uint64_t result, size_t consumed_chars, bool complete], i.e. consumed characters of string and completed=false if not fully consumed.
+     * @see bitStringBytes()
+     * @see to_bitstring()
+     */
+    UInt64SizeBoolTuple fromBitString(std::string const &bitstr, const bool lsbFirst = false, const Bool checkPrefix = Bool::True) noexcept;
+
+    /**
+     * Produce a binary string representation of the given lsb-first byte values.
+     *
+     * If lsbFirst is true, orders LSB left -> MSB right, usual for byte streams. Result will not have a leading `0b`.
+     * Otherwise orders MSB left -> LSB right, usual for readable integer values. Result will have a leading `0b` if !skipPrefix (default).
+     *
+     * @param data pointer to the first byte to print, lsb-first
+     * @param length number of bytes to print
+     * @param lsbFirst true having the least significant byte printed first (lowest addressed byte to highest),
+     *                 otherwise have the most significant byte printed first (highest addressed byte to lowest).
+     *                 A leading `0b` will be prepended if `lsbFirst == false`.
+     * @param skipPrefix false to add leading `0b` if !lsbFirst (default), true to not add (skip)..
+     * @return the bit-string representation of the data
+     */
+    std::string toBitString(const void *data, const nsize_t length,
+                            const bool lsbFirst, const bool skipPrefix = false) noexcept;
+
+    template<class uint8_container_type,
+             std::enable_if_t<std::is_integral_v<typename uint8_container_type::value_type> &&
+                              std::is_convertible_v<typename uint8_container_type::value_type, uint8_t>,
+                              bool> = true>
+    std::string toBitString(const uint8_container_type &bytes,
+                            const bool lsbFirst, const bool skipPrefix = false) noexcept {
+        return toBitString((const uint8_t *)bytes.data(), bytes.size(), lsbFirst, skipPrefix);
+    }
+
+    /**
+     * Produce a binary string representation with leading `0b` in MSB of the given value with standard layout.
+     * @tparam value_type a standard layout value type
+     * @param v the value of given standard layout type
+     * @param skipPrefix false to add leading `0b` (default), true to not add (skip)..
+     * @return the bit-string representation of the value
+     * @see bytesBitString()
+     * @see from_bitstring()
+     */
+    template<class value_type,
+             std::enable_if_t<!std::is_pointer_v<value_type> &&
+                              std::is_standard_layout_v<value_type> &&
+                              std::is_trivially_copyable_v<value_type>,
+                              bool> = true>
+    inline std::string toBitString(value_type const &v, const bool skipPrefix = false) noexcept {
+        if constexpr ( is_little_endian() ) {
+            return toBitString(pointer_cast<const uint8_t *>(&v), sizeof(v),
+                               false /* lsbFirst */, skipPrefix);
+        } else {
+            const value_type v_le = jau::bswap(v);
+            return toBitString(pointer_cast<const uint8_t *>(&v_le), sizeof(v),
+                               false /* lsbFirst */, skipPrefix);
         }
     }
 
@@ -262,6 +362,92 @@ namespace jau {
             res[total_chars - 1 - (char_iter++)] = '-';
         }
         return res;
+    }
+
+    /**
+    // *************************************************
+    // *************************************************
+    // *************************************************
+     */
+
+    /**
+     * Produce a string representation of an unsigned integral integer value with given radix.
+     * @tparam value_type an unsigned integral integer type
+     * @param v the unsigned integral integer value
+     * @param radix base of the number system, supported: 2 binary, 8 octal, 10 decimal, 16 hexadecimal
+     * @param skipPrefix False to add leading prefix for radix (default), True to skip. Prefixes: `0x` hex, `0` octal and `0b` binary.
+     * @param width the minimum number of characters to be printed including prefix. Add padding with `padding` if result is shorter.
+     * @param separator separator character for each decimal 3 or other radix 4. Defaults to 0 for no separator.
+     * @param padding padding character, defaults to '0'. See 'width' above.
+     * @return the string representation of the unsigned integral integer value with given radix
+     */
+    template<class value_type,
+             std::enable_if_t<std::is_integral_v<value_type> &&
+                              std::is_unsigned_v<value_type>,
+                              bool> = true>
+    std::string to_string(value_type v, const nsize_t radix, const Bool skipPrefix = Bool::False, size_t width = 0,
+                          const char separator = 0, const char padding = '0') noexcept {
+        nsize_t shift;
+        switch ( radix ) {
+            case 16: shift = 4; break;
+            case 10: shift = 0; break;
+            case 8:  shift = 3; break;
+            case 2:  shift = 1; break;
+            default: return "";
+        }
+        const nsize_t mask = radix - 1;  // ignored for radix 10
+        const size_t val_digits = jau::digits<value_type>(v, radix);
+        const size_t prefix_len = (*skipPrefix || 10 == radix) ? 0 : (8 == radix ? 1 : 2);
+        const size_t separator_gap = 10 == radix ? 3 : 4;
+        size_t separator_count;
+        if ( separator && '0' == padding ) {
+            // separator inside padding
+            if ( width > prefix_len ) {
+                const size_t len0 = std::max<size_t>(width - prefix_len, val_digits);
+                separator_count = (len0 - 1) / separator_gap;
+                if ( val_digits + separator_count + prefix_len > width ) {
+                    --separator_count;  // fix down
+                }
+            } else {
+                separator_count = (val_digits - 1) / separator_gap;
+            }
+        } else if ( separator ) {
+            // separator w/o padding
+            separator_count = (val_digits - 1) / separator_gap;
+        } else {
+            separator_count = 0;
+        }
+        size_t len = std::max<size_t>(width, val_digits + separator_count + prefix_len);
+
+        std::string str(len, ' ');
+        size_t digit_idx = 0, separator_idx = 0;
+        while ( len > prefix_len ) {
+            if ( separator_idx < separator_count && 0 < digit_idx && 0 == digit_idx % separator_gap ) {
+                str[--len] = separator;
+                ++separator_idx;
+            }
+            if ( len > prefix_len ) {
+                if ( 10 != radix ) {
+                    str[--len] = digit_idx < val_digits ? HexadecimalArray[v & mask] : padding;
+                    v >>= shift;
+                } else {
+                    str[--len] = digit_idx < val_digits ? '0' + (v % 10) : padding;
+                    v /= 10;
+                }
+                ++digit_idx;
+            }
+        }
+        if ( len > 0 ) {
+            switch ( radix ) {  // NOLINT(bugprone-switch-missing-default-case)
+                case 16: str[--len] = 'x'; break;
+                case 8:  str[--len] = '0'; break;
+                case 2:  str[--len] = 'b'; break;
+            }
+            if ( len > 0 ) {
+                str[--len] = '0';
+            }
+        }
+        return str;
     }
 
     /**
@@ -555,6 +741,25 @@ namespace jau {
     }
     template<typename T>
     std::string to_string(std::vector<T> const &list) { return to_string<T>(list, ", "); }
+
+    template<typename T>
+    std::string to_string(std::vector<T> const &list, const std::string &delim, const nsize_t radix) {
+        if ( list.empty() ) {
+            return std::string();
+        }
+        bool need_delim = false;
+        std::string res;
+        for ( const T &e : list ) {
+            if ( need_delim ) {
+                res.append(delim);
+            }
+            res.append(to_string(e, radix));
+            need_delim = true;
+        }
+        return res;
+    }
+    template<typename T>
+    std::string to_string(std::vector<T> const &list, const nsize_t radix) { return to_string<T>(list, ", ", radix); }
 
     /**
      * Returns tuple [int64_t result, size_t consumed_chars, bool complete] of string to integer conversion via `std::strtoll`.

@@ -52,12 +52,98 @@ TEST_CASE( "JAU to_string() Test 00 - jau::to_string() std::string conversion", 
 
     Addr48Bit addr48bit_1(u64_1);
 
-    CHECK( "1" == jau::to_string<int>(i1) );
-    CHECK( "1116791496961" == jau::to_string(u64_1) );
-    CHECK( "0xaffe" == jau::to_string(p_v_1) );
-    CHECK( "1.650000" == jau::to_string(float_1) );
+    CHECK("1" == jau::to_string<int>(i1));
+    CHECK("1116791496961" == jau::to_string(u64_1));
+    CHECK("0xaffe" == jau::to_string(p_v_1));
+    CHECK("0xaffe" == jau::to_hexstring(0xaffe_u32));
+    {
+        // radix, default: no-width, prefix, no-separator, '0' padding
+        CHECK("0xaffe" == jau::to_string(0xaffe_u32, 16));               // hex
+        CHECK("876543210" == jau::to_string(876543210_u64, 10));         // dec
+        CHECK("077652" == jau::to_string(077652_u32, 8));                // oct
+        CHECK("0b11010101101" == jau::to_string(0b11010101101_u32, 2));  // bin
 
-    CHECK( "01:04:05:F5:E1:01" == jau::to_string(addr48bit_1) );
+        // no-prefix, radix, default: no-width, no-separator, '0' padding
+        CHECK("affe" == jau::to_string(0xaffe_u32, 16, jau::True()));               // hex
+        CHECK("876543210" == jau::to_string(876543210_u64, 10, jau::True()));       // dec
+        CHECK("77652" == jau::to_string(077652_u32, 8, jau::True()));               // oct
+        CHECK("11010101101" == jau::to_string(0b11010101101_u32, 2, jau::True()));  // bin
+
+        // radix, width-expansion, default: prefix, no-separator, '0' padding
+        CHECK("0x00affe" == jau::to_string(0xaffe_u32, 16, jau::False(), 8));                 // hex
+        CHECK("000876543210" == jau::to_string(876543210_u64, 10, jau::False(), 12));         // dec
+        CHECK("0000077652" == jau::to_string(077652_u32, 8, jau::False(), 10));               // oct
+        CHECK("0b00011010101101" == jau::to_string(0b11010101101_u32, 2, jau::False(), 16));  // bin
+
+        // no-prefix, radix, width-expansion, default: no-separator, '0' padding
+        CHECK("0000affe" == jau::to_string(0xaffe_u32, 16, jau::True(), 8));                 // hex
+        CHECK("000876543210" == jau::to_string(876543210_u64, 10, jau::True(), 12));         // dec
+        CHECK("0000077652" == jau::to_string(077652_u32, 8, jau::True(), 10));               // oct
+        CHECK("0000011010101101" == jau::to_string(0b11010101101_u32, 2, jau::True(), 16));  // bin
+
+        // radix, separator, default: no-width, prefix, '0' padding
+        CHECK("0xaffe" == jau::to_string(0xaffe_u32, 16, jau::False(), 0, '\''));             // hex
+        CHECK("0x1'affe" == jau::to_string(0x1affe_u32, 16, jau::False(), 0, '\''));          // hex
+        CHECK("876'543'210" == jau::to_string(876543210_u64, 10, jau::False(), 0, '\''));     // dec
+        CHECK("1'876'543'210" == jau::to_string(1876543210_u64, 10, jau::False(), 0, '\''));  // dec
+        CHECK("04321'7652" == jau::to_string(043217652_u32, 8, jau::False(), 0, '\''));       // oct
+        CHECK("01'4321'7652" == jau::to_string(0143217652_u32, 8, jau::False(), 0, '\''));    // oct
+        CHECK("0b1010'1101" == jau::to_string(0b10101101_u32, 2, jau::False(), 0, '\''));     // bin
+        CHECK("0b1'1010'1101" == jau::to_string(0b110101101_u32, 2, jau::False(), 0, '\''));  // bin
+
+        // no-prefix, radix, separator, default: no-width, '0' padding
+        CHECK("affe" == jau::to_string(0xaffe_u32, 16, jau::True(), 0, '\''));               // hex
+        CHECK("1'affe" == jau::to_string(0x1affe_u32, 16, jau::True(), 0, '\''));            // hex
+        CHECK("876'543'210" == jau::to_string(876543210_u64, 10, jau::True(), 0, '\''));     // dec
+        CHECK("1'876'543'210" == jau::to_string(1876543210_u64, 10, jau::True(), 0, '\''));  // dec
+        CHECK("4321'7652" == jau::to_string(043217652_u32, 8, jau::True(), 0, '\''));        // oct
+        CHECK("1'4321'7652" == jau::to_string(0143217652_u32, 8, jau::True(), 0, '\''));     // oct
+        CHECK("1010'1101" == jau::to_string(0b10101101_u32, 2, jau::True(), 0, '\''));       // bin
+        CHECK("1'1010'1101" == jau::to_string(0b110101101_u32, 2, jau::True(), 0, '\''));    // bin
+
+        // radix, width-expansion, separator, default: prefix, '0' padding
+        CHECK("0xaffe" == jau::to_string(0xaffe_u32, 16, jau::False(), 6, '\''));    // hex
+        CHECK("0x'affe" == jau::to_string(0xaffe_u32, 16, jau::False(), 7, '\''));   // hex
+        CHECK("0x0'affe" == jau::to_string(0xaffe_u32, 16, jau::False(), 8, '\''));  // hex
+
+        CHECK("876'543'210" == jau::to_string(876543210_u64, 10, jau::False(), 11, '\''));    // dec
+        CHECK("'876'543'210" == jau::to_string(876543210_u64, 10, jau::False(), 12, '\''));   // dec
+        CHECK("0'876'543'210" == jau::to_string(876543210_u64, 10, jau::False(), 13, '\''));  // dec
+
+        CHECK("07652" == jau::to_string(07652_u32, 8, jau::False(), 5, '\''));    // oct
+        CHECK("0'7652" == jau::to_string(07652_u32, 8, jau::False(), 6, '\''));   // oct
+        CHECK("00'7652" == jau::to_string(07652_u32, 8, jau::False(), 7, '\''));  // oct
+
+        CHECK("0b1110'1010'1101" == jau::to_string(0b111010101101_u32, 2, jau::False(), 16, '\''));    // bin
+        CHECK("0b'1110'1010'1101" == jau::to_string(0b111010101101_u32, 2, jau::False(), 17, '\''));   // bin
+        CHECK("0b0'1110'1010'1101" == jau::to_string(0b111010101101_u32, 2, jau::False(), 18, '\''));  // bin
+
+        // no-prefix, radix, width-expansion, separator, default: '0' padding
+        CHECK("affe" == jau::to_string(0xaffe_u32, 16, jau::True(), 4, '\''));    // hex
+        CHECK("'affe" == jau::to_string(0xaffe_u32, 16, jau::True(), 5, '\''));   // hex
+        CHECK("0'affe" == jau::to_string(0xaffe_u32, 16, jau::True(), 6, '\''));  // hex
+
+        CHECK("876'543'210" == jau::to_string(876543210_u64, 10, jau::True(), 11, '\''));    // dec
+        CHECK("'876'543'210" == jau::to_string(876543210_u64, 10, jau::True(), 12, '\''));   // dec
+        CHECK("0'876'543'210" == jau::to_string(876543210_u64, 10, jau::True(), 13, '\''));  // dec
+
+        CHECK("7652" == jau::to_string(07652_u32, 8, jau::True(), 4, '\''));    // oct
+        CHECK("'7652" == jau::to_string(07652_u32, 8, jau::True(), 5, '\''));   // oct
+        CHECK("0'7652" == jau::to_string(07652_u32, 8, jau::True(), 6, '\''));  // oct
+
+        CHECK("1110'1010'1101" == jau::to_string(0b111010101101_u32, 2, jau::True(), 14, '\''));    // bin
+        CHECK("'1110'1010'1101" == jau::to_string(0b111010101101_u32, 2, jau::True(), 15, '\''));   // bin
+        CHECK("0'1110'1010'1101" == jau::to_string(0b111010101101_u32, 2, jau::True(), 16, '\''));  // bin
+
+        // no-prefix, radix, width-expansion, padding ' '
+        CHECK("    affe" == jau::to_string(0xaffe_u32, 16, jau::True(), 8, '\'', ' '));
+        CHECK("    876'543'210" == jau::to_string(876543210_u32, 10, jau::True(), 15, '\'', ' '));
+        CHECK("    110'1010'1101" == jau::to_string(0b11010101101_u32, 2, jau::True(), 17, '\'', ' '));
+        CHECK("    7'7652" == jau::to_string(077652_u32, 8, jau::True(), 10, '\'', ' '));
+    }
+    CHECK("1.650000" == jau::to_string(float_1));
+
+    CHECK("01:04:05:F5:E1:01" == jau::to_string(addr48bit_1));
 
     //
     // Validating 'pointer std::vector::const_iterator.operator->()'
@@ -94,4 +180,3 @@ TEST_CASE( "JAU to_string() Test 00 - jau::to_string() std::string conversion", 
 
     CHECK(vec_int_citer_1E_str == jau::to_string(vec_int_citer_1E));
 }
-

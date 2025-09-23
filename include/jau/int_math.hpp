@@ -143,6 +143,39 @@ namespace jau {
     }
 
     /**
+     * Returns log2(bytesize*8), e.g. to bit-shift whole byte values
+     *
+     * If bytesize is not of power2, zero is returned.
+     *
+     * @param bytesize number of bytes
+     * @return log2(bytesize*8)
+     */
+    constexpr size_t log2_byteshift(const size_t bytesize) noexcept {
+        if ( bytesize < 256 ) {
+            switch ( bytesize ) {
+                case 1:   return 3;   //    8 bits
+                case 2:   return 4;   //   16 bits
+                case 4:   return 5;   //   32 bits
+                case 8:   return 6;   //   64 bits
+                case 16:  return 7;   //  128 bits
+                case 32:  return 8;   //  256 bits
+                case 64:  return 9;   //  512 bits
+                case 128: return 10;  // 1024 bits
+                default:  return 0;   // non pow-2 bytesize
+            }
+        }
+        if( !jau::is_power_of_2(bytesize) ) {
+            return 0;
+        }
+        // starting w/ bytesize 256, shift 11
+        size_t bitsize = (bytesize * 8) >> 11, r = 11;
+        while ( bitsize >>= 1 ) {
+            ++r;
+        }
+        return r;
+    }
+
+    /**
      * If the given {@code n} is not is_power_of_2() return next_power_of_2(),
      * otherwise return {@code n} unchanged.
      *
@@ -432,6 +465,33 @@ namespace jau {
              std::enable_if_t<std::is_integral_v<T>, bool> = true>
     constexpr size_t digits10(const T x, const bool sign_is_digit = true) noexcept {
         return digits10<T>(x, jau::sign<T>(x), sign_is_digit);
+    }
+
+    /**
+     * Returns the number of digits of the given unsigned integral value number and
+     * the given radix.
+     * @tparam T an integral unsigned integer type
+     * @param x the integral integer
+     * @param radix base of the number system, e.g. 2 binary, 8 octal, 10 decimal,
+     * 16 hexadecimal, ..
+     * @return digit count
+     */
+    template<typename T,
+             std::enable_if_t<std::is_integral_v<T> &&
+                              std::is_unsigned_v<T>,
+                              bool> = true>
+    constexpr size_t digits(const T x, const nsize_t radix) noexcept {
+        if ( x == 0 ) {
+            return 1;
+        }
+        switch ( radix ) {
+            case 2:
+                return 1 + static_cast<nsize_t>(std::log2<T>(x));
+            case 10:
+                return 1 + static_cast<nsize_t>(std::log10<T>(x));
+            default:
+                return 1 + static_cast<nsize_t>(std::log10<T>(x) / std::log10<T>(radix));
+        }
     }
 
     /**@}*/

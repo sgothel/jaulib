@@ -302,3 +302,31 @@ TEST_CASE( "Int Math Test 21", "[mul][overflow][arithmetic][math]" ) {
         }
     }
 }
+
+constexpr static size_t log2_byteshift2(const size_t bytesize) noexcept {
+    size_t bitsize = bytesize * 8, r = 0;
+    while ( bitsize >>= 1 ) {
+        ++r;
+    }
+    return r;
+}
+
+TEST_CASE("Int Math Test 22", "[log2_byteshift][arithmetic][math]") {
+    for(size_t bytesz = 1; bytesz < 4096; bytesz<<=1) {
+        size_t bitsz = bytesz*8;
+        size_t l2 = (size_t)std::log2(bitsz);
+        size_t shift1 = jau::log2_byteshift(bytesz);
+        size_t shift2 = log2_byteshift2(bytesz);
+        fprintf(stderr, "bytesz %zu, bitsz %zu: log2 %zu, shift[1 %zu, 2 %zu]\n",
+            bytesz, bitsz, l2, shift1, shift2);
+        REQUIRE( l2 == shift1 );
+        REQUIRE( l2 == shift2 );
+    }
+    // non-power2 tests
+    REQUIRE(0 == jau::log2_byteshift(0));
+    REQUIRE(0 == jau::log2_byteshift(3));
+    REQUIRE(0 == jau::log2_byteshift(65));
+    REQUIRE(0 == jau::log2_byteshift(257));
+    REQUIRE(0 == jau::log2_byteshift(256+8));
+}
+
