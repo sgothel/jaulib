@@ -85,22 +85,24 @@
         return true;
     }
 
-    static bool UserInfo_get_env_uid(::uid_t& res_uid, const bool try_sudo) noexcept {
+    static bool UserInfo_get_env_uid(::uid_t &res_uid, const bool try_sudo) noexcept {
         char *env_str = nullptr;
-        long long env_val = 0;
-        if( try_sudo ) {
+        // int64_t env_val = 0;
+        if ( try_sudo ) {
             env_str = ::getenv("SUDO_UID");
-            if( nullptr != env_str ) {
-                if( jau::to_integer(env_val, env_str, strlen(env_str)) ) {
-                    res_uid = (::uid_t) env_val;
+            if ( nullptr != env_str ) {
+                const auto [env_val, consumed, complete] = jau::to_integer(env_str, strlen(env_str));
+                if ( complete ) {
+                    res_uid = (::uid_t)env_val;
                     return true;
                 }
             }
         }
         env_str = ::getenv("UID");
-        if( nullptr != env_str ) {
-            if( jau::to_integer(env_val, env_str, strlen(env_str)) ) {
-                res_uid = (::uid_t) env_val;
+        if ( nullptr != env_str ) {
+            const auto [env_val, consumed, complete] = jau::to_integer(env_str, strlen(env_str));
+            if ( complete ) {
+                res_uid = (::uid_t)env_val;
                 return true;
             }
         }

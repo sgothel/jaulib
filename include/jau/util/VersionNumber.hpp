@@ -192,7 +192,6 @@ namespace jau::util {
             }
             return res;
         }
-
     };
 
     inline std::ostream& operator<<(std::ostream& out, const VersionNumber& v) noexcept {
@@ -304,12 +303,15 @@ namespace jau::util {
                                 if constexpr ( DBG_OUT ) {
                                     std::cout << "XXX: git commits " << m_git_commits << std::endl;
                                 }
-                                if( match.size() >= 6 && match[5].length() > 0 ) {
-                                    m_git_ssha = jau::from_hexstring(match[5]);
+                                if ( match.size() >= 6 && match[5].length() > 0 ) {
+                                    const auto [git_ssha, len0, ok0] = jau::from_hexstring(match[5]);
                                     if constexpr ( DBG_OUT ) {
-                                        std::cout << "XXX: git ssha '" << match[5] << "', hex " << jau::to_hexstring(m_git_ssha) << ", dec " << m_git_ssha << std::endl;
+                                        std::cout << "XXX: git ssha ok " << ok0 << " '" << match[5] << "', hex " << jau::to_hexstring(git_ssha) << ", dec " << git_ssha << std::endl;
                                     }
-                                    if( match.size() >= 7 && match[6].length() > 0 ) {
+                                    if ( ok0 ) {
+                                        m_git_ssha = git_ssha;
+                                    }
+                                    if ( match.size() >= 7 && match[6].length() > 0 ) {
                                         m_git_dirty = true;
                                         if constexpr ( DBG_OUT ) {
                                             std::cout << "XXX: git dirty " << m_git_dirty << std::endl;
@@ -389,7 +391,6 @@ namespace jau::util {
             }
             return res;
         }
-
     };
 
     inline std::ostream& operator<<(std::ostream& out, const VersionNumberString& v) noexcept {

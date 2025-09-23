@@ -736,24 +736,34 @@ namespace jau {
     /** fraction using int64_t as integral type */
     typedef fraction<int64_t> fraction_i64;
 
+    /** Simple pre-defined value pair [fraction_i64, size_t, bool] for structured bindings to multi-values. */
+    struct FracI64SizeBoolTuple {
+        /** a fraction_i64 value, e.g. compute result value, etc */
+        fraction_i64 v;
+        /** a size_t value, e.g. index, length, etc */
+        size_t s;
+        /** a boolean value, e.g. success, etc */
+        bool b;
+    };
+
     /**
-     * Stores the fraction_i64 value of the given string value in format `<num>/<denom>`,
+     * Returns the fraction_i64 of the given string in format `<num>/<denom>`,
      * which may contain whitespace.
      *
      * It the given string value does not conform with the format
-     * or exceeds the given value range, `false` is being returned.
+     * or exceeds the given value range, `complete=false` is being returned.
      *
      * If the given string value has been accepted, it is stored in the result reference
-     * and `true` is being returned.
+     * and `complete=true` is being returned.
      *
-     * @param result storage for result is value is parsed successfully and within range.
+     * You may use C++17 structured bindings to handle the tuple.
+     *
      * @param value the string value
      * @param min_allowed the minimum allowed value
      * @param max_allowed the maximum allowed value
-     * @return true if value has been accepted, otherwise false
+     * @return tuple [fraction_i64 result, size_t consumed_chars, bool complete], i.e. complete is true if value has been accepted, otherwise false
      */
-    bool to_fraction_i64(fraction_i64& result, const std::string & value, const fraction_i64& min_allowed, const fraction_i64& max_allowed) noexcept;
-
+    FracI64SizeBoolTuple to_fraction_i64(const std::string& value, const fraction_i64& min_allowed, const fraction_i64& max_allowed) noexcept;
 
     /** fraction using uint64_t as integral type */
     typedef fraction<uint64_t> fraction_u64;

@@ -91,69 +91,73 @@ namespace jau {
      */
 
     /**
-     * Converts a given hexadecimal string representation into a byte vector.
+     * Converts a given hexadecimal string representation into a byte vector, lsb-first.
      *
      * In case a non valid hexadecimal digit appears in the given string,
      * conversion ends and fills the byte vector up until the violation.
      *
-     * If string is in MSB first (default w/ leading 0x) and platform jau::is_little_endian(),
-     * lsbFirst = false shall be passed.
-     *
      * In case hexstr contains an odd number of hex-nibbles, it will be interpreted as follows
-     * - 0xf12 = 0x0f12 = { 0x12, 0x0f } - msb, 1st single low-nibble is most significant
-     * -   12f = 0xf012 = { 0x12, 0xf0 } - lsb, last single high-nibble is most significant
+     * - 0xf[12] = 0x0f12 = { 0x12, 0x0f } - msb, 1st single low-nibble is most significant
+     * -   [12]f = 0xf012 = { 0x12, 0xf0 } - lsb, last single high-nibble is most significant
      *
-     * @param out the byte vector sink
+     * Even if complete==false, result holds the partial value if consumed_chars>0.
+     *
+     * You may use C++17 structured bindings to handle the pair.
+     *
+     * @param out the byte vector sink, lsb-first
      * @param hexstr the hexadecimal string representation
-     * @param lsbFirst low significant byte first
-     * @param checkLeading0x if true, checks for a leading `0x` and removes it, otherwise not.
-     * @return the length of the matching byte vector
+     * @param lsbFirst low significant byte in `hexstr` first
+     * @param checkPrefix if True, checks for a leading `0x` and removes it, otherwise not.
+     * @return pair [size_t consumed_chars, bool complete], i.e. consumed characters of string and completed=false if not fully consumed.
      */
-    size_t hexStringBytes(std::vector<uint8_t>& out, const std::string& hexstr, const bool lsbFirst, const bool checkLeading0x) noexcept;
+    SizeBoolPair hexStringBytes(std::vector<uint8_t> &out, const std::string &hexstr, const bool lsbFirst, const Bool checkPrefix = Bool::True) noexcept;
 
     /** See hexStringBytes() */
-    size_t hexStringBytes(std::vector<uint8_t>& out, const uint8_t hexstr[], const size_t hexstr_len, const bool lsbFirst, const bool checkLeading0x) noexcept;
+    SizeBoolPair hexStringBytes(std::vector<uint8_t> &out, const uint8_t hexstr[], const size_t hexstr_len, const bool lsbFirst, const Bool checkPrefix = Bool::True) noexcept;
 
     /**
      * Converts a given hexadecimal string representation into a uint64_t value according to hexStringBytes().
      *
-     * If string is in MSB first (default w/ leading 0x) and platform jau::is_little_endian(),
-     * lsbFirst = false shall be passed (default).
+     * Even if complete==false, result holds the partial value if consumed_chars>0.
      *
-     * @param s the hexadecimal string representation
-     * @param lsbFirst low significant byte first
-     * @param checkLeading0x if true, checks for a leading `0x` and removes it, otherwise not.
-     * @return the uint64_t value
+     * You may use C++17 structured bindings to handle the tuple.
+     *
+     * @param hexstr the hexadecimal string representation
+     * @param lsbFirst low significant byte in `hexstr` first
+     * @param checkPrefix if True, checks for a leading `0x` and removes it, otherwise not.
+     * @return tuple [uint64_t result, size_t consumed_chars, bool complete], i.e. consumed characters of string and completed=false if not fully consumed.
      * @see hexStringBytes()
      * @see to_hexstring()
      */
-    uint64_t from_hexstring(std::string const & s, const bool lsbFirst=!jau::is_little_endian(), const bool checkLeading0x=true) noexcept;
+    UInt64SizeBoolTuple from_hexstring(std::string const &hexstr, const bool lsbFirst = false, const Bool checkPrefix = Bool::True) noexcept;
+
+    inline constexpr const char *HexadecimalArray = "0123456789abcdef";
 
     /**
-     * Produce a hexadecimal string representation of the given byte values.
-     * <p>
-     * If lsbFirst is true, orders LSB left -> MSB right, usual for byte streams. Result will not have a leading `0x`.<br>
-     * Otherwise orders MSB left -> LSB right, usual for readable integer values. Result will have a leading `0x` if !skipLeading0x (default).
-     * </p>
-     * @param data pointer to the first byte to print
+     * Produce a hexadecimal string representation of the given lsb-first byte values.
+     *
+     * If lsbFirst is true, orders LSB left -> MSB right, usual for byte streams. Result will not have a leading `0x`.
+     * Otherwise orders MSB left -> LSB right, usual for readable integer values. Result will have a leading `0x` if !skipPrefix (default).
+     *
+     * @param data pointer to the first byte to print, lsb-first
      * @param length number of bytes to print
      * @param lsbFirst true having the least significant byte printed first (lowest addressed byte to highest),
      *                 otherwise have the most significant byte printed first (highest addressed byte to lowest).
      *                 A leading `0x` will be prepended if `lsbFirst == false`.
      * @param lowerCase true to use lower case hex-chars (default), otherwise capital letters are being used.
-     * @param skipLeading0x false to add leading `0x` if !lsbFirst (default), true to not add (skip)..
+     * @param skipPrefix false to add leading `0x` if !lsbFirst (default), true to not add (skip)..
      * @return the hex-string representation of the data
      */
-    std::string bytesHexString(const void* data, const nsize_t length,
-                               const bool lsbFirst, const bool lowerCase=true, const bool skipLeading0x=false) noexcept;
+    std::string bytesHexString(const void *data, const nsize_t length,
+                               const bool lsbFirst, const bool lowerCase = true, const bool skipPrefix = false) noexcept;
 
-    template< class uint8_container_type,
-              std::enable_if_t<std::is_integral_v<typename uint8_container_type::value_type> &&
-                               std::is_convertible_v<typename uint8_container_type::value_type, uint8_t>,
-                               bool> = true>
-    std::string bytesHexString(const uint8_container_type& bytes,
-                               const bool lsbFirst, const bool lowerCase=true, const bool skipLeading0x=false) noexcept {
-            return bytesHexString((const uint8_t *)bytes.data(), bytes.size(), lsbFirst, lowerCase, skipLeading0x);
+    template<class uint8_container_type,
+             std::enable_if_t<std::is_integral_v<typename uint8_container_type::value_type> &&
+                              std::is_convertible_v<typename uint8_container_type::value_type, uint8_t>,
+                              bool> = true>
+    std::string bytesHexString(const uint8_container_type &bytes,
+                               const bool lsbFirst, const bool lowerCase = true, const bool skipPrefix = false) noexcept {
+        return bytesHexString((const uint8_t *)bytes.data(), bytes.size(), lsbFirst, lowerCase, skipPrefix);
     }
 
     /**
@@ -169,50 +173,50 @@ namespace jau {
      * Produce a lower-case hexadecimal string representation with leading `0x` in MSB of the given pointer.
      * @tparam value_type a pointer type
      * @param v the pointer of given pointer type
-     * @param skipLeading0x false to add leading `0x` (default), true to not add (skip)..
+     * @param skipPrefix false to add leading `0x` (default), true to not add (skip)..
      * @return the hex-string representation of the value
      * @see bytesHexString()
      * @see from_hexstring()
      */
-    template< class value_type,
-              std::enable_if_t<std::is_pointer_v<value_type>,
-                               bool> = true>
-    inline std::string to_hexstring(value_type const & v, const bool skipLeading0x=false) noexcept
-    {
-        #if defined(__EMSCRIPTEN__) // jau::os::is_generic_wasm()
-            static_assert( is_little_endian() ); // Bug in emscripten, unable to deduce uint16_t, uint32_t or uint64_t override of cpu_to_le() or bswap()
-            const uintptr_t v_le = reinterpret_cast<uintptr_t>(v);
-            return bytesHexString(pointer_cast<const uint8_t*>(&v_le), sizeof(v),              // NOLINT(bugprone-sizeof-expression): Intended
-                                  false /* lsbFirst */, true /* lowerCase */, skipLeading0x);
-        #else
-            const uintptr_t v_le = jau::cpu_to_le( reinterpret_cast<uintptr_t>(v) );
-            return bytesHexString(pointer_cast<const uint8_t*>(&v_le), sizeof(v),              // NOLINT(bugprone-sizeof-expression): Intended
-                                  false /* lsbFirst */, true /* lowerCase */, skipLeading0x);
-        #endif
+    template<class value_type,
+             std::enable_if_t<std::is_pointer_v<value_type>,
+                              bool> = true>
+    inline std::string to_hexstring(value_type const &v, const bool skipPrefix = false) noexcept {
+#if defined(__EMSCRIPTEN__)                 // jau::os::is_generic_wasm()
+        static_assert(is_little_endian());  // Bug in emscripten, unable to deduce uint16_t, uint32_t or uint64_t override of cpu_to_le() or bswap()
+        const uintptr_t v_le = reinterpret_cast<uintptr_t>(v);
+        return bytesHexString(pointer_cast<const uint8_t *>(&v_le), sizeof(v),  // NOLINT(bugprone-sizeof-expression): Intended
+                              false /* lsbFirst */, true /* lowerCase */, skipPrefix);
+#else
+        const uintptr_t v_le = jau::cpu_to_le(reinterpret_cast<uintptr_t>(v));
+        return bytesHexString(pointer_cast<const uint8_t *>(&v_le), sizeof(v),  // NOLINT(bugprone-sizeof-expression): Intended
+                              false /* lsbFirst */, true /* lowerCase */, skipPrefix);
+#endif
     }
 
     /**
      * Produce a lower-case hexadecimal string representation with leading `0x` in MSB of the given value with standard layout.
      * @tparam value_type a standard layout value type
      * @param v the value of given standard layout type
-     * @param skipLeading0x false to add leading `0x` (default), true to not add (skip)..
+     * @param skipPrefix false to add leading `0x` (default), true to not add (skip)..
      * @return the hex-string representation of the value
      * @see bytesHexString()
      * @see from_hexstring()
      */
-    template< class value_type,
-              std::enable_if_t<!std::is_pointer_v<value_type> &&
-                               std::is_standard_layout_v<value_type>,
-                               bool> = true>
-    inline std::string to_hexstring(value_type const & v, const bool skipLeading0x=false) noexcept
-    {
-        if constexpr( is_little_endian() ) {
-            return bytesHexString(pointer_cast<const uint8_t*>(&v), sizeof(v),
-                                  false /* lsbFirst */, true /* lowerCase */, skipLeading0x);
+    template<class value_type,
+             std::enable_if_t<!std::is_pointer_v<value_type> &&
+                              std::is_standard_layout_v<value_type>,
+                              bool> = true>
+    inline std::string to_hexstring(value_type const &v, const bool skipPrefix = false) noexcept {
+        if constexpr ( is_little_endian() ) {
+            return bytesHexString(pointer_cast<const uint8_t *>(&v), sizeof(v),
+                                  false /* lsbFirst */, true /* lowerCase */, skipPrefix);
         } else {
             const value_type v_le = jau::bswap(v);
-            return bytesHexString(pointer_cast<const uint8_t*>(&v_le), sizeof(v),
-                                  false /* lsbFirst */, true /* lowerCase */, skipLeading0x);
+            return bytesHexString(pointer_cast<const uint8_t *>(&v_le), sizeof(v),
+                                  false /* lsbFirst */, true /* lowerCase */, skipPrefix);
+        }
+    }
         }
     }
 
@@ -224,38 +228,38 @@ namespace jau {
 
     /**
      * Produce a decimal string representation of an integral integer value.
-     * @tparam T an integral integer type
+     * @tparam value_type an integral integer type
      * @param v the integral integer value
      * @param separator if not 0, use as separation character, otherwise no separation characters are being used
      * @param width the minimum number of characters to be printed. Add padding with blank space if result is shorter.
      * @return the string representation of the integral integer value
      */
-    template< class value_type,
-              std::enable_if_t< std::is_integral_v<value_type>,
-                                bool> = true>
-    std::string to_decstring(const value_type& v, const char separator=',', const nsize_t width=0) noexcept {
+    template<class value_type,
+             std::enable_if_t<std::is_integral_v<value_type>,
+                              bool> = true>
+    std::string to_decstring(const value_type &v, const char separator = ',', const nsize_t width = 0) noexcept {
         const snsize_t v_sign = jau::sign<value_type>(v);
-        const nsize_t digit10_count1 = jau::digits10<value_type>(v, v_sign, true /* sign_is_digit */);
-        const nsize_t digit10_count2 = v_sign < 0 ? digit10_count1 - 1 : digit10_count1; // less sign
+        const size_t digit10_count1 = jau::digits10<value_type>(v, v_sign, true /* sign_is_digit */);
+        const size_t digit10_count2 = v_sign < 0 ? digit10_count1 - 1 : digit10_count1;  // less sign
 
-        const nsize_t comma_count = 0 == separator ? 0 : ( digit10_count1 - 1 ) / 3;
-        const nsize_t net_chars = digit10_count1 + comma_count;
-        const nsize_t total_chars = std::max<nsize_t>(width, net_chars);
+        const size_t separator_count = separator ? (digit10_count1 - 1) / 3 : 0;
+        const size_t net_chars = digit10_count1 + separator_count;
+        const size_t total_chars = std::max<size_t>(width, net_chars);
         std::string res(total_chars, ' ');
 
         value_type n = v;
-        nsize_t char_iter = 0;
+        size_t char_iter = 0;
 
-        for(nsize_t digit10_iter = 0; digit10_iter < digit10_count2 /* && char_iter < total_chars */; digit10_iter++ ) {
-            const int digit = v_sign < 0 ? invert_sign( n % 10 ) : n % 10;
+        for ( size_t digit10_iter = 0; digit10_iter < digit10_count2 /* && char_iter < total_chars */; digit10_iter++ ) {
+            const int digit = v_sign < 0 ? invert_sign(n % 10) : n % 10;
             n /= 10;
-            if( 0 < digit10_iter && 0 == digit10_iter % 3 ) {
-                res[total_chars-1-(char_iter++)] = separator;
+            if ( separator && 0 < digit10_iter && 0 == digit10_iter % 3 ) {
+                res[total_chars - 1 - (char_iter++)] = separator;
             }
-            res[total_chars-1-(char_iter++)] = '0' + digit;
+            res[total_chars - 1 - (char_iter++)] = '0' + digit;
         }
-        if( v_sign < 0 /* && char_iter < total_chars */ ) {
-            res[total_chars-1-(char_iter++)] = '-';
+        if ( v_sign < 0 /* && char_iter < total_chars */ ) {
+            res[total_chars - 1 - (char_iter++)] = '-';
         }
         return res;
     }
@@ -552,8 +556,23 @@ namespace jau {
     template<typename T>
     std::string to_string(std::vector<T> const &list) { return to_string<T>(list, ", "); }
 
-    bool to_integer(long long & result, const std::string& str, const char limiter='\0', const char *limiter_pos=nullptr);
-    bool to_integer(long long & result, const char * str, size_t str_len, const char limiter='\0', const char *limiter_pos=nullptr);
+    /**
+     * Returns tuple [int64_t result, size_t consumed_chars, bool complete] of string to integer conversion via `std::strtoll`.
+     *
+     * Even if complete==false, result holds the partial value if consumed_chars>0.
+     *
+     * You may use C++17 structured bindings to handle the tuple.
+     */
+    Int64SizeBoolTuple to_integer(const std::string &str, const nsize_t radix = 10, const char limiter = '\0', const char *limiter_pos = nullptr);
+
+    /**
+     * Returns tuple [int64_t result, size_t consumed_chars, bool complete] of string to integer conversion via `std::strtoll`.
+     *
+     * Even if complete==false, result holds the partial value if consumed_chars>0.
+     *
+     * You may use C++17 structured bindings to handle the tuple.
+     */
+    Int64SizeBoolTuple to_integer(const char *str, size_t str_len, const nsize_t radix = 10, const char limiter = '\0', const char *limiter_pos = nullptr);
 
     /**
      * C++20: Heterogeneous Lookup in (Un)ordered Containers

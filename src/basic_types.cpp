@@ -569,21 +569,24 @@ static snsize_t hexCharByte_(const uint8_t c) {
     return -1;
 }
 
-size_t jau::hexStringBytes(std::vector<uint8_t>& out, const std::string& hexstr, const bool lsbFirst, const bool checkLeading0x) noexcept {
-    return jau::hexStringBytes(out, cast_char_ptr_to_uint8(hexstr.data()), hexstr.size(), lsbFirst, checkLeading0x);
+SizeBoolPair jau::hexStringBytes(std::vector<uint8_t> &out, const std::string &hexstr, const bool lsbFirst, const Bool checkPrefix) noexcept {
+    return jau::hexStringBytes(out, cast_char_ptr_to_uint8(hexstr.data()), hexstr.size(), lsbFirst, checkPrefix);
 }
-size_t jau::hexStringBytes(std::vector<uint8_t>& out, const uint8_t hexstr[], const size_t hexstr_len, const bool lsbFirst, const bool checkLeading0x) noexcept {
+
+SizeBoolPair jau::hexStringBytes(std::vector<uint8_t> &out, const uint8_t hexstr[], const size_t hexstr_len, const bool lsbFirst, const Bool checkPrefix) noexcept {
     size_t offset;
-    if( checkLeading0x && hexstr_len >= 2 && hexstr[0] == '0' && hexstr[1] == 'x' ) {
+    if ( *checkPrefix && hexstr_len >= 2 && hexstr[0] == '0' && hexstr[1] == 'x' ) {
         offset = 2;
     } else {
         offset = 0;
     }
     size_t lsb, msb;
-    if( lsbFirst ) {
-        lsb = 1; msb = 0;
+    if ( lsbFirst ) {
+        lsb = 1;
+        msb = 0;
     } else {
-        lsb = 0; msb = 1;
+        lsb = 0;
+        msb = 1;
     }
     const size_t hexlen_in = hexstr_len - offset;
     const size_t bsize = hexlen_in / 2;
@@ -591,73 +594,77 @@ size_t jau::hexStringBytes(std::vector<uint8_t>& out, const uint8_t hexstr[], co
     out.reserve(bsize + hexlen_in % 2);
 
     // Odd nibbles:
-    // - 0xf12 = 0x0f12 = { 0x12, 0x0f } - msb, 1st single low-nibble is most significant
-    // -   12f = 0xf012 = { 0x12, 0xf0 } - lsb, last single high-nibble is most significant
+    // - 0xf[12] = 0x0f12 = { 0x12, 0x0f } - msb, 1st single low-nibble is most significant
+    // -   [12]f = 0xf012 = { 0x12, 0xf0 } - lsb, last single high-nibble is most significant
     //
     const bool has_single_nibble = 0 < hexlen_in % 2;
     uint8_t high_msb_nibble = 0;
-    if( !lsbFirst && has_single_nibble ) {
+    if ( !lsbFirst && has_single_nibble ) {
         // consume single MSB nibble
         const size_t idx = 0;
-        assert( hexstr_len - 1 >= offset + idx );
-        const snsize_t l = hexCharByte_( hexstr[ offset + idx ] );
-        if( 0 <= l ) {
-            high_msb_nibble = static_cast<uint8_t>( l );
+        assert(hexstr_len - 1 >= offset + idx);
+        const snsize_t l = hexCharByte_(hexstr[offset + idx]);
+        if ( 0 <= l ) {
+            high_msb_nibble = static_cast<uint8_t>(l);
         } else {
             // invalid char
-            return out.size();
+            return { .s = offset, .b = false };
         }
         ++offset;
     }
-    size_t i = 0;
-    for (; i < bsize; ++i) {
-        const size_t idx = ( lsb*i + msb*(bsize-1-i) ) * 2;
-        assert( hexstr_len - 1 >= offset + idx + 1 );
-        const snsize_t h = hexCharByte_( hexstr[ offset + idx ] );
-        const snsize_t l = hexCharByte_( hexstr[ offset + idx + 1 ] );
-        if( 0 <= h && 0 <= l ) {
-            out.push_back( static_cast<uint8_t>( (h << 4) + l ) );
+    for ( size_t i = 0; i < bsize; ++i ) {
+        const size_t idx = (lsb * i + msb * (bsize - 1 - i)) * 2;
+        assert(hexstr_len - 1 >= offset + idx + 1);
+        const snsize_t h = hexCharByte_(hexstr[offset + idx]);
+        const snsize_t l = hexCharByte_(hexstr[offset + idx + 1]);
+        if ( 0 <= h && 0 <= l ) {
+            out.push_back(static_cast<uint8_t>((h << 4) + l));
+        } else if ( 0 > h ) {
+            // invalid 1st char
+            return { .s = offset + 2 * i, .b = false };
         } else {
-            // invalid char
-            return out.size();
+            // invalid 2nd char
+            return { .s = offset + 2 * i + 1, .b = false };
         }
     }
-    if( has_single_nibble ) {
-        if( lsbFirst ) {
-            assert( hexstr_len - 1 == offset + i*2 );
-            const snsize_t h = hexCharByte_( hexstr[ offset + i*2 ] );
-            if( 0 <= h ) {
-                out.push_back( static_cast<uint8_t>( (h << 4) + 0 ) );
+    offset += bsize * 2;
+    if ( has_single_nibble ) {
+        if ( lsbFirst ) {
+            assert(hexstr_len - 1 == offset);
+            const snsize_t h = hexCharByte_(hexstr[offset]);
+            if ( 0 <= h ) {
+                out.push_back(static_cast<uint8_t>((h << 4) + 0));
             } else {
                 // invalid char
-                return out.size();
+                return { .s = offset, .b = false };
             }
+            ++offset;
         } else {
-            out.push_back( high_msb_nibble );
+            out.push_back(high_msb_nibble);
         }
     }
-    assert( hexlen_in/2 + hexlen_in%2 == out.size() );
-    return out.size();
+    assert(hexlen_in / 2 + hexlen_in % 2 == out.size());
+    assert(offset == hexstr_len);
+    return { .s = offset, .b = true };
 }
 
-uint64_t jau::from_hexstring(std::string const & s, const bool lsbFirst, const bool checkLeading0x) noexcept
-{
+UInt64SizeBoolTuple jau::from_hexstring(std::string const &hexstr, const bool lsbFirst, const Bool checkPrefix) noexcept {
     std::vector<uint8_t> out;
-    hexStringBytes(out, s, lsbFirst, checkLeading0x);
+    auto [consumed, complete] = hexStringBytes(out, hexstr, lsbFirst, checkPrefix);
     if constexpr ( jau::is_little_endian() ) {
-        while( out.size() < sizeof(uint64_t) ) {
+        while ( out.size() < sizeof(uint64_t) ) {
             out.push_back(0);
         }
     } else {
-        while( out.size() < sizeof(uint64_t) ) {
+        while ( out.size() < sizeof(uint64_t) ) {
             out.insert(out.cbegin(), 0);
         }
     }
-    return *pointer_cast<const uint64_t*>( out.data() );
+    uint64_t result = jau::le_to_cpu(*pointer_cast<const uint64_t *>(out.data()));
+    return { .v = result, .s = consumed, .b = complete };
 }
 
-static const char* HEX_ARRAY_LOW = "0123456789abcdef";
-static const char* HEX_ARRAY_BIG = "0123456789ABCDEF";
+static constexpr const char *HEX_ARRAY_BIG = "0123456789ABCDEF";
 
 std::string jau::bytesHexString(const void *data, const nsize_t length,
                                 const bool lsbFirst, const bool lowerCase, const bool skipPrefix) noexcept {
@@ -749,82 +756,90 @@ std::string jau::to_string(const jau::func::target_type v) noexcept {
     return "undef";
 }
 
-bool jau::to_integer(long long & result, const char * str, size_t str_len, const char limiter, const char *limiter_pos) {
+Int64SizeBoolTuple jau::to_integer(const char *str, size_t str_len, const jau::nsize_t radix, const char limiter, const char *limiter_pos) {
+    int64_t result = 0;
+    size_t consumed = 0;
+    bool complete = false;
     static constexpr const bool _debug = false;
     char *endptr = nullptr;
-    if( nullptr == limiter_pos ) {
+    if ( nullptr == limiter_pos ) {
         limiter_pos = str + str_len;
     }
     errno = 0;
-    const long long num = std::strtoll(str, &endptr, 10);
-    if( 0 != errno ) {
+    const long long num = std::strtoll(str, &endptr, int(radix));
+    if ( 0 != errno ) {
         // value under- or overflow occured
         if constexpr ( _debug ) {
             INFO_PRINT("Value under- or overflow occurred, value %lld in: '%s', errno %d %s", num, str, errno, strerror(errno));
         }
-        return false;
+        return { .v = result, .s = consumed, .b = complete };
     }
-    if( nullptr == endptr || endptr == str ) {
+    if ( nullptr == endptr || endptr == str ) {
         // no digits consumed
         if constexpr ( _debug ) {
-            INFO_PRINT("Value no digits consumed @ idx %d, %p == start, in: '%s'", endptr-str, endptr, str);
+            INFO_PRINT("Value no digits consumed @ idx %d, %p == start, in: '%s'", endptr - str, endptr, str);
         }
-        return false;
+        return { .v = result, .s = consumed, .b = complete };
     }
-    if( endptr < limiter_pos ) {
-        while( endptr < limiter_pos && ::isspace(*endptr) ) { // only accept whitespace
+    result = static_cast<int64_t>(num);
+    if ( endptr < limiter_pos ) {
+        while ( endptr < limiter_pos && ::isspace(*endptr) ) {  // only accept whitespace
             ++endptr;
         }
     }
-    if( *endptr != limiter || endptr != limiter_pos ) {
+    consumed = endptr - str;
+    if ( *endptr == limiter || endptr == limiter_pos ) {
+        complete = true;
+    } else {
         // numerator value not completely valid
         if constexpr ( _debug ) {
-            INFO_PRINT("Value end not '%c' @ idx %d, %p != %p, in: %p '%s' len %zd", limiter, endptr-str, endptr, limiter_pos, str, str, str_len);
+            INFO_PRINT("Value end not '%c' @ idx %d, %p != %p, in: %p '%s' len %zd", limiter, endptr - str, endptr, limiter_pos, str, str, str_len);
         }
-        return false;
     }
-    result = num;
-    return true;
+    return { .v = result, .s = consumed, .b = complete };
 }
 
-bool jau::to_integer(long long & result, const std::string& str, const char limiter, const char *limiter_pos) {
-    return to_integer(result, str.c_str(), str.size(), limiter, limiter_pos);
+Int64SizeBoolTuple jau::to_integer(const std::string &str, const jau::nsize_t radix, const char limiter, const char *limiter_pos) {
+    return to_integer(str.c_str(), str.size(), radix, limiter, limiter_pos);
 }
 
-bool jau::to_fraction_i64(fraction_i64& result, const std::string & value, const fraction_i64& min_allowed, const fraction_i64& max_allowed) noexcept {
+FracI64SizeBoolTuple jau::to_fraction_i64(const std::string &value, const fraction_i64 &min_allowed, const fraction_i64 &max_allowed) noexcept {
     static constexpr const bool _debug = false;
-    const char * str = const_cast<const char*>(value.c_str());
+    fraction_i64 result;
+    size_t consumed = 0;
+    const char *str = const_cast<const char *>(value.c_str());
     const size_t str_len = value.length();
     const char *divptr = nullptr;
 
     divptr = std::strstr(str, "/");
-    if( nullptr == divptr ) {
+    if ( nullptr == divptr ) {
         if constexpr ( _debug ) {
             INFO_PRINT("Missing '/' in: '%s'", str);
         }
-        return false;
+        return { .v = result, .s = consumed, .b = false };
     }
 
-    long long num;
-    if( !to_integer(num, str, str_len, '/', divptr) ) {
-        return false;
+    auto [num, num_consumed, num_ok] = to_integer(str, str_len, 10, '/', divptr);
+    consumed = num_consumed;
+    if ( !num_ok ) {
+        return { .v = result, .s = consumed, .b = false };
     }
+    consumed = divptr + 1 - str;  // complete up until '/'
 
-    long long denom; // 0x7ffc7090d904 != 0x7ffc7090d907 " 10 / 1000000 "
-    if( !to_integer(denom, divptr+1, str_len-(divptr-str)-1, '\0', str + str_len) ) {
-        return false;
-    }
+    // int64_t denom;  // 0x7ffc7090d904 != 0x7ffc7090d907 " 10 / 1000000 "
+    auto [denom, denom_consumed, denom_ok] = to_integer(divptr + 1, str_len - (divptr - str) - 1, 10, '\0', str + str_len);
+    consumed += denom_consumed;
 
-    fraction_i64 temp((int64_t)num, (uint64_t)denom);
-    if( ! ( min_allowed <= temp && temp <= max_allowed ) ) {
+    fraction_i64 temp(num, (uint64_t)denom);
+    if ( !(min_allowed <= temp && temp <= max_allowed) ) {
         // invalid user value range
         if constexpr ( _debug ) {
             INFO_PRINT("Numerator out of range, not %s <= %s <= %s, in: '%s'", min_allowed.toString().c_str(), temp.toString().c_str(), max_allowed.toString().c_str(), str);
         }
-        return false;
+        return { .v = result, .s = consumed, .b = false };
     }
     result = temp;
-    return true;
+    return { .v = result, .s = consumed, .b = denom_ok };
 }
 
 std::string jau::math::to_string(const jau::math::math_error_t v) noexcept {
@@ -851,4 +866,3 @@ std::string jau::type_info::toString() const noexcept {
     r.append("]]");
     return r;
 }
-

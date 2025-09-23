@@ -190,10 +190,10 @@ fraction_i64 environment::getFractionProperty(const std::string& name, const fra
         COND_PRINT(local_debug, "env::getFractionProperty %s: null -> %s (default)", name.c_str(), default_value.toString().c_str());
         return default_value;
     } else {
-        fraction_i64 result = default_value;
-        if( !to_fraction_i64(result, value, min_allowed, max_allowed) ) {
+        auto [result, consumed, complete] = to_fraction_i64(value, min_allowed, max_allowed);
+        if ( !complete ) {
             ERR_PRINT("env::getFractionProperty %s: value %s not valid or in range[%s .. %s] -> %s (default)",
-                    name.c_str(), value.c_str(), min_allowed.toString().c_str(), max_allowed.toString().c_str(), default_value.toString().c_str());
+                      name.c_str(), value.c_str(), min_allowed.toString().c_str(), max_allowed.toString().c_str(), default_value.toString().c_str());
         }
         return result;
     }

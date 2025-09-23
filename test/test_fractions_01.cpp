@@ -382,44 +382,45 @@ TEST_CASE( "Fraction Cast Test 01.1", "[integer][fraction][type][to_num_of]" ) {
     }
 }
 
-TEST_CASE( "Fraction String Test 01.2", "[integer][fraction][type][string]" ) {
+TEST_CASE("Fraction String Test 01.2", "[integer][fraction][type][string]") {
     {
-        fraction_i64 a;
         fraction_i64 exp = 10_s;
 
-        REQUIRE( true  == to_fraction_i64(a, "10/1", 0_s, 365_d) );
-        REQUIRE( exp == a );
+        const auto [a1, len1, ok1] = to_fraction_i64("10/1", 0_s, 365_d);
+        REQUIRE(true == ok1);
+        REQUIRE(exp == a1);
         {
-            fraction_i64 b;
-            REQUIRE( true  == to_fraction_i64(b, a.toString(), a, a) );
-            REQUIRE( exp == b );
+            const auto [b, len, ok] = to_fraction_i64(a1.toString(), 0_s, 365_d);
+            REQUIRE(true == ok);
+            REQUIRE(exp == b);
         }
 
-        REQUIRE( true  == to_fraction_i64(a, "10/1", 10_s, 10_s) );
-        REQUIRE( exp == a );
+        const auto [a2, len2, ok2] = to_fraction_i64("10/1", 10_s, 10_s);
+        REQUIRE(true == ok2);
+        REQUIRE(exp == a2);
         {
-            fraction_i64 b;
-            REQUIRE( true  == to_fraction_i64(b, a.toString(), a, a) );
-            REQUIRE( exp == b );
+            const auto [b, len, ok] = to_fraction_i64(a2.toString(), a2, a2);
+            REQUIRE(true == ok);
+            REQUIRE(exp == b);
         }
 
-        REQUIRE( false == to_fraction_i64(a, "10/1",  100_ns, 9_s) );
-        REQUIRE( false == to_fraction_i64(a, "10/1",  11_s, 365_d) );
+        REQUIRE(false == to_fraction_i64("10/1", 100_ns, 9_s).b);
+        REQUIRE(false == to_fraction_i64("10/1", 11_s, 365_d).b);
     }
     {
-        fraction_i64 a;
-        REQUIRE( true  == to_fraction_i64(a, " 10 / 1000000 ", 0_s, 365_d) );
-        REQUIRE( 10_us == a );
+        const auto [a1, len1, ok1] = to_fraction_i64(" 10 / 1000000 ", 0_s, 365_d);
+        REQUIRE(true == ok1);
+        REQUIRE(10_us == a1);
         {
-            fraction_i64 b;
-            REQUIRE( true  == to_fraction_i64(b, a.toString(), a, a) );
-            REQUIRE( 10_us == b );
+            const auto [b, len, ok] = to_fraction_i64(a1.toString(), a1, a1);
+            REQUIRE(true == ok);
+            REQUIRE(10_us == b);
         }
 
-        REQUIRE( false == to_fraction_i64(a, " 10x / 1000000 ", 0_s, 365_d) );
-        REQUIRE( false == to_fraction_i64(a, " 10 / 1000000x ", 0_s, 365_d) );
-        REQUIRE( false == to_fraction_i64(a, " 10 % 1000000x ", 0_s, 365_d) );
-        REQUIRE( false == to_fraction_i64(a, " 10 ", 0_s, 365_d) );
+        REQUIRE(false == to_fraction_i64(" 10x / 1000000 ", 0_s, 365_d).b);
+        REQUIRE(false == to_fraction_i64(" 10 / 1000000x ", 0_s, 365_d).b);
+        REQUIRE(false == to_fraction_i64(" 10 % 1000000x ", 0_s, 365_d).b);
+        REQUIRE(false == to_fraction_i64(" 10 ", 0_s, 365_d).b);
     }
 }
 

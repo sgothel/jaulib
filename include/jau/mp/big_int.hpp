@@ -1089,10 +1089,9 @@ namespace jau::mp {
             BigInt r;
 
             std::vector<uint8_t> bin_out;
-            const size_t exp_blen = str_len / 2 + str_len % 2;
-            const size_t blen = jau::hexStringBytes(bin_out, buf, str_len, is_little_endian(byte_order), jau::False() /* checkPrefix */);
-            if ( exp_blen != blen ) {
-                throw jau::math::MathDomainError("invalid hexadecimal char @ " + std::to_string(blen) + "/" + std::to_string(exp_blen) + " of '" +
+            const auto [str_len2, str_ok] = jau::hexStringBytes(bin_out, buf, str_len, is_little_endian(byte_order), jau::False() /* checkPrefix */);
+            if ( !str_ok ) {
+                throw jau::math::MathDomainError("invalid hexadecimal char @ " + std::to_string(str_len2) + "/" + std::to_string(str_len) + " of '" +
                                                  std::string(cast_uint8_ptr_to_char(buf), str_len) + "'",
                                                  E_FILE_LINE);
             }

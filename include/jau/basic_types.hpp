@@ -46,6 +46,34 @@
 
 namespace jau {
 
+    /** Simple pre-defined value pair [size_t, bool] for structured bindings to multi-values. */
+    struct SizeBoolPair {
+        /** a size_t value, e.g. index, length, etc */
+        size_t s;
+        /** a boolean value, e.g. success, etc */
+        bool b;
+    };
+
+    /** Simple pre-defined value tuple [uint64_t, size_t, bool] for structured bindings to multi-values. */
+    struct UInt64SizeBoolTuple {
+        /** a uint64_t value, e.g. compute result value, etc */
+        uint64_t v;
+        /** a size_t value, e.g. index, length, etc */
+        size_t s;
+        /** a boolean value, e.g. success, etc */
+        bool b;
+    };
+
+    /** Simple pre-defined value tuple [int64_t, size_t, bool] for structured bindings to multi-values. */
+    struct Int64SizeBoolTuple {
+        /** a int64_t value, e.g. compute result value, etc */
+        int64_t v;
+        /** a size_t value, e.g. index, length, etc */
+        size_t s;
+        /** a boolean value, e.g. success, etc */
+        bool b;
+    };
+
     /**
      * \ingroup Fractions
      *
