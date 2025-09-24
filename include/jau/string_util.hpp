@@ -106,14 +106,17 @@ namespace jau {
      *
      * @param out the byte vector sink, lsb-first
      * @param hexstr the hexadecimal string representation
+     * @param hexstr_len length of hextstr
      * @param lsbFirst low significant byte in `hexstr` first
      * @param checkPrefix if True, checks for a leading `0x` and removes it, otherwise not.
      * @return pair [size_t consumed_chars, bool complete], i.e. consumed characters of string and completed=false if not fully consumed.
      */
-    SizeBoolPair hexStringBytes(std::vector<uint8_t> &out, const std::string &hexstr, const bool lsbFirst, const Bool checkPrefix = Bool::True) noexcept;
+    SizeBoolPair fromHexString(std::vector<uint8_t> &out, const uint8_t hexstr[], const size_t hexstr_len, const bool lsbFirst, const Bool checkPrefix = Bool::True) noexcept;
 
     /** See hexStringBytes() */
-    SizeBoolPair hexStringBytes(std::vector<uint8_t> &out, const uint8_t hexstr[], const size_t hexstr_len, const bool lsbFirst, const Bool checkPrefix = Bool::True) noexcept;
+    inline SizeBoolPair fromHexString(std::vector<uint8_t> &out, const std::string &hexstr, const bool lsbFirst, const Bool checkPrefix = Bool::True) noexcept {
+        return jau::fromHexString(out, cast_char_ptr_to_uint8(hexstr.data()), hexstr.size(), lsbFirst, checkPrefix);
+    }
 
     /**
      * Converts a given hexadecimal string representation into a uint64_t value according to hexStringBytes().
@@ -129,7 +132,7 @@ namespace jau {
      * @see hexStringBytes()
      * @see to_hexstring()
      */
-    UInt64SizeBoolTuple from_hexstring(std::string const &hexstr, const bool lsbFirst = false, const Bool checkPrefix = Bool::True) noexcept;
+    UInt64SizeBoolTuple fromHexString(std::string const &hexstr, const bool lsbFirst = false, const Bool checkPrefix = Bool::True) noexcept;
 
     inline constexpr const char *HexadecimalArray = "0123456789abcdef";
 
@@ -148,26 +151,26 @@ namespace jau {
      * @param skipPrefix false to add leading `0x` if !lsbFirst (default), true to not add (skip)..
      * @return the hex-string representation of the data
      */
-    std::string bytesHexString(const void *data, const nsize_t length,
-                               const bool lsbFirst, const bool lowerCase = true, const bool skipPrefix = false) noexcept;
+    std::string toHexString(const void *data, const nsize_t length,
+                            const bool lsbFirst, const bool lowerCase = true, const bool skipPrefix = false) noexcept;
 
     template<class uint8_container_type,
              std::enable_if_t<std::is_integral_v<typename uint8_container_type::value_type> &&
                               std::is_convertible_v<typename uint8_container_type::value_type, uint8_t>,
                               bool> = true>
-    std::string bytesHexString(const uint8_container_type &bytes,
-                               const bool lsbFirst, const bool lowerCase = true, const bool skipPrefix = false) noexcept {
-        return bytesHexString((const uint8_t *)bytes.data(), bytes.size(), lsbFirst, lowerCase, skipPrefix);
+    std::string toHexString(const uint8_container_type &bytes,
+                            const bool lsbFirst, const bool lowerCase = true, const bool skipPrefix = false) noexcept {
+        return toHexString((const uint8_t *)bytes.data(), bytes.size(), lsbFirst, lowerCase, skipPrefix);
     }
 
     /**
-     * Produce a hexadecimal string representation of the given byte value.
+     * Produce a hexadecimal string representation of the given byte value and appends it to the given string
      * @param dest the std::string reference destination to append
      * @param value the byte value to represent
      * @param lowerCase true to use lower case hex-chars, otherwise capital letters are being used.
      * @return the given std::string reference for chaining
      */
-    std::string &byteHexString(std::string &dest, const uint8_t value, const bool lowerCase) noexcept;
+    std::string &appendToHexString(std::string &dest, const uint8_t value, const bool lowerCase) noexcept;
 
     /**
      * Produce a lower-case hexadecimal string representation with leading `0x` in MSB of the given pointer.
@@ -181,16 +184,16 @@ namespace jau {
     template<class value_type,
              std::enable_if_t<std::is_pointer_v<value_type>,
                               bool> = true>
-    inline std::string to_hexstring(value_type const &v, const bool skipPrefix = false) noexcept {
+    inline std::string toHexString(value_type const &v, const bool skipPrefix = false) noexcept {
 #if defined(__EMSCRIPTEN__)                 // jau::os::is_generic_wasm()
         static_assert(is_little_endian());  // Bug in emscripten, unable to deduce uint16_t, uint32_t or uint64_t override of cpu_to_le() or bswap()
         const uintptr_t v_le = reinterpret_cast<uintptr_t>(v);
-        return bytesHexString(pointer_cast<const uint8_t *>(&v_le), sizeof(v),  // NOLINT(bugprone-sizeof-expression): Intended
-                              false /* lsbFirst */, true /* lowerCase */, skipPrefix);
+        return toHexString(pointer_cast<const uint8_t *>(&v_le), sizeof(v),  // NOLINT(bugprone-sizeof-expression): Intended
+                           false /* lsbFirst */, true /* lowerCase */, skipPrefix);
 #else
         const uintptr_t v_le = jau::cpu_to_le(reinterpret_cast<uintptr_t>(v));
-        return bytesHexString(pointer_cast<const uint8_t *>(&v_le), sizeof(v),  // NOLINT(bugprone-sizeof-expression): Intended
-                              false /* lsbFirst */, true /* lowerCase */, skipPrefix);
+        return toHexString(pointer_cast<const uint8_t *>(&v_le), sizeof(v),  // NOLINT(bugprone-sizeof-expression): Intended
+                           false /* lsbFirst */, true /* lowerCase */, skipPrefix);
 #endif
     }
 
@@ -205,16 +208,17 @@ namespace jau {
      */
     template<class value_type,
              std::enable_if_t<!std::is_pointer_v<value_type> &&
-                              std::is_standard_layout_v<value_type>,
+                              std::is_standard_layout_v<value_type> &&
+                              std::is_trivially_copyable_v<value_type>,
                               bool> = true>
-    inline std::string to_hexstring(value_type const &v, const bool skipPrefix = false) noexcept {
+    inline std::string toHexString(value_type const &v, const bool skipPrefix = false) noexcept {
         if constexpr ( is_little_endian() ) {
-            return bytesHexString(pointer_cast<const uint8_t *>(&v), sizeof(v),
-                                  false /* lsbFirst */, true /* lowerCase */, skipPrefix);
+            return toHexString(pointer_cast<const uint8_t *>(&v), sizeof(v),
+                               false /* lsbFirst */, true /* lowerCase */, skipPrefix);
         } else {
             const value_type v_le = jau::bswap(v);
-            return bytesHexString(pointer_cast<const uint8_t *>(&v_le), sizeof(v),
-                                  false /* lsbFirst */, true /* lowerCase */, skipPrefix);
+            return toHexString(pointer_cast<const uint8_t *>(&v_le), sizeof(v),
+                               false /* lsbFirst */, true /* lowerCase */, skipPrefix);
         }
     }
 
@@ -666,7 +670,7 @@ namespace jau {
                               std::is_pointer_v<value_type>,
                               bool> = true>
     inline std::string to_string(const value_type &ref) {
-        return to_hexstring((void *)ref);  // NOLINT(bugprone-multi-level-implicit-pointer-conversion)
+        return toHexString((void *)ref);  // NOLINT(bugprone-multi-level-implicit-pointer-conversion)
     }
 
     template<class value_type,
@@ -705,7 +709,7 @@ namespace jau {
                               jau::has_member_of_pointer_v<value_type>,
                               bool> = true>
     inline std::string to_string(const value_type &ref) {
-        return to_hexstring((void *)ref.operator->());
+        return toHexString((void *)ref.operator->());
     }
 
     template<class value_type,

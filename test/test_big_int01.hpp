@@ -58,7 +58,7 @@ TEST_CASE( "MP Big Int Test 00", "[big_int_t][arithmetic][math]" ) {
             REQUIRE( d == r );
         }
         {
-            BigInt r = b / b;
+            BigInt r = b / b; // NOLINT(misc-redundant-expression)
             std::cout << "big_int 2/2:: " << r.to_dec_string(true) << std::endl;
             REQUIRE( a == r );
         }
@@ -162,7 +162,7 @@ TEST_CASE( "MP Big Int Dec Test 10", "[big_int_t][inout][math]" ) {
         if ( false ) {
             for(size_t i=0; i<sizeof(a_u8); ++i) {
                 std::string s1;
-                jau::byteHexString(s1, a.byte_at(i), true);
+                jau::appendToHexString(s1, a.byte_at(i), true);
                 std::cout << "zero.buf[" << std::to_string(i) << "]: 0x" << s1 << std::endl;
             }
         }
@@ -178,7 +178,7 @@ TEST_CASE( "MP Big Int Dec Test 10", "[big_int_t][inout][math]" ) {
             if ( false ) {
                 for(size_t i=0; i<sizeof(a_u8); ++i) {
                     std::string s1;
-                    jau::byteHexString(s1, buf[i], true);
+                    jau::appendToHexString(s1, buf[i], true);
                     std::cout << "le.buf[" << std::to_string(i) << "]: 0x" << s1 << std::endl;
                 }
             }
@@ -198,7 +198,7 @@ TEST_CASE( "MP Big Int Dec Test 10", "[big_int_t][inout][math]" ) {
             if ( false ) {
                 for(size_t i=0; i<sizeof(a_u8); ++i) {
                     std::string s1;
-                    jau::byteHexString(s1, buf[i], true);
+                    jau::appendToHexString(s1, buf[i], true);
                     std::cout << "be.buf[" << std::to_string(i) << "]: 0x" << s1 << std::endl;
                 }
             }

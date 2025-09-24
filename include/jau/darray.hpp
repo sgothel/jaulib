@@ -401,7 +401,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
             constexpr void ctor_copy_range_check(pointer dest, iterator first, const_iterator last) {
                 JAU_DARRAY_PRINTF0("ctor_copy_range_check [%zd .. %zd] -> ??, dist %zd\n", (first-m_begin), (last-m_begin)-1, (last-first)-1);
                 if( first > last ) {
-                    throw jau::IllegalArgumentError("first "+to_hexstring(first)+" > last "+to_hexstring(last), E_FILE_LINE);
+                    throw jau::IllegalArgumentError("first "+toHexString(first)+" > last "+toHexString(last), E_FILE_LINE);
                 }
                 for(; first < last; ++dest, ++first) {
                     new (const_cast<pointer_mutable>(dest)) value_type( *first ); // placement new
@@ -1783,7 +1783,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
             std::string getInfo() const noexcept {
                 difference_type cap_ = (m_storage_end-m_begin);
                 difference_type size_ = (m_end-m_begin);
-                std::string res("darray[this "+jau::to_hexstring(this)+
+                std::string res("darray[this "+jau::toHexString(this)+
                                 ", " + valueSignature().name() +
                                 ", size "+std::to_string(size_)+" / "+std::to_string(cap_)+
                                 ", flags[");
@@ -1799,11 +1799,11 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                            "], uses[mmove "+std::to_string(uses_memmove)+
                            ", realloc "+std::to_string(uses_realloc)+
                            ", smem "+std::to_string(uses_secmem)+
-                           "], begin "+jau::to_hexstring(m_begin)+
+                           "], begin "+jau::toHexString(m_begin)+
                            ", [pos "+std::to_string(m_position-m_begin)+
                            ", lim "+std::to_string(m_limit-m_begin)+
-                           ", end "+std::to_string(m_end-m_begin)+" "+jau::to_hexstring(m_end)+
-                           ", send "+std::to_string(m_storage_end-m_begin)+" "+jau::to_hexstring(m_storage_end)+
+                           ", end "+std::to_string(m_end-m_begin)+" "+jau::toHexString(m_end)+
+                           ", send "+std::to_string(m_storage_end-m_begin)+" "+jau::toHexString(m_storage_end)+
                            "]");
                 return res;
             }

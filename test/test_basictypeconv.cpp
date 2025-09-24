@@ -121,9 +121,9 @@ static void test_byteorder(const Value_type v_cpu,
 {
     if( VERBOSE ) {
         fprintf(stderr, "test_byteorder: sizeof %zu; platform littleEndian %d", sizeof(Value_type), jau::is_little_endian());
-        fprintf(stderr, "\ncpu: %s: ", jau::to_hexstring(v_cpu).c_str()); print(v_cpu);
-        fprintf(stderr, "\nle_: %s: ", jau::to_hexstring(v_le).c_str()); print(v_le);
-        fprintf(stderr, "\nbe_: %s: ", jau::to_hexstring(v_be).c_str()); print(v_be);
+        fprintf(stderr, "\ncpu: %s: ", jau::toHexString(v_cpu).c_str()); print(v_cpu);
+        fprintf(stderr, "\nle_: %s: ", jau::toHexString(v_le).c_str()); print(v_le);
+        fprintf(stderr, "\nbe_: %s: ", jau::toHexString(v_be).c_str()); print(v_be);
         fprintf(stderr, "\n");
     }
     {
@@ -381,9 +381,9 @@ template<typename Value_type>
 static void test_value_littlebig(const Value_type v_cpu, const Value_type v_le, const Value_type v_be) {
     if ( VERBOSE ) {
         fprintf(stderr, "test_value_littlebig: sizeof %zu; platform littleEndian %d", sizeof(Value_type), jau::is_little_endian());
-        fprintf(stderr, "\ncpu: %s: ", jau::to_hexstring(v_cpu).c_str()); print(v_cpu);
-        fprintf(stderr, "\nle_: %s: ", jau::to_hexstring(v_le).c_str()); print(v_le);
-        fprintf(stderr, "\nbe_: %s: ", jau::to_hexstring(v_be).c_str()); print(v_be);
+        fprintf(stderr, "\ncpu: %s: ", jau::toHexString(v_cpu).c_str()); print(v_cpu);
+        fprintf(stderr, "\nle_: %s: ", jau::toHexString(v_le).c_str()); print(v_le);
+        fprintf(stderr, "\nbe_: %s: ", jau::toHexString(v_be).c_str()); print(v_be);
         fprintf(stderr, "\n");
     }
     uint8_t buffer[2 * sizeof(Value_type)];
@@ -490,31 +490,33 @@ TEST_CASE("HexString from and to byte vector conversion - Test 04", "[hexstring]
         const uint64_t v0_cpu = 0x000000ff2b2a1b1aU;
 
         const std::string value_s0_le = "1a1b2a2bff";  // LE
-        const std::string value_s1_le = jau::bytesHexString(source_le.data(), source_le.size(), true /* lsbFirst */);
+        const std::string value_s1_le = jau::toHexString(source_le.data(), source_le.size(), true /* lsbFirst */);
         {
             std::vector<uint8_t> out;
-            jau::hexStringBytes(out, value_s1_le, true);
-            const uint64_t v_cpu = jau::le_to_cpu(*jau::pointer_cast<const uint64_t *>(out.data()));
+            jau::fromHexString(out, value_s1_le, true);
+            const auto [v_cpu, consumed, complete] = jau::fromHexString(value_s1_le, true /* lsbFirst */);
             std::string v_cpu_s0 = jau::format_string("%lx", v_cpu);
-            std::string v_cpu_s1 = jau::to_hexstring(v_cpu);
+            std::string v_cpu_s1 = jau::toHexString(v_cpu);
             std::string v_cpu_s2 = jau::to_string(v_cpu, 16);
             std::cout << "v0_le " << value_s1_le << ", is_le " << jau::is_little_endian() << std::endl;
             std::cout << "- out " << jau::to_string(out, 16) << std::endl;
             std::cout << "- v_cpu0 0x" << v_cpu_s0 << std::endl;
             std::cout << "- v_cpu1 " << v_cpu_s1 << std::endl;
             std::cout << "- v_cpu2 " << v_cpu_s2 << std::endl;
+            REQUIRE(value_s1_le.length() == consumed);
+            REQUIRE(true == complete);
             REQUIRE(source_le == out);
             REQUIRE(v0_cpu == v_cpu);
             REQUIRE(v_cpu_s1 == v_cpu_s2);
         }
-        const auto [v1_cpu, consumed1, complete1] = jau::from_hexstring(value_s1_le, true /* lsbFirst */);
+        const auto [v1_cpu, consumed1, complete1] = jau::fromHexString(value_s1_le, true /* lsbFirst */);
         REQUIRE(true == complete1);
         REQUIRE(value_s1_le.length() == consumed1);
 
         std::vector<uint8_t> pass2_le;
-        jau::hexStringBytes(pass2_le, value_s1_le, true /* lsbFirst */, jau::False());
-        const std::string value_s2_le = jau::bytesHexString(pass2_le, true /* lsbFirst */);
-        const auto [v2_cpu, consumed2, complete2] = jau::from_hexstring(value_s2_le, true /* lsbFirst */);
+        jau::fromHexString(pass2_le, value_s1_le, true /* lsbFirst */, jau::False());
+        const std::string value_s2_le = jau::toHexString(pass2_le, true /* lsbFirst */);
+        const auto [v2_cpu, consumed2, complete2] = jau::fromHexString(value_s2_le, true /* lsbFirst */);
         REQUIRE(true == complete2);
         REQUIRE(value_s2_le.length() == consumed2);
 
@@ -523,9 +525,9 @@ TEST_CASE("HexString from and to byte vector conversion - Test 04", "[hexstring]
 
         std::cout << "v0_le " << value_s1_le << " (2) " << value_s2_le << std::endl;
         {
-            std::string v1_cpu_s = jau::to_hexstring(v1_cpu);
+            std::string v1_cpu_s = jau::toHexString(v1_cpu);
             std::cout << "v1_cpu_s " << v1_cpu_s << std::endl;
-            std::string v2_cpu_s = jau::to_hexstring(v2_cpu);
+            std::string v2_cpu_s = jau::toHexString(v2_cpu);
             std::cout << "v2_cpu_s " << v2_cpu_s << std::endl;
         }
         REQUIRE(v0_cpu == v1_cpu);
@@ -540,31 +542,33 @@ TEST_CASE("HexString from and to byte vector conversion - Test 04", "[hexstring]
         const uint64_t v0_cpu = 0x000000ff2b2a1b1aU;
 
         const std::string value_s0_be = "0xff2b2a1b1a";
-        const std::string value_s1_be = jau::bytesHexString(source_le.data(), source_le.size(), false /* lsbFirst */);
+        const std::string value_s1_be = jau::toHexString(source_le.data(), source_le.size(), false /* lsbFirst */);
         {
             std::vector<uint8_t> out;
-            jau::hexStringBytes(out, value_s1_be, false);
-            const uint64_t v_cpu = jau::le_to_cpu(*jau::pointer_cast<const uint64_t *>(out.data()));
+            jau::fromHexString(out, value_s1_be, false);
+            const auto [v_cpu, consumed, complete] = jau::fromHexString(value_s1_be, false /* lsbFirst */);
             std::string v_cpu_s0 = jau::format_string("%lx", v_cpu);
-            std::string v_cpu_s1 = jau::to_hexstring(v_cpu);
+            std::string v_cpu_s1 = jau::toHexString(v_cpu);
             std::string v_cpu_s2 = jau::to_string(v_cpu, 16);
             std::cout << "v0_be " << value_s1_be << ", is_le " << jau::is_little_endian() << std::endl;
             std::cout << "- out " << jau::to_string(out, 16) << std::endl;
             std::cout << "- v_cpu0 0x" << v_cpu_s0 << std::endl;
             std::cout << "- v_cpu1 " << v_cpu_s1 << std::endl;
             std::cout << "- v_cpu2 " << v_cpu_s2 << std::endl;
+            REQUIRE(value_s1_be.length() == consumed);
+            REQUIRE(true == complete);
             REQUIRE(source_le == out);
             REQUIRE(v0_cpu == v_cpu);
             REQUIRE(v_cpu_s1 == v_cpu_s2);
         }
-        const auto [v1_cpu, consumed1, complete1] = jau::from_hexstring(value_s1_be, false /* lsbFirst */);
+        const auto [v1_cpu, consumed1, complete1] = jau::fromHexString(value_s1_be, false /* lsbFirst */);
         REQUIRE(true == complete1);
         REQUIRE(value_s1_be.length() == consumed1);
 
         std::vector<uint8_t> pass2_le;
-        jau::hexStringBytes(pass2_le, value_s1_be, false /* lsbFirst */);
-        const std::string value_s2_be = jau::bytesHexString(pass2_le.data(), pass2_le.size(), false /* lsbFirst */);
-        const auto [v2_cpu, consumed2, complete2] = jau::from_hexstring(value_s2_be, false /* lsbFirst */);
+        jau::fromHexString(pass2_le, value_s1_be, false /* lsbFirst */);
+        const std::string value_s2_be = jau::toHexString(pass2_le.data(), pass2_le.size(), false /* lsbFirst */);
+        const auto [v2_cpu, consumed2, complete2] = jau::fromHexString(value_s2_be, false /* lsbFirst */);
         REQUIRE(true == complete2);
         REQUIRE(value_s2_be.length() == consumed2);
         REQUIRE(value_s0_be == value_s1_be);
@@ -572,9 +576,9 @@ TEST_CASE("HexString from and to byte vector conversion - Test 04", "[hexstring]
 
         std::cout << "v0_be " << value_s1_be << " (2) " << value_s2_be << std::endl;
         {
-            std::string v1_cpu_s = jau::to_hexstring(v1_cpu);
+            std::string v1_cpu_s = jau::toHexString(v1_cpu);
             std::cout << "v1_cpu_s " << v1_cpu_s << std::endl;
-            std::string v2_cpu_s = jau::to_hexstring(v2_cpu);
+            std::string v2_cpu_s = jau::toHexString(v2_cpu);
             std::cout << "v2_cpu_s " << v2_cpu_s << std::endl;
         }
         REQUIRE(v0_cpu == v1_cpu);
@@ -590,32 +594,32 @@ TEST_CASE("HexString from and to byte vector conversion - Test 04", "[hexstring]
         const uint64_t v0 = 0xff2b2a1b1aU;
         const std::string v0_s_msb = "0xff2b2a1b1a";
         const std::string v0_s_lsb = "1a1b2a2bff";
-        std::cout << "v0   " << jau::to_hexstring(v0) << std::endl;
+        std::cout << "v0   " << jau::toHexString(v0) << std::endl;
         std::cout << "v0_b " << jau::to_string(v0_b, 16) << std::endl;
         std::cout << "v0_s (msb) " << v0_s_msb << std::endl;
         std::cout << "v0_s (lsb)   " << v0_s_lsb << std::endl;
 
         std::vector<uint8_t> v1_b_msb;
         std::vector<uint8_t> v1_b_lsb;
-        jau::hexStringBytes(v1_b_msb, v0_s_msb, false /* lsbFirst */);
-        jau::hexStringBytes(v1_b_lsb, v0_s_lsb, true /* lsbFirst */);
-        const std::string v1_bs_msb_str = jau::bytesHexString(v1_b_msb, false /* lsbFirst */);
-        const std::string v1_bs_lsb_str = jau::bytesHexString(v1_b_lsb, false /* lsbFirst */);
+        jau::fromHexString(v1_b_msb, v0_s_msb, false /* lsbFirst */);
+        jau::fromHexString(v1_b_lsb, v0_s_lsb, true /* lsbFirst */);
+        const std::string v1_bs_msb_str = jau::toHexString(v1_b_msb, false /* lsbFirst */);
+        const std::string v1_bs_lsb_str = jau::toHexString(v1_b_lsb, false /* lsbFirst */);
         std::cout << "v1_b  (msb str) " << jau::to_string(v1_b_msb, 16) << std::endl;
         std::cout << "v1_bs (msb str) " << v1_bs_msb_str << std::endl;
         std::cout << "v1_b  (lsb str) " << jau::to_string(v1_b_lsb, 16) << std::endl;
         std::cout << "v1_bs (lsb str) " << v1_bs_lsb_str << std::endl;
 
-        const auto [v1_msb, consumed1, complete1] = jau::from_hexstring(v0_s_msb, false /* lsbFirst */);
+        const auto [v1_msb, consumed1, complete1] = jau::fromHexString(v0_s_msb, false /* lsbFirst */);
         REQUIRE(true == complete1);
         REQUIRE(v0_s_msb.length() == consumed1);
 
-        const auto [v1_lsb, consumed2, complete2] = jau::from_hexstring(v0_s_lsb, true /* lsbFirst */);
+        const auto [v1_lsb, consumed2, complete2] = jau::fromHexString(v0_s_lsb, true /* lsbFirst */);
         REQUIRE(true == complete2);
         REQUIRE(v0_s_lsb.length() == consumed2);
 
-        std::cout << "v1   (msb) " << jau::to_hexstring(v1_msb) << std::endl;
-        std::cout << "v1   (lsb) " << jau::to_hexstring(v1_lsb) << std::endl;
+        std::cout << "v1   (msb) " << jau::toHexString(v1_msb) << std::endl;
+        std::cout << "v1   (lsb) " << jau::toHexString(v1_lsb) << std::endl;
 
         REQUIRE(v0 == v1_msb);
         REQUIRE(v0 == v1_lsb);
@@ -632,30 +636,30 @@ TEST_CASE("HexString from and to byte vector conversion - Test 04", "[hexstring]
         const uint64_t v0_lsb = 0xf02b2a1b1aU;
         const std::string v0_s_msb = "0xf2b2a1b1a";
         const std::string v0_s_lsb = "1a1b2a2bf";
-        std::cout << "v0   (msb) " << jau::to_hexstring(v0_msb) << std::endl;
+        std::cout << "v0   (msb) " << jau::toHexString(v0_msb) << std::endl;
         std::cout << "v0_b (msb) " << jau::to_string(v0_b_msb, 16) << std::endl;
         std::cout << "v0_s (msb) " << v0_s_msb << std::endl;
-        std::cout << "v0   (lsb) " << jau::to_hexstring(v0_lsb) << std::endl;
+        std::cout << "v0   (lsb) " << jau::toHexString(v0_lsb) << std::endl;
         std::cout << "v0_b (lsb) " << jau::to_string(v0_b_lsb, 16) << std::endl;
         std::cout << "v0_s (lsb) " << v0_s_lsb << std::endl;
 
         std::vector<uint8_t> v1_b_msb;
         std::vector<uint8_t> v1_b_lsb;
-        jau::hexStringBytes(v1_b_msb, v0_s_msb, false /* lsbFirst */);
-        jau::hexStringBytes(v1_b_lsb, v0_s_lsb, true /* lsbFirst */);
-        const std::string v1_bs_msb_str = jau::bytesHexString(v1_b_msb, false /* lsbFirst */);
-        const std::string v1_bs_lsb_str = jau::bytesHexString(v1_b_lsb, false /* lsbFirst */);
+        jau::fromHexString(v1_b_msb, v0_s_msb, false /* lsbFirst */);
+        jau::fromHexString(v1_b_lsb, v0_s_lsb, true /* lsbFirst */);
+        const std::string v1_bs_msb_str = jau::toHexString(v1_b_msb, false /* lsbFirst */);
+        const std::string v1_bs_lsb_str = jau::toHexString(v1_b_lsb, false /* lsbFirst */);
         std::cout << "v1_b  (msb str) " << jau::to_string(v1_b_msb, 16) << std::endl;
         std::cout << "v1_bs (msb str) " << v1_bs_msb_str << std::endl;
         std::cout << "v1_b  (lsb str) " << jau::to_string(v1_b_lsb, 16) << std::endl;
         std::cout << "v1_bs (lsb str) " << v1_bs_lsb_str << std::endl;
 
-        const jau::UInt64SizeBoolTuple v1_msb = jau::from_hexstring(v0_s_msb, false);
+        const jau::UInt64SizeBoolTuple v1_msb = jau::fromHexString(v0_s_msb, false);
         REQUIRE(true == v1_msb.b);
-        const jau::UInt64SizeBoolTuple v1_lsb = jau::from_hexstring(v0_s_lsb, true);
+        const jau::UInt64SizeBoolTuple v1_lsb = jau::fromHexString(v0_s_lsb, true);
         REQUIRE(true == v1_lsb.b);
-        std::cout << "v1   (msb) " << jau::to_hexstring(v1_msb.v) << std::endl;
-        std::cout << "v1   (lsb) " << jau::to_hexstring(v1_lsb.v) << std::endl;
+        std::cout << "v1   (msb) " << jau::toHexString(v1_msb.v) << std::endl;
+        std::cout << "v1   (lsb) " << jau::toHexString(v1_lsb.v) << std::endl;
 
         REQUIRE(v0_msb == v1_msb.v);
         REQUIRE(v0_lsb == v1_lsb.v);
@@ -666,11 +670,11 @@ TEST_CASE("HexString from and to byte vector conversion - Test 04", "[hexstring]
     {
         std::cout << "Even digits (2): " << std::endl;
         const uint64_t v0 = 0x000000ff2b2a1b1aU;
-        std::string v0_s = jau::to_hexstring(v0);
-        const jau::UInt64SizeBoolTuple v0_2 = jau::from_hexstring(v0_s);
+        std::string v0_s = jau::toHexString(v0);
+        const jau::UInt64SizeBoolTuple v0_2 = jau::fromHexString(v0_s);
         REQUIRE(true == v0_2.b);
         std::cout << "v0_s " << v0_s << std::endl;
-        std::cout << "v0_2  " << jau::to_hexstring(v0_2.v) << std::endl;
+        std::cout << "v0_2  " << jau::toHexString(v0_2.v) << std::endl;
         REQUIRE(v0 == v0_2.v);
         std::cout << std::endl;
     }
@@ -678,18 +682,18 @@ TEST_CASE("HexString from and to byte vector conversion - Test 04", "[hexstring]
         std::cout << "Even digits (3): " << std::endl;
         std::string v0_0s1 = "0xff2b2a1b1a";
         const uint64_t v0_0 = 0xff2b2a1b1aU;
-        std::string v0_0s2 = jau::to_hexstring(v0_0);
+        std::string v0_0s2 = jau::toHexString(v0_0);
 
-        const jau::UInt64SizeBoolTuple i0_0s1 = jau::from_hexstring(v0_0s1);
+        const jau::UInt64SizeBoolTuple i0_0s1 = jau::fromHexString(v0_0s1);
         REQUIRE(true == i0_0s1.b);
-        const jau::UInt64SizeBoolTuple i0_0s2 = jau::from_hexstring(v0_0s2);
+        const jau::UInt64SizeBoolTuple i0_0s2 = jau::fromHexString(v0_0s2);
         REQUIRE(true == i0_0s2.b);
 
         std::cout << "v0_0s  " << v0_0s1 << std::endl;
         std::cout << "v0_0s2 " << v0_0s2 << std::endl;
 
-        std::cout << "i0_0s1 " << jau::to_hexstring(i0_0s1.v) << std::endl;
-        std::cout << "i0_0s2 " << jau::to_hexstring(i0_0s2.v) << std::endl;
+        std::cout << "i0_0s1 " << jau::toHexString(i0_0s1.v) << std::endl;
+        std::cout << "i0_0s2 " << jau::toHexString(i0_0s2.v) << std::endl;
 
         REQUIRE(v0_0 == i0_0s1.v);
         REQUIRE(v0_0 == i0_0s2.v);
@@ -699,18 +703,18 @@ TEST_CASE("HexString from and to byte vector conversion - Test 04", "[hexstring]
         std::cout << "Odd digits (3): " << std::endl;
         std::string v0_0s1 = "0xf2b2a1b1a";
         const uint64_t v0_0 = 0xf2b2a1b1aU;
-        std::string v0_0s2 = jau::to_hexstring(v0_0);
+        std::string v0_0s2 = jau::toHexString(v0_0);
 
-        const auto [i0_0s1, len1, ok1] = jau::from_hexstring(v0_0s1);
+        const auto [i0_0s1, len1, ok1] = jau::fromHexString(v0_0s1);
         REQUIRE(true == ok1);
-        const auto [i0_0s2, len2, ok2] = jau::from_hexstring(v0_0s2);
+        const auto [i0_0s2, len2, ok2] = jau::fromHexString(v0_0s2);
         REQUIRE(true == ok2);
 
         std::cout << "v0_0s  " << v0_0s1 << std::endl;
         std::cout << "v0_0s2 " << v0_0s2 << std::endl;
 
-        std::cout << "i0_0s1 " << jau::to_hexstring(i0_0s1) << std::endl;
-        std::cout << "i0_0s2 " << jau::to_hexstring(i0_0s2) << std::endl;
+        std::cout << "i0_0s1 " << jau::toHexString(i0_0s1) << std::endl;
+        std::cout << "i0_0s2 " << jau::toHexString(i0_0s2) << std::endl;
 
         REQUIRE(v0_0 == i0_0s1);
         REQUIRE(v0_0 == i0_0s2);
@@ -731,13 +735,16 @@ TEST_CASE("BitString from and to byte vector conversion - Test 05", "[bitstring]
         {
             std::vector<uint8_t> out;
             jau::fromBitString(out, value_s1_le, true);
-            const uint64_t v_cpu = jau::le_to_cpu(*jau::pointer_cast<const uint64_t *>(out.data()));
+            const auto [v_cpu, consumed, complete] = jau::fromBitString(value_s1_le, true /* lsbFirst */);
             std::string v_cpu_s1 = jau::toBitString(v_cpu);
             std::string v_cpu_s2 = jau::to_string(v_cpu, 2);
             std::cout << "v0_le " << value_s1_le << ", is_le " << jau::is_little_endian() << std::endl;
             std::cout << "- out " << jau::to_string(out, 16) << std::endl;
+            std::cout << "- consumed " << std::to_string(consumed) << ", complete " << std::to_string(complete) << std::endl;
             std::cout << "- v_cpu1 " << v_cpu_s1 << std::endl;
             std::cout << "- v_cpu2 " << v_cpu_s2 << std::endl;
+            REQUIRE(value_s1_le.length() == consumed);
+            REQUIRE(true == complete);
             REQUIRE(source_le == out);
             REQUIRE(v0_cpu == v_cpu);
             REQUIRE(v_cpu_s1 == v_cpu_s2);
@@ -776,13 +783,15 @@ TEST_CASE("BitString from and to byte vector conversion - Test 05", "[bitstring]
         {
             std::vector<uint8_t> out;
             jau::fromBitString(out, value_s1_be, false);
-            const uint64_t v_cpu = jau::le_to_cpu(*jau::pointer_cast<const uint64_t *>(out.data()));
+            const auto [v_cpu, consumed, complete] = jau::fromBitString(value_s1_be, false /* lsbFirst */);
             std::string v_cpu_s1 = jau::toBitString(v_cpu);
             std::string v_cpu_s2 = jau::to_string(v_cpu, 2);
             std::cout << "v0_be " << value_s1_be << ", is_le " << jau::is_little_endian() << std::endl;
             std::cout << "- out " << jau::to_string(out, 16) << std::endl;
             std::cout << "- v_cpu1 " << v_cpu_s1 << std::endl;
             std::cout << "- v_cpu2 " << v_cpu_s2 << std::endl;
+            REQUIRE(value_s1_be.length() == consumed);
+            REQUIRE(true == complete);
             REQUIRE(source_le == out);
             REQUIRE(v0_cpu == v_cpu);
             REQUIRE(v_cpu_s1 == v_cpu_s2);
@@ -798,9 +807,9 @@ TEST_CASE("BitString from and to byte vector conversion - Test 05", "[bitstring]
 
         std::cout << "v0_be " << value_s1_be << " (2) " << value_s2_be << std::endl;
         {
-            std::string v1_cpu_s = jau::to_hexstring(v1_cpu);
+            std::string v1_cpu_s = jau::toHexString(v1_cpu);
             std::cout << "v1_cpu_s " << v1_cpu_s << std::endl;
-            std::string v2_cpu_s = jau::to_hexstring(v2_cpu);
+            std::string v2_cpu_s = jau::toHexString(v2_cpu);
             std::cout << "v2_cpu_s " << v2_cpu_s << std::endl;
         }
         REQUIRE(v0_cpu == v1_cpu);
@@ -880,8 +889,8 @@ TEST_CASE("BitString from and to byte vector conversion - Test 05", "[bitstring]
 
         const auto [v1_msb, len1, ok1] = jau::fromBitString(v0_s_msb, false);
         const auto [v1_lsb, len2, ok2] = jau::fromBitString(v0_s_lsb, true);
-        std::cout << "v1   (msb) " << jau::toBitString(v1_msb) << ", " << jau::to_hexstring(v1_msb, false) << std::endl;
-        std::cout << "v1   (lsb) " << jau::toBitString(v1_lsb) << ", " << jau::to_hexstring(v1_lsb, true) << std::endl;
+        std::cout << "v1   (msb) " << jau::toBitString(v1_msb) << ", " << jau::toHexString(v1_msb, false) << std::endl;
+        std::cout << "v1   (lsb) " << jau::toBitString(v1_lsb) << ", " << jau::toHexString(v1_lsb, true) << std::endl;
 
         REQUIRE(v0_msb == v1_msb);
         REQUIRE(v0_lsb == v1_lsb);

@@ -123,10 +123,10 @@ namespace jau::os {
             std::string toString() const noexcept {
                 if( isValid() ) {
                     return "NativeLibrary[path[given '" + m_libraryPath + "', native '"+m_nativeLibraryPath+"'], 0x" +
-                            jau::to_hexstring(m_libraryHandle) + ", global " + std::to_string(m_global) + "]";
+                            jau::toHexString(m_libraryHandle) + ", global " + std::to_string(m_global) + "]";
                 } else {
                     return "NativeLibrary[invalid, path[given '" + m_libraryPath + "'], 0x" +
-                            jau::to_hexstring(m_libraryHandle) + ", global " + std::to_string(m_global) + "]";
+                            jau::toHexString(m_libraryHandle) + ", global " + std::to_string(m_global) + "]";
                 }
             }
 

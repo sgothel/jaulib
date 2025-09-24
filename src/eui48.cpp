@@ -47,7 +47,7 @@ std::string EUI48Sub::toString() const noexcept {
         if( is_little_endian() ) {
             for(jau::nsize_t i=0; i < length; ++i) {
                 const jau::nsize_t idx = length - 1 - i;
-                jau::byteHexString(str, b[idx], false /* lowerCase */);
+                jau::appendToHexString(str, b[idx], false /* lowerCase */);
                 if( 0 < idx ) {
                     str.push_back(':');
                 }
@@ -57,7 +57,7 @@ std::string EUI48Sub::toString() const noexcept {
                 if( 0 < idx ) {
                     str.push_back(':');
                 }
-                jau::byteHexString(str, b[idx], false /* lowerCase */);
+                jau::appendToHexString(str, b[idx], false /* lowerCase */);
             }
         }
     } else {
@@ -175,29 +175,29 @@ std::string EUI48::toString() const noexcept {
     str.reserve(17); // 6 * 2 + ( 6 - 1 )
 
     if( is_little_endian() ) {
-        jau::byteHexString(str, b[5], false /* lowerCase */);
+        jau::appendToHexString(str, b[5], false /* lowerCase */);
         str.push_back(':');
-        jau::byteHexString(str, b[4], false /* lowerCase */);
+        jau::appendToHexString(str, b[4], false /* lowerCase */);
         str.push_back(':');
-        jau::byteHexString(str, b[3], false /* lowerCase */);
+        jau::appendToHexString(str, b[3], false /* lowerCase */);
         str.push_back(':');
-        jau::byteHexString(str, b[2], false /* lowerCase */);
+        jau::appendToHexString(str, b[2], false /* lowerCase */);
         str.push_back(':');
-        jau::byteHexString(str, b[1], false /* lowerCase */);
+        jau::appendToHexString(str, b[1], false /* lowerCase */);
         str.push_back(':');
-        jau::byteHexString(str, b[0], false /* lowerCase */);
+        jau::appendToHexString(str, b[0], false /* lowerCase */);
     } else {
-        jau::byteHexString(str, b[0], false /* lowerCase */);
+        jau::appendToHexString(str, b[0], false /* lowerCase */);
         str.push_back(':');
-        jau::byteHexString(str, b[1], false /* lowerCase */);
+        jau::appendToHexString(str, b[1], false /* lowerCase */);
         str.push_back(':');
-        jau::byteHexString(str, b[2], false /* lowerCase */);
+        jau::appendToHexString(str, b[2], false /* lowerCase */);
         str.push_back(':');
-        jau::byteHexString(str, b[3], false /* lowerCase */);
+        jau::appendToHexString(str, b[3], false /* lowerCase */);
         str.push_back(':');
-        jau::byteHexString(str, b[4], false /* lowerCase */);
+        jau::appendToHexString(str, b[4], false /* lowerCase */);
         str.push_back(':');
-        jau::byteHexString(str, b[5], false /* lowerCase */);
+        jau::appendToHexString(str, b[5], false /* lowerCase */);
     }
     return str;
 }

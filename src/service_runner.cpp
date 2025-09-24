@@ -283,5 +283,5 @@ bool service_runner::join() noexcept {
 
 std::string service_runner::toString() const noexcept {
     return "ServiceRunner["+name_+", running "+std::to_string(is_running())+", shall_stop "+std::to_string(shall_stop_)+
-           ", thread_id "+to_hexstring((void*)thread_id_)+"]"; // NOLINT(performance-no-int-to-ptr)
+           ", thread_id "+toHexString((void*)thread_id_)+"]"; // NOLINT(performance-no-int-to-ptr)
 }

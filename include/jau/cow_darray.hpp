@@ -1154,7 +1154,7 @@ namespace jau {
             }
 
             std::string getInfo() const noexcept {
-                return ("cow_darray[this "+jau::to_hexstring(this)+
+                return ("cow_darray[this "+jau::toHexString(this)+
                         ", "+store_ref->getInfo()+
                         "]");
             }

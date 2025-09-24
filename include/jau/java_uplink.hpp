@@ -64,7 +64,7 @@ namespace jau::jni {
             JavaAnonRef javaObjectRef;
 
         public:
-            virtual std::string toString() const noexcept { return "JavaUplink["+jau::to_hexstring(this)+"]"; }
+            virtual std::string toString() const noexcept { return "JavaUplink["+jau::toHexString(this)+"]"; }
 
             virtual std::string get_java_class() const noexcept = 0;
 

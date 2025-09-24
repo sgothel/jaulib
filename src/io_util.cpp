@@ -593,7 +593,7 @@ static size_t consume_header_curl2_sync(char *buffer, size_t size, size_t nmemb,
         DBG_PRINT("consume_header_curl2.X realsize %zu, total %" PRIu64 " / ( content_len has %d, size %" PRIu64 " ), result %d",
                realsize, response.total_read, response.has_content_length, response.content_length, response.result.load() );
         std::string blob(buffer, realsize);
-        jau::PLAIN_PRINT(true, "%s", jau::bytesHexString((uint8_t*)buffer, 0, realsize, true /* lsbFirst */).c_str());
+        jau::PLAIN_PRINT(true, "%s", jau::toHexString((uint8_t*)buffer, 0, realsize, true /* lsbFirst */).c_str());
         jau::PLAIN_PRINT(true, "%s", blob.c_str());
     }
 
@@ -650,7 +650,7 @@ static size_t consume_header_curl2_async(char *buffer, size_t size, size_t nmemb
         DBG_PRINT("consume_header_curl2.X realsize %zu, total %" PRIu64 " / ( content_len has %d, size %" PRIu64 " ), result %d, rb %s",
                realsize, response.total_read.load(), response.has_content_length.load(), response.content_length.load(), response.result.load(), s.c_str() );
         std::string blob(buffer, realsize);
-        jau::PLAIN_PRINT(true, "%s", jau::bytesHexString((uint8_t*)buffer, 0, realsize, true /* lsbFirst */).c_str());
+        jau::PLAIN_PRINT(true, "%s", jau::toHexString((uint8_t*)buffer, 0, realsize, true /* lsbFirst */).c_str());
         jau::PLAIN_PRINT(true, "%s", blob.c_str());
     }
 

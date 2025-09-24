@@ -181,7 +181,7 @@ namespace jau::util {
             std::string res = std::to_string(m_major) + "." + std::to_string(m_minor) + "." + std::to_string(m_sub);
             if( hasGitInfo() ) {
                 res.append(", git[post ").append(std::to_string(m_git_commits))
-                   .append(", tip ").append(jau::to_hexstring(m_git_ssha, true))
+                   .append(", tip ").append(jau::toHexString(m_git_ssha, true))
                    .append(", ");
                 if( git_dirty() ) {
                     res.append("dirty");
@@ -304,9 +304,9 @@ namespace jau::util {
                                     std::cout << "XXX: git commits " << m_git_commits << std::endl;
                                 }
                                 if ( match.size() >= 6 && match[5].length() > 0 ) {
-                                    const auto [git_ssha, len0, ok0] = jau::from_hexstring(match[5]);
+                                    const auto [git_ssha, len0, ok0] = jau::fromHexString(match[5]);
                                     if constexpr ( DBG_OUT ) {
-                                        std::cout << "XXX: git ssha ok " << ok0 << " '" << match[5] << "', hex " << jau::to_hexstring(git_ssha) << ", dec " << git_ssha << std::endl;
+                                        std::cout << "XXX: git ssha ok " << ok0 << " '" << match[5] << "', hex " << jau::toHexString(git_ssha) << ", dec " << git_ssha << std::endl;
                                     }
                                     if ( ok0 ) {
                                         m_git_ssha = git_ssha;
@@ -377,7 +377,7 @@ namespace jau::util {
             std::string res = std::to_string(m_major) + "." + std::to_string(m_minor) + "." + std::to_string(m_sub);
             if( hasGitInfo() ) {
                 res.append(", git[post ").append(std::to_string(m_git_commits))
-                   .append(", tip ").append(jau::to_hexstring(m_git_ssha, true))
+                   .append(", tip ").append(jau::toHexString(m_git_ssha, true))
                    .append(", ");
                 if( git_dirty() ) {
                     res.append("dirty");

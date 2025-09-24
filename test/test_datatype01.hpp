@@ -93,7 +93,7 @@ __pack ( struct Addr48Bit {
         str.reserve(17);
 
         for(int i=6-1; 0 <= i; --i) {
-            jau::byteHexString(str, b[i], false /* lowerCase */);
+            jau::appendToHexString(str, b[i], false /* lowerCase */);
             if( 0 < i ) {
                 str.push_back(':');
             }

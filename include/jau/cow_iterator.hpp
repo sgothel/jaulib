@@ -457,8 +457,8 @@ namespace jau {
             }
 #endif
             std::string get_info() const noexcept {
-                return "cow_rw_iterator[this "+jau::to_hexstring(this)+", CoW "+jau::to_hexstring(&cow_parent_)+
-                        ", store "+jau::to_hexstring(&store_ref_)+
+                return "cow_rw_iterator[this "+jau::toHexString(this)+", CoW "+jau::toHexString(&cow_parent_)+
+                        ", store "+jau::toHexString(&store_ref_)+
                        ", "+jau::to_string(iterator_)+"]";
             }
 
@@ -914,8 +914,8 @@ namespace jau {
             }
 #endif
             std::string get_info() const noexcept {
-                return "cow_ro_iterator[this "+jau::to_hexstring(this)+
-                        ", store "+jau::to_hexstring(&store_ref_)+
+                return "cow_ro_iterator[this "+jau::toHexString(this)+
+                        ", store "+jau::toHexString(&store_ref_)+
                        ", "+jau::to_string(iterator_)+"]";
             }
     };

@@ -785,8 +785,8 @@ namespace jau::mp {
             if ( is_negative() ) {
                 s += "-";
             }
-            s.append(jau::bytesHexString(data, data_len,
-                                         false /* lsbFirst */, true /* lowerCase */));
+            s.append(jau::toHexString(data, data_len,
+                                      false /* lsbFirst */, true /* lowerCase */));
             if ( add_details ) {
                 append_detail(s);
             }
@@ -1089,7 +1089,7 @@ namespace jau::mp {
             BigInt r;
 
             std::vector<uint8_t> bin_out;
-            const auto [str_len2, str_ok] = jau::hexStringBytes(bin_out, buf, str_len, is_little_endian(byte_order), jau::False() /* checkPrefix */);
+            const auto [str_len2, str_ok] = jau::fromHexString(bin_out, buf, str_len, is_little_endian(byte_order), jau::False() /* checkPrefix */);
             if ( !str_ok ) {
                 throw jau::math::MathDomainError("invalid hexadecimal char @ " + std::to_string(str_len2) + "/" + std::to_string(str_len) + " of '" +
                                                  std::string(cast_uint8_ptr_to_char(buf), str_len) + "'",
@@ -1547,7 +1547,7 @@ namespace jau::mp {
             s.append(", bits ").append(std::to_string(bits())).append(", ").append(std::to_string(sig_words())).append(" word(s): ");
             for ( size_t i = 0; i < sig_words(); ++i ) {
                 const mp_word_t w = word_at(i);
-                s.append(jau::bytesHexString(&w, mp_word_bits / CHAR_BIT, false /* lsbFirst */, true /* lowerCase */))
+                s.append(jau::toHexString(&w, mp_word_bits / CHAR_BIT, false /* lsbFirst */, true /* lowerCase */))
                 .append(", ");
             }
         }

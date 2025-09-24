@@ -221,7 +221,7 @@ namespace jau::jni {
             ~JavaGlobalObj() noexcept override;
 
             std::string toString() const noexcept override {
-                return "JavaGlobalObj["+jau::to_hexstring(javaObjectRef.getObject())+"]";
+                return "JavaGlobalObj["+jau::toHexString(javaObjectRef.getObject())+"]";
             }
 
             const JNIGlobalRef & getJavaObject() const noexcept { return javaObjectRef; }
@@ -654,8 +654,8 @@ namespace jau::jni {
             }
 
             std::string toString() const noexcept {
-                return "shared_ptr_ref[ ptr "+jau::to_hexstring(ref_ptr)+
-                                     ", obj "+ ( nullptr != ref_ptr ? jau::to_hexstring(ref_ptr->get()) : "null" ) + "]";
+                return "shared_ptr_ref[ ptr "+jau::toHexString(ref_ptr)+
+                                     ", obj "+ ( nullptr != ref_ptr ? jau::toHexString(ref_ptr->get()) : "null" ) + "]";
             }
     };
 

@@ -153,11 +153,11 @@ static void test01DynamikLinkerAbs(const std::string& libBasename, const std::st
     jau::os::DynamicLinker& dl = jau::os::DynamicLinker::get();
     jau::os::DynamicLinker::libhandle_t libHandle = dl.openLibraryLocal(libPath);
     std::cout << "- Path: " << libPath << std::endl;
-    std::cout << "- LibHandle: " << jau::to_hexstring(libHandle) << std::endl;
+    std::cout << "- LibHandle: " << jau::toHexString(libHandle) << std::endl;
     REQUIRE( nullptr != libHandle );
 
     jau::os::DynamicLinker::symhandle_t symHandle = dl.lookupSymbol(libHandle, symbolName);
-    std::cout << "- Symbol '" << symbolName << "': Handle = " << jau::to_hexstring(symHandle) << std::endl;
+    std::cout << "- Symbol '" << symbolName << "': Handle = " << jau::toHexString(symHandle) << std::endl;
     REQUIRE( nullptr != symHandle );
 
     const char* nativePath = dl.lookupLibraryPathname(libHandle, symbolName);

@@ -421,7 +421,7 @@ std::cv_status jau::wait_for(std::condition_variable &cv, std::unique_lock<std::
 
 std::string jau::threadName(const std::thread::id id) noexcept {
     #if 1
-        return "Thread 0x"+jau::to_hexstring( std::hash<std::thread::id>{}(id) );
+        return "Thread 0x"+jau::toHexString( std::hash<std::thread::id>{}(id) );
     #else
         std::stringstream ss;
         ss.setf(std::ios_base::hex | std::ios_base::showbase);
@@ -569,11 +569,7 @@ static snsize_t hexCharByte_(const uint8_t c) {
     return -1;
 }
 
-SizeBoolPair jau::hexStringBytes(std::vector<uint8_t> &out, const std::string &hexstr, const bool lsbFirst, const Bool checkPrefix) noexcept {
-    return jau::hexStringBytes(out, cast_char_ptr_to_uint8(hexstr.data()), hexstr.size(), lsbFirst, checkPrefix);
-}
-
-SizeBoolPair jau::hexStringBytes(std::vector<uint8_t> &out, const uint8_t hexstr[], const size_t hexstr_len, const bool lsbFirst, const Bool checkPrefix) noexcept {
+SizeBoolPair jau::fromHexString(std::vector<uint8_t> &out, const uint8_t hexstr[], const size_t hexstr_len, const bool lsbFirst, const Bool checkPrefix) noexcept {
     size_t offset;
     if ( *checkPrefix && hexstr_len >= 2 && hexstr[0] == '0' && hexstr[1] == 'x' ) {
         offset = 2;
@@ -648,9 +644,9 @@ SizeBoolPair jau::hexStringBytes(std::vector<uint8_t> &out, const uint8_t hexstr
     return { .s = offset, .b = true };
 }
 
-UInt64SizeBoolTuple jau::from_hexstring(std::string const &hexstr, const bool lsbFirst, const Bool checkPrefix) noexcept {
+UInt64SizeBoolTuple jau::fromHexString(std::string const &hexstr, const bool lsbFirst, const Bool checkPrefix) noexcept {
     std::vector<uint8_t> out;
-    auto [consumed, complete] = hexStringBytes(out, hexstr, lsbFirst, checkPrefix);
+    auto [consumed, complete] = fromHexString(out, hexstr, lsbFirst, checkPrefix);
     if constexpr ( jau::is_little_endian() ) {
         while ( out.size() < sizeof(uint64_t) ) {
             out.push_back(0);
@@ -767,8 +763,8 @@ UInt64SizeBoolTuple jau::fromBitString(std::string const &bitstr, const bool lsb
 
 static constexpr const char *HEX_ARRAY_BIG = "0123456789ABCDEF";
 
-std::string jau::bytesHexString(const void *data, const nsize_t length,
-                                const bool lsbFirst, const bool lowerCase, const bool skipPrefix) noexcept {
+std::string jau::toHexString(const void *data, const nsize_t length,
+                             const bool lsbFirst, const bool lowerCase, const bool skipPrefix) noexcept {
     const char *hex_array = lowerCase ? HexadecimalArray : HEX_ARRAY_BIG;
     std::string str;
 
@@ -812,7 +808,7 @@ std::string jau::bytesHexString(const void *data, const nsize_t length,
     return str;
 }
 
-std::string &jau::byteHexString(std::string &dest, const uint8_t value, const bool lowerCase) noexcept {
+std::string &jau::appendToHexString(std::string &dest, const uint8_t value, const bool lowerCase) noexcept {
     const char *hex_array = lowerCase ? HexadecimalArray : HEX_ARRAY_BIG;
 
     if ( 2 > dest.capacity() - dest.size() ) {  // Until C++20, then reserve is ignored if capacity > reserve
@@ -1005,8 +1001,8 @@ std::string jau::type_info::toString() const noexcept {
     using namespace jau::enums;
 
     std::string r("TypeInfo[addr ");
-    r.append(jau::to_hexstring(this))
-     .append(", hash ").append(jau::to_hexstring(hash_code()))
+    r.append(jau::toHexString(this))
+     .append(", hash ").append(jau::toHexString(hash_code()))
      .append(", `").append(name())
      .append("`, ident").append(to_string(m_idflags));
     r.append("]]");

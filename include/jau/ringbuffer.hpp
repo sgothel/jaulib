@@ -1038,7 +1038,7 @@ class ringbuffer {
             const std::string e_s = isEmpty() ? ", empty" : "";
             const std::string f_s = isFull() ? ", full" : "";
             const std::string mode_s = getMultiPCEnabled() ? ", mpc" : ", one";
-            std::string res("ringbuffer<?>[this "+jau::to_hexstring(this)+
+            std::string res("ringbuffer<?>[this "+jau::toHexString(this)+
                             ", size "+std::to_string(size())+" / "+std::to_string(capacityPlusOne-1)+
                             ", "+e_s+f_s+mode_s+", type[integral "+std::to_string(is_integral)+
                             ", trivialCpy "+std::to_string(std::is_trivially_copyable_v<Value_type>)+
@@ -1213,7 +1213,7 @@ class ringbuffer {
         bool isEmpty() const noexcept { return writePos == readPos; /* 0 == size */ }
 
         /** Returns true if this ring buffer is full, otherwise false. */
-        bool isFull() const noexcept { 
+        bool isFull() const noexcept {
             return ( writePos + 1 ) % capacityPlusOne == readPos; /* W == R - 1 */ // NOLINT(clang-analyzer-core.DivideZero): always capacityPlusOne > 0
         }
 
