@@ -114,8 +114,8 @@ namespace jau {
     SizeBoolPair fromHexString(std::vector<uint8_t> &out, const uint8_t hexstr[], const size_t hexstr_len, const bool lsbFirst, const Bool checkPrefix = Bool::True) noexcept;
 
     /** See hexStringBytes() */
-    inline SizeBoolPair fromHexString(std::vector<uint8_t> &out, const std::string &hexstr, const bool lsbFirst, const Bool checkPrefix = Bool::True) noexcept {
-        return jau::fromHexString(out, cast_char_ptr_to_uint8(hexstr.data()), hexstr.size(), lsbFirst, checkPrefix);
+    inline SizeBoolPair fromHexString(std::vector<uint8_t> &out, const std::string_view hexstr, const bool lsbFirst, const Bool checkPrefix = Bool::True) noexcept {
+        return jau::fromHexString(out, cast_char_ptr_to_uint8(hexstr.data()), hexstr.length(), lsbFirst, checkPrefix); // NOLINT(bugprone-suspicious-stringview-data-usage)
     }
 
     /**
@@ -132,7 +132,7 @@ namespace jau {
      * @see hexStringBytes()
      * @see to_hexstring()
      */
-    UInt64SizeBoolTuple fromHexString(std::string const &hexstr, const bool lsbFirst = false, const Bool checkPrefix = Bool::True) noexcept;
+    UInt64SizeBoolTuple fromHexString(std::string_view const hexstr, const bool lsbFirst = false, const Bool checkPrefix = Bool::True) noexcept;
 
     inline constexpr const char *HexadecimalArray = "0123456789abcdef";
 
@@ -253,8 +253,8 @@ namespace jau {
     SizeBoolPair fromBitString(std::vector<uint8_t> &out, const uint8_t bitstr[], const size_t bitstr_len, const bool lsbFirst, const Bool checkPrefix = Bool::True) noexcept;
 
     /** See fromBitString() */
-    inline SizeBoolPair fromBitString(std::vector<uint8_t> &out, const std::string &bitstr, const bool lsbFirst, const Bool checkPrefix = Bool::True) noexcept {
-        return jau::fromBitString(out, cast_char_ptr_to_uint8(bitstr.data()), bitstr.size(), lsbFirst, checkPrefix);
+    inline SizeBoolPair fromBitString(std::vector<uint8_t> &out, const std::string_view bitstr, const bool lsbFirst, const Bool checkPrefix = Bool::True) noexcept {
+        return jau::fromBitString(out, cast_char_ptr_to_uint8(bitstr.data()), bitstr.length(), lsbFirst, checkPrefix); // NOLINT(bugprone-suspicious-stringview-data-usage)
     }
 
     /**
@@ -271,7 +271,7 @@ namespace jau {
      * @see bitStringBytes()
      * @see to_bitstring()
      */
-    UInt64SizeBoolTuple fromBitString(std::string const &bitstr, const bool lsbFirst = false, const Bool checkPrefix = Bool::True) noexcept;
+    UInt64SizeBoolTuple fromBitString(std::string_view const bitstr, const bool lsbFirst = false, const Bool checkPrefix = Bool::True) noexcept;
 
     /**
      * Produce a binary string representation of the given lsb-first byte values.
@@ -772,7 +772,8 @@ namespace jau {
      *
      * You may use C++17 structured bindings to handle the tuple.
      */
-    Int64SizeBoolTuple to_integer(const std::string &str, const nsize_t radix = 10, const char limiter = '\0', const char *limiter_pos = nullptr);
+    Int64SizeBoolTuple to_integer(const char *str, size_t str_len, const nsize_t radix = 10, const char limiter = '\0', const char *limiter_pos = nullptr);
+
 
     /**
      * Returns tuple [int64_t result, size_t consumed_chars, bool complete] of string to integer conversion via `std::strtoll`.
@@ -781,7 +782,9 @@ namespace jau {
      *
      * You may use C++17 structured bindings to handle the tuple.
      */
-    Int64SizeBoolTuple to_integer(const char *str, size_t str_len, const nsize_t radix = 10, const char limiter = '\0', const char *limiter_pos = nullptr);
+     inline Int64SizeBoolTuple to_integer(const std::string_view str, const nsize_t radix = 10, const char limiter = '\0', const char *limiter_pos = nullptr) {
+         return to_integer(str.data(), str.length(), radix, limiter, limiter_pos);
+     }
 
     /**
      * C++20: Heterogeneous Lookup in (Un)ordered Containers

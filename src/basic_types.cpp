@@ -644,7 +644,7 @@ SizeBoolPair jau::fromHexString(std::vector<uint8_t> &out, const uint8_t hexstr[
     return { .s = offset, .b = true };
 }
 
-UInt64SizeBoolTuple jau::fromHexString(std::string const &hexstr, const bool lsbFirst, const Bool checkPrefix) noexcept {
+UInt64SizeBoolTuple jau::fromHexString(std::string_view const hexstr, const bool lsbFirst, const Bool checkPrefix) noexcept {
     std::vector<uint8_t> out;
     auto [consumed, complete] = fromHexString(out, hexstr, lsbFirst, checkPrefix);
     if constexpr ( jau::is_little_endian() ) {
@@ -745,7 +745,7 @@ SizeBoolPair jau::fromBitString(std::vector<uint8_t> &out, const uint8_t bitstr[
     return { .s = offset, .b = true };
 }
 
-UInt64SizeBoolTuple jau::fromBitString(std::string const &bitstr, const bool lsbFirst, const Bool checkPrefix) noexcept {
+UInt64SizeBoolTuple jau::fromBitString(std::string_view const bitstr, const bool lsbFirst, const Bool checkPrefix) noexcept {
     std::vector<uint8_t> out;
     auto [consumed, complete] = fromBitString(out, bitstr, lsbFirst, checkPrefix);
     if constexpr ( jau::is_little_endian() ) {
@@ -939,10 +939,6 @@ Int64SizeBoolTuple jau::to_integer(const char *str, size_t str_len, const jau::n
         }
     }
     return { .v = result, .s = consumed, .b = complete };
-}
-
-Int64SizeBoolTuple jau::to_integer(const std::string &str, const jau::nsize_t radix, const char limiter, const char *limiter_pos) {
-    return to_integer(str.c_str(), str.size(), radix, limiter, limiter_pos);
 }
 
 FracI64SizeBoolTuple jau::to_fraction_i64(const std::string &value, const fraction_i64 &min_allowed, const fraction_i64 &max_allowed) noexcept {

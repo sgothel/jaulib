@@ -304,7 +304,7 @@ namespace jau::util {
                                     std::cout << "XXX: git commits " << m_git_commits << std::endl;
                                 }
                                 if ( match.size() >= 6 && match[5].length() > 0 ) {
-                                    const auto [git_ssha, len0, ok0] = jau::fromHexString(match[5]);
+                                    const auto [git_ssha, len0, ok0] = jau::fromHexString(match[5].str());
                                     if constexpr ( DBG_OUT ) {
                                         std::cout << "XXX: git ssha ok " << ok0 << " '" << match[5] << "', hex " << jau::toHexString(git_ssha) << ", dec " << git_ssha << std::endl;
                                     }
