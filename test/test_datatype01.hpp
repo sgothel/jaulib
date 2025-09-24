@@ -33,6 +33,7 @@
 #include <jau/packed_attribute.hpp>
 #include <jau/ordered_atomic.hpp>
 #include <jau/basic_types.hpp>
+#include <jau/string_util.hpp>
 
 using namespace jau;
 
@@ -105,7 +106,7 @@ __pack ( struct Addr48Bit {
 
 } );
 
-std::ostream & operator << (std::ostream &out, const Addr48Bit &a) {
+inline std::ostream & operator << (std::ostream &out, const Addr48Bit &a) {
     out << a.toString();
     return out;
 }
@@ -190,7 +191,7 @@ class DataType01 {
 #endif
 };
 
-std::ostream & operator << (std::ostream &out, const DataType01 &a) {
+inline std::ostream & operator << (std::ostream &out, const DataType01 &a) {
     out << a.toString();
     return out;
 }
@@ -269,7 +270,7 @@ class DataType02_Memmove_Secmem {
 #endif
 };
 
-std::ostream & operator << (std::ostream &out, const DataType02_Memmove_Secmem &a) {
+inline std::ostream & operator << (std::ostream &out, const DataType02_Memmove_Secmem &a) {
     out << a.toString();
     return out;
 }
