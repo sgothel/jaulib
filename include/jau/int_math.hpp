@@ -27,10 +27,11 @@
 
 #include <climits>
 #include <cmath>
-#include <cstdint>
+#include <concepts>
 
 #include <jau/base_math.hpp>
 #include <jau/int_math_ct.hpp>
+#include <jau/type_concepts.hpp>
 
 namespace jau {
 
@@ -51,9 +52,8 @@ namespace jau {
     // Remember: constexpr specifier used in a function or static data member (since C++17) declaration implies inline.
 
     /** Returns true of the given integer value is zero. */
-    template<class T>
-    typename std::enable_if_t<std::is_integral_v<T>, bool>
-    constexpr is_zero(const T& a) noexcept {
+    template<std::integral T>
+    constexpr bool is_zero(const T& a) noexcept {
         return 0 == a;
     }
 
@@ -64,9 +64,8 @@ namespace jau {
      * @param a value to compare
      * @param b value to compare
      */
-    template<class T>
-    typename std::enable_if_t<std::is_integral_v<T>, bool>
-    constexpr equals(const T& a, const T& b) noexcept {
+    template<std::integral T>
+    constexpr bool equals(const T& a, const T& b) noexcept {
         return a == b;
     }
 
@@ -78,9 +77,8 @@ namespace jau {
      * @param b value to compare
      * @param allowed_deviation allowed deviation
      */
-    template<class T>
-    typename std::enable_if_t<std::is_integral_v<T>, bool>
-    constexpr equals(const T& a, const T& b, const T& allowed_deviation) noexcept {
+    template<std::integral T>
+    constexpr bool equals(const T& a, const T& b, const T& allowed_deviation) noexcept {
         return std::abs(a - b) <= allowed_deviation;
     }
 
@@ -93,10 +91,7 @@ namespace jau {
      * @param align_to alignment boundary, must not be 0
      * @return n rounded up to a multiple of align_to
      */
-    template<typename T, typename U,
-             std::enable_if_t<std::is_integral_v<T> && std::is_unsigned_v<T> &&
-                              std::is_integral_v<U> && std::is_unsigned_v<U>,
-                              bool> = true>
+    template<jau::req::unsigned_integral T, jau::req::unsigned_integral U>
     constexpr T round_up(const T n, const U align_to) {
         assert(align_to != 0);  // align_to must not be 0
 
@@ -116,30 +111,31 @@ namespace jau {
      * @param align_to alignment boundary
      * @return n rounded down to a multiple of align_to
      */
-    template<typename T, typename U,
-             std::enable_if_t<std::is_integral_v<T> && std::is_unsigned_v<T> &&
-                              std::is_integral_v<U> && std::is_unsigned_v<U>,
-                              bool> = true>
+    template<jau::req::unsigned_integral T, jau::req::unsigned_integral U>
     constexpr T round_down(T n, U align_to) {
         return align_to == 0 ? n : (n - (n % align_to));
     }
 
     /**
-     * Power of 2 test (w/o branching ?) in O(1), i.e. test whether a single bit is set
+     * Power of 2 test in O(1), i.e. test whether a single bit is set
      *
-     * Source: [bithacks Test PowerOf2](http://www.graphics.stanford.edu/~seander/bithacks.html#DetermineIfPowerOf2)
+     * Uses either
+     * - C++20: std::has_single_bit
+     * - else: [bithacks Test PowerOf2](http://www.graphics.stanford.edu/~seander/bithacks.html#DetermineIfPowerOf2)
+     *   - Branching may occur due to relational operator.
      *
-     * Branching may occur due to relational operator.
-     *
-     * @tparam T an integral number type
-     * @param x the integral number
+     * @tparam T an unsigned integral number type
+     * @param x the unsigned integral number
      * @return true if arg is 2^n for some x > 0
      * @see std::has_single_bit()
      */
-    template<typename T,
-             std::enable_if_t<std::is_unsigned_v<T> && std::is_integral_v<T>, bool> = true>
+    template<jau::req::unsigned_integral T>
     constexpr bool is_power_of_2(const T x) noexcept {
-        return x && 0 == (x & (x - 1));
+        if constexpr ( is_cxx20() ) {
+            return std::has_single_bit(x);
+        } else {
+            return x && 0 == (x & (x - 1));
+        }
     }
 
     /**
@@ -180,12 +176,13 @@ namespace jau {
      * otherwise return {@code n} unchanged.
      *
      * Uses either
-     * - C++20: std::bit_ceil()
-     * - else: ct_next_power_of_2()
+     * - C++20: std::bit_ceil
+     * - else: is_power_of_2 and ct_next_power_of_2
      *
      * @see std::bit_ceil()
      */
-    constexpr uint32_t bit_ceil(const uint32_t n) noexcept {
+    template<jau::req::unsigned_integral T>
+    constexpr T bit_ceil(const T n) noexcept {
         if constexpr ( is_cxx20() ) {
             return std::bit_ceil(n);
         } else if ( is_power_of_2(n) ) {
@@ -196,13 +193,12 @@ namespace jau {
     }
 
     /**
-     * Return the index of the highest set bit w/ branching (loop) in O(n), actually O(n/2).
+     * Return the index of the highest set bit w/ branching (loop) in O(n/2).
      *
      * @tparam T an unsigned integral number type
      * @param x value
      */
-    template<typename T,
-             std::enable_if_t<std::is_integral_v<T> && std::is_unsigned_v<T>, bool> = true>
+    template<jau::req::unsigned_integral T>
     constexpr nsize_t high_bit(T x) {
         nsize_t hb = 0;
         for ( nsize_t s = (CHAR_BIT * sizeof(T)) >> 1; s > 0; s >>= 1 ) {
@@ -261,8 +257,7 @@ namespace jau {
      * @param res storage for result
      * @return true if overflow, otherwise false
      */
-    template<typename T,
-             std::enable_if_t<std::is_integral_v<T>, bool> = true>
+    template<std::integral T>
     constexpr bool add_overflow(const T a, const T b, T& res) noexcept {
         if constexpr ( has_builtin_add_overflow() ) {
             return __builtin_add_overflow(a, b, &res);
@@ -293,8 +288,7 @@ namespace jau {
      * @param res storage for result
      * @return true if overflow, otherwise false
      */
-    template<typename T,
-             std::enable_if_t<std::is_integral_v<T>, bool> = true>
+    template<std::integral T>
     constexpr bool sub_overflow(const T a, const T b, T& res) noexcept {
         if constexpr ( has_builtin_sub_overflow() ) {
             return __builtin_sub_overflow(a, b, &res);
@@ -325,8 +319,7 @@ namespace jau {
      * @param res storage for result
      * @return true if overflow, otherwise false
      */
-    template<typename T,
-             std::enable_if_t<std::is_integral_v<T>, bool> = true>
+    template<std::integral T>
     constexpr bool mul_overflow(const T a, const T b, T& res) noexcept {
         if constexpr ( has_builtin_mul_overflow() ) {
             return __builtin_mul_overflow(a, b, &res);
@@ -361,10 +354,7 @@ namespace jau {
      * @param b integral value b
      * @return zero if a and b are zero, otherwise the greatest common divisor (GCD) of a and b,
      */
-    template<typename T,
-             std::enable_if_t<std::is_integral_v<T> &&
-                              !std::is_unsigned_v<T>,
-                              bool> = true>
+    template<jau::req::signed_integral T>
     constexpr T gcd(T a, T b) noexcept {
         T a_ = abs(a);
         T b_ = abs(b);
@@ -376,10 +366,7 @@ namespace jau {
         return a_;
     }
 
-    template<typename T,
-             std::enable_if_t<std::is_integral_v<T> &&
-                              std::is_unsigned_v<T>,
-                              bool> = true>
+    template<jau::req::unsigned_integral T>
     constexpr T gcd(T a, T b) noexcept {
         while ( b != 0 ) {
             const T t = b;
@@ -398,8 +385,7 @@ namespace jau {
      * @param b integral value b
      * @return true if overflow, otherwise false for success
      */
-    template<typename T,
-             std::enable_if_t<std::is_integral_v<T>, bool> = true>
+    template<std::integral T>
     constexpr bool lcm_overflow(const T a, const T b, T& result) noexcept {
         const T _gcd = gcd<T>(a, b);
         if ( 0 < _gcd ) {
@@ -434,8 +420,7 @@ namespace jau {
      * @param sign_is_digit if true and value is negative, adds one to result for sign. Defaults to true.
      * @return digit count
      */
-    template<typename T,
-             std::enable_if_t<std::is_integral_v<T>, bool> = true>
+    template<std::integral T>
     constexpr size_t digits10(const T x, const snsize_t x_sign, const bool sign_is_digit = true) noexcept {
         if ( x_sign == 0 ) {
             return 1;
@@ -461,8 +446,7 @@ namespace jau {
      * @param sign_is_digit if true and value is negative, adds one to result for sign. Defaults to true.
      * @return digit count
      */
-    template<typename T,
-             std::enable_if_t<std::is_integral_v<T>, bool> = true>
+    template<std::integral T>
     constexpr size_t digits10(const T x, const bool sign_is_digit = true) noexcept {
         return digits10<T>(x, jau::sign<T>(x), sign_is_digit);
     }
@@ -476,10 +460,7 @@ namespace jau {
      * 16 hexadecimal, ..
      * @return digit count
      */
-    template<typename T,
-             std::enable_if_t<std::is_integral_v<T> &&
-                              std::is_unsigned_v<T>,
-                              bool> = true>
+    template<jau::req::unsigned_integral T>
     constexpr size_t digits(const T x, const nsize_t radix) noexcept {
         if ( x == 0 ) {
             return 1;

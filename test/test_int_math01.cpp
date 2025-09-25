@@ -165,11 +165,11 @@ TEST_CASE( "Int Math Test 10", "[bits][arithmetic][math]" ) {
             REQUIRE( 4u == std::bit_ceil(3u) );
             REQUIRE(64u == std::bit_ceil(63u) );
         }
-        REQUIRE( 1 == bit_ceil(0) );
-        REQUIRE( 1 == bit_ceil(1) );
-        REQUIRE( 2 == bit_ceil(2) );
-        REQUIRE( 4 == bit_ceil(3) );
-        REQUIRE(64 == bit_ceil(63) );
+        REQUIRE( 1 == bit_ceil(0_u32) );
+        REQUIRE( 1 == bit_ceil(1_u32) );
+        REQUIRE( 2 == bit_ceil(2_u32) );
+        REQUIRE( 4 == bit_ceil(3_u32) );
+        REQUIRE(64 == bit_ceil(63_u32) );
     }
     {
         REQUIRE(  0 == ct_bit_count( 0b00000000000000000000000000000000UL ) );

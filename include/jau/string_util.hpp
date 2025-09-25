@@ -26,6 +26,7 @@
 #define JAU_STRING_UTIL_HPP_
 
 #include <algorithm>
+#include <concepts>
 #include <cstdarg>
 #include <cstdint>
 #include <cstring>
@@ -46,6 +47,7 @@
 #include <jau/packed_attribute.hpp>
 #include <jau/string_cfmt.hpp>
 #include <jau/type_traits_queries.hpp>
+#include <jau/type_concepts.hpp>
 
 namespace jau {
 
@@ -154,12 +156,11 @@ namespace jau {
     std::string toHexString(const void *data, const nsize_t length,
                             const bool lsbFirst, const bool lowerCase = true, const bool skipPrefix = false) noexcept;
 
-    template<class uint8_container_type,
-             std::enable_if_t<std::is_integral_v<typename uint8_container_type::value_type> &&
-                              std::is_convertible_v<typename uint8_container_type::value_type, uint8_t>,
-                              bool> = true>
-    std::string toHexString(const uint8_container_type &bytes,
-                            const bool lsbFirst, const bool lowerCase = true, const bool skipPrefix = false) noexcept {
+    template<class uint8_container_type>
+        requires jau::req::contiguous_container<uint8_container_type> &&
+                 std::convertible_to<typename uint8_container_type::value_type, uint8_t>
+    inline std::string toHexString(const uint8_container_type &bytes,
+                                   const bool lsbFirst, const bool lowerCase = true, const bool skipPrefix = false) noexcept {
         return toHexString((const uint8_t *)bytes.data(), bytes.size(), lsbFirst, lowerCase, skipPrefix);
     }
 
@@ -181,9 +182,9 @@ namespace jau {
      * @see bytesHexString()
      * @see from_hexstring()
      */
-    template<class value_type,
-             std::enable_if_t<std::is_pointer_v<value_type>,
-                              bool> = true>
+    template<class value_type>
+        requires jau::req::pointer<value_type> &&
+                 (!jau::req::container<value_type>)
     inline std::string toHexString(value_type const &v, const bool skipPrefix = false) noexcept {
 #if defined(__EMSCRIPTEN__)                 // jau::os::is_generic_wasm()
         static_assert(is_little_endian());  // Bug in emscripten, unable to deduce uint16_t, uint32_t or uint64_t override of cpu_to_le() or bswap()
@@ -206,11 +207,11 @@ namespace jau {
      * @see bytesHexString()
      * @see from_hexstring()
      */
-    template<class value_type,
-             std::enable_if_t<!std::is_pointer_v<value_type> &&
-                              std::is_standard_layout_v<value_type> &&
-                              std::is_trivially_copyable_v<value_type>,
-                              bool> = true>
+    template<class value_type>
+      requires jau::req::standard_layout<value_type> &&
+               jau::req::trivially_copyable<value_type> &&
+               (!jau::req::container<value_type>) &&
+               (!jau::req::pointer<value_type>)
     inline std::string toHexString(value_type const &v, const bool skipPrefix = false) noexcept {
         if constexpr ( is_little_endian() ) {
             return toHexString(pointer_cast<const uint8_t *>(&v), sizeof(v),
@@ -290,11 +291,10 @@ namespace jau {
     std::string toBitString(const void *data, const nsize_t length,
                             const bool lsbFirst, const bool skipPrefix = false) noexcept;
 
-    template<class uint8_container_type,
-             std::enable_if_t<std::is_integral_v<typename uint8_container_type::value_type> &&
-                              std::is_convertible_v<typename uint8_container_type::value_type, uint8_t>,
-                              bool> = true>
-    std::string toBitString(const uint8_container_type &bytes,
+    template<class uint8_container_type>
+        requires jau::req::contiguous_container<uint8_container_type> &&
+                 std::convertible_to<typename uint8_container_type::value_type, uint8_t>
+    inline std::string toBitString(const uint8_container_type &bytes,
                             const bool lsbFirst, const bool skipPrefix = false) noexcept {
         return toBitString((const uint8_t *)bytes.data(), bytes.size(), lsbFirst, skipPrefix);
     }
@@ -308,11 +308,11 @@ namespace jau {
      * @see bytesBitString()
      * @see from_bitstring()
      */
-    template<class value_type,
-             std::enable_if_t<!std::is_pointer_v<value_type> &&
-                              std::is_standard_layout_v<value_type> &&
-                              std::is_trivially_copyable_v<value_type>,
-                              bool> = true>
+    template<class value_type>
+        requires jau::req::standard_layout<value_type> &&
+                 jau::req::trivially_copyable<value_type> &&
+                 (!jau::req::container<value_type>) &&
+                 (!jau::req::pointer<value_type>)
     inline std::string toBitString(value_type const &v, const bool skipPrefix = false) noexcept {
         if constexpr ( is_little_endian() ) {
             return toBitString(pointer_cast<const uint8_t *>(&v), sizeof(v),

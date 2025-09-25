@@ -27,6 +27,7 @@
 
 #include <cmath>
 #include <climits>
+#include <concepts>
 #include <type_traits>
 
 #include <jau/base_math.hpp>
@@ -122,8 +123,7 @@ namespace jau {
      * @see float_value()
      * @see double_value()
      */
-    template<class T,
-             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    template<std::floating_point T>
     typename jau::uint_bytes_t<sizeof(T)>
     bit_value_raw(const T a) noexcept
     {
@@ -235,9 +235,8 @@ namespace jau {
      * @tparam T a non integer float type
      * @return machine epsilon of T
      */
-    template<class T>
-    typename std::enable_if_t<std::is_floating_point_v<T>, T>
-    machineEpsilon() noexcept
+    template<std::floating_point T>
+    T machineEpsilon() noexcept
     {
       const T one(1);
       const T two(2);
@@ -249,30 +248,26 @@ namespace jau {
     }
 
     /** Returns true if the given value is less than epsilon, w/ epsilon > 0. */
-    template<class T>
-    typename std::enable_if_t<std::is_floating_point_v<T>, bool>
-    constexpr is_zero(const T& a, const T& epsilon=std::numeric_limits<T>::epsilon()) noexcept {
+    template<std::floating_point T>
+    constexpr bool is_zero(const T& a, const T& epsilon=std::numeric_limits<T>::epsilon()) noexcept {
         return std::abs(a) < epsilon;
     }
 
     /** Returns true if all given values a and b are less than epsilon, w/ epsilon > 0. */
-    template<class T>
-    typename std::enable_if_t<std::is_floating_point_v<T>, bool>
-    constexpr is_zero2f(const T& a, const T& b, const T& epsilon=std::numeric_limits<T>::epsilon()) noexcept {
+    template<std::floating_point T>
+    constexpr bool is_zero2f(const T& a, const T& b, const T& epsilon=std::numeric_limits<T>::epsilon()) noexcept {
         return std::abs(a) < epsilon && std::abs(b) < epsilon;
     }
 
     /** Returns true if all given values a, b and c are less than epsilon, w/ epsilon > 0. */
-    template<class T>
-    typename std::enable_if_t<std::is_floating_point_v<T>, bool>
-    constexpr is_zero3f(const T& a, const T& b, const T& c, const T& epsilon=std::numeric_limits<T>::epsilon()) noexcept {
+    template<std::floating_point T>
+    constexpr bool is_zero3f(const T& a, const T& b, const T& c, const T& epsilon=std::numeric_limits<T>::epsilon()) noexcept {
         return std::abs(a) < epsilon && std::abs(b) < epsilon && std::abs(c) < epsilon;
     }
 
     /** Returns true if all given values a, b, c and d are less than epsilon, w/ epsilon > 0. */
-    template<class T>
-    typename std::enable_if_t<std::is_floating_point_v<T>, bool>
-    constexpr is_zero4f(const T& a, const T& b, const T& c, const T& d, const T& epsilon=std::numeric_limits<T>::epsilon()) noexcept {
+    template<std::floating_point T>
+    constexpr bool is_zero4f(const T& a, const T& b, const T& c, const T& d, const T& epsilon=std::numeric_limits<T>::epsilon()) noexcept {
         return std::abs(a) < epsilon && std::abs(b) < epsilon && std::abs(c) < epsilon && std::abs(d) < epsilon;
     }
 
@@ -280,9 +275,8 @@ namespace jau {
      * Returns true if the given value is zero,
      * disregarding `epsilon` but considering `NaN`, `-Inf` and `+Inf`.
      */
-    template<class T>
-    typename std::enable_if_t<std::is_floating_point_v<T>, bool>
-    constexpr is_zero_raw(const T& a) noexcept {
+    template<std::floating_point T>
+    constexpr bool is_zero_raw(const T& a) noexcept {
         return ( bit_value(a) & ~float_iec559_sign_bit ) == 0;
     }
 
@@ -301,8 +295,7 @@ namespace jau {
      * @param a value to compare
      * @param b value to compare
      */
-    template<class T,
-             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    template<std::floating_point T>
     constexpr int compare(const T a, const T b) noexcept {
         if( a < b ) {
             return -1; // Neither is NaN, a is smaller
@@ -342,8 +335,7 @@ namespace jau {
      * @param b value to compare
      * @param epsilon defaults to std::numeric_limits<T>::epsilon(), must be > 0
      */
-    template<class T,
-             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    template<std::floating_point T>
     constexpr int compare(const T a, const T b, const T epsilon) noexcept {
         if( std::abs(a - b) < epsilon ) {
             return 0;
@@ -365,9 +357,8 @@ namespace jau {
      * @param a value to compare
      * @param b value to compare
      */
-    template<class T>
-    typename std::enable_if_t<std::is_floating_point_v<T>, bool>
-    constexpr equals_raw(const T& a, const T& b) noexcept {
+    template<std::floating_point T>
+    constexpr bool equals_raw(const T& a, const T& b) noexcept {
         // Values are equal (Inf, Nan .. )
         return bit_value(a) == bit_value(b);
     }
@@ -388,9 +379,8 @@ namespace jau {
      * @param b value to compare
      * @param epsilon defaults to std::numeric_limits<T>::epsilon(), must be > 0
      */
-    template<class T>
-    typename std::enable_if_t<std::is_floating_point_v<T>, bool>
-    constexpr equals(const T& a, const T& b, const T& epsilon=std::numeric_limits<T>::epsilon()) noexcept {
+    template<std::floating_point T>
+    constexpr bool equals(const T& a, const T& b, const T& epsilon=std::numeric_limits<T>::epsilon()) noexcept {
         if( std::abs(a - b) < epsilon ) {
             return true;
         } else {
@@ -407,9 +397,8 @@ namespace jau {
      * @param a value to compare
      * @param b value to compare
      */
-    template<class T>
-    typename std::enable_if_t<std::is_floating_point_v<T>, bool>
-    constexpr equals2(const T& a, const T& b, const T& epsilon=std::numeric_limits<T>::epsilon()) noexcept {
+    template<std::floating_point T>
+    constexpr bool equals2(const T& a, const T& b, const T& epsilon=std::numeric_limits<T>::epsilon()) noexcept {
         return std::abs(a - b) < epsilon;
     }
 
@@ -430,9 +419,8 @@ namespace jau {
      * @param ulp desired precision in ULPs (units in the last place)
      * @param epsilon the machine epsilon of type T, defaults to <code>std::numeric_limits<T>::epsilon()</code>
      */
-    template<class T>
-    typename std::enable_if_t<std::is_floating_point_v<T>, bool>
-    constexpr equals(const T& a, const T& b, int ulp, const T& epsilon=std::numeric_limits<T>::epsilon()) noexcept {
+    template<std::floating_point T>
+    constexpr bool equals(const T& a, const T& b, int ulp, const T& epsilon=std::numeric_limits<T>::epsilon()) noexcept {
         return equals(a, b, epsilon * ulp);
     }
 
@@ -454,9 +442,8 @@ namespace jau {
      * @param ulp desired precision in ULPs (units in the last place), defaults to 1
      * @param epsilon the machine epsilon of type T, defaults to <code>std::numeric_limits<T>::epsilon()</code>
      */
-    template<class T>
-    typename std::enable_if_t<std::is_floating_point_v<T>, bool>
-    almost_equal(const T& a, const T& b, int ulp=1, const T& epsilon=std::numeric_limits<T>::epsilon()) noexcept
+    template<std::floating_point T>
+    constexpr bool almost_equal(const T& a, const T& b, int ulp=1, const T& epsilon=std::numeric_limits<T>::epsilon()) noexcept
     {
         const T diff = std::fabs(a-b);
         if( ( diff <= epsilon * std::fabs(a+b) * ulp ) ||
@@ -469,29 +456,25 @@ namespace jau {
     }
 
     /** Returns the rounded value cast to signed int. */
-    template<class T,
-             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    template<std::floating_point T>
     constexpr typename jau::sint_bytes_t<sizeof(T)> round_to_int(const T v) noexcept {
         return static_cast<typename jau::sint_bytes_t<sizeof(T)>>( std::round(v) );
     }
 
     /** Returns the rounded value cast to unsigned int. */
-    template<class T,
-             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    template<std::floating_point T>
     constexpr typename jau::uint_bytes_t<sizeof(T)> round_to_uint(const T v) noexcept {
         return static_cast<typename jau::uint_bytes_t<sizeof(T)>>( std::round(v) );
     }
 
     /** Converts arc-degree to radians */
-    template<typename T,
-        std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    template<std::floating_point T>
     constexpr T adeg_to_rad(const T arc_degree) noexcept {
         return arc_degree * (T)M_PI / (T)180.0;
     }
 
     /** Converts radians to arc-degree */
-    template<typename T,
-        std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    template<std::floating_point T>
     constexpr T rad_to_adeg(const T rad) noexcept {
         return rad * (T)180.0 / (T)M_PI;
     }
@@ -507,8 +490,7 @@ namespace jau {
      * @param row selected row of float data `a`
      * @return given string buffer `sb` for chaining
      */
-    template<typename T,
-        std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    template<std::floating_point T>
     std::string& row_to_string(std::string& sb, const std::string_view f,
                                const T a[],
                                const jau::nsize_t rows, const jau::nsize_t columns,
@@ -538,8 +520,7 @@ namespace jau {
      * @param rowMajorOrder if true floats are laid out in row-major-order, otherwise column-major-order (OpenGL)
      * @return given string buffer `sb` for chaining
      */
-    template<typename T,
-        std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    template<std::floating_point T>
     std::string& mat_to_string(std::string& sb, const std::string& rowPrefix, const std::string_view f,
                                const T a[], const jau::nsize_t rows, const jau::nsize_t columns,
                                const bool rowMajorOrder) noexcept {

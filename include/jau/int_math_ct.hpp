@@ -27,10 +27,12 @@
 
 #include <cstdint>
 #include <climits>
+#include <concepts>
 
 #include <jau/cpp_lang_util.hpp>
 #include <jau/int_types.hpp>
 #include <jau/cpp_pragma.hpp>
+#include <jau/type_concepts.hpp>
 
 namespace jau {
 
@@ -63,10 +65,8 @@ namespace jau {
      * @param x the number
      * @return function result
      */
-    template <typename T,
-              std::enable_if_t< std::is_integral_v<T>, bool> = true>
-    constexpr int ct_sign(const T x) noexcept
-    {
+    template <std::integral T>
+    constexpr int ct_sign(const T x) noexcept {
         return (x != 0) | -(int)((std::make_unsigned_t<T>)((T)x) >> (sizeof(T) * CHAR_BIT - 1));
         // return (int) ( (T(0) < x) - (x < T(0)) );
     }
@@ -89,12 +89,8 @@ namespace jau {
      * @param x the number
      * @return function result
      */
-    template <typename T,
-              std::enable_if_t< std::is_arithmetic_v<T> &&
-                                std::is_integral_v<T> &&
-                               !std::is_unsigned_v<T>, bool> = true>
-    constexpr T ct_abs(const T x) noexcept
-    {
+    template <jau::req::signed_integral T>
+    constexpr T ct_abs(const T x) noexcept {
         using unsigned_T = std::make_unsigned_t<T>;
         const T mask = x >> ( sizeof(T) * CHAR_BIT - 1 );
         PRAGMA_DISABLE_WARNING_PUSH
@@ -102,6 +98,8 @@ namespace jau {
         return static_cast<unsigned_T>( ( x + mask ) ^ mask ); // clang 15: int overflow on UB (constrained in API doc)
         PRAGMA_DISABLE_WARNING_POP
     }
+#if 0
+    // the type req is floating_point (signed), but we have no ct_sign for float.
     template <typename T,
               std::enable_if_t< std::is_arithmetic_v<T> &&
                                !std::is_integral_v<T> &&
@@ -110,11 +108,10 @@ namespace jau {
     {
         return x * jau::ct_sign<T>(x);
     }
-    template <typename T,
-              std::enable_if_t< std::is_arithmetic_v<T> &&
-                                std::is_unsigned_v<T>, bool> = true>
-    constexpr T ct_abs(const T x) noexcept
-    {
+#endif
+
+    template <jau::req::unsigned_arithmetic T>
+    constexpr T ct_abs(const T x) noexcept {
         return x;
     }
 
@@ -129,10 +126,8 @@ namespace jau {
      * @param x one number
      * @param x the other number
      */
-    template <typename T,
-              std::enable_if_t< std::is_integral_v<T>, bool> = true>
-    constexpr T ct_min(const T x, const T y) noexcept
-    {
+    template <std::integral T>
+    constexpr T ct_min(const T x, const T y) noexcept {
         return y + ( (x - y) & ( (x - y) >> ( sizeof(T) * CHAR_BIT - 1 ) ) );
     }
 
@@ -147,10 +142,8 @@ namespace jau {
      * @param x one number
      * @param x the other number
      */
-    template <typename T,
-              std::enable_if_t< std::is_integral_v<T>, bool> = true>
-    constexpr T ct_max(const T x, const T y) noexcept
-    {
+    template <std::integral T>
+    constexpr T ct_max(const T x, const T y) noexcept {
         return x - ( (x - y) & ( (x - y) >> ( sizeof(T) * CHAR_BIT - 1 ) ) );
     }
 
@@ -167,10 +160,8 @@ namespace jau {
      * @param min_val the minimum limes, inclusive
      * @param max_val the maximum limes, inclusive
      */
-    template <typename T,
-              std::enable_if_t< std::is_integral_v<T>, bool> = true>
-    constexpr T ct_clamp(const T x, const T min_val, const T max_val) noexcept
-    {
+    template <std::integral T>
+    constexpr T ct_clamp(const T x, const T min_val, const T max_val) noexcept {
         return jau::ct_min<T>(jau::ct_max<T>(x, min_val), max_val);
     }
 
@@ -185,8 +176,7 @@ namespace jau {
      * @param a_if_masked value to merge in masked bits
      * @param b_if_unmasked value to merge in non-masked bits
      */
-    template <typename T,
-              std::enable_if_t< std::is_integral_v<T> && std::is_unsigned_v<T>, bool> = true>
+    template <jau::req::unsigned_integral T>
     constexpr T ct_masked_merge(T mask, T a_if_masked, T b_if_unmasked) noexcept {
         return b_if_unmasked ^ ( mask & ( a_if_masked ^ b_if_unmasked ) );
     }
@@ -212,6 +202,22 @@ namespace jau {
             n |= n >> 4;
             n |= n >> 8;
             n |= n >> 16;
+            ++n;
+            n += ( 0 == n ); // avoid 0 -> 0
+            return n;
+        }
+    }
+    constexpr uint64_t ct_next_power_of_2(uint64_t n) noexcept {
+        if constexpr ( is_cxx20() ) {
+            return std::has_single_bit(n) ? std::bit_ceil(n+1) : std::bit_ceil(n);
+        } else {
+            --n;
+            n |= n >> 1;
+            n |= n >> 2;
+            n |= n >> 4;
+            n |= n >> 8;
+            n |= n >> 16;
+            n |= n >> 32;
             ++n;
             n += ( 0 == n ); // avoid 0 -> 0
             return n;
@@ -258,8 +264,7 @@ namespace jau {
      *
      * @tparam T an unsigned integral number type
      */
-    template <typename T,
-              std::enable_if_t< std::is_integral_v<T> && std::is_unsigned_v<T>, bool> = true>
+    template <jau::req::unsigned_integral T>
     constexpr T ct_expand_top_bit(T x)
     {
        return T(0) - ( x >> ( sizeof(T) * CHAR_BIT - 1 ) );
@@ -271,8 +276,7 @@ namespace jau {
      *
      * @tparam T an unsigned integral number type
      */
-    template <typename T,
-              std::enable_if_t< std::is_integral_v<T> && std::is_unsigned_v<T>, bool> = true>
+    template <jau::req::unsigned_integral T>
     constexpr T ct_is_zero(T x)
     {
        return jau::ct_expand_top_bit<T>( ~x & (x - 1) );

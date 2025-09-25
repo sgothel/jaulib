@@ -25,12 +25,12 @@
 #ifndef JAU_BASE_MATH_HPP_
 #define JAU_BASE_MATH_HPP_
 
-#include <cstdint>
-#include <cmath>
 #include <climits>
+#include <cmath>
 
-#include <jau/int_types.hpp>
 #include <jau/int_math_ct.hpp>
+#include <jau/int_types.hpp>
+#include <jau/type_concepts.hpp>
 
 namespace jau {
 
@@ -57,8 +57,7 @@ namespace jau {
      * @param b value to compare
      * @param range the maximum difference both values may differ
      */
-    template<class T,
-             std::enable_if_t<std::is_arithmetic_v<T>, bool> = true>
+    template<jau::req::arithmetic T>
     bool in_range(const T& a, const T& b, const T& range) {
         return std::abs(a-b) <= range;
     }
@@ -78,17 +77,13 @@ namespace jau {
      * @param x the arithmetic number
      * @return function result
      */
-    template <typename T,
-              std::enable_if_t< std::is_arithmetic_v<T> &&
-                               !std::is_unsigned_v<T>, bool> = true>
+    template <jau::req::signed_arithmetic T>
     constexpr int sign(const T x) noexcept
     {
         return (int) ( (T(0) < x) - (x < T(0)) );
     }
-    
-    template <typename T,
-              std::enable_if_t< std::is_arithmetic_v<T> &&
-                                std::is_unsigned_v<T>, bool> = true>
+
+    template <jau::req::unsigned_arithmetic T>
     constexpr int sign(const T x) noexcept
     {
         return (int) ( T(0) < x );
@@ -120,17 +115,13 @@ namespace jau {
      * @param x the number
      * @return function result
      */
-    template <typename T,
-              std::enable_if_t< std::is_arithmetic_v<T> &&
-                               !std::is_unsigned_v<T>, bool> = true>
+    template <jau::req::signed_arithmetic T>
     constexpr T invert_sign(const T x) noexcept
     {
         return std::numeric_limits<T>::min() == x ? std::numeric_limits<T>::max() : -x;
     }
 
-    template <typename T,
-              std::enable_if_t< std::is_arithmetic_v<T> &&
-                                std::is_unsigned_v<T>, bool> = true>
+    template <jau::req::unsigned_arithmetic T>
     constexpr T invert_sign(const T x) noexcept
     {
         return x;
@@ -149,17 +140,13 @@ namespace jau {
      * @param x the number
      * @return function result
      */
-    template <typename T,
-              std::enable_if_t< std::is_arithmetic_v<T> &&
-                               !std::is_unsigned_v<T>, bool> = true>
+    template <jau::req::signed_arithmetic T>
     constexpr T abs(const T x) noexcept
     {
         return jau::sign<T>(x) < 0 ? jau::invert_sign<T>( x ) : x;
     }
 
-    template <typename T,
-              std::enable_if_t< std::is_arithmetic_v<T> &&
-                                std::is_unsigned_v<T>, bool> = true>
+    template <jau::req::unsigned_arithmetic T>
     constexpr T abs(const T x) noexcept
     {
         return x;
@@ -172,8 +159,7 @@ namespace jau {
      * @param x one number
      * @param x the other number
      */
-    template <typename T,
-              std::enable_if_t< std::is_arithmetic_v<T>, bool> = true>
+    template <jau::req::arithmetic T>
     constexpr T min(const T x, const T y) noexcept
     {
         return x < y ? x : y;
@@ -186,8 +172,7 @@ namespace jau {
      * @param x one number
      * @param x the other number
      */
-    template <typename T,
-              std::enable_if_t< std::is_arithmetic_v<T>, bool> = true>
+    template <jau::req::arithmetic T>
     constexpr T max(const T x, const T y) noexcept
     {
         return x > y ? x : y;
@@ -203,8 +188,7 @@ namespace jau {
      * @param min_val the minimum limes, inclusive
      * @param max_val the maximum limes, inclusive
      */
-    template <typename T,
-              std::enable_if_t< std::is_arithmetic_v<T>, bool> = true>
+    template <jau::req::arithmetic T>
     constexpr T clamp(const T x, const T min_val, const T max_val) noexcept
     {
         return jau::min<T>(jau::max<T>(x, min_val), max_val);
