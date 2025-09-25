@@ -12,21 +12,22 @@
 #ifndef JAU_MATH_UTIL_PMVMAT4f_HPP_
 #define JAU_MATH_UTIL_PMVMAT4f_HPP_
 
+#include <cassert>
 #include <cmath>
 #include <cstdarg>
 #include <cstdint>
-#include <cassert>
-#include <string>
 #include <iostream>
+#include <string>
 
+#include <jau/basic_types.hpp>
 #include <jau/debug.hpp>
 #include <jau/functional.hpp>
-#include <jau/basic_types.hpp>
+#include <jau/math/geom/frustum.hpp>
 #include <jau/math/mat4f.hpp>
 #include <jau/math/quaternion.hpp>
-#include <jau/math/geom/frustum.hpp>
-#include <jau/math/util/syncbuffer.hpp>
 #include <jau/math/util/sstack.hpp>
+#include <jau/math/util/syncbuffer.hpp>
+#include <jau/type_concepts.hpp>
 
 namespace jau::math::util {
 
@@ -75,8 +76,7 @@ namespace jau::math::util {
  * i.e. before the data is pushed to the GPU.
  */
 
-template<typename Value_type,
-         std::enable_if_t<std::is_floating_point_v<Value_type>, bool> = true>
+template <jau::req::packed_floating_point Value_type>
 class PMVMatrix4 {
     public:
       typedef Value_type               value_type;
@@ -87,12 +87,12 @@ class PMVMatrix4 {
       typedef value_type*              iterator;
       typedef const value_type*        const_iterator;
 
-      typedef Vector3F<value_type, std::is_floating_point_v<Value_type>> Vec3;
-      typedef Vector4F<value_type, std::is_floating_point_v<Value_type>> Vec4;
-      typedef Ray3F<value_type, std::is_floating_point_v<Value_type>> Ray3;
-      typedef Matrix4<value_type, std::is_floating_point_v<Value_type>> Mat4;
-      typedef SyncMatrix4<value_type, std::is_floating_point_v<Value_type>> SyncMat4;
-      typedef SyncMatrices4<value_type, std::is_floating_point_v<Value_type>> SyncMats4;
+      typedef Vector3F<value_type> Vec3;
+      typedef Vector4F<value_type> Vec4;
+      typedef Ray3F<value_type> Ray3;
+      typedef Matrix4<value_type> Mat4;
+      typedef SyncMatrix4<value_type> SyncMat4;
+      typedef SyncMatrices4<value_type> SyncMats4;
 
     private:
         class PMVSync1 : public SyncMat4 {
@@ -1473,8 +1473,7 @@ class PMVMatrix4 {
     }
 };
 
-template<typename Value_type,
-         std::enable_if_t<std::is_floating_point_v<Value_type>, bool> = true>
+template <jau::req::packed_floating_point Value_type>
 inline std::ostream& operator<<(std::ostream& out, const PMVMatrix4<Value_type>& v) noexcept {
     return out << v.toString();
 }

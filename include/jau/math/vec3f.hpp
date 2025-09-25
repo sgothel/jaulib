@@ -12,19 +12,18 @@
 #ifndef JAU_MATH_VEC3F_HPP_
 #define JAU_MATH_VEC3F_HPP_
 
+#include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <cstdarg>
-#include <cassert>
-#include <limits>
-#include <string>
-#include <algorithm>
-
-#include <jau/float_math.hpp>
-
 #include <initializer_list>
 #include <iostream>
+#include <limits>
+#include <string>
 
+#include <jau/float_math.hpp>
 #include <jau/math/vec2f.hpp>
+#include <jau/type_concepts.hpp>
 
 namespace jau::math {
 
@@ -39,9 +38,7 @@ namespace jau::math {
      * Component and overall alignment is natural as sizeof(value_type),
      * i.e. sizeof(value_type) == alignof(value_type)
      */
-    template <typename Value_type,
-              std::enable_if_t<std::is_floating_point_v<Value_type> &&
-                               sizeof(Value_type) == alignof(Value_type), bool> = true>
+    template <jau::req::packed_floating_point Value_type>
     class alignas(sizeof(Value_type)) Vector3F {
         public:
             typedef Value_type                  value_type;
@@ -61,7 +58,7 @@ namespace jau::math {
             /** Size in bytes with value_alignment */
             constexpr static const size_t byte_size = components * sizeof(value_type);
 
-            typedef Vector2F<value_type, std::is_floating_point_v<Value_type>> Vec2;
+            typedef Vector2F<value_type> Vec2;
 
             constexpr static const value_type zero = value_type(0);
             constexpr static const value_type one = value_type(1);
@@ -351,8 +348,7 @@ namespace jau::math {
             }
     };
 
-    template<typename T,
-             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    template<jau::req::packed_floating_point T>
     constexpr Vector3F<T> operator+(const Vector3F<T>& lhs, const Vector3F<T>& rhs ) noexcept {
         // Returning a Vector3 object from the returned reference of operator+=()
         // may hinder copy-elision or "named return value optimization" (NRVO).
@@ -363,66 +359,56 @@ namespace jau::math {
         Vector3F<T> r(lhs); r += rhs; return r;
     }
 
-    template<typename T,
-             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    template<jau::req::packed_floating_point T>
     constexpr Vector3F<T> operator-(const Vector3F<T>& lhs, const Vector3F<T>& rhs ) noexcept {
         Vector3F<T> r(lhs); r -= rhs; return r;
     }
 
-    template<typename T,
-             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    template<jau::req::packed_floating_point T>
     constexpr Vector3F<T> operator-(const Vector3F<T>& lhs) noexcept {
         Vector3F<T> r(lhs);
         r *= -1;
         return r;
     }
 
-    template<typename T,
-             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    template<jau::req::packed_floating_point T>
     constexpr Vector3F<T> operator*(const Vector3F<T>& lhs, const T s ) noexcept {
         Vector3F<T> r(lhs); r *= s; return r;
     }
 
-    template<typename T,
-             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    template<jau::req::packed_floating_point T>
     constexpr Vector3F<T> operator*(const T s, const Vector3F<T>& rhs) noexcept {
         Vector3F<T> r(rhs); r *= s; return r;
     }
 
-    template<typename T,
-             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    template<jau::req::packed_floating_point T>
     constexpr Vector3F<T> operator/(const Vector3F<T>& lhs, const T s ) noexcept {
         Vector3F<T> r(lhs); r /= s; return r;
     }
 
-    template<typename T,
-             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    template<jau::req::packed_floating_point T>
     constexpr Vector3F<T> operator/(const T s, const Vector3F<T>& rhs) noexcept {
         Vector3F<T> r(rhs);
         r.x=s/r.x; r.y=s/r.y; r.z=s/r.z;
         return r;
     }
 
-    template<typename T,
-             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    template<jau::req::packed_floating_point T>
     constexpr Vector3F<T> min(const Vector3F<T>& lhs, const Vector3F<T>& rhs) noexcept {
         return Vector3F<T>(std::min(lhs.x, rhs.x), std::min(lhs.y, rhs.y), std::min(lhs.z, rhs.z));
     }
 
-    template<typename T,
-             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    template<jau::req::packed_floating_point T>
     constexpr Vector3F<T> max(const Vector3F<T>& lhs, const Vector3F<T>& rhs) noexcept {
         return Vector3F<T>(std::max(lhs.x, rhs.x), std::max(lhs.y, rhs.y), std::max(lhs.z, rhs.z));
     }
 
-    template<typename T,
-             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    template<jau::req::packed_floating_point T>
     constexpr Vector3F<T> abs(const Vector3F<T>& lhs) noexcept {
         return Vector3F<T>(std::abs(lhs.x), std::abs(lhs.y), std::abs(lhs.z));
     }
 
-    template<typename T,
-             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    template<jau::req::packed_floating_point T>
     std::ostream& operator<<(std::ostream& out, const Vector3F<T>& v) noexcept {
         return out << v.toString();
     }
@@ -467,8 +453,7 @@ namespace jau::math {
      * R(t) = R0 + Rd * t with R0 origin, Rd direction and t > 0.0
      * </pre>
      */
-    template<typename Value_type,
-             std::enable_if_t<std::is_floating_point_v<Value_type>, bool> = true>
+    template <jau::req::packed_floating_point Value_type>
     class alignas(sizeof(Value_type)) Ray3F {
       public:
         typedef Value_type                  value_type;
@@ -493,8 +478,7 @@ namespace jau::math {
         std::string toString() const noexcept { return "Ray[orig "+orig.toString()+", dir "+dir.toString() +"]"; }
     };
 
-    template<typename T,
-             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    template <jau::req::packed_floating_point T>
     std::ostream& operator<<(std::ostream& out, const Ray3F<T>& v) noexcept {
         return out << v.toString();
     }

@@ -13,14 +13,16 @@
 #define JAU_MATH_QUATERNION_HPP_
 
 #include <cmath>
+#include <concepts>
 #include <cstdarg>
+#include <iostream>
 #include <limits>
 #include <string>
-#include <iostream>
 
 #include <jau/float_math.hpp>
-#include <jau/math/vec3f.hpp>
 #include <jau/math/mat4f.hpp>
+#include <jau/math/vec3f.hpp>
+#include <jau/type_concepts.hpp>
 
 namespace jau::math {
 
@@ -44,8 +46,7 @@ namespace jau::math {
  * See <a href="http://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/index.htm">euclideanspace.com-Quaternion</a>
  * </p>
  */
-template<typename Value_type,
-         std::enable_if_t<std::is_floating_point_v<Value_type>, bool> = true >
+template<std::floating_point Value_type>
 class alignas(Value_type) Quaternion {
   public:
     typedef Value_type               value_type;
@@ -1147,38 +1148,32 @@ class alignas(Value_type) Quaternion {
     }
 };
 
-template<typename T,
-         std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+template<std::floating_point T>
 constexpr Quaternion<T> operator+(const Quaternion<T>& lhs, const Quaternion<T>& rhs ) noexcept {
     Quaternion<T> r(lhs); r += rhs; return r;
 }
 
-template<typename T,
-         std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+template<std::floating_point T>
 constexpr Quaternion<T> operator-(const Quaternion<T>& lhs, const Quaternion<T>& rhs ) noexcept {
     Quaternion<T> r(lhs); r -= rhs; return r;
 }
 
-template<typename T,
-         std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+template<std::floating_point T>
 constexpr Quaternion<T> operator*(const Quaternion<T>& lhs, const Quaternion<T>& rhs ) noexcept {
     Quaternion<T> r(lhs); r *= rhs; return r;
 }
 
-template<typename T,
-         std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+template<std::floating_point T>
 constexpr Quaternion<T> operator*(const Quaternion<T>& lhs, const T s ) noexcept {
     Quaternion<T> r(lhs); r *= s; return r;
 }
 
-template<typename T,
-         std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+template<std::floating_point T>
 constexpr Quaternion<T> operator*(const T s, const Quaternion<T>& rhs) noexcept {
     Quaternion<T> r(rhs); r *= s; return r;
 }
 
-template<typename T,
-         std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+template<std::floating_point T>
 std::ostream& operator<<(std::ostream& out, const Quaternion<T>& v) noexcept {
     return out << v.toString();
 }
@@ -1186,11 +1181,9 @@ std::ostream& operator<<(std::ostream& out, const Quaternion<T>& v) noexcept {
 typedef Quaternion<float> Quat4f;
 static_assert(alignof(float) == alignof(Quat4f));
 
-
-template<typename Value_type,
-    typename std::enable_if_t<std::is_floating_point_v<Value_type>, bool> sf_type>
-Matrix4<Value_type, sf_type>&
-Matrix4<Value_type, sf_type>::setToRotation(const Matrix4<Value_type, sf_type>::Quat& q) {
+template <jau::req::packed_floating_point Value_type>
+Matrix4<Value_type>&
+Matrix4<Value_type>::setToRotation(const Matrix4<Value_type>::Quat& q) {
     Matrix4<Value_type> m0;
     Quaternion<Value_type> r;
     m0.setToRotation(r);
@@ -1200,18 +1193,15 @@ Matrix4<Value_type, sf_type>::setToRotation(const Matrix4<Value_type, sf_type>::
     return *this;
 }
 
-
-template<typename Value_type,
-         typename std::enable_if_t<std::is_floating_point_v<Value_type>, bool> sf_type>
-Matrix4<Value_type, sf_type>::Quat&
-Matrix4<Value_type, sf_type>::getRotation(Matrix4<Value_type, sf_type>::Quat& res) const noexcept {
+template <jau::req::packed_floating_point Value_type>
+Matrix4<Value_type>::Quat&
+Matrix4<Value_type>::getRotation(Matrix4<Value_type>::Quat& res) const noexcept {
     return res.setFromMat(m00, m01, m02, m10, m11, m12, m20, m21, m22);
 }
 
-template<typename Value_type,
-         typename std::enable_if_t<std::is_floating_point_v<Value_type>, bool> sf_type>
-Matrix4<Value_type, sf_type>&
-Matrix4<Value_type, sf_type>::rotate(const Matrix4<Value_type, sf_type>::Quat& quat) noexcept {
+template <jau::req::packed_floating_point Value_type>
+Matrix4<Value_type>&
+Matrix4<Value_type>::rotate(const Matrix4<Value_type>::Quat& quat) noexcept {
     Matrix4<Value_type> tmp;
     return mul( quat.toMatrix(tmp) );
 }

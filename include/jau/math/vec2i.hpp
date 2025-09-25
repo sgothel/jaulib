@@ -15,12 +15,12 @@
 #include <cmath>
 #include <cstdarg>
 #include <cassert>
-#include <limits>
 #include <string>
 #include <algorithm>
 #include <iostream>
 
 #include <jau/float_math.hpp>
+#include <jau/type_concepts.hpp>
 
 namespace jau::math {
 
@@ -35,9 +35,7 @@ namespace jau::math {
      * Component and overall alignment is natural as sizeof(value_type),
      * i.e. sizeof(value_type) == alignof(value_type)
      */
-    template<typename Value_type,
-             std::enable_if_t<std::is_integral_v<Value_type> &&
-                              sizeof(Value_type) == alignof(Value_type), bool> = true>
+    template<jau::req::packed_integral Value_type>
     class alignas(sizeof(Value_type)) Vector2I {
       public:
         typedef Value_type                  value_type;
@@ -255,8 +253,7 @@ namespace jau::math {
         }
     };
 
-    template<typename T,
-             std::enable_if_t<std::numeric_limits<T>::is_integer, bool> = true>
+    template<jau::req::packed_integral T>
     constexpr Vector2I<T> operator+(const Vector2I<T>& lhs, const Vector2I<T>& rhs ) noexcept {
         // Returning a Vector2I<T> object from the returned reference of operator+=()
         // may hinder copy-elision or "named return value optimization" (NRVO).
@@ -267,66 +264,56 @@ namespace jau::math {
         Vector2I<T> r(lhs); r += rhs; return r;
     }
 
-    template<typename T,
-             std::enable_if_t<std::numeric_limits<T>::is_integer, bool> = true>
+    template<jau::req::packed_integral T>
     constexpr Vector2I<T> operator-(const Vector2I<T>& lhs, const Vector2I<T>& rhs ) noexcept {
         Vector2I<T> r(lhs); r -= rhs; return r;
     }
 
-    template<typename T,
-             std::enable_if_t<std::numeric_limits<T>::is_integer, bool> = true>
+    template<jau::req::packed_integral T>
     constexpr Vector2I<T> operator-(const Vector2I<T>& lhs) noexcept {
         Vector2I<T> r(lhs);
         r *= -1;
         return r;
     }
 
-    template<typename T,
-             std::enable_if_t<std::numeric_limits<T>::is_integer, bool> = true>
+    template<jau::req::packed_integral T>
     constexpr Vector2I<T> operator*(const Vector2I<T>& lhs, const float s ) noexcept {
         Vector2I<T> r(lhs); r *= s; return r;
     }
 
-    template<typename T,
-             std::enable_if_t<std::numeric_limits<T>::is_integer, bool> = true>
+    template<jau::req::packed_integral T>
     constexpr Vector2I<T> operator*(const float s, const Vector2I<T>& rhs) noexcept {
         Vector2I<T> r(rhs); r *= s; return r;
     }
 
-    template<typename T,
-             std::enable_if_t<std::numeric_limits<T>::is_integer, bool> = true>
+    template<jau::req::packed_integral T>
     constexpr Vector2I<T> operator/(const Vector2I<T>& lhs, const float s ) noexcept {
         Vector2I<T> r(lhs); r /= s; return r;
     }
 
-    template<typename T,
-             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    template<jau::req::packed_integral T>
     constexpr Vector2I<T> operator/(const T s, const Vector2I<T>& rhs) noexcept {
         Vector2I<T> r(rhs);
         r.x=s/r.x; r.y=s/r.y;
         return r;
     }
 
-    template<typename T,
-             std::enable_if_t<std::numeric_limits<T>::is_integer, bool> = true>
+    template<jau::req::packed_integral T>
     constexpr Vector2I<T> min(const Vector2I<T>& lhs, const Vector2I<T>& rhs) noexcept {
         return Vector2I<T>(std::min(lhs.x, rhs.x), std::min(lhs.y, rhs.y));
     }
 
-    template<typename T,
-             std::enable_if_t<std::numeric_limits<T>::is_integer, bool> = true>
+    template<jau::req::packed_integral T>
     constexpr Vector2I<T> max(const Vector2I<T>& lhs, const Vector2I<T>& rhs) noexcept {
         return Vector2I<T>(std::max(lhs.x, rhs.x), std::max(lhs.y, rhs.y));
     }
 
-    template<typename T,
-             std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    template<jau::req::packed_integral T>
     constexpr Vector2I<T> abs(const Vector2I<T>& lhs) noexcept {
         return Vector2I<T>(std::abs(lhs.x), std::abs(lhs.y));
     }
 
-    template<typename T,
-             std::enable_if_t<std::numeric_limits<T>::is_integer, bool> = true>
+    template<jau::req::packed_integral T>
     std::ostream& operator<<(std::ostream& out, const Vector2I<T>& v) noexcept {
         return out << v.toString();
     }
@@ -341,10 +328,8 @@ namespace jau::math {
     /**
      * Point2I alias of Vector2I
      */
-    template<typename Value_type,
-             std::enable_if_t<std::numeric_limits<Value_type>::is_integer &&
-                              sizeof(Value_type) == alignof(Value_type), bool> = true>
-    using Point2I = Vector2I<Value_type>;
+    template<jau::req::packed_integral T>
+    using Point2I = Vector2I<T>;
 
     typedef Point2I<int> Point2i;
     static_assert(2 == Point2i::components);

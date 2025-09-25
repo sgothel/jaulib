@@ -15,6 +15,7 @@
 #include <iostream>
 
 #include <jau/int_math.hpp>
+#include <jau/type_concepts.hpp>
 #include <jau/math/vec2i.hpp>
 
 namespace jau::math {
@@ -30,9 +31,7 @@ namespace jau::math {
      * Component and overall alignment is natural as sizeof(value_type),
      * i.e. sizeof(value_type) == alignof(value_type)
      */
-    template<typename Value_type,
-             std::enable_if_t<std::is_integral_v<Value_type> &&
-                              sizeof(Value_type) == alignof(Value_type), bool> = true>
+    template<jau::req::packed_integral Value_type>
     class alignas(sizeof(Value_type)) RectI {
       public:
         typedef Value_type                  value_type;
@@ -139,8 +138,7 @@ namespace jau::math {
         { return std::to_string(m_x)+"/"+std::to_string(m_y)+" "+std::to_string(m_width)+"x"+std::to_string(m_height); }
     };
 
-    template<typename T,
-             std::enable_if_t<std::numeric_limits<T>::is_integer, bool> = true>
+    template<jau::req::packed_integral T>
     std::ostream& operator<<(std::ostream& out, const RectI<T>& v) noexcept {
         return out << v.toString();
     }

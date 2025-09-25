@@ -12,15 +12,15 @@
 #ifndef JAU_MATH_UTIL_SSTACK_HPP_
 #define JAU_MATH_UTIL_SSTACK_HPP_
 
+#include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <cstdarg>
-#include <cassert>
 #include <vector>
-#include <type_traits>
-#include <algorithm>
 
 #include <jau/cpp_lang_util.hpp>
 #include <jau/math/mat4f.hpp>
+#include <jau/type_concepts.hpp>
 
 namespace jau::math::util {
 
@@ -34,10 +34,7 @@ namespace jau::math::util {
      * @tparam T type of one element used in each compound
      * @tparam element_size number of T elements making up one compound
      */
-    template<typename Value_type, size_t Element_size,
-             std::enable_if_t<std::is_floating_point_v<Value_type> ||
-                              std::is_integral_v<Value_type>,
-                              bool> = true>
+    template<jau::req::arithmetic  Value_type, size_t Element_size>
     class SimpleStack {
         public:
             typedef Value_type  value_type;
@@ -98,10 +95,7 @@ namespace jau::math::util {
      * A Matrix stack of compounds, each consisting of 16 * `T`
      * @tparam T type of one element used in each compound
      */
-    template<typename Value_type,
-             std::enable_if_t<std::is_floating_point_v<Value_type> ||
-                              std::is_integral_v<Value_type>,
-                              bool> = true>
+    template <jau::req::packed_floating_point Value_type>
     class MatrixStack {
         public:
             typedef Value_type  value_type;

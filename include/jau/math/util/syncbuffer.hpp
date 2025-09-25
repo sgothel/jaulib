@@ -19,6 +19,7 @@
 #include <jau/float_types.hpp>
 #include <jau/functional.hpp>
 #include <jau/math/mat4f.hpp>
+#include <jau/type_concepts.hpp>
 
 namespace jau::math::util {
 
@@ -82,12 +83,11 @@ namespace jau::math::util {
     };
 
     /** SyncBuffer interface with a single underlying Matrix4. */
-    template<typename Value_type,
-             std::enable_if_t<std::is_floating_point_v<Value_type>, bool> = true>
+    template <jau::req::packed_floating_point Value_type>
     class SyncMatrix4 : public SyncBuffer {
       public:
         typedef Value_type               value_type;
-        typedef Matrix4<value_type, std::is_floating_point_v<value_type>> Mat4;
+        typedef Matrix4<value_type>      Mat4;
 
         /** Return the underlying Mat4, used to synchronize via action() to the buffer(). */
         virtual const Mat4& matrix() const noexcept = 0;
@@ -119,12 +119,11 @@ namespace jau::math::util {
 
 
     /** SyncBuffer interface with multiple underlying Matrix4. */
-    template<typename Value_type,
-             std::enable_if_t<std::is_floating_point_v<Value_type>, bool> = true>
+    template <jau::req::packed_floating_point Value_type>
     class SyncMatrices4 : public SyncBuffer {
       public:
         typedef Value_type               value_type;
-        typedef Matrix4<value_type, std::is_floating_point_v<value_type>> Mat4;
+        typedef Matrix4<value_type>      Mat4;
 
         /** Return the underlying Mat4 pointer, used to synchronize via action() to the buffer(). */
         virtual const Mat4* matrices() const noexcept = 0;

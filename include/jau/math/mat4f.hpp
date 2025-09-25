@@ -12,23 +12,24 @@
 #ifndef JAU_MATH_MAT4f_HPP_
 #define JAU_MATH_MAT4f_HPP_
 
+#include <cassert>
 #include <cmath>
 #include <cstdarg>
-#include <cassert>
+#include <initializer_list>
+#include <iostream>
 #include <limits>
 #include <string>
 #include <vector>
-#include <initializer_list>
-#include <iostream>
 
 #include <jau/debug.hpp>
 #include <jau/float_math.hpp>
+#include <jau/int_types.hpp>
+#include <jau/math/fov_hv_halves.hpp>
 #include <jau/math/math_error.hpp>
+#include <jau/math/recti.hpp>
 #include <jau/math/vec3f.hpp>
 #include <jau/math/vec4f.hpp>
-#include <jau/math/recti.hpp>
-#include <jau/math/fov_hv_halves.hpp>
-#include <jau/int_types.hpp>
+#include <jau/type_concepts.hpp>
 
 namespace jau::math::geom {
     class Frustum; // forward
@@ -41,8 +42,7 @@ namespace jau::math {
      *  @{
      */
 
-    template<typename Value_type,
-             std::enable_if_t<std::is_floating_point_v<Value_type>, bool> >
+    template<std::floating_point Value_type>
     class Quaternion; // forward
 
 /**
@@ -96,8 +96,7 @@ namespace jau::math {
  * </p>
  */
 
-template<typename Value_type,
-         std::enable_if_t<std::is_floating_point_v<Value_type>, bool> = true>
+template <jau::req::packed_floating_point Value_type>
 class alignas(Value_type) Matrix4 {
   public:
     typedef Value_type               value_type;
@@ -111,7 +110,7 @@ class alignas(Value_type) Matrix4 {
     typedef Vector3F<value_type> Vec3;
     typedef Vector4F<value_type> Vec4;
     typedef Ray3F<value_type> Ray3;
-    typedef Quaternion<value_type, std::is_floating_point_v<Value_type>> Quat;
+    typedef Quaternion<value_type> Quat;
 
     constexpr static const value_type zero = value_type(0);
     constexpr static const value_type one  = value_type(1);
@@ -1946,26 +1945,22 @@ class alignas(Value_type) Matrix4 {
     std::string toString() const noexcept { return toString("", "%13.9f"); }
 };
 
-template<typename T,
-         std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+template <jau::req::packed_floating_point T>
 constexpr Matrix4<T> operator*(const Matrix4<T>& lhs, const Matrix4<T>& rhs ) noexcept {
     Matrix4<T> r(lhs); r.mul(rhs); return r;
 }
 
-template<typename T,
-         std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+template <jau::req::packed_floating_point T>
 constexpr Matrix4<T> operator*(const Matrix4<T>& lhs, const T s ) noexcept {
     Matrix4<T> r(lhs); r *= s; return r;
 }
 
-template<typename T,
-         std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+template <jau::req::packed_floating_point T>
 constexpr Matrix4<T> operator*(const T s, const Matrix4<T>& rhs) noexcept {
     Matrix4<T> r(rhs); r *= s; return r;
 }
 
-template<typename T,
-         std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+template <jau::req::packed_floating_point T>
 std::ostream& operator<<(std::ostream& out, const Matrix4<T>& v) noexcept {
     return out << v.toString();
 }

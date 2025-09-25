@@ -68,6 +68,14 @@ namespace jau::req {
     template<typename T>
     concept signed_integral = std::is_integral_v<T> && std::is_signed_v<T>;
 
+    /** Concept of type-trait std::is_integral and sizeof(T) == alignof(T) (packed) */
+    template<typename T>
+    concept packed_integral = std::is_integral_v<T> && sizeof(T) == alignof(T);
+
+    /** Concept of type-trait std::is_floating_point and sizeof(T) == alignof(T) (packed) */
+    template <typename T>
+    concept packed_floating_point = std::is_floating_point_v<T> && sizeof(T) == alignof(T);
+
     /** C++ Named Requirement Container (partial) */
     template<typename T>
     concept container = requires(T t) {
