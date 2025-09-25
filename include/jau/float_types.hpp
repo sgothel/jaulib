@@ -51,8 +51,10 @@ namespace jau {
     #endif
 
     namespace float_literals {
-        constexpr float32_t operator ""_f32(long double __v)   { return (float32_t)__v; }
-        constexpr float64_t operator ""_f64(long double __v)   { return (float64_t)__v; }
+        constexpr float32_t operator ""_f32(long double __v)            { return (float32_t)__v; }
+        constexpr float32_t operator ""_f32(unsigned long long int __v) { return (float32_t)__v; }
+        constexpr float64_t operator ""_f64(long double __v)            { return (float64_t)__v; }
+        constexpr float64_t operator ""_f64(unsigned long long int __v) { return (float64_t)__v; }
     } // float_literals
 
     class float_ctti {
