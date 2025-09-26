@@ -3,6 +3,14 @@ Copyright © 2020-2025 Gothel Software e.K.
 Copyright © 2020 ZAFENA AB
 Copyright © 2015-2016 Intel Corporation
 
+SPDX-License-Identifier: MIT
+
+This Source Code Form is subject to the terms of the MIT License
+If a copy of the MIT was not distributed with this file,
+you can obtain one at https://opensource.org/license/mit/
+
++++
+
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
 "Software"), to deal in the Software without restriction, including
@@ -29,7 +37,7 @@ code and inspiration from the Botan Cryptographic Library
 and is licensed under the Simplified BSD License 
 and redistributed under the MIT License with jaulib.
 - include/jau/ct_utils.hpp
-- include/jau/mp/big_int_t.hpp
+- include/jau/mp/big_int.hpp
 - include/jau/mp/big_int_ops.hpp
 
 The original Botan Simplified BSD License:
