@@ -464,6 +464,7 @@ namespace jau {
     };
     constexpr Bool True() noexcept { return Bool::True; }
     constexpr Bool False() noexcept { return Bool::False; }
+    constexpr Bool makeBool(bool v) noexcept { return v ? Bool::True : Bool::False; }
 
     constexpr bool value(const Bool rhs) noexcept {
         return static_cast<bool>(rhs);

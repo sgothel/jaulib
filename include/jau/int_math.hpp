@@ -25,6 +25,7 @@
 #ifndef JAU_INT_MATH_HPP_
 #define JAU_INT_MATH_HPP_
 
+#include <bit>
 #include <climits>
 #include <cmath>
 #include <concepts>
@@ -207,6 +208,17 @@ namespace jau {
             x >>= z;
         }
         return hb + x;
+    }
+
+    /**
+     * Returns the number of set bits within given unsigned integral
+     *
+     * @tparam T an unsigned integral number type
+     * @param n value
+     */
+    template<jau::req::unsigned_integral T>
+    constexpr size_t bit_count(T n) noexcept {
+        return (size_t)std::popcount(n);
     }
 
     /**
