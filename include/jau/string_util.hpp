@@ -92,6 +92,16 @@ namespace jau {
     // *************************************************
      */
 
+    enum class LoUpCase : bool {
+        lower = false,
+        upper = true
+    };
+
+    enum class PrefixOpt : bool {
+        none = false,
+        prefix = true
+    };
+
     /**
      * Converts a given hexadecimal string representation into a byte vector, lsb-first.
      *
@@ -109,15 +119,17 @@ namespace jau {
      * @param out the byte vector sink, lsb-first
      * @param hexstr the hexadecimal string representation
      * @param hexstr_len length of hextstr
-     * @param lsbFirst low significant byte in `hexstr` first
+     * @param byteOrder lb_endian_t::big for big-endian bytes in `hexstr` (default)
      * @param checkPrefix if True, checks for a leading `0x` and removes it, otherwise not.
      * @return pair [size_t consumed_chars, bool complete], i.e. consumed characters of string and completed=false if not fully consumed.
      */
-    SizeBoolPair fromHexString(std::vector<uint8_t> &out, const uint8_t hexstr[], const size_t hexstr_len, const bool lsbFirst, const Bool checkPrefix = Bool::True) noexcept;
+    SizeBoolPair fromHexString(std::vector<uint8_t> &out, const uint8_t hexstr[], const size_t hexstr_len,
+                               const lb_endian_t byteOrder = lb_endian_t::big, const Bool checkPrefix = Bool::True) noexcept;
 
     /** See hexStringBytes() */
-    inline SizeBoolPair fromHexString(std::vector<uint8_t> &out, const std::string_view hexstr, const bool lsbFirst, const Bool checkPrefix = Bool::True) noexcept {
-        return jau::fromHexString(out, cast_char_ptr_to_uint8(hexstr.data()), hexstr.length(), lsbFirst, checkPrefix); // NOLINT(bugprone-suspicious-stringview-data-usage)
+    inline SizeBoolPair fromHexString(std::vector<uint8_t> &out, const std::string_view hexstr,
+                                      const lb_endian_t byteOrder = lb_endian_t::big, const Bool checkPrefix = Bool::True) noexcept {
+        return jau::fromHexString(out, cast_char_ptr_to_uint8(hexstr.data()), hexstr.length(), byteOrder, checkPrefix); // NOLINT(bugprone-suspicious-stringview-data-usage)
     }
 
     /**
@@ -128,56 +140,52 @@ namespace jau {
      * You may use C++17 structured bindings to handle the tuple.
      *
      * @param hexstr the hexadecimal string representation
-     * @param lsbFirst low significant byte in `hexstr` first
+     * @param byteOrder lb_endian_t::big for big-endian bytes in `hexstr` (default)
      * @param checkPrefix if True, checks for a leading `0x` and removes it, otherwise not.
      * @return tuple [uint64_t result, size_t consumed_chars, bool complete], i.e. consumed characters of string and completed=false if not fully consumed.
      * @see hexStringBytes()
      * @see to_hexstring()
      */
-    UInt64SizeBoolTuple fromHexString(std::string_view const hexstr, const bool lsbFirst = false, const Bool checkPrefix = Bool::True) noexcept;
+    UInt64SizeBoolTuple fromHexString(std::string_view const hexstr, const lb_endian_t byteOrder = lb_endian_t::big,
+                                      const Bool checkPrefix = Bool::True) noexcept;
 
     inline constexpr const char *HexadecimalArray = "0123456789abcdef";
 
     /**
      * Produce a hexadecimal string representation of the given lsb-first byte values.
      *
-     * If lsbFirst is true, orders LSB left -> MSB right, usual for byte streams. Result will not have a leading `0x`.
-     * Otherwise orders MSB left -> LSB right, usual for readable integer values. Result will have a leading `0x` if !skipPrefix (default).
+     * If byteOrder is lb_endian_t::little, orders lsb-byte left, usual for byte streams. Result will not have a leading `0x`.
+     * Otherwise, lb_endian_t::big (default),  orders msb-byte left for integer values. Result will have a leading `0x` if !skipPrefix.
      *
      * @param data pointer to the first byte to print, lsb-first
      * @param length number of bytes to print
-     * @param lsbFirst true having the least significant byte printed first (lowest addressed byte to highest),
-     *                 otherwise have the most significant byte printed first (highest addressed byte to lowest).
-     *                 A leading `0x` will be prepended if `lsbFirst == false`.
-     * @param lowerCase true to use lower case hex-chars (default), otherwise capital letters are being used.
-     * @param skipPrefix false to add leading `0x` if !lsbFirst (default), true to not add (skip)..
+     * @param byteOrder lb_endian_t::big for big-endian bytes in resulting hex-string (default).
+     *                  A leading `0x` will be prepended if `byteOrder == lb_endian_t::big` and `PrefixOpt::prefix` given.
+     * @param capitalization LoUpCase capitalization, default is LoUpCase::lower
+     * @param prefix pass PrefixOpt::prefix (default) to add leading `0x` if `byteOrder == lb_endian_t::big` (default)
      * @return the hex-string representation of the data
      */
     std::string toHexString(const void *data, const nsize_t length,
-                            const bool lsbFirst, const bool lowerCase = true, const bool skipPrefix = false) noexcept;
-
-    template<class uint8_container_type>
-        requires jau::req::contiguous_container<uint8_container_type> &&
-                 std::convertible_to<typename uint8_container_type::value_type, uint8_t>
-    inline std::string toHexString(const uint8_container_type &bytes,
-                                   const bool lsbFirst, const bool lowerCase = true, const bool skipPrefix = false) noexcept {
-        return toHexString((const uint8_t *)bytes.data(), bytes.size(), lsbFirst, lowerCase, skipPrefix);
-    }
+                            const lb_endian_t byteOrder = lb_endian_t::big, const LoUpCase capitalization = LoUpCase::lower,
+                            const PrefixOpt prefix = PrefixOpt::prefix) noexcept;
 
     /**
      * Produce a hexadecimal string representation of the given byte value and appends it to the given string
      * @param dest the std::string reference destination to append
      * @param value the byte value to represent
-     * @param lowerCase true to use lower case hex-chars, otherwise capital letters are being used.
+     * @param capitalization LoUpCase capitalization, default is LoUpCase::lower
      * @return the given std::string reference for chaining
      */
-    std::string &appendToHexString(std::string &dest, const uint8_t value, const bool lowerCase) noexcept;
+    std::string &appendToHexString(std::string &dest, const uint8_t value, const LoUpCase capitalization = LoUpCase::lower) noexcept;
 
     /**
      * Produce a lower-case hexadecimal string representation with leading `0x` in MSB of the given pointer.
      * @tparam value_type a pointer type
      * @param v the pointer of given pointer type
-     * @param skipPrefix false to add leading `0x` (default), true to not add (skip)..
+     * @param byteOrder lb_endian_t::big for big-endian bytes in resulting hex-string (default).
+     *                  A leading `0x` will be prepended if `byteOrder == lb_endian_t::big` and `PrefixOpt::prefix` given.
+     * @param capitalization LoUpCase capitalization, default is LoUpCase::lower
+     * @param prefix pass PrefixOpt::prefix (default) to add leading `0x` if `byteOrder == lb_endian_t::big` (default)
      * @return the hex-string representation of the value
      * @see bytesHexString()
      * @see from_hexstring()
@@ -185,24 +193,52 @@ namespace jau {
     template<class value_type>
         requires jau::req::pointer<value_type> &&
                  (!jau::req::container<value_type>)
-    inline std::string toHexString(value_type const &v, const bool skipPrefix = false) noexcept {
+    inline std::string toHexString(value_type const &v, const lb_endian_t byteOrder = lb_endian_t::big,
+                                   const LoUpCase capitalization = LoUpCase::lower,
+                                   const PrefixOpt prefix = PrefixOpt::prefix) noexcept
+    {
 #if defined(__EMSCRIPTEN__)                 // jau::os::is_generic_wasm()
         static_assert(is_little_endian());  // Bug in emscripten, unable to deduce uint16_t, uint32_t or uint64_t override of cpu_to_le() or bswap()
         const uintptr_t v_le = reinterpret_cast<uintptr_t>(v);
         return toHexString(pointer_cast<const uint8_t *>(&v_le), sizeof(v),  // NOLINT(bugprone-sizeof-expression): Intended
-                           false /* lsbFirst */, true /* lowerCase */, skipPrefix);
+                           byteOrder, capitalization, prefix);
 #else
         const uintptr_t v_le = jau::cpu_to_le(reinterpret_cast<uintptr_t>(v));
         return toHexString(pointer_cast<const uint8_t *>(&v_le), sizeof(v),  // NOLINT(bugprone-sizeof-expression): Intended
-                           false /* lsbFirst */, true /* lowerCase */, skipPrefix);
+                           byteOrder, capitalization, prefix);
 #endif
+    }
+
+    /**
+     * Produce a lower-case hexadecimal string representation with leading `0x` in MSB of the given uint8_t continuous container values.
+     * @tparam uint8_container_type a uint8_t continuous container type
+     * @param bytes the value of given uint8_t continuous container type
+     * @param byteOrder lb_endian_t::big for big-endian bytes in resulting hex-string (default).
+     *                  A leading `0x` will be prepended if `byteOrder == lb_endian_t::big` and `PrefixOpt::prefix` given.
+     * @param capitalization LoUpCase capitalization, default is LoUpCase::lower
+     * @param prefix pass PrefixOpt::prefix (default) to add leading `0x` if `byteOrder == lb_endian_t::big` (default)
+     * @return the hex-string representation of the value
+     * @see bytesHexString()
+     * @see from_hexstring()
+     */
+    template<class uint8_container_type>
+        requires jau::req::contiguous_container<uint8_container_type> &&
+                 std::convertible_to<typename uint8_container_type::value_type, uint8_t>
+    inline std::string toHexString(const uint8_container_type &bytes,
+                                   const lb_endian_t byteOrder = lb_endian_t::big, const LoUpCase capitalization = LoUpCase::lower,
+                                   const PrefixOpt skipPrefix = PrefixOpt::prefix) noexcept
+    {
+        return toHexString((const uint8_t *)bytes.data(), bytes.size(), byteOrder, capitalization, skipPrefix);
     }
 
     /**
      * Produce a lower-case hexadecimal string representation with leading `0x` in MSB of the given value with standard layout.
      * @tparam value_type a standard layout value type
      * @param v the value of given standard layout type
-     * @param skipPrefix false to add leading `0x` (default), true to not add (skip)..
+     * @param byteOrder lb_endian_t::big for big-endian bytes in resulting hex-string (default).
+     *                  A leading `0x` will be prepended if `byteOrder == lb_endian_t::big` and `PrefixOpt::prefix` given.
+     * @param capitalization LoUpCase capitalization, default is LoUpCase::lower
+     * @param prefix pass PrefixOpt::prefix (default) to add leading `0x` if `byteOrder == lb_endian_t::big` (default)
      * @return the hex-string representation of the value
      * @see bytesHexString()
      * @see from_hexstring()
@@ -212,14 +248,16 @@ namespace jau {
                jau::req::trivially_copyable<value_type> &&
                (!jau::req::container<value_type>) &&
                (!jau::req::pointer<value_type>)
-    inline std::string toHexString(value_type const &v, const bool skipPrefix = false) noexcept {
+    inline std::string toHexString(value_type const &v, const lb_endian_t byteOrder = lb_endian_t::big,
+                                   const LoUpCase capitalization = LoUpCase::lower,
+                                   const PrefixOpt prefix = PrefixOpt::prefix) noexcept {
         if constexpr ( is_little_endian() ) {
             return toHexString(pointer_cast<const uint8_t *>(&v), sizeof(v),
-                               false /* lsbFirst */, true /* lowerCase */, skipPrefix);
+                               byteOrder, capitalization, prefix);
         } else {
             const value_type v_le = jau::bswap(v);
             return toHexString(pointer_cast<const uint8_t *>(&v_le), sizeof(v),
-                               false /* lsbFirst */, true /* lowerCase */, skipPrefix);
+                               byteOrder, capitalization, prefix);
         }
     }
 
@@ -247,15 +285,17 @@ namespace jau {
      * @param out the byte vector sink, lsb-first
      * @param bitstr the binary string representation
      * @param bitstr_len length of bitstr
-     * @param lsbFirst low significant byte in `bitstr` first
+     * @param bitOrder bit_order_t::msb for most significant bits in `bitstr` first (default)
      * @param checkPrefix if True, checks for a leading `0b` and removes it, otherwise not.
      * @return pair [size_t consumed_chars, bool complete], i.e. consumed characters of string and completed=false if not fully consumed.
      */
-    SizeBoolPair fromBitString(std::vector<uint8_t> &out, const uint8_t bitstr[], const size_t bitstr_len, const bool lsbFirst, const Bool checkPrefix = Bool::True) noexcept;
+    SizeBoolPair fromBitString(std::vector<uint8_t> &out, const uint8_t bitstr[], const size_t bitstr_len,
+                               const bit_order_t bitOrder = bit_order_t::msb, const Bool checkPrefix = Bool::True) noexcept;
 
     /** See fromBitString() */
-    inline SizeBoolPair fromBitString(std::vector<uint8_t> &out, const std::string_view bitstr, const bool lsbFirst, const Bool checkPrefix = Bool::True) noexcept {
-        return jau::fromBitString(out, cast_char_ptr_to_uint8(bitstr.data()), bitstr.length(), lsbFirst, checkPrefix); // NOLINT(bugprone-suspicious-stringview-data-usage)
+    inline SizeBoolPair fromBitString(std::vector<uint8_t> &out, const std::string_view bitstr,
+                                      const bit_order_t bitOrder = bit_order_t::msb, const Bool checkPrefix = Bool::True) noexcept {
+        return jau::fromBitString(out, cast_char_ptr_to_uint8(bitstr.data()), bitstr.length(), bitOrder, checkPrefix); // NOLINT(bugprone-suspicious-stringview-data-usage)
     }
 
     /**
@@ -267,43 +307,59 @@ namespace jau {
      *
      * @param bitstr the binary string representation
      * @param checkPrefix if true, checks for a leading `0b` and removes it, otherwise not.
-     * @param lsbFirst low significant byte in `bitstr` first
+     * @param bitOrder bit_order_t::msb for most significant bits in `bitstr` first (default)
      * @return tuple [uint64_t result, size_t consumed_chars, bool complete], i.e. consumed characters of string and completed=false if not fully consumed.
      * @see bitStringBytes()
      * @see to_bitstring()
      */
-    UInt64SizeBoolTuple fromBitString(std::string_view const bitstr, const bool lsbFirst = false, const Bool checkPrefix = Bool::True) noexcept;
+    UInt64SizeBoolTuple fromBitString(std::string_view const bitstr, const bit_order_t bitOrder = bit_order_t::msb, const Bool checkPrefix = Bool::True) noexcept;
 
     /**
      * Produce a binary string representation of the given lsb-first byte values.
      *
-     * If lsbFirst is true, orders LSB left -> MSB right, usual for byte streams. Result will not have a leading `0b`.
-     * Otherwise orders MSB left -> LSB right, usual for readable integer values. Result will have a leading `0b` if !skipPrefix (default).
+     * If byteOrder is lb_endian_t::little, orders lsb-byte left, usual for byte streams. Result will not have a leading `0b`.
+     * Otherwise, lb_endian_t::big (default),  orders msb-byte left for integer values. Result will have a leading `0b` if !skipPrefix.
      *
      * @param data pointer to the first byte to print, lsb-first
      * @param length number of bytes to print
-     * @param lsbFirst true having the least significant byte printed first (lowest addressed byte to highest),
-     *                 otherwise have the most significant byte printed first (highest addressed byte to lowest).
-     *                 A leading `0b` will be prepended if `lsbFirst == false`.
-     * @param skipPrefix false to add leading `0b` if !lsbFirst (default), true to not add (skip)..
+     * @param bitOrder bit_order_t::msb for most-significant-bit first in resulting bit-string, bit_order_t::msb is default
+     *                  A leading `0b` will be prepended if `bitOrder == bit_order_t::msb` and `PrefixOpt::prefix` given.
+     * @param prefix pass PrefixOpt::prefix (default) to add leading `0b` if `bitOrder == bit_order_t::msb` (default)
+     * @param bit_len optional fixed number of bits to be printed counting from lsb excluding prefix. Pass zero for dropping zero leading bytes (default).
      * @return the bit-string representation of the data
      */
     std::string toBitString(const void *data, const nsize_t length,
-                            const bool lsbFirst, const bool skipPrefix = false) noexcept;
+                            const bit_order_t bitOrder = bit_order_t::msb, const PrefixOpt prefix = PrefixOpt::prefix,
+                            size_t bit_len=0) noexcept;
 
+    /**
+     * Produce a binary string representation with leading `0b` in MSB of the given uint8_t continuous container values.
+     * @tparam uint8_container_type a uint8_t continuous container type
+     * @param bytes the value of given uint8_t continuous container type
+     * @param bitOrder bit_order_t::msb for most-significant-bit first in resulting bit-string, bit_order_t::msb is default
+     *                  A leading `0b` will be prepended if `bitOrder == bit_order_t::msb` and `PrefixOpt::prefix` given.
+     * @param prefix pass PrefixOpt::prefix (default) to add leading `0b` if `bitOrder == bit_order_t::msb` (default)
+     * @param bit_len optional fixed number of bits to be printed counting from lsb excluding prefix. Pass zero for dropping zero leading bytes (default).
+     * @return the bit-string representation of the value
+     * @see bytesBitString()
+     * @see from_bitstring()
+     */
     template<class uint8_container_type>
         requires jau::req::contiguous_container<uint8_container_type> &&
                  std::convertible_to<typename uint8_container_type::value_type, uint8_t>
     inline std::string toBitString(const uint8_container_type &bytes,
-                            const bool lsbFirst, const bool skipPrefix = false) noexcept {
-        return toBitString((const uint8_t *)bytes.data(), bytes.size(), lsbFirst, skipPrefix);
+                            const bit_order_t bitOrder = bit_order_t::msb, const PrefixOpt prefix = PrefixOpt::prefix, size_t bit_len=0) noexcept {
+        return toBitString((const uint8_t *)bytes.data(), bytes.size(), bitOrder, prefix, bit_len);
     }
 
     /**
      * Produce a binary string representation with leading `0b` in MSB of the given value with standard layout.
      * @tparam value_type a standard layout value type
      * @param v the value of given standard layout type
-     * @param skipPrefix false to add leading `0b` (default), true to not add (skip)..
+     * @param bitOrder bit_order_t::msb for most-significant-bit first in resulting bit-string, bit_order_t::msb is default
+     *                  A leading `0b` will be prepended if `bitOrder == bit_order_t::msb` and `PrefixOpt::prefix` given.
+     * @param prefix pass PrefixOpt::prefix (default) to add leading `0b` if `bitOrder == bit_order_t::msb` (default)
+     * @param bit_len optional fixed number of bits to be printed counting from lsb excluding prefix. Pass zero for dropping zero leading bytes (default).
      * @return the bit-string representation of the value
      * @see bytesBitString()
      * @see from_bitstring()
@@ -313,14 +369,16 @@ namespace jau {
                  jau::req::trivially_copyable<value_type> &&
                  (!jau::req::container<value_type>) &&
                  (!jau::req::pointer<value_type>)
-    inline std::string toBitString(value_type const &v, const bool skipPrefix = false) noexcept {
+    inline std::string toBitString(value_type const &v, const bit_order_t bitOrder = bit_order_t::msb,
+                                   const PrefixOpt prefix = PrefixOpt::prefix, size_t bit_len=0) noexcept
+    {
         if constexpr ( is_little_endian() ) {
             return toBitString(pointer_cast<const uint8_t *>(&v), sizeof(v),
-                               false /* lsbFirst */, skipPrefix);
+                               bitOrder, prefix, bit_len);
         } else {
             const value_type v_le = jau::bswap(v);
             return toBitString(pointer_cast<const uint8_t *>(&v_le), sizeof(v),
-                               false /* lsbFirst */, skipPrefix);
+                               bitOrder, prefix, bit_len);
         }
     }
 
@@ -379,18 +437,19 @@ namespace jau {
      * @tparam value_type an unsigned integral integer type
      * @param v the unsigned integral integer value
      * @param radix base of the number system, supported: 2 binary, 8 octal, 10 decimal, 16 hexadecimal
-     * @param skipPrefix False to add leading prefix for radix (default), True to skip. Prefixes: `0x` hex, `0` octal and `0b` binary.
-     * @param width the minimum number of characters to be printed including prefix. Add padding with `padding` if result is shorter.
+     * @param prefix pass PrefixOpt::prefix (default) to add leading prefix for radix. Prefixes: `0x` hex, `0` octal and `0b` binary.
+     * @param min_width the minimum number of characters to be printed including prefix. Add padding with `padding` if result is shorter.
      * @param separator separator character for each decimal 3 or other radix 4. Defaults to 0 for no separator.
-     * @param padding padding character, defaults to '0'. See 'width' above.
+     * @param padding padding character, defaults to '0'. See 'min_width' above.
      * @return the string representation of the unsigned integral integer value with given radix
      */
     template<class value_type,
              std::enable_if_t<std::is_integral_v<value_type> &&
                               std::is_unsigned_v<value_type>,
                               bool> = true>
-    std::string to_string(value_type v, const nsize_t radix, const Bool skipPrefix = Bool::False, size_t width = 0,
-                          const char separator = 0, const char padding = '0') noexcept {
+    std::string to_string(value_type v, const nsize_t radix, const PrefixOpt prefix = PrefixOpt::prefix,
+                          size_t min_width = 0, const char separator = 0, const char padding = '0') noexcept
+    {
         nsize_t shift;
         switch ( radix ) {
             case 16: shift = 4; break;
@@ -401,15 +460,15 @@ namespace jau {
         }
         const nsize_t mask = radix - 1;  // ignored for radix 10
         const size_t val_digits = jau::digits<value_type>(v, radix);
-        const size_t prefix_len = (*skipPrefix || 10 == radix) ? 0 : (8 == radix ? 1 : 2);
+        const size_t prefix_len = (PrefixOpt::none == prefix || 10 == radix) ? 0 : (8 == radix ? 1 : 2);
         const size_t separator_gap = 10 == radix ? 3 : 4;
         size_t separator_count;
         if ( separator && '0' == padding ) {
             // separator inside padding
-            if ( width > prefix_len ) {
-                const size_t len0 = std::max<size_t>(width - prefix_len, val_digits);
+            if ( min_width > prefix_len ) {
+                const size_t len0 = std::max<size_t>(min_width - prefix_len, val_digits);
                 separator_count = (len0 - 1) / separator_gap;
-                if ( val_digits + separator_count + prefix_len > width ) {
+                if ( val_digits + separator_count + prefix_len > min_width ) {
                     --separator_count;  // fix down
                 }
             } else {
@@ -421,7 +480,7 @@ namespace jau {
         } else {
             separator_count = 0;
         }
-        size_t len = std::max<size_t>(width, val_digits + separator_count + prefix_len);
+        size_t len = std::max<size_t>(min_width, val_digits + separator_count + prefix_len);
 
         std::string str(len, ' ');
         size_t digit_idx = 0, separator_idx = 0;

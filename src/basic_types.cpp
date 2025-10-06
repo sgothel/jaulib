@@ -569,7 +569,9 @@ static snsize_t hexCharByte_(const uint8_t c) {
     return -1;
 }
 
-SizeBoolPair jau::fromHexString(std::vector<uint8_t> &out, const uint8_t hexstr[], const size_t hexstr_len, const bool lsbFirst, const Bool checkPrefix) noexcept {
+SizeBoolPair jau::fromHexString(std::vector<uint8_t> &out, const uint8_t hexstr[], const size_t hexstr_len,
+                                const lb_endian_t byteOrder, const Bool checkPrefix) noexcept {
+    using namespace jau::enums;
     size_t offset;
     if ( *checkPrefix && hexstr_len >= 2 && hexstr[0] == '0' && hexstr[1] == 'x' ) {
         offset = 2;
@@ -577,7 +579,7 @@ SizeBoolPair jau::fromHexString(std::vector<uint8_t> &out, const uint8_t hexstr[
         offset = 0;
     }
     size_t lsb, msb;
-    if ( lsbFirst ) {
+    if ( byteOrder == lb_endian_t::little ) {
         lsb = 1;
         msb = 0;
     } else {
@@ -595,7 +597,7 @@ SizeBoolPair jau::fromHexString(std::vector<uint8_t> &out, const uint8_t hexstr[
     //
     const bool has_single_nibble = 0 < hexlen_in % 2;
     uint8_t high_msb_nibble = 0;
-    if ( !lsbFirst && has_single_nibble ) {
+    if ( byteOrder == lb_endian_t::big && has_single_nibble ) {
         // consume single MSB nibble
         const size_t idx = 0;
         assert(hexstr_len - 1 >= offset + idx);
@@ -625,7 +627,7 @@ SizeBoolPair jau::fromHexString(std::vector<uint8_t> &out, const uint8_t hexstr[
     }
     offset += bsize * 2;
     if ( has_single_nibble ) {
-        if ( lsbFirst ) {
+        if ( byteOrder == lb_endian_t::little ) {
             assert(hexstr_len - 1 == offset);
             const snsize_t h = hexCharByte_(hexstr[offset]);
             if ( 0 <= h ) {
@@ -644,9 +646,10 @@ SizeBoolPair jau::fromHexString(std::vector<uint8_t> &out, const uint8_t hexstr[
     return { .s = offset, .b = true };
 }
 
-UInt64SizeBoolTuple jau::fromHexString(std::string_view const hexstr, const bool lsbFirst, const Bool checkPrefix) noexcept {
+UInt64SizeBoolTuple jau::fromHexString(std::string_view const hexstr, const lb_endian_t byteOrder, const Bool checkPrefix) noexcept {
     std::vector<uint8_t> out;
-    auto [consumed, complete] = fromHexString(out, hexstr, lsbFirst, checkPrefix);
+    out.reserve(8);
+    auto [consumed, complete] = fromHexString(out, hexstr, byteOrder, checkPrefix);
     if constexpr ( jau::is_little_endian() ) {
         while ( out.size() < sizeof(uint64_t) ) {
             out.push_back(0);
@@ -667,7 +670,8 @@ static snsize_t bitCharByte_(const uint8_t c) {
     return -1;
 }
 
-SizeBoolPair jau::fromBitString(std::vector<uint8_t> &out, const uint8_t bitstr[], const size_t bitstr_len, const bool lsbFirst, const Bool checkPrefix) noexcept {
+SizeBoolPair jau::fromBitString(std::vector<uint8_t> &out, const uint8_t bitstr[], const size_t bitstr_len,
+                                const bit_order_t bitOrder, const Bool checkPrefix) noexcept {
     size_t offset;
     if ( *checkPrefix && bitstr_len >= 2 && bitstr[0] == '0' && bitstr[1] == 'b' ) {
         offset = 2;
@@ -675,7 +679,7 @@ SizeBoolPair jau::fromBitString(std::vector<uint8_t> &out, const uint8_t bitstr[
         offset = 0;
     }
     size_t lsb, msb;
-    if ( lsbFirst ) {
+    if ( bitOrder == bit_order_t::lsb ) {
         lsb = 1;
         msb = 0;
     } else {
@@ -694,7 +698,7 @@ SizeBoolPair jau::fromBitString(std::vector<uint8_t> &out, const uint8_t bitstr[
     //   - 11 -> 11000000 -> C0
     //
     uint8_t cached_nibble8 = 0;
-    if ( !lsbFirst && 0 < bnibbles ) {
+    if ( bitOrder == bit_order_t::msb && 0 < bnibbles ) {
         // consume single MSB nibble
         assert(bitstr_len - 1 >= offset + bnibbles - 1);
         for ( size_t i = 0; i < bnibbles; ++i ) {
@@ -725,7 +729,7 @@ SizeBoolPair jau::fromBitString(std::vector<uint8_t> &out, const uint8_t bitstr[
     }
     offset += bsize * 8;
     if ( 0 < bnibbles ) {
-        if ( lsbFirst ) {
+        if ( bitOrder == bit_order_t::lsb ) {
             assert(bitstr_len - 1 >= offset + bnibbles - 1);
             for ( size_t i = 0; i < bnibbles; ++i ) {
                 const snsize_t l = bitCharByte_(bitstr[offset + i]);
@@ -745,9 +749,10 @@ SizeBoolPair jau::fromBitString(std::vector<uint8_t> &out, const uint8_t bitstr[
     return { .s = offset, .b = true };
 }
 
-UInt64SizeBoolTuple jau::fromBitString(std::string_view const bitstr, const bool lsbFirst, const Bool checkPrefix) noexcept {
+UInt64SizeBoolTuple jau::fromBitString(std::string_view const bitstr, const bit_order_t bitOrder, const Bool checkPrefix) noexcept {
     std::vector<uint8_t> out;
-    auto [consumed, complete] = fromBitString(out, bitstr, lsbFirst, checkPrefix);
+    out.reserve(8);
+    auto [consumed, complete] = fromBitString(out, bitstr, bitOrder, checkPrefix);
     if constexpr ( jau::is_little_endian() ) {
         while ( out.size() < sizeof(uint64_t) ) {
             out.push_back(0);
@@ -764,8 +769,8 @@ UInt64SizeBoolTuple jau::fromBitString(std::string_view const bitstr, const bool
 static constexpr const char *HEX_ARRAY_BIG = "0123456789ABCDEF";
 
 std::string jau::toHexString(const void *data, const nsize_t length,
-                             const bool lsbFirst, const bool lowerCase, const bool skipPrefix) noexcept {
-    const char *hex_array = lowerCase ? HexadecimalArray : HEX_ARRAY_BIG;
+                             const lb_endian_t byteOrder, const LoUpCase capitalization, const PrefixOpt prefix) noexcept {
+    const char *hex_array = LoUpCase::lower == capitalization ? HexadecimalArray : HEX_ARRAY_BIG;
     std::string str;
 
     if ( nullptr == data ) {
@@ -775,7 +780,7 @@ std::string jau::toHexString(const void *data, const nsize_t length,
         return "nil";
     }
     const uint8_t *const bytes = static_cast<const uint8_t *>(data);
-    if ( lsbFirst ) {
+    if ( byteOrder == lb_endian_t::little ) {
         // LSB left -> MSB right, no leading `0x`
         // TODO: skip tail all-zeros?
         str.reserve(length * 2 + 1);
@@ -786,7 +791,7 @@ std::string jau::toHexString(const void *data, const nsize_t length,
         }
     } else {
         // MSB left -> LSB right, with leading `0x`
-        if ( skipPrefix ) {
+        if ( PrefixOpt::none == prefix ) {
             str.reserve(length * 2 + 1);
         } else {
             str.reserve(length * 2 + 1 + 2);
@@ -808,8 +813,8 @@ std::string jau::toHexString(const void *data, const nsize_t length,
     return str;
 }
 
-std::string &jau::appendToHexString(std::string &dest, const uint8_t value, const bool lowerCase) noexcept {
-    const char *hex_array = lowerCase ? HexadecimalArray : HEX_ARRAY_BIG;
+std::string &jau::appendToHexString(std::string &dest, const uint8_t value, const LoUpCase capitalization) noexcept {
+    const char *hex_array = LoUpCase::lower == capitalization ? HexadecimalArray : HEX_ARRAY_BIG;
 
     if ( 2 > dest.capacity() - dest.size() ) {  // Until C++20, then reserve is ignored if capacity > reserve
         dest.reserve(dest.size() + 2);
@@ -820,48 +825,59 @@ std::string &jau::appendToHexString(std::string &dest, const uint8_t value, cons
     return dest;
 }
 
-std::string jau::toBitString(const void *data, const nsize_t length,
-                                const bool lsbFirst, const bool skipPrefix) noexcept {
+std::string jau::toBitString(const void *data, const nsize_t data_len,
+                             const bit_order_t bitOrder, const PrefixOpt prefix, size_t bit_len) noexcept {
     std::string str;
 
     if ( nullptr == data ) {
         return "null";
     }
-    if ( 0 == length ) {
+    if ( 0 == data_len ) {
         return "nil";
     }
     const uint8_t *const bytes = static_cast<const uint8_t *>(data);
-    if ( lsbFirst ) {
+    nsize_t bits_left = data_len*8;
+    const bool fixed_len = bit_len > 0;
+    nsize_t bits_todo = fixed_len ? std::min<size_t>(bit_len, bits_left) : bits_left;
+    if ( bitOrder == bit_order_t::lsb ) {
         // LSB left -> MSB right, no leading `0x`
         // TODO: skip tail all-zeros?
-        str.reserve(length * 8 + 1);
-        for ( nsize_t i = 0; i < length; i++ ) {
+        str.reserve(data_len * 8 + 1);
+        for ( nsize_t i = 0; i < data_len && 0 < bits_todo; i++ ) {
             const nsize_t v = bytes[i] & 0xFF;
-            for ( nsize_t j = 0; j < 8; ++j ) {
-                str.push_back(char('0' + (v >> (8 - 1 - j) & 1)));
+            for ( nsize_t j = 0; j < 8 && 0 < bits_todo; ++j ) {
+                str.push_back(char('0' + ( (v >> (8 - 1 - j)) & 1) ));
+                --bits_todo;
+                --bits_left;
             }
         }
     } else {
         // MSB left -> LSB right, with leading `0b`
-        if ( skipPrefix ) {
-            str.reserve(length * 8 + 1);
+        if ( PrefixOpt::none == prefix ) {
+            str.reserve(data_len * 8 + 1);
         } else {
-            str.reserve(length * 8 + 1 + 2);
+            str.reserve(data_len * 8 + 1 + 2);
             str.push_back('0');
             str.push_back('b');
         }
         bool skip_leading_zeros = true;
-        nsize_t i = length;
-        do {
-            i--;
+        for (nsize_t i = data_len; i-- > 0 && 0 < bits_todo; ) {
             const int v = bytes[i] & 0xFF;
-            if ( 0 != v || !skip_leading_zeros || i == 0 ) {
-                for ( nsize_t j = 0; j < 8; ++j ) {
-                    str.push_back(char('0' + (v >> (8 - 1 - j) & 1)));
+            if ( v || 0 == i || !skip_leading_zeros || ( fixed_len && bits_todo >= bits_left-8 ) ) {
+                for ( nsize_t j = 0; j < 8 && 0 < bits_todo; ++j ) {
+                    const int b = (v >> (8 - 1 - j)) & 1;
+                    const bool c0 = !fixed_len || bits_todo >= bits_left;
+                    if ( ( b && c0 ) || !skip_leading_zeros || c0 ) {
+                        str.push_back(char('0' + b));
+                        --bits_todo;
+                        skip_leading_zeros = false;
+                    }
+                    --bits_left;
                 }
-                skip_leading_zeros = false;
+            } else {
+                bits_left -= 8;;
             }
-        } while ( i != 0 );
+        }
     }
     return str;
 }
@@ -877,11 +893,11 @@ std::string jau::to_string(const endian_t v) noexcept {
 }
 
 std::string jau::to_string(const lb_endian_t v) noexcept {
-    switch(v) {
-        case lb_endian_t::little:  return "little";
-        case lb_endian_t::big:  return "big";
-    }
-    return "undef";
+    return v == lb_endian_t::little ? "little" : "big";
+}
+
+std::string jau::to_string(const bit_order_t v) noexcept {
+    return v == bit_order_t::lsb ? "lsb" : "msb";
 }
 
 std::string jau::to_string(const jau::func::target_type v) noexcept {

@@ -8,7 +8,7 @@
  * If a copy of the MIT was not distributed with this file,
  * you can obtain one at https://opensource.org/license/mit/.
  */
- 
+
 #include <cassert>
 #include <cstdint>
 #include <cstring>
@@ -46,7 +46,7 @@ class BitDemoData {
             throw jau::IndexOutOfBoundsError("n <= 32 expected", n, 32, E_FILE_LINE);
         }
     }
-    
+
     inline const static std::vector<std::string_view> pyramid32bit_one = {
         "00000000000000000000000000000001",
         "00000000000000000000000000000010",
@@ -173,7 +173,7 @@ class BitDemoData {
             return "";
         }
         const uint64_t mask = (1_u64 << bitCount) - 1_u64;
-        const std::string& s0 = jau::to_string(mask & v, 2, jau::True(), bitCount);
+        const std::string& s0 = jau::to_string(mask & v, 2, jau::PrefixOpt::none, bitCount);
         std::string padding(strZeroPadding, bitCount > s0.length() ? bitCount - s0.length() : 0);
         return padding + s0;
     }

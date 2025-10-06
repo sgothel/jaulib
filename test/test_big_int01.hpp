@@ -162,7 +162,7 @@ TEST_CASE( "MP Big Int Dec Test 10", "[big_int_t][inout][math]" ) {
         if ( false ) {
             for(size_t i=0; i<sizeof(a_u8); ++i) {
                 std::string s1;
-                jau::appendToHexString(s1, a.byte_at(i), true);
+                jau::appendToHexString(s1, a.byte_at(i), jau::LoUpCase::lower);
                 std::cout << "zero.buf[" << std::to_string(i) << "]: 0x" << s1 << std::endl;
             }
         }
@@ -171,14 +171,14 @@ TEST_CASE( "MP Big Int Dec Test 10", "[big_int_t][inout][math]" ) {
 
         uint8_t buf[sizeof(a_u8)];
         {
-            for(size_t i=0; i<sizeof(a_u8); ++i) {
+            for(size_t i=0; i<sizeof(a_u8); ++i) { // NOLINT(modernize-loop-convert)
                 buf[i] = 0;
             }
             REQUIRE( sizeof(a_u8) == a.binary_encode(buf, sizeof(buf), jau::lb_endian_t::little) );
             if ( false ) {
                 for(size_t i=0; i<sizeof(a_u8); ++i) {
                     std::string s1;
-                    jau::appendToHexString(s1, buf[i], true);
+                    jau::appendToHexString(s1, buf[i], jau::LoUpCase::lower);
                     std::cout << "le.buf[" << std::to_string(i) << "]: 0x" << s1 << std::endl;
                 }
             }
@@ -191,14 +191,14 @@ TEST_CASE( "MP Big Int Dec Test 10", "[big_int_t][inout][math]" ) {
             REQUIRE( a == b );
         }
         {
-            for(size_t i=0; i<sizeof(a_u8); ++i) {
+            for(size_t i=0; i<sizeof(a_u8); ++i) { // NOLINT(modernize-loop-convert)
                 buf[i] = 0;
             }
             REQUIRE( sizeof(a_u8) == a.binary_encode(buf, sizeof(buf), jau::lb_endian_t::big) );
             if ( false ) {
                 for(size_t i=0; i<sizeof(a_u8); ++i) {
                     std::string s1;
-                    jau::appendToHexString(s1, buf[i], true);
+                    jau::appendToHexString(s1, buf[i], jau::LoUpCase::lower);
                     std::cout << "be.buf[" << std::to_string(i) << "]: 0x" << s1 << std::endl;
                 }
             }
@@ -228,7 +228,7 @@ TEST_CASE( "MP Big Int Dec Test 11", "[big_int_t][inout][math]" ) {
 
         uint8_t buf[sizeof(a_u8)];
         {
-            for(size_t i=0; i<sizeof(a_u8); ++i) {
+            for(size_t i=0; i<sizeof(a_u8); ++i) { // NOLINT(modernize-loop-convert)
                 buf[i] = 0;
             }
             REQUIRE( sizeof(a_u8) == a.binary_encode(buf, sizeof(buf), jau::lb_endian_t::little) );
@@ -241,7 +241,7 @@ TEST_CASE( "MP Big Int Dec Test 11", "[big_int_t][inout][math]" ) {
             REQUIRE( a == b );
         }
         {
-            for(size_t i=0; i<sizeof(a_u8); ++i) {
+            for(size_t i=0; i<sizeof(a_u8); ++i) { // NOLINT(modernize-loop-convert)
                 buf[i] = 0;
             }
             REQUIRE( sizeof(a_u8) == a.binary_encode(buf, sizeof(buf), jau::lb_endian_t::big) );

@@ -72,8 +72,10 @@ static std::string format_000a_vsnprintf(float fa, float fb, size_t sz1, uint64_
         str.resize(bsz - 1);      // excl. EOS
 
         nchars = std::snprintf(&str[0], bsz,
-                               "format_000a: %f, %f, %zu, %" PRIu64 ", %d\n",
-                               fa + 1.0_f32, fb + 1.0_f32, sz1 + 1, a_u64 + 1_u64, i + 1);
+                               "format_000a: %f, %f, %zu, %" PRIu64 ", %" PRIu64 ", %" PRIx64 ", %06" PRIu64 ", %06" PRIx64 ", %d\n",
+                               fa + 1.0_f32, fb + 1.0_f32, sz1 + 1,
+                               a_u64 + 1_u64, a_u64 + 1_u64, a_u64 + 1_u64, a_u64 + 1_u64, a_u64 + 1_u64,
+                               i + 1);
 
         if( nchars < bsz ) {
             str.resize(nchars);
@@ -86,13 +88,17 @@ static std::string format_000a_vsnprintf(float fa, float fb, size_t sz1, uint64_
 }
 
 static std::string format_010a_jaufmtstr(float fa, float fb, size_t sz1, uint64_t a_u64, int i) {
-    return jau::format_string("format_010a: %f, %f, %zu, %" PRIu64 ", %d\n",
-                              fa + 1.0_f32, fb + 1.0_f32, sz1 + 1, a_u64 + 1_u64, i + 1);
+    return jau::format_string("format_010a: %f, %f, %zu, %" PRIu64 ", %" PRIu64 ", %" PRIx64 ", %06" PRIu64 ", %06" PRIx64 ", %d\n",
+                              fa + 1.0_f32, fb + 1.0_f32, sz1 + 1,
+                              a_u64 + 1_u64, a_u64 + 1_u64, a_u64 + 1_u64, a_u64 + 1_u64, a_u64 + 1_u64,
+                              i + 1);
 }
 
 static constexpr std::string format_020a_jaufmtstr_n(float fa, float fb, size_t sz1, uint64_t a_u64, int i) {
-    return jau::format_string_n(1023, "format_020a: %f, %f, %zu, %" PRIu64 ", %d\n",
-                                fa + 1.0_f32, fb + 1.0_f32, sz1 + 1, a_u64 + 1_u64, i + 1);
+    return jau::format_string_n(1023, "format_020a: %f, %f, %zu, %" PRIu64 ", %" PRIu64 ", %" PRIx64 ", %06" PRIu64 ", %06" PRIx64 ", %d\n",
+                                fa + 1.0_f32, fb + 1.0_f32, sz1 + 1,
+                                a_u64 + 1_u64, a_u64 + 1_u64, a_u64 + 1_u64, a_u64 + 1_u64, a_u64 + 1_u64,
+                                i + 1);
 }
 
 static std::string format_030a_strstream(float fa, float fb, size_t sz1, uint64_t a_u64, int i) {
@@ -122,8 +128,10 @@ static std::string format_000b_vsnprintf(float fa, float fb, size_t sz1, uint64_
         str.resize(bsz - 1);      // excl. EOS
 
         nchars = std::snprintf(&str[0], bsz,
-                               "format_000b: %.2f, %2.2f, %zu, %" PRIu64 ", %03d\n",
-                               fa + 1.0_f32, fb + 1.0_f32, sz1 + 1, a_u64 + 1_u64, i + 1);
+                               "format_000b: %.2f, %2.2f, %zu, %" PRIu64 ", %" PRIu64 ", %" PRIx64 ", %06" PRIu64 ", %06" PRIx64 ", %03d\n",
+                               fa + 1.0_f32, fb + 1.0_f32, sz1 + 1,
+                               a_u64 + 1_u64, a_u64 + 1_u64, a_u64 + 1_u64, a_u64 + 1_u64, a_u64 + 1_u64,
+                               i + 1);
 
         if( nchars < bsz ) {
             str.resize(nchars);
@@ -135,13 +143,17 @@ static std::string format_000b_vsnprintf(float fa, float fb, size_t sz1, uint64_
     return str;
 }
 static std::string format_010b_jaufmtstr(float fa, float fb, size_t sz1, uint64_t a_u64, int i) {
-    return jau::format_string("format_010b: %.2f, %2.2f, %zu, %" PRIu64 ", %03d\n",
-                              fa + 1.0_f32, fb + 1.0_f32, sz1 + 1, a_u64 + 1_u64, i + 1);
+    return jau::format_string("format_010b: %.2f, %2.2f, %zu, %" PRIu64 ", %" PRIu64 ", %" PRIx64 ", %06" PRIu64 ", %06" PRIx64 ", %03d\n",
+                              fa + 1.0_f32, fb + 1.0_f32, sz1 + 1,
+                              a_u64 + 1_u64, a_u64 + 1_u64, a_u64 + 1_u64, a_u64 + 1_u64, a_u64 + 1_u64,
+                              i + 1);
 }
 
 static std::string format_020b_jaufmtstr_n(float fa, float fb, size_t sz1, uint64_t a_u64, int i) {
-    return jau::format_string_n(1023, "format_020b: %.2f, %2.2f, %zu, %" PRIu64 ", %03d\n",
-                                fa + 1.0_f32, fb + 1.0_f32, sz1 + 1, a_u64 + 1_u64, i + 1);
+    return jau::format_string_n(1023, "format_020b: %.2f, %2.2f, %zu, %" PRIu64 ", %" PRIu64 ", %" PRIx64 ", %06" PRIu64 ", %06" PRIx64 ", %03d\n",
+                                fa + 1.0_f32, fb + 1.0_f32, sz1 + 1,
+                                a_u64 + 1_u64, a_u64 + 1_u64, a_u64 + 1_u64, a_u64 + 1_u64, a_u64 + 1_u64,
+                                i + 1);
 }
 
 static std::string format_030b_strstream(float fa, float fb, size_t sz1, uint64_t a_u64, int i) {
@@ -235,7 +247,8 @@ TEST_CASE("jau::cfmt_00", "[jau][std::string][jau::cfmt]") {
     char buf[1024];
     constexpr float fa = 1.123456f, fb = 2.2f;
     constexpr size_t sz1 = 1;
-    constexpr int64_t sz2 = 2;
+    constexpr int64_t v_i64 = 2;
+    constexpr uint64_t v_u64 = 3;
     constexpr int i = 3;
     const float *pf = &fa;
 
@@ -245,11 +258,11 @@ TEST_CASE("jau::cfmt_00", "[jau][std::string][jau::cfmt]") {
         static_assert( 0 <= pr.argCount() );
     }
     {   // 'format_check: %.2f, %2.2f, %zu, %lu, %03d'
-        constexpr  jau::cfmt2::PResult pc = jau::cfmt2::checkR("format_check: %.2f, %2.2f, %zu, %" PRIu64 ", %03d\n",
-                                                               fa, fb, sz1, sz2, i);
+        constexpr  jau::cfmt2::PResult pc = jau::cfmt2::checkR("format_check: %.2f, %2.2f, %zu, %" PRIi64 ", %" PRIi64 "d, %" PRIi64 "X, %06" PRIu64 "d, %06" PRIu64 "X, %03d\n",
+                                                               fa, fb, sz1, v_i64, v_i64, v_i64, v_u64, v_u64, i);
         std::cerr << "XXX: " << __LINE__ << ": " << pc << std::endl;
         // static_assert( 5 == pc.argCount() );
-        REQUIRE(5 == pc.argCount());
+        REQUIRE(9 == pc.argCount());
     }
     {
         constexpr jau::cfmt2::PResult pr = jau::cfmt2::checkR("lala %d - end", 2);
@@ -309,6 +322,8 @@ TEST_CASE("jau::cfmt_00", "[jau][std::string][jau::cfmt]") {
         static_assert(true == jau::cfmt::check("unsigned int -> int %d", (unsigned int)1));
         static_assert(true == jau::cfmt::check("unsigned int -> unsigned int %u", (unsigned int)1));
         static_assert(true == jau::cfmt::check("         int -> unsigned int %u", 1));
+        static_assert(true == jau::cfmt::check("    uint64_t -> int64_t %" PRIi64, (uint64_t)1));
+        static_assert(true == jau::cfmt::check("     int64_t -> uint64_t %" PRIu64, (int64_t)1));
         static_assert(true == jau::cfmt::check("        char -> int %d", (char)1)); // integral target type > given type
         {
             jau::cfmt::PResult res = jau::cfmt::checkR(" error long -> int %d", (long)1);
@@ -325,8 +340,8 @@ TEST_CASE("jau::cfmt_00", "[jau][std::string][jau::cfmt]") {
         static_assert(true == jau::cfmt::check(" %f", fa));
         static_assert(true == jau::cfmt::check(" %zd", (ssize_t)1));
         static_assert(true == jau::cfmt::check(" %zu", (size_t)1));
-        static_assert(true == jau::cfmt::check(" %" PRIi64 ".", (int64_t)1));
-        static_assert(true == jau::cfmt::check(" %" PRIi64 ".", sz2));
+        static_assert(true == jau::cfmt::check(" %" PRIi64 ", %" PRIi64 ", %08" PRIi64 ".", (int64_t)1, (int64_t)1, (int64_t)1));
+        static_assert(true == jau::cfmt::check(" %" PRIi64 ", %" PRIi64 ", %08" PRIi64 ".", v_i64, v_i64, v_i64));
         static_assert(true == jau::cfmt::check(" %p", pf));
         // static_assert(true == jau::cfmt::check(" %s", "lala"));
 
@@ -341,8 +356,12 @@ TEST_CASE("jau::cfmt_00", "[jau][std::string][jau::cfmt]") {
         static_assert(1 == jau::cfmt::checkR("Hello 1 %.2f - end", fa).argCount());
         static_assert(2 == jau::cfmt::checkR("Hello 1 %.2f, 2 %2.2f - end", fa, fb).argCount());
         static_assert(3 == jau::cfmt::checkR("Hello 1 %.2f , 2 %2.2f, 3 %zu - end", fa, fb, sz1).argCount());
-        static_assert(4 == jau::cfmt::checkR("Hello 1 %.2f, 2 %2.2f, 3 %zu, 4 %" PRIi64 " - end", fa, fb, sz1, sz2).argCount());
-        static_assert(5 == jau::cfmt::checkR("Hello 1 %.2f, 2 %2.2f, 3 %zu, 4 %" PRIi64 ", 5 %03d - end", fa, fb, sz1, sz2, i).argCount());
+        static_assert(4 == jau::cfmt::checkR("Hello 1 %.2f, 2 %2.2f, 3 %zu, 4 %" PRIi64 " - end", fa, fb, sz1, v_i64).argCount());
+        static_assert(5 == jau::cfmt::checkR("Hello 1 %.2f, 2 %2.2f, 3 %zu, 4 %" PRIi64 ", 5 %03d - end", fa, fb, sz1, v_i64, i).argCount());
+
+        static_assert(5 == jau::cfmt::checkR("Hello %" PRIu64 ", %" PRIu64 ", %" PRIx64 ", %06" PRIu64 ", %06" PRIx64 "",
+                                             v_i64, v_i64, v_i64, v_i64, v_i64).argCount());
+
         // static_assert(6 == jau::cfmt::checkR("Hello 1 %.2f, 2 %2.2f, 3 %zu, 4 %" PRIi64 ", 5 %03d, 6 %p - end", fa, fb, sz1, sz2, i, pf).argCount());
         // static_assert(1 == jau::cfmt::checkR(" %s", "lala").argCount());
 
@@ -356,13 +375,13 @@ TEST_CASE("jau::cfmt_00", "[jau][std::string][jau::cfmt]") {
             assert(-1 == jau::cfmt::checkR("Hello 1 %d", sz1).argCount()); // NOLINT(misc-static-assert)
         }
         static_assert(-6 == jau::cfmt::checkR("Hello 1 %.2f, 2 %2.2f, 3 %zu, 4 %" PRIi64 ", 5 %03d, 6 %p - end",
-                                              fa, fb, sz1, sz2, i, i).argCount());
+                                              fa, fb, sz1, v_i64, i, i).argCount());
         static_assert(false == jau::cfmt::check("Hello 1 %.2f, 2 %2.2f, 3 %zu, 4 %" PRIi64 ", 5 %03d, 6 %p - end",
-                                              fa, fb, sz1, sz2, i, i));
+                                              fa, fb, sz1, v_i64, i, i));
 
         {
             const std::string s = jau_format_string_static("format_020a: %f, %f, %zu, %" PRIu64 ", %d\n",
-                                                           fa + 1.0_f32, fb + 1.0_f32, sz1 + 1, sz2 + 1_u64, i + 1);
+                                                           fa + 1.0_f32, fb + 1.0_f32, sz1 + 1, v_i64 + 1_u64, i + 1);
             REQUIRE( s.size() > 0 );
         }
         {
@@ -415,9 +434,9 @@ TEST_CASE("jau::cfmt_00", "[jau][std::string][jau::cfmt]") {
         std::cerr << "XXX: " << __LINE__ << ": " << pc << std::endl;
         REQUIRE(3 == jau::cfmt::checkR("Hello 1 %.2f, 2 %2.2f, 3 %zu - end", fa, fb, sz1).argCount());
 
-        REQUIRE(4 == jau::cfmt::checkR("Hello 1 %.2f, 2 %2.2f, 3 %zu, 4 %" PRIi64 " - end", fa, fb, sz1, sz2).argCount());
-        REQUIRE(5 == jau::cfmt::checkR("Hello 1 %.2f, 2 %2.2f, 3 %zu, 4 %" PRIi64 ", 5 %03d - end", fa, fb, sz1, sz2, i).argCount());
-        REQUIRE(6 == jau::cfmt::checkR("Hello 1 %.2f, 2 %2.2f, 3 %zu, 4 %" PRIi64 ", 5 %03d, 6 %p - end", fa, fb, sz1, sz2, i, pf).argCount());
+        REQUIRE(4 == jau::cfmt::checkR("Hello 1 %.2f, 2 %2.2f, 3 %zu, 4 %" PRIi64 " - end", fa, fb, sz1, v_i64).argCount());
+        REQUIRE(5 == jau::cfmt::checkR("Hello 1 %.2f, 2 %2.2f, 3 %zu, 4 %" PRIi64 ", 5 %03d - end", fa, fb, sz1, v_i64, i).argCount());
+        REQUIRE(6 == jau::cfmt::checkR("Hello 1 %.2f, 2 %2.2f, 3 %zu, 4 %" PRIi64 ", 5 %03d, 6 %p - end", fa, fb, sz1, v_i64, i, pf).argCount());
 
         // REQUIRE(13 == std::snprintf(buf, sizeof(buf), "Hello World %").argCount());
         REQUIRE(0 > jau::cfmt::checkR("Hello World %").argCount());
@@ -429,7 +448,7 @@ TEST_CASE("jau::cfmt_00", "[jau][std::string][jau::cfmt]") {
             REQUIRE(-1 == jau::cfmt::checkR("Hello 1 %d", sz1).argCount());
         }
         REQUIRE(-6 == jau::cfmt::checkR("Hello 1 %.2f, 2 %2.2f, 3 %zu, 4 %" PRIi64 ", 5 %03d, 6 %p - end",
-                                        fa, fb, sz1, sz2, i, i).argCount());
+                                        fa, fb, sz1, v_i64, i, i).argCount());
     }
 }
 

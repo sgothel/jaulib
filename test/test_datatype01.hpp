@@ -35,8 +35,6 @@
 #include <jau/basic_types.hpp>
 #include <jau/string_util.hpp>
 
-using namespace jau;
-
 __pack ( struct Addr48Bit {
     uint8_t b[6]; // == sizeof(Addr48Bit)
 
@@ -94,7 +92,7 @@ __pack ( struct Addr48Bit {
         str.reserve(17);
 
         for(int i=6-1; 0 <= i; --i) {
-            jau::appendToHexString(str, b[i], false /* lowerCase */);
+            jau::appendToHexString(str, b[i], jau::LoUpCase::upper);
             if( 0 < i ) {
                 str.push_back(':');
             }

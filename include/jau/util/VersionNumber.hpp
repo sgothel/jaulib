@@ -181,7 +181,7 @@ namespace jau::util {
             std::string res = std::to_string(m_major) + "." + std::to_string(m_minor) + "." + std::to_string(m_sub);
             if( hasGitInfo() ) {
                 res.append(", git[post ").append(std::to_string(m_git_commits))
-                   .append(", tip ").append(jau::toHexString(m_git_ssha, true))
+                   .append(", tip ").append(jau::toHexString(m_git_ssha, jau::lb_endian_t::little))
                    .append(", ");
                 if( git_dirty() ) {
                     res.append("dirty");
@@ -377,7 +377,7 @@ namespace jau::util {
             std::string res = std::to_string(m_major) + "." + std::to_string(m_minor) + "." + std::to_string(m_sub);
             if( hasGitInfo() ) {
                 res.append(", git[post ").append(std::to_string(m_git_commits))
-                   .append(", tip ").append(jau::toHexString(m_git_ssha, true))
+                   .append(", tip ").append(jau::toHexString(m_git_ssha, jau::lb_endian_t::little))
                    .append(", ");
                 if( git_dirty() ) {
                     res.append("dirty");

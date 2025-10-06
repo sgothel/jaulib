@@ -74,6 +74,23 @@ namespace jau {
         bool b;
     };
 
+    /** Bit order type, i.e. least-significant-bit (lsb) or most-significant-bit (msb) first. */
+    enum class bit_order_t : bool
+    {
+        /** Identifier for least-significant-bit (lsb) first. */
+        lsb = false,
+
+        /** Identifier for most-significant-bit (msb) first. */
+        msb = true
+    };
+
+    /**
+     * Return std::string representation of the given bit_order_t.
+     * @param v the bit_order_t value
+     * @return the std::string representation
+     */
+    std::string to_string(const bit_order_t v) noexcept;
+
     /**
      * \ingroup Fractions
      *
