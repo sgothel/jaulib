@@ -331,7 +331,7 @@ static void bitorder_test(const std::string &prefix, T exp_def, T exp_rev) {
 template<jau::req::unsigned_integral T>
 static void bitorder_test2(const std::string &prefix, jau::nsize_t n, T val_def, T exp_rev) {
     const T has_rev = jau::rev_bits(n, val_def);
-    if( true ) {
+    if( false ) {
         std::cout << prefix << " n bits    " << n << "\n";
         std::cout << prefix << " val a_def " << jau::toBitString(val_def) << ", " << val_def << "\n";
         std::cout << prefix << " exp a_rev " << jau::toBitString(exp_rev) << ", " << exp_rev << "\n";
@@ -345,7 +345,6 @@ TEST_CASE("Integer Type Bit Order Test 20", "[bitorder][bitreverse]") {
         const uint8_t a_def = 0b01011100_u8;
         const uint8_t a_rev = 0b00111010_u8;
         bitorder_test("u8.1", a_def, a_rev);
-
         for(int i=0; i<8; ++i) {
             const uint8_t def = 0b00000001_u8 << i;
             const uint8_t rev = 0b10000000_u8 >> i;
@@ -361,6 +360,12 @@ TEST_CASE("Integer Type Bit Order Test 20", "[bitorder][bitreverse]") {
         const uint16_t a_def = 0b1011000001011100_u16;
         const uint16_t a_rev = 0b0011101000001101_u16;
         bitorder_test("u16.1", a_def, a_rev);
+
+        for(int i=0; i<16; ++i) {
+            const uint16_t def = 0b0000000000000001_u16 << i;
+            const uint16_t rev = 0b1000000000000000_u16 >> i;
+            bitorder_test("u16.1."+std::to_string(i), def, rev);
+        }
     }
     {
         const uint16_t a_def = 0b0010110000010111_u16;
@@ -386,6 +391,12 @@ TEST_CASE("Integer Type Bit Order Test 20", "[bitorder][bitreverse]") {
         const uint32_t a_def = 0b10110000010111010101100110011100_u32;
         const uint32_t a_rev = 0b00111001100110101011101000001101_u32;
         bitorder_test("u32.1", a_def, a_rev);
+
+        for(int i=0; i<32; ++i) {
+            const uint32_t def = 0b00000000000000000000000000000001_u32 << i;
+            const uint32_t rev = 0b10000000000000000000000000000000_u32 >> i;
+            bitorder_test("u32.1."+std::to_string(i), def, rev);
+        }
     }
     {
         const uint32_t a_def = 0b00101100000101110101011001100111_u32;
@@ -401,6 +412,12 @@ TEST_CASE("Integer Type Bit Order Test 20", "[bitorder][bitreverse]") {
         const uint64_t a_def = 0b1011000001011101010110011001110011010111001100001110000110001001_u64;
         const uint64_t a_rev = 0b1001000110000111000011001110101100111001100110101011101000001101_u64;
         bitorder_test("u64.1", a_def, a_rev);
+
+        for(int i=0; i<64; ++i) {
+            const uint64_t def = 0b0000000000000000000000000000000000000000000000000000000000000001_u64 << i;
+            const uint64_t rev = 0b1000000000000000000000000000000000000000000000000000000000000000_u64 >> i;
+            bitorder_test("u64.1."+std::to_string(i), def, rev);
+        }
     }
     {
         const uint64_t a_def = 0b0010110000010111010101100110011100110101110011000011100001100010_u64;
@@ -424,50 +441,38 @@ TEST_CASE("Integer Type Bit Order Test 20", "[bitorder][bitreverse]") {
     }
 }
 
+static void testBitReverse(std::string_view prefix, std::string_view s_be0) {
+    const bool verbose = false;
+    if( verbose ) {
+        std::cout << prefix << "\n";
+    }
+    const auto [v_be0, len_be, ok_be] = jau::fromBitString(s_be0);
+    REQUIRE(true == ok_be);
+    REQUIRE(s_be0.size() == len_be);
+
+    std::string s_be2 = jau::toBitString(uint32_t(v_be0), jau::bit_order_t::msb, jau::PrefixOpt::none, s_be0.size());
+    // std::string s_le2 = jau::toBitString(jau::bswap(uint32_t(v_be0)), jau::bit_order_t::msb, jau::PrefixOpt::none, s_be0.size());
+    std::string s_be2_rev = s_be2;
+    std::ranges::reverse(s_be2_rev);
+    std::string s_be3_rev = jau::to_string(jau::rev_bits(s_be0.size(), uint32_t(v_be0)), 2, jau::PrefixOpt::none, s_be0.size());
+    if( verbose ) {
+        std::cout << "  s_be0:     " << s_be0 << "\n";
+        std::cout << "  s_be2:     " << s_be2 << "\n";
+        std::cout << "  s_be2_rev: " << s_be2_rev << "\n";
+        std::cout << "  s_be3_rev: " << s_be3_rev << "\n";
+        // std::cout << "  s_le2:     " << s_le2 << "\n";
+    }
+    REQUIRE( s_be0 == s_be2 );
+    REQUIRE( s_be2_rev == s_be3_rev );
+}
+
 TEST_CASE("Integer Type Bit Order Test 21", "[bitorder][bitreverse]") {
-    {
-        std::cout << "Test 21.1\n";
-        // be: xxx101100101110111011001 = xxx10110 01011101 11011001
-        // le: 1101100101011101xxx10110 = 11011001 01011101 xxx10110
-        std::string_view s_be0 = "000101100101110111011001";
-        const auto [v_be0, len_be, ok_be] = jau::fromBitString(s_be0);
-        REQUIRE(true == ok_be);
-        REQUIRE(s_be0.size() == len_be);
+    // be: xxx101100101110111011001 = xxx10110 01011101 11011001
+    // le: 1101100101011101xxx10110 = 11011001 01011101 xxx10110
+    testBitReverse("Test 21.1", "000101100101110111011001");
 
-        std::string s_be2 = jau::toBitString(uint32_t(v_be0), jau::bit_order_t::msb, jau::PrefixOpt::none, s_be0.size());
-        std::string s_le2 = jau::toBitString(jau::bswap(uint32_t(v_be0)), jau::bit_order_t::msb, jau::PrefixOpt::none, s_be0.size());
-        std::string s_be2_rev = s_be2;
-        std::ranges::reverse(s_be2_rev);
-        std::string s_be3_rev = jau::to_string(jau::rev_bits(s_be0.size(), uint32_t(v_be0)), 2, jau::PrefixOpt::none, s_be0.size());
-        std::cout << "  s_be0:     " << s_be0 << "\n";
-        std::cout << "  s_be2:     " << s_be2 << "\n";
-        std::cout << "  s_be2_rev: " << s_be2_rev << "\n";
-        std::cout << "  s_be3_rev: " << s_be3_rev << "\n";
-        std::cout << "  s_le2:     " << s_le2 << "\n";
-        REQUIRE( s_be0 == s_be2 );
-        REQUIRE( s_be2_rev == s_be3_rev );
-    }
-    {
-        std::cout << "Test 21.2\n";
-        // be: xxx101100101110111011001 = xxx10110 01011101 11011001
-        std::string_view s_be0 = "101100101110111011001";
-        const auto [v_be0, len_be, ok_be] = jau::fromBitString(s_be0);
-        REQUIRE(true == ok_be);
-        REQUIRE(s_be0.size() == len_be);
-
-        std::string s_be2 = jau::toBitString(uint32_t(v_be0), jau::bit_order_t::msb, jau::PrefixOpt::none, s_be0.size());
-        std::string s_le2 = jau::toBitString(jau::bswap(uint32_t(v_be0)), jau::bit_order_t::msb, jau::PrefixOpt::none, s_be0.size());
-        std::string s_be2_rev = s_be2;
-        std::ranges::reverse(s_be2_rev);
-        std::string s_be3_rev = jau::to_string(jau::rev_bits(s_be0.size(), uint32_t(v_be0)), 2, jau::PrefixOpt::none, s_be0.size());
-        std::cout << "  s_be0:     " << s_be0 << "\n";
-        std::cout << "  s_be2:     " << s_be2 << "\n";
-        std::cout << "  s_be2_rev: " << s_be2_rev << "\n";
-        std::cout << "  s_be3_rev: " << s_be3_rev << "\n";
-        std::cout << "  s_le2:     " << s_le2 << "\n";
-        REQUIRE( s_be0 == s_be2 );
-        REQUIRE( s_be2_rev == s_be3_rev );
-    }
+    // be: xxx101100101110111011001 = xxx10110 01011101 11011001
+    testBitReverse("Test 21.2", "101100101110111011001");
 }
 
 template<typename Value_type>

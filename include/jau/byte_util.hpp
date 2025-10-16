@@ -25,6 +25,7 @@
 #ifndef JAU_BYTE_UTIL_HPP_
 #define JAU_BYTE_UTIL_HPP_
 
+#include <array>
 #include <cstring>
 #include <string>
 #include <cstdint>
@@ -35,6 +36,7 @@
 #include <jau/packed_attribute.hpp>
 
 #include <jau/int_types.hpp>
+#include <jau/type_concepts.hpp>
 
 namespace jau {
 
@@ -740,6 +742,97 @@ namespace jau {
             return {}; // unreachable -> static_assert(..) above
         }
 
+    }
+
+    /**
+    // *************************************************
+    // *************************************************
+    // *************************************************
+     */
+
+    namespace impl {
+        /** @see https://graphics.stanford.edu/~seander/bithacks.html#BitReverseTable */
+        static constexpr std::array<uint8_t, 256> BitRevTable256 =
+            []() constexpr -> std::array<uint8_t, 256> {
+                using namespace jau::int_literals;
+                std::array<uint8_t, 256> result{};
+                for (size_t i = 0; i < 256; ++i) {
+                    // result[i] = (i * 0x0202020202_u64 & 0x010884422010_u64) % 1023;
+                    result[i] = ( (i * 0x80200802_u64) & 0x0884422110_u64 ) * 0x0101010101_u64 >> 32;
+                }
+                return result;
+            }();
+    }
+
+    /**
+     * Reverse bits of one byte
+     * @see https://graphics.stanford.edu/~seander/bithacks.html#BitReverseTable
+     */
+    constexpr uint8_t rev_bits(uint8_t v) noexcept { return impl::BitRevTable256[v]; };
+    /**
+     * Reverse bits of two bytes
+     * @see https://graphics.stanford.edu/~seander/bithacks.html#BitReverseTable
+     */
+    constexpr uint16_t rev_bits(uint16_t v) noexcept {
+        return ( uint16_t( impl::BitRevTable256[ v        & 0xff] ) << 8) |
+               ( uint16_t( impl::BitRevTable256[(v >>  8) & 0xff] )     );
+    };
+    /**
+     * Reverse bits of four bytes
+     * @see https://graphics.stanford.edu/~seander/bithacks.html#BitReverseTable
+     */
+    constexpr uint32_t rev_bits(uint32_t v) noexcept {
+        return ( uint32_t( impl::BitRevTable256[ v        & 0xff] ) << 24) |
+               ( uint32_t( impl::BitRevTable256[(v >>  8) & 0xff] ) << 16) |
+               ( uint32_t( impl::BitRevTable256[(v >> 16) & 0xff] ) <<  8) |
+               ( uint32_t( impl::BitRevTable256[(v >> 24) & 0xff] )      );
+    };
+    /**
+     * Reverse bits of eight bytes
+     * @see https://graphics.stanford.edu/~seander/bithacks.html#BitReverseTable
+     */
+    constexpr uint64_t rev_bits(uint64_t v) noexcept {
+        return ( uint64_t( impl::BitRevTable256[ v        & 0xff] ) << 56) |
+               ( uint64_t( impl::BitRevTable256[(v >>  8) & 0xff] ) << 48) |
+               ( uint64_t( impl::BitRevTable256[(v >> 16) & 0xff] ) << 40) |
+               ( uint64_t( impl::BitRevTable256[(v >> 24) & 0xff] ) << 32) |
+               ( uint64_t( impl::BitRevTable256[(v >> 32) & 0xff] ) << 24) |
+               ( uint64_t( impl::BitRevTable256[(v >> 40) & 0xff] ) << 16) |
+               ( uint64_t( impl::BitRevTable256[(v >> 48) & 0xff] ) <<  8) |
+               ( uint64_t( impl::BitRevTable256[(v >> 56) & 0xff] )      );
+    };
+
+    /** Returns the unit_type bit mask of n-bits, i.e. n low order 1’s */
+    template<jau::req::unsigned_integral T>
+    static constexpr T bit_mask(size_t n) noexcept {
+        if ( n >= sizeof(T) * CHAR_BIT ) {
+            return std::numeric_limits<T>::max();
+        } else {
+            return (T(1) << n) - T(1);
+        }
+    }
+
+    /**
+     * Reversed `n` bits of value `v`, this is an O(n) operation.
+     *
+     * The reversed bits will stick in their `n` bits position,
+     * i.e. not shifted to the left of `n` bits as `rev_bits(v)` would.
+     * @see https://graphics.stanford.edu/~seander/bithacks.html#BitReverseTable
+     */
+    template<jau::req::unsigned_integral T>
+    constexpr T rev_bits(jau::nsize_t n, T v) {
+        if ( n >= sizeof(T) * CHAR_BIT ) {
+            return rev_bits(v); // reverse all bits
+        }
+        v &= (T(1) << n) - T(1); // mask-out undesired bits
+        T r = v & 1; // r will be reversed bits of v; first get LSB of v
+        jau::nsize_t s = std::min(n-1, sizeof(T) * CHAR_BIT - 1); // extra shift needed at end
+        for (v >>= 1; v; v >>= 1) {
+            r <<= 1;
+            r |= v & 1;
+            --s;
+        }
+        return r << s; // shift when v's highest bits are zero
     }
 
     /**
