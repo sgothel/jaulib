@@ -802,7 +802,7 @@ namespace jau {
                ( uint64_t( impl::BitRevTable256[(v >> 56) & 0xff] )      );
     };
 
-    /** Returns the unit_type bit mask of n-bits, i.e. n low order 1’s */
+    /** Returns the T bit mask of n-bits, i.e. n low order 1’s */
     template<jau::req::unsigned_integral T>
     static constexpr T bit_mask(size_t n) noexcept {
         if ( n >= sizeof(T) * CHAR_BIT ) {

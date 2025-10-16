@@ -602,45 +602,47 @@ public class Bitstream<T> {
         }
     }
 
-    private ByteStream<T> bytes;
+    private ByteStream<T> m_bytes;
     /** 8-bit cache of byte stream */
-    private int bitBuffer;
-    private int bitsDataMark;
+    private int m_bitCache;
+    private int m_bitsDataMark;
 
-    /** See {@link #getBitCount()}. */
-    private int bitCount;
-    private int bitsCountMark;
+    /** See {@link #getCachedBitCount()}. */
+    private int m_bitCount;
+    private int m_bitsCountMark;
 
-    private boolean outputMode;
-    private boolean throwIOExceptionOnEOF;
+    private boolean m_writeMode;
+    private boolean m_throwIOExceptionOnEOF;
 
     /**
      * @param stream
      * @param outputMode
-     * @throws IllegalArgumentException if requested <i>outputMode</i> doesn't match stream's {@link #canInput()} and {@link #canOutput()}.
+     * @throws IllegalArgumentException if requested <i>outputMode</i> doesn't match stream's {@link #canInput()} and {@link #canWrite()}.
      */
     public Bitstream(final ByteStream<T> stream, final boolean outputMode) throws IllegalArgumentException {
-        this.bytes = stream;
-        this.outputMode = outputMode;
+        this.m_bytes = stream;
+        this.m_writeMode = outputMode;
         resetLocal();
         validateMode();
-        throwIOExceptionOnEOF = false;
+        m_throwIOExceptionOnEOF = false;
     }
 
     private final void resetLocal() {
-        bitBuffer = 0;
-        bitCount = 0;
-        bitsDataMark = 0;
-        bitsCountMark = -1;
+        m_bitCache = 0;
+        m_bitCount = 0;
+        m_bitsDataMark = 0;
+        m_bitsCountMark = -1;
     }
+    private final boolean canInput0() { return null != m_bytes ? m_bytes.canInput() : false; }
+    private final boolean canOutput0() { return null != m_bytes ? m_bytes.canOutput() : false; }
     private final void validateMode() throws IllegalArgumentException {
-        if( !canInput() && !canOutput() ) {
+        if( !canInput0() && !canOutput0() ) {
             throw new IllegalArgumentException("stream can neither input nor output: "+this);
         }
-        if( outputMode && !canOutput() ) {
+        if( m_writeMode && !canOutput0() ) {
             throw new IllegalArgumentException("stream cannot output as requested: "+this);
         }
-        if( !outputMode && !canInput() ) {
+        if( !m_writeMode && !canInput0() ) {
             throw new IllegalArgumentException("stream cannot input as requested: "+this);
         }
     }
@@ -652,36 +654,54 @@ public class Bitstream<T> {
      * </p>
      */
     public final void setThrowIOExceptionOnEOF(final boolean enable) {
-        throwIOExceptionOnEOF = enable;
+        m_throwIOExceptionOnEOF = enable;
     }
 
     /** Returns true if I/O methods throw an {@link IOException} if {@link #EOS} appears, otherwise false (default). */
-    public final boolean getThrowIOExceptionOnEOF() { return throwIOExceptionOnEOF; }
+    public final boolean getThrowIOExceptionOnEOF() { return m_throwIOExceptionOnEOF; }
 
     /**
      * Sets the underlying stream, without {@link #close()}ing the previous one.
      * <p>
-     * If the previous stream was in {@link #canOutput() output mode},
+     * If the previous stream was in {@link #canWrite() output mode},
      * {@link #flush()} is being called.
      * </p>
-     * @throws IllegalArgumentException if requested <i>outputMode</i> doesn't match stream's {@link #canInput()} and {@link #canOutput()}.
+     * @throws IllegalArgumentException if requested <i>outputMode</i> doesn't match stream's {@link #canInput()} and {@link #canWrite()}.
      * @throws IOException could be caused by {@link #flush()}.
      */
-    public final void setStream(final T stream, final boolean outputMode) throws IllegalArgumentException, IOException {
-        if( null != bytes && this.outputMode ) {
+    public final void setStream(final T stream, final boolean writeMode) throws IllegalArgumentException, IOException {
+        if( null != m_bytes && this.m_writeMode ) {
             flush();
         }
-        this.bytes.setStream(stream);
-        this.outputMode = outputMode;
+        this.m_bytes.setStream(stream);
+        this.m_writeMode = writeMode;
+        resetLocal();
+        validateMode();
+    }
+
+    /**
+     * Sets the output-mode of this stream.
+     *
+     * If the previous stream was in {@link #canWrite() output mode},
+     * {@link #flush()} is being called.
+     *
+     * @throws IllegalArgumentException if requested <i>outputMode</i> doesn't match stream's {@link #canInput()} and {@link #canWrite()}.
+     * @throws IOException could be caused by {@link #flush()}.
+     */
+    public final void setWriteMode(final boolean writeMode) throws IllegalArgumentException, IOException {
+        if( this.m_writeMode ) {
+            flush();
+        }
+        this.m_writeMode = writeMode;
         resetLocal();
         validateMode();
     }
 
     /** Returns the currently used {@link ByteStream}. */
-    public final ByteStream<T> getStream() { return bytes; }
+    public final ByteStream<T> getStream() { return m_bytes; }
 
     /** Returns the currently used {@link ByteStream}'s {@link ByteStream#getStream()}. */
-    public final T getSubStream() { return bytes.getStream(); }
+    public final T getSubStream() { return m_bytes.getStream(); }
 
     /**
      * Closing the underlying stream, implies {@link #flush()}.
@@ -690,18 +710,18 @@ public class Bitstream<T> {
      * hence {@link #setStream(Object)} must be called before re-using instance.
      * </p>
      * <p>
-     * If the closed stream was in {@link #canOutput() output mode},
+     * If the closed stream was in {@link #canWrite() output mode},
      * {@link #flush()} is being called.
      * </p>
      *
      * @throws IOException
      */
     public final void close() throws IOException {
-        if( null != bytes && this.outputMode ) {
+        if( null != m_bytes && this.m_writeMode ) {
             flush();
         }
-        bytes.close();
-        bytes = null;
+        m_bytes.close();
+        m_bytes = null;
         resetLocal();
     }
 
@@ -716,16 +736,16 @@ public class Bitstream<T> {
      * @throws IOException
      */
     public final int flush() throws IllegalStateException, IOException {
-        if( !outputMode || null == bytes ) {
+        if( !m_writeMode || null == m_bytes ) {
             throw new IllegalStateException("not in output-mode: "+this);
         }
-        bytes.flush();
-        if( 0 != bitCount ) {
-            final int r = bytes.write((byte)bitBuffer);
-            bitBuffer = 0;
-            bitCount = 0;
+        m_bytes.flush();
+        if( 0 != m_bitCount ) {
+            final int r = m_bytes.write((byte)m_bitCache);
+            m_bitCache = 0;
+            m_bitCount = 0;
             if( EOS == r ) {
-                if( throwIOExceptionOnEOF ) {
+                if( m_throwIOExceptionOnEOF ) {
                     throw new IOException("EOS "+this);
                 }
                 return EOS;
@@ -734,11 +754,8 @@ public class Bitstream<T> {
         return 0;
     }
 
-    /** Return true if stream can handle input, i.e. {@link #readBit(boolean)}. */
-    public final boolean canInput() { return null != bytes ? bytes.canInput() : false; }
-
-    /** Return true if stream can handle output, i.e. {@link #writeBit(boolean, int)}. */
-    public final boolean canOutput() { return null != bytes ? bytes.canOutput() : false; }
+    /** Returns true in case stream is in write mode, false if in read mode. */
+    public final boolean canWrite() { return m_writeMode; }
 
     /**
      * Set {@code markpos} to current position, allowing the stream to be {@link #reset()}.
@@ -746,12 +763,12 @@ public class Bitstream<T> {
      * @throws IllegalStateException if not in input mode or stream closed
      */
     public final void mark(final int readLimit) throws IllegalStateException {
-        if( outputMode || null == bytes ) {
+        if( m_writeMode || null == m_bytes ) {
             throw new IllegalStateException("not in input-mode: "+this);
         }
-        bytes.mark(readLimit);
-        bitsDataMark = bitBuffer;
-        bitsCountMark = bitCount;
+        m_bytes.mark(readLimit);
+        m_bitsDataMark = m_bitCache;
+        m_bitsCountMark = m_bitCount;
     }
 
     /**
@@ -764,73 +781,63 @@ public class Bitstream<T> {
      * @throws IOException if reset operation failed.
      */
     public final void reset() throws IllegalStateException, IOException {
-        if( outputMode || null == bytes ) {
+        if( m_writeMode || null == m_bytes ) {
             throw new IllegalStateException("not in input-mode: "+this);
         }
-        if( 0 > bitsCountMark ) {
+        if( 0 > m_bitsCountMark ) {
             throw new IllegalStateException("markpos not set: "+this);
         }
-        bytes.reset();
-        bitBuffer = bitsDataMark;
-        bitCount = bitsCountMark;
+        m_bytes.reset();
+        m_bitCache = m_bitsDataMark;
+        m_bitCount = m_bitsCountMark;
     }
 
     /**
-     * Number of remaining bits in cache to read before next byte-read (input mode)
+     * Number of remaining bits cached to read before next byte-read (input mode)
      * or number of remaining bits to be cached before next byte-write (output mode).
-     * <p>
-     * Counting down from 7..0 7..0, starting with 0.
-     * </p>
-     * <p>
-     * In input mode, zero indicates reading a new byte and cont. w/ 7.
-     * In output mode, the cached byte is written when flipping over to 0.
-     * </p>
+     *
+     * Counting down from 7..0, starting with 0.
+     * - In input mode, zero indicates reading up next 8 bits and cont. w/ 7 bits.
+     * - In output mode, the cached bits are written when flipping over to 0.
      */
-    public final int getBitCount() { return bitCount; }
+    public final int getCachedBitCount() { return m_bitCount; }
 
     /**
-     * Return the last bit number read or written counting from [0..7].
+     * Return the last cached bit position read or written counting from [0..7].
      * If no bit access has been performed, 7 is returned.
-     * <p>
+     *
      * Returned value is normalized [0..7], i.e. independent from <i>msb</i> or <i>lsb</i> read order.
-     * </p>
      */
-    public final int getLastBitPos() { return 7 - bitCount; }
+    public final int getLastCachedPos() { return 7 - m_bitCount; }
 
     /**
-     * Return the next bit number to be read or write counting from [0..7].
-     * If no bit access has been performed, 0 is returned.
-     * <p>
+     * Return the next cached bit position to be read or written counting from [0..7].
+     *
+     * If no bit access has been performed or none is cached, 0 is returned.
+     *
      * Returned value is normalized [0..7], i.e. independent from <i>msb</i> or <i>lsb</i> read order.
-     * </p>
      */
-    public final int getBitPosition() {
-        if( 0 == bitCount ) {
-            return 0;
-        } else {
-            return 8 - bitCount;
-        }
+    public final int getCachedPos() {
+        return 0 == m_bitCount ? 0 : 8 - m_bitCount;
     }
 
     /**
-     * Returns the current bit buffer.
-     * @see #getBitCount()
+     * Returns the current bit cache.
+     * @see #getCachedBitCount()
      */
-    public final int getBitBuffer() { return bitBuffer; }
+    public final int getBitCache() { return m_bitCache; }
 
     /**
      * Returns the bit position in the stream.
      */
     public final long position() {
-        // final long bytePos = bytes.position() - ( !outputMode && 0 != bitCount ? 1 : 0 );
-        // return ( bytePos << 3 ) + getBitPosition();
-        if( null == bytes ) {
+        if( null == m_bytes ) {
             return EOS;
-        } else if( 0 == bitCount ) {
-            return bytes.position() << 3;
+        } else if( 0 == m_bitCount ) {
+            return m_bytes.position() << 3;
         } else {
-            final long bytePos = bytes.position() - ( outputMode ? 0 : 1 );
-            return ( bytePos << 3 ) + 8 - bitCount;
+            final long bytePos = m_bytes.position() - ( m_writeMode ? 0 : 1 );
+            return ( bytePos << 3 ) + 8 - m_bitCount;
         }
     }
 
@@ -860,10 +867,28 @@ public class Bitstream<T> {
         if( 0 > newPosition ) {
             throw new IllegalArgumentException("new position not positive: "+newPosition);
         }
-        bytes.position(0); // throws UnsupportedOperationException
-        resetLocal();
-        if( newPosition > skip(newPosition) ) {
-            return EOS;
+        final long pos0 = position();
+        final long diff = newPosition - pos0;
+        if( diff == 0 ) {
+            return newPosition;
+        } else if( diff > 0 ) {
+            if( diff > skip(diff) ) {
+                return EOS;
+            }
+        } else {
+            // backwards
+            if( m_writeMode ) {
+                if( 0 < m_bitCount && EOS == m_bytes.write((byte)m_bitCache) ) {
+                    return 0;
+                }
+            }
+            resetLocal();
+            if( 0 != m_bytes.position(0) ) { // throws UnsupportedOperationException
+                return EOS;
+            }
+            if( newPosition > skip(newPosition) ) {
+                return EOS;
+            }
         }
         return newPosition;
     }
@@ -875,29 +900,29 @@ public class Bitstream<T> {
      * @throws IllegalStateException if not in input mode or stream closed
      */
     public final int readBit(final boolean msbFirst) throws UnsupportedOperationException, IllegalStateException, IOException {
-        if( outputMode || null == bytes ) {
+        if( m_writeMode || null == m_bytes ) {
             throw new IllegalStateException("not in input-mode: "+this);
         }
-        if ( 0 < bitCount ) {
-            bitCount--;
+        if ( 0 < m_bitCount ) {
+            --m_bitCount;
             if( msbFirst ) {
-                return  ( bitBuffer >>> bitCount ) & 0x01;
+                return  ( m_bitCache >>> m_bitCount ) & 0x01;
             } else {
-                return  ( bitBuffer >>> ( 7 - bitCount ) ) & 0x01;
+                return  ( m_bitCache >>> ( 7 - m_bitCount ) ) & 0x01;
             }
         } else {
-            bitBuffer = bytes.read();
-            if( EOS == bitBuffer ) {
-                if( throwIOExceptionOnEOF ) {
+            m_bitCache = m_bytes.read();
+            if( EOS == m_bitCache ) {
+                if( m_throwIOExceptionOnEOF ) {
                     throw new IOException("EOS "+this);
                 }
                 return EOS;
             } else {
-                bitCount=7;
+                m_bitCount=7;
                 if( msbFirst ) {
-                    return bitBuffer >>> 7;
+                    return m_bitCache >>> m_bitCount;
                 } else {
-                    return bitBuffer & 0x01;
+                    return m_bitCache & 0x01;
                 }
             }
         }
@@ -906,37 +931,37 @@ public class Bitstream<T> {
     /**
      * @param msbFirst if true outgoing stream bit order is MSB to LSB, otherwise LSB to MSB.
      * @param bit
-     * @return the currently written byte or {@link #EOS} if end-of-stream is reached.
+     * @return true if successful, otherwise false
      * @throws IOException
      * @throws IllegalStateException if not in output mode or stream closed
      */
-    public final int writeBit(final boolean msbFirst, final int bit) throws IllegalStateException, IOException {
-        if( !outputMode || null == bytes ) {
+    public final boolean writeBit(final boolean msbFirst, final int bit) throws IllegalStateException, IOException {
+        if( !m_writeMode || null == m_bytes ) {
             throw new IllegalStateException("not in output-mode: "+this);
         }
-        if ( 0 < bitCount ) {
-            bitCount--;
+        if ( 0 < m_bitCount ) {
+            --m_bitCount;
             if( msbFirst ) {
-                bitBuffer |= ( 0x01 & bit ) << bitCount;
+                m_bitCache |= ( 0x01 & bit ) << m_bitCount;
             } else {
-                bitBuffer |= ( 0x01 & bit ) << ( 7 - bitCount );
+                m_bitCache |= ( 0x01 & bit ) << ( 7 - m_bitCount );
             }
-            if( 0 == bitCount ) {
-                final int r = bytes.write((byte)bitBuffer);
-                if( throwIOExceptionOnEOF && EOS == r ) {
+            if( 0 == m_bitCount ) {
+                final int r = m_bytes.write((byte)m_bitCache);
+                if( m_throwIOExceptionOnEOF && EOS == r ) {
                     throw new IOException("EOS "+this);
                 }
-                return r;
+                return EOS != r;
             }
         } else {
-            bitCount = 7;
+            m_bitCount = 7;
             if( msbFirst ) {
-                bitBuffer = ( 0x01 & bit ) << 7;
+                m_bitCache = ( 0x01 & bit ) << m_bitCount;
             } else {
-                bitBuffer = 0x01 & bit;
+                m_bitCache = 0x01 & bit;
             }
         }
-        return bitBuffer;
+        return true;
     }
 
     /**
@@ -948,57 +973,58 @@ public class Bitstream<T> {
      * @throws IllegalStateException if closed
      */
     public long skip(final long n) throws IllegalStateException, IOException {
-        if( null == bytes ) {
+        if( null == m_bytes ) {
             throw new IllegalStateException("closed: "+this);
         }
         if( DEBUG ) {
             System.err.println("Bitstream.skip.0: "+n+" - "+toStringImpl());
         }
         if( n > 0 ) {
-            if( n <= bitCount ) {
-                bitCount -= (int)n;
+            if( n <= m_bitCount ) {
+                m_bitCount -= (int)n;
                 if( DEBUG ) {
                     System.err.println("Bitstream.skip.F_N1: "+n+" - "+toStringImpl());
                 }
                 return n;
             } else { // n > bitCount
-                if( outputMode ) {
-                    if( 0 < bitCount ) {
-                        if( EOS == bytes.write((byte)bitBuffer) ) {
-                            return 0;
-                        }
+                if( m_writeMode ) {
+                    if( 0 < m_bitCount && EOS == m_bytes.write((byte)m_bitCache) ) {
+                        return 0;
                     }
-                    bitBuffer = 0;
+                    m_bitCache = 0;
                 }
-                final long n2 = n - bitCount;                // subtract cached bits, bitsCount is zero at this point
+                final long n2 = n - m_bitCount;                // subtract cached bits, bitsCount is zero at this point
                 final long n3 = n2 >>> 3;                    // bytes to skip
-                final long n4 = bytes.skip(n3);              // actual skipped bytes
+                final long n4 = m_bytes.skip(n3);              // actual skipped bytes
                 final int n5 = (int) ( n2 - ( n3 << 3 ) );   // remaining skip bits == nX % 8
-                final long nX = ( n4 << 3 ) + n5 + bitCount; // actual skipped bits
+                final long nX = ( n4 << 3 ) + n5 + m_bitCount; // actual skipped bits
                 /**
                 if( DEBUG ) {
                     System.err.println("Bitstream.skip.1: n2 "+n2+", n3 "+n3+", n4 "+n4+", n5 "+n5+", nX "+nX+" - "+toStringImpl());
                 } */
+                m_bitCount = 0;
                 if( nX < n ) {
                     // couldn't complete skipping .. EOS .. etc
-                    bitCount = 0;
-                    bitBuffer = 0;
+                    m_bitCache = 0;
                     if( DEBUG ) {
                         System.err.println("Bitstream.skip.F_EOS: "+n+" - "+toStringImpl());
                     }
-                    if( throwIOExceptionOnEOF ) {
+                    if( m_throwIOExceptionOnEOF ) {
                         throw new IOException("EOS "+this);
                     }
                     return nX;
                 }
-                bitCount = ( 8 - n5 ) & 7; // % 8
                 int notReadBits = 0;
-                if( !outputMode && 0 < bitCount ) {
-                    bitBuffer = bytes.read();
-                    if( EOS == bitBuffer ) {
-                        notReadBits = bitCount;
-                        bitCount = 0;
+                if( !m_writeMode && 0 < n5 ) {
+                    m_bitCache = m_bytes.read();
+                    if( EOS == m_bitCache ) {
+                        // notReadBits = n5;
+                        notReadBits = m_bitCount;
+                    } else {
+                        m_bitCount = 8 - n5;
                     }
+                } else {
+                    m_bitCount = ( 8 - n5 ) & 7; // % 8
                 }
                 if( DEBUG ) {
                     System.err.println("Bitstream.skip.F_N2: "+n+", notReadBits "+notReadBits+" - "+toStringImpl());
@@ -1030,7 +1056,7 @@ public class Bitstream<T> {
         if( 31 < n ) {
             throw new IllegalArgumentException("n > 31: "+n);
         }
-        if( outputMode || null == bytes ) {
+        if( m_writeMode || null == m_bytes ) {
             throw new IllegalStateException("not in input-mode: "+this);
         }
         if( 0 == n ) {
@@ -1042,7 +1068,7 @@ public class Bitstream<T> {
                 for(int i=0; i < n; i++) {
                     final int b = readBit(false /* msbFirst */);
                     if( EOS == b ) {
-                        if( throwIOExceptionOnEOF ) {
+                        if( m_throwIOExceptionOnEOF ) {
                             throw new IOException("EOS "+this);
                         }
                         return EOS;
@@ -1053,37 +1079,37 @@ public class Bitstream<T> {
             } else {
                 // fast path
                 int c = n;
-                final int n1 = Math.min(n, bitCount); // remaining portion
+                final int n1 = Math.min(n, m_bitCount); // remaining portion
                 int r;
                 if( 0 < n1 ) {
                     final int m1 = ( 1 << n1 ) - 1;
-                    final int s1 = 7 - bitCount + 1; // LSBfirst: right-shift to new bits
-                    bitCount -= n1;
+                    final int s1 = 7 - m_bitCount + 1; // LSBfirst: right-shift to new bits
+                    m_bitCount -= n1;
                     c -= n1;
                     // MSBfirst: r = ( m1 & ( bitBuffer >>> bitCount ) ) << c;
-                    r = ( m1 & ( bitBuffer >>> s1 ) ); // LSBfirst
+                    r = ( m1 & ( m_bitCache >>> s1 ) ); // LSBfirst
                     if( 0 == c ) {
                         return r;
                     }
                 } else {
                     r = 0;
                 }
-                assert( 0 == bitCount );
+                assert( 0 == m_bitCount );
                 int s = n1; // LSBfirst: left shift for additional elements
                 do {
-                    bitBuffer = bytes.read();
-                    if( EOS == bitBuffer ) {
-                        if( throwIOExceptionOnEOF ) {
+                    m_bitCache = m_bytes.read();
+                    if( EOS == m_bitCache ) {
+                        if( m_throwIOExceptionOnEOF ) {
                             throw new IOException("EOS "+this);
                         }
                         return EOS;
                     }
                     final int n2 = Math.min(c, 8); // full portion
                     final int m2 = ( 1 << n2 ) - 1;
-                    bitCount = 8 - n2;
+                    m_bitCount = 8 - n2;
                     c -= n2;
                     // MSBfirst: r |= ( m2 & ( bitBuffer >>> bitCount ) ) << c;
-                    r |= ( m2 & bitBuffer ) << s; // LSBfirst on new bits
+                    r |= ( m2 & m_bitCache ) << s; // LSBfirst on new bits
                     s += n2;
                 } while ( 0 < c );
                 return r;
@@ -1107,32 +1133,31 @@ public class Bitstream<T> {
         if( 31 < n ) {
             throw new IllegalArgumentException("n > 31: "+n);
         }
-        if( !outputMode || null == bytes ) {
+        if( !m_writeMode || null == m_bytes ) {
             throw new IllegalStateException("not in output-mode: "+this);
         }
         if( 0 < n ) {
             if( !useFastPathStream ) {
                 // Slow path
                 for(int i=0; i < n; i++) {
-                    final int b = writeBit(false /* msbFirst */, ( bits >>> i ) & 0x1);
-                    if( EOS == b ) {
+                    if( !writeBit(false /* msbFirst */, ( bits >>> i ) & 0x1) ) {
                         return EOS;
                     }
                 }
             } else {
                 // fast path
                 int c = n;
-                final int n1 = Math.min(n, bitCount); // remaining portion
+                final int n1 = Math.min(n, m_bitCount); // remaining portion
                 if( 0 < n1 ) {
                     final int m1 = ( 1 << n1 ) - 1;
-                    final int s1 = 7 - bitCount + 1; // LSBfirst: left-shift to free bit-pos
-                    bitCount -= n1;
+                    final int s1 = 7 - m_bitCount + 1; // LSBfirst: left-shift to free bit-pos
+                    m_bitCount -= n1;
                     c -= n1;
                     // MSBfirst: bitBuffer |= ( m1 & ( bits >>> c ) ) << bitCount;
-                    bitBuffer |= ( m1 & bits ) << s1 ; // LSBfirst
-                    if( 0 == bitCount ) {
-                        if( EOS == bytes.write((byte)bitBuffer) ) {
-                            if( throwIOExceptionOnEOF ) {
+                    m_bitCache |= ( m1 & bits ) << s1 ; // LSBfirst
+                    if( 0 == m_bitCount ) {
+                        if( EOS == m_bytes.write((byte)m_bitCache) ) {
+                            if( m_throwIOExceptionOnEOF ) {
                                 throw new IOException("EOS "+this);
                             }
                             return EOS;
@@ -1142,19 +1167,19 @@ public class Bitstream<T> {
                         return bits;
                     }
                 }
-                assert( 0 == bitCount );
+                assert( 0 == m_bitCount );
                 int s = n1; // LSBfirst: left shift for additional elements
                 do {
                     final int n2 = Math.min(c, 8); // full portion
                     final int m2 = ( 1 << n2 ) - 1;
-                    bitCount = 8 - n2;
+                    m_bitCount = 8 - n2;
                     c -= n2;
                     // MSBfirst: bitBuffer = ( m2 & ( bits >>> c ) ) << bitCount;
-                    bitBuffer = ( m2 & ( bits >>> s ) ); // LSBfirst
+                    m_bitCache = ( m2 & ( bits >>> s ) ); // LSBfirst
                     s += n2;
-                    if( 0 == bitCount ) {
-                        if( EOS == bytes.write((byte)bitBuffer) ) {
-                            if( throwIOExceptionOnEOF ) {
+                    if( 0 == m_bitCount ) {
+                        if( EOS == m_bytes.write((byte)m_bitCache) ) {
+                            if( m_throwIOExceptionOnEOF ) {
                                 throw new IOException("EOS "+this);
                             }
                             return EOS;
@@ -1177,13 +1202,13 @@ public class Bitstream<T> {
      * @throws IOException
      */
     public final int readUInt8() throws IllegalStateException, IOException {
-        if( 0 == bitCount && useFastPathTypes ) {
+        if( 0 == m_bitCount && useFastPathTypes ) {
             // fast path
-            if( outputMode || null == bytes ) {
+            if( m_writeMode || null == m_bytes ) {
                 throw new IllegalStateException("not in input-mode: "+this);
             }
-            final int r = bytes.read();
-            if( throwIOExceptionOnEOF && EOS == r ) {
+            final int r = m_bytes.read();
+            if( m_throwIOExceptionOnEOF && EOS == r ) {
                 throw new IOException("EOS "+this);
             }
             return r;
@@ -1199,13 +1224,13 @@ public class Bitstream<T> {
      * @throws IOException
      */
     public final int writeInt8(final byte int8) throws IllegalStateException, IOException {
-        if( 0 == bitCount && useFastPathTypes  ) {
+        if( 0 == m_bitCount && useFastPathTypes  ) {
             // fast path
-            if( !outputMode || null == bytes ) {
+            if( !m_writeMode || null == m_bytes ) {
                 throw new IllegalStateException("not in output-mode: "+this);
             }
-            final int r = bytes.write(int8);
-            if( throwIOExceptionOnEOF && EOS == r ) {
+            final int r = m_bytes.write(int8);
+            if( m_throwIOExceptionOnEOF && EOS == r ) {
                 throw new IOException("EOS "+this);
             }
             return r;
@@ -1227,15 +1252,15 @@ public class Bitstream<T> {
      * @throws IOException
      */
     public final int readUInt16(final boolean bigEndian) throws IllegalStateException, IOException {
-        if( 0 == bitCount && useFastPathTypes ) {
+        if( 0 == m_bitCount && useFastPathTypes ) {
             // fast path
-            if( outputMode || null == bytes ) {
+            if( m_writeMode || null == m_bytes ) {
                 throw new IllegalStateException("not in input-mode: "+this);
             }
-            final int b1 = bytes.read();
-            final int b2 = EOS != b1 ? bytes.read() : EOS;
+            final int b1 = m_bytes.read();
+            final int b2 = EOS != b1 ? m_bytes.read() : EOS;
             if( EOS == b2 ) {
-                if( throwIOExceptionOnEOF ) {
+                if( m_throwIOExceptionOnEOF ) {
                     throw new IOException("EOS "+this);
                 }
                 return EOS;
@@ -1288,9 +1313,9 @@ public class Bitstream<T> {
      * @throws IOException
      */
     public final int writeInt16(final boolean bigEndian, final short int16) throws IllegalStateException, IOException {
-        if( 0 == bitCount && useFastPathTypes ) {
+        if( 0 == m_bitCount && useFastPathTypes ) {
             // fast path
-            if( !outputMode || null == bytes ) {
+            if( !m_writeMode || null == m_bytes ) {
                 throw new IllegalStateException("not in output-mode: "+this);
             }
             final byte hi = (byte) ( 0xff & ( int16 >>> 8 ) );
@@ -1303,12 +1328,12 @@ public class Bitstream<T> {
                 b1 = lo;
                 b2 = hi;
             }
-            if( EOS != bytes.write(b1) ) {
-                if( EOS != bytes.write(b2) ) {
+            if( EOS != m_bytes.write(b1) ) {
+                if( EOS != m_bytes.write(b2) ) {
                     return int16;
                 }
             }
-            if( throwIOExceptionOnEOF ) {
+            if( m_throwIOExceptionOnEOF ) {
                 throw new IOException("EOS "+this);
             }
             return EOS;
@@ -1334,17 +1359,17 @@ public class Bitstream<T> {
      * @throws IOException
      */
     public final long readUInt32(final boolean bigEndian) throws IllegalStateException, IOException {
-        if( 0 == bitCount && useFastPathTypes ) {
+        if( 0 == m_bitCount && useFastPathTypes ) {
             // fast path
-            if( outputMode || null == bytes ) {
+            if( m_writeMode || null == m_bytes ) {
                 throw new IllegalStateException("not in input-mode: "+this);
             }
-            final int b1 = bytes.read();
-            final int b2 = EOS != b1 ? bytes.read() : EOS;
-            final int b3 = EOS != b2 ? bytes.read() : EOS;
-            final int b4 = EOS != b3 ? bytes.read() : EOS;
+            final int b1 = m_bytes.read();
+            final int b2 = EOS != b1 ? m_bytes.read() : EOS;
+            final int b3 = EOS != b2 ? m_bytes.read() : EOS;
+            final int b4 = EOS != b3 ? m_bytes.read() : EOS;
             if( EOS == b4 ) {
-                if( throwIOExceptionOnEOF ) {
+                if( m_throwIOExceptionOnEOF ) {
                     throw new IOException("EOS "+this);
                 }
                 return EOS;
@@ -1401,9 +1426,9 @@ public class Bitstream<T> {
      * @throws IOException
      */
     public final int writeInt32(final boolean bigEndian, final int int32) throws IllegalStateException, IOException {
-        if( 0 == bitCount && useFastPathTypes ) {
+        if( 0 == m_bitCount && useFastPathTypes ) {
             // fast path
-            if( !outputMode || null == bytes ) {
+            if( !m_writeMode || null == m_bytes ) {
                 throw new IllegalStateException("not in output-mode: "+this);
             }
             final byte p1 = (byte) ( 0xff & ( int32 >>> 24 ) );
@@ -1422,16 +1447,16 @@ public class Bitstream<T> {
                 b3 = p2;
                 b4 = p1;
             }
-            if( EOS != bytes.write(b1) ) {
-                if( EOS != bytes.write(b2) ) {
-                    if( EOS != bytes.write(b3) ) {
-                        if( EOS != bytes.write(b4) ) {
+            if( EOS != m_bytes.write(b1) ) {
+                if( EOS != m_bytes.write(b2) ) {
+                    if( EOS != m_bytes.write(b3) ) {
+                        if( EOS != m_bytes.write(b4) ) {
                             return int32;
                         }
                     }
                 }
             }
-            if( throwIOExceptionOnEOF ) {
+            if( m_throwIOExceptionOnEOF ) {
                 throw new IOException("EOS "+this);
             }
             return EOS;
@@ -1499,15 +1524,15 @@ public class Bitstream<T> {
     protected String toStringImpl() {
         final String mode;
         final long bpos;
-        if( null == bytes ) {
+        if( null == m_bytes ) {
             mode = "closed";
             bpos = -1;
         } else {
-            mode = outputMode ? "output" : "input";
-            bpos = bytes.position();
+            mode = m_writeMode ? "output" : "input";
+            bpos = m_bytes.position();
         }
         return String.format((Locale)null, "%s, pos %d [byteP %d, bitCnt %d], bitbuf %s",
-                mode, position(), bpos, bitCount, toHexBinString(true, bitBuffer, 8));
+                mode, position(), bpos, m_bitCount, toHexBinString(true, m_bitCache, 8));
     }
 
     private static final String strZeroPadding= "0000000000000000000000000000000000000000000000000000000000000000"; // 64

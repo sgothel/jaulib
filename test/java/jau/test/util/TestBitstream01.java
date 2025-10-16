@@ -94,7 +94,7 @@ public class TestBitstream01 extends JunitTracer {
                 pre = testStringMSB.substring(0, preBits);
                 post = testStringMSB.substring(preBits+skipBits, preBits+skipBits+postBits);
             } else {
-                pre = testStringMSB.substring(postBits+skipBits, preBits+skipBits+postBits);
+                pre = testStringMSB.substring(postBits+skipBits, postBits+skipBits+preBits);
                 post = testStringMSB.substring(0, postBits);
             }
         } else {
@@ -102,7 +102,7 @@ public class TestBitstream01 extends JunitTracer {
                 pre = testStringLSB.substring(0, preBits);
                 post = testStringLSB.substring(preBits+skipBits, preBits+skipBits+postBits);
             } else {
-                pre = testStringMSB.substring(postBits+skipBits, preBits+skipBits+postBits);
+                pre = testStringMSB.substring(postBits+skipBits, postBits+skipBits+preBits);
                 post = testStringMSB.substring(0, postBits);
             }
         }

@@ -8,12 +8,11 @@
  * If a copy of the MIT was not distributed with this file,
  * you can obtain one at https://opensource.org/license/mit/.
  */
-#ifndef JAU_BITFIELD_HPP_
-#define JAU_BITFIELD_HPP_
+#ifndef JAU_BITHEAP_HPP_
+#define JAU_BITHEAP_HPP_
 
 #include <unistd.h>
 
-#include <array>
 #include <climits>
 #include <cmath>
 #include <cstring>
@@ -30,61 +29,74 @@
 #include <jau/type_concepts.hpp>
 
 namespace jau {
+
     /**
-     * Simple statically sized bitfield template for efficient bit storage access in O(1).
+     * Simple dynamically heap-sized bitheap for efficient bit storage access in O(1).
      *
      * Bit-position and bit-order are in least-significant-bits (lsb) first.
      *
-     * Implementations utilizes an in-memory `std::array<StorageType, (BitSize+31)/32>`
-     * with unsigned integral StorageType of sizeof(StorageType) <= sizeof(size_t).
+     * Implementations utilizes a dynamic heap `std::vector<unsigned long>` StorageType.
      *
-     * Similar to std::bitset, but providing custom methods.
+     * Similar to std::bitset, but utilizing dynamic runtime heapsize and  providing custom methods.
      *
-     * @see jau::bitheap
+     * @see jau::bitfield
      */
-    template<jau::req::unsigned_integral StorageType, size_t BitSize>
-        requires requires (StorageType) { sizeof(StorageType) <= sizeof(size_t); }
-    class bitfield_t {
+    class bitheap {
       public:
-        typedef StorageType unit_type;                                                ///< Unit data type
+        typedef unsigned long unit_type;                                              ///< Unit data type
         typedef size_t   size_type;                                                   ///< size_t data type, bit position and count
         static constexpr size_type unit_byte_size = sizeof(unit_type);                ///< One unit size in bytes
         static constexpr size_type unit_bit_size = unit_byte_size * CHAR_BIT;         ///< One unit size in bits
         static constexpr size_type unit_shift = jau::log2_byteshift(unit_byte_size);  ///< One unit shift amount
-        static constexpr size_type bit_size = BitSize;                                ///< Storage size in bits
 
         /** Returns storage size in bits */
         constexpr size_type size() const noexcept { return bit_size; }
 
         /// Storage size in units
-        static constexpr size_type unit_size = std::max<size_type>(1, (bit_size + unit_bit_size - 1) >> unit_shift);
+        // static constexpr size_type unit_size = std::max<size_type>(1, (bit_size + unit_bit_size - 1) >> unit_shift);
 
       private:
         static constexpr unit_type one_u = 1;
 
-        typedef std::array<unit_type, unit_size> storage_t;
+        typedef std::vector<unit_type> storage_t;
+        size_type bit_size;     ///< Storage size in bits
+        size_type unit_size;    ///< Storage size in units
         storage_t storage;
 
       public:
-        static constexpr bool in_range(size_type bitpos) { return bitpos < bit_size; }
-        static constexpr bool in_range(size_type bitpos, size_type length) {
+        constexpr bool in_range(size_type bitpos) const noexcept { return bitpos < bit_size; }
+        constexpr bool in_range(size_type bitpos, size_type length) const noexcept {
             return bitpos + length <= bit_size;
         }
 
-        /** Constructs an empty bitfield instance */
-        constexpr bitfield_t() noexcept { clear(); }
+        /** Constructs an empty bitheap instance */
+        constexpr bitheap(size_type bitSize) noexcept
+        : bit_size(bitSize),
+          unit_size(std::max<size_type>(1, (bit_size + unit_bit_size - 1) >> unit_shift)),
+          storage(unit_size, 0)
+        { clear(); }
 
         /**
-         * Constructs a bitfield instance, initialized with `bitstr` msb bit-pattern.
+         * Constructs a bitheap instance, initialized with `bitstr` msb bit-pattern.
          * @param bitstr most-significat (msb) bit string pattern
          * @throws jau::IllegalArgumentError if bitstr put failed
          * @see put(std::string_view)
          */
-        bitfield_t(std::string_view bitstr) {
+        bitheap(std::string_view bitstr)
+        : bit_size(bitstr.size()),
+          unit_size(std::max<size_type>(1, (bit_size + unit_bit_size - 1) >> unit_shift)),
+          storage(unit_size, 0)
+        {
             clear();
             if( !put(0, bitstr) ) {
                 throw jau::IllegalArgumentError("Invalid bit-patter "+std::string(bitstr), E_FILE_LINE);
             }
+        }
+
+        void resize(size_t new_bit_size) {
+            bit_size = new_bit_size;
+            unit_size = std::max<size_type>(1, (bit_size + unit_bit_size - 1) >> unit_shift);
+            storage.resize(unit_size, 0);
         }
 
         /*** Clears whole bitfield, i.e. sets all bits to zero. */
@@ -92,7 +104,7 @@ namespace jau {
             std::memset(storage.data(), 0, unit_byte_size * unit_size);
         }
         /*** Clears whole bitfield, i.e. sets all bits to zero. */
-        constexpr bitfield_t &reset() noexcept {
+        constexpr bitheap &reset() noexcept {
             clear();
             return *this;
         }
@@ -146,7 +158,7 @@ namespace jau {
             return true;
         }
         /*** Flips all bits in this storage. */
-        constexpr bitfield_t &flip() noexcept {
+        constexpr bitheap &flip() noexcept {
             size_type remaining = bit_size;
             for ( size_type i = 0; i < unit_size; ++i ) {
                 storage[i] = ~storage[i] & bit_mask<unit_type>(remaining);
@@ -156,7 +168,7 @@ namespace jau {
         }
 
         /*** Reverse all bits in this storage. */
-        constexpr bitfield_t &reverse() noexcept {
+        constexpr bitheap &reverse() noexcept {
             const size_type s0 = bit_size & (unit_bit_size-1); // % unit_bit_size;
             if( 0 == s0 ) { // fast-path, swap units
                 size_type l = 0, r = unit_size-1;
@@ -333,7 +345,7 @@ namespace jau {
             return true;
         }
         /** Set all bits of this bitfield to the given value `bit`. */
-        bitfield_t &setAll(bool bit) noexcept {
+        bitheap &setAll(bool bit) noexcept {
             (void)set(0, bit_size, bit);
             return *this;
         }
@@ -354,7 +366,7 @@ namespace jau {
             }
             return c;
         }
-        constexpr bool operator==(const bitfield_t &rhs) const noexcept {
+        constexpr bool operator==(const bitheap &rhs) const noexcept {
             if ( this == &rhs ) {
                 return true;
             }
@@ -368,8 +380,7 @@ namespace jau {
             return i == unit_size;
         }
 
-        template<size_t OBitSize>
-        [[nodiscard]] bool put(size_t bitpos, const bitfield_t<StorageType, OBitSize>& o) {
+        [[nodiscard]] bool put(size_t bitpos, const bitheap& o) {
             size_t length = o.bit_size;
             if ( 0 == length ) {
                 return true;
@@ -400,16 +411,14 @@ namespace jau {
             return true;
         }
 
-        template<size_t BitLength>
-        [[nodiscard]] std::pair<bitfield_t<StorageType, BitLength>, bool> subbits(size_type bitpos) const noexcept {
-            if ( 0 == BitLength ) {
-                return { bitfield_t<StorageType, BitLength>(), true };
-            } else if ( !in_range(bitpos, BitLength) ) {
-                return { bitfield_t<StorageType, BitLength>(), false };
+        [[nodiscard]] std::pair<bitheap, bool> subbits(size_type bitpos, size_type length) const noexcept {
+            if ( 0 == length ) {
+                return { bitheap(0), true };
+            } else if ( !in_range(bitpos, length) ) {
+                return { bitheap(0), false };
             }
-            std::pair<bitfield_t<StorageType, BitLength>, bool> r{ bitfield_t<StorageType, BitLength>(), true };
-            size_type length = BitLength;
-            const size_type unit_count = ( BitLength + unit_bit_size - 1 ) >> unit_shift;
+            std::pair<bitheap, bool> r{ bitheap(length), true };
+            const size_type unit_count = ( length + unit_bit_size - 1 ) >> unit_shift;
             const size_type unit_pos = bitpos >> unit_shift;
             const size_type unit_bit_pos = bitpos - (unit_pos << unit_shift);
             if ( 0 == unit_bit_pos ) {
@@ -417,7 +426,7 @@ namespace jau {
                 size_type i = 0;
                 for ( size_type u = unit_pos; u < unit_count && 0 < length; ++u ) {
                     if( !r.first.putUnit( i, l, storage[u] ) ) {
-                        return { bitfield_t<StorageType, BitLength>(), false };
+                        return { bitheap(0), false };
                     }
                     length -= l;
                     i += l;
@@ -426,7 +435,7 @@ namespace jau {
             } else {
                 for(size_type i = 0; i < length; ++i) {
                     if( !r.first.put(i, get(bitpos+i)) ) {
-                        return { bitfield_t<StorageType, BitLength>(), false };
+                        return { bitheap(0), false };
                     }
                 }
             }
@@ -472,26 +481,10 @@ namespace jau {
         }
     };
 
-    template<jau::req::unsigned_integral StorageType, size_t BitSize>
-        requires requires (StorageType) { sizeof(StorageType) <= sizeof(size_t); }
-    inline std::ostream &operator<<(std::ostream &out, const bitfield_t<StorageType, BitSize> &v) {
+    inline std::ostream &operator<<(std::ostream &out, const bitheap &v) {
         return out << v.toString();
     }
 
-    /**
-     * Simple bitfield template for efficient bit storage access in O(1).
-     *
-     * Implementations utilizes an in-memory `std::array<unsigned long, (BitSize+31)/32>`
-     * with `unsigned long` StorageType.
-     *
-     * Alias for bitfield_t, using `unsigned long` for `StorageType`, i.e. at least 32bit or 64bit on LP64.
-     *
-     * @see jau::bitfield_t
-     * @see jau::bitheap
-     */
-    template<size_t BitSize>
-    using bitfield = bitfield_t<unsigned long, BitSize>;
-
 }  // namespace jau
 
-#endif /*  JAU_BITFIELD_HPP_ */
+#endif /*  JAU_BITHEAP_HPP_ */
