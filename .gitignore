@@ -32,3 +32,4 @@ documentation.tar.xz
 *.jar
 /Profiling test_cow_darray_perf01/
 /bin/
+old_jaulibs/
