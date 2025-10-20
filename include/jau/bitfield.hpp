@@ -30,6 +30,12 @@
 #include <jau/type_concepts.hpp>
 
 namespace jau {
+
+    /** \addtogroup ByteUtils
+     *
+     *  @{
+     */
+
     /**
      * Simple statically sized bitfield template for efficient bit storage access in O(1).
      *
@@ -491,6 +497,8 @@ namespace jau {
      */
     template<size_t BitSize>
     using bitfield = bitfield_t<unsigned long, BitSize>;
+
+    /**@}*/
 
 }  // namespace jau
 

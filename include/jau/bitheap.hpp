@@ -30,6 +30,11 @@
 
 namespace jau {
 
+    /** \addtogroup ByteUtils
+     *
+     *  @{
+     */
+
     /**
      * Simple dynamically heap-sized bitheap for efficient bit storage access in O(1).
      *
@@ -484,6 +489,8 @@ namespace jau {
     inline std::ostream &operator<<(std::ostream &out, const bitheap &v) {
         return out << v.toString();
     }
+
+    /**@}*/
 
 }  // namespace jau
 

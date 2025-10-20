@@ -32,6 +32,11 @@ namespace jau::io {
 
     using namespace jau::enums;
 
+    /** \addtogroup IOUtils
+     *
+     *  @{
+     */
+
     /** I/O read or write access. */
     enum class ioaccess_t : bool {
         /** Read intent */
@@ -782,7 +787,6 @@ namespace jau::io {
     };
 
     inline std::ostream& operator<<(std::ostream& os, const Bitstream& v) { return os << v.toString(); }
-
 
     /**@}*/
 
