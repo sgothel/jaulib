@@ -242,7 +242,7 @@ SpaceBeforeParensOptions:
   AfterPlacementOperator: true
 SpacesInParens: Custom
 SpacesInParensOptions:
-  InConditionalStatements: true
+  InConditionalStatements: false
   InCStyleCasts: false
   InEmptyParentheses: false
   Other: false
