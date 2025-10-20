@@ -69,7 +69,7 @@ uint64_t jau::io::read_stream(ByteStream& in,
 
             buffer.resize(got);
             total += got;
-            has_more = 1 <= got && !in.fail() && ( !in.has_content_size() || total < in.content_size() );
+            has_more = 1 <= got && !in.fail() && ( !in.hasContentSize() || total < in.contentSize() );
             try {
                 if( !consumer_fn(buffer, !has_more) ) {
                     break; // end streaming
@@ -112,7 +112,7 @@ uint64_t jau::io::read_stream(ByteStream& in,
     {
         uint64_t got = _read_buffer(in, *buffers[idx]);
         total_read += got;
-        eof_read = 0 == got || in.fail() || ( in.has_content_size() && total_read >= in.content_size() );
+        eof_read = 0 == got || in.fail() || ( in.hasContentSize() && total_read >= in.contentSize() );
         eof[idx] = eof_read;
         ++idx;
     }
@@ -132,7 +132,7 @@ uint64_t jau::io::read_stream(ByteStream& in,
         if( !eof_read ) {
             uint64_t got = _read_buffer(in, *buffers[idx]);
             total_read += got;
-            eof_read = 0 == got || in.fail() || ( in.has_content_size() && total_read >= in.content_size() );
+            eof_read = 0 == got || in.fail() || ( in.hasContentSize() && total_read >= in.contentSize() );
             eof[idx] = eof_read;
             if( 0 == got ) {
                 // read-ahead eof propagation if read zero bytes,

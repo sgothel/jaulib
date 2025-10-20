@@ -95,16 +95,16 @@ class TestByteStream01 {
 
                     REQUIRE( true == in.isOpen() );
                     REQUIRE( false == in.canWrite() );
-                    REQUIRE( true == in.has_content_size() );
+                    REQUIRE( true == in.hasContentSize() );
 
                     char buffer[1024];
                     while( !in.eof() ) {
-                        uint64_t in_left = in.content_size() - in.position();
+                        uint64_t in_left = in.contentSize() - in.position();
                         uint64_t l0 = std::min(in_left, std::min(sizeof(buffer), take));
                         REQUIRE( l0 == in.read(buffer, l0) );
                         REQUIRE( l0 == out.write(buffer, l0) );
 
-                        in_left = in.content_size() - in.position();
+                        in_left = in.contentSize() - in.position();
                         l0 = std::min(in_left, std::min(sizeof(buffer), skip));
                         const uint64_t p0 = in.position() + l0;
                         // std::cout << "XXX: " << in << ": l0 " << l0 << ", p0 " << p0 << "\n";
@@ -178,7 +178,7 @@ class TestByteStream01 {
 
             uint64_t out_bytes_payload = 0;
             jau::io::StreamConsumerFunc consume_data = [&](jau::io::secure_vector<uint8_t>& data, bool is_final) -> bool {
-                if( !is_final && ( !input.has_content_size() || out_bytes_payload + data.size() < input.content_size() ) ) {
+                if( !is_final && ( !input.hasContentSize() || out_bytes_payload + data.size() < input.contentSize() ) ) {
                     const size_t written = outfile.write(data.data(), data.size());
                     out_bytes_payload += written;
                     return data.size() == written; // continue ..
@@ -269,7 +269,7 @@ class TestByteStream01 {
                     jau::PLAIN_PRINT(true, "test00_protocols: not_exiting_http_uri: %s", in->toString().c_str());
                     REQUIRE( false == in->good() );
                     REQUIRE( true == in->fail() );
-                    REQUIRE( 0 == in->content_size() );
+                    REQUIRE( 0 == in->contentSize() );
                 } else {
                     REQUIRE( nullptr == in );
                 }
@@ -300,7 +300,7 @@ class TestByteStream01 {
                 jau::io::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
                 REQUIRE( true == out_stats.exists() );
                 REQUIRE( true == out_stats.is_file() );
-                REQUIRE( in->content_size() == out_stats.size() );
+                REQUIRE( in->contentSize() == out_stats.size() );
                 REQUIRE( fname_payload_size_lst[file_idx] == out_stats.size() );
                 REQUIRE( true == jau::io::fs::compare(in->id(), out_stats.path(), true /* verbose */) );
             }
@@ -324,7 +324,7 @@ class TestByteStream01 {
                 jau::io::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
                 REQUIRE( true == out_stats.exists() );
                 REQUIRE( true == out_stats.is_file() );
-                REQUIRE( in->content_size() == out_stats.size() );
+                REQUIRE( in->contentSize() == out_stats.size() );
                 REQUIRE( fname_payload_size_lst[file_idx] == out_stats.size() );
                 REQUIRE( true == jau::io::fs::compare(fname_payload_lst[file_idx], out_stats.path(), true /* verbose */) );
             }
@@ -347,7 +347,7 @@ class TestByteStream01 {
                     jau::io::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
                     REQUIRE( true == out_stats.exists() );
                     REQUIRE( true == out_stats.is_file() );
-                    REQUIRE( in->content_size() == out_stats.size() );
+                    REQUIRE( in->contentSize() == out_stats.size() );
                     REQUIRE( fname_payload_size_lst[file_idx] == out_stats.size() );
                     REQUIRE( true == jau::io::fs::compare(fname_payload_lst[file_idx], out_stats.path(), true /* verbose */) );
                 } else {
@@ -367,7 +367,7 @@ class TestByteStream01 {
             jau::io::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
             REQUIRE( true == out_stats.exists() );
             REQUIRE( true == out_stats.is_file() );
-            REQUIRE( data_stream.content_size() == out_stats.size() );
+            REQUIRE( data_stream.contentSize() == out_stats.size() );
             REQUIRE( fname_payload_size_lst[file_idx] == out_stats.size() );
             REQUIRE( true == jau::io::fs::compare(data_stream.id(), out_stats.path(), true /* verbose */) );
         }
@@ -383,7 +383,7 @@ class TestByteStream01 {
             jau::io::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
             REQUIRE( true == out_stats.exists() );
             REQUIRE( true == out_stats.is_file() );
-            REQUIRE( data_stream.content_size() == out_stats.size() );
+            REQUIRE( data_stream.contentSize() == out_stats.size() );
             REQUIRE( fname_payload_size_lst[file_idx] == out_stats.size() );
             REQUIRE( true == jau::io::fs::compare(data_stream.id(), out_stats.path(), true /* verbose */) );
         }
@@ -399,7 +399,7 @@ class TestByteStream01 {
             jau::io::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
             REQUIRE( true == out_stats.exists() );
             REQUIRE( true == out_stats.is_file() );
-            REQUIRE( data_stream.content_size() == out_stats.size() );
+            REQUIRE( data_stream.contentSize() == out_stats.size() );
             REQUIRE( fname_payload_size_lst[file_idx] == out_stats.size() );
             REQUIRE( true == jau::io::fs::compare(data_stream.id(), out_stats.path(), true /* verbose */) );
         }
@@ -424,7 +424,7 @@ class TestByteStream01 {
                 jau::io::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
                 REQUIRE( true == out_stats.exists() );
                 REQUIRE( true == out_stats.is_file() );
-                REQUIRE( data_stream.content_size() == out_stats.size() );
+                REQUIRE( data_stream.contentSize() == out_stats.size() );
                 REQUIRE( fname_payload_size_lst[file_idx] == out_stats.size() );
                 REQUIRE( true == jau::io::fs::compare(fname_payload_lst[file_idx], out_stats.path(), true /* verbose */) );
             }
@@ -441,7 +441,7 @@ class TestByteStream01 {
                 jau::io::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
                 REQUIRE( true == out_stats.exists() );
                 REQUIRE( true == out_stats.is_file() );
-                REQUIRE( data_stream.content_size() == out_stats.size() );
+                REQUIRE( data_stream.contentSize() == out_stats.size() );
                 REQUIRE( fname_payload_size_lst[file_idx] == out_stats.size() );
                 REQUIRE( true == jau::io::fs::compare(fname_payload_lst[file_idx], out_stats.path(), true /* verbose */) );
             }
@@ -468,8 +468,8 @@ class TestByteStream01 {
                 REQUIRE( true == out_stats.exists() );
                 REQUIRE( true == out_stats.is_file() );
                 REQUIRE( data_stream.fail() == true );
-                REQUIRE( data_stream.has_content_size() == false );
-                REQUIRE( data_stream.content_size() == 0 );
+                REQUIRE( data_stream.hasContentSize() == false );
+                REQUIRE( data_stream.contentSize() == 0 );
                 REQUIRE( 0 == out_stats.size() );
             }
         }
@@ -492,7 +492,7 @@ class TestByteStream01 {
                 }
             }
             // probably set after transfering due to above sleep, which also ends when total size has been reached.
-            data_feed->set_eof( data_feed->fail() ? jau::io::io_result_t::FAILED : jau::io::io_result_t::SUCCESS );
+            data_feed->setEOF( data_feed->fail() ? jau::io::io_result_t::FAILED : jau::io::io_result_t::SUCCESS );
             (void)xfer_total; // not used yet ..
         }
 
@@ -500,8 +500,8 @@ class TestByteStream01 {
         static void feed_source_01(jau::io::ByteInStream_Feed * data_feed, const size_t feed_size=1024) {
             uint64_t xfer_total = 0;
             jau::io::ByteStream_File data_stream(data_feed->id(), jau::io::iomode_t::read);
-            const uint64_t file_size = data_stream.content_size();
-            data_feed->set_content_size( file_size );
+            const uint64_t file_size = data_stream.contentSize();
+            data_feed->setContentSize( file_size );
             std::vector<uint8_t> buffer;
             buffer.resize(feed_size);
             while( data_stream.good() && xfer_total < file_size ) {
@@ -516,15 +516,15 @@ class TestByteStream01 {
                 }
             }
             // probably set after transfering due to above sleep, which also ends when total size has been reached.
-            data_feed->set_eof( !data_feed->fail() && xfer_total == file_size ? jau::io::io_result_t::SUCCESS : jau::io::io_result_t::FAILED );
+            data_feed->setEOF( !data_feed->fail() && xfer_total == file_size ? jau::io::io_result_t::SUCCESS : jau::io::io_result_t::FAILED );
         }
 
         // full speed, with content size
         static void feed_source_10(jau::io::ByteInStream_Feed * data_feed, const size_t feed_size=1024) {
             uint64_t xfer_total = 0;
             jau::io::ByteStream_File data_stream(data_feed->id(), jau::io::iomode_t::read);
-            const uint64_t file_size = data_stream.content_size();
-            data_feed->set_content_size( data_stream.content_size() );
+            const uint64_t file_size = data_stream.contentSize();
+            data_feed->setContentSize( data_stream.contentSize() );
             std::vector<uint8_t> buffer;
             buffer.resize(feed_size);
             while( data_stream.good() && xfer_total < file_size ) {
@@ -536,7 +536,7 @@ class TestByteStream01 {
                     }
                 }
             }
-            data_feed->set_eof( !data_feed->fail() && xfer_total == file_size ? jau::io::io_result_t::SUCCESS : jau::io::io_result_t::FAILED );
+            data_feed->setEOF( !data_feed->fail() && xfer_total == file_size ? jau::io::io_result_t::SUCCESS : jau::io::io_result_t::FAILED );
         }
 
         // full speed, no content size, interrupting @ 1024 bytes within our header
@@ -551,7 +551,7 @@ class TestByteStream01 {
                     xfer_total += count;
                     if( data_feed->write(buffer.data(), count) ) {
                         if( xfer_total >= 1024 ) {
-                            data_feed->set_eof( jau::io::io_result_t::FAILED ); // calls data_feed->interruptReader();
+                            data_feed->setEOF( jau::io::io_result_t::FAILED ); // calls data_feed->interruptReader();
                             return;
                         }
                     } else {
@@ -567,8 +567,8 @@ class TestByteStream01 {
         static void feed_source_21(jau::io::ByteInStream_Feed * data_feed, const size_t feed_size=1024) {
             uint64_t xfer_total = 0;
             jau::io::ByteStream_File data_stream(data_feed->id(), jau::io::iomode_t::read);
-            const uint64_t file_size = data_stream.content_size();
-            data_feed->set_content_size( data_stream.content_size() );
+            const uint64_t file_size = data_stream.contentSize();
+            data_feed->setContentSize( data_stream.contentSize() );
             std::vector<uint8_t> buffer;
             buffer.resize(feed_size);
             while( data_stream.good() ) {
@@ -577,7 +577,7 @@ class TestByteStream01 {
                     xfer_total += count;
                     if( data_feed->write(buffer.data(), count) ) {
                         if( xfer_total >= file_size/4 ) {
-                            data_feed->set_eof( jau::io::io_result_t::FAILED ); // calls data_feed->interruptReader();
+                            data_feed->setEOF( jau::io::io_result_t::FAILED ); // calls data_feed->interruptReader();
                             return;
                         }
                     } else {
@@ -609,7 +609,7 @@ class TestByteStream01 {
                     jau::io::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
                     REQUIRE( true == out_stats.exists() );
                     REQUIRE( true == out_stats.is_file() );
-                    REQUIRE( data_feed.content_size() == out_stats.size() );
+                    REQUIRE( data_feed.contentSize() == out_stats.size() );
                     REQUIRE( fname_payload_size_lst[file_idx] == out_stats.size() );
                     REQUIRE( true == jau::io::fs::compare(data_feed.id(), out_stats.path(), true /* verbose */) );
                 }
@@ -627,7 +627,7 @@ class TestByteStream01 {
                     jau::io::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
                     REQUIRE( true == out_stats.exists() );
                     REQUIRE( true == out_stats.is_file() );
-                    REQUIRE( data_feed.content_size() == out_stats.size() );
+                    REQUIRE( data_feed.contentSize() == out_stats.size() );
                     REQUIRE( fname_payload_size_lst[file_idx] == out_stats.size() );
                     REQUIRE( true == jau::io::fs::compare(data_feed.id(), out_stats.path(), true /* verbose */) );
                 }
@@ -645,7 +645,7 @@ class TestByteStream01 {
                     jau::io::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
                     REQUIRE( true == out_stats.exists() );
                     REQUIRE( true == out_stats.is_file() );
-                    REQUIRE( data_feed.content_size() == 0 );
+                    REQUIRE( data_feed.contentSize() == 0 );
                     REQUIRE( fname_payload_size_lst[file_idx] == out_stats.size() );
                     REQUIRE( true == jau::io::fs::compare(data_feed.id(), out_stats.path(), true /* verbose */) );
                 }
@@ -666,7 +666,7 @@ class TestByteStream01 {
                     jau::io::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
                     REQUIRE( true == out_stats.exists() );
                     REQUIRE( true == out_stats.is_file() );
-                    REQUIRE( data_feed.content_size() == out_stats.size() );
+                    REQUIRE( data_feed.contentSize() == out_stats.size() );
                     REQUIRE( fname_payload_size_lst[file_idx] == out_stats.size() );
                     REQUIRE( true == jau::io::fs::compare(data_feed.id(), out_stats.path(), true /* verbose */) );
                 }
@@ -693,7 +693,7 @@ class TestByteStream01 {
                     jau::io::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
                     REQUIRE( true == out_stats.exists() );
                     REQUIRE( true == out_stats.is_file() );
-                    REQUIRE( data_feed.content_size() == out_stats.size() );
+                    REQUIRE( data_feed.contentSize() == out_stats.size() );
                     REQUIRE( fname_payload_size_lst[file_idx] == out_stats.size() );
                     REQUIRE( true == jau::io::fs::compare(data_feed.id(), out_stats.path(), true /* verbose */) );
                 }
@@ -711,7 +711,7 @@ class TestByteStream01 {
                     jau::io::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
                     REQUIRE( true == out_stats.exists() );
                     REQUIRE( true == out_stats.is_file() );
-                    REQUIRE( data_feed.content_size() == out_stats.size() );
+                    REQUIRE( data_feed.contentSize() == out_stats.size() );
                     REQUIRE( fname_payload_size_lst[file_idx] == out_stats.size() );
                     REQUIRE( true == jau::io::fs::compare(data_feed.id(), out_stats.path(), true /* verbose */) );
                 }
@@ -729,7 +729,7 @@ class TestByteStream01 {
                     jau::io::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
                     REQUIRE( true == out_stats.exists() );
                     REQUIRE( true == out_stats.is_file() );
-                    REQUIRE( data_feed.content_size() == 0 );
+                    REQUIRE( data_feed.contentSize() == 0 );
                     REQUIRE( fname_payload_size_lst[file_idx] == out_stats.size() );
                     REQUIRE( true == jau::io::fs::compare(data_feed.id(), out_stats.path(), true /* verbose */) );
                 }
@@ -756,7 +756,7 @@ class TestByteStream01 {
                     jau::io::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
                     REQUIRE( true == out_stats.exists() );
                     REQUIRE( true == out_stats.is_file() );
-                    REQUIRE( data_feed.content_size() == out_stats.size() );
+                    REQUIRE( data_feed.contentSize() == out_stats.size() );
                     REQUIRE( fname_payload_size_lst[file_idx] == out_stats.size() );
                     REQUIRE( true == jau::io::fs::compare(data_feed.id(), out_stats.path(), true /* verbose */) );
                 }
@@ -783,8 +783,8 @@ class TestByteStream01 {
                     jau::io::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
                     REQUIRE( true == out_stats.exists() );
                     REQUIRE( true == out_stats.is_file() );
-                    REQUIRE( false == data_feed.has_content_size() );
-                    REQUIRE( 0 == data_feed.content_size() );
+                    REQUIRE( false == data_feed.hasContentSize() );
+                    REQUIRE( 0 == data_feed.contentSize() );
                     REQUIRE( fname_payload_size_lst[file_idx] > out_stats.size() ); // interrupted...
                     REQUIRE( false == jau::io::fs::compare(data_feed.id(), out_stats.path(), true /* verbose */) );
                 }
@@ -802,9 +802,9 @@ class TestByteStream01 {
                     jau::io::fs::file_stats out_stats(fname_payload_copy_lst[file_idx]);
                     REQUIRE( true == out_stats.exists() );
                     REQUIRE( true == out_stats.is_file() );
-                    REQUIRE( true == data_feed.has_content_size() );
-                    REQUIRE( fname_payload_size_lst[file_idx] == data_feed.content_size() );
-                    REQUIRE( data_feed.content_size() > out_stats.size() ); // interrupted...
+                    REQUIRE( true == data_feed.hasContentSize() );
+                    REQUIRE( fname_payload_size_lst[file_idx] == data_feed.contentSize() );
+                    REQUIRE( data_feed.contentSize() > out_stats.size() ); // interrupted...
                     REQUIRE( false == jau::io::fs::compare(data_feed.id(), out_stats.path(), true /* verbose */) );
                 }
             }
@@ -813,10 +813,10 @@ class TestByteStream01 {
         void test_stream_seek(jau::io::ByteStream& in) {
             REQUIRE( true == in.isOpen() );
             REQUIRE( false == in.canWrite() );
-            REQUIRE( true == in.has_content_size() );
+            REQUIRE( true == in.hasContentSize() );
             uint64_t p0 = 0;
             REQUIRE( p0 == in.position() );
-            const uint64_t len = in.content_size();
+            const uint64_t len = in.contentSize();
             REQUIRE( true == in.available(len) );
             p0 = len/4;
             REQUIRE( 0 < p0 );
@@ -870,7 +870,7 @@ class TestByteStream01 {
                               size_t skip1, size_t take1, size_t skip2, size_t take2) {
             REQUIRE( true == in.isOpen() );
             REQUIRE( false == in.canWrite() );
-            REQUIRE( true == in.has_content_size() );
+            REQUIRE( true == in.hasContentSize() );
 
             jau::io::ByteStream_File out(out_name, jau::io::iomode_t::writetrunc);
             REQUIRE( true == out.good() );
@@ -880,7 +880,7 @@ class TestByteStream01 {
 
                 uint64_t p0 = 0;
                 REQUIRE( p0 == in.position() );
-                const uint64_t len = in.content_size();
+                const uint64_t len = in.contentSize();
                 REQUIRE( true == in.available(len) );
                 {
                     p0 = skip1;
@@ -900,13 +900,13 @@ class TestByteStream01 {
                     REQUIRE( true == in.available(len-p0) );
                 }
                 REQUIRE( true == in.available(take2) );
-                REQUIRE( take2 == in.content_size() - in.position() );
+                REQUIRE( take2 == in.contentSize() - in.position() );
                 REQUIRE( take2 == in.read(buffer, take2) );
                 p0 += take2;
                 REQUIRE( p0 == in.position() );
                 REQUIRE(take2 == out.write(buffer, take2) );
                 REQUIRE(take1+take2 == out.position() );
-                REQUIRE( in.content_size() == in.position() );
+                REQUIRE( in.contentSize() == in.position() );
                 REQUIRE( true == in.eof() );
             }
             REQUIRE( true == jau::io::fs::compare(out_name, cmp_name, true /* verbose */) );
@@ -920,7 +920,7 @@ class TestByteStream01 {
             jau::io::ByteStream_File in(test40_src_name, jau::io::iomode_t::read);
             REQUIRE( true == in.isOpen() );
             REQUIRE( false == in.canWrite() );
-            REQUIRE( true == in.has_content_size() );
+            REQUIRE( true == in.hasContentSize() );
             test_stream_seek(in, outfile_name01, test40_cmp1_name, 41, 40, 40, 39);
             REQUIRE(0 == in.seek(0) );
             test_stream_seek(in, outfile_name02, test40_cmp2_name, 28, 31, 41, 60);
@@ -942,7 +942,7 @@ class TestByteStream01 {
                 jau::io::ByteInStream_URL in(uri_original, 500_ms);
                 REQUIRE( true == in.isOpen() );
                 REQUIRE( false == in.canWrite() );
-                REQUIRE( true == in.has_content_size() );
+                REQUIRE( true == in.hasContentSize() );
                 test_stream_seek(in, outfile_name01, test40_cmp1_name, 41, 40, 40, 39);
                 REQUIRE(jau::io::ByteStream::npos == in.seek(0) );
             }
@@ -951,7 +951,7 @@ class TestByteStream01 {
                 jau::io::ByteInStream_URL in(uri_original, 500_ms);
                 REQUIRE( true == in.isOpen() );
                 REQUIRE( false == in.canWrite() );
-                REQUIRE( true == in.has_content_size() );
+                REQUIRE( true == in.hasContentSize() );
                 test_stream_seek(in, outfile_name02, test40_cmp2_name, 28, 31, 41, 60);
                 REQUIRE(jau::io::ByteStream::npos == in.seek(0) );
             }
@@ -960,7 +960,7 @@ class TestByteStream01 {
         void test_stream_rewind(jau::io::ByteStream& in, const std::string& out_name, const std::string& cmp_name) {
             REQUIRE( true == in.isOpen() );
             REQUIRE( false == in.canWrite() );
-            REQUIRE( true == in.has_content_size() );
+            REQUIRE( true == in.hasContentSize() );
 
             jau::io::ByteStream_File out(out_name, jau::io::iomode_t::writetrunc);
             REQUIRE( true == out.good() );
@@ -977,7 +977,7 @@ class TestByteStream01 {
                 char buffer[100];
 
                 REQUIRE( 0 == in.position() );
-                const uint64_t len = in.content_size();
+                const uint64_t len = in.contentSize();
                 REQUIRE( true == in.available(len) );
 
                 {
@@ -1132,7 +1132,7 @@ class TestByteStream01 {
             jau::io::ByteStream_File in(test40_src_name, jau::io::iomode_t::read);
             REQUIRE( true == in.isOpen() );
             REQUIRE( false == in.canWrite() );
-            REQUIRE( true == in.has_content_size() );
+            REQUIRE( true == in.hasContentSize() );
             test_stream_rewind(in, outfile_name01, test40_cmp3_name);
         }
 
@@ -1150,7 +1150,7 @@ class TestByteStream01 {
                 jau::io::ByteInStream_URL in(uri_original, 500_ms);
                 REQUIRE( true == in.isOpen() );
                 REQUIRE( false == in.canWrite() );
-                REQUIRE( true == in.has_content_size() );
+                REQUIRE( true == in.hasContentSize() );
                 test_stream_rewind(in, outfile_name01, test40_cmp3_name);
                 REQUIRE(jau::io::ByteStream::npos == in.seek(0) );
             }

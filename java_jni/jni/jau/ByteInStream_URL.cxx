@@ -265,7 +265,7 @@ jlong Java_org_jau_io_ByteInStream_1URL_position(JNIEnv *env, jobject obj) {
 jboolean Java_org_jau_io_ByteInStream_1URL_has_1content_1size(JNIEnv *env, jobject obj) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_URL> ref(env, obj); // hold until done
-        return ref->has_content_size() ? JNI_TRUE : JNI_FALSE;
+        return ref->hasContentSize() ? JNI_TRUE : JNI_FALSE;
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }
@@ -275,7 +275,7 @@ jboolean Java_org_jau_io_ByteInStream_1URL_has_1content_1size(JNIEnv *env, jobje
 jlong Java_org_jau_io_ByteInStream_1URL_content_1size(JNIEnv *env, jobject obj) {
     try {
         jau::jni::shared_ptr_ref<jau::io::ByteInStream_URL> ref(env, obj); // hold until done
-        return static_cast<jlong>( ref->content_size() );
+        return static_cast<jlong>( ref->contentSize() );
     } catch(...) {
         rethrow_and_raise_java_exception_jau(env);
     }

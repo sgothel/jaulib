@@ -183,22 +183,42 @@ namespace jau::io {
      * @see @ref byte_in_stream_properties "ByteInStream Properties"
      */
     class ByteStream : public IOStateCap {
+      public:
+        /// uint64_t size data type, bit position and count
+        typedef uint64_t size_type;
+
       protected:
         iomode_t m_iomode;
+        lb_endian_t m_byteOrder;
 
         /// Fallback slow discard implementation usind read() in case of unknown stream size.
         size_t discardRead(size_t n) noexcept;
 
       public:
-        /** Invalid position constant, denoting unset mark() or invalid position. Value: `std::numeric_limits<uint64_t>::max()` */
-        constexpr static uint64_t npos = std::numeric_limits<uint64_t>::max();
+        /** Invalid position constant, denoting unset mark() or invalid position. Value: `std::numeric_limits<size_type>::max()` */
+        constexpr static size_type npos = std::numeric_limits<size_type>::max();
 
-        ByteStream(iomode_t mode) noexcept
-        : IOStateCap(), m_iomode(mode) { }
+        /**
+         * @param mode iomode_t
+         * @param byteOrder endian byte-order of stream storage, defaults to lb_endian_t::little.
+         *                  Only affects multi-byte r/w operations, e.g. readU16(), writeU16(), etc
+         */
+        ByteStream(iomode_t mode, lb_endian_t byteOrder=lb_endian_t::little) noexcept
+        : IOStateCap(), m_iomode(mode), m_byteOrder(byteOrder) { }
 
         ~ByteStream() noexcept override = default;
 
         constexpr iomode_t mode() const noexcept { return m_iomode; }
+
+        /** Clears iomode_t::write from mode() */
+        void setImmutable() noexcept { m_iomode &= ~iomode_t::write; }
+
+        /**
+         * Returns endian byte-order of stream storage.
+         *
+         * Only affects multi-byte r/w operations, e.g. readU16(), writeU16(), etc.
+         */
+        constexpr lb_endian_t byteOrder() const noexcept { return m_byteOrder; }
 
         /** Returns true in case stream has iomode::read capabilities. */
         constexpr bool canRead() const noexcept { return is_set(m_iomode, iomode_t::read); }
@@ -224,20 +244,39 @@ namespace jau::io {
          * Returns true if implementation is aware of content_size(), otherwise false.
          * @see content_size()
          */
-        virtual bool has_content_size() const noexcept = 0;
+        virtual bool hasContentSize() const noexcept = 0;
 
         /**
          * Returns the content_size if known.
          * @see has_content_size()
          */
-        virtual uint64_t content_size() const noexcept = 0;
+        virtual size_type contentSize() const noexcept = 0;
 
         /**
          * Returns the position indicator, similar to e.g. std::basic_istream.
          *
          * @return number of bytes read or written so far.
          */
-        virtual uint64_t position() const noexcept = 0;
+        virtual size_type position() const noexcept = 0;
+
+        /**
+         * Returns the remaining bytes, i.e. content_size() - position(), if content_size if known, otherwise zero.
+         * @see has_content_size()
+         * @see content_size()
+         * @see position()
+         */
+        virtual size_type remaining() const noexcept { return hasContentSize() ? contentSize() - position() : 0; }
+
+        /**
+         * Return true if implementation supports random rewinding the stream, i.e. seek() below position().
+         *
+         * If random rewind is not supported and method returns false,
+         * one can still rewind in range [mark() .. position()).
+         *
+         * @see seek()
+         * @see setMark()
+         */
+        virtual bool canRewind() const noexcept = 0;
 
         /**
          * Sets position indicator for output-streams or input-streams with known length, similar to e.g. std::basic_istream.
@@ -247,15 +286,17 @@ namespace jau::io {
          * If newPos is >= stream-length, iostate::eofbit is set and position set to stream-length,
          * otherwise iostate::eofbit is cleared.
          *
-         * Certain implementations may not allow random rewinding of the stream
-         * but only support rewinding back to `markpos` (see setMark()) and may return ByteStream::npos if no set or exceeding range.
+         * Certain implementations may not allow random rewinding of the stream, see canRewind().
+         * In this case, rewinding is limited to mark(), see setMark(), and may return ByteStream::npos if none set or exceeding range.
          *
          * A ByteInStream's mark is cleared if > newPos.
          *
          * @param newPos desired absolute byte-offset (position)
          * @return resulting position if successful (incl eofbit) or ByteStream::npos otherwise having an unchanged position().
+         * @see canRewind()
+         * @see setMark()
          */
-        [[nodiscard]] virtual uint64_t seek(uint64_t newPos) noexcept = 0;
+        [[nodiscard]] virtual size_type seek(size_type newPos) noexcept = 0;
 
         virtual std::string toString() const noexcept = 0;
 
@@ -273,14 +314,16 @@ namespace jau::io {
          *
          * @param readlimit maximum number of bytes able to read before invalidating the `markpos`.
          * @return true if marks is set successfully, otherwise false
+         * @see seek()
+         * @see canRewind()
          */
-        [[nodiscard]] virtual bool setMark(uint64_t readLimit) noexcept = 0;
+        [[nodiscard]] virtual bool setMark(size_type readLimit) noexcept = 0;
 
         /** Returns the `markpos` set via setMark() or ByteStream::npos if unset. */
-        virtual uint64_t mark() const noexcept = 0;
+        virtual size_type mark() const noexcept = 0;
 
         /** Returns the `readLimit` set via setMark(). If unset either 0 or implicit limit. */
-        virtual uint64_t markReadLimit() const noexcept = 0;
+        virtual size_type markReadLimit() const noexcept = 0;
 
         /**
          * Seeks stream position to `markpos` as set via setMark().
@@ -345,14 +388,13 @@ namespace jau::io {
         [[nodiscard]] virtual size_t read(void* out, size_t length) noexcept = 0;
 
         /**
-         * Read one byte.
-         *
-         * Input stream operation, returns false if !is_input().
-         *
-         * @param out the byte to read to
-         * @return true if one byte has been read, false otherwise
+         * Read one byte, `uint8_t`
+         * @param bits reference to result
+         * @return true if successful, otherwise false
          */
-        [[nodiscard]] bool read(uint8_t& out) noexcept;
+        [[nodiscard]] bool read(uint8_t& bits) noexcept {
+            return 1 != read(&bits, 1);
+        }
 
         /**
          * Read from the source but do not modify the internal
@@ -366,7 +408,7 @@ namespace jau::io {
          * @param peek_offset offset from current stream position to read at
          * @return length in bytes that was actually read and put into out
          */
-        [[nodiscard]] virtual size_t peek(void* out, size_t length, uint64_t peek_offset) noexcept = 0;
+        [[nodiscard]] virtual size_t peek(void* out, size_t length, size_type peek_offset) noexcept = 0;
 
         /**
          * Peek one byte at current position
@@ -376,7 +418,9 @@ namespace jau::io {
          * @param out an output byte
          * @return true if one byte has been peeked, false otherwise
          */
-        [[nodiscard]] bool peek(uint8_t& out) noexcept;
+        [[nodiscard]] bool peek(uint8_t& out) noexcept {
+            return 1 == peek(&out, 1, 0);
+        }
 
         /**
          * Discard the next N bytes of the data
@@ -387,6 +431,93 @@ namespace jau::io {
          * @return number of bytes actually discarded
          */
         [[nodiscard]] virtual size_t discard(size_t N) noexcept = 0;
+
+        /**
+         * Read `uint16_t`.
+         *
+         * If stream byteOrder() != jau::lb_endian_t::native, result is bytes swapped via jau::bswap().
+         * @param bits reference to result
+         * @return true if successful, otherwise false
+         */
+        [[nodiscard]] bool readU16(uint16_t& bits) noexcept {
+            if ( 2 != read(&bits, 2) ) {
+                return false;
+            }
+            if ( m_byteOrder != lb_endian_t::native ) {
+                bits = jau::bswap(bits);
+            }
+            return true;
+        }
+        /**
+         * Read `int16_t`.
+         *
+         * If stream byteOrder() != jau::lb_endian_t::native, result is bytes swapped via jau::bswap().
+         * @param bits reference to result
+         * @return true if successful, otherwise false
+         */
+        [[nodiscard]] bool readS16(int16_t& bits) noexcept { return readU16( *reinterpret_cast<uint16_t*>(&bits) ); }
+
+        /**
+         * Read incoming `uint32_t`.
+         *
+         * If stream byteOrder() != jau::lb_endian_t::native, result is bytes swapped via jau::bswap().
+         * @param bits reference to result
+         * @return true if successful, otherwise false
+         */
+        [[nodiscard]] bool readU32(uint32_t& bits) noexcept {
+            if ( 4 != read(&bits, 4) ) {
+                return false;
+            }
+            if ( m_byteOrder != lb_endian_t::native ) {
+                bits = jau::bswap(bits);
+            }
+            return true;
+        }
+        /**
+         * Read `int32_t`.
+         *
+         * If stream byteOrder() != jau::lb_endian_t::native, result is bytes swapped via jau::bswap().
+         * @param bits reference to result
+         * @return true if successful, otherwise false
+         */
+        [[nodiscard]] bool readS32(int32_t& bits) noexcept { return readU32( *reinterpret_cast<uint32_t*>(&bits) ); }
+
+        /**
+         * Read incoming `uint64_t` w/o considering `bigEndian`, i.e. no byte swap is performed.
+         * @param bits reference to result
+         * @return true if successful, otherwise false
+         */
+        [[nodiscard]] bool readU64Raw(uint64_t &bits) noexcept {
+            if ( 4 != read(&bits, 8) ) {
+                return false;
+            }
+            return true;
+        }
+        /**
+         * Read incoming `uint64_t`.
+         *
+         * If stream byteOrder() != jau::lb_endian_t::native, result is bytes swapped via jau::bswap().
+         * @param bits reference to result
+         * @return true if successful, otherwise false
+         */
+        [[nodiscard]] bool readU64(uint64_t &bits) noexcept {
+            if ( 4 != read(&bits, 8) ) {
+                return false;
+            }
+            if ( m_byteOrder != lb_endian_t::native ) {
+                bits = jau::bswap(bits);
+            }
+            return true;
+        }
+        /**
+         * Read `int64_t`.
+         *
+         * If stream byteOrder() != jau::lb_endian_t::native, result is bytes swapped via jau::bswap().
+         *
+         * @param bits reference to result
+         * @return true if successful, otherwise false
+         */
+        [[nodiscard]] bool readS64(int64_t &bits) noexcept { return readU64(*reinterpret_cast<uint64_t *>(&bits)); }
 
         //
         // Output Stream
@@ -407,19 +538,102 @@ namespace jau::io {
         [[nodiscard]] virtual size_t write(const void* in, size_t length) noexcept = 0;
 
         /**
-         * Write one byte.
+         * Write one byte, `uint8_t`.
          *
          * Output stream operation, returns false if !is_output().
          *
          * @param in the byte to be written
          * @return true if one byte has been written, otherwise false
          */
-        [[nodiscard]] bool write(const uint8_t& in) noexcept;
+        [[nodiscard]] bool write(uint8_t in) noexcept {
+            return 1 == write(&in, 1);
+        }
 
         /**
          * Synchronizes all output operations, or do nothing.
          */
         virtual void flush() noexcept = 0;
+
+        /**
+         * Write the given `uint16_t`.
+         *
+         * If stream byteOrder() != jau::lb_endian_t::native, result is bytes swapped via jau::bswap().
+         *
+         * @param bits data to write
+         * @return true if successful, otherwise false
+         */
+        [[nodiscard]] bool writeU16(uint16_t bits) noexcept {
+            if ( m_byteOrder != lb_endian_t::native ) {
+                bits = jau::bswap(bits);
+            }
+            return 2 == write(&bits, 2);
+        }
+        /**
+         * Write the given `int16_t`.
+         *
+         * If stream byteOrder() != jau::lb_endian_t::native, result is bytes swapped via jau::bswap().
+         *
+         * @param bits data to write
+         * @return true if successful, otherwise false
+         */
+        [[nodiscard]] bool writeS16(int16_t bits) noexcept { return writeU16(*reinterpret_cast<uint16_t*>(&bits)); }
+
+        /**
+         * Write the given `uint32_t`.
+         *
+         * If stream byteOrder() != jau::lb_endian_t::native, result is bytes swapped via jau::bswap().
+         *
+         * @param bits data to write
+         * @return true if successful, otherwise false
+         */
+        [[nodiscard]] bool writeU32(uint32_t bits) noexcept {
+            if ( m_byteOrder != lb_endian_t::native ) {
+                bits = jau::bswap(bits);
+            }
+            return 4 == write(&bits, 4);
+        }
+        /**
+         * Write the given `int32_t`.
+         *
+         * If stream byteOrder() != jau::lb_endian_t::native, result is bytes swapped via jau::bswap().
+         *
+         * @param bits data to write
+         * @return true if successful, otherwise false
+         */
+        [[nodiscard]] bool writeS32(int32_t bits) noexcept { return writeU32(*reinterpret_cast<uint32_t*>(&bits)); }
+
+        /**
+         * Write the given `uint64_t` w/o considering `bigEndian`, i.e. no byte swap is performed.
+         *
+         * @param bits data to write
+         * @return true if successful, otherwise false
+         */
+        [[nodiscard]] bool writeU64Raw(uint64_t bits) noexcept {
+            return 8 == write(&bits, 8);
+        }
+        /**
+         * Write the given `uint64_t`.
+         *
+         * If stream byteOrder() != jau::lb_endian_t::native, result is bytes swapped via jau::bswap().
+         *
+         * @param bits data to write
+         * @return true if successful, otherwise false
+         */
+        [[nodiscard]] bool writeU64(uint64_t bits) noexcept {
+            if ( m_byteOrder != lb_endian_t::native ) {
+                bits = jau::bswap(bits);
+            }
+            return 8 == write(&bits, 8);
+        }
+        /**
+         * Write the given `int64_t`.
+         *
+         * If stream byteOrder() != jau::lb_endian_t::native, result is bytes swapped via jau::bswap().
+         *
+         * @param bits data to write
+         * @return true if successful, otherwise false
+         */
+        [[nodiscard]] bool writeS64(int64_t bits) noexcept { return writeU64(*reinterpret_cast<uint64_t*>(&bits)); }
     };
 
     inline std::ostream& operator<<(std::ostream& os, const ByteStream& v) { return os << v.toString(); }
@@ -432,33 +646,51 @@ namespace jau::io {
         /**
          * Construct a secure memory source that reads from a string, iomode_t::read.
          * @param in the string to read from
+         * @param byteOrder endian byte-order of stream storage, defaults to lb_endian_t::little.
+         *                  Only affects multi-byte r/w operations, e.g. readU16(), writeU16(), etc
          */
-        explicit ByteStream_SecMemory(const std::string& in);
+        explicit ByteStream_SecMemory(const std::string& in, lb_endian_t byteOrder=lb_endian_t::little);
 
         /**
-         * Construct a secure memory source that reads from a byte array
+         * Construct a secure memory source using a sized byte array
+         * @param length the length of the byte array
+         * @param iomode determines whether file should be opened iomode_t::read, iomode_t::write or iomode_t::rw
+         * @param byteOrder endian byte-order of stream storage, defaults to lb_endian_t::little.
+         *                  Only affects multi-byte r/w operations, e.g. readU16(), writeU16(), etc
+         */
+        ByteStream_SecMemory(size_t length, iomode_t mode, lb_endian_t byteOrder=lb_endian_t::little)
+        : ByteStream(mode, byteOrder), m_source(length), m_offset(0), m_mark(npos) { }
+
+        /**
+         * Construct a secure memory source copying data from a byte array
          * @param in the byte array to read from, copied over
          * @param length the length of the byte array
          * @param iomode determines whether file should be opened iomode_t::read, iomode_t::write or iomode_t::rw
+         * @param byteOrder endian byte-order of stream storage, defaults to lb_endian_t::little.
+         *                  Only affects multi-byte r/w operations, e.g. readU16(), writeU16(), etc
          */
-        ByteStream_SecMemory(const uint8_t in[], size_t length, iomode_t mode)
-        : ByteStream(mode), m_source(in, in + length), m_offset(0), m_mark(npos) { }
+        ByteStream_SecMemory(const uint8_t in[], size_t length, iomode_t mode, lb_endian_t byteOrder=lb_endian_t::little)
+        : ByteStream(mode, byteOrder), m_source(in, in + length), m_offset(0), m_mark(npos) { }
 
         /**
-         * Construct a secure memory source that reads from a secure_vector
+         * Construct a secure memory source copying data from a secure_vector
          * @param in the MemoryRegion to read from, this instance assumes ownership
          * @param iomode determines whether file should be opened iomode_t::read, iomode_t::write or iomode_t::rw
+         * @param byteOrder endian byte-order of stream storage, defaults to lb_endian_t::little.
+         *                  Only affects multi-byte r/w operations, e.g. readU16(), writeU16(), etc
          */
-        explicit ByteStream_SecMemory(io::secure_vector<uint8_t>&& in, iomode_t mode)
-        : ByteStream(mode), m_source(std::move(in)), m_offset(0), m_mark(npos) { }
+        explicit ByteStream_SecMemory(io::secure_vector<uint8_t>&& in, iomode_t mode, lb_endian_t byteOrder=lb_endian_t::little)
+        : ByteStream(mode, byteOrder), m_source(std::move(in)), m_offset(0), m_mark(npos) { }
 
         /**
-         * Construct a secure memory source that reads from a std::vector
+         * Construct a secure memory source copying data from a std::vector
          * @param in the MemoryRegion to read from, copied over
          * @param iomode determines whether file should be opened iomode_t::read, iomode_t::write or iomode_t::rw
+         * @param byteOrder endian byte-order of stream storage, defaults to lb_endian_t::little.
+         *                  Only affects multi-byte r/w operations, e.g. readU16(), writeU16(), etc
          */
-        explicit ByteStream_SecMemory(const std::vector<uint8_t>& in, iomode_t mode)
-        : ByteStream(mode), m_source(in.begin(), in.end()), m_offset(0), m_mark(npos) { }
+        explicit ByteStream_SecMemory(const std::vector<uint8_t>& in, iomode_t mode, lb_endian_t byteOrder=lb_endian_t::little)
+        : ByteStream(mode, byteOrder), m_source(in.begin(), in.end()), m_offset(0), m_mark(npos) { }
 
         ~ByteStream_SecMemory() noexcept override { close(); }
 
@@ -466,24 +698,26 @@ namespace jau::io {
 
         void close() noexcept override;
 
-        bool has_content_size() const noexcept override { return true; }
+        bool hasContentSize() const noexcept override { return true; }
 
-        uint64_t content_size() const noexcept override { return m_source.size(); }
+        size_type contentSize() const noexcept override { return m_source.size(); }
 
-        uint64_t position() const noexcept override { return m_offset; }
+        size_type position() const noexcept override { return m_offset; }
 
-        [[nodiscard]] uint64_t seek(uint64_t newPos) noexcept override;
+        bool canRewind() const noexcept override { return true; }
+
+        [[nodiscard]] size_type seek(size_type newPos) noexcept override;
 
         std::string toString() const noexcept override;
 
-        [[nodiscard]] bool setMark(uint64_t readLimit) noexcept override;
-        uint64_t mark() const noexcept override { return m_mark; }
-        uint64_t markReadLimit() const noexcept override { return content_size(); }
+        [[nodiscard]] bool setMark(size_type readLimit) noexcept override;
+        size_type mark() const noexcept override { return m_mark; }
+        size_type markReadLimit() const noexcept override { return contentSize(); }
         [[nodiscard]] bool seekMark() noexcept override;
 
         bool available(size_t n) noexcept override;
         [[nodiscard]] size_t read(void*, size_t) noexcept override;
-        [[nodiscard]] size_t peek(void*, size_t, uint64_t) noexcept override;
+        [[nodiscard]] size_t peek(void*, size_t, size_type) noexcept override;
         [[nodiscard]] size_t discard(size_t N) noexcept override;
 
         [[nodiscard]] size_t write(const void*, size_t) noexcept override;
@@ -492,7 +726,7 @@ namespace jau::io {
       private:
         io::secure_vector<uint8_t> m_source;
         size_t m_offset;
-        uint64_t m_mark;
+        size_type m_mark;
     };
 
     /**
@@ -511,10 +745,10 @@ namespace jau::io {
         int m_fd;
 
         bool m_has_content_length;
-        uint64_t m_content_size;
-        uint64_t m_offset;
-        uint64_t m_mark;
-        uint64_t get_available() const noexcept { return m_has_content_length ? m_content_size - m_offset : 0; }
+        size_type m_content_size;
+        size_type m_offset;
+        size_type m_mark;
+        size_type get_available() const noexcept { return m_has_content_length ? m_content_size - m_offset : 0; }
 
       public:
         /**
@@ -527,10 +761,15 @@ namespace jau::io {
          * the leading `file://` is cut off and the remainder being used.
          *
          * @param path the path to the file, maybe a local file URI
-         * @param iomode determines whether file should be opened iomode_t::read, iomode_t::write or iomode_t::rw
-         * @param fmode file protection mode for a new file, otherwise ignored.
+         * @param iomode determines whether file should be opened iomode_t::read, iomode_t::write or iomode_t::rw (default)
+         * @param fmode file protection mode for a new file, otherwise ignored. Defaults to fs::fmode_t::def_file_prot.
+         * @param byteOrder endian byte-order of stream storage, defaults to lb_endian_t::little.
+         *                  Only affects multi-byte r/w operations, e.g. readU16(), writeU16(), etc
          */
-        ByteStream_File(const std::string& path, iomode_t iomode, const jau::io::fs::fmode_t fmode = fs::fmode_t::def_file_prot) noexcept;
+        ByteStream_File(const std::string& path,
+                        iomode_t iomode = iomode_t::rw,
+                        const jau::io::fs::fmode_t fmode = fs::fmode_t::def_file_prot,
+                        lb_endian_t byteOrder=lb_endian_t::little) noexcept;
 
         /**
          * Construct a stream based byte stream from filesystem path and parent directory file descriptor,
@@ -543,10 +782,15 @@ namespace jau::io {
          *
          * @param dirfd parent directory file descriptor
          * @param path the path to the file, maybe a local file URI
-         * @param iomode determines whether file should be opened iomode_t::read, iomode_t::write or iomode_t::rw
-         * @param fmode file protection mode for a new file, otherwise ignored.
+         * @param iomode determines whether file should be opened iomode_t::read, iomode_t::write or iomode_t::rw (default)
+         * @param fmode file protection mode for a new file, otherwise ignored. Defaults to fs::fmode_t::def_file_prot.
+         * @param byteOrder endian byte-order of stream storage, defaults to lb_endian_t::little.
+         *                  Only affects multi-byte r/w operations, e.g. readU16(), writeU16(), etc
          */
-        ByteStream_File(const int dirfd, const std::string& path, iomode_t iomode, const jau::io::fs::fmode_t fmode = fs::fmode_t::def_file_prot) noexcept;
+        ByteStream_File(const int dirfd, const std::string& path,
+                        iomode_t iomode = iomode_t::rw,
+                        const jau::io::fs::fmode_t fmode = fs::fmode_t::def_file_prot,
+                        lb_endian_t byteOrder=lb_endian_t::little) noexcept;
 
         /**
          * Construct a stream based byte stream by duplicating given file descriptor
@@ -555,9 +799,11 @@ namespace jau::io {
          * the leading `file://` is cut off and the remainder being used.
          *
          * @param fd file descriptor to duplicate leaving the given `fd` untouched
-         * @param iomode determines whether file descriptor is iomode_t::read, iomode_t::write or iomode_t::rw
+         * @param iomode determines whether file descriptor is iomode_t::read, iomode_t::write or iomode_t::rw (default)
+         * @param byteOrder endian byte-order of stream storage, defaults to lb_endian_t::little.
+         *                  Only affects multi-byte r/w operations, e.g. readU16(), writeU16(), etc
          */
-        ByteStream_File(const int fd, iomode_t mode) noexcept;
+        ByteStream_File(const int fd, iomode_t mode = iomode_t::rw, lb_endian_t byteOrder=lb_endian_t::little) noexcept;
 
         ByteStream_File(const ByteStream_File&) = delete;
 
@@ -578,20 +824,21 @@ namespace jau::io {
         void close() noexcept override;
         std::string id() const noexcept override { return m_stats.path(); }
 
-        bool has_content_size() const noexcept override { return m_has_content_length; }
-        uint64_t content_size() const noexcept override { return m_content_size; }
-        uint64_t position() const noexcept override { return m_offset; }
-        [[nodiscard]] uint64_t seek(uint64_t newPos) noexcept override;
+        bool hasContentSize() const noexcept override { return m_has_content_length; }
+        size_type contentSize() const noexcept override { return m_content_size; }
+        size_type position() const noexcept override { return m_offset; }
+        bool canRewind() const noexcept override { return true; }
+        [[nodiscard]] size_type seek(size_type newPos) noexcept override;
         std::string toString() const noexcept override;
 
-        [[nodiscard]] bool setMark(uint64_t readLimit) noexcept override;
-        uint64_t mark() const noexcept override { return m_mark; }
-        uint64_t markReadLimit() const noexcept override { return content_size(); }
+        [[nodiscard]] bool setMark(size_type readLimit) noexcept override;
+        size_type mark() const noexcept override { return m_mark; }
+        size_type markReadLimit() const noexcept override { return contentSize(); }
         [[nodiscard]] bool seekMark() noexcept override;
 
         bool available(size_t n) noexcept override;
         [[nodiscard]] size_t read(void*, size_t) noexcept override;
-        [[nodiscard]] size_t peek(void*, size_t, uint64_t) noexcept override;
+        [[nodiscard]] size_t peek(void*, size_t, size_type) noexcept override;
         [[nodiscard]] size_t discard(size_t N) noexcept override;
 
         [[nodiscard]] size_t write(const void*, size_t) noexcept override;
@@ -622,21 +869,23 @@ namespace jau::io {
             size_t m_end;
 
           public:
+            using size_type = jau::io::ByteStream::size_type;
+
             typedef jau::function<size_t(void* out, size_t length)> DataProvider;
 
             RewindBuffer() noexcept : m_buffer(0), m_end(0) {}
 
-            constexpr bool covered(const uint64_t m, uint64_t o) const noexcept {
+            constexpr bool covered(const size_type m, size_type o) const noexcept {
                 return ByteStream::npos != m && m <= o && o < m + m_end;
             }
 
-            constexpr uint64_t capacity() const noexcept { return m_buffer.size(); }
-            constexpr uint64_t end() const noexcept { return m_end; }
+            constexpr size_type capacity() const noexcept { return m_buffer.size(); }
+            constexpr size_type end() const noexcept { return m_end; }
             std::string toString() const noexcept {
                 return "Rew[end " + std::to_string(end()) + ", capacity " + std::to_string(capacity()) + "]";
             }
 
-            bool setMark(const uint64_t m, uint64_t o, uint64_t readLimit) noexcept {
+            bool setMark(const size_type m, size_type o, size_type readLimit) noexcept {
                 // DBG_PRINT("RewindBuffer.setMark.0 mark %" PRIu64 ", offset %" PRIu64 ", %s", m, o, toString().c_str());
                 PRAGMA_DISABLE_WARNING_PUSH
                 PRAGMA_DISABLE_WARNING_TYPE_RANGE_LIMIT
@@ -660,7 +909,7 @@ namespace jau::io {
                 }
                 return true;
             }
-            size_t read(uint64_t& m, uint64_t& o, DataProvider newData, void* out, const size_t length) noexcept {
+            size_t read(size_type& m, size_type& o, DataProvider newData, void* out, const size_t length) noexcept {
                 [[maybe_unused]] size_t l0 = length;
                 size_t g1 = 0, g2 = 0;
                 if ( covered(m, o) ) {
@@ -704,8 +953,10 @@ namespace jau::io {
          * Construct a ringbuffer backed Http byte input stream
          * @param url the URL of the data to read
          * @param timeout maximum duration in fractions of seconds to wait @ available() for next bytes, where fractions_i64::zero waits infinitely
+         * @param byteOrder endian byte-order of stream storage, defaults to lb_endian_t::little.
+         *                  Only affects multi-byte r/w operations, e.g. readU16(), writeU16(), etc
          */
-        ByteInStream_URL(std::string url, const jau::fraction_i64& timeout) noexcept;
+        ByteInStream_URL(std::string url, const jau::fraction_i64& timeout, lb_endian_t byteOrder=lb_endian_t::little) noexcept;
 
         ByteInStream_URL(const ByteInStream_URL&) = delete;
 
@@ -719,18 +970,20 @@ namespace jau::io {
         void close() noexcept override;
         std::string id() const noexcept override { return m_url; }
 
-        bool has_content_size() const noexcept override;
-        uint64_t content_size() const noexcept override { return m_stream_resp->content_length; }
-        uint64_t position() const noexcept override { return m_offset; }
+        bool hasContentSize() const noexcept override;
+        size_type contentSize() const noexcept override { return m_stream_resp->content_length; }
+        size_type position() const noexcept override { return m_offset; }
+
+        bool canRewind() const noexcept override { return false; }
 
         /// newPos < position() limited to `markpos`, see setMark().
-        [[nodiscard]] uint64_t seek(uint64_t newPos) noexcept override;
+        [[nodiscard]] size_type seek(size_type newPos) noexcept override;
 
         std::string toString() const noexcept override;
 
-        [[nodiscard]] bool setMark(uint64_t readLimit) noexcept override;
-        uint64_t mark() const noexcept override { return m_mark; }
-        uint64_t markReadLimit() const noexcept override { return m_rewindbuf.capacity(); }
+        [[nodiscard]] bool setMark(size_type readLimit) noexcept override;
+        size_type mark() const noexcept override { return m_mark; }
+        size_type markReadLimit() const noexcept override { return m_rewindbuf.capacity(); }
         [[nodiscard]] bool seekMark() noexcept override;
 
         /**
@@ -765,7 +1018,7 @@ namespace jau::io {
          */
         [[nodiscard]] size_t read(void* out, size_t length) noexcept override;
 
-        [[nodiscard]] size_t peek(void* out, size_t length, uint64_t peek_offset) noexcept override;
+        [[nodiscard]] size_t peek(void* out, size_t length, size_type peek_offset) noexcept override;
 
         /// Implemented by skipping input stream via read
         [[nodiscard]] size_t discard(size_t N) noexcept override;
@@ -774,7 +1027,7 @@ namespace jau::io {
         void flush() noexcept override { }
 
       private:
-        uint64_t get_available() const noexcept { return m_stream_resp->has_content_length ? m_stream_resp->content_length - m_offset : 0; }
+        size_type get_available() const noexcept { return m_stream_resp->has_content_length ? m_stream_resp->content_length - m_offset : 0; }
         std::string to_string_int() const noexcept;
 
         const std::string m_url;
@@ -782,8 +1035,8 @@ namespace jau::io {
         ByteRingbuffer m_buffer;
         jau::io::AsyncStreamResponseRef m_stream_resp;
 
-        uint64_t m_offset;
-        uint64_t m_mark;
+        size_type m_offset;
+        size_type m_mark;
         impl::RewindBuffer m_rewindbuf;
 
         impl::RewindBuffer::DataProvider newData = [&](void* out, size_t length) -> size_t {
@@ -823,8 +1076,10 @@ namespace jau::io {
          * Construct a ringbuffer backed externally provisioned byte input stream
          * @param id_name arbitrary identifier for this instance
          * @param timeout maximum duration in fractions of seconds to wait @ available() and write(), where fractions_i64::zero waits infinitely
+         * @param byteOrder endian byte-order of stream storage, defaults to lb_endian_t::little.
+         *                  Only affects multi-byte r/w operations, e.g. readU16(), writeU16(), etc
          */
-        ByteInStream_Feed(std::string id_name, const jau::fraction_i64& timeout) noexcept;
+        ByteInStream_Feed(std::string id_name, const jau::fraction_i64& timeout, lb_endian_t byteOrder=lb_endian_t::little) noexcept;
 
         ByteInStream_Feed(const ByteInStream_Feed&) = delete;
 
@@ -848,7 +1103,7 @@ namespace jau::io {
          * Set known content size, informal only.
          * @param content_length the content size in bytes
          */
-        void set_content_size(const uint64_t size) noexcept {
+        void setContentSize(const size_type size) noexcept {
             m_content_size = size;
             m_has_content_length = true;
         }
@@ -862,7 +1117,7 @@ namespace jau::io {
          *
          * @see interruptReader()
          */
-        void set_eof(const io_result_t result) noexcept;
+        void setEOF(const io_result_t result) noexcept;
 
         iostate_t rdstate() const noexcept override;
 
@@ -872,20 +1127,22 @@ namespace jau::io {
 
         std::string id() const noexcept override { return m_id; }
 
-        bool has_content_size() const noexcept override { return m_has_content_length; }
+        bool hasContentSize() const noexcept override { return m_has_content_length; }
 
-        uint64_t content_size() const noexcept override { return m_content_size; }
+        size_type contentSize() const noexcept override { return m_content_size; }
 
-        uint64_t position() const noexcept override { return m_offset; }
+        size_type position() const noexcept override { return m_offset; }
+
+        bool canRewind() const noexcept override { return false; }
 
         /// newPos < position() limited to `markpos`, see setMark().
-        [[nodiscard]] uint64_t seek(uint64_t newPos) noexcept override;
+        [[nodiscard]] size_type seek(size_type newPos) noexcept override;
 
         std::string toString() const noexcept override;
 
-        [[nodiscard]] bool setMark(uint64_t readLimit) noexcept override;
-        uint64_t mark() const noexcept override { return m_mark; }
-        uint64_t markReadLimit() const noexcept override { return m_rewindbuf.capacity(); }
+        [[nodiscard]] bool setMark(size_type readLimit) noexcept override;
+        size_type mark() const noexcept override { return m_mark; }
+        size_type markReadLimit() const noexcept override { return m_rewindbuf.capacity(); }
         [[nodiscard]] bool seekMark() noexcept override;
 
         /**
@@ -921,7 +1178,7 @@ namespace jau::io {
         [[nodiscard]] size_t read(void* out, size_t length) noexcept override;
 
         /// Not implemented, returns 0
-        [[nodiscard]] size_t peek(void* out, size_t length, uint64_t peek_offset) noexcept override;
+        [[nodiscard]] size_t peek(void* out, size_t length, size_type peek_offset) noexcept override;
 
         /// Implemented by skipping input stream via read
         [[nodiscard]] size_t discard(size_t N) noexcept override;
@@ -959,8 +1216,8 @@ namespace jau::io {
         void flush() noexcept override { }
 
       private:
-        uint64_t get_available() const noexcept { return m_has_content_length ? m_content_size - m_offset : 0; }
-        std::string to_string_int() const noexcept;
+        size_type getAvailable() const noexcept { return m_has_content_length ? m_content_size - m_offset : 0; }
+        std::string toStringInt() const noexcept;
 
         const std::string m_id;
         jau::fraction_i64 m_timeout;
@@ -970,8 +1227,8 @@ namespace jau::io {
         jau::relaxed_atomic_uint64 m_total_xfered;
         relaxed_atomic_io_result_t m_result;
 
-        uint64_t m_offset;
-        uint64_t m_mark;
+        size_type m_offset;
+        size_type m_mark;
         impl::RewindBuffer m_rewindbuf;
 
         impl::RewindBuffer::DataProvider newData = [&](void* out, size_t length) -> size_t {
@@ -1001,9 +1258,11 @@ namespace jau::io {
          * Construct a byte input stream wrapper using the given parent ByteInStream.
          * @param parent the parent ByteInStream
          * @param buffer a user defined buffer for the recording
+         * @param byteOrder endian byte-order of stream storage, defaults to lb_endian_t::little.
+         *                  Only affects multi-byte r/w operations, e.g. readU16(), writeU16(), etc
          */
-        ByteStream_Recorder(ByteStream& parent, io::secure_vector<uint8_t>& buffer) noexcept
-        : ByteStream(iomode_t::read), m_parent(parent), m_offset(0), m_buffer(buffer), m_rec_offset(0), m_is_recording(false) { };
+        ByteStream_Recorder(ByteStream& parent, io::secure_vector<uint8_t>& buffer, lb_endian_t byteOrder=lb_endian_t::little) noexcept
+        : ByteStream(parent.mode(), byteOrder), m_parent(parent), m_offset(0), m_buffer(buffer), m_rec_offset(0), m_is_recording(false) { };
 
         ByteStream_Recorder(const ByteStream_Recorder&) = delete;
 
@@ -1017,7 +1276,7 @@ namespace jau::io {
          * A potential previous recording will be cleared.
          * </p>
          */
-        void start_recording() noexcept;
+        void startRecording() noexcept;
 
         /**
          * Stops the recording.
@@ -1025,7 +1284,7 @@ namespace jau::io {
          * The recording persists.
          * </p>
          */
-        void stop_recording() noexcept;
+        void stopRecording() noexcept;
 
         /**
          * Clears the recording.
@@ -1033,17 +1292,17 @@ namespace jau::io {
          * If the recording was ongoing, also stops the recording.
          * </p>
          */
-        void clear_recording() noexcept;
+        void clearRecording() noexcept;
 
         /** Returns the reference of the recording buffer given by user. */
         io::secure_vector<uint8_t>& get_recording() noexcept { return m_buffer; }
 
-        size_t get_bytes_recorded() noexcept { return m_buffer.size(); }
+        size_t getRecordedBytes() noexcept { return m_buffer.size(); }
 
         /** Returns the recording start position. */
-        uint64_t get_recording_start_pos() noexcept { return m_rec_offset; }
+        size_type get_recording_start_pos() noexcept { return m_rec_offset; }
 
-        bool is_recording() noexcept { return m_is_recording; }
+        bool isRecording() noexcept { return m_is_recording; }
 
         void assignState(const iostate_t state = iostate_t::goodbit) noexcept override { m_parent.assignState(state); }
         iostate_t rdstate() const noexcept override { return m_parent.rdstate(); }
@@ -1052,17 +1311,19 @@ namespace jau::io {
 
         void close() noexcept override;
 
-        uint64_t position() const noexcept override { return m_offset; }
+        size_type position() const noexcept override { return m_offset; }
 
-        bool has_content_size() const noexcept override { return m_parent.has_content_size(); }
+        bool hasContentSize() const noexcept override { return m_parent.hasContentSize(); }
 
-        uint64_t content_size() const noexcept override { return m_parent.content_size(); }
+        size_type contentSize() const noexcept override { return m_parent.contentSize(); }
 
         std::string toString() const noexcept override;
 
         std::string id() const noexcept override { return m_parent.id(); }
 
-        [[nodiscard]] uint64_t seek(uint64_t newPos) noexcept override {
+        bool canRewind() const noexcept override { return m_parent.canRewind(); }
+
+        [[nodiscard]] size_type seek(size_type newPos) noexcept override {
             m_offset = m_parent.seek(newPos);
             return m_offset;
         }
@@ -1072,9 +1333,9 @@ namespace jau::io {
             return n;
         }
 
-        [[nodiscard]] bool setMark(uint64_t readLimit) noexcept override { return m_parent.setMark(readLimit); }
-        uint64_t mark() const noexcept override { return m_parent.mark(); }
-        uint64_t markReadLimit() const noexcept override { return m_parent.markReadLimit(); }
+        [[nodiscard]] bool setMark(size_type readLimit) noexcept override { return m_parent.setMark(readLimit); }
+        size_type mark() const noexcept override { return m_parent.mark(); }
+        size_type markReadLimit() const noexcept override { return m_parent.markReadLimit(); }
         [[nodiscard]] bool seekMark() noexcept override {
             if ( m_parent.seekMark() ) {
                 m_offset = m_parent.position();
@@ -1086,7 +1347,7 @@ namespace jau::io {
 
         [[nodiscard]] size_t read(void*, size_t) noexcept override;
 
-        [[nodiscard]] size_t peek(void* out, size_t length, uint64_t peek_offset) noexcept override {
+        [[nodiscard]] size_t peek(void* out, size_t length, size_type peek_offset) noexcept override {
             return m_parent.peek(out, length, peek_offset);
         }
 
@@ -1097,9 +1358,9 @@ namespace jau::io {
 
       private:
         ByteStream& m_parent;
-        uint64_t m_offset;
+        size_type m_offset;
         io::secure_vector<uint8_t>& m_buffer;
-        uint64_t m_rec_offset;
+        size_type m_rec_offset;
         bool m_is_recording;
     };
 
