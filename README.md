@@ -9,10 +9,10 @@ This project's canonical repositories is hosted on [Gothel Software](https://jau
 This project provides general C++ collections, algorithms and utilities.
 
 `jaulib` was extracted from [Direct-BT](https://jausoft.com/cgit/direct_bt.git/about/) to enable general use and enforce better encapsulation,
-now it is utilized in multiple projects ranging from cryptography with [Cipherpack](https://jausoft.com/cgit/cipherpack.git/about/), 
+now it is utilized in multiple projects ranging from cryptography with [Cipherpack](https://jausoft.com/cgit/cipherpack.git/about/),
 over-the-air (OTA) updates to computer graphics with [Gamp](https://jausoft.com/cgit/gamp.git/about/).
 
-It also provides a basic mechanisms to create a thin Java JNI binding 
+It also provides a basic mechanisms to create a thin Java JNI binding
 as well as some Java JNI bindings for a subset of `jaulib`.
 
 ### Status
@@ -103,7 +103,7 @@ under *jaulib/src/* into your build recipe.
 
 The produced Java libraries are fully functional.
 
-This library's build recipe are functional though, 
+This library's build recipe are functional though,
 but currently only intended to support unit testing and to produce a Doxygen API doc.
 
 ### Build Dependencies
@@ -112,11 +112,11 @@ but currently only intended to support unit testing and to produce a Doxygen API
   - gcc >= 11 (C++20), recommended >= 12.2.0
   - clang >= 13 (C++20), recommended >= 18.1.6
 - Optional for `lint` validation
-  - clang-tidy >= 18.1.6
+  - clang-tidy >= 19
 - Optional for `eclipse` and `vscodium` integration
-  - clangd >= 18.1.6
-  - clang-tools >= 18.1.6
-  - clang-format >= 18.1.6
+  - clangd >= 19
+  - clang-tools >= 19
+  - clang-format >= 19
 - Optional
   - libunwind8 >= 1.2.1
   - libcurl4 >= 7.74 (tested, lower may work)
@@ -170,14 +170,14 @@ Note: `mini-httpd` is being used for unit testing URL streaming only.
 Installing build dependencies on Debian >= 11 and Ubuntu >= 20.04:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}
 apt install git
-apt install build-essential g++ gcc libc-dev libpthread-stubs0-dev 
-apt install clang-18 clang-tidy-18 clangd-18 clang-tools-18 clang-format-18
+apt install build-essential g++ gcc libc-dev libpthread-stubs0-dev
+apt install clang-19 clang-tidy-19 clangd-19 clang-tools-19 clang-format-19
 apt install libunwind8 libunwind-dev
 apt install cmake cmake-extras extra-cmake-modules
 apt install doxygen graphviz
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If using the optional clang toolchain, 
+If using the optional clang toolchain,
 perhaps change the clang version-suffix of above clang install line to the appropriate version.
 
 After complete clang installation, you might want to setup the latest version as your default.
@@ -288,9 +288,9 @@ You may utilize `scripts/build-preset.sh` for an initial build, install and test
 <a name="cmake_presets_hardcoded"></a>
 
 #### CMake Build via Hardcoded Presets
-Besides above `CMakePresets.json` presets, 
+Besides above `CMakePresets.json` presets,
 `JaulibSetup.cmake` contains hardcoded presets for *undefined variables* if
-- `CMAKE_INSTALL_PREFIX` and `CMAKE_CXX_CLANG_TIDY` cmake variables are unset, or 
+- `CMAKE_INSTALL_PREFIX` and `CMAKE_CXX_CLANG_TIDY` cmake variables are unset, or
 - `JAU_CMAKE_ENFORCE_PRESETS` cmake- or environment-variable is set to `TRUE` or `ON`
 
 The hardcoded presets resemble `debug-clang` [presets](README.md#cmake_presets_optional).
@@ -350,7 +350,7 @@ Enable/disable unit tests to build
 
 Add unit tests requiring `sudo` to build (default: disabled).<br />
 This option requires `-DBUILD_TESTING=ON` to be effective.<br />
-Covered unit test requiring `sudo` are currently 
+Covered unit test requiring `sudo` are currently
 - `Linux` OS
   - `jau::fs::mount_image()`
   - `jau::fs::umount()`
@@ -365,8 +365,8 @@ Using clang instead of gcc:
 
 Building with clang and clang-tidy `lint` validation
 ~~~~~~~~~~~~~
--DCMAKE_C_COMPILER=/usr/bin/clang 
--DCMAKE_CXX_COMPILER=/usr/bin/clang++ 
+-DCMAKE_C_COMPILER=/usr/bin/clang
+-DCMAKE_CXX_COMPILER=/usr/bin/clang++
 -DCMAKE_CXX_CLANG_TIDY=/usr/bin/clang-tidy;-p;$rootdir/$build_dir
 ~~~~~~~~~~~~~
 
@@ -401,7 +401,7 @@ Cross-compiling on a different system:
 -DCMAKE_C_FLAGS:STRING=-m32 -march=i586
 ~~~~~~~~~~~~~
 
-To build documentation run: 
+To build documentation run:
 ~~~~~~~~~~~~~
 make doc
 ~~~~~~~~~~~~~
@@ -439,15 +439,15 @@ to run on other architectures than the host.
 
 See [Build Procedure](#build-procedure) for general overview.
 
-You may use [our pi-gen branch](https://jausoft.com/cgit/pi-gen.git/about/) to produce 
+You may use [our pi-gen branch](https://jausoft.com/cgit/pi-gen.git/about/) to produce
 a Raspi-arm64, Raspi-armhf or PC-amd64 target image.
 
 ## IDE Integration
 
-### Eclipse 
+### Eclipse
 Tested Eclipse 2024-03 (4.31).
 
-IDE integration configuration files are provided for 
+IDE integration configuration files are provided for
 - [Eclipse](https://download.eclipse.org/eclipse/downloads/) with extensions
   - [CDT](https://github.com/eclipse-cdt/) or [CDT @ eclipse.org](https://projects.eclipse.org/projects/tools.cdt)
   - [CDT-LSP](https://github.com/eclipse-cdt/cdt-lsp) *recommended*
@@ -458,7 +458,7 @@ IDE integration configuration files are provided for
   - `CMake Support`, install `C/C++ CMake Build Support` with ID `org.eclipse.cdt.cmake.feature.group`
     - Usable via via [Hardcoded CMake Presets](README.md#cmake_presets_hardcoded) with `debug-clang`
 
-The [Hardcoded CMake Presets](README.md#cmake_presets_hardcoded) will 
+The [Hardcoded CMake Presets](README.md#cmake_presets_hardcoded) will
 use `build/default` as the default build folder with debug enabled.
 
 Make sure to set the environment variable `CMAKE_BUILD_PARALLEL_LEVEL`
@@ -467,16 +467,16 @@ This will enable parallel build with the IDE.
 
 You can import the project to your workspace via `File . Import...` and `Existing Projects into Workspace` menu item.
 
-For Eclipse one might need to adjust some setting in the `.project` and `.cproject` (CDT) 
+For Eclipse one might need to adjust some setting in the `.project` and `.cproject` (CDT)
 via Eclipse settings UI, but it should just work out of the box.
 
-Otherwise recreate the Eclipse project by 
-- delete `.project` and `.cproject` 
+Otherwise recreate the Eclipse project by
+- delete `.project` and `.cproject`
 - `File . New . C/C++ Project` and `Empty or Existing CMake Project` while using this project folder.
 
 ### VSCodium or VS Code
 
-IDE integration configuration files are provided for 
+IDE integration configuration files are provided for
 - [VSCodium](https://vscodium.com/) or [VS Code](https://code.visualstudio.com/) with extensions
   - [vscode-clangd](https://github.com/clangd/vscode-clangd)
   - [twxs.cmake](https://github.com/twxs/vs.language.cmake)
