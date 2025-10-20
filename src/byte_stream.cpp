@@ -36,6 +36,7 @@
 
 #include <jau/io/byte_stream.hpp>
 #include <jau/io/io_util.hpp>
+#include <jau/io/bit_stream.hpp>
 
 extern "C" {
     #include <unistd.h>
@@ -914,4 +915,8 @@ std::string ByteStream_Recorder::toString() const noexcept {
                             "], consumed "+jau::to_decstring(m_offset)+
                             ", iomode["+jau::io::to_string(m_iomode)+
                             ", iostate["+jau::io::to_string(rdstate())+"]]";
+}
+
+std::string jau::io::to_string(const ioaccess_t v) noexcept {
+    return v == ioaccess_t::read ? "read" : "write";
 }

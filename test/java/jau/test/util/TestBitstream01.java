@@ -102,8 +102,8 @@ public class TestBitstream01 extends JunitTracer {
                 pre = testStringLSB.substring(0, preBits);
                 post = testStringLSB.substring(preBits+skipBits, preBits+skipBits+postBits);
             } else {
-                pre = testStringMSB.substring(postBits+skipBits, postBits+skipBits+preBits);
-                post = testStringMSB.substring(0, postBits);
+                pre = testStringLSB.substring(postBits+skipBits, postBits+skipBits+preBits);
+                post = testStringLSB.substring(0, postBits);
             }
         }
         final String r = msbFirstAssemble ? pre + post : post + pre;
