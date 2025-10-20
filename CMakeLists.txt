@@ -1,6 +1,9 @@
 cmake_minimum_required (VERSION 3.21.0 FATAL_ERROR)
 include(JaulibSetup.cmake)
 # set(DONT_USE_RTTI ON)
+# set(BUILDJAVA OFF)
+# set(CC_INSTRUMENTATION ON)
+# set(USE_LIBUNWIND OFF)
 JaulibPreset()
 
 if(JAU_CMAKE_HARD_PRESETS)
