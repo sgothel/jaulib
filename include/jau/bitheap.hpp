@@ -130,7 +130,7 @@ namespace jau {
          * Writes the bit value `v` to position `bitpos` into this storage.
          * @returns true on sucess, otherwise false
          */
-        [[nodiscard]] constexpr bool put(size_type bitpos, bool v) noexcept {
+        constexpr bool put(size_type bitpos, bool v) noexcept {
             if ( !in_range(bitpos) ) {
                 return false;
             }
@@ -148,7 +148,7 @@ namespace jau {
          * Flips the bit value at position `bitpos` in this storage.
          * @returns true on sucess, otherwise false
          */
-        [[nodiscard]] constexpr bool flip(size_type bitpos) noexcept {
+        constexpr bool flip(size_type bitpos) noexcept {
             if ( !in_range(bitpos) ) {
                 return false;
             }
@@ -199,23 +199,23 @@ namespace jau {
          * Sets the bit at position `bitpos` of this storage.
          * @returns true on sucess, otherwise false
          */
-        [[nodiscard]] constexpr bool set(size_type bitpos) noexcept { return put(bitpos, true); }
+        constexpr bool set(size_type bitpos) noexcept { return put(bitpos, true); }
         /**
          * Clear the bit at position `bitpos` of this storage.
          * @returns true on sucess, otherwise false
          */
-        [[nodiscard]] constexpr bool clr(size_type bitpos) noexcept { return put(bitpos, false); }
+        constexpr bool clr(size_type bitpos) noexcept { return put(bitpos, false); }
         /**
          * Clear the bit at position `bitpos` of this storage.
          * @returns true on sucess, otherwise false
          */
-        [[nodiscard]] constexpr bool reset(size_type bitpos) noexcept { return put(bitpos, false); }
+        constexpr bool reset(size_type bitpos) noexcept { return put(bitpos, false); }
 
         /**
          * Copies the bit at position `srcBitpos` to position `dstBitpos`, returning the copied bit-value.
          * @returns true on sucess, otherwise false
          */
-        [[nodiscard]] bool copy(size_type srcBitpos, size_type dstBitpos) noexcept {
+        bool copy(size_type srcBitpos, size_type dstBitpos) noexcept {
             return put(dstBitpos, get(srcBitpos));
         }
 
@@ -250,7 +250,7 @@ namespace jau {
          * Writes `length` bits of given `data` into this storage, starting with the lowest bit from the storage position `bitpos`.
          * @returns true on sucess, otherwise false
          */
-        [[nodiscard]] bool putUnit(size_type bitpos, size_type length, unit_type data) noexcept {
+        bool putUnit(size_type bitpos, size_type length, unit_type data) noexcept {
             if ( 0 == length ) {
                 return true;
             } else if ( length > unit_bit_size || !in_range(bitpos, length) ) {
@@ -286,7 +286,7 @@ namespace jau {
          * @param bitstr most-significat (msb) bit string pattern
          * @returns true on sucess, otherwise false
          */
-        [[nodiscard]] bool put(size_type bitpos, std::string_view bitstr) noexcept {
+        bool put(size_type bitpos, std::string_view bitstr) noexcept {
             if ( 0 == bitstr.size() ) {
                 return true;
             } else if ( !in_range(bitpos, bitstr.size()) ) {
@@ -312,7 +312,7 @@ namespace jau {
          * Set `length` bits starting at `bitpos` of this bitfield to the given value `bit`.
          * @returns true on sucess, otherwise false
          */
-        [[nodiscard]] bool set(size_type bitpos, size_type length, bool bit) noexcept {
+        bool set(size_type bitpos, size_type length, bool bit) noexcept {
             if ( 0 == length ) {
                 return true;
             } else if ( !in_range(bitpos, length) ) {
@@ -359,7 +359,7 @@ namespace jau {
          * Copies `length` bits at position `srcBitpos` to position `dstBitpos`, returning the copied bits.
          * @returns true on sucess, otherwise false
          */
-        [[nodiscard]] bool copyUnit(size_type srcBitpos, size_type dstBitpos, size_type length) noexcept {
+        bool copyUnit(size_type srcBitpos, size_type dstBitpos, size_type length) noexcept {
             return putUnit(dstBitpos, length, getUnit(srcBitpos, length));
         }
 
@@ -385,7 +385,7 @@ namespace jau {
             return i == unit_size;
         }
 
-        [[nodiscard]] bool put(size_t bitpos, const bitheap& o) {
+        bool put(size_t bitpos, const bitheap& o) {
             size_t length = o.bit_size;
             if ( 0 == length ) {
                 return true;
@@ -416,7 +416,7 @@ namespace jau {
             return true;
         }
 
-        [[nodiscard]] std::pair<bitheap, bool> subbits(size_type bitpos, size_type length) const noexcept {
+        std::pair<bitheap, bool> subbits(size_type bitpos, size_type length) const noexcept {
             if ( 0 == length ) {
                 return { bitheap(0), true };
             } else if ( !in_range(bitpos, length) ) {
