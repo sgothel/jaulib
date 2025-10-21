@@ -115,9 +115,10 @@ namespace jau {
             const size_type b = bitpos - (u << unit_shift);
             return storage[u] & (one_u << b);
         }
+
         /**
          * Writes the bit value `v` to position `bitpos` into this storage.
-         * @returns true on sucess, otherwise false
+         * @returns true on success, otherwise false
          */
         [[nodiscard]] constexpr bool put(size_type bitpos, bool v) noexcept {
             if ( !in_range(bitpos) ) {
@@ -133,9 +134,10 @@ namespace jau {
             }
             return true;
         }
+
         /**
          * Flips the bit value at position `bitpos` in this storage.
-         * @returns true on sucess, otherwise false
+         * @returns true on success, otherwise false
          */
         [[nodiscard]] constexpr bool flip(size_type bitpos) noexcept {
             if ( !in_range(bitpos) ) {
@@ -151,6 +153,7 @@ namespace jau {
             }
             return true;
         }
+
         /*** Flips all bits in this storage. */
         constexpr bitfield_t &flip() noexcept {
             size_type remaining = bit_size;
@@ -186,23 +189,23 @@ namespace jau {
         }
         /**
          * Sets the bit at position `bitpos` of this storage.
-         * @returns true on sucess, otherwise false
+         * @returns true on success, otherwise false
          */
         [[nodiscard]] constexpr bool set(size_type bitpos) noexcept { return put(bitpos, true); }
         /**
          * Clear the bit at position `bitpos` of this storage.
-         * @returns true on sucess, otherwise false
+         * @returns true on success, otherwise false
          */
         [[nodiscard]] constexpr bool clr(size_type bitpos) noexcept { return put(bitpos, false); }
         /**
          * Clear the bit at position `bitpos` of this storage.
-         * @returns true on sucess, otherwise false
+         * @returns true on success, otherwise false
          */
         [[nodiscard]] constexpr bool reset(size_type bitpos) noexcept { return put(bitpos, false); }
 
         /**
          * Copies the bit at position `srcBitpos` to position `dstBitpos`, returning the copied bit-value.
-         * @returns true on sucess, otherwise false
+         * @returns true on success, otherwise false
          */
         [[nodiscard]] bool copy(size_type srcBitpos, size_type dstBitpos) noexcept {
             return put(dstBitpos, get(srcBitpos));
@@ -237,7 +240,7 @@ namespace jau {
 
         /**
          * Writes `length` bits of given `data` into this storage, starting with the lowest bit from the storage position `bitpos`.
-         * @returns true on sucess, otherwise false
+         * @returns true on success, otherwise false
          */
         [[nodiscard]] bool putUnit(size_type bitpos, size_type length, unit_type data) noexcept {
             if ( 0 == length ) {
@@ -273,7 +276,7 @@ namespace jau {
          * Writes `bitstr` msb bit-pattern into this storage, starting with the lowest bit from the storage position `bitpos`.
          * @param bitpos bit position to insert
          * @param bitstr most-significat (msb) bit string pattern
-         * @returns true on sucess, otherwise false
+         * @returns true on success, otherwise false
          */
         [[nodiscard]] bool put(size_type bitpos, std::string_view bitstr) noexcept {
             if ( 0 == bitstr.size() ) {
@@ -299,7 +302,7 @@ namespace jau {
 
         /**
          * Set `length` bits starting at `bitpos` of this bitfield to the given value `bit`.
-         * @returns true on sucess, otherwise false
+         * @returns true on success, otherwise false
          */
         [[nodiscard]] bool set(size_type bitpos, size_type length, bool bit) noexcept {
             if ( 0 == length ) {
@@ -346,7 +349,7 @@ namespace jau {
 
         /**
          * Copies `length` bits at position `srcBitpos` to position `dstBitpos`, returning the copied bits.
-         * @returns true on sucess, otherwise false
+         * @returns true on success, otherwise false
          */
         [[nodiscard]] bool copyUnit(size_type srcBitpos, size_type dstBitpos, size_type length) noexcept {
             return putUnit(dstBitpos, length, getUnit(srcBitpos, length));
