@@ -54,7 +54,7 @@ namespace jau::math::util {
         virtual const void* data() const noexcept = 0;
 
         /** Return the underlying data buffer as bytes after invoking sync action(). */
-        const void* syncedData()  noexcept { action()(); return data(); }
+        const void* syncedData() noexcept { action()(); return data(); }
 
         /** Returns type signature of implementing class's stored component value type. */
         virtual const jau::type_info& compSignature() const noexcept = 0;
@@ -82,42 +82,6 @@ namespace jau::math::util {
         virtual std::string toString() const = 0;
     };
 
-    /** SyncBuffer interface with a single underlying Matrix4. */
-    template <jau::req::packed_floating_point Value_type>
-    class SyncMatrix4 : public SyncBuffer {
-      public:
-        typedef Value_type               value_type;
-        typedef Matrix4<value_type>      Mat4;
-
-        /** Return the underlying Mat4, used to synchronize via action() to the buffer(). */
-        virtual const Mat4& matrix() const noexcept = 0;
-
-        /** Return the underlying float data buffer. */
-        constexpr const value_type* floats() const noexcept { return matrix().cbegin(); }
-
-        const void* data() const noexcept override { return floats(); }
-
-        const jau::type_info& compSignature() const noexcept override { return jau::static_ctti<value_type>(); }
-        /** The component's size in bytes */
-        constexpr size_t bytesPerComp() const noexcept { return sizeof(value_type); }
-        /** The number of components per element */
-        constexpr size_t compsPerElem() const noexcept { return 16; }
-        /** Returns element count. One element consist compsPerElem() components. */
-        constexpr size_t elementCount() const noexcept { return 1; }
-        /** Returns the byte size of all elements, i.e. elementCount() * compsPerElem() * bytesPerComp(). */
-        constexpr size_t byteCount() const noexcept { return 1 * 16 * bytesPerComp(); }
-
-        std::string toString() const override {
-            return std::string("SyncMatrix4[").append(compSignature().name())
-                   .append(", count ").append(std::to_string(elementCount()))
-                   .append(" elem x ").append(std::to_string(compsPerElem()))
-                   .append(" comp x ").append(std::to_string(bytesPerComp()))
-                   .append(" = ").append(std::to_string(byteCount())).append(" bytes]");
-        }
-    };
-    typedef SyncMatrix4<float> SyncMat4f;
-
-
     /** SyncBuffer interface with multiple underlying Matrix4. */
     template <jau::req::packed_floating_point Value_type>
     class SyncMatrices4 : public SyncBuffer {
@@ -125,16 +89,27 @@ namespace jau::math::util {
         typedef Value_type               value_type;
         typedef Matrix4<value_type>      Mat4;
 
+      private:
+        const Mat4 &m_mat;
+        size_t m_count;
+        sync_action_t m_sync;
+
+      public:
+        SyncMatrices4(const Mat4 &first, size_t count, sync_action_t s = sync_action_t())
+        : m_mat(first), m_count(count), m_sync(std::move(s)) {}
+
         /** Return the underlying Mat4 pointer, used to synchronize via action() to the buffer(). */
-        virtual const Mat4* matrices() const noexcept = 0;
+        constexpr const Mat4* matrices() const noexcept { return &m_mat; }
         /** Return the number of Mat4 referenced by matrices() */
-        virtual size_t matrixCount() const noexcept = 0;
+        constexpr size_t matrixCount() const noexcept { return m_count; }
 
         /** Return the underlying float data buffer. */
-        constexpr const value_type* floats() const noexcept { return matrices()[0].cbegin(); }
+        constexpr const value_type* floats() const noexcept { return m_mat.cbegin(); }
 
+        sync_action_t& action() noexcept override { return m_sync; }
         const void* data() const noexcept override { return floats(); }
 
+        /** Returns the component's value_type signature */
         const jau::type_info& compSignature() const noexcept override { return jau::static_ctti<value_type>(); }
         /** The component's size in bytes */
         constexpr size_t bytesPerComp() const noexcept { return sizeof(value_type); }

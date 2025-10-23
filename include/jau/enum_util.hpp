@@ -241,6 +241,11 @@ namespace jau::enums {
     }
 
     template<typename E, std::enable_if_t<std::is_enum_v<E>>* = nullptr>
+    constexpr bool has_any(const E mask) noexcept {
+        return std::underlying_type_t<E>(0) != ( *mask );
+    }
+
+    template<typename E, std::enable_if_t<std::is_enum_v<E>>* = nullptr>
     constexpr void append_bitstr(std::string& out, E mask, E bit, const std::string& bitstr, bool& comma) {
         if( bit == (mask & bit) ) {
             if( comma ) { out.append(", "); }

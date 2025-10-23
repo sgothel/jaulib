@@ -26,7 +26,7 @@
 
 #include <jau/test/catch2_ext.hpp>
 
-#include <jau/math/util/pmvmat4f.hpp>
+#include <jau/math/util/pmvmat4.hpp>
 
 using namespace jau;
 using namespace jau::math;
