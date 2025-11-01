@@ -930,7 +930,11 @@ TEST_CASE( "Fraction Time Measurement Test 04.01", "[fraction][fraction_timespec
 TEST_CASE( "Fraction Time Conversion Test 05.01", "[fraction_timespec][time]" ) {
     fraction_timespec zero;
     fraction_timespec onesec(1, 0);
-    fraction_timespec onesec_onemilli(1, 100000000_i64);
+    fraction_timespec onesec_onedeci (1, 100000000_i64);
+    fraction_timespec onesec_onemilli(1,   1000000_i64);
+    fraction_timespec onesec_onemicro(1,      1000_i64);
+    fraction_timespec onesec_onenano (1,         1_i64);
+    fraction_timespec onesec_decimillimicronano(1, 101001001_i64);
     {
         fraction_timespec t0 = fraction_timespec::from(1968, 1, 1);
         jau::INFO_PRINT( "a - 1968-1-1 -> %s, %s", t0.toString().c_str(), t0.toISO8601String().c_str());
@@ -953,15 +957,99 @@ TEST_CASE( "Fraction Time Conversion Test 05.01", "[fraction_timespec][time]" ) 
     }
     {
         int64_t utcOffsetSec; size_t consumedChars;
+        {
+            fraction_timespec t00 = fraction_timespec::from("1970-1-1", utcOffsetSec, consumedChars);
+            REQUIRE(0 == utcOffsetSec); REQUIRE( 8 == consumedChars);
+            REQUIRE(t00 == fraction_timespec::from("1970-1-1"));
+            REQUIRE(t00 == zero);
+        }
+        {
+            fraction_timespec tt = fraction_timespec::from("1970-01-01T00:00:01Z", utcOffsetSec, consumedChars);
+            REQUIRE(0 == utcOffsetSec); REQUIRE(20 == consumedChars);
+            REQUIRE(tt == fraction_timespec::from("1970-01-01T00:00:01Z"));
+            REQUIRE(tt == onesec);
+            REQUIRE(tt - onesec == zero);
+        }
+        {
+            fraction_timespec tt = fraction_timespec::from("1970-01-01T00:00:01.1Z", utcOffsetSec, consumedChars);
+            REQUIRE(0 == utcOffsetSec);
+            REQUIRE(22 == consumedChars);
+            REQUIRE(tt == fraction_timespec::from("1970-01-01T00:00:01.1Z"));
+            REQUIRE(tt == onesec_onedeci);
+            REQUIRE(tt - onesec_onedeci == zero);
+        }
+        {
+            fraction_timespec tt = fraction_timespec::from("1970-01-01T00:00:01.100Z", utcOffsetSec, consumedChars);
+            REQUIRE(0 == utcOffsetSec);
+            REQUIRE(24 == consumedChars);
+            REQUIRE(tt == fraction_timespec::from("1970-01-01T00:00:01.1Z"));
+            REQUIRE(tt == onesec_onedeci);
+            REQUIRE(tt - onesec_onedeci == zero);
+        }
+        {
+            fraction_timespec tt = fraction_timespec::from("1970-01-01T00:00:01.100000000Z", utcOffsetSec, consumedChars);
+            REQUIRE(0 == utcOffsetSec);
+            REQUIRE(30 == consumedChars);
+            REQUIRE(tt == fraction_timespec::from("1970-01-01T00:00:01.1Z"));
+            REQUIRE(tt == onesec_onedeci);
+            REQUIRE(tt - onesec_onedeci == zero);
+        }
+        {
+            fraction_timespec tt = fraction_timespec::from("1970-01-01T00:00:01.001Z", utcOffsetSec, consumedChars);
+            REQUIRE(0 == utcOffsetSec);
+            REQUIRE(24 == consumedChars);
+            REQUIRE(tt == fraction_timespec::from("1970-01-01T00:00:01.001Z"));
+            REQUIRE(tt == onesec_onemilli);
+            REQUIRE(tt - onesec_onemilli == zero);
+        }
+        {
+            fraction_timespec tt = fraction_timespec::from("1970-01-01T00:00:01.001000000Z", utcOffsetSec, consumedChars);
+            REQUIRE(0 == utcOffsetSec);
+            REQUIRE(30 == consumedChars);
+            REQUIRE(tt == fraction_timespec::from("1970-01-01T00:00:01.001Z"));
+            REQUIRE(tt == onesec_onemilli);
+            REQUIRE(tt - onesec_onemilli == zero);
+        }
+        {
+            fraction_timespec tt = fraction_timespec::from("1970-01-01T00:00:01.000001Z", utcOffsetSec, consumedChars);
+            REQUIRE(0 == utcOffsetSec);
+            REQUIRE(27 == consumedChars);
+            REQUIRE(tt == fraction_timespec::from("1970-01-01T00:00:01.000001Z"));
+            REQUIRE(tt == onesec_onemicro);
+            REQUIRE(tt - onesec_onemicro == zero);
+        }
+        {
+            fraction_timespec tt = fraction_timespec::from("1970-01-01T00:00:01.000001000Z", utcOffsetSec, consumedChars);
+            REQUIRE(0 == utcOffsetSec);
+            REQUIRE(30 == consumedChars);
+            REQUIRE(tt == fraction_timespec::from("1970-01-01T00:00:01.000001Z"));
+            REQUIRE(tt == onesec_onemicro);
+            REQUIRE(tt - onesec_onemicro == zero);
+        }
+        {
+            fraction_timespec tt = fraction_timespec::from("1970-01-01T00:00:01.000000001Z", utcOffsetSec, consumedChars);
+            REQUIRE(0 == utcOffsetSec);
+            REQUIRE(30 == consumedChars);
+            REQUIRE(tt == fraction_timespec::from("1970-01-01T00:00:01.000000001Z"));
+            REQUIRE(tt == onesec_onenano);
+            REQUIRE(tt - onesec_onenano == zero);
+        }
+        {
+            fraction_timespec tt = fraction_timespec::from("1970-01-01T00:00:01.101001001Z", utcOffsetSec, consumedChars);
+            REQUIRE(0 == utcOffsetSec);
+            REQUIRE(30 == consumedChars);
+            REQUIRE(tt == fraction_timespec::from("1970-01-01T00:00:01.101001001Z"));
+            REQUIRE(tt == onesec_decimillimicronano);
+            REQUIRE(tt - onesec_decimillimicronano == zero);
+        }
+    }
+    {
+        int64_t utcOffsetSec; size_t consumedChars;
+
         fraction_timespec t00 = fraction_timespec::from("2024-1-1", utcOffsetSec, consumedChars);
         REQUIRE(0 == utcOffsetSec); REQUIRE( 8 == consumedChars);
         REQUIRE(t00 == fraction_timespec::from("2024-1-1"));
-        fraction_timespec t00a = fraction_timespec::from("2024-01-01T00:00:01Z", utcOffsetSec, consumedChars);
-        REQUIRE(0 == utcOffsetSec); REQUIRE(20 == consumedChars);
-        REQUIRE(t00a == fraction_timespec::from("2024-01-01T00:00:01Z"));
-        fraction_timespec t00b = fraction_timespec::from("2024-01-01T00:00:01.1Z", utcOffsetSec, consumedChars);
-        REQUIRE(0 == utcOffsetSec); REQUIRE(22 == consumedChars);
-        REQUIRE(t00b == fraction_timespec::from("2024-01-01T00:00:01.1Z"));
+
         fraction_timespec t01 = fraction_timespec::from("2024-01-01T12:34:56Z", utcOffsetSec, consumedChars);
         REQUIRE(0 == utcOffsetSec); REQUIRE(20 == consumedChars);
         REQUIRE(t01 == fraction_timespec::from("2024-01-01T12:34:56Z"));
@@ -993,8 +1081,6 @@ TEST_CASE( "Fraction Time Conversion Test 05.01", "[fraction_timespec][time]" ) 
         REQUIRE(tX1 == t03);
         REQUIRE(tX2 == t02);
         REQUIRE(tX2 == t04);
-        REQUIRE(t00a - onesec == t00);
-        REQUIRE(t00b - onesec_onemilli == t00);
 
         REQUIRE(tX0 == fraction_timespec::from(tX0.toISO8601String()));
         REQUIRE(tX1 == fraction_timespec::from(tX1.toISO8601String()));

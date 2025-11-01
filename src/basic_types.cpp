@@ -244,8 +244,9 @@ fraction_timespec fraction_timespec::from(const std::string &datestr, int64_t &u
                                 m = std::stoi(match[5]);
                                 if ( match.size() > 6 && match[6].length() > 0 ) {
                                     s = std::stoi(match[6]);
-                                    if ( match.size() > 7 && match[7].length() > 0 ) {
-                                        ns = std::stoul(match[7]);
+                                    if ( match.size() > 7 && 0 < match[7].length() && match[7].length() <= 9 ) {
+                                        const size_t ns_sdigits = match[7].length();
+                                        ns = std::stoul(match[7]) * static_cast<uint64_t>(std::pow(10, 9 - ns_sdigits));
                                     }
                                     if ( match.size() > 8 && match[8].length() > 0 ) {
                                         // UTC Zulu
@@ -263,13 +264,6 @@ fraction_timespec fraction_timespec::from(const std::string &datestr, int64_t &u
                         }
                     }
                 }
-            }
-            if ( 0 < ns ) {
-                const size_t ns_digits = jau::digits10(ns, 1, true);
-                if ( 9 < ns_digits ) {
-                    ns = 0;  // error in remainder
-                }
-                ns = ns * static_cast<uint64_t>(std::pow(10, 9 - ns_digits));
             }
             // add the timezone offset if desired, rendering result non-UTC
             utcOffsetSec = offset_sign * ((offset_h * 60_i64 * 60_i64) + (offset_m * 60_i64));
