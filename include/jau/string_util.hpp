@@ -519,7 +519,20 @@ namespace jau {
     // *************************************************
      */
 
-    namespace impl {
+    namespace unsafe {
+        /**
+         * Returns a (potentially truncated) string according to `snprintf()` formatting rules
+         * and variable number of arguments following the `format` argument.
+         *
+         * This variant doesn't validate `format` against given arguments, see jau::format_string_n.
+         *
+         * Resulting string is truncated to `min(maxStrLen, formatLen)`,
+         * with `formatLen` being the given formatted string length of output w/o limitation.
+         *
+         * @param maxStrLen maximum resulting string length
+         * @param format `printf()` compliant format string
+         * @param args optional arguments matching the format string
+         */
         template<typename... Args>
         constexpr std::string format_string_n(const std::size_t maxStrLen, const std::string_view &format, const Args &...args) {
             std::string str;
@@ -540,6 +553,18 @@ namespace jau {
             return str;
         }
 
+        /**
+         * Returns a (non-truncated) string according to `snprintf()` formatting rules
+         * and variable number of arguments following the `format` argument.
+         *
+         * This variant doesn't validate `format` against given arguments, see jau::format_string_h.
+         *
+         * Resulting string size matches formated output w/o limitation.
+         *
+         * @param strLenHint initially used string length w/o EOS
+         * @param format `printf()` compliant format string
+         * @param args optional arguments matching the format string
+         */
         template <typename... Args>
         constexpr std::string format_string_h(const std::size_t strLenHint, const std::string_view format, const Args &...args) {
             size_t nchars;
@@ -579,6 +604,23 @@ namespace jau {
                 return str;
             }
         }
+
+        /**
+         * Returns a (non-truncated) string according to `snprintf()` formatting rules
+         * using an initially string length of 1023 w/o EOS and
+         * variable number of arguments following the `format` argument.
+         *
+         * This variant doesn't validate `format` against given arguments, see jau::format_string_h.
+         *
+         * Resulting string size matches formated output w/o limitation.
+         *
+         * @param format `printf()` compliant format string
+         * @param args optional arguments matching the format string
+         */
+        template <typename... Args>
+        constexpr std::string format_string(const std::string_view format, const Args &...args) {
+            return unsafe::format_string_h(1023, format, args...);
+        }
     }  // namespace impl
 
     /**
@@ -601,7 +643,7 @@ namespace jau {
         if ( pr.argCount() < 0 ) {
             throw jau::IllegalArgumentError("format/arg mismatch `" + std::string(format) + "`: " + pr.toString(), E_FILE_LINE);
         }
-        return impl::format_string_n(maxStrLen, format, args...);
+        return unsafe::format_string_n(maxStrLen, format, args...);
     }
 
     /**
@@ -621,7 +663,7 @@ namespace jau {
     template <StringLiteral format, typename... Args>
     consteval_cxx20 std::string format_string_n(const std::size_t maxStrLen, const Args &...args) {
         static_assert(0 <= jau::cfmt::checkR2<Args...>(format.view()).argCount());
-        return impl::format_string_n(maxStrLen, format.view(), args...);
+        return unsafe::format_string_n(maxStrLen, format.view(), args...);
     }
 
     /**
@@ -643,12 +685,32 @@ namespace jau {
         if ( pr.argCount() < 0 ) {
             throw jau::IllegalArgumentError("format/arg mismatch `" + std::string(format) + "`: " + pr.toString(), E_FILE_LINE);
         }
-        return impl::format_string_h(strLenHint, format, args...);
+        return unsafe::format_string_h(strLenHint, format, args...);
     }
 
     /**
      * Safely returns a (non-truncated) string according to `snprintf()` formatting rules
      * and variable number of arguments following the `format` argument.
+     *
+     * jau::cfmt2::checkR2() is utilize to validate `format` against given arguments at *compile time*
+     * and fails to compile on mismatch.
+     *
+     * Resulting string size matches formated output w/o limitation.
+     *
+     * @tparam format `printf()` compliant format string
+     * @param strLenHint initially used string length w/o EOS
+     * @param args optional arguments matching the format string
+     */
+    template <StringLiteral format, typename... Args>
+    consteval_cxx20 std::string format_string_h(const std::size_t strLenHint, const Args &...args) {
+        static_assert(0 <= jau::cfmt::checkR2<Args...>(format.view()).argCount());
+        return unsafe::format_string_h(strLenHint, format.view(), args...);
+    }
+
+    /**
+     * Safely returns a (non-truncated) string according to `snprintf()` formatting rules
+     * using an initially string length of 1023 w/o EOS and
+     * variable number of arguments following the `format` argument.
      *
      * jau::cfmt2::checkR2() is utilize to validate `format` against given arguments at *runtime*
      * and throws jau::IllegalArgumentError on mismatch.
@@ -665,7 +727,8 @@ namespace jau {
 
     /**
      * Safely returns a (non-truncated) string according to `snprintf()` formatting rules
-     * and variable number of arguments following the `format` argument.
+     * using an initially string length of 1023 w/o EOS and
+     * variable number of arguments following the `format` argument.
      *
      * jau::cfmt2::checkR2() is utilize to validate `format` against given arguments at *compile time*
      * and fails to compile on mismatch.
@@ -677,8 +740,7 @@ namespace jau {
      */
     template <StringLiteral format, typename... Args>
     consteval_cxx20 std::string format_string(const Args &...args) {
-        static_assert(0 <= jau::cfmt::checkR2<Args...>(format.view()).argCount());
-        return impl::format_string_h(1023, format.view(), args...);
+        return format_string_h<format>(1023, args...);
     }
 
     /**

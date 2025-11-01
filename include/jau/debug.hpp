@@ -66,7 +66,7 @@ namespace jau {
         if ( pr.argCount() < 0 ) {
             throw jau::IllegalArgumentError("format/arg mismatch `"+std::string(format)+"`: "+pr.toString(), E_FILE_LINE);
         }
-        impl::dbgPrint2(impl::format_string_h(1023, format, args...).c_str());
+        impl::dbgPrint2(unsafe::format_string_h(1023, format, args...).c_str());
     }
     /** Use for environment-variable environment::DEBUG conditional debug messages, prefix '[elapsed_time] Debug: '. */
     #define DBG_PRINT(...) { if( jau::environment::get().debug ) { jau::impl::dbgPrint1(__VA_ARGS__); } }
