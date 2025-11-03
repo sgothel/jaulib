@@ -914,7 +914,7 @@ namespace jau::io {
                 size_t g1 = 0, g2 = 0;
                 if ( covered(m, o) ) {
                     const size_t p0 = o - m;
-                    g1 = std::min(m + m_end - o, l0);
+                    g1 = std::min<size_t>(m + m_end - o, l0);
                     std::memcpy(out, m_buffer.data() + p0, g1);
                     o += g1;
                     l0 -= g1;

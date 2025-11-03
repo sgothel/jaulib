@@ -28,6 +28,7 @@
 #include <jau/basic_types.hpp>
 #include <jau/byte_util.hpp>
 #include <jau/cpp_lang_util.hpp>
+#include <jau/int_types.hpp>
 #include <jau/string_util.hpp>
 #include <jau/test/catch2_ext.hpp>
 
@@ -90,6 +91,56 @@ TEST_CASE( "Endianess Test 00", "[endian]" ) {
     REQUIRE( cpp_is_little == jau::is_little_endian() );
     REQUIRE( cpp_is_big == is_big );
     REQUIRE( is_little == isLittleEndian2());
+}
+
+// static std::string f( uint8_t v) { return "uint8_t, "+std::to_string(sizeof(v))+" bytes";}
+// static std::string f(  int8_t v) { return "int8_t, "+std::to_string(sizeof(v))+" bytes";}
+// static std::string f(uint16_t v) { return "uint16_t, "+std::to_string(sizeof(v))+" bytes";}
+// static std::string f( int16_t v) { return "int16_t, "+std::to_string(sizeof(v))+" bytes";}
+static std::string f(uint32_t v) { return "uint32_t, "+std::to_string(sizeof(v))+" bytes";}
+static std::string f( int32_t v) { return "int32_t, "+std::to_string(sizeof(v))+" bytes";}
+static std::string f(unsigned long long int v) { return "unsigned long long int, "+std::to_string(sizeof(v))+" bytes";}
+static std::string f(unsigned long int v) { return "unsigned long int, "+std::to_string(sizeof(v))+" bytes";}
+// static std::string f(uint64_t v) { return "uint64_t, "+std::to_string(sizeof(v))+" bytes";}
+// static std::string f( int64_t v) { return "int64_t, "+std::to_string(sizeof(v))+" bytes";}
+static std::string f(long long int v) { return "long long int, "+std::to_string(sizeof(v))+" bytes";}
+static std::string f(long int v) { return "long int, "+std::to_string(sizeof(v))+" bytes";}
+
+TEST_CASE( "Type Overload Test 01", "[wordsize]" ) {
+    unsigned v_u = 17;
+    int v_i = 17;
+    unsigned long v_ul = 42;
+    long v_l = 42;
+    unsigned long long v_ull = 42;
+    long long v_ll = 42;
+
+    uint32_t v_u32 = 9;
+    int32_t v_i32 = 9;
+    uint64_t v_u64 = 135;
+    int64_t v_i64 = 135;
+    jau::nsize_t v_jau_n = 22;
+    jau::snsize_t v_jau_sn = 23;
+    size_t v_sz = 11;
+    ssize_t v_ssz = 12;
+
+    static_assert(sizeof(uint64_t) == sizeof(unsigned long) || sizeof(uint32_t) == sizeof(unsigned long));
+    static_assert(sizeof(uint64_t) == sizeof(jau::nsize_t) || sizeof(uint32_t) == sizeof(jau::nsize_t));
+
+    std::cout << "- unsigned          : " << f(v_u) << "\n"
+              << "- int               : " << f(v_i) << "\n"
+              << "- unsigned long     : "<< f(v_ul) << "\n"
+              << "- long              : "<< f(v_l) << "\n"
+              << "- unsigned long long: "<< f(v_ull) << "\n"
+              << "- long long         : "<< f(v_ll) << "\n"
+              << "- uint32_t          : " << f(v_u32) << "\n"
+              << "-  int32_t          : " << f(v_i32) << "\n"
+              << "- uint64_t          : " << f(v_u64) << "\n"
+              << "-  int64_t          : " << f(v_i64) << "\n"
+              << "- jau::nsize_t      : " << f(v_jau_n) << "\n"
+              << "- jau::snsize_t     : " << f(v_jau_sn) << "\n"
+              << "- size_t            : " << f(v_sz) << "\n"
+              << "- ssize_t           : " << f(v_ssz) << "\n"
+              << "\n";
 }
 
 template<typename Value_type>

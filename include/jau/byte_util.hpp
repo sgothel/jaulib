@@ -826,7 +826,7 @@ namespace jau {
         }
         v &= (T(1) << n) - T(1); // mask-out undesired bits
         T r = v & 1; // r will be reversed bits of v; first get LSB of v
-        jau::nsize_t s = std::min(n-1, sizeof(T) * CHAR_BIT - 1); // extra shift needed at end
+        jau::nsize_t s = std::min<jau::nsize_t>(n-1, jau::nsize_t( sizeof(T) ) * CHAR_BIT - 1); // extra shift needed at end
         for (v >>= 1; v; v >>= 1) {
             r <<= 1;
             r |= v & 1;

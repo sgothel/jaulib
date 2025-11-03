@@ -1100,6 +1100,7 @@ SyncStreamResponseRef jau::io::read_url_stream_sync(net_tk_handle handle, const 
     if( !uri_tk::protocol_supported(url) ) {
 #endif // USE_LIBCURL
         (void)httpPostReq;
+        (void)buffer;
         (void)consumer_fn;
         res->result = io::io_result_t::FAILED;
         res->header_resp.notify_complete();

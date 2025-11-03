@@ -42,30 +42,6 @@ namespace jau {
      *  @{
      */
 
-    /**
-     * Natural 'size_t' alternative using `uint_fast32_t` as its natural sized type.
-     * <p>
-     * The leading 'n' stands for natural.
-     * </p>
-     * <p>
-     * This is a compromise to indicate intend,
-     * but to avoid handling a multiple sized `size_t` footprint where not desired.
-     * </p>
-     */
-    typedef uint_fast32_t nsize_t;
-
-    /**
-     * Natural 'ssize_t' alternative using `int_fast32_t` as its natural sized type.
-     * <p>
-     * The leading 'n' stands for natural.
-     * </p>
-     * <p>
-     * This is a compromise to indicate intend,
-     * but to avoid handling a multiple sized `ssize_t` footprint where not desired.
-     * </p>
-     */
-    typedef int_fast32_t snsize_t;
-
     // Remember: constexpr specifier used in a function or static data member (since C++17) declaration implies inline.
 
     template <int bytesize> struct uint_bytes;
@@ -95,6 +71,30 @@ namespace jau {
     /// Alias template for float_bytes
     template <int bytesize>
       using float_bytes_t = typename float_bytes<bytesize>::type;
+
+    /**
+     * Natural 'size_t' alternative using `uint<XX>_t` with xx = `sizeof(unsigned long int)*8` as its natural sized type,
+     * i.e. either uint32_t (ILP32, LLP64), uint64_t (LP64, ILP64, SILP64) or uint128_t (future).
+     *
+     * This is a compromise to indicate intend and to avoid using a multiple sized `size_t` footprint where not desired.
+     *
+     * Note: size_t on LLP64 model is 64-bit, while `unsigned long int` and hence jau::nsize_t remains 32-bit.
+     *
+     * @see jau::cpu::pointer_bit_size()
+     */
+    typedef uint_bytes_t<sizeof(unsigned long int)> nsize_t;
+
+    /**
+     * Natural 'ssize_t' alternative using `int<XX>_t` with xx = `sizeof(long int)*8` as its natural sized type,
+     * i.e. either int32_t (ILP32, LLP64), int64_t (LP64, ILP64, SILP64) or int128_t (future).
+     *
+     * This is a compromise to indicate intend and to avoid using a multiple sized `size_t` footprint where not desired.
+     *
+     * Note: ssize_t on LLP64 model is 64-bit, while `long int` and hence jau::snsize_t remains 32-bit.
+     *
+     * @see jau::cpu::pointer_bit_size()
+     */
+    typedef sint_bytes_t<sizeof(long int)> snsize_t;
 
     /**
     // *************************************************

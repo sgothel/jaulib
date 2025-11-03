@@ -36,19 +36,20 @@ namespace jau {
      */
 
     /**
-     * Simple dynamically heap-sized bitheap for efficient bit storage access in O(1).
+     * Simple dynamically heap-sized bitheap for efficient bit storage access.
      *
      * Bit-position and bit-order are in least-significant-bits (lsb) first.
      *
-     * Implementations utilizes a dynamic heap `std::vector<unsigned long>` StorageType.
+     * Implementations utilizes a dynamic heap `std::vector<jau::nsize_t>` StorageType.
      *
      * Similar to std::bitset, but utilizing dynamic runtime heapsize and  providing custom methods.
      *
      * @see jau::bitfield
+     * @see jau::nsize_t
      */
     class bitheap {
       public:
-        typedef unsigned long unit_type;                                              ///< Unit data type
+        typedef jau::nsize_t unit_type;                                               ///< Unit data type
         typedef size_t   size_type;                                                   ///< size_t data type, bit position and count
         static constexpr size_type unit_byte_size = sizeof(unit_type);                ///< One unit size in bytes
         static constexpr size_type unit_bit_size = unit_byte_size * CHAR_BIT;         ///< One unit size in bits

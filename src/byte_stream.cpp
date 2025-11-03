@@ -246,7 +246,7 @@ std::string ByteStream_SecMemory::toString() const noexcept {
         if( !good() ) {
             return 0;
         }
-        const size_t n = std::min(N, m_content_size - m_offset);
+        const size_t n = std::min<size_t>(N, m_content_size - m_offset);
         const size_t p0 = m_offset;
         return seek(p0 + n) - p0;
     } else {
@@ -655,7 +655,7 @@ size_t ByteInStream_URL::read(void* out, size_t length) noexcept {
     return m_rewindbuf.read(m_mark, m_offset, newData, out, length);
 }
 
-size_t ByteInStream_URL::peek(void* out, size_t length, size_t peek_offset) noexcept {
+size_t ByteInStream_URL::peek(void* out, size_t length, size_type peek_offset) noexcept {
     (void)out;
     (void)length;
     (void)peek_offset;
@@ -803,7 +803,7 @@ size_t ByteInStream_Feed::read(void* out, size_t length) noexcept {
     return m_rewindbuf.read(m_mark, m_offset, newData, out, length);
 }
 
-size_t ByteInStream_Feed::peek(void* out, size_t length, size_t peek_offset) noexcept {
+size_t ByteInStream_Feed::peek(void* out, size_t length, size_type peek_offset) noexcept {
     (void)out;
     (void)length;
     (void)peek_offset;

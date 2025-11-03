@@ -37,11 +37,11 @@ namespace jau {
      */
 
     /**
-     * Simple statically sized bitfield template for efficient bit storage access in O(1).
+     * Simple statically sized bitfield template for efficient bit storage access.
      *
      * Bit-position and bit-order are in least-significant-bits (lsb) first.
      *
-     * Implementations utilizes an in-memory `std::array<StorageType, (BitSize+31)/32>`
+     * Implementations utilizes an in-memory `std::array<StorageType, (BitSize+StorageTypeBits-1)/StorageTypeBits>`
      * with unsigned integral StorageType of sizeof(StorageType) <= sizeof(size_t).
      *
      * Similar to std::bitset, but providing custom methods.
@@ -488,18 +488,16 @@ namespace jau {
     }
 
     /**
-     * Simple bitfield template for efficient bit storage access in O(1).
+     * Simple bitfield template for efficient bit storage access.
      *
-     * Implementations utilizes an in-memory `std::array<unsigned long, (BitSize+31)/32>`
-     * with `unsigned long` StorageType.
-     *
-     * Alias for bitfield_t, using `unsigned long` for `StorageType`, i.e. at least 32bit or 64bit on LP64.
+     * Implementations utilizes an in-memory `std::array<StorageType = jau::nsize_t, (BitSize+StorageTypeBits-1)/StorageTypeBits>`.
      *
      * @see jau::bitfield_t
      * @see jau::bitheap
+     * @see jau::nsize_t
      */
     template<size_t BitSize>
-    using bitfield = bitfield_t<unsigned long, BitSize>;
+    using bitfield = bitfield_t<jau::nsize_t, BitSize>;
 
     /**@}*/
 

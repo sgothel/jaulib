@@ -810,7 +810,7 @@ file_stats::file_stats(const ctor_cookie& cc, int dirfd, const dir_item& item, c
             }
         }
         if constexpr ( _debug ) {
-            jau::fprintf_td(stderr, "file_stats(%d): '%s', %d, errno %d (%s)\n", (int)cc.rec_level, to_string().c_str(), stat_res, errno, ::strerror(errno));
+            jau::fprintf_td(stderr, "file_stats(%d): '%s', %d, errno %d (%s)\n", (int)cc.rec_level, toString().c_str(), stat_res, errno, ::strerror(errno));
         }
     }
 #endif /* _USE_STATX_ */
@@ -1496,7 +1496,7 @@ static bool copy_file(const int src_dirfd, const file_stats& src_stats,
             if ( 0 > rc1 ) {
                 ERR_PRINT("Failed to read bytes @ %s / %s, %s",
                         jau::to_decstring(offset).c_str(), jau::to_decstring(src_stats.size()).c_str(),
-                        src_stats.to_string().c_str());
+                        src_stats.toString().c_str());
             } else if ( 0 > rc2 ) {
                 ERR_PRINT("Failed to write bytes @ %s / %s, %s",
                         jau::to_decstring(offset).c_str(), jau::to_decstring(src_stats.size()).c_str(),

@@ -100,12 +100,12 @@ class TestByteStream01 {
                     char buffer[1024];
                     while( !in.eof() ) {
                         uint64_t in_left = in.contentSize() - in.position();
-                        uint64_t l0 = std::min(in_left, std::min(sizeof(buffer), take));
+                        uint64_t l0 = std::min<uint64_t>(in_left, std::min<size_t>(sizeof(buffer), take));
                         REQUIRE( l0 == in.read(buffer, l0) );
                         REQUIRE( l0 == out.write(buffer, l0) );
 
                         in_left = in.contentSize() - in.position();
-                        l0 = std::min(in_left, std::min(sizeof(buffer), skip));
+                        l0 = std::min<uint64_t>(in_left, std::min<size_t>(sizeof(buffer), skip));
                         const uint64_t p0 = in.position() + l0;
                         // std::cout << "XXX: " << in << ": l0 " << l0 << ", p0 " << p0 << "\n";
                         REQUIRE(p0 == in.seek(p0) );
