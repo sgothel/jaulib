@@ -38,6 +38,7 @@
 #include <jau/basic_algos.hpp>
 #include <jau/basic_types.hpp>
 #include <jau/callocator.hpp>
+#include <jau/cpp_lang_util.hpp>
 #include <jau/debug.hpp>
 #include <jau/ordered_atomic.hpp>
 #include <jau/secmem.hpp>
@@ -440,12 +441,16 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                 }
             }
             template< class InputIt >
-            constexpr pointer clone_range_foreign(const size_type dest_capacity, InputIt first, InputIt last) { // NOLINT(performance-unnecessary-value-param)
+            constexpr pointer clone_range_foreign(const size_t dest_capacity, InputIt first, InputIt last) { // NOLINT(performance-unnecessary-value-param)
+                if( dest_capacity > std::numeric_limits<size_type>::max() ) {
+                    throw jau::IllegalArgumentError("capacity "+std::to_string(dest_capacity)+" > size_type max "+
+                                                    std::to_string(std::numeric_limits<size_type>::max()), E_FILE_LINE);
+                }
                 if( dest_capacity < size_type(last-first) ) {
                     throw jau::IllegalArgumentError("capacity "+std::to_string(dest_capacity)+" < source range "+
                                                         std::to_string(difference_type(last-first)), E_FILE_LINE);
                 }
-                pointer dest = allocStore(dest_capacity);
+                pointer dest = allocStore(size_type(dest_capacity));
                 ctor_copy_range_foreign(dest, first, last);
                 return dest;
             }
@@ -938,6 +943,47 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                     return *this;
                 }
                 throw jau::IndexOutOfBoundsError(position(), size(), E_FILE_LINE);
+            }
+
+            /**
+             * Relative put() for an initializer list of same type, increasing position().
+             *
+             * Grows storage and/or moves limit if required and grow==True().
+             *
+             * Throws if position() + count > limit().
+             *
+             * @param initlist values to be written
+             * @param grow set to Bool::True if allowing to grow, otherwise exception is thrown if position() == limit(). Defaults to Bool::False.
+             * @see setGrowthFactor()
+             */
+            constexpr_cxx20 self_t& put(std::initializer_list<value_type> initlist, Bool grow=Bool::False)
+            {
+                if( initlist.size() > std::numeric_limits<size_type>::max() ) {
+                    throw jau::IllegalArgumentError("capacity "+std::to_string(initlist.size())+" > size_type max "+
+                                                    std::to_string(std::numeric_limits<size_type>::max()), E_FILE_LINE);
+                }
+                const size_type count1 = size_type(initlist.size()); // number of elements to put
+                if( *grow && m_position + count1 > m_limit ) {
+                    const size_type count2 = position() + count1 - limit(); // number of newly required elements (space)
+                    if( m_limit + count2 > m_storage_end ) {
+                        grow_storage_move(limit() + count2 - capacity());
+                        // resize(limit() + count2);
+                        m_end += count2;
+                        m_limit += count2;
+                    } else if( m_limit + count2 > m_end ) {
+                        // resize(limit() + count2);
+                        m_end += count2;
+                        m_limit += count2;
+                    } else {
+                        m_limit+=count2;
+                    }
+                }
+                if( m_position + count1 - 1 < m_limit ) {
+                    ctor_copy_range_foreign(m_position, initlist.begin(), initlist.end());
+                    m_position+=count1;
+                    return *this;
+                }
+                throw jau::IndexOutOfBoundsError(getInfo(), position(), count1, E_FILE_LINE);
             }
 
             /**
@@ -1525,7 +1571,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                 }
                 new (const_cast<pointer_mutable>(m_end)) value_type( x ); // placement new
                 m_limit = ++m_end;
-                m_position=m_limit;
+                m_position = m_limit;
             }
 
             /**
@@ -1541,7 +1587,33 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                 }
                 new (const_cast<pointer_mutable>(m_end)) value_type( std::move(x) ); // placement new, just one element - no optimization
                 m_limit = ++m_end;
-                m_position=m_limit;
+                m_position = m_limit;
+            }
+
+            /**
+             * Like std::push_back(), but for an initializer list to copy.
+             *
+             * size/end and limit will be increased by inserted elements, position set to limit/end.
+             *
+             * @param initlist values to be written
+             */
+            constexpr_cxx20 void push_back(std::initializer_list<value_type> initlist)
+            {
+                if( initlist.size() > std::numeric_limits<size_type>::max() ) {
+                    throw jau::IllegalArgumentError("capacity "+std::to_string(initlist.size())+" > size_type max "+
+                                                    std::to_string(std::numeric_limits<size_type>::max()), E_FILE_LINE);
+                }
+                const size_type count1 = size_type(initlist.size());
+                if( m_end + count1 > m_storage_end ) {
+                    const size_type epos = size_type(m_end - m_begin);
+                    const size_type spos = size_type(m_storage_end - m_begin);
+                    const size_type count2 = epos + count1 - spos;
+                    grow_storage_move(limit() + count2 - capacity());
+                }
+                ctor_copy_range_foreign(m_end, initlist.begin(), initlist.end());
+                m_end += count1;
+                m_limit = m_end;
+                m_position = m_limit;
             }
 
             /**
