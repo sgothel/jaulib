@@ -855,6 +855,22 @@ class PMVMatrix4 {
     //
 
     /**
+     * Set the {@link #getP() projection matrix} to the perspective/frustum matrix.
+     *
+     * @param fovy_rad fov angle in radians
+     * @param aspect aspect ratio width / height
+     * @param zNear
+     * @param zFar
+     * @throws IllegalArgumentException if {@code zNear <= 0} or {@code zFar <= zNear}
+     * @see Mat4#setToPerspective(float, float, float, float)
+     */
+    PMVMatrix4& setToPerspective(const float fovy_rad, const float aspect, const float zNear, const float zFar) {
+        m_matP.setToPerspective(fovy_rad, aspect, zNear, zFar);
+        setProjectionDirty();
+        return *this;
+    }
+
+    /**
      * {@link #mulP(Mat4) Multiply} the {@link #getP() projection matrix} with the perspective/frustum matrix.
      *
      * @param fovy_rad fov angle in radians
@@ -871,13 +887,22 @@ class PMVMatrix4 {
     }
 
     /**
-     * {@link #mulP(Mat4) Multiply} the {@link #getP() projection matrix}
-     * with the eye, object and orientation, i.e. {@link Mat4#setToLookAt(Vec3, Vec3, Vec3, Mat4)}.
+     * Set the {@link #getMv() modelview matrix}
+     * to the eye, object and orientation (camera), i.e. {@link Mat4#setToLookAt(Vec3, Vec3, Vec3, Mat4)}.
      */
-    constexpr PMVMatrix4& lookAtP(const Vec3& eye, const Vec3& center, const Vec3& up) noexcept {
-        Mat4 mat4Tmp2;
+    constexpr PMVMatrix4& setToLookAtMv(const Vec3& eye, const Vec3& center, const Vec3& up) noexcept {
+        m_matMv.setToLookAt(eye, center, up);
+        setModelviewDirty();
+        return *this;
+    }
+
+    /**
+     * {@link #mulMv(Mat4) Multiply} the {@link #getMv() modelview matrix}
+     * with the eye, object and orientation (camera), i.e. {@link Mat4#setToLookAt(Vec3, Vec3, Vec3, Mat4)}.
+     */
+    constexpr PMVMatrix4& lookAtMv(const Vec3& eye, const Vec3& center, const Vec3& up) noexcept {
         Mat4 mat4Tmp1;
-        mulP( mat4Tmp1.setToLookAt(eye, center, up, mat4Tmp2) );
+        mulMv( mat4Tmp1.setToLookAt(eye, center, up) );
         return *this;
     }
 
