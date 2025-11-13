@@ -140,7 +140,7 @@ class PMVMatrix4 {
 
         MatrixStack<value_type> m_stackMv, m_stackP, m_stackTex;
 
-        PMVData m_requestBits; // may contain the requested bits: INVERSE_MODELVIEW | INVERSE_PROJECTION | INVERSE_TRANSPOSED_MODELVIEW
+        PMVData m_requestBits; // may contain the requested bits: PMVData::inv_mv | PMVData::inv_proj | PMVData::inv_tps_mv
 
         PMVMod m_modifiedBits = PMVMod::all;
         PMVData m_dirtyBits = PMVData::none; // contains the dirty bits, i.e. hinting for update operation
@@ -385,7 +385,7 @@ class PMVMatrix4 {
      * <p>
      * See <a href="#storageDetails"> matrix storage details</a>.
      * </p>
-     * @throws IllegalArgumentException if {@link #INVERSE_MODELVIEW} has not been requested in ctor {@link #PMVMatrix4(int)}.
+     * @throws IllegalArgumentException if PMVData::inv_mv has not been requested in ctor.
      */
     SyncMats4f makeSyncPMvMvi() {
         if( !is_set(m_requestBits, PMVData::inv_mv) ) {
@@ -399,10 +399,12 @@ class PMVMatrix4 {
      * <p>
      * See <a href="#storageDetails"> matrix storage details</a>.
      * </p>
-     * @throws IllegalArgumentException if {@link #INVERSE_TRANSPOSED_MODELVIEW} has not been requested in ctor {@link #PMVMatrix4(int)}.
+     * @throws IllegalArgumentException if PMVData::inv_mv or PMVData::inv_tps_mv has not been requested in ctor.
      */
     SyncMats4f makeSyncPMvMviMvit() {
-        if( !is_set(m_requestBits, PMVData::inv_tps_mv) ) {
+        if( !is_set(m_requestBits, PMVData::inv_mv) ||
+            !is_set(m_requestBits, PMVData::inv_tps_mv) )
+        {
             throw jau::IllegalArgumentError("Not requested in ctor", E_FILE_LINE);
         }
         return SyncMats4f(m_matP, 4, jau::bind_member(this, &PMVMatrix4::updateImpl0));
