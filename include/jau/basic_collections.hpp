@@ -94,37 +94,57 @@ namespace jau {
     /**
      * HashMapWrap, generic std::unordered_set exposing a more higher level API
      */
-    template<typename Key_type, typename Hash_functor, typename Value_type, typename Novalue_type, Novalue_type no_value>
+    template<typename Key_type, typename Hash_functor, typename Value_type, typename Novalue_type, Novalue_type No_value>
     class HashMapWrap {
       public:
-        typedef std::unordered_map<Key_type, Value_type, Hash_functor, std::equal_to<>> HashMapType;
+        typedef Key_type          key_type;
+        typedef Hash_functor      hash_functor;
+        typedef Value_type        value_type;
+        typedef value_type*       pointer;
+        // typedef const value_type* const_pointer;
+        // typedef value_type&       reference;
+        typedef const value_type& const_reference;
+        typedef Novalue_type      novalue_type;
+
+        typedef std::unordered_map<key_type, value_type, hash_functor, std::equal_to<>> HashMapType;
 
       private:
         HashMapType m_map;
+        value_type no_value = No_value; /// converts novalue_type No_value to lvalue value_type to return its reference
 
       public:
         HashMapType& map() noexcept { return m_map; }
         const HashMapType& map() const noexcept { return m_map; }
 
-        /** Returns the mapped value for the given name or `no_value` */
-        Value_type get(std::string_view key) const {
+        const_reference novalue() const { return no_value; }
+
+        /** Returns the immutable mapped value reference for the given name or `no_value` */
+        const_reference get(const key_type& key) const {
             auto it = m_map.find(key);
             if( it != m_map.end() ) {
                 return it->second;
             }
             return no_value;
         }
+        /** Returns the mutable mapped value reference for the given name or std::nullopt */
+        pointer get(const key_type& key) {
+            auto it = m_map.find(key);
+            if( it != m_map.end() ) {
+                return &it->second;
+            }
+            return nullptr; // don't leak mutable no_value
+        }
 
         /** Returns true if the given name maps to a value or `no_value`. */
-        bool containsKey(std::string_view key) const {
+        bool containsKey(const key_type& key) const {
             return m_map.contains(key);
         }
 
-        /** Returns the string_view key of the first value, otherwise std::nullopt. Note: O(n) operation, slow. */
-        std::optional<std::string_view> containsValue(const Value_type& value) const {
-            for (const std::pair<const std::string, Value_type>& n : m_map) {
+        /** Returns the key reference of the first value, otherwise std::nullopt. Note: O(n) operation, slow. */
+        std::optional<const key_type&> containsValue(const_reference value) const {
+            for (const std::pair<const key_type, value_type>& n : m_map) {
                 if( n.second == value ) {
-                    return std::optional<std::string_view>{n.first};
+                    return std::optional<const key_type&>{n.first};
                 }
             }
             return std::nullopt;
@@ -135,25 +155,59 @@ namespace jau {
 
         /**
          * Maps the value for the given name, overwrites old mapping if exists.
-         * @return previously mapped value or `no_value`.
+         * @return true if value is newly mapped, otherwise false if replacing old mapping.
          */
-        Value_type put(std::string_view key, const Value_type& obj) {
+        bool put0(const key_type& key, const_reference obj) {
             auto it = m_map.find(key);
             if( it != m_map.end() ) {
-                Value_type old = it->second;
+                value_type old = it->second;
+                it->second        = obj;
+                return false;
+            }
+            m_map.insert( {key, obj} );
+            return true;
+        }
+
+        /**
+         * Maps the value for the given name, overwrites old mapping if exists.
+         *
+         * Consider using put0 if old replaced value is not of interest.
+         *
+         * @return previously mapped value or `no_value`.
+         */
+        value_type put1(const key_type& key, const_reference obj) {
+            auto it = m_map.find(key);
+            if( it != m_map.end() ) {
+                value_type old = it->second;
                 it->second        = obj;
                 return old;
             }
-            m_map.insert({std::string(key), obj });
-            // m_attachedMap[key] = obj;
+            m_map.insert( {key, obj} );
             return no_value;
         }
 
-        /** Removes value if mapped and returns it, otherwise returns `no_value`. */
-        Value_type remove(std::string_view key) {
+        /** Removes value if mapped and returns true, otherwise returns false. */
+        bool remove0(const key_type& key) {
             auto it = m_map.find(key);
             if( it != m_map.end() ) {
-                Value_type old = it->second;
+                value_type old = it->second;
+                m_map.erase(it);
+                return true;
+            }
+            return false;
+        }
+
+        /**
+         * Removes value if mapped and returns it, otherwise returns `no_value`.
+         *
+         * Consider using remove0 if removed value is not of interest.
+         *
+         * @return removed value or `no_value`.
+         */
+        value_type remove1(const key_type& key) {
+            auto it = m_map.find(key);
+            if( it != m_map.end() ) {
+                value_type old = it->second;
                 m_map.erase(it);
                 return old;
             }
