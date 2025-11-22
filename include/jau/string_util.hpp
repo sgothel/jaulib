@@ -33,8 +33,6 @@
 #include <string>
 #include <string_view>
 #include <type_traits>
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 #include "jau/basic_types.hpp"
@@ -906,44 +904,6 @@ namespace jau {
      inline Int64SizeBoolTuple to_integer(const std::string_view str, const nsize_t radix = 10, const char limiter = '\0', const char *limiter_pos = nullptr) {
          return to_integer(str.data(), str.length(), radix, limiter, limiter_pos);
      }
-
-    /**
-     * C++20: Heterogeneous Lookup in (Un)ordered Containers
-     *
-     * @see https://www.cppstories.com/2021/heterogeneous-access-cpp20/
-     */
-    struct string_hash {
-        using is_transparent = void;
-        [[nodiscard]] size_t operator()(const char *txt) const {
-            return std::hash<std::string_view>{}(txt);
-        }
-        [[nodiscard]] size_t operator()(std::string_view txt) const {
-            return std::hash<std::string_view>{}(txt);
-        }
-        [[nodiscard]] size_t operator()(const std::string &txt) const {
-            return std::hash<std::string>{}(txt);
-        }
-    };
-
-    template<typename T>
-    using StringHashMap = std::unordered_map<std::string, T, string_hash, std::equal_to<>>;
-
-    using StringHashSet = std::unordered_set<std::string, string_hash, std::equal_to<>>;
-
-    /**
-     * std::string_view std::unordered_map, use with care.
-     *
-     * Key values must persist through the lifecycle of the map.
-     */
-    template<typename T>
-    using StringViewHashMap = std::unordered_map<std::string_view, T, string_hash, std::equal_to<>>;
-
-    /**
-     * std::string_view std::unordered_set, use with care.
-     *
-     * Key values must persist through the lifecycle of the set.
-     */
-    using StringViewHashSet = std::unordered_set<std::string_view, string_hash, std::equal_to<>>;
 
     /**@}*/
 

@@ -24,9 +24,10 @@ See [C++ Minimum Requirements](#cpp_min_req) and [Supported Platforms](#sup_plat
 Up to date API documentation can be found:
 
 * [C++ API Doc](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/index.html) with [topics](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/topics.html):
-  * [Basic Algorithms](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__Algorithms.html)
+  * [Algorithms](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__Algorithms.html)
   * [Byte Utilities](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__ByteUtils.html)
   * [C++ Language Utilities](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__CppLang.html)
+  * [Collections](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__Collections.html)
   * [Concurrency](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__Concurrency.html)
   * [Codec](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__Codec.html)
   * [Data Structures](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__DataStructs.html)
@@ -39,8 +40,8 @@ Up to date API documentation can be found:
     * [Integer types and arithmetic](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__Integer.html)
     * [Float types and arithmetic](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__Floats.html)
     * [Constant Time (CT) Operations](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__ConstantTime.html)
-  * [OS Support](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__OSSup.html)
   * [Network Utilities](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__NetUtils.html)
+  * [OS Support](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__OSSup.html)
   * [String Utilities](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__StringUtils.html)
   * [System and OS Utilities](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__SysUtils.html)
 
