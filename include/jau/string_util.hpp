@@ -930,6 +930,21 @@ namespace jau {
 
     using StringHashSet = std::unordered_set<std::string, string_hash, std::equal_to<>>;
 
+    /**
+     * std::string_view std::unordered_map, use with care.
+     *
+     * Key values must persist through the lifecycle of the map.
+     */
+    template<typename T>
+    using StringViewHashMap = std::unordered_map<std::string_view, T, string_hash, std::equal_to<>>;
+
+    /**
+     * std::string_view std::unordered_set, use with care.
+     *
+     * Key values must persist through the lifecycle of the set.
+     */
+    using StringViewHashSet = std::unordered_set<std::string_view, string_hash, std::equal_to<>>;
+
     /**@}*/
 
 }  // namespace jau
