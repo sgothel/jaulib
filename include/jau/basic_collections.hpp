@@ -97,6 +97,10 @@ namespace jau {
      *
      * Allows using No_value for queries to signal `no value` found in map.
      *
+     * `no_value` will be returned by reference, including mutable reference.
+     * Hence caller must ensure that this special value is detected and not written to.
+     * This path has been chosen in favor of returning a `nullptr`.
+     *
      * @tparam Key_type key type
      * @tparam Value_type value type
      * @tparam Novalue_type value type representing `no value`, e.g. Value_type or std::nullptr_t for pointer.
@@ -122,9 +126,9 @@ namespace jau {
         typedef Query_type        query_type;
         typedef Hash_functor      hash_functor;
         typedef Value_type        value_type;
-        typedef value_type*       pointer;
+        // typedef value_type*       pointer;
         // typedef const value_type* const_pointer;
-        // typedef value_type&       reference;
+        typedef value_type&       reference;
         typedef const value_type& const_reference;
         typedef Novalue_type      novalue_type;
 
@@ -140,28 +144,31 @@ namespace jau {
         HashMapType& map() noexcept { return m_map; }
         const HashMapType& map() const noexcept { return m_map; }
 
-        const_reference novalue() const { return no_value; }
+        /// Returns the no-value immutable refererence `no_value`
+        constexpr const_reference novalue() const noexcept { return no_value; }
+        /// Returns the no-value mutable refererence, `no_value` (should not be writable or written to)
+        constexpr reference novalue() noexcept { return no_value; }
 
         size_type size() const noexcept { return m_map.size(); }
 
         /** Clears the hash map. */
         void clear() { m_map.clear(); }
 
-        /** Returns the immutable mapped value reference for the given key or `no_value` */
+        /** Returns the immutable mapped value reference for the given key or novalue() */
         const_reference get(const query_type& key) const {
             auto it = m_map.find(key);
             if( it != m_map.end() ) {
                 return it->second;
             }
-            return no_value;
+            return novalue();
         }
-        /** Returns the mutable mapped value pointer for the given key or nullptr. */
-        pointer get2(const query_type& key) {
+        /** Returns the mutable mapped value reference for the given key or novalue() */
+        reference get(const query_type& key) {
             auto it = m_map.find(key);
             if( it != m_map.end() ) {
-                return &it->second;
+                return it->second;
             }
-            return nullptr; // don't leak mutable no_value
+            return novalue();
         }
 
         /** Returns the immutable pair_type pointer for the given key or nullptr. */
@@ -192,7 +199,7 @@ namespace jau {
          * Adds a new mapping of the value for the given key, does nothing if a mapping exists.
          * @return true if value is newly mapped, otherwise false doing nothing.
          */
-        bool insert(const key_type& key, const_reference obj) {
+        bool insert(const key_type &key, const_reference obj) {
             return m_map.insert( {key, obj} ).second;
         }
 
@@ -203,7 +210,7 @@ namespace jau {
         template<class Q>
         requires (!std::same_as<key_type, query_type>) &&
                  std::same_as<Q, query_type>
-        bool insert(const Q& key, const_reference obj) {
+        bool insert(const Q &key, const_reference obj) {
             return m_map.insert( {key_type(key), obj} ).second;
         }
 
@@ -211,7 +218,7 @@ namespace jau {
          * Maps the value for the given key, overwrites old mapping if exists.
          * @return true if value is newly mapped, otherwise false if replacing old mapping.
          */
-        bool put(const key_type& key, const_reference obj) {
+        bool put(const key_type &key, const_reference obj) {
             auto it = m_map.find(key);
             if( it != m_map.end() ) {
                 it->second        = obj;
@@ -228,7 +235,7 @@ namespace jau {
         template<class Q>
         requires (!std::same_as<key_type, query_type>) &&
                  std::same_as<Q, query_type>
-        bool put(const Q& key, const_reference obj) {
+        bool put(const Q &key, const_reference obj) {
             auto it = m_map.find(key);
             if( it != m_map.end() ) {
                 it->second        = obj;
@@ -243,16 +250,55 @@ namespace jau {
          *
          * Consider using put() if old replaced value is not of interest.
          *
-         * @return previously mapped value or `no_value`.
+         * @return newly successfully mapped value reference owned by this map or novalue()
+         * @see ::novalue()
          */
-        value_type put2(const key_type& key, const_reference obj) {
+        reference put2(const key_type &key, const_reference obj) {
             auto it = m_map.find(key);
             if( it != m_map.end() ) {
-                value_type old = it->second;
                 it->second        = obj;
+                return it->second;
+            }
+            auto [ it2, res ] = m_map.insert( {key, obj} );
+            return res ? it2->second : novalue();
+        }
+
+        /**
+         * Maps the value for the given key, overwrites old mapping if exists.
+         *
+         * Consider using put() if old replaced value is not of interest.
+         *
+         * @return newly successfully mapped value reference owned by this map or novalue()
+         * @see ::novalue()
+         */
+        template<class Q>
+        requires (!std::same_as<key_type, query_type>) &&
+                 std::same_as<Q, query_type>
+        reference put2(const Q &key, const_reference obj) {
+            auto it = m_map.find(key);
+            if( it != m_map.end() ) {
+                it->second        = obj;
+                return it->second;
+            }
+            auto [ it2, res ] = m_map.insert( {key, obj} );
+            return res ? it2->second : novalue();
+        }
+
+        /**
+         * Maps the value for the given key, overwrites old mapping if exists.
+         *
+         * Consider using put() if old replaced value is not of interest.
+         *
+         * @return previously mapped value or `no_value`.
+         */
+        value_type put3(const key_type &key, const_reference obj) {
+            auto it = m_map.find(key);
+            if (it != m_map.end()) {
+                value_type old = it->second;
+                it->second = obj;
                 return old;
             }
-            m_map.insert( {key, obj} );
+            m_map.insert({ key, obj });
             return no_value;
         }
 
@@ -266,7 +312,7 @@ namespace jau {
         template<class Q>
         requires (!std::same_as<key_type, query_type>) &&
                  std::same_as<Q, query_type>
-        value_type put2(const Q& key, const_reference obj) {
+        value_type put3(const Q &key, const_reference obj) {
             auto it = m_map.find(key);
             if( it != m_map.end() ) {
                 value_type old = it->second;
@@ -281,7 +327,7 @@ namespace jau {
          * Replaces the already mapped value for the given key, does nothing if no mapping exists.
          * @return true if mapped value is replaced, otherwise false doing nothing.
          */
-        bool replace(const key_type& key, const_reference obj) {
+        bool replace(const key_type &key, const_reference obj) {
             auto it = m_map.find(key);
             if( it != m_map.end() ) {
                 it->second        = obj;
@@ -297,7 +343,7 @@ namespace jau {
         template<class Q>
         requires (!std::same_as<key_type, query_type>) &&
                  std::same_as<Q, query_type>
-        bool replace(const Q& key, const_reference obj) {
+        bool replace(const Q &key, const_reference obj) {
             auto it = m_map.find(key);
             if( it != m_map.end() ) {
                 it->second        = obj;
@@ -307,7 +353,20 @@ namespace jau {
         }
 
         /** Removes value if mapped and returns true, otherwise returns false. */
-        bool remove(const query_type& key) {
+        bool remove(const query_type &key) {
+            auto it = m_map.find(key);
+            if( it != m_map.end() ) {
+                m_map.erase(it);
+                return true;
+            }
+            return false;
+        }
+
+        /** Removes value if mapped and returns true, otherwise returns false. */
+        template<class Q>
+        requires (!std::same_as<key_type, query_type>) &&
+                 std::same_as<Q, query_type>
+        bool remove(const Q &key) {
             auto it = m_map.find(key);
             if( it != m_map.end() ) {
                 m_map.erase(it);
@@ -323,7 +382,27 @@ namespace jau {
          *
          * @return removed value or `no_value`.
          */
-        value_type remove2(const query_type& key) {
+        value_type remove2(const query_type &key) {
+            auto it = m_map.find(key);
+            if( it != m_map.end() ) {
+                value_type old = it->second;
+                m_map.erase(it);
+                return old;
+            }
+            return no_value;
+        }
+
+        /**
+         * Removes value if mapped and returns it, otherwise returns `no_value`.
+         *
+         * Consider using remove() if removed value is not of interest.
+         *
+         * @return removed value or `no_value`.
+         */
+        template<class Q>
+        requires (!std::same_as<key_type, query_type>) &&
+                 std::same_as<Q, query_type>
+        value_type remove2(const Q &key) {
             auto it = m_map.find(key);
             if( it != m_map.end() ) {
                 value_type old = it->second;

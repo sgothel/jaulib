@@ -28,6 +28,7 @@
 #include <jau/cpp_lang_util.hpp>
 #include <jau/enum_util.hpp>
 #include <typeinfo>
+#include <cstdint>
 
 namespace jau {
 
