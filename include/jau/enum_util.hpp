@@ -567,48 +567,11 @@ namespace jau::enums {
  *  @{
  */
 
-//
-// JAU_FOR_EACH macros inspired by David Mazières, June 2021
-// <https://www.scs.stanford.edu/~dm/blog/va-opt.html>
-//
-// All hacks below to circumvent lack of C++26 reflection.
-//
-
-// Note space before (), so object-like macro
-#define JAU_PARENS ()
-
-#define JAU_EXPAND(...) JAU_EXPAND4(JAU_EXPAND4(JAU_EXPAND4(JAU_EXPAND4(__VA_ARGS__))))
-#define JAU_EXPAND4(...) JAU_EXPAND3(JAU_EXPAND3(JAU_EXPAND3(JAU_EXPAND3(__VA_ARGS__))))
-#define JAU_EXPAND3(...) JAU_EXPAND2(JAU_EXPAND2(JAU_EXPAND2(JAU_EXPAND2(__VA_ARGS__))))
-#define JAU_EXPAND2(...) JAU_EXPAND1(JAU_EXPAND1(JAU_EXPAND1(JAU_EXPAND1(__VA_ARGS__))))
-#define JAU_EXPAND1(...) __VA_ARGS__
-
-#define JAU_FOR_EACH(macro, type, ...)                              \
-  __VA_OPT__(JAU_EXPAND(JAU_FOR_EACH_HELPER(macro, type, __VA_ARGS__)))
-#define JAU_FOR_EACH_HELPER(macro, type, a1, ...)                   \
-  macro(type, a1)                                               \
-  __VA_OPT__(JAU_FOR_EACH_AGAIN JAU_PARENS (macro, type, __VA_ARGS__))
-#define JAU_FOR_EACH_AGAIN() JAU_FOR_EACH_HELPER
-
 #define JAU_ENUM_CASE_SHORT(type, name) case type::name: return #name;
 #define JAU_ENUM_CASE_LONG(type, name)  case type::name: return #type "::" #name;
 
-#define JAU_FOR_EACH_LIST(macro, type, ...)                              \
-  __VA_OPT__(JAU_EXPAND(JAU_FOR_EACH_LIST_HELPER(macro, type, __VA_ARGS__)))
-#define JAU_FOR_EACH_LIST_HELPER(macro, type, a1, ...)                   \
-  macro(type, a1)                                               \
-  __VA_OPT__(, JAU_FOR_EACH_LIST_AGAIN JAU_PARENS (macro, type, __VA_ARGS__))
-#define JAU_FOR_EACH_LIST_AGAIN() JAU_FOR_EACH_LIST_HELPER
-
 #define JAU_ENUM_TYPE_VALUE(type, name) type::name
 #define JAU_ENUM_VALUE(type, name) name
-
-#define JAU_FOR_EACH_VALUE(macro, type, value, ...)             \
-  __VA_OPT__(JAU_EXPAND(JAU_FOR_EACH_VALUE_HELPER(macro, type, value, __VA_ARGS__)))
-#define JAU_FOR_EACH_VALUE_HELPER(macro, type, value, a1, ...)  \
-  macro(type, a1, value)                                        \
-  __VA_OPT__(JAU_FOR_EACH_VALUE_AGAIN JAU_PARENS (macro, type, value, __VA_ARGS__))
-#define JAU_FOR_EACH_VALUE_AGAIN() JAU_FOR_EACH_VALUE_HELPER
 
 #define JAU_MAKE_ENUM_STRING(type, ...)                       \
     JAU_MAKE_ENUM_STRING_SUB(type, type, __VA_ARGS__)         \
@@ -617,7 +580,7 @@ namespace jau::enums {
     to_string(const type e) noexcept                        \
     { return std::string(name(e)); }                        \
 
-#define JAU_APPEND_BITSTR(U,V,M) jau::enums::append_bitstr(out, M, U::V, #V, comma);
+#define JAU_ENUM_APPEND_BITSTR(U,V,M) jau::enums::append_bitstr(out, M, U::V, #V, comma);
 
 #define JAU_MAKE_BITFIELD_ENUM_STRING(type, ...)            \
     JAU_MAKE_ENUM_STRING_SUB(type, type, __VA_ARGS__)       \
@@ -626,7 +589,7 @@ namespace jau::enums {
     to_string(const type mask) noexcept {                   \
         std::string out("[");                               \
         bool comma = false;                                 \
-        JAU_FOR_EACH_VALUE(JAU_APPEND_BITSTR, type, mask, __VA_ARGS__); \
+        JAU_FOR_EACH2_VALUE(JAU_ENUM_APPEND_BITSTR, type, mask, __VA_ARGS__); \
         out.append("]");                                    \
         return out;                                         \
     }                                                       \
@@ -638,7 +601,7 @@ namespace jau::enums {
     to_string(const type mask) noexcept {                   \
         std::string out("[");                               \
         bool comma = false;                                 \
-        JAU_FOR_EACH_VALUE(JAU_APPEND_BITSTR, type, mask, __VA_ARGS__); \
+        JAU_FOR_EACH2_VALUE(JAU_ENUM_APPEND_BITSTR, type, mask, __VA_ARGS__); \
         out.append("]");                                    \
         return out;                                         \
     }                                                       \
@@ -649,7 +612,7 @@ namespace jau::enums {
     long_name(const type v) noexcept                        \
     {                                                       \
         switch (v) {                                        \
-            JAU_FOR_EACH(JAU_ENUM_CASE_LONG, type, __VA_ARGS__) \
+            JAU_FOR_EACH2(JAU_ENUM_CASE_LONG, type, __VA_ARGS__) \
             default:                                        \
                 return "undef " #stype;                     \
         }                                                   \
@@ -658,7 +621,7 @@ namespace jau::enums {
     name(const type v) noexcept                             \
     {                                                       \
         switch (v) {                                        \
-            JAU_FOR_EACH(JAU_ENUM_CASE_SHORT, type, __VA_ARGS__) \
+            JAU_FOR_EACH2(JAU_ENUM_CASE_SHORT, type, __VA_ARGS__) \
             default:                                        \
                 return "undef";                             \
         }                                                   \
@@ -685,7 +648,7 @@ namespace jau::enums {
     to_string(const type mask) noexcept {                   \
         std::string out("[");                               \
         bool comma = false;                                 \
-        JAU_FOR_EACH_VALUE(JAU_APPEND_BITSTR, type, mask, __VA_ARGS__); \
+        JAU_FOR_EACH2_VALUE(JAU_ENUM_APPEND_BITSTR, type, mask, __VA_ARGS__); \
         out.append("]");                                    \
         return out;                                         \
     }                                                       \
@@ -696,7 +659,7 @@ namespace jau::enums {
     long_name(const type v) noexcept                        \
     {                                                       \
         switch (v) {                                        \
-            JAU_FOR_EACH(JAU_ENUM_CASE_LONG, type, __VA_ARGS__) \
+            JAU_FOR_EACH2(JAU_ENUM_CASE_LONG, type, __VA_ARGS__) \
             default:                                        \
                 return "undef " #stype;                     \
         }                                                   \
@@ -705,7 +668,7 @@ namespace jau::enums {
     name(const type v) noexcept                             \
     {                                                       \
         switch (v) {                                        \
-            JAU_FOR_EACH(JAU_ENUM_CASE_SHORT, type, __VA_ARGS__) \
+            JAU_FOR_EACH2(JAU_ENUM_CASE_SHORT, type, __VA_ARGS__) \
             default:                                        \
                 return "undef";                             \
         }                                                   \
@@ -720,7 +683,7 @@ namespace jau::enums {
     JAU_MAKE_ENUM_INFO2(type, type, __VA_ARGS__)        \
 
 #define JAU_MAKE_ENUM_INFO2(type, stype, ...)           \
-    typedef jau::enums::enum_info<type, JAU_FOR_EACH_LIST(JAU_ENUM_TYPE_VALUE, type, __VA_ARGS__)> stype##_info_t; \
+    typedef jau::enums::enum_info<type, JAU_FOR_EACH2_LIST(JAU_ENUM_TYPE_VALUE, type, __VA_ARGS__)> stype##_info_t; \
 
 
 /**@}*/

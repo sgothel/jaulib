@@ -33,10 +33,10 @@
 #include <type_traits>
 #include <functional>
 
-#include <jau/basic_types.hpp>
 #include <jau/cpp_lang_util.hpp>
+#include <jau/int_types.hpp>
 #include <jau/type_info.hpp>
-#include <jau/debug.hpp>
+#include <jau/string_util.hpp>
 
 namespace jau {
 
@@ -546,7 +546,7 @@ namespace jau {
                     if( useHeap() ) {
                         udata.heap = ::malloc(m_tfunc->size);
                         if( !udata.heap ) {
-                            ABORT("Error: bad_alloc: heap allocation failed");
+                            { jau::unsafe::errPrint(stderr, "ABORT", true /* errno */, true /* backtrace */, __func__, __FILE__, __LINE__, "Error: bad_alloc: heap allocation failed"); abort(); }
                             return; // unreachable
                         }
                         if( m_tfunc->non_trivial ) {
@@ -566,7 +566,7 @@ namespace jau {
                         if( m_tfunc->non_trivial ) {
                             udata.heap = ::malloc(m_tfunc->size);
                             if( !udata.heap ) {
-                                ABORT("Error: bad_alloc: heap allocation failed");
+                                { jau::unsafe::errPrint(stderr, "ABORT", true /* errno */, true /* backtrace */, __func__, __FILE__, __LINE__, "Error: bad_alloc: heap allocation failed"); abort(); }
                                 return; // unreachable
                             }
                             m_tfunc->non_trivial->move_ctor(this, &o);
@@ -611,7 +611,7 @@ namespace jau {
                         if( useHeap() ) {
                             udata.heap = ::malloc(m_tfunc->size);
                             if( !udata.heap ) {
-                                ABORT("Error: bad_alloc: heap allocation failed");
+                                { jau::unsafe::errPrint(stderr, "ABORT", true /* errno */, true /* backtrace */, __func__, __FILE__, __LINE__, "Error: bad_alloc: heap allocation failed"); abort(); }
                                 return *this; // unreachable
                             }
                             if( m_tfunc->non_trivial ) {
@@ -638,7 +638,7 @@ namespace jau {
                         if( m_tfunc->non_trivial ) {
                             udata.heap = ::malloc(m_tfunc->size);
                             if( !udata.heap ) {
-                                ABORT("Error: bad_alloc: heap allocation failed");
+                                { jau::unsafe::errPrint(stderr, "ABORT", true /* errno */, true /* backtrace */, __func__, __FILE__, __LINE__, "Error: bad_alloc: heap allocation failed"); abort(); }
                                 return *this; // unreachable
                             }
                             m_tfunc->non_trivial->move_ctor(this, &o);

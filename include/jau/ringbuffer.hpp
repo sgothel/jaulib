@@ -358,7 +358,7 @@ class ringbuffer {
                     }
                     if( writePos != localReadPos ) {
                         // Avoid exception, abort!
-                        ABORT("copy segment error: this %s, readPos %d/%d; writePos %d", toString().c_str(), readPos.load(), localReadPos, writePos.load());
+                        ABORT("copy segment error: this %s, readPos %zu/%zu; writePos %zu", toString(), readPos.load(), localReadPos, writePos.load());
                     }
                     if constexpr ( uses_secmem ) {
                         zero_bytes_sec(voidptr_cast(&array[0]), capacityPlusOne*sizeof(Value_type));
@@ -381,7 +381,7 @@ class ringbuffer {
                 }
                 if( writePos != localReadPos ) {
                     // Avoid exception, abort!
-                    ABORT("copy segment error: this %s, readPos %d/%d; writePos %d", toString().c_str(), readPos.load(), localReadPos, writePos.load());
+                    ABORT("copy segment error: this %s, readPos %zu/%zu; writePos %zu", toString(), readPos.load(), localReadPos, writePos.load());
                 }
                 zero_bytes_sec(voidptr_cast(&array[0]), capacityPlusOne*sizeof(Value_type));
                 readPos = localReadPos;
@@ -397,7 +397,7 @@ class ringbuffer {
                 capacityPlusOne = source.capacityPlusOne;
                 array = newArray(capacityPlusOne);
             } else if( capacityPlusOne != source.capacityPlusOne ) {
-                ABORT( ("capacityPlusOne not equal: this "+toString()+", source "+source.toString() ).c_str() );
+                ABORT("capacityPlusOne not equal: this %s, source %s", toString(), source.toString());
             } else {
                 clearImpl();
             }
@@ -417,7 +417,7 @@ class ringbuffer {
                     new (const_cast<pointer_mutable>(array + localWritePos)) value_type( source.array[localWritePos] ); // placement new
                 }
                 if( writePos != localWritePos ) {
-                    ABORT( ("copy segment error: this "+toString()+", localWritePos "+std::to_string(localWritePos)+"; source "+source.toString()).c_str() );
+                    ABORT("copy segment error: this %s, localWritePos %zu; source %s", toString(), localWritePos, source.toString());
                 }
             }
         }

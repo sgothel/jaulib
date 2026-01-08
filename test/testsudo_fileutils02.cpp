@@ -152,7 +152,7 @@ class TestFileUtil02 : TestFileUtilBase {
         ::gid_t result_int = default_group;
         if( nullptr != ::fgets(result, sizeof(result), fp) ) {
             result_int = static_cast<::gid_t>( ::atoi(result) );
-            jau::PLAIN_PRINT(true, "get_gid(%s) -> %s (%d)", groupname.c_str(), result, (int)result_int);
+            PLAIN_PRINT(true, "get_gid(%s) -> %s (%d)", groupname, std::string_view(result), (int)result_int);
         } else {
             fprintf(stderr, "Command failed (2) '%s'\n", cmd.c_str() );
         }
@@ -197,7 +197,7 @@ class TestFileUtil02 : TestFileUtilBase {
             if( !cap_get_flag(caps, CAP_SYS_ADMIN,  ::CAP_EFFECTIVE, &cap_sys_admin) ) { return; }
             if( !cap_get_flag(caps, CAP_SETUID,     ::CAP_EFFECTIVE, &cap_setuid) ) { return; }
             if( !cap_get_flag(caps, CAP_SETGID,     ::CAP_EFFECTIVE, &cap_setgid) ) { return; }
-            jau::fprintf_td(stderr, "Caps: sys_admin %d, setuid %d, setgid %d\n",
+            jau::fprintf_td(stderr, "Caps: sys_admin %u, setuid %u, setgid %u\n",
                     cap_sys_admin, cap_setuid, cap_setgid);
 
             // Not required as mount/umount uses fork(), then seteuid(0)

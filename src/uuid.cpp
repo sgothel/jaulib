@@ -87,7 +87,7 @@ std::unique_ptr<uuid_t> uuid_t::clone() const noexcept {
         case TypeSize::UUID32_SZ: return std::make_unique<uuid32_t>( *( static_cast<const uuid32_t*>(this) ) );
         case TypeSize::UUID128_SZ: return std::make_unique<uuid128_t>( *( static_cast<const uuid128_t*>(this) ) );
     }
-    ABORT("Unknown Type %d", static_cast<jau::nsize_t>(type));
+    ABORT("Unknown Type %zu", static_cast<jau::nsize_t>(type));
     abort(); // never reached
 }
 
@@ -122,7 +122,7 @@ uuid128_t uuid_t::toUUID128(uuid128_t const & base_uuid, jau::nsize_t const uuid
         case TypeSize::UUID32_SZ:  return uuid128_t( *( static_cast<const uuid32_t*>(this)  ), base_uuid, uuid32_le_octet_index);
         case TypeSize::UUID128_SZ: return uuid128_t( *( static_cast<const uuid128_t*>(this) ) );
     }
-    ABORT("Unknown Type %d", static_cast<jau::nsize_t>(type));
+    ABORT("Unknown Type %zu", static_cast<jau::nsize_t>(type));
     abort(); // never reached
 }
 
@@ -140,7 +140,7 @@ std::string uuid16_t::toString() const noexcept {
 
     const jau::nsize_t count = snprintf(&str[0], str.capacity(), "%.4x", value);
     if( length != count ) {
-        ABORT("UUID16 string not of length %d but %d", length, count);
+        ABORT("UUID16 string not of length %zu but %zu", length, count);
     }
     return str;
 }
@@ -159,7 +159,7 @@ std::string uuid32_t::toString() const noexcept {
 
     const jau::nsize_t count = snprintf(&str[0], str.capacity(), "%.8x", value);
     if( length != count ) {
-        ABORT("UUID32 string not of length %d but %d", length, count);
+        ABORT("UUID32 string not of length %zu but %zu", length, count);
     }
     return str;
 }
@@ -210,7 +210,7 @@ std::string uuid128_t::toString() const noexcept {
     const jau::nsize_t count = snprintf(&str[0], str.capacity(), "%.8x-%.4x-%.4x-%.4x-%.8x%.4x",
                                 part0, part1, part2, part3, part4, part5);
     if( length != count ) {
-        ABORT("UUID128 string not of length %d but %d", length, count);
+        ABORT("UUID128 string not of length %zu but %zu", length, count);
     }
     return str;
 }

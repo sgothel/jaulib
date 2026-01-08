@@ -10,6 +10,7 @@
  */
 #include <cassert>
 #include <cstring>
+#include <iostream>
 
 #include <jau/enum_util.hpp>
 #include <jau/io/file_util.hpp>

@@ -61,7 +61,7 @@ namespace jau::io::fs {
      * otherwise an empty string.
      * @param relpath a path, might be relative
      */
-    std::string absolute(const std::string_view& relpath) noexcept;
+    std::string absolute(std::string_view relpath) noexcept;
 
     /**
      * Return stripped last component from given path separated by `/`, excluding the trailing separator `/`.
@@ -73,7 +73,7 @@ namespace jau::io::fs {
      * @param path given path
      * @return leading directory name w/o slash or `.`
      */
-    std::string dirname(const std::string_view& path) noexcept;
+    std::string dirname(std::string_view path) noexcept;
 
     /**
      * Return stripped leading directory components from given path separated by `/`.
@@ -83,7 +83,7 @@ namespace jau::io::fs {
      * @param path given path
      * @return last non-slash component or `.`
      */
-    std::string basename(const std::string_view& path) noexcept;
+    std::string basename(std::string_view path) noexcept;
 
     /**
      * Return stripped leading directory components from given path separated by `/`,
@@ -95,7 +95,7 @@ namespace jau::io::fs {
      * @param suffix suffix at end of path to be removed
      * @return last non-slash component or `.`
      */
-    std::string basename(const std::string_view& path, const std::string_view& suffix) noexcept;
+    std::string basename(std::string_view path, std::string_view suffix) noexcept;
 
     /**
      * Return stripped leading directory components from given path separated by `/`,
@@ -107,10 +107,10 @@ namespace jau::io::fs {
      * @param suffixes suffixes at end of path to be removed
      * @return last non-slash component or `.`
      */
-    std::string basename(const std::string_view& path, const std::vector<std::string_view>& suffixes) noexcept;
+    std::string basename(std::string_view path, const std::vector<std::string_view>& suffixes) noexcept;
 
     /** Returns true if first character is `/` or - in case of Windows - `\\`. */
-    bool isAbsolute(const std::string_view& path) noexcept;
+    bool isAbsolute(std::string_view path) noexcept;
 
     /** Returns true if path exists _and_ is accessible. */
     bool exists(const std::string& path, bool verbose_on_error=false) noexcept;
@@ -140,11 +140,11 @@ namespace jau::io::fs {
                 backed_string_view() noexcept
                 : backing(), view(backing) {}
 
-                backed_string_view(const std::string& backing_, const std::string_view& view_) noexcept
+                backed_string_view(const std::string& backing_, std::string_view view_) noexcept
                 : backing(backing_),
                     view(backing_.size() > 0 ? ((std::string_view)backing).substr(view_.data() - backing_.data(), view_.size()) : view_) {}
 
-                backed_string_view(const std::string_view& view_) noexcept
+                backed_string_view(std::string_view view_) noexcept
                 : backing(), view(view_) {}
 
 #if 0
@@ -179,7 +179,7 @@ namespace jau::io::fs {
                     backing = orig;
                     view = backing;
                 }
-                void backup(const std::string_view& orig) noexcept {
+                void backup(std::string_view orig) noexcept {
                     backing = std::string(orig);
                     view = backing;
                 }
@@ -188,7 +188,7 @@ namespace jau::io::fs {
                     backing.append(appendix);
                     view = backing;
                 }
-                void backup_and_append(const std::string_view& orig, const std::string& appendix) noexcept {
+                void backup_and_append(std::string_view orig, const std::string& appendix) noexcept {
                     backing = std::string(orig);
                     backing.append(appendix);
                     view = backing;
@@ -201,7 +201,7 @@ namespace jau::io::fs {
                     return std::string(view);
                 }
             };
-            static std::unique_ptr<backed_string_view> reduce(const std::string_view& path_) noexcept;
+            static std::unique_ptr<backed_string_view> reduce(std::string_view path_) noexcept;
 
             dir_item(std::unique_ptr<backed_string_view> cleanpath) noexcept;
 
@@ -216,7 +216,7 @@ namespace jau::io::fs {
              *
              * @param path_ the raw path
              */
-            dir_item(const std::string_view& path_) noexcept;
+            dir_item(std::string_view path_) noexcept;
 
             /**
              * Create a dir_item with already cleaned dirname and basename

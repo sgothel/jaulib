@@ -225,8 +225,8 @@ std::string ByteStream_SecMemory::toString() const noexcept {
         off64_t abs_pos = __posix_lseek64(m_fd, static_cast<off64_t>(newPos), SEEK_SET);
         if( 0 > abs_pos ) {
             addstate_impl( iostate_t::failbit );
-            ERR_PRINT("Failed to seek to position %" PRIu64 " of existing file %s, errno %d %s",
-                    newPos, toString().c_str(), errno, strerror(errno));
+            ERR_PRINT("Failed to seek to position %" PRIu64 " of existing file %s",
+                    newPos, toString().c_str());
             return ByteStream::npos;
         }
         m_offset = abs_pos;
@@ -284,7 +284,7 @@ std::string ByteStream_SecMemory::toString() const noexcept {
             }
             // Check errno == ETIMEDOUT ??
             addstate_impl( iostate_t::failbit );
-            DBG_PRINT("ByteInStream_File::read: Error occurred in %s, errno %d %s", toString().c_str(), errno, strerror(errno));
+            DBG_PRINT("ByteInStream_File::read: Error occurred in %s, errno %d %s", toString(), (int)errno, strerror(errno));
             return 0;
         }
         total += static_cast<size_t>(len);
@@ -311,8 +311,8 @@ size_t ByteStream_File::peek(void* out, size_t length, size_type peek_offset) no
         abs_pos = __posix_lseek64(m_fd, static_cast<off64_t>(peek_offset), SEEK_CUR);
         if( 0 > abs_pos ) {
             addstate_impl( iostate_t::failbit );
-            DBG_PRINT("ByteInStream_File::peek: Error occurred (offset1 %zd) in %s, errno %d %s",
-                    peek_offset, toString().c_str(), errno, strerror(errno));
+            DBG_PRINT("ByteInStream_File::peek: Error occurred (offset1 %zu) in %s, errno %d %s",
+                    peek_offset, toString(), (int)errno, strerror(errno));
             return 0;
         }
     }
@@ -325,7 +325,7 @@ size_t ByteStream_File::peek(void* out, size_t length, size_type peek_offset) no
             }
             // Check errno == ETIMEDOUT ??
             addstate_impl( iostate_t::failbit );
-            DBG_PRINT("ByteInStream_File::peak: Error occurred (read) in %s, errno %d %s", toString().c_str(), errno, strerror(errno));
+            DBG_PRINT("ByteInStream_File::peak: Error occurred (read) in %s, errno %d %s", toString(), (int)errno, strerror(errno));
             return 0;
         }
         got = len; // potentially zero bytes, i.e. eof
@@ -333,8 +333,8 @@ size_t ByteStream_File::peek(void* out, size_t length, size_type peek_offset) no
     if( __posix_lseek64(m_fd, static_cast<off64_t>(m_offset), SEEK_SET) < 0 ) {
         // even though we were able to fetch the desired data above, let's fail if position reset fails
         addstate_impl( iostate_t::failbit );
-        DBG_PRINT("ByteInStream_File::peek: Error occurred (offset2 %zd) in %s, errno %d %s",
-                peek_offset, toString().c_str(), errno, strerror(errno));
+        DBG_PRINT("ByteInStream_File::peek: Error occurred (offset2 %zu) in %s, errno %d %s",
+                peek_offset, toString(), (int)errno, strerror(errno));
         return 0;
     }
     return got;
@@ -362,7 +362,7 @@ size_t ByteStream_File::write(const void* out, size_t length) noexcept {
             }
             // Check errno == ETIMEDOUT ??
             addstate_impl( iostate_t::failbit );
-            DBG_PRINT("ByteOutStream_File::write: Error occurred in %s, errno %d %s", toString().c_str(), errno, strerror(errno));
+            DBG_PRINT("ByteOutStream_File::write: Error occurred in %s, errno %d %s", toString(), (int)errno, strerror(errno));
             return 0;
         }
         total += static_cast<size_t>(len);
@@ -396,7 +396,7 @@ static bool _jau_file_size(const int fd, const jau::io::fs::file_stats& stats, c
     if( cur_pos2 != cur_pos ) {
         DBG_PRINT("ByteInStream_File::file_size: Error rewinding to current position failed, orig-pos %" PRIi64 " -> %" PRIi64 ", errno %d %s.",
                   cur_pos, cur_pos2,
-                  errno, strerror(errno));
+                  (int)errno, strerror(errno));
         return false;
     }
     len = ByteStream::size_type(end) + 1_u64;
@@ -423,7 +423,7 @@ ByteStream_File::ByteStream_File(const int fd, iomode_t mode, lb_endian_t byteOr
     if( 0 > cur_pos ) {
         addstate_impl( iostate_t::failbit );
         ERR_PRINT("Failed to read position of existing file %s, errno %d %s",
-                toString().c_str(), errno, strerror(errno));
+                toString(), (int)errno, strerror(errno));
         return;
     }
     m_offset = cur_pos;
@@ -494,8 +494,7 @@ ByteStream_File::ByteStream_File(const int dirfd, const std::string& path, iomod
     const off64_t cur_pos = just_opened || !m_stats.is_file() ? 0 : __posix_lseek64(m_fd, 0, SEEK_CUR);
     if( 0 > cur_pos ) {
         addstate_impl( iostate_t::failbit );
-        ERR_PRINT("Failed to read position of existing file %s, errno %d %s",
-                toString().c_str(), errno, strerror(errno));
+        ERR_PRINT("Failed to read position of existing file %s, errno %d %s", toString(), (int)errno, strerror(errno));
         return;
     }
     m_offset = cur_pos;
@@ -506,8 +505,7 @@ ByteStream_File::ByteStream_File(const int dirfd, const std::string& path, iomod
         const off64_t end = __posix_lseek64(m_fd, 0, SEEK_END);
         if( 0 > end ) {
             addstate_impl( iostate_t::failbit );
-            ERR_PRINT("Failed to position existing file to end %s, errno %d %s",
-                    toString().c_str(), errno, strerror(errno));
+            ERR_PRINT("Failed to position existing file to end %s, errno %d %s", toString(), (int)errno, strerror(errno));
             return;
         }
         m_offset = end;

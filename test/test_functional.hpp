@@ -22,7 +22,6 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <cassert>
-#include <cinttypes>
 #include <cstring>
 #include <string>
 #include <typeindex>
@@ -1174,7 +1173,7 @@ class TestFunction01 {
             jau::function<int(int)> f_c = lambda_01();
             const char* fc_name = jau::ctti_name<decltype(f_c)>();
             REQUIRE( jau::type_info::is_valid( fc_name ) );
-            std::string fc_str(fc_name);
+            // std::string fc_str(fc_name);
             fprintf(stderr, "fc_name: %s\n", fc_name);
             fprintf(stderr, "fc:      %s\n", f_c.toString().c_str());
         }
@@ -1681,7 +1680,7 @@ class TestFunction01 {
         // nop
     }
 
-    void test_function0_result_type(std::string msg, bool expEqual, const int value, int expRes, MyClassFunction0& f1, MyClassFunction0& f2) {
+    void test_function0_result_type(const std::string& msg, bool expEqual, const int value, int expRes, MyClassFunction0& f1, MyClassFunction0& f2) {
         // test std::function identity
         INFO(msg+": Func0.rt Func f1p == f2p : " + std::to_string( f1 == f2 ) + ", f1p: " + f1.toString() + ", f2 "+f2.toString() );
         int f1r = f1(value);
@@ -1695,7 +1694,7 @@ class TestFunction01 {
             REQUIRE(f1 != f2);
         }
     }
-    void test_function0________type(std::string msg, bool expEqual, MyClassFunction0& f1, MyClassFunction0& f2) {
+    void test_function0________type(const std::string& msg, bool expEqual, MyClassFunction0& f1, MyClassFunction0& f2) {
         // test std::function identity
         INFO(msg+": Func0._t Func f1p == f2p : " + std::to_string( f1 == f2 ) + ", f1p: " + f1.toString() + ", f2 "+f2.toString() );
         {
@@ -1710,7 +1709,7 @@ class TestFunction01 {
             CHECK(f1 != f2);
         }
     }
-    void test_function0_result_____(std::string msg, const int value, int expRes, MyClassFunction0& f1, MyClassFunction0& f2) {
+    void test_function0_result_____(const std::string& msg, const int value, int expRes, MyClassFunction0& f1, MyClassFunction0& f2) {
         // test std::function identity
         INFO(msg+": Func0.ref.r_ Func f1p == f2p : " + std::to_string( f1 == f2 ) + ", f1p: " + f1.toString() + ", f2 "+f2.toString() );
         int f1r = f1(value);
@@ -1719,7 +1718,7 @@ class TestFunction01 {
         REQUIRE(f1r == expRes);
         REQUIRE(f2r == expRes);
     }
-    void test_function0_result_copy(std::string msg, const int value, int expRes, MyClassFunction0 f1, MyClassFunction0 f2) {
+    void test_function0_result_copy(const std::string& msg, const int value, int expRes, MyClassFunction0 f1, MyClassFunction0 f2) {
         // test std::function identity
         INFO(msg+": Func0.cpy.r_ Func f1p == f2p : " + std::to_string( f1 == f2 ) + ", f1p: " + f1.toString() + ", f2 "+f2.toString() );
         int f1r = f1(value);
@@ -1729,7 +1728,7 @@ class TestFunction01 {
         REQUIRE(f2r == expRes);
     }
 
-    void test_function1_result_type(std::string msg, bool expEqual, const int value, int expRes, MyClassFunction1& f1, MyClassFunction1& f2) noexcept {
+    void test_function1_result_type(const std::string& msg, bool expEqual, const int value, int expRes, MyClassFunction1& f1, MyClassFunction1& f2) noexcept {
         // test std::function identity
         INFO(msg+": Func1.ref.rt Func f1p == f2p : " + std::to_string( f1 == f2 ) + ", f1p: " + f1.toString() + ", f2 "+f2.toString() );
         int f1r, f2r;
@@ -1744,7 +1743,7 @@ class TestFunction01 {
             REQUIRE(f1 != f2);
         }
     }
-    void test_function1________type(std::string msg, bool expEqual, MyClassFunction1& f1, MyClassFunction1& f2) noexcept {
+    void test_function1________type(const std::string& msg, bool expEqual, MyClassFunction1& f1, MyClassFunction1& f2) noexcept {
         // test std::function identity
         INFO(msg+": Func1.ref._t Func f1p == f2p : " + std::to_string( f1 == f2 ) + ", f1p: " + f1.toString() + ", f2 "+f2.toString() );
         {
@@ -1761,7 +1760,7 @@ class TestFunction01 {
         }
     }
 
-    void test_function2________type(std::string msg, bool expEqual, MyClassFunction2& f1, MyClassFunction2& f2) noexcept {
+    void test_function2________type(const std::string& msg, bool expEqual, MyClassFunction2& f1, MyClassFunction2& f2) noexcept {
         // test std::function identity
         INFO(msg+": Func2.ref._t Func f1p == f2p : " + std::to_string( f1 == f2 ) + ", f1p: " + f1.toString() + ", f2 "+f2.toString() );
         {

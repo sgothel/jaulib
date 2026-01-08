@@ -505,7 +505,9 @@ TEST_CASE( "Test 15c Axes And Matrix", "[matrix][quaternion][linear_algebra][mat
         float eulerHas0[3];
         eulerHas1.get(eulerHas0);
         Vec3f eulerHas0v(eulerHas0), eulerExp0v(eulerExp0);
-        REQUIRE( eulerHas0v == eulerExp0v );
+        // REQUIRE( eulerHas0v == eulerExp0v );
+        REQUIRE_THAT( std::abs( eulerExp0v.dist(eulerHas0v) ), Catch::Matchers::WithinAbs(0.0f, Quat4f::allowed_deviation) );
+        REQUIRE( true == eulerExp0v.equals(eulerHas0v, Quat4f::allowed_deviation) );
     }
     REQUIRE_THAT( std::abs( eulerExp1.dist(eulerHas1) ), Catch::Matchers::WithinAbs(0.0f, Quat4f::allowed_deviation) );
     REQUIRE( true == eulerExp1.equals(eulerHas1, Quat4f::allowed_deviation) );

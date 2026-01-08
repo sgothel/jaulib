@@ -33,52 +33,109 @@
 #include <string>
 #include <cstdio>
 #include <cstdarg>
+#include <string_view>
 
 #include <jau/cpp_lang_util.hpp>
 #include <jau/environment.hpp>
-#include <jau/backtrace.hpp>
 
 #include <jau/string_util.hpp>
+#include <jau/string_cfmt.hpp>
 
 // #define PERF_PRINT_ON 1
 
 namespace jau {
 
     namespace impl {
-        void dbgPrint1(const char * format, ...) noexcept;
-        void dbgPrint2(const char *s) noexcept;
-
-        /** Use for unconditional ::abort() call with given messages, prefix '[elapsed_time] ABORT @ file:line func: '. Function also appends last errno and strerror(errno). */
-        void abortImpl(const char *func, const char *file, const int line, const char * format, ...) noexcept;
-
-        void errPrint(const char *prefix, const bool backtrace, const char *func, const char *file, const int line, const char * format, ...) noexcept;
-        void warnPrint(const char *func, const char *file, const int line, const char * format, ...) noexcept;
-        void wordyPrint(const char * format, ...) noexcept;
-    }
-
-    /** Use for unconditional ::abort() call with given messages, prefix '[elapsed_time] ABORT @ file:line func: '. Function also appends last errno and strerror(errno). */
-    #define ABORT(...) { jau::impl::abortImpl(__func__, __FILE__, __LINE__, __VA_ARGS__); }
-
-    /** Use for environment-variable environment::DEBUG conditional debug messages, prefix '[elapsed_time] Debug: '. */
-    template <typename... Args>
-    void dbgPrint(std::string_view format, const Args &...args) {
-        const jau::cfmt::PResult pr = jau::cfmt::checkR2<Args...>(format);
-        if ( pr.argCount() < 0 ) {
-            throw jau::IllegalArgumentError("format/arg mismatch `"+std::string(format)+"`: "+pr.toString(), E_FILE_LINE);
+        template <typename... Args>
+        void dbgPrint0(FILE *out, bool addErrno, bool addBacktrace, std::string_view format, const Args &...args) noexcept {
+            std::exception_ptr eptr;
+            try {
+                ::fputs(jau::format_string(format, args...).c_str(), out);
+                if (addErrno) {
+                    ::fprintf(stderr, "; last errno %d %s", errno, strerror(errno));
+                }
+                ::fputs("\n", out);
+                if (addBacktrace) {
+                    ::fprintf(stderr, "%s", jau::get_backtrace(true /* skip_anon_frames */, 4 /* max_frames */, 2 /* skip_frames: this() + get_b*() */).c_str());
+                }
+                if (addErrno || addBacktrace) {
+                    ::fflush(stderr);
+                }
+            } catch (...) {
+                eptr = std::current_exception();
+            }
+            handle_exception(eptr);
         }
-        impl::dbgPrint2(unsafe::format_string_h(1023, format, args...).c_str());
+
+        template <typename... Args>
+        void dbgPrint1(FILE *out, bool printPrefix, const char *msg, std::string_view format, const Args &...args) noexcept {
+            if (printPrefix) {
+                std::exception_ptr eptr;
+                try {
+                    ::fputc('[', out);
+                    ::fputs(jau::to_decstring(environment::getElapsedMillisecond(), ',', 9).c_str(), out);
+                    ::fputs("] ", out);
+                    if (msg) {
+                        ::fputs(msg, out);
+                        ::fputs(": ", out);
+                    }
+                } catch (...) {
+                    eptr = std::current_exception();
+                }
+                handle_exception(eptr);
+            }
+            jau::impl::dbgPrint0(out, false, false, format, args...);
+        }
+
+        template <typename... Args>
+        void dbgPrint2(FILE *out, const char *msg, bool addErrno, bool addBacktrace, const char *func, const char *file, const int line,
+                                  std::string_view format, const Args &...args) noexcept {
+            std::exception_ptr eptr;
+            try {
+                ::fputc('[', out);
+                ::fputs(jau::to_decstring(environment::getElapsedMillisecond(), ',', 9).c_str(), out);
+                ::fputs("] ", out);
+                if (msg) {
+                    ::fputs(msg, out);
+                    ::fputs(" ", out);
+                }
+                ::fprintf(stderr, "@ %s:%d %s: ", file, line, func);
+            } catch (...) {
+                eptr = std::current_exception();
+            }
+            handle_exception(eptr);
+            jau::impl::dbgPrint0(out, addErrno, addBacktrace, format, args...);
+        }
     }
+
+    #define jau_dbgPrint1(out, printPrefix, msg, fmt, ...) \
+        jau::impl::dbgPrint1((out), (printPrefix), (msg), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
+        static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
+
+    #define jau_dbgPrint1Line(out, printPrefix, msg, fmt, ...) \
+        jau::impl::dbgPrint1((out), (printPrefix), (msg), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
+        static_assert(0 == jau::cfmt::check2Line< JAU_FOR_EACH1_LIST(JAU_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
+
+    #define jau_dbgPrint2(out, msg, addErrno, addBacktrace, func, file, line, fmt, ...) \
+        jau::impl::dbgPrint2((out), (msg), (addErrno), (addBacktrace), (func), (file), (line), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
+        static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
+
+    #define jau_dbgPrint2Line(out, msg, addErrno, addBacktrace, func, file, line, fmt, ...) \
+        jau::impl::dbgPrint2((out), (msg), (addErrno), (addBacktrace), (func), (file), (line), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
+        static_assert(0 == jau::cfmt::check2Line< JAU_FOR_EACH1_LIST(JAU_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
+
     /** Use for environment-variable environment::DEBUG conditional debug messages, prefix '[elapsed_time] Debug: '. */
-    #define DBG_PRINT(...) { if( jau::environment::get().debug ) { jau::impl::dbgPrint1(__VA_ARGS__); } }
-
-    /** Use for environment-variable environment::DEBUG conditional warning messages, prefix '[elapsed_time] Warning @ FILE:LINE FUNC: ' */
-    #define DBG_WARN_PRINT(...) { if( jau::environment::get().debug ) { jau::impl::warnPrint(__func__, __FILE__, __LINE__, __VA_ARGS__); } }
-
-    /** Use for environment-variable environment::DEBUG conditional error messages, prefix '[elapsed_time] Warning @ FILE:LINE FUNC: '. Function also appends last errno, strerror(errno) and full backtrace*/
-    #define DBG_ERR_PRINT(...) { if( jau::environment::get().debug ) { jau::impl::errPrint("Debug", true /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); } }
+    #define DBG_PRINT(fmt, ...) { if( jau::environment::get().debug ) { jau_dbgPrint1(stderr, true, "Debug", fmt __VA_OPT__(,) __VA_ARGS__); } }
+    #define DBG_PRINT_LINE(fmt, ...) { if( jau::environment::get().debug ) { jau_dbgPrint1Line(stderr, true, "Debug", fmt __VA_OPT__(,) __VA_ARGS__); } }
 
     /** Use for environment-variable environment::DEBUG_JNI conditional debug messages, prefix '[elapsed_time] Debug: '. */
-    #define DBG_JNI_PRINT(...) { if( jau::environment::get().debug_jni ) { jau::impl::dbgPrint1(__VA_ARGS__); } }
+    #define DBG_JNI_PRINT(...) { if( jau::environment::get().debug_jni ) { jau_dbgPrint1(stderr, true, "Debug", __VA_ARGS__); } }
+
+    /** Use for environment-variable environment::DEBUG conditional warning messages, prefix '[elapsed_time] Warning @ FILE:LINE FUNC: ' */
+    #define DBG_WARN_PRINT(...) { if( jau::environment::get().debug ) { jau_dbgPrint2(stderr, "Warning", false /* errno */, false /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); } }
+
+    /** Use for environment-variable environment::DEBUG conditional error messages, prefix '[elapsed_time] Debug @ FILE:LINE FUNC: '. Function also appends last errno, strerror(errno) and full backtrace*/
+    #define DBG_ERR_PRINT(...) { if( jau::environment::get().debug ) { jau_dbgPrint2(stderr, "Debug", true /* errno */, true /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); } }
 
     /**
      * Use for environment-variable environment::VERBOSE conditional verbose messages, prefix '[elapsed_time] Wordy: '.
@@ -86,8 +143,7 @@ namespace jau {
      * 'Wordy' is the shorter English form of the Latin word 'verbosus', from which the word 'verbosity' is sourced.
      * </p>
      */
-    #define WORDY_PRINT(...) { if( jau::environment::get().verbose ) { jau::impl::wordyPrint(__VA_ARGS__); } }
-
+    #define WORDY_PRINT(...) { if( jau::environment::get().verbose ) { jau_dbgPrint1(stderr, true, "Wordy", __VA_ARGS__); } }
 
     #define PERF_TS_T0_BASE()  const uint64_t _t0 = jau::getCurrentMilliseconds()
 
@@ -115,29 +171,30 @@ namespace jau {
         #define PERF3_TS_TD(m)
     #endif
 
-    /** Use for unconditional error messages, prefix '[elapsed_time] Error @ file:line func: '. Function also appends last errno and strerror(errno). */
-    void ERR_PRINTv(const char *func, const char *file, const int line, const char * format, va_list args) noexcept;
+    /** Use for unconditional ::abort() call with given messages, prefix '[elapsed_time] ABORT @ file:line func: '. Function also appends last errno and strerror(errno). */
+    #define ABORT(...) { jau_dbgPrint2(stderr, "ABORT", true /* errno */, true /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); abort(); }
 
     /** Use for unconditional error messages, prefix '[elapsed_time] Error @ FILE:LINE FUNC: '. Function also appends last errno, strerror(errno) and full backtrace*/
-    #define ERR_PRINT(...) { jau::impl::errPrint("Error", true /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); }
+    #define ERR_PRINT(...) { jau_dbgPrint2(stderr, "Error", true /* errno */, true /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); }
 
     /** Use for unconditional error messages, prefix '[elapsed_time] Error @ FILE:LINE FUNC: '. Function also appends last errno and strerror(errno). No backtrace. */
-    #define ERR_PRINT2(...) { jau::impl::errPrint("Error", false /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); }
+    #define ERR_PRINT2(...) { jau_dbgPrint2(stderr, "Error", true /* errno */, false /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); }
+
+    /** Use for unconditional error messages, prefix '[elapsed_time] Error @ FILE:LINE FUNC: '. Function also appends last errno and strerror(errno). Full backtrace. */
+    #define ERR_PRINT3(...) { jau_dbgPrint2(stderr, "Error", true /* errno */, true /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); }
 
     /** Use for unconditional interruption messages, prefix '[elapsed_time] Interrupted @ FILE:LINE FUNC: '. Function also appends last errno and strerror(errno). */
-    #define IRQ_PRINT(...) { jau::impl::errPrint("Interrupted", false /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); }
-
-    /** Use for unconditional warning messages, prefix '[elapsed_time] Warning @ file:line func: ' */
-    void WARN_PRINTv(const char *func, const char *file, const int line, const char * format, va_list args) noexcept;
+    #define IRQ_PRINT(...) { jau_dbgPrint2(stderr, "Interrupted", true /* errno */, false /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); }
 
     /** Use for unconditional warning messages, prefix '[elapsed_time] Warning @ FILE:LINE FUNC: ' */
-    #define WARN_PRINT(...) { jau::impl::warnPrint(__func__, __FILE__, __LINE__, __VA_ARGS__); }
+    #define WARN_PRINT(...) { jau_dbgPrint2(stderr, "Warning", false /* errno */, false /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); }
 
     /** Use for unconditional informal messages, prefix '[elapsed_time] Info: '. */
-    void INFO_PRINT(const char * format, ...) noexcept;
+    #define INFO_PRINT(fmt, ...) { jau_dbgPrint1(stderr, true, "Info", fmt __VA_OPT__(,) __VA_ARGS__); }
+    #define INFO_PRINT_LINE(fmt, ...) { jau_dbgPrint1Line(stderr, true, "Info", fmt __VA_OPT__(,) __VA_ARGS__); }
 
     /** Use for unconditional plain messages, prefix '[elapsed_time] ' if printPrefix == true. */
-    void PLAIN_PRINT(const bool printPrefix, const char * format, ...) noexcept;
+    #define PLAIN_PRINT(printPrefix, fmt, ...) { jau_dbgPrint1(stderr, (printPrefix), nullptr, fmt __VA_OPT__(,) __VA_ARGS__); }
 
     /**
      * Convenient fprintf() invocation, prepending the given elapsed_ms timestamp.
@@ -146,32 +203,46 @@ namespace jau {
      * @param format the format
      * @param args the optional arguments
      */
-    int fprintf_td(const uint64_t elapsed_ms, FILE* stream, const char * format, ...) noexcept;
-
+    template <typename... Args>
+    int fprintf_td(const uint64_t elapsed_ms, FILE* stream, std::string_view format, const Args &...args) noexcept {
+        int res = 0;
+        std::exception_ptr eptr;
+        try {
+            res = ::fprintf(stream, "[%s] ", jau::to_decstring(elapsed_ms, ',', 9).c_str());
+            const int r = ::fputs(jau::format_string(format, args...).c_str(), stream);
+            if (r >= 0) {
+                res += r;
+            }
+        } catch (...) {
+            eptr = std::current_exception();
+        }
+        handle_exception(eptr);
+        return res;
+    }
     /**
      * Convenient fprintf() invocation, prepending the environment::getElapsedMillisecond() timestamp.
      * @param stream the output stream
      * @param format the format
      * @param args the optional arguments
      */
-    int fprintf_td(FILE* stream, const char * format, ...) noexcept;
-
-    void COND_PRINT_impl(const char * format, ...) noexcept;
+    template <typename... Args>
+    inline int fprintf_td(FILE* stream, std::string_view format, const Args &...args) noexcept {
+        return fprintf_td(environment::getElapsedMillisecond(), stream, format, args...);
+    }
 
     /** Use for conditional plain messages, prefix '[elapsed_time] '. */
-    #define COND_PRINT(C, ...) { if( C ) { jau::COND_PRINT_impl(__VA_ARGS__); } }
-
+    #define COND_PRINT(C, ...) { if( C ) { jau::impl::dbgPrint0(stderr, false, false, __VA_ARGS__); } }
 
     template<class List>
     void printSharedPtrList(const std::string& prefix, List & list) noexcept {
-        fprintf(stderr, "%s: Start: %zu elements\n", prefix.c_str(), (size_t)list.size());
+        ::fprintf(stderr, "%s: Start: %zu elements\n", prefix.c_str(), (size_t)list.size());
         int idx = 0;
         for (auto it = list.begin(); it != list.end(); idx++) {
             typename List::value_type & e = *it;
             if ( nullptr != e ) {
-                fprintf(stderr, "%s[%d]: useCount %zu, mem %p\n", prefix.c_str(), idx, (size_t)e.use_count(), e.get());
+                ::fprintf(stderr, "%s[%d]: useCount %zu, mem %p\n", prefix.c_str(), idx, (size_t)e.use_count(), e.get());
             } else {
-                fprintf(stderr, "%s[%d]: NULL\n", prefix.c_str(), idx);
+                ::fprintf(stderr, "%s[%d]: NULL\n", prefix.c_str(), idx);
             }
             ++it;
         }

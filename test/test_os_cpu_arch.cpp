@@ -23,6 +23,7 @@
  */
 #include <cassert>
 #include <cstring>
+#include <iostream>
 
 #include <jau/test/catch2_ext.hpp>
 

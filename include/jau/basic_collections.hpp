@@ -280,7 +280,7 @@ namespace jau {
                 it->second        = obj;
                 return it->second;
             }
-            auto [ it2, res ] = m_map.insert( {key, obj} );
+            auto [ it2, res ] = m_map.insert( {key_type(key), obj} );
             return res ? it2->second : novalue();
         }
 

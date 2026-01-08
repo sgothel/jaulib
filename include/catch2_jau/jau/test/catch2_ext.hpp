@@ -118,7 +118,7 @@
 // }
 
 #if !defined(CATCH_CONFIG_MAIN)
-#include <jau/test/catch2_my_main.cpp>
+#include <jau/test/catch2_my_main.cpp> // NOLINT(bugprone-suspicious-include)
 #endif /* !defined(CATCH_CONFIG_MAIN) */
 
 #endif // CATCH2_EXT_H

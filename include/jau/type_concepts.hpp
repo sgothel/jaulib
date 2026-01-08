@@ -26,7 +26,10 @@
 #define JAU_TYPE_CONCEPTS_HPP_
 
 #include <concepts>
+#include <string>
 #include <type_traits>
+#include <jau/cpp_lang_util.hpp>
+#include <jau/string_literal.hpp>
 
 /** Requirement (concept) Definitions */
 namespace jau::req {
@@ -47,6 +50,10 @@ namespace jau::req {
     /** Concept of type-trait std::is_trivially_copyable */
     template<typename T>
     concept trivially_copyable = std::is_trivially_copyable_v<T>;
+
+    /** Concept of type-trait for `bool` type */
+    template<typename T>
+    concept boolean = std::is_same_v<bool, std::remove_cv_t<T>>;
 
     /** Concept of type-trait std::is_arithmetic */
     template<typename T>
@@ -75,6 +82,76 @@ namespace jau::req {
     /** Concept of type-trait std::is_floating_point and sizeof(T) == alignof(T) (packed) */
     template <typename T>
     concept packed_floating_point = std::is_floating_point_v<T> && sizeof(T) == alignof(T);
+
+    /** Removes */
+    template<class T>
+    requires pointer<T>
+    using base_pointer = std::add_pointer_t<std::remove_const_t<std::remove_pointer_t<std::remove_cv_t<T>>>>;
+
+    /// A `char*`
+    template<typename T>
+    concept char_pointer = std::is_same_v<char*, base_pointer<T>>;
+
+    /**
+     * A string literal: `char (&)[N]`, jau::StringLiteral
+     */
+    template<typename T>
+    concept string_literal = std::constructible_from<decltype(jau::StringLiteral(T{})), T>
+                          && (!std::is_integral_v<std::remove_reference_t<T>>)
+                          && (!std::is_floating_point_v<std::remove_reference_t<T>>)
+                          && (!std::is_enum_v<std::remove_reference_t<T>>);
+
+    /// A std::string
+    template<typename T>
+    concept string_type = std::is_base_of_v<std::string, std::remove_cv_t<std::remove_reference_t<T>>>;
+
+    /// A string class, i.e. std::string, std::string_view or jau::StringLiteral
+    template<typename T>
+    concept string_class = string_type<T>
+                        || std::is_base_of_v<std::string_view, std::remove_cv_t<std::remove_reference_t<T>>>
+                        || std::is_same_v<decltype(jau::StringLiteral(T{})), T>;
+
+    /**
+     * Like a string:
+     * - string literal:
+     *   - `CharT (&)[N]`
+     *   - jau::StringLiteral
+     * - string_class:
+     *   - std::string<CharT>
+     *   - std::string_view<CharT>
+     * - char_pointer: `char*`
+     */
+    template<typename T>
+    concept string_alike = string_literal<T> || string_class<T> || char_pointer<T>;
+
+    template<typename T>
+    concept string_alike0 = string_literal<T> || string_class<T>;
+
+    /**
+     * A convertible type to a string or a string itself.
+     * - string_alike: std::string, std::string_view, jau::StringLiteral, `CharT (&)[N]`, `char*`
+     * - integral
+     * - floating_point
+     *
+     * Convertible to string via std::to_string(T) or jau::to_string(T)
+     */
+    template<typename T>
+    concept stringifyable_std = string_alike<T>
+                         || std::is_integral_v<T>
+                         || std::is_floating_point_v<T>;
+
+    /**
+     * A convertible type to a string or a string itself.
+     * - string_alike: std::string, std::string_view, jau::StringLiteral, `char (&)[N]`, `char*`
+     * - integral
+     * - floating_point
+     * - pointer
+     *
+     * Convertible to string via jau::to_string(T)
+     */
+    template<typename T>
+    concept stringifyable_jau = stringifyable_std<T>
+                             || pointer<T>;
 
     /** C++ Named Requirement Container (partial) */
     template<typename T>

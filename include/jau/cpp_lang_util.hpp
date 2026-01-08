@@ -26,6 +26,7 @@
 #define JAU_CPP_LANG_EXT_HPP_
 
 #include <climits>
+#include <cstdint>
 #include <string_view>
 #include <type_traits>
 #include <string>
@@ -518,34 +519,41 @@ namespace jau {
         return out;
     }
 
-    /**
-     * Static compile-time string literal storage.
-     * @tparam N string length including EOS
-     */
-    template<size_t N>
-    class StringLiteral
-    {
-      // private:
-      public:
-        char buf[N];
+    //
+    //
+    //
 
-      public:
-        consteval_cxx20 StringLiteral(const char (&str)[N]) noexcept {
-            for (size_t i = 0; i < N; ++i) { buf[i] = str[i]; }
-        }
-        consteval_cxx20 StringLiteral(const StringLiteral& o) noexcept = delete; // violating pattern
-        consteval_cxx20 StringLiteral& operator=(const StringLiteral& o) noexcept = delete; // violating pattern
-
-        consteval_cxx20 StringLiteral(StringLiteral&& o) noexcept = default;
-        consteval_cxx20 StringLiteral& operator=(StringLiteral&& o) noexcept = default;
-
-        /// Returns string literal size w/o EOS.
-        consteval_cxx20 size_t size() const noexcept { return N-1; }
-        /// Returns c-string w/ EOS.
-        consteval_cxx20 char const* c_str() const noexcept { return buf; }
-        /// Returns string_view
-        consteval_cxx20 std::string_view view() const noexcept { return std::string_view(buf, N-1); }
+    /** Simple pre-defined value pair [size_t, bool] for structured bindings to multi-values. */
+    struct SizeBoolPair {
+        /** a size_t value, e.g. index, length, etc */
+        size_t s;
+        /** a boolean value, e.g. success, etc */
+        bool b;
     };
+
+    /** Simple pre-defined value tuple [uint64_t, size_t, bool] for structured bindings to multi-values. */
+    struct UInt64SizeBoolTuple {
+        /** a uint64_t value, e.g. compute result value, etc */
+        uint64_t v;
+        /** a size_t value, e.g. index, length, etc */
+        size_t s;
+        /** a boolean value, e.g. success, etc */
+        bool b;
+    };
+
+    /** Simple pre-defined value tuple [int64_t, size_t, bool] for structured bindings to multi-values. */
+    struct Int64SizeBoolTuple {
+        /** a int64_t value, e.g. compute result value, etc */
+        int64_t v;
+        /** a size_t value, e.g. index, length, etc */
+        size_t s;
+        /** a boolean value, e.g. success, etc */
+        bool b;
+    };
+
+    //
+    //
+    //
 
     namespace impl {
         inline bool runtime_eval(bool v) { return v; }
@@ -558,5 +566,64 @@ namespace jau {
     /**@}*/
 
 } // namespace jau
+
+/** \addtogroup CppLang
+ *
+ *  @{
+ */
+
+#define E_FILE_LINE __FILE__, __LINE__
+
+//
+// JAU_FOR_EACH macros inspired by David Mazières, June 2021
+// <https://www.scs.stanford.edu/~dm/blog/va-opt.html>
+//
+// All hacks below to circumvent lack of C++26 reflection.
+//
+
+// Note space before (), so object-like macro
+#define JAU_PARENS ()
+
+#define JAU_EXPAND(...) JAU_EXPAND4(JAU_EXPAND4(JAU_EXPAND4(JAU_EXPAND4(__VA_ARGS__))))
+#define JAU_EXPAND4(...) JAU_EXPAND3(JAU_EXPAND3(JAU_EXPAND3(JAU_EXPAND3(__VA_ARGS__))))
+#define JAU_EXPAND3(...) JAU_EXPAND2(JAU_EXPAND2(JAU_EXPAND2(JAU_EXPAND2(__VA_ARGS__))))
+#define JAU_EXPAND2(...) JAU_EXPAND1(JAU_EXPAND1(JAU_EXPAND1(JAU_EXPAND1(__VA_ARGS__))))
+#define JAU_EXPAND1(...) __VA_ARGS__
+
+// Macro w/ 1 arguments
+
+#define JAU_FOR_EACH1_LIST(macro, ...)                              \
+  __VA_OPT__(JAU_EXPAND(JAU_FOR_EACH1_LIST_HELPER(macro, __VA_ARGS__)))
+#define JAU_FOR_EACH1_LIST_HELPER(macro, a1, ...)                   \
+  macro(a1)                                                         \
+  __VA_OPT__(, JAU_FOR_EACH1_LIST_AGAIN JAU_PARENS (macro, __VA_ARGS__))
+#define JAU_FOR_EACH1_LIST_AGAIN() JAU_FOR_EACH1_LIST_HELPER
+
+#define JAU_DECLTYPE_VALUE(type) decltype(type)
+
+// Macro w/ 2 arguments
+
+#define JAU_FOR_EACH2(macro, type, ...)                              \
+  __VA_OPT__(JAU_EXPAND(JAU_FOR_EACH2_HELPER(macro, type, __VA_ARGS__)))
+#define JAU_FOR_EACH2_HELPER(macro, type, a1, ...)                   \
+  macro(type, a1)                                                    \
+  __VA_OPT__(JAU_FOR_EACH2_AGAIN JAU_PARENS (macro, type, __VA_ARGS__))
+#define JAU_FOR_EACH2_AGAIN() JAU_FOR_EACH2_HELPER
+
+#define JAU_FOR_EACH2_LIST(macro, type, ...)                              \
+  __VA_OPT__(JAU_EXPAND(JAU_FOR_EACH2_LIST_HELPER(macro, type, __VA_ARGS__)))
+#define JAU_FOR_EACH2_LIST_HELPER(macro, type, a1, ...)                   \
+  macro(type, a1)                                                         \
+  __VA_OPT__(, JAU_FOR_EACH2_LIST_AGAIN JAU_PARENS (macro, type, __VA_ARGS__))
+#define JAU_FOR_EACH2_LIST_AGAIN() JAU_FOR_EACH2_LIST_HELPER
+
+#define JAU_FOR_EACH2_VALUE(macro, type, value, ...)             \
+  __VA_OPT__(JAU_EXPAND(JAU_FOR_EACH2_VALUE_HELPER(macro, type, value, __VA_ARGS__)))
+#define JAU_FOR_EACH2_VALUE_HELPER(macro, type, value, a1, ...)  \
+  macro(type, a1, value)                                         \
+  __VA_OPT__(JAU_FOR_EACH2_VALUE_AGAIN JAU_PARENS (macro, type, value, __VA_ARGS__))
+#define JAU_FOR_EACH2_VALUE_AGAIN() JAU_FOR_EACH2_VALUE_HELPER
+
+/**@}*/
 
 #endif /* JAU_CPP_LANG_EXT_HPP_ */

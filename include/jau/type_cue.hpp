@@ -97,7 +97,7 @@ namespace jau {
 
         static std::string to_string(const bool withSize=true) {
             if( withSize ) {
-                return jau::format_string("%s[%zu bytes]", ctti().name().c_str(), sizeof(T));
+                return jau::unsafe::format_string("%s[%zu bytes]", ctti().name().c_str(), sizeof(T));
             } else {
                 return ctti().name();
             }

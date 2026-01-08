@@ -24,13 +24,12 @@
 #include <cassert>
 #include <cinttypes>
 #include <cstring>
-#include <memory>
-#include <thread>
 #include <pthread.h>
 
 #include <jau/test/catch2_ext.hpp>
 
 #include <jau/simple_timer.hpp>
+#include <jau/basic_types.hpp>
 
 using namespace jau;
 using namespace jau::fractions_i64_literals;

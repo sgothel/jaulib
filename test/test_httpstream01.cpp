@@ -67,11 +67,11 @@ class TestHttpStream01 {
 
         void test01_post_sync_ok() {
             if( !jau::io::uri_tk::protocol_supported("http:") ) {
-                jau::PLAIN_PRINT(true, "http not supported, abort\n");
+                PLAIN_PRINT(true, "http not supported, abort\n");
                 return;
             }
             if( catch_auto_run ) {
-                jau::PLAIN_PRINT(true, "not enabled on auto-run\n");
+                PLAIN_PRINT(true, "not enabled on auto-run\n");
                 return;
             }
             jau::io::http::PostRequestPtr postReq = std::make_unique<jau::io::http::PostRequest>();
@@ -101,7 +101,7 @@ class TestHttpStream01 {
 
             jau::io::free_net_tk_handle(handle);
 
-            jau::PLAIN_PRINT(true, "test01_post_sync_ok.X Done: consumed %" PRIu64 " / total %" PRIu64 " / content_len %" PRIu64 ", result %d",
+            PLAIN_PRINT(true, "test01_post_sync_ok.X Done: consumed %" PRIu64 " / total %" PRIu64 " / content_len %" PRIu64 ", result %d",
                     consumed_byte_count.load(), res->total_read, res->content_length, (int)res->result.load() );
 
             REQUIRE( res->header_resp.completed() == true );
@@ -115,11 +115,11 @@ class TestHttpStream01 {
 
         void test11_post_async_ok() {
             if( !jau::io::uri_tk::protocol_supported("http:") ) {
-                jau::PLAIN_PRINT(true, "http not supported, abort\n");
+                PLAIN_PRINT(true, "http not supported, abort\n");
                 return;
             }
             if( catch_auto_run ) {
-                jau::PLAIN_PRINT(true, "not enabled on auto-run\n");
+                PLAIN_PRINT(true, "not enabled on auto-run\n");
                 return;
             }
             jau::io::http::PostRequestPtr postReq = std::make_unique<jau::io::http::PostRequest>();
@@ -150,7 +150,7 @@ class TestHttpStream01 {
             res->thread.join();
             jau::io::free_net_tk_handle(handle);
 
-            jau::PLAIN_PRINT(true, "test11_post_async_ok.X Done: consumed %" PRIu64 " / total %" PRIu64 " / content_len %" PRIu64 ", result %d",
+            PLAIN_PRINT(true, "test11_post_async_ok.X Done: consumed %" PRIu64 " / total %" PRIu64 " / content_len %" PRIu64 ", result %d",
                     consumed_byte_count.load(), res->total_read.load(), res->content_length.load(), (int)res->result.load() );
 
             REQUIRE( res->header_resp.completed() == true );

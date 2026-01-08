@@ -23,6 +23,7 @@
  */
 #include <cassert>
 #include <cstring>
+#include <type_traits>
 
 #include <jau/test/catch2_ext.hpp>
 
@@ -134,6 +135,9 @@ struct NamedSharedPayloadListDefault {
             if(0<i) {
                 res.append(", ");
             }
+            static_assert(true == std::is_pointer_v<const char*>);
+            // static_assert(true == std::is_pointer_v<decltype(e)>);
+
             res.append("[").append(jau::to_string(e)).append("]");
             ++i;
         } );

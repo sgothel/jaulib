@@ -30,20 +30,22 @@
 #include <cstdarg>
 #include <cstdint>
 #include <cstring>
+#include <limits>
 #include <string>
 #include <string_view>
 #include <type_traits>
 #include <vector>
 
-#include "jau/basic_types.hpp"
 #include "jau/type_info.hpp"
 
 #include <jau/byte_util.hpp>
 #include <jau/cpp_lang_util.hpp>
+#include <jau/packed_attribute.hpp>
+
 #include <jau/int_math.hpp>
 #include <jau/int_types.hpp>
-#include <jau/packed_attribute.hpp>
-#include <jau/string_cfmt.hpp>
+#include <jau/string_literal.hpp>
+
 #include <jau/type_traits_queries.hpp>
 #include <jau/type_concepts.hpp>
 
@@ -58,6 +60,8 @@ namespace jau {
     inline bool is_ascii_code(int c) noexcept {
         return 0 != std::iscntrl(c) || 0 != std::isprint(c);
     }
+
+    constexpr bool is_digit(char c) noexcept { return '0' <= c && c <= '9'; }
 
     /**
      * Returns a C++ String taken from buffer with maximum length of min(max_len, max_len).
@@ -147,7 +151,8 @@ namespace jau {
     UInt64SizeBoolTuple fromHexString(std::string_view const hexstr, const lb_endian_t byteOrder = lb_endian_t::big,
                                       const Bool checkPrefix = Bool::True) noexcept;
 
-    inline constexpr const char *HexadecimalArray = "0123456789abcdef";
+    inline constexpr const char *HexadecimalArrayLow = "0123456789abcdef";
+    inline constexpr const char *HexadecimalArrayBig = "0123456789ABCDEF";
 
     /**
      * Produce a hexadecimal string representation of the given lsb-first byte values.
@@ -431,85 +436,202 @@ namespace jau {
      */
 
     /**
-     * Produce a string representation of an unsigned integral integer value with given radix.
-     * @tparam value_type an unsigned integral integer type
-     * @param v the unsigned integral integer value
+     * Appends a string representation of an integral integer value with given radix.
+     * @tparam value_type an integral integer type
+     * @param dest the std::string to append to
+     * @param val the unsigned integral integer value
      * @param radix base of the number system, supported: 2 binary, 8 octal, 10 decimal, 16 hexadecimal
+     * @param capitalization LoUpCase capitalization, default is LoUpCase::lower
      * @param prefix pass PrefixOpt::prefix (default) to add leading prefix for radix. Prefixes: `0x` hex, `0` octal and `0b` binary.
      * @param min_width the minimum number of characters to be printed including prefix. Add padding with `padding` if result is shorter.
      * @param separator separator character for each decimal 3 or other radix 4. Defaults to 0 for no separator.
      * @param padding padding character, defaults to '0'. See 'min_width' above.
      * @return the string representation of the unsigned integral integer value with given radix
      */
-    template<class value_type,
-             std::enable_if_t<std::is_integral_v<value_type> &&
-                              std::is_unsigned_v<value_type>,
-                              bool> = true>
-    std::string to_string(value_type v, const nsize_t radix, const PrefixOpt prefix = PrefixOpt::prefix,
-                          size_t min_width = 0, const char separator = 0, const char padding = '0') noexcept
+    template<std::integral value_type>
+    std::string& append_string(std::string &dest, value_type val, const nsize_t radix,
+                          const LoUpCase capitalization = LoUpCase::lower,
+                          const PrefixOpt prefix = PrefixOpt::prefix,
+                          const nsize_t min_width = 0, const char separator = 0, const char padding = '0') noexcept
     {
+        const size_t dest_start_len = dest.size();
         nsize_t shift;
         switch ( radix ) {
             case 16: shift = 4; break;
             case 10: shift = 0; break;
             case 8:  shift = 3; break;
             case 2:  shift = 1; break;
-            default: return "";
+            default: return dest;
         }
+        typedef std::make_unsigned_t<value_type> unsigned_value_type;
+        unsigned_value_type v = unsigned_value_type( jau::abs(val) );
+        const char *hex_array = LoUpCase::lower == capitalization ? HexadecimalArrayLow : HexadecimalArrayBig;
         const nsize_t mask = radix - 1;  // ignored for radix 10
-        const size_t val_digits = jau::digits<value_type>(v, radix);
-        const size_t prefix_len = (PrefixOpt::none == prefix || 10 == radix) ? 0 : (8 == radix ? 1 : 2);
-        const size_t separator_gap = 10 == radix ? 3 : 4;
-        size_t separator_count;
-        if ( separator && '0' == padding ) {
-            // separator inside padding
-            if ( min_width > prefix_len ) {
-                const size_t len0 = std::max<size_t>(min_width - prefix_len, val_digits);
-                separator_count = (len0 - 1) / separator_gap;
-                if ( val_digits + separator_count + prefix_len > min_width ) {
-                    --separator_count;  // fix down
+        const nsize_t val_digits = jau::digits<value_type>(v, radix);
+        nsize_t sign_len = 0;
+        char sign = 0;
+        if( !jau::is_positive(val) ) {
+            sign = '-';
+            ++sign_len;
+        }
+        const nsize_t prefix_len = (PrefixOpt::none == prefix || 10 == radix) ? 0 : (8 == radix ? 1 : 2);
+        const nsize_t sep_gap = 10 == radix ? 3 : 4;
+        nsize_t sep_count = 0;
+        if( val_digits > 0 && separator ) {
+            if ( '0' == padding ) {
+                // separator inside padding
+                if ( min_width > prefix_len ) {
+                    const size_t len0 = std::max<size_t>(min_width - prefix_len, val_digits);
+                    sep_count = (len0 - 1) / sep_gap;
+                    if ( val_digits + sep_count + prefix_len > min_width ) {
+                        --sep_count;  // fix down
+                    }
+                } else {
+                    sep_count = (val_digits - 1) / sep_gap;
                 }
             } else {
-                separator_count = (val_digits - 1) / separator_gap;
+                // separator w/o padding
+                sep_count = (val_digits - 1) / sep_gap;
             }
-        } else if ( separator ) {
-            // separator w/o padding
-            separator_count = (val_digits - 1) / separator_gap;
-        } else {
-            separator_count = 0;
         }
-        size_t len = std::max<size_t>(min_width, val_digits + separator_count + prefix_len);
+        {
+            const size_t added_len = std::max<size_t>(min_width, val_digits + sep_count + sign_len + prefix_len);
+            dest.resize(dest_start_len + added_len, ' ');
+        }
+        const char * const d_start = dest.data() + dest_start_len;
+        const char * const d_start_num = d_start + prefix_len;
+        char *d = dest.data()+dest.size();
 
-        std::string str(len, ' ');
-        size_t digit_idx = 0, separator_idx = 0;
-        while ( len > prefix_len ) {
-            if ( separator_idx < separator_count && 0 < digit_idx && 0 == digit_idx % separator_gap ) {
-                str[--len] = separator;
+        nsize_t digit_cnt = 0, separator_idx = 0;
+        while ( d > d_start_num ) {
+            if ( separator_idx < sep_count && 0 < digit_cnt && 0 == digit_cnt % sep_gap ) {
+                *(--d) = separator;
                 ++separator_idx;
             }
-            if ( len > prefix_len ) {
-                if ( 10 != radix ) {
-                    str[--len] = digit_idx < val_digits ? HexadecimalArray[v & mask] : padding;
-                    v >>= shift;
-                } else {
-                    str[--len] = digit_idx < val_digits ? '0' + (v % 10) : padding;
+            if ( d > d_start_num ) {
+                if (digit_cnt >= val_digits) {
+                    if( !sign || ( padding == '0' && d > d_start_num+1 ) )  {
+                        *(--d) = padding;
+                    } else {
+                        *(--d) = sign;
+                        sign = 0;
+                    }
+                } else if ( 10 == radix ) {
+                    *(--d) = '0' + (v % 10);
                     v /= 10;
+                } else {
+                    *(--d) = hex_array[v & mask];
+                    v >>= shift;
                 }
-                ++digit_idx;
+                ++digit_cnt;
             }
         }
-        if ( len > 0 ) {
+        if ( d > d_start ) {
             switch ( radix ) {  // NOLINT(bugprone-switch-missing-default-case)
-                case 16: str[--len] = 'x'; break;
-                case 8:  str[--len] = '0'; break;
-                case 2:  str[--len] = 'b'; break;
+                case 16: *(--d) = 'x'; break;
+                case 8:  *(--d) = '0'; break;
+                case 2:  *(--d) = 'b'; break;
             }
-            if ( len > 0 ) {
-                str[--len] = '0';
+            if ( d > d_start ) {
+                *(--d) = '0';
             }
         }
+        return dest;
+    }
+
+    /**
+     * Produce a string representation of an integral integer value with given radix.
+     * @tparam value_type an unsigned integral integer type
+     * @param v the integral integer value
+     * @param radix base of the number system, supported: 2 binary, 8 octal, 10 decimal, 16 hexadecimal
+     * @param capitalization LoUpCase capitalization, default is LoUpCase::lower
+     * @param prefix pass PrefixOpt::prefix (default) to add leading prefix for radix. Prefixes: `0x` hex, `0` octal and `0b` binary.
+     * @param min_width the minimum number of characters to be printed including prefix. Add padding with `padding` if result is shorter.
+     * @param separator separator character for each decimal 3 or other radix 4. Defaults to 0 for no separator.
+     * @param padding padding character, defaults to '0'. See 'min_width' above.
+     * @return the string representation of the unsigned integral integer value with given radix
+     */
+    template<std::integral value_type>
+    std::string to_string(value_type v, const nsize_t radix,
+                          const LoUpCase capitalization = LoUpCase::lower,
+                          const PrefixOpt prefix = PrefixOpt::prefix,
+                          const nsize_t min_width = 0, const char separator = 0, const char padding = '0') noexcept
+    {
+        std::string str;
+        append_string(str, v, radix, capitalization, prefix, min_width, separator, padding);
         return str;
     }
+
+    template<class value_type>
+    requires jau::req::signed_integral<value_type>
+    constexpr bool from_chars(value_type &result, std::string_view str) noexcept {
+        using namespace jau::int_literals;
+        result = 0;
+
+        std::string_view::const_iterator str_end = str.cend();
+        std::string_view::const_iterator begin = str.cbegin();
+        while( begin < str_end && !jau::is_digit(*begin)) { ++begin; }
+        if( begin == str_end ) {
+            return false; // no number
+        }
+        const value_type sign = begin > str.cbegin() && *(begin-1) == '-' ? -1 : 1;
+
+        std::string_view::const_iterator end = begin + 1;
+        while( end < str_end && jau::is_digit(*end)) { ++end; }
+
+        value_type multiplier = 1;
+        while( end > begin ) {
+            const value_type digit = *(--end) - '0';
+            const value_type sum = digit * multiplier * sign;
+            if( sign > 0 && result > std::numeric_limits<value_type>::max() - sum ) {
+                // overflow
+                return false;
+            } else if( sign < 0 && result < std::numeric_limits<value_type>::min() - sum ) {
+                // underflow
+                return false;
+            }
+            result += sum;
+            multiplier *= 10;
+        }
+        return true;
+    }
+
+    template<class value_type>
+    requires jau::req::unsigned_integral<value_type>
+    constexpr bool from_chars(value_type &result, std::string_view str) noexcept {
+        using namespace jau::int_literals;
+        result = 0;
+
+        std::string_view::const_iterator str_end = str.cend();
+        std::string_view::const_iterator begin = str.cbegin();
+        while( begin < str_end && !jau::is_digit(*begin)) { ++begin; }
+        if( begin == str_end ) {
+            return false; // no number
+        }
+        {
+            const value_type sign = begin > str.cbegin() && *(begin-1) == '-' ? -1 : 1;
+            if( sign < 0 ) {
+                return false; // only for unsigned
+            }
+        }
+
+        std::string_view::const_iterator end = begin + 1;
+        while( end < str_end && jau::is_digit(*end)) { ++end; }
+
+        value_type multiplier = 1;
+        while( end > begin ) {
+            const value_type digit = *(--end) - '0';
+            const value_type sum = digit * multiplier;
+            if( result > std::numeric_limits<value_type>::max() - sum ) {
+                // overflow
+                return false;
+            }
+            result += sum;
+            multiplier *= 10;
+        }
+        return true;
+    }
+
 
     /**
     // *************************************************
@@ -531,25 +653,8 @@ namespace jau {
          * @param format `printf()` compliant format string
          * @param args optional arguments matching the format string
          */
-        template<typename... Args>
-        constexpr std::string format_string_n(const std::size_t maxStrLen, const std::string_view &format, const Args &...args) {
-            std::string str;
-            str.reserve(maxStrLen + 1);  // incl. EOS
-            str.resize(maxStrLen);       // excl. EOS
-
-            // -Wformat=2 -> -Wformat -Wformat-nonliteral -Wformat-security -Wformat-y2k
-            // -Wformat=2 -Wformat-overflow=2 -Wformat-signedness
-            PRAGMA_DISABLE_WARNING_PUSH
-            PRAGMA_DISABLE_WARNING_FORMAT_NONLITERAL
-            PRAGMA_DISABLE_WARNING_FORMAT_SECURITY
-            const size_t nchars = std::snprintf(&str[0], maxStrLen + 1, format.data(), args...);  // NOLINT
-            PRAGMA_DISABLE_WARNING_POP
-            if ( nchars < maxStrLen + 1 ) {
-                str.resize(nchars);
-                str.shrink_to_fit();
-            }  // else truncated w/ nchars > MaxStrLen
-            return str;
-        }
+        std::string format_string_n(const std::size_t maxStrLen, const char* format, ...) noexcept;
+        std::string vformat_string_n(const std::size_t maxStrLen, const char* format, va_list args) noexcept;
 
         /**
          * Returns a (non-truncated) string according to `snprintf()` formatting rules
@@ -563,49 +668,12 @@ namespace jau {
          * @param format `printf()` compliant format string
          * @param args optional arguments matching the format string
          */
-        template <typename... Args>
-        constexpr std::string format_string_h(const std::size_t strLenHint, const std::string_view format, const Args &...args) {
-            size_t nchars;
-            std::string str;
-            {
-                const size_t bsz = strLenHint + 1;  // including EOS
-                str.reserve(bsz);                   // incl. EOS
-                str.resize(bsz - 1);                // excl. EOS
-
-                // -Wformat=2 -> -Wformat -Wformat-nonliteral -Wformat-security -Wformat-y2k
-                // -Wformat=2 -Wformat-overflow=2 -Wformat-signedness
-                PRAGMA_DISABLE_WARNING_PUSH
-                PRAGMA_DISABLE_WARNING_FORMAT_NONLITERAL
-                PRAGMA_DISABLE_WARNING_FORMAT_SECURITY
-                nchars = std::snprintf(&str[0], bsz, format.data(), args...);  // NOLINT
-                PRAGMA_DISABLE_WARNING_POP
-                if ( nchars < bsz ) {
-                    str.resize(nchars);
-                    str.shrink_to_fit();
-                    return str;
-                }
-            }
-            {
-                const size_t bsz = std::min<size_t>(nchars + 1, str.max_size() + 1);  // limit incl. EOS
-                str.reserve(bsz);                                                     // incl. EOS
-                str.resize(bsz - 1);                                                  // excl. EOS
-
-                // -Wformat=2 -> -Wformat -Wformat-nonliteral -Wformat-security -Wformat-y2k
-                // -Wformat=2 -Wformat-overflow=2 -Wformat-signedness
-                PRAGMA_DISABLE_WARNING_PUSH
-                PRAGMA_DISABLE_WARNING_FORMAT_NONLITERAL
-                PRAGMA_DISABLE_WARNING_FORMAT_SECURITY
-                nchars = std::snprintf(&str[0], bsz, format.data(), args...);  // NOLINT
-                PRAGMA_DISABLE_WARNING_POP
-
-                str.resize(nchars);
-                return str;
-            }
-        }
+        std::string format_string_h(const std::size_t strLenHint, const char* format, ...) noexcept;
+        std::string vformat_string_h(const std::size_t strLenHint, const char* format, va_list args) noexcept;
 
         /**
          * Returns a (non-truncated) string according to `snprintf()` formatting rules
-         * using an initially string length of 1023 w/o EOS and
+         * using an initially string length of jau::cfmt::default_string_capacity w/o EOS and
          * variable number of arguments following the `format` argument.
          *
          * This variant doesn't validate `format` against given arguments, see jau::format_string_h.
@@ -615,140 +683,32 @@ namespace jau {
          * @param format `printf()` compliant format string
          * @param args optional arguments matching the format string
          */
-        template <typename... Args>
-        constexpr std::string format_string(const std::string_view format, const Args &...args) {
-            return unsafe::format_string_h(1023, format, args...);
-        }
+        std::string format_string(const char* format, ...) noexcept;
+
+        void errPrint(FILE *out, const char *msg, bool addErrno, bool addBacktrace, const char *func, const char *file, const int line,
+                      const char* format, ...) noexcept;
+
     }  // namespace impl
 
-    /**
-     * Safely returns a (potentially truncated) string according to `snprintf()` formatting rules
-     * and variable number of arguments following the `format` argument.
-     *
-     * jau::cfmt2::checkR2() is utilize to validate `format` against given arguments at *runtime*
-     * and throws jau::IllegalArgumentError on mismatch.
-     *
-     * Resulting string is truncated to `min(maxStrLen, formatLen)`,
-     * with `formatLen` being the given formatted string length of output w/o limitation.
-     *
-     * @param maxStrLen maximum resulting string length
-     * @param format `printf()` compliant format string
-     * @param args optional arguments matching the format string
-     */
-    template<typename... Args>
-    constexpr std::string format_string_n(const std::size_t maxStrLen, const std::string_view &format, const Args &...args) {
-        const jau::cfmt::PResult pr = jau::cfmt::checkR2<Args...>(format);
-        if ( pr.argCount() < 0 ) {
-            throw jau::IllegalArgumentError("format/arg mismatch `" + std::string(format) + "`: " + pr.toString(), E_FILE_LINE);
-        }
-        return unsafe::format_string_n(maxStrLen, format, args...);
-    }
-
-    /**
-     * Safely returns a (potentially truncated) string according to `snprintf()` formatting rules
-     * and variable number of arguments following the `format` argument.
-     *
-     * jau::cfmt2::checkR2() is utilize to validate `format` against given arguments at *compile time*
-     * and fails to compile on mismatch.
-     *
-     * Resulting string is truncated to `min(maxStrLen, formatLen)`,
-     * with `formatLen` being the given formatted string length of output w/o limitation.
-     *
-     * @tparam format `printf()` compliant format string
-     * @param maxStrLen maximum resulting string length
-     * @param args optional arguments matching the format string
-     */
-    template <StringLiteral format, typename... Args>
-    consteval_cxx20 std::string format_string_n(const std::size_t maxStrLen, const Args &...args) {
-        static_assert(0 <= jau::cfmt::checkR2<Args...>(format.view()).argCount());
-        return unsafe::format_string_n(maxStrLen, format.view(), args...);
-    }
-
-    /**
-     * Safely returns a (non-truncated) string according to `snprintf()` formatting rules
-     * and variable number of arguments following the `format` argument.
-     *
-     * jau::cfmt2::checkR2() is utilize to validate `format` against given arguments at *runtime*
-     * and throws jau::IllegalArgumentError on mismatch.
-     *
-     * Resulting string size matches formated output w/o limitation.
-     *
-     * @param strLenHint initially used string length w/o EOS
-     * @param format `printf()` compliant format string
-     * @param args optional arguments matching the format string
-     */
-    template <typename... Args>
-    constexpr std::string format_string_h(const std::size_t strLenHint, const std::string_view format, const Args &...args) {
-        const jau::cfmt::PResult pr = jau::cfmt::checkR2<Args...>(format);
-        if ( pr.argCount() < 0 ) {
-            throw jau::IllegalArgumentError("format/arg mismatch `" + std::string(format) + "`: " + pr.toString(), E_FILE_LINE);
-        }
-        return unsafe::format_string_h(strLenHint, format, args...);
-    }
-
-    /**
-     * Safely returns a (non-truncated) string according to `snprintf()` formatting rules
-     * and variable number of arguments following the `format` argument.
-     *
-     * jau::cfmt2::checkR2() is utilize to validate `format` against given arguments at *compile time*
-     * and fails to compile on mismatch.
-     *
-     * Resulting string size matches formated output w/o limitation.
-     *
-     * @tparam format `printf()` compliant format string
-     * @param strLenHint initially used string length w/o EOS
-     * @param args optional arguments matching the format string
-     */
-    template <StringLiteral format, typename... Args>
-    consteval_cxx20 std::string format_string_h(const std::size_t strLenHint, const Args &...args) {
-        static_assert(0 <= jau::cfmt::checkR2<Args...>(format.view()).argCount());
-        return unsafe::format_string_h(strLenHint, format.view(), args...);
-    }
-
-    /**
-     * Safely returns a (non-truncated) string according to `snprintf()` formatting rules
-     * using an initially string length of 1023 w/o EOS and
-     * variable number of arguments following the `format` argument.
-     *
-     * jau::cfmt2::checkR2() is utilize to validate `format` against given arguments at *runtime*
-     * and throws jau::IllegalArgumentError on mismatch.
-     *
-     * Resulting string size matches formated output w/o limitation.
-     *
-     * @param format `printf()` compliant format string
-     * @param args optional arguments matching the format string
-     */
-    template <typename... Args>
-    constexpr std::string format_string(const std::string_view format, const Args &...args) {
-        return format_string_h(1023, format, args...);
-    }
-
-    /**
-     * Safely returns a (non-truncated) string according to `snprintf()` formatting rules
-     * using an initially string length of 1023 w/o EOS and
-     * variable number of arguments following the `format` argument.
-     *
-     * jau::cfmt2::checkR2() is utilize to validate `format` against given arguments at *compile time*
-     * and fails to compile on mismatch.
-     *
-     * Resulting string size matches formated output w/o limitation.
-     *
-     * @tparam format `printf()` compliant format string
-     * @param args optional arguments matching the format string
-     */
-    template <StringLiteral format, typename... Args>
-    consteval_cxx20 std::string format_string(const Args &...args) {
-        return format_string_h<format>(1023, args...);
-    }
 
     /**
     // *************************************************
     // *************************************************
     // *************************************************
      */
+    template<typename CharT, std::size_t N>
+    constexpr std::string to_string(const CharT (&ref)[N]) {
+        return std::string(ref);
+    }
+
+    template<class value_type>
+    requires std::is_same_v<jau::StringLiteral<value_type::size>, value_type> // jau::req::string_alike<value_type>
+    constexpr std::string to_string(const value_type &ref) {
+        return std::string(ref);
+    }
 
     template<class value_type,
-             std::enable_if_t<(std::is_integral_v<value_type> && !std::is_same_v<bool, value_type>) ||
+             std::enable_if_t<(std::is_integral_v<value_type> && !std::is_same_v<bool, std::remove_cv_t<value_type>>) ||
                               std::is_floating_point_v<value_type>,
                               bool> = true>
     inline std::string to_string(const value_type &ref) {
@@ -756,7 +716,7 @@ namespace jau {
     }
 
     template<class value_type,
-             std::enable_if_t<std::is_same_v<bool, value_type>,
+             std::enable_if_t<std::is_same_v<bool, std::remove_cv_t<value_type>>,
                               bool> = true>
     inline std::string to_string(const value_type &ref) {
         return ref ? "T" : "F";
@@ -786,6 +746,18 @@ namespace jau {
                               !std::is_floating_point_v<value_type> &&
                               !std::is_base_of_v<std::string, value_type> &&
                               !std::is_base_of_v<std::string_view, value_type> &&
+                              std::is_same_v<char*, jau::req::base_pointer<value_type>>,
+                              bool> = true>
+    inline std::string to_string(const value_type &ref) {
+        return std::string(ref);
+    }
+
+    template<class value_type,
+             std::enable_if_t<!std::is_integral_v<value_type> &&
+                              !std::is_floating_point_v<value_type> &&
+                              !std::is_base_of_v<std::string, value_type> &&
+                              !std::is_base_of_v<std::string_view, value_type> &&
+                              !std::is_same_v<char*, jau::req::base_pointer<value_type>> &&
                               std::is_pointer_v<value_type>,
                               bool> = true>
     inline std::string to_string(const value_type &ref) {
@@ -891,7 +863,7 @@ namespace jau {
      *
      * You may use C++17 structured bindings to handle the tuple.
      */
-    Int64SizeBoolTuple to_integer(const char *str, size_t str_len, const nsize_t radix = 10, const char limiter = '\0', const char *limiter_pos = nullptr);
+    Int64SizeBoolTuple to_integer(const char *str, size_t str_len, const nsize_t radix = 10, const char limiter = '\0', const char *limiter_pos = nullptr) noexcept;
 
 
     /**
@@ -901,17 +873,13 @@ namespace jau {
      *
      * You may use C++17 structured bindings to handle the tuple.
      */
-     inline Int64SizeBoolTuple to_integer(const std::string_view str, const nsize_t radix = 10, const char limiter = '\0', const char *limiter_pos = nullptr) {
+     inline Int64SizeBoolTuple to_integer(const std::string_view str, const nsize_t radix = 10, const char limiter = '\0', const char *limiter_pos = nullptr) noexcept {
          return to_integer(str.data(), str.length(), radix, limiter, limiter_pos);
      }
 
     /**@}*/
 
 }  // namespace jau
-
-#define jau_format_string_static(...) \
-    jau::format_string(__VA_ARGS__);  \
-    static_assert(0 <= jau::cfmt::checkR(__VA_ARGS__).argCount());  // compile time validation!
 
 /** \example test_intdecstring01.cpp
  * This C++ unit test validates the jau::to_decstring implementation

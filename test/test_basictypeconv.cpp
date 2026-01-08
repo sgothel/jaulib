@@ -30,6 +30,7 @@
 #include <jau/cpp_lang_util.hpp>
 #include <jau/int_types.hpp>
 #include <jau/string_util.hpp>
+#include <jau/string_cfmt.hpp>
 #include <jau/test/catch2_ext.hpp>
 
 extern "C" {
@@ -505,7 +506,7 @@ static void testBitReverse(std::string_view prefix, std::string_view s_be0) {
     // std::string s_le2 = jau::toBitString(jau::bswap(uint32_t(v_be0)), jau::bit_order_t::msb, jau::PrefixOpt::none, s_be0.size());
     std::string s_be2_rev = s_be2;
     std::ranges::reverse(s_be2_rev);
-    std::string s_be3_rev = jau::to_string(jau::rev_bits(s_be0.size(), uint32_t(v_be0)), 2, jau::PrefixOpt::none, s_be0.size());
+    std::string s_be3_rev = jau::to_string(jau::rev_bits(s_be0.size(), uint32_t(v_be0)), 2, jau::LoUpCase::lower, jau::PrefixOpt::none, s_be0.size());
     if( verbose ) {
         std::cout << "  s_be0:     " << s_be0 << "\n";
         std::cout << "  s_be2:     " << s_be2 << "\n";

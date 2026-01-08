@@ -23,12 +23,14 @@
  */
 #include <cstring>
 #include <exception>
+#include <iostream>
 #include <stdexcept>
 #include <system_error>
 
 #include <jau/test/catch2_ext.hpp>
 
 #include <jau/basic_types.hpp>
+#include <jau/exceptions.hpp>
 #include <jau/math/math_error.hpp>
 #include <jau/mp/big_int.hpp>
 
@@ -79,7 +81,7 @@ TEST_CASE( "Exception 00", "[exceptions][error]" ) {
     REQUIRE_THROWS_AS(      throwOutOfMemoryError(), jau::ExceptionBase);
     REQUIRE_THROWS_AS(      throwOutOfMemoryError(), std::bad_alloc);
     REQUIRE_THROWS_AS(      throwOutOfMemoryError(), std::exception);
-    
+
     static_assert( true == std::is_base_of_v<jau::ExceptionBase, jau::RuntimeExceptionBase>);
     static_assert( true == std::is_base_of_v<jau::RuntimeExceptionBase, jau::RuntimeException>);
     static_assert( true == std::is_base_of_v<std::runtime_error, jau::RuntimeException>);
@@ -88,7 +90,7 @@ TEST_CASE( "Exception 00", "[exceptions][error]" ) {
     REQUIRE_THROWS_AS(      throwRuntimeException(), jau::RuntimeExceptionBase);
     REQUIRE_THROWS_AS(      throwRuntimeException(), std::runtime_error);
     REQUIRE_THROWS_AS(      throwRuntimeException(), std::exception);
-    
+
     static_assert( true == std::is_base_of_v<jau::ExceptionBase, jau::LogicErrorBase>);
     static_assert( true == std::is_base_of_v<jau::LogicErrorBase, jau::LogicError>);
     static_assert( true == std::is_base_of_v<std::logic_error, jau::LogicError>);
@@ -97,7 +99,7 @@ TEST_CASE( "Exception 00", "[exceptions][error]" ) {
     REQUIRE_THROWS_AS(      throwLogicError(), jau::LogicErrorBase);
     REQUIRE_THROWS_AS(      throwLogicError(), std::logic_error);
     REQUIRE_THROWS_AS(      throwLogicError(), std::exception);
-    
+
     static_assert( true == std::is_base_of_v<std::out_of_range, jau::IndexOutOfBoundsError>);
     static_assert( true == std::is_base_of_v<jau::LogicErrorBase, jau::IndexOutOfBoundsError>);
     static_assert( true == std::is_base_of_v<std::logic_error, jau::IndexOutOfBoundsError>);
@@ -105,8 +107,8 @@ TEST_CASE( "Exception 00", "[exceptions][error]" ) {
     REQUIRE_THROWS_AS(      throwIndexOutOfBoundsError(), std::out_of_range);
     REQUIRE_THROWS_MATCHES( throwIndexOutOfBoundsError(), jau::LogicErrorBase, Catch::Matchers::ContainsSubstring("IndexOutOfBoundsError") );
     REQUIRE_THROWS_AS(      throwIndexOutOfBoundsError(), std::logic_error);
-    REQUIRE_THROWS_AS(      throwIndexOutOfBoundsError(), std::exception);  
-    
+    REQUIRE_THROWS_AS(      throwIndexOutOfBoundsError(), std::exception);
+
     static_assert( true == std::is_base_of_v<std::invalid_argument, jau::IllegalArgumentError>);
     static_assert( true == std::is_base_of_v<jau::LogicErrorBase, jau::IllegalArgumentError>);
     static_assert( true == std::is_base_of_v<std::logic_error, jau::IllegalArgumentError>);
@@ -115,7 +117,7 @@ TEST_CASE( "Exception 00", "[exceptions][error]" ) {
     REQUIRE_THROWS_MATCHES( throwIllegalArgumentError(), jau::LogicErrorBase, Catch::Matchers::ContainsSubstring("IllegalArgumentError") );
     REQUIRE_THROWS_AS(      throwIllegalArgumentError(), std::logic_error);
     REQUIRE_THROWS_AS(      throwIllegalArgumentError(), std::exception);
-    
+
     static_assert( true == std::is_base_of_v<std::domain_error, jau::IllegalStateError>);
     static_assert( true == std::is_base_of_v<jau::LogicErrorBase, jau::IllegalStateError>);
     static_assert( true == std::is_base_of_v<std::logic_error, jau::IllegalStateError>);
@@ -124,7 +126,7 @@ TEST_CASE( "Exception 00", "[exceptions][error]" ) {
     REQUIRE_THROWS_MATCHES( throwIllegalStateError(), jau::LogicErrorBase, Catch::Matchers::ContainsSubstring("IllegalStateError") );
     REQUIRE_THROWS_AS(      throwIllegalStateError(), std::logic_error);
     REQUIRE_THROWS_AS(      throwIllegalStateError(), std::exception);
-    
+
     static_assert( true == std::is_base_of_v<jau::RuntimeExceptionBase, jau::RuntimeSystemExceptionBase>);
     static_assert( true == std::is_base_of_v<jau::ExceptionBase, jau::RuntimeSystemExceptionBase>);
     static_assert( true == std::is_base_of_v<jau::RuntimeSystemExceptionBase, jau::RuntimeSystemException>);
@@ -136,7 +138,7 @@ TEST_CASE( "Exception 00", "[exceptions][error]" ) {
     REQUIRE_THROWS_MATCHES( throwRuntimeSystemException(), jau::RuntimeExceptionBase, Catch::Matchers::ContainsSubstring("RuntimeSystemException") );
     REQUIRE_THROWS_AS(      throwRuntimeSystemException(), std::runtime_error);
     REQUIRE_THROWS_AS(      throwRuntimeSystemException(), std::exception);
-           
+
     static_assert( true == std::is_base_of_v<std::ios_base::failure, jau::IOError>);
     static_assert( true == std::is_base_of_v<jau::RuntimeSystemExceptionBase, jau::IOError>);
     static_assert( true == std::is_base_of_v<std::system_error, jau::IOError>);
@@ -149,22 +151,22 @@ TEST_CASE( "Exception 00", "[exceptions][error]" ) {
     REQUIRE_THROWS_MATCHES( throwIOError(), jau::RuntimeExceptionBase, Catch::Matchers::ContainsSubstring("IOError") );
     REQUIRE_THROWS_AS( throwIOError(), std::runtime_error );
     REQUIRE_THROWS_AS( throwIOError(), std::exception );
-    
+
     REQUIRE_THROWS_MATCHES( throwInternalError(), jau::RuntimeExceptionBase, Catch::Matchers::ContainsSubstring("InternalError") );
     REQUIRE_THROWS_AS( throwInternalError(), std::runtime_error );
     REQUIRE_THROWS_MATCHES( throwInternalError(), jau::InternalError, Catch::Matchers::ContainsSubstring("InternalError") );
     REQUIRE_THROWS_AS( throwInternalError(), std::exception );
-    
+
     REQUIRE_THROWS_MATCHES( throwNotImplementedException(), jau::RuntimeExceptionBase, Catch::Matchers::ContainsSubstring("NotImplementedException") );
     REQUIRE_THROWS_AS( throwNotImplementedException(), std::runtime_error );
     REQUIRE_THROWS_MATCHES( throwNotImplementedException(), jau::NotImplementedException, Catch::Matchers::ContainsSubstring("NotImplementedException") );
     REQUIRE_THROWS_AS( throwNotImplementedException(), std::exception );
-    
+
     REQUIRE_THROWS_MATCHES( throwNullPointerException(), jau::RuntimeExceptionBase, Catch::Matchers::ContainsSubstring("NullPointerException") );
     REQUIRE_THROWS_AS( throwNullPointerException(), std::runtime_error );
     REQUIRE_THROWS_MATCHES( throwNullPointerException(), jau::NullPointerException, Catch::Matchers::ContainsSubstring("NullPointerException") );
     REQUIRE_THROWS_AS( throwNullPointerException(), std::exception );
-    
+
     REQUIRE_THROWS_MATCHES( throwUnsupportedOperationException(), jau::RuntimeExceptionBase, Catch::Matchers::ContainsSubstring("UnsupportedOperationException") );
     REQUIRE_THROWS_AS( throwUnsupportedOperationException(), std::runtime_error );
     REQUIRE_THROWS_MATCHES( throwUnsupportedOperationException(), jau::UnsupportedOperationException, Catch::Matchers::ContainsSubstring("UnsupportedOperationException") );
@@ -196,7 +198,7 @@ TEST_CASE( "Exception 10 Math", "[big_int_t][exceptions][error][math]" ) {
     static_assert( true == std::is_base_of_v<std::exception, jau::math::MathError>);
     REQUIRE_THROWS_MATCHES( throwMathError(), jau::math::MathErrorBase, Catch::Matchers::ContainsSubstring("MathError(undefined)") );
     REQUIRE_THROWS_AS(      throwMathError(), std::exception);
-    
+
     static_assert( true == std::is_base_of_v<jau::math::MathRuntimeErrorBase, jau::math::MathInexactError>);
     static_assert( true == std::is_base_of_v<jau::math::MathErrorBase, jau::math::MathInexactError>);
     static_assert( true == std::is_base_of_v<std::runtime_error, jau::math::MathInexactError>);
@@ -206,7 +208,7 @@ TEST_CASE( "Exception 10 Math", "[big_int_t][exceptions][error][math]" ) {
     REQUIRE_THROWS_AS(      throwMathInexactError(), jau::math::MathErrorBase);
     REQUIRE_THROWS_AS(      throwMathInexactError(), std::runtime_error);
     REQUIRE_THROWS_AS(      throwMathInexactError(), std::exception);
-    
+
     static_assert( true == std::is_base_of_v<jau::math::MathRuntimeErrorBase, jau::math::MathOverflowError>);
     static_assert( true == std::is_base_of_v<jau::math::MathErrorBase, jau::math::MathOverflowError>);
     static_assert( true == std::is_base_of_v<std::overflow_error, jau::math::MathOverflowError>);
@@ -218,7 +220,7 @@ TEST_CASE( "Exception 10 Math", "[big_int_t][exceptions][error][math]" ) {
     REQUIRE_THROWS_AS(      throwMathOverflowError(), std::overflow_error);
     REQUIRE_THROWS_AS(      throwMathOverflowError(), std::runtime_error);
     REQUIRE_THROWS_AS(      throwMathOverflowError(), std::exception);
-    
+
     static_assert( true == std::is_base_of_v<jau::math::MathRuntimeErrorBase, jau::math::MathUnderflowError>);
     static_assert( true == std::is_base_of_v<jau::math::MathErrorBase, jau::math::MathUnderflowError>);
     static_assert( true == std::is_base_of_v<std::underflow_error, jau::math::MathUnderflowError>);
@@ -238,7 +240,7 @@ TEST_CASE( "Exception 10 Math", "[big_int_t][exceptions][error][math]" ) {
     REQUIRE_THROWS_AS(      throwMathDomainError(), jau::math::MathErrorBase);
     REQUIRE_THROWS_AS(      throwMathDomainError(), std::domain_error);
     REQUIRE_THROWS_AS(      throwMathDomainError(), std::exception);
-    
+
     static_assert( true == std::is_base_of_v<jau::math::MathErrorBase, jau::math::MathDivByZeroError>);
     static_assert( true == std::is_base_of_v<jau::math::MathDomainError, jau::math::MathDivByZeroError>);
     static_assert( true == std::is_base_of_v<std::domain_error, jau::math::MathDivByZeroError>);
@@ -248,7 +250,7 @@ TEST_CASE( "Exception 10 Math", "[big_int_t][exceptions][error][math]" ) {
     REQUIRE_THROWS_AS(      throwMathDivByZeroError(), jau::math::MathErrorBase);
     REQUIRE_THROWS_AS(      throwMathDivByZeroError(), std::domain_error);
     REQUIRE_THROWS_AS(      throwMathDivByZeroError(), std::exception);
-    REQUIRE_THROWS_AS(      throwMathDivByZeroError(), std::exception);    
+    REQUIRE_THROWS_AS(      throwMathDivByZeroError(), std::exception);
 }
 
 TEST_CASE( "Exception 11 Math", "[big_int_t][exceptions][error][arithmetic][math]" ) {
@@ -260,5 +262,24 @@ TEST_CASE( "Exception 11 Math", "[big_int_t][exceptions][error][arithmetic][math
     {
         jau::mp::BigInt a = jau::mp::BigInt::from_s32(-1), b = jau::mp::BigInt::from_s32(-1), r;
         REQUIRE_THROWS_MATCHES( r = a % b, jau::math::MathDomainError, Catch::Matchers::ContainsSubstring("invalid") );
+    }
+}
+
+TEST_CASE( "Exception 20 Catching", "[exceptions][error]" ) {
+    {
+        jau::exception_handler_t eh = [](const std::exception &e) -> bool {
+            std::cerr << "Exception 20: " << e.what() << "\n";
+            return true;
+        };
+        std::exception_ptr eptr;
+
+        try {
+            [[maybe_unused]]
+            char ch = std::string().at(1);  // this generates a std::out_of_range
+        } catch (...) {
+            eptr = std::current_exception();  // capture
+        }
+
+        REQUIRE(true == jau::handle_exception(eptr, eh));
     }
 }

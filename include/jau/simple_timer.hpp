@@ -25,10 +25,7 @@
 #ifndef JAU_SIMPLE_TIMER_HPP_
 #define JAU_SIMPLE_TIMER_HPP_
 
-#include <cstdint>
 #include <mutex>
-#include <condition_variable>
-#include <thread>
 
 #include <jau/ordered_atomic.hpp>
 #include <jau/fraction_type.hpp>

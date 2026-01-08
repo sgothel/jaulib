@@ -23,6 +23,7 @@
  */
 
 #include <jau/simple_timer.hpp>
+#include <jau/basic_types.hpp>
 
 using namespace jau;
 
@@ -31,13 +32,13 @@ void simple_timer::timer_work(service_runner& sr_ref) {
         // non-blocking sleep in regards to stop()
         std::unique_lock<std::mutex> lock(sr_ref.mtx_shall_stop()); // RAII-style acquire and relinquish via destructor
         bool overflow = false;
-        const fraction_timespec timeout_time = getMonotonicTime() + fraction_timespec(duration, &overflow);
+        const fraction_timespec timeout_time = jau::getMonotonicTime() + fraction_timespec(duration, &overflow);
         if( overflow ) {
             sr_ref.set_shall_stop(); // bail out
         }
         std::cv_status s { std::cv_status::no_timeout };
         while( !sr_ref.shall_stop() && std::cv_status::timeout != s ) {
-            s = wait_until( sr_ref.cv_shall_stop(), lock, timeout_time );
+            s = jau::wait_until( sr_ref.cv_shall_stop(), lock, timeout_time );
             if( std::cv_status::timeout == s && !sr_ref.shall_stop() ) {
                 duration = fractions_i64::zero;
             }

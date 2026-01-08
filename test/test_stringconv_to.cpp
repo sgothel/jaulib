@@ -22,12 +22,15 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <cassert>
+#include <cinttypes>
 #include <cstring>
+#include <limits>
 
 #include "test_datatype01.hpp"
 
 #include <jau/basic_types.hpp>
 #include <jau/cpp_lang_util.hpp>
+#include <jau/string_cfmt.hpp>
 #include <jau/string_util.hpp>
 #include <jau/test/catch2_ext.hpp>
 #include <jau/type_traits_queries.hpp>
@@ -64,82 +67,82 @@ TEST_CASE( "Test 00 - to_string", "[jau][string][to_string]" ) {
         CHECK("0b11010101101" == jau::to_string(0b11010101101_u32, 2));  // bin
 
         // no-prefix, radix, default: no-width, no-separator, '0' padding
-        CHECK("affe" == jau::to_string(0xaffe_u32, 16, jau::PrefixOpt::none));     // hex
-        CHECK("876543210" == jau::to_string(876543210_u64, 10, jau::PrefixOpt::none));       // dec
-        CHECK("77652" == jau::to_string(077652_u32, 8, jau::PrefixOpt::none));               // oct
-        CHECK("11010101101" == jau::to_string(0b11010101101_u32, 2, jau::PrefixOpt::none));  // bin
+        CHECK("affe" == jau::to_string(0xaffe_u32, 16, jau::LoUpCase::lower, jau::PrefixOpt::none));     // hex
+        CHECK("876543210" == jau::to_string(876543210_u64, 10, jau::LoUpCase::lower, jau::PrefixOpt::none));       // dec
+        CHECK("77652" == jau::to_string(077652_u32, 8, jau::LoUpCase::lower, jau::PrefixOpt::none));               // oct
+        CHECK("11010101101" == jau::to_string(0b11010101101_u32, 2, jau::LoUpCase::lower, jau::PrefixOpt::none));  // bin
 
         // radix, width-expansion, default: prefix, no-separator, '0' padding
-        CHECK("0x00affe" == jau::to_string(0xaffe_u32, 16, jau::PrefixOpt::prefix, 8));                 // hex
-        CHECK("000876543210" == jau::to_string(876543210_u64, 10, jau::PrefixOpt::prefix, 12));         // dec
-        CHECK("0000077652" == jau::to_string(077652_u32, 8, jau::PrefixOpt::prefix, 10));               // oct
-        CHECK("0b00011010101101" == jau::to_string(0b11010101101_u32, 2, jau::PrefixOpt::prefix, 16));  // bin
+        CHECK("0x00affe" == jau::to_string(0xaffe_u32, 16, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 8));                 // hex
+        CHECK("000876543210" == jau::to_string(876543210_u64, 10, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 12));         // dec
+        CHECK("0000077652" == jau::to_string(077652_u32, 8, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 10));               // oct
+        CHECK("0b00011010101101" == jau::to_string(0b11010101101_u32, 2, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 16));  // bin
 
         // no-prefix, radix, width-expansion, default: no-separator, '0' padding
-        CHECK("0000affe" == jau::to_string(0xaffe_u32, 16, jau::PrefixOpt::none, 8));                 // hex
-        CHECK("000876543210" == jau::to_string(876543210_u64, 10, jau::PrefixOpt::none, 12));         // dec
-        CHECK("0000077652" == jau::to_string(077652_u32, 8, jau::PrefixOpt::none, 10));               // oct
-        CHECK("0000011010101101" == jau::to_string(0b11010101101_u32, 2, jau::PrefixOpt::none, 16));  // bin
+        CHECK("0000affe" == jau::to_string(0xaffe_u32, 16, jau::LoUpCase::lower, jau::PrefixOpt::none, 8));                 // hex
+        CHECK("000876543210" == jau::to_string(876543210_u64, 10, jau::LoUpCase::lower, jau::PrefixOpt::none, 12));         // dec
+        CHECK("0000077652" == jau::to_string(077652_u32, 8, jau::LoUpCase::lower, jau::PrefixOpt::none, 10));               // oct
+        CHECK("0000011010101101" == jau::to_string(0b11010101101_u32, 2, jau::LoUpCase::lower, jau::PrefixOpt::none, 16));  // bin
 
         // radix, separator, default: no-width, prefix, '0' padding
-        CHECK("0xaffe" == jau::to_string(0xaffe_u32, 16, jau::PrefixOpt::prefix, 0, '\''));             // hex
-        CHECK("0x1'affe" == jau::to_string(0x1affe_u32, 16, jau::PrefixOpt::prefix, 0, '\''));          // hex
-        CHECK("876'543'210" == jau::to_string(876543210_u64, 10, jau::PrefixOpt::prefix, 0, '\''));     // dec
-        CHECK("1'876'543'210" == jau::to_string(1876543210_u64, 10, jau::PrefixOpt::prefix, 0, '\''));  // dec
-        CHECK("04321'7652" == jau::to_string(043217652_u32, 8, jau::PrefixOpt::prefix, 0, '\''));       // oct
-        CHECK("01'4321'7652" == jau::to_string(0143217652_u32, 8, jau::PrefixOpt::prefix, 0, '\''));    // oct
-        CHECK("0b1010'1101" == jau::to_string(0b10101101_u32, 2, jau::PrefixOpt::prefix, 0, '\''));     // bin
-        CHECK("0b1'1010'1101" == jau::to_string(0b110101101_u32, 2, jau::PrefixOpt::prefix, 0, '\''));  // bin
+        CHECK("0xaffe" == jau::to_string(0xaffe_u32, 16, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 0, '\''));             // hex
+        CHECK("0x1'affe" == jau::to_string(0x1affe_u32, 16, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 0, '\''));          // hex
+        CHECK("876'543'210" == jau::to_string(876543210_u64, 10, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 0, '\''));     // dec
+        CHECK("1'876'543'210" == jau::to_string(1876543210_u64, 10, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 0, '\''));  // dec
+        CHECK("04321'7652" == jau::to_string(043217652_u32, 8, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 0, '\''));       // oct
+        CHECK("01'4321'7652" == jau::to_string(0143217652_u32, 8, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 0, '\''));    // oct
+        CHECK("0b1010'1101" == jau::to_string(0b10101101_u32, 2, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 0, '\''));     // bin
+        CHECK("0b1'1010'1101" == jau::to_string(0b110101101_u32, 2, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 0, '\''));  // bin
 
         // no-prefix, radix, separator, default: no-width, '0' padding
-        CHECK("affe" == jau::to_string(0xaffe_u32, 16, jau::PrefixOpt::none, 0, '\''));               // hex
-        CHECK("1'affe" == jau::to_string(0x1affe_u32, 16, jau::PrefixOpt::none, 0, '\''));            // hex
-        CHECK("876'543'210" == jau::to_string(876543210_u64, 10, jau::PrefixOpt::none, 0, '\''));     // dec
-        CHECK("1'876'543'210" == jau::to_string(1876543210_u64, 10, jau::PrefixOpt::none, 0, '\''));  // dec
-        CHECK("4321'7652" == jau::to_string(043217652_u32, 8, jau::PrefixOpt::none, 0, '\''));        // oct
-        CHECK("1'4321'7652" == jau::to_string(0143217652_u32, 8, jau::PrefixOpt::none, 0, '\''));     // oct
-        CHECK("1010'1101" == jau::to_string(0b10101101_u32, 2, jau::PrefixOpt::none, 0, '\''));       // bin
-        CHECK("1'1010'1101" == jau::to_string(0b110101101_u32, 2, jau::PrefixOpt::none, 0, '\''));    // bin
+        CHECK("affe" == jau::to_string(0xaffe_u32, 16, jau::LoUpCase::lower, jau::PrefixOpt::none, 0, '\''));               // hex
+        CHECK("1'affe" == jau::to_string(0x1affe_u32, 16, jau::LoUpCase::lower, jau::PrefixOpt::none, 0, '\''));            // hex
+        CHECK("876'543'210" == jau::to_string(876543210_u64, 10, jau::LoUpCase::lower, jau::PrefixOpt::none, 0, '\''));     // dec
+        CHECK("1'876'543'210" == jau::to_string(1876543210_u64, 10, jau::LoUpCase::lower, jau::PrefixOpt::none, 0, '\''));  // dec
+        CHECK("4321'7652" == jau::to_string(043217652_u32, 8, jau::LoUpCase::lower, jau::PrefixOpt::none, 0, '\''));        // oct
+        CHECK("1'4321'7652" == jau::to_string(0143217652_u32, 8, jau::LoUpCase::lower, jau::PrefixOpt::none, 0, '\''));     // oct
+        CHECK("1010'1101" == jau::to_string(0b10101101_u32, 2, jau::LoUpCase::lower, jau::PrefixOpt::none, 0, '\''));       // bin
+        CHECK("1'1010'1101" == jau::to_string(0b110101101_u32, 2, jau::LoUpCase::lower, jau::PrefixOpt::none, 0, '\''));    // bin
 
         // radix, width-expansion, separator, default: prefix, '0' padding
-        CHECK("0xaffe" == jau::to_string(0xaffe_u32, 16, jau::PrefixOpt::prefix, 6, '\''));    // hex
-        CHECK("0x'affe" == jau::to_string(0xaffe_u32, 16, jau::PrefixOpt::prefix, 7, '\''));   // hex
-        CHECK("0x0'affe" == jau::to_string(0xaffe_u32, 16, jau::PrefixOpt::prefix, 8, '\''));  // hex
+        CHECK("0xaffe" == jau::to_string(0xaffe_u32, 16, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 6, '\''));    // hex
+        CHECK("0x'affe" == jau::to_string(0xaffe_u32, 16, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 7, '\''));   // hex
+        CHECK("0x0'affe" == jau::to_string(0xaffe_u32, 16, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 8, '\''));  // hex
 
-        CHECK("876'543'210" == jau::to_string(876543210_u64, 10, jau::PrefixOpt::prefix, 11, '\''));    // dec
-        CHECK("'876'543'210" == jau::to_string(876543210_u64, 10, jau::PrefixOpt::prefix, 12, '\''));   // dec
-        CHECK("0'876'543'210" == jau::to_string(876543210_u64, 10, jau::PrefixOpt::prefix, 13, '\''));  // dec
+        CHECK("876'543'210" == jau::to_string(876543210_u64, 10, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 11, '\''));    // dec
+        CHECK("'876'543'210" == jau::to_string(876543210_u64, 10, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 12, '\''));   // dec
+        CHECK("0'876'543'210" == jau::to_string(876543210_u64, 10, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 13, '\''));  // dec
 
-        CHECK("07652" == jau::to_string(07652_u32, 8, jau::PrefixOpt::prefix, 5, '\''));    // oct
-        CHECK("0'7652" == jau::to_string(07652_u32, 8, jau::PrefixOpt::prefix, 6, '\''));   // oct
-        CHECK("00'7652" == jau::to_string(07652_u32, 8, jau::PrefixOpt::prefix, 7, '\''));  // oct
+        CHECK("07652" == jau::to_string(07652_u32, 8, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 5, '\''));    // oct
+        CHECK("0'7652" == jau::to_string(07652_u32, 8, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 6, '\''));   // oct
+        CHECK("00'7652" == jau::to_string(07652_u32, 8, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 7, '\''));  // oct
 
-        CHECK("0b1110'1010'1101" == jau::to_string(0b111010101101_u32, 2, jau::PrefixOpt::prefix, 16, '\''));    // bin
-        CHECK("0b'1110'1010'1101" == jau::to_string(0b111010101101_u32, 2, jau::PrefixOpt::prefix, 17, '\''));   // bin
-        CHECK("0b0'1110'1010'1101" == jau::to_string(0b111010101101_u32, 2, jau::PrefixOpt::prefix, 18, '\''));  // bin
+        CHECK("0b1110'1010'1101" == jau::to_string(0b111010101101_u32, 2, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 16, '\''));    // bin
+        CHECK("0b'1110'1010'1101" == jau::to_string(0b111010101101_u32, 2, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 17, '\''));   // bin
+        CHECK("0b0'1110'1010'1101" == jau::to_string(0b111010101101_u32, 2, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 18, '\''));  // bin
 
         // no-prefix, radix, width-expansion, separator, default: '0' padding
-        CHECK("affe" == jau::to_string(0xaffe_u32, 16, jau::PrefixOpt::none, 4, '\''));    // hex
-        CHECK("'affe" == jau::to_string(0xaffe_u32, 16, jau::PrefixOpt::none, 5, '\''));   // hex
-        CHECK("0'affe" == jau::to_string(0xaffe_u32, 16, jau::PrefixOpt::none, 6, '\''));  // hex
+        CHECK("affe" == jau::to_string(0xaffe_u32, 16, jau::LoUpCase::lower, jau::PrefixOpt::none, 4, '\''));    // hex
+        CHECK("'affe" == jau::to_string(0xaffe_u32, 16, jau::LoUpCase::lower, jau::PrefixOpt::none, 5, '\''));   // hex
+        CHECK("0'affe" == jau::to_string(0xaffe_u32, 16, jau::LoUpCase::lower, jau::PrefixOpt::none, 6, '\''));  // hex
 
-        CHECK("876'543'210" == jau::to_string(876543210_u64, 10, jau::PrefixOpt::none, 11, '\''));    // dec
-        CHECK("'876'543'210" == jau::to_string(876543210_u64, 10, jau::PrefixOpt::none, 12, '\''));   // dec
-        CHECK("0'876'543'210" == jau::to_string(876543210_u64, 10, jau::PrefixOpt::none, 13, '\''));  // dec
+        CHECK("876'543'210" == jau::to_string(876543210_u64, 10, jau::LoUpCase::lower, jau::PrefixOpt::none, 11, '\''));    // dec
+        CHECK("'876'543'210" == jau::to_string(876543210_u64, 10, jau::LoUpCase::lower, jau::PrefixOpt::none, 12, '\''));   // dec
+        CHECK("0'876'543'210" == jau::to_string(876543210_u64, 10, jau::LoUpCase::lower, jau::PrefixOpt::none, 13, '\''));  // dec
 
-        CHECK("7652" == jau::to_string(07652_u32, 8, jau::PrefixOpt::none, 4, '\''));    // oct
-        CHECK("'7652" == jau::to_string(07652_u32, 8, jau::PrefixOpt::none, 5, '\''));   // oct
-        CHECK("0'7652" == jau::to_string(07652_u32, 8, jau::PrefixOpt::none, 6, '\''));  // oct
+        CHECK("7652" == jau::to_string(07652_u32, 8, jau::LoUpCase::lower, jau::PrefixOpt::none, 4, '\''));    // oct
+        CHECK("'7652" == jau::to_string(07652_u32, 8, jau::LoUpCase::lower, jau::PrefixOpt::none, 5, '\''));   // oct
+        CHECK("0'7652" == jau::to_string(07652_u32, 8, jau::LoUpCase::lower, jau::PrefixOpt::none, 6, '\''));  // oct
 
-        CHECK("1110'1010'1101" == jau::to_string(0b111010101101_u32, 2, jau::PrefixOpt::none, 14, '\''));    // bin
-        CHECK("'1110'1010'1101" == jau::to_string(0b111010101101_u32, 2, jau::PrefixOpt::none, 15, '\''));   // bin
-        CHECK("0'1110'1010'1101" == jau::to_string(0b111010101101_u32, 2, jau::PrefixOpt::none, 16, '\''));  // bin
+        CHECK("1110'1010'1101" == jau::to_string(0b111010101101_u32, 2, jau::LoUpCase::lower, jau::PrefixOpt::none, 14, '\''));    // bin
+        CHECK("'1110'1010'1101" == jau::to_string(0b111010101101_u32, 2, jau::LoUpCase::lower, jau::PrefixOpt::none, 15, '\''));   // bin
+        CHECK("0'1110'1010'1101" == jau::to_string(0b111010101101_u32, 2, jau::LoUpCase::lower, jau::PrefixOpt::none, 16, '\''));  // bin
 
         // no-prefix, radix, width-expansion, padding ' '
-        CHECK("    affe" == jau::to_string(0xaffe_u32, 16, jau::PrefixOpt::none, 8, '\'', ' '));
-        CHECK("    876'543'210" == jau::to_string(876543210_u32, 10, jau::PrefixOpt::none, 15, '\'', ' '));
-        CHECK("    110'1010'1101" == jau::to_string(0b11010101101_u32, 2, jau::PrefixOpt::none, 17, '\'', ' '));
-        CHECK("    7'7652" == jau::to_string(077652_u32, 8, jau::PrefixOpt::none, 10, '\'', ' '));
+        CHECK("    affe" == jau::to_string(0xaffe_u32, 16, jau::LoUpCase::lower, jau::PrefixOpt::none, 8, '\'', ' '));
+        CHECK("    876'543'210" == jau::to_string(876543210_u32, 10, jau::LoUpCase::lower, jau::PrefixOpt::none, 15, '\'', ' '));
+        CHECK("    110'1010'1101" == jau::to_string(0b11010101101_u32, 2, jau::LoUpCase::lower, jau::PrefixOpt::none, 17, '\'', ' '));
+        CHECK("    7'7652" == jau::to_string(077652_u32, 8, jau::LoUpCase::lower, jau::PrefixOpt::none, 10, '\'', ' '));
     }
     CHECK("1.650000" == jau::to_string(float_1));
 
@@ -258,3 +261,4 @@ TEST_CASE( "Test 03 - toBitString()", "[jau][string][toBitString]" ) {
                                          0b0000000000000000000000000000000000000000000000000000000000000000_u64, 64);
     }
 }
+

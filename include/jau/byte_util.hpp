@@ -1282,6 +1282,31 @@ namespace jau {
         return get_packed_value(pointer_cast<const packed_t<T>*>( buffer ), byte_order);
     }
 
+    /**
+    // *************************************************
+    // *************************************************
+    // *************************************************
+     */
+
+    /** Bit order type, i.e. least-significant-bit (lsb) or most-significant-bit (msb) first. */
+    enum class bit_order_t : bool
+    {
+        /** Identifier for least-significant-bit (lsb) first. */
+        lsb = false,
+
+        /** Identifier for most-significant-bit (msb) first. */
+        msb = true
+    };
+
+    /**
+     * Return std::string representation of the given bit_order_t.
+     * @param v the bit_order_t value
+     * @return the std::string representation
+     */
+    inline std::string to_string(const bit_order_t v) noexcept {
+        return v == bit_order_t::lsb ? "lsb" : "msb";
+    }
+
     /**@}*/
 
 } // namespace jau

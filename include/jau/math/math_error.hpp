@@ -15,6 +15,7 @@
 #include <stdexcept>
 #include <jau/int_math.hpp>
 #include <jau/basic_types.hpp>
+#include <jau/exceptions.hpp>
 
 namespace jau::math {
 

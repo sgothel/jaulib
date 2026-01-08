@@ -52,6 +52,25 @@ namespace jau {
 
     // Remember: constexpr specifier used in a function or static data member (since C++17) declaration implies inline.
 
+    /** Returns true of the given integral is positive, i.e. >= 0. */
+    template<typename T>
+    requires jau::req::signed_integral<T>
+    constexpr bool is_positive(const T& a) noexcept {
+        return a >= 0;
+    }
+
+    template<typename T>
+    requires std::floating_point<T>
+    constexpr bool is_positive(const T& a) noexcept {
+        return a >= 0;
+    }
+
+    template<typename T>
+    requires jau::req::unsigned_integral<T>
+    constexpr bool is_positive(const T&) noexcept {
+        return true;
+    }
+
     /** Returns true of the given integer value is zero. */
     template<std::integral T>
     constexpr bool is_zero(const T& a) noexcept {
@@ -433,14 +452,14 @@ namespace jau {
      * @return digit count
      */
     template<std::integral T>
-    constexpr size_t digits10(const T x, const snsize_t x_sign, const bool sign_is_digit = true) noexcept {
+    constexpr nsize_t digits10(const T x, const snsize_t x_sign, const bool sign_is_digit = true) noexcept {
         if ( x_sign == 0 ) {
             return 1;
         }
         if ( x_sign < 0 ) {
-            return 1 + static_cast<size_t>(std::log10<T>(invert_sign<T>(x))) + (sign_is_digit ? 1 : 0);
+            return 1 + static_cast<nsize_t>(std::log10<T>(invert_sign<T>(x))) + (sign_is_digit ? 1 : 0);
         } else {
-            return 1 + static_cast<size_t>(std::log10<T>(x));
+            return 1 + static_cast<nsize_t>(std::log10<T>(x));
         }
     }
 
@@ -459,7 +478,7 @@ namespace jau {
      * @return digit count
      */
     template<std::integral T>
-    constexpr size_t digits10(const T x, const bool sign_is_digit = true) noexcept {
+    constexpr nsize_t digits10(const T x, const bool sign_is_digit = true) noexcept {
         return digits10<T>(x, jau::sign<T>(x), sign_is_digit);
     }
 
@@ -473,7 +492,7 @@ namespace jau {
      * @return digit count
      */
     template<jau::req::unsigned_integral T>
-    constexpr size_t digits(const T x, const nsize_t radix) noexcept {
+    constexpr nsize_t digits(const T x, const nsize_t radix) noexcept {
         if ( x == 0 ) {
             return 1;
         }

@@ -32,6 +32,7 @@
 #include <jau/io/io_util.hpp>
 #include <jau/io/byte_stream.hpp>
 #include <jau/string_util.hpp>
+#include <jau/type_concepts.hpp>
 
 #ifdef USE_LIBCURL
     #include <curl/curl.h>
@@ -261,7 +262,7 @@ static size_t consume_header_curl1(char *buffer, size_t size, size_t nmemb, void
         DBG_PRINT("consume_header_curl1.X realsize %zu, total %" PRIu64 " / ( content_len has %d, size %" PRIu64 " )",
                realsize, cg->total_read, cg->has_content_length, cg->content_length );
         std::string blob(buffer, realsize);
-        jau::PLAIN_PRINT(true, "%s", blob.c_str());
+        PLAIN_PRINT(true, "%s", blob);
     }
 
     return realsize;
@@ -320,17 +321,13 @@ uint64_t jau::io::read_url_stream(const std::string& url,
     if( !uri_tk::protocol_supported(url) ) {
         const std::string_view scheme = uri_tk::get_scheme(url);
         DBG_PRINT("Protocol of given uri-scheme '%s' not supported. Supported protocols [%s].",
-                std::string(scheme).c_str(), jau::to_string(uri_tk::supported_protocols(), ",").c_str());
+                std::string(scheme), jau::to_string(uri_tk::supported_protocols(), ","));
         return 0;
     }
 
     /* init the curl session */
     CURL *curl_handle = curl_easy_init();
     DBG_PRINT("CURL: Create own handle %p", curl_handle);
-    if( nullptr == curl_handle ) {
-        ERR_PRINT("Error setting up url %s, null curl handle", url.c_str());
-        return 0;
-    }
 
     curl_glue1_t cg = { .curl_handle=curl_handle, .has_content_length=false, .content_length=0,
                         .status_code=0, .total_read=0, .buffer=buffer, .consumer_fn=consumer_fn };
@@ -338,7 +335,7 @@ uint64_t jau::io::read_url_stream(const std::string& url,
     res = curl_easy_setopt(curl_handle, CURLOPT_ERRORBUFFER, errorbuffer.data());
     if( CURLE_OK != res ) {
         ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
-                  url.c_str(), (int)res, curl_easy_strerror(res), errorbuffer.data());
+                  url, (int)res, curl_easy_strerror(res), errorbuffer.data());
         goto errout;
     }
 
@@ -346,7 +343,7 @@ uint64_t jau::io::read_url_stream(const std::string& url,
     res = curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str());
     if( CURLE_OK != res ) {
         ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
-                  url.c_str(), (int)res, curl_easy_strerror(res), errorbuffer.data());
+                  url, (int)res, curl_easy_strerror(res), errorbuffer.data());
         goto errout;
     }
 
@@ -355,7 +352,7 @@ uint64_t jau::io::read_url_stream(const std::string& url,
                            jau::environment::getBooleanProperty("jau_io_net_verbose", false) ? 1L : 0L );
     if( CURLE_OK != res ) {
         ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
-                  url.c_str(), (int)res, curl_easy_strerror(res), errorbuffer.data());
+                  url, (int)res, curl_easy_strerror(res), errorbuffer.data());
         goto errout;
     }
 
@@ -363,7 +360,7 @@ uint64_t jau::io::read_url_stream(const std::string& url,
         res = curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYPEER, 0L);
         if( CURLE_OK != res ) {
             ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
-                      url.c_str(), (int)res, curl_easy_strerror(res), errorbuffer.data());
+                      url, (int)res, curl_easy_strerror(res), errorbuffer.data());
             goto errout;
         }
     }
@@ -372,7 +369,7 @@ uint64_t jau::io::read_url_stream(const std::string& url,
     res = curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 1L);
     if( CURLE_OK != res ) {
         ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
-                  url.c_str(), (int)res, curl_easy_strerror(res), errorbuffer.data());
+                  url, (int)res, curl_easy_strerror(res), errorbuffer.data());
         goto errout;
     }
 
@@ -380,7 +377,7 @@ uint64_t jau::io::read_url_stream(const std::string& url,
     res = curl_easy_setopt(curl_handle, CURLOPT_SUPPRESS_CONNECT_HEADERS, 1L);
     if( CURLE_OK != res ) {
         ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
-                  url.c_str(), (int)res, curl_easy_strerror(res), errorbuffer.data());
+                  url, (int)res, curl_easy_strerror(res), errorbuffer.data());
         goto errout;
     }
 
@@ -388,7 +385,7 @@ uint64_t jau::io::read_url_stream(const std::string& url,
     res = curl_easy_setopt(curl_handle, CURLOPT_HEADER, 0L);
     if( CURLE_OK != res ) {
         ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
-                  url.c_str(), (int)res, curl_easy_strerror(res), errorbuffer.data());
+                  url, (int)res, curl_easy_strerror(res), errorbuffer.data());
         goto errout;
     }
 
@@ -396,7 +393,7 @@ uint64_t jau::io::read_url_stream(const std::string& url,
     res = curl_easy_setopt(curl_handle, CURLOPT_HEADERFUNCTION, consume_header_curl1);
     if( CURLE_OK != res ) {
         ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
-                  url.c_str(), (int)res, curl_easy_strerror(res), errorbuffer.data());
+                  url, (int)res, curl_easy_strerror(res), errorbuffer.data());
         goto errout;
     }
 
@@ -404,7 +401,7 @@ uint64_t jau::io::read_url_stream(const std::string& url,
     res = curl_easy_setopt(curl_handle, CURLOPT_HEADERDATA, (void*)&cg);
     if( CURLE_OK != res ) {
         ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
-                  url.c_str(), (int)res, curl_easy_strerror(res), errorbuffer.data());
+                  url, (int)res, curl_easy_strerror(res), errorbuffer.data());
         goto errout;
     }
 
@@ -412,7 +409,7 @@ uint64_t jau::io::read_url_stream(const std::string& url,
     res = curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, consume_data_curl1);
     if( CURLE_OK != res ) {
         ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
-                  url.c_str(), (int)res, curl_easy_strerror(res), errorbuffer.data());
+                  url, (int)res, curl_easy_strerror(res), errorbuffer.data());
         goto errout;
     }
 
@@ -420,7 +417,7 @@ uint64_t jau::io::read_url_stream(const std::string& url,
     res = curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void*)&cg);
     if( CURLE_OK != res ) {
         ERR_PRINT("Error setting up url %s, error %d '%s' '%s'",
-                  url.c_str(), (int)res, curl_easy_strerror(res), errorbuffer.data());
+                  url, (int)res, curl_easy_strerror(res), errorbuffer.data());
         goto errout;
     }
 
@@ -428,7 +425,7 @@ uint64_t jau::io::read_url_stream(const std::string& url,
     res = curl_easy_perform(curl_handle);
     if( CURLE_OK != res ) {
         IRQ_PRINT("Error processing url %s, error %d '%s' '%s'",
-                  url.c_str(), (int)res, curl_easy_strerror(res), errorbuffer.data());
+                  url, (int)res, curl_easy_strerror(res), errorbuffer.data());
         goto errout;
     }
 
@@ -551,8 +548,8 @@ static size_t consume_header_curl2_sync(char *buffer, size_t size, size_t nmemb,
 
     if( io_result_t::NONE != response.result ) {
         // user abort!
-        DBG_PRINT("consume_header_curl2_sync ABORT by User: total %" PRIi64 ", result %d, rb %s",
-                response.total_read, response.result.load() );
+        DBG_PRINT("consume_header_curl2_sync ABORT by User: total %" PRIu64 ", result %s",
+                response.total_read, jau::io::toString(response.result) );
         cg->set_end_of_input();
         return 0;
     }
@@ -590,11 +587,12 @@ static size_t consume_header_curl2_sync(char *buffer, size_t size, size_t nmemb,
     }
 
     if( false ) {
-        DBG_PRINT("consume_header_curl2.X realsize %zu, total %" PRIu64 " / ( content_len has %d, size %" PRIu64 " ), result %d",
-               realsize, response.total_read, response.has_content_length, response.content_length, response.result.load() );
+        DBG_PRINT("consume_header_curl2.X realsize %" PRIu64 ", total %" PRIu64 " / ( content_len has %d, size %" PRIu64 " ), result %s",
+               realsize, response.total_read, response.has_content_length, response.content_length,
+               jau::io::toString(response.result) );
         std::string blob(buffer, realsize);
-        jau::PLAIN_PRINT(true, "%s", jau::toHexString((uint8_t*)buffer, realsize, jau::lb_endian_t::little).c_str());
-        jau::PLAIN_PRINT(true, "%s", blob.c_str());
+        PLAIN_PRINT(true, "%s", jau::toHexString((uint8_t*)buffer, realsize, jau::lb_endian_t::little));
+        PLAIN_PRINT(true, "%s", blob);
     }
 
     return realsize;
@@ -607,8 +605,8 @@ static size_t consume_header_curl2_async(char *buffer, size_t size, size_t nmemb
     if( io_result_t::NONE != response.result ) {
         // user abort!
         const std::string s = cg->buffer ? cg->buffer->toString() : "null";
-        DBG_PRINT("consume_header_curl2 ABORT by User: total %" PRIi64 ", result %d, rb %s",
-                response.total_read.load(), response.result.load(), s.c_str() );
+        DBG_PRINT("consume_header_curl2 ABORT by User: total %" PRIu64 ", result %s, rb %s",
+                response.total_read.load(), jau::io::toString(response.result), s );
         cg->set_end_of_input();
         return 0;
     }
@@ -647,11 +645,12 @@ static size_t consume_header_curl2_async(char *buffer, size_t size, size_t nmemb
 
     if( false ) {
         const std::string s = cg->buffer ? cg->buffer->toString() : "null";
-        DBG_PRINT("consume_header_curl2.X realsize %zu, total %" PRIu64 " / ( content_len has %d, size %" PRIu64 " ), result %d, rb %s",
-               realsize, response.total_read.load(), response.has_content_length.load(), response.content_length.load(), response.result.load(), s.c_str() );
+        DBG_PRINT("consume_header_curl2.X realsize %zu, total %" PRIu64 " / ( content_len has %d, size %" PRIu64 " ), result %s, rb %s",
+               realsize, response.total_read.load(), response.has_content_length.load(), response.content_length.load(),
+               jau::io::toString(response.result), s );
         std::string blob(buffer, realsize);
-        jau::PLAIN_PRINT(true, "%s", jau::toHexString((uint8_t*)buffer, realsize, jau::lb_endian_t::little).c_str());
-        jau::PLAIN_PRINT(true, "%s", blob.c_str());
+        PLAIN_PRINT(true, "%s", jau::toHexString((uint8_t*)buffer, realsize, jau::lb_endian_t::little));
+        PLAIN_PRINT(true, "%s", blob);
     }
 
     return realsize;
@@ -665,8 +664,8 @@ static size_t consume_data_curl2_sync(char *ptr, size_t size, size_t nmemb, void
         // user abort!
         // user abort!
         const std::string s = cg->buffer ? cg->buffer->toString() : "null";
-        DBG_PRINT("consume_data_curl2 ABORT by User: total %" PRIi64 ", result %d, rb %s",
-                response.total_read, response.result.load(), s.c_str() );
+        DBG_PRINT("consume_data_curl2 ABORT by User: total %" PRIu64 ", result %s, rb %s",
+                response.total_read, jau::io::toString(response.result), s );
         cg->set_end_of_input();
         return 0;
     }
@@ -690,14 +689,14 @@ static size_t consume_data_curl2_sync(char *ptr, size_t size, size_t nmemb, void
     const size_t realsize = size * nmemb;
     if( jau::environment::get().debug ) {
         const std::string s = cg->buffer ? cg->buffer->toString() : "null";
-        DBG_PRINT("consume_data_curl2.0 realsize %zu, rb %s", realsize, s.c_str() );
+        DBG_PRINT("consume_data_curl2.0 realsize %zu, rb %s", realsize, s );
     }
     if( cg->buffer ) {
         bool timeout_occured;
         if( !cg->buffer->putBlocking(reinterpret_cast<uint8_t*>(ptr),
                                      reinterpret_cast<uint8_t*>(ptr)+realsize, 0_s, timeout_occured) ) {
-            DBG_PRINT("consume_data_curl2 Failed put: total %" PRIi64 ", result %d, timeout %d, rb %s",
-                    response.total_read, response.result.load(), timeout_occured, cg->buffer->toString().c_str() );
+            DBG_PRINT("consume_data_curl2 Failed put: total %" PRIu64 ", result %s, timeout %d, rb %s",
+                    response.total_read, jau::io::toString(response.result), timeout_occured, cg->buffer->toString() );
             if( timeout_occured ) {
                 cg->set_end_of_input();
             }
@@ -725,8 +724,9 @@ static size_t consume_data_curl2_sync(char *ptr, size_t size, size_t nmemb, void
 
     if( jau::environment::get().debug ) {
         const std::string s = cg->buffer ? cg->buffer->toString() : "null";
-        DBG_PRINT("consume_data_curl2.X realsize %zu, total %" PRIu64 " / ( content_len has %d, size %" PRIu64 " ), is_final %d, result %d, rb %s",
-               realsize, response.total_read, response.has_content_length, response.content_length, is_final, response.result.load(), s.c_str() );
+        DBG_PRINT("consume_data_curl2.X realsize %zu, total %" PRIu64 " / ( content_len has %d, size %" PRIu64 " ), is_final %d, result %s, rb %s",
+               realsize, response.total_read, response.has_content_length, response.content_length, is_final,
+               jau::io::toString(response.result), s );
     }
 
     return realsize;
@@ -739,8 +739,8 @@ static size_t consume_data_curl2_async(char *ptr, size_t size, size_t nmemb, voi
     if( io_result_t::NONE != response.result ) {
         // user abort!
         const std::string s = cg->buffer ? cg->buffer->toString() : "null";
-        DBG_PRINT("consume_data_curl2 ABORT by User: total %" PRIi64 ", result %d, rb %s",
-                response.total_read.load(), response.result.load(), s.c_str() );
+        DBG_PRINT("consume_data_curl2 ABORT by User: total %" PRIu64 ", result %s, rb %s",
+                response.total_read.load(), jau::io::toString(response.result), s );
         cg->set_end_of_input();
         return 0;
     }
@@ -764,14 +764,14 @@ static size_t consume_data_curl2_async(char *ptr, size_t size, size_t nmemb, voi
     const size_t realsize = size * nmemb;
     if( jau::environment::get().debug ) {
         const std::string s = cg->buffer ? cg->buffer->toString() : "null";
-        DBG_PRINT("consume_data_curl2.0 realsize %zu, rb %s", realsize, s.c_str() );
+        DBG_PRINT("consume_data_curl2.0 realsize %zu, rb %s", realsize, s );
     }
     if( cg->buffer ) {
         bool timeout_occured;
         if( !cg->buffer->putBlocking(reinterpret_cast<uint8_t*>(ptr),
                                      reinterpret_cast<uint8_t*>(ptr)+realsize, 0_s, timeout_occured) ) {
-            DBG_PRINT("consume_data_curl2 Failed put: total %" PRIi64 ", result %d, timeout %d, rb %s",
-                    response.total_read.load(), response.result.load(), timeout_occured, cg->buffer->toString().c_str() );
+            DBG_PRINT("consume_data_curl2 Failed put: total %" PRIu64 ", result %s, timeout %d, rb %s",
+                    response.total_read.load(), jau::io::toString(response.result), timeout_occured, cg->buffer->toString() );
             if( timeout_occured ) {
                 cg->set_end_of_input();
             }
@@ -799,8 +799,9 @@ static size_t consume_data_curl2_async(char *ptr, size_t size, size_t nmemb, voi
 
     if( jau::environment::get().debug ) {
         const std::string s = cg->buffer ? cg->buffer->toString() : "null";
-        DBG_PRINT("consume_data_curl2.X realsize %zu, total %" PRIu64 " / ( content_len has %d, size %" PRIu64 " ), is_final %d, result %d, rb %s",
-               realsize, response.total_read.load(), response.has_content_length.load(), response.content_length.load(), is_final, response.result.load(), s.c_str() );
+        DBG_PRINT("consume_data_curl2.X realsize %zu, total %" PRIu64 " / ( content_len has %d, size %" PRIu64 " ), is_final %d, result %s, rb %s",
+               realsize, response.total_read.load(), response.has_content_length.load(), response.content_length.load(), is_final,
+               jau::io::toString(response.result), s );
     }
 
     return realsize;
@@ -1107,7 +1108,7 @@ SyncStreamResponseRef jau::io::read_url_stream_sync(net_tk_handle handle, const 
         // buffer.set_end_of_input(true);
         const std::string_view scheme = uri_tk::get_scheme(url);
         DBG_PRINT("Protocol of given uri-scheme '%s' not supported. Supported protocols [%s].",
-                std::string(scheme).c_str(), jau::to_string(uri_tk::supported_protocols(), ",").c_str());
+                std::string(scheme), jau::to_string(uri_tk::supported_protocols(), ","));
         return res;
 #ifdef USE_LIBCURL
     }
@@ -1134,7 +1135,7 @@ AsyncStreamResponseRef jau::io::read_url_stream_async(net_tk_handle handle, cons
         // buffer.set_end_of_input(true);
         const std::string_view scheme = uri_tk::get_scheme(url);
         DBG_PRINT("Protocol of given uri-scheme '%s' not supported. Supported protocols [%s].",
-                std::string(scheme).c_str(), jau::to_string(uri_tk::supported_protocols(), ",").c_str());
+                std::string(scheme), jau::to_string(uri_tk::supported_protocols(), ","));
         return res;
 #ifdef USE_LIBCURL
     }
@@ -1148,35 +1149,35 @@ AsyncStreamResponseRef jau::io::read_url_stream_async(net_tk_handle handle, cons
 }
 
 void jau::io::print_stats(const std::string& prefix, const uint64_t& out_bytes_total, const jau::fraction_i64& td) noexcept {
-    jau::PLAIN_PRINT(true, "%s: Duration %s s, %s ms", prefix.c_str(),
-            td.toString().c_str(), jau::to_decstring(td.to_ms()).c_str());
+    PLAIN_PRINT(true, "%s: Duration %s s, %s ms", prefix,
+            td.toString(), jau::to_decstring(td.to_ms()));
 
     if( out_bytes_total >= 100'000'000 ) {
-        jau::PLAIN_PRINT(true, "%s: Size %s MB", prefix.c_str(),
-                jau::to_decstring(std::llround((double)out_bytes_total/1'000'000.0)).c_str());
+        PLAIN_PRINT(true, "%s: Size %s MB", prefix,
+                jau::to_decstring(std::llround((double)out_bytes_total/1'000'000.0)));
     } else if( out_bytes_total >= 100'000 ) {
-        jau::PLAIN_PRINT(true, "%s: Size %s KB", prefix.c_str(),
-                jau::to_decstring(std::llround((double)out_bytes_total/1'000.0)).c_str());
+        PLAIN_PRINT(true, "%s: Size %s KB", prefix,
+                jau::to_decstring(std::llround((double)out_bytes_total/1'000.0)));
     } else {
-        jau::PLAIN_PRINT(true, "%s: Size %s B", prefix.c_str(),
-                jau::to_decstring(out_bytes_total).c_str());
+        PLAIN_PRINT(true, "%s: Size %s B", prefix,
+                jau::to_decstring(out_bytes_total));
     }
 
     const uint64_t _rate_bps = std::llround( (double)out_bytes_total / td.to_double() ); // bytes per second
     const uint64_t _rate_bitps = std::llround( ( (double)out_bytes_total * 8.0 ) / td.to_double() ); // bits per second
 
     if( _rate_bitps >= 100'000'000 ) {
-        jau::PLAIN_PRINT(true, "%s: Bitrate %s Mbit/s, %s MB/s", prefix.c_str(),
-                jau::to_decstring(std::llround((double)_rate_bitps/1'000'000.0)).c_str(),
-                jau::to_decstring(std::llround((double)_rate_bps/1'000'000.0)).c_str());
+        PLAIN_PRINT(true, "%s: Bitrate %s Mbit/s, %s MB/s", prefix,
+                jau::to_decstring(std::llround((double)_rate_bitps/1'000'000.0)),
+                jau::to_decstring(std::llround((double)_rate_bps/1'000'000.0)));
     } else if( _rate_bitps >= 100'000 ) {
-        jau::PLAIN_PRINT(true, "%s: Bitrate %s kbit/s, %s kB/s", prefix.c_str(),
-                jau::to_decstring(std::llround((double)_rate_bitps/1'000.0)).c_str(),
-                jau::to_decstring(std::llround((double)_rate_bps/1'000.0)).c_str());
+        PLAIN_PRINT(true, "%s: Bitrate %s kbit/s, %s kB/s", prefix,
+                jau::to_decstring(std::llround((double)_rate_bitps/1'000.0)),
+                jau::to_decstring(std::llround((double)_rate_bps/1'000.0)));
     } else {
-        jau::PLAIN_PRINT(true, "%s: Bitrate %s bit/s, %s B/s", prefix.c_str(),
-                jau::to_decstring(_rate_bitps).c_str(),
-                jau::to_decstring(_rate_bps).c_str());
+        PLAIN_PRINT(true, "%s: Bitrate %s bit/s, %s B/s", prefix,
+                jau::to_decstring(_rate_bitps),
+                jau::to_decstring(_rate_bps));
     }
 }
 

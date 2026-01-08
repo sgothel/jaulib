@@ -293,8 +293,8 @@ namespace jau::os {
         const char* lookupLibraryPathname(libhandle_t handle, const std::string& symbolName) noexcept {
             const char* fname = lookupLibraryPathnameImpl(handle, symbolName);
             if(DEBUG_LOOKUP) {
-                jau::INFO_PRINT("DynamicLinkerImpl.lookupLibraryPathname(%s, %s) -> '%s'",
-                        jau::toHexString(handle).c_str(), symbolName.c_str(), nullptr != fname ? fname : "null");
+                INFO_PRINT("DynamicLinkerImpl.lookupLibraryPathname(%s, %s) -> '%s'",
+                        jau::toHexString(handle), symbolName, nullptr != fname ? fname : "null");
             }
             return fname;
         }
@@ -306,8 +306,8 @@ namespace jau::os {
         symhandle_t lookupSymbolGlobal(const std::string& symbolName) noexcept {
             symhandle_t addr = lookupSymbolGlobalImpl(symbolName);
             if(DEBUG_LOOKUP) {
-                jau::INFO_PRINT("DynamicLinkerImpl.lookupSymbolGlobal(%s) -> %s",
-                        symbolName.c_str(), jau::toHexString(addr).c_str());
+                INFO_PRINT("DynamicLinkerImpl.lookupSymbolGlobal(%s) -> %s",
+                        symbolName, jau::toHexString(addr));
             }
             return addr;
         }
@@ -320,8 +320,8 @@ namespace jau::os {
         symhandle_t lookupSymbol(libhandle_t handle, const std::string& symbolName) noexcept {
             symhandle_t addr = lookupSymbolLocalImpl(handle, symbolName);
             if(DEBUG_LOOKUP) {
-                jau::INFO_PRINT("DynamicLinkerImpl.lookupSymbol(%s, %s) -> %s",
-                        jau::toHexString(handle).c_str(), symbolName.c_str(), jau::toHexString(addr).c_str());
+                INFO_PRINT("DynamicLinkerImpl.lookupSymbol(%s, %s) -> %s",
+                        jau::toHexString(handle), symbolName, jau::toHexString(addr));
             }
             return addr;
         }

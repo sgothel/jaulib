@@ -269,7 +269,7 @@ fraction_timespec fraction_timespec::from(const std::string &datestr, int64_t &u
             return fraction_timespec::from(y, M, d, h, m, s, ns);
         }
     } catch ( ... ) {
-        ERR_PRINT2("Caught unknown exception parsing %s", datestr.c_str());
+        ERR_PRINT2("Caught unknown exception parsing %s", datestr);
     }
     return fraction_timespec();  // error
 }
@@ -549,6 +549,120 @@ uint128dp_t jau::merge_uint128(uint32_t const uuid32, uint128dp_t const &base_uu
     return dest;
 }
 
+std::string jau::unsafe::vformat_string_n(const std::size_t maxStrLen, const char* format, va_list args) noexcept {
+    std::exception_ptr eptr;
+    std::string str;
+    try {
+        str.reserve(maxStrLen + 1);  // incl. EOS
+        str.resize(maxStrLen);       // excl. EOS
+
+        // -Wformat=2 -> -Wformat -Wformat-nonliteral -Wformat-security -Wformat-y2k
+        // -Wformat=2 -Wformat-overflow=2 -Wformat-signedness
+        PRAGMA_DISABLE_WARNING_PUSH
+        PRAGMA_DISABLE_WARNING_FORMAT_NONLITERAL
+        PRAGMA_DISABLE_WARNING_FORMAT_SECURITY
+        const size_t nchars = std::vsnprintf(&str[0], maxStrLen + 1, format, args); // NOLINT: clang-tidy bug
+        PRAGMA_DISABLE_WARNING_POP
+
+        if ( nchars < maxStrLen + 1 ) {
+            str.resize(nchars);
+            str.shrink_to_fit();
+        }  // else truncated w/ nchars > MaxStrLen
+    } catch (...) {
+        eptr = std::current_exception();
+    }
+    handle_exception(eptr);
+    return str;
+}
+
+std::string jau::unsafe::format_string_n(const std::size_t maxStrLen, const char* format, ...) noexcept {
+    va_list args;
+    va_start (args, format);
+    std::string str = vformat_string_n(maxStrLen, format, args);
+    va_end (args);
+    return str;
+}
+
+std::string jau::unsafe::vformat_string_h(const std::size_t strLenHint, const char* format, va_list args) noexcept {
+    std::exception_ptr eptr;
+    size_t nchars;
+    size_t bsz = strLenHint + 1;  // including EOS
+    std::string str;
+    try {
+        str.reserve(bsz);  // incl. EOS
+        str.resize(bsz-1); // excl. EOS
+
+        PRAGMA_DISABLE_WARNING_PUSH
+        PRAGMA_DISABLE_WARNING_FORMAT_NONLITERAL
+        PRAGMA_DISABLE_WARNING_FORMAT_SECURITY
+        nchars = std::vsnprintf(&str[0], bsz, format, args); // NOLINT: clang-tidy bug
+        PRAGMA_DISABLE_WARNING_POP
+
+        if( nchars < bsz ) {
+            str.resize(nchars);
+            str.shrink_to_fit();
+        } else {
+            bsz = std::min<size_t>(nchars+1, str.max_size()+1); // limit incl. EOS
+            str.reserve(bsz);  // incl. EOS
+            str.resize(bsz-1); // excl. EOS
+
+            PRAGMA_DISABLE_WARNING_PUSH
+            PRAGMA_DISABLE_WARNING_FORMAT_NONLITERAL
+            PRAGMA_DISABLE_WARNING_FORMAT_SECURITY
+            nchars = std::vsnprintf(&str[0], bsz, format, args); // NOLINT: clang-tidy bug
+            PRAGMA_DISABLE_WARNING_POP
+
+            str.resize(nchars);
+        }
+    } catch (...) {
+        eptr = std::current_exception();
+    }
+    handle_exception(eptr);
+    return str;
+}
+
+std::string jau::unsafe::format_string_h(const std::size_t strLenHint, const char* format, ...) noexcept {
+    va_list args;
+    va_start (args, format);
+    std::string str = vformat_string_h(strLenHint, format, args);
+    va_end (args);
+    return str;
+}
+
+std::string jau::unsafe::format_string(const char* format, ...) noexcept {
+    va_list args;
+    va_start (args, format);
+    std::string str = vformat_string_h(jau::cfmt::default_string_capacity, format, args);
+    va_end (args);
+    return str;
+}
+
+void jau::unsafe::errPrint(FILE *out, const char *msg, bool addErrno, bool addBacktrace, const char *func, const char *file, const int line,
+                           const char* format, ...) noexcept
+{
+    va_list args;
+    va_start (args, format);
+    std::exception_ptr eptr;
+    try {
+        ::fprintf(out, "%s @ %s:%d %s: ", msg, file, line, func);
+        ::fputs(vformat_string_h(jau::cfmt::default_string_capacity, format, args).c_str(), out);
+        if( addErrno ) {
+            ::fprintf(stderr, "; last errno %d %s", errno, strerror(errno));
+        }
+        fputs("\n", out);
+        if( addBacktrace ) {
+            ::fprintf(stderr, "%s", jau::get_backtrace(true /* skip_anon_frames */, 4 /* max_frames */, 2 /* skip_frames: this() + get_b*() */).c_str());
+        }
+        if( addErrno || addBacktrace ) {
+            ::fflush(stderr);
+        }
+    } catch (...) {
+        eptr = std::current_exception();
+    }
+    handle_exception(eptr);
+    va_end (args);
+}
+
 static snsize_t hexCharByte_(const uint8_t c) {
     if ( '0' <= c && c <= '9' ) {
         return c - '0';
@@ -759,11 +873,9 @@ UInt64SizeBoolTuple jau::fromBitString(std::string_view const bitstr, const bit_
     return { .v = result, .s = consumed, .b = complete };
 }
 
-static constexpr const char *HEX_ARRAY_BIG = "0123456789ABCDEF";
-
 std::string jau::toHexString(const void *data, const nsize_t length,
                              const lb_endian_t byteOrder, const LoUpCase capitalization, const PrefixOpt prefix) noexcept {
-    const char *hex_array = LoUpCase::lower == capitalization ? HexadecimalArray : HEX_ARRAY_BIG;
+    const char *hex_array = LoUpCase::lower == capitalization ? HexadecimalArrayLow : HexadecimalArrayBig;
     std::string str;
 
     if ( nullptr == data ) {
@@ -807,7 +919,7 @@ std::string jau::toHexString(const void *data, const nsize_t length,
 }
 
 std::string &jau::appendToHexString(std::string &dest, const uint8_t value, const LoUpCase capitalization) noexcept {
-    const char *hex_array = LoUpCase::lower == capitalization ? HexadecimalArray : HEX_ARRAY_BIG;
+    const char *hex_array = LoUpCase::lower == capitalization ? HexadecimalArrayLow : HexadecimalArrayBig;
 
     if ( 2 > dest.capacity() - dest.size() ) {  // Until C++20, then reserve is ignored if capacity > reserve
         dest.reserve(dest.size() + 2);
@@ -889,10 +1001,6 @@ std::string jau::to_string(const lb_endian_t v) noexcept {
     return v == lb_endian_t::little ? "little" : "big";
 }
 
-std::string jau::to_string(const bit_order_t v) noexcept {
-    return v == bit_order_t::lsb ? "lsb" : "msb";
-}
-
 std::string jau::to_string(const jau::func::target_type v) noexcept {
     switch(v) {
         case jau::func::target_type::null:  return "null";
@@ -907,7 +1015,7 @@ std::string jau::to_string(const jau::func::target_type v) noexcept {
     return "undef";
 }
 
-Int64SizeBoolTuple jau::to_integer(const char *str, size_t str_len, const jau::nsize_t radix, const char limiter, const char *limiter_pos) {
+Int64SizeBoolTuple jau::to_integer(const char *str, size_t str_len, const jau::nsize_t radix, const char limiter, const char *limiter_pos) noexcept {
     int64_t result = 0;
     size_t consumed = 0;
     bool complete = false;
@@ -921,14 +1029,14 @@ Int64SizeBoolTuple jau::to_integer(const char *str, size_t str_len, const jau::n
     if ( 0 != errno ) {
         // value under- or overflow occured
         if constexpr ( _debug ) {
-            INFO_PRINT("Value under- or overflow occurred, value %lld in: '%s', errno %d %s", num, str, errno, strerror(errno));
+            INFO_PRINT("Value under- or overflow occurred, value %lld in: '%s', errno %d %s", num, str, (int)errno, strerror(errno));
         }
         return { .v = result, .s = consumed, .b = complete };
     }
     if ( nullptr == endptr || endptr == str ) {
         // no digits consumed
         if constexpr ( _debug ) {
-            INFO_PRINT("Value no digits consumed @ idx %d, %p == start, in: '%s'", endptr - str, endptr, str);
+            INFO_PRINT("Value no digits consumed @ idx %zd, %p == start, in: '%s'", endptr - str, endptr, str);
         }
         return { .v = result, .s = consumed, .b = complete };
     }
@@ -944,7 +1052,7 @@ Int64SizeBoolTuple jau::to_integer(const char *str, size_t str_len, const jau::n
     } else {
         // numerator value not completely valid
         if constexpr ( _debug ) {
-            INFO_PRINT("Value end not '%c' @ idx %d, %p != %p, in: %p '%s' len %zd", limiter, endptr - str, endptr, limiter_pos, str, str, str_len);
+            INFO_PRINT("Value end not '%c' @ idx %zd, %p != %p, in: %p '%s' len %zu", limiter, endptr - str, endptr, limiter_pos, str, str, str_len);
         }
     }
     return { .v = result, .s = consumed, .b = complete };
@@ -981,7 +1089,7 @@ FracI64SizeBoolTuple jau::to_fraction_i64(const std::string &value, const fracti
     if ( !(min_allowed <= temp && temp <= max_allowed) ) {
         // invalid user value range
         if constexpr ( _debug ) {
-            INFO_PRINT("Numerator out of range, not %s <= %s <= %s, in: '%s'", min_allowed.toString().c_str(), temp.toString().c_str(), max_allowed.toString().c_str(), str);
+            INFO_PRINT("Numerator out of range, not %s <= %s <= %s, in: '%s'", min_allowed.toString(), temp.toString(), max_allowed.toString(), str);
         }
         return { .v = result, .s = consumed, .b = false };
     }

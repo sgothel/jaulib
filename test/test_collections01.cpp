@@ -49,11 +49,11 @@ TEST_CASE( "StringHashMapWrap Test 00", "[hashmap][string][StringHashMapWrap]" )
         REQUIRE( 2 == map.size() );
         REQUIRE( 3 == map.get(two2) );
 
-        REQUIRE( 3 == map.put2(two2, 4) );
+        REQUIRE( 3 == map.put3(two2, 4) );
         REQUIRE( 2 == map.size() );
         REQUIRE( 4 == map.get(two2) );
 
-        REQUIRE( -1 == map.put2("new", 100) );
+        REQUIRE( -1 == map.put3("new", 100) );
         REQUIRE(  3 == map.size() );
         REQUIRE(100 == map.get("new") );
 
@@ -78,6 +78,20 @@ TEST_CASE( "StringHashMapWrap Test 00", "[hashmap][string][StringHashMapWrap]" )
         REQUIRE( 3 == map.get(two2) );
         REQUIRE( false == map.replace("new", 1) );
         REQUIRE( 2 == map.size() );
+
+        {
+            const int v = 42;
+            int &i2_0 = map.put2("i2", v);
+            int &i2_1 = map.get("i2");
+            const int &i2_2 = map.get("i2");
+            REQUIRE( v == i2_0 );
+            REQUIRE( v == i2_1 );
+            REQUIRE( v == i2_2 );
+            REQUIRE( &i2_0 != &v );
+            REQUIRE( &i2_0 == &i2_1 );
+            REQUIRE( &i2_0 == &i2_2 );
+            REQUIRE( 3 == map.size() );
+        }
 
         map.clear();
         REQUIRE( 0 == map.size() );
@@ -106,11 +120,11 @@ TEST_CASE( "StringViewHashMapWrap Test 00", "[hashmap][string_view][StringViewHa
         REQUIRE( 2 == map.size() );
         REQUIRE( 3 == map.get(two) );
 
-        REQUIRE( 3 == map.put2(two, 4) );
+        REQUIRE( 3 == map.put3(two, 4) );
         REQUIRE( 2 == map.size() );
         REQUIRE( 4 == map.get(two) );
 
-        REQUIRE( -1 == map.put2("new", 100) );
+        REQUIRE( -1 == map.put3("new", 100) );
         REQUIRE(  3 == map.size() );
         REQUIRE(100 == map.get("new") );
 
@@ -135,6 +149,21 @@ TEST_CASE( "StringViewHashMapWrap Test 00", "[hashmap][string_view][StringViewHa
         REQUIRE( 3 == map.get(two) );
         REQUIRE( false == map.replace("new", 1) );
         REQUIRE( 2 == map.size() );
+
+        {
+            const int v = 42;
+            const std::string_view i2_k = "i2";
+            int &i2_0 = map.put2(i2_k, v);
+            int &i2_1 = map.get(i2_k);
+            const int &i2_2 = map.get(i2_k);
+            REQUIRE( v == i2_0 );
+            REQUIRE( v == i2_1 );
+            REQUIRE( v == i2_2 );
+            REQUIRE( &i2_0 != &v );
+            REQUIRE( &i2_0 == &i2_1 );
+            REQUIRE( &i2_0 == &i2_2 );
+            REQUIRE( 3 == map.size() );
+        }
 
         map.clear();
         REQUIRE( 0 == map.size() );
@@ -171,11 +200,11 @@ TEST_CASE( "StringViewHashMapWrap Test 00", "[hashmap][string_view][StringViewHa
         REQUIRE( 2 == map.size() );
         REQUIRE( 3 == map.get(two2) );
 
-        REQUIRE( 3 == map.put2(two2, 4) );
+        REQUIRE( 3 == map.put3(two2, 4) );
         REQUIRE( 2 == map.size() );
         REQUIRE( 4 == map.get(two2) );
 
-        REQUIRE( -1 == map.put2("new", 100) );
+        REQUIRE( -1 == map.put3("new", 100) );
         REQUIRE(  3 == map.size() );
         REQUIRE(100 == map.get("new") );
 

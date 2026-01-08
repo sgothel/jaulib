@@ -112,7 +112,7 @@ int main( int argc, char* argv[] )
   argv_2.reserve(argc+extra_args_c);
 
   for(int i=0; i<argc; i++) {
-      if( 0 == strcmp("--perf_analysis", argv[i]) ) {
+      if( 0 == strcmp("--perf-analysis", argv[i]) ) {
           catch_perf_analysis = true;
       } else {
           argv_2.push_back(argv[i]);
@@ -121,7 +121,7 @@ int main( int argc, char* argv[] )
   for(int i=0; i<extra_args_c; i++) {
       argv_2.push_back(extra_args[i]);
   }
-  fprintf(stderr, "argc %d -> %zu, auto_run %d, perf_analysis %d\n",
+  fprintf(stderr, "argc %d -> %zu, auto_run %d, perf-analysis %d\n",
           argc, argv_2.size(), catch_auto_run, catch_perf_analysis);
   for(size_t i=0; i<argv_2.size(); ++i) {
       printf("[%zu] %s\n", i, argv_2[i]);
