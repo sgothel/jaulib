@@ -35,64 +35,7 @@
 
 #include <jau/cpp_pragma.hpp>
 
-/**
- * @anchor jau_cfmt_header
- * ## `snprintf` argument type checker `jau::cfmt`
- *
- * ### Features
- * - jau::cfmt::check() provides strict type matching of arguments against the format string.
- * - Have jau::cfmt::check() to be passed _before_ using std::snprintf(),
- *   removing safety concerns of the latter and benefit from its formatting and performance.
- * - Follows [C++ Reference](https://en.cppreference.com/w/cpp/io/c/fprintf)
- *
- * ### Type Conversion
- * Implementation follows type conversion rules as described
- * in [Variadic Default Conversion](https://en.cppreference.com/w/cpp/language/variadic_arguments#Default_conversions)
- *   - float to double promotion
- *   - bool, char, short, and unscoped enumerations are converted to int or wider integer types
- * as well as in [va_arg](https://en.cppreference.com/w/cpp/utility/variadic/va_arg)
- *   - ignore signed/unsigned type differences for integral types
- *   - void pointer tolerance
- *
- * ### Implementation Details
- * - Validates arguments against format string at compile time or runtime,
- *   depending whether passed arguments are of constexpr nature (compile time).
- * - Written in C++20 using template argument pack w/ save argument type checks
- * - Written as constexpr, capable to be utilized at compile-time.
- *
- * #### Supported Conversion Specifiers and Data Types
- *
- * The following conversion specifiers are supported:
- * - `c`, `s`, `d`, `o`, `x`, `X`, `u`, `f`, `e`, `E`, `a`, `A`, `g`, `G`, `p`
- * - Their synonyms
- *   - `i` -> `d`
- *   - `F` -> `f`
- * - Flags `-`, `+`, ` `, `0` and `#`
- * - Asterisk `*` for field width and precision
- *
- * The following length modifiers are supported where allowed
- * - `hh` [unsigned] char
- * - `h` [unsigned] short
- * - `l` [unsigned] long
- * - `ll` [unsigned] long long
- * - 'j' uintmax_t or intmax_t
- * - 'z' size_t or ssize_t
- * - 't' ptrdiff_t
- * - 'L' long double
- *
- * See [C++ Reference](https://en.cppreference.com/w/cpp/io/c/fprintf) for details.
- *
- * ### Further Documentation
- * - [C++ Reference](https://en.cppreference.com/w/cpp/io/c/fprintf)
- * - [Linux snprintf(3) man page](https://www.man7.org/linux/man-pages/man3/snprintf.3p.html)
- * - [FreeBSD snprintf(3) man page](https://man.freebsd.org/cgi/man.cgi?snprintf(3))
- */
 namespace jau::cfmt2 {
-
-    /** \addtogroup StringUtils
-     *
-     *  @{
-     */
 
     enum class pstate_t {
         error,
@@ -786,8 +729,6 @@ namespace jau::cfmt2 {
     constexpr const PResult checkR2(const std::string_view fmt) noexcept {
         return impl::checkRec<Targs...>( PResult(fmt) );
     }
-
-    /**@}*/
 
 } // namespace jau::cfmt2
 
