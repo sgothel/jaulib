@@ -49,11 +49,11 @@ static void printFormat(int line, const char *fmt, const Args &...args) {
     // std::string exp = jau::unsafe::format_string(fmt, args...);
     // std::string has = jau::format_string(fmt, args...);
     std::string has;
-    jau::cfmt::SFormatResult r = jau::cfmt::formatR(has, fmt, args...);
+    jau::cfmt::Result r = jau::cfmt::formatR(has, fmt, args...);
     std::cerr << "FormatResult @ " << line << ": " << r << "\n";
     std::cerr << "FormatResult @ " << line << ": has `" << has << "`\n\n";
-    CHECK( false == r.error());
-    CHECK( sizeof...(args) == r.arg_count);
+    CHECK( true == r.success());
+    CHECK( sizeof...(args) == r.argumentCount());
 }
 
 TEST_CASE("format: std::cfmt footprint", "[jau][std::string][jau::cfmt][footprint]") {

@@ -490,15 +490,64 @@ namespace jau::cfmt {
         }
     };
 
-    template<typename T>
-    concept OutputType = requires(T t) {
-        { t.maxLen() }      -> std::same_as<size_t>;
-        // { t.fits(size_t) }  -> std::same_as<bool>;
+    class Result {
+      private:
+        std::string_view m_fmt;
+        FormatOpts m_opts;
+        size_t m_pos;        ///< position of next fmt character to be read
+        ssize_t m_arg_count;
+        int m_line;
+        bool m_success; ///< true if operation was successful, otherwise indicates error
 
-        { t.get() }        -> std::same_as<std::string_view>;
+      public:
+        constexpr Result(std::string_view f, FormatOpts o, size_t pos, ssize_t acount, int line, bool ok)
+        : m_fmt(f), m_opts(o), m_pos(pos), m_arg_count(acount), m_line(line), m_success(ok) {}
+
+        /// true if operation was successful, otherwise indicates error
+        constexpr bool success() const noexcept { return m_success; }
+
+        /// Arguments processed
+        constexpr ssize_t argumentCount() const noexcept { return m_arg_count; }
+
+        /// format string_view
+        constexpr const std::string_view& fmt() const noexcept { return m_fmt; }
+
+        /// Last argument FormatOpts (error analysis)
+        constexpr const FormatOpts& opts() const noexcept { return m_opts; }
+        /// Position of next fmt character to be read (error analysis)
+        constexpr size_t pos() const noexcept { return m_pos; }
+        /// error line of implementation source code or zero if success (error analysis)
+        constexpr int errorLine() const noexcept { return m_line; }
+
+        std::string toString() const {
+            const char c = m_pos < m_fmt.length() ? m_fmt[m_pos] : '@';
+            std::string s = "args ";
+            s.append(std::to_string(m_arg_count))
+            .append(", ok ")
+            .append(jau::to_string(m_success))
+            .append(", line ")
+            .append(std::to_string(m_line))
+            .append(", pos ")
+            .append(std::to_string(m_pos))
+            .append(", char `")
+            .append(std::string(1, c))
+            .append("`, last[").append(m_opts.toString())
+            .append("], fmt `").append(m_fmt)
+            .append("`");
+            return s;
+        }
     };
 
+    inline std::ostream &operator<<(std::ostream &out, const Result &pc) {
+        out << pc.toString();
+        return out;
+    }
+
     namespace impl {
+        inline constexpr const size_t float_charbuf_maxlen = 32;
+        inline constexpr const size_t default_float_precision = 6;
+        inline constexpr const double_t max_append_float = (double_t)1e9;
+
         inline void append_rev(std::string &dest, const size_t dest_maxlen, std::string_view src, bool prec_cut, bool reverse, const FormatOpts &opts) noexcept
         {
             if (!dest_maxlen) {
@@ -751,10 +800,6 @@ namespace jau::cfmt {
 
             *(dest.data()+dest_len) = 0; // EOS (is reserved)
         }
-
-        inline constexpr const size_t float_charbuf_maxlen = 32;
-        inline constexpr const size_t default_float_precision = 6;
-        inline constexpr const double_t max_append_float = (double_t)1e9;
 
         // check for NaN and special values
         template<std::floating_point value_type>
@@ -1183,286 +1228,295 @@ namespace jau::cfmt {
             append_rev(dest, dest_maxlen, std::string_view(d_start, d-d_start), false /*prec*/, true /*rev**/, opts);
         }
 
-    }  // namespace impl
-
-    /// A null OutputType for `constexpr` and `consteval` formatting dropping all output
-    class NullOutput {
-      public:
-        constexpr NullOutput() noexcept = default;
-
-        constexpr size_t maxLen() const noexcept { return 0; }
-        constexpr bool fits(size_t) const noexcept { return false; }
-
-        std::string_view get() const noexcept { return "(nil)"; }
-
         template<typename T>
-        requires jau::req::stringifyable_jau<T>
-        constexpr void appendFormatted(const FormatOpts&, const T&) noexcept { }
+        concept OutputType = requires(T t) {
+            { t.maxLen() }      -> std::same_as<size_t>;
+            // { t.fits(size_t) }  -> std::same_as<bool>;
 
-        constexpr void appendText(std::string_view ) noexcept { }
-        constexpr void appendError(size_t, int , const std::string_view ) noexcept {}
-    };
+            { t.get() }        -> std::same_as<std::string_view>;
+        };
 
-    /// A std::string OutputType for runtime formatting into a std::string
-    class StringOutput {
-      private:
-        std::size_t m_maxLen;
-        std::string &m_s;
+        /// A null OutputType for `constexpr` and `consteval` formatting dropping all output
+        class NullOutput {
+          public:
+            constexpr NullOutput() noexcept = default;
 
-      public:
-        StringOutput(std::size_t maxLen, std::string &s) noexcept : m_maxLen(maxLen), m_s(s) {}
+            constexpr size_t maxLen() const noexcept { return 0; }
+            constexpr bool fits(size_t) const noexcept { return false; }
 
-        constexpr size_t maxLen() const noexcept { return m_maxLen; }
-        constexpr bool fits(size_t n) const noexcept { return 0 < m_maxLen && n <= m_maxLen - m_s.size(); }
+            std::string_view get() const noexcept { return "(nil)"; }
 
-        std::string_view get() const noexcept { return m_s; }
+            template<typename T>
+            requires jau::req::stringifyable_jau<T>
+            constexpr void appendFormatted(const FormatOpts&, const T&) noexcept { }
 
-        template<typename T>
-        requires jau::req::string_literal<T> || jau::req::string_class<T>
-        inline void appendFormatted(const FormatOpts& opts, const T& v) noexcept {
-            std::exception_ptr eptr;
-            try {
-                impl::append_string(m_s, m_maxLen, v, opts);
-            } catch (...) {
-                eptr = std::current_exception();
-            }
-            handle_exception(eptr);
-        }
-        template<typename T>
-        requires jau::req::char_pointer<T>
-        inline void appendFormatted(const FormatOpts& opts, const T& v) noexcept {
-            std::exception_ptr eptr;
-            try {
-                if( nullptr != v ) {
-                    impl::append_string(m_s, m_maxLen, v, opts);
-                } else {
-                    impl::append_string(m_s, m_maxLen, "(null)", opts);
-                }
-            } catch (...) {
-                eptr = std::current_exception();
-            }
-            handle_exception(eptr);
-        }
-        template<typename T>
-        requires jau::req::boolean<T>
-        inline void appendFormatted(const FormatOpts& opts, const T& v) noexcept {
-            std::exception_ptr eptr;
-            try {
-                impl::append_string(m_s, m_maxLen, jau::to_string(v), opts);
-            } catch (...) {
-                eptr = std::current_exception();
-            }
-            handle_exception(eptr);
-        }
-        template<typename T>
-        requires jau::req::pointer<T> && (!jau::req::string_alike<T>)
-        inline void appendFormatted(const FormatOpts& opts, const T& v) noexcept {
-            std::exception_ptr eptr;
-            try {
-                if( nullptr != v ) {
-                    const uintptr_t v_le = jau::cpu_to_le(reinterpret_cast<uintptr_t>(v));
-                    impl::append_integral(m_s, m_maxLen, v_le, opts);
-                } else {
-                    impl::append_string(m_s, m_maxLen, "(nil)", opts);
-                }
-            } catch (...) {
-                eptr = std::current_exception();
-            }
-            handle_exception(eptr);
-        }
-        template<typename T>
-        requires std::is_integral_v<T> && (!jau::req::boolean<T>)
-        inline void appendFormatted(const FormatOpts& opts, const T& v) noexcept {
-            std::exception_ptr eptr;
-            try {
-                impl::append_integral(m_s, m_maxLen, v, opts);
-            } catch (...) {
-                eptr = std::current_exception();
-            }
-            handle_exception(eptr);
-        }
-        template<typename T>
-        requires std::is_floating_point_v<T>
-        inline void appendFormatted(const FormatOpts& opts, const T& v) noexcept {
-            std::exception_ptr eptr;
-            try {
-                if( opts.conversion == cspec_t::floating_point ) {
-                    impl::append_float(m_s, m_maxLen, v, opts);
-                } else if( opts.conversion == cspec_t::hex_float ) {
-                    impl::append_afloat(m_s, m_maxLen, v, opts);
-                } else {
-                    // cspec_t::exp_float, cspec_t::alt_float
-                    impl::append_efloat(m_s, m_maxLen, v, opts);
-                }
-            } catch (...) {
-                eptr = std::current_exception();
-            }
-            handle_exception(eptr);
-        }
-        inline void appendText(const std::string_view v) noexcept {
-            if( fits(v.size()) ) {
+            constexpr void appendText(std::string_view ) noexcept { }
+            constexpr void appendError(size_t, int , const std::string_view ) noexcept {}
+        };
+
+        /// A std::string OutputType for runtime formatting into a std::string
+        class StringOutput {
+          private:
+            std::size_t m_maxLen;
+            std::string &m_s;
+
+          public:
+            StringOutput(std::size_t maxLen, std::string &s) noexcept : m_maxLen(maxLen), m_s(s) {}
+
+            constexpr size_t maxLen() const noexcept { return m_maxLen; }
+            constexpr bool fits(size_t n) const noexcept { return 0 < m_maxLen && n <= m_maxLen - m_s.size(); }
+
+            std::string_view get() const noexcept { return m_s; }
+
+            template<typename T>
+            requires jau::req::string_literal<T> || jau::req::string_class<T>
+            inline void appendFormatted(const FormatOpts& opts, const T& v) noexcept {
                 std::exception_ptr eptr;
                 try {
-                    m_s.append(v);
+                    impl::append_string(m_s, m_maxLen, v, opts);
                 } catch (...) {
                     eptr = std::current_exception();
                 }
                 handle_exception(eptr);
             }
-        }
-        inline void appendError(ssize_t argIdx, int line, const std::string_view tag) noexcept {
-            std::exception_ptr eptr;
-            try {
-                std::string m;
-                m.append("<E#").append(std::to_string(jau::abs(argIdx))).append("@").append(std::to_string(line)).append(":").append(tag).append(">");
-                if( fits(m.size()) ) {
-                    m_s.append(m);
+            template<typename T>
+            requires jau::req::char_pointer<T>
+            inline void appendFormatted(const FormatOpts& opts, const T& v) noexcept {
+                std::exception_ptr eptr;
+                try {
+                    if( nullptr != v ) {
+                        impl::append_string(m_s, m_maxLen, v, opts);
+                    } else {
+                        impl::append_string(m_s, m_maxLen, "(null)", opts);
+                    }
+                } catch (...) {
+                    eptr = std::current_exception();
                 }
-            } catch (...) {
-                eptr = std::current_exception();
+                handle_exception(eptr);
             }
-            handle_exception(eptr);
-        }
-    };
+            template<typename T>
+            requires jau::req::boolean<T>
+            inline void appendFormatted(const FormatOpts& opts, const T& v) noexcept {
+                std::exception_ptr eptr;
+                try {
+                    impl::append_string(m_s, m_maxLen, jau::to_string(v), opts);
+                } catch (...) {
+                    eptr = std::current_exception();
+                }
+                handle_exception(eptr);
+            }
+            template<typename T>
+            requires jau::req::pointer<T> && (!jau::req::string_alike<T>)
+            inline void appendFormatted(const FormatOpts& opts, const T& v) noexcept {
+                std::exception_ptr eptr;
+                try {
+                    if( nullptr != v ) {
+                        const uintptr_t v_le = jau::cpu_to_le(reinterpret_cast<uintptr_t>(v));
+                        impl::append_integral(m_s, m_maxLen, v_le, opts);
+                    } else {
+                        impl::append_string(m_s, m_maxLen, "(nil)", opts);
+                    }
+                } catch (...) {
+                    eptr = std::current_exception();
+                }
+                handle_exception(eptr);
+            }
+            template<typename T>
+            requires std::is_integral_v<T> && (!jau::req::boolean<T>)
+            inline void appendFormatted(const FormatOpts& opts, const T& v) noexcept {
+                std::exception_ptr eptr;
+                try {
+                    impl::append_integral(m_s, m_maxLen, v, opts);
+                } catch (...) {
+                    eptr = std::current_exception();
+                }
+                handle_exception(eptr);
+            }
+            template<typename T>
+            requires std::is_floating_point_v<T>
+            inline void appendFormatted(const FormatOpts& opts, const T& v) noexcept {
+                std::exception_ptr eptr;
+                try {
+                    if( opts.conversion == cspec_t::floating_point ) {
+                        impl::append_float(m_s, m_maxLen, v, opts);
+                    } else if( opts.conversion == cspec_t::hex_float ) {
+                        impl::append_afloat(m_s, m_maxLen, v, opts);
+                    } else {
+                        // cspec_t::exp_float, cspec_t::alt_float
+                        impl::append_efloat(m_s, m_maxLen, v, opts);
+                    }
+                } catch (...) {
+                    eptr = std::current_exception();
+                }
+                handle_exception(eptr);
+            }
+            inline void appendText(const std::string_view v) noexcept {
+                if( fits(v.size()) ) {
+                    std::exception_ptr eptr;
+                    try {
+                        m_s.append(v);
+                    } catch (...) {
+                        eptr = std::current_exception();
+                    }
+                    handle_exception(eptr);
+                }
+            }
+            inline void appendError(ssize_t argIdx, int line, const std::string_view tag) noexcept {
+                std::exception_ptr eptr;
+                try {
+                    std::string m;
+                    m.append("<E#").append(std::to_string(jau::abs(argIdx))).append("@").append(std::to_string(line)).append(":").append(tag).append(">");
+                    if( fits(m.size()) ) {
+                        m_s.append(m);
+                    }
+                } catch (...) {
+                    eptr = std::current_exception();
+                }
+                handle_exception(eptr);
+            }
+        };
 
-    namespace impl {
         template<OutputType Output>
         class Parser;  // fwd
-    }
-
-    template<OutputType Output>
-    struct FResult {
-        Output out;
-        std::string_view fmt;
-        size_t pos;        ///< position of next fmt character to be read
-        size_t pos_lstart; ///< start of last conversion spec
-        ssize_t arg_count;
-        int line;
-        pstate_t state;
-
-        FormatOpts opts;
-
-        constexpr FResult(Output p, std::string_view fmt_) noexcept
-        : out(std::move(p)), fmt(fmt_), pos(0), pos_lstart(0),
-          arg_count(0), line(0), state(pstate_t::outside), opts() {}
-
-        constexpr FResult(const FResult &pre) noexcept = default;
-        constexpr FResult &operator=(const FResult &x) noexcept = default;
-
-        constexpr bool hasNext() const noexcept {
-            return !error() && pos < fmt.length();
-        }
-
-        constexpr ssize_t argCount() const noexcept { return arg_count; }
-        constexpr bool error() const noexcept { return pstate_t::error == state; }
-
-        std::string toString() const {
-            const char c = pos < fmt.length() ? fmt[pos] : '@';
-            std::string s = "args ";
-            s.append(std::to_string(arg_count))
-            .append(", state ")
-            .append(to_string(state))
-            .append(", line ")
-            .append(std::to_string(line))
-            .append(", pos ")
-            .append(std::to_string(pos))
-            .append(", char `")
-            .append(std::string(1, c))
-            .append("`, last[").append(opts.toString())
-            .append("], fmt `").append(fmt)
-            .append("`, out `")
-            .append(out.get())
-            .append("`");
-            return s;
-        }
-
-      private:
-        friend class impl::Parser<Output>;
-
-        constexpr bool nextSymbol(char &c) noexcept {
-            if( pos < fmt.length() ) {
-                c = fmt[pos++];
-                return true;
-            } else {
-                return false;
-            }
-        }
-        constexpr bool toConversion() noexcept {
-            if( pstate_t::outside != state ) {
-                return true;  // inside conversion specifier
-            } else if( fmt[pos] == '%' ) {
-                state = pstate_t::start;  // just at start of conversion specifier
-                pos_lstart = pos++;
-                opts.reset();
-                return true;
-            } else if( pos < fmt.length() ) {
-                // seek next conversion specifier
-                const size_t q = fmt.find('%', pos+1);
-                if( q == std::string::npos ) {
-                    // no conversion specifier found
-                    appendText(fmt.substr(pos, fmt.length()-pos));
-                    pos = fmt.length();
-                    return false;
-                } else {
-                    // new conversion specifier found
-                    appendText(fmt.substr(pos, q-pos));
-                    state = pstate_t::start;
-                    pos_lstart = pos;
-                    pos = q+1;
-                    opts.reset();
-                    return true;
-                }
-            } else {
-                // end of format
-                return false;
-            }
-        }
-
-        constexpr void setLastSpec(size_t endpos) noexcept {
-            if( endpos > pos_lstart ) {
-                opts.fmt = fmt.substr(pos_lstart, endpos-pos_lstart);
-            }
-        }
-
-        constexpr void setError(int l) noexcept {
-            line = l;
-            state = pstate_t::error;
-            if( 0 == arg_count ) {
-                arg_count = std::numeric_limits<ssize_t>::min();
-            } else if( 0 < arg_count ) {
-                arg_count *= -1;
-            }
-        }
-
-        template<typename T>
-        requires jau::req::stringifyable_jau<T>
-        constexpr FResult& appendFormatted(const T &v) noexcept { out.appendFormatted(opts, v); return *this; }
-
-        constexpr FResult& appendText(const std::string_view v) noexcept { out.appendText(v); return *this; }
-        constexpr FResult& appendError(const std::string_view tag) noexcept {
-            ssize_t c = arg_count == std::numeric_limits<ssize_t>::min() ? 0 : arg_count;
-            out.appendError(c, line, tag); return *this;
-        }
-    };
-
-    template<OutputType Output>
-    inline std::ostream &operator<<(std::ostream &out, const FResult<Output> &pc) {
-        out << pc.toString();
-        return out;
-    }
-
-    // A NullOutput formatting result, capable of `constexpr` and `consteval`
-    typedef FResult<NullOutput> CheckResult;
-
-    /// A StringOutput formatting result for runtime formatting into a std::string
-    typedef FResult<StringOutput> SFormatResult;
-
-    namespace impl {
-
-        static constexpr bool verbose_error = true;
 
         class no_type_t {};
 
+        template<OutputType Output>
+        class FResult {
+          public:
+            std::string_view fmt;
+            size_t pos;  ///< position of next fmt character to be read
+            ssize_t arg_count;
+            int line;
+            pstate_t state;
+            FormatOpts opts;
+
+          private:
+            Output m_out;
+            size_t pos_lstart;  ///< start of last conversion spec
+
+          public:
+            constexpr FResult(Output p, std::string_view fmt_) noexcept
+            : fmt(fmt_), pos(0), arg_count(0), line(0), state(pstate_t::outside), opts(),
+              m_out(std::move(p)), pos_lstart(0) { }
+
+            constexpr FResult(const FResult &pre) noexcept = default;
+            constexpr FResult &operator=(const FResult &x) noexcept = default;
+
+            constexpr operator Result() const noexcept {
+                return Result(fmt, opts, pos, arg_count, line, pstate_t::outside == state);
+            }
+
+            constexpr bool hasNext() const noexcept {
+                return !error() && pos < fmt.length();
+            }
+
+            constexpr ssize_t argCount() const noexcept { return arg_count; }
+            constexpr bool error() const noexcept { return pstate_t::error == state; }
+
+            std::string toString() const {
+                const char c = pos < fmt.length() ? fmt[pos] : '@';
+                std::string s = "args ";
+                s.append(std::to_string(arg_count))
+                .append(", state ")
+                .append(to_string(state))
+                .append(", line ")
+                .append(std::to_string(line))
+                .append(", pos ")
+                .append(std::to_string(pos))
+                .append(", char `")
+                .append(std::string(1, c))
+                .append("`, last[")
+                .append(opts.toString())
+                .append("], fmt `")
+                .append(fmt)
+                .append("`, out `")
+                .append(m_out.get())
+                .append("`");
+                return s;
+            }
+
+          private:
+            friend class impl::Parser<Output>;
+
+            constexpr bool nextSymbol(char &c) noexcept {
+                if (pos < fmt.length()) {
+                    c = fmt[pos++];
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+            constexpr bool toConversion() noexcept {
+                if (pstate_t::outside != state) {
+                    return true;  // inside conversion specifier
+                } else if (fmt[pos] == '%') {
+                    state = pstate_t::start;  // just at start of conversion specifier
+                    pos_lstart = pos++;
+                    opts.reset();
+                    return true;
+                } else if (pos < fmt.length()) {
+                    // seek next conversion specifier
+                    const size_t q = fmt.find('%', pos + 1);
+                    if (q == std::string::npos) {
+                        // no conversion specifier found
+                        appendText(fmt.substr(pos, fmt.length() - pos));
+                        pos = fmt.length();
+                        return false;
+                    } else {
+                        // new conversion specifier found
+                        appendText(fmt.substr(pos, q - pos));
+                        state = pstate_t::start;
+                        pos_lstart = pos;
+                        pos = q + 1;
+                        opts.reset();
+                        return true;
+                    }
+                } else {
+                    // end of format
+                    return false;
+                }
+            }
+
+            constexpr void setLastSpec(size_t endpos) noexcept {
+                if (endpos > pos_lstart) {
+                    opts.fmt = fmt.substr(pos_lstart, endpos - pos_lstart);
+                }
+            }
+
+            constexpr void setError(int l) noexcept {
+                line = l;
+                state = pstate_t::error;
+                if (0 == arg_count) {
+                    arg_count = std::numeric_limits<ssize_t>::min();
+                } else if (0 < arg_count) {
+                    arg_count *= -1;
+                }
+            }
+
+            template<typename T>
+                requires jau::req::stringifyable_jau<T>
+            constexpr FResult &appendFormatted(const T &v) noexcept {
+                m_out.appendFormatted(opts, v);
+                return *this;
+            }
+
+            constexpr FResult &appendText(const std::string_view v) noexcept {
+                m_out.appendText(v);
+                return *this;
+            }
+            constexpr FResult &appendError(const std::string_view tag) noexcept {
+                ssize_t c = arg_count == std::numeric_limits<ssize_t>::min() ? 0 : arg_count;
+                m_out.appendError(c, line, tag);
+                return *this;
+            }
+        };
+
+        // A NullOutput formatting result, capable of `constexpr` and `consteval`
+        typedef FResult<NullOutput> CheckResult;
+
+        /// A StringOutput formatting result for runtime formatting into a std::string
+        typedef FResult<StringOutput> SFormatResult;
         template<OutputType Output>
         class Parser {
           public:
@@ -2085,7 +2139,7 @@ namespace jau::cfmt {
     template <typename... Targs>
     inline std::string format(std::string_view fmt, const Targs &...args) noexcept {
         std::string s;
-        SFormatResult ctx(StringOutput(s.max_size(), s), fmt);
+        impl::SFormatResult ctx(impl::StringOutput(s.max_size(), s), fmt);
         constexpr const impl::FormatParser p;
         if constexpr( 0 < sizeof...(Targs) ) {
             ((p.template parseOne<Targs>(ctx, args)), ...);
@@ -2109,7 +2163,7 @@ namespace jau::cfmt {
     template <typename... Targs>
     inline std::string format(size_t maxLen, std::string_view fmt, const Targs &...args) noexcept {
         std::string s;
-        SFormatResult ctx(StringOutput(std::min(maxLen, s.max_size()), s), fmt);
+        impl::SFormatResult ctx(impl::StringOutput(std::min(maxLen, s.max_size()), s), fmt);
         constexpr const impl::FormatParser p;
         if constexpr( 0 < sizeof...(Targs) ) {
             ((p.template parseOne<Targs>(ctx, args)), ...);
@@ -2128,12 +2182,12 @@ namespace jau::cfmt {
      * @param s destination string to append the formatted string
      * @param fmt the snprintf format string
      * @param args passed arguments, used for template type deduction only
-     * @return true if successfully parsed format and arguments, false otherwise.
+     * @return jau::cfmt::Result instance for further inspection
      * @see @ref jau_cfmt_header
      */
     template <typename... Targs>
-    inline SFormatResult formatR(std::string &s, std::string_view fmt, const Targs &...args) noexcept {
-        SFormatResult ctx(StringOutput(s.max_size(), s), fmt);
+    inline Result formatR(std::string &s, std::string_view fmt, const Targs &...args) noexcept {
+        impl::SFormatResult ctx(impl::StringOutput(s.max_size(), s), fmt);
         constexpr const impl::FormatParser p;
         if constexpr( 0 < sizeof...(Targs) ) {
             ((p.template parseOne<Targs>(ctx, args)), ...);
@@ -2152,12 +2206,12 @@ namespace jau::cfmt {
      * @param maxLen maximum string length
      * @param fmt the snprintf format string
      * @param args passed arguments, used for template type deduction only
-     * @return true if successfully parsed format and arguments, false otherwise.
+     * @return jau::cfmt::Result instance for further inspection
      * @see @ref jau_cfmt_header
      */
     template <typename... Targs>
-    inline SFormatResult formatR(std::string &s, size_t maxLen, std::string_view fmt, const Targs &...args) noexcept {
-        SFormatResult ctx(StringOutput(std::min(maxLen, s.max_size()), s), fmt);
+    inline Result formatR(std::string &s, size_t maxLen, std::string_view fmt, const Targs &...args) noexcept {
+        impl::SFormatResult ctx(impl::StringOutput(std::min(maxLen, s.max_size()), s), fmt);
         constexpr const impl::FormatParser p;
         if constexpr( 0 < sizeof...(Targs) ) {
             ((p.template parseOne<Targs>(ctx, args)), ...);
@@ -2180,7 +2234,7 @@ namespace jau::cfmt {
      */
     template <typename... Targs>
     consteval_cxx20 ssize_t check(std::string_view fmt, const Targs &...) noexcept {
-        CheckResult ctx(NullOutput(), fmt);
+        impl::CheckResult ctx(impl::NullOutput(), fmt);
         constexpr const impl::CheckParser p;
         if constexpr( 0 < sizeof...(Targs) ) {
             ((p.template checkOne<Targs>(ctx)), ...);
@@ -2201,7 +2255,7 @@ namespace jau::cfmt {
      */
     template <typename... Targs>
     consteval_cxx20 int checkLine(std::string_view fmt, const Targs &...) noexcept {
-        CheckResult ctx(NullOutput(), fmt);
+        impl::CheckResult ctx(impl::NullOutput(), fmt);
         constexpr const impl::CheckParser p;
         if constexpr( 0 < sizeof...(Targs) ) {
             ((p.template checkOne<Targs>(ctx)), ...);
@@ -2223,7 +2277,7 @@ namespace jau::cfmt {
      */
     template <typename... Targs>
     constexpr ssize_t check2(std::string_view fmt) noexcept {
-        CheckResult ctx(NullOutput(), fmt);
+        impl::CheckResult ctx(impl::NullOutput(), fmt);
         constexpr const impl::CheckParser p;
         if constexpr( 0 < sizeof...(Targs) ) {
             ((p.template checkOne<Targs>(ctx)), ...);
@@ -2244,7 +2298,7 @@ namespace jau::cfmt {
      */
     template <typename... Targs>
     constexpr int check2Line(std::string_view fmt) noexcept {
-        CheckResult ctx(NullOutput(), fmt);
+        impl::CheckResult ctx(impl::NullOutput(), fmt);
         constexpr const impl::CheckParser p;
         if constexpr( 0 < sizeof...(Targs) ) {
             ((p.template checkOne<Targs>(ctx)), ...);
@@ -2261,12 +2315,12 @@ namespace jau::cfmt {
      * @tparam Targs the argument template type pack to be validated against the format string
      * @param fmt the snprintf format string
      * @param args passed arguments, used for template type deduction only
-     * @return CheckResult result object for further inspection.
+     * @return jau::cfmt::Result instance for further inspection
      * @see @ref jau_cfmt_header
      */
     template <typename... Targs>
-    constexpr CheckResult checkR(std::string_view fmt, const Targs &...) noexcept {
-        CheckResult ctx(NullOutput(), fmt);
+    constexpr Result checkR(std::string_view fmt, const Targs &...) noexcept {
+        impl::CheckResult ctx(impl::NullOutput(), fmt);
         constexpr const impl::CheckParser p;
         if constexpr( 0 < sizeof...(Targs) ) {
             ((p.template checkOne<Targs>(ctx)), ...);
@@ -2282,12 +2336,12 @@ namespace jau::cfmt {
      *
      * @tparam Targs the argument template type pack to be validated against the format string
      * @param fmt the snprintf format string
-     * @return CheckResult result object for further inspection.
+     * @return jau::cfmt::Result instance for further inspection
      * @see @ref jau_cfmt_header
      */
     template <typename... Targs>
-    consteval_cxx20 CheckResult checkR2(std::string_view format) noexcept {
-        CheckResult ctx(NullOutput(), format);
+    consteval_cxx20 Result checkR2(std::string_view format) noexcept {
+        impl::CheckResult ctx(impl::NullOutput(), format);
         constexpr const impl::CheckParser p;
         if constexpr( 0 < sizeof...(Targs) ) {
             ((p.template checkOne<Targs>(ctx)), ...);

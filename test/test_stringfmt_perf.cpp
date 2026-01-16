@@ -74,9 +74,9 @@ TEST_CASE("jau::cfmt benchmark", "[benchmark][jau][std::string][format_string]")
             uint64_t sz2 = 2;
             int i1 = 3;
 
-            jau::cfmt::CheckResult pc = jau::cfmt::checkR("format_check: %.2f, %2.2f, %zu, %" PRIu64 ", %03d", fa, fb, sz1, sz2, i1);
-            REQUIRE(5 == pc.argCount());
-            res = res + pc.argCount();
+            jau::cfmt::Result pc = jau::cfmt::checkR("format_check: %.2f, %2.2f, %zu, %" PRIu64 ", %03d", fa, fb, sz1, sz2, i1);
+            REQUIRE(5 == pc.argumentCount());
+            res = res + pc.argumentCount();
         }
         return res;
     };
@@ -92,9 +92,9 @@ TEST_CASE("jau::cfmt benchmark", "[benchmark][jau][std::string][format_string]")
     BENCHMARK("fmt1.11 checkR     cnstexpr bench") {
         volatile size_t res = 0;
         for( size_t i = 0; i < loops; ++i ) {
-            constexpr  jau::cfmt::CheckResult pc = jau::cfmt::checkR("format_check: %.2f, %2.2f, %zu, %" PRIu64 ", %03d", 1.0f, 2.0f, 3_uz, 64_u64, 1_i32);
-            REQUIRE(5 == pc.argCount());
-            res = res + pc.argCount();
+            constexpr  jau::cfmt::Result pc = jau::cfmt::checkR("format_check: %.2f, %2.2f, %zu, %" PRIu64 ", %03d", 1.0f, 2.0f, 3_uz, 64_u64, 1_i32);
+            REQUIRE(5 == pc.argumentCount());
+            res = res + pc.argumentCount();
         }
         return res;
     };
@@ -106,9 +106,9 @@ TEST_CASE("jau::cfmt benchmark", "[benchmark][jau][std::string][format_string]")
             constexpr uint64_t sz2 = 2;
             constexpr int i1 = 3;
 
-            constexpr  jau::cfmt::CheckResult pc = jau::cfmt::checkR("format_check: %.2f, %2.2f, %zu, %" PRIu64 ", %03d", fa, fb, sz1, sz2, i1);
-            REQUIRE(5 == pc.argCount());
-            res = res + pc.argCount();
+            constexpr  jau::cfmt::Result pc = jau::cfmt::checkR("format_check: %.2f, %2.2f, %zu, %" PRIu64 ", %03d", fa, fb, sz1, sz2, i1);
+            REQUIRE(5 == pc.argumentCount());
+            res = res + pc.argumentCount();
         }
         return res;
     };

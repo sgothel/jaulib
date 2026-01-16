@@ -19,7 +19,6 @@
 #include <cstring>
 #include <iostream>
 #include <string_view>
-#include <type_traits>
 
 #include <jau/basic_types.hpp>
 #include <jau/cpp_lang_util.hpp>
@@ -51,68 +50,68 @@ TEST_CASE("parse: width precision from format", "[jau][std::string][jau::cfmt]")
     //
     {
         std::string s;
-        jau::cfmt::SFormatResult r = jau::cfmt::formatR(s,"%" PRIi64, (int64_t)1);
+        jau::cfmt::Result r = jau::cfmt::formatR(s,"%" PRIi64, (int64_t)1);
         std::cerr << "FormatResult " << r << "\n";
-        REQUIRE( false == r.error());
-        REQUIRE( 1 == r.arg_count);
-        REQUIRE( flags_t::none == r.opts.flags);
-        REQUIRE( false == r.opts.width_set);
-        REQUIRE( 0 == r.opts.width);
-        REQUIRE( false == r.opts.precision_set);
-        REQUIRE( 0 == r.opts.precision);
-        REQUIRE( jau::cfmt::plength_t::l == r.opts.length_mod);
+        REQUIRE( true == r.success());
+        REQUIRE( 1 == r.argumentCount());
+        REQUIRE( flags_t::none == r.opts().flags);
+        REQUIRE( false == r.opts().width_set);
+        REQUIRE( 0 == r.opts().width);
+        REQUIRE( false == r.opts().precision_set);
+        REQUIRE( 0 == r.opts().precision);
+        REQUIRE( jau::cfmt::plength_t::l == r.opts().length_mod);
     }
     {
         std::string s;
-        jau::cfmt::SFormatResult r = jau::cfmt::formatR(s,"%23" PRIi64, (int64_t)1);
+        jau::cfmt::Result r = jau::cfmt::formatR(s,"%23" PRIi64, (int64_t)1);
         std::cerr << "FormatResult " << r << "\n";
-        REQUIRE( false == r.error());
-        REQUIRE( 1 == r.arg_count);
-        REQUIRE( flags_t::none == r.opts.flags);
-        REQUIRE( true == r.opts.width_set);
-        REQUIRE( 23 == r.opts.width);
-        REQUIRE( false == r.opts.precision_set);
-        REQUIRE( 0 == r.opts.precision);
-        REQUIRE( jau::cfmt::plength_t::l == r.opts.length_mod);
+        REQUIRE( true == r.success());
+        REQUIRE( 1 == r.argumentCount());
+        REQUIRE( flags_t::none == r.opts().flags);
+        REQUIRE( true == r.opts().width_set);
+        REQUIRE( 23 == r.opts().width);
+        REQUIRE( false == r.opts().precision_set);
+        REQUIRE( 0 == r.opts().precision);
+        REQUIRE( jau::cfmt::plength_t::l == r.opts().length_mod);
     }
     {
         std::string s;
-        jau::cfmt::SFormatResult r = jau::cfmt::formatR(s,"%.12" PRIi64, (int64_t)1);
+        jau::cfmt::Result r = jau::cfmt::formatR(s,"%.12" PRIi64, (int64_t)1);
         std::cerr << "FormatResult " << r << "\n";
-        REQUIRE( false == r.error());
-        REQUIRE( 1 == r.arg_count);
-        REQUIRE( flags_t::none == r.opts.flags);
-        REQUIRE( false == r.opts.width_set);
-        REQUIRE( 0 == r.opts.width);
-        REQUIRE( true == r.opts.precision_set);
-        REQUIRE( 12 == r.opts.precision);
-        REQUIRE( jau::cfmt::plength_t::l == r.opts.length_mod);
+        REQUIRE( true == r.success());
+        REQUIRE( 1 == r.argumentCount());
+        REQUIRE( flags_t::none == r.opts().flags);
+        REQUIRE( false == r.opts().width_set);
+        REQUIRE( 0 == r.opts().width);
+        REQUIRE( true == r.opts().precision_set);
+        REQUIRE( 12 == r.opts().precision);
+        REQUIRE( jau::cfmt::plength_t::l == r.opts().length_mod);
     }
     {
         std::string s;
-        jau::cfmt::SFormatResult r = jau::cfmt::formatR(s,"%23.12" PRIi64, (int64_t)1);
+        jau::cfmt::Result r = jau::cfmt::formatR(s,"%23.12" PRIi64, (int64_t)1);
         std::cerr << "FormatResult " << r << "\n";
-        REQUIRE( false == r.error());
-        REQUIRE( 1 == r.arg_count);
-        REQUIRE( flags_t::none == r.opts.flags);
-        REQUIRE( true == r.opts.width_set);
-        REQUIRE( 23 == r.opts.width);
-        REQUIRE( true == r.opts.precision_set);
-        REQUIRE( 12 == r.opts.precision);
-        REQUIRE( jau::cfmt::plength_t::l == r.opts.length_mod);
+        REQUIRE( true == r.success());
+        REQUIRE( 1 == r.argumentCount());
+        REQUIRE( flags_t::none == r.opts().flags);
+        REQUIRE( true == r.opts().width_set);
+        REQUIRE( 23 == r.opts().width);
+        REQUIRE( true == r.opts().precision_set);
+        REQUIRE( 12 == r.opts().precision);
+        REQUIRE( jau::cfmt::plength_t::l == r.opts().length_mod);
     }
     {
         std::string s;
-        jau::cfmt::SFormatResult r = jau::cfmt::formatR(s,"%#-+0 23.12" PRIi64, (int64_t)1);
+        jau::cfmt::Result r = jau::cfmt::formatR(s,"%#-+0 23.12" PRIi64, (int64_t)1);
         std::cerr << "FormatResult " << r << "\n";
-        REQUIRE( false == r.error());
-        REQUIRE( 1 == r.arg_count);
-        REQUIRE( ( flags_t::left | flags_t::plus ) == r.opts.flags);
-        REQUIRE( true == r.opts.width_set);
-        REQUIRE( 23 == r.opts.width);
-        REQUIRE( true == r.opts.precision_set);
-        REQUIRE( 12 == r.opts.precision);
-        REQUIRE( jau::cfmt::plength_t::l == r.opts.length_mod);
+        REQUIRE( true == r.success());
+        REQUIRE( 1 == r.argumentCount());
+        REQUIRE( ( flags_t::left | flags_t::plus ) == r.opts().flags);
+        REQUIRE( true == r.opts().width_set);
+        REQUIRE( 23 == r.opts().width);
+        REQUIRE( true == r.opts().precision_set);
+        REQUIRE( 12 == r.opts().precision);
+        REQUIRE( jau::cfmt::plength_t::l == r.opts().length_mod);
     }
 }
 
@@ -121,69 +120,69 @@ TEST_CASE("parse: width precision from arg", "[jau][std::string][jau::cfmt]") {
 
     {
         std::string s;
-        jau::cfmt::SFormatResult r = jau::cfmt::formatR(s,"%*" PRIi64, 21, (int64_t)1);
+        jau::cfmt::Result r = jau::cfmt::formatR(s,"%*" PRIi64, 21, (int64_t)1);
         std::cerr << "FormatResult " << r << "\n";
-        REQUIRE( false == r.error());
-        REQUIRE( 2 == r.arg_count);
-        REQUIRE( flags_t::none == r.opts.flags);
-        REQUIRE( true == r.opts.width_set);
-        REQUIRE( 21 == r.opts.width);
-        REQUIRE( false == r.opts.precision_set);
-        REQUIRE( 0 == r.opts.precision);
-        REQUIRE( jau::cfmt::plength_t::l == r.opts.length_mod);
+        REQUIRE( true == r.success());
+        REQUIRE( 2 == r.argumentCount());
+        REQUIRE( flags_t::none == r.opts().flags);
+        REQUIRE( true == r.opts().width_set);
+        REQUIRE( 21 == r.opts().width);
+        REQUIRE( false == r.opts().precision_set);
+        REQUIRE( 0 == r.opts().precision);
+        REQUIRE( jau::cfmt::plength_t::l == r.opts().length_mod);
     }
     {
         std::string s;
-        jau::cfmt::SFormatResult r = jau::cfmt::formatR(s,"%.*" PRIi64, 12, (int64_t)1);
+        jau::cfmt::Result r = jau::cfmt::formatR(s,"%.*" PRIi64, 12, (int64_t)1);
         std::cerr << "FormatResult " << r << "\n";
-        REQUIRE( false == r.error());
-        REQUIRE( 2 == r.arg_count);
-        REQUIRE( flags_t::none == r.opts.flags);
-        REQUIRE( false == r.opts.width_set);
-        REQUIRE( 0 == r.opts.width);
-        REQUIRE( true == r.opts.precision_set);
-        REQUIRE( 12 == r.opts.precision);
-        REQUIRE( jau::cfmt::plength_t::l == r.opts.length_mod);
+        REQUIRE( true == r.success());
+        REQUIRE( 2 == r.argumentCount());
+        REQUIRE( flags_t::none == r.opts().flags);
+        REQUIRE( false == r.opts().width_set);
+        REQUIRE( 0 == r.opts().width);
+        REQUIRE( true == r.opts().precision_set);
+        REQUIRE( 12 == r.opts().precision);
+        REQUIRE( jau::cfmt::plength_t::l == r.opts().length_mod);
     }
     {
         std::string s;
-        jau::cfmt::SFormatResult r = jau::cfmt::formatR(s,"%*.*" PRIi64, 23, 12, (int64_t)1);
+        jau::cfmt::Result r = jau::cfmt::formatR(s,"%*.*" PRIi64, 23, 12, (int64_t)1);
         std::cerr << "FormatResult " << r << "\n";
-        REQUIRE( false == r.error());
-        REQUIRE( 3 == r.arg_count);
-        REQUIRE( flags_t::none == r.opts.flags);
-        REQUIRE( true == r.opts.width_set);
-        REQUIRE( 23 == r.opts.width);
-        REQUIRE( true == r.opts.precision_set);
-        REQUIRE( 12 == r.opts.precision);
-        REQUIRE( jau::cfmt::plength_t::l == r.opts.length_mod);
+        REQUIRE( true == r.success());
+        REQUIRE( 3 == r.argumentCount());
+        REQUIRE( flags_t::none == r.opts().flags);
+        REQUIRE( true == r.opts().width_set);
+        REQUIRE( 23 == r.opts().width);
+        REQUIRE( true == r.opts().precision_set);
+        REQUIRE( 12 == r.opts().precision);
+        REQUIRE( jau::cfmt::plength_t::l == r.opts().length_mod);
     }
 
     {
         std::string s;
-        jau::cfmt::SFormatResult r = jau::cfmt::formatR(s,"%-*.12" PRIi64, 23, (int64_t)1);
+        jau::cfmt::Result r = jau::cfmt::formatR(s,"%-*.12" PRIi64, 23, (int64_t)1);
         std::cerr << "FormatResult " << r << "\n";
-        REQUIRE( false == r.error());
-        REQUIRE( 2 == r.arg_count);
-        REQUIRE( flags_t::left == r.opts.flags);
-        REQUIRE( true == r.opts.width_set);
-        REQUIRE( 23 == r.opts.width);
-        REQUIRE( true == r.opts.precision_set);
-        REQUIRE( 12 == r.opts.precision);
-        REQUIRE( jau::cfmt::plength_t::l == r.opts.length_mod);
+        REQUIRE( true == r.success());
+        REQUIRE( 2 == r.argumentCount());
+        REQUIRE( flags_t::left == r.opts().flags);
+        REQUIRE( true == r.opts().width_set);
+        REQUIRE( 23 == r.opts().width);
+        REQUIRE( true == r.opts().precision_set);
+        REQUIRE( 12 == r.opts().precision);
+        REQUIRE( jau::cfmt::plength_t::l == r.opts().length_mod);
     }
     {
         std::string s;
-        jau::cfmt::SFormatResult r = jau::cfmt::formatR(s,"%+.*" PRIi64, 12, (int64_t)1);
+        jau::cfmt::Result r = jau::cfmt::formatR(s,"%+.*" PRIi64, 12, (int64_t)1);
         std::cerr << "FormatResult " << r << "\n";
-        REQUIRE( false == r.error());
-        REQUIRE( 2 == r.arg_count);
-        REQUIRE( flags_t::plus == r.opts.flags);
-        REQUIRE( false == r.opts.width_set);
-        REQUIRE( 0 == r.opts.width);
-        REQUIRE( true == r.opts.precision_set);
-        REQUIRE( 12 == r.opts.precision);
-        REQUIRE( jau::cfmt::plength_t::l == r.opts.length_mod);
+        REQUIRE( true == r.success());
+        REQUIRE( 2 == r.argumentCount());
+        REQUIRE( flags_t::plus == r.opts().flags);
+        REQUIRE( false == r.opts().width_set);
+        REQUIRE( 0 == r.opts().width);
+        REQUIRE( true == r.opts().precision_set);
+        REQUIRE( 12 == r.opts().precision);
+        REQUIRE( jau::cfmt::plength_t::l == r.opts().length_mod);
     }
 }
 
@@ -192,11 +191,11 @@ static void checkFormat(int line, const char *fmt, const Args &...args) {
     std::string exp = jau::unsafe::format_string(fmt, args...);
     // std::string has = jau::format_string(fmt, args...);
     std::string has;
-    jau::cfmt::SFormatResult r = jau::cfmt::formatR(has, fmt, args...);
+    jau::cfmt::Result r = jau::cfmt::formatR(has, fmt, args...);
     std::cerr << "FormatResult @ " << line << ": " << r << "\n";
     std::cerr << "FormatResult @ " << line << ": exp `" << exp << "`, has `" << has << "`\n\n";
-    CHECK( false == r.error());
-    CHECK( sizeof...(args) == r.arg_count);
+    CHECK( true == r.success());
+    CHECK( sizeof...(args) == r.argumentCount());
     CHECK(exp == has);
 }
 
