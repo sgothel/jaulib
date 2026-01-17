@@ -83,10 +83,20 @@ namespace jau::req {
     template <typename T>
     concept packed_floating_point = std::is_floating_point_v<T> && sizeof(T) == alignof(T);
 
-    /** Removes */
+    /** Returns underlying pointer type w/o constant'ness */
     template<class T>
     requires pointer<T>
-    using base_pointer = std::add_pointer_t<std::remove_const_t<std::remove_pointer_t<std::remove_cv_t<T>>>>;
+    using underlying_pointer_type = std::remove_const_t<std::remove_pointer_t<std::remove_cv_t<T>>>;
+
+    /** Returns base pointer type w/o constant'ness in pointer nor value */
+    template<class T>
+    requires pointer<T>
+    using base_pointer = std::add_pointer_t<underlying_pointer_type<T>>;
+
+    /** Returns all const pointer type w/ constant'ness in pointer and value */
+    template<class T>
+    requires pointer<T>
+    using const2_pointer = std::add_const_t<std::add_pointer_t<std::add_const_t<underlying_pointer_type<T>>>>;
 
     /// A `char*`
     template<typename T>

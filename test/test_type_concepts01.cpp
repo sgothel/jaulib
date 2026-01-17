@@ -23,6 +23,7 @@
  */
 
 #include <concepts>
+#include <type_traits>
 #include <vector>
 #include <list>
 #include <forward_list>
@@ -44,8 +45,15 @@ using namespace jau::float_literals;
 class AnyClass {};
 
 TEST_CASE( "01 Type Concept Queries: Build-In") {
+    static_assert(true == std::is_integral_v<char> );
+    static_assert(false == std::is_unsigned_v<char> );
+
     static_assert(false == jau::req::pointer<int> );
     static_assert(true  == jau::req::pointer<int*> );
+
+    static_assert(true == std::is_integral_v<bool> );
+    static_assert(true == std::is_same_v<bool, std::type_identity_t<bool>> );
+    static_assert(true == jau::req::boolean<std::type_identity_t<bool>> );
 
     static_assert(true  == jau::req::unsigned_integral<unsigned> );
     static_assert(false == jau::req::unsigned_integral<int> );
