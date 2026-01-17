@@ -642,7 +642,8 @@ namespace jau {
     namespace unsafe {
         /**
          * Returns a (potentially truncated) string according to `snprintf()` formatting rules
-         * and variable number of arguments following the `format` argument.
+         * and variable number of arguments following the `format` argument
+         * while utilizing the unsafe `vsnprintf`.
          *
          * This variant doesn't validate `format` against given arguments, see jau::format_string_n.
          *
@@ -658,7 +659,8 @@ namespace jau {
 
         /**
          * Returns a (non-truncated) string according to `snprintf()` formatting rules
-         * and variable number of arguments following the `format` argument.
+         * and variable number of arguments following the `format` argument
+         * while utilizing the unsafe `vsnprintf`.
          *
          * This variant doesn't validate `format` against given arguments, see jau::format_string_h.
          *
@@ -673,10 +675,10 @@ namespace jau {
 
         /**
          * Returns a (non-truncated) string according to `snprintf()` formatting rules
-         * using an initially string length of jau::cfmt::default_string_capacity w/o EOS and
-         * variable number of arguments following the `format` argument.
+         * and variable number of arguments following the `format` argument
+         * while utilizing the unsafe `vsnprintf`.
          *
-         * This variant doesn't validate `format` against given arguments, see jau::format_string_h.
+         * This variant doesn't validate `format` against given arguments, see jau::format_string.
          *
          * Resulting string size matches formated output w/o limitation.
          *

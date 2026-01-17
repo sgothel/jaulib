@@ -43,6 +43,7 @@
 #include <jau/math/math_error.hpp>
 #include <jau/secmem.hpp>
 #include <jau/string_util.hpp>
+#include <jau/string_cfmt.hpp>
 
 using namespace jau;
 
@@ -1120,4 +1121,676 @@ std::string jau::type_info::toString() const noexcept {
      .append("`, ident").append(to_string(m_idflags));
     r.append("]]");
     return r;
+}
+
+//
+//
+//
+
+void jau::cfmt::impl::append_rev(std::string &dest, const size_t dest_maxlen, std::string_view src, bool prec_cut, bool reverse, const FormatOpts &opts) noexcept
+{
+    if (!dest_maxlen) {
+        return;
+    }
+    size_t src_len = src.size();
+    const char *p = src.data();
+    const size_t dest_start_len = dest.size();
+
+    // pre padding
+    if (prec_cut && opts.precision_set) {
+        src_len = std::min(src_len, opts.precision);
+    }
+    size_t space_left = 0, space_right = 0;
+    {
+        // string optional re-capacity and resize
+        const size_t maxlen = dest_maxlen - dest_start_len;
+        size_t len = std::min(src_len, maxlen); // already cut to precision if applicable
+        if (!is_set(opts.flags, flags_t::left) && opts.width_set && opts.width > len) {
+            space_left = std::min(opts.width-len, maxlen-len);
+            len += space_left;
+        }
+        // p2: append pad spaces left/right up to given width
+        if (opts.width_set && len < opts.width) {
+            if (is_set(opts.flags, flags_t::left)) {
+                space_right = std::min(opts.width-len, maxlen-len);
+                len += space_right;
+            } else if (!is_set(opts.flags, flags_t::zeropad)) {
+                space_left = std::min(opts.width-len, maxlen-len);
+                len += space_left;
+            }
+        }
+        size_t new_size = dest_start_len + len;
+        dest.reserve(new_size + 1); // +EOS, not shrinking!
+        dest.resize(new_size, ' ');
+    }
+    char *d_left = dest.data() + dest_start_len + space_left;
+    char *d_end = dest.data() + dest.size() - space_right;
+    assert(d_left <= d_end);
+
+    // string
+    if (!reverse) {
+        std::memcpy(d_left, p, std::min<size_t>(src_len, d_end-d_left));
+        // std::copy(p, p+(d_end-d), d);
+    } else {
+        while (d_left<d_end) {
+            *(--d_end) = *(p++);
+        }
+    }
+    assert(d_left <= d_end);
+
+    *(dest.data()+dest.size()) = 0; // EOS (is reserved)
+}
+
+void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxlen, uint64_t v, bool negative, const FormatOpts &opts, bool inject_dot) noexcept {
+    if (!dest_maxlen) {
+        return;
+    }
+    const size_t dest_start_len = dest.size();
+
+    const nsize_t radix = opts.radix;
+    nsize_t shift;
+    switch (radix) {
+        case 16: shift = 4; break;
+        case 10: shift = 0; break;
+        case 8:  shift = 3; break;
+        case 2:  shift = 1; break;
+        default: return;
+    }
+    typedef uint64_t unsigned_value_type;
+    // typedef std::make_unsigned_t<value_type> unsigned_value_type;
+    // unsigned_value_type v = unsigned_value_type(jau::abs(val));
+    // const bool negative = !jau::is_positive(val);
+    const char *hex_array = is_set(opts.flags, flags_t::uppercase) ? HexadecimalArrayBig : HexadecimalArrayLow;
+    const nsize_t mask = radix - 1;  // ignored for radix 10
+    const char separator = is_set(opts.flags, flags_t::thousands) ? '\'' : 0;
+    const nsize_t sep_gap = 10 == radix ? 3 : 4;
+    const nsize_t val_digits = opts.precision_set && opts.precision == 0 && jau::is_zero(v) ? 0 : jau::digits<unsigned_value_type>(v, radix);
+    const nsize_t sep_count = val_digits > 0 && separator ? (val_digits - 1) / sep_gap : 0;
+    const size_t prec = opts.precision_set ? opts.precision : 0;
+    const nsize_t xtra_dot = inject_dot ? 1 : 0;
+    size_t width = opts.width_set ? opts.width : 0;
+    size_t zeros_left = 0, space_left = 0, space_right = 0;
+    size_t xtra_left = 0;  ///< contains hash, sign and prec_left and single space
+    {
+        size_t len = val_digits + xtra_dot + sep_count;  // current total of the number string
+        // p1: pad leading zeros
+        if (!is_set(opts.flags, flags_t::left)) {
+            if (width && is_set(opts.flags, flags_t::zeropad) && (negative || has_any(opts.flags, flags_t::plus | flags_t::space))) {
+                --width;
+            }
+            if (len < prec) {
+                zeros_left = prec - len;
+                xtra_left += zeros_left;
+                len += zeros_left;
+            }
+            if (len < width && is_set(opts.flags, flags_t::zeropad)) {
+                size_t n = width - len;
+                zeros_left += n;
+                xtra_left += n;
+                len += n;
+            }
+        }
+
+        // p1: handle hash
+        if (is_set(opts.flags, flags_t::hash)) {
+            if (!opts.precision_set && len && ((len == prec) || (len == width))) {
+                --xtra_left;
+                --len;
+                if (zeros_left) { --zeros_left; }
+                if (len && (radix == 16)) {
+                    --xtra_left;
+                    --len;
+                    if (zeros_left) { --zeros_left; }
+                }
+            }
+            if (radix == 16 || radix == 2) {
+                ++xtra_left;
+                ++len;
+            }
+            ++xtra_left;
+            ++len;  // hash zero
+        }
+
+        // p1: sign
+        if (negative) {
+            ++xtra_left;
+            ++len;  // '-';
+        } else if (is_set(opts.flags, flags_t::plus)) {
+            ++xtra_left;
+            ++len;  // '+';  // ignore the space if the '+' exists
+        }
+
+        // p1: space
+        if (!negative && is_set(opts.flags, flags_t::space)) {
+            ++xtra_left;
+            ++len;  // ' ';
+        }
+
+        // p2: append pad spaces left/right up to given width
+        if (len < width) {
+            if (is_set(opts.flags, flags_t::left)) {
+                space_right = width - len;
+                // len += space_right;
+            } else if (!is_set(opts.flags, flags_t::zeropad)) {
+                space_left = width - len;
+                // len += space_left;
+            }
+        }
+
+        const size_t added_maxlen = dest_maxlen - dest_start_len;
+        const size_t added_len = std::min<size_t>(added_maxlen, val_digits + xtra_dot + sep_count + xtra_left + space_left + space_right);
+        dest.reserve(dest_start_len + added_len + 1);  // +EOS, not shrinking!
+        dest.resize(dest_start_len + added_len, ' ');
+
+#if !defined(NDEBUG) && 0
+        fprintf(stderr, "XXX.80: opts: %s\n", opts.toString().c_str());
+        if (negative) {
+            fprintf(stderr, "XXX.80: val %zd, abs %zu\n", (ssize_t)val, (size_t)v);
+        } else {
+            fprintf(stderr, "XXX.80: val %zu, abs %zu\n", (size_t)val, (size_t)v);
+        }
+        fprintf(stderr, "XXX.80: idx[digits %zu, sep %zu, xleft %zu (zeros %zu)], space[l %zu, r %zu] -> len %zu\n",
+                val_digits, sep_count, xtra_left, zeros_left, space_left, space_right, len);
+        fprintf(stderr, "XXX.80: total len[old %zu, added %zu, len %zu], number_start %zu\n", dest_start_len, added_len, dest.size(), xtra_left + space_left);
+#endif
+    }
+    const size_t dest_len = dest.size();
+    const char *const d_start = dest.data() + dest_start_len;
+    const char *const d_start_num = d_start + space_left + xtra_left;
+    char *d = dest.data() + dest_len - space_right;
+    const char *const d_end_num = d;
+#if !defined(NDEBUG) && 0
+    fprintf(stderr, "XXX.80: total len %zu, d_start_num %zd - d_end_num %zd (num_len %zd)\n",
+            dest.size() - dest_start_len, d_start_num - d_start, d_end_num - d_start, d_end_num - d_start_num);
+#endif
+
+    assert(d_end_num >= d_start_num);
+    assert(size_t(d_end_num - d_start_num) == val_digits + xtra_dot + sep_count);
+    assert(d >= d_start_num);
+    assert(d >= d_start);
+
+    nsize_t digit_cnt = 0, separator_idx = 0;
+    while (d > d_start_num) {
+        if (separator_idx < sep_count && 0 < digit_cnt && 0 == digit_cnt % sep_gap) {
+            *(--d) = separator;
+            ++separator_idx;
+        }
+        assert(d > d_start_num);
+        // if ( d > d_start_num ) {
+        assert(digit_cnt < val_digits);
+        if (10 == radix) {
+            *(--d) = char('0' + (v % 10));
+            v /= 10;
+        } else {
+            *(--d) = hex_array[v & mask];
+            v >>= shift;
+        }
+        ++digit_cnt;
+        if (xtra_dot && d == d_start_num + 1 + xtra_dot) {
+            *(--d) = '.';
+        }
+        // }
+    }
+    assert(d == d_start_num);
+    assert(d >= d_start);
+
+    // p1: pad leading zeros (prec_left + space_left)
+    assert(d_start <= d_start_num - zeros_left);
+    if (zeros_left) {
+        std::memset(d - zeros_left, '0', zeros_left);
+        // std::fill(d-zeros_left, d, '0');
+        d -= zeros_left;
+    }
+
+    // p1: handle hash
+    if (d > d_start && is_set(opts.flags, flags_t::hash)) {
+        size_t len = d_end_num - d;  // total length so far
+        if (!opts.precision_set && len && ((len == prec) || (len == width))) {
+            ++d;
+            --len;
+            if (len && (radix == 16)) {
+                ++d;
+                --len;
+            }
+        }
+        assert(d > d_start);
+        if (radix == 16) {
+            *(--d) = is_set(opts.flags, flags_t::uppercase) ? 'X' : 'x';
+        } else if (radix == 2) {
+            *(--d) = 'b';
+        }
+
+        assert(d > d_start);
+        *(--d) = '0';
+    }
+    assert(d >= d_start);
+
+    if (negative) {
+        assert(d > d_start);
+        *(--d) = '-';
+    } else if (is_set(opts.flags, flags_t::plus)) {
+        assert(d > d_start);
+        *(--d) = '+';  // ignore the space if the '+' exists
+    } else if (is_set(opts.flags, flags_t::space)) {
+        assert(d > d_start);
+        *(--d) = ' ';
+    }
+#if !defined(NDEBUG) && 0
+    if (d != d_start + space_left) {
+        fprintf(stderr, "ERROR d %p, d_start %p, space_left %zu, dist %zd",
+                d, d_start, space_left, d_start + space_left - d);
+    }
+#endif
+    assert(d == d_start + space_left);  // string space fully written
+
+    *(dest.data() + dest_len) = 0;  // EOS (is reserved)
+}
+
+bool jau::cfmt::impl::is_float_validF64(std::string &dest, const size_t dest_maxlen, const double value, const FormatOpts &opts) noexcept {
+    const uint64_t r = jau::bit_value_raw( value );
+    const bool up = is_set(opts.flags, flags_t::uppercase);
+    if (r == jau::double_iec559_nan_bitval) {
+        append_string(dest, dest_maxlen, up ? "NAN" : "nan", opts);
+        return false;
+    } else if (r == jau::double_iec559_negative_inf_bitval) {
+        append_string(dest, dest_maxlen, up ? "-INF" : "-inf", opts);
+        return false;;
+    } else if (r == jau::double_iec559_positive_inf_bitval) {
+        const bool plus = is_set(opts.flags, flags_t::plus);
+        append_string(dest, dest_maxlen, plus ? ( up ? "+INF" : "+inf" ) : ( up ? "INF" : "inf" ), opts);
+        return false;
+    }
+    return true;
+}
+
+void jau::cfmt::impl::append_floatF64(std::string &dest, const size_t dest_maxlen, const double ivalue, const FormatOpts &opts) noexcept {
+    using namespace jau::float_literals;
+
+    if (!dest_maxlen) {
+        return;
+    }
+    if (!is_float_validF64(dest, dest_maxlen, ivalue, opts)) {
+        return;
+    }
+    // FIXME `long double`
+    typedef double float_type;  // enforce 64bit only double type (see below)
+    // typedef jau::float_bytes_t<std::max(sizeof(ifloat_type), sizeof(double))> float_type;
+
+    char buf_[float_charbuf_maxlen];
+    char *d = buf_;
+    const char *const d_start = d;
+    const char *const d_end = d + float_charbuf_maxlen;
+    float_type diff = 0;
+
+    // powers of 10
+    static constexpr const float_type pow10[] = { 1e0_f64, 1e1_f64, 1e2_f64, 1e3_f64, 1e4_f64, 1e5_f64, 1e6_f64, 1e7_f64, 1e8_f64, 1e9_f64,
+                                                  1e10_f64, 1e11_f64, 1e12_f64, 1e13_f64, 1e14_f64 };
+    static constexpr const size_t prec_max = sizeof(pow10) / sizeof(float_type) - 1;  // 14
+
+    // test for negative
+    const bool negative = ivalue < 0;
+    float_type value = float_type(negative ? -ivalue : ivalue);
+
+    // test for very large values
+    // standard printf behavior is to print EVERY whole number digit -- which could be 100s of characters overflowing your buffers == bad
+    if ((value > max_append_float) || (value < -max_append_float)) {
+        append_efloatF64(dest, dest_maxlen, ivalue, opts);
+        return;
+    }
+
+    // set default precision, if not set explicitly
+    size_t prec = opts.precision_set ? opts.precision : default_float_precision;
+
+    // limit precision to prec_max, cause a prec > prec_max (14) can lead to overflow errors (orig 9)
+    while (prec > prec_max) {
+        *(d++) = '0';
+        prec--;
+    }
+
+    uint64_t whole = (uint64_t)value;
+    float_type tmp = (value - float_type(whole)) * pow10[prec];
+    uint64_t frac = (uint64_t)tmp;
+    diff = tmp - (float_type)frac;
+
+    if (diff > 0.5) {
+        ++frac;
+        // handle rollover, e.g. case 0.99 with prec 1 is 1.0
+        if (float_type(frac) >= pow10[prec]) {
+            frac = 0;
+            ++whole;
+        }
+    } else if (diff < 0.5) {
+    } else if ((frac == 0) || (frac & 1)) {
+        // if halfway, round up if odd OR if last digit is 0
+        ++frac;
+    }
+
+#if !defined(NDEBUG) && 0
+    fprintf(stderr, "FFF.10: val %f, positive %d, len %zu/%zu, prec %zu/%zu, width %zu: whole %" PRIu64 ", frac %" PRIu64 ", double_t %s\n",
+            value, !negative, len, float_charbuf_maxlen, prec, prec_max, width, whole, frac, jau::static_ctti<double_t>().toString().c_str());
+#endif
+
+    if (prec == 0) {
+        diff = value - (float_type)whole;
+        if ((!(diff < 0.5) || (diff > 0.5)) && (whole & 1)) {
+            // exactly 0.5 and ODD, then round up
+            // 1.5 -> 2, but 2.5 -> 2
+            ++whole;
+        }
+    } else {
+        unsigned int count = prec;
+        // now do fractional part, as an unsigned number
+        if (d < d_end) {
+            do {
+                --count;
+                *(d++) = char('0' + (frac % 10));
+            } while ((frac /= 10) && d < d_end);
+        }
+
+        // add extra 0s
+        while (d < d_end && count-- > 0) {
+            *(d++) = '0';
+        }
+        if (d < d_end) {
+            // add decimal
+            *(d++) = '.';
+        }
+    }
+
+    // do whole part, number is reversed
+    if (d < d_end) {
+        do {
+            *(d++) = char('0' + (whole % 10));
+        } while ((whole /= 10) && d < d_end);
+    }
+
+    // pad leading zeros
+    size_t width = opts.width_set ? opts.width : 0;
+    if (!is_set(opts.flags, flags_t::left) && is_set(opts.flags, flags_t::zeropad)) {
+        if (width && (negative || has_any(opts.flags, flags_t::plus | flags_t::space))) {
+            width--;
+        }
+        while ((d < d_start + width) && d < d_end) {
+            *(d++) = '0';
+        }
+    }
+
+    if (d < d_end) {
+        if (negative) {
+            *(d++) = '-';
+        } else if (is_set(opts.flags, flags_t::plus)) {
+            *(d++) = '+';  // ignore the space if the '+' exists
+        } else if (is_set(opts.flags, flags_t::space)) {
+            *(d++) = ' ';
+        }
+    }
+
+    append_rev(dest, dest_maxlen, std::string_view(d_start, d - d_start), false /*prec*/, true /*rev**/, opts);
+}
+
+void jau::cfmt::impl::append_efloatF64(std::string &dest, const size_t dest_maxlen, const double ivalue, const FormatOpts &iopts) noexcept {
+    using namespace jau::float_literals;
+
+    if (!dest_maxlen) {
+        return;
+    }
+    if (!is_float_validF64(dest, dest_maxlen, ivalue, iopts)) {
+        return;
+    }
+    // FIXME `long double`
+    typedef double float_type;  // enforce 64bit only double type (see below)
+
+    // determine the sign
+    const bool negative = ivalue < 0;
+    float_type value = float_type(negative ? -ivalue : ivalue);
+
+    // default precision
+    size_t prec = iopts.precision_set ? iopts.precision : default_float_precision;
+
+    // determine the decimal exponent
+    // based on the algorithm by David Gay (https://www.ampl.com/netlib/fp/dtoa.c)
+    // NOTE: 64bit double type specific
+    union {
+        uint64_t U;
+        double F;
+    } conv;
+
+    conv.F = value;
+    int32_t expval;
+    {
+        int32_t exp2 = int32_t((conv.U >> 52U) & 0x07FFU) - 1023;       // effectively log2
+        conv.U = (conv.U & ((1_u64 << 52U) - 1U)) | (1023_u64 << 52U);  // drop the exponent so conv.F is now in [1,2)
+        // now approximate log10 from the log2 integer part and an expansion of ln around 1.5
+        expval = int32_t(0.1760912590558 + exp2 * 0.301029995663981 + (conv.F - 1.5) * 0.289529654602168);
+        // now we want to compute 10^expval but we want to be sure it won't overflow
+        exp2 = int32_t(expval * 3.321928094887362 + 0.5);  // NOLINT(bugprone-incorrect-roundings)
+        const double z = expval * std::numbers::ln10 - exp2 * std::numbers::ln2;
+        const double z2 = z * z;
+        conv.U = (uint64_t)(exp2 + 1023) << 52U;
+        // compute exp(z) using continued fractions, see https://en.wikipedia.org/wiki/Exponential_function#Continued_fractions_for_ex
+        conv.F *= 1 + 2 * z / (2 - z + (z2 / (6 + (z2 / (10 + z2 / 14)))));
+    }
+    // correct for rounding errors
+    if (value < conv.F) {
+        expval--;
+        conv.F /= 10;
+    }
+
+    // the exponent format is "%+03d" and largest value is "307", so set aside 4-5 characters
+    unsigned int minwidth = ((expval < 100) && (expval > -100)) ? 4U : 5U;
+    FormatOpts fopts;
+
+    // in "%g" mode, "prec" is the number of *significant figures* not decimals
+    if (cspec_t::alt_float == iopts.conversion) {
+        // do we want to fall-back to "%f" mode?
+        if ((value >= 1e-4) && (value < 1e6)) {
+            if ((int)prec > expval) {
+                prec = (unsigned)((int)prec - expval - 1);
+            } else {
+                prec = 0;
+            }
+            fopts.precision_set = true;  // make sure _ftoa respects precision
+            fopts.precision = prec;
+            // no characters in exponent
+            minwidth = 0U;
+            expval = 0;
+        } else {
+            // we use one sigfig for the whole part
+            if ((prec > 0) && iopts.precision_set) {
+                --prec;
+            }
+        }
+    }
+
+    // will everything fit?
+    const size_t width = iopts.width_set ? iopts.width : 0;
+    unsigned int fwidth = width;
+    if (width > minwidth) {
+        // we didn't fall-back so subtract the characters required for the exponent
+        fwidth -= minwidth;
+    } else {
+        // not enough characters, so go back to default sizing
+        fwidth = 0U;
+    }
+    if (is_set(iopts.flags, flags_t::left) && minwidth) {
+        // if we're padding on the right, DON'T pad the floating part
+        fwidth = 0U;
+    }
+
+    // rescale the float value
+    if (expval) {
+        value /= conv.F;
+    }
+
+#if !defined(NDEBUG) && 0
+    fprintf(stderr, "EEE.10: expval %d, dest '%s' (len %zu), iopts %s\n", expval, dest.c_str(), dest.size(), iopts.toString().c_str());
+#endif
+
+    // output the floating part
+    const size_t start_idx = dest.size();
+    {
+        fopts.conversion = cspec_t::floating_point;
+        fopts.radix = 10;
+        fopts.flags = iopts.flags;
+        if (iopts.precision_set) {
+            fopts.precision_set = true;
+        }
+        if (fopts.precision_set) {
+            fopts.precision = prec;
+        } else {
+            fopts.precision = 0;
+        }
+        fopts.width_set = true;
+        fopts.width = fwidth;
+        append_floatF64(dest, dest_maxlen, negative ? -value : value, fopts);
+    }
+
+    // output the exponent part
+    if (minwidth) {
+        // output the exponential symbol
+        {
+            const size_t idx = dest.size();
+            dest.reserve(idx + float_charbuf_maxlen + 1);  // add EOS
+            dest.resize(idx + 1, ' ');
+            dest[idx] = is_set(iopts.flags, flags_t::uppercase) ? 'E' : 'e';
+        }
+        // output the exponent value
+        fopts.conversion = cspec_t::unsigned_int;
+        fopts.radix = 10;
+        fopts.flags = flags_t::zeropad | flags_t::plus;
+        fopts.precision_set = false;
+        fopts.precision = 0;
+        fopts.width_set = true;
+        fopts.width = minwidth - 1;
+#if !defined(NDEBUG) && 0
+        fprintf(stderr, "EEE.31: v %f (exp %d), dest '%s' (len %zu), fopts %s\n",
+                value, expval, dest.c_str(), dest.size(), fopts.toString().c_str());
+#endif
+        // FIXME
+        append_integral(dest, dest_maxlen, uint64_t(jau::abs(expval)), expval < 0, fopts);
+        // append_integral(dest, dest_maxlen, expval, fopts);
+        // might need to right-pad spaces
+        if (is_set(iopts.flags, flags_t::left)) {
+            const size_t idx = dest.size();
+            if (idx - start_idx < width) {
+                size_t space_right = width - (idx - start_idx);
+                dest.reserve(idx + space_right + 1);  // add EOS
+                dest.resize(idx + space_right, ' ');
+            }
+        }
+    }
+#if !defined(NDEBUG) && 0
+    fprintf(stderr, "EEE.88: expval %d, dest '%s' (len %zu, cap %zu)\n", expval, dest.c_str(), dest.size(), dest.capacity());
+#endif
+}
+
+void jau::cfmt::impl::append_afloatF64(std::string &dest, const size_t dest_maxlen, const double ivalue, const size_t ivalue_size, const FormatOpts &iopts) noexcept {
+    using namespace jau::float_literals;
+
+    if (!dest_maxlen) {
+        return;
+    }
+    if (!is_float_validF64(dest, dest_maxlen, ivalue, iopts)) {
+        return;
+    }
+    typedef double float_type;  // enforce 64bit only double type (spec)
+    const unsigned significand_shift = sizeof(float_type) > ivalue_size ? 8 * (sizeof(float_type) - ivalue_size) - 4 : 0;
+
+    // determine the sign
+    const bool negative = ivalue < 0;
+    float_type value = float_type(negative ? -ivalue : ivalue);
+
+    // default precision
+    size_t prec = iopts.precision_set ? iopts.precision : default_float_precision;
+
+    uint64_t significand = jau::significand_raw(value) >> significand_shift;
+    const int32_t expval = jau::exponent_unbiased(value);
+
+    // the exponent format is "%+03d" and largest value is "307", so set aside 4-5 characters
+    unsigned int minwidth = ((expval < 100) && (expval > -100)) ? 4U : 5U;
+    FormatOpts fopts;
+
+    // will everything fit?
+    const size_t width = iopts.width_set ? iopts.width : 0;
+    unsigned int fwidth = width;
+    if (width > minwidth) {
+        // we didn't fall-back so subtract the characters required for the exponent
+        fwidth -= minwidth;
+    } else {
+        // not enough characters, so go back to default sizing
+        fwidth = 0U;
+    }
+    if (is_set(iopts.flags, flags_t::left) && minwidth) {
+        // if we're padding on the right, DON'T pad the floating part
+        fwidth = 0U;
+    }
+
+#if !defined(NDEBUG) && 0
+    fprintf(stderr, "AAA.10: v %f, frac %" PRIx64 ", expval %d, dest '%s' (len %zu), iopts %s\n",
+            ivalue, significand, expval, dest.c_str(), dest.size(), iopts.toString().c_str());
+#endif
+
+    const size_t start_idx = dest.size();
+    // output the floating part
+    {
+        fopts.conversion = cspec_t::signed_int;
+        fopts.radix = 16;
+        fopts.flags = iopts.flags | flags_t::hash;
+
+        if (iopts.precision_set) {
+            fopts.precision_set = true;
+        }
+        if (fopts.precision_set) {
+            fopts.precision = prec;
+        } else {
+            fopts.precision = 0;
+        }
+        fopts.width_set = true;
+        fopts.width = fwidth;
+#if !defined(NDEBUG) && 0
+        fprintf(stderr, "AAA.31: v %f, frac %" PRIx64 ", expval %d, dest '%s' (len %zu), fopts %s\n",
+                ivalue, significand, expval, dest.c_str(), dest.size(), fopts.toString().c_str());
+#endif
+        // FIXME
+        append_integral(dest, dest_maxlen, significand, false, fopts, true);
+        // append_integral<decltype(significand), true>(dest, dest_maxlen, significand, fopts);
+    }
+
+    // output the exponent part
+    if (minwidth) {
+        // output the exponential symbol
+        {
+            const size_t idx = dest.size();
+            dest.reserve(idx + float_charbuf_maxlen + 1);  // add EOS
+            dest.resize(idx + 1, ' ');
+            dest[idx] = is_set(iopts.flags, flags_t::uppercase) ? 'P' : 'p';
+        }
+        // output the exponent value
+        fopts.conversion = cspec_t::unsigned_int;
+        fopts.radix = 10;
+        fopts.flags = flags_t::plus;
+        fopts.precision_set = false;
+        fopts.precision = 0;
+        fopts.width_set = false;
+        fopts.width = 0;
+#if !defined(NDEBUG) && 0
+        fprintf(stderr, "AAA.32: v %f, frac %" PRIx64 ", expval %d, dest '%s' (len %zu), fopts %s\n",
+                ivalue, significand, expval, dest.c_str(), dest.size(), fopts.toString().c_str());
+#endif
+        // FIXME
+        append_integral(dest, dest_maxlen, uint64_t(jau::abs(expval)), expval < 0, fopts);
+        // append_integral(dest, dest_maxlen, expval, fopts);
+        // might need to right-pad spaces
+        if (is_set(iopts.flags, flags_t::left)) {
+            const size_t idx = dest.size();
+            if (idx - start_idx < width) {
+                size_t space_right = width - (idx - start_idx);
+                dest.reserve(idx + space_right + 1);  // add EOS
+                dest.resize(idx + space_right, ' ');
+            }
+        }
+    }
+#if !defined(NDEBUG) && 0
+    fprintf(stderr, "AAA.88: expval %d, dest '%s' (len %zu, cap %zu)\n", expval, dest.c_str(), dest.size(), dest.capacity());
+#endif
 }

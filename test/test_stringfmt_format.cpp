@@ -119,6 +119,8 @@ TEST_CASE("parse: width precision from arg", "[jau][std::string][jau::cfmt]") {
     using namespace jau::cfmt;
 
     {
+        jau_string_check("%*" PRIi64, 21, (int64_t)1);
+        jau_string_checkLine("%*" PRIi64, 21, (int64_t)1);
         std::string s;
         jau::cfmt::Result r = jau::cfmt::formatR(s,"%*" PRIi64, 21, (int64_t)1);
         std::cerr << "FormatResult " << r << "\n";
@@ -212,6 +214,10 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
     void *p2b = (void *)0xaabbcc_u64; // NOLINT
     void *p3a = (void *)0x112233aabbccdd_u64; // NOLINT
     void *p3b = (void *)0xaabbcc_u64; // NOLINT
+    const char sl1[] = "Hallo";
+    std::string s2 = "World";
+    std::string_view s2sv = s2;
+    const char *s2p = s2.c_str();
 
     {
         double value = 123.45;
@@ -248,6 +254,14 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
 
     checkFormat(__LINE__, "%c", 'Z');
     checkFormat(__LINE__, "%s", "Hello World");
+    checkFormat(__LINE__, "%s", sl1);
+    {
+        // impossible for vsnprintf (via jau::unsafe::format_string)
+        CHECK( 1 == jau::cfmt::check("%s", s2));
+        CHECK( "World" == jau::format_string("%s", s2));
+        CHECK( 1 == jau::cfmt::check("%s", s2sv));
+        CHECK( "World" == jau::format_string("%s", s2sv));
+    }
     checkFormat(__LINE__, "%p", &i32);
     checkFormat(__LINE__, "p1a %p %0p", p1a, p1a);
     checkFormat(__LINE__, "p1b %p %0p", p1b, p1b);
@@ -255,8 +269,11 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
     checkFormat(__LINE__, "p2b %p %0p", p2b, p2b);
     checkFormat(__LINE__, "p3a %p %0p", p3a, p3a);
     checkFormat(__LINE__, "p3b %p %0p", p3b, p3b);
-    checkFormat(__LINE__, "%s", (char *)nullptr);
+    checkFormat(__LINE__, "p3b %p %0p", &i32_u, &i32_u);
+    checkFormat(__LINE__, "p3b %p %0p", &sl1, &sl1);
+    checkFormat(__LINE__, "p3b %p %0p", s2p, s2p);
     checkFormat(__LINE__, "%p", (void *)nullptr);
+    checkFormat(__LINE__, "%s", (char *)nullptr);
 
     checkFormat(__LINE__, "%d", i32);
 
@@ -307,7 +324,17 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
         const char *limiter_pos = nullptr;
         char *endptr = nullptr;
 
+        jau_string_check("Value end not '%c' @ idx %zd, %p != %p, in: %p '%s' len %zu", limiter, endptr - str, endptr, limiter_pos, str, str, str_len);
         jau_string_checkLine("Value end not '%c' @ idx %zd, %p != %p, in: %p '%s' len %zu", limiter, endptr - str, endptr, limiter_pos, str, str, str_len);
+    }
+    // bool
+    {
+        jau_string_check("%d", (bool)true);
+        jau_string_checkLine("%d", (bool)true);
+        jau_string_check("%u", (bool)true);
+        jau_string_checkLine("%u", (bool)true);
+        // jau_string_check("%s", (bool)true);
+        // jau_string_checkLine("%s", (bool)true);
     }
 
     // enums

@@ -268,11 +268,12 @@ TEST_CASE("jau::cfmt_10", "[jau][std::string][jau::cfmt]") {
     {
         // we support safe signedness conversion
         static_assert( 1  == jau::cfmt::check("         int -> int %d", 1));
-        static_assert(-1 == jau::cfmt::check("unsigned int -> int %d", (unsigned int)1)); // error: unsigned -> signed
+        static_assert(-1 == jau::cfmt::check("unsigned int  -> int %d", (unsigned int)1));  // error: sizeof(unsigned) == sizeof(signed)
+        static_assert( 1 == jau::cfmt::check("unsigned char -> int %d", (unsigned char)1)); // OK: sizeof(unsigned) < sizeof(signed)
         static_assert( 1  == jau::cfmt::check("unsigned int -> unsigned int %u", (unsigned int)1));
-        static_assert( 1 == jau::cfmt::check("         int -> unsigned int %u", 1));            // OK: signed -> unsigned
-        static_assert(-1 == jau::cfmt::check("    uint64_t -> int64_t %" PRIi64, (uint64_t)1)); // error: unsigned -> signed
-        static_assert( 1 == jau::cfmt::check("     int64_t -> uint64_t %" PRIu64, (int64_t)1)); // OK: signed -> unsigned
+        static_assert( 1 == jau::cfmt::check("         int -> unsigned int %u",  1));            // OK: +signed -> unsigned
+        static_assert(-1 == jau::cfmt::check("    uint64_t -> int64_t %" PRIi64, (uint64_t)1)); // error: sizeof(unsigned) == sizeof(signed)
+        static_assert( 1 == jau::cfmt::check("     int64_t -> uint64_t %" PRIu64, (int64_t)1)); // OK: +signed -> unsigned
 
         // given type <= integral target type
         static_assert( 1 == jau::cfmt::check("        char -> int %d", (char)1));     // OK  given type <= integral target type
