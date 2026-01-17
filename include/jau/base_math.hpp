@@ -27,6 +27,7 @@
 
 #include <climits>
 #include <cmath>
+#include <concepts>
 
 #include <jau/int_math_ct.hpp>
 #include <jau/int_types.hpp>
@@ -60,6 +61,25 @@ namespace jau {
     template<jau::req::arithmetic T>
     bool in_range(const T& a, const T& b, const T& range) {
         return std::abs(a-b) <= range;
+    }
+
+    /** Returns true of the given integral is positive, i.e. >= 0. */
+    template<typename T>
+    requires jau::req::signed_integral<T>
+    constexpr bool is_positive(const T a) noexcept {
+        return a >= 0;
+    }
+
+    template<typename T>
+    requires std::floating_point<T>
+    constexpr bool is_positive(const T a) noexcept {
+        return a >= 0;
+    }
+
+    template<typename T>
+    requires jau::req::unsigned_integral<T>
+    constexpr bool is_positive(const T) noexcept {
+        return true;
     }
 
     /**

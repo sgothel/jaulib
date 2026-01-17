@@ -52,25 +52,6 @@ namespace jau {
 
     // Remember: constexpr specifier used in a function or static data member (since C++17) declaration implies inline.
 
-    /** Returns true of the given integral is positive, i.e. >= 0. */
-    template<typename T>
-    requires jau::req::signed_integral<T>
-    constexpr bool is_positive(const T& a) noexcept {
-        return a >= 0;
-    }
-
-    template<typename T>
-    requires std::floating_point<T>
-    constexpr bool is_positive(const T& a) noexcept {
-        return a >= 0;
-    }
-
-    template<typename T>
-    requires jau::req::unsigned_integral<T>
-    constexpr bool is_positive(const T&) noexcept {
-        return true;
-    }
-
     /** Returns true of the given integer value is zero. */
     template<std::integral T>
     constexpr bool is_zero(const T& a) noexcept {
