@@ -378,6 +378,31 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
     }
 }
 
+TEST_CASE("integral_conversion", "[jau][std::string][jau::cfmt]") {
+    static constexpr const char *format_check_exp1 = "format_check: -1, 2, -3, 4, -5, 6, -7, 8, -9, 10";
+    static constexpr const char *format_check_exp2 = "format_check: -1, 02, -03, 0004, -0005, 000006, -000007, 00000008, -00000009, 0000000010";
+    char i1=-1;
+    unsigned char i2=2;
+
+    short i3=-3;
+    unsigned short i4=4;
+
+    int i5=-5;
+    unsigned int i6=6;
+
+    long i7=-7;
+    unsigned long i8=8;
+
+    ssize_t i9 = -9;
+    size_t i10 = 10;
+
+    jau_string_check("format_check: %hhd, %hhu, %hd, %hu, %d, %u, %ld, %lu, %zd, %zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
+    CHECK(format_check_exp1 == jau::format_string("format_check: %hhd, %hhu, %hd, %hu, %d, %u, %ld, %lu, %zd, %zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10));
+
+    jau_string_check("format_check: %01hhd, %02hhu, %03hd, %04hu, %05d, %06u, %07ld, %08lu, %09zd, %010zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
+    CHECK(format_check_exp2 == jau::format_string("format_check: %01hhd, %02hhu, %03hd, %04hu, %05d, %06u, %07ld, %08lu, %09zd, %010zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10));
+}
+
 TEST_CASE("thousands_flag", "[jau][std::string][jau::cfmt][flags]" ) {
     //
     // thousand flag ' or ,

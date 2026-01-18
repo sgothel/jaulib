@@ -270,9 +270,9 @@ namespace jau::cfmt {
 
     struct FormatOpts {
         std::string_view fmt;
-        size_t width;
-        size_t precision;
-        nsize_t radix;
+        uint32_t width;
+        uint32_t precision;
+        uint32_t radix;
         flags_t flags;
         plength_t length_mod;
         cspec_t conversion;
@@ -280,15 +280,15 @@ namespace jau::cfmt {
         bool precision_set:1;
 
         constexpr FormatOpts() noexcept
-        : fmt(), width(0), precision(0), radix(0),
+        : fmt(), width(0), precision(0), radix(10),
           flags(flags_t::none),
           length_mod(plength_t::none),
           conversion(cspec_t::none),
           width_set(false), precision_set(false)
           { }
 
-        constexpr void setWidth(size_t v) { width = v; width_set = true; }
-        constexpr void setPrecision(size_t v) { precision = v; precision_set = true; }
+        constexpr void setWidth(uint32_t v) { width = v; width_set = true; }
+        constexpr void setPrecision(uint32_t v) { precision = v; precision_set = true; }
         constexpr bool addFlag(char c) noexcept {
             switch( c ) {
                 case '#':  flags |= flags_t::hash; break;
@@ -403,73 +403,11 @@ namespace jau::cfmt {
             return true;
         }
 
-        /// Reconstructs format string
-        std::string toFormat() const {
-            std::string s;
-            s.reserve(31);
-            s.append("%");
-            if( is_set(flags, flags_t::hash) ) { s.append("#"); }
-            if( is_set(flags, flags_t::zeropad) ) { s.append("0"); }
-            if( is_set(flags, flags_t::left) ) { s.append("-"); }
-            if( is_set(flags, flags_t::space) ) { s.append(" "); }
-            if( is_set(flags, flags_t::plus) ) { s.append("+"); }
-            if( width_set ) {
-                s.append(std::to_string(width));
-            }
-            if( precision_set) {
-                s.append(".").append(std::to_string(precision));
-            }
-            if( plength_t::none != length_mod ) {
-                s.append(to_string(length_mod));
-            }
-            switch( conversion ) {
-                case cspec_t::character:
-                    s.append("c");
-                    break;
-                case cspec_t::string:
-                    s.append("s");
-                    break;
-                case cspec_t::pointer:
-                    s.append("p");
-                    break;
-                case cspec_t::signed_int:
-                    s.append("d");
-                    break;
-                case cspec_t::unsigned_int: {
-                        if( 16 == radix ) {
-                            s.append( is_set(flags, flags_t::uppercase) ? "X" : "x" );
-                        } else if( 8 == radix ) {
-                            s.append("o");
-                        } else if( 2 == radix ) {
-                            s.append("b");
-                        } else {
-                            s.append("u");
-                        }
-                    } break;
-                case cspec_t::floating_point:
-                    s.append( is_set(flags, flags_t::uppercase) ? "F" : "f" );
-                    break;
-                case cspec_t::exp_float:
-                    s.append( is_set(flags, flags_t::uppercase) ? "E" : "e" );
-                    break;
-                case cspec_t::hex_float:
-                    s.append( is_set(flags, flags_t::uppercase) ? "A" : "a" );
-                    break;
-                case cspec_t::alt_float:
-                    s.append( is_set(flags, flags_t::uppercase) ? "G" : "g" );
-                    break;
-                default:
-                    s.append("E");
-                    break;
-            }  // switch( fmt_literal )
-            return s;
-        }
-
         constexpr void reset() noexcept {
             fmt = std::string_view();
             width = 0;
             precision = 0;
-            radix = 0;
+            radix = 10;
             flags = flags_t::none;
             length_mod = plength_t::none;
             conversion = cspec_t::none;
@@ -477,30 +415,16 @@ namespace jau::cfmt {
             precision_set = false;
         }
 
-        std::string toString() const {
-            std::string s = "fmt `";
-            s.append(fmt).append("` -> `").append(toFormat())
-             .append("`, flags ")
-             .append(to_string(flags))
-             .append(", width ");
-            if( width_set ) {
-                s.append(std::to_string(width));
-            } else {
-                s.append("no");
-            }
-            s.append(", precision ");
-            if( precision_set ) {
-                s.append(std::to_string(precision));
-            } else {
-                s.append("no");
-            }
-            s.append(", length `")
-             .append(to_string(length_mod))
-             .append("`, cspec ").append(to_string(conversion))
-             .append(", radix ").append(std::to_string(radix));
-            return s;
-        }
+        /// Reconstructs format string
+        std::string toFormat() const;
+
+        std::string toString() const;
     };
+
+    inline std::ostream &operator<<(std::ostream &out, const FormatOpts &o) {
+        out << o.toString();
+        return out;
+    }
 
     class Result {
       private:
@@ -531,23 +455,7 @@ namespace jau::cfmt {
         /// error line of implementation source code or zero if success (error analysis)
         constexpr int errorLine() const noexcept { return m_line; }
 
-        std::string toString() const {
-            const char c = m_pos < m_fmt.length() ? m_fmt[m_pos] : '@';
-            std::string s = "args ";
-            s.append(std::to_string(m_arg_count))
-            .append(", ok ")
-            .append(jau::to_string(m_success))
-            .append(", line ")
-            .append(std::to_string(m_line))
-            .append(", pos ")
-            .append(std::to_string(m_pos))
-            .append(", char `")
-            .append(std::string(1, c))
-            .append("`, last[").append(m_opts.toString())
-            .append("], fmt `").append(m_fmt)
-            .append("`");
-            return s;
-        }
+        std::string toString() const;
     };
 
     inline std::ostream &operator<<(std::ostream &out, const Result &pc) {
@@ -556,16 +464,15 @@ namespace jau::cfmt {
     }
 
     namespace impl {
-        inline constexpr const size_t float_charbuf_maxlen = 32;
+        inline constexpr const size_t char32buf_maxlen = 32;
         inline constexpr const size_t default_float_precision = 6;
         inline constexpr const double_t max_append_float = (double_t)1e9;
 
-        void append_rev(std::string &dest, const size_t dest_maxlen, std::string_view src, bool prec_cut, bool reverse, const FormatOpts &opts) noexcept;
-        inline void append_string(std::string &dest, const size_t dest_maxlen, std::string_view src, const FormatOpts &opts) noexcept {
+        void append_rev(std::string &dest, const size_t dest_maxlen, std::string_view src, bool prec_cut, bool reverse, const FormatOpts &opts);
+        inline void append_string(std::string &dest, const size_t dest_maxlen, std::string_view src, const FormatOpts &opts) {
             append_rev(dest, dest_maxlen, src, true /*prec*/, false /*rev**/, opts);
         }
-
-        void append_integral(std::string &dest, const size_t dest_maxlen, const uint64_t val, bool negative, const FormatOpts &opts, bool inject_dot=false) noexcept;
+        void append_integral(std::string &dest, const size_t dest_maxlen, uint64_t v, const bool negative, const FormatOpts &opts, const bool inject_dot=false);
 
         // check for NaN and special values
         template<std::floating_point value_type>
@@ -585,11 +492,10 @@ namespace jau::cfmt {
             }
             return true;
         }
-        bool is_float_validF64(std::string &dest, const size_t dest_maxlen, const double value, const FormatOpts &opts) noexcept;
-
-        void append_floatF64(std::string &dest, const size_t dest_maxlen, const double value, const FormatOpts &opts) noexcept;
-        void append_efloatF64(std::string &dest, const size_t dest_maxlen, const double ivalue, const FormatOpts &iopts) noexcept;
-        void append_afloatF64(std::string &dest, const size_t dest_maxlen, const double ivalue, const size_t ivalue_size, const FormatOpts &iopts) noexcept;
+        bool is_float_validF64(std::string &dest, const size_t dest_maxlen, const double value, const FormatOpts &opts);
+        void append_floatF64(std::string &dest, const size_t dest_maxlen, const double value, const FormatOpts &opts);
+        void append_efloatF64(std::string &dest, const size_t dest_maxlen, const double ivalue, const FormatOpts &iopts);
+        void append_afloatF64(std::string &dest, const size_t dest_maxlen, const double ivalue, const size_t ivalue_size, const FormatOpts &iopts);
 
         template<typename T>
         concept OutputType = requires(T t) {
@@ -635,112 +541,63 @@ namespace jau::cfmt {
             StringOutput(std::size_t maxLen, std::string &s) noexcept : m_maxLen(maxLen), m_s(s) {}
 
             constexpr size_t maxLen() const noexcept { return m_maxLen; }
-            constexpr bool fits(size_t n) const noexcept { return 0 < m_maxLen && n <= m_maxLen - m_s.size(); }
+            constexpr bool fits(size_t n) const noexcept { return m_s.size() + n <= m_maxLen; }
 
             std::string_view get() const noexcept { return m_s; }
 
             template<typename T>
             requires jau::req::string_literal<T> || jau::req::string_class<T>
-            void appendFormatted(const FormatOpts& opts, const T& v) noexcept {
-                std::exception_ptr eptr;
-                try {
-                    impl::append_string(m_s, m_maxLen, v, opts);
-                } catch (...) {
-                    eptr = std::current_exception();
-                }
-                handle_exception(eptr);
+            void appendFormatted(const FormatOpts& opts, const T& v) {
+                impl::append_string(m_s, m_maxLen, v, opts);
             }
             template<typename T>
             requires jau::req::char_pointer<T>
-            void appendFormatted(const FormatOpts& opts, const T& v) noexcept {
-                std::exception_ptr eptr;
-                try {
-                    if( nullptr != v ) {
-                        impl::append_string(m_s, m_maxLen, v, opts);
-                    } else {
-                        impl::append_string(m_s, m_maxLen, "(null)", opts);
-                    }
-                } catch (...) {
-                    eptr = std::current_exception();
+            void appendFormatted(const FormatOpts& opts, const T& v) {
+                if( nullptr != v ) {
+                    impl::append_string(m_s, m_maxLen, std::string_view(v), opts);
+                } else {
+                    impl::append_string(m_s, m_maxLen, "(null)", opts);
                 }
-                handle_exception(eptr);
             }
             template<typename T>
             requires jau::req::boolean<T>
-            void appendFormatted(const FormatOpts& opts, const T& v) noexcept {
-                std::exception_ptr eptr;
-                try {
-                    impl::append_string(m_s, m_maxLen, jau::to_string(v), opts);
-                } catch (...) {
-                    eptr = std::current_exception();
-                }
-                handle_exception(eptr);
+            void appendFormatted(const FormatOpts& opts, const T& v) {
+                impl::append_string(m_s, m_maxLen, jau::to_string(v), opts);
             }
             template<typename T>
             requires jau::req::pointer<T> && (!jau::req::string_alike<T>)
-            void appendFormatted(const FormatOpts& opts, const T& v) noexcept {
-                std::exception_ptr eptr;
-                try {
-                    if( nullptr != v ) {
-                        const uintptr_t v_le = jau::cpu_to_le(reinterpret_cast<uintptr_t>(v));
-                        impl::append_integral(m_s, m_maxLen, v_le, false, opts);
-                    } else {
-                        impl::append_string(m_s, m_maxLen, "(nil)", opts);
-                    }
-                } catch (...) {
-                    eptr = std::current_exception();
+            void appendFormatted(const FormatOpts& opts, const T& v) {
+                if( nullptr != v ) {
+                    const uintptr_t v_le = jau::cpu_to_le(reinterpret_cast<uintptr_t>(v));
+                    impl::append_integral(m_s, m_maxLen, v_le, false, opts);
+                } else {
+                    impl::append_string(m_s, m_maxLen, "(nil)", opts);
                 }
-                handle_exception(eptr);
             }
             template<typename T>
             requires jau::req::unsigned_integral<T> && (!jau::req::boolean<T>)
-            void appendFormattedInt(const FormatOpts& opts, const T& v, bool negative) noexcept {
-                std::exception_ptr eptr;
-                try {
-                    impl::append_integral(m_s, m_maxLen, uint64_t(jau::abs(v)), negative, opts);
-                } catch (...) {
-                    eptr = std::current_exception();
-                }
-                handle_exception(eptr);
+            void appendFormattedInt(const FormatOpts& opts, const T& v, bool negative) {
+                impl::append_integral(m_s, m_maxLen, uint64_t(v), negative, opts);
             }
             template<typename T>
             requires std::is_floating_point_v<T>
-            void appendFormattedFloat(const FormatOpts& opts, const T& v, nsize_t floatSize) noexcept {
-                std::exception_ptr eptr;
-                try {
-                    if( opts.conversion == cspec_t::floating_point ) {
-                        impl::append_floatF64(m_s, m_maxLen, v, opts);
-                    } else if( opts.conversion == cspec_t::hex_float ) {
-                        impl::append_afloatF64(m_s, m_maxLen, v, floatSize, opts);
-                    } else {
-                        // cspec_t::exp_float, cspec_t::alt_float
-                        impl::append_efloatF64(m_s, m_maxLen, v, opts);
-                    }
-                } catch (...) {
-                    eptr = std::current_exception();
-                }
-                handle_exception(eptr);
-            }
-            void appendText(const std::string_view v) noexcept {
-                if( fits(v.size()) ) {
-                    std::exception_ptr eptr;
-                    try {
-                        m_s.append(v);
-                    } catch (...) {
-                        eptr = std::current_exception();
-                    }
-                    handle_exception(eptr);
+            void appendFormattedFloat(const FormatOpts& opts, const T& v, nsize_t floatSize) {
+                if( opts.conversion == cspec_t::floating_point ) {
+                    impl::append_floatF64(m_s, m_maxLen, v, opts);
+                } else if( opts.conversion == cspec_t::hex_float ) {
+                    impl::append_afloatF64(m_s, m_maxLen, v, floatSize, opts);
+                } else {
+                    // cspec_t::exp_float, cspec_t::alt_float
+                    impl::append_efloatF64(m_s, m_maxLen, v, opts);
                 }
             }
-            void appendError(size_t argIdx, int line, const std::string_view tag) noexcept {
-                std::exception_ptr eptr;
-                try {
-                    m_s.append("<E#").append(std::to_string(argIdx)).append("@").append(std::to_string(line)).append(":").append(tag).append(">");
-                } catch (...) {
-                    eptr = std::current_exception();
+            inline void appendText(const std::string_view v) {
+                if (fits(v.size())) {
+                    m_s.append(v);
                 }
-                handle_exception(eptr);
             }
+
+            void appendError(size_t argIdx, int line, const std::string_view tag);
         };
 
         template<OutputType Output>
@@ -843,7 +700,7 @@ namespace jau::cfmt {
                     // seek next conversion specifier
                     const size_t q = fmt.find('%', pos + 1);
                     if (q == std::string::npos) {
-                        // no conversion specifier found
+                        // no conversion specifier found, end of format
                         appendText(fmt.substr(pos, fmt.length() - pos));
                         pos = fmt.length();
                         return false;
@@ -880,32 +737,27 @@ namespace jau::cfmt {
 
             template<typename T>
                 requires jau::req::stringifyable_jau<T> && (!jau::req::unsigned_integral<T>) && (!std::floating_point<T>)
-            constexpr FResult &appendFormatted(const T &v) noexcept {
+            constexpr void appendFormatted(const T &v) {
                 m_out.appendFormatted(opts, v);
-                return *this;
             }
             template<typename T>
             requires jau::req::unsigned_integral<T> && (!jau::req::boolean<T>)
-            constexpr FResult &appendFormatted(const T &v) noexcept {
+            constexpr void appendFormatted(const T &v) {
                 m_out.appendFormattedInt(opts, v, m_argval_negative);
-                return *this;
             }
 
             template<typename T>
                 requires std::floating_point<T>
-            constexpr FResult &appendFormatted(const T &v) noexcept {
+            constexpr void appendFormatted(const T &v) {
                 m_out.appendFormattedFloat(opts, v, m_argtype_size);
-                return *this;
             }
 
-            constexpr FResult &appendText(const std::string_view v) noexcept {
+            constexpr void appendText(const std::string_view v) {
                 m_out.appendText(v);
-                return *this;
             }
-            constexpr FResult &appendError(const std::string_view tag) noexcept {
+            constexpr void appendError(const std::string_view tag) {
                 const ssize_t c = arg_count == std::numeric_limits<ssize_t>::min() ? 0 : arg_count;
                 m_out.appendError(jau::abs(c), line, tag);
-                return *this;
             }
         };
 
@@ -956,6 +808,7 @@ namespace jau::cfmt {
 
         /// A StringOutput formatting result for runtime formatting into a std::string
         typedef FResult<StringOutput> SFormatResult;
+
         template<OutputType Output>
         class Parser {
           public:
@@ -1184,15 +1037,15 @@ namespace jau::cfmt {
                 if( pc.m_argval_negative ) {
                     if( is_width ) {
                         pc.opts.flags |= flags_t::left; // reverse padding
-                        pc.opts.setWidth((size_t)val);
+                        pc.opts.setWidth((uint32_t)val);
                     } else {
                         pc.opts.setPrecision(0);
                     }
                 } else {
                     if( is_width ) {
-                        pc.opts.setWidth((size_t)val);
+                        pc.opts.setWidth((uint32_t)val);
                     } else {
-                        pc.opts.setPrecision((size_t)val);
+                        pc.opts.setPrecision((uint32_t)val);
                     }
                 }
                 // next argument is required
@@ -1225,10 +1078,14 @@ namespace jau::cfmt {
                     // pc.setError(__LINE__); // number syntax
                     return false;  // error
                 }
+                if( num < 0 || num > std::numeric_limits<int>::max() ) {
+                    // pc.setError(__LINE__); // number syntax
+                    return false;  // error
+                }
                 if( is_width ) {
-                    pc.opts.setWidth((size_t)num);
+                    pc.opts.setWidth((uint32_t)num);
                 } else {
-                    pc.opts.setPrecision((size_t)num);
+                    pc.opts.setPrecision((uint32_t)num);
                 }
                 return true;  // continue with current argument
             }
@@ -1437,15 +1294,8 @@ namespace jau::cfmt {
             constexpr bool parseSignedFmtSpec(Result &pc, const T &val) const {
                 ++pc.arg_count;
 
-                // Not accepting unsigned -> signed
-                // FIXME
+                // Only accepting unsigned -> signed, if sizeof(unsigned) < sizeof(signed)
                 const unsigned int signed_argtype_size = pc.m_argtype_signed ? pc.m_argtype_size : pc.m_argtype_size + 1;
-                #if 0
-                if( !pc.m_argtype_signed ) {
-                    pc.setError(__LINE__);
-                    return false;
-                }
-                #endif
 
                 if (jau::is_zero(val)) {
                     pc.opts.flags &= ~flags_t::hash;  // no hash for 0 values
@@ -1654,6 +1504,10 @@ namespace jau::cfmt {
 
     }  // namespace impl
 
+    //
+    // Public format functions
+    //
+
     /**
      * Strict format with type validation of arguments against the format string.
      *
@@ -1748,6 +1602,10 @@ namespace jau::cfmt {
         p.template parseOne<impl::no_type_t>(ctx, impl::no_type_t());
         return ctx;
     }
+
+    //
+    // Public check functions
+    //
 
     /**
      * Strict type validation of arguments against the format string.
@@ -1930,7 +1788,7 @@ namespace jau {
         std::string str;
         std::exception_ptr eptr;
         try {
-            str.reserve(strLenHint);
+            str.reserve(strLenHint+1); // +EOS
             jau::cfmt::formatR(str, format, args...);
         } catch (...) {
             eptr = std::current_exception();

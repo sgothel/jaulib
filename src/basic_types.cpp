@@ -1124,11 +1124,114 @@ std::string jau::type_info::toString() const noexcept {
 }
 
 //
-//
+// jau::cfmt
 //
 
-void jau::cfmt::impl::append_rev(std::string &dest, const size_t dest_maxlen, std::string_view src, bool prec_cut, bool reverse, const FormatOpts &opts) noexcept
-{
+/// Reconstructs format string
+std::string jau::cfmt::FormatOpts::toFormat() const {
+    std::string s;
+    s.reserve(31);
+    s.append("%");
+    if( is_set(flags, flags_t::hash) ) { s.append("#"); }
+    if( is_set(flags, flags_t::zeropad) ) { s.append("0"); }
+    if( is_set(flags, flags_t::left) ) { s.append("-"); }
+    if( is_set(flags, flags_t::space) ) { s.append(" "); }
+    if( is_set(flags, flags_t::plus) ) { s.append("+"); }
+    if( width_set ) {
+        s.append(std::to_string(width));
+    }
+    if( precision_set) {
+        s.append(".").append(std::to_string(precision));
+    }
+    if( plength_t::none != length_mod ) {
+        s.append(to_string(length_mod));
+    }
+    switch( conversion ) {
+        case cspec_t::character:
+            s.append("c");
+            break;
+        case cspec_t::string:
+            s.append("s");
+            break;
+        case cspec_t::pointer:
+            s.append("p");
+            break;
+        case cspec_t::signed_int:
+            s.append("d");
+            break;
+        case cspec_t::unsigned_int: {
+                if( 16 == radix ) {
+                    s.append( is_set(flags, flags_t::uppercase) ? "X" : "x" );
+                } else if( 8 == radix ) {
+                    s.append("o");
+                } else if( 2 == radix ) {
+                    s.append("b");
+                } else {
+                    s.append("u");
+                }
+            } break;
+        case cspec_t::floating_point:
+            s.append( is_set(flags, flags_t::uppercase) ? "F" : "f" );
+            break;
+        case cspec_t::exp_float:
+            s.append( is_set(flags, flags_t::uppercase) ? "E" : "e" );
+            break;
+        case cspec_t::hex_float:
+            s.append( is_set(flags, flags_t::uppercase) ? "A" : "a" );
+            break;
+        case cspec_t::alt_float:
+            s.append( is_set(flags, flags_t::uppercase) ? "G" : "g" );
+            break;
+        default:
+            s.append("E");
+            break;
+    }  // switch( fmt_literal )
+    return s;
+}
+
+std::string jau::cfmt::FormatOpts::toString() const {
+    std::string s = "fmt `";
+    s.append(fmt).append("` -> `").append(toFormat())
+     .append("`, flags ")
+     .append(to_string(flags))
+     .append(", width ");
+    if( width_set ) {
+        s.append(std::to_string(width));
+    } else {
+        s.append("no");
+    }
+    s.append(", precision ");
+    if( precision_set ) {
+        s.append(std::to_string(precision));
+    } else {
+        s.append("no");
+    }
+    s.append(", length `")
+     .append(to_string(length_mod))
+     .append("`, cspec ").append(to_string(conversion))
+     .append(", radix ").append(std::to_string(radix));
+    return s;
+}
+
+std::string jau::cfmt::Result::toString() const {
+    const char c = m_pos < m_fmt.length() ? m_fmt[m_pos] : '@';
+    std::string s = "args ";
+    s.append(std::to_string(m_arg_count))
+    .append(", ok ")
+    .append(jau::to_string(m_success))
+    .append(", line ")
+    .append(std::to_string(m_line))
+    .append(", pos ")
+    .append(std::to_string(m_pos))
+    .append(", char `")
+    .append(std::string(1, c))
+    .append("`, last[").append(m_opts.toString())
+    .append("], fmt `").append(m_fmt)
+    .append("`");
+    return s;
+}
+
+void jau::cfmt::impl::append_rev(std::string &dest, const size_t dest_maxlen, std::string_view src, bool prec_cut, bool reverse, const FormatOpts &opts) {
     if (!dest_maxlen) {
         return;
     }
@@ -1138,7 +1241,7 @@ void jau::cfmt::impl::append_rev(std::string &dest, const size_t dest_maxlen, st
 
     // pre padding
     if (prec_cut && opts.precision_set) {
-        src_len = std::min(src_len, opts.precision);
+        src_len = std::min<size_t>(src_len, opts.precision);
     }
     size_t space_left = 0, space_right = 0;
     {
@@ -1159,7 +1262,7 @@ void jau::cfmt::impl::append_rev(std::string &dest, const size_t dest_maxlen, st
                 len += space_left;
             }
         }
-        size_t new_size = dest_start_len + len;
+        const size_t new_size = dest_start_len + len;
         dest.reserve(new_size + 1); // +EOS, not shrinking!
         dest.resize(new_size, ' ');
     }
@@ -1181,14 +1284,14 @@ void jau::cfmt::impl::append_rev(std::string &dest, const size_t dest_maxlen, st
     *(dest.data()+dest.size()) = 0; // EOS (is reserved)
 }
 
-void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxlen, uint64_t v, bool negative, const FormatOpts &opts, bool inject_dot) noexcept {
+void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxlen, uint64_t v, const bool negative, const jau::cfmt::FormatOpts &opts, const bool inject_dot) {
     if (!dest_maxlen) {
         return;
     }
     const size_t dest_start_len = dest.size();
 
-    const nsize_t radix = opts.radix;
-    nsize_t shift;
+    const uint32_t radix = opts.radix;
+    uint32_t shift;
     switch (radix) {
         case 16: shift = 4; break;
         case 10: shift = 0; break;
@@ -1196,23 +1299,56 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
         case 2:  shift = 1; break;
         default: return;
     }
-    typedef uint64_t unsigned_value_type;
-    // typedef std::make_unsigned_t<value_type> unsigned_value_type;
-    // unsigned_value_type v = unsigned_value_type(jau::abs(val));
-    // const bool negative = !jau::is_positive(val);
     const char *hex_array = is_set(opts.flags, flags_t::uppercase) ? HexadecimalArrayBig : HexadecimalArrayLow;
-    const nsize_t mask = radix - 1;  // ignored for radix 10
     const char separator = is_set(opts.flags, flags_t::thousands) ? '\'' : 0;
-    const nsize_t sep_gap = 10 == radix ? 3 : 4;
-    const nsize_t val_digits = opts.precision_set && opts.precision == 0 && jau::is_zero(v) ? 0 : jau::digits<unsigned_value_type>(v, radix);
-    const nsize_t sep_count = val_digits > 0 && separator ? (val_digits - 1) / sep_gap : 0;
-    const size_t prec = opts.precision_set ? opts.precision : 0;
-    const nsize_t xtra_dot = inject_dot ? 1 : 0;
-    size_t width = opts.width_set ? opts.width : 0;
-    size_t zeros_left = 0, space_left = 0, space_right = 0;
-    size_t xtra_left = 0;  ///< contains hash, sign and prec_left and single space
+    const uint32_t sep_gap = 10 == radix ? 3 : 4;
+
+    // const uint32_t val_digits = opts.precision_set && opts.precision == 0 && jau::is_zero(v) ? 0 : jau::digits(v, radix);
+    uint32_t val_digits; // includes separator count
+    char buf_[char32buf_maxlen];
+    if( opts.precision_set && opts.precision == 0 && jau::is_zero(v) ) {
+        val_digits = 0;
+    } else {
+        const uint64_t mask = radix - 1;
+        char * d = buf_;
+        const char * const d_end_num = d + char32buf_maxlen;
+        if (!separator) {
+            do {
+                if (10 == radix) {
+                    *(d++) = char('0' + (v % 10_u64));
+                    v /= 10;
+                } else {
+                    *(d++) = hex_array[v & mask];
+                    v >>= shift;
+                }
+            } while( v && d < d_end_num);
+        } else {
+            uint32_t digit_cnt = 0;
+            do {
+                if (0 < digit_cnt && 0 == digit_cnt % sep_gap) {
+                    *(d++) = separator;
+                }
+                assert(d < d_end_num);
+
+                if (10 == radix) {
+                    *(d++) = char('0' + (v % 10_u64));
+                    v /= 10;
+                } else {
+                    *(d++) = hex_array[v & mask];
+                    v >>= shift;
+                }
+                ++digit_cnt;
+            } while( v && d < d_end_num);
+        }
+        val_digits = d - buf_;
+    }
+    const uint32_t prec = opts.precision_set ? opts.precision : 0;
+    const uint32_t xtra_dot = val_digits && inject_dot ? 1 : 0;
+    uint32_t width = opts.width_set ? opts.width : 0;
+    uint32_t zeros_left = 0, space_left = 0, space_right = 0;
+    uint32_t xtra_left = 0;  ///< contains hash, sign and prec_left and single space
     {
-        size_t len = val_digits + xtra_dot + sep_count;  // current total of the number string
+        uint32_t len = val_digits + xtra_dot;  // total of the number string
         // p1: pad leading zeros
         if (!is_set(opts.flags, flags_t::left)) {
             if (width && is_set(opts.flags, flags_t::zeropad) && (negative || has_any(opts.flags, flags_t::plus | flags_t::space))) {
@@ -1224,7 +1360,7 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
                 len += zeros_left;
             }
             if (len < width && is_set(opts.flags, flags_t::zeropad)) {
-                size_t n = width - len;
+                uint32_t n = width - len;
                 zeros_left += n;
                 xtra_left += n;
                 len += n;
@@ -1276,22 +1412,19 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
                 // len += space_left;
             }
         }
-
         const size_t added_maxlen = dest_maxlen - dest_start_len;
-        const size_t added_len = std::min<size_t>(added_maxlen, val_digits + xtra_dot + sep_count + xtra_left + space_left + space_right);
-        dest.reserve(dest_start_len + added_len + 1);  // +EOS, not shrinking!
-        dest.resize(dest_start_len + added_len, ' ');
+        const size_t added_len = std::min<size_t>(added_maxlen, space_left + xtra_left + ( val_digits + xtra_dot ) + space_right);
+        const size_t new_size = dest_start_len + added_len;
+        dest.reserve(new_size + 1);  // +EOS, not shrinking!
+        dest.resize(new_size, ' ');
 
 #if !defined(NDEBUG) && 0
+        const uint32_t sep_count = val_digits > 0 && separator ? (val_digits - 1) / sep_gap : 0;
         fprintf(stderr, "XXX.80: opts: %s\n", opts.toString().c_str());
-        if (negative) {
-            fprintf(stderr, "XXX.80: val %zd, abs %zu\n", (ssize_t)val, (size_t)v);
-        } else {
-            fprintf(stderr, "XXX.80: val %zu, abs %zu\n", (size_t)val, (size_t)v);
-        }
-        fprintf(stderr, "XXX.80: idx[digits %zu, sep %zu, xleft %zu (zeros %zu)], space[l %zu, r %zu] -> len %zu\n",
+        fprintf(stderr, "XXX.80: negative %d, val %" PRIu64 "\n", negative, v);
+        fprintf(stderr, "XXX.80: idx[digits %u, sep %u, xleft %u (zeros %u)], space[l %u, r %u] -> len %u\n",
                 val_digits, sep_count, xtra_left, zeros_left, space_left, space_right, len);
-        fprintf(stderr, "XXX.80: total len[old %zu, added %zu, len %zu], number_start %zu\n", dest_start_len, added_len, dest.size(), xtra_left + space_left);
+        fprintf(stderr, "XXX.80: total len[old %zu, added %zu, len %zu], number_start %u\n", dest_start_len, added_len, dest.size(), xtra_left + space_left);
 #endif
     }
     const size_t dest_len = dest.size();
@@ -1299,37 +1432,25 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
     const char *const d_start_num = d_start + space_left + xtra_left;
     char *d = dest.data() + dest_len - space_right;
     const char *const d_end_num = d;
-#if !defined(NDEBUG) && 0
-    fprintf(stderr, "XXX.80: total len %zu, d_start_num %zd - d_end_num %zd (num_len %zd)\n",
-            dest.size() - dest_start_len, d_start_num - d_start, d_end_num - d_start, d_end_num - d_start_num);
-#endif
-
     assert(d_end_num >= d_start_num);
-    assert(size_t(d_end_num - d_start_num) == val_digits + xtra_dot + sep_count);
-    assert(d >= d_start_num);
-    assert(d >= d_start);
+    assert(size_t(d_end_num - d_start_num) == val_digits + xtra_dot);
 
-    nsize_t digit_cnt = 0, separator_idx = 0;
-    while (d > d_start_num) {
-        if (separator_idx < sep_count && 0 < digit_cnt && 0 == digit_cnt % sep_gap) {
-            *(--d) = separator;
-            ++separator_idx;
-        }
-        assert(d > d_start_num);
-        // if ( d > d_start_num ) {
-        assert(digit_cnt < val_digits);
-        if (10 == radix) {
-            *(--d) = char('0' + (v % 10));
-            v /= 10;
+    // required = space_left + xtra_left + ( val_digits + xtra_dot ) + space_right;
+    {
+        char * p = buf_;
+        if (!xtra_dot) {
+            while (d > d_start_num) {
+                *(--d) = *(p++); // NOLINT(clang-analyzer-core.uninitialized.Assign): Wrong analysis? buf_ was written up-to val_digits! (Assigned value is garbage or undefined)
+            }
         } else {
-            *(--d) = hex_array[v & mask];
-            v >>= shift;
+            while (d > d_start_num) {
+                *(--d) = *(p++); // NOLINT(clang-analyzer-core.uninitialized.Assign): Wrong analysis? buf_ was written up-to val_digits! (Assigned value is garbage or undefined)
+                if (d == d_start_num + 1 + xtra_dot) {
+                    *(--d) = '.';
+                }
+            }
         }
-        ++digit_cnt;
-        if (xtra_dot && d == d_start_num + 1 + xtra_dot) {
-            *(--d) = '.';
-        }
-        // }
+        assert(p - buf_ == val_digits);
     }
     assert(d == d_start_num);
     assert(d >= d_start);
@@ -1386,7 +1507,7 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
     *(dest.data() + dest_len) = 0;  // EOS (is reserved)
 }
 
-bool jau::cfmt::impl::is_float_validF64(std::string &dest, const size_t dest_maxlen, const double value, const FormatOpts &opts) noexcept {
+bool jau::cfmt::impl::is_float_validF64(std::string &dest, const size_t dest_maxlen, const double value, const FormatOpts &opts) {
     const uint64_t r = jau::bit_value_raw( value );
     const bool up = is_set(opts.flags, flags_t::uppercase);
     if (r == jau::double_iec559_nan_bitval) {
@@ -1403,7 +1524,7 @@ bool jau::cfmt::impl::is_float_validF64(std::string &dest, const size_t dest_max
     return true;
 }
 
-void jau::cfmt::impl::append_floatF64(std::string &dest, const size_t dest_maxlen, const double ivalue, const FormatOpts &opts) noexcept {
+void jau::cfmt::impl::append_floatF64(std::string &dest, const size_t dest_maxlen, const double ivalue, const FormatOpts &opts) {
     using namespace jau::float_literals;
 
     if (!dest_maxlen) {
@@ -1416,10 +1537,10 @@ void jau::cfmt::impl::append_floatF64(std::string &dest, const size_t dest_maxle
     typedef double float_type;  // enforce 64bit only double type (see below)
     // typedef jau::float_bytes_t<std::max(sizeof(ifloat_type), sizeof(double))> float_type;
 
-    char buf_[float_charbuf_maxlen];
+    char buf_[char32buf_maxlen];
     char *d = buf_;
     const char *const d_start = d;
-    const char *const d_end = d + float_charbuf_maxlen;
+    const char *const d_end = d + char32buf_maxlen;
     float_type diff = 0;
 
     // powers of 10
@@ -1528,7 +1649,7 @@ void jau::cfmt::impl::append_floatF64(std::string &dest, const size_t dest_maxle
     append_rev(dest, dest_maxlen, std::string_view(d_start, d - d_start), false /*prec*/, true /*rev**/, opts);
 }
 
-void jau::cfmt::impl::append_efloatF64(std::string &dest, const size_t dest_maxlen, const double ivalue, const FormatOpts &iopts) noexcept {
+void jau::cfmt::impl::append_efloatF64(std::string &dest, const size_t dest_maxlen, const double ivalue, const FormatOpts &iopts) {
     using namespace jau::float_literals;
 
     if (!dest_maxlen) {
@@ -1650,7 +1771,7 @@ void jau::cfmt::impl::append_efloatF64(std::string &dest, const size_t dest_maxl
         // output the exponential symbol
         {
             const size_t idx = dest.size();
-            dest.reserve(idx + float_charbuf_maxlen + 1);  // add EOS
+            dest.reserve(idx + char32buf_maxlen + 1);  // add EOS
             dest.resize(idx + 1, ' ');
             dest[idx] = is_set(iopts.flags, flags_t::uppercase) ? 'E' : 'e';
         }
@@ -1673,9 +1794,10 @@ void jau::cfmt::impl::append_efloatF64(std::string &dest, const size_t dest_maxl
         if (is_set(iopts.flags, flags_t::left)) {
             const size_t idx = dest.size();
             if (idx - start_idx < width) {
-                size_t space_right = width - (idx - start_idx);
-                dest.reserve(idx + space_right + 1);  // add EOS
-                dest.resize(idx + space_right, ' ');
+                // const size_t with_space_right = idx + ( width - (idx - start_idx) );
+                const size_t with_space_right = width + start_idx;
+                dest.reserve(with_space_right + 1);  // add EOS
+                dest.resize(with_space_right, ' ');
             }
         }
     }
@@ -1684,7 +1806,7 @@ void jau::cfmt::impl::append_efloatF64(std::string &dest, const size_t dest_maxl
 #endif
 }
 
-void jau::cfmt::impl::append_afloatF64(std::string &dest, const size_t dest_maxlen, const double ivalue, const size_t ivalue_size, const FormatOpts &iopts) noexcept {
+void jau::cfmt::impl::append_afloatF64(std::string &dest, const size_t dest_maxlen, const double ivalue, const size_t ivalue_size, const FormatOpts &iopts) {
     using namespace jau::float_literals;
 
     if (!dest_maxlen) {
@@ -1761,7 +1883,7 @@ void jau::cfmt::impl::append_afloatF64(std::string &dest, const size_t dest_maxl
         // output the exponential symbol
         {
             const size_t idx = dest.size();
-            dest.reserve(idx + float_charbuf_maxlen + 1);  // add EOS
+            dest.reserve(idx + char32buf_maxlen + 1);  // add EOS
             dest.resize(idx + 1, ' ');
             dest[idx] = is_set(iopts.flags, flags_t::uppercase) ? 'P' : 'p';
         }
@@ -1784,13 +1906,18 @@ void jau::cfmt::impl::append_afloatF64(std::string &dest, const size_t dest_maxl
         if (is_set(iopts.flags, flags_t::left)) {
             const size_t idx = dest.size();
             if (idx - start_idx < width) {
-                size_t space_right = width - (idx - start_idx);
-                dest.reserve(idx + space_right + 1);  // add EOS
-                dest.resize(idx + space_right, ' ');
+                // const size_t with_space_right = idx + ( width - (idx - start_idx) );
+                const size_t with_space_right = width + start_idx;
+                dest.reserve(with_space_right + 1);  // add EOS
+                dest.resize(with_space_right, ' ');
             }
         }
     }
 #if !defined(NDEBUG) && 0
     fprintf(stderr, "AAA.88: expval %d, dest '%s' (len %zu, cap %zu)\n", expval, dest.c_str(), dest.size(), dest.capacity());
 #endif
+}
+
+void jau::cfmt::impl::StringOutput::appendError(size_t argIdx, int line, const std::string_view tag) {
+    m_s.append("<E#").append(std::to_string(argIdx)).append("@").append(std::to_string(line)).append(":").append(tag).append(">");
 }
