@@ -26,7 +26,7 @@ check() {
 }
 
 if [ -z "${builddir}" ] ; then
-    check release-gcc-master-00
+    check release-clang
     check release-gcc
 else
     check ${builddir}

@@ -60,6 +60,32 @@
       }
     },
     {
+      "name": "perf-gcc",
+      "inherits": "debug",
+      "displayName": "Profiling (gcc, C++20, java)",
+      "binaryDir": "${sourceDir}/build/perf-gcc",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/dist/perf-gcc",
+        "JAU_CMAKE_FIX_INSTALL_PREFIX": "ON",
+        "USE_STRIP": "OFF"
+      }
+    },
+    {
+      "name": "perf-clang",
+      "inherits": "debug",
+      "displayName": "Profiling (clang, C++20, java)",
+      "binaryDir": "${sourceDir}/build/perf-clang",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/dist/perf-clang",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "JAU_CMAKE_FIX_INSTALL_PREFIX": "ON",
+        "USE_STRIP": "OFF"
+      }
+    },
+    {
       "name": "release",
       "inherits": "debug",
       "displayName": "Release (cc, C++20, java)",
@@ -123,6 +149,14 @@
       "configurePreset": "debug2-gcc"
     },
     {
+      "name": "perf-gcc",
+      "configurePreset": "perf-gcc"
+    },
+    {
+      "name": "perf-clang",
+      "configurePreset": "perf-clang"
+    },
+    {
       "name": "release",
       "configurePreset": "release"
     },
@@ -161,6 +195,18 @@
     {
       "name": "debug2-gcc",
       "configurePreset": "debug2-gcc",
+      "output": {"outputOnFailure": true},
+      "execution": {"noTestsAction": "error", "stopOnFailure": true}
+    },
+    {
+      "name": "perf-gcc",
+      "configurePreset": "perf-gcc",
+      "output": {"outputOnFailure": true},
+      "execution": {"noTestsAction": "error", "stopOnFailure": true}
+    },
+    {
+      "name": "perf-clang",
+      "configurePreset": "perf-clang",
       "output": {"outputOnFailure": true},
       "execution": {"noTestsAction": "error", "stopOnFailure": true}
     },
