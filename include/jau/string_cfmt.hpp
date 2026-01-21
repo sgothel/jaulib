@@ -538,7 +538,8 @@ namespace jau::cfmt {
             std::string &m_s;
 
           public:
-            StringOutput(std::size_t maxLen, std::string &s) noexcept : m_maxLen(maxLen), m_s(s) {}
+            constexpr StringOutput(std::size_t maxLen, std::string &s) noexcept
+            : m_maxLen(maxLen), m_s(s) {}
 
             constexpr size_t maxLen() const noexcept { return m_maxLen; }
             constexpr bool fits(size_t n) const noexcept { return m_s.size() + n <= m_maxLen; }
@@ -755,14 +756,12 @@ namespace jau::cfmt {
             constexpr void appendText(const std::string_view v) {
                 m_out.appendText(v);
             }
+
             constexpr void appendError(const std::string_view tag) {
                 const ssize_t c = arg_count == std::numeric_limits<ssize_t>::min() ? 0 : arg_count;
                 m_out.appendError(jau::abs(c), line, tag);
             }
         };
-
-        // A NullOutput formatting result, capable of `constexpr` and `consteval`
-        typedef FResult<NullOutput> CheckResult;
 
         template <jau::req::signed_integral T>
         constexpr T abs_int(const T x) noexcept
@@ -806,18 +805,24 @@ namespace jau::cfmt {
         template<typename T>
         using make_simple_pointer_t = typename std::conditional_t<jau::req::pointer<T>, std::type_identity<const char * const>, std::type_identity<T>>::type;  // NOLINT
 
+        // A NullOutput formatting result, capable of `constexpr` and `consteval`
+        typedef FResult<NullOutput> CheckResult;
+
         /// A StringOutput formatting result for runtime formatting into a std::string
-        typedef FResult<StringOutput> SFormatResult;
+        typedef FResult<StringOutput> StringResult;
 
         template<OutputType Output>
         class Parser {
           public:
             typedef FResult<Output> Result;
-            constexpr Parser() noexcept = default;
+            constexpr Parser() noexcept = delete;
+
+            // Note: parseOne using StringResult is not consteval nor noexcept (string ops)
+            // Note: checkOne using CheckResult is consteval and noexcept (zero string ops)
 
             template <typename T>
             requires std::is_integral_v<T>
-            constexpr void parseOne(Result &pc, const T &val) const noexcept {
+            static constexpr void parseOne(Result &pc, const T &val) {
                 pc.m_argtype_size = sizeof(T);
                 pc.m_argtype_signed = std::is_signed_v<T>;
                 pc.m_argval_negative = !is_positive(val);
@@ -827,7 +832,7 @@ namespace jau::cfmt {
 
             template <typename T>
             requires std::is_floating_point_v<T>
-            constexpr void parseOne(Result &pc, const T &val) const noexcept {
+            static constexpr void parseOne(Result &pc, const T &val) {
                 pc.m_argtype_size = sizeof(T);
                 pc.m_argtype_signed = true;
                 pc.m_argval_negative = !is_positive(val);
@@ -836,7 +841,7 @@ namespace jau::cfmt {
 
             template <typename T>
             requires jau::req::pointer<T> // also allows passing `char*` for `%p`
-            constexpr void parseOne(Result &pc, const T &val) const noexcept {
+            static constexpr void parseOne(Result &pc, const T &val) {
                 pc.m_argtype_size = sizeof(T); // NOLINT(bugprone-sizeof-expression)
                 pc.m_argtype_signed = false;
                 pc.m_argval_negative = false;
@@ -846,7 +851,7 @@ namespace jau::cfmt {
 
             template <typename T>
             requires jau::req::string_literal<T> || jau::req::string_class<T>
-            constexpr void parseOne(Result &pc, const T &val) const noexcept {
+            static constexpr void parseOne(Result &pc, const T &val) {
                 pc.m_argtype_size = sizeof(T); // NOLINT(bugprone-sizeof-expression)
                 pc.m_argtype_signed = false;
                 pc.m_argval_negative = false;
@@ -855,7 +860,7 @@ namespace jau::cfmt {
 
             template <typename T>
             requires (!(std::is_integral_v<T> || std::is_floating_point_v<T> || jau::req::pointer<T> || jau::req::string_alike<T>)) // not: jau::req::string_literal<T> || jau::req::string_class<T> || jau::req::char_pointer<T>
-            constexpr void parseOne(Result &pc, const T &val) const noexcept {
+            static constexpr void parseOne(Result &pc, const T &val) {
                 pc.m_argtype_size = sizeof(T); // NOLINT(bugprone-sizeof-expression)
                 pc.m_argtype_signed = std::is_signed_v<T>;
                 pc.m_argval_negative = !is_positive(val);
@@ -864,7 +869,7 @@ namespace jau::cfmt {
 
             template <typename T>
             requires std::is_integral_v<T>
-            constexpr void checkOne(Result &pc) const noexcept {
+            static constexpr void checkOne(CheckResult &pc) noexcept {
                 pc.m_argtype_size = sizeof(T);
                 pc.m_argtype_signed = std::is_signed_v<T>;
                 pc.m_argval_negative = false;
@@ -874,7 +879,7 @@ namespace jau::cfmt {
 
             template <typename T>
             requires std::is_floating_point_v<T>
-            constexpr void checkOne(Result &pc) const noexcept {
+            static constexpr void checkOne(CheckResult &pc) noexcept {
                 pc.m_argtype_size = sizeof(T);
                 pc.m_argtype_signed = true;
                 pc.m_argval_negative = false;
@@ -883,7 +888,7 @@ namespace jau::cfmt {
 
             template <typename T>
             requires jau::req::pointer<T> // also allows passing `char*` for `%p`
-            constexpr void checkOne(Result &pc) const noexcept {
+            static constexpr void checkOne(CheckResult &pc) noexcept {
                 pc.m_argtype_size = sizeof(T); // NOLINT(bugprone-sizeof-expression)
                 pc.m_argtype_signed = false;
                 pc.m_argval_negative = false;
@@ -893,7 +898,7 @@ namespace jau::cfmt {
 
             template <typename T>
             requires jau::req::string_literal<T> || jau::req::string_class<T>
-            constexpr void checkOne(Result &pc) const noexcept {
+            static constexpr void checkOne(CheckResult &pc) noexcept {
                 pc.m_argtype_size = sizeof(T); // NOLINT(bugprone-sizeof-expression)
                 pc.m_argtype_signed = false;
                 pc.m_argval_negative = false;
@@ -902,7 +907,7 @@ namespace jau::cfmt {
 
             template <typename T>
             requires (!(std::is_integral_v<T> || std::is_floating_point_v<T> || jau::req::pointer<T> || jau::req::string_alike<T>)) // not: jau::req::string_literal<T> || jau::req::string_class<T> || jau::req::char_pointer<T>
-            constexpr void checkOne(Result &pc) const noexcept {
+            static constexpr void checkOne(CheckResult &pc) noexcept {
                 pc.m_argtype_size = sizeof(T); // NOLINT(bugprone-sizeof-expression)
                 pc.m_argtype_signed = std::is_signed_v<T>;
                 pc.m_argval_negative = false;
@@ -910,6 +915,7 @@ namespace jau::cfmt {
             }
 
           private:
+
             /**
              * Parse the given argument against the current conversion specifier of the format string.
              *
@@ -925,7 +931,7 @@ namespace jau::cfmt {
              * @return true if no error _and_ not complete, i.e. further calls with subsequent parameter required. Otherwise parsing ended due to error or completeness.
              */
             template <typename T>
-            constexpr void parseOneImpl(Result &pc, const T &val) const noexcept {
+            static constexpr void parseOneImpl(Result &pc, const T &val) {
                 if( !pc.hasNext() ) {
                     return;  // done or error
                 }
@@ -986,6 +992,7 @@ namespace jau::cfmt {
                             }
                         }
                     }
+
                     if( !parseLengthMods(pc, c) ) {
                         pc.appendError("Len");
                         return;  // error
@@ -1011,20 +1018,20 @@ namespace jau::cfmt {
                 // return pc.hasNext(); // true: no-error and not-complete
             }
 
-            constexpr void parseFlags(Result &pc, char &c) const noexcept {
+            static constexpr void parseFlags(Result &pc, char &c) noexcept {
                 while( pc.opts.addFlag(c) && pc.nextSymbol(c) ) { }
             }
 
             /// Parse argument field width or precision, returns false on error. Otherwise next argument is required.
             template <typename T>
             requires (!jau::req::unsigned_integral<T>)
-            constexpr void parseArgWidthPrecision(bool, Result &pc, const T &) const noexcept {
+            static constexpr void parseArgWidthPrecision(bool, Result &pc, const T &) noexcept {
                 pc.setError(__LINE__);
             }
             /// Parse argument field width or precision, returns false on error. Otherwise next argument is required.
             template <typename T>
             requires (jau::req::unsigned_integral<T>)
-            constexpr void parseArgWidthPrecision(bool is_width, Result &pc, const T &val) const noexcept {
+            static constexpr void parseArgWidthPrecision(bool is_width, Result &pc, const T &val) noexcept {
                 if constexpr( std::is_same_v<no_type_t, T> ) {
                     pc.setError(__LINE__);
                     return;  // error
@@ -1053,7 +1060,7 @@ namespace jau::cfmt {
 
             /// Parse format field width or precision, returns true if field is consumed and parsing can continue
             /// or false if field has not been consumed or definite error
-            constexpr bool parseFmtWidthPrecision(bool is_width, Result &pc, char &c) const noexcept {
+            static constexpr bool parseFmtWidthPrecision(bool is_width, Result &pc, char &c) noexcept {
                 char buffer[num_max_slen+1];
                 char *s = &buffer[0];
                 const char *s_begin = s;
@@ -1091,7 +1098,7 @@ namespace jau::cfmt {
             }
 
             /* parse length modifier, returns true if parsing can continue or false on error. */
-            constexpr bool parseLengthMods(Result &pc, char &c) const noexcept {
+            static constexpr bool parseLengthMods(Result &pc, char &c) noexcept {
                 if( 'h' == c ) {
                     if( !pc.nextSymbol(c) ) { return false; }
                     if( 'h' == c ) {
@@ -1130,7 +1137,7 @@ namespace jau::cfmt {
             }
 
             template <typename T>
-            constexpr bool parseFmtSpec(Result &pc, char fmt_literal, const T &val) const noexcept {
+            static constexpr bool parseFmtSpec(Result &pc, char fmt_literal, const T &val) {
                 if( !pc.opts.setConversion(fmt_literal) ) {
                     pc.setError(__LINE__);
                     return false;
@@ -1160,8 +1167,7 @@ namespace jau::cfmt {
 
             template <typename T>
             requires (!jau::req::unsigned_integral<T>)
-            constexpr bool parseCharFmtSpec(Result &pc, const T &) const noexcept
-            {
+            static constexpr bool parseCharFmtSpec(Result &pc, const T &) noexcept {
                 if constexpr( !std::is_same_v<no_type_t, T> ) {
                     ++pc.arg_count;
                 }
@@ -1171,8 +1177,7 @@ namespace jau::cfmt {
 
             template <typename T>
             requires jau::req::unsigned_integral<T> //  && (!jau::req::boolean<T>)
-            constexpr bool parseCharFmtSpec(Result &pc, const T &val0) const noexcept
-            {
+            static constexpr bool parseCharFmtSpec(Result &pc, const T &val0) {
                 ++pc.arg_count;
 
                 using V = make_int_signed_t<T>; // restore signed type!
@@ -1209,8 +1214,7 @@ namespace jau::cfmt {
 
             template <typename T>
             requires (!jau::req::string_alike<T>)
-            constexpr bool parseStringFmtSpec(Result &pc, const T &) const noexcept
-            {
+            static constexpr bool parseStringFmtSpec(Result &pc, const T &) noexcept {
                 if constexpr( !std::is_same_v<no_type_t, T> ) {
                     ++pc.arg_count;
                 }
@@ -1220,8 +1224,7 @@ namespace jau::cfmt {
 
             template <typename T>
             requires jau::req::string_alike<T>
-            constexpr bool parseStringFmtSpec(Result &pc, const T &val) const noexcept
-            {
+            static constexpr bool parseStringFmtSpec(Result &pc, const T &val) {
                 ++pc.arg_count;
                 switch( pc.opts.length_mod ) {
                     case plength_t::none:
@@ -1244,7 +1247,7 @@ namespace jau::cfmt {
 
             template <typename T>
             requires (!jau::req::pointer<T>)
-            constexpr bool parseAPointerFmtSpec(Result &pc, const T &) const noexcept {
+            static constexpr bool parseAPointerFmtSpec(Result &pc, const T &) noexcept {
                 if constexpr( !std::is_same_v<no_type_t, T> ) {
                     ++pc.arg_count;
                 }
@@ -1253,7 +1256,7 @@ namespace jau::cfmt {
             }
             template <typename T>
             requires jau::req::pointer<T>
-            constexpr bool parseAPointerFmtSpec(Result &pc, const T &val) const noexcept {
+            static constexpr bool parseAPointerFmtSpec(Result &pc, const T &val) {
                 pc.opts.length_mod = plength_t::none;
                 ++pc.arg_count;
                 pc.appendFormatted((void *)const_cast<std::remove_const_t<T>>(val)); // force pointer type
@@ -1262,7 +1265,7 @@ namespace jau::cfmt {
 
             template <typename T>
             requires (!(jau::req::unsigned_integral<T> || std::is_enum_v<T>))
-            constexpr bool parseSignedFmtSpec(Result &pc, const T &) const {
+            static constexpr bool parseSignedFmtSpec(Result &pc, const T &) noexcept {
                 if constexpr( !std::is_same_v<no_type_t, T> ) {
                     ++pc.arg_count;
                 }
@@ -1271,7 +1274,7 @@ namespace jau::cfmt {
             }
             template <typename T>
             requires std::is_enum_v<T> && (!jau::req::signed_integral<std::underlying_type_t<T>>)
-            constexpr bool parseSignedFmtSpec(Result &pc, const T &) const {
+            static constexpr bool parseSignedFmtSpec(Result &pc, const T &) noexcept {
                 if constexpr( !std::is_same_v<no_type_t, T> ) {
                     ++pc.arg_count;
                 }
@@ -1280,7 +1283,7 @@ namespace jau::cfmt {
             }
             template <typename T>
             requires std::is_enum_v<T> && jau::req::signed_integral<std::underlying_type_t<T>>
-            constexpr bool parseSignedFmtSpec(Result &pc, const T &val0) const {
+            static constexpr bool parseSignedFmtSpec(Result &pc, const T &val0) {
                 using U = std::underlying_type_t<T>;
                 using V = make_int_unsigned_t<U>;
                 const U u = U(val0);
@@ -1291,7 +1294,7 @@ namespace jau::cfmt {
             }
             template <typename T>
             requires jau::req::unsigned_integral<T>
-            constexpr bool parseSignedFmtSpec(Result &pc, const T &val) const {
+            static constexpr bool parseSignedFmtSpec(Result &pc, const T &val) {
                 ++pc.arg_count;
 
                 // Only accepting unsigned -> signed, if sizeof(unsigned) < sizeof(signed)
@@ -1362,7 +1365,7 @@ namespace jau::cfmt {
 
             template <typename T>
             requires (!(jau::req::unsigned_integral<T> || std::is_enum_v<T>))
-            constexpr bool parseUnsignedFmtSpec(Result &pc, const T &) const noexcept {
+            static constexpr bool parseUnsignedFmtSpec(Result &pc, const T &) noexcept {
                 if constexpr( !std::is_same_v<no_type_t, T> ) {
                     ++pc.arg_count;
                 }
@@ -1371,7 +1374,7 @@ namespace jau::cfmt {
             }
             template <typename T>
             requires std::is_enum_v<T>
-            constexpr bool parseUnsignedFmtSpec(Result &pc, const T &val0) const {
+            static constexpr bool parseUnsignedFmtSpec(Result &pc, const T &val0) {
                 using U = std::underlying_type_t<T>;
                 using V = make_int_unsigned_t<U>;
                 const U u = U(val0);
@@ -1382,7 +1385,7 @@ namespace jau::cfmt {
             }
             template <typename T>
             requires jau::req::unsigned_integral<T>
-            constexpr bool parseUnsignedFmtSpec(Result &pc, const T &val) const noexcept {
+            static constexpr bool parseUnsignedFmtSpec(Result &pc, const T &val) {
                 ++pc.arg_count;
 
                 // Accepting signed, but not negative
@@ -1458,7 +1461,7 @@ namespace jau::cfmt {
 
             template <typename T>
             requires (!std::floating_point<T>)
-            constexpr bool parseFloatFmtSpec(Result &pc, const char /*fmt_literal*/, const T &) const noexcept {
+            static constexpr bool parseFloatFmtSpec(Result &pc, const char /*fmt_literal*/, const T &) noexcept {
                 if constexpr( !std::is_same_v<no_type_t, T> ) {
                     ++pc.arg_count;
                 }
@@ -1467,7 +1470,7 @@ namespace jau::cfmt {
             }
             template <typename T>
             requires std::floating_point<T>
-            constexpr bool parseFloatFmtSpec(Result &pc, const char /*fmt_literal*/, const T &val) const noexcept {
+            static constexpr bool parseFloatFmtSpec(Result &pc, const char /*fmt_literal*/, const T &val) {
                 ++pc.arg_count;
 
                 using U = std::remove_cv_t<T>;
@@ -1513,21 +1516,28 @@ namespace jau::cfmt {
      *
      * See @ref jau_cfmt_header for details
      *
-     * @tparam Targs the argument template type pack to be validated against the format string
-     * @param fmt the snprintf format string
+     * @tparam Targs the argument template type pack for the given arguments `args`
+     * @param fmt the snprintf compliant format string
      * @param args passed arguments, used for template type deduction only
      * @return true if successfully parsed format and arguments, false otherwise.
      * @see @ref jau_cfmt_header
      */
     template <typename... Targs>
-    inline std::string format(std::string_view fmt, const Targs &...args) noexcept {
+    inline __attribute__((always_inline))
+    std::string format(std::string_view fmt, const Targs &...args) noexcept {
         std::string s;
-        impl::SFormatResult ctx(impl::StringOutput(s.max_size(), s), fmt);
-        constexpr const impl::FormatParser p;
-        if constexpr( 0 < sizeof...(Targs) ) {
-            ((p.template parseOne<Targs>(ctx, args)), ...);
+        impl::StringResult ctx(impl::StringOutput(s.max_size(), s), fmt);
+
+        std::exception_ptr eptr;
+        try {
+            if constexpr( 0 < sizeof...(Targs) ) {
+                ((impl::FormatParser::parseOne<Targs>(ctx, args)), ...);
+            }
+            impl::FormatParser::parseOne<impl::no_type_t>(ctx, impl::no_type_t());
+        } catch (...) {
+            eptr = std::current_exception();
         }
-        p.template parseOne<impl::no_type_t>(ctx, impl::no_type_t());
+        handle_exception(eptr);
         return s;
     }
 
@@ -1536,22 +1546,29 @@ namespace jau::cfmt {
      *
      * See @ref jau_cfmt_header for details
      *
-     * @tparam Targs the argument template type pack to be validated against the format string
+     * @tparam Targs the argument template type pack for the given arguments `args`
      * @param maxLen maximum string length
-     * @param fmt the snprintf format string
+     * @param fmt the snprintf compliant format string
      * @param args passed arguments, used for template type deduction only
      * @return true if successfully parsed format and arguments, false otherwise.
      * @see @ref jau_cfmt_header
      */
     template <typename... Targs>
-    inline std::string format(size_t maxLen, std::string_view fmt, const Targs &...args) noexcept {
+    inline __attribute__((always_inline))
+    std::string format(size_t maxLen, std::string_view fmt, const Targs &...args) noexcept {
         std::string s;
-        impl::SFormatResult ctx(impl::StringOutput(std::min(maxLen, s.max_size()), s), fmt);
-        constexpr const impl::FormatParser p;
-        if constexpr( 0 < sizeof...(Targs) ) {
-            ((p.template parseOne<Targs>(ctx, args)), ...);
+        impl::StringResult ctx(impl::StringOutput(std::min(maxLen, s.max_size()), s), fmt);
+
+        std::exception_ptr eptr;
+        try {
+            if constexpr( 0 < sizeof...(Targs) ) {
+                ((impl::FormatParser::parseOne<Targs>(ctx, args)), ...);
+            }
+            impl::FormatParser::parseOne<impl::no_type_t>(ctx, impl::no_type_t());
+        } catch (...) {
+            eptr = std::current_exception();
         }
-        p.template parseOne<impl::no_type_t>(ctx, impl::no_type_t());
+        handle_exception(eptr);
         return s;
     }
 
@@ -1561,21 +1578,28 @@ namespace jau::cfmt {
      *
      * See @ref jau_cfmt_header for details
      *
-     * @tparam Targs the argument template type pack to be validated against the format string
+     * @tparam Targs the argument template type pack for the given arguments `args`
      * @param s destination string to append the formatted string
-     * @param fmt the snprintf format string
+     * @param maxLen maximum string length
+     * @param fmt the snprintf compliant format string
      * @param args passed arguments, used for template type deduction only
      * @return jau::cfmt::Result instance for further inspection
      * @see @ref jau_cfmt_header
      */
     template <typename... Targs>
-    inline Result formatR(std::string &s, std::string_view fmt, const Targs &...args) noexcept {
-        impl::SFormatResult ctx(impl::StringOutput(s.max_size(), s), fmt);
-        constexpr const impl::FormatParser p;
-        if constexpr( 0 < sizeof...(Targs) ) {
-            ((p.template parseOne<Targs>(ctx, args)), ...);
+    inline __attribute__((always_inline))
+    Result formatR(std::string &s, size_t maxLen, std::string_view fmt, const Targs &...args) noexcept {
+        impl::StringResult ctx(impl::StringOutput(std::min(maxLen, s.max_size()), s), fmt);
+
+        std::exception_ptr eptr;
+        try {
+            if constexpr( 0 < sizeof...(Targs) ) {
+                ((impl::FormatParser::parseOne<Targs>(ctx, args)), ...);
+            }
+            impl::FormatParser::parseOne<impl::no_type_t>(ctx, impl::no_type_t());
+        } catch (...) {
+            eptr = std::current_exception();
         }
-        p.template parseOne<impl::no_type_t>(ctx, impl::no_type_t());
         return ctx;
     }
     /**
@@ -1584,23 +1608,78 @@ namespace jau::cfmt {
      *
      * See @ref jau_cfmt_header for details
      *
-     * @tparam Targs the argument template type pack to be validated against the format string
+     * @tparam Targs the argument template type pack for the given arguments `args`
      * @param s destination string to append the formatted string
-     * @param maxLen maximum string length
-     * @param fmt the snprintf format string
+     * @param fmt the snprintf compliant format string
      * @param args passed arguments, used for template type deduction only
      * @return jau::cfmt::Result instance for further inspection
      * @see @ref jau_cfmt_header
      */
     template <typename... Targs>
-    inline Result formatR(std::string &s, size_t maxLen, std::string_view fmt, const Targs &...args) noexcept {
-        impl::SFormatResult ctx(impl::StringOutput(std::min(maxLen, s.max_size()), s), fmt);
-        constexpr const impl::FormatParser p;
-        if constexpr( 0 < sizeof...(Targs) ) {
-            ((p.template parseOne<Targs>(ctx, args)), ...);
+    inline __attribute__((always_inline))
+    Result formatR(std::string &s, std::string_view fmt, const Targs &...args) noexcept {
+        return formatR(s, s.max_size(), fmt, args...);
+    }
+
+    /**
+     * Strict format with type validation of arguments against the format string,
+     * appending to the given destination.
+     *
+     * Resulting string is truncated to `min(maxLen, formatLen)`,
+     * with `formatLen` being the given formatted string length of output w/o limitation
+     * and its capacity is left unchanged.
+     *
+     * Use `std::string::shrink_to_fit()` on the returned string,
+     * if you desire efficiency for longer lifecycles (assuming `maxLen` hasn't been reached).
+     *
+     * See @ref jau_cfmt_header for details
+     *
+     * @tparam Targs the argument template type pack for the given arguments `args`
+     * @param strLenHint initially used string length w/o EOS
+     * @param s destination string to append the formatted string
+     * @param maxLen maximum resulting string length including EOS
+     * @param fmt the snprintf compliant format string
+     * @param args arguments matching the format string
+     */
+    template <typename... Targs>
+    inline __attribute__((always_inline))
+    Result formatR(const std::size_t strLenHint, std::string &s, size_t maxLen, std::string_view fmt, const Targs &...args) noexcept {
+        impl::StringResult ctx(impl::StringOutput(std::min(maxLen, s.max_size()), s), fmt);
+
+        std::exception_ptr eptr;
+        try {
+            s.reserve(strLenHint+1); // +EOS
+            if constexpr( 0 < sizeof...(Targs) ) {
+                ((impl::FormatParser::parseOne<Targs>(ctx, args)), ...);
+            }
+            impl::FormatParser::parseOne<impl::no_type_t>(ctx, impl::no_type_t());
+        } catch (...) {
+            eptr = std::current_exception();
         }
-        p.template parseOne<impl::no_type_t>(ctx, impl::no_type_t());
         return ctx;
+    }
+
+    /**
+     * Strict format with type validation of arguments against the format string,
+     * appending to the given destination.
+     *
+     * Resulting string size matches formated output w/o limitation
+     * and its capacity is left unchanged.
+     *
+     * Use `std::string::shrink_to_fit()` on the returned string,
+     * if you desire efficiency for longer lifecycles.
+     *
+     * See @ref jau_cfmt_header for details
+     *
+     * @tparam Targs the argument template type pack for the given arguments `args`
+     * @param strLenHint initially used string length w/o EOS
+     * @param fmt the snprintf compliant format string
+     * @param args arguments matching the format string
+     */
+    template <typename... Targs>
+    inline __attribute__((always_inline))
+    Result formatR(const std::size_t strLenHint, std::string &s, std::string_view fmt, const Targs &...args) noexcept {
+        return formatR(strLenHint, s, s.max_size(), fmt, args...);
     }
 
     //
@@ -1608,12 +1687,15 @@ namespace jau::cfmt {
     //
 
     /**
-     * Strict type validation of arguments against the format string.
+     * Strict compile-time type validation of deduced argument-types against the format string.
+     *
+     * In case your can't provide constexpr arguments,
+     * use `check2()`. Types can always be produced, see macro `jau_string_checkLine()`.
      *
      * See @ref jau_cfmt_header for details
      *
      * @tparam Targs the argument template type pack to be validated against the format string
-     * @param fmt the snprintf format string
+     * @param fmt the snprintf compliant format string
      * @param args passed arguments, used for template type deduction only
      * @return number of parser format arguments if successfully, otherwise negative number indicates first failed argument starting with -1
      *         w/ min(ssize_t) denoting the format string
@@ -1622,20 +1704,22 @@ namespace jau::cfmt {
     template <typename... Targs>
     consteval_cxx20 ssize_t check(std::string_view fmt, const Targs &...) noexcept {
         impl::CheckResult ctx(impl::NullOutput(), fmt);
-        constexpr const impl::CheckParser p;
         if constexpr( 0 < sizeof...(Targs) ) {
-            ((p.template checkOne<Targs>(ctx)), ...);
+            ((impl::CheckParser::checkOne<Targs>(ctx)), ...);
         }
-        p.template checkOne<impl::no_type_t>(ctx);
+        impl::CheckParser::checkOne<impl::no_type_t>(ctx);
         return ctx.arg_count;
     }
     /**
-     * Strict type validation of arguments against the format string.
+     * Strict compile-time type validation of deduced argument-types against the format string.
+     *
+     * In case your can't provide constexpr arguments,
+     * use `check2Line()`. Types can always be produced, see macro `jau_string_checkLine()`.
      *
      * See @ref jau_cfmt_header for details
      *
      * @tparam Targs the argument template type pack to be validated against the format string
-     * @param fmt the snprintf format string
+     * @param fmt the snprintf compliant format string
      * @param args passed arguments, used for template type deduction only
      * @return 0 if successfully, otherwise the source code line number detecting the failure
      * @see @ref jau_cfmt_header
@@ -1643,21 +1727,20 @@ namespace jau::cfmt {
     template <typename... Targs>
     consteval_cxx20 int checkLine(std::string_view fmt, const Targs &...) noexcept {
         impl::CheckResult ctx(impl::NullOutput(), fmt);
-        constexpr const impl::CheckParser p;
         if constexpr( 0 < sizeof...(Targs) ) {
-            ((p.template checkOne<Targs>(ctx)), ...);
+            ((impl::CheckParser::checkOne<Targs>(ctx)), ...);
         }
-        p.template checkOne<impl::no_type_t>(ctx);
+        impl::CheckParser::checkOne<impl::no_type_t>(ctx);
         return ctx.line;
     }
 
     /**
-     * Strict type validation of arguments against the format string.
+     * Strict compile-time type validation of explicit argument-types against the format string.
      *
      * See @ref jau_cfmt_header for details
      *
      * @tparam Targs the argument template type pack to be validated against the format string
-     * @param fmt the snprintf format string
+     * @param fmt the snprintf compliant format string
      * @return number of parser format arguments if successfully, otherwise negative number indicates first failed argument starting with -1
      *         w/ min(ssize_t) denoting the format string
      * @see @ref jau_cfmt_header
@@ -1665,42 +1748,40 @@ namespace jau::cfmt {
     template <typename... Targs>
     consteval_cxx20 ssize_t check2(std::string_view fmt) noexcept {
         impl::CheckResult ctx(impl::NullOutput(), fmt);
-        constexpr const impl::CheckParser p;
         if constexpr( 0 < sizeof...(Targs) ) {
-            ((p.template checkOne<Targs>(ctx)), ...);
+            ((impl::CheckParser::checkOne<Targs>(ctx)), ...);
         }
-        p.template checkOne<impl::no_type_t>(ctx);
+        impl::CheckParser::checkOne<impl::no_type_t>(ctx);
         return ctx.arg_count;
     }
 
     /**
-     * Strict type validation of arguments against the format string.
+     * Strict compile-time type validation of explicit argument-types against the format string.
      *
      * See @ref jau_cfmt_header for details
      *
      * @tparam Targs the argument template type pack to be validated against the format string
-     * @param fmt the snprintf format string
+     * @param fmt the snprintf compliant format string
      * @return 0 if successfully, otherwise the source code line number detecting the failure
      * @see @ref jau_cfmt_header
      */
     template <typename... Targs>
     consteval_cxx20 int check2Line(std::string_view fmt) noexcept {
         impl::CheckResult ctx(impl::NullOutput(), fmt);
-        constexpr const impl::CheckParser p;
         if constexpr( 0 < sizeof...(Targs) ) {
-            ((p.template checkOne<Targs>(ctx)), ...);
+            ((impl::CheckParser::checkOne<Targs>(ctx)), ...);
         }
-        p.template checkOne<impl::no_type_t>(ctx);
+        impl::CheckParser::checkOne<impl::no_type_t>(ctx);
         return ctx.line;
     }
 
     /**
-     * Strict type validation of arguments against the format string.
+     * Strict compile-time type validation of deduced argument-types against the format string.
      *
      * See @ref jau_cfmt_header for details
      *
      * @tparam Targs the argument template type pack to be validated against the format string
-     * @param fmt the snprintf format string
+     * @param fmt the snprintf compliant format string
      * @param args passed arguments, used for template type deduction only
      * @return jau::cfmt::Result instance for further inspection
      * @see @ref jau_cfmt_header
@@ -1708,32 +1789,30 @@ namespace jau::cfmt {
     template <typename... Targs>
     consteval_cxx20 Result checkR(std::string_view fmt, const Targs &...) noexcept {
         impl::CheckResult ctx(impl::NullOutput(), fmt);
-        constexpr const impl::CheckParser p;
         if constexpr( 0 < sizeof...(Targs) ) {
-            ((p.template checkOne<Targs>(ctx)), ...);
+            ((impl::CheckParser::checkOne<Targs>(ctx)), ...);
         }
-        p.template checkOne<impl::no_type_t>(ctx);
+        impl::CheckParser::checkOne<impl::no_type_t>(ctx);
         return ctx;
     }
 
     /**
-     * Strict type validation of arguments against the format string.
+     * Strict compile-time type validation of explicit argument-types against the format string.
      *
      * See @ref jau_cfmt_header for details
      *
      * @tparam Targs the argument template type pack to be validated against the format string
-     * @param fmt the snprintf format string
+     * @param fmt the snprintf compliant format string
      * @return jau::cfmt::Result instance for further inspection
      * @see @ref jau_cfmt_header
      */
     template <typename... Targs>
     consteval_cxx20 Result checkR2(std::string_view format) noexcept {
         impl::CheckResult ctx(impl::NullOutput(), format);
-        constexpr const impl::CheckParser p;
         if constexpr( 0 < sizeof...(Targs) ) {
-            ((p.template checkOne<Targs>(ctx)), ...);
+            ((impl::CheckParser::checkOne<Targs>(ctx)), ...);
         }
-        p.template checkOne<impl::no_type_t>(ctx);
+        impl::CheckParser::checkOne<impl::no_type_t>(ctx);
         return ctx;
     }
 
@@ -1744,30 +1823,28 @@ namespace jau::cfmt {
 namespace jau {
     /**
      * Safely returns a (potentially truncated) string according to `snprintf()` formatting rules
-     * and variable number of arguments following the `format` argument.
+     * and variable number of arguments following the `fmt` argument.
      *
      * jau::cfmt::format() is utilize to validate `format` against given arguments at *runtime*.
      *
-     * Resulting string is truncated to `min(maxStrLen, formatLen)`,
+     * Resulting string is truncated to `min(maxLen, formatLen)`,
      * with `formatLen` being the given formatted string length of output w/o limitation.
-     *
-     * Use `std::string::shrink_to_fit()` on the returned string,
-     * if you desire efficiency for longer lifecycles.
      *
      * See @ref jau_cfmt_header for details
      *
-     * @param maxStrLen maximum resulting string length including
-     * @param format `printf()` compliant format string
-     * @param args optional arguments matching the format string
+     * @param maxLen maximum resulting string length including
+     * @param fmt the snprintf compliant format string
+     * @param args arguments matching the format string
      */
     template<typename... Args>
-    inline std::string format_string_n(const std::size_t maxStrLen, std::string_view format, const Args &...args) noexcept {
-        return jau::cfmt::format(maxStrLen, format, args...);
+    inline __attribute__((always_inline))
+    std::string format_string_n(const std::size_t maxLen, std::string_view fmt, const Args &...args) noexcept {
+        return jau::cfmt::format(maxLen, fmt, args...);
     }
 
     /**
      * Safely returns a (non-truncated) string according to `snprintf()` formatting rules
-     * and variable number of arguments following the `format` argument.
+     * and variable number of arguments following the `fmt` argument.
      *
      * jau::cfmt::formatR() is utilize to validate `format` against given arguments at *runtime*.
      *
@@ -1780,27 +1857,49 @@ namespace jau {
      * See @ref jau_cfmt_header for details
      *
      * @param strLenHint initially used string length w/o EOS
-     * @param format `printf()` compliant format string
-     * @param args optional arguments matching the format string
+     * @param fmt the snprintf compliant format string
+     * @param args arguments matching the format string
      */
     template <typename... Args>
-    inline std::string format_string_h(const std::size_t strLenHint, std::string_view format, const Args &...args) noexcept {
+    inline __attribute__((always_inline))
+    std::string format_string_h(const std::size_t strLenHint, std::string_view fmt, const Args &...args) noexcept {
         std::string str;
-        std::exception_ptr eptr;
-        try {
-            str.reserve(strLenHint+1); // +EOS
-            jau::cfmt::formatR(str, format, args...);
-        } catch (...) {
-            eptr = std::current_exception();
-        }
-        handle_exception(eptr);
+        jau::cfmt::formatR(strLenHint, str, fmt, args...);
+        return str;
+    }
+
+    /**
+     * Safely returns a (potentially truncated) string according to `snprintf()` formatting rules
+     * and variable number of arguments following the `fmt` argument.
+     *
+     * jau::cfmt::formatR() is utilize to validate `format` against given arguments at *runtime*.
+     *
+     * Resulting string is truncated to `min(maxLen, formatLen)`,
+     * with `formatLen` being the given formatted string length of output w/o limitation
+     * and its capacity is left unchanged.
+     *
+     * Use `std::string::shrink_to_fit()` on the returned string,
+     * if you desire efficiency for longer lifecycles (assuming `maxLen` hasn't been reached).
+     *
+     * See @ref jau_cfmt_header for details
+     *
+     * @param strLenHint initially used string length w/o EOS
+     * @param maxLen maximum resulting string length including EOS
+     * @param fmt the snprintf compliant format string
+     * @param args arguments matching the format string
+     */
+    template <typename... Args>
+    inline __attribute__((always_inline))
+    std::string format_string_hn(const std::size_t strLenHint, const std::size_t maxLen, std::string_view fmt, const Args &...args) noexcept {
+        std::string str;
+        jau::cfmt::formatR(strLenHint, str, maxLen, fmt, args...);
         return str;
     }
 
     /**
      * Safely returns a (non-truncated) string according to `snprintf()` formatting rules
      * using a reserved string length of jau::cfmt::default_string_capacity and
-     * variable number of arguments following the `format` argument.
+     * variable number of arguments following the `fmt` argument.
      *
      * jau::cfmt::formatR() is utilize to validate `format` against given arguments at *runtime*.
      *
@@ -1812,12 +1911,13 @@ namespace jau {
      *
      * See @ref jau_cfmt_header for details
      *
-     * @param format `printf()` compliant format string
-     * @param args optional arguments matching the format string
+     * @param fmt the snprintf compliant format string
+     * @param args arguments matching the format string
      */
     template <typename... Args>
-    inline std::string format_string(std::string_view format, const Args &...args) noexcept {
-        return jau::format_string_h(jau::cfmt::default_string_capacity, format, args...);
+    inline __attribute__((always_inline))
+    std::string format_string(std::string_view fmt, const Args &...args) noexcept {
+        return jau::format_string_h(jau::cfmt::default_string_capacity, fmt, args...);
     }
 
     /**@}*/
@@ -1829,10 +1929,20 @@ namespace jau {
  *  @{
  */
 
+#if 0
+// TODO: gcc created multiple instances in shared-lib
+//       However, `constexpr` can't be explicitly instantiated.
+//
+// Explicit instantiation declaration of template function
+extern template void jau::cfmt::impl::FormatParser::parseOneImpl<jau::cfmt::impl::no_type_t>(
+    typename jau::cfmt::impl::FormatParser::Result&,
+    const jau::cfmt::impl::no_type_t&);
+#endif
+
 /**
  * Macro, safely returns a (non-truncated) string according to `snprintf()` formatting rules
  * using a reserved string length of jau::cfmt::default_string_capacity and
- * variable number of arguments following the `format` argument.
+ * variable number of arguments following the `fmt` argument.
  *
  * This macro also produces compile time validation using a `static_assert`
  * against jau::cfmt::check2.
@@ -1848,7 +1958,7 @@ namespace jau {
  * See @ref jau_cfmt_header for details
  *
  * @param format `printf()` compliant format string
- * @param args optional arguments matching the format string
+ * @param args arguments matching the format string
  */
 #define jau_format_string(fmt, ...) \
     jau::format_string((fmt) __VA_OPT__(,) __VA_ARGS__);  \
@@ -1856,7 +1966,7 @@ namespace jau {
 
 /**
  * Macro, safely returns a (non-truncated) string according to `snprintf()` formatting rules
- * and variable number of arguments following the `format` argument.
+ * and variable number of arguments following the `fmt` argument.
  *
  * This macro also produces compile time validation using a `static_assert`
  * against jau::cfmt::check2.
@@ -1873,7 +1983,7 @@ namespace jau {
  *
  * @param strLenHint initially used string length w/o EOS
  * @param format `printf()` compliant format string
- * @param args optional arguments matching the format string
+ * @param args arguments matching the format string
  */
 #define jau_format_string_h(strLenHint, fmt, ...) \
     jau::format_string((strLenHint), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
@@ -1882,7 +1992,7 @@ namespace jau {
 /**
  * Macro, safely returns a (non-truncated) string according to `snprintf()` formatting rules
  * using a reserved string length of jau::cfmt::default_string_capacity and
- * variable number of arguments following the `format` argument.
+ * variable number of arguments following the `fmt` argument.
  *
  * This macro also produces compile time validation using a `static_assert`
  * against jau::cfmt::check2Line.
@@ -1898,7 +2008,7 @@ namespace jau {
  * See @ref jau_cfmt_header for details
  *
  * @param format `printf()` compliant format string
- * @param args optional arguments matching the format string
+ * @param args arguments matching the format string
  */
 #define jau_format_string2(fmt, ...) \
     jau::format_string((fmt) __VA_OPT__(,) __VA_ARGS__);  \
@@ -1911,7 +2021,7 @@ namespace jau {
  * See @ref jau_cfmt_header for details
  *
  * @param format `printf()` compliant format string
- * @param args optional arguments matching the format string
+ * @param args arguments matching the format string
  */
 #define jau_string_check(fmt, ...) \
     static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
@@ -1923,7 +2033,7 @@ namespace jau {
  * See @ref jau_cfmt_header for details
  *
  * @param format `printf()` compliant format string
- * @param args optional arguments matching the format string
+ * @param args arguments matching the format string
  */
 #define jau_string_checkLine(fmt, ...) \
     static_assert(0 == jau::cfmt::check2Line< JAU_FOR_EACH1_LIST(JAU_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!

@@ -1272,8 +1272,8 @@ void jau::cfmt::impl::append_rev(std::string &dest, const size_t dest_maxlen, st
 
     // string
     if (!reverse) {
-        std::memcpy(d_left, p, std::min<size_t>(src_len, d_end-d_left));
-        // std::copy(p, p+(d_end-d), d);
+        std::memcpy(d_left, p, d_end-d_left);
+        // std::copy(p, p+(d_end-d_left), d_left);
     } else {
         while (d_left<d_end) {
             *(--d_end) = *(p++);
@@ -1440,11 +1440,11 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
         char * p = buf_;
         if (!xtra_dot) {
             while (d > d_start_num) {
-                *(--d) = *(p++); // NOLINT(clang-analyzer-core.uninitialized.Assign): Wrong analysis? buf_ was written up-to val_digits! (Assigned value is garbage or undefined)
+                *(--d) = *(p++); // NOLINT(clang-analyzer-core.uninitialized.Assign): Wrong analysis, see `Case 1` in test_stringfmt_impl.cpp. (Assigned value is garbage or undefined)
             }
         } else {
             while (d > d_start_num) {
-                *(--d) = *(p++); // NOLINT(clang-analyzer-core.uninitialized.Assign): Wrong analysis? buf_ was written up-to val_digits! (Assigned value is garbage or undefined)
+                *(--d) = *(p++);
                 if (d == d_start_num + 1 + xtra_dot) {
                     *(--d) = '.';
                 }
@@ -1921,3 +1921,13 @@ void jau::cfmt::impl::append_afloatF64(std::string &dest, const size_t dest_maxl
 void jau::cfmt::impl::StringOutput::appendError(size_t argIdx, int line, const std::string_view tag) {
     m_s.append("<E#").append(std::to_string(argIdx)).append("@").append(std::to_string(line)).append(":").append(tag).append(">");
 }
+
+#if 0
+// TODO: gcc created multiple instances in shared-lib
+//       However, `constexpr` can't be explicitly instantiated.
+//
+// Explicit instantiation definition of template function
+template void jau::cfmt::impl::FormatParser::parseOneImpl<jau::cfmt::impl::no_type_t>(
+    typename jau::cfmt::impl::FormatParser::Result&,
+    const jau::cfmt::impl::no_type_t&);
+#endif

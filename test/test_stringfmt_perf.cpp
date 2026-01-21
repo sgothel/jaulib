@@ -45,6 +45,82 @@ using namespace jau::float_literals;
 using namespace jau::int_literals;
 
 /// Execute with `test_stringfmt_perf --perf-analysis`
+TEST_CASE("jau_cfmt_benchmark_str1", "[benchmark][jau][std::string][format_string]") {
+    const size_t loops = 1000; // catch_auto_run ? 1000 : 1000;
+    WARN("Benchmark with " + std::to_string(loops) + " loops");
+    CHECK(true);
+
+    static constexpr const char *format_check_exp = "format_check: '  Hi World'";
+    BENCHMARK("fmt1.32 format       rsrved bench") {
+        std::string str1 = "Hi World";
+
+        volatile size_t res = 0;
+        for( size_t i = 0; i < loops; ++i ) {
+            std::string s = jau::format_string("format_check: '%10s'", str1);
+            REQUIRE(format_check_exp == s);
+            res = res + s.size();
+        }
+        return res;
+    };
+    BENCHMARK("fmtX.32 snprintf     rsrved bench") {
+        std::string str1 = "Hi World";
+
+        volatile size_t res = 0;
+        for( size_t i = 0; i < loops; ++i ) {
+            std::string s;
+            const size_t bsz = jau::cfmt::default_string_capacity + 1; // including EOS
+            s.reserve(bsz);         // incl. EOS
+            s.resize(bsz - 1);      // excl. EOS
+            size_t nchars = std::snprintf(&s[0], bsz, "format_check: '%10s'", str1.c_str());
+            if( nchars < bsz ) {
+                s.resize(nchars);
+            }
+            REQUIRE(format_check_exp == s);
+            res = res + nchars;
+        }
+        return res;
+    };
+}
+
+TEST_CASE("jau_cfmt_benchmark_str2", "[benchmark][jau][std::string][format_string]") {
+    const size_t loops = 1000; // catch_auto_run ? 1000 : 1000;
+    WARN("Benchmark with " + std::to_string(loops) + " loops");
+    CHECK(true);
+
+    static constexpr const char *format_check_exp = "format_check: 003, '  Hi World'";
+    BENCHMARK("fmt1.32 format       rsrved bench") {
+        int i1 = 3;
+        std::string str1 = "Hi World";
+
+        volatile size_t res = 0;
+        for( size_t i = 0; i < loops; ++i ) {
+            std::string s = jau::format_string("format_check: %03d, '%10s'", i1, str1);
+            REQUIRE(format_check_exp == s);
+            res = res + s.size();
+        }
+        return res;
+    };
+    BENCHMARK("fmtX.32 snprintf     rsrved bench") {
+        int i1 = 3;
+        std::string str1 = "Hi World";
+
+        volatile size_t res = 0;
+        for( size_t i = 0; i < loops; ++i ) {
+            std::string s;
+            const size_t bsz = jau::cfmt::default_string_capacity + 1; // including EOS
+            s.reserve(bsz);         // incl. EOS
+            s.resize(bsz - 1);      // excl. EOS
+            size_t nchars = std::snprintf(&s[0], bsz, "format_check: %03d, '%10s'", i1, str1.c_str());
+            if( nchars < bsz ) {
+                s.resize(nchars);
+            }
+            REQUIRE(format_check_exp == s);
+            res = res + nchars;
+        }
+        return res;
+    };
+}
+
 TEST_CASE("jau_cfmt_benchmark_all", "[benchmark][jau][std::string][format_string]") {
     const size_t loops = 1000; // catch_auto_run ? 1000 : 1000;
     WARN("Benchmark with " + std::to_string(loops) + " loops");
@@ -210,152 +286,3 @@ TEST_CASE("jau_cfmt_benchmark_all", "[benchmark][jau][std::string][format_string
 #endif
 }
 
-TEST_CASE("jau_cfmt_benchmark_int1", "[benchmark][jau][std::string][format_string]") {
-    const size_t loops = 1000; // catch_auto_run ? 1000 : 1000;
-    WARN("Benchmark with " + std::to_string(loops) + " loops");
-    CHECK(true);
-
-    static constexpr const char *format_check_exp = "format_check: 3";
-    BENCHMARK("fmt1.32 format       rsrved bench") {
-        int i1 = 3;
-
-        volatile size_t res = 0;
-        for( size_t i = 0; i < loops; ++i ) {
-            std::string s = jau::format_string("format_check: %d", i1);
-            REQUIRE(format_check_exp == s);
-            res = res + s.size();
-        }
-        return res;
-    };
-    BENCHMARK("fmtX.32 snprintf     rsrved bench") {
-        int i1 = 3;
-
-        volatile size_t res = 0;
-        for( size_t i = 0; i < loops; ++i ) {
-            std::string s;
-            const size_t bsz = jau::cfmt::default_string_capacity + 1; // including EOS
-            s.reserve(bsz);         // incl. EOS
-            s.resize(bsz - 1);      // excl. EOS
-            size_t nchars = std::snprintf(&s[0], bsz, "format_check: %d", i1);
-            if( nchars < bsz ) {
-                s.resize(nchars);
-            }
-            REQUIRE(format_check_exp == s);
-            res = res + nchars;
-        }
-        return res;
-    };
-}
-
-TEST_CASE("jau_cfmt_benchmark_int2", "[benchmark][jau][std::string][format_string]") {
-    const size_t loops = 1000; // catch_auto_run ? 1000 : 1000;
-    WARN("Benchmark with " + std::to_string(loops) + " loops");
-    CHECK(true);
-
-    static constexpr const char *format_check_exp = "format_check: 003";
-    BENCHMARK("fmt1.32 format       rsrved bench") {
-        int i1 = 3;
-
-        volatile size_t res = 0;
-        for( size_t i = 0; i < loops; ++i ) {
-            std::string s = jau::format_string("format_check: %03d", i1);
-            REQUIRE(format_check_exp == s);
-            res = res + s.size();
-        }
-        return res;
-    };
-    BENCHMARK("fmtX.32 snprintf     rsrved bench") {
-        int i1 = 3;
-
-        volatile size_t res = 0;
-        for( size_t i = 0; i < loops; ++i ) {
-            std::string s;
-            const size_t bsz = jau::cfmt::default_string_capacity + 1; // including EOS
-            s.reserve(bsz);         // incl. EOS
-            s.resize(bsz - 1);      // excl. EOS
-            size_t nchars = std::snprintf(&s[0], bsz, "format_check: %03d", i1);
-            if( nchars < bsz ) {
-                s.resize(nchars);
-            }
-            REQUIRE(format_check_exp == s);
-            res = res + nchars;
-        }
-        return res;
-    };
-}
-
-TEST_CASE("jau_cfmt_benchmark_str1", "[benchmark][jau][std::string][format_string]") {
-    const size_t loops = 1000; // catch_auto_run ? 1000 : 1000;
-    WARN("Benchmark with " + std::to_string(loops) + " loops");
-    CHECK(true);
-
-    static constexpr const char *format_check_exp = "format_check: '  Hi World'";
-    BENCHMARK("fmt1.32 format       rsrved bench") {
-        std::string str1 = "Hi World";
-
-        volatile size_t res = 0;
-        for( size_t i = 0; i < loops; ++i ) {
-            std::string s = jau::format_string("format_check: '%10s'", str1);
-            REQUIRE(format_check_exp == s);
-            res = res + s.size();
-        }
-        return res;
-    };
-    BENCHMARK("fmtX.32 snprintf     rsrved bench") {
-        std::string str1 = "Hi World";
-
-        volatile size_t res = 0;
-        for( size_t i = 0; i < loops; ++i ) {
-            std::string s;
-            const size_t bsz = jau::cfmt::default_string_capacity + 1; // including EOS
-            s.reserve(bsz);         // incl. EOS
-            s.resize(bsz - 1);      // excl. EOS
-            size_t nchars = std::snprintf(&s[0], bsz, "format_check: '%10s'", str1.c_str());
-            if( nchars < bsz ) {
-                s.resize(nchars);
-            }
-            REQUIRE(format_check_exp == s);
-            res = res + nchars;
-        }
-        return res;
-    };
-}
-
-TEST_CASE("jau_cfmt_benchmark_str2", "[benchmark][jau][std::string][format_string]") {
-    const size_t loops = 1000; // catch_auto_run ? 1000 : 1000;
-    WARN("Benchmark with " + std::to_string(loops) + " loops");
-    CHECK(true);
-
-    static constexpr const char *format_check_exp = "format_check: 003, '  Hi World'";
-    BENCHMARK("fmt1.32 format       rsrved bench") {
-        int i1 = 3;
-        std::string str1 = "Hi World";
-
-        volatile size_t res = 0;
-        for( size_t i = 0; i < loops; ++i ) {
-            std::string s = jau::format_string("format_check: %03d, '%10s'", i1, str1);
-            REQUIRE(format_check_exp == s);
-            res = res + s.size();
-        }
-        return res;
-    };
-    BENCHMARK("fmtX.32 snprintf     rsrved bench") {
-        int i1 = 3;
-        std::string str1 = "Hi World";
-
-        volatile size_t res = 0;
-        for( size_t i = 0; i < loops; ++i ) {
-            std::string s;
-            const size_t bsz = jau::cfmt::default_string_capacity + 1; // including EOS
-            s.reserve(bsz);         // incl. EOS
-            s.resize(bsz - 1);      // excl. EOS
-            size_t nchars = std::snprintf(&s[0], bsz, "format_check: %03d, '%10s'", i1, str1.c_str());
-            if( nchars < bsz ) {
-                s.resize(nchars);
-            }
-            REQUIRE(format_check_exp == s);
-            res = res + nchars;
-        }
-        return res;
-    };
-}
