@@ -176,6 +176,7 @@ namespace jau {
      * @param args the optional arguments
      */
     template <typename... Args>
+    inline __attribute__((always_inline))
     int fprintf_td(const uint64_t elapsed_ms, FILE* stream, std::string_view format, const Args &...args) noexcept {
         int res = ::fprintf(stream, "[%s] ", jau::to_decstring(elapsed_ms, ',', 9).c_str());
         const int r = ::fputs(jau::format_string(format, args...).c_str(), stream);
@@ -184,6 +185,10 @@ namespace jau {
         }
         return res;
     }
+    #define jau_fprintf_td2(elapsed_ms, stream, fmt, ...) \
+        jau::fprintf_td((elapsed_ms), (stream), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
+        static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
+
     /**
      * Convenient fprintf() invocation, prepending the environment::getElapsedMillisecond() timestamp.
      * @param stream the output stream
@@ -191,9 +196,13 @@ namespace jau {
      * @param args the optional arguments
      */
     template <typename... Args>
-    inline int fprintf_td(FILE* stream, std::string_view format, const Args &...args) noexcept {
+    inline __attribute__((always_inline))
+    int fprintf_td(FILE* stream, std::string_view format, const Args &...args) noexcept {
         return fprintf_td(environment::getElapsedMillisecond(), stream, format, args...);
     }
+    #define jau_fprintf_td(stream, fmt, ...) \
+        jau::fprintf_td((stream), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
+        static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
 
     /** Use for conditional plain messages, prefix '[elapsed_time] '. */
     #define COND_PRINT(C, ...) { if( C ) { jau::impl::dbgPrint0(stderr, false, false, __VA_ARGS__); } }

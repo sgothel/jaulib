@@ -45,11 +45,11 @@ class TestFileUtil01 : TestFileUtilBase {
         jau::io::fs::file_stats proot_stats_01 = getTestDataDirStats(executable_path);
         std::string rel_project_root = getTestDataRelDir(executable_path);
         jau::io::fs::file_stats proot_stats_02(rel_project_root);
-        jau::fprintf_td(stdout, "test00: cwd:               %s\n", cwd.c_str());
-        jau::fprintf_td(stdout, "test00: 00: image.stat:    %s\n", image_stats.toString().c_str());
-        jau::fprintf_td(stdout, "test00: 02: proot01.stats: %s\n", proot_stats_01.toString().c_str());
-        jau::fprintf_td(stdout, "test00: 02: proot02.rel:   %s\n", rel_project_root.c_str());
-        jau::fprintf_td(stdout, "test00: 02: proot02.stats: %s\n", proot_stats_02.toString().c_str());
+        jau_fprintf_td(stdout, "test00: cwd:               %s\n", cwd);
+        jau_fprintf_td(stdout, "test00: 00: image.stat:    %s\n", image_stats.toString());
+        jau_fprintf_td(stdout, "test00: 02: proot01.stats: %s\n", proot_stats_01.toString());
+        jau_fprintf_td(stdout, "test00: 02: proot02.rel:   %s\n", rel_project_root);
+        jau_fprintf_td(stdout, "test00: 02: proot02.stats: %s\n", proot_stats_02.toString());
         REQUIRE( proot_stats_01.exists() );
         REQUIRE( proot_stats_02.exists() );
     }
