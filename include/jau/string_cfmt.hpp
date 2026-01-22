@@ -475,23 +475,6 @@ namespace jau::cfmt {
         void append_integral(std::string &dest, const size_t dest_maxlen, uint64_t v, const bool negative, const FormatOpts &opts, const bool inject_dot=false);
 
         // check for NaN and special values
-        template<std::floating_point value_type>
-        requires (!std::is_same_v<double, value_type>)
-        bool is_float_validT(std::string &dest, const size_t dest_maxlen, const value_type value, const FormatOpts &opts) noexcept {
-            const bool up = is_set(opts.flags, flags_t::uppercase);
-            if (value != value) {
-                append_string(dest, dest_maxlen, up ? "NAN" : "nan", opts);
-                return false;
-            } else if (value < -std::numeric_limits<value_type>::max()) {
-                append_string(dest, dest_maxlen, up ? "-INF" : "-inf", opts);
-                return false;;
-            } else if (value > std::numeric_limits<value_type>::max()) {
-                const bool plus = is_set(opts.flags, flags_t::plus);
-                append_string(dest, dest_maxlen, plus ? ( up ? "+INF" : "+inf" ) : ( up ? "INF" : "inf" ), opts);
-                return false;
-            }
-            return true;
-        }
         bool is_float_validF64(std::string &dest, const size_t dest_maxlen, const double value, const FormatOpts &opts);
         void append_floatF64(std::string &dest, const size_t dest_maxlen, const double value, const FormatOpts &opts);
         void append_efloatF64(std::string &dest, const size_t dest_maxlen, const double ivalue, const FormatOpts &iopts);
