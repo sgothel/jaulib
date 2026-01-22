@@ -370,6 +370,7 @@ namespace jau {
                  *
                  * g++ (Debian 12.2.0-3) 12.2.0, Debian 12 Bookworm 2022-10-17
                  * g++ bug: False positive of '-Wnull-dereference'
+                 * See <https://gcc.gnu.org/bugzilla/show_bug.cgi?id=86172>
                  *
 In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__shared_count<_Lp>&) [with __gnu_cxx::_Lock_policy _Lp = __gnu_cxx::_S_atomic]’,
     inlined from ‘std::__shared_ptr<_Tp, _Lp>::__shared_ptr(const std::__shared_ptr<_Tp, _Lp>&) [with _Tp = direct_bt::BTDevice; __gnu_cxx::_Lock_policy _Lp = __gnu_cxx::_S_atomic]’ at /usr/include/c++/12/bits/shared_ptr_base.h:1522:7,

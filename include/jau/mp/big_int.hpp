@@ -809,7 +809,17 @@ namespace jau::mp {
 
             ~data_t() noexcept = default;
 
-            data_t& operator=(const data_t& r) noexcept = default;
+            /**
+             * g++ 4:14.2.0-1 Debian 13
+             * g++ bug: False positive of '-Wnull-dereference'
+             * See <https://gcc.gnu.org/bugzilla/show_bug.cgi?id=86172>
+             */
+            PRAGMA_DISABLE_WARNING_PUSH
+            PRAGMA_DISABLE_WARNING_NULL_DEREFERENCE
+
+            data_t& operator=(const data_t& r) noexcept = default; // gcc 14 -Wnull-dereference
+
+            PRAGMA_DISABLE_WARNING_POP
 
             data_t& operator=(data_t&& other) noexcept {
                 if ( this != &other ) {
