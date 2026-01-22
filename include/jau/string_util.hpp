@@ -41,6 +41,7 @@
 
 #include <jau/byte_util.hpp>
 #include <jau/cpp_lang_util.hpp>
+#include <jau/exceptions.hpp>
 #include <jau/packed_attribute.hpp>
 
 #include <jau/int_math.hpp>
@@ -411,22 +412,29 @@ namespace jau {
         const size_t separator_count = separator ? (digit10_count1 - 1) / 3 : 0;
         const size_t net_chars = digit10_count1 + separator_count;
         const size_t total_chars = std::max<size_t>(width, net_chars);
-        std::string res(total_chars, ' ');
+        std::string res;
+        std::exception_ptr eptr;
+        try {
+            res.resize(total_chars, ' ');
 
-        value_type n = v;
-        size_t char_iter = 0;
+            value_type n = v;
+            size_t char_iter = 0;
 
-        for ( size_t digit10_iter = 0; digit10_iter < digit10_count2 /* && char_iter < total_chars */; digit10_iter++ ) {
-            const int digit = v_sign < 0 ? invert_sign(n % 10) : n % 10;
-            n /= 10;
-            if ( separator && 0 < digit10_iter && 0 == digit10_iter % 3 ) {
-                res[total_chars - 1 - (char_iter++)] = separator;
+            for ( size_t digit10_iter = 0; digit10_iter < digit10_count2 /* && char_iter < total_chars */; digit10_iter++ ) {
+                const int digit = v_sign < 0 ? invert_sign(n % 10) : n % 10;
+                n /= 10;
+                if ( separator && 0 < digit10_iter && 0 == digit10_iter % 3 ) {
+                    res[total_chars - 1 - (char_iter++)] = separator;
+                }
+                res[total_chars - 1 - (char_iter++)] = '0' + digit;
             }
-            res[total_chars - 1 - (char_iter++)] = '0' + digit;
+            if ( v_sign < 0 /* && char_iter < total_chars */ ) {
+                res[total_chars - 1 - (char_iter++)] = '-';
+            }
+        } catch (...) {
+            eptr = std::current_exception();
         }
-        if ( v_sign < 0 /* && char_iter < total_chars */ ) {
-            res[total_chars - 1 - (char_iter++)] = '-';
-        }
+        jau::handle_exception(eptr, E_FILE_LINE);
         return res;
     }
 
