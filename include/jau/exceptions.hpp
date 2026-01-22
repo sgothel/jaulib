@@ -44,21 +44,23 @@ namespace jau {
     /**
      * Handle given optional exception (nullable std::exception_ptr) and send std::exception::what() message to `stderr`
      * @param eptr contains optional exception, may be `nullptr`
-     * @return true if `eptr` contained an exception pointer, message was not `nullptr`
+     * @return true if `eptr` contained an exception pointer, not `nullptr`
      */
-    inline bool handle_exception(std::exception_ptr eptr) { // NOLINT(performance-unnecessary-value-param) passing by value is OK
-        try {
-            if (eptr) {
+    inline __attribute__((always_inline))
+    bool handle_exception(std::exception_ptr eptr, const char* file, int line) noexcept { // NOLINT(performance-unnecessary-value-param) passing by value is OK
+        if (eptr) {
+            try {
                 std::rethrow_exception(eptr);
+            } catch (const std::exception &e) {
+                ::fprintf(stderr, "Exception caught @ %s:%d: %s\n", file, line, e.what());
+                return true;
             }
-        } catch (const std::exception &e) {
-            ::fprintf(stderr, "Exception caught: %s\n", e.what());
-            return true;
         }
         return false;
     }
 
-    typedef jau::function<bool(const std::exception &)> exception_handler_t;
+    /// Exception handler method, should return true if not consumed or deemed an error. Shall be `noexcept` itself.
+    typedef jau::function<bool(const std::exception &, const char* file, int line)> exception_handler_t;
 
     /**
      * Handle given optional exception (nullable std::exception_ptr) and calls exception_handler_t
@@ -66,13 +68,14 @@ namespace jau {
      * @param eh exception_handler_t to process an eventual exception
      * @return true if `eptr` contained an exception pointer, exception_handler_t result is returned. Otherwise false (no exception).
      */
-    inline bool handle_exception(std::exception_ptr eptr, jau::exception_handler_t &eh) { // NOLINT(performance-unnecessary-value-param) passing by value is OK
-        try {
-            if (eptr) {
+    inline __attribute__((always_inline))
+    bool handle_exception(std::exception_ptr eptr, jau::exception_handler_t &eh, const char* file, int line) noexcept { // NOLINT(performance-unnecessary-value-param) passing by value is OK
+        if (eptr) {
+            try {
                 std::rethrow_exception(eptr);
+            } catch (const std::exception &e) {
+                return eh(e, file, line);
             }
-        } catch (const std::exception &e) {
-            return eh(e);
         }
         return false;
     }

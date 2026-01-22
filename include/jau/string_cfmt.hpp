@@ -1530,7 +1530,7 @@ namespace jau::cfmt {
         } catch (...) {
             eptr = std::current_exception();
         }
-        handle_exception(eptr);
+        handle_exception(eptr, E_FILE_LINE);
         return s;
     }
 
@@ -1561,7 +1561,7 @@ namespace jau::cfmt {
         } catch (...) {
             eptr = std::current_exception();
         }
-        handle_exception(eptr);
+        handle_exception(eptr, E_FILE_LINE);
         return s;
     }
 
@@ -1593,6 +1593,7 @@ namespace jau::cfmt {
         } catch (...) {
             eptr = std::current_exception();
         }
+        handle_exception(eptr, E_FILE_LINE);
         return ctx;
     }
     /**
@@ -1649,6 +1650,7 @@ namespace jau::cfmt {
         } catch (...) {
             eptr = std::current_exception();
         }
+        handle_exception(eptr, E_FILE_LINE);
         return ctx;
     }
 

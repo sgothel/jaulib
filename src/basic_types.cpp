@@ -550,6 +550,10 @@ uint128dp_t jau::merge_uint128(uint32_t const uuid32, uint128dp_t const &base_uu
     return dest;
 }
 
+//
+// jau::unsafe strings
+//
+
 std::string jau::unsafe::vformat_string_n(const std::size_t maxStrLen, const char* format, va_list args) noexcept {
     std::exception_ptr eptr;
     std::string str;
@@ -572,7 +576,7 @@ std::string jau::unsafe::vformat_string_n(const std::size_t maxStrLen, const cha
     } catch (...) {
         eptr = std::current_exception();
     }
-    handle_exception(eptr);
+    handle_exception(eptr, E_FILE_LINE);
     return str;
 }
 
@@ -618,7 +622,7 @@ std::string jau::unsafe::vformat_string_h(const std::size_t strLenHint, const ch
     } catch (...) {
         eptr = std::current_exception();
     }
-    handle_exception(eptr);
+    handle_exception(eptr, E_FILE_LINE);
     return str;
 }
 
@@ -660,9 +664,13 @@ void jau::unsafe::errPrint(FILE *out, const char *msg, bool addErrno, bool addBa
     } catch (...) {
         eptr = std::current_exception();
     }
-    handle_exception(eptr);
+    handle_exception(eptr, E_FILE_LINE);
     va_end (args);
 }
+
+//
+//
+//
 
 static snsize_t hexCharByte_(const uint8_t c) {
     if ( '0' <= c && c <= '9' ) {

@@ -27,6 +27,7 @@
 #include <stdexcept>
 #include <system_error>
 
+#include <jau/cpp_lang_util.hpp>
 #include <jau/test/catch2_ext.hpp>
 
 #include <jau/basic_types.hpp>
@@ -267,8 +268,19 @@ TEST_CASE( "Exception 11 Math", "[big_int_t][exceptions][error][arithmetic][math
 
 TEST_CASE( "Exception 20 Catching", "[exceptions][error]" ) {
     {
-        jau::exception_handler_t eh = [](const std::exception &e) -> bool {
-            std::cerr << "Exception 20: " << e.what() << "\n";
+        std::exception_ptr eptr;
+        try {
+            [[maybe_unused]]
+            char ch = std::string().at(1);  // this generates a std::out_of_range
+        } catch (...) {
+            eptr = std::current_exception();  // capture
+        }
+
+        REQUIRE(true == jau::handle_exception(eptr, E_FILE_LINE));
+    }
+    {
+        jau::exception_handler_t eh = [](const std::exception &e, const char* file, int line) -> bool {
+            std::cerr << "Exception 20 @ " << file << ":" << line << ": " << e.what() << "\n";
             return true;
         };
         std::exception_ptr eptr;
@@ -280,6 +292,6 @@ TEST_CASE( "Exception 20 Catching", "[exceptions][error]" ) {
             eptr = std::current_exception();  // capture
         }
 
-        REQUIRE(true == jau::handle_exception(eptr, eh));
+        REQUIRE(true == jau::handle_exception(eptr, eh, E_FILE_LINE));
     }
 }
