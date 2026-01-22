@@ -2018,7 +2018,7 @@ extern template void jau::cfmt::impl::FormatParser::parseOneImpl<jau::cfmt::impl
  * @param format `printf()` compliant format string
  * @param args arguments matching the format string
  */
-#define jau_string_check(fmt, ...) \
+#define jau_format_check(fmt, ...) \
     static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
 
 /**
@@ -2030,7 +2030,7 @@ extern template void jau::cfmt::impl::FormatParser::parseOneImpl<jau::cfmt::impl
  * @param format `printf()` compliant format string
  * @param args arguments matching the format string
  */
-#define jau_string_checkLine(fmt, ...) \
+#define jau_format_checkLine(fmt, ...) \
     static_assert(0 == jau::cfmt::check2Line< JAU_FOR_EACH1_LIST(JAU_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
 
 /**@}*/

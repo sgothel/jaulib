@@ -25,11 +25,10 @@
 #ifndef COUNTING_ALLOCATOR_HPP
 #define COUNTING_ALLOCATOR_HPP
 
-#include <cinttypes>
 #include <memory>
 
 #include <jau/basic_types.hpp>
-// #include <jau/ordered_atomic.hpp>
+#include <jau/string_cfmt.hpp>
 
 namespace jau {
 
@@ -85,10 +84,9 @@ struct counting_allocator : public std::allocator<T>
     }
 
   public:
-    std::string toString(const nsize_t mem_width=0, const nsize_t count_width=0) {
-        return "CAlloc["/*+std::to_string(id)+", "*/+to_decstring(memory_usage, ',', mem_width)+" bytes, alloc[balance "+
-                to_decstring(alloc_balance, ',', count_width)+" = "+
-                to_decstring(alloc_count, ',', count_width)+" - "+to_decstring(dealloc_count, ',', count_width)+"]]";
+    std::string toString() {
+        return jau_format_string("CAlloc[%'zu bytes, alloc[balance %'zd = %'zu - %'zu]]",
+            memory_usage, alloc_balance, alloc_count, dealloc_count);
     }
 
     counting_allocator() noexcept
@@ -159,7 +157,7 @@ struct counting_allocator : public std::allocator<T>
 #if __cplusplus > 201703L
     [[nodiscard]] constexpr value_type* allocate(std::size_t n) { // C++20
         flush_stats();
-        memory_usage += n * sizeof(value_type); // NOLINT(bugprone-sizeof-expression): Intended pointer type if so chosen 
+        memory_usage += n * sizeof(value_type); // NOLINT(bugprone-sizeof-expression): Intended pointer type if so chosen
         alloc_count++;
         alloc_balance++;
         return std::allocator<value_type>::allocate(n);

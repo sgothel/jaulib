@@ -119,8 +119,8 @@ TEST_CASE("parse: width precision from arg", "[jau][std::string][jau::cfmt]") {
     using namespace jau::cfmt;
 
     {
-        jau_string_check("%*" PRIi64, 21, (int64_t)1);
-        jau_string_checkLine("%*" PRIi64, 21, (int64_t)1);
+        jau_format_check("%*" PRIi64, 21, (int64_t)1);
+        jau_format_checkLine("%*" PRIi64, 21, (int64_t)1);
         std::string s;
         jau::cfmt::Result r = jau::cfmt::formatR(s,"%*" PRIi64, 21, (int64_t)1);
         std::cerr << "FormatResult " << r << "\n";
@@ -324,17 +324,17 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
         const char *limiter_pos = nullptr;
         char *endptr = nullptr;
 
-        jau_string_check("Value end not '%c' @ idx %zd, %p != %p, in: %p '%s' len %zu", limiter, endptr - str, endptr, limiter_pos, str, str, str_len);
-        jau_string_checkLine("Value end not '%c' @ idx %zd, %p != %p, in: %p '%s' len %zu", limiter, endptr - str, endptr, limiter_pos, str, str, str_len);
+        jau_format_check("Value end not '%c' @ idx %zd, %p != %p, in: %p '%s' len %zu", limiter, endptr - str, endptr, limiter_pos, str, str, str_len);
+        jau_format_checkLine("Value end not '%c' @ idx %zd, %p != %p, in: %p '%s' len %zu", limiter, endptr - str, endptr, limiter_pos, str, str, str_len);
     }
     // bool
     {
-        jau_string_check("%d", (bool)true);
-        jau_string_checkLine("%d", (bool)true);
-        jau_string_check("%u", (bool)true);
-        jau_string_checkLine("%u", (bool)true);
-        // jau_string_check("%s", (bool)true);
-        // jau_string_checkLine("%s", (bool)true);
+        jau_format_check("%d", (bool)true);
+        jau_format_checkLine("%d", (bool)true);
+        jau_format_check("%u", (bool)true);
+        jau_format_checkLine("%u", (bool)true);
+        // jau_format_check("%s", (bool)true);
+        // jau_format_checkLine("%s", (bool)true);
     }
 
     // enums
@@ -367,7 +367,7 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
         static_assert(true == std::is_unsigned_v<std::underlying_type_t<decltype(e4_u)>>);
 
         jau_format_string("Enum %u, %d, %d, %u\n", e1_u, e2_s, e3_s, e4_u);
-        jau_string_checkLine("%u, %d, %d, %u\n", e1_u, e2_s, e3_s, e4_u);
+        jau_format_checkLine("%u, %d, %d, %u\n", e1_u, e2_s, e3_s, e4_u);
 
         static_assert(4 == jau::cfmt::check("%u, %d, %d, %u\n", e1_u, e2_s, e3_s, e4_u));
         static_assert(0 == jau::cfmt::checkLine("%u, %u, %d, %u\n", e1_u, e2_s, e3_s, e4_u));
@@ -396,10 +396,10 @@ TEST_CASE("integral_conversion", "[jau][std::string][jau::cfmt]") {
     ssize_t i9 = -9;
     size_t i10 = 10;
 
-    jau_string_check("format_check: %hhd, %hhu, %hd, %hu, %d, %u, %ld, %lu, %zd, %zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
+    jau_format_check("format_check: %hhd, %hhu, %hd, %hu, %d, %u, %ld, %lu, %zd, %zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
     CHECK(format_check_exp1 == jau::format_string("format_check: %hhd, %hhu, %hd, %hu, %d, %u, %ld, %lu, %zd, %zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10));
 
-    jau_string_check("format_check: %01hhd, %02hhu, %03hd, %04hu, %05d, %06u, %07ld, %08lu, %09zd, %010zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
+    jau_format_check("format_check: %01hhd, %02hhu, %03hd, %04hu, %05d, %06u, %07ld, %08lu, %09zd, %010zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
     CHECK(format_check_exp2 == jau::format_string("format_check: %01hhd, %02hhu, %03hd, %04hu, %05d, %06u, %07ld, %08lu, %09zd, %010zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10));
 }
 
@@ -407,8 +407,8 @@ TEST_CASE("thousands_flag", "[jau][std::string][jau::cfmt][flags]" ) {
     //
     // thousand flag ' or ,
     //
-    jau_string_checkLine("%'d", 1);
-    jau_string_checkLine("%,d", 1);
+    jau_format_checkLine("%'d", 1);
+    jau_format_checkLine("%,d", 1);
 
     CHECK("1" == jau::format_string("%'d", 1));
     CHECK("10" == jau::format_string("%#'d", 10));
@@ -421,7 +421,7 @@ TEST_CASE("thousands_flag", "[jau][std::string][jau::cfmt][flags]" ) {
 }
 
 TEST_CASE("binary", "[jau][std::string][jau::cfmt][flags]" ) {
-    jau_string_checkLine("%b", 1_u32);
+    jau_format_checkLine("%b", 1_u32);
 
     CHECK("0b1" == jau::format_string("%#b", 1_u32));
     CHECK("0b1010111111111110" == jau::format_string("%#b", 0xaffe_u32));

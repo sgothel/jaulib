@@ -25,11 +25,9 @@
 #ifndef COUNTING_CALLOCATOR_HPP
 #define COUNTING_CALLOCATOR_HPP
 
-#include <cinttypes>
-#include <memory>
-
 #include <jau/basic_types.hpp>
 #include <jau/callocator.hpp>
+#include <jau/string_cfmt.hpp>
 
 namespace jau {
 
@@ -87,11 +85,9 @@ struct counting_callocator : public jau::callocator<T>
     }
 
   public:
-    std::string toString(const nsize_t mem_width=0, const nsize_t count_width=0) {
-        return "CAlloc["/*+std::to_string(id)+", "*/+to_decstring(memory_usage, ',', mem_width)+" bytes, alloc[balance "+
-                to_decstring(alloc_balance, ',', count_width)+" = "+
-                to_decstring(alloc_count, ',', count_width)+" - "+to_decstring(dealloc_count, ',', count_width)+
-                ", realloc = "+to_decstring(realloc_count, ',', count_width)+"]]";
+    std::string toString() {
+        return jau_format_string("CCAlloc[%'zu bytes, alloc[balance %'zd = %'zu - %'zu, realloc %'zu]]",
+            memory_usage, alloc_balance, alloc_count, dealloc_count, realloc_count);
     }
 
     counting_callocator() noexcept
