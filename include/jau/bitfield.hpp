@@ -14,6 +14,7 @@
 #include <unistd.h>
 
 #include <array>
+#include <cassert>
 #include <climits>
 #include <cmath>
 #include <cstring>
@@ -265,8 +266,16 @@ namespace jau {
                 const size_type l2 = length - l1;                 // length of second chunk < unit_bit_size
                 if ( l2 > 0 ) {
                     const unit_type m2 = (one_u << l2) - one_u;   // mask of second chunk
+                    /**
+                     * g++ 4:14.2.0-1 Debian 13
+                     * g++ bug: False positive of '-Warray-bounds'
+                     * See <https://gcc.gnu.org/bugzilla/show_bug.cgi?id=56456>
+                     */
+                    PRAGMA_DISABLE_WARNING_PUSH
+                    PRAGMA_DISABLE_WARNING_ARRAY_BOUNDS
                     storage[u + 1] = ((~m2) & storage[u + 1])     // keep non-written storage bits
                                      | (m2 & (data >> l1));       // overwrite storage w/ used data bits
+                    PRAGMA_DISABLE_WARNING_POP
                 }
             }
             return true;

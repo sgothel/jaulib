@@ -654,6 +654,18 @@ static void testAlignedBitReverse(std::string_view prefix, const TestDataBF& d) 
 TEST_CASE("Bitfield Test 30 Aligned Reverse", "[bitfield][bitreverse]") {
     {
         jau::bitfield<64> exp(BitDemoData::testStringLSB64_le);
+        /**
+         * Analyze:
+         * g++ 4:14.2.0-1 Debian 13
+         * g++ bug: False positive of '-Warray-bounds'
+         * See <https://gcc.gnu.org/bugzilla/show_bug.cgi?id=56456>
+         */
+        // static_assert(8 == sizeof(typename decltype(exp)::unit_type));
+        if (8 == sizeof(typename decltype(exp)::unit_type)) {
+            REQUIRE( 8 == decltype(exp)::unit_byte_size);
+            REQUIRE(64 == decltype(exp)::unit_bit_size);
+            REQUIRE( 1 == decltype(exp)::unit_size);
+        }
         jau::bitfield<64> has(BitDemoData::testStringMSB64_be);
         has.reverse();
         REQUIRE(exp == has);
