@@ -1132,6 +1132,32 @@ std::string jau::type_info::toString() const noexcept {
 }
 
 //
+// debug
+//
+
+void jau::impl::dbgPrint0_tail(FILE *out, bool addErrno, bool addBacktrace) noexcept {
+    if (addErrno) {
+        ::fprintf(stderr, "; last errno %d %s", errno, strerror(errno));
+    }
+    ::fputs("\n", out);
+    if (addBacktrace) {
+        ::fprintf(stderr, "%s", jau::get_backtrace(true /* skip_anon_frames */, 4 /* max_frames */, 2 /* skip_frames: this() + get_b*() */).c_str());
+    }
+    if (addErrno || addBacktrace) {
+        ::fflush(stderr);
+    }
+}
+void jau::impl::dbgPrint1_prefix(FILE *out, const char *msg, const char *msgsep) noexcept {
+    ::fputc('[', out);
+    ::fputs(jau::to_decstring(environment::getElapsedMillisecond(), ',', 9).c_str(), out);
+    ::fputs("] ", out);
+    if (msg) {
+        ::fputs(msg, out);
+        ::fputs(msgsep, out);
+    }
+}
+
+//
 // jau::cfmt
 //
 

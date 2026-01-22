@@ -46,64 +46,36 @@
 namespace jau {
 
     namespace impl {
+        /// This function is a possible cancellation point and therefore marked with noexcept (not marked with __THROW like ::fprintf).
+        void dbgPrint0_tail(FILE *out, bool addErrno, bool addBacktrace) noexcept;
+        /// This function is a possible cancellation point and therefore marked with noexcept (not marked with __THROW like ::fprintf).
+        void dbgPrint1_prefix(FILE *out, const char *msg, const char *msgsep) noexcept;
+
+        /// This function is a possible cancellation point and therefore marked with noexcept (not marked with __THROW like ::fprintf).
         template <typename... Args>
+        inline __attribute__((always_inline))
         void dbgPrint0(FILE *out, bool addErrno, bool addBacktrace, std::string_view format, const Args &...args) noexcept {
-            std::exception_ptr eptr;
-            try {
-                ::fputs(jau::format_string(format, args...).c_str(), out);
-                if (addErrno) {
-                    ::fprintf(stderr, "; last errno %d %s", errno, strerror(errno));
-                }
-                ::fputs("\n", out);
-                if (addBacktrace) {
-                    ::fprintf(stderr, "%s", jau::get_backtrace(true /* skip_anon_frames */, 4 /* max_frames */, 2 /* skip_frames: this() + get_b*() */).c_str());
-                }
-                if (addErrno || addBacktrace) {
-                    ::fflush(stderr);
-                }
-            } catch (...) {
-                eptr = std::current_exception();
-            }
-            handle_exception(eptr);
+            ::fputs(jau::format_string(format, args...).c_str(), out);
+            jau::impl::dbgPrint0_tail(out, addErrno, addBacktrace);
         }
 
+        /// This function is a possible cancellation point and therefore marked with noexcept (not marked with __THROW like ::fprintf).
         template <typename... Args>
+        inline __attribute__((always_inline))
         void dbgPrint1(FILE *out, bool printPrefix, const char *msg, std::string_view format, const Args &...args) noexcept {
             if (printPrefix) {
-                std::exception_ptr eptr;
-                try {
-                    ::fputc('[', out);
-                    ::fputs(jau::to_decstring(environment::getElapsedMillisecond(), ',', 9).c_str(), out);
-                    ::fputs("] ", out);
-                    if (msg) {
-                        ::fputs(msg, out);
-                        ::fputs(": ", out);
-                    }
-                } catch (...) {
-                    eptr = std::current_exception();
-                }
-                handle_exception(eptr);
+                jau::impl::dbgPrint1_prefix(out, msg, ": ");
             }
             jau::impl::dbgPrint0(out, false, false, format, args...);
         }
 
+        /// This function is a possible cancellation point and therefore marked with noexcept (not marked with __THROW like ::fprintf).
         template <typename... Args>
+        inline __attribute__((always_inline))
         void dbgPrint2(FILE *out, const char *msg, bool addErrno, bool addBacktrace, const char *func, const char *file, const int line,
                                   std::string_view format, const Args &...args) noexcept {
-            std::exception_ptr eptr;
-            try {
-                ::fputc('[', out);
-                ::fputs(jau::to_decstring(environment::getElapsedMillisecond(), ',', 9).c_str(), out);
-                ::fputs("] ", out);
-                if (msg) {
-                    ::fputs(msg, out);
-                    ::fputs(" ", out);
-                }
-                ::fprintf(stderr, "@ %s:%d %s: ", file, line, func);
-            } catch (...) {
-                eptr = std::current_exception();
-            }
-            handle_exception(eptr);
+            jau::impl::dbgPrint1_prefix(out, msg, " ");
+            ::fprintf(stderr, "@ %s:%d %s: ", file, line, func);
             jau::impl::dbgPrint0(out, addErrno, addBacktrace, format, args...);
         }
     }
@@ -205,18 +177,11 @@ namespace jau {
      */
     template <typename... Args>
     int fprintf_td(const uint64_t elapsed_ms, FILE* stream, std::string_view format, const Args &...args) noexcept {
-        int res = 0;
-        std::exception_ptr eptr;
-        try {
-            res = ::fprintf(stream, "[%s] ", jau::to_decstring(elapsed_ms, ',', 9).c_str());
-            const int r = ::fputs(jau::format_string(format, args...).c_str(), stream);
-            if (r >= 0) {
-                res += r;
-            }
-        } catch (...) {
-            eptr = std::current_exception();
+        int res = ::fprintf(stream, "[%s] ", jau::to_decstring(elapsed_ms, ',', 9).c_str());
+        const int r = ::fputs(jau::format_string(format, args...).c_str(), stream);
+        if (r >= 0) {
+            res += r;
         }
-        handle_exception(eptr);
         return res;
     }
     /**
