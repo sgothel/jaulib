@@ -473,6 +473,8 @@ namespace jau::cfmt {
             append_rev(dest, dest_maxlen, src, true /*prec*/, false /*rev**/, opts);
         }
         void append_integral(std::string &dest, const size_t dest_maxlen, uint64_t v, const bool negative, const FormatOpts &opts, const bool inject_dot=false);
+        // no width, nor precision, nor inject_dot
+        void append_integral_simple(std::string &dest, const size_t dest_maxlen, uint64_t v, const bool negative, const FormatOpts &opts);
 
         // check for NaN and special values
         bool is_float_validF64(std::string &dest, const size_t dest_maxlen, const double value, const FormatOpts &opts);
@@ -553,7 +555,11 @@ namespace jau::cfmt {
             void appendFormatted(const FormatOpts& opts, const T& v) {
                 if( nullptr != v ) {
                     const uintptr_t v_le = jau::cpu_to_le(reinterpret_cast<uintptr_t>(v));
-                    impl::append_integral(m_s, m_maxLen, v_le, false, opts);
+                    if (!opts.width_set && !opts.precision_set) {
+                        impl::append_integral_simple(m_s, m_maxLen, v_le, false, opts);
+                    } else {
+                        impl::append_integral(m_s, m_maxLen, v_le, false, opts);
+                    }
                 } else {
                     impl::append_string(m_s, m_maxLen, "(nil)", opts);
                 }
@@ -561,7 +567,11 @@ namespace jau::cfmt {
             template<typename T>
             requires jau::req::unsigned_integral<T> && (!jau::req::boolean<T>)
             void appendFormattedInt(const FormatOpts& opts, const T& v, bool negative) {
-                impl::append_integral(m_s, m_maxLen, uint64_t(v), negative, opts);
+                if (!opts.width_set && !opts.precision_set) {
+                    impl::append_integral_simple(m_s, m_maxLen, uint64_t(v), negative, opts);
+                } else {
+                    impl::append_integral(m_s, m_maxLen, uint64_t(v), negative, opts);
+                }
             }
             template<typename T>
             requires std::is_floating_point_v<T>

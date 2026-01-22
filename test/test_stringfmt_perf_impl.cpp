@@ -133,9 +133,13 @@ TEST_CASE("jau_cfmt_benchmark_append_integral00", "[benchmark][jau][std::string]
 
         jau::cfmt::impl::append_integral(s, s.max_size(), i1, false, o1, false);
         REQUIRE(format_check_exp == s);
+
+        s.clear();
+        jau::cfmt::impl::append_integral_simple(s, s.max_size(), i1, false, o1);
+        REQUIRE(format_check_exp == s);
     }
 
-    BENCHMARK("append_integral      rsrved bench") {
+    BENCHMARK("append_integral        rsrved bench") {
         volatile size_t res = 0;
         for( size_t i = 0; i < loops; ++i ) {
             std::string s;
@@ -147,8 +151,20 @@ TEST_CASE("jau_cfmt_benchmark_append_integral00", "[benchmark][jau][std::string]
         }
         return res;
     };
+    BENCHMARK("append_integral_simple rsrved bench") {
+        volatile size_t res = 0;
+        for( size_t i = 0; i < loops; ++i ) {
+            std::string s;
+            s.reserve(jau::cfmt::default_string_capacity+1);
 
-    BENCHMARK("snprintf             rsrved bench") {
+            jau::cfmt::impl::append_integral_simple(s, s.max_size(), i1, false, o1);
+            REQUIRE(format_check_exp == s);
+            res = res + s.size();
+        }
+        return res;
+    };
+
+    BENCHMARK("snprintf               rsrved bench") {
         volatile size_t res = 0;
         for( size_t i = 0; i < loops; ++i ) {
             std::string s;

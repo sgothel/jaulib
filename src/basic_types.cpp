@@ -1299,9 +1299,7 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
         case 2:  shift = 1; break;
         default: return;
     }
-    const char *hex_array = is_set(opts.flags, flags_t::uppercase) ? HexadecimalArrayBig : HexadecimalArrayLow;
     const char separator = is_set(opts.flags, flags_t::thousands) ? '\'' : 0;
-    const uint32_t sep_gap = 10 == radix ? 3 : 4;
 
     // const uint32_t val_digits = opts.precision_set && opts.precision == 0 && jau::is_zero(v) ? 0 : jau::digits(v, radix);
     uint32_t val_digits; // includes separator count
@@ -1309,6 +1307,7 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
     if( opts.precision_set && opts.precision == 0 && jau::is_zero(v) ) {
         val_digits = 0;
     } else {
+        const char *hex_array = is_set(opts.flags, flags_t::uppercase) ? HexadecimalArrayBig : HexadecimalArrayLow;
         const uint64_t mask = radix - 1;
         char * d = buf_;
         const char * const d_end_num = d + char32buf_maxlen;
@@ -1323,6 +1322,7 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
                 }
             } while( v && d < d_end_num);
         } else {
+            const uint32_t sep_gap = 10 == radix ? 3 : 4;
             uint32_t digit_cnt = 0;
             do {
                 if (0 < digit_cnt && 0 == digit_cnt % sep_gap) {
@@ -1340,15 +1340,19 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
                 ++digit_cnt;
             } while( v && d < d_end_num);
         }
+        if (inject_dot && d < d_end_num-1) {
+            *d = *(d-1);
+            *(d-1) = '.';
+            ++d;
+        }
         val_digits = d - buf_;
     }
     const uint32_t prec = opts.precision_set ? opts.precision : 0;
-    const uint32_t xtra_dot = val_digits && inject_dot ? 1 : 0;
     uint32_t width = opts.width_set ? opts.width : 0;
     uint32_t zeros_left = 0, space_left = 0, space_right = 0;
     uint32_t xtra_left = 0;  ///< contains hash, sign and prec_left and single space
     {
-        uint32_t len = val_digits + xtra_dot;  // total of the number string
+        uint32_t len = val_digits;  // total of the number string
         // p1: pad leading zeros
         if (!is_set(opts.flags, flags_t::left)) {
             if (width && is_set(opts.flags, flags_t::zeropad) && (negative || has_any(opts.flags, flags_t::plus | flags_t::space))) {
@@ -1413,7 +1417,7 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
             }
         }
         const size_t added_maxlen = dest_maxlen - dest_start_len;
-        const size_t added_len = std::min<size_t>(added_maxlen, space_left + xtra_left + ( val_digits + xtra_dot ) + space_right);
+        const size_t added_len = std::min<size_t>(added_maxlen, space_left + xtra_left + val_digits + space_right);
         const size_t new_size = dest_start_len + added_len;
         dest.reserve(new_size + 1);  // +EOS, not shrinking!
         dest.resize(new_size, ' ');
@@ -1433,22 +1437,13 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
     char *d = dest.data() + dest_len - space_right;
     const char *const d_end_num = d;
     assert(d_end_num >= d_start_num);
-    assert(size_t(d_end_num - d_start_num) == val_digits + xtra_dot);
+    assert(size_t(d_end_num - d_start_num) == val_digits);
 
-    // required = space_left + xtra_left + ( val_digits + xtra_dot ) + space_right;
+    // required = space_left + xtra_left + val_digits + space_right;
     {
         char * p = buf_;
-        if (!xtra_dot) {
-            while (d > d_start_num) {
-                *(--d) = *(p++); // NOLINT(clang-analyzer-core.uninitialized.Assign): Wrong analysis, see `Case 1` in test_stringfmt_impl.cpp. (Assigned value is garbage or undefined)
-            }
-        } else {
-            while (d > d_start_num) {
-                *(--d) = *(p++);
-                if (d == d_start_num + 1 + xtra_dot) {
-                    *(--d) = '.';
-                }
-            }
+        while (d > d_start_num) {
+            *(--d) = *(p++); // NOLINT(clang-analyzer-core.uninitialized.Assign): Wrong analysis, see `Case 1` in test_stringfmt_impl.cpp. (Assigned value is garbage or undefined)
         }
         assert(p - buf_ == val_digits);
     }
@@ -1471,7 +1466,7 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
             --len;
             if (len && (radix == 16)) {
                 ++d;
-                --len;
+                // --len;
             }
         }
         assert(d > d_start);
@@ -1496,13 +1491,147 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
         assert(d > d_start);
         *(--d) = ' ';
     }
-#if !defined(NDEBUG) && 0
-    if (d != d_start + space_left) {
-        fprintf(stderr, "ERROR d %p, d_start %p, space_left %zu, dist %zd",
-                d, d_start, space_left, d_start + space_left - d);
-    }
-#endif
     assert(d == d_start + space_left);  // string space fully written
+
+    *(dest.data() + dest_len) = 0;  // EOS (is reserved)
+}
+void jau::cfmt::impl::append_integral_simple(std::string &dest, const size_t dest_maxlen, uint64_t v, const bool negative, const jau::cfmt::FormatOpts &opts) {
+    if (!dest_maxlen) {
+        return;
+    }
+    const size_t dest_start_len = dest.size();
+
+    const uint32_t radix = opts.radix;
+    uint32_t shift;
+    switch (radix) {
+        case 16: shift = 4; break;
+        case 10: shift = 0; break;
+        case 8:  shift = 3; break;
+        case 2:  shift = 1; break;
+        default: return;
+    }
+    const char separator = is_set(opts.flags, flags_t::thousands) ? '\'' : 0;
+
+    // const uint32_t val_digits = opts.precision_set && opts.precision == 0 && jau::is_zero(v) ? 0 : jau::digits(v, radix);
+    uint32_t val_digits; // includes separator count
+    char buf_[char32buf_maxlen];
+    {
+        const char *hex_array = is_set(opts.flags, flags_t::uppercase) ? HexadecimalArrayBig : HexadecimalArrayLow;
+        const uint64_t mask = radix - 1;
+        char * d = buf_;
+        const char * const d_end_num = d + char32buf_maxlen;
+        if (!separator) {
+            do {
+                if (10 == radix) {
+                    *(d++) = char('0' + (v % 10_u64));
+                    v /= 10;
+                } else {
+                    *(d++) = hex_array[v & mask];
+                    v >>= shift;
+                }
+            } while( v && d < d_end_num);
+        } else {
+            const uint32_t sep_gap = 10 == radix ? 3 : 4;
+            uint32_t digit_cnt = 0;
+            do {
+                if (0 < digit_cnt && 0 == digit_cnt % sep_gap) {
+                    *(d++) = separator;
+                }
+                assert(d < d_end_num);
+
+                if (10 == radix) {
+                    *(d++) = char('0' + (v % 10_u64));
+                    v /= 10;
+                } else {
+                    *(d++) = hex_array[v & mask];
+                    v >>= shift;
+                }
+                ++digit_cnt;
+            } while( v && d < d_end_num);
+        }
+        val_digits = d - buf_;
+    }
+    uint32_t xtra_left = 0;  ///< contains hash, sign and single space
+    {
+        // p1: handle hash
+        if (is_set(opts.flags, flags_t::hash)) {
+            if (radix == 16 || radix == 2) {
+                ++xtra_left;
+            }
+            ++xtra_left; // hash zero
+        }
+
+        // p1: sign
+        if (negative) {
+            ++xtra_left; // '-';
+        } else if (is_set(opts.flags, flags_t::plus)) {
+            ++xtra_left; // '+';  // ignore the space if the '+' exists
+        }
+
+        // p1: space
+        if (!negative && is_set(opts.flags, flags_t::space)) {
+            ++xtra_left; // ' ';
+        }
+
+        const size_t added_maxlen = dest_maxlen - dest_start_len;
+        const size_t added_len = std::min<size_t>(added_maxlen, xtra_left + val_digits );
+        const size_t new_size = dest_start_len + added_len;
+        dest.reserve(new_size + 1);  // +EOS, not shrinking!
+        dest.resize(new_size, ' ');
+
+#if !defined(NDEBUG) && 0
+        const uint32_t sep_count = val_digits > 0 && separator ? (val_digits - 1) / sep_gap : 0;
+        fprintf(stderr, "XXX.80: opts: %s\n", opts.toString().c_str());
+        fprintf(stderr, "XXX.80: negative %d, val %" PRIu64 "\n", negative, v);
+        fprintf(stderr, "XXX.80: idx[digits %u, sep %u, xleft %u\n",
+                val_digits, sep_count, xtra_left);
+        fprintf(stderr, "XXX.80: total len[old %zu, added %zu, len %zu], number_start %u\n", dest_start_len, added_len, dest.size(), xtra_left);
+#endif
+    }
+    const size_t dest_len = dest.size();
+    const char *const d_start = dest.data() + dest_start_len;
+    const char *const d_start_num = d_start + xtra_left;
+    char *d = dest.data() + dest_len;
+    [[maybe_unused]] const char *const d_end_num = d;
+    assert(d_end_num >= d_start_num);
+    assert(size_t(d_end_num - d_start_num) == val_digits);
+
+    // required = space_left + xtra_left + val_digits + space_right;
+    {
+        char * p = buf_;
+        while (d > d_start_num) {
+            *(--d) = *(p++); // NOLINT(clang-analyzer-core.uninitialized.Assign): Wrong analysis, see `Case 1` in test_stringfmt_impl.cpp. (Assigned value is garbage or undefined)
+        }
+        assert(p - buf_ == val_digits);
+    }
+    assert(d == d_start_num);
+    assert(d >= d_start);
+
+    // p1: handle hash
+    if (d > d_start && is_set(opts.flags, flags_t::hash)) {
+        assert(d > d_start);
+        if (radix == 16) {
+            *(--d) = is_set(opts.flags, flags_t::uppercase) ? 'X' : 'x';
+        } else if (radix == 2) {
+            *(--d) = 'b';
+        }
+
+        assert(d > d_start);
+        *(--d) = '0';
+    }
+    assert(d >= d_start);
+
+    if (negative) {
+        assert(d > d_start);
+        *(--d) = '-';
+    } else if (is_set(opts.flags, flags_t::plus)) {
+        assert(d > d_start);
+        *(--d) = '+';  // ignore the space if the '+' exists
+    } else if (is_set(opts.flags, flags_t::space)) {
+        assert(d > d_start);
+        *(--d) = ' ';
+    }
+    assert(d == d_start);  // string space fully written
 
     *(dest.data() + dest_len) = 0;  // EOS (is reserved)
 }
@@ -1523,6 +1652,7 @@ bool jau::cfmt::impl::is_float_validF64(std::string &dest, const size_t dest_max
     }
     return true;
 }
+
 
 void jau::cfmt::impl::append_floatF64(std::string &dest, const size_t dest_maxlen, const double ivalue, const FormatOpts &opts) {
     using namespace jau::float_literals;
@@ -1787,9 +1917,8 @@ void jau::cfmt::impl::append_efloatF64(std::string &dest, const size_t dest_maxl
         fprintf(stderr, "EEE.31: v %f (exp %d), dest '%s' (len %zu), fopts %s\n",
                 value, expval, dest.c_str(), dest.size(), fopts.toString().c_str());
 #endif
-        // FIXME
         append_integral(dest, dest_maxlen, uint64_t(jau::abs(expval)), expval < 0, fopts);
-        // append_integral(dest, dest_maxlen, expval, fopts);
+
         // might need to right-pad spaces
         if (is_set(iopts.flags, flags_t::left)) {
             const size_t idx = dest.size();
@@ -1873,9 +2002,7 @@ void jau::cfmt::impl::append_afloatF64(std::string &dest, const size_t dest_maxl
         fprintf(stderr, "AAA.31: v %f, frac %" PRIx64 ", expval %d, dest '%s' (len %zu), fopts %s\n",
                 ivalue, significand, expval, dest.c_str(), dest.size(), fopts.toString().c_str());
 #endif
-        // FIXME
         append_integral(dest, dest_maxlen, significand, false, fopts, true);
-        // append_integral<decltype(significand), true>(dest, dest_maxlen, significand, fopts);
     }
 
     // output the exponent part
@@ -1899,9 +2026,8 @@ void jau::cfmt::impl::append_afloatF64(std::string &dest, const size_t dest_maxl
         fprintf(stderr, "AAA.32: v %f, frac %" PRIx64 ", expval %d, dest '%s' (len %zu), fopts %s\n",
                 ivalue, significand, expval, dest.c_str(), dest.size(), fopts.toString().c_str());
 #endif
-        // FIXME
         append_integral(dest, dest_maxlen, uint64_t(jau::abs(expval)), expval < 0, fopts);
-        // append_integral(dest, dest_maxlen, expval, fopts);
+
         // might need to right-pad spaces
         if (is_set(iopts.flags, flags_t::left)) {
             const size_t idx = dest.size();

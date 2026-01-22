@@ -15,6 +15,7 @@
 #include <cassert>
 #include <cstdio>
 #include <cstring>
+#include <iomanip>
 #include <string_view>
 
 #include <jau/basic_types.hpp>
@@ -310,6 +311,29 @@ TEST_CASE("jau_cfmt_benchmark_int_all", "[benchmark][jau][std::string][format_in
         for( size_t i = 0; i < loops; ++i ) {
             // fa += 0.01f; fb += 0.02f; ++sz1; ++i1; str1.append("X");
             std::string s = jau::cfmt::format("format_check: %01hhd, %02hhu, %03hd, %04hu, %05d, %06u, %07ld, %08lu, %09zd, %010zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
+            REQUIRE(format_check_exp2 == s);
+            res = res + s.size();
+        }
+        return res;
+    };
+
+    BENCHMARK("fmtX.250 stringstream        bench") {
+        volatile size_t res = 0;
+        for( size_t i = 0; i < loops; ++i ) {
+            std::ostringstream ss1;
+            ss1 << "format_check: "
+                << std::setfill('0') // undefined with negative numbers, duh!
+                << "-" << std::setw(1-1) << int(jau::abs(i1)) << ", "
+                << std::setw(2) << unsigned(i2) << ", "
+                << "-" << std::setw(3-1) << jau::abs(i3) << ", "
+                << std::setw(4) << i4 << ", "
+                << "-" << std::setw(5-1) << jau::abs(i5) << ", "
+                << std::setw(6) << i6 << ", "
+                << "-" << std::setw(7-1) << jau::abs(i7) << ", "
+                << std::setw(8) << i8 << ", "
+                << "-" << std::setw(9-1) << jau::abs(i9) << ", "
+                << std::setw(10) << i10;
+            std::string s = ss1.str();
             REQUIRE(format_check_exp2 == s);
             res = res + s.size();
         }

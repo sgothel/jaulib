@@ -66,10 +66,19 @@ TEST_CASE("jau_cfmt_append_integral01", "[benchmark][jau][std::string][format_st
         std::cout << "FormatOpts: " << opts << "\n";
         REQUIRE(2 == opts.radix);
 
-        std::string s;
-        s.reserve(jau::cfmt::default_string_capacity + 1);
+        {
+            std::string s;
+            s.reserve(jau::cfmt::default_string_capacity + 1);
 
-        jau::cfmt::impl::append_integral(s, s.max_size(), value, negative, opts, inject_dot);
-        REQUIRE(format_exp == s);
+            jau::cfmt::impl::append_integral(s, s.max_size(), value, negative, opts, inject_dot);
+            REQUIRE(format_exp == s);
+        }
+        {
+            std::string s;
+            s.reserve(jau::cfmt::default_string_capacity + 1);
+
+            jau::cfmt::impl::append_integral_simple(s, s.max_size(), value, negative, opts);
+            REQUIRE(format_exp == s);
+        }
     }
 }
