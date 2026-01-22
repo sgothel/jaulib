@@ -36,7 +36,7 @@
 #include <jau/cpp_lang_util.hpp>
 #include <jau/int_types.hpp>
 #include <jau/type_info.hpp>
-#include <jau/string_util.hpp>
+#include <jau/string_util_unsafe.hpp>
 
 namespace jau {
 

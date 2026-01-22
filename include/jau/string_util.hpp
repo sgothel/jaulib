@@ -1,6 +1,6 @@
 /*
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2021 Gothel Software e.K.
+ * Copyright (c) 2021-2026 Gothel Software e.K.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -36,6 +36,7 @@
 #include <type_traits>
 #include <vector>
 
+#include <jau/string_util_unsafe.hpp>
 #include "jau/type_info.hpp"
 
 #include <jau/byte_util.hpp>
@@ -639,65 +640,6 @@ namespace jau {
     // *************************************************
      */
 
-    namespace unsafe {
-        /**
-         * Returns a (potentially truncated) string according to `snprintf()` formatting rules
-         * and variable number of arguments following the `format` argument
-         * while utilizing the unsafe `vsnprintf`.
-         *
-         * This variant doesn't validate `format` against given arguments, see jau::format_string_n.
-         *
-         * Resulting string is truncated to `min(maxStrLen, formatLen)`,
-         * with `formatLen` being the given formatted string length of output w/o limitation.
-         *
-         * @param maxStrLen maximum resulting string length
-         * @param format `printf()` compliant format string
-         * @param args optional arguments matching the format string
-         */
-        std::string format_string_n(const std::size_t maxStrLen, const char* format, ...) noexcept;
-        std::string vformat_string_n(const std::size_t maxStrLen, const char* format, va_list args) noexcept;
-
-        /**
-         * Returns a (non-truncated) string according to `snprintf()` formatting rules
-         * and variable number of arguments following the `format` argument
-         * while utilizing the unsafe `vsnprintf`.
-         *
-         * This variant doesn't validate `format` against given arguments, see jau::format_string_h.
-         *
-         * Resulting string size matches formated output w/o limitation.
-         *
-         * @param strLenHint initially used string length w/o EOS
-         * @param format `printf()` compliant format string
-         * @param args optional arguments matching the format string
-         */
-        std::string format_string_h(const std::size_t strLenHint, const char* format, ...) noexcept;
-        std::string vformat_string_h(const std::size_t strLenHint, const char* format, va_list args) noexcept;
-
-        /**
-         * Returns a (non-truncated) string according to `snprintf()` formatting rules
-         * and variable number of arguments following the `format` argument
-         * while utilizing the unsafe `vsnprintf`.
-         *
-         * This variant doesn't validate `format` against given arguments, see jau::format_string.
-         *
-         * Resulting string size matches formated output w/o limitation.
-         *
-         * @param format `printf()` compliant format string
-         * @param args optional arguments matching the format string
-         */
-        std::string format_string(const char* format, ...) noexcept;
-
-        void errPrint(FILE *out, const char *msg, bool addErrno, bool addBacktrace, const char *func, const char *file, const int line,
-                      const char* format, ...) noexcept;
-
-    }  // namespace impl
-
-
-    /**
-    // *************************************************
-    // *************************************************
-    // *************************************************
-     */
     template<typename CharT, std::size_t N>
     constexpr std::string to_string(const CharT (&ref)[N]) {
         return std::string(ref);
