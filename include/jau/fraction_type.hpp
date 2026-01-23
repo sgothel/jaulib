@@ -579,14 +579,18 @@ namespace jau {
     /** Return the maximum of the two given fractions */
     template<typename int_type>
     constexpr const fraction<int_type>& max(const fraction<int_type>& lhs, const fraction<int_type>& rhs) noexcept {
-        return lhs >= rhs ? lhs : rhs;
+        return lhs >= rhs ? lhs : rhs; // NOLINT(bugprone-return-const-ref-from-parameter): Despite `&&` overload, still warning
     }
+    template<typename int_type>
+    constexpr const fraction<int_type>& max(fraction<int_type>&&, fraction<int_type>&&) noexcept = delete; // bugprone-return-const-ref-from-parameter
 
     /** Return the minimum of the two given fractions */
     template<typename int_type>
     constexpr const fraction<int_type>& min(const fraction<int_type>& lhs, const fraction<int_type>& rhs) noexcept {
-        return lhs <= rhs ? lhs : rhs;
+        return lhs <= rhs ? lhs : rhs; // NOLINT(bugprone-return-const-ref-from-parameter): Despite `&&` overload, still warning
     }
+    template<typename int_type>
+    constexpr const fraction<int_type>& min(fraction<int_type>&&, fraction<int_type>&&) noexcept = delete; // bugprone-return-const-ref-from-parameter
 
     /**
      * Returns the value of the sign function applied to numerator.
@@ -1187,13 +1191,15 @@ namespace jau {
 
     /** Return the maximum of the two given fraction_timespec */
     constexpr const fraction_timespec& max(const fraction_timespec& lhs, const fraction_timespec& rhs) noexcept {
-        return lhs > rhs ? lhs : rhs;
+        return lhs > rhs ? lhs : rhs; // NOLINT(bugprone-return-const-ref-from-parameter): Despite `&&` overload, still warning
     }
+    constexpr const fraction_timespec& max(fraction_timespec&&, fraction_timespec&&) noexcept = delete; // bugprone-return-const-ref-from-parameter
 
     /** Return the minimum of the two given fraction_timespec */
     constexpr const fraction_timespec& min(const fraction_timespec& lhs, const fraction_timespec& rhs) noexcept {
-        return lhs < rhs ? lhs : rhs;
+        return lhs < rhs ? lhs : rhs; // NOLINT(bugprone-return-const-ref-from-parameter): Despite `&&` overload, still warning
     }
+    constexpr const fraction_timespec& min(fraction_timespec&&, fraction_timespec&&) noexcept = delete; // bugprone-return-const-ref-from-parameter
 
     /**
      * Returns the value of the sign function applied to tv_sec.

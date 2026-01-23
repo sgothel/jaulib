@@ -65,8 +65,8 @@ class TestLatch01 {
 
         my_counter = count;
 
-        REQUIRE(count+1 == completion.value());
-        REQUIRE(count == my_counter);
+        REQUIRE_EQUAL(count+1, completion.value());
+        REQUIRE_EQUAL(count, my_counter.load());
 
         for(size_t i=0; i<count; i++) {
             tasks[i] = std::thread(&TestLatch01::countDown, this, std::ref(completion), (int64_t)i*1_ms);
@@ -94,8 +94,8 @@ class TestLatch01 {
 
         my_counter = count;
 
-        REQUIRE(count+1 == completion.value());
-        REQUIRE(count == my_counter);
+        REQUIRE_EQUAL(count+1, completion.value());
+        REQUIRE_EQUAL(count, my_counter.load());
 
         for(size_t i=0; i<count; i++) {
             tasks[i] = std::thread(&TestLatch01::countDown, this, std::ref(completion), (int64_t)i*1_ms);
@@ -126,8 +126,8 @@ class TestLatch01 {
         my_counter = count;
         completion.set(count);
 
-        REQUIRE(count == completion.value());
-        REQUIRE(count == my_counter);
+        REQUIRE_EQUAL(count, completion.value());
+        REQUIRE_EQUAL(count, my_counter.load());
 
         for(size_t i=0; i<count; i++) {
             tasks[i] = std::thread(&TestLatch01::countDown, this, std::ref(completion), (int64_t)i*1_ms);
@@ -169,8 +169,8 @@ class TestLatch01 {
             while( completion.value() < count ) {
                 jau::sleep_for( 10_ms );
             }
-            REQUIRE(count == completion.value());
-            REQUIRE(count == my_counter);
+            REQUIRE_EQUAL(count, completion.value());
+            REQUIRE_EQUAL(count, my_counter.load());
             for(auto & task : tasks) {
                 if( task.joinable() ) {
                     task.join();

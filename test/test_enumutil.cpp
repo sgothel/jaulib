@@ -24,7 +24,7 @@ enum class test_type1_t : uint8_t {
     three = 3
 };
 // and add the `enum class` support functions
-JAU_MAKE_ENUM_STRING(test_type1_t, one, two, three);
+JAU_MAKE_ENUM_STRING(test_type1_t, one, two, three); // NOLINT(misc-use-internal-linkage): intentional
 JAU_MAKE_ENUM_INFO(test_type1_t, none, one, two, three);
 
 // Define the `enum class` yourself ...
@@ -35,7 +35,7 @@ enum class test_type2_t : uint8_t {
     three  // <third value
 };
 // and add the `enum class` support functions
-JAU_MAKE_ENUM_STRING(test_type2_t, one, two, three);
+JAU_MAKE_ENUM_STRING(test_type2_t, one, two, three); // NOLINT(misc-use-internal-linkage): intentional
 JAU_MAKE_ENUM_INFO(test_type2_t, none, one, two, three);
 
 // Define the `enum class` yourself ...
@@ -46,7 +46,7 @@ enum class test_type3_t : uint8_t {
     three = 1 << 2
 };
 // and add the `enum class` support functions
-JAU_MAKE_BITFIELD_ENUM_STRING(test_type3_t, one, two, three);
+JAU_MAKE_BITFIELD_ENUM_STRING(test_type3_t, one, two, three); // NOLINT(misc-use-internal-linkage): intentional
 JAU_MAKE_ENUM_INFO(test_type3_t, none, one, two, three);
 
 namespace jau::io::fs {
@@ -150,7 +150,7 @@ namespace test::local {
         three = 1 << 2
     };
     // and add the `enum class` support functions
-    JAU_MAKE_BITFIELD_ENUM_STRING(test_type4_t, one, two, three);
+    JAU_MAKE_BITFIELD_ENUM_STRING(test_type4_t, one, two, three); // NOLINT(misc-use-internal-linkage): intentional
     JAU_MAKE_ENUM_INFO(test_type4_t, one, two, three);
 
     // Define the `enum class` yourself ...
@@ -161,7 +161,7 @@ namespace test::local {
         three = 30
     };
     // and add the `enum class` support functions
-    JAU_MAKE_ENUM_STRING(test_type5_t, one, two, three);
+    JAU_MAKE_ENUM_STRING(test_type5_t, one, two, three); // NOLINT(misc-use-internal-linkage): intentional
     JAU_MAKE_ENUM_INFO(test_type5_t, one, two, three);
 }
 

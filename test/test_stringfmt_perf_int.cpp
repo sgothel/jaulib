@@ -323,7 +323,7 @@ TEST_CASE("jau_cfmt_benchmark_int_all", "[benchmark][jau][std::string][format_in
             std::ostringstream ss1;
             ss1 << "format_check: "
                 << std::setfill('0') // undefined with negative numbers, duh!
-                << "-" << std::setw(1-1) << int(jau::abs(i1)) << ", "
+                << "-" << std::setw(0) << int(jau::abs(i1)) << ", "
                 << std::setw(2) << unsigned(i2) << ", "
                 << "-" << std::setw(3-1) << jau::abs(i3) << ", "
                 << std::setw(4) << i4 << ", "

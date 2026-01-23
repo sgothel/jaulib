@@ -1,6 +1,6 @@
 #!/bin/sh
 
-CLANG_VERSION=19
+CLANG_VERSION=21
 
 update-alternatives --remove-all clang
 update-alternatives --remove-all clangd

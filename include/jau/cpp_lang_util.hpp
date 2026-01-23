@@ -368,7 +368,7 @@ namespace jau {
     pointer_cast(const Source& src) noexcept
     {
         if constexpr ( is_cxx20() ) {
-            return std::bit_cast<Dest, Source>(src);
+            return std::bit_cast<Dest, Source>(src); // NOLINT(bugprone-bitwise-pointer-cast): intentional
         } else if constexpr ( has_builtin_bit_cast() ) {
             return __builtin_bit_cast(Dest, src);
         } else {

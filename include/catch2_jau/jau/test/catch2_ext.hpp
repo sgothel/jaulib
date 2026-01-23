@@ -36,6 +36,49 @@
 #include <catch2/catch_amalgamated.hpp>
 #include <jau/float_math.hpp>
 
+template<class T, class U>
+inline void CHECK_EQUAL(T t, U u)
+{
+    if constexpr (std::is_signed_v<T> == std::is_signed_v<U>) {
+        CHECK(t == u);
+    } else if constexpr (std::is_signed_v<T>) {
+        // return t >= 0 && std::make_unsigned_t<T>(t) == u;
+        if(t >= 0 ) {
+            CHECK(std::make_unsigned_t<T>(t) == u);
+        } else {
+            CHECK(t == std::make_signed_t<U>(u));
+        }
+    } else { // std::is_signed_v<U>
+        // return u >= 0 && std::make_unsigned_t<U>(u) == t;
+        if( u >= 0 ) {
+            CHECK(std::make_unsigned_t<U>(u) == t);
+        } else {
+            CHECK(std::make_signed_t<T>(t) == u);
+        }
+    }
+}
+template<class T, class U>
+inline void REQUIRE_EQUAL(T t, U u)
+{
+    if constexpr (std::is_signed_v<T> == std::is_signed_v<U>) {
+        CHECK(t == u);
+    } else if constexpr (std::is_signed_v<T>) {
+        // return t >= 0 && std::make_unsigned_t<T>(t) == u;
+        if(t >= 0 ) {
+            REQUIRE(std::make_unsigned_t<T>(t) == u);
+        } else {
+            REQUIRE(t == std::make_signed_t<U>(u));
+        }
+    } else { // std::is_signed_v<U>
+        // return u >= 0 && std::make_unsigned_t<U>(u) == t;
+        if( u >= 0 ) {
+            REQUIRE(std::make_unsigned_t<U>(u) == t);
+        } else {
+            REQUIRE(std::make_signed_t<T>(t) == u);
+        }
+    }
+}
+
 // namespace Catch {
 ///////////////////////////////////////////////////////////////////////////////
 #define INTERNAL_CATCH_TEST_M( msg, macroName, resultDisposition, ... ) \

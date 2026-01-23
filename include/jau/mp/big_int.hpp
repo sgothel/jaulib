@@ -1576,11 +1576,15 @@ namespace jau {
     inline mp::BigInt pow(mp::BigInt b, const mp::BigInt& e) { return b.pow(e); }
 
     inline const mp::BigInt& min(const mp::BigInt& x, const mp::BigInt& y) noexcept {
-        return x < y ? x : y;
+        return x < y ? x : y; // NOLINT(bugprone-return-const-ref-from-parameter): Despite `&&` overload, still warning
     }
+    inline const mp::BigInt& min(mp::BigInt&&, mp::BigInt&&) noexcept = delete; // bugprone-return-const-ref-from-parameter
+
     inline const mp::BigInt& max(const mp::BigInt& x, const mp::BigInt& y) noexcept {
-        return x > y ? x : y;
+        return x > y ? x : y; // NOLINT(bugprone-return-const-ref-from-parameter): Despite `&&` overload, still warning
     }
+    inline const mp::BigInt& max(mp::BigInt&&, mp::BigInt&&) noexcept = delete; // bugprone-return-const-ref-from-parameter
+
     inline const mp::BigInt& clamp(const mp::BigInt& x, const mp::BigInt& min_val, const mp::BigInt& max_val) noexcept {
         return min(max(x, min_val), max_val);
     }

@@ -180,6 +180,7 @@ apt install doxygen graphviz
 
 If using the optional clang toolchain,
 perhaps change the clang version-suffix of above clang install line to the appropriate version.
+Find more current clang version for [Debian/Ubuntu](https://apt.llvm.org/).
 
 After complete clang installation, you might want to setup the latest version as your default.
 For Debian you can use this [clang alternatives setup script](scripts/setup_clang_alternatives.sh).

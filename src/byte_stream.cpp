@@ -316,7 +316,7 @@ size_t ByteStream_File::peek(void* out, size_t length, size_type peek_offset) no
             return 0;
         }
     }
-    if( abs_pos == static_cast<off64_t>(peek_offset) ) {
+    if( abs_pos == static_cast<off64_t>(peek_offset) ) { // NOLINT(modernize-use-integer-sign-comparison): false positive
         ssize_t len = 0;
         while ( ( len = ::read(m_fd, out, length) ) < 0 ) {
             if ( errno == EAGAIN || errno == EINTR ) {

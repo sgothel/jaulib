@@ -1471,7 +1471,7 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
     char *d = dest.data() + dest_len - space_right;
     const char *const d_end_num = d;
     assert(d_end_num >= d_start_num);
-    assert(size_t(d_end_num - d_start_num) == val_digits);
+    assert(d_end_num - d_start_num == val_digits);
 
     // required = space_left + xtra_left + val_digits + space_right;
     {
@@ -1628,7 +1628,7 @@ void jau::cfmt::impl::append_integral_simple(std::string &dest, const size_t des
     char *d = dest.data() + dest_len;
     [[maybe_unused]] const char *const d_end_num = d;
     assert(d_end_num >= d_start_num);
-    assert(size_t(d_end_num - d_start_num) == val_digits);
+    assert(d_end_num - d_start_num == val_digits);
 
     // required = space_left + xtra_left + val_digits + space_right;
     {
@@ -1830,7 +1830,7 @@ void jau::cfmt::impl::append_efloatF64(std::string &dest, const size_t dest_maxl
     float_type value = float_type(negative ? -ivalue : ivalue);
 
     // default precision
-    size_t prec = iopts.precision_set ? iopts.precision : default_float_precision;
+    uint32_t prec = iopts.precision_set ? iopts.precision : default_float_precision;
 
     // determine the decimal exponent
     // based on the algorithm by David Gay (https://www.ampl.com/netlib/fp/dtoa.c)
@@ -1869,8 +1869,8 @@ void jau::cfmt::impl::append_efloatF64(std::string &dest, const size_t dest_maxl
     if (cspec_t::alt_float == iopts.conversion) {
         // do we want to fall-back to "%f" mode?
         if ((value >= 1e-4) && (value < 1e6)) {
-            if ((int)prec > expval) {
-                prec = (unsigned)((int)prec - expval - 1);
+            if (int32_t(prec) > expval) { // NOLINT(modernize-use-integer-sign-comparison): false positive
+                prec = uint32_t(int32_t(prec) - expval - 1);
             } else {
                 prec = 0;
             }
