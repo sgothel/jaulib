@@ -21,6 +21,8 @@ Checks:  'clang-diagnostic-*, clang-analyzer-*,
 CheckOptions:
   - key:             modernize-use-default-member-init.UseAssignment
     value:           'true'
+  - key:             modernize-use-scoped-lock.WarnOnSingleLocks
+    value:           'false'
 
 WarningsAsErrors: '*'
 HeaderFilterRegex: '(include/jau/.*)\.hpp'
