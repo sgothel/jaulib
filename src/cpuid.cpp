@@ -272,12 +272,12 @@ jau::cpu::CpuInfo::CpuInfo() noexcept
     has_l1_minmax = get_cache_line_size(l1_share_max, l1_apart_min);
 }
 
-std::string jau::cpu::CpuInfo::toString(std::string& sb, bool details_only) const noexcept {
+std::string jau::cpu::CpuInfo::toString(std::string& sb, bool details_only) const {
     if( !details_only ) {
         sb.append(to_string(family)).append(" (");
     }
     sb.append( jau::format_string("%s endian, %zu bits, %zu cores, page-sz %zu",
-        to_string(byte_order).c_str(), pointer_bits, online_core_count(), page_size) );
+        to_string(byte_order), pointer_bits, online_core_count(), page_size) );
     if( has_l1_minmax ) {
         sb.append( jau::format_string(", l1[shared-max %zu, apart-min %zu]", l1_share_max, l1_apart_min) );
     }

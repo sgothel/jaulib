@@ -1842,7 +1842,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                 return count;
             }
 
-            std::string toString() const noexcept {
+            std::string toString() const {
                 std::string res("{ " + valueSignature().name() + ", " + std::to_string( size() ) + "/" + std::to_string( capacity() ) + ": ");
                 int i=0;
                 jau::for_each_const(*this, [&res, &i](const value_type & e) {

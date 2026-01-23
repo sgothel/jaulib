@@ -1142,7 +1142,7 @@ namespace jau {
                 return count;
             }
 
-            std::string toString() const noexcept {
+            std::string toString() const {
                 std::string res("{ " + std::to_string( size() ) + ": ");
                 int i=0;
                 jau::for_each_const(*this, [&res, &i](const value_type & e) {

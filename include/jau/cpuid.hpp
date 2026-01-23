@@ -226,7 +226,7 @@ namespace jau::cpu {
                 return std::max(sys_online_cores, concurrent_threads);
             }
 
-            std::string toString(std::string& sb, bool details_only=false) const noexcept;
+            std::string toString(std::string& sb, bool details_only=false) const;
             std::string toString() const noexcept {
                 std::string sb; toString(sb); return sb;
             }
