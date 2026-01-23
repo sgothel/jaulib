@@ -115,6 +115,8 @@
  *   - Only if underlying type is `unsigned`, it can't be used for signed integer conversion (see above)
  * - Accept direct std::string and std::string_view for `%s` string arguments
  * - Arithmetic integral + floating point types are limited to a maximum of 64-bit
+ * - `bool` argument type can be also converted to string (`true` or `false`)
+ *   - standard conversion is to integral (number `0` or `1`)
  * - Runtime Errors
  *   - Failed runtime checks will inject an error market,
  *     e.g. `<E#1@1234:Cnv>` where the 1st argument caused a conversion error (`Cnv`)
@@ -546,11 +548,6 @@ namespace jau::cfmt {
                 }
             }
             template<typename T>
-            requires jau::req::boolean<T>
-            void appendFormatted(const FormatOpts& opts, const T& v) {
-                impl::append_string(m_s, m_maxLen, jau::to_string(v), opts);
-            }
-            template<typename T>
             requires jau::req::pointer<T> && (!jau::req::string_alike<T>)
             void appendFormatted(const FormatOpts& opts, const T& v) {
                 if( nullptr != v ) {
@@ -565,7 +562,7 @@ namespace jau::cfmt {
                 }
             }
             template<typename T>
-            requires jau::req::unsigned_integral<T> && (!jau::req::boolean<T>)
+            requires jau::req::unsigned_integral<T>
             void appendFormattedInt(const FormatOpts& opts, const T& v, bool negative) {
                 if (!opts.width_set && !opts.precision_set) {
                     impl::append_integral_simple(m_s, m_maxLen, uint64_t(v), negative, opts);
@@ -741,6 +738,12 @@ namespace jau::cfmt {
             }
 
             template<typename T>
+            requires jau::req::boolean<T>
+            constexpr void appendFormatted(const T &v) {
+                m_out.appendFormatted(opts, v ? "true" : "false");
+            }
+
+            template<typename T>
                 requires std::floating_point<T>
             constexpr void appendFormatted(const T &v) {
                 m_out.appendFormattedFloat(opts, v, m_argtype_size);
@@ -814,7 +817,7 @@ namespace jau::cfmt {
             // Note: checkOne using CheckResult is consteval and noexcept (zero string ops)
 
             template <typename T>
-            requires std::is_integral_v<T>
+            requires std::is_integral_v<T> && (!jau::req::boolean<T>)
             static constexpr void parseOne(Result &pc, const T &val) {
                 pc.m_argtype_size = sizeof(T);
                 pc.m_argtype_signed = std::is_signed_v<T>;
@@ -852,7 +855,11 @@ namespace jau::cfmt {
             }
 
             template <typename T>
-            requires (!(std::is_integral_v<T> || std::is_floating_point_v<T> || jau::req::pointer<T> || jau::req::string_alike<T>)) // not: jau::req::string_literal<T> || jau::req::string_class<T> || jau::req::char_pointer<T>
+            requires (!( std::is_integral_v<T>
+                      || std::is_floating_point_v<T>
+                      || jau::req::pointer<T>
+                      || jau::req::string_alike<T>) // not: jau::req::string_literal<T> || jau::req::string_class<T> || jau::req::char_pointer<T>
+                     ) || jau::req::boolean<T>
             static constexpr void parseOne(Result &pc, const T &val) {
                 pc.m_argtype_size = sizeof(T); // NOLINT(bugprone-sizeof-expression)
                 pc.m_argtype_signed = std::is_signed_v<T>;
@@ -861,7 +868,7 @@ namespace jau::cfmt {
             }
 
             template <typename T>
-            requires std::is_integral_v<T>
+            requires std::is_integral_v<T> && (!jau::req::boolean<T>)
             static constexpr void checkOne(CheckResult &pc) noexcept {
                 pc.m_argtype_size = sizeof(T);
                 pc.m_argtype_signed = std::is_signed_v<T>;
@@ -899,7 +906,11 @@ namespace jau::cfmt {
             }
 
             template <typename T>
-            requires (!(std::is_integral_v<T> || std::is_floating_point_v<T> || jau::req::pointer<T> || jau::req::string_alike<T>)) // not: jau::req::string_literal<T> || jau::req::string_class<T> || jau::req::char_pointer<T>
+            requires (!( std::is_integral_v<T>
+                      || std::is_floating_point_v<T>
+                      || jau::req::pointer<T>
+                      || jau::req::string_alike<T>) // not: jau::req::string_literal<T> || jau::req::string_class<T> || jau::req::char_pointer<T>
+                     ) || jau::req::boolean<T>
             static constexpr void checkOne(CheckResult &pc) noexcept {
                 pc.m_argtype_size = sizeof(T); // NOLINT(bugprone-sizeof-expression)
                 pc.m_argtype_signed = std::is_signed_v<T>;
@@ -1159,7 +1170,7 @@ namespace jau::cfmt {
             }
 
             template <typename T>
-            requires (!jau::req::unsigned_integral<T>)
+            requires (!jau::req::unsigned_integral<T>) || jau::req::boolean<T>
             static constexpr bool parseCharFmtSpec(Result &pc, const T &) noexcept {
                 if constexpr( !std::is_same_v<no_type_t, T> ) {
                     ++pc.arg_count;
@@ -1169,7 +1180,7 @@ namespace jau::cfmt {
             }
 
             template <typename T>
-            requires jau::req::unsigned_integral<T> //  && (!jau::req::boolean<T>)
+            requires jau::req::unsigned_integral<T> && (!jau::req::boolean<T>)
             static constexpr bool parseCharFmtSpec(Result &pc, const T &val0) {
                 ++pc.arg_count;
 
@@ -1206,7 +1217,7 @@ namespace jau::cfmt {
             }
 
             template <typename T>
-            requires (!jau::req::string_alike<T>)
+            requires (!(jau::req::string_alike<T> || jau::req::boolean<T>))
             static constexpr bool parseStringFmtSpec(Result &pc, const T &) noexcept {
                 if constexpr( !std::is_same_v<no_type_t, T> ) {
                     ++pc.arg_count;
@@ -1216,7 +1227,7 @@ namespace jau::cfmt {
             }
 
             template <typename T>
-            requires jau::req::string_alike<T>
+            requires jau::req::string_alike<T> || jau::req::boolean<T>
             static constexpr bool parseStringFmtSpec(Result &pc, const T &val) {
                 ++pc.arg_count;
                 switch( pc.opts.length_mod ) {
@@ -1352,7 +1363,11 @@ namespace jau::cfmt {
                         pc.setError(__LINE__);
                         return false;
                 }
-                pc.appendFormatted(val);
+                if constexpr (jau::req::boolean<T>) {
+                    pc.appendFormatted((unsigned int)val);
+                } else {
+                    pc.appendFormatted(val);
+                }
                 return true;
             }
 
@@ -1448,7 +1463,11 @@ namespace jau::cfmt {
                         pc.setError(__LINE__);
                         return false;
                 }
-                pc.appendFormatted(val);
+                if constexpr (jau::req::boolean<T>) {
+                    pc.appendFormatted((unsigned int)val);
+                } else {
+                    pc.appendFormatted(val);
+                }
                 return true;
             }
 

@@ -333,8 +333,14 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
         jau_format_checkLine("%d", (bool)true);
         jau_format_check("%u", (bool)true);
         jau_format_checkLine("%u", (bool)true);
-        // jau_format_check("%s", (bool)true);
-        // jau_format_checkLine("%s", (bool)true);
+        jau_format_check("%s", (bool)true);
+        jau_format_checkLine("%s", (bool)true);
+        CHECK("1" == jau::format_string("%d", (bool)true));
+        CHECK("0" == jau::format_string("%d", (bool)false));
+        CHECK("1" == jau::format_string("%u", (bool)true));
+        CHECK("0" == jau::format_string("%u", (bool)false));
+        CHECK("true" == jau::format_string("%s", (bool)true));
+        CHECK("false" == jau::format_string("%s", (bool)false));
     }
 
     // enums
