@@ -28,6 +28,7 @@
 #include <jau/basic_types.hpp>
 #include <jau/byte_util.hpp>
 #include <jau/cpp_lang_util.hpp>
+#include <jau/debug.hpp>
 #include <jau/int_types.hpp>
 #include <jau/string_util.hpp>
 #include <jau/string_cfmt.hpp>
@@ -69,10 +70,10 @@ constexpr static bool isLittleEndian2() noexcept {
 
 
 TEST_CASE( "Endianess Test 00", "[endian]" ) {
-    fprintf(stderr, "********************************************************************************\n");
-    fprintf(stderr, "is_builtin_bit_cast_available: %d\n", jau::has_builtin_bit_cast());
-    fprintf(stderr, "endian: %s\n", jau::to_string(jau::endian_t::native).c_str());
-    fprintf(stderr, "********************************************************************************\n");
+    jau_fprintf_td(stderr, "********************************************************************************\n");
+    jau_fprintf_td(stderr, "is_builtin_bit_cast_available: %d\n", jau::has_builtin_bit_cast());
+    jau_fprintf_td(stderr, "endian: %s\n", jau::to_string(jau::endian_t::native));
+    jau_fprintf_td(stderr, "********************************************************************************\n");
 
     const bool cpp_is_little =
         #if BYTE_ORDER == LITTLE_ENDIAN

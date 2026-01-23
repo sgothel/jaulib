@@ -995,7 +995,7 @@ std::string jau::toBitString(const void *data, const nsize_t data_len,
     }
     return str;
 }
-std::string jau::to_string(const endian_t v) noexcept {
+std::string_view jau::to_string(const endian_t v) noexcept {
     switch(v) {
         case endian_t::little:  return "little";
         case endian_t::big:  return "big";
@@ -1006,11 +1006,11 @@ std::string jau::to_string(const endian_t v) noexcept {
     return "undef";
 }
 
-std::string jau::to_string(const lb_endian_t v) noexcept {
+std::string_view jau::to_string(const lb_endian_t v) noexcept {
     return v == lb_endian_t::little ? "little" : "big";
 }
 
-std::string jau::to_string(const jau::func::target_type v) noexcept {
+std::string_view jau::to_string(const jau::func::target_type v) noexcept {
     switch(v) {
         case jau::func::target_type::null:  return "null";
         case jau::func::target_type::member:  return "member";

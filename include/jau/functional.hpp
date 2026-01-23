@@ -1227,7 +1227,7 @@ namespace jau {
      constexpr uint32_t number(const func::target_type rhs) noexcept {
          return static_cast<uint32_t>(rhs);
      }
-     std::string to_string(const func::target_type v) noexcept;
+     std::string_view to_string(const func::target_type v) noexcept;
 
     /**
      * Class template [jau::function](@ref function_def) is a general-purpose static-polymorphic function wrapper.
@@ -1504,12 +1504,14 @@ namespace jau {
              * @anchor function_toString The string representation contains the complete signature and detailed memory footprint.
              */
             std::string toString() const {
-                return "function<" + to_string( type() ) + ", " + signature().name() + ">( sz net " +
-                        std::to_string( target_size() ) + " / ( delegate_t " +
-                        std::to_string( sizeof( target ) ) + " + target_vdata " +
-                        std::to_string( target.heap_size() ) + " -> "+
-                        std::to_string( size() ) + " ), trivial_cpy "+
-                        std::to_string( target.is_trivially_copyable() ) + " ) ";
+                std::string s("function<");
+                s.append(to_string( type())).append(", ").append(signature().name()).append(">( sz net ")
+                 .append(std::to_string( target_size() )).append(" / ( delegate_t ")
+                 .append(std::to_string( sizeof( target ) )).append(" + target_vdata ")
+                 .append(std::to_string( target.heap_size() )).append(" -> ")
+                 .append(std::to_string( size() )).append(" ), trivial_cpy ")
+                 .append(std::to_string( target.is_trivially_copyable() )).append(" ) ");
+                 return s;
             }
 
             constexpr R operator()(A... args) const {

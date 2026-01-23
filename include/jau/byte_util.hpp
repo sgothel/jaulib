@@ -275,14 +275,14 @@ namespace jau {
      * @param v the \ref endian value
      * @return the std::string representation
      */
-    std::string to_string(const endian_t v) noexcept;
+    std::string_view to_string(const endian_t v) noexcept;
 
     /**
      * Return std::string representation of the given \ref lb_endian.
      * @param v the \ref lb_endian value
      * @return the std::string representation
      */
-    std::string to_string(const lb_endian_t v) noexcept;
+    std::string_view to_string(const lb_endian_t v) noexcept;
 
     constexpr lb_endian_t to_lb_endian(const endian_t v) noexcept {
         switch(v) {
