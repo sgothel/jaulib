@@ -1,7 +1,8 @@
 Checks:  'clang-diagnostic-*, clang-analyzer-*,
           modernize-*, bugprone-*, performance-*,
-          unused-*,misc-*,
+          misc-*,
           readability-redundant-*,
+          bugprone-exception-escape,
           -bugprone-reserved-identifier, -bugprone-easily-swappable-parameters, -bugprone-assignment-in-if-condition,
           -bugprone-misplaced-widening-cast, -bugprone-branch-clone,
           -clang-diagnostic-unknown-warning-option,
@@ -12,7 +13,7 @@ Checks:  'clang-diagnostic-*, clang-analyzer-*,
           -modernize-avoid-bind, -modernize-use-transparent-functors, -modernize-use-constraints,
           -modernize-min-max-use-initializer-list, -modernize-type-traits,
           -performance-avoid-endl, -performance-enum-size,
-          -misc-macro-parentheses, -misc-non-private-member-variables-in-classes, -misc-include-cleaner,
+          -misc-non-private-member-variables-in-classes, -misc-include-cleaner,
           -misc-const-correctness, -misc-unconventional-assign-operator, -misc-use-anonymous-namespace,
           -misc-misplaced-const, -misc-no-recursion, -misc-confusable-identifiers,
           -readability-redundant-declaration, -readability-redundant-inline-specifier, -readability-redundant-member-init,
@@ -25,8 +26,9 @@ CheckOptions:
     value:           'false'
 
 WarningsAsErrors: '*'
-HeaderFilterRegex: '(include/jau/.*)\.hpp'
+#HeaderFilterRegex: '(include/jau/|/usr/include/).*$'
+HeaderFilterRegex: '(include/jau/).*$'
+
 # AnalyzeTemporaryDtors: false
 FormatStyle:     none
 InheritParentConfig: false
-User:            sven
