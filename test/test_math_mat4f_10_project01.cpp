@@ -34,8 +34,6 @@ using namespace jau;
 using namespace jau::math;
 using namespace jau::math::util;
 
-static const float EPSILON = std::numeric_limits<float>::epsilon();
-
 /**
  * PMVMatrix w/ separate P + Mv vs Mat4f::mapObjToWin() w/ single PMv
  *
@@ -183,8 +181,8 @@ TEST_CASE( "Test 10 Project Matrix4f 1", "[project][mat4f][linear_algebra][math]
     Mat4f::mapObjToWin(objPos, mat4Mv, mat4P, viewport, winHas);
     std::cout << "B.0.0 - Project 1,0 -->" << winHas << std::endl;
 
-    REQUIRE_THAT( winExp.x, Catch::Matchers::WithinAbs(std::round(winHas.x), EPSILON) );
-    REQUIRE_THAT( winExp.y, Catch::Matchers::WithinAbs(std::round(winHas.y), EPSILON) );
+    REQUIRE_THAT( winExp.x, Catch::Matchers::WithinAbs(std::round(winHas.x), EPSILON<float>) );
+    REQUIRE_THAT( winExp.y, Catch::Matchers::WithinAbs(std::round(winHas.y), EPSILON<float>) );
 }
 
 TEST_CASE( "Test 11 Project Matrix4f 2", "[project][mat4f][linear_algebra][math]" ) {
@@ -216,6 +214,6 @@ TEST_CASE( "Test 11 Project Matrix4f 2", "[project][mat4f][linear_algebra][math]
     Mat4f::mapObjToWin(objPos, mat4Mv, mat4P, viewport, winHas);
     std::cout << "B.0.0 - Project 1,0 -->" << winHas << std::endl;
 
-    REQUIRE_THAT( winExp.x, Catch::Matchers::WithinAbs(std::round(winHas.x), EPSILON) );
-    REQUIRE_THAT( winExp.y, Catch::Matchers::WithinAbs(std::round(winHas.y), EPSILON) );
+    REQUIRE_THAT( winExp.x, Catch::Matchers::WithinAbs(std::round(winHas.x), EPSILON<float>) );
+    REQUIRE_THAT( winExp.y, Catch::Matchers::WithinAbs(std::round(winHas.y), EPSILON<float>) );
 }

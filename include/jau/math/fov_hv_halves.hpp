@@ -167,7 +167,7 @@ class FovHVHalves {
     }
 
     std::string toStringInDegrees() const noexcept {
-        const float f = 180.0f / M_PI;
+        constexpr float f = 180.0f * jau::inv_PI<float>;
         std::string storedAs = inTangents?"tangents":"radians";
         if( inTangents ) {
             const float aleft = std::atan(left);

@@ -32,8 +32,6 @@
 using namespace jau;
 using namespace jau::math;
 
-static const float EPSILON = std::numeric_limits<float>::epsilon();
-
 static const float mI_0[] = {    1,    0,    0,    0,
                                  0,    1,    0,    0,
                                  0,    0,    1,    0,
@@ -78,7 +76,7 @@ TEST_CASE( "Test 00 Load Get", "[mat4f][linear_algebra][math]" ) {
     {
         float f16[16];
         m1.get(f16);
-        COMPARE_NARRAYS_EPS(m1_0, f16, 16, EPSILON);
+        COMPARE_NARRAYS_EPS(m1_0, f16, 16, EPSILON<float>);
 
         Mat4f m;
         m.load(f16);

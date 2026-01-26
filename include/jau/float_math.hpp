@@ -43,6 +43,26 @@ namespace jau {
      *  @{
      */
 
+    /// Alias for `π` or half-circle radians (180 degrees), i.e. std::numbers::pi_v<T>
+    template<std::floating_point T>
+    inline constexpr T PI = std::numbers::pi_v<T>;
+
+    /// Alias for `π/2` or right-angle radians (90 degrees), i.e. std::numbers::pi_v<T>/T(2)
+    template<std::floating_point T>
+    inline constexpr T PI_2 = std::numbers::pi_v<T>/T(2);
+
+    /// Alias for `π/4` or half right-angle radians (45 degrees), i.e. std::numbers::pi_v<T>/T(4)
+    template<std::floating_point T>
+    inline constexpr T PI_4 = std::numbers::pi_v<T>/T(4);
+
+    /// Alias for `1/π` or inverse of `π`, i.e. T(1)/std::numbers::pi_v<T> or std::numbers::inv_pi_v<T>
+    template<std::floating_point T>
+    inline constexpr T inv_PI = std::numbers::inv_pi_v<T>;
+
+    /// Alias for epsilon constant, i.e. std::numeric_limits<T>::epsilon()
+    template<std::floating_point T>
+    inline constexpr T EPSILON = std::numeric_limits<T>::epsilon();
+
     /**
      * Calculates the smallest floating point value approximation
      * the given type T can represent, the machine epsilon of T.
@@ -284,13 +304,13 @@ namespace jau {
     /** Converts arc-degree to radians */
     template<std::floating_point T>
     constexpr T adeg_to_rad(const T arc_degree) noexcept {
-        return arc_degree * (T)M_PI / (T)180.0;
+        return arc_degree * PI<T> / T(180.0);
     }
 
     /** Converts radians to arc-degree */
     template<std::floating_point T>
     constexpr T rad_to_adeg(const T rad) noexcept {
-        return rad * (T)180.0 / (T)M_PI;
+        return rad * T(180.0) * inv_PI<T>;
     }
 
     /**

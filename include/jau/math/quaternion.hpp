@@ -924,11 +924,11 @@ class alignas(Value_type) Quaternion {
         if (test > 0.499f * unit) { // singularity at north pole
             return Vec3( zero,                        // m_x-bank
                          two * std::atan2(m_x, m_w),  // y-heading
-                         M_PI_2 );                    // z-attitude
+                         jau::PI_2<value_type> );     // z-attitude
         } else if (test < -0.499f * unit) { // singularity at south pole
             return Vec3( zero,                        // m_x-bank
                         -two * std::atan2(m_x, m_w),  // m_y-heading
-                        -M_PI_2 );                    // m_z-attitude
+                        -jau::PI_2<value_type> );     // m_z-attitude
         } else {
             return Vec3( std::atan2(two * m_x * m_w - two * m_y * m_z, -sqx + sqy - sqz + sqw), // m_x-bank
                          std::atan2(two * m_y * m_w - two * m_x * m_z,  sqx - sqy - sqz + sqw), // m_y-heading

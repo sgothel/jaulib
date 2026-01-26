@@ -32,8 +32,6 @@
 using namespace jau;
 using namespace jau::math;
 
-static const float EPSILON = std::numeric_limits<float>::epsilon();
-
 static float* makeIdentity(float m[]) {
   m[0+4*0] = 1;
   m[1+4*0] = 0;
@@ -135,7 +133,7 @@ static void testImpl(float matrix[]) {
     // System.err.println(FloatUtil.matrixToString(null, "inv1_0: ", "%10.7f", inv1_0, 0, 4, 4, false /* rowMajorOrder */));
     // System.err.println(FloatUtil.matrixToString(null, "inv2_0: ", "%10.7f", inv2_0, 0, 4, 4, false /* rowMajorOrder */));
 
-    COMPARE_NARRAYS_EPS(matrix, inv2_0, 16, EPSILON);
+    COMPARE_NARRAYS_EPS(matrix, inv2_0, 16, EPSILON<float>);
 
     //
     // Mat4f
