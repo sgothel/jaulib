@@ -1977,7 +1977,7 @@ extern template void jau::cfmt::impl::FormatParser::parseOneImpl<jau::cfmt::impl
  */
 #define jau_format_string(fmt, ...) \
     jau::format_string((fmt) __VA_OPT__(,) __VA_ARGS__);  \
-    static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
+    static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_NOREF_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
 
 /**
  * Macro, safely returns a (non-truncated) string according to `snprintf()` formatting rules
@@ -2002,7 +2002,7 @@ extern template void jau::cfmt::impl::FormatParser::parseOneImpl<jau::cfmt::impl
  */
 #define jau_format_string_h(strLenHint, fmt, ...) \
     jau::format_string((strLenHint), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
-    static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
+    static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_NOREF_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
 
 /**
  * Macro, safely returns a (non-truncated) string according to `snprintf()` formatting rules
@@ -2027,7 +2027,7 @@ extern template void jau::cfmt::impl::FormatParser::parseOneImpl<jau::cfmt::impl
  */
 #define jau_format_string2(fmt, ...) \
     jau::format_string((fmt) __VA_OPT__(,) __VA_ARGS__);  \
-    static_assert(0 == jau::cfmt::check2Line< JAU_FOR_EACH1_LIST(JAU_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
+    static_assert(0 == jau::cfmt::check2Line< JAU_FOR_EACH1_LIST(JAU_NOREF_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
 
 /**
  * Macro produces compile time validation using a `static_assert`
@@ -2039,7 +2039,7 @@ extern template void jau::cfmt::impl::FormatParser::parseOneImpl<jau::cfmt::impl
  * @param args arguments matching the format string
  */
 #define jau_format_check(fmt, ...) \
-    static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
+    static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_NOREF_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
 
 /**
  * Macro produces compile time validation using a `static_assert`
@@ -2051,7 +2051,7 @@ extern template void jau::cfmt::impl::FormatParser::parseOneImpl<jau::cfmt::impl
  * @param args arguments matching the format string
  */
 #define jau_format_checkLine(fmt, ...) \
-    static_assert(0 == jau::cfmt::check2Line< JAU_FOR_EACH1_LIST(JAU_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
+    static_assert(0 == jau::cfmt::check2Line< JAU_FOR_EACH1_LIST(JAU_NOREF_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
 
 /**@}*/
 

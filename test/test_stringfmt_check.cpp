@@ -197,6 +197,22 @@ static void format_0b() {
 #endif
 }
 
+static void test_refs(const size_t &sz, const int64_t &i64, const float &f) {
+    // references can't be passed as arguments
+    //   static_assert( 0 == jau::cfmt::checkLine("lala %zu, %" PRIi64 ", %f", sz, i64, f) );
+    //   static_assert( 0 == jau::cfmt::check("lala %zu, %" PRIi64 ", %f", sz, i64, f) );
+    //
+    // however, after removing the reference and feeding it into the check2 variant, it works
+    static_assert( 0 == jau::cfmt::check2Line<std::remove_reference_t<decltype(sz)>,
+            std::remove_reference_t<decltype(i64)>,
+            std::remove_reference_t<decltype(f)>>("lala %zu, %" PRIi64 ", %f") );
+    //
+    // which is what is done in the macros
+    //
+    jau_format_checkLine("lala %zu, %" PRIi64 ", %f", sz, i64, f);
+    jau_format_check("lala %zu, %" PRIi64 ", %f", sz, i64, f);
+}
+
 TEST_CASE("jau::cfmt_10", "[jau][std::string][jau::cfmt]") {
     char buf[1024];
     constexpr float fa = 1.123456f, fb = 2.2f;
@@ -206,6 +222,7 @@ TEST_CASE("jau::cfmt_10", "[jau][std::string][jau::cfmt]") {
     constexpr int i = 3;
     const float *pf = &fa;
 
+    test_refs(sz1, v_i64, fa);
     {
         std::string s;
         jau::cfmt::Result r = jau::cfmt::formatR(s, "lala %d", 2);

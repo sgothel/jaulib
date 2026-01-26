@@ -82,19 +82,19 @@ namespace jau::impl {
 
 #define jau_dbgPrint1(out, printPrefix, msg, fmt, ...) \
     jau::impl::dbgPrint1((out), (printPrefix), (msg), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
-    static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
+    static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_NOREF_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
 
 #define jau_dbgPrint1Line(out, printPrefix, msg, fmt, ...) \
     jau::impl::dbgPrint1((out), (printPrefix), (msg), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
-    static_assert(0 == jau::cfmt::check2Line< JAU_FOR_EACH1_LIST(JAU_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
+    static_assert(0 == jau::cfmt::check2Line< JAU_FOR_EACH1_LIST(JAU_NOREF_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
 
 #define jau_dbgPrint2(out, msg, addErrno, addBacktrace, func, file, line, fmt, ...) \
     jau::impl::dbgPrint2((out), (msg), (addErrno), (addBacktrace), (func), (file), (line), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
-    static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
+    static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_NOREF_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
 
 #define jau_dbgPrint2Line(out, msg, addErrno, addBacktrace, func, file, line, fmt, ...) \
     jau::impl::dbgPrint2((out), (msg), (addErrno), (addBacktrace), (func), (file), (line), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
-    static_assert(0 == jau::cfmt::check2Line< JAU_FOR_EACH1_LIST(JAU_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
+    static_assert(0 == jau::cfmt::check2Line< JAU_FOR_EACH1_LIST(JAU_NOREF_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
 
 /** Use for environment-variable environment::DEBUG conditional debug messages, prefix '[elapsed_time] Debug: '. */
 #define jau_DBG_PRINT(fmt, ...) { if( jau::environment::get().debug ) { jau_dbgPrint1(stderr, true, "Debug", fmt __VA_OPT__(,) __VA_ARGS__); } }
@@ -220,10 +220,10 @@ namespace jau {
 
 #define jau_fprintf_td2(elapsed_ms, stream, fmt, ...) \
     jau::fprintf_td((elapsed_ms), (stream), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
-    static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
+    static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_NOREF_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
 
 #define jau_fprintf_td(stream, fmt, ...) \
     jau::fprintf_td((stream), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
-    static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
+    static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_NOREF_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
 
 #endif /* JAU_DEBUG_HPP_ */

@@ -682,6 +682,7 @@ namespace jau {
 #define JAU_FOR_EACH1_LIST_AGAIN() JAU_FOR_EACH1_LIST_HELPER
 
 #define JAU_DECLTYPE_VALUE(type) decltype(type)
+#define JAU_NOREF_DECLTYPE_VALUE(type) std::remove_reference_t<decltype(type)>
 
 // Macro w/ 2 arguments
 
