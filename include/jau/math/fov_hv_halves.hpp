@@ -162,11 +162,11 @@ class FovHVHalves {
     /** Returns the full vertical FOV, i.e. {@link #top} + {@link #bottom}, either in {@link #inTangents} or radians. */
     float vertFov() const noexcept { return top+bottom; }
 
-    std::string toString() const noexcept {
+    std::string toString() const {
         return "FovHVH["+(inTangents?std::string("tangents"):std::string("radians"))+": "+std::to_string(left)+" l, "+std::to_string(right)+" r, "+std::to_string(top)+" t, "+std::to_string(bottom)+" b]";
     }
 
-    std::string toStringInDegrees() const noexcept {
+    std::string toStringInDegrees() const {
         constexpr float f = 180.0f * jau::inv_PI<float>;
         std::string storedAs = inTangents?"tangents":"radians";
         if( inTangents ) {
