@@ -30,6 +30,7 @@
 #include <cstdarg>
 #include <cstdint>
 #include <cstring>
+#include <exception>
 #include <limits>
 #include <string>
 #include <string_view>
@@ -63,7 +64,85 @@ namespace jau {
         return 0 != std::iscntrl(c) || 0 != std::isprint(c);
     }
 
-    constexpr bool is_digit(char c) noexcept { return '0' <= c && c <= '9'; }
+    /**
+     * Returns true if given char `c` is one of the following whitespace character:
+     * - space (0x20, ' ')
+     * - form feed (0x0c, '\f')
+     * - line feed (0x0a, '\n')
+     * - carriage return (0x0d, '\r')
+     * - horizontal tab (0x09, '\t')
+     * - vertical tab (0x0b, '\v')
+     */
+    constexpr bool is_space(const char c) noexcept {
+        switch(c) {
+            case ' ': return true;
+            case '\f': return true;
+            case '\n': return true;
+            case '\r': return true;
+            case '\t': return true;
+            case '\v': return true;
+            default: return false;
+        }
+    }
+
+    /// Returns true if given char `c` matches the char symbol range with the radix 16, 10 (default), 8 or 2
+    constexpr bool is_digit(const char c, const uint32_t radix=10, const char separator = 0) noexcept {
+        if( separator && separator == c ) {
+            return true;
+        }
+        switch (radix) {
+            case 16:
+                return ('0' <= c && c <= '9')
+                    || ('A' <= c && c <= 'F')
+                    || ('a' <= c && c <= 'f');
+            case 10:
+                return '0' <= c && c <= '9';
+            case 8:
+                return '0' <= c && c <= '7';
+            case 2:
+                return '0' <= c && c <= '1';
+            default:
+                break;
+        }
+        return false;
+    }
+    /// Returns digit value of given char `c` matching the radix 16, 10, 8 or 2, `-1` on no match
+    constexpr int32_t digit(const uint8_t c, const uint32_t radix=10) noexcept {
+        switch (radix) {
+            case 16:
+                if ('0' <= c && c <= '9') {
+                    return c - '0';
+                }
+                if ('A' <= c && c <= 'F') {
+                    return c - 'A' + 10;
+                }
+                if ('a' <= c && c <= 'f') {
+                    return c - 'a' + 10;
+                }
+                break;
+            case 10:
+                if ('0' <= c && c <= '9') {
+                    return c - '0';
+                }
+                break;
+            case 8:
+                if ('0' <= c && c <= '7') {
+                    return c - '0';
+                }
+                break;
+            case 2:
+                if ('0' <= c && c <= '1') {
+                    return c - '0';
+                }
+                break;
+            default:
+                break;
+        }
+        return -1;
+    }
+    constexpr int32_t hexDigit(const uint8_t c) noexcept {
+        return digit(c, 16);
+    }
 
     /**
      * Returns a C++ String taken from buffer with maximum length of min(max_len, max_len).
@@ -75,20 +154,20 @@ namespace jau {
      * The source string within buffer is not required to contain an EOS null byte;
      * </p>
      */
-    std::string get_string(const uint8_t *buffer, nsize_t const buffer_len, nsize_t const max_len) noexcept;
+    std::string get_string(const uint8_t *buffer, nsize_t const buffer_len, nsize_t const max_len);
 
     /** trim in place */
     void trimInPlace(std::string &s) noexcept;
 
     /** trim copy */
-    std::string trim(const std::string &s) noexcept;
+    std::string trim(const std::string &s);
 
     /** Split given string `str` at `separator` into the resulting std::vector excluding the separator sequence . */
-    std::vector<std::string> split_string(const std::string &str, const std::string &separator) noexcept;
+    std::vector<std::string> split_string(const std::string &str, const std::string &separator);
 
     std::string &toLowerInPlace(std::string &s) noexcept;
 
-    std::string toLower(const std::string &s) noexcept;
+    std::string toLower(const std::string &s);
 
     /**
     // *************************************************
@@ -107,7 +186,7 @@ namespace jau {
     };
 
     /**
-     * Converts a given hexadecimal string representation into a byte vector, lsb-first.
+     * Converts a given hexadecimal string representation, appending to a byte vector (lsb-first).
      *
      * In case a non valid hexadecimal digit appears in the given string,
      * conversion ends and fills the byte vector up until the violation.
@@ -120,7 +199,7 @@ namespace jau {
      *
      * You may use C++17 structured bindings to handle the pair.
      *
-     * @param out the byte vector sink, lsb-first
+     * @param out the byte vector sink to append, lsb-first
      * @param hexstr the hexadecimal string representation
      * @param hexstr_len length of hextstr
      * @param byteOrder lb_endian_t::big for big-endian bytes in `hexstr` (default)
@@ -128,16 +207,48 @@ namespace jau {
      * @return pair [size_t consumed_chars, bool complete], i.e. consumed characters of string and completed=false if not fully consumed.
      */
     SizeBoolPair fromHexString(std::vector<uint8_t> &out, const uint8_t hexstr[], const size_t hexstr_len,
-                               const lb_endian_t byteOrder = lb_endian_t::big, const Bool checkPrefix = Bool::True) noexcept;
+                               const lb_endian_t byteOrder = lb_endian_t::big, const Bool checkPrefix = Bool::True);
 
     /** See hexStringBytes() */
     inline SizeBoolPair fromHexString(std::vector<uint8_t> &out, const std::string_view hexstr,
-                                      const lb_endian_t byteOrder = lb_endian_t::big, const Bool checkPrefix = Bool::True) noexcept {
+                                      const lb_endian_t byteOrder = lb_endian_t::big, const Bool checkPrefix = Bool::True) {
         return jau::fromHexString(out, cast_char_ptr_to_uint8(hexstr.data()), hexstr.length(), byteOrder, checkPrefix); // NOLINT(bugprone-suspicious-stringview-data-usage)
     }
 
     /**
-     * Converts a given hexadecimal string representation into a uint64_t value according to hexStringBytes().
+     * Converts a given hexadecimal string representation, storing into a byte array(lsb-first).
+     *
+     * In case a non valid hexadecimal digit appears in the given string,
+     * conversion ends and fills the byte vector up until the violation.
+     *
+     * In case hexstr contains an odd number of hex-nibbles, it will be interpreted as follows
+     * - 0xf[12] = 0x0f12 = { 0x12, 0x0f } - msb, 1st single low-nibble is most significant
+     * -   [12]f = 0xf012 = { 0x12, 0xf0 } - lsb, last single high-nibble is most significant
+     *
+     * Even if complete==false, result holds the partial value if consumed_chars>0.
+     *
+     * You may use C++17 structured bindings to handle the triple.
+     *
+     * @param out byte array pointer to store result, lsb-first
+     * @param out_len size of byte array
+     * @param hexstr the hexadecimal string representation
+     * @param hexstr_len length of hextstr
+     * @param byteOrder lb_endian_t::big for big-endian bytes in `hexstr` (default)
+     * @param checkPrefix if True, checks for a leading `0x` and removes it, otherwise not.
+     * @return triple [uint8_t* out_end, size_t consumed_chars, bool complete],
+     *         i.e. end pointer of out (last write + 1), consumed characters of string and completed=false if not fully consumed.
+     */
+    UInt8PtrSizeBoolPair fromHexString(uint8_t *out, size_t out_len, const uint8_t hexstr[], const size_t hexstr_len,
+                                          const lb_endian_t byteOrder = lb_endian_t::big, const Bool checkPrefix = Bool::True) noexcept;
+
+    /** See hexStringBytes() */
+    inline UInt8PtrSizeBoolPair fromHexString(uint8_t *out, size_t out_len, const std::string_view hexstr,
+                                      const lb_endian_t byteOrder = lb_endian_t::big, const Bool checkPrefix = Bool::True) noexcept {
+        return jau::fromHexString(out, out_len, cast_char_ptr_to_uint8(hexstr.data()), hexstr.length(), byteOrder, checkPrefix); // NOLINT(bugprone-suspicious-stringview-data-usage)
+    }
+
+    /**
+     * Converts a given hexadecimal string representation appending to a uint64_t value according to hexStringBytes().
      *
      * Even if complete==false, result holds the partial value if consumed_chars>0.
      *
@@ -157,6 +268,25 @@ namespace jau {
     inline constexpr const char *HexadecimalArrayBig = "0123456789ABCDEF";
 
     /**
+     * Appends a hexadecimal string representation of the given lsb-first byte values.
+     *
+     * If byteOrder is lb_endian_t::little, orders lsb-byte left, usual for byte streams. Result will not have a leading `0x`.
+     * Otherwise, lb_endian_t::big (default),  orders msb-byte left for integer values. Result will have a leading `0x` if !skipPrefix.
+     *
+     * @param dest the std::string to append to
+     * @param data pointer to the first byte to print, lsb-first
+     * @param length number of bytes to print
+     * @param byteOrder lb_endian_t::big for big-endian bytes in resulting hex-string (default).
+     *                  A leading `0x` will be prepended if `byteOrder == lb_endian_t::big` and `PrefixOpt::prefix` given.
+     * @param capitalization LoUpCase capitalization, default is LoUpCase::lower
+     * @param prefix pass PrefixOpt::prefix (default) to add leading `0x` if `byteOrder == lb_endian_t::big` (default)
+     * @return the given string buffer for concatenation
+     */
+    std::string& appendHexString(std::string& dest, const void *data, const nsize_t length,
+                                 const lb_endian_t byteOrder = lb_endian_t::big, const LoUpCase capitalization = LoUpCase::lower,
+                                 const PrefixOpt prefix = PrefixOpt::prefix) noexcept;
+
+    /**
      * Produce a hexadecimal string representation of the given lsb-first byte values.
      *
      * If byteOrder is lb_endian_t::little, orders lsb-byte left, usual for byte streams. Result will not have a leading `0x`.
@@ -170,9 +300,13 @@ namespace jau {
      * @param prefix pass PrefixOpt::prefix (default) to add leading `0x` if `byteOrder == lb_endian_t::big` (default)
      * @return the hex-string representation of the data
      */
-    std::string toHexString(const void *data, const nsize_t length,
-                            const lb_endian_t byteOrder = lb_endian_t::big, const LoUpCase capitalization = LoUpCase::lower,
-                            const PrefixOpt prefix = PrefixOpt::prefix) noexcept;
+    inline std::string toHexString(const void *data, const nsize_t length,
+                                   const lb_endian_t byteOrder = lb_endian_t::big, const LoUpCase capitalization = LoUpCase::lower,
+                                   const PrefixOpt prefix = PrefixOpt::prefix) noexcept {
+        std::string s;
+        appendHexString(s, data, length, byteOrder, capitalization, prefix);
+        return s;
+    }
 
     /**
      * Produce a hexadecimal string representation of the given byte value and appends it to the given string
@@ -181,7 +315,7 @@ namespace jau {
      * @param capitalization LoUpCase capitalization, default is LoUpCase::lower
      * @return the given std::string reference for chaining
      */
-    std::string &appendToHexString(std::string &dest, const uint8_t value, const LoUpCase capitalization = LoUpCase::lower) noexcept;
+    std::string &appendHexString(std::string &dest, const uint8_t value, const LoUpCase capitalization = LoUpCase::lower) noexcept;
 
     /**
      * Produce a lower-case hexadecimal string representation with leading `0x` in MSB of the given pointer.
@@ -273,7 +407,7 @@ namespace jau {
      */
 
     /**
-     * Converts a given binary string representation into a byte vector, lsb-first.
+     * Converts a given binary string representation, appending to a byte vector (lsb-first).
      *
      * In case a non valid binary digit appears in the given string,
      * conversion ends and fills the byte vector up until the violation.
@@ -287,7 +421,7 @@ namespace jau {
      *
      * You may use C++17 structured bindings to handle the pair.
      *
-     * @param out the byte vector sink, lsb-first
+     * @param out the byte vector sink to append, lsb-first
      * @param bitstr the binary string representation
      * @param bitstr_len length of bitstr
      * @param bitOrder bit_order_t::msb for most significant bits in `bitstr` first (default)
@@ -295,12 +429,45 @@ namespace jau {
      * @return pair [size_t consumed_chars, bool complete], i.e. consumed characters of string and completed=false if not fully consumed.
      */
     SizeBoolPair fromBitString(std::vector<uint8_t> &out, const uint8_t bitstr[], const size_t bitstr_len,
-                               const bit_order_t bitOrder = bit_order_t::msb, const Bool checkPrefix = Bool::True) noexcept;
+                               const bit_order_t bitOrder = bit_order_t::msb, const Bool checkPrefix = Bool::True);
 
     /** See fromBitString() */
     inline SizeBoolPair fromBitString(std::vector<uint8_t> &out, const std::string_view bitstr,
-                                      const bit_order_t bitOrder = bit_order_t::msb, const Bool checkPrefix = Bool::True) noexcept {
+                                      const bit_order_t bitOrder = bit_order_t::msb, const Bool checkPrefix = Bool::True) {
         return jau::fromBitString(out, cast_char_ptr_to_uint8(bitstr.data()), bitstr.length(), bitOrder, checkPrefix); // NOLINT(bugprone-suspicious-stringview-data-usage)
+    }
+
+    /**
+     * Converts a given binary string representation, storing into a byte array(lsb-first).
+     *
+     * In case a non valid binary digit appears in the given string,
+     * conversion ends and fills the byte vector up until the violation.
+     *
+     * In case bitstr contains an incomplete number of bit-nibbles, it will be interpreted as follows
+     * - 0b11[00000001] = 0x0301 = { 0x01, 0x03 } - msb, 1st single low-nibble is most significant
+     * - 0b[01000000]11 = 0xC040 = { 0x40, 0xC0 } - lsb, last single high-nibble is most significant
+     *   - 11 -> 11000000 -> C0
+     *
+     * Even if complete==false, result holds the partial value if consumed_chars>0.
+     *
+     * You may use C++17 structured bindings to handle the triple.
+     *
+     * @param out byte array pointer to store result, lsb-first
+     * @param out_len size of byte array
+     * @param bitstr the binary string representation
+     * @param bitstr_len length of bitstr
+     * @param bitOrder bit_order_t::msb for most significant bits in `bitstr` first (default)
+     * @param checkPrefix if True, checks for a leading `0b` and removes it, otherwise not.
+     * @return triple [uint8_t* out_end, size_t consumed_chars, bool complete],
+     *         i.e. end pointer of out (last write + 1), consumed characters of string and completed=false if not fully consumed.
+     */
+    UInt8PtrSizeBoolPair fromBitString(uint8_t *out, size_t out_len, const uint8_t bitstr[], const size_t bitstr_len,
+                                       const bit_order_t bitOrder = bit_order_t::msb, const Bool checkPrefix = Bool::True) noexcept;
+
+    /** See fromBitString() */
+    inline UInt8PtrSizeBoolPair fromBitString(uint8_t *out, size_t out_len, const std::string_view bitstr,
+                                      const bit_order_t bitOrder = bit_order_t::msb, const Bool checkPrefix = Bool::True) noexcept {
+        return jau::fromBitString(out, out_len, cast_char_ptr_to_uint8(bitstr.data()), bitstr.length(), bitOrder, checkPrefix); // NOLINT(bugprone-suspicious-stringview-data-usage)
     }
 
     /**
@@ -320,6 +487,25 @@ namespace jau {
     UInt64SizeBoolTuple fromBitString(std::string_view const bitstr, const bit_order_t bitOrder = bit_order_t::msb, const Bool checkPrefix = Bool::True) noexcept;
 
     /**
+     * Appends a binary string representation of the given lsb-first byte values.
+     *
+     * If byteOrder is lb_endian_t::little, orders lsb-byte left, usual for byte streams. Result will not have a leading `0b`.
+     * Otherwise, lb_endian_t::big (default),  orders msb-byte left for integer values. Result will have a leading `0b` if !skipPrefix.
+     *
+     * @param dest the std::string to append to
+     * @param data pointer to the first byte to print, lsb-first
+     * @param length number of bytes to print
+     * @param bitOrder bit_order_t::msb for most-significant-bit first in resulting bit-string, bit_order_t::msb is default
+     *                  A leading `0b` will be prepended if `bitOrder == bit_order_t::msb` and `PrefixOpt::prefix` given.
+     * @param prefix pass PrefixOpt::prefix (default) to add leading `0b` if `bitOrder == bit_order_t::msb` (default)
+     * @param bit_len optional fixed number of bits to be printed counting from lsb excluding prefix. Pass zero for dropping zero leading bytes (default).
+     * @return the given string buffer for concatenation
+     */
+    std::string& appendBitString(std::string& dest, const void *data, const nsize_t length,
+                                 const bit_order_t bitOrder = bit_order_t::msb, const PrefixOpt prefix = PrefixOpt::prefix,
+                                 size_t bit_len=0) noexcept;
+
+    /**
      * Produce a binary string representation of the given lsb-first byte values.
      *
      * If byteOrder is lb_endian_t::little, orders lsb-byte left, usual for byte streams. Result will not have a leading `0b`.
@@ -333,9 +519,13 @@ namespace jau {
      * @param bit_len optional fixed number of bits to be printed counting from lsb excluding prefix. Pass zero for dropping zero leading bytes (default).
      * @return the bit-string representation of the data
      */
-    std::string toBitString(const void *data, const nsize_t length,
-                            const bit_order_t bitOrder = bit_order_t::msb, const PrefixOpt prefix = PrefixOpt::prefix,
-                            size_t bit_len=0) noexcept;
+    inline std::string toBitString(const void *data, const nsize_t length,
+                                   const bit_order_t bitOrder = bit_order_t::msb, const PrefixOpt prefix = PrefixOpt::prefix,
+                                   size_t bit_len=0) noexcept {
+        std::string s;
+        appendBitString(s, data, length, bitOrder, prefix, bit_len);
+        return s;
+    }
 
     /**
      * Produce a binary string representation with leading `0b` in MSB of the given uint8_t continuous container values.
@@ -445,26 +635,129 @@ namespace jau {
      */
 
     /**
-     * Appends a string representation of an integral integer value with given radix.
+     * Converts a given integer string representation to the given result reference,
+     * compatible with `::strtoll()`
+     *
+     * - Signed value_type: `[space][+-][prefix][digits+sep]`
+     * - Unsigned value_type: `[space][+][prefix][digits+sep]`
+     *
+     * Even if complete==false due to empty string, under- or overflow,
+     * the result holds the partial value if consumed_chars>0.
+     *
+     * Whitespace and non-matching chars
+     * - Leading and tailing whitespace chars are consumed, see jau::is_space()
+     * - Tail non-matching chars are ignored: complete is true but consumed_chars is < str.length()
+     *
+     * You may use C++17 structured bindings to handle the pair.
+     * - `[size_t consumed_chars, bool complete]`
+     *
+     * @param result the integral reference for the result
+     * @param str the decimal string representation
+     * @param radix base of the number system, supported: 2 binary, 8 octal, 10 decimal, 16 hexadecimal
+     * @param separator separator character (default 0, none), allowing to ignore like thousand separator characters
+     * @return pair [size_t consumed_chars, bool complete], i.e. consumed characters of string and completed=false if not fully consumed.
+     */
+    template<std::integral value_type>
+    constexpr SizeBoolPair fromIntString(value_type &result, std::string_view str, uint32_t radix=10, const char separator = 0) noexcept {
+        using namespace jau::int_literals;
+        result = 0;
+
+        std::string_view::const_iterator str_begin = str.cbegin();
+        std::string_view::const_iterator str_end = str.cend();
+        std::string_view::const_iterator begin = str_begin; // begin of digits
+        value_type sign = 1;
+
+        // consume leading whitespace
+        while( begin < str_end && jau::is_space(*begin)) { ++begin; }
+        // sign
+        if (begin < str_end ) {
+            if (*begin == '-') {
+                if constexpr (std::is_unsigned_v<value_type>) {
+                    return { .s = size_t(begin-str_begin), .b = false }; // invalid
+                }
+                sign = -1;
+                ++begin;
+            } else if (*begin == '+') {
+                ++begin;
+            }
+        }
+        // prefix
+        if( 16 == radix && begin < str_end-1 ) {
+            if ( *begin == '0' && (*(begin+1) == 'x' || *(begin+1) == 'X') ) {
+                begin+=2;
+            }
+        } else if( 8 == radix && begin < str_end ) {
+            if ( *begin == '0' ) {
+                begin+=1;
+            }
+        } else if( 2 == radix && begin < str_end-1 ) {
+            if ( *begin == '0' && *(begin+1) == 'b' ) {
+                begin+=2;
+            }
+        }
+        if (begin == str_end || !jau::is_digit(*begin, radix, separator)) {
+            return { .s = size_t(begin-str_begin), .b = false }; // no number (empty or no digit)
+        }
+
+        std::string_view::const_iterator end = begin;
+        while( end < str_end && jau::is_digit(*end, radix, separator)) { ++end; } // position to last digit, ignore tail
+        const size_t len = end-str_begin; // consumed length w/o tail
+        std::string_view::const_iterator iter = end;
+
+        value_type multiplier = 1;
+        while( iter > begin ) {
+            const int32_t d = digit(*(--iter), radix);
+            if ( 0 > d ) {
+                continue; // skip seperator
+            }
+            const value_type sum = d * multiplier * sign;
+            if( sign > 0 && result > std::numeric_limits<value_type>::max() - sum ) {
+                // overflow
+                return { .s = len, .b = false };
+            }
+            if constexpr (std::is_signed_v<value_type>) {
+                if( sign < 0 && result < std::numeric_limits<value_type>::min() - sum ) {
+                    // underflow
+                    return { .s = len, .b = false };
+                }
+            }
+            result += sum;
+            multiplier *= radix;
+        }
+        // consume tailing whitespace
+        while( end < str_end && jau::is_space(*end)) { ++end; }
+        return { .s = size_t(end-str_begin), .b = true };
+    }
+    /// See fromIntString
+    template<std::integral value_type>
+    constexpr SizeBoolPair fromIntString(value_type &result, const char *str, size_t str_len, uint32_t radix=10, const char separator = 0) noexcept {
+        return fromIntString(result, std::string_view(str, str_len), radix, separator);
+    }
+
+    /**
+     * Appends an integer string representation of an integral integer value with given radix.
+     *
+     * `[space][-][prefix][zeros_padding+sep][digits+sep]`
+     *
      * @tparam value_type an integral integer type
      * @param dest the std::string to append to
      * @param val the unsigned integral integer value
      * @param radix base of the number system, supported: 2 binary, 8 octal, 10 decimal, 16 hexadecimal
      * @param capitalization LoUpCase capitalization, default is LoUpCase::lower
      * @param prefix pass PrefixOpt::prefix (default) to add leading prefix for radix. Prefixes: `0x` hex, `0` octal and `0b` binary.
-     * @param min_width the minimum number of characters to be printed including prefix. Add padding with `padding` if result is shorter.
+     * @param min_width the minimum number of characters to be printed including sign and prefix. Add padding if sign+prefix+val-digits are shorter.
      * @param separator separator character for each decimal 3 or other radix 4. Defaults to 0 for no separator.
      * @param padding padding character, defaults to '0'. See 'min_width' above.
-     * @return the string representation of the unsigned integral integer value with given radix
+     * @return the given string buffer for concatenation
      */
     template<std::integral value_type>
-    std::string& append_string(std::string &dest, value_type val, const nsize_t radix,
-                          const LoUpCase capitalization = LoUpCase::lower,
-                          const PrefixOpt prefix = PrefixOpt::prefix,
-                          const nsize_t min_width = 0, const char separator = 0, const char padding = '0') noexcept
+    std::string& appendIntString(std::string &dest, value_type val, const uint32_t radix,
+                                   const LoUpCase capitalization = LoUpCase::lower,
+                                   const PrefixOpt prefix = PrefixOpt::prefix,
+                                   const uint32_t min_width = 0, const char separator = 0, const char padding = '0') noexcept
     {
         const size_t dest_start_len = dest.size();
-        nsize_t shift;
+        uint32_t shift;
         switch ( radix ) {
             case 16: shift = 4; break;
             case 10: shift = 0; break;
@@ -472,70 +765,70 @@ namespace jau {
             case 2:  shift = 1; break;
             default: return dest;
         }
-        typedef std::make_unsigned_t<value_type> unsigned_value_type;
-        unsigned_value_type v = unsigned_value_type( jau::abs(val) );
-        const char *hex_array = LoUpCase::lower == capitalization ? HexadecimalArrayLow : HexadecimalArrayBig;
-        const nsize_t mask = radix - 1;  // ignored for radix 10
-        const nsize_t val_digits = jau::digits<value_type>(v, radix);
-        nsize_t sign_len = 0;
-        char sign = 0;
-        if( !jau::is_positive(val) ) {
-            sign = '-';
-            ++sign_len;
-        }
-        const nsize_t prefix_len = (PrefixOpt::none == prefix || 10 == radix) ? 0 : (8 == radix ? 1 : 2);
-        const nsize_t sep_gap = 10 == radix ? 3 : 4;
-        nsize_t sep_count = 0;
-        if( val_digits > 0 && separator ) {
-            if ( '0' == padding ) {
-                // separator inside padding
-                if ( min_width > prefix_len ) {
-                    const size_t len0 = std::max<size_t>(min_width - prefix_len, val_digits);
-                    sep_count = (len0 - 1) / sep_gap;
-                    if ( val_digits + sep_count + prefix_len > min_width ) {
+        using unsigned_value_type = std::make_unsigned_t<value_type>;
+        unsigned_value_type v = jau::unsigned_value( val );
+        const uint32_t val_digits = jau::digits<unsigned_value_type>(v, radix);
+        const uint32_t sign_len = jau::is_positive(val) ? 0 : 1;
+        const uint32_t prefix_len = (PrefixOpt::none == prefix || 10 == radix) ? 0 : (8 == radix ? 1 : 2);
+        const uint32_t sep_gap = 10 == radix ? 3 : 4;
+        uint32_t sep_count = 0, space_left=0;
+        if (separator) {
+            sep_count = (val_digits - 1) / sep_gap;
+            const uint32_t len0 = sign_len + prefix_len + val_digits + sep_count;
+            if (min_width > len0) {
+                if (val_digits > 0 && '0' == padding) {
+                    // separator inside padding
+                    const uint32_t len1 = min_width - sign_len - prefix_len;
+                    sep_count = (len1 - 1) / sep_gap;
+                    if ( sign_len + prefix_len + (val_digits + sep_count) > min_width ) {
                         --sep_count;  // fix down
                     }
                 } else {
-                    sep_count = (val_digits - 1) / sep_gap;
+                    space_left = min_width - len0;
                 }
-            } else {
-                // separator w/o padding
-                sep_count = (val_digits - 1) / sep_gap;
             }
         }
         {
-            const size_t added_len = std::max<size_t>(min_width, val_digits + sep_count + sign_len + prefix_len);
-            dest.resize(dest_start_len + added_len, ' ');
+            std::exception_ptr eptr;
+            try {
+                const size_t added_len = std::max<size_t>(min_width, space_left + sign_len + prefix_len + (val_digits + sep_count));
+                dest.reserve(dest_start_len + added_len + 1); // w/ EOS
+                dest.resize(dest_start_len + added_len, ' '); // w/o EOS
+            } catch (...) {
+                eptr = std::current_exception();
+            }
+            if (handle_exception(eptr, E_FILE_LINE)) {
+                return dest;
+            }
         }
         const char * const d_start = dest.data() + dest_start_len;
-        const char * const d_start_num = d_start + prefix_len;
+        const char * const d_start_num = d_start + space_left + sign_len + prefix_len;
         char *d = dest.data()+dest.size();
-
-        nsize_t digit_cnt = 0, separator_idx = 0;
-        while ( d > d_start_num ) {
-            if ( separator_idx < sep_count && 0 < digit_cnt && 0 == digit_cnt % sep_gap ) {
-                *(--d) = separator;
-                ++separator_idx;
-            }
-            if ( d > d_start_num ) {
-                if (digit_cnt >= val_digits) {
-                    if( !sign || ( padding == '0' && d > d_start_num+1 ) )  {
-                        *(--d) = padding;
-                    } else {
-                        *(--d) = sign;
-                        sign = 0;
-                    }
-                } else if ( 10 == radix ) {
-                    *(--d) = '0' + (v % 10);
-                    v /= 10;
-                } else {
-                    *(--d) = hex_array[v & mask];
-                    v >>= shift;
+        *d = 0; // EOS (is reserved)
+        {
+            const char *hex_array = LoUpCase::lower == capitalization ? HexadecimalArrayLow : HexadecimalArrayBig;
+            const unsigned_value_type mask = unsigned_value_type(radix - 1);  // ignored for radix 10
+            uint32_t digit_cnt = 0, separator_idx = 0;
+            while (d > d_start_num) {
+                if (separator_idx < sep_count && 0 < digit_cnt && 0 == digit_cnt % sep_gap) {
+                    *(--d) = separator;
+                    ++separator_idx;
                 }
-                ++digit_cnt;
+                if (d > d_start_num) {
+                    if (digit_cnt >= val_digits) {
+                        *(--d) = padding;
+                    } else if (10 == radix) {
+                        *(--d) = '0' + (v % 10);
+                        v /= 10;
+                    } else {
+                        *(--d) = hex_array[v & mask];
+                        v >>= shift;
+                    }
+                    ++digit_cnt;
+                }
             }
         }
-        if ( d > d_start ) {
+        if ( prefix_len && d > d_start ) {
             switch ( radix ) {  // NOLINT(bugprone-switch-missing-default-case)
                 case 16: *(--d) = 'x'; break;
                 case 8:  *(--d) = '0'; break;
@@ -545,11 +838,17 @@ namespace jau {
                 *(--d) = '0';
             }
         }
+        if ( sign_len && d > d_start ) {
+            *(--d) = '-';
+        }
         return dest;
     }
 
     /**
-     * Produce a string representation of an integral integer value with given radix.
+     * Produces an integer string representation of an integral integer value with given radix.
+     *
+     * `[space][-][prefix][zeros_padding+sep][digits+sep]`
+     *
      * @tparam value_type an unsigned integral integer type
      * @param v the integral integer value
      * @param radix base of the number system, supported: 2 binary, 8 octal, 10 decimal, 16 hexadecimal
@@ -567,80 +866,9 @@ namespace jau {
                           const nsize_t min_width = 0, const char separator = 0, const char padding = '0') noexcept
     {
         std::string str;
-        append_string(str, v, radix, capitalization, prefix, min_width, separator, padding);
+        appendIntString(str, v, radix, capitalization, prefix, min_width, separator, padding);
         return str;
     }
-
-    template<class value_type>
-    requires jau::req::signed_integral<value_type>
-    constexpr bool from_chars(value_type &result, std::string_view str) noexcept {
-        using namespace jau::int_literals;
-        result = 0;
-
-        std::string_view::const_iterator str_end = str.cend();
-        std::string_view::const_iterator begin = str.cbegin();
-        while( begin < str_end && !jau::is_digit(*begin)) { ++begin; }
-        if( begin == str_end ) {
-            return false; // no number
-        }
-        const value_type sign = begin > str.cbegin() && *(begin-1) == '-' ? -1 : 1;
-
-        std::string_view::const_iterator end = begin + 1;
-        while( end < str_end && jau::is_digit(*end)) { ++end; }
-
-        value_type multiplier = 1;
-        while( end > begin ) {
-            const value_type digit = *(--end) - '0';
-            const value_type sum = digit * multiplier * sign;
-            if( sign > 0 && result > std::numeric_limits<value_type>::max() - sum ) {
-                // overflow
-                return false;
-            } else if( sign < 0 && result < std::numeric_limits<value_type>::min() - sum ) {
-                // underflow
-                return false;
-            }
-            result += sum;
-            multiplier *= 10;
-        }
-        return true;
-    }
-
-    template<class value_type>
-    requires jau::req::unsigned_integral<value_type>
-    constexpr bool from_chars(value_type &result, std::string_view str) noexcept {
-        using namespace jau::int_literals;
-        result = 0;
-
-        std::string_view::const_iterator str_end = str.cend();
-        std::string_view::const_iterator begin = str.cbegin();
-        while( begin < str_end && !jau::is_digit(*begin)) { ++begin; }
-        if( begin == str_end ) {
-            return false; // no number
-        }
-        {
-            const value_type sign = begin > str.cbegin() && *(begin-1) == '-' ? -1 : 1;
-            if( sign < 0 ) {
-                return false; // only for unsigned
-            }
-        }
-
-        std::string_view::const_iterator end = begin + 1;
-        while( end < str_end && jau::is_digit(*end)) { ++end; }
-
-        value_type multiplier = 1;
-        while( end > begin ) {
-            const value_type digit = *(--end) - '0';
-            const value_type sum = digit * multiplier;
-            if( result > std::numeric_limits<value_type>::max() - sum ) {
-                // overflow
-                return false;
-            }
-            result += sum;
-            multiplier *= 10;
-        }
-        return true;
-    }
-
 
     /**
     // *************************************************
@@ -807,27 +1035,6 @@ namespace jau {
     }
     template<typename T>
     std::string to_string(std::vector<T> const &list, const nsize_t radix) { return to_string<T>(list, ", ", radix); }
-
-    /**
-     * Returns tuple [int64_t result, size_t consumed_chars, bool complete] of string to integer conversion via `std::strtoll`.
-     *
-     * Even if complete==false, result holds the partial value if consumed_chars>0.
-     *
-     * You may use C++17 structured bindings to handle the tuple.
-     */
-    Int64SizeBoolTuple to_integer(const char *str, size_t str_len, const nsize_t radix = 10, const char limiter = '\0', const char *limiter_pos = nullptr) noexcept;
-
-
-    /**
-     * Returns tuple [int64_t result, size_t consumed_chars, bool complete] of string to integer conversion via `std::strtoll`.
-     *
-     * Even if complete==false, result holds the partial value if consumed_chars>0.
-     *
-     * You may use C++17 structured bindings to handle the tuple.
-     */
-     inline Int64SizeBoolTuple to_integer(const std::string_view str, const nsize_t radix = 10, const char limiter = '\0', const char *limiter_pos = nullptr) noexcept {
-         return to_integer(str.data(), str.length(), radix, limiter, limiter_pos);
-     }
 
     /**@}*/
 

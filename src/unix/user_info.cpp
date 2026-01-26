@@ -21,6 +21,7 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include <jau/string_util.hpp>
 #if !defined(_WIN32)
 
     #include "jau/debug.hpp"
@@ -87,22 +88,22 @@
 
     static bool UserInfo_get_env_uid(::uid_t &res_uid, const bool try_sudo) noexcept {
         char *env_str = nullptr;
-        // int64_t env_val = 0;
+        ::uid_t env_val = 0;
         if ( try_sudo ) {
             env_str = ::getenv("SUDO_UID");
             if ( nullptr != env_str ) {
-                const auto [env_val, consumed, complete] = jau::to_integer(env_str, strlen(env_str));
+                const auto [consumed, complete] = jau::fromIntString(env_val, env_str, strlen(env_str));
                 if ( complete ) {
-                    res_uid = (::uid_t)env_val;
+                    res_uid = env_val;
                     return true;
                 }
             }
         }
         env_str = ::getenv("UID");
         if ( nullptr != env_str ) {
-            const auto [env_val, consumed, complete] = jau::to_integer(env_str, strlen(env_str));
+            const auto [consumed, complete] = jau::fromIntString(env_val, env_str, strlen(env_str));
             if ( complete ) {
-                res_uid = (::uid_t)env_val;
+                res_uid = env_val;
                 return true;
             }
         }

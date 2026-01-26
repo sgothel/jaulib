@@ -28,6 +28,7 @@
 #include <climits>
 #include <cmath>
 #include <concepts>
+#include <type_traits>
 
 #include <jau/int_math_ct.hpp>
 #include <jau/int_types.hpp>
@@ -168,6 +169,35 @@ namespace jau {
 
     template <jau::req::unsigned_arithmetic T>
     constexpr T abs(const T x) noexcept
+    {
+        return x;
+    }
+
+    /**
+     * Returns the unsigned typed absolute value of an arithmetic number (w/ branching) in O(1)
+     *
+     * Implementation handles 2-complement case INT_MIN -> -INT_MIN, i.e. INT_MAX+1 as unsigned
+     *
+     * @tparam T an arithmetic number type
+     * @param x the number
+     * @return function result
+     */
+    template<jau::req::signed_arithmetic T>
+    constexpr std::make_unsigned_t<T> unsigned_value(const T x) noexcept {
+        using U = std::make_unsigned_t<T>;
+        if (jau::sign<T>(x) < 0) {
+            if (std::numeric_limits<T>::min() == x) {
+                return U(std::numeric_limits<T>::max()) + U(1);
+            } else {
+                return U(-x);
+            }
+        } else {
+            return U(x);
+        }
+    }
+
+    template <jau::req::unsigned_arithmetic T>
+    constexpr T unsigned_value(const T x) noexcept
     {
         return x;
     }

@@ -934,6 +934,30 @@ TEST_CASE("HexString from and to byte vector conversion - Test 40", "[hexstring]
         REQUIRE(v0_0 == i0_0s2);
         std::cout << std::endl;
     }
+    {
+        // concatenation
+        const std::vector<uint8_t> source_le = { 0x1a, 0x1b, 0x2a, 0x2b, 0xff };
+        const std::vector<uint8_t> source_le_2x = { 0x1a, 0x1b, 0x2a, 0x2b, 0xff, 0x1a, 0x1b, 0x2a, 0x2b, 0xff };
+
+        const std::string value_s0_le = "1a1b2a2bff";  // LE
+        const std::string value_s0_le_2x = "1a1b2a2bff1a1b2a2bff";  // LE
+
+        std::vector<uint8_t> out;
+        const auto [o_sz1, o_ok1] = jau::fromHexString(out, value_s0_le, jau::lb_endian_t::little);
+        REQUIRE(true == o_ok1);
+        REQUIRE(value_s0_le.length() == o_sz1);
+        REQUIRE(5 == out.size());
+
+        // append
+        const auto [o_sz2, o_ok2] = jau::fromHexString(out, value_s0_le, jau::lb_endian_t::little);
+        REQUIRE(true == o_ok2);
+        REQUIRE(value_s0_le.length() == o_sz2);
+        REQUIRE(10 == out.size());
+        REQUIRE(source_le_2x == out);
+
+        const std::string value_s2_le = jau::toHexString(out, jau::lb_endian_t::little);
+        REQUIRE(value_s0_le_2x == value_s2_le);
+    }
 }
 
 TEST_CASE("BitString from and to byte vector conversion - Test 41", "[bitstring]") {

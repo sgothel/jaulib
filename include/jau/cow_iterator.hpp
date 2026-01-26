@@ -905,15 +905,15 @@ namespace jau {
             constexpr difference_type distance(const cow_rw_iterator<storage_t, storage_ref_t, cow_container_t>& rhs) const noexcept
             { return iterator_ - rhs.iterator_; }
 
-            inline std::string toString() const noexcept {
+            inline std::string toString() const {
                 return jau::to_string(iterator_);
             }
 #if 0
-            inline operator std::string() const noexcept {
+            inline operator std::string() const {
                 return toString();
             }
 #endif
-            std::string get_info() const noexcept {
+            std::string get_info() const {
                 return "cow_ro_iterator[this "+jau::toHexString(this)+
                         ", store "+jau::toHexString(&store_ref_)+
                        ", "+jau::to_string(iterator_)+"]";

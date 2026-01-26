@@ -1853,7 +1853,7 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
                 return res;
             }
 
-            std::string getInfo() const noexcept {
+            std::string getInfo() const {
                 difference_type cap_ = (m_storage_end-m_begin);
                 difference_type size_ = (m_end-m_begin);
                 std::string res("darray[this "+jau::toHexString(this)+

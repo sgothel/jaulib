@@ -162,7 +162,7 @@ TEST_CASE( "MP Big Int Dec Test 10", "[big_int_t][inout][math]" ) {
         if ( false ) {
             for(size_t i=0; i<sizeof(a_u8); ++i) {
                 std::string s1;
-                jau::appendToHexString(s1, a.byte_at(i), jau::LoUpCase::lower);
+                jau::appendHexString(s1, a.byte_at(i), jau::LoUpCase::lower);
                 std::cout << "zero.buf[" << std::to_string(i) << "]: 0x" << s1 << std::endl;
             }
         }
@@ -178,7 +178,7 @@ TEST_CASE( "MP Big Int Dec Test 10", "[big_int_t][inout][math]" ) {
             if ( false ) {
                 for(size_t i=0; i<sizeof(a_u8); ++i) {
                     std::string s1;
-                    jau::appendToHexString(s1, buf[i], jau::LoUpCase::lower);
+                    jau::appendHexString(s1, buf[i], jau::LoUpCase::lower);
                     std::cout << "le.buf[" << std::to_string(i) << "]: 0x" << s1 << std::endl;
                 }
             }
@@ -198,7 +198,7 @@ TEST_CASE( "MP Big Int Dec Test 10", "[big_int_t][inout][math]" ) {
             if ( false ) {
                 for(size_t i=0; i<sizeof(a_u8); ++i) {
                     std::string s1;
-                    jau::appendToHexString(s1, buf[i], jau::LoUpCase::lower);
+                    jau::appendHexString(s1, buf[i], jau::LoUpCase::lower);
                     std::cout << "be.buf[" << std::to_string(i) << "]: 0x" << s1 << std::endl;
                 }
             }

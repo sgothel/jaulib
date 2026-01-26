@@ -760,14 +760,14 @@ namespace jau::cfmt {
         };
 
         template <jau::req::signed_integral T>
-        constexpr T abs_int(const T x) noexcept
+        constexpr std::make_unsigned_t<T> unsigned_int(const T x) noexcept
         {
-            return jau::sign<T>(x) < 0 ? jau::invert_sign<T>( x ) : x;
+            return jau::unsigned_value(x);
         }
 
         template<typename T>
         requires (!jau::req::signed_integral<T>)
-        constexpr T abs_int(const T& x) noexcept {
+        constexpr T unsigned_int(const T& x) noexcept {
             return x;
         }
 
@@ -823,7 +823,7 @@ namespace jau::cfmt {
                 pc.m_argtype_signed = std::is_signed_v<T>;
                 pc.m_argval_negative = !is_positive(val);
                 using U = make_int_unsigned_t<T>;
-                parseOneImpl<U>(pc, U(abs_int(val))); // uint64_t
+                parseOneImpl<U>(pc, unsigned_int(val)); // uint64_t
             }
 
             template <typename T>
@@ -1085,7 +1085,8 @@ namespace jau::cfmt {
                 if( sv.empty() ) {
                     return false; // no digits, may continue
                 }
-                if( !from_chars(num, sv) ) {
+
+                if( !jau::fromIntString(num, sv, 10).b ) {
                     // pc.setError(__LINE__); // number syntax
                     return false;  // error
                 }
@@ -1294,7 +1295,7 @@ namespace jau::cfmt {
                 pc.m_argtype_signed = true;
                 pc.m_argtype_size = sizeof(U);
                 pc.m_argval_negative = !is_positive(u);
-                return parseSignedFmtSpec<V>(pc, V(abs_int(u)));
+                return parseSignedFmtSpec<V>(pc, unsigned_int(u));
             }
             template <typename T>
             requires jau::req::unsigned_integral<T>
@@ -1389,7 +1390,7 @@ namespace jau::cfmt {
                 pc.m_argtype_signed = std::is_signed_v<U>;
                 pc.m_argtype_size = sizeof(U);
                 pc.m_argval_negative = !is_positive(u);
-                return parseUnsignedFmtSpec<V>(pc, V(abs_int(u)));
+                return parseUnsignedFmtSpec<V>(pc, unsigned_int(u));
             }
             template <typename T>
             requires jau::req::unsigned_integral<T>

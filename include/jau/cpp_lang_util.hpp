@@ -29,6 +29,7 @@
 #include <cstdint>
 #include <string_view>
 #include <type_traits>
+#include <exception>
 #include <string>
 #include <cstring>
 #include <ostream>
@@ -458,6 +459,63 @@ namespace jau {
         f();
     }
 
+    /**@}*/
+
+    /** \addtogroup Exceptions
+     *
+     *  @{
+     */
+
+    /**
+     * Handle given optional exception (nullable std::exception_ptr) and send std::exception::what() message to `stderr`
+     * @param eptr contains optional exception, may be `nullptr`
+     * @return true if `eptr` contained an exception pointer, not `nullptr`
+     */
+    inline __attribute__((always_inline))
+    bool handle_exception(std::exception_ptr eptr, const char* file, int line) noexcept { // NOLINT(performance-unnecessary-value-param) passing by value is OK
+        if (eptr) {
+            try {
+                std::rethrow_exception(eptr);
+            } catch (const std::exception &e) {
+                ::fprintf(stderr, "Exception caught @ %s:%d: %s\n", file, line, e.what());
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**@}*/
+
+    /** \addtogroup StringUtils
+     *
+     *  @{
+     */
+
+    /// No throw wrap for given unary predicate producing a `std::string`.
+    template<class UnaryPredicate>
+    inline std::string string_noexcept(UnaryPredicate p) noexcept {
+        std::exception_ptr eptr;
+        try {
+            return p();
+        } catch (...) {
+            eptr = std::current_exception();
+        }
+        handle_exception(eptr, __FILE__, __LINE__);
+        return std::string();
+    }
+
+    /// No throw `std::string(std::string_view)` instantiation
+    inline std::string string_noexcept(std::string_view v) noexcept {
+        return string_noexcept([v]() { return std::string(v); });
+    }
+
+    /**@}*/
+
+    /** \addtogroup CppLang
+     *
+     *  @{
+     */
+
     /// Boolean type without implicit conversion, safe for function parameter
     enum class Bool : bool {
         False = false,
@@ -513,7 +571,9 @@ namespace jau {
             return "false";
         }
     }
-    constexpr std::string to_string(const Bool v) noexcept { return std::string(name(v)); }
+    inline std::string to_string(const Bool v) noexcept {
+        return string_noexcept([v]() { return std::string(name(v)); });
+    }
     inline std::ostream & operator << (std::ostream &out, const Bool c) {
         out << to_string(c);
         return out;
@@ -525,6 +585,15 @@ namespace jau {
 
     /** Simple pre-defined value pair [size_t, bool] for structured bindings to multi-values. */
     struct SizeBoolPair {
+        /** a size_t value, e.g. index, length, etc */
+        size_t s;
+        /** a boolean value, e.g. success, etc */
+        bool b;
+    };
+    /** Simple pre-defined value pair [uint8_t*, size_t, bool] for structured bindings to multi-values. */
+    struct UInt8PtrSizeBoolPair {
+        /** a uint8_t* pointer value */
+        uint8_t* p;
         /** a size_t value, e.g. index, length, etc */
         size_t s;
         /** a boolean value, e.g. success, etc */

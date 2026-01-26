@@ -767,7 +767,7 @@ namespace jau::mp {
             return s;
         }
 
-        std::string to_hex_string(bool add_details = false) const noexcept {
+        std::string to_hex_string(bool add_details = false) const {
             std::vector<uint8_t> bits;
             const uint8_t* data;
             size_t data_len;
@@ -1552,7 +1552,7 @@ namespace jau::mp {
             return remainder;
         }
 
-        void append_detail(std::string& s) const noexcept {
+        void append_detail(std::string& s) const {
             s.append(", bits ").append(std::to_string(bits())).append(", ").append(std::to_string(sig_words())).append(" word(s): ");
             for ( size_t i = 0; i < sig_words(); ++i ) {
                 const mp_word_t w = word_at(i);

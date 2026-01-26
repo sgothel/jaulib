@@ -47,8 +47,8 @@ namespace jau::math {
             /** undefined math error */
             undefined = 1U << 15,
     };
-    /** Returns std::string representation of math_error_t */
-    std::string to_string(const math_error_t v) noexcept;
+    /** Returns std::string_view representation of math_error_t */
+    std::string_view to_string(const math_error_t v) noexcept;
 
     class MathErrorBase : public ExceptionBase {
       private:
@@ -56,7 +56,7 @@ namespace jau::math {
 
       protected:
         MathErrorBase(math_error_t err, std::string const& m, const char* file, int line) noexcept
-        : ExceptionBase("MathError("+to_string(err)+")", m, file, line), m_error(err) {}
+        : ExceptionBase("MathError("+jau::string_noexcept(to_string(err))+")", m, file, line), m_error(err) {}
 
       public:
         math_error_t error() const noexcept;

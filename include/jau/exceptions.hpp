@@ -25,6 +25,7 @@
 #ifndef JAU_EXCEPTIONS_HPP_
 #define JAU_EXCEPTIONS_HPP_
 
+#include <exception>
 #include <ios>
 #include <stdexcept>
 #include <string>
@@ -40,24 +41,6 @@ namespace jau {
      *
      *  @{
      */
-
-    /**
-     * Handle given optional exception (nullable std::exception_ptr) and send std::exception::what() message to `stderr`
-     * @param eptr contains optional exception, may be `nullptr`
-     * @return true if `eptr` contained an exception pointer, not `nullptr`
-     */
-    inline __attribute__((always_inline))
-    bool handle_exception(std::exception_ptr eptr, const char* file, int line) noexcept { // NOLINT(performance-unnecessary-value-param) passing by value is OK
-        if (eptr) {
-            try {
-                std::rethrow_exception(eptr);
-            } catch (const std::exception &e) {
-                ::fprintf(stderr, "Exception caught @ %s:%d: %s\n", file, line, e.what());
-                return true;
-            }
-        }
-        return false;
-    }
 
     /// Exception handler method, should return true if not consumed or deemed an error. Shall be `noexcept` itself.
     typedef jau::function<bool(const std::exception &, const char* file, int line)> exception_handler_t;
@@ -84,11 +67,6 @@ namespace jau {
     // *************************************************
     // *************************************************
     // *************************************************
-     */
-
-    /** \addtogroup Exceptions
-     *
-     *  @{
      */
 
     class ExceptionBase {
@@ -335,12 +313,6 @@ namespace jau {
         UnsupportedOperationException(std::string const& m, const char* file, int line) noexcept
         : RuntimeException("UnsupportedOperationException", m, file, line) { }
     };
-
-    /**
-    // *************************************************
-    // *************************************************
-    // *************************************************
-     */
 
     /**@}*/
 

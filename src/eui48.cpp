@@ -47,7 +47,7 @@ std::string EUI48Sub::toString() const noexcept {
         if( is_little_endian() ) {
             for(jau::nsize_t i=0; i < length; ++i) {
                 const jau::nsize_t idx = length - 1 - i;
-                jau::appendToHexString(str, b[idx], LoUpCase::upper);
+                jau::appendHexString(str, b[idx], LoUpCase::upper);
                 if( 0 < idx ) {
                     str.push_back(':');
                 }
@@ -57,7 +57,7 @@ std::string EUI48Sub::toString() const noexcept {
                 if( 0 < idx ) {
                     str.push_back(':');
                 }
-                jau::appendToHexString(str, b[idx], LoUpCase::upper);
+                jau::appendHexString(str, b[idx], LoUpCase::upper);
             }
         }
     } else {
@@ -175,29 +175,29 @@ std::string EUI48::toString() const noexcept {
     str.reserve(17); // 6 * 2 + ( 6 - 1 )
 
     if( is_little_endian() ) {
-        jau::appendToHexString(str, b[5], LoUpCase::upper);
+        jau::appendHexString(str, b[5], LoUpCase::upper);
         str.push_back(':');
-        jau::appendToHexString(str, b[4], LoUpCase::upper);
+        jau::appendHexString(str, b[4], LoUpCase::upper);
         str.push_back(':');
-        jau::appendToHexString(str, b[3], LoUpCase::upper);
+        jau::appendHexString(str, b[3], LoUpCase::upper);
         str.push_back(':');
-        jau::appendToHexString(str, b[2], LoUpCase::upper);
+        jau::appendHexString(str, b[2], LoUpCase::upper);
         str.push_back(':');
-        jau::appendToHexString(str, b[1], LoUpCase::upper);
+        jau::appendHexString(str, b[1], LoUpCase::upper);
         str.push_back(':');
-        jau::appendToHexString(str, b[0], LoUpCase::upper);
+        jau::appendHexString(str, b[0], LoUpCase::upper);
     } else {
-        jau::appendToHexString(str, b[0], LoUpCase::upper);
+        jau::appendHexString(str, b[0], LoUpCase::upper);
         str.push_back(':');
-        jau::appendToHexString(str, b[1], LoUpCase::upper);
+        jau::appendHexString(str, b[1], LoUpCase::upper);
         str.push_back(':');
-        jau::appendToHexString(str, b[2], LoUpCase::upper);
+        jau::appendHexString(str, b[2], LoUpCase::upper);
         str.push_back(':');
-        jau::appendToHexString(str, b[3], LoUpCase::upper);
+        jau::appendHexString(str, b[3], LoUpCase::upper);
         str.push_back(':');
-        jau::appendToHexString(str, b[4], LoUpCase::upper);
+        jau::appendHexString(str, b[4], LoUpCase::upper);
         str.push_back(':');
-        jau::appendToHexString(str, b[5], LoUpCase::upper);
+        jau::appendHexString(str, b[5], LoUpCase::upper);
     }
     return str;
 }

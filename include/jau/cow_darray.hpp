@@ -1153,7 +1153,7 @@ namespace jau {
                 return res;
             }
 
-            std::string getInfo() const noexcept {
+            std::string getInfo() const {
                 return ("cow_darray[this "+jau::toHexString(this)+
                         ", "+store_ref->getInfo()+
                         "]");

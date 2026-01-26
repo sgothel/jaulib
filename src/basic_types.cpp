@@ -91,54 +91,61 @@ uint64_t jau::getWallClockSeconds() noexcept {
 }
 
 std::string fraction_timespec::toString() const noexcept {
-    return std::to_string(tv_sec) + "s + " + std::to_string(tv_nsec) + "ns";
+    return string_noexcept([this]() { return std::to_string(tv_sec) + "s + " + std::to_string(tv_nsec) + "ns"; });
 }
 
 std::string fraction_timespec::toISO8601String(bool space_separator, bool muteTime) const noexcept {
-    std::time_t t0 = static_cast<std::time_t>(tv_sec);
-    struct std::tm tm_0;
-    if ( nullptr == ::gmtime_r(&t0, &tm_0) ) {
-        if ( muteTime ) {
-            if ( space_separator ) {
-                return "1970-01-01";
+    std::exception_ptr eptr;
+    try {
+        std::time_t t0 = static_cast<std::time_t>(tv_sec);
+        struct std::tm tm_0;
+        if ( nullptr == ::gmtime_r(&t0, &tm_0) ) {
+            if ( muteTime ) {
+                if ( space_separator ) {
+                    return "1970-01-01";
+                } else {
+                    return "1970-01-01Z";
+                }
             } else {
-                return "1970-01-01Z";
+                if ( space_separator ) {
+                    return "1970-01-01 00:00:00";
+                } else {
+                    return "1970-01-01T00:00:00Z";
+                }
             }
         } else {
-            if ( space_separator ) {
-                return "1970-01-01 00:00:00";
+            // 2022-05-28T23:23:50Z 20+1
+            //
+            // 1655994850s + 228978909ns
+            // 2022-06-23T14:34:10.228978909Z 30+1
+            char b[30 + 1];
+            size_t p;
+            if ( muteTime || (0 == tm_0.tm_hour && 0 == tm_0.tm_min && 0 == tm_0.tm_sec && 0 == tv_nsec) ) {
+                p = ::strftime(b, sizeof(b), "%Y-%m-%d", &tm_0);
             } else {
-                return "1970-01-01T00:00:00Z";
+                if ( space_separator ) {
+                    p = ::strftime(b, sizeof(b), "%Y-%m-%d %H:%M:%S", &tm_0);
+                } else {
+                    p = ::strftime(b, sizeof(b), "%Y-%m-%dT%H:%M:%S", &tm_0);
+                }
             }
+            if ( 0 < p && p < sizeof(b) - 1 ) {
+                size_t q = 0;
+                const size_t remaining = sizeof(b) - p;
+                if ( !muteTime && 0 < tv_nsec ) {
+                    q = ::snprintf(b + p, remaining, ".%09" PRIi64, tv_nsec);
+                }
+                if ( !space_separator ) {
+                    ::snprintf(b + p + q, remaining - q, "Z");
+                }
+            }
+            return std::string(b);
         }
-    } else {
-        // 2022-05-28T23:23:50Z 20+1
-        //
-        // 1655994850s + 228978909ns
-        // 2022-06-23T14:34:10.228978909Z 30+1
-        char b[30 + 1];
-        size_t p;
-        if ( muteTime || (0 == tm_0.tm_hour && 0 == tm_0.tm_min && 0 == tm_0.tm_sec && 0 == tv_nsec) ) {
-            p = ::strftime(b, sizeof(b), "%Y-%m-%d", &tm_0);
-        } else {
-            if ( space_separator ) {
-                p = ::strftime(b, sizeof(b), "%Y-%m-%d %H:%M:%S", &tm_0);
-            } else {
-                p = ::strftime(b, sizeof(b), "%Y-%m-%dT%H:%M:%S", &tm_0);
-            }
-        }
-        if ( 0 < p && p < sizeof(b) - 1 ) {
-            size_t q = 0;
-            const size_t remaining = sizeof(b) - p;
-            if ( !muteTime && 0 < tv_nsec ) {
-                q = ::snprintf(b + p, remaining, ".%09" PRIi64, tv_nsec);
-            }
-            if ( !space_separator ) {
-                ::snprintf(b + p + q, remaining - q, "Z");
-            }
-        }
-        return std::string(b);
+    } catch (...) {
+        eptr = std::current_exception();
     }
+    jau::handle_exception(eptr, E_FILE_LINE);
+    return std::string();
 }
 
 fraction_timespec fraction_timespec::from(int year, unsigned month, unsigned day,
@@ -414,27 +421,27 @@ std::cv_status jau::wait_for(std::condition_variable &cv, std::unique_lock<std::
 }
 
 std::string jau::threadName(const std::thread::id id) noexcept {
-    #if 1
-        return "Thread 0x"+jau::toHexString( std::hash<std::thread::id>{}(id) );
-    #else
-        std::stringstream ss;
-        ss.setf(std::ios_base::hex | std::ios_base::showbase);
-        ss << "Thread " << id;
-        return ss.str();
-    #endif
+    return string_noexcept([&id]() { return "Thread 0x"+jau::toHexString( std::hash<std::thread::id>{}(id) ); });
 }
 
 jau::ExceptionBase::ExceptionBase(std::string &&type, std::string const& m, const char* file, int line) noexcept // NOLINT(modernize-pass-by-value)
 : msg_( std::move(type) ),
   backtrace_( jau::get_backtrace(true /* skip_anon_frames */) )
 {
-    msg_.append(" @ ").append(file).append(":").append(std::to_string(line)).append(": ").append(m);
-    what_ = msg_;
-    what_.append("\nNative backtrace:\n");
-    what_.append(backtrace_);
+    std::exception_ptr eptr;
+    try {
+        msg_.append(" @ ").append(file).append(":").append(std::to_string(line)).append(": ").append(m);
+        what_ = msg_;
+        what_.append("\nNative backtrace:\n");
+        what_.append(backtrace_);
+    } catch (...) {
+        eptr = std::current_exception();
+        ::fprintf(stderr, "Exception @ ExceptionBase::ctor() for exception: %s\nNative backtrace\n%s", msg_.c_str(), backtrace_.c_str());
+    }
+    handle_exception(eptr, E_FILE_LINE);
 }
 
-std::string jau::get_string(const uint8_t *buffer, nsize_t const buffer_len, nsize_t const max_len) noexcept {
+std::string jau::get_string(const uint8_t *buffer, nsize_t const buffer_len, nsize_t const max_len) {
     const nsize_t cstr_max_len = std::min(buffer_len, max_len);
     const size_t cstr_len = ::strnlen(reinterpret_cast<const char*>(buffer), cstr_max_len); // if cstr_len == cstr_max_len then no EOS
     return std::string(reinterpret_cast<const char*>(buffer), cstr_len);
@@ -449,13 +456,13 @@ void jau::trimInPlace(std::string &s) noexcept {
     }).base(), s.end());
 }
 
-std::string jau::trim(const std::string &_s) noexcept {
+std::string jau::trim(const std::string &_s) {
     std::string s(_s);
     trimInPlace(s);
     return s;
 }
 
-std::vector<std::string> jau::split_string(const std::string &str, const std::string &separator) noexcept {
+std::vector<std::string> jau::split_string(const std::string &str, const std::string &separator) {
     std::vector<std::string> res;
     size_t p0 = 0;
     while ( p0 != std::string::npos && p0 < str.size() ) {
@@ -474,7 +481,7 @@ std::string &jau::toLowerInPlace(std::string &s) noexcept {
                    [](unsigned char c) { return std::tolower(c); });
     return s;
 }
-std::string jau::toLower(const std::string& s) noexcept {
+std::string jau::toLower(const std::string& s) {
     std::string t(s); toLowerInPlace(t); return t;
 }
 
@@ -672,21 +679,8 @@ void jau::unsafe::errPrint(FILE *out, const char *msg, bool addErrno, bool addBa
 //
 //
 
-static snsize_t hexCharByte_(const uint8_t c) {
-    if ( '0' <= c && c <= '9' ) {
-        return c - '0';
-    }
-    if ( 'A' <= c && c <= 'F' ) {
-        return c - 'A' + 10;
-    }
-    if ( 'a' <= c && c <= 'f' ) {
-        return c - 'a' + 10;
-    }
-    return -1;
-}
-
 SizeBoolPair jau::fromHexString(std::vector<uint8_t> &out, const uint8_t hexstr[], const size_t hexstr_len,
-                                const lb_endian_t byteOrder, const Bool checkPrefix) noexcept {
+                                const lb_endian_t byteOrder, const Bool checkPrefix) {
     using namespace jau::enums;
     size_t offset;
     if ( *checkPrefix && hexstr_len >= 2 && hexstr[0] == '0' && hexstr[1] == 'x' ) {
@@ -704,8 +698,8 @@ SizeBoolPair jau::fromHexString(std::vector<uint8_t> &out, const uint8_t hexstr[
     }
     const size_t hexlen_in = hexstr_len - offset;
     const size_t bsize = hexlen_in / 2;
-    out.clear();
-    out.reserve(bsize + hexlen_in % 2);
+    const size_t out_size_old = out.size();
+    out.reserve(out_size_old + bsize + hexlen_in % 2);
 
     // Odd nibbles:
     // - 0xf[12] = 0x0f12 = { 0x12, 0x0f } - msb, 1st single low-nibble is most significant
@@ -717,7 +711,7 @@ SizeBoolPair jau::fromHexString(std::vector<uint8_t> &out, const uint8_t hexstr[
         // consume single MSB nibble
         const size_t idx = 0;
         assert(hexstr_len - 1 >= offset + idx);
-        const snsize_t l = hexCharByte_(hexstr[offset + idx]);
+        const int32_t l = hexDigit(hexstr[offset + idx]);
         if ( 0 <= l ) {
             high_msb_nibble = static_cast<uint8_t>(l);
         } else {
@@ -729,8 +723,8 @@ SizeBoolPair jau::fromHexString(std::vector<uint8_t> &out, const uint8_t hexstr[
     for ( size_t i = 0; i < bsize; ++i ) {
         const size_t idx = (lsb * i + msb * (bsize - 1 - i)) * 2;
         assert(hexstr_len - 1 >= offset + idx + 1);
-        const snsize_t h = hexCharByte_(hexstr[offset + idx]);
-        const snsize_t l = hexCharByte_(hexstr[offset + idx + 1]);
+        const int32_t h = hexDigit(hexstr[offset + idx]);
+        const int32_t l = hexDigit(hexstr[offset + idx + 1]);
         if ( 0 <= h && 0 <= l ) {
             out.push_back(static_cast<uint8_t>((h << 4) + l));
         } else if ( 0 > h ) {
@@ -745,7 +739,7 @@ SizeBoolPair jau::fromHexString(std::vector<uint8_t> &out, const uint8_t hexstr[
     if ( has_single_nibble ) {
         if ( byteOrder == lb_endian_t::little ) {
             assert(hexstr_len - 1 == offset);
-            const snsize_t h = hexCharByte_(hexstr[offset]);
+            const int32_t h = hexDigit(hexstr[offset]);
             if ( 0 <= h ) {
                 out.push_back(static_cast<uint8_t>((h << 4) + 0));
             } else {
@@ -757,25 +751,108 @@ SizeBoolPair jau::fromHexString(std::vector<uint8_t> &out, const uint8_t hexstr[
             out.push_back(high_msb_nibble);
         }
     }
-    assert(hexlen_in / 2 + hexlen_in % 2 == out.size());
+    assert(out_size_old + hexlen_in / 2 + hexlen_in % 2 == out.size());
     assert(offset == hexstr_len);
     return { .s = offset, .b = true };
 }
 
-UInt64SizeBoolTuple jau::fromHexString(std::string_view const hexstr, const lb_endian_t byteOrder, const Bool checkPrefix) noexcept {
-    std::vector<uint8_t> out;
-    out.reserve(8);
-    auto [consumed, complete] = fromHexString(out, hexstr, byteOrder, checkPrefix);
-    if constexpr ( jau::is_little_endian() ) {
-        while ( out.size() < sizeof(uint64_t) ) {
-            out.push_back(0);
-        }
+UInt8PtrSizeBoolPair jau::fromHexString(uint8_t *out, size_t out_len, const uint8_t hexstr[], const size_t hexstr_len,
+                                           const lb_endian_t byteOrder, const Bool checkPrefix) noexcept {
+    using namespace jau::enums;
+
+    size_t offset;
+    if ( *checkPrefix && hexstr_len >= 2 && hexstr[0] == '0' && hexstr[1] == 'x' ) {
+        offset = 2;
     } else {
-        while ( out.size() < sizeof(uint64_t) ) {
-            out.insert(out.cbegin(), 0);
+        offset = 0;
+    }
+    size_t lsb, msb;
+    if ( byteOrder == lb_endian_t::little ) {
+        lsb = 1;
+        msb = 0;
+    } else {
+        lsb = 0;
+        msb = 1;
+    }
+    const size_t hexlen_in = hexstr_len - offset;
+    const size_t bsize = hexlen_in / 2;
+    const size_t out_size = bsize + hexlen_in % 2;
+    if (out_size > out_len) {
+        return { .p = out, .s = 0, .b = false };
+    }
+    [[maybe_unused]] uint8_t * const out_end = out + out_len;
+
+    // Odd nibbles:
+    // - 0xf[12] = 0x0f12 = { 0x12, 0x0f } - msb, 1st single low-nibble is most significant
+    // -   [12]f = 0xf012 = { 0x12, 0xf0 } - lsb, last single high-nibble is most significant
+    //
+    const bool has_single_nibble = 0 < hexlen_in % 2;
+    uint8_t high_msb_nibble = 0;
+    if ( byteOrder == lb_endian_t::big && has_single_nibble ) {
+        // consume single MSB nibble
+        const size_t idx = 0;
+        assert(hexstr_len - 1 >= offset + idx);
+        const int32_t l = hexDigit(hexstr[offset + idx]);
+        if ( 0 <= l ) {
+            high_msb_nibble = static_cast<uint8_t>(l);
+        } else {
+            // invalid char
+            return { .p = out, .s = offset, .b = false };
+        }
+        ++offset;
+    }
+    for ( size_t i = 0; i < bsize; ++i ) {
+        const size_t idx = (lsb * i + msb * (bsize - 1 - i)) * 2;
+        assert(hexstr_len - 1 >= offset + idx + 1);
+        const int32_t h = hexDigit(hexstr[offset + idx]);
+        const int32_t l = hexDigit(hexstr[offset + idx + 1]);
+        if ( 0 <= h && 0 <= l ) {
+            *(out++) = static_cast<uint8_t>((h << 4) + l);
+        } else if ( 0 > h ) {
+            // invalid 1st char
+            return { .p = out, .s = offset + 2 * i, .b = false };
+        } else {
+            // invalid 2nd char
+            return { .p = out, .s = offset + 2 * i + 1, .b = false };
         }
     }
-    uint64_t result = jau::le_to_cpu(*pointer_cast<const uint64_t *>(out.data()));
+    offset += bsize * 2;
+    if ( has_single_nibble ) {
+        if ( byteOrder == lb_endian_t::little ) {
+            assert(hexstr_len - 1 == offset);
+            const int32_t h = hexDigit(hexstr[offset]);
+            if ( 0 <= h ) {
+                *(out++) = static_cast<uint8_t>((h << 4) + 0);
+            } else {
+                // invalid char
+                return { .p = out, .s = offset, .b = false };
+            }
+            ++offset;
+        } else {
+            *(out++) = high_msb_nibble;
+        }
+    }
+    assert(out <= out_end);
+    assert(out_size == hexlen_in / 2 + hexlen_in % 2);
+    assert(offset == hexstr_len);
+    return { .p = out, .s = offset, .b = true };
+}
+
+UInt64SizeBoolTuple jau::fromHexString(std::string_view const hexstr, const lb_endian_t byteOrder, const Bool checkPrefix) noexcept {
+    uint8_t out_buf[sizeof(uint64_t)];
+    uint8_t * const out_end = out_buf + sizeof(uint64_t);
+    auto [out, consumed, complete] = fromHexString(out_buf, sizeof(uint64_t), hexstr, byteOrder, checkPrefix);
+    if( out < out_end ) {
+        if constexpr ( jau::is_little_endian() ) {
+            std::memset(out, 0, out_end-out); // fill gap at end
+        } else {
+            const size_t filled = out_end - out;
+            const size_t gap = sizeof(uint64_t) - filled;
+            std::memmove(out_buf+gap, out_buf, gap); // overlap move start -> gap
+            std::memset(out_buf, 0, gap); // fill gap at start
+        }
+    }
+    uint64_t result = jau::le_to_cpu(*pointer_cast<const uint64_t *>(&out_buf[0]));
     return { .v = result, .s = consumed, .b = complete };
 }
 
@@ -787,7 +864,7 @@ static snsize_t bitCharByte_(const uint8_t c) {
 }
 
 SizeBoolPair jau::fromBitString(std::vector<uint8_t> &out, const uint8_t bitstr[], const size_t bitstr_len,
-                                const bit_order_t bitOrder, const Bool checkPrefix) noexcept {
+                                const bit_order_t bitOrder, const Bool checkPrefix) {
     size_t offset;
     if ( *checkPrefix && bitstr_len >= 2 && bitstr[0] == '0' && bitstr[1] == 'b' ) {
         offset = 2;
@@ -805,8 +882,8 @@ SizeBoolPair jau::fromBitString(std::vector<uint8_t> &out, const uint8_t bitstr[
     const size_t bitlen_in = bitstr_len - offset;
     const size_t bsize = bitlen_in / 8;
     const size_t bnibbles = bitlen_in % 8;
-    out.clear();
-    out.reserve(bsize + (bnibbles > 0 ? 1 : 0));
+    const size_t out_size_old = out.size();
+    out.reserve(out_size_old + bsize + (bnibbles > 0 ? 1 : 0));
 
     // Nibbles (incomplete octets):
     // - 0b11[00000001] = 0x0301 = { 0x01, 0x03 } - msb, 1st single low-nibble is most significant
@@ -860,141 +937,234 @@ SizeBoolPair jau::fromBitString(std::vector<uint8_t> &out, const uint8_t bitstr[
         }
         out.push_back(cached_nibble8);
     }
-    assert(bitlen_in / 8 + (bitlen_in % 8 ? 1 : 0) == out.size());
+    assert(out_size_old + bitlen_in / 8 + (bitlen_in % 8 ? 1 : 0) == out.size());
     assert(offset == bitstr_len);
     return { .s = offset, .b = true };
 }
 
-UInt64SizeBoolTuple jau::fromBitString(std::string_view const bitstr, const bit_order_t bitOrder, const Bool checkPrefix) noexcept {
-    std::vector<uint8_t> out;
-    out.reserve(8);
-    auto [consumed, complete] = fromBitString(out, bitstr, bitOrder, checkPrefix);
-    if constexpr ( jau::is_little_endian() ) {
-        while ( out.size() < sizeof(uint64_t) ) {
-            out.push_back(0);
-        }
+UInt8PtrSizeBoolPair jau::fromBitString(uint8_t *out, size_t out_len, const uint8_t bitstr[], const size_t bitstr_len,
+                                           const bit_order_t bitOrder, const Bool checkPrefix) noexcept {
+    size_t offset;
+    if ( *checkPrefix && bitstr_len >= 2 && bitstr[0] == '0' && bitstr[1] == 'b' ) {
+        offset = 2;
     } else {
-        while ( out.size() < sizeof(uint64_t) ) {
-            out.insert(out.cbegin(), 0);
+        offset = 0;
+    }
+    size_t lsb, msb;
+    if ( bitOrder == bit_order_t::lsb ) {
+        lsb = 1;
+        msb = 0;
+    } else {
+        lsb = 0;
+        msb = 1;
+    }
+    const size_t bitlen_in = bitstr_len - offset;
+    const size_t bsize = bitlen_in / 8;
+    const size_t bnibbles = bitlen_in % 8;
+    const size_t out_size = bsize + (bnibbles > 0 ? 1 : 0);
+    if (out_size > out_len) {
+        return { .p = out, .s = 0, .b = false };
+    }
+    [[maybe_unused]] uint8_t * const out_end = out + out_len;
+
+    // Nibbles (incomplete octets):
+    // - 0b11[00000001] = 0x0301 = { 0x01, 0x03 } - msb, 1st single low-nibble is most significant
+    // - 0b[01000000]11 = 0xC040 = { 0x40, 0xC0 } - lsb, last single high-nibble is most significant
+    //   - 11 -> 11000000 -> C0
+    //
+    uint8_t cached_nibble8 = 0;
+    if ( bitOrder == bit_order_t::msb && 0 < bnibbles ) {
+        // consume single MSB nibble
+        assert(bitstr_len - 1 >= offset + bnibbles - 1);
+        for ( size_t i = 0; i < bnibbles; ++i ) {
+            const snsize_t l = bitCharByte_(bitstr[offset + i]);
+            if ( 0 <= l ) {
+                cached_nibble8 |= static_cast<uint8_t>(l) << (bnibbles - 1 - i);
+            } else {
+                // invalid char
+                return { .p = out, .s = offset + i, .b = false };
+            }
+        }
+        offset += bnibbles;
+    }
+    for ( size_t i = 0; i < bsize; ++i ) {
+        uint8_t b = 0;
+        const size_t idx = (lsb * i + msb * (bsize - 1 - i)) * 8;
+        assert(bitstr_len - 1 >= offset + idx + 8 - 1);
+        for ( size_t j = 0; j < 8; ++j ) {
+            const snsize_t l = bitCharByte_(bitstr[offset + idx + j]);
+            if ( 0 <= l ) {
+                b |= static_cast<uint8_t>(l) << (8 - 1 - j);
+            } else {
+                // invalid char
+                return { .p = out, .s = offset + 8 * i + j, .b = false };
+            }
+        }
+        *(out++) = b;
+    }
+    offset += bsize * 8;
+    if ( 0 < bnibbles ) {
+        if ( bitOrder == bit_order_t::lsb ) {
+            assert(bitstr_len - 1 >= offset + bnibbles - 1);
+            for ( size_t i = 0; i < bnibbles; ++i ) {
+                const snsize_t l = bitCharByte_(bitstr[offset + i]);
+                if ( 0 <= l ) {
+                    cached_nibble8 |= static_cast<uint8_t>(l) << (8 - 1 - i);
+                } else {
+                    // invalid char
+                    return { .p = out, .s = offset + i, .b = false };
+                }
+            }
+            offset += bnibbles;
+        }
+        *(out++) = cached_nibble8;
+    }
+    assert(out <= out_end);
+    assert(out_size == bitlen_in / 8 + (bitlen_in % 8 ? 1 : 0));
+    assert(offset == bitstr_len);
+    return { .p = out, .s = offset, .b = true };
+}
+
+UInt64SizeBoolTuple jau::fromBitString(std::string_view const bitstr, const bit_order_t bitOrder, const Bool checkPrefix) noexcept {
+    uint8_t out_buf[sizeof(uint64_t)];
+    uint8_t * const out_end = out_buf + sizeof(uint64_t);
+    auto [out, consumed, complete] = fromBitString(out_buf, sizeof(uint64_t), bitstr, bitOrder, checkPrefix);
+    if( out < out_end ) {
+        if constexpr ( jau::is_little_endian() ) {
+            std::memset(out, 0, out_end-out); // fill gap at end
+        } else {
+            const size_t filled = out_end - out;
+            const size_t gap = sizeof(uint64_t) - filled;
+            std::memmove(out_buf+gap, out_buf, gap); // overlap move start -> gap
+            std::memset(out_buf, 0, gap); // fill gap at start
         }
     }
-    uint64_t result = jau::le_to_cpu(*pointer_cast<const uint64_t *>(out.data()));
+    uint64_t result = jau::le_to_cpu(*pointer_cast<const uint64_t *>(&out_buf[0]));
     return { .v = result, .s = consumed, .b = complete };
 }
 
-std::string jau::toHexString(const void *data, const nsize_t length,
-                             const lb_endian_t byteOrder, const LoUpCase capitalization, const PrefixOpt prefix) noexcept {
+std::string& jau::appendHexString(std::string& dest, const void *data, const nsize_t length,
+                                   const lb_endian_t byteOrder, const LoUpCase capitalization,
+                                   const PrefixOpt prefix) noexcept {
     const char *hex_array = LoUpCase::lower == capitalization ? HexadecimalArrayLow : HexadecimalArrayBig;
-    std::string str;
 
     if ( nullptr == data ) {
-        return "null";
+        return dest.append("null");
     }
     if ( 0 == length ) {
-        return "nil";
+        return dest.append("nil");
     }
     const uint8_t *const bytes = static_cast<const uint8_t *>(data);
-    if ( byteOrder == lb_endian_t::little ) {
-        // LSB left -> MSB right, no leading `0x`
-        // TODO: skip tail all-zeros?
-        str.reserve(length * 2 + 1);
-        for ( nsize_t i = 0; i < length; i++ ) {
-            const int v = bytes[i] & 0xFF;
-            str.push_back(hex_array[v >> 4]);
-            str.push_back(hex_array[v & 0x0F]);
-        }
-    } else {
-        // MSB left -> LSB right, with leading `0x`
-        if ( PrefixOpt::none == prefix ) {
-            str.reserve(length * 2 + 1);
-        } else {
-            str.reserve(length * 2 + 1 + 2);
-            str.push_back('0');
-            str.push_back('x');
-        }
-        bool skip_leading_zeros = true;
-        nsize_t i = length;
-        do {
-            i--;
-            const int v = bytes[i] & 0xFF;
-            if ( 0 != v || !skip_leading_zeros || i == 0 ) {
-                str.push_back(hex_array[v >> 4]);
-                str.push_back(hex_array[v & 0x0F]);
-                skip_leading_zeros = false;
+    std::exception_ptr eptr;
+    try {
+        if ( byteOrder == lb_endian_t::little ) {
+            // LSB left -> MSB right, no leading `0x`
+            // TODO: skip tail all-zeros?
+            dest.reserve(dest.size() + length * 2 + 1);
+            for ( nsize_t i = 0; i < length; i++ ) {
+                const int v = bytes[i] & 0xFF;
+                dest.push_back(hex_array[v >> 4]);
+                dest.push_back(hex_array[v & 0x0F]);
             }
-        } while ( i != 0 );
+        } else {
+            // MSB left -> LSB right, with leading `0x`
+            if ( PrefixOpt::none == prefix ) {
+                dest.reserve(dest.size() + length * 2 + 1);
+            } else {
+                dest.reserve(dest.size() + length * 2 + 1 + 2);
+                dest.push_back('0');
+                dest.push_back('x');
+            }
+            bool skip_leading_zeros = true;
+            nsize_t i = length;
+            do {
+                i--;
+                const int v = bytes[i] & 0xFF;
+                if ( 0 != v || !skip_leading_zeros || i == 0 ) {
+                    dest.push_back(hex_array[v >> 4]);
+                    dest.push_back(hex_array[v & 0x0F]);
+                    skip_leading_zeros = false;
+                }
+            } while ( i != 0 );
+        }
+    } catch (...) {
+        eptr = std::current_exception();
     }
-    return str;
+    handle_exception(eptr, E_FILE_LINE);
+    return dest;
 }
 
-std::string &jau::appendToHexString(std::string &dest, const uint8_t value, const LoUpCase capitalization) noexcept {
+std::string &jau::appendHexString(std::string &dest, const uint8_t value, const LoUpCase capitalization) noexcept {
     const char *hex_array = LoUpCase::lower == capitalization ? HexadecimalArrayLow : HexadecimalArrayBig;
 
-    if ( 2 > dest.capacity() - dest.size() ) {  // Until C++20, then reserve is ignored if capacity > reserve
-        dest.reserve(dest.size() + 2);
-    }
+    dest.reserve(dest.size() + 2);
     const int v = value & 0xFF;
     dest.push_back(hex_array[v >> 4]);
     dest.push_back(hex_array[v & 0x0F]);
     return dest;
 }
 
-std::string jau::toBitString(const void *data, const nsize_t data_len,
+std::string& jau::appendBitString(std::string &dest, const void *data, const nsize_t length,
                              const bit_order_t bitOrder, const PrefixOpt prefix, size_t bit_len) noexcept {
-    std::string str;
-
     if ( nullptr == data ) {
-        return "null";
+        return dest.append("null");
     }
-    if ( 0 == data_len ) {
-        return "nil";
+    if ( 0 == length ) {
+        return dest.append("nil");
     }
     const uint8_t *const bytes = static_cast<const uint8_t *>(data);
-    nsize_t bits_left = data_len*8;
+    nsize_t bits_left = length*8;
     const bool fixed_len = bit_len > 0;
     nsize_t bits_todo = fixed_len ? std::min<size_t>(bit_len, bits_left) : bits_left;
-    if ( bitOrder == bit_order_t::lsb ) {
-        // LSB left -> MSB right, no leading `0x`
-        // TODO: skip tail all-zeros?
-        str.reserve(data_len * 8 + 1);
-        for ( nsize_t i = 0; i < data_len && 0 < bits_todo; i++ ) {
-            const nsize_t v = bytes[i] & 0xFF;
-            for ( nsize_t j = 0; j < 8 && 0 < bits_todo; ++j ) {
-                str.push_back(char('0' + ( (v >> (8 - 1 - j)) & 1) ));
-                --bits_todo;
-                --bits_left;
-            }
-        }
-    } else {
-        // MSB left -> LSB right, with leading `0b`
-        if ( PrefixOpt::none == prefix ) {
-            str.reserve(data_len * 8 + 1);
-        } else {
-            str.reserve(data_len * 8 + 1 + 2);
-            str.push_back('0');
-            str.push_back('b');
-        }
-        bool skip_leading_zeros = true;
-        for (nsize_t i = data_len; i-- > 0 && 0 < bits_todo; ) {
-            const int v = bytes[i] & 0xFF;
-            if ( v || 0 == i || !skip_leading_zeros || ( fixed_len && bits_todo >= bits_left-8 ) ) {
+    std::exception_ptr eptr;
+    try {
+        if ( bitOrder == bit_order_t::lsb ) {
+            // LSB left -> MSB right, no leading `0x`
+            // TODO: skip tail all-zeros?
+            dest.reserve(dest.size() + length * 8 + 1);
+            for ( nsize_t i = 0; i < length && 0 < bits_todo; i++ ) {
+                const nsize_t v = bytes[i] & 0xFF;
                 for ( nsize_t j = 0; j < 8 && 0 < bits_todo; ++j ) {
-                    const int b = (v >> (8 - 1 - j)) & 1;
-                    const bool c0 = !fixed_len || bits_todo >= bits_left;
-                    if ( ( b && c0 ) || !skip_leading_zeros || c0 ) {
-                        str.push_back(char('0' + b));
-                        --bits_todo;
-                        skip_leading_zeros = false;
-                    }
+                    dest.push_back(char('0' + ( (v >> (8 - 1 - j)) & 1) ));
+                    --bits_todo;
                     --bits_left;
                 }
+            }
+        } else {
+            // MSB left -> LSB right, with leading `0b`
+            if ( PrefixOpt::none == prefix ) {
+                dest.reserve(dest.size() + length * 8 + 1);
             } else {
-                bits_left -= 8;;
+                dest.reserve(dest.size() + length * 8 + 1 + 2);
+                dest.push_back('0');
+                dest.push_back('b');
+            }
+            bool skip_leading_zeros = true;
+            for (nsize_t i = length; i-- > 0 && 0 < bits_todo; ) {
+                const int v = bytes[i] & 0xFF;
+                if ( v || 0 == i || !skip_leading_zeros || ( fixed_len && bits_todo >= bits_left-8 ) ) {
+                    for ( nsize_t j = 0; j < 8 && 0 < bits_todo; ++j ) {
+                        const int b = (v >> (8 - 1 - j)) & 1;
+                        const bool c0 = !fixed_len || bits_todo >= bits_left;
+                        if ( ( b && c0 ) || !skip_leading_zeros || c0 ) {
+                            dest.push_back(char('0' + b));
+                            --bits_todo;
+                            skip_leading_zeros = false;
+                        }
+                        --bits_left;
+                    }
+                } else {
+                    bits_left -= 8;;
+                }
             }
         }
+    } catch (...) {
+        eptr = std::current_exception();
     }
-    return str;
+    handle_exception(eptr, E_FILE_LINE);
+    return dest;
 }
+
 std::string_view jau::to_string(const endian_t v) noexcept {
     switch(v) {
         case endian_t::little:  return "little";
@@ -1024,89 +1194,40 @@ std::string_view jau::to_string(const jau::func::target_type v) noexcept {
     return "undef";
 }
 
-Int64SizeBoolTuple jau::to_integer(const char *str, size_t str_len, const jau::nsize_t radix, const char limiter, const char *limiter_pos) noexcept {
-    int64_t result = 0;
-    size_t consumed = 0;
-    bool complete = false;
-    static constexpr const bool _debug = false;
-    char *endptr = nullptr;
-    if ( nullptr == limiter_pos ) {
-        limiter_pos = str + str_len;
-    }
-    errno = 0;
-    const long long num = std::strtoll(str, &endptr, int(radix));
-    if ( 0 != errno ) {
-        // value under- or overflow occured
-        if constexpr ( _debug ) {
-            INFO_PRINT("Value under- or overflow occurred, value %lld in: '%s', errno %d %s", num, str, (int)errno, strerror(errno));
-        }
-        return { .v = result, .s = consumed, .b = complete };
-    }
-    if ( nullptr == endptr || endptr == str ) {
-        // no digits consumed
-        if constexpr ( _debug ) {
-            INFO_PRINT("Value no digits consumed @ idx %zd, %p == start, in: '%s'", endptr - str, endptr, str);
-        }
-        return { .v = result, .s = consumed, .b = complete };
-    }
-    result = static_cast<int64_t>(num);
-    if ( endptr < limiter_pos ) {
-        while ( endptr < limiter_pos && ::isspace(*endptr) ) {  // only accept whitespace
-            ++endptr;
-        }
-    }
-    consumed = endptr - str;
-    if ( *endptr == limiter || endptr == limiter_pos ) {
-        complete = true;
-    } else {
-        // numerator value not completely valid
-        if constexpr ( _debug ) {
-            INFO_PRINT("Value end not '%c' @ idx %zd, %p != %p, in: %p '%s' len %zu", limiter, endptr - str, endptr, limiter_pos, str, str, str_len);
-        }
-    }
-    return { .v = result, .s = consumed, .b = complete };
-}
-
-FracI64SizeBoolTuple jau::to_fraction_i64(const std::string &value, const fraction_i64 &min_allowed, const fraction_i64 &max_allowed) noexcept {
-    static constexpr const bool _debug = false;
+FracI64SizeBoolTuple jau::to_fraction_i64(std::string_view str, const fraction_i64 &min_allowed, const fraction_i64 &max_allowed) noexcept {
     fraction_i64 result;
     size_t consumed = 0;
-    const char *str = const_cast<const char *>(value.c_str());
-    const size_t str_len = value.length();
-    const char *divptr = nullptr;
 
-    divptr = std::strstr(str, "/");
-    if ( nullptr == divptr ) {
-        if constexpr ( _debug ) {
-            INFO_PRINT("Missing '/' in: '%s'", str);
-        }
+    std::string::size_type divpos = str.find('/', 0);
+    if (std::string::npos == divpos) {
         return { .v = result, .s = consumed, .b = false };
     }
 
-    auto [num, num_consumed, num_ok] = to_integer(str, str_len, 10, '/', divptr);
+    int64_t num;
+    auto [num_consumed, num_ok] = jau::fromIntString(num, str.substr(0, divpos), 10);
     consumed = num_consumed;
-    if ( !num_ok ) {
+    if (!num_ok || consumed < divpos) {  // complete up until '/'?
         return { .v = result, .s = consumed, .b = false };
     }
-    consumed = divptr + 1 - str;  // complete up until '/'
 
-    // int64_t denom;  // 0x7ffc7090d904 != 0x7ffc7090d907 " 10 / 1000000 "
-    auto [denom, denom_consumed, denom_ok] = to_integer(divptr + 1, str_len - (divptr - str) - 1, 10, '\0', str + str_len);
+    uint64_t denom;
+    std::string_view denom_str = str.substr(divpos + 1);
+    auto [denom_consumed, denom_ok] = jau::fromIntString(denom, denom_str, 10);
     consumed += denom_consumed;
+    if (!denom_ok || denom_consumed < denom_str.size()) {  // completed w/o garbage?
+        return { .v = result, .s = consumed, .b = false };
+    }
 
-    fraction_i64 temp(num, (uint64_t)denom);
-    if ( !(min_allowed <= temp && temp <= max_allowed) ) {
+    fraction_i64 temp(num, denom);
+    if (!(min_allowed <= temp && temp <= max_allowed)) {
         // invalid user value range
-        if constexpr ( _debug ) {
-            INFO_PRINT("Numerator out of range, not %s <= %s <= %s, in: '%s'", min_allowed.toString(), temp.toString(), max_allowed.toString(), str);
-        }
         return { .v = result, .s = consumed, .b = false };
     }
     result = temp;
-    return { .v = result, .s = consumed, .b = denom_ok };
+    return { .v = result, .s = consumed, .b = true };
 }
 
-std::string jau::math::to_string(const jau::math::math_error_t v) noexcept {
+std::string_view jau::math::to_string(const jau::math::math_error_t v) noexcept {
     switch(v) {
         case jau::math::math_error_t::none: return "none";
         case jau::math::math_error_t::invalid: return "invalid";
@@ -1398,7 +1519,7 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
                 len += zeros_left;
             }
             if (len < width && is_set(opts.flags, flags_t::zeropad)) {
-                uint32_t n = width - len;
+                const uint32_t n = width - len;
                 zeros_left += n;
                 xtra_left += n;
                 len += n;

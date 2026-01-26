@@ -27,11 +27,10 @@
 
 #include <chrono>
 #include <cmath>
+#include <concepts>
 #include <cstdint>
 #include <cstdio>
 #include <limits>
-
-#include "jau/cpp_lang_util.hpp"
 
 #include <jau/backtrace.hpp>
 #include <jau/cpp_pragma.hpp>
@@ -101,8 +100,7 @@ namespace jau {
      * @tparam int_type
      * @tparam
      */
-    template<typename Int_type,
-             std::enable_if_t<std::is_integral_v<Int_type>, bool> = true>
+    template<std::integral Int_type>
     class fraction {
       public:
         /** User defined integral integer template type, used for numerator and may be signed. */
@@ -543,53 +541,53 @@ namespace jau {
         }
     };
 
-    template<typename int_type>
+    template<std::integral int_type>
     inline std::string to_string(const fraction<int_type>& v) noexcept { return v.toString(); }
 
-    template<typename int_type>
+    template<std::integral int_type>
     constexpr bool operator!=(const fraction<int_type>& lhs, const fraction<int_type>& rhs) noexcept {
         return lhs.denom != rhs.denom || lhs.num != rhs.num;
     }
 
-    template<typename int_type>
+    template<std::integral int_type>
     constexpr bool operator==(const fraction<int_type>& lhs, const fraction<int_type>& rhs) noexcept {
         return !(lhs != rhs);
     }
 
-    template<typename int_type>
+    template<std::integral int_type>
     constexpr bool operator>(const fraction<int_type>& lhs, const fraction<int_type>& rhs) noexcept {
         return lhs.num * (int_type)rhs.denom > (int_type)lhs.denom * rhs.num;
     }
 
-    template<typename int_type>
+    template<std::integral int_type>
     constexpr bool operator>=(const fraction<int_type>& lhs, const fraction<int_type>& rhs) noexcept {
         return lhs.num * (int_type)rhs.denom >= (int_type)lhs.denom * rhs.num;
     }
 
-    template<typename int_type>
+    template<std::integral int_type>
     constexpr bool operator<(const fraction<int_type>& lhs, const fraction<int_type>& rhs) noexcept {
         return lhs.num * (int_type)rhs.denom < (int_type)lhs.denom * rhs.num;
     }
 
-    template<typename int_type>
+    template<std::integral int_type>
     constexpr bool operator<=(const fraction<int_type>& lhs, const fraction<int_type>& rhs) noexcept {
         return lhs.num * (int_type)rhs.denom <= (int_type)lhs.denom * rhs.num;
     }
 
     /** Return the maximum of the two given fractions */
-    template<typename int_type>
+    template<std::integral int_type>
     constexpr const fraction<int_type>& max(const fraction<int_type>& lhs, const fraction<int_type>& rhs) noexcept {
         return lhs >= rhs ? lhs : rhs; // NOLINT(bugprone-return-const-ref-from-parameter): Despite `&&` overload, still warning
     }
-    template<typename int_type>
+    template<std::integral int_type>
     constexpr const fraction<int_type>& max(fraction<int_type>&&, fraction<int_type>&&) noexcept = delete; // bugprone-return-const-ref-from-parameter
 
     /** Return the minimum of the two given fractions */
-    template<typename int_type>
+    template<std::integral int_type>
     constexpr const fraction<int_type>& min(const fraction<int_type>& lhs, const fraction<int_type>& rhs) noexcept {
         return lhs <= rhs ? lhs : rhs; // NOLINT(bugprone-return-const-ref-from-parameter): Despite `&&` overload, still warning
     }
-    template<typename int_type>
+    template<std::integral int_type>
     constexpr const fraction<int_type>& min(fraction<int_type>&&, fraction<int_type>&&) noexcept = delete; // bugprone-return-const-ref-from-parameter
 
     /**
@@ -601,7 +599,7 @@ namespace jau {
      * </pre>
      * @return function result
      */
-    template<typename int_type>
+    template<std::integral int_type>
     constexpr snsize_t sign(const fraction<int_type>& rhs) noexcept {
         return jau::sign(rhs.num);
     }
@@ -609,7 +607,7 @@ namespace jau {
     /**
      * Returns the absolute fraction
      */
-    template<typename int_type>
+    template<std::integral int_type>
     constexpr fraction<int_type> abs(const fraction<int_type>& rhs) noexcept {
         fraction<int_type> copy(rhs);  // skip normalize
         copy.num = jau::abs(rhs.num);
@@ -626,7 +624,7 @@ namespace jau {
      * @param rhs the scalar
      * @return resulting new fraction, reduced
      */
-    template<typename int_type>
+    template<std::integral int_type>
     constexpr fraction<int_type> operator*(const fraction<int_type>& lhs, const int_type& rhs) noexcept {
         return fraction<int_type>(lhs.num * rhs, lhs.denom);
     }
@@ -641,7 +639,7 @@ namespace jau {
      * @param rhs the fraction
      * @return resulting new fraction, reduced
      */
-    template<typename int_type>
+    template<std::integral int_type>
     constexpr fraction<int_type> operator*(const int_type& lhs, const fraction<int_type>& rhs) noexcept {
         return fraction<int_type>(rhs.num * lhs, rhs.denom);
     }
@@ -653,7 +651,7 @@ namespace jau {
      * @param rhs the scalar
      * @return resulting new fraction, reduced
      */
-    template<typename int_type>
+    template<std::integral int_type>
     constexpr fraction<int_type> operator/(const fraction<int_type>& lhs, const int_type& rhs) noexcept {
         fraction<int_type> r(lhs);
         return r /= rhs;
@@ -666,7 +664,7 @@ namespace jau {
      * @param rhs the fraction
      * @return resulting new fraction, reduced
      */
-    template<typename int_type>
+    template<std::integral int_type>
     constexpr fraction<int_type> operator/(const int_type& lhs, const fraction<int_type>& rhs) noexcept {
         fraction<int_type> r(lhs, (int_type)1);
         return r /= rhs;
@@ -682,7 +680,7 @@ namespace jau {
      * @param rhs a fraction
      * @return resulting new fraction, reduced
      */
-    template<typename int_type>
+    template<std::integral int_type>
     constexpr fraction<int_type> operator+(const fraction<int_type>& lhs, const fraction<int_type>& rhs) noexcept {
         fraction<int_type> r(lhs);
         r += rhs;  // implicit reduce
@@ -699,7 +697,7 @@ namespace jau {
      * @param rhs a fraction
      * @return resulting new fraction, reduced
      */
-    template<typename int_type>
+    template<std::integral int_type>
     constexpr fraction<int_type> operator-(const fraction<int_type>& lhs, const fraction<int_type>& rhs) noexcept {
         fraction<int_type> r(lhs);
         r -= rhs;  // implicit reduce
@@ -716,7 +714,7 @@ namespace jau {
      * @param rhs a fraction
      * @return resulting new fraction, reduced
      */
-    template<typename int_type>
+    template<std::integral int_type>
     constexpr fraction<int_type> operator*(const fraction<int_type>& lhs, const fraction<int_type>& rhs) noexcept {
         fraction<int_type> r(lhs);
         r *= rhs;  // implicit reduce
@@ -730,7 +728,7 @@ namespace jau {
      * @param rhs a fraction
      * @return resulting new fraction, reduced
      */
-    template<typename int_type>
+    template<std::integral int_type>
     constexpr fraction<int_type> operator/(const fraction<int_type>& lhs, const fraction<int_type>& rhs) noexcept {
         fraction<int_type> r(lhs);
         r /= rhs;  // implicit reduce
@@ -751,23 +749,24 @@ namespace jau {
     };
 
     /**
-     * Returns the fraction_i64 of the given string in format `<num>/<denom>`,
+     * Returns the fraction_i64 of the given character in format `<num>/<denom>`,
      * which may contain whitespace.
      *
-     * It the given string value does not conform with the format
+     * It the given character value does not conform with the format
      * or exceeds the given value range, `complete=false` is being returned.
      *
-     * If the given string value has been accepted, it is stored in the result reference
+     * If the given character value has been accepted, it is stored in the result reference
      * and `complete=true` is being returned.
      *
-     * You may use C++17 structured bindings to handle the tuple.
+     * You may use C++17 structured bindings to handle the tuple
+     * - `[fraction_i64 result, size_t consumed_chars, bool complete]`
      *
-     * @param value the string value
+     * @param str the character to parse
      * @param min_allowed the minimum allowed value
      * @param max_allowed the maximum allowed value
      * @return tuple [fraction_i64 result, size_t consumed_chars, bool complete], i.e. complete is true if value has been accepted, otherwise false
      */
-    FracI64SizeBoolTuple to_fraction_i64(const std::string& value, const fraction_i64& min_allowed, const fraction_i64& max_allowed) noexcept;
+    FracI64SizeBoolTuple to_fraction_i64(std::string_view str, const fraction_i64& min_allowed, const fraction_i64& max_allowed) noexcept;
 
     /** fraction using uint64_t as integral type */
     typedef fraction<uint64_t> fraction_u64;
@@ -1332,7 +1331,7 @@ namespace std {
     /**
      * Output stream operator for jau::fraction_timespec
      */
-    inline std::ostream& operator<<(std::ostream& os, const jau::fraction_timespec& v) noexcept {
+    inline std::ostream& operator<<(std::ostream& os, const jau::fraction_timespec& v) {
         os << v.toString();
         return os;
     }
@@ -1341,7 +1340,7 @@ namespace std {
      * Output stream operator for jau::fraction
      */
     template<typename int_type>
-    inline std::ostream& operator<<(std::ostream& os, const jau::fraction<int_type>& v) noexcept {
+    inline std::ostream& operator<<(std::ostream& os, const jau::fraction<int_type>& v) {
         os << v.toString();
         return os;
     }

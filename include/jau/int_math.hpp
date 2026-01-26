@@ -433,14 +433,14 @@ namespace jau {
      * @return digit count
      */
     template<std::integral T>
-    constexpr nsize_t digits10(const T x, const snsize_t x_sign, const bool sign_is_digit = true) noexcept {
+    constexpr uint32_t digits10(const T x, const int x_sign, const bool sign_is_digit = true) noexcept {
         if ( x_sign == 0 ) {
             return 1;
         }
         if ( x_sign < 0 ) {
-            return 1 + static_cast<nsize_t>(std::log10<T>(invert_sign<T>(x))) + (sign_is_digit ? 1 : 0);
+            return 1 + static_cast<uint32_t>(std::log10<T>(invert_sign<T>(x))) + (sign_is_digit ? 1 : 0);
         } else {
-            return 1 + static_cast<nsize_t>(std::log10<T>(x));
+            return 1 + static_cast<uint32_t>(std::log10<T>(x));
         }
     }
 
@@ -459,7 +459,7 @@ namespace jau {
      * @return digit count
      */
     template<std::integral T>
-    constexpr nsize_t digits10(const T x, const bool sign_is_digit = true) noexcept {
+    constexpr uint32_t digits10(const T x, const bool sign_is_digit = true) noexcept {
         return digits10<T>(x, jau::sign<T>(x), sign_is_digit);
     }
 
@@ -473,17 +473,17 @@ namespace jau {
      * @return digit count
      */
     template<jau::req::unsigned_integral T>
-    constexpr nsize_t digits(const T x, const nsize_t radix) noexcept {
+    constexpr uint32_t digits(const T x, const uint32_t radix) noexcept {
         if ( x == 0 ) {
             return 1;
         }
         switch ( radix ) {
             case 2:
-                return 1 + static_cast<nsize_t>(std::log2<T>(x));
+                return 1 + static_cast<uint32_t>(std::log2<T>(x));
             case 10:
-                return 1 + static_cast<nsize_t>(std::log10<T>(x));
+                return 1 + static_cast<uint32_t>(std::log10<T>(x));
             default:
-                return 1 + static_cast<nsize_t>(std::log10<T>(x) / std::log10<T>(radix));
+                return 1 + static_cast<uint32_t>(std::log10<T>(x) / std::log10<T>(radix));
         }
     }
 
