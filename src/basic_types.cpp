@@ -209,7 +209,7 @@ static std::regex jau_ISO8601_regex() noexcept {
                       );
 
     } catch ( ... ) {
-        ERR_PRINT2("Caught unknown exception");
+        jau_ERR_PRINT2("Caught unknown exception");
         return std::regex();
     }
 }
@@ -277,7 +277,7 @@ fraction_timespec fraction_timespec::from(const std::string &datestr, int64_t &u
             return fraction_timespec::from(y, M, d, h, m, s, ns);
         }
     } catch ( ... ) {
-        ERR_PRINT2("Caught unknown exception parsing %s", datestr);
+        jau_ERR_PRINT2("Caught unknown exception parsing %s", datestr);
     }
     return fraction_timespec();  // error
 }

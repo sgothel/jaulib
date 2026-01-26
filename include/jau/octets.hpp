@@ -81,7 +81,7 @@ namespace jau {
              */
             static inline void checkPtr(uint8_t *data_, nsize_t size_) noexcept {
                 if( nullptr == data_ && 0 < size_ ) {
-                    ABORT("TROOctets: nullptr with size %s > 0", std::to_string(size_).c_str());
+                    jau_ABORT("TROOctets: nullptr with size %s > 0", std::to_string(size_).c_str());
                     abort(); // never reached
                 }
             }

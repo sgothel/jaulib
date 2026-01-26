@@ -429,15 +429,15 @@ namespace jau::io {
          * @return actual skipped bits
          */
         [[nodiscard]] size_type skip(size_type n) noexcept {
-            DBG_PRINT("Bitstream.skip.0: %" PRIu64 " - %s", n, toStringImpl().c_str());
+            jau_DBG_PRINT("Bitstream.skip.0: %" PRIu64 " - %s", n, toStringImpl().c_str());
             // forward skip
             if( !canWrite() && n <= m_bitCount ) {
                 m_bitCount -= n;
-                DBG_PRINT("Bitstream.skip.F_N1: %" PRIu64 " - %s", n, toStringImpl().c_str());
+                jau_DBG_PRINT("Bitstream.skip.F_N1: %" PRIu64 " - %s", n, toStringImpl().c_str());
                 return n;
             } else if( canWrite() && n <= MaxBitCacheSize-m_bitCount ) {
                 m_bitCount += n;
-                DBG_PRINT("Bitstream.skip.F_N2: %" PRIu64 " - %s", n, toStringImpl().c_str());
+                jau_DBG_PRINT("Bitstream.skip.F_N2: %" PRIu64 " - %s", n, toStringImpl().c_str());
                 return n;
             } else {
                 // r: n > bitCount
@@ -454,12 +454,12 @@ namespace jau::io {
                 const size_type n5 = n1 - ( n3 << byte_shift );             // remaining skip bits == nX % 64 (64-bit aligned)
                 const size_type nX = (n4 << byte_shift) + n5 + m_bitCount;  // actual skipped bits
                 m_bitCount = 0;
-                // DBG_PRINT("Bitstream.skip.1: n %" PRIu64 ", n1 %" PRIu64 ", n2 %" PRIu64 ", n3 %" PRIu64 ", n4 %" PRIu64 ", n5 %" PRIu64 ", nX %" PRIu64 ",  - %s",
+                // jau_DBG_PRINT("Bitstream.skip.1: n %" PRIu64 ", n1 %" PRIu64 ", n2 %" PRIu64 ", n3 %" PRIu64 ", n4 %" PRIu64 ", n5 %" PRIu64 ", nX %" PRIu64 ",  - %s",
                 //    n, n1, n2, n3, n4, n5, nX, toStringImpl().c_str());
                 if( nX < n ) {
                     // incomplete skipping
                     m_bitCache = 0;
-                    DBG_PRINT("Bitstream.skip.F_EOS: %" PRIu64 " - %s", n, toStringImpl().c_str());
+                    jau_DBG_PRINT("Bitstream.skip.F_EOS: %" PRIu64 " - %s", n, toStringImpl().c_str());
                     return nX;
                 }
                 jau::nsize_t notReadBits = 0;
@@ -474,7 +474,7 @@ namespace jau::io {
                 } else {
                     m_bitCount = 0;
                 }
-                DBG_PRINT("Bitstream.skip.F_X2: %" PRIu64 ", notReadBits %zu - %s", n, (size_t)notReadBits, toStringImpl().c_str());
+                jau_DBG_PRINT("Bitstream.skip.F_X2: %" PRIu64 ", notReadBits %zu - %s", n, (size_t)notReadBits, toStringImpl().c_str());
                 return nX - notReadBits;
             }
         }

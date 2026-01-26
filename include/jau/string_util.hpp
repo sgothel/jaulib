@@ -326,8 +326,8 @@ namespace jau {
      * @param capitalization LoUpCase capitalization, default is LoUpCase::lower
      * @param prefix pass PrefixOpt::prefix (default) to add leading `0x` if `byteOrder == lb_endian_t::big` (default)
      * @return the hex-string representation of the value
-     * @see bytesHexString()
-     * @see from_hexstring()
+     * @see toHexString()
+     * @see fromHexString()
      */
     template<class value_type>
         requires jau::req::pointer<value_type> &&
@@ -357,8 +357,8 @@ namespace jau {
      * @param capitalization LoUpCase capitalization, default is LoUpCase::lower
      * @param prefix pass PrefixOpt::prefix (default) to add leading `0x` if `byteOrder == lb_endian_t::big` (default)
      * @return the hex-string representation of the value
-     * @see bytesHexString()
-     * @see from_hexstring()
+     * @see toHexString()
+     * @see fromHexString()
      */
     template<class uint8_container_type>
         requires jau::req::contiguous_container<uint8_container_type> &&
@@ -379,8 +379,8 @@ namespace jau {
      * @param capitalization LoUpCase capitalization, default is LoUpCase::lower
      * @param prefix pass PrefixOpt::prefix (default) to add leading `0x` if `byteOrder == lb_endian_t::big` (default)
      * @return the hex-string representation of the value
-     * @see bytesHexString()
-     * @see from_hexstring()
+     * @see toHexString()
+     * @see fromHexString()
      */
     template<class value_type>
       requires jau::req::standard_layout<value_type> &&
@@ -536,8 +536,8 @@ namespace jau {
      * @param prefix pass PrefixOpt::prefix (default) to add leading `0b` if `bitOrder == bit_order_t::msb` (default)
      * @param bit_len optional fixed number of bits to be printed counting from lsb excluding prefix. Pass zero for dropping zero leading bytes (default).
      * @return the bit-string representation of the value
-     * @see bytesBitString()
-     * @see from_bitstring()
+     * @see toBitString()
+     * @see fromBitString()
      */
     template<class uint8_container_type>
         requires jau::req::contiguous_container<uint8_container_type> &&
@@ -556,8 +556,8 @@ namespace jau {
      * @param prefix pass PrefixOpt::prefix (default) to add leading `0b` if `bitOrder == bit_order_t::msb` (default)
      * @param bit_len optional fixed number of bits to be printed counting from lsb excluding prefix. Pass zero for dropping zero leading bytes (default).
      * @return the bit-string representation of the value
-     * @see bytesBitString()
-     * @see from_bitstring()
+     * @see toBitString()
+     * @see fromBitString()
      */
     template<class value_type>
         requires jau::req::standard_layout<value_type> &&

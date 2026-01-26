@@ -110,7 +110,7 @@ void JNIEnvContainer::detach() {
 
 JNIGlobalRef::JNIGlobalRef() noexcept {
     this->object = nullptr;
-    DBG_JNI_PRINT("JNIGlobalRef::def_ctor0 nullptr");
+    jau_DBG_JNI_PRINT("JNIGlobalRef::def_ctor0 nullptr");
 }
 
 JNIGlobalRef::JNIGlobalRef(jobject _object) {
@@ -126,7 +126,7 @@ JNIGlobalRef::JNIGlobalRef(jobject _object) {
     }
 #endif
     this->object = env->NewGlobalRef(_object);
-    DBG_JNI_PRINT("JNIGlobalRef::def_ctor1 %p -> %p", _object, this->object);
+    jau_DBG_JNI_PRINT("JNIGlobalRef::def_ctor1 %p -> %p", _object, this->object);
 }
 
 JNIGlobalRef::JNIGlobalRef(const JNIGlobalRef &o) {
@@ -141,14 +141,14 @@ JNIGlobalRef::JNIGlobalRef(const JNIGlobalRef &o) {
         throw jau::RuntimeException("JavaGlobalObj::ctor2: Invalid non-null jobject", E_FILE_LINE);
     }
     object = env->NewGlobalRef(o.object);
-    DBG_JNI_PRINT("JNIGlobalRef::copy_ctor %p -> %p", o.object, object);
+    jau_DBG_JNI_PRINT("JNIGlobalRef::copy_ctor %p -> %p", o.object, object);
 }
 
 JNIGlobalRef::JNIGlobalRef(JNIGlobalRef &&o) noexcept {
     std::unique_lock<std::mutex> lock(o.mtx);
 
     object = o.object;
-    DBG_JNI_PRINT("JNIGlobalRef::move_ctor %p (nulled) -> %p", o.object, object);
+    jau_DBG_JNI_PRINT("JNIGlobalRef::move_ctor %p (nulled) -> %p", o.object, object);
     o.object = nullptr;
 }
 
@@ -174,7 +174,7 @@ JNIGlobalRef& JNIGlobalRef::operator=(const JNIGlobalRef &o) {
         throw jau::RuntimeException("Other JNIGlobalRef jobject is null", E_FILE_LINE);
     }
     object = env->NewGlobalRef(o.object);
-    DBG_JNI_PRINT("JNIGlobalRef::copy_assign %p -> %p", o.object, object);
+    jau_DBG_JNI_PRINT("JNIGlobalRef::copy_assign %p -> %p", o.object, object);
     return *this;
 }
 
@@ -184,7 +184,7 @@ JNIGlobalRef& JNIGlobalRef::operator=(JNIGlobalRef &&o) noexcept {
     std::lock(lockThis, lockThat);
 
     object = o.object;
-    DBG_JNI_PRINT("JNIGlobalRef::move_assign %p (nulled) -> %p", o.object, object);
+    jau_DBG_JNI_PRINT("JNIGlobalRef::move_assign %p (nulled) -> %p", o.object, object);
     o.object = nullptr;
     return *this;
 }
@@ -193,12 +193,12 @@ JNIGlobalRef::~JNIGlobalRef() noexcept {
     try {
         JNIEnv * env = *jni_env; // exception if null
         std::unique_lock<std::mutex> lock(mtx);
-        DBG_JNI_PRINT("JNIGlobalRef::dtor %p", object);
+        jau_DBG_JNI_PRINT("JNIGlobalRef::dtor %p", object);
         if( nullptr != object ) {
             // due to move ctor and assignment, we accept nullptr object
             const jobjectRefType ref_type = env->GetObjectRefType(object);
             if( JNIInvalidRefType == ref_type ) {
-                ERR_PRINT("Invalid non-null jobject"); // noexcept
+                jau_ERR_PRINT("Invalid non-null jobject"); // noexcept
             } else {
                 env->DeleteGlobalRef(object);
             }
@@ -235,9 +235,9 @@ jobjectRefType JNIGlobalRef::getObjectRefType() const noexcept {
         std::unique_lock<std::mutex> lock(mtx);
         return env->GetObjectRefType(object);
     } catch (const jau::ExceptionBase &e) {
-        ERR_PRINT("%s", e.brief_message().c_str());
+        jau_ERR_PRINT("%s", e.brief_message().c_str());
     } catch (...) {
-        ERR_PRINT("Unknown exception");
+        jau_ERR_PRINT("Unknown exception");
     }
     return jobjectRefType::JNIInvalidRefType;
 }
@@ -255,7 +255,7 @@ jobject JNIGlobalRef::getObject() const noexcept {
 
 bool JNIGlobalRef::operator==(const JNIGlobalRef& rhs) const noexcept {
     if( &rhs == this ) {
-        DBG_JNI_PRINT("JNIGlobalRef::== true: %p == %p (ptr)", object, rhs.object);
+        jau_DBG_JNI_PRINT("JNIGlobalRef::== true: %p == %p (ptr)", object, rhs.object);
         return true;
     }
     bool res = false;
@@ -266,11 +266,11 @@ bool JNIGlobalRef::operator==(const JNIGlobalRef& rhs) const noexcept {
         std::lock(lockThis, lockThat);
 
         res = JNI_TRUE == env->IsSameObject(object, rhs.object);
-        DBG_JNI_PRINT("JNIGlobalRef::== %d: %p == %p (IsSameObject)", res, object, rhs.object);
+        jau_DBG_JNI_PRINT("JNIGlobalRef::== %d: %p == %p (IsSameObject)", res, object, rhs.object);
     } catch (const jau::ExceptionBase &e) {
-        ERR_PRINT("%s", e.brief_message().c_str());
+        jau_ERR_PRINT("%s", e.brief_message().c_str());
     } catch (...) {
-        ERR_PRINT("Unknown exception");
+        jau_ERR_PRINT("Unknown exception");
     }
     return res;
 }

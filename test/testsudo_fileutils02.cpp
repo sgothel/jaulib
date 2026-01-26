@@ -48,7 +48,7 @@ class TestFileUtil02 : TestFileUtilBase {
             gid_t gid_list[64];
             int count = ::getgroups(sizeof(gid_list)/sizeof(*gid_list), gid_list);
             if( 0 > count ) {
-                ERR_PRINT("getgroups() failed");
+                jau_ERR_PRINT("getgroups() failed");
             } else {
                 jau::fprintf_td(stderr, "%s: groups[%d]: ", title.c_str(), count);
                 for(int i=0; i<count; ++i) {
@@ -60,7 +60,7 @@ class TestFileUtil02 : TestFileUtilBase {
         }
         static bool set_groups(size_t size, const gid_t *list) {
             if( 0 > ::setgroups(size, list) ) {
-                ERR_PRINT("setgroups failed");
+                jau_ERR_PRINT("setgroups failed");
                 return false;
             }
             return true;
@@ -68,7 +68,7 @@ class TestFileUtil02 : TestFileUtilBase {
 
         static bool set_effective_gid(::gid_t group_id) {
             if( 0 != ::setegid(group_id) ) {
-                ERR_PRINT("setegid(%" PRIu32 ") failed", group_id);
+                jau_ERR_PRINT("setegid(%" PRIu32 ") failed", group_id);
                 return false;
             }
             return true;
@@ -76,7 +76,7 @@ class TestFileUtil02 : TestFileUtilBase {
 
         static bool set_effective_uid(::uid_t user_id) {
             if( 0 != ::seteuid(user_id) ) {
-                ERR_PRINT("seteuid(%" PRIu32 ") failed", user_id);
+                jau_ERR_PRINT("seteuid(%" PRIu32 ") failed", user_id);
                 return false;
             }
             return true;
@@ -86,14 +86,14 @@ class TestFileUtil02 : TestFileUtilBase {
 
     static bool cap_get_flag(cap_t cap_p, cap_value_t cap, cap_flag_t flag, cap_flag_value_t *value_p) noexcept {
         if( 0 != ::cap_get_flag(cap_p, cap, flag, value_p) ) {
-            ERR_PRINT("cap_get_flag() failed");
+            jau_ERR_PRINT("cap_get_flag() failed");
             return false;
         }
         return true;
     }
     static bool cap_set_flag(cap_t cap_p, cap_flag_t flag, int ncap, const cap_value_t *caps, cap_flag_value_t value) noexcept {
         if( 0 != ::cap_set_flag(cap_p, flag, ncap, caps, value) ) {
-            ERR_PRINT("cap_set_flag() failed");
+            jau_ERR_PRINT("cap_set_flag() failed");
             return false;
         }
         return true;
@@ -103,7 +103,7 @@ class TestFileUtil02 : TestFileUtilBase {
         ::cap_t cap_p;
         cap_p = ::cap_get_proc();
         if( nullptr == cap_p ) {
-            ERR_PRINT("cap_get_proc() failed");
+            jau_ERR_PRINT("cap_get_proc() failed");
             return false;
         }
         if( !cap_set_flag(cap_p, flag, ncap, cap_list, CAP_SET) ) { return false; }
@@ -121,7 +121,7 @@ class TestFileUtil02 : TestFileUtilBase {
         ::cap_t caps;
         caps = ::cap_get_proc();
         if( nullptr == caps ) {
-            ERR_PRINT("cap_get_proc() failed");
+            jau_ERR_PRINT("cap_get_proc() failed");
             return;
         }
         {
@@ -152,7 +152,7 @@ class TestFileUtil02 : TestFileUtilBase {
         ::gid_t result_int = default_group;
         if( nullptr != ::fgets(result, sizeof(result), fp) ) {
             result_int = static_cast<::gid_t>( ::atoi(result) );
-            PLAIN_PRINT(true, "get_gid(%s) -> %s (%d)", groupname, std::string_view(result), (int)result_int);
+            jau_PLAIN_PRINT(true, "get_gid(%s) -> %s (%d)", groupname, std::string_view(result), (int)result_int);
         } else {
             fprintf(stderr, "Command failed (2) '%s'\n", cmd.c_str() );
         }
@@ -172,7 +172,7 @@ class TestFileUtil02 : TestFileUtilBase {
         ::uid_t user_id = caller_uid;
         jau::os::UserInfo user_info(user_id);
         if( !user_info.isValid() ) {
-            ERR_PRINT("couldn't fetch [SUDO_]UID");
+            jau_ERR_PRINT("couldn't fetch [SUDO_]UID");
             return;
         }
         ::gid_t group_id = (::gid_t)user_info.gid();
@@ -185,7 +185,7 @@ class TestFileUtil02 : TestFileUtilBase {
             ::cap_t caps;
             caps = ::cap_get_proc();
             if( nullptr == caps ) {
-                ERR_PRINT("cap_get_proc() failed");
+                jau_ERR_PRINT("cap_get_proc() failed");
                 return;
             }
             {
@@ -201,12 +201,12 @@ class TestFileUtil02 : TestFileUtilBase {
                     cap_sys_admin, cap_setuid, cap_setgid);
 
             // Not required as mount/umount uses fork(), then seteuid(0)
-            if( 0 > ::prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0) ) { ERR_PRINT("prctl() failed"); }
+            if( 0 > ::prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0) ) { jau_ERR_PRINT("prctl() failed"); }
 
             ::cap_free(caps);
 
             if( !cap_sys_admin || !cap_setuid || !cap_setgid ) {
-                ERR_PRINT("capabilities incomplete, needs: cap_sys_admin, cap_setuid, cap_setgid, uid is % " PRIu32 "", caller_uid);
+                jau_ERR_PRINT("capabilities incomplete, needs: cap_sys_admin, cap_setuid, cap_setgid, uid is % " PRIu32 "", caller_uid);
                 return;
             }
 
@@ -221,7 +221,7 @@ class TestFileUtil02 : TestFileUtilBase {
                 ::cap_t caps;
                 caps = ::cap_get_proc();
                 if( nullptr == caps ) {
-                    ERR_PRINT("cap_get_proc() failed");
+                    jau_ERR_PRINT("cap_get_proc() failed");
                     return;
                 }
 
@@ -235,7 +235,7 @@ class TestFileUtil02 : TestFileUtilBase {
                     ::cap_free(c_str);
                 }
                 if( 0 > ::prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0) ) {
-                    ERR_PRINT("prctl() failed");
+                    jau_ERR_PRINT("prctl() failed");
                 }
                 ::cap_free(caps);
             } else {

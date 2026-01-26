@@ -15,7 +15,7 @@
 // #define DEBUG_DLOPEN 1
 
 #ifdef DEBUG_DLOPEN
-    typedef void *(*DLOPEN_FPTR_TYPE)(const char *filename, int flag); 
+    typedef void *(*DLOPEN_FPTR_TYPE)(const char *filename, int flag);
     #define VERBOSE_ON 1
 #endif
 
@@ -24,12 +24,12 @@
 #ifdef VERBOSE_ON
     #ifdef ANDROID
         #include <android/log.h>
-        #define  DBG_PRINT(...)  __android_log_print(ANDROID_LOG_DEBUG, "JogAmp", __VA_ARGS__)
+        #define  jau_DBG_PRINT(...)  __android_log_print(ANDROID_LOG_DEBUG, "JogAmp", __VA_ARGS__)
     #else
-        #define  DBG_PRINT(...) fprintf(stderr, __VA_ARGS__); fflush(stderr)
+        #define  jau_DBG_PRINT(...) fprintf(stderr, __VA_ARGS__); fflush(stderr)
     #endif
 #else
-        #define  DBG_PRINT(...)
+        #define  jau_DBG_PRINT(...)
 #endif
 
 /*
@@ -74,7 +74,7 @@ Java_jau_sys_dl_UnixDynamicLinkerImpl_dlopen(JNIEnv *env, jclass _unused, jstrin
     void *_res;
 #ifdef DEBUG_DLOPEN
     DLOPEN_FPTR_TYPE dlopenFunc = nullptr;
-    DBG_PRINT("XXX dlopen.0\n");
+    jau_DBG_PRINT("XXX dlopen.0\n");
 #endif
 
     if (arg0 != nullptr) {
@@ -85,12 +85,12 @@ Java_jau_sys_dl_UnixDynamicLinkerImpl_dlopen(JNIEnv *env, jclass _unused, jstrin
             return 0;
         }
     }
-    
+
 #ifdef DEBUG_DLOPEN
     dlopenFunc = (DLOPEN_FPTR_TYPE)dlsym(RTLD_DEFAULT, "dlopen");
-    DBG_PRINT("XXX dlopen.1: lib %s, dlopen-fptr %p %p (%d)\n", _UTF8arg0, dlopen, dlopenFunc, dlopen == dlopenFunc);
+    jau_DBG_PRINT("XXX dlopen.1: lib %s, dlopen-fptr %p %p (%d)\n", _UTF8arg0, dlopen, dlopenFunc, dlopen == dlopenFunc);
     _res = dlopen((char *)_UTF8arg0, (int)arg1);
-    DBG_PRINT("XXX dlopen.2: %p\n", _res);
+    jau_DBG_PRINT("XXX dlopen.2: %p\n", _res);
 #else
     _res = dlopen((char *)_UTF8arg0, (int)arg1);
 #endif
@@ -98,7 +98,7 @@ Java_jau_sys_dl_UnixDynamicLinkerImpl_dlopen(JNIEnv *env, jclass _unused, jstrin
         env->ReleaseStringUTFChars(arg0, _UTF8arg0);
     }
 #ifdef DEBUG_DLOPEN
-    DBG_PRINT("XXX dlopen.X\n");
+    jau_DBG_PRINT("XXX dlopen.X\n");
 #endif
     return (jlong)(intptr_t)_res;
 }
@@ -116,7 +116,7 @@ Java_jau_sys_dl_UnixDynamicLinkerImpl_dlsym(JNIEnv *env, jclass _unused, jlong a
         const char * _UTF8arg1 = env->GetStringUTFChars(arg1, (jboolean *)nullptr);
         if (_UTF8arg1 != nullptr) {
             const void *_res = dlsym((void *)(intptr_t)arg0, (char *)_UTF8arg1); // NOLINT(performance-no-int-to-ptr)
-            DBG_PRINT("XXX dlsym: handle %p, symbol %s -> %p\n", (void *)(intptr_t)arg0, _UTF8arg1, _res);
+            jau_DBG_PRINT("XXX dlsym: handle %p, symbol %s -> %p\n", (void *)(intptr_t)arg0, _UTF8arg1, _res);
             env->ReleaseStringUTFChars(arg1, _UTF8arg1);
             return (jlong)(intptr_t)_res;
         } else {
@@ -128,5 +128,5 @@ Java_jau_sys_dl_UnixDynamicLinkerImpl_dlsym(JNIEnv *env, jclass _unused, jlong a
         env->ThrowNew(env->FindClass("java/lang/IllegalArgumentException"),
                       R"(Argument "arg1" is null in native dispatcher for "dlsym")");
         return 0;
-    }    
+    }
 }

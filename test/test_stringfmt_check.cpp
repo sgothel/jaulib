@@ -407,12 +407,12 @@ TEST_CASE("jau::cfmt_01", "[jau][std::string][format_string]") {
 }
 
 TEST_CASE("jau::cfmt_10 debug", "[jau][std::string][format_string][debug]") {
-    INFO_PRINT("lala001");
-    INFO_PRINT("lala002 %d, %f, %s", 1, 3.14, "hello world");
+    jau_INFO_PRINT("lala001");
+    jau_INFO_PRINT("lala002 %d, %f, %s", 1, 3.14, "hello world");
     std::string s1 = "Hello";
     std::string_view sv1 = s1;
     const char * s1p = s1.c_str();
-    INFO_PRINT("lala003 %s, %s, %s", s1, sv1, s1p);
+    jau_INFO_PRINT("lala003 %s, %s, %s", s1, sv1, s1p);
 
-    ERR_PRINT3("error 01: '%s', %d", s1, 88);
+    jau_ERR_PRINT3("error 01: '%s', %d", s1, 88);
 }

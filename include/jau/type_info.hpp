@@ -263,10 +263,10 @@ namespace jau {
             /** Aborts program execution if given signature is nullptr or has a string length == 0. */
             static void abort_invalid(const char* signature) noexcept {
                 if( nullptr == signature ) {
-                    fprintf(stderr, "ABORT @ %s:%d %s: CTTI signature nullptr\n", __FILE__, __LINE__, __func__);
+                    fprintf(stderr, "jau_ABORT @ %s:%d %s: CTTI signature nullptr\n", __FILE__, __LINE__, __func__);
                     ::abort();
                 } else if( 0 == ::strlen(signature) ) {
-                    fprintf(stderr, "ABORT @ %s:%d %s: CTTI signature zero sized\n", __FILE__, __LINE__, __func__);
+                    fprintf(stderr, "jau_ABORT @ %s:%d %s: CTTI signature zero sized\n", __FILE__, __LINE__, __func__);
                     ::abort();
                 }
             }

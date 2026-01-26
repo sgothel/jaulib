@@ -70,12 +70,12 @@ class TestByteStream01 {
 
                         for(size=0; size < size_limit; size+=one_line.size()) {
                             if( one_line.size() != ofs.write(one_line.data(), one_line.size()) ) {
-                                ERR_PRINT("Write %zu bytes to test file failed: %s", one_line.size(), ofs.toString());
+                                jau_ERR_PRINT("Write %zu bytes to test file failed: %s", one_line.size(), ofs.toString());
                                 return false;
                             }
                         }
                         if( 1 != ofs.write("X", 1) ) { // make it odd
-                            ERR_PRINT("Write %d bytes to test file failed: %s", 1, ofs.toString());
+                            jau_ERR_PRINT("Write %d bytes to test file failed: %s", 1, ofs.toString());
                             return false;
                         }
                         size += 1;
@@ -147,7 +147,7 @@ class TestByteStream01 {
                 (void)res;
                 const std::string cwd = jau::io::fs::get_cwd();
                 const std::string cmd = std::string(mini_httpd_exe)+" -p 8080 -l "+cwd+"/mini_httpd.log";
-                PLAIN_PRINT(true, "%s", cmd);
+                jau_PLAIN_PRINT(true, "%s", cmd);
                 res = std::system(cmd.c_str());
                 (void)res;
             }
@@ -155,24 +155,24 @@ class TestByteStream01 {
 
         static bool transfer(jau::io::ByteStream& input, const std::string& output_fname, const size_t buffer_size=4096) {
             const jau::fraction_timespec _t0 = jau::getMonotonicTime();
-            PLAIN_PRINT(true, "Transfer Start: %s", input.toString());
+            jau_PLAIN_PRINT(true, "Transfer Start: %s", input.toString());
             {
                 const jau::io::fs::file_stats output_stats(output_fname);
                 if( output_stats.exists() ) {
                     if( output_stats.is_file() ) {
                         if( !jau::io::fs::remove(output_fname) ) {
-                            ERR_PRINT2("ByteStream copy failed: Failed deletion of existing output file %s", output_fname);
+                            jau_ERR_PRINT2("ByteStream copy failed: Failed deletion of existing output file %s", output_fname);
                             return false;
                         }
                     } else {
-                        ERR_PRINT2("ByteStream copy failed: Not overwriting existing output file %s", output_fname);
+                        jau_ERR_PRINT2("ByteStream copy failed: Not overwriting existing output file %s", output_fname);
                         return false;
                     }
                 }
             }
             jau::io::ByteStream_File outfile(output_fname, jau::io::iomode_t::write);
             if ( !outfile.good() || !outfile.isOpen() ) {
-                ERR_PRINT2("ByteStream copy failed: Couldn't open output file %s", output_fname);
+                jau_ERR_PRINT2("ByteStream copy failed: Couldn't open output file %s", output_fname);
                 return false;
             }
 
@@ -194,17 +194,17 @@ class TestByteStream01 {
             input.close();
 
             if ( 0==in_bytes_total || input.fail() ) {
-                IRQ_PRINT("ByteStream copy failed: Input file read failed in %s, out %s", input.toString(), outfile.toString());
+                jau_IRQ_PRINT("ByteStream copy failed: Input file read failed in %s, out %s", input.toString(), outfile.toString());
                 return false;
             }
             if ( outfile.fail() ) {
-                IRQ_PRINT("ByteStream copy failed: Output file write failed in %s, out %s", input.toString(), outfile.toString());
+                jau_IRQ_PRINT("ByteStream copy failed: Output file write failed in %s, out %s", input.toString(), outfile.toString());
                 return false;
             }
 
             const jau::fraction_i64 _td = ( jau::getMonotonicTime() - _t0 ).to_fraction_i64();
             jau::io::print_stats("Transfer "+output_fname, out_bytes_payload, _td);
-            PLAIN_PRINT(true, "Transfer End: %s", input.toString());
+            jau_PLAIN_PRINT(true, "Transfer End: %s", input.toString());
 
             return true;
         }
@@ -216,7 +216,7 @@ class TestByteStream01 {
             httpd_start();
             {
                 std::vector<std::string_view> protos = jau::io::uri_tk::supported_protocols();
-                PLAIN_PRINT(true, "test00_protocols: Supported protocols: %zu: %s", protos.size(), jau::to_string(protos, ","));
+                jau_PLAIN_PRINT(true, "test00_protocols: Supported protocols: %zu: %s", protos.size(), jau::to_string(protos, ","));
                 if( http_support_expected ) { // assume no http -> no curl
                     REQUIRE( 0 < protos.size() );
                 } else {
@@ -231,7 +231,7 @@ class TestByteStream01 {
 
                 std::unique_ptr<jau::io::ByteStream> in = jau::io::to_ByteInStream(url);
                 if( nullptr != in ) {
-                    PLAIN_PRINT(true, "test00_protocols: not_exiting_file: %s", in->toString());
+                    jau_PLAIN_PRINT(true, "test00_protocols: not_exiting_file: %s", in->toString());
                 }
                 REQUIRE( nullptr == in );
             }
@@ -242,7 +242,7 @@ class TestByteStream01 {
 
                 std::unique_ptr<jau::io::ByteStream> in = jau::io::to_ByteInStream(url);
                 if( nullptr != in ) {
-                    PLAIN_PRINT(true, "test00_protocols: not_exiting_file_uri: %s", in->toString());
+                    jau_PLAIN_PRINT(true, "test00_protocols: not_exiting_file_uri: %s", in->toString());
                 }
                 REQUIRE( nullptr == in );
             }
@@ -253,7 +253,7 @@ class TestByteStream01 {
 
                 std::unique_ptr<jau::io::ByteStream> in = jau::io::to_ByteInStream(url);
                 if( nullptr != in ) {
-                    PLAIN_PRINT(true, "test00_protocols: not_exiting_protocol_uri: %s", in->toString());
+                    jau_PLAIN_PRINT(true, "test00_protocols: not_exiting_protocol_uri: %s", in->toString());
                 }
                 REQUIRE( nullptr == in );
             }
@@ -266,7 +266,7 @@ class TestByteStream01 {
                 if( http_support_expected ) {
                     REQUIRE( nullptr != in );
                     jau::sleep_for( 100_ms ); // time to read 404 response
-                    PLAIN_PRINT(true, "test00_protocols: not_exiting_http_uri: %s", in->toString());
+                    jau_PLAIN_PRINT(true, "test00_protocols: not_exiting_http_uri: %s", in->toString());
                     REQUIRE( false == in->good() );
                     REQUIRE( true == in->fail() );
                     REQUIRE( 0 == in->contentSize() );
@@ -289,7 +289,7 @@ class TestByteStream01 {
 
                 std::unique_ptr<jau::io::ByteStream> in = jau::io::to_ByteInStream(url);
                 if( nullptr != in ) {
-                    PLAIN_PRINT(true, "test00_protocols: local-file-0: %s", in->toString());
+                    jau_PLAIN_PRINT(true, "test00_protocols: local-file-0: %s", in->toString());
                 }
                 REQUIRE( nullptr != in );
                 REQUIRE( false == in->fail() );
@@ -311,9 +311,9 @@ class TestByteStream01 {
 
                 std::unique_ptr<jau::io::ByteStream> in = jau::io::to_ByteInStream(url);
                 if( nullptr != in ) {
-                    PLAIN_PRINT(true, "test00_protocols: local-file-1: %s", in->toString());
+                    jau_PLAIN_PRINT(true, "test00_protocols: local-file-1: %s", in->toString());
                 } else {
-                    PLAIN_PRINT(true, "test00_protocols: local-file-1: NULL from url '%s'", url);
+                    jau_PLAIN_PRINT(true, "test00_protocols: local-file-1: NULL from url '%s'", url);
                 }
                 REQUIRE( nullptr != in );
                 REQUIRE( false == in->fail() );
@@ -335,7 +335,7 @@ class TestByteStream01 {
 
                 std::unique_ptr<jau::io::ByteStream> in = jau::io::to_ByteInStream(url);
                 if( nullptr != in ) {
-                    PLAIN_PRINT(true, "test00_protocols: http: %s", in->toString());
+                    jau_PLAIN_PRINT(true, "test00_protocols: http: %s", in->toString());
                 }
                 if( http_support_expected ) {
                     REQUIRE( nullptr != in );
@@ -407,7 +407,7 @@ class TestByteStream01 {
         void test11_copy_http_ok_buff32k() {
             jau::fprintf_td(stderr, "\n"); jau::fprintf_td(stderr, "%s\n", __func__);
             if( !jau::io::uri_tk::protocol_supported("http:") ) {
-                PLAIN_PRINT(true, "http not supported, abort\n");
+                jau_PLAIN_PRINT(true, "http not supported, abort\n");
                 return;
             }
             httpd_start();
@@ -450,7 +450,7 @@ class TestByteStream01 {
         void test12_copy_http_404() {
             jau::fprintf_td(stderr, "\n"); jau::fprintf_td(stderr, "%s\n", __func__);
             if( !jau::io::uri_tk::protocol_supported("http:") ) {
-                PLAIN_PRINT(true, "http not supported, abort\n");
+                jau_PLAIN_PRINT(true, "http not supported, abort\n");
                 return;
             }
             httpd_start();
@@ -933,7 +933,7 @@ class TestByteStream01 {
 
             jau::fprintf_td(stderr, "\n"); jau::fprintf_td(stderr, "%s\n", __func__);
             if( !jau::io::uri_tk::protocol_supported("http:") ) {
-                PLAIN_PRINT(true, "http not supported, abort\n");
+                jau_PLAIN_PRINT(true, "http not supported, abort\n");
                 return;
             }
             httpd_start();
@@ -1142,7 +1142,7 @@ class TestByteStream01 {
 
             jau::fprintf_td(stderr, "\n"); jau::fprintf_td(stderr, "%s\n", __func__);
             if( !jau::io::uri_tk::protocol_supported("http:") ) {
-                PLAIN_PRINT(true, "http not supported, abort\n");
+                jau_PLAIN_PRINT(true, "http not supported, abort\n");
                 return;
             }
             httpd_start();

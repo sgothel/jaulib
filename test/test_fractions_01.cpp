@@ -937,23 +937,23 @@ TEST_CASE( "Fraction Time Conversion Test 05.01", "[fraction_timespec][time]" ) 
     fraction_timespec onesec_decimillimicronano(1, 101001001_i64);
     {
         fraction_timespec t0 = fraction_timespec::from(1968, 1, 1);
-        INFO_PRINT( "a - 1968-1-1 -> %s, %s", t0.toString().c_str(), t0.toISO8601String().c_str());
+        jau_INFO_PRINT( "a - 1968-1-1 -> %s, %s", t0.toString().c_str(), t0.toISO8601String().c_str());
         REQUIRE(zero > t0);
     }
     {
         fraction_timespec t0 = fraction_timespec::from(1970, 1, 1);
-        INFO_PRINT( "a - 1970-1-1 -> %s, %s", t0.toString().c_str(), t0.toISO8601String().c_str());
+        jau_INFO_PRINT( "a - 1970-1-1 -> %s, %s", t0.toString().c_str(), t0.toISO8601String().c_str());
         REQUIRE(zero == t0);
     }
     {
         fraction_timespec exp(24_i64*3600_i64, 0);
         fraction_timespec t0 = fraction_timespec::from(1970, 1, 2);
-        INFO_PRINT( "a - 1970-1-2 -> %s, %s", t0.toString().c_str(), t0.toISO8601String().c_str());
+        jau_INFO_PRINT( "a - 1970-1-2 -> %s, %s", t0.toString().c_str(), t0.toISO8601String().c_str());
         REQUIRE(exp == t0);
     }
     {
         fraction_timespec t0 = fraction_timespec::from(2024, 1, 1);
-        INFO_PRINT( "a - 2024-1-1 -> %s, %s", t0.toString().c_str(), t0.toISO8601String().c_str());
+        jau_INFO_PRINT( "a - 2024-1-1 -> %s, %s", t0.toString().c_str(), t0.toISO8601String().c_str());
     }
     {
         int64_t utcOffsetSec; size_t consumedChars;
@@ -1063,15 +1063,15 @@ TEST_CASE( "Fraction Time Conversion Test 05.01", "[fraction_timespec][time]" ) 
         REQUIRE(0 == utcOffsetSec); REQUIRE(24 == consumedChars);
         REQUIRE(t04 == fraction_timespec::from("2024-01-01  12:34:56.789"));
 
-        INFO_PRINT( "b - t00 %s, %s", t00.toString().c_str(), t00.toISO8601String().c_str());
-        INFO_PRINT( "b - t00 %s, %s", t00.toString().c_str(), t00.toISO8601String(true).c_str());
-        INFO_PRINT( "b - t01 %s, %s", t01.toString().c_str(), t01.toISO8601String().c_str());
-        INFO_PRINT( "b - t01 %s, %s", t01.toString().c_str(), t01.toISO8601String(true).c_str());
-        INFO_PRINT( "b - t02 %s, %s", t02.toString().c_str(), t02.toISO8601String().c_str());
-        INFO_PRINT( "b - t02 %s, %s", t02.toString().c_str(), t02.toISO8601String(true).c_str());
-        INFO_PRINT( "b - t03 %s, %s", t03.toString().c_str(), t03.toISO8601String(true).c_str());
-        INFO_PRINT( "b - t04 %s, %s", t04.toString().c_str(), t04.toISO8601String(true).c_str());
-        INFO_PRINT( "b - t04 %s, %s", t04.toString().c_str(), t04.toISO8601String(true, true).c_str());
+        jau_INFO_PRINT( "b - t00 %s, %s", t00.toString().c_str(), t00.toISO8601String().c_str());
+        jau_INFO_PRINT( "b - t00 %s, %s", t00.toString().c_str(), t00.toISO8601String(true).c_str());
+        jau_INFO_PRINT( "b - t01 %s, %s", t01.toString().c_str(), t01.toISO8601String().c_str());
+        jau_INFO_PRINT( "b - t01 %s, %s", t01.toString().c_str(), t01.toISO8601String(true).c_str());
+        jau_INFO_PRINT( "b - t02 %s, %s", t02.toString().c_str(), t02.toISO8601String().c_str());
+        jau_INFO_PRINT( "b - t02 %s, %s", t02.toString().c_str(), t02.toISO8601String(true).c_str());
+        jau_INFO_PRINT( "b - t03 %s, %s", t03.toString().c_str(), t03.toISO8601String(true).c_str());
+        jau_INFO_PRINT( "b - t04 %s, %s", t04.toString().c_str(), t04.toISO8601String(true).c_str());
+        jau_INFO_PRINT( "b - t04 %s, %s", t04.toString().c_str(), t04.toISO8601String(true, true).c_str());
 
         fraction_timespec tX0 = fraction_timespec::from(2024, 1, 1);
         fraction_timespec tX1 = fraction_timespec::from(2024, 1, 1, 12, 34, 56, 0);
@@ -1084,8 +1084,8 @@ TEST_CASE( "Fraction Time Conversion Test 05.01", "[fraction_timespec][time]" ) 
 
         REQUIRE(tX0 == fraction_timespec::from(tX0.toISO8601String()));
         REQUIRE(tX1 == fraction_timespec::from(tX1.toISO8601String()));
-        INFO_PRINT( "c - tX2 %s, %s", tX2.toString().c_str(), tX2.toISO8601String().c_str());
-        INFO_PRINT( "c - tX2 %s, %s", tX2.toString().c_str(), tX2.toISO8601String(true).c_str());
+        jau_INFO_PRINT( "c - tX2 %s, %s", tX2.toString().c_str(), tX2.toISO8601String().c_str());
+        jau_INFO_PRINT( "c - tX2 %s, %s", tX2.toString().c_str(), tX2.toISO8601String(true).c_str());
         REQUIRE(tX2 == fraction_timespec::from(tX2.toISO8601String()));
         REQUIRE(tX0 == fraction_timespec::from(tX0.toISO8601String(true)));
         REQUIRE(tX1 == fraction_timespec::from(tX1.toISO8601String(true)));
@@ -1132,9 +1132,9 @@ TEST_CASE( "Fraction Time Conversion Test 05.01", "[fraction_timespec][time]" ) 
         if ( false ) {
             int64_t t0_offset; size_t consumedChars;
             fraction_timespec t0 = fraction_timespec::from("2024-01-01T01:02:03.456789+01:02", t0_offset, consumedChars);
-            INFO_PRINT( "d - 1t0 %s, %s, offset %" PRId64 "s, chars %zu", t0.toString().c_str(), t0.toISO8601String().c_str(), t0_offset, consumedChars);
+            jau_INFO_PRINT( "d - 1t0 %s, %s, offset %" PRId64 "s, chars %zu", t0.toString().c_str(), t0.toISO8601String().c_str(), t0_offset, consumedChars);
             fraction_timespec t1 = fraction_timespec::from("2024-01-01T01:02:03.456789+01:02", Bool::True);
-            INFO_PRINT( "d - 1t1 %s, %s", t1.toString().c_str(), t1.toISO8601String().c_str());
+            jau_INFO_PRINT( "d - 1t1 %s, %s", t1.toString().c_str(), t1.toISO8601String().c_str());
         }
         REQUIRE(tX0+p1h+p2m == fraction_timespec::from("2024-01-01T01:02:03.456789+01:02", Bool::True));
         REQUIRE(tX0         == fraction_timespec::from("2024-01-01T01:02:03.456789-01:02"));
@@ -1184,7 +1184,7 @@ TEST_CASE( "Fraction Time Conversion Test 05.01", "[fraction_timespec][time]" ) 
         fraction_timespec tX0 = fraction_timespec::from(1, 2, 3, 4, 5, 6, 456789000_i64);
         int64_t t0_offset=987654321_i64; size_t consumedChars=2783964772;
         fraction_timespec t0 = fraction_timespec::from("1-02-3T4:05:6.456789Z", t0_offset, consumedChars);
-        INFO_PRINT( "e - 0t0 %s, %s, offset %" PRId64 "s", t0.toString().c_str(), t0.toISO8601String().c_str(), t0_offset);
+        jau_INFO_PRINT( "e - 0t0 %s, %s, offset %" PRId64 "s", t0.toString().c_str(), t0.toISO8601String().c_str(), t0_offset);
         REQUIRE(tX0         == t0);
         REQUIRE(0 == t0_offset);
         REQUIRE(21 == consumedChars);
@@ -1193,7 +1193,7 @@ TEST_CASE( "Fraction Time Conversion Test 05.01", "[fraction_timespec][time]" ) 
     {
         int64_t t0_offset=987654321_i64; size_t consumedChars=2783964772;
         fraction_timespec t0 = fraction_timespec::from("2024-01-01 01:02:03.456789+01:02", t0_offset, consumedChars);
-        INFO_PRINT( "e - 1t0 %s, %s, offset %" PRId64 "s", t0.toString().c_str(), t0.toISO8601String().c_str(), t0_offset);
+        jau_INFO_PRINT( "e - 1t0 %s, %s, offset %" PRId64 "s", t0.toString().c_str(), t0.toISO8601String().c_str(), t0_offset);
         REQUIRE(t0 == fraction_timespec::from(2024, 1, 1, 1, 2, 3, 456789000_i64));
         REQUIRE(t0_offset == 60*60_i64 + 2*60_i64);
         REQUIRE(32 == consumedChars);
@@ -1201,7 +1201,7 @@ TEST_CASE( "Fraction Time Conversion Test 05.01", "[fraction_timespec][time]" ) 
     {
         int64_t t0_offset=987654321_i64; size_t consumedChars=2783964772;
         fraction_timespec t0 = fraction_timespec::from("2024-01-01 01:02:03.456789-01:02", t0_offset, consumedChars);
-        INFO_PRINT( "e - 2t0 %s, %s, offset %" PRId64 "s", t0.toString().c_str(), t0.toISO8601String().c_str(), t0_offset);
+        jau_INFO_PRINT( "e - 2t0 %s, %s, offset %" PRId64 "s", t0.toString().c_str(), t0.toISO8601String().c_str(), t0_offset);
         REQUIRE(t0 == fraction_timespec::from(2024, 1, 1, 1, 2, 3, 456789000_i64));
         REQUIRE(t0_offset == -60*60_i64 - 2*60_i64);
         REQUIRE(32 == consumedChars);
@@ -1211,7 +1211,7 @@ TEST_CASE( "Fraction Time Conversion Test 05.01", "[fraction_timespec][time]" ) 
         fraction_timespec tX0 = fraction_timespec::from(1, 2, 3, 0, 0, 0, 0_i64);
         int64_t t0_offset=987654321_i64; size_t consumedChars=2783964772;
         fraction_timespec t0 = fraction_timespec::from("1-02-3Z4:05:6.456789+01:02", t0_offset, consumedChars);
-        INFO_PRINT( "e - 3t0 %s, %s, offset %" PRId64 "s", t0.toString().c_str(), t0.toISO8601String().c_str(), t0_offset);
+        jau_INFO_PRINT( "e - 3t0 %s, %s, offset %" PRId64 "s", t0.toString().c_str(), t0.toISO8601String().c_str(), t0_offset);
         REQUIRE(tX0         == t0);
         REQUIRE(0 == t0_offset);
         REQUIRE(7 == consumedChars);
@@ -1221,7 +1221,7 @@ TEST_CASE( "Fraction Time Conversion Test 05.01", "[fraction_timespec][time]" ) 
         fraction_timespec tX0 = fraction_timespec::from(1, 2, 3, 4, 5, 6, 0_i64);
         int64_t t0_offset=987654321_i64; size_t consumedChars=2783964772;
         fraction_timespec t0 = fraction_timespec::from("1-02-3T4:05:6Z.456789+01:02", t0_offset, consumedChars);
-        INFO_PRINT( "e - 4t0 %s, %s, offset %" PRId64 "s", t0.toString().c_str(), t0.toISO8601String().c_str(), t0_offset);
+        jau_INFO_PRINT( "e - 4t0 %s, %s, offset %" PRId64 "s", t0.toString().c_str(), t0.toISO8601String().c_str(), t0_offset);
         REQUIRE(tX0         == t0);
         REQUIRE(0 == t0_offset);
         REQUIRE(14 == consumedChars);
@@ -1231,7 +1231,7 @@ TEST_CASE( "Fraction Time Conversion Test 05.01", "[fraction_timespec][time]" ) 
         fraction_timespec tX0 = fraction_timespec::from(1, 2, 3, 4, 5, 6, 456789000_i64);
         int64_t t0_offset=987654321_i64; size_t consumedChars=2783964772;
         fraction_timespec t0 = fraction_timespec::from("1-02-3T4:05:6.456789Z+01:02", t0_offset, consumedChars);
-        INFO_PRINT( "e - 5t0 %s, %s, offset %" PRId64 "s", t0.toString().c_str(), t0.toISO8601String().c_str(), t0_offset);
+        jau_INFO_PRINT( "e - 5t0 %s, %s, offset %" PRId64 "s", t0.toString().c_str(), t0.toISO8601String().c_str(), t0_offset);
         REQUIRE(tX0         == t0);
         REQUIRE(0 == t0_offset);
         REQUIRE(21 == consumedChars);
@@ -1253,7 +1253,7 @@ TEST_CASE( "Fraction Time Conversion Test 05.01", "[fraction_timespec][time]" ) 
     {
         int64_t offset=987654321_i64; size_t consumedChars=2783964772;
         fraction_timespec t0 = fraction_timespec::from("Error01 2024-01-01     01:02:03.456789   +01:02HALLO SJKSJSJKSJ", offset, consumedChars);
-        INFO_PRINT( "Error01 t0 %s, %s", t0.toString().c_str(), t0.toISO8601String().c_str());
+        jau_INFO_PRINT( "Error01 t0 %s, %s", t0.toString().c_str(), t0.toISO8601String().c_str());
         REQUIRE(fraction_timespec() == t0);
         REQUIRE(true == t0.isZero());
         REQUIRE(offset == 0);

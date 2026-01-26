@@ -111,12 +111,12 @@ namespace jau::os {
 
             /** Closes this native library. Further lookup operations are not allowed after calling this method. */
             void close() noexcept  {
-                DBG_PRINT("NativeLibrary.close(): closing %s", toString().c_str());
+                jau_DBG_PRINT("NativeLibrary.close(): closing %s", toString().c_str());
                 if ( nullptr != m_libraryHandle ) {
                     const DynamicLinker::libhandle_t handle = m_libraryHandle;
                     m_libraryHandle = nullptr;
                     m_dynLink.closeLibrary(handle);
-                    DBG_PRINT("NativeLibrary.close(): Successfully closed %s", toString().c_str());
+                    jau_DBG_PRINT("NativeLibrary.close(): Successfully closed %s", toString().c_str());
                 }
             }
 
@@ -185,7 +185,7 @@ namespace jau::os {
 
               // Iterate down these and see which one if any we can actually find.
               for (const std::string& path : paths ) {
-                  DBG_PRINT("NativeLibrary.open(global %d): Trying to load %s", global, path.c_str());
+                  jau_DBG_PRINT("NativeLibrary.open(global %d): Trying to load %s", global, path.c_str());
                   DynamicLinker::libhandle_t res;
                   if(global) {
                       res = m_dynLink.openLibraryGlobal(path);
@@ -194,14 +194,14 @@ namespace jau::os {
                   }
                   if ( nullptr != res ) {
                       NativeLibrary nl(m_dynLink, res, path, global, symbolName);
-                      DBG_PRINT("NativeLibrary.open: Opened: %s", nl.toString().c_str());
+                      jau_DBG_PRINT("NativeLibrary.open: Opened: %s", nl.toString().c_str());
                       return nl;
                   } else if( jau::environment::get().debug ) {
-                      DBG_PRINT("NativeLibrary.open: Failed to open '%s', last error %s",
+                      jau_DBG_PRINT("NativeLibrary.open: Failed to open '%s', last error %s",
                               path.c_str(), m_dynLink.getLastError().c_str());
                   }
               }
-              DBG_PRINT("NativeLibrary.open(global %d): Did not succeed in loading: '%s' within '%s'",
+              jau_DBG_PRINT("NativeLibrary.open(global %d): Did not succeed in loading: '%s' within '%s'",
                       global, libName.c_str(), jau::to_string(paths).c_str());
               return NativeLibrary(m_dynLink, nullptr, libName, global, symbolName);
             }

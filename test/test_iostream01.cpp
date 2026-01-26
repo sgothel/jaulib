@@ -72,7 +72,7 @@ class TestIOStream01 {
                 (void)res;
                 const std::string cwd = jau::io::fs::get_cwd();
                 const std::string cmd = std::string(mini_httpd_exe)+" -p 8080 -l "+cwd+"/mini_httpd.log";
-                PLAIN_PRINT(true, "%s", cmd.c_str());
+                jau_PLAIN_PRINT(true, "%s", cmd.c_str());
                 res = std::system(cmd.c_str());
                 (void)res;
             }
@@ -88,7 +88,7 @@ class TestIOStream01 {
         void test00_protocols() {
             {
                 std::vector<std::string_view> protos = jau::io::uri_tk::supported_protocols();
-                PLAIN_PRINT(true, "test00_protocols: Supported protocols: %zu: %s", protos.size(), jau::to_string(protos, ",").c_str());
+                jau_PLAIN_PRINT(true, "test00_protocols: Supported protocols: %zu: %s", protos.size(), jau::to_string(protos, ",").c_str());
 #ifdef USE_LIBCURL
                 REQUIRE( 0 < protos.size() );
 #else
@@ -161,7 +161,7 @@ class TestIOStream01 {
 
         void test01_sync_ok() {
             if( !jau::io::uri_tk::protocol_supported("http:") ) {
-                PLAIN_PRINT(true, "http not supported, abort\n");
+                jau_PLAIN_PRINT(true, "http not supported, abort\n");
                 return;
             }
             const jau::io::fs::file_stats in_stats(basename_10kiB);
@@ -181,13 +181,13 @@ class TestIOStream01 {
                     return false;
                 }
                 consumed_total_bytes += data.size();
-                PLAIN_PRINT(true, "test01_sync_ok #%zu: consumed size %zu, total %" PRIu64 ", capacity %zu, final %d",
+                jau_PLAIN_PRINT(true, "test01_sync_ok #%zu: consumed size %zu, total %" PRIu64 ", capacity %zu, final %d",
                         consumed_calls, data.size(), consumed_total_bytes, data.capacity(), is_final );
                 return true;
             };
             uint64_t http_total_bytes = jau::io::read_url_stream(url_input, buffer, consume);
             const uint64_t out_bytes_total = outfile.position();
-            PLAIN_PRINT(true, "test01_sync_ok Done: total %" PRIu64 ", capacity %zu", consumed_total_bytes, buffer.capacity());
+            jau_PLAIN_PRINT(true, "test01_sync_ok Done: total %" PRIu64 ", capacity %zu", consumed_total_bytes, buffer.capacity());
 
             REQUIRE( file_size == http_total_bytes );
             REQUIRE( consumed_total_bytes == http_total_bytes );
@@ -196,7 +196,7 @@ class TestIOStream01 {
 
         void test02_sync_404() {
             if( !jau::io::uri_tk::protocol_supported("http:") ) {
-                PLAIN_PRINT(true, "http not supported, abort\n");
+                jau_PLAIN_PRINT(true, "http not supported, abort\n");
                 return;
             }
             const std::string url_input = url_input_root + "doesnt_exists.txt";
@@ -214,13 +214,13 @@ class TestIOStream01 {
                     return false;
                 }
                 consumed_total_bytes += data.size();
-                PLAIN_PRINT(true, "test02_sync_404 #%zu: consumed size %zu, total %" PRIu64 ", capacity %zu, final %d",
+                jau_PLAIN_PRINT(true, "test02_sync_404 #%zu: consumed size %zu, total %" PRIu64 ", capacity %zu, final %d",
                         consumed_calls, data.size(), consumed_total_bytes, data.capacity(), is_final );
                 return true;
             };
             uint64_t http_total_bytes = jau::io::read_url_stream(url_input, buffer, consume);
             const uint64_t out_bytes_total = outfile.position();
-            PLAIN_PRINT(true, "test02_sync_404 Done: total %" PRIu64 ", capacity %zu", consumed_total_bytes, buffer.capacity());
+            jau_PLAIN_PRINT(true, "test02_sync_404 Done: total %" PRIu64 ", capacity %zu", consumed_total_bytes, buffer.capacity());
 
             REQUIRE( 0 == http_total_bytes );
             REQUIRE( consumed_total_bytes == http_total_bytes );
@@ -229,7 +229,7 @@ class TestIOStream01 {
 
         void test11_async_ok() {
             if( !jau::io::uri_tk::protocol_supported("http:") ) {
-                PLAIN_PRINT(true, "http not supported, abort\n");
+                jau_PLAIN_PRINT(true, "http not supported, abort\n");
                 return;
             }
             const jau::io::fs::file_stats in_stats(basename_10kiB);
@@ -255,14 +255,14 @@ class TestIOStream01 {
                 // const size_t consumed_bytes = content_length >= 0 ? std::min(buffer_size, content_length - consumed_total_bytes) : rb.getSize();
                 const size_t consumed_bytes = rb.getBlocking(buffer.data(), buffer_size, 1, 500_ms);
                 consumed_total_bytes += consumed_bytes;
-                PLAIN_PRINT(true, "test11_async_ok.0 #%zu: consumed[this %zu, total %" PRIu64 ", result %s, rb %s",
+                jau_PLAIN_PRINT(true, "test11_async_ok.0 #%zu: consumed[this %zu, total %" PRIu64 ", result %s, rb %s",
                         consumed_loops, consumed_bytes, consumed_total_bytes, jau::io::toString(res->result), rb.toString() );
                 if( consumed_bytes != outfile.write(buffer.data(), consumed_bytes) ) {
                     break;
                 }
             }
             const uint64_t out_bytes_total = outfile.position();
-            PLAIN_PRINT(true, "test11_async_ok.X Done: total %" PRIu64 ", result %s, rb %s",
+            jau_PLAIN_PRINT(true, "test11_async_ok.X Done: total %" PRIu64 ", result %s, rb %s",
                     consumed_total_bytes, jau::io::toString(res->result), rb.toString() );
 
             res->thread.join();
@@ -277,7 +277,7 @@ class TestIOStream01 {
 
         void test12_async_404() {
             if( !jau::io::uri_tk::protocol_supported("http:") ) {
-                PLAIN_PRINT(true, "http not supported, abort\n");
+                jau_PLAIN_PRINT(true, "http not supported, abort\n");
                 return;
             }
             const std::string url_input = url_input_root + "doesnt_exists.txt";
@@ -301,14 +301,14 @@ class TestIOStream01 {
                 // const size_t consumed_bytes = content_length >= 0 ? std::min(buffer_size, content_length - consumed_total_bytes) : rb.getSize();
                 const size_t consumed_bytes = rb.getBlocking(buffer.data(), buffer_size, 1, 500_ms);
                 consumed_total_bytes += consumed_bytes;
-                PLAIN_PRINT(true, "test12_async_404.0 #%zu: consumed[this %zu, total %" PRIu64 ", result %s, rb %s",
+                jau_PLAIN_PRINT(true, "test12_async_404.0 #%zu: consumed[this %zu, total %" PRIu64 ", result %s, rb %s",
                         consumed_loops, consumed_bytes, consumed_total_bytes, jau::io::toString(res->result), rb.toString() );
                 if( consumed_bytes != outfile.write(reinterpret_cast<char*>(buffer.data()), consumed_bytes) ) {
                     break;
                 }
             }
             const uint64_t out_bytes_total = outfile.position();
-            PLAIN_PRINT(true, "test12_async_404.X Done: total %" PRIu64 ", result %d, rb %s",
+            jau_PLAIN_PRINT(true, "test12_async_404.X Done: total %" PRIu64 ", result %d, rb %s",
                     consumed_total_bytes, (int)res->result.load(), rb.toString().c_str() );
 
             res->thread.join();

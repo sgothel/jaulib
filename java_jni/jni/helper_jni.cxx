@@ -473,7 +473,7 @@ jau::jni::JavaGlobalObj::~JavaGlobalObj() noexcept { // NOLINT(bugprone-exceptio
     try {
         JNIEnv *env = *jni_env;
         if( nullptr == env ) {
-            ABORT("JavaGlobalObj::dtor null JNIEnv");
+            jau_ABORT("JavaGlobalObj::dtor null JNIEnv");
         }
         {
             std::unique_lock<std::mutex> lock(javaObjectRef.mtx);

@@ -110,11 +110,11 @@ std::string jau::get_backtrace(const bool skip_anon_frames, const jau::snsize_t 
         unw_word_t offset;
 
         if( 0 != ( res = unw_getcontext(&uc) ) ) {
-            INFO_PRINT("unw_getcontext ERR: %d\n", res);
+            jau_INFO_PRINT("unw_getcontext ERR: %d\n", res);
             return out;
         }
         if( 0 != ( res = unw_init_local(&cursor, &uc) ) ) {
-            INFO_PRINT("unw_init_local ERR %d\n", res);
+            jau_INFO_PRINT("unw_init_local ERR %d\n", res);
             return out;
         }
         bool last_frame_anon = false;
@@ -128,11 +128,11 @@ std::string jau::get_backtrace(const bool skip_anon_frames, const jau::snsize_t 
             std::string line(cstr);
 
             if( 0 != ( res = unw_get_reg(&cursor, UNW_REG_IP, &ip) ) ) { // instruction pointer (pc)
-                INFO_PRINT("unw_get_reg(IP): frame %zd, ERR %d\n", frame, res);
+                jau_INFO_PRINT("unw_get_reg(IP): frame %zd, ERR %d\n", frame, res);
                 ip = 0;
             }
             if( 0 != ( res = unw_get_reg(&cursor, UNW_REG_SP, &sp) ) ) { // stack pointer
-                INFO_PRINT("unw_get_reg(SP): frame %zd, ERR %d\n", frame, res);
+                jau_INFO_PRINT("unw_get_reg(SP): frame %zd, ERR %d\n", frame, res);
                 sp = 0;
             }
             if( 0 == unw_get_proc_name(&cursor, cstr, sizeof(cstr), &offset) ) {

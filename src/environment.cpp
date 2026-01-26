@@ -60,7 +60,7 @@ static const std::string s_false("false");
 std::string environment::getProperty(const std::string& name) noexcept {
     const char* value = ::getenv(name.c_str());
     if ( nullptr != value ) {
-        COND_PRINT(local_debug, "env::getProperty0 '%s': '%s'", name.c_str(), value);
+        jau_COND_PRINT(local_debug, "env::getProperty0 '%s': '%s'", name.c_str(), value);
         return std::string(value);
     }
     if ( std::string::npos != name.find('.', 0) ) {
@@ -69,12 +69,12 @@ std::string environment::getProperty(const std::string& name) noexcept {
         std::replace(alt_name.begin(), alt_name.end(), '.', '_');  // NOLINT(modernize-use-ranges)
         value = ::getenv(alt_name.c_str());
         if ( nullptr != value ) {
-            COND_PRINT(local_debug, "env::getProperty0 '%s' -> '%s': '%s'", name.c_str(), alt_name.c_str(), value);
+            jau_COND_PRINT(local_debug, "env::getProperty0 '%s' -> '%s': '%s'", name.c_str(), alt_name.c_str(), value);
             return std::string(value);
         }
-        COND_PRINT(local_debug, "env::getProperty0 '%s' -> '%s': NOT FOUND", name.c_str(), alt_name.c_str());
+        jau_COND_PRINT(local_debug, "env::getProperty0 '%s' -> '%s': NOT FOUND", name.c_str(), alt_name.c_str());
     } else {
-        COND_PRINT(local_debug, "env::getProperty0 '%s': NOT FOUND", name.c_str());
+        jau_COND_PRINT(local_debug, "env::getProperty0 '%s': NOT FOUND", name.c_str());
     }
     // not found: empty string
     return std::string();
@@ -83,10 +83,10 @@ std::string environment::getProperty(const std::string& name) noexcept {
 std::string environment::getProperty(const std::string& name, const std::string& default_value) noexcept {
     std::string value = getProperty(name);
     if ( 0 == value.length() ) {
-        COND_PRINT(local_debug, "env::getProperty1 %s: null -> %s (default)", name.c_str(), default_value.c_str());
+        jau_COND_PRINT(local_debug, "env::getProperty1 %s: null -> %s (default)", name.c_str(), default_value.c_str());
         return default_value;
     } else {
-        COND_PRINT(local_debug, "env::getProperty1 %s (default %s): %s", name.c_str(), default_value.c_str(), value.c_str());
+        jau_COND_PRINT(local_debug, "env::getProperty1 %s (default %s): %s", name.c_str(), default_value.c_str(), value.c_str());
         return value;
     }
 }
@@ -94,11 +94,11 @@ std::string environment::getProperty(const std::string& name, const std::string&
 bool environment::getBooleanProperty(const std::string& name, const bool default_value) noexcept {
     const std::string value = getProperty(name);
     if ( 0 == value.length() ) {
-        COND_PRINT(local_debug, "env::getBooleanProperty %s: null -> %d (default)", name.c_str(), default_value);
+        jau_COND_PRINT(local_debug, "env::getBooleanProperty %s: null -> %d (default)", name.c_str(), default_value);
         return default_value;
     } else {
         const bool res = "true" == value;
-        COND_PRINT(local_debug, "env::getBooleanProperty %s (default %d): %d/%s", name.c_str(), default_value, res, value.c_str());
+        jau_COND_PRINT(local_debug, "env::getBooleanProperty %s (default %d): %d/%s", name.c_str(), default_value, res, value.c_str());
         return res;
     }
 }
@@ -109,7 +109,7 @@ int32_t environment::getInt32Property(const std::string& name, const int32_t def
                                       const int32_t min_allowed, const int32_t max_allowed) noexcept {
     const std::string value = getProperty(name);
     if ( 0 == value.length() ) {
-        COND_PRINT(local_debug, "env::getInt32Property %s: null -> %" PRId32 " (default)", name.c_str(), default_value);
+        jau_COND_PRINT(local_debug, "env::getInt32Property %s: null -> %" PRId32 " (default)", name.c_str(), default_value);
         return default_value;
     } else {
         int32_t res = default_value;
@@ -123,21 +123,21 @@ int32_t environment::getInt32Property(const std::string& name, const int32_t def
                 if ( min_allowed <= res1 && res1 <= max_allowed ) {
                     // matching user value range
                     res = res1;
-                    COND_PRINT(local_debug, "env::getInt32Property %s (default %" PRId32 "): %" PRId32 "/%s",
+                    jau_COND_PRINT(local_debug, "env::getInt32Property %s (default %" PRId32 "): %" PRId32 "/%s",
                                name.c_str(), default_value, res, value.c_str());
                 } else {
                     // invalid user value range
-                    ERR_PRINT("env::getInt32Property %s: %" PRId32 "/%s (invalid user range [% " PRId32 "..%" PRId32 "]) -> %" PRId32 " (default)",
+                    jau_ERR_PRINT("env::getInt32Property %s: %" PRId32 "/%s (invalid user range [% " PRId32 "..%" PRId32 "]) -> %" PRId32 " (default)",
                               name.c_str(), res1, value.c_str(), min_allowed, max_allowed, res);
                 }
             } else {
                 // invalid int32_t range
-                ERR_PRINT("env::getInt32Property %s: %" PRIu64 "/%s (invalid int32_t range) -> %" PRId32 " (default)",
+                jau_ERR_PRINT("env::getInt32Property %s: %" PRIu64 "/%s (invalid int32_t range) -> %" PRId32 " (default)",
                           name.c_str(), (uint64_t)res0, value.c_str(), res);
             }
         } else {
             // string value not fully valid
-            ERR_PRINT("env::getInt32Property %s: %s (invalid string) -> %" PRId32 " (default)",
+            jau_ERR_PRINT("env::getInt32Property %s: %s (invalid string) -> %" PRId32 " (default)",
                       name.c_str(), value.c_str(), res);
         }
         return res;
@@ -148,7 +148,7 @@ uint32_t environment::getUint32Property(const std::string& name, const uint32_t 
                                         const uint32_t min_allowed, const uint32_t max_allowed) noexcept {
     const std::string value = getProperty(name);
     if ( 0 == value.length() ) {
-        COND_PRINT(local_debug, "env::getUint32Property %s: null -> %" PRIu32 " (default)", name.c_str(), default_value);
+        jau_COND_PRINT(local_debug, "env::getUint32Property %s: null -> %" PRIu32 " (default)", name.c_str(), default_value);
         return default_value;
     } else {
         uint32_t res = default_value;
@@ -162,21 +162,21 @@ uint32_t environment::getUint32Property(const std::string& name, const uint32_t 
                 if ( min_allowed <= res1 && res1 <= max_allowed ) {
                     // matching user value range
                     res = res1;
-                    COND_PRINT(local_debug, "env::getUint32Property %s (default %" PRIu32 "): %" PRIu32 "/%s",
+                    jau_COND_PRINT(local_debug, "env::getUint32Property %s (default %" PRIu32 "): %" PRIu32 "/%s",
                                name.c_str(), default_value, res, value.c_str());
                 } else {
                     // invalid user value range
-                    ERR_PRINT("env::getUint32Property %s: %" PRIu32 "/%s (invalid user range [% " PRIu32 "..%" PRIu32 "]) -> %" PRIu32 " (default)",
+                    jau_ERR_PRINT("env::getUint32Property %s: %" PRIu32 "/%s (invalid user range [% " PRIu32 "..%" PRIu32 "]) -> %" PRIu32 " (default)",
                               name.c_str(), res1, value.c_str(), min_allowed, max_allowed, res);
                 }
             } else {
                 // invalid uint32_t range
-                ERR_PRINT("env::getUint32Property %s: %" PRIu64 "/%s (invalid uint32_t range) -> %" PRIu32 " (default)",
+                jau_ERR_PRINT("env::getUint32Property %s: %" PRIu64 "/%s (invalid uint32_t range) -> %" PRIu32 " (default)",
                           name.c_str(), (uint64_t)res0, value.c_str(), res);
             }
         } else {
             // string value not fully valid
-            ERR_PRINT("env::getUint32Property %s: %s (invalid string) -> %" PRIu32 " (default)",
+            jau_ERR_PRINT("env::getUint32Property %s: %s (invalid string) -> %" PRIu32 " (default)",
                       name.c_str(), value.c_str(), res);
         }
         return res;
@@ -187,12 +187,12 @@ fraction_i64 environment::getFractionProperty(const std::string& name, const fra
                                               const fraction_i64& min_allowed, const fraction_i64& max_allowed) noexcept {
     const std::string value = getProperty(name);
     if ( 0 == value.length() ) {
-        COND_PRINT(local_debug, "env::getFractionProperty %s: null -> %s (default)", name.c_str(), default_value.toString().c_str());
+        jau_COND_PRINT(local_debug, "env::getFractionProperty %s: null -> %s (default)", name.c_str(), default_value.toString().c_str());
         return default_value;
     } else {
         auto [result, consumed, complete] = to_fraction_i64(value, min_allowed, max_allowed);
         if ( !complete ) {
-            ERR_PRINT("env::getFractionProperty %s: value %s not valid or in range[%s .. %s] -> %s (default)",
+            jau_ERR_PRINT("env::getFractionProperty %s: value %s not valid or in range[%s .. %s] -> %s (default)",
                       name.c_str(), value.c_str(), min_allowed.toString().c_str(), max_allowed.toString().c_str(), default_value.toString().c_str());
         }
         return result;
@@ -211,16 +211,16 @@ void environment::envSet(const std::string& prefix_domain, std::string basepair)
             trimInPlace(value);
             if ( name.length() > 0 ) {
                 if ( value.length() > 0 ) {
-                    COND_PRINT(local_debug, "env::setProperty %s -> %s (explode)", name.c_str(), value.c_str());
+                    jau_COND_PRINT(local_debug, "env::setProperty %s -> %s (explode)", name.c_str(), value.c_str());
                     ::setenv(name.c_str(), value.c_str(), 1 /* overwrite */);
                 } else {
-                    COND_PRINT(local_debug, "env::setProperty %s -> true (explode default-1)", name.c_str());
+                    jau_COND_PRINT(local_debug, "env::setProperty %s -> true (explode default-1)", name.c_str());
                     ::setenv(name.c_str(), "true", 1 /* overwrite */);
                 }
             }
         } else {
             const std::string name = prefix_domain + "." + basepair;
-            COND_PRINT(local_debug, "env::setProperty %s -> true (explode default-0)", name.c_str());
+            jau_COND_PRINT(local_debug, "env::setProperty %s -> true (explode default-0)", name.c_str());
             ::setenv(name.c_str(), "true", 1 /* overwrite */);
         }
     }
@@ -237,7 +237,7 @@ void environment::envExplodeProperties(const std::string& prefix_domain, const s
     if ( elem_len > 0 ) {
         envSet(prefix_domain, list.substr(start, elem_len));
     }
-    COND_PRINT(local_debug, "env::setProperty %s -> true (explode default)", prefix_domain.c_str());
+    jau_COND_PRINT(local_debug, "env::setProperty %s -> true (explode default)", prefix_domain.c_str());
     ::setenv(prefix_domain.c_str(), "true", 1 /* overwrite */);
 }
 

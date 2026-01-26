@@ -737,7 +737,7 @@ namespace jau::math::geom {
                             if(result.y < m_lo.y - epsilon || result.y > m_hi.y + epsilon) { return false; }
                             break;
                         default:
-                            ERR_PRINT("Internal Error");
+                            jau_ERR_PRINT("Internal Error");
                             return false;
                     }
                 } else {
@@ -755,7 +755,7 @@ namespace jau::math::geom {
                             result.y = origin.y + maxT[whichPlane] * dir.y;
                             break;
                         default:
-                            ERR_PRINT("Internal Error");
+                            jau_ERR_PRINT("Internal Error");
                             return false;
                     }
                 }

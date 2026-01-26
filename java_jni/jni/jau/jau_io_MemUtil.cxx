@@ -55,12 +55,12 @@ jboolean Java_org_jau_io_MemUtil_zeroString(JNIEnv *env, jclass clazz, jstring j
         }
         jboolean is_copy = JNI_FALSE;
         const jchar* str_u16 = env->GetStringCritical(jstr, &is_copy);
-        DBG_PRINT("zeroString.0: jstr %p, copy %d", str_u16, is_copy);
+        jau_DBG_PRINT("zeroString.0: jstr %p, copy %d", str_u16, is_copy);
         if( nullptr != str_u16 ) {
             ::explicit_bzero((void*)str_u16, len * sizeof(jchar));
             env->ReleaseStringCritical(jstr, str_u16);
         } else {
-            ERR_PRINT("GetStringCritical() return null");
+            jau_ERR_PRINT("GetStringCritical() return null");
         }
         if( nullptr == str_u16 || JNI_TRUE == is_copy ) {
             // try harder ..
@@ -70,19 +70,19 @@ jboolean Java_org_jau_io_MemUtil_zeroString(JNIEnv *env, jclass clazz, jstring j
             jau::jni::java_exception_check_and_throw(env, E_FILE_LINE);
 
             if( nullptr == jstr_value ) {
-                ERR_PRINT("GetObjectField(value) is null");
+                jau_ERR_PRINT("GetObjectField(value) is null");
                 return JNI_FALSE;
             }
             const size_t jstr_value_size = env->GetArrayLength(jstr_value);
             if( 0 == jstr_value_size ) {
-                ERR_PRINT("GetArrayLength(address byte array) is null");
+                jau_ERR_PRINT("GetArrayLength(address byte array) is null");
                 return JNI_FALSE;
             }
             jau::jni::JNICriticalArray<uint8_t, jbyteArray> criticalArray(env); // RAII - release
             uint8_t * ptr = criticalArray.get(jstr_value, criticalArray.Mode::UPDATE_AND_RELEASE);
-            DBG_PRINT("zeroString.1: value: %p, len %zu, is_copy %d", ptr, jstr_value_size, criticalArray.getIsCopy());
+            jau_DBG_PRINT("zeroString.1: value: %p, len %zu, is_copy %d", ptr, jstr_value_size, criticalArray.getIsCopy());
             if( nullptr == ptr ) {
-                ERR_PRINT("GetPrimitiveArrayCritical(address byte array) is null");
+                jau_ERR_PRINT("GetPrimitiveArrayCritical(address byte array) is null");
                 return JNI_FALSE;
             }
             ::explicit_bzero((void*)ptr, jstr_value_size);
@@ -134,17 +134,17 @@ jobject Java_org_jau_io_MemUtil_toByteBufferImpl(JNIEnv *env, jclass clazz, jstr
     jobject jdest = env->CallStaticObjectMethod(clazz, buffer_new, (jint)u8_size);
     jau::jni::java_exception_check_and_throw(env, E_FILE_LINE);
     if( nullptr == jdest ) {
-        ERR_PRINT("Couldn't allocated ByteBuffer w/ capacity %zu", u8_size);
+        jau_ERR_PRINT("Couldn't allocated ByteBuffer w/ capacity %zu", u8_size);
         return nullptr;
     }
     char* jdest_address = (char*)env->GetDirectBufferAddress(jdest);
     size_t jdest_capacity = (size_t)env->GetDirectBufferCapacity(jdest);
     if( nullptr == jdest_address || 0 == jdest_capacity ) {
-        ERR_PRINT("ByteBuffer w/ capacity %zu has zero address (%p) or length (%zu)", u8_size, jdest_address, jdest_capacity);
+        jau_ERR_PRINT("ByteBuffer w/ capacity %zu has zero address (%p) or length (%zu)", u8_size, jdest_address, jdest_capacity);
         return nullptr;
     }
     if( u8_size > jdest_capacity ) {
-        ERR_PRINT("ByteBuffer w/ capacity %zu < required size %zu)", jdest_capacity, u8_size);
+        jau_ERR_PRINT("ByteBuffer w/ capacity %zu < required size %zu)", jdest_capacity, u8_size);
         return nullptr;
     }
     ::memcpy(jdest_address, u8_conv.data(), u8_size);

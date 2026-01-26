@@ -244,7 +244,7 @@ class ringbuffer {
                 value_type * m = alloc_inst.allocate(count);
                 if( nullptr == m ) {
                     // Avoid exception, abort!
-                    ABORT("Error: bad_alloc: alloc %zu  elements * %zu bytes/element = %zu  bytes failed",
+                    jau_ABORT("Error: bad_alloc: alloc %zu  elements * %zu bytes/element = %zu  bytes failed",
                           count, sizeof(value_type), (count * sizeof(value_type)));
                 }
                 _DEBUG_DUMP("newArray ...");
@@ -264,7 +264,7 @@ class ringbuffer {
                 alloc_inst.deallocate(*a, count);
                 *a = nullptr;
             } else {
-                ABORT("ringbuffer::freeArray with nullptr");
+                jau_ABORT("ringbuffer::freeArray with nullptr");
             }
         }
 
@@ -358,7 +358,7 @@ class ringbuffer {
                     }
                     if( writePos != localReadPos ) {
                         // Avoid exception, abort!
-                        ABORT("copy segment error: this %s, readPos %zu/%zu; writePos %zu", toString(), readPos.load(), localReadPos, writePos.load());
+                        jau_ABORT("copy segment error: this %s, readPos %zu/%zu; writePos %zu", toString(), readPos.load(), localReadPos, writePos.load());
                     }
                     if constexpr ( uses_secmem ) {
                         zero_bytes_sec(voidptr_cast(&array[0]), capacityPlusOne*sizeof(Value_type));
@@ -381,7 +381,7 @@ class ringbuffer {
                 }
                 if( writePos != localReadPos ) {
                     // Avoid exception, abort!
-                    ABORT("copy segment error: this %s, readPos %zu/%zu; writePos %zu", toString(), readPos.load(), localReadPos, writePos.load());
+                    jau_ABORT("copy segment error: this %s, readPos %zu/%zu; writePos %zu", toString(), readPos.load(), localReadPos, writePos.load());
                 }
                 zero_bytes_sec(voidptr_cast(&array[0]), capacityPlusOne*sizeof(Value_type));
                 readPos = localReadPos;
@@ -397,7 +397,7 @@ class ringbuffer {
                 capacityPlusOne = source.capacityPlusOne;
                 array = newArray(capacityPlusOne);
             } else if( capacityPlusOne != source.capacityPlusOne ) {
-                ABORT("capacityPlusOne not equal: this %s, source %s", toString(), source.toString());
+                jau_ABORT("capacityPlusOne not equal: this %s, source %s", toString(), source.toString());
             } else {
                 clearImpl();
             }
@@ -417,7 +417,7 @@ class ringbuffer {
                     new (const_cast<pointer_mutable>(array + localWritePos)) value_type( source.array[localWritePos] ); // placement new
                 }
                 if( writePos != localWritePos ) {
-                    ABORT("copy segment error: this %s, localWritePos %zu; source %s", toString(), localWritePos, source.toString());
+                    jau_ABORT("copy segment error: this %s, localWritePos %zu; source %s", toString(), localWritePos, source.toString());
                 }
             }
         }
@@ -475,7 +475,7 @@ class ringbuffer {
         bool peekImpl(Value_type& dest, const bool blocking, const fraction_i64& timeout, bool& timeout_occurred) noexcept {
             timeout_occurred = false;
             if( !std::is_copy_constructible_v<Value_type> ) {
-                ABORT("Value_type is not copy constructible");
+                jau_ABORT("Value_type is not copy constructible");
                 return false;
             }
             if( 1 >= capacityPlusOne ) {
@@ -827,7 +827,7 @@ class ringbuffer {
         bool copyIntoImpl(const Value_type &e, const bool blocking, const fraction_i64& timeout, bool& timeout_occurred) noexcept {
             timeout_occurred = false;
             if( !std::is_copy_constructible_v<Value_type> ) {
-                ABORT("Value_type is not copy constructible");
+                jau_ABORT("Value_type is not copy constructible");
                 return false;
             }
             if( 1 >= capacityPlusOne ) {
@@ -879,7 +879,7 @@ class ringbuffer {
         bool copyIntoImpl(const Value_type *first, const Value_type* last, const bool blocking, const fraction_i64& timeout, bool& timeout_occurred) noexcept {
             timeout_occurred = false;
             if( !std::is_copy_constructible_v<Value_type> ) {
-                ABORT("Value_type is not copy constructible");
+                jau_ABORT("Value_type is not copy constructible");
                 return false;
             }
             const Value_type *iter_in = first;

@@ -886,7 +886,7 @@ namespace jau::io {
             }
 
             bool setMark(const size_type m, size_type o, size_type readLimit) noexcept {
-                // DBG_PRINT("RewindBuffer.setMark.0 mark %" PRIu64 ", offset %" PRIu64 ", %s", m, o, toString().c_str());
+                // jau_DBG_PRINT("RewindBuffer.setMark.0 mark %" PRIu64 ", offset %" PRIu64 ", %s", m, o, toString().c_str());
                 PRAGMA_DISABLE_WARNING_PUSH
                 PRAGMA_DISABLE_WARNING_TYPE_RANGE_LIMIT
                 if ( readLimit > std::numeric_limits<size_t>::max() ) {
@@ -900,7 +900,7 @@ namespace jau::io {
                         std::memmove(m_buffer.data(), m_buffer.data() + q, l0);
                     }
                     m_end = l0;
-                    // DBG_PRINT("RewindBuffer.setMark.1 src-q %" PRIu64 ", len %" PRIu64 ", %s.", q, l0, toString().c_str());
+                    // jau_DBG_PRINT("RewindBuffer.setMark.1 src-q %" PRIu64 ", len %" PRIu64 ", %s.", q, l0, toString().c_str());
                 } else {
                     m_end = 0;
                 }
@@ -933,7 +933,7 @@ namespace jau::io {
                     o += g2;
                     l0 -= g2;
                 }
-                // DBG_PRINT("ByteInStream::read.X: size (%zu + %zu = %zu) / %zu (-> %zu) bytes, %s",
+                // jau_DBG_PRINT("ByteInStream::read.X: size (%zu + %zu = %zu) / %zu (-> %zu) bytes, %s",
                 //           g1, g2, g1+g2, length, l0, toString().c_str() );
                 return g1 + g2;
             }

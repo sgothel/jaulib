@@ -510,7 +510,7 @@ class alignas(Value_type) Matrix4 {
     bool invert() noexcept {
         const value_type amax = absMax();
         if( zero == amax ) {
-            DBG_PRINT("Matrix4:invert: absMax==0: %s", toString().c_str());
+            jau_DBG_PRINT("Matrix4:invert: absMax==0: %s", toString().c_str());
             return false;
         }
         const value_type scale = one/amax;
@@ -556,7 +556,7 @@ class alignas(Value_type) Matrix4 {
 
         const value_type det = (a00*b00 + a01*b01 + a02*b02 + a03*b03) / scale;
         if( 0 == det ) {
-            DBG_PRINT("Matrix4:invert: det==0: %s", toString().c_str());
+            jau_DBG_PRINT("Matrix4:invert: det==0: %s", toString().c_str());
             return false;
         }
         const value_type invdet = one / det;
@@ -591,7 +591,7 @@ class alignas(Value_type) Matrix4 {
     bool invert(const Matrix4& src) noexcept {
         const value_type amax = src.absMax();
         if( zero == amax ) {
-            DBG_PRINT("Matrix4:invert(src): absMax==0: %s", src.toString().c_str());
+            jau_DBG_PRINT("Matrix4:invert(src): absMax==0: %s", src.toString().c_str());
             return false;
         }
         const value_type scale = one/amax;
@@ -638,7 +638,7 @@ class alignas(Value_type) Matrix4 {
         const value_type det = (a00*b00 + a01*b01 + a02*b02 + a03*b03) / scale;
 
         if( 0 == det ) {
-            DBG_PRINT("Matrix4:invert(src): det==0: %s", src.toString().c_str());
+            jau_DBG_PRINT("Matrix4:invert(src): det==0: %s", src.toString().c_str());
             return false;
         }
         const value_type invdet = one / det;

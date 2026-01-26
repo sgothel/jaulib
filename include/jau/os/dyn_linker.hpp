@@ -113,7 +113,7 @@ namespace jau::os {
                 libRef = iter->second;
                 libRef->incrRefCount();
             }
-            DBG_PRINT("DynamicLinkerImpl.incrLibRefCount %s -> %s, libs loaded %zu",
+            jau_DBG_PRINT("DynamicLinkerImpl.incrLibRefCount %s -> %s, libs loaded %zu",
                     jau::toHexString(handle).c_str(), libRef->toString().c_str(), m_handleToNameMap.size());
             return libRef;
         }
@@ -127,10 +127,10 @@ namespace jau::os {
                 if( 0 == libRef->decrRefCount() ) {
                     m_handleToNameMap.erase(iter);
                 }
-                DBG_PRINT("DynamicLinkerImpl.decrLibRefCount %s -> %s, libs loaded %zu",
+                jau_DBG_PRINT("DynamicLinkerImpl.decrLibRefCount %s -> %s, libs loaded %zu",
                         jau::toHexString(handle).c_str(), libRef->toString().c_str(), m_handleToNameMap.size());
             } else {
-                DBG_PRINT("DynamicLinkerImpl.decrLibRefCount %s -> null, libs loaded %zu",
+                jau_DBG_PRINT("DynamicLinkerImpl.decrLibRefCount %s -> null, libs loaded %zu",
                         jau::toHexString(handle).c_str(), m_handleToNameMap.size());
             }
             return libRef;
@@ -257,10 +257,10 @@ namespace jau::os {
             libhandle_t handle = openLibraryGlobalImpl(pathname);
             if( nullptr != handle ) {
                 LibRef_ref libRef = incrLibRefCount(handle, pathname);
-                DBG_PRINT("DynamicLinkerImpl.openLibraryGlobal \"%s\": %s -> %s",
+                jau_DBG_PRINT("DynamicLinkerImpl.openLibraryGlobal \"%s\": %s -> %s",
                         pathname.c_str(), jau::toHexString(handle).c_str(), libRef->toString().c_str());
             } else {
-                DBG_PRINT("DynamicLinkerImpl.openLibraryGlobal \"%s\" failed, error %s",
+                jau_DBG_PRINT("DynamicLinkerImpl.openLibraryGlobal \"%s\" failed, error %s",
                         pathname.c_str(), getLastError().c_str());
             }
             return handle;
@@ -276,10 +276,10 @@ namespace jau::os {
             libhandle_t handle = openLibraryLocalImpl(pathname);
             if( nullptr != handle ) {
                 LibRef_ref libRef = incrLibRefCount(handle, pathname);
-                DBG_PRINT("DynamicLinkerImpl.openLibraryLocal \"%s\": %s -> %s",
+                jau_DBG_PRINT("DynamicLinkerImpl.openLibraryLocal \"%s\": %s -> %s",
                         pathname.c_str(), jau::toHexString(handle).c_str(), libRef->toString().c_str());
             } else {
-                DBG_PRINT("DynamicLinkerImpl.openLibraryLocal \"%s\" failed, error %s",
+                jau_DBG_PRINT("DynamicLinkerImpl.openLibraryLocal \"%s\" failed, error %s",
                         pathname.c_str(), getLastError().c_str());
             }
             return handle;
@@ -293,7 +293,7 @@ namespace jau::os {
         const char* lookupLibraryPathname(libhandle_t handle, const std::string& symbolName) noexcept {
             const char* fname = lookupLibraryPathnameImpl(handle, symbolName);
             if(DEBUG_LOOKUP) {
-                INFO_PRINT("DynamicLinkerImpl.lookupLibraryPathname(%s, %s) -> '%s'",
+                jau_INFO_PRINT("DynamicLinkerImpl.lookupLibraryPathname(%s, %s) -> '%s'",
                         jau::toHexString(handle), symbolName, nullptr != fname ? fname : "null");
             }
             return fname;
@@ -306,7 +306,7 @@ namespace jau::os {
         symhandle_t lookupSymbolGlobal(const std::string& symbolName) noexcept {
             symhandle_t addr = lookupSymbolGlobalImpl(symbolName);
             if(DEBUG_LOOKUP) {
-                INFO_PRINT("DynamicLinkerImpl.lookupSymbolGlobal(%s) -> %s",
+                jau_INFO_PRINT("DynamicLinkerImpl.lookupSymbolGlobal(%s) -> %s",
                         symbolName, jau::toHexString(addr));
             }
             return addr;
@@ -320,7 +320,7 @@ namespace jau::os {
         symhandle_t lookupSymbol(libhandle_t handle, const std::string& symbolName) noexcept {
             symhandle_t addr = lookupSymbolLocalImpl(handle, symbolName);
             if(DEBUG_LOOKUP) {
-                INFO_PRINT("DynamicLinkerImpl.lookupSymbol(%s, %s) -> %s",
+                jau_INFO_PRINT("DynamicLinkerImpl.lookupSymbol(%s, %s) -> %s",
                         jau::toHexString(handle), symbolName, jau::toHexString(addr));
             }
             return addr;
@@ -336,10 +336,10 @@ namespace jau::os {
         void closeLibrary(libhandle_t handle) noexcept {
             LibRef_ref libRef = decrLibRefCount( handle ); // null libRef is OK for global lookup
             if( nullptr != libRef ) {
-                DBG_PRINT("DynamicLinkerImpl.closeLibrary(%s -> %s)",
+                jau_DBG_PRINT("DynamicLinkerImpl.closeLibrary(%s -> %s)",
                         jau::toHexString(handle).c_str(), libRef->toString().c_str());
             } else {
-                DBG_PRINT("DynamicLinkerImpl.closeLibrary(%s -> null)", jau::toHexString(handle).c_str());
+                jau_DBG_PRINT("DynamicLinkerImpl.closeLibrary(%s -> null)", jau::toHexString(handle).c_str());
             }
             if( nullptr != handle ) {
                 closeLibraryImpl(handle);

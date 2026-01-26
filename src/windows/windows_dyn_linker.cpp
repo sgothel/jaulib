@@ -82,7 +82,7 @@
 
             symhandle_t lookupSymbolGlobalImpl(const std::string& symbolName) noexcept override {
                 if(DEBUG_LOOKUP) {
-                    WARN_PRINT("lookupSymbolGlobal: Not supported on Windows");
+                    jau_WARN_PRINT("lookupSymbolGlobal: Not supported on Windows");
                 }
                 // allow DynamicLibraryBundle to continue w/ local libs
                 return 0;

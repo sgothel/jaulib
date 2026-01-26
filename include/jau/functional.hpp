@@ -1018,7 +1018,7 @@ namespace jau {
                         // jau::type_cue<L>::print("ylambda_target_t.lambda", TypeTraitGroup::ALL);
                         // jau::type_cue<data_type>::print("ylambda_target_t.data_type", TypeTraitGroup::ALL);
                         // fprintf(stderr, "ylambda_target: %s\n\t\tsize %zu, %p: %s\n",
-                        //         sig.name(), sizeof(L), &function, jau::bytesHexString(&function, 0, sizeof(L), true).c_str());
+                        //         sig.name(), sizeof(L), &function, jau::toHexString(&function, sizeof(L)).c_str());
                     }
 
                     constexpr size_t detail_size() const noexcept { return sizeof(function); }

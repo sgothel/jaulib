@@ -1430,7 +1430,7 @@ class PMVMatrix4 {
         }
         if( has_any( m_requestBits & ( ( m_dirtyBits & ( PMVData::inv_proj ) ) ) ) ) { // only if requested & dirty
             if( !m_matPi.invert(m_matP) ) {
-                DBG_ERR_PRINT("Invalid source P matrix, can't compute inverse: %s", m_matP.toString().c_str(), E_FILE_LINE);
+                jau_DBG_ERR_PRINT("Invalid source P matrix, can't compute inverse: %s", m_matP.toString().c_str(), E_FILE_LINE);
                 // still continue with other derived matrices
             } else {
                 mod = true;
@@ -1439,7 +1439,7 @@ class PMVMatrix4 {
         }
         if( has_any( m_requestBits & ( ( m_dirtyBits & ( PMVData::inv_mv | PMVData::inv_tps_mv ) ) ) ) ) { // only if requested & dirty
             if( !m_matMvi.invert(m_matMv) ) {
-                DBG_ERR_PRINT("Invalid source Mv matrix, can't compute inverse: %s", m_matMv.toString().c_str(), E_FILE_LINE);
+                jau_DBG_ERR_PRINT("Invalid source Mv matrix, can't compute inverse: %s", m_matMv.toString().c_str(), E_FILE_LINE);
                 m_dirtyBits &= ~(PMVData::inv_mv | PMVData::inv_tps_mv);
                 return mod; // no successful update as we abort due to inversion failure, skip INVERSE_TRANSPOSED_MODELVIEW as well
             }

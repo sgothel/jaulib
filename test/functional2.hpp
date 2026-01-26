@@ -165,7 +165,7 @@ namespace jau {
                     try {
                         udata.heap.non_trivial = new non_trivial_t(nt);
                     } catch (const std::bad_alloc &e) {
-                        ABORT("Error: bad_alloc: non_trivial allocation failed");
+                        jau_ABORT("Error: bad_alloc: non_trivial allocation failed");
                         return; // unreachable
                     }
                     udata.heap.memory = ::malloc(m_size);
@@ -240,14 +240,14 @@ namespace jau {
                     if( m_size > 0 ) {
                         udata.heap.memory = ::malloc(m_size);
                         if( nullptr == udata.heap.memory ) {
-                            ABORT("Error: bad_alloc: heap.memory allocation failed");
+                            jau_ABORT("Error: bad_alloc: heap.memory allocation failed");
                             return; // unreachable
                         }
                         if( nullptr != o.udata.heap.non_trivial ) {
                             try {
                                 udata.heap.non_trivial = new non_trivial_t( *o.udata.heap.non_trivial );
                             } catch (const std::bad_alloc &e) {
-                                ABORT("Error: bad_alloc: non_trivial allocation failed");
+                                jau_ABORT("Error: bad_alloc: non_trivial allocation failed");
                                 return; // unreachable
                             }
                             udata.heap.non_trivial->copy_ctor(this, &o);
@@ -270,7 +270,7 @@ namespace jau {
                         if( nullptr != udata.heap.non_trivial ) {
                             udata.heap.memory = ::malloc(o.m_size);
                             if( nullptr == udata.heap.memory ) {
-                                ABORT("Error: bad_alloc: heap.memory allocation failed");
+                                jau_ABORT("Error: bad_alloc: heap.memory allocation failed");
                                 return; // unreachable
                             }
                             udata.heap.non_trivial->move_ctor(this, &o);
@@ -326,14 +326,14 @@ namespace jau {
                         if( m_size > 0 ) {
                             udata.heap.memory = ::malloc(m_size);
                             if( nullptr == udata.heap.memory ) {
-                                ABORT("Error: bad_alloc: heap.memory allocation failed");
+                                jau_ABORT("Error: bad_alloc: heap.memory allocation failed");
                                 return *this; // unreachable
                             }
                             if( nullptr != o.udata.heap.non_trivial ) {
                                 try {
                                     udata.heap.non_trivial = new non_trivial_t( *o.udata.heap.non_trivial );
                                 } catch (const std::bad_alloc &e) {
-                                    ABORT("Error: bad_alloc: non_trivial allocation failed");
+                                    jau_ABORT("Error: bad_alloc: non_trivial allocation failed");
                                     return *this; // unreachable
                                 }
                                 udata.heap.non_trivial->copy_ctor(this, &o);
@@ -366,7 +366,7 @@ namespace jau {
                         if( nullptr != udata.heap.non_trivial ) {
                             udata.heap.memory = ::malloc(o.m_size);
                             if( nullptr == udata.heap.memory ) {
-                                ABORT("Error: bad_alloc: heap.memory allocation failed");
+                                jau_ABORT("Error: bad_alloc: heap.memory allocation failed");
                                 return *this; // unreachable
                             }
                             udata.heap.non_trivial->move_ctor(this, &o);
