@@ -31,10 +31,11 @@
 #include <initializer_list>
 #include <memory>
 #include <string>
+#include "jau/cpp_lang_util.hpp"
 
 #include <jau/basic_types.hpp>
 #include <jau/debug.hpp>
-#include <jau/eui48.hpp>
+#include <jau/io/eui48.hpp>
 #include <jau/secmem.hpp>
 #include <jau/uuid.hpp>
 
@@ -190,12 +191,12 @@ namespace jau {
                 return jau::get_uint32(_data + i, byte_order());
             }
 
-            EUI48 get_eui48(const nsize_t i) const {
-                check_range(i, sizeof(EUI48), E_FILE_LINE);
-                return EUI48(_data+i, byte_order() );
+            jau::io::net::EUI48 get_eui48(const nsize_t i) const {
+                check_range(i, sizeof(jau::io::net::EUI48), E_FILE_LINE);
+                return jau::io::net::EUI48(_data+i, byte_order() );
             }
-            inline EUI48 get_eui48_nc(const nsize_t i) const noexcept {
-                return EUI48(_data+i, byte_order() );
+            inline jau::io::net::EUI48 get_eui48_nc(const nsize_t i) const noexcept {
+                return jau::io::net::EUI48(_data+i, byte_order() );
             }
 
             uint64_t get_uint64(const nsize_t i) const {
@@ -283,7 +284,14 @@ namespace jau {
             }
 
             std::string toString() const noexcept {
-                return "size "+std::to_string(_size)+", ["+to_string( byte_order() )+", "+to_string( byte_order() )+"], ro: "+bytesHexString(_data, 0, _size, true /* lsbFirst */);
+                std::string s;
+                do_noexcept([&]() {
+                    s.append("size ")
+                     .append(std::to_string(_size))
+                     .append(", [").append(to_string( byte_order() )).append(", ").append(to_string( byte_order() )).append("], ro: ");
+                     });
+                jau::appendHexString(s, _data, _size);
+                return s;
             }
     };
 
@@ -349,11 +357,11 @@ namespace jau {
                 jau::put_uint32(data() + i, v, byte_order());
             }
 
-            void put_eui48(const nsize_t i, const EUI48 & v) {
+            void put_eui48(const nsize_t i, const jau::io::net::EUI48 & v) {
                 check_range(i, sizeof(v.b), E_FILE_LINE);
                 v.put(data() + i, byte_order() );
             }
-            inline void put_eui48_nc(const nsize_t i, const EUI48 & v) noexcept {
+            inline void put_eui48_nc(const nsize_t i, const jau::io::net::EUI48 & v) noexcept {
                 v.put(data() + i, byte_order() );
             }
 
@@ -479,7 +487,7 @@ namespace jau {
             }
 
             std::string toString() const noexcept {
-                return "size "+std::to_string(size())+", rw: "+bytesHexString(get_ptr(), 0, size(), true /* lsbFirst */);
+                return string_noexcept([&](){ return "size "+std::to_string(size())+", rw: "+toHexString(get_ptr(), size()); });
             }
     };
 
@@ -541,7 +549,7 @@ namespace jau {
             }
 
             std::string toString() const noexcept {
-                return "offset "+std::to_string(_offset)+", size "+std::to_string(_size)+": "+bytesHexString(_parent.get_ptr(), _offset, _size, true /* lsbFirst */);
+                return string_noexcept([&](){ return "offset "+std::to_string(_offset)+", size "+std::to_string(_size)+": "+toHexString(_parent.get_ptr()+_offset, _size); } );
             }
     };
 
@@ -926,8 +934,8 @@ namespace jau {
                 return *this;
             }
 
-            std::string toString() const {
-                return "size "+std::to_string(size())+", capacity "+std::to_string(capacity())+", "+bytesHexString(get_ptr(), 0, size(), true /* lsbFirst */);
+            std::string toString() const noexcept {
+                return string_noexcept([&](){ return "size "+std::to_string(size())+", capacity "+std::to_string(capacity())+", "+toHexString(get_ptr(), size()); } );
             }
     };
 
@@ -945,7 +953,7 @@ namespace jau {
         public:
             /** Fixed maximum size */
             constexpr static const jau::nsize_t fixed_size = FixedSize;
-            
+
         private:
             uint8_t smem[fixed_size];
 
@@ -960,7 +968,7 @@ namespace jau {
             {
                 JAU_TRACE_OCTETS_PRINT("AOctets ctor0: sized");
             }
-            
+
             /**
              * Takes ownership (malloc(size) and copy, free) ..
              *
@@ -1064,8 +1072,8 @@ namespace jau {
                 return *this;
             }
 
-            std::string toString() const {
-                return "size "+std::to_string(size())+", fixed_size "+std::to_string(fixed_size)+", "+bytesHexString(get_ptr(), 0, size(), true /* lsbFirst */);
+            std::string toString() const noexcept {
+                return string_noexcept([&](){ return "size "+std::to_string(size())+", fixed_size "+std::to_string(fixed_size)+", "+toHexString(get_ptr(), size()); });
             }
     };
 

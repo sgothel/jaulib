@@ -493,6 +493,19 @@ namespace jau {
 
     /// No throw wrap for given unary predicate producing a `std::string`.
     template<class UnaryPredicate>
+    inline void do_noexcept(UnaryPredicate p) noexcept {
+        std::exception_ptr eptr;
+        try {
+            p();
+            return;
+        } catch (...) {
+            eptr = std::current_exception();
+        }
+        handle_exception(eptr, __FILE__, __LINE__);
+    }
+
+    /// No throw wrap for given unary predicate producing a `std::string`.
+    template<class UnaryPredicate>
     inline std::string string_noexcept(UnaryPredicate p) noexcept {
         std::exception_ptr eptr;
         try {
