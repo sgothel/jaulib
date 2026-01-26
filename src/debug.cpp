@@ -95,76 +95,78 @@ std::string jau::demangle_name(const char* mangled_name) noexcept {
 
 std::string jau::get_backtrace(const bool skip_anon_frames, const jau::snsize_t max_frames, const jau::snsize_t skip_frames) noexcept {
     std::string out;
+    try {
 #ifdef USE_LIBUNWIND
-    // symbol:
-    //  1: _ZN9direct_bt10DBTAdapter14startDiscoveryEbNS_19HCILEOwnAddressTypeEtt + 0x58d @ ip 0x7faa959d6daf, sp 0x7ffe38f301e0
-    // de-mangled:
-    //  1: direct_bt::DBTAdapter::startDiscovery(bool, direct_bt::HCILEOwnAddressType, unsigned short, unsigned short) + 0x58d @ ip 0x7f687b459071, sp 0x7fff2bf795d0
-    jau::snsize_t frame=0;
-    int res;
-    char cstr[256];
-    unw_context_t uc;
-    unw_word_t ip, sp;
-    unw_cursor_t cursor;
-    unw_word_t offset;
+        // symbol:
+        //  1: _ZN9direct_bt10DBTAdapter14startDiscoveryEbNS_19HCILEOwnAddressTypeEtt + 0x58d @ ip 0x7faa959d6daf, sp 0x7ffe38f301e0
+        // de-mangled:
+        //  1: direct_bt::DBTAdapter::startDiscovery(bool, direct_bt::HCILEOwnAddressType, unsigned short, unsigned short) + 0x58d @ ip 0x7f687b459071, sp 0x7fff2bf795d0
+        jau::snsize_t frame=0;
+        int res;
+        char cstr[256];
+        unw_context_t uc;
+        unw_word_t ip, sp;
+        unw_cursor_t cursor;
+        unw_word_t offset;
 
-    if( 0 != ( res = unw_getcontext(&uc) ) ) {
-        INFO_PRINT("unw_getcontext ERR: %d\n", res);
-        return out;
-    }
-    if( 0 != ( res = unw_init_local(&cursor, &uc) ) ) {
-        INFO_PRINT("unw_init_local ERR %d\n", res);
-        return out;
-    }
-    bool last_frame_anon = false;
-    while( unw_step(&cursor) > 0 && ( 0 > max_frames || ( max_frames + skip_frames ) > ( frame + 1 ) ) ) {
-        frame++;
-        if( skip_frames > frame ) {
-            continue;
+        if( 0 != ( res = unw_getcontext(&uc) ) ) {
+            INFO_PRINT("unw_getcontext ERR: %d\n", res);
+            return out;
         }
-        bool append_line;
-        snprintf(cstr, sizeof(cstr), "%3zd: ", (ssize_t)frame);
-        std::string line(cstr);
-
-        if( 0 != ( res = unw_get_reg(&cursor, UNW_REG_IP, &ip) ) ) { // instruction pointer (pc)
-            INFO_PRINT("unw_get_reg(IP): frame %zd, ERR %d\n", frame, res);
-            ip = 0;
+        if( 0 != ( res = unw_init_local(&cursor, &uc) ) ) {
+            INFO_PRINT("unw_init_local ERR %d\n", res);
+            return out;
         }
-        if( 0 != ( res = unw_get_reg(&cursor, UNW_REG_SP, &sp) ) ) { // stack pointer
-            INFO_PRINT("unw_get_reg(SP): frame %zd, ERR %d\n", frame, res);
-            sp = 0;
-        }
-        if( 0 == unw_get_proc_name(&cursor, cstr, sizeof(cstr), &offset) ) {
-            int status;
-            char *real_name;
-            cstr[sizeof(cstr) -1] = 0; // fail safe
-            if ( (real_name = abi::__cxa_demangle(cstr, nullptr, nullptr, &status)) == nullptr ) {
-                line.append(cstr); // didn't work, use cstr
-            } else {
-                line.append(real_name);
-                free( real_name );
+        bool last_frame_anon = false;
+        while( unw_step(&cursor) > 0 && ( 0 > max_frames || ( max_frames + skip_frames ) > ( frame + 1 ) ) ) {
+            frame++;
+            if( skip_frames > frame ) {
+                continue;
             }
-            snprintf(cstr, sizeof(cstr), " + 0x%lx @ ip %p, sp %p", (unsigned long)offset, (void*)ip, (void*)sp); // NOLINT(performance-no-int-to-ptr)
-            append_line = true;
-            last_frame_anon = false;
-        } else {
-            // anon frame w/o proc-name
-            snprintf(cstr, sizeof(cstr), "__no_proc_name__ @ ip %p, sp %p", (void*)ip, (void*)sp); // NOLINT(performance-no-int-to-ptr)
-            append_line = !skip_anon_frames || !last_frame_anon;
-            last_frame_anon = true;
+            bool append_line;
+            snprintf(cstr, sizeof(cstr), "%3zd: ", (ssize_t)frame);
+            std::string line(cstr);
+
+            if( 0 != ( res = unw_get_reg(&cursor, UNW_REG_IP, &ip) ) ) { // instruction pointer (pc)
+                INFO_PRINT("unw_get_reg(IP): frame %zd, ERR %d\n", frame, res);
+                ip = 0;
+            }
+            if( 0 != ( res = unw_get_reg(&cursor, UNW_REG_SP, &sp) ) ) { // stack pointer
+                INFO_PRINT("unw_get_reg(SP): frame %zd, ERR %d\n", frame, res);
+                sp = 0;
+            }
+            if( 0 == unw_get_proc_name(&cursor, cstr, sizeof(cstr), &offset) ) {
+                int status;
+                char *real_name;
+                cstr[sizeof(cstr) -1] = 0; // fail safe
+                if ( (real_name = abi::__cxa_demangle(cstr, nullptr, nullptr, &status)) == nullptr ) {
+                    line.append(cstr); // didn't work, use cstr
+                } else {
+                    line.append(real_name);
+                    free( real_name );
+                }
+                snprintf(cstr, sizeof(cstr), " + 0x%lx @ ip %p, sp %p", (unsigned long)offset, (void*)ip, (void*)sp); // NOLINT(performance-no-int-to-ptr)
+                append_line = true;
+                last_frame_anon = false;
+            } else {
+                // anon frame w/o proc-name
+                snprintf(cstr, sizeof(cstr), "__no_proc_name__ @ ip %p, sp %p", (void*)ip, (void*)sp); // NOLINT(performance-no-int-to-ptr)
+                append_line = !skip_anon_frames || !last_frame_anon;
+                last_frame_anon = true;
+            }
+            line.append(cstr);
+            line.append("\n");
+            if( append_line ) {
+                out.append(line);
+            }
         }
-        line.append(cstr);
-        line.append("\n");
-        if( append_line ) {
-            out.append(line);
-        }
-    }
 #else /* USE_LIBUNWIND */
-    (void)skip_anon_frames;
-    (void)max_frames;
-    (void)skip_frames;
-    out.append("0: backtrace disabled\n");
+        (void)skip_anon_frames;
+        (void)max_frames;
+        (void)skip_frames;
+        out.append("0: backtrace disabled\n");
 #endif /* USE_LIBUNWIND */
+    } catch (...) { } // NOLINT(bugprone-empty-catch): intentional
     return out;
 }
 
