@@ -85,13 +85,13 @@ extern "C" {
 #include <catch2/catch_amalgamated.hpp>
 
 /** The main argv[0] test executable path */
-std::string executable_path;
+std::string executable_path; // NOLINT(misc-use-internal-linkage)
 
 /** Run w/o command-line args, i.e. default CI unit test. */
-bool catch_auto_run;
+bool catch_auto_run; // NOLINT(misc-use-internal-linkage)
 
 /** Run w/ command-line arg '--perf_analysis'. */
-bool catch_perf_analysis;
+bool catch_perf_analysis; // NOLINT(misc-use-internal-linkage)
 
 static char * extra_args[] = { (char*)"--colour-mode", (char*)"none" };
 static int extra_args_c = sizeof(extra_args) / sizeof(const char *);
@@ -130,7 +130,7 @@ int main( int argc, char* argv[] )
   // writing to session.configData() here sets defaults
   // this is the preferred way to set them
 
-  int returnCode = session.applyCommandLine( argv_2.size(), argv_2.data() );
+  int returnCode = session.applyCommandLine( int(argv_2.size()), argv_2.data() );
 
   if( returnCode != 0 ) { // Indicates a command line error
       return returnCode;

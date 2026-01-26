@@ -33,8 +33,10 @@
 #ifndef CATCH2_EXT_H
 #define CATCH2_EXT_H
 
-#include <catch2/catch_amalgamated.hpp>
+#include <catch2/catch_amalgamated.hpp> // NOLINT
 #include <jau/float_math.hpp>
+
+// NOLINTBEGIN(bugprone-chained-comparison)
 
 template<class T, class U>
 inline void CHECK_EQUAL(T t, U u)
@@ -159,6 +161,8 @@ inline void REQUIRE_EQUAL(T t, U u)
       }
     }
 // }
+
+// NOLINTEND(bugprone-chained-comparison)
 
 #if !defined(CATCH_CONFIG_MAIN)
 #include <jau/test/catch2_my_main.cpp> // NOLINT(bugprone-suspicious-include)
