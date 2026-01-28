@@ -67,6 +67,8 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/dist/perf-gcc",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
         "JAU_CMAKE_FIX_INSTALL_PREFIX": "ON",
         "USE_STRIP": "OFF"
       }

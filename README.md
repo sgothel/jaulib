@@ -239,7 +239,7 @@ cd jaulib
 
 #### CMake Build via Presets
 Following debug presets are defined in `CMakePresets.json`
-- `debug`
+- **`debug`**
   - default generator
   - default compiler
   - C++20
@@ -252,39 +252,49 @@ Following debug presets are defined in `CMakePresets.json`
   - testing with sudo off
   - binary-dir `build/debug`
   - install-dir `dist/debug`
-- `debug-clang`
-  - inherits from `debug`
-  - compiler: `clang`
-  - enabled `clang-tidy`
-  - binary-dir `build/debug-clang`
-  - install-dir `dist/debug-clang`
-- `debug-gcc`
-  - inherits from `debug`
-  - compiler: `gcc`
-  - disabled `clang-tidy`
-  - binary-dir `build/debug-gcc`
-  - install-dir `dist/debug-gcc`
-- `release`
-  - inherits from `debug`
-  - debug disabled
-  - disabled `clang-tidy`
-  - testing with sudo on
-  - binary-dir `build/release`
-  - install-dir `dist/release`
-- `release-clang`
-  - compiler: `clang`
-  - enabled `clang-tidy`
-  - binary-dir `build/release-clang`
-  - install-dir `dist/release-clang`
-- `release-gcc`
-  - compiler: `gcc`
-  - disabled `clang-tidy`
-  - binary-dir `build/release-gcc`
-  - install-dir `dist/release-gcc`
-- **`default`**
-  - inherits from `debug-clang`
-  - binary-dir `build/default`
-  - install-dir `dist/default`
+  - **`debug-clang`**
+    - compiler: `clang`
+    - enabled `clang-tidy`
+    - binary-dir `build/debug-clang`
+    - install-dir `dist/debug-clang`
+    - **`default`**
+      - binary-dir `build/default`
+      - install-dir `dist/default`
+  - **`debug-gcc`**
+    - compiler: `gcc`
+    - disabled `clang-tidy`
+    - binary-dir `build/debug-gcc`
+    - install-dir `dist/debug-gcc`
+  - **`release`**
+    - debug disabled (strip libraries)
+    - disabled `clang-tidy`
+    - testing with sudo on
+    - binary-dir `build/release`
+    - install-dir `dist/release`
+    - **`release-clang`**
+      - compiler: `clang`
+      - enabled `clang-tidy`
+      - binary-dir `build/release-clang`
+      - install-dir `dist/release-clang`
+    - **`release-gcc`**
+      - compiler: `gcc`
+      - disabled `clang-tidy`
+      - binary-dir `build/release-gcc`
+      - install-dir `dist/release-gcc`
+  - **`perf-clang`**
+    - debug disabled
+    - no strip
+    - compiler: `clang`
+    - disabled `clang-tidy`
+    - binary-dir `build/perf-clang`
+    - install-dir `dist/perf-clang`
+  - **`perf-gcc`**
+    - debug disabled
+    - no strip
+    - compiler: `gcc`
+    - disabled `clang-tidy`
+    - binary-dir `build/perf-gcc`
+    - install-dir `dist/perf-gcc`
 
 Kick-off the workflow by e.g. using preset `release-gcc` to configure, build, test, install and building documentation.
 You may skip `install` and `doc_jau` by dropping it from `--target`.
