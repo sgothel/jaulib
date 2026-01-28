@@ -33,3 +33,5 @@ documentation.tar.xz
 /Profiling test_cow_darray_perf01/
 /bin/
 old_jaulibs/
+perf/
+symbols/
