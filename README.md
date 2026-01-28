@@ -128,6 +128,7 @@ but currently only intended to support unit testing and to produce a Doxygen API
 #### Install on FreeBSD
 
 Installing build dependencies on FreeBSD >= 13:
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}
 pkg install git
 pkg install sudo
@@ -140,6 +141,7 @@ ln -s /usr/local/bin/bash /bin/bash
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Install optional Java dependencies:
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}
 pkg install openjdk17
 pkg install openjdk17-jre
@@ -148,6 +150,7 @@ rehash
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For Java ensure `/etc/fstab` includes:
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}
 fdesc   /dev/fd         fdescfs         rw      0       0
 proc    /proc           procfs          rw      0       0
@@ -160,6 +163,7 @@ hence testing using cmake option `-DTEST_WITH_SUDO=ON` is disabled. <br />
 To use URL streaming functionality via the `curl` library in `jau_io_util.hpp` and `jau/io_util.cpp`,
 the cmake option `-DUSE_LIBCURL=ON` must be set. <br />
 This also requires installation of the following packets:
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}
 pkg install curl
 apt install mini-httpd
@@ -169,6 +173,7 @@ Note: `mini-httpd` is being used for unit testing URL streaming only.
 #### Install on Debian or Ubuntu
 
 Installing build dependencies on Debian >= 11 and Ubuntu >= 20.04:
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}
 apt install git
 apt install build-essential g++ gcc libc-dev libpthread-stubs0-dev
@@ -186,6 +191,7 @@ After complete clang installation, you might want to setup the latest version as
 For Debian you can use this [clang alternatives setup script](scripts/setup_clang_alternatives.sh).
 
 Install optional Java dependencies:
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}
 apt install openjdk-17-jdk openjdk-17-jre junit4
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -193,6 +199,7 @@ apt install openjdk-17-jdk openjdk-17-jre junit4
 To test `jau::fs::mount_image()` and `jau::fs::umount()` under `Linux`
 with enabled cmake option `-DTEST_WITH_SUDO=ON`, <br />
 the following build dependencies are added
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}
 apt install libcap-dev libcap2-bin
 apt install squashfs-tools
@@ -201,6 +208,7 @@ apt install squashfs-tools
 To use URL streaming functionality via the `curl` library in `jau_io_util.hpp` and `jau/io_util.cpp`,
 the cmake option `-DUSE_LIBCURL=ON` must be set. <br />
 This also requires installation of the following packets:
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}
 apt install libcurl4 libcurl4-gnutls-dev
 apt install mini-httpd
@@ -213,6 +221,7 @@ At time of writing (Debian 12), it is recommended to install
 from [its upstream source](https://emscripten.org/docs/getting_started/downloads.html).
 
 At a later time (more recent Debian > 12 deployment) the Debian default may be functional:
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}
 apt install emscripten
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -279,6 +288,7 @@ Following debug presets are defined in `CMakePresets.json`
 
 Kick-off the workflow by e.g. using preset `release-gcc` to configure, build, test, install and building documentation.
 You may skip `install` and `doc_jau` by dropping it from `--target`.
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}
 cmake --preset release-gcc
 cmake --build --preset release-gcc --parallel
@@ -299,6 +309,7 @@ The hardcoded presets resemble `debug-clang` [presets](README.md#cmake_presets_o
 
 Kick-off the workflow to configure, build, test, install and building documentation.
 You may skip `install` and `doc_jau` by dropping it from `--target`.
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}
 rm -rf build/default
 cmake -B build/default
@@ -332,20 +343,25 @@ you all the options. The interesting ones are detailed below:
 - `BUILDJAVA`
 
 Changing install path
+
 ~~~~~~~~~~~~~
 -DCMAKE_INSTALL_PREFIX=/somewhere/dist-jaulib
 ~~~~~~~~~~~~~
 
 Building debug build:
+
 ~~~~~~~~~~~~~
 -DDEBUG=ON
 ~~~~~~~~~~~~~
+
 or
+
 ~~~~~~~~~~~~~
 -DCMAKE_BUILD_TYPE=Debug
 ~~~~~~~~~~~~~
 
 Enable/disable unit tests to build
+
 ~~~~~~~~~~~~~
 -DBUILD_TESTING=ON
 ~~~~~~~~~~~~~
@@ -356,16 +372,19 @@ Covered unit test requiring `sudo` are currently
 - `Linux` OS
   - `jau::fs::mount_image()`
   - `jau::fs::umount()`
+
 ~~~~~~~~~~~~~
 -DTEST_WITH_SUDO=ON
 ~~~~~~~~~~~~~
 
 Using clang instead of gcc:
+
 ~~~~~~~~~~~~~
 -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++
 ~~~~~~~~~~~~~
 
 Building with clang and clang-tidy `lint` validation
+
 ~~~~~~~~~~~~~
 -DCMAKE_C_COMPILER=/usr/bin/clang
 -DCMAKE_CXX_COMPILER=/usr/bin/clang++
@@ -373,47 +392,56 @@ Building with clang and clang-tidy `lint` validation
 ~~~~~~~~~~~~~
 
 Disable stripping native lib even in non debug build:
+
 ~~~~~~~~~~~~~
 -DUSE_STRIP=OFF
 ~~~~~~~~~~~~~
 
 Enable using `libcurl` (default: disabled)
+
 ~~~~~~~~~~~~~
 -DUSE_LIBCURL=ON
 ~~~~~~~~~~~~~
 
 Enable using `libunwind` (default: disabled)
+
 ~~~~~~~~~~~~~
 -DUSE_LIBUNWIND=ON
 ~~~~~~~~~~~~~
 
 Disable using `C++ Runtime Type Information` (*RTTI*) (default: enabled)
+
 ~~~~~~~~~~~~~
 -DDONT_USE_RTTI=ON
 ~~~~~~~~~~~~~
 
 Building debug and instrumentation (sanitizer) build:
+
 ~~~~~~~~~~~~~
 -DDEBUG=ON -DINSTRUMENTATION=ON
 ~~~~~~~~~~~~~
 
 Cross-compiling on a different system:
+
 ~~~~~~~~~~~~~
 -DCMAKE_CXX_FLAGS:STRING=-m32 -march=i586
 -DCMAKE_C_FLAGS:STRING=-m32 -march=i586
 ~~~~~~~~~~~~~
 
 To build documentation run:
+
 ~~~~~~~~~~~~~
 make doc
 ~~~~~~~~~~~~~
 
 To build Java bindings:
+
 ~~~~~~~~~~~~~
 -DBUILDJAVA=ON
 ~~~~~~~~~~~~~
 
 Override default javac debug arguments `source,lines`:
+
 ~~~~~~~~~~~~~
 -DJAVAC_DEBUG_ARGS="source,lines,vars"
 
@@ -495,10 +523,12 @@ IDE integration configuration files are provided for
 
 For VSCodium one might copy the [example root-workspace file](.vscode/jaulib.code-workspace_example)
 to the parent folder of this project (*note the filename change*) and adjust the `path` to your filesystem.
+
 ~~~~~~~~~~~~~
 cp .vscode/jaulib.code-workspace_example ../jaulib.code-workspace
 vi ../jaulib.code-workspace
 ~~~~~~~~~~~~~
+
 Then you can open it via `File . Open Workspace from File...` menu item.
 - All listed extensions are referenced in this workspace file to be installed via the IDE
 - Select one of the [CMake Presets](README.md#cmake_presets_optional) for
