@@ -469,7 +469,7 @@ namespace jau {
     /**
      * Handle given optional exception (nullable std::exception_ptr) and send std::exception::what() message to `stderr`
      * @param eptr contains optional exception, may be `nullptr`
-     * @return true if `eptr` contained an exception pointer, not `nullptr`
+     * @return true if `eptr` contained an exception pointer, false otherwise (`nullptr`)
      */
     inline __attribute__((always_inline))
     bool handle_exception(std::exception_ptr eptr, const char* file, int line) noexcept { // NOLINT(performance-unnecessary-value-param) passing by value is OK
@@ -484,6 +484,19 @@ namespace jau {
         return false;
     }
 
+    /// No throw wrap for given unary predicate `p` action. Returns true for success (no exception), otherwise false (exception occurred).
+    template<class UnaryPredicate>
+    inline bool do_noexcept(UnaryPredicate p) noexcept {
+        std::exception_ptr eptr;
+        try {
+            p();
+            return true;
+        } catch (...) {
+            eptr = std::current_exception();
+        }
+        return !handle_exception(eptr, __FILE__, __LINE__);
+    }
+
     /**@}*/
 
     /** \addtogroup StringUtils
@@ -491,20 +504,7 @@ namespace jau {
      *  @{
      */
 
-    /// No throw wrap for given unary predicate producing a `std::string`.
-    template<class UnaryPredicate>
-    inline void do_noexcept(UnaryPredicate p) noexcept {
-        std::exception_ptr eptr;
-        try {
-            p();
-            return;
-        } catch (...) {
-            eptr = std::current_exception();
-        }
-        handle_exception(eptr, __FILE__, __LINE__);
-    }
-
-    /// No throw wrap for given unary predicate producing a `std::string`.
+    /// No throw wrap for given unary predicate `p` producing a `std::string`. Returns an empty string if `p` causes an exception.
     template<class UnaryPredicate>
     inline std::string string_noexcept(UnaryPredicate p) noexcept {
         std::exception_ptr eptr;
