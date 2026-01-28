@@ -282,7 +282,7 @@ namespace jau::io {
      * To abort streaming, (1) user may return `false` from the given `consumer_func`.
      * Asynchronous URL read content using the given byte jau::ringbuffer, allowing parallel reading.
      *
-     * To abort streaming, (2) user may set given reference `results` to a value other than async_io_result_t::NONE.
+     * To abort streaming, (2) user may set given reference `results` to a value other than io_result_t::NONE.
      *
      * Standard implementation uses [curl](https://curl.se/),
      * hence all [*libcurl* network protocols](https://curl.se/docs/url-syntax.html) are supported,
@@ -363,7 +363,7 @@ namespace jau::io {
      * To abort streaming, (1) user may return `false` from the given `consumer_func`.
      * Asynchronous URL read content using the given byte jau::ringbuffer, allowing parallel reading.
      *
-     * To abort streaming, (2) user may set given reference `results` to a value other than async_io_result_t::NONE.
+     * To abort streaming, (2) user may set given reference `results` to a value other than io_result_t::NONE.
      *
      * Standard implementation uses [curl](https://curl.se/),
      * hence all [*libcurl* network protocols](https://curl.se/docs/url-syntax.html) are supported,
