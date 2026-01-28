@@ -419,11 +419,48 @@ TEST_CASE("thousands_flag", "[jau][std::string][jau::cfmt][flags]" ) {
     CHECK("1" == jau::format_string("%'d", 1));
     CHECK("10" == jau::format_string("%#'d", 10));
     CHECK("100" == jau::format_string("%,d", 100));
-    CHECK("1'000" == jau::format_string("%'d", 1000));
+    CHECK("1'000" == jau::format_string("%#'d", 1000));
     CHECK("1'000'000" == jau::format_string("%,d", 1000000));
     CHECK("+1'000'000" == jau::format_string("%'+d", 1000000));
+    CHECK("+1'000'000" == jau::format_string("%#'+d", 1000000));
     CHECK("-1'000'000" == jau::format_string("%,d", -1000000));
-    CHECK("-1'000'000" == jau::format_string("%'d", -1000000));
+    CHECK("-1'000'000" == jau::format_string("%#'d", -1000000));
+
+    CHECK("ff" == jau::format_string("%'x", 0xff_u32));
+    CHECK("0xff" == jau::format_string("%#'x", 0xff_u32));
+    CHECK("ffff" == jau::format_string("%,x", 0xffff_u32));
+    CHECK("0x1'ffff" == jau::format_string("%#'x", 0x1ffff_u32));
+    CHECK("1'ffff'ffff" == jau::format_string("%,lx", 0x1ffffffff_i64));
+    CHECK("0x1'ffff'ffff" == jau::format_string("%#'lx", 0x1ffffffff_u64));
+    // negative types not allowed for hex-conversion
+
+    // separator, space-padding
+    CHECK(" 876'543" == jau::format_string("%,8d", 876543));
+    CHECK("9'876'543" == jau::format_string("%,8d", 9876543));
+    CHECK("9'876'543" == jau::format_string("%,9d", 9876543));
+    CHECK(" 9'876'543" == jau::format_string("%,10d", 9876543));
+    CHECK("    9'876'543" == jau::format_string("%,13d", 9876543));
+
+    CHECK("0xaffe" == jau::format_string("%#'x", 0xaffe_u32));
+    CHECK("0xaffe" == jau::format_string("%#'6x", 0xaffe_u32));
+    CHECK(" 0xaffe" == jau::format_string("%#'7x", 0xaffe_u32));
+    CHECK("  0xaffe" == jau::format_string("%#'8x", 0xaffe_u32));
+    CHECK("0x1'affe" == jau::format_string("%#'7x", 0x1affe_u32));
+    CHECK("    0x1'affe" == jau::format_string("%#'12x", 0x1affe_u32));
+
+    // separator, zero-padding
+    CHECK("'876'543" == jau::format_string("%,08d", 876543));
+    CHECK("9'876'543" == jau::format_string("%,08d", 9876543));
+    CHECK("9'876'543" == jau::format_string("%,09d", 9876543));
+    CHECK("09'876'543" == jau::format_string("%,010d", 9876543));
+    CHECK("0'009'876'543" == jau::format_string("%,013d", 9876543));
+
+    CHECK("0xaffe" == jau::format_string("%#'x", 0xaffe_u32));
+    CHECK("0xaffe" == jau::format_string("%#'06x", 0xaffe_u32));
+    CHECK("0x'affe" == jau::format_string("%#'07x", 0xaffe_u32));
+    CHECK("0x0'affe" == jau::format_string("%#'08x", 0xaffe_u32));
+    CHECK("0x1'affe" == jau::format_string("%#'07x", 0x1affe_u32));
+    CHECK("0x'0001'affe" == jau::format_string("%#'012x", 0x1affe_u32));
 }
 
 TEST_CASE("binary", "[jau][std::string][jau::cfmt][flags]" ) {

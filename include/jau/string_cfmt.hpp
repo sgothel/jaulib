@@ -136,8 +136,8 @@
  * - `-`: left, C99
  * - <code>&nbsp;</code>: space, C99
  * - `+`: plus, C99
- * - ``'``: thousands, POSIX
- * - `,`: thousands, OpenJDK (alias for Java users)
+ * - ``'``: thousands, POSIX (quotation mark)
+ * - `,`: thousands, OpenJDK (comma, alias for Java users)
  *
  * #### Width and Precision
  * Width and precision also supports `*` to use the next argument for its value.
@@ -269,6 +269,12 @@ namespace jau::cfmt {
     };
     JAU_MAKE_ENUM_STRING(cspec_t, character, string, pointer, signed_int, unsigned_int,
                          floating_point, exp_float, alt_float, hex_float);
+
+    /// Global jau::cfmt configuration
+    struct Config {
+        /// Default ``'`` thousand's separator, see flags_t::thousands
+        inline static constexpr char default_thousand_separator = '\'';
+    };
 
     struct FormatOpts {
         std::string_view fmt;

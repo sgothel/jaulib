@@ -188,13 +188,12 @@ TEST_CASE("jau_cfmt_benchmark_append_integral01", "[benchmark][jau][std::string]
     CHECK(true);
 
     const uint64_t i1 = std::numeric_limits<uint64_t>::max(); // Value = 18446744073709551615 (0xffffffffffffffff)
-    static constexpr const char *format_check_exp1 = "    0000000018'446'744'073'709'551'615";
-    static constexpr const char *format_check_exp0 = "    0000000000000018446744073709551615";
+    static constexpr const char *format_check_exp1 = "    018446744073709551615";
+    static constexpr const char *format_check_exp0 = "    018446744073709551615";
     jau::cfmt::FormatOpts o1;
     o1.length_mod = jau::cfmt::plength_t::z;
-    o1.addFlag('\'');
-    o1.setWidth(38);
-    o1.setPrecision(34);
+    o1.setWidth(25);
+    o1.setPrecision(21);
     o1.setConversion('u');
     std::cout << "flags: " << o1 << "\n";
 
@@ -226,7 +225,62 @@ TEST_CASE("jau_cfmt_benchmark_append_integral01", "[benchmark][jau][std::string]
             const size_t bsz = jau::cfmt::default_string_capacity + 1; // including EOS
             s.reserve(bsz);         // incl. EOS
             s.resize(bsz - 1);      // excl. EOS
-            size_t nchars = std::snprintf(&s[0], bsz, "%38.34zu", i1);
+            size_t nchars = std::snprintf(&s[0], bsz, "%25.21zu", i1);
+            if( nchars < bsz ) {
+                s.resize(nchars);
+            }
+            REQUIRE(format_check_exp0 == s);
+            res = res + nchars;
+        }
+        return res;
+    };
+}
+
+TEST_CASE("jau_cfmt_benchmark_append_integral02", "[benchmark][jau][std::string][format_string]") {
+    const size_t loops = 1000; // catch_auto_run ? 1000 : 1000;
+    WARN("Benchmark with " + std::to_string(loops) + " loops");
+    CHECK(true);
+
+    const uint64_t i1 = std::numeric_limits<uint64_t>::max(); // Value = 18446744073709551615 (0xffffffffffffffff)
+    static constexpr const char *format_check_exp1 = "    018'446'744'073'709'551'615";
+    static constexpr const char *format_check_exp0 = "    018446744073709551615";
+    jau::cfmt::FormatOpts o1;
+    o1.length_mod = jau::cfmt::plength_t::z;
+    o1.addFlag('\'');
+    o1.setWidth(31);
+    o1.setPrecision(27);
+    o1.setConversion('u');
+    std::cout << "flags: " << o1 << "\n";
+
+    {
+        std::string s;
+        s.reserve(jau::cfmt::default_string_capacity + 1);
+
+        jau::cfmt::impl::append_integral(s, s.max_size(), i1, false, o1, false);
+        REQUIRE(format_check_exp1 == s);
+    }
+
+    BENCHMARK("append_integral      rsrved bench") {
+        volatile size_t res = 0;
+        for( size_t i = 0; i < loops; ++i ) {
+            std::string s;
+            s.reserve(jau::cfmt::default_string_capacity+1);
+
+            jau::cfmt::impl::append_integral(s, s.max_size(), i1, false, o1, false);
+            REQUIRE(format_check_exp1 == s);
+            res = res + s.size();
+        }
+        return res;
+    };
+
+    BENCHMARK("snprintf             rsrved bench") {
+        volatile size_t res = 0;
+        for( size_t i = 0; i < loops; ++i ) {
+            std::string s;
+            const size_t bsz = jau::cfmt::default_string_capacity + 1; // including EOS
+            s.reserve(bsz);         // incl. EOS
+            s.resize(bsz - 1);      // excl. EOS
+            size_t nchars = std::snprintf(&s[0], bsz, "%25.21zu", i1);
             if( nchars < bsz ) {
                 s.resize(nchars);
             }

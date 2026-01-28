@@ -105,21 +105,21 @@ static void test_uint64_t(const std::string& msg, const uint64_t v, const size_t
 }
 
 TEST_CASE( "Integer Decimal String Test 01", "[datatype][int_dec_string]" ) {
-    test_int32_t("INT32_MIN", INT32_MIN, 14, "-2,147,483,648");
-    test_int32_t("int32_t -thousand", -1000, 6, "-1,000");
+    test_int32_t("INT32_MIN", INT32_MIN, 14, "-2'147'483'648");
+    test_int32_t("int32_t -thousand", -1000, 6, "-1'000");
     test_int32_t("int32_t one", 1, 1, "1");
-    test_int32_t("int32_t thousand", 1000, 5, "1,000");
-    test_int32_t("INT32_MAX", INT32_MAX, 13, "2,147,483,647");
+    test_int32_t("int32_t thousand", 1000, 5, "1'000");
+    test_int32_t("INT32_MAX", INT32_MAX, 13, "2'147'483'647");
 
     test_uint32_t("UINT32_MIN", 0, 1, "0");
     test_uint32_t("uint32_t one", 1, 1, "1");
-    test_uint32_t("uint32_t thousand", 1000, 5, "1,000");
-    test_uint32_t("UINT32_MAX", UINT32_MAX, 13, "4,294,967,295");
+    test_uint32_t("uint32_t thousand", 1000, 5, "1'000");
+    test_uint32_t("UINT32_MAX", UINT32_MAX, 13, "4'294'967'295");
 
     test_uint64_t("UINT64_MIN", 0, 1, "0");
     test_uint64_t("uint64_t one", 1, 1, "1");
-    test_uint64_t("uint64_t thousand", 1000, 5, "1,000");
-    test_uint64_t("UINT64_MAX", UINT64_MAX, 26, "18,446,744,073,709,551,615");
+    test_uint64_t("uint64_t thousand", 1000, 5, "1'000");
+    test_uint64_t("UINT64_MAX", UINT64_MAX, 26, "18'446'744'073'709'551'615");
 }
 
 

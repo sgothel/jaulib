@@ -1288,6 +1288,7 @@ std::string jau::cfmt::FormatOpts::toFormat() const {
     s.reserve(31);
     s.append("%");
     if( is_set(flags, flags_t::hash) ) { s.append("#"); }
+    if( is_set(flags, flags_t::thousands) ) { s.append("'"); }
     if( is_set(flags, flags_t::zeropad) ) { s.append("0"); }
     if( is_set(flags, flags_t::left) ) { s.append("-"); }
     if( is_set(flags, flags_t::space) ) { s.append(" "); }
@@ -1444,8 +1445,8 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
         return;
     }
     const size_t dest_start_len = dest.size();
-
     const uint32_t radix = opts.radix;
+    const uint32_t sep_gap = 10 == radix ? 3 : 4;
     uint32_t shift;
     switch (radix) {
         case 16: shift = 4; break;
@@ -1454,10 +1455,8 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
         case 2:  shift = 1; break;
         default: return;
     }
-    const char separator = is_set(opts.flags, flags_t::thousands) ? '\'' : 0;
-
     // const uint32_t val_digits = opts.precision_set && opts.precision == 0 && jau::is_zero(v) ? 0 : jau::digits(v, radix);
-    uint32_t val_digits; // includes separator count
+    uint32_t val_digits; // includes inject_dot
     char buf_[char32buf_maxlen];
     if( opts.precision_set && opts.precision == 0 && jau::is_zero(v) ) {
         val_digits = 0;
@@ -1466,35 +1465,15 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
         const uint64_t mask = radix - 1;
         char * d = buf_;
         const char * const d_end_num = d + char32buf_maxlen;
-        if (!separator) {
-            do {
-                if (10 == radix) {
-                    *(d++) = char('0' + (v % 10_u64));
-                    v /= 10;
-                } else {
-                    *(d++) = hex_array[v & mask];
-                    v >>= shift;
-                }
-            } while( v && d < d_end_num);
-        } else {
-            const uint32_t sep_gap = 10 == radix ? 3 : 4;
-            uint32_t digit_cnt = 0;
-            do {
-                if (0 < digit_cnt && 0 == digit_cnt % sep_gap) {
-                    *(d++) = separator;
-                }
-                assert(d < d_end_num);
-
-                if (10 == radix) {
-                    *(d++) = char('0' + (v % 10_u64));
-                    v /= 10;
-                } else {
-                    *(d++) = hex_array[v & mask];
-                    v >>= shift;
-                }
-                ++digit_cnt;
-            } while( v && d < d_end_num);
-        }
+        do {
+            if (10 == radix) {
+                *(d++) = char('0' + (v % 10_u64));
+                v /= 10;
+            } else {
+                *(d++) = hex_array[v & mask];
+                v >>= shift;
+            }
+        } while( v && d < d_end_num);
         if (inject_dot && d < d_end_num-1) {
             *d = *(d-1);
             *(d-1) = '.';
@@ -1502,87 +1481,82 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
         }
         val_digits = d - buf_;
     }
+    uint32_t num_len; ///< contains zero-padding, val_digits and separator
+    char separator;
+    if (is_set(opts.flags, flags_t::thousands)) {
+        separator = Config::default_thousand_separator;
+        num_len = val_digits + ( (val_digits - 1) / sep_gap );
+    } else {
+        separator = 0;
+        num_len = val_digits;
+    }
     const uint32_t prec = opts.precision_set ? opts.precision : 0;
     uint32_t width = opts.width_set ? opts.width : 0;
-    uint32_t zeros_left = 0, space_left = 0, space_right = 0;
-    uint32_t xtra_left = 0;  ///< contains hash, sign and prec_left and single space
+    uint32_t space_left = 0, space_right = 0;
+    uint32_t xtra_left = 0;  ///< contains hash, sign, single space
     {
-        uint32_t len = val_digits;  // total of the number string
+        const uint32_t num_len0 = num_len; ///< initial number-len digits + sep_count
+
         // p1: pad leading zeros
         if (!is_set(opts.flags, flags_t::left)) {
             if (width && is_set(opts.flags, flags_t::zeropad) && (negative || has_any(opts.flags, flags_t::plus | flags_t::space))) {
                 --width;
             }
-            if (len < prec) {
-                zeros_left = prec - len;
-                xtra_left += zeros_left;
-                len += zeros_left;
+            if (num_len < prec) {
+                num_len += prec - num_len;
             }
-            if (len < width && is_set(opts.flags, flags_t::zeropad)) {
-                const uint32_t n = width - len;
-                zeros_left += n;
-                xtra_left += n;
-                len += n;
+            if (num_len < width && is_set(opts.flags, flags_t::zeropad)) {
+                num_len += width - num_len;
             }
         }
-
         // p1: handle hash
         if (is_set(opts.flags, flags_t::hash)) {
-            if (!opts.precision_set && len && ((len == prec) || (len == width))) {
-                --xtra_left;
-                --len;
-                if (zeros_left) { --zeros_left; }
-                if (len && (radix == 16)) {
-                    --xtra_left;
-                    --len;
-                    if (zeros_left) { --zeros_left; }
+            if (!opts.precision_set && num_len>num_len0 && ((num_len == prec) || (num_len == width))) {
+                --num_len;
+                if (num_len>num_len0 && (radix == 16 || radix == 2)) {
+                    --num_len;
                 }
             }
             if (radix == 16 || radix == 2) {
                 ++xtra_left;
-                ++len;
             }
-            ++xtra_left;
-            ++len;  // hash zero
+            ++xtra_left; // hash zero
         }
 
         // p1: sign
         if (negative) {
-            ++xtra_left;
-            ++len;  // '-';
+            ++xtra_left; // '-';
         } else if (is_set(opts.flags, flags_t::plus)) {
-            ++xtra_left;
-            ++len;  // '+';  // ignore the space if the '+' exists
+            ++xtra_left; // '+';  // ignore the space if the '+' exists
         }
 
         // p1: space
         if (!negative && is_set(opts.flags, flags_t::space)) {
-            ++xtra_left;
-            ++len;  // ' ';
+            ++xtra_left; // ' ';
         }
 
         // p2: append pad spaces left/right up to given width
-        if (len < width) {
-            if (is_set(opts.flags, flags_t::left)) {
-                space_right = width - len;
-                // len += space_right;
-            } else if (!is_set(opts.flags, flags_t::zeropad)) {
-                space_left = width - len;
-                // len += space_left;
+        {
+            const uint32_t len = xtra_left + num_len;
+            if (len < width) {
+                if (is_set(opts.flags, flags_t::left)) {
+                    space_right = width - len;
+                } else if (!is_set(opts.flags, flags_t::zeropad)) {
+                    space_left = width - len;
+                }
             }
         }
         const size_t added_maxlen = dest_maxlen - dest_start_len;
-        const size_t added_len = std::min<size_t>(added_maxlen, space_left + xtra_left + val_digits + space_right);
+        const size_t added_len = std::min<size_t>(added_maxlen, space_left + xtra_left + num_len + space_right);
         const size_t new_size = dest_start_len + added_len;
         dest.reserve(new_size + 1);  // +EOS, not shrinking!
         dest.resize(new_size, ' ');
 
 #if !defined(NDEBUG) && 0
-        const uint32_t sep_count = val_digits > 0 && separator ? (val_digits - 1) / sep_gap : 0;
-        fprintf(stderr, "XXX.80: opts: %s\n", opts.toString().c_str());
-        fprintf(stderr, "XXX.80: negative %d, val %" PRIu64 "\n", negative, v);
-        fprintf(stderr, "XXX.80: idx[digits %u, sep %u, xleft %u (zeros %u)], space[l %u, r %u] -> len %u\n",
-                val_digits, sep_count, xtra_left, zeros_left, space_left, space_right, len);
+        fprintf(stderr, "XXX.80: seperator '%c', opts %s\n", separator, opts.toString().c_str());
+        fprintf(stderr, "XXX.80: negative %d, val %" PRIu64 "\n", (int)negative, v);
+        fprintf(stderr, "XXX.80: num_len %u (digits %u + sep %u + .. ), xleft %u, space[l %u, r %u] -> len %u\n",
+                num_len, val_digits, sep_count, xtra_left, space_left, space_right, (space_left + xtra_left + num_len + space_right));
         fprintf(stderr, "XXX.80: total len[old %zu, added %zu, len %zu], number_start %u\n", dest_start_len, added_len, dest.size(), xtra_left + space_left);
 #endif
     }
@@ -1591,27 +1565,40 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
     const char *const d_start_num = d_start + space_left + xtra_left;
     char *d = dest.data() + dest_len - space_right;
     const char *const d_end_num = d;
+    const char *const d_start_digit = d_end_num - val_digits;
     assert(d_end_num >= d_start_num);
-    assert(d_end_num - d_start_num == val_digits);
-
-    // required = space_left + xtra_left + val_digits + space_right;
+    assert(d_end_num - d_start_num == num_len);
     {
         char * p = buf_;
-        while (d > d_start_num) {
-            *(--d) = *(p++); // NOLINT(clang-analyzer-core.uninitialized.Assign): Wrong analysis, see `Case 1` in test_stringfmt_impl.cpp. (Assigned value is garbage or undefined)
+        if( !separator ) {
+            while (d > d_start_digit) {
+                *(--d) = *(p++); // NOLINT(clang-analyzer-core.uninitialized.Assign): Wrong analysis, see `Case 1` in test_stringfmt_impl.cpp. (Assigned value is garbage or undefined)
+            }
+            assert(p - buf_ == val_digits);
+            while (d > d_start_num) {
+                *(--d) = '0'; // zero-padding
+            }
+        } else {
+            uint32_t sep_count1 = (num_len - 1) / sep_gap; // final seperator count
+            uint32_t digit_cnt = 0;
+            while (d > d_start_num) {
+                if (sep_count1 && digit_cnt && 0 == digit_cnt % sep_gap) {
+                    *(--d) = separator;
+                    --sep_count1;
+                }
+                if (d > d_start_num) {
+                    if (digit_cnt >= val_digits) {
+                        *(--d) = '0'; // zero-padding
+                    } else {
+                        *(--d) = *(p++); // NOLINT(clang-analyzer-core.uninitialized.Assign): Wrong analysis, see `Case 1` in test_stringfmt_impl.cpp. (Assigned value is garbage or undefined)
+                    }
+                    ++digit_cnt;
+                }
+            }
         }
-        assert(p - buf_ == val_digits);
     }
     assert(d == d_start_num);
     assert(d >= d_start);
-
-    // p1: pad leading zeros (prec_left + space_left)
-    assert(d_start <= d_start_num - zeros_left);
-    if (zeros_left) {
-        std::memset(d - zeros_left, '0', zeros_left);
-        // std::fill(d-zeros_left, d, '0');
-        d -= zeros_left;
-    }
 
     // p1: handle hash
     if (d > d_start && is_set(opts.flags, flags_t::hash)) {
@@ -1619,7 +1606,7 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
         if (!opts.precision_set && len && ((len == prec) || (len == width))) {
             ++d;
             --len;
-            if (len && (radix == 16)) {
+            if (len && (radix == 16 || radix == 2)) {
                 ++d;
                 // --len;
             }
@@ -1650,6 +1637,7 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
 
     *(dest.data() + dest_len) = 0;  // EOS (is reserved)
 }
+
 void jau::cfmt::impl::append_integral_simple(std::string &dest, const size_t dest_maxlen, uint64_t v, const bool negative, const jau::cfmt::FormatOpts &opts) {
     if (!dest_maxlen) {
         return;
@@ -1665,7 +1653,7 @@ void jau::cfmt::impl::append_integral_simple(std::string &dest, const size_t des
         case 2:  shift = 1; break;
         default: return;
     }
-    const char separator = is_set(opts.flags, flags_t::thousands) ? '\'' : 0;
+    const char separator = is_set(opts.flags, flags_t::thousands) ? Config::default_thousand_separator : (char)0;
 
     // const uint32_t val_digits = opts.precision_set && opts.precision == 0 && jau::is_zero(v) ? 0 : jau::digits(v, radix);
     uint32_t val_digits; // includes separator count
@@ -1735,12 +1723,13 @@ void jau::cfmt::impl::append_integral_simple(std::string &dest, const size_t des
         dest.resize(new_size, ' ');
 
 #if !defined(NDEBUG) && 0
+        const uint32_t sep_gap = 10 == radix ? 3 : 4;
         const uint32_t sep_count = val_digits > 0 && separator ? (val_digits - 1) / sep_gap : 0;
-        fprintf(stderr, "XXX.80: opts: %s\n", opts.toString().c_str());
-        fprintf(stderr, "XXX.80: negative %d, val %" PRIu64 "\n", negative, v);
-        fprintf(stderr, "XXX.80: idx[digits %u, sep %u, xleft %u\n",
+        fprintf(stderr, "XXX.81: seperator '%c', opts %s\n", separator, opts.toString().c_str());
+        fprintf(stderr, "XXX.81: negative %d, val %" PRIu64 "\n", (int)negative, v);
+        fprintf(stderr, "XXX.81: idx[digits %u, sep %u, xleft %u\n",
                 val_digits, sep_count, xtra_left);
-        fprintf(stderr, "XXX.80: total len[old %zu, added %zu, len %zu], number_start %u\n", dest_start_len, added_len, dest.size(), xtra_left);
+        fprintf(stderr, "XXX.81: total len[old %zu, added %zu, len %zu], number_start %u\n", dest_start_len, added_len, dest.size(), xtra_left);
 #endif
     }
     const size_t dest_len = dest.size();

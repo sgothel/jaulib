@@ -24,6 +24,7 @@
 #include <cassert>
 #include <cstring>
 
+#include "jau/base_math.hpp"
 #include "test_datatype01.hpp"
 
 #include <jau/basic_types.hpp>
@@ -46,17 +47,81 @@ typedef decltype( std::declval<std_vec_int_citer>().operator->() ) std_vec_int_c
 using namespace jau::int_literals;
 
 template<typename value_type>
+static void testDecTo(int line, value_type v, std::string_view exp_s,
+                      const uint32_t min_width = 0, const char separator = 0)
+{
+    std::string has1_s = jau::to_string(v, 10, jau::LoUpCase::lower, jau::PrefixOpt::none, min_width, separator, ' ');
+    std::string has2_s = jau::to_decstring(v, separator, min_width);
+    std::cerr << "line " << line << ": v '" << v
+              << ", exp_s '" << exp_s << "' (l " << exp_s.length()
+              << "), has1_s '" << has1_s << "' (l " << has1_s.length() << ", c " << has1_s.capacity() << ", m " << (exp_s == has1_s)
+              << "), has2_s '" << has2_s << "' (l " << has2_s.length() << ", c " << has2_s.capacity() << ", m " << (exp_s == has2_s)
+              << ")\n";
+    CHECK( exp_s.length() == has1_s.length() );
+    CHECK( exp_s.length() == has2_s.length() );
+    REQUIRE( exp_s == has1_s );
+    REQUIRE( exp_s == has2_s );
+}
+
+template<typename value_type>
 static void testTo(int line, value_type v, std::string_view exp_s,
                    uint32_t radix, jau::LoUpCase capitalization = jau::LoUpCase::lower, jau::PrefixOpt prefix = jau::PrefixOpt::prefix,
                    const uint32_t min_width = 0, const char separator = 0, const char padding = '0')
 {
-    std::string has_s = jau::to_string(v, radix, capitalization, prefix, min_width, separator, padding);
+    if( radix == 10 && padding == ' ' ) {
+        testDecTo(line, v, exp_s, min_width, separator);
+    }
+    std::string has1_s = jau::to_string(v, radix, capitalization, prefix, min_width, separator, padding);
+    jau::cfmt::FormatOpts opts;
+    bool use_cfm=false;
+    {
+        if (prefix == jau::PrefixOpt::prefix) {
+            opts.addFlag('#');
+        }
+        if (padding == '0') {
+            opts.addFlag('0');
+        }
+        if (separator == '\'' || separator == ',') {
+            opts.addFlag(separator);
+        }
+        if( min_width > 0 ) {
+            opts.setWidth(min_width);
+        }
+        if( sizeof(v) >= sizeof(uint64_t)) {
+            opts.length_mod = jau::cfmt::plength_t::l;
+        }
+        if ( jau::is_positive(v)) {
+            switch (radix) {
+                case 16: use_cfm=true; opts.setConversion(capitalization==jau::LoUpCase::lower ? 'x' : 'X'); break;
+                case 10: use_cfm=true; opts.setConversion('u'); break;
+                case  8: use_cfm=true; opts.setConversion('o'); break;
+                case  2: use_cfm=true; opts.setConversion('b'); break;
+                default: break;
+            }
+        } else {
+            if( radix==10) {
+                use_cfm=true;
+                opts.setConversion('d');
+            }
+        }
+    }
+    std::string fmt2 = opts.toFormat();
+    std::string has2_s = use_cfm ? jau::cfmt::format(fmt2, v) : "";
     std::cerr << "line " << line << ": v '" << v << ", radix " << radix
               << ", exp_s '" << exp_s << "' (l " << exp_s.length()
-              << "), has_s '" << has_s << "' (l " << has_s.length() << ", c " << has_s.capacity()
-              << "), match " << (exp_s == has_s) << "\n";
-    CHECK( exp_s.length() == has_s.length() );
-    REQUIRE( exp_s == has_s );
+              << "), has1_s '" << has1_s << "' (l " << has1_s.length() << ", c " << has1_s.capacity() << ", m " << (exp_s == has1_s) << ")"
+              ;
+    if(use_cfm) {
+        std::cerr << ", has2_s '" << has2_s << "' (l " << has2_s.length() << ", c " << has2_s.capacity() << ", m " << (exp_s == has1_s)
+                  << ", fmt2 '" << fmt2 << ", " << opts.toString() << ")";
+    }
+    std::cerr << "\n";
+    CHECK( exp_s.length() == has1_s.length() );
+    REQUIRE( exp_s == has1_s );
+    if(use_cfm) {
+        CHECK( exp_s.length() == has2_s.length() );
+        REQUIRE( exp_s == has2_s );
+    }
 }
 template<typename value_type>
 static void testToFrom(int line, value_type exp_v, std::string_view exp_s, std::string_view in_s,
@@ -108,18 +173,14 @@ TEST_CASE( "Test 00 - to_string/appendIntString, fromIntString", "[jau][string][
         // radix, default: no-width, prefix, no-separator, no padding
         testToFrom(__LINE__, 0xdeadbeef_u32, "0xdeadbeef", 16);                               // hex
         testToFrom(__LINE__, 0xdeadbeef_u32, "0xdead'beef", "  0x'dead'beef la", 16, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 0, '\'');    // hex
-        testFrom(__LINE__, 0xdeadbeef_u32, "  0x'dead'beef la", 16, '\'');    // hex
 
         testToFrom(__LINE__, 876543210_u64, "876543210", 10);                      // dec
         testToFrom(__LINE__, 876543210_u64, "876'543'210", "  '876'543'210 la", 10, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 0, '\''); // dec
-        testFrom(__LINE__, 876543210_u64, "  '876'543'210 la", 10, '\''); // dec
 
         testToFrom(__LINE__, 077652_u32, "077652", 8);                               // oct
         testToFrom(__LINE__, 077652_u32, "07'7652", "  07'7652 la", 8, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 0, '\'');              // oct
-        testFrom(__LINE__, 077652_u32, "  07'7652 la", 8, '\'');              // oct
 
         testToFrom(__LINE__, 0b11010101101_u32, "0b110'1010'1101", "  0b'110'1010'1101 la", 2, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 0, '\''); // bin
-        testFrom(__LINE__, 0b11010101101_u32, "  0b'110'1010'1101 la", 2, '\''); // bin
 
         // no-prefix, radix, default: no-width, no-separator, no padding
         testToFrom(__LINE__, 0xaffe_u32, "affe", 16, jau::LoUpCase::lower, jau::PrefixOpt::none);                  // hex
@@ -205,11 +266,128 @@ TEST_CASE( "Test 00 - to_string/appendIntString, fromIntString", "[jau][string][
         testToFrom(__LINE__, 0b111010101101_u32, "'1110'1010'1101", 2, jau::LoUpCase::lower, jau::PrefixOpt::none, 15, '\'');  // bin
         testToFrom(__LINE__, 0b111010101101_u32, "0'1110'1010'1101", 2, jau::LoUpCase::lower, jau::PrefixOpt::none, 16, '\''); // bin
 
-        // no-prefix, radix, width-expansion, padding ' '
+        // Also testing to_decstring() due to radix==10 and padding==' '
+
+        //
+        // a.b.c radix, no-width, space padding ' ', [prefix], [separator], [signed]
+        //     |
+        //     0 - unsigned
+        //     1 - signed
+        //   |
+        //   0 = no-separator
+        //   1 = separator
+        // |
+        // 0 - no-prefix,
+        // 1 - prefix,
+
+        // 0.0.0 unsigned, no-prefix, radix, space padding ' ', default: no-width, no-separator
+        testToFrom(__LINE__, 0xaffe_u32, "affe", 16, jau::LoUpCase::lower, jau::PrefixOpt::none, 0, 0, ' ');   // hex
+        testToFrom(__LINE__, 876543210_u64,  "876543210",   10, jau::LoUpCase::lower, jau::PrefixOpt::none, 0, 0, ' '); // dec
+        testToFrom(__LINE__, 077652_u32, "77652",   8, jau::LoUpCase::lower, jau::PrefixOpt::none, 0, 0, ' ');   // oct
+        testToFrom(__LINE__, 0b11010101101_u32, "11010101101", 2, jau::LoUpCase::lower, jau::PrefixOpt::none, 0, 0, ' ');   // bin
+
+        // 0.0.1 signed, no-prefix, radix, space padding ' ', default: no-width, no-separator
+        testToFrom(__LINE__, -0xaffe_i32, "-affe", 16, jau::LoUpCase::lower, jau::PrefixOpt::none, 0, 0, ' ');   // hex
+        testToFrom(__LINE__, -876543210_i64, "-876543210",   10, jau::LoUpCase::lower, jau::PrefixOpt::none, 0, 0, ' '); // dec
+        testToFrom(__LINE__, -077652_i32, "-77652",   8, jau::LoUpCase::lower, jau::PrefixOpt::none, 0, 0, ' ');   // oct
+        testToFrom(__LINE__, -0b11010101101_i32, "-11010101101", 2, jau::LoUpCase::lower, jau::PrefixOpt::none, 0, 0, ' ');   // bin
+
+        // 0.1.0 unsigned, no-prefix, radix, separator, space padding ' ', default: no-width
+        testToFrom(__LINE__, 0xaffe_u32, "affe", 16, jau::LoUpCase::lower, jau::PrefixOpt::none, 0, '\'', ' ');   // hex
+        testToFrom(__LINE__, 876543210_u64, "876'543'210",   10, jau::LoUpCase::lower, jau::PrefixOpt::none, 0, '\'', ' '); // dec
+        testToFrom(__LINE__, 077652_u32, "7'7652",   8, jau::LoUpCase::lower, jau::PrefixOpt::none, 0, '\'', ' ');   // oct
+        testToFrom(__LINE__, 0b11010101101_u32, "110'1010'1101", 2, jau::LoUpCase::lower, jau::PrefixOpt::none, 0, '\'', ' ');   // bin
+
+        // 0.1.1 signed, no-prefix, radix, separator, space padding ' ', default: no-width
+        testToFrom(__LINE__, -0xaffe_i32, "-affe", 16, jau::LoUpCase::lower, jau::PrefixOpt::none, 0, '\'', ' ');   // hex
+        testToFrom(__LINE__, -876543210_i64, "-876'543'210",   10, jau::LoUpCase::lower, jau::PrefixOpt::none, 0, '\'', ' '); // dec
+        testToFrom(__LINE__, -077652_i32, "-7'7652",   8, jau::LoUpCase::lower, jau::PrefixOpt::none, 0, '\'', ' ');   // oct
+        testToFrom(__LINE__, -0b11010101101_i32, "-110'1010'1101", 2, jau::LoUpCase::lower, jau::PrefixOpt::none, 0, '\'', ' ');   // bin
+
+        // 1.0.0 unsigned, radix, space padding ' ', default: prefix,  no-width, no-separator
+        testToFrom(__LINE__, 0xaffe_u32, "0xaffe", 16, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 0, 0, ' ');   // hex
+        testToFrom(__LINE__, 876543210_u64,  "876543210",   10, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 0, 0, ' '); // dec
+        testToFrom(__LINE__, 077652_u32, "077652",   8, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 0, 0, ' ');   // oct
+        testToFrom(__LINE__, 0b11010101101_u32, "0b11010101101", 2, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 0, 0, ' ');   // bin
+
+        // 1.0.1 signed, radix, space padding ' ', default: prefix,  no-width, no-separator
+        testToFrom(__LINE__, -0xaffe_i32, "-0xaffe", 16, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 0, 0, ' ');   // hex
+        testToFrom(__LINE__, -876543210_i64, "-876543210",   10, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 0, 0, ' '); // dec
+        testToFrom(__LINE__, -077652_i32, "-077652",   8, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 0, 0, ' ');   // oct
+        testToFrom(__LINE__, -0b11010101101_i32, "-0b11010101101", 2, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 0, 0, ' ');   // bin
+
+        // 1.1.0 unsigned, radix, separator, space padding ' ', default: prefix,  no-width
+        testToFrom(__LINE__, 0xaffe_u32, "0xaffe", 16, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 0, '\'', ' ');   // hex
+        testToFrom(__LINE__, 876543210_u64, "876'543'210",   10, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 0, '\'', ' '); // dec
+        testToFrom(__LINE__, 077652_u32, "07'7652",   8, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 0, '\'', ' ');   // oct
+        testToFrom(__LINE__, 0b11010101101_u32, "0b110'1010'1101", 2, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 0, '\'', ' ');   // bin
+
+        // 1.1.1 signed, radix, separator, space padding ' ', default: prefix,  no-width
+        testToFrom(__LINE__, -0xaffe_i32, "-0xaffe", 16, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 0, '\'', ' ');   // hex
+        testToFrom(__LINE__, -876543210_i64, "-876'543'210",   10, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 0, '\'', ' '); // dec
+        testToFrom(__LINE__, -077652_i32, "-07'7652",   8, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 0, '\'', ' ');   // oct
+        testToFrom(__LINE__, -0b11010101101_i32, "-0b110'1010'1101", 2, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 0, '\'', ' ');   // bin
+
+        //
+        // a.b.c radix, width-expansion, space padding ' ', [prefix], [separator], [signed]
+        //     |
+        //     0 - unsigned
+        //     1 - signed
+        //   |
+        //   0 = no-separator
+        //   1 = separator
+        // |
+        // 0 - no-prefix,
+        // 1 - prefix,
+
+        // 0.0.0 unsigned, no-prefix, radix, width-expansion, space padding ' ', default: no-separator
+        testToFrom(__LINE__, 0xaffe_u32, "    affe", 16, jau::LoUpCase::lower, jau::PrefixOpt::none, 8, 0, ' ');   // hex
+        testToFrom(__LINE__, 876543210_u64,  "      876543210",   10, jau::LoUpCase::lower, jau::PrefixOpt::none, 15, 0, ' '); // dec
+        testToFrom(__LINE__, 077652_u32, "     77652",   8, jau::LoUpCase::lower, jau::PrefixOpt::none, 10, 0, ' ');   // oct
+        testToFrom(__LINE__, 0b11010101101_u32, "      11010101101", 2, jau::LoUpCase::lower, jau::PrefixOpt::none, 17, 0, ' ');   // bin
+
+        // 0.0.1 signed, no-prefix, radix, width-expansion, space padding ' ', default: no-separator
+        testToFrom(__LINE__, -0xaffe_i32, "   -affe", 16, jau::LoUpCase::lower, jau::PrefixOpt::none, 8, 0, ' ');   // hex
+        testToFrom(__LINE__, -876543210_i64, "     -876543210",   10, jau::LoUpCase::lower, jau::PrefixOpt::none, 15, 0, ' '); // dec
+        testToFrom(__LINE__, -077652_i32, "    -77652",   8, jau::LoUpCase::lower, jau::PrefixOpt::none, 10, 0, ' ');   // oct
+        testToFrom(__LINE__, -0b11010101101_i32, "     -11010101101", 2, jau::LoUpCase::lower, jau::PrefixOpt::none, 17, 0, ' ');   // bin
+
+        // 0.1.0 unsigned, no-prefix, radix, width-expansion, separator, space padding ' '
         testToFrom(__LINE__, 0xaffe_u32, "    affe", 16, jau::LoUpCase::lower, jau::PrefixOpt::none, 8, '\'', ' ');   // hex
         testToFrom(__LINE__, 876543210_u64, "    876'543'210",   10, jau::LoUpCase::lower, jau::PrefixOpt::none, 15, '\'', ' '); // dec
         testToFrom(__LINE__, 077652_u32, "    7'7652",   8, jau::LoUpCase::lower, jau::PrefixOpt::none, 10, '\'', ' ');   // oct
         testToFrom(__LINE__, 0b11010101101_u32, "    110'1010'1101", 2, jau::LoUpCase::lower, jau::PrefixOpt::none, 17, '\'', ' ');   // bin
+
+        // 0.1.1 signed, no-prefix, radix, width-expansion, separator, space padding ' '
+        testToFrom(__LINE__, -0xaffe_i32, "   -affe", 16, jau::LoUpCase::lower, jau::PrefixOpt::none, 8, '\'', ' ');   // hex
+        testToFrom(__LINE__, -876543210_i64, "   -876'543'210",   10, jau::LoUpCase::lower, jau::PrefixOpt::none, 15, '\'', ' '); // dec
+        testToFrom(__LINE__, -077652_i32, "   -7'7652",   8, jau::LoUpCase::lower, jau::PrefixOpt::none, 10, '\'', ' ');   // oct
+        testToFrom(__LINE__, -0b11010101101_i32, "   -110'1010'1101", 2, jau::LoUpCase::lower, jau::PrefixOpt::none, 17, '\'', ' ');   // bin
+
+        // 1.0.0 unsigned, radix, width-expansion, space padding ' ', default: prefix,  no-separator
+        testToFrom(__LINE__, 0xaffe_u32, "  0xaffe", 16, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 8, 0, ' ');   // hex
+        testToFrom(__LINE__, 876543210_u64,  "      876543210",   10, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 15, 0, ' '); // dec
+        testToFrom(__LINE__, 077652_u32, "    077652",   8, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 10, 0, ' ');   // oct
+        testToFrom(__LINE__, 0b11010101101_u32, "    0b11010101101", 2, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 17, 0, ' ');   // bin
+
+        // 1.0.1 signed, radix, width-expansion, space padding ' ', default: prefix,  no-separator
+        testToFrom(__LINE__, -0xaffe_i32, " -0xaffe", 16, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 8, 0, ' ');   // hex
+        testToFrom(__LINE__, -876543210_i64, "     -876543210",   10, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 15, 0, ' '); // dec
+        testToFrom(__LINE__, -077652_i32, "   -077652",   8, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 10, 0, ' ');   // oct
+        testToFrom(__LINE__, -0b11010101101_i32, "   -0b11010101101", 2, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 17, 0, ' ');   // bin
+
+        // 1.1.0 unsigned, radix, width-expansion, separator, space padding ' '
+        testToFrom(__LINE__, 0xaffe_u32, "  0xaffe", 16, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 8, '\'', ' ');   // hex
+        testToFrom(__LINE__, 876543210_u64, "    876'543'210",   10, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 15, '\'', ' '); // dec
+        testToFrom(__LINE__, 077652_u32, "   07'7652",   8, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 10, '\'', ' ');   // oct
+        testToFrom(__LINE__, 0b11010101101_u32, "  0b110'1010'1101", 2, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 17, '\'', ' ');   // bin
+
+        // 1.1.1 signed, radix, width-expansion, separator, space padding ' '
+        testToFrom(__LINE__, -0xaffe_i32, " -0xaffe", 16, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 8, '\'', ' ');   // hex
+        testToFrom(__LINE__, -876543210_i64, "   -876'543'210",   10, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 15, '\'', ' '); // dec
+        testToFrom(__LINE__, -077652_i32, "  -07'7652",   8, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 10, '\'', ' ');   // oct
+        testToFrom(__LINE__, -0b11010101101_i32, " -0b110'1010'1101", 2, jau::LoUpCase::lower, jau::PrefixOpt::prefix, 17, '\'', ' ');   // bin
+
     }
     CHECK("1.650000" == jau::to_string(float_1));
 

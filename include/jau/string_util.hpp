@@ -66,12 +66,12 @@ namespace jau {
 
     /**
      * Returns true if given char `c` is one of the following whitespace character:
-     * - space (0x20, ' ')
-     * - form feed (0x0c, '\f')
-     * - line feed (0x0a, '\n')
-     * - carriage return (0x0d, '\r')
-     * - horizontal tab (0x09, '\t')
-     * - vertical tab (0x0b, '\v')
+     * - space (0x20, `` ``)
+     * - form feed (0x0c, ``\f``)
+     * - line feed (0x0a, ``\n``)
+     * - carriage return (0x0d, ``\r``)
+     * - horizontal tab (0x09, ``\t``)
+     * - vertical tab (0x0b, ``\v``)
      */
     constexpr bool is_space(const char c) noexcept {
         switch(c) {
@@ -584,57 +584,6 @@ namespace jau {
      */
 
     /**
-     * Produce a decimal string representation of an integral integer value.
-     * @tparam value_type an integral integer type
-     * @param v the integral integer value
-     * @param separator if not 0, use as separation character, otherwise no separation characters are being used
-     * @param width the minimum number of characters to be printed. Add padding with blank space if result is shorter.
-     * @return the string representation of the integral integer value
-     */
-    template<class value_type,
-             std::enable_if_t<std::is_integral_v<value_type>,
-                              bool> = true>
-    std::string to_decstring(const value_type &v, const char separator = ',', const nsize_t width = 0) noexcept {
-        const snsize_t v_sign = jau::sign<value_type>(v);
-        const size_t digit10_count1 = jau::digits10<value_type>(v, v_sign, true /* sign_is_digit */);
-        const size_t digit10_count2 = v_sign < 0 ? digit10_count1 - 1 : digit10_count1;  // less sign
-
-        const size_t separator_count = separator ? (digit10_count1 - 1) / 3 : 0;
-        const size_t net_chars = digit10_count1 + separator_count;
-        const size_t total_chars = std::max<size_t>(width, net_chars);
-        std::string res;
-        std::exception_ptr eptr;
-        try {
-            res.resize(total_chars, ' ');
-
-            value_type n = v;
-            size_t char_iter = 0;
-
-            for ( size_t digit10_iter = 0; digit10_iter < digit10_count2 /* && char_iter < total_chars */; digit10_iter++ ) {
-                const int digit = v_sign < 0 ? invert_sign(n % 10) : n % 10;
-                n /= 10;
-                if ( separator && 0 < digit10_iter && 0 == digit10_iter % 3 ) {
-                    res[total_chars - 1 - (char_iter++)] = separator;
-                }
-                res[total_chars - 1 - (char_iter++)] = '0' + digit;
-            }
-            if ( v_sign < 0 /* && char_iter < total_chars */ ) {
-                res[total_chars - 1 - (char_iter++)] = '-';
-            }
-        } catch (...) {
-            eptr = std::current_exception();
-        }
-        jau::handle_exception(eptr, E_FILE_LINE);
-        return res;
-    }
-
-    /**
-    // *************************************************
-    // *************************************************
-    // *************************************************
-     */
-
-    /**
      * Converts a given integer string representation to the given result reference,
      * compatible with `::strtoll()`
      *
@@ -737,7 +686,7 @@ namespace jau {
     /**
      * Appends an integer string representation of an integral integer value with given radix.
      *
-     * `[space][-][prefix][zeros_padding+sep][digits+sep]`
+     * `[space][-][prefix][zero_padding+sep][digits+sep]`
      *
      * @tparam value_type an integral integer type
      * @param dest the std::string to append to
@@ -747,14 +696,15 @@ namespace jau {
      * @param prefix pass PrefixOpt::prefix (default) to add leading prefix for radix. Prefixes: `0x` hex, `0` octal and `0b` binary.
      * @param min_width the minimum number of characters to be printed including sign and prefix. Add padding if sign+prefix+val-digits are shorter.
      * @param separator separator character for each decimal 3 or other radix 4. Defaults to 0 for no separator.
-     * @param padding padding character, defaults to '0'. See 'min_width' above.
+     * @param padding padding character, defaults to '0'.
+     *                Zero padding w/ '0' includes separator and comes before prefix, otherwise added to the left. See 'min_width' above.
      * @return the given string buffer for concatenation
      */
     template<std::integral value_type>
     std::string& appendIntString(std::string &dest, value_type val, const uint32_t radix,
-                                   const LoUpCase capitalization = LoUpCase::lower,
-                                   const PrefixOpt prefix = PrefixOpt::prefix,
-                                   const uint32_t min_width = 0, const char separator = 0, const char padding = '0') noexcept
+                                 const LoUpCase capitalization = LoUpCase::lower,
+                                 const PrefixOpt prefix = PrefixOpt::prefix,
+                                 const uint32_t min_width = 0, const char separator = 0, const char padding = '0') noexcept
     {
         const size_t dest_start_len = dest.size();
         uint32_t shift;
@@ -771,27 +721,34 @@ namespace jau {
         const uint32_t sign_len = jau::is_positive(val) ? 0 : 1;
         const uint32_t prefix_len = (PrefixOpt::none == prefix || 10 == radix) ? 0 : (8 == radix ? 1 : 2);
         const uint32_t sep_gap = 10 == radix ? 3 : 4;
-        uint32_t sep_count = 0, space_left=0;
-        if (separator) {
-            sep_count = (val_digits - 1) / sep_gap;
-            const uint32_t len0 = sign_len + prefix_len + val_digits + sep_count;
-            if (min_width > len0) {
-                if (val_digits > 0 && '0' == padding) {
-                    // separator inside padding
+        uint32_t sep_count, space_left;
+        if ('0' == padding) {
+            space_left = 0;
+            if (separator) {
+                // separator inside zero-padding
+                sep_count = (val_digits - 1) / sep_gap;
+                const uint32_t len0 = sign_len + prefix_len + val_digits + sep_count;
+                if (min_width > len0 && val_digits > 0) {
                     const uint32_t len1 = min_width - sign_len - prefix_len;
                     sep_count = (len1 - 1) / sep_gap;
                     if ( sign_len + prefix_len + (val_digits + sep_count) > min_width ) {
                         --sep_count;  // fix down
                     }
-                } else {
-                    space_left = min_width - len0;
                 }
+            } else {
+                sep_count = 0;
             }
+        } else {
+            sep_count = separator ? (val_digits - 1) / sep_gap : 0;
+            const uint32_t len0 = sign_len + prefix_len + val_digits + sep_count;
+            space_left = min_width > len0 ? min_width - len0 : 0;
         }
         {
             std::exception_ptr eptr;
             try {
-                const size_t added_len = std::max<size_t>(min_width, space_left + sign_len + prefix_len + (val_digits + sep_count));
+                const uint32_t added_len = std::max(min_width, space_left + sign_len + prefix_len + (val_digits + sep_count));
+                // fprintf(stderr, "XXX: space_left %u, sign_len %u, prefix_len %u digits %u, sep_count %u; min_width %u; added_len %u\n",
+                //         space_left, sign_len, prefix_len, val_digits, sep_count, min_width, added_len);
                 dest.reserve(dest_start_len + added_len + 1); // w/ EOS
                 dest.resize(dest_start_len + added_len, ' '); // w/o EOS
             } catch (...) {
@@ -831,7 +788,6 @@ namespace jau {
         if ( prefix_len && d > d_start ) {
             switch ( radix ) {  // NOLINT(bugprone-switch-missing-default-case)
                 case 16: *(--d) = 'x'; break;
-                case 8:  *(--d) = '0'; break;
                 case 2:  *(--d) = 'b'; break;
             }
             if ( d > d_start ) {
@@ -847,26 +803,111 @@ namespace jau {
     /**
      * Produces an integer string representation of an integral integer value with given radix.
      *
-     * `[space][-][prefix][zeros_padding+sep][digits+sep]`
+     * `[space][-][prefix][zero_padding+sep][digits+sep]`
      *
      * @tparam value_type an unsigned integral integer type
      * @param v the integral integer value
      * @param radix base of the number system, supported: 2 binary, 8 octal, 10 decimal, 16 hexadecimal
      * @param capitalization LoUpCase capitalization, default is LoUpCase::lower
      * @param prefix pass PrefixOpt::prefix (default) to add leading prefix for radix. Prefixes: `0x` hex, `0` octal and `0b` binary.
-     * @param min_width the minimum number of characters to be printed including prefix. Add padding with `padding` if result is shorter.
+     * @param min_width the minimum number of characters to be printed including sign and prefix. Add padding if sign+prefix+val-digits are shorter.
      * @param separator separator character for each decimal 3 or other radix 4. Defaults to 0 for no separator.
-     * @param padding padding character, defaults to '0'. See 'min_width' above.
-     * @return the string representation of the unsigned integral integer value with given radix
+     * @param padding padding character, defaults to '0'.
+     *                Zero padding w/ '0' includes separator and comes before prefix, otherwise added to the left. See 'min_width' above.
+     * @return the string representation of the integral integer value with given radix
      */
     template<std::integral value_type>
-    std::string to_string(value_type v, const nsize_t radix,
+    std::string to_string(value_type v, const uint32_t radix,
                           const LoUpCase capitalization = LoUpCase::lower,
                           const PrefixOpt prefix = PrefixOpt::prefix,
-                          const nsize_t min_width = 0, const char separator = 0, const char padding = '0') noexcept
+                          const uint32_t min_width = 0, const char separator = 0, const char padding = '0') noexcept
     {
         std::string str;
         appendIntString(str, v, radix, capitalization, prefix, min_width, separator, padding);
+        return str;
+    }
+
+    /**
+     * Appends a decimal integer string representation of an integral integer value with given radix.
+     *
+     * `[space][-][digits+sep]`
+     *
+     * @tparam value_type an integral integer type
+     * @param dest the std::string to append to
+     * @param val the unsigned integral integer value
+     * @param separator separator character for each decimal 3. Defaults to `'` for no separator.
+     * @param min_width the minimum number of characters to be printed including sign. Add left space if sign+val-digits are shorter.
+     * @return the given string buffer for concatenation
+     */
+    template<class value_type,
+             std::enable_if_t<std::is_integral_v<value_type>,
+                              bool> = true>
+    std::string& appendDecString(std::string &dest, const value_type &val, const char separator = '\'', const uint32_t min_width = 0) noexcept {
+        const size_t dest_start_len = dest.size();
+        using unsigned_value_type = std::make_unsigned_t<value_type>;
+        unsigned_value_type v = jau::unsigned_value( val );
+        const uint32_t val_digits = jau::digits10<unsigned_value_type>(v);
+        const uint32_t sign_len = jau::is_positive(val) ? 0 : 1;
+        constexpr uint32_t sep_gap = 3;
+        const uint32_t sep_count = separator ? (val_digits - 1) / sep_gap : 0;
+        const uint32_t num_chars = sign_len + (val_digits + sep_count);
+        const uint32_t added_len = std::max(min_width, num_chars);
+        const uint32_t space_left = added_len - num_chars;
+        {
+            std::exception_ptr eptr;
+            try {
+                // fprintf(stderr, "XXX: space_left %u, sign_len %u, digits %u, sep_count %u; min_width %u; added_len %u\n",
+                //         space_left, sign_len, val_digits, sep_count, min_width, added_len);
+                dest.reserve(dest_start_len + added_len + 1); // w/ EOS
+                dest.resize(dest_start_len + added_len, ' '); // w/o EOS
+            } catch (...) {
+                eptr = std::current_exception();
+            }
+            if (handle_exception(eptr, E_FILE_LINE)) {
+                return dest;
+            }
+        }
+        const char * const d_start = dest.data() + dest_start_len;
+        const char * const d_start_num = d_start + space_left + sign_len;
+        char *d = dest.data()+dest.size();
+        *d = 0; // EOS (is reserved)
+        {
+            uint32_t digit_cnt = 0, separator_idx = 0;
+            while (d > d_start_num) {
+                if (separator_idx < sep_count && 0 < digit_cnt && 0 == digit_cnt % sep_gap) {
+                    *(--d) = separator;
+                    ++separator_idx;
+                }
+                if (d > d_start_num) {
+                    *(--d) = '0' + (v % 10);
+                    v /= 10;
+                    ++digit_cnt;
+                }
+            }
+        }
+        if ( sign_len && d > d_start ) {
+            *(--d) = '-';
+        }
+        return dest;
+    }
+
+    /**
+     * Produces a decimal integer string representation of an integral integer value with given radix.
+     *
+     * `[space][-][digits+sep]`
+     *
+     * @tparam value_type an integral integer type
+     * @param v the unsigned integral integer value
+     * @param separator separator character for each decimal 3. Defaults to `'` for no separator.
+     * @param min_width the minimum number of characters to be printed including sign. Add left space if sign+val-digits are shorter.
+     * @return the decimal string representation of the integral integer
+     */
+    template<class value_type,
+             std::enable_if_t<std::is_integral_v<value_type>,
+                              bool> = true>
+    std::string to_decstring(const value_type &v, const char separator = '\'', const nsize_t min_width = 0) noexcept {
+        std::string str;
+        appendDecString(str, v, separator, min_width);
         return str;
     }
 
