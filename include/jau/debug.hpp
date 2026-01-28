@@ -104,10 +104,10 @@ namespace jau::impl {
 #define jau_DBG_JNI_PRINT(...) { if( jau::environment::get().debug_jni ) { jau_dbgPrint1(stderr, true, "Debug", __VA_ARGS__); } }
 
 /** Use for environment-variable environment::DEBUG conditional warning messages, prefix '[elapsed_time] Warning @ FILE:LINE FUNC: ' */
-#define jau_DBG_WARN_PRINT(...) { if( jau::environment::get().debug ) { jau_dbgPrint2(stderr, "Warning", false /* errno */, false /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); } }
+#define jau_DBG_WARN_PRINT(...) { if( jau::environment::get().debug ) { jau_dbgPrint2(stderr, "Warning", false /* errno */, false /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); } } // NOLINT(bugprone-lambda-function-name)
 
 /** Use for environment-variable environment::DEBUG conditional error messages, prefix '[elapsed_time] Debug @ FILE:LINE FUNC: '. Function also appends last errno, strerror(errno) and full backtrace*/
-#define jau_DBG_ERR_PRINT(...) { if( jau::environment::get().debug ) { jau_dbgPrint2(stderr, "Debug", true /* errno */, true /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); } }
+#define jau_DBG_ERR_PRINT(...) { if( jau::environment::get().debug ) { jau_dbgPrint2(stderr, "Debug", true /* errno */, true /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); } } // NOLINT(bugprone-lambda-function-name)
 
 /**
  * Use for environment-variable environment::VERBOSE conditional verbose messages, prefix '[elapsed_time] Wordy: '.
@@ -144,22 +144,22 @@ namespace jau::impl {
 #endif
 
 /** Use for unconditional ::abort() call with given messages, prefix '[elapsed_time] ABORT @ file:line func: '. Function also appends last errno and strerror(errno). */
-#define jau_ABORT(...) { jau_dbgPrint2(stderr, "ABORT", true /* errno */, true /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); abort(); }
+#define jau_ABORT(...) { jau_dbgPrint2(stderr, "ABORT", true /* errno */, true /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); abort(); } // NOLINT(bugprone-lambda-function-name)
 
 /** Use for unconditional error messages, prefix '[elapsed_time] Error @ FILE:LINE FUNC: '. Function also appends last errno, strerror(errno) and full backtrace*/
-#define jau_ERR_PRINT(...) { jau_dbgPrint2(stderr, "Error", true /* errno */, true /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); }
+#define jau_ERR_PRINT(...) { jau_dbgPrint2(stderr, "Error", true /* errno */, true /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); } // NOLINT(bugprone-lambda-function-name)
 
 /** Use for unconditional error messages, prefix '[elapsed_time] Error @ FILE:LINE FUNC: '. Function also appends last errno and strerror(errno). No backtrace. */
-#define jau_ERR_PRINT2(...) { jau_dbgPrint2(stderr, "Error", true /* errno */, false /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); }
+#define jau_ERR_PRINT2(...) { jau_dbgPrint2(stderr, "Error", true /* errno */, false /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); } // NOLINT(bugprone-lambda-function-name)
 
 /** Use for unconditional error messages, prefix '[elapsed_time] Error @ FILE:LINE FUNC: '. Function also appends last errno and strerror(errno). Full backtrace. */
-#define jau_ERR_PRINT3(...) { jau_dbgPrint2(stderr, "Error", true /* errno */, true /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); }
+#define jau_ERR_PRINT3(...) { jau_dbgPrint2(stderr, "Error", true /* errno */, true /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); } // NOLINT(bugprone-lambda-function-name)
 
 /** Use for unconditional interruption messages, prefix '[elapsed_time] Interrupted @ FILE:LINE FUNC: '. Function also appends last errno and strerror(errno). */
-#define jau_IRQ_PRINT(...) { jau_dbgPrint2(stderr, "Interrupted", true /* errno */, false /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); }
+#define jau_IRQ_PRINT(...) { jau_dbgPrint2(stderr, "Interrupted", true /* errno */, false /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); } // NOLINT(bugprone-lambda-function-name)
 
 /** Use for unconditional warning messages, prefix '[elapsed_time] Warning @ FILE:LINE FUNC: ' */
-#define jau_WARN_PRINT(...) { jau_dbgPrint2(stderr, "Warning", false /* errno */, false /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); }
+#define jau_WARN_PRINT(...) { jau_dbgPrint2(stderr, "Warning", false /* errno */, false /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); } // NOLINT(bugprone-lambda-function-name)
 
 /** Use for unconditional informal messages, prefix '[elapsed_time] Info: '. */
 #define jau_INFO_PRINT(fmt, ...) { jau_dbgPrint1(stderr, true, "Info", fmt __VA_OPT__(,) __VA_ARGS__); }
