@@ -416,7 +416,7 @@ namespace jau {
 
     /**
      * Returns the number of decimal digits of the given integral value number using std::log10<T>().<br>
-     * If sign_is_digit == true (default), treats a potential negative sign as a digit.
+     * If sign_is_digit == true (default), treats a negative sign of value `x` as a digit.
      * <pre>
      * x < 0: 1 + (int) ( log10( -x ) ) + ( sign_is_digit ? 1 : 0 )
      * x = 0: 1
@@ -446,7 +446,7 @@ namespace jau {
 
     /**
      * Returns the number of decimal digits of the given integral value number using std::log10<T>().
-     * If sign_is_digit == true (default), treats a potential negative sign as a digit.
+     * If sign_is_digit == true (default), treats a negative sign of value `x` as a digit.
      * <pre>
      * x < 0: 1 + (int) ( log10( -x ) ) + ( sign_is_digit ? 1 : 0 )
      * x = 0: 1
@@ -455,12 +455,49 @@ namespace jau {
      * Implementation uses jau::invert_sign() to have a safe absolute value conversion, if required.
      * @tparam T an integral integer type
      * @param x the integral integer
-     * @param sign_is_digit if true and value is negative, adds one to result for sign. Defaults to true.
+     * @param sign_is_digit if true and value is negative, adds one to result for sign. Default is true.
      * @return digit count
      */
     template<std::integral T>
-    constexpr uint32_t digits10(const T x, const bool sign_is_digit = true) noexcept {
+    constexpr uint32_t digits10(const T x, const bool sign_is_digit) noexcept {
         return digits10<T>(x, jau::sign<T>(x), sign_is_digit);
+    }
+
+    /**
+     * Returns the number of decimal digits of the given signed integral value number using std::log10<T>()
+     * including a negative sign of value `x` as a digit.
+     * <pre>
+     * x < 0: 1 + (int) ( log10( -x ) ) + 1
+     * x = 0: 1
+     * x > 0: 1 + (int) ( log10(  x ) )
+     * </pre>
+     * Implementation uses jau::invert_sign() to have a safe absolute value conversion, if required.
+     * @tparam T a signed integral integer type
+     * @param x the signed integral integer
+     * @return digit count
+     */
+    template<jau::req::signed_integral T>
+    constexpr uint32_t digits10(const T x) noexcept {
+        return digits10<T>(x, jau::sign<T>(x), true /*sign_is_digit*/);
+    }
+
+    /**
+     * Returns the number of decimal digits of the given unsigned integral value number using std::log10<T>().
+     * <pre>
+     * x = 0: 1
+     * x > 0: 1 + (int) ( log10(  x ) )
+     * </pre>
+     * Implementation uses jau::invert_sign() to have a safe absolute value conversion, if required.
+     * @tparam T an unsigned integral integer type
+     * @param x the unsigned integral integer
+     * @return digit count
+     */
+    template<jau::req::unsigned_integral T>
+    constexpr uint32_t digits10(const T x) noexcept {
+        if ( x == 0 ) {
+            return 1;
+        }
+        return 1 + static_cast<uint32_t>(std::log10<T>(x));
     }
 
     /**
