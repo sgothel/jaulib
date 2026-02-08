@@ -1,6 +1,6 @@
 /*
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2020-2025 Gothel Software e.K.
+ * Copyright (c) 2020-2026 Gothel Software e.K.
  * Copyright (c) 2020 ZAFENA AB
  *
  * Permission is hereby granted, free of charge, to any person obtaining
@@ -26,6 +26,7 @@
 #ifndef JAU_FUNCTIONAL_HPP_
 #define JAU_FUNCTIONAL_HPP_
 
+#include <cassert>
 #include <cstring>
 #include <string>
 #include <memory>
@@ -446,7 +447,9 @@ namespace jau {
                 // `TriviallyCopyable` using cache
                 constexpr delegate_t(const target_func_t& tfunc) noexcept
                 : m_tfunc(&tfunc)
-                { }
+                {
+                    assert(tfunc.size <= sizeof(udata.cache));
+                }
 
                 // any using heap
                 constexpr delegate_t(const target_func_t& tfunc, bool) noexcept
@@ -555,7 +558,8 @@ namespace jau {
                             ::memcpy(udata.heap, o.udata.heap, m_tfunc->size);
                         }
                     } else {
-                        ::memcpy(udata.cache, o.udata.cache, m_tfunc->size);
+                        assert(m_tfunc->size <= sizeof(udata.cache)); // use sizeof(udata.cache), not m_tfunc->size, avoid uninitialized data
+                        ::memcpy(udata.cache, o.udata.cache, sizeof(udata.cache)); // mark-1: clang-analyzer-core.uninitialized.Branch
                     }
                 }
 
@@ -577,7 +581,8 @@ namespace jau {
                         }
                         o.udata.heap = nullptr;
                     } else {
-                        ::memcpy(udata.cache, o.udata.cache, m_tfunc->size);
+                        assert(m_tfunc->size <= sizeof(udata.cache)); // use sizeof(udata.cache), not m_tfunc->size, avoid uninitialized data
+                        ::memcpy(udata.cache, o.udata.cache, sizeof(udata.cache)); // mark-1: clang-analyzer-core.uninitialized.Branch
                     }
                 }
 
@@ -591,7 +596,8 @@ namespace jau {
                         // sdata: copy
                         m_tfunc = o.m_tfunc;
 
-                        ::memcpy(udata.cache, o.udata.cache, m_tfunc->size);
+                        assert(m_tfunc->size <= sizeof(udata.cache)); // use sizeof(udata.cache), not m_tfunc->size, avoid uninitialized data
+                        ::memcpy(udata.cache, o.udata.cache, sizeof(udata.cache)); // mark-1: clang-analyzer-core.uninitialized.Branch
                     } else if( useHeap() && o.useHeap() && m_tfunc->size >= o.m_tfunc->size ) {
                         // vdata: reuse memory
                         if( m_tfunc->non_trivial ) {
@@ -620,7 +626,8 @@ namespace jau {
                                 ::memcpy(udata.heap, o.udata.heap, m_tfunc->size);
                             }
                         } else {
-                            ::memcpy(udata.cache, o.udata.cache, m_tfunc->size);
+                            assert(m_tfunc->size <= sizeof(udata.cache)); // use sizeof(udata.cache), not m_tfunc->size, avoid uninitialized data
+                            ::memcpy(udata.cache, o.udata.cache, sizeof(udata.cache)); // mark-1: clang-analyzer-core.uninitialized.Branch
                         }
                     }
                     return *this;
@@ -649,7 +656,8 @@ namespace jau {
                         }
                         o.udata.heap = nullptr;
                     } else {
-                        ::memcpy(udata.cache, o.udata.cache, m_tfunc->size);
+                        assert(m_tfunc->size <= sizeof(udata.cache)); // use sizeof(udata.cache), not m_tfunc->size, avoid uninitialized data
+                        ::memcpy(udata.cache, o.udata.cache, sizeof(udata.cache)); // mark-1: clang-analyzer-core.uninitialized.Branch
                     }
                     return *this;
                 }
