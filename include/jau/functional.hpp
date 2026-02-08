@@ -584,7 +584,7 @@ namespace jau {
                         assert(m_tfunc->size <= sizeof(udata.cache)); // use sizeof(udata.cache), not m_tfunc->size, avoid uninitialized data
                         ::memcpy(udata.cache, o.udata.cache, sizeof(udata.cache)); // mark-1: clang-analyzer-core.uninitialized.Branch
                     }
-                }
+                } // NOLINT (clang-analyzer-unix.Malloc): False positive w/ clang 21.1.8
 
                 delegate_t& operator=(const delegate_t &o) noexcept
                 {
@@ -1854,7 +1854,7 @@ namespace jau {
     template<typename I, typename... A>
     inline jau::function<void(A...)>
     bind_capval(I&& data, void(*func)(I&, A...)) noexcept {
-        return function<void(A...)>( func::capval_target_t<void, I, A...>::delegate(std::forward<I>(data), func), 0 );
+        return function<void(A...)>( func::capval_target_t<void, I, A...>::delegate(std::forward<I>(data), func), 0 ); // NOLINT (clang-analyzer-unix.Malloc): False positive w/ clang 21.1.8
     }
 
     /**
