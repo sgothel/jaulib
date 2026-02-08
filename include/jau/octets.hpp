@@ -1,6 +1,6 @@
 /*
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2020-2024 Gothel Software e.K.
+ * Copyright (c) 2020-2026 Gothel Software e.K.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -31,7 +31,9 @@
 #include <initializer_list>
 #include <memory>
 #include <string>
+#include <string_view>
 #include "jau/cpp_lang_util.hpp"
+#include "jau/int_types.hpp"
 
 #include <jau/basic_types.hpp>
 #include <jau/debug.hpp>
@@ -614,6 +616,35 @@ namespace jau {
             /**
              * Takes ownership (malloc(size) and copy, free) ..
              *
+             * Using explicit capacity >= source size.
+             *
+             * @param capacity_ new capacity
+             * @param source_ source data to be copied into this new instance
+             * @param size_ length of source data
+             * @param byte_order lb_endian::little or lb_endian::big byte order, one may pass lb_endian::native.
+             * @throws IllegalArgumentException if capacity_ < size_
+             * @throws IllegalArgumentException if source_ is nullptr and size_ > 0
+             * @throws OutOfMemoryError if allocation fails
+             */
+            POctets(const nsize_t capacity_, const uint8_t *source_, const nsize_t size_, const lb_endian_t byte_order)
+            : TOctets( allocData(capacity_), size_, byte_order),
+              _capacity( capacity_ )
+            {
+                if( capacity() < size() ) {
+                    throw IllegalArgumentError("capacity "+std::to_string(capacity())+" < size "+std::to_string(size()), E_FILE_LINE);
+                }
+                if( 0 < size_ ) {
+                    if( nullptr == source_ ) {
+                        throw IllegalArgumentError("source nullptr with size "+std::to_string(size_)+" > 0", E_FILE_LINE);
+                    }
+                    std::memcpy(data(), source_, size_);
+                }
+                JAU_TRACE_OCTETS_PRINT("POctets ctor1a: %p", data());
+            }
+
+            /**
+             * Takes ownership (malloc(size) and copy, free) ..
+             *
              * Capacity and size will be of given source size.
              *
              * @param source_ source data to be copied into this new instance
@@ -632,7 +663,75 @@ namespace jau {
                     }
                     std::memcpy(data(), source_, size_);
                 }
-                JAU_TRACE_OCTETS_PRINT("POctets ctor1: %p", data());
+                JAU_TRACE_OCTETS_PRINT("POctets ctor1b: %p", data());
+            }
+
+            /**
+             * Takes ownership (malloc(size) and copy, free) ..
+             *
+             * Using explicit capacity >= source size.
+             *
+             * @param capacity_ new capacity
+             * @param source_ string view source data to be copied into this new instance
+             * @param byte_order lb_endian::little or lb_endian::big byte order, one may pass lb_endian::native.
+             * @throws IllegalArgumentException if capacity_ < source_.size()
+             * @throws OutOfMemoryError if allocation fails
+             */
+            POctets(const nsize_t capacity_, std::string_view source_, const lb_endian_t byte_order)
+            : TOctets( allocData(capacity_), source_.size(), byte_order),
+              _capacity( capacity_ )
+            {
+                if( capacity() < size() ) {
+                    throw IllegalArgumentError("capacity "+std::to_string(capacity())+" < size "+std::to_string(size()), E_FILE_LINE);
+                }
+                if( 0 < source_.size() ) {
+                    std::memcpy(data(), source_.data(), source_.size());
+                }
+                JAU_TRACE_OCTETS_PRINT("POctets ctor2a: %p", data());
+            }
+
+            /**
+             * Takes ownership (malloc(size) and copy, free) ..
+             *
+             * Capacity and size will be of given source size.
+             *
+             * @param source_ string view source data to be copied into this new instance
+             * @param byte_order lb_endian::little or lb_endian::big byte order, one may pass lb_endian::native.
+             * @throws OutOfMemoryError if allocation fails
+             */
+            POctets(std::string_view source_, const lb_endian_t byte_order)
+            : TOctets( allocData(source_.size()), source_.size(), byte_order),
+              _capacity( source_.size() )
+            {
+                if( 0 < source_.size() ) {
+                    std::memcpy(data(), source_.data(), source_.size());
+                }
+                JAU_TRACE_OCTETS_PRINT("POctets ctor2b: %p", data());
+            }
+
+            /**
+             * Takes ownership (malloc(size) and copy, free) ..
+             *
+             * Using explicit capacity >= source size.
+             *
+             * @param capacity_ new capacity
+             * @param sourcelist source initializer list data to be copied into this new instance with implied size
+             * @param byte_order lb_endian::little or lb_endian::big byte order, one may pass lb_endian::native.
+             * @throws IllegalArgumentException if capacity_ < source_.size()
+             * @throws IllegalArgumentException if source_ is nullptr and size_ > 0
+             * @throws OutOfMemoryError if allocation fails
+             */
+            POctets(const nsize_t capacity_, std::initializer_list<uint8_t> sourcelist, const lb_endian_t byte_order)
+            : TOctets( allocData(capacity_), sourcelist.size(), byte_order),
+              _capacity( capacity_ )
+            {
+                if( capacity() < size() ) {
+                    throw IllegalArgumentError("capacity "+std::to_string(capacity())+" < size "+std::to_string(size()), E_FILE_LINE);
+                }
+                if( 0 < size() ) {
+                    std::memcpy(data(), sourcelist.begin(), size());
+                }
+                JAU_TRACE_OCTETS_PRINT("POctets ctor3a: %p", data());
             }
 
             /**
@@ -649,10 +748,10 @@ namespace jau {
             : TOctets( allocData(sourcelist.size()), sourcelist.size(), byte_order),
               _capacity( sourcelist.size() )
             {
-                if( 0 < _capacity ) {
-                    std::memcpy(data(), sourcelist.begin(), _capacity);
+                if( 0 < size() ) {
+                    std::memcpy(data(), sourcelist.begin(), size());
                 }
-                JAU_TRACE_OCTETS_PRINT("POctets ctor1: %p", data());
+                JAU_TRACE_OCTETS_PRINT("POctets ctor3b: %p", data());
             }
 
             /**
@@ -671,7 +770,7 @@ namespace jau {
                 if( capacity() < size() ) {
                     throw IllegalArgumentError("capacity "+std::to_string(capacity())+" < size "+std::to_string(size()), E_FILE_LINE);
                 }
-                JAU_TRACE_OCTETS_PRINT("POctets ctor2: %p", data());
+                JAU_TRACE_OCTETS_PRINT("POctets ctor4a: %p", data());
             }
 
             /**
@@ -682,9 +781,10 @@ namespace jau {
              * @throws OutOfMemoryError if allocation fails
              */
             POctets(const nsize_t size, const lb_endian_t byte_order)
-            : POctets(size, size, byte_order)
+            : TOctets( allocData( size ), size, byte_order ),
+              _capacity( size )
             {
-                JAU_TRACE_OCTETS_PRINT("POctets ctor3: %p", data());
+                JAU_TRACE_OCTETS_PRINT("POctets ctor4b: %p", data());
             }
 
             /**
