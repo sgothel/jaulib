@@ -691,7 +691,7 @@ namespace jau {
                  * @return target function result
                  */
                 constexpr R operator()(A... args) const {
-                    return m_tfunc->cb(const_cast<delegate_t*>(this), args...);
+                    return m_tfunc->cb(const_cast<delegate_t*>(this), args...); // NOLINT(performance-unnecessary-value-param)
                 }
 
                 /**
@@ -734,7 +734,7 @@ namespace jau {
                 typedef delegate_t<R, A...> delegate_type;
 
             private:
-                constexpr static R invoke_impl(delegate_type* __restrict_cxx__ const, A...) {
+                constexpr static R invoke_impl(delegate_type* __restrict_cxx__ const, A...) { // NOLINT(performance-unnecessary-value-param)
                     return R();
                 }
 
@@ -800,7 +800,7 @@ namespace jau {
 
                 constexpr static R invoke_impl(delegate_type* __restrict_cxx__ const data, A... args) {
                     data_type * __restrict_cxx__ const d = data->template data<data_type>();
-                    return ( *(d->function) )(d->base, args...);
+                    return ( *(d->function) )(d->base, args...); // NOLINT(performance-unnecessary-value-param)
                 }
 
                 constexpr static bool equal_op_impl(const delegate_type& lhs_, const delegate_type& rhs_) noexcept {
@@ -827,7 +827,7 @@ namespace jau {
 
                 constexpr static R invoke_impl(delegate_type* __restrict_cxx__ const data, A... args) {
                     data_type * __restrict_cxx__ const d = data->template data<data_type>();
-                    return (d->base->*d->method)(args...);
+                    return (d->base->*d->method)(args...); // NOLINT(performance-unnecessary-value-param)
                 }
 
                 constexpr static bool equal_op_impl(const delegate_type& lhs_, const delegate_type& rhs_) noexcept {
@@ -887,7 +887,7 @@ namespace jau {
                 };
 
                 constexpr static R invoke_impl(delegate_type* __restrict_cxx__ const data, A... args) {
-                    return ( *(data->template data<data_type>()->function) )(args...);
+                    return ( *(data->template data<data_type>()->function) )(args...); // NOLINT(performance-unnecessary-value-param)
                 }
 
                 constexpr static bool equal_op_impl(const delegate_type& lhs_, const delegate_type& rhs_) noexcept {
@@ -938,7 +938,7 @@ namespace jau {
                 };
 
                 constexpr static R invoke_impl(delegate_type* __restrict_cxx__ const data, A... args) {
-                    return ( data->template data<data_type>()->function )(args...);
+                    return ( data->template data<data_type>()->function )(args...); // NOLINT(performance-unnecessary-value-param)
                 }
 
                 constexpr static bool equal_op_impl(const delegate_type& lhs_, const delegate_type& rhs_) noexcept {
@@ -1033,7 +1033,7 @@ namespace jau {
                 };
 
                 constexpr static R invoke_impl(delegate_type* __restrict_cxx__ const data, A... args) {
-                    return ( data->template data<data_type>()->function )(*data, args...);
+                    return ( data->template data<data_type>()->function )(*data, args...); // NOLINT(performance-unnecessary-value-param)
                 }
 
                 constexpr static bool equal_op_impl(const delegate_type& lhs_, const delegate_type& rhs_) noexcept {
@@ -1088,7 +1088,7 @@ namespace jau {
 
                 constexpr static R invoke_impl(delegate_type* __restrict_cxx__ const data, A... args) {
                     data_type* __restrict_cxx__ const d = data->template data<data_type>();
-                    return (*d->function)(d->data, args...);
+                    return (*d->function)(d->data, args...); // NOLINT(performance-unnecessary-value-param)
                 }
 
                 constexpr static bool equal_op_impl(const delegate_type& lhs_, const delegate_type& rhs_) noexcept {
@@ -1144,7 +1144,7 @@ namespace jau {
 
                 constexpr static R invoke_impl(delegate_type* __restrict_cxx__ const data, A... args) {
                     data_type* __restrict_cxx__ const d = data->template data<data_type>();
-                    return (*d->function)(d->data_ptr, args...);
+                    return (*d->function)(d->data_ptr, args...); // NOLINT(performance-unnecessary-value-param)
                 }
 
                 constexpr static bool equal_op_impl(const delegate_type& lhs_, const delegate_type& rhs_) noexcept {
@@ -1200,7 +1200,7 @@ namespace jau {
                 constexpr static R invoke_impl(delegate_type* __restrict_cxx__ const data, A... args) {
                     data_type* __restrict_cxx__ const d = data->template data<data_type>();
                     if( d->function ) {
-                        return d->function(args...);
+                        return d->function(args...); // NOLINT(performance-unnecessary-value-param)
                     } else {
                         return R();
                     }
@@ -1523,10 +1523,10 @@ namespace jau {
             }
 
             constexpr R operator()(A... args) const {
-                return target(args...);
+                return target(args...); // NOLINT(performance-unnecessary-value-param)
             }
             constexpr R operator()(A... args) {
-                return target(args...);
+                return target(args...); // NOLINT(performance-unnecessary-value-param)
             }
 
             constexpr bool operator==(const function<R(A...)>& rhs) const noexcept {

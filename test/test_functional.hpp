@@ -23,6 +23,7 @@
  */
 #include <cassert>
 #include <cstring>
+#include <memory>
 #include <string>
 #include <typeindex>
 
@@ -52,6 +53,44 @@ static void Func1a_free(int&r, int i) noexcept {
 static void Func2a_free() noexcept {
     // nop
 }
+
+class TrivialObj {
+  private:
+    int m_i1;
+    int m_i2;
+
+  public:
+    TrivialObj()
+    : m_i1(1), m_i2(2)
+    {}
+
+    int i1() const noexcept { return m_i1; }
+    int i2() const noexcept { return m_i2; }
+};
+typedef std::shared_ptr<TrivialObj> TrivialObjSRef;
+
+class NonTrivialObj {
+  private:
+    int m_i1;
+    int m_i2;
+    void *m_mem;
+
+  public:
+    NonTrivialObj()
+    : m_i1(1), m_i2(2), m_mem(::malloc(1024))
+    {}
+
+    ~NonTrivialObj() {
+        if(m_mem) {
+            ::free(m_mem);
+            m_mem = nullptr;
+        }
+    }
+    int i1() const noexcept { return m_i1; }
+    int i2() const noexcept { return m_i2; }
+    void* handle() const noexcept { return m_mem; }
+};
+typedef std::shared_ptr<NonTrivialObj> NonTrivialObjSRef;
 
 class TestFunction01 {
   public:
@@ -1633,6 +1672,141 @@ class TestFunction01 {
 #endif
     }
 
+    void test30_objargs01() {
+        // std::function
+        {
+            std::function<int(TrivialObj i)> f = [](TrivialObj i)->int {
+                int res = i.i1()+i.i2()+100;
+                return res;;
+            };
+
+            REQUIRE( true == static_cast<bool>( f ) );
+            REQUIRE( nullptr != f );
+            REQUIRE( f != nullptr );
+            REQUIRE( 103 == f(TrivialObj()) );
+        }
+        {
+            // Test null
+            {
+                function<int(TrivialObj)> fa0;
+                function<int(TrivialObj)> fa1 = nullptr;
+                REQUIRE( jau::func::target_type::null == fa0.type() );
+                REQUIRE( jau::func::target_type::null == fa1.type() );
+            }
+            {
+                typedef jau::function<bool(TrivialObj /* data */, bool /* is_final */)> SomeFunc;
+                SomeFunc fa0;
+                SomeFunc fa1 = nullptr;
+                REQUIRE( jau::func::target_type::null == fa0.type() );
+                REQUIRE( jau::func::target_type::null == fa1.type() );
+            }
+        }
+        {
+            // Test capturing lambdas
+            volatile int i = 100;
+
+            function<int(TrivialObj i)> fa0 = [](TrivialObj i)->int {
+                int res = i.i1()+i.i2()+100;
+                return res;;
+            };
+            fprintf(stderr, "lambda.0: %s, signature %s\n", fa0.toString().c_str(), fa0.signature().internal_name());
+            REQUIRE( jau::func::target_type::lambda == fa0.type() );
+            REQUIRE(103 == fa0(TrivialObj()));
+
+            auto fa2_stub = [&](TrivialObj a) -> int {
+                return i + a.i1() + a.i2();
+            };
+            function<int(TrivialObj)> fa2_a = fa2_stub;
+            fprintf(stderr, "lambda.2_a: %s, signature %s\n", fa2_a.toString().c_str(), fa2_a.signature().internal_name());
+            REQUIRE( jau::func::target_type::lambda == fa2_a.type() );
+            REQUIRE(103 == fa2_a(TrivialObj()));
+
+            function<int(TrivialObj)> fa2_b = fa2_stub;
+            fprintf(stderr, "lambda.2_b: %s, signature %s\n", fa2_b.toString().c_str(), fa2_b.signature().internal_name());
+            REQUIRE( jau::func::target_type::lambda == fa2_b.type() );
+            REQUIRE(103 == fa2_b(TrivialObj()));
+        }
+        {
+            // free, result non-void
+            typedef int(*cfunc)(TrivialObj); // to force non-capturing lambda into a free function template type deduction
+            function<int(TrivialObj)> fl_0 = (cfunc) ( [](TrivialObj i) -> int {
+                int res = i.i1()+i.i2()+100;
+                return res;
+            } );
+            fprintf(stderr, "freeB.0 %s\n", fl_0.toString().c_str());
+            REQUIRE( jau::func::target_type::free == fl_0.type() );
+            REQUIRE(103 == fl_0(TrivialObj()));
+        }
+    }
+    void test31_objargs02() {
+        NonTrivialObj nto0;
+
+        // std::function
+        {
+            std::function<int(const NonTrivialObj & i)> f = [](const NonTrivialObj &i)->int {
+                int res = i.i1()+i.i2()+100;
+                return res;;
+            };
+
+            REQUIRE( true == static_cast<bool>( f ) );
+            REQUIRE( nullptr != f );
+            REQUIRE( f != nullptr );
+            REQUIRE( 103 == f(nto0) );
+        }
+        {
+            // Test null
+            {
+                function<int(const NonTrivialObj &)> fa0;
+                function<int(const NonTrivialObj &)> fa1 = nullptr;
+                REQUIRE( jau::func::target_type::null == fa0.type() );
+                REQUIRE( jau::func::target_type::null == fa1.type() );
+            }
+            {
+                typedef jau::function<bool(const NonTrivialObj & /* data */, bool /* is_final */)> SomeFunc;
+                SomeFunc fa0;
+                SomeFunc fa1 = nullptr;
+                REQUIRE( jau::func::target_type::null == fa0.type() );
+                REQUIRE( jau::func::target_type::null == fa1.type() );
+            }
+        }
+        {
+            // Test capturing lambdas
+            volatile int i = 100;
+
+            function<int(const NonTrivialObj & i)> fa0 = [](const NonTrivialObj & i)->int {
+                int res = i.i1()+i.i2()+100;
+                return res;;
+            };
+            fprintf(stderr, "lambda.0: %s, signature %s\n", fa0.toString().c_str(), fa0.signature().internal_name());
+            REQUIRE( jau::func::target_type::lambda == fa0.type() );
+            REQUIRE(103 == fa0(nto0));
+
+            auto fa2_stub = [&](const NonTrivialObj & a) -> int {
+                return i + a.i1() + a.i2();
+            };
+            function<int(const NonTrivialObj &)> fa2_a = fa2_stub;
+            fprintf(stderr, "lambda.2_a: %s, signature %s\n", fa2_a.toString().c_str(), fa2_a.signature().internal_name());
+            REQUIRE( jau::func::target_type::lambda == fa2_a.type() );
+            REQUIRE(103 == fa2_a(nto0));
+
+            function<int(const NonTrivialObj &)> fa2_b = fa2_stub;
+            fprintf(stderr, "lambda.2_b: %s, signature %s\n", fa2_b.toString().c_str(), fa2_b.signature().internal_name());
+            REQUIRE( jau::func::target_type::lambda == fa2_b.type() );
+            REQUIRE(103 == fa2_b(nto0));
+        }
+        {
+            // free, result non-void
+            typedef int(*cfunc)(const NonTrivialObj &); // to force non-capturing lambda into a free function template type deduction
+            function<int(const NonTrivialObj &)> fl_0 = (cfunc) ( [](const NonTrivialObj & i) -> int {
+                int res = i.i1()+i.i2()+100;
+                return res;
+            } );
+            fprintf(stderr, "freeB.0 %s\n", fl_0.toString().c_str());
+            REQUIRE( jau::func::target_type::free == fl_0.type() );
+            REQUIRE(103 == fl_0(nto0));
+        }
+    }
+
   private:
 
     // template<typename R, typename... A>
@@ -1834,7 +2008,7 @@ class TestFunction01 {
             value = o.value;
             return *this;
         }
-        IntOffset2& operator=(IntOffset2 &&o) {
+        IntOffset2& operator=(IntOffset2 &&o)  noexcept {
             INFO("IntOffset2::move_assign");
             value = std::move(o.value);
             (void)value;
@@ -1876,3 +2050,5 @@ METHOD_AS_TEST_CASE( TestFunction01::test14_capval_lambda,       "14_capval");
 METHOD_AS_TEST_CASE( TestFunction01::test15_ylambda,             "15_ylambda");
 
 METHOD_AS_TEST_CASE( TestFunction01::test20_misc,                "20_misc");
+METHOD_AS_TEST_CASE( TestFunction01::test30_objargs01,           "30_objargs01");
+METHOD_AS_TEST_CASE( TestFunction01::test31_objargs02,           "31_objargs02");
