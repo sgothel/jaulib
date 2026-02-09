@@ -416,7 +416,7 @@ namespace jau {
                     move_ctor_t move_ctor;
                 };
                 struct target_func_t final_opt {
-                    typedef R(*invocation_t)(delegate_t* __restrict_cxx__ const data, A... args);
+                    typedef R(*invocation_t)(delegate_t* __restrict_cxx__ const data, A&&... args);
                     typedef bool(*equal_op_t)(const delegate_t& data_lhs, const delegate_t& data_rhs) noexcept;
 
                     /** Delegated specialization callback. (local) */
@@ -484,30 +484,30 @@ namespace jau {
                 // `TriviallyCopyable` using cache
                 template<typename T, typename... P,
                          std::enable_if_t<use_trivial_cache<T>(), bool> = true>
-                static delegate_t make(const target_func_t& tfunc, P... params) noexcept
+                static delegate_t make(const target_func_t& tfunc, P&&... params) noexcept
                 {
                     delegate_t target(tfunc);
-                    new( target.template data<T>() ) T(params...); // placement new
+                    new( target.template data<T>() ) T(std::forward<P>(params)...); // placement new
                     return target;
                 }
 
                 // `TriviallyCopyable` using heap
                 template<typename T, typename... P,
                          std::enable_if_t<use_trivial_heap<T>(), bool> = true>
-                static delegate_t make(const target_func_t& tfunc, P... params) noexcept
+                static delegate_t make(const target_func_t& tfunc, P&&... params) noexcept
                 {
                     delegate_t target(tfunc, true);
-                    new( target.template data<T>() ) T(params...); // placement new
+                    new( target.template data<T>() ) T(std::forward<P>(params)...); // placement new
                     return target;
                 }
 
                 // Non `TriviallyCopyable` using heap
                 template<typename T, typename... P,
                          std::enable_if_t<use_nontrivial_heap<T>(), bool> = true>
-                static delegate_t make(const target_func_t& tfunc, P... params) noexcept // NOLINT(performance-unnecessary-value-param)
+                static delegate_t make(const target_func_t& tfunc, P&&... params) noexcept
                 {
                     delegate_t target(tfunc, true);
-                    new( target.template data<T>() ) T(params...); // placement new // NOLINT(performance-unnecessary-value-param)
+                    new( target.template data<T>() ) T(std::forward<P>(params)...); // placement new
                     return target;
                 }
 
@@ -690,8 +690,8 @@ namespace jau {
                  * @param args target function arguments
                  * @return target function result
                  */
-                constexpr R operator()(A... args) const {
-                    return m_tfunc->cb(const_cast<delegate_t*>(this), args...); // NOLINT(performance-unnecessary-value-param)
+                constexpr R operator()(A&&... args) const {
+                    return m_tfunc->cb(const_cast<delegate_t*>(this), std::forward<A>(args)...);
                 }
 
                 /**
@@ -734,7 +734,7 @@ namespace jau {
                 typedef delegate_t<R, A...> delegate_type;
 
             private:
-                constexpr static R invoke_impl(delegate_type* __restrict_cxx__ const, A...) { // NOLINT(performance-unnecessary-value-param)
+                constexpr static R invoke_impl(delegate_type* __restrict_cxx__ const, A&&...) {
                     return R();
                 }
 
@@ -798,9 +798,9 @@ namespace jau {
                     }
                 };
 
-                constexpr static R invoke_impl(delegate_type* __restrict_cxx__ const data, A... args) {
+                constexpr static R invoke_impl(delegate_type* __restrict_cxx__ const data, A&&... args) {
                     data_type * __restrict_cxx__ const d = data->template data<data_type>();
-                    return ( *(d->function) )(d->base, args...); // NOLINT(performance-unnecessary-value-param)
+                    return ( *(d->function) )(d->base, std::forward<A>(args)...);
                 }
 
                 constexpr static bool equal_op_impl(const delegate_type& lhs_, const delegate_type& rhs_) noexcept {
@@ -825,9 +825,9 @@ namespace jau {
                       { }
                 };
 
-                constexpr static R invoke_impl(delegate_type* __restrict_cxx__ const data, A... args) {
+                constexpr static R invoke_impl(delegate_type* __restrict_cxx__ const data, A&&... args) {
                     data_type * __restrict_cxx__ const d = data->template data<data_type>();
-                    return (d->base->*d->method)(args...); // NOLINT(performance-unnecessary-value-param)
+                    return (d->base->*d->method)(std::forward<A>(args)...);
                 }
 
                 constexpr static bool equal_op_impl(const delegate_type& lhs_, const delegate_type& rhs_) noexcept {
@@ -886,8 +886,8 @@ namespace jau {
                     : function(_function) { }
                 };
 
-                constexpr static R invoke_impl(delegate_type* __restrict_cxx__ const data, A... args) {
-                    return ( *(data->template data<data_type>()->function) )(args...); // NOLINT(performance-unnecessary-value-param)
+                constexpr static R invoke_impl(delegate_type* __restrict_cxx__ const data, A&&... args) {
+                    return ( *(data->template data<data_type>()->function) )(std::forward<A>(args)...);
                 }
 
                 constexpr static bool equal_op_impl(const delegate_type& lhs_, const delegate_type& rhs_) noexcept {
@@ -931,14 +931,14 @@ namespace jau {
                     L function;
                     jau::type_info sig;
 
-                    data_type(L _function) noexcept
-                    : function( _function ), sig( jau::make_ctti<R, L, A...>() ) {}
+                    data_type(L&& _function) noexcept
+                    : function( std::move(_function) ), sig( jau::make_ctti<R, L, A...>() ) {}
 
                     constexpr size_t detail_size() const noexcept { return sizeof(function); }
                 };
 
-                constexpr static R invoke_impl(delegate_type* __restrict_cxx__ const data, A... args) {
-                    return ( data->template data<data_type>()->function )(args...); // NOLINT(performance-unnecessary-value-param)
+                constexpr static R invoke_impl(delegate_type* __restrict_cxx__ const data, A&&... args) {
+                    return ( data->template data<data_type>()->function )(std::forward<A>(args)...);
                 }
 
                 constexpr static bool equal_op_impl(const delegate_type& lhs_, const delegate_type& rhs_) noexcept {
@@ -961,7 +961,7 @@ namespace jau {
 
             public:
                 static delegate_type delegate(L function) noexcept {
-                    return delegate_type::template make<data_type>( get(), function );
+                    return delegate_type::template make<data_type>( get(), std::forward<L>(function) );
                 }
         };
 
@@ -1021,8 +1021,8 @@ namespace jau {
                     L function;
                     jau::type_info sig;
 
-                    data_type(L _function) noexcept
-                    : function( _function ), sig( jau::make_ctti<R, L, A...>() ) {
+                    data_type(L&& _function) noexcept
+                    : function( std::move(_function) ), sig( jau::make_ctti<R, L, A...>() ) {
                         // jau::type_cue<L>::print("ylambda_target_t.lambda", TypeTraitGroup::ALL);
                         // jau::type_cue<data_type>::print("ylambda_target_t.data_type", TypeTraitGroup::ALL);
                         // fprintf(stderr, "ylambda_target: %s\n\t\tsize %zu, %p: %s\n",
@@ -1032,8 +1032,8 @@ namespace jau {
                     constexpr size_t detail_size() const noexcept { return sizeof(function); }
                 };
 
-                constexpr static R invoke_impl(delegate_type* __restrict_cxx__ const data, A... args) {
-                    return ( data->template data<data_type>()->function )(*data, args...); // NOLINT(performance-unnecessary-value-param)
+                constexpr static R invoke_impl(delegate_type* __restrict_cxx__ const data, A&&... args) {
+                    return ( data->template data<data_type>()->function )(*data, std::forward<A>(args)...);
                 }
 
                 constexpr static bool equal_op_impl(const delegate_type& lhs_, const delegate_type& rhs_) noexcept {
@@ -1056,7 +1056,7 @@ namespace jau {
 
             public:
                 static delegate_type delegate(L function) noexcept {
-                    return delegate_type::template make<data_type>( get(), function );
+                    return delegate_type::template make<data_type>( get(), std::forward<L>(function) );
                 }
         };
 
@@ -1086,9 +1086,9 @@ namespace jau {
                     : function(_function), data(std::move(_data)) {}
                 };
 
-                constexpr static R invoke_impl(delegate_type* __restrict_cxx__ const data, A... args) {
+                constexpr static R invoke_impl(delegate_type* __restrict_cxx__ const data, A&&... args) {
                     data_type* __restrict_cxx__ const d = data->template data<data_type>();
-                    return (*d->function)(d->data, args...); // NOLINT(performance-unnecessary-value-param)
+                    return (*d->function)(d->data, std::forward<A>(args)...);
                 }
 
                 constexpr static bool equal_op_impl(const delegate_type& lhs_, const delegate_type& rhs_) noexcept {
@@ -1114,7 +1114,7 @@ namespace jau {
                 }
 
                 static delegate_type delegate(I&& data, R(*function)(I&, A...)) noexcept {
-                    return function ? delegate_type::template make<data_type>( get(), std::move(data), function ) : func::null_target_t<R, A...>::delegate();
+                    return function ? delegate_type::template make<data_type>( get(), std::forward<I>(data), function ) : func::null_target_t<R, A...>::delegate();
                 }
         };
 
@@ -1142,9 +1142,9 @@ namespace jau {
                     {}
                 };
 
-                constexpr static R invoke_impl(delegate_type* __restrict_cxx__ const data, A... args) {
+                constexpr static R invoke_impl(delegate_type* __restrict_cxx__ const data, A&&... args) {
                     data_type* __restrict_cxx__ const d = data->template data<data_type>();
-                    return (*d->function)(d->data_ptr, args...); // NOLINT(performance-unnecessary-value-param)
+                    return (*d->function)(d->data_ptr, std::forward<A>(args)...);
                 }
 
                 constexpr static bool equal_op_impl(const delegate_type& lhs_, const delegate_type& rhs_) noexcept {
@@ -1187,20 +1187,22 @@ namespace jau {
                 typedef delegate_t<R, A...> delegate_type;
 
             private:
+                typedef std::function<R(A...)> function_t;
+
                 struct data_type final_opt {
-                    std::function<R(A...)> function;
+                    function_t function;
                     uint64_t id;
 
-                    data_type(uint64_t id_, std::function<R(A...)> function_) noexcept
+                    data_type(uint64_t id_, function_t&& function_) noexcept
                     : function(std::move(function_)), id(id_) {}
 
                     constexpr size_t detail_size() const noexcept { return sizeof(id)+sizeof(function); }
                 };
 
-                constexpr static R invoke_impl(delegate_type* __restrict_cxx__ const data, A... args) {
+                constexpr static R invoke_impl(delegate_type* __restrict_cxx__ const data, A&&... args) {
                     data_type* __restrict_cxx__ const d = data->template data<data_type>();
                     if( d->function ) {
-                        return d->function(args...); // NOLINT(performance-unnecessary-value-param)
+                        return d->function(std::forward<A>(args)...);
                     } else {
                         return R();
                     }
@@ -1224,8 +1226,8 @@ namespace jau {
                 };
 
             public:
-                static delegate_type delegate(uint64_t id, std::function<R(A...)>&& function) noexcept {
-                    return delegate_type::template make<data_type>( get(), id, std::move(function) );
+                static delegate_type delegate(uint64_t id, function_t function) noexcept {
+                    return delegate_type::template make<data_type>( get(), id, std::forward<function_t>(function) );
                 }
         };
         /**@}*/
@@ -1328,7 +1330,7 @@ namespace jau {
              * Constructs an instance by taking a lambda function.
              *
              * @tparam L typename holding the lambda closure
-             * @param func the lambda reference
+             * @param func the lambda instance (copy)
              * @see @ref function_overview "function Overview"
              * @see @ref function_usage "function Usage"
              */
@@ -1349,7 +1351,7 @@ namespace jau {
              * Constructs an instance by taking a lambda function.
              *
              * @tparam L typename holding the lambda closure
-             * @param func the lambda reference
+             * @param func the lambda instance (copy)
              * @see @ref function_overview "function Overview"
              * @see @ref function_usage "function Usage"
              */
@@ -1369,7 +1371,7 @@ namespace jau {
              * see [ylambda_target_t](@ref ylambda_target).
              *
              * @tparam L typename holding the lambda closure
-             * @param func the lambda reference
+             * @param func the lambda instance (copy)
              * @see @ref ylambda_target "ylambda_target_t"
              * @see @ref function_overview "function Overview"
              * @see @ref function_usage "function Usage"
@@ -1431,7 +1433,7 @@ namespace jau {
              * The function invocation will have the reference of the moved data being passed to the target function for efficiency.
              *
              * @tparam I typename holding the captured data used by the function
-             * @param data data type instance holding the captured data
+             * @param data data type rvalue holding the captured data
              * @param func function with `R` return value and `A...` arguments.
              * @see @ref function_overview "function Overview"
              * @see @ref function_usage "function Usage"
@@ -1523,10 +1525,10 @@ namespace jau {
             }
 
             constexpr R operator()(A... args) const {
-                return target(args...); // NOLINT(performance-unnecessary-value-param)
+                return target(std::forward<A>(args)...);
             }
             constexpr R operator()(A... args) {
-                return target(args...); // NOLINT(performance-unnecessary-value-param)
+                return target(std::forward<A>(args)...);
             }
 
             constexpr bool operator==(const function<R(A...)>& rhs) const noexcept {

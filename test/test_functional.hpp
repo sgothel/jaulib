@@ -86,6 +86,14 @@ class NonTrivialObj {
             m_mem = nullptr;
         }
     }
+    NonTrivialObj(const NonTrivialObj& o)
+    : m_i1(o.m_i1), m_i2(o.m_i2), m_mem(::malloc(1024)) {
+        ::memcpy(m_mem, o.m_mem, 1024);
+    }
+    NonTrivialObj(NonTrivialObj&& o) noexcept
+    : m_i1(o.m_i1), m_i2(o.m_i2), m_mem(o.m_mem) {
+        o.m_mem = nullptr;
+    }
     int i1() const noexcept { return m_i1; }
     int i2() const noexcept { return m_i2; }
     void* handle() const noexcept { return m_mem; }
