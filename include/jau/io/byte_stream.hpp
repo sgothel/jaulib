@@ -909,7 +909,7 @@ namespace jau::io {
                 }
                 return true;
             }
-            size_t read(size_type& m, size_type& o, DataProvider newData, void* out, const size_t length) noexcept {
+            size_t read(size_type& m, size_type& o, DataProvider& newData, void* out, const size_t length) noexcept {
                 [[maybe_unused]] size_t l0 = length;
                 size_t g1 = 0, g2 = 0;
                 if ( covered(m, o) ) {
