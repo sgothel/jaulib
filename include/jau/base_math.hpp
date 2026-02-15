@@ -244,6 +244,24 @@ namespace jau {
         return jau::min<T>(jau::max<T>(x, min_val), max_val);
     }
 
+    /**
+     * Returns constrained integral value to lie between given min- and maximum value (w/ branching) in O(1),
+     * cast to type `R`.
+     *
+     * Implementation returns `min(max(x, min_val), max_val)`, analog to GLSL's clamp()
+     *
+     * @tparam R an arithmetic number type, target return type
+     * @tparam T an arithmetic number type
+     * @param x one number
+     * @param min_val the minimum limes, inclusive
+     * @param max_val the maximum limes, inclusive
+     */
+    template <jau::req::arithmetic R, jau::req::arithmetic T>
+    constexpr R clampCast(const T x, const T min_val, const T max_val) noexcept
+    {
+        return static_cast<R>(jau::clamp<T>(x, min_val, max_val));
+    }
+
     /**@}*/
 
 } // namespace jau
