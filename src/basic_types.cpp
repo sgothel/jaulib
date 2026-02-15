@@ -32,6 +32,7 @@
 #include <regex>
 #include <string>
 
+#include "jau/base_math.hpp"
 #include <jau/basic_types.hpp>
 #include <jau/byte_util.hpp>
 #include <jau/cpp_lang_util.hpp>
@@ -1268,13 +1269,30 @@ void jau::impl::dbgPrint0_tail(FILE *out, bool addErrno, bool addBacktrace) noex
         ::fflush(stderr);
     }
 }
+ssize_t jau::impl::dbgPrint_td_prefix(const uint64_t elapsed_ms, FILE *out) noexcept {
+    const std::string st = jau::to_decstring(elapsed_ms, ',', 9);
+    ssize_t res = 0;
+    if (EOF == ::fputc('[', out)) {
+        return -1;
+    }
+    res += 1;
+    if ( 0 > ::fputs(st.c_str(), out)) {
+        return -1*(res+(ssize_t)st.length());
+    }
+    res += jau::clampCast<ssize_t, size_t>(st.length(), 0, std::numeric_limits<ssize_t>::max()-res);
+    if (0 > ::fputs("] ", out)) {
+        return -1*(res+2);
+    }
+    res += 2;
+    return res;
+}
 void jau::impl::dbgPrint1_prefix(FILE *out, const char *msg, const char *msgsep) noexcept {
-    ::fputc('[', out);
-    ::fputs(jau::to_decstring(environment::getElapsedMillisecond(), ',', 9).c_str(), out);
-    ::fputs("] ", out);
+    dbgPrint_td_prefix(environment::getElapsedMillisecond(), out);
     if (msg) {
         ::fputs(msg, out);
-        ::fputs(msgsep, out);
+        if (msgsep) {
+            ::fputs(msgsep, out);
+        }
     }
 }
 

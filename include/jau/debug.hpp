@@ -49,6 +49,8 @@ namespace jau::impl {
     /// This function is a possible cancellation point and therefore marked with noexcept (not marked with __THROW like ::fprintf).
     void dbgPrint0_tail(FILE *out, bool addErrno, bool addBacktrace) noexcept;
     /// This function is a possible cancellation point and therefore marked with noexcept (not marked with __THROW like ::fprintf).
+    ssize_t dbgPrint_td_prefix(const uint64_t elapsed_ms, FILE *out) noexcept;
+    /// This function is a possible cancellation point and therefore marked with noexcept (not marked with __THROW like ::fprintf).
     void dbgPrint1_prefix(FILE *out, const char *msg, const char *msgsep) noexcept;
 
     /// This function is a possible cancellation point and therefore marked with noexcept (not marked with __THROW like ::fprintf).
@@ -173,33 +175,55 @@ namespace jau::impl {
 
 namespace jau {
     /**
-     * Convenient fprintf() invocation, prepending the given elapsed_ms timestamp.
+     * Convenient secure fprintf() invocation, prepending the given elapsed_ms timestamp
+     * and using `jau:format_string`.
      * @param elapsed_ms the given elapsed time in milliseconds
      * @param stream the output stream
      * @param format the format
      * @param args the optional arguments
+     * @return number of bytes printed if successful, otherwise negative
      */
     template <typename... Args>
     inline __attribute__((always_inline))
-    int fprintf_td(const uint64_t elapsed_ms, FILE* stream, std::string_view format, const Args &...args) noexcept {
-        int res = ::fprintf(stream, "[%s] ", jau::to_decstring(elapsed_ms, ',', 9).c_str());
-        const int r = ::fputs(jau::format_string(format, args...).c_str(), stream);
-        if (r >= 0) {
-            res += r;
+    ssize_t fprintf_td(const uint64_t elapsed_ms, FILE* stream, std::string_view format, const Args &...args) noexcept {
+        ssize_t res = jau::impl::dbgPrint_td_prefix(elapsed_ms, stream);
+        if (0>res) {
+            return res;
         }
-        return res;
+        const std::string s = jau::format_string(format, args...);
+        const int r = ::fputs(s.c_str(), stream);
+        res += jau::clampCast<ssize_t, size_t>(s.length(), 0, std::numeric_limits<ssize_t>::max()-res);
+        return 0>r ? -1*res : res;
     }
 
     /**
-     * Convenient fprintf() invocation, prepending the environment::getElapsedMillisecond() timestamp.
+     * Convenient secure fprintf() invocation, prepending the environment::getElapsedMillisecond() timestamp,
+     * and using `jau:format_string`.
      * @param stream the output stream
      * @param format the format
      * @param args the optional arguments
+     * @return number of bytes printed if successful, otherwise negative
      */
     template <typename... Args>
     inline __attribute__((always_inline))
-    int fprintf_td(FILE* stream, std::string_view format, const Args &...args) noexcept {
+    ssize_t fprintf_td(FILE* stream, std::string_view format, const Args &...args) noexcept {
         return fprintf_td(environment::getElapsedMillisecond(), stream, format, args...);
+    }
+
+    /**
+     * Convenient secure fprintf() invocation using `jau:format_string`.
+     * @param stream the output stream
+     * @param format the format
+     * @param args the optional arguments
+     * @return number of bytes printed if successful, otherwise negative
+     */
+    template <typename... Args>
+    inline __attribute__((always_inline))
+    ssize_t fprintf(FILE* stream, std::string_view format, const Args &...args) noexcept {
+        const std::string s = jau::format_string(format, args...);
+        const int r = ::fputs(s.c_str(), stream);
+        const ssize_t res = jau::clampCast<ssize_t, size_t>(s.length(), 0, std::numeric_limits<ssize_t>::max());
+        return 0>r ? -1*res : res;
     }
 
     template<class List>
@@ -225,5 +249,14 @@ namespace jau {
 #define jau_fprintf_td(stream, fmt, ...) \
     jau::fprintf_td((stream), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
     static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_NOREF_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
+
+#define jau_printf(fmt, ...) \
+    jau::fprintf((stdout), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
+    static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_NOREF_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
+
+#define jau_fprintf(stream, fmt, ...) \
+    jau::fprintf((stream), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
+    static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_NOREF_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
+
 
 #endif /* JAU_DEBUG_HPP_ */
