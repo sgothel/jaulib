@@ -45,6 +45,8 @@ namespace jau {
     // Remember: constexpr specifier used in a function or static data member (since C++17) declaration implies inline.
 
     template <int bytesize> struct uint_bytes;
+    template <> struct uint_bytes<1>{ using type = uint8_t; };
+    template <> struct uint_bytes<2>{ using type = uint16_t; };
     template <> struct uint_bytes<4>{ using type = uint32_t; };
     template <> struct uint_bytes<8>{ using type = uint64_t; };
     #if defined(__SIZEOF_INT128__)
@@ -55,6 +57,8 @@ namespace jau {
       using uint_bytes_t = typename uint_bytes<bytesize>::type;
 
     template <int bytesize> struct sint_bytes;
+    template <> struct sint_bytes<1>{ using type = int8_t; };
+    template <> struct sint_bytes<2>{ using type = int16_t; };
     template <> struct sint_bytes<4>{ using type = int32_t; };
     template <> struct sint_bytes<8>{ using type = int64_t; };
     #if defined(__SIZEOF_INT128__)
