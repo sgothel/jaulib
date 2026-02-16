@@ -19,6 +19,7 @@
 #include <cassert>
 #include <cerrno>
 #include <concepts>
+#include <cinttypes> // NOLINT(unused-includes): For user's PRIxYY macros
 #include <cstdarg>
 #include <cstddef>
 #include <cstdint>
