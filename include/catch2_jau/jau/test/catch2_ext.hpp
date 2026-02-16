@@ -33,6 +33,8 @@
 #ifndef CATCH2_EXT_H
 #define CATCH2_EXT_H
 
+#define CATCH_CONFIG_NO_COUNTER 1
+
 #include <catch2/catch_amalgamated.hpp> // NOLINT
 #include <jau/float_math.hpp>
 
