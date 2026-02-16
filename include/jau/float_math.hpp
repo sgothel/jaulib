@@ -29,6 +29,7 @@
 #include <climits>
 #include <concepts>
 #include <type_traits>
+#include <numbers>
 
 #include <jau/float_types.hpp>
 #include <jau/base_math.hpp>
