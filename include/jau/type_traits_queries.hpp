@@ -173,6 +173,14 @@ namespace jau {
 
     template <typename _Tp> inline constexpr bool has_member_of_pointer_v = has_member_of_pointer<_Tp>::value;
 
+    template<class C, typename=void> struct has_free_to_string : std::false_type {};
+    template<class C> struct has_free_to_string<C, typename std::enable_if_t<
+            std::is_same_v<std::string, decltype(to_string(std::declval<C>()))> ||
+            std::is_same_v<std::string_view, decltype(to_string(std::declval<C>()))>
+        >> : std::true_type {};
+
+    template <typename _Tp> inline constexpr bool has_free_to_string_v = has_free_to_string<_Tp>::value;
+
     /**@}*/
 
 } // namespace jau

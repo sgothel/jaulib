@@ -157,6 +157,24 @@ static void testFrom(int line, value_type exp_v, std::string_view in_s,uint32_t 
     // REQUIRE( in_s.length() == consumed );
 }
 
+class SomeClass {
+  public:
+    std::string toString() const { return "SomeClass toString"; }
+};
+enum class game_t : uint16_t {
+    none,
+    chess,
+    pacman,
+    mrdo
+};
+JAU_MAKE_ENUM_STRING(game_t, chess, pacman, mrdo); // NOLINT
+
+enum class plainenum_t : uint16_t {
+    none,
+    lala,
+    lili
+};
+
 TEST_CASE( "Test 00 - to_string/appendIntString, fromIntString", "[jau][string][to_string][from_string]" ) {
     int i1 = 1;
     uint64_t u64_1 = 1116791496961ull;
@@ -169,6 +187,11 @@ TEST_CASE( "Test 00 - to_string/appendIntString, fromIntString", "[jau][string][
     CHECK("1116791496961" == jau::to_string(u64_1));
     CHECK("0xaffe" == jau::to_string(p_v_1));
     CHECK("0xaffe" == jau::toHexString(0xaffe_u32));
+    CHECK("SomeClass toString" == jau::to_string(SomeClass()));
+    CHECK("chess" == jau::to_string(game_t::chess));
+    CHECK("pacman" == jau::to_string(game_t::pacman));
+    CHECK("lala" != jau::to_string(plainenum_t::lala));
+    CHECK("little" == jau::to_string(jau::lb_endian_t::little));
     {
         // radix, default: no-width, prefix, no-separator, no padding
         testToFrom(__LINE__, 0xdeadbeef_u32, "0xdeadbeef", 16);                               // hex

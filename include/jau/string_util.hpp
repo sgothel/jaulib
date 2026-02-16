@@ -1025,7 +1025,23 @@ namespace jau {
                               !std::is_pointer_v<value_type> &&
                               !jau::has_toString_v<value_type> &&
                               !jau::has_to_string_v<value_type> &&
-                              !jau::has_member_of_pointer_v<value_type>,
+                              !jau::has_member_of_pointer_v<value_type> &&
+                              jau::has_free_to_string_v<value_type>,
+                              bool> = true>
+    inline std::string to_string(const value_type &ref) {
+        return to_string(ref);
+    }
+
+    template<class value_type,
+             std::enable_if_t<!std::is_integral_v<value_type> &&
+                              !std::is_floating_point_v<value_type> &&
+                              !std::is_base_of_v<std::string, value_type> &&
+                              !std::is_base_of_v<std::string_view, value_type> &&
+                              !std::is_pointer_v<value_type> &&
+                              !jau::has_toString_v<value_type> &&
+                              !jau::has_to_string_v<value_type> &&
+                              !jau::has_member_of_pointer_v<value_type> &&
+                              !jau::has_free_to_string_v<value_type>,
                               bool> = true>
     inline std::string to_string(const value_type &ref) {
         (void)ref;
