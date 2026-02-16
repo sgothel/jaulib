@@ -85,73 +85,94 @@ namespace jau {
 
     // Remember: constexpr specifier used in a function or static data member (since C++17) declaration implies inline.
 
-    constexpr uint16_t bswap(uint16_t const source) noexcept {
+    template <jau::req::unsigned_integral T>
+    requires (sizeof(T) == 2)
+    constexpr T bswap(T const & source) noexcept {
         #if defined __has_builtin_bswap16
             return __builtin_bswap16(source);
         #else
-            return (uint16_t) ( ( ( (source) >> 8 ) & 0xff ) |
-                                ( ( (source) & 0xff) << 8 ) );
+            using namespace jau::int_literals;
+            return (T) ( ( ( source >> 8 ) & 0xff ) |
+                         ( ( source & 0xff_u16) << 8 ) );
         #endif
     }
 
-    constexpr int16_t bswap(int16_t const source) noexcept {
-        #if defined __has_builtin_bswap64
+    template <jau::req::signed_integral T>
+    requires (sizeof(T) == 2)
+    constexpr T bswap(T const & source) noexcept {
+        #if defined __has_builtin_bswap16
             return jau::bit_cast<int16_t>( __builtin_bswap16(jau::bit_cast<uint16_t>(source)) );
         #else
-            return (int16_t) ( ( ( (source) >> 8 ) & 0xff ) |
-                               ( ( (source) & 0xff) << 8 ) );
+            using namespace jau::int_literals;
+            const uint16_t usource = jau::bit_cast<uint16_t>(source);
+            return (T) ( ( ( usource >> 8 ) & 0xff ) |
+                         ( ( usource & 0xff_u16) << 8 ) );
         #endif
     }
 
-    constexpr uint32_t bswap(uint32_t const source) noexcept {
+    template <jau::req::unsigned_integral T>
+    requires (sizeof(T) == 4)
+    constexpr T bswap(T const & source) noexcept {
         #if defined __has_builtin_bswap32
             return __builtin_bswap32(source);
         #else
-            return ( ( source & 0xff000000U ) >> 24 ) |
-                   ( ( source & 0x00ff0000U ) >>  8 ) |
-                   ( ( source & 0x0000ff00U ) <<  8 ) |
-                   ( ( source & 0x000000ffU ) << 24 );
+            using namespace jau::int_literals;
+            return ( ( source & 0xff000000_u32 ) >> 24 ) |
+                   ( ( source & 0x00ff0000_u32 ) >>  8 ) |
+                   ( ( source & 0x0000ff00_u32 ) <<  8 ) |
+                   ( ( source & 0x000000ff_u32 ) << 24 );
         #endif
     }
 
-    constexpr int32_t bswap(int32_t const source) noexcept {
-        #if defined __has_builtin_bswap64
-            return jau::bit_cast<int32_t>( __builtin_bswap32(jau::bit_cast<uint32_t>(source)) );
+    template <jau::req::signed_integral T>
+    requires (sizeof(T) == 4)
+    constexpr T bswap(T const & source) noexcept {
+        #if defined __has_builtin_bswap32
+            return jau::bit_cast<T>( __builtin_bswap32(jau::bit_cast<uint32_t>(source)) );
         #else
-            return jau::bit_cast<int32_t>( ( ( source & 0xff000000U ) >> 24 ) |
-                                           ( ( source & 0x00ff0000U ) >>  8 ) |
-                                           ( ( source & 0x0000ff00U ) <<  8 ) |
-                                           ( ( source & 0x000000ffU ) << 24 ) );
+            using namespace jau::int_literals;
+            const uint32_t usource = jau::bit_cast<uint32_t>(source);
+            return jau::bit_cast<T>( ( ( usource & 0xff000000_u32 ) >> 24 ) |
+                                     ( ( usource & 0x00ff0000_u32 ) >>  8 ) |
+                                     ( ( usource & 0x0000ff00_u32 ) <<  8 ) |
+                                     ( ( usource & 0x000000ff_u32 ) << 24 ) );
         #endif
     }
 
-    constexpr uint64_t bswap(uint64_t const & source) noexcept {
+    template <jau::req::unsigned_integral T>
+    requires (sizeof(T) == 8)
+    constexpr T bswap(T const & source) noexcept {
         #if defined __has_builtin_bswap64
             return __builtin_bswap64(source);
         #else
-            return ( ( source & 0xff00000000000000ULL ) >> 56 ) |
-                   ( ( source & 0x00ff000000000000ULL ) >> 40 ) |
-                   ( ( source & 0x0000ff0000000000ULL ) >> 24 ) |
-                   ( ( source & 0x000000ff00000000ULL ) >>  8 ) |
-                   ( ( source & 0x00000000ff000000ULL ) <<  8 ) |
-                   ( ( source & 0x0000000000ff0000ULL ) << 24 ) |
-                   ( ( source & 0x000000000000ff00ULL ) << 40 ) |
-                   ( ( source & 0x00000000000000ffULL ) << 56 );
+            using namespace jau::int_literals;
+            return ( ( source & 0xff00000000000000_u64 ) >> 56 ) |
+                   ( ( source & 0x00ff000000000000_u64 ) >> 40 ) |
+                   ( ( source & 0x0000ff0000000000_u64 ) >> 24 ) |
+                   ( ( source & 0x000000ff00000000_u64 ) >>  8 ) |
+                   ( ( source & 0x00000000ff000000_u64 ) <<  8 ) |
+                   ( ( source & 0x0000000000ff0000_u64 ) << 24 ) |
+                   ( ( source & 0x000000000000ff00_u64 ) << 40 ) |
+                   ( ( source & 0x00000000000000ff_u64 ) << 56 );
         #endif
     }
 
-    constexpr int64_t bswap(int64_t const & source) noexcept {
+    template <jau::req::signed_integral T>
+    requires (sizeof(T) == 8)
+    constexpr T bswap(T const & source) noexcept {
         #if defined __has_builtin_bswap64
-            return jau::bit_cast<int64_t>( __builtin_bswap64(jau::bit_cast<uint64_t>(source)) );
+            return jau::bit_cast<T>( __builtin_bswap64(jau::bit_cast<uint64_t>(source)) );
         #else
-            return jau::bit_cast<int64_t>( ( ( source & 0xff00000000000000ULL ) >> 56 ) |
-                                           ( ( source & 0x00ff000000000000ULL ) >> 40 ) |
-                                           ( ( source & 0x0000ff0000000000ULL ) >> 24 ) |
-                                           ( ( source & 0x000000ff00000000ULL ) >>  8 ) |
-                                           ( ( source & 0x00000000ff000000ULL ) <<  8 ) |
-                                           ( ( source & 0x0000000000ff0000ULL ) << 24 ) |
-                                           ( ( source & 0x000000000000ff00ULL ) << 40 ) |
-                                           ( ( source & 0x00000000000000ffULL ) << 56 ) );
+            using namespace jau::int_literals;
+            const uint64_t usource = jau::bit_cast<uint64_t>(source);
+            return jau::bit_cast<T>( ( ( usource & 0xff00000000000000_u64 ) >> 56 ) |
+                                     ( ( usource & 0x00ff000000000000_u64 ) >> 40 ) |
+                                     ( ( usource & 0x0000ff0000000000_u64 ) >> 24 ) |
+                                     ( ( usource & 0x000000ff00000000_u64 ) >>  8 ) |
+                                     ( ( usource & 0x00000000ff000000_u64 ) <<  8 ) |
+                                     ( ( usource & 0x0000000000ff0000_u64 ) << 24 ) |
+                                     ( ( usource & 0x000000000000ff00_u64 ) << 40 ) |
+                                     ( ( usource & 0x00000000000000ff_u64 ) << 56 ) );
         #endif
     }
 
@@ -410,7 +431,8 @@ namespace jau {
     static_assert( is_defined_endian(endian_t::native) );
     static_assert( is_little_or_big_endian() );
 
-    constexpr uint16_t be_to_cpu(uint16_t const n) noexcept {
+    template <jau::req::unsigned_integral T>
+    constexpr T be_to_cpu(T const n) noexcept {
         if constexpr ( is_little_endian() ) {
             return bswap(n);
         } else if constexpr ( is_big_endian() ) {
@@ -419,7 +441,8 @@ namespace jau {
             return 0; // unreachable -> static_assert(..) above
         }
     }
-    constexpr uint16_t cpu_to_be(uint16_t const h) noexcept {
+    template <jau::req::unsigned_integral T>
+    constexpr T cpu_to_be(T const h) noexcept {
         if constexpr ( is_little_endian() ) {
             return bswap(h);
         } else if constexpr ( is_big_endian() ) {
@@ -428,7 +451,8 @@ namespace jau {
             return 0; // unreachable -> static_assert(..) above
         }
     }
-    constexpr uint16_t le_to_cpu(uint16_t const l) noexcept {
+    template <jau::req::unsigned_integral T>
+    constexpr T le_to_cpu(T const l) noexcept {
         if constexpr ( is_little_endian() ) {
             return l;
         } else if constexpr ( is_big_endian() ) {
@@ -437,7 +461,8 @@ namespace jau {
             return 0; // unreachable -> static_assert(..) above
         }
     }
-    constexpr uint16_t cpu_to_le(uint16_t const h) noexcept {
+    template <jau::req::unsigned_integral T>
+    constexpr T cpu_to_le(T const h) noexcept {
         if constexpr ( is_little_endian() ) {
             return h;
         } else if constexpr ( is_big_endian() ) {
@@ -447,7 +472,8 @@ namespace jau {
         }
     }
 
-    constexpr int16_t be_to_cpu(int16_t const n) noexcept {
+    template <jau::req::signed_integral T>
+    constexpr T be_to_cpu(T const n) noexcept {
         if constexpr ( is_little_endian() ) {
             return bswap(n);
         } else if constexpr ( is_big_endian() ) {
@@ -456,7 +482,8 @@ namespace jau {
             return 0; // unreachable -> static_assert(..) above
         }
     }
-    constexpr int16_t cpu_to_be(int16_t const h) noexcept {
+    template <jau::req::signed_integral T>
+    constexpr T cpu_to_be(T const h) noexcept {
         if constexpr ( is_little_endian() ) {
             return bswap(h);
         } else if constexpr ( is_big_endian() ) {
@@ -465,7 +492,8 @@ namespace jau {
             return 0; // unreachable -> static_assert(..) above
         }
     }
-    constexpr int16_t le_to_cpu(int16_t const l) noexcept {
+    template <jau::req::signed_integral T>
+    constexpr T le_to_cpu(T const l) noexcept {
         if constexpr ( is_little_endian() ) {
             return l;
         } else if constexpr ( is_big_endian() ) {
@@ -474,7 +502,8 @@ namespace jau {
             return 0; // unreachable -> static_assert(..) above
         }
     }
-    constexpr int16_t cpu_to_le(int16_t const h) noexcept {
+    template <jau::req::signed_integral T>
+    constexpr T cpu_to_le(T const h) noexcept {
         if constexpr ( is_little_endian() ) {
             return h;
         } else if constexpr ( is_big_endian() ) {
@@ -484,153 +513,6 @@ namespace jau {
         }
     }
 
-    constexpr uint32_t be_to_cpu(uint32_t const n) noexcept {
-        if constexpr ( is_little_endian() ) {
-            return bswap(n);
-        } else if constexpr ( is_big_endian() ) {
-            return n;
-        } else {
-            return 0; // unreachable -> static_assert(..) above
-        }
-    }
-    constexpr uint32_t cpu_to_be(uint32_t const h) noexcept {
-        if constexpr ( is_little_endian() ) {
-            return bswap(h);
-        } else if constexpr ( is_big_endian() ) {
-            return h;
-        } else {
-            return 0; // unreachable -> static_assert(..) above
-        }
-    }
-    constexpr uint32_t le_to_cpu(uint32_t const l) noexcept {
-        if constexpr ( is_little_endian() ) {
-            return l;
-        } else if constexpr ( is_big_endian() ) {
-            return bswap(l);
-        } else {
-            return 0; // unreachable -> static_assert(..) above
-        }
-    }
-    constexpr uint32_t cpu_to_le(uint32_t const h) noexcept {
-        if constexpr ( is_little_endian() ) {
-            return h;
-        } else if constexpr ( is_big_endian() ) {
-            return bswap(h);
-        } else {
-            return 0; // unreachable -> static_assert(..) above
-        }
-    }
-
-    constexpr int32_t be_to_cpu(int32_t const n) noexcept {
-        if constexpr ( is_little_endian() ) {
-            return bswap(n);
-        } else if constexpr ( is_big_endian() ) {
-            return n;
-        } else {
-            return 0; // unreachable -> static_assert(..) above
-        }
-    }
-    constexpr int32_t cpu_to_be(int32_t const h) noexcept {
-        if constexpr ( is_little_endian() ) {
-            return bswap(h);
-        } else if constexpr ( is_big_endian() ) {
-            return h;
-        } else {
-            return 0; // unreachable -> static_assert(..) above
-        }
-    }
-    constexpr int32_t le_to_cpu(int32_t const l) noexcept {
-        if constexpr ( is_little_endian() ) {
-            return l;
-        } else if constexpr ( is_big_endian() ) {
-            return bswap(l);
-        } else {
-            return 0; // unreachable -> static_assert(..) above
-        }
-    }
-    constexpr int32_t cpu_to_le(int32_t const h) noexcept {
-        if constexpr ( is_little_endian() ) {
-            return h;
-        } else if constexpr ( is_big_endian() ) {
-            return bswap(h);
-        } else {
-            return 0; // unreachable -> static_assert(..) above
-        }
-    }
-
-    constexpr uint64_t be_to_cpu(uint64_t const & n) noexcept {
-        if constexpr ( is_little_endian() ) {
-            return bswap(n);
-        } else if constexpr ( is_big_endian() ) {
-            return n;
-        } else {
-            return 0; // unreachable -> static_assert(..) above
-        }
-    }
-    constexpr uint64_t cpu_to_be(uint64_t const & h) noexcept {
-        if constexpr ( is_little_endian() ) {
-            return bswap(h);
-        } else if constexpr ( is_big_endian() ) {
-            return h;
-        } else {
-            return 0; // unreachable -> static_assert(..) above
-        }
-    }
-    constexpr uint64_t le_to_cpu(uint64_t const & l) noexcept {
-        if constexpr ( is_little_endian() ) {
-            return l;
-        } else if constexpr ( is_big_endian() ) {
-            return bswap(l);
-        } else {
-            return 0; // unreachable -> static_assert(..) above
-        }
-    }
-    constexpr uint64_t cpu_to_le(uint64_t const & h) noexcept {
-        if constexpr ( is_little_endian() ) {
-            return h;
-        } else if constexpr ( is_big_endian() ) {
-            return bswap(h);
-        } else {
-            return 0; // unreachable -> static_assert(..) above
-        }
-    }
-
-    constexpr int64_t be_to_cpu(int64_t const & n) noexcept {
-        if constexpr ( is_little_endian() ) {
-            return bswap(n);
-        } else if constexpr ( is_big_endian() ) {
-            return n;
-        } else {
-            return 0; // unreachable -> static_assert(..) above
-        }
-    }
-    constexpr int64_t cpu_to_be(int64_t const & h) noexcept {
-        if constexpr ( is_little_endian() ) {
-            return bswap(h);
-        } else if constexpr ( is_big_endian() ) {
-            return h;
-        } else {
-            return 0; // unreachable -> static_assert(..) above
-        }
-    }
-    constexpr int64_t le_to_cpu(int64_t const & l) noexcept {
-        if constexpr ( is_little_endian() ) {
-            return l;
-        } else if constexpr ( is_big_endian() ) {
-            return bswap(l);
-        } else {
-            return 0; // unreachable -> static_assert(..) above
-        }
-    }
-    constexpr int64_t cpu_to_le(int64_t const & h) noexcept {
-        if constexpr ( is_little_endian() ) {
-            return h;
-        } else if constexpr ( is_big_endian() ) {
-            return bswap(h);
-        } else {
-            return 0; // unreachable -> static_assert(..) above
-        }
-    }
 
     constexpr uint128dp_t be_to_cpu(uint128dp_t const & n) noexcept {
         if constexpr ( is_little_endian() ) {

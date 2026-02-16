@@ -32,6 +32,8 @@
 #include <jau/int_types.hpp>
 #include <jau/string_util.hpp>
 #include <jau/string_cfmt.hpp>
+#include <jau/type_cue.hpp>
+
 #include <jau/test/catch2_ext.hpp>
 
 extern "C" {
@@ -107,6 +109,76 @@ static std::string f(unsigned long int v) { return "unsigned long int, "+std::to
 // static std::string f( int64_t v) { return "int64_t, "+std::to_string(sizeof(v))+" bytes";}
 static std::string f(long long int v) { return "long long int, "+std::to_string(sizeof(v))+" bytes";}
 static std::string f(long int v) { return "long int, "+std::to_string(sizeof(v))+" bytes";}
+
+template<typename T>
+static void print_typeinfo(int line, const std::string& tname) {
+    static const jau::type_info &t = jau::static_ctti<T>();
+    std::cerr << tname << " @ " << line << "\n";
+    std::cerr << "- ctti: " << t.toString() << "\n";
+    jau::type_cue<T>::fprint(stderr, tname, jau::TypeTraitGroup::NONE);
+    std::cerr << "------------------------------------------------------------------------------\n";
+}
+
+TEST_CASE( "Type Type Test 00", "[wordsize]" ) {
+    /**
+     * wasm 32bit
+     * - int: 32-bit, int32_t
+     * - long: 32-bit, intptr_t, ssize_t
+     * - long long: 64-bit, int64_t
+     *
+     * unix 64bit (LP64)
+     * - int: 32-bit, int32_t
+     * - long: 64-bit, long long, uint64_t, intptr_t, ssize_t
+     *
+     * Remark:
+     *
+     *  Complete integral overload w/o ambiguity can only be achieved via
+     *  template concept types in byte_util.hpp.
+     *
+     *  Example:
+     *  - A: wasm 32-bit
+     *    - int32_t  -> 32-bit, int
+     *    - int64_t  -> 64-bit, long long
+     *    - long     -> 32-bit
+     *    - intptr_t -> 32-bit, long
+     *
+     *  - B: unix 64-bit
+     *    - int32_t  -> 32-bit, int
+     *    - int64_t  -> 64-bit, long
+     *    - long     -> 64-bit
+     *    - intptr_t -> 64-bit, long
+     *
+     *  Overloading w/ concrete types can't cover all cases
+     *  using sized types like `int32_t`, `int64_t`, ..
+     *
+     *  On wasm-32bit `intptr_t` is `long`,
+     *  which is not mapped since `int32_t` is `int`.
+     *
+     *  On unix-64bit `intptr_t` is `long`,
+     *  which is mapped as `int64_t`.
+     *
+     *  Hence a concrete overload for `intptr_t` or better `long`
+     *  would end up ambiguous on unix-64bit.
+     *
+     *  Solution is to use template concepts for signed and unsigned integrals.
+     */
+    print_typeinfo<int>(__LINE__, "int");
+    print_typeinfo<long>(__LINE__, "long");
+    print_typeinfo<long long>(__LINE__, "long long");
+    print_typeinfo<int32_t>(__LINE__, "int32_t");
+    print_typeinfo<int64_t>(__LINE__, "int64_t");
+    print_typeinfo<intptr_t>(__LINE__, "intptr_t");
+    print_typeinfo<ssize_t>(__LINE__, "ssize_t");
+
+    print_typeinfo<unsigned int>(__LINE__, "unsigned int");
+    print_typeinfo<unsigned long>(__LINE__, "unsigned long");
+    print_typeinfo<unsigned long long>(__LINE__, "unsigned long long");
+    print_typeinfo<uint32_t>(__LINE__, "uint32_t");
+    print_typeinfo<uint64_t>(__LINE__, "uint64_t");
+    print_typeinfo<uintptr_t>(__LINE__, "uintptr_t");
+    print_typeinfo<size_t>(__LINE__, "size_t");
+
+}
 
 TEST_CASE( "Type Overload Test 01", "[wordsize]" ) {
     unsigned v_u = 17;
@@ -202,6 +274,12 @@ static void test_byteorder(const Value_type v_cpu,
         REQUIRE( r1_cpu == v_cpu );
         REQUIRE( r2_cpu == v_cpu );
     }
+    {
+        Value_type r1_le = jau::cpu_to_le(v_cpu);
+        Value_type r2_be = jau::cpu_to_be(v_cpu);
+        REQUIRE( r1_le == v_le );
+        REQUIRE( r2_be == v_be );
+    }
 }
 
 static uint16_t composeU16(const uint8_t n1, const uint8_t n2) {
@@ -262,6 +340,53 @@ static int64_t composeI64(const uint8_t n1, const uint8_t n2, const uint8_t n3, 
     p_dest[5] = n6;
     p_dest[6] = n7;
     p_dest[7] = n8;
+    return dest;
+}
+
+template<typename T>
+static T composeT(jau::lb_endian_t bo,
+                  [[maybe_unused]] const uint8_t n1, [[maybe_unused]] const uint8_t n2,
+                  [[maybe_unused]] const uint8_t n3, [[maybe_unused]] const uint8_t n4,
+                  [[maybe_unused]] const uint8_t n5, [[maybe_unused]] const uint8_t n6,
+                  [[maybe_unused]] const uint8_t n7, [[maybe_unused]] const uint8_t n8)
+{
+    T dest;
+    uint8_t *p_dest = reinterpret_cast<uint8_t *>(&dest);
+    if (jau::lb_endian_t::little == bo) {
+        if constexpr (sizeof(T) >= 2) {
+            p_dest[0] = n1;
+            p_dest[1] = n2;
+        }
+        if constexpr (sizeof(T) >= 4) {
+            p_dest[2] = n3;
+            p_dest[3] = n4;
+        }
+        if constexpr (sizeof(T) >= 8) {
+            p_dest[4] = n5;
+            p_dest[5] = n6;
+            p_dest[6] = n7;
+            p_dest[7] = n8;
+        }
+    } else {
+        if constexpr (sizeof(T) == 2) {
+            p_dest[0] = n2;
+            p_dest[1] = n1;
+        } else if constexpr (sizeof(T) == 4) {
+            p_dest[0] = n4;
+            p_dest[1] = n3;
+            p_dest[2] = n2;
+            p_dest[3] = n1;
+        } else if constexpr (sizeof(T) == 8) {
+            p_dest[0] = n8;
+            p_dest[1] = n7;
+            p_dest[2] = n6;
+            p_dest[3] = n5;
+            p_dest[4] = n4;
+            p_dest[5] = n3;
+            p_dest[6] = n2;
+            p_dest[7] = n1;
+        }
+    }
     return dest;
 }
 
@@ -336,7 +461,7 @@ TEST_CASE("Integer Type Byte Order Test 10", "[byteorder][bswap]") {
         test_byteorder(cpu, le, be);
     }
     {
-        constexpr uint64_t cpu = 0xfedcba9876543210ULL;
+        constexpr uint64_t cpu = 0xfedcba9876543210_u64;
         uint64_t le = composeU64(0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe);  // stream: 1032547698badcfe
         uint64_t be = composeU64(0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10);  // stream: fedcba9876543210
         test_byteorder(cpu, le, be);
@@ -346,6 +471,30 @@ TEST_CASE("Integer Type Byte Order Test 10", "[byteorder][bswap]") {
         int64_t le = composeI64(0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe);  // stream: 1032547698badcfe
         int64_t be = composeI64(0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10);  // stream: fedcba9876543210
         test_byteorder(cpu, le, be);
+    }
+    {
+        constexpr size_t cpu = static_cast<size_t>(0xfedcba9876543210_u64);
+        size_t le = composeT<size_t>(jau::lb_endian_t::little, 0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe);  // stream: 1032547698badcfe
+        size_t be = composeT<size_t>(jau::lb_endian_t::big,    0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe);  // stream: fedcba9876543210
+        test_byteorder<size_t>(cpu, le, be);
+    }
+    {
+        constexpr ssize_t cpu = static_cast<ssize_t>(0xfedcba9876543210_i64);
+        ssize_t le = composeT<ssize_t>(jau::lb_endian_t::little, 0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe);  // stream: 1032547698badcfe
+        ssize_t be = composeT<ssize_t>(jau::lb_endian_t::big,    0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe);  // stream: fedcba9876543210
+        test_byteorder<ssize_t>(cpu, le, be);
+    }
+    {
+        constexpr uintptr_t cpu = static_cast<uintptr_t>(0xfedcba9876543210_u64);
+        uintptr_t le = composeT<uintptr_t>(jau::lb_endian_t::little, 0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe);  // stream: 1032547698badcfe
+        uintptr_t be = composeT<uintptr_t>(jau::lb_endian_t::big,    0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe);  // stream: fedcba9876543210
+        test_byteorder<uintptr_t>(cpu, le, be);
+    }
+    {
+        constexpr intptr_t cpu = static_cast<intptr_t>(0xfedcba9876543210_i64);
+        intptr_t le = composeT<intptr_t>(jau::lb_endian_t::little, 0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe);  // stream: 1032547698badcfe
+        intptr_t be = composeT<intptr_t>(jau::lb_endian_t::big,    0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe);  // stream: fedcba9876543210
+        test_byteorder<intptr_t>(cpu, le, be);
     }
     {
         jau::uint128dp_t le = compose<jau::uint128dp_t>(0x01, jau::lb_endian_t::little);

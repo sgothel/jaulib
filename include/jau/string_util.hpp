@@ -336,16 +336,9 @@ namespace jau {
                                    const LoUpCase capitalization = LoUpCase::lower,
                                    const PrefixOpt prefix = PrefixOpt::prefix) noexcept
     {
-#if defined(__EMSCRIPTEN__)                 // jau::os::is_generic_wasm()
-        static_assert(is_little_endian());  // Bug in emscripten, unable to deduce uint16_t, uint32_t or uint64_t override of cpu_to_le() or bswap()
-        const uintptr_t v_le = reinterpret_cast<uintptr_t>(v);
-        return toHexString(pointer_cast<const uint8_t *>(&v_le), sizeof(v),  // NOLINT(bugprone-sizeof-expression): Intended
-                           byteOrder, capitalization, prefix);
-#else
         const uintptr_t v_le = jau::cpu_to_le(reinterpret_cast<uintptr_t>(v));
         return toHexString(pointer_cast<const uint8_t *>(&v_le), sizeof(v),  // NOLINT(bugprone-sizeof-expression): Intended
                            byteOrder, capitalization, prefix);
-#endif
     }
 
     /**

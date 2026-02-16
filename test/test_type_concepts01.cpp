@@ -69,6 +69,10 @@ TEST_CASE( "01 Type Concept Queries: Build-In") {
     static_assert(false == jau::req::signed_integral<decltype(1_u32)> );
     static_assert(true  == jau::req::signed_integral<decltype(1)> );
 
+    static_assert(false == std::integral<jau::uint128dp_t> );
+    static_assert(false == jau::req::unsigned_integral<jau::uint128dp_t> );
+    static_assert(false == jau::req::signed_integral<jau::uint128dp_t> );
+
     static_assert(true  == jau::req::boolean<bool> );
     static_assert(false == jau::req::boolean<int> );
 
