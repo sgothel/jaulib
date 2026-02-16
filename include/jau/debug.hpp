@@ -219,7 +219,7 @@ namespace jau {
      */
     template <typename... Args>
     inline __attribute__((always_inline))
-    ssize_t fprintf(FILE* stream, std::string_view format, const Args &...args) noexcept {
+    ssize_t fprintf_sc(FILE* stream, std::string_view format, const Args &...args) noexcept {
         const std::string s = jau::format_string(format, args...);
         const int r = ::fputs(s.c_str(), stream);
         const ssize_t res = jau::clampCast<ssize_t, size_t>(s.length(), 0, std::numeric_limits<ssize_t>::max());
@@ -251,11 +251,11 @@ namespace jau {
     static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_NOREF_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
 
 #define jau_printf(fmt, ...) \
-    jau::fprintf((stdout), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
+    jau::fprintf_sc((stdout), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
     static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_NOREF_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
 
 #define jau_fprintf(stream, fmt, ...) \
-    jau::fprintf((stream), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
+    jau::fprintf_sc((stream), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
     static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_NOREF_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
 
 
