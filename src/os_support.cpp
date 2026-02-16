@@ -171,11 +171,9 @@ std::string jau::os::get_platform_info(std::string& sb) noexcept {
     const jau::cpu::CpuInfo& cpu = jau::cpu::CpuInfo::get();
 
     sb.append( jau::format_string("Platform: %s %s, %s (",
-            jau::os::to_string(os).c_str(),
-            ( rti_ok ? rti.release.c_str() : ""),
-            jau::cpu::to_string(cpu.family).c_str() ) );
+            os, ( rti_ok ? rti.release : ""), cpu.family ) );
     cpu.toString(sb, true);
-    sb.append( jau::format_string("), abi %s, ", jau::os::to_string(abi).c_str()) );
+    sb.append( jau::format_string("), abi %s, ", abi) );
     sb.append( jau::os::get_os_and_arch(os, cpu.family, abi, cpu.byte_order) );
     if( rti_ok ) {
         sb.append(", runtime: ").append(rti.to_string()).append("\n");
@@ -246,14 +244,14 @@ static std::vector<std::string> DynamicLinker_buildNames(const std::string& libN
 
 static void DynamicLinker_addBasenames(const std::string& cause, const std::vector<std::string>& baseNames, std::vector<std::string>& paths) noexcept {
   for (const std::string& baseName : baseNames) {
-      jau_DBG_PRINT("NativeLibrary.enumerateLibraryPaths: %s: '%s'", cause.c_str(), baseName.c_str());
+      jau_DBG_PRINT("NativeLibrary.enumerateLibraryPaths: %s: '%s'", cause, baseName);
       paths.push_back(baseName);
   }
 }
 static void DynamicLinker_addAbsPaths(const std::string& cause, const std::string& abs_path, const std::vector<std::string>& baseNames, std::vector<std::string>& paths) noexcept {
   for (const std::string& baseName : baseNames) {
       std::string p(abs_path); p.append("/").append(baseName);
-      jau_DBG_PRINT("NativeLibrary.enumerateLibraryPaths: %s: '%s', from path '%s'", cause.c_str(), p.c_str(), abs_path.c_str());
+      jau_DBG_PRINT("NativeLibrary.enumerateLibraryPaths: %s: '%s', from path '%s'", cause, p, abs_path);
       paths.push_back(p);
   }
 }
@@ -280,7 +278,7 @@ static void DynamicLinker_addRelPaths(const std::string& cause, const std::strin
 std::vector<std::string> jau::os::DynamicLinker::enumerateLibraryPaths(const std::string& libName,
                                                                        bool searchSystemPath,
                                                                        bool searchSystemPathFirst) noexcept {
-    jau_DBG_PRINT("DynamicLibrary.enumerateLibraryPaths: libName '%s'", libName.c_str());
+    jau_DBG_PRINT("DynamicLibrary.enumerateLibraryPaths: libName '%s'", libName);
     std::vector<std::string> paths;
     if ( 0 == libName.size() ) {
         return paths;
@@ -289,12 +287,12 @@ std::vector<std::string> jau::os::DynamicLinker::enumerateLibraryPaths(const std
     // Allow user's full path specification to override our building of paths
     if ( jau::io::fs::isAbsolute(libName) ) {
         paths.push_back(libName);
-        jau_DBG_PRINT("NativeLibrary.enumerateLibraryPaths: done, absolute path found '%s'", libName.c_str());
+        jau_DBG_PRINT("NativeLibrary.enumerateLibraryPaths: done, absolute path found '%s'", libName);
         return paths;
     }
 
     std::vector<std::string> baseNames = DynamicLinker_buildNames(libName);
-    jau_DBG_PRINT("NativeLibrary.enumerateLibraryPaths: baseNames: %s", jau::to_string(baseNames).c_str());
+    jau_DBG_PRINT("NativeLibrary.enumerateLibraryPaths: baseNames: %s", jau::to_string(baseNames));
 
     if( searchSystemPath && searchSystemPathFirst ) {
         DynamicLinker_addSysPaths("add.ssp_1st", baseNames, paths);
@@ -347,7 +345,7 @@ std::vector<std::string> jau::os::DynamicLinker::enumerateLibraryPaths(const std
             DynamicLinker_addAbsPaths("add.ssp_lst_macos_cur", "/System/Library/Frameworks/" + libName + ".framework", baseNames, paths);
         }
     }
-    jau_DBG_PRINT("NativeLibrary.enumerateLibraryPaths: done: %s", jau::to_string(paths).c_str());
+    jau_DBG_PRINT("NativeLibrary.enumerateLibraryPaths: done: %s", jau::to_string(paths));
     return paths;
 }
 

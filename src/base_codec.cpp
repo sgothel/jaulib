@@ -202,7 +202,7 @@ std::vector<uint8_t> jau::codec::base::decode64(const std::string_view& in_code,
     }
 
     if( 0 != in_len ) {
-        jau_DBG_PRINT("in_len %zu/%zu at '%s', out_len %zu/%zu\n", (in_code.length()-in_len), in_code.length(), std::string(in_code).c_str(), res.size(), out_len);
+        jau_DBG_PRINT("in_len %zu/%zu at '%s', out_len %zu/%zu\n", (in_code.length()-in_len), in_code.length(), in_code, res.size(), out_len);
         return std::vector<uint8_t>(); // decoding error
     } else {
         return res;

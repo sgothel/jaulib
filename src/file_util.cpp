@@ -1962,15 +1962,15 @@ jau::io::fs::mount_ctx jau::io::fs::mount_image(const std::string& image_path, c
         loop_ctl_fd = -1;
 
         snprintf(loopname, sizeof(loopname), "/dev/loop%d", loop_device_id);
-        jau_INFO_PRINT("mount: Info: Using loop-device '%s'", std::string_view(loopname));
+        jau_INFO_PRINT("mount: Info: Using loop-device '%s'", loopname);
 
         loop_device_fd = __posix_openat64(AT_FDCWD, loopname, O_RDWR);
         if( 0 > loop_device_fd ) {
-            jau_ERR_PRINT("Couldn't open loop-device '%s': res %d", std::string_view(loopname), loop_device_fd);
+            jau_ERR_PRINT("Couldn't open loop-device '%s': res %d", loopname, loop_device_fd);
             goto errout_child;
         }
         if( 0 > ::ioctl(loop_device_fd, LOOP_SET_FD, backingfile) ) {
-            jau_ERR_PRINT("Couldn't attach image-file '%s' to loop-device '%s'", image_stats.toString(), std::string_view(loopname));
+            jau_ERR_PRINT("Couldn't attach image-file '%s' to loop-device '%s'", image_stats.toString(), loopname);
             goto errout_child;
         }
 

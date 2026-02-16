@@ -54,9 +54,9 @@ typedef jau::cow_darray<uint64_t, jau::nsize_t, counting_callocator<uint64_t>> j
 
 template<class T>
 static void print_list(T& data) {
-    printf("list: %d { ", (int)data.size());
+    jau_printf("list: %d { ", (int)data.size());
     jau::for_each_const(data, [](const uint64_t & e) {
-        printf("%s, ", to_decstring(e, ',', 2).c_str());
+        jau_printf("%'2" PRIu64 ", ", e);
     } );
     printf("}\n");
 }
@@ -65,7 +65,7 @@ template<class T>
 static void print_list(const std::string& pre, T& data) {
     printf("%s: %d { ", pre.c_str(), (int)data.size());
     jau::for_each_const(data, [](const uint64_t & e) {
-        printf("%s, ", to_decstring(e, ',', 2).c_str());
+        jau_printf("%'2" PRIu64 ", ", e);
     } );
     printf("}\n");
 }
@@ -1199,8 +1199,8 @@ static bool test_01_cow_iterator_properties(const std::string& type_id) {
             REQUIRE(*c_begin1 == *m_begin1);
             REQUIRE( c_begin1 ==  m_begin1);
             REQUIRE( ( c_begin1 - m_begin1 ) == 0);
-            printf("       1st store: %s == %s, dist %u\n",
-                    to_decstring(*c_begin1, ',', 2).c_str(), to_decstring(*m_begin1, ',', 2).c_str(), (unsigned int)(c_begin1 - m_begin1));
+            jau_printf("       1st store: %'2" PRIu64 " == %'2" PRIu64 ", dist %'u\n",
+                    *c_begin1, *m_begin1, (unsigned int)(c_begin1 - m_begin1));
             citer_type c_begin2;
             {
                 iter_type m_begin2 = data.begin();  // mutable new_store non-const iterator, gets held until write_back() or destruction
@@ -1209,14 +1209,14 @@ static bool test_01_cow_iterator_properties(const std::string& type_id) {
                 REQUIRE(*c_begin2 == *m_begin2);
                 REQUIRE( c_begin2 ==  m_begin2);
                 REQUIRE( ( c_begin2 - m_begin2 ) == 0);
-                printf("       2nd store: %s == %s, dist %u\n",
-                        to_decstring(*c_begin2, ',', 2).c_str(), to_decstring(*m_begin2, ',', 2).c_str(), (unsigned int)(c_begin2 - m_begin2));
+                jau_printf("       2nd store: %'2" PRIu64 " == %'2" PRIu64 ", dist %'u\n",
+                        *c_begin2, *m_begin2, (unsigned int)(c_begin2 - m_begin2));
 
                 REQUIRE(*c_begin2 == *c_begin1);
                 REQUIRE( c_begin2 !=  c_begin1);
                 REQUIRE( ( c_begin2 - c_begin1 ) != 0);
-                printf("2nd -> 1st store: %s == %s, dist %u\n",
-                        to_decstring(*c_begin2, ',', 2).c_str(), to_decstring(*c_begin1, ',', 2).c_str(), (unsigned int)(c_begin2 - c_begin1));
+                jau_printf("2nd -> 1st store: %'2" PRIu64 " == %'2" PRIu64 ", dist %'u\n",
+                        *c_begin2, *c_begin1, (unsigned int)(c_begin2 - c_begin1));
 
                 m_begin2.write_back();              // write back storage of m_begin2 to parent CoW and invalidate m_begin2
             }
@@ -1225,17 +1225,17 @@ static bool test_01_cow_iterator_properties(const std::string& type_id) {
             REQUIRE(*c_begin2 == *c_begin2b);
             REQUIRE( c_begin2 ==  c_begin2b);
             REQUIRE( ( c_begin2 - c_begin2b ) == 0);
-            printf("2nd -> cow == cbegin: %s == %s, dist %u\n",
-                    to_decstring(*c_begin2, ',', 2).c_str(), to_decstring(*c_begin2b, ',', 2).c_str(), (unsigned int)(c_begin2 - c_begin2b));
-            printf("2nd -> 1st          : %s == %s, dist %u\n",
-                    to_decstring(*c_begin1, ',', 2).c_str(), to_decstring(*c_begin2, ',', 2).c_str(), (unsigned int)(c_begin1 - c_begin2));
+            jau_printf("2nd -> cow == cbegin: %'2" PRIu64 " == %'2" PRIu64 ", dist %'u\n",
+                    *c_begin2, *c_begin2b, (unsigned int)(c_begin2 - c_begin2b));
+            jau_printf("2nd -> 1st          : %'2" PRIu64 " == %'2" PRIu64 ", dist %'u\n",
+                    *c_begin1, *c_begin2, (unsigned int)(c_begin1 - c_begin2));
 
             m_begin1.write_back();                  // write back storage of m_begin1 to parent CoW and invalidate m_begin2
         }
         // 1st store -> cow_xxx
         citer_type c_begin1b = data.cbegin();
-        printf("1st -> cow == cbegin: %s == %s, dist %u\n",
-                to_decstring(*c_begin1, ',', 2).c_str(), to_decstring(*c_begin1b, ',', 2).c_str(), (unsigned int)(c_begin1 - c_begin1b));
+        jau_printf("1st -> cow == cbegin: %'2" PRIu64 " == %'2" PRIu64 ", dist %'u\n",
+                *c_begin1, *c_begin1b, (unsigned int)(c_begin1 - c_begin1b));
         REQUIRE(*c_begin1 == *c_begin1b);
         REQUIRE( c_begin1 ==  c_begin1b);
         REQUIRE( ( c_begin1 - c_begin1b ) == 0);

@@ -1149,35 +1149,27 @@ AsyncStreamResponseRef jau::io::read_url_stream_async(net_tk_handle handle, cons
 }
 
 void jau::io::print_stats(const std::string& prefix, const uint64_t& out_bytes_total, const jau::fraction_i64& td) noexcept {
-    jau_PLAIN_PRINT(true, "%s: Duration %s s, %s ms", prefix,
-            td.toString(), jau::to_decstring(td.to_ms()));
+    jau_PLAIN_PRINT(true, "%s: Duration %s s, %'" PRIi64 " ms", prefix, td.toString(), td.to_ms());
 
     if( out_bytes_total >= 100'000'000 ) {
-        jau_PLAIN_PRINT(true, "%s: Size %s MB", prefix,
-                jau::to_decstring(std::llround((double)out_bytes_total/1'000'000.0)));
+        jau_PLAIN_PRINT(true, "%s: Size %'" PRIi64 " MB", prefix, std::llround((double)out_bytes_total/1'000'000.0));
     } else if( out_bytes_total >= 100'000 ) {
-        jau_PLAIN_PRINT(true, "%s: Size %s KB", prefix,
-                jau::to_decstring(std::llround((double)out_bytes_total/1'000.0)));
+        jau_PLAIN_PRINT(true, "%s: Size %'" PRIi64 " KB", prefix, std::llround((double)out_bytes_total/1'000.0));
     } else {
-        jau_PLAIN_PRINT(true, "%s: Size %s B", prefix,
-                jau::to_decstring(out_bytes_total));
+        jau_PLAIN_PRINT(true, "%s: Size %'" PRIu64 " B", prefix, out_bytes_total);
     }
 
     const uint64_t _rate_bps = std::llround( (double)out_bytes_total / td.to_double() ); // bytes per second
     const uint64_t _rate_bitps = std::llround( ( (double)out_bytes_total * 8.0 ) / td.to_double() ); // bits per second
 
     if( _rate_bitps >= 100'000'000 ) {
-        jau_PLAIN_PRINT(true, "%s: Bitrate %s Mbit/s, %s MB/s", prefix,
-                jau::to_decstring(std::llround((double)_rate_bitps/1'000'000.0)),
-                jau::to_decstring(std::llround((double)_rate_bps/1'000'000.0)));
+        jau_PLAIN_PRINT(true, "%s: Bitrate %'" PRIi64 " Mbit/s, %'" PRIi64 " MB/s", prefix,
+                std::llround((double)_rate_bitps/1'000'000.0), std::llround((double)_rate_bps/1'000'000.0));
     } else if( _rate_bitps >= 100'000 ) {
-        jau_PLAIN_PRINT(true, "%s: Bitrate %s kbit/s, %s kB/s", prefix,
-                jau::to_decstring(std::llround((double)_rate_bitps/1'000.0)),
-                jau::to_decstring(std::llround((double)_rate_bps/1'000.0)));
+        jau_PLAIN_PRINT(true, "%s: Bitrate %'" PRIi64 " kbit/s, %'" PRIi64 " kB/s", prefix,
+                std::llround((double)_rate_bitps/1'000.0), std::llround((double)_rate_bps/1'000.0));
     } else {
-        jau_PLAIN_PRINT(true, "%s: Bitrate %s bit/s, %s B/s", prefix,
-                jau::to_decstring(_rate_bitps),
-                jau::to_decstring(_rate_bps));
+        jau_PLAIN_PRINT(true, "%s: Bitrate %'" PRIu64 " bit/s, %'" PRIu64 " B/s", prefix, _rate_bitps, _rate_bps);
     }
 }
 

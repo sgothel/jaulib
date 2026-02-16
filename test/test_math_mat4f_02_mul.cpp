@@ -143,20 +143,20 @@ TEST_CASE( "Test 05 Perf01", "[mat4f][linear_algebra][math]" ) {
         REQUIRE( dr > 0 );
     }
 
-    printf("Checkmark %f\n", dr);
-    printf("Summary loops %6zu: I4a %6s ms total (%s us), %f ns/mul, I4a / I4b %f%%\n", loops,
-            jau::to_decstring(tI4a.to_ms()).c_str(), jau::to_decstring(tI4a.to_us()).c_str(),
-            (double)tI4a.to_ns()/2.0/(double)loops, tI4a.to_double()/tI4b.to_double()*100.0);
-    printf("Summary loops %6zu: I4b %6s ms total (%s us), %f ns/mul, I4b / I4a %f%%\n", loops,
-            jau::to_decstring(tI4b.to_ms()).c_str(), jau::to_decstring(tI4b.to_us()).c_str(),
-            (double)tI4b.to_ns()/2.0/(double)loops, tI4b.to_double()/tI4a.to_double()*100.0);
+    jau_printf("Checkmark %f\n", dr);
+    jau_printf("Summary loops %6zu: I4a %'6" PRIi64 " ms total (%'" PRIi64 " us), %f ns/mul, I4a / I4b %f%%\n", loops,
+               tI4a.to_ms(), tI4a.to_us(),
+               (double)tI4a.to_ns()/2.0/(double)loops, tI4a.to_double()/tI4b.to_double()*100.0);
+    jau_printf("Summary loops %6zu: I4b %6" PRIi64 " ms total (%'" PRIi64 " us), %f ns/mul, I4b / I4a %f%%\n", loops,
+               tI4b.to_ms(), tI4b.to_us(),
+               (double)tI4b.to_ns()/2.0/(double)loops, tI4b.to_double()/tI4a.to_double()*100.0);
 
     if( catch_perf_analysis ) {
-        printf("Summary loops %6zu: I5a %6s ms total, %f ns/mul, I5a / I5b %f%%\n", loops5a,
-                jau::to_decstring(tI5a.to_ms()).c_str(),
-                (double)tI5a.to_ns()/2.0/(double)loops5a, tI5a.to_double()/tI5b.to_double()*100.0);
-        printf("Summary loops %6zu: I5b %6s ms total, %f ns/mul, I5b / I5a %f%%\n", loops5b,
-                jau::to_decstring(tI5b.to_ms()).c_str(),
-                (double)tI5b.to_ns()/2.0/(double)loops5b, tI5b.to_double()/tI5a.to_double()*100.0);
+        jau_printf("Summary loops %6zu: I5a %'6" PRIi64 " ms total, %f ns/mul, I5a / I5b %f%%\n", loops5a,
+                   tI5a.to_ms(),
+                   (double)tI5a.to_ns()/2.0/(double)loops5a, tI5a.to_double()/tI5b.to_double()*100.0);
+        jau_printf("Summary loops %6zu: I5b %'6" PRIi64 " ms total, %f ns/mul, I5b / I5a %f%%\n", loops5b,
+                   tI5b.to_ms(),
+                  (double)tI5b.to_ns()/2.0/(double)loops5b, tI5b.to_double()/tI5a.to_double()*100.0);
     }
 }

@@ -225,8 +225,7 @@ std::string ByteStream_SecMemory::toString() const noexcept {
         off64_t abs_pos = __posix_lseek64(m_fd, static_cast<off64_t>(newPos), SEEK_SET);
         if( 0 > abs_pos ) {
             addstate_impl( iostate_t::failbit );
-            jau_ERR_PRINT("Failed to seek to position %" PRIu64 " of existing file %s",
-                    newPos, toString().c_str());
+            jau_ERR_PRINT("Failed to seek to position %" PRIu64 " of existing file %s", newPos, toString());
             return ByteStream::npos;
         }
         m_offset = abs_pos;
@@ -284,7 +283,7 @@ std::string ByteStream_SecMemory::toString() const noexcept {
             }
             // Check errno == ETIMEDOUT ??
             addstate_impl( iostate_t::failbit );
-            jau_DBG_PRINT("ByteInStream_File::read: Error occurred in %s, errno %d %s", toString(), (int)errno, strerror(errno));
+            jau_DBG_PRINT("ByteInStream_File::read: Error occurred in %s, errno %d %s", toString(), errno, strerror(errno));
             return 0;
         }
         total += static_cast<size_t>(len);
@@ -312,7 +311,7 @@ size_t ByteStream_File::peek(void* out, size_t length, size_type peek_offset) no
         if( 0 > abs_pos ) {
             addstate_impl( iostate_t::failbit );
             jau_DBG_PRINT("ByteInStream_File::peek: Error occurred (offset1 %" PRIu64 ") in %s, errno %d %s",
-                    peek_offset, toString(), (int)errno, strerror(errno));
+                    peek_offset, toString(), errno, strerror(errno));
             return 0;
         }
     }
@@ -325,7 +324,7 @@ size_t ByteStream_File::peek(void* out, size_t length, size_type peek_offset) no
             }
             // Check errno == ETIMEDOUT ??
             addstate_impl( iostate_t::failbit );
-            jau_DBG_PRINT("ByteInStream_File::peak: Error occurred (read) in %s, errno %d %s", toString(), (int)errno, strerror(errno));
+            jau_DBG_PRINT("ByteInStream_File::peak: Error occurred (read) in %s, errno %d %s", toString(), errno, strerror(errno));
             return 0;
         }
         got = len; // potentially zero bytes, i.e. eof
@@ -334,7 +333,7 @@ size_t ByteStream_File::peek(void* out, size_t length, size_type peek_offset) no
         // even though we were able to fetch the desired data above, let's fail if position reset fails
         addstate_impl( iostate_t::failbit );
         jau_DBG_PRINT("ByteInStream_File::peek: Error occurred (offset2 %" PRIu64 ") in %s, errno %d %s",
-                peek_offset, toString(), (int)errno, strerror(errno));
+                peek_offset, toString(), errno, strerror(errno));
         return 0;
     }
     return got;
@@ -362,7 +361,7 @@ size_t ByteStream_File::write(const void* out, size_t length) noexcept {
             }
             // Check errno == ETIMEDOUT ??
             addstate_impl( iostate_t::failbit );
-            jau_DBG_PRINT("ByteOutStream_File::write: Error occurred in %s, errno %d %s", toString(), (int)errno, strerror(errno));
+            jau_DBG_PRINT("ByteOutStream_File::write: Error occurred in %s, errno %d %s", toString(), errno, strerror(errno));
             return 0;
         }
         total += static_cast<size_t>(len);
@@ -395,8 +394,7 @@ static bool _jau_file_size(const int fd, const jau::io::fs::file_stats& stats, c
     const off64_t cur_pos2 = __posix_lseek64(fd, cur_pos, SEEK_SET);
     if( cur_pos2 != cur_pos ) {
         jau_DBG_PRINT("ByteInStream_File::file_size: Error rewinding to current position failed, orig-pos %" PRIi64 " -> %" PRIi64 ", errno %d %s.",
-                  cur_pos, cur_pos2,
-                  (int)errno, strerror(errno));
+                  cur_pos, cur_pos2, errno, strerror(errno));
         return false;
     }
     len = ByteStream::size_type(end) + 1_u64;
@@ -410,20 +408,19 @@ ByteStream_File::ByteStream_File(const int fd, iomode_t mode, lb_endian_t byteOr
 {
     if( !m_stats.exists() || !m_stats.has_access() ) {
         addstate_impl( iostate_t::failbit ); // Note: conforming with std::ifstream open
-        jau_DBG_PRINT("ByteInStream_File::ctor: Error, not an existing or accessible file in %s, %s", m_stats.toString().c_str(), toString().c_str());
+        jau_DBG_PRINT("ByteInStream_File::ctor: Error, not an existing or accessible file in %s, %s", m_stats.toString(), toString());
         return;
     }
     m_fd = ::dup(fd);
     if ( 0 > m_fd ) {
         addstate_impl( iostate_t::failbit ); // Note: conforming with std::ifstream open
-        jau_DBG_PRINT("ByteInStream_File::ctor: Error occurred in %s, %s", m_stats.toString().c_str(), toString().c_str());
+        jau_DBG_PRINT("ByteInStream_File::ctor: Error occurred in %s, %s", m_stats.toString(), toString());
         return;
     }
     const off64_t cur_pos = __posix_lseek64(m_fd, 0, SEEK_CUR);
     if( 0 > cur_pos ) {
         addstate_impl( iostate_t::failbit );
-        jau_ERR_PRINT("Failed to read position of existing file %s, errno %d %s",
-                toString(), (int)errno, strerror(errno));
+        jau_ERR_PRINT("Failed to read position of existing file %s, errno %d %s", toString(), errno, strerror(errno));
         return;
     }
     m_offset = cur_pos;
@@ -446,17 +443,17 @@ ByteStream_File::ByteStream_File(const int dirfd, const std::string& path, iomod
     }
     if( !canRead() && !canWrite() ) {
         addstate_impl( iostate_t::failbit ); // Note: conforming with std::ifstream open
-        jau_DBG_PRINT("ByteStream_File::ctor: Error, iomode_t invalid: %s, %s", to_string(m_iomode).c_str(), toString().c_str());
+        jau_DBG_PRINT("ByteStream_File::ctor: Error, iomode_t invalid: %s, %s", m_iomode, toString());
         return;
     }
     if( ( m_stats.exists() && !m_stats.is_file() && !m_stats.has_fd() ) || !m_stats.has_access() ) {
         addstate_impl( iostate_t::failbit ); // Note: conforming with std::ofstream open (?)
-        jau_DBG_PRINT("ByteStream_File::ctor: Error, an existing non[file, fd] or not accessible element in %s, %s", m_stats.toString().c_str(), toString().c_str());
+        jau_DBG_PRINT("ByteStream_File::ctor: Error, an existing non[file, fd] or not accessible element in %s, %s", m_stats.toString(), toString());
         return;
     }
     if( !canWrite() && !m_stats.exists() ) {
         addstate_impl( iostate_t::failbit ); // Note: conforming with std::ifstream open
-        jau_DBG_PRINT("ByteStream_File::ctor: Error, can't open non-existing read-only file in %s, %s", m_stats.toString().c_str(), toString().c_str());
+        jau_DBG_PRINT("ByteStream_File::ctor: Error, can't open non-existing read-only file in %s, %s", m_stats.toString(), toString());
         return;
     }
     bool truncated = false;
@@ -484,7 +481,7 @@ ByteStream_File::ByteStream_File(const int dirfd, const std::string& path, iomod
     }
     if ( 0 > m_fd ) {
         addstate_impl( iostate_t::failbit ); // Note: conforming with std::ifstream open
-        jau_DBG_PRINT("ByteInStream_File::ctor: Error while opening %s, %s", m_stats.toString().c_str(), toString().c_str());
+        jau_DBG_PRINT("ByteInStream_File::ctor: Error while opening %s, %s", m_stats.toString(), toString());
         return;
     }
     if( truncated ) {
@@ -494,7 +491,7 @@ ByteStream_File::ByteStream_File(const int dirfd, const std::string& path, iomod
     const off64_t cur_pos = just_opened || !m_stats.is_file() ? 0 : __posix_lseek64(m_fd, 0, SEEK_CUR);
     if( 0 > cur_pos ) {
         addstate_impl( iostate_t::failbit );
-        jau_ERR_PRINT("Failed to read position of existing file %s, errno %d %s", toString(), (int)errno, strerror(errno));
+        jau_ERR_PRINT("Failed to read position of existing file %s, errno %d %s", toString(), errno, strerror(errno));
         return;
     }
     m_offset = cur_pos;
@@ -505,7 +502,7 @@ ByteStream_File::ByteStream_File(const int dirfd, const std::string& path, iomod
         const off64_t end = __posix_lseek64(m_fd, 0, SEEK_END);
         if( 0 > end ) {
             addstate_impl( iostate_t::failbit );
-            jau_ERR_PRINT("Failed to position existing file to end %s, errno %d %s", toString(), (int)errno, strerror(errno));
+            jau_ERR_PRINT("Failed to position existing file to end %s, errno %d %s", toString(), errno, strerror(errno));
             return;
         }
         m_offset = end;
@@ -549,7 +546,7 @@ ByteInStream_URL::ByteInStream_URL(std::string url, const jau::fraction_i64& tim
 { }
 
 void ByteInStream_URL::close() noexcept {
-    jau_DBG_PRINT("ByteInStream_URL: close.0 %s, %s", id().c_str(), to_string_int().c_str());
+    jau_DBG_PRINT("ByteInStream_URL: close.0 %s, %s", id(), to_string_int());
 
     if( m_stream_resp->processing() ) {
         m_stream_resp->result = io_result_t::SUCCESS; // signal end of streaming
@@ -557,12 +554,12 @@ void ByteInStream_URL::close() noexcept {
 
     m_buffer.close( true /* zeromem */); // also unblocks all r/w ops
     if( m_stream_resp->thread.joinable() ) {
-        jau_DBG_PRINT("ByteInStream_URL: close.1 %s, %s", id().c_str(), m_buffer.toString().c_str());
+        jau_DBG_PRINT("ByteInStream_URL: close.1 %s, %s", id(), m_buffer.toString());
         m_stream_resp->thread.join();
     }
     std::thread none;
     m_stream_resp->thread.swap(none);
-    jau_DBG_PRINT("ByteInStream_URL: close.X %s, %s", id().c_str(), to_string_int().c_str());
+    jau_DBG_PRINT("ByteInStream_URL: close.X %s, %s", id(), to_string_int());
 }
 
 bool ByteInStream_URL::available(size_t n) noexcept {
@@ -712,13 +709,13 @@ ByteInStream_Feed::ByteInStream_Feed(std::string id_name, const jau::fraction_i6
 { }
 
 void ByteInStream_Feed::close() noexcept {
-    jau_DBG_PRINT("ByteInStream_Feed: close.0 %s, %s", id().c_str(), toStringInt().c_str());
+    jau_DBG_PRINT("ByteInStream_Feed: close.0 %s, %s", id(), toStringInt());
 
     if( io_result_t::NONE == m_result ) {
         m_result = io_result_t::SUCCESS; // signal end of streaming
     }
     m_buffer.close( true /* zeromem */); // also unblocks all r/w ops
-    jau_DBG_PRINT("ByteInStream_Feed: close.X %s, %s", id().c_str(), toStringInt().c_str());
+    jau_DBG_PRINT("ByteInStream_Feed: close.X %s, %s", id(), toStringInt());
 }
 
 bool ByteInStream_Feed::available(size_t n) noexcept {
@@ -868,7 +865,7 @@ std::string ByteInStream_Feed::toString() const noexcept {
 void ByteStream_Recorder::close() noexcept {
     clearRecording();
     m_parent.close();
-    jau_DBG_PRINT("ByteInStream_Recorder: close.X %s", id().c_str());
+    jau_DBG_PRINT("ByteInStream_Recorder: close.X %s", id());
 }
 
 void ByteStream_Recorder::startRecording() noexcept {

@@ -47,11 +47,11 @@ void service_runner::service_thread() {
         try {
             service_init_locked(*this);
             running = true;
-            jau_DBG_PRINT("%s::worker Started", name_.c_str());
+            jau_DBG_PRINT("%s::worker Started", name_);
         } catch(const std::exception &e) {
             thread_id_ = 0;
             running = false;
-            jau_ERR_PRINT2("%s::worker Exception @ service_init_locked: %s", name_.c_str(), e.what());
+            jau_ERR_PRINT2("%s::worker Exception @ service_init_locked: %s", name_, e.what());
         }
     }
     cv_init.notify_all(); // have mutex unlocked before notify_all to avoid pessimistic re-block of notified wait() thread.
@@ -61,7 +61,7 @@ void service_runner::service_thread() {
     }
 
     thread_local jau::call_on_release thread_cleanup([&]() { // NOLINT(misc-use-internal-linkage)
-        jau_DBG_PRINT("%s::worker::ThreadCleanup: serviceRunning %d -> 0", name_.c_str(), running.load());
+        jau_DBG_PRINT("%s::worker::ThreadCleanup: serviceRunning %d -> 0", name_, running.load());
         running = false;
         cv_init.notify_all();
     });
@@ -71,16 +71,16 @@ void service_runner::service_thread() {
             service_work(*this);
         } catch(const std::exception &e) {
             shall_stop_ = true;
-            jau_ERR_PRINT2("%s::worker Exception @ service_work: %s", name_.c_str(), e.what());
+            jau_ERR_PRINT2("%s::worker Exception @ service_work: %s", name_, e.what());
         }
     }
     {
         const std::lock_guard<std::mutex> lock(mtx_lifecycle); // RAII-style acquire and relinquish via destructor
-        jau_WORDY_PRINT("%s::worker: Ended", name_.c_str());
+        jau_WORDY_PRINT("%s::worker: Ended", name_);
         try {
             service_end_locked(*this);
         } catch(const std::exception &e) {
-            jau_ERR_PRINT2("%s::worker Exception @ service_end_locked: %s", name_.c_str(), e.what());
+            jau_ERR_PRINT2("%s::worker Exception @ service_end_locked: %s", name_, e.what());
         }
         thread_id_ = 0;
         running = false;
@@ -150,13 +150,13 @@ service_runner::service_runner(std::string name__,
   shall_stop_(true), running(false),
   thread_id_(0)
 {
-    jau_DBG_PRINT("%s::ctor", name_.c_str());
+    jau_DBG_PRINT("%s::ctor", name_);
 }
 
 service_runner::~service_runner() noexcept {
-    jau_DBG_PRINT("%s::dtor: Begin", name_.c_str());
+    jau_DBG_PRINT("%s::dtor: Begin", name_);
     stop();
-    jau_DBG_PRINT("%s::dtor: End", name_.c_str());
+    jau_DBG_PRINT("%s::dtor: End", name_);
 }
 
 void service_runner::set_shall_stop() noexcept {
@@ -168,7 +168,7 @@ void service_runner::set_shall_stop() noexcept {
 }
 
 void service_runner::start() noexcept {
-    jau_DBG_PRINT("%s::start: Begin: %s", name_.c_str(), toString().c_str());
+    jau_DBG_PRINT("%s::start: Begin: %s", name_, toString());
     /**
      * We utilize a global SIGALRM handler, since we only can install one handler.
      */
@@ -180,7 +180,7 @@ void service_runner::start() noexcept {
     cv_shall_stop_.notify_all(); // have mutex unlocked before notify_all to avoid pessimistic re-block of notified wait() thread.
 
     if( running ) {
-        jau_DBG_PRINT("%s::start: End.0: %s", name_.c_str(), toString().c_str());
+        jau_DBG_PRINT("%s::start: End.0: %s", name_, toString());
         return;
     }
 
@@ -193,17 +193,17 @@ void service_runner::start() noexcept {
     while( false == running && false == shall_stop_ ) {
         cv_init.wait(lock);
     }
-    jau_DBG_PRINT("%s::start: End.X: %s", name_.c_str(), toString().c_str());
+    jau_DBG_PRINT("%s::start: End.X: %s", name_, toString());
 }
 
 bool service_runner::stop() noexcept {
-    jau_DBG_PRINT("%s::stop: Begin: %s", name_.c_str(), toString().c_str());
+    jau_DBG_PRINT("%s::stop: Begin: %s", name_, toString());
 
     std::unique_lock<std::mutex> lock(mtx_lifecycle); // RAII-style acquire and relinquish via destructor
     const ::pthread_t tid_service = thread_id_;
     const bool is_service = tid_service == ::pthread_self();
     jau_DBG_PRINT("%s::stop: service[running %d, shall_stop %d, is_service %d, tid %p)",
-              name_.c_str(), running.load(), shall_stop_.load(), is_service, (void*)tid_service); // NOLINT(performance-no-int-to-ptr)
+              name_, running.load(), shall_stop_.load(), is_service, (void*)tid_service); // NOLINT(performance-no-int-to-ptr)
     set_shall_stop();
     bool result;
     if( running ) {
@@ -213,12 +213,12 @@ bool service_runner::stop() noexcept {
                 if constexpr ( jau::os::has_pthread() ) {
                     int kerr;
                     if( 0 != ( kerr = ::pthread_kill(tid_service, SIGALRM) ) ) {
-                        jau_ERR_PRINT("%s::stop: pthread_kill %p FAILED: %d", name_.c_str(), (void*)tid_service, kerr); // NOLINT(performance-no-int-to-ptr)
+                        jau_ERR_PRINT("%s::stop: pthread_kill %p FAILED: %d", name_, (void*)tid_service, kerr); // NOLINT(performance-no-int-to-ptr)
                     }
                 } else
                 #endif
                 {
-                    jau_INFO_PRINT("%s::stop: pthread_kill n/a, service %p running", name_.c_str(), (void*)tid_service); // NOLINT(performance-no-int-to-ptr)
+                    jau_INFO_PRINT("%s::stop: pthread_kill n/a, service %p running", name_, (void*)tid_service); // NOLINT(performance-no-int-to-ptr)
                 }
             }
             // Ensure the reader thread has ended, no runaway-thread using *this instance after destruction
@@ -232,7 +232,7 @@ bool service_runner::stop() noexcept {
                     cv_init.wait(lock);
                 }
                 if( std::cv_status::timeout == s && true == running ) {
-                    jau_ERR_PRINT("%s::stop: Timeout (force !running): %s", name_.c_str(), toString().c_str());
+                    jau_ERR_PRINT("%s::stop: Timeout (force !running): %s", name_, toString());
                     result = false; // bail out w/ false
                 }
             }
@@ -243,16 +243,16 @@ bool service_runner::stop() noexcept {
     } else {
         result = true;
     }
-    jau_DBG_PRINT("%s::stop: End: Result %d, %s", name_.c_str(), result, toString().c_str());
+    jau_DBG_PRINT("%s::stop: End: Result %d, %s", name_, result, toString());
     return result;
 }
 
 bool service_runner::join() noexcept {
-    jau_DBG_PRINT("%s::join: Begin: %s", name_.c_str(), toString().c_str());
+    jau_DBG_PRINT("%s::join: Begin: %s", name_, toString());
     std::unique_lock<std::mutex> lock(mtx_lifecycle); // RAII-style acquire and relinquish via destructor
 
     const bool is_service = thread_id_ == ::pthread_self();
-    jau_DBG_PRINT("%s::join: is_service %d, %s", name_.c_str(), is_service, toString().c_str());
+    jau_DBG_PRINT("%s::join: is_service %d, %s", name_, is_service, toString());
     bool result;
     if( running ) {
         if( !is_service ) {
@@ -267,7 +267,7 @@ bool service_runner::join() noexcept {
                     cv_init.wait(lock);
                 }
                 if( std::cv_status::timeout == s && true == running ) {
-                    jau_ERR_PRINT("%s::join: Timeout (force !running): %s", name_.c_str(), toString().c_str());
+                    jau_ERR_PRINT("%s::join: Timeout (force !running): %s", name_, toString());
                     result = false; // bail out w/ false
                 }
             }
@@ -278,7 +278,7 @@ bool service_runner::join() noexcept {
     } else {
         result = true;
     }
-    jau_DBG_PRINT("%s::join: End: Result %d, %s", name_.c_str(), result, toString().c_str());
+    jau_DBG_PRINT("%s::join: End: Result %d, %s", name_, result, toString());
     return result;
 }
 

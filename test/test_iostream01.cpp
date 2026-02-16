@@ -72,7 +72,7 @@ class TestIOStream01 {
                 (void)res;
                 const std::string cwd = jau::io::fs::get_cwd();
                 const std::string cmd = std::string(mini_httpd_exe)+" -p 8080 -l "+cwd+"/mini_httpd.log";
-                jau_PLAIN_PRINT(true, "%s", cmd.c_str());
+                jau_PLAIN_PRINT(true, "%s", cmd);
                 res = std::system(cmd.c_str());
                 (void)res;
             }
@@ -88,7 +88,7 @@ class TestIOStream01 {
         void test00_protocols() {
             {
                 std::vector<std::string_view> protos = jau::io::uri_tk::supported_protocols();
-                jau_PLAIN_PRINT(true, "test00_protocols: Supported protocols: %zu: %s", protos.size(), jau::to_string(protos, ",").c_str());
+                jau_PLAIN_PRINT(true, "test00_protocols: Supported protocols: %zu: %s", protos.size(), jau::to_string(protos, ","));
 #ifdef USE_LIBCURL
                 REQUIRE( 0 < protos.size() );
 #else
@@ -309,7 +309,7 @@ class TestIOStream01 {
             }
             const uint64_t out_bytes_total = outfile.position();
             jau_PLAIN_PRINT(true, "test12_async_404.X Done: total %" PRIu64 ", result %d, rb %s",
-                    consumed_total_bytes, (int)res->result.load(), rb.toString().c_str() );
+                    consumed_total_bytes, (int)res->result.load(), rb.toString() );
 
             res->thread.join();
 
