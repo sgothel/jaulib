@@ -171,7 +171,7 @@ TEST_CASE("jau_cfmt_benchmark_append_integral00", "[benchmark][jau][std::string]
             const size_t bsz = jau::cfmt::default_string_capacity + 1; // including EOS
             s.reserve(bsz);         // incl. EOS
             s.resize(bsz - 1);      // excl. EOS
-            size_t nchars = std::snprintf(&s[0], bsz, "%zu", i1);
+            size_t nchars = std::snprintf(&s[0], bsz, "%" PRIu64, i1);
             if( nchars < bsz ) {
                 s.resize(nchars);
             }
@@ -225,7 +225,7 @@ TEST_CASE("jau_cfmt_benchmark_append_integral01", "[benchmark][jau][std::string]
             const size_t bsz = jau::cfmt::default_string_capacity + 1; // including EOS
             s.reserve(bsz);         // incl. EOS
             s.resize(bsz - 1);      // excl. EOS
-            size_t nchars = std::snprintf(&s[0], bsz, "%25.21zu", i1);
+            size_t nchars = std::snprintf(&s[0], bsz, "%25.21" PRIu64, i1);
             if( nchars < bsz ) {
                 s.resize(nchars);
             }
@@ -280,7 +280,7 @@ TEST_CASE("jau_cfmt_benchmark_append_integral02", "[benchmark][jau][std::string]
             const size_t bsz = jau::cfmt::default_string_capacity + 1; // including EOS
             s.reserve(bsz);         // incl. EOS
             s.resize(bsz - 1);      // excl. EOS
-            size_t nchars = std::snprintf(&s[0], bsz, "%25.21zu", i1);
+            size_t nchars = std::snprintf(&s[0], bsz, "%25.21" PRIu64, i1);
             if( nchars < bsz ) {
                 s.resize(nchars);
             }

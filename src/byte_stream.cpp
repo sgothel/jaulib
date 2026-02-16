@@ -311,7 +311,7 @@ size_t ByteStream_File::peek(void* out, size_t length, size_type peek_offset) no
         abs_pos = __posix_lseek64(m_fd, static_cast<off64_t>(peek_offset), SEEK_CUR);
         if( 0 > abs_pos ) {
             addstate_impl( iostate_t::failbit );
-            jau_DBG_PRINT("ByteInStream_File::peek: Error occurred (offset1 %zu) in %s, errno %d %s",
+            jau_DBG_PRINT("ByteInStream_File::peek: Error occurred (offset1 %" PRIu64 ") in %s, errno %d %s",
                     peek_offset, toString(), (int)errno, strerror(errno));
             return 0;
         }
@@ -333,7 +333,7 @@ size_t ByteStream_File::peek(void* out, size_t length, size_type peek_offset) no
     if( __posix_lseek64(m_fd, static_cast<off64_t>(m_offset), SEEK_SET) < 0 ) {
         // even though we were able to fetch the desired data above, let's fail if position reset fails
         addstate_impl( iostate_t::failbit );
-        jau_DBG_PRINT("ByteInStream_File::peek: Error occurred (offset2 %zu) in %s, errno %d %s",
+        jau_DBG_PRINT("ByteInStream_File::peek: Error occurred (offset2 %" PRIu64 ") in %s, errno %d %s",
                 peek_offset, toString(), (int)errno, strerror(errno));
         return 0;
     }
