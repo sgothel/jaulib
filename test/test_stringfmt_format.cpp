@@ -201,6 +201,24 @@ static void checkFormat(int line, const char *fmt, const Args &...args) {
     CHECK(exp == has);
 }
 
+class SomeClass {
+  public:
+    std::string toString() const { return "SomeClass toString"; }
+};
+enum class game_t : uint16_t {
+    none,
+    chess,
+    pacman,
+    mrdo
+};
+JAU_MAKE_ENUM_STRING(game_t, chess, pacman, mrdo); // NOLINT
+
+enum class plainenum_t : uint16_t {
+    none,
+    lala,
+    lili
+};
+
 TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
     // type conversion
     int32_t  i32 = -1234;
@@ -261,6 +279,50 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
         CHECK( "World" == jau::format_string("%s", s2));
         CHECK( 1 == jau::cfmt::check("%s", s2sv));
         CHECK( "World" == jau::format_string("%s", s2sv));
+    }
+    {
+        // jau_format_checkLine("%s", (int)0);
+        CHECK( -1 == jau::cfmt::check("%s", (int)0));
+    }
+    {
+        const char *cstr0 = nullptr;
+        const char *cstr1 = "Hello World";
+        jau_format_checkLine("%s", cstr0);
+        CHECK( "(null)" == jau::format_string("%s", cstr0));
+        CHECK( "Hello World" == jau::format_string("%s", cstr1));
+    }
+    {
+        const void *handle = (void *)0x12345678;
+        const void *nil = nullptr;
+        jau_format_checkLine("%p", handle);
+        CHECK( "0x12345678" == jau::format_string("%p", handle));
+        CHECK( "(nil)" == jau::format_string("%p", nil));
+        jau_format_checkLine("%#p", handle);
+        CHECK( "0x12345678" == jau::format_string("%#p", handle));
+        CHECK( "(nil)" == jau::format_string("%#p", nil));
+
+        // only `char*` for string allowed
+        CHECK( -1 == jau::cfmt::check("%s", handle));
+        CHECK( true == jau::format_string("%s", handle).starts_with("<E#1"));
+        CHECK( true == jau::format_string("%s", nil).starts_with("<E#1"));
+    }
+    {
+        CHECK("SomeClass toString" == jau::to_string(SomeClass()));
+        jau_format_checkLine("%s", SomeClass());
+        CHECK( "SomeClass toString" == jau::format_string("%s", SomeClass()));
+
+        CHECK("chess" == jau::to_string(game_t::chess));
+        CHECK("pacman" == jau::to_string(game_t::pacman));
+        jau_format_checkLine("%s", game_t::chess);
+        CHECK( "chess" == jau::format_string("%s", game_t::chess));
+        CHECK( "pacman" == jau::format_string("%s", game_t::pacman));
+
+        CHECK("lala" != jau::to_string(plainenum_t::lala)); // no to_string available
+        CHECK( -1 == jau::cfmt::check("%s", plainenum_t::lala));    // no to_string available
+
+        CHECK("little" == jau::to_string(jau::lb_endian_t::little));
+        jau_format_checkLine("%s", jau::lb_endian_t::little);
+        CHECK( "little" == jau::format_string("%s", jau::lb_endian_t::little));
     }
     checkFormat(__LINE__, "%p", &i32);
     checkFormat(__LINE__, "p1a %p %0p", p1a, p1a);

@@ -116,8 +116,8 @@
  *   - Only if underlying type is `unsigned`, it can't be used for signed integer conversion (see above)
  * - Accept direct std::string and std::string_view for `%s` string arguments
  * - Arithmetic integral + floating point types are limited to a maximum of 64-bit
- * - `bool` argument type can be also converted to string (`true` or `false`)
- *   - standard conversion is to integral (number `0` or `1`)
+ * - `bool` standard conversion is to integral (number `0` or `1`)
+ * - Argument types for string conversion see *Extended Argument-Types for Conversion Specifier* below
  * - Runtime Errors
  *   - Failed runtime checks will inject an error market,
  *     e.g. `<E#1@1234:Cnv>` where the 1st argument caused a conversion error (`Cnv`)
@@ -165,7 +165,7 @@
  *   - `s` string
  *   - `p` pointer
  *   - `d` signed integral or `i`
- * - Unsigned integral
+ * - Integral
  *   - `o` octal unsigned
  *   - `x` `X` hexadecimal unsigned low and capital chars
  *   - `b` binary unsigned presentation (extension)
@@ -181,6 +181,21 @@
  *
  * #### Extended Conversion Specifier
  * - `b` bitpattern of unsigned integral w/ prefix `0b` (if `#` flag is added)
+ *
+ * #### Extended Argument-Types for Conversion Specifier
+ *   - `s` string
+ *     - `char *`
+ *       - `nullptr` produces `(null)`
+ *     - `std::string`, `std::string_view`
+ *     - `bool`
+ *     - any type w/ a free function 'to_string', producing either `std::string` or `std::string_view`
+ *       - including enum types, instrumented via `JAU_MAKE_ENUM_STRING` or `JAU_MAKE_BITFIELD_ENUM_STRING`
+ *     - any class exposing toString() or to_string() method _and_ a well formed default ctor
+ *       - for compile time checks, the default ctor must be constexpr
+ * - Integral
+ *   - `enum` types
+ *     - If underlying type is `unsigned`, it can't be used for signed integer conversion
+ *   - `bool` as integral (number `0` or `1`)
  *
  * ### Special Thanks
  * To the project [A printf / sprintf Implementation for Embedded Systems](https://github.com/mpaland/printf)
@@ -510,7 +525,7 @@ namespace jau::cfmt {
             std::string_view get() const noexcept { return "(nil)"; }
 
             template<typename T>
-            requires jau::req::stringifyable_jau<T>
+            requires jau::req::stringifyable0_jau<T> || jau::req::pointer<T>
             constexpr void appendFormatted(const FormatOpts&, const T&) noexcept { }
 
             template<typename T>
@@ -540,6 +555,23 @@ namespace jau::cfmt {
 
             std::string_view get() const noexcept { return m_s; }
 
+            // Note: `appendFormatted` is covering all `jau::req::stringifyable0_jau<T>` cases
+
+            template<typename T>
+            requires jau::has_toString_v<T>
+            void appendFormatted(const FormatOpts& opts, const T& v) {
+                impl::append_string(m_s, m_maxLen, v.toString(), opts);
+            }
+            template<typename T>
+            requires jau::has_to_string_v<T>
+            void appendFormatted(const FormatOpts& opts, const T& v) {
+                impl::append_string(m_s, m_maxLen, v.to_string(), opts);
+            }
+            template<typename T>
+            requires jau::has_free_to_string_v<T>
+            void appendFormatted(const FormatOpts& opts, const T& v) {
+                impl::append_string(m_s, m_maxLen, to_string(v), opts);
+            }
             template<typename T>
             requires jau::req::string_literal<T> || jau::req::string_class<T>
             void appendFormatted(const FormatOpts& opts, const T& v) {
@@ -734,7 +766,7 @@ namespace jau::cfmt {
             }
 
             template<typename T>
-                requires jau::req::stringifyable_jau<T> && (!jau::req::unsigned_integral<T>) && (!std::floating_point<T>)
+                requires (jau::req::stringifyable0_jau<T> || jau::req::pointer<T>)
             constexpr void appendFormatted(const T &v) {
                 m_out.appendFormatted(opts, v);
             }
@@ -804,9 +836,13 @@ namespace jau::cfmt {
         template<typename T>
         using make_int_signed_t = typename std::conditional_t<jau::req::unsigned_integral<T> && !jau::req::boolean<T>, std::make_signed<T>, std::type_identity<T>>::type;  // NOLINT
 
-        /// Returns a simple `const char * const` if: pointer, otherwise returns orig type
+        /// Returns a simple `const char * const` if: `char *`, otherwise returns orig type
         template<typename T>
-        using make_simple_pointer_t = typename std::conditional_t<jau::req::pointer<T>, std::type_identity<const char * const>, std::type_identity<T>>::type;  // NOLINT
+        using make_char_pointer_t = typename std::conditional_t<jau::req::char_pointer<T>, std::type_identity<const char * const>, std::type_identity<T>>::type;  // NOLINT
+
+        /// Returns a simple `const void * const` if: pointer, otherwise returns orig type
+        template<typename T>
+        using make_void_pointer_t = typename std::conditional_t<jau::req::pointer<T>, std::type_identity<const void * const>, std::type_identity<T>>::type;  // NOLINT
 
         // A NullOutput formatting result, capable of `constexpr` and `consteval`
         typedef FResult<NullOutput> CheckResult;
@@ -843,12 +879,22 @@ namespace jau::cfmt {
             }
 
             template <typename T>
-            requires jau::req::pointer<T> // also allows passing `char*` for `%p`
+            requires jau::req::pointer<T> && (!jau::req::char_pointer<T>)
             static constexpr void parseOne(Result &pc, const T &val) {
                 pc.m_argtype_size = sizeof(T); // NOLINT(bugprone-sizeof-expression)
                 pc.m_argtype_signed = false;
                 pc.m_argval_negative = false;
-                using U = make_simple_pointer_t<T>; // aliasing to 'char*'
+                using U = make_void_pointer_t<T>; // aliasing to 'const void * const'
+                parseOneImpl<U>(pc, U(val)); // pass-through
+            }
+
+            template <typename T>
+            requires jau::req::char_pointer<T> // also allows passing `char*` for `%p`
+            static constexpr void parseOne(Result &pc, const T &val) {
+                pc.m_argtype_size = sizeof(T); // NOLINT(bugprone-sizeof-expression)
+                pc.m_argtype_signed = false;
+                pc.m_argval_negative = false;
+                using U = make_char_pointer_t<T>; // aliasing to 'const char * const'
                 parseOneImpl<U>(pc, U(val)); // pass-through
             }
 
@@ -1225,7 +1271,7 @@ namespace jau::cfmt {
             }
 
             template <typename T>
-            requires (!(jau::req::string_alike<T> || jau::req::boolean<T>))
+            requires (!(jau::req::stringifyable0_jau<T> || jau::req::boolean<T>))
             static constexpr bool parseStringFmtSpec(Result &pc, const T &) noexcept {
                 if constexpr( !std::is_same_v<no_type_t, T> ) {
                     ++pc.arg_count;
@@ -1233,9 +1279,8 @@ namespace jau::cfmt {
                 pc.setError(__LINE__);
                 return false;
             }
-
             template <typename T>
-            requires jau::req::string_alike<T> || jau::req::boolean<T>
+            requires jau::req::stringifyable0_jau<T> || jau::req::boolean<T>
             static constexpr bool parseStringFmtSpec(Result &pc, const T &val) {
                 ++pc.arg_count;
                 switch( pc.opts.length_mod ) {

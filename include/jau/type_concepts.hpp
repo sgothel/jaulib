@@ -30,6 +30,7 @@
 #include <type_traits>
 #include <jau/cpp_lang_util.hpp>
 #include <jau/string_literal.hpp>
+#include <jau/type_traits_queries.hpp>
 
 /** Requirement (concept) Definitions */
 namespace jau::req {
@@ -138,30 +139,83 @@ namespace jau::req {
     concept string_alike0 = string_literal<T> || string_class<T>;
 
     /**
-     * A convertible type to a string or a string itself.
+     * A strict convertible type to `std::string` or `std::string_view` via `jau::to_string(T)` or `to_string(T)` (custom free function)
+     * - has member `toString()`
+     * - has member `to_string()`
+     * - has free function `to_string(T)`
+     */
+    template<typename T>
+    concept string_convertible0_jau = jau::has_toString_v<T> ||
+                                      jau::has_to_string_v<T> ||
+                                      jau::has_free_to_string_v<T>;
+
+    /**
+     * A loose convertible type to `std::string` or `std::string_view` via `jau::to_string(T)` or `to_string(T)` (custom free function)
+     * - integral
+     * - floating_point
+     * - pointer
+     *   - including has member function `operator->()`
+     * - string_convertible0_jau
+     *   - has member `toString()`
+     *   - has member `to_string()`
+     *   - has free function `to_string(T)`
+     *
+     * Convertible to string via `std::to_string(T)` or `jau::to_string(T)`
+     */
+    template<typename T>
+    concept string_convertible1_jau = std::is_integral_v<T> ||
+                                      std::is_floating_point_v<T> ||
+                                      std::is_pointer_v<T> ||
+                                      jau::has_member_of_pointer_v<T> ||
+                                      string_convertible0_jau<T>;
+
+    /**
+     * A convertible type to `std::string` or a `std::string` itself.
      * - string_alike: std::string, std::string_view, jau::StringLiteral, `CharT (&)[N]`, `char*`
      * - integral
      * - floating_point
      *
-     * Convertible to string via std::to_string(T) or jau::to_string(T)
+     * Convertible to string via `std::to_string(T)` or `jau::to_string(T)`
      */
     template<typename T>
     concept stringifyable_std = string_alike<T>
-                         || std::is_integral_v<T>
-                         || std::is_floating_point_v<T>;
+                             || std::is_integral_v<T>
+                             || std::is_floating_point_v<T>;
 
     /**
-     * A convertible type to a string or a string itself.
+     * A strict convertible type to `std::string`, `std::string_view` or a `std::string` itself.
+     * - string_alike: std::string, std::string_view, jau::StringLiteral, `char (&)[N]`, `char*`
+     * - string_convertible0_jau
+     *   - has member `toString()`
+     *   - has member `to_string()`
+     *   - has free function `to_string(T)`
+     *
+     * Convertible to string via `jau::to_string(T)` or `to_string(T)` (custom free function)
+     */
+    template<typename T>
+    concept stringifyable0_jau = string_alike<T>
+                              || string_convertible0_jau<T>;
+
+    /**
+     * A loose convertible type to `std::string`, `std::string_view` or a `std::string` itself.
      * - string_alike: std::string, std::string_view, jau::StringLiteral, `char (&)[N]`, `char*`
      * - integral
      * - floating_point
-     * - pointer
+     * - string_convertible1_jau
+     *   - integral
+     *   - floating_point
+     *   - pointer
+     *     - including has member function `operator->()`
+     *   - string_convertible0_jau
+     *     - has member `toString()`
+     *     - has member `to_string()`
+     *     - has free function `to_string(T)`
      *
-     * Convertible to string via jau::to_string(T)
+     * Convertible to string via `jau::to_string(T)` or `to_string(T)` (custom free function)
      */
     template<typename T>
-    concept stringifyable_jau = stringifyable_std<T>
-                             || pointer<T>;
+    concept stringifyable1_jau = stringifyable_std<T>
+                              || string_convertible1_jau<T>;
 
     /** C++ Named Requirement Container (partial) */
     template<typename T>
