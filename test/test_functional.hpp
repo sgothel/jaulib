@@ -1713,8 +1713,8 @@ class TestFunction01 {
             // Test capturing lambdas
             volatile int i = 100;
 
-            function<int(TrivialObj i)> fa0 = [](TrivialObj i)->int {
-                int res = i.i1()+i.i2()+100;
+            function<int(TrivialObj i)> fa0 = [](TrivialObj o)->int {
+                int res = o.i1()+o.i2()+100;
                 return res;;
             };
             fprintf(stderr, "lambda.0: %s, signature %s\n", fa0.toString().c_str(), fa0.signature().internal_name());
@@ -1781,8 +1781,8 @@ class TestFunction01 {
             // Test capturing lambdas
             volatile int i = 100;
 
-            function<int(const NonTrivialObj & i)> fa0 = [](const NonTrivialObj & i)->int {
-                int res = i.i1()+i.i2()+100;
+            function<int(const NonTrivialObj &)> fa0 = [](const NonTrivialObj & o)->int {
+                int res = o.i1()+o.i2()+100;
                 return res;;
             };
             fprintf(stderr, "lambda.0: %s, signature %s\n", fa0.toString().c_str(), fa0.signature().internal_name());
