@@ -35,7 +35,10 @@ enum class test_type2_t : uint8_t {
     three  // <third value
 };
 // and add the `enum class` support functions
-JAU_MAKE_ENUM_STRING(test_type2_t, one, two, three); // NOLINT(misc-use-internal-linkage): intentional
+JAU_MAKE_ENUM_STRING_KV(test_type2_t, // NOLINT(misc-use-internal-linkage): intentional
+    one, One,
+    two, Two,
+    three, Three);
 JAU_MAKE_ENUM_INFO(test_type2_t, none, one, two, three);
 
 // Define the `enum class` yourself ...
@@ -46,7 +49,7 @@ enum class test_type3_t : uint8_t {
     three = 1 << 2
 };
 // and add the `enum class` support functions
-JAU_MAKE_BITFIELD_ENUM_STRING(test_type3_t, one, two, three); // NOLINT(misc-use-internal-linkage): intentional
+JAU_MAKE_BITFIELD_ENUM_STRING_LONG(test_type3_t, one, two, three); // NOLINT(misc-use-internal-linkage): intentional
 JAU_MAKE_ENUM_INFO(test_type3_t, none, one, two, three);
 
 namespace jau::io::fs {
@@ -107,12 +110,10 @@ TEST_CASE( "Enum Class Value Type Test 10", "[enum][type]" ) {
 
     {
         static_assert( 4 == test_type2_t_info_t::size() );
-        static_assert( "one" == name(test_type2_t::one) );
-        static_assert( "test_type2_t::one" == long_name(test_type2_t::one) );
+        static_assert( "One" == name(test_type2_t::one) );
 
-        REQUIRE( "one" == name(test_type2_t::one) );
-        REQUIRE( "test_type2_t::one" == long_name(test_type2_t::one) );
-        REQUIRE( "one" == to_string(test_type2_t::one) );
+        REQUIRE( "One" == name(test_type2_t::one) );
+        REQUIRE( "One" == to_string(test_type2_t::one) );
     }
     {
         static_assert( 4 == test_type3_t_info_t::size() );
@@ -150,7 +151,7 @@ namespace test::local {
         three = 1 << 2
     };
     // and add the `enum class` support functions
-    JAU_MAKE_BITFIELD_ENUM_STRING(test_type4_t, one, two, three); // NOLINT(misc-use-internal-linkage): intentional
+    JAU_MAKE_BITFIELD_ENUM_STRING_LONG(test_type4_t, one, two, three); // NOLINT(misc-use-internal-linkage): intentional
     JAU_MAKE_ENUM_INFO(test_type4_t, one, two, three);
 
     // Define the `enum class` yourself ...
@@ -161,7 +162,7 @@ namespace test::local {
         three = 30
     };
     // and add the `enum class` support functions
-    JAU_MAKE_ENUM_STRING(test_type5_t, one, two, three); // NOLINT(misc-use-internal-linkage): intentional
+    JAU_MAKE_ENUM_STRING_LONG(test_type5_t, one, two, three); // NOLINT(misc-use-internal-linkage): intentional
     JAU_MAKE_ENUM_INFO(test_type5_t, one, two, three);
 }
 

@@ -707,6 +707,14 @@ namespace jau {
   __VA_OPT__(JAU_FOR_EACH2_VALUE_AGAIN JAU_PARENS (macro, type, value, __VA_ARGS__))
 #define JAU_FOR_EACH2_VALUE_AGAIN() JAU_FOR_EACH2_VALUE_HELPER
 
+// Macro w/ 3 arguments: type, a1, a2
+#define JAU_FOR_EACH3(macro, type, ...)                              \
+  __VA_OPT__(JAU_EXPAND(JAU_FOR_EACH3_HELPER(macro, type, __VA_ARGS__)))
+#define JAU_FOR_EACH3_HELPER(macro, type, a1, a2, ...)               \
+  macro(type, a1, a2)                                                \
+  __VA_OPT__(JAU_FOR_EACH3_AGAIN JAU_PARENS (macro, type, __VA_ARGS__))
+#define JAU_FOR_EACH3_AGAIN() JAU_FOR_EACH3_HELPER
+
 /**@}*/
 
 #endif /* JAU_CPP_LANG_EXT_HPP_ */
