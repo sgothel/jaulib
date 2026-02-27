@@ -154,8 +154,8 @@ namespace jau::impl {
 /** Use for unconditional error messages, prefix '[elapsed_time] Error @ FILE:LINE FUNC: '. Function also appends last errno and strerror(errno). No backtrace. */
 #define jau_ERR_PRINT2(...) { jau_dbgPrint2(stderr, "Error", true /* errno */, false /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); } // NOLINT(bugprone-lambda-function-name)
 
-/** Use for unconditional error messages, prefix '[elapsed_time] Error @ FILE:LINE FUNC: '. Function also appends last errno and strerror(errno). Full backtrace. */
-#define jau_ERR_PRINT3(...) { jau_dbgPrint2(stderr, "Error", true /* errno */, true /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); } // NOLINT(bugprone-lambda-function-name)
+/** Use for unconditional error messages, prefix '[elapsed_time] Error @ FILE:LINE FUNC: '. No last errno, nor strerror(errno). No backtrace. */
+#define jau_ERR_PRINT3(...) { jau_dbgPrint2(stderr, "Error", false /* errno */, false /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); } // NOLINT(bugprone-lambda-function-name)
 
 /** Use for unconditional interruption messages, prefix '[elapsed_time] Interrupted @ FILE:LINE FUNC: '. Function also appends last errno and strerror(errno). */
 #define jau_IRQ_PRINT(...) { jau_dbgPrint2(stderr, "Interrupted", true /* errno */, false /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); } // NOLINT(bugprone-lambda-function-name)
