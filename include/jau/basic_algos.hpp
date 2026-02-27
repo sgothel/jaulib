@@ -120,24 +120,19 @@ namespace jau {
      * @return true if contained, otherwise false
      */
     template<class InputArray, class T>
-    constexpr bool contains(InputArray &array, const T& value) noexcept
+    constexpr bool contains(const InputArray &array, const T& value) noexcept
     {
-        const typename InputArray::size_type size = array.size();
-        for (typename InputArray::size_type i = 0; i < size; ++i) {
-            if( value == array[i] ) {
-                return true;
-            }
-        }
-        return false;
+        const auto last = array.cend();
+        return last != jau::find(array.cbegin(), last, value);
     }
 
     template<class InputArray, class T>
     constexpr bool eraseFirst(InputArray &array, const T& value)
     {
-        const typename InputArray::size_type size = array.size();
-        for (typename InputArray::size_type i = 0; i < size; ++i) {
-            if( value == array[i] ) {
-                array.erase(i);
+        const auto last = array.end();
+        for (auto first = array.begin(); first != last; ++first) {
+            if (*first == value) {
+                array.erase(first);
                 return true;
             }
         }
