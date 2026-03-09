@@ -1648,6 +1648,56 @@ namespace jau::cfmt {
      * @param maxLen maximum string length
      * @param fmt the snprintf compliant format string
      * @param args passed arguments, used for template type deduction only
+     * @return the given destination string for concatenation
+     * @see @ref jau_cfmt_header
+     */
+    template <typename... Targs>
+    inline __attribute__((always_inline))
+    std::string& append(std::string &s, size_t maxLen, std::string_view fmt, const Targs &...args) noexcept {
+        impl::StringResult ctx(impl::StringOutput(std::min(maxLen, s.max_size()), s), fmt);
+
+        std::exception_ptr eptr;
+        try {
+            if constexpr( 0 < sizeof...(Targs) ) {
+                ((impl::FormatParser::parseOne<Targs>(ctx, args)), ...);
+            }
+            impl::FormatParser::parseOne<impl::no_type_t>(ctx, impl::no_type_t());
+        } catch (...) {
+            eptr = std::current_exception();
+        }
+        handle_exception(eptr, E_FILE_LINE);
+        return s;
+    }
+    /**
+     * Strict format with type validation of arguments against the format string,
+     * appending to the given destination.
+     *
+     * See @ref jau_cfmt_header for details
+     *
+     * @tparam Targs the argument template type pack for the given arguments `args`
+     * @param s destination string to append the formatted string
+     * @param fmt the snprintf compliant format string
+     * @param args passed arguments, used for template type deduction only
+     * @return the given destination string for concatenation
+     * @see @ref jau_cfmt_header
+     */
+    template <typename... Targs>
+    inline __attribute__((always_inline))
+    std::string& append(std::string &s, std::string_view fmt, const Targs &...args) noexcept {
+        return append(s, s.max_size(), fmt, args...);
+    }
+
+    /**
+     * Strict format with type validation of arguments against the format string,
+     * appending to the given destination.
+     *
+     * See @ref jau_cfmt_header for details
+     *
+     * @tparam Targs the argument template type pack for the given arguments `args`
+     * @param s destination string to append the formatted string
+     * @param maxLen maximum string length
+     * @param fmt the snprintf compliant format string
+     * @param args passed arguments, used for template type deduction only
      * @return jau::cfmt::Result instance for further inspection
      * @see @ref jau_cfmt_header
      */
@@ -2053,7 +2103,7 @@ extern template void jau::cfmt::impl::FormatParser::parseOneImpl<jau::cfmt::impl
  * @param args arguments matching the format string
  */
 #define jau_format_string_h(strLenHint, fmt, ...) \
-    jau::format_string((strLenHint), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
+    jau::format_string_h((strLenHint), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
     static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_NOREF_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
 
 /**
@@ -2080,6 +2130,30 @@ extern template void jau::cfmt::impl::FormatParser::parseOneImpl<jau::cfmt::impl
 #define jau_format_string2(fmt, ...) \
     jau::format_string((fmt) __VA_OPT__(,) __VA_ARGS__);  \
     static_assert(0 == jau::cfmt::check2Line< JAU_FOR_EACH1_LIST(JAU_NOREF_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
+
+/**
+ * Macro, safely appends a (non-truncated) string according to `snprintf()` formatting rules
+ * using a variable number of arguments following the `fmt` argument.
+ *
+ * This macro also produces compile time validation using a `static_assert`
+ * against jau::cfmt::check2.
+ *
+ * jau::cfmt::append() is utilize to validate `format` against given arguments at *runtime*.
+ *
+ * Resulting string size matches formated output w/o limitation
+ * and its capacity is left unchanged.
+ *
+ * Use `std::string::shrink_to_fit()` on the returned string,
+ * if you desire efficiency for longer lifecycles.
+ *
+ * See @ref jau_cfmt_header for details
+ *
+ * @param format `printf()` compliant format string
+ * @param args arguments matching the format string
+ */
+#define jau_append_string(s, fmt, ...) \
+    jau::cfmt::append((s), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
+    static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_NOREF_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
 
 /**
  * Macro produces compile time validation using a `static_assert`
