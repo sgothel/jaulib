@@ -31,6 +31,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <limits>
+#include <type_traits>
 
 #include <jau/backtrace.hpp>
 #include <jau/cpp_pragma.hpp>
@@ -574,21 +575,49 @@ namespace jau {
         return lhs.num * (int_type)rhs.denom <= (int_type)lhs.denom * rhs.num;
     }
 
-    /** Return the maximum of the two given fractions */
+    /** Return the const-reference of the maximum of the given fraction const-reference pair. */
     template<std::integral int_type>
     constexpr const fraction<int_type>& max(const fraction<int_type>& lhs, const fraction<int_type>& rhs) noexcept {
-        return lhs >= rhs ? lhs : rhs; // NOLINT(bugprone-return-const-ref-from-parameter): Despite `&&` overload, still warning
+        static_assert(!std::is_rvalue_reference_v<const fraction<int_type>&>);
+        return lhs > rhs ? lhs : rhs; // NOLINT(bugprone-return-const-ref-from-parameter): Despite `&&` overload, still warning
     }
+    /** Return the maximum of the given fraction `rvalue` pair (copy-elision) */
     template<std::integral int_type>
-    constexpr const fraction<int_type>& max(fraction<int_type>&&, fraction<int_type>&&) noexcept = delete; // bugprone-return-const-ref-from-parameter
+    constexpr fraction<int_type> max(fraction<int_type>&& lhs, fraction<int_type>&& rhs) noexcept {
+        return lhs > rhs ? lhs : rhs;
+    }
+    /** Return the maximum of the given fraction pair */
+    template<std::integral int_type>
+    constexpr fraction<int_type> max(const fraction<int_type>& lhs, fraction<int_type>&& rhs) noexcept {
+        return lhs > rhs ? lhs : rhs;
+    }
+    /** Return the maximum of the given fraction pair */
+    template<std::integral int_type>
+    constexpr fraction<int_type> max(fraction<int_type>&& lhs, const fraction<int_type>& rhs) noexcept {
+        return lhs > rhs ? lhs : rhs;
+    }
 
-    /** Return the minimum of the two given fractions */
+    /** Return the const-reference of the minimum of the given fraction const-reference pair. */
     template<std::integral int_type>
     constexpr const fraction<int_type>& min(const fraction<int_type>& lhs, const fraction<int_type>& rhs) noexcept {
-        return lhs <= rhs ? lhs : rhs; // NOLINT(bugprone-return-const-ref-from-parameter): Despite `&&` overload, still warning
+        static_assert(!std::is_rvalue_reference_v<const fraction<int_type>&>);
+        return lhs < rhs ? lhs : rhs; // NOLINT(bugprone-return-const-ref-from-parameter): Despite `&&` overload, still warning
     }
+    /** Return the minimum of the given fraction `rvalue` pair (copy-elision) */
     template<std::integral int_type>
-    constexpr const fraction<int_type>& min(fraction<int_type>&&, fraction<int_type>&&) noexcept = delete; // bugprone-return-const-ref-from-parameter
+    constexpr fraction<int_type> min(fraction<int_type>&& lhs, fraction<int_type>&& rhs) noexcept {
+        return lhs < rhs ? lhs : rhs;
+    }
+    /** Return the minimum of the given fraction pair */
+    template<std::integral int_type>
+    constexpr fraction<int_type> min(const fraction<int_type>& lhs, fraction<int_type>&& rhs) noexcept {
+        return lhs < rhs ? lhs : rhs;
+    }
+    /** Return the minimum of the given fraction pair */
+    template<std::integral int_type>
+    constexpr fraction<int_type> min(fraction<int_type>&& lhs, const fraction<int_type>& rhs) noexcept {
+        return lhs < rhs ? lhs : rhs;
+    }
 
     /**
      * Returns the value of the sign function applied to numerator.
@@ -1188,17 +1217,39 @@ namespace jau {
 
     inline std::string to_string(const fraction_timespec& v) noexcept { return v.toString(); }
 
-    /** Return the maximum of the two given fraction_timespec */
+    /** Return the const-reference of the maximum of the given fraction_timespec const-reference pair. */
     constexpr const fraction_timespec& max(const fraction_timespec& lhs, const fraction_timespec& rhs) noexcept {
-        return lhs > rhs ? lhs : rhs; // NOLINT(bugprone-return-const-ref-from-parameter): Despite `&&` overload, still warning
+        return lhs > rhs ? lhs : rhs;
     }
-    constexpr const fraction_timespec& max(fraction_timespec&&, fraction_timespec&&) noexcept = delete; // bugprone-return-const-ref-from-parameter
+    /** Return the maximum of the given fraction_timespec `rvalue` pair (copy-elision) */
+    constexpr fraction_timespec max(fraction_timespec&& lhs, fraction_timespec&& rhs) noexcept {
+        return lhs > rhs ? lhs : rhs;
+    }
+    /** Return the maximum of the given fraction_timespec pair */
+    constexpr fraction_timespec max(const fraction_timespec& lhs, fraction_timespec&& rhs) noexcept {
+        return lhs > rhs ? lhs : rhs;
+    }
+    /** Return the maximum of the given fraction_timespec pair */
+    constexpr fraction_timespec max(fraction_timespec&& lhs, const fraction_timespec& rhs) noexcept {
+        return lhs > rhs ? lhs : rhs;
+    }
 
-    /** Return the minimum of the two given fraction_timespec */
+    /** Return the const-reference of the minimum of the given fraction_timespec const-reference pair. */
     constexpr const fraction_timespec& min(const fraction_timespec& lhs, const fraction_timespec& rhs) noexcept {
-        return lhs < rhs ? lhs : rhs; // NOLINT(bugprone-return-const-ref-from-parameter): Despite `&&` overload, still warning
+        return lhs < rhs ? lhs : rhs;
     }
-    constexpr const fraction_timespec& min(fraction_timespec&&, fraction_timespec&&) noexcept = delete; // bugprone-return-const-ref-from-parameter
+    /** Return the minimum of the given fraction_timespec `rvalue` pair (copy-elision) */
+    constexpr fraction_timespec min(fraction_timespec&& lhs, fraction_timespec&& rhs) noexcept {
+        return lhs < rhs ? lhs : rhs;
+    }
+    /** Return the minimum of the given fraction_timespec pair */
+    constexpr fraction_timespec min(const fraction_timespec& lhs, fraction_timespec&& rhs) noexcept {
+        return lhs < rhs ? lhs : rhs;
+    }
+    /** Return the minimum of the given fraction_timespec pair */
+    constexpr fraction_timespec min(fraction_timespec&& lhs, const fraction_timespec& rhs) noexcept {
+        return lhs < rhs ? lhs : rhs;
+    }
 
     /**
      * Returns the value of the sign function applied to tv_sec.

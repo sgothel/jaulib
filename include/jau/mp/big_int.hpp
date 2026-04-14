@@ -1575,26 +1575,37 @@ namespace jau {
     inline mp::BigInt abs(const mp::BigInt& x) noexcept { return x.abs(); }
     inline mp::BigInt pow(mp::BigInt b, const mp::BigInt& e) { return b.pow(e); }
 
+    /** Return the const-reference of the minimum of the given BigInt const-reference pair. */
     inline const mp::BigInt& min(const mp::BigInt& x, const mp::BigInt& y) noexcept {
-        return x < y ? x : y; // NOLINT(bugprone-return-const-ref-from-parameter): Despite `&&` overload, still warning
+        return x < y ? x : y;
     }
-    inline const mp::BigInt& min(mp::BigInt&&, mp::BigInt&&) noexcept = delete; // bugprone-return-const-ref-from-parameter
+    inline mp::BigInt min(mp::BigInt&&, mp::BigInt&&) noexcept = delete;
+    inline mp::BigInt min(const mp::BigInt&, mp::BigInt&&) noexcept = delete;
+    inline mp::BigInt min(mp::BigInt&&, const mp::BigInt&) noexcept = delete;
 
+    /** Return the const-reference of the maximum of the given BigInt const-reference pair. */
     inline const mp::BigInt& max(const mp::BigInt& x, const mp::BigInt& y) noexcept {
-        return x > y ? x : y; // NOLINT(bugprone-return-const-ref-from-parameter): Despite `&&` overload, still warning
+        return x > y ? x : y;
     }
-    inline const mp::BigInt& max(mp::BigInt&&, mp::BigInt&&) noexcept = delete; // bugprone-return-const-ref-from-parameter
+    inline mp::BigInt max(mp::BigInt&&, mp::BigInt&&) noexcept = delete;
+    inline mp::BigInt max(const mp::BigInt&, mp::BigInt&&) noexcept = delete;
+    inline mp::BigInt max(mp::BigInt&&, const mp::BigInt&) noexcept = delete;
 
+    /** Return the const-reference of the clamped-value of the given BigInt const-reference triple. */
     inline const mp::BigInt& clamp(const mp::BigInt& x, const mp::BigInt& min_val, const mp::BigInt& max_val) noexcept {
         return min(max(x, min_val), max_val);
     }
+    inline mp::BigInt clamp(mp::BigInt&&, mp::BigInt&&, mp::BigInt&&) noexcept = delete;
 
+    /** Return the reference of the minimum of the given BigInt reference pair. */
     inline mp::BigInt& min(mp::BigInt& x, mp::BigInt& y) noexcept {
         return x < y ? x : y;
     }
+    /** Return the reference of the maximum of the given BigInt reference pair. */
     inline mp::BigInt& max(mp::BigInt& x, mp::BigInt& y) noexcept {
         return x > y ? x : y;
     }
+    /** Return the reference of the clamped-value of the given BigInt reference triple. */
     inline mp::BigInt& clamp(mp::BigInt& x, mp::BigInt& min_val, mp::BigInt& max_val) noexcept {
         return min(max(x, min_val), max_val);
     }

@@ -52,11 +52,10 @@ namespace jau::util {
     class VersionNumber {
       protected:
         int m_major, m_minor, m_sub;
+        uint16_t m_state;
+        bool m_git_dirty;
         int m_git_commits;
         uint64_t m_git_ssha;
-        bool m_git_dirty;
-
-        uint16_t m_state;
 
         constexpr static const bool DBG_OUT             = false;
 
@@ -69,8 +68,9 @@ namespace jau::util {
                                 int gitCommits, uint64_t gitSSHA, bool gitDirty,
                                 uint16_t _state) noexcept
         : m_major(majorRev), m_minor(minorRev), m_sub(subMinorRev),
-          m_git_commits(gitCommits), m_git_ssha(gitSSHA), m_git_dirty(gitDirty),
-          m_state(_state) { }
+          m_state(_state), m_git_dirty(gitDirty),
+          m_git_commits(gitCommits), m_git_ssha(gitSSHA)
+        { }
 
       public:
         /**
@@ -196,6 +196,40 @@ namespace jau::util {
 
     inline std::ostream& operator<<(std::ostream& out, const VersionNumber& v) noexcept {
         return out << v.toString();
+    }
+
+    /** Return the const-reference of the maximum of the given VersionNumber const-reference pair. */
+    constexpr const VersionNumber& max(const VersionNumber& lhs, const VersionNumber& rhs) noexcept {
+        return lhs > rhs ? lhs : rhs;
+    }
+    /** Return the maximum of the given VersionNumber `rvalue` pair (copy-elision) */
+    constexpr VersionNumber max(VersionNumber&& lhs, VersionNumber&& rhs) noexcept {
+        return lhs > rhs ? lhs : rhs;
+    }
+    /** Return the maximum of the given VersionNumber pair */
+    constexpr VersionNumber max(const VersionNumber& lhs, VersionNumber&& rhs) noexcept {
+        return lhs > rhs ? lhs : rhs;
+    }
+    /** Return the maximum of the given VersionNumber pair */
+    constexpr VersionNumber max(VersionNumber&& lhs, const VersionNumber& rhs) noexcept {
+        return lhs > rhs ? lhs : rhs;
+    }
+
+    /** Return the const-reference of the minimum of the given VersionNumber const-reference pair. */
+    constexpr const VersionNumber& min(const VersionNumber& lhs, const VersionNumber& rhs) noexcept {
+        return lhs < rhs ? lhs : rhs;
+    }
+    /** Return the minimum of the given VersionNumber `rvalue` pair (copy-elision) */
+    constexpr VersionNumber min(VersionNumber&& lhs, VersionNumber&& rhs) noexcept {
+        return lhs < rhs ? lhs : rhs;
+    }
+    /** Return the minimum of the given VersionNumber pair */
+    constexpr VersionNumber min(const VersionNumber& lhs, VersionNumber&& rhs) noexcept {
+        return lhs < rhs ? lhs : rhs;
+    }
+    /** Return the minimum of the given VersionNumber pair */
+    constexpr VersionNumber min(VersionNumber&& lhs, const VersionNumber& rhs) noexcept {
+        return lhs < rhs ? lhs : rhs;
     }
 
     /**

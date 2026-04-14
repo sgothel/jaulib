@@ -297,7 +297,23 @@ TEST_CASE( "Fraction Types Test 00", "[fraction][type]" ) {
     }
 }
 
-TEST_CASE( "Fraction GCD and Modulo Test 00", "[integer][fraction][gcd]" ) {
+TEST_CASE( "Fraction Base Test 00.0", "[integer][fraction]" ) {
+    fraction_i64 f100s( 100_s );
+    fraction_i64 f200s( 200_s );
+    {
+        fraction_i64 fbig  = max(f100s, f200s);
+        fraction_i64 fsmall= min(f100s, f200s);
+        REQUIRE( f200s == fbig );
+        REQUIRE( f100s == fsmall );
+    }
+    {
+        fraction_i64 fbig   = max(fraction_i64( 100_s ), fraction_i64( 200_s ));
+        fraction_i64 fsmall = min(fraction_i64( 100_s ), fraction_i64( 200_s ));
+        REQUIRE( f200s == fbig );
+        REQUIRE( f100s == fsmall );
+    }
+}
+TEST_CASE( "Fraction GCD and Modulo Test 01.0", "[integer][fraction][gcd]" ) {
     test_gcd_fract<int>(0, 0, 0, 0, 1);
     test_gcd_fract<uint32_t>(0, 0, 0, 0, 1);
 

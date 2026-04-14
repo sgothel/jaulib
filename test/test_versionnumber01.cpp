@@ -38,13 +38,34 @@ TEST_CASE( "VersionNumber Test 00", "[version][util]" ) {
     REQUIRE(true == jau::VERSION.hasMinor());
     REQUIRE(true == jau::VERSION.hasSub());
     REQUIRE(true == jau::VERSION.hasString());
+    {
+        VersionNumber vn1(1, 0, 16);
+        VersionNumber vn2(2, 0, 16);
+        REQUIRE( vn1 < vn2 );
+        const VersionNumber &vbig   = max(vn1, vn2);
+        const VersionNumber &vsmall = min(vn1, vn2);
+        REQUIRE( vbig == vn2 );
+        REQUIRE( vsmall == vn1 );
+        VersionNumber vbig2   = max(VersionNumber(1, 0, 16), VersionNumber(2, 0, 16));
+        VersionNumber vsmall2 = min(VersionNumber(1, 0, 16), VersionNumber(2, 0, 16));
+        REQUIRE( vbig2 == vn2 );
+        REQUIRE( vsmall2 == vn1 );
+        VersionNumber vbig3   = max(vn1, VersionNumber(2, 0, 16));
+        VersionNumber vsmall3 = min(vn1, VersionNumber(2, 0, 16));
+        REQUIRE( vbig3 == vn2 );
+        REQUIRE( vsmall3 == vn1 );
+        VersionNumber vbig4   = max(VersionNumber(1, 0, 16), vn2);
+        VersionNumber vsmall4 = min(VersionNumber(1, 0, 16), vn2);
+        REQUIRE( vbig4 == vn2 );
+        REQUIRE( vsmall4 == vn1 );
+    }
 }
 
 TEST_CASE( "VersionNumber Test 01a", "[version][util]" ) {
     std::string vs00 = "1.0.16";
     std::string vs01 = "OpenGL ES GLSL ES 1.0.16";
     std::string vs02 = "1.0.16 OpenGL ES GLSL ES";
-    
+
     VersionNumber vn0(1, 0, 16);
     std::cout << "vn0: " << vn0 << std::endl;
     REQUIRE(true == vn0.hasMajor());
@@ -53,7 +74,7 @@ TEST_CASE( "VersionNumber Test 01a", "[version][util]" ) {
     REQUIRE(false == vn0.hasGitInfo());
 
     VersionNumberString vn(vs00);
-    std::cout << "vn.00: " << vn << std::endl;    
+    std::cout << "vn.00: " << vn << std::endl;
     REQUIRE(true == vn.hasMajor());
     REQUIRE(true == vn.hasMinor());
     REQUIRE(true == vn.hasSub());
@@ -62,7 +83,7 @@ TEST_CASE( "VersionNumber Test 01a", "[version][util]" ) {
     REQUIRE(vn0 == vn);
 
     vn = VersionNumberString(vs01);
-    std::cout << "vn.01: " << vn << std::endl;    
+    std::cout << "vn.01: " << vn << std::endl;
     REQUIRE(true == vn.hasMajor());
     REQUIRE(true == vn.hasMinor());
     REQUIRE(true == vn.hasSub());
@@ -70,12 +91,12 @@ TEST_CASE( "VersionNumber Test 01a", "[version][util]" ) {
     REQUIRE(vn0 == vn);
 
     vn = VersionNumberString(vs02);
-    std::cout << "vn.02: " << vn << std::endl;    
+    std::cout << "vn.02: " << vn << std::endl;
     REQUIRE(true == vn.hasMajor());
     REQUIRE(true == vn.hasMinor());
     REQUIRE(true == vn.hasSub());
     REQUIRE(false == vn.hasGitInfo());
-    REQUIRE(vn0 == vn);    
+    REQUIRE(vn0 == vn);
 }
 
 TEST_CASE( "VersionNumber Test 01b", "[version][util]" ) {
@@ -114,7 +135,7 @@ TEST_CASE( "VersionNumber Test 01b", "[version][util]" ) {
     REQUIRE(true == vn.hasMinor());
     REQUIRE(true == vn.hasSub());
     REQUIRE(false == vn.hasGitInfo());
-    REQUIRE(vn0 == vn);        
+    REQUIRE(vn0 == vn);
 }
 
 TEST_CASE( "VersionNumber Test 02a", "[version][util]" ) {
@@ -146,7 +167,7 @@ TEST_CASE( "VersionNumber Test 02a", "[version][util]" ) {
     REQUIRE(vn0 == vn);
 
     vn = VersionNumberString(vs02);
-    std::cout << "vn.02: " << vn << std::endl;    
+    std::cout << "vn.02: " << vn << std::endl;
     REQUIRE(true == vn.hasMajor());
     REQUIRE(true == vn.hasMinor());
     REQUIRE(true == !vn.hasSub());
@@ -190,7 +211,7 @@ TEST_CASE( "VersionNumber Test 02b", "[version][util]" ) {
     REQUIRE(vn0 == vn);
 }
 
-TEST_CASE( "VersionNumber Test 03a", "[version][util]" ) {    
+TEST_CASE( "VersionNumber Test 03a", "[version][util]" ) {
     const std::string vs00 = "A10.11.12b";
     const std::string vs01 = "Prelim Text 10.Funny11.Weird12 Something is odd";
     const std::string vs02 = "Prelim Text 10.Funny11l1.Weird12 2 Something is odd";
@@ -277,7 +298,7 @@ TEST_CASE( "VersionNumber Test 04a", "[version][util]" ) {
     REQUIRE(true == vn1.hasMinor());
     REQUIRE(true == vn1.hasSub());
     REQUIRE(true == vn1.hasGitInfo());
-    
+
     VersionNumberString vn;
 
     vn = VersionNumberString(vs00);
