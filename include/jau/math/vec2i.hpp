@@ -30,7 +30,7 @@ namespace jau::math {
      */
 
     /**
-     * 2D vector using two value_type components.
+     * 2D vector using two integral value_type components.
      *
      * Component and overall alignment is natural as sizeof(value_type),
      * i.e. sizeof(value_type) == alignof(value_type)
@@ -214,8 +214,14 @@ namespace jau::math {
 
         std::string toString() const noexcept { return std::to_string(x)+", "+std::to_string(y); }
 
+        /// Returns true if both components are zero
         constexpr bool is_zero() const noexcept {
             return jau::is_zero(x) && jau::is_zero(y);
+        }
+
+        /// Returns true if both components are positive or zero
+        constexpr bool is_positive() const noexcept {
+            return jau::is_positive(x) && jau::is_positive(y);
         }
 
         /**
@@ -324,6 +330,27 @@ namespace jau::math {
     static_assert(sizeof(int) == alignof(Vec2i));
     static_assert(sizeof(int)*2 == Vec2i::byte_size);
     static_assert(sizeof(int)*2 == sizeof(Vec2i));
+
+    typedef Vector2I<unsigned int> Vec2u;
+    static_assert(2 == Vec2u::components);
+    static_assert(sizeof(unsigned int) == Vec2u::value_alignment);
+    static_assert(sizeof(unsigned int) == alignof(Vec2u));
+    static_assert(sizeof(unsigned int)*2 == Vec2u::byte_size);
+    static_assert(sizeof(unsigned int)*2 == sizeof(Vec2u));
+
+    typedef Vector2I<int32_t> Vec2i32;
+    static_assert(2 == Vec2i32::components);
+    static_assert(sizeof(int32_t) == Vec2i32::value_alignment);
+    static_assert(sizeof(int32_t) == alignof(Vec2i32));
+    static_assert(sizeof(int32_t)*2 == Vec2i32::byte_size);
+    static_assert(sizeof(int32_t)*2 == sizeof(Vec2i32));
+
+    typedef Vector2I<int32_t> Vec2u32;
+    static_assert(2 == Vec2u32::components);
+    static_assert(sizeof(int32_t) == Vec2u32::value_alignment);
+    static_assert(sizeof(int32_t) == alignof(Vec2u32));
+    static_assert(sizeof(int32_t)*2 == Vec2u32::byte_size);
+    static_assert(sizeof(int32_t)*2 == sizeof(Vec2u32));
 
     /**
      * Point2I alias of Vector2I

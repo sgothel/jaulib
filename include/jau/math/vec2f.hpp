@@ -31,7 +31,7 @@ namespace jau::math {
      */
 
     /**
-     * 2D vector using two value_type components.
+     * 2D vector using two floating point value_type components.
      *
      * Component and overall alignment is natural as sizeof(value_type),
      * i.e. sizeof(value_type) == alignof(value_type)
@@ -225,8 +225,14 @@ namespace jau::math {
 
         std::string toString() const noexcept { return std::to_string(x)+", "+std::to_string(y); }
 
+        /// Returns true if all component's absolute values are less than epsilon
         constexpr bool is_zero() const noexcept {
             return jau::is_zero(x) && jau::is_zero(y);
+        }
+
+        /// Returns true if all components are positive or zero
+        constexpr bool is_positive() const noexcept {
+            return jau::is_positive(x) && jau::is_positive(y);
         }
 
         /**

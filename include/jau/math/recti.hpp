@@ -26,7 +26,7 @@ namespace jau::math {
      */
 
     /**
-     * Rectangle with x, y, width and height value_type components.
+     * Rectangle with x, y, width and height integral value_type components.
      *
      * Component and overall alignment is natural as sizeof(value_type),
      * i.e. sizeof(value_type) == alignof(value_type)
@@ -129,9 +129,14 @@ namespace jau::math {
         constexpr void setPosition(const Vector2I<value_type>& pos) noexcept { m_x = pos.x; m_y = pos.y; }
         constexpr void setSize(const Vector2I<value_type>& size) noexcept { m_width = size.x; m_height = size.y; }
 
-        /** Return true if area is zero. */
+        /// Returns true if area is zero
         constexpr bool is_zero() const noexcept {
             return 0 == m_width || 0 == m_height;
+        }
+
+        /// Returns true if area is positive or zero
+        constexpr bool is_positive() const noexcept {
+            return 0 <= m_width * m_height;
         }
 
         std::string toString() const noexcept
@@ -148,6 +153,12 @@ namespace jau::math {
     static_assert(sizeof(int) == Recti::value_alignment);
     static_assert(sizeof(int) == alignof(Recti));
     static_assert(sizeof(int)*4 == sizeof(Recti));
+
+    typedef RectI<int32_t> Recti32;
+    static_assert(4 == Recti32::components);
+    static_assert(sizeof(int32_t) == Recti32::value_alignment);
+    static_assert(sizeof(int32_t) == alignof(Recti32));
+    static_assert(sizeof(int32_t)*4 == sizeof(Recti32));
 
 /**@}*/
 

@@ -33,7 +33,7 @@ namespace jau::math {
      */
 
     /**
-     * 3D vector using three value_type components.
+     * 3D vector using three floating point value_type components.
      *
      * Component and overall alignment is natural as sizeof(value_type),
      * i.e. sizeof(value_type) == alignof(value_type)
@@ -235,8 +235,14 @@ namespace jau::math {
 
             std::string toString() const noexcept { return std::to_string(x)+", "+std::to_string(y)+", "+std::to_string(z); }
 
+            /// Returns true if all component's absolute values are less than epsilon
             constexpr bool is_zero() const noexcept {
                 return jau::is_zero(x) && jau::is_zero(y) && jau::is_zero(z);
+            }
+
+            /// Returns true if all components are positive or zero
+            constexpr bool is_positive() const noexcept {
+                return jau::is_positive(x) && jau::is_positive(y) && jau::is_positive(z);
             }
 
             /**
