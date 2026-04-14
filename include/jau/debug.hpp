@@ -102,6 +102,9 @@ namespace jau::impl {
 #define jau_DBG_PRINT(fmt, ...) { if( jau::environment::get().debug ) { jau_dbgPrint1(stderr, true, "Debug", fmt __VA_OPT__(,) __VA_ARGS__); } }
 #define jau_DBG_PRINT_LINE(fmt, ...) { if( jau::environment::get().debug ) { jau_dbgPrint1Line(stderr, true, "Debug", fmt __VA_OPT__(,) __VA_ARGS__); } }
 
+/** Use for environment-variable environment::DEBUG conditional debug messages, prefix '[elapsed_time] Debug @ FILE:LINE FUNC: ' */
+#define jau_DBG_PRINT2(...) { if( jau::environment::get().debug ) { jau_dbgPrint2(stderr, "Debug", false /* errno */, false /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); } } // NOLINT(bugprone-lambda-function-name)
+
 /** Use for environment-variable environment::DEBUG_JNI conditional debug messages, prefix '[elapsed_time] Debug: '. */
 #define jau_DBG_JNI_PRINT(...) { if( jau::environment::get().debug_jni ) { jau_dbgPrint1(stderr, true, "Debug", __VA_ARGS__); } }
 
