@@ -359,16 +359,46 @@ namespace jau::math {
         return r;
     }
 
+    /// Returns the component-wise minimum of given vectors
     template <jau::req::packed_floating_point T>
     constexpr Vector4F<T> min(const Vector4F<T>& lhs, const Vector4F<T>& rhs) noexcept {
         return Vector4F<T>(std::min(lhs.x, rhs.x), std::min(lhs.y, rhs.y), std::min(lhs.z, rhs.z), std::min(lhs.w, rhs.w));
     }
+    /// Returns the component-wise minimum of given vector and scalar
+    template<jau::req::packed_floating_point T>
+    constexpr Vector4F<T> min(const Vector4F<T>& lhs, const T rhs) noexcept {
+        return Vector4F<T>(std::min(lhs.x, rhs), std::min(lhs.y, rhs), std::min(lhs.z, rhs), std::min(lhs.w, rhs));
+    }
 
+    /// Returns the component-wise maximum of given vectors
     template <jau::req::packed_floating_point T>
     constexpr Vector4F<T> max(const Vector4F<T>& lhs, const Vector4F<T>& rhs) noexcept {
         return Vector4F<T>(std::max(lhs.x, rhs.x), std::max(lhs.y, rhs.y), std::max(lhs.z, rhs.z), std::max(lhs.w, rhs.w));
     }
+    /// Returns the component-wise maximum of given vector and scalar
+    template<jau::req::packed_floating_point T>
+    constexpr Vector4F<T> max(const Vector4F<T>& lhs, const T rhs) noexcept {
+        return Vector4F<T>(std::max(lhs.x, rhs), std::max(lhs.y, rhs), std::max(lhs.z, rhs), std::max(lhs.w, rhs));
+    }
 
+    /// Returns the component-wise clamped-value of given value-vector to the min_val and max_val vector
+    template<jau::req::packed_floating_point T>
+    constexpr Vector4F<T> clamp(const Vector4F<T>& v, const Vector4F<T>& min_val, const Vector4F<T>& max_val) noexcept {
+        return Vector4F<T>(std::min(std::max(v.x, min_val.x), max_val.x),
+                           std::min(std::max(v.y, min_val.y), max_val.y),
+                           std::min(std::max(v.z, min_val.z), max_val.z),
+                           std::min(std::max(v.w, min_val.w), max_val.w));
+    }
+    /// Returns the component-wise clamped-value of given value-vector to the min_val and max_val scalar
+    template<jau::req::packed_floating_point T>
+    constexpr Vector4F<T> clamp(const Vector4F<T>& v, const T min_val, const T max_val) noexcept {
+        return Vector4F<T>(std::min(std::max(v.x, min_val), max_val),
+                           std::min(std::max(v.y, min_val), max_val),
+                           std::min(std::max(v.z, min_val), max_val),
+                           std::min(std::max(v.w, min_val), max_val));
+    }
+
+    /// Returns the component-wise absolute values of given vector
     template <jau::req::packed_floating_point T>
     constexpr Vector4F<T> abs(const Vector4F<T>& lhs) noexcept {
         return Vector4F<T>(std::abs(lhs.x), std::abs(lhs.y), std::abs(lhs.z), std::abs(lhs.w));

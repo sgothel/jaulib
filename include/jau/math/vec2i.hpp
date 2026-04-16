@@ -339,16 +339,42 @@ namespace jau::math {
         return r;
     }
 
+    /// Returns the component-wise minimum of given vectors
     template<jau::req::packed_integral T>
     constexpr Vector2I<T> min(const Vector2I<T>& lhs, const Vector2I<T>& rhs) noexcept {
         return Vector2I<T>(std::min(lhs.x, rhs.x), std::min(lhs.y, rhs.y));
     }
+    /// Returns the component-wise minimum of given vector and scalar
+    template<jau::req::packed_integral T>
+    constexpr Vector2I<T> min(const Vector2I<T>& lhs, const T rhs) noexcept {
+        return Vector2I<T>(std::min(lhs.x, rhs), std::min(lhs.y, rhs));
+    }
 
+    /// Returns the component-wise maximum of given vectors
     template<jau::req::packed_integral T>
     constexpr Vector2I<T> max(const Vector2I<T>& lhs, const Vector2I<T>& rhs) noexcept {
         return Vector2I<T>(std::max(lhs.x, rhs.x), std::max(lhs.y, rhs.y));
     }
+    /// Returns the component-wise maximum of given vector and scalar
+    template<jau::req::packed_integral T>
+    constexpr Vector2I<T> max(const Vector2I<T>& lhs, const T rhs) noexcept {
+        return Vector2I<T>(std::max(lhs.x, rhs), std::max(lhs.y, rhs));
+    }
 
+    /// Returns the component-wise clamped-value of given value-vector to the min_val and max_val vector
+    template<jau::req::packed_integral T>
+    constexpr Vector2I<T> clamp(const Vector2I<T>& v, const Vector2I<T>& min_val, const Vector2I<T>& max_val) noexcept {
+        return Vector2I<T>(std::min(std::max(v.x, min_val.x), max_val.x),
+                           std::min(std::max(v.y, min_val.y), max_val.y));
+    }
+    /// Returns the component-wise clamped-value of given value-vector to the min_val and max_val scalar
+    template<jau::req::packed_integral T>
+    constexpr Vector2I<T> clamp(const Vector2I<T>& v, const T min_val, const T max_val) noexcept {
+        return Vector2I<T>(std::min(std::max(v.x, min_val), max_val),
+                           std::min(std::max(v.y, min_val), max_val));
+    }
+
+    /// Returns the component-wise absolute values of given vector
     template<jau::req::packed_integral T>
     constexpr Vector2I<T> abs(const Vector2I<T>& lhs) noexcept {
         return Vector2I<T>(std::abs(lhs.x), std::abs(lhs.y));

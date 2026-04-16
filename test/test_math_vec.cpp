@@ -110,6 +110,23 @@ static void test_vec(std::ostream& out, const char* prefix) {
         out << "Test.1e: " << a << ", components = " << T::components << std::endl;
         test_vec_elem12<T, U>(a);
     }
+    {
+        T a = { U(1), U(4) }; // remainder components is zero
+        T b = { U(3), U(2) }; // remainder components is zero
+        T Max = { U(3), U(4) }; // remainder components is zero
+        T Min = { U(1), U(2) }; // remainder components is zero
+
+        T max1 = max(a, b);
+        T min1 = min(a, b);
+        T clamp1 = clamp(b, Min, Max);
+        T clamp2 = clamp(a, U(2), U(3));
+        out << "Test.1f: " << a << ", b = " << b << ", max " << max1 << ", min " << min1 << ", clamp1 " << clamp1 << ", clamp2 " << clamp2 << std::endl;
+        REQUIRE(max1 == Max);
+        REQUIRE(min1 == Min);
+        REQUIRE(clamp1 == b);
+        REQUIRE(clamp2.x == U(2));
+        REQUIRE(clamp2.y == U(3));
+    }
 }
 
 template<class T>
