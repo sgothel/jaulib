@@ -83,8 +83,14 @@ namespace jau::math {
             constexpr Vector4F(const_iterator v) noexcept
             : x(v[0]), y(v[1]), z(v[2]), w(v[3]) {}
 
+            template<typename container_type>
+            requires jau::req::contiguous_container<container_type> &&
+                     std::convertible_to<typename container_type::value_type, value_type>
+            constexpr Vector4F(const container_type &c) noexcept
+            { set(c.begin(), c.end()); }
+
             constexpr Vector4F(std::initializer_list<value_type> v) noexcept
-            : x(v[0]), y(v[1]), z(v[2]), w(v[3]) {}
+            { set(v.begin(), v.end()); }
 
             constexpr Vector4F(const Vector4F& o) noexcept = default;
             constexpr Vector4F(Vector4F&& o) noexcept = default;
@@ -141,6 +147,28 @@ namespace jau::math {
             /** this = xyzw, returns this. */
             constexpr Vector4F& set(const_iterator xyzw) noexcept
             { x=xyzw[0]; y=xyzw[1]; z=xyzw[2]; z=xyzw[3]; return *this; }
+
+            /** this = { x, y, z }, returns this. */
+            constexpr Vector4F& set(std::initializer_list<value_type> v) noexcept {
+                return set(v.begin(), v.end());
+            }
+            /** this = { c.begin() ... c.end() }, returns this. */
+            template<typename container_type>
+            requires jau::req::contiguous_container<container_type> &&
+                     std::convertible_to<typename container_type::value_type, value_type>
+            constexpr Vector4F& set(const container_type &c) noexcept
+            { return set(c.begin(), c.end()); }
+            /** this = { *begin ... *end }, returns this. */
+            constexpr Vector4F& set(const_iterator begin, const_iterator end) noexcept {
+                pointer d=&x; const_pointer d_end=d+components;
+                while (d!=d_end && begin!=end) {
+                    *d++ = *begin++;
+                }
+                while (d!=d_end) {
+                    *d++ = 0; // zero remainder
+                }
+                return *this;
+            }
 
             /** this = this + {d.x, d.y, d.z, d.w}, component wise. Returns this. */
             constexpr Vector4F& add(const Vector4F& d) noexcept

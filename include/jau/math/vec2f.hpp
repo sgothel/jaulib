@@ -15,6 +15,7 @@
 #include <cmath>
 #include <cstdarg>
 #include <cassert>
+#include <initializer_list>
 #include <limits>
 #include <string>
 #include <algorithm>
@@ -75,6 +76,18 @@ namespace jau::math {
         constexpr Vector2F(const value_type x_, const value_type y_) noexcept
         : x(x_), y(y_) {}
 
+        constexpr Vector2F(const_iterator v) noexcept
+        : x(v[0]), y(v[1]) {}
+
+        template<typename container_type>
+        requires jau::req::contiguous_container<container_type> &&
+                 std::convertible_to<typename container_type::value_type, value_type>
+        constexpr Vector2F(const container_type &c) noexcept
+        { set(c.begin(), c.end()); }
+
+        constexpr Vector2F(std::initializer_list<value_type> v) noexcept
+        { set(v.begin(), v.end()); }
+
         constexpr Vector2F(const Vector2F& o) noexcept = default;
         constexpr Vector2F(Vector2F&& o) noexcept = default;
         constexpr Vector2F& operator=(const Vector2F&) noexcept = default;
@@ -124,6 +137,28 @@ namespace jau::math {
         /** this = xy, returns this. */
         constexpr Vector2F& set(const_iterator xy) noexcept
         { x=xy[0]; y=xy[1]; return *this; }
+
+        /** this = { x, y, z }, returns this. */
+        constexpr Vector2F& set(std::initializer_list<value_type> v) noexcept {
+            return set(v.begin(), v.end());
+        }
+        /** this = { c.begin() ... c.end() }, returns this. */
+        template<typename container_type>
+        requires jau::req::contiguous_container<container_type> &&
+                 std::convertible_to<typename container_type::value_type, value_type>
+        constexpr Vector2F& set(const container_type &c) noexcept
+        { return set(c.begin(), c.end()); }
+        /** this = { *begin ... *end }, returns this. */
+        constexpr Vector2F& set(const_iterator begin, const_iterator end) noexcept {
+            pointer d=&x; const_pointer d_end=d+components;
+            while (d!=d_end && begin!=end) {
+                *d++ = *begin++;
+            }
+            while (d!=d_end) {
+                *d++ = 0; // zero remainder
+            }
+            return *this;
+        }
 
         /** this = this + {d.x, d.y}, component wise. Returns this. */
         constexpr Vector2F& add(const Vector2F& d) noexcept

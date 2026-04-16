@@ -21,9 +21,7 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include <thread>
 #include <cassert>
-#include <cinttypes>
 #include <cstring>
 
 #include <jau/test/catch2_ext.hpp>
@@ -38,20 +36,80 @@ using namespace jau;
 using namespace jau::math;
 
 template<class T, class U>
+static void test_vec_elem12(const T &a) {
+    REQUIRE( a[0] == U(1) );
+    REQUIRE( a.x == U(1) );
+    REQUIRE( a[1] == U(2) );
+    REQUIRE( a.y == U(2) );
+    for(size_t i=2; i<T::components; ++i) {
+        REQUIRE( a[i] == U(0) );
+    }
+}
+
+template<class T, class U>
 static void test_vec(std::ostream& out, const char* prefix) {
-    out << "Test: " << std::string(prefix) << ", sizeof(U) = " << sizeof(U) << std::endl;
-    T a( U(1) ), b( U(2) );
-    out << "- a: " << a << ", len = " << std::to_string(a.length()) << ", len(normal(a)) = " << std::to_string(T(a).normalize().length()) << std::endl;
-    out << "- b: " << b << ", len = " << std::to_string(b.length()) << ", len(normal(b)) = " << std::to_string(T(b).normalize().length()) << std::endl;
+    {
+        out << "Test.0: " << std::string(prefix) << ", sizeof(U) = " << sizeof(U) << std::endl;
+        T a( U(1) ), b( U(2) );
+        out << "- a: " << a << ", len = " << std::to_string(a.length()) << ", len(normal(a)) = " << std::to_string(T(a).normalize().length()) << std::endl;
+        out << "- b: " << b << ", len = " << std::to_string(b.length()) << ", len(normal(b)) = " << std::to_string(T(b).normalize().length()) << std::endl;
 
-    REQUIRE( T(U(2)) == a * U(2) );
-    REQUIRE( T(U(1)) == b / U(2) );
+        REQUIRE( T(U(2)) == a * U(2) );
+        REQUIRE( T(U(1)) == b / U(2) );
 
-    a.normalize();
-    b.normalize();
+        a.normalize();
+        b.normalize();
 
-    REQUIRE( jau::equals(U(1), a.length() ) );
-    REQUIRE( jau::equals(U(1), b.length() ) );
+        REQUIRE( jau::equals(U(1), a.length() ) );
+        REQUIRE( jau::equals(U(1), b.length() ) );
+    }
+    {
+        // initializer list
+        T a = { U(1) }; // remainder components is zero
+        out << "Test.1a: " << a << ", components = " << T::components << std::endl;
+        REQUIRE( a[0] == U(1) );
+        REQUIRE( a.x == U(1) );
+        REQUIRE( a[1] == U(0) );
+        REQUIRE( a.y == U(0) );
+        for(size_t i=2; i<T::components; ++i) {
+            REQUIRE( a[i] == U(0) );
+        }
+    }
+    {
+        // initializer list
+        T a = { U(1), U(2) }; // remainder components is zero
+        out << "Test.1b: " << a << ", components = " << T::components << std::endl;
+        test_vec_elem12<T, U>(a);
+    }
+    {
+        // initializer list
+        std::array<U, T::components> c = { U(1), U(2) }; // remainder components is zero
+        T a = c; // remainder components is zero
+        out << "Test.1c1: " << a << ", components = " << T::components << std::endl;
+        test_vec_elem12<T, U>(a);
+    }
+    {
+        // initializer list
+        std::array<U, T::components> c = { U(1), U(2) }; // remainder components is zero
+        T a(c); // remainder components is zero
+        out << "Test.1c2: " << a << ", components = " << T::components << std::endl;
+        test_vec_elem12<T, U>(a);
+    }
+    {
+        // initializer list
+        T a;
+        a.set({ U(1), U(2) }); // remainder components is zero
+        out << "Test.1d: " << a << ", components = " << T::components << std::endl;
+        test_vec_elem12<T, U>(a);
+    }
+    {
+        // initializer list
+        std::array<U, T::components> c = { U(1), U(2) }; // remainder components is zero
+        T a;
+        a.set(c.begin(), c.end()); // remainder components is zero
+        out << "Test.1e: " << a << ", components = " << T::components << std::endl;
+        test_vec_elem12<T, U>(a);
+    }
 }
 
 template<class T>

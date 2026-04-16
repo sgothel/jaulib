@@ -82,8 +82,14 @@ namespace jau::math {
             constexpr Vector3F(const_iterator v) noexcept
             : x(v[0]), y(v[1]), z(v[2]) {}
 
+            template<typename container_type>
+            requires jau::req::contiguous_container<container_type> &&
+                     std::convertible_to<typename container_type::value_type, value_type>
+            constexpr Vector3F(const container_type &c) noexcept
+            { set(c.begin(), c.end()); }
+
             constexpr Vector3F(std::initializer_list<value_type> v) noexcept
-            : x(v[0]), y(v[1]), z(v[2]) {}
+            { set(v.begin(), v.end()); }
 
             constexpr Vector3F(const Vector3F& o) noexcept = default;
             constexpr Vector3F(Vector3F&& o) noexcept = default;
@@ -148,6 +154,28 @@ namespace jau::math {
             /** this = xyz, returns this. */
             constexpr Vector3F& set(const_iterator xyz) noexcept
             { x=xyz[0]; y=xyz[1]; z=xyz[2]; return *this; }
+
+            /** this = { x, y, z }, returns this. */
+            constexpr Vector3F& set(std::initializer_list<value_type> v) noexcept {
+                return set(v.begin(), v.end());
+            }
+            /** this = { c.begin() ... c.end() }, returns this. */
+            template<typename container_type>
+            requires jau::req::contiguous_container<container_type> &&
+                     std::convertible_to<typename container_type::value_type, value_type>
+            constexpr Vector3F& set(const container_type &c) noexcept
+            { return set(c.begin(), c.end()); }
+            /** this = { *begin ... *end }, returns this. */
+            constexpr Vector3F& set(const_iterator begin, const_iterator end) noexcept {
+                pointer d=&x; const_pointer d_end=d+components;
+                while (d!=d_end && begin!=end) {
+                    *d++ = *begin++;
+                }
+                while (d!=d_end) {
+                    *d++ = 0; // zero remainder
+                }
+                return *this;
+            }
 
             /** this = this + {d.x, d.y, d.z}, component wise. Returns this. */
             constexpr Vector3F& add(const Vector3F& d) noexcept
