@@ -32,47 +32,47 @@
 using namespace jau;
 using namespace jau::math;
 
-static const float mI_0[] = {    1,    0,    0,    0,
-                                 0,    1,    0,    0,
-                                 0,    0,    1,    0,
-                                 0,    0,    0,    1 };
-static const Mat4f mI(mI_0);
+static const Mat4f mI = {    1,    0,    0,    0,
+                             0,    1,    0,    0,
+                             0,    0,    1,    0,
+                             0,    0,    0,    1 };
 
 static const float m1_0[] = {    1,    3,    4,    0,
                                  6,    7,    8,    5,
                                 98,    7,    6,    9,
                                 54,    3,    2,    5 };
-static const Mat4f m1(m1_0);
 
-static const float m1T_0[] = {   1,    6,   98,   54,
-                                 3,    7,    7,    3,
-                                 4,    8,    6,    2,
-                                 0,    5,    9,    5 };
-static const Mat4f m1T(m1T_0);
+static const Mat4f m1     = {    1,    3,    4,    0,
+                                 6,    7,    8,    5,
+                                98,    7,    6,    9,
+                                54,    3,    2,    5 };
 
-static const float m2_0[] = {    1,    6,   98,   54,
-                                 3,    7,    7,    3,
-                                 4,    8,    6,    2,
-                                 0,    5,    9,    5 };
-static const Mat4f m2(m2_0);
+static const Mat4f m1T = {   1,    6,   98,   54,
+                             3,    7,    7,    3,
+                             4,    8,    6,    2,
+                             0,    5,    9,    5 };
 
-static const float m2xm1_0[] = {   26,   59,  143,   71,
-                                   59,  174,  730,  386,
-                                  143,  730, 9770, 5370,
-                                   71,  386, 5370, 2954 };
-static const Mat4f m2xm1(m2xm1_0);
+static const Mat4f m2 = {    1,    6,   98,   54,
+                             3,    7,    7,    3,
+                             4,    8,    6,    2,
+                             0,    5,    9,    5 };
 
-static const float m1xm2_0[] = {12557,  893,  748, 1182,
-                                  893,  116,  116,  113,
-                                  748,  116,  120,  104,
-                                 1182,  113,  104,  131 };
-static const Mat4f m1xm2(m1xm2_0);
+static const Mat4f m2xm1 = {   26,   59,  143,   71,
+                               59,  174,  730,  386,
+                              143,  730, 9770, 5370,
+                               71,  386, 5370, 2954 };
+
+static const Mat4f m1xm2 = {12557,  893,  748, 1182,
+                              893,  116,  116,  113,
+                              748,  116,  120,  104,
+                             1182,  113,  104,  131 };
 
 TEST_CASE( "Test 00 Load Get", "[mat4f][linear_algebra][math]" ) {
     {
         Mat4f m;
         REQUIRE(mI == m);
     }
+    COMPARE_NARRAYS_EPS(m1_0, m1.data(), 16, EPSILON<float>);
     {
         float f16[16];
         m1.get(f16);

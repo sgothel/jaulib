@@ -192,17 +192,15 @@ TEST_CASE( "Test 04", "[mat4f][linear_algebra][math]" ) {
 }
 
 TEST_CASE( "Test 05 Perf01", "[mat4f][linear_algebra][math]" ) {
-    float p1[] = { 2.3464675f, 0,          0,        0,
+    Mat4f p1_m = { 2.3464675f, 0,          0,        0,
                    0,          2.4142134f, 0,        0,
                    0,          0,         -1.0002f, -1,
                    0,          0,        -20.002f,   0 };
-    Mat4f p1_m(p1);
 
-    float p2[] = { 26,   59,  143,   71,
+    Mat4f p2_m = { 26,   59,  143,   71,
                    59,  174,  730,  386,
                   143,  730, 9770, 5370,
                    71,  386, 5370, 2954 };
-    Mat4f p2_m(p2);
 
     Mat4f res_m;
 

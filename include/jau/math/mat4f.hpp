@@ -47,14 +47,15 @@ namespace jau::math {
 
 /**
  * Basic 4x4 value_type matrix implementation using fields for intensive use-cases (host operations).
- * <p>
+ *
+ * Memory layout is in column-major order
+ * and class complies with jau::req::contiguous_container, i.e. `C++ Named Requirement ContiguousContainer` requirements.
+ *
  * Implementation covers {@link FloatUtil} matrix functionality, exposed in an object oriented manner.
- * </p>
- * <p>
+ *
  * Unlike {@link com.jogamp.math.util.PMVmat4f PMVmat4f}, this class only represents one single matrix.
- * </p>
- * <p>
- * For array operations the layout is expected in column-major order
+ *
+ * For array operations the layout is in column-major order
  * matching OpenGL's implementation, illustration:
  * <pre>
     Row-Major                       Column-Major (OpenGL):
@@ -78,22 +79,14 @@ namespace jau::math {
          m23 = tz;                  m23 = tz;
 
  * </pre>
- * </p>
- * <p>
  * <ul>
  *   <li><a href="http://web.archive.org/web/20041029003853/http://www.j3d.org/matrix_faq/matrfaq_latest.html">Matrix-FAQ</a></li>
  *   <li><a href="https://en.wikipedia.org/wiki/Matrix_%28mathematics%29">Wikipedia-Matrix</a></li>
  *   <li><a href="http://www.euclideanspace.com/maths/algebra/matrix/index.htm">euclideanspace.com-Matrix</a></li>
  * </ul>
- * </p>
- * <p>
+ *
  * Implementation utilizes unrolling of small vertices and matrices wherever possible
- * while trying to access memory in a linear fashion for performance reasons, see:
- * <ul>
- *   <li><a href="https://lessthanoptimal.github.io/Java-Matrix-Benchmark/">java-matrix-benchmark</a></li>
- *   <li><a href="https://github.com/lessthanoptimal/ejml">EJML Efficient Java Matrix Library</a></li>
- * </ul>
- * </p>
+ * while trying to access memory in a linear fashion for performance reasons.
  */
 
 template <jau::req::packed_floating_point Value_type>
@@ -106,6 +99,22 @@ class alignas(Value_type) Matrix4 {
     typedef const value_type&        const_reference;
     typedef value_type*              iterator;
     typedef const value_type*        const_iterator;
+
+    typedef std::size_t              size_type;
+    typedef std::ptrdiff_t           difference_type;
+
+    /** value alignment is sizeof(value_type) */
+    constexpr static int value_alignment = sizeof(value_type);
+
+    /** Number of value_type components  */
+    constexpr static const size_type columns = 4;
+    /** Number of value_type components  */
+    constexpr static const size_type rows = 4;
+    /** Number of value_type components = columns * rows */
+    constexpr static const size_type components = columns * rows;
+
+    /** Size in bytes with value_alignment */
+    constexpr static const size_type byte_size = components * sizeof(value_type);
 
     typedef Vector3F<value_type> Vec3;
     typedef Vector4F<value_type> Vec4;
@@ -151,21 +160,18 @@ class alignas(Value_type) Matrix4 {
      * Creates a new matrix based on given value_type[4*4] column major order.
      * @param m 4x4 matrix in column-major order
      */
-    constexpr Matrix4(const_iterator m) noexcept
-    : m00(*m),     m10(*(++m)), m20(*(++m)), m30(*(++m)), // column 0
-      m01(*(++m)), m11(*(++m)), m21(*(++m)), m31(*(++m)), // column 1
-      m02(*(++m)), m12(*(++m)), m22(*(++m)), m32(*(++m)), // column 2
-      m03(*(++m)), m13(*(++m)), m23(*(++m)), m33(*(++m))  // column 3
-    {}
+    constexpr Matrix4(const_iterator m) noexcept {
+        set(m, m+components);
+    }
 
     /**
      * Creates a new matrix based on given value_type initializer list in column major order.
-     * @param m source initializer list value_type data to be copied into this new instance, implied size must be >= 16
+     *
+     * Fills with zero if given data is insufficient
+     * @param m source initializer list value_type data to be copied into this new instance
      */
-    constexpr Matrix4(std::initializer_list<value_type> m) noexcept
-    : Matrix4( m.begin() )
-    {
-        assert(m.size() >= 16 );
+    constexpr Matrix4(std::initializer_list<value_type> m) noexcept {
+        set(m.begin(), m.end());
     }
 
     /**
@@ -209,21 +215,55 @@ class alignas(Value_type) Matrix4 {
     //
 
     /**
-     * Returns writable reference to the {@code i}th component of this column-major order matrix, 0 <= i < 16 w/o boundary check
+     * Returns writable reference to the {@code i}th component of this column-major order matrix, 0 <= i < components w/o boundary check
      */
-    constexpr reference operator[](size_t i) noexcept {
-        assert( i < 16 );
+    constexpr reference operator[](size_type i) noexcept {
+        assert( i < components );
         return (&m00)[i];
     }
 
-    /** Sets the {@code i}th component of this column-major order matrix with value_type {@code v}, 0 <= i < 16 w/o boundary check*/
+    /** Sets the {@code i}th component of this column-major order matrix with value_type {@code v}, 0 <= i < components w/o boundary check*/
     constexpr void set(const jau::nsize_t i, const value_type v) noexcept {
-        assert( i < 16 );
+        assert( i < components );
         (&m00)[i] = v;
     }
 
+    /// Sets this matrix by values `v` in column major order, fills with zero if insufficient and returns this.
+    constexpr Matrix4& set(std::initializer_list<value_type> v) noexcept {
+        return set(v.begin(), v.end());
+    }
+    /// Sets this matrix by values of `c` in column major order, fills with zero if insufficient and returns this.
+    template<typename container_type>
+    requires jau::req::contiguous_container<container_type> &&
+             std::convertible_to<typename container_type::value_type, value_type>
+    constexpr Matrix4& set(const container_type &c) noexcept
+    { return set(c.begin(), c.end()); }
+    /// Sets this matrix by values [begin .. end) in column major order, fills with zero if insufficient and returns this.
+    constexpr Matrix4& set(const_iterator begin, const_iterator end) noexcept {
+        pointer d=&m00; const_pointer d_end=d+components;
+        while (d!=d_end && begin!=end) {
+            *d++ = *begin++;
+        }
+        while (d!=d_end) {
+            *d++ = 0; // zero remainder
+        }
+        return *this;
+    }
+
+    explicit operator const_pointer() const noexcept { return &m00; }
     explicit operator pointer() noexcept { return &m00; }
+
+    constexpr const_iterator cbegin() const noexcept { return &m00; }
     constexpr iterator begin() noexcept { return &m00; }
+
+    constexpr const_iterator cend() const noexcept { return cbegin() + components; }
+    constexpr iterator end() noexcept { return begin() + components; }
+
+    constexpr pointer data() noexcept { return &m00; }
+    constexpr const_pointer data() const noexcept { return &m00; }
+
+    /// Returns the number of components
+    constexpr size_type size() const noexcept { return components; }
 
     /**
      * Set this matrix to identity.
@@ -247,7 +287,7 @@ class alignas(Value_type) Matrix4 {
 
     /**
      * Load the values of the given matrix {@code src} to this matrix w/o boundary check.
-     * @param src 4x4 matrix value_type[16] in column-major order
+     * @param src 4x4 matrix value_type[components] in column-major order
      * @return this matrix for chaining
      */
     constexpr Matrix4& load(const_iterator src) noexcept {
@@ -284,21 +324,18 @@ class alignas(Value_type) Matrix4 {
     //
 
     /**
-     * Returns read-only {@code i}th component of the given column-major order matrix, 0 <= i < 16 w/o boundary check
+     * Returns read-only {@code i}th component of the given column-major order matrix, 0 <= i < components w/o boundary check
      */
-    constexpr value_type operator[](size_t i) const noexcept {
-        assert( i < 16 );
+    constexpr value_type operator[](size_type i) const noexcept {
+        assert( i < components );
         return (&m00)[i];
     }
 
-    /** Returns the {@code i}th component of the given column-major order matrix, 0 <= i < 16, w/o boundary check */
+    /** Returns the {@code i}th component of the given column-major order matrix, 0 <= i < components, w/o boundary check */
     constexpr value_type get(const jau::nsize_t i) const noexcept {
-        assert( i < 16 );
+        assert( i < components );
         return (&m00)[i];
     }
-
-    explicit operator const_pointer() const noexcept { return &m00; }
-    constexpr const_iterator cbegin() const noexcept { return &m00; }
 
     /**
      * Get the named column of the given column-major matrix to v_out w/o boundary check.
@@ -368,7 +405,7 @@ class alignas(Value_type) Matrix4 {
     /**
      * Get the named row of the given column-major matrix to v_out w/o boundary check.
      * @param row named row to copy
-     * @param v_out the row-vector assert( i < 16 )e
+     * @param v_out the row-vector assert( i < components )e
      * @return given result vector <i>v_out</i> for chaining
      */
     constexpr Vec3& getRow(const jau::nsize_t row, Vec3& v_out) const noexcept {
@@ -380,9 +417,9 @@ class alignas(Value_type) Matrix4 {
     }
 
     /**
-     * Get this matrix into the given value_type[16] array in column major order w/o boundary check.
+     * Get this matrix into the given value_type[components] array in column major order w/o boundary check.
      *
-     * @param dst value_type[16] array storage in column major order
+     * @param dst value_type[components] array storage in column major order
      * @return {@code dst} for chaining
      */
     constexpr iterator get(iterator dst) const noexcept {
@@ -413,8 +450,8 @@ class alignas(Value_type) Matrix4 {
      * @param dst_off offset for matrix {@code dst}
      * @return {@code dst} for chaining
      */
-    constexpr std::vector<value_type>& get(std::vector<value_type>& dst, size_t dst_off) const noexcept {
-        assert( dst.size() >= dst_off+16 && dst_off <= std::numeric_limits<size_t>::max() - 15 );
+    constexpr std::vector<value_type>& get(std::vector<value_type>& dst, size_type dst_off) const noexcept {
+        assert( dst.size() >= dst_off+components && dst_off <= std::numeric_limits<size_type>::max() - 15 );
         get( &dst[dst_off++] );
         return dst;
     }
@@ -1931,7 +1968,7 @@ class alignas(Value_type) Matrix4 {
      */
     std::string toString(const std::string& rowPrefix, const std::string_view f) const noexcept {
         std::string sb;
-        value_type tmp[16];
+        value_type tmp[components];
         get(tmp);
         return jau::mat_to_string(sb, rowPrefix, f, tmp, 4, 4, false /* rowMajorOrder */); // creates a copy-out!
     }
@@ -1967,8 +2004,9 @@ std::ostream& operator<<(std::ostream& out, const Matrix4<T>& v) noexcept {
 
 typedef Matrix4<float> Mat4f;
 
+static_assert(true == jau::req::contiguous_container<Mat4f>);
 static_assert(alignof(float) == alignof(Mat4f));
-static_assert(sizeof(float)*16 == sizeof(Mat4f));
+static_assert(sizeof(float)*Mat4f::components == sizeof(Mat4f));
 
 /**@}*/
 

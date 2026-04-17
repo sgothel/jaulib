@@ -32,17 +32,15 @@
 using namespace jau;
 using namespace jau::math;
 
-static const float m1_0[] = {    1,    3,    4,    0,
-                                 6,    7,    8,    5,
-                                98,    7,    6,    9,
-                                54,    3,    2,    5 };
-static const Mat4f m1(m1_0);
+static const Mat4f m1 = {    1,    3,    4,    0,
+                             6,    7,    8,    5,
+                            98,    7,    6,    9,
+                            54,    3,    2,    5 };
 
-static const float m2_0[] = {    1,    6,   98,   54,
-                                 3,    7,    7,    3,
-                                 4,    8,    6,    2,
-                                 0,    5,    9,    5 };
-static const Mat4f m2(m2_0);
+static const Mat4f m2 = {    1,    6,   98,   54,
+                             3,    7,    7,    3,
+                             4,    8,    6,    2,
+                             0,    5,    9,    5 };
 
 TEST_CASE( "Test 05 Perf01", "[mat4f][linear_algebra][math]" ) {
     Mat4f res_m;
