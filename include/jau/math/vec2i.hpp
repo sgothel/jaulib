@@ -21,6 +21,7 @@
 #include <iostream>
 
 #include <jau/float_math.hpp>
+#include <jau/math/vecbase.hpp>
 #include <jau/type_concepts.hpp>
 
 namespace jau::math {
@@ -33,82 +34,52 @@ namespace jau::math {
     /**
      * 2D vector using two integral value_type components.
      *
+     * Class complies with jau::req::contiguous_container, i.e. `C++ Named Requirement ContiguousContainer` requirements.
+     *
      * Component and overall alignment is natural as sizeof(value_type),
      * i.e. sizeof(value_type) == alignof(value_type)
      */
     template<jau::req::packed_integral Value_type>
-    class alignas(sizeof(Value_type)) Vector2I {
+    class alignas(sizeof(Value_type)) Vector2I : public VectorNT<Value_type, Vector2I<Value_type>, 2>
+    {
       public:
-        typedef Value_type                  value_type;
-        typedef value_type*                 pointer;
-        typedef const value_type*           const_pointer;
-        typedef value_type&                 reference;
-        typedef const value_type&           const_reference;
-        typedef value_type*                 iterator;
-        typedef const value_type*           const_iterator;
-
-        /** value alignment is sizeof(value_type) */
-        constexpr static int value_alignment = sizeof(value_type);
-
-        /** Number of value_type components  */
-        constexpr static const size_t components = 2;
-
-        /** Size in bytes with value_alignment */
-        constexpr static const size_t byte_size = components * sizeof(value_type);
+        using VectorBase = VectorNT<Value_type, Vector2I<Value_type>, 2>;
+        using typename VectorBase::value_type;
+        using typename VectorBase::iterator;
+        using typename VectorBase::const_iterator;
+        using VectorBase::components;
+        using VectorBase::zero;
+        using VectorBase::one;
+        using VectorBase::x;
+        using VectorBase::set;
 
         typedef typename jau::float_bytes<sizeof(value_type)>::type float_type;
 
-        constexpr static const value_type zero = value_type(0);
-        constexpr static const value_type one  = value_type(1);
-
-        value_type x;
         value_type y;
 
         constexpr Vector2I() noexcept
-        : x(zero), y(zero) {}
+        : VectorBase(zero), y(zero) {}
 
         constexpr Vector2I(const value_type v) noexcept
-        : x(v), y(v) {}
+        : VectorBase(v), y(v) {}
 
         constexpr Vector2I(const value_type x_, const value_type y_) noexcept
-        : x(x_), y(y_) {}
+        : VectorBase(x_), y(y_) {}
 
         constexpr Vector2I(const_iterator v) noexcept
-        : x(v[0]), y(v[1]) {}
+        : VectorBase(v) {}
 
         template<typename container_type>
         requires jau::req::contiguous_container<container_type> &&
                  std::convertible_to<typename container_type::value_type, value_type>
-        constexpr Vector2I(const container_type &c) noexcept
-        { set(c.begin(), c.end()); }
+        constexpr Vector2I(const container_type &c) noexcept { VectorBase::set(c.begin(), c.end()); }
 
-        constexpr Vector2I(std::initializer_list<value_type> v) noexcept
-        { set(v.begin(), v.end()); }
+        constexpr Vector2I(std::initializer_list<value_type> v) noexcept { VectorBase::set(v.begin(), v.end()); }
 
         constexpr Vector2I(const Vector2I& o) noexcept = default;
         constexpr Vector2I(Vector2I&& o) noexcept = default;
         constexpr Vector2I& operator=(const Vector2I&) noexcept = default;
         constexpr Vector2I& operator=(Vector2I&&) noexcept = default;
-
-        constexpr Vector2I copy() noexcept { return Vector2I(*this); }
-
-        /** Returns read-only component */
-        constexpr value_type operator[](size_t i) const noexcept {
-            assert(i < 2);
-            return (&x)[i];
-        }
-
-        explicit operator const_pointer() const noexcept { return &x; }
-        constexpr const_iterator cbegin() const noexcept { return &x; }
-
-        /** Returns writeable reference to component */
-        constexpr reference operator[](size_t i) noexcept {
-            assert(i < 2);
-            return (&x)[i];
-        }
-
-        explicit operator pointer() noexcept { return &x; }
-        constexpr iterator begin() noexcept { return &x; }
 
         /** xy = this, returns xy. */
         constexpr iterator get(iterator xy) const noexcept {
@@ -136,32 +107,6 @@ namespace jau::math {
 
         constexpr Vector2I& set(const value_type vx, const value_type vy) noexcept
         { x=vx; y=vy; return *this; }
-
-        /** this = xy, returns this. */
-        constexpr Vector2I& set(const_iterator xy) noexcept
-        { x=xy[0]; y=xy[1]; return *this; }
-
-        /** this = { x, y, z }, returns this. */
-        constexpr Vector2I& set(std::initializer_list<value_type> v) noexcept {
-            return set(v.begin(), v.end());
-        }
-        /** this = { c.begin() ... c.end() }, returns this. */
-        template<typename container_type>
-        requires jau::req::contiguous_container<container_type> &&
-                 std::convertible_to<typename container_type::value_type, value_type>
-        constexpr Vector2I& set(const container_type &c) noexcept
-        { return set(c.begin(), c.end()); }
-        /** this = { *begin ... *end }, returns this. */
-        constexpr Vector2I& set(const_iterator begin, const_iterator end) noexcept {
-            pointer d=&x; const_pointer d_end=d+components;
-            while (d!=d_end && begin!=end) {
-                *d++ = *begin++;
-            }
-            while (d!=d_end) {
-                *d++ = 0; // zero remainder
-            }
-            return *this;
-        }
 
         /** this = this + {d.x, d.y}, component wise. Returns this. */
         constexpr Vector2I& add(const Vector2I& d) noexcept
@@ -386,6 +331,7 @@ namespace jau::math {
     }
 
     typedef Vector2I<int> Vec2i;
+    static_assert(true == jau::req::contiguous_container<Vec2i>);
     static_assert(2 == Vec2i::components);
     static_assert(sizeof(int) == Vec2i::value_alignment);
     static_assert(sizeof(int) == alignof(Vec2i));
@@ -393,6 +339,7 @@ namespace jau::math {
     static_assert(sizeof(int)*2 == sizeof(Vec2i));
 
     typedef Vector2I<unsigned int> Vec2u;
+    static_assert(true == jau::req::contiguous_container<Vec2u>);
     static_assert(2 == Vec2u::components);
     static_assert(sizeof(unsigned int) == Vec2u::value_alignment);
     static_assert(sizeof(unsigned int) == alignof(Vec2u));
@@ -400,6 +347,7 @@ namespace jau::math {
     static_assert(sizeof(unsigned int)*2 == sizeof(Vec2u));
 
     typedef Vector2I<int32_t> Vec2i32;
+    static_assert(true == jau::req::contiguous_container<Vec2i32>);
     static_assert(2 == Vec2i32::components);
     static_assert(sizeof(int32_t) == Vec2i32::value_alignment);
     static_assert(sizeof(int32_t) == alignof(Vec2i32));
@@ -407,6 +355,7 @@ namespace jau::math {
     static_assert(sizeof(int32_t)*2 == sizeof(Vec2i32));
 
     typedef Vector2I<int32_t> Vec2u32;
+    static_assert(true == jau::req::contiguous_container<Vec2u32>);
     static_assert(2 == Vec2u32::components);
     static_assert(sizeof(int32_t) == Vec2u32::value_alignment);
     static_assert(sizeof(int32_t) == alignof(Vec2u32));

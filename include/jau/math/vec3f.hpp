@@ -22,6 +22,7 @@
 #include <string>
 
 #include <jau/float_math.hpp>
+#include <jau/math/vecbase.hpp>
 #include <jau/math/vec2f.hpp>
 #include <jau/type_concepts.hpp>
 
@@ -35,87 +36,59 @@ namespace jau::math {
     /**
      * 3D vector using three floating point value_type components.
      *
+     * Class complies with jau::req::contiguous_container, i.e. `C++ Named Requirement ContiguousContainer` requirements.
+     *
      * Component and overall alignment is natural as sizeof(value_type),
      * i.e. sizeof(value_type) == alignof(value_type)
      */
     template <jau::req::packed_floating_point Value_type>
-    class alignas(sizeof(Value_type)) Vector3F {
+    class alignas(sizeof(Value_type)) Vector3F : public VectorNT<Value_type, Vector3F<Value_type>, 3>
+    {
       public:
-        typedef Value_type value_type;
-        typedef value_type *pointer;
-        typedef const value_type *const_pointer;
-        typedef value_type &reference;
-        typedef const value_type &const_reference;
-        typedef value_type *iterator;
-        typedef const value_type *const_iterator;
-
-        /** value alignment is sizeof(value_type) */
-        constexpr static int value_alignment = sizeof(value_type);
-
-        /** Number of value_type components  */
-        constexpr static const size_t components = 3;
-
-        /** Size in bytes with value_alignment */
-        constexpr static const size_t byte_size = components * sizeof(value_type);
+        using VectorBase = VectorNT<Value_type, Vector3F<Value_type>, 3>;
+        using typename VectorBase::value_type;
+        using typename VectorBase::iterator;
+        using typename VectorBase::const_iterator;
+        using VectorBase::components;
+        using VectorBase::zero;
+        using VectorBase::one;
+        using VectorBase::x;
+        using VectorBase::set;
 
         typedef Vector2F<value_type> Vec2;
 
-        constexpr static const value_type zero = value_type(0);
-        constexpr static const value_type one = value_type(1);
-
-        value_type x;
         value_type y;
         value_type z;
 
         constexpr Vector3F() noexcept
-        : x(zero), y(zero), z(zero) { }
+        : VectorBase(zero), y(zero), z(zero) { }
 
         constexpr Vector3F(const value_type v) noexcept
-        : x(v), y(v), z(v) { }
+        : VectorBase(v), y(v), z(v) { }
 
         constexpr Vector3F(const value_type x_, const value_type y_, const value_type z_) noexcept
-        : x(x_), y(y_), z(z_) { }
+        : VectorBase(x_), y(y_), z(z_) { }
 
         constexpr Vector3F(const Vec2 &o2, const value_type z_) noexcept
-        : x(o2.x), y(o2.y), z(z_) { }
+        : VectorBase(o2.x), y(o2.y), z(z_) { }
 
         constexpr Vector3F(const_iterator v) noexcept
-        : x(v[0]), y(v[1]), z(v[2]) { }
+        : VectorBase(v) { }
 
         template<typename container_type>
             requires jau::req::contiguous_container<container_type> &&
                      std::convertible_to<typename container_type::value_type, value_type>
-        constexpr Vector3F(const container_type &c) noexcept { set(c.begin(), c.end()); }
+        constexpr Vector3F(const container_type &c) noexcept { VectorBase::set(c.begin(), c.end()); }
 
-        constexpr Vector3F(std::initializer_list<value_type> v) noexcept { set(v.begin(), v.end()); }
+        constexpr Vector3F(std::initializer_list<value_type> v) noexcept { VectorBase::set(v.begin(), v.end()); }
 
         constexpr Vector3F(const Vector3F &o) noexcept = default;
         constexpr Vector3F(Vector3F &&o) noexcept = default;
         constexpr Vector3F &operator=(const Vector3F &) noexcept = default;
         constexpr Vector3F &operator=(Vector3F &&) noexcept = default;
 
-        constexpr Vector3F copy() noexcept { return Vector3F(*this); }
-
         /// Returns a Vec2 instance using x and y component, dropping z
         constexpr Vec2 toVec2xy() const noexcept { return Vec2(x, y); }
-
-        /** Returns read-only component */
-        constexpr value_type operator[](size_t i) const noexcept {
-            assert(i < 3);
-            return (&x)[i];
-        }
-
-        explicit operator const_pointer() const noexcept { return &x; }
-        constexpr const_iterator cbegin() const noexcept { return &x; }
-
-        /** Returns writeable reference to component  */
-        constexpr reference operator[](size_t i) noexcept {
-            assert(i < 3);
-            return (&x)[i];
-        }
-
-        explicit operator pointer() noexcept { return &x; }
-        constexpr iterator begin() noexcept { return &x; }
 
         /** xyz = this, returns xyz. */
         constexpr iterator get(iterator xyz) const noexcept
@@ -148,32 +121,6 @@ namespace jau::math {
 
         constexpr Vector3F& set(const value_type vx, const value_type vy, const value_type vz) noexcept
         { x=vx; y=vy; z=vz; return *this; }
-
-        /** this = xyz, returns this. */
-        constexpr Vector3F& set(const_iterator xyz) noexcept
-        { x=xyz[0]; y=xyz[1]; z=xyz[2]; return *this; }
-
-        /** this = { x, y, z }, returns this. */
-        constexpr Vector3F& set(std::initializer_list<value_type> v) noexcept {
-            return set(v.begin(), v.end());
-        }
-        /** this = { c.begin() ... c.end() }, returns this. */
-        template<typename container_type>
-        requires jau::req::contiguous_container<container_type> &&
-                 std::convertible_to<typename container_type::value_type, value_type>
-        constexpr Vector3F& set(const container_type &c) noexcept
-        { return set(c.begin(), c.end()); }
-        /** this = { *begin ... *end }, returns this. */
-        constexpr Vector3F& set(const_iterator begin, const_iterator end) noexcept {
-            pointer d=&x; const_pointer d_end=d+components;
-            while (d!=d_end && begin!=end) {
-                *d++ = *begin++;
-            }
-            while (d!=d_end) {
-                *d++ = 0; // zero remainder
-            }
-            return *this;
-        }
 
         /** this = this + {d.x, d.y, d.z}, component wise. Returns this. */
         constexpr Vector3F& add(const Vector3F& d) noexcept
@@ -480,6 +427,7 @@ namespace jau::math {
     static_assert(sizeof(double)*3 == sizeof(Vector3F<double>));
 
     typedef Vector3F<float> Vec3f;
+    static_assert(true == jau::req::contiguous_container<Vec3f>);
     static_assert(3 == Vec3f::components);
     static_assert(sizeof(float) == Vec3f::value_alignment);
     static_assert(sizeof(float) == alignof(Vec3f));
@@ -495,6 +443,7 @@ namespace jau::math {
     using Point3F = Vector3F<Value_type>;
 
     typedef Point3F<float> Point3f;
+    static_assert(true == jau::req::contiguous_container<Point3f>);
     static_assert(3 == Point3f::components);
     static_assert(sizeof(float) == Point3f::value_alignment);
     static_assert(sizeof(float) == alignof(Point3f));

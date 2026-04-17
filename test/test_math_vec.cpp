@@ -98,8 +98,10 @@ static void test_vec(std::ostream& out, const char* prefix) {
     {
         // initializer list
         T a;
+        T b = a.copy();
         a.set({ U(1), U(2) }); // remainder components is zero
         out << "Test.1d: " << a << ", components = " << T::components << std::endl;
+        out << "b " << b << "\n";
         test_vec_elem12<T, U>(a);
     }
     {
@@ -142,6 +144,12 @@ TEST_CASE( "Math Vec Test 00", "[vec][linear_algebra][math]" ) {
     static_assert(alignof(float) == alignof(Vec4f));
     static_assert(alignof(float) == alignof(Mat4f));
 
+    static_assert(true == jau::req::contiguous_container<Vec2i>);
+    static_assert(true == jau::req::contiguous_container<Vec2f>);
+    static_assert(true == jau::req::contiguous_container<Vec3f>);
+    static_assert(true == jau::req::contiguous_container<Vec4f>);
+    static_assert(true == jau::req::contiguous_container<Mat4f>);
+
     dump_align_props<int>(std::cout, "int");
     dump_align_props<float>(std::cout, "float");
     dump_align_props<Vec2i>(std::cout, "Vec2i");
@@ -154,12 +162,37 @@ TEST_CASE( "Math Vec Test 00", "[vec][linear_algebra][math]" ) {
     std::cout << "A v3 " << Vec3f(1, 2, 3) << std::endl;
     std::cout << "A v4 " << Vec4f(1, 2, 3, 4) << std::endl;
     {
-        const float mf[] = {  1.0f,  2.0f,  3.0f,  4.0f, // column 0
-                              5.0f,  6.0f,  7.0f,  8.0f, // column 1
-                              9.0f, 10.0f, 11.0f, 12.0f, // column 2
-                             13.0f, 14.0f, 15.0f, 16.0f  // column 3
-                           };
-        std::cout << "A mat4 " << Mat4f(mf) << std::endl;
+        const Mat4f m = {   1.0f,  2.0f,  3.0f,  4.0f, // column 0
+                            5.0f,  6.0f,  7.0f,  8.0f, // column 1
+                            9.0f, 10.0f, 11.0f, 12.0f, // column 2
+                           13.0f, 14.0f, 15.0f, 16.0f  // column 3
+                        };
+        std::cout << "A mat4 " << m << std::endl;
+    }
+    {
+        Vec4f a = { 2, 4, 5, 6 };
+        Vec4f b = a.copy();
+        REQUIRE( a == b );
+        REQUIRE( 2 == b[0] );
+        REQUIRE( 4 == b[1] );
+        REQUIRE( 5 == b[2] );
+        REQUIRE( 6 == b[3] );
+        REQUIRE( 2 == b.x );
+        REQUIRE( 4 == b.y );
+        REQUIRE( 5 == b.z );
+        REQUIRE( 6 == b.w );
+        a.set({ 1, 2, 3, 4 });
+        REQUIRE( Vec4f{ 1, 2, 3, 4 } == a );
+        REQUIRE( 1 == a.x );
+        REQUIRE( 2 == a.y );
+        REQUIRE( 3 == a.z );
+        REQUIRE( 4 == a.w );
+        b.set(a);
+        REQUIRE( a == b );
+        REQUIRE( 1 == b.x );
+        REQUIRE( 2 == b.y );
+        REQUIRE( 3 == b.z );
+        REQUIRE( 4 == b.w );
     }
 
     REQUIRE( Vec2f() == Vec2f(0, 0) );
