@@ -75,12 +75,11 @@ namespace jau::math {
         constexpr Vector3F(const_iterator v) noexcept
         : VectorBase(v) { }
 
-        template<typename container_type>
-            requires jau::req::contiguous_container<container_type> &&
-                     std::convertible_to<typename container_type::value_type, value_type>
-        constexpr Vector3F(const container_type &c) noexcept { VectorBase::set(c.begin(), c.end()); }
-
         constexpr Vector3F(std::initializer_list<value_type> v) noexcept { VectorBase::set(v.begin(), v.end()); }
+
+        template<typename container_type>
+            requires jau::req::contiguous_container<container_type>
+        constexpr Vector3F(const container_type &c) noexcept { VectorBase::set(c.cbegin(), c.cend()); }
 
         constexpr Vector3F(const Vector3F &o) noexcept = default;
         constexpr Vector3F(Vector3F &&o) noexcept = default;

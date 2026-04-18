@@ -117,14 +117,45 @@ namespace jau::math {
         constexpr Self& set(std::initializer_list<value_type> v) noexcept {
             return set(v.begin(), v.end());
         }
+
         /** this = { c.begin() ... c.end() }, returns this. */
         template<typename container_type>
-        requires jau::req::contiguous_container<container_type> &&
-                 std::convertible_to<typename container_type::value_type, value_type>
-        constexpr Self& set(const container_type &c) noexcept
-        { return set(c.cbegin(), c.cend()); }
-        /** this = { *begin ... *end }, returns this. */
+        requires jau::req::contiguous_container<container_type>
+        constexpr Self& set(const container_type &c) noexcept { return set(c.cbegin(), c.cend()); }
+
+        /// this = { *begin ... *end }, returns this. Variant for matching value_type pointer.
         constexpr Self& set(const_iterator begin, const_iterator end) noexcept {
+            // fprintf(stderr, "set.S1\n"); jau::impl::dbgPrint0_tail(stdout, false, true); fflush(stderr);
+            pointer d=&x; const_pointer d_end=d+components;
+            while (d!=d_end && begin!=end) {
+                *d++ = *begin++;
+            }
+            while (d!=d_end) {
+                *d++ = 0; // zero remainder
+            }
+            return self();
+        }
+
+        /// this = { *begin ... *end }, returns this. Variant for other convertible plain value_type pointer, e.g. std::array<T>::const_iterator.
+        template<typename other_iterator>
+        requires std::convertible_to<jau::req::underlying_pointer_type<other_iterator>, value_type>
+        constexpr Self& set(other_iterator begin, other_iterator end) noexcept {
+            // fprintf(stderr, "set.T2\n"); jau::impl::dbgPrint0_tail(stdout, false, true); fflush(stderr);
+            pointer d=&x; const_pointer d_end=d+components;
+            while (d!=d_end && begin!=end) {
+                *d++ = *begin++;
+            }
+            while (d!=d_end) {
+                *d++ = 0; // zero remainder
+            }
+            return self();
+        }
+
+        /// this = { *begin ... *end }, returns this. Variant for complex container iterator, e.g. std::vector<T>::const_iterator.
+        template<typename iterator_type>
+        requires std::convertible_to<typename iterator_type::value_type, value_type>
+        constexpr Self& set(iterator_type begin, iterator_type end) noexcept {
+            // fprintf(stderr, "set.T3\n"); jau::impl::dbgPrint0_tail(stdout, false, true); fflush(stderr);
             pointer d=&x; const_pointer d_end=d+components;
             while (d!=d_end && begin!=end) {
                 *d++ = *begin++;

@@ -175,6 +175,16 @@ class alignas(Value_type) Matrix4 {
     }
 
     /**
+     * Creates a new matrix based on given contiguous container in column major order.
+     *
+     * Fills with zero if given data is insufficient
+     * @param m source contiguous container to be copied into this new instance
+     */
+    template<typename container_type>
+        requires jau::req::contiguous_container<container_type>
+    constexpr Matrix4(const container_type &m) noexcept { set(m.cbegin(), m.cend()); }
+
+    /**
      * Creates a new matrix copying the values of the given {@code src} matrix.
      */
     constexpr Matrix4(const Matrix4& o) noexcept
@@ -234,12 +244,45 @@ class alignas(Value_type) Matrix4 {
     }
     /// Sets this matrix by values of `c` in column major order, fills with zero if insufficient and returns this.
     template<typename container_type>
-    requires jau::req::contiguous_container<container_type> &&
-             std::convertible_to<typename container_type::value_type, value_type>
-    constexpr Matrix4& set(const container_type &c) noexcept
-    { return set(c.begin(), c.end()); }
+    requires jau::req::contiguous_container<container_type>
+    constexpr Matrix4& set(const container_type &c) noexcept { return set(c.cbegin(), c.cend()); }
+
     /// Sets this matrix by values [begin .. end) in column major order, fills with zero if insufficient and returns this.
+    /// (Variant for matching value_type pointer)
     constexpr Matrix4& set(const_iterator begin, const_iterator end) noexcept {
+        // fprintf(stderr, "set.S1\n"); jau::impl::dbgPrint0_tail(stdout, false, true); fflush(stderr);
+        pointer d=&m00; const_pointer d_end=d+components;
+        while (d!=d_end && begin!=end) {
+            *d++ = *begin++;
+        }
+        while (d!=d_end) {
+            *d++ = 0; // zero remainder
+        }
+        return *this;
+    }
+
+    /// Sets this matrix by values [begin .. end) in column major order, fills with zero if insufficient and returns this.
+    /// (Variant for other convertible plain value_type pointer, e.g. std::array<T>::const_iterator)
+    template<typename other_iterator>
+    requires std::convertible_to<jau::req::underlying_pointer_type<other_iterator>, value_type>
+    constexpr Matrix4& set(other_iterator begin, other_iterator end) noexcept {
+        // fprintf(stderr, "set.T2\n"); jau::impl::dbgPrint0_tail(stdout, false, true); fflush(stderr);
+        pointer d=&m00; const_pointer d_end=d+components;
+        while (d!=d_end && begin!=end) {
+            *d++ = *begin++;
+        }
+        while (d!=d_end) {
+            *d++ = 0; // zero remainder
+        }
+        return *this;
+    }
+
+    /// Sets this matrix by values [begin .. end) in column major order, fills with zero if insufficient and returns this.
+    /// (Variant for complex container iterator, e.g. std::vector<T>::const_iterator)
+    template<typename iterator_type>
+    requires std::convertible_to<typename iterator_type::value_type, value_type>
+    constexpr Matrix4& set(iterator_type begin, iterator_type end) noexcept {
+        // fprintf(stderr, "set.T3\n"); jau::impl::dbgPrint0_tail(stdout, false, true); fflush(stderr);
         pointer d=&m00; const_pointer d_end=d+components;
         while (d!=d_end && begin!=end) {
             *d++ = *begin++;

@@ -69,12 +69,11 @@ namespace jau::math {
         constexpr Vector2I(const_iterator v) noexcept
         : VectorBase(v) {}
 
-        template<typename container_type>
-        requires jau::req::contiguous_container<container_type> &&
-                 std::convertible_to<typename container_type::value_type, value_type>
-        constexpr Vector2I(const container_type &c) noexcept { VectorBase::set(c.begin(), c.end()); }
-
         constexpr Vector2I(std::initializer_list<value_type> v) noexcept { VectorBase::set(v.begin(), v.end()); }
+
+        template<typename container_type>
+        requires jau::req::contiguous_container<container_type>
+        constexpr Vector2I(const container_type &c) noexcept { VectorBase::set(c.cbegin(), c.cend()); }
 
         constexpr Vector2I(const Vector2I& o) noexcept = default;
         constexpr Vector2I(Vector2I&& o) noexcept = default;

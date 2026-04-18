@@ -170,9 +170,15 @@ TEST_CASE( "Math Vec Test 00", "[vec][linear_algebra][math]" ) {
         std::cout << "A mat4 " << m << std::endl;
     }
     {
+        std::cerr << "A p1.1" << std::endl;
         Vec4f a = { 2, 4, 5, 6 };
+        std::cerr << "A p1.2" << std::endl;
         Vec4f b = a.copy();
         REQUIRE( a == b );
+        REQUIRE( &b.x == &b[0] );
+        REQUIRE( &b.y == &b[1] );
+        REQUIRE( &b.z == &b[2] );
+        REQUIRE( &b.w == &b[3] );
         REQUIRE( 2 == b[0] );
         REQUIRE( 4 == b[1] );
         REQUIRE( 5 == b[2] );
@@ -181,18 +187,84 @@ TEST_CASE( "Math Vec Test 00", "[vec][linear_algebra][math]" ) {
         REQUIRE( 4 == b.y );
         REQUIRE( 5 == b.z );
         REQUIRE( 6 == b.w );
+        std::cerr << "A p1.3" << std::endl;
         a.set({ 1, 2, 3, 4 });
+        std::cerr << "A p1.4" << std::endl;
         REQUIRE( Vec4f{ 1, 2, 3, 4 } == a );
         REQUIRE( 1 == a.x );
         REQUIRE( 2 == a.y );
         REQUIRE( 3 == a.z );
         REQUIRE( 4 == a.w );
+        std::cerr << "A p1.5" << std::endl;
         b.set(a);
         REQUIRE( a == b );
         REQUIRE( 1 == b.x );
         REQUIRE( 2 == b.y );
         REQUIRE( 3 == b.z );
         REQUIRE( 4 == b.w );
+    }
+    {
+        std::cerr << "A p2.1" << std::endl;
+        Vec4f a = { 2.0, 4.0, 5.0, 6.0 };
+        REQUIRE( 2 == a.x );
+        REQUIRE( 4 == a.y );
+        REQUIRE( 5 == a.z );
+        REQUIRE( 6 == a.w );
+    }
+    {
+        std::cerr << "A p3.1" << std::endl;
+        Vec4f a = { 2.0f, 4.0f, 5.0f, 6.0f };
+        REQUIRE( 2 == a.x );
+        REQUIRE( 4 == a.y );
+        REQUIRE( 5 == a.z );
+        REQUIRE( 6 == a.w );
+    }
+    {
+        std::cerr << "A p4.1" << std::endl;
+        std::array<float, 4> c1 = { 2.0f, 4.0f, 5.0f, 6.0f };
+        std::cerr << "A p4.2" << std::endl;
+        std::vector<float> c2 = { 2.0f, 4.0f, 5.0f, 6.0f };
+        std::cerr << "A p4.3" << std::endl;
+        Vec4f a1 = c1;
+        std::cerr << "A p4.4" << std::endl;
+        Vec4f a2 = c2;
+        std::cerr << "A p4.5" << std::endl;
+        REQUIRE( Vec4f{ 2.0f, 4.0f, 5.0f, 6.0f } == a1 );
+        REQUIRE( 2 == a1.x );
+        REQUIRE( 4 == a1.y );
+        REQUIRE( 5 == a1.z );
+        REQUIRE( 6 == a1.w );
+        std::cerr << "A p4.6" << std::endl;
+        REQUIRE( Vec4f{ 2.0f, 4.0f, 5.0f, 6.0f } == a2 );
+        REQUIRE( 2 == a2.x );
+        REQUIRE( 4 == a2.y );
+        REQUIRE( 5 == a2.z );
+        REQUIRE( 6 == a2.w );
+    }
+    {
+        std::cerr << "A p5.1" << std::endl;
+        std::array<double, 4> c1 = { 2.0, 4.0, 5.0, 6.0 };
+        // std::array<double, 4>::const_iterator i1 = c1.cbegin();
+
+        std::cerr << "A p5.2" << std::endl;
+        std::vector<double> c2 = { 2.0, 4.0, 5.0, 6.0 };
+        // std::vector<double>::const_iterator i2 = c2.cbegin();
+        std::cerr << "A p5.3" << std::endl;
+        Vec4f a1 = c1;
+        std::cerr << "A p5.4" << std::endl;
+        Vec4f a2 = c2;
+        std::cerr << "A p5.5" << std::endl;
+        REQUIRE( Vec4f{ 2.0, 4.0, 5.0, 6.0 } == a1 );
+        REQUIRE( 2 == a1.x );
+        REQUIRE( 4 == a1.y );
+        REQUIRE( 5 == a1.z );
+        REQUIRE( 6 == a1.w );
+        std::cerr << "A p5.6" << std::endl;
+        REQUIRE( Vec4f{ 2.0, 4.0, 5.0, 6.0 } == a2 );
+        REQUIRE( 2 == a2.x );
+        REQUIRE( 4 == a2.y );
+        REQUIRE( 5 == a2.z );
+        REQUIRE( 6 == a2.w );
     }
 
     REQUIRE( Vec2f() == Vec2f(0, 0) );
