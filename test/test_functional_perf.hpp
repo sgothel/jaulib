@@ -406,6 +406,21 @@ class TestFunction01 {
             };
         }
 
+        // plain lambda native
+        {
+            auto f = [](int a) -> int {
+                return 100+ a;
+            };
+
+            BENCHMARK("lambda_plain_native") {
+                volatile int r=0;
+                for(int i=0; i<loops; ++i) {
+                    r = r + f(i);
+                }
+                return r;
+            };
+        }
+
         // capture std::function lambda
         {
             volatile int captured = 100;
@@ -432,6 +447,22 @@ class TestFunction01 {
             };
 
             BENCHMARK("lambda_capt_jaufunc") {
+                volatile int r=0;
+                for(int i=0; i<loops; ++i) {
+                    r = r + f(i);
+                }
+                return r;
+            };
+        }
+        // capture lambda native
+        {
+            volatile int captured = 100;
+
+            auto f = [&](int a) -> int {
+                return captured + a;
+            };
+
+            BENCHMARK("lambda_capt_native") {
                 volatile int r=0;
                 for(int i=0; i<loops; ++i) {
                     r = r + f(i);
