@@ -70,13 +70,11 @@ namespace jau {
         static constexpr unit_type one_u = 1;
 
         typedef std::array<unit_type, unit_size> storage_t;
-        storage_t storage;
+        storage_t m_storage;
 
       public:
         static constexpr bool in_range(size_type bitpos) { return bitpos < bit_size; }
-        static constexpr bool in_range(size_type bitpos, size_type length) {
-            return bitpos + length <= bit_size;
-        }
+        static constexpr bool in_range(size_type bitpos, size_type length) { return bitpos + length <= bit_size; }
 
         /** Constructs an empty bitfield instance */
         constexpr bitfield_t() noexcept { clear(); }
@@ -94,9 +92,18 @@ namespace jau {
             }
         }
 
+        /*** Returns the number of set bits within this bitfield. */
+        size_type count() const noexcept {
+            size_type c = 0;
+            for ( size_type i = 0; i < unit_size; ++i ) {
+                c += jau::bit_count(m_storage[i]);
+            }
+            return c;
+        }
+
         /*** Clears whole bitfield, i.e. sets all bits to zero. */
         constexpr void clear() noexcept {
-            std::memset(storage.data(), 0, unit_byte_size * unit_size);
+            std::memset(m_storage.data(), 0, unit_byte_size * unit_size);
         }
         /*** Clears whole bitfield, i.e. sets all bits to zero. */
         constexpr bitfield_t &reset() noexcept {
@@ -113,8 +120,8 @@ namespace jau {
                 return false;
             }
             const size_type u = bitpos >> unit_shift;
-            const size_type b = bitpos - (u << unit_shift);
-            return storage[u] & (one_u << b);
+            const size_type b = bitpos & (unit_bit_size-1); // % unit_bit_size;
+            return m_storage[u] & (one_u << b);
         }
 
         /**
@@ -126,12 +133,12 @@ namespace jau {
                 return false;
             }
             const size_type u = bitpos >> unit_shift;
-            const size_type b = bitpos - (u << unit_shift);
+            const size_type b = bitpos & (unit_bit_size-1); // % unit_bit_size;
             const unit_type m = one_u << b;
             if ( v ) {
-                storage[u] |= m;
+                m_storage[u] |= m;
             } else {
-                storage[u] &= ~m;
+                m_storage[u] &= ~m;
             }
             return true;
         }
@@ -145,12 +152,12 @@ namespace jau {
                 return false;
             }
             const size_type u = bitpos >> unit_shift;
-            const size_type b = bitpos - (u << unit_shift);
+            const size_type b = bitpos & (unit_bit_size-1); // % unit_bit_size;
             const unit_type m = one_u << b;
-            if ( storage[u] & m ) {
-                storage[u] &= ~m;
+            if ( m_storage[u] & m ) {
+                m_storage[u] &= ~m;
             } else {
-                storage[u] |= m;
+                m_storage[u] |= m;
             }
             return true;
         }
@@ -159,7 +166,7 @@ namespace jau {
         constexpr bitfield_t &flip() noexcept {
             size_type remaining = bit_size;
             for ( size_type i = 0; i < unit_size; ++i ) {
-                storage[i] = ~storage[i] & bit_mask<unit_type>(remaining);
+                m_storage[i] = ~m_storage[i] & bit_mask<unit_type>(remaining);
                 remaining -= unit_bit_size;
             }
             return *this;
@@ -168,18 +175,18 @@ namespace jau {
         /*** Reverse all bits in this storage. */
         constexpr bitfield_t &reverse() noexcept {
             const size_type s0 = bit_size & (unit_bit_size-1); // % unit_bit_size;
-            if( 0 == s0 ) { // fast-path, swap units
+            if( 0 == s0 && unit_size>0 ) { // fast-path, swap units
                 size_type l = 0, r = unit_size-1;
                 while ( l < r ) {
-                    const unit_type v_l = jau::rev_bits(storage[l]);
-                    const unit_type v_r = jau::rev_bits(storage[r]);
-                    storage[l++] = v_r;
-                    storage[r--] = v_l;
+                    const unit_type v_l = jau::rev_bits(m_storage[l]);
+                    const unit_type v_r = jau::rev_bits(m_storage[r]);
+                    m_storage[l++] = v_r;
+                    m_storage[r--] = v_l;
                 }
                 if( l == r ) { // last odd middle
-                    storage[l] = jau::rev_bits(storage[l]);
+                    m_storage[l] = jau::rev_bits(m_storage[l]);
                 }
-            } else { // slow-path, swap bits
+            } else if (bit_size>0) { // slow-path, swap bits
                 for(size_type l = 0, r = bit_size-1; l < r; ++l, --r) {
                     const bool s = get(l);
                     (void)put(l, get(r));
@@ -218,21 +225,21 @@ namespace jau {
                 return 0;
             }
             const size_type u = bitpos >> unit_shift;
-            const size_type b = bitpos - (u << unit_shift);
+            const size_type b = bitpos & (unit_bit_size-1); // % unit_bit_size;
             if ( 0 == b ) {
                 // fast path
                 const unit_type m = bit_mask<unit_type>(length);  // mask of chunk
-                return m & storage[u];
+                return m & m_storage[u];
             } else {
                 // slow path
                 const size_type left = unit_bit_size - b;         // remaining bits of first chunk storage
                 const size_type l1 = std::min(length, left);      // length of first chunk < unit_bit_size
                 const unit_type m1 = (one_u << l1) - one_u;       // mask of first chunk
-                const unit_type d1 = m1 & (storage[u] >> b);      // data of first chunk
+                const unit_type d1 = m1 & (m_storage[u] >> b);    // data of first chunk
                 const size_type l2 = length - l1;                 // length of second chunk < unit_bit_size
                 if ( l2 > 0 ) {
                     const unit_type m2 = (one_u << l2) - one_u;   // mask of second chunk
-                    return d1 | ((m2 & storage[u + 1]) << l1);    // data combined chunk 1+2
+                    return d1 | ((m2 & m_storage[u + 1]) << l1);  // data combined chunk 1+2
                 } else {
                     return d1;  // data of chunk 1 only
                 }
@@ -250,18 +257,18 @@ namespace jau {
                 return false;
             }
             const size_type u = bitpos >> unit_shift;
-            const size_type b = bitpos - (u << unit_shift);
+            const size_type b = bitpos & (unit_bit_size-1); // % unit_bit_size;
             if ( 0 == b ) {
                 // fast path
                 const unit_type m = bit_mask<unit_type>(length);  // mask of chunk
-                storage[u] = ((~m) & storage[u])                  // keep non-written storage bits
+                m_storage[u] = ((~m) & m_storage[u])              // keep non-written storage bits
                              | (m & data);                        // overwrite storage w/ used data bits
             } else {
                 // slow path
                 const size_type left = unit_bit_size - b;         // remaining bits of first chunk storage
                 const size_type l1 = std::min(length, left);      // length of first chunk < unit_bit_size
                 const unit_type m1 = (one_u << l1) - one_u;       // mask of first chunk
-                storage[u] = ((~(m1 << b)) & storage[u])          // keep non-written storage bits
+                m_storage[u] = ((~(m1 << b)) & m_storage[u])      // keep non-written storage bits
                              | ((m1 & data) << b);                // overwrite storage w/ used data bits
                 const size_type l2 = length - l1;                 // length of second chunk < unit_bit_size
                 if ( l2 > 0 ) {
@@ -273,7 +280,7 @@ namespace jau {
                      */
                     PRAGMA_DISABLE_WARNING_PUSH
                     PRAGMA_DISABLE_WARNING_ARRAY_BOUNDS
-                    storage[u + 1] = ((~m2) & storage[u + 1])     // keep non-written storage bits
+                    m_storage[u + 1] = ((~m2) & m_storage[u + 1]) // keep non-written storage bits
                                      | (m2 & (data >> l1));       // overwrite storage w/ used data bits
                     PRAGMA_DISABLE_WARNING_POP
                 }
@@ -323,7 +330,7 @@ namespace jau {
             size_type remaining = length;
             size_type u = bitpos >> unit_shift;
             {
-                const size_type b = bitpos - (u << unit_shift);
+                const size_type b = bitpos & (unit_bit_size-1); // % unit_bit_size;
                 if ( b > 0 ) {
                     const size_type l = std::min(unit_bit_size-b, remaining);
                     if (!putUnit(bitpos, l, v)) { // first incomplete unit
@@ -335,7 +342,7 @@ namespace jau {
                 }
             }
             while ( remaining > unit_bit_size ) {
-                storage[u++] = v;
+                m_storage[u++] = v;
                 bitpos += unit_bit_size;
                 remaining -= unit_bit_size;
             }
@@ -364,14 +371,6 @@ namespace jau {
             return putUnit(dstBitpos, length, getUnit(srcBitpos, length));
         }
 
-        /*** Returns the number of set bits within this bitfield. */
-        size_type count() const noexcept {
-            size_type c = 0;
-            for ( size_type i = 0; i < unit_size; ++i ) {
-                c += jau::bit_count(storage[i]);
-            }
-            return c;
-        }
         constexpr bool operator==(const bitfield_t &rhs) const noexcept {
             if ( this == &rhs ) {
                 return true;
@@ -380,7 +379,7 @@ namespace jau {
                 return false;
             }
             size_type i = 0;
-            while ( i < unit_size && storage[i] == rhs.storage[i] ) {
+            while ( i < unit_size && m_storage[i] == rhs.m_storage[i] ) {
                 ++i;
             }
             return i == unit_size;
@@ -395,13 +394,12 @@ namespace jau {
                 return false;
             }
             const size_type unit_count = ( length + unit_bit_size - 1 ) >> unit_shift;
-            const size_type unit_pos = bitpos >> unit_shift;
-            const size_type unit_bit_pos = bitpos - (unit_pos << unit_shift);
+            const size_type unit_bit_pos = bitpos & (unit_bit_size-1); // % unit_bit_size;
             if ( 0 == unit_bit_pos ) {
                 size_type l = std::min(length, unit_bit_size);
                 size_type i = bitpos;
                 for ( size_type u = 0; u < unit_count && 0 < length; ++u ) {
-                    if( !putUnit( i, l, o.storage[u] ) ) {
+                    if( !putUnit( i, l, o.m_storage[u] ) ) {
                         return false;
                     }
                     length -= l;
@@ -429,12 +427,12 @@ namespace jau {
             size_type length = BitLength;
             const size_type unit_count = ( BitLength + unit_bit_size - 1 ) >> unit_shift;
             const size_type unit_pos = bitpos >> unit_shift;
-            const size_type unit_bit_pos = bitpos - (unit_pos << unit_shift);
+            const size_type unit_bit_pos = bitpos & (unit_bit_size-1); // % unit_bit_size;
             if ( 0 == unit_bit_pos ) {
                 size_type l = std::min(length, unit_bit_size);
                 size_type i = 0;
                 for ( size_type u = unit_pos; u < unit_count && 0 < length; ++u ) {
-                    if( !r.first.putUnit( i, l, storage[u] ) ) {
+                    if( !r.first.putUnit( i, l, m_storage[u] ) ) {
                         return { bitfield_t<StorageType, BitLength>(), false };
                     }
                     length -= l;
@@ -462,13 +460,13 @@ namespace jau {
             }
             const size_type unit_count = ( length + unit_bit_size - 1 ) >> unit_shift;
             const size_type unit_pos = bitpos >> unit_shift;
-            const size_type bit_pos = bitpos - (unit_pos << unit_shift);
+            const size_type bit_pos = bitpos & (unit_bit_size-1); // % unit_bit_size;
             if ( 0 == bit_pos ) {
                 // fast path
                 const size_type sz0 = (unit_size - 1) * unit_bit_size;;
                 size_type l = length > sz0 ? length - sz0 : std::min(length, unit_bit_size);
                 for ( size_type i = unit_pos + unit_count; i-- > unit_pos && 0 < length; ) {
-                    r.append( jau::toBitString(storage[i], bit_order_t::msb, PrefixOpt::none, l) );
+                    r.append( jau::toBitString(m_storage[i], bit_order_t::msb, PrefixOpt::none, l) );
                     length -= l;
                     l = std::min(length, unit_bit_size);
                 }
