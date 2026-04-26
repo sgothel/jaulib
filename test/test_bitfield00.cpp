@@ -14,6 +14,7 @@
 #include <cstring>
 
 #include <jau/basic_types.hpp>
+#include <jau/bitview.hpp>
 #include <jau/bitfield.hpp>
 #include <jau/bitheap.hpp>
 #include <jau/debug.hpp>
@@ -22,12 +23,331 @@
 #include <jau/io/file_util.hpp>
 #include <jau/io/io_util.hpp>
 #include <jau/string_util.hpp>
+#include <jau/type_cue.hpp>
 #include <jau/test/catch2_ext.hpp>
 
 // #include "test_httpd.hpp"
 #include "data_bitstream.hpp"
 
 using namespace jau::int_literals;
+
+TEST_CASE( "Bitview Test 00a", "[bitview]" ) {
+    {
+        const size_t bits = 1_uz*64_uz; // 64 bits, 8 bytes
+        typedef jau::nsize_t storagetype;
+        {
+            typedef jau::bitview<storagetype> mybitview; // 32 bytes
+            std::array<storagetype, mybitview::unitSize(bits)> storage;
+            mybitview b1(storage);
+            std::cout << "Info " << __LINE__ << ": jau::bitview<jau::nsize_t>  " << jau::type_cue<mybitview>::to_string() << ", sizeof(b1) = " << sizeof(b1) << "\n";
+            jau::type_cue<mybitview>::fprint(stdout, "jau::bitview<jau::nsize_t>", jau::TypeTraitGroup::ALL);
+        }
+        {
+            typedef jau::bitfield_t<storagetype, bits> mybitview; // 32 + 8 = 40 bytes
+            mybitview b1;
+            std::cout << "Info " << __LINE__ << ": jau::bitfield_t<jau::nsize_t, 64 bits, 8 bytes>  " << jau::type_cue<mybitview>::to_string() << ", sizeof(b1) = " << sizeof(b1) << "\n";
+            jau::type_cue<mybitview>::fprint(stdout, "jau::bitfield_t<jau::nsize_t, 64 bits, 8 bytes>", jau::TypeTraitGroup::ALL);
+        }
+        {
+            typedef jau::bitheap mybitview; // 56 bytes
+            mybitview b1(bits);
+            std::cout << "Info " << __LINE__ << ": jau::bitheap " << jau::type_cue<mybitview>::to_string() << ", sizeof(b1) = " << sizeof(b1) << "\n";
+            jau::type_cue<mybitview>::fprint(stdout, "jau::bitheap", jau::TypeTraitGroup::ALL);
+        }
+    }
+    {
+        const size_t bits = 3_uz*64_uz; // 192
+        typedef uint64_t storagetype;
+        typedef jau::bitview<storagetype> mybitview;
+        std::array<storagetype, mybitview::unitSize(bits)> storage;
+        mybitview b1(storage);
+
+        size_t s_count1, s_count2;
+        storage[0] = 0b1010101010101010101010101010101010101010101010101010101010101010; // 32
+        storage[1] = 0b1111111111111110000000000000001111111111111110000000000000000111; // 33
+        storage[2] = 0b0000000000000000111111111111111100000000000000001111111111111111; // 32 = 97
+        REQUIRE(32 == jau::bit_count(storage[0]));
+        REQUIRE(33 == jau::bit_count(storage[1]));
+        REQUIRE(32 == jau::bit_count(storage[2]));
+        s_count1  = jau::bit_count(storage[0]);
+        s_count1 += jau::bit_count(storage[1]);
+        s_count1 += jau::bit_count(storage[2]);
+        REQUIRE(97 == s_count1);
+        s_count2  = jau::bit_count(~storage[0]);
+        s_count2 += jau::bit_count(~storage[1]);
+        s_count2 += jau::bit_count(~storage[2]);
+        REQUIRE(95 == s_count2);
+
+        REQUIRE(bits == b1.size());
+        REQUIRE( 0 == b1.offset());
+        REQUIRE(64 == b1.unit_bit_size);
+        REQUIRE( 8 == b1.unit_byte_size);
+        REQUIRE( 6 == b1.unit_shift);
+        REQUIRE( 3 == b1.unitSize());
+
+        REQUIRE(s_count1   == b1.count());
+        REQUIRE(s_count2   == b1.flip().count());
+        REQUIRE(s_count1   == b1.flip().count());
+        REQUIRE(s_count2   == b1.flip().count());
+        REQUIRE(0          == b1.clear().count());
+        REQUIRE(b1.size()  == b1.flip().count());
+        REQUIRE(0          == b1.flip().count());
+        REQUIRE(b1.size()  == b1.setAll(true).count());
+        REQUIRE(0          == b1.setAll(false).count());
+
+        REQUIRE(true == b1.set(64, 2_uz*64_uz, true));
+        REQUIRE(2_uz*64_uz == b1.count());
+    }
+    {
+        const size_t bits = 3_uz*64_uz+4_uz; // 196
+        typedef uint64_t storagetype;
+        typedef jau::bitview<storagetype> mybitview;
+        std::array<storagetype, mybitview::unitSize(bits)> storage;
+        mybitview b1(storage, bits);
+
+        size_t s_count1, s_count2;
+        storage[0] = 0b1010101010101010101010101010101010101010101010101010101010101010; // 32
+        storage[1] = 0b1111111111111110000000000000001111111111111110000000000000000111; // 33
+        storage[2] = 0b1111111111111110000000000000001111111111111110000000000000000111; // 33
+        storage[3] = 0b0000000000000000111111111111111100000000000000001111111111111111; // 32 = 130 (total), 4 = 102 (used)
+        REQUIRE(32 == jau::bit_count(storage[0]));
+        REQUIRE(33 == jau::bit_count(storage[1]));
+        REQUIRE(33 == jau::bit_count(storage[2]));
+        REQUIRE(32 == jau::bit_count(storage[3]));
+        REQUIRE( 4 == jau::bit_count(storage[3] & 0b1111_u64));
+        s_count1  = jau::bit_count(storage[0]);
+        s_count1 += jau::bit_count(storage[1]);
+        s_count1 += jau::bit_count(storage[2]);
+        s_count1 += jau::bit_count(storage[3] & 0b1111_u64);
+        REQUIRE(102 == s_count1);
+        s_count2  = jau::bit_count(~storage[0]);
+        s_count2 += jau::bit_count(~storage[1]);
+        s_count2 += jau::bit_count(~storage[2]);
+        s_count2 += jau::bit_count(~storage[3] & 0b1111_u64);
+        REQUIRE( 94 == s_count2);
+
+        REQUIRE(bits == b1.size());
+        REQUIRE( 0 == b1.offset());
+        REQUIRE(64 == b1.unit_bit_size);
+        REQUIRE( 8 == b1.unit_byte_size);
+        REQUIRE( 6 == b1.unit_shift);
+        REQUIRE( 4 == b1.unitSize());
+
+        REQUIRE(s_count1   == b1.count());
+        REQUIRE(s_count2   == b1.flip().count());
+        REQUIRE(s_count1   == b1.flip().count());
+        REQUIRE(s_count2   == b1.flip().count());
+        REQUIRE(0          == b1.clear().count());
+        REQUIRE(b1.size()  == b1.flip().count());
+        REQUIRE(0          == b1.flip().count());
+        REQUIRE(b1.size() == b1.setAll(true).count());
+        REQUIRE(0         == b1.setAll(false).count());
+
+        REQUIRE(true == b1.set(33, 2_uz*64_uz+2_uz, true));
+        REQUIRE(2_uz*64_uz+2_uz == b1.count());
+    }
+    {
+        const size_t bits = 3_uz*32_uz+3_uz; // 99
+        typedef uint32_t storagetype;
+        typedef jau::bitview<storagetype> mybitview;
+        std::array<storagetype, mybitview::unitSize(bits)> storage;
+        mybitview b1(storage, bits);
+
+        size_t s_count1, s_count2;
+        storage[0] = 0b10101010101010101010101010101010; // 16
+        storage[1] = 0b11111110000000111111100000000111; // 17
+        storage[2] = 0b11111110000000111111100000000111; // 17
+        storage[3] = 0b00000000111111110000000011111111; // 16 = 66 (total), 3 = 53 (used)
+        REQUIRE(16 == jau::bit_count(storage[0]));
+        REQUIRE(17 == jau::bit_count(storage[1]));
+        REQUIRE(17 == jau::bit_count(storage[2]));
+        REQUIRE(16 == jau::bit_count(storage[3]));
+        REQUIRE( 3 == jau::bit_count(storage[3] & 0b111_u32));
+        s_count1  = jau::bit_count(storage[0]);
+        s_count1 += jau::bit_count(storage[1]);
+        s_count1 += jau::bit_count(storage[2]);
+        s_count1 += jau::bit_count(storage[3] & 0b111_u32);
+        REQUIRE(53 == s_count1);
+        s_count2  = jau::bit_count(~storage[0]);
+        s_count2 += jau::bit_count(~storage[1]);
+        s_count2 += jau::bit_count(~storage[2]);
+        s_count2 += jau::bit_count(~storage[3] & 0b111_u32);
+        REQUIRE(46 == s_count2);
+
+        REQUIRE(bits == b1.size());
+        REQUIRE( 0 == b1.offset());
+        REQUIRE(32 == b1.unit_bit_size);
+        REQUIRE(4 == b1.unit_byte_size);
+        REQUIRE(5 == b1.unit_shift);
+        REQUIRE(4 == b1.unitSize());
+
+        REQUIRE(s_count1   == b1.count());
+        REQUIRE(s_count2   == b1.flip().count());
+        REQUIRE(s_count1   == b1.flip().count());
+        REQUIRE(s_count2   == b1.flip().count());
+        REQUIRE(0          == b1.clear().count());
+        REQUIRE(b1.size()  == b1.flip().count());
+        REQUIRE(0          == b1.flip().count());
+        REQUIRE(b1.size() == b1.setAll(true).count());
+        REQUIRE(0         == b1.setAll(false).count());
+
+        REQUIRE(true == b1.set(17, 2_uz*32_uz+2_uz, true));
+        REQUIRE(2_uz*32_uz+2_uz == b1.count());
+    }
+    {
+        const size_t bits = 3_uz*8_uz+2_uz; // 26
+        typedef uint8_t storagetype;
+        typedef jau::bitview<storagetype> mybitview;
+        std::array<storagetype, mybitview::unitSize(bits)> storage;
+        mybitview b1(storage, bits);
+
+        size_t s_count1, s_count2;
+        storage[0] = 0b10101010; // 4
+        storage[1] = 0b11100011; // 5
+        storage[2] = 0b11100011; // 5
+        storage[3] = 0b00110011; // 4 = 18 (total), 2 = 16 (used)
+        REQUIRE(4 == jau::bit_count<storagetype>(storage[0]));
+        REQUIRE(5 == jau::bit_count<storagetype>(storage[1]));
+        REQUIRE(5 == jau::bit_count<storagetype>(storage[2]));
+        REQUIRE(4 == jau::bit_count<storagetype>(storage[3]));
+        REQUIRE(2 == jau::bit_count<storagetype>(storage[3] & 0b11_u8));
+        s_count1  = jau::bit_count<storagetype>(storage[0]);
+        s_count1 += jau::bit_count<storagetype>(storage[1]);
+        s_count1 += jau::bit_count<storagetype>(storage[2]);
+        s_count1 += jau::bit_count<storagetype>(storage[3] & 0b11_u8);
+        REQUIRE(16 == s_count1);
+        s_count2  = jau::bit_count<storagetype>(~storage[0]);
+        s_count2 += jau::bit_count<storagetype>(~storage[1]);
+        s_count2 += jau::bit_count<storagetype>(~storage[2]);
+        s_count2 += jau::bit_count<storagetype>(~storage[3] & 0b11_u8);
+        REQUIRE(10 == s_count2);
+
+        REQUIRE(bits == b1.size());
+        REQUIRE( 0 == b1.offset());
+        REQUIRE(8 == b1.unit_bit_size);
+        REQUIRE(1 == b1.unit_byte_size);
+        REQUIRE(3 == b1.unit_shift);
+        REQUIRE(4 == b1.unitSize());
+
+        REQUIRE(s_count1   == b1.count());
+        REQUIRE(s_count2   == b1.flip().count());
+        REQUIRE(s_count1   == b1.flip().count());
+        REQUIRE(s_count2   == b1.flip().count());
+        REQUIRE(0          == b1.clear().count());
+        REQUIRE(b1.size()  == b1.flip().count());
+        REQUIRE(0          == b1.flip().count());
+        REQUIRE(b1.size() == b1.setAll(true).count());
+        REQUIRE(0         == b1.setAll(false).count());
+
+        REQUIRE(true == b1.set(5, 2_uz*8_uz+2_uz, true));
+        REQUIRE(2_uz*8_uz+2_uz == b1.count());
+    }
+}
+
+TEST_CASE( "Bitview Test 00b", "[bitview]" ) {
+    {
+        const size_t bits = 3_uz*64_uz+4_uz; // 196
+        const size_t offset = 5;
+        typedef uint64_t storagetype;
+        typedef jau::bitview<storagetype> mybitview;
+        std::array<storagetype, mybitview::unitSize(bits)> storage;
+        mybitview b1(offset, storage, bits);
+
+        size_t s_count1, s_count2;
+        storage[0] = 0b1010101010101010101010101010101010101010101010101010101010101010; // 32 total, 30 used
+        storage[1] = 0b1111111111111110000000000000001111111111111110000000000000000111; // 33
+        storage[2] = 0b1111111111111110000000000000001111111111111110000000000000000111; // 33
+        storage[3] = 0b0000000000000000111111111111111100000000000000001111111111111111; // 32 = 130 (total), 9 = 105 (used)
+        REQUIRE(32 == jau::bit_count(storage[0]));
+        REQUIRE(30 == jau::bit_count(storage[0] & ~0b11111_u64));
+        REQUIRE(33 == jau::bit_count(storage[1]));
+        REQUIRE(33 == jau::bit_count(storage[2]));
+        REQUIRE(32 == jau::bit_count(storage[3]));
+        REQUIRE( 9 == jau::bit_count(storage[3] & 0b111111111_u64));
+        s_count1  = jau::bit_count(storage[0] & ~0b11111_u64);
+        s_count1 += jau::bit_count(storage[1]);
+        s_count1 += jau::bit_count(storage[2]);
+        s_count1 += jau::bit_count(storage[3] & 0b111111111_u64);
+        REQUIRE(105 == s_count1);
+        s_count2  = jau::bit_count(~storage[0] & ~0b11111_u64);
+        s_count2 += jau::bit_count(~storage[1]);
+        s_count2 += jau::bit_count(~storage[2]);
+        s_count2 += jau::bit_count(~storage[3] & 0b111111111_u64);
+        REQUIRE( 91 == s_count2);
+
+        REQUIRE(bits == b1.size());
+        REQUIRE(offset == b1.offset());
+        REQUIRE(64 == b1.unit_bit_size);
+        REQUIRE( 8 == b1.unit_byte_size);
+        REQUIRE( 6 == b1.unit_shift);
+        REQUIRE( 4 == b1.unitSize());
+
+        {
+            mybitview b2(offset, storage, 64_uz-offset);
+            std::cout << "XXX.0 " << __LINE__ << ", " << b2.infoString() << "\n";
+            REQUIRE(30   == b2.count());
+            mybitview b3 = b1.subview(0, 64_uz-offset).first;
+            std::cout << "XXX.1 " << __LINE__ << ", " << b3.infoString() << "\n";
+            REQUIRE(b2 == b3);
+        }
+        {
+            mybitview b2(1_uz*64_uz, storage, 64_uz);
+            std::cout << "XXX.0 " << __LINE__ << ", " << b2.infoString() << "\n";
+            REQUIRE(33   == b2.count());
+            mybitview b3 = b1.subview(1_uz*64_uz-offset, 64_uz).first;
+            std::cout << "XXX.1 " << __LINE__ << ", " << b3.infoString() << "\n";
+            REQUIRE(b2 == b3);
+        }
+        {
+            mybitview b2(2_uz*64_uz, storage, 64_uz);
+            std::cout << "XXX.0 " << __LINE__ << ", " << b2.infoString() << "\n";
+            REQUIRE(33   == b2.count());
+            mybitview b3 = b1.subview(2_uz*64_uz-offset, 64_uz).first;
+            std::cout << "XXX.1 " << __LINE__ << ", " << b3.infoString() << "\n";
+            REQUIRE(b2 == b3);
+        }
+        {
+            mybitview b2(3_uz*64_uz, storage, 9_uz);
+            std::cout << "XXX.0 " << __LINE__ << ", " << b2.infoString() << "\n";
+            REQUIRE(9   == b2.count());
+            mybitview b3 = b1.subview(3_uz*64_uz-offset, 9_uz).first;
+            std::cout << "XXX.1 " << __LINE__ << ", " << b3.infoString() << "\n";
+            REQUIRE(b2 == b3);
+        }
+        {
+            const std::string p = "11110101010101010101010101010101010101010101010101010101010101"; // 62
+            jau::bitheap b2(p);
+            std::cout << "XXX.0 " << __LINE__ << ", " << b2.infoString() << "\n";
+            mybitview b3 = b1.subview(0, 62).first;
+            std::cout << "XXX.1 " << __LINE__ << ", " << b3.infoString() << "\n";
+            REQUIRE(b2.view() == b3);
+        }
+        {
+            // 111111111000000000000000011110101010101010101010101010101010101010101010101010101010101
+            // 11111111100000000000000001111010101010101010101010 o=37, l=50
+            const std::string p = "11111111100000000000000001111010101010101010101010"; // 50
+            jau::bitheap b2(p);
+            std::cout << "XXX.0 " << __LINE__ << ", " << b2.infoString() << "\n";
+            mybitview b3 = b1.subview(37, 50).first;
+            std::cout << "XXX.1 " << __LINE__ << ", " << b3.infoString() << "\n";
+            REQUIRE(b2.view() == b3);
+        }
+
+        std::cout << "XXX.0 " << __LINE__ << ", " << b1.infoString() << "\n";
+        REQUIRE(s_count1   == b1.count());
+        REQUIRE(s_count2   == b1.flip().count());
+        REQUIRE(s_count1   == b1.flip().count());
+        REQUIRE(s_count2   == b1.flip().count());
+        REQUIRE(0          == b1.clear().count());
+        REQUIRE(b1.size()  == b1.flip().count());
+        REQUIRE(0          == b1.flip().count());
+        REQUIRE(b1.size() == b1.setAll(true).count());
+        REQUIRE(0         == b1.setAll(false).count());
+
+        REQUIRE(true == b1.set(33, 2_uz*64_uz+2_uz, true));
+        REQUIRE(2_uz*64_uz+2_uz == b1.count());
+    }
+}
 
 TEST_CASE( "Bitfield Test 00", "[bitfield]" ) {
     {
