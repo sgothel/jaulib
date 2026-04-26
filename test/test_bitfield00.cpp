@@ -42,7 +42,7 @@ TEST_CASE( "Bitfield Test 00", "[bitfield]" ) {
         REQUIRE(b1.bit_size == b1.flip().count());
         REQUIRE(0           == b1.flip().count());
         REQUIRE(b1.bit_size == b1.flip().count());
-        REQUIRE(0           == b1.reset().count());
+        REQUIRE(0           == b1.clear().count());
         REQUIRE(b1.bit_size == b1.setAll(true).count());
         REQUIRE(0           == b1.setAll(false).count());
         REQUIRE( true       == b1.set(64, 2_uz*64_uz, true));
@@ -60,7 +60,7 @@ TEST_CASE( "Bitfield Test 00", "[bitfield]" ) {
         REQUIRE(b1.bit_size == b1.flip().count());
         REQUIRE(0           == b1.flip().count());
         REQUIRE(b1.bit_size == b1.flip().count());
-        REQUIRE(0           == b1.reset().count());
+        REQUIRE(0           == b1.clear().count());
         REQUIRE(b1.bit_size == b1.setAll(true).count());
         REQUIRE(0           == b1.setAll(false).count());
         REQUIRE( true       == b1.set(33, 2_uz*64_uz+2_uz, true));
@@ -79,7 +79,7 @@ TEST_CASE( "Bitfield Test 00", "[bitfield]" ) {
         REQUIRE(b1.bit_size == b1.flip().count());
         REQUIRE(0           == b1.flip().count());
         REQUIRE(b1.bit_size == b1.flip().count());
-        REQUIRE(0           == b1.reset().count());
+        REQUIRE(0           == b1.clear().count());
         REQUIRE(b1.bit_size == b1.setAll(true).count());
         REQUIRE(0           == b1.setAll(false).count());
         REQUIRE(true        == b1.set(17, 2_uz*32_uz+2_uz, true));
@@ -98,7 +98,7 @@ TEST_CASE( "Bitfield Test 00", "[bitfield]" ) {
         REQUIRE(b1.bit_size == b1.flip().count());
         REQUIRE(0           == b1.flip().count());
         REQUIRE(b1.bit_size == b1.flip().count());
-        REQUIRE(0           == b1.reset().count());
+        REQUIRE(0           == b1.clear().count());
         REQUIRE(b1.bit_size == b1.setAll(true).count());
         REQUIRE(0           == b1.setAll(false).count());
         REQUIRE(true        == b1.set(5, 2_uz*8_uz+2_uz, true));
@@ -477,7 +477,7 @@ static void test_Unaligned(const TestDataBF &d, jau::bitfield_t<StorageType, Bit
     }
 
     // test put/get
-    bf.reset();
+    bf.clear();
     REQUIRE_MSG(msg+", bitpos 0", false == bf[lowBitnum]);
     REQUIRE(true == bf.put(lowBitnum, true));
     REQUIRE_MSG(msg+", bitpos 0", true == bf[lowBitnum]);
