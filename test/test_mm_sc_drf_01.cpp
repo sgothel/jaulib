@@ -37,6 +37,7 @@ static int loops = 10;
  * See Herb Sutter's 2013-12-23 slides p19, first box "It must be impossible for the assertion to fail – wouldn’t be SC.".
  * </p>
  * See 'test_mm_sc_drf_00' implementing same test using an atomic acquire/release critical block with spin-lock.
+ * See 'test_mm_sc_drf_02' implementing same test using a C++20 atomic wait operation.
  */
 class TestMemModelSCDRF01 {
   private:

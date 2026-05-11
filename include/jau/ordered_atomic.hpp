@@ -233,7 +233,77 @@ template <typename _Tp, std::memory_order _MO> struct ordered_atomic : private s
     _Tp fetch_xor(_Tp __i) volatile noexcept
     { return super::fetch_xor(__i, _MO); }
 
-  };
+#if __cplusplus > 201703L // C++20
+
+    /// Same as `std::atomic<_Tp>::wait`, using predefined fixed std::memory_order
+    CXX_ALWAYS_INLINE
+    void wait(_Tp __old) const noexcept {
+        super::wait(__old, _MO);
+    }
+
+    /// Same as `std::atomic<_Tp>::wait`, using predefined fixed std::memory_order
+    CXX_ALWAYS_INLINE
+    void wait(_Tp __old) const volatile noexcept {
+        super::wait(__old, _MO);
+    }
+
+    /***
+     * Waiting until the value has changed to `__new` value.
+     *
+     * This is similar to `wait`, which waits until the value has changed from old to something else.
+     *
+     * @param __new the awaited value
+     * @return first acquired old `load` value
+     */
+    CXX_ALWAYS_INLINE
+    _Tp wait_for(_Tp __new) const noexcept {
+        const _Tp __start = load();
+        _Tp __old = __start;
+        while (__new != __old) {
+            super::wait(__old, _MO);
+            __old = load();
+        }
+        return __start;
+    }
+
+    /***
+     * Waiting until the value has changed to `__new` value.
+     *
+     * This is similar to `wait`, which waits until the value has changed from old to something else.
+     *
+     * @param __new the awaited value
+     * @return first acquired old `load` value
+     */
+    CXX_ALWAYS_INLINE
+    _Tp wait_for(_Tp __new) const volatile noexcept {
+        const _Tp __start = load();
+        _Tp __old = __start;
+        while (__new != __old) {
+            super::wait(__old, _MO);
+            __old = load();
+        }
+        return __start;
+    }
+
+    /// Same as `std::atomic<_Tp>::notify_one`
+    CXX_ALWAYS_INLINE
+    void notify_one() noexcept { super::notify_one(); }
+
+    /// Same as `std::atomic<_Tp>::notify_one`
+    CXX_ALWAYS_INLINE
+    void notify_one() volatile noexcept { super::notify_one(); }
+
+    /// Same as `std::atomic<_Tp>::notify_all`
+    CXX_ALWAYS_INLINE
+    void notify_all() noexcept { super::notify_all(); }
+
+    /// Same as `std::atomic<_Tp>::notify_all`
+    CXX_ALWAYS_INLINE
+    void notify_all() volatile noexcept { super::notify_all(); }
+
+#endif  // C++20
+
+};
 
   template <typename _Tp, std::memory_order _MO>
   std::string to_string(const ordered_atomic<_Tp, _MO> & ref)
