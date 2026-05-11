@@ -2,8 +2,6 @@
  * Author: Sven Gothel <sgothel@jausoft.com>
  * Copyright (c) 2021-2026 Gothel Software e.K.
  *
- * ***
- *
  * SPDX-License-Identifier: MIT
  *
  * This Source Code Form is subject to the terms of the MIT License
