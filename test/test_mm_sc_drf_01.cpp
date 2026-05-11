@@ -79,11 +79,11 @@ class TestMemModelSCDRF01 {
         while( startValue != value1 ) {
             cvRead.wait(lock);
         }
-        REQUIRE_MSG(msg+": %s: value at read value1 (start)", startValue == value1);
+        REQUIRE_MSG(msg+": value at read value1 (start)", startValue == value1);
 
         for(int i=0; i<len; i++) {
             int v = array[i];
-            REQUIRE_MSG(msg+": %s: start value at read array #"+std::to_string(i), (startValue+i) == v);
+            REQUIRE_MSG(msg+": start value at read array #"+std::to_string(i), (startValue+i) == v);
         }
     }
 
@@ -98,12 +98,13 @@ class TestMemModelSCDRF01 {
             while( idx != (value1 * -1) - 1 ) {
                 cvWrite.wait(lock);
             }
-            // INFO_STR("putThreadType11.done @ %d (has %d, exp %d)\n", idx, value1, (idx+1)*-1);
+            // fprintf(stderr, "putThreadType11.done @ %d (has %d, exp %d)\n", idx, value1, (idx+1)*-1);
             value1 = idx;
             array[idx] = idx; // last written checked first, SC-DRF should handle...
             cvRead.notify_all();
         }
     }
+
     void getThreadType11(const std::string& msg, int _idx) {
         const int idx = std::min(number(array_size)-1, _idx);
 
@@ -116,12 +117,12 @@ class TestMemModelSCDRF01 {
             // INFO_STR("getThreadType11.wait for has %d == exp %d\n", value1, idx);
             cvRead.wait(lock);
         }
-        REQUIRE_MSG(msg+": %s: value at read array (idx), idx "+std::to_string(idx), idx == array[idx]); // check last-written first
-        REQUIRE_MSG(msg+": %s: value at read value1 (idx), idx "+std::to_string(idx), idx == value1);
+        REQUIRE_MSG(msg+": value at read array (idx), idx "+std::to_string(idx), idx == array[idx]); // check last-written first
+        REQUIRE_MSG(msg+": value at read value1 (idx), idx "+std::to_string(idx), idx == value1);
         // next write encoded idx
         int next_idx = (idx+1)%array_size;
         next_idx = ( next_idx + 1 ) * -1;
-        // INFO_STR("getThreadType11.done for %d, next %d (v %d)\n", idx, (idx+1)%array_size, next_idx);
+        // fprintf(stderr, "getThreadType11.done for %d, next %d (v %d)\n", idx, (idx+1)%array_size, next_idx);
         value1 = next_idx;
         cvWrite.notify_all();
     }

@@ -82,15 +82,14 @@ class TestMemModelSCDRF00 {
 
         int _sync_value;
         while( startValue != ( _sync_value = sync_value ) ) ; // SC-DRF acquire atomic with spin-lock waiting for startValue
-        REQUIRE_MSG(msg+": %s: value at read value1 (sync)", _sync_value == value1);
-        REQUIRE_MSG(msg+": %s: value at read value1 (start)", startValue == value1);
+        REQUIRE_MSG(msg+": sync_value == startValue", _sync_value == startValue);
+        REQUIRE_MSG(msg+": value at read value1 (start)", startValue == value1);
 
         for(int i=0; i<len; i++) {
             int v = array[i];
-            REQUIRE_MSG(msg+": %s: sync value at read array #"+std::to_string(i), (_sync_value+i) == v);
-            REQUIRE_MSG(msg+": %s: start value at read array #"+std::to_string(i), (startValue+i) == v);
+            REQUIRE_MSG(msg+": start value at read array #"+std::to_string(i), (startValue+i) == v);
         }
-        sync_value = _sync_value; // SC-DRF release atomic
+        sync_value = _sync_value; // SC-DRF release atomic (unchanged)
     }
 
     void putThreadType11(int indexAndValue) {
@@ -104,7 +103,7 @@ class TestMemModelSCDRF00 {
             do {
                 _sync_value = sync_value;
             } while( idx != (_sync_value * -1) - 1 );
-            // INFO_STR("putThreadType11.done @ %d (has %d, exp %d)\n", idx, _sync_value, (idx+1)*-1);
+            // fprintf(stderr, "putThreadType11.done @ %d (has %d, exp %d)\n", idx, _sync_value, (idx+1)*-1);
             _sync_value = idx;
             value1 = idx;
             array[idx] = idx; // last written checked first, SC-DRF should handle...
@@ -122,13 +121,12 @@ class TestMemModelSCDRF00 {
         do {
             _sync_value = sync_value;
         } while( idx != _sync_value );
-        REQUIRE_MSG(msg+": %s: value at read array (a), idx "+std::to_string(idx), idx == array[idx]); // check last-written first
-        REQUIRE_MSG(msg+": %s: value at read value1, idx "+std::to_string(idx), idx == value1);
-        REQUIRE_MSG(msg+": %s: value at read sync, idx "+std::to_string(idx), idx == _sync_value);
+        REQUIRE_MSG(msg+": value at read array (a), idx "+std::to_string(idx), idx == array[idx]); // check last-written first
+        REQUIRE_MSG(msg+": value at read value1, idx "+std::to_string(idx), idx == value1);
         // next write encoded idx
         _sync_value = (idx+1)%array_size;
         _sync_value = ( _sync_value + 1 ) * -1;
-        // INFO_STR("getThreadType11.done for %d, next %d (v %d)\n", idx, (idx+1)%array_size, _sync_value);
+        // fprintf(stderr, "getThreadType11.done for %d, next %d (v %d)\n", idx, (idx+1)%array_size, _sync_value);
         value1 = _sync_value;
         sync_value = _sync_value; // SC-DRF release atomic
     }
