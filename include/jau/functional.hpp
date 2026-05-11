@@ -460,7 +460,7 @@ namespace jau {
 
             public:
                 // null type: `TriviallyCopyable` using cache
-                inline __attribute__((always_inline))
+                CXX_ALWAYS_INLINE
                 static delegate_t make(const target_func_t& tfunc) noexcept
                 {
                     delegate_t target(tfunc);
@@ -471,7 +471,7 @@ namespace jau {
                 // `TriviallyCopyable` using cache
                 template<typename T, typename... P,
                          std::enable_if_t<use_trivial_cache<T>(), bool> = true>
-                inline __attribute__((always_inline))
+                CXX_ALWAYS_INLINE
                 static delegate_t make(const target_func_t& tfunc, P&&... params) noexcept
                 {
                     delegate_t target(tfunc);
@@ -482,7 +482,7 @@ namespace jau {
                 // `TriviallyCopyable` using heap
                 template<typename T, typename... P,
                          std::enable_if_t<use_trivial_heap<T>(), bool> = true>
-                inline __attribute__((always_inline))
+                CXX_ALWAYS_INLINE
                 static delegate_t make(const target_func_t& tfunc, P&&... params) noexcept
                 {
                     delegate_t target(tfunc, true);
@@ -493,7 +493,7 @@ namespace jau {
                 // Non `TriviallyCopyable` using heap
                 template<typename T, typename... P,
                          std::enable_if_t<use_nontrivial_heap<T>(), bool> = true>
-                inline __attribute__((always_inline))
+                CXX_ALWAYS_INLINE
                 static delegate_t make(const target_func_t& tfunc, P&&... params) noexcept
                 {
                     delegate_t target(tfunc, true);
@@ -741,7 +741,7 @@ namespace jau {
                 };
 
             public:
-                inline __attribute__((always_inline))
+                CXX_ALWAYS_INLINE
                 static delegate_type delegate() noexcept {
                     return delegate_type::make(get());
                 }
@@ -849,7 +849,7 @@ namespace jau {
                  * @param method member-function of class C0
                  * @return delegate_t<R, A...> instance holding the target-function object.
                  */
-                inline __attribute__((always_inline))
+                CXX_ALWAYS_INLINE
                 static delegate_type delegate(C1 *base, R(C0::*method)(A...),
                                             std::enable_if_t<std::is_base_of_v<C0, C1>, bool> = true) noexcept
                 {
@@ -899,7 +899,7 @@ namespace jau {
                 };
 
             public:
-                inline __attribute__((always_inline))
+                CXX_ALWAYS_INLINE
                 static delegate_type delegate(R(*function)(A...)) noexcept {
                     return function ? delegate_type::template make<data_type>( get(), function ) : func::null_target_t<R, A...>::delegate();
                 }
@@ -953,7 +953,7 @@ namespace jau {
                 };
 
             public:
-                inline __attribute__((always_inline))
+                CXX_ALWAYS_INLINE
                 static delegate_type delegate(L function) noexcept {
                     return delegate_type::template make<data_type>( get(), std::forward<L>(function) );
                 }
@@ -1049,7 +1049,7 @@ namespace jau {
                 };
 
             public:
-                inline __attribute__((always_inline))
+                CXX_ALWAYS_INLINE
                 static delegate_type delegate(L function) noexcept {
                     return delegate_type::template make<data_type>( get(), std::forward<L>(function) );
                 }
@@ -1104,12 +1104,12 @@ namespace jau {
                 };
 
             public:
-                inline __attribute__((always_inline))
+                CXX_ALWAYS_INLINE
                 static delegate_type delegate(const I& data, R(*function)(I&, A...)) noexcept {
                     return function ? delegate_type::template make<data_type>( get(), data, function ) : func::null_target_t<R, A...>::delegate();
                 }
 
-                inline __attribute__((always_inline))
+                CXX_ALWAYS_INLINE
                 static delegate_type delegate(I&& data, R(*function)(I&, A...)) noexcept {
                     return function ? delegate_type::template make<data_type>( get(), std::forward<I>(data), function ) : func::null_target_t<R, A...>::delegate();
                 }
@@ -1162,7 +1162,7 @@ namespace jau {
                 };
 
             public:
-                inline __attribute__((always_inline))
+                CXX_ALWAYS_INLINE
                 static delegate_type delegate(I* data_ptr, R(*function)(I*, A...)) noexcept {
                     return data_ptr && function ? delegate_type::template make<data_type>( get(), data_ptr, function ) : func::null_target_t<R, A...>::delegate();
                 }
@@ -1224,7 +1224,7 @@ namespace jau {
                 };
 
             public:
-                inline __attribute__((always_inline))
+                CXX_ALWAYS_INLINE
                 static delegate_type delegate(uint64_t id, function_t function) noexcept {
                     return delegate_type::template make<data_type>( get(), id, std::forward<function_t>(function) );
                 }

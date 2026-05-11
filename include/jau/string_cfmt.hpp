@@ -1586,7 +1586,7 @@ namespace jau::cfmt {
      * @see @ref jau_cfmt_header
      */
     template <typename... Targs>
-    inline __attribute__((always_inline))
+    CXX_ALWAYS_INLINE
     std::string format(std::string_view fmt, const Targs &...args) noexcept {
         std::string s;
         impl::StringResult ctx(impl::StringOutput(s.max_size(), s), fmt);
@@ -1617,7 +1617,7 @@ namespace jau::cfmt {
      * @see @ref jau_cfmt_header
      */
     template <typename... Targs>
-    inline __attribute__((always_inline))
+    CXX_ALWAYS_INLINE
     std::string format(size_t maxLen, std::string_view fmt, const Targs &...args) noexcept {
         std::string s;
         impl::StringResult ctx(impl::StringOutput(std::min(maxLen, s.max_size()), s), fmt);
@@ -1650,7 +1650,7 @@ namespace jau::cfmt {
      * @see @ref jau_cfmt_header
      */
     template <typename... Targs>
-    inline __attribute__((always_inline))
+    CXX_ALWAYS_INLINE
     std::string& append(std::string &s, size_t maxLen, std::string_view fmt, const Targs &...args) noexcept {
         impl::StringResult ctx(impl::StringOutput(std::min(maxLen, s.max_size()), s), fmt);
 
@@ -1680,7 +1680,7 @@ namespace jau::cfmt {
      * @see @ref jau_cfmt_header
      */
     template <typename... Targs>
-    inline __attribute__((always_inline))
+    CXX_ALWAYS_INLINE
     std::string& append(std::string &s, std::string_view fmt, const Targs &...args) noexcept {
         return append(s, s.max_size(), fmt, args...);
     }
@@ -1700,7 +1700,7 @@ namespace jau::cfmt {
      * @see @ref jau_cfmt_header
      */
     template <typename... Targs>
-    inline __attribute__((always_inline))
+    CXX_ALWAYS_INLINE
     Result formatR(std::string &s, size_t maxLen, std::string_view fmt, const Targs &...args) noexcept {
         impl::StringResult ctx(impl::StringOutput(std::min(maxLen, s.max_size()), s), fmt);
 
@@ -1730,7 +1730,7 @@ namespace jau::cfmt {
      * @see @ref jau_cfmt_header
      */
     template <typename... Targs>
-    inline __attribute__((always_inline))
+    CXX_ALWAYS_INLINE
     Result formatR(std::string &s, std::string_view fmt, const Targs &...args) noexcept {
         return formatR(s, s.max_size(), fmt, args...);
     }
@@ -1756,7 +1756,7 @@ namespace jau::cfmt {
      * @param args arguments matching the format string
      */
     template <typename... Targs>
-    inline __attribute__((always_inline))
+    CXX_ALWAYS_INLINE
     Result formatR(const std::size_t strLenHint, std::string &s, size_t maxLen, std::string_view fmt, const Targs &...args) noexcept {
         impl::StringResult ctx(impl::StringOutput(std::min(maxLen, s.max_size()), s), fmt);
 
@@ -1792,7 +1792,7 @@ namespace jau::cfmt {
      * @param args arguments matching the format string
      */
     template <typename... Targs>
-    inline __attribute__((always_inline))
+    CXX_ALWAYS_INLINE
     Result formatR(const std::size_t strLenHint, std::string &s, std::string_view fmt, const Targs &...args) noexcept {
         return formatR(strLenHint, s, s.max_size(), fmt, args...);
     }
@@ -1952,7 +1952,7 @@ namespace jau {
      * @param args arguments matching the format string
      */
     template<typename... Args>
-    inline __attribute__((always_inline))
+    CXX_ALWAYS_INLINE
     std::string format_string_n(const std::size_t maxLen, std::string_view fmt, const Args &...args) noexcept {
         return jau::cfmt::format(maxLen, fmt, args...);
     }
@@ -1976,7 +1976,7 @@ namespace jau {
      * @param args arguments matching the format string
      */
     template <typename... Args>
-    inline __attribute__((always_inline))
+    CXX_ALWAYS_INLINE
     std::string format_string_h(const std::size_t strLenHint, std::string_view fmt, const Args &...args) noexcept {
         std::string str;
         jau::cfmt::formatR(strLenHint, str, fmt, args...);
@@ -2004,7 +2004,7 @@ namespace jau {
      * @param args arguments matching the format string
      */
     template <typename... Args>
-    inline __attribute__((always_inline))
+    CXX_ALWAYS_INLINE
     std::string format_string_hn(const std::size_t strLenHint, const std::size_t maxLen, std::string_view fmt, const Args &...args) noexcept {
         std::string str;
         jau::cfmt::formatR(strLenHint, str, maxLen, fmt, args...);
@@ -2030,7 +2030,7 @@ namespace jau {
      * @param args arguments matching the format string
      */
     template <typename... Args>
-    inline __attribute__((always_inline))
+    CXX_ALWAYS_INLINE
     std::string format_string(std::string_view fmt, const Args &...args) noexcept {
         return jau::format_string_h(jau::cfmt::default_string_capacity, fmt, args...);
     }

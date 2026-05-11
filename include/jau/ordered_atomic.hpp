@@ -19,10 +19,6 @@
 
 namespace jau {
 
-#ifndef CXX_ALWAYS_INLINE
-# define CXX_ALWAYS_INLINE inline __attribute__((__always_inline__))
-#endif
-
 /** @defgroup Concurrency Concurrency
  *  Concurrency support to avoid data races and help to synchronize access.
  *

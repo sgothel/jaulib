@@ -62,6 +62,10 @@ namespace jau {
      *  @{
      */
 
+    #ifndef CXX_ALWAYS_INLINE
+        # define CXX_ALWAYS_INLINE inline __attribute__((always_inline))
+    #endif
+
     /**
      * `consteval` qualifier replacement for C++20 `consteval`.
      *
@@ -458,7 +462,7 @@ namespace jau {
      * @param eptr contains optional exception, may be `nullptr`
      * @return true if `eptr` contained an exception pointer, false otherwise (`nullptr`)
      */
-    inline __attribute__((always_inline))
+    CXX_ALWAYS_INLINE
     bool handle_exception(std::exception_ptr eptr, const char* file, int line) noexcept { // NOLINT(performance-unnecessary-value-param) passing by value is OK
         if (eptr) {
             try {

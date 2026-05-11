@@ -38,7 +38,7 @@ namespace jau {
      * @param eh exception_handler_t to process an eventual exception
      * @return true if `eptr` contained an exception pointer, exception_handler_t result is returned. Otherwise false (no exception).
      */
-    inline __attribute__((always_inline))
+    CXX_ALWAYS_INLINE
     bool handle_exception(std::exception_ptr eptr, jau::exception_handler_t &eh, const char* file, int line) noexcept { // NOLINT(performance-unnecessary-value-param) passing by value is OK
         if (eptr) {
             try {
