@@ -51,6 +51,13 @@ namespace jau {
  * </p>
  */
 template <typename _Tp, std::memory_order _MO> struct ordered_atomic : private std::atomic<_Tp> {
+  public:
+    /// Used underlying type
+    using value_type = _Tp;
+
+    /// Used std::memory_order
+    static constexpr const std::memory_order order = _MO;
+
   private:
     typedef std::atomic<_Tp> super;
 
