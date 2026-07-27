@@ -201,9 +201,13 @@ static void checkFormat(int line, const char *fmt, const Args &...args) {
     CHECK(exp == has);
 }
 
-class SomeClass {
+class SomeClass1 {
   public:
-    std::string toString() const { return "SomeClass toString"; }
+    std::string toString() const { return "SomeClass1 toString"; }
+};
+class SomeClass2 {
+  public:
+    std::string_view to_string() const { return "SomeClass2 toString"; }
 };
 enum class game_t : uint16_t {
     none,
@@ -306,24 +310,6 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
         CHECK( true == jau::format_string("%s", handle).starts_with("<E#1"));
         CHECK( true == jau::format_string("%s", nil).starts_with("<E#1"));
     }
-    {
-        CHECK("SomeClass toString" == jau::to_string(SomeClass()));
-        jau_format_checkLine("%s", SomeClass());
-        CHECK( "SomeClass toString" == jau::format_string("%s", SomeClass()));
-
-        CHECK("chess" == jau::to_string(game_t::chess));
-        CHECK("pacman" == jau::to_string(game_t::pacman));
-        jau_format_checkLine("%s", game_t::chess);
-        CHECK( "chess" == jau::format_string("%s", game_t::chess));
-        CHECK( "pacman" == jau::format_string("%s", game_t::pacman));
-
-        CHECK("lala" != jau::to_string(plainenum_t::lala)); // no to_string available
-        CHECK( -1 == jau::cfmt::check("%s", plainenum_t::lala));    // no to_string available
-
-        CHECK("little" == jau::to_string(jau::lb_endian_t::little));
-        jau_format_checkLine("%s", jau::lb_endian_t::little);
-        CHECK( "little" == jau::format_string("%s", jau::lb_endian_t::little));
-    }
     checkFormat(__LINE__, "%p", &i32);
     checkFormat(__LINE__, "p1a %p %0p", p1a, p1a);
     checkFormat(__LINE__, "p1b %p %0p", p1b, p1b);
@@ -405,7 +391,7 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
         CHECK("false" == jau::format_string("%s", (bool)false));
     }
 
-    // enums
+    // enums: integral value
     {
         enum enum1_unsigned_t { jau1_alpha, jau1_beta, jau1_gamma }; ///< unsigned
         enum1_unsigned_t e1_u = jau1_alpha;
@@ -443,6 +429,37 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
         static_assert(0 == jau::cfmt::checkLine("%u\n", e1_u)); // unsigned -> unsigned OK
         static_assert(0 < jau::cfmt::checkLine("%d\n", e1_u));  // unsigned -> signed ERROR
         static_assert(0 == jau::cfmt::checkLine("%u\n", e2_s)); // signed -> unsigned OK
+
+        CHECK("lala" != jau::to_string(plainenum_t::lala)); // no to_string available
+        CHECK( -1 == jau::cfmt::check("%s", plainenum_t::lala));    // no to_string available
+    }
+    // enums: string value
+    {
+        CHECK("chess" == jau::to_string(game_t::chess));
+        CHECK("pacman" == jau::to_string(game_t::pacman));
+        jau_format_checkLine("%s", game_t::chess);
+        CHECK( "chess" == jau::format_string("%s", game_t::chess));
+        CHECK( "pacman" == jau::format_string("%s", game_t::pacman));
+
+        CHECK("little" == jau::to_string(jau::lb_endian_t::little));
+        jau_format_checkLine("%s", jau::lb_endian_t::little);
+        CHECK( "little" == jau::format_string("%s", jau::lb_endian_t::little));
+    }
+    // class w/ toString to_string
+    {
+        CHECK("SomeClass1 toString" == jau::to_string(SomeClass1()));
+        jau_format_checkLine("%s", SomeClass1());
+        CHECK( "SomeClass1 toString" == jau::format_string("%s", SomeClass1()));
+
+        CHECK("SomeClass2 toString" == SomeClass2().to_string());
+        jau_format_checkLine("%s", SomeClass2());
+        CHECK("SomeClass2 toString" == jau::format_string("%s", SomeClass2()));
+
+        SomeClass1 sc1;
+        CHECK("SomeClass1 toString" == jau::to_string(sc1));
+        CHECK("SomeClass1 toString" == jau::format_string("%s", sc1));
+        // CHECK("SomeClass1 toString" == jau::format_string("%s", &sc1));
+        CHECK("SomeClass1 toString" != jau::format_string("%p", &sc1));
     }
 }
 

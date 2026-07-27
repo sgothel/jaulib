@@ -1,33 +1,55 @@
 #!/bin/sh
 
+sdir=`dirname $(readlink -f $0)`
+rootdir=`dirname $sdir`
+bname=`basename $0 .sh`
+
 builddir=$1
+
+version="1.5.1"
 
 nm_opts="-C --print-size --size-sort --radix=d"
 
 check() {
     builddir=$1
+    nmlog=$2
     echo "Symbols ${builddir}: libjaulib"
-    nm ${nm_opts} ${builddir}/src/libjaulib.so.1.4.1 | grep "jau::cfmt" | wc
+    nm ${nm_opts} ${builddir}/src/libjaulib.so.${version} | grep "jau::cfmt" | tee ${nmlog}.lib.txt | wc -l
 
     echo Symbols "${builddir}: test_stringfmt_format"
-    nm ${nm_opts} ${builddir}/test/test_stringfmt_format | grep "jau::cfmt" | wc
+    nm ${nm_opts} ${builddir}/test/test_stringfmt_format | grep "jau::cfmt" | tee ${nmlog}.format.txt | wc -l
+    echo Symbols "${builddir}: test_stringfmt_footprint0"
+    nm ${nm_opts} ${builddir}/test/test_stringfmt_footprint0 | grep "jau::cfmt" | tee ${nmlog}.foot0.txt | wc -l
+    echo Symbols "${builddir}: test_stringfmt_footprint1"
+    nm ${nm_opts} ${builddir}/test/test_stringfmt_footprint1 | grep "jau::cfmt" | tee ${nmlog}.foot1.txt | wc -l
     echo
     echo "--------------------------------------------------"
     echo
 
-    echo "Size ${builddir}: Kilobytes libjaulib"
+    echo "Size ${builddir}: Kilobytes test_stringfmt_format"
     du -hsk --apparent-size ${builddir}/test/test_stringfmt_format
 
-    echo "Size ${builddir}: Kilobytes test_stringfmt_format"
-    du -hsk --apparent-size ${builddir}/src/libjaulib.so.1.4.1
+    echo "Size ${builddir}: Kilobytes test_stringfmt_footprint0"
+    du -hsk --apparent-size ${builddir}/test/test_stringfmt_footprint0
+    echo "Size ${builddir}: Kilobytes test_stringfmt_footprint1"
+    du -hsk --apparent-size ${builddir}/test/test_stringfmt_footprint1
+
+    echo "Size ${builddir}: Kilobytes libjaulib"
+    du -hsk --apparent-size ${builddir}/src/libjaulib.so.${version}
     echo
     echo "--------------------------------------------------"
     echo
 }
 
+check_logged() {
+    builddir=$1
+    logname=${bname}-`basename ${builddir}`
+    check ${builddir} ${logname}.nm 2>&1 | tee ${logname}.txt
+}
+
 if [ -z "${builddir}" ] ; then
-    check release-clang
-    check release-gcc
+    check_logged build/release-clang
+    check_logged build/release-gcc
 else
-    check ${builddir}
+    check_logged ${builddir}
 fi

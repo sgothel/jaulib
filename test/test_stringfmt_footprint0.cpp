@@ -39,16 +39,18 @@ using namespace jau::float_literals;
 
 using namespace jau::int_literals;
 
+#define FOOTPRINT_EXT 1
+
 //
 // Explore memory footprint of using jau::cfmt, this unit uses unsafe variadic-argument format (not jau::cfmt)
 //
 
 template <typename... Args>
+CXX_ALWAYS_INLINE
 static void printFormat(int line, const char *fmt, const Args &...args) {
     // std::string exp = jau::unsafe::format_string(fmt, args...);
     // std::string has = jau::format_string(fmt, args...);
-    std::string has = jau::unsafe::format_string(fmt, args...);
-    std::cerr << "FormatResult @ " << line << ": has `" << has << "`\n\n";
+    std::cerr << "FormatResult @ " << line << ": has `" << jau::unsafe::format_string(fmt, args...) << "`\n\n";
 }
 
 TEST_CASE("format: std::cfmt footprint", "[jau][std::string][jau::cfmt][footprint]") {
@@ -76,7 +78,10 @@ TEST_CASE("format: std::cfmt footprint", "[jau][std::string][jau::cfmt][footprin
     printFormat(__LINE__, "p2b %p %0p", p2b, p2b);
     printFormat(__LINE__, "p3a %p %0p", p3a, p3a);
     printFormat(__LINE__, "p3b %p %0p", p3b, p3b);
-
+#if FOOTPRINT_EXT
+    printFormat(__LINE__, "xxx %p %0p, %p %0p, %p %0p, %p %0p, %p %0p, %p %0p",
+        p1a, p1a, p1b, p1b, p2a, p2a, p2b, p2b, p3a, p3a, p3b, p3b);
+#endif
     printFormat(__LINE__, "%d", i32);
 
     printFormat(__LINE__, "%o", u32);
@@ -87,6 +92,9 @@ TEST_CASE("format: std::cfmt footprint", "[jau][std::string][jau::cfmt][footprin
     printFormat(__LINE__, "%x", i32_u);
     printFormat(__LINE__, "%X", i32_u);
     printFormat(__LINE__, "%u", i32_u);
+#if FOOTPRINT_EXT
+    printFormat(__LINE__, "%o %x %X %u, %o %x %X %u", u32, u32, u32, u32, i32_u, i32_u, i32_u, i32_u);
+#endif
 
     printFormat(__LINE__, "%f", f64);
     printFormat(__LINE__, "%e", f64);
@@ -95,6 +103,9 @@ TEST_CASE("format: std::cfmt footprint", "[jau][std::string][jau::cfmt][footprin
     printFormat(__LINE__, "%A", f64);
     // checkFormat(__LINE__, "%g", f64);
     // checkFormat(__LINE__, "%G", f64);
+#if FOOTPRINT_EXT
+    printFormat(__LINE__, "%f %e %E %a %A", f64, f64, f64, f64, f64);
+#endif
 
     printFormat(__LINE__, "%f", f32);
     printFormat(__LINE__, "%e", f32);
@@ -103,6 +114,60 @@ TEST_CASE("format: std::cfmt footprint", "[jau][std::string][jau::cfmt][footprin
     printFormat(__LINE__, "%A", f32);
     // checkFormat(__LINE__, "%g", f32);
     // checkFormat(__LINE__, "%G", f32);
+#if FOOTPRINT_EXT
+    printFormat(__LINE__, "%f %e %E %a %A", f32, f32, f32, f32, f32);
+#endif
+
+    printFormat(__LINE__, "0 %o %x %X %u, %o %x %X %u %u %u",   0, u32, u32, u32, i32_u, i32_u, i32_u, i32_u, 0U, 1U);
+#if FOOTPRINT_EXT
+    printFormat(__LINE__, "1 %o %x %X %u, %o %x %X %u %u %u", u32,   1, u32, u32, i32_u, i32_u, i32_u, i32_u, 2U, 3U);
+    printFormat(__LINE__, "2 %o %x %X %u, %o %x %X %u %u %u", u32, u32,   2, u32, i32_u, i32_u, i32_u, i32_u, 4U, 5U);
+    printFormat(__LINE__, "3 %o %x %X %u, %o %x %X %u %u %u", u32, u32, u32,   3, i32_u, i32_u, i32_u, i32_u, 6U, 7U);
+    printFormat(__LINE__, "4 %o %x %X %u, %o %x %X %u %u %u", u32, u32, u32, u32,    4U, i32_u, i32_u, i32_u, 8U, 9U);
+    printFormat(__LINE__, "5 %o %x %X %u, %o %x %X %u %u %u", u32, u32, u32, u32, i32_u,    5U, i32_u, i32_u, 8U, 7U);
+    printFormat(__LINE__, "6 %o %x %X %u, %o %x %X %u %u %u", u32, u32, u32, u32, i32_u, i32_u,    6U, i32_u, 6U, 5U);
+    printFormat(__LINE__, "7 %o %x %X %u, %o %x %X %u %u %u", u32, u32, u32, u32, i32_u, i32_u, i32_u,    7U, 4U, 3U);
+    printFormat(__LINE__, "8 %o %x %X %u, %o %x %X %u %u %u", u32, u32, u32, u32, i32_u, i32_u, i32_u, i32_u, 2U, 1U);
+    printFormat(__LINE__, "9 %o %x %X %u, %o %x %X %u %u %u", u32, u32, u32, u32, i32_u, i32_u, i32_u, i32_u, 9U, 9U);
+#endif
+    printFormat(__LINE__, "a %o %x %X %u, %o %x %X %u %u %u",   0, u32, u32, u32, i32_u, i32_u, i32_u, i32_u, 0U, 1U);
+#if FOOTPRINT_EXT
+    printFormat(__LINE__, "b %o %x %X %u, %o %x %X %u %u %u", u32,   1, u32, u32, i32_u, i32_u, i32_u, i32_u, 2U, 3U);
+    printFormat(__LINE__, "c %o %x %X %u, %o %x %X %u %u %u", u32, u32,   2, u32, i32_u, i32_u, i32_u, i32_u, 4U, 5U);
+    printFormat(__LINE__, "d %o %x %X %u, %o %x %X %u %u %u", u32, u32, u32,   3, i32_u, i32_u, i32_u, i32_u, 6U, 7U);
+    printFormat(__LINE__, "e %o %x %X %u, %o %x %X %u %u %u", u32, u32, u32, u32,    4U, i32_u, i32_u, i32_u, 8U, 9U);
+    printFormat(__LINE__, "f %o %x %X %u, %o %x %X %u %u %u", u32, u32, u32, u32, i32_u,    5U, i32_u, i32_u, 8U, 7U);
+    printFormat(__LINE__, "g %o %x %X %u, %o %x %X %u %u %u", u32, u32, u32, u32, i32_u, i32_u,    6U, i32_u, 6U, 5U);
+    printFormat(__LINE__, "h %o %x %X %u, %o %x %X %u %u %u", u32, u32, u32, u32, i32_u, i32_u, i32_u,    7U, 4U, 3U);
+    printFormat(__LINE__, "i %o %x %X %u, %o %x %X %u %u %u", u32, u32, u32, u32, i32_u, i32_u, i32_u, i32_u, 2U, 1U);
+    printFormat(__LINE__, "j %o %x %X %u, %o %x %X %u %u %u", u32, u32, u32, u32, i32_u, i32_u, i32_u, i32_u, 9U, 9U);
+#endif
+
+
+    printFormat(__LINE__, "0 %f %e %E %a %A", f32, f32, f32, f32, f32);
+#if FOOTPRINT_EXT
+    printFormat(__LINE__, "1 %f %e %E %a %A", f32, f32, f32, f32, f32);
+    printFormat(__LINE__, "2 %f %e %E %a %A", f32, f32, f32, f32, f32);
+    printFormat(__LINE__, "3 %f %e %E %a %A", f32, f32, f32, f32, f32);
+    printFormat(__LINE__, "4 %f %e %E %a %A", f32, f32, f32, f32, f32);
+    printFormat(__LINE__, "5 %f %e %E %a %A", f32, f32, f32, f32, f32);
+    printFormat(__LINE__, "6 %f %e %E %a %A", f32, f32, f32, f32, f32);
+    printFormat(__LINE__, "7 %f %e %E %a %A", f32, f32, f32, f32, f32);
+    printFormat(__LINE__, "8 %f %e %E %a %A", f32, f32, f32, f32, f32);
+    printFormat(__LINE__, "9 %f %e %E %a %A", f32, f32, f32, f32, f32);
+#endif
+    printFormat(__LINE__, "a %f %e %E %a %A", f32, f32, f32, f32, f32);
+#if FOOTPRINT_EXT
+    printFormat(__LINE__, "b %f %e %E %a %A", f32, f32, f32, f32, f32);
+    printFormat(__LINE__, "c %f %e %E %a %A", f32, f32, f32, f32, f32);
+    printFormat(__LINE__, "d %f %e %E %a %A", f32, f32, f32, f32, f32);
+    printFormat(__LINE__, "e %f %e %E %a %A", f32, f32, f32, f32, f32);
+    printFormat(__LINE__, "f %f %e %E %a %A", f32, f32, f32, f32, f32);
+    printFormat(__LINE__, "g %f %e %E %a %A", f32, f32, f32, f32, f32);
+    printFormat(__LINE__, "h %f %e %E %a %A", f32, f32, f32, f32, f32);
+    printFormat(__LINE__, "i %f %e %E %a %A", f32, f32, f32, f32, f32);
+    printFormat(__LINE__, "j %f %e %E %a %A", f32, f32, f32, f32, f32);
+#endif
 
     printFormat(__LINE__, "%dZZZ", i32);
     printFormat(__LINE__, "%dZZ", i32);
