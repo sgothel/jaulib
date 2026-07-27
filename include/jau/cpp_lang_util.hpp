@@ -66,6 +66,10 @@ namespace jau {
         # define CXX_ALWAYS_INLINE inline __attribute__((always_inline))
     #endif
 
+    #ifndef CXX_NO_INLINE
+        # define CXX_NO_INLINE inline __attribute__((noinline))
+    #endif
+
     /**
      * `consteval` qualifier replacement for C++20 `consteval`.
      *
