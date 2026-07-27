@@ -114,12 +114,12 @@ namespace jau::req {
 
     /// A std::string
     template<typename T>
-    concept string_type = std::is_base_of_v<std::string, std::remove_cv_t<std::remove_reference_t<T>>>;
+    concept string_type = std::is_base_of_v<std::string, std::remove_reference_t<T>>;
 
     /// A string class, i.e. std::string, std::string_view or jau::StringLiteral
     template<typename T>
     concept string_class = string_type<T>
-                        || std::is_base_of_v<std::string_view, std::remove_cv_t<std::remove_reference_t<T>>>
+                        || std::is_base_of_v<std::string_view, std::remove_reference_t<T>>
                         || std::is_same_v<decltype(jau::StringLiteral(T{})), T>;
 
     /**
