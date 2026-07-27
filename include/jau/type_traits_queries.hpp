@@ -158,10 +158,10 @@ namespace jau {
     template<class C> struct name<C, typename std::enable_if_t< \
       !std::is_same_v<decltype(std::declval<C>().fn args)*, void>>> : std::true_type {};
 
-    METHOD_CHECKER(has_toString, toString, std::string, ())
+    METHOD_CHECKER(has_toString, toString, std::string_view, ())
     template <typename _Tp> inline constexpr bool has_toString_v = has_toString<_Tp>::value;
 
-    METHOD_CHECKER(has_to_string, to_string, std::string, ())
+    METHOD_CHECKER(has_to_string, to_string, std::string_view, ())
     template <typename _Tp> inline constexpr bool has_to_string_v = has_to_string<_Tp>::value;
 
     // Author: Sven Gothel

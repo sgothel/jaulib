@@ -91,6 +91,7 @@ TEST_CASE( "01 Type Concept Queries: Build-In") {
     static_assert(false == jau::req::unsigned_integral<jau::uint128dp_t> );
     static_assert(false == jau::req::signed_integral<jau::uint128dp_t> );
 
+    static_assert(true  == std::is_integral_v<bool> );
     static_assert(true  == jau::req::boolean<bool> );
     static_assert(false == jau::req::boolean<int> );
 
@@ -119,6 +120,20 @@ TEST_CASE( "01 Type Concept Queries: Build-In") {
     static_assert(false == jau::req::is_contiguous_container<std::deque<int>>() );
 
     REQUIRE(true == true);
+}
+
+template <typename T>
+requires jau::req::string_alike0<T>
+static constexpr void checkOne() noexcept {}
+template <typename T>
+requires jau::req::boolean<T>
+static constexpr void checkOne() noexcept {}
+
+template <typename... Targs>
+consteval_cxx20 void check2(std::string_view) noexcept {
+    if constexpr( 0 < sizeof...(Targs) ) {
+        ((checkOne<Targs>()), ...);
+    }
 }
 
 TEST_CASE( "02 Type Concept Queries: Strings") {
@@ -172,6 +187,15 @@ TEST_CASE( "02 Type Concept Queries: Strings") {
     static_assert(false == jau::req::string_alike<decltype(123)> );
     static_assert(false == jau::req::string_alike<decltype(123.0f)> );
     static_assert(false == jau::req::string_alike<AnyClass> );
+    {
+        bool b_;
+        std::string name_;
+        static_assert(true  == jau::req::string_alike<decltype(name_)> );
+        static_assert(true  == jau::req::string_alike0<decltype(name_)> );
+        static_assert(true  == jau::req::boolean<decltype(b_)> );
+        check2<decltype(name_)>("");
+        check2<decltype(b_)>("");
+    }
 
     static_assert(true  == jau::req::stringifyable_std<decltype(std::string("Hello"))> );
     static_assert(true  == jau::req::stringifyable_std<decltype(std::string_view("Hello"))> );
