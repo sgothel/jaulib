@@ -1340,7 +1340,7 @@ namespace jau {
                                       !std::is_same_v<L, function<R(A...)>>
                      , bool> = true>
             function(L func) noexcept
-            : target( func::lambda_target_t<R, L, A...>::delegate(func) )
+            : target( func::lambda_target_t<R, L, A...>::delegate(std::move(func)) )
             { }
 
             /**
@@ -1357,7 +1357,7 @@ namespace jau {
             template<typename L>
             static function<R(A...)> bind_lambda(L func) noexcept
             {
-                return function<R(A...)>( jau::func::lambda_target_t<R, L, A...>::delegate(func), 0 );
+                return function<R(A...)>( jau::func::lambda_target_t<R, L, A...>::delegate(std::move(func)), 0 );
             }
 
             /**
@@ -1378,7 +1378,7 @@ namespace jau {
             template<typename L>
             static function<R(A...)> bind_ylambda(L func) noexcept
             {
-                return function<R(A...)>( jau::func::ylambda_target_t<R, L, A...>::delegate(func), 0 );
+                return function<R(A...)>( jau::func::ylambda_target_t<R, L, A...>::delegate(std::move(func)), 0 );
             }
 
             /**
@@ -1477,7 +1477,7 @@ namespace jau {
              * @see @ref function_usage "function Usage"
              */
             function(uint64_t id, std::function<R(A...)> func) noexcept
-            : target( func::std_target_t<R, A...>::delegate(id, func) )
+            : target( func::std_target_t<R, A...>::delegate(id, std::move(func)) )
             { }
 
             function(const function &o) noexcept = default;
