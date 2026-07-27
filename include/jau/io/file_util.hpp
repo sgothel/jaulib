@@ -124,6 +124,8 @@ namespace jau::io::fs {
      */
     std::string lookup_asset_dir(const char* exe_path, const char* asset_file, const char* asset_install_subdir) noexcept;
 
+    class file_stats; // fwd
+
     /**
      * Representing a directory item split into dirname() and basename().
      */
@@ -131,6 +133,7 @@ namespace jau::io::fs {
         private:
             std::string dirname_;
             std::string basename_;
+            std::shared_ptr<file_stats> fstats_;
             bool empty_;
 
             struct backed_string_view {
@@ -232,6 +235,17 @@ namespace jau::io::fs {
              */
             dir_item(std::string dirname__, std::string basename__) noexcept;
 
+            /**
+             * Create and set file_stats to this item
+             * @param dirfd directory file-descriptor of this dirname
+             */
+            void set_stats(int dirfd) noexcept;
+
+            /**
+             * Create and set file_stats to this item
+             */
+            void set_stats() noexcept;
+
             /** Returns the dirname, shall not be empty and denotes `.` for current working director. */
             const std::string& dirname() const noexcept { return dirname_; }
 
@@ -247,6 +261,9 @@ namespace jau::io::fs {
              * Returns true if bot, dirname() and basename() refer to `.`, e.g.. default ctor.
              */
             bool empty() const noexcept { return empty_; }
+
+            /** Returns pointer to optional file_stats, maybe nullptr if not used. */
+            const file_stats* stats() const noexcept { return fstats_.get(); };
 
             bool operator==(const dir_item& rhs) const noexcept {
                 return dirname_ == rhs.dirname_ && basename_ == rhs.basename_;
@@ -574,6 +591,9 @@ namespace jau::io::fs {
             /** Returns the retrieved field_t fields. */
             constexpr field_t fields() const noexcept { return has_fields_; }
 
+            /** Returns true if this object has been initialized with an actual file, i.e. fields() != field_t::none. Otherwise false. */
+            bool is_initialized() const noexcept { return has_fields_ != field_t::none; }
+
             /** Returns the fmode_t, file type and mode. */
             fmode_t mode() const noexcept { return mode_; }
 
@@ -698,9 +718,9 @@ namespace jau::io::fs {
     bool touch(const std::string& path, const fmode_t mode = fmode_t::def_file_prot) noexcept;
 
     /**
-     * `void consume_dir_item(const dir_item& item)`
+     * `void consume_dir_item(dir_item& item)`
      */
-    typedef jau::function<void(const dir_item&)> consume_dir_item;
+    typedef jau::function<void(dir_item&&)> consume_dir_item;
 
     /**
      * Returns a list of directory elements excluding `.` and `..` for the given path, non recursive.
@@ -714,16 +734,21 @@ namespace jau::io::fs {
     bool get_dir_content(const std::string& path, const consume_dir_item& digest) noexcept;
 
     /**
+     * `void consume_dirfd_item(int dirfd, const dir_item& item)`
+     */
+    typedef jau::function<void(int dirfd, dir_item&&)> consume_dirfd_item;
+
+    /**
      * Returns a list of directory elements excluding `.` and `..` for the given path, non recursive.
      *
      * The custom consume_dir_item `digest` may also be used to filter the element, besides storing it.
      *
      * @param dirfd file descriptor to given `path` left untouched as a copy is being used to retrieve the directory content.
      * @param path path to directory
-     * @param digest consume_dir_item function to receive each directory item, e.g. `void consume_dir_item(const dir_item& item)`
+     * @param digest consume_dirfd_item function to receive each directory item, e.g. `void consume_dirfd_item(int dirfd, const dir_item& item)`
      * @return true if given path exists, is directory and is readable, otherwise false
      */
-    bool get_dir_content(const int dirfd, const std::string& path, const consume_dir_item& digest) noexcept;
+    bool get_dir_content(const int dirfd, const std::string& path, const consume_dirfd_item& digest) noexcept;
 
     /**
      * Filesystem traverse event used to call path_visitor for path elements from visit().
@@ -796,17 +821,26 @@ namespace jau::io::fs {
 
     /**
      * path_visitor jau::FunctionDef definition
-     * - `bool visitor(traverse_event tevt, const file_stats& item_stats, size_t depth)`
+     * - `bool visitor(traverse_event tevt, const file_stats& item_stats, size_t depth, size_t file_idx, size_t file_count)`
      *
-     * Depth being the recursive directory depth starting with 1 for the initial directory.
+     * Arguments
+     * - `depth` being the recursive directory depth starting with 1 for the initial directory
+     * - `file_idx` being the current file index starting with zero of all files (see `file_count`) of the current directory (see `depth`)
+     * - `file_count` number of files of the current directory (see `depth`).
+     *
+     * If a visit calls is for a directory itself, `file_idx` and `file_count` is zero.
      *
      * Returning `false` stops traversal in general but traverse_options::dir_check_entry
      * will only skip traversing the denied directory.
      */
-    typedef jau::function<bool(traverse_event, const file_stats&, size_t)> path_visitor;
+    typedef jau::function<bool(traverse_event, const file_stats&, [[maybe_unused]] size_t depth,
+                               [[maybe_unused]] size_t file_idx, [[maybe_unused]] size_t file_count)> path_visitor;
 
     /**
      * Filesystem traverse options used to visit() path elements.
+     *
+     * Only one optional order can be given, i.e. lexicographical_order, mtime_order or size_order.
+     * To reverse their order reverse_order may be set.
      *
      * This `enum class` type fulfills `C++ named requirements: BitmaskType`.
      *
@@ -823,22 +857,33 @@ namespace jau::io::fs {
         /** Traverse through symbolic linked directories if traverse_options::recursive is set, i.e. directories with property fmode_t::link set. */
         follow_symlinks = 1U << 1,
 
+        /** Reverses traverse order: lexicographical_order, mtime_order or size_order. */
+        reverse_order = 1U << 2,
+
         /** Traverse through elements in lexicographical order. This might be required when computing an order dependent outcome like a hash value. */
-        lexicographical_order = 1U << 2,
+        lexicographical_order = 1U << 3,
+
+        /** Traverse through elements in order of their size, i.e. oldest files first. */
+        size_order = 1U << 4,
+
+        /** Traverse through elements in order of their modification timestamp, i.e. oldest files first. */
+        mtime_order = 1U << 5,
 
         /** Call path_visitor at directory entry, allowing path_visitor to skip traversal of this directory if returning false. */
-        dir_check_entry = 1U << 7,
+        dir_check_entry = 1U << 12,
 
         /** Call path_visitor at directory entry. Both, dir_entry and dir_exit can be set, only one or none. */
-        dir_entry = 1U << 8,
+        dir_entry = 1U << 13,
 
         /** Call path_visitor at directory exit. Both, dir_entry and dir_exit can be set, only one or none. */
-        dir_exit = 1U << 9,
+        dir_exit = 1U << 14,
 
         /** Enable verbosity mode, potentially used by a path_visitor implementation like remove(). */
         verbose = 1U << 15
     };
-    JAU_MAKE_BITFIELD_ENUM_STRING(traverse_options, recursive, follow_symlinks, lexicographical_order, dir_check_entry, dir_entry, dir_exit);
+    JAU_MAKE_BITFIELD_ENUM_STRING(traverse_options, recursive, follow_symlinks,
+                                  reverse_order, lexicographical_order, size_order, mtime_order,
+                                  dir_check_entry, dir_entry, dir_exit);
 
     /**
      * Visit element(s) of a given path, see traverse_options for detailed settings.

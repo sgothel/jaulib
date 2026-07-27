@@ -1167,10 +1167,6 @@ class TestFileUtil01 : TestFileUtilBase {
     }
 
 
-    void test21_visit_error() {
-        INFO_STR("\n\ntest21_visit_error\n");
-    }
-
     void test20_visit() {
         INFO_STR("\n\ntest20_visit\n");
 
@@ -1197,9 +1193,8 @@ class TestFileUtil01 : TestFileUtilBase {
         visitor_stats stats_R_FSL_PDL(topts_R_FSL_PDL);
         {
             // Use an easy-code capturing lambda visitor
-            const jau::io::fs::path_visitor pv = [&](jau::io::fs::traverse_event tevt, const jau::io::fs::file_stats& element_stats, size_t depth) -> bool {
+            const jau::io::fs::path_visitor pv = [&](jau::io::fs::traverse_event tevt, const jau::io::fs::file_stats& element_stats, size_t, size_t, size_t) -> bool {
                             (void)tevt;
-                            (void)depth;
                             stats_R_FSL_PDL.add(element_stats);
                             return true;
                           };
@@ -1223,10 +1218,9 @@ class TestFileUtil01 : TestFileUtilBase {
         {
             // Use a harder to code internal capturing-reference type visitor
             const jau::io::fs::path_visitor pv = jau::bind_capref(&stats_R_FSL,
-                    ( bool(*)(visitor_stats*, jau::io::fs::traverse_event, const jau::io::fs::file_stats&, size_t) ) /* help template type deduction of function-ptr */
-                        ( [](visitor_stats* stats_ptr, jau::io::fs::traverse_event tevt, const jau::io::fs::file_stats& element_stats, size_t depth) -> bool {
+                    ( bool(*)(visitor_stats*, jau::io::fs::traverse_event, const jau::io::fs::file_stats&, size_t, size_t, size_t) ) /* help template type deduction of function-ptr */
+                        ( [](visitor_stats* stats_ptr, jau::io::fs::traverse_event tevt, const jau::io::fs::file_stats& element_stats, size_t, size_t, size_t) -> bool {
                             (void)tevt;
-                            (void)depth;
                             stats_ptr->add(element_stats);
                             return true;
                           } ) );
@@ -1236,6 +1230,201 @@ class TestFileUtil01 : TestFileUtilBase {
         }
 
         REQUIRE( true == jau::io::fs::remove(temp_root, jau::io::fs::traverse_options::recursive) );
+    }
+
+    static void test21_create_temp(const std::string &temp_root) {
+            std::string sub_dir1 = temp_root+"/sub1";
+            std::string sub_dir2 = temp_root+"/sub2";
+            std::string sub_dir3 = temp_root+"/sub1/sub3";
+            const jau::fraction_timespec ts( 1577836800_s + 0_h); // 2020-01-01 00:00:00
+
+            REQUIRE( true == jau::io::fs::mkdir(temp_root, jau::io::fs::fmode_t::def_dir_prot) );
+            REQUIRE( true == jau::io::fs::touch(temp_root+"/data02.txt", ts + 13_d, ts + 3_d) ); // atime, mtime
+            REQUIRE( true == jau::io::fs::touch(temp_root+"/data01.txt", ts + 12_d, ts + 2_d) ); // atime, mtime
+            REQUIRE( true == jau::io::fs::touch(temp_root+"/data03.txt", ts + 11_d, ts + 1_d) ); // atime, mtime
+            REQUIRE( true == jau::io::fs::mkdir(sub_dir1, jau::io::fs::fmode_t::def_dir_prot) );
+            REQUIRE( true == jau::io::fs::mkdir(sub_dir2, jau::io::fs::fmode_t::def_dir_prot) );
+            REQUIRE( true == jau::io::fs::mkdir(sub_dir3, jau::io::fs::fmode_t::def_dir_prot) );
+            REQUIRE( true == jau::io::fs::touch(sub_dir1+"/data12.txt", ts + 23_d, ts + 13_d) ); // atime, mtime
+            REQUIRE( true == jau::io::fs::touch(sub_dir1+"/data11.txt", ts + 22_d, ts + 12_d) ); // atime, mtime
+            REQUIRE( true == jau::io::fs::touch(sub_dir1+"/data13.txt", ts + 21_d, ts + 11_d) ); // atime, mtime
+            REQUIRE( true == jau::io::fs::touch(sub_dir2+"/data22.txt", ts + 33_d, ts + 23_d) ); // atime, mtime
+            REQUIRE( true == jau::io::fs::touch(sub_dir2+"/data21.txt", ts + 32_d, ts + 22_d) ); // atime, mtime
+            REQUIRE( true == jau::io::fs::touch(sub_dir2+"/data23.txt", ts + 31_d, ts + 21_d) ); // atime, mtime
+            REQUIRE( true == jau::io::fs::touch(sub_dir3+"/data32.txt", ts + 43_d, ts + 33_d) ); // atime, mtime
+            REQUIRE( true == jau::io::fs::touch(sub_dir3+"/data31.txt", ts + 42_d, ts + 32_d) ); // atime, mtime
+            REQUIRE( true == jau::io::fs::touch(sub_dir3+"/data33.txt", ts + 41_d, ts + 31_d) ); // atime, mtime
+    }
+    static void test21_check(const visitor_stats& vstats) {
+            REQUIRE( 16 == vstats.total_real );
+            REQUIRE(  0 == vstats.total_sym_links_existing );
+            REQUIRE(  0 == vstats.total_sym_links_not_existing );
+            REQUIRE(  0 == vstats.total_no_access );
+            REQUIRE(  0 == vstats.total_not_existing );
+            REQUIRE(  0 == vstats.total_file_bytes );
+            REQUIRE( 12 == vstats.files_real );
+            REQUIRE(  0 == vstats.files_sym_link );
+            REQUIRE(  4 == vstats.dirs_real );
+            REQUIRE(  0 == vstats.dirs_sym_link );
+    }
+    void test21_visit_ordered() {
+        {
+            INFO_STR("\n\ntest21_visit_ordered none\n");
+            test21_create_temp(temp_root);
+            const jau::io::fs::traverse_options topts = jau::io::fs::traverse_options::recursive |
+                                                        jau::io::fs::traverse_options::dir_exit;
+            visitor_stats vstats(topts);
+            {
+                // Use an easy-code capturing lambda visitor
+                const jau::io::fs::path_visitor pv = [&](jau::io::fs::traverse_event tevt, const jau::io::fs::file_stats &element_stats, size_t, size_t idx, size_t count) -> bool {
+                    (void)tevt;
+                    vstats.add(element_stats);
+                    jau::fprintf_td(stdout, "- t21 o.0: %zu/%zu: %s\n", idx, count, element_stats.toString());
+                    return true;
+                };
+                REQUIRE(true == jau::io::fs::visit(temp_root, topts, pv));
+                jau::fprintf_td(stdout, "test21_visit_ordered none: %s\n%s\n", to_string(topts).c_str(), vstats.toString().c_str());
+                test21_check(vstats);
+            }
+            REQUIRE( true == jau::io::fs::remove(temp_root, jau::io::fs::traverse_options::recursive) );
+        }
+        {
+            INFO_STR("\n\ntest21_visit_ordered basename\n");
+            test21_create_temp(temp_root);
+            const jau::io::fs::traverse_options topts = jau::io::fs::traverse_options::recursive |
+                                                        jau::io::fs::traverse_options::lexicographical_order |
+                                                        jau::io::fs::traverse_options::dir_entry |
+                                                        jau::io::fs::traverse_options::dir_exit;
+            visitor_stats vstats(topts);
+            {
+                jau::io::fs::file_stats last_stats;
+                // Use an easy-code capturing lambda visitor
+                const jau::io::fs::path_visitor pv = [&](jau::io::fs::traverse_event tevt, const jau::io::fs::file_stats &element_stats, size_t, size_t idx, size_t count) -> bool {
+                    (void)tevt;
+                    if (has_any(tevt, jau::io::fs::traverse_event::dir_entry)) {
+                        last_stats = jau::io::fs::file_stats();
+                        return true;
+                    } else if (has_any(tevt, jau::io::fs::traverse_event::dir_exit)) {
+                        last_stats = jau::io::fs::file_stats();
+                    } else if (has_any(tevt, jau::io::fs::traverse_event::file)) {
+                        if (last_stats.is_initialized()) {
+                            REQUIRE(last_stats.path() < element_stats.path());
+                        }
+                        last_stats = element_stats;
+                    }
+                    vstats.add(element_stats);
+                    jau::fprintf_td(stdout, "- t21.bu: %zu/%zu: %s\n", idx, count, element_stats.toString());
+                    return true;
+                };
+                REQUIRE(true == jau::io::fs::visit(temp_root, topts, pv));
+                jau::fprintf_td(stdout, "test21_visit_ordered basename: %s\n%s\n", to_string(topts).c_str(), vstats.toString().c_str());
+                test21_check(vstats);
+            }
+            REQUIRE( true == jau::io::fs::remove(temp_root, jau::io::fs::traverse_options::recursive) );
+        }
+        {
+            INFO_STR("\n\ntest21_visit_ordered basename-rev\n");
+            test21_create_temp(temp_root);
+            const jau::io::fs::traverse_options topts = jau::io::fs::traverse_options::recursive |
+                                                        jau::io::fs::traverse_options::lexicographical_order |
+                                                        jau::io::fs::traverse_options::reverse_order |
+                                                        jau::io::fs::traverse_options::dir_entry |
+                                                        jau::io::fs::traverse_options::dir_exit;
+            visitor_stats vstats(topts);
+            {
+                jau::io::fs::file_stats last_stats;
+                // Use an easy-code capturing lambda visitor
+                const jau::io::fs::path_visitor pv = [&](jau::io::fs::traverse_event tevt, const jau::io::fs::file_stats &element_stats, size_t, size_t idx, size_t count) -> bool {
+                    (void)tevt;
+                    if (has_any(tevt, jau::io::fs::traverse_event::dir_entry)) {
+                        last_stats = jau::io::fs::file_stats();
+                        return true;
+                    } else if (has_any(tevt, jau::io::fs::traverse_event::dir_exit)) {
+                        last_stats = jau::io::fs::file_stats();
+                    } else if (has_any(tevt, jau::io::fs::traverse_event::file)) {
+                        if (last_stats.is_initialized()) {
+                            REQUIRE(last_stats.path() > element_stats.path());
+                        }
+                        last_stats = element_stats;
+                    }
+                    vstats.add(element_stats);
+                    jau::fprintf_td(stdout, "- t21.bd: %zu/%zu: %s\n", idx, count, element_stats.toString());
+                    return true;
+                };
+                REQUIRE(true == jau::io::fs::visit(temp_root, topts, pv));
+                jau::fprintf_td(stdout, "test21_visit_ordered basename-rev: %s\n%s\n", to_string(topts).c_str(), vstats.toString().c_str());
+                test21_check(vstats);
+            }
+            REQUIRE( true == jau::io::fs::remove(temp_root, jau::io::fs::traverse_options::recursive) );
+        }
+        {
+            INFO_STR("\n\ntest21_visit_ordered mtime\n");
+            test21_create_temp(temp_root);
+            const jau::io::fs::traverse_options topts = jau::io::fs::traverse_options::recursive |
+                                                        jau::io::fs::traverse_options::mtime_order |
+                                                        jau::io::fs::traverse_options::dir_exit;
+            visitor_stats vstats(topts);
+            {
+                jau::io::fs::file_stats last_stats;
+                // Use an easy-code capturing lambda visitor
+                const jau::io::fs::path_visitor pv = [&](jau::io::fs::traverse_event tevt, const jau::io::fs::file_stats &element_stats, size_t, size_t idx, size_t count) -> bool {
+                    (void)tevt;
+                    if (has_any(tevt, jau::io::fs::traverse_event::dir_entry)) {
+                        last_stats = jau::io::fs::file_stats();
+                        return true;
+                    } else if (has_any(tevt, jau::io::fs::traverse_event::dir_exit)) {
+                        last_stats = jau::io::fs::file_stats();
+                    } else if (has_any(tevt, jau::io::fs::traverse_event::file)) {
+                        if (last_stats.is_initialized()) {
+                            REQUIRE(last_stats.mtime() < element_stats.mtime());
+                        }
+                        last_stats = element_stats;
+                    }
+                    vstats.add(element_stats);
+                    jau::fprintf_td(stdout, "- t21.mu: %zu/%zu: %s\n", idx, count, element_stats.toString());
+                    return true;
+                };
+                REQUIRE(true == jau::io::fs::visit(temp_root, topts, pv));
+                jau::fprintf_td(stdout, "test21_visit_ordered mtime: %s\n%s\n", to_string(topts).c_str(), vstats.toString().c_str());
+                test21_check(vstats);
+            }
+            REQUIRE( true == jau::io::fs::remove(temp_root, jau::io::fs::traverse_options::recursive) );
+        }
+        {
+            INFO_STR("\n\ntest21_visit_ordered mtime-rev\n");
+            test21_create_temp(temp_root);
+            const jau::io::fs::traverse_options topts = jau::io::fs::traverse_options::recursive |
+                                                        jau::io::fs::traverse_options::mtime_order |
+                                                        jau::io::fs::traverse_options::reverse_order |
+                                                        jau::io::fs::traverse_options::dir_exit;
+            visitor_stats vstats(topts);
+            {
+                jau::io::fs::file_stats last_stats;
+                // Use an easy-code capturing lambda visitor
+                const jau::io::fs::path_visitor pv = [&](jau::io::fs::traverse_event tevt, const jau::io::fs::file_stats &element_stats, size_t, size_t idx, size_t count) -> bool {
+                    (void)tevt;
+                    if (has_any(tevt, jau::io::fs::traverse_event::dir_entry)) {
+                        last_stats = jau::io::fs::file_stats();
+                        return true;
+                    } else if (has_any(tevt, jau::io::fs::traverse_event::dir_exit)) {
+                        last_stats = jau::io::fs::file_stats();
+                    } else if (has_any(tevt, jau::io::fs::traverse_event::file)) {
+                        if (last_stats.is_initialized()) {
+                            REQUIRE(last_stats.mtime() > element_stats.mtime());
+                        }
+                        last_stats = element_stats;
+                    }
+                    vstats.add(element_stats);
+                    jau::fprintf_td(stdout, "- t21.md: %zu/%zu: %s\n", idx, count, element_stats.toString());
+                    return true;
+                };
+                REQUIRE(true == jau::io::fs::visit(temp_root, topts, pv));
+                jau::fprintf_td(stdout, "test21_visit_ordered mtime-rev: %s\n%s\n", to_string(topts).c_str(), vstats.toString().c_str());
+                test21_check(vstats);
+            }
+            REQUIRE( true == jau::io::fs::remove(temp_root, jau::io::fs::traverse_options::recursive) );
+        }
+        fflush(nullptr);
     }
 
     void test22_visit_symlinks() {
@@ -1250,9 +1439,7 @@ class TestFileUtil01 : TestFileUtilBase {
             visitor_stats stats(topts);
 
             // Use an easy-code capturing lambda visitor
-            const jau::io::fs::path_visitor pv = [&](jau::io::fs::traverse_event tevt, const jau::io::fs::file_stats& element_stats, size_t depth) -> bool {
-                (void)tevt;
-                (void)depth;
+            const jau::io::fs::path_visitor pv = [&](jau::io::fs::traverse_event, const jau::io::fs::file_stats& element_stats, size_t, size_t, size_t) -> bool {
                 stats.add(element_stats);
                 return true;
             };
@@ -1277,9 +1464,7 @@ class TestFileUtil01 : TestFileUtilBase {
             visitor_stats stats(topts);
 
             // Use an easy-code capturing lambda visitor
-            const jau::io::fs::path_visitor pv = [&](jau::io::fs::traverse_event tevt, const jau::io::fs::file_stats& element_stats, size_t depth) -> bool {
-                (void)tevt;
-                (void)depth;
+            const jau::io::fs::path_visitor pv = [&](jau::io::fs::traverse_event, const jau::io::fs::file_stats& element_stats, size_t, size_t, size_t) -> bool {
                 stats.add(element_stats);
                 return true;
             };
@@ -1305,8 +1490,7 @@ class TestFileUtil01 : TestFileUtilBase {
             visitor_stats stats(topts);
 
             // Use an easy-code capturing lambda visitor
-            const jau::io::fs::path_visitor pv = [&](jau::io::fs::traverse_event tevt, const jau::io::fs::file_stats& element_stats, size_t depth) -> bool {
-                (void)tevt;
+            const jau::io::fs::path_visitor pv = [&](jau::io::fs::traverse_event tevt, const jau::io::fs::file_stats& element_stats, size_t depth, size_t, size_t) -> bool {
                 if( jau::io::fs::is_set(tevt, jau::io::fs::traverse_event::dir_check_entry) && depth > 1 ) {
                     return false;
                 }
@@ -1326,6 +1510,7 @@ class TestFileUtil01 : TestFileUtilBase {
             REQUIRE(  2 == stats.dirs_real );
             REQUIRE(  0 == stats.dirs_sym_link );
         }
+        fflush(nullptr);
     }
 
     void test30_copy_file2dir() {
@@ -1374,6 +1559,7 @@ class TestFileUtil01 : TestFileUtilBase {
                 REQUIRE( source1_stats.mode() == dest_stats.mode() );
             }
         }
+        fflush(nullptr);
         {
             // Error: already exists of 'Copy file to folder'
             const jau::io::fs::copy_options copts = jau::io::fs::copy_options::preserve_all |
@@ -1387,6 +1573,7 @@ class TestFileUtil01 : TestFileUtilBase {
             }
             REQUIRE( false == jau::io::fs::copy(source1_stats.path(), root_copy, copts) );
         }
+        fflush(nullptr);
         {
             // Overwrite copy file to folder
             const jau::io::fs::copy_options copts = jau::io::fs::copy_options::preserve_all |
@@ -1645,10 +1832,8 @@ class TestFileUtil01 : TestFileUtilBase {
         REQUIRE( true == root_copy_stats.ok() );
         REQUIRE( true == root_copy_stats.is_dir() );
 
-        bool(*pv_capture)(visitor_stats*, jau::io::fs::traverse_event, const jau::io::fs::file_stats&, size_t) =
-            ( [](visitor_stats* stats_ptr, jau::io::fs::traverse_event tevt, const jau::io::fs::file_stats& element_stats, size_t depth) -> bool {
-                (void)tevt;
-                (void)depth;
+        bool(*pv_capture)(visitor_stats*, jau::io::fs::traverse_event, const jau::io::fs::file_stats&, size_t, size_t, size_t) =
+            ( [](visitor_stats* stats_ptr, jau::io::fs::traverse_event, const jau::io::fs::file_stats& element_stats, size_t, size_t, size_t) -> bool {
                 stats_ptr->add(element_stats);
                 return true;
               } );
@@ -1751,6 +1936,7 @@ METHOD_AS_TEST_CASE( TestFileUtil01::test10_mkdir,              "Test TestFileUt
 METHOD_AS_TEST_CASE( TestFileUtil01::test11_touch,              "Test TestFileUtil01 - test11_touch");
 
 METHOD_AS_TEST_CASE( TestFileUtil01::test20_visit,              "Test TestFileUtil01 - test20_visit");
+METHOD_AS_TEST_CASE( TestFileUtil01::test21_visit_ordered,      "Test TestFileUtil01 - test21_visit_ordered");
 METHOD_AS_TEST_CASE( TestFileUtil01::test22_visit_symlinks,     "Test TestFileUtil01 - test22_visit_symlinks");
 
 METHOD_AS_TEST_CASE( TestFileUtil01::test30_copy_file2dir,      "Test TestFileUtil01 - test30_copy_file2dir");

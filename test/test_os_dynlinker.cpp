@@ -87,7 +87,7 @@ TEST_CASE( "Test00", "[dll][os]" ) {
                                               jau::io::fs::traverse_options::dir_check_entry |
                                               jau::io::fs::traverse_options::verbose;
             std::cout << "move: libs in '" << libDir << "' to '" << libDirOrig << "'" << std::endl;
-            const jau::io::fs::path_visitor pv = [&](jau::io::fs::traverse_event tevt, const jau::io::fs::file_stats& element_stats, size_t depth) -> bool {
+            const jau::io::fs::path_visitor pv = [&](jau::io::fs::traverse_event tevt, const jau::io::fs::file_stats& element_stats, size_t depth, size_t, size_t) -> bool {
                 if( jau::io::fs::is_set(tevt, jau::io::fs::traverse_event::dir_check_entry) && depth > 1 ) {
                     std::cout << "- move: ignore entry depth[" << depth << "]" << element_stats.item().toString() << std::endl;
                     return false;

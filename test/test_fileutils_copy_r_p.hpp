@@ -69,10 +69,9 @@ void testxx_copy_r_p(const std::string& title, // NOLINT(misc-definitions-in-hea
     REQUIRE( true == dest_stats.ok() );
     REQUIRE( true == dest_stats.is_dir() );
 
-    bool(*pv_capture)(visitor_stats*, jau::io::fs::traverse_event, const jau::io::fs::file_stats&, size_t) =
-        ( [](visitor_stats* stats_ptr, jau::io::fs::traverse_event tevt, const jau::io::fs::file_stats& element_stats, size_t depth) -> bool {
+    bool(*pv_capture)(visitor_stats*, jau::io::fs::traverse_event, const jau::io::fs::file_stats&, size_t, size_t, size_t) =
+        ( [](visitor_stats* stats_ptr, jau::io::fs::traverse_event tevt, const jau::io::fs::file_stats& element_stats, size_t, size_t, size_t) -> bool {
             (void)tevt;
-            (void)depth;
             stats_ptr->add(element_stats);
             return true;
           } );
@@ -167,19 +166,16 @@ void testxx_copy_r_p(const std::string& title, // NOLINT(misc-definitions-in-hea
         };
         source_visitor_params svp { .title=title, .source_folder_path=source.path(), .dest=dest_stats, .dest_is_vfat=dest_is_vfat,
                                     .opt_drop_dest_links=opt_drop_dest_links };
-        const jau::io::fs::path_visitor pv1 = jau::bind_capref<bool, source_visitor_params, jau::io::fs::traverse_event, const jau::io::fs::file_stats&, size_t>(&svp,
-                ( bool(*)(source_visitor_params*, jau::io::fs::traverse_event, const jau::io::fs::file_stats&, size_t) ) /* help template type deduction of function-ptr */
-                    ( [](source_visitor_params* _svp, jau::io::fs::traverse_event tevt1, const jau::io::fs::file_stats& element_stats1, size_t depth) -> bool {
+        const jau::io::fs::path_visitor pv1 = jau::bind_capref<bool, source_visitor_params, jau::io::fs::traverse_event, const jau::io::fs::file_stats&, size_t, size_t, size_t>(&svp,
+                ( bool(*)(source_visitor_params*, jau::io::fs::traverse_event, const jau::io::fs::file_stats&, size_t, size_t, size_t) ) /* help template type deduction of function-ptr */
+                    ( [](source_visitor_params* _svp, jau::io::fs::traverse_event tevt1, const jau::io::fs::file_stats& element_stats1, size_t, size_t, size_t) -> bool {
                         (void)tevt1;
-                        (void)depth;
                         dest_visitor_params dvp { .title=_svp->title, .source_folder_path=_svp->source_folder_path, .dest_folder_path=_svp->dest.path(),
                                                   .source_basename=jau::io::fs::basename( element_stats1.path() ), .stats=element_stats1,
                                                   .dest_is_vfat=_svp->dest_is_vfat, .match=false };
-                        const jau::io::fs::path_visitor pv2 = jau::bind_capref<bool, dest_visitor_params, jau::io::fs::traverse_event, const jau::io::fs::file_stats&, size_t>(&dvp,
-                                ( bool(*)(dest_visitor_params*, jau::io::fs::traverse_event, const jau::io::fs::file_stats&, size_t depth) ) /* help template type deduction of function-ptr */
-                                    ( [](dest_visitor_params* _dvp, jau::io::fs::traverse_event tevt2, const jau::io::fs::file_stats& element_stats2, size_t depth2) -> bool {
-                                        (void)tevt2;
-                                        (void)depth2;
+                        const jau::io::fs::path_visitor pv2 = jau::bind_capref<bool, dest_visitor_params, jau::io::fs::traverse_event, const jau::io::fs::file_stats&, size_t, size_t, size_t>(&dvp,
+                                ( bool(*)(dest_visitor_params*, jau::io::fs::traverse_event, const jau::io::fs::file_stats&, size_t, size_t, size_t) ) /* help template type deduction of function-ptr */
+                                    ( [](dest_visitor_params* _dvp, jau::io::fs::traverse_event, const jau::io::fs::file_stats& element_stats2, size_t, size_t, size_t) -> bool {
                                         const std::string path2 = element_stats2.path();
                                         const std::string basename2 = jau::io::fs::basename( path2 );
                                         const std::string source_folder_basename = jau::io::fs::basename( _dvp->source_folder_path );
