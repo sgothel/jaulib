@@ -362,9 +362,9 @@ jobject Java_org_jau_fs_FileUtil_get_1dir_1content(JNIEnv *env, jclass cls, jstr
     try {
         const std::string path = jau::jni::from_jstring_to_string(env, jpath);
         std::vector<jau::io::fs::dir_item> content;
-        const jau::io::fs::consume_dir_item cs = jau::bind_capref<void, std::vector<jau::io::fs::dir_item>, jau::io::fs::dir_item&&>(&content,
-            ( void(*)(std::vector<jau::io::fs::dir_item>*, jau::io::fs::dir_item&&) ) /* help template type deduction of function-ptr */
-                ( [](std::vector<jau::io::fs::dir_item>* receiver, jau::io::fs::dir_item&& item) -> void { receiver->push_back( item ); } )
+        const jau::io::fs::consume_dir_item cs = jau::bind_capref<bool, std::vector<jau::io::fs::dir_item>, jau::io::fs::dir_item&&>(&content,
+            ( bool(*)(std::vector<jau::io::fs::dir_item>*, jau::io::fs::dir_item&&) ) /* help template type deduction of function-ptr */
+                ( [](std::vector<jau::io::fs::dir_item>* receiver, jau::io::fs::dir_item&& item) -> bool { receiver->push_back( item ); return true; } )
         );
         if( get_dir_content(path, cs) ) {
             static const std::string _dirItemClassName("org/jau/fs/DirItem");

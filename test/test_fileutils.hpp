@@ -63,6 +63,10 @@ struct visitor_stats {
       dirs_sym_link(0)
     {}
 
+    visitor_stats()
+    : visitor_stats(jau::io::fs::traverse_options::none)
+    {}
+
     void add(const jau::io::fs::file_stats& element_stats) {
         if( element_stats.is_link() ) {
             if( element_stats.exists() ) {

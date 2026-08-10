@@ -718,9 +718,11 @@ namespace jau::io::fs {
     bool touch(const std::string& path, const fmode_t mode = fmode_t::def_file_prot) noexcept;
 
     /**
-     * `void consume_dir_item(dir_item& item)`
+     * `bool consume_dir_item(dir_item& item)`
+     *
+     * Returning `false` stops directory traversal.
      */
-    typedef jau::function<void(dir_item&&)> consume_dir_item;
+    typedef jau::function<bool(dir_item&&)> consume_dir_item;
 
     /**
      * Returns a list of directory elements excluding `.` and `..` for the given path, non recursive.
@@ -734,9 +736,11 @@ namespace jau::io::fs {
     bool get_dir_content(const std::string& path, const consume_dir_item& digest) noexcept;
 
     /**
-     * `void consume_dirfd_item(int dirfd, const dir_item& item)`
+     * `bool consume_dirfd_item(int dirfd, const dir_item& item)`
+     *
+     * Returning `false` stops directory traversal.
      */
-    typedef jau::function<void(int dirfd, dir_item&&)> consume_dirfd_item;
+    typedef jau::function<bool(int dirfd, dir_item&&)> consume_dirfd_item;
 
     /**
      * Returns a list of directory elements excluding `.` and `..` for the given path, non recursive.
@@ -824,16 +828,19 @@ namespace jau::io::fs {
      * - `bool visitor(traverse_event tevt, const file_stats& item_stats, size_t depth, size_t file_idx, size_t file_count)`
      *
      * Arguments
+     * - `tevt` the traverse_event causing the visit call
+     * - `stat` the file_stats reference, describing the entry
      * - `depth` being the recursive directory depth starting with 1 for the initial directory
      * - `file_idx` being the current file index starting with zero of all files (see `file_count`) of the current directory (see `depth`)
      * - `file_count` number of files of the current directory (see `depth`).
+     *    Is zero if traverse_options::two_pass is not set nor implied for all but traverse_event::dir_exit.
      *
      * If a visit calls is for a directory itself, `file_idx` and `file_count` is zero.
      *
      * Returning `false` stops traversal in general but traverse_options::dir_check_entry
      * will only skip traversing the denied directory.
      */
-    typedef jau::function<bool(traverse_event, const file_stats&, [[maybe_unused]] size_t depth,
+    typedef jau::function<bool(traverse_event tevt, const file_stats &stat, [[maybe_unused]] size_t depth,
                                [[maybe_unused]] size_t file_idx, [[maybe_unused]] size_t file_count)> path_visitor;
 
     /**
@@ -851,23 +858,44 @@ namespace jau::io::fs {
         /** No option set */
         none = 0,
 
-        /** Traverse through directories, i.e. perform visit, copy, remove etc actions recursively throughout the directory structure. */
+        /** Traverse through directories w/ depth>1, i.e. perform visit, copy, remove etc actions recursively throughout the directory structure. */
         recursive = 1U << 0,
 
         /** Traverse through symbolic linked directories if traverse_options::recursive is set, i.e. directories with property fmode_t::link set. */
         follow_symlinks = 1U << 1,
 
+        /**
+         * Enforces gathering all directory elements before visiting (heap).
+         * - Issues get_dir_content first, applies sort and then calls the path_visitor.
+         * - Passing actual `file_count` value to path_visitor.
+         */
+        two_pass = 1U << 2,
+
         /** Reverses traverse order: lexicographical_order, mtime_order or size_order. */
-        reverse_order = 1U << 2,
+        reverse_order = 1U << 3,
 
-        /** Traverse through elements in lexicographical order. This might be required when computing an order dependent outcome like a hash value. */
-        lexicographical_order = 1U << 3,
+        /**
+         * Traverse through elements in lexicographical order. This might be required when computing an order dependent outcome like a hash value.
+         * - Note: Implies two_pass (heap, see above).
+         */
+        lexicographical_order = 1U << 4,
 
-        /** Traverse through elements in order of their size, i.e. oldest files first. */
-        size_order = 1U << 4,
+        /**
+         * Traverse through elements in order of their size, i.e. smallest files first.
+         * - Note: Implies two_pass (heap, see above).
+         * - Note: For all directory elements, `file_stats` will be gathered before visiting (heap).
+         */
+        size_order = 1U << 5,
 
-        /** Traverse through elements in order of their modification timestamp, i.e. oldest files first. */
-        mtime_order = 1U << 5,
+        /**
+         * Traverse through elements in order of their modification timestamp, i.e. oldest files first.
+         * - Note: Implies two_pass (heap, see above).
+         * - Note: For all directory elements, `file_stats` will be gathered before visiting (heap).
+         */
+        mtime_order = 1U << 6,
+
+        /** Traversal order mask `. lexicographical_order | mtime_order | size_order`. */
+        order_mask = lexicographical_order | mtime_order | size_order,
 
         /** Call path_visitor at directory entry, allowing path_visitor to skip traversal of this directory if returning false. */
         dir_check_entry = 1U << 12,
@@ -881,7 +909,7 @@ namespace jau::io::fs {
         /** Enable verbosity mode, potentially used by a path_visitor implementation like remove(). */
         verbose = 1U << 15
     };
-    JAU_MAKE_BITFIELD_ENUM_STRING(traverse_options, recursive, follow_symlinks,
+    JAU_MAKE_BITFIELD_ENUM_STRING(traverse_options, recursive, follow_symlinks, two_pass,
                                   reverse_order, lexicographical_order, size_order, mtime_order,
                                   dir_check_entry, dir_entry, dir_exit);
 
@@ -890,8 +918,6 @@ namespace jau::io::fs {
      *
      * All elements of type fmode_t::file, fmode_t::dir and fmode_t::no_access or fmode_t::not_existing
      * will be visited by the given path_visitor `visitor`.
-     *
-     * Depth passed to path_visitor is the recursive directory depth and starts with 1 for the initial directory.
      *
      * path_visitor returning `false` stops traversal in general but traverse_options::dir_check_entry
      * will only skip traversing the denied directory.
@@ -905,15 +931,13 @@ namespace jau::io::fs {
      *        In case of recursive directory traversion, the initial dir_entry visit starts with depth 1 and 2 fds, its parent and current directory.
      * @return true if successful including no path_visitor stopped traversal by returning `false` excluding traverse_options::dir_check_entry.
      */
-    bool visit(const std::string& path, const traverse_options topts, const path_visitor& visitor, std::vector<int>* dirfds = nullptr) noexcept;
+    bool visit(const std::string& path, traverse_options topts, const path_visitor& visitor, std::vector<int>* dirfds = nullptr) noexcept;
 
     /**
      * Visit element(s) of a given path, see traverse_options for detailed settings.
      *
      * All elements of type fmode_t::file, fmode_t::dir and fmode_t::no_access or fmode_t::not_existing
      * will be visited by the given path_visitor `visitor`.
-     *
-     * Depth passed to path_visitor is the recursive directory depth and starts with 1 for the initial directory.
      *
      * path_visitor returning `false` stops traversal in general but traverse_options::dir_check_entry
      * will only skip traversing the denied directory.
@@ -927,7 +951,7 @@ namespace jau::io::fs {
      *        In case of recursive directory traversion, the initial dir_entry visit starts with depth 1 and 2 fds, its parent and current directory.
      * @return true if successful including no path_visitor stopped traversal by returning `false` excluding traverse_options::dir_check_entry.
      */
-    bool visit(const file_stats& item_stats, const traverse_options topts, const path_visitor& visitor, std::vector<int>* dirfds = nullptr) noexcept;
+    bool visit(const file_stats& item_stats, traverse_options topts, const path_visitor& visitor, std::vector<int>* dirfds = nullptr) noexcept;
 
     /**
      * Remove the given path. If path represents a director, `recursive` must be set to true.
@@ -945,7 +969,7 @@ namespace jau::io::fs {
      * @param topts given traverse_options for this operation, defaults to traverse_options::none
      * @return true only if the file or the directory with content has been deleted, otherwise false
      */
-    bool remove(const std::string& path, const traverse_options topts = traverse_options::none) noexcept;
+    bool remove(const std::string& path, traverse_options topts = traverse_options::none) noexcept;
 
     /**
      * Compare the bytes of both files, denoted by source1 and source2.
