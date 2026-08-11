@@ -1768,9 +1768,9 @@ namespace jau::cfmt {
      * See @ref jau_cfmt_header for details
      *
      * @tparam Targs the argument template type pack for the given arguments `args`
-     * @param strLenHint initial string capacity w/o EOS or zero for none
+     * @param strLenHint initial string capacity w/o EOS for appended content or zero for none
      * @param s destination string to append the formatted string
-     * @param maxLen maximum string length
+     * @param maxLen maximum total string length
      * @param fmt the snprintf compliant format string
      * @param args passed arguments, used for template type deduction only
      * @return the given destination string for concatenation
@@ -1780,11 +1780,11 @@ namespace jau::cfmt {
     CXX_ALWAYS_INLINE
     std::string& append(const size_t strLenHint, std::string &s, size_t maxLen, std::string_view fmt, const Targs &...args) noexcept {
         maxLen = std::min(maxLen, s.max_size());
-        impl::StringResult ctx(impl::StringOutput(maxLen, s), fmt);
+        impl::StringResult ctx(impl::StringOutput(maxLen-s.length(), s), fmt);
 
         try {
             if (strLenHint>0) {
-                s.reserve(std::min(strLenHint, maxLen)+1); // +EOS
+                s.reserve(std::min(s.length()+strLenHint, maxLen)+1); // +EOS
             }
             if constexpr( 0 < sizeof...(Targs) ) {
                 ((impl::FormatParser::parseOne<Targs>(ctx, args)), ...);
@@ -1810,9 +1810,9 @@ namespace jau::cfmt {
      * See @ref jau_cfmt_header for details
      *
      * @tparam Targs the argument template type pack for the given arguments `args`
-     * @param strLenHint initial string capacity w/o EOS or zero for none
+     * @param strLenHint initial string capacity w/o EOS for appended content or zero for none
      * @param s destination string to append the formatted string
-     * @param maxLen maximum resulting string length including EOS
+     * @param maxLen maximum total string length
      * @param fmt the snprintf compliant format string
      * @param args arguments matching the format string
      */
@@ -1820,11 +1820,11 @@ namespace jau::cfmt {
     CXX_ALWAYS_INLINE
     Result formatR(const size_t strLenHint, std::string &s, size_t maxLen, std::string_view fmt, const Targs &...args) noexcept {
         maxLen = std::min(maxLen, s.max_size());
-        impl::StringResult ctx(impl::StringOutput(maxLen, s), fmt);
+        impl::StringResult ctx(impl::StringOutput(maxLen-s.length(), s), fmt);
 
         try {
             if (strLenHint>0) {
-                s.reserve(std::min(strLenHint, maxLen)+1); // +EOS
+                s.reserve(std::min(s.length()+strLenHint, maxLen)+1); // +EOS
             }
             if constexpr( 0 < sizeof...(Targs) ) {
                 ((impl::FormatParser::parseOne<Targs>(ctx, args)), ...);
@@ -2114,9 +2114,9 @@ namespace jau {
      * See @ref jau_cfmt_header for details
      *
      * @tparam Targs the argument template type pack for the given arguments `args`
-     * @param strLenHint initially string capacity w/o EOS or zero for none
+     * @param strLenHint initial string capacity w/o EOS for appended content or zero for none
      * @param s destination string to append the formatted string
-     * @param maxLen maximum string length
+     * @param maxLen maximum total string length
      * @param fmt the snprintf compliant format string
      * @param args passed arguments, used for template type deduction only
      * @return the given destination string for concatenation
