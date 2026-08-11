@@ -50,6 +50,25 @@ namespace jau {
     std::string get_backtrace(const bool skip_anon_frames, const jau::snsize_t max_frames=-1, const jau::snsize_t skip_frames=1) noexcept;
 
     /**
+     * Appends a de-mangled backtrace string separated by newline excluding this function to the given `out` string.
+     * <p>
+     * Returns one line per stack frame, each with
+     * <pre>
+     * - stack frame number
+     * - demangled function name + offset (sp)
+     * - the instruction pointer (pc)
+     * - the stack pointer (sp)
+     * </pre>
+     * </p>
+     * @param out string to append the produced backtrack
+     * @param skip_anon_frames if true, skip all frames w/o proc-name
+     * @param max_frames number of stack frames to be printed or -1 for unlimited, defaults to -1
+     * @param skip_frames number of stack frames to skip, default is one frame for this function.
+     * @return the de-mangled backtrace, separated by newline
+     */
+    void append_backtrace(std::string &out, const bool skip_anon_frames, const jau::snsize_t max_frames=-1, const jau::snsize_t skip_frames=1) noexcept;
+
+    /**
      * Prints the de-mangled backtrace string separated by newline excluding this function to stderr, using get_backtrace().
      * @param skip_anon_frames if true, skip all frames w/o proc-name
      * @param max_frames number of stack frames to be printed or -1 for unlimited, defaults to -1

@@ -95,6 +95,12 @@ std::string jau::demangle_name(const char* mangled_name) noexcept {
 
 std::string jau::get_backtrace(const bool skip_anon_frames, const jau::snsize_t max_frames, const jau::snsize_t skip_frames) noexcept {
     std::string out;
+    out.reserve(1024);
+    append_backtrace(out, skip_anon_frames, max_frames, skip_frames);
+    return out;
+}
+
+void jau::append_backtrace(std::string &out, const bool skip_anon_frames, const jau::snsize_t max_frames, const jau::snsize_t skip_frames) noexcept {
     try {
 #ifdef USE_LIBUNWIND
         // symbol:
@@ -111,11 +117,11 @@ std::string jau::get_backtrace(const bool skip_anon_frames, const jau::snsize_t 
 
         if( 0 != ( res = unw_getcontext(&uc) ) ) {
             jau_INFO_PRINT("unw_getcontext ERR: %d\n", res);
-            return out;
+            return;
         }
         if( 0 != ( res = unw_init_local(&cursor, &uc) ) ) {
             jau_INFO_PRINT("unw_init_local ERR %d\n", res);
-            return out;
+            return;
         }
         bool last_frame_anon = false;
         while( unw_step(&cursor) > 0 && ( 0 > max_frames || ( max_frames + skip_frames ) > ( frame + 1 ) ) ) {
@@ -167,7 +173,6 @@ std::string jau::get_backtrace(const bool skip_anon_frames, const jau::snsize_t 
         out.append("0: backtrace disabled\n");
 #endif /* USE_LIBUNWIND */
     } catch (...) { } // NOLINT(bugprone-empty-catch): intentional
-    return out;
 }
 
 #if defined(__GNUC__) && ! defined(__clang__)
@@ -175,7 +180,7 @@ std::string jau::get_backtrace(const bool skip_anon_frames, const jau::snsize_t 
 #endif
 
 void jau::print_backtrace(const bool skip_anon_frames, const jau::snsize_t max_frames, const jau::snsize_t skip_frames) noexcept {
-    ::fprintf(stderr, "%s", get_backtrace(skip_anon_frames, max_frames, skip_frames).c_str());
+    ::fputs(jau::get_backtrace(skip_anon_frames, max_frames, skip_frames).c_str(), stderr);
     ::fflush(stderr);
 }
 

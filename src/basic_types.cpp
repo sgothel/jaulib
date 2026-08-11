@@ -95,12 +95,13 @@ std::string fraction_timespec::toString() const noexcept {
     return string_noexcept([this]() { return std::to_string(tv_sec) + "s + " + std::to_string(tv_nsec) + "ns"; });
 }
 
-std::string fraction_timespec::toISO8601String(bool space_separator, bool muteTime) const noexcept {
+std::string fraction_timespec::toISO8601String(bool space_separator, bool muteTime, bool utcTime, bool muteNanos) const noexcept {
     std::exception_ptr eptr;
     try {
         std::time_t t0 = static_cast<std::time_t>(tv_sec);
         struct std::tm tm_0;
-        if ( nullptr == ::gmtime_r(&t0, &tm_0) ) {
+        const bool tcvt_ok = utcTime ? nullptr != ::gmtime_r(&t0, &tm_0) : nullptr != ::localtime_r(&t0, &tm_0);
+        if ( !tcvt_ok ) {
             if ( muteTime ) {
                 if ( space_separator ) {
                     return "1970-01-01";
@@ -133,7 +134,7 @@ std::string fraction_timespec::toISO8601String(bool space_separator, bool muteTi
             if ( 0 < p && p < sizeof(b) - 1 ) {
                 size_t q = 0;
                 const size_t remaining = sizeof(b) - p;
-                if ( !muteTime && 0 < tv_nsec ) {
+                if ( !muteTime && !muteNanos && 0 < tv_nsec ) {
                     q = ::snprintf(b + p, remaining, ".%09" PRIi64, tv_nsec);
                 }
                 if ( !space_separator ) {
@@ -664,7 +665,7 @@ void jau::unsafe::errPrint(FILE *out, const char *msg, bool addErrno, bool addBa
         }
         fputs("\n", out);
         if( addBacktrace ) {
-            ::fprintf(stderr, "%s", jau::get_backtrace(true /* skip_anon_frames */, 4 /* max_frames */, 2 /* skip_frames: this() + get_b*() */).c_str());
+            ::fputs(jau::get_backtrace(true /* skip_anon_frames */, 4 /* max_frames */, 2 /* skip_frames: this() + get_b*() */).c_str(), stderr);
         }
         if( addErrno || addBacktrace ) {
             ::fflush(stderr);
@@ -1257,43 +1258,58 @@ std::string jau::type_info::toString() const noexcept {
 // debug
 //
 
-void jau::impl::dbgPrint0_tail(FILE *out, bool addErrno, bool addBacktrace) noexcept {
-    if (addErrno) {
-        ::fprintf(stderr, "; last errno %d %s", errno, strerror(errno));
-    }
-    ::fputs("\n", out);
-    if (addBacktrace) {
-        ::fprintf(stderr, "%s", jau::get_backtrace(true /* skip_anon_frames */, 4 /* max_frames */, 2 /* skip_frames: this() + get_b*() */).c_str());
-    }
-    if (addErrno || addBacktrace) {
-        ::fflush(stderr);
-    }
-}
-ssize_t jau::impl::dbgPrint_td_prefix(const uint64_t elapsed_ms, FILE *out) noexcept {
-    const std::string st = jau::to_decstring(elapsed_ms, ',', 9);
-    ssize_t res = 0;
-    if (EOF == ::fputc('[', out)) {
-        return -1;
-    }
-    res += 1;
-    if ( 0 > ::fputs(st.c_str(), out)) {
-        return -1*(res+(ssize_t)st.length());
-    }
-    res += jau::clampCast<ssize_t, size_t>(st.length(), 0, std::numeric_limits<ssize_t>::max()-res);
-    if (0 > ::fputs("] ", out)) {
-        return -1*(res+2);
-    }
-    res += 2;
-    return res;
-}
-void jau::impl::dbgPrint1_prefix(FILE *out, const char *msg, const char *msgsep) noexcept {
-    dbgPrint_td_prefix(environment::getElapsedMillisecond(), out);
-    if (msg) {
-        ::fputs(msg, out);
-        if (msgsep) {
-            ::fputs(msgsep, out);
+void jau::impl::dbgPrint_pre(std::string &str, bool addPrefix, const char *prefixMsg, const char *prefixMsgSep,
+                             const char *func, const char *file, const int line) noexcept {
+    str.reserve(jau::cfmt::default_string_capacity);
+    if (addPrefix) {
+        str.append("[");
+        appendDecString(str, environment::getElapsedMillisecond(), ',', 9);
+        str.append("] ");
+        if (prefixMsg) {
+            str.append(prefixMsg);
+            if (prefixMsgSep) {
+                str.append(prefixMsgSep);
+            }
         }
     }
+    if (file && func) {
+        str.append("@ ").append(file).append(":").append(std::to_string(line)).append(" ").append(func).append(": ");
+    }
+}
+
+void jau::impl::dbgPrint_tail(FILE *out, std::string &str, bool addErrno, bool addBacktrace) noexcept {
+    if (addErrno) {
+        str.append("; last errno ").append(std::to_string(errno)).append(" ").append(strerror(errno));
+    }
+    str.append("\n");
+    if (addBacktrace) {
+        jau::append_backtrace(str, true /* skip_anon_frames */, 4 /* max_frames */, 2 /* skip_frames: this() + get_b*() */);
+    }
+    ::fputs(str.c_str(), out);
+    if (addErrno || addBacktrace) {
+        ::fflush(out);
+    }
+}
+
+void jau::impl::fprintf_td_pre(std::string &str, const uint64_t elapsed_ms) noexcept {
+    str.reserve(jau::cfmt::default_string_capacity);
+    str.append("[");
+    appendDecString(str, elapsed_ms, ',', 9);
+    str.append("] ");
+}
+
+void jau::impl::fprintf_ts0_pre(std::string &str) noexcept {
+    const jau::fraction_timespec now = jau::getWallClockTime();
+    str.reserve(jau::cfmt::default_string_capacity);
+    str.append("[")
+       .append(now.toISO8601String(true /* space */, false, false /* utcTime */, true /* muteNanos */));
+    str.append("] ");
+}
+
+ssize_t jau::impl::fprintf_tail(FILE *stream, const std::string &str) noexcept {
+    const int r = ::fputs(str.c_str(), stream);
+    const ssize_t res = jau::clampCast<ssize_t, size_t>(str.length(), 0, std::numeric_limits<ssize_t>::max());
+    return 0 > r ? -1 * res : res;
 }
 
 //

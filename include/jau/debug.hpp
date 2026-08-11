@@ -33,39 +33,46 @@
 
 namespace jau::impl {
     /// This function is a possible cancellation point and therefore marked with noexcept (not marked with __THROW like ::fprintf).
-    void dbgPrint0_tail(FILE *out, bool addErrno, bool addBacktrace) noexcept;
+    void dbgPrint_pre(std::string &str, bool addPrefix, const char *prefixMsg, const char *prefixMsgSep,
+                      const char *func, const char *file, const int line) noexcept;
     /// This function is a possible cancellation point and therefore marked with noexcept (not marked with __THROW like ::fprintf).
-    ssize_t dbgPrint_td_prefix(const uint64_t elapsed_ms, FILE *out) noexcept;
-    /// This function is a possible cancellation point and therefore marked with noexcept (not marked with __THROW like ::fprintf).
-    void dbgPrint1_prefix(FILE *out, const char *msg, const char *msgsep) noexcept;
+    void dbgPrint_tail(FILE *out, std::string &str, bool addErrno, bool addBacktrace) noexcept;
 
     /// This function is a possible cancellation point and therefore marked with noexcept (not marked with __THROW like ::fprintf).
     template <typename... Args>
     CXX_ALWAYS_INLINE
     void dbgPrint0(FILE *out, bool addErrno, bool addBacktrace, std::string_view format, const Args &...args) noexcept {
-        ::fputs(jau::format_string(format, args...).c_str(), out);
-        jau::impl::dbgPrint0_tail(out, addErrno, addBacktrace);
+        std::string str;
+        dbgPrint_pre(str, false, nullptr /* prefixMsg */, nullptr /* prefixMsgSep */, nullptr /* func */, nullptr /* file */, 0 /* line */);
+        jau::cfmt::append(0, str, std::numeric_limits<size_t>::max(), format, args...);
+        dbgPrint_tail(out, str, addErrno, addBacktrace);
     }
 
     /// This function is a possible cancellation point and therefore marked with noexcept (not marked with __THROW like ::fprintf).
     template <typename... Args>
     CXX_ALWAYS_INLINE
-    void dbgPrint1(FILE *out, bool printPrefix, const char *msg, std::string_view format, const Args &...args) noexcept {
-        if (printPrefix) {
-            jau::impl::dbgPrint1_prefix(out, msg, ": ");
-        }
-        jau::impl::dbgPrint0(out, false, false, format, args...);
+    void dbgPrint1(FILE *out, bool addPrefix, const char *msg, std::string_view format, const Args &...args) noexcept {
+        std::string str;
+        dbgPrint_pre(str, addPrefix, msg, ": ", nullptr /* func */, nullptr /* file */, 0 /* line */);
+        jau::cfmt::append(0, str, std::numeric_limits<size_t>::max(), format, args...);
+        dbgPrint_tail(out, str, false, false);
     }
 
     /// This function is a possible cancellation point and therefore marked with noexcept (not marked with __THROW like ::fprintf).
     template <typename... Args>
     CXX_ALWAYS_INLINE
     void dbgPrint2(FILE *out, const char *msg, bool addErrno, bool addBacktrace, const char *func, const char *file, const int line,
-                              std::string_view format, const Args &...args) noexcept {
-        jau::impl::dbgPrint1_prefix(out, msg, " ");
-        ::fprintf(stderr, "@ %s:%d %s: ", file, line, func);
-        jau::impl::dbgPrint0(out, addErrno, addBacktrace, format, args...);
+                   std::string_view format, const Args &...args) noexcept {
+        std::string str;
+        dbgPrint_pre(str, true, msg, " ", func, file, line);
+        jau::cfmt::append(0, str, std::numeric_limits<size_t>::max(), format, args...);
+        dbgPrint_tail(out, str, addErrno, addBacktrace);
     }
+
+    void fprintf_td_pre(std::string &str, const uint64_t elapsed_ms) noexcept;
+    void fprintf_ts0_pre(std::string &str) noexcept;
+    ssize_t fprintf_tail(FILE *stream, const std::string &str) noexcept;
+
 } // namespace jau::impl
 
 #define jau_dbgPrint1(out, printPrefix, msg, fmt, ...) \
@@ -165,7 +172,7 @@ namespace jau::impl {
 namespace jau {
     /**
      * Convenient secure fprintf() invocation, prepending the given elapsed_ms timestamp
-     * and using `jau:format_string`.
+     * and using `jau::format_string`.
      * @param elapsed_ms the given elapsed time in milliseconds
      * @param stream the output stream
      * @param format the format
@@ -175,19 +182,15 @@ namespace jau {
     template <typename... Args>
     CXX_ALWAYS_INLINE
     ssize_t fprintf_td(const uint64_t elapsed_ms, FILE* stream, std::string_view format, const Args &...args) noexcept {
-        ssize_t res = jau::impl::dbgPrint_td_prefix(elapsed_ms, stream);
-        if (0>res) {
-            return res;
-        }
-        const std::string s = jau::format_string(format, args...);
-        const int r = ::fputs(s.c_str(), stream);
-        res += jau::clampCast<ssize_t, size_t>(s.length(), 0, std::numeric_limits<ssize_t>::max()-res);
-        return 0>r ? -1*res : res;
+        std::string str;
+        jau::impl::fprintf_td_pre(str, elapsed_ms);
+        jau::cfmt::append(0, str, std::numeric_limits<size_t>::max(), format, args...);
+        return jau::impl::fprintf_tail(stream, str);
     }
 
     /**
      * Convenient secure fprintf() invocation, prepending the environment::getElapsedMillisecond() timestamp,
-     * and using `jau:format_string`.
+     * and using `jau::format_string`.
      * @param stream the output stream
      * @param format the format
      * @param args the optional arguments
@@ -200,7 +203,24 @@ namespace jau {
     }
 
     /**
-     * Convenient secure fprintf() invocation using `jau:format_string`.
+     * Convenient secure fprintf() invocation, prepending jau::getWallClockTime() timestamp in localtime w/o nanoseconds,
+     * and using `jau::format_string`.
+     * @param stream the output stream
+     * @param format the format
+     * @param args the optional arguments
+     * @return number of bytes printed if successful, otherwise negative
+     */
+    template <typename... Args>
+    CXX_ALWAYS_INLINE
+    ssize_t fprintf_ts(FILE* stream, std::string_view format, const Args &...args) noexcept {
+        std::string str;
+        jau::impl::fprintf_ts0_pre(str);
+        jau::cfmt::append(0, str, std::numeric_limits<size_t>::max(), format, args...);
+        return jau::impl::fprintf_tail(stream, str);
+	}
+
+    /**
+     * Convenient secure fprintf() invocation using `jau::format_string`.
      * @param stream the output stream
      * @param format the format
      * @param args the optional arguments
@@ -209,10 +229,7 @@ namespace jau {
     template <typename... Args>
     CXX_ALWAYS_INLINE
     ssize_t fprintf_sc(FILE* stream, std::string_view format, const Args &...args) noexcept {
-        const std::string s = jau::format_string(format, args...);
-        const int r = ::fputs(s.c_str(), stream);
-        const ssize_t res = jau::clampCast<ssize_t, size_t>(s.length(), 0, std::numeric_limits<ssize_t>::max());
-        return 0>r ? -1*res : res;
+        return jau::impl::fprintf_tail(stream, jau::format_string(format, args...));
     }
 
     template<class List>

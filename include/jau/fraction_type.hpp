@@ -1199,7 +1199,7 @@ namespace jau {
         std::string toString() const noexcept;
 
         /**
-         * Convenience string conversion interpreted since Unix Epoch in UTC
+         * Convenience string conversion interpreted since Unix Epoch in UTC (default) or localtime
          * to ISO 8601 `YYYY-mm-ddTHH:MM:SS.ssZ`, e.g. '2022-06-23T14:34:10Z` or '2022-06-23T14:34:10.228978909Z`.
          *
          * Implementation uses `strftime()` with format `%Y-%m-%dT%H:%M:%S`
@@ -1211,8 +1211,10 @@ namespace jau {
          *        otherwise use ISO 8601 as described above. Defaults to `false`.
          *
          * @param muteTime if true, always mute time
+         * @param utcTime if true convert Unix Epoch to UTC (default), otherwise use localtime
+         * @param muteNanos if true, drop fractions of seconds, otherwise add them to string (default)
          */
-        std::string toISO8601String(bool space_separator = false, bool muteTime = false) const noexcept;
+        std::string toISO8601String(bool space_separator = false, bool muteTime = false, bool utcTime=true, bool muteNanos=false) const noexcept;
     };
 
     inline std::string to_string(const fraction_timespec& v) noexcept { return v.toString(); }
