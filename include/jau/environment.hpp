@@ -86,6 +86,11 @@ namespace jau {
 
         public:
             /**
+             * Module startup time t0 in wall time using high precision and range of fraction_timespec.
+             */
+            static const fraction_timespec startupTimeWall;
+
+            /**
              * Module startup time t0 in monotonic time using high precision and range of fraction_timespec.
              */
             static const fraction_timespec startupTimeMonotonic;
@@ -104,6 +109,17 @@ namespace jau {
              */
             static fraction_timespec getElapsedMonotonicTime() noexcept {
                 return getMonotonicTime() - startupTimeMonotonic;
+            }
+
+            /**
+             * Returns startup wall clock plus elapsed monotonic time using fraction_timespec since module startup,
+             * see {@link #startupTimeWall} and getElapsedMonotonicTime().
+             * <pre>
+             *    return startupTimeWall + getElapsedMonotonicTime();
+             * </pre>
+             */
+            static fraction_timespec getWallMonotonicTime() noexcept {
+                return startupTimeWall + getElapsedMonotonicTime();
             }
 
             /**

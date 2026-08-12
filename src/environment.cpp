@@ -31,6 +31,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "jau/basic_types.hpp"
 
 #include <jau/debug.hpp>
 #include <jau/environment.hpp>
@@ -51,6 +52,7 @@ void root_environment::set_terminating() noexcept { is_terminating_ = true; }
 
 const uint64_t environment::startupTimeMilliseconds = jau::getCurrentMilliseconds();
 const fraction_timespec environment::startupTimeMonotonic = jau::getMonotonicTime();
+const fraction_timespec environment::startupTimeWall= jau::getWallClockTime();
 
 bool environment::local_debug = false;
 

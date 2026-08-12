@@ -1299,7 +1299,7 @@ void jau::impl::fprintf_td_pre(std::string &str, const uint64_t elapsed_ms) noex
 }
 
 void jau::impl::fprintf_ts0_pre(std::string &str) noexcept {
-    const jau::fraction_timespec now = jau::getWallClockTime();
+    const jau::fraction_timespec now = environment::getWallMonotonicTime();
     str.reserve(jau::cfmt::default_string_capacity);
     str.append("[")
        .append(now.toISO8601String(true /* space */, false, false /* utcTime */, true /* muteNanos */));

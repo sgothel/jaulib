@@ -203,7 +203,7 @@ namespace jau {
     }
 
     /**
-     * Convenient secure fprintf() invocation, prepending jau::getWallClockTime() timestamp in localtime w/o nanoseconds,
+     * Convenient secure fprintf() invocation, prepending environment::getWallMonotonicTime() timestamp in localtime w/o nanoseconds,
      * and using `jau::format_string`.
      * @param stream the output stream
      * @param format the format
@@ -254,6 +254,10 @@ namespace jau {
 
 #define jau_fprintf_td(stream, fmt, ...) \
     jau::fprintf_td((stream), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
+    static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_NOREF_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
+
+#define jau_fprintf_ts(stream, fmt, ...) \
+    jau::fprintf_ts((stream), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
     static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_NOREF_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
 
 #define jau_printf(fmt, ...) \
