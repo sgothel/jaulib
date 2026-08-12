@@ -1797,6 +1797,32 @@ namespace jau::cfmt {
     }
 
     /**
+     * Strict format with type validation of arguments against the format string
+     * using an initial capacity of jau::cfmt::default_string_capacity,
+     * appending to the given destination.
+     *
+     * Resulting string size matches formated output w/o limitation
+     * and its capacity is left unchanged.
+     *
+     * Use `std::string::shrink_to_fit()` on the returned string,
+     * if you desire efficiency for longer lifecycles.
+     *
+     * See @ref jau_cfmt_header for details
+     *
+     * @tparam Targs the argument template type pack for the given arguments `args`
+     * @param s destination string to append the formatted string
+     * @param fmt the snprintf compliant format string
+     * @param args passed arguments, used for template type deduction only
+     * @return the given destination string for concatenation
+     * @see @ref jau_cfmt_header
+     */
+    template <typename... Targs>
+    CXX_ALWAYS_INLINE
+    std::string& append(std::string &s, std::string_view fmt, const Targs &...args) noexcept {
+        return append(jau::cfmt::default_string_capacity, s, std::numeric_limits<size_t>::max(), fmt, args...);
+    }
+
+    /**
      * Strict format with type validation of arguments against the format string,
      * appending to the given destination.
      *
@@ -2016,6 +2042,7 @@ namespace jau {
      * @param maxLen maximum resulting string length including
      * @param fmt the snprintf compliant format string
      * @param args arguments matching the format string
+     * @see jau::cfmt::append to append a formatted string
      */
     template<typename... Args>
     CXX_ALWAYS_INLINE
@@ -2040,6 +2067,7 @@ namespace jau {
      * @param strLenHint initially string capacity w/o EOS or zero for none
      * @param fmt the snprintf compliant format string
      * @param args arguments matching the format string
+     * @see jau::cfmt::append to append a formatted string
      */
     template <typename... Args>
     CXX_ALWAYS_INLINE
@@ -2066,6 +2094,7 @@ namespace jau {
      * @param maxLen maximum resulting string length including EOS
      * @param fmt the snprintf compliant format string
      * @param args arguments matching the format string
+     * @see jau::cfmt::append to append a formatted string
      */
     template <typename... Args>
     CXX_ALWAYS_INLINE
@@ -2090,70 +2119,12 @@ namespace jau {
      *
      * @param fmt the snprintf compliant format string
      * @param args arguments matching the format string
+     * @see jau::cfmt::append to append a formatted string
      */
     template <typename... Args>
     CXX_ALWAYS_INLINE
     std::string format_string(std::string_view fmt, const Args &...args) noexcept {
         return jau::cfmt::format(jau::cfmt::default_string_capacity, std::numeric_limits<size_t>::max(), fmt, args...);
-    }
-
-    /**
-     * Strict format with type validation of arguments against the format string,
-     * appending to the given destination.
-     *
-     * jau::cfmt::append() is utilize to validate `format` against given arguments at *runtime*.
-     *
-     * Resulting string is truncated to `min(maxLen, formatLen)`,
-     * with `formatLen` being the given formatted string length of output w/o limitation
-     * and its capacity is left unchanged.
-     *
-     * Use `std::string::shrink_to_fit()` on the returned string,
-     * if you desire efficiency for longer lifecycles (assuming `maxLen` hasn't been reached)
-     * or pass zero for `strLenHint`.
-     *
-     * See @ref jau_cfmt_header for details
-     *
-     * @tparam Targs the argument template type pack for the given arguments `args`
-     * @param strLenHint initial string capacity w/o EOS for appended content or zero for none
-     * @param s destination string to append the formatted string
-     * @param maxLen maximum total string length
-     * @param fmt the snprintf compliant format string
-     * @param args passed arguments, used for template type deduction only
-     * @return the given destination string for concatenation
-     * @see @ref jau_cfmt_header
-     */
-    template <typename... Targs>
-    CXX_ALWAYS_INLINE
-    std::string& append_hn(size_t strLenHint, std::string &s, size_t maxLen, std::string_view fmt, const Targs &...args) noexcept {
-        return jau::cfmt::append(strLenHint, s, maxLen, fmt, args...);
-    }
-
-    /**
-     * Strict format with type validation of arguments against the format string
-     * using an initial capacity of jau::cfmt::default_string_capacity,
-     * appending to the given destination.
-     *
-     * jau::cfmt::append() is utilize to validate `format` against given arguments at *runtime*.
-     *
-     * Resulting string size matches formated output w/o limitation
-     * and its capacity is left unchanged.
-     *
-     * Use `std::string::shrink_to_fit()` on the returned string,
-     * if you desire efficiency for longer lifecycles.
-     *
-     * See @ref jau_cfmt_header for details
-     *
-     * @tparam Targs the argument template type pack for the given arguments `args`
-     * @param s destination string to append the formatted string
-     * @param fmt the snprintf compliant format string
-     * @param args passed arguments, used for template type deduction only
-     * @return the given destination string for concatenation
-     * @see @ref jau_cfmt_header
-     */
-    template <typename... Targs>
-    CXX_ALWAYS_INLINE
-    std::string& append(std::string &s, std::string_view fmt, const Targs &...args) noexcept {
-        return jau::cfmt::append(jau::cfmt::default_string_capacity, s, std::numeric_limits<size_t>::max(), fmt, args...);
     }
 
     /**@}*/
@@ -2271,7 +2242,7 @@ extern template void jau::cfmt::impl::FormatParser::parseOneImpl<jau::cfmt::impl
  * @param args arguments matching the format string
  */
 #define jau_append_string(s, fmt, ...) \
-    jau::append((s), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
+    jau::cfmt::append((s), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
     static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_NOREF_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
 
 /**
