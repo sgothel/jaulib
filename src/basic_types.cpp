@@ -2226,12 +2226,29 @@ void jau::cfmt::impl::StringOutput::appendError(size_t argIdx, int line, const s
     m_s.append("<E#").append(std::to_string(argIdx)).append("@").append(std::to_string(line)).append(":").append(tag).append(">");
 }
 
-#if 0
-// TODO: gcc created multiple instances in shared-lib
-//       However, `constexpr` can't be explicitly instantiated.
-//
 // Explicit instantiation definition of template function
-template void jau::cfmt::impl::FormatParser::parseOneImpl<jau::cfmt::impl::no_type_t>(
-    typename jau::cfmt::impl::FormatParser::Result&,
-    const jau::cfmt::impl::no_type_t&);
-#endif
+template class jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>;
+template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOneImpl<jau::cfmt::impl::no_type_t>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, jau::cfmt::impl::no_type_t const&);
+template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOneImpl<bool>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, bool const&);
+template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOneImpl<unsigned long>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, unsigned long const&);
+template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOneImpl<double>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, double const&);
+template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOneImpl<void const* const>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, void const* const&);
+template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOneImpl<char const* const>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, char const* const&);
+template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOneImpl<std::string_view>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, std::string_view const&);
+template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<jau::cfmt::impl::no_type_t>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, jau::cfmt::impl::no_type_t const&);
+template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<bool>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, bool const&);
+template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<char>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, char const&);
+template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<short>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, short const&);
+template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<int>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, int const&);
+template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<long>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, long const&);
+template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<unsigned char>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, unsigned char const&);
+template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<unsigned short>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, unsigned short const&);
+template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<unsigned int>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, unsigned int const&);
+template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<unsigned long>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, unsigned long const&);
+template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<double>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, double const&);
+template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<float>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, float const&);
+template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<int*>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, int* const&);
+template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<char const*>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, char const* const&);
+template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<char*>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, char* const&);
+template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<void*>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, void* const&);
+template class jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>;
