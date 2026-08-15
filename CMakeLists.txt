@@ -4,6 +4,7 @@ include(JaulibSetup.cmake)
 # set(BUILDJAVA OFF)
 # set(CC_INSTRUMENTATION ON)
 # set(USE_LIBUNWIND OFF)
+# set(USE_LTO_FOR_ALL_TARGETS ON)
 JaulibPreset()
 
 if(JAU_CMAKE_HARD_PRESETS)

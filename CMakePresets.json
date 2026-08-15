@@ -13,6 +13,7 @@
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "20",
         "DONT_USE_RTTI": "ON",
+        "USE_LTO_FOR_ALL_TARGETS": "ON",
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/dist/debug",
         "JAU_CMAKE_FIX_INSTALL_PREFIX": "ON",

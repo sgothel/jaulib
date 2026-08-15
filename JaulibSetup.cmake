@@ -17,6 +17,8 @@
 # - USE_LIBCURL
 # - USE_LIBUNWIND
 # - BUILDJAVA
+# - USE_LTO_FOR_ALL_TARGETS
+# - TOOLCHAIN_SUPPORTS_IPO
 #
 
 message(STATUS "CMAKE_CURRENT_LIST_DIR: ${CMAKE_CURRENT_LIST_DIR}")
@@ -217,6 +219,11 @@ if(JAU_CMAKE_FIX_INSTALL_PREFIX)
     message(STATUS "JaulibSetup: Setting(2) CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}")
 endif()
 
+include(CheckIPOSupported)
+check_ipo_supported(RESULT TOOLCHAIN_SUPPORTS_IPO OUTPUT error)
+set(TOOLCHAIN_SUPPORTS_IPO "${TOOLCHAIN_SUPPORTS_IPO}" CACHE BOOL "" FORCE)
+set(USE_LTO_FOR_ALL_TARGETS ${USE_LTO_FOR_ALL_TARGETS} CACHE BOOL "" FORCE)
+
 message(STATUS "JaulibSetup: OS_NAME ${OS_NAME}")
 message(STATUS "JaulibSetup: OS_ARCH ${OS_ARCH} (${CMAKE_SYSTEM_PROCESSOR})")
 message(STATUS "JaulibSetup: OS_AND_ARCH ${OS_AND_ARCH}")
@@ -226,6 +233,8 @@ message(STATUS "JaulibSetup: Compiler = ${CMAKE_CXX_COMPILER_ID}")
 message(STATUS "JaulibSetup: TOOLSET ${TOOLSET}")
 message(STATUS "JaulibSetup: BUILD_TESTING = ${BUILD_TESTING}")
 message(STATUS "JaulibSetup: CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}")
+message(STATUS "JaulibSetup: TOOLCHAIN_SUPPORTS_IPO ${TOOLCHAIN_SUPPORTS_IPO}")
+message(STATUS "JaulibSetup: USE_LTO_FOR_ALL_TARGETS ${USE_LTO_FOR_ALL_TARGETS}")
 
 if(DEFINED CMAKE_CXX_CLANG_TIDY)
     message(STATUS "JaulibSetup: clang-tidy preset: ${CMAKE_CXX_CLANG_TIDY}")
@@ -357,6 +366,27 @@ else()
     #set(${PROJECT_NAME}_STATIC_LINKER_FLAGS ${${PROJECT_NAME}_STATIC_LINKER_FLAGS} "-frtti")
     set(${PROJECT_NAME}_EXE_LINKER_FLAGS ${${PROJECT_NAME}_EXE_LINKER_FLAGS} "-frtti")
 endif(DONT_USE_RTTI)
+
+if(USE_LTO_FOR_ALL_TARGETS AND TOOLCHAIN_SUPPORTS_IPO)
+    message(STATUS "JaulibSetup: LTO enabled for all targets (user config)")
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+    #if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    #    set(${PROJECT_NAME}_CXX_FLAGS ${${PROJECT_NAME}_CXX_FLAGS} "-flto=auto" "-fno-fat-lto-objects")
+    #    set(${PROJECT_NAME}_SHARED_LINKER_FLAGS ${${PROJECT_NAME}_SHARED_LINKER_FLAGS} "-flto=auto" "-fno-fat-lto-objects")
+    #    set(${PROJECT_NAME}_STATIC_LINKER_FLAGS ${${PROJECT_NAME}_STATIC_LINKER_FLAGS} "-flto=auto" "-fno-fat-lto-objects" "-fuse-linker-plugin")
+    #    set(${PROJECT_NAME}_EXE_LINKER_FLAGS ${${PROJECT_NAME}_EXE_LINKER_FLAGS} "-flto=auto" "-fno-fat-lto-objects")
+    #elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    #    # Supports same lto-flags as gcc, but defaults to `-flto=thin`
+    #    set(${PROJECT_NAME}_CXX_FLAGS ${${PROJECT_NAME}_CXX_FLAGS} "-flto=auto" "-fno-fat-lto-objects")
+    #    set(${PROJECT_NAME}_SHARED_LINKER_FLAGS ${${PROJECT_NAME}_SHARED_LINKER_FLAGS} "-flto=auto" "-fno-fat-lto-objects")
+    #    set(${PROJECT_NAME}_STATIC_LINKER_FLAGS ${${PROJECT_NAME}_STATIC_LINKER_FLAGS} "-flto=auto" "-fno-fat-lto-objects")
+    #    set(${PROJECT_NAME}_EXE_LINKER_FLAGS ${${PROJECT_NAME}_EXE_LINKER_FLAGS} "-flto=auto" "-fno-fat-lto-objects")
+    #endif()
+elseif(CMAKE_INTERPROCEDURAL_OPTIMIZATION)
+    message(STATUS "JaulibSetup: LTO enabled for all targets (cmake config)")
+else()
+    message(STATUS "JaulibSetup: LTO not enabled for all targets")
+endif()
 
 if(NOT EMSCRIPTEN)
   if(${OS_NAME} STREQUAL "freebsd")

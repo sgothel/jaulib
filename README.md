@@ -243,6 +243,7 @@ Following debug presets are defined in `CMakePresets.json`
   - default generator
   - default compiler
   - C++20
+  - LTO for all targets enabled
   - debug enabled
   - disabled `clang-tidy`
   - java (if available)
@@ -351,6 +352,8 @@ you all the options. The interesting ones are detailed below:
 - `USE_LIBCURL`
 - `USE_LIBUNWIND`
 - `BUILDJAVA`
+- `USE_LTO_FOR_ALL_TARGETS`
+- `TOOLCHAIN_SUPPORTS_IPO`
 
 Changing install path
 
@@ -423,6 +426,16 @@ Disable using `C++ Runtime Type Information` (*RTTI*) (default: enabled)
 
 ~~~~~~~~~~~~~
 -DDONT_USE_RTTI=ON
+~~~~~~~~~~~~~
+
+Enable LTO for all targets (default: disabled)
+
+*If `TOOLCHAIN_SUPPORTS_IPO` is enabled via `cmake` detection,
+all targets will be build with LTO support
+by enabling the `cmake` variable `CMAKE_INTERPROCEDURAL_OPTIMIZATION`.*
+
+~~~~~~~~~~~~~
+-DUSE_LTO_FOR_ALL_TARGETS=ON
 ~~~~~~~~~~~~~
 
 Building debug and instrumentation (sanitizer) build:
