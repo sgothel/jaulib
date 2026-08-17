@@ -86,6 +86,91 @@ namespace jau {
     /****************************************************************************************
      ****************************************************************************************/
 
+    template<typename T>
+    class OptDeleter
+    {
+      private:
+        bool m_owning;
+      public:
+        constexpr OptDeleter() noexcept : m_owning(true) {}
+        constexpr OptDeleter(bool owner) noexcept : m_owning(owner) {}
+        constexpr OptDeleter(const OptDeleter&) noexcept = default;
+        constexpr OptDeleter(OptDeleter&&) noexcept = default;
+        void operator()(T* p) const {
+            if( m_owning ) {
+                delete p;
+            }
+        }
+    };
+
+    /****************************************************************************************
+     ****************************************************************************************/
+
+    /**
+     * Scoping a unique value, allowing to ensure RAII destruction (w/ custom resource acquisition).
+     *
+     * Similar to std::unique_ptr<T>'s deleter utilization,
+     * but versatile and more on-point in regards to the scoped value.
+     *
+     * @tparam Value_type the scoped unique value type
+     * @tparam Novalue_type value type representing `No_value`, e.g. Value_type or std::nullptr_t for pointer or `int -1` for file-descriptor
+     *                      Requirement: Value_type must be constructible from Novalue_type.
+     * @tparam No_value `no value` query result of Novalue_type type, e.g. a Value_type `-1`, `MAX_VALUE` or nullptr for std::nullptr_t
+     */
+    template<typename Value_type,
+             typename Novalue_type, Novalue_type No_value>
+        requires std::constructible_from<Value_type, Novalue_type>
+    class ScopedUniqValue {
+      public:
+        typedef Value_type value_type;
+        typedef value_type *pointer;
+        typedef const value_type *const_pointer;
+        typedef value_type &reference;
+        typedef const value_type &const_reference;
+
+        typedef jau::function<void(reference)> deleter_t;
+
+      private:
+        value_type m_value;
+        deleter_t m_deleter;
+
+      public:
+        constexpr ScopedUniqValue() noexcept
+        : m_value(No_value), m_deleter(deleter_t()) { }
+
+        explicit constexpr ScopedUniqValue(value_type &&r, deleter_t deleter = deleter_t()) noexcept
+        : m_value(std::move(r)), m_deleter(std::move(deleter)) { }
+
+        constexpr ScopedUniqValue(ScopedUniqValue &&o) noexcept
+        : m_value(std::move(o.m_value)), m_deleter(std::move(o.m_deleter)) {
+            o.m_value = No_value;
+            o.m_deleter = deleter_t();
+        }
+        constexpr ScopedUniqValue &operator=(ScopedUniqValue &&o) noexcept {
+            m_value = std::move(o.m_value);
+            m_deleter = std::move(o.m_deleter);
+            o.m_value = No_value;
+            o.m_deleter = deleter_t();
+            return *this;
+        }
+
+        constexpr ScopedUniqValue(const ScopedUniqValue &) noexcept = delete;
+        constexpr ScopedUniqValue &operator=(const ScopedUniqValue &) noexcept = delete;
+
+        constexpr ~ScopedUniqValue() noexcept {
+            m_deleter(m_value);
+        };
+
+        const_reference operator*() const noexcept { return m_value; }
+        reference operator*() noexcept { return m_value; }
+
+        const_pointer operator->() const noexcept { return &m_value; };
+        pointer operator->() noexcept { return &m_value; };
+    };
+
+    /****************************************************************************************
+     ****************************************************************************************/
+
     /**
      * Like std::find() of 'algorithm'
      * <p>
@@ -464,23 +549,6 @@ namespace jau {
 
     /****************************************************************************************
      ****************************************************************************************/
-
-    template<typename T>
-    class OptDeleter
-    {
-      private:
-        bool m_owning;
-      public:
-        constexpr OptDeleter() noexcept : m_owning(true) {}
-        constexpr OptDeleter(bool owner) noexcept : m_owning(owner) {}
-        constexpr OptDeleter(const OptDeleter&) noexcept = default;
-        constexpr OptDeleter(OptDeleter&&) noexcept = default;
-        void operator()(T* p) const {
-            if( m_owning ) {
-                delete p;
-            }
-        }
-    };
 
     /**@}*/
 
