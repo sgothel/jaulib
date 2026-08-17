@@ -29,6 +29,7 @@
 #include <jau/fraction_type.hpp>
 #include <jau/functional.hpp>
 #include <jau/enum_util.hpp>
+#include <jau/basic_algos.hpp>
 #include <memory>
 #include <string>
 
@@ -718,6 +719,105 @@ namespace jau::io::fs {
      * @return true if successful, otherwise false
      */
     bool touch(const std::string& path, const fmode_t mode = fmode_t::def_file_prot) noexcept;
+
+    /// POSIX `fcntl` file descriptor control operations, manipulating the file descriptor (fd) flags
+    namespace ctrl /* fcntl */ {
+        /**
+         * File descriptor locking operations
+         *
+         * This `enum class` type fulfills `C++ named requirements: BitmaskType`.
+         *
+         * @see lock()
+         * @see lock_wait()
+         * @see unlock()
+         */
+        enum class lock_ops : uint16_t {
+            /** No option set */
+            none = 0,
+
+            /** Non exclusive read lock operation, i.e. `F_RDLCK` lock type. */
+            read_lock = 1U << 0,
+
+            /** Exclusive write lock operation, i.e. `F_WRLCK` lock type. */
+            write_lock = 1U << 1,
+
+            /** Blocking lock operation, i.e. `F_SETLKW` command, otherwise `F_SETLK` command. */
+            blocking = 1U << 2,
+
+            /** Range from file start, i.e. `SEEK_SET` start flavor. */
+            seek_set = 1U << 8,
+
+            /** Range from current file position, i.e. `SEEK_CUR` start flavor. */
+            seek_cur = 1U << 9,
+
+            /** Range from file end position, i.e. `SEEK_END` start flavor. */
+            seek_end = 1U << 10,
+
+            /** Default write lock: write_lock | seek_set */
+            write_lock_default = write_lock | seek_set,
+            /** Default read lock: read_lock | seek_set */
+            read_lock_default = read_lock | seek_set,
+            /** Default unlock: read_lock | seek_set*/
+            unlock_default = seek_set
+        };
+        JAU_MAKE_BITFIELD_ENUM_STRING(lock_ops, read_lock, write_lock, seek_set, seek_cur, seek_end);
+
+
+        /**
+         * Unlock a file region
+         * @param fd the file descriptor
+         * @param ops locking operation, defaults to lock_ops::unlock_default
+         * @param start Starting offset for lock, defaults to 0 (start of file)
+         * @param len Number of bytes to lock, defaults to 0 (full file)
+         * @return zero if successful, otherwise -errno
+         */
+        int unlock(int fd, lock_ops ops=lock_ops::unlock_default, ::off_t start=0, ::off_t len=0) noexcept;
+
+        /**
+         * Lock a file region
+         * @param fd the file descriptor
+         * @param ops locking operation, defaults to lock_ops::write_lock_default
+         * @param start Starting offset for lock, defaults to 0 (start of file)
+         * @param len Number of bytes to lock, defaults to 0 (full file)
+         * @return zero if successful, otherwise -errno
+         */
+        int lock(int fd, lock_ops ops=lock_ops::write_lock_default, ::off_t start=0, ::off_t len=0) noexcept;
+
+        /**
+         * Test if a file region is lockable
+         * @param fd the file descriptor
+         * @param ops locking operation, defaults to lock_ops::write_lock_default
+         * @param start Starting offset for lock, defaults to 0 (start of file)
+         * @param len Number of bytes to lock, defaults to 0 (full file)
+         * @return zero if lockable, or > 0 for PID of process holding incompatible lock, or -errno.
+         */
+        ssize_t is_locked(int fd, lock_ops ops=lock_ops::write_lock_default, ::off_t start=0, ::off_t len=0) noexcept;
+
+        /**
+         * Set close-on-exec flag, i.e. `FD_CLOEXEC`.
+         * @param fd the file descriptor
+         * @return zero if successful, otherwise -errno
+         */
+        int set_close_on_exec(int fd) noexcept;
+    }
+
+    typedef ScopedUniqValue<int, int, -1> ScopedFD;
+
+    /**
+     * Create a pid-lock-file and attempts to acquire an exclusive lock.
+     *
+     * Returns >= 0 if successful, `-EAGAIN` or `-EACCES` if already locked,
+     * otherwise an error.
+     *
+     * The returned ScopedFD's destructor releases the lock,
+     * removes the pid lock-file itself and closes the file-descriptor.
+     *
+     + @param fname lock-file name
+     + @param pid the process-id
+     + @param mode the file permissions, defaults to fmode_t::rw_usr
+     * @return ScopedFD file-descriptor if >= 0, otherwise -errno. `-EAGAIN` or `-EACCES` denotes an already locked file.
+     */
+    ScopedFD create_pid_lock_file(const std::string &fname, size_t pid, const fmode_t mode = fmode_t::rw_usr);
 
     /**
      * `bool consume_dir_item(dir_item& item)`

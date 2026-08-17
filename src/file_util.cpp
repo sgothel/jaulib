@@ -996,6 +996,121 @@ bool jau::io::fs::touch(const std::string& path, const fmode_t mode) noexcept {
     return res;
 }
 
+static int jau_file_lock_op(struct ::flock &fl, int fd, int cmd, jau::io::fs::ctrl::lock_ops ops, ::off_t start, ::off_t len) noexcept
+{
+    using namespace jau::io::fs::ctrl;
+    const lock_ops seek_op = ops & (lock_ops::seek_set | lock_ops::seek_cur | lock_ops::seek_end);
+    if (jau::bit_count(*seek_op) != 1) {
+        return -1;
+    }
+    const lock_ops rw_op = ops & (lock_ops::read_lock | lock_ops::write_lock);
+    if (jau::bit_count(*rw_op) > 1) {
+        return -1;
+    }
+    short whence, type;
+    if (is_set(ops, lock_ops::seek_set)) {
+        whence = SEEK_SET;
+    } else if (is_set(ops, lock_ops::seek_cur)) {
+        whence = SEEK_CUR;
+    } else { // seek_end
+        whence = SEEK_END;
+    }
+    if (is_set(ops, lock_ops::read_lock)) {
+        type = F_RDLCK;
+    } else if (is_set(ops, lock_ops::write_lock)) {
+        type = F_WRLCK;
+    } else {
+        type = F_UNLCK;
+    }
+    ::memset(&fl, 0, sizeof(fl));
+    fl.l_type = type;
+    fl.l_whence = whence;
+    fl.l_start = start;
+    fl.l_len = len;
+    return 0 == ::fcntl(fd, cmd, &fl) ? 0 : -errno;
+}
+
+int jau::io::fs::ctrl::lock(int fd, lock_ops ops, ::off_t start, ::off_t len) noexcept {
+    const int cmd = is_set(ops, lock_ops::blocking) ? F_SETLKW : F_SETLK;
+    struct ::flock fl;
+    return jau_file_lock_op(fl, fd, cmd, ops, start, len);
+}
+
+int jau::io::fs::ctrl::unlock(int fd, lock_ops ops, ::off_t start, ::off_t len) noexcept {
+    struct ::flock fl;
+    return jau_file_lock_op(fl, fd, F_SETLK, ops & ~(lock_ops::read_lock|lock_ops::write_lock), start, len);
+}
+
+ssize_t jau::io::fs::ctrl::is_locked(int fd, lock_ops ops, ::off_t start, ::off_t len) noexcept {
+    const lock_ops rw_op = ops & (lock_ops::read_lock | lock_ops::write_lock);
+    if (jau::bit_count(*rw_op) != 1) {
+        return -1;
+    }
+    struct ::flock fl;
+    int e;
+    if (0 != (e=jau_file_lock_op(fl, fd, F_GETLK, ops, start, len))) {
+        return e;
+    }
+    return (fl.l_type == F_UNLCK) ? 0 : fl.l_pid;
+}
+
+int jau::io::fs::ctrl::set_close_on_exec(int fd) noexcept {
+    int flags = ::fcntl(fd, F_GETFD);
+    if (flags == -1) {
+        jau_ERR_PRINT("Couldn't get flags for fd %d", fd);
+        return -errno;
+    }
+    if (!(flags & FD_CLOEXEC)) {
+        flags |= FD_CLOEXEC;
+        if (::fcntl(fd, F_SETFD, flags) == -1) {
+            jau_ERR_PRINT("Couldn't set flags for fd %d", fd);
+            return -errno;
+        }
+    }
+    return 0;
+}
+
+ScopedFD jau::io::fs::create_pid_lock_file(const std::string &fname, size_t pid, const jau::io::fs::fmode_t mode) {
+    int fd = ::open(fname.c_str(), O_RDWR | O_CREAT, posix_protection_bits(mode));
+    if (0 > fd) {
+        const int e = errno;
+        jau_ERR_PRINT("Couldn't create pid lock-file '%s'", fname);
+        return ScopedFD(-e);
+    }
+    if (0>ctrl::set_close_on_exec(fd)) {
+        return ScopedFD(-1);
+    }
+    int e;
+    if ((e=ctrl::lock(fd)) != 0) {
+        if (e != -EAGAIN && e != -EACCES) {
+            jau_ERR_PRINT("Unable to lock PID file `%s`", fname);
+        } // else already locked file -EAGAIN || -EACCES
+        return ScopedFD(std::move(e)); // NOLINT(performance-move-const-arg)
+    }
+    // NOTE: ::unlink(fname) to mark for removal renders exclusive write-lock non-functional (not locking)
+    if (::ftruncate(fd, 0) == -1) {
+        jau_ERR_PRINT("Couldn't truncate pid lock-file `%s` for removal", fname);
+        return ScopedFD(-1);
+    }
+    ScopedFD fdh = ScopedFD(std::move(fd), // NOLINT(performance-move-const-arg)
+        [fname](int &fd_) -> void {
+            if (fd_ >= 0) {
+                ctrl::unlock(fd_);
+                if (::unlink(fname.c_str())) {
+                    jau_ERR_PRINT("Failed to unlink pid lock-file `%s`", fname);
+                }
+                ::close(fd_);
+            }
+        });
+    const std::string s_pid = std::to_string(pid);
+    const ssize_t sz = ::write(*fdh, s_pid.c_str(), s_pid.length());
+    if (sz < 0 || s_pid.length() != (size_t)sz) {
+        jau_ERR_PRINT("Couldn't write pid `%s` to pid lock-file '%s', res %zd", s_pid, fname, sz);
+        return ScopedFD(-1);
+    }
+    return fdh;
+}
+
 bool jau::io::fs::get_dir_content(const std::string& path, const consume_dir_item& digest) noexcept {
     DIR *dir;
     struct dirent *ent;
