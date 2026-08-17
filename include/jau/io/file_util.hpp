@@ -307,6 +307,8 @@ namespace jau::io::fs {
         read_usr = 00400,
         /** Protection bit: POSIX S_IWUSR */
         write_usr = 00200,
+        /** Protection bit: POSIX S_IRUSR | S_IWUSR */
+        rw_usr = 00600,
         /** Protection bit: POSIX S_IXUSR */
         exec_usr = 00100,
         /** Protection bit: POSIX S_IRWXU */
