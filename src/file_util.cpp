@@ -1102,10 +1102,10 @@ ScopedFD jau::io::fs::create_pid_lock_file(const std::string &fname, size_t pid,
                 ::close(fd_);
             }
         });
-    const std::string s_pid = std::to_string(pid);
+    const std::string s_pid = std::to_string(pid).append("\n");
     const ssize_t sz = ::write(*fdh, s_pid.c_str(), s_pid.length());
     if (sz < 0 || s_pid.length() != (size_t)sz) {
-        jau_ERR_PRINT("Couldn't write pid `%s` to pid lock-file '%s', res %zd", s_pid, fname, sz);
+        jau_ERR_PRINT("Couldn't write pid %zu to pid lock-file '%s', res %zd", pid, fname, sz);
         return ScopedFD(-1);
     }
     return fdh;
