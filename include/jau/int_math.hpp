@@ -140,36 +140,34 @@ namespace jau {
     }
 
     /**
-     * Returns log2(bytesize*8), e.g. to bit-shift whole byte values
+     * Returns the base-2 logarithmic of the given unsigned integral value using bit-operations.
+     *
+     * If v == 0, returns std::numeric_limits<unsigned int>::max()
+     *
+     * @param v, where 2^x=v
+     * @return x of 2^x=v w/ v>0, or std::numeric_limits<unsigned int>::max() w/ v==0
+     * @see std::bit_width
+     * @see std::countl_zero
+     */
+    template<jau::req::unsigned_integral T>
+    constexpr unsigned int log2i(T v) noexcept {
+        return (unsigned int)std::bit_width<T>(v) - 1U;
+    }
+
+    /**
+     * Returns log2i(bytesize*8), e.g. to bit-shift whole byte values
      *
      * If bytesize is not of power2, zero is returned.
      *
      * @param bytesize number of bytes
-     * @return log2(bytesize*8)
+     * @return log2i(bytesize*8)
+     * @see jau::log2i()
      */
-    constexpr size_t log2_byteshift(const size_t bytesize) noexcept {
-        if ( bytesize < 256 ) {
-            switch ( bytesize ) {
-                case 1:   return 3;   //    8 bits
-                case 2:   return 4;   //   16 bits
-                case 4:   return 5;   //   32 bits
-                case 8:   return 6;   //   64 bits
-                case 16:  return 7;   //  128 bits
-                case 32:  return 8;   //  256 bits
-                case 64:  return 9;   //  512 bits
-                case 128: return 10;  // 1024 bits
-                default:  return 0;   // non pow-2 bytesize
-            }
-        }
+    constexpr unsigned int log2_byteshift(const size_t bytesize) noexcept {
         if( !jau::is_power_of_2(bytesize) ) {
             return 0;
         }
-        // starting w/ bytesize 256, shift 11
-        size_t bitsize = (bytesize * 8) >> 11, r = 11;
-        while ( bitsize >>= 1 ) {
-            ++r;
-        }
-        return r;
+        return jau::log2i(bytesize*8U);
     }
 
     /**

@@ -21,10 +21,13 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include <bit>
+#include <limits>
 #include <thread>
 #include <cassert>
 #include <cinttypes>
 #include <cstring>
+#include "jau/debug.hpp"
 
 #include <jau/cpp_lang_util.hpp>
 #include <jau/test/catch2_ext.hpp>
@@ -318,17 +321,32 @@ constexpr static size_t log2_byteshift2(const size_t bytesize) noexcept {
     return r;
 }
 
-TEST_CASE("Int Math Test 22", "[log2_byteshift][arithmetic][math]") {
+TEST_CASE("Int Math Test 22", "[log2,log2_byteshift][arithmetic][math]") {
     for(size_t bytesz = 1; bytesz < 4096; bytesz<<=1) {
         size_t bitsz = bytesz*8;
-        size_t l2 = (size_t)std::log2(bitsz);
+        size_t l2f = (size_t)std::log2(bitsz);
+        size_t l2i = jau::log2i(bitsz);
+        size_t bits = std::bit_width(bitsz);
         size_t shift1 = jau::log2_byteshift(bytesz);
         size_t shift2 = log2_byteshift2(bytesz);
-        fprintf(stderr, "bytesz %zu, bitsz %zu: log2 %zu, shift[1 %zu, 2 %zu]\n",
-            bytesz, bitsz, l2, shift1, shift2);
-        REQUIRE( l2 == shift1 );
-        REQUIRE( l2 == shift2 );
+        fprintf(stderr, "bytesz %zu, bitsz %zu: log2(std %zu, jau %zu), bits %zu, shift[1 %zu, 2 %zu]\n",
+            bytesz, bitsz, l2f, l2i, bits, shift1, shift2);
+        REQUIRE( l2f == l2i );
+        REQUIRE( l2i+1 == bits );
+        REQUIRE( l2i == shift1 );
+        REQUIRE( l2i == shift2 );
     }
+    // log2i tests
+    REQUIRE(3 == jau::log2i(8_u32));
+    REQUIRE(2 == jau::log2i(4_u32));
+    REQUIRE(1 == jau::log2i(2_u32));
+    REQUIRE(0 == jau::log2i(1_u32));
+    REQUIRE(std::numeric_limits<unsigned int>::max() == jau::log2i(0_u32));
+    for(uint32_t v=0; v<=512; ++v) {
+        // jau_fprintf(stderr, "XXX %u = %#bu = log2i %u, bits %d\n", v, v, jau::log2i(v), std::bit_width(v));
+        REQUIRE(jau::log2i(v)+1U == (unsigned)std::bit_width(v));
+    }
+
     // non-power2 tests
     REQUIRE(0 == jau::log2_byteshift(0));
     REQUIRE(0 == jau::log2_byteshift(3));
