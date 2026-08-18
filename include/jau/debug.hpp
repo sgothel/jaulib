@@ -40,7 +40,6 @@ namespace jau::impl {
 
     /// This function is a possible cancellation point and therefore marked with noexcept (not marked with __THROW like ::fprintf).
     template <typename... Args>
-    CXX_NO_INLINE
     void dbgPrint0(FILE *out, bool addErrno, bool addBacktrace, std::string_view format, const Args &...args) noexcept {
         std::string str;
         dbgPrint_pre(str, false, nullptr /* prefixMsg */, nullptr /* prefixMsgSep */, nullptr /* func */, nullptr /* file */, 0 /* line */);
@@ -50,7 +49,6 @@ namespace jau::impl {
 
     /// This function is a possible cancellation point and therefore marked with noexcept (not marked with __THROW like ::fprintf).
     template <typename... Args>
-    CXX_NO_INLINE
     void dbgPrint1(FILE *out, bool addPrefix, const char *msg, std::string_view format, const Args &...args) noexcept {
         std::string str;
         dbgPrint_pre(str, addPrefix, msg, ": ", nullptr /* func */, nullptr /* file */, 0 /* line */);
@@ -60,7 +58,6 @@ namespace jau::impl {
 
     /// This function is a possible cancellation point and therefore marked with noexcept (not marked with __THROW like ::fprintf).
     template <typename... Args>
-    CXX_NO_INLINE
     void dbgPrint2(FILE *out, const char *msg, bool addErrno, bool addBacktrace, const char *func, const char *file, const int line,
                    std::string_view format, const Args &...args) noexcept {
         std::string str;
@@ -180,7 +177,6 @@ namespace jau {
      * @return number of bytes printed if successful, otherwise negative
      */
     template <typename... Args>
-    CXX_NO_INLINE
     ssize_t fprintf_td(const uint64_t elapsed_ms, FILE* stream, std::string_view format, const Args &...args) noexcept {
         std::string str;
         jau::impl::fprintf_td_pre(str, elapsed_ms);
@@ -211,7 +207,6 @@ namespace jau {
      * @return number of bytes printed if successful, otherwise negative
      */
     template <typename... Args>
-    CXX_NO_INLINE
     ssize_t fprintf_ts(FILE* stream, std::string_view format, const Args &...args) noexcept {
         std::string str;
         jau::impl::fprintf_ts0_pre(str);
@@ -227,7 +222,6 @@ namespace jau {
      * @return number of bytes printed if successful, otherwise negative
      */
     template <typename... Args>
-    CXX_NO_INLINE
     ssize_t fprintf_sc(FILE* stream, std::string_view format, const Args &...args) noexcept {
         return jau::impl::fprintf_tail(stream, jau::format_string(format, args...));
     }
