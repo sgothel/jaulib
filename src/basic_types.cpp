@@ -2249,4 +2249,5 @@ template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<d
 template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<float>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, float const&);
 template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<char const*>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, char const* const&);
 template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<char*>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, char* const&);
+template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<std::string_view>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, std::string_view const&);
 template class jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>;

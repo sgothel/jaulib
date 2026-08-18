@@ -924,16 +924,19 @@ namespace jau::cfmt {
                 parseOneImpl<const char * const>(pc, U(val)); // pass-through
             }
 
-            template <typename T>
-            requires jau::req::string_literal<T> || jau::req::string_class<T>
+            template <jau::req::string_literal T>
             CXX_NO_INLINE
             static constexpr void parseOne(Result &pc, const T &val) {
-                pc.m_argtype_size = sizeof(T); // NOLINT(bugprone-sizeof-expression)
-                pc.m_argtype_signed = false;
-                pc.m_argval_negative = false;
+                pc.set_arg(sizeof(T)); // NOLINT(bugprone-sizeof-expression)
                 parseOneImpl<std::string_view>(pc, std::string_view(val)); // pass as string_view
             }
-
+            template <typename T>
+            requires jau::req::string_type<T> || jau::req::string_view_type<T>
+            CXX_NO_INLINE
+            static constexpr void parseOne(Result &pc, const T &val) {
+                pc.set_arg(sizeof(T)); // NOLINT(bugprone-sizeof-expression)
+                parseOneImpl<std::string_view>(pc, val); // pass as string_view
+            }
             template <typename T>
             requires jau::has_toString_v<T> && (!jau::req::string_alike<T>) && (!std::is_enum_v<T>)
             CXX_NO_INLINE
@@ -2147,6 +2150,7 @@ extern template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::par
 extern template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<float>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, float const&);
 extern template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<char const*>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, char const* const&);
 extern template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<char*>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, char* const&);
+extern template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<std::string_view>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, std::string_view const&);
 extern template class jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>;
 
 /**
