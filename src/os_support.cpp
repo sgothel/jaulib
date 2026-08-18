@@ -41,7 +41,10 @@
 
 using namespace jau;
 
-#define CASE_TO_STRING(U,V) case U::V: return #V;
+namespace jau::os {
+    JAU_MAKE_BITFIELD_ENUM_STRING_CODE(os_type_t, Unix, Windows, Linux, Android, FreeBSD, Darwin, QnxNTO, GenWasm, Emscripten);
+    JAU_MAKE_ENUM_STRING_CODE(abi_type_t, generic, gnu_armel, gnu_armhf, aarch64, wasm32_gen, wasm32_ems, wasm64_gen, wasm64_ems);
+}
 
 bool jau::os::get_rt_os_info(RuntimeOSInfo& info) noexcept {
     #if !defined(_WIN32)

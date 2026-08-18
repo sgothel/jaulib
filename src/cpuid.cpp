@@ -46,6 +46,20 @@
 using namespace jau;
 using namespace jau::cpu;
 
+namespace jau::cpu {
+    JAU_MAKE_ENUM_STRING_CODE(cpu_family_t, arm32, arm64, x86_32, x86_64, ia64,
+        ppc32, ppc64, sparc32, sparc64, mips32, mips64, superh32, superh64, wasm32, wasm64);
+
+    JAU_MAKE_BITFIELD_ENUM_STRING_CODE(arm32_hwcap1_t, swp, half, thumb, bits26, fmult, fpa, vfp, edsp, java, iwmmxt,
+        crunch, thumbee, neon, vfp_v3, vfp_v3_d16, tls, vfp_v4, idiva,
+        idivt, vfp_d32, lpae, evtstrm);
+    JAU_MAKE_BITFIELD_ENUM_STRING_CODE(arm32_hwcap2_t, aes, pmull, sha1, sha2, crc32);
+
+    JAU_MAKE_BITFIELD_ENUM_STRING_CODE(arm64_hwcap_t, fp, asimd, evtstrm, aes, pmull, sha1, sha2, crc32, atomics, fphp,
+        asimdhp, cpuid, asimdrdm, jscvt, fcma, lrcpc, dcpop, sha3, sm3, sm4,
+        asimddp, sha512, sve, asimdfhm, dit, uscat, ilrcpc, flagm, ssbs, sb, paca, pacg);
+}
+
 static bool get_cache_line_size(size_t& l1_share_max, size_t& l1_apart_min) noexcept {
     #ifdef __cpp_lib_hardware_interference_size
         l1_share_max = std::hardware_constructive_interference_size;

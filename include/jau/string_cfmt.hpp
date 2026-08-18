@@ -253,7 +253,7 @@ namespace jau::cfmt {
 
         uppercase   = (uint16_t)1 << 8  ///< uppercase, via conversion spec
     };
-    JAU_MAKE_BITFIELD_ENUM_STRING(flags_t, hash, zeropad, left, space, plus, thousands, uppercase);
+    JAU_MAKE_BITFIELD_ENUM_STRING_DECL(flags_t);
 
     /// Format length modifiers
     enum class plength_t : uint16_t {
@@ -267,7 +267,7 @@ namespace jau::cfmt {
         z,   ///< size_t or ssize_t integer
         t    ///< ptrdiff_t
     };
-    JAU_MAKE_ENUM_STRING(plength_t, hh, h, l, ll, L, j, z, t);
+    JAU_MAKE_ENUM_STRING_DECL(plength_t);
 
     /// Format conversion specifier (fully defined w/ radix)
     enum class cspec_t : uint16_t {
@@ -282,8 +282,7 @@ namespace jau::cfmt {
         alt_float,        ///< `g` or `G`
         hex_float,        ///< `a` or `A`
     };
-    JAU_MAKE_ENUM_STRING(cspec_t, character, string, pointer, signed_int, unsigned_int,
-                         floating_point, exp_float, alt_float, hex_float);
+    JAU_MAKE_ENUM_STRING_DECL(cspec_t);
 
     /// Global jau::cfmt configuration
     struct Config {

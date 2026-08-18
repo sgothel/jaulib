@@ -78,6 +78,11 @@ using namespace jau::int_literals;
     const size_t jau::io::BEST_URLSTREAM_RINGBUFFER_SIZE = 2_uz * 16384_uz;
 #endif
 
+namespace jau::io {
+    JAU_MAKE_BITFIELD_ENUM_STRING_CODE(iostate_t, goodbit, badbit, eofbit, failbit, timeout);
+    JAU_MAKE_BITFIELD_ENUM_STRING_CODE(iomode_t, read, write, atend, trunc);
+}
+
 inline constexpr static void copy_mem(void* out, const void* in, size_t n) noexcept {
     if(in != nullptr && out != nullptr && n > 0) {
         std::memcpy(out, in, sizeof(uint8_t)*n);

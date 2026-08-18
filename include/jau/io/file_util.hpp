@@ -366,7 +366,7 @@ namespace jau::io::fs {
         /** Type mask for sock | blk | chr | fifo | dir | file | link | no_access | not_existing. */
         type_mask = 0b01100000000001111111000000000000,
     };
-    JAU_MAKE_BITFIELD_ENUM_STRING(fmode_t, sock, blk, chr, fifo, dir, file, link, no_access, not_existing);
+    JAU_MAKE_BITFIELD_ENUM_STRING_DECL(fmode_t);
 
     /**
      * Return the string representation of fmode_t
@@ -688,7 +688,7 @@ namespace jau::io::fs {
              */
             std::string toString() const noexcept;
     };
-    JAU_MAKE_BITFIELD_ENUM_STRING2(file_stats::field_t, field_t, type, mode, nlink, uid, gid, atime, mtime, ctime, ino, size, blocks, btime);
+    JAU_MAKE_BITFIELD_ENUM_STRING2_DECL(file_stats::field_t);
 
     inline std::ostream& operator<<(std::ostream& os, const file_stats& v) { return os << v.toString(); }
 
@@ -760,7 +760,7 @@ namespace jau::io::fs {
             /** Default unlock: read_lock | seek_set*/
             unlock_default = seek_set
         };
-        JAU_MAKE_BITFIELD_ENUM_STRING(lock_ops, read_lock, write_lock, seek_set, seek_cur, seek_end);
+        JAU_MAKE_BITFIELD_ENUM_STRING_DECL(lock_ops);
 
 
         /**
@@ -923,7 +923,7 @@ namespace jau::io::fs {
          */
         dir_non_recursive = dir_entry | dir_exit
     };
-    JAU_MAKE_BITFIELD_ENUM_STRING(traverse_event, symlink, file, dir_check_entry, dir_entry, dir_exit, dir_symlink);
+    JAU_MAKE_BITFIELD_ENUM_STRING_DECL(traverse_event);
 
     /**
      * path_visitor jau::FunctionDef definition
@@ -1011,9 +1011,7 @@ namespace jau::io::fs {
         /** Enable verbosity mode, potentially used by a path_visitor implementation like remove(). */
         verbose = 1U << 15
     };
-    JAU_MAKE_BITFIELD_ENUM_STRING(traverse_options, recursive, follow_symlinks, two_pass,
-                                  reverse_order, lexicographical_order, size_order, mtime_order,
-                                  dir_check_entry, dir_entry, dir_exit);
+    JAU_MAKE_BITFIELD_ENUM_STRING_DECL(traverse_options);
 
     /**
      * Visit element(s) of a given path, see traverse_options for detailed settings.
@@ -1143,7 +1141,7 @@ namespace jau::io::fs {
         /** Enable verbosity mode, show error messages on stderr. */
         verbose = 1 << 15
     };
-    JAU_MAKE_BITFIELD_ENUM_STRING(copy_options, recursive, follow_symlinks, into_existing_dir, ignore_symlink_errors, overwrite, preserve_all, sync);
+    JAU_MAKE_BITFIELD_ENUM_STRING_DECL(copy_options);
 
     /**
      * Copy the given source_path to dest_path using copy_options.
@@ -1260,9 +1258,7 @@ namespace jau::io::fs {
         active = 1 << 30,
         nouser = 1UL << 31
     };
-    JAU_MAKE_BITFIELD_ENUM_STRING(mountflags_linux, rdonly, nosuid, nodev, noexec, synchronous, remount, mandlock, dirsync, noatime,
-                                nodiratime, bind, move, rec, silent, posixacl, unbindable, private_, slave, shared, relatime,
-                                kernmount, i_version, strictatime, lazytime, active, nouser);
+    JAU_MAKE_BITFIELD_ENUM_STRING_DECL(mountflags_linux);
 
     /**
      * Attach the filesystem image named in `image_path` to `target`
@@ -1329,7 +1325,7 @@ namespace jau::io::fs {
         expire = 4,
         nofollow = 8
     };
-    JAU_MAKE_BITFIELD_ENUM_STRING(umountflags_linux, force, detach, expire, nofollow);
+    JAU_MAKE_BITFIELD_ENUM_STRING_DECL(umountflags_linux);
 
     /**
      * Detach the given mount_ctx `context`

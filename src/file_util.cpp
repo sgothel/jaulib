@@ -1377,6 +1377,30 @@ bool jau::io::fs::visit(const file_stats& item_stats, traverse_options topts, co
     return res;
 }
 
+namespace jau::io::fs {
+    JAU_MAKE_BITFIELD_ENUM_STRING_CODE(fmode_t, sock, blk, chr, fifo, dir, file, link, no_access, not_existing);
+
+    JAU_MAKE_BITFIELD_ENUM_STRING2_CODE(file_stats::field_t, field_t, type, mode, nlink, uid, gid, atime, mtime, ctime, ino, size, blocks, btime);
+
+    JAU_MAKE_BITFIELD_ENUM_STRING_CODE(traverse_event, symlink, file, dir_check_entry, dir_entry, dir_exit, dir_symlink);
+
+    JAU_MAKE_BITFIELD_ENUM_STRING_CODE(traverse_options, recursive, follow_symlinks, two_pass,
+            reverse_order, lexicographical_order, size_order, mtime_order,
+            dir_check_entry, dir_entry, dir_exit);
+
+    JAU_MAKE_BITFIELD_ENUM_STRING_CODE(copy_options, recursive, follow_symlinks, into_existing_dir, ignore_symlink_errors, overwrite, preserve_all, sync);
+
+    JAU_MAKE_BITFIELD_ENUM_STRING_CODE(mountflags_linux, rdonly, nosuid, nodev, noexec, synchronous, remount, mandlock, dirsync, noatime,
+                                nodiratime, bind, move, rec, silent, posixacl, unbindable, private_, slave, shared, relatime,
+                                kernmount, i_version, strictatime, lazytime, active, nouser);
+
+    JAU_MAKE_BITFIELD_ENUM_STRING_CODE(umountflags_linux, force, detach, expire, nofollow);
+
+    namespace ctrl {
+        JAU_MAKE_BITFIELD_ENUM_STRING_CODE(lock_ops, read_lock, write_lock, seek_set, seek_cur, seek_end);
+    }
+}
+
 bool jau::io::fs::visit(const std::string& path, traverse_options topts, const path_visitor& visitor, std::vector<int>* dirfds) noexcept {
     return jau::io::fs::visit(file_stats(path), topts, visitor, dirfds);
 }

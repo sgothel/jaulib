@@ -57,7 +57,7 @@ namespace jau::io {
         /** Input or output operation failed due to timeout. */
         timeout = 1U << 3
     };
-    JAU_MAKE_BITFIELD_ENUM_STRING(iostate_t, goodbit, badbit, eofbit, failbit, timeout);
+    JAU_MAKE_BITFIELD_ENUM_STRING_DECL(iostate_t);
 
     /** Stream I/O mode, e.g. read and/or write. */
     enum class iomode_t : uint32_t {
@@ -76,7 +76,7 @@ namespace jau::io {
         /** Write capabilities and truncate existing (file) stream, i.e. `write|trunc` */
         writetrunc = write | trunc,
     };
-    JAU_MAKE_BITFIELD_ENUM_STRING(iomode_t, read, write, atend, trunc);
+    JAU_MAKE_BITFIELD_ENUM_STRING_DECL(iomode_t);
 
     /**
      * Supporting std::basic_ios's iostate capabilities for all ByteStream implementations.
