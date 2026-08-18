@@ -1428,7 +1428,40 @@ std::string jau::cfmt::Result::toString() const {
     return s;
 }
 
-void jau::cfmt::impl::append_rev(std::string &dest, const size_t dest_maxlen, std::string_view src, bool prec_cut, bool reverse, const FormatOpts &opts) {
+bool jau::cfmt::impl::reserve(std::string &dest, const size_t new_capacity) noexcept {
+    if (new_capacity <= dest.capacity()) {
+        return true;
+    }
+    try {
+        dest.reserve(new_capacity);
+        return true;
+    } catch (...) {
+        std::exception_ptr eptr = std::current_exception();
+        try {
+            std::rethrow_exception(eptr);
+        } catch (const std::exception &e) {
+            ::fprintf(stderr, "Exception caught @ %s:%d: %s\n", __FILE__, __LINE__, e.what());
+        }
+        return false;
+    }
+}
+bool jau::cfmt::impl::reserve_resize(std::string &dest, const size_t new_capacity, const size_t new_size) noexcept {
+    try {
+        dest.reserve(new_capacity);
+        dest.resize(new_size, ' ');
+        return true;
+    } catch (...) {
+        std::exception_ptr eptr = std::current_exception();
+        try {
+            std::rethrow_exception(eptr);
+        } catch (const std::exception &e) {
+            ::fprintf(stderr, "Exception caught @ %s:%d: %s\n", __FILE__, __LINE__, e.what());
+        }
+        return false;
+    }
+}
+
+void jau::cfmt::impl::append_rev(std::string &dest, const size_t dest_maxlen, std::string_view src, bool prec_cut, bool reverse, const FormatOpts &opts) noexcept {
     if (!dest_maxlen) {
         return;
     }
@@ -1460,8 +1493,9 @@ void jau::cfmt::impl::append_rev(std::string &dest, const size_t dest_maxlen, st
             }
         }
         const size_t new_size = dest_start_len + len;
-        dest.reserve(new_size + 1); // +EOS, not shrinking!
-        dest.resize(new_size, ' ');
+        if (!reserve_resize(dest, new_size + 1, new_size)) { // cap +EOS, not shrinking!
+            return;
+        }
     }
     char *d_left = dest.data() + dest_start_len + space_left;
     char *d_end = dest.data() + dest.size() - space_right;
@@ -1481,7 +1515,7 @@ void jau::cfmt::impl::append_rev(std::string &dest, const size_t dest_maxlen, st
     *(dest.data()+dest.size()) = 0; // EOS (is reserved)
 }
 
-void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxlen, uint64_t v, const bool negative, const jau::cfmt::FormatOpts &opts, const bool inject_dot) {
+void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxlen, uint64_t v, const bool negative, const jau::cfmt::FormatOpts &opts, const bool inject_dot) noexcept {
     if (!dest_maxlen) {
         return;
     }
@@ -1590,8 +1624,9 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
         const size_t added_maxlen = dest_maxlen - dest_start_len;
         const size_t added_len = std::min<size_t>(added_maxlen, space_left + xtra_left + num_len + space_right);
         const size_t new_size = dest_start_len + added_len;
-        dest.reserve(new_size + 1);  // +EOS, not shrinking!
-        dest.resize(new_size, ' ');
+        if (!reserve_resize(dest, new_size + 1, new_size)) { // cap +EOS, not shrinking!
+            return;
+        }
 
 #if !defined(NDEBUG) && 0
         fprintf(stderr, "XXX.80: seperator '%c', opts %s\n", separator, opts.toString().c_str());
@@ -1679,7 +1714,7 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
     *(dest.data() + dest_len) = 0;  // EOS (is reserved)
 }
 
-void jau::cfmt::impl::append_integral_simple(std::string &dest, const size_t dest_maxlen, uint64_t v, const bool negative, const jau::cfmt::FormatOpts &opts) {
+void jau::cfmt::impl::append_integral_simple(std::string &dest, const size_t dest_maxlen, uint64_t v, const bool negative, const jau::cfmt::FormatOpts &opts) noexcept {
     if (!dest_maxlen) {
         return;
     }
@@ -1760,8 +1795,9 @@ void jau::cfmt::impl::append_integral_simple(std::string &dest, const size_t des
         const size_t added_maxlen = dest_maxlen - dest_start_len;
         const size_t added_len = std::min<size_t>(added_maxlen, xtra_left + val_digits );
         const size_t new_size = dest_start_len + added_len;
-        dest.reserve(new_size + 1);  // +EOS, not shrinking!
-        dest.resize(new_size, ' ');
+        if (!reserve_resize(dest, new_size + 1, new_size)) { // cap +EOS, not shrinking!
+            return;
+        }
 
 #if !defined(NDEBUG) && 0
         const uint32_t sep_gap = 10 == radix ? 3 : 4;
@@ -1821,7 +1857,7 @@ void jau::cfmt::impl::append_integral_simple(std::string &dest, const size_t des
     *(dest.data() + dest_len) = 0;  // EOS (is reserved)
 }
 
-bool jau::cfmt::impl::is_float_validF64(std::string &dest, const size_t dest_maxlen, const double value, const FormatOpts &opts) {
+bool jau::cfmt::impl::is_float_validF64(std::string &dest, const size_t dest_maxlen, const double value, const FormatOpts &opts) noexcept {
     const uint64_t r = jau::bit_value_raw( value );
     const bool up = is_set(opts.flags, flags_t::uppercase);
     if (r == jau::double_iec559_nan_bitval) {
@@ -1839,7 +1875,7 @@ bool jau::cfmt::impl::is_float_validF64(std::string &dest, const size_t dest_max
 }
 
 
-void jau::cfmt::impl::append_floatF64(std::string &dest, const size_t dest_maxlen, const double ivalue, const FormatOpts &opts) {
+void jau::cfmt::impl::append_floatF64(std::string &dest, const size_t dest_maxlen, const double ivalue, const FormatOpts &opts) noexcept {
     using namespace jau::float_literals;
 
     if (!dest_maxlen) {
@@ -1964,7 +2000,7 @@ void jau::cfmt::impl::append_floatF64(std::string &dest, const size_t dest_maxle
     append_rev(dest, dest_maxlen, std::string_view(d_start, d - d_start), false /*prec*/, true /*rev**/, opts);
 }
 
-void jau::cfmt::impl::append_efloatF64(std::string &dest, const size_t dest_maxlen, const double ivalue, const FormatOpts &iopts) {
+void jau::cfmt::impl::append_efloatF64(std::string &dest, const size_t dest_maxlen, const double ivalue, const FormatOpts &iopts) noexcept {
     using namespace jau::float_literals;
 
     if (!dest_maxlen) {
@@ -2086,8 +2122,9 @@ void jau::cfmt::impl::append_efloatF64(std::string &dest, const size_t dest_maxl
         // output the exponential symbol
         {
             const size_t idx = dest.size();
-            dest.reserve(idx + char32buf_maxlen + 1);  // add EOS
-            dest.resize(idx + 1, ' ');
+            if (!reserve_resize(dest, idx + char32buf_maxlen + 1, idx + 1)) {  // cap +EOS, not shrinking!
+                return;
+            }
             dest[idx] = is_set(iopts.flags, flags_t::uppercase) ? 'E' : 'e';
         }
         // output the exponent value
@@ -2110,8 +2147,9 @@ void jau::cfmt::impl::append_efloatF64(std::string &dest, const size_t dest_maxl
             if (idx - start_idx < width) {
                 // const size_t with_space_right = idx + ( width - (idx - start_idx) );
                 const size_t with_space_right = width + start_idx;
-                dest.reserve(with_space_right + 1);  // add EOS
-                dest.resize(with_space_right, ' ');
+                if (!reserve_resize(dest, with_space_right + 1, with_space_right)) {  // cap +EOS, not shrinking!
+                    return;
+                }
             }
         }
     }
@@ -2120,7 +2158,7 @@ void jau::cfmt::impl::append_efloatF64(std::string &dest, const size_t dest_maxl
 #endif
 }
 
-void jau::cfmt::impl::append_afloatF64(std::string &dest, const size_t dest_maxlen, const double ivalue, const size_t ivalue_size, const FormatOpts &iopts) {
+void jau::cfmt::impl::append_afloatF64(std::string &dest, const size_t dest_maxlen, const double ivalue, const size_t ivalue_size, const FormatOpts &iopts) noexcept {
     using namespace jau::float_literals;
 
     if (!dest_maxlen) {
@@ -2195,8 +2233,9 @@ void jau::cfmt::impl::append_afloatF64(std::string &dest, const size_t dest_maxl
         // output the exponential symbol
         {
             const size_t idx = dest.size();
-            dest.reserve(idx + char32buf_maxlen + 1);  // add EOS
-            dest.resize(idx + 1, ' ');
+            if (!reserve_resize(dest, idx + char32buf_maxlen + 1, idx + 1)) {  // cap +EOS, not shrinking!
+                return;
+            }
             dest[idx] = is_set(iopts.flags, flags_t::uppercase) ? 'P' : 'p';
         }
         // output the exponent value
@@ -2219,8 +2258,9 @@ void jau::cfmt::impl::append_afloatF64(std::string &dest, const size_t dest_maxl
             if (idx - start_idx < width) {
                 // const size_t with_space_right = idx + ( width - (idx - start_idx) );
                 const size_t with_space_right = width + start_idx;
-                dest.reserve(with_space_right + 1);  // add EOS
-                dest.resize(with_space_right, ' ');
+                if (!reserve_resize(dest, with_space_right + 1, with_space_right)) {  // cap +EOS, not shrinking!
+                    return;
+                }
             }
         }
     }

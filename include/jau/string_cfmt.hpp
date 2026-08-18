@@ -24,7 +24,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <exception>
 #include <limits>
 #include <ostream>
 #include <string>
@@ -491,19 +490,22 @@ namespace jau::cfmt {
         inline constexpr const uint32_t default_float_precision = 6;
         inline constexpr const double_t max_append_float = (double_t)1e9;
 
-        void append_rev(std::string &dest, const size_t dest_maxlen, std::string_view src, bool prec_cut, bool reverse, const FormatOpts &opts);
-        inline void append_string(std::string &dest, const size_t dest_maxlen, std::string_view src, const FormatOpts &opts) {
+        bool reserve(std::string &dest, const size_t new_capacity) noexcept;
+        bool reserve_resize(std::string &dest, const size_t new_capacity, const size_t new_size) noexcept;
+
+        void append_rev(std::string &dest, const size_t dest_maxlen, std::string_view src, bool prec_cut, bool reverse, const FormatOpts &opts) noexcept;
+        inline void append_string(std::string &dest, const size_t dest_maxlen, std::string_view src, const FormatOpts &opts) noexcept {
             append_rev(dest, dest_maxlen, src, true /*prec*/, false /*rev**/, opts);
         }
-        void append_integral(std::string &dest, const size_t dest_maxlen, uint64_t v, const bool negative, const FormatOpts &opts, const bool inject_dot=false);
+        void append_integral(std::string &dest, const size_t dest_maxlen, uint64_t v, const bool negative, const FormatOpts &opts, const bool inject_dot=false) noexcept;
         // no width, nor precision, nor inject_dot
-        void append_integral_simple(std::string &dest, const size_t dest_maxlen, uint64_t v, const bool negative, const FormatOpts &opts);
+        void append_integral_simple(std::string &dest, const size_t dest_maxlen, uint64_t v, const bool negative, const FormatOpts &opts) noexcept;
 
         // check for NaN and special values
-        bool is_float_validF64(std::string &dest, const size_t dest_maxlen, const double value, const FormatOpts &opts);
-        void append_floatF64(std::string &dest, const size_t dest_maxlen, const double value, const FormatOpts &opts);
-        void append_efloatF64(std::string &dest, const size_t dest_maxlen, const double ivalue, const FormatOpts &iopts);
-        void append_afloatF64(std::string &dest, const size_t dest_maxlen, const double ivalue, const size_t ivalue_size, const FormatOpts &iopts);
+        bool is_float_validF64(std::string &dest, const size_t dest_maxlen, const double value, const FormatOpts &opts) noexcept;
+        void append_floatF64(std::string &dest, const size_t dest_maxlen, const double value, const FormatOpts &opts) noexcept;
+        void append_efloatF64(std::string &dest, const size_t dest_maxlen, const double ivalue, const FormatOpts &iopts) noexcept;
+        void append_afloatF64(std::string &dest, const size_t dest_maxlen, const double ivalue, const size_t ivalue_size, const FormatOpts &iopts) noexcept;
 
         template<typename T>
         concept OutputType = requires(T t) {
@@ -876,7 +878,7 @@ namespace jau::cfmt {
             template <typename T>
             requires jau::req::boolean<T>
             CXX_NO_INLINE
-            static constexpr void parseOne(Result &pc, const T &val) {
+            static constexpr void parseOne(Result &pc, const T &val) noexcept{
                 pc.set_arg(sizeof(T)); // NOLINT(bugprone-sizeof-expression)
                 parseOneImpl<bool>(pc, val); // pass-through
             }
@@ -884,7 +886,7 @@ namespace jau::cfmt {
             template <typename T>
             requires std::is_integral_v<T> && (!jau::req::boolean<T>)
             CXX_NO_INLINE
-            static constexpr void parseOne(Result &pc, const T &val) {
+            static constexpr void parseOne(Result &pc, const T &val) noexcept {
                 pc.m_argtype_size = sizeof(T);
                 pc.m_argtype_signed = std::is_signed_v<T>;
                 pc.m_argval_negative = !is_positive(val);
@@ -895,7 +897,7 @@ namespace jau::cfmt {
             template <typename T>
             requires std::is_floating_point_v<T>
             CXX_NO_INLINE
-            static constexpr void parseOne(Result &pc, const T &val) {
+            static constexpr void parseOne(Result &pc, const T &val) noexcept {
                 pc.m_argtype_size = sizeof(T);
                 pc.m_argtype_signed = true;
                 pc.m_argval_negative = !is_positive(val);
@@ -903,21 +905,21 @@ namespace jau::cfmt {
             }
 
             CXX_NO_INLINE
-            static constexpr void parseOneVoidPointer(Result &pc, const void * const val) {
+            static constexpr void parseOneVoidPointer(Result &pc, const void * const val) noexcept {
                 pc.set_arg(sizeof(void*));
                 parseOneImpl<const void * const>(pc, val); // pass-through
             }
             template <typename T>
             requires jau::req::pointer<T> && (!jau::req::char_pointer<T>)
             CXX_ALWAYS_INLINE
-            static constexpr void parseOne(Result &pc, const T &val) {
+            static constexpr void parseOne(Result &pc, const T &val) noexcept {
                 parseOneVoidPointer(pc, (const void * const)val); // pass-through
             }
 
             template <typename T>
             requires jau::req::char_pointer<T> // also allows passing `char*` for `%p`
             CXX_NO_INLINE
-            static constexpr void parseOne(Result &pc, const T &val) {
+            static constexpr void parseOne(Result &pc, const T &val) noexcept {
                 pc.set_arg(sizeof(T)); // NOLINT(bugprone-sizeof-expression)
                 using U = make_char_pointer_t<T>; // aliasing to 'const char * const'
                 parseOneImpl<const char * const>(pc, U(val)); // pass-through
@@ -925,35 +927,35 @@ namespace jau::cfmt {
 
             template <jau::req::string_literal T>
             CXX_NO_INLINE
-            static constexpr void parseOne(Result &pc, const T &val) {
+            static constexpr void parseOne(Result &pc, const T &val) noexcept {
                 pc.set_arg(sizeof(T)); // NOLINT(bugprone-sizeof-expression)
                 parseOneImpl<std::string_view>(pc, std::string_view(val)); // pass as string_view
             }
             template <typename T>
             requires jau::req::string_type<T> || jau::req::string_view_type<T>
             CXX_NO_INLINE
-            static constexpr void parseOne(Result &pc, const T &val) {
+            static constexpr void parseOne(Result &pc, const T &val) noexcept {
                 pc.set_arg(sizeof(T)); // NOLINT(bugprone-sizeof-expression)
                 parseOneImpl<std::string_view>(pc, val); // pass as string_view
             }
             template <typename T>
             requires jau::has_toString_v<T> && (!jau::req::string_alike<T>) && (!std::is_enum_v<T>)
             CXX_NO_INLINE
-            static constexpr void parseOne(Result &pc, const T &val) {
+            static constexpr void parseOne(Result &pc, const T &val) noexcept {
                 pc.set_arg(sizeof(T)); // NOLINT(bugprone-sizeof-expression)
                 parseOneImpl<std::string_view>(pc, val.toString());
             }
             template <typename T>
             requires jau::has_to_string_v<T> && (!jau::req::string_alike<T>) && (!std::is_enum_v<T>)
             CXX_NO_INLINE
-            static constexpr void parseOne(Result &pc, const T &val) {
+            static constexpr void parseOne(Result &pc, const T &val) noexcept {
                 pc.set_arg(sizeof(T)); // NOLINT(bugprone-sizeof-expression)
                 parseOneImpl<std::string_view>(pc, val.to_string());
             }
             template <typename T>
             requires jau::has_free_to_string_v<T> && (!jau::req::string_alike<T>)
             CXX_ALWAYS_INLINE
-            static constexpr void parseOne(Result &pc, const T &val) {
+            static constexpr void parseOne(Result &pc, const T &val) noexcept {
                 pc.set_arg(sizeof(T)); // NOLINT(bugprone-sizeof-expression)
                 parseOneImpl<std::string_view>(pc, to_string(val));
             }
@@ -961,7 +963,7 @@ namespace jau::cfmt {
             template <typename T>
             requires std::is_enum_v<T> && (!jau::has_free_to_string_v<T>)
             CXX_NO_INLINE
-            static constexpr void parseOne(Result &pc, const T &val) {
+            static constexpr void parseOne(Result &pc, const T &val) noexcept {
                 pc.m_argtype_size = sizeof(T); // NOLINT(bugprone-sizeof-expression)
                 pc.m_argtype_signed = std::is_signed_v<T>;
                 pc.m_argval_negative = !is_positive(val);
@@ -971,7 +973,7 @@ namespace jau::cfmt {
             template <typename T>
             requires std::is_same_v<no_type_t, T>
             CXX_NO_INLINE
-            static constexpr void parseOne(Result &pc, const T &val) {
+            static constexpr void parseOne(Result &pc, const T &val) noexcept {
                 pc.set_arg(0); // NOLINT(bugprone-sizeof-expression)
                 parseOneImpl<no_type_t>(pc, val); // pass-through
             }
@@ -1078,7 +1080,7 @@ namespace jau::cfmt {
                   || std::is_enum_v<T>
                   || std::is_same_v<no_type_t, T>
             CXX_NO_INLINE
-            static constexpr void parseOneImpl(Result &pc, const T &val) {
+            static constexpr void parseOneImpl(Result &pc, const T &val) noexcept {
                 if( !pc.hasNext() ) {
                     return;  // done or error
                 }
@@ -1703,20 +1705,16 @@ namespace jau::cfmt {
     CXX_ALWAYS_INLINE
     std::string format(const size_t strLenHint, size_t maxLen, std::string_view fmt, const Targs &...args) noexcept {
         std::string s;
-        maxLen = std::min(maxLen, s.max_size());
+        maxLen = std::min(maxLen, s.max_size()-1);
         impl::StringResult ctx(impl::StringOutput(maxLen, s), fmt);
 
-        try {
-            if (strLenHint>0) {
-                s.reserve(std::min(strLenHint, maxLen)+1); // +EOS
-            }
-            if constexpr( 0 < sizeof...(Targs) ) {
-                ((impl::FormatParser::parseOne<Targs>(ctx, args)), ...);
-            }
-            impl::FormatParser::parseOne<impl::no_type_t>(ctx, impl::no_type_t());
-        } catch (const std::exception &e) {
-            ::fprintf(stderr, "Exception caught @ %s:%d: %s\n", __func__, __LINE__, e.what());
-        } // NOLINT(bugprone-exception-escape): No unqualified exception expected but std::bad_alloc
+        if (!impl::reserve(s, std::min(strLenHint, maxLen)+1)) { // +EOS
+            return s;
+        }
+        if constexpr( 0 < sizeof...(Targs) ) {
+            ((impl::FormatParser::parseOne<Targs>(ctx, args)), ...);
+        }
+        impl::FormatParser::parseOne<impl::no_type_t>(ctx, impl::no_type_t());
         return s;
     }
 
@@ -1769,20 +1767,17 @@ namespace jau::cfmt {
     template <typename... Targs>
     CXX_ALWAYS_INLINE
     std::string& append(const size_t strLenHint, std::string &s, size_t maxLen, std::string_view fmt, const Targs &...args) noexcept {
-        maxLen = std::min(maxLen, s.max_size());
+        maxLen = std::min(maxLen, s.max_size()-1);
         impl::StringResult ctx(impl::StringOutput(maxLen-s.length(), s), fmt);
 
-        try {
-            if (strLenHint>0) {
-                s.reserve(std::min(s.length()+strLenHint, maxLen)+1); // +EOS
-            }
-            if constexpr( 0 < sizeof...(Targs) ) {
-                ((impl::FormatParser::parseOne<Targs>(ctx, args)), ...);
-            }
-            impl::FormatParser::parseOne<impl::no_type_t>(ctx, impl::no_type_t());
-        } catch (const std::exception &e) {
-            ::fprintf(stderr, "Exception caught @ %s:%d: %s\n", __func__, __LINE__, e.what());
-        } // NOLINT(bugprone-exception-escape): No unqualified exception expected but std::bad_alloc
+        if (!impl::reserve(s, std::min(s.length() + strLenHint, maxLen) + 1)) {  // +EOS
+            return s;
+        }
+        if constexpr( 0 < sizeof...(Targs) ) {
+            ((impl::FormatParser::parseOne<Targs>(ctx, args)), ...);
+            // (unused(ctx, args), ...);
+        }
+        impl::FormatParser::parseOne<impl::no_type_t>(ctx, impl::no_type_t());
         return s;
     }
 
@@ -1835,20 +1830,16 @@ namespace jau::cfmt {
     template <typename... Targs>
     CXX_ALWAYS_INLINE
     Result formatR(const size_t strLenHint, std::string &s, size_t maxLen, std::string_view fmt, const Targs &...args) noexcept {
-        maxLen = std::min(maxLen, s.max_size());
+        maxLen = std::min(maxLen, s.max_size()-1);
         impl::StringResult ctx(impl::StringOutput(maxLen-s.length(), s), fmt);
 
-        try {
-            if (strLenHint>0) {
-                s.reserve(std::min(s.length()+strLenHint, maxLen)+1); // +EOS
-            }
-            if constexpr( 0 < sizeof...(Targs) ) {
-                ((impl::FormatParser::parseOne<Targs>(ctx, args)), ...);
-            }
-            impl::FormatParser::parseOne<impl::no_type_t>(ctx, impl::no_type_t());
-        } catch (const std::exception &e) {
-            ::fprintf(stderr, "Exception caught @ %s:%d: %s\n", __func__, __LINE__, e.what());
-        } // NOLINT(bugprone-exception-escape): No unqualified exception expected but std::bad_alloc
+        if (!impl::reserve(s, std::min(s.length()+strLenHint, maxLen)+1)) { // +EOS
+            return ctx;
+        }
+        if constexpr( 0 < sizeof...(Targs) ) {
+            ((impl::FormatParser::parseOne<Targs>(ctx, args)), ...);
+        }
+        impl::FormatParser::parseOne<impl::no_type_t>(ctx, impl::no_type_t());
         return ctx;
     }
 
