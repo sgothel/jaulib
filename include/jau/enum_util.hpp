@@ -704,6 +704,24 @@ namespace jau::enums {
         return out;                                         \
     }
 
+#define JAU_MAKE_BITFIELD_ENUM_STRING2_DECL(type)           \
+    JAU_MAKE_ENUM_STRING_SUB_DECL(type)                     \
+                                                            \
+    std::string                                             \
+    to_string(const type mask) noexcept;
+
+#define JAU_MAKE_BITFIELD_ENUM_STRING2_CODE(type, stype, ...) \
+    JAU_MAKE_ENUM_STRING_SUB_CODE(type, stype, __VA_ARGS__) \
+                                                            \
+    std::string                                             \
+    to_string(const type mask) noexcept {                   \
+        std::string out("[");                               \
+        bool comma = false;                                 \
+        JAU_FOR_EACH2_VALUE(JAU_ENUM_APPEND_BITSTR, type, mask, __VA_ARGS__); \
+        out.append("]");                                    \
+        return out;                                         \
+    }
+
 #define JAU_MAKE_BITFIELD_ENUM_STRING2_LONG(type, stype, ...)    \
     JAU_MAKE_ENUM_STRING_SUB_LONG(type, stype, __VA_ARGS__)      \
                                                             \
