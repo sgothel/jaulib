@@ -482,14 +482,18 @@ namespace jau {
     /// No throw wrap for given unary predicate `p` action. Returns true for success (no exception), otherwise false (exception occurred).
     template<class UnaryPredicate>
     inline bool do_noexcept(UnaryPredicate p) noexcept {
-        std::exception_ptr eptr;
         try {
             p();
             return true;
         } catch (...) {
-            eptr = std::current_exception();
+            std::exception_ptr eptr = std::current_exception();
+            try {
+                std::rethrow_exception(eptr);
+            } catch (const std::exception &e) {
+                ::fprintf(stderr, "Exception caught @ %s:%d: %s\n", __FILE__, __LINE__, e.what());
+            }
+            return false;
         }
-        return !handle_exception(eptr, __FILE__, __LINE__);
     }
 
     /**@}*/
@@ -502,13 +506,16 @@ namespace jau {
     /// No throw wrap for given unary predicate `p` producing a `std::string`. Returns an empty string if `p` causes an exception.
     template<class UnaryPredicate>
     inline std::string string_noexcept(UnaryPredicate p) noexcept {
-        std::exception_ptr eptr;
         try {
             return p();
         } catch (...) {
-            eptr = std::current_exception();
+            std::exception_ptr eptr = std::current_exception();
+            try {
+                std::rethrow_exception(eptr);
+            } catch (const std::exception &e) {
+                ::fprintf(stderr, "Exception caught @ %s:%d: %s\n", __FILE__, __LINE__, e.what());
+            }
         }
-        handle_exception(eptr, __FILE__, __LINE__);
         return std::string();
     }
 
