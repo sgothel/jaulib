@@ -903,15 +903,16 @@ namespace jau::cfmt {
                 parseOneImpl<double>(pc, double(val)); // double
             }
 
+            CXX_NO_INLINE
+            static constexpr void parseOneVoidPointer(Result &pc, const void * const val) {
+                pc.set_arg(sizeof(void*));
+                parseOneImpl<const void * const>(pc, val); // pass-through
+            }
             template <typename T>
             requires jau::req::pointer<T> && (!jau::req::char_pointer<T>)
-            CXX_NO_INLINE
+            CXX_ALWAYS_INLINE
             static constexpr void parseOne(Result &pc, const T &val) {
-                pc.m_argtype_size = sizeof(T); // NOLINT(bugprone-sizeof-expression)
-                pc.m_argtype_signed = false;
-                pc.m_argval_negative = false;
-                using U = make_void_pointer_t<T>; // aliasing to 'const void * const'
-                parseOneImpl<const void * const>(pc, U(val)); // pass-through
+                parseOneVoidPointer(pc, (const void * const)val); // pass-through
             }
 
             template <typename T>
@@ -2144,10 +2145,8 @@ extern template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::par
 extern template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<unsigned long>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, unsigned long const&);
 extern template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<double>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, double const&);
 extern template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<float>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, float const&);
-extern template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<int*>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, int* const&);
 extern template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<char const*>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, char const* const&);
 extern template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<char*>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, char* const&);
-extern template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<void*>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, void* const&);
 extern template class jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>;
 
 /**

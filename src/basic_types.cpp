@@ -2247,8 +2247,6 @@ template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<u
 template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<unsigned long>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, unsigned long const&);
 template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<double>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, double const&);
 template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<float>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, float const&);
-template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<int*>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, int* const&);
 template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<char const*>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, char const* const&);
 template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<char*>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, char* const&);
-template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<void*>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, void* const&);
 template class jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>;
