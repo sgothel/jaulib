@@ -62,6 +62,12 @@ enum class plainenum_t : uint16_t {
     lili
 };
 
+enum freeenum_t : uint16_t {
+    none,
+    lala,
+    lili
+};
+
 TEST_CASE( "01 Type Concept Queries: Build-In") {
     static_assert(true == std::is_integral_v<char> );
     static_assert(false == std::is_unsigned_v<char> );
@@ -94,6 +100,16 @@ TEST_CASE( "01 Type Concept Queries: Build-In") {
     static_assert(true  == std::is_integral_v<bool> );
     static_assert(true  == jau::req::boolean<bool> );
     static_assert(false == jau::req::boolean<int> );
+
+    static_assert(true  == std::is_enum_v<freeenum_t> );
+    static_assert(true  == std::is_enum_v<plainenum_t> );
+    static_assert(true  == std::is_enum_v<game_t> );
+    static_assert(false  == std::is_integral_v<freeenum_t> );
+    static_assert(false  == std::is_integral_v<plainenum_t> );
+    static_assert(false  == std::is_integral_v<game_t> );
+    static_assert(false  == jau::has_free_to_string_v<freeenum_t>);
+    static_assert(false  == jau::has_free_to_string_v<plainenum_t>);
+    static_assert(true  == jau::has_free_to_string_v<game_t>);
 
     static_assert(true  == jau::req::pointer<int*> );
     static_assert(true  == jau::req::pointer<char*> );
