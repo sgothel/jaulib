@@ -653,7 +653,7 @@ namespace jau::cfmt {
             bool m_argval_negative:1;
 
           public:
-            constexpr FResult(Output p, std::string_view fmt_) noexcept
+            constexpr FResult(Output &&p, std::string_view fmt_) noexcept
             : fmt(fmt_), pos(0), arg_count(0), line(0), opts(),
               state(pstate_t::outside),
               m_out(std::move(p)), pos_lstart(0),
@@ -669,11 +669,14 @@ namespace jau::cfmt {
                 return Result(fmt, opts, pos, arg_count, line, pstate_t::outside == state);
             }
 
+            CXX_ALWAYS_INLINE
             constexpr bool hasNext() const noexcept {
                 return !error() && pos < fmt.length();
             }
 
+            CXX_ALWAYS_INLINE
             constexpr ssize_t argCount() const noexcept { return arg_count; }
+            CXX_ALWAYS_INLINE
             constexpr bool error() const noexcept { return pstate_t::error == state; }
 
             std::string toString() const {
@@ -709,6 +712,13 @@ namespace jau::cfmt {
 
             constexpr void reset() noexcept {
                 opts.reset();
+            }
+
+            CXX_ALWAYS_INLINE
+            constexpr void set_arg(size_t size) noexcept {
+                m_argtype_size = size;
+                m_argtype_signed = false;
+                m_argval_negative = false;
             }
             constexpr bool nextSymbol(char &c) noexcept {
                 if (pos < fmt.length()) {
@@ -868,9 +878,7 @@ namespace jau::cfmt {
             requires jau::req::boolean<T>
             CXX_NO_INLINE
             static constexpr void parseOne(Result &pc, const T &val) {
-                pc.m_argtype_size = sizeof(T); // NOLINT(bugprone-sizeof-expression)
-                pc.m_argtype_signed = false;
-                pc.m_argval_negative = false;
+                pc.set_arg(sizeof(T)); // NOLINT(bugprone-sizeof-expression)
                 parseOneImpl<bool>(pc, val); // pass-through
             }
 
@@ -910,9 +918,7 @@ namespace jau::cfmt {
             requires jau::req::char_pointer<T> // also allows passing `char*` for `%p`
             CXX_NO_INLINE
             static constexpr void parseOne(Result &pc, const T &val) {
-                pc.m_argtype_size = sizeof(T); // NOLINT(bugprone-sizeof-expression)
-                pc.m_argtype_signed = false;
-                pc.m_argval_negative = false;
+                pc.set_arg(sizeof(T)); // NOLINT(bugprone-sizeof-expression)
                 using U = make_char_pointer_t<T>; // aliasing to 'const char * const'
                 parseOneImpl<const char * const>(pc, U(val)); // pass-through
             }
@@ -931,28 +937,22 @@ namespace jau::cfmt {
             requires jau::has_toString_v<T> && (!jau::req::string_alike<T>) && (!std::is_enum_v<T>)
             CXX_NO_INLINE
             static constexpr void parseOne(Result &pc, const T &val) {
-                pc.m_argtype_size = sizeof(T); // NOLINT(bugprone-sizeof-expression)
-                pc.m_argtype_signed = false;
-                pc.m_argval_negative = false;
-                parseOneImpl<std::string_view>(pc, val.toString()); // pass as string_view
+                pc.set_arg(sizeof(T)); // NOLINT(bugprone-sizeof-expression)
+                parseOneImpl<std::string_view>(pc, val.toString());
             }
             template <typename T>
             requires jau::has_to_string_v<T> && (!jau::req::string_alike<T>) && (!std::is_enum_v<T>)
             CXX_NO_INLINE
             static constexpr void parseOne(Result &pc, const T &val) {
-                pc.m_argtype_size = sizeof(T); // NOLINT(bugprone-sizeof-expression)
-                pc.m_argtype_signed = false;
-                pc.m_argval_negative = false;
-                parseOneImpl<std::string_view>(pc, val.to_string()); // pass as string_view
+                pc.set_arg(sizeof(T)); // NOLINT(bugprone-sizeof-expression)
+                parseOneImpl<std::string_view>(pc, val.to_string());
             }
             template <typename T>
             requires jau::has_free_to_string_v<T> && (!jau::req::string_alike<T>)
             CXX_NO_INLINE
             static constexpr void parseOne(Result &pc, const T &val) {
-                pc.m_argtype_size = sizeof(T); // NOLINT(bugprone-sizeof-expression)
-                pc.m_argtype_signed = false;
-                pc.m_argval_negative = false;
-                parseOneImpl<std::string_view>(pc, to_string(val)); // pass as string_view
+                pc.set_arg(sizeof(T)); // NOLINT(bugprone-sizeof-expression)
+                parseOneImpl<std::string_view>(pc, to_string(val));
             }
 
             template <typename T>
@@ -969,9 +969,7 @@ namespace jau::cfmt {
             requires std::is_same_v<no_type_t, T>
             CXX_NO_INLINE
             static constexpr void parseOne(Result &pc, const T &val) {
-                pc.m_argtype_size = 0; // NOLINT(bugprone-sizeof-expression)
-                pc.m_argtype_signed = false;
-                pc.m_argval_negative = false;
+                pc.set_arg(0); // NOLINT(bugprone-sizeof-expression)
                 parseOneImpl<no_type_t>(pc, val); // pass-through
             }
 
@@ -982,9 +980,7 @@ namespace jau::cfmt {
             template <typename T>
             requires jau::req::boolean<T>
             static consteval void checkOne(CheckResult &pc) noexcept {
-                pc.m_argtype_size = sizeof(T); // NOLINT(bugprone-sizeof-expression)
-                pc.m_argtype_signed = false;
-                pc.m_argval_negative = false;
+                pc.set_arg(sizeof(T)); // NOLINT(bugprone-sizeof-expression)
                 parseOneImpl<bool>(pc, T()); // pass-through
             }
 
@@ -1010,9 +1006,7 @@ namespace jau::cfmt {
             template <typename T>
             requires jau::req::pointer<T> && (!jau::req::char_pointer<T>)
             static consteval void checkOne(CheckResult &pc) noexcept {
-                pc.m_argtype_size = sizeof(T); // NOLINT(bugprone-sizeof-expression)
-                pc.m_argtype_signed = false;
-                pc.m_argval_negative = false;
+                pc.set_arg(sizeof(T)); // NOLINT(bugprone-sizeof-expression)
                 using U = make_void_pointer_t<T>; // aliasing to 'const void * const'
                 parseOneImpl<const void * const>(pc, U()); // pass-through
             }
@@ -1020,9 +1014,7 @@ namespace jau::cfmt {
             template <typename T>
             requires jau::req::char_pointer<T> // also allows passing `char*` for `%p`
             static consteval void checkOne(CheckResult &pc) noexcept {
-                pc.m_argtype_size = sizeof(T); // NOLINT(bugprone-sizeof-expression)
-                pc.m_argtype_signed = false;
-                pc.m_argval_negative = false;
+                pc.set_arg(sizeof(T)); // NOLINT(bugprone-sizeof-expression)
                 using U = make_char_pointer_t<T>; // aliasing to 'const char * const'
                 parseOneImpl<const char * const>(pc, U()); // pass-through
             }
@@ -1030,18 +1022,14 @@ namespace jau::cfmt {
             template <typename T>
             requires jau::req::string_literal<T> || jau::req::string_class<T>
             static consteval void checkOne(CheckResult &pc) noexcept {
-                pc.m_argtype_size = sizeof(T); // NOLINT(bugprone-sizeof-expression)
-                pc.m_argtype_signed = false;
-                pc.m_argval_negative = false;
+                pc.set_arg(sizeof(T)); // NOLINT(bugprone-sizeof-expression)
                 parseOneImpl<std::string_view>(pc, std::string_view()); // pass as string_view
             }
 
             template <typename T>
             requires jau::req::string_convertible0_jau<T> && (!jau::req::string_alike<T>)
             static consteval void checkOne(CheckResult &pc) noexcept {
-                pc.m_argtype_size = sizeof(T); // NOLINT(bugprone-sizeof-expression)
-                pc.m_argtype_signed = false;
-                pc.m_argval_negative = false;
+                pc.set_arg(sizeof(T)); // NOLINT(bugprone-sizeof-expression)
                 parseOneImpl<std::string_view>(pc, std::string_view()); // pass as string_view
             }
 
@@ -1057,9 +1045,7 @@ namespace jau::cfmt {
             template <typename T>
             requires std::is_same_v<no_type_t, T>
             static consteval void checkOne(CheckResult &pc) noexcept {
-                pc.m_argtype_size = 0; // NOLINT(bugprone-sizeof-expression)
-                pc.m_argtype_signed = false;
-                pc.m_argval_negative = false;
+                pc.set_arg(0); // NOLINT(bugprone-sizeof-expression)
                 parseOneImpl<no_type_t>(pc, no_type_t()); // pass-through
             }
 
