@@ -1749,6 +1749,37 @@ namespace jau::cfmt {
      * with `formatLen` being the given formatted string length of output w/o limitation
      * and its capacity is left unchanged.
      *
+     * See @ref jau_cfmt_header for details
+     *
+     * @tparam Targs the argument template type pack for the given arguments `args`
+     * @param s destination string to append the formatted string
+     * @param maxLen maximum total string length
+     * @param fmt the snprintf compliant format string
+     * @param args passed arguments, used for template type deduction only
+     * @return the given destination string for concatenation
+     * @see @ref jau_cfmt_header
+     */
+    template <typename... Targs>
+    CXX_ALWAYS_INLINE
+    std::string& append(std::string &s, size_t maxLen, std::string_view fmt, const Targs &...args) noexcept {
+        maxLen = std::min(maxLen, s.max_size()-1);
+        impl::StringResult ctx(impl::StringOutput(maxLen-s.length(), s), fmt);
+
+        if constexpr( 0 < sizeof...(Targs) ) {
+            ((impl::FormatParser::parseOne<Targs>(ctx, args)), ...);
+        }
+        impl::FormatParser::parseOne<impl::no_type_t>(ctx, impl::no_type_t());
+        return s;
+    }
+
+    /**
+     * Strict format with type validation of arguments against the format string,
+     * appending to the given destination.
+     *
+     * Resulting string is truncated to `min(maxLen, formatLen)`,
+     * with `formatLen` being the given formatted string length of output w/o limitation
+     * and its capacity is left unchanged.
+     *
      * Use `std::string::shrink_to_fit()` on the returned string,
      * if you desire efficiency for longer lifecycles (assuming `maxLen` hasn't been reached)
      * or pass zero for `strLenHint`.
