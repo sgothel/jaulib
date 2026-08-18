@@ -84,6 +84,9 @@ namespace jau::req {
     template <typename T>
     concept packed_floating_point = std::is_floating_point_v<T> && sizeof(T) == alignof(T);
 
+    template <typename T>
+    concept enumeration = std::is_enum_v<T>;
+
     /** Returns underlying pointer type w/o constant'ness */
     template<class T>
     requires pointer<T>

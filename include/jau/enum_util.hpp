@@ -18,6 +18,7 @@
 #include <cstring>
 #include <ostream>
 #include <jau/cpp_lang_util.hpp>
+#include <jau/type_concepts.hpp>
 
 /**
  * Provides scoped enum type support functionality, including `to_string`,
@@ -161,40 +162,40 @@ namespace jau::enums {
         return { { args... } };
     }
 
-    template <typename E, std::enable_if_t<std::is_enum_v<E>>* = nullptr>
+    template <jau::req::enumeration E>
     constexpr std::underlying_type_t<E>
     number(const E v) noexcept { return static_cast<std::underlying_type_t<E>>(v); }
 
-    template <typename E, std::enable_if_t<std::is_enum_v<E>>* = nullptr>
+    template <jau::req::enumeration E>
     constexpr std::underlying_type_t<E>
     operator*(const E v) noexcept { return static_cast<std::underlying_type_t<E>>(v); }
 
-    template<typename E, std::enable_if_t<std::is_enum_v<E>>* = nullptr>
+    template <jau::req::enumeration E>
     constexpr E operator~(const E rhs) noexcept {
         return E(~number(rhs));
     }
 
-    template<typename E, std::enable_if_t<std::is_enum_v<E>>* = nullptr>
+    template <jau::req::enumeration E>
     constexpr E operator^(const E lhs, const E rhs) noexcept {
         return E(*lhs ^ *rhs);
     }
 
-    template<typename E, std::enable_if_t<std::is_enum_v<E>>* = nullptr>
+    template <jau::req::enumeration E>
     constexpr E operator|(const E lhs, const E rhs) noexcept {
         return E(*lhs | *rhs);
     }
 
-    template<typename E, std::enable_if_t<std::is_enum_v<E>>* = nullptr>
+    template <jau::req::enumeration E>
     constexpr E operator&(const E lhs, const E rhs) noexcept {
         return E(*lhs & *rhs);
     }
 
-    template<typename E, std::enable_if_t<std::is_enum_v<E>>* = nullptr>
+    template <jau::req::enumeration E>
     constexpr E& operator|=(E& lhs, const E rhs) noexcept {
         return lhs = lhs | rhs;
     }
 
-    template<typename E, std::enable_if_t<std::is_enum_v<E>>* = nullptr>
+    template <jau::req::enumeration E>
     constexpr E& operator&=(E& lhs, const E rhs) noexcept {
         return lhs = lhs & rhs;
     }
@@ -206,7 +207,7 @@ namespace jau::enums {
      *
      * Returns store reference.
      */
-    template<typename E, std::enable_if_t<std::is_enum_v<E>>* = nullptr>
+    template <jau::req::enumeration E>
     constexpr E& write(E& store, const E bits, bool set) noexcept {
         if( set ) {
             return store = store | bits;
@@ -215,37 +216,37 @@ namespace jau::enums {
         }
     }
 
-    template<typename E, std::enable_if_t<std::is_enum_v<E>>* = nullptr>
+    template <jau::req::enumeration E>
     constexpr E& operator^=(E& lhs, const E rhs) noexcept {
         return lhs = lhs ^ rhs;
     }
 
-    template<typename E, std::enable_if_t<std::is_enum_v<E>>* = nullptr>
+    template <jau::req::enumeration E>
     constexpr bool operator==(const E lhs, const E rhs) noexcept {
         return *lhs == *rhs;
     }
 
-    template<typename E, std::enable_if_t<std::is_enum_v<E>>* = nullptr>
+    template <jau::req::enumeration E>
     constexpr bool operator!=(const E lhs, const E rhs) noexcept {
         return !(lhs == rhs);
     }
 
-    template<typename E, std::enable_if_t<std::is_enum_v<E>>* = nullptr>
+    template <jau::req::enumeration E>
     constexpr bool is_set(const E mask, const E bits) noexcept {
         return bits == (mask & bits);
     }
 
-    template<typename E, std::enable_if_t<std::is_enum_v<E>>* = nullptr>
+    template <jau::req::enumeration E>
     constexpr bool has_any(const E mask, const E bits) noexcept {
         return std::underlying_type_t<E>(0) != ( *mask & *bits );
     }
 
-    template<typename E, std::enable_if_t<std::is_enum_v<E>>* = nullptr>
+    template <jau::req::enumeration E>
     constexpr bool has_any(const E mask) noexcept {
         return std::underlying_type_t<E>(0) != ( *mask );
     }
 
-    template<typename E, std::enable_if_t<std::is_enum_v<E>>* = nullptr>
+    template <jau::req::enumeration E>
     constexpr void append_bitstr(std::string& out, E mask, E bit, const std::string& bitstr, bool& comma) {
         if( bit == (mask & bit) ) {
             if( comma ) { out.append(", "); }
@@ -253,16 +254,15 @@ namespace jau::enums {
         }
     }
 
-    template <typename T,
-              std::enable_if_t<std::is_enum_v<T>>* = nullptr>
-    inline std::ostream& operator<<(std::ostream& os, const T v) { return os << name(v); }
+    template <jau::req::enumeration E>
+    inline std::ostream& operator<<(std::ostream& os, const E v) { return os << name(v); }
 
-    template <typename EnumType, auto... Vargs> class enum_iterator; // fwd
+    template <jau::req::enumeration EnumType, auto... Vargs> class enum_iterator; // fwd
 
     /**
      * Enumeration info template class including iterator (enum_iterator)
      */
-    template <typename EnumType, auto... Vargs>
+    template <jau::req::enumeration EnumType, auto... Vargs>
     class enum_info {
         public:
             typedef size_t                                      size_type;
@@ -330,16 +330,24 @@ namespace jau::enums {
      * <code>template< class T > is_enum_info<T>::value</code> compile-time Type Trait,
      * determining whether the given template class is a enum_info type.
      */
-    template< class T >
+    template< class T>
     struct is_enum_info<T, std::void_t<typename T::enum_info_tag>> : std::true_type { };
 
-    template <typename enum_info_t, std::enable_if_t<is_enum_info<enum_info_t>::value>* = nullptr>
-    inline std::ostream& operator<<(std::ostream& os, const enum_info_t& v) {
+    /** Convenience is_enum_info<T>::value **/
+    template<typename T>
+    inline constexpr bool is_enum_info_v = is_enum_info<T>::value; // NOLINT(modernize-type-traits)
+
+    /** Convenience concept requirement of is_enum_info_v<T> **/
+    template <typename T>
+    concept enum_info_type = is_enum_info_v<T>;
+
+    template <enum_info_type T>
+    inline std::ostream& operator<<(std::ostream& os, const T& v) {
         os << v.name() << "[";
-        typename enum_info_t::iterator end = v.end();
+        typename T::iterator end = v.end();
         bool comma = false;
-        for(typename enum_info_t::iterator iter = v.begin(); iter != end; ++iter, comma=true) {
-            typename enum_info_t::value_type ev = *iter;
+        for(typename T::iterator iter = v.begin(); iter != end; ++iter, comma=true) {
+            typename T::value_type ev = *iter;
             if( comma ) {
                 os << ", ";
             }
@@ -352,7 +360,7 @@ namespace jau::enums {
     /**
      * Enumeration iterator, see enum_info
      */
-    template <typename EnumType, auto... Vargs>
+    template <jau::req::enumeration EnumType, auto... Vargs>
     class enum_iterator {
         public:
             typedef enum_info<EnumType, Vargs...>               enum_info_t;
