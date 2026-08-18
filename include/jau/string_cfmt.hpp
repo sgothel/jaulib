@@ -953,7 +953,7 @@ namespace jau::cfmt {
             }
             template <typename T>
             requires jau::has_free_to_string_v<T> && (!jau::req::string_alike<T>)
-            CXX_NO_INLINE
+            CXX_ALWAYS_INLINE
             static constexpr void parseOne(Result &pc, const T &val) {
                 pc.set_arg(sizeof(T)); // NOLINT(bugprone-sizeof-expression)
                 parseOneImpl<std::string_view>(pc, to_string(val));
