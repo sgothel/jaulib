@@ -582,10 +582,23 @@ namespace jau::enums {
 #define JAU_ENUM_TYPE_VALUE(type, name) type::name
 #define JAU_ENUM_VALUE(type, name) name
 
-#define JAU_MAKE_ENUM_STRING(type, ...)                       \
-    JAU_MAKE_ENUM_STRING_SUB(type, type, __VA_ARGS__)         \
+#define JAU_MAKE_ENUM_STRING(type, ...)                     \
+    JAU_MAKE_ENUM_STRING_SUB(type, type, __VA_ARGS__)       \
                                                             \
     constexpr std::string                                   \
+    to_string(const type e) noexcept                        \
+    { return std::string(name(e)); }
+
+#define JAU_MAKE_ENUM_STRING_DECL(type)                     \
+    JAU_MAKE_ENUM_STRING_SUB_DECL(type)                     \
+                                                            \
+    std::string                                             \
+    to_string(const type e) noexcept;
+
+#define JAU_MAKE_ENUM_STRING_CODE(type, ...)                \
+    JAU_MAKE_ENUM_STRING_SUB_CODE(type, type, __VA_ARGS__)  \
+                                                            \
+    std::string                                             \
     to_string(const type e) noexcept                        \
     { return std::string(name(e)); }
 
@@ -593,6 +606,19 @@ namespace jau::enums {
     JAU_MAKE_ENUM_STRING_SUB_LONG(type, type, __VA_ARGS__)  \
                                                             \
     constexpr std::string                                   \
+    to_string(const type e) noexcept                        \
+    { return std::string(name(e)); }
+
+#define JAU_MAKE_ENUM_STRING_LONG_DECL(type)                \
+    JAU_MAKE_ENUM_STRING_SUB_LONG_DECL(type)                \
+                                                            \
+    std::string                                             \
+    to_string(const type e) noexcept;
+
+#define JAU_MAKE_ENUM_STRING_LONG_CODE(type, ...)           \
+    JAU_MAKE_ENUM_STRING_SUB_LONG_CODE(type, type, __VA_ARGS__)  \
+                                                            \
+    std::string                                             \
     to_string(const type e) noexcept                        \
     { return std::string(name(e)); }
 
@@ -618,10 +644,46 @@ namespace jau::enums {
         return out;                                         \
     }
 
+#define JAU_MAKE_BITFIELD_ENUM_STRING_DECL(type)            \
+    JAU_MAKE_ENUM_STRING_SUB_DECL(type)                     \
+                                                            \
+    std::string                                             \
+    to_string(const type mask) noexcept;
+
+#define JAU_MAKE_BITFIELD_ENUM_STRING_CODE(type, ...)       \
+    JAU_MAKE_ENUM_STRING_SUB_CODE(type, type, __VA_ARGS__)  \
+                                                            \
+    std::string                                             \
+    to_string(const type mask) noexcept {                   \
+        std::string out("[");                               \
+        bool comma = false;                                 \
+        JAU_FOR_EACH2_VALUE(JAU_ENUM_APPEND_BITSTR, type, mask, __VA_ARGS__); \
+        out.append("]");                                    \
+        return out;                                         \
+    }
+
 #define JAU_MAKE_BITFIELD_ENUM_STRING_LONG(type, ...)       \
     JAU_MAKE_ENUM_STRING_SUB_LONG(type, type, __VA_ARGS__)  \
                                                             \
     inline std::string                                      \
+    to_string(const type mask) noexcept {                   \
+        std::string out("[");                               \
+        bool comma = false;                                 \
+        JAU_FOR_EACH2_VALUE(JAU_ENUM_APPEND_BITSTR, type, mask, __VA_ARGS__); \
+        out.append("]");                                    \
+        return out;                                         \
+    }
+
+#define JAU_MAKE_BITFIELD_ENUM_STRING_LONG_DECL(type)       \
+    JAU_MAKE_ENUM_STRING_SUB_LONG_DECL(type)                \
+                                                            \
+    std::string                                             \
+    to_string(const type mask) noexcept;
+
+#define JAU_MAKE_BITFIELD_ENUM_STRING_LONG_CODE(type, ...)  \
+    JAU_MAKE_ENUM_STRING_SUB_LONG_CODE(type, type, __VA_ARGS__)  \
+                                                            \
+    std::string                                             \
     to_string(const type mask) noexcept {                   \
         std::string out("[");                               \
         bool comma = false;                                 \
@@ -684,6 +746,31 @@ namespace jau::enums {
     }
 
 // internal usage only
+#define JAU_MAKE_ENUM_STRING_SUB_DECL(type)                 \
+    std::string_view                                        \
+    name(const type v) noexcept;                            \
+                                                            \
+    std::string_view                                        \
+    type_name(const type) noexcept;
+
+// internal usage only
+#define JAU_MAKE_ENUM_STRING_SUB_CODE(type, stype, ...)     \
+    std::string_view                                        \
+    name(const type v) noexcept                             \
+    {                                                       \
+        switch (v) {                                        \
+            JAU_FOR_EACH2(JAU_ENUM_CASE_SHORT, type, __VA_ARGS__) \
+            default:                                        \
+                return "undef";                             \
+        }                                                   \
+    }                                                       \
+    std::string_view                                        \
+    type_name(const type) noexcept                          \
+    {                                                       \
+        return #stype;                                      \
+    }
+
+// internal usage only
 #define JAU_MAKE_ENUM_STRING_SUB_KV(type, stype, ...)       \
     constexpr std::string_view                              \
     name(const type v) noexcept                             \
@@ -712,6 +799,25 @@ namespace jau::enums {
         }                                                   \
     }                                                       \
     JAU_MAKE_ENUM_STRING_SUB(type, type, __VA_ARGS__)
+
+// internal usage only
+#define JAU_MAKE_ENUM_STRING_SUB_LONG_DECL(type)            \
+    std::string_view                                        \
+    long_name(const type v) noexcept;                       \
+    JAU_MAKE_ENUM_STRING_SUB_DECL(type)
+
+// internal usage only
+#define JAU_MAKE_ENUM_STRING_SUB_LONG_CODE(type, stype, ...) \
+    std::string_view                                        \
+    long_name(const type v) noexcept                        \
+    {                                                       \
+        switch (v) {                                        \
+            JAU_FOR_EACH2(JAU_ENUM_CASE_LONG, type, __VA_ARGS__) \
+            default:                                        \
+                return "undef " #stype;                     \
+        }                                                   \
+    }                                                       \
+    JAU_MAKE_ENUM_STRING_SUB_CODE(type, type, __VA_ARGS__)
 
 // static class member
 #define JAU_MAKE_ENUM_STRING_MEMBER(type, ...)              \

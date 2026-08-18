@@ -52,6 +52,50 @@ enum class test_type3_t : uint8_t {
 JAU_MAKE_BITFIELD_ENUM_STRING_LONG(test_type3_t, one, two, three); // NOLINT(misc-use-internal-linkage): intentional
 JAU_MAKE_ENUM_INFO(test_type3_t, none, one, two, three);
 
+// Define the `enum class` yourself ...
+enum class test_type10_t : uint8_t {
+    none = 0, // <no value item denoting no value
+    one = 1,
+    two = 2,
+    three = 3
+};
+// and add the `enum class` support functions
+JAU_MAKE_ENUM_STRING_DECL(test_type10_t); // NOLINT(misc-use-internal-linkage): intentional
+JAU_MAKE_ENUM_STRING_CODE(test_type10_t, one, two, three); // NOLINT(misc-use-internal-linkage): intentional
+
+// Define the `enum class` yourself ...
+enum class test_type11_t : uint8_t {
+    none = 0, // <no value item denoting no value
+    one = 1,
+    two = 2,
+    three = 3
+};
+// and add the `enum class` support functions
+JAU_MAKE_ENUM_STRING_LONG_DECL(test_type11_t); // NOLINT(misc-use-internal-linkage): intentional
+JAU_MAKE_ENUM_STRING_LONG_CODE(test_type11_t, one, two, three); // NOLINT(misc-use-internal-linkage): intentional
+
+// Define the `enum class` yourself ...
+enum class test_type12_t : uint8_t {
+    none = 0, // <no value item denoting no value
+    one = 1 << 0,
+    two = 1 << 1,
+    three = 1 << 2
+};
+// and add the `enum class` support functions
+JAU_MAKE_BITFIELD_ENUM_STRING_DECL(test_type12_t); // NOLINT(misc-use-internal-linkage): intentional
+JAU_MAKE_BITFIELD_ENUM_STRING_CODE(test_type12_t, one, two, three); // NOLINT(misc-use-internal-linkage): intentional
+
+// Define the `enum class` yourself ...
+enum class test_type13_t : uint8_t {
+    none = 0, // <no value item denoting no value
+    one = 1 << 0,
+    two = 1 << 1,
+    three = 1 << 2
+};
+// and add the `enum class` support functions
+JAU_MAKE_BITFIELD_ENUM_STRING_LONG_DECL(test_type13_t); // NOLINT(misc-use-internal-linkage): intentional
+JAU_MAKE_BITFIELD_ENUM_STRING_LONG_CODE(test_type13_t, one, two, three); // NOLINT(misc-use-internal-linkage): intentional
+
 namespace jau::io::fs {
     JAU_MAKE_ENUM_INFO(fmode_t, none, sock, blk, chr, fifo, dir, file, link, no_access, not_existing);
     JAU_MAKE_ENUM_INFO(mountflags_linux, none, rdonly, nosuid, nodev, noexec, synchronous, remount, mandlock, dirsync, noatime,
@@ -107,6 +151,44 @@ TEST_CASE( "Enum Class Value Type Test 10", "[enum][type]" ) {
             }
         }
     }
+    {
+        using namespace jau::enums;
+
+        static_assert( true == is_enum<test_type10_t::one>() );
+        static_assert( true == is_enum<test_type10_t::two>() );
+        static_assert( true == is_enum<test_type10_t::three>() );
+        static_assert( "test_type10_t::one" == long_name<test_type10_t::one>() );
+        static_assert( "test_type10_t::two" == long_name<test_type10_t::two>() );
+        static_assert( "test_type10_t::three" == long_name<test_type10_t::three>() );
+        static_assert( "one" == name<test_type10_t::one>() );
+        static_assert( "two" == name<test_type10_t::two>() );
+        static_assert( "three" == name<test_type10_t::three>() );
+
+        REQUIRE( "test_type10_t::one" == long_name<test_type10_t::one>() );
+        REQUIRE( "one" == name<test_type10_t::one>() );
+        REQUIRE( true == is_enum<test_type10_t::one>() );
+        {
+            // std::string_view *res = fill_names<test_type10_t::one, test_type10_t::two, test_type10_t::three>();
+            constexpr auto nt = get_names<test_type10_t::one, test_type10_t::two, test_type10_t::three>();
+            for(std::string_view sv : nt.names) {
+                std::cout << "NameTable: val -> string: " << sv << std::endl;
+                REQUIRE( false == sv.empty() );
+            }
+            constexpr auto vt = get_values(test_type10_t::one, test_type10_t::two, test_type10_t::three);
+            for(test_type10_t v : vt.values) {
+                std::cout << "ValueTable: val: " << static_cast<int>(v) << std::endl;
+            }
+        }
+    }
+    {
+        // split declaration/code not constexpr
+        // static_assert( "one" == name(test_type13_t::one) );
+        // static_assert( "test_type13_t::one" == long_name(test_type13_t::one) );
+        REQUIRE( "one" == name(test_type11_t::one) );
+        REQUIRE( "test_type11_t::one" == long_name(test_type11_t::one) );
+
+        REQUIRE( "one" == to_string(test_type11_t::one) );
+    }
 
     {
         static_assert( 4 == test_type2_t_info_t::size() );
@@ -130,6 +212,36 @@ TEST_CASE( "Enum Class Value Type Test 10", "[enum][type]" ) {
 
             REQUIRE( "[one, two]" == to_string(test_type3_t::one | test_type3_t::two) );
             REQUIRE( "[one, two, three]" == to_string(test_type3_t::one | test_type3_t::two | test_type3_t::three) );
+        }
+    }
+    {
+        // split declaration/code not constexpr
+        // static_assert( "one" == name(test_type11_t::one) );
+        REQUIRE( "one" == name(test_type12_t::one) );
+
+        REQUIRE( "[one]" == to_string(test_type12_t::one) );
+
+        {
+            using namespace jau::enums;
+
+            REQUIRE( "[one, two]" == to_string(test_type12_t::one | test_type12_t::two) );
+            REQUIRE( "[one, two, three]" == to_string(test_type12_t::one | test_type12_t::two | test_type12_t::three) );
+        }
+    }
+    {
+        // split declaration/code not constexpr
+        // static_assert( "one" == name(test_type13_t::one) );
+        // static_assert( "test_type13_t::one" == long_name(test_type13_t::one) );
+        REQUIRE( "one" == name(test_type13_t::one) );
+        REQUIRE( "test_type13_t::one" == long_name(test_type13_t::one) );
+
+        REQUIRE( "[one]" == to_string(test_type13_t::one) );
+
+        {
+            using namespace jau::enums;
+
+            REQUIRE( "[one, two]" == to_string(test_type13_t::one | test_type13_t::two) );
+            REQUIRE( "[one, two, three]" == to_string(test_type13_t::one | test_type13_t::two | test_type13_t::three) );
         }
     }
     {
