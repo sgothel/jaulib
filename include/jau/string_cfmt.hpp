@@ -1694,7 +1694,7 @@ namespace jau::cfmt {
      *
      * @tparam Targs the argument template type pack for the given arguments `args`
      * @param strLenHint initial string capacity w/o EOS or zero for none
-     * @param maxLen maximum resulting string length including EOS
+     * @param maxLen maximum resulting string length w/o EOS
      * @param fmt the snprintf compliant format string
      * @param args arguments matching the format string
      */
@@ -1749,7 +1749,7 @@ namespace jau::cfmt {
      *
      * @tparam Targs the argument template type pack for the given arguments `args`
      * @param s destination string to append the formatted string
-     * @param maxLen maximum total string length
+     * @param maxLen maximum resulting string length w/o EOS
      * @param fmt the snprintf compliant format string
      * @param args passed arguments, used for template type deduction only
      * @return the given destination string for concatenation
@@ -1784,7 +1784,7 @@ namespace jau::cfmt {
      * @tparam Targs the argument template type pack for the given arguments `args`
      * @param strLenHint initial string capacity w/o EOS for appended content or zero for none
      * @param s destination string to append the formatted string
-     * @param maxLen maximum total string length
+     * @param maxLen maximum resulting string length w/o EOS
      * @param fmt the snprintf compliant format string
      * @param args passed arguments, used for template type deduction only
      * @return the given destination string for concatenation
@@ -1848,7 +1848,7 @@ namespace jau::cfmt {
      * @tparam Targs the argument template type pack for the given arguments `args`
      * @param strLenHint initial string capacity w/o EOS for appended content or zero for none
      * @param s destination string to append the formatted string
-     * @param maxLen maximum total string length
+     * @param maxLen maximum resulting string length w/o EOS
      * @param fmt the snprintf compliant format string
      * @param args arguments matching the format string
      */
@@ -2044,7 +2044,7 @@ namespace jau {
      *
      * See @ref jau_cfmt_header for details
      *
-     * @param maxLen maximum resulting string length including
+     * @param maxLen maximum resulting string length w/o EOS
      * @param fmt the snprintf compliant format string
      * @param args arguments matching the format string
      * @see jau::cfmt::append to append a formatted string
@@ -2096,7 +2096,7 @@ namespace jau {
      * See @ref jau_cfmt_header for details
      *
      * @param strLenHint initially string capacity w/o EOS or zero for none
-     * @param maxLen maximum resulting string length including EOS
+     * @param maxLen maximum resulting string length w/o EOS
      * @param fmt the snprintf compliant format string
      * @param args arguments matching the format string
      * @see jau::cfmt::append to append a formatted string
