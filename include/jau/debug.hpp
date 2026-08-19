@@ -175,6 +175,22 @@ namespace jau::impl {
 #define jau_COND_PRINT(C, ...) { if( C ) { jau::impl::dbgPrint0(stderr, false, false, __VA_ARGS__); } }
 
 namespace jau {
+    /// No throw wrap for given unary predicate `p` action. aborts() if an exception occurred (included backtrace if supported).
+    template<class UnaryPredicate>
+    inline void abort_onexcept(UnaryPredicate p) noexcept {
+        try {
+            p();
+        } catch (...) {
+            std::exception_ptr eptr = std::current_exception();
+            try {
+                std::rethrow_exception(eptr);
+            } catch (const std::exception &e) {
+                jau_ABORT("Abort due to caught exception @ %s:%d: %s\n", __FILE__, __LINE__, e.what());
+                // unreachable
+            }
+        }
+    }
+
     /**
      * Convenient secure fprintf() invocation, prepending the given elapsed_ms timestamp
      * and using `jau::format_string`.
