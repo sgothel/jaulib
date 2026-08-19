@@ -1258,32 +1258,52 @@ std::string jau::type_info::toString() const noexcept {
 // debug
 //
 
-void jau::impl::dbgPrint_pre(std::string &str, bool addPrefix, const char *prefixMsg, const char *prefixMsgSep,
+bool jau::impl::dbgPrint_pre(size_t init_strsize, std::string &str, bool addPrefix, const char *prefixMsg, const char *prefixMsgSep,
                              const char *func, const char *file, const int line) noexcept {
-    str.reserve(jau::cfmt::default_string_capacity);
-    if (addPrefix) {
-        str.append("[");
-        appendDecString(str, environment::getElapsedMillisecond(), ',', 9);
-        str.append("] ");
-        if (prefixMsg) {
-            str.append(prefixMsg);
-            if (prefixMsgSep) {
-                str.append(prefixMsgSep);
+    try {
+        str.reserve(init_strsize);
+        if (addPrefix) {
+            str.append("[");
+            appendDecString(str, environment::getElapsedMillisecond(), ',', 9);
+            str.append("] ");
+            if (prefixMsg) {
+                str.append(prefixMsg);
+                if (prefixMsgSep) {
+                    str.append(prefixMsgSep);
+                }
             }
         }
-    }
-    if (file && func) {
-        str.append("@ ").append(file).append(":").append(std::to_string(line)).append(" ").append(func).append(": ");
+        if (file && func) {
+            str.append("@ ").append(file).append(":").append(std::to_string(line)).append(" ").append(func).append(": ");
+        }
+        return true;
+    } catch (...) {
+        std::exception_ptr eptr = std::current_exception();
+        try {
+            std::rethrow_exception(eptr);
+        } catch (const std::exception &e) {
+            ::fprintf(stderr, "Exception caught @ %s:%d: %s\n", __FILE__, __LINE__, e.what());
+        }
+        return false;
     }
 }
 
 void jau::impl::dbgPrint_tail(FILE *out, std::string &str, bool addErrno, bool addBacktrace) noexcept {
-    if (addErrno) {
-        str.append("; last errno ").append(std::to_string(errno)).append(" ").append(strerror(errno));
-    }
-    str.append("\n");
-    if (addBacktrace) {
-        jau::append_backtrace(str, true /* skip_anon_frames */, 4 /* max_frames */, 2 /* skip_frames: this() + get_b*() */);
+    try {
+        if (addErrno) {
+            str.append("; last errno ").append(std::to_string(errno)).append(" ").append(strerror(errno));
+        }
+        str.append("\n");
+        if (addBacktrace) {
+            jau::append_backtrace(str, true /* skip_anon_frames */, 4 /* max_frames */, 2 /* skip_frames: this() + get_b*() */);
+        }
+    } catch (...) {
+        std::exception_ptr eptr = std::current_exception();
+        try {
+            std::rethrow_exception(eptr);
+        } catch (const std::exception &e) {
+            ::fprintf(stderr, "Exception caught @ %s:%d: %s\n", __FILE__, __LINE__, e.what());
+        }
     }
     ::fputs(str.c_str(), out);
     if (addErrno || addBacktrace) {
@@ -1291,19 +1311,41 @@ void jau::impl::dbgPrint_tail(FILE *out, std::string &str, bool addErrno, bool a
     }
 }
 
-void jau::impl::fprintf_td_pre(std::string &str, const uint64_t elapsed_ms) noexcept {
-    str.reserve(jau::cfmt::default_string_capacity);
-    str.append("[");
-    appendDecString(str, elapsed_ms, ',', 9);
-    str.append("] ");
+bool jau::impl::fprintf_td_pre(size_t init_strsize, std::string &str, const uint64_t elapsed_ms) noexcept {
+    try {
+        str.reserve(init_strsize);
+        str.append("[");
+        appendDecString(str, elapsed_ms, ',', 9);
+        str.append("] ");
+        return true;
+    } catch (...) {
+        std::exception_ptr eptr = std::current_exception();
+        try {
+            std::rethrow_exception(eptr);
+        } catch (const std::exception &e) {
+            ::fprintf(stderr, "Exception caught @ %s:%d: %s\n", __FILE__, __LINE__, e.what());
+        }
+        return false;
+    }
 }
 
-void jau::impl::fprintf_ts0_pre(std::string &str) noexcept {
-    const jau::fraction_timespec now = environment::getWallMonotonicTime();
-    str.reserve(jau::cfmt::default_string_capacity);
-    str.append("[")
-       .append(now.toISO8601String(true /* space */, false, false /* utcTime */, true /* muteNanos */));
-    str.append("] ");
+bool jau::impl::fprintf_ts0_pre(size_t init_strsize, std::string &str) noexcept {
+    try {
+        const jau::fraction_timespec now = environment::getWallMonotonicTime();
+        str.reserve(init_strsize);
+        str.append("[")
+           .append(now.toISO8601String(true /* space */, false, false /* utcTime */, true /* muteNanos */));
+        str.append("] ");
+        return true;
+    } catch (...) {
+        std::exception_ptr eptr = std::current_exception();
+        try {
+            std::rethrow_exception(eptr);
+        } catch (const std::exception &e) {
+            ::fprintf(stderr, "Exception caught @ %s:%d: %s\n", __FILE__, __LINE__, e.what());
+        }
+        return false;
+    }
 }
 
 ssize_t jau::impl::fprintf_tail(FILE *stream, const std::string &str) noexcept {

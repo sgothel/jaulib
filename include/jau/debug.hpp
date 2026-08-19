@@ -33,7 +33,7 @@
 
 namespace jau::impl {
     /// This function is a possible cancellation point and therefore marked with noexcept (not marked with __THROW like ::fprintf).
-    void dbgPrint_pre(std::string &str, bool addPrefix, const char *prefixMsg, const char *prefixMsgSep,
+    bool dbgPrint_pre(size_t init_strsize, std::string &str, bool addPrefix, const char *prefixMsg, const char *prefixMsgSep,
                       const char *func, const char *file, const int line) noexcept;
     /// This function is a possible cancellation point and therefore marked with noexcept (not marked with __THROW like ::fprintf).
     void dbgPrint_tail(FILE *out, std::string &str, bool addErrno, bool addBacktrace) noexcept;
@@ -42,7 +42,11 @@ namespace jau::impl {
     template <typename... Args>
     void dbgPrint0(FILE *out, bool addErrno, bool addBacktrace, std::string_view format, const Args &...args) noexcept {
         std::string str;
-        dbgPrint_pre(str, false, nullptr /* prefixMsg */, nullptr /* prefixMsgSep */, nullptr /* func */, nullptr /* file */, 0 /* line */);
+        if (!dbgPrint_pre(jau::cfmt::default_string_capacity, str, false, nullptr /* prefixMsg */, nullptr /* prefixMsgSep */,
+                          nullptr /* func */, nullptr /* file */, 0 /* line */))
+        {
+            return;
+        }
         jau::cfmt::append(str, std::numeric_limits<size_t>::max(), format, args...);
         dbgPrint_tail(out, str, addErrno, addBacktrace);
     }
@@ -51,7 +55,9 @@ namespace jau::impl {
     template <typename... Args>
     void dbgPrint1(FILE *out, bool addPrefix, const char *msg, std::string_view format, const Args &...args) noexcept {
         std::string str;
-        dbgPrint_pre(str, addPrefix, msg, ": ", nullptr /* func */, nullptr /* file */, 0 /* line */);
+        if (!dbgPrint_pre(jau::cfmt::default_string_capacity, str, addPrefix, msg, ": ", nullptr /* func */, nullptr /* file */, 0 /* line */)) {
+            return;
+        }
         jau::cfmt::append(str, std::numeric_limits<size_t>::max(), format, args...);
         dbgPrint_tail(out, str, false, false);
     }
@@ -61,13 +67,15 @@ namespace jau::impl {
     void dbgPrint2(FILE *out, const char *msg, bool addErrno, bool addBacktrace, const char *func, const char *file, const int line,
                    std::string_view format, const Args &...args) noexcept {
         std::string str;
-        dbgPrint_pre(str, true, msg, " ", func, file, line);
+        if (!dbgPrint_pre(jau::cfmt::default_string_capacity, str, true, msg, " ", func, file, line)) {
+            return;
+        }
         jau::cfmt::append(str, std::numeric_limits<size_t>::max(), format, args...);
         dbgPrint_tail(out, str, addErrno, addBacktrace);
     }
 
-    void fprintf_td_pre(std::string &str, const uint64_t elapsed_ms) noexcept;
-    void fprintf_ts0_pre(std::string &str) noexcept;
+    bool fprintf_td_pre(size_t init_strsize, std::string &str, const uint64_t elapsed_ms) noexcept;
+    bool fprintf_ts0_pre(size_t init_strsize, std::string &str) noexcept;
     ssize_t fprintf_tail(FILE *stream, const std::string &str) noexcept;
 
 } // namespace jau::impl
@@ -179,7 +187,9 @@ namespace jau {
     template <typename... Args>
     ssize_t fprintf_td(const uint64_t elapsed_ms, FILE* stream, std::string_view format, const Args &...args) noexcept {
         std::string str;
-        jau::impl::fprintf_td_pre(str, elapsed_ms);
+        if (!jau::impl::fprintf_td_pre(jau::cfmt::default_string_capacity, str, elapsed_ms) ) {
+            return -1;
+        }
         jau::cfmt::append(str, std::numeric_limits<size_t>::max(), format, args...);
         return jau::impl::fprintf_tail(stream, str);
     }
@@ -209,7 +219,9 @@ namespace jau {
     template <typename... Args>
     ssize_t fprintf_ts(FILE* stream, std::string_view format, const Args &...args) noexcept {
         std::string str;
-        jau::impl::fprintf_ts0_pre(str);
+        if (!jau::impl::fprintf_ts0_pre(jau::cfmt::default_string_capacity, str)) {
+            return -1;
+        }
         jau::cfmt::append(str, std::numeric_limits<size_t>::max(), format, args...);
         return jau::impl::fprintf_tail(stream, str);
 	}
