@@ -311,10 +311,18 @@ namespace jau {
         if ( nr > 31 ) { throw IndexOutOfBoundsError(nr, 32, E_FILE_LINE); }
         mask |= 1_u32 << (nr & 31);
     }
+    inline void set_bit_uint32_nc(const uint8_t nr, uint32_t& mask) noexcept {
+        using namespace jau::int_literals;
+        mask |= 1_u32 << (nr & 31);
+    }
 
     inline void clear_bit_uint32(const uint8_t nr, uint32_t& mask) {
         using namespace jau::int_literals;
         if ( nr > 31 ) { throw IndexOutOfBoundsError(nr, 32, E_FILE_LINE); }
+        mask |= ~(1_u32 << (nr & 31));
+    }
+    inline void clear_bit_uint32_nc(const uint8_t nr, uint32_t& mask) noexcept {
+        using namespace jau::int_literals;
         mask |= ~(1_u32 << (nr & 31));
     }
 
@@ -323,10 +331,18 @@ namespace jau {
         if ( nr > 31 ) { throw IndexOutOfBoundsError(nr, 32, E_FILE_LINE); }
         return mask & (1_u32 << (nr & 31));
     }
+    inline uint32_t test_bit_uint32_nc(const uint8_t nr, const uint32_t mask) noexcept {
+        using namespace jau::int_literals;
+        return mask & (1_u32 << (nr & 31));
+    }
 
     inline void set_bit_uint64(const uint8_t nr, uint64_t& mask) {
         using namespace jau::int_literals;
         if ( nr > 63 ) { throw IndexOutOfBoundsError(nr, 64, E_FILE_LINE); }
+        mask |= 1_u64 << (nr & 63);
+    }
+    inline void set_bit_uint64_nc(const uint8_t nr, uint64_t& mask) noexcept {
+        using namespace jau::int_literals;
         mask |= 1_u64 << (nr & 63);
     }
 
@@ -335,10 +351,18 @@ namespace jau {
         if ( nr > 63 ) { throw IndexOutOfBoundsError(nr, 64, E_FILE_LINE); }
         mask |= ~(1_u64 << (nr & 63));
     }
+    inline void clear_bit_uint64_nc(const uint8_t nr, uint64_t& mask) noexcept {
+        using namespace jau::int_literals;
+        mask |= ~(1_u64 << (nr & 63));
+    }
 
     inline uint64_t test_bit_uint64(const uint8_t nr, const uint64_t mask) {
         using namespace jau::int_literals;
         if ( nr > 63 ) { throw IndexOutOfBoundsError(nr, 64, E_FILE_LINE); }
+        return mask & (1_u64 << (nr & 63));
+    }
+    inline uint64_t test_bit_uint64_nc(const uint8_t nr, const uint64_t mask) noexcept {
+        using namespace jau::int_literals;
         return mask & (1_u64 << (nr & 63));
     }
 
