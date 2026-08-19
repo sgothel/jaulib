@@ -936,7 +936,7 @@ namespace jau {
             /**
              * Resizes this instance, including its capacity
              * @param newCapacity new capacity, must be >= newSize
-             * @param newSize new size, must be < newCapacity
+             * @param newSize new size, must be <= newCapacity
              * @return
              * @throws OutOfMemoryError if allocation fails
              * @throws IllegalArgumentException if newCapacity < newSize
