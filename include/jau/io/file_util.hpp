@@ -794,7 +794,14 @@ namespace jau::io::fs {
         ssize_t is_locked(int fd, lock_ops ops=lock_ops::write_lock_default, ::off_t start=0, ::off_t len=0) noexcept;
 
         /**
-         * Set close-on-exec flag, i.e. `FD_CLOEXEC`.
+         * Set nonblock file-status flag, i.e. `O_NONBLOCK`.
+         * @param fd the file descriptor
+         * @return zero if successful, otherwise -errno
+         */
+        int set_non_block(int fd) noexcept;
+
+        /**
+         * Set close-on-exec file-descriptor flag, i.e. `FD_CLOEXEC`.
          * @param fd the file descriptor
          * @return zero if successful, otherwise -errno
          */

@@ -1054,17 +1054,36 @@ ssize_t jau::io::fs::ctrl::is_locked(int fd, lock_ops ops, ::off_t start, ::off_
     return (fl.l_type == F_UNLCK) ? 0 : fl.l_pid;
 }
 
+int jau::io::fs::ctrl::set_non_block(int fd) noexcept {
+    int flags = ::fcntl(fd, F_GETFL);
+    if (flags == -1) {
+        int saved_errno = errno;
+        jau_ERR_PRINT("Couldn't get status flags for fd %d", fd);
+        return -saved_errno;
+    }
+    if (!(flags & O_NONBLOCK)) {
+        flags |= O_NONBLOCK;
+        if (::fcntl(fd, F_SETFL, flags) == -1) {
+            int saved_errno = errno;
+            jau_ERR_PRINT("Couldn't set status flags for fd %d", fd);
+            return -saved_errno;
+        }
+    }
+    return 0;
+}
 int jau::io::fs::ctrl::set_close_on_exec(int fd) noexcept {
     int flags = ::fcntl(fd, F_GETFD);
     if (flags == -1) {
-        jau_ERR_PRINT("Couldn't get flags for fd %d", fd);
-        return -errno;
+        int saved_errno = errno;
+        jau_ERR_PRINT("Couldn't get descriptor flags for fd %d", fd);
+        return -saved_errno;
     }
     if (!(flags & FD_CLOEXEC)) {
         flags |= FD_CLOEXEC;
         if (::fcntl(fd, F_SETFD, flags) == -1) {
-            jau_ERR_PRINT("Couldn't set flags for fd %d", fd);
-            return -errno;
+            int saved_errno = errno;
+            jau_ERR_PRINT("Couldn't set descriptor flags for fd %d", fd);
+            return -saved_errno;
         }
     }
     return 0;
