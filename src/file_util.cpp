@@ -1095,10 +1095,10 @@ ScopedFD jau::io::fs::create_pid_lock_file(const std::string &fname, size_t pid,
     ScopedFD fdh = ScopedFD(std::move(fd), // NOLINT(performance-move-const-arg)
         [fname](int &fd_) -> void {
             if (fd_ >= 0) {
-                ctrl::unlock(fd_);
                 if (::unlink(fname.c_str())) {
                     jau_ERR_PRINT("Failed to unlink pid lock-file `%s`", fname);
                 }
+                ctrl::unlock(fd_);
                 ::close(fd_);
             }
         });
