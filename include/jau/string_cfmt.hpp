@@ -93,6 +93,12 @@
  *     - Compile time check
  *   - Otherwise fails intentionally
  *
+ * ### Safety
+ * - [Thread-safety](https://www.man7.org/linux/man-pages/man7/attributes.7.html): MT-Safe
+ * - [Signal-safety](https://www.man7.org/linux/man-pages/man7/signal-safety.7.html)
+ *   - `jau::cfmt::append_cap`: AS-Safe
+ *   - `jau::cfmt::append` if passing `std::string` w/ `maxLen = capacity - 1`: AS-Safe
+ *
  * ### Implementation Details
  * #### General
  * - Validates argument types against format string at compile time (consteval)
@@ -490,7 +496,7 @@ namespace jau::cfmt {
         inline constexpr const double_t max_append_float = (double_t)1e9;
 
         bool reserve(std::string &dest, const size_t new_capacity) noexcept;
-        bool reserve_resize(std::string &dest, const size_t new_capacity, const size_t new_size) noexcept;
+        bool reserve_append(std::string &dest, const size_t new_capacity, const size_t append_count) noexcept;
 
         void append_rev(std::string &dest, const size_t dest_maxlen, std::string_view src, bool prec_cut, bool reverse, const FormatOpts &opts) noexcept;
         inline void append_string(std::string &dest, const size_t dest_maxlen, std::string_view src, const FormatOpts &opts) noexcept {
@@ -543,10 +549,15 @@ namespace jau::cfmt {
         /// A std::string OutputType for runtime formatting into a std::string
         class StringOutput {
           private:
+            /** maximum resulting string length w/o EOS */
             size_t m_maxLen;
             std::string &m_s;
 
           public:
+            /**
+             * @param maxLen maximum resulting string length w/o EOS
+             * @param s destination string to append the formatted string
+             */
             constexpr StringOutput(size_t maxLen, std::string &s) noexcept
             : m_maxLen(maxLen), m_s(s) {}
 
@@ -622,8 +633,11 @@ namespace jau::cfmt {
                 }
             }
             inline void appendText(const std::string_view v) {
-                if (fits(v.size())) {
+                const size_t remaining = m_maxLen - m_s.size();
+                if (remaining >= v.size()) {
                     m_s.append(v);
+                } else {
+                    m_s.append(v, 0, remaining);
                 }
             }
 
@@ -1745,6 +1759,9 @@ namespace jau::cfmt {
      * with `formatLen` being the given formatted string length of output w/o limitation
      * and its capacity is left unchanged.
      *
+     * This method *may be* [AS-Safe](https://www.man7.org/linux/man-pages/man7/signal-safety.7.html)
+     * if passed string `s` has `maxLen = s.capacity() - 1`.
+     *
      * See @ref jau_cfmt_header for details
      *
      * @tparam Targs the argument template type pack for the given arguments `args`
@@ -1758,7 +1775,43 @@ namespace jau::cfmt {
     template <typename... Targs>
     std::string& append(std::string &s, size_t maxLen, std::string_view fmt, const Targs &...args) noexcept {
         maxLen = std::min(maxLen, s.max_size()-1);
-        impl::StringResult ctx(impl::StringOutput(maxLen-s.length(), s), fmt);
+        impl::StringResult ctx(impl::StringOutput(maxLen, s), fmt);
+
+        if constexpr( 0 < sizeof...(Targs) ) {
+            ((impl::FormatParser::parseOne<Targs>(ctx, args)), ...);
+        }
+        impl::FormatParser::parseOne<impl::no_type_t>(ctx, impl::no_type_t());
+        return s;
+    }
+
+    /**
+     * Strict format with type validation of arguments against the format string,
+     * appending to the given destination.
+     *
+     * `maxLen` w/o EOS is derived by given destination string's remaining space, i.e. `maxLen = s.capacity() - 1`.
+     *
+     * Resulting string is truncated to `min(maxLen, formatLen)`,
+     * with `formatLen` being the given formatted string length of output w/o limitation
+     * and its capacity is left unchanged.
+     *
+     * This method *is* [AS-Safe](https://www.man7.org/linux/man-pages/man7/signal-safety.7.html),
+     * it returns early if passed string `s` has not `maxLen` capacity.
+     *
+     * See @ref jau_cfmt_header for details
+     *
+     * @tparam Targs the argument template type pack for the given arguments `args`
+     * @param s destination string to append the formatted string
+     * @param fmt the snprintf compliant format string
+     * @param args passed arguments, used for template type deduction only
+     * @return the given destination string for concatenation
+     * @see @ref jau_cfmt_header
+     */
+    template <typename... Targs>
+    std::string& append_cap(std::string &s, std::string_view fmt, const Targs &...args) noexcept {
+        if (s.capacity() - 1 <= s.length()) {
+            return s; // full already, explicit -EOS
+        }
+        impl::StringResult ctx(impl::StringOutput(s.capacity()-1, s), fmt); // explicit -EOS
 
         if constexpr( 0 < sizeof...(Targs) ) {
             ((impl::FormatParser::parseOne<Targs>(ctx, args)), ...);
@@ -1793,7 +1846,7 @@ namespace jau::cfmt {
     template <typename... Targs>
     std::string& append(const size_t strLenHint, std::string &s, size_t maxLen, std::string_view fmt, const Targs &...args) noexcept {
         maxLen = std::min(maxLen, s.max_size()-1);
-        impl::StringResult ctx(impl::StringOutput(maxLen-s.length(), s), fmt);
+        impl::StringResult ctx(impl::StringOutput(maxLen, s), fmt);
 
         if (!impl::reserve(s, std::min(s.length() + strLenHint, maxLen) + 1)) {  // +EOS
             return s;
@@ -1855,7 +1908,7 @@ namespace jau::cfmt {
     template <typename... Targs>
     Result formatR(const size_t strLenHint, std::string &s, size_t maxLen, std::string_view fmt, const Targs &...args) noexcept {
         maxLen = std::min(maxLen, s.max_size()-1);
-        impl::StringResult ctx(impl::StringOutput(maxLen-s.length(), s), fmt);
+        impl::StringResult ctx(impl::StringOutput(maxLen, s), fmt);
 
         if (!impl::reserve(s, std::min(s.length()+strLenHint, maxLen)+1)) { // +EOS
             return ctx;
@@ -2175,7 +2228,7 @@ extern template class jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>;
  * This macro also produces compile time validation using a `static_assert`
  * against jau::cfmt::check2.
  *
- * jau::cfmt::format() is utilize to validate `format` against given arguments at *runtime*.
+ * jau::cfmt::format() is utilize to validate `fmt` against given arguments at *runtime*.
  *
  * Resulting string size matches formated output w/o limitation
  * and its capacity is left unchanged.
@@ -2185,7 +2238,7 @@ extern template class jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>;
  *
  * See @ref jau_cfmt_header for details
  *
- * @param format `printf()` compliant format string
+ * @param fmt `printf()` compliant format string
  * @param args arguments matching the format string
  */
 #define jau_format_string(fmt, ...) \
@@ -2199,7 +2252,7 @@ extern template class jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>;
  * This macro also produces compile time validation using a `static_assert`
  * against jau::cfmt::check2.
  *
- * jau::cfmt::format() is utilize to validate `format` against given arguments at *runtime*.
+ * jau::cfmt::format() is utilize to validate `fmt` against given arguments at *runtime*.
  *
  * Resulting string size matches formated output w/o limitation
  * and its capacity is left unchanged.
@@ -2210,7 +2263,7 @@ extern template class jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>;
  * See @ref jau_cfmt_header for details
  *
  * @param strLenHint initially string capacity w/o EOS or zero for none
- * @param format `printf()` compliant format string
+ * @param fmt `printf()` compliant format string
  * @param args arguments matching the format string
  */
 #define jau_format_string_h(strLenHint, fmt, ...) \
@@ -2225,7 +2278,7 @@ extern template class jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>;
  * This macro also produces compile time validation using a `static_assert`
  * against jau::cfmt::check2Line.
  *
- * jau::cfmt::format() is utilize to validate `format` against given arguments at *runtime*.
+ * jau::cfmt::format() is utilize to validate `fmt` against given arguments at *runtime*.
  *
  * Resulting string size matches formated output w/o limitation
  * and its capacity is left unchanged.
@@ -2235,7 +2288,7 @@ extern template class jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>;
  *
  * See @ref jau_cfmt_header for details
  *
- * @param format `printf()` compliant format string
+ * @param fmt `printf()` compliant format string
  * @param args arguments matching the format string
  */
 #define jau_format_string2(fmt, ...) \
@@ -2249,7 +2302,7 @@ extern template class jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>;
  * This macro also produces compile time validation using a `static_assert`
  * against jau::cfmt::check2.
  *
- * jau::cfmt::append() is utilize to validate `format` against given arguments at *runtime*.
+ * jau::cfmt::append() is utilize to validate `fmt` against given arguments at *runtime*.
  *
  * Resulting string size matches formated output w/o limitation
  * and its capacity is left unchanged.
@@ -2259,11 +2312,66 @@ extern template class jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>;
  *
  * See @ref jau_cfmt_header for details
  *
- * @param format `printf()` compliant format string
+ * @param fmt `printf()` compliant format string
  * @param args arguments matching the format string
  */
 #define jau_append_string(s, fmt, ...) \
     jau::cfmt::append((s), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
+    static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_NOREF_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
+
+/**
+ * Macro, safely appends a truncated string according to `snprintf()` formatting rules
+ * using a variable number of arguments following the `fmt` argument.
+ *
+ * This macro also produces compile time validation using a `static_assert`
+ * against jau::cfmt::check2.
+ *
+ * jau::cfmt::append() is utilize to validate `fmt` against given arguments at *runtime*.
+ *
+ * Resulting string is truncated to `min(maxLen, formatLen)`,
+ * with `formatLen` being the given formatted string length of output w/o limitation
+ * and its capacity is left unchanged.
+ *
+ * This method *may be* [AS-Safe](https://www.man7.org/linux/man-pages/man7/signal-safety.7.html)
+ * if passed string `s` has `maxLen <= s.capacity() - 1`.
+ *
+ * See @ref jau_cfmt_header for details
+ *
+ * @param s destination string to append the formatted string
+ * @param maxLen maximum resulting string length w/o EOS
+ * @param fmt `printf()` compliant format string
+ * @param args arguments matching the format string
+ */
+#define jau_append_string_m(s, maxlen, fmt, ...) \
+    jau::cfmt::append((s), (maxlen), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
+    static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_NOREF_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
+
+/**
+ * Macro, safely appends a truncated string according to `snprintf()` formatting rules
+ * using a variable number of arguments following the `fmt` argument.
+ *
+ * This macro also produces compile time validation using a `static_assert`
+ * against jau::cfmt::check2.
+ *
+ * jau::cfmt::append_cap() is utilize to validate `fmt` against given arguments at *runtime*.
+ *
+ * `maxLen` w/o EOS is derived by given destination string's remaining space, i.e. `maxLen = s.capacity() - 1`.
+ *
+ * Resulting string is truncated to `min(maxLen, formatLen)`,
+ * with `formatLen` being the given formatted string length of output w/o limitation
+ * and its capacity is left unchanged.
+ *
+ * This method *is* [AS-Safe](https://www.man7.org/linux/man-pages/man7/signal-safety.7.html),
+ * it returns early if passed string `s` has not `maxLen` capacity.
+ *
+ * See @ref jau_cfmt_header for details
+ *
+ * @param s destination string to append the formatted string
+ * @param fmt `printf()` compliant format string
+ * @param args arguments matching the format string
+ */
+#define jau_append_string_cap(s, fmt, ...) \
+    jau::cfmt::append_cap((s), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
     static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_NOREF_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
 
 /**
@@ -2272,7 +2380,7 @@ extern template class jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>;
  *
  * See @ref jau_cfmt_header for details
  *
- * @param format `printf()` compliant format string
+ * @param fmt `printf()` compliant format string
  * @param args arguments matching the format string
  */
 #define jau_format_check(fmt, ...) \
@@ -2284,7 +2392,7 @@ extern template class jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>;
  *
  * See @ref jau_cfmt_header for details
  *
- * @param format `printf()` compliant format string
+ * @param fmt `printf()` compliant format string
  * @param args arguments matching the format string
  */
 #define jau_format_checkLine(fmt, ...) \

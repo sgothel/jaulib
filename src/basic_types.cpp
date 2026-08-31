@@ -1482,22 +1482,24 @@ bool jau::cfmt::impl::reserve(std::string &dest, const size_t new_capacity) noex
         try {
             std::rethrow_exception(eptr);
         } catch (const std::exception &e) {
-            ::fprintf(stderr, "Exception caught @ %s:%d: %s\n", __FILE__, __LINE__, e.what());
+            ::fprintf(stderr, "Exception caught @ %s:%d: new-cap %zu: %s\n",
+                __FILE__, __LINE__, new_capacity, e.what());
         }
         return false;
     }
 }
-bool jau::cfmt::impl::reserve_resize(std::string &dest, const size_t new_capacity, const size_t new_size) noexcept {
+bool jau::cfmt::impl::reserve_append(std::string &dest, const size_t new_capacity, const size_t append_count) noexcept {
     try {
         dest.reserve(new_capacity);
-        dest.resize(new_size, ' ');
+        dest.append(append_count, ' ');
         return true;
     } catch (...) {
         std::exception_ptr eptr = std::current_exception();
         try {
             std::rethrow_exception(eptr);
         } catch (const std::exception &e) {
-            ::fprintf(stderr, "Exception caught @ %s:%d: %s\n", __FILE__, __LINE__, e.what());
+            ::fprintf(stderr, "Exception caught @ %s:%d: new-cap %zu, append %zu: %s\n",
+                __FILE__, __LINE__, new_capacity, append_count, e.what());
         }
         return false;
     }
@@ -1518,24 +1520,23 @@ void jau::cfmt::impl::append_rev(std::string &dest, const size_t dest_maxlen, st
     size_t space_left = 0, space_right = 0;
     {
         // string optional re-capacity and resize
-        const size_t maxlen = dest_maxlen - dest_start_len;
-        size_t len = std::min(src_len, maxlen); // already cut to precision if applicable
+        const size_t added_maxlen = dest_maxlen - dest_start_len;
+        size_t len = std::min(src_len, added_maxlen); // already cut to precision if applicable
         if (!is_set(opts.flags, flags_t::left) && opts.width_set && opts.width > len) {
-            space_left = std::min(opts.width-len, maxlen-len);
+            space_left = std::min(opts.width-len, added_maxlen-len);
             len += space_left;
         }
         // p2: append pad spaces left/right up to given width
         if (opts.width_set && len < opts.width) {
             if (is_set(opts.flags, flags_t::left)) {
-                space_right = std::min(opts.width-len, maxlen-len);
+                space_right = std::min(opts.width-len, added_maxlen-len);
                 len += space_right;
             } else if (!is_set(opts.flags, flags_t::zeropad)) {
-                space_left = std::min(opts.width-len, maxlen-len);
+                space_left = std::min(opts.width-len, added_maxlen-len);
                 len += space_left;
             }
         }
-        const size_t new_size = dest_start_len + len;
-        if (!reserve_resize(dest, new_size + 1, new_size)) { // cap +EOS, not shrinking!
+        if (!reserve_append(dest, dest_start_len + len + 1, len)) { // cap +EOS, not shrinking!
             return;
         }
     }
@@ -1665,8 +1666,7 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
         }
         const size_t added_maxlen = dest_maxlen - dest_start_len;
         const size_t added_len = std::min<size_t>(added_maxlen, space_left + xtra_left + num_len + space_right);
-        const size_t new_size = dest_start_len + added_len;
-        if (!reserve_resize(dest, new_size + 1, new_size)) { // cap +EOS, not shrinking!
+        if (!reserve_append(dest, dest_start_len + added_len + 1, added_len)) { // cap +EOS, not shrinking!
             return;
         }
 
@@ -1836,8 +1836,7 @@ void jau::cfmt::impl::append_integral_simple(std::string &dest, const size_t des
 
         const size_t added_maxlen = dest_maxlen - dest_start_len;
         const size_t added_len = std::min<size_t>(added_maxlen, xtra_left + val_digits );
-        const size_t new_size = dest_start_len + added_len;
-        if (!reserve_resize(dest, new_size + 1, new_size)) { // cap +EOS, not shrinking!
+        if (!reserve_append(dest, dest_start_len + added_len + 1, added_len)) { // cap +EOS, not shrinking!
             return;
         }
 
@@ -2164,7 +2163,10 @@ void jau::cfmt::impl::append_efloatF64(std::string &dest, const size_t dest_maxl
         // output the exponential symbol
         {
             const size_t idx = dest.size();
-            if (!reserve_resize(dest, idx + char32buf_maxlen + 1, idx + 1)) {  // cap +EOS, not shrinking!
+            if (idx + 1 > dest_maxlen ||
+                !reserve_append(dest, std::min(idx + 1 + char32buf_maxlen, dest_maxlen) + 1, 1) // cap +EOS, not shrinking!
+               )
+            {
                 return;
             }
             dest[idx] = is_set(iopts.flags, flags_t::uppercase) ? 'E' : 'e';
@@ -2189,7 +2191,10 @@ void jau::cfmt::impl::append_efloatF64(std::string &dest, const size_t dest_maxl
             if (idx - start_idx < width) {
                 // const size_t with_space_right = idx + ( width - (idx - start_idx) );
                 const size_t with_space_right = width + start_idx;
-                if (!reserve_resize(dest, with_space_right + 1, with_space_right)) {  // cap +EOS, not shrinking!
+                if (with_space_right > dest_maxlen ||
+                    !reserve_append(dest, with_space_right + 1, with_space_right - idx) // cap +EOS, not shrinking!
+                   )
+                {
                     return;
                 }
             }
@@ -2275,7 +2280,10 @@ void jau::cfmt::impl::append_afloatF64(std::string &dest, const size_t dest_maxl
         // output the exponential symbol
         {
             const size_t idx = dest.size();
-            if (!reserve_resize(dest, idx + char32buf_maxlen + 1, idx + 1)) {  // cap +EOS, not shrinking!
+            if (idx + 1 > dest_maxlen ||
+                !reserve_append(dest, std::min(idx + 1 + char32buf_maxlen, dest_maxlen) + 1, 1)  // cap +EOS, not shrinking!
+               )
+            {
                 return;
             }
             dest[idx] = is_set(iopts.flags, flags_t::uppercase) ? 'P' : 'p';
@@ -2300,7 +2308,10 @@ void jau::cfmt::impl::append_afloatF64(std::string &dest, const size_t dest_maxl
             if (idx - start_idx < width) {
                 // const size_t with_space_right = idx + ( width - (idx - start_idx) );
                 const size_t with_space_right = width + start_idx;
-                if (!reserve_resize(dest, with_space_right + 1, with_space_right)) {  // cap +EOS, not shrinking!
+                if (with_space_right > dest_maxlen ||
+                    !reserve_append(dest, with_space_right + 1, with_space_right - idx) // cap +EOS, not shrinking!
+                   )
+                {
                     return;
                 }
             }

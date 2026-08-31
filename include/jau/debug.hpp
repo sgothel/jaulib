@@ -193,7 +193,7 @@ namespace jau {
 
     /**
      * Convenient secure fprintf() invocation, prepending the given elapsed_ms timestamp
-     * and using `jau::format_string`.
+     * and using `jau::format_string` and `fputs`.
      * @param elapsed_ms the given elapsed time in milliseconds
      * @param stream the output stream
      * @param format the format
@@ -212,7 +212,7 @@ namespace jau {
 
     /**
      * Convenient secure fprintf() invocation, prepending the environment::getElapsedMillisecond() timestamp,
-     * and using `jau::format_string`.
+     * and using `jau::format_string` and `fputs`
      * @param stream the output stream
      * @param format the format
      * @param args the optional arguments
@@ -226,7 +226,7 @@ namespace jau {
 
     /**
      * Convenient secure fprintf() invocation, prepending environment::getWallMonotonicTime() timestamp in localtime w/o nanoseconds,
-     * and using `jau::format_string`.
+     * and using `jau::format_string`  and `fputs`
      * @param stream the output stream
      * @param format the format
      * @param args the optional arguments
@@ -243,7 +243,7 @@ namespace jau {
 	}
 
     /**
-     * Convenient secure fprintf() invocation using `jau::format_string`.
+     * Convenient secure fprintf() invocation using `jau::format_string`  and `fputs`
      * @param stream the output stream
      * @param format the format
      * @param args the optional arguments
