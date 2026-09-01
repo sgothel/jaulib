@@ -28,6 +28,7 @@
 
 #include <mutex>
 #include <type_traits>
+#include "jau/type_concepts.hpp"
 
 #include <jau/cow_iterator.hpp>
 
@@ -468,9 +469,8 @@ namespace jau {
     /****************************************************************************************
      ****************************************************************************************/
 
-    template<class T>
-    const typename T::value_type * find_const(T& data, typename T::value_type const & elem,
-            std::enable_if_t< is_cow_type<T>::value, bool> = true ) noexcept
+    template<jau::req::cow_container T>
+    const typename T::value_type * find_const(T& data, typename T::value_type const & elem) noexcept
     {
         for (typename T::const_iterator first = data.cbegin(); !first.is_end(); ++first) {
             if (*first == elem) {
@@ -479,9 +479,8 @@ namespace jau {
         }
         return nullptr;
     }
-    template<class T>
-    const typename T::value_type * find_const(T& data, typename T::value_type const & elem,
-            std::enable_if_t< !is_cow_type<T>::value, bool> = true ) noexcept
+    template<jau::req::container T>
+    const typename T::value_type * find_const(T& data, typename T::value_type const & elem) noexcept
     {
         typename T::const_iterator first = data.cbegin();
         typename T::const_iterator last = data.cend();
@@ -496,18 +495,39 @@ namespace jau {
     /****************************************************************************************
      ****************************************************************************************/
 
-    template<class T, class UnaryFunction>
-    constexpr UnaryFunction for_each_const(T& data, UnaryFunction f,
-            std::enable_if_t< is_cow_type<T>::value, bool> = true ) noexcept
+    template<jau::req::cow_container T, class UnaryFunction>
+    requires jau::req::nothrow_function<UnaryFunction, typename T::const_reference>
+    constexpr UnaryFunction for_each_const(const T& data, UnaryFunction f) noexcept
     {
         for (typename T::const_iterator first = data.cbegin(); !first.is_end(); ++first) {
             f(*first);
         }
         return f; // implicit move since C++11
     }
-    template<class T, class UnaryFunction>
-    constexpr UnaryFunction for_each_const(T& data, UnaryFunction f,
-            std::enable_if_t< !is_cow_type<T>::value, bool> = true ) noexcept
+    template<jau::req::cow_container T, class UnaryFunction>
+    requires jau::req::throw_function<UnaryFunction, typename T::const_reference>
+    constexpr UnaryFunction for_each_const(const T& data, UnaryFunction f)
+    {
+        for (typename T::const_iterator first = data.cbegin(); !first.is_end(); ++first) {
+            f(*first);
+        }
+        return f; // implicit move since C++11
+    }
+
+    template<jau::req::container T, class UnaryFunction>
+    requires jau::req::nothrow_function<UnaryFunction, typename T::const_reference>
+    constexpr UnaryFunction for_each_const(const T& data, UnaryFunction f) noexcept
+    {
+        typename T::const_iterator first = data.cbegin();
+        typename T::const_iterator last = data.cend();
+        for (; first != last; ++first) {
+            f(*first);
+        }
+        return f; // implicit move since C++11
+    }
+    template<jau::req::container T, class UnaryFunction>
+    requires jau::req::throw_function<UnaryFunction, typename T::const_reference>
+    constexpr UnaryFunction for_each_const(const T& data, UnaryFunction f)
     {
         typename T::const_iterator first = data.cbegin();
         typename T::const_iterator last = data.cend();
@@ -521,11 +541,12 @@ namespace jau {
      ****************************************************************************************/
 
     /**
-     * See jau::for_each_fidelity()
+     * jau::req::cow_container && jau::req::nothrow_function<UnaryFunction, typename T::reference>
+     * @see jau::for_each_fidelity()
      */
-    template<class T, class UnaryFunction>
-    constexpr UnaryFunction for_each_fidelity(T& data, UnaryFunction f,
-            std::enable_if_t< is_cow_type<T>::value, bool> = true ) noexcept
+    template<jau::req::cow_container T, class UnaryFunction>
+    requires jau::req::nothrow_function<UnaryFunction, typename T::reference>
+    constexpr UnaryFunction for_each_fidelity(T& data, UnaryFunction f) noexcept
     {
         for (typename T::const_iterator first = data.cbegin(); !first.is_end(); ++first) {
             f( *const_cast<typename T::value_type*>( & (*first) ) );
@@ -533,11 +554,40 @@ namespace jau {
         return f; // implicit move since C++11
     }
     /**
-     * See jau::for_each_fidelity()
+     * jau::req::cow_container && jau::req::throw_function<UnaryFunction, typename T::reference>
+     * @see jau::for_each_fidelity()
      */
-    template<class T, class UnaryFunction>
-    constexpr UnaryFunction for_each_fidelity(T& data, UnaryFunction f,
-            std::enable_if_t< !is_cow_type<T>::value, bool> = true ) noexcept
+    template<jau::req::cow_container T, class UnaryFunction>
+    requires jau::req::throw_function<UnaryFunction, typename T::reference>
+    constexpr UnaryFunction for_each_fidelity(T& data, UnaryFunction f)
+    {
+        for (typename T::const_iterator first = data.cbegin(); !first.is_end(); ++first) {
+            f( *const_cast<typename T::value_type*>( & (*first) ) );
+        }
+        return f; // implicit move since C++11
+    }
+    /**
+     * jau::req::container && jau::req::nothrow_function<UnaryFunction, typename T::reference>
+     * @see jau::for_each_fidelity()
+     */
+    template<jau::req::container T, class UnaryFunction>
+    requires jau::req::nothrow_function<UnaryFunction, typename T::reference>
+    constexpr UnaryFunction for_each_fidelity(T& data, UnaryFunction f) noexcept
+    {
+        typename T::const_iterator first = data.cbegin();
+        typename T::const_iterator last = data.cend();
+        for (; first != last; ++first) {
+            f( *const_cast<typename T::value_type*>( & (*first) ) );
+        }
+        return f; // implicit move since C++11
+    }
+    /**
+     * jau::req::container && jau::req::throw_function<UnaryFunction, typename T::reference>
+     * @see jau::for_each_fidelity()
+     */
+    template<jau::req::container T, class UnaryFunction>
+    requires jau::req::throw_function<UnaryFunction, typename T::reference>
+    constexpr UnaryFunction for_each_fidelity(T& data, UnaryFunction f)
     {
         typename T::const_iterator first = data.cbegin();
         typename T::const_iterator last = data.cend();

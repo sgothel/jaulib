@@ -56,7 +56,7 @@ const static DataType01 * findDataSet01_hash(T& data, DataType01 const & elem) n
 }
 
 template<class T>
-static int test_00_list_itr(T& data) {
+static int test_00_list_itr(const T& data) {
     int some_number = 0; // add some validated work, avoiding any 'optimization away'
     jau::for_each_const(data, [&some_number](const DataType01 & e) {
         some_number += e.nop();
