@@ -49,6 +49,7 @@ namespace jau::unsafe {
      * @param format `printf()` compliant format string
      * @param args optional arguments matching the format string
      */
+    __attribute__((format (printf,2,3)))
     std::string format_string_n(const std::size_t maxStrLen, const char* format, ...) noexcept;
     std::string vformat_string_n(const std::size_t maxStrLen, const char* format, va_list args) noexcept;
 
@@ -65,6 +66,7 @@ namespace jau::unsafe {
      * @param format `printf()` compliant format string
      * @param args optional arguments matching the format string
      */
+    __attribute__((format (printf,2,3)))
     std::string format_string_h(const std::size_t strLenHint, const char* format, ...) noexcept;
     std::string vformat_string_h(const std::size_t strLenHint, const char* format, va_list args) noexcept;
 
@@ -80,6 +82,7 @@ namespace jau::unsafe {
      * @param format `printf()` compliant format string
      * @param args optional arguments matching the format string
      */
+    __attribute__((format (printf,1,2)))
     std::string format_string(const char* format, ...) noexcept;
 
     void errPrint(FILE *out, const char *msg, bool addErrno, bool addBacktrace, const char *func, const char *file, const int line,

@@ -50,7 +50,11 @@ CXX_ALWAYS_INLINE
 static void printFormat(int line, const char *fmt, const Args &...args) {
     // std::string exp = jau::unsafe::format_string(fmt, args...);
     // std::string has = jau::format_string(fmt, args...);
+    PRAGMA_DISABLE_WARNING_PUSH
+    PRAGMA_DISABLE_WARNING_FORMAT_NONLITERAL
+    PRAGMA_DISABLE_WARNING_FORMAT_SECURITY
     std::cerr << "FormatResult @ " << line << ": has `" << jau::unsafe::format_string(fmt, args...) << "`\n\n";
+    PRAGMA_DISABLE_WARNING_POP
 }
 
 TEST_CASE("format: std::cfmt footprint", "[jau][std::string][jau::cfmt][footprint]") {

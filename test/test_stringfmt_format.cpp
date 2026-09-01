@@ -190,7 +190,12 @@ TEST_CASE("parse: width precision from arg", "[jau][std::string][jau::cfmt]") {
 
 template <typename... Args>
 static void checkFormat(int line, const char *fmt, const Args &...args) {
+    PRAGMA_DISABLE_WARNING_PUSH
+    PRAGMA_DISABLE_WARNING_FORMAT_NONLITERAL
+    PRAGMA_DISABLE_WARNING_FORMAT_SECURITY
     std::string exp = jau::unsafe::format_string(fmt, args...);
+    PRAGMA_DISABLE_WARNING_POP
+
     // std::string has = jau::format_string(fmt, args...);
     std::string has;
     jau::cfmt::Result r = jau::cfmt::formatR(has, fmt, args...);
