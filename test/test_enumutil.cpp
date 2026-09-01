@@ -313,3 +313,108 @@ TEST_CASE( "Enum Class Value Type Test 11", "[enum][type]" ) {
         static_assert( 30 == *test_type5_t::three );
     }
 }
+
+namespace test::local2 {
+    class Thing {
+      public:
+        // Define the `enum class` yourself ...
+        enum class Enum1 : uint8_t {
+            none = 0,  // <no value item denoting no value
+            one = 1 << 0,
+            two = 1 << 1,
+            three = 1 << 2
+        };
+
+        // Define the `enum class` yourself ...
+        enum class Enum2 : uint8_t {
+            none = 0,  // <no value item denoting no value
+            one = 10,
+            two = 20,
+            three = 30
+        };
+        // Define the `enum class` yourself ...
+        enum class EnumA : uint8_t {
+            none = 0,  // <no value item denoting no value
+            one = 1 << 0,
+            two = 1 << 1,
+            three = 1 << 2
+        };
+
+        // Define the `enum class` yourself ...
+        enum class EnumB : uint8_t {
+            none = 0,  // <no value item denoting no value
+            one = 10,
+            two = 20,
+            three = 30
+        };
+    };
+    // and add the `enum class` support functions
+    JAU_MAKE_BITFIELD_ENUM_STRING2_LONG(Thing::Enum1, Enum1, one, two, three);  // NOLINT(misc-use-internal-linkage): intentional
+    JAU_MAKE_ENUM_INFO2(Thing::Enum1, Enum1, one, two, three);
+    JAU_MAKE_ENUM_STRING2_LONG(Thing::Enum2, Enum2, one, two, three);  // NOLINT(misc-use-internal-linkage): intentional
+    JAU_MAKE_ENUM_INFO2(Thing::Enum2, Enum2, one, two, three);
+
+    JAU_MAKE_BITFIELD_ENUM_STRING2_DECL(Thing::EnumA); // NOLINT(misc-use-internal-linkage): intentional
+    JAU_MAKE_ENUM_STRING2_DECL(Thing::EnumB);          // NOLINT(misc-use-internal-linkage): intentional
+
+    JAU_MAKE_BITFIELD_ENUM_STRING2_CODE(Thing::EnumA, EnumA, one, two, three);
+    JAU_MAKE_ENUM_STRING2_CODE(Thing::EnumB, EnumB, one, two, three);
+}
+
+TEST_CASE( "Enum Class Value Type Test 12", "[enum][type]" ) {
+    {
+        using namespace test::local2;
+        static_assert( 3 == Enum1_info_t::size() );
+        static_assert( "one" == name(Thing::Enum1::one) );
+        // static_assert( "one" == to_string(Thing::Enum1::one) );
+        // static_assert( "test_type4_t::one" == long_name(Thing::Enum1::one) );
+        REQUIRE( "one" == name(Thing::Enum1::one) );
+        REQUIRE( "Thing::Enum1::one" == long_name(Thing::Enum1::one) );
+
+        REQUIRE( "[one]" == to_string(Thing::Enum1::one) );
+
+        {
+            using namespace jau::enums;
+            REQUIRE( "[one, two]" == to_string(Thing::Enum1::one | Thing::Enum1::two) );
+            REQUIRE( "[one, two, three]" == to_string(Thing::Enum1::one | Thing::Enum1::two | Thing::Enum1::three) );
+        }
+    }
+    {
+        using namespace test::local2;
+
+        static_assert( 3 == Enum2_info_t::size() );
+        static_assert( "one" == name(Thing::Enum2::one) );
+        // static_assert( "test_type5_t::one" == long_name(Thing::Enum2::one) );
+        REQUIRE( "one" == name(Thing::Enum2::one) );
+        REQUIRE( "Thing::Enum2::one" == long_name(Thing::Enum2::one) );
+
+        REQUIRE( "one" == to_string(Thing::Enum2::one) );
+
+        using namespace jau::enums;
+        static_assert( 10 == number(Thing::Enum2::one) );
+        static_assert( 20 == *Thing::Enum2::two );
+        static_assert( 30 == *Thing::Enum2::three );
+    }
+    {
+        using namespace test::local2;
+        REQUIRE( "one" == name(Thing::EnumA::one) );
+        REQUIRE( "[one]" == to_string(Thing::EnumA::one) );
+
+        {
+            using namespace jau::enums;
+            REQUIRE( "[one, two]" == to_string(Thing::EnumA::one | Thing::EnumA::two) );
+            REQUIRE( "[one, two, three]" == to_string(Thing::EnumA::one | Thing::EnumA::two | Thing::EnumA::three) );
+        }
+    }
+    {
+        using namespace test::local2;
+
+        REQUIRE( "one" == name(Thing::EnumB::one) );
+        REQUIRE( "one" == to_string(Thing::EnumB::one) );
+
+        using namespace jau::enums;
+        static_assert( 10 == number(Thing::EnumB::one) );
+        static_assert( 20 == *Thing::EnumB::two );
+        static_assert( 30 == *Thing::EnumB::three );
+    }
+}

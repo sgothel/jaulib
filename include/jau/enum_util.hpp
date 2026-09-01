@@ -602,6 +602,26 @@ namespace jau::enums {
     to_string(const type e) noexcept                        \
     { return std::string(name(e)); }
 
+#define JAU_MAKE_ENUM_STRING2(type, stype, ...)             \
+    JAU_MAKE_ENUM_STRING_SUB(type, stype, __VA_ARGS__)      \
+                                                            \
+    constexpr std::string                                   \
+    to_string(const type e) noexcept                        \
+    { return std::string(name(e)); }
+
+#define JAU_MAKE_ENUM_STRING2_DECL(type)                    \
+    JAU_MAKE_ENUM_STRING_SUB_DECL(type)                     \
+                                                            \
+    std::string                                             \
+    to_string(const type e) noexcept;
+
+#define JAU_MAKE_ENUM_STRING2_CODE(type, stype, ...)        \
+    JAU_MAKE_ENUM_STRING_SUB_CODE(type, stype, __VA_ARGS__) \
+                                                            \
+    std::string                                             \
+    to_string(const type e) noexcept                        \
+    { return std::string(name(e)); }
+
 #define JAU_MAKE_ENUM_STRING_LONG(type, ...)                \
     JAU_MAKE_ENUM_STRING_SUB_LONG(type, type, __VA_ARGS__)  \
                                                             \
@@ -616,7 +636,27 @@ namespace jau::enums {
     to_string(const type e) noexcept;
 
 #define JAU_MAKE_ENUM_STRING_LONG_CODE(type, ...)           \
-    JAU_MAKE_ENUM_STRING_SUB_LONG_CODE(type, type, __VA_ARGS__)  \
+    JAU_MAKE_ENUM_STRING_SUB_LONG_CODE(type, type, __VA_ARGS__) \
+                                                            \
+    std::string                                             \
+    to_string(const type e) noexcept                        \
+    { return std::string(name(e)); }
+
+#define JAU_MAKE_ENUM_STRING2_LONG(type, stype, ...)        \
+    JAU_MAKE_ENUM_STRING_SUB_LONG(type, stype, __VA_ARGS__) \
+                                                            \
+    constexpr std::string                                   \
+    to_string(const type e) noexcept                        \
+    { return std::string(name(e)); }
+
+#define JAU_MAKE_ENUM_STRING2_LONG_DECL(type)               \
+    JAU_MAKE_ENUM_STRING_SUB_LONG_DECL(type)                \
+                                                            \
+    std::string                                             \
+    to_string(const type e) noexcept;
+
+#define JAU_MAKE_ENUM_STRING2_LONG_CODE(type, stype, ...)   \
+    JAU_MAKE_ENUM_STRING_SUB_LONG_CODE(type, stype, __VA_ARGS__) \
                                                             \
     std::string                                             \
     to_string(const type e) noexcept                        \
