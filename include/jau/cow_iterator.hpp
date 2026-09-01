@@ -1029,6 +1029,12 @@ namespace jau {
     template< class T >
     struct is_cow_type<T, std::void_t<typename T::cow_container_t>> : std::true_type { };
 
+    template <typename _Tp>
+    inline constexpr bool is_cow_type_v = is_cow_type<_Tp>::value;
+
+    template <typename T>
+    concept cow_type = is_cow_type_v<T>;
+
     /****************************************************************************************
      ****************************************************************************************/
 

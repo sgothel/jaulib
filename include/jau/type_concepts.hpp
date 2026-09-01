@@ -224,6 +224,30 @@ namespace jau::req {
     concept stringifyable1_jau = stringifyable_std<T>
                               || string_convertible1_jau<T>;
 
+
+    /**
+     * A generic function type, w/o specifying the return value
+     */
+    template<typename T, typename... Args>
+    concept function = requires(T&& t, Args&& ...args) {
+        { t(args...) } ;
+    };
+
+    /**
+     * A generic noexcept function type, i.e. w/ `noexcept` qualification
+     */
+    template<typename T, typename... Args>
+    concept nothrow_function = requires(T&& t, Args&& ...args) {
+        { t(args...) } noexcept;
+    };
+
+    /**
+     * A generic throwing function type, i.e. no `noexcept` qualification
+     */
+    template<typename T, typename... Args>
+    concept throw_function = function<T, Args...> && (!nothrow_function<T, Args...>);
+
+
     /** C++ Named Requirement Container (partial) */
     template<typename T>
     concept container = requires(T t) {
@@ -268,6 +292,29 @@ namespace jau::req {
     template<typename T>
     requires (!contiguous_container<T>)
     constexpr bool is_contiguous_container() { return false; }
+
+    /** C++ Named Requirement CoW-Container (partial) */
+    template<typename T>
+    concept cow_container = requires(T t) {
+        typename T::value_type;
+        typename T::reference;
+        typename T::const_reference;
+        typename T::iterator;
+        typename T::const_iterator;
+        typename T::difference_type;
+        typename T::size_type;
+        typename T::cow_container_t;
+        typename T::storage_ref_t;
+
+        { t.begin() } -> std::same_as<typename T::iterator>;
+        { t.snapshot() } -> std::same_as<typename T::storage_ref_t>;
+        { t.size() } -> std::same_as<typename T::size_type>;
+    };
+
+    /** Query whether type is a C++ Named Requirement CoW-Container (partial) */
+    template<typename T>
+    requires cow_container<T>
+    constexpr bool is_cow_container() { return true; }
 
     /**@}*/
 
