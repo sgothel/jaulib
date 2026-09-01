@@ -736,20 +736,16 @@ namespace jau {
             const uint32_t len0 = sign_len + prefix_len + val_digits + sep_count;
             space_left = min_width > len0 ? min_width - len0 : 0;
         }
-        {
-            std::exception_ptr eptr;
-            try {
-                const uint32_t added_len = std::max(min_width, space_left + sign_len + prefix_len + (val_digits + sep_count));
-                // fprintf(stderr, "XXX: space_left %u, sign_len %u, prefix_len %u digits %u, sep_count %u; min_width %u; added_len %u\n",
-                //         space_left, sign_len, prefix_len, val_digits, sep_count, min_width, added_len);
-                dest.reserve(dest_start_len + added_len + 1); // w/ EOS
-                dest.resize(dest_start_len + added_len, ' '); // w/o EOS
-            } catch (...) {
-                eptr = std::current_exception();
-            }
-            if (handle_exception(eptr, E_FILE_LINE)) {
-                return dest;
-            }
+        try {
+            const uint32_t added_len = std::max(min_width, space_left + sign_len + prefix_len + (val_digits + sep_count));
+            // fprintf(stderr, "XXX: space_left %u, sign_len %u, prefix_len %u digits %u, sep_count %u; min_width %u; added_len %u\n",
+            //         space_left, sign_len, prefix_len, val_digits, sep_count, min_width, added_len);
+            dest.reserve(dest_start_len + added_len + 1); // w/ EOS
+            dest.resize(dest_start_len + added_len, ' '); // w/o EOS
+        } catch (...) {
+            std::exception_ptr eptr = std::current_exception();
+            handle_exception(eptr, E_FILE_LINE);
+            return dest;
         }
         const char * const d_start = dest.data() + dest_start_len;
         const char * const d_start_num = d_start + space_left + sign_len + prefix_len;
@@ -846,19 +842,15 @@ namespace jau {
         const uint32_t num_chars = sign_len + (val_digits + sep_count);
         const uint32_t added_len = std::max(min_width, num_chars);
         const uint32_t space_left = added_len - num_chars;
-        {
-            std::exception_ptr eptr;
-            try {
-                // fprintf(stderr, "XXX: space_left %u, sign_len %u, digits %u, sep_count %u; min_width %u; added_len %u\n",
-                //         space_left, sign_len, val_digits, sep_count, min_width, added_len);
-                dest.reserve(dest_start_len + added_len + 1); // w/ EOS
-                dest.resize(dest_start_len + added_len, ' '); // w/o EOS
-            } catch (...) {
-                eptr = std::current_exception();
-            }
-            if (handle_exception(eptr, E_FILE_LINE)) {
-                return dest;
-            }
+        try {
+            // fprintf(stderr, "XXX: space_left %u, sign_len %u, digits %u, sep_count %u; min_width %u; added_len %u\n",
+            //         space_left, sign_len, val_digits, sep_count, min_width, added_len);
+            dest.reserve(dest_start_len + added_len + 1); // w/ EOS
+            dest.resize(dest_start_len + added_len, ' '); // w/o EOS
+        } catch (...) {
+            std::exception_ptr eptr = std::current_exception();
+            handle_exception(eptr, E_FILE_LINE);
+            return dest;
         }
         const char * const d_start = dest.data() + dest_start_len;
         const char * const d_start_num = d_start + space_left + sign_len;

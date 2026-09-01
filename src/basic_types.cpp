@@ -97,7 +97,6 @@ std::string fraction_timespec::toString() const noexcept {
 }
 
 std::string fraction_timespec::toISO8601String(bool space_separator, bool muteTime, bool utcTime, bool muteNanos) const noexcept {
-    std::exception_ptr eptr;
     try {
         std::time_t t0 = static_cast<std::time_t>(tv_sec);
         struct std::tm tm_0;
@@ -145,9 +144,9 @@ std::string fraction_timespec::toISO8601String(bool space_separator, bool muteTi
             return std::string(b);
         }
     } catch (...) {
-        eptr = std::current_exception();
+        std::exception_ptr eptr = std::current_exception();
+        handle_exception(eptr, E_FILE_LINE);
     }
-    jau::handle_exception(eptr, E_FILE_LINE);
     return std::string();
 }
 
@@ -431,17 +430,16 @@ jau::ExceptionBase::ExceptionBase(std::string &&type, std::string const& m, cons
 : msg_( std::move(type) ),
   backtrace_( jau::get_backtrace(true /* skip_anon_frames */) )
 {
-    std::exception_ptr eptr;
     try {
         msg_.append(" @ ").append(file).append(":").append(std::to_string(line)).append(": ").append(m);
         what_ = msg_;
         what_.append("\nNative backtrace:\n");
         what_.append(backtrace_);
     } catch (...) {
-        eptr = std::current_exception();
+        std::exception_ptr eptr = std::current_exception();
+        handle_exception(eptr, E_FILE_LINE);
         ::fprintf(stderr, "Exception @ ExceptionBase::ctor() for exception: %s\nNative backtrace\n%s", msg_.c_str(), backtrace_.c_str());
     }
-    handle_exception(eptr, E_FILE_LINE);
 }
 
 std::string jau::get_string(const uint8_t *buffer, nsize_t const buffer_len, nsize_t const max_len) {
@@ -565,7 +563,6 @@ uint128dp_t jau::merge_uint128(uint32_t const uuid32, uint128dp_t const &base_uu
 //
 
 std::string jau::unsafe::vformat_string_n(const std::size_t maxStrLen, const char* format, va_list args) noexcept {
-    std::exception_ptr eptr;
     std::string str;
     try {
         str.reserve(maxStrLen + 1);  // incl. EOS
@@ -584,9 +581,9 @@ std::string jau::unsafe::vformat_string_n(const std::size_t maxStrLen, const cha
             str.shrink_to_fit();
         }  // else truncated w/ nchars > MaxStrLen
     } catch (...) {
-        eptr = std::current_exception();
+        std::exception_ptr eptr = std::current_exception();
+        handle_exception(eptr, E_FILE_LINE);
     }
-    handle_exception(eptr, E_FILE_LINE);
     return str;
 }
 
@@ -599,7 +596,6 @@ std::string jau::unsafe::format_string_n(const std::size_t maxStrLen, const char
 }
 
 std::string jau::unsafe::vformat_string_h(const std::size_t strLenHint, const char* format, va_list args) noexcept {
-    std::exception_ptr eptr;
     size_t nchars;
     size_t bsz = strLenHint + 1;  // including EOS
     std::string str;
@@ -630,9 +626,9 @@ std::string jau::unsafe::vformat_string_h(const std::size_t strLenHint, const ch
             str.resize(nchars);
         }
     } catch (...) {
-        eptr = std::current_exception();
+        std::exception_ptr eptr = std::current_exception();
+        handle_exception(eptr, E_FILE_LINE);
     }
-    handle_exception(eptr, E_FILE_LINE);
     return str;
 }
 
@@ -657,7 +653,6 @@ void jau::unsafe::errPrint(FILE *out, const char *msg, bool addErrno, bool addBa
 {
     va_list args;
     va_start (args, format);
-    std::exception_ptr eptr;
     try {
         ::fprintf(out, "%s @ %s:%d %s: ", msg, file, line, func);
         ::fputs(vformat_string_h(jau::cfmt::default_string_capacity, format, args).c_str(), out);
@@ -672,9 +667,9 @@ void jau::unsafe::errPrint(FILE *out, const char *msg, bool addErrno, bool addBa
             ::fflush(stderr);
         }
     } catch (...) {
-        eptr = std::current_exception();
+        std::exception_ptr eptr = std::current_exception();
+        handle_exception(eptr, E_FILE_LINE);
     }
-    handle_exception(eptr, E_FILE_LINE);
     va_end (args);
 }
 
@@ -1058,7 +1053,6 @@ std::string& jau::appendHexString(std::string& dest, const void *data, const nsi
         return dest.append("nil");
     }
     const uint8_t *const bytes = static_cast<const uint8_t *>(data);
-    std::exception_ptr eptr;
     try {
         if ( byteOrder == lb_endian_t::little ) {
             // LSB left -> MSB right, no leading `0x`
@@ -1091,19 +1085,24 @@ std::string& jau::appendHexString(std::string& dest, const void *data, const nsi
             } while ( i != 0 );
         }
     } catch (...) {
-        eptr = std::current_exception();
+        std::exception_ptr eptr = std::current_exception();
+        handle_exception(eptr, E_FILE_LINE);
     }
-    handle_exception(eptr, E_FILE_LINE);
     return dest;
 }
 
 std::string &jau::appendHexString(std::string &dest, const uint8_t value, const LoUpCase capitalization) noexcept {
     const char *hex_array = LoUpCase::lower == capitalization ? HexadecimalArrayLow : HexadecimalArrayBig;
 
-    dest.reserve(dest.size() + 2);
-    const int v = value & 0xFF;
-    dest.push_back(hex_array[v >> 4]);
-    dest.push_back(hex_array[v & 0x0F]);
+    try {
+        dest.reserve(dest.size() + 2);
+        const int v = value & 0xFF;
+        dest.push_back(hex_array[v >> 4]);
+        dest.push_back(hex_array[v & 0x0F]);
+    } catch (...) {
+        std::exception_ptr eptr = std::current_exception();
+        handle_exception(eptr, E_FILE_LINE);
+    }
     return dest;
 }
 
@@ -1119,7 +1118,6 @@ std::string& jau::appendBitString(std::string &dest, const void *data, const nsi
     nsize_t bits_left = length*8;
     const bool fixed_len = bit_len > 0;
     nsize_t bits_todo = fixed_len ? std::min<size_t>(bit_len, bits_left) : bits_left;
-    std::exception_ptr eptr;
     try {
         if ( bitOrder == bit_order_t::lsb ) {
             // LSB left -> MSB right, no leading `0x`
@@ -1162,9 +1160,9 @@ std::string& jau::appendBitString(std::string &dest, const void *data, const nsi
             }
         }
     } catch (...) {
-        eptr = std::current_exception();
+        std::exception_ptr eptr = std::current_exception();
+        jau::handle_exception(eptr, E_FILE_LINE);
     }
-    handle_exception(eptr, E_FILE_LINE);
     return dest;
 }
 
@@ -1280,11 +1278,7 @@ bool jau::impl::dbgPrint_pre(size_t init_strsize, std::string &str, bool addPref
         return true;
     } catch (...) {
         std::exception_ptr eptr = std::current_exception();
-        try {
-            std::rethrow_exception(eptr);
-        } catch (const std::exception &e) {
-            ::fprintf(stderr, "Exception caught @ %s:%d: %s\n", __FILE__, __LINE__, e.what());
-        }
+        handle_exception(eptr, E_FILE_LINE);
         return false;
     }
 }
@@ -1300,11 +1294,7 @@ void jau::impl::dbgPrint_tail(FILE *out, std::string &str, bool addErrno, bool a
         }
     } catch (...) {
         std::exception_ptr eptr = std::current_exception();
-        try {
-            std::rethrow_exception(eptr);
-        } catch (const std::exception &e) {
-            ::fprintf(stderr, "Exception caught @ %s:%d: %s\n", __FILE__, __LINE__, e.what());
-        }
+        handle_exception(eptr, E_FILE_LINE);
     }
     ::fputs(str.c_str(), out);
     if (addErrno || addBacktrace) {
@@ -1321,11 +1311,7 @@ bool jau::impl::fprintf_td_pre(size_t init_strsize, std::string &str, const uint
         return true;
     } catch (...) {
         std::exception_ptr eptr = std::current_exception();
-        try {
-            std::rethrow_exception(eptr);
-        } catch (const std::exception &e) {
-            ::fprintf(stderr, "Exception caught @ %s:%d: %s\n", __FILE__, __LINE__, e.what());
-        }
+        handle_exception(eptr, E_FILE_LINE);
         return false;
     }
 }
@@ -1340,11 +1326,7 @@ bool jau::impl::fprintf_ts0_pre(size_t init_strsize, std::string &str) noexcept 
         return true;
     } catch (...) {
         std::exception_ptr eptr = std::current_exception();
-        try {
-            std::rethrow_exception(eptr);
-        } catch (const std::exception &e) {
-            ::fprintf(stderr, "Exception caught @ %s:%d: %s\n", __FILE__, __LINE__, e.what());
-        }
+        handle_exception(eptr, E_FILE_LINE);
         return false;
     }
 }
