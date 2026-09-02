@@ -80,6 +80,10 @@ namespace jau::impl {
 
 } // namespace jau::impl
 
+#define jau_dbgPrint0(out, addErrno, addBacktrace, fmt, ...) \
+    jau::impl::dbgPrint0((out), (addErrno), (addBacktrace), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
+    static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_NOREF_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
+
 #define jau_dbgPrint1(out, printPrefix, msg, fmt, ...) \
     jau::impl::dbgPrint1((out), (printPrefix), (msg), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
     static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_NOREF_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
@@ -172,7 +176,7 @@ namespace jau::impl {
 #define jau_PLAIN_PRINT(printPrefix, fmt, ...) { jau_dbgPrint1(stderr, (printPrefix), nullptr, fmt __VA_OPT__(,) __VA_ARGS__); }
 
 /** Use for conditional plain messages, prefix '[elapsed_time] '. */
-#define jau_COND_PRINT(C, ...) { if( C ) { jau::impl::dbgPrint0(stderr, false, false, __VA_ARGS__); } }
+#define jau_COND_PRINT(C, ...) { if( C ) { jau_dbgPrint0(stderr, false, false, __VA_ARGS__); } }
 
 namespace jau {
     /// No throw wrap for given unary predicate `p` action. aborts() if an exception occurred (included backtrace if supported).
