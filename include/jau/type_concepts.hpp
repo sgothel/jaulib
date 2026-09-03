@@ -30,7 +30,6 @@
 #include <type_traits>
 #include <jau/cpp_lang_util.hpp>
 #include <jau/string_literal.hpp>
-#include <jau/type_traits_queries.hpp>
 
 /** Requirement (concept) Definitions */
 namespace jau::req {
@@ -40,9 +39,21 @@ namespace jau::req {
      *  @{
      */
 
+    /** Concept of type, able to evaluate `std::declval<T>()` */
+    template<typename T>
+    concept has_decltype = requires {
+        { std::declval<T>() };
+    };
+
     /** Concept of type-trait std::is_pointer */
     template<typename T>
     concept pointer = std::is_pointer_v<T>;
+
+    /** Concept of type w/ member of pointer '->' operator with convertible pointer return, no arguments */
+    template<typename T>
+    concept has_member_of_pointer = requires(T t) {
+        { t.operator->() } -> pointer;
+    };
 
     /** Concept of type-trait std::is_standard_layout */
     template<typename T>
@@ -55,6 +66,10 @@ namespace jau::req {
     /** Concept of type-trait for `bool` type */
     template<typename T>
     concept boolean = std::is_same_v<bool, std::remove_cv_t<T>>;
+
+    /** Concept of type-trait for `char` type */
+    template<typename T>
+    concept character = std::is_same_v<char, std::remove_cv_t<T>>;
 
     /** Concept of type-trait std::is_arithmetic */
     template<typename T>
@@ -83,6 +98,15 @@ namespace jau::req {
     /** Concept of type-trait std::is_floating_point and sizeof(T) == alignof(T) (packed) */
     template <typename T>
     concept packed_floating_point = std::is_floating_point_v<T> && sizeof(T) == alignof(T);
+
+    template <typename T>
+    concept integer = std::is_integral_v<T> && !boolean<T>;
+
+    template <typename T>
+    concept signed_integer = std::is_integral_v<T> && std::is_signed_v<T> && !boolean<T>;
+
+    template <typename T>
+    concept unsigned_integer = std::is_integral_v<T> && std::is_unsigned_v<T> && !boolean<T>;
 
     template <typename T>
     concept enumeration = std::is_enum_v<T>;
@@ -123,6 +147,90 @@ namespace jau::req {
     template<typename T>
     concept string_view_type = std::is_base_of_v<std::string_view, std::remove_reference_t<T>>;
 
+    /// A std::string or std::string_view
+    template<typename T>
+    concept string_or_view_type = string_type<T> || string_view_type<T>;
+
+    /// A type T w/ T t; t.toString() -> string_or_stringview_type
+    template<typename T>
+    concept has_toString_any = requires(T t) {
+        { t.toString() } -> string_or_view_type;
+    };
+    /// A type T w/ T t; t.toString() -> string_or_stringview_type
+    template<typename T>
+    concept has_toString_view = requires(T t) {
+        { t.toString() } -> string_view_type;
+    };
+    /// A type T w/ T t; t.toString() -> string_or_stringview_type
+    template<typename T>
+    concept has_toString_string = requires(T t) {
+        { t.toString() } -> string_type;
+    };
+
+    /// A type T w/ T t; t.to_string() -> string_or_stringview_type
+    template<typename T>
+    concept has_to_string_any = requires(T t) {
+        { t.to_string() } -> string_or_view_type;
+    };
+    /// A type T w/ T t; t.to_string() -> string_view_type
+    template<typename T>
+    concept has_to_string_view = requires(T t) {
+        { t.to_string() } -> string_view_type;
+    };
+    /// A type T w/ T t; t.to_string() -> string_view_type
+    template<typename T>
+    concept has_to_string_string = requires(T t) {
+        { t.to_string() } -> string_type;
+    };
+
+    /// A type T w/ T t; jau::to_string(t) -> string_view_type
+    template<typename T>
+    concept has_free_to_string_view_jau = requires(T t) {
+        { jau::to_string(t) } -> string_view_type;
+    };
+    /// A type T w/ T t; <NS>::to_string(t) -> string_view_type, w/ NS other than `jau`
+    template<typename T>
+    concept has_free_to_string_view_other = (!has_free_to_string_view_jau<T>) && requires(T t) {
+        { to_string(t) } -> string_view_type;
+    };
+    /// A type T w/ T t; to_string(t) -> string_view_type
+    template<typename T>
+    concept has_free_to_string_view = requires(T t) {
+        { to_string(t) } -> string_view_type;
+    };
+
+    /// A type T w/ T t; jau::to_string(t) -> string_type
+    template<typename T>
+    concept has_free_to_string_string_jau = requires(T t) {
+        { jau::to_string(t) } -> string_type;
+    };
+    /// A type T w/ T t; <NS>::to_string(t) -> string_type, w/ NS other than `jau`
+    template<typename T>
+    concept has_free_to_string_string_other = (!has_free_to_string_string_jau<T>) && requires(T t) {
+        { to_string(t) } -> string_type;
+    };
+    /// A type T w/ T t; to_string(t) -> string_type
+    template<typename T>
+    concept has_free_to_string_string = requires(T t) {
+        { to_string(t) } -> string_type;
+    };
+
+    /// A type T w/ T t; jau::to_string(t) -> string_or_stringview_type
+    template<typename T>
+    concept has_free_to_string_any_jau = requires(T t) {
+        { jau::to_string(t) } -> string_or_view_type;
+    };
+    /// A type T w/ T t; <NS>::to_string(t) -> string_or_stringview_type, w/ NS other than `jau`
+    template<typename T>
+    concept has_free_to_string_any_other = (!has_free_to_string_any_jau<T>) && requires(T t) {
+        { to_string(t) } -> string_or_view_type;
+    };
+    /// A type T w/ T t; to_string(t) -> string_or_stringview_type
+    template<typename T>
+    concept has_free_to_string_any = requires(T t) {
+        { to_string(t) } -> string_or_view_type;
+    };
+
     /// A string class, i.e. std::string, std::string_view or jau::StringLiteral
     template<typename T>
     concept string_class = string_type<T>
@@ -146,15 +254,46 @@ namespace jau::req {
     concept string_alike0 = string_literal<T> || string_class<T>;
 
     /**
-     * A strict convertible type to `std::string` or `std::string_view` via `jau::to_string(T)` or `to_string(T)` (custom free function)
-     * - has member `toString()`
-     * - has member `to_string()`
-     * - has free function `to_string(T)`
+     * A strict convertible type to `std::string_view` via `jau::to_string(T)`
+     * - has member `toString()`  -> string || string_view
+     * - has member `to_string()` -> string || string_view
      */
     template<typename T>
-    concept string_convertible0_jau = jau::has_toString_v<T> ||
-                                      jau::has_to_string_v<T> ||
-                                      jau::has_free_to_string_v<T>;
+    concept stringorview_convertible_jau = has_toString_any<T> ||
+                                           has_to_string_any<T>;
+
+    /**
+     * A strict convertible type to `std::string` or `std::string_view` via `jau::to_string(T)` or `to_string(T)` (custom free function)
+     * - has member `toString()`          -> string || string_view
+     * - has member `to_string()`         -> string || string_view
+     * - has free function `to_string(T)` -> string || string_view
+     */
+    template<typename T>
+    concept stringorview_convertible0 = has_toString_any<T> ||
+                                        has_to_string_any<T> ||
+                                        has_free_to_string_any<T>;
+
+    /**
+     * A strict convertible type to `std::string_view` via `jau::to_string(T)` or `to_string(T)` (custom free function)
+     * - has member `toString()`          -> string_view
+     * - has member `to_string()`         -> string_view
+     * - has free function `to_string(T)` -> string_view
+     */
+    template<typename T>
+    concept stringview_convertible0 = has_toString_view<T> ||
+                                      has_to_string_view<T> ||
+                                      has_free_to_string_view<T>;
+
+    /**
+     * A strict convertible type to `std::string` via `jau::to_string(T)` or `to_string(T)` (custom free function)
+     * - has member `toString()`           -> string
+     * - has member `to_string()`          -> string
+     * - has free function `to_string(T)`  -> string
+     */
+    template<typename T>
+    concept string_convertible0 = has_toString_string<T> ||
+                                  has_to_string_string<T> ||
+                                  has_free_to_string_string<T>;
 
     /**
      * A loose convertible type to `std::string` or `std::string_view` via `jau::to_string(T)` or `to_string(T)` (custom free function)
@@ -170,11 +309,11 @@ namespace jau::req {
      * Convertible to string via `std::to_string(T)` or `jau::to_string(T)`
      */
     template<typename T>
-    concept string_convertible1_jau = std::is_integral_v<T> ||
-                                      std::is_floating_point_v<T> ||
-                                      std::is_pointer_v<T> ||
-                                      jau::has_member_of_pointer_v<T> ||
-                                      string_convertible0_jau<T>;
+    concept stringorview_convertible1 = std::is_integral_v<T> ||
+                                        std::is_floating_point_v<T> ||
+                                        std::is_pointer_v<T> ||
+                                        has_member_of_pointer<T> ||
+                                        stringorview_convertible0<T>;
 
     /**
      * A convertible type to `std::string` or a `std::string` itself.
@@ -201,7 +340,7 @@ namespace jau::req {
      */
     template<typename T>
     concept stringifyable0_jau = string_alike<T>
-                              || string_convertible0_jau<T>;
+                              || stringorview_convertible0<T>;
 
     /**
      * A loose convertible type to `std::string`, `std::string_view` or a `std::string` itself.
@@ -222,14 +361,14 @@ namespace jau::req {
      */
     template<typename T>
     concept stringifyable1_jau = stringifyable_std<T>
-                              || string_convertible1_jau<T>;
+                              || stringorview_convertible1<T>;
 
 
     /**
      * A generic function type, w/o specifying the return value
      */
     template<typename T, typename... Args>
-    concept function = requires(T&& t, Args&& ...args) {
+    concept function = requires(T t, Args&& ...args) {
         { t(args...) } ;
     };
 
@@ -237,7 +376,7 @@ namespace jau::req {
      * A generic noexcept function type, i.e. w/ `noexcept` qualification
      */
     template<typename T, typename... Args>
-    concept nothrow_function = requires(T&& t, Args&& ...args) {
+    concept nothrow_function = requires(T t, Args&& ...args) {
         { t(args...) } noexcept;
     };
 
@@ -247,6 +386,13 @@ namespace jau::req {
     template<typename T, typename... Args>
     concept throw_function = function<T, Args...> && (!nothrow_function<T, Args...>);
 
+    /** Type Wrapper for `value_type`: `typedef value_type` and conversion operator to `value_type`.  */
+    template<typename T>
+    concept wrapper = requires(T t) {
+        typename T::value_type;
+
+        { (typename T::value_type)t } -> std::same_as<typename T::value_type>;
+    };
 
     /** C++ Named Requirement Container (partial) */
     template<typename T>

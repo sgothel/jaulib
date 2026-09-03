@@ -29,8 +29,7 @@
 #ifndef JAU_TYPE_TRAITS_QUERIES_HPP_
 #define JAU_TYPE_TRAITS_QUERIES_HPP_
 
-#include <cstring>
-#include <string>
+#include <tuple>
 #include <type_traits>
 
 namespace jau {
@@ -82,104 +81,6 @@ namespace jau {
 
     template<typename... Ts>
     inline constexpr bool is_all_same_v = is_all_same<Ts...>::value; // NOLINT(modernize-type-traits)
-
-    /**
-    // *************************************************
-    // *************************************************
-    // *************************************************
-     */
-
-    // Author: firda @ stackoverflow (posted the following there)
-    // Location: https://stackoverflow.com/questions/1966362/sfinae-to-check-for-inherited-member-functions/25448020#25448020
-#if 0
-    /// Checker for typedef with given name and convertible type
-    #define TYPEDEF_CHECKER(checker, name) \
-    template<class C, typename T, typename = void> struct checker : std::false_type {}; \
-    template<class C, typename T> struct checker<C, T, typename std::enable_if_t< \
-      std::is_convertible_v<typename C::name, T>>> : std::true_type {}
-
-    /// Checker for typedef with given name and exact type
-    #define TYPEDEF_CHECKER_STRICT(checker, name) \
-    template<class C, typename T, typename = void> struct checker : std::false_type {}; \
-    template<class C, typename T> struct checker<C, T, typename std::enable_if_t< \
-      std::is_same_v<typename C::name, T>>> : std::true_type {}
-
-    /// Checker for typedef with given name and any type
-    #define TYPEDEF_CHECKER_ANY(checker, name) \
-    template<class C, typename = void> struct checker : std::false_type {}; \
-    template<class C> struct checker<C, typename std::enable_if_t< \
-      !std::is_same_v<typename C::name*, void>>> : std::true_type {}
-
-    /// Checker for static const variable with given name and value
-    #define MVALUE_CHECKER(checker, name, val) \
-    template<class C, typename = void> struct checker : std::false_type {}; \
-    template<class C> struct checker<C, typename std::enable_if_t< \
-      std::is_convertible_v<decltype(C::name), const decltype(val)> && C::name == val>> : std::true_type {}
-    /// Checker for static const variable with given name, value and type
-    #define MVALUE_CHECKER_STRICT(checker, name, val) \
-    template<class C, typename = void> struct checker : std::false_type {}; \
-    template<class C> struct checker<C, typename std::enable_if_t< \
-      std::is_same_v<decltype(C::name), const decltype(val)> && C::name == val>> : std::true_type {}
-#endif
-
-    /// Checker for member with given name and convertible type
-    #define MTYPE_CHECKER(checker, name) \
-    template<class C, typename T, typename = void> struct checker : std::false_type {}; \
-    template<class C, typename T> struct checker<C, T, typename std::enable_if_t< \
-      std::is_convertible_v<decltype(C::name), T>>> : std::true_type {}
-
-    /// Checker for member with given name and exact type
-    #define MTYPE_CHECKER_STRICT(checker, name) \
-    template<class C, typename T, typename = void> struct checker : std::false_type {}; \
-    template<class C, typename T> struct checker<C, T, typename std::enable_if_t< \
-      std::is_same_v<decltype(C::name), T>>> : std::true_type {}
-
-    /// Checker for member with given name and any type
-    #define MTYPE_CHECKER_ANY(checker, name) \
-    template<class C, typename = void> struct checker : std::false_type {}; \
-    template<class C> struct checker<C, typename std::enable_if_t< \
-      !std::is_same_v<decltype(C::name)*, void>>> : std::true_type {}
-
-    /// Checker for member function with convertible return type and accepting given arguments
-    #define METHOD_CHECKER(checker, name, ret, args) \
-    template<class C, typename=void> struct checker : std::false_type {}; \
-    template<class C> struct checker<C, typename std::enable_if_t< \
-      std::is_convertible_v<decltype(std::declval<C>().name args), ret>>> : std::true_type {}; // NOLINT(bugprone-macro-parentheses)
-
-    /// Checker for member function with exact retutn type and accepting given arguments
-    #define METHOD_CHECKER_STRICT_RET(name, fn, ret, args) \
-    template<class C, typename=void> struct name : std::false_type {}; \
-    template<class C> struct name<C, typename std::enable_if_t< \
-      std::is_same_v<decltype(std::declval<C>().fn args), ret>>> : std::true_type {};  // NOLINT(bugprone-macro-parentheses)
-
-    /// Checker for member function accepting given arguments
-    #define METHOD_CHECKER_ANY(name, fn, args) \
-    template<class C, typename=void> struct name : std::false_type {}; \
-    template<class C> struct name<C, typename std::enable_if_t< \
-      !std::is_same_v<decltype(std::declval<C>().fn args)*, void>>> : std::true_type {};
-
-    METHOD_CHECKER(has_toString, toString, std::string_view, ())
-    template <typename _Tp> inline constexpr bool has_toString_v = has_toString<_Tp>::value;
-
-    METHOD_CHECKER(has_to_string, to_string, std::string_view, ())
-    template <typename _Tp> inline constexpr bool has_to_string_v = has_to_string<_Tp>::value;
-
-    // Author: Sven Gothel
-
-    /// Checker for member of pointer '->' operator with convertible pointer return, no arguments
-    template<class C, typename=void> struct has_member_of_pointer : std::false_type {};
-    template<class C> struct has_member_of_pointer<C, typename std::enable_if_t<
-      std::is_pointer_v<decltype(std::declval<C>().operator->())>>> : std::true_type {};
-
-    template <typename _Tp> inline constexpr bool has_member_of_pointer_v = has_member_of_pointer<_Tp>::value;
-
-    template<class C, typename=void> struct has_free_to_string : std::false_type {};
-    template<class C> struct has_free_to_string<C, typename std::enable_if_t<
-            std::is_same_v<std::string, decltype(to_string(std::declval<C>()))> ||
-            std::is_same_v<std::string_view, decltype(to_string(std::declval<C>()))>
-        >> : std::true_type {};
-
-    template <typename _Tp> inline constexpr bool has_free_to_string_v = has_free_to_string<_Tp>::value;
 
     /**@}*/
 

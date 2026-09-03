@@ -42,6 +42,7 @@
 #include <jau/debug.hpp>
 #include <jau/ordered_atomic.hpp>
 #include <jau/secmem.hpp>
+#include <jau/type_traits_queries.hpp>
 
 namespace jau {
 

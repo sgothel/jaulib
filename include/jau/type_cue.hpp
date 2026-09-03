@@ -30,7 +30,6 @@
 #include <cstdint>
 #include <type_traits>
 
-#include <jau/type_traits_queries.hpp>
 #include <jau/string_util.hpp>
 
 namespace jau {

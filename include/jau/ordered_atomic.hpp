@@ -13,7 +13,6 @@
 #define JAU_ORDERED_ATOMIC_HPP_
 
 #include <atomic>
-#include <memory>
 
 #include <jau/int_types.hpp>
 
@@ -307,12 +306,6 @@ template <typename _Tp, std::memory_order _MO> struct ordered_atomic : private s
 #endif  // C++20
 
 };
-
-  template <typename _Tp, std::memory_order _MO>
-  std::string to_string(const ordered_atomic<_Tp, _MO> & ref)
-  {
-        return to_string(ref.load());
-  }
 
   /** SC atomic integral scalar boolean. Memory-Model (MM) guaranteed sequential consistency (SC) between acquire (read) and release (write) */
   typedef ordered_atomic<bool, std::memory_order_seq_cst> sc_atomic_bool;

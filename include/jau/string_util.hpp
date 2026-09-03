@@ -37,19 +37,16 @@
 #include <type_traits>
 #include <vector>
 
-#include <jau/string_util_unsafe.hpp>
-#include "jau/type_info.hpp"
-
 #include <jau/byte_util.hpp>
 #include <jau/cpp_lang_util.hpp>
 #include <jau/exceptions.hpp>
-#include <jau/packed_attribute.hpp>
-
 #include <jau/int_math.hpp>
 #include <jau/int_types.hpp>
+#include <jau/ordered_atomic.hpp>
+#include <jau/packed_attribute.hpp>
 #include <jau/string_literal.hpp>
-
-#include <jau/type_traits_queries.hpp>
+#include <jau/string_util_unsafe.hpp>
+#include <jau/type_info.hpp>
 #include <jau/type_concepts.hpp>
 
 namespace jau {
@@ -902,6 +899,12 @@ namespace jau {
     // *************************************************
      */
 
+    template<class value_type>
+    requires std::is_same_v<bool, std::remove_cv_t<value_type>>
+    inline std::string to_string(const value_type &ref) {
+        return ref ? "T" : "F";
+    }
+
     template<typename CharT, std::size_t N>
     constexpr std::string to_string(const CharT (&ref)[N]) {
         return std::string(ref);
@@ -913,131 +916,150 @@ namespace jau {
         return std::string(ref);
     }
 
-    template<class value_type,
-             std::enable_if_t<(std::is_integral_v<value_type> && !std::is_same_v<bool, std::remove_cv_t<value_type>>) ||
-                              std::is_floating_point_v<value_type>,
-                              bool> = true>
+    template<class value_type>
+    requires jau::req::integer<value_type> ||
+             std::is_floating_point_v<value_type>
     inline std::string to_string(const value_type &ref) {
         return std::to_string(ref);
     }
 
-    template<class value_type,
-             std::enable_if_t<std::is_same_v<bool, std::remove_cv_t<value_type>>,
-                              bool> = true>
-    inline std::string to_string(const value_type &ref) {
-        return ref ? "T" : "F";
-    }
-
-    template<class value_type,
-             std::enable_if_t<!std::is_integral_v<value_type> &&
-                              !std::is_floating_point_v<value_type> &&
-                              std::is_base_of_v<std::string, value_type>,
-                              bool> = true>
+    template<class value_type>
+    requires (!std::is_integral_v<value_type>) && (!std::is_floating_point_v<value_type>) &&
+             std::is_base_of_v<std::string, value_type>
     inline std::string to_string(const value_type &ref) {
         return ref;
     }
 
-    template<class value_type,
-             std::enable_if_t<!std::is_integral_v<value_type> &&
-                              !std::is_floating_point_v<value_type> &&
-                              !std::is_base_of_v<std::string, value_type> &&
-                              std::is_base_of_v<std::string_view, value_type>,
-                              bool> = true>
+    template<class value_type>
+    requires (!std::is_integral_v<value_type>) && (!std::is_floating_point_v<value_type>) &&
+             (!std::is_base_of_v<std::string, value_type>) &&
+             std::is_base_of_v<std::string_view, value_type>
     inline std::string to_string(const value_type &ref) {
         return std::string(ref);
     }
 
-    template<class value_type,
-             std::enable_if_t<!std::is_integral_v<value_type> &&
-                              !std::is_floating_point_v<value_type> &&
-                              !std::is_base_of_v<std::string, value_type> &&
-                              !std::is_base_of_v<std::string_view, value_type> &&
-                              std::is_same_v<char*, jau::req::base_pointer<value_type>>,
-                              bool> = true>
+    template<class value_type>
+    requires (!std::is_integral_v<value_type>) && (!std::is_floating_point_v<value_type>) &&
+             (!std::is_base_of_v<std::string, value_type>) &&
+             (!std::is_base_of_v<std::string_view, value_type>) &&
+             std::is_same_v<char*, jau::req::base_pointer<value_type>>
     inline std::string to_string(const value_type &ref) {
         return std::string(ref);
     }
 
-    template<class value_type,
-             std::enable_if_t<!std::is_integral_v<value_type> &&
-                              !std::is_floating_point_v<value_type> &&
-                              !std::is_base_of_v<std::string, value_type> &&
-                              !std::is_base_of_v<std::string_view, value_type> &&
-                              !std::is_same_v<char*, jau::req::base_pointer<value_type>> &&
-                              std::is_pointer_v<value_type>,
-                              bool> = true>
+    template<class value_type>
+    requires (!std::is_integral_v<value_type>) && (!std::is_floating_point_v<value_type>) &&
+             (!std::is_base_of_v<std::string, value_type>) &&
+             (!std::is_base_of_v<std::string_view, value_type>) &&
+             (!std::is_same_v<char*, jau::req::base_pointer<value_type>>) &&
+             std::is_pointer_v<value_type>
     inline std::string to_string(const value_type &ref) {
         return toHexString((void *)ref);  // NOLINT(bugprone-multi-level-implicit-pointer-conversion)
     }
 
-    template<class value_type,
-             std::enable_if_t<!std::is_integral_v<value_type> &&
-                              !std::is_floating_point_v<value_type> &&
-                              !std::is_base_of_v<std::string, value_type> &&
-                              !std::is_base_of_v<std::string_view, value_type> &&
-                              !std::is_pointer_v<value_type> &&
-                              jau::has_toString_v<value_type>,
-                              bool> = true>
+    template<class value_type>
+    requires (!std::is_integral_v<value_type>) && (!std::is_floating_point_v<value_type>) &&
+             (!std::is_base_of_v<std::string, value_type>) &&
+             (!std::is_base_of_v<std::string_view, value_type>) &&
+             (!std::is_pointer_v<value_type>) &&
+             (!jau::req::wrapper<value_type>) &&
+             jau::req::has_toString_string<value_type>
     inline std::string to_string(const value_type &ref) {
         return ref.toString();
     }
+    template<class value_type>
+    requires (!std::is_integral_v<value_type>) && (!std::is_floating_point_v<value_type>) &&
+             (!std::is_base_of_v<std::string, value_type>) &&
+             (!std::is_base_of_v<std::string_view, value_type>) &&
+             (!std::is_pointer_v<value_type>) &&
+             (!jau::req::wrapper<value_type>) &&
+             jau::req::has_toString_view<value_type>
+    inline std::string to_string(const value_type &ref) {
+        return std::string(ref.toString());
+    }
 
-    template<class value_type,
-             std::enable_if_t<!std::is_integral_v<value_type> &&
-                              !std::is_floating_point_v<value_type> &&
-                              !std::is_base_of_v<std::string, value_type> &&
-                              !std::is_base_of_v<std::string_view, value_type> &&
-                              !std::is_pointer_v<value_type> &&
-                              !jau::has_toString_v<value_type> &&
-                              jau::has_to_string_v<value_type>,
-                              bool> = true>
+    template<class value_type>
+    requires (!std::is_integral_v<value_type>) && (!std::is_floating_point_v<value_type>) &&
+             (!std::is_base_of_v<std::string, value_type>) &&
+             (!std::is_base_of_v<std::string_view, value_type>) &&
+             (!std::is_pointer_v<value_type>) &&
+             (!jau::req::wrapper<value_type>) &&
+             (!jau::req::has_toString_any<value_type>) &&
+             jau::req::has_to_string_string<value_type>
     inline std::string to_string(const value_type &ref) {
         return ref.to_string();
     }
+    template<class value_type>
+    requires (!std::is_integral_v<value_type>) && (!std::is_floating_point_v<value_type>) &&
+             (!std::is_base_of_v<std::string, value_type>) &&
+             (!std::is_base_of_v<std::string_view, value_type>) &&
+             (!std::is_pointer_v<value_type>) &&
+             (!jau::req::wrapper<value_type>) &&
+             (!jau::req::has_toString_any<value_type>) &&
+             jau::req::has_to_string_view<value_type>
+    inline std::string to_string(const value_type &ref) {
+        return std::string(ref.to_string());
+    }
 
-    template<class value_type,
-             std::enable_if_t<!std::is_integral_v<value_type> &&
-                              !std::is_floating_point_v<value_type> &&
-                              !std::is_base_of_v<std::string, value_type> &&
-                              !std::is_base_of_v<std::string_view, value_type> &&
-                              !std::is_pointer_v<value_type> &&
-                              !jau::has_toString_v<value_type> &&
-                              !jau::has_to_string_v<value_type> &&
-                              jau::has_member_of_pointer_v<value_type>,
-                              bool> = true>
+    template<class value_type>
+    requires (!std::is_integral_v<value_type>) && (!std::is_floating_point_v<value_type>) &&
+             (!std::is_base_of_v<std::string, value_type>) &&
+             (!std::is_base_of_v<std::string_view, value_type>) &&
+             (!std::is_pointer_v<value_type>) &&
+             (!jau::req::wrapper<value_type>) &&
+             (!jau::req::has_toString_any<value_type>) &&
+             (!jau::req::has_to_string_any<value_type>) &&
+             jau::req::has_member_of_pointer<value_type>
     inline std::string to_string(const value_type &ref) {
         return toHexString((void *)ref.operator->());
     }
 
-    template<class value_type,
-             std::enable_if_t<!std::is_integral_v<value_type> &&
-                              !std::is_floating_point_v<value_type> &&
-                              !std::is_base_of_v<std::string, value_type> &&
-                              !std::is_base_of_v<std::string_view, value_type> &&
-                              !std::is_pointer_v<value_type> &&
-                              !jau::has_toString_v<value_type> &&
-                              !jau::has_to_string_v<value_type> &&
-                              !jau::has_member_of_pointer_v<value_type> &&
-                              jau::has_free_to_string_v<value_type>,
-                              bool> = true>
+    template<class value_type>
+    requires (!std::is_integral_v<value_type>) && (!std::is_floating_point_v<value_type>) &&
+             (!std::is_base_of_v<std::string, value_type>) &&
+             (!std::is_base_of_v<std::string_view, value_type>) &&
+             (!std::is_pointer_v<value_type>) &&
+             (!jau::req::wrapper<value_type>) &&
+             (!jau::req::has_toString_any<value_type>) &&
+             (!jau::req::has_to_string_any<value_type>) &&
+             (!jau::req::has_member_of_pointer<value_type>) &&
+             jau::req::has_free_to_string_view_other<value_type>
     inline std::string to_string(const value_type &ref) {
-        return to_string(ref);
+        return std::string(to_string(ref));
     }
 
-    template<class value_type,
-             std::enable_if_t<!std::is_integral_v<value_type> &&
-                              !std::is_floating_point_v<value_type> &&
-                              !std::is_base_of_v<std::string, value_type> &&
-                              !std::is_base_of_v<std::string_view, value_type> &&
-                              !std::is_pointer_v<value_type> &&
-                              !jau::has_toString_v<value_type> &&
-                              !jau::has_to_string_v<value_type> &&
-                              !jau::has_member_of_pointer_v<value_type> &&
-                              !jau::has_free_to_string_v<value_type>,
-                              bool> = true>
+    template<class value_type>
+    requires (!std::is_integral_v<value_type>) && (!std::is_floating_point_v<value_type>) &&
+             (!std::is_base_of_v<std::string, value_type>) &&
+             (!std::is_base_of_v<std::string_view, value_type>) &&
+             (!std::is_pointer_v<value_type>) &&
+             (!jau::req::wrapper<value_type>) &&
+             (!jau::req::has_toString_any<value_type>) &&
+             (!jau::req::has_to_string_any<value_type>) &&
+             (!jau::req::has_member_of_pointer<value_type>) &&
+             jau::req::has_free_to_string_string_other<value_type>
+    inline std::string to_string(const value_type &ref) {
+        return std::string(to_string(ref));
+    }
+
+    template<class value_type>
+    requires (!std::is_integral_v<value_type>) && (!std::is_floating_point_v<value_type>) &&
+             (!std::is_base_of_v<std::string, value_type>) &&
+             (!std::is_base_of_v<std::string_view, value_type>) &&
+             (!std::is_pointer_v<value_type>) &&
+             (!jau::req::wrapper<value_type>) &&
+             (!jau::req::has_toString_any<value_type>) &&
+             (!jau::req::has_to_string_any<value_type>) &&
+             (!jau::req::has_member_of_pointer<value_type>) &&
+             (!jau::req::has_free_to_string_any<value_type>)
     inline std::string to_string(const value_type &ref) {
         (void)ref;
         return "jau::to_string<T> n/a for type " + jau::static_ctti<value_type>().toString();
+    }
+
+    template<jau::req::wrapper T>
+    inline std::string to_string(const T &ref) {
+        return jau::to_string<typename T::value_type>(ref);
     }
 
     template<typename T>

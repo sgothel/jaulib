@@ -188,10 +188,36 @@ TEST_CASE( "Test 00 - to_string/appendIntString, fromIntString", "[jau][string][
     CHECK("0xaffe" == jau::to_string(p_v_1));
     CHECK("0xaffe" == jau::toHexString(0xaffe_u32));
     CHECK("SomeClass toString" == jau::to_string(SomeClass()));
-    CHECK("chess" == jau::to_string(game_t::chess));
-    CHECK("pacman" == jau::to_string(game_t::pacman));
-    CHECK("lala" != jau::to_string(plainenum_t::lala));
-    CHECK("little" == jau::to_string(jau::lb_endian_t::little));
+
+    {
+        // enum
+        static_assert(false == std::is_integral_v<game_t>);
+        static_assert(false == std::is_floating_point_v<game_t>);
+        static_assert(false == std::is_base_of_v<std::string, game_t>);
+        static_assert(false == std::is_base_of_v<std::string_view, game_t>);
+        static_assert(false == std::is_pointer_v<game_t>);
+        static_assert(false == jau::req::has_toString_any<game_t>);
+        static_assert(false == jau::req::has_to_string_any<game_t>);
+        static_assert(false == jau::req::has_member_of_pointer<game_t>);
+        static_assert(false == jau::req::has_free_to_string_any_jau<game_t>);
+        static_assert(true  == jau::req::has_free_to_string_any_other<game_t>);
+        static_assert(true  == jau::req::has_free_to_string_any<game_t>);
+
+        CHECK("chess" == to_string(game_t::chess));   // enum variant
+        CHECK("pacman" == to_string(game_t::pacman)); // enum variant
+        CHECK("chess" == jau::to_string(game_t::chess));
+        CHECK("pacman" == jau::to_string(game_t::pacman));
+        CHECK("jau::to_string<T> n/a for type" == jau::to_string(plainenum_t::lala).substr(0, 30)); // no to_string available
+        CHECK("little" == to_string(jau::lb_endian_t::little));
+    }
+    {
+        // atomic wrapper
+        jau::ordered_atomic<SomeClass, std::memory_order_relaxed> sc_clz1;
+        CHECK("SomeClass toString" == jau::to_string(sc_clz1));
+
+        jau::relaxed_atomic_int sc_int = 11;
+        CHECK("11" == jau::to_string(sc_int));
+    }
     {
         // radix, default: no-width, prefix, no-separator, no padding
         testToFrom(__LINE__, 0xdeadbeef_u32, "0xdeadbeef", 16);                               // hex
@@ -425,7 +451,7 @@ TEST_CASE( "Test 00 - to_string/appendIntString, fromIntString", "[jau][string][
     // jau::type_cue<std_vec_int_citer_pointer>::print("std_vec_int_citer_pointer", jau::TypeTraitGroup::ALL);
 
     // jau::type_cue<std_vec_int_citer_ptrop_retval>::print("std_vec_int_citer_ptrop_retval", jau::TypeTraitGroup::ALL);
-    printf("jau::has_member_of_pointer<std_vec_int_citer>) %d\n", jau::has_member_of_pointer<std_vec_int_citer>::value);
+    printf("jau::has_member_of_pointer<std_vec_int_citer>) %d\n", jau::req::has_member_of_pointer<std_vec_int_citer>);
 
     std_vec_int vec_int_1;
     vec_int_1.push_back(1); vec_int_1.push_back(2); vec_int_1.push_back(3);

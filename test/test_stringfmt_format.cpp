@@ -19,6 +19,7 @@
 #include <cstring>
 #include <iostream>
 #include <string_view>
+#include "jau/ordered_atomic.hpp"
 
 #include <jau/basic_types.hpp>
 #include <jau/cpp_lang_util.hpp>
@@ -214,6 +215,11 @@ class SomeClass2 {
   public:
     std::string_view to_string() const { return "SomeClass2 toString"; }
 };
+class SomeClass3 {
+  public:
+};
+inline std::string_view to_string(const SomeClass3&) { return "SomeClass3 toString"; } // NOLINT(misc-use-internal-linkage): intend
+
 enum class game_t : uint16_t {
     none,
     chess,
@@ -435,7 +441,7 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
         static_assert(0 < jau::cfmt::checkLine("%d\n", e1_u));  // unsigned -> signed ERROR
         static_assert(0 == jau::cfmt::checkLine("%u\n", e2_s)); // signed -> unsigned OK
 
-        CHECK("lala" != jau::to_string(plainenum_t::lala)); // no to_string available
+        CHECK("jau::to_string<T> n/a for type" == jau::to_string(plainenum_t::lala).substr(0, 30)); // no to_string available
         CHECK( -1 == jau::cfmt::check("%s", plainenum_t::lala));    // no to_string available
     }
     // enums: string value
@@ -450,7 +456,7 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
         jau_format_checkLine("%s", jau::lb_endian_t::little);
         CHECK( "little" == jau::format_string("%s", jau::lb_endian_t::little));
     }
-    // class w/ toString to_string
+    // class w/ toString to_string and free to_string (SomeClass3)
     {
         CHECK("SomeClass1 toString" == jau::to_string(SomeClass1()));
         jau_format_checkLine("%s", SomeClass1());
@@ -460,11 +466,40 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
         jau_format_checkLine("%s", SomeClass2());
         CHECK("SomeClass2 toString" == jau::format_string("%s", SomeClass2()));
 
+        CHECK("SomeClass3 toString" == to_string(SomeClass3()));
+        jau_format_checkLine("%s", SomeClass3());
+        CHECK("SomeClass3 toString" == jau::format_string("%s", SomeClass3()));
+
         SomeClass1 sc1;
         CHECK("SomeClass1 toString" == jau::to_string(sc1));
         CHECK("SomeClass1 toString" == jau::format_string("%s", sc1));
-        // CHECK("SomeClass1 toString" == jau::format_string("%s", &sc1));
         CHECK("SomeClass1 toString" != jau::format_string("%p", &sc1));
+
+        SomeClass2 sc2;
+        CHECK("SomeClass2 toString" == jau::to_string(sc2));
+        CHECK("SomeClass2 toString" == jau::format_string("%s", sc2));
+        CHECK("SomeClass2 toString" != jau::format_string("%p", &sc2));
+
+        SomeClass3 sc3;
+        CHECK("SomeClass3 toString" == jau::to_string(sc3));
+        CHECK("SomeClass3 toString" == jau::format_string("%s", sc3));
+        CHECK("SomeClass3 toString" != jau::format_string("%p", &sc3));
+    }
+    // atomic wrapper
+    {
+        jau::ordered_atomic<SomeClass1, std::memory_order_relaxed> sc_clz1;
+        CHECK("SomeClass1 toString" == jau::to_string(sc_clz1));
+        CHECK("SomeClass1 toString" == jau::format_string("%s", sc_clz1));
+    }
+    {
+        jau::ordered_atomic<SomeClass3, std::memory_order_relaxed> sc_clz3;
+        CHECK("SomeClass3 toString" == jau::to_string(sc_clz3));
+        CHECK("SomeClass3 toString" == jau::format_string("%s", sc_clz3));
+    }
+    {
+        jau::relaxed_atomic_int sc_int = 11;
+        CHECK("11" == jau::to_string(sc_int));
+        CHECK("11" == jau::format_string("%s", sc_int));
     }
 }
 

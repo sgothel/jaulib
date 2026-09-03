@@ -69,7 +69,50 @@ enum freeenum_t : uint16_t {
 };
 
 TEST_CASE( "01 Type Concept Queries: Build-In") {
-    static_assert(true == std::is_integral_v<char> );
+    static_assert(true  == std::is_integral_v<char> );
+    static_assert(true  == std::is_integral_v<unsigned> );
+    static_assert(true  == std::is_integral_v<int> );
+    static_assert(true  == std::is_integral_v<short> );
+    static_assert(true  == std::is_integral_v<bool> );
+    static_assert(true  == std::is_integral_v<decltype(1_u32)> );
+    static_assert(true  == std::is_integral_v<decltype(1_i32)> );
+    static_assert(true  == std::is_integral_v<decltype(1)> );
+    static_assert(false == std::is_integral_v<float> );
+    static_assert(false == std::is_integral_v<game_t> );
+
+    static_assert(true  == jau::req::integer<unsigned> );
+    static_assert(true  == jau::req::integer<int> );
+    static_assert(true  == jau::req::integer<short> );
+    static_assert(true  == jau::req::integer<char> );
+    static_assert(true  == jau::req::integer<decltype(1_u32)> );
+    static_assert(true  == jau::req::integer<decltype(1_i32)> );
+    static_assert(true  == jau::req::integer<decltype(1)> );
+    static_assert(false == jau::req::integer<bool> );
+    static_assert(false == jau::req::integer<float> );
+    static_assert(false == jau::req::integer<game_t> );
+
+    static_assert(true  == jau::req::signed_integer<int> );
+    static_assert(true  == jau::req::signed_integer<short> );
+    static_assert(true  == jau::req::signed_integer<char> );
+    static_assert(true  == jau::req::signed_integer<decltype(1_i32)> );
+    static_assert(true  == jau::req::signed_integer<decltype(1)> );
+    static_assert(false == jau::req::signed_integer<unsigned> );
+    static_assert(false == jau::req::signed_integer<decltype(1_u32)> );
+    static_assert(false == jau::req::signed_integer<bool> );
+    static_assert(false == jau::req::signed_integer<float> );
+    static_assert(false == jau::req::signed_integer<game_t> );
+
+    static_assert(true  == jau::req::unsigned_integer<unsigned> );
+    static_assert(true  == jau::req::unsigned_integer<decltype(1_u32)> );
+    static_assert(false == jau::req::unsigned_integer<int> );
+    static_assert(false == jau::req::unsigned_integer<short> );
+    static_assert(false == jau::req::unsigned_integer<char> );
+    static_assert(false == jau::req::unsigned_integer<decltype(1_i32)> );
+    static_assert(false == jau::req::unsigned_integer<decltype(1)> );
+    static_assert(false == jau::req::unsigned_integer<bool> );
+    static_assert(false == jau::req::unsigned_integer<float> );
+    static_assert(false == jau::req::unsigned_integer<game_t> );
+
     static_assert(false == std::is_unsigned_v<char> );
 
     static_assert(false == jau::req::pointer<int> );
@@ -82,6 +125,7 @@ TEST_CASE( "01 Type Concept Queries: Build-In") {
     static_assert(true  == jau::req::unsigned_integral<unsigned> );
     static_assert(false == jau::req::unsigned_integral<int> );
     static_assert(true  == jau::req::unsigned_integral<bool> );
+    static_assert(false == jau::req::unsigned_integral<float> );
     static_assert(true  == jau::req::unsigned_integral<decltype(1_u32)> );
     static_assert(false == jau::req::unsigned_integral<decltype(1_i32)> );
     static_assert(false == jau::req::unsigned_integral<decltype(1)> );
@@ -89,6 +133,7 @@ TEST_CASE( "01 Type Concept Queries: Build-In") {
     static_assert(true  == jau::req::signed_integral<int> );
     static_assert(false == jau::req::signed_integral<unsigned> );
     static_assert(false == jau::req::signed_integral<bool> );
+    static_assert(false == jau::req::signed_integral<float> );
     static_assert(true  == jau::req::signed_integral<decltype(1_i32)> );
     static_assert(false == jau::req::signed_integral<decltype(1_u32)> );
     static_assert(true  == jau::req::signed_integral<decltype(1)> );
@@ -107,9 +152,9 @@ TEST_CASE( "01 Type Concept Queries: Build-In") {
     static_assert(false  == std::is_integral_v<freeenum_t> );
     static_assert(false  == std::is_integral_v<plainenum_t> );
     static_assert(false  == std::is_integral_v<game_t> );
-    static_assert(false  == jau::has_free_to_string_v<freeenum_t>);
-    static_assert(false  == jau::has_free_to_string_v<plainenum_t>);
-    static_assert(true  == jau::has_free_to_string_v<game_t>);
+    static_assert(false  == jau::req::has_free_to_string_any<freeenum_t>);
+    static_assert(false  == jau::req::has_free_to_string_any<plainenum_t>);
+    static_assert(true  == jau::req::has_free_to_string_any<game_t>);
 
     static_assert(true  == jau::req::pointer<int*> );
     static_assert(true  == jau::req::pointer<char*> );

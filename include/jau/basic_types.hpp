@@ -39,7 +39,6 @@
 #include <jau/int_types.hpp>
 #include <jau/ordered_atomic.hpp>
 #include <jau/packed_attribute.hpp>
-#include <jau/type_traits_queries.hpp>
 
 namespace jau {
 

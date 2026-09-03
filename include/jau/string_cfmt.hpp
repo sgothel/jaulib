@@ -39,7 +39,6 @@
 #include <jau/exceptions.hpp>
 #include <jau/float_types.hpp>
 #include <jau/packed_attribute.hpp>
-#include <jau/type_traits_queries.hpp>
 #include <jau/type_concepts.hpp>
 #include <jau/string_util.hpp>
 #include <jau/cpp_pragma.hpp>
@@ -569,17 +568,17 @@ namespace jau::cfmt {
             // Note: `appendFormatted` is covering all `jau::req::stringifyable0_jau<T>` cases
 
             template<typename T>
-            requires jau::has_toString_v<T>
+            requires jau::req::has_toString_any<T>
             void appendFormatted(const FormatOpts& opts, const T& v) {
                 impl::append_string(m_s, m_maxLen, v.toString(), opts);
             }
             template<typename T>
-            requires jau::has_to_string_v<T>
+            requires jau::req::has_to_string_any<T>
             void appendFormatted(const FormatOpts& opts, const T& v) {
                 impl::append_string(m_s, m_maxLen, v.to_string(), opts);
             }
             template<typename T>
-            requires jau::has_free_to_string_v<T>
+            requires jau::req::has_free_to_string_any<T>
             void appendFormatted(const FormatOpts& opts, const T& v) {
                 impl::append_string(m_s, m_maxLen, to_string(v), opts);
             }
@@ -952,21 +951,21 @@ namespace jau::cfmt {
                 parseOneImpl<std::string_view>(pc, val); // pass as string_view
             }
             template <typename T>
-            requires jau::has_toString_v<T> && (!jau::req::string_alike<T>) && (!std::is_enum_v<T>)
+            requires jau::req::has_toString_any<T> && (!jau::req::string_alike<T>) && (!std::is_enum_v<T>)
             CXX_NO_INLINE
             static constexpr void parseOne(Result &pc, const T &val) noexcept {
                 pc.set_arg(sizeof(T)); // NOLINT(bugprone-sizeof-expression)
                 parseOneImpl<std::string_view>(pc, val.toString());
             }
             template <typename T>
-            requires jau::has_to_string_v<T> && (!jau::req::string_alike<T>) && (!std::is_enum_v<T>)
+            requires jau::req::has_to_string_any<T> && (!jau::req::string_alike<T>) && (!std::is_enum_v<T>)
             CXX_NO_INLINE
             static constexpr void parseOne(Result &pc, const T &val) noexcept {
                 pc.set_arg(sizeof(T)); // NOLINT(bugprone-sizeof-expression)
                 parseOneImpl<std::string_view>(pc, val.to_string());
             }
             template <typename T>
-            requires jau::has_free_to_string_v<T> && (!jau::req::string_alike<T>)
+            requires jau::req::has_free_to_string_any<T> && (!jau::req::string_alike<T>)
             CXX_ALWAYS_INLINE
             static constexpr void parseOne(Result &pc, const T &val) noexcept {
                 pc.set_arg(sizeof(T)); // NOLINT(bugprone-sizeof-expression)
@@ -974,7 +973,7 @@ namespace jau::cfmt {
             }
 
             template <typename T>
-            requires std::is_enum_v<T> && (!jau::has_free_to_string_v<T>)
+            requires std::is_enum_v<T> && (!jau::req::has_free_to_string_any<T>)
             CXX_NO_INLINE
             static constexpr void parseOne(Result &pc, const T &val) noexcept {
                 pc.m_argtype_size = sizeof(T); // NOLINT(bugprone-sizeof-expression)
@@ -1045,14 +1044,14 @@ namespace jau::cfmt {
             }
 
             template <typename T>
-            requires jau::req::string_convertible0_jau<T> && (!jau::req::string_alike<T>)
+            requires jau::req::stringorview_convertible0<T> && (!jau::req::string_alike<T>)
             static consteval void checkOne(CheckResult &pc) noexcept {
                 pc.set_arg(sizeof(T)); // NOLINT(bugprone-sizeof-expression)
                 parseOneImpl<std::string_view>(pc, std::string_view()); // pass as string_view
             }
 
             template <typename T>
-            requires std::is_enum_v<T> && (!jau::has_free_to_string_v<T>)
+            requires std::is_enum_v<T> && (!jau::req::has_free_to_string_any<T>)
             static consteval void checkOne(CheckResult &pc) noexcept {
                 pc.m_argtype_size = sizeof(T); // NOLINT(bugprone-sizeof-expression)
                 pc.m_argtype_signed = std::is_signed_v<T>;

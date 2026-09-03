@@ -43,6 +43,7 @@
 #include <jau/fraction_type.hpp>
 #include <jau/ordered_atomic.hpp>
 #include <jau/secmem.hpp>
+#include <jau/type_traits_queries.hpp>
 
 namespace jau {
 
