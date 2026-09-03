@@ -491,7 +491,7 @@ namespace jau::cfmt {
     }
 
     namespace impl {
-        inline constexpr const size_t char32buf_maxlen = 32;
+        inline constexpr const uint32_t char32buf_maxlen = 32;
         inline constexpr const uint32_t default_float_precision = 6;
         inline constexpr const double_t max_append_float = (double_t)1e9;
 

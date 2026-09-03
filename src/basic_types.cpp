@@ -29,6 +29,7 @@
 #include <cstdint>
 #include <cstring>
 #include <ctime>
+#include <limits>
 #include <regex>
 #include <string>
 
@@ -1563,6 +1564,9 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
         return;
     }
     const size_t dest_start_len = dest.size();
+    const uint32_t added_maxlen = (uint32_t)
+        std::min<size_t>(dest_maxlen - dest_start_len, std::numeric_limits<uint32_t>::max());
+
     const uint32_t radix = opts.radix;
     const uint32_t sep_gap = 10 == radix ? 3 : 4;
     uint32_t shift;
@@ -1573,6 +1577,8 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
         case 2:  shift = 1; break;
         default: return;
     }
+    const char separator = is_set(opts.flags, flags_t::thousands) ? Config::default_thousand_separator : (char)0;
+
     // const uint32_t val_digits = opts.precision_set && opts.precision == 0 && jau::is_zero(v) ? 0 : jau::digits(v, radix);
     uint32_t val_digits; // includes inject_dot
     char buf_[char32buf_maxlen];
@@ -1582,7 +1588,7 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
         const char *hex_array = is_set(opts.flags, flags_t::uppercase) ? HexadecimalArrayBig : HexadecimalArrayLow;
         const uint64_t mask = radix - 1;
         char * d = buf_;
-        const char * const d_end_num = d + char32buf_maxlen;
+        const char * const d_end_num_max = d + std::min(added_maxlen, char32buf_maxlen);
         do {
             if (10 == radix) {
                 *(d++) = char('0' + (v % 10_u64));
@@ -1591,25 +1597,21 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
                 *(d++) = hex_array[v & mask];
                 v >>= shift;
             }
-        } while( v && d < d_end_num);
-        if (inject_dot && d < d_end_num-1) {
+        } while( v && d < d_end_num_max);
+        if (inject_dot && d < d_end_num_max-1) {
             *d = *(d-1);
             *(d-1) = '.';
             ++d;
         }
         val_digits = d - buf_;
+        assert(val_digits <= added_maxlen);
     }
-    uint32_t num_len; ///< contains zero-padding, val_digits and separator
-    char separator;
-    if (is_set(opts.flags, flags_t::thousands)) {
-        separator = Config::default_thousand_separator;
-        num_len = val_digits + ( (val_digits - 1) / sep_gap );
-    } else {
-        separator = 0;
-        num_len = val_digits;
-    }
+    uint32_t num_len = separator ? ///< contains zero-padding, val_digits and separator
+        std::min(added_maxlen, val_digits + ( (val_digits - 1) / sep_gap )) :
+        val_digits;
+
     const uint32_t prec = opts.precision_set ? opts.precision : 0;
-    uint32_t width = opts.width_set ? opts.width : 0;
+    uint32_t width = opts.width_set ? std::min(added_maxlen, opts.width) : 0;
     uint32_t space_left = 0, space_right = 0;
     uint32_t xtra_left = 0;  ///< contains hash, sign, single space
     {
@@ -1640,6 +1642,7 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
             }
             ++xtra_left; // hash zero
         }
+        num_len = std::min(added_maxlen, num_len);
 
         // p1: sign
         if (negative) {
@@ -1652,6 +1655,7 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
         if (!negative && is_set(opts.flags, flags_t::space)) {
             ++xtra_left; // ' ';
         }
+        xtra_left = std::min(added_maxlen-num_len, xtra_left);
 
         // p2: append pad spaces left/right up to given width
         {
@@ -1664,7 +1668,8 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
                 }
             }
         }
-        const size_t added_maxlen = dest_maxlen - dest_start_len;
+        space_left = std::min(added_maxlen-num_len-xtra_left, space_left);
+        space_right = std::min(added_maxlen-num_len-xtra_left-space_left, space_right);
         const size_t added_len = std::min<size_t>(added_maxlen, space_left + xtra_left + num_len + space_right);
         if (!reserve_append(dest, dest_start_len + added_len + 1, added_len)) { // cap +EOS, not shrinking!
             return;
@@ -1690,9 +1695,8 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
         char * p = buf_;
         if( !separator ) {
             while (d > d_start_digit) {
-                *(--d) = *(p++); // NOLINT(clang-analyzer-core.uninitialized.Assign): Wrong analysis, see `Case 1` in test_stringfmt_impl.cpp. (Assigned value is garbage or undefined)
+                *(--d) = *(p++);
             }
-            assert(p - buf_ == val_digits);
             while (d > d_start_num) {
                 *(--d) = '0'; // zero-padding
             }
@@ -1708,12 +1712,13 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
                     if (digit_cnt >= val_digits) {
                         *(--d) = '0'; // zero-padding
                     } else {
-                        *(--d) = *(p++); // NOLINT(clang-analyzer-core.uninitialized.Assign): Wrong analysis, see `Case 1` in test_stringfmt_impl.cpp. (Assigned value is garbage or undefined)
+                        *(--d) = *(p++);
                     }
                     ++digit_cnt;
                 }
             }
         }
+        assert(p == buf_ + val_digits);
     }
     assert(d == d_start_num);
     assert(d >= d_start);
@@ -1761,6 +1766,8 @@ void jau::cfmt::impl::append_integral_simple(std::string &dest, const size_t des
         return;
     }
     const size_t dest_start_len = dest.size();
+    const uint32_t added_maxlen = (uint32_t)
+        std::min<size_t>(dest_maxlen - dest_start_len, std::numeric_limits<uint32_t>::max());
 
     const uint32_t radix = opts.radix;
     uint32_t shift;
@@ -1780,7 +1787,7 @@ void jau::cfmt::impl::append_integral_simple(std::string &dest, const size_t des
         const char *hex_array = is_set(opts.flags, flags_t::uppercase) ? HexadecimalArrayBig : HexadecimalArrayLow;
         const uint64_t mask = radix - 1;
         char * d = buf_;
-        const char * const d_end_num = d + char32buf_maxlen;
+        const char * const d_end_num_max = d + std::min(added_maxlen, char32buf_maxlen);
         if (!separator) {
             do {
                 if (10 == radix) {
@@ -1790,7 +1797,7 @@ void jau::cfmt::impl::append_integral_simple(std::string &dest, const size_t des
                     *(d++) = hex_array[v & mask];
                     v >>= shift;
                 }
-            } while( v && d < d_end_num);
+            } while( v && d < d_end_num_max);
         } else {
             const uint32_t sep_gap = 10 == radix ? 3 : 4;
             uint32_t digit_cnt = 0;
@@ -1798,7 +1805,7 @@ void jau::cfmt::impl::append_integral_simple(std::string &dest, const size_t des
                 if (0 < digit_cnt && 0 == digit_cnt % sep_gap) {
                     *(d++) = separator;
                 }
-                assert(d < d_end_num);
+                assert(d < d_end_num_max);
 
                 if (10 == radix) {
                     *(d++) = char('0' + (v % 10_u64));
@@ -1808,9 +1815,10 @@ void jau::cfmt::impl::append_integral_simple(std::string &dest, const size_t des
                     v >>= shift;
                 }
                 ++digit_cnt;
-            } while( v && d < d_end_num);
+            } while( v && d < d_end_num_max);
         }
         val_digits = d - buf_;
+        assert(val_digits <= added_maxlen);
     }
     uint32_t xtra_left = 0;  ///< contains hash, sign and single space
     {
@@ -1833,8 +1841,8 @@ void jau::cfmt::impl::append_integral_simple(std::string &dest, const size_t des
         if (!negative && is_set(opts.flags, flags_t::space)) {
             ++xtra_left; // ' ';
         }
+        xtra_left = std::min(added_maxlen-val_digits, xtra_left);
 
-        const size_t added_maxlen = dest_maxlen - dest_start_len;
         const size_t added_len = std::min<size_t>(added_maxlen, xtra_left + val_digits );
         if (!reserve_append(dest, dest_start_len + added_len + 1, added_len)) { // cap +EOS, not shrinking!
             return;
@@ -1862,9 +1870,9 @@ void jau::cfmt::impl::append_integral_simple(std::string &dest, const size_t des
     {
         char * p = buf_;
         while (d > d_start_num) {
-            *(--d) = *(p++); // NOLINT(clang-analyzer-core.uninitialized.Assign): Wrong analysis, see `Case 1` in test_stringfmt_impl.cpp. (Assigned value is garbage or undefined)
+            *(--d) = *(p++); // NOLINT(clang-analyzer-core.uninitialized.Assign): See val_digits assert
         }
-        assert(p - buf_ == val_digits);
+        assert(p == buf_ + val_digits);
     }
     assert(d == d_start_num);
     assert(d >= d_start);
