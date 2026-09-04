@@ -825,9 +825,7 @@ namespace jau {
      * @param min_width the minimum number of characters to be printed including sign. Add left space if sign+val-digits are shorter.
      * @return the given string buffer for concatenation
      */
-    template<class value_type,
-             std::enable_if_t<std::is_integral_v<value_type>,
-                              bool> = true>
+    template<jau::req::integral value_type>
     std::string& appendDecString(std::string &dest, const value_type &val, const char separator = '\'', const uint32_t min_width = 0) noexcept {
         const size_t dest_start_len = dest.size();
         using unsigned_value_type = std::make_unsigned_t<value_type>;
@@ -884,9 +882,7 @@ namespace jau {
      * @param min_width the minimum number of characters to be printed including sign. Add left space if sign+val-digits are shorter.
      * @return the decimal string representation of the integral integer
      */
-    template<class value_type,
-             std::enable_if_t<std::is_integral_v<value_type>,
-                              bool> = true>
+    template<jau::req::integral value_type>
     std::string to_decstring(const value_type &v, const char separator = '\'', const nsize_t min_width = 0) noexcept {
         std::string str;
         appendDecString(str, v, separator, min_width);
@@ -918,20 +914,20 @@ namespace jau {
 
     template<class value_type>
     requires jau::req::integer<value_type> ||
-             std::is_floating_point_v<value_type>
+             jau::req::floating_point<value_type>
     inline std::string to_string(const value_type &ref) {
         return std::to_string(ref);
     }
 
     template<class value_type>
-    requires (!std::is_integral_v<value_type>) && (!std::is_floating_point_v<value_type>) &&
+    requires (!jau::req::integral<value_type>) && (!jau::req::floating_point<value_type>) &&
              std::is_base_of_v<std::string, value_type>
     inline std::string to_string(const value_type &ref) {
         return ref;
     }
 
     template<class value_type>
-    requires (!std::is_integral_v<value_type>) && (!std::is_floating_point_v<value_type>) &&
+    requires (!jau::req::integral<value_type>) && (!jau::req::floating_point<value_type>) &&
              (!std::is_base_of_v<std::string, value_type>) &&
              std::is_base_of_v<std::string_view, value_type>
     inline std::string to_string(const value_type &ref) {
@@ -939,7 +935,7 @@ namespace jau {
     }
 
     template<class value_type>
-    requires (!std::is_integral_v<value_type>) && (!std::is_floating_point_v<value_type>) &&
+    requires (!jau::req::integral<value_type>) && (!jau::req::floating_point<value_type>) &&
              (!std::is_base_of_v<std::string, value_type>) &&
              (!std::is_base_of_v<std::string_view, value_type>) &&
              std::is_same_v<char*, jau::req::base_pointer<value_type>>
@@ -948,30 +944,30 @@ namespace jau {
     }
 
     template<class value_type>
-    requires (!std::is_integral_v<value_type>) && (!std::is_floating_point_v<value_type>) &&
+    requires (!jau::req::integral<value_type>) && (!jau::req::floating_point<value_type>) &&
              (!std::is_base_of_v<std::string, value_type>) &&
              (!std::is_base_of_v<std::string_view, value_type>) &&
              (!std::is_same_v<char*, jau::req::base_pointer<value_type>>) &&
-             std::is_pointer_v<value_type>
+             jau::req::pointer<value_type>
     inline std::string to_string(const value_type &ref) {
         return toHexString((void *)ref);  // NOLINT(bugprone-multi-level-implicit-pointer-conversion)
     }
 
     template<class value_type>
-    requires (!std::is_integral_v<value_type>) && (!std::is_floating_point_v<value_type>) &&
+    requires (!jau::req::integral<value_type>) && (!jau::req::floating_point<value_type>) &&
              (!std::is_base_of_v<std::string, value_type>) &&
              (!std::is_base_of_v<std::string_view, value_type>) &&
-             (!std::is_pointer_v<value_type>) &&
+             (!jau::req::pointer<value_type>) &&
              (!jau::req::wrapper<value_type>) &&
              jau::req::has_toString_string<value_type>
     inline std::string to_string(const value_type &ref) {
         return ref.toString();
     }
     template<class value_type>
-    requires (!std::is_integral_v<value_type>) && (!std::is_floating_point_v<value_type>) &&
+    requires (!jau::req::integral<value_type>) && (!jau::req::floating_point<value_type>) &&
              (!std::is_base_of_v<std::string, value_type>) &&
              (!std::is_base_of_v<std::string_view, value_type>) &&
-             (!std::is_pointer_v<value_type>) &&
+             (!jau::req::pointer<value_type>) &&
              (!jau::req::wrapper<value_type>) &&
              jau::req::has_toString_view<value_type>
     inline std::string to_string(const value_type &ref) {
@@ -979,10 +975,10 @@ namespace jau {
     }
 
     template<class value_type>
-    requires (!std::is_integral_v<value_type>) && (!std::is_floating_point_v<value_type>) &&
+    requires (!jau::req::integral<value_type>) && (!jau::req::floating_point<value_type>) &&
              (!std::is_base_of_v<std::string, value_type>) &&
              (!std::is_base_of_v<std::string_view, value_type>) &&
-             (!std::is_pointer_v<value_type>) &&
+             (!jau::req::pointer<value_type>) &&
              (!jau::req::wrapper<value_type>) &&
              (!jau::req::has_toString_any<value_type>) &&
              jau::req::has_to_string_string<value_type>
@@ -990,10 +986,10 @@ namespace jau {
         return ref.to_string();
     }
     template<class value_type>
-    requires (!std::is_integral_v<value_type>) && (!std::is_floating_point_v<value_type>) &&
+    requires (!jau::req::integral<value_type>) && (!jau::req::floating_point<value_type>) &&
              (!std::is_base_of_v<std::string, value_type>) &&
              (!std::is_base_of_v<std::string_view, value_type>) &&
-             (!std::is_pointer_v<value_type>) &&
+             (!jau::req::pointer<value_type>) &&
              (!jau::req::wrapper<value_type>) &&
              (!jau::req::has_toString_any<value_type>) &&
              jau::req::has_to_string_view<value_type>
@@ -1002,10 +998,10 @@ namespace jau {
     }
 
     template<class value_type>
-    requires (!std::is_integral_v<value_type>) && (!std::is_floating_point_v<value_type>) &&
+    requires (!jau::req::integral<value_type>) && (!jau::req::floating_point<value_type>) &&
              (!std::is_base_of_v<std::string, value_type>) &&
              (!std::is_base_of_v<std::string_view, value_type>) &&
-             (!std::is_pointer_v<value_type>) &&
+             (!jau::req::pointer<value_type>) &&
              (!jau::req::wrapper<value_type>) &&
              (!jau::req::has_toString_any<value_type>) &&
              (!jau::req::has_to_string_any<value_type>) &&
@@ -1015,10 +1011,10 @@ namespace jau {
     }
 
     template<class value_type>
-    requires (!std::is_integral_v<value_type>) && (!std::is_floating_point_v<value_type>) &&
+    requires (!jau::req::integral<value_type>) && (!jau::req::floating_point<value_type>) &&
              (!std::is_base_of_v<std::string, value_type>) &&
              (!std::is_base_of_v<std::string_view, value_type>) &&
-             (!std::is_pointer_v<value_type>) &&
+             (!jau::req::pointer<value_type>) &&
              (!jau::req::wrapper<value_type>) &&
              (!jau::req::has_toString_any<value_type>) &&
              (!jau::req::has_to_string_any<value_type>) &&
@@ -1029,10 +1025,10 @@ namespace jau {
     }
 
     template<class value_type>
-    requires (!std::is_integral_v<value_type>) && (!std::is_floating_point_v<value_type>) &&
+    requires (!jau::req::integral<value_type>) && (!jau::req::floating_point<value_type>) &&
              (!std::is_base_of_v<std::string, value_type>) &&
              (!std::is_base_of_v<std::string_view, value_type>) &&
-             (!std::is_pointer_v<value_type>) &&
+             (!jau::req::pointer<value_type>) &&
              (!jau::req::wrapper<value_type>) &&
              (!jau::req::has_toString_any<value_type>) &&
              (!jau::req::has_to_string_any<value_type>) &&
@@ -1043,10 +1039,10 @@ namespace jau {
     }
 
     template<class value_type>
-    requires (!std::is_integral_v<value_type>) && (!std::is_floating_point_v<value_type>) &&
+    requires (!jau::req::integral<value_type>) && (!jau::req::floating_point<value_type>) &&
              (!std::is_base_of_v<std::string, value_type>) &&
              (!std::is_base_of_v<std::string_view, value_type>) &&
-             (!std::is_pointer_v<value_type>) &&
+             (!jau::req::pointer<value_type>) &&
              (!jau::req::wrapper<value_type>) &&
              (!jau::req::has_toString_any<value_type>) &&
              (!jau::req::has_to_string_any<value_type>) &&
