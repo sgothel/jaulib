@@ -28,6 +28,7 @@
 #include <list>
 #include <forward_list>
 #include <deque>
+#include "catch2/catch_amalgamated.hpp"
 
 #include <jau/int_math.hpp>
 #include <jau/int_types.hpp>
@@ -68,9 +69,23 @@ enum freeenum_t : uint16_t {
     lili
 };
 
+template<typename T>
+class MyWrap {
+  private:
+    T store;
+
+  public:
+    using value_type = T;
+
+    MyWrap(T v) noexcept : store(v) {}
+    inline operator T() const noexcept { return store; }
+    inline operator T&() noexcept { return store; }
+};
+
 TEST_CASE( "01 Type Concept Queries: Build-In") {
     static_assert(true  == std::is_integral_v<char> );
     static_assert(true  == std::is_integral_v<unsigned> );
+    static_assert(true  == std::is_integral_v<unsigned short> );
     static_assert(true  == std::is_integral_v<int> );
     static_assert(true  == std::is_integral_v<short> );
     static_assert(true  == std::is_integral_v<bool> );
@@ -83,6 +98,7 @@ TEST_CASE( "01 Type Concept Queries: Build-In") {
     static_assert(true  == jau::req::integer<unsigned> );
     static_assert(true  == jau::req::integer<int> );
     static_assert(true  == jau::req::integer<short> );
+    static_assert(true  == jau::req::integer<unsigned short> );
     static_assert(true  == jau::req::integer<char> );
     static_assert(true  == jau::req::integer<decltype(1_u32)> );
     static_assert(true  == jau::req::integer<decltype(1_i32)> );
@@ -99,10 +115,12 @@ TEST_CASE( "01 Type Concept Queries: Build-In") {
     static_assert(false == jau::req::signed_integer<unsigned> );
     static_assert(false == jau::req::signed_integer<decltype(1_u32)> );
     static_assert(false == jau::req::signed_integer<bool> );
+    static_assert(false == jau::req::signed_integer<unsigned short> );
     static_assert(false == jau::req::signed_integer<float> );
     static_assert(false == jau::req::signed_integer<game_t> );
 
     static_assert(true  == jau::req::unsigned_integer<unsigned> );
+    static_assert(true  == jau::req::unsigned_integer<unsigned short> );
     static_assert(true  == jau::req::unsigned_integer<decltype(1_u32)> );
     static_assert(false == jau::req::unsigned_integer<int> );
     static_assert(false == jau::req::unsigned_integer<short> );
@@ -123,6 +141,7 @@ TEST_CASE( "01 Type Concept Queries: Build-In") {
     static_assert(true == jau::req::boolean<std::type_identity_t<bool>> );
 
     static_assert(true  == jau::req::unsigned_integral<unsigned> );
+    static_assert(true  == jau::req::unsigned_integral<unsigned short> );
     static_assert(false == jau::req::unsigned_integral<int> );
     static_assert(true  == jau::req::unsigned_integral<bool> );
     static_assert(false == jau::req::unsigned_integral<float> );
@@ -132,6 +151,7 @@ TEST_CASE( "01 Type Concept Queries: Build-In") {
 
     static_assert(true  == jau::req::signed_integral<int> );
     static_assert(false == jau::req::signed_integral<unsigned> );
+    static_assert(false == jau::req::signed_integral<unsigned short> );
     static_assert(false == jau::req::signed_integral<bool> );
     static_assert(false == jau::req::signed_integral<float> );
     static_assert(true  == jau::req::signed_integral<decltype(1_i32)> );
@@ -180,6 +200,90 @@ TEST_CASE( "01 Type Concept Queries: Build-In") {
     static_assert(false == jau::req::is_contiguous_container<std::list<int>>() );
     static_assert(false == jau::req::is_contiguous_container<std::deque<int>>() );
 
+    {
+        using namespace jau::req;
+        MyWrap<uint16_t> w_u16 = 42;
+        uint16_t u16_0 = 42;
+        static_assert(true == std::is_same_v<uint16_t, type_of<decltype(w_u16)>>);
+        static_assert(true == std::is_same_v<uint16_t, type_of<decltype(u16_0)>>);
+
+        // copy value
+        const type_of<decltype(w_u16)> u16_1 = value_of(w_u16);
+        // mutable reference value, copy
+        type_of<decltype(w_u16)> &u16_2 = reference_of(w_u16);
+        REQUIRE(42 == jau::req::value_of(w_u16));
+        REQUIRE(42 == u16_1);
+        REQUIRE(42 == u16_2);
+        REQUIRE(42 == u16_0);
+
+        u16_2 += 99;
+        reference_of(u16_2) += 1;
+        REQUIRE(142 == u16_2);
+        REQUIRE(142 == w_u16);
+
+        w_u16 = 24;
+        REQUIRE(24 == w_u16);
+        REQUIRE(24 == jau::req::value_of(w_u16));
+        REQUIRE(42 == u16_1);
+        REQUIRE(24 == u16_2);
+
+        reference_of(w_u16) = 88;
+        REQUIRE(88 == w_u16);
+        REQUIRE(88 == jau::req::value_of(w_u16));
+        REQUIRE(42 == u16_1);
+        REQUIRE(88 == u16_2);
+    }
+    {
+        using namespace jau::req;
+        game_t g1_0 = game_t::pacman;
+        MyWrap<game_t> w_g1 = game_t::chess;
+        static_assert(true == std::is_same_v<game_t, type_of<decltype(w_g1)>>);
+        static_assert(true == std::is_same_v<game_t, type_of<decltype(g1_0)>>);
+
+        // copy value
+        const type_of<decltype(w_g1)> g1_1 = value_of(w_g1);
+        // mutable reference value, copy
+        type_of<decltype(w_g1)> &g1_2 = reference_of(w_g1);
+
+        REQUIRE(game_t::chess == jau::req::value_of(w_g1));
+        REQUIRE(game_t::chess == g1_1);
+        REQUIRE(game_t::chess == g1_2);
+        REQUIRE(game_t::pacman == g1_0);
+
+        g1_2 = game_t::none;
+        reference_of(g1_2) = game_t::mrdo;
+        REQUIRE(game_t::mrdo == w_g1);
+        REQUIRE(game_t::mrdo == jau::req::value_of(w_g1));
+        REQUIRE(game_t::chess == g1_1);
+        REQUIRE(game_t::mrdo == g1_2);
+
+        w_g1 = game_t::pacman;
+        REQUIRE(game_t::pacman == w_g1);
+        REQUIRE(game_t::pacman == jau::req::value_of(w_g1));
+        REQUIRE(game_t::chess == g1_1);
+        REQUIRE(game_t::pacman == g1_2);
+
+        reference_of(w_g1) = game_t::mrdo;
+        REQUIRE(game_t::mrdo == w_g1);
+        REQUIRE(game_t::mrdo == jau::req::value_of(w_g1));
+        REQUIRE(game_t::chess == g1_1);
+        REQUIRE(game_t::mrdo == g1_2);
+    }
+    {
+        using namespace jau::req;
+
+        uint16_t native_u16 = 1;
+        type_of<decltype(native_u16)> u16_0 = value_of(native_u16);
+        REQUIRE(1 == u16_0);
+
+        jau::relaxed_atomic_uint16 relaxed_u16 = 11U;
+        static_assert(true == std::is_same_v<uint16_t, type_of<decltype(relaxed_u16)>>);
+        static_assert(true  == jau::req::wrapped_unsigned_integral<decltype(relaxed_u16)> );
+        type_of<decltype(relaxed_u16)> u16_1 = value_of(relaxed_u16);
+
+        REQUIRE(11U == jau::req::value_of(relaxed_u16));
+        REQUIRE(11U == u16_1);
+    }
     REQUIRE(true == true);
 }
 

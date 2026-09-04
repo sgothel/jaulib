@@ -1059,7 +1059,7 @@ namespace jau {
 
     template<jau::req::wrapper T>
     inline std::string to_string(const T &ref) {
-        return jau::to_string<typename T::value_type>(ref);
+        return jau::to_string(jau::req::value_of(ref));
     }
 
     template<typename T>

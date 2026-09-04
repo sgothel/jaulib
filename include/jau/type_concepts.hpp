@@ -45,6 +45,69 @@ namespace jau::req {
         { std::declval<T>() };
     };
 
+    /** Type Wrapper for `value_type`: `typedef value_type` and conversion operator to `value_type`.  */
+    template<typename T>
+    concept wrapper = requires(T t) {
+        typename T::value_type;
+
+        { t.operator typename T::value_type() } -> std::same_as<typename T::value_type>;
+    };
+
+    /** Query whether type is a wrapper */
+    template<typename T>
+    requires wrapper<T>
+    constexpr bool is_wrapper() { return true; }
+
+    /** Query whether type is a wrapper */
+    template<typename T>
+    requires (!wrapper<T>)
+    constexpr bool is_wrapper() { return false; }
+
+    namespace impl {
+        /// Conditional w/ default implementation (false) for direct type
+        template<bool Cond, typename T>
+        struct wrapped_type {
+            using type = T;
+        };
+        /// Partial specialization for true, i.e. wrapped-type
+        template<typename T>
+        struct wrapped_type<true, T> {
+            using type = T::value_type;
+        };
+    }
+
+    /** Wrapper: Evaluates the underlying wrapped type, or the direct type if not a wrapper (identity). */
+    template<typename T>
+    using type_of = impl::wrapped_type<wrapper<T>, T>::type;
+
+    /** Wrapper: Returns copied value of underlying wrapped type, or the direct value if not a wrapper (identity). */
+    template<typename T>
+    requires wrapper<T>
+    inline typename T::value_type value_of(const T &ref) {
+        return ref.operator typename T::value_type();
+    }
+
+    /** Wrapper: Returns copied value of underlying wrapped type, or the direct value if not a wrapper (identity). */
+    template<typename T>
+    requires (!wrapper<T>)
+    constexpr T value_of(const T &ref) {
+        return ref;
+    }
+
+    /** Wrapper: Returns mutable value reference of underlying wrapped type, or the direct value if not a wrapper (identity). */
+    template<typename T>
+    requires wrapper<T>
+    inline typename T::value_type& reference_of(T &ref) {
+        return ref.operator typename T::value_type&();
+    }
+
+    /** Wrapper: Returns mutable value reference of underlying wrapped type, or the direct value if not a wrapper (identity). */
+    template<typename T>
+    requires (!wrapper<T>)
+    constexpr T& reference_of(T &ref) {
+        return ref;
+    }
+
     /** Concept of type-trait std::is_pointer */
     template<typename T>
     concept pointer = std::is_pointer_v<T>;
@@ -59,6 +122,14 @@ namespace jau::req {
     template<typename T>
     concept standard_layout = std::is_standard_layout_v<T>;
 
+    /** Concept of type wrapper holding an standard_layout type. */
+    template<typename T>
+    concept wrapped_standard_layout  = wrapper<T> && standard_layout<typename T::value_type>;
+
+    /** Concept of any standard_layout, either a direct standard_layout or wrapped_standard_layout. */
+    template<typename T>
+    concept any_standard_layout  = standard_layout<T> || wrapped_standard_layout<T>;
+
     /** Concept of type-trait std::is_trivially_copyable */
     template<typename T>
     concept trivially_copyable = std::is_trivially_copyable_v<T>;
@@ -66,6 +137,14 @@ namespace jau::req {
     /** Concept of type-trait for `bool` type */
     template<typename T>
     concept boolean = std::is_same_v<bool, std::remove_cv_t<T>>;
+
+    /** Concept of type wrapper holding an boolean type. */
+    template<typename T>
+    concept wrapped_boolean  = wrapper<T> && boolean<typename T::value_type>;
+
+    /** Concept of any boolean, either a direct boolean or wrapped_boolean. */
+    template<typename T>
+    concept any_boolean  = boolean<T> || wrapped_boolean<T>;
 
     /** Concept of type-trait for `char` type */
     template<typename T>
@@ -83,33 +162,117 @@ namespace jau::req {
     template<typename T>
     concept signed_arithmetic = std::is_arithmetic_v<T> && std::is_signed_v<T>;
 
+    /** Concept of type wrapper holding an arithmetic type. */
+    template<typename T>
+    concept wrapped_arithmetic  = wrapper<T> && arithmetic<typename T::value_type>;
+
+    /** Concept of type wrapper holding an unsigned arithmetic type. */
+    template<typename T>
+    concept wrapped_unsigned_arithmetic  = wrapper<T> && unsigned_arithmetic<typename T::value_type>;
+
+    /** Concept of type wrapper holding an signed arithmetic type. */
+    template<typename T>
+    concept wrapped_signed_arithmetic  = wrapper<T> && signed_arithmetic<typename T::value_type>;
+
+    /** Concept of any arithmetic, either a direct arithmetic or wrapped_arithmetic. */
+    template<typename T>
+    concept any_arithmetic  = arithmetic<T> || wrapped_arithmetic<T>;
+
+    /** Concept of any unsigned arithmetic, either a direct unsigned_arithmetic or wrapped_unsigned_arithmetic. */
+    template<typename T>
+    concept any_unsigned_arithmetic  = unsigned_arithmetic<T> || wrapped_unsigned_arithmetic<T>;
+
+    /** Concept of any signed arithmetic, either a direct signed_arithmetic or wrapped_signed_arithmetic. */
+    template<typename T>
+    concept any_signed_arithmetic  = signed_arithmetic<T> || wrapped_signed_arithmetic<T>;
+
+    /** Concept of type-trait std::is_floating_point */
+    template<typename T>
+    concept floating_point = std::is_floating_point_v<T>;
+
+    /** Concept of type wrapper holding an floating_point type. */
+    template<typename T>
+    concept wrapped_floating_point  = wrapper<T> && floating_point<typename T::value_type>;
+
+    /** Concept of any floating_point, either a direct floating_point or wrapped_floating_point. */
+    template<typename T>
+    concept any_floating_point  = floating_point<T> || wrapped_floating_point<T>;
+
+    /** Concept of type-trait std::is_integral */
+    template<typename T>
+    concept integral = std::is_integral_v<T>;
+
     /** Concept of type-trait std::is_unsigned and std::is_integral */
     template<typename T>
-    concept unsigned_integral = std::is_integral_v<T> && std::is_unsigned_v<T>;
+    concept unsigned_integral = integral<T> && std::is_unsigned_v<T>;
 
     /** Concept of type-trait std::is_signed and std::is_integral */
     template<typename T>
-    concept signed_integral = std::is_integral_v<T> && std::is_signed_v<T>;
+    concept signed_integral = integral<T> && std::is_signed_v<T>;
+
+    /** Concept of type wrapper holding an integral type. */
+    template<typename T>
+    concept wrapped_integral  = wrapper<T> && integral<typename T::value_type>;
+
+    /** Concept of type wrapper holding an unsigned integral type. */
+    template<typename T>
+    concept wrapped_unsigned_integral  = wrapped_integral<T> && std::is_unsigned_v<typename T::value_type>;
+
+    /** Concept of type wrapper holding an signed integral type. */
+    template<typename T>
+    concept wrapped_signed_integral  = wrapped_integral<T> && std::is_signed_v<typename T::value_type>;
+
+    /** Concept of any integral, either a direct integral or wrapped_integral. */
+    template<typename T>
+    concept any_integral  = integral<T> || wrapped_integral<T>;
+
+    /** Concept of any unsigned integral, either a direct unsigned_integral or wrapped_unsigned_integral. */
+    template<typename T>
+    concept any_unsigned_integral  = unsigned_integral<T> || wrapped_unsigned_integral<T>;
+
+    /** Concept of any signed integral, either a direct signed_integral or wrapped_signed_integral. */
+    template<typename T>
+    concept any_signed_integral  = signed_integral<T> || wrapped_signed_integral<T>;
 
     /** Concept of type-trait std::is_integral and sizeof(T) == alignof(T) (packed) */
     template<typename T>
-    concept packed_integral = std::is_integral_v<T> && sizeof(T) == alignof(T);
+    concept packed_integral = integral<T> && sizeof(T) == alignof(T);
 
     /** Concept of type-trait std::is_floating_point and sizeof(T) == alignof(T) (packed) */
     template <typename T>
     concept packed_floating_point = std::is_floating_point_v<T> && sizeof(T) == alignof(T);
 
     template <typename T>
-    concept integer = std::is_integral_v<T> && !boolean<T>;
+    concept integer = integral<T> && !boolean<T>;
 
     template <typename T>
-    concept signed_integer = std::is_integral_v<T> && std::is_signed_v<T> && !boolean<T>;
+    concept signed_integer = integral<T> && std::is_signed_v<T> && !boolean<T>;
 
     template <typename T>
-    concept unsigned_integer = std::is_integral_v<T> && std::is_unsigned_v<T> && !boolean<T>;
+    concept unsigned_integer = integral<T> && std::is_unsigned_v<T> && !boolean<T>;
+
+    /** Concept of type wrapper holding an integer type. */
+    template<typename T>
+    concept wrapped_integer  = wrapper<T> && integer<typename T::value_type>;
+
+    /** Concept of type wrapper holding an unsigned integer type. */
+    template<typename T>
+    concept wrapped_unsigned_integer  = wrapped_integer<T> && std::is_unsigned_v<typename T::value_type>;
+
+    /** Concept of type wrapper holding an signed integer type. */
+    template<typename T>
+    concept wrapped_signed_integer  = wrapped_integer<T> && std::is_signed_v<typename T::value_type>;
 
     template <typename T>
     concept enumeration = std::is_enum_v<T>;
+
+    /** Concept of type wrapper holding an enumeration type. */
+    template<typename T>
+    concept wrapped_enum  = jau::req::wrapper<T> && jau::req::enumeration<typename T::value_type>;
+
+    /** Concept of any enumeration, either a direct enum or wrapped_enum. */
+    template<typename T>
+    concept any_enum  = enumeration<T> || wrapped_enum<T>;
 
     /** Returns underlying pointer type w/o constant'ness */
     template<class T>
@@ -135,9 +298,9 @@ namespace jau::req {
      */
     template<typename T>
     concept string_literal = std::constructible_from<decltype(jau::StringLiteral(T{})), T>
-                          && (!std::is_integral_v<std::remove_reference_t<T>>)
-                          && (!std::is_floating_point_v<std::remove_reference_t<T>>)
-                          && (!std::is_enum_v<std::remove_reference_t<T>>);
+                          && (!integral<std::remove_reference_t<T>>)
+                          && (!floating_point<std::remove_reference_t<T>>)
+                          && (!enumeration<std::remove_reference_t<T>>);
 
     /// A std::string
     template<typename T>
@@ -309,9 +472,9 @@ namespace jau::req {
      * Convertible to string via `std::to_string(T)` or `jau::to_string(T)`
      */
     template<typename T>
-    concept stringorview_convertible1 = std::is_integral_v<T> ||
-                                        std::is_floating_point_v<T> ||
-                                        std::is_pointer_v<T> ||
+    concept stringorview_convertible1 = integral<T> ||
+                                        floating_point<T> ||
+                                        pointer<T> ||
                                         has_member_of_pointer<T> ||
                                         stringorview_convertible0<T>;
 
@@ -325,8 +488,8 @@ namespace jau::req {
      */
     template<typename T>
     concept stringifyable_std = string_alike<T>
-                             || std::is_integral_v<T>
-                             || std::is_floating_point_v<T>;
+                             || integral<T>
+                             || floating_point<T>;
 
     /**
      * A strict convertible type to `std::string`, `std::string_view` or a `std::string` itself.
@@ -385,14 +548,6 @@ namespace jau::req {
      */
     template<typename T, typename... Args>
     concept throw_function = function<T, Args...> && (!nothrow_function<T, Args...>);
-
-    /** Type Wrapper for `value_type`: `typedef value_type` and conversion operator to `value_type`.  */
-    template<typename T>
-    concept wrapper = requires(T t) {
-        typename T::value_type;
-
-        { (typename T::value_type)t } -> std::same_as<typename T::value_type>;
-    };
 
     /** C++ Named Requirement Container (partial) */
     template<typename T>
@@ -462,10 +617,14 @@ namespace jau::req {
     requires cow_container<T>
     constexpr bool is_cow_container() { return true; }
 
+    /** Query whether type is a C++ Named Requirement CoW-Container (partial) */
+    template<typename T>
+    requires (!cow_container<T>)
+    constexpr bool is_cow_container() { return false; }
+
     /**@}*/
 
 } // namespace jau::req
-
 
 /** \example test_type_concepts01.cpp
  * This C++ unit test validates the jau::req concepts
