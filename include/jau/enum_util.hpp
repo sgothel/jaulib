@@ -162,42 +162,99 @@ namespace jau::enums {
         return { { args... } };
     }
 
-    template <jau::req::enumeration E>
-    constexpr std::underlying_type_t<E>
-    number(const E v) noexcept { return static_cast<std::underlying_type_t<E>>(v); }
-
-    template <jau::req::enumeration E>
-    constexpr std::underlying_type_t<E>
-    operator*(const E v) noexcept { return static_cast<std::underlying_type_t<E>>(v); }
-
-    template <jau::req::enumeration E>
-    constexpr E operator~(const E rhs) noexcept {
-        return E(~number(rhs));
+    template <jau::req::any_enum E>
+    constexpr std::underlying_type_t<jau::req::type_of<E>>
+    number(const E &v) noexcept {
+        using namespace jau::req;
+        return static_cast<std::underlying_type_t<type_of<E>>>(value_of(v));
     }
 
-    template <jau::req::enumeration E>
-    constexpr E operator^(const E lhs, const E rhs) noexcept {
-        return E(*lhs ^ *rhs);
+    template <jau::req::any_enum E>
+    constexpr std::underlying_type_t<jau::req::type_of<E>>
+    operator*(const E &v) noexcept {
+        using namespace jau::req;
+        return static_cast<std::underlying_type_t<type_of<E>>>(value_of(v));
     }
 
-    template <jau::req::enumeration E>
-    constexpr E operator|(const E lhs, const E rhs) noexcept {
-        return E(*lhs | *rhs);
+    template <jau::req::any_enum E>
+    constexpr jau::req::type_of<E> operator~(const E rhs) noexcept {
+        using namespace jau::req;
+        return type_of<E>(~number(value_of(rhs)));
     }
 
-    template <jau::req::enumeration E>
-    constexpr E operator&(const E lhs, const E rhs) noexcept {
-        return E(*lhs & *rhs);
+    template <jau::req::any_enum E1, jau::req::any_enum E2>
+    requires std::is_same_v<jau::req::type_of<E1>, jau::req::type_of<E2>>
+    constexpr jau::req::type_of<E1> operator^(const E1 &lhs, const E2 &rhs) noexcept {
+        using namespace jau::req;
+        return type_of<E1>(*value_of(lhs) ^ *value_of(rhs));
     }
 
-    template <jau::req::enumeration E>
-    constexpr E& operator|=(E& lhs, const E rhs) noexcept {
-        return lhs = lhs | rhs;
+    template <jau::req::any_enum E1, jau::req::any_enum E2>
+    requires std::is_same_v<jau::req::type_of<E1>, jau::req::type_of<E2>>
+    constexpr jau::req::type_of<E1> operator|(const E1 &lhs, const E2 &rhs) noexcept {
+        using namespace jau::req;
+        return type_of<E1>(*value_of(lhs) | *value_of(rhs));
     }
 
-    template <jau::req::enumeration E>
-    constexpr E& operator&=(E& lhs, const E rhs) noexcept {
-        return lhs = lhs & rhs;
+    template <jau::req::any_enum E1, jau::req::any_enum E2>
+    requires std::is_same_v<jau::req::type_of<E1>, jau::req::type_of<E2>>
+    constexpr jau::req::type_of<E1> operator&(const E1 &lhs, const E2 &rhs) noexcept {
+        using namespace jau::req;
+        return type_of<E1>(*value_of(lhs) & *value_of(rhs));
+    }
+
+    template <jau::req::any_enum E1, jau::req::any_enum E2>
+    requires std::is_same_v<jau::req::type_of<E1>, jau::req::type_of<E2>>
+    constexpr jau::req::type_of<E1>& operator|=(E1 &lhs, const E2 &rhs) noexcept {
+        using namespace jau::req;
+        return reference_of(lhs) = value_of(lhs) | value_of(rhs);
+    }
+
+    template <jau::req::any_enum E1, jau::req::any_enum E2>
+    requires std::is_same_v<jau::req::type_of<E1>, jau::req::type_of<E2>>
+    constexpr jau::req::type_of<E1>& operator&=(E1 &lhs, const E2 &rhs) noexcept {
+        using namespace jau::req;
+        return reference_of(lhs) = value_of(lhs) & value_of(rhs);
+    }
+
+    template <jau::req::any_enum E1, jau::req::any_enum E2>
+    requires std::is_same_v<jau::req::type_of<E1>, jau::req::type_of<E2>>
+    constexpr jau::req::type_of<E1>& operator^=(E1 &lhs, const E2 &rhs) noexcept {
+        using namespace jau::req;
+        return reference_of(lhs) = value_of(lhs) ^ value_of(rhs);
+    }
+
+    template <jau::req::any_enum E1, jau::req::any_enum E2>
+    requires std::is_same_v<jau::req::type_of<E1>, jau::req::type_of<E2>>
+    constexpr bool operator==(const E1 &lhs, const E2 &rhs) noexcept {
+        using namespace jau::req;
+        return *value_of(lhs) == *value_of(rhs);
+    }
+
+    template <jau::req::any_enum E1, jau::req::any_enum E2>
+    requires std::is_same_v<jau::req::type_of<E1>, jau::req::type_of<E2>>
+    constexpr bool operator!=(const E1 &lhs, const E2 &rhs) noexcept {
+        return !(lhs == rhs);
+    }
+
+    template <jau::req::any_enum E1, jau::req::any_enum E2>
+    requires std::is_same_v<jau::req::type_of<E1>, jau::req::type_of<E2>>
+    constexpr bool is_set(const E1 &mask, const E2 &bits) noexcept {
+        using namespace jau::req;
+        return value_of(bits) == (value_of(mask) & value_of(bits));
+    }
+
+    template <jau::req::any_enum E1, jau::req::any_enum E2>
+    requires std::is_same_v<jau::req::type_of<E1>, jau::req::type_of<E2>>
+    constexpr bool has_any(const E1 &mask, const E2 &bits) noexcept {
+        using namespace jau::req;
+        return std::underlying_type_t<E1>(0) != ( *value_of(mask) & *value_of(bits) );
+    }
+
+    template <jau::req::any_enum E>
+    constexpr bool has_any(const E &mask) noexcept {
+        using namespace jau::req;
+        return std::underlying_type_t<type_of<E>>(0) != ( *value_of(mask) );
     }
 
     /**
@@ -207,43 +264,14 @@ namespace jau::enums {
      *
      * Returns store reference.
      */
-    template <jau::req::enumeration E>
-    constexpr E& write(E& store, const E bits, bool set) noexcept {
+    template <jau::req::any_enum E1, jau::req::any_enum E2>
+    constexpr jau::req::type_of<E1>& write(E1 &store, const E2 &bits, bool set) noexcept {
+        using namespace jau::req;
         if( set ) {
-            return store = store | bits;
+            return reference_of(store) = value_of(store) | value_of(bits);
         } else {
-            return store = store & ~bits;
+            return reference_of(store) = value_of(store) & ~value_of(bits);
         }
-    }
-
-    template <jau::req::enumeration E>
-    constexpr E& operator^=(E& lhs, const E rhs) noexcept {
-        return lhs = lhs ^ rhs;
-    }
-
-    template <jau::req::enumeration E>
-    constexpr bool operator==(const E lhs, const E rhs) noexcept {
-        return *lhs == *rhs;
-    }
-
-    template <jau::req::enumeration E>
-    constexpr bool operator!=(const E lhs, const E rhs) noexcept {
-        return !(lhs == rhs);
-    }
-
-    template <jau::req::enumeration E>
-    constexpr bool is_set(const E mask, const E bits) noexcept {
-        return bits == (mask & bits);
-    }
-
-    template <jau::req::enumeration E>
-    constexpr bool has_any(const E mask, const E bits) noexcept {
-        return std::underlying_type_t<E>(0) != ( *mask & *bits );
-    }
-
-    template <jau::req::enumeration E>
-    constexpr bool has_any(const E mask) noexcept {
-        return std::underlying_type_t<E>(0) != ( *mask );
     }
 
     template <jau::req::enumeration E>

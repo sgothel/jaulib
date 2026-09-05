@@ -418,3 +418,106 @@ TEST_CASE( "Enum Class Value Type Test 12", "[enum][type]" ) {
         static_assert( 30 == *Thing::EnumB::three );
     }
 }
+
+template<typename T>
+class Wrap {
+  private:
+    T store;
+
+  public:
+    using value_type = T;
+
+    Wrap(T v) noexcept : store(v) {}
+    inline operator T() const noexcept { return store; }
+    inline operator T&() noexcept { return store; }
+};
+
+TEST_CASE( "Enum Class BitOps Test 20", "[enum][type]" ) {
+    using namespace jau::enums;
+    test_type3_t b123 = test_type3_t(0b0111);
+    REQUIRE(0b0111 == *b123);
+    REQUIRE((test_type3_t::one | test_type3_t::two | test_type3_t::three) == b123);
+    test_type3_t b12 = test_type3_t(0b0011);
+    REQUIRE(0b0011 == *b12);
+    REQUIRE((test_type3_t::one | test_type3_t::two) == b12);
+    REQUIRE((test_type3_t::one | test_type3_t::two) == (b123 & b12));
+    REQUIRE(0b0011 == *(b123 & b12));
+    test_type3_t b23 = test_type3_t(0b0110);
+    REQUIRE(0b0110 == *b23);
+    REQUIRE((test_type3_t::two | test_type3_t::three) == b23);
+    
+    {
+        test_type3_t b1 = test_type3_t::none;
+        b1 |= test_type3_t::one;
+        b1 |= test_type3_t::two;
+        b1 |= test_type3_t::three;
+        REQUIRE(b123 == b1);
+        REQUIRE((test_type3_t::one | test_type3_t::two | test_type3_t::three) == b1);
+    }
+    {
+        test_type3_t b1 = test_type3_t::one | test_type3_t::two | test_type3_t::three;
+        test_type3_t b2 = test_type3_t::one | test_type3_t::two | test_type3_t::three;
+        REQUIRE(b123 == b1);
+        REQUIRE(b123 == b2);
+        b2 = b2 & ~test_type3_t::three;
+        REQUIRE(b12 == b2);
+        b2 = b2 | test_type3_t::three;
+        REQUIRE(b123 == b2);
+        b2 &= ~test_type3_t::three;
+        REQUIRE(b12 == b2);
+    }
+    {
+        test_type3_t b1 = test_type3_t::one |                     test_type3_t::three;
+        test_type3_t b2 = test_type3_t::one | test_type3_t::two;
+        test_type3_t b3 = b1 ^ b2;
+        REQUIRE((test_type3_t::two | test_type3_t::three) == b3);
+        REQUIRE(b23 == b3);
+        b3 ^= b123;
+        REQUIRE(test_type3_t::one == b3);
+    }
+}
+
+TEST_CASE( "Enum Class Wrapped BitOps Test 21", "[enum][type]" ) {
+    using namespace jau::enums;
+    Wrap<test_type3_t> b123 = test_type3_t(0b0111);
+    REQUIRE(0b0111 == *b123);
+    REQUIRE((test_type3_t::one | test_type3_t::two | test_type3_t::three) == b123);
+    Wrap<test_type3_t> b12 = test_type3_t(0b0011);
+    REQUIRE(0b0011 == *b12);
+    REQUIRE((test_type3_t::one | test_type3_t::two) == b12);
+    REQUIRE((test_type3_t::one | test_type3_t::two) == (b123 & b12));
+    REQUIRE(0b0011 == *(b123 & b12));
+    Wrap<test_type3_t> b23 = test_type3_t(0b0110);
+    REQUIRE(0b0110 == *b23);
+    REQUIRE((test_type3_t::two | test_type3_t::three) == b23);
+    
+    {
+        Wrap<test_type3_t> b1 = test_type3_t::none;
+        b1 |= test_type3_t::one;
+        b1 |= test_type3_t::two;
+        b1 |= test_type3_t::three;
+        REQUIRE(b123 == b1);
+        REQUIRE((test_type3_t::one | test_type3_t::two | test_type3_t::three) == b1);
+    }
+    {
+        Wrap<test_type3_t> b1 = test_type3_t::one | test_type3_t::two | test_type3_t::three;
+        Wrap<test_type3_t> b2 = test_type3_t::one | test_type3_t::two | test_type3_t::three;
+        REQUIRE(b123 == b1);
+        REQUIRE(b123 == b2);
+        b2 = b2 & ~test_type3_t::three;
+        REQUIRE(b12 == b2);
+        b2 = b2 | test_type3_t::three;
+        REQUIRE(b123 == b2);
+        b2 &= ~test_type3_t::three;
+        REQUIRE(b12 == b2);
+    }
+    {
+        Wrap<test_type3_t> b1 = test_type3_t::one |                     test_type3_t::three;
+        Wrap<test_type3_t> b2 = test_type3_t::one | test_type3_t::two;
+        Wrap<test_type3_t> b3 = b1 ^ b2;
+        REQUIRE((test_type3_t::two | test_type3_t::three) == b3);
+        REQUIRE(b23 == b3);
+        b3 ^= b123;
+        REQUIRE(test_type3_t::one == b3);
+    }
+}
