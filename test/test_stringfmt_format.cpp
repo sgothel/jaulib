@@ -488,8 +488,15 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
     // atomic wrapper
     {
         jau::ordered_atomic<SomeClass1, std::memory_order_relaxed> sc_clz1;
+        jau::ordered_atomic<SomeClass3, std::memory_order_relaxed> sc_clz3;
+        jau::ordered_atomic<uint16_t, std::memory_order_relaxed> sc_u16 = 12;
+        jau::ordered_atomic<bool, std::memory_order_relaxed> sc_bool = true;
         CHECK("SomeClass1 toString" == jau::to_string(sc_clz1));
+        CHECK("SomeClass3 toString" == jau::to_string(sc_clz3));
+        CHECK("12" == jau::to_string(sc_u16));
+        CHECK("T" == jau::to_string(sc_bool));
         CHECK("SomeClass1 toString" == jau::format_string("%s", sc_clz1));
+        CHECK("SomeClass1 toString, 12, true, SomeClass3 toString" == jau::format_string("%s, %u, %s, %s", sc_clz1, sc_u16, sc_bool, sc_clz3));
     }
     {
         jau::ordered_atomic<SomeClass3, std::memory_order_relaxed> sc_clz3;
@@ -499,7 +506,7 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
     {
         jau::relaxed_atomic_int sc_int = 11;
         CHECK("11" == jau::to_string(sc_int));
-        CHECK("11" == jau::format_string("%s", sc_int));
+        CHECK("11" == jau::format_string("%d", sc_int));
     }
 }
 

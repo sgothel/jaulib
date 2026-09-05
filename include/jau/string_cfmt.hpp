@@ -888,32 +888,36 @@ namespace jau::cfmt {
             //
 
             template <typename T>
-            requires jau::req::boolean<T>
+            requires jau::req::any_boolean<T>
             CXX_NO_INLINE
             static constexpr void parseOne(Result &pc, const T &val) noexcept{
-                pc.set_arg(sizeof(T)); // NOLINT(bugprone-sizeof-expression)
-                parseOneImpl<bool>(pc, val); // pass-through
+                using namespace jau::req;
+                pc.set_arg(sizeof(type_of<T>)); // NOLINT(bugprone-sizeof-expression)
+                parseOneImpl<bool>(pc, value_of(val)); // pass-through
             }
 
             template <typename T>
-            requires std::is_integral_v<T> && (!jau::req::boolean<T>)
+            requires jau::req::any_integral<T> && (!jau::req::any_boolean<T>)
             CXX_NO_INLINE
             static constexpr void parseOne(Result &pc, const T &val) noexcept {
-                pc.m_argtype_size = sizeof(T);
-                pc.m_argtype_signed = std::is_signed_v<T>;
-                pc.m_argval_negative = !is_positive(val);
-                using U = make_int_unsigned_t<T>;
-                parseOneImpl<U>(pc, unsigned_int(val)); // uint64_t
+                using namespace jau::req;
+                using WT = type_of<T>;
+                pc.m_argtype_size = sizeof(WT);
+                pc.m_argtype_signed = std::is_signed_v<WT>;
+                pc.m_argval_negative = !is_positive(value_of(val));
+                using U = make_int_unsigned_t<WT>;
+                parseOneImpl<U>(pc, unsigned_int(value_of(val))); // uint64_t
             }
 
             template <typename T>
-            requires std::is_floating_point_v<T>
+            requires jau::req::any_floating_point<T>
             CXX_NO_INLINE
             static constexpr void parseOne(Result &pc, const T &val) noexcept {
-                pc.m_argtype_size = sizeof(T);
+                using namespace jau::req;
+                pc.m_argtype_size = sizeof(type_of<T>);
                 pc.m_argtype_signed = true;
-                pc.m_argval_negative = !is_positive(val);
-                parseOneImpl<double>(pc, double(val)); // double
+                pc.m_argval_negative = !is_positive(value_of(val));
+                parseOneImpl<double>(pc, double(value_of(val))); // double
             }
 
             CXX_NO_INLINE
@@ -965,7 +969,9 @@ namespace jau::cfmt {
                 parseOneImpl<std::string_view>(pc, val.to_string());
             }
             template <typename T>
-            requires jau::req::has_free_to_string_any<T> && (!jau::req::string_alike<T>)
+            requires jau::req::has_free_to_string_any<T> && (!
+                     (jau::req::string_alike<T> || jau::req::any_boolean<T> ||
+                      jau::req::any_integral<T> || jau::req::any_floating_point<T> || jau::req::pointer<T>))
             CXX_ALWAYS_INLINE
             static constexpr void parseOne(Result &pc, const T &val) noexcept {
                 pc.set_arg(sizeof(T)); // NOLINT(bugprone-sizeof-expression)
@@ -973,13 +979,15 @@ namespace jau::cfmt {
             }
 
             template <typename T>
-            requires std::is_enum_v<T> && (!jau::req::has_free_to_string_any<T>)
+            requires jau::req::any_enum<T> && (!jau::req::has_free_to_string_any<T>)
             CXX_NO_INLINE
             static constexpr void parseOne(Result &pc, const T &val) noexcept {
-                pc.m_argtype_size = sizeof(T); // NOLINT(bugprone-sizeof-expression)
-                pc.m_argtype_signed = std::is_signed_v<T>;
-                pc.m_argval_negative = !is_positive(val);
-                parseOneImpl<T>(pc, val);
+                using namespace jau::req;
+                using WT = type_of<T>;
+                pc.m_argtype_size = sizeof(WT); // NOLINT(bugprone-sizeof-expression)
+                pc.m_argtype_signed = std::is_signed_v<WT>;
+                pc.m_argval_negative = !is_positive(value_of(val));
+                parseOneImpl<T>(pc, value_of(val));
             }
 
             template <typename T>
@@ -995,26 +1003,31 @@ namespace jau::cfmt {
             //
 
             template <typename T>
-            requires jau::req::boolean<T>
+            requires jau::req::any_boolean<T>
             static consteval void checkOne(CheckResult &pc) noexcept {
-                pc.set_arg(sizeof(T)); // NOLINT(bugprone-sizeof-expression)
-                parseOneImpl<bool>(pc, T()); // pass-through
+                using namespace jau::req;
+                using WT = type_of<T>;
+                pc.set_arg(sizeof(WT)); // NOLINT(bugprone-sizeof-expression)
+                parseOneImpl<bool>(pc, WT()); // pass-through
             }
 
             template <typename T>
-            requires std::is_integral_v<T> && (!jau::req::boolean<T>)
+            requires jau::req::any_integral<T> && (!jau::req::any_boolean<T>)
             static consteval void checkOne(CheckResult &pc) noexcept {
-                pc.m_argtype_size = sizeof(T);
-                pc.m_argtype_signed = std::is_signed_v<T>;
+                using namespace jau::req;
+                using WT = type_of<T>;
+                pc.m_argtype_size = sizeof(WT);
+                pc.m_argtype_signed = std::is_signed_v<WT>;
                 pc.m_argval_negative = false;
-                using U = make_int_unsigned_t<T>;
+                using U = make_int_unsigned_t<WT>;
                 parseOneImpl<U>(pc, U()); // uint64_t
             }
 
             template <typename T>
-            requires std::is_floating_point_v<T>
+            requires jau::req::any_floating_point<T>
             static consteval void checkOne(CheckResult &pc) noexcept {
-                pc.m_argtype_size = sizeof(T);
+                using namespace jau::req;
+                pc.m_argtype_size = sizeof(type_of<T>);
                 pc.m_argtype_signed = true;
                 pc.m_argval_negative = false;
                 parseOneImpl<double>(pc, double()); // double
@@ -1037,26 +1050,42 @@ namespace jau::cfmt {
             }
 
             template <typename T>
-            requires jau::req::string_literal<T> || jau::req::string_class<T>
+            requires jau::req::string_literal<T> || jau::req::string_class<T> || jau::req::string_view_type<T>
             static consteval void checkOne(CheckResult &pc) noexcept {
                 pc.set_arg(sizeof(T)); // NOLINT(bugprone-sizeof-expression)
                 parseOneImpl<std::string_view>(pc, std::string_view()); // pass as string_view
             }
 
             template <typename T>
-            requires jau::req::stringorview_convertible0<T> && (!jau::req::string_alike<T>)
+            requires jau::req::has_toString_any<T> && (!jau::req::string_alike<T>) && (!std::is_enum_v<T>)
+            static consteval void checkOne(CheckResult &pc) noexcept {
+                pc.set_arg(sizeof(T)); // NOLINT(bugprone-sizeof-expression)
+                parseOneImpl<std::string_view>(pc, std::string_view()); // pass as string_view
+            }
+            template <typename T>
+            requires jau::req::has_to_string_any<T> && (!jau::req::string_alike<T>) && (!std::is_enum_v<T>)
+            static consteval void checkOne(CheckResult &pc) noexcept {
+                pc.set_arg(sizeof(T)); // NOLINT(bugprone-sizeof-expression)
+                parseOneImpl<std::string_view>(pc, std::string_view()); // pass as string_view
+            }
+            template <typename T>
+            requires jau::req::has_free_to_string_any<T> && (!
+                     (jau::req::string_alike<T> || jau::req::any_boolean<T> ||
+                      jau::req::any_integral<T> || jau::req::any_floating_point<T> || jau::req::pointer<T>))
             static consteval void checkOne(CheckResult &pc) noexcept {
                 pc.set_arg(sizeof(T)); // NOLINT(bugprone-sizeof-expression)
                 parseOneImpl<std::string_view>(pc, std::string_view()); // pass as string_view
             }
 
             template <typename T>
-            requires std::is_enum_v<T> && (!jau::req::has_free_to_string_any<T>)
+            requires jau::req::any_enum<T> && (!jau::req::has_free_to_string_any<T>)
             static consteval void checkOne(CheckResult &pc) noexcept {
-                pc.m_argtype_size = sizeof(T); // NOLINT(bugprone-sizeof-expression)
-                pc.m_argtype_signed = std::is_signed_v<T>;
+                using namespace jau::req;
+                using WT = type_of<T>;
+                pc.m_argtype_size = sizeof(WT); // NOLINT(bugprone-sizeof-expression)
+                pc.m_argtype_signed = std::is_signed_v<WT>;
                 pc.m_argval_negative = false;
-                parseOneImpl<T>(pc, T());
+                parseOneImpl<T>(pc, WT());
             }
 
             template <typename T>
