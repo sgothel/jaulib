@@ -485,6 +485,13 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
         CHECK("SomeClass3 toString" == jau::format_string("%s", sc3));
         CHECK("SomeClass3 toString" != jau::format_string("%p", &sc3));
     }
+    // jau::fraction_i64 has both, member toString and free to_string
+    {
+        jau::fraction_i64 timeout(10, 1);
+        jau_format_check("Timeout %ld ms, %s", timeout.to_ms(), timeout);
+        CHECK("10/1" == jau::to_string(timeout));
+        CHECK("Timeout 10000 ms, 10/1" == jau::format_string("Timeout %ld ms, %s", timeout.to_ms(), timeout));
+    }
     // atomic wrapper
     {
         jau::ordered_atomic<SomeClass1, std::memory_order_relaxed> sc_clz1;

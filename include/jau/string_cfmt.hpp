@@ -970,7 +970,7 @@ namespace jau::cfmt {
             }
             template <typename T>
             requires jau::req::has_free_to_string_any<T> && (!
-                     (jau::req::string_alike<T> || jau::req::any_boolean<T> ||
+                     (jau::req::has_toString_any<T> || jau::req::string_alike<T> || jau::req::any_boolean<T> ||
                       jau::req::any_integral<T> || jau::req::any_floating_point<T> || jau::req::pointer<T>))
             CXX_ALWAYS_INLINE
             static constexpr void parseOne(Result &pc, const T &val) noexcept {
@@ -1070,7 +1070,7 @@ namespace jau::cfmt {
             }
             template <typename T>
             requires jau::req::has_free_to_string_any<T> && (!
-                     (jau::req::string_alike<T> || jau::req::any_boolean<T> ||
+                     (jau::req::has_toString_any<T> || jau::req::string_alike<T> || jau::req::any_boolean<T> ||
                       jau::req::any_integral<T> || jau::req::any_floating_point<T> || jau::req::pointer<T>))
             static consteval void checkOne(CheckResult &pc) noexcept {
                 pc.set_arg(sizeof(T)); // NOLINT(bugprone-sizeof-expression)
