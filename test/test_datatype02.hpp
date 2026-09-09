@@ -123,6 +123,8 @@ struct GattCharacteristicPropertySpec {
     const GattCharacteristicProperty property;
     const GattRequirementSpec requirement;
 
+    ~GattCharacteristicPropertySpec() noexcept = default;
+
     std::string toString() const noexcept;
 };
 

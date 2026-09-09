@@ -550,6 +550,28 @@ namespace jau::req {
     template<typename T, typename... Args>
     concept throw_function = function<T, Args...> && (!nothrow_function<T, Args...>);
 
+    /**
+     * A generic noexcept destructor type, i.e. destructor w/ `noexcept` qualification
+     */
+    template<typename T>
+    concept nothrow_destructor = requires(T t) {
+        { t.~T() } noexcept;
+    };
+
+    /**
+     * A generic noexcept default-constructor type, i.e. destructor w/ `noexcept` qualification
+     */
+    template<typename T>
+    concept nothrow_default_constructor = requires() {
+        { T() } noexcept;
+    };
+
+    /**
+     * A generic noexcept default-constructor and destructor type, i.e. both w/ `noexcept` qualification
+     */
+    template<typename T>
+    concept nothrow_defctor_dtor = nothrow_default_constructor<T> && nothrow_destructor<T>;
+
     /** Determining whether the given template class contains `typedef std::true_type enforce_secmem`. */
     template<typename T >
     concept enforce_secmem = requires {

@@ -151,6 +151,7 @@ namespace jau {
               bool use_memmove = std::is_trivially_copyable_v<Value_type> || jau::req::memmove_compliant<Value_type>,
               bool use_secmem  = jau::req::enforce_secmem<Value_type>
              >
+    requires jau::req::nothrow_destructor<Value_type>
     class darray
     {
         public:
@@ -344,7 +345,7 @@ namespace jau {
                 if( m_position > m_limit) { m_position = m_limit; }
             }
 
-            constexpr void dtor_one(iterator pos) {
+            constexpr void dtor_one(iterator pos) noexcept {
                 JAU_DARRAY_PRINTF0("dtor [%zd], count 1\n", (pos-m_begin));
                 ( pos )->~value_type(); // placement new -> manual destruction!
                 if constexpr ( uses_secmem ) {
@@ -352,7 +353,7 @@ namespace jau {
                 }
             }
 
-            constexpr size_type dtor_range(iterator first, const_iterator last) {
+            constexpr size_type dtor_range(iterator first, const_iterator last) noexcept {
                 size_type count=0;
                 JAU_DARRAY_PRINTF0("dtor [%zd .. %zd], count %zd\n", (first-m_begin), (last-m_begin)-1, (last-first)-1);
                 for(; first < last; ++first, ++count ) {

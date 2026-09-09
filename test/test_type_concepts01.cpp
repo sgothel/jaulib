@@ -183,6 +183,12 @@ TEST_CASE( "01 Type Concept Queries: Build-In") {
 
     static_assert(false == jau::req::container<int> );
 
+    static_assert(true == jau::req::nothrow_destructor<int>);
+    static_assert(true == jau::req::nothrow_destructor<jau::darray<int>>);
+    static_assert(true == jau::req::nothrow_default_constructor<int>);
+    static_assert(true == jau::req::nothrow_default_constructor<jau::darray<int>>);
+    static_assert(true == jau::req::nothrow_defctor_dtor<int>);
+    static_assert(true == jau::req::nothrow_defctor_dtor<jau::darray<int>>);
 
     static_assert(true == jau::req::container<std::vector<int>> );
     static_assert(true == jau::req::container<std::map<int, int>> );
