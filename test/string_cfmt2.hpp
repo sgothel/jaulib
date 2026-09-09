@@ -31,7 +31,7 @@
 #include <jau/byte_util.hpp>
 #include <jau/cpp_lang_util.hpp>
 #include <jau/packed_attribute.hpp>
-#include <jau/type_traits_queries.hpp>
+#include <jau/type_concepts.hpp>
 
 #include <jau/cpp_pragma.hpp>
 

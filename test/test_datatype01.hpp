@@ -206,7 +206,7 @@ inline bool operator!=(const DataType01& lhs, const DataType01& rhs) noexcept
 
 class DataType02_Memmove_Secmem {
     public:
-        typedef std::true_type  container_memmove_compliant;
+        typedef std::true_type  memmove_compliant;
         typedef std::true_type  enforce_secmem;
 
         Addr48Bit address;

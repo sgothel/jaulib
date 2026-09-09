@@ -57,8 +57,8 @@ namespace jau {
      * @tparam use_secmem
      */
     template <typename Value_type, typename Size_type = jau::nsize_t, typename Alloc_type = jau::callocator<Value_type>,
-              bool use_memmove = std::is_trivially_copyable_v<Value_type> || is_container_memmove_compliant_v<Value_type>,
-              bool use_secmem  = is_enforcing_secmem_v<Value_type>
+              bool use_memmove = std::is_trivially_copyable_v<Value_type> || jau::req::memmove_compliant<Value_type>,
+              bool use_secmem  = jau::req::enforce_secmem<Value_type>
              >
     class darray_sorted : protected darray<Value_type, Size_type, Alloc_type, use_memmove, use_secmem> {
         public:

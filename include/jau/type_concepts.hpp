@@ -27,7 +27,9 @@
 
 #include <concepts>
 #include <string>
+#include <tuple>
 #include <type_traits>
+
 #include <jau/cpp_lang_util.hpp>
 #include <jau/string_literal.hpp>
 
@@ -38,6 +40,15 @@ namespace jau::req {
      *
      *  @{
      */
+
+    template<typename... Ts>
+    using first_type = std::tuple_element_t<0, std::tuple<Ts...>>;
+
+    template<typename... Ts>
+    concept is_all_same = std::conjunction_v<std::is_same<first_type<Ts...>, Ts>...>;
+
+    template<typename T1, typename... Ts>
+    concept is_first_same = std::conjunction_v<std::is_same<T1, Ts>...>;
 
     /** Concept of type, able to evaluate `std::declval<T>()` */
     template<typename T>
@@ -52,16 +63,6 @@ namespace jau::req {
 
         { t.operator typename T::value_type() } -> std::same_as<typename T::value_type>;
     };
-
-    /** Query whether type is a wrapper */
-    template<typename T>
-    requires wrapper<T>
-    constexpr bool is_wrapper() { return true; }
-
-    /** Query whether type is a wrapper */
-    template<typename T>
-    requires (!wrapper<T>)
-    constexpr bool is_wrapper() { return false; }
 
     namespace impl {
         /// Conditional w/ default implementation (false) for direct type
@@ -549,6 +550,20 @@ namespace jau::req {
     template<typename T, typename... Args>
     concept throw_function = function<T, Args...> && (!nothrow_function<T, Args...>);
 
+    /** Determining whether the given template class contains `typedef std::true_type enforce_secmem`. */
+    template<typename T >
+    concept enforce_secmem = requires {
+        typename T::enforce_secmem;
+        { T::enforce_secmem::value } -> std::same_as<std::true_type>;
+    };
+
+    /** Determining whether the given template class contains `typedef std::true_type memmove_compliant`. */
+    template< class T >
+    concept memmove_compliant = requires {
+        typename T::memmove_compliant;
+        { T::memmove_compliant } -> std::same_as<std::true_type>;
+    };
+
     /** C++ Named Requirement Container (partial) */
     template<typename T>
     concept container = requires(T t) {
@@ -565,16 +580,6 @@ namespace jau::req {
         { t.size() } -> std::same_as<typename T::size_type>;
     };
 
-    /** Query whether type is a C++ Named Requirement Container (partial) */
-    template<typename T>
-    requires container<T>
-    constexpr bool is_container() { return true; }
-
-    /** Query whether type is a C++ Named Requirement Container (partial) */
-    template<typename T>
-    requires (!container<T>)
-    constexpr bool is_container() { return false; }
-
     /** C++ Named Requirement ContiguousContainer (partial) */
     template<typename T>
     concept contiguous_container = container<T> && requires(T t) {
@@ -584,17 +589,7 @@ namespace jau::req {
         { t.data() } -> std::same_as<typename T::pointer>;
     };
 
-    /** Query whether type is a C++ Named Requirement ContiguousContainer (partial) */
-    template<typename T>
-    requires contiguous_container<T>
-    constexpr bool is_contiguous_container() { return true; }
-
-    /** Query whether type is a C++ Named Requirement ContiguousContainer (partial) */
-    template<typename T>
-    requires (!contiguous_container<T>)
-    constexpr bool is_contiguous_container() { return false; }
-
-    /** C++ Named Requirement CoW-Container (partial) */
+    /** CoW-Container (partial) */
     template<typename T>
     concept cow_container = requires(T t) {
         typename T::value_type;
@@ -611,16 +606,6 @@ namespace jau::req {
         { t.snapshot() } -> std::same_as<typename T::storage_ref_t>;
         { t.size() } -> std::same_as<typename T::size_type>;
     };
-
-    /** Query whether type is a C++ Named Requirement CoW-Container (partial) */
-    template<typename T>
-    requires cow_container<T>
-    constexpr bool is_cow_container() { return true; }
-
-    /** Query whether type is a C++ Named Requirement CoW-Container (partial) */
-    template<typename T>
-    requires (!cow_container<T>)
-    constexpr bool is_cow_container() { return false; }
 
     /**@}*/
 

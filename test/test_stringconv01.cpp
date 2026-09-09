@@ -32,7 +32,6 @@
 #include <jau/string_cfmt.hpp>
 #include <jau/string_util.hpp>
 #include <jau/test/catch2_ext.hpp>
-#include <jau/type_traits_queries.hpp>
 
 typedef std::vector<int> std_vec_int;
 

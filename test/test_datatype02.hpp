@@ -25,9 +25,7 @@
 #define TEST_DATATYPE02_CPP_
 
 #include <cassert>
-#include <cinttypes>
 #include <cstring>
-#include <random>
 
 #include <jau/cpp_lang_util.hpp>
 #include <jau/packed_attribute.hpp>
@@ -166,6 +164,7 @@ struct GattServiceCharacteristic {
     std::string toString() const noexcept;
 };
 
+// NOLINTBEGIN(modernize-use-designated-initializers)
 const GattServiceCharacteristic GATT_GENERIC_ACCESS_SRVC = { GENERIC_ACCESS,
         { { DEVICE_NAME, Mandatory,
             // GattCharacteristicPropertySpec[9]:
@@ -320,6 +319,8 @@ const GattServiceCharacteristic GATT_DEVICE_INFORMATION_SRVC = { DEVICE_INFORMAT
           }
         } };
 
+// NOLINTEND(modernize-use-designated-initializers)
+
 const jau::darray<const GattServiceCharacteristic*> GATT_SERVICES = {
         &GATT_GENERIC_ACCESS_SRVC, &GATT_HEALTH_THERMOMETER_SRVC, &GATT_DEVICE_INFORMATION_SRVC };
 
@@ -331,7 +332,7 @@ const jau::darray<const GattServiceCharacteristic*> GATT_SERVICES = {
     X(DEVICE_INFORMATION) \
     X(BATTERY_SERVICE)
 
-std::string GattServiceTypeToString(const GattServiceType v) noexcept {
+inline std::string GattServiceTypeToString(const GattServiceType v) noexcept {
     switch(v) {
         SERVICE_TYPE_ENUM(CASE_TO_STRING)
         default: ; // fall through intended
@@ -363,7 +364,7 @@ std::string GattServiceTypeToString(const GattServiceType v) noexcept {
     X(PNP_ID)
 
 
-std::string GattCharacteristicTypeToString(const GattCharacteristicType v) noexcept {
+inline std::string GattCharacteristicTypeToString(const GattCharacteristicType v) noexcept {
     switch(v) {
         CHARACTERISTIC_TYPE_ENUM(CASE_TO_STRING)
         default: ; // fall through intended
@@ -383,7 +384,7 @@ std::string GattCharacteristicTypeToString(const GattCharacteristicType v) noexc
         X(ReliableWriteExt) \
         X(AuxWriteExt)
 
-std::string GattCharacteristicPropertyToString(const GattCharacteristicProperty v) noexcept {
+inline std::string GattCharacteristicPropertyToString(const GattCharacteristicProperty v) noexcept {
     switch(v) {
         CHARACTERISTIC_PROP_ENUM(CASE_TO_STRING)
         default: ; // fall through intended
@@ -400,7 +401,7 @@ std::string GattCharacteristicPropertyToString(const GattCharacteristicProperty 
     X(if_notify_or_indicate_supported) \
     X(C1)
 
-std::string GattRequirementSpecToString(const GattRequirementSpec v) noexcept {
+inline std::string GattRequirementSpecToString(const GattRequirementSpec v) noexcept {
     switch(v) {
         REQUIREMENT_SPEC_ENUM(CASE_TO_STRING)
         default: ; // fall through intended
@@ -408,15 +409,15 @@ std::string GattRequirementSpecToString(const GattRequirementSpec v) noexcept {
     return "Unknown";
 }
 
-std::string GattCharacteristicPropertySpec::toString() const noexcept {
+inline std::string GattCharacteristicPropertySpec::toString() const noexcept {
     return GattCharacteristicPropertyToString(property)+": "+GattRequirementSpecToString(requirement);
 }
 
-std::string GattClientCharacteristicConfigSpec::toString() const noexcept {
+inline std::string GattClientCharacteristicConfigSpec::toString() const noexcept {
     return "ClientCharCfg["+GattRequirementSpecToString(requirement)+"["+read.toString()+", "+writeWithAck.toString()+"]]";
 }
 
-std::string GattCharacteristicSpec::toString() const noexcept {
+inline std::string GattCharacteristicSpec::toString() const noexcept {
     std::string res = GattCharacteristicTypeToString(characteristic)+": "+GattRequirementSpecToString(requirement)+", Properties[";
     for(size_t i=0; i<propertySpec.size(); i++) {
         if(0<i) {
@@ -428,7 +429,7 @@ std::string GattCharacteristicSpec::toString() const noexcept {
     return res;
 }
 
-std::string GattServiceCharacteristic::toString() const noexcept {
+inline std::string GattServiceCharacteristic::toString() const noexcept {
     std::string res = GattServiceTypeToString(service)+": [";
     for(size_t i=0; i<characteristics.size(); i++) {
         if(0<i) {

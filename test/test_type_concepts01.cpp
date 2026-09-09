@@ -181,24 +181,28 @@ TEST_CASE( "01 Type Concept Queries: Build-In") {
     static_assert(true  == jau::req::pointer<const char*> );
     static_assert(false == jau::req::pointer<int> );
 
-    static_assert(false == jau::req::is_container<int>() );
+    static_assert(false == jau::req::container<int> );
 
-    static_assert(true == jau::req::is_container<std::vector<int>>() );
-    static_assert(true == jau::req::is_container<std::map<int, int>>() );
-    static_assert(true == jau::req::is_container<std::array<int, 10>>() );
-    static_assert(false == jau::req::is_container<std::forward_list<int>>() ); // misses: size
-    static_assert(true == jau::req::is_container<std::list<int>>() );
-    static_assert(true == jau::req::is_container<std::deque<int>>() );
-    static_assert(true == jau::req::is_container<jau::darray<int>>() );
-    static_assert(false == jau::req::is_container<jau::cow_darray<int>>() ); // has no direct `end` method
 
-    static_assert(true == jau::req::is_contiguous_container<std::vector<int>>() );
-    static_assert(true == jau::req::is_contiguous_container<std::array<int, 10>>() );
-    static_assert(true == jau::req::is_contiguous_container<jau::darray<int>>() );
-    static_assert(false == jau::req::is_contiguous_container<std::map<int, int>>() );
-    static_assert(false == jau::req::is_contiguous_container<std::forward_list<int>>() );
-    static_assert(false == jau::req::is_contiguous_container<std::list<int>>() );
-    static_assert(false == jau::req::is_contiguous_container<std::deque<int>>() );
+    static_assert(true == jau::req::container<std::vector<int>> );
+    static_assert(true == jau::req::container<std::map<int, int>> );
+    static_assert(true == jau::req::container<std::array<int, 10>> );
+    static_assert(false == jau::req::container<std::forward_list<int>> ); // misses: size
+    static_assert(true == jau::req::container<std::list<int>> );
+    static_assert(true == jau::req::container<std::deque<int>> );
+    static_assert(true == jau::req::container<jau::darray<int>> );
+    static_assert(false == jau::req::container<jau::cow_darray<int>> ); // has no direct `end` method
+
+    static_assert(true == jau::req::contiguous_container<std::vector<int>> );
+    static_assert(true == jau::req::contiguous_container<std::array<int, 10>> );
+    static_assert(true == jau::req::contiguous_container<jau::darray<int>> );
+    static_assert(false == jau::req::contiguous_container<std::map<int, int>> );
+    static_assert(false == jau::req::contiguous_container<std::forward_list<int>> );
+    static_assert(false == jau::req::contiguous_container<std::list<int>> );
+    static_assert(false == jau::req::contiguous_container<std::deque<int>> );
+
+    static_assert(false == jau::req::cow_container<jau::darray<int>> );
+    static_assert(true == jau::req::cow_container<jau::cow_darray<int>> );
 
     {
         using namespace jau::req;

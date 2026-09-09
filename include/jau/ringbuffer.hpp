@@ -28,7 +28,6 @@
 
 #include <algorithm>
 #include <atomic>
-#include <chrono>
 #include <condition_variable>
 #include <cstdint>
 #include <cstring>
@@ -43,7 +42,7 @@
 #include <jau/fraction_type.hpp>
 #include <jau/ordered_atomic.hpp>
 #include <jau/secmem.hpp>
-#include <jau/type_traits_queries.hpp>
+#include <jau/type_concepts.hpp>
 
 namespace jau {
 
@@ -176,9 +175,9 @@ namespace jau {
  * @see jau::sc_atomic_critical
  */
 template <typename Value_type, typename Size_type,
-          bool use_memmove = std::is_trivially_copyable_v<Value_type> || is_container_memmove_compliant_v<Value_type>,
+          bool use_memmove = std::is_trivially_copyable_v<Value_type> || jau::req::memmove_compliant<Value_type>,
           bool use_memcpy  = std::is_trivially_copyable_v<Value_type>,
-          bool use_secmem  = is_enforcing_secmem_v<Value_type>
+          bool use_secmem  = jau::req::enforce_secmem<Value_type>
          >
 class ringbuffer {
     public:

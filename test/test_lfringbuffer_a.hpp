@@ -23,9 +23,7 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <cassert>
-#include <cinttypes>
 #include <cstring>
-#include <memory>
 #include <thread>
 
 #include <jau/test/catch2_ext.hpp>
@@ -48,9 +46,9 @@ Integral_type getValue(const Value_type& e);
 template <typename Integral_type, typename Value_type, typename Size_type,
         bool exp_memmove, bool exp_memcpy, bool exp_secmem,
 
-        bool use_memmove = std::is_trivially_copyable_v<Value_type> || is_container_memmove_compliant_v<Value_type>,
+        bool use_memmove = std::is_trivially_copyable_v<Value_type> || jau::req::memmove_compliant<Value_type>,
         bool use_memcpy  = std::is_trivially_copyable_v<Value_type>,
-        bool use_secmem  = is_enforcing_secmem_v<Value_type>
+        bool use_secmem  = jau::req::enforce_secmem<Value_type>
     >
 class TestRingbuffer_A {
   public:
@@ -847,9 +845,9 @@ class TestRingbuffer_A {
 
 template <typename Integral_type, typename Value_type, typename Size_type,
         bool exp_memmove, bool exp_memcpy, bool exp_secmem,
-        bool use_memmove = std::is_trivially_copyable_v<Value_type> || is_container_memmove_compliant_v<Value_type>,
+        bool use_memmove = std::is_trivially_copyable_v<Value_type> || jau::req::memmove_compliant<Value_type>,
         bool use_memcpy  = std::is_trivially_copyable_v<Value_type>,
-        bool use_secmem  = is_enforcing_secmem_v<Value_type>
+        bool use_secmem  = jau::req::enforce_secmem<Value_type>
     >
 void PerformRingbufferTests() {
     typedef TestRingbuffer_A<Integral_type, Value_type, Size_type,

@@ -29,7 +29,6 @@
 #include <jau/string_util.hpp>
 #include <jau/test/catch2_ext.hpp>
 #include <jau/type_concepts.hpp>
-#include <jau/type_traits_queries.hpp>
 
 #ifdef HAS_STD_FORMAT
     #include <format>

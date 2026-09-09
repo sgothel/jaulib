@@ -118,8 +118,8 @@ namespace jau {
      * @see jau::cow_rw_iterator::write_back()
      */
     template <typename Value_type, typename Size_type = jau::nsize_t, typename Alloc_type = jau::callocator<Value_type>,
-              bool use_memmove = std::is_trivially_copyable_v<Value_type> || is_container_memmove_compliant_v<Value_type>,
-              bool use_secmem  = is_enforcing_secmem_v<Value_type>
+              bool use_memmove = std::is_trivially_copyable_v<Value_type> || jau::req::memmove_compliant<Value_type>,
+              bool use_secmem  = jau::req::enforce_secmem<Value_type>
              >
     class cow_darray
     {
@@ -1181,9 +1181,8 @@ namespace jau {
      * @see cow_darray::push_back_list()
      * @see make_cow_darray()
      */
-    template <typename First, typename... Next,
-              // std::enable_if_t< ( std::is_same<First, Next>::value && ... ), bool> = true>
-              std::enable_if_t< std::conjunction_v<std::is_same<First, Next>... >, bool> = true>
+    template <typename First, typename... Next>
+    requires jau::req::is_first_same<First, Next...>
     constexpr cow_darray< First > make_cow_darray(First&& arg1, Next&&... argsN)
     {
         cow_darray< First > d(1 + sizeof...(Next));

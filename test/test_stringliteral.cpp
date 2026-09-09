@@ -28,7 +28,7 @@
 #include <jau/cpp_lang_util.hpp>
 #include <jau/string_literal.hpp>
 #include <jau/test/catch2_ext.hpp>
-#include <jau/type_traits_queries.hpp>
+#include <jau/type_concepts.hpp>
 
 TEST_CASE("jau::BasicStringLiteral_00", "[jau][std::string][BasicStringLiteral]") {
     static_assert(true == jau::req::string_literal<decltype("lala")>);

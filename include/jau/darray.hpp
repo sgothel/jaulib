@@ -42,7 +42,7 @@
 #include <jau/debug.hpp>
 #include <jau/ordered_atomic.hpp>
 #include <jau/secmem.hpp>
-#include <jau/type_traits_queries.hpp>
+#include <jau/type_concepts.hpp>
 
 namespace jau {
 
@@ -130,9 +130,9 @@ namespace jau {
      * Since element pointer and iterator are always invalidated for container after storage mutation,
      * above constraints are not really anything novel and go along with normal std::vector.
      *
-     * Users may include `typedef container_memmove_compliant` in their Value_type class
+     * Users may include `typedef memmove_compliant` in their Value_type class
      * to enforce `use_memmove` as follows:
-     * - `typedef std::true_type  container_memmove_compliant;`
+     * - `typedef std::true_type memmove_compliant;`
      *
      * @anchor darray_secmem
      * #### use_secmem
@@ -143,13 +143,13 @@ namespace jau {
      *
      * Users may include `typedef enforce_secmem` in their Value_type class
      * to enforce `use_secmem` as follows:
-     * - `typedef std::true_type  enforce_secmem;`
+     * - `typedef std::true_type enforce_secmem;`
      *
      * @see cow_darray
      */
     template <typename Value_type, typename Size_type = jau::nsize_t, typename Alloc_type = jau::callocator<Value_type>,
-              bool use_memmove = std::is_trivially_copyable_v<Value_type> || is_container_memmove_compliant_v<Value_type>,
-              bool use_secmem  = is_enforcing_secmem_v<Value_type>
+              bool use_memmove = std::is_trivially_copyable_v<Value_type> || jau::req::memmove_compliant<Value_type>,
+              bool use_secmem  = jau::req::enforce_secmem<Value_type>
              >
     class darray
     {
@@ -276,8 +276,8 @@ namespace jau {
             }
 
             template<class _Alloc_type>
-            [[nodiscard]] constexpr value_type * reallocStore(const size_type new_capacity_,
-                    std::enable_if_t< std::is_base_of_v<jau::callocator<value_type>, _Alloc_type>, bool > = true )
+            [[nodiscard]] constexpr value_type * reallocStore(const size_type new_capacity_)
+            requires std::is_base_of_v<jau::callocator<value_type>, _Alloc_type>
             {
                 if( pinned() ) {
                     throw jau::IllegalStateError("realloc "+std::to_string(new_capacity_)+" elements * "+
@@ -299,8 +299,8 @@ namespace jau {
                 return m;
             }
             template<class _Alloc_type>
-            [[nodiscard]] constexpr value_type * reallocStore(const size_type new_capacity_,
-                    std::enable_if_t< !std::is_base_of_v<jau::callocator<value_type>, _Alloc_type>, bool > = true )
+            [[nodiscard]] constexpr value_type * reallocStore(const size_type new_capacity_)
+            requires (!std::is_base_of_v<jau::callocator<value_type>, _Alloc_type>)
             {
                 (void)new_capacity_;
                 throw jau::UnsupportedOperationException("realloc not supported on non allocator_type not based upon jau::callocator", E_FILE_LINE);
@@ -1000,10 +1000,10 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
              * @param args values to be written
              * @see setGrowthFactor()
              */
-            template<typename... Targs,
-                std::enable_if_t< jau::is_all_same_v<Targs...> &&
-                                  sizeof(Value_type) >= sizeof(jau::first_type<Targs...>) &&                  // NOLINT(bugprone-sizeof-expression)
-                                  std::is_assignable_v<value_type&, jau::first_type<Targs...>>, bool> = true>
+            template<typename... Targs>
+            requires jau::req::is_all_same<Targs...> &&
+                     (sizeof(Value_type) >= sizeof(jau::req::first_type<Targs...>)) &&  // NOLINT(bugprone-sizeof-expression)
+                     std::is_assignable_v<value_type&, jau::req::first_type<Targs...>>
             constexpr_cxx20 self_t& putN(Bool grow, const Targs&...args) {
                 const size_type count1 = sizeof...(args);
                 if( *grow && m_position + count1 > m_limit ) {
@@ -1904,9 +1904,8 @@ In copy constructor ‘std::__shared_count<_Lp>::__shared_count(const std::__sha
      * @see darray::push_back_list()
      * @see make_darray()
      */
-    template <typename First, typename... Next,
-              // std::enable_if_t< ( std::is_same<First, Next>::value && ... ), bool> = true>
-              std::enable_if_t< std::conjunction_v<std::is_same<First, Next>... >, bool> = true>
+    template <typename First, typename... Next>
+    requires jau::req::is_first_same<First, Next...>
     constexpr darray< First > make_darray(First&& arg1, Next&&... argsN)
     {
         darray< First > d(1 + sizeof...(Next));
