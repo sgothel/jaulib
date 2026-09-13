@@ -23,6 +23,7 @@
  */
 
 #include <concepts>
+#include <memory>
 #include <type_traits>
 #include <vector>
 #include <list>
@@ -189,6 +190,10 @@ TEST_CASE( "01 Type Concept Queries: Build-In") {
     static_assert(true == jau::req::nothrow_default_constructor<jau::darray<int>>);
     static_assert(true == jau::req::nothrow_defctor_dtor<int>);
     static_assert(true == jau::req::nothrow_defctor_dtor<jau::darray<int>>);
+
+    static_assert(true  == std::is_trivially_copyable_v<int>);
+    static_assert(false == std::is_trivially_copyable_v<std::unique_ptr<int>>);
+    static_assert(false == std::is_trivially_copyable_v<std::shared_ptr<int>>);
 
     static_assert(true == jau::req::container<std::vector<int>> );
     static_assert(true == jau::req::container<std::map<int, int>> );
