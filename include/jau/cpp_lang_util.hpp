@@ -464,6 +464,8 @@ namespace jau {
     /**
      * Handle given optional exception (nullable std::exception_ptr) and send std::exception::what() message to `stderr`
      * @param eptr contains optional exception, may be `nullptr`
+     * @param file source file of caller
+     * @param line source line of caller
      * @return true if `eptr` contained an exception pointer, false otherwise (`nullptr`)
      */
     CXX_ALWAYS_INLINE
@@ -477,6 +479,22 @@ namespace jau {
             }
         }
         return false;
+    }
+
+    /**
+     * Print std::exception::what() message of given mandatory exception to given file-stream `out`
+     * @param out FILE output stream
+     * @param eptr contains exception
+     * @param file source file of caller
+     * @param line source line of caller
+     */
+    CXX_ALWAYS_INLINE
+    void fput_exception(FILE *out, std::exception_ptr eptr, const char* file, int line) noexcept {
+        try {
+            std::rethrow_exception(eptr); // NOLINT(performance-unnecessary-value-param) passing by value is OK
+        } catch (const std::exception &e) {
+            ::fprintf(out, "Exception caught @ %s:%d: %s\n", file, line, e.what());
+        }
     }
 
     /// No throw wrap for given unary predicate `p` action. Returns true for success (no exception), otherwise false (exception occurred).

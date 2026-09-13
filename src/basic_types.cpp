@@ -144,8 +144,7 @@ std::string fraction_timespec::toISO8601String(bool space_separator, bool muteTi
             return std::string(b);
         }
     } catch (...) {
-        std::exception_ptr eptr = std::current_exception();
-        handle_exception(eptr, E_FILE_LINE);
+        fput_exception(stderr, std::current_exception(), E_FILE_LINE);
     }
     return std::string();
 }
@@ -436,8 +435,7 @@ jau::ExceptionBase::ExceptionBase(std::string &&type, std::string const& m, cons
         what_.append("\nNative backtrace:\n");
         what_.append(backtrace_);
     } catch (...) {
-        std::exception_ptr eptr = std::current_exception();
-        handle_exception(eptr, E_FILE_LINE);
+        fput_exception(stderr, std::current_exception(), E_FILE_LINE);
         ::fprintf(stderr, "Exception @ ExceptionBase::ctor() for exception: %s\nNative backtrace\n%s", msg_.c_str(), backtrace_.c_str());
     }
 }
@@ -581,8 +579,7 @@ std::string jau::unsafe::vformat_string_n(const std::size_t maxStrLen, const cha
             str.shrink_to_fit();
         }  // else truncated w/ nchars > MaxStrLen
     } catch (...) {
-        std::exception_ptr eptr = std::current_exception();
-        handle_exception(eptr, E_FILE_LINE);
+        fput_exception(stderr, std::current_exception(), E_FILE_LINE);
     }
     return str;
 }
@@ -626,8 +623,7 @@ std::string jau::unsafe::vformat_string_h(const std::size_t strLenHint, const ch
             str.resize(nchars);
         }
     } catch (...) {
-        std::exception_ptr eptr = std::current_exception();
-        handle_exception(eptr, E_FILE_LINE);
+        fput_exception(stderr, std::current_exception(), E_FILE_LINE);
     }
     return str;
 }
@@ -667,8 +663,7 @@ void jau::unsafe::errPrint(FILE *out, const char *msg, bool addErrno, bool addBa
             ::fflush(stderr);
         }
     } catch (...) {
-        std::exception_ptr eptr = std::current_exception();
-        handle_exception(eptr, E_FILE_LINE);
+        fput_exception(stderr, std::current_exception(), E_FILE_LINE);
     }
     va_end (args);
 }
@@ -1085,8 +1080,7 @@ std::string& jau::appendHexString(std::string& dest, const void *data, const nsi
             } while ( i != 0 );
         }
     } catch (...) {
-        std::exception_ptr eptr = std::current_exception();
-        handle_exception(eptr, E_FILE_LINE);
+        fput_exception(stderr, std::current_exception(), E_FILE_LINE);
     }
     return dest;
 }
@@ -1100,8 +1094,7 @@ std::string &jau::appendHexString(std::string &dest, const uint8_t value, const 
         dest.push_back(hex_array[v >> 4]);
         dest.push_back(hex_array[v & 0x0F]);
     } catch (...) {
-        std::exception_ptr eptr = std::current_exception();
-        handle_exception(eptr, E_FILE_LINE);
+        fput_exception(stderr, std::current_exception(), E_FILE_LINE);
     }
     return dest;
 }
@@ -1160,8 +1153,7 @@ std::string& jau::appendBitString(std::string &dest, const void *data, const nsi
             }
         }
     } catch (...) {
-        std::exception_ptr eptr = std::current_exception();
-        jau::handle_exception(eptr, E_FILE_LINE);
+        fput_exception(stderr, std::current_exception(), E_FILE_LINE);
     }
     return dest;
 }
@@ -1277,8 +1269,7 @@ bool jau::impl::dbgPrint_pre(size_t init_strsize, std::string &str, bool addPref
         }
         return true;
     } catch (...) {
-        std::exception_ptr eptr = std::current_exception();
-        handle_exception(eptr, E_FILE_LINE);
+        fput_exception(stderr, std::current_exception(), E_FILE_LINE);
         return false;
     }
 }
@@ -1293,8 +1284,7 @@ void jau::impl::dbgPrint_tail(FILE *out, std::string &str, bool addErrno, bool a
             jau::append_backtrace(str, true /* skip_anon_frames */, 4 /* max_frames */, 2 /* skip_frames: this() + get_b*() */);
         }
     } catch (...) {
-        std::exception_ptr eptr = std::current_exception();
-        handle_exception(eptr, E_FILE_LINE);
+        fput_exception(stderr, std::current_exception(), E_FILE_LINE);
     }
     ::fputs(str.c_str(), out);
     if (addErrno || addBacktrace) {
@@ -1310,8 +1300,7 @@ bool jau::impl::fprintf_td_pre(size_t init_strsize, std::string &str, const uint
         str.append("] ");
         return true;
     } catch (...) {
-        std::exception_ptr eptr = std::current_exception();
-        handle_exception(eptr, E_FILE_LINE);
+        fput_exception(stderr, std::current_exception(), E_FILE_LINE);
         return false;
     }
 }
@@ -1325,8 +1314,7 @@ bool jau::impl::fprintf_ts0_pre(size_t init_strsize, std::string &str) noexcept 
         str.append("] ");
         return true;
     } catch (...) {
-        std::exception_ptr eptr = std::current_exception();
-        handle_exception(eptr, E_FILE_LINE);
+        fput_exception(stderr, std::current_exception(), E_FILE_LINE);
         return false;
     }
 }

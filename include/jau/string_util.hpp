@@ -740,8 +740,7 @@ namespace jau {
             dest.reserve(dest_start_len + added_len + 1); // w/ EOS
             dest.resize(dest_start_len + added_len, ' '); // w/o EOS
         } catch (...) {
-            std::exception_ptr eptr = std::current_exception();
-            handle_exception(eptr, E_FILE_LINE);
+            fput_exception(stderr, std::current_exception(), E_FILE_LINE);
             return dest;
         }
         const char * const d_start = dest.data() + dest_start_len;
@@ -843,8 +842,7 @@ namespace jau {
             dest.reserve(dest_start_len + added_len + 1); // w/ EOS
             dest.resize(dest_start_len + added_len, ' '); // w/o EOS
         } catch (...) {
-            std::exception_ptr eptr = std::current_exception();
-            handle_exception(eptr, E_FILE_LINE);
+            fput_exception(stderr, std::current_exception(), E_FILE_LINE);
             return dest;
         }
         const char * const d_start = dest.data() + dest_start_len;

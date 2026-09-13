@@ -267,6 +267,7 @@ TEST_CASE( "Exception 11 Math", "[big_int_t][exceptions][error][arithmetic][math
 }
 
 TEST_CASE( "Exception 20 Catching", "[exceptions][error]" ) {
+    // cpp_lang_util.hpp
     {
         std::exception_ptr eptr;
         try {
@@ -278,9 +279,10 @@ TEST_CASE( "Exception 20 Catching", "[exceptions][error]" ) {
 
         REQUIRE(true == jau::handle_exception(eptr, E_FILE_LINE));
     }
+    // exceptions.hpp
     {
         jau::exception_handler_t eh = [](const std::exception &e, const char* file, int line) -> bool {
-            std::cerr << "Exception 20 @ " << file << ":" << line << ": " << e.what() << "\n";
+            std::cerr << "Exception 20.02 @ " << file << ":" << line << ": " << e.what() << "\n";
             return true;
         };
         std::exception_ptr eptr;
@@ -293,5 +295,77 @@ TEST_CASE( "Exception 20 Catching", "[exceptions][error]" ) {
         }
 
         REQUIRE(true == jau::handle_exception(eptr, eh, E_FILE_LINE));
+    }
+    {
+        jau::ExceptionMessageTuple emt;
+        try {
+            [[maybe_unused]]
+            char ch = std::string().at(1);  // this generates a std::out_of_range
+        } catch (...) {
+            emt = jau::extract_exception(std::current_exception());
+        }
+        std::cerr << "Exception 20.03: brief " << emt.base.brief_message() << "\n";
+        std::cerr << "Exception 20.03: whole " << emt.base.whole_message() << "\n";
+        REQUIRE(true == emt.b);
+        REQUIRE(0 < emt.msg.length());
+        REQUIRE(0 < emt.base.whole_message().length());
+    }
+    {
+        jau::mp::BigInt a = 1, b = 0, r;
+        jau::ExceptionMessageTuple emt;
+        try {
+            r = a / b;
+        } catch (...) {
+            emt = jau::extract_exception(std::current_exception());
+        }
+        std::cerr << "Exception 20.04: brief " << emt.base.brief_message() << "\n";
+        std::cerr << "Exception 20.04: whole " << emt.base.whole_message() << "\n";
+        REQUIRE(true == emt.b);
+        REQUIRE(0 < emt.msg.length());
+        REQUIRE(0 < emt.base.whole_message().length());
+    }
+    {
+        std::string msg;
+        try {
+            [[maybe_unused]]
+            char ch = std::string().at(1);  // this generates a std::out_of_range
+        } catch (...) {
+            msg = jau::exception_message(std::current_exception());
+        }
+        std::cerr << "Exception 20.05: msg " << msg << "\n";
+        REQUIRE(0 < msg.length());
+    }
+    {
+        jau::mp::BigInt a = 1, b = 0, r;
+        std::string msg;
+        try {
+            r = a / b;
+        } catch (...) {
+            msg = jau::exception_message(std::current_exception());
+        }
+        std::cerr << "Exception 20.06: msg " << msg << "\n";
+        REQUIRE(0 < msg.length());
+    }
+    {
+        std::string msg;
+        try {
+            [[maybe_unused]]
+            char ch = std::string().at(1);  // this generates a std::out_of_range
+        } catch (...) {
+            msg = jau::exception_message(stderr, std::current_exception(), E_FILE_LINE);
+        }
+        std::cerr << "Exception 20.07: msg " << msg << "\n";
+        REQUIRE(0 < msg.length());
+    }
+    {
+        jau::mp::BigInt a = 1, b = 0, r;
+        std::string msg;
+        try {
+            r = a / b;
+        } catch (...) {
+            msg = jau::exception_message(stderr, std::current_exception(), E_FILE_LINE);
+        }
+        std::cerr << "Exception 20.08: msg " << msg << "\n";
+        REQUIRE(0 < msg.length());
     }
 }

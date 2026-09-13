@@ -36,6 +36,8 @@ namespace jau {
      * Handle given optional exception (nullable std::exception_ptr) and calls exception_handler_t
      * @param eptr contains optional exception, may be `nullptr`
      * @param eh exception_handler_t to process an eventual exception
+     * @param file source file of caller
+     * @param line source line of caller
      * @return true if `eptr` contained an exception pointer, exception_handler_t result is returned. Otherwise false (no exception).
      */
     CXX_ALWAYS_INLINE
@@ -69,6 +71,14 @@ namespace jau {
         ExceptionBase(std::string&& type, std::string const& m, const char* file, int line) noexcept;
 
       public:
+        /// Empty ExceptionBase
+        ExceptionBase() noexcept
+        : msg_(), backtrace_(), what_() {}
+
+        /// std::exception derived ExceptionBase
+        ExceptionBase(const std::exception &e) noexcept
+        : msg_(e.what()), backtrace_(), what_(e.what()) {}
+
         virtual ~ExceptionBase() noexcept = default;
         ExceptionBase(const ExceptionBase& o) noexcept = default;
         ExceptionBase(ExceptionBase&& o) noexcept = default;
@@ -93,6 +103,76 @@ namespace jau {
             return whole_message().c_str();
         }
     };
+
+    /** Simple ExceptionMessageTuple describing a potential exception, to be used for structured bindings. */
+    struct ExceptionMessageTuple {
+        /** A boolean value, true if an exception occurred */
+        bool b;
+        /** Contains brief message, if an exception occurred. Otherwise empty string */
+        std::string msg;
+        /** Contains the exception base in case a boolean value, e.g. success, etc */
+        ExceptionBase base;
+    };
+
+    /**
+     * Extract ExceptionMessageTuple of given exception
+     * @param eptr contains exception
+     * @return ExceptionMessageTuple describing the occurred exception
+     */
+    CXX_ALWAYS_INLINE
+    ExceptionMessageTuple extract_exception(std::exception_ptr eptr) noexcept {
+        try {
+            std::rethrow_exception(eptr); // NOLINT(performance-unnecessary-value-param) passing by value is OK
+        } catch (const ExceptionBase &e1) {
+            return { .b=true, .msg=e1.brief_message(), .base=e1 };
+        } catch (const std::exception &e2) {
+            return { .b=true, .msg=e2.what(), .base=e2 };
+        }
+        return { .b=false, .msg="", .base=ExceptionBase() };
+    }
+
+    /**
+     * Extract message of given exception, i.e. return jau::ExceptionBase::brief_message() or std::exception::what()
+     * @param eptr contains exception
+     * @return string containing jau::ExceptionBase::brief_message() or std::exception::what()
+     */
+    CXX_ALWAYS_INLINE
+    std::string exception_message(std::exception_ptr eptr) noexcept {
+        try {
+            std::rethrow_exception(eptr); // NOLINT(performance-unnecessary-value-param) passing by value is OK
+        } catch (const ExceptionBase &e1) {
+            return e1.brief_message();
+        } catch (const std::exception &e2) {
+            return e2.what();
+        }
+        return "";
+    }
+
+    /**
+     * Extract message of given exception, i.e. return jau::ExceptionBase::brief_message() or std::exception::what()
+     *
+     * The full message std::exception::what() including pre-pended file and line will also be send to given file-stream `out`
+     *
+     * @param out FILE output stream
+     * @param eptr contains optional exception, may be `nullptr`
+     * @param file source file of caller
+     * @param line source line of caller
+     * @return string containing jau::ExceptionBase::brief_message() or std::exception::what() if `eptr` contained an exception pointer, otherwise an empty string
+     */
+    CXX_ALWAYS_INLINE
+    std::string exception_message(FILE *out, std::exception_ptr eptr, const char* file, int line) noexcept {
+        try {
+            std::rethrow_exception(eptr); // NOLINT(performance-unnecessary-value-param) passing by value is OK
+        } catch (const ExceptionBase &e1) {
+            ::fprintf(out, "Exception caught @ %s:%d: %s\n", file, line, e1.what());
+            return e1.brief_message();
+        } catch (const std::exception &e2) {
+            ::fprintf(out, "Exception caught @ %s:%d: %s\n", file, line, e2.what());
+            return e2.what();
+        }
+        return "";
+    }
+
     class RuntimeExceptionBase : public ExceptionBase {
       protected:
         RuntimeExceptionBase(std::string&& type, std::string const& m, const char* file, int line) noexcept
