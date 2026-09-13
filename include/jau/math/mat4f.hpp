@@ -107,24 +107,24 @@ class alignas(Value_type) Matrix4 {
     constexpr static int value_alignment = sizeof(value_type);
 
     /** Number of value_type components  */
-    constexpr static const size_type columns = 4;
+    constexpr static size_type columns = 4;
     /** Number of value_type components  */
-    constexpr static const size_type rows = 4;
+    constexpr static size_type rows = 4;
     /** Number of value_type components = columns * rows */
-    constexpr static const size_type components = columns * rows;
+    constexpr static size_type components = columns * rows;
 
     /** Size in bytes with value_alignment */
-    constexpr static const size_type byte_size = components * sizeof(value_type);
+    constexpr static size_type byte_size = components * sizeof(value_type);
 
     typedef Vector3F<value_type> Vec3;
     typedef Vector4F<value_type> Vec4;
     typedef Ray3F<value_type> Ray3;
     typedef Quaternion<value_type> Quat;
 
-    constexpr static const value_type zero = value_type(0);
-    constexpr static const value_type one  = value_type(1);
-    constexpr static const value_type two  = value_type(2);
-    constexpr static const value_type half = one/two;
+    constexpr static value_type zero = value_type(0);
+    constexpr static value_type one  = value_type(1);
+    constexpr static value_type two  = value_type(2);
+    constexpr static value_type half = one/two;
 
     /**
      * Inversion Epsilon, used with equals method to determine if two inverted matrices are close enough to be considered equal.
@@ -132,7 +132,7 @@ class alignas(Value_type) Matrix4 {
      * Using {@value}, which is ~84 times `std::numeric_limits<value_type>::epsilon()`.
      * </p>
      */
-    constexpr static const value_type inv_deviation = value_type(84) * std::numeric_limits<value_type>::epsilon(); // 84 * EPSILON(1.1920929E-7f) = 1.0E-5f
+    constexpr static value_type inv_deviation = value_type(84) * std::numeric_limits<value_type>::epsilon(); // 84 * EPSILON(1.1920929E-7f) = 1.0E-5f
 
   private:
     //     RC

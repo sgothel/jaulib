@@ -60,10 +60,10 @@ class alignas(Value_type) Quaternion {
     typedef Vector3F<value_type> Vec3;
     typedef Matrix4<value_type> Mat4;
 
-    constexpr static const value_type zero = value_type(0);
-    constexpr static const value_type one  = value_type(1);
-    constexpr static const value_type two  = value_type(2);
-    constexpr static const value_type half = one/two;
+    constexpr static value_type zero = value_type(0);
+    constexpr static value_type one  = value_type(1);
+    constexpr static value_type two  = value_type(2);
+    constexpr static value_type half = one/two;
 
     /**
      * Quaternion Epsilon, used with equals method to determine if two Quaternions are close enough to be considered equal.
@@ -71,7 +71,7 @@ class alignas(Value_type) Quaternion {
      * Using {@value}, which is ~8.4 times `std::numeric_limits<value_type>::epsilon()`.
      * </p>
      */
-    constexpr static const value_type allowed_deviation = value_type(8.4) * std::numeric_limits<value_type>::epsilon();  // 8.4 * EPSILON(1.1920929E-7f) = 1.0E-6f; double deviation: 1.0E-8f
+    constexpr static value_type allowed_deviation = value_type(8.4) * std::numeric_limits<value_type>::epsilon();  // 8.4 * EPSILON(1.1920929E-7f) = 1.0E-6f; double deviation: 1.0E-8f
 
   private:
     value_type m_x, m_y, m_z, m_w;

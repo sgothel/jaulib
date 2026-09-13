@@ -1052,7 +1052,7 @@ namespace jau {
     {
         public:
             /** Fixed maximum size */
-            constexpr static const jau::nsize_t fixed_size = FixedSize;
+            constexpr static jau::nsize_t fixed_size = FixedSize;
 
         private:
             uint8_t smem[fixed_size];

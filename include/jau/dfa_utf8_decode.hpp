@@ -31,8 +31,8 @@
 #include <cstdint>
 
 namespace jau {
-    constexpr static const uint32_t DFA_UTF8_ACCEPT = 0;
-    constexpr static const uint32_t DFA_UTF8_REJECT = 12;
+    constexpr static uint32_t DFA_UTF8_ACCEPT = 0;
+    constexpr static uint32_t DFA_UTF8_REJECT = 12;
 
     /**
      * \ingroup ByteUtils

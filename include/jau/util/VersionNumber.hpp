@@ -57,12 +57,12 @@ namespace jau::util {
         int m_git_commits;
         uint64_t m_git_ssha;
 
-        constexpr static const bool DBG_OUT             = false;
+        constexpr static bool DBG_OUT             = false;
 
-        constexpr static const uint16_t HAS_MAJOR       = 1U << 0;
-        constexpr static const uint16_t HAS_MINOR       = 1U << 1;
-        constexpr static const uint16_t HAS_SUB         = 1U << 2;
-        constexpr static const uint16_t HAS_GIT_INFO    = 1U << 3;
+        constexpr static uint16_t HAS_MAJOR       = 1U << 0;
+        constexpr static uint16_t HAS_MINOR       = 1U << 1;
+        constexpr static uint16_t HAS_SUB         = 1U << 2;
+        constexpr static uint16_t HAS_GIT_INFO    = 1U << 3;
 
         constexpr VersionNumber(int majorRev, int minorRev, int subMinorRev,
                                 int gitCommits, uint64_t gitSSHA, bool gitDirty,

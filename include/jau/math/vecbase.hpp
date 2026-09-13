@@ -50,13 +50,13 @@ namespace jau::math {
         constexpr static int value_alignment = sizeof(value_type);
 
         /** Number of value_type components  */
-        constexpr static const size_type components = Components;
+        constexpr static size_type components = Components;
 
         /** Size in bytes with value_alignment */
-        constexpr static const size_type byte_size = components * sizeof(value_type);
+        constexpr static size_type byte_size = components * sizeof(value_type);
 
-        constexpr static const value_type zero = value_type(0);
-        constexpr static const value_type one = value_type(1);
+        constexpr static value_type zero = value_type(0);
+        constexpr static value_type one = value_type(1);
 
         value_type x;
 

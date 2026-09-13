@@ -38,7 +38,7 @@ namespace jau::math::util {
     class SimpleStack {
         public:
             typedef Value_type  value_type;
-            constexpr static const size_t element_size = Element_size;
+            constexpr static size_t element_size = Element_size;
 
         private:
             int growSize;

@@ -78,17 +78,17 @@ namespace jau::math::geom {
 class Frustum {
   public:
     /** Index for left plane: {@value} */
-    constexpr static const int LEFT   = 0;
+    constexpr static int LEFT   = 0;
     /** Index for right plane: {@value} */
-    constexpr static const int RIGHT  = 1;
+    constexpr static int RIGHT  = 1;
     /** Index for bottom plane: {@value} */
-    constexpr static const int BOTTOM = 2;
+    constexpr static int BOTTOM = 2;
     /** Index for top plane: {@value} */
-    constexpr static const int TOP    = 3;
+    constexpr static int TOP    = 3;
     /** Index for near plane: {@value} */
-    constexpr static const int NEAR   = 4;
+    constexpr static int NEAR   = 4;
     /** Index for far plane: {@value} */
-    constexpr static const int FAR    = 5;
+    constexpr static int FAR    = 5;
 
     /**
      * {@link Frustum} description by {@link #fovhv} and {@link #zNear}, {@link #zFar}.

@@ -68,12 +68,12 @@ namespace jau::math::geom::plane {
 
             AffineTransformType m_type;
 
-            constexpr static const char* determinantIsZero = "Zero Determinante";
+            constexpr static char* determinantIsZero = "Zero Determinante";
 
       public:
 
         /** The min absolute value equivalent to zero, aka EPSILON. */
-        constexpr static const float ZERO = (float)1E-10;
+        constexpr static float ZERO = (float)1E-10;
 
         /** Initialized to identity. */
         constexpr AffineTransform() noexcept

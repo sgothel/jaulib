@@ -181,9 +181,9 @@ template <typename Value_type, typename Size_type,
          >
 class ringbuffer {
     public:
-        constexpr static const bool uses_memmove = use_memmove;
-        constexpr static const bool uses_memcpy = use_memcpy;
-        constexpr static const bool uses_secmem  = use_secmem;
+        constexpr static bool uses_memmove = use_memmove;
+        constexpr static bool uses_memcpy = use_memcpy;
+        constexpr static bool uses_secmem  = use_secmem;
 
         // typedefs' for C++ named requirements: Container (ex iterator)
 
@@ -198,7 +198,7 @@ class ringbuffer {
         typedef jau::callocator<Value_type>                 allocator_type;
 
     private:
-        constexpr static const bool is_integral = std::is_integral_v<Value_type>;
+        constexpr static bool is_integral = std::is_integral_v<Value_type>;
 
         typedef std::remove_const_t<Value_type>             value_type_mutable;
         /** Required to create and move immutable elements, aka const */

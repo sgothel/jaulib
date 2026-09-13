@@ -125,11 +125,11 @@ namespace jau {
     {
         public:
             /** Default growth factor using the golden ratio 1.618 */
-            constexpr static const float DEFAULT_GROWTH_FACTOR = std::numbers::phi_v<float>; // 1.618f;
+            constexpr static float DEFAULT_GROWTH_FACTOR = std::numbers::phi_v<float>; // 1.618f;
 
-            constexpr static const bool uses_memmove = use_memmove;
-            constexpr static const bool uses_secmem  = use_secmem;
-            constexpr static const bool uses_realloc = use_memmove && std::is_base_of_v<jau::callocator<Value_type>, Alloc_type>;
+            constexpr static bool uses_memmove = use_memmove;
+            constexpr static bool uses_secmem  = use_secmem;
+            constexpr static bool uses_realloc = use_memmove && std::is_base_of_v<jau::callocator<Value_type>, Alloc_type>;
 
             // typedefs' for C++ named requirements: Container
 

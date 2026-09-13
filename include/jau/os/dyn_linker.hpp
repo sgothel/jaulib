@@ -50,7 +50,7 @@ namespace jau::os {
         typedef void* symhandle_t;
 
       protected:
-        constexpr static const bool DEBUG_LOOKUP = false;
+        constexpr static bool DEBUG_LOOKUP = false;
 
         //
         // Implemented per platform as hidden detail

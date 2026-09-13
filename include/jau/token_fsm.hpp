@@ -224,7 +224,7 @@ namespace jau::lang {
             /**
              * token_error value, denoting an invalid token or alphabet code-point.
              */
-            constexpr static const uint_t token_error = std::numeric_limits<uint_t>::max();
+            constexpr static uint_t token_error = std::numeric_limits<uint_t>::max();
 
             constexpr static uint_t to_symbol(char c) noexcept { return static_cast<unsigned char>(c); }
 

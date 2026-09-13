@@ -472,10 +472,10 @@ namespace jau::math {
         constexpr static int value_alignment = sizeof(value_type);
 
         /** Number of value_type components  */
-        constexpr static const size_t components = 6;
+        constexpr static size_t components = 6;
 
         /** Size in bytes with value_alignment */
-        constexpr static const size_t byte_size = components * sizeof(value_type);
+        constexpr static size_t byte_size = components * sizeof(value_type);
 
         /** Origin of Ray. */
         alignas(value_alignment) Point3F<value_type> orig;
