@@ -233,6 +233,22 @@ namespace jau::enums {
 
     template <jau::req::any_enum E1, jau::req::any_enum E2>
     requires std::is_same_v<jau::req::type_of<E1>, jau::req::type_of<E2>>
+    constexpr std::strong_ordering operator<=>(const E1 &lhs, const E2 &rhs) noexcept {
+        using namespace jau::req;
+        return *value_of(lhs) == *value_of(rhs) ? std::strong_ordering::equal :
+               ( *value_of(lhs) < *value_of(rhs) ? std::strong_ordering::less : std::strong_ordering::greater );
+    }
+
+    template <jau::req::any_enum E1, jau::req::any_enum E2>
+    requires std::is_same_v<jau::req::type_of<E1>, jau::req::type_of<E2>>
+    constexpr int compare(const E1 &lhs, const E2 &rhs) noexcept {
+        using namespace jau::req;
+        return *value_of(lhs) == *value_of(rhs) ? 0 :
+               ( *value_of(lhs) < *value_of(rhs) ? -1 : 1 );
+    }
+
+    template <jau::req::any_enum E1, jau::req::any_enum E2>
+    requires std::is_same_v<jau::req::type_of<E1>, jau::req::type_of<E2>>
     constexpr bool operator!=(const E1 &lhs, const E2 &rhs) noexcept {
         return !(lhs == rhs);
     }

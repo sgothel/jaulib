@@ -103,6 +103,19 @@ namespace jau::io::fs {
                        kernmount, i_version, strictatime, lazytime, active, nouser);
 }
 
+template<typename T>
+class Wrap {
+  private:
+    T store;
+
+  public:
+    using value_type = T;
+
+    Wrap(T v) noexcept : store(v) {}
+    inline operator T() const noexcept { return store; }
+    inline operator T&() noexcept { return store; }
+};
+
 template<typename enum_info_t>
 static void test_enum_info(size_t size)
 {
@@ -178,6 +191,39 @@ TEST_CASE( "Enum Class Value Type Test 10", "[enum][type]" ) {
             for(test_type10_t v : vt.values) {
                 std::cout << "ValueTable: val: " << static_cast<int>(v) << std::endl;
             }
+        }
+        {
+            static_assert(test_type10_t::one == test_type10_t::one); // NOLINT(misc-redundant-expression)
+            static_assert(test_type10_t::one <  test_type10_t::two);
+            static_assert(test_type10_t::one <= test_type10_t::two);
+            static_assert(test_type10_t::two >= test_type10_t::one);
+            static_assert(test_type10_t::two >  test_type10_t::one);
+            static_assert( 0 == jau::enums::compare(test_type10_t::one, test_type10_t::one));
+            static_assert(-1 == jau::enums::compare(test_type10_t::one, test_type10_t::two));
+            static_assert( 1 == jau::enums::compare(test_type10_t::two, test_type10_t::one));
+
+            test_type10_t one = test_type10_t::one;
+            test_type10_t two = test_type10_t::two;
+            REQUIRE(one == one);
+            REQUIRE(one <  two);
+            REQUIRE(one <= two);
+            REQUIRE(two >= one);
+            REQUIRE(two >  one);
+            REQUIRE( 0 == jau::enums::compare(one, one));
+            REQUIRE(-1 == jau::enums::compare(one, two));
+            REQUIRE( 1 == jau::enums::compare(two, one));
+        }
+        {
+            Wrap<test_type10_t> one = test_type10_t::one;
+            Wrap<test_type10_t> two = test_type10_t::two;
+            REQUIRE(one == one);
+            REQUIRE(one <  two);
+            REQUIRE(one <= two);
+            REQUIRE(two >= one);
+            REQUIRE(two >  one);
+            REQUIRE( 0 == jau::enums::compare(one, one));
+            REQUIRE(-1 == jau::enums::compare(one, two));
+            REQUIRE( 1 == jau::enums::compare(two, one));
         }
     }
     {
@@ -419,19 +465,6 @@ TEST_CASE( "Enum Class Value Type Test 12", "[enum][type]" ) {
     }
 }
 
-template<typename T>
-class Wrap {
-  private:
-    T store;
-
-  public:
-    using value_type = T;
-
-    Wrap(T v) noexcept : store(v) {}
-    inline operator T() const noexcept { return store; }
-    inline operator T&() noexcept { return store; }
-};
-
 TEST_CASE( "Enum Class BitOps Test 20", "[enum][type]" ) {
     using namespace jau::enums;
     test_type3_t b123 = test_type3_t(0b0111);
@@ -445,7 +478,7 @@ TEST_CASE( "Enum Class BitOps Test 20", "[enum][type]" ) {
     test_type3_t b23 = test_type3_t(0b0110);
     REQUIRE(0b0110 == *b23);
     REQUIRE((test_type3_t::two | test_type3_t::three) == b23);
-    
+
     {
         test_type3_t b1 = test_type3_t::none;
         b1 |= test_type3_t::one;
@@ -490,7 +523,7 @@ TEST_CASE( "Enum Class Wrapped BitOps Test 21", "[enum][type]" ) {
     Wrap<test_type3_t> b23 = test_type3_t(0b0110);
     REQUIRE(0b0110 == *b23);
     REQUIRE((test_type3_t::two | test_type3_t::three) == b23);
-    
+
     {
         Wrap<test_type3_t> b1 = test_type3_t::none;
         b1 |= test_type3_t::one;
