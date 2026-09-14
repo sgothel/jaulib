@@ -345,6 +345,34 @@ namespace jau {
             std = 7
         };
 
+        namespace impl {
+                /**
+                 * Cases
+                 * -  trivial +  sdata (fast path)
+                 * -  trivial +  vdata
+                 * - !trivial +  vdata
+                 */
+                union target_data_t { // 32
+                    uint8_t cache[32]; // size <= 0, 32 bytes local high perf cached chunk
+                    void* heap;        // size >  0,  8
+                };
+
+                template<typename T>
+                concept trivial_cache = std::is_trivially_copyable_v<T> && sizeof(target_data_t::cache) >= sizeof(T);
+
+                template<typename T>
+                concept trivial_heap = std::is_trivially_copyable_v<T> && sizeof(target_data_t::cache) < sizeof(T);
+
+                template<typename T>
+                concept any_heap = !std::is_trivially_copyable_v<T> || sizeof(target_data_t::cache) < sizeof(T);
+
+                template<typename T>
+                concept nontrivial_heap = !std::is_trivially_copyable_v<T> &&
+                                          std::is_destructible_v<T> &&
+                                          std::is_copy_constructible_v<T> &&
+                                          std::is_move_constructible_v<T>;
+        }
+
         /**
          * Delegated target function object, providing a fast path target function invocation.
          *
@@ -368,29 +396,6 @@ namespace jau {
             public:
                 /** Utilize a natural size type jau::nsize_t. */
                 typedef jau::nsize_t size_type;
-
-                template<typename T>
-                constexpr static bool use_trivial_cache() {
-                    return std::is_trivially_copyable_v<T> &&
-                           sizeof(udata.cache) >= sizeof(T);
-                }
-                template<typename T>
-                constexpr static bool use_trivial_heap() {
-                    return std::is_trivially_copyable_v<T> &&
-                           sizeof(udata.cache) < sizeof(T);
-                }
-                template<typename T>
-                constexpr static bool use_any_heap() {
-                    return !std::is_trivially_copyable_v<T> ||
-                           sizeof(udata.cache) < sizeof(T);
-                }
-                template<typename T>
-                constexpr static bool use_nontrivial_heap() {
-                    return !std::is_trivially_copyable_v<T> &&
-                           std::is_destructible_v<T> &&
-                           std::is_copy_constructible_v<T> &&
-                           std::is_move_constructible_v<T>;
-                }
 
             // protected:
                 struct non_trivial_t final_opt { // 3 * 8 = 24
@@ -416,19 +421,8 @@ namespace jau {
                 };
 
             private:
-                /**
-                 * Cases
-                 * -  trivial +  sdata (fast path)
-                 * -  trivial +  vdata
-                 * - !trivial +  vdata
-                 */
-                union target_data_t { // 32
-                    uint8_t cache[32]; // size <= 0, 32 bytes local high perf cached chunk
-                    void* heap;       // size >  0,  8
-                };
-
                 const target_func_t* m_tfunc; //  8
-                target_data_t udata;          // 32, aligned to delegate_t start + sizeof(pointer)
+                impl::target_data_t udata;    // 32, aligned to delegate_t start + sizeof(pointer)
 
                 // `TriviallyCopyable` using cache
                 constexpr delegate_t(const target_func_t& tfunc) noexcept
@@ -469,8 +463,7 @@ namespace jau {
                 }
 
                 // `TriviallyCopyable` using cache
-                template<typename T, typename... P,
-                         std::enable_if_t<use_trivial_cache<T>(), bool> = true>
+                template<impl::trivial_cache T, typename... P>
                 CXX_ALWAYS_INLINE
                 static delegate_t make(const target_func_t& tfunc, P&&... params) noexcept
                 {
@@ -480,8 +473,7 @@ namespace jau {
                 }
 
                 // `TriviallyCopyable` using heap
-                template<typename T, typename... P,
-                         std::enable_if_t<use_trivial_heap<T>(), bool> = true>
+                template<impl::trivial_heap T, typename... P>
                 CXX_ALWAYS_INLINE
                 static delegate_t make(const target_func_t& tfunc, P&&... params) noexcept
                 {
@@ -491,8 +483,7 @@ namespace jau {
                 }
 
                 // Non `TriviallyCopyable` using heap
-                template<typename T, typename... P,
-                         std::enable_if_t<use_nontrivial_heap<T>(), bool> = true>
+                template<impl::nontrivial_heap T, typename... P>
                 CXX_ALWAYS_INLINE
                 static delegate_t make(const target_func_t& tfunc, P&&... params) noexcept
                 {
@@ -502,13 +493,13 @@ namespace jau {
                 }
 
                 // Return nullptr for `TriviallyCopyable` using cache or heap
-                template<typename T,
-                         std::enable_if_t<!use_nontrivial_heap<T>(), bool> = true>
+                template<typename T>
+                requires (!impl::nontrivial_heap<T>)
                 static non_trivial_t* getNonTrivialCtor() noexcept { return nullptr; }
 
                 // Return pointer to static non_trivial_nt ctor/dtor's for Non `TriviallyCopyable` using heap
-                template<typename T,
-                         std::enable_if_t<use_nontrivial_heap<T>(), bool> = true>
+                template<typename T>
+                requires impl::nontrivial_heap<T>
                 static non_trivial_t* getNonTrivialCtor() noexcept
                 {
                     static non_trivial_t nt {
@@ -567,7 +558,7 @@ namespace jau {
                             m_tfunc->non_trivial->dtor(&o);
                             ::free(o.udata.heap);
                         } else {
-                            udata.heap = std::move( o.udata.heap );
+                            udata.heap = o.udata.heap; // move
                         }
                         o.udata.heap = nullptr;
                     } else {
@@ -642,7 +633,7 @@ namespace jau {
                             m_tfunc->non_trivial->dtor(&o);
                             ::free(o.udata.heap);
                         } else {
-                            udata.heap = std::move( o.udata.heap );
+                            udata.heap = o.udata.heap; // move
                         }
                         o.udata.heap = nullptr;
                     } else {
@@ -652,24 +643,20 @@ namespace jau {
                     return *this;
                 }
 
-                template<typename T,
-                         std::enable_if_t<use_trivial_cache<T>(), bool> = true>
+                template<impl::trivial_cache T>
                 constexpr const T* data() const noexcept {
                     return pointer_cast<T*>( &udata.cache[0] ); // aligned to delegate_t start + sizeof(pointer)
                 }
-                template<typename T,
-                         std::enable_if_t<use_trivial_cache<T>(), bool> = true>
+                template<impl::trivial_cache T>
                 constexpr T* data() noexcept {
                     return pointer_cast<T*>( &udata.cache[0] ); // aligned to delegate_t start + sizeof(pointer)
                 }
 
-                template<typename T,
-                         std::enable_if_t<use_any_heap<T>(), bool> = true>
+                template<impl::any_heap T>
                 constexpr const T* data() const noexcept {
                     return pointer_cast<const T*>( udata.heap );
                 }
-                template<typename T,
-                         std::enable_if_t<use_any_heap<T>(), bool> = true>
+                template<impl::any_heap T>
                 constexpr T* data() noexcept {
                     return pointer_cast<T*>( udata.heap );
                 }
@@ -751,6 +738,8 @@ namespace jau {
          * func::member_target_t implementation for class member functions,
          * identifiable as func::target_type::member via jau::function<R(A...)>::type().
          *
+         * This implementation is only enabled if C0 is base of C1.
+         *
          * @tparam R function return type
          * @tparam C0 class type holding the member-function
          * @tparam C1 class derived from C0 or C0 of this base-pointer used to invoke the member-function
@@ -758,6 +747,7 @@ namespace jau {
          * @see @ref function_overview "Function Overview"
          */
         template<typename R, typename C0, typename C1, typename... A>
+        requires std::is_base_of_v<C0, C1>
         class member_target_t final_opt {
             public:
                 typedef delegate_t<R, A...> delegate_type;
@@ -843,15 +833,12 @@ namespace jau {
                 /**
                  * Construct a delegate_t<R, A...> instance from given this base-pointer and member-function.
                  *
-                 * This factory function is only enabled if C0 is base of C1.
-                 *
                  * @param base this base-pointer of class C1 derived from C0 or C0 used to invoke the member-function
                  * @param method member-function of class C0
                  * @return delegate_t<R, A...> instance holding the target-function object.
                  */
                 CXX_ALWAYS_INLINE
-                static delegate_type delegate(C1 *base, R(C0::*method)(A...),
-                                            std::enable_if_t<std::is_base_of_v<C0, C1>, bool> = true) noexcept
+                static delegate_type delegate(C1 *base, R(C0::*method)(A...)) noexcept
                 {
                     return base && method ? delegate_type::template make<data_type>( get(), base, method ) : func::null_target_t<R, A...>::delegate();
                 }
@@ -1333,12 +1320,11 @@ namespace jau {
              * @see @ref function_overview "function Overview"
              * @see @ref function_usage "function Usage"
              */
-            template<typename L,
-                     std::enable_if_t<!std::is_same_v<L, std::shared_ptr<delegate_type>> &&
-                                      !std::is_pointer_v<L> &&
-                                      !std::is_same_v<L, R(A...)> &&
-                                      !std::is_same_v<L, function<R(A...)>>
-                     , bool> = true>
+            template<typename L>
+            requires (!std::is_same_v<L, std::shared_ptr<delegate_type>>) &&
+                     (!std::is_pointer_v<L>) &&
+                     (!std::is_same_v<L, R(A...)>) &&
+                     (!std::is_same_v<L, function<R(A...)>>)
             function(L func) noexcept
             : target( func::lambda_target_t<R, L, A...>::delegate(std::move(func)) )
             { }
@@ -1554,13 +1540,10 @@ namespace jau {
      * @see @ref function_usage "function Usage"
      */
     template<typename Rl, typename... Al, template <typename...> class Fl = function,
-             typename Rr, typename... Ar, template <typename...> class Fr = function,
-             std::enable_if_t< !std::is_same_v< Fl<Rl(Al...)>, Fr<Rr(Ar...)> >
-             , bool> = true>
-    bool operator==(const function<Rl(Al...)>& lhs, const function<Rr(Ar...)>& rhs) noexcept
+             typename Rr, typename... Ar, template <typename...> class Fr = function>
+    requires (!std::is_same_v< Fl<Rl(Al...)>, Fr<Rr(Ar...)>>)
+    bool operator==(const function<Rl(Al...)>&, const function<Rr(Ar...)>&) noexcept
     {
-        (void)lhs;
-        (void)rhs;
         return false;
     }
 
@@ -1580,9 +1563,8 @@ namespace jau {
      * @see @ref function_usage "function Usage"
      */
     template<typename Rl, typename... Al, template <typename...> class Fl = function,
-             typename Rr, typename... Ar, template <typename...> class Fr = function,
-             std::enable_if_t< std::is_same_v< Fl<Rl(Al...)>, Fr<Rr(Ar...)> >
-             , bool> = true>
+             typename Rr, typename... Ar, template <typename...> class Fr = function>
+    requires std::is_same_v< Fl<Rl(Al...)>, Fr<Rr(Ar...)>>
     bool operator==(const function<Rl(Al...)>& lhs, const function<Rr(Ar...)>& rhs) noexcept
     { return lhs.operator==( rhs ); }
 
