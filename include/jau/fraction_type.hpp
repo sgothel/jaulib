@@ -140,10 +140,8 @@ namespace jau {
          * @param n the given numerator
          * @param d the given denominator
          */
-        template<typename T,
-                 std::enable_if_t<std::is_same_v<int_type, T> &&
-                                  !std::is_unsigned_v<T>,
-                                  bool> = true>
+        template<typename T>
+        requires std::is_same_v<int_type, T> && (!std::is_unsigned_v<T>)
         constexpr fraction(const int_type& n, const T& d) noexcept
         : num(0), denom(1), overflow(false) {
             if ( n != 0 && d != 0 ) {

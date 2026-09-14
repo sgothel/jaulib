@@ -47,8 +47,8 @@ namespace jau {
  * Not implementing deprecated (C++17) and removed (C++20)
  * methods: address(), max_size(), construct() and destroy().
  */
-template <typename T,
-          std::enable_if_t< std::is_integral_v<T>, bool> = true>
+template <typename T>
+requires std::is_integral_v<T>
 struct callocator_sec
 {
   public:

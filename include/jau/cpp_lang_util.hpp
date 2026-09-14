@@ -355,13 +355,10 @@ namespace jau {
      * @see bit_cast()
      */
     template <class Dest, class Source>
-    constexpr
-    typename std::enable_if_t<
-        sizeof(Dest) == sizeof(Source) &&   // NOLINT(bugprone-sizeof-expression): Intended, same pointer size
-        std::is_pointer_v<Source> &&
-        std::is_pointer_v<Dest>,
-        Dest>
-    pointer_cast(const Source& src) noexcept
+    requires (sizeof(Dest) == sizeof(Source)) &&   // NOLINT(bugprone-sizeof-expression): Intended, same pointer size
+             std::is_pointer_v<Source> &&
+             std::is_pointer_v<Dest>
+    constexpr Dest pointer_cast(const Source& src) noexcept
     {
         if constexpr ( is_cxx20() ) {
             return std::bit_cast<Dest, Source>(src); // NOLINT(bugprone-bitwise-pointer-cast): intentional
@@ -387,13 +384,11 @@ namespace jau {
      * @see pointer_cast()
      */
     template <class Dest, class Source>
+    requires (sizeof(Dest) == sizeof(Source)) &&
+             std::is_trivially_copyable_v<Dest> &&
+             std::is_trivially_copyable_v<Source>
     constexpr
-    typename std::enable_if_t<
-        sizeof(Dest) == sizeof(Source) &&
-        std::is_trivially_copyable_v<Dest> &&
-        std::is_trivially_copyable_v<Source>,
-        Dest>
-    bit_cast(const Source& src) noexcept
+    Dest bit_cast(const Source& src) noexcept
     {
         if constexpr ( is_cxx20() ) {
             return std::bit_cast<Dest, Source>(src);

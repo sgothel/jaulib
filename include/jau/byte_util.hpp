@@ -1088,12 +1088,8 @@ namespace jau {
      * @param v
      * @see \ref packed_t_alignment_cast
      */
-    template<typename T>
-    constexpr
-    typename std::enable_if_t<
-        std::is_standard_layout_v<T>,
-        void>
-    put_value(uint8_t * buffer, const T& v) noexcept
+    template<jau::req::standard_layout T>
+    constexpr void put_value(uint8_t * buffer, const T& v) noexcept
     {
         // reinterpret_cast<packed_t<T>*>( buffer )->store = v;
         pointer_cast<packed_t<T>*>( buffer )->store = v;
@@ -1112,12 +1108,8 @@ namespace jau {
      * @param byte_order
      * @see \ref packed_t_alignment_cast
      */
-    template<typename T>
-    constexpr
-    typename std::enable_if_t<
-        std::is_standard_layout_v<T>,
-        void>
-    put_value(uint8_t * buffer, const T& v, const lb_endian_t byte_order) noexcept
+    template<jau::req::standard_layout T>
+    constexpr void put_value(uint8_t * buffer, const T& v, const lb_endian_t byte_order) noexcept
     {
         pointer_cast<packed_t<T>*>( buffer )->store = is_little_endian(byte_order) ? cpu_to_le(v) : cpu_to_be(v);
     }
@@ -1131,12 +1123,8 @@ namespace jau {
      * @return
      * @see \ref packed_t_alignment_cast
      */
-    template<typename T>
-    constexpr
-    typename std::enable_if_t<
-        std::is_standard_layout_v<T>,
-        T>
-    get_value(uint8_t const * buffer) noexcept
+    template<jau::req::standard_layout T>
+    constexpr T get_value(uint8_t const * buffer) noexcept
     {
         return pointer_cast<const packed_t<T>*>( buffer )->store;
     }
@@ -1154,12 +1142,8 @@ namespace jau {
      * @return
      * @see \ref packed_t_alignment_cast
      */
-    template<typename T>
-    constexpr
-    typename std::enable_if_t<
-        std::is_standard_layout_v<T>,
-        T>
-    get_value(uint8_t const * buffer, const lb_endian_t byte_order) noexcept
+    template<jau::req::standard_layout T>
+    constexpr T get_value(uint8_t const * buffer, const lb_endian_t byte_order) noexcept
     {
         return get_packed_value(pointer_cast<const packed_t<T>*>( buffer ), byte_order);
     }

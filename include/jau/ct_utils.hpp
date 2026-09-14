@@ -16,7 +16,7 @@
 #ifndef JAU_CT_UTILS_HPP_
 #define JAU_CT_UTILS_HPP_
 
-#include <type_traits>
+#include <jau/type_concepts.hpp>
 #include <jau/int_math.hpp>
 
 #if defined(JAU_HAS_VALGRIND)
@@ -75,18 +75,14 @@ inline void unpoison([[maybe_unused]] T& p)
 *
  * @tparam T unsigned integral type
  */
-template <typename T,
-          std::enable_if_t< std::is_integral_v<T> && std::is_unsigned_v<T>, bool> = true>
+template <jau::req::unsigned_integral T>
 class Mask
    {
    public:
       Mask(const Mask<T>& other) noexcept
       : m_mask(other.m_mask) { }
 
-      Mask<T>& operator=(const Mask<T>& other) noexcept {
-          m_mask = other.m_mask;
-          return *this;
-      }
+      Mask<T>& operator=(const Mask<T>& other) noexcept = default;
 
       /**
       * Derive a Mask from a Mask of a larger type
@@ -375,8 +371,7 @@ class Mask
        y    = t1;
    }
 
-   template <typename T,
-             std::enable_if_t<std::is_pointer_v<T>, bool> = true>
+   template <jau::req::pointer T>
    inline void conditional_swap_ptr(bool cnd, T& x, T& y) noexcept {
        uintptr_t xp = reinterpret_cast<uintptr_t>(x);
        uintptr_t yp = reinterpret_cast<uintptr_t>(y);

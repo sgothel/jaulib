@@ -436,9 +436,8 @@ namespace jau::math {
     /**
      * Point3F alias of Vector3F
      */
-    template<typename Value_type,
-             std::enable_if_t<std::is_floating_point_v<Value_type> &&
-                              sizeof(Value_type) == alignof(Value_type), bool> = true>
+    template<jau::req::floating_point Value_type>
+    requires (sizeof(Value_type) == alignof(Value_type))
     using Point3F = Vector3F<Value_type>;
 
     typedef Point3F<float> Point3f;

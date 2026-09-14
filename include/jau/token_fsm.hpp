@@ -37,13 +37,13 @@
 #define JAU_TOKEN_FSM_HPP_
 
 #include <string>
-#include <type_traits>
 #include <vector>
 
 #include <jau/basic_algos.hpp>
 #include <jau/darray.hpp>
 #include <jau/int_types.hpp>
 #include <jau/secmem.hpp>
+#include <jau/type_concepts.hpp>
 
 // #define JAU_DO_JAU_TRACE_PRINT 1
 #ifdef JAU_DO_JAU_TRACE_PRINT
@@ -210,10 +210,8 @@ namespace jau::lang {
      * @tparam State_type used for token name and internal FSM, hence memory sensitive.
      *         Must be an unsigned integral type with minimum size of sizeof(alphabet::code_point_t), i.e. uint16_t.
      */
-    template<typename State_type,
-             std::enable_if_t<std::is_integral_v<State_type> &&
-                              std::is_unsigned_v<State_type> &&
-                              sizeof(alphabet::code_point_t) <= sizeof(State_type), bool> = true>
+    template<jau::req::unsigned_integral State_type>
+    requires (sizeof(alphabet::code_point_t) <= sizeof(State_type))
     class token_fsm {
         public:
             /**

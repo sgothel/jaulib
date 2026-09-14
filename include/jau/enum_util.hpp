@@ -80,8 +80,8 @@ namespace jau::enums {
         return JAU_PRETTY_FUNCTION;
     }
 
-    template <auto V,
-              std::enable_if_t<std::is_enum_v<decltype(V)>>* = nullptr>
+    template <auto V>
+    requires std::is_enum_v<decltype(V)>
     consteval_cxx20 bool is_enum() noexcept {
       // bool is_name() [E = test_type_t, V = test_type_t::one]
       constexpr std::string_view name(enum_funcname<decltype(V), V>());
@@ -95,8 +95,8 @@ namespace jau::enums {
       return !(c >= '0' && c <= '9'); // true if character, not-a-number
     }
 
-    template <auto V,
-              std::enable_if_t<std::is_enum_v<decltype(V)>>* = nullptr>
+    template <auto V>
+    requires std::is_enum_v<decltype(V)>
     consteval_cxx20 std::string_view long_name() noexcept {
       // const char *enum_funcname() [E = test_type1_t, V = test_type1_t::one]
       constexpr std::string_view sym(enum_funcname<decltype(V), V>());
@@ -115,8 +115,8 @@ namespace jau::enums {
       return sym.substr(i);
     }
 
-    template <auto V,
-              std::enable_if_t<std::is_enum_v<decltype(V)>>* = nullptr>
+    template <auto V>
+    requires std::is_enum_v<decltype(V)>
     consteval_cxx20 std::string_view name() noexcept {
       // const char *enum_funcname() [E = test_type1_t, V = test_type1_t::one]
       constexpr std::string_view sym(enum_funcname<decltype(V), V>());

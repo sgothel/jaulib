@@ -143,10 +143,9 @@ namespace jau::jni {
     jobject convert_vector_stringview_to_jarraylist(JNIEnv *env, const std::vector<std::string_view>& array);
     std::vector<std::string> convert_jlist_string_to_vector(JNIEnv *env, jobject jlist);
 
-    template< class byte_container_type,
-              std::enable_if_t<std::is_integral_v<typename byte_container_type::value_type> &&
-                               std::is_convertible_v<typename byte_container_type::value_type, jbyte>,
-                               bool> = true>
+    template<class byte_container_type>
+    requires std::is_integral_v<typename byte_container_type::value_type> &&
+             std::is_convertible_v<typename byte_container_type::value_type, jbyte>
     jbyteArray convert_bytes_to_jbytearray(JNIEnv *env, const byte_container_type& data) {
         const size_t data_size = data.size();
         jbyteArray jdata = env->NewByteArray((jsize)data_size);

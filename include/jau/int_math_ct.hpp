@@ -100,10 +100,7 @@ namespace jau {
     }
 #if 0
     // the type req is floating_point (signed), but we have no ct_sign for float.
-    template <typename T,
-              std::enable_if_t< std::is_arithmetic_v<T> &&
-                               !std::is_integral_v<T> &&
-                               !std::is_unsigned_v<T>, bool> = true>
+    template <jau::req::floating_point T>
     constexpr T ct_abs(const T x) noexcept
     {
         return x * jau::ct_sign<T>(x);
