@@ -14,6 +14,7 @@
 
 #include <climits>
 #include <cstdint>
+#include <memory>
 #include <string_view>
 #include <type_traits>
 #include <exception>
@@ -738,5 +739,99 @@ namespace jau {
 #define JAU_FOR_EACH3_VALUE_AGAIN() JAU_FOR_EACH3_VALUE_HELPER
 
 /**@}*/
+
+namespace jau {
+
+    /** \addtogroup CppLang
+     *
+     *  @{
+     */
+
+    /**
+     * Create a `std::unique_ptr<T>` object of type `T`.
+     *
+     * In case of an occurring exception, program will abort.
+     *
+     * @tparam T A non-array object type.
+     * @param args Constructor arguments for the new object.
+     * @returns A `std::unique_ptr<T>` that owns the new object.
+     */
+    template<typename T, typename... Args>
+    constexpr_cxx23
+    std::unique_ptr<T> make_unique_or_abort(Args &&...args) {
+        try {
+            return std::make_unique<T>(std::forward<Args>(args)...);
+        } catch (...) {
+            jau::fput_exception(stderr, std::current_exception(), E_FILE_LINE);
+            ::fprintf(stderr, "Exception occurred -> abort, caught in %s @ %s:%d\n", __func__, E_FILE_LINE);
+            ::abort();
+            return nullptr; // unreachable
+        }
+    }
+    /**
+     * Create a `std::unique_ptr<T>` object of type `T`.
+     *
+     * In case of an occurring exception, nullptr is returned.
+     *
+     * @tparam T A non-array object type.
+     * @param args Constructor arguments for the new object.
+     * @returns A `std::unique_ptr<T>` that owns the new object or nullptr in case of an exception.
+     */
+    template<typename T, typename... Args>
+    constexpr_cxx23
+    std::unique_ptr<T> make_unique_or_null(Args &&...args) {
+        try {
+            return std::make_unique<T>(std::forward<Args>(args)...);
+        } catch (...) {
+            jau::fput_exception(stderr, std::current_exception(), E_FILE_LINE);
+            ::fprintf(stderr, "Exception caught in %s @ %s:%d\n", __func__, E_FILE_LINE);
+            return nullptr;
+        }
+    }
+
+    /**
+     * Create a `std::shared_ptr<T>` object of type `T`.
+     *
+     * In case of an occurring exception, program will abort.
+     *
+     * @tparam T A non-array object type.
+     * @param args Constructor arguments for the new object.
+     * @returns A `std::shared_ptr<T>` that owns the new object.
+     */
+    template<typename T, typename... Args>
+    constexpr_cxx23
+    std::shared_ptr<T> make_shared_or_abort(Args &&...args) {
+        try {
+            return std::make_shared<T>(std::forward<Args>(args)...);
+        } catch (...) {
+            jau::fput_exception(stderr, std::current_exception(), E_FILE_LINE);
+            ::fprintf(stderr, "Exception occurred -> abort, caught in %s @ %s:%d\n", __func__, E_FILE_LINE);
+            ::abort();
+            return nullptr; // unreachable
+        }
+    }
+    /**
+     * Create a `std::shared_ptr<T>` object of type `T`.
+     *
+     * In case of an occurring exception, nullptr is returned.
+     *
+     * @tparam T A non-array object type.
+     * @param args Constructor arguments for the new object.
+     * @returns A `std::shared_ptr<T>` that owns the new object or nullptr in case of an exception.
+     */
+    template<typename T, typename... Args>
+    constexpr_cxx23
+    std::shared_ptr<T> make_shared_or_null(Args &&...args) {
+        try {
+            return std::make_shared<T>(std::forward<Args>(args)...);
+        } catch (...) {
+            jau::fput_exception(stderr, std::current_exception(), E_FILE_LINE);
+            ::fprintf(stderr, "Exception caught in %s @ %s:%d\n", __func__, E_FILE_LINE);
+            return nullptr;
+        }
+    }
+
+    /**@}*/
+}
 
 #endif /* JAU_CPP_LANG_EXT_HPP_ */
