@@ -510,10 +510,9 @@ namespace jau {
 
             /**
              * Returns <code>std::numeric_limits<difference_type>::max()</code> as the maximum array size.
-             * <p>
+             *
              * We rely on the signed <code>difference_type</code> for pointer arithmetic,
              * deducing ranges from iterator.
-             * </p>
              */
             constexpr size_type max_size() const noexcept { return DIFF_MAX; }
 
@@ -522,9 +521,9 @@ namespace jau {
             /**
              * Returns this instances' recursive write mutex, allowing user to
              * implement more complex mutable write operations.
-             * <p>
+             *
              * See example in jau::cow_darray::set_store()
-             * </p>
+             *
              *
              * @see jau::cow_darray::get_write_mutex()
              * @see jau::cow_darray::copy_store()
@@ -556,24 +555,26 @@ namespace jau {
              * Replace the current store with the given instance,
              * potentially acquired via jau::cow_darray::copy_store()
              * and mutated while holding the jau::cow_darray::get_write_mutex() lock.
-             * <p>
-             * This is a move operation, i.e. the given new_store_ref is invalid on the caller side
-             * after this operation. <br>
+             *
+             * User shall pass the store via std::move(),
+             * i.e. the given new_store_ref is invalid on the caller side after this operation.
+             *
              * User shall pass the store via std::move()
-             * <pre>
-             *     cow_darray<std::shared_ptr<Thing>> list;
+             * ```
+             *     typedef cow_darray<std::shared_ptr<Thing>> thing_cow_t;
+             *     thing_cow_t cow;
              *     ...
              *     {
-             *         std::lock_guard<std::recursive_mutex> lock(list.get_write_mutex());
-             *         std::shared_ptr<std::vector<std::shared_ptr<Thing>>> snapshot = list.copy_store();
+             *         std::lock_guard<std::recursive_mutex> lock(cow.get_write_mutex());
+             *         thing_cow_t::storage_ref_t snapshot = cow.copy_store();
              *         ...
              *         some fancy mutation
              *         ...
-             *         list.set_store(std::move(snapshot));
+             *         cow.set_store(std::move(snapshot));
              *     }
-             * </pre>
+             * ```
              * Above functionality is covered by jau::cow_rw_iterator, see also jau::cow_rw_iterator::write_back()
-             * </p>
+             *
              * @param new_store_ref the user store to be moved here, replacing the current store.
              *
              * @see jau::cow_darray::get_write_mutex()
@@ -790,9 +791,8 @@ namespace jau {
 
             /**
              * Like std::vector::swap().
-             * <p>
+             *
              * This write operation uses a mutex lock and is blocking both cow_darray instance's write operations.
-             * </p>
              */
             constexpr_atomic
             void swap(cow_darray& x) noexcept {
