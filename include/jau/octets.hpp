@@ -837,7 +837,7 @@ namespace jau {
             /**
              * Assignment operator
              * @param _source POctet source to be copied
-             * @return
+             * @return reference to this instance of chaining
              * @throws OutOfMemoryError if allocation fails
              */
             POctets& operator=(const POctets &_source) {
@@ -855,7 +855,7 @@ namespace jau {
             /**
              * Move assignment operator
              * @param o POctet source to be taken over
-             * @return
+             * @return reference to this instance of chaining
              */
             POctets& operator=(POctets &&o) noexcept {
                 // move origin data references
@@ -890,7 +890,7 @@ namespace jau {
             /**
              * Assignment operator for TROOctets
              * @param _source TROOctets to be copied
-             * @return
+             * @return reference to this instance of chaining
              * @throws OutOfMemoryError if allocation fails
              */
             POctets& operator=(const TROOctets &_source) {
@@ -921,7 +921,7 @@ namespace jau {
             /**
              * Assignment operator for TOctetSlice
              * @param _source TOctetSlice to be copied
-             * @return
+             * @return reference to this instance of chaining
              * @throws OutOfMemoryError if allocation fails
              */
             POctets& operator=(const TOctetSlice &_source) {
@@ -937,7 +937,7 @@ namespace jau {
              * Resizes this instance, including its capacity
              * @param newCapacity new capacity, must be >= newSize
              * @param newSize new size, must be <= newCapacity
-             * @return
+             * @return reference to this instance of chaining
              * @throws OutOfMemoryError if allocation fails
              * @throws IllegalArgumentException if newCapacity < newSize
              */
@@ -962,7 +962,7 @@ namespace jau {
             /**
              * Sets a new size for this instance.
              * @param newSize new size, must be <= current capacity()
-             * @return
+             * @return reference to this instance of chaining
              * @throws IllegalArgumentException if newSize > current capacity()
              */
             POctets & resize(const nsize_t newSize) {
@@ -974,10 +974,20 @@ namespace jau {
             }
 
             /**
+             * Sets a new size to zero for this instance, i.e. clears the recognized content.
+             * @return reference to this instance of chaining
+             * @throws IllegalArgumentException if newSize > current capacity()
+             */
+            POctets & clear() noexcept {
+                setSize(0);
+                return *this;
+            }
+
+            /**
              * Changes the capacity.
              *
              * @param newCapacity new capacity, must be >= size()
-             * @return
+             * @return reference to this instance of chaining
              * @throws OutOfMemoryError if allocation fails
              * @throws IllegalArgumentException if newCapacity < size()
              */
@@ -1002,7 +1012,7 @@ namespace jau {
             /**
              * Append and assign operator
              * @param b
-             * @return
+             * @return reference to this instance of chaining
              * @throws OutOfMemoryError if allocation due to potential recapacity() fails
              */
             POctets & operator+=(const TROOctets &b) {
@@ -1019,7 +1029,7 @@ namespace jau {
             /**
              * Append and assign operator
              * @param b
-             * @return
+             * @return reference to this instance of chaining
              * @throws OutOfMemoryError if allocation due to potential recapacity() fails
              */
             POctets & operator+=(const TOctetSlice &b) {
@@ -1136,7 +1146,7 @@ namespace jau {
             /**
              * Assignment operator
              * @param _source POctet source to be copied
-             * @return
+             * @return reference to this instance of chaining
              * @throws IllegalArgumentException if fixed_size < source size
              */
             AOctets& operator=(const TROOctets &_source) {
@@ -1161,7 +1171,7 @@ namespace jau {
             /**
              * Sets a new size for this instance.
              * @param newSize new size, must be <= current capacity()
-             * @return
+             * @return reference to this instance of chaining
              * @throws IllegalArgumentException if fixed_size < newSize
              */
             AOctets & resize(const nsize_t newSize) {
