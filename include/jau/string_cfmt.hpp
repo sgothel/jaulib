@@ -58,7 +58,7 @@
  *     jau_string_check("Hello %s %u", "World", 2.0); // shows static_assert() argument error for argument 2 (float, not unsigned integral)
  *     jau_string_checkLine("Hello %s %u", "World", 2.0); // shows static_assert() source-line error for argument 2 (float, not unsigned integral)
  *   ```
- * -  Runtime safe string formatting via `jau::format_string`
+ * - Runtime safe string formatting via `jau::format_string`
  *   ```
  *     std::string s0 = "World";
  *     std::string s1 = jau::format_string("Hello %s, %d + %d = %'d", s0, 1, 1, 2000);
