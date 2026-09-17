@@ -506,6 +506,7 @@ namespace jau {
 
             ~cow_darray() noexcept {
                 JAU_DARRAY_PRINTF("dtor: %s\n", getInfo().c_str());
+                store_ref = nullptr; // explicitly pull storage_t
             }
 
             /**
