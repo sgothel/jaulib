@@ -29,8 +29,9 @@
 #include <cstdio>
 
 #include <jau/secmem.hpp>
-#include <jau/string_util.hpp>
 #include <jau/byte_util.hpp>
+#include <jau/string_cfmt.hpp>
+#include <jau/string_util.hpp>
 #include <jau/io/eui48.hpp>
 
 using namespace jau;
@@ -40,30 +41,34 @@ std::string EUI48Sub::toString() const noexcept {
     // str_len = 2 * len + ( len - 1 )
     // str_len = 3 * len - 1
     // len = ( str_len + 1 ) / 3
-    std::string str;
-    if( 0 < length ) {
-        str.reserve(3 * length - 1);
 
+    if( 0 < length ) {
+        std::string str;
+        if (!jau::reserve_string(str, 3 * length - 1)) {
+            return ":";
+        }
         if( is_little_endian() ) {
             for(jau::nsize_t i=0; i < length; ++i) {
                 const jau::nsize_t idx = length - 1 - i;
-                jau::appendHexString(str, b[idx], LoUpCase::upper);
                 if( 0 < idx ) {
-                    str.push_back(':');
+                    jau_append_string(str, "%2.2X:", b[idx]);
+                } else {
+                    jau_append_string(str, "%2.2X", b[idx]);
                 }
             }
         } else {
             for(jau::nsize_t idx=0; idx < length; ++idx) {
                 if( 0 < idx ) {
-                    str.push_back(':');
+                    jau_append_string(str, ":%2.2X", b[idx]);
+                } else {
+                    jau_append_string(str, "%2.2X", b[idx]);
                 }
-                jau::appendHexString(str, b[idx], LoUpCase::upper);
             }
         }
+        return str;
     } else {
-        str.push_back(':');
+        return ":";
     }
-    return str;
 }
 
 bool EUI48Sub::scanEUI48Sub(const std::string& str, EUI48Sub& dest, std::string& errmsg) {
@@ -168,38 +173,12 @@ jau::snsize_t EUI48Sub::indexOf(const uint8_t haystack_b[], const jau::nsize_t h
 }
 
 std::string EUI48::toString() const noexcept {
-    // str_len = 2 * len + ( len - 1 )
-    // str_len = 3 * len - 1
-    // len = ( str_len + 1 ) / 3
-    std::string str;
-    str.reserve(17); // 6 * 2 + ( 6 - 1 )
-
+    // 17 = 6 * 2 + ( 6 - 1 )
     if( is_little_endian() ) {
-        jau::appendHexString(str, b[5], LoUpCase::upper);
-        str.push_back(':');
-        jau::appendHexString(str, b[4], LoUpCase::upper);
-        str.push_back(':');
-        jau::appendHexString(str, b[3], LoUpCase::upper);
-        str.push_back(':');
-        jau::appendHexString(str, b[2], LoUpCase::upper);
-        str.push_back(':');
-        jau::appendHexString(str, b[1], LoUpCase::upper);
-        str.push_back(':');
-        jau::appendHexString(str, b[0], LoUpCase::upper);
+        return jau_format_string_h(17, "%2.2X:%2.2X:%2.2X:%2.2X:%2.2X:%2.2X", b[5], b[4], b[3], b[2], b[1], b[0]);
     } else {
-        jau::appendHexString(str, b[0], LoUpCase::upper);
-        str.push_back(':');
-        jau::appendHexString(str, b[1], LoUpCase::upper);
-        str.push_back(':');
-        jau::appendHexString(str, b[2], LoUpCase::upper);
-        str.push_back(':');
-        jau::appendHexString(str, b[3], LoUpCase::upper);
-        str.push_back(':');
-        jau::appendHexString(str, b[4], LoUpCase::upper);
-        str.push_back(':');
-        jau::appendHexString(str, b[5], LoUpCase::upper);
+        return jau_format_string_h(17, "%2.2X:%2.2X:%2.2X:%2.2X:%2.2X:%2.2X", b[0], b[1], b[2], b[3], b[4], b[5]);
     }
-    return str;
 }
 
 bool EUI48::scanEUI48(const std::string& str, EUI48& dest, std::string& errmsg) {
@@ -211,10 +190,10 @@ bool EUI48::scanEUI48(const std::string& str, EUI48& dest, std::string& errmsg) 
     }
     int scanres;
     if( is_little_endian() ) {
-        scanres = sscanf(str.c_str(), "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx",
+        scanres = ::sscanf(str.c_str(), "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx",
                         &dest.b[5], &dest.b[4], &dest.b[3], &dest.b[2], &dest.b[1], &dest.b[0]);
     } else {
-        scanres = sscanf(str.c_str(), "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx",
+        scanres = ::sscanf(str.c_str(), "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx",
                         &dest.b[0], &dest.b[1], &dest.b[2], &dest.b[3], &dest.b[4], &dest.b[5]);
     }
     if ( 6 != scanres ) {

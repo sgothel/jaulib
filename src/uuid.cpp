@@ -26,7 +26,7 @@
 #include <jau/debug.hpp>
 
 #include <jau/uuid.hpp>
-
+#include <jau/string_cfmt.hpp>
 
 using namespace jau;
 
@@ -133,16 +133,7 @@ uuid128_t::uuid128_t(uuid32_t const & uuid32, uuid128_t const & base_uuid, jau::
 : uuid_t(TypeSize::UUID128_SZ), value(merge_uint128(uuid32.value, base_uuid.value, uuid32_le_octet_index)) {}
 
 std::string uuid16_t::toString() const noexcept {
-    const jau::nsize_t length = 4;
-    std::string str;
-    str.reserve(length+1); // including EOS for snprintf
-    str.resize(length);
-
-    const jau::nsize_t count = snprintf(&str[0], str.capacity(), "%.4x", value);
-    if( length != count ) {
-        jau_ABORT("UUID16 string not of length %zu but %zu", length, count);
-    }
-    return str;
+    return jau_format_string_h(4, "%.4x", value);
 }
 
 std::string uuid16_t::toUUID128String(uuid128_t const & base_uuid, jau::nsize_t const le_octet_index) const noexcept
@@ -152,16 +143,7 @@ std::string uuid16_t::toUUID128String(uuid128_t const & base_uuid, jau::nsize_t 
 }
 
 std::string uuid32_t::toString() const noexcept {
-    const jau::nsize_t length = 8;
-    std::string str;
-    str.reserve(length+1); // including EOS for snprintf
-    str.resize(length);
-
-    const jau::nsize_t count = snprintf(&str[0], str.capacity(), "%.8x", value);
-    if( length != count ) {
-        jau_ABORT("UUID32 string not of length %zu but %zu", length, count);
-    }
-    return str;
+    return jau_format_string_h(8, "%.8x", value);
 }
 
 std::string uuid32_t::toUUID128String(uuid128_t const & base_uuid, jau::nsize_t const le_octet_index) const noexcept
@@ -183,10 +165,6 @@ std::string uuid128_t::toString() const noexcept {
     // BE: low-mem - 87654321-0000-1000-8000-00805F9B34FB - high-mem
     //                   0      1    2    3      4    5
     //
-    const jau::nsize_t length = 36;
-    std::string str;
-    str.reserve(length+1); // including EOS for snprintf
-    str.resize(length);
     uint32_t part0, part4;
     uint16_t part1, part2, part3, part5;
 
@@ -207,12 +185,8 @@ std::string uuid128_t::toString() const noexcept {
         part1 = jau::get_uint16(value.data+ 10);
         part0 = jau::get_uint32(value.data+ 12);
     }
-    const jau::nsize_t count = snprintf(&str[0], str.capacity(), "%.8x-%.4x-%.4x-%.4x-%.8x%.4x",
-                                part0, part1, part2, part3, part4, part5);
-    if( length != count ) {
-        jau_ABORT("UUID128 string not of length %zu but %zu", length, count);
-    }
-    return str;
+    return jau_format_string_h(36, "%.8x-%.4x-%.4x-%.4x-%.8x%.4x",
+        part0, part1, part2, part3, part4, part5);
 }
 
 uuid16_t::uuid16_t(const std::string& str)
