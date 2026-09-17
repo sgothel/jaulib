@@ -448,8 +448,7 @@ namespace jau::cfmt {
     };
 
     inline std::ostream &operator<<(std::ostream &out, const FormatOpts &o) {
-        out << o.toString();
-        return out;
+        return out << o.toString();
     }
 
     class Result {
@@ -485,8 +484,7 @@ namespace jau::cfmt {
     };
 
     inline std::ostream &operator<<(std::ostream &out, const Result &pc) {
-        out << pc.toString();
-        return out;
+        return out << pc.toString();
     }
 
     namespace impl {

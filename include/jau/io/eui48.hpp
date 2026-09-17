@@ -181,6 +181,10 @@ namespace jau::io::net {
     };
     inline std::string to_string(const EUI48Sub& a) noexcept { return a.toString(); }
 
+    inline std::ostream& operator<<(std::ostream& os, const EUI48Sub &a) {
+        return os << a.toString();
+    }
+
     inline bool operator==(const EUI48Sub& lhs, const EUI48Sub& rhs) noexcept {
         if( &lhs == &rhs ) {
             return true;
@@ -321,6 +325,10 @@ namespace jau::io::net {
         jau::nsize_t put(uint8_t * const sink, const lb_endian_t byte_order) const noexcept;
     } );
     inline std::string to_string(const EUI48& a) noexcept { return a.toString(); }
+
+    inline std::ostream& operator<<(std::ostream& os, const EUI48 &a) {
+        return os << a.toString();
+    }
 
     inline bool operator==(const EUI48& lhs, const EUI48& rhs) noexcept {
         if( &lhs == &rhs ) {

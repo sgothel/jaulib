@@ -1383,8 +1383,7 @@ namespace std {
      * Output stream operator for jau::fraction_timespec
      */
     inline std::ostream& operator<<(std::ostream& os, const jau::fraction_timespec& v) {
-        os << v.toString();
-        return os;
+        return os << v.toString();
     }
 
     /**
@@ -1392,8 +1391,7 @@ namespace std {
      */
     template<typename int_type>
     inline std::ostream& operator<<(std::ostream& os, const jau::fraction<int_type>& v) {
-        os << v.toString();
-        return os;
+        return os << v.toString();
     }
 
     /**@}*/

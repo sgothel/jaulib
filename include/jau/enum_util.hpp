@@ -397,8 +397,7 @@ namespace jau::enums {
             }
             os << ev << " (" << std::to_string( *ev ) << ")";
         }
-        os << "]";
-        return os;
+        return os << "]";
     }
 
     /**

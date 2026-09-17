@@ -1,6 +1,6 @@
 /*
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2020 Gothel Software e.K.
+ * Copyright (c) 2020-2026 Gothel Software e.K.
  * Copyright (c) 2020 ZAFENA AB
  *
  * Permission is hereby granted, free of charge, to any person obtaining
@@ -30,7 +30,6 @@
 #include <string>
 #include <memory>
 #include <cstdint>
-#include <vector>
 
 #include <jau/basic_types.hpp>
 #include <jau/secmem.hpp>
@@ -149,6 +148,10 @@ inline std::string to_string(const uuid_t::TypeSize v) noexcept {
     return uuid_t::getTypeSizeString(v);
 }
 
+inline std::ostream& operator<<(std::ostream& os, const uuid_t &v) {
+    return os << v.toString();
+}
+
 class uuid16_t : public uuid_t {
 public:
     uint16_t value;
@@ -166,7 +169,7 @@ public:
     uuid16_t& operator=(const uuid16_t &o) noexcept = default;
     uuid16_t& operator=(uuid16_t &&o) noexcept = default;
 
-    const uint8_t * data() const noexcept override { 
+    const uint8_t * data() const noexcept override {
         return static_cast<uint8_t*>(static_cast<void*>(const_cast<uint16_t*>(&value))); // NOLINT(bugprone-casting-through-void): Alignment OK - same as reinterpret_cast<T*>( p )
     }
     std::string toString() const noexcept override;
@@ -195,8 +198,8 @@ public:
     uuid32_t& operator=(const uuid32_t &o) noexcept = default;
     uuid32_t& operator=(uuid32_t &&o) noexcept = default;
 
-    const uint8_t * data() const noexcept override { 
-        return static_cast<uint8_t*>(static_cast<void*>(const_cast<uint32_t*>(&value))); // NOLINT(bugprone-casting-through-void): Alignment OK - same as reinterpret_cast<T*>( p ) 
+    const uint8_t * data() const noexcept override {
+        return static_cast<uint8_t*>(static_cast<void*>(const_cast<uint32_t*>(&value))); // NOLINT(bugprone-casting-through-void): Alignment OK - same as reinterpret_cast<T*>( p )
     }
     std::string toString() const noexcept override;
     std::string toUUID128String(uuid128_t const & base_uuid=BT_BASE_UUID, jau::nsize_t const le_octet_index=12) const noexcept override;
