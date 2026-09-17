@@ -166,6 +166,11 @@ namespace jau {
 
     std::string toLower(const std::string &s);
 
+    /** Simple std::string reserve wrapper w/ noexcept, returning true on success (no exception). */
+    bool reserve_string(std::string &s, const size_t new_capacity) noexcept;
+    /** Simple std::string reserve and append wrapper w/ noexcept, returning true on success (no exception). */
+    bool reserve_append_string(std::string &s, size_t new_capacity, size_t append_count, char append_char=' ') noexcept;
+
     /**
     // *************************************************
     // *************************************************

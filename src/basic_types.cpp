@@ -484,6 +484,42 @@ std::string jau::toLower(const std::string& s) {
     std::string t(s); toLowerInPlace(t); return t;
 }
 
+bool jau::reserve_string(std::string &s, const size_t new_capacity) noexcept {
+    if (new_capacity <= s.capacity()) {
+        return true;
+    }
+    try {
+        s.reserve(new_capacity);
+        return true;
+    } catch (...) {
+        std::exception_ptr eptr = std::current_exception();
+        try {
+            std::rethrow_exception(eptr);
+        } catch (const std::exception &e) {
+            ::fprintf(stderr, "Exception caught @ %s:%d: new-cap %zu: %s\n",
+                __FILE__, __LINE__, new_capacity, e.what());
+        }
+        return false;
+    }
+}
+
+bool jau::reserve_append_string(std::string &s, size_t new_capacity, size_t append_count, char append_char) noexcept {
+    try {
+        s.reserve(new_capacity);
+        s.append(append_count, append_char);
+        return true;
+    } catch (...) {
+        std::exception_ptr eptr = std::current_exception();
+        try {
+            std::rethrow_exception(eptr);
+        } catch (const std::exception &e) {
+            ::fprintf(stderr, "Exception caught @ %s:%d: new-cap %zu, append %zu: %s\n",
+                __FILE__, __LINE__, new_capacity, append_count, e.what());
+        }
+        return false;
+    }
+}
+
 // one static_assert is sufficient for whole compilation unit
 static_assert(is_defined_endian(endian_t::native));
 static_assert(is_little_or_big_endian());
@@ -1441,41 +1477,6 @@ std::string jau::cfmt::Result::toString() const {
     return s;
 }
 
-bool jau::cfmt::impl::reserve(std::string &dest, const size_t new_capacity) noexcept {
-    if (new_capacity <= dest.capacity()) {
-        return true;
-    }
-    try {
-        dest.reserve(new_capacity);
-        return true;
-    } catch (...) {
-        std::exception_ptr eptr = std::current_exception();
-        try {
-            std::rethrow_exception(eptr);
-        } catch (const std::exception &e) {
-            ::fprintf(stderr, "Exception caught @ %s:%d: new-cap %zu: %s\n",
-                __FILE__, __LINE__, new_capacity, e.what());
-        }
-        return false;
-    }
-}
-bool jau::cfmt::impl::reserve_append(std::string &dest, const size_t new_capacity, const size_t append_count) noexcept {
-    try {
-        dest.reserve(new_capacity);
-        dest.append(append_count, ' ');
-        return true;
-    } catch (...) {
-        std::exception_ptr eptr = std::current_exception();
-        try {
-            std::rethrow_exception(eptr);
-        } catch (const std::exception &e) {
-            ::fprintf(stderr, "Exception caught @ %s:%d: new-cap %zu, append %zu: %s\n",
-                __FILE__, __LINE__, new_capacity, append_count, e.what());
-        }
-        return false;
-    }
-}
-
 void jau::cfmt::impl::append_rev(std::string &dest, const size_t dest_maxlen, std::string_view src, bool prec_cut, bool reverse, const FormatOpts &opts) noexcept {
     if (!dest_maxlen) {
         return;
@@ -1507,7 +1508,7 @@ void jau::cfmt::impl::append_rev(std::string &dest, const size_t dest_maxlen, st
                 len += space_left;
             }
         }
-        if (!reserve_append(dest, dest_start_len + len + 1, len)) { // cap +EOS, not shrinking!
+        if (!jau::reserve_append_string(dest, dest_start_len + len + 1, len)) { // cap +EOS, not shrinking!
             return;
         }
     }
@@ -1641,7 +1642,7 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
         space_left = std::min(added_maxlen-num_len-xtra_left, space_left);
         space_right = std::min(added_maxlen-num_len-xtra_left-space_left, space_right);
         const size_t added_len = std::min<size_t>(added_maxlen, space_left + xtra_left + num_len + space_right);
-        if (!reserve_append(dest, dest_start_len + added_len + 1, added_len)) { // cap +EOS, not shrinking!
+        if (!jau::reserve_append_string(dest, dest_start_len + added_len + 1, added_len)) { // cap +EOS, not shrinking!
             return;
         }
 
@@ -1814,7 +1815,7 @@ void jau::cfmt::impl::append_integral_simple(std::string &dest, const size_t des
         xtra_left = std::min(added_maxlen-val_digits, xtra_left);
 
         const size_t added_len = std::min<size_t>(added_maxlen, xtra_left + val_digits );
-        if (!reserve_append(dest, dest_start_len + added_len + 1, added_len)) { // cap +EOS, not shrinking!
+        if (!jau::reserve_append_string(dest, dest_start_len + added_len + 1, added_len)) { // cap +EOS, not shrinking!
             return;
         }
 
@@ -2142,7 +2143,7 @@ void jau::cfmt::impl::append_efloatF64(std::string &dest, const size_t dest_maxl
         {
             const size_t idx = dest.size();
             if (idx + 1 > dest_maxlen ||
-                !reserve_append(dest, std::min(idx + 1 + char32buf_maxlen, dest_maxlen) + 1, 1) // cap +EOS, not shrinking!
+                !jau::reserve_append_string(dest, std::min(idx + 1 + char32buf_maxlen, dest_maxlen) + 1, 1) // cap +EOS, not shrinking!
                )
             {
                 return;
@@ -2170,7 +2171,7 @@ void jau::cfmt::impl::append_efloatF64(std::string &dest, const size_t dest_maxl
                 // const size_t with_space_right = idx + ( width - (idx - start_idx) );
                 const size_t with_space_right = width + start_idx;
                 if (with_space_right > dest_maxlen ||
-                    !reserve_append(dest, with_space_right + 1, with_space_right - idx) // cap +EOS, not shrinking!
+                    !jau::reserve_append_string(dest, with_space_right + 1, with_space_right - idx) // cap +EOS, not shrinking!
                    )
                 {
                     return;
@@ -2259,7 +2260,7 @@ void jau::cfmt::impl::append_afloatF64(std::string &dest, const size_t dest_maxl
         {
             const size_t idx = dest.size();
             if (idx + 1 > dest_maxlen ||
-                !reserve_append(dest, std::min(idx + 1 + char32buf_maxlen, dest_maxlen) + 1, 1)  // cap +EOS, not shrinking!
+                !jau::reserve_append_string(dest, std::min(idx + 1 + char32buf_maxlen, dest_maxlen) + 1, 1)  // cap +EOS, not shrinking!
                )
             {
                 return;
@@ -2287,7 +2288,7 @@ void jau::cfmt::impl::append_afloatF64(std::string &dest, const size_t dest_maxl
                 // const size_t with_space_right = idx + ( width - (idx - start_idx) );
                 const size_t with_space_right = width + start_idx;
                 if (with_space_right > dest_maxlen ||
-                    !reserve_append(dest, with_space_right + 1, with_space_right - idx) // cap +EOS, not shrinking!
+                    !jau::reserve_append_string(dest, with_space_right + 1, with_space_right - idx) // cap +EOS, not shrinking!
                    )
                 {
                     return;

@@ -494,9 +494,6 @@ namespace jau::cfmt {
         inline constexpr const uint32_t default_float_precision = 6;
         inline constexpr const double_t max_append_float = (double_t)1e9;
 
-        bool reserve(std::string &dest, const size_t new_capacity) noexcept;
-        bool reserve_append(std::string &dest, const size_t new_capacity, const size_t append_count) noexcept;
-
         void append_rev(std::string &dest, const size_t dest_maxlen, std::string_view src, bool prec_cut, bool reverse, const FormatOpts &opts) noexcept;
         inline void append_string(std::string &dest, const size_t dest_maxlen, std::string_view src, const FormatOpts &opts) noexcept {
             append_rev(dest, dest_maxlen, src, true /*prec*/, false /*rev**/, opts);
@@ -1746,7 +1743,7 @@ namespace jau::cfmt {
         maxLen = std::min(maxLen, s.max_size()-1);
         impl::StringResult ctx(impl::StringOutput(maxLen, s), fmt);
 
-        if (!impl::reserve(s, std::min(strLenHint, maxLen)+1)) { // +EOS
+        if (!jau::reserve_string(s, std::min(strLenHint, maxLen)+1)) { // +EOS
             return s;
         }
         if constexpr( 0 < sizeof...(Targs) ) {
@@ -1900,7 +1897,7 @@ namespace jau::cfmt {
         maxLen = std::min(maxLen, s.max_size()-1);
         impl::StringResult ctx(impl::StringOutput(maxLen, s), fmt);
 
-        if (!impl::reserve(s, std::min(s.length() + strLenHint, maxLen) + 1)) {  // +EOS
+        if (!jau::reserve_string(s, std::min(s.length() + strLenHint, maxLen) + 1)) {  // +EOS
             return s;
         }
         if constexpr( 0 < sizeof...(Targs) ) {
@@ -1936,7 +1933,7 @@ namespace jau::cfmt {
         maxLen = std::min(maxLen, s.max_size()-1);
         impl::StringResult ctx(impl::StringOutput(maxLen, s), fmt);
 
-        if (!impl::reserve(s, std::min(s.length()+strLenHint, maxLen)+1)) { // +EOS
+        if (!jau::reserve_string(s, std::min(s.length()+strLenHint, maxLen)+1)) { // +EOS
             return ctx;
         }
         if constexpr( 0 < sizeof...(Targs) ) {
