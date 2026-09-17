@@ -243,7 +243,7 @@ Following debug presets are defined in `CMakePresets.json`
   - default generator
   - default compiler
   - C++20
-  - LTO for all targets enabled
+  - LTO for all targets disabled
   - debug enabled
   - disabled `clang-tidy`
   - java (if available)
@@ -267,6 +267,7 @@ Following debug presets are defined in `CMakePresets.json`
     - binary-dir `build/debug-gcc`
     - install-dir `dist/debug-gcc`
   - **`release`**
+    - LTO for all targets enabled
     - debug disabled (strip libraries)
     - disabled `clang-tidy`
     - testing with sudo on
@@ -428,7 +429,7 @@ Disable using `C++ Runtime Type Information` (*RTTI*) (default: enabled)
 -DDONT_USE_RTTI=ON
 ~~~~~~~~~~~~~
 
-Enable LTO for all targets (default: disabled)
+Enable LTO for all targets (default: enabled for release)
 
 *If `TOOLCHAIN_SUPPORTS_IPO` is enabled via `cmake` detection,
 all targets will be build with LTO support

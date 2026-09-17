@@ -13,7 +13,7 @@
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "20",
         "DONT_USE_RTTI": "ON",
-        "USE_LTO_FOR_ALL_TARGETS": "ON",
+        "USE_LTO_FOR_ALL_TARGETS": "OFF",
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/dist/debug",
         "JAU_CMAKE_FIX_INSTALL_PREFIX": "ON",
@@ -66,6 +66,7 @@
       "displayName": "Profiling (gcc, C++20, java)",
       "binaryDir": "${sourceDir}/build/perf-gcc",
       "cacheVariables": {
+        "USE_LTO_FOR_ALL_TARGETS": "ON",
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/dist/perf-gcc",
         "CMAKE_C_COMPILER": "gcc",
@@ -80,6 +81,7 @@
       "displayName": "Profiling (clang, C++20, java)",
       "binaryDir": "${sourceDir}/build/perf-clang",
       "cacheVariables": {
+        "USE_LTO_FOR_ALL_TARGETS": "ON",
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/dist/perf-clang",
         "CMAKE_C_COMPILER": "clang",
@@ -94,6 +96,7 @@
       "displayName": "Release (cc, C++20, java)",
       "binaryDir": "${sourceDir}/build/release",
       "cacheVariables": {
+        "USE_LTO_FOR_ALL_TARGETS": "ON",
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/dist/release",
         "JAU_CMAKE_FIX_INSTALL_PREFIX": "ON",
