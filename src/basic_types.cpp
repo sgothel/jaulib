@@ -29,6 +29,7 @@
 #include <cstdint>
 #include <cstring>
 #include <ctime>
+#include <exception>
 #include <limits>
 #include <regex>
 #include <string>
@@ -518,6 +519,15 @@ bool jau::reserve_append_string(std::string &s, size_t new_capacity, size_t appe
         }
         return false;
     }
+}
+
+std::string& jau::append_string(std::string &s, std::string_view add) noexcept {
+    try {
+        s.append(add);
+    } catch (...) {
+        jau::fput_exception(stderr, std::current_exception(), E_FILE_LINE);
+    }
+    return s;
 }
 
 // one static_assert is sufficient for whole compilation unit
