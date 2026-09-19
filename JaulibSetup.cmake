@@ -33,6 +33,9 @@ include_guard(GLOBAL)
 macro(JaulibPreset)
     # Poor man's IDE integration, hard-coded presets for undefined variables
     message(STATUS "JaulibPreset: Start")
+
+    cmake_policy(SET CMP0177 NEW)
+
     if( (NOT DEFINED JAU_CMAKE_ENFORCE_PRESETS) AND (DEFINED ENV{JAU_CMAKE_ENFORCE_PRESETS}) )
         set (JAU_CMAKE_ENFORCE_PRESETS $ENV{JAU_CMAKE_ENFORCE_PRESETS})
         message(STATUS "JaulibPreset: JAU_CMAKE_ENFORCE_PRESETS -> ${JAU_CMAKE_ENFORCE_PRESETS} (env)")

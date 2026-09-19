@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.21.0 FATAL_ERROR)
+cmake_minimum_required (VERSION 3.21 FATAL_ERROR)
 include(JaulibSetup.cmake)
 # set(DONT_USE_RTTI ON)
 # set(BUILDJAVA OFF)
