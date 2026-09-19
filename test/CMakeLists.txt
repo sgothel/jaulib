@@ -71,7 +71,7 @@ foreach( name ${TARGETS_IDIOMATIC_TEST} )
     add_dependencies(${name} jaulib catch2)
     add_test (NAME ${name} COMMAND ${name})
     if(DEFINED CMAKE_CXX_CLANG_TIDY)
-        set_target_properties(${name} PROPERTIES CXX_CLANG_TIDY "${CMAKE_CXX_CLANG_TIDY};--checks;-bugprone-chained-comparison")
+        set_target_properties(${name} PROPERTIES CXX_CLANG_TIDY "${CMAKE_CXX_CLANG_TIDY};--checks;-bugprone-chained-comparison,-bugprone-macro-parentheses")
     endif()
 endforeach()
 
@@ -104,7 +104,7 @@ IF( ( TEST_WITH_SUDO ) AND ( "${OS_NAME}" STREQUAL "linux" ) )
                                    --keep=1 --user=$ENV{USER} --addamb=cap_sys_admin,cap_setuid,cap_setgid+eip
                                    -- -c "ulimit -c unlimited; ./${name}")
         if(DEFINED CMAKE_CXX_CLANG_TIDY)
-            set_target_properties(${name} PROPERTIES CXX_CLANG_TIDY "${CMAKE_CXX_CLANG_TIDY};--checks;-bugprone-chained-comparison")
+            set_target_properties(${name} PROPERTIES CXX_CLANG_TIDY "${CMAKE_CXX_CLANG_TIDY};--checks;-bugprone-chained-comparison,-bugprone-macro-parentheses")
         endif()
         #
         # add_test (NAME ${name} COMMAND sudo -E ./${name})
