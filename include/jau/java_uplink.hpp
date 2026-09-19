@@ -31,6 +31,7 @@
 
 #include <jau/basic_types.hpp>
 #include <jau/string_util.hpp>
+#include <jau/string_cfmt.hpp>
 
 namespace jau::jni {
 
@@ -64,7 +65,7 @@ namespace jau::jni {
             JavaAnonRef javaObjectRef;
 
         public:
-            virtual std::string toString() const { return "JavaUplink["+jau::toHexString(this)+"]"; }
+            virtual std::string toString() const noexcept { return jau_format_string("JavaUplink[%p]", this); }
 
             virtual std::string get_java_class() const noexcept = 0;
 
