@@ -111,10 +111,16 @@ namespace jau::impl {
 #define jau_DBG_JNI_PRINT(...) { if( jau::environment::get().debug_jni ) { jau_dbgPrint1(stderr, true, "Debug", __VA_ARGS__); } }
 
 /** Use for environment-variable environment::DEBUG conditional warning messages, prefix '[elapsed_time] Warning @ FILE:LINE FUNC: ' */
-#define jau_DBG_WARN_PRINT(...) { if( jau::environment::get().debug ) { jau_dbgPrint2(stderr, "Warning", false /* errno */, false /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); } } // NOLINT(bugprone-lambda-function-name)
+#define jau_DBG_WARN_PRINT(...) { if( jau::environment::get().debug ) { jau_dbgPrint2(stderr, "Warning (dbg)", false /* errno */, false /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); } } // NOLINT(bugprone-lambda-function-name)
 
-/** Use for environment-variable environment::DEBUG conditional error messages, prefix '[elapsed_time] Debug @ FILE:LINE FUNC: '. Function also appends last errno, strerror(errno) and full backtrace*/
-#define jau_DBG_ERR_PRINT(...) { if( jau::environment::get().debug ) { jau_dbgPrint2(stderr, "Debug", true /* errno */, true /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); } } // NOLINT(bugprone-lambda-function-name)
+/** Use for environment-variable environment::DEBUG conditional error messages, prefix '[elapsed_time] Error (dbg) @ FILE:LINE FUNC: '. Function also appends last errno, strerror(errno) and full backtrace*/
+#define jau_DBG_ERR_PRINT(...) { if( jau::environment::get().debug ) { jau_dbgPrint2(stderr, "Error (dbg)", true /* errno */, true /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); } } // NOLINT(bugprone-lambda-function-name)
+
+/** Use for environment-variable environment::DEBUG conditional error messages, prefix '[elapsed_time] Error @ FILE:LINE FUNC: '. Function also appends last errno and strerror(errno). No backtrace. */
+#define jau_DBG_ERR_PRINT2(...) { if( jau::environment::get().debug ) { jau_dbgPrint2(stderr, "Error (dbg)", true /* errno */, false /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); } } // NOLINT(bugprone-lambda-function-name)
+
+/** Use for environment-variable environment::DEBUG conditional error messages, prefix '[elapsed_time] Error @ FILE:LINE FUNC: '. No last errno, nor strerror(errno). No backtrace. */
+#define jau_DBG_ERR_PRINT3(...) { if( jau::environment::get().debug ) { jau_dbgPrint2(stderr, "Error (dbg)", false /* errno */, false /* backtrace */, __func__, __FILE__, __LINE__, __VA_ARGS__); } } // NOLINT(bugprone-lambda-function-name)
 
 /**
  * Use for environment-variable environment::VERBOSE conditional verbose messages, prefix '[elapsed_time] Wordy: '.
