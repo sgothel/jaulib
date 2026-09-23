@@ -201,6 +201,17 @@
  *     - If underlying type is `unsigned`, it can't be used for signed integer conversion
  *   - `bool` as integral (number `0` or `1`)
  *
+ * ### Build Specific Notes
+ * #### JAU_CFMT_TRACK_FORMAT_OPTS_FMT
+ * You may define compile-time macro `JAU_CFMT_TRACK_FORMAT_OPTS_FMT` to enable FormatOpts::fmt
+ * to track the original conversion specifier to debug.
+ * Disabled by default to save memory footprint and runtime costs.
+ *
+ * Example
+ * ```
+ * #define JAU_CFMT_TRACK_FORMAT_OPTS_FMT 1
+ * ```
+ *
  * ### Special Thanks
  * To the project [A printf / sprintf Implementation for Embedded Systems](https://github.com/mpaland/printf)
  * worked on by Marco Paland and many others. I have used their `test_suite.cpp` code within our unit test
@@ -320,7 +331,9 @@ namespace jau::cfmt {
 
 
     struct FormatOpts {
+#ifdef JAU_CFMT_TRACK_FORMAT_OPTS_FMT
         std::string_view fmt;
+#endif
         uint32_t width;
         uint32_t precision;
         uint32_t radix;
@@ -331,7 +344,11 @@ namespace jau::cfmt {
         bool precision_set:1;
 
         constexpr FormatOpts() noexcept
-        : fmt(), width(0), precision(0), radix(10),
+        :
+#ifdef JAU_CFMT_TRACK_FORMAT_OPTS_FMT
+          fmt(),
+#endif
+          width(0), precision(0), radix(10),
           flags(flags_t::none),
           length_mod(plength_t::none),
           conversion(cspec_t::none),
@@ -455,7 +472,9 @@ namespace jau::cfmt {
         }
 
         constexpr void reset() noexcept {
+#ifdef JAU_CFMT_TRACK_FORMAT_OPTS_FMT
             fmt = std::string_view();
+#endif
             width = 0;
             precision = 0;
             radix = 10;
@@ -837,11 +856,13 @@ namespace jau::cfmt {
                 }
             }
 
+#ifdef JAU_CFMT_TRACK_FORMAT_OPTS_FMT
             constexpr void setLastSpec(size_t endpos) noexcept {
                 if (endpos > pos_lstart) {
                     opts.fmt = fmt.substr(pos_lstart, endpos - pos_lstart);
                 }
             }
+#endif
 
             constexpr void setError(int l) noexcept {
                 line = l;
@@ -1205,7 +1226,9 @@ namespace jau::cfmt {
                         pc.appendError("Len");
                         return;  // error
                     }
+#ifdef JAU_CFMT_TRACK_FORMAT_OPTS_FMT
                     pc.setLastSpec(pc.pos);
+#endif
 
                     if( c == '%' ) {
                         loop_next = true;

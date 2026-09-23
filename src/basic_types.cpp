@@ -1429,7 +1429,10 @@ std::string jau::cfmt::FormatOpts::toFormat() const {
 
 std::string jau::cfmt::FormatOpts::toString() const {
     std::string s = "fmt `";
-    s.append(fmt).append("` -> `").append(toFormat())
+#ifdef JAU_CFMT_TRACK_FORMAT_OPTS_FMT
+    s.append(fmt).append("` -> `");
+#endif
+    s.append(toFormat())
      .append("`, flags ")
      .append(to_string(flags))
      .append(", width ");
