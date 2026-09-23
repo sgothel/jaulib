@@ -624,8 +624,9 @@ namespace jau::cfmt {
             requires std::is_floating_point_v<T>
             constexpr void appendFormattedFloat(const FormatOpts&, const T&, nsize_t) noexcept {}
 
-            constexpr void appendText(std::string_view ) noexcept { }
-            constexpr void appendError(size_t, int , const std::string_view ) noexcept {}
+            constexpr void appendText(std::string_view) noexcept { }
+            constexpr void appendText(std::string_view, size_t, size_t) noexcept { }
+            constexpr void appendError(size_t, int , const std::string_view) noexcept {}
         };
 
         /// A std::string OutputType for runtime formatting into a std::string
@@ -714,13 +715,11 @@ namespace jau::cfmt {
                     impl::append_efloatF64(m_s, m_maxLen, v, opts);
                 }
             }
-            inline void appendText(const std::string_view v) noexcept {
-                const size_t remaining = m_maxLen - m_s.size();
-                if (remaining >= v.size()) {
-                    jau::append_string(m_s, v);
-                } else {
-                    jau::append_string(m_s, v, 0, remaining);
-                }
+            void appendText(std::string_view v) noexcept {
+                jau::append_string(m_s, v, 0, std::min(m_maxLen - m_s.size(), v.size()));
+            }
+            void appendText(std::string_view v, size_t pos, size_t n) noexcept {
+                jau::append_string(m_s, v, pos, std::min(m_maxLen - m_s.size(), n));
             }
 
             void appendError(size_t argIdx, int line, const std::string_view tag) noexcept;
@@ -838,12 +837,12 @@ namespace jau::cfmt {
                     const size_t q = fmt.find('%', pos + 1);
                     if (q == std::string::npos) {
                         // no conversion specifier found, end of format
-                        appendText(fmt.substr(pos, fmt.length() - pos));
+                        appendText(fmt, pos, fmt.length() - pos);
                         pos = fmt.length();
                         return false;
                     } else {
                         // new conversion specifier found
-                        appendText(fmt.substr(pos, q - pos));
+                        appendText(fmt, pos, q - pos);
                         state = pstate_t::start;
                         pos_lstart = pos;
                         pos = q + 1;
@@ -897,10 +896,17 @@ namespace jau::cfmt {
                 m_out.appendFormattedFloat(opts, v, m_argtype_size);
             }
 
+            CXX_NO_INLINE
             constexpr void appendText(const std::string_view v) noexcept {
                 m_out.appendText(v);
             }
 
+            CXX_NO_INLINE
+            constexpr void appendText(std::string_view v, size_t pos_, size_t n) noexcept {
+                m_out.appendText(v, pos_, n);
+            }
+
+            CXX_NO_INLINE
             constexpr void appendError(const std::string_view tag) noexcept {
                 const ssize_t c = arg_count == std::numeric_limits<ssize_t>::min() ? 0 : arg_count;
                 m_out.appendError(jau::abs(c), line, tag);
