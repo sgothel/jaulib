@@ -234,7 +234,13 @@ namespace jau::cfmt {
     constexpr inline size_t default_string_capacity = 511;
 
 
-    enum class pstate_t : uint16_t {
+    /// Global jau::cfmt configuration
+    struct Config {
+        /// Default ``'`` thousand's separator, see flags_t::thousands
+        inline static constexpr char default_thousand_separator = '\'';
+    };
+
+    enum class pstate_t : uint8_t {
         error,
         outside,
         start,
@@ -252,22 +258,22 @@ namespace jau::cfmt {
     }
 
     /// Format flags
-    enum class flags_t : uint16_t {
+    enum class flags_t : uint8_t {
         none        = 0,                ///< no flag
 
-        hash        = (uint16_t)1 << 1, ///< actual flag `#`, C99
-        zeropad     = (uint16_t)1 << 2, ///< actual flag `0`, C99
-        left        = (uint16_t)1 << 3, ///< actual flag `-`, C99
-        space       = (uint16_t)1 << 4, ///< actual flag ` `, C99
-        plus        = (uint16_t)1 << 5, ///< actual flag `+`, C99
-        thousands   = (uint16_t)1 << 6, ///< actual flag `\'`, POSIX
+        hash        = 1_u8 << 0, ///< actual flag `#`, C99
+        zeropad     = 1_u8 << 1, ///< actual flag `0`, C99
+        left        = 1_u8 << 2, ///< actual flag `-`, C99
+        space       = 1_u8 << 3, ///< actual flag ` `, C99
+        plus        = 1_u8 << 4, ///< actual flag `+`, C99
+        thousands   = 1_u8 << 5, ///< actual flag `\'`, POSIX
 
-        uppercase   = (uint16_t)1 << 8  ///< uppercase, via conversion spec
+        uppercase   = 1_u8 << 7  ///< uppercase, via conversion spec
     };
     JAU_MAKE_BITFIELD_ENUM_STRING_DECL(flags_t);
 
     /// Format length modifiers
-    enum class plength_t : uint16_t {
+    enum class plength_t : uint8_t {
         none,
         hh,  ///< char integer
         h,   ///< short integer
@@ -281,7 +287,7 @@ namespace jau::cfmt {
     JAU_MAKE_ENUM_STRING_DECL(plength_t);
 
     /// Format conversion specifier (fully defined w/ radix)
-    enum class cspec_t : uint16_t {
+    enum class cspec_t : uint8_t {
         none,             ///< none
         character,        ///< `c`
         string,           ///< `s`
@@ -295,11 +301,6 @@ namespace jau::cfmt {
     };
     JAU_MAKE_ENUM_STRING_DECL(cspec_t);
 
-    /// Global jau::cfmt configuration
-    struct Config {
-        /// Default ``'`` thousand's separator, see flags_t::thousands
-        inline static constexpr char default_thousand_separator = '\'';
-    };
 
     struct FormatOpts {
         std::string_view fmt;
@@ -569,27 +570,27 @@ namespace jau::cfmt {
 
             template<typename T>
             requires jau::req::has_toString_any<T>
-            void appendFormatted(const FormatOpts& opts, const T& v) {
+            void appendFormatted(const FormatOpts& opts, const T& v) noexcept {
                 impl::append_string(m_s, m_maxLen, v.toString(), opts);
             }
             template<typename T>
             requires jau::req::has_to_string_any<T>
-            void appendFormatted(const FormatOpts& opts, const T& v) {
+            void appendFormatted(const FormatOpts& opts, const T& v) noexcept {
                 impl::append_string(m_s, m_maxLen, v.to_string(), opts);
             }
             template<typename T>
             requires jau::req::has_free_to_string_any<T>
-            void appendFormatted(const FormatOpts& opts, const T& v) {
+            void appendFormatted(const FormatOpts& opts, const T& v) noexcept {
                 impl::append_string(m_s, m_maxLen, to_string(v), opts);
             }
             template<typename T>
             requires jau::req::string_literal<T> || jau::req::string_class<T>
-            void appendFormatted(const FormatOpts& opts, const T& v) {
+            void appendFormatted(const FormatOpts& opts, const T& v) noexcept {
                 impl::append_string(m_s, m_maxLen, v, opts);
             }
             template<typename T>
             requires jau::req::char_pointer<T>
-            void appendFormatted(const FormatOpts& opts, const T& v) {
+            void appendFormatted(const FormatOpts& opts, const T& v) noexcept {
                 if( nullptr != v ) {
                     impl::append_string(m_s, m_maxLen, std::string_view(v), opts);
                 } else {
@@ -598,7 +599,7 @@ namespace jau::cfmt {
             }
             template<typename T>
             requires jau::req::pointer<T> && (!jau::req::string_alike<T>)
-            void appendFormatted(const FormatOpts& opts, const T& v) {
+            void appendFormatted(const FormatOpts& opts, const T& v) noexcept {
                 if( nullptr != v ) {
                     const uintptr_t v_le = jau::cpu_to_le(reinterpret_cast<uintptr_t>(v));
                     if (!opts.width_set && !opts.precision_set) {
@@ -612,7 +613,7 @@ namespace jau::cfmt {
             }
             template<typename T>
             requires jau::req::unsigned_integral<T>
-            void appendFormattedInt(const FormatOpts& opts, const T& v, bool negative) {
+            void appendFormattedInt(const FormatOpts& opts, const T& v, bool negative) noexcept {
                 if (!opts.width_set && !opts.precision_set) {
                     impl::append_integral_simple(m_s, m_maxLen, uint64_t(v), negative, opts);
                 } else {
@@ -621,7 +622,7 @@ namespace jau::cfmt {
             }
             template<typename T>
             requires std::is_floating_point_v<T>
-            void appendFormattedFloat(const FormatOpts& opts, const T& v, nsize_t floatSize) {
+            void appendFormattedFloat(const FormatOpts& opts, const T& v, nsize_t floatSize) noexcept {
                 if( opts.conversion == cspec_t::floating_point ) {
                     impl::append_floatF64(m_s, m_maxLen, v, opts);
                 } else if( opts.conversion == cspec_t::hex_float ) {
@@ -631,16 +632,16 @@ namespace jau::cfmt {
                     impl::append_efloatF64(m_s, m_maxLen, v, opts);
                 }
             }
-            inline void appendText(const std::string_view v) {
+            inline void appendText(const std::string_view v) noexcept {
                 const size_t remaining = m_maxLen - m_s.size();
                 if (remaining >= v.size()) {
-                    m_s.append(v);
+                    jau::append_string(m_s, v);
                 } else {
-                    m_s.append(v, 0, remaining);
+                    jau::append_string(m_s, v, 0, remaining);
                 }
             }
 
-            void appendError(size_t argIdx, int line, const std::string_view tag);
+            void appendError(size_t argIdx, int line, const std::string_view tag) noexcept;
         };
 
         template<OutputType Output>
@@ -791,32 +792,32 @@ namespace jau::cfmt {
 
             template<typename T>
                 requires (jau::req::stringifyable0_jau<T> || jau::req::pointer<T>)
-            constexpr void appendFormatted(const T &v) {
+            constexpr void appendFormatted(const T &v) noexcept {
                 m_out.appendFormatted(opts, v);
             }
             template<typename T>
             requires jau::req::unsigned_integral<T> && (!jau::req::boolean<T>)
-            constexpr void appendFormatted(const T &v) {
+            constexpr void appendFormatted(const T &v) noexcept {
                 m_out.appendFormattedInt(opts, v, m_argval_negative);
             }
 
             template<typename T>
             requires jau::req::boolean<T>
-            constexpr void appendFormatted(const T &v) {
+            constexpr void appendFormatted(const T &v) noexcept {
                 m_out.appendFormatted(opts, v ? "true" : "false");
             }
 
             template<typename T>
                 requires std::floating_point<T>
-            constexpr void appendFormatted(const T &v) {
+            constexpr void appendFormatted(const T &v) noexcept {
                 m_out.appendFormattedFloat(opts, v, m_argtype_size);
             }
 
-            constexpr void appendText(const std::string_view v) {
+            constexpr void appendText(const std::string_view v) noexcept {
                 m_out.appendText(v);
             }
 
-            constexpr void appendError(const std::string_view tag) {
+            constexpr void appendError(const std::string_view tag) noexcept {
                 const ssize_t c = arg_count == std::numeric_limits<ssize_t>::min() ? 0 : arg_count;
                 m_out.appendError(jau::abs(c), line, tag);
             }
@@ -1328,7 +1329,7 @@ namespace jau::cfmt {
             template <typename T>
             requires std::is_same_v<no_type_t, T>
             CXX_ALWAYS_INLINE
-            static constexpr bool parseFmtSpec(Result &pc, char fmt_literal, const T &) {
+            static constexpr bool parseFmtSpec(Result &pc, char fmt_literal, const T &) noexcept {
                 if( !pc.opts.setConversion(fmt_literal) ) {
                     pc.setError(__LINE__);
                     return false;
@@ -1340,7 +1341,7 @@ namespace jau::cfmt {
             template <typename T>
             requires (!std::is_same_v<no_type_t, T>)
             CXX_ALWAYS_INLINE
-            static constexpr bool parseFmtSpec(Result &pc, char fmt_literal, const T &val) {
+            static constexpr bool parseFmtSpec(Result &pc, char fmt_literal, const T &val) noexcept {
                 if( !pc.opts.setConversion(fmt_literal) ) {
                     pc.setError(__LINE__);
                     return false;
@@ -1380,7 +1381,7 @@ namespace jau::cfmt {
             template <typename T>
             requires jau::req::unsigned_integral<T> && (!jau::req::boolean<T>)
             CXX_ALWAYS_INLINE
-            static constexpr bool parseCharFmtSpec(Result &pc, const T &val0) {
+            static constexpr bool parseCharFmtSpec(Result &pc, const T &val0) noexcept {
                 ++pc.arg_count;
 
                 using V = make_int_signed_t<T>; // restore signed type!
@@ -1395,8 +1396,8 @@ namespace jau::cfmt {
                             pc.setError(__LINE__);
                             return false;
                         }
-                        std::string s(1, (char)(val*sign));
-                        pc.appendFormatted(std::string_view(s));
+                        char buf[] = { (char)(val*sign), 0 };
+                        pc.appendFormatted(std::string_view(buf, 1));  // FIXME: Support UTF16? UTF8 default
                     } break;
                     case plength_t::l: {
                         if ( !pc.m_argtype_signed ||
@@ -1405,8 +1406,8 @@ namespace jau::cfmt {
                             pc.setError(__LINE__);
                             return false;
                         }
-                        std::string s(1, (char)(val*sign));
-                        pc.appendFormatted(std::string_view(s));  // FIXME: Support UTF16? UTF8 default
+                        char buf[] = { (char)(val*sign), 0 };
+                        pc.appendFormatted(std::string_view(buf, 1));  // FIXME: Support UTF16? UTF8 default
                     } break;
                     default:
                         pc.setError(__LINE__);
@@ -1426,7 +1427,7 @@ namespace jau::cfmt {
             template <typename T>
             requires jau::req::stringifyable0_jau<T> || jau::req::boolean<T>
             CXX_ALWAYS_INLINE
-            static constexpr bool parseStringFmtSpec(Result &pc, const T &val) {
+            static constexpr bool parseStringFmtSpec(Result &pc, const T &val) noexcept {
                 ++pc.arg_count;
                 switch( pc.opts.length_mod ) {
                     case plength_t::none:
@@ -1484,7 +1485,7 @@ namespace jau::cfmt {
             template <typename T>
             requires std::is_enum_v<T> && jau::req::signed_integral<std::underlying_type_t<T>>
             CXX_ALWAYS_INLINE
-            static constexpr bool parseSignedFmtSpec(Result &pc, const T &val0) {
+            static constexpr bool parseSignedFmtSpec(Result &pc, const T &val0) noexcept {
                 using U = std::underlying_type_t<T>;
                 using V = make_int_unsigned_t<U>;
                 const U u = U(val0);
@@ -1496,7 +1497,7 @@ namespace jau::cfmt {
             template <typename T>
             requires jau::req::unsigned_integral<T>
             CXX_ALWAYS_INLINE
-            static constexpr bool parseSignedFmtSpec(Result &pc, const T &val) {
+            static constexpr bool parseSignedFmtSpec(Result &pc, const T &val) noexcept {
                 ++pc.arg_count;
 
                 // Only accepting unsigned -> signed, if sizeof(unsigned) < sizeof(signed)
@@ -1580,7 +1581,7 @@ namespace jau::cfmt {
             template <typename T>
             requires std::is_enum_v<T>
             CXX_ALWAYS_INLINE
-            static constexpr bool parseUnsignedFmtSpec(Result &pc, const T &val0) {
+            static constexpr bool parseUnsignedFmtSpec(Result &pc, const T &val0) noexcept {
                 using U = std::underlying_type_t<T>;
                 using V = make_int_unsigned_t<U>;
                 const U u = U(val0);
@@ -1592,7 +1593,7 @@ namespace jau::cfmt {
             template <typename T>
             requires jau::req::unsigned_integral<T>
             CXX_ALWAYS_INLINE
-            static constexpr bool parseUnsignedFmtSpec(Result &pc, const T &val) {
+            static constexpr bool parseUnsignedFmtSpec(Result &pc, const T &val) noexcept {
                 ++pc.arg_count;
 
                 // Accepting signed, but not negative
@@ -1681,7 +1682,7 @@ namespace jau::cfmt {
             template <typename T>
             requires std::floating_point<T>
             CXX_ALWAYS_INLINE
-            static constexpr bool parseFloatFmtSpec(Result &pc, const char /*fmt_literal*/, const T &val) {
+            static constexpr bool parseFloatFmtSpec(Result &pc, const char /*fmt_literal*/, const T &val) noexcept {
                 ++pc.arg_count;
 
                 using U = std::remove_cv_t<T>;

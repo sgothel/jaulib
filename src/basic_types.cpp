@@ -2320,8 +2320,14 @@ void jau::cfmt::impl::append_afloatF64(std::string &dest, const size_t dest_maxl
 #endif
 }
 
-void jau::cfmt::impl::StringOutput::appendError(size_t argIdx, int line, const std::string_view tag) {
-    m_s.append("<E#").append(std::to_string(argIdx)).append("@").append(std::to_string(line)).append(":").append(tag).append(">");
+void jau::cfmt::impl::StringOutput::appendError(size_t argIdx, int line, const std::string_view tag) noexcept {
+    jau::append_string(m_s, "<E#");
+    jau::appendDecString(m_s, argIdx, 0);
+    jau::append_string(m_s, "@");
+    jau::appendDecString(m_s, line, 0);
+    jau::append_string(m_s, ":");
+    jau::append_string(m_s, tag);
+    jau::append_string(m_s, ">");
 }
 
 // Explicit instantiation definition of template function
