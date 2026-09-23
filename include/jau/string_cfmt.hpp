@@ -221,11 +221,18 @@ namespace jau::cfmt {
      *  @{
      */
 
-    /// Maximum net number string len w/o EOS, up to uint64_t
-    constexpr inline const size_t num_max_slen = 31;
+    /// Maximum net integral number decimal digits, up to uint64_t max() or int64_t min()
+    constexpr inline size_t integral_max_digits10 = 20;
+
+    /// Maximum net integral or floating-point number string len w/o EOS, including all double presentations
+    constexpr inline uint32_t number_max_strlen = 32;
+
+    /// Default floating-point precision, value 6
+    constexpr inline uint32_t default_float_precision = 6;
 
     /// Default string reserved capacity w/o EOS (511)
-    constexpr inline const size_t default_string_capacity = 511;
+    constexpr inline size_t default_string_capacity = 511;
+
 
     enum class pstate_t : uint16_t {
         error,
@@ -488,9 +495,7 @@ namespace jau::cfmt {
     }
 
     namespace impl {
-        inline constexpr const uint32_t char32buf_maxlen = 32;
-        inline constexpr const uint32_t default_float_precision = 6;
-        inline constexpr const double_t max_append_float = (double_t)1e9;
+        inline constexpr double_t max_append_float = (double_t)1e9;
 
         void append_rev(std::string &dest, const size_t dest_maxlen, std::string_view src, bool prec_cut, bool reverse, const FormatOpts &opts) noexcept;
         inline void append_string(std::string &dest, const size_t dest_maxlen, std::string_view src, const FormatOpts &opts) noexcept {
@@ -1244,10 +1249,10 @@ namespace jau::cfmt {
             /// Parse format field width or precision, returns true if field is consumed and parsing can continue
             /// or false if field has not been consumed or definite error
             static constexpr bool parseFmtWidthPrecision(bool is_width, Result &pc, char &c) noexcept {
-                char buffer[num_max_slen+1];
+                char buffer[integral_max_digits10+1];
                 char *s = &buffer[0];
                 const char *s_begin = s;
-                const char *s_end = s + num_max_slen;
+                const char *s_end = s + integral_max_digits10;
                 while( jau::is_digit(c) && s < s_end ) {
                     *s = c; ++s;
                     if( !pc.nextSymbol(c) ) {

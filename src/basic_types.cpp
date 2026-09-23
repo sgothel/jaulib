@@ -1571,14 +1571,14 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
 
     // const uint32_t val_digits = opts.precision_set && opts.precision == 0 && jau::is_zero(v) ? 0 : jau::digits(v, radix);
     uint32_t val_digits; // includes inject_dot
-    char buf_[char32buf_maxlen];
+    char buf_[number_max_strlen];
     if( opts.precision_set && opts.precision == 0 && jau::is_zero(v) ) {
         val_digits = 0;
     } else {
         const char *hex_array = is_set(opts.flags, flags_t::uppercase) ? HexadecimalArrayBig : HexadecimalArrayLow;
         const uint64_t mask = radix - 1;
         char * d = buf_;
-        const char * const d_end_num_max = d + std::min(added_maxlen, char32buf_maxlen);
+        const char * const d_end_num_max = d + std::min(added_maxlen, number_max_strlen);
         do {
             if (10 == radix) {
                 *(d++) = char('0' + (v % 10_u64));
@@ -1772,12 +1772,12 @@ void jau::cfmt::impl::append_integral_simple(std::string &dest, const size_t des
 
     // const uint32_t val_digits = opts.precision_set && opts.precision == 0 && jau::is_zero(v) ? 0 : jau::digits(v, radix);
     uint32_t val_digits; // includes separator count
-    char buf_[char32buf_maxlen];
+    char buf_[number_max_strlen];
     {
         const char *hex_array = is_set(opts.flags, flags_t::uppercase) ? HexadecimalArrayBig : HexadecimalArrayLow;
         const uint64_t mask = radix - 1;
         char * d = buf_;
-        const char * const d_end_num_max = d + std::min(added_maxlen, char32buf_maxlen);
+        const char * const d_end_num_max = d + std::min(added_maxlen, number_max_strlen);
         if (!separator) {
             do {
                 if (10 == radix) {
@@ -1927,10 +1927,10 @@ void jau::cfmt::impl::append_floatF64(std::string &dest, const size_t dest_maxle
     typedef double float_type;  // enforce 64bit only double type (see below)
     // typedef jau::float_bytes_t<std::max(sizeof(ifloat_type), sizeof(double))> float_type;
 
-    char buf_[char32buf_maxlen];
+    char buf_[number_max_strlen];
     char *d = buf_;
     const char *const d_start = d;
-    const char *const d_end = d + char32buf_maxlen;
+    const char *const d_end = d + number_max_strlen;
     float_type diff = 0;
 
     // powers of 10
@@ -2162,7 +2162,7 @@ void jau::cfmt::impl::append_efloatF64(std::string &dest, const size_t dest_maxl
         {
             const size_t idx = dest.size();
             if (idx + 1 > dest_maxlen ||
-                !jau::reserve_append_string(dest, std::min(idx + 1 + char32buf_maxlen, dest_maxlen) + 1, 1) // cap +EOS, not shrinking!
+                !jau::reserve_append_string(dest, std::min(idx + 1 + number_max_strlen, dest_maxlen) + 1, 1) // cap +EOS, not shrinking!
                )
             {
                 return;
@@ -2279,7 +2279,7 @@ void jau::cfmt::impl::append_afloatF64(std::string &dest, const size_t dest_maxl
         {
             const size_t idx = dest.size();
             if (idx + 1 > dest_maxlen ||
-                !jau::reserve_append_string(dest, std::min(idx + 1 + char32buf_maxlen, dest_maxlen) + 1, 1)  // cap +EOS, not shrinking!
+                !jau::reserve_append_string(dest, std::min(idx + 1 + number_max_strlen, dest_maxlen) + 1, 1)  // cap +EOS, not shrinking!
                )
             {
                 return;
