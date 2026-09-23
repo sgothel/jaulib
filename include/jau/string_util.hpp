@@ -170,8 +170,22 @@ namespace jau {
     bool reserve_string(std::string &s, const size_t new_capacity) noexcept;
     /** Simple std::string reserve and append wrapper w/ noexcept, returning true on success (no exception). */
     bool reserve_append_string(std::string &s, size_t new_capacity, size_t append_count, char append_char=' ') noexcept;
-    /** Simple std::string append given string wrapper w/ noexcept, returning passed std::string `s`. */
+
+    /**
+     * Simple std::string append given string wrapper w/ noexcept, returning passed std::string `s`.
+     * @param s   The string to append to
+     * @param add A string_view to be appended from.
+     */
     std::string& append_string(std::string &s, std::string_view add) noexcept;
+
+    /**
+     * Simple std::string append given string wrapper w/ noexcept, returning passed std::string `s`.
+     * @param s   The string to append to
+     * @param add A string_view to be appended from.
+     * @param pos The position in the string_view `s` to append from.
+     * @param n   The number of characters to append from the string_view `s`.
+     */
+    std::string& append_string(std::string &s, std::string_view add, size_t pos, size_t n) noexcept;
 
     /**
     // *************************************************

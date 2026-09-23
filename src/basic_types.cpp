@@ -530,6 +530,15 @@ std::string& jau::append_string(std::string &s, std::string_view add) noexcept {
     return s;
 }
 
+std::string& jau::append_string(std::string &s, std::string_view add, size_t pos, size_t n) noexcept {
+    try {
+        s.append(add, pos, n);
+    } catch (...) {
+        jau::fput_exception(stderr, std::current_exception(), E_FILE_LINE);
+    }
+    return s;
+}
+
 // one static_assert is sufficient for whole compilation unit
 static_assert(is_defined_endian(endian_t::native));
 static_assert(is_little_or_big_endian());
