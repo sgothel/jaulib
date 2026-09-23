@@ -512,6 +512,52 @@ namespace jau::cfmt {
         void append_efloatF64(std::string &dest, const size_t dest_maxlen, const double ivalue, const FormatOpts &iopts) noexcept;
         void append_afloatF64(std::string &dest, const size_t dest_maxlen, const double ivalue, const size_t ivalue_size, const FormatOpts &iopts) noexcept;
 
+        template <jau::req::signed_integral T>
+        constexpr std::make_unsigned_t<T> unsigned_int(const T x) noexcept
+        {
+            return jau::unsigned_value(x);
+        }
+
+        template<typename T>
+        requires (!jau::req::signed_integral<T>)
+        constexpr T unsigned_int(const T& x) noexcept {
+            return x;
+        }
+
+        template<typename T>
+        requires jau::req::signed_integral<T>
+        constexpr bool is_positive(const T a) noexcept {
+            return a >= 0;
+        }
+
+        template<typename T>
+        requires std::floating_point<T>
+        constexpr bool is_positive(const T a) noexcept {
+            return a >= 0;
+        }
+
+        template<typename T>
+        requires (!jau::req::signed_integral<T>) && (!std::floating_point<T>)
+        constexpr bool is_positive(const T&) noexcept {
+            return true;
+        }
+
+        /// Returns uint64_t type if: integral || boolean, otherwise returns orig type
+        template<typename T>
+        using make_int_unsigned_t = typename std::conditional_t<std::is_integral_v<T> || jau::req::boolean<T>, std::type_identity<uint64_t>, std::type_identity<T>>::type;  // NOLINT
+
+        /// Returns signed-type variation if: unsigned-integral && !boolean, otherwise returns orig type
+        template<typename T>
+        using make_int_signed_t = typename std::conditional_t<jau::req::unsigned_integral<T> && !jau::req::boolean<T>, std::make_signed<T>, std::type_identity<T>>::type;  // NOLINT
+
+        /// Returns a simple `const char * const` if: `char *`, otherwise returns orig type
+        template<typename T>
+        using make_char_pointer_t = typename std::conditional_t<jau::req::char_pointer<T>, std::type_identity<const char * const>, std::type_identity<T>>::type;  // NOLINT
+
+        /// Returns a simple `const void * const` if: pointer, otherwise returns orig type
+        template<typename T>
+        using make_void_pointer_t = typename std::conditional_t<jau::req::pointer<T>, std::type_identity<const void * const>, std::type_identity<T>>::type;  // NOLINT
+
         template<typename T>
         concept OutputType = requires(T t) {
             { t.maxLen() }      -> std::same_as<size_t>;
@@ -822,52 +868,6 @@ namespace jau::cfmt {
                 m_out.appendError(jau::abs(c), line, tag);
             }
         };
-
-        template <jau::req::signed_integral T>
-        constexpr std::make_unsigned_t<T> unsigned_int(const T x) noexcept
-        {
-            return jau::unsigned_value(x);
-        }
-
-        template<typename T>
-        requires (!jau::req::signed_integral<T>)
-        constexpr T unsigned_int(const T& x) noexcept {
-            return x;
-        }
-
-        template<typename T>
-        requires jau::req::signed_integral<T>
-        constexpr bool is_positive(const T a) noexcept {
-            return a >= 0;
-        }
-
-        template<typename T>
-        requires std::floating_point<T>
-        constexpr bool is_positive(const T a) noexcept {
-            return a >= 0;
-        }
-
-        template<typename T>
-        requires (!jau::req::signed_integral<T>) && (!std::floating_point<T>)
-        constexpr bool is_positive(const T&) noexcept {
-            return true;
-        }
-
-        /// Returns uint64_t type if: integral || boolean, otherwise returns orig type
-        template<typename T>
-        using make_int_unsigned_t = typename std::conditional_t<std::is_integral_v<T> || jau::req::boolean<T>, std::type_identity<uint64_t>, std::type_identity<T>>::type;  // NOLINT
-
-        /// Returns signed-type variation if: unsigned-integral && !boolean, otherwise returns orig type
-        template<typename T>
-        using make_int_signed_t = typename std::conditional_t<jau::req::unsigned_integral<T> && !jau::req::boolean<T>, std::make_signed<T>, std::type_identity<T>>::type;  // NOLINT
-
-        /// Returns a simple `const char * const` if: `char *`, otherwise returns orig type
-        template<typename T>
-        using make_char_pointer_t = typename std::conditional_t<jau::req::char_pointer<T>, std::type_identity<const char * const>, std::type_identity<T>>::type;  // NOLINT
-
-        /// Returns a simple `const void * const` if: pointer, otherwise returns orig type
-        template<typename T>
-        using make_void_pointer_t = typename std::conditional_t<jau::req::pointer<T>, std::type_identity<const void * const>, std::type_identity<T>>::type;  // NOLINT
 
         // A NullOutput formatting result, capable of `constexpr` and `consteval`
         typedef FResult<NullOutput> CheckResult;
