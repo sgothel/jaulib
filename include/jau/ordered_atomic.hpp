@@ -55,7 +55,7 @@ template <typename _Tp, std::memory_order _MO> struct ordered_atomic : private s
     using value_type = _Tp;
 
     /// Used std::memory_order
-    static constexpr const std::memory_order order = _MO;
+    static constexpr std::memory_order order = _MO;
 
   private:
     typedef std::atomic<_Tp> super;

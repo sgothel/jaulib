@@ -82,7 +82,7 @@ namespace jau::lang {
             /**
              * token_error value, denoting an invalid alphabet code-point.
              */
-            static inline constexpr const code_point_t code_error = std::numeric_limits<code_point_t>::max();
+            static inline constexpr code_point_t code_error = std::numeric_limits<code_point_t>::max();
 
             typedef code_point_t (*code_point_func)(const char c) noexcept;
 

@@ -61,7 +61,7 @@ namespace jau::math::geom {
     constexpr bool testSeg2SegIntersection2D(Vec2f* result, const Vec2f& p, const Vec2f& p2, const Vec2f& q, const Vec2f& q2, const bool do_collinear=false) noexcept
     {
         // Operations: 11+, 8*, 2 branches without collinear case
-        constexpr const float eps = std::numeric_limits<float>::epsilon();
+        constexpr float eps = std::numeric_limits<float>::epsilon();
         const Vec2f r = p2 - p;
         const Vec2f s = q2 - q;
         const float rxs = r.cross(s);

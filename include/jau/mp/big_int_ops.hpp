@@ -44,26 +44,26 @@ namespace jau::mp {
     }
     #undef JAU_FORCE_MP_WORD_32_BITS
     #if !defined( JAU_FORCE_MP_WORD_32_BITS )
-        constexpr const size_t mp_word_bits = impl::best_word_byte_size() * CHAR_BIT;
+        constexpr size_t mp_word_bits = impl::best_word_byte_size() * CHAR_BIT;
         typedef typename jau::uint_bytes<impl::best_word_byte_size()>::type mp_word_t;
         typedef typename jau::uint_bytes<impl::best_word_byte_size()*2>::type mp_dword_t;
-        constexpr const bool has_mp_dword = is_builtin_int128_available();
+        constexpr bool has_mp_dword = is_builtin_int128_available();
     #elif 1
-        constexpr const size_t mp_word_bits = 32;
+        constexpr size_t mp_word_bits = 32;
         typedef uint32_t mp_word_t;
-        constexpr const bool has_mp_dword = true;
+        constexpr bool has_mp_dword = true;
         typedef uint64_t mp_dword_t;
     #elif 0
-        constexpr const size_t mp_word_bits = 64;
+        constexpr size_t mp_word_bits = 64;
         typedef uint64_t mp_word_t;
         #if defined(__SIZEOF_INT128__)
-            constexpr const bool has_mp_dword = true;
+            constexpr bool has_mp_dword = true;
             typedef uint128_t mp_dword_t;
         #else
-            constexpr const bool has_mp_dword = false;
+            constexpr bool has_mp_dword = false;
         #endif
     #endif
-    constexpr const mp_word_t mp_word_max = ~static_cast<mp_word_t>(0);
+    constexpr mp_word_t mp_word_max = ~static_cast<mp_word_t>(0);
 }
 
 namespace jau::mp::ops {
@@ -159,8 +159,8 @@ namespace jau::mp::ops {
              * some adds and shifts. Last resort for CPUs like UltraSPARC (with
              * 64-bit registers/ALU, but no 64x64->128 multiply) or 32-bit CPUs.
              */
-            constexpr const size_t HWORD_BITS = 32;
-            constexpr const uint32_t HWORD_MASK = 0xFFFFFFFFU;
+            constexpr size_t HWORD_BITS = 32;
+            constexpr uint32_t HWORD_MASK = 0xFFFFFFFFU;
 
             const uint32_t a_hi = (a >> HWORD_BITS);
             const uint32_t a_lo = (a  & HWORD_MASK);
@@ -650,9 +650,9 @@ namespace jau::mp::ops {
      */
     inline int bigint_cmp(const mp_word_t x[], size_t x_size, const mp_word_t y[], size_t y_size) noexcept
     {
-        constexpr const mp_word_t LT = static_cast<mp_word_t>(-1);
-        constexpr const mp_word_t EQ = 0;
-        constexpr const mp_word_t GT = 1;
+        constexpr mp_word_t LT = static_cast<mp_word_t>(-1);
+        constexpr mp_word_t EQ = 0;
+        constexpr mp_word_t GT = 1;
         const size_t common_elems = jau::min(x_size, y_size);
 
         mp_word_t result = EQ; // until found otherwise

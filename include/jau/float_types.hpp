@@ -163,7 +163,7 @@ namespace jau {
     }
     /** Extracts the 8-bit exponent from the given IEEE 754 (IEC 559) float32_t */
     constexpr uint32_t exponent_raw(float32_t a) noexcept {
-        constexpr const uint32_t m = uint32_t(0b11111111) << 23U;
+        constexpr uint32_t m = uint32_t(0b11111111) << 23U;
         return ( bit_value_raw(a) & m ) >> 23U;
     }
     /** Extracts the unbiased 8-bit exponent from the given IEEE 754 (IEC 559) float64_t and subtracts 127, i.e. exponent_raw(a)-127 */
@@ -226,7 +226,7 @@ namespace jau {
     }
     /** Extracts the 11-bit exponent from the given IEEE 754 (IEC 559) float64_t */
     constexpr uint32_t exponent_raw(float64_t a) noexcept {
-        constexpr const uint64_t m = uint64_t(0b11111111111) << 52;
+        constexpr uint64_t m = uint64_t(0b11111111111) << 52;
         return uint32_t(( bit_value_raw(a) & m ) >> 52);
     }
     /** Extracts the unbiased 11-bit exponent from the given IEEE 754 (IEC 559) float64_t and subtracts 1023, i.e. exponent_raw(a)-1023 */

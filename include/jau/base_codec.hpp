@@ -123,7 +123,7 @@ namespace jau::codec::base {
      */
     class base64_alphabet : public alphabet {
         private:
-            static inline constexpr const std::string_view data  = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+            static inline constexpr std::string_view data  = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
             static int s_code_point(const char c) noexcept {
                 if ('A' <= c && c <= 'Z') {
@@ -168,7 +168,7 @@ namespace jau::codec::base {
      */
     class base64url_alphabet : public alphabet {
         private:
-            static inline constexpr const std::string_view data  = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+            static inline constexpr std::string_view data  = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
             static int s_code_point(const char c) noexcept {
                 if ('A' <= c && c <= 'Z') {
@@ -212,7 +212,7 @@ namespace jau::codec::base {
      */
     class natural64_alphabet : public alphabet {
         private:
-            static inline constexpr const std::string_view data = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_";
+            static inline constexpr std::string_view data = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_";
 
             static int s_code_point(const char c) noexcept {
                 if ('0' <= c && c <= '9') {
@@ -253,7 +253,7 @@ namespace jau::codec::base {
      */
     class natural86_alphabet : public alphabet {
         private:
-            static inline constexpr const std::string_view data = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_!#%&()+,/:;<=>?@[]^{}~";
+            static inline constexpr std::string_view data = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_!#%&()+,/:;<=>?@[]^{}~";
 
             static int s_code_point(const char c) noexcept {
                 if ('0' <= c && c <= '9') {
@@ -317,7 +317,7 @@ namespace jau::codec::base {
      */
     class ascii38_alphabet : public alphabet {
         private:
-            static inline constexpr const std::string_view data = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_";
+            static inline constexpr std::string_view data = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_";
 
             static int s_code_point(const char c) noexcept {
                 if ('0' <= c && c <= '9') {
@@ -357,7 +357,7 @@ namespace jau::codec::base {
      */
     class ascii64_alphabet : public alphabet {
         private:
-            static inline constexpr const std::string_view data = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
+            static inline constexpr std::string_view data = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
 
             static int s_code_point(const char c) noexcept {
                 if ('0' <= c && c <= '9') {
@@ -396,7 +396,7 @@ namespace jau::codec::base {
      */
     class ascii86_alphabet : public alphabet {
         private:
-            static inline constexpr const std::string_view data = "!#%&()+,-/0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_abcdefghijklmnopqrstuvwxyz{}~";
+            static inline constexpr std::string_view data = "!#%&()+,-/0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_abcdefghijklmnopqrstuvwxyz{}~";
 
             static int s_code_point(const char c) noexcept {
                 if ('0' <= c && c <= '9') {

@@ -229,7 +229,7 @@ namespace jau {
              *
              * @see @ref ctti_name_lambda_limitations "CTTI lambda name limitations"
              */
-            static constexpr const bool limited_lambda_id =
+            static constexpr bool limited_lambda_id =
                 #if defined(__cxx_rtti_available__)
                     false;
                 #else

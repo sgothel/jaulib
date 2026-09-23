@@ -73,7 +73,7 @@ namespace jau {
             /**
              * Special value representing maximal value of size_type, used to denote an invalid index position return value, i.e. `no position`.
              */
-            static constexpr const size_type npos = std::numeric_limits<size_type>::max();
+            static constexpr size_type npos = std::numeric_limits<size_type>::max();
 
             enum order_t { UP, DOWN };
 
