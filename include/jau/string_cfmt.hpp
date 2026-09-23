@@ -577,7 +577,7 @@ namespace jau::cfmt {
             std::string_view get() const noexcept { return "(nil)"; }
 
             template<typename T>
-            requires jau::req::stringifyable0_jau<T> || jau::req::pointer<T>
+            requires jau::req::stringifiable<T> || jau::req::pointer<T>
             constexpr void appendFormatted(const FormatOpts&, const T&) noexcept { }
 
             template<typename T>
@@ -612,7 +612,7 @@ namespace jau::cfmt {
 
             std::string_view get() const noexcept { return m_s; }
 
-            // Note: `appendFormatted` is covering all `jau::req::stringifyable0_jau<T>` cases
+            // Note: `appendFormatted` is covering all `jau::req::stringifiable` cases
 
             template<typename T>
             requires jau::req::has_toString_any<T>
@@ -837,7 +837,7 @@ namespace jau::cfmt {
             }
 
             template<typename T>
-                requires (jau::req::stringifyable0_jau<T> || jau::req::pointer<T>)
+                requires (jau::req::stringifiable<T> || jau::req::pointer<T>)
             constexpr void appendFormatted(const T &v) noexcept {
                 m_out.appendFormatted(opts, v);
             }
@@ -1417,7 +1417,7 @@ namespace jau::cfmt {
             }
 
             template <typename T>
-            requires (!(jau::req::stringifyable0_jau<T> || jau::req::boolean<T>))
+            requires (!(jau::req::stringifiable<T> || jau::req::boolean<T>))
             CXX_ALWAYS_INLINE
             static constexpr bool parseStringFmtSpec(Result &pc, const T &) noexcept {
                 ++pc.arg_count;
@@ -1425,7 +1425,7 @@ namespace jau::cfmt {
                 return false;
             }
             template <typename T>
-            requires jau::req::stringifyable0_jau<T> || jau::req::boolean<T>
+            requires jau::req::stringifiable<T> || jau::req::boolean<T>
             CXX_ALWAYS_INLINE
             static constexpr bool parseStringFmtSpec(Result &pc, const T &val) noexcept {
                 ++pc.arg_count;

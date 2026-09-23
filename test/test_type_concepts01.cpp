@@ -303,7 +303,7 @@ TEST_CASE( "01 Type Concept Queries: Build-In") {
 }
 
 template <typename T>
-requires jau::req::string_alike0<T>
+requires jau::req::string_alike<T>
 static constexpr void checkOne() noexcept {}
 template <typename T>
 requires jau::req::boolean<T>
@@ -371,52 +371,38 @@ TEST_CASE( "02 Type Concept Queries: Strings") {
         bool b_;
         std::string name_;
         static_assert(true  == jau::req::string_alike<decltype(name_)> );
-        static_assert(true  == jau::req::string_alike0<decltype(name_)> );
         static_assert(true  == jau::req::boolean<decltype(b_)> );
         check2<decltype(name_)>("");
         check2<decltype(b_)>("");
     }
 
-    static_assert(true  == jau::req::stringifyable_std<decltype(std::string("Hello"))> );
-    static_assert(true  == jau::req::stringifyable_std<decltype(std::string_view("Hello"))> );
-    static_assert(true  == jau::req::stringifyable_std<decltype("Hello")> );
-    static_assert(true  == jau::req::stringifyable_std<decltype((const char*)"Hello")> );
-    static_assert(false == jau::req::stringifyable_std<int*> );
-    static_assert(true  == jau::req::stringifyable_std<decltype('c')> );
-    static_assert(true  == jau::req::stringifyable_std<decltype(123)> );
-    static_assert(true  == jau::req::stringifyable_std<decltype(123.0f)> );
-    static_assert(false == jau::req::stringifyable_std<AnyClass> );
-    static_assert(false == jau::req::stringifyable_std<SomeClass> );
-    static_assert(false == jau::req::stringifyable_std<game_t> );
-    static_assert(false == jau::req::stringifyable_std<plainenum_t> );
+    static_assert(true  == jau::req::stringifiable<decltype(std::string("Hello"))> );
+    static_assert(true  == jau::req::stringifiable<decltype(std::string_view("Hello"))> );
+    static_assert(true  == jau::req::stringifiable<decltype("Hello")> );
+    static_assert(true  == jau::req::stringifiable<decltype((const char*)"Hello")> );
+    static_assert(false == jau::req::stringifiable<int*> );
+    static_assert(false == jau::req::stringifiable<void*> );
+    static_assert(false == jau::req::stringifiable<decltype('c')> );
+    static_assert(false == jau::req::stringifiable<decltype(123)> );
+    static_assert(false == jau::req::stringifiable<decltype(123.0f)> );
+    static_assert(false == jau::req::stringifiable<AnyClass> );
+    static_assert(true  == jau::req::stringifiable<SomeClass> );
+    static_assert(true  == jau::req::stringifiable<game_t> );
+    static_assert(false == jau::req::stringifiable<plainenum_t> );
 
-    static_assert(true  == jau::req::stringifyable0_jau<decltype(std::string("Hello"))> );
-    static_assert(true  == jau::req::stringifyable0_jau<decltype(std::string_view("Hello"))> );
-    static_assert(true  == jau::req::stringifyable0_jau<decltype("Hello")> );
-    static_assert(true  == jau::req::stringifyable0_jau<decltype((const char*)"Hello")> );
-    static_assert(false == jau::req::stringifyable0_jau<int*> );
-    static_assert(false == jau::req::stringifyable0_jau<void*> );
-    static_assert(false == jau::req::stringifyable0_jau<decltype('c')> );
-    static_assert(false == jau::req::stringifyable0_jau<decltype(123)> );
-    static_assert(false == jau::req::stringifyable0_jau<decltype(123.0f)> );
-    static_assert(false == jau::req::stringifyable0_jau<AnyClass> );
-    static_assert(true  == jau::req::stringifyable0_jau<SomeClass> );
-    static_assert(true  == jau::req::stringifyable0_jau<game_t> );
-    static_assert(false == jau::req::stringifyable0_jau<plainenum_t> );
-
-    static_assert(true  == jau::req::stringifyable1_jau<decltype(std::string("Hello"))> );
-    static_assert(true  == jau::req::stringifyable1_jau<decltype(std::string_view("Hello"))> );
-    static_assert(true  == jau::req::stringifyable1_jau<decltype("Hello")> );
-    static_assert(true  == jau::req::stringifyable1_jau<decltype((const char*)"Hello")> );
-    static_assert(true  == jau::req::stringifyable1_jau<int*> );
-    static_assert(true  == jau::req::stringifyable1_jau<void*> );
-    static_assert(true  == jau::req::stringifyable1_jau<decltype('c')> );
-    static_assert(true  == jau::req::stringifyable1_jau<decltype(123)> );
-    static_assert(true  == jau::req::stringifyable1_jau<decltype(123.0f)> );
-    static_assert(false == jau::req::stringifyable1_jau<AnyClass> );
-    static_assert(true  == jau::req::stringifyable1_jau<SomeClass> );
-    static_assert(true  == jau::req::stringifyable1_jau<game_t> );
-    static_assert(false == jau::req::stringifyable1_jau<plainenum_t> );
+    static_assert(true  == jau::req::stringifiable_loose<decltype(std::string("Hello"))> );
+    static_assert(true  == jau::req::stringifiable_loose<decltype(std::string_view("Hello"))> );
+    static_assert(true  == jau::req::stringifiable_loose<decltype("Hello")> );
+    static_assert(true  == jau::req::stringifiable_loose<decltype((const char*)"Hello")> );
+    static_assert(true  == jau::req::stringifiable_loose<int*> );
+    static_assert(true  == jau::req::stringifiable_loose<void*> );
+    static_assert(true  == jau::req::stringifiable_loose<decltype('c')> );
+    static_assert(true  == jau::req::stringifiable_loose<decltype(123)> );
+    static_assert(true  == jau::req::stringifiable_loose<decltype(123.0f)> );
+    static_assert(false == jau::req::stringifiable_loose<AnyClass> );
+    static_assert(true  == jau::req::stringifiable_loose<SomeClass> );
+    static_assert(true  == jau::req::stringifiable_loose<game_t> );
+    static_assert(false == jau::req::stringifiable_loose<plainenum_t> );
 
 }
 

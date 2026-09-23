@@ -421,57 +421,89 @@ namespace jau::req {
      *   - std::string<CharT>
      *   - std::string_view<CharT>
      * - char_pointer: `char*`
+     * @param string_literal
+     * @param string_class
+     * @param char_pointer
      */
     template<typename T>
     concept string_alike = string_literal<T> || string_class<T> || char_pointer<T>;
 
-    template<typename T>
-    concept string_alike0 = string_literal<T> || string_class<T>;
-
     /**
-     * A strict convertible type to `std::string_view` via `jau::to_string(T)`
+     * A strict convertible type to `std::string_view` or `std::string` via `jau::to_string(T)` w/o free functions,
+     * while not being a `std::string_view` or `std::string` itself.
      * - has member `toString()`  -> string || string_view
      * - has member `to_string()` -> string || string_view
+     * @see has_toString_any
+     * @see has_to_string_any
      */
     template<typename T>
-    concept stringorview_convertible_jau = has_toString_any<T> ||
-                                           has_to_string_any<T>;
+    concept stringorview_convertible_member = has_toString_any<T> ||
+                                              has_to_string_any<T>;
 
     /**
-     * A strict convertible type to `std::string` or `std::string_view` via `jau::to_string(T)` or `to_string(T)` (custom free function)
+     * A strict convertible type to `std::string` or `std::string_view` via `jau::to_string(T)` or `to_string(T)` (custom free function),
+     * while not being a `std::string_view` or `std::string` itself.
      * - has member `toString()`          -> string || string_view
      * - has member `to_string()`         -> string || string_view
      * - has free function `to_string(T)` -> string || string_view
+     * @see has_toString_any
+     * @see has_to_string_any
+     * @see has_free_to_string_any
      */
     template<typename T>
-    concept stringorview_convertible0 = has_toString_any<T> ||
-                                        has_to_string_any<T> ||
-                                        has_free_to_string_any<T>;
+    concept stringorview_convertible = has_toString_any<T> ||
+                                       has_to_string_any<T> ||
+                                       has_free_to_string_any<T>;
 
     /**
-     * A strict convertible type to `std::string_view` via `jau::to_string(T)` or `to_string(T)` (custom free function)
+     * A strict convertible type to `std::string_view` via `jau::to_string(T)` or `to_string(T)` (custom free function),
+     * while not being a `std::string_view` itself.
      * - has member `toString()`          -> string_view
      * - has member `to_string()`         -> string_view
      * - has free function `to_string(T)` -> string_view
+     * @see has_toString_view
+     * @see has_to_string_view
+     * @see has_free_to_string_view
      */
     template<typename T>
-    concept stringview_convertible0 = has_toString_view<T> ||
-                                      has_to_string_view<T> ||
-                                      has_free_to_string_view<T>;
+    concept stringview_convertible = has_toString_view<T> ||
+                                     has_to_string_view<T> ||
+                                     has_free_to_string_view<T>;
 
     /**
-     * A strict convertible type to `std::string` via `jau::to_string(T)` or `to_string(T)` (custom free function)
+     * A strict convertible type to `std::string` via `jau::to_string(T)` or `to_string(T)` (custom free function),
+     * while not being a `std::string` itself.
      * - has member `toString()`           -> string
      * - has member `to_string()`          -> string
      * - has free function `to_string(T)`  -> string
+     * @see has_toString_string
+     * @see has_to_string_string
+     * @see has_free_to_string_string
      */
     template<typename T>
-    concept string_convertible0 = has_toString_string<T> ||
-                                  has_to_string_string<T> ||
-                                  has_free_to_string_string<T>;
+    concept string_convertible = has_toString_string<T> ||
+                                 has_to_string_string<T> ||
+                                 has_free_to_string_string<T>;
 
     /**
-     * A loose convertible type to `std::string` or `std::string_view` via `jau::to_string(T)` or `to_string(T)` (custom free function)
+     * A strict convertible type to `std::string` or `std::string_view`, or a `std::string` itself.
+     * - string_alike: std::string, std::string_view, jau::StringLiteral, `char (&)[N]`, `char*`
+     * - stringorview_convertible
+     *   - has member `toString()`
+     *   - has member `to_string()`
+     *   - has free function `to_string(T)`
+     *
+     * Convertible to string via `jau::to_string(T)` or `to_string(T)` (custom free function)
+     * @see string_alike
+     * @see stringorview_convertible
+     */
+    template<typename T>
+    concept stringifiable = string_alike<T>
+                            || stringorview_convertible<T>;
+
+    /**
+     * A loose convertible type to `std::string` or `std::string_view` via `jau::to_string(T)` or `to_string(T)` (custom free function),
+     * while not being a `std::string_view` or `std::string` itself.
      * - integral
      * - floating_point
      * - pointer
@@ -482,62 +514,31 @@ namespace jau::req {
      *   - has free function `to_string(T)`
      *
      * Convertible to string via `std::to_string(T)` or `jau::to_string(T)`
+     * @see integral
+     * @see floating_point
+     * @see pointer
+     * @see has_member_of_pointer
+     * @see stringorview_convertible
      */
     template<typename T>
-    concept stringorview_convertible1 = integral<T> ||
-                                        floating_point<T> ||
-                                        pointer<T> ||
-                                        has_member_of_pointer<T> ||
-                                        stringorview_convertible0<T>;
+    concept stringorview_convertible_loose = integral<T> ||
+                                             floating_point<T> ||
+                                             pointer<T> ||
+                                             has_member_of_pointer<T> ||
+                                             stringorview_convertible<T>;
 
     /**
-     * A convertible type to `std::string` or a `std::string` itself.
-     * - string_alike: std::string, std::string_view, jau::StringLiteral, `CharT (&)[N]`, `char*`
-     * - integral
-     * - floating_point
-     *
-     * Convertible to string via `std::to_string(T)` or `jau::to_string(T)`
-     */
-    template<typename T>
-    concept stringifyable_std = string_alike<T>
-                             || integral<T>
-                             || floating_point<T>;
-
-    /**
-     * A strict convertible type to `std::string`, `std::string_view` or a `std::string` itself.
+     * A loose convertible type to `std::string` or `std::string_view`, or a `std::string` itself.
      * - string_alike: std::string, std::string_view, jau::StringLiteral, `char (&)[N]`, `char*`
-     * - string_convertible0_jau
-     *   - has member `toString()`
-     *   - has member `to_string()`
-     *   - has free function `to_string(T)`
+     * - stringorview_convertible_loose
      *
      * Convertible to string via `jau::to_string(T)` or `to_string(T)` (custom free function)
+     * @see string_alike
+     * @see stringorview_convertible_loose
      */
     template<typename T>
-    concept stringifyable0_jau = string_alike<T>
-                              || stringorview_convertible0<T>;
-
-    /**
-     * A loose convertible type to `std::string`, `std::string_view` or a `std::string` itself.
-     * - string_alike: std::string, std::string_view, jau::StringLiteral, `char (&)[N]`, `char*`
-     * - integral
-     * - floating_point
-     * - string_convertible1_jau
-     *   - integral
-     *   - floating_point
-     *   - pointer
-     *     - including has member function `operator->()`
-     *   - string_convertible0_jau
-     *     - has member `toString()`
-     *     - has member `to_string()`
-     *     - has free function `to_string(T)`
-     *
-     * Convertible to string via `jau::to_string(T)` or `to_string(T)` (custom free function)
-     */
-    template<typename T>
-    concept stringifyable1_jau = stringifyable_std<T>
-                              || stringorview_convertible1<T>;
-
+    concept stringifiable_loose = string_alike<T>
+                                  || stringorview_convertible_loose<T>;
 
     /**
      * A generic function type, w/o specifying the return value
