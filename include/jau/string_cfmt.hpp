@@ -197,6 +197,7 @@
  *       - for compile time checks, the default ctor must be constexpr
  * - Integral
  *   - `enum` types
+ *     - only supported if not `stringifiable`, i.e. if no free `to_string` method is provided
  *     - If underlying type is `unsigned`, it can't be used for signed integer conversion
  *   - `bool` as integral (number `0` or `1`)
  *
@@ -300,6 +301,22 @@ namespace jau::cfmt {
         hex_float,        ///< `a` or `A`
     };
     JAU_MAKE_ENUM_STRING_DECL(cspec_t);
+
+    constexpr char to_fmt_spec(cspec_t conversion) noexcept {
+        switch( conversion ) {
+            case cspec_t::any:              return '?';
+            case cspec_t::character:        return 'c';
+            case cspec_t::string:           return 's';
+            case cspec_t::pointer:          return 'p';
+            case cspec_t::signed_int:       return 'd';
+            case cspec_t::unsigned_int:     return 'u'; // radix 10, 'x' radix 16, o' radix 8, 'b' radix 2
+            case cspec_t::floating_point:   return 'f';
+            case cspec_t::exp_float:        return 'e';
+            case cspec_t::hex_float:        return 'a';
+            case cspec_t::alt_float:        return 'g';
+            default:                        return '!';
+        }
+    }
 
 
     struct FormatOpts {

@@ -1411,46 +1411,19 @@ std::string jau::cfmt::FormatOpts::toFormat() const {
     if( plength_t::none != length_mod ) {
         s.append(to_string(length_mod));
     }
-    switch( conversion ) {
-        case cspec_t::character:
-            s.append("c");
-            break;
-        case cspec_t::string:
-            s.append("s");
-            break;
-        case cspec_t::pointer:
-            s.append("p");
-            break;
-        case cspec_t::signed_int:
-            s.append("d");
-            break;
-        case cspec_t::unsigned_int: {
-                if( 16 == radix ) {
-                    s.append( is_set(flags, flags_t::uppercase) ? "X" : "x" );
-                } else if( 8 == radix ) {
-                    s.append("o");
-                } else if( 2 == radix ) {
-                    s.append("b");
-                } else {
-                    s.append("u");
-                }
-            } break;
-        case cspec_t::floating_point:
-            s.append( is_set(flags, flags_t::uppercase) ? "F" : "f" );
-            break;
-        case cspec_t::exp_float:
-            s.append( is_set(flags, flags_t::uppercase) ? "E" : "e" );
-            break;
-        case cspec_t::hex_float:
-            s.append( is_set(flags, flags_t::uppercase) ? "A" : "a" );
-            break;
-        case cspec_t::alt_float:
-            s.append( is_set(flags, flags_t::uppercase) ? "G" : "g" );
-            break;
-        default:
-            s.append("E");
-            break;
-    }  // switch( fmt_literal )
+    if (conversion == cspec_t::unsigned_int) {
+        if( 16 == radix ) {
+            s.append( is_set(flags, flags_t::uppercase) ? "X" : "x" );
+        } else if( 8 == radix ) {
+            s.append("o");
+        } else if( 2 == radix ) {
+            s.append("b");
+        } else {
+            s.append("u");
+        }
+    } else {
+        s.append(1, to_fmt_spec(conversion));
+    }
     return s;
 }
 
