@@ -243,12 +243,15 @@ namespace jau::req {
     template <typename T>
     concept packed_floating_point = std::is_floating_point_v<T> && sizeof(T) == alignof(T);
 
+    /** Concept of integer, i.e. like integral but excluding boolean. */
     template <typename T>
     concept integer = integral<T> && !boolean<T>;
 
+    /** Concept of signed integer, i.e. like signed_integral but excluding boolean. */
     template <typename T>
     concept signed_integer = integral<T> && std::is_signed_v<T> && !boolean<T>;
 
+    /** Concept of unsigned integer, i.e. like unsigned_integral but excluding boolean. */
     template <typename T>
     concept unsigned_integer = integral<T> && std::is_unsigned_v<T> && !boolean<T>;
 
@@ -263,6 +266,10 @@ namespace jau::req {
     /** Concept of type wrapper holding an signed integer type. */
     template<typename T>
     concept wrapped_signed_integer  = wrapped_integer<T> && std::is_signed_v<typename T::value_type>;
+
+    /** Concept of any integer, either a direct integer or wrapped_integer. */
+    template<typename T>
+    concept any_integer  = integer<T> || wrapped_integer<T>;
 
     template <typename T>
     concept enumeration = std::is_enum_v<T>;
@@ -310,6 +317,10 @@ namespace jau::req {
     /// A std::string_view
     template<typename T>
     concept string_view_type = std::is_base_of_v<std::string_view, std::remove_reference_t<T>>;
+
+    /// A std::string_view convertible, may also be a string_view itself
+    template<typename T>
+    concept string_view_convertible = std::is_convertible_v<const T&, std::string_view>;
 
     /// A std::string or std::string_view
     template<typename T>
