@@ -395,6 +395,7 @@ namespace jau::cfmt {
             }
         }
 
+        CXX_NO_INLINE
         constexpr bool setConversion(char fmt_literal) noexcept {
             radix = 10; // default
             switch (fmt_literal) {
@@ -836,6 +837,7 @@ namespace jau::cfmt {
                 }
             }
 
+            CXX_NO_INLINE
             constexpr bool toConversion() noexcept {
                 if (pstate_t::outside != state) {
                     return true;  // inside conversion specifier
@@ -875,6 +877,7 @@ namespace jau::cfmt {
             }
 #endif
 
+            CXX_NO_INLINE
             constexpr void setError(int l) noexcept {
                 line = l;
                 state = pstate_t::error;
