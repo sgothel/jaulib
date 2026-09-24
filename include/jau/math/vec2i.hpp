@@ -191,7 +191,7 @@ namespace jau::math {
             x = tmp;
         }
 
-        std::string toString() const noexcept { return std::to_string(x)+", "+std::to_string(y); }
+        std::string toString() const noexcept { return jau::format_string_h(jau::cfmt::number_max_strlen*2+2, "%?, %?", x, y); }
 
         /// Returns true if both components are zero
         constexpr bool is_zero() const noexcept {

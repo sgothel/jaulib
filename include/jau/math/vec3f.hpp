@@ -205,8 +205,8 @@ namespace jau::math {
             return *this;
         }
 
-        std::string toString() const noexcept { return std::to_string(x)+", "+std::to_string(y)+", "+std::to_string(z); }
-
+        std::string toString() const noexcept { return jau::format_string_h(jau::cfmt::number_max_strlen*3+4, "%?, %?, %?", x, y, z); }
+        
         /// Returns true if all component's absolute values are less than epsilon
         constexpr bool is_zero() const noexcept {
             return jau::is_zero(x) && jau::is_zero(y) && jau::is_zero(z);

@@ -180,7 +180,7 @@ namespace jau::math {
         constexpr Vector4F& operator/=(const value_type s ) noexcept
         { x/=s; y/=s; z/=s; w/=s; return *this; }
 
-        std::string toString() const noexcept { return std::to_string(x) + ", " + std::to_string(y) + ", " + std::to_string(z) + ", " + std::to_string(w); }
+        std::string toString() const noexcept { return jau::format_string_h(jau::cfmt::number_max_strlen*4+6, "%?, %?, %?, %?", x, y, z, w); }
 
         /// Returns true if all component's absolute values are less than epsilon
         constexpr bool is_zero() const noexcept {

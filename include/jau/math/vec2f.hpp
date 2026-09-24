@@ -20,6 +20,7 @@
 #include <string>
 #include <algorithm>
 #include <iostream>
+#include "jau/string_cfmt.hpp"
 
 #include <jau/float_math.hpp>
 #include <jau/math/vecbase.hpp>
@@ -202,7 +203,7 @@ namespace jau::math {
             return *this;
         }
 
-        std::string toString() const noexcept { return std::to_string(x)+", "+std::to_string(y); }
+        std::string toString() const noexcept { return jau::format_string_h(jau::cfmt::number_max_strlen*2+2, "%?, %?", x, y); }
 
         /// Returns true if all component's absolute values are less than epsilon
         constexpr bool is_zero() const noexcept {
