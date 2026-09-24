@@ -19,6 +19,7 @@
 #include <cstring>
 #include <iostream>
 #include <sstream>
+#include <string>
 #include <string_view>
 #include <type_traits>
 
@@ -210,6 +211,11 @@ static void test_refs(const size_t &sz, const int64_t &i64, const float &f) {
     //
     jau_format_checkLine("lala %zu, %" PRIi64 ", %f", sz, i64, f);
     jau_format_check("lala %zu, %" PRIi64 ", %f", sz, i64, f);
+}
+
+TEST_CASE("jau::cfmt_01", "[jau][std::string][format_string]") {
+    format_0a();
+    format_0b();
 }
 
 TEST_CASE("jau::cfmt_10", "[jau][std::string][jau::cfmt]") {
@@ -415,11 +421,6 @@ TEST_CASE("jau::cfmt_10", "[jau][std::string][jau::cfmt]") {
         REQUIRE(-6 == jau::cfmt::checkR("Hello 1 %.2f, 2 %2.2f, 3 %zu, 4 %" PRIi64 ", 5 %03d, 6 %p - end",
                                         fa, fb, sz1, v_i64, i, i).argumentCount());
     }
-}
-
-TEST_CASE("jau::cfmt_01", "[jau][std::string][format_string]") {
-    format_0a();
-    format_0b();
 }
 
 TEST_CASE("jau::cfmt_10 debug", "[jau][std::string][format_string][debug]") {

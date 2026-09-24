@@ -55,26 +55,28 @@
  *   - Example using `jau_string_check(fmt, ...)` macro utilizing `jau::cfmt::check2`
  *     The macro resolves the passed arguments types via `decltype` to be utilized for `jau::cfmt::check2`
  *   ```
- *     jau_string_check("Hello %s %u", "World", 2.0); // shows static_assert() argument error for argument 2 (float, not unsigned integral)
- *     jau_string_checkLine("Hello %s %u", "World", 2.0); // shows static_assert() source-line error for argument 2 (float, not unsigned integral)
+ *     auto &thing = ...; // assume template- or polymorphic-type
+ *     jau_string_check("Hello %s %u, thing %?", "World", 2.0, thing); // shows static_assert() argument error for argument 2 (float, not unsigned integral)
+ *     jau_string_checkLine("Hello %s %u, thing  %?", "World", 2.0, thing); // shows static_assert() source-line error for argument 2 (float, not unsigned integral)
  *   ```
  * - Runtime safe string formatting via `jau::format_string`
  *   ```
+ *     auto &thing = ...; // assume template- or polymorphic-type
  *     std::string s0 = "World";
- *     std::string s1 = jau::format_string("Hello %s, %d + %d = %'d", s0, 1, 1, 2000);
- *     std::string s3 = jau::format_string_h(100, "Hello %s, %d + %d = %'d", s0, 1, 1, 2000); // using a string w/ reserved size of 100
+ *     std::string s1 = jau::format_string("Hello %s, %d + %d = %'d; thing %?", s0, 1, 1, 2000, thing);
+ *     std::string s3 = jau::format_string_h(100, "Hello %s, %d + %d = %'d; thing %?", s0, 1, 1, 2000, thing); // using a string w/ reserved size of 100
  *
  *     // string concatenation, each `formatR` appends to the given referenced string
  *     std::string concat;
  *     concat.reserve(1000);
- *     jau::cfmt::formatR(concat, "Hello %s, %d + %d = %'d", s0, 1, 1, 2000);
+ *     jau::cfmt::formatR(concat, "Hello %s, %d + %d = %'d, thing %?", s0, 1, 1, 2000, thing);
  *     ...
  *     jau::cfmt::formatR(concat, "%#b", 2U);
  *   ```
  * - Both, compile time check and runtime formatting via `jau_format_string` macro (the actual goal)
  *   ```
- *     std::string s1 = jau_format_string("Hello %s, %d + %d = %'d", s0, 1, 1, 2000);
- *     std::string s2 = jau_format_string_h(100, "Hello %s, %d + %d = %'d", s0, 1, 1, 2000); // using a string w/ reserved size of 100
+ *     std::string s1 = jau_format_string("Hello %s, %d + %d = %'d, thing %?", s0, 1, 1, 2000, thing);
+ *     std::string s2 = jau_format_string_h(100, "Hello %s, %d + %d = %'d, thing %?", s0, 1, 1, 2000, thing); // using a string w/ reserved size of 100
  *   ```
  * - Compatible with [fprintf](https://en.cppreference.com/w/cpp/io/c/fprintf), [snprintf](https://www.man7.org/linux/man-pages/man3/snprintf.3p.html), etc
  *
@@ -114,6 +116,7 @@
  *   - Not accepting `unsigned` -> `signed` conversion if sizeof(unsigned type) >= sizeof(signed type)
  *     to avoid overflow (compile time check), otherwise OK
  *   - Not accepting negative integral value for `unsigned` (runtime check)
+ * - Accepts jau::req::wrapper type arguments, for which the underlying type and value is being used.
  * - Accept given type <= integral target type, conversion to wider types
  * - Accept `enum` types for integer conversion.
  *   - Only if underlying type is `unsigned`, it can't be used for signed integer conversion (see above)
@@ -184,6 +187,31 @@
  *
  * #### Extended Conversion Specifier
  * - `b` bitpattern of unsigned integral w/ prefix `0b` (if `#` flag is added)
+ * - `?` auto conversion by type (see below)
+ *
+ * #### Auto-Conversion
+ * The auto conversion specifier `?` can be used to pass template- and polymorphic-types.
+ * The argument-type defines the used conversion (see table below).
+ *
+ * This is a convenient way to pass template- and polymorphic-types w/o knowing them exactly,
+ * similar to the C++ streamout API.
+ *
+ * Auto conversion supports jau::req::wrapper type arguments like regular defined arguments.
+ *
+ * The length modifier is set to plength_t::any, i.e. no value length restriction applies.
+ *
+ *  Argument Type (jau::req)           | Spec | cspec_t            | Notes                             |
+ *  :----------------------------------| :----| :------------------| :---------------------------------|
+ *  `character`                        | `c`  | `character`        |                                   |
+ *  `signed_integer`                   | `d`  | `signed_integer`   | !`boolean`, !`character`          |
+ *  `unsigned_integer`                 | `u`  | `unsigned_integer` | !`boolean`, !`character`          |
+ *  `enumeration` / `signed_integer`   | `d`  | `signed_integer`   | !stringifiable`                   |
+ *  `enumeration` / `unsigned_integer` | `u`  | `unsigned_integer` | !stringifiable`                   |
+ *  `floating-point`                   | `f`  | `floating_point`   |                                   |
+ *  `pointer`                          | `p`  | `pointer`          | !`char_pointer`                   |
+ *  `boolean`                          | `s`  | `string`           | `true` or `false`                 |
+ *  `enumeration`                      | `s`  | `string`           | if `stringifiable`                |
+ *  `stringifiable`                    | `s`  | `string`           | incl. `boolean` and `enumeration` |
  *
  * #### Extended Argument-Types for Conversion Specifier
  *   - `s` string
@@ -245,6 +273,7 @@ namespace jau::cfmt {
     /// Default string reserved capacity w/o EOS (511)
     constexpr inline size_t default_string_capacity = 511;
 
+    constexpr inline char auto_conversion_spec = '?';
 
     /// Global jau::cfmt configuration
     struct Config {
@@ -294,13 +323,15 @@ namespace jau::cfmt {
         L,   ///< long double float
         j,   ///< intmax_t or uintmax_t integer
         z,   ///< size_t or ssize_t integer
-        t    ///< ptrdiff_t
+        t,   ///< ptrdiff_t
+        any  ///< any size
     };
     JAU_MAKE_ENUM_STRING_DECL(plength_t);
 
     /// Format conversion specifier (fully defined w/ radix)
     enum class cspec_t : uint8_t {
         none,             ///< none
+        any,              ///< `?` auto-conversion
         character,        ///< `c`
         string,           ///< `s`
         pointer,          ///< `p`
@@ -329,6 +360,48 @@ namespace jau::cfmt {
         }
     }
 
+    template <typename T>
+    requires jau::req::character<T>
+    consteval cspec_t to_cspec() noexcept {
+        return cspec_t::character;
+    }
+    template <typename T>
+    requires jau::req::unsigned_integer<T> && (!jau::req::character<T>)
+    consteval cspec_t to_cspec() noexcept {
+        return cspec_t::unsigned_int;
+    }
+    template <typename T>
+    requires jau::req::signed_integer<T> && (!jau::req::character<T>)
+    consteval cspec_t to_cspec() noexcept {
+        return cspec_t::signed_int;
+    }
+    template <typename T>
+    requires jau::req::floating_point<T>
+    consteval cspec_t to_cspec() noexcept {
+        return cspec_t::floating_point;
+    }
+    template <typename T>
+    requires jau::req::pointer<T> && (!jau::req::char_pointer<T>)
+    consteval cspec_t to_cspec() noexcept {
+        return cspec_t::pointer;
+    }
+    template <typename T>
+    requires jau::req::stringifiable<T> || jau::req::boolean<T>
+    consteval cspec_t to_cspec() noexcept {
+        return cspec_t::string;
+    }
+    template <typename T>
+    requires jau::req::enumeration<T> && jau::req::unsigned_integral<std::underlying_type_t<T>>
+             && (!jau::req::stringifiable<T>)
+    consteval cspec_t to_cspec() noexcept {
+        return cspec_t::unsigned_int;
+    }
+    template <typename T>
+    requires jau::req::enumeration<T> && jau::req::signed_integral<std::underlying_type_t<T>>
+             && (!jau::req::stringifiable<T>)
+    consteval cspec_t to_cspec() noexcept {
+        return cspec_t::signed_int;
+    }
 
     struct FormatOpts {
 #ifdef JAU_CFMT_TRACK_FORMAT_OPTS_FMT
@@ -399,6 +472,9 @@ namespace jau::cfmt {
         constexpr bool setConversion(char fmt_literal) noexcept {
             radix = 10; // default
             switch (fmt_literal) {
+                case auto_conversion_spec:
+                    conversion = cspec_t::any;
+                    break;
                 case 'c':
                     conversion = cspec_t::character;
                     break;
@@ -745,6 +821,7 @@ namespace jau::cfmt {
             Output m_out;
             size_t pos_lstart;  ///< start of last conversion spec
             unsigned int m_argtype_size;
+            cspec_t m_arg_aconvert; //< auto conversion type of parseOne Type
             bool m_argtype_signed:1;
             bool m_argval_negative:1;
 
@@ -754,6 +831,7 @@ namespace jau::cfmt {
               state(pstate_t::outside),
               m_out(std::move(p)), pos_lstart(0),
               m_argtype_size(0),
+              m_arg_aconvert(cspec_t::none),
               m_argtype_signed(false),
               m_argval_negative(false)
               { }
@@ -789,7 +867,9 @@ namespace jau::cfmt {
                 .append(std::string(1, c))
                 .append("`, last[")
                 .append(opts.toString())
-                .append("`, type[signed ")
+                .append("`, type[aconv ")
+                .append(jau::to_string(m_arg_aconvert))
+                .append(", signed ")
                 .append(jau::to_string(m_argtype_signed))
                 .append(", size ")
                 .append(std::to_string(m_argtype_size))
@@ -815,6 +895,7 @@ namespace jau::cfmt {
             CXX_NO_INLINE
             constexpr void set_arg(const T &val) noexcept {
                 m_argtype_size = sizeof(T); // NOLINT(bugprone-sizeof-expression)
+                m_arg_aconvert = to_cspec<T>();
                 m_argtype_signed = std::is_signed_v<T>;
                 m_argval_negative = !is_positive(jau::req::value_of(val));
             }
@@ -824,6 +905,7 @@ namespace jau::cfmt {
             CXX_NO_INLINE
             constexpr void set_arg(const T &) noexcept {
                 m_argtype_size = 0; // NOLINT(bugprone-sizeof-expression)
+                m_arg_aconvert = cspec_t::none;
                 m_argtype_signed = false;
                 m_argval_negative = false;
             }
@@ -1397,6 +1479,10 @@ namespace jau::cfmt {
             requires (!std::is_same_v<no_type_t, T>)
             CXX_ALWAYS_INLINE
             static constexpr bool parseFmtSpec(Result &pc, char fmt_literal, const T &val) noexcept {
+                if (fmt_literal == auto_conversion_spec) {
+                    fmt_literal = to_fmt_spec(pc.m_arg_aconvert);
+                    pc.opts.length_mod = plength_t::any;
+                }
                 if( !pc.opts.setConversion(fmt_literal) ) {
                     pc.setError(__LINE__);
                     return false;
@@ -1464,6 +1550,10 @@ namespace jau::cfmt {
                         char buf[] = { (char)(val*sign), 0 };
                         pc.appendFormatted(std::string_view(buf, 1));  // FIXME: Support UTF16? UTF8 default
                     } break;
+                    case plength_t::any: {
+                        char buf[] = { (char)(val*sign), 0 };
+                        pc.appendFormatted(std::string_view(buf, 1));  // FIXME: Support UTF16? UTF8 default
+                    } break;
                     default:
                         pc.setError(__LINE__);
                         return false;
@@ -1486,6 +1576,7 @@ namespace jau::cfmt {
                 ++pc.arg_count;
                 switch( pc.opts.length_mod ) {
                     case plength_t::none:
+                    case plength_t::any:
                         break;
                     case plength_t::l:
                         if constexpr( !(std::is_pointer_v<T> &&
@@ -1594,6 +1685,8 @@ namespace jau::cfmt {
                             return false;
                         }
                         break;
+                    case plength_t::any:
+                        break;
                     default:
                         pc.setError(__LINE__);
                         return false;
@@ -1682,7 +1775,8 @@ namespace jau::cfmt {
                             return false;
                         }
                         break;
-
+                    case plength_t::any:
+                        break;
                     default:
                         pc.setError(__LINE__);
                         return false;
@@ -1728,6 +1822,8 @@ namespace jau::cfmt {
                             pc.setError(__LINE__);
                             return false;
                         }
+                        break;
+                    case plength_t::any:
                         break;
                     default:
                         pc.setError(__LINE__);

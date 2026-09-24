@@ -1386,8 +1386,8 @@ ssize_t jau::impl::fprintf_tail(FILE *stream, const std::string &str) noexcept {
 
 namespace jau::cfmt {
     JAU_MAKE_BITFIELD_ENUM_STRING_CODE(flags_t, hash, zeropad, left, space, plus, thousands, uppercase);
-    JAU_MAKE_ENUM_STRING_CODE(plength_t, hh, h, l, ll, L, j, z, t);
-    JAU_MAKE_ENUM_STRING_CODE(cspec_t, character, string, pointer, signed_int, unsigned_int,
+    JAU_MAKE_ENUM_STRING_CODE(plength_t, hh, h, l, ll, L, j, z, t, any);
+    JAU_MAKE_ENUM_STRING_CODE(cspec_t, any, character, string, pointer, signed_int, unsigned_int,
         floating_point, exp_float, alt_float, hex_float);
 }
 
@@ -1408,7 +1408,7 @@ std::string jau::cfmt::FormatOpts::toFormat() const {
     if( precision_set) {
         s.append(".").append(std::to_string(precision));
     }
-    if( plength_t::none != length_mod ) {
+    if( plength_t::none != length_mod && plength_t::any!= length_mod ) {
         s.append(to_string(length_mod));
     }
     if (conversion == cspec_t::unsigned_int) {
