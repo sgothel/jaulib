@@ -1,6 +1,6 @@
 #!/bin/sh
 
-CLANG_VERSION=21
+CLANG_VERSION=23
 
 do_alt() {
     name=$1

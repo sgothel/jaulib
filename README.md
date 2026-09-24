@@ -16,7 +16,7 @@ It also provides a basic mechanisms to create a thin Java JNI binding
 as well as some Java JNI bindings for a subset of `jaulib`.
 
 ### Status
-Build and clang-tidy clean on C++20, passing all unit tests.
+Build and clang-tidy (23.1.0) clean on C++20, passing all unit tests.
 
 See [C++ Minimum Requirements](#cpp_min_req) and [Supported Platforms](#sup_platforms) for details.
 
@@ -69,8 +69,8 @@ Optional WebAssembly (Wasm) builds via [emscripten](https://emscripten.org/).
 
 ### C++ Compiler Support
 - C++20, see [C++20 compiler support](https://en.cppreference.com/w/cpp/compiler_support#cpp20)
-  - gcc >= 11, recommended >= 12.2.0
-  - clang >= 13, recommended >= 18.1.6
+  - gcc >= 11, recommended >= 14.2.0
+  - clang >= 13, recommended >= 23.1.0
 
 ### Rational for C++20 Minimum
 - Moving metaprogramming to C++20 concepts and constrains
@@ -110,8 +110,8 @@ but currently only intended to support unit testing and to produce a Doxygen API
 ### Build Dependencies
 - CMake >= 3.21 (2021-07-14)
 - C++ compiler
-  - gcc >= 11 (C++20), recommended >= 12.2.0
-  - clang >= 13 (C++20), recommended >= 18.1.6
+  - gcc >= 11 (C++20), recommended >= 14.2.0
+  - clang >= 13 (C++20), recommended >= 23.1.0
 - Optional for `lint` validation
   - clang-tidy >= 19
 - Optional for `eclipse` and `vscodium` integration
@@ -177,7 +177,7 @@ Installing build dependencies on Debian >= 11 and Ubuntu >= 20.04:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}
 apt install git
 apt install build-essential g++ gcc libc-dev libpthread-stubs0-dev
-apt install clang-19 clang-tidy-19 clangd-19 clang-tools-19 clang-format-19
+apt install clang-23 clang-tidy-23 clangd-23 clang-tools-23 clang-format-23
 apt install libunwind8 libunwind-dev
 apt install cmake cmake-extras extra-cmake-modules
 apt install doxygen graphviz
