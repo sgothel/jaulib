@@ -21,6 +21,8 @@ Checks:  'clang-diagnostic-*, clang-analyzer-*,
           -readability-redundant-access-specifiers'
 
 CheckOptions:
+  - key:             bugprone-exception-escape.TreatFunctionsWithoutSpecificationAsThrowing
+    value:           'All'
   - key:             modernize-use-default-member-init.UseAssignment
     value:           'true'
   - key:             modernize-use-scoped-lock.WarnOnSingleLocks
