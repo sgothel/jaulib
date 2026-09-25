@@ -181,7 +181,11 @@ namespace jau::os {
          */
         constexpr_cxx20 static std::string getCanonicalName(const std::string& basename, const bool checkIsCanonical=true) noexcept {
             if( !checkIsCanonical || !isCanonicalName(basename, true) ) {
-                return getDefaultPrefix()+basename+getDefaultSuffix();
+                std::string r;
+                jau::append_string(r, getDefaultPrefix());
+                jau::append_string(r, basename);
+                jau::append_string(r, getDefaultSuffix());
+                return r;
             } else {
                 return basename;
             }

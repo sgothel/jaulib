@@ -49,23 +49,23 @@ using namespace jau;
 #endif
 
 // gcc-1 CTTI mangled name: 'constexpr const char* jau::ctti_name() [with T = int(int)]'
-static const std::string ctti_name_prefix_gcc1 = "constexpr const char* jau::ctti_name() [with T = ";
+static constexpr std::string_view ctti_name_prefix_gcc1 = "constexpr const char* jau::ctti_name() [with T = ";
 
 // clang-1 CTTI mangled name: 'const char *jau::ctti_name() [T = int (int)]`
-static const std::string ctti_name_prefix_clang1 = "const char *jau::ctti_name() [T = ";
+static constexpr std::string_view ctti_name_prefix_clang1 = "const char *jau::ctti_name() [T = ";
 
-static const std::string* ctti_name_prefixes[] = { &ctti_name_prefix_gcc1, &ctti_name_prefix_clang1 };
+static constexpr std::string_view ctti_name_prefixes[] = { ctti_name_prefix_gcc1, ctti_name_prefix_clang1 };
 
 std::string jau::demangle_name(const char* mangled_name) noexcept {
     const size_t len = ::strlen(mangled_name);
     if( nullptr == mangled_name || 0 == len ) {
         return std::string();
     }
-    for(const std::string* ctti_name_prefix : ctti_name_prefixes) {
-        if( len > ctti_name_prefix->length()+2 &&
-            mangled_name == ::strstr(mangled_name, ctti_name_prefix->c_str()) )
+    for(const std::string_view ctti_name_prefix : ctti_name_prefixes) {
+        if( len > ctti_name_prefix.length()+2 &&
+            mangled_name == ::strstr(mangled_name, ctti_name_prefix.data()) ) // NOLINT(bugprone-suspicious-stringview-data-usage): it is a c_str (above)
         {
-            std::string r( mangled_name + ctti_name_prefix->length() );
+            std::string r( mangled_name + ctti_name_prefix.length() );
             r.resize(r.length() - 1);
             return r;
         }

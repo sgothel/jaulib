@@ -1,6 +1,6 @@
 /*
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2021-2023 Gothel Software e.K.
+ * Copyright (c) 2021-2026 Gothel Software e.K.
  *
  * ByteStream, ByteInStream_SecMemory and ByteStream_istream are derived from Botan under same license:
  * - Copyright (c) 1999-2007 Jack Lloyd
@@ -31,6 +31,8 @@
 #include <cstddef>
 #include <cstring>
 #include <limits>
+
+#include <jau/string_util.hpp>
 #include <jau/cpuid.hpp>
 #include <jau/debug.hpp>
 
@@ -73,7 +75,7 @@ using namespace jau::int_literals;
 #endif
 
 #ifdef USE_LIBCURL
-    const size_t jau::io::BEST_URLSTREAM_RINGBUFFER_SIZE = 2_uz * (size_t)CURL_MAX_WRITE_SIZE;
+    const size_t jau::io::BEST_URLSTREAM_RINGBUFFER_SIZE = 2_uz * (size_t)CURL_MAX_WRITE_SIZE; // NOLINT(bugprone-throwing-static-initialization): nonsense
 #else
     const size_t jau::io::BEST_URLSTREAM_RINGBUFFER_SIZE = 2_uz * 16384_uz;
 #endif
@@ -98,7 +100,7 @@ size_t ByteStream::discardRead(size_t n) noexcept {
 
     while(n)
     {
-        const size_t got = read(buf, std::min(n, sizeof(buf)));
+        const size_t got = read(buf, jau::min(n, sizeof(buf)));
         if( 0 == got ) {
             break;
         }
@@ -132,7 +134,7 @@ size_t ByteStream::discardRead(size_t n) noexcept {
     if( !good() || !canRead() ) {
         return 0;
     }
-    size_t n = std::min(N, m_source.size() - m_offset);
+    size_t n = jau::min(N, m_source.size() - m_offset);
     m_offset += n;
     if( m_source.size() == m_offset ) {
         addstate_impl( iostate_t::eofbit );
@@ -156,7 +158,7 @@ size_t ByteStream_SecMemory::read(void* out, size_t length) noexcept {
     if( 0 == length || !good() || !canRead() ) {
         return 0;
     }
-    const size_t got = std::min<size_t>(m_source.size() - m_offset, length);
+    const size_t got = jau::min<size_t>(m_source.size() - m_offset, length);
     copy_mem(out, m_source.data() + m_offset, got);
     m_offset += got;
     if( m_source.size() == m_offset ) {
@@ -180,7 +182,7 @@ size_t ByteStream_SecMemory::peek(void* out, size_t length, size_type peek_offse
     }
     PRAGMA_DISABLE_WARNING_POP
     const size_t po_sz = static_cast<size_t>(peek_offset);
-    const size_t peek_len = std::min(bytes_left - po_sz, length);
+    const size_t peek_len = jau::min(bytes_left - po_sz, length);
     copy_mem(out, &m_source[m_offset + po_sz], peek_len);
     return peek_len;
 }
@@ -189,7 +191,7 @@ size_t ByteStream_SecMemory::peek(void* out, size_t length, size_type peek_offse
     if( 0 == length || fail() || !canWrite() ) {
         return 0;
     }
-    const size_t got = std::min<size_t>(m_source.size() - m_offset, length);
+    const size_t got = jau::min<size_t>(m_source.size() - m_offset, length);
     copy_mem(m_source.data() + m_offset, out, got);
     m_offset += got;
     return got;
@@ -209,12 +211,8 @@ void ByteStream_SecMemory::close() noexcept {
 }
 
 std::string ByteStream_SecMemory::toString() const noexcept {
-    return "ByteInStream_SecMemory[content size "+jau::to_decstring(m_source.size())+
-                            ", consumed "+jau::to_decstring(m_offset)+
-                            ", available "+jau::to_decstring(m_source.size()-m_offset)+
-                            ", iomode["+jau::io::to_string(m_iomode)+
-                            ", iostate["+jau::io::to_string(rdstate())+
-                            "]]";
+    return jau_format_string("ByteInStream_SecMemory[content size %'zu, consumed %'zu, available %'zu, iomode[%s, iostate[%s]]",
+        m_source.size(), m_offset, m_source.size()-m_offset, m_iomode, rdstate());
 }
 
 [[nodiscard]] ByteStream::size_type ByteStream_File::seek(size_type newPos) noexcept {
@@ -250,7 +248,7 @@ std::string ByteStream_SecMemory::toString() const noexcept {
         if( !good() ) {
             return 0;
         }
-        const size_t n = std::min<size_t>(N, m_content_size - m_offset);
+        const size_t n = jau::min<size_t>(N, m_content_size - m_offset);
         const size_t p0 = m_offset;
         return seek(p0 + n) - p0;
     } else {
@@ -532,14 +530,14 @@ void ByteStream_File::flush() noexcept {
 }
 
 std::string ByteStream_File::toString() const noexcept {
-    return "ByteInStream_File[content_length "+( hasContentSize() ? jau::to_decstring(m_content_size) : "n/a" )+
-                            ", consumed "+jau::to_decstring(m_offset)+
-                            ", available "+jau::to_decstring(get_available())+
-                            ", fd "+std::to_string(m_fd)+
-                            ", iomode["+jau::io::to_string(m_iomode)+
-                            ", iostate["+jau::io::to_string(rdstate())+
-                            "], "+m_stats.toString()+
-                            "]";
+    std::string cs;
+    if (hasContentSize()) {
+        jau::appendDecString(cs, m_content_size);
+    } else  {
+        jau::append_string(cs, "n/a");
+    }
+    return jau_format_string("ByteInStream_File[content_length %s, consumed %'zu, available %'zu, fd %d, iomode[%s], iostate[%s], %s]",
+        cs, m_offset, get_available(), m_fd, m_iomode, rdstate(), m_stats);
 }
 
 
@@ -676,18 +674,23 @@ iostate_t ByteInStream_URL::rdstate() const noexcept {
 }
 
 std::string ByteInStream_URL::to_string_int() const noexcept {
-    return m_url+", Url[content_length "+( hasContentSize() ? jau::to_decstring(m_stream_resp->content_length.load()) : "n/a" )+
-                       ", xfered "+jau::to_decstring(m_stream_resp->total_read.load())+
-                       ", result "+std::to_string((int8_t)m_stream_resp->result.load())+
-           "], consumed "+jau::to_decstring(m_offset)+
-           ", available "+jau::to_decstring(get_available())+
-           ", iomode["+jau::io::to_string(m_iomode)+
-           ", iostate["+jau::io::to_string(rdstate())+
-           "], rewind[mark "+std::to_string(m_mark)+", "+m_rewindbuf.toString()+
-           "], "+m_buffer.toString();
+    std::string cs;
+    if (hasContentSize()) {
+        jau::appendDecString(cs, m_stream_resp->content_length.load());
+    } else  {
+        jau::append_string(cs, "n/a");
+    }
+    return jau_format_string("%s, Url[content_length %s, xfered %'zu, result %s], consumed %'zu, available %'zu, iomode[%s], iostate[%s]"
+        ", rewind[mark %zu, %s], %s",
+        m_url, cs, m_stream_resp->total_read, m_stream_resp->result,
+        m_offset, get_available(), m_iomode, rdstate(), m_mark, m_rewindbuf, m_buffer);
 }
 std::string ByteInStream_URL::toString() const noexcept {
-    return "ByteInStream_URL["+to_string_int()+"]";
+    std::string s;
+    jau::append_string(s, "ByteInStream_URL[");
+    jau::append_string(s, to_string_int());
+    jau::append_string(s, "]");
+    return s;
 }
 
 std::unique_ptr<ByteStream> jau::io::to_ByteInStream(const std::string& path_or_uri, jau::fraction_i64 timeout) noexcept {
@@ -853,18 +856,22 @@ void ByteInStream_Feed::setEOF(const io_result_t result) noexcept {
 }
 
 std::string ByteInStream_Feed::toStringInt() const noexcept {
-    return m_id+", ext[content_length "+( hasContentSize() ? jau::to_decstring(m_content_size.load()) : "n/a" )+
-                   ", xfered "+jau::to_decstring(m_total_xfered.load())+
-                   ", result "+std::to_string((int8_t)m_result.load())+
-           "], consumed "+std::to_string(m_offset)+
-           ", available "+std::to_string(getAvailable())+
-           ", iomode["+jau::io::to_string(m_iomode)+
-           ", iostate["+jau::io::to_string(rdstate())+
-           "], "+m_buffer.toString();
+    std::string cs;
+    if (hasContentSize()) {
+        jau::appendDecString(cs, m_content_size.load());
+    } else  {
+        jau::append_string(cs, "n/a");
+    }
+    return jau_format_string("%s, ext[content_length %s, xfered %'zu, result %s], consumed %'zu, available %'zu, iomode[%s], iostate[%s], %s",
+        m_id, cs, m_total_xfered, m_result, m_offset, getAvailable(), m_iomode, rdstate(), m_buffer);
 }
 
 std::string ByteInStream_Feed::toString() const noexcept {
-    return "ByteInStream_Feed["+toStringInt()+"]";
+    std::string s;
+    jau::append_string(s, "ByteInStream_Feed[");
+    jau::append_string(s, toStringInt());
+    jau::append_string(s, "]");
+    return s;
 }
 
 void ByteStream_Recorder::close() noexcept {
@@ -874,7 +881,7 @@ void ByteStream_Recorder::close() noexcept {
 }
 
 void ByteStream_Recorder::startRecording() noexcept {
-    m_buffer.resize(0);
+    m_buffer.clear();
     m_rec_offset = m_offset;
     m_is_recording = true;
 }
@@ -893,8 +900,12 @@ size_t ByteStream_Recorder::read(void* out, size_t length) noexcept {
     const size_t consumed_bytes = m_parent.read(out, length);
     m_offset += consumed_bytes;
     if( isRecording() && consumed_bytes > 0 ) {
-        uint8_t* out_u8 = static_cast<uint8_t*>(out);
-        m_buffer.insert(m_buffer.end(), out_u8, out_u8+consumed_bytes);
+        try {
+            uint8_t* out_u8 = static_cast<uint8_t*>(out);
+            m_buffer.insert(m_buffer.end(), out_u8, out_u8+consumed_bytes);
+        } catch (...) {
+            fput_exception(stderr, std::current_exception(), E_FILE_LINE);
+        }
     }
     return consumed_bytes;
 }
@@ -903,20 +914,21 @@ size_t ByteStream_Recorder::write(const void* out, size_t length) noexcept {
     const size_t consumed_bytes = m_parent.write(out, length);
     m_offset += consumed_bytes;
     if( isRecording() && consumed_bytes > 0 ) {
-        const uint8_t* out_u8 = reinterpret_cast<const uint8_t*>(out);
-        m_buffer.insert(m_buffer.end(), out_u8, out_u8+consumed_bytes);
+        try {
+            const uint8_t* out_u8 = reinterpret_cast<const uint8_t*>(out);
+            m_buffer.insert(m_buffer.end(), out_u8, out_u8+consumed_bytes);
+        } catch (...) {
+            fput_exception(stderr, std::current_exception(), E_FILE_LINE);
+        }
     }
     return consumed_bytes;
 }
 
 std::string ByteStream_Recorder::toString() const noexcept {
-    return "ByteInStream_Recorder[parent "+m_parent.id()+", recording[on "+std::to_string(m_is_recording)+
-                            " offset "+jau::to_decstring(m_rec_offset)+
-                            "], consumed "+jau::to_decstring(m_offset)+
-                            ", iomode["+jau::io::to_string(m_iomode)+
-                            ", iostate["+jau::io::to_string(rdstate())+"]]";
+    return jau_format_string("ByteInStream_Recorder[parent %s, recording[on %s, offset %'zu], consumed %'zu, iomode[%s], iostate[%s]]",
+        m_parent.id(), m_is_recording, m_rec_offset, m_offset, m_iomode, rdstate());
 }
 
-std::string jau::io::to_string(const ioaccess_t v) noexcept {
+std::string_view jau::io::to_string(const ioaccess_t v) noexcept {
     return v == ioaccess_t::read ? "read" : "write";
 }

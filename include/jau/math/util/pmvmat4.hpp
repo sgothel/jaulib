@@ -276,46 +276,37 @@ class PMVMatrix4 {
     constexpr const Mat4& getMv() const noexcept { return m_matMv; }
 
     /**
-     * Returns the inverse {@link GLMatrixFunc#GL_MODELVIEW_MATRIX modelview matrix} (Pi) if requested.
-     * <p>
+     * Returns the inverse GLMatrixFunc::GL_MODELVIEW_MATRIX modelview matrix (Pi) if requested.
+     *
+     * Requires PMVData::inv_proj to be requested in the ctor.
+     *
      * See <a href="#storageDetails"> matrix storage details</a>.
-     * </p>
-     * @throws IllegalArgumentException if {@link #INVERSE_PROJECTION} has not been requested in ctor {@link #PMVMatrix4(int)}.
      */
-    const Mat4& getPi() {
-        if( !is_set(m_requestBits, PMVData::inv_proj) ) {
-            throw jau::IllegalArgumentError("Not requested in ctor", E_FILE_LINE);
-        }
+    const Mat4& getPi() noexcept {
         updateImpl(false);
         return m_matPi;
     }
 
     /**
-     * Returns the inverse {@link GLMatrixFunc#GL_MODELVIEW_MATRIX modelview matrix} (Mvi) if requested.
-     * <p>
+     * Returns the inverse GLMatrixFunc::GL_MODELVIEW_MATRIX modelview matrix (Mvi) if requested.
+     *
+     * Requires PMVData::inv_mv to be requested in the ctor.
+     *
      * See <a href="#storageDetails"> matrix storage details</a>.
-     * </p>
-     * @throws IllegalArgumentException if {@link #INVERSE_MODELVIEW} has not been requested in ctor {@link #PMVMatrix4(int)}.
      */
-    const Mat4& getMvi() {
-        if( !is_set(m_requestBits, PMVData::inv_mv) ) {
-            throw jau::IllegalArgumentError("Not requested in ctor", E_FILE_LINE);
-        }
+    const Mat4& getMvi() noexcept {
         updateImpl(false);
         return m_matMvi;
     }
 
     /**
-     * Returns the inverse transposed {@link GLMatrixFunc#GL_MODELVIEW_MATRIX modelview matrix} (Mvit) if requested.
-     * <p>
+     * Returns the inverse transposed GLMatrixFunc::GL_MODELVIEW_MATRIX modelview matrix (Mvit) if requested.
+     *
+     * Requires PMVData::inv_tps_mv to be requested in the ctor.
+     *
      * See <a href="#storageDetails"> matrix storage details</a>.
-     * </p>
-     * @throws IllegalArgumentException if {@link #INVERSE_TRANSPOSED_MODELVIEW} has not been requested in ctor {@link #PMVMatrix4(int)}.
      */
-    const Mat4& getMvit() {
-        if( !is_set(m_requestBits, PMVData::inv_tps_mv) ) {
-            throw jau::IllegalArgumentError("Not requested in ctor", E_FILE_LINE);
-        }
+    const Mat4& getMvit() noexcept {
         updateImpl(false);
         return m_matMvit;
     }
@@ -353,60 +344,46 @@ class PMVMatrix4 {
     SyncMats4 makeSyncT() noexcept { return SyncMat4(m_matTex, 1); }
 
     /**
-     * Returns a new SyncMatrix of inverse {@link GLMatrixFunc#GL_MODELVIEW_MATRIX modelview matrix} (Mvi) if requested.
-     * <p>
+     * Returns a new SyncMatrix of inverse GLMatrixFunc::GL_MODELVIEW_MATRIX modelview matrix (Mvi) if requested.
+     *
+     * Requires PMVData::inv_mv to be requested in the ctor.
+     *
      * See <a href="#storageDetails"> matrix storage details</a>.
-     * </p>
-     * @throws IllegalArgumentException if {@link #INVERSE_MODELVIEW} has not been requested in ctor {@link #PMVMatrix4(int)}.
      */
-    SyncMats4 makeSyncMvi() {
-        if( !is_set(m_requestBits, PMVData::inv_mv) ) {
-            throw jau::IllegalArgumentError("Not requested in ctor", E_FILE_LINE);
-        }
+    SyncMats4 makeSyncMvi() noexcept {
         return SyncMats4(m_matMvi, 1, jau::bind_member(this, &PMVMatrix4::updateImpl0));
     }
 
     /**
-     * Returns a new SyncMatrix of inverse transposed {@link GLMatrixFunc#GL_MODELVIEW_MATRIX modelview matrix} (Mvit) if requested.
-     * <p>
+     * Returns a new SyncMatrix of inverse transposed GLMatrixFunc::GL_MODELVIEW_MATRIX modelview matrix (Mvit) if requested.
+     *
+     * Requires PMVData::inv_tps_mv to be requested in the ctor.
+     *
      * See <a href="#storageDetails"> matrix storage details</a>.
-     * </p>
-     * @throws IllegalArgumentException if {@link #INVERSE_TRANSPOSED_MODELVIEW} has not been requested in ctor {@link #PMVMatrix4(int)}.
      */
-    SyncMats4 makeSyncMvit() {
-        if( !is_set(m_requestBits, PMVData::inv_tps_mv) ) {
-            throw jau::IllegalArgumentError("Not requested in ctor", E_FILE_LINE);
-        }
+    SyncMats4 makeSyncMvit() noexcept {
         return SyncMats4(m_matMvit, 1, jau::bind_member(this, &PMVMatrix4::updateImpl0));
     }
 
     /**
-     * Returns a new SyncMatrices4f of 3 matrices within one FloatBuffer: {@link #getP() P}, {@link #getMv() Mv} and {@link #getMvi() Mvi} if requested.
-     * <p>
+     * Returns a new SyncMatrices4f of 3 matrices within one FloatBuffer: getP() P, getMv() Mv and getMvi() Mvi if requested.
+     *
+     * Requires PMVData::inv_mv to be requested in the ctor.
+     *
      * See <a href="#storageDetails"> matrix storage details</a>.
-     * </p>
-     * @throws IllegalArgumentException if PMVData::inv_mv has not been requested in ctor.
      */
-    SyncMats4f makeSyncPMvMvi() {
-        if( !is_set(m_requestBits, PMVData::inv_mv) ) {
-            throw jau::IllegalArgumentError("Not requested in ctor", E_FILE_LINE);
-        }
+    SyncMats4f makeSyncPMvMvi() noexcept {
         return SyncMats4f(m_matP, 3, jau::bind_member(this, &PMVMatrix4::updateImpl0));
     }
 
     /**
-     * Returns a new SyncMatrices4f of 4 matrices within one FloatBuffer: {@link #getP() P}, {@link #getMv() Mv}, {@link #getMvi() Mvi} and {@link #getMvit() Mvit} if requested.
-     * <p>
+     * Returns a new SyncMatrices4f of 4 matrices within one FloatBuffer: getP() P, getMv() Mv, getMvi() Mvi and getMvit() Mvit if requested.
+     *
+     * Requires PMVData::inv_mv and PMVData::inv_tps_mv to be requested in the ctor.
+     *
      * See <a href="#storageDetails"> matrix storage details</a>.
-     * </p>
-     * @throws IllegalArgumentException if PMVData::inv_mv or PMVData::inv_tps_mv has not been requested in ctor.
      */
-    SyncMats4f makeSyncPMvMviMvit() {
-        if( !is_set(m_requestBits, PMVData::inv_mv) ||
-            !is_set(m_requestBits, PMVData::inv_tps_mv) )
-        {
-            throw jau::IllegalArgumentError("Not requested in ctor", E_FILE_LINE);
-        }
+    SyncMats4f makeSyncPMvMviMvit() noexcept {
         return SyncMats4f(m_matP, 4, jau::bind_member(this, &PMVMatrix4::updateImpl0));
     }
 
@@ -416,7 +393,7 @@ class PMVMatrix4 {
      *
      * See <a href="#storageDetails"> matrix storage details</a>.
      */
-    SyncMats4f makeSyncPMvReq() {
+    SyncMats4f makeSyncPMvReq() noexcept {
         {
             constexpr PMVData m = PMVData::inv_mv | PMVData::inv_tps_mv;
             if( m == ( m & m_requestBits ) ) {

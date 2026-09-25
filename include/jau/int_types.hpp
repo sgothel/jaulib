@@ -174,63 +174,63 @@ namespace jau {
 
     namespace int_literals {
         /** Literal for signed int8_t */
-        constexpr int8_t operator ""_i8(unsigned long long int __v)   { return (int8_t)__v; }
+        constexpr int8_t operator""_i8(unsigned long long int __v) noexcept { return (int8_t)__v; }
 
         /** Literal for unsigned uint8_t */
-        constexpr uint8_t operator ""_u8(unsigned long long int __v)  { return (uint8_t)__v; }
+        constexpr uint8_t operator""_u8(unsigned long long int __v) noexcept { return (uint8_t)__v; }
 
         /** Literal for signed int16_t */
-        constexpr int16_t operator ""_i16(unsigned long long int __v)   { return (int16_t)__v; }
+        constexpr int16_t operator""_i16(unsigned long long int __v) noexcept { return (int16_t)__v; }
 
         /** Literal for unsigned uint16_t */
-        constexpr uint16_t operator ""_u16(unsigned long long int __v)  { return (uint16_t)__v; }
+        constexpr uint16_t operator""_u16(unsigned long long int __v) noexcept { return (uint16_t)__v; }
 
         /** Literal for signed int32_t */
-        constexpr int32_t operator ""_i32(unsigned long long int __v)   { return (int32_t)__v; }
+        constexpr int32_t operator""_i32(unsigned long long int __v) noexcept { return (int32_t)__v; }
 
         /** Literal for unsigned uint32_t */
-        constexpr unsigned operator ""_ui(unsigned long long int __v)  { return (unsigned)__v; }
+        constexpr unsigned operator""_ui(unsigned long long int __v) noexcept { return (unsigned)__v; }
 
         /** Literal for unsigned uint32_t */
-        constexpr uint32_t operator ""_u32(unsigned long long int __v)  { return (uint32_t)__v; }
+        constexpr uint32_t operator""_u32(unsigned long long int __v) noexcept { return (uint32_t)__v; }
 
         /** Literal for signed int64_t */
-        constexpr int64_t operator ""_i64(unsigned long long int __v)   { return (int64_t)__v; }
+        constexpr int64_t operator""_i64(unsigned long long int __v) noexcept { return (int64_t)__v; }
 
         /** Literal for unsigned uint64_t */
-        constexpr uint64_t operator ""_u64(unsigned long long int __v)  { return (uint64_t)__v; }
+        constexpr uint64_t operator""_u64(unsigned long long int __v) noexcept { return (uint64_t)__v; }
 
         /** Literal for signed ssize_t */
-        constexpr ssize_t operator ""_iz(unsigned long long int __v)  { return (ssize_t)__v; }
+        constexpr ssize_t operator""_iz(unsigned long long int __v) noexcept { return (ssize_t)__v; }
 
         /** Literal for unsigned size_t */
-        constexpr size_t operator ""_uz(unsigned long long int __v)  { return (size_t)__v; }
+        constexpr size_t operator""_uz(unsigned long long int __v) noexcept { return (size_t)__v; }
 
         /** Literal for signed jau::snsize_t */
-        constexpr jau::snsize_t operator ""_inz(unsigned long long int __v)  { return (jau::snsize_t)__v; }
+        constexpr jau::snsize_t operator""_inz(unsigned long long int __v) noexcept { return (jau::snsize_t)__v; }
 
         /** Literal for unsigned jau::nsize_t */
-        constexpr jau::nsize_t operator ""_unz(unsigned long long int __v)  { return (jau::nsize_t)__v; }
-    }
+        constexpr jau::nsize_t operator""_unz(unsigned long long int __v) noexcept { return (jau::nsize_t)__v; }
+    }  // namespace int_literals
 
     class int_ctti {
       public:
         /// uint8_t
-        static const jau::type_info& u8() { return jau::static_ctti<uint8_t>(); }
+        static const jau::type_info& u8() noexcept { return jau::static_ctti<uint8_t>(); }
         /// int32_t
-        static const jau::type_info& i8() { return jau::static_ctti<int8_t>(); }
+        static const jau::type_info& i8() noexcept { return jau::static_ctti<int8_t>(); }
         /// uint16_t
-        static const jau::type_info& u16() { return jau::static_ctti<uint16_t>(); }
+        static const jau::type_info& u16() noexcept { return jau::static_ctti<uint16_t>(); }
         /// int16_t
-        static const jau::type_info& i16() { return jau::static_ctti<int16_t>(); }
+        static const jau::type_info& i16() noexcept { return jau::static_ctti<int16_t>(); }
         /// uint32_t
-        static const jau::type_info& u32() { return jau::static_ctti<uint32_t>(); }
+        static const jau::type_info& u32() noexcept { return jau::static_ctti<uint32_t>(); }
         /// int32_t
-        static const jau::type_info& i32() { return jau::static_ctti<int32_t>(); }
+        static const jau::type_info& i32() noexcept { return jau::static_ctti<int32_t>(); }
         /// uint64_t
-        static const jau::type_info& u64() { return jau::static_ctti<uint64_t>(); }
+        static const jau::type_info& u64() noexcept { return jau::static_ctti<uint64_t>(); }
         /// int64_t
-        static const jau::type_info& i64() { return jau::static_ctti<int64_t>(); }
+        static const jau::type_info& i64() noexcept { return jau::static_ctti<int64_t>(); }
     };
 
     /**@}*/

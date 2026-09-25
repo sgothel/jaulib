@@ -143,7 +143,7 @@ void jau::jni::raise_java_exception(JNIEnv *env, const std::invalid_argument &e,
     env->ThrowNew(env->FindClass("java/lang/IllegalArgumentException"), e.what());
 }
 
-static std::string _unknown_exception_type_msg("Unknown exception type");
+static constexpr const char *_unknown_exception_type_msg = "Unknown exception type";
 
 void jau::jni::rethrow_and_raise_java_exception_jauimpl(JNIEnv *env, const char* file, int line) {
     // std::exception_ptr e = std::current_exception();
@@ -184,7 +184,7 @@ void jau::jni::rethrow_and_raise_java_exception_jauimpl(JNIEnv *env, const char*
         env->ThrowNew(env->FindClass("java/lang/Error"), msg);
     } catch (...) {
         jau::jni::print_native_caught_exception_fwd2java(_unknown_exception_type_msg, file, line);
-        env->ThrowNew(env->FindClass("java/lang/Error"), _unknown_exception_type_msg.c_str());
+        env->ThrowNew(env->FindClass("java/lang/Error"), _unknown_exception_type_msg);
     }
 }
 

@@ -428,8 +428,8 @@ namespace jau::cfmt {
           width_set(false), precision_set(false)
           { }
 
-        constexpr void setWidth(uint32_t v) { width = v; width_set = true; }
-        constexpr void setPrecision(uint32_t v) { precision = v; precision_set = true; }
+        constexpr void setWidth(uint32_t v) noexcept { width = v; width_set = true; }
+        constexpr void setPrecision(uint32_t v) noexcept { precision = v; precision_set = true; }
         constexpr bool addFlag(char c) noexcept {
             switch( c ) {
                 case '#':  flags |= flags_t::hash; break;
@@ -582,7 +582,7 @@ namespace jau::cfmt {
         bool m_success:1; ///< true if operation was successful, otherwise indicates error
 
       public:
-        constexpr Result(std::string_view f, FormatOpts o, size_t pos, ssize_t acount, int line, bool ok)
+        constexpr Result(std::string_view f, FormatOpts o, size_t pos, ssize_t acount, int line, bool ok) noexcept
         : m_fmt(f), m_pos(pos), m_arg_count(acount), m_line(line), m_opts(o), m_success(ok) {}
 
         /// true if operation was successful, otherwise indicates error
@@ -601,7 +601,7 @@ namespace jau::cfmt {
         /// error line of implementation source code or zero if success (error analysis)
         constexpr int errorLine() const noexcept { return m_line; }
 
-        std::string toString() const;
+        std::string toString() const noexcept;
     };
 
     inline std::ostream &operator<<(std::ostream &out, const Result &pc) {
@@ -793,10 +793,10 @@ namespace jau::cfmt {
                 }
             }
             void appendText(std::string_view v) noexcept {
-                jau::append_string(m_s, v, 0, std::min(m_maxLen - m_s.size(), v.size()));
+                jau::append_string(m_s, v, 0, jau::min(m_maxLen - m_s.size(), v.size()));
             }
             void appendText(std::string_view v, size_t pos, size_t n) noexcept {
-                jau::append_string(m_s, v, pos, std::min(m_maxLen - m_s.size(), n));
+                jau::append_string(m_s, v, pos, jau::min(m_maxLen - m_s.size(), n));
             }
 
             void appendError(size_t argIdx, int line, const std::string_view tag) noexcept;
@@ -1864,10 +1864,10 @@ namespace jau::cfmt {
     template <typename... Targs>
     std::string format(const size_t strLenHint, size_t maxLen, std::string_view fmt, const Targs &...args) noexcept {
         std::string s;
-        maxLen = std::min(maxLen, s.max_size()-1);
+        maxLen = jau::min(maxLen, s.max_size()-1);
         impl::StringResult ctx(impl::StringOutput(maxLen, s), fmt);
 
-        if (!jau::reserve_string(s, std::min(strLenHint, maxLen)+1)) { // +EOS
+        if (!jau::reserve_string(s, jau::min(strLenHint, maxLen)+1)) { // +EOS
             return s;
         }
         if constexpr( 0 < sizeof...(Targs) ) {
@@ -1923,7 +1923,7 @@ namespace jau::cfmt {
      */
     template <typename... Targs>
     std::string& append(std::string &s, size_t maxLen, std::string_view fmt, const Targs &...args) noexcept {
-        maxLen = std::min(maxLen, s.max_size()-1);
+        maxLen = jau::min(maxLen, s.max_size()-1);
         impl::StringResult ctx(impl::StringOutput(maxLen, s), fmt);
 
         if constexpr( 0 < sizeof...(Targs) ) {
@@ -2018,10 +2018,10 @@ namespace jau::cfmt {
      */
     template <typename... Targs>
     std::string& append(const size_t strLenHint, std::string &s, size_t maxLen, std::string_view fmt, const Targs &...args) noexcept {
-        maxLen = std::min(maxLen, s.max_size()-1);
+        maxLen = jau::min(maxLen, s.max_size()-1);
         impl::StringResult ctx(impl::StringOutput(maxLen, s), fmt);
 
-        if (!jau::reserve_string(s, std::min(s.length() + strLenHint, maxLen) + 1)) {  // +EOS
+        if (!jau::reserve_string(s, jau::min(s.length() + strLenHint, maxLen) + 1)) {  // +EOS
             return s;
         }
         if constexpr( 0 < sizeof...(Targs) ) {
@@ -2054,10 +2054,10 @@ namespace jau::cfmt {
      */
     template <typename... Targs>
     Result formatR(const size_t strLenHint, std::string &s, size_t maxLen, std::string_view fmt, const Targs &...args) noexcept {
-        maxLen = std::min(maxLen, s.max_size()-1);
+        maxLen = jau::min(maxLen, s.max_size()-1);
         impl::StringResult ctx(impl::StringOutput(maxLen, s), fmt);
 
-        if (!jau::reserve_string(s, std::min(s.length()+strLenHint, maxLen)+1)) { // +EOS
+        if (!jau::reserve_string(s, jau::min(s.length()+strLenHint, maxLen)+1)) { // +EOS
             return ctx;
         }
         if constexpr( 0 < sizeof...(Targs) ) {

@@ -482,7 +482,7 @@ namespace jau::io::fs {
             class ctor_cookie {
                 friend file_stats;
                 uint16_t rec_level;
-                ctor_cookie(const uint16_t recursion_level_) { rec_level = recursion_level_; }
+                ctor_cookie(const uint16_t recursion_level_) noexcept { rec_level = recursion_level_; }
             };
 
         public:

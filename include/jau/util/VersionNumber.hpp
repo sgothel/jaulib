@@ -177,7 +177,7 @@ namespace jau::util {
             return (h << 1) + ( git_dirty() ? 1 : 0 );
         }
 
-        std::string toString() const noexcept {
+        virtual std::string toString() const noexcept {
             std::string res = std::to_string(m_major) + "." + std::to_string(m_minor) + "." + std::to_string(m_sub);
             if( hasGitInfo() ) {
                 res.append(", git[post ").append(std::to_string(m_git_commits))
@@ -257,16 +257,24 @@ namespace jau::util {
           m_strEnd(strEnd), m_version_str(std::move(_version_str)) { }
 
       public:
-        static std::regex getNonGitPattern(const std::string& delim) {
+        static std::regex getNonGitPattern(const std::string& delim) noexcept {
             // v0.0.1-3-gd55f8a3-dirty
             // return std::regex( R"(\D*(\d+)[^\.\s]*(?:\.\D*(\d+)[^\.\s]*(?:\.\D*(\d+))?)?)");
-            return std::regex( R"(\D*(\d+)[^\)" + delim + R"(\s]*(?:\)" + delim + R"(\D*(\d+)[^\)" + delim + R"(\s]*(?:\)" + delim + R"(\D*(\d+))?)?)");
+            std::regex rx;
+            do_noexcept([&rx, delim]() {
+                rx = std::regex( R"(\D*(\d+)[^\)" + delim + R"(\s]*(?:\)" + delim + R"(\D*(\d+)[^\)" + delim + R"(\s]*(?:\)" + delim + R"(\D*(\d+))?)?)");
+            });
+            return rx;
         }
 
-        static std::regex getGitPattern(const std::string& delim) {
+        static std::regex getGitPattern(const std::string& delim) noexcept {
             // v0.0.1-3-gd55f8a3-dirty
             // return std::regex( R"(\D*(\d+)[^\.\s]*(?:\.\D*(\d+)[^\.\s]*(?:\.\D*(\d+)(?:\-(\d+)\-g([0-9a-f]+)(\-dirty)?)?)?)?)");
-            return std::regex( R"(\D*(\d+)[^\)" + delim + R"(\s]*(?:\)" + delim + R"(\D*(\d+)[^\)" + delim + R"(\s]*(?:\)" + delim + R"(\D*(\d+)(?:\-(\d+)\-g([0-9a-f]+)(\-dirty)?)?)?)?)");
+            std::regex rx;
+            do_noexcept([&rx, delim]() {
+                rx = std::regex( R"(\D*(\d+)[^\)" + delim + R"(\s]*(?:\)" + delim + R"(\D*(\d+)[^\)" + delim + R"(\s]*(?:\)" + delim + R"(\D*(\d+)(?:\-(\d+)\-g([0-9a-f]+)(\-dirty)?)?)?)?)");
+            });
+            return rx;
         }
 
         static const std::regex& getDefaultPattern() noexcept {  // NOLINT(bugprone-exception-escape)
@@ -407,7 +415,7 @@ namespace jau::util {
          */
         constexpr ssize_t endOfStringMatch() const noexcept { return m_strEnd; }
 
-        std::string toString() const noexcept {
+        std::string toString() const noexcept override {
             std::string res = std::to_string(m_major) + "." + std::to_string(m_minor) + "." + std::to_string(m_sub);
             if( hasGitInfo() ) {
                 res.append(", git[post ").append(std::to_string(m_git_commits))

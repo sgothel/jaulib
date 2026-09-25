@@ -1,6 +1,6 @@
 /*
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2020-2024 Gothel Software e.K.
+ * Copyright (c) 2020-2026 Gothel Software e.K.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -222,8 +222,8 @@ fraction_timespec fraction_timespec::from(const std::string &datestr, int64_t &u
     consumedChars = 0;
     utcOffsetSec = 0;
 
-    std::smatch match;
     try {
+        std::smatch match;
         if ( std::regex_search(datestr, match, pattern) ) {
             consumedChars = match.length();
             constexpr bool DBG_OUT = false;
@@ -284,7 +284,7 @@ fraction_timespec fraction_timespec::from(const std::string &datestr, int64_t &u
     return fraction_timespec();  // error
 }
 
-bool jau::milli_sleep(uint64_t td_ms, const bool ignore_irq) noexcept {
+bool jau::milli_sleep(uint64_t td_ms, const bool ignore_irq) noexcept { // NOLINT(bugprone-exception-escape): clock_nanosleep not throwing
     constexpr uint64_t ms_per_sec =         1'000UL;
     constexpr uint64_t ns_per_ms  =     1'000'000UL;
     constexpr uint64_t ns_per_sec = 1'000'000'000UL;;
@@ -298,7 +298,7 @@ bool jau::milli_sleep(uint64_t td_ms, const bool ignore_irq) noexcept {
     } while ( ignore_irq && EINTR == res );
     return 0 == res;
 }
-bool jau::sleep(const fraction_timespec &relative_time, const bool ignore_irq) noexcept {
+bool jau::sleep(const fraction_timespec &relative_time, const bool ignore_irq) noexcept { // NOLINT(bugprone-exception-escape): clock_nanosleep not throwing
     struct timespec ts = relative_time.to_timespec();
     int res;
     do {
@@ -307,7 +307,7 @@ bool jau::sleep(const fraction_timespec &relative_time, const bool ignore_irq) n
     return 0 == res;
 }
 
-bool jau::sleep_until(const fraction_timespec &absolute_time, const bool monotonic, const bool ignore_irq) noexcept {
+bool jau::sleep_until(const fraction_timespec &absolute_time, const bool monotonic, const bool ignore_irq) noexcept { // NOLINT(bugprone-exception-escape): clock_nanosleep not throwing
     if ( absolute_time <= fraction_tv::zero ) {
         return false;
     }
@@ -358,7 +358,7 @@ bool jau::sleep_for(const fraction_i64 &relative_time, const bool monotonic, con
 
     static bool __jau__has_pthread_cond_clockwait() noexcept {
         const bool r = nullptr != pthread_cond_clockwait;
-        ::fprintf(stderr, "INFO: jau::has_pthread_cond_clockwait: %d\n", r);
+        jau_INFO_PRINT("INFO: jau::has_pthread_cond_clockwait: %d", r);
         return r;
     }
     static bool jau_has_pthread_cond_clockwait() noexcept {
@@ -383,7 +383,7 @@ bool jau::sleep_for(const fraction_i64 &relative_time, const bool monotonic, con
     }
 #endif
 
-std::cv_status jau::wait_until(std::condition_variable &cv, std::unique_lock<std::mutex> &lock, const fraction_timespec &absolute_time, const bool monotonic) noexcept {
+std::cv_status jau::wait_until(std::condition_variable &cv, std::unique_lock<std::mutex> &lock, const fraction_timespec &absolute_time, const bool monotonic) noexcept { // NOLINT(bugprone-exception-escape): native_handle() not throwing
     if ( absolute_time <= fraction_tv::zero ) {
         return std::cv_status::no_timeout;
     }
@@ -426,7 +426,7 @@ std::string jau::threadName(const std::thread::id id) noexcept {
     return string_noexcept([&id]() { return "Thread 0x"+jau::toHexString( std::hash<std::thread::id>{}(id) ); });
 }
 
-jau::ExceptionBase::ExceptionBase(std::string &&type, std::string const& m, const char* file, int line) noexcept // NOLINT(modernize-pass-by-value)
+jau::ExceptionBase::ExceptionBase(std::string &&type, std::string const& m, const char* file, int line) noexcept // NOLINT(bugprone-exception-escape): fprintf OK
 : msg_( std::move(type) ),
   backtrace_( jau::get_backtrace(true /* skip_anon_frames */) )
 {
@@ -442,16 +442,16 @@ jau::ExceptionBase::ExceptionBase(std::string &&type, std::string const& m, cons
 }
 
 std::string jau::get_string(const uint8_t *buffer, nsize_t const buffer_len, nsize_t const max_len) {
-    const nsize_t cstr_max_len = std::min(buffer_len, max_len);
+    const nsize_t cstr_max_len = jau::min(buffer_len, max_len);
     const size_t cstr_len = ::strnlen(reinterpret_cast<const char*>(buffer), cstr_max_len); // if cstr_len == cstr_max_len then no EOS
     return std::string(reinterpret_cast<const char*>(buffer), cstr_len);
 }
 
-void jau::trimInPlace(std::string &s) noexcept {
-    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) { // NOLINT(modernize-use-ranges)
+void jau::trimInPlace(std::string &s) noexcept { // NOLINT(bugprone-exception-escape): find_if not throwing
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) noexcept { // NOLINT(modernize-use-ranges)
         return !std::isspace(ch);
     }));
-    s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) { // NOLINT(modernize-use-ranges)
+    s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) noexcept { // NOLINT(modernize-use-ranges)
         return !std::isspace(ch);
     }).base(), s.end());
 }
@@ -462,12 +462,12 @@ std::string jau::trim(const std::string &_s) {
     return s;
 }
 
-std::vector<std::string> jau::split_string(const std::string &str, const std::string &separator) {
+std::vector<std::string> jau::split_string(std::string_view str, std::string_view separator) {
     std::vector<std::string> res;
     size_t p0 = 0;
     while ( p0 != std::string::npos && p0 < str.size() ) {
         size_t p1 = str.find(separator, p0);
-        res.push_back(str.substr(p0, p1));  // incl. npos
+        res.emplace_back(str.substr(p0, p1));  // incl. npos
         if ( p1 != std::string::npos ) {
             p1 += separator.length();
         }
@@ -476,16 +476,25 @@ std::vector<std::string> jau::split_string(const std::string &str, const std::st
     return res;
 }
 
-std::string &jau::toLowerInPlace(std::string &s) noexcept {
+std::string &jau::toLowerInPlace(std::string &s) noexcept { // NOLINT(bugprone-exception-escape): transform not throwing
     std::transform(s.begin(), s.end(), s.begin(),  // NOLINT(modernize-use-ranges)
-                   [](unsigned char c) { return std::tolower(c); });
+                   [](unsigned char c) noexcept { return std::tolower(c); });
     return s;
 }
 std::string jau::toLower(const std::string& s) {
     std::string t(s); toLowerInPlace(t); return t;
 }
 
-bool jau::reserve_string(std::string &s, const size_t new_capacity) noexcept {
+std::string jau::make_string(std::string_view v) noexcept {
+    try {
+        return std::string(v);
+    } catch (...) {
+        jau::fput_exception(stderr, std::current_exception(), E_FILE_LINE);
+        return std::string();
+    }
+}
+
+bool jau::reserve_string(std::string &s, const size_t new_capacity) noexcept { // NOLINT(bugprone-exception-escape): rethrow_exception caught
     if (new_capacity <= s.capacity()) {
         return true;
     }
@@ -504,7 +513,7 @@ bool jau::reserve_string(std::string &s, const size_t new_capacity) noexcept {
     }
 }
 
-bool jau::reserve_append_string(std::string &s, size_t new_capacity, size_t append_count, char append_char) noexcept {
+bool jau::reserve_append_string(std::string &s, size_t new_capacity, size_t append_count, char append_char) noexcept { // NOLINT(bugprone-exception-escape): rethrow_exception caught
     try {
         s.reserve(new_capacity);
         s.append(append_count, append_char);
@@ -639,7 +648,7 @@ std::string jau::unsafe::vformat_string_n(const std::size_t maxStrLen, const cha
     return str;
 }
 
-std::string jau::unsafe::format_string_n(const std::size_t maxStrLen, const char* format, ...) noexcept {
+std::string jau::unsafe::format_string_n(const std::size_t maxStrLen, const char* format, ...) noexcept { // NOLINT(modernize-avoid-variadic-functions)
     va_list args;
     va_start (args, format);
     std::string str = vformat_string_n(maxStrLen, format, args);
@@ -665,7 +674,7 @@ std::string jau::unsafe::vformat_string_h(const std::size_t strLenHint, const ch
             str.resize(nchars);
             str.shrink_to_fit();
         } else {
-            bsz = std::min<size_t>(nchars+1, str.max_size()+1); // limit incl. EOS
+            bsz = jau::min<size_t>(nchars+1, str.max_size()+1); // limit incl. EOS
             str.reserve(bsz);  // incl. EOS
             str.resize(bsz-1); // excl. EOS
 
@@ -683,7 +692,7 @@ std::string jau::unsafe::vformat_string_h(const std::size_t strLenHint, const ch
     return str;
 }
 
-std::string jau::unsafe::format_string_h(const std::size_t strLenHint, const char* format, ...) noexcept {
+std::string jau::unsafe::format_string_h(const std::size_t strLenHint, const char* format, ...) noexcept { // NOLINT(modernize-avoid-variadic-functions)
     va_list args;
     va_start (args, format);
     std::string str = vformat_string_h(strLenHint, format, args);
@@ -691,7 +700,7 @@ std::string jau::unsafe::format_string_h(const std::size_t strLenHint, const cha
     return str;
 }
 
-std::string jau::unsafe::format_string(const char* format, ...) noexcept {
+std::string jau::unsafe::format_string(const char* format, ...) noexcept { // NOLINT(modernize-avoid-variadic-functions)
     va_list args;
     va_start (args, format);
     std::string str = vformat_string_h(jau::cfmt::default_string_capacity, format, args);
@@ -699,7 +708,8 @@ std::string jau::unsafe::format_string(const char* format, ...) noexcept {
     return str;
 }
 
-void jau::unsafe::errPrint(FILE *out, const char *msg, bool addErrno, bool addBacktrace, const char *func, const char *file, const int line,
+void jau::unsafe::errPrint(FILE *out, const char *msg, bool addErrno, bool addBacktrace, // NOLINT(modernize-avoid-variadic-functions)
+                           const char *func, const char *file, const int line,
                            const char* format, ...) noexcept
 {
     va_list args;
@@ -904,7 +914,7 @@ UInt64SizeBoolTuple jau::fromHexString(std::string_view const hexstr, const lb_e
     return { .v = result, .s = consumed, .b = complete };
 }
 
-static snsize_t bitCharByte_(const uint8_t c) {
+static snsize_t bitCharByte_(const uint8_t c) noexcept {
     if ( '0' <= c && c <= '1' ) {
         return c - '0';
     }
@@ -1097,10 +1107,10 @@ std::string& jau::appendHexString(std::string& dest, const void *data, const nsi
     const char *hex_array = LoUpCase::lower == capitalization ? HexadecimalArrayLow : HexadecimalArrayBig;
 
     if ( nullptr == data ) {
-        return dest.append("null");
+        return jau::append_string(dest, "null");
     }
     if ( 0 == length ) {
-        return dest.append("nil");
+        return jau::append_string(dest, "nil");
     }
     const uint8_t *const bytes = static_cast<const uint8_t *>(data);
     try {
@@ -1157,15 +1167,15 @@ std::string &jau::appendHexString(std::string &dest, const uint8_t value, const 
 std::string& jau::appendBitString(std::string &dest, const void *data, const nsize_t length,
                              const bit_order_t bitOrder, const PrefixOpt prefix, size_t bit_len) noexcept {
     if ( nullptr == data ) {
-        return dest.append("null");
+        return jau::append_string(dest, "null");
     }
     if ( 0 == length ) {
-        return dest.append("nil");
+        return jau::append_string(dest, "nil");
     }
     const uint8_t *const bytes = static_cast<const uint8_t *>(data);
     nsize_t bits_left = length*8;
     const bool fixed_len = bit_len > 0;
-    nsize_t bits_todo = fixed_len ? std::min<size_t>(bit_len, bits_left) : bits_left;
+    nsize_t bits_todo = fixed_len ? min<size_t>(bit_len, bits_left) : bits_left;
     try {
         if ( bitOrder == bit_order_t::lsb ) {
             // LSB left -> MSB right, no leading `0x`
@@ -1228,6 +1238,10 @@ std::string_view jau::to_string(const lb_endian_t v) noexcept {
     return v == lb_endian_t::little ? "little" : "big";
 }
 
+std::string_view jau::to_string(const bit_order_t v) noexcept {
+    return v == bit_order_t::lsb ? "lsb" : "msb";
+}
+
 std::string_view jau::to_string(const jau::func::target_type v) noexcept {
     switch(v) {
         case jau::func::target_type::null:  return "null";
@@ -1242,12 +1256,12 @@ std::string_view jau::to_string(const jau::func::target_type v) noexcept {
     return "undef";
 }
 
-FracI64SizeBoolTuple jau::to_fraction_i64(std::string_view str, const fraction_i64 &min_allowed, const fraction_i64 &max_allowed) noexcept {
+FracI64SizeBoolTuple jau::to_fraction_i64(std::string_view str, const fraction_i64 &min_allowed, const fraction_i64 &max_allowed) noexcept { // NOLINT(bugprone-exception-escape): view.substr not throwing
     fraction_i64 result;
     size_t consumed = 0;
 
     std::string::size_type divpos = str.find('/', 0);
-    if (std::string::npos == divpos) {
+    if (std::string::npos == divpos || divpos == str.length()-1 ) {
         return { .v = result, .s = consumed, .b = false };
     }
 
@@ -1291,13 +1305,8 @@ std::string_view jau::math::to_string(const jau::math::math_error_t v) noexcept 
 std::string jau::type_info::toString() const noexcept {
     using namespace jau::enums;
 
-    std::string r("TypeInfo[addr ");
-    r.append(jau::toHexString(this))
-     .append(", hash ").append(jau::toHexString(hash_code()))
-     .append(", `").append(name())
-     .append("`, ident").append(to_string(m_idflags));
-    r.append("]]");
-    return r;
+    return jau_format_string("TypeInfo[addr %p, hash %#zx, '%s', ident%s]]",
+        this, hash_code(), name(), m_idflags);
 }
 
 //
@@ -1329,7 +1338,7 @@ bool jau::impl::dbgPrint_pre(size_t init_strsize, std::string &str, bool addPref
     }
 }
 
-void jau::impl::dbgPrint_tail(FILE *out, std::string &str, bool addErrno, bool addBacktrace) noexcept {
+void jau::impl::dbgPrint_tail(FILE *out, std::string &str, bool addErrno, bool addBacktrace) noexcept { // NOLINT(bugprone-exception-escape): fstream-out not throwing
     try {
         if (addErrno) {
             str.append("; last errno ").append(std::to_string(errno)).append(" ").append(strerror(errno));
@@ -1374,7 +1383,7 @@ bool jau::impl::fprintf_ts0_pre(size_t init_strsize, std::string &str) noexcept 
     }
 }
 
-ssize_t jau::impl::fprintf_tail(FILE *stream, const std::string &str) noexcept {
+ssize_t jau::impl::fprintf_tail(FILE *stream, const std::string &str) noexcept { // NOLINT(bugprone-exception-escape): fstream-out not throwing
     const int r = ::fputs(str.c_str(), stream);
     const ssize_t res = jau::clampCast<ssize_t, size_t>(str.length(), 0, std::numeric_limits<ssize_t>::max());
     return 0 > r ? -1 * res : res;
@@ -1454,22 +1463,27 @@ std::string jau::cfmt::FormatOpts::toString() const {
     return s;
 }
 
-std::string jau::cfmt::Result::toString() const {
+std::string jau::cfmt::Result::toString() const noexcept {
     const char c = m_pos < m_fmt.length() ? m_fmt[m_pos] : '@';
-    std::string s = "args ";
-    s.append(std::to_string(m_arg_count))
-    .append(", ok ")
-    .append(jau::to_string(m_success))
-    .append(", line ")
-    .append(std::to_string(m_line))
-    .append(", pos ")
-    .append(std::to_string(m_pos))
-    .append(", char `")
-    .append(std::string(1, c))
-    .append("`, last[").append(m_opts.toString())
-    .append("], fmt `").append(m_fmt)
-    .append("`");
-    return s;
+    try {
+        std::string s = "args ";
+        s.append(std::to_string(m_arg_count))
+        .append(", ok ")
+        .append(jau::to_string(m_success))
+        .append(", line ")
+        .append(std::to_string(m_line))
+        .append(", pos ")
+        .append(std::to_string(m_pos))
+        .append(", char `")
+        .append(std::string(1, c))
+        .append("`, last[").append(m_opts.toString())
+        .append("], fmt `").append(m_fmt)
+        .append("`");
+        return s;
+    } catch (...) {
+        fput_exception(stderr, std::current_exception(), E_FILE_LINE);
+        return std::string();
+    }
 }
 
 void jau::cfmt::impl::append_rev(std::string &dest, const size_t dest_maxlen, std::string_view src, bool prec_cut, bool reverse, const FormatOpts &opts) noexcept {
@@ -1482,24 +1496,24 @@ void jau::cfmt::impl::append_rev(std::string &dest, const size_t dest_maxlen, st
 
     // pre padding
     if (prec_cut && opts.precision_set) {
-        src_len = std::min<size_t>(src_len, opts.precision);
+        src_len = jau::min<size_t>(src_len, opts.precision);
     }
     size_t space_left = 0, space_right = 0;
     {
         // string optional re-capacity and resize
         const size_t added_maxlen = dest_maxlen - dest_start_len;
-        size_t len = std::min(src_len, added_maxlen); // already cut to precision if applicable
+        size_t len = jau::min(src_len, added_maxlen); // already cut to precision if applicable
         if (!is_set(opts.flags, flags_t::left) && opts.width_set && opts.width > len) {
-            space_left = std::min(opts.width-len, added_maxlen-len);
+            space_left = jau::min(opts.width-len, added_maxlen-len);
             len += space_left;
         }
         // p2: append pad spaces left/right up to given width
         if (opts.width_set && len < opts.width) {
             if (is_set(opts.flags, flags_t::left)) {
-                space_right = std::min(opts.width-len, added_maxlen-len);
+                space_right = jau::min(opts.width-len, added_maxlen-len);
                 len += space_right;
             } else if (!is_set(opts.flags, flags_t::zeropad)) {
-                space_left = std::min(opts.width-len, added_maxlen-len);
+                space_left = jau::min(opts.width-len, added_maxlen-len);
                 len += space_left;
             }
         }
@@ -1531,7 +1545,7 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
     }
     const size_t dest_start_len = dest.size();
     const uint32_t added_maxlen = (uint32_t)
-        std::min<size_t>(dest_maxlen - dest_start_len, std::numeric_limits<uint32_t>::max());
+        jau::min<size_t>(dest_maxlen - dest_start_len, std::numeric_limits<uint32_t>::max());
 
     const uint32_t radix = opts.radix;
     const uint32_t sep_gap = 10 == radix ? 3 : 4;
@@ -1573,11 +1587,11 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
         assert(val_digits <= added_maxlen);
     }
     uint32_t num_len = separator ? ///< contains zero-padding, val_digits and separator
-        std::min(added_maxlen, val_digits + ( (val_digits - 1) / sep_gap )) :
+        jau::min(added_maxlen, val_digits + ( (val_digits - 1) / sep_gap )) :
         val_digits;
 
     const uint32_t prec = opts.precision_set ? opts.precision : 0;
-    uint32_t width = opts.width_set ? std::min(added_maxlen, opts.width) : 0;
+    uint32_t width = opts.width_set ? jau::min(added_maxlen, opts.width) : 0;
     uint32_t space_left = 0, space_right = 0;
     uint32_t xtra_left = 0;  ///< contains hash, sign, single space
     {
@@ -1608,7 +1622,7 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
             }
             ++xtra_left; // hash zero
         }
-        num_len = std::min(added_maxlen, num_len);
+        num_len = jau::min(added_maxlen, num_len);
 
         // p1: sign
         if (negative) {
@@ -1621,7 +1635,7 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
         if (!negative && is_set(opts.flags, flags_t::space)) {
             ++xtra_left; // ' ';
         }
-        xtra_left = std::min(added_maxlen-num_len, xtra_left);
+        xtra_left = jau::min(added_maxlen-num_len, xtra_left);
 
         // p2: append pad spaces left/right up to given width
         {
@@ -1634,9 +1648,9 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
                 }
             }
         }
-        space_left = std::min(added_maxlen-num_len-xtra_left, space_left);
-        space_right = std::min(added_maxlen-num_len-xtra_left-space_left, space_right);
-        const size_t added_len = std::min<size_t>(added_maxlen, space_left + xtra_left + num_len + space_right);
+        space_left = jau::min(added_maxlen-num_len-xtra_left, space_left);
+        space_right = jau::min(added_maxlen-num_len-xtra_left-space_left, space_right);
+        const size_t added_len = jau::min<size_t>(added_maxlen, space_left + xtra_left + num_len + space_right);
         if (!jau::reserve_append_string(dest, dest_start_len + added_len + 1, added_len)) { // cap +EOS, not shrinking!
             return;
         }
@@ -1733,7 +1747,7 @@ void jau::cfmt::impl::append_integral_simple(std::string &dest, const size_t des
     }
     const size_t dest_start_len = dest.size();
     const uint32_t added_maxlen = (uint32_t)
-        std::min<size_t>(dest_maxlen - dest_start_len, std::numeric_limits<uint32_t>::max());
+        jau::min<size_t>(dest_maxlen - dest_start_len, std::numeric_limits<uint32_t>::max());
 
     const uint32_t radix = opts.radix;
     uint32_t shift;
@@ -1807,9 +1821,9 @@ void jau::cfmt::impl::append_integral_simple(std::string &dest, const size_t des
         if (!negative && is_set(opts.flags, flags_t::space)) {
             ++xtra_left; // ' ';
         }
-        xtra_left = std::min(added_maxlen-val_digits, xtra_left);
+        xtra_left = jau::min(added_maxlen-val_digits, xtra_left);
 
-        const size_t added_len = std::min<size_t>(added_maxlen, xtra_left + val_digits );
+        const size_t added_len = jau::min<size_t>(added_maxlen, xtra_left + val_digits );
         if (!jau::reserve_append_string(dest, dest_start_len + added_len + 1, added_len)) { // cap +EOS, not shrinking!
             return;
         }
@@ -2138,12 +2152,12 @@ void jau::cfmt::impl::append_efloatF64(std::string &dest, const size_t dest_maxl
         {
             const size_t idx = dest.size();
             if (idx + 1 > dest_maxlen ||
-                !jau::reserve_append_string(dest, std::min(idx + 1 + number_max_strlen, dest_maxlen) + 1, 1) // cap +EOS, not shrinking!
+                !jau::reserve_append_string(dest, jau::min(idx + 1 + number_max_strlen, dest_maxlen) + 1, 1) // cap +EOS, not shrinking!
                )
             {
                 return;
             }
-            dest[idx] = is_set(iopts.flags, flags_t::uppercase) ? 'E' : 'e';
+            *(dest.data() + idx) = is_set(iopts.flags, flags_t::uppercase) ? 'E' : 'e';
         }
         // output the exponent value
         fopts.conversion = cspec_t::unsigned_int;
@@ -2255,12 +2269,12 @@ void jau::cfmt::impl::append_afloatF64(std::string &dest, const size_t dest_maxl
         {
             const size_t idx = dest.size();
             if (idx + 1 > dest_maxlen ||
-                !jau::reserve_append_string(dest, std::min(idx + 1 + number_max_strlen, dest_maxlen) + 1, 1)  // cap +EOS, not shrinking!
+                !jau::reserve_append_string(dest, jau::min(idx + 1 + number_max_strlen, dest_maxlen) + 1, 1)  // cap +EOS, not shrinking!
                )
             {
                 return;
             }
-            dest[idx] = is_set(iopts.flags, flags_t::uppercase) ? 'P' : 'p';
+            *(dest.data() + idx) = is_set(iopts.flags, flags_t::uppercase) ? 'P' : 'p';
         }
         // output the exponent value
         fopts.conversion = cspec_t::unsigned_int;

@@ -248,7 +248,7 @@ namespace jau {
             }
 
             /** Aborts program execution if given signature is nullptr or has a string length == 0. */
-            static void abort_invalid(const char* signature) noexcept {
+            static void abort_invalid(const char* signature) noexcept { // NOLINT(bugprone-exception-escape): abort intended
                 if( nullptr == signature ) {
                     fprintf(stderr, "jau_ABORT @ %s:%d %s: CTTI signature nullptr\n", __FILE__, __LINE__, __func__);
                     ::abort();

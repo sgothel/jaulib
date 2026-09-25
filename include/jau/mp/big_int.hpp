@@ -1610,7 +1610,7 @@ namespace jau {
         return min(max(x, min_val), max_val);
     }
 
-    inline mp::BigInt gcd(const mp::BigInt& a, const mp::BigInt& b) noexcept {
+    inline mp::BigInt gcd(const mp::BigInt& a, const mp::BigInt& b) {
         mp::BigInt a_ = abs(a);
         mp::BigInt b_ = abs(b);
         while ( b_.is_nonzero() ) {

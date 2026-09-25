@@ -68,9 +68,7 @@ JNIEnv *JNIEnvContainer::operator->() {
     return env;
 }
 
-JNIEnvContainer::JNIEnvContainer() = default;
-
-JNIEnvContainer::~JNIEnvContainer() {
+JNIEnvContainer::~JNIEnvContainer() noexcept {
     detach();
 }
 
@@ -97,7 +95,7 @@ void JNIEnvContainer::attach() {
     needsDetach = nullptr != newEnv;
 }
 
-void JNIEnvContainer::detach() {
+void JNIEnvContainer::detach() noexcept {
     if (env == nullptr) {
         return;
     }

@@ -32,6 +32,8 @@
 #include <cstdio>
 #include <limits>
 #include <type_traits>
+#include "jau/string_cfmt.hpp"
+#include "jau/string_util.hpp"
 
 #include <jau/backtrace.hpp>
 #include <jau/cpp_pragma.hpp>
@@ -363,21 +365,14 @@ namespace jau {
          * @return
          */
         std::string toString(const bool show_double = false) const noexcept {
-            std::string r = std::to_string(num) + "/" + std::to_string(denom);
+            std::string r = jau_format_string_h(jau::cfmt::integral_max_digits10*2+1+(show_double?jau::cfmt::number_max_strlen:0), "%?/%?", num, denom);
             if ( overflow ) {
-                r.append(" O! ");
+                jau::append_string(r, " O! ");
             } else if ( show_double ) {
                 const int precision = (int)std::max<size_t>(6, digits10(denom, false /* sign_is_digit */));
-                std::string fmt("%.");
-                fmt.append(std::to_string(precision)).append("f");
-                char buf[96];
-                PRAGMA_DISABLE_WARNING_PUSH
-                PRAGMA_DISABLE_WARNING_FORMAT_NONLITERAL
-                int res = ::snprintf(buf, sizeof(buf), fmt.c_str(), to_double());
-                PRAGMA_DISABLE_WARNING_POP
-                if ( 0 < res ) {
-                    r.append(" ( " + std::string(buf) + " )");
-                }
+                std::string fmt = jau::format_string_h(jau::cfmt::integral_max_digits10 + 3, "%%.%df", precision);
+                std::string s = jau::format_string_h(jau::cfmt::number_max_strlen, fmt, to_double());
+                jau::append_string(r, s);
             }
             return r;
         }
@@ -836,40 +831,40 @@ namespace jau {
 
     namespace fractions_i64_literals {
         /** Literal for fractions_i64::tera */
-        constexpr fraction_i64 operator ""_T(unsigned long long int __T)     { return (int64_t)__T    * fractions_i64::tera; }
+        constexpr fraction_i64 operator ""_T(unsigned long long int __T)     noexcept { return (int64_t)__T    * fractions_i64::tera; }
         /** Literal for fractions_i64::giga */
-        constexpr fraction_i64 operator ""_G(unsigned long long int __G)     { return (int64_t)__G    * fractions_i64::giga; }
+        constexpr fraction_i64 operator ""_G(unsigned long long int __G)     noexcept { return (int64_t)__G    * fractions_i64::giga; }
         /** Literal for fractions_i64::mega */
-        constexpr fraction_i64 operator ""_M(unsigned long long int __M)     { return (int64_t)__M    * fractions_i64::mega; }
+        constexpr fraction_i64 operator ""_M(unsigned long long int __M)     noexcept { return (int64_t)__M    * fractions_i64::mega; }
         /** Literal for fractions_i64::kilo */
-        constexpr fraction_i64 operator ""_k(unsigned long long int __k)     { return (int64_t)__k    * fractions_i64::kilo; }
+        constexpr fraction_i64 operator ""_k(unsigned long long int __k)     noexcept { return (int64_t)__k    * fractions_i64::kilo; }
         /** Literal for fractions_i64::one */
-        constexpr fraction_i64 operator ""_one(unsigned long long int __one) { return (int64_t)__one  * fractions_i64::one; }
+        constexpr fraction_i64 operator ""_one(unsigned long long int __one) noexcept { return (int64_t)__one  * fractions_i64::one; }
         /** Literal for fractions_i64::milli */
-        constexpr fraction_i64 operator ""_m(unsigned long long int __m)     { return (int64_t)__m    * fractions_i64::milli; }
+        constexpr fraction_i64 operator ""_m(unsigned long long int __m)     noexcept { return (int64_t)__m    * fractions_i64::milli; }
         /** Literal for fractions_i64::micro */
-        constexpr fraction_i64 operator ""_u(unsigned long long int __u)     { return (int64_t)__u    * fractions_i64::micro; }
+        constexpr fraction_i64 operator ""_u(unsigned long long int __u)     noexcept { return (int64_t)__u    * fractions_i64::micro; }
         /** Literal for fractions_i64::nano */
-        constexpr fraction_i64 operator ""_n(unsigned long long int __n)     { return (int64_t)__n    * fractions_i64::nano; }
+        constexpr fraction_i64 operator ""_n(unsigned long long int __n)     noexcept { return (int64_t)__n    * fractions_i64::nano; }
         /** Literal for fractions_i64::pico */
-        constexpr fraction_i64 operator ""_p(unsigned long long int __p)     { return (int64_t)__p    * fractions_i64::pico; }
+        constexpr fraction_i64 operator ""_p(unsigned long long int __p)     noexcept { return (int64_t)__p    * fractions_i64::pico; }
 
         /** Literal for fractions_i64::years */
-        constexpr fraction_i64 operator ""_y(unsigned long long int __y)     { return (int64_t)__y    * fractions_i64::years; }
+        constexpr fraction_i64 operator ""_y(unsigned long long int __y)     noexcept { return (int64_t)__y    * fractions_i64::years; }
         /** Literal for fractions_i64::days */
-        constexpr fraction_i64 operator ""_d(unsigned long long int __d)     { return (int64_t)__d    * fractions_i64::days; }
+        constexpr fraction_i64 operator ""_d(unsigned long long int __d)     noexcept { return (int64_t)__d    * fractions_i64::days; }
         /** Literal for fractions_i64::hours */
-        constexpr fraction_i64 operator ""_h(unsigned long long int __h)     { return (int64_t)__h    * fractions_i64::hours; }
+        constexpr fraction_i64 operator ""_h(unsigned long long int __h)     noexcept { return (int64_t)__h    * fractions_i64::hours; }
         /** Literal for fractions_i64::minutes */
-        constexpr fraction_i64 operator ""_min(unsigned long long int __min) { return (int64_t)__min  * fractions_i64::minutes; }
+        constexpr fraction_i64 operator ""_min(unsigned long long int __min) noexcept { return (int64_t)__min  * fractions_i64::minutes; }
         /** Literal for fractions_i64::seconds */
-        constexpr fraction_i64 operator ""_s(unsigned long long int __s)     { return (int64_t)__s    * fractions_i64::seconds; }
+        constexpr fraction_i64 operator ""_s(unsigned long long int __s)     noexcept { return (int64_t)__s    * fractions_i64::seconds; }
         /** Literal for fractions_i64::milli */
-        constexpr fraction_i64 operator ""_ms(unsigned long long int __ms)   { return (int64_t)__ms   * fractions_i64::milli; }
+        constexpr fraction_i64 operator ""_ms(unsigned long long int __ms)   noexcept { return (int64_t)__ms   * fractions_i64::milli; }
         /** Literal for fractions_i64::micro */
-        constexpr fraction_i64 operator ""_us(unsigned long long int __us)   { return (int64_t)__us   * fractions_i64::micro; }
+        constexpr fraction_i64 operator ""_us(unsigned long long int __us)   noexcept { return (int64_t)__us   * fractions_i64::micro; }
         /** Literal for fractions_i64::nano */
-        constexpr fraction_i64 operator ""_ns(unsigned long long int __ns)   { return (int64_t)__ns   * fractions_i64::nano; }
+        constexpr fraction_i64 operator ""_ns(unsigned long long int __ns)   noexcept { return (int64_t)__ns   * fractions_i64::nano; }
     }  // namespace fractions_i64_literals
 
     // clang-format on
@@ -1044,7 +1039,7 @@ namespace jau {
         constexpr fraction_timespec& normalize() noexcept {
             if ( 0 != tv_nsec ) {
                 constexpr int64_t ns_per_sec = 1'000'000'000L;
-                if ( std::abs(tv_nsec) >= ns_per_sec ) {
+                if ( abs(tv_nsec) >= ns_per_sec ) {
                     const int64_t c = tv_nsec / ns_per_sec;
                     tv_nsec -= c * ns_per_sec;
                     tv_sec += c;

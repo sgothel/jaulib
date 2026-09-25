@@ -465,7 +465,7 @@ namespace jau {
      * @return true if `eptr` contained an exception pointer, false otherwise (`nullptr`)
      */
     CXX_ALWAYS_INLINE
-    bool handle_exception(std::exception_ptr eptr, const char* file, int line) noexcept { // NOLINT(performance-unnecessary-value-param) passing by value is OK
+    bool handle_exception(std::exception_ptr eptr, const char* file, int line) noexcept { // NOLINT(performance-unnecessary-value-param, bugprone-exception-escape): rethrow_exception caught
         if (eptr) {
             try {
                 std::rethrow_exception(eptr);
@@ -485,7 +485,7 @@ namespace jau {
      * @param line source line of caller
      */
     CXX_ALWAYS_INLINE
-    void fput_exception(FILE *out, std::exception_ptr eptr, const char* file, int line) noexcept {
+    void fput_exception(FILE *out, std::exception_ptr eptr, const char* file, int line) noexcept { // NOLINT(bugprone-exception-escape): rethrow_exception caught
         try {
             std::rethrow_exception(eptr); // NOLINT(performance-unnecessary-value-param) passing by value is OK
         } catch (const std::exception &e) {
@@ -495,7 +495,7 @@ namespace jau {
 
     /// No throw wrap for given unary predicate `p` action. Returns true for success (no exception), otherwise false (exception occurred).
     template<class UnaryPredicate>
-    inline bool do_noexcept(UnaryPredicate p) noexcept {
+    inline bool do_noexcept(const UnaryPredicate &p) noexcept { // NOLINT(bugprone-exception-escape): rethrow_exception caught
         try {
             p();
             return true;
@@ -519,7 +519,7 @@ namespace jau {
 
     /// No throw wrap for given unary predicate `p` producing a `std::string`. Returns an empty string if `p` causes an exception.
     template<class UnaryPredicate>
-    inline std::string string_noexcept(UnaryPredicate p) noexcept {
+    inline std::string string_noexcept(const UnaryPredicate & p) noexcept { // NOLINT(bugprone-exception-escape): rethrow_exception caught
         try {
             return p();
         } catch (...) {

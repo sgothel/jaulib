@@ -196,7 +196,7 @@ namespace jau {
      * @see float_value()
      * @see bit_value_raw()
      */
-    constexpr uint32_t bit_value(const float a) noexcept {
+    constexpr uint32_t bit_value(const float a) noexcept { // NOLINT(bugprone-exception-escape): std::isnan not throwing
         if( std::isnan(a) ) {
             return float_iec559_nan_bitval;
         }
@@ -257,7 +257,7 @@ namespace jau {
      * @see double_value()
      * @see bit_value_raw()
      */
-    constexpr uint64_t bit_value(const float64_t a) noexcept {
+    constexpr uint64_t bit_value(const float64_t a) noexcept { // NOLINT(bugprone-exception-escape): std::isnan not throwing
         if( std::isnan(a) ) {
             return double_iec559_nan_bitval;
         }
@@ -270,10 +270,10 @@ namespace jau {
     }
 
     namespace float_literals {
-        constexpr float32_t operator ""_f32(long double __v)            { return (float32_t)__v; }
-        constexpr float32_t operator ""_f32(unsigned long long int __v) { return (float32_t)__v; }
-        constexpr float64_t operator ""_f64(long double __v)            { return (float64_t)__v; }
-        constexpr float64_t operator ""_f64(unsigned long long int __v) { return (float64_t)__v; }
+        constexpr float32_t operator ""_f32(long double __v)            noexcept { return (float32_t)__v; }
+        constexpr float32_t operator ""_f32(unsigned long long int __v) noexcept { return (float32_t)__v; }
+        constexpr float64_t operator ""_f64(long double __v)            noexcept { return (float64_t)__v; }
+        constexpr float64_t operator ""_f64(unsigned long long int __v) noexcept { return (float64_t)__v; }
     } // float_literals
 
     class float_ctti {

@@ -44,20 +44,20 @@ namespace jau::jni {
 extern JavaVM* vm;
 
 
-/* 
+/*
  * This class provides a lifetime-managed JNIEnv object, which attaches or
  * detaches the current thread from the JVM automatically
  */
 class JNIEnvContainer {
-private:    
+private:
     JNIEnv *env = nullptr;
     bool needsDetach = false;
-    
+
 public:
     /* Attaches this thread to the JVM if it is not already attached */
-    JNIEnvContainer();
+    JNIEnvContainer() noexcept = default;
     /* Detaches this thread to the JVM if it is attached */
-    ~JNIEnvContainer();
+    ~JNIEnvContainer() noexcept;
 
     /* Provides access to the local thread's JNIEnv object */
     JNIEnv *operator*();
@@ -67,7 +67,7 @@ public:
     /* Attaches this thread to the JVM if it is not already attached */
     void attach();
     /* Detaches this thread to the JVM if it is attached */
-    void detach();
+    void detach() noexcept;
 };
 
 /* Each thread has a local jni_env variable of JNIEnvContainer type */
