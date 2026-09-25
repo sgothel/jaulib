@@ -1621,13 +1621,11 @@ namespace jau {
         return a_;
     }
 
-    /**@}*/
-}  // namespace jau
-
-namespace std {
     inline std::ostream& operator<<(std::ostream& out, const jau::mp::BigInt& v) {
         return out << v.to_dec_string();
     }
-}  // namespace std
+
+    /**@}*/
+}  // namespace jau
 
 #endif /** JAU_BIG_INT_HPP_ */

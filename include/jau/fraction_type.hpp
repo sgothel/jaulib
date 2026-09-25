@@ -535,6 +535,14 @@ namespace jau {
         }
     };
 
+    /**
+     * Output stream operator for jau::fraction
+     */
+    template<typename int_type>
+    inline std::ostream& operator<<(std::ostream& os, const jau::fraction<int_type>& v) {
+        return os << v.toString();
+    }
+
     template<std::integral int_type>
     inline std::string to_string(const fraction<int_type>& v) noexcept { return v.toString(); }
 
@@ -1212,6 +1220,13 @@ namespace jau {
 
     inline std::string to_string(const fraction_timespec& v) noexcept { return v.toString(); }
 
+    /**
+     * Output stream operator for jau::fraction_timespec
+     */
+    inline std::ostream& operator<<(std::ostream& os, const jau::fraction_timespec& v) {
+        return os << v.toString();
+    }
+
     /** Return the const-reference of the maximum of the given fraction_timespec const-reference pair. */
     constexpr const fraction_timespec& max(const fraction_timespec& lhs, const fraction_timespec& rhs) noexcept {
         return lhs > rhs ? lhs : rhs;
@@ -1368,29 +1383,5 @@ namespace jau {
     /**@}*/
 
 }  // namespace jau
-
-namespace std {
-
-    /** \addtogroup Fractions
-     */
-
-    /**
-     * Output stream operator for jau::fraction_timespec
-     */
-    inline std::ostream& operator<<(std::ostream& os, const jau::fraction_timespec& v) {
-        return os << v.toString();
-    }
-
-    /**
-     * Output stream operator for jau::fraction
-     */
-    template<typename int_type>
-    inline std::ostream& operator<<(std::ostream& os, const jau::fraction<int_type>& v) {
-        return os << v.toString();
-    }
-
-    /**@}*/
-
-}  // namespace std
 
 #endif /* JAU_FRACTION_TYPE_HPP_ */
