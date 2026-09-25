@@ -81,16 +81,30 @@ namespace jau::req {
     template<typename T>
     using type_of = impl::wrapped_type<wrapper<T>, T>::type;
 
-    /** Wrapper: Returns copied value of underlying wrapped type, or the direct value if not a wrapper (identity). */
+    /** Wrapper: Returns trivial copy of value of underlying wrapped type, or the direct value if not a wrapper (identity). */
     template<typename T>
-    requires wrapper<T>
+    requires wrapper<T> && std::is_trivially_copyable_v<T>
+    inline T::value_type value_of(const T &ref) noexcept {
+        return ref.operator typename T::value_type();
+    }
+
+    /** Wrapper: Returns trivial copy of value of underlying wrapped type, or the direct value if not a wrapper (identity). */
+    template<typename T>
+    requires (!wrapper<T>) && std::is_trivially_copyable_v<T>
+    constexpr T value_of(const T &ref) noexcept {
+        return ref;
+    }
+
+    /** Wrapper: Returns non-trivial copy of value of underlying wrapped type, or the direct value if not a wrapper (identity). */
+    template<typename T>
+    requires wrapper<T> && (!std::is_trivially_copyable_v<T>)
     inline T::value_type value_of(const T &ref) {
         return ref.operator typename T::value_type();
     }
 
-    /** Wrapper: Returns copied value of underlying wrapped type, or the direct value if not a wrapper (identity). */
+    /** Wrapper: Returns non-trivial copy of value of underlying wrapped type, or the direct value if not a wrapper (identity). */
     template<typename T>
-    requires (!wrapper<T>)
+    requires (!wrapper<T>) && (!std::is_trivially_copyable_v<T>)
     constexpr T value_of(const T &ref) {
         return ref;
     }
@@ -98,15 +112,29 @@ namespace jau::req {
     /** Wrapper: Returns mutable value reference of underlying wrapped type, or the direct value if not a wrapper (identity). */
     template<typename T>
     requires wrapper<T>
-    inline T::value_type& reference_of(T &ref) {
+    inline T::value_type& reference_of(T &ref) noexcept {
         return ref.operator typename T::value_type&();
     }
 
     /** Wrapper: Returns mutable value reference of underlying wrapped type, or the direct value if not a wrapper (identity). */
     template<typename T>
     requires (!wrapper<T>)
-    constexpr T& reference_of(T &ref) {
+    constexpr T& reference_of(T &ref) noexcept {
         return ref;
+    }
+
+    /** Wrapper: Returns immutable value reference of underlying wrapped type, or the direct value if not a wrapper (identity). */
+    template<typename T>
+    requires wrapper<T>
+    inline const T::value_type& reference_of(const T &ref) noexcept {
+        return ref.operator typename T::value_type&();
+    }
+
+    /** Wrapper: Returns immutable value reference of underlying wrapped type, or the direct value if not a wrapper (identity). */
+    template<typename T>
+    requires (!wrapper<T>)
+    constexpr const T& reference_of(const T &ref) noexcept {
+        return ref; // NOLINT(bugprone-return-const-ref-from-parameter)
     }
 
     /** Concept of type-trait std::is_pointer */
