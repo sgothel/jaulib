@@ -512,11 +512,11 @@ namespace jau {
                         },
                       .copy_ctor =
                         [](delegate_t* i, const delegate_t* o) -> void {
-                            new( i->template data<T>() ) T( *( o->template data<T>() ) ); // placement new copy-ctor
+                            new( i->template data<T>() ) T( *o->template data<T>()  ); // placement new copy-ctor
                         },
                       .move_ctor =
                         [](delegate_t* i, delegate_t* o) -> void {
-                            new( i->template data<T>() ) T( std::move( *( o->template data<T>() ) ) ); // placement new move-ctor
+                            new( i->template data<T>() ) T( std::move( *o->template data<T>()  ) ); // placement new move-ctor
                         }
                     };
                     return &nt;
@@ -866,7 +866,7 @@ namespace jau {
                 };
 
                 constexpr static R invoke_impl(delegate_type* __restrict_cxx__ const data, A&&... args) {
-                    return ( *(data->template data<data_type>()->function) )(std::forward<A>(args)...);
+                    return ( *(data->template data<data_type>()->function) )(std::forward<A>(args)...); // NOLINT(readability-redundant-parentheses)
                 }
 
                 constexpr static bool equal_op_impl(const delegate_type& lhs_, const delegate_type& rhs_) noexcept {
@@ -918,7 +918,7 @@ namespace jau {
                 };
 
                 constexpr static R invoke_impl(delegate_type* __restrict_cxx__ const data, A&&... args) {
-                    return ( data->template data<data_type>()->function )(std::forward<A>(args)...);
+                    return data->template data<data_type>()->function(std::forward<A>(args)...);
                 }
 
                 constexpr static bool equal_op_impl(const delegate_type& lhs_, const delegate_type& rhs_) noexcept {
@@ -1014,7 +1014,7 @@ namespace jau {
                 };
 
                 constexpr static R invoke_impl(delegate_type* __restrict_cxx__ const data, A&&... args) {
-                    return ( data->template data<data_type>()->function )(*data, std::forward<A>(args)...);
+                    return ( data->template data<data_type>()->function )(*data, std::forward<A>(args)...); // NOLINT(readability-redundant-parentheses)
                 }
 
                 constexpr static bool equal_op_impl(const delegate_type& lhs_, const delegate_type& rhs_) noexcept {

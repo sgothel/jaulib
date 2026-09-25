@@ -638,7 +638,7 @@ namespace jau::jni {
              */
             T& operator*() {
                 null_check2();
-                return *(ref_ptr->get());
+                return *ref_ptr->get();
             }
 
             /**

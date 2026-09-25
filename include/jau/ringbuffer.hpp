@@ -275,7 +275,7 @@ class ringbuffer {
             }
         }
         constexpr void dtor_one(pointer elem) {
-            ( elem )->~value_type(); // placement new -> manual destruction!
+            elem->~value_type(); // placement new -> manual destruction!
             if constexpr ( uses_secmem ) {
                 zero_bytes_sec(voidptr_cast(elem), sizeof(value_type));
             }

@@ -200,7 +200,7 @@ namespace jau {
     template<jau::req::unsigned_integral T>
     constexpr nsize_t high_bit(T x) {
         nsize_t hb = 0;
-        for ( nsize_t s = (CHAR_BIT * sizeof(T)) >> 1; s > 0; s >>= 1 ) {
+        for ( nsize_t s = (CHAR_BIT * sizeof(T)) >> 1u; s > 0; s >>= 1u ) {
             const nsize_t z = s * ((~jau::ct_is_zero(x >> s)) & 1);
             hb += z;
             x >>= z;

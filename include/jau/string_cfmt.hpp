@@ -1871,7 +1871,7 @@ namespace jau::cfmt {
             return s;
         }
         if constexpr( 0 < sizeof...(Targs) ) {
-            ((impl::FormatParser::parseOne<Targs>(ctx, args)), ...);
+            (impl::FormatParser::parseOne<Targs>(ctx, args), ...);
         }
         impl::FormatParser::parseOne<impl::no_type_t>(ctx, impl::no_type_t());
         return s;
@@ -1927,7 +1927,7 @@ namespace jau::cfmt {
         impl::StringResult ctx(impl::StringOutput(maxLen, s), fmt);
 
         if constexpr( 0 < sizeof...(Targs) ) {
-            ((impl::FormatParser::parseOne<Targs>(ctx, args)), ...);
+            (impl::FormatParser::parseOne<Targs>(ctx, args), ...);
         }
         impl::FormatParser::parseOne<impl::no_type_t>(ctx, impl::no_type_t());
         return s;
@@ -1987,7 +1987,7 @@ namespace jau::cfmt {
         impl::StringResult ctx(impl::StringOutput(s.capacity()-1, s), fmt); // explicit -EOS
 
         if constexpr( 0 < sizeof...(Targs) ) {
-            ((impl::FormatParser::parseOne<Targs>(ctx, args)), ...);
+            (impl::FormatParser::parseOne<Targs>(ctx, args), ...);
         }
         impl::FormatParser::parseOne<impl::no_type_t>(ctx, impl::no_type_t());
         return s;
@@ -2025,7 +2025,7 @@ namespace jau::cfmt {
             return s;
         }
         if constexpr( 0 < sizeof...(Targs) ) {
-            ((impl::FormatParser::parseOne<Targs>(ctx, args)), ...);
+            (impl::FormatParser::parseOne<Targs>(ctx, args), ...);
             // (unused(ctx, args), ...);
         }
         impl::FormatParser::parseOne<impl::no_type_t>(ctx, impl::no_type_t());
@@ -2061,7 +2061,7 @@ namespace jau::cfmt {
             return ctx;
         }
         if constexpr( 0 < sizeof...(Targs) ) {
-            ((impl::FormatParser::parseOne<Targs>(ctx, args)), ...);
+            (impl::FormatParser::parseOne<Targs>(ctx, args), ...);
         }
         impl::FormatParser::parseOne<impl::no_type_t>(ctx, impl::no_type_t());
         return ctx;
@@ -2114,7 +2114,7 @@ namespace jau::cfmt {
     consteval_cxx20 ssize_t check(std::string_view fmt, const Targs &...) noexcept {
         impl::CheckResult ctx(impl::NullOutput(), fmt);
         if constexpr( 0 < sizeof...(Targs) ) {
-            ((impl::CheckParser::checkOne<Targs>(ctx)), ...);
+            (impl::CheckParser::checkOne<Targs>(ctx), ...);
         }
         impl::CheckParser::checkOne<impl::no_type_t>(ctx);
         return ctx.arg_count;
@@ -2137,7 +2137,7 @@ namespace jau::cfmt {
     consteval_cxx20 int checkLine(std::string_view fmt, const Targs &...) noexcept {
         impl::CheckResult ctx(impl::NullOutput(), fmt);
         if constexpr( 0 < sizeof...(Targs) ) {
-            ((impl::CheckParser::checkOne<Targs>(ctx)), ...);
+            (impl::CheckParser::checkOne<Targs>(ctx), ...);
         }
         impl::CheckParser::checkOne<impl::no_type_t>(ctx);
         return ctx.line;
@@ -2158,7 +2158,7 @@ namespace jau::cfmt {
     consteval_cxx20 ssize_t check2(std::string_view fmt) noexcept {
         impl::CheckResult ctx(impl::NullOutput(), fmt);
         if constexpr( 0 < sizeof...(Targs) ) {
-            ((impl::CheckParser::checkOne<Targs>(ctx)), ...);
+            (impl::CheckParser::checkOne<Targs>(ctx), ...);
         }
         impl::CheckParser::checkOne<impl::no_type_t>(ctx);
         return ctx.arg_count;
@@ -2178,7 +2178,7 @@ namespace jau::cfmt {
     consteval_cxx20 int check2Line(std::string_view fmt) noexcept {
         impl::CheckResult ctx(impl::NullOutput(), fmt);
         if constexpr( 0 < sizeof...(Targs) ) {
-            ((impl::CheckParser::checkOne<Targs>(ctx)), ...);
+            (impl::CheckParser::checkOne<Targs>(ctx), ...);
         }
         impl::CheckParser::checkOne<impl::no_type_t>(ctx);
         return ctx.line;
@@ -2199,7 +2199,7 @@ namespace jau::cfmt {
     consteval_cxx20 Result checkR(std::string_view fmt, const Targs &...) noexcept {
         impl::CheckResult ctx(impl::NullOutput(), fmt);
         if constexpr( 0 < sizeof...(Targs) ) {
-            ((impl::CheckParser::checkOne<Targs>(ctx)), ...);
+            (impl::CheckParser::checkOne<Targs>(ctx), ...);
         }
         impl::CheckParser::checkOne<impl::no_type_t>(ctx);
         return ctx;
@@ -2219,7 +2219,7 @@ namespace jau::cfmt {
     consteval_cxx20 Result checkR2(std::string_view format) noexcept {
         impl::CheckResult ctx(impl::NullOutput(), format);
         if constexpr( 0 < sizeof...(Targs) ) {
-            ((impl::CheckParser::checkOne<Targs>(ctx)), ...);
+            (impl::CheckParser::checkOne<Targs>(ctx), ...);
         }
         impl::CheckParser::checkOne<impl::no_type_t>(ctx);
         return ctx;

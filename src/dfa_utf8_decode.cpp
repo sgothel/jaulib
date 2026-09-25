@@ -91,8 +91,8 @@ uint32_t jau::dfa_utf8_decode(uint32_t & state, uint32_t & codep, const uint32_t
   const uint32_t type = dfa_utf8d[byte_value];
 
   codep = (state != DFA_UTF8_ACCEPT) ?
-    (byte_value & 0x3fu) | (codep << 6) :
-    (0xff >> type) & (byte_value);
+    (byte_value & 0x3fu) | (codep << 6u) :
+    (0xffu >> type) & byte_value;
 
   state = dfa_utf8d[256 + state + type];
   return state;

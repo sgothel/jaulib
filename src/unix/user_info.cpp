@@ -149,7 +149,7 @@
             }
             jau_DBG_PRINT("getpwuid(%" PRIu32 "): name '%s', uid %" PRIu32 ", gid %" PRIu32 "\n", n_res_uid, pwd_res->pw_name, pwd_res->pw_uid, pwd_res->pw_gid);
             res_uid = (id_t)n_res_uid;
-            res_gid = (id_t)(::gid_t)(pwd_res->pw_gid);
+            res_gid = (id_t)(::gid_t)pwd_res->pw_gid;
             username = std::string(pwd_res->pw_name);
             homedir = std::string(pwd_res->pw_dir);
             shell = std::string(pwd_res->pw_shell);
@@ -164,7 +164,7 @@
                 }
                 jau_DBG_PRINT("getpwnam(%s): name '%s', uid %" PRIu32 ", gid %" PRIu32 "\n", tmp_username, pwd_res->pw_name, pwd_res->pw_uid, pwd_res->pw_gid);
                 res_uid = (id_t)n_res_uid;
-                res_gid = (id_t)(::gid_t)(pwd_res->pw_gid);
+                res_gid = (id_t)(::gid_t)pwd_res->pw_gid;
                 username = std::string(pwd_res->pw_name);
                 homedir = std::string(pwd_res->pw_dir);
                 shell = std::string(pwd_res->pw_shell);
@@ -183,8 +183,8 @@
             return false;
         }
         jau_DBG_PRINT("getpwnam(%s): name '%s', uid %" PRIu32 ", gid %" PRIu32 "\n", username_lookup, pwd_res->pw_name, pwd_res->pw_uid, pwd_res->pw_gid);
-        res_uid = (id_t)(::uid_t)(pwd_res->pw_uid);
-        res_gid = (id_t)(::gid_t)(pwd_res->pw_gid);
+        res_uid = (id_t)(::uid_t)pwd_res->pw_uid;
+        res_gid = (id_t)(::gid_t)pwd_res->pw_gid;
         username = std::string(pwd_res->pw_name);
         homedir = std::string(pwd_res->pw_dir);
         shell = std::string(pwd_res->pw_shell);

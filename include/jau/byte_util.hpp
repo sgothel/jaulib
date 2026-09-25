@@ -176,7 +176,7 @@ namespace jau {
         #endif
     }
 
-    constexpr void bswap(uint8_t * sink, uint8_t const * source, nsize_t len) {
+    constexpr void bswap(uint8_t * sink, uint8_t const * source, nsize_t len) noexcept {
         source += len - 1;
         for (; len > 0; len--) {
             *sink++ = *source--;
@@ -640,7 +640,7 @@ namespace jau {
                 std::array<uint8_t, 256> result{};
                 for (size_t i = 0; i < 256; ++i) {
                     // result[i] = (i * 0x0202020202_u64 & 0x010884422010_u64) % 1023;
-                    result[i] = ( (i * 0x80200802_u64) & 0x0884422110_u64 ) * 0x0101010101_u64 >> 32;
+                    result[i] = ( (i * 0x80200802_u64) & 0x0884422110_u64 ) * 0x0101010101_u64 >> 32u;
                 }
                 return result;
             }();
@@ -656,32 +656,32 @@ namespace jau {
      * @see https://graphics.stanford.edu/~seander/bithacks.html#BitReverseTable
      */
     constexpr uint16_t rev_bits(uint16_t v) noexcept {
-        return ( uint16_t( impl::BitRevTable256[ v        & 0xff] ) << 8) |
-               ( uint16_t( impl::BitRevTable256[(v >>  8) & 0xff] )     );
+        return ( uint16_t( impl::BitRevTable256[ v         & 0xffu] ) << 8u) |
+               ( uint16_t( impl::BitRevTable256[(v >>  8u) & 0xffu] )      );
     };
     /**
      * Reverse bits of four bytes
      * @see https://graphics.stanford.edu/~seander/bithacks.html#BitReverseTable
      */
     constexpr uint32_t rev_bits(uint32_t v) noexcept {
-        return ( uint32_t( impl::BitRevTable256[ v        & 0xff] ) << 24) |
-               ( uint32_t( impl::BitRevTable256[(v >>  8) & 0xff] ) << 16) |
-               ( uint32_t( impl::BitRevTable256[(v >> 16) & 0xff] ) <<  8) |
-               ( uint32_t( impl::BitRevTable256[(v >> 24) & 0xff] )      );
+        return ( uint32_t( impl::BitRevTable256[ v         & 0xffu] ) << 24u) |
+               ( uint32_t( impl::BitRevTable256[(v >>  8u) & 0xffu] ) << 16u) |
+               ( uint32_t( impl::BitRevTable256[(v >> 16u) & 0xffu] ) <<  8u) |
+               ( uint32_t( impl::BitRevTable256[(v >> 24u) & 0xffu] )      );
     };
     /**
      * Reverse bits of eight bytes
      * @see https://graphics.stanford.edu/~seander/bithacks.html#BitReverseTable
      */
     constexpr uint64_t rev_bits(uint64_t v) noexcept {
-        return ( uint64_t( impl::BitRevTable256[ v        & 0xff] ) << 56) |
-               ( uint64_t( impl::BitRevTable256[(v >>  8) & 0xff] ) << 48) |
-               ( uint64_t( impl::BitRevTable256[(v >> 16) & 0xff] ) << 40) |
-               ( uint64_t( impl::BitRevTable256[(v >> 24) & 0xff] ) << 32) |
-               ( uint64_t( impl::BitRevTable256[(v >> 32) & 0xff] ) << 24) |
-               ( uint64_t( impl::BitRevTable256[(v >> 40) & 0xff] ) << 16) |
-               ( uint64_t( impl::BitRevTable256[(v >> 48) & 0xff] ) <<  8) |
-               ( uint64_t( impl::BitRevTable256[(v >> 56) & 0xff] )      );
+        return ( uint64_t( impl::BitRevTable256[ v         & 0xffu] ) << 56u) |
+               ( uint64_t( impl::BitRevTable256[(v >>  8u) & 0xffu] ) << 48u) |
+               ( uint64_t( impl::BitRevTable256[(v >> 16u) & 0xffu] ) << 40u) |
+               ( uint64_t( impl::BitRevTable256[(v >> 24u) & 0xffu] ) << 32u) |
+               ( uint64_t( impl::BitRevTable256[(v >> 32u) & 0xffu] ) << 24u) |
+               ( uint64_t( impl::BitRevTable256[(v >> 40u) & 0xffu] ) << 16u) |
+               ( uint64_t( impl::BitRevTable256[(v >> 48u) & 0xffu] ) <<  8u) |
+               ( uint64_t( impl::BitRevTable256[(v >> 56u) & 0xffu] )      );
     };
 
     /** Returns the T bit mask of n-bits, i.e. n low order 1’s */
@@ -1169,9 +1169,7 @@ namespace jau {
      * @param v the bit_order_t value
      * @return the std::string representation
      */
-    inline std::string to_string(const bit_order_t v) noexcept {
-        return v == bit_order_t::lsb ? "lsb" : "msb";
-    }
+    std::string_view to_string(const bit_order_t v) noexcept;
 
     /**@}*/
 

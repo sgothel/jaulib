@@ -1,6 +1,6 @@
 /*
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2020-2024 Gothel Software e.K.
+ * Copyright (c) 2020-2026 Gothel Software e.K.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -347,7 +347,7 @@ namespace jau {
 
             constexpr void dtor_one(iterator pos) noexcept {
                 JAU_DARRAY_PRINTF0("dtor [%zd], count 1\n", (pos-m_begin));
-                ( pos )->~value_type(); // placement new -> manual destruction!
+                pos->~value_type(); // placement new -> manual destruction!
                 if constexpr ( uses_secmem ) {
                     zero_bytes_sec(voidptr_cast(pos), sizeof(value_type));
                 }
@@ -357,7 +357,7 @@ namespace jau {
                 size_type count=0;
                 JAU_DARRAY_PRINTF0("dtor [%zd .. %zd], count %zd\n", (first-m_begin), (last-m_begin)-1, (last-first)-1);
                 for(; first < last; ++first, ++count ) {
-                    ( first )->~value_type(); // placement new -> manual destruction!
+                    first->~value_type(); // placement new -> manual destruction!
                 }
                 if constexpr ( uses_secmem ) {
                     zero_bytes_sec(voidptr_cast(last-count), count*sizeof(value_type));

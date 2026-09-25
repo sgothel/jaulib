@@ -194,11 +194,11 @@ namespace jau {
             return std::has_single_bit(n) ? std::bit_ceil(n+1) : std::bit_ceil(n);
         } else {
             --n;
-            n |= n >> 1;
-            n |= n >> 2;
-            n |= n >> 4;
-            n |= n >> 8;
-            n |= n >> 16;
+            n |= n >> 1u;
+            n |= n >> 2u;
+            n |= n >> 4u;
+            n |= n >> 8u;
+            n |= n >> 16u;
             ++n;
             n += ( 0 == n ); // avoid 0 -> 0
             return n;

@@ -152,7 +152,7 @@ namespace jau::mp::ops {
         if constexpr ( is_builtin_int128_available() ) {
             const uint128_t r = static_cast<uint128_t>(a) * b;
             hi = (r >> 64) & 0xFFFFFFFFFFFFFFFFUL;
-            lo = (r      ) & 0xFFFFFFFFFFFFFFFFUL;
+            lo =  r        & 0xFFFFFFFFFFFFFFFFUL;
         } else {
             /*
              * Do a 64x64->128 multiply using four 32x32->64 multiplies plus

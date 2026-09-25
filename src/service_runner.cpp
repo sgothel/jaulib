@@ -113,7 +113,7 @@ bool service_runner::install_sighandler() noexcept {
     struct sigaction sa_setup;
     jau::zero_bytes_sec(&sa_setup, sizeof(sa_setup));
     sa_setup.sa_sigaction = sigaction_handler;
-    ::sigemptyset(&(sa_setup.sa_mask));
+    ::sigemptyset(&sa_setup.sa_mask);
     sa_setup.sa_flags = SA_SIGINFO;
     if( 0 != ::sigaction( SIGALRM, &sa_setup, nullptr ) ) {
         jau_ERR_PRINT("service_runner::install_sighandler: Setting sighandler");
@@ -127,7 +127,7 @@ bool service_runner::remove_sighandler() noexcept {
     struct sigaction sa_setup;
     jau::zero_bytes_sec(&sa_setup, sizeof(sa_setup));
     sa_setup.sa_handler = SIG_DFL;
-    ::sigemptyset(&(sa_setup.sa_mask));
+    ::sigemptyset(&sa_setup.sa_mask);
     sa_setup.sa_flags = 0;
     if( 0 != ::sigaction( SIGALRM, &sa_setup, nullptr ) ) {
         jau_ERR_PRINT("service_runner::remove_sighandler: Resetting sighandler");
