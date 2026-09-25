@@ -200,7 +200,7 @@ uuid16_t::uuid16_t(const std::string& str)
         msg.append(": "+str);
         throw jau::IllegalArgumentError(msg, E_FILE_LINE);
     }
-    if ( sscanf(str.c_str(), "%04hx", &part0) != 1 ) {
+    if ( sscanf(str.c_str(), "%04hx", &part0) != 1 ) { // NOLINT(bugprone-unchecked-string-to-number-conversion)
         std::string msg("UUID16 string not in format '0000' but "+str);
         throw jau::IllegalArgumentError(msg, E_FILE_LINE);
     }
@@ -221,7 +221,7 @@ uuid32_t::uuid32_t(const std::string& str)
         throw jau::IllegalArgumentError(msg, E_FILE_LINE);
     }
     // if ( sscanf(str.c_str(), "%08x-%04hx-%04hx-%04hx-%08x%04hx",
-    if ( sscanf(str.c_str(), "%08x", &part0) != 1 ) {
+    if ( sscanf(str.c_str(), "%08x", &part0) != 1 ) { // NOLINT(bugprone-unchecked-string-to-number-conversion)
         std::string msg("UUID32 string not in format '00000000' but "+str);
         throw jau::IllegalArgumentError(msg, E_FILE_LINE);
     }
@@ -242,7 +242,7 @@ uuid128_t::uuid128_t(const std::string& str)
         msg.append(": "+str);
         throw jau::IllegalArgumentError(msg, E_FILE_LINE);
     }
-    if ( sscanf(str.c_str(), "%08x-%04hx-%04hx-%04hx-%08x%04hx",
+    if ( sscanf(str.c_str(), "%08x-%04hx-%04hx-%04hx-%08x%04hx", // NOLINT(bugprone-unchecked-string-to-number-conversion)
                      &part0, &part1, &part2, &part3, &part4, &part5) != 6 )
     {
         std::string msg("UUID128 string not in format '00000000-0000-1000-8000-00805F9B34FB' but "+str);

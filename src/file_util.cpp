@@ -470,10 +470,10 @@ std::string jau::io::fs::to_named_fd(const int fd) noexcept {
 
 int jau::io::fs::from_named_fd(const std::string& named_fd) noexcept {
     int scan_value = -1;
-    if( 1 == sscanf(named_fd.c_str(), "/dev/fd/%d", &scan_value) ) {
+    if( 1 == sscanf(named_fd.c_str(), "/dev/fd/%d", &scan_value) ) { // NOLINT(bugprone-unchecked-string-to-number-conversion)
         // GNU/Linux, FreeBSD, ... ?
         return scan_value;
-    } else if( 1 == sscanf(named_fd.c_str(), "/proc/self/fd/%d", &scan_value) ) {
+    } else if( 1 == sscanf(named_fd.c_str(), "/proc/self/fd/%d", &scan_value) ) { // NOLINT(bugprone-unchecked-string-to-number-conversion)
         // GNU/Linux only?
         return scan_value;
     }
@@ -1851,7 +1851,7 @@ static bool copy_push_mkdir(const file_stats& dst_stats, copy_context_t& ctx) no
         constexpr const int32_t val_min = 888;
         constexpr const int32_t val_max = std::numeric_limits<int32_t>::max(); // 6 digits base 38 > INT_MAX
         uint64_t mkdir_cntr = 0;
-        std::mt19937_64 prng;
+        std::mt19937_64 prng; // NOLINT(bugprone-random-generator-seed): OK here
         std::uniform_int_distribution<int32_t> prng_dist(val_min, val_max);
         bool mkdir_ok = false;
         do {

@@ -92,7 +92,7 @@ bool EUI48Sub::scanEUI48Sub(const std::string& str, EUI48Sub& dest, std::string&
             ++j;
             exp_colon = false;
         } else {
-            if ( sscanf(str_ptr+j, "%02hhx", &b_[dest.length]) != 1 ) // b_: high->low
+            if ( sscanf(str_ptr+j, "%02hhx", &b_[dest.length]) != 1 ) // b_: high->low // NOLINT(bugprone-unchecked-string-to-number-conversion)
             {
                 errmsg.append("EUI48Sub sub-string not in format '01:02:03:0A:0B:0C' but '"+str+"', pos "+std::to_string(j)+", len "+std::to_string(str_len));
                 return false;
@@ -190,10 +190,10 @@ bool EUI48::scanEUI48(const std::string& str, EUI48& dest, std::string& errmsg) 
     }
     int scanres;
     if( is_little_endian() ) {
-        scanres = ::sscanf(str.c_str(), "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx",
+        scanres = ::sscanf(str.c_str(), "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx", // NOLINT(bugprone-unchecked-string-to-number-conversion)
                         &dest.b[5], &dest.b[4], &dest.b[3], &dest.b[2], &dest.b[1], &dest.b[0]);
     } else {
-        scanres = ::sscanf(str.c_str(), "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx",
+        scanres = ::sscanf(str.c_str(), "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx", // NOLINT(bugprone-unchecked-string-to-number-conversion)
                         &dest.b[0], &dest.b[1], &dest.b[2], &dest.b[3], &dest.b[4], &dest.b[5]);
     }
     if ( 6 != scanres ) {
