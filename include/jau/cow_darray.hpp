@@ -139,7 +139,7 @@ namespace jau {
             typedef value_type&                                 reference;
             typedef const value_type&                           const_reference;
             typedef Size_type                                   size_type;
-            typedef typename std::make_signed_t<size_type>      difference_type;
+            typedef std::make_signed_t<size_type>               difference_type;
             typedef Alloc_type                                  allocator_type;
 
             typedef darray<value_type, size_type,

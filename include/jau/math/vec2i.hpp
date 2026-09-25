@@ -53,7 +53,7 @@ namespace jau::math {
         using VectorBase::x;
         using VectorBase::set;
 
-        typedef typename jau::float_bytes<sizeof(value_type)>::type float_type;
+        typedef jau::float_bytes<sizeof(value_type)>::type float_type;
 
         value_type y;
 

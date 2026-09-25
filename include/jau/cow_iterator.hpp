@@ -92,7 +92,7 @@ namespace jau {
             typedef CoW_container                               cow_container_t;
 
             /** Actual iterator type of the contained native iterator, probably a simple pointer. */
-            typedef typename storage_t::iterator                iterator_type;
+            typedef storage_t::iterator                iterator_type;
 
         private:
             typedef std::iterator_traits<iterator_type>         sub_traits_t;
@@ -111,16 +111,16 @@ namespace jau {
               store_ref_(cow_parent.copy_store()), iterator_(store_ref_->begin()) { }
 
         public:
-            typedef typename sub_traits_t::iterator_category    iterator_category;  // random_access_iterator_tag
+            typedef sub_traits_t::iterator_category    iterator_category;  // random_access_iterator_tag
 
-            typedef typename storage_t::size_type               size_type;          // using our template overload Size_type
-            typedef typename storage_t::difference_type         difference_type;    // derived from our Size_type
-            // typedef typename storage_t::value_type           value_type;         // OK
-            // typedef typename storage_t::reference            reference;          //
-            // typedef typename storage_t::pointer              pointer;            //
-            typedef typename sub_traits_t::value_type           value_type;         // OK
-            typedef typename sub_traits_t::reference            reference;          // 'value_type &'
-            typedef typename sub_traits_t::pointer              pointer;            // 'value_type *'
+            typedef storage_t::size_type               size_type;          // using our template overload Size_type
+            typedef storage_t::difference_type         difference_type;    // derived from our Size_type
+            // typedef storage_t::value_type           value_type;         // OK
+            // typedef storage_t::reference            reference;          //
+            // typedef storage_t::pointer              pointer;            //
+            typedef sub_traits_t::value_type           value_type;         // OK
+            typedef sub_traits_t::reference            reference;          // 'value_type &'
+            typedef sub_traits_t::pointer              pointer;            // 'value_type *'
 
 // FIXME
 #if __cplusplus > 201703L && __cpp_lib_concepts && 0
@@ -650,7 +650,7 @@ namespace jau {
             typedef CoW_container                               cow_container_t;
 
             /** Actual const iterator type of the contained native iterator, probably a simple pointer. */
-            typedef typename storage_t::const_iterator          iterator_type;
+            typedef storage_t::const_iterator          iterator_type;
 
         private:
             typedef std::iterator_traits<iterator_type>         sub_traits_t;
@@ -662,16 +662,16 @@ namespace jau {
             : store_ref_(std::move(store)), iterator_(std::move(it)) { }
 
         public:
-            typedef typename sub_traits_t::iterator_category    iterator_category;  // random_access_iterator_tag
+            typedef sub_traits_t::iterator_category    iterator_category;  // random_access_iterator_tag
 
-            typedef typename storage_t::size_type               size_type;          // using our template overload Size_type
-            typedef typename storage_t::difference_type         difference_type;    // derived from our Size_type
-            // typedef typename storage_t::value_type           value_type;         // OK
-            // typedef typename storage_t::reference            reference;          // storage_t is not 'const'
-            // typedef typename storage_t::pointer              pointer;            // storage_t is not 'const'
-            typedef typename sub_traits_t::value_type           value_type;         // OK
-            typedef typename sub_traits_t::reference            reference;          // 'const value_type &'
-            typedef typename sub_traits_t::pointer              pointer;            // 'const value_type *'
+            typedef storage_t::size_type               size_type;          // using our template overload Size_type
+            typedef storage_t::difference_type         difference_type;    // derived from our Size_type
+            // typedef storage_t::value_type           value_type;         // OK
+            // typedef storage_t::reference            reference;          // storage_t is not 'const'
+            // typedef storage_t::pointer              pointer;            // storage_t is not 'const'
+            typedef sub_traits_t::value_type           value_type;         // OK
+            typedef sub_traits_t::reference            reference;          // 'const value_type &'
+            typedef sub_traits_t::pointer              pointer;            // 'const value_type *'
 
 // FIXME
 #if __cplusplus > 201703L && __cpp_lib_concepts && 0
@@ -999,13 +999,13 @@ namespace jau {
     { return rhs.compare(lhs) <= 0; }
 
     template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
-    constexpr typename Storage_type::difference_type operator-
+    constexpr Storage_type::difference_type operator-
                 ( const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
                   const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
     { return lhs.distance(rhs); }
 
     template <typename Storage_type, typename Storage_ref_type, typename CoW_container>
-    constexpr typename Storage_type::difference_type operator-
+    constexpr Storage_type::difference_type operator-
                 ( const cow_rw_iterator<Storage_type, Storage_ref_type, CoW_container>& lhs,
                   const cow_ro_iterator<Storage_type, Storage_ref_type, CoW_container>& rhs) noexcept
     { return rhs.distance(lhs) * -1; }

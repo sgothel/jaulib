@@ -23,7 +23,6 @@
  */
 #pragma once
 
-#include <cstdint>
 #include <string>
 #include <memory>
 #include <mutex>
@@ -89,7 +88,7 @@ namespace jau::os {
         typedef std::shared_ptr<LibRef> LibRef_ref;
 
         typedef std::unordered_map<libhandle_t, LibRef_ref> LibRefMap_t;
-        typedef typename LibRefMap_t::iterator LibRefIter_t;
+        typedef LibRefMap_t::iterator LibRefIter_t;
 
         std::mutex m_mtx_libref;
         LibRefMap_t m_handleToNameMap;

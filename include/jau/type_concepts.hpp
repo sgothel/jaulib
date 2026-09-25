@@ -84,7 +84,7 @@ namespace jau::req {
     /** Wrapper: Returns copied value of underlying wrapped type, or the direct value if not a wrapper (identity). */
     template<typename T>
     requires wrapper<T>
-    inline typename T::value_type value_of(const T &ref) {
+    inline T::value_type value_of(const T &ref) {
         return ref.operator typename T::value_type();
     }
 
@@ -98,7 +98,7 @@ namespace jau::req {
     /** Wrapper: Returns mutable value reference of underlying wrapped type, or the direct value if not a wrapper (identity). */
     template<typename T>
     requires wrapper<T>
-    inline typename T::value_type& reference_of(T &ref) {
+    inline T::value_type& reference_of(T &ref) {
         return ref.operator typename T::value_type&();
     }
 

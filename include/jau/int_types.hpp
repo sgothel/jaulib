@@ -54,7 +54,7 @@ namespace jau {
     #endif
     /// Alias template for uint_bytes
     template <int bytesize>
-      using uint_bytes_t = typename uint_bytes<bytesize>::type;
+      using uint_bytes_t = uint_bytes<bytesize>::type;
 
     template <int bytesize> struct sint_bytes;
     template <> struct sint_bytes<1>{ using type = int8_t; };
@@ -66,7 +66,7 @@ namespace jau {
     #endif
     /// Alias template for sint_bytes
     template <int bytesize>
-      using sint_bytes_t = typename sint_bytes<bytesize>::type;
+      using sint_bytes_t = sint_bytes<bytesize>::type;
 
     template <int bytesize> struct float_bytes;
     template <> struct float_bytes<sizeof(float)>{ using type = float; };
@@ -74,7 +74,7 @@ namespace jau {
     template <> struct float_bytes<sizeof(long double)>{ using type = long double; };
     /// Alias template for float_bytes
     template <int bytesize>
-      using float_bytes_t = typename float_bytes<bytesize>::type;
+      using float_bytes_t = float_bytes<bytesize>::type;
 
     /**
      * Natural 'size_t' alternative using `uint<XX>_t` with xx = `sizeof(unsigned long int)*8` as its natural sized type,

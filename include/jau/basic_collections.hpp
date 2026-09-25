@@ -133,8 +133,8 @@ namespace jau {
         typedef Novalue_type      novalue_type;
 
         typedef std::unordered_map<key_type, value_type, hash_functor, KeyEqual, Allocator> HashMapType;
-        typedef typename HashMapType::size_type     size_type;
-        typedef typename HashMapType::value_type    pair_type;
+        typedef HashMapType::size_type     size_type;
+        typedef HashMapType::value_type    pair_type;
 
       private:
         HashMapType m_map;

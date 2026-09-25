@@ -1,6 +1,6 @@
 /*
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2020 Gothel Software e.K.
+ * Copyright (c) 2020-2026 Gothel Software e.K.
  * Copyright (c) 2020 ZAFENA AB
  *
  * Permission is hereby granted, free of charge, to any person obtaining
@@ -27,10 +27,9 @@
 #define JAU_BASIC_ALGOS_HPP_
 
 #include <mutex>
-#include <type_traits>
-#include "jau/type_concepts.hpp"
 
 #include <jau/cow_iterator.hpp>
+#include <jau/type_concepts.hpp>
 
 namespace jau {
     /** @defgroup Algorithms Basic Algorithms
@@ -392,7 +391,7 @@ namespace jau {
     template<class InputIt, class UnaryFunction>
     constexpr UnaryFunction for_each_fidelity(InputIt first, InputIt last, UnaryFunction f)
     {
-        typedef typename InputIt::value_type value_type;
+        using value_type = InputIt::value_type;
 
         for (; first != last; ++first) {
             f( *const_cast<value_type*>( & (*first) ) );
@@ -470,7 +469,7 @@ namespace jau {
      ****************************************************************************************/
 
     template<jau::req::cow_container T>
-    const typename T::value_type * find_const(T& data, typename T::value_type const & elem) noexcept
+    const T::value_type * find_const(T& data, typename T::value_type const & elem) noexcept
     {
         for (typename T::const_iterator first = data.cbegin(); !first.is_end(); ++first) {
             if (*first == elem) {
@@ -480,7 +479,7 @@ namespace jau {
         return nullptr;
     }
     template<jau::req::container T>
-    const typename T::value_type * find_const(T& data, typename T::value_type const & elem) noexcept
+    const T::value_type * find_const(T& data, typename T::value_type const & elem) noexcept
     {
         typename T::const_iterator first = data.cbegin();
         typename T::const_iterator last = data.cend();
@@ -549,7 +548,7 @@ namespace jau {
     constexpr UnaryFunction for_each_fidelity(T& data, UnaryFunction f) noexcept
     {
         for (typename T::const_iterator first = data.cbegin(); !first.is_end(); ++first) {
-            f( *const_cast<typename T::value_type*>( & (*first) ) );
+            f( *const_cast<T::value_type*>( & (*first) ) );
         }
         return f; // implicit move since C++11
     }
@@ -562,7 +561,7 @@ namespace jau {
     constexpr UnaryFunction for_each_fidelity(T& data, UnaryFunction f)
     {
         for (typename T::const_iterator first = data.cbegin(); !first.is_end(); ++first) {
-            f( *const_cast<typename T::value_type*>( & (*first) ) );
+            f( *const_cast<T::value_type*>( & (*first) ) );
         }
         return f; // implicit move since C++11
     }
@@ -577,7 +576,7 @@ namespace jau {
         typename T::const_iterator first = data.cbegin();
         typename T::const_iterator last = data.cend();
         for (; first != last; ++first) {
-            f( *const_cast<typename T::value_type*>( & (*first) ) );
+            f( *const_cast<T::value_type*>( & (*first) ) );
         }
         return f; // implicit move since C++11
     }
@@ -592,7 +591,7 @@ namespace jau {
         typename T::const_iterator first = data.cbegin();
         typename T::const_iterator last = data.cend();
         for (; first != last; ++first) {
-            f( *const_cast<typename T::value_type*>( & (*first) ) );
+            f( *const_cast<T::value_type*>( & (*first) ) );
         }
         return f; // implicit move since C++11
     }

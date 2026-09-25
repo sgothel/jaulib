@@ -1,6 +1,6 @@
 /*
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2020-2024 Gothel Software e.K.
+ * Copyright (c) 2020-2026 Gothel Software e.K.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -139,8 +139,8 @@ namespace jau {
             return 1; // Neither is NaN, a is larger
         }
         // a == b: we compare the _signed_ int value
-        typedef typename jau::uint_bytes_t<sizeof(T)> T_uint;
-        typedef typename std::make_signed_t<T_uint> T_int;
+        typedef jau::uint_bytes_t<sizeof(T)> T_uint;
+        typedef std::make_signed_t<T_uint> T_int;
         const T_int a_bits = static_cast<T_int>( bit_value(a) );
         const T_int b_bits = static_cast<T_int>( bit_value(b) );
         if( a_bits == b_bits ) {
@@ -292,14 +292,14 @@ namespace jau {
 
     /** Returns the rounded value cast to signed int. */
     template<std::floating_point T>
-    constexpr typename jau::sint_bytes_t<sizeof(T)> round_to_int(const T v) noexcept {
-        return static_cast<typename jau::sint_bytes_t<sizeof(T)>>( std::round(v) );
+    constexpr jau::sint_bytes_t<sizeof(T)> round_to_int(const T v) noexcept {
+        return static_cast<jau::sint_bytes_t<sizeof(T)>>( std::round(v) );
     }
 
     /** Returns the rounded value cast to unsigned int. */
     template<std::floating_point T>
-    constexpr typename jau::uint_bytes_t<sizeof(T)> round_to_uint(const T v) noexcept {
-        return static_cast<typename jau::uint_bytes_t<sizeof(T)>>( std::round(v) );
+    constexpr jau::uint_bytes_t<sizeof(T)> round_to_uint(const T v) noexcept {
+        return static_cast<jau::uint_bytes_t<sizeof(T)>>( std::round(v) );
     }
 
     /** Converts arc-degree to radians */

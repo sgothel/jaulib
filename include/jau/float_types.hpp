@@ -63,8 +63,8 @@ namespace jau {
 
     using namespace jau::int_literals;
 
-    typedef typename jau::uint_bytes_t<sizeof(float)> float_uint_t;
-    typedef typename jau::uint_bytes_t<sizeof(float64_t)> double_uint_t;
+    typedef jau::uint_bytes_t<sizeof(float)> float_uint_t;
+    typedef jau::uint_bytes_t<sizeof(float64_t)> double_uint_t;
 
     /** Signed bit 31 of IEEE 754 (IEC 559) single float-point bit layout, i.e. `0x80000000`. */
     constexpr uint32_t const float_iec559_sign_bit = 1_u32 << 31; // 0x80000000_u32;
@@ -137,10 +137,10 @@ namespace jau {
      * @see double_value()
      */
     template<std::floating_point T>
-    typename jau::uint_bytes_t<sizeof(T)>
+    jau::uint_bytes_t<sizeof(T)>
     bit_value_raw(const T a) noexcept
     {
-        typedef typename jau::uint_bytes_t<sizeof(T)> T_uint;
+        typedef jau::uint_bytes_t<sizeof(T)> T_uint;
         union { T_uint u; T f; } iec559 = { .f = a };
         return iec559.u;
     }

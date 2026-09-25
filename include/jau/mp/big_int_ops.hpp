@@ -45,8 +45,8 @@ namespace jau::mp {
     #undef JAU_FORCE_MP_WORD_32_BITS
     #if !defined( JAU_FORCE_MP_WORD_32_BITS )
         constexpr size_t mp_word_bits = impl::best_word_byte_size() * CHAR_BIT;
-        typedef typename jau::uint_bytes<impl::best_word_byte_size()>::type mp_word_t;
-        typedef typename jau::uint_bytes<impl::best_word_byte_size()*2>::type mp_dword_t;
+        typedef jau::uint_bytes<impl::best_word_byte_size()>::type mp_word_t;
+        typedef jau::uint_bytes<impl::best_word_byte_size()*2>::type mp_dword_t;
         constexpr bool has_mp_dword = is_builtin_int128_available();
     #elif 1
         constexpr size_t mp_word_bits = 32;

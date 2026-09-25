@@ -1,6 +1,6 @@
 /*
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2020, 2022 Gothel Software e.K.
+ * Copyright (c) 2020, 2026 Gothel Software e.K.
  * Copyright (c) 2020 ZAFENA AB
  *
  * Permission is hereby granted, free of charge, to any person obtaining
@@ -708,7 +708,7 @@ namespace jau::jni {
             return result;
         }
 
-        jau::for_each(array.begin(), array.end(), [&](typename T::value_type & elem){
+        jau::for_each(array.begin(), array.end(), [&](T::value_type & elem){
             JavaAnonRef objref = elem->getJavaObject();
             if ( nullptr == objref ) {
                 throw InternalError("JavaUplink element of array has no valid java-object: "+elem->toString(), E_FILE_LINE);
