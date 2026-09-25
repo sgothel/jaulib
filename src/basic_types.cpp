@@ -1549,14 +1549,6 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
 
     const uint32_t radix = opts.radix;
     const uint32_t sep_gap = 10 == radix ? 3 : 4;
-    uint32_t shift;
-    switch (radix) {
-        case 16: shift = 4; break;
-        case 10: shift = 0; break;
-        case 8:  shift = 3; break;
-        case 2:  shift = 1; break;
-        default: return;
-    }
     const char separator = is_set(opts.flags, flags_t::thousands) ? Config::default_thousand_separator : (char)0;
 
     // const uint32_t val_digits = opts.precision_set && opts.precision == 0 && jau::is_zero(v) ? 0 : jau::digits(v, radix);
@@ -1565,19 +1557,29 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
     if( opts.precision_set && opts.precision == 0 && jau::is_zero(v) ) {
         val_digits = 0;
     } else {
-        const char *hex_array = is_set(opts.flags, flags_t::uppercase) ? HexadecimalArrayBig : HexadecimalArrayLow;
-        const uint64_t mask = radix - 1;
         char * d = buf_;
-        const char * const d_end_num_max = d + std::min(added_maxlen, number_max_strlen);
-        do {
-            if (10 == radix) {
+        const char * const d_end_num_max = d + jau::min(added_maxlen, number_max_strlen);
+        if (10 == radix) {
+            do {
                 *(d++) = char('0' + (v % 10_u64));
                 v /= 10;
-            } else {
+            } while( v && d < d_end_num_max);
+        } else {
+            const uint64_t mask = radix - 1;
+            const char *hex_array = is_set(opts.flags, flags_t::uppercase) ? HexadecimalArrayBig : HexadecimalArrayLow;
+            uint32_t shift;
+            switch (radix) {
+                case 16: shift = 4; break;
+                case 10: shift = 0; break;
+                case 8:  shift = 3; break;
+                case 2:  shift = 1; break;
+                default: return;
+            }
+            do {
                 *(d++) = hex_array[v & mask];
                 v >>= shift;
-            }
-        } while( v && d < d_end_num_max);
+            } while( v && d < d_end_num_max);
+        }
         if (inject_dot && d < d_end_num_max-1) {
             *d = *(d-1);
             *(d-1) = '.';
@@ -1750,52 +1752,64 @@ void jau::cfmt::impl::append_integral_simple(std::string &dest, const size_t des
         jau::min<size_t>(dest_maxlen - dest_start_len, std::numeric_limits<uint32_t>::max());
 
     const uint32_t radix = opts.radix;
-    uint32_t shift;
-    switch (radix) {
-        case 16: shift = 4; break;
-        case 10: shift = 0; break;
-        case 8:  shift = 3; break;
-        case 2:  shift = 1; break;
-        default: return;
-    }
     const char separator = is_set(opts.flags, flags_t::thousands) ? Config::default_thousand_separator : (char)0;
 
     // const uint32_t val_digits = opts.precision_set && opts.precision == 0 && jau::is_zero(v) ? 0 : jau::digits(v, radix);
     uint32_t val_digits; // includes separator count
     char buf_[number_max_strlen];
     {
-        const char *hex_array = is_set(opts.flags, flags_t::uppercase) ? HexadecimalArrayBig : HexadecimalArrayLow;
-        const uint64_t mask = radix - 1;
         char * d = buf_;
-        const char * const d_end_num_max = d + std::min(added_maxlen, number_max_strlen);
-        if (!separator) {
-            do {
-                if (10 == radix) {
+        const char * const d_end_num_max = d + jau::min(added_maxlen, number_max_strlen);
+        if (10 == radix) {
+            if (!separator) {
+                do {
                     *(d++) = char('0' + (v % 10_u64));
                     v /= 10;
-                } else {
-                    *(d++) = hex_array[v & mask];
-                    v >>= shift;
-                }
-            } while( v && d < d_end_num_max);
-        } else {
-            const uint32_t sep_gap = 10 == radix ? 3 : 4;
-            uint32_t digit_cnt = 0;
-            do {
-                if (0 < digit_cnt && 0 == digit_cnt % sep_gap) {
-                    *(d++) = separator;
-                }
-                assert(d < d_end_num_max);
+                } while( v && d < d_end_num_max);
+            } else {
+                const uint32_t sep_gap = 10 == radix ? 3 : 4;
+                uint32_t digit_cnt = 0;
+                do {
+                    if (0 < digit_cnt && 0 == digit_cnt % sep_gap) {
+                        *(d++) = separator;
+                    }
+                    assert(d < d_end_num_max);
 
-                if (10 == radix) {
                     *(d++) = char('0' + (v % 10_u64));
                     v /= 10;
-                } else {
+                    ++digit_cnt;
+                } while( v && d < d_end_num_max);
+            }
+        } else {
+            const uint64_t mask = radix - 1;
+            const char *hex_array = is_set(opts.flags, flags_t::uppercase) ? HexadecimalArrayBig : HexadecimalArrayLow;
+            uint32_t shift;
+            switch (radix) {
+                case 16: shift = 4; break;
+                case 10: shift = 0; break;
+                case 8:  shift = 3; break;
+                case 2:  shift = 1; break;
+                default: return;
+            }
+            if (!separator) {
+                do {
                     *(d++) = hex_array[v & mask];
                     v >>= shift;
-                }
-                ++digit_cnt;
-            } while( v && d < d_end_num_max);
+                } while( v && d < d_end_num_max);
+            } else {
+                const uint32_t sep_gap = 10 == radix ? 3 : 4;
+                uint32_t digit_cnt = 0;
+                do {
+                    if (0 < digit_cnt && 0 == digit_cnt % sep_gap) {
+                        *(d++) = separator;
+                    }
+                    assert(d < d_end_num_max);
+
+                    *(d++) = hex_array[v & mask];
+                    v >>= shift;
+                    ++digit_cnt;
+                } while( v && d < d_end_num_max);
+            }
         }
         val_digits = d - buf_;
         assert(val_digits <= added_maxlen);
