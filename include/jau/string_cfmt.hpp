@@ -430,6 +430,7 @@ namespace jau::cfmt {
 
         constexpr void setWidth(uint32_t v) noexcept { width = v; width_set = true; }
         constexpr void setPrecision(uint32_t v) noexcept { precision = v; precision_set = true; }
+
         constexpr bool addFlag(char c) noexcept {
             switch( c ) {
                 case '#':  flags |= flags_t::hash; break;
@@ -443,6 +444,8 @@ namespace jau::cfmt {
             }
             return true; // a flag
         }
+
+        CXX_ALWAYS_INLINE
         constexpr void validateFlags() noexcept {
             switch (conversion) {
                 case cspec_t::unsigned_int:
@@ -548,6 +551,7 @@ namespace jau::cfmt {
             return true;
         }
 
+        CXX_ALWAYS_INLINE
         constexpr void reset() noexcept {
 #ifdef JAU_CFMT_TRACK_FORMAT_OPTS_FMT
             fmt = std::string_view();
