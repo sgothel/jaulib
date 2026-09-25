@@ -9,13 +9,10 @@
  * you can obtain one at https://opensource.org/license/mit/.
  */
 #include <cassert>
-#include <cinttypes>
 #include <cstring>
 
-#include <atomic>
 #include <mutex>
 #include <condition_variable>
-#include <memory>
 
 #include <thread>
 #include <pthread.h>
@@ -27,6 +24,8 @@
 using namespace jau;
 
 static int loops = 10;
+
+namespace {
 
 /**
  * test_mm_sc_drf_01: Testing SC-DRF non-atomic global read and write within a locked mutex critical block.
@@ -232,5 +231,7 @@ class TestMemModelSCDRF01 {
         for(int i=loops; i>0; i--) { test12_Read10Write10(); }
     }
 };
+
+} // anon-ns
 
 METHOD_AS_TEST_CASE( TestMemModelSCDRF01::test_list, "Test TestMemModelSCDRF 01- test_list");

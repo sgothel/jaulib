@@ -9,11 +9,7 @@
  * you can obtain one at https://opensource.org/license/mit/.
  */
 #include <cassert>
-#include <cinttypes>
 #include <cstring>
-
-#include <atomic>
-#include <memory>
 
 #include <thread>
 #include <pthread.h>
@@ -25,6 +21,8 @@
 using namespace jau;
 
 static int loops = 10;
+
+namespace {
 
 /**
  * test_mm_sc_drf_02: Testing SC-DRF non-atomic global read and write within a critical C++20 atomic wait operation block.
@@ -249,5 +247,7 @@ class TestMemModelSCDRF02 {
 #endif // C++20
 
 };
+
+} // anon-ns
 
 METHOD_AS_TEST_CASE( TestMemModelSCDRF02::test_list, "Test TestMemModelSCDRF 02- test_list");

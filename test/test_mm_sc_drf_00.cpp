@@ -9,11 +9,7 @@
  * you can obtain one at https://opensource.org/license/mit/.
  */
 #include <cassert>
-#include <cinttypes>
 #include <cstring>
-
-#include <atomic>
-#include <memory>
 
 #include <thread>
 #include <pthread.h>
@@ -42,7 +38,7 @@ static int loops = 10;
  * See 'test_mm_sc_drf_01' implementing same test using mutex-lock and condition wait.
  * See 'test_mm_sc_drf_02' implementing same test using a C++20 atomic wait operation.
  */
-class TestMemModelSCDRF00 {
+class TestMemModelSCDRF00 { // NOLINT(misc-use-internal-linkage): intend
   private:
     enum Defaults : int {
         array_size = 10

@@ -108,10 +108,10 @@ static void print_iterator_info(const std::string& typedefname,
 
 template<class T>
 static bool test_00_inspect_iterator_types(const std::string& type_id) {
-    typedef typename T::size_type       size_type;
-    typedef typename T::iterator        iter_type;
-    typedef typename T::difference_type diff_type;
-    typedef typename T::const_iterator  citer_type;
+    using size_type = T::size_type;
+    using iter_type = T::iterator;
+    using diff_type = T::difference_type;
+    using citer_type = T::const_iterator;
 
     printf("**** Type Info: %s\n", type_id.c_str());
     jau::type_cue<T>::print("T");
@@ -170,7 +170,7 @@ static void test_iterator_compare(const typename T::size_type size,
                                   const typename T::difference_type citer1_idx,
                                   const typename T::difference_type citer2_idx)
 {
-    typedef typename T::difference_type diff_type;
+    using diff_type = T::difference_type;
 
     diff_type d_size = static_cast<diff_type>(size);
     diff_type distance = citer2_idx - citer1_idx;
@@ -379,8 +379,8 @@ template<class T>
 static bool test_citer_type_ops(const std::string& type_id,
                 std::enable_if_t< is_cow_type<T>::value, bool> = true )
 {
-    typedef typename T::const_iterator  citer_type;
-    typedef typename T::difference_type diff_type;
+    using citer_type = T::const_iterator;
+    using diff_type = T::difference_type;
 
     T data;
     fill_list(data, 10);
@@ -419,8 +419,8 @@ template<class T>
 static bool test_citer_type_ops(const std::string& type_id,
         std::enable_if_t< !is_cow_type<T>::value, bool> = true )
 {
-    typedef typename T::const_iterator  citer_type;
-    typedef typename T::difference_type diff_type;
+    using citer_type = T::const_iterator;
+    using diff_type = T::difference_type;
     T data;
     fill_list(data, 10);
 
@@ -455,12 +455,13 @@ template<class T>
 static bool test_mutable_iterator_ops(const std::string& type_id,
         std::enable_if_t< is_cow_type<T>::value, bool> = true )
 {
-    typedef typename T::size_type       size_type;
-    typedef typename T::const_iterator  citer_type;
-    typedef typename T::iterator        iter_type;
-    typedef typename T::difference_type diff_type;
-    typedef typename T::value_type      value_type;
-    typedef typename T::storage_t       storage_t;
+
+    using size_type = T::size_type;
+    using citer_type = T::const_iterator;
+    using iter_type = T::iterator;
+    using diff_type = T::difference_type;
+    using value_type = T::value_type;
+    using storage_t = T::storage_t;
 
     printf("**** test_mutable_iterator_ops(CoW): %s\n", type_id.c_str());
     {
@@ -790,9 +791,9 @@ template<class T>
 static bool test_mutable_iterator_ops(const std::string& type_id,
         std::enable_if_t< !is_cow_type<T>::value, bool> = true )
 {
-    typedef typename T::iterator        iter_type;
-    typedef typename T::const_iterator  citer_type;
-    typedef typename T::difference_type diff_type;
+    using citer_type = T::const_iterator;
+    using iter_type = T::iterator;
+    using diff_type = T::difference_type;
 
     printf("**** test_mutable_iterator_ops(___): %s\n", type_id.c_str());
     {
@@ -1106,9 +1107,9 @@ static bool test_01_validate_iterator_ops(const std::string& type_id) {
 
 template<class T>
 static bool test_01_cow_iterator_properties(const std::string& type_id) {
-    typedef typename T::size_type    size_type;
-    typedef typename T::const_iterator  citer_type;
-    typedef typename T::iterator        iter_type;
+    using size_type = T::size_type;
+    using citer_type = T::const_iterator;
+    using iter_type = T::iterator;
 
     printf("**** test_cow_iterator_properties: %s\n", type_id.c_str());
     print_iterator_info<citer_type>("citer_type");

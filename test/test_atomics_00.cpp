@@ -36,10 +36,11 @@ static thread_local int tls_counter = 0;
  * Validates basic atomic thread-safety and thread-local storage (TLS).
  */
 template<bool USE_CPP20_ATOMIC_WAIT>
-class TestAtomics00 {
+class TestAtomics00 { // NOLINT(misc-use-internal-linkage,-warnings-as-errors)
+
   private:
     template <typename T>
-    static void wait(const T &atom, typename T::value_type __old) noexcept {
+    static void wait(const T &atom, T::value_type __old) noexcept {
         if constexpr (USE_CPP20_ATOMIC_WAIT) {
             atom.wait(__old); // atomic-wait, blocks until notified
         } else {
@@ -56,7 +57,7 @@ class TestAtomics00 {
     // no logging
 
     template <typename T>
-    static typename T::value_type wait_for(const T &atom, typename T::value_type __new) noexcept {
+    static T::value_type wait_for(const T &atom, T::value_type __new) noexcept {
         if constexpr (USE_CPP20_ATOMIC_WAIT) {
             return atom.wait_for(__new);
         } else {
@@ -123,10 +124,10 @@ class TestAtomics00 {
 
   #endif
 
-    static constexpr const int PingCount = 50;
-    static constexpr const int IDLE = 0;
-    static constexpr const int PING = 1;
-    static constexpr const int PONG = 2;
+    static constexpr int PingCount = 50;
+    static constexpr int IDLE = 0;
+    static constexpr int PING = 1;
+    static constexpr int PONG = 2;
 
     jau::relaxed_atomic_int pingpong_counter = 0;
     jau::sc_atomic_int pingpong_status = IDLE;

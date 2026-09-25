@@ -69,19 +69,18 @@ static jau::io::Bitstream getTestStream(const jau::bit_order_t dataBitOrder,
     const nsize_t byteCount = (bitCount + 7) / 8;
     jau::bitheap source = getBitfield(bitCount, dataBitOrder);
     jau::io::Bitstream bsTest(std::make_unique<jau::io::ByteStream_SecMemory>(byteCount, jau::io::iomode_t::rw), jau::io::ioaccess_t::write);
-    fprintf(stderr, "TestStream.0: bitOrder[data %s], bits[pre %zu, skip %zu, post %zu = %zu]: %s\n",
-            jau::to_string(dataBitOrder).c_str(),
-            (size_t)preBits, (size_t)skipBits, (size_t)postBits, (size_t)bitCount, bsTest.toString().c_str());
+    jau_fprintf(stderr, "TestStream.0: bitOrder[data %s], bits[pre %zu, skip %zu, post %zu = %zu]: %s\n",
+            dataBitOrder, preBits, skipBits, postBits, bitCount, bsTest.toString().c_str());
     std::cerr << source << "\n";
 
     for( nsize_t i = 0; i < bitCount; i++ ) {
         REQUIRE(true == bsTest.writeBit(source[i]) );
-        // fprintf(stderr, "TestData.1a: i %zu, %s\n", (size_t)i, bsTest.toString().c_str());
+        // jau_fprintf(stderr, "TestData.1a: i %zu, %s\n", i, bsTest.toString().c_str());
     }
     CHECK(preBits + skipBits + postBits == bsTest.position());
 
     REQUIRE(true == bsTest.setAccess(jau::io::ioaccess_t::read)); // switch to input-mode, implies flush()
-    fprintf(stderr, "TestData.X: %s\n", bsTest.toString().c_str());
+    jau_fprintf(stderr, "TestData.X: %s\n", bsTest.toString().c_str());
     REQUIRE(0 == bsTest.seek(0));
     BitDemoData::dumpData("TestStream.X", bsTest.byteStream());
     return bsTest;
@@ -90,8 +89,8 @@ static jau::io::Bitstream getTestStream(const jau::bit_order_t dataBitOrder,
 static std::string getTestStreamResultAsString(const jau::bit_order_t dataBitOrder,
                                                const jau::nsize_t preBits, const jau::nsize_t skipBits, const jau::nsize_t postBits) {
     const jau::nsize_t totalBits = preBits+postBits;
-    fprintf(stderr,"TestString: bitOrder %s, preBits %zu, skipBits %zu, postBits %zu, totalBits %zu\n",
-            jau::to_string(dataBitOrder).c_str(), (size_t)preBits, (size_t)skipBits, (size_t)postBits, (size_t)totalBits);
+    jau_fprintf(stderr,"TestString: bitOrder %s, preBits %zu, skipBits %zu, postBits %zu, totalBits %zu\n",
+            dataBitOrder, preBits, skipBits, postBits, totalBits);
 
     jau::bitheap source = getBitfield(preBits+skipBits+postBits, dataBitOrder);
     std::cerr << source << "\n";
@@ -110,34 +109,34 @@ static std::string getTestStreamResultAsString(const jau::bit_order_t dataBitOrd
 
 static std::string readBits(jau::io::Bitstream *copy, jau::io::Bitstream &input,
                             const nsize_t preCount, const nsize_t count) /* throws IOException */ {
-    fprintf(stderr, "ReadBits.0: count[pre %zu, actual %zu]: %s\n", (size_t)preCount, (size_t)count, input.toString().c_str());
+    jau_fprintf(stderr, "ReadBits.0: count[pre %zu, actual %zu]: %s\n", preCount, count, input.toString().c_str());
     if( copy ) {
-        fprintf(stderr, "ReadBits.0c: %s\n", copy->toString().c_str());
+        jau_fprintf(stderr, "ReadBits.0c: %s\n", copy->toString().c_str());
     }
     std::string sbRead;
     nsize_t i = 0;
     while( i < count ) {
         const int bit = input.readBit();
         if( 0 > bit ) {
-            // fprintf(stderr, "ReadBits.1: EOS: i %zu, %s\n", (size_t)i, input.toString().c_str());
+            // jau_fprintf(stderr, "ReadBits.1: EOS: i %zu, %s\n", i, input.toString().c_str());
             break;
         } else {
             const char c = ( 0 != bit ) ? '1' : '0';
             sbRead.insert(0, 1, c);
             i++;
-            // fprintf(stderr, "ReadBits.1: i %zu, '%c' -> %s, %s\n", (size_t)i, c, sbRead.c_str(), input.toString().c_str());
+            // jau_fprintf(stderr, "ReadBits.1: i %zu, '%c' -> %s, %s\n", i, c, sbRead.c_str(), input.toString().c_str());
             REQUIRE(i+preCount == input.position());
             if( copy ) {
                 REQUIRE(true == copy->writeBit(bit));
-                // fprintf(stderr, "ReadBits.1c: i %zu, %s\n", (size_t)i, copy->toString().c_str());
+                // jau_fprintf(stderr, "ReadBits.1c: i %zu, %s\n", i, copy->toString().c_str());
                 REQUIRE(i+preCount == copy->position());
             }
         }
     }
-    fprintf(stderr, "ReadBits.2: %s\n", input.toString().c_str());
+    jau_fprintf(stderr, "ReadBits.2: %s\n", input.toString().c_str());
     REQUIRE(i+preCount == input.position());
     if( copy ) {
-        fprintf(stderr, "ReadBits.2c: %s\n", copy->toString().c_str());
+        jau_fprintf(stderr, "ReadBits.2c: %s\n", copy->toString().c_str());
         REQUIRE(i+preCount == copy->position());
     }
     return sbRead;
@@ -145,8 +144,8 @@ static std::string readBits(jau::io::Bitstream *copy, jau::io::Bitstream &input,
 
 static void testLinearBitsImpl(const jau::bit_order_t bitOrder, const nsize_t preBits, const nsize_t skipBits, const nsize_t postBits) {
     const nsize_t totalBits = preBits+skipBits+postBits;
-    fprintf(stderr,"XXX TestLinearBits: bitOrder %s, preBits %zu, skipBits %zu, postBits %zu, totalBits %zu\n",
-        jau::to_string(bitOrder).c_str(), (size_t)preBits, (size_t)skipBits, (size_t)postBits, (size_t)totalBits);
+    jau_fprintf(stderr,"XXX TestLinearBits: bitOrder %s, preBits %zu, skipBits %zu, postBits %zu, totalBits %zu\n",
+        bitOrder, preBits, skipBits, postBits, totalBits);
 
     // prepare bitstream
     std::cerr << "Prepare bitstream\n";
@@ -253,8 +252,8 @@ TEST_CASE( "Bitstream Test 02 LinearBitsLSBFirst", "[bitstream]" ) {
 
 static void testBulkBitsImpl(const nsize_t preBits, const nsize_t skipBits, const nsize_t postBits) /* throws IOException */ {
     const nsize_t totalBits = preBits+skipBits+postBits;
-    fprintf(stderr,"XXX TestBulkBits: preBits %zu, skipBits %zu, postBits %zu, totalBits %zu\n",
-        (size_t)preBits, (size_t)skipBits, (size_t)postBits, (size_t)totalBits);
+    jau_fprintf(stderr,"XXX TestBulkBits: preBits %zu, skipBits %zu, postBits %zu, totalBits %zu\n",
+        preBits, skipBits, postBits, totalBits);
 
     // prepare bitstream
     std::cerr << "Prepare bitstream\n";

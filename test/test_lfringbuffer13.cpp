@@ -22,7 +22,6 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <cassert>
-#include <cinttypes>
 #include <cstring>
 #include <memory>
 #include <thread>
@@ -37,11 +36,11 @@ using namespace jau::fractions_i64_literals;
 
 typedef jau::snsize_t IntegralType;
 
-class Integer {
+class Integer { // NOLINT(misc-use-internal-linkage): intend
     public:
         IntegralType value;
 
-        Integer(IntegralType v) : value(v) {}
+        Integer(IntegralType v) noexcept : value(v) {}
 
         Integer(const Integer &o) noexcept = default;
         Integer(Integer &&o) noexcept = default;
@@ -60,7 +59,7 @@ constexpr const std::nullptr_t SharedTypeNullElem = nullptr ;
 typedef ringbuffer<SharedType, jau::nsize_t> SharedTypeRingbuffer;
 
 // Test examples.
-class TestRingbuffer13 {
+class TestRingbuffer13 { // NOLINT(misc-use-internal-linkage): intend
   private:
 
     std::shared_ptr<SharedTypeRingbuffer> createEmpty(jau::nsize_t initialCapacity) {

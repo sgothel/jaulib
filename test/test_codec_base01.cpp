@@ -197,6 +197,8 @@ TEST_CASE( "Integer Base 86 Encoding Test 03", "[integer][type]" ) {
     testIntegerBase86(jau::codec::base::ascii86_alphabet());
 }
 
+namespace {
+
 class base64_alphabet_nopadding : public jau::codec::base::alphabet {
     private:
         static inline constexpr const std::string_view data  = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -462,6 +464,8 @@ static void testBinaryBase64() {
     }
 
 }
+
+} // anon-namespace
 
 TEST_CASE( "Binary Base 64 Encoding Test 11", "[binary][type]" ) {
     testBinaryBase64();

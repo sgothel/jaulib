@@ -22,7 +22,6 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <cassert>
-#include <cinttypes>
 #include <cstring>
 
 #include <jau/test/catch2_ext.hpp>
@@ -181,7 +180,7 @@ static void test10_cpp_token() {
     std::vector<token_fsm_u17::token_value_t> tkey_words;
     tkey_words.reserve(skey_words.size());
     for(size_t i=0; i<skey_words.size(); ++i ) {
-        tkey_words.push_back( { static_cast<token_fsm_u17::uint_t>( i+1 ) /* token */, skey_words[i] /* value */ } );
+        tkey_words.push_back( { .name=static_cast<token_fsm_u17::uint_t>( i+1 ) /* token */, .value=skey_words[i] /* value */ } );
     }
 
     token_fsm_u17 token( jau::lang::ascii69_alphabet(), tkey_words );

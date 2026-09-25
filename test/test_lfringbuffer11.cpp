@@ -22,9 +22,7 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <cassert>
-#include <cinttypes>
 #include <cstring>
-#include <memory>
 #include <thread>
 #include <pthread.h>
 
@@ -43,7 +41,7 @@ typedef ringbuffer<TrivialType, jau::nsize_t> TrivialTypeRingbuffer;
 constexpr static const IntegralType integral_modulus = 254;
 
 // Test examples.
-class TestRingbuffer11 {
+class TestRingbuffer11 { // NOLINT(misc-use-internal-linkage): intend
   private:
 
     TrivialTypeRingbuffer createEmpty(jau::nsize_t initialCapacity) {

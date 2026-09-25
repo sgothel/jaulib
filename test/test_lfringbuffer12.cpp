@@ -22,9 +22,7 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <cassert>
-#include <cinttypes>
 #include <cstring>
-#include <memory>
 #include <thread>
 #include <pthread.h>
 
@@ -37,11 +35,11 @@ using namespace jau::fractions_i64_literals;
 
 typedef jau::snsize_t IntegralType;
 
-class Integer {
+class Integer { // NOLINT(misc-use-internal-linkage): intend
     public:
         IntegralType value;
 
-        Integer(IntegralType v) : value(v) {}
+        Integer(IntegralType v) noexcept : value(v) {}
 
         Integer() noexcept : value(0) { }
 
@@ -62,7 +60,7 @@ static const TrivialType TrivialTypeNullElem(-1);
 typedef ringbuffer<TrivialType, jau::nsize_t> TrivialTypeRingbuffer;
 
 // Test examples.
-class TestRingbuffer12 {
+class TestRingbuffer12 { // NOLINT(misc-use-internal-linkage): intend
   private:
 
     TrivialTypeRingbuffer createEmpty(jau::nsize_t initialCapacity) {

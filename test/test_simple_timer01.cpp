@@ -35,6 +35,8 @@ using namespace jau;
 using namespace jau::fractions_i64_literals;
 using namespace jau::int_literals;
 
+namespace {
+
 class TestSimpleTimer01 {
   public:
     // install it once ..
@@ -132,6 +134,8 @@ class TestSimpleTimer01 {
     }
 
 };
+
+} // anon-ns
 
 METHOD_AS_TEST_CASE( TestSimpleTimer01::test01_dog1, "Test TestSimpleTimer01 - test01_dog1");
 METHOD_AS_TEST_CASE( TestSimpleTimer01::test01_dog2, "Test TestSimpleTimer01 - test01_dog2");

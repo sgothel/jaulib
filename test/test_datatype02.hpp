@@ -26,6 +26,7 @@
 
 #include <cassert>
 #include <cstring>
+#include "jau/string_util.hpp"
 
 #include <jau/cpp_lang_util.hpp>
 #include <jau/packed_attribute.hpp>
@@ -35,6 +36,8 @@
 #include <jau/darray.hpp>
 
 using namespace jau;
+
+namespace { // NOLINT(misc-anonymous-namespace-in-header): Intentional local-linkage of anon-namespace
 
 enum GattServiceType : uint16_t {
     /** This service contains generic information about the device. This is a mandatory service. */
@@ -167,7 +170,8 @@ struct GattServiceCharacteristic {
 };
 
 // NOLINTBEGIN(modernize-use-designated-initializers)
-const GattServiceCharacteristic GATT_GENERIC_ACCESS_SRVC = { GENERIC_ACCESS,
+const GattServiceCharacteristic GATT_GENERIC_ACCESS_SRVC = { GENERIC_ACCESS, // NOLINT(bugprone-throwing-static-initialization): OK for testing
+
         { { DEVICE_NAME, Mandatory,
             // GattCharacteristicPropertySpec[9]:
             { { Read, Mandatory },
@@ -211,7 +215,7 @@ const GattServiceCharacteristic GATT_GENERIC_ACCESS_SRVC = { GENERIC_ACCESS,
         } };
 
 /** https://www.bluetooth.com/wp-content/uploads/Sitecore-Media-Library/Gatt/Xml/Services/org.bluetooth.service.health_thermometer.xml */
-const GattServiceCharacteristic GATT_HEALTH_THERMOMETER_SRVC = { HEALTH_THERMOMETER,
+const GattServiceCharacteristic GATT_HEALTH_THERMOMETER_SRVC = { HEALTH_THERMOMETER, // NOLINT(bugprone-throwing-static-initialization): OK for testing
         { { TEMPERATURE_MEASUREMENT, Mandatory,
             // GattCharacteristicPropertySpec[9]:
             { { Read, Excluded },
@@ -246,7 +250,7 @@ const GattServiceCharacteristic GATT_HEALTH_THERMOMETER_SRVC = { HEALTH_THERMOME
           },
         } };
 
-const GattServiceCharacteristic GATT_DEVICE_INFORMATION_SRVC = { DEVICE_INFORMATION,
+const GattServiceCharacteristic GATT_DEVICE_INFORMATION_SRVC = { DEVICE_INFORMATION, // NOLINT(bugprone-throwing-static-initialization): OK for testing
         { { MANUFACTURER_NAME_STRING, Optional,
             // GattCharacteristicPropertySpec[9]:
             { { Read, Mandatory },
@@ -323,7 +327,7 @@ const GattServiceCharacteristic GATT_DEVICE_INFORMATION_SRVC = { DEVICE_INFORMAT
 
 // NOLINTEND(modernize-use-designated-initializers)
 
-const jau::darray<const GattServiceCharacteristic*> GATT_SERVICES = {
+const jau::darray<const GattServiceCharacteristic*> GATT_SERVICES = { // NOLINT(bugprone-throwing-static-initialization): OK for testing
         &GATT_GENERIC_ACCESS_SRVC, &GATT_HEALTH_THERMOMETER_SRVC, &GATT_DEVICE_INFORMATION_SRVC };
 
 #define CASE_TO_STRING(V) case V: return #V;
@@ -420,28 +424,35 @@ inline std::string GattClientCharacteristicConfigSpec::toString() const noexcept
 }
 
 inline std::string GattCharacteristicSpec::toString() const noexcept {
-    std::string res = GattCharacteristicTypeToString(characteristic)+": "+GattRequirementSpecToString(requirement)+", Properties[";
+    std::string res = GattCharacteristicTypeToString(characteristic);
+    jau::append_string(res, ": ");
+    jau::append_string(res, GattRequirementSpecToString(requirement)+", Properties[");
     for(size_t i=0; i<propertySpec.size(); i++) {
         if(0<i) {
-            res += ", ";
+            jau::append_string(res, ", ");
         }
-        res += propertySpec.at(i).toString();
+        jau::append_string(res, propertySpec[i].toString());
     }
-    res += "], "+clientConfig.toString();
+    jau::append_string(res, "], ");
+    jau::append_string(res, clientConfig.toString());
     return res;
 }
 
 inline std::string GattServiceCharacteristic::toString() const noexcept {
-    std::string res = GattServiceTypeToString(service)+": [";
+    std::string res = GattServiceTypeToString(service);
+    jau::append_string(res, ": [");
     for(size_t i=0; i<characteristics.size(); i++) {
         if(0<i) {
-            res += ", ";
+            jau::append_string(res, ", ");
         }
-        res.append("[").append(characteristics.at(i).toString()).append("]");
+        jau::append_string(res, "[");
+        jau::append_string(res, characteristics[i].toString());
+        jau::append_string(res, "]");
     }
-    res += "]";
+    jau::append_string(res, "]");
     return res;
 }
 
+} // anon-namespace
 
 #endif /* TEST_DATATYPE01_CPP_ */

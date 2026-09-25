@@ -29,7 +29,6 @@
 #include <list>
 #include <forward_list>
 #include <deque>
-#include "catch2/catch_amalgamated.hpp"
 
 #include <jau/int_math.hpp>
 #include <jau/int_types.hpp>
@@ -37,6 +36,7 @@
 #include <jau/darray.hpp>
 #include <jau/float_math.hpp>
 #include <jau/float_types.hpp>
+
 #include <jau/test/catch2_ext.hpp>
 
 #include <jau/type_concepts.hpp>
@@ -44,13 +44,13 @@
 using namespace jau::int_literals;
 using namespace jau::float_literals;
 
-class AnyClass {};
+class AnyClass {}; // NOLINT(misc-use-internal-linkage): intend
 
-class SomeClass {
+class SomeClass { // NOLINT(misc-use-internal-linkage): intend
   public:
     std::string toString() const { return "SomeClass toString"; }
 };
-enum class game_t : uint16_t {
+enum class game_t : uint16_t { // NOLINT(misc-use-internal-linkage): intend
     none,
     chess,
     pacman,
@@ -58,20 +58,20 @@ enum class game_t : uint16_t {
 };
 JAU_MAKE_ENUM_STRING(game_t, chess, pacman, mrdo); // NOLINT
 
-enum class plainenum_t : uint16_t {
+enum class plainenum_t : uint16_t { // NOLINT(misc-use-internal-linkage): intend
     none,
     lala,
     lili
 };
 
-enum freeenum_t : uint16_t {
+enum freeenum_t : uint16_t { // NOLINT(misc-use-internal-linkage): intend
     none,
     lala,
     lili
 };
 
 template<typename T>
-class MyWrap {
+class MyWrap { // NOLINT(misc-use-internal-linkage): intend
   private:
     T store;
 
@@ -312,7 +312,7 @@ static constexpr void checkOne() noexcept {}
 template <typename... Targs>
 consteval_cxx20 void check2(std::string_view) noexcept {
     if constexpr( 0 < sizeof...(Targs) ) {
-        ((checkOne<Targs>()), ...);
+        (checkOne<Targs>(), ...);
     }
 }
 

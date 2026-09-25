@@ -22,6 +22,8 @@ using namespace jau::int_literals;
 using namespace jau::math;
 using namespace jau::math::geom;
 
+namespace {
+
 struct AABBox {
     Point2f lo, hi;
 
@@ -71,10 +73,12 @@ struct AABBox {
     }
 };
 
+} // anon-ns
+
 #include <random>
 
 TEST_CASE( "Float Math Bench 04a", "[intersect][benchmark][arithmetic][math]" ) {
-    std::mt19937 rng;
+    std::mt19937 rng; // NOLINT(bugprone-random-generator-seed): OK here
     int32_t seed_val=0;
     rng.seed(seed_val);
     std::uniform_int_distribution<int32_t> rint(0,50);

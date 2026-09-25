@@ -62,11 +62,15 @@ static void testToFrom(int line, value_type exp_v, std::string_view exp_s, std::
     // REQUIRE( exp_s.length() == consumed );
 }
 
+namespace {
+
 template<typename value_type>
 struct DataFromTo01 {
     std::string_view from;
     value_type       to;
 };
+
+} // anon-ns
 
 TEST_CASE( "Test 01 - from_chars()", "[jau][string][toBitString]" ) {
     {

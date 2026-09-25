@@ -34,6 +34,8 @@ using namespace jau;
 using namespace jau::fractions_i64_literals;
 using namespace jau::int_literals;
 
+namespace {
+
 class TestLatch01 {
   private:
     jau::relaxed_atomic_int my_counter = 0;
@@ -193,6 +195,8 @@ class TestLatch01 {
         }
     }
 };
+
+} // anon-ns
 
 METHOD_AS_TEST_CASE( TestLatch01::test01_down_wait,      "test01_down_wait");
 METHOD_AS_TEST_CASE( TestLatch01::test02_down_wait_for,  "test02_down_wait_for");

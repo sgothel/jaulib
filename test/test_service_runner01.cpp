@@ -22,9 +22,7 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <cassert>
-#include <cinttypes>
 #include <cstring>
-#include <memory>
 #include <thread>
 #include <pthread.h>
 
@@ -36,6 +34,8 @@
 using namespace jau;
 using namespace jau::fractions_i64_literals;
 using namespace jau::int_literals;
+
+namespace {
 
 class TestServiceRunner01 {
   public:
@@ -177,6 +177,8 @@ class TestServiceRunner01 {
 
 
 };
+
+} // anon-ns
 
 METHOD_AS_TEST_CASE( TestServiceRunner01::test01_service01_fast_stop, "test01_service01_fast_stop");
 METHOD_AS_TEST_CASE( TestServiceRunner01::test02_service01_fast_stop, "test02_service01_fast_stop");

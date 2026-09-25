@@ -922,5 +922,3 @@ void PerformRingbufferTests() {
         trb.testS27_GrowFull13_End3();
     }
 }
-
-

@@ -219,7 +219,7 @@ TEST_CASE( "Bitview Test 00a", "[bitview]" ) {
         s_count2  = jau::bit_count<storagetype>(~storage[0]);
         s_count2 += jau::bit_count<storagetype>(~storage[1]);
         s_count2 += jau::bit_count<storagetype>(~storage[2]);
-        s_count2 += jau::bit_count<storagetype>(~storage[3] & 0b11_u8);
+        s_count2 += jau::bit_count<storagetype>(~storage[3] & 0b11_u8); // NOLINT(bugprone-signed-bitwise): all types unsigned, false positive
         REQUIRE(10 == s_count2);
 
         REQUIRE(bits == b1.size());
@@ -450,8 +450,8 @@ TEST_CASE( "Bitfield Test 01 BitCount32_One", "[bitfield]" ) {
 static jau::bitheap getBitheap(const jau::bit_order_t dataBitOrder,
                                const jau::nsize_t preBits, const jau::nsize_t skipBits, const jau::nsize_t postBits) {
     const jau::nsize_t totalBits = preBits+postBits;
-    fprintf(stderr,"XXX getBitheap: bitOrder %s, preBits %zu, skipBits %zu, postBits %zu, totalBits %zu\n",
-        jau::to_string(dataBitOrder).c_str(), (size_t)preBits, (size_t)skipBits, (size_t)postBits, (size_t)totalBits);
+    jau_fprintf(stderr,"XXX getBitheap: bitOrder %s, preBits %zu, skipBits %zu, postBits %zu, totalBits %zu\n",
+        dataBitOrder, preBits, skipBits, postBits, totalBits);
 
     // msb 11111010 11011110 10101111 11111110 11011110 10101111 11001010 11111110
     // lsb 01111111 01010011 11110101 01111011 01111111 11110101 01111011 01011111
@@ -526,7 +526,7 @@ TEST_CASE( "Bitfield Test 10 BitCount32_One", "[bitfield]" ) {
  * ***********************************************************************************
  */
 
-static std::vector<uint32_t> testDataOneBit = {
+static std::vector<uint32_t> testDataOneBit = { // NOLINT(bugprone-throwing-static-initialization)
     0, 0, 1, 1, 2, 1, 3, 2, 4, 1, 5, 2, 6, 2, 7, 3,
     8, 1, 9, 2, 10, 2, 11, 3, 12, 2, 13, 3, 14, 3, 15, 4, 16, 1, 17, 2,
     0x3F, 6, 0x40, 1, 0x41, 2, 0x7f, 7, 0x80, 1, 0x81, 2, 0xfe, 7, 0xff, 8,
@@ -563,7 +563,7 @@ TEST_CASE( "Bitfield Test 11 BitCount32_Data", "[bitfield]" ) {
  * ***********************************************************************************
  */
 
-struct TestDataBF {
+struct TestDataBF { // NOLINT(misc-use-internal-linkage)
     const size_t bitSize;
     const uint64_t val;
     const std::string_view pattern;
@@ -576,7 +576,7 @@ static std::ostream &operator<<(std::ostream &out, const TestDataBF &v) {
     return out << v.toString();
 }
 
-static std::vector<TestDataBF> testDataBF64Bit = {
+static std::vector<TestDataBF> testDataBF64Bit = { // NOLINT(bugprone-throwing-static-initialization)
     TestDataBF(64, BitDemoData::testIntMSB64_be, BitDemoData::testStringMSB64_be),
     TestDataBF(64, BitDemoData::testIntMSB64_le, BitDemoData::testStringMSB64_le),
     TestDataBF(64, BitDemoData::testIntLSB64_be, BitDemoData::testStringLSB64_be),
@@ -588,7 +588,7 @@ static std::vector<TestDataBF> testDataBF64Bit = {
 };
 
 
-static std::vector<TestDataBF> testDataBF32Bit = {
+static std::vector<TestDataBF> testDataBF32Bit = { // NOLINT(bugprone-throwing-static-initialization)
     // H->L    : 0x04030201: 00000100 00000011 00000010 00000001
     TestDataBF(32, 0x04030201, "00000100000000110000001000000001"),
 
@@ -598,7 +598,7 @@ static std::vector<TestDataBF> testDataBF32Bit = {
     TestDataBF(32, 0xDEADBEEF, "11011110101011011011111011101111")
 };
 
-static std::vector<TestDataBF> testDataBF16Bit = {
+static std::vector<TestDataBF> testDataBF16Bit = { // NOLINT(bugprone-throwing-static-initialization)
     // H->L    : 0x0201: 00000100 00000011 00000010 00000001
     TestDataBF(16, 0x0201, "0000001000000001"),
     // H->L    : 0x0403: 00000100 00000011
@@ -614,7 +614,7 @@ static std::vector<TestDataBF> testDataBF16Bit = {
     TestDataBF(16, 0xBEEF, "1011111011101111")
 };
 
-static std::vector<TestDataBF> testDataBF3Bit = {
+static std::vector<TestDataBF> testDataBF3Bit = { // NOLINT(bugprone-throwing-static-initialization)
     TestDataBF(3, 0x01, "001"),
     TestDataBF(3, 0x02, "010"),
     TestDataBF(3, 0x05, "101")
@@ -981,7 +981,7 @@ TEST_CASE("Bitfield Test 30 Aligned Reverse", "[bitfield][bitreverse]") {
          * See <https://gcc.gnu.org/bugzilla/show_bug.cgi?id=56456>
          */
         // static_assert(8 == sizeof(typename decltype(exp)::unit_type));
-        if (8 == sizeof(typename decltype(exp)::unit_type)) {
+        if (8 == sizeof(decltype(exp)::unit_type)) {
             REQUIRE( 8 == decltype(exp)::unit_byte_size);
             REQUIRE(64 == decltype(exp)::unit_bit_size);
             REQUIRE( 1 == decltype(exp)::unit_size);

@@ -25,6 +25,8 @@ using namespace jau;
 
 #define USE_LOGGING 0
 
+namespace {
+
 /**
  * test_sharedptr_00: Tests std::shared_ptr thread-safe reference counter from n threads
  * - plain atomics w/ spin-lock (busy loop)
@@ -37,7 +39,7 @@ using namespace jau;
 class TestSharedPtr00 {
   private:
     template <typename T>
-    static void wait(const T &atom, typename T::value_type __old) noexcept {
+    static void wait(const T &atom, T::value_type __old) noexcept {
         // spin-lock waiting
         typename T::value_type __val = atom;
         while (__val == __old) {
@@ -50,7 +52,7 @@ class TestSharedPtr00 {
     // no logging
 
     template <typename T>
-    static typename T::value_type wait_for(const T &atom, typename T::value_type __new) noexcept {
+    static T::value_type wait_for(const T &atom, T::value_type __new) noexcept {
         // spin-lock waiting
         const typename T::value_type __start = atom;
         typename T::value_type __old = __start;
@@ -193,6 +195,8 @@ class TestSharedPtr00 {
       jau_fprintf(stderr, "MAIN: XXX\n");
     }
 };
+
+} // anon-ns
 
 static int loops = 4;
 

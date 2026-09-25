@@ -22,9 +22,7 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <cassert>
-#include <cinttypes>
 #include <cstring>
-#include <memory>
 
 #include <jau/ringbuffer.hpp>
 
@@ -34,7 +32,7 @@ using namespace jau;
 
 typedef jau::snsize_t Integral_type;
 
-class Integer {
+class Integer { // NOLINT(misc-use-internal-linkage): intend
     public:
         Integral_type value;
 

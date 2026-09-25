@@ -45,6 +45,8 @@ extern "C" {
 using namespace jau::fractions_i64_literals;
 using namespace jau::int_literals;
 
+namespace {
+
 class TestHttpStream01 {
     public:
         const std::string url_input_root = "http://httpbin.org/post";
@@ -164,6 +166,8 @@ class TestHttpStream01 {
         }
 
 };
+
+} // anon-namespace
 
 METHOD_AS_TEST_CASE( TestHttpStream01::test01_post_sync_ok, "TestIOStream01 - test01_post_sync_ok");
 METHOD_AS_TEST_CASE( TestHttpStream01::test11_post_async_ok, "TestIOStream01 - test11_post_async_ok");

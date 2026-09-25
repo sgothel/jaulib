@@ -92,6 +92,8 @@ TEST_CASE( "Int Math Bench 03a", "[ct_min][ct_max][benchmark][arithmetic][math]"
 
 using namespace jau::math;
 
+namespace {
+
 struct AABBox {
     Point2i lo, hi;
 
@@ -141,10 +143,12 @@ struct AABBox {
     }
 };
 
+} // anon-namespace
+
 #include <random>
 
 TEST_CASE( "Int Math Bench 04a", "[intersect][benchmark][arithmetic][math]" ) {
-    std::mt19937 rng;
+    std::mt19937 rng; // NOLINT(bugprone-random-generator-seed): OK here
     int32_t seed_val=0;
     rng.seed(seed_val);
     std::uniform_int_distribution<int32_t> rint(0,50);

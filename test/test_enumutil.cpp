@@ -17,7 +17,7 @@
 #include <jau/test/catch2_ext.hpp>
 
 // Define the `enum class` yourself ...
-enum class test_type1_t : uint8_t {
+enum class test_type1_t : uint8_t { // NOLINT(misc-use-internal-linkage): intentional
     none = 0, // <no value item denoting no value
     one = 1,
     two = 2,
@@ -28,7 +28,7 @@ JAU_MAKE_ENUM_STRING(test_type1_t, one, two, three); // NOLINT(misc-use-internal
 JAU_MAKE_ENUM_INFO(test_type1_t, none, one, two, three);
 
 // Define the `enum class` yourself ...
-enum class test_type2_t : uint8_t {
+enum class test_type2_t : uint8_t { // NOLINT(misc-use-internal-linkage): intentional
     none = 0, // <no value item denoting no value
     one,   // <first value
     two,   // <second value
@@ -42,7 +42,7 @@ JAU_MAKE_ENUM_STRING_KV(test_type2_t, // NOLINT(misc-use-internal-linkage): inte
 JAU_MAKE_ENUM_INFO(test_type2_t, none, one, two, three);
 
 // Define the `enum class` yourself ...
-enum class test_type3_t : uint8_t {
+enum class test_type3_t : uint8_t { // NOLINT(misc-use-internal-linkage): intentional
     none = 0, // <no value item denoting no value
     one = 1 << 0,
     two = 1 << 1,
@@ -53,7 +53,7 @@ JAU_MAKE_BITFIELD_ENUM_STRING_LONG(test_type3_t, one, two, three); // NOLINT(mis
 JAU_MAKE_ENUM_INFO(test_type3_t, none, one, two, three);
 
 // Define the `enum class` yourself ...
-enum class test_type10_t : uint8_t {
+enum class test_type10_t : uint8_t { // NOLINT(misc-use-internal-linkage): intentional
     none = 0, // <no value item denoting no value
     one = 1,
     two = 2,
@@ -64,7 +64,7 @@ JAU_MAKE_ENUM_STRING_DECL(test_type10_t); // NOLINT(misc-use-internal-linkage): 
 JAU_MAKE_ENUM_STRING_CODE(test_type10_t, one, two, three); // NOLINT(misc-use-internal-linkage): intentional
 
 // Define the `enum class` yourself ...
-enum class test_type11_t : uint8_t {
+enum class test_type11_t : uint8_t { // NOLINT(misc-use-internal-linkage): intentional
     none = 0, // <no value item denoting no value
     one = 1,
     two = 2,
@@ -75,7 +75,7 @@ JAU_MAKE_ENUM_STRING_LONG_DECL(test_type11_t); // NOLINT(misc-use-internal-linka
 JAU_MAKE_ENUM_STRING_LONG_CODE(test_type11_t, one, two, three); // NOLINT(misc-use-internal-linkage): intentional
 
 // Define the `enum class` yourself ...
-enum class test_type12_t : uint8_t {
+enum class test_type12_t : uint8_t { // NOLINT(misc-use-internal-linkage): intentional
     none = 0, // <no value item denoting no value
     one = 1 << 0,
     two = 1 << 1,
@@ -86,7 +86,7 @@ JAU_MAKE_BITFIELD_ENUM_STRING_DECL(test_type12_t); // NOLINT(misc-use-internal-l
 JAU_MAKE_BITFIELD_ENUM_STRING_CODE(test_type12_t, one, two, three); // NOLINT(misc-use-internal-linkage): intentional
 
 // Define the `enum class` yourself ...
-enum class test_type13_t : uint8_t {
+enum class test_type13_t : uint8_t { // NOLINT(misc-use-internal-linkage): intentional
     none = 0, // <no value item denoting no value
     one = 1 << 0,
     two = 1 << 1,
@@ -104,7 +104,7 @@ namespace jau::io::fs {
 }
 
 template<typename T>
-class Wrap {
+class Wrap { // NOLINT(misc-use-internal-linkage): intentional
   private:
     T store;
 
@@ -121,8 +121,8 @@ static void test_enum_info(size_t size)
 {
     using namespace jau::enums;
 
-    typedef typename enum_info_t::iterator iterator;
-    typedef typename enum_info_t::value_type enum_t;
+    using iterator = enum_info_t::iterator;
+    using enum_t = enum_info_t::value_type;
     const enum_info_t& ei = enum_info_t::get();
     std::cout << ei << std::endl;
     std::cout << "Enum type: " << ei.name() << std::endl;
@@ -302,7 +302,7 @@ TEST_CASE( "Enum Class Value Type Test 10", "[enum][type]" ) {
 
 namespace test::local {
     // Define the `enum class` yourself ...
-    enum class test_type4_t : uint8_t {
+    enum class test_type4_t : uint8_t { // NOLINT(misc-use-internal-linkage): intentional
         none = 0, // <no value item denoting no value
         one = 1 << 0,
         two = 1 << 1,
@@ -313,7 +313,7 @@ namespace test::local {
     JAU_MAKE_ENUM_INFO(test_type4_t, one, two, three);
 
     // Define the `enum class` yourself ...
-    enum class test_type5_t : uint8_t {
+    enum class test_type5_t : uint8_t { // NOLINT(misc-use-internal-linkage): intentional
         none = 0, // <no value item denoting no value
         one = 10,
         two = 20,
@@ -361,7 +361,7 @@ TEST_CASE( "Enum Class Value Type Test 11", "[enum][type]" ) {
 }
 
 namespace test::local2 {
-    class Thing {
+    class Thing { // NOLINT(misc-use-internal-linkage): intentional
       public:
         // Define the `enum class` yourself ...
         enum class Enum1 : uint8_t {

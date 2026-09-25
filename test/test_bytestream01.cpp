@@ -42,7 +42,7 @@ extern "C" {
 
 using namespace jau::fractions_i64_literals;
 
-class TestByteStream01 {
+class TestByteStream01 { // NOLINT(misc-use-internal-linkage): intend
     private:
         const size_t IDX_11kiB = 0;
         const size_t IDX_65MiB = 1;
@@ -136,19 +136,19 @@ class TestByteStream01 {
 
         ~TestByteStream01() {
             if( jau::io::uri_tk::protocol_supported("http:") ) {
-                int res = std::system("killall mini_httpd");
+                int res = std::system("killall mini_httpd"); // NOLINT(bugprone-command-processor): intend
                 (void)res;
             }
         }
 
         static void httpd_start() {
             if( jau::io::uri_tk::protocol_supported("http:") ) {
-                int res = std::system("killall mini_httpd");
+                int res = std::system("killall mini_httpd"); // NOLINT(bugprone-command-processor): intend
                 (void)res;
                 const std::string cwd = jau::io::fs::get_cwd();
                 const std::string cmd = std::string(mini_httpd_exe)+" -p 8080 -l "+cwd+"/mini_httpd.log";
                 jau_PLAIN_PRINT(true, "%s", cmd);
-                res = std::system(cmd.c_str());
+                res = std::system(cmd.c_str()); // NOLINT(bugprone-command-processor): intend
                 (void)res;
             }
         }

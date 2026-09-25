@@ -42,20 +42,20 @@ using namespace jau::float_literals;
 
 using namespace jau::int_literals;
 
-class SomeClass1 {
+class SomeClass1 { // NOLINT(misc-use-internal-linkage): intend
   public:
     std::string toString() const { return "SomeClass1 toString"; }
 };
-class SomeClass2 {
+class SomeClass2 { // NOLINT(misc-use-internal-linkage): intend
   public:
     std::string_view to_string() const { return "SomeClass2 toString"; }
 };
-class SomeClass3 {
+class SomeClass3 { // NOLINT(misc-use-internal-linkage): intend
   public:
 };
 inline std::string_view to_string(const SomeClass3&) { return "SomeClass3 toString"; } // NOLINT(misc-use-internal-linkage): intend
 
-enum class game_t : uint16_t {
+enum class game_t : uint16_t { // NOLINT(misc-use-internal-linkage): intend
     none,
     chess,
     pacman,
@@ -63,7 +63,7 @@ enum class game_t : uint16_t {
 };
 JAU_MAKE_ENUM_STRING(game_t, chess, pacman, mrdo); // NOLINT
 
-enum class plainenum_t : uint16_t {
+enum class plainenum_t : uint16_t { // NOLINT(misc-use-internal-linkage): intend
     none,
     lala,
     lili

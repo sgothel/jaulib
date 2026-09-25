@@ -22,7 +22,6 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <cassert>
-#include <cinttypes>
 #include <cstring>
 #include <memory>
 
@@ -34,7 +33,7 @@ using namespace jau;
 
 typedef jau::snsize_t Integral_type;
 
-class Integer {
+class Integer { // NOLINT(misc-use-internal-linkage): intend
     public:
         Integral_type value;
 
@@ -53,7 +52,7 @@ class Integer {
         Integral_type getValue() const { return value; }
         static Integer valueOf(const Integral_type i) { return Integer(i); }
 };
-typedef std::shared_ptr<Integer> Value_type;
+typedef std::shared_ptr<Integer> Value_type; // NOLINT(misc-use-internal-linkage): intend
 
 template<>
 Value_type getDefault() { return std::make_shared<Integer>(); }

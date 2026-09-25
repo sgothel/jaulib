@@ -47,6 +47,8 @@ extern "C" {
 using namespace jau::fractions_i64_literals;
 using namespace jau::int_literals;
 
+namespace {
+
 class TestIOStream01 {
     public:
         const std::string url_input_root = "http://localhost:8080/";
@@ -68,19 +70,19 @@ class TestIOStream01 {
                 }
             }
             if( jau::io::uri_tk::protocol_supported("http:") ) {
-                int res = std::system("killall mini_httpd");
+                int res = std::system("killall mini_httpd"); // NOLINT(bugprone-command-processor): OK for testing
                 (void)res;
                 const std::string cwd = jau::io::fs::get_cwd();
                 const std::string cmd = std::string(mini_httpd_exe)+" -p 8080 -l "+cwd+"/mini_httpd.log";
                 jau_PLAIN_PRINT(true, "%s", cmd);
-                res = std::system(cmd.c_str());
+                res = std::system(cmd.c_str()); // NOLINT(bugprone-command-processor) // NOLINT(bugprone-command-processor): OK for testing
                 (void)res;
             }
         }
 
         ~TestIOStream01() {
             if( jau::io::uri_tk::protocol_supported("http:") ) {
-                int res = std::system("killall mini_httpd");
+                int res = std::system("killall mini_httpd"); // NOLINT(bugprone-command-processor): OK for testing
                 (void)res;
             }
         }
@@ -323,6 +325,8 @@ class TestIOStream01 {
         }
 
 };
+
+} // anon-namespace
 
 METHOD_AS_TEST_CASE( TestIOStream01::test00_protocols, "TestIOStream01 - test00_protocols");
 METHOD_AS_TEST_CASE( TestIOStream01::test01_sync_ok,   "TestIOStream01 - test01_sync_ok");

@@ -37,7 +37,7 @@
 /////
 
 namespace jau {
-    enum class log_level : uint32_t {
+    enum class log_level : uint32_t { // NOLINT(misc-use-internal-linkage): intend
         none        =   0,
         fatal       =  10,
         critical    =  20,
@@ -49,7 +49,7 @@ namespace jau {
     };
     constexpr log_level log_level_default = log_level::warning;
 
-    enum class time_format {
+    enum class time_format { // NOLINT(misc-use-internal-linkage): intend
         elapsed_millis  = 0,
         timestamp       = 1
     };
@@ -60,7 +60,7 @@ namespace jau {
     }
 
     template<log_level Level=log_level_default>
-    class Logger {
+    class Logger { // NOLINT(misc-use-internal-linkage): intend
       public:
         typedef jau::function<void(std::string &sink)> append_func;
 
@@ -119,7 +119,7 @@ namespace jau {
         }
 #else
         template <typename Dummy = bool, typename... Args,
-                  typename std::enable_if_t<jau::enums::compare(level, jau::log_level::debug) >= 0, Dummy> = false >
+                  std::enable_if_t<jau::enums::compare(level, jau::log_level::debug) >= 0, Dummy> = false >
         void debug(std::string_view format, const Args &...args) noexcept {
             m_str.clear();
             // jau::impl::dbgPrint1(out, true, "Debug", format, args...);
@@ -133,13 +133,13 @@ namespace jau {
         }
 
         template <typename Dummy = bool, typename... Args,
-                  typename std::enable_if_t<jau::enums::compare(level, jau::log_level::debug) < 0, Dummy> = false >
+                  std::enable_if_t<jau::enums::compare(level, jau::log_level::debug) < 0, Dummy> = false >
         CXX_ALWAYS_INLINE
         void debug(std::string_view, const Args &...) noexcept {
         }
 
         template <typename Dummy = bool, typename... Args,
-                  typename std::enable_if_t<jau::enums::compare(level, jau::log_level::debug) >= 0, Dummy> = false >
+                  std::enable_if_t<jau::enums::compare(level, jau::log_level::debug) >= 0, Dummy> = false >
         void debug(append_func &&af) noexcept {
             m_str.clear();
             // jau::impl::dbgPrint1(out, true, "Debug", format, args...);
@@ -153,7 +153,7 @@ namespace jau {
         }
 
         template <typename Dummy = bool, typename... Args,
-                  typename std::enable_if_t<jau::enums::compare(level, jau::log_level::debug) < 0, Dummy> = false >
+                  std::enable_if_t<jau::enums::compare(level, jau::log_level::debug) < 0, Dummy> = false >
         CXX_ALWAYS_INLINE
         void debug(append_func &&) noexcept {
         }

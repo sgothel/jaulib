@@ -156,11 +156,11 @@ static void testFrom(int line, value_type exp_v, std::string_view in_s,uint32_t 
     // REQUIRE( in_s.length() == consumed );
 }
 
-class SomeClass {
+class SomeClass { // NOLINT(misc-use-internal-linkage): intend
   public:
     std::string toString() const { return "SomeClass toString"; }
 };
-enum class game_t : uint16_t {
+enum class game_t : uint16_t { // NOLINT(misc-use-internal-linkage): intend
     none,
     chess,
     pacman,
@@ -168,7 +168,7 @@ enum class game_t : uint16_t {
 };
 JAU_MAKE_ENUM_STRING(game_t, chess, pacman, mrdo); // NOLINT
 
-enum class plainenum_t : uint16_t {
+enum class plainenum_t : uint16_t { // NOLINT(misc-use-internal-linkage): intend
     none,
     lala,
     lili
@@ -455,11 +455,11 @@ TEST_CASE( "Test 00 - to_string/appendIntString, fromIntString", "[jau][string][
     std_vec_int vec_int_1;
     vec_int_1.push_back(1); vec_int_1.push_back(2); vec_int_1.push_back(3);
     std_vec_int_citer vec_int_citer_1B = vec_int_1.cbegin();
-    uint8_t* vec_int_citer_1B_ptr = (uint8_t*)(vec_int_citer_1B.operator->());
+    uint8_t* vec_int_citer_1B_ptr = (uint8_t*)vec_int_citer_1B.operator->();
     std::string vec_int_citer_1B_str = jau::toHexString(vec_int_citer_1B_ptr);
 
     std_vec_int_citer vec_int_citer_1E = vec_int_1.cend();
-    uint8_t* vec_int_citer_1E_ptr = (uint8_t*)(vec_int_citer_1E.operator->());
+    uint8_t* vec_int_citer_1E_ptr = (uint8_t*)vec_int_citer_1E.operator->();
     std::string vec_int_citer_1E_str = jau::toHexString(vec_int_citer_1E_ptr);
 
     std::ptrdiff_t vec_int_citer_1E_1B_ptrdiff = vec_int_citer_1E_ptr - vec_int_citer_1B_ptr;

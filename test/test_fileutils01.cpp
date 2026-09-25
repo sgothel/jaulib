@@ -36,7 +36,7 @@ extern "C" {
     #include <unistd.h>
 }
 
-class TestFileUtil01 : TestFileUtilBase {
+class TestFileUtil01 : TestFileUtilBase { // NOLINT(misc-use-internal-linkage): intend
   public:
 
     void test00_testfiles() {

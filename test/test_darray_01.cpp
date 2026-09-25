@@ -117,6 +117,8 @@ TEST_CASE( "JAU DArray Test 02 - jau::darray immutable type (const)", "[const][j
 /**********************************************************************************************************************************************/
 /**********************************************************************************************************************************************/
 
+namespace {
+
 template<class Payload>
 using SharedPayloadListMemMove = jau::darray<std::shared_ptr<Payload>, jau::nsize_t, jau::callocator<std::shared_ptr<Payload>>, true /* use_memmove */>;
 
@@ -180,14 +182,14 @@ struct NamedPayloadListDefault {
     std::string toString() const noexcept {
         std::string res = "NPL-Default-"+std::to_string(name)+"[sz "+std::to_string(payload.size())+"/"+std::to_string(payload.capacity())+": ";
         int i=0;
-        jau::for_each(payload.cbegin(), payload.cend(), [&](const typename PayloadListDefault<Payload>::value_type & e) {
+        jau::for_each(payload.cbegin(), payload.cend(), [&](const PayloadListDefault<Payload>::value_type & e) {
             if(0<i) {
                 res += ", ";
             }
             res.append("[").append(jau::to_string(e)).append("]");
             ++i;
         } );
-        res += "]";
+        res += ']';
         return res;
     }
 };
@@ -207,7 +209,7 @@ struct NamedPayloadListMemMove {
             res.append("[").append(jau::to_string(e)).append("]");
             ++i;
         } );
-        res += "]";
+        res += ']';
         return res;
     }
 };
@@ -573,6 +575,8 @@ static void testDArrayGattServiceCharacteristic() {
     printf("COPY1-2: %s\n\n", gatt2b.toString().c_str());
     printf("COPY2-3: %s\n\n", gatt2c.toString().c_str());
 }
+
+} // anon-namespace
 
 TEST_CASE( "JAU DArray Test 10 - jau::darray value_type behavior (type traits)", "[datatype][jau][darray]" ) {
     testDArrayValueType<uint64_t>("uint64_t");
