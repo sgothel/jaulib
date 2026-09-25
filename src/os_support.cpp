@@ -1,6 +1,6 @@
 /*
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2020-2024 Gothel Software e.K.
+ * Copyright (c) 2020-2026 Gothel Software e.K.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -189,8 +189,8 @@ std::pair<std::string, bool>
 DynamicLinker_processCanonicalNameImpl(bool strip, const std::string& filename, const bool isBasename,
                                        const bool caseInsensitive=jau::os::is_windows()) noexcept
 {
-  const std::string prefix = jau::os::DynamicLinker::getDefaultPrefix();
-  const std::string suffix = jau::os::DynamicLinker::getDefaultSuffix();
+  const std::string_view prefix = jau::os::DynamicLinker::getDefaultPrefix();
+  const std::string_view suffix = jau::os::DynamicLinker::getDefaultSuffix();
   const std::string libBaseName = isBasename ? filename : jau::io::fs::basename(filename);
   const std::string libBaseNameLC = caseInsensitive ? jau::toLower(libBaseName) : libBaseName;
   const size_t pre_idx = libBaseNameLC.find(prefix);

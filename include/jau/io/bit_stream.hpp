@@ -45,11 +45,11 @@ namespace jau::io {
         write = true
     };
     /**
-     * Return std::string representation of the given ioaccess_t.
+     * Return std::string_view representation of the given ioaccess_t.
      * @param v the ioaccess_t value
      * @return the std::string representation
      */
-    std::string to_string(const ioaccess_t v) noexcept;
+    std::string_view to_string(const ioaccess_t v) noexcept;
 
     /**
      * Versatile Bitstream implementation supporting:

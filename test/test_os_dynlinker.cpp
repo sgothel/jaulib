@@ -1,25 +1,12 @@
 /*
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2021 Gothel Software e.K.
+ * Copyright Gothel Software e.K.
  *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
+ * SPDX-License-Identifier: MIT
  *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * This Source Code Form is subject to the terms of the MIT License
+ * If a copy of the MIT was not distributed with this file,
+ * you can obtain one at https://opensource.org/license/mit/.
  */
 #include <cassert>
 #include <cstring>
@@ -183,7 +170,7 @@ static void test01DynamikLinkerAbs(const std::string& libBasename, const std::st
 // Test 01 Local Open dlsym etc
 TEST_CASE( "Test01", "[dll][os]" ) {
     {
-        std::string lib_path_var_name = jau::os::DynamicLinker::getEnvLibPathVarName();
+        std::string_view lib_path_var_name = jau::os::DynamicLinker::getEnvLibPathVarName();
         std::string lib_path_var = jau::environment::getProperty( lib_path_var_name );
         std::vector<std::string> lib_paths = jau::os::DynamicLinker::getSystemEnvLibraryPaths();
         std::cout << "- lib_path_var_name: " << lib_path_var_name << std::endl;
@@ -221,7 +208,7 @@ static void test10NativeLibrary(const std::string& libBasename, const std::strin
             return;
         }
     }
-    std::string lib_path_var_name = jau::os::DynamicLinker::getEnvLibPathVarName();
+    std::string_view lib_path_var_name = jau::os::DynamicLinker::getEnvLibPathVarName();
     std::string lib_path_var0 = jau::environment::getProperty( lib_path_var_name );
     {
         std::cout << "Sys-Path: '" << lib_path_var_name << "': Original" << std::endl;
@@ -272,11 +259,11 @@ static void test10NativeLibrary(const std::string& libBasename, const std::strin
         std::cout << "Sys-Path: '" << lib_path_var_name << "': Variant 1: With libDirAbs" << std::endl;
         std::string lib_path_var2;
         if( lib_path_var0.size() > 0 ) {
-            lib_path_var2 = lib_path_var0+jau::os::path_separator()+libDirAbs;
+            lib_path_var2.append(lib_path_var0).append(jau::os::path_separator()).append(libDirAbs);
         } else {
-            lib_path_var2 = libDirAbs;
+            lib_path_var2.append(libDirAbs);
         }
-        ::setenv(lib_path_var_name.c_str(), lib_path_var2.c_str(), 1 /* overwrite */);
+        ::setenv(std::string(lib_path_var_name).c_str(), lib_path_var2.c_str(), 1 /* overwrite */);
         std::cout << "- lib_path_var set 2: " << lib_path_var2 << std::endl;
 
         std::string lib_path_var = jau::environment::getProperty( lib_path_var_name );
@@ -320,11 +307,11 @@ static void test10NativeLibrary(const std::string& libBasename, const std::strin
         std::cout << "Sys-Path: '" << lib_path_var_name << "': Variant 2: With test_exe path" << std::endl;
         std::string lib_path_var2;
         if( lib_path_var0.size() > 0 ) {
-            lib_path_var2 = lib_path_var0+jau::os::path_separator()+exe_dir;
+            lib_path_var2.append(lib_path_var0).append(jau::os::path_separator()).append(exe_dir);
         } else {
-            lib_path_var2 = exe_dir;
+            lib_path_var2.append(exe_dir);
         }
-        ::setenv(lib_path_var_name.c_str(), lib_path_var2.c_str(), 1 /* overwrite */);
+        ::setenv(std::string(lib_path_var_name).c_str(), lib_path_var2.c_str(), 1 /* overwrite */);
         std::cout << "- lib_path_var set 3: " << lib_path_var2 << std::endl;
 
         std::string lib_path_var = jau::environment::getProperty( lib_path_var_name );

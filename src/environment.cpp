@@ -28,13 +28,12 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <memory>
 #include <string>
-#include <vector>
-#include "jau/basic_types.hpp"
 
+#include <jau/basic_types.hpp>
 #include <jau/debug.hpp>
 #include <jau/environment.hpp>
+#include <jau/string_util.hpp>
 
 using namespace jau;
 
@@ -56,11 +55,11 @@ const fraction_timespec environment::startupTimeWall= jau::getWallClockTime();
 
 bool environment::local_debug = false;
 
-static const std::string s_true("true");
-static const std::string s_false("false");
+static const std::string_view s_true("true");
+static const std::string_view s_false("false");
 
-std::string environment::getProperty(const std::string& name) noexcept {
-    const char* value = ::getenv(name.c_str());
+std::string environment::getProperty(std::string_view name) noexcept {
+    const char* value = ::getenv(std::string(name).c_str());
     if ( nullptr != value ) {
         jau_COND_PRINT(local_debug, "env::getProperty0 '%s': '%s'", name, value);
         return std::string(value);
@@ -82,18 +81,18 @@ std::string environment::getProperty(const std::string& name) noexcept {
     return std::string();
 }
 
-std::string environment::getProperty(const std::string& name, const std::string& default_value) noexcept {
+std::string environment::getProperty(std::string_view name, std::string_view default_value) noexcept {
     std::string value = getProperty(name);
     if ( 0 == value.length() ) {
         jau_COND_PRINT(local_debug, "env::getProperty1 %s: null -> %s (default)", name, default_value);
-        return default_value;
+        return std::string(default_value);
     } else {
         jau_COND_PRINT(local_debug, "env::getProperty1 %s (default %s): %s", name, default_value, value);
         return value;
     }
 }
 
-bool environment::getBooleanProperty(const std::string& name, const bool default_value) noexcept {
+bool environment::getBooleanProperty(std::string_view name, const bool default_value) noexcept {
     const std::string value = getProperty(name);
     if ( 0 == value.length() ) {
         jau_COND_PRINT(local_debug, "env::getBooleanProperty %s: null -> %d (default)", name, default_value);
@@ -107,7 +106,7 @@ bool environment::getBooleanProperty(const std::string& name, const bool default
 
 #include <climits>
 
-int32_t environment::getInt32Property(const std::string& name, const int32_t default_value,
+int32_t environment::getInt32Property(std::string_view name, const int32_t default_value,
                                       const int32_t min_allowed, const int32_t max_allowed) noexcept {
     const std::string value = getProperty(name);
     if ( 0 == value.length() ) {
@@ -146,7 +145,7 @@ int32_t environment::getInt32Property(const std::string& name, const int32_t def
     }
 }
 
-uint32_t environment::getUint32Property(const std::string& name, const uint32_t default_value,
+uint32_t environment::getUint32Property(std::string_view name, const uint32_t default_value,
                                         const uint32_t min_allowed, const uint32_t max_allowed) noexcept {
     const std::string value = getProperty(name);
     if ( 0 == value.length() ) {
@@ -185,7 +184,7 @@ uint32_t environment::getUint32Property(const std::string& name, const uint32_t 
     }
 }
 
-fraction_i64 environment::getFractionProperty(const std::string& name, const fraction_i64& default_value,
+fraction_i64 environment::getFractionProperty(std::string_view name, const fraction_i64& default_value,
                                               const fraction_i64& min_allowed, const fraction_i64& max_allowed) noexcept {
     const std::string value = getProperty(name);
     if ( 0 == value.length() ) {
@@ -228,22 +227,23 @@ void environment::envSet(const std::string& prefix_domain, std::string basepair)
     }
 }
 
-void environment::envExplodeProperties(const std::string& prefix_domain, const std::string& list) noexcept {
+void environment::envExplodeProperties(std::string_view prefix_domain_, std::string_view list) noexcept {
     size_t pos = 0, start = 0;
+    std::string prefix_domain(prefix_domain_);
     while ( (pos = list.find(',', start)) != std::string::npos ) {
         const size_t elem_len = pos - start;  // excluding ','
-        envSet(prefix_domain, list.substr(start, elem_len));
+        envSet(prefix_domain, std::string(list.substr(start, elem_len)));
         start = pos + 1;  // skip ','
     }
     const size_t elem_len = list.length() - start;  // last one
     if ( elem_len > 0 ) {
-        envSet(prefix_domain, list.substr(start, elem_len));
+        envSet(prefix_domain, std::string(list.substr(start, elem_len)));
     }
     jau_COND_PRINT(local_debug, "env::setProperty %s -> true (explode default)", prefix_domain);
     ::setenv(prefix_domain.c_str(), "true", 1 /* overwrite */);
 }
 
-bool environment::getExplodingPropertiesImpl(const std::string& root_prefix_domain, const std::string& prefix_domain) noexcept {
+bool environment::getExplodingPropertiesImpl(std::string_view root_prefix_domain, std::string_view prefix_domain) noexcept {
     std::string value = environment::getProperty(prefix_domain, s_false);
     if ( s_false == value ) {
         return false;
@@ -251,16 +251,21 @@ bool environment::getExplodingPropertiesImpl(const std::string& root_prefix_doma
     if ( s_true == value ) {
         return true;
     }
-    if ( root_prefix_domain.length() > 0 && root_prefix_domain + ".debug" == prefix_domain ) {
-        local_debug = true;
+    if ( root_prefix_domain.length() > 0) {
+        std::string s;
+        jau::append_string(s, root_prefix_domain);
+        jau::append_string(s, ".debug");
+        if ( s == prefix_domain ) {
+            local_debug = true;
+        }
     }
     envExplodeProperties(prefix_domain, value);
     return true;
 }
 
-environment::environment(const std::string& root_prefix_domain_) noexcept
+environment::environment(std::string_view root_prefix_domain_) noexcept
 : root_prefix_domain(root_prefix_domain_),
-  debug(getExplodingPropertiesImpl(root_prefix_domain_, root_prefix_domain_ + ".debug")),
-  debug_jni(getBooleanProperty(root_prefix_domain_ + ".debug.jni", false)),
-  verbose(getExplodingPropertiesImpl(root_prefix_domain_, root_prefix_domain_ + ".verbose") || environment::debug) {
+  debug(getExplodingPropertiesImpl(root_prefix_domain_, root_prefix_domain + ".debug")),
+  debug_jni(getBooleanProperty(root_prefix_domain + ".debug.jni", false)),
+  verbose(getExplodingPropertiesImpl(root_prefix_domain_, root_prefix_domain + ".verbose") || environment::debug) {
 }

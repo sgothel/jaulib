@@ -1,6 +1,6 @@
 /*
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2020 Gothel Software e.K.
+ * Copyright (c) 2020-2026 Gothel Software e.K.
  * Copyright (c) 2020 ZAFENA AB
  *
  * Permission is hereby granted, free of charge, to any person obtaining
@@ -27,14 +27,9 @@
 #define JAU_ENV_HPP_
 
 #include <cstdint>
-#include <cinttypes>
 #include <cstring>
 #include <string>
 #include <cstdio>
-
-extern "C" {
-    #include <errno.h>
-}
 
 #include <jau/basic_types.hpp>
 
@@ -75,14 +70,14 @@ namespace jau {
         private:
             const std::string root_prefix_domain;
 
-            environment(const std::string & root_prefix_domain) noexcept;
+            environment(std::string_view root_prefix_domain) noexcept;
 
             static bool local_debug;
 
             static void envSet(const std::string& prefix_domain, std::string basepair) noexcept;
-            static void envExplodeProperties(const std::string& prefix_domain, const std::string& list) noexcept;
+            static void envExplodeProperties(std::string_view prefix_domain, std::string_view list) noexcept;
 
-            static bool getExplodingPropertiesImpl(const std::string& root_prefix_domain, const std::string & prefix_domain) noexcept;
+            static bool getExplodingPropertiesImpl(std::string_view root_prefix_domain, std::string_view prefix_domain) noexcept;
 
         public:
             /**
@@ -161,7 +156,7 @@ namespace jau {
              * This allows Unix shell user to set the property 'direct_bt_debug' instead of 'direct_bt.debug'.
              * </p>
              */
-            static std::string getProperty(const std::string & name) noexcept;
+            static std::string getProperty(std::string_view name) noexcept;
 
             /**
              * Returns the value of the environment's variable 'name',
@@ -172,7 +167,7 @@ namespace jau {
              * e.g. 'direct_bt_debug' if ''direct_bt.debug' wasn't found.
              * </p>
              */
-            static std::string getProperty(const std::string & name, const std::string & default_value) noexcept;
+            static std::string getProperty(std::string_view name, std::string_view default_value) noexcept;
 
             /**
              * Returns the boolean value of the environment's variable 'name',
@@ -187,7 +182,7 @@ namespace jau {
              * e.g. 'direct_bt_debug' if ''direct_bt.debug' wasn't found.
              * </p>
              */
-            static bool getBooleanProperty(const std::string & name, const bool default_value) noexcept;
+            static bool getBooleanProperty(std::string_view name, const bool default_value) noexcept;
 
             /**
              * Returns the int32_t value of the environment's variable 'name',
@@ -199,7 +194,7 @@ namespace jau {
              * e.g. 'direct_bt_debug' if ''direct_bt.debug' wasn't found.
              * </p>
              */
-            static int32_t getInt32Property(const std::string & name, const int32_t default_value,
+            static int32_t getInt32Property(std::string_view name, const int32_t default_value,
                                             const int32_t min_allowed=INT32_MIN, const int32_t max_allowed=INT32_MAX) noexcept;
 
             /**
@@ -212,7 +207,7 @@ namespace jau {
              * e.g. 'direct_bt_debug' if ''direct_bt.debug' wasn't found.
              * </p>
              */
-            static uint32_t getUint32Property(const std::string & name, const uint32_t default_value,
+            static uint32_t getUint32Property(std::string_view name, const uint32_t default_value,
                                               const uint32_t min_allowed=0, const uint32_t max_allowed=UINT32_MAX) noexcept;
 
             /**
@@ -227,7 +222,7 @@ namespace jau {
              * e.g. 'direct_bt_debug' if ''direct_bt.debug' wasn't found.
              * </p>
              */
-            static fraction_i64 getFractionProperty(const std::string & name, const fraction_i64& default_value,
+            static fraction_i64 getFractionProperty(std::string_view name, const fraction_i64& default_value,
                                                     const fraction_i64& min_allowed, const fraction_i64& max_allowed) noexcept;
 
             /**
@@ -286,7 +281,7 @@ namespace jau {
              * @param prefix_domain the queried prefix domain, e.g. "direct_bt.debug" or "direct_bt.verbose" etc.
              * @return
              */
-            static bool getExplodingProperties(const std::string & prefix_domain) noexcept {
+            static bool getExplodingProperties(std::string_view prefix_domain) noexcept {
                 return getExplodingPropertiesImpl("", prefix_domain);
             }
 
@@ -304,7 +299,7 @@ namespace jau {
              *        Initial call shall utilize the actual project's root_prefix_domain!
              * @return the static singleton instance.
              */
-            static environment& get(const std::string& root_prefix_domain="jau") noexcept {
+            static environment& get(std::string_view root_prefix_domain="jau") noexcept {
                 /**
                  * Thread safe starting with C++11 6.7:
                  *

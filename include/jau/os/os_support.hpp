@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Gothel Software e.K.
+ * Copyright (c) 2020-2026 Gothel Software e.K.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -29,7 +29,6 @@
 
 #include <jau/byte_util.hpp>
 #include <jau/int_types.hpp>
-#include "jau/cpp_lang_util.hpp"
 #include "jau/enum_util.hpp"
 #include "jau/cpuid.hpp"
 
@@ -315,8 +314,12 @@ namespace jau::os {
         }
     }
     /** Returns the OS's path separator as a string, e.g. `;` for Windows and `:` for Unix (rest of the world) */
-    constexpr_cxx20 std::string path_separator() noexcept {
-        return std::string(1, path_separator_char());
+    constexpr std::string_view path_separator() noexcept {
+        if constexpr (jau::os::is_windows()) {
+            return ";";
+        } else {
+            return ":";
+        }
     }
 
     /** Returns the OS's path separator character, e.g. `\\` for Windows and `/` for Unix (rest of the world) */
@@ -329,8 +332,12 @@ namespace jau::os {
     }
 
     /** Returns the OS's path separator as a string, e.g. `\\` for Windows and `/` for Unix (rest of the world) */
-    constexpr_cxx20 std::string dir_separator() noexcept {
-        return std::string(1, dir_separator_char());
+    constexpr std::string_view dir_separator() noexcept {
+        if constexpr (jau::os::is_windows()) {
+            return "\\";
+        } else {
+            return "/";
+        }
     }
 
     std::string get_platform_info(std::string& sb) noexcept;

@@ -160,7 +160,7 @@ namespace jau {
     std::string trim(const std::string &s);
 
     /** Split given string `str` at `separator` into the resulting std::vector excluding the separator sequence . */
-    std::vector<std::string> split_string(const std::string &str, const std::string &separator);
+    std::vector<std::string> split_string(std::string_view str, std::string_view separator);
 
     std::string &toLowerInPlace(std::string &s) noexcept;
 

@@ -136,7 +136,7 @@ namespace jau::os {
         virtual ~DynamicLinker() noexcept = default;
 
         /** Returns the environment library path variable name, e.g. `LD_LIBRARY_PATH` */
-        constexpr_cxx20 static std::string getEnvLibPathVarName() noexcept {
+        constexpr_cxx20 static std::string_view getEnvLibPathVarName() noexcept {
             if constexpr ( jau::os::is_darwin() ) {
                 return "DYLD_LIBRARY_PATH";
             } else if constexpr ( jau::os::is_windows() ) {
@@ -153,7 +153,7 @@ namespace jau::os {
         }
 
         /** Returns the native library prefix, e.g. `lib` */
-        constexpr_cxx20 static std::string getDefaultPrefix() noexcept {
+        constexpr_cxx20 static std::string_view getDefaultPrefix() noexcept {
             if constexpr ( jau::os::is_windows() ) {
                 return "";
             } else {
@@ -161,7 +161,7 @@ namespace jau::os {
             }
         }
         /** Returns the native library suffix including the dot, e.g. `.so` */
-        constexpr_cxx20 static std::string getDefaultSuffix() noexcept {
+        constexpr_cxx20 static std::string_view getDefaultSuffix() noexcept {
             if constexpr ( jau::os::is_darwin() ) {
                 return ".dylib";
             } else if constexpr ( jau::os::is_windows() ) {

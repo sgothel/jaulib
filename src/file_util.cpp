@@ -39,6 +39,8 @@
 #include <cstdio>
 #include <random>
 
+#include <jau/string_util.hpp>
+
 extern "C" {
     #include <unistd.h>
     #include <dirent.h>
@@ -121,18 +123,18 @@ std::string jau::io::fs::absolute(std::string_view relpath) noexcept {
 
 static const char c_slash('/');
 static const char c_backslash('\\');
-static const std::string s_slash("/");
-static const std::string s_slash_dot_slash("/./");
-static const std::string s_slash_dot("/.");
-static const std::string s_dot_slash("./");
-static const std::string s_dot(".");
-static const std::string s_slash_dotdot_slash("/../");
-static const std::string s_slash_dotdot("/..");
-static const std::string s_dotdot("..");
+static const std::string_view s_slash("/");
+static const std::string_view s_slash_dot_slash("/./");
+static const std::string_view s_slash_dot("/.");
+static const std::string_view s_dot_slash("./");
+static const std::string_view s_dot(".");
+static const std::string_view s_slash_dotdot_slash("/../");
+static const std::string_view s_slash_dotdot("/..");
+static const std::string_view s_dotdot("..");
 
 std::string jau::io::fs::dirname(std::string_view path) noexcept {
     if( 0 == path.size() ) {
-        return s_dot;
+        return std::string(s_dot);
     }
     size_t end_pos;
     if( c_slash == path[path.size()-1] ) {
@@ -145,7 +147,7 @@ std::string jau::io::fs::dirname(std::string_view path) noexcept {
     }
     size_t idx = path.find_last_of(c_slash, end_pos);
     if( idx == std::string_view::npos ) {
-        return s_dot;
+        return std::string(s_dot);
     } else {
         // ensure `/lala` -> '/', i.e. don't cut off single '/'
         return std::string( path.substr(0, std::max<size_t>(1, idx)) );
@@ -154,7 +156,7 @@ std::string jau::io::fs::dirname(std::string_view path) noexcept {
 
 std::string jau::io::fs::basename(std::string_view path) noexcept {
     if( 0 == path.size() ) {
-        return s_dot;
+        return std::string(s_dot);
     }
     size_t end_pos;
     if( c_slash == path[path.size()-1] ) {
@@ -406,7 +408,11 @@ std::string dir_item::path() const noexcept {
     if( s_slash == dirname_ ) {
         return dirname_ + basename_;
     }
-    return dirname_ + s_slash + basename_;
+    std::string s;
+    jau::append_string(s, dirname_);
+    jau::append_string(s, s_slash);
+    jau::append_string(s, basename_);
+    return s;
 }
 
 std::string dir_item::toString() const noexcept {
