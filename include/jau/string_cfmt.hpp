@@ -897,7 +897,7 @@ namespace jau::cfmt {
                 m_argtype_size = sizeof(T); // NOLINT(bugprone-sizeof-expression)
                 m_arg_aconvert = to_cspec<T>();
                 m_argtype_signed = std::is_signed_v<T>;
-                m_argval_negative = !is_positive(jau::req::value_of(val));
+                m_argval_negative = !is_positive(val);
             }
 
             template <typename T>
@@ -1035,7 +1035,7 @@ namespace jau::cfmt {
             static constexpr void parseOne(Result &pc, const T &val) noexcept{
                 using namespace jau::req;
                 using WT = type_of<T>;
-                pc.template set_arg<WT>(val);
+                pc.template set_arg<WT>(value_of(val));
                 parseOneImpl<bool>(pc, value_of(val)); // pass-through
             }
 
