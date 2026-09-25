@@ -84,13 +84,15 @@ namespace jau::req {
     /** Wrapper: Returns trivial copy of value of underlying wrapped type, or the direct value if not a wrapper (identity). */
     template<typename T>
     requires wrapper<T> && std::is_trivially_copyable_v<T>
-    inline T::value_type value_of(const T &ref) noexcept {
+    CXX_ALWAYS_INLINE
+    T::value_type value_of(const T &ref) noexcept {
         return ref.operator typename T::value_type();
     }
 
     /** Wrapper: Returns trivial copy of value of underlying wrapped type, or the direct value if not a wrapper (identity). */
     template<typename T>
     requires (!wrapper<T>) && std::is_trivially_copyable_v<T>
+    CXX_ALWAYS_INLINE
     constexpr T value_of(const T &ref) noexcept {
         return ref;
     }
@@ -98,13 +100,15 @@ namespace jau::req {
     /** Wrapper: Returns non-trivial copy of value of underlying wrapped type, or the direct value if not a wrapper (identity). */
     template<typename T>
     requires wrapper<T> && (!std::is_trivially_copyable_v<T>)
-    inline T::value_type value_of(const T &ref) {
+    CXX_ALWAYS_INLINE
+    T::value_type value_of(const T &ref) {
         return ref.operator typename T::value_type();
     }
 
     /** Wrapper: Returns non-trivial copy of value of underlying wrapped type, or the direct value if not a wrapper (identity). */
     template<typename T>
     requires (!wrapper<T>) && (!std::is_trivially_copyable_v<T>)
+    CXX_ALWAYS_INLINE
     constexpr T value_of(const T &ref) {
         return ref;
     }
@@ -112,13 +116,15 @@ namespace jau::req {
     /** Wrapper: Returns mutable value reference of underlying wrapped type, or the direct value if not a wrapper (identity). */
     template<typename T>
     requires wrapper<T>
-    inline T::value_type& reference_of(T &ref) noexcept {
+    CXX_ALWAYS_INLINE
+    T::value_type& reference_of(T &ref) noexcept {
         return ref.operator typename T::value_type&();
     }
 
     /** Wrapper: Returns mutable value reference of underlying wrapped type, or the direct value if not a wrapper (identity). */
     template<typename T>
     requires (!wrapper<T>)
+    CXX_ALWAYS_INLINE
     constexpr T& reference_of(T &ref) noexcept {
         return ref;
     }
@@ -126,13 +132,15 @@ namespace jau::req {
     /** Wrapper: Returns immutable value reference of underlying wrapped type, or the direct value if not a wrapper (identity). */
     template<typename T>
     requires wrapper<T>
-    inline const T::value_type& reference_of(const T &ref) noexcept {
+    CXX_ALWAYS_INLINE
+    const T::value_type& reference_of(const T &ref) noexcept {
         return ref.operator typename T::value_type&();
     }
 
     /** Wrapper: Returns immutable value reference of underlying wrapped type, or the direct value if not a wrapper (identity). */
     template<typename T>
     requires (!wrapper<T>)
+    CXX_ALWAYS_INLINE
     constexpr const T& reference_of(const T &ref) noexcept {
         return ref; // NOLINT(bugprone-return-const-ref-from-parameter)
     }

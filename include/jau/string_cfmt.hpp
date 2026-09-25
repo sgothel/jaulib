@@ -886,6 +886,7 @@ namespace jau::cfmt {
           private:
             friend class impl::Parser<Output>;
 
+            CXX_NO_INLINE
             constexpr void reset() noexcept {
                 opts.reset();
             }
