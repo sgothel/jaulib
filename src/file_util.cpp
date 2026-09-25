@@ -1622,6 +1622,8 @@ errout:
     return res;
 }
 
+namespace {
+
 struct copy_context_t {
     copy_options copts;
     int skip_dst_dir_mkdir;
@@ -1955,6 +1957,8 @@ static bool copy_dir_preserve(const file_stats& src_stats, const int dst_dirfd, 
     }
     return true;
 }
+
+} // anon-namespace
 
 bool jau::io::fs::copy(const std::string& source_path, const std::string& target_path, const copy_options copts) noexcept {
     traverse_options topts = traverse_options::dir_entry | traverse_options::dir_exit;

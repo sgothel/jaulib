@@ -217,6 +217,8 @@ bool jau::io::uri_tk::is_httpx_protocol(const std::string_view& uri) noexcept {
 
 #ifdef USE_LIBCURL
 
+namespace {
+
 struct curl_glue1_t {
     CURL *curl_handle;
     bool has_content_length;
@@ -307,6 +309,8 @@ static size_t consume_data_curl1(char *ptr, size_t size, size_t nmemb, void *use
 
     return realsize;
 }
+
+} // anon-namespace
 
 #endif // USE_LIBCURL
 
@@ -471,6 +475,8 @@ bool jau::io::url_header_resp::wait_until_completion(const jau::fraction_i64& ti
 }
 
 #ifdef USE_LIBCURL
+
+namespace {
 
 struct curl_glue2_sync_t {
     curl_glue2_sync_t(void *_curl_handle,
@@ -1010,6 +1016,8 @@ cleanup:
         cg.curl_handle = nullptr;
     }
 }
+
+} // anon-namespace
 
 static void read_url_stream_async(const char *url, std::unique_ptr<curl_glue2_async_t> && cg) noexcept {
     std::vector<char> errorbuffer;

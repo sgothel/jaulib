@@ -13,7 +13,7 @@
     #include <unistd.h>
 #endif
 
-JNIEXPORT jint JNICALL 
+JNIEXPORT jint JNICALL
 Java_jau_sys_MachineDataInfoRuntime_getPointerSizeInBytesImpl(JNIEnv *env, jclass _unused) {
     (void)env;
     (void)_unused;
@@ -21,7 +21,7 @@ Java_jau_sys_MachineDataInfoRuntime_getPointerSizeInBytesImpl(JNIEnv *env, jclas
     return sizeof(void *);
 }
 
-JNIEXPORT jlong JNICALL 
+JNIEXPORT jlong JNICALL
 Java_jau_sys_MachineDataInfoRuntime_getPageSizeInBytesImpl(JNIEnv *env, jclass _unused) {
     (void)env;
     (void)_unused;
@@ -35,61 +35,63 @@ Java_jau_sys_MachineDataInfoRuntime_getPageSizeInBytesImpl(JNIEnv *env, jclass _
 #endif
 }
 
-typedef struct { 
-    int8_t      c1;
-    int8_t      v;
-} struct_alignment_int8;
+namespace {
+    typedef struct {
+        int8_t      c1;
+        int8_t      v;
+    } struct_alignment_int8;
 
-typedef struct { 
-    int8_t      c1;
-    int16_t     v;
-} struct_alignment_int16;
+    typedef struct {
+        int8_t      c1;
+        int16_t     v;
+    } struct_alignment_int16;
 
-typedef struct { 
-    int8_t      c1;
-    int32_t      v;
-} struct_alignment_int32;
+    typedef struct {
+        int8_t      c1;
+        int32_t      v;
+    } struct_alignment_int32;
 
-typedef struct { 
-    int8_t      c1;
-    int64_t      v;
-} struct_alignment_int64;
+    typedef struct {
+        int8_t      c1;
+        int64_t      v;
+    } struct_alignment_int64;
 
-typedef struct { 
-    int8_t      c1;
-    int         v;
-} struct_alignment_int;
+    typedef struct {
+        int8_t      c1;
+        int         v;
+    } struct_alignment_int;
 
-typedef struct { 
-    int8_t      c1;
-    long        v;
-} struct_alignment_long;
+    typedef struct {
+        int8_t      c1;
+        long        v;
+    } struct_alignment_long;
 
-typedef struct { 
-    int8_t      c1;
-    void *     v;
-} struct_alignment_pointer;
+    typedef struct {
+        int8_t      c1;
+        void *     v;
+    } struct_alignment_pointer;
 
-typedef struct { 
-    int8_t      c1;
-    float     v;
-} struct_alignment_float;
+    typedef struct {
+        int8_t      c1;
+        float     v;
+    } struct_alignment_float;
 
-typedef struct { 
-    int8_t      c1;
-    double     v;
-} struct_alignment_double;
+    typedef struct {
+        int8_t      c1;
+        double     v;
+    } struct_alignment_double;
 
-typedef struct { 
-    int8_t      c1;
-    long double     v;
-} struct_alignment_ldouble;
+    typedef struct {
+        int8_t      c1;
+        long double     v;
+    } struct_alignment_ldouble;
+}
 
 // size_t padding(size_t totalsize, size_t typesize)   { return totalsize - typesize - sizeof(char); }
 // static size_t alignment(size_t totalsize, size_t typesize) { return totalsize - typesize; }
 #define ALIGNMENT(a, b) ( (a) - (b) )
 
-JNIEXPORT jint JNICALL 
+JNIEXPORT jint JNICALL
 Java_jau_sys_MachineDataInfoRuntime_getAlignmentInt8Impl(JNIEnv *env, jclass _unused) {
     (void)env;
     (void)_unused;
@@ -97,7 +99,7 @@ Java_jau_sys_MachineDataInfoRuntime_getAlignmentInt8Impl(JNIEnv *env, jclass _un
     return ALIGNMENT(sizeof( struct_alignment_int8 ), sizeof(int8_t));
 }
 
-JNIEXPORT jint JNICALL 
+JNIEXPORT jint JNICALL
 Java_jau_sys_MachineDataInfoRuntime_getAlignmentInt16Impl(JNIEnv *env, jclass _unused) {
     (void)env;
     (void)_unused;
@@ -105,7 +107,7 @@ Java_jau_sys_MachineDataInfoRuntime_getAlignmentInt16Impl(JNIEnv *env, jclass _u
     return ALIGNMENT(sizeof( struct_alignment_int16 ), sizeof(int16_t));
 }
 
-JNIEXPORT jint JNICALL 
+JNIEXPORT jint JNICALL
 Java_jau_sys_MachineDataInfoRuntime_getAlignmentInt32Impl(JNIEnv *env, jclass _unused) {
     (void)env;
     (void)_unused;
@@ -113,7 +115,7 @@ Java_jau_sys_MachineDataInfoRuntime_getAlignmentInt32Impl(JNIEnv *env, jclass _u
     return ALIGNMENT(sizeof( struct_alignment_int32 ), sizeof(int32_t));
 }
 
-JNIEXPORT jint JNICALL 
+JNIEXPORT jint JNICALL
 Java_jau_sys_MachineDataInfoRuntime_getAlignmentInt64Impl(JNIEnv *env, jclass _unused) {
     (void)env;
     (void)_unused;
@@ -121,7 +123,7 @@ Java_jau_sys_MachineDataInfoRuntime_getAlignmentInt64Impl(JNIEnv *env, jclass _u
     return ALIGNMENT(sizeof( struct_alignment_int64 ), sizeof(int64_t));
 }
 
-JNIEXPORT jint JNICALL 
+JNIEXPORT jint JNICALL
 Java_jau_sys_MachineDataInfoRuntime_getAlignmentIntImpl(JNIEnv *env, jclass _unused) {
     (void)env;
     (void)_unused;
@@ -129,7 +131,7 @@ Java_jau_sys_MachineDataInfoRuntime_getAlignmentIntImpl(JNIEnv *env, jclass _unu
     return ALIGNMENT(sizeof( struct_alignment_int ), sizeof(int));
 }
 
-JNIEXPORT jint JNICALL 
+JNIEXPORT jint JNICALL
 Java_jau_sys_MachineDataInfoRuntime_getAlignmentLongImpl(JNIEnv *env, jclass _unused) {
     (void)env;
     (void)_unused;
@@ -137,7 +139,7 @@ Java_jau_sys_MachineDataInfoRuntime_getAlignmentLongImpl(JNIEnv *env, jclass _un
     return ALIGNMENT(sizeof( struct_alignment_long ), sizeof(long));
 }
 
-JNIEXPORT jint JNICALL 
+JNIEXPORT jint JNICALL
 Java_jau_sys_MachineDataInfoRuntime_getAlignmentPointerImpl(JNIEnv *env, jclass _unused) {
     (void)env;
     (void)_unused;
@@ -145,7 +147,7 @@ Java_jau_sys_MachineDataInfoRuntime_getAlignmentPointerImpl(JNIEnv *env, jclass 
     return ALIGNMENT(sizeof( struct_alignment_pointer ), sizeof(void *));
 }
 
-JNIEXPORT jint JNICALL 
+JNIEXPORT jint JNICALL
 Java_jau_sys_MachineDataInfoRuntime_getAlignmentFloatImpl(JNIEnv *env, jclass _unused) {
     (void)env;
     (void)_unused;
@@ -153,7 +155,7 @@ Java_jau_sys_MachineDataInfoRuntime_getAlignmentFloatImpl(JNIEnv *env, jclass _u
     return ALIGNMENT(sizeof( struct_alignment_float ), sizeof(float));
 }
 
-JNIEXPORT jint JNICALL 
+JNIEXPORT jint JNICALL
 Java_jau_sys_MachineDataInfoRuntime_getAlignmentDoubleImpl(JNIEnv *env, jclass _unused) {
     (void)env;
     (void)_unused;
@@ -161,7 +163,7 @@ Java_jau_sys_MachineDataInfoRuntime_getAlignmentDoubleImpl(JNIEnv *env, jclass _
     return ALIGNMENT(sizeof( struct_alignment_double ), sizeof(double));
 }
 
-JNIEXPORT jint JNICALL 
+JNIEXPORT jint JNICALL
 Java_jau_sys_MachineDataInfoRuntime_getAlignmentLongDoubleImpl(JNIEnv *env, jclass _unused) {
     (void)env;
     (void)_unused;
@@ -169,7 +171,7 @@ Java_jau_sys_MachineDataInfoRuntime_getAlignmentLongDoubleImpl(JNIEnv *env, jcla
     return ALIGNMENT(sizeof( struct_alignment_ldouble ), sizeof(long double));
 }
 
-JNIEXPORT jint JNICALL 
+JNIEXPORT jint JNICALL
 Java_jau_sys_MachineDataInfoRuntime_getSizeOfIntImpl(JNIEnv *env, jclass _unused) {
     (void)env;
     (void)_unused;
@@ -177,7 +179,7 @@ Java_jau_sys_MachineDataInfoRuntime_getSizeOfIntImpl(JNIEnv *env, jclass _unused
     return sizeof(int);
 }
 
-JNIEXPORT jint JNICALL 
+JNIEXPORT jint JNICALL
 Java_jau_sys_MachineDataInfoRuntime_getSizeOfLongImpl(JNIEnv *env, jclass _unused) {
     (void)env;
     (void)_unused;
@@ -185,7 +187,7 @@ Java_jau_sys_MachineDataInfoRuntime_getSizeOfLongImpl(JNIEnv *env, jclass _unuse
     return sizeof(long);
 }
 
-JNIEXPORT jint JNICALL 
+JNIEXPORT jint JNICALL
 Java_jau_sys_MachineDataInfoRuntime_getSizeOfFloatImpl(JNIEnv *env, jclass _unused) {
     (void)env;
     (void)_unused;
@@ -193,7 +195,7 @@ Java_jau_sys_MachineDataInfoRuntime_getSizeOfFloatImpl(JNIEnv *env, jclass _unus
     return sizeof(float);
 }
 
-JNIEXPORT jint JNICALL 
+JNIEXPORT jint JNICALL
 Java_jau_sys_MachineDataInfoRuntime_getSizeOfDoubleImpl(JNIEnv *env, jclass _unused) {
     (void)env;
     (void)_unused;
@@ -201,7 +203,7 @@ Java_jau_sys_MachineDataInfoRuntime_getSizeOfDoubleImpl(JNIEnv *env, jclass _unu
     return sizeof(double);
 }
 
-JNIEXPORT jint JNICALL 
+JNIEXPORT jint JNICALL
 Java_jau_sys_MachineDataInfoRuntime_getSizeOfLongDoubleImpl(JNIEnv *env, jclass _unused) {
     (void)env;
     (void)_unused;

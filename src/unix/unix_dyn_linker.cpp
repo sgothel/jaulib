@@ -42,7 +42,7 @@
         #define LIB_DEFAULT   ((void *) 0)
     #endif
 
-    namespace jau::os::impl {
+    namespace {
 
         using namespace jau::os;
 
@@ -173,15 +173,15 @@
             Bionic32DynamicLinker() noexcept
             : UnixDynamicLinker(LIB_DEFAULT, LIB_NEXT, FLAG_LAZY, FLAG_NOW, FLAG_LOCAL, FLAG_GLOBAL) {}
         };
-    } // namespace jau::os::impl
+    } // anon-namespace
 
     jau::os::DynamicLinker* jau::os::DynamicLinker::create() {
         if constexpr ( jau::os::is_android() && 32 == jau::cpu::pointer_bit_size() ) {
-            return new jau::os::impl::Bionic32DynamicLinker();
+            return new Bionic32DynamicLinker();
         } else if constexpr ( jau::os::is_darwin() ) {
-            return new jau::os::impl::DarwinDynamicLinker();
+            return new DarwinDynamicLinker();
         } else {
-            return new jau::os::impl::PosixDynamicLinker();
+            return new PosixDynamicLinker();
         }
     }
 
