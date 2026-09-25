@@ -42,11 +42,11 @@ namespace jau::math::util {
     /** PMVMatrix4 modified core matrices */
     enum class PMVMod : uint32_t {
         none = 0,
-        /** Bit value stating a modified {@link #getP() projection matrix (P)}, since last {@link #update()} call. */
+        /** Bit value stating a modified getP() projection matrix (P), since last update() call. */
         proj = 1 << 0,
-        /** Bit value stating a modified {@link #getMv() modelview matrix (Mv)}, since last {@link #update()} call. */
+        /** Bit value stating a modified getMv() modelview matrix (Mv), since last update() call. */
         mv = 1 << 1,
-        /** Bit value stating a modified {@link #getT() texture matrix (T)}, since last {@link #update()} call. */
+        /** Bit value stating a modified getT() texture matrix (T), since last update() call. */
         text = 1 << 2,
         /** Bit value stating all is modified */
         all = proj | mv | text,
@@ -56,19 +56,19 @@ namespace jau::math::util {
     /** PMVMatrix4 derived matrices and values */
     enum class PMVData : uint32_t {
         none = 0,
-        /** Bit value for {@link #getMvi() inverse modelview matrix (Mvi)}, updated via {@link #update()}. */
+        /** Bit value for getMvi() inverse modelview matrix (Mvi), updated via update(). */
         inv_mv = 1 << 1,
-        /** Bit value for {@link #getMvit() inverse transposed modelview matrix (Mvit)}, updated via {@link #update()}. */
+        /** Bit value for getMvit() inverse transposed modelview matrix (Mvit), updated via update(). */
         inv_tps_mv = 1 << 2,
-        /** Bit value for {@link #getPi() inverse projection matrix (Pi)}, updated via {@link #update()}. */
+        /** Bit value for getPi() inverse projection matrix (Pi), updated via update(). */
         inv_proj = 1 << 3,
-        /** Bit value for {@link #getFrustum() frustum} and updated by {@link #getFrustum()}. */
+        /** Bit value for getFrustum() frustum and updated by getFrustum(). */
         frustum = 1 << 4,
-        /** Bit value for {@link #getPMv() pre-multiplied P x Mv}, updated by {@link #getPMv()}. */
+        /** Bit value for getPMv() pre-multiplied P x Mv, updated by getPMv(). */
         pre_pmv = 1 << 5,
-        /** Bit value for {@link #getPMvi() pre-multiplied invert(P x Mv)}, updated by {@link #getPMvi()}. */
+        /** Bit value for getPMvi() pre-multiplied invert(P x Mv), updated by getPMvi(). */
         pre_pmvi = 1 << 6,
-        /** Manual bits not covered by {@link #update()} but {@link #getFrustum()}, {@link #FRUSTUM}, {@link #getPMv()}, {@link #PREMUL_PMV}, {@link #getPMvi()}, {@link #PREMUL_PMVI}, etc. */
+        /** Manual bits not covered by update() but getFrustum(), frustum, getPMv(), pre_pmv, getPMvi(), pre_pmvi, etc. */
         manual = frustum | pre_pmv | pre_pmvi
     };
     JAU_MAKE_BITFIELD_ENUM_STRING(PMVData, inv_mv, inv_tps_mv, inv_proj,
@@ -78,12 +78,12 @@ namespace jau::math::util {
  * PMVMatrix4 implements the basic computer graphics Matrix4 pack using
  * projection (P), modelview (Mv) and texture (T) Matrix4 operations.
  *
- * PMVMatrix4 provides the {@link #getMvi() inverse modelview matrix (Mvi)} and
- * {@link #getMvit() inverse transposed modelview matrix (Mvit)}.
- * {@link Frustum} is also provided by {@link #getFrustum()}.
+ * PMVMatrix4 provides the getMvi() inverse modelview matrix (Mvi) and
+ * getMvit() inverse transposed modelview matrix (Mvit).
+ * Frustum is also provided by getFrustum().
  *
- * To keep these derived values synchronized after mutable Mv operations like {@link #rotateMv(Quaternion)}
- * users have to call {@link #update()} before using Mvi and Mvit.
+ * To keep these derived values synchronized after mutable Mv operations like rotateMv(Quaternion)
+ * users have to call update() before using Mvi and Mvit.
  *
  * All matrices are provided in column-major order,
  * as specified in the OpenGL fixed function pipeline, i.e. compatibility profile.
@@ -99,7 +99,7 @@ namespace jau::math::util {
  * - clip = P x V x M x Obj = P x Mv x Obj
  * etc ..
  *
- * PMVMatrix4 can supplement {@link com.jogamp.opengl.GL2ES2 GL2ES2} applications w/ the
+ * PMVMatrix4 can supplement com.jogamp.opengl.GL2ES2 GL2ES2 applications w/ the
  * lack of the described matrix functionality.
  *
  * <a name="storageDetails"><h5>Matrix storage details</h5></a>
@@ -169,9 +169,9 @@ class PMVMatrix4 {
     /**
      * Creates an instance of PMVMatrix4.
      *
-     * This constructor only sets up an instance w/o additional derived INVERSE_MODELVIEW, INVERSE_PROJECTION or INVERSE_TRANSPOSED_MODELVIEW matrices.
+     * This constructor only sets up an instance w/o additional derived PMVData::inv_mv, PMVData::inv_proj or PMVData::inv_tps_mv PMVData::inv_tps_mv matrices.
      *
-     * @see #PMVMatrix4(int)
+     * @see PMVMatrix4(int)
      */
     PMVMatrix4() noexcept
     : PMVMatrix4(PMVData::none) { }
@@ -180,18 +180,18 @@ class PMVMatrix4 {
      * Creates an instance of PMVMatrix4.
      *
      * Additional derived matrices can be requested via `derivedMatrices`, i.e.
-     * - INVERSE_MODELVIEW
-     * - INVERSE_PROJECTION
-     * - INVERSE_TRANSPOSED_MODELVIEW
+     * - PMVData::inv_mv
+     * - PMVData::inv_proj
+     * - PMVData::inv_tps_mv
      *
      * Implementation uses native Matrix4 elements using column-order fields.
      * Derived matrices are updated at retrieval, e.g. getMvi(), or via synchronized access, e.g. makeSyncMvi(), to the actual Mat4 instances.
      *
-     * @param derivedMatrices additional matrices can be requested by passing bits {@link #INVERSE_MODELVIEW}, INVERSE_PROJECTION and {@link #INVERSE_TRANSPOSED_MODELVIEW}.
-     * @see #getReqBits()
-     * @see #isReqDirty()
-     * @see #getDirtyBits()
-     * @see #update()
+     * @param derivedMatrices additional matrices can be requested by passing bits PMVData::inv_mv, PMVData::inv_proj and PMVData::inv_tps_mv
+     * @see getReqBits()
+     * @see isReqDirty()
+     * @see getDirtyBits()
+     * @see update()
      */
     PMVMatrix4(PMVData derivedMatrices) noexcept
     : m_requestBits( matToReq(derivedMatrices) )
@@ -224,7 +224,7 @@ class PMVMatrix4 {
     size_t matrixCount() const noexcept { return matrixCount(m_requestBits); }
 
     /**
-     * Issues {@link Mat4#loadIdentity()} on all matrices and resets all internal states.
+     * Issues Mat4::loadIdentity() on all matrices and resets all internal states.
      */
     constexpr void reset() noexcept {
         m_matP.loadIdentity();
@@ -240,9 +240,9 @@ class PMVMatrix4 {
     //
 
     /**
-     * Returns the {@link GLMatrixFunc#GL_TEXTURE_MATRIX texture matrix} (T).
+     * Returns the GLMatrixFunc::GL_TEXTURE_MATRIX texture matrix (T).
      * <p>
-     * Consider using {@link #setTextureDirty()} if modifying the returned {@link Mat4}.
+     * Consider using setTextureDirty() if modifying the returned Mat4.
      * </p>
      * <p>
      * See <a href="#storageDetails"> matrix storage details</a>.
@@ -252,9 +252,9 @@ class PMVMatrix4 {
     constexpr const Mat4& getT() const noexcept { return m_matTex; }
 
     /**
-     * Returns the {@link GLMatrixFunc#GL_PROJECTION_MATRIX projection matrix} (P).
+     * Returns the GLMatrixFunc::GL_PROJECTION_MATRIX projection matrix (P).
      * <p>
-     * Consider using {@link #setProjectionDirty()} if modifying the returned {@link Mat4}.
+     * Consider using setProjectionDirty() if modifying the returned Mat4.
      * </p>
      * <p>
      * See <a href="#storageDetails"> matrix storage details</a>.
@@ -264,9 +264,9 @@ class PMVMatrix4 {
     constexpr const Mat4& getP() const noexcept { return m_matP; }
 
     /**
-     * Returns the {@link GLMatrixFunc#GL_MODELVIEW_MATRIX modelview matrix} (Mv).
+     * Returns the GLMatrixFunc::GL_MODELVIEW_MATRIX modelview matrix (Mv).
      * <p>
-     * Consider using {@link #setModelviewDirty()} if modifying the returned {@link Mat4}.
+     * Consider using setModelviewDirty() if modifying the returned Mat4.
      * </p>
      * <p>
      * See <a href="#storageDetails"> matrix storage details</a>.
@@ -312,7 +312,7 @@ class PMVMatrix4 {
     }
 
     /**
-     * Returns a new SyncMatrix of {@link GLMatrixFunc#GL_PROJECTION_MATRIX projection matrix} (P).
+     * Returns a new SyncMatrix of GLMatrixFunc::GL_PROJECTION_MATRIX projection matrix (P).
      * <p>
      * See <a href="#storageDetails"> matrix storage details</a>.
      * </p>
@@ -320,7 +320,7 @@ class PMVMatrix4 {
     constexpr SyncMats4 makeSyncP() noexcept { return SyncMats4(m_matP, 1); }
 
     /**
-     * Returns a new SyncMatrix of {@link GLMatrixFunc#GL_MODELVIEW_MATRIX modelview matrix} (Mv).
+     * Returns a new SyncMatrix of GLMatrixFunc::GL_MODELVIEW_MATRIX modelview matrix (Mv).
      * <p>
      * See <a href="#storageDetails"> matrix storage details</a>.
      * </p>
@@ -328,7 +328,7 @@ class PMVMatrix4 {
     constexpr SyncMats4 makeSyncMv() noexcept { return SyncMats4(m_matMv, 1); }
 
     /**
-     * Returns a new SyncMatrices4f of 2 matrices within one FloatBuffer: {@link #getP() P} and {@link #getMv() Mv}.
+     * Returns a new SyncMatrices4f of 2 matrices within one FloatBuffer: getP() P and getMv() Mv.
      * <p>
      * See <a href="#storageDetails"> matrix storage details</a>.
      * </p>
@@ -336,7 +336,7 @@ class PMVMatrix4 {
     SyncMats4f makeSyncPMv() noexcept { return SyncMats4f(m_matP, 2); }
 
     /**
-     * Returns a new SyncMatrix of {@link GLMatrixFunc#GL_TEXTURE_MATRIX texture matrix} (T).
+     * Returns a new SyncMatrix of GLMatrixFunc::GL_TEXTURE_MATRIX texture matrix (T).
      * <p>
      * See <a href="#storageDetails"> matrix storage details</a>.
      * </p>
@@ -414,7 +414,7 @@ class PMVMatrix4 {
     //
 
     /**
-     * Returns multiplication result of {@link #getP() P} and {@link #getMv() Mv} matrix, i.e.
+     * Returns multiplication result of getP() P and getMv() Mv matrix, i.e.
      * <pre>
      *    result = P x Mv
      * </pre>
@@ -426,7 +426,7 @@ class PMVMatrix4 {
     }
 
     /**
-     * Returns multiplication result of {@link #getMv() Mv} and {@link #getP() P} matrix, i.e.
+     * Returns multiplication result of getMv() Mv and getP() P matrix, i.e.
      * <pre>
      *    result = Mv x P
      * </pre>
@@ -459,7 +459,7 @@ class PMVMatrix4 {
     /**
      * v_out = Mv x v_in
      *
-     * Affine 3f-vector transformation by 4x4 matrix, see {@link Mat4#mulVec3(Vec3, Vec3)}.
+     * Affine 3f-vector transformation by 4x4 matrix, see Mat4::mulVec3(Vec3, Vec3).
      *
      * @param v_in input vector, can be v_out for in-place transformation
      * @param v_out output vector
@@ -474,7 +474,7 @@ class PMVMatrix4 {
     //
 
     /**
-     * Load the {@link #getMv() modelview matrix} with the provided values.
+     * Load the getMv() modelview matrix with the provided values.
      */
     constexpr PMVMatrix4& loadMv(float values[]) noexcept {
         m_matMv.load(values);
@@ -482,7 +482,7 @@ class PMVMatrix4 {
         return *this;
     }
     /**
-     * Load the {@link #getMv() modelview matrix} with the values of the given {@link Mat4}.
+     * Load the getMv() modelview matrix with the values of the given Mat4.
      */
     constexpr PMVMatrix4& loadMv(const Mat4& m) noexcept {
         m_matMv.load(m);
@@ -490,7 +490,7 @@ class PMVMatrix4 {
         return *this;
     }
     /**
-     * Load the {@link #getMv() modelview matrix} with the values of the given {@link Quaternion}'s rotation Quaternion::toMatrix() representation.
+     * Load the getMv() modelview matrix with the values of the given Quaternion's rotation Quaternion::toMatrix() representation.
      */
     constexpr PMVMatrix4& loadMv(const Quat4f& quat) noexcept {
         quat.toMatrix(m_matMv);
@@ -499,7 +499,7 @@ class PMVMatrix4 {
     }
 
     /**
-     * Load the {@link #getP() projection matrix} with the provided values.
+     * Load the getP() projection matrix with the provided values.
      */
     constexpr PMVMatrix4& loadP(float values[]) noexcept {
         m_matP.load(values);
@@ -507,7 +507,7 @@ class PMVMatrix4 {
         return *this;
     }
     /**
-     * Load the {@link #getP() projection matrix} with the values of the given {@link Mat4}.
+     * Load the getP() projection matrix with the values of the given Mat4.
      */
     constexpr PMVMatrix4& loadP(const Mat4& m) {
         m_matP.load(m);
@@ -515,7 +515,7 @@ class PMVMatrix4 {
         return *this;
     }
     /**
-     * Load the {@link #getP() projection matrix} with the values of the given {@link Quaternion}'s rotation Quaternion::toMatrix() representation.
+     * Load the getP() projection matrix with the values of the given Quaternion's rotation Quaternion::toMatrix() representation.
      */
     constexpr PMVMatrix4& loadP(const Quat4f& quat) noexcept {
         quat.toMatrix(m_matP);
@@ -524,7 +524,7 @@ class PMVMatrix4 {
     }
 
     /**
-     * Load the {@link #getT() texture matrix} with the provided values.
+     * Load the getT() texture matrix with the provided values.
      */
     constexpr PMVMatrix4& loadT(float values[]) noexcept {
         m_matTex.load(values);
@@ -532,7 +532,7 @@ class PMVMatrix4 {
         return *this;
     }
     /**
-     * Load the {@link #getT() texture matrix} with the values of the given {@link Mat4}.
+     * Load the getT() texture matrix with the values of the given Mat4.
      */
     constexpr PMVMatrix4& loadT(Mat4& m) noexcept {
         m_matTex.load(m);
@@ -540,7 +540,7 @@ class PMVMatrix4 {
         return *this;
     }
     /**
-     * Load the {@link #getT() texture matrix} with the values of the given {@link Quaternion}'s rotation Quaternion::toMatrix() representation.
+     * Load the getT() texture matrix with the values of the given Quaternion's rotation Quaternion::toMatrix() representation.
      */
     constexpr PMVMatrix4& loadT(const Quat4f& quat) noexcept {
         quat.toMatrix(m_matTex);
@@ -549,7 +549,7 @@ class PMVMatrix4 {
     }
 
     /**
-     * Load the {@link #getMv() modelview matrix} with the values of the given {@link Mat4}.
+     * Load the getMv() modelview matrix with the values of the given Mat4.
      */
     constexpr PMVMatrix4& loadMvIdentity() noexcept {
         m_matMv.loadIdentity();
@@ -558,7 +558,7 @@ class PMVMatrix4 {
     }
 
     /**
-     * Load the {@link #getP() projection matrix} with the values of the given {@link Mat4}.
+     * Load the getP() projection matrix with the values of the given Mat4.
      */
     constexpr PMVMatrix4& loadPIdentity() noexcept {
         m_matP.loadIdentity();
@@ -567,7 +567,7 @@ class PMVMatrix4 {
     }
 
     /**
-     * Load the {@link #getT() texture matrix} with the values of the given {@link Mat4}.
+     * Load the getT() texture matrix with the values of the given Mat4.
      */
     constexpr PMVMatrix4& loadTIdentity() noexcept {
         m_matTex.loadIdentity();
@@ -576,7 +576,7 @@ class PMVMatrix4 {
     }
 
     /**
-     * Multiply the {@link #getMv() modelview matrix}: [c] = [c] x [m]
+     * Multiply the getMv() modelview matrix: [c] = [c] x [m]
      * @param m the right hand Mat4
      * @return *this instance of chaining
      */
@@ -587,7 +587,7 @@ class PMVMatrix4 {
     }
 
     /**
-     * Multiply the {@link #getP() projection matrix}: [c] = [c] x [m]
+     * Multiply the getP() projection matrix: [c] = [c] x [m]
      * @param m the right hand Mat4
      * @return *this instance of chaining
      */
@@ -598,7 +598,7 @@ class PMVMatrix4 {
     }
 
     /**
-     * Multiply the {@link #getT() texture matrix}: [c] = [c] x [m]
+     * Multiply the getT() texture matrix: [c] = [c] x [m]
      * @param m the right hand Mat4
      * @return *this instance of chaining
      */
@@ -609,7 +609,7 @@ class PMVMatrix4 {
     }
 
     /**
-     * Translate the {@link #getMv() modelview matrix}.
+     * Translate the getMv() modelview matrix.
      * @param x
      * @param y
      * @param z
@@ -620,7 +620,7 @@ class PMVMatrix4 {
         return mulMv( mat4Tmp1.setToTranslation(x, y, z) );
     }
     /**
-     * Translate the {@link #getMv() modelview matrix}.
+     * Translate the getMv() modelview matrix.
      * @param t translation vec3
      * @return *this instance of chaining
      */
@@ -630,7 +630,7 @@ class PMVMatrix4 {
     }
 
     /**
-     * Translate the {@link #getP() projection matrix}.
+     * Translate the getP() projection matrix.
      * @param x
      * @param y
      * @param z
@@ -641,7 +641,7 @@ class PMVMatrix4 {
         return mulP( mat4Tmp1.setToTranslation(x, y, z) );
     }
     /**
-     * Translate the {@link #getP() projection matrix}.
+     * Translate the getP() projection matrix.
      * @param t translation vec3
      * @return *this instance of chaining
      */
@@ -651,7 +651,7 @@ class PMVMatrix4 {
     }
 
     /**
-     * Scale the {@link #getMv() modelview matrix}.
+     * Scale the getMv() modelview matrix.
      * @param x
      * @param y
      * @param z
@@ -662,7 +662,7 @@ class PMVMatrix4 {
         return mulMv( mat4Tmp1.setToScale(x, y, z) );
     }
     /**
-     * Scale the {@link #getMv() modelview matrix}.
+     * Scale the getMv() modelview matrix.
      * @param s scale vec4f
      * @return *this instance of chaining
      */
@@ -672,7 +672,7 @@ class PMVMatrix4 {
     }
 
     /**
-     * Scale the {@link #getP() projection matrix}.
+     * Scale the getP() projection matrix.
      * @param x
      * @param y
      * @param z
@@ -683,7 +683,7 @@ class PMVMatrix4 {
         return mulP( mat4Tmp1.setToScale(x, y, z) );
     }
     /**
-     * Scale the {@link #getP() projection matrix}.
+     * Scale the getP() projection matrix.
      * @param s scale vec4f
      * @return *this instance of chaining
      */
@@ -693,9 +693,9 @@ class PMVMatrix4 {
     }
 
     /**
-     * Rotate the {@link #getMv() modelview matrix} by the given axis and angle in radians.
+     * Rotate the getMv() modelview matrix by the given axis and angle in radians.
      * <p>
-     * Consider using {@link #rotateMv(Quaternion)}
+     * Consider using rotateMv(Quaternion)
      * </p>
      * @param ang_rad angle in radians
      * @param axis rotation axis
@@ -707,9 +707,9 @@ class PMVMatrix4 {
         return mulMv( mat4Tmp1.setToRotationAxis(ang_rad, x, y, z) );
     }
     /**
-     * Rotate the {@link #getMv() modelview matrix} by the given axis and angle in radians.
+     * Rotate the getMv() modelview matrix by the given axis and angle in radians.
      * <p>
-     * Consider using {@link #rotateMv(Quaternion)}
+     * Consider using rotateMv(Quaternion)
      * </p>
      * @param ang_rad angle in radians
      * @param axis rotation axis
@@ -721,8 +721,8 @@ class PMVMatrix4 {
         return mulMv( mat4Tmp1.setToRotationAxis(ang_rad, axis) );
     }
     /**
-     * Rotate the {@link #getMv() modelview matrix} with the given {@link Quaternion}'s rotation {@link Mat4#setToRotation(Quaternion) matrix representation}.
-     * @param quat the {@link Quaternion}
+     * Rotate the getMv() modelview matrix} with the given Quaternion's rotation Mat4::setToRotation(Quaternion) matrix representation.
+     * @param quat the Quaternion
      * @return *this instance of chaining
      */
     constexpr PMVMatrix4& rotateMv(const Quat4f& quat) noexcept {
@@ -731,9 +731,9 @@ class PMVMatrix4 {
     }
 
     /**
-     * Rotate the {@link #getP() projection matrix} by the given axis and angle in radians.
+     * Rotate the getP() projection matrix by the given axis and angle in radians.
      * <p>
-     * Consider using {@link #rotateP(Quaternion)}
+     * Consider using rotateP(Quaternion)
      * </p>
      * @param ang_rad angle in radians
      * @param axis rotation axis
@@ -745,9 +745,9 @@ class PMVMatrix4 {
         return mulP( mat4Tmp1.setToRotationAxis(ang_rad, x, y, z) );
     }
     /**
-     * Rotate the {@link #getP() projection matrix} by the given axis and angle in radians.
+     * Rotate the getP() projection matrix by the given axis and angle in radians.
      * <p>
-     * Consider using {@link #rotateP(Quaternion)}
+     * Consider using rotateP(Quaternion)
      * </p>
      * @param ang_rad angle in radians
      * @param axis rotation axis
@@ -759,8 +759,8 @@ class PMVMatrix4 {
         return mulP( mat4Tmp1.setToRotationAxis(ang_rad, axis) );
     }
     /**
-     * Rotate the {@link #getP() projection matrix} with the given {@link Quaternion}'s rotation {@link Mat4#setToRotation(Quaternion) matrix representation}.
-     * @param quat the {@link Quaternion}
+     * Rotate the getP() projection matrix} with the given Quaternion's rotation Mat4::setToRotation(Quaternion) matrix representation.
+     * @param quat the Quaternion
      * @return *this instance of chaining
      */
     constexpr PMVMatrix4& rotateP(const Quat4f& quat) noexcept {
@@ -768,49 +768,49 @@ class PMVMatrix4 {
         return mulP( quat.toMatrix(mat4Tmp1) );
     }
 
-    /** Pop the {@link #getMv() modelview matrix} from its stack. */
+    /** Pop the getMv() modelview matrix from its stack. */
     constexpr_cxx20 PMVMatrix4& popMv() noexcept {
         m_stackMv.pop(m_matMv);
         setModelviewDirty();
         return *this;
     }
-    /** Pop the {@link #getP() projection matrix} from its stack. */
+    /** Pop the getP() projection matrix from its stack. */
     constexpr_cxx20 PMVMatrix4& popP() noexcept {
         m_stackP.pop(m_matP);
         setProjectionDirty();
         return *this;
     }
-    /** Pop the {@link #getT() texture matrix} from its stack. */
+    /** Pop the getT() texture matrix from its stack. */
     constexpr_cxx20 PMVMatrix4& popT() noexcept {
         m_stackTex.pop(m_matTex);
         setTextureDirty();
         return *this;
     }
-    /** Push the {@link #getMv() modelview matrix} to its stack, while preserving its values. */
+    /** Push the getMv() modelview matrix to its stack, while preserving its values. */
     constexpr_cxx20 PMVMatrix4& pushMv() noexcept {
         m_stackMv.push(m_matMv);
         return *this;
     }
-    /** Push the {@link #getP() projection matrix} to its stack, while preserving its values. */
+    /** Push the getP() projection matrix to its stack, while preserving its values. */
     constexpr_cxx20 PMVMatrix4& pushP() noexcept {
         m_stackP.push(m_matP);
         return *this;
     }
-    /** Push the {@link #getT() texture matrix} to its stack, while preserving its values. */
+    /** Push the getT() texture matrix to its stack, while preserving its values. */
     constexpr_cxx20 PMVMatrix4& pushT() noexcept {
         m_stackTex.push(m_matTex);
         return *this;
     }
 
     /**
-     * {@link #mulP(Mat4) Multiply} the {@link #getP() projection matrix} with the orthogonal matrix.
+     * mulP(Mat4) Multiply the getP() projection matrix with the orthogonal matrix.
      * @param left
      * @param right
      * @param bottom
      * @param top
      * @param zNear
      * @param zFar
-     * @see Mat4#setToOrtho(float, float, float, float, float, float)
+     * @see Mat4::setToOrtho(float, float, float, float, float, float)
      */
     constexpr void orthoP(const float left, const float right, const float bottom, const float top, const float zNear, const float zFar) noexcept {
         Mat4 mat4Tmp1;
@@ -818,11 +818,11 @@ class PMVMatrix4 {
     }
 
     /**
-     * {@link #mulP(Mat4) Multiply} the {@link #getP() projection matrix} with the frustum matrix.
+     * mulP(Mat4) Multiply the getP() projection matrix with the frustum matrix.
      *
      * @throws IllegalArgumentException if {@code zNear <= 0} or {@code zFar <= zNear}
      *                          or {@code left == right}, or {@code bottom == top}.
-     * @see Mat4#setToFrustum(float, float, float, float, float, float)
+     * @see Mat4::setToFrustum(float, float, float, float, float, float)
      */
     void frustumP(const float left, const float right, const float bottom, const float top, const float zNear, const float zFar) {
         Mat4 mat4Tmp1;
@@ -834,14 +834,14 @@ class PMVMatrix4 {
     //
 
     /**
-     * Set the {@link #getP() projection matrix} to the perspective/frustum matrix.
+     * Set the getP() projection matrix to the perspective/frustum matrix.
      *
      * @param fovy_rad fov angle in radians
      * @param aspect aspect ratio width / height
      * @param zNear
      * @param zFar
      * @throws IllegalArgumentException if {@code zNear <= 0} or {@code zFar <= zNear}
-     * @see Mat4#setToPerspective(float, float, float, float)
+     * @see Mat4::setToPerspective(float, float, float, float)
      */
     PMVMatrix4& setToPerspective(const float fovy_rad, const float aspect, const float zNear, const float zFar) {
         m_matP.setToPerspective(fovy_rad, aspect, zNear, zFar);
@@ -850,14 +850,14 @@ class PMVMatrix4 {
     }
 
     /**
-     * {@link #mulP(Mat4) Multiply} the {@link #getP() projection matrix} with the perspective/frustum matrix.
+     * mulP(Mat4) Multiply the getP() projection matrix with the perspective/frustum matrix.
      *
      * @param fovy_rad fov angle in radians
      * @param aspect aspect ratio width / height
      * @param zNear
      * @param zFar
      * @throws IllegalArgumentException if {@code zNear <= 0} or {@code zFar <= zNear}
-     * @see Mat4#setToPerspective(float, float, float, float)
+     * @see Mat4::setToPerspective(float, float, float, float)
      */
     PMVMatrix4& perspectiveP(const float fovy_rad, const float aspect, const float zNear, const float zFar) {
         Mat4 mat4Tmp1;
@@ -866,8 +866,8 @@ class PMVMatrix4 {
     }
 
     /**
-     * Set the {@link #getMv() modelview matrix}
-     * to the eye, object and orientation (camera), i.e. {@link Mat4#setToLookAt(Vec3, Vec3, Vec3, Mat4)}.
+     * Set the getMv() modelview matrix
+     * to the eye, object and orientation (camera), i.e. Mat4::setToLookAt(Vec3, Vec3, Vec3, Mat4).
      */
     constexpr PMVMatrix4& setToLookAtMv(const Vec3& eye, const Vec3& center, const Vec3& up) noexcept {
         m_matMv.setToLookAt(eye, center, up);
@@ -876,8 +876,8 @@ class PMVMatrix4 {
     }
 
     /**
-     * {@link #mulMv(Mat4) Multiply} the {@link #getMv() modelview matrix}
-     * with the eye, object and orientation (camera), i.e. {@link Mat4#setToLookAt(Vec3, Vec3, Vec3, Mat4)}.
+     * mulMv(Mat4) Multiply the getMv() modelview matrix
+     * with the eye, object and orientation (camera), i.e. Mat4::setToLookAt(Vec3, Vec3, Vec3, Mat4).
      */
     constexpr PMVMatrix4& lookAtMv(const Vec3& eye, const Vec3& center, const Vec3& up) noexcept {
         Mat4 mat4Tmp1;
@@ -954,7 +954,7 @@ class PMVMatrix4 {
     /**
      * Map window coordinates to object coordinates.
      *
-     * The INVERSE_PROJECTION must have been request in the constructor.
+     * The PMVData::inv_proj must have been request in the constructor.
      *
      * - Pv' = P' x V', using getPi()
      * - V' x V x M = M, with Mv = V x M
@@ -980,6 +980,8 @@ class PMVMatrix4 {
 
     /**
      * Map window coordinates to view coordinates.
+     *
+     * The PMVData::inv_proj must have been request in the constructor.
      *
      * @param winx
      * @param winy
@@ -1024,10 +1026,10 @@ class PMVMatrix4 {
 
     /**
      * Map two window coordinates w/ shared X/Y and distinctive Z
-     * to a {@link Ray} in object space.
+     * to a Ray in object space.
      *
-     * The resulting {@link Ray} maybe used for <i>picking</i>
-     * using a {@link AABBox#getRayIntersection(Vec3, Ray, float, bool) bounding box}
+     * The resulting Ray maybe used for <i>picking</i>
+     * using a AABBox::getRayIntersection(Vec3, Ray, float, bool) bounding box
      * of a shape also in object space.
      *
      * Notes for picking <i>winz0</i> and <i>winz1</i>:
@@ -1039,7 +1041,7 @@ class PMVMatrix4 {
      * @param winz0
      * @param winz1
      * @param viewport
-     * @param ray storage for the resulting {@link Ray}
+     * @param ray storage for the resulting Ray
      * @return true if successful, otherwise false (failed to invert matrix, or becomes z is infinity)
      */
     bool mapWinToObjRay(const float winx, const float winy, const float winz0, const float winz1,
@@ -1049,13 +1051,13 @@ class PMVMatrix4 {
 
     /**
      * Map two window coordinates w/ shared X/Y and distinctive Z
-     * to a {@link Ray} in world space.
+     * to a Ray in world space.
      *
-     * The resulting {@link Ray} maybe used for <i>picking</i>
-     * using a {@link AABBox#getRayIntersection(Vec3, Ray, float, bool) bounding box}
+     * The resulting Ray maybe used for <i>picking</i>
+     * using a AABBox::getRayIntersection(Vec3, Ray, float, bool) bounding box
      * of a shape also in world space.
      *
-     * The INVERSE_PROJECTION must have been request in the constructor.
+     * The PMVData::inv_proj must have been request in the constructor.
      *
      * - Pv' = P' x V', using getPi()
      * - V' x V x M = M, with Mv = V x M
@@ -1070,10 +1072,10 @@ class PMVMatrix4 {
      * @param winz1
      * @param matVi the inverse view matrix
      * @param viewport
-     * @param ray storage for the resulting {@link Ray}
+     * @param ray storage for the resulting Ray
      * @return true if successful, otherwise false (failed to invert matrix, or becomes z is infinity)
      *
-     * @see INVERSE_PROJECTION
+     * @see PMVData::inv_proj
      * @see setView()
      */
     bool mapWinToWorldRay(const float winx, const float winy, const float winz0, const float winz1,
@@ -1085,10 +1087,10 @@ class PMVMatrix4 {
 
     /**
      * Map two window coordinates w/ shared X/Y and distinctive Z
-     * to a {@link Ray} in view space.
+     * to a Ray in view space.
      *
-     * The resulting {@link Ray} maybe used for <i>picking</i>
-     * using a {@link AABBox#getRayIntersection(Vec3, Ray, float, bool) bounding box}
+     * The resulting Ray maybe used for <i>picking</i>
+     * using a AABBox::getRayIntersection(Vec3, Ray, float, bool) bounding box
      * of a shape also in view space.
      *
      * Notes for picking <i>winz0</i> and <i>winz1</i>:
@@ -1100,7 +1102,7 @@ class PMVMatrix4 {
      * @param winz0
      * @param winz1
      * @param viewport
-     * @param ray storage for the resulting {@link Ray}
+     * @param ray storage for the resulting Ray
      * @return true if successful, otherwise false (failed to invert matrix, or becomes z is infinity)
      */
     bool mapWinToViewRay(const float winx, const float winy, const float winz0, const float winz1,
@@ -1158,7 +1160,7 @@ class PMVMatrix4 {
      * Returns the modified bits due to mutable operations..
      * <p>
      * A modified bit is set, if the corresponding matrix had been modified by a mutable operation
-     * since last {@link #update()} or {@link #getModifiedBits(bool) getModifiedBits(true)} call.
+     * since last update() or getModifiedBits(bool) getModifiedBits(true) call.
      * </p>
      * @param clear if true, clears the modified bits, otherwise leaves them untouched.
      *
@@ -1179,22 +1181,22 @@ class PMVMatrix4 {
     /**
      * Returns the dirty bits due to mutable operations,
      * i.e.
-     * - {@link #INVERSE_MODELVIEW} (if requested)
-     * - {@link #INVERSE_PROJECTION} (if requested)
-     * - {@link #INVERSE_TRANSPOSED_MODELVIEW} (if requested)
-     * - {@link #FRUSTUM} (always, cleared via {@link #getFrustum()}
+     * - PMVData::inv_mv (if requested)
+     * - PMVData::inv_proj (if requested)
+     * - PMVData::inv_tps_mv (if requested)
+     * - PMVData::frustum (always, cleared via getFrustum()
      * <p>
      * A dirty bit is set, if the corresponding matrix had been modified by a mutable operation
-     * since last {@link #update()} call and requested in the constructor {@link #PMVMatrix4(int)}.
+     * since last update() call and requested in the constructor PMVMatrix4(int).
      * </p>
      * <p>
-     * {@link #update()} clears the dirty state for the matrices and {@link #getFrustum()} for {@link #FRUSTUM}.
+     * update() clears the dirty state for the matrices and getFrustum() for FRUSTUM.
      * </p>
      *
      * @see #isReqDirty()
-     * @see PMVMats::INVERSE_MODELVIEW
-     * @see PMVMats::INVERSE_PROJECTION
-     * @see PMVMats::INVERSE_TRANSPOSED_MODELVIEW
+     * @see PMVData::inv_mv
+     * @see PMVData::inv_proj
+     * @see PMVData::inv_tps_mv
      * @see PMVMats::FRUSTUM
      * @see PMVMatrix4(PMVMats)
      * @see getMvi()
@@ -1208,35 +1210,35 @@ class PMVMatrix4 {
     }
 
     /**
-     * Returns true if the one of the {@link #getReqBits() requested bits} are are set dirty due to mutable operations,
+     * Returns true if the one of the getReqBits() requested bits are are set dirty due to mutable operations,
      * i.e. at least one of
-     * - {@link #INVERSE_MODELVIEW}
-     * - {@link #INVERSE_PROJECTION}
-     * - {@link #INVERSE_TRANSPOSED_MODELVIEW}
+     * - PMVData::inv_mv
+     * - PMVData::inv_proj
+     * - PMVData::inv_tps_mv
      * <p>
      * A dirty bit is set, if the corresponding matrix had been modified by a mutable operation
-     * since last {@link #update()} call and requested in the constructor {@link #PMVMatrix4(int)}.
+     * since last update() call and requested in the constructor PMVMatrix4(int).
      * </p>
      * <p>
-     * {@link #update()} clears the dirty state for the matrices and {@link #getFrustum()} for {@link #FRUSTUM}.
+     * update() clears the dirty state for the matrices and getFrustum() for FRUSTUM.
      * </p>
      *
-     * @see #INVERSE_MODELVIEW
-     * @see #INVERSE_PROJECTION
-     * @see #INVERSE_TRANSPOSED_MODELVIEW
-     * @see #PMVMatrix4(int)
-     * @see #getMvi()
-     * @see #getMvit()
-     * @see #makeSyncPMvMvi()
-     * @see #makeSyncPMvMviMvit()
+     * @see PMVData::inv_mv
+     * @see PMVData::inv_proj
+     * @see PMVData::inv_tps_mv
+     * @see PMVMatrix4(int)
+     * @see getMvi()
+     * @see getMvit()
+     * @see makeSyncPMvMvi()
+     * @see makeSyncPMvMviMvit()
      */
     constexpr bool isReqDirty() noexcept {
         return has_any(m_dirtyBits, m_requestBits);
     }
 
     /**
-     * Sets the {@link #getMv() Modelview (Mv)} matrix dirty and modified,
-     * i.e. adds INVERSE_MODELVIEW | INVERSE_TRANSPOSED_MODELVIEW | MANUAL_BITS to {@link #getDirtyBits() dirty bits}.
+     * Sets the getMv() Modelview (Mv) matrix dirty and modified,
+     * i.e. adds PMVData::inv_mv | PMVData::inv_tps_mv | MANUAL_BITS to getDirtyBits() dirty bits.
      * @see #isReqDirty()
      */
     constexpr void setModelviewDirty() noexcept {
@@ -1245,8 +1247,8 @@ class PMVMatrix4 {
     }
 
     /**
-     * Sets the {@link #getP() Projection (P)} matrix dirty and modified,
-     * i.e. adds INVERSE_PROJECTION | MANUAL_BITS to {@link #getDirtyBits() dirty bits}.
+     * Sets the getP() Projection (P) matrix dirty and modified,
+     * i.e. adds PMVData::inv_proj | MANUAL_BITS to getDirtyBits() dirty bits.
      */
     constexpr void setProjectionDirty() noexcept {
         m_dirtyBits |= PMVData::inv_proj | PMVData::manual ;
@@ -1254,7 +1256,7 @@ class PMVMatrix4 {
     }
 
     /**
-     * Sets the {@link #getT() Texture (T)} matrix modified.
+     * Sets the getT() Texture (T) matrix modified.
      */
     constexpr void setTextureDirty() noexcept {
         m_modifiedBits |= PMVMod::text;
@@ -1263,15 +1265,15 @@ class PMVMatrix4 {
     /**
      * Returns the request bit mask, which uses bit values equal to the dirty mask
      * and may contain
-     * - PMVMats::INVERSE_MODELVIEW
-     * - PMVMats::INVERSE_PROJECTION
-     * - PMVMats::INVERSE_TRANSPOSED_MODELVIEW
+     * - PMVData::inv_mv
+     * - PMVData::inv_proj
+     * - PMVData::inv_tps_mv
      *
      * The request bit mask is set by in the constructor PMVMatrix4(PMVMats).
      *
-     * @see PMVMats::INVERSE_MODELVIEW
-     * @see PMVMats::INVERSE_PROJECTION
-     * @see PMVMats::INVERSE_TRANSPOSED_MODELVIEW
+     * @see PMVData::inv_mv
+     * @see PMVData::inv_proj
+     * @see PMVData::inv_tps_mv
      * @see PMVMatrix4(PMVMats)
      * @see getMvi()
      * @see getMvit()
@@ -1284,13 +1286,13 @@ class PMVMatrix4 {
     /**
      * Returns the pre-multiplied projection x modelview, P x Mv.
      * <p>
-     * This {@link Mat4} instance should be re-fetched via this method and not locally stored
+     * This Mat4 instance should be re-fetched via this method and not locally stored
      * to have it updated from a potential modification of underlying projection and/or modelview matrix.
-     * {@link #update()} has no effect on this {@link Mat4}.
+     * update() has no effect on this Mat4.
      * </p>
      * <p>
      * This pre-multipled P x Mv is considered dirty, if its corresponding
-     * {@link #getP() P matrix} or {@link #getMv() Mv matrix} has been modified since its last update.
+     * getP() P matrix} or getMv() Mv matrix has been modified since its last update.
      * </p>
      * @see #update()
      */
@@ -1304,15 +1306,15 @@ class PMVMatrix4 {
 
     /**
      * Returns the pre-multiplied inverse projection x modelview,
-     * if {@link Mat4#invert(Mat4)} succeeded, otherwise `null`.
+     * if Mat4::invert(Mat4) succeeded, otherwise `null`.
      * <p>
-     * This {@link Mat4} instance should be re-fetched via this method and not locally stored
+     * This Mat4 instance should be re-fetched via this method and not locally stored
      * to have it updated from a potential modification of underlying projection and/or modelview matrix.
-     * {@link #update()} has no effect on this {@link Mat4}.
+     * update() has no effect on this Mat4.
      * </p>
      * <p>
      * This pre-multipled invert(P x Mv) is considered dirty, if its corresponding
-     * {@link #getP() P matrix} or {@link #getMv() Mv matrix} has been modified since its last update.
+     * getP() P matrix or getMv() Mv matrix has been modified since its last update.
      * </p>
      * @see #update()
      */
@@ -1328,13 +1330,13 @@ class PMVMatrix4 {
     /**
      * Returns the frustum, derived from projection x modelview.
      * <p>
-     * This {@link Frustum} instance should be re-fetched via this method and not locally stored
+     * This Frustum instance should be re-fetched via this method and not locally stored
      * to have it updated from a potential modification of underlying projection and/or modelview matrix.
-     * {@link #update()} has no effect on this {@link Frustum}.
+     * update() has no effect on this Frustum.
      * </p>
      * <p>
-     * The {@link Frustum} is considered dirty, if its corresponding
-     * {@link #getP() P matrix} or {@link #getMv() Mv matrix} has been modified since its last update.
+     * The Frustum is considered dirty, if its corresponding
+     * getP() P matrix or getMv() Mv matrix has been modified since its last update.
      * </p>
      * @see #update()
      */
@@ -1347,29 +1349,29 @@ class PMVMatrix4 {
     }
 
     /**
-     * Update the derived {@link #getMvi() inverse modelview (Mvi)},
-     * {@link #getMvit() inverse transposed modelview (Mvit)} matrices
-     * <b>if</b> they {@link #isReqDirty() are dirty} <b>and</b>
-     * requested via the constructor {@link #PMVMatrix4(int)}.<br/>
+     * Update the derived getMvi() inverse modelview (Mvi),
+     * getMvit() inverse transposed modelview (Mvit) matrices
+     * <b>if</b> they isReqDirty() are dirty <b>and</b>
+     * requested via the constructor PMVMatrix4(int).<br/>
      * Hence updates the following dirty bits.
-     * - PMVMats::INVERSE_MODELVIEW
-     * - PMVMats::INVERSE_PROJECTION
-     * - PMVMats::INVERSE_TRANSPOSED_MODELVIEW
+     * - PMVData::inv_mv
+     * - PMVData::inv_proj
+     * - PMVData::inv_tps_mv
      *
-     * The {@link Frustum} is updated only via {@link #getFrustum()} separately.
+     * The Frustum is updated only via getFrustum() separately.
 
      * The Mvi and Mvit matrices are considered dirty, if their corresponding
-     * {@link #getMv() Mv matrix} has been modified since their last update.
+     * getMv() Mv matrix has been modified since their last update.
 
-     * Method is automatically called by {@link SyncMat4} and {@link SyncMatrices4f}
-     * instances {@link SyncAction} as retrieved by e.g. {@link #makeSyncMvit()}.
-     * This ensures an automatic update cycle if used with {@link com.jogamp.opengl.GLUniformData}.
+     * Method is automatically called by SyncMat4 and SyncMatrices4f
+     * instances SyncAction as retrieved by e.g. makeSyncMvit().
+     * This ensures an automatic update cycle if used with com.jogamp.opengl.GLUniformData.
 
      * Method may be called manually in case mutable operations has been called
      * and caller operates on already fetched references, i.e. not calling
-     * {@link #getMvi()}, {@link #getMvit()} anymore.
+     * getMvi(), getMvit() anymore.
 
-     * Method clears the modified bits like {@link #getModifiedBits(bool) getModifiedBits(true)},
+     * Method clears the modified bits like getModifiedBits(bool) getModifiedBits(true),
      * which are set by any mutable operation. The modified bits have no impact
      * on this method, but the return value.
      *
@@ -1380,9 +1382,9 @@ class PMVMatrix4 {
      *
      * @see getModifiedBits(bool)
      * @see isReqDirty()
-     * @see PMVMats::INVERSE_MODELVIEW
-     * @see PMVMats::INVERSE_PROJECTION
-     * @see PMVMats::INVERSE_TRANSPOSED_MODELVIEW
+     * @see PMVData::inv_mv
+     * @see PMVData::inv_proj
+     * @see PMVData::inv_tps_mv
      * @see PMVMatrix4(PMVMats)
      * @see getMvi()
      * @see getMvit()
@@ -1405,7 +1407,7 @@ class PMVMatrix4 {
             m_modifiedBits = PMVMod::none;
             mod = false;
         }
-        if( has_any( m_requestBits & ( ( m_dirtyBits & ( PMVData::inv_proj ) ) ) ) ) { // only if requested & dirty
+        if( has_any( m_requestBits & ( m_dirtyBits & PMVData::inv_proj ) ) ) { // only if requested & dirty
             if( !m_matPi.invert(m_matP) ) {
                 jau_DBG_ERR_PRINT("Invalid source P matrix, can't compute inverse: %s", m_matP.toString().c_str(), E_FILE_LINE);
                 // still continue with other derived matrices
@@ -1414,11 +1416,11 @@ class PMVMatrix4 {
             }
             m_dirtyBits &= ~PMVData::inv_proj;
         }
-        if( has_any( m_requestBits & ( ( m_dirtyBits & ( PMVData::inv_mv | PMVData::inv_tps_mv ) ) ) ) ) { // only if requested & dirty
+        if( has_any( m_requestBits & ( m_dirtyBits & ( PMVData::inv_mv | PMVData::inv_tps_mv ) ) ) ) { // only if requested & dirty
             if( !m_matMvi.invert(m_matMv) ) {
                 jau_DBG_ERR_PRINT("Invalid source Mv matrix, can't compute inverse: %s", m_matMv.toString().c_str(), E_FILE_LINE);
                 m_dirtyBits &= ~(PMVData::inv_mv | PMVData::inv_tps_mv);
-                return mod; // no successful update as we abort due to inversion failure, skip INVERSE_TRANSPOSED_MODELVIEW as well
+                return mod; // no successful update as we abort due to inversion failure, skip PMVData::inv_tps_mv as well
             }
             m_dirtyBits &= ~PMVData::inv_mv;
             mod = true;
