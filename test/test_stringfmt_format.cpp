@@ -209,6 +209,46 @@ TEST_CASE("jau::cfmt::FormatOpts with auto", "[jau][jau::cfmt]") {
         REQUIRE( jau::cfmt::plength_t::any == r.opts().length_mod);
         REQUIRE( "1" == s);
     }
+    {
+        using namespace jau::cfmt;
+        int v=65;
+        static_assert(jau::cfmt::cspec_t::signed_int == jau::cfmt::to_cspec<decltype(v)>());
+
+        std::string s;
+        jau::cfmt::Result r = jau::cfmt::formatR(s,"%2.3d", v);
+        std::cerr << "FormatResult " << r << "\n";
+        std::cerr << "FormatString '" << s << "'\n";
+        REQUIRE( true == r.success());
+        REQUIRE( 1 == r.argumentCount());
+        REQUIRE( flags_t::none == r.opts().flags);
+        REQUIRE( true == r.opts().width_set);
+        REQUIRE( 2 == r.opts().width);
+        REQUIRE( true == r.opts().precision_set);
+        REQUIRE( 3 == r.opts().precision);
+        REQUIRE( jau::cfmt::cspec_t::signed_int == r.opts().conversion);
+        REQUIRE( jau::cfmt::plength_t::none == r.opts().length_mod);
+        REQUIRE( "065" == s);
+    }
+    {
+        using namespace jau::cfmt;
+        float v=12.34;
+        static_assert(jau::cfmt::cspec_t::floating_point == jau::cfmt::to_cspec<decltype(v)>());
+
+        std::string s;
+        jau::cfmt::Result r = jau::cfmt::formatR(s,"%2.3f", v);
+        std::cerr << "FormatResult " << r << "\n";
+        std::cerr << "FormatString '" << s << "'\n";
+        REQUIRE( true == r.success());
+        REQUIRE( 1 == r.argumentCount());
+        REQUIRE( flags_t::none == r.opts().flags);
+        REQUIRE( true == r.opts().width_set);
+        REQUIRE( 2 == r.opts().width);
+        REQUIRE( true == r.opts().precision_set);
+        REQUIRE( 3 == r.opts().precision);
+        REQUIRE( jau::cfmt::cspec_t::floating_point == r.opts().conversion);
+        REQUIRE( jau::cfmt::plength_t::none == r.opts().length_mod);
+        REQUIRE( "12.340" == s);
+    }
 #if 0
     {
     short i3=-3;

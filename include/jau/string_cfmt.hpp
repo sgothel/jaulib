@@ -579,14 +579,14 @@ namespace jau::cfmt {
     class Result {
       private:
         std::string_view m_fmt;
-        size_t m_pos;        ///< position of next fmt character to be read
+        std::string_view::const_iterator m_pos; ///< position of next fmt character to be read
         ssize_t m_arg_count;
         int m_line;
         FormatOpts m_opts;
         bool m_success:1; ///< true if operation was successful, otherwise indicates error
 
       public:
-        constexpr Result(std::string_view f, FormatOpts o, size_t pos, ssize_t acount, int line, bool ok) noexcept
+        constexpr Result(std::string_view f, FormatOpts o, std::string_view::const_iterator pos, ssize_t acount, int line, bool ok) noexcept
         : m_fmt(f), m_pos(pos), m_arg_count(acount), m_line(line), m_opts(o), m_success(ok) {}
 
         /// true if operation was successful, otherwise indicates error
@@ -601,7 +601,9 @@ namespace jau::cfmt {
         /// Last argument FormatOpts (error analysis)
         constexpr const FormatOpts& opts() const noexcept { return m_opts; }
         /// Position of next fmt character to be read (error analysis)
-        constexpr size_t pos() const noexcept { return m_pos; }
+        constexpr std::string_view::const_iterator pos() const noexcept { return m_pos; }
+        /// Index of next fmt character to be read (error analysis)
+        constexpr size_t index() const noexcept { return m_pos-m_fmt.cbegin(); }
         /// error line of implementation source code or zero if success (error analysis)
         constexpr int errorLine() const noexcept { return m_line; }
 
@@ -705,8 +707,8 @@ namespace jau::cfmt {
             requires std::is_floating_point_v<T>
             constexpr void appendFormattedFloat(const FormatOpts&, const T&, nsize_t) noexcept {}
 
-            constexpr void appendText(std::string_view) noexcept { }
-            constexpr void appendText(std::string_view, size_t, size_t) noexcept { }
+            constexpr void appendText(const char) noexcept { }
+            constexpr void appendText(const char *, const char *) noexcept { }
             constexpr void appendError(size_t, int , const std::string_view) noexcept {}
         };
 
@@ -796,13 +798,23 @@ namespace jau::cfmt {
                     impl::append_efloatF64(m_s, m_maxLen, v, opts);
                 }
             }
-            void appendText(std::string_view v) noexcept {
-                jau::append_string(m_s, v, 0, jau::min(m_maxLen - m_s.size(), v.size()));
+            void appendText(const char c) noexcept {
+                if (m_maxLen > m_s.size()) {
+                    try {
+                        m_s.append(1, c);
+                    } catch (...) {
+                        jau::fput_exception(stderr, std::current_exception(), E_FILE_LINE);
+                    }
+                }
             }
-            void appendText(std::string_view v, size_t pos, size_t n) noexcept {
-                jau::append_string(m_s, v, pos, jau::min(m_maxLen - m_s.size(), n));
+            void appendText(const char *vbegin, const char *vend) noexcept {
+                const size_t len = jau::min(m_maxLen - m_s.size(), size_t(vend-vbegin));
+                try {
+                    m_s.append(vbegin, len);
+                } catch (...) {
+                    jau::fput_exception(stderr, std::current_exception(), E_FILE_LINE);
+                }
             }
-
             void appendError(size_t argIdx, int line, const std::string_view tag) noexcept;
         };
 
@@ -815,7 +827,8 @@ namespace jau::cfmt {
         class FResult {
           public:
             std::string_view fmt;
-            size_t pos;  ///< position of next fmt character to be read
+            std::string_view::const_iterator pos;  ///< position of next fmt character to be read
+            std::string_view::const_iterator end;  ///< position of end
             ssize_t arg_count;
             int line;
             FormatOpts opts;
@@ -823,7 +836,6 @@ namespace jau::cfmt {
 
           private:
             Output m_out;
-            size_t pos_lstart;  ///< start of last conversion spec
             unsigned int m_argtype_size;
             cspec_t m_arg_aconvert; //< auto conversion type of parseOne Type
             bool m_argtype_signed:1;
@@ -831,9 +843,9 @@ namespace jau::cfmt {
 
           public:
             constexpr FResult(Output &&p, std::string_view fmt_) noexcept
-            : fmt(fmt_), pos(0), arg_count(0), line(0), opts(),
+            : fmt(fmt_), pos(fmt_.cbegin()), end(fmt_.cend()), arg_count(0), line(0), opts(),
               state(pstate_t::outside),
-              m_out(std::move(p)), pos_lstart(0),
+              m_out(std::move(p)),
               m_argtype_size(0),
               m_arg_aconvert(cspec_t::none),
               m_argtype_signed(false),
@@ -848,8 +860,11 @@ namespace jau::cfmt {
             }
 
             CXX_ALWAYS_INLINE
+            constexpr size_t index() const noexcept { return pos - fmt.cbegin(); }
+
+            CXX_ALWAYS_INLINE
             constexpr bool hasNext() const noexcept {
-                return !error() && pos < fmt.length();
+                return !error() && pos < end;
             }
 
             CXX_ALWAYS_INLINE
@@ -858,15 +873,15 @@ namespace jau::cfmt {
             constexpr bool error() const noexcept { return pstate_t::error == state; }
 
             std::string toString() const {
-                const char c = pos < fmt.length() ? fmt[pos] : '@';
+                const char c = pos < end ? *pos : '@';
                 std::string s = "args ";
                 s.append(std::to_string(arg_count))
                 .append(", state ")
                 .append(to_string(state))
                 .append(", line ")
                 .append(std::to_string(line))
-                .append(", pos ")
-                .append(std::to_string(pos))
+                .append(", idx ")
+                .append(std::to_string(index()))
                 .append(", char `")
                 .append(std::string(1, c))
                 .append("`, last[")
@@ -916,8 +931,8 @@ namespace jau::cfmt {
             }
 
             constexpr bool nextSymbol(char &c) noexcept {
-                if (pos < fmt.length()) {
-                    c = fmt[pos++];
+                if (pos < end) [[likely]] {
+                    c = *pos++;
                     return true;
                 } else {
                     return false;
@@ -928,24 +943,26 @@ namespace jau::cfmt {
             constexpr bool toConversion() noexcept {
                 if (pstate_t::outside != state) {
                     return true;  // inside conversion specifier
-                } else if (fmt[pos] == '%') {
+                } else if (*pos == '%') [[likely]] {
                     state = pstate_t::start;  // just at start of conversion specifier
-                    pos_lstart = pos++;
+                    ++pos;
                     reset();
                     return true;
-                } else if (pos < fmt.length()) {
+                } else if (pos < end) {
                     // seek next conversion specifier
-                    const size_t q = fmt.find('%', pos + 1);
-                    if (q == std::string::npos) {
+                    std::string_view::const_iterator q=pos+1;  ///< position of next fmt character to be read
+                    while(*q != '%' && q < end) {
+                        ++q;
+                    }
+                    if (q == end) {
                         // no conversion specifier found, end of format
-                        appendText(fmt, pos, fmt.length() - pos);
-                        pos = fmt.length();
+                        appendText(pos, end);
+                        pos = end;
                         return false;
                     } else {
                         // new conversion specifier found
-                        appendText(fmt, pos, q - pos);
+                        appendText(pos, q);
                         state = pstate_t::start;
-                        pos_lstart = pos;
                         pos = q + 1;
                         reset();
                         return true;
@@ -998,14 +1015,11 @@ namespace jau::cfmt {
                 m_out.appendFormattedFloat(opts, v, m_argtype_size);
             }
 
-            CXX_NO_INLINE
-            constexpr void appendText(const std::string_view v) noexcept {
-                m_out.appendText(v);
+            constexpr void appendText(const char c) noexcept {
+                m_out.appendText(c);
             }
-
-            CXX_NO_INLINE
-            constexpr void appendText(std::string_view v, size_t pos_, size_t n) noexcept {
-                m_out.appendText(v, pos_, n);
+            constexpr void appendText(const char *vbegin, const char *vend) noexcept {
+                m_out.appendText(vbegin, vend);
             }
 
             CXX_NO_INLINE
@@ -1263,7 +1277,7 @@ namespace jau::cfmt {
                   || std::is_same_v<no_type_t, T>
             CXX_NO_INLINE
             static constexpr void parseOneImpl(Result &pc, const T &val) noexcept {
-                if( !pc.hasNext() ) {
+                if( !pc.hasNext() ) [[unlikely]] {
                     return;  // done or error
                 }
 
@@ -1276,55 +1290,55 @@ namespace jau::cfmt {
                     // pstate_t::outside != _state
 
                     /* skip '%' or previous `*` */
-                    if( !pc.nextSymbol(c) ) {
+                    if( !pc.nextSymbol(c) ) [[unlikely]] {
                         pc.setError(__LINE__);
                         return;  // error
                     }
 
-                    if( pstate_t::start == pc.state ) {
+                    if( pstate_t::start == pc.state ) [[likely]] {
                         pc.state = pstate_t::field_width;
                         parseFlags(pc, c);
 
                         /* parse field width */
-                        if( c == '*' ) {
-                            // error or continue with next argument for same conversion -> field_width
-                            parseArgWidthPrecision<T>(true, pc, val);
-                            return;
-                        } else {
+                        if( c != '*' ) [[likely]] {
                             if( !parseFmtWidthPrecision(true, pc, c) ) {
-                                if( pc.error() ) {
+                                if( pc.error() ) [[unlikely]] {
                                     return;
                                 }
                                 // no width, continue with same argument for same conversion -> field_width
                             }
+                        } else {
+                            // error or continue with next argument for same conversion -> field_width
+                            parseArgWidthPrecision<T>(true, pc, val);
+                            return;
                         }
                     }
 
-                    if( pstate_t::field_width == pc.state ) {
+                    if( pstate_t::field_width == pc.state ) [[likely]] {
                         /* parse precision */
                         pc.state = pstate_t::precision;
                         if( c == '.' ) {
-                            if( !pc.nextSymbol(c) ) {
+                            if( !pc.nextSymbol(c) ) [[unlikely]] {
                                 pc.setError(__LINE__); // missing number + spec
                                 return; // error
                             }
-                            if( c == '*' ) {
-                                // error or continue with next argument for same conversion -> field_width
-                                parseArgWidthPrecision<T>(false, pc, val);
-                                return;
-                            } else {
+                            if( c != '*' ) [[likely]] {
                                 if( !parseFmtWidthPrecision(false, pc, c) ) {
-                                    if( pc.error() ) {
+                                    if( pc.error() ) [[unlikely]] {
                                         return;
                                     }
                                     // no explicit precision -> zero precision, continue with same argument
                                     pc.opts.setPrecision(0);
                                 }
+                            } else {
+                                // error or continue with next argument for same conversion -> field_width
+                                parseArgWidthPrecision<T>(false, pc, val);
+                                return;
                             }
                         }
                     }
 
-                    if( !parseLengthMods(pc, c) ) {
+                    if( !parseLengthMods(pc, c) ) [[likely]] {
                         pc.appendError("Len");
                         return;  // error
                     }
@@ -1332,15 +1346,15 @@ namespace jau::cfmt {
                     pc.setLastSpec(pc.pos);
 #endif
 
-                    if( c == '%' ) {
-                        loop_next = true;
-                        pc.appendText("%");
-                    } else {
+                    if( c != '%' ) [[likely]] {
                         loop_next = false;
-                        if( !parseFmtSpec<T>(pc, c, val) ) {
+                        if( !parseFmtSpec<T>(pc, c, val) ) [[unlikely]] {
                             pc.appendError("Cnv");
                             return;  // error
                         }
+                    } else {
+                        loop_next = true;
+                        pc.appendText('%');
                     }
 
                     // next conversion specifier
@@ -1389,81 +1403,137 @@ namespace jau::cfmt {
                 // next argument is required
             }
 
-            /// Parse format field width or precision, returns true if field is consumed and parsing can continue
-            /// or false if field has not been consumed or definite error
-            static constexpr bool parseFmtWidthPrecision(bool is_width, Result &pc, char &c) noexcept {
-                char buffer[integral_max_digits10+1];
-                char *s = &buffer[0];
-                const char *s_begin = s;
-                const char *s_end = s + integral_max_digits10;
-                while( jau::is_digit(c) && s < s_end ) {
-                    *s = c; ++s;
-                    if( !pc.nextSymbol(c) ) {
-                        pc.setError(__LINE__); // no digit nor spec
-                        return false;
-                    }
+            CXX_ALWAYS_INLINE
+            static constexpr bool is_digit(const char c) noexcept {
+                return '0' <= c && c <= '9';
+            }
+            CXX_ALWAYS_INLINE
+            static constexpr int32_t digit(const uint8_t c) noexcept {
+                if ('0' <= c && c <= '9') {
+                    return c - '0';
                 }
-                if( jau::is_digit(c) ) {
-                    pc.setError(__LINE__); // s >= s_end
-                    return false;
-                }
-                std::string_view sv(s_begin, s - s_begin);
-                int64_t num = 0;
-                if( sv.empty() ) {
-                    return false; // no digits, may continue
+                return -1;
+            }
+            static constexpr bool fromIntString(uint32_t &result_, std::string_view str) noexcept {
+                using namespace jau::int_literals;
+                typedef uint32_t value_type;
+                result_ = 0;
+
+                const std::string_view::const_iterator str_end = str.cend();
+                std::string_view::const_iterator begin = str.cbegin(); // begin of digits
+
+                // no leading whitespace: `str` is trimmed
+                // no sign
+                // no prefix for radix 10
+                if (begin == str_end || !is_digit(*begin)) {
+                    return false; // no number (empty or no digit)
                 }
 
-                if( !jau::fromIntString(num, sv, 10).b ) {
-                    // pc.setError(__LINE__); // number syntax
-                    return false;  // error
+                // no tailing garbage: `str` is trimmed
+                std::string_view::const_iterator iter = str_end;
+
+                value_type multiplier = 1;
+                value_type result = 0;
+                while( iter > begin ) {
+                    const int32_t d = digit(*(--iter));
+                    if ( 0 > d ) {
+                        return false; // not a number
+                    }
+                    const value_type sum = value_type(d) * multiplier;
+                    if( result > std::numeric_limits<value_type>::max() - sum ) {
+                        return false; // overflow
+                    }
+                    result += sum;
+                    multiplier *= 10;
                 }
-                if( num < 0 || num > std::numeric_limits<int>::max() ) {
-                    // pc.setError(__LINE__); // number syntax
-                    return false;  // error
+                result_ = result;
+                return true;
+            }
+
+            /// Parse format field width or precision, returns true if field is consumed and parsing can continue
+            /// or false if field has not been consumed or definite error
+            CXX_NO_INLINE
+            static constexpr bool parseFmtWidthPrecision(bool is_width, Result &pc, char &c) noexcept {
+                const std::string_view::const_iterator p_begin = pc.pos-1; // move back to 'c' position (-1)
+                std::string_view::const_iterator p_i = p_begin;
+                const std::string_view::const_iterator p_end = pc.end;
+                while( is_digit(c) ) {
+                    ++p_i;
+                    if (p_i == p_end) {
+                        pc.pos = p_i;
+                        pc.setError(__LINE__);  // no digit nor spec
+                        return false;
+                    }
+                    c = *p_i;
+                }
+                pc.pos = p_i+1; // next-char to be read, c contains current char (non-digit)
+                if( p_i == p_begin ) {
+                    return false; // no digits, may continue
+                }
+                std::string_view sv(p_begin, p_i - p_begin);
+                uint32_t num = 0;
+
+                if( !fromIntString(num, sv) ) {
+                    // number syntax or overflow
+                    pc.setError(__LINE__);
+                    return false;
                 }
                 if( is_width ) {
-                    pc.opts.setWidth((uint32_t)num);
+                    pc.opts.setWidth(num);
                 } else {
-                    pc.opts.setPrecision((uint32_t)num);
+                    pc.opts.setPrecision(num);
                 }
                 return true;  // continue with current argument
             }
 
             /* parse length modifier, returns true if parsing can continue or false on error. */
             static constexpr bool parseLengthMods(Result &pc, char &c) noexcept {
-                if( 'h' == c ) {
-                    if( !pc.nextSymbol(c) ) { return false; }
-                    if( 'h' == c ) {
+                switch(c) {
+                    case 'h':
                         if( !pc.nextSymbol(c) ) { return false; }
-                        pc.opts.length_mod = plength_t::hh;
-                    } else {
-                        pc.opts.length_mod = plength_t::h;
-                    }
-                } else if( 'l' == c ) {
-                    if( !pc.nextSymbol(c) ) { return false; }
-                    if( 'l' == c ) {
+                        if( 'h' == c ) {
+                            if( !pc.nextSymbol(c) ) { return false; }
+                            pc.opts.length_mod = plength_t::hh;
+                        } else {
+                            pc.opts.length_mod = plength_t::h;
+                        }
+                        break;
+
+                    case 'l':
+                        if( !pc.nextSymbol(c) ) { return false; }
+                        if( 'l' == c ) {
+                            if( !pc.nextSymbol(c) ) { return false; }
+                            pc.opts.length_mod = plength_t::ll;
+                        } else {
+                            pc.opts.length_mod = plength_t::l;
+                        }
+                        break;
+                    case 'q':
                         if( !pc.nextSymbol(c) ) { return false; }
                         pc.opts.length_mod = plength_t::ll;
-                    } else {
-                        pc.opts.length_mod = plength_t::l;
-                    }
-                } else if( 'q' == c ) {
-                    if( !pc.nextSymbol(c) ) { return false; }
-                    pc.opts.length_mod = plength_t::ll;
-                } else if( 'L' == c ) {
-                    if( !pc.nextSymbol(c) ) { return false; }
-                    pc.opts.length_mod = plength_t::L;
-                } else if( 'j' == c ) {
-                    if( !pc.nextSymbol(c) ) { return false; }
-                    pc.opts.length_mod = plength_t::j;
-                } else if( 'z' == c || 'Z' == c ) {
-                    if( !pc.nextSymbol(c) ) { return false; }
-                    pc.opts.length_mod = plength_t::z;
-                } else if( 't' == c ) {
-                    if( !pc.nextSymbol(c) ) { return false; }
-                    pc.opts.length_mod = plength_t::t;
-                } else {
-                    pc.opts.length_mod = plength_t::none;
+                        break;
+                    case 'L':
+                        if( !pc.nextSymbol(c) ) { return false; }
+                        pc.opts.length_mod = plength_t::L;
+                        break;
+                    case 'j':
+                        if( !pc.nextSymbol(c) ) { return false; }
+                        pc.opts.length_mod = plength_t::j;
+                        break;
+                    case 'z':
+                        [[fallthrough]];
+                    case 'Z':
+                        if( !pc.nextSymbol(c) ) { return false; }
+                        pc.opts.length_mod = plength_t::z;
+                        break;
+                    case 't':
+                        if( !pc.nextSymbol(c) ) { return false; }
+                        pc.opts.length_mod = plength_t::t;
+                        break;
+                    default:
+                        pc.opts.length_mod = plength_t::none;
+                        break;
+
                 }
                 return true;
             }
