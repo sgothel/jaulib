@@ -737,7 +737,7 @@ void jau::unsafe::errPrint(FILE *out, const char *msg, bool addErrno, bool addBa
 //
 //
 
-SizeBoolPair jau::fromHexString(std::vector<uint8_t> &out, const uint8_t hexstr[], const size_t hexstr_len,
+SizeBoolPair jau::fromHexString(std::vector<uint8_t> &out, const char *hexstr, const size_t hexstr_len,
                                 const lb_endian_t byteOrder, const Bool checkPrefix) {
     using namespace jau::enums;
     size_t offset;
@@ -814,8 +814,8 @@ SizeBoolPair jau::fromHexString(std::vector<uint8_t> &out, const uint8_t hexstr[
     return { .s = offset, .b = true };
 }
 
-UInt8PtrSizeBoolPair jau::fromHexString(uint8_t *out, size_t out_len, const uint8_t hexstr[], const size_t hexstr_len,
-                                           const lb_endian_t byteOrder, const Bool checkPrefix) noexcept {
+UInt8PtrSizeBoolPair jau::fromHexString(uint8_t *out, size_t out_len, const char *hexstr, const size_t hexstr_len,
+                                        const lb_endian_t byteOrder, const Bool checkPrefix) noexcept {
     using namespace jau::enums;
 
     size_t offset;

@@ -226,13 +226,13 @@ namespace jau {
      * @param checkPrefix if True, checks for a leading `0x` and removes it, otherwise not.
      * @return pair [size_t consumed_chars, bool complete], i.e. consumed characters of string and completed=false if not fully consumed.
      */
-    SizeBoolPair fromHexString(std::vector<uint8_t> &out, const uint8_t hexstr[], const size_t hexstr_len,
+    SizeBoolPair fromHexString(std::vector<uint8_t> &out, const char *hexstr, const size_t hexstr_len,
                                const lb_endian_t byteOrder = lb_endian_t::big, const Bool checkPrefix = Bool::True);
 
     /** See hexStringBytes() */
     inline SizeBoolPair fromHexString(std::vector<uint8_t> &out, const std::string_view hexstr,
                                       const lb_endian_t byteOrder = lb_endian_t::big, const Bool checkPrefix = Bool::True) {
-        return jau::fromHexString(out, cast_char_ptr_to_uint8(hexstr.data()), hexstr.length(), byteOrder, checkPrefix); // NOLINT(bugprone-suspicious-stringview-data-usage)
+        return jau::fromHexString(out, hexstr.data(), hexstr.length(), byteOrder, checkPrefix); // NOLINT(bugprone-suspicious-stringview-data-usage)
     }
 
     /**
@@ -258,13 +258,13 @@ namespace jau {
      * @return triple [uint8_t* out_end, size_t consumed_chars, bool complete],
      *         i.e. end pointer of out (last write + 1), consumed characters of string and completed=false if not fully consumed.
      */
-    UInt8PtrSizeBoolPair fromHexString(uint8_t *out, size_t out_len, const uint8_t hexstr[], const size_t hexstr_len,
-                                          const lb_endian_t byteOrder = lb_endian_t::big, const Bool checkPrefix = Bool::True) noexcept;
+    UInt8PtrSizeBoolPair fromHexString(uint8_t *out, size_t out_len, const char *hexstr, const size_t hexstr_len,
+                                       const lb_endian_t byteOrder = lb_endian_t::big, const Bool checkPrefix = Bool::True) noexcept;
 
     /** See hexStringBytes() */
     inline UInt8PtrSizeBoolPair fromHexString(uint8_t *out, size_t out_len, const std::string_view hexstr,
-                                      const lb_endian_t byteOrder = lb_endian_t::big, const Bool checkPrefix = Bool::True) noexcept {
-        return jau::fromHexString(out, out_len, cast_char_ptr_to_uint8(hexstr.data()), hexstr.length(), byteOrder, checkPrefix); // NOLINT(bugprone-suspicious-stringview-data-usage)
+                                              const lb_endian_t byteOrder = lb_endian_t::big, const Bool checkPrefix = Bool::True) noexcept {
+        return jau::fromHexString(out, out_len, hexstr.data(), hexstr.length(), byteOrder, checkPrefix); // NOLINT(bugprone-suspicious-stringview-data-usage)
     }
 
     /**
@@ -794,7 +794,7 @@ namespace jau {
             }
         }
         if ( prefix_len && d > d_start ) {
-            switch ( radix ) {  // NOLINT(bugprone-switch-missing-default-case)
+            switch ( radix ) {  // NOLINT(bugprone-switch-missing-default-case, bugprone-unhandled-code-paths)
                 case 16: *(--d) = 'x'; break;
                 case 2:  *(--d) = 'b'; break;
             }

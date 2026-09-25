@@ -162,9 +162,9 @@ namespace jau::mp {
             if ( str.length() > markers + 2 && str[markers] == '0' &&
                  str[markers + 1] == 'x' ) {
                 markers += 2;
-                *this = hex_decode(cast_char_ptr_to_uint8(str.data()) + markers, str.length() - markers, lb_endian_t::big);
+                *this = hex_decode(str.data() + markers, str.length() - markers, lb_endian_t::big);
             } else {
-                *this = dec_decode(cast_char_ptr_to_uint8(str.data()) + markers, str.length() - markers);
+                *this = dec_decode(str.data() + markers, str.length() - markers);
             }
 
             if ( is_negative )
@@ -1094,26 +1094,26 @@ namespace jau::mp {
          *
          * The value is stored in the local storage format, see \ref bigint_storage_format
          */
-        static BigInt hex_decode(const uint8_t buf[], size_t str_len, const lb_endian_t byte_order) {
+        static BigInt hex_decode(const char *buf, size_t str_len, const lb_endian_t byte_order) {
             BigInt r;
 
             std::vector<uint8_t> bin_out;
             const auto [str_len2, str_ok] = jau::fromHexString(bin_out, buf, str_len, byte_order, jau::False() /* checkPrefix */);
             if ( !str_ok ) {
                 throw jau::math::MathDomainError("invalid hexadecimal char @ " + std::to_string(str_len2) + "/" + std::to_string(str_len) + " of '" +
-                                                 std::string(cast_uint8_ptr_to_char(buf), str_len) + "'",
+                                                 std::string(buf, str_len) + "'",
                                                  E_FILE_LINE);
             }
             r.binary_decode(bin_out.data(), bin_out.size(), lb_endian_t::little);
             return r;
         }
 
-        static BigInt dec_decode(const uint8_t buf[], size_t str_len) {
+        static BigInt dec_decode(const char *buf, size_t str_len) {
             BigInt r;
 
             // This could be made faster using the same trick as to_dec_string
             for ( size_t i = 0; i < str_len; ++i ) {
-                const char c = static_cast<char>(buf[i]);
+                const char c = buf[i];
 
                 if ( c < '0' || c > '9' ) {
                     throw jau::math::MathDomainError("invalid decimal char", E_FILE_LINE);
