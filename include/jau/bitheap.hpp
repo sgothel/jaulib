@@ -118,7 +118,7 @@ namespace jau {
             return r;
         }
 
-        std::string infoString() const noexcept {
+        std::string infoString() const noexcept { // NOLINT(bugprone-derived-method-shadowing-base-method): intentional
             return bitview_t::infoString("bitheap");
         }
     };
