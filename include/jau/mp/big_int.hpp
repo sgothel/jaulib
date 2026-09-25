@@ -750,7 +750,7 @@ namespace jau::mp {
             s.reserve(1 + digits.size());
 
             if ( is_negative() ) {
-                s += "-";
+                s += '-';
             }
 
             // Reverse and convert to textual digits
@@ -759,7 +759,7 @@ namespace jau::mp {
             }
 
             if ( s.empty() ) {
-                s += "0";
+                s += '0';
             }
             if ( add_details ) {
                 append_detail(s);
@@ -783,7 +783,7 @@ namespace jau::mp {
 
             std::string s;
             if ( is_negative() ) {
-                s += "-";
+                s += '-';
             }
             s.append(jau::toHexString(data, data_len, jau::lb_endian_t::big, jau::LoUpCase::lower));
             if ( add_details ) {
@@ -1479,8 +1479,8 @@ namespace jau::mp {
 
             sign_fixup(x, y_arg, q, r);
 
-            r_out = r;
-            q_out = q;
+            r_out = std::move(r);
+            q_out = std::move(q);
         }
 
         BigInt operator/(const mp_word_t& y) const {
@@ -1526,7 +1526,7 @@ namespace jau::mp {
             }
 
             r_out = r;
-            q_out = q;
+            q_out = std::move(q);
         }
 
         mp_word_t operator%(mp_word_t mod) {
