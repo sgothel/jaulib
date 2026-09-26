@@ -165,6 +165,7 @@ namespace jau::enums {
         return { { args... } };
     }
 
+    /// Return underlying value of given enum (optionally from the wrapper)
     template <jau::req::any_enum E>
     constexpr std::underlying_type_t<jau::req::type_of<E>>
     number(const E &v) noexcept {
@@ -172,11 +173,26 @@ namespace jau::enums {
         return static_cast<std::underlying_type_t<type_of<E>>>(value_of(v));
     }
 
+    /// Return underlying value of given enum (optionally from the wrapper)
     template <jau::req::any_enum E>
     constexpr std::underlying_type_t<jau::req::type_of<E>>
     operator*(const E &v) noexcept {
         using namespace jau::req;
         return static_cast<std::underlying_type_t<type_of<E>>>(value_of(v));
+    }
+
+    /// Return reference to underlying immutable value of given enum (optionally from the wrapper)
+    template <jau::req::any_enum E>
+    constexpr const std::underlying_type_t<jau::req::type_of<E>>&
+    number_ref(const E &v) noexcept {
+        return *reinterpret_cast<const std::underlying_type_t<jau::req::type_of<E>>*>(&jau::req::reference_of(v));
+    }
+
+    /// Return reference to underlying mutable value of given enum (optionally from the wrapper)
+    template <jau::req::any_enum E>
+    constexpr std::underlying_type_t<jau::req::type_of<E>>&
+    number_ref(E &v) noexcept {
+        return *reinterpret_cast<std::underlying_type_t<jau::req::type_of<E>>*>(&jau::req::reference_of(v));
     }
 
     template <jau::req::any_enum E>

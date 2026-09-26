@@ -204,7 +204,10 @@ TEST_CASE( "Enum Class Value Type Test 10", "[enum][type]" ) {
 
             test_type10_t one = test_type10_t::one;
             test_type10_t two = test_type10_t::two;
-            REQUIRE(one == one);
+            REQUIRE(one == test_type10_t::one);
+            REQUIRE(two == test_type10_t::two);
+            REQUIRE(*one == 1);
+            REQUIRE(*two == 2);
             REQUIRE(one <  two);
             REQUIRE(one <= two);
             REQUIRE(two >= one);
@@ -212,11 +215,29 @@ TEST_CASE( "Enum Class Value Type Test 10", "[enum][type]" ) {
             REQUIRE( 0 == jau::enums::compare(one, one));
             REQUIRE(-1 == jau::enums::compare(one, two));
             REQUIRE( 1 == jau::enums::compare(two, one));
+
+            uint8_t n1 = *one;
+            uint8_t n2 = number(one);
+            uint8_t n3 = number_ref(test_type10_t::one);
+            uint8_t n4 = number_ref(one);
+            uint8_t& n_ref = number_ref(one);
+            REQUIRE(1 == n1);
+            REQUIRE(1 == n2);
+            REQUIRE(1 == n3);
+            REQUIRE(1 == n4);
+            REQUIRE(1 == n_ref);
+
+            n_ref = 2; // store number 2 in underlying enum storage
+            REQUIRE(2 == n_ref);
+            REQUIRE(one == test_type10_t::two);
         }
         {
             Wrap<test_type10_t> one = test_type10_t::one;
             Wrap<test_type10_t> two = test_type10_t::two;
-            REQUIRE(one == one);
+            REQUIRE(one == test_type10_t::one);
+            REQUIRE(two == test_type10_t::two);
+            REQUIRE(*one == 1);
+            REQUIRE(*two == 2);
             REQUIRE(one <  two);
             REQUIRE(one <= two);
             REQUIRE(two >= one);
@@ -224,6 +245,21 @@ TEST_CASE( "Enum Class Value Type Test 10", "[enum][type]" ) {
             REQUIRE( 0 == jau::enums::compare(one, one));
             REQUIRE(-1 == jau::enums::compare(one, two));
             REQUIRE( 1 == jau::enums::compare(two, one));
+
+            uint8_t n1 = *one;
+            uint8_t n2 = number(one);
+            uint8_t n3 = number_ref(test_type10_t::one);
+            uint8_t n4 = number_ref(one);
+            uint8_t& n_ref = number_ref(one);
+            REQUIRE(1 == n1);
+            REQUIRE(1 == n2);
+            REQUIRE(1 == n3);
+            REQUIRE(1 == n4);
+            REQUIRE(1 == n_ref);
+
+            n_ref = 2; // store number 2 in underlying enum storage
+            REQUIRE(2 == n_ref);
+            REQUIRE(one == test_type10_t::two);
         }
     }
     {
