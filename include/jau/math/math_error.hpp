@@ -56,7 +56,7 @@ namespace jau::math {
 
       protected:
         MathErrorBase(math_error_t err, std::string const& m, const char* file, int line) noexcept
-        : ExceptionBase("MathError("+jau::string_noexcept(to_string(err))+")", m, file, line), m_error(err) {}
+        : ExceptionBase("MathError("+jau::make_string(to_string(err))+")", m, file, line), m_error(err) {}
 
       public:
         math_error_t error() const noexcept;

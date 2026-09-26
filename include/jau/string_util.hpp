@@ -166,7 +166,15 @@ namespace jau {
 
     std::string toLower(const std::string &s);
 
-    std::string make_string(std::string_view v) noexcept;
+    CXX_NO_INLINE
+    constexpr std::string make_string(std::string_view v) noexcept {
+        try {
+            return std::string(v);
+        } catch (...) {
+            jau::fput_exception(stderr, std::current_exception(), E_FILE_LINE);
+            return std::string();
+        }
+    }
 
     /** Simple std::string reserve wrapper w/ noexcept, returning true on success (no exception). */
     bool reserve_string(std::string &s, const size_t new_capacity) noexcept;

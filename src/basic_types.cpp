@@ -485,15 +485,6 @@ std::string jau::toLower(const std::string& s) {
     std::string t(s); toLowerInPlace(t); return t;
 }
 
-std::string jau::make_string(std::string_view v) noexcept {
-    try {
-        return std::string(v);
-    } catch (...) {
-        jau::fput_exception(stderr, std::current_exception(), E_FILE_LINE);
-        return std::string();
-    }
-}
-
 bool jau::reserve_string(std::string &s, const size_t new_capacity) noexcept { // NOLINT(bugprone-exception-escape): rethrow_exception caught
     if (new_capacity <= s.capacity()) {
         return true;

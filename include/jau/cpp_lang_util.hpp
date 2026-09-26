@@ -533,11 +533,6 @@ namespace jau {
         return std::string();
     }
 
-    /// No throw `std::string(std::string_view)` instantiation
-    inline std::string string_noexcept(std::string_view v) noexcept {
-        return string_noexcept([v]() { return std::string(v); });
-    }
-
     /**@}*/
 
     /** \addtogroup CppLang
