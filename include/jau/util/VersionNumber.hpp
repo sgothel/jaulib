@@ -1,6 +1,6 @@
 /*
  * Author: Sven Gothel <sgothel@jausoft.com>
- * Copyright (c) 2010-2024 Gothel Software e.K.
+ * Copyright (c) 2010-2026 Gothel Software e.K.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -33,6 +33,7 @@
 #include <string>
 
 #include <jau/int_types.hpp>
+#include <jau/string_cfmt.hpp>
 #include <jau/string_util.hpp>
 
 namespace jau::util {
@@ -252,9 +253,11 @@ namespace jau::util {
       protected:
         constexpr VersionNumberString(int majorRev, int minorRev, int subMinorRev,
                                       int gitCommits, uint64_t gitSSHA, bool gitDirty,
-                                      uint16_t _state, ssize_t strEnd, std::string _version_str) noexcept
-        : VersionNumber(majorRev, minorRev, subMinorRev, gitCommits, gitSSHA, gitDirty, _state),
-          m_strEnd(strEnd), m_version_str(std::move(_version_str)) { }
+                                      uint16_t _state, ssize_t strEnd, std::string_view _version_str) noexcept
+        : VersionNumber(majorRev, minorRev, subMinorRev, gitCommits, gitSSHA, gitDirty, _state), m_strEnd(strEnd)
+        {
+            m_version_str = jau::make_string(_version_str);
+        }
 
       public:
         static std::regex getNonGitPattern(const std::string& delim) noexcept {
@@ -309,10 +312,10 @@ namespace jau::util {
          * @see #hasMinor()
          * @see #hasSub()
          */
-        VersionNumberString(const std::string& versionString, const std::regex& versionPattern) noexcept
-        : VersionNumber(0, 0, 0, 0, 0, false, 0),
-          m_strEnd(0), m_version_str(versionString)
+        VersionNumberString(std::string_view versionString, const std::regex& versionPattern) noexcept
+        : VersionNumber(0, 0, 0, 0, 0, false, 0), m_strEnd(0)
         {
+            m_version_str = jau::make_string(versionString);
             // group1: \d* == digits major
             // group2: \d* == digits minor
             // group3: \d* == digits sub
@@ -320,7 +323,7 @@ namespace jau::util {
             // group5: hex == hex short-sha
             // group6: str == dirty
             std::smatch match;
-            if ( std::regex_search(versionString, match, versionPattern) ) {
+            if ( std::regex_search(m_version_str, match, versionPattern) ) {
                 m_strEnd = match.position() + match.length();
                 if constexpr ( DBG_OUT ) {
                     std::cout << "XXX: " << versionString << std::endl;
@@ -382,7 +385,7 @@ namespace jau::util {
          * @see #hasMinor()
          * @see #hasSub()
          */
-        VersionNumberString(const std::string& versionString) noexcept
+        VersionNumberString(std::string_view versionString) noexcept
         : VersionNumberString(versionString, getDefaultPattern()) { }
 
         /**
@@ -401,7 +404,7 @@ namespace jau::util {
          * @see #hasMinor()
          * @see #hasSub()
          */
-        VersionNumberString(const std::string& versionString, const std::string& delim) noexcept
+        VersionNumberString(std::string_view versionString, const std::string& delim) noexcept
         : VersionNumberString(versionString, getGitPattern(delim)) { }
 
         /** Returns true if constructed with a `version-string`, otherwise false. */
@@ -416,20 +419,15 @@ namespace jau::util {
         constexpr ssize_t endOfStringMatch() const noexcept { return m_strEnd; }
 
         std::string toString() const noexcept override {
-            std::string res = std::to_string(m_major) + "." + std::to_string(m_minor) + "." + std::to_string(m_sub);
+
+            std::string res = jau_format_string("%d.%d.%d", m_major, m_minor, m_sub);
             if( hasGitInfo() ) {
-                res.append(", git[post ").append(std::to_string(m_git_commits))
-                   .append(", tip ").append(jau::toHexString(m_git_ssha, jau::lb_endian_t::little))
-                   .append(", ");
-                if( git_dirty() ) {
-                    res.append("dirty");
-                } else {
-                    res.append("clean");
-                }
-                res.append("]");
+                jau_append_string(res, ", git[post %d, tip %s, %s]",
+                    m_git_commits, jau::toHexString(m_git_ssha, jau::lb_endian_t::little),
+                    git_dirty() ? "dirty" : "clean");
             }
             if ( hasString() ) {
-                res.append(" (").append(m_version_str).append(")");
+                jau_append_string(res, " (%s)", m_version_str);
             }
             return res;
         }
