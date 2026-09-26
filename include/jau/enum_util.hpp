@@ -70,8 +70,8 @@ namespace jau::enums {
      *  @{
      */
 
-    /// Default string reserved capacity w/o EOS (255)
-    constexpr inline size_t default_string_capacity = 255;
+    /// Default string reserved capacity w/o EOS (127)
+    constexpr inline size_t default_string_capacity = 127;
 
     ///
     /// clang + gcc
