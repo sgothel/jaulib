@@ -34,6 +34,7 @@
 #include <string_view>
 #include "jau/cpp_lang_util.hpp"
 #include "jau/int_types.hpp"
+#include "jau/string_cfmt.hpp"
 
 #include <jau/basic_types.hpp>
 #include <jau/debug.hpp>
@@ -285,13 +286,9 @@ namespace jau {
                 return !(*this == rhs);
             }
 
-            std::string toString() const noexcept {
+            virtual std::string toString() const noexcept {
                 std::string s;
-                do_noexcept([&]() {
-                    s.append("size ")
-                     .append(std::to_string(_size))
-                     .append(", [").append(to_string( byte_order() )).append(", ").append(to_string( byte_order() )).append("], ro: ");
-                     });
+                s = jau_format_string("size %zu, %s, ro: ", _size, byte_order());
                 jau::appendHexString(s, _data, _size);
                 return s;
             }
@@ -488,8 +485,11 @@ namespace jau {
                 return data() + i;
             }
 
-            std::string toString() const noexcept {
-                return string_noexcept([&](){ return "size "+std::to_string(size())+", rw: "+toHexString(get_ptr(), size()); });
+            std::string toString() const noexcept override {
+                std::string s;
+                s = jau_format_string("size %zu, %s, rw: ", size(), byte_order());
+                jau::appendHexString(s, get_ptr(), size());
+                return s;
             }
     };
 
@@ -551,7 +551,10 @@ namespace jau {
             }
 
             std::string toString() const noexcept {
-                return string_noexcept([&](){ return "offset "+std::to_string(_offset)+", size "+std::to_string(_size)+": "+toHexString(_parent.get_ptr()+_offset, _size); } );
+                std::string s;
+                s = jau_format_string("offset %zu, size %zu, %s: ", _offset, size(), byte_order());
+                jau::appendHexString(s, _parent.get_ptr()+_offset, size());
+                return s;
             }
     };
 
@@ -893,7 +896,7 @@ namespace jau {
              * @return reference to this instance of chaining
              * @throws OutOfMemoryError if allocation fails
              */
-            POctets& operator=(const TROOctets &_source) {
+            POctets& operator=(const TROOctets &_source) { // NOLINT(bugprone-derived-method-shadowing-base-method): intentional
                 if( static_cast<TROOctets *>(this) == &_source ) {
                     return *this;
                 }
@@ -1044,8 +1047,11 @@ namespace jau {
                 return *this;
             }
 
-            std::string toString() const noexcept {
-                return string_noexcept([&](){ return "size "+std::to_string(size())+", capacity "+std::to_string(capacity())+", "+toHexString(get_ptr(), size()); } );
+            std::string toString() const noexcept override {
+                std::string s;
+                s = jau_format_string("size %zu, capacity %zu, %s, rw: ", size(), capacity(), byte_order());
+                jau::appendHexString(s, get_ptr(), size());
+                return s;
             }
     };
 
@@ -1149,7 +1155,7 @@ namespace jau {
              * @return reference to this instance of chaining
              * @throws IllegalArgumentException if fixed_size < source size
              */
-            AOctets& operator=(const TROOctets &_source) {
+            AOctets& operator=(const TROOctets &_source) { // NOLINT(bugprone-derived-method-shadowing-base-method): intentional
                 if( this == &_source ) {
                     return *this;
                 }
@@ -1182,8 +1188,11 @@ namespace jau {
                 return *this;
             }
 
-            std::string toString() const noexcept {
-                return string_noexcept([&](){ return "size "+std::to_string(size())+", fixed_size "+std::to_string(fixed_size)+", "+toHexString(get_ptr(), size()); });
+            std::string toString() const noexcept override {
+                std::string s;
+                s = jau_format_string("size %zu, fixed_size %zu, %s: ", size(), fixed_size, byte_order());
+                jau::appendHexString(s, get_ptr(), size());
+                return s;
             }
     };
 
