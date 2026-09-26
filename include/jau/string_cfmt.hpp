@@ -166,28 +166,24 @@
  *
  * #### Conversion Specifiers
  * The following standard conversion specifiers are supported:
- * - Basic
- *   - `c` character
- *   - `s` string
- *   - `p` pointer
- *   - `d` signed integral or `i`
- * - Integral
- *   - `o` octal unsigned
- *   - `x` `X` hexadecimal unsigned low and capital chars
- *   - `b` binary unsigned presentation (extension)
- *   - `u` decimal unsigned
- * - Floating point
- *   - `f` or `F` double floating point
- *   - `e`, `E` exponential low- and capital E
- *   - `g`, `G` alternate exponential low- and capital E
- *   - `a`, `A` hexadecimal low- and capital chars
- * - Aliases
- *   - `i` -> `d`
- *   - `F` -> `f`
  *
- * #### Extended Conversion Specifier
- * - `b` bitpattern of unsigned integral w/ prefix `0b` (if `#` flag is added)
- * - `?` auto conversion by type (see below)
+ *  Spec | Alias | std | Argument Type (jau::req)           | cspec_t            | Notes                             |
+ *  :----| :-----| :---| :----------------------------------| :------------------| :---------------------------------|
+ *  `c`  |       | S   | `character`                        | `character`        |                                   |
+ *  `s`  |       | S   | `stringifiable`                    | `string`           | incl. `boolean` and `enumeration` |
+ *  `p`  |       | S   | `pointer`                          | `pointer`          | incl. `char_pointer`              |
+ *  `d`  | `i`   | S   | `signed_integer`, `enumeration`    | `signed_integer`   | decimal, `enumeration` must be signed |
+ *  `u`  |       | S   | `unsigned_integer`, `enumeration`  | `unsigned_integer` | decimal representation            |
+ *  `o`  |       | S   | `unsigned_integer`, `enumeration`  | `unsigned_integer` | octal representation              |
+ *  `x`  |       | S   | `unsigned_integer`, `enumeration`  | `unsigned_integer` | hexadecimal representation        |
+ *  `b`  |       | X   | `unsigned_integer`, `enumeration`  | `unsigned_integer` | binary representation w/ prefix `0b` (`#`) |
+ *  `f`  | `F`   | S   | `floating-point`                   | `floating_point`   | double floatint-point             |
+ *  `e`  | `E`   | S   | `floating-point`                   | `floating_point`   | double, exponential low- and capital `E` |
+ *  `g`  | `G`   | S   | `floating-point`                   | `floating_point`   | double, alternate exponential low- and capital `E` |
+ *  `a`  | `A`   | S   | `floating-point`                   | `floating_point`   | double, hexadecimal low- and capital chars |
+ *  `?`  |       | X   | auto-conversion                    | `any`              | see auto-conversion below         |
+ *
+ * `std` values: **S** for C99 or POSIX standard and **X** for our own extension.
  *
  * #### Auto-Conversion
  * The auto conversion specifier `?` can be used to pass template- and polymorphic-types.
@@ -205,8 +201,8 @@
  *  `character`                        | `c`  | `character`        |                                   |
  *  `signed_integer`                   | `d`  | `signed_integer`   | !`boolean`, !`character`          |
  *  `unsigned_integer`                 | `u`  | `unsigned_integer` | !`boolean`, !`character`          |
- *  `enumeration` / `signed_integer`   | `d`  | `signed_integer`   | !stringifiable`                   |
- *  `enumeration` / `unsigned_integer` | `u`  | `unsigned_integer` | !stringifiable`                   |
+ *  `enumeration` / `signed_integer`   | `d`  | `signed_integer`   | !`stringifiable`                  |
+ *  `enumeration` / `unsigned_integer` | `u`  | `unsigned_integer` | !`stringifiable`                  |
  *  `floating-point`                   | `f`  | `floating_point`   |                                   |
  *  `pointer`                          | `p`  | `pointer`          | !`char_pointer`                   |
  *  `boolean`                          | `s`  | `string`           | `true` or `false`                 |
