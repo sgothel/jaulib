@@ -24,8 +24,9 @@
 
 #include "test_fileutils_copy_r_p.hpp"
 
-#include "jau/os/user_info.hpp"
 #include <jau/enum_util.hpp>
+#include <jau/string_util.hpp>
+#include <jau/os/user_info.hpp>
 
 extern "C" {
     #include <unistd.h>
@@ -37,7 +38,7 @@ extern "C" {
     #include <sys/prctl.h>
 }
 
-class TestFileUtil02 : TestFileUtilBase {
+class TestFileUtil02 : TestFileUtilBase { // NOLINT(misc-use-internal-linkage)
   private:
         static constexpr const bool change_caps = false;
 
@@ -143,7 +144,7 @@ class TestFileUtil02 : TestFileUtilBase {
     static ::gid_t get_gid(const std::string& groupname) {
         static const ::gid_t default_group = 44;
         std::string cmd("getent group "+groupname+" | cut -d: -f3");
-        FILE* fp = ::popen(cmd.c_str(), "r");
+        FILE* fp = ::popen(cmd.c_str(), "r"); // NOLINT(bugprone-command-processor): test only
         if (fp == nullptr) {
             fprintf(stderr, "Command failed (1) '%s'\n", cmd.c_str() );
             return default_group;
@@ -151,7 +152,7 @@ class TestFileUtil02 : TestFileUtilBase {
         char result[100];
         ::gid_t result_int = default_group;
         if( nullptr != ::fgets(result, sizeof(result), fp) ) {
-            result_int = static_cast<::gid_t>( ::atoi(result) );
+            jau::fromIntString(result_int, result);
             jau_PLAIN_PRINT(true, "get_gid(%s) -> %s (%d)", groupname, std::string_view(result), (int)result_int);
         } else {
             fprintf(stderr, "Command failed (2) '%s'\n", cmd.c_str() );
