@@ -613,10 +613,20 @@ namespace jau::cfmt {
     namespace impl {
         inline constexpr double_t max_append_float = (double_t)1e9;
 
+        /// append w/ layout using opts.precision_set and opts.width_set and opts flags {left, zeropad}
         void append_rev(std::string &dest, const size_t dest_maxlen, std::string_view src, bool prec_cut, bool reverse, const FormatOpts &opts) noexcept;
         inline void append_string(std::string &dest, const size_t dest_maxlen, std::string_view src, const FormatOpts &opts) noexcept {
-            append_rev(dest, dest_maxlen, src, true /*prec*/, false /*rev**/, opts);
+            if (!opts.width_set && !opts.precision_set) {
+                try {
+                    dest.append(src.data(), jau::min(dest_maxlen - dest.size(), src.length())); // NOLINT(bugprone-suspicious-stringview-data-usage): No EOS required
+                } catch (...) {
+                    jau::fput_exception(stderr, std::current_exception(), E_FILE_LINE);
+                }
+            } else {
+                append_rev(dest, dest_maxlen, src, true /*prec*/, false /*rev**/, opts);
+            }
         }
+
         void append_integral(std::string &dest, const size_t dest_maxlen, uint64_t v, const bool negative, const FormatOpts &opts, const bool inject_dot=false) noexcept;
         // no width, nor precision, nor inject_dot
         void append_integral_simple(std::string &dest, const size_t dest_maxlen, uint64_t v, const bool negative, const FormatOpts &opts) noexcept;
@@ -794,7 +804,7 @@ namespace jau::cfmt {
                     impl::append_efloatF64(m_s, m_maxLen, v, opts);
                 }
             }
-            void appendText(const char c) noexcept {
+            constexpr void appendText(const char c) noexcept {
                 if (m_maxLen > m_s.size()) {
                     try {
                         m_s.append(1, c);
@@ -803,10 +813,9 @@ namespace jau::cfmt {
                     }
                 }
             }
-            void appendText(const char *vbegin, const char *vend) noexcept {
-                const size_t len = jau::min(m_maxLen - m_s.size(), size_t(vend-vbegin));
+            constexpr void appendText(const char *vbegin, const char *vend) noexcept {
                 try {
-                    m_s.append(vbegin, len);
+                    m_s.append(vbegin, jau::min(m_maxLen - m_s.size(), size_t(vend-vbegin)));
                 } catch (...) {
                     jau::fput_exception(stderr, std::current_exception(), E_FILE_LINE);
                 }
