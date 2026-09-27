@@ -1603,7 +1603,6 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
         if (!jau::reserve_append_string(dest, dest_start_len + added_len + 1, added_len)) [[unlikely]] { // cap +EOS, not shrinking!
             return;
         }
-
 #if !defined(NDEBUG) && 0
         fprintf(stderr, "XXX.80: seperator '%c', opts %s\n", separator, opts.toString().c_str());
         fprintf(stderr, "XXX.80: negative %d, val %" PRIu64 "\n", (int)negative, v);
@@ -1629,9 +1628,10 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
             while (d > d_start_digit) {
                 *(--d) = *(p++);
             }
-            while (d > d_start_num) {
-                *(--d) = '0'; // zero-padding
-            }
+            // zero-padding
+            const size_t zlen = d - d_start_num;
+            d = const_cast<char *>(d_start_num);
+            ::memset(d, '0', zlen);
         } else {
             uint32_t sep_count1 = (num_len - 1) / sep_gap; // final seperator count
             uint32_t digit_cnt = 0;
