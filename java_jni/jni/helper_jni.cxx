@@ -27,6 +27,7 @@
 #include <stdexcept>
 #include <vector>
 
+#include <jau/debug.hpp>
 #include <jau/basic_types.hpp>
 #include <jau/jni/helper_jni.hpp>
 
@@ -50,7 +51,7 @@ bool jau::jni::java_exception_check(JNIEnv *env, const char* file, int line)
         jmethodID toString = search_method(env, eClazz, "toString", "()Ljava/lang/String;", false);
         jstring jmsg = (jstring) env->CallObjectMethod(e, toString);
         std::string msg = from_jstring_to_string(env, jmsg);
-        fprintf(stderr, "Java exception occurred @ %s:%d and forward to Java: %s\n", file, line, msg.c_str()); fflush(stderr);
+        jau_fprintf(stderr, "Java exception occurred @ %s:%d and forward to Java: %s\n", file, line, msg); fflush(stderr);
 
         env->Throw(e); // re-throw the java exception - java side!
         return true;
@@ -71,23 +72,23 @@ void jau::jni::java_exception_check_and_throw(JNIEnv *env, const char* file, int
         jmethodID toString = search_method(env, eClazz, "toString", "()Ljava/lang/String;", false);
         jstring jmsg = (jstring) env->CallObjectMethod(e, toString);
         std::string msg = from_jstring_to_string(env, jmsg);
-        fprintf(stderr, "Java exception occurred @ %s:%d and forward to Native: %s\n", file, line, msg.c_str()); fflush(stderr);
+        jau_fprintf(stderr, "Java exception occurred @ %s:%d and forward to Native: %s\n", file, line, msg); fflush(stderr);
 
         throw jau::RuntimeException("Java exception occurred: "+msg, file, line);
     }
 }
 
 void jau::jni::print_native_caught_exception_fwd2java(const jau::ExceptionBase &e, const char* file, int line) {
-    fprintf(stderr, "Native exception caught @ %s:%d and forward to Java: %s\n", file, line, e.what()); fflush(stderr);
+    jau_fprintf(stderr, "Native exception caught @ %s:%d and forward to Java: %s\n", file, line, e.what()); fflush(stderr);
 }
 void jau::jni::print_native_caught_exception_fwd2java(const std::exception &e, const char* file, int line) {
-    fprintf(stderr, "Native exception caught @ %s:%d and forward to Java: %s\n", file, line, e.what()); fflush(stderr);
+    jau_fprintf(stderr, "Native exception caught @ %s:%d and forward to Java: %s\n", file, line, e.what()); fflush(stderr);
 }
-void jau::jni::print_native_caught_exception_fwd2java(const std::string &msg, const char* file, int line) {
-    fprintf(stderr, "Native exception caught @ %s:%d and forward to Java: %s\n", file, line, msg.c_str()); fflush(stderr);
+void jau::jni::print_native_caught_exception_fwd2java(std::string_view cmsg, const char* file, int line) {
+    jau_fprintf(stderr, "Native exception caught @ %s:%d and forward to Java: %s\n", file, line, cmsg); fflush(stderr);
 }
 void jau::jni::print_native_caught_exception_fwd2java(const char * cmsg, const char* file, int line) {
-    fprintf(stderr, "Native exception caught @ %s:%d and forward to Java: %s\n", file, line, cmsg); fflush(stderr);
+    jau_fprintf(stderr, "Native exception caught @ %s:%d and forward to Java: %s\n", file, line, cmsg); fflush(stderr);
 }
 
 void jau::jni::raise_java_exception(JNIEnv *env, const jau::ExceptionBase &e, const char* file, int line) {

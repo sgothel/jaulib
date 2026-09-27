@@ -77,7 +77,7 @@ namespace jau::jni {
 
     void print_native_caught_exception_fwd2java(const jau::ExceptionBase &e, const char* file, int line);
     void print_native_caught_exception_fwd2java(const std::exception &e, const char* file, int line);
-    void print_native_caught_exception_fwd2java(const std::string &msg, const char* file, int line);
+    void print_native_caught_exception_fwd2java(std::string_view cmsg, const char* file, int line);
     void print_native_caught_exception_fwd2java(const char * cmsg, const char* file, int line);
 
     void raise_java_exception(JNIEnv *env, const jau::ExceptionBase &e, const char* file, int line);
