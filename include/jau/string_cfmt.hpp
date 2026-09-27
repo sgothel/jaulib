@@ -1313,11 +1313,8 @@ namespace jau::cfmt {
 
                         /* parse field width */
                         if( c != '*' ) [[likely]] {
-                            if( !parseFmtWidthPrecision(true, pc, c) ) {
-                                if( pc.error() ) [[unlikely]] {
-                                    return;
-                                }
-                                // no width, continue with same argument for same conversion -> field_width
+                            if( !parseFmtWidthPrecision(true, pc, c) ) [[unlikely]] {
+                                return;
                             }
                         } else {
                             // error or continue with next argument for same conversion -> field_width
@@ -1335,12 +1332,8 @@ namespace jau::cfmt {
                                 return; // error
                             }
                             if( c != '*' ) [[likely]] {
-                                if( !parseFmtWidthPrecision(false, pc, c) ) {
-                                    if( pc.error() ) [[unlikely]] {
-                                        return;
-                                    }
-                                    // no explicit precision -> zero precision, continue with same argument
-                                    pc.opts.setPrecision(0);
+                                if( !parseFmtWidthPrecision(false, pc, c) ) [[unlikely]] {
+                                    return;
                                 }
                             } else {
                                 // error or continue with next argument for same conversion -> field_width
@@ -1350,7 +1343,7 @@ namespace jau::cfmt {
                         }
                     }
 
-                    if( !parseLengthMods(pc, c) ) [[likely]] {
+                    if( !parseLengthMods(pc, c) ) [[unlikely]] {
                         pc.appendError("Len");
                         return;  // error
                     }
@@ -1462,8 +1455,8 @@ namespace jau::cfmt {
                 return true;
             }
 
-            /// Parse format field width or precision, returns true if field is consumed and parsing can continue
-            /// or false if field has not been consumed or definite error
+            /// Parse format field width or precision, returns true if field is consumed or parsing can continue
+            /// or false on definite error
             CXX_NO_INLINE
             static constexpr bool parseFmtWidthPrecision(bool is_width, Result &pc, char &c) noexcept {
                 const std::string_view::const_iterator p_begin = pc.pos-1; // move back to 'c' position (-1)
@@ -1480,7 +1473,11 @@ namespace jau::cfmt {
                 }
                 pc.pos = p_i+1; // next-char to be read, c contains current char (non-digit)
                 if( p_i == p_begin ) {
-                    return false; // no digits, may continue
+                    if (!is_width) {
+                        // no explicit precision -> zero precision
+                        pc.opts.setPrecision(0);
+                    }
+                    return true; // no digits, may continue
                 }
                 std::string_view sv(p_begin, p_i - p_begin);
                 uint32_t num = 0;
