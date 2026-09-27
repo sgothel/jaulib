@@ -290,7 +290,8 @@ TEST_CASE("jau::cfmt_10", "[jau][std::string][jau::cfmt]") {
     {
         // we support safe signedness conversion
         static_assert( 1  == jau::cfmt::check("         int -> int %d", 1));
-        static_assert(-1 == jau::cfmt::check("unsigned int  -> int %d", (unsigned int)1));  // error: sizeof(unsigned) == sizeof(signed)
+        // JAU_CFMT_IGNORE_LENGTH_MODIFIER
+        // static_assert(-1 == jau::cfmt::check("unsigned int  -> int %d", (unsigned int)1));  // error: sizeof(unsigned) == sizeof(signed)
         static_assert( 1 == jau::cfmt::check("unsigned char -> int %d", (unsigned char)1)); // OK: sizeof(unsigned) < sizeof(signed)
         static_assert( 1  == jau::cfmt::check("unsigned int -> unsigned int %u", (unsigned int)1));
         static_assert( 1 == jau::cfmt::check("         int -> unsigned int %u",  1));            // OK: +signed -> unsigned
@@ -308,7 +309,9 @@ TEST_CASE("jau::cfmt_10", "[jau][std::string][jau::cfmt]") {
         if constexpr ( sizeof(long) <= sizeof(int) ) {
             REQUIRE( 1 == jau::cfmt::check(" OK long(4) -> int %d", (long)1)); // NOLINT(misc-static-assert)
         } else {
-            REQUIRE(-1 == jau::cfmt::check(" error long(8) -> int %d", (long)1)); // NOLINT(misc-static-assert); error: given type > integral target type
+            // JAU_CFMT_IGNORE_LENGTH_MODIFIER
+            REQUIRE( 1 == jau::cfmt::check(" ignor long(8) -> int %d", (long)1)); // NOLINT(misc-static-assert)
+            // REQUIRE(-1 == jau::cfmt::check(" error long(8) -> int %d", (long)1)); // NOLINT(misc-static-assert); error: given type > integral target type
         }
 
         static_assert(1 == jau::cfmt::check(" %d", i));
@@ -416,7 +419,9 @@ TEST_CASE("jau::cfmt_10", "[jau][std::string][jau::cfmt]") {
         if constexpr ( sizeof(long) <= 4 ) {
             REQUIRE( 1 == jau::cfmt::checkR("Hello 1 %d", sz1).argumentCount());
         } else {
-            REQUIRE(-1 == jau::cfmt::checkR("Hello 1 %d", sz1).argumentCount());
+            // JAU_CFMT_IGNORE_LENGTH_MODIFIER
+            // REQUIRE( 1 == jau::cfmt::checkR("Hello 1 %d", sz1).argumentCount());
+            REQUIRE(-1 == jau::cfmt::checkR("Hello 1 %d", sz1).argumentCount()); // 64-bit
         }
         REQUIRE(-6 == jau::cfmt::checkR("Hello 1 %.2f, 2 %2.2f, 3 %zu, 4 %" PRIi64 ", 5 %03d, 6 %p - end",
                                         fa, fb, sz1, v_i64, i, i).argumentCount());

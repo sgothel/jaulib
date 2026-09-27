@@ -83,9 +83,12 @@
  * ### Type Conversion
  * Implementation follows type conversion rules as described
  * in [Variadic Default Conversion](https://en.cppreference.com/w/cpp/language/variadic_arguments#Default_conversions)
- * - float to double promotion
- * - bool, char, short, and unscoped enumerations are converted to int or wider integer types,
- *   see also [va_arg](https://en.cppreference.com/w/cpp/utility/variadic/va_arg)
+ * - The *length modifier* is parsed, but *ignored* for argument type validation (see below).
+ * - float to double promotion, see jau::cfmt::floating_point_promotion
+ * - `bool`, `char`, `short`, `int` and unscoped enumerations are promoted for integral conversion to
+ *   - signed: `int64_t`, see jau::cfmt::signed_integral_promotion
+ *   - unsigned: `uint64_t`, see jau::cfmt::unsigned_integral_promotion
+ *   See also [va_arg](https://en.cppreference.com/w/cpp/utility/variadic/va_arg)
  * - void pointer tolerance
  * - Exception signedness conversion
  *   - Allows positive signed to unsigned type conversion
@@ -117,11 +120,10 @@
  *     to avoid overflow (compile time check), otherwise OK
  *   - Not accepting negative integral value for `unsigned` (runtime check)
  * - Accepts jau::req::wrapper type arguments, for which the underlying type and value is being used.
- * - Accept given type <= integral target type, conversion to wider types
  * - Accept `enum` types for integer conversion.
  *   - Only if underlying type is `unsigned`, it can't be used for signed integer conversion (see above)
  * - Accept direct std::string and std::string_view for `%s` string arguments
- * - Arithmetic integral + floating point types are limited to a maximum of 64-bit
+ * - Arithmetic integral + floating point types are limited to 64-bit (promotion type)
  * - `bool` standard conversion is to integral (number `0` or `1`)
  * - Argument types for string conversion see *Extended Argument-Types for Conversion Specifier* below
  * - Runtime Errors
@@ -163,6 +165,13 @@
  * - `z` size_t or ssize_t
  * - `Z` deprecated synonym for `z`
  * - `t` ptrdiff_t
+ *
+ * The *length modifier* is parsed, but *ignored* for argument type validation, due to
+ * - Not required for correctness as this implementation tracks argument types via template-paramter-packs
+ * - Ignored with auto-conversion, see below
+ * - Considerably increased performance of the implementation
+ *
+ * Hence you are allowed to not pass the length modifier in your format.
  *
  * #### Conversion Specifiers
  * The following standard conversion specifiers are supported:
@@ -256,6 +265,13 @@ namespace jau::cfmt {
      *
      *  @{
      */
+
+    // `int64_t` signed integral promotion type
+    using signed_integral_promotion = int64_t;
+    // `uint64_t` unsigned integral promotion type
+    using unsigned_integral_promotion = uint64_t;
+    // `double` floating-point promotion type
+    using floating_point_promotion = double;
 
     /// Maximum net integral number decimal digits, up to uint64_t max() or int64_t min()
     constexpr inline size_t integral_max_digits10 = 20;
@@ -667,13 +683,13 @@ namespace jau::cfmt {
             return true;
         }
 
-        /// Returns uint64_t type if: integral || boolean, otherwise returns orig type
+        /// Returns unsigned_integral_promotion type if: integral || boolean, otherwise returns orig type
         template<typename T>
-        using make_int_unsigned_t = typename std::conditional_t<std::is_integral_v<T> || jau::req::boolean<T>, std::type_identity<uint64_t>, std::type_identity<T>>::type;  // NOLINT
+        using make_int_unsigned_t = typename std::conditional_t<std::is_integral_v<T> || jau::req::boolean<T>, std::type_identity<unsigned_integral_promotion>, std::type_identity<T>>::type;  // NOLINT
 
-        /// Returns signed-type variation if: unsigned-integral && !boolean, otherwise returns orig type
+        /// Returns unsigned_integral_promotion type if: unsigned-integral && !boolean, otherwise returns orig type
         template<typename T>
-        using make_int_signed_t = typename std::conditional_t<jau::req::unsigned_integral<T> && !jau::req::boolean<T>, std::make_signed<T>, std::type_identity<T>>::type;  // NOLINT
+        using make_int_signed_t = typename std::conditional_t<jau::req::unsigned_integral<T> && !jau::req::boolean<T>, std::type_identity<signed_integral_promotion>, std::type_identity<T>>::type;  // NOLINT
 
         /// Returns a simple `const char * const` if: `char *`, otherwise returns orig type
         template<typename T>
@@ -1071,7 +1087,7 @@ namespace jau::cfmt {
                 using WT = type_of<T>;
                 pc.template set_arg<WT>(value_of(val));
                 using U = make_int_unsigned_t<WT>;
-                parseOneImpl<U>(pc, unsigned_int(value_of(val))); // uint64_t
+                parseOneImpl<U>(pc, unsigned_int(value_of(val))); // unsigned_integral_promotion
             }
 
             template <typename T>
@@ -1081,7 +1097,7 @@ namespace jau::cfmt {
                 using namespace jau::req;
                 using WT = type_of<T>;
                 pc.template set_arg<WT>(value_of(val));
-                parseOneImpl<double>(pc, double(value_of(val))); // double
+                parseOneImpl<floating_point_promotion>(pc, double(value_of(val))); // floating_point_promotion
             }
 
             CXX_NO_INLINE
@@ -1613,35 +1629,8 @@ namespace jau::cfmt {
                 const V val = V(val0);
                 const V sign = pc.m_argval_negative ? -1 : 1;
 
-                switch( pc.opts.length_mod ) {
-                    case plength_t::none: {
-                        if ( !pc.m_argtype_signed ||
-                             ( sizeof(char) != pc.m_argtype_size &&
-                               sizeof(int) != pc.m_argtype_size ) ) {
-                            pc.setError(__LINE__);
-                            return false;
-                        }
-                        char buf[] = { (char)(val*sign), 0 };
-                        pc.appendFormatted(std::string_view(buf, 1));  // FIXME: Support UTF16? UTF8 default
-                    } break;
-                    case plength_t::l: {
-                        if ( !pc.m_argtype_signed ||
-                             ( sizeof(wchar_t) != pc.m_argtype_size && // NOLINT(misc-redundant-expression)
-                               sizeof(wint_t) != pc.m_argtype_size ) ) {
-                            pc.setError(__LINE__);
-                            return false;
-                        }
-                        char buf[] = { (char)(val*sign), 0 };
-                        pc.appendFormatted(std::string_view(buf, 1));  // FIXME: Support UTF16? UTF8 default
-                    } break;
-                    case plength_t::any: {
-                        char buf[] = { (char)(val*sign), 0 };
-                        pc.appendFormatted(std::string_view(buf, 1));  // FIXME: Support UTF16? UTF8 default
-                    } break;
-                    default:
-                        pc.setError(__LINE__);
-                        return false;
-                }
+                char buf[] = { (char)(val*sign), 0 };
+                pc.appendFormatted(std::string_view(buf, 1));  // FIXME: Support UTF16? UTF8 default
                 return true;
             }
 
@@ -1658,22 +1647,6 @@ namespace jau::cfmt {
             CXX_ALWAYS_INLINE
             static constexpr bool parseStringFmtSpec(Result &pc, const T &val) noexcept {
                 ++pc.arg_count;
-                switch( pc.opts.length_mod ) {
-                    case plength_t::none:
-                    case plength_t::any:
-                        break;
-                    case plength_t::l:
-                        if constexpr( !(std::is_pointer_v<T> &&
-                                        std::is_same_v<wchar_t, std::remove_cv_t<std::remove_pointer_t<T>>>) ) {
-                            pc.setError(__LINE__);
-                            return false;
-                        }
-                        break;
-                    default:
-                        // setError();
-                        pc.setError(__LINE__);
-                        return false;
-                }
                 pc.appendFormatted(val);
                 return true;
             }
@@ -1711,70 +1684,17 @@ namespace jau::cfmt {
             static constexpr bool parseSignedFmtSpec(Result &pc, const T &val) noexcept {
                 ++pc.arg_count;
 
-                // Only accepting unsigned -> signed, if sizeof(unsigned) < sizeof(signed)
-                const unsigned int signed_argtype_size = pc.m_argtype_signed ? pc.m_argtype_size : pc.m_argtype_size + 1;
-
                 if (jau::is_zero(val)) {
                     pc.opts.flags &= ~flags_t::hash;  // no hash for 0 values
                 }
 
-                // we accept given type <= integral target type
-
-                switch( pc.opts.length_mod ) {
-                    case plength_t::hh:
-                        if ( signed_argtype_size > sizeof(char) ) { // NOLINT(bugprone-sizeof-expression)
-                            pc.setError(__LINE__);
-                            return false;
-                        }
-                        break;
-                    case plength_t::h:
-                        if ( signed_argtype_size > sizeof(short) ) { // NOLINT(bugprone-sizeof-expression)
-                            pc.setError(__LINE__);
-                            return false;
-                        }
-                        break;
-                    case plength_t::none:
-                        if ( signed_argtype_size > sizeof(int) ) { // NOLINT(bugprone-sizeof-expression)
-                            pc.setError(__LINE__);
-                            return false;
-                        }
-                        break;
-                    case plength_t::l:
-                        if ( signed_argtype_size > sizeof(long) ) { // NOLINT(bugprone-sizeof-expression)
-                            pc.setError(__LINE__);
-                            return false;
-                        }
-                        break;
-                    case plength_t::ll:
-                        if ( signed_argtype_size > sizeof(long long) ) { // NOLINT(bugprone-sizeof-expression)
-                            pc.setError(__LINE__);
-                            return false;
-                        }
-                        break;
-                    case plength_t::j:
-                        if ( signed_argtype_size > sizeof(intmax_t) ) { // NOLINT(bugprone-sizeof-expression)
-                            pc.setError(__LINE__);
-                            return false;
-                        }
-                        break;
-                    case plength_t::z:
-                        if ( signed_argtype_size > sizeof(ssize_t) ) { // NOLINT(bugprone-sizeof-expression)
-                            pc.setError(__LINE__);
-                            return false;
-                        }
-                        break;
-                    case plength_t::t:
-                        if ( signed_argtype_size > sizeof(ptrdiff_t) ) { // NOLINT(bugprone-sizeof-expression)
-                            pc.setError(__LINE__);
-                            return false;
-                        }
-                        break;
-                    case plength_t::any:
-                        break;
-                    default:
-                        pc.setError(__LINE__);
-                        return false;
+                // Only accepting unsigned -> signed, if sizeof(unsigned) < sizeof(signed)
+                const unsigned int signed_argtype_size = pc.m_argtype_signed ? pc.m_argtype_size : pc.m_argtype_size + 1;
+                if ( signed_argtype_size > sizeof(signed_integral_promotion) ) { // NOLINT(bugprone-sizeof-expression)
+                    pc.setError(__LINE__);
+                    return false;
                 }
+
                 if constexpr (jau::req::boolean<T>) {
                     pc.appendFormatted((unsigned int)val);
                 } else {
@@ -1807,64 +1727,13 @@ namespace jau::cfmt {
                     pc.opts.flags &= ~flags_t::hash;  // no hash for 0 values
                 }
 
-                // we accept given type <= integral target type
-
-                switch( pc.opts.length_mod ) {
-                    case plength_t::hh:
-                        if ( pc.m_argtype_size > sizeof(unsigned char) ) { // NOLINT(bugprone-sizeof-expression)
-                            pc.setError(__LINE__);
-                            return false;
-                        }
-                        break;
-                    case plength_t::h:
-                        if ( pc.m_argtype_size > sizeof(unsigned short) ) { // NOLINT(bugprone-sizeof-expression)
-                            pc.setError(__LINE__);
-                            return false;
-                        }
-                        break;
-                    case plength_t::none:
-                        if ( pc.m_argtype_size > sizeof(unsigned int) ) { // NOLINT(bugprone-sizeof-expression)
-                            pc.setError(__LINE__);
-                            return false;
-                        }
-                        break;
-                    case plength_t::l:
-                        if ( pc.m_argtype_size > sizeof(unsigned long) ) { // NOLINT(bugprone-sizeof-expression)
-                            pc.setError(__LINE__);
-                            return false;
-                        }
-                        break;
-                    case plength_t::ll:
-                        if ( pc.m_argtype_size > sizeof(unsigned long long) ) { // NOLINT(bugprone-sizeof-expression)
-                            pc.setError(__LINE__);
-                            return false;
-                        }
-                        break;
-                    case plength_t::j:
-                        if ( pc.m_argtype_size > sizeof(uintmax_t) ) { // NOLINT(bugprone-sizeof-expression)
-                            pc.setError(__LINE__);
-                            return false;
-                        }
-                        break;
-                    case plength_t::z:
-                        if ( pc.m_argtype_size > sizeof(size_t) ) { // NOLINT(bugprone-sizeof-expression)
-                            pc.setError(__LINE__);
-                            return false;
-                        }
-                        break;
-
-                    case plength_t::t:
-                        if ( pc.m_argtype_size > sizeof(ptrdiff_t) ) { // NOLINT(bugprone-sizeof-expression)
-                            pc.setError(__LINE__);
-                            return false;
-                        }
-                        break;
-                    case plength_t::any:
-                        break;
-                    default:
-                        pc.setError(__LINE__);
-                        return false;
+#if 0
+                // we accept given type <= integral promotion type (max 64-bit)
+                if ( pc.m_argtype_size > sizeof(unsigned_integral_promotion) ) { // NOLINT(bugprone-sizeof-expression)
+                    pc.setError(__LINE__);
+                    return false;
                 }
+#endif
                 if constexpr (jau::req::boolean<T>) {
                     pc.appendFormatted((unsigned int)val);
                 } else {
@@ -1886,33 +1755,6 @@ namespace jau::cfmt {
             CXX_ALWAYS_INLINE
             static constexpr bool parseFloatFmtSpec(Result &pc, const char /*fmt_literal*/, const T &val) noexcept {
                 ++pc.arg_count;
-
-                using U = std::remove_cv_t<T>;
-
-                switch( pc.opts.length_mod ) {
-                    case plength_t::none:
-                    case plength_t::l:
-                        if constexpr( !std::is_same_v<float, U> &&
-                                      !std::is_same_v<double, U> ) {
-                            pc.setError(__LINE__);
-                            return false;
-                        }
-                        break;
-                    case plength_t::L:
-                        if constexpr( !std::is_same_v<float, U> &&
-                                      !std::is_same_v<double, U> &&
-                                      !std::is_same_v<long double, U> ) {
-                        } else {
-                            pc.setError(__LINE__);
-                            return false;
-                        }
-                        break;
-                    case plength_t::any:
-                        break;
-                    default:
-                        pc.setError(__LINE__);
-                        return false;
-                }
                 pc.appendFormatted(val);
                 return true;
             }

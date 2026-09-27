@@ -591,7 +591,9 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
     checkFormat(__LINE__, "%#020x", 305441741);
     checkFormat(__LINE__, "%zd", 2147483647L);
 
-    static_assert(0 < jau::cfmt::checkLine("%zd", 2147483647UL)); // failed intentionally unsigned -> signed
+    #if !JAU_CFMT_IGNORE_LENGTH_MODIFIER
+        static_assert(0 < jau::cfmt::checkLine("%zd", 2147483647UL)); // failed intentionally unsigned -> signed
+    #endif
     checkFormat(__LINE__, "%zu", 2147483647UL);
 
     static_assert(0 == jau::cfmt::checkLine("%s", (const char*)"Test"));
@@ -673,7 +675,8 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
         static_assert(0 == jau::cfmt::checkLine("%?, %?, %?, %?\n", e1_u, e2_s, e3_s, e4_u));
 
         static_assert(0 == jau::cfmt::checkLine("%u\n", e1_u)); // unsigned -> unsigned OK
-        static_assert(0 < jau::cfmt::checkLine("%d\n", e1_u));  // unsigned -> signed ERROR
+        // !JAU_CFMT_IGNORE_LENGTH_MODIFIER
+        // static_assert(0 < jau::cfmt::checkLine("%d\n", e1_u));  // unsigned -> signed ERROR
         static_assert(0 == jau::cfmt::checkLine("%u\n", e2_s)); // signed -> unsigned OK
 
         CHECK("jau::to_string<T> n/a for type" == jau::to_string(plainenum_t::lala).substr(0, 30)); // no to_string available
@@ -2027,7 +2030,7 @@ TEST_CASE("types", "[jau][std::string][jau::cfmt][types]" ) {
   buffer = jau::format_string("%zd", 2147483647L);
   CHECK(buffer == "2147483647");
 
-  // failed intentionally unsigned -> signed
+  // failed intentionally unsigned -> signed 64-bit
   static_assert(0 < jau::cfmt::checkLine("%zd", 2147483647UL));
   // buffer = jau::format_string("%zd", 2147483647UL);
   // CHECK(buffer == "2147483647");
@@ -2074,22 +2077,26 @@ TEST_CASE("types", "[jau][std::string][jau::cfmt][types]" ) {
   buffer = jau::format_string("%s", "A Test");
   CHECK(buffer == "A Test");
 
-  static_assert(0  < jau::cfmt::checkLine("%hhu", 0xFFU)); // size unsigned int > unsigned char (intentional failure)
+  // !JAU_CFMT_IGNORE_LENGTH_MODIFIER
+  // static_assert(0  < jau::cfmt::checkLine("%hhu", 0xFFU)); // size unsigned int > unsigned char (intentional failure)
   static_assert(0 == jau::cfmt::checkLine("%hhu", 0xFF_u8));
   buffer = jau::format_string("%hhu", 0xFF_u8);
   CHECK(buffer == "255");
 
   // intentionally fails: given arg size > hh char
-  static_assert(0 < jau::cfmt::checkLine("%hhu", 0xFFFFUL)); // size unsigned long > unsigned char (intentional failure)
+  // !JAU_CFMT_IGNORE_LENGTH_MODIFIER
+  // static_assert(0 < jau::cfmt::checkLine("%hhu", 0xFFFFUL)); // size unsigned long > unsigned char (intentional failure)
   // buffer = jau::format_string("%hhu", 0xFFFFUL);
   // CHECK(buffer == "255");
 
-  static_assert(0  < jau::cfmt::checkLine("%hu", 0x123456UL)); // size unsigned long > unsigned short (intentional failure)
+  // !JAU_CFMT_IGNORE_LENGTH_MODIFIER
+  // static_assert(0  < jau::cfmt::checkLine("%hu", 0x123456UL)); // size unsigned long > unsigned short (intentional failure)
   static_assert(0 == jau::cfmt::checkLine("%hu", 0x1234_u16));
   buffer = jau::format_string("%hu", 0x1234_u16); // size unsigned long > unsigned short
   CHECK(buffer == "4660");
 
-  static_assert(0  < jau::cfmt::checkLine("%s%hhi %hu", "Test", 10000, 0xFFFFFFFF));
+  // !JAU_CFMT_IGNORE_LENGTH_MODIFIER
+  // static_assert(0  < jau::cfmt::checkLine("%s%hhi %hu", "Test", 10000, 0xFFFFFFFF));
   static_assert(0 == jau::cfmt::checkLine("%s%hhi %hu", "Test", 16_i8, 0xFFFF_u16));
   buffer = jau::format_string("%s%hhi %hu", "Test", (char)16, (unsigned short)0xFFFF);
   CHECK(buffer == "Test16 65535");
