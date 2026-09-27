@@ -409,6 +409,11 @@ namespace jau::req {
     concept has_free_to_string_view = requires(T t) {
         { to_string(t) } -> string_view_type;
     };
+    /// A type T w/ T t; to_stringview(t) -> string_view_type
+    template<typename T>
+    concept has_free_to_stringview = requires(T t) {
+        { to_stringview(t) } -> string_view_type;
+    };
 
     /// A type T w/ T t; jau::to_string(t) -> string_type
     template<typename T>

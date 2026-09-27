@@ -1124,9 +1124,16 @@ namespace jau::cfmt {
                 parseOneImpl<std::string_view>(pc, val.to_string());
             }
             template <typename T>
+            requires jau::req::has_free_to_stringview<T>
+            CXX_ALWAYS_INLINE
+            static constexpr void parseOne(Result &pc, const T &val) noexcept {
+                pc.template set_arg<std::string_view>("");
+                parseOneImpl<std::string_view>(pc, to_stringview(val));
+            }
+            template <typename T>
             requires jau::req::has_free_to_string_any<T> && (!
-                     (jau::req::has_toString_any<T> || jau::req::string_alike<T> || jau::req::any_boolean<T> ||
-                      jau::req::any_integral<T> || jau::req::any_floating_point<T> || jau::req::pointer<T>))
+                     (jau::req::has_free_to_stringview<T> || jau::req::has_toString_any<T> || jau::req::string_alike<T> ||
+                      jau::req::any_boolean<T> || jau::req::any_integral<T> || jau::req::any_floating_point<T> || jau::req::pointer<T>))
             CXX_ALWAYS_INLINE
             static constexpr void parseOne(Result &pc, const T &val) noexcept {
                 pc.template set_arg<std::string_view>("");

@@ -1062,9 +1062,10 @@ namespace jau {
              (!jau::req::has_toString_any<value_type>) &&
              (!jau::req::has_to_string_any<value_type>) &&
              (!jau::req::has_member_of_pointer<value_type>) &&
-             jau::req::has_free_to_string_string_other<value_type>
+             (!jau::req::has_free_to_string_view_other<value_type>) &&
+             jau::req::has_free_to_stringview<value_type>
     inline std::string to_string(const value_type &ref) {
-        return std::string(to_string(ref));
+        return std::string(to_stringview(ref));
     }
 
     template<class value_type>
@@ -1076,6 +1077,23 @@ namespace jau {
              (!jau::req::has_toString_any<value_type>) &&
              (!jau::req::has_to_string_any<value_type>) &&
              (!jau::req::has_member_of_pointer<value_type>) &&
+             (!jau::req::has_free_to_string_view_other<value_type>) &&
+             (!jau::req::has_free_to_stringview<value_type>) &&
+             jau::req::has_free_to_string_string_other<value_type>
+    inline std::string to_string(const value_type &ref) {
+        return to_string(ref);
+    }
+
+    template<class value_type>
+    requires (!jau::req::integral<value_type>) && (!jau::req::floating_point<value_type>) &&
+             (!std::is_base_of_v<std::string, value_type>) &&
+             (!std::is_base_of_v<std::string_view, value_type>) &&
+             (!jau::req::pointer<value_type>) &&
+             (!jau::req::wrapper<value_type>) &&
+             (!jau::req::has_toString_any<value_type>) &&
+             (!jau::req::has_to_string_any<value_type>) &&
+             (!jau::req::has_member_of_pointer<value_type>) &&
+             (!jau::req::has_free_to_stringview<value_type>) &&
              (!jau::req::has_free_to_string_any<value_type>)
     inline std::string to_string(const value_type &ref) {
         (void)ref;

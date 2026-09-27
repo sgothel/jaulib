@@ -24,7 +24,7 @@ enum class test_type1_t : uint8_t { // NOLINT(misc-use-internal-linkage): intent
     three = 3
 };
 // and add the `enum class` support functions
-JAU_MAKE_ENUM_STRING(test_type1_t, one, two, three); // NOLINT(misc-use-internal-linkage): intentional
+JAU_MAKE_ENUM_STRING_LONG(test_type1_t, one, two, three); // NOLINT(misc-use-internal-linkage): intentional
 JAU_MAKE_ENUM_INFO(test_type1_t, none, one, two, three);
 
 // Define the `enum class` yourself ...
@@ -151,6 +151,13 @@ TEST_CASE( "Enum Class Value Type Test 10", "[enum][type]" ) {
         REQUIRE( "test_type1_t::one" == long_name<test_type1_t::one>() );
         REQUIRE( "one" == name<test_type1_t::one>() );
         REQUIRE( true == is_enum<test_type1_t::one>() );
+
+        static_assert( "one" == name(test_type1_t::one) );
+        static_assert( "test_type1_t::one" == long_name(test_type1_t::one) );
+        static_assert( "one" == to_stringview(test_type1_t::one) );
+        static_assert( "one" == to_string(test_type1_t::one) );
+        static_assert( std::is_same_v<std::string_view, decltype(to_stringview(test_type1_t::one))> );
+        static_assert( std::is_same_v<std::string, decltype(to_string(test_type1_t::one))> );
         {
             // std::string_view *res = fill_names<test_type1_t::one, test_type1_t::two, test_type1_t::three>();
             constexpr auto nt = get_names<test_type1_t::one, test_type1_t::two, test_type1_t::three>();
@@ -267,6 +274,7 @@ TEST_CASE( "Enum Class Value Type Test 10", "[enum][type]" ) {
         // static_assert( "one" == name(test_type13_t::one) );
         // static_assert( "test_type13_t::one" == long_name(test_type13_t::one) );
         REQUIRE( "one" == name(test_type11_t::one) );
+        REQUIRE( "one" == to_stringview(test_type11_t::one) );
         REQUIRE( "test_type11_t::one" == long_name(test_type11_t::one) );
 
         REQUIRE( "one" == to_string(test_type11_t::one) );

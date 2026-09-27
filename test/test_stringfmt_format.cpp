@@ -681,6 +681,8 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
     }
     // enums: string value
     {
+        CHECK("chess" == name(game_t::chess));
+        CHECK("chess" == to_string(game_t::chess));
         CHECK("chess" == jau::to_string(game_t::chess));
         CHECK("pacman" == jau::to_string(game_t::pacman));
         jau_format_checkLine("%s", game_t::chess);
