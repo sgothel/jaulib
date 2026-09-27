@@ -177,16 +177,48 @@ namespace jau {
     }
 
     /** Simple std::string reserve wrapper w/ noexcept, returning true on success (no exception). */
-    bool reserve_string(std::string &s, const size_t new_capacity) noexcept;
+    constexpr bool reserve_string(std::string &s, const size_t new_capacity) noexcept { // NOLINT(bugprone-exception-escape): rethrow_handled
+        if (new_capacity <= s.capacity()) {
+            return true;
+        }
+        try {
+            s.reserve(new_capacity);
+        } catch (...) {
+            jau::fput_exception(stderr, std::current_exception(), E_FILE_LINE);
+            return false;
+        }
+        return true;
+    }
+
     /** Simple std::string reserve and append wrapper w/ noexcept, returning true on success (no exception). */
-    bool reserve_append_string(std::string &s, size_t new_capacity, size_t append_count, char append_char=' ') noexcept;
+    constexpr bool reserve_append_string(std::string &s, size_t new_capacity, size_t append_count, char append_char=' ') noexcept { // NOLINT(bugprone-exception-escape): rethrow handled
+        if (new_capacity <= s.capacity()) [[likely]] {
+            s.append(append_count, ' '); // NOLINT(bugprone-exception-escape): Handled via capacity
+        } else {
+            try {
+                s.reserve(new_capacity);
+                s.append(append_count, append_char);
+            } catch (...) {
+                jau::fput_exception(stderr, std::current_exception(), E_FILE_LINE);
+                return false;
+            }
+        }
+        return true;
+    }
 
     /**
      * Simple std::string append given string wrapper w/ noexcept, returning passed std::string `s`.
      * @param s   The string to append to
      * @param add A string_view to be appended from.
      */
-    std::string& append_string(std::string &s, std::string_view add) noexcept;
+    constexpr std::string& append_string(std::string &s, std::string_view add) noexcept {
+        try {
+            s.append(add);
+        } catch (...) {
+            jau::fput_exception(stderr, std::current_exception(), E_FILE_LINE);
+        }
+        return s;
+    }
 
     /**
      * Simple std::string append given string wrapper w/ noexcept, returning passed std::string `s`.
@@ -195,7 +227,14 @@ namespace jau {
      * @param pos The position in the string_view `s` to append from.
      * @param n   The number of characters to append from the string_view `s`.
      */
-    std::string& append_string(std::string &s, std::string_view add, size_t pos, size_t n) noexcept;
+    constexpr std::string& append_string(std::string &s, std::string_view add, size_t pos, size_t n) noexcept {
+        try {
+            s.append(add, pos, n);
+        } catch (...) {
+            jau::fput_exception(stderr, std::current_exception(), E_FILE_LINE);
+        }
+        return s;
+    }
 
     /**
     // *************************************************

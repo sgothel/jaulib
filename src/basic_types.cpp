@@ -485,60 +485,6 @@ std::string jau::toLower(const std::string& s) {
     std::string t(s); toLowerInPlace(t); return t;
 }
 
-bool jau::reserve_string(std::string &s, const size_t new_capacity) noexcept { // NOLINT(bugprone-exception-escape): rethrow_exception caught
-    if (new_capacity <= s.capacity()) {
-        return true;
-    }
-    try {
-        s.reserve(new_capacity);
-        return true;
-    } catch (...) {
-        std::exception_ptr eptr = std::current_exception();
-        try {
-            std::rethrow_exception(eptr);
-        } catch (const std::exception &e) {
-            ::fprintf(stderr, "Exception caught @ %s:%d: new-cap %zu: %s\n",
-                __FILE__, __LINE__, new_capacity, e.what());
-        }
-        return false;
-    }
-}
-
-bool jau::reserve_append_string(std::string &s, size_t new_capacity, size_t append_count, char append_char) noexcept { // NOLINT(bugprone-exception-escape): rethrow_exception caught
-    try {
-        s.reserve(new_capacity);
-        s.append(append_count, append_char);
-        return true;
-    } catch (...) {
-        std::exception_ptr eptr = std::current_exception();
-        try {
-            std::rethrow_exception(eptr);
-        } catch (const std::exception &e) {
-            ::fprintf(stderr, "Exception caught @ %s:%d: new-cap %zu, append %zu: %s\n",
-                __FILE__, __LINE__, new_capacity, append_count, e.what());
-        }
-        return false;
-    }
-}
-
-std::string& jau::append_string(std::string &s, std::string_view add) noexcept {
-    try {
-        s.append(add);
-    } catch (...) {
-        jau::fput_exception(stderr, std::current_exception(), E_FILE_LINE);
-    }
-    return s;
-}
-
-std::string& jau::append_string(std::string &s, std::string_view add, size_t pos, size_t n) noexcept {
-    try {
-        s.append(add, pos, n);
-    } catch (...) {
-        jau::fput_exception(stderr, std::current_exception(), E_FILE_LINE);
-    }
-    return s;
-}
-
 // one static_assert is sufficient for whole compilation unit
 static_assert(is_defined_endian(endian_t::native));
 static_assert(is_little_or_big_endian());
