@@ -130,7 +130,7 @@ TEST_CASE("jau_cfmt_benchmark_append_integral00", "[benchmark][jau][std::string]
         std::string s;
         s.reserve(jau::cfmt::default_string_capacity + 1);
 
-        jau::cfmt::impl::append_integral(s, s.max_size(), i1, false, o1, false);
+        jau::cfmt::impl::append_integral(s, s.max_size(), i1, false, o1);
         REQUIRE(format_check_exp == s);
 
         s.clear();
@@ -144,7 +144,7 @@ TEST_CASE("jau_cfmt_benchmark_append_integral00", "[benchmark][jau][std::string]
             std::string s;
             s.reserve(jau::cfmt::default_string_capacity+1);
 
-            jau::cfmt::impl::append_integral(s, s.max_size(), i1, false, o1, false);
+            jau::cfmt::impl::append_integral(s, s.max_size(), i1, false, o1);
             REQUIRE(format_check_exp == s);
             res = res + s.size();
         }
@@ -200,7 +200,7 @@ TEST_CASE("jau_cfmt_benchmark_append_integral01", "[benchmark][jau][std::string]
         std::string s;
         s.reserve(jau::cfmt::default_string_capacity + 1);
 
-        jau::cfmt::impl::append_integral(s, s.max_size(), i1, false, o1, false);
+        jau::cfmt::impl::append_integral(s, s.max_size(), i1, false, o1);
         REQUIRE(format_check_exp1 == s);
     }
 
@@ -210,7 +210,7 @@ TEST_CASE("jau_cfmt_benchmark_append_integral01", "[benchmark][jau][std::string]
             std::string s;
             s.reserve(jau::cfmt::default_string_capacity+1);
 
-            jau::cfmt::impl::append_integral(s, s.max_size(), i1, false, o1, false);
+            jau::cfmt::impl::append_integral(s, s.max_size(), i1, false, o1);
             REQUIRE(format_check_exp1 == s);
             res = res + s.size();
         }
@@ -255,7 +255,7 @@ TEST_CASE("jau_cfmt_benchmark_append_integral02", "[benchmark][jau][std::string]
         std::string s;
         s.reserve(jau::cfmt::default_string_capacity + 1);
 
-        jau::cfmt::impl::append_integral(s, s.max_size(), i1, false, o1, false);
+        jau::cfmt::impl::append_integral(s, s.max_size(), i1, false, o1);
         REQUIRE(format_check_exp1 == s);
     }
 
@@ -265,7 +265,7 @@ TEST_CASE("jau_cfmt_benchmark_append_integral02", "[benchmark][jau][std::string]
             std::string s;
             s.reserve(jau::cfmt::default_string_capacity+1);
 
-            jau::cfmt::impl::append_integral(s, s.max_size(), i1, false, o1, false);
+            jau::cfmt::impl::append_integral(s, s.max_size(), i1, false, o1);
             REQUIRE(format_check_exp1 == s);
             res = res + s.size();
         }

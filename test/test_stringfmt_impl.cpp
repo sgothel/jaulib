@@ -56,10 +56,8 @@ TEST_CASE("jau_cfmt_append_integral01", "[benchmark][jau][std::string][format_st
         // no precision
         // value = 0 ??? -> val_digits 1
         // negative = true
-        // no inject_dot
         const uint64_t value = 0;
         const bool negative = true;
-        const bool inject_dot = false;
         jau::cfmt::FormatOpts opts;
         opts.length_mod = jau::cfmt::plength_t::z;
         opts.setConversion('b');
@@ -70,7 +68,7 @@ TEST_CASE("jau_cfmt_append_integral01", "[benchmark][jau][std::string][format_st
             std::string s;
             s.reserve(jau::cfmt::default_string_capacity + 1);
 
-            jau::cfmt::impl::append_integral(s, s.max_size(), value, negative, opts, inject_dot);
+            jau::cfmt::impl::append_integral(s, s.max_size(), value, negative, opts);
             REQUIRE(format_exp == s);
         }
         {
