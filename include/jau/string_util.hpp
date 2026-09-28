@@ -206,6 +206,22 @@ namespace jau {
         return true;
     }
 
+    /** Simple std::string reserve and resize wrapper w/ noexcept, returning true on success (no exception). */
+    constexpr bool reserve_resize_string(std::string &s, size_t new_capacity, size_t new_size, char fill_char=' ') noexcept { // NOLINT(bugprone-exception-escape): rethrow handled
+        if (new_capacity <= s.capacity()) [[likely]] {
+            s.resize(new_size, fill_char); // NOLINT(bugprone-exception-escape): Handled via capacity
+        } else {
+            try {
+                s.reserve(new_capacity);
+                s.resize(new_size, fill_char);
+            } catch (...) {
+                jau::fput_exception(stderr, std::current_exception(), E_FILE_LINE);
+                return false;
+            }
+        }
+        return true;
+    }
+
     /**
      * Simple std::string append given string wrapper w/ noexcept, returning passed std::string `s`.
      * @param s   The string to append to
@@ -782,9 +798,9 @@ namespace jau {
         const uint32_t prefix_len = (PrefixOpt::none == prefix || 10 == radix) ? 0 : (8 == radix ? 1 : 2);
         const uint32_t sep_gap = 10 == radix ? 3 : 4;
         uint32_t sep_count, space_left;
-        if ('0' == padding) {
+        if ('0' == padding) [[likely]] {
             space_left = 0;
-            if (separator) {
+            if (separator) [[unlikely]] {
                 // separator inside zero-padding
                 sep_count = (val_digits - 1) / sep_gap;
                 const uint32_t len0 = sign_len + prefix_len + val_digits + sep_count;
@@ -803,14 +819,10 @@ namespace jau {
             const uint32_t len0 = sign_len + prefix_len + val_digits + sep_count;
             space_left = min_width > len0 ? min_width - len0 : 0;
         }
-        try {
-            const uint32_t added_len = std::max(min_width, space_left + sign_len + prefix_len + (val_digits + sep_count));
-            // fprintf(stderr, "XXX: space_left %u, sign_len %u, prefix_len %u digits %u, sep_count %u; min_width %u; added_len %u\n",
-            //         space_left, sign_len, prefix_len, val_digits, sep_count, min_width, added_len);
-            dest.reserve(dest_start_len + added_len + 1); // w/ EOS
-            dest.resize(dest_start_len + added_len, ' '); // w/o EOS
-        } catch (...) {
-            fput_exception(stderr, std::current_exception(), E_FILE_LINE);
+        const uint32_t added_len = std::max(min_width, space_left + sign_len + prefix_len + (val_digits + sep_count));
+        // fprintf(stderr, "XXX: space_left %u, sign_len %u, prefix_len %u digits %u, sep_count %u; min_width %u; added_len %u\n",
+        //         space_left, sign_len, prefix_len, val_digits, sep_count, min_width, added_len);
+        if (!jau::reserve_resize_string(dest, dest_start_len + added_len + 1, dest_start_len + added_len)) [[unlikely]] { // w/ EOS in capacity
             return dest;
         }
         const char * const d_start = dest.data() + dest_start_len;
@@ -821,23 +833,24 @@ namespace jau {
             const char *hex_array = LoUpCase::lower == capitalization ? HexadecimalArrayLow : HexadecimalArrayBig;
             const unsigned_value_type mask = unsigned_value_type(radix - 1);  // ignored for radix 10
             uint32_t digit_cnt = 0, separator_idx = 0;
-            while (d > d_start_num) {
-                if (separator_idx < sep_count && 0 < digit_cnt && 0 == digit_cnt % sep_gap) {
+            while (d > d_start_num) [[likely]] {
+                if (separator_idx < sep_count && digit_cnt && 0 == digit_cnt % sep_gap) [[unlikely]] {
                     *(--d) = separator;
                     ++separator_idx;
-                }
-                if (d > d_start_num) {
-                    if (digit_cnt >= val_digits) {
-                        *(--d) = padding;
-                    } else if (10 == radix) {
-                        *(--d) = '0' + (v % 10);
-                        v /= 10;
-                    } else {
-                        *(--d) = hex_array[v & mask];
-                        v >>= shift;
+                    if (d == d_start_num) [[unlikely]] {
+                        break; // done
                     }
-                    ++digit_cnt;
                 }
+                if (digit_cnt >= val_digits) [[unlikely]] {
+                    *(--d) = padding;
+                } else if (10 == radix) [[likely]] {
+                    *(--d) = '0' + (v % 10);
+                    v /= 10;
+                } else {
+                    *(--d) = hex_array[v & mask];
+                    v >>= shift;
+                }
+                ++digit_cnt;
             }
         }
         if ( prefix_len && d > d_start ) {
@@ -849,7 +862,7 @@ namespace jau {
                 *(--d) = '0';
             }
         }
-        if ( sign_len && d > d_start ) {
+        if ( sign_len && d > d_start ) [[unlikely]] {
             *(--d) = '-';
         }
         return dest;
@@ -906,13 +919,9 @@ namespace jau {
         const uint32_t num_chars = sign_len + (val_digits + sep_count);
         const uint32_t added_len = std::max(min_width, num_chars);
         const uint32_t space_left = added_len - num_chars;
-        try {
-            // fprintf(stderr, "XXX: space_left %u, sign_len %u, digits %u, sep_count %u; min_width %u; added_len %u\n",
-            //         space_left, sign_len, val_digits, sep_count, min_width, added_len);
-            dest.reserve(dest_start_len + added_len + 1); // w/ EOS
-            dest.resize(dest_start_len + added_len, ' '); // w/o EOS
-        } catch (...) {
-            fput_exception(stderr, std::current_exception(), E_FILE_LINE);
+        // fprintf(stderr, "XXX: space_left %u, sign_len %u, digits %u, sep_count %u; min_width %u; added_len %u\n",
+        //         space_left, sign_len, val_digits, sep_count, min_width, added_len);
+        if (!jau::reserve_resize_string(dest, dest_start_len + added_len + 1, dest_start_len + added_len)) [[unlikely]] { // w/ EOS in capacity
             return dest;
         }
         const char * const d_start = dest.data() + dest_start_len;
@@ -921,19 +930,20 @@ namespace jau {
         *d = 0; // EOS (is reserved)
         {
             uint32_t digit_cnt = 0, separator_idx = 0;
-            while (d > d_start_num) {
-                if (separator_idx < sep_count && 0 < digit_cnt && 0 == digit_cnt % sep_gap) {
+            while (d > d_start_num) [[likely]] {
+                if (separator_idx < sep_count && digit_cnt && 0 == digit_cnt % sep_gap) [[unlikely]] {
                     *(--d) = separator;
                     ++separator_idx;
+                    if (d == d_start_num) [[unlikely]] {
+                        break; // done
+                    }
                 }
-                if (d > d_start_num) {
-                    *(--d) = '0' + (v % 10);
-                    v /= 10;
-                    ++digit_cnt;
-                }
+                *(--d) = '0' + (v % 10);
+                v /= 10;
+                ++digit_cnt;
             }
         }
-        if ( sign_len && d > d_start ) {
+        if ( sign_len && d > d_start ) [[unlikely]] {
             *(--d) = '-';
         }
         return dest;
