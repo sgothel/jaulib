@@ -1051,7 +1051,7 @@ std::string& jau::appendHexString(std::string& dest, const void *data, const nsi
     }
     const uint8_t *const bytes = static_cast<const uint8_t *>(data);
     try {
-        if ( byteOrder == lb_endian_t::little ) {
+        if ( byteOrder == lb_endian_t::little ) [[unlikely]] {
             // LSB left -> MSB right, no leading `0x`
             // TODO: skip tail all-zeros?
             dest.reserve(dest.size() + length * 2 + 1);
