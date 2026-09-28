@@ -193,7 +193,7 @@ namespace jau {
     /** Simple std::string reserve and append wrapper w/ noexcept, returning true on success (no exception). */
     constexpr bool reserve_append_string(std::string &s, size_t new_capacity, size_t append_count, char append_char=' ') noexcept { // NOLINT(bugprone-exception-escape): rethrow handled
         if (new_capacity <= s.capacity()) [[likely]] {
-            s.append(append_count, ' '); // NOLINT(bugprone-exception-escape): Handled via capacity
+            s.append(append_count, append_char); // NOLINT(bugprone-exception-escape): Handled via capacity
         } else {
             try {
                 s.reserve(new_capacity);
