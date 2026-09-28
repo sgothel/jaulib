@@ -1325,7 +1325,13 @@ namespace jau::cfmt {
 
                     if( pstate_t::start == pc.state ) [[likely]] {
                         pc.state = pstate_t::field_width;
-                        parseFlags(pc, c);
+
+                        while (pc.opts.addFlag(c)) {
+                            if (!pc.nextSymbol(c)) [[unlikely]] {
+                                pc.setError(__LINE__); // missing flag followup
+                                return; // error
+                            }
+                        }
 
                         /* parse field width */
                         if( c != '*' ) [[likely]] {
@@ -1369,7 +1375,15 @@ namespace jau::cfmt {
 
                     if( c != '%' ) [[likely]] {
                         loop_next = false;
-                        if( !parseFmtSpec<T>(pc, c, val) ) [[unlikely]] {
+                        if (c == auto_conversion_spec) {
+                            c = to_fmt_spec(pc.m_arg_aconvert);
+                            pc.opts.length_mod = plength_t::any;
+                        }
+                        if( !pc.opts.setConversion(c) ) [[unlikely]] {
+                            pc.setError(__LINE__);
+                            return; // error
+                        }
+                        if( !parseFmtSpec<T>(pc, val) ) [[unlikely]] {
                             pc.appendError("Cnv");
                             return;  // error
                         }
@@ -1384,10 +1398,6 @@ namespace jau::cfmt {
                 } while (loop_next);
 
                 // return pc.hasNext(); // true: no-error and not-complete
-            }
-
-            static constexpr void parseFlags(Result &pc, char &c) noexcept {
-                while( pc.opts.addFlag(c) && pc.nextSymbol(c) ) { }
             }
 
             /// Parse argument field width or precision, returns false on error. Otherwise next argument is required.
@@ -1566,11 +1576,7 @@ namespace jau::cfmt {
             template <typename T>
             requires std::is_same_v<no_type_t, T>
             CXX_ALWAYS_INLINE
-            static constexpr bool parseFmtSpec(Result &pc, char fmt_literal, const T &) noexcept {
-                if( !pc.opts.setConversion(fmt_literal) ) {
-                    pc.setError(__LINE__);
-                    return false;
-                }
+            static constexpr bool parseFmtSpec(Result &pc, const T &) noexcept {
                 pc.setError(__LINE__);
                 return false;
             }
@@ -1578,16 +1584,7 @@ namespace jau::cfmt {
             template <typename T>
             requires (!std::is_same_v<no_type_t, T>)
             CXX_ALWAYS_INLINE
-            static constexpr bool parseFmtSpec(Result &pc, char fmt_literal, const T &val) noexcept {
-                if (fmt_literal == auto_conversion_spec) {
-                    fmt_literal = to_fmt_spec(pc.m_arg_aconvert);
-                    pc.opts.length_mod = plength_t::any;
-                }
-                if( !pc.opts.setConversion(fmt_literal) ) {
-                    pc.setError(__LINE__);
-                    return false;
-                }
-
+            static constexpr bool parseFmtSpec(Result &pc, const T &val) noexcept {
                 switch( pc.opts.conversion ) {
                     case cspec_t::character:
                         return parseCharFmtSpec<T>(pc, val);
@@ -1603,7 +1600,7 @@ namespace jau::cfmt {
                     case cspec_t::exp_float:
                     case cspec_t::hex_float:
                     case cspec_t::alt_float:
-                        return parseFloatFmtSpec<T>(pc, fmt_literal, val);
+                        return parseFloatFmtSpec<T>(pc, val);
                     default:
                         pc.setError(__LINE__);
                         return false;
@@ -1745,7 +1742,7 @@ namespace jau::cfmt {
             template <typename T>
             requires (!std::floating_point<T>)
             CXX_ALWAYS_INLINE
-            static constexpr bool parseFloatFmtSpec(Result &pc, const char /*fmt_literal*/, const T &) noexcept {
+            static constexpr bool parseFloatFmtSpec(Result &pc, const T &) noexcept {
                 ++pc.arg_count;
                 pc.setError(__LINE__);
                 return false;
@@ -1753,7 +1750,7 @@ namespace jau::cfmt {
             template <typename T>
             requires std::floating_point<T>
             CXX_ALWAYS_INLINE
-            static constexpr bool parseFloatFmtSpec(Result &pc, const char /*fmt_literal*/, const T &val) noexcept {
+            static constexpr bool parseFloatFmtSpec(Result &pc, const T &val) noexcept {
                 ++pc.arg_count;
                 pc.appendFormatted(val);
                 return true;
