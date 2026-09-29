@@ -654,14 +654,14 @@ namespace jau::cfmt {
         void append_afloatF64(std::string &dest, const size_t dest_maxlen, const double ivalue, const size_t ivalue_size, const FormatOpts &iopts) noexcept;
 
         template <jau::req::signed_integral T>
-        constexpr std::make_unsigned_t<T> unsigned_int(const T x) noexcept
+        constexpr unsigned_integral_promotion unsigned_int(const T x) noexcept
         {
             return jau::unsigned_value(x);
         }
 
         template<typename T>
         requires (!jau::req::signed_integral<T>)
-        constexpr T unsigned_int(const T& x) noexcept {
+        constexpr unsigned_integral_promotion unsigned_int(const T& x) noexcept {
             return x;
         }
 
@@ -682,14 +682,6 @@ namespace jau::cfmt {
         constexpr bool is_positive(const T&) noexcept {
             return true;
         }
-
-        /// Returns unsigned_integral_promotion type if: integral || boolean, otherwise returns orig type
-        template<typename T>
-        using make_int_unsigned_t = typename std::conditional_t<std::is_integral_v<T> || jau::req::boolean<T>, std::type_identity<unsigned_integral_promotion>, std::type_identity<T>>::type;  // NOLINT
-
-        /// Returns unsigned_integral_promotion type if: unsigned-integral && !boolean, otherwise returns orig type
-        template<typename T>
-        using make_int_signed_t = typename std::conditional_t<jau::req::unsigned_integral<T> && !jau::req::boolean<T>, std::type_identity<signed_integral_promotion>, std::type_identity<T>>::type;  // NOLINT
 
         /// Returns a simple `const char * const` if: `char *`, otherwise returns orig type
         template<typename T>
@@ -1086,8 +1078,7 @@ namespace jau::cfmt {
                 using namespace jau::req;
                 using WT = type_of<T>;
                 pc.template set_arg<WT>(value_of(val));
-                using U = make_int_unsigned_t<WT>;
-                parseOneImpl<U>(pc, unsigned_int(value_of(val))); // unsigned_integral_promotion
+                parseOneImpl<unsigned_integral_promotion>(pc, unsigned_int(value_of(val)));
             }
 
             template <typename T>
@@ -1097,7 +1088,7 @@ namespace jau::cfmt {
                 using namespace jau::req;
                 using WT = type_of<T>;
                 pc.template set_arg<WT>(value_of(val));
-                parseOneImpl<floating_point_promotion>(pc, double(value_of(val))); // floating_point_promotion
+                parseOneImpl<floating_point_promotion>(pc, floating_point_promotion(value_of(val)));
             }
 
             CXX_NO_INLINE
@@ -1113,7 +1104,7 @@ namespace jau::cfmt {
             }
 
             template <typename T>
-            requires jau::req::char_pointer<T> // also allows passing `char*` for `%p`
+            requires jau::req::char_pointer<T> // also allows passing `%s` and `%p`
             CXX_NO_INLINE
             static constexpr void parseOne(Result &pc, const T &val) noexcept {
                 using U = make_char_pointer_t<T>; // aliasing to 'const char * const'
@@ -1173,8 +1164,7 @@ namespace jau::cfmt {
                 using WT = type_of<T>;
                 using WT2 = std::underlying_type_t<WT>;
                 pc.template set_arg<WT2>(jau::enums::number(value_of(val)));
-                using U = make_int_unsigned_t<WT2>;
-                parseOneImpl<U>(pc, unsigned_int(jau::enums::number(value_of(val)))); // uint64_t
+                parseOneImpl<unsigned_integral_promotion>(pc, unsigned_int(jau::enums::number(value_of(val))));
             }
 
             template <typename T>
@@ -1204,8 +1194,7 @@ namespace jau::cfmt {
                 using namespace jau::req;
                 using WT = type_of<T>;
                 pc.template set_arg<WT>(WT());
-                using U = make_int_unsigned_t<WT>;
-                parseOneImpl<U>(pc, U()); // uint64_t
+                parseOneImpl<unsigned_integral_promotion>(pc, unsigned_integral_promotion());
             }
 
             template <typename T>
@@ -1268,8 +1257,7 @@ namespace jau::cfmt {
                 using WT = type_of<T>;
                 using WT2 = std::underlying_type_t<WT>;
                 pc.template set_arg<WT2>(WT2());
-                using U = make_int_unsigned_t<WT2>;
-                parseOneImpl<U>(pc, U()); // uint64_t
+                parseOneImpl<unsigned_integral_promotion>(pc, unsigned_integral_promotion());
             }
 
             template <typename T>
@@ -1296,12 +1284,12 @@ namespace jau::cfmt {
              * @return true if no error _and_ not complete, i.e. further calls with subsequent parameter required. Otherwise parsing ended due to error or completeness.
              */
             template <typename T>
-            requires jau::req::boolean<T>
-                  || std::is_integral_v<T>
-                  || std::is_floating_point_v<T>
-                  || jau::req::pointer<T>
-                  || jau::req::char_pointer<T> // also allows passing `char*` for `%p`
-                  || jau::req::string_literal<T> || jau::req::string_class<T>
+            requires std::is_same_v<bool, T>
+                  || std::is_same_v<unsigned_integral_promotion, T>
+                  || std::is_same_v<double, T>
+                  || std::is_same_v<const void * const, T>
+                  || std::is_same_v<const char * const, T>
+                  || std::is_same_v<std::string_view, T>
                   || std::is_same_v<no_type_t, T>
             CXX_NO_INLINE
             static constexpr void parseOneImpl(Result &pc, const T &val) noexcept {
@@ -1402,14 +1390,15 @@ namespace jau::cfmt {
 
             /// Parse argument field width or precision, returns false on error. Otherwise next argument is required.
             template <typename T>
-            requires (!jau::req::unsigned_integral<T>)
+            requires (!std::is_same_v<unsigned_integral_promotion, T>)
             CXX_ALWAYS_INLINE
             static constexpr void parseArgWidthPrecision(bool, Result &pc, const T &) noexcept {
                 pc.setError(__LINE__);
             }
+
             /// Parse argument field width or precision, returns false on error. Otherwise next argument is required.
             template <typename T>
-            requires jau::req::unsigned_integral<T>
+            requires std::is_same_v<unsigned_integral_promotion, T>
             CXX_ALWAYS_INLINE
             static constexpr void parseArgWidthPrecision(bool is_width, Result &pc, const T &val) noexcept {
                 ++pc.arg_count;
@@ -1608,7 +1597,7 @@ namespace jau::cfmt {
             }
 
             template <typename T>
-            requires (!jau::req::unsigned_integral<T>) || jau::req::boolean<T>
+            requires (!std::is_same_v<unsigned_integral_promotion, T>)
             CXX_ALWAYS_INLINE
             static constexpr bool parseCharFmtSpec(Result &pc, const T &) noexcept {
                 ++pc.arg_count;
@@ -1617,14 +1606,13 @@ namespace jau::cfmt {
             }
 
             template <typename T>
-            requires jau::req::unsigned_integral<T> && (!jau::req::boolean<T>)
+            requires std::is_same_v<unsigned_integral_promotion, T>
             CXX_ALWAYS_INLINE
             static constexpr bool parseCharFmtSpec(Result &pc, const T &val0) noexcept {
                 ++pc.arg_count;
 
-                using V = make_int_signed_t<T>; // restore signed type!
-                const V val = V(val0);
-                const V sign = pc.m_argval_negative ? -1 : 1;
+                const signed_integral_promotion val = signed_integral_promotion(val0);
+                const signed_integral_promotion sign = pc.m_argval_negative ? -1 : 1;
 
                 char buf[] = { (char)(val*sign), 0 };
                 pc.appendFormatted(std::string_view(buf, 1));  // FIXME: Support UTF16? UTF8 default
@@ -1649,7 +1637,7 @@ namespace jau::cfmt {
             }
 
             template <typename T>
-            requires (!jau::req::pointer<T>)
+            requires (!jau::req::pointer<T>) // <const void* const> or <const char* const>
             CXX_ALWAYS_INLINE
             static constexpr bool parseAPointerFmtSpec(Result &pc, const T &) noexcept {
                 ++pc.arg_count;
@@ -1657,7 +1645,7 @@ namespace jau::cfmt {
                 return false;
             }
             template <typename T>
-            requires jau::req::pointer<T>
+            requires jau::req::pointer<T> // <const void* const> or <const char* const>
             CXX_ALWAYS_INLINE
             static constexpr bool parseAPointerFmtSpec(Result &pc, const T &val) {
                 pc.opts.length_mod = plength_t::none;
@@ -1667,7 +1655,7 @@ namespace jau::cfmt {
             }
 
             template <typename T>
-            requires (!jau::req::unsigned_integral<T>)
+            requires (!(std::is_same_v<unsigned_integral_promotion, T> || jau::req::any_boolean<T>))
             CXX_ALWAYS_INLINE
             static constexpr bool parseSignedFmtSpec(Result &pc, const T &) noexcept {
                 ++pc.arg_count;
@@ -1676,7 +1664,7 @@ namespace jau::cfmt {
             }
 
             template <typename T>
-            requires jau::req::unsigned_integral<T>
+            requires std::is_same_v<unsigned_integral_promotion, T> || jau::req::any_boolean<T>
             CXX_ALWAYS_INLINE
             static constexpr bool parseSignedFmtSpec(Result &pc, const T &val) noexcept {
                 ++pc.arg_count;
@@ -1685,7 +1673,7 @@ namespace jau::cfmt {
                     pc.opts.flags &= ~flags_t::hash;  // no hash for 0 values
                 }
 
-                // Only accepting unsigned -> signed, if sizeof(unsigned) < sizeof(signed)
+                // Only accepting unsigned -> signed, if sizeof(unsigned) < sizeof(signed_integral_promotion)
                 const unsigned int signed_argtype_size = pc.m_argtype_signed ? pc.m_argtype_size : pc.m_argtype_size + 1;
                 if ( signed_argtype_size > sizeof(signed_integral_promotion) ) { // NOLINT(bugprone-sizeof-expression)
                     pc.setError(__LINE__);
@@ -1701,7 +1689,7 @@ namespace jau::cfmt {
             }
 
             template <typename T>
-            requires (!jau::req::unsigned_integral<T>)
+            requires (!(std::is_same_v<unsigned_integral_promotion, T> || jau::req::any_boolean<T>))
             CXX_ALWAYS_INLINE
             static constexpr bool parseUnsignedFmtSpec(Result &pc, const T &) noexcept {
                 ++pc.arg_count;
@@ -1709,7 +1697,7 @@ namespace jau::cfmt {
                 return false;
             }
             template <typename T>
-            requires jau::req::unsigned_integral<T>
+            requires std::is_same_v<unsigned_integral_promotion, T> || jau::req::any_boolean<T>
             CXX_ALWAYS_INLINE
             static constexpr bool parseUnsignedFmtSpec(Result &pc, const T &val) noexcept {
                 ++pc.arg_count;
@@ -1740,7 +1728,7 @@ namespace jau::cfmt {
             }
 
             template <typename T>
-            requires (!std::floating_point<T>)
+            requires (!std::is_same_v<floating_point_promotion, T>)
             CXX_ALWAYS_INLINE
             static constexpr bool parseFloatFmtSpec(Result &pc, const T &) noexcept {
                 ++pc.arg_count;
@@ -1748,7 +1736,7 @@ namespace jau::cfmt {
                 return false;
             }
             template <typename T>
-            requires std::floating_point<T>
+            requires std::is_same_v<floating_point_promotion, T>
             CXX_ALWAYS_INLINE
             static constexpr bool parseFloatFmtSpec(Result &pc, const T &val) noexcept {
                 ++pc.arg_count;
@@ -2266,13 +2254,13 @@ namespace jau {
 
 // Explicit instantiation declaration of template function
 extern template class jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>;
-extern template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOneImpl<jau::cfmt::impl::no_type_t>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, jau::cfmt::impl::no_type_t const&);
 extern template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOneImpl<bool>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, bool const&);
-extern template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOneImpl<unsigned long>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, unsigned long const&);
+extern template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOneImpl<jau::cfmt::unsigned_integral_promotion>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, unsigned long const&);
 extern template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOneImpl<double>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, double const&);
-extern template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOneImpl<void const* const>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, void const* const&);
-extern template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOneImpl<char const* const>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, char const* const&);
+extern template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOneImpl<const void * const>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, void const* const&);
+extern template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOneImpl<const char * const>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, char const* const&);
 extern template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOneImpl<std::string_view>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, std::string_view const&);
+extern template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOneImpl<jau::cfmt::impl::no_type_t>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, jau::cfmt::impl::no_type_t const&);
 extern template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<jau::cfmt::impl::no_type_t>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, jau::cfmt::impl::no_type_t const&);
 extern template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<bool>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, bool const&);
 extern template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOne<char>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, char const&);
