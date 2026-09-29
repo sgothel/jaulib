@@ -43,6 +43,7 @@ Up to date API documentation can be found:
   * [Network Utilities](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__NetUtils.html)
   * [OS Support](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__OSSup.html)
   * [String Utilities](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__StringUtils.html)
+    * [jau::cfmt](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__StringCFormat.html#jau_cfmt_header)
   * [System and OS Utilities](https://jausoft.com/projects/jaulib/build/documentation/cpp/html/group__SysUtils.html)
 
 * [Java API Doc](https://jausoft.com/projects/jaulib/build/documentation/java/html/index.html).
