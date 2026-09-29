@@ -73,7 +73,6 @@
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/dist/perf-gcc",
         "CMAKE_C_COMPILER": "gcc",
         "CMAKE_CXX_COMPILER": "g++",
-        "JAU_CMAKE_FIX_INSTALL_PREFIX": "ON",
         "USE_STRIP": "OFF"
       }
     },
@@ -88,7 +87,6 @@
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/dist/perf-clang",
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++",
-        "JAU_CMAKE_FIX_INSTALL_PREFIX": "ON",
         "USE_STRIP": "OFF"
       }
     },
@@ -118,6 +116,18 @@
       }
     },
     {
+      "name": "footprint-clang",
+      "inherits": "release",
+      "displayName": "Footprint (clang, clang-tidy, C++20, java)",
+      "binaryDir": "${sourceDir}/build/footprint-clang",
+      "cacheVariables": {
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/dist/footprint-clang",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "USE_STRIP": "OFF"
+      }
+    },
+    {
       "name": "release-gcc",
       "inherits": "release",
       "displayName": "Release (gcc, C++20, java)",
@@ -126,6 +136,18 @@
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/dist/release-gcc",
         "CMAKE_C_COMPILER": "gcc",
         "CMAKE_CXX_COMPILER": "g++"
+      }
+    },
+    {
+      "name": "footprint-gcc",
+      "inherits": "release",
+      "displayName": "Footprint (gcc, C++20, java)",
+      "binaryDir": "${sourceDir}/build/footprint-gcc",
+      "cacheVariables": {
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/dist/footprint-gcc",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "USE_STRIP": "OFF"
       }
     },
     {
@@ -173,8 +195,16 @@
       "configurePreset": "release-clang"
     },
     {
+      "name": "footprint-clang",
+      "configurePreset": "footprint-clang"
+    },
+    {
       "name": "release-gcc",
       "configurePreset": "release-gcc"
+    },
+    {
+      "name": "footprint-gcc",
+      "configurePreset": "footprint-gcc"
     },
     {
       "name": "default",

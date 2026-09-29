@@ -6,7 +6,7 @@ bname=`basename $0 .sh`
 
 builddir=$1
 
-version="1.5.1"
+version="1.8.0"
 
 nm_opts="-C --print-size --size-sort --radix=d"
 
@@ -48,8 +48,8 @@ check_logged() {
 }
 
 if [ -z "${builddir}" ] ; then
-    check_logged build/release-clang
-    check_logged build/release-gcc
+    check_logged build/footprint-clang
+    check_logged build/footprint-gcc
 else
     check_logged ${builddir}
 fi
