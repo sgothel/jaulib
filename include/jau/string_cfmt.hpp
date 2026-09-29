@@ -591,7 +591,7 @@ namespace jau::cfmt {
             return true;
         }
 
-        CXX_ALWAYS_INLINE
+        CXX_NO_INLINE
         constexpr void reset() noexcept {
 #ifdef JAU_CFMT_TRACK_FORMAT_OPTS_FMT
             fmt = std::string_view();
@@ -772,7 +772,6 @@ namespace jau::cfmt {
             : m_maxLen(maxLen), m_s(s) {}
 
             constexpr size_t maxLen() const noexcept { return m_maxLen; }
-            constexpr bool fits(size_t n) const noexcept { return m_s.size() + n <= m_maxLen; }
 
             std::string_view get() const noexcept { return m_s; }
 
@@ -948,7 +947,7 @@ namespace jau::cfmt {
           private:
             friend class impl::Parser<Output>;
 
-            CXX_NO_INLINE
+            CXX_ALWAYS_INLINE
             constexpr void reset() noexcept {
                 opts.reset();
             }
@@ -973,6 +972,7 @@ namespace jau::cfmt {
                 m_argval_negative = false;
             }
 
+            CXX_ALWAYS_INLINE
             constexpr bool nextSymbol(char &c) noexcept {
                 if (pos < end) [[likely]] {
                     c = *pos++;
@@ -1121,16 +1121,12 @@ namespace jau::cfmt {
                 parseOneImpl<floating_point_promotion>(pc, floating_point_promotion(value_of(val)));
             }
 
-            CXX_NO_INLINE
-            static constexpr void parseOneVoidPointer(Result &pc, const void * const val) noexcept {
-                pc.template set_arg<const void * const>(nullptr);
-                parseOneImpl<const void * const>(pc, val); // pass-through
-            }
             template <typename T>
             requires jau::req::pointer<T> && (!jau::req::char_pointer<T>)
-            CXX_ALWAYS_INLINE
+            CXX_NO_INLINE
             static constexpr void parseOne(Result &pc, const T &val) noexcept {
-                parseOneVoidPointer(pc, (const void * const)val); // pass-through
+                pc.template set_arg<const void * const>(nullptr);
+                parseOneImpl<const void * const>(pc, (const void * const)val); // pass-through
             }
 
             template <typename T>
@@ -1171,7 +1167,7 @@ namespace jau::cfmt {
             }
             template <typename T>
             requires jau::req::has_free_to_stringview<T>
-            CXX_ALWAYS_INLINE
+            CXX_NO_INLINE
             static constexpr void parseOne(Result &pc, const T &val) noexcept {
                 pc.template set_arg<std::string_view>("");
                 parseOneImpl<std::string_view>(pc, to_stringview(val));
@@ -1180,7 +1176,7 @@ namespace jau::cfmt {
             requires jau::req::has_free_to_string_any<T> && (!
                      (jau::req::has_free_to_stringview<T> || jau::req::has_toString_any<T> || jau::req::string_alike<T> ||
                       jau::req::any_boolean<T> || jau::req::any_integral<T> || jau::req::any_floating_point<T> || jau::req::pointer<T>))
-            CXX_ALWAYS_INLINE
+            CXX_NO_INLINE
             static constexpr void parseOne(Result &pc, const T &val) noexcept {
                 pc.template set_arg<std::string_view>("");
                 parseOneImpl<std::string_view>(pc, to_string(val));
@@ -1546,6 +1542,7 @@ namespace jau::cfmt {
 
 #ifdef JAU_CFMT_TRACK_FORMAT_OPTS_LEN
             /* parse length modifier, returns true if parsing can continue or false on error. */
+            CXX_ALWAYS_INLINE
             static constexpr bool parseLengthMods(Result &pc, char &c) noexcept {
                 switch(c) {
                     case 'h':
@@ -1598,6 +1595,7 @@ namespace jau::cfmt {
             }
 #else
             /* parse length modifier, returns true if parsing can continue or false on error. */
+            CXX_ALWAYS_INLINE
             static constexpr bool parseLengthMods(Result &pc, char &c) noexcept {
                 const char pre = c;
                 switch(pre) {
