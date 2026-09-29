@@ -24,7 +24,6 @@
 
 #include <algorithm>
 #include <cassert>
-#include <cinttypes>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
@@ -1607,7 +1606,7 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
         }
 #if !defined(NDEBUG) && 0
         fprintf(stderr, "XXX.80: separator '%c', opts %s\n", separator, opts.toString().c_str());
-        fprintf(stderr, "XXX.80: negative %d, val %" PRIu64 "\n", (int)negative, v);
+        fprintf(stderr, "XXX.80: negative %d, val %u\n", (int)negative, v);
         fprintf(stderr, "XXX.80: num_len %u (digits %u + sep %u + .. ), xleft %u, space[l %u, r %u] -> len %u\n",
                 num_len, val_digits, sep_count, xtra_left, space_left, space_right, (space_left + xtra_left + num_len + space_right));
         fprintf(stderr, "XXX.80: total len[old %zu, added %zu, len %zu], number_start %u\n", dest_start_len, added_len, dest.size(), xtra_left + space_left);
@@ -1821,7 +1820,7 @@ void jau::cfmt::impl::append_integral_simple(std::string &dest, const size_t des
         const uint32_t sep_gap = 10 == radix ? 3 : 4;
         const uint32_t sep_count = val_digits > 0 && separator ? (val_digits - 1) / sep_gap : 0;
         fprintf(stderr, "XXX.81: seperator '%c', opts %s\n", separator, opts.toString().c_str());
-        fprintf(stderr, "XXX.81: negative %d, val %" PRIu64 "\n", (int)negative, v);
+        fprintf(stderr, "XXX.81: negative %d, val %u\n", (int)negative, v);
         fprintf(stderr, "XXX.81: idx[digits %u, sep %u, xleft %u\n",
                 val_digits, sep_count, xtra_left);
         fprintf(stderr, "XXX.81: total len[old %zu, added %zu, len %zu], number_start %u\n", dest_start_len, added_len, dest.size(), xtra_left);
@@ -1951,7 +1950,7 @@ void jau::cfmt::impl::append_floatF64(std::string &dest, const size_t dest_maxle
     }
 
 #if !defined(NDEBUG) && 0
-    fprintf(stderr, "FFF.10: val %f, positive %d, len %zu/%zu, prec %zu/%zu, width %zu: whole %" PRIu64 ", frac %" PRIu64 ", double_t %s\n",
+    fprintf(stderr, "FFF.10: val %f, positive %d, len %zu/%zu, prec %zu/%zu, width %zu: whole %u, frac %u, double_t %s\n",
             value, !negative, len, float_charbuf_maxlen, prec, prec_max, width, whole, frac, jau::static_ctti<double_t>().toString().c_str());
 #endif
 
@@ -2219,7 +2218,7 @@ void jau::cfmt::impl::append_afloatF64(std::string &dest, const size_t dest_maxl
     }
 
 #if !defined(NDEBUG) && 0
-    fprintf(stderr, "AAA.10: v %f, frac %" PRIx64 ", expval %d, dest '%s' (len %zu), iopts %s\n",
+    fprintf(stderr, "AAA.10: v %f, frac %x, expval %d, dest '%s' (len %zu), iopts %s\n",
             ivalue, significand, expval, dest.c_str(), dest.size(), iopts.toString().c_str());
 #endif
 
@@ -2241,7 +2240,7 @@ void jau::cfmt::impl::append_afloatF64(std::string &dest, const size_t dest_maxl
         fopts.width_set = true;
         fopts.width = fwidth;
 #if !defined(NDEBUG) && 0
-        fprintf(stderr, "AAA.31: v %f, frac %" PRIx64 ", expval %d, dest '%s' (len %zu), fopts %s\n",
+        fprintf(stderr, "AAA.31: v %f, frac %x, expval %d, dest '%s' (len %zu), fopts %s\n",
                 ivalue, significand, expval, dest.c_str(), dest.size(), fopts.toString().c_str());
 #endif
         append_integral(dest, dest_maxlen, significand, false, fopts, true);
@@ -2269,7 +2268,7 @@ void jau::cfmt::impl::append_afloatF64(std::string &dest, const size_t dest_maxl
         fopts.width_set = false;
         fopts.width = 0;
 #if !defined(NDEBUG) && 0
-        fprintf(stderr, "AAA.32: v %f, frac %" PRIx64 ", expval %d, dest '%s' (len %zu), fopts %s\n",
+        fprintf(stderr, "AAA.32: v %f, frac %x, expval %d, dest '%s' (len %zu), fopts %s\n",
                 ivalue, significand, expval, dest.c_str(), dest.size(), fopts.toString().c_str());
 #endif
         append_integral(dest, dest_maxlen, uint64_t(jau::abs(expval)), expval < 0, fopts);

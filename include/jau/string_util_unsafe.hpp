@@ -40,7 +40,7 @@ namespace jau::unsafe {
      * and variable number of arguments following the `format` argument
      * while utilizing the unsafe `vsnprintf`.
      *
-     * This variant doesn't validate `format` against given arguments, see jau::format_string_n.
+     * This variant doesn't validate `format` against given arguments, see jau::cfmt::format_n.
      *
      * Resulting string is truncated to `min(maxStrLen, formatLen)`,
      * with `formatLen` being the given formatted string length of output w/o limitation.
@@ -58,7 +58,7 @@ namespace jau::unsafe {
      * and variable number of arguments following the `format` argument
      * while utilizing the unsafe `vsnprintf`.
      *
-     * This variant doesn't validate `format` against given arguments, see jau::format_string_h.
+     * This variant doesn't validate `format` against given arguments, see jau::cfmt::format_h.
      *
      * Resulting string size matches formated output w/o limitation.
      *
@@ -75,7 +75,7 @@ namespace jau::unsafe {
      * and variable number of arguments following the `format` argument
      * while utilizing the unsafe `vsnprintf`.
      *
-     * This variant doesn't validate `format` against given arguments, see jau::format_string.
+     * This variant doesn't validate `format` against given arguments, see jau::cfmt::format.
      *
      * Resulting string size matches formated output w/o limitation.
      *

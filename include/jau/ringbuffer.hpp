@@ -248,11 +248,11 @@ class ringbuffer {
                           count, sizeof(value_type), (count * sizeof(value_type)));
                 }
                 _DEBUG_DUMP("newArray ...");
-                _DEBUG_PRINT("newArray %" PRIu64 "\n", count);
+                _DEBUG_PRINT("newArray %u\n", count);
                 return m;
             } else {
                 _DEBUG_DUMP("newArray ...");
-                _DEBUG_PRINT("newArray %" PRIu64 "\n", count);
+                _DEBUG_PRINT("newArray %u\n", count);
                 return nullptr;
             }
         }

@@ -54,6 +54,8 @@ namespace jau {
     /** @defgroup StringUtils String Utilities
      *  String utilities for type conversion and manipulation.
      *
+     * Further support is coming from \ref StringCFormat.
+     *
      *  @{
      */
 

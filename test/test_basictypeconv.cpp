@@ -858,7 +858,7 @@ TEST_CASE("HexString from and to byte vector conversion - Test 40", "[hexstring]
             std::vector<uint8_t> out;
             jau::fromHexString(out, value_s1_le, jau::lb_endian_t::little);
             const auto [v_cpu, consumed, complete] = jau::fromHexString(value_s1_le, jau::lb_endian_t::little);
-            std::string v_cpu_s0 = jau::format_string("%lx", v_cpu);
+            std::string v_cpu_s0 = jau::cfmt::format("%lx", v_cpu);
             std::string v_cpu_s1 = jau::toHexString(v_cpu);
             std::string v_cpu_s2 = jau::to_string(v_cpu, 16);
             std::cout << "v0_le " << value_s1_le << ", is_le " << jau::is_little_endian() << std::endl;
@@ -910,7 +910,7 @@ TEST_CASE("HexString from and to byte vector conversion - Test 40", "[hexstring]
             std::vector<uint8_t> out;
             jau::fromHexString(out, value_s1_be, jau::lb_endian_t::big);
             const auto [v_cpu, consumed, complete] = jau::fromHexString(value_s1_be, jau::lb_endian_t::big);
-            std::string v_cpu_s0 = jau::format_string("%lx", v_cpu);
+            std::string v_cpu_s0 = jau::cfmt::format("%lx", v_cpu);
             std::string v_cpu_s1 = jau::toHexString(v_cpu);
             std::string v_cpu_s2 = jau::to_string(v_cpu, 16);
             std::cout << "v0_be " << value_s1_be << ", is_le " << jau::is_little_endian() << std::endl;

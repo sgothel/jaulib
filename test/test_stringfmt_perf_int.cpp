@@ -50,7 +50,7 @@ TEST_CASE("jau_cfmt_benchmark_int0", "[benchmark][jau][std::string][format_int]"
 
         volatile size_t res = 0;
         for( size_t i = 0; i < loops; ++i ) {
-            std::string s = jau::format_string("format_check: %d", i1);
+            std::string s = jau::cfmt::format("format_check: %d", i1);
             REQUIRE(format_check_exp == s);
             res = res + s.size();
         }
@@ -87,7 +87,7 @@ TEST_CASE("jau_cfmt_benchmark_int1", "[benchmark][jau][std::string][format_int]"
 
         volatile size_t res = 0;
         for( size_t i = 0; i < loops; ++i ) {
-            std::string s = jau::format_string("format_check: %03d", i1);
+            std::string s = jau::cfmt::format("format_check: %03d", i1);
             REQUIRE(format_check_exp == s);
             res = res + s.size();
         }
@@ -138,7 +138,7 @@ TEST_CASE("jau_cfmt_benchmark_int2", "[benchmark][jau][std::string][format_int]"
     BENCHMARK("fmt1.34 format       rsrved bench") {
         volatile size_t res = 0;
         for( size_t i = 0; i < loops; ++i ) {
-            std::string s = jau::format_string("format_check: %d, %zu", i1, i2);
+            std::string s = jau::cfmt::format("format_check: %d, %zu", i1, i2);
             REQUIRE(format_check_exp1 == s);
             res = res + s.size();
         }
@@ -203,7 +203,7 @@ TEST_CASE("jau_cfmt_benchmark_int_all", "[benchmark][jau][std::string][format_in
         volatile size_t res = 0;
         for( size_t i = 0; i < loops; ++i ) {
             // fa += 0.01f; fb += 0.02f; ++sz1; ++i1; str1.append("X");
-            std::string s = jau::cfmt::format("format_check: %hhd, %hhu, %hd, %hu, %d, %u, %ld, %lu, %zd, %zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
+            std::string s = jau::cfmt::format("format_check: %d, %u, %d, %u, %d, %u, %d, %u, %d, %u", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
             REQUIRE(format_check_exp1 == s);
             res = res + s.size();
         }
@@ -213,7 +213,7 @@ TEST_CASE("jau_cfmt_benchmark_int_all", "[benchmark][jau][std::string][format_in
         volatile size_t res = 0;
         for( size_t i = 0; i < loops; ++i ) {
             reserved.clear();
-            jau::cfmt::formatR(reserved, "format_check: %hhd, %hhu, %hd, %hu, %d, %u, %ld, %lu, %zd, %zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
+            jau::cfmt::formatR(reserved, "format_check: %d, %u, %d, %u, %d, %u, %d, %u, %d, %u", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
             REQUIRE(format_check_exp1 == reserved);
             res = res + reserved.size();
         }
@@ -223,7 +223,7 @@ TEST_CASE("jau_cfmt_benchmark_int_all", "[benchmark][jau][std::string][format_in
         volatile size_t res = 0;
         for( size_t i = 0; i < loops; ++i ) {
             reserved.clear();
-            jau::cfmt::append(reserved, "format_check: %hhd, %hhu, %hd, %hu, %d, %u, %ld, %lu, %zd, %zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
+            jau::cfmt::append(reserved, "format_check: %d, %u, %d, %u, %d, %u, %d, %u, %d, %u", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
             REQUIRE(format_check_exp1 == reserved);
             res = res + reserved.size();
         }
@@ -281,7 +281,7 @@ TEST_CASE("jau_cfmt_benchmark_int_all", "[benchmark][jau][std::string][format_in
     BENCHMARK("fmt1.230 format              bench") {
         volatile size_t res = 0;
         for( size_t i = 0; i < loops; ++i ) {
-            std::string s = jau::cfmt::format("format_check: %01hhd, %02hhu, %03hd, %04hu, %05d, %06u, %07ld, %08lu, %09zd, %010zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
+            std::string s = jau::cfmt::format("format_check: %01d, %02u, %03d, %04u, %05d, %06u, %07d, %08u, %09d, %010u", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
             REQUIRE(format_check_exp2 == s);
             res = res + s.size();
         }
@@ -292,7 +292,7 @@ TEST_CASE("jau_cfmt_benchmark_int_all", "[benchmark][jau][std::string][format_in
         for( size_t i = 0; i < loops; ++i ) {
             reserved.clear();
 
-            jau::cfmt::formatR(reserved, "format_check: %01hhd, %02hhu, %03hd, %04hu, %05d, %06u, %07ld, %08lu, %09zd, %010zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
+            jau::cfmt::formatR(reserved, "format_check: %01d, %02u, %03d, %04u, %05d, %06u, %07d, %08u, %09d, %010u", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
             REQUIRE(format_check_exp2 == reserved);
             res = res + reserved.size();
         }
@@ -302,7 +302,7 @@ TEST_CASE("jau_cfmt_benchmark_int_all", "[benchmark][jau][std::string][format_in
         volatile size_t res = 0;
         for( size_t i = 0; i < loops; ++i ) {
             reserved.clear();
-            jau_append_string(reserved, "format_check: %01hhd, %02hhu, %03hd, %04hu, %05d, %06u, %07ld, %08lu, %09zd, %010zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
+            jau_append_string(reserved, "format_check: %01d, %02u, %03d, %04u, %05d, %06u, %07d, %08u, %09d, %010u", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
             REQUIRE(format_check_exp2 == reserved);
             res = res + reserved.size();
         }
@@ -312,7 +312,7 @@ TEST_CASE("jau_cfmt_benchmark_int_all", "[benchmark][jau][std::string][format_in
         volatile size_t res = 0;
         for( size_t i = 0; i < loops; ++i ) {
             reserved.clear();
-            jau::cfmt::append(reserved, "format_check: %01hhd, %02hhu, %03hd, %04hu, %05d, %06u, %07ld, %08lu, %09zd, %010zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
+            jau::cfmt::append(reserved, "format_check: %01d, %02u, %03d, %04u, %05d, %06u, %07d, %08u, %09d, %010u", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
             REQUIRE(format_check_exp2 == reserved);
             res = res + reserved.size();
         }

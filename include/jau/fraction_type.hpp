@@ -370,8 +370,8 @@ namespace jau {
                 jau::append_string(r, " O! ");
             } else if ( show_double ) {
                 const int precision = (int)std::max<size_t>(6, digits10(denom, false /* sign_is_digit */));
-                std::string fmt = jau::format_string_h(jau::cfmt::integral_max_digits10 + 3, "%%.%df", precision);
-                std::string s = jau::format_string_h(jau::cfmt::number_max_strlen, fmt, to_double());
+                std::string fmt = jau::cfmt::format_h(jau::cfmt::integral_max_digits10 + 3, "%%.%df", precision);
+                std::string s = jau::cfmt::format_h(jau::cfmt::number_max_strlen, fmt, to_double());
                 jau::append_string(r, s);
             }
             return r;

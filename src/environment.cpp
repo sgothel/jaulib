@@ -133,7 +133,7 @@ int32_t environment::getInt32Property(std::string_view name, const int32_t defau
                 }
             } else {
                 // invalid int32_t range
-                jau_ERR_PRINT("env::getInt32Property %s: %" PRIu64 "/%s (invalid int32_t range) -> %" PRId32 " (default)",
+                jau_ERR_PRINT("env::getInt32Property %s: %u/%s (invalid int32_t range) -> %" PRId32 " (default)",
                           name, (uint64_t)res0, value, res);
             }
         } else {
@@ -149,7 +149,7 @@ uint32_t environment::getUint32Property(std::string_view name, const uint32_t de
                                         const uint32_t min_allowed, const uint32_t max_allowed) noexcept {
     const std::string value = getProperty(name);
     if ( 0 == value.length() ) {
-        jau_COND_PRINT(local_debug, "env::getUint32Property %s: null -> %" PRIu32 " (default)", name, default_value);
+        jau_COND_PRINT(local_debug, "env::getUint32Property %s: null -> %u (default)", name, default_value);
         return default_value;
     } else {
         uint32_t res = default_value;
@@ -163,21 +163,21 @@ uint32_t environment::getUint32Property(std::string_view name, const uint32_t de
                 if ( min_allowed <= res1 && res1 <= max_allowed ) {
                     // matching user value range
                     res = res1;
-                    jau_COND_PRINT(local_debug, "env::getUint32Property %s (default %" PRIu32 "): %" PRIu32 "/%s",
+                    jau_COND_PRINT(local_debug, "env::getUint32Property %s (default %u): %u/%s",
                                name, default_value, res, value);
                 } else {
                     // invalid user value range
-                    jau_ERR_PRINT("env::getUint32Property %s: %" PRIu32 "/%s (invalid user range [% " PRIu32 "..%" PRIu32 "]) -> %" PRIu32 " (default)",
+                    jau_ERR_PRINT("env::getUint32Property %s: %u/%s (invalid user range [% u..%u]) -> %u (default)",
                               name, res1, value, min_allowed, max_allowed, res);
                 }
             } else {
                 // invalid uint32_t range
-                jau_ERR_PRINT("env::getUint32Property %s: %" PRIu64 "/%s (invalid uint32_t range) -> %" PRIu32 " (default)",
+                jau_ERR_PRINT("env::getUint32Property %s: %u/%s (invalid uint32_t range) -> %u (default)",
                           name, (uint64_t)res0, value, res);
             }
         } else {
             // string value not fully valid
-            jau_ERR_PRINT("env::getUint32Property %s: %s (invalid string) -> %" PRIu32 " (default)",
+            jau_ERR_PRINT("env::getUint32Property %s: %s (invalid string) -> %u (default)",
                       name, value, res);
         }
         return res;

@@ -332,12 +332,12 @@ namespace jau {
                                const bool rowMajorOrder, const jau::nsize_t row) noexcept {
       if(rowMajorOrder) {
           for(jau::nsize_t c=0; c<columns; ++c) {
-              sb.append( jau::format_string(f, a[ row*columns + c ] ) );
+              sb.append( jau::cfmt::format(f, a[ row*columns + c ] ) );
               sb.append(", ");
           }
       } else {
           for(jau::nsize_t c=0; c<columns; ++c) {
-              sb.append( jau::format_string(f, a[ row + c*rows ] ) );
+              sb.append( jau::cfmt::format(f, a[ row + c*rows ] ) );
               sb.append(", ");
           }
       }

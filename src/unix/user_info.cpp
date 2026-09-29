@@ -38,7 +38,7 @@
     using namespace jau::os;
 
     bool UserInfo::get_groups(std::vector<id_t>& list) noexcept {
-        // jau::fprintf_td(stderr, "%s: uid %" PRIu32 ", euid %" PRIu32 ", gid %" PRIu32 ", egid %" PRIu32 "\n",
+        // jau::fprintf_td(stderr, "%s: uid %u, euid %u, gid %u, egid %u\n",
         //        title, ::getuid(), ::geteuid(), ::getgid(), ::getegid());
         list.clear();
         ::gid_t gid_list[64];
@@ -71,7 +71,7 @@
     bool UserInfo::set_effective_gid(id_t group_id) noexcept {
         ::gid_t n_group_id = (::gid_t) group_id;
         if( 0 != ::setegid(n_group_id) ) {
-            jau_ERR_PRINT("setegid(%" PRIu64 ") failed", group_id);
+            jau_ERR_PRINT("setegid(%u) failed", group_id);
             return false;
         }
         return true;
@@ -80,7 +80,7 @@
     bool UserInfo::set_effective_uid(id_t user_id) noexcept {
         ::uid_t n_user_id = (::uid_t)user_id;
         if( 0 != ::seteuid(n_user_id) ) {
-            jau_ERR_PRINT("seteuid(%" PRIu64 ") failed", user_id);
+            jau_ERR_PRINT("seteuid(%u) failed", user_id);
             return false;
         }
         return true;
@@ -144,10 +144,10 @@
         if ( !is_root || UserInfo_get_env_uid(n_res_uid, is_root) ) {
             struct passwd *pwd_res = nullptr;
             if ( 0 != ::getpwuid_r(n_res_uid, &pwd, buffer, sizeof(buffer), &pwd_res) || nullptr == pwd_res ) {
-                jau_DBG_PRINT("getpwuid(%" PRIu32 ") failed", n_res_uid);
+                jau_DBG_PRINT("getpwuid(%u) failed", n_res_uid);
                 return false;
             }
-            jau_DBG_PRINT("getpwuid(%" PRIu32 "): name '%s', uid %" PRIu32 ", gid %" PRIu32 "\n", n_res_uid, pwd_res->pw_name, pwd_res->pw_uid, pwd_res->pw_gid);
+            jau_DBG_PRINT("getpwuid(%u): name '%s', uid %u, gid %u\n", n_res_uid, pwd_res->pw_name, pwd_res->pw_uid, pwd_res->pw_gid);
             res_uid = (id_t)n_res_uid;
             res_gid = (id_t)(::gid_t)pwd_res->pw_gid;
             username = std::string(pwd_res->pw_name);
@@ -162,7 +162,7 @@
                     jau_DBG_PRINT("getpwnam(%s) failed\n", tmp_username);
                     return false;
                 }
-                jau_DBG_PRINT("getpwnam(%s): name '%s', uid %" PRIu32 ", gid %" PRIu32 "\n", tmp_username, pwd_res->pw_name, pwd_res->pw_uid, pwd_res->pw_gid);
+                jau_DBG_PRINT("getpwnam(%s): name '%s', uid %u, gid %u\n", tmp_username, pwd_res->pw_name, pwd_res->pw_uid, pwd_res->pw_gid);
                 res_uid = (id_t)n_res_uid;
                 res_gid = (id_t)(::gid_t)pwd_res->pw_gid;
                 username = std::string(pwd_res->pw_name);
@@ -182,7 +182,7 @@
             jau_DBG_PRINT("getpwnam(%s) failed\n", username_lookup);
             return false;
         }
-        jau_DBG_PRINT("getpwnam(%s): name '%s', uid %" PRIu32 ", gid %" PRIu32 "\n", username_lookup, pwd_res->pw_name, pwd_res->pw_uid, pwd_res->pw_gid);
+        jau_DBG_PRINT("getpwnam(%s): name '%s', uid %u, gid %u\n", username_lookup, pwd_res->pw_name, pwd_res->pw_uid, pwd_res->pw_gid);
         res_uid = (id_t)(::uid_t)pwd_res->pw_uid;
         res_gid = (id_t)(::gid_t)pwd_res->pw_gid;
         username = std::string(pwd_res->pw_name);

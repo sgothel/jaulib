@@ -767,7 +767,7 @@ static void test_Unaligned(const TestDataBF &d, jau::bitfield_t<StorageType, Bit
     const size_t maxBitpos = bf.size()-d.bitSize;
     const size_t oneBitCount = jau::bit_count(d.val);
 
-    const std::string msg = jau::format_string("Value 0x%08" PRIx64 " / %s, l %zu/%zu, c %zu, lbPos %zu -> %zu",
+    const std::string msg = jau::cfmt::format("Value 0x%08" PRIx64 " / %s, l %zu/%zu, c %zu, lbPos %zu -> %zu",
             d.val, d.pattern, d.bitSize, bf.size(), oneBitCount, lowBitnum, maxBitpos);
 
     //

@@ -261,7 +261,7 @@ static size_t consume_header_curl1(char *buffer, size_t size, size_t nmemb, void
     const size_t realsize = size * nmemb;
 
     if( false ) {
-        jau_DBG_PRINT("consume_header_curl1.X realsize %zu, total %" PRIu64 " / ( content_len has %d, size %" PRIu64 " )",
+        jau_DBG_PRINT("consume_header_curl1.X realsize %zu, total %u / ( content_len has %d, size %u )",
                realsize, cg->total_read, cg->has_content_length, cg->content_length );
         std::string blob(buffer, realsize);
         jau_PLAIN_PRINT(true, "%s", blob);
@@ -295,7 +295,7 @@ static size_t consume_data_curl1(char *ptr, size_t size, size_t nmemb, void *use
     const bool is_final = 0 == realsize ||
                           cg->has_content_length ? cg->total_read >= cg->content_length : false;
 
-    jau_DBG_PRINT("consume_data_curl1.X realsize %zu, total %" PRIu64 " / ( content_len has %d, size %" PRIu64 " ), is_final %d",
+    jau_DBG_PRINT("consume_data_curl1.X realsize %zu, total %u / ( content_len has %d, size %u ), is_final %d",
            realsize, cg->total_read, cg->has_content_length, cg->content_length, is_final );
 
     try {
@@ -554,7 +554,7 @@ static size_t consume_header_curl2_sync(char *buffer, size_t size, size_t nmemb,
 
     if( io_result_t::NONE != response.result ) {
         // user abort!
-        jau_DBG_PRINT("consume_header_curl2_sync jau_ABORT by User: total %" PRIu64 ", result %s",
+        jau_DBG_PRINT("consume_header_curl2_sync jau_ABORT by User: total %u, result %s",
                 response.total_read, jau::io::toString(response.result) );
         cg->set_end_of_input();
         return 0;
@@ -593,7 +593,7 @@ static size_t consume_header_curl2_sync(char *buffer, size_t size, size_t nmemb,
     }
 
     if( false ) {
-        jau_DBG_PRINT("consume_header_curl2.X realsize %" PRIu64 ", total %" PRIu64 " / ( content_len has %d, size %" PRIu64 " ), result %s",
+        jau_DBG_PRINT("consume_header_curl2.X realsize %u, total %u / ( content_len has %d, size %u ), result %s",
                realsize, response.total_read, response.has_content_length, response.content_length,
                jau::io::toString(response.result) );
         std::string blob(buffer, realsize);
@@ -611,7 +611,7 @@ static size_t consume_header_curl2_async(char *buffer, size_t size, size_t nmemb
     if( io_result_t::NONE != response.result ) {
         // user abort!
         const std::string s = cg->buffer ? cg->buffer->toString() : "null";
-        jau_DBG_PRINT("consume_header_curl2 jau_ABORT by User: total %" PRIu64 ", result %s, rb %s",
+        jau_DBG_PRINT("consume_header_curl2 jau_ABORT by User: total %u, result %s, rb %s",
                 response.total_read.load(), jau::io::toString(response.result), s );
         cg->set_end_of_input();
         return 0;
@@ -651,7 +651,7 @@ static size_t consume_header_curl2_async(char *buffer, size_t size, size_t nmemb
 
     if( false ) {
         const std::string s = cg->buffer ? cg->buffer->toString() : "null";
-        jau_DBG_PRINT("consume_header_curl2.X realsize %zu, total %" PRIu64 " / ( content_len has %d, size %" PRIu64 " ), result %s, rb %s",
+        jau_DBG_PRINT("consume_header_curl2.X realsize %zu, total %u / ( content_len has %d, size %u ), result %s, rb %s",
                realsize, response.total_read.load(), response.has_content_length.load(), response.content_length.load(),
                jau::io::toString(response.result), s );
         std::string blob(buffer, realsize);
@@ -670,7 +670,7 @@ static size_t consume_data_curl2_sync(char *ptr, size_t size, size_t nmemb, void
         // user abort!
         // user abort!
         const std::string s = cg->buffer ? cg->buffer->toString() : "null";
-        jau_DBG_PRINT("consume_data_curl2 jau_ABORT by User: total %" PRIu64 ", result %s, rb %s",
+        jau_DBG_PRINT("consume_data_curl2 jau_ABORT by User: total %u, result %s, rb %s",
                 response.total_read, jau::io::toString(response.result), s );
         cg->set_end_of_input();
         return 0;
@@ -701,7 +701,7 @@ static size_t consume_data_curl2_sync(char *ptr, size_t size, size_t nmemb, void
         bool timeout_occured;
         if( !cg->buffer->putBlocking(reinterpret_cast<uint8_t*>(ptr),
                                      reinterpret_cast<uint8_t*>(ptr)+realsize, 0_s, timeout_occured) ) {
-            jau_DBG_PRINT("consume_data_curl2 Failed put: total %" PRIu64 ", result %s, timeout %d, rb %s",
+            jau_DBG_PRINT("consume_data_curl2 Failed put: total %u, result %s, timeout %d, rb %s",
                     response.total_read, jau::io::toString(response.result), timeout_occured, cg->buffer->toString() );
             if( timeout_occured ) {
                 cg->set_end_of_input();
@@ -730,7 +730,7 @@ static size_t consume_data_curl2_sync(char *ptr, size_t size, size_t nmemb, void
 
     if( jau::environment::get().debug ) {
         const std::string s = cg->buffer ? cg->buffer->toString() : "null";
-        jau_DBG_PRINT("consume_data_curl2.X realsize %zu, total %" PRIu64 " / ( content_len has %d, size %" PRIu64 " ), is_final %d, result %s, rb %s",
+        jau_DBG_PRINT("consume_data_curl2.X realsize %zu, total %u / ( content_len has %d, size %u ), is_final %d, result %s, rb %s",
                realsize, response.total_read, response.has_content_length, response.content_length, is_final,
                jau::io::toString(response.result), s );
     }
@@ -745,7 +745,7 @@ static size_t consume_data_curl2_async(char *ptr, size_t size, size_t nmemb, voi
     if( io_result_t::NONE != response.result ) {
         // user abort!
         const std::string s = cg->buffer ? cg->buffer->toString() : "null";
-        jau_DBG_PRINT("consume_data_curl2 jau_ABORT by User: total %" PRIu64 ", result %s, rb %s",
+        jau_DBG_PRINT("consume_data_curl2 jau_ABORT by User: total %u, result %s, rb %s",
                 response.total_read.load(), jau::io::toString(response.result), s );
         cg->set_end_of_input();
         return 0;
@@ -776,7 +776,7 @@ static size_t consume_data_curl2_async(char *ptr, size_t size, size_t nmemb, voi
         bool timeout_occured;
         if( !cg->buffer->putBlocking(reinterpret_cast<uint8_t*>(ptr),
                                      reinterpret_cast<uint8_t*>(ptr)+realsize, 0_s, timeout_occured) ) {
-            jau_DBG_PRINT("consume_data_curl2 Failed put: total %" PRIu64 ", result %s, timeout %d, rb %s",
+            jau_DBG_PRINT("consume_data_curl2 Failed put: total %u, result %s, timeout %d, rb %s",
                     response.total_read.load(), jau::io::toString(response.result), timeout_occured, cg->buffer->toString() );
             if( timeout_occured ) {
                 cg->set_end_of_input();
@@ -805,7 +805,7 @@ static size_t consume_data_curl2_async(char *ptr, size_t size, size_t nmemb, voi
 
     if( jau::environment::get().debug ) {
         const std::string s = cg->buffer ? cg->buffer->toString() : "null";
-        jau_DBG_PRINT("consume_data_curl2.X realsize %zu, total %" PRIu64 " / ( content_len has %d, size %" PRIu64 " ), is_final %d, result %s, rb %s",
+        jau_DBG_PRINT("consume_data_curl2.X realsize %zu, total %u / ( content_len has %d, size %u ), is_final %d, result %s, rb %s",
                realsize, response.total_read.load(), response.has_content_length.load(), response.content_length.load(), is_final,
                jau::io::toString(response.result), s );
     }
@@ -1157,27 +1157,27 @@ AsyncStreamResponseRef jau::io::read_url_stream_async(net_tk_handle handle, cons
 }
 
 void jau::io::print_stats(const std::string& prefix, const uint64_t& out_bytes_total, const jau::fraction_i64& td) noexcept {
-    jau_PLAIN_PRINT(true, "%s: Duration %s s, %'" PRIi64 " ms", prefix, td.toString(), td.to_ms());
+    jau_PLAIN_PRINT(true, "%s: Duration %s s, %'i ms", prefix, td.toString(), td.to_ms());
 
     if( out_bytes_total >= 100'000'000 ) {
-        jau_PLAIN_PRINT(true, "%s: Size %'" PRIi64 " MB", prefix, std::llround((double)out_bytes_total/1'000'000.0));
+        jau_PLAIN_PRINT(true, "%s: Size %'i MB", prefix, std::llround((double)out_bytes_total/1'000'000.0));
     } else if( out_bytes_total >= 100'000 ) {
-        jau_PLAIN_PRINT(true, "%s: Size %'" PRIi64 " KB", prefix, std::llround((double)out_bytes_total/1'000.0));
+        jau_PLAIN_PRINT(true, "%s: Size %'i KB", prefix, std::llround((double)out_bytes_total/1'000.0));
     } else {
-        jau_PLAIN_PRINT(true, "%s: Size %'" PRIu64 " B", prefix, out_bytes_total);
+        jau_PLAIN_PRINT(true, "%s: Size %'u B", prefix, out_bytes_total);
     }
 
     const uint64_t _rate_bps = std::llround( (double)out_bytes_total / td.to_double() ); // bytes per second
     const uint64_t _rate_bitps = std::llround( ( (double)out_bytes_total * 8.0 ) / td.to_double() ); // bits per second
 
     if( _rate_bitps >= 100'000'000 ) {
-        jau_PLAIN_PRINT(true, "%s: Bitrate %'" PRIi64 " Mbit/s, %'" PRIi64 " MB/s", prefix,
+        jau_PLAIN_PRINT(true, "%s: Bitrate %'i Mbit/s, %'i MB/s", prefix,
                 std::llround((double)_rate_bitps/1'000'000.0), std::llround((double)_rate_bps/1'000'000.0));
     } else if( _rate_bitps >= 100'000 ) {
-        jau_PLAIN_PRINT(true, "%s: Bitrate %'" PRIi64 " kbit/s, %'" PRIi64 " kB/s", prefix,
+        jau_PLAIN_PRINT(true, "%s: Bitrate %'i kbit/s, %'i kB/s", prefix,
                 std::llround((double)_rate_bitps/1'000.0), std::llround((double)_rate_bps/1'000.0));
     } else {
-        jau_PLAIN_PRINT(true, "%s: Bitrate %'" PRIu64 " bit/s, %'" PRIu64 " B/s", prefix, _rate_bitps, _rate_bps);
+        jau_PLAIN_PRINT(true, "%s: Bitrate %'u bit/s, %'u B/s", prefix, _rate_bitps, _rate_bps);
     }
 }
 

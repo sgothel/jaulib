@@ -63,10 +63,16 @@ enum class game_t : uint16_t { // NOLINT(misc-use-internal-linkage): intend
 };
 JAU_MAKE_ENUM_STRING(game_t, chess, pacman, mrdo); // NOLINT
 
-enum class plainenum_t : uint16_t { // NOLINT(misc-use-internal-linkage): intend
+enum class plain_scoped_unsigned_enum_t : unsigned { // NOLINT(misc-use-internal-linkage): intend
     none,
-    lala,
-    lili
+    one = 1,
+    two = 2
+};
+enum class plain_scoped_signed_enum_t : signed { // NOLINT(misc-use-internal-linkage): intend
+    none,
+    minus_one = -1,
+    one = 1,
+    two = 2
 };
 
 TEST_CASE("jau::cfmt::cspec_t from type", "[jau][jau::cfmt]") {
@@ -86,7 +92,22 @@ TEST_CASE("jau::cfmt::cspec_t from type", "[jau][jau::cfmt]") {
 
     static_assert(jau::cfmt::cspec_t::string        == jau::cfmt::to_cspec<SomeClass1>());
     static_assert(jau::cfmt::cspec_t::string        == jau::cfmt::to_cspec<game_t>());
-    static_assert(jau::cfmt::cspec_t::unsigned_int  == jau::cfmt::to_cspec<plainenum_t>());
+    static_assert(jau::cfmt::cspec_t::unsigned_int  == jau::cfmt::to_cspec<plain_scoped_unsigned_enum_t>());
+    static_assert(jau::cfmt::cspec_t::signed_int    == jau::cfmt::to_cspec<plain_scoped_signed_enum_t>());
+
+    enum plain_unscoped_unsigned_enum_t : unsigned { // NOLINT(misc-use-internal-linkage): intend
+        aa_none,
+        aa_one = 1,
+        aa_two = 2
+    };
+    enum plain_unscoped_signed_enum_t : signed { // NOLINT(misc-use-internal-linkage): intend
+        bb_none,
+        bb_minus_one = -1,
+        bb_one = 1,
+        bb_two = 2
+    };
+    static_assert(jau::cfmt::cspec_t::unsigned_int  == jau::cfmt::to_cspec<plain_unscoped_unsigned_enum_t>());
+    static_assert(jau::cfmt::cspec_t::signed_int    == jau::cfmt::to_cspec<plain_unscoped_signed_enum_t>());
 }
 
 TEST_CASE("jau::cfmt::FormatOpts with auto", "[jau][jau::cfmt]") {
@@ -288,7 +309,7 @@ TEST_CASE("parse: width precision from format", "[jau][std::string][jau::cfmt]")
     }
     {
         std::string s;
-        jau::cfmt::Result r = jau::cfmt::formatR(s,"%23" PRIi64, (int64_t)1);
+        jau::cfmt::Result r = jau::cfmt::formatR(s,"%23i", (int64_t)1);
         std::cerr << "FormatResult " << r << "\n";
         REQUIRE( true == r.success());
         REQUIRE( 1 == r.argumentCount());
@@ -298,7 +319,7 @@ TEST_CASE("parse: width precision from format", "[jau][std::string][jau::cfmt]")
         REQUIRE( false == r.opts().precision_set);
         REQUIRE( 0 == r.opts().precision);
         REQUIRE( jau::cfmt::cspec_t::signed_int == r.opts().conversion);
-        REQUIRE( jau::cfmt::plength_t::l == r.opts().length_mod);
+        REQUIRE( jau::cfmt::plength_t::none == r.opts().length_mod);
     }
     {
         std::string s;
@@ -316,7 +337,7 @@ TEST_CASE("parse: width precision from format", "[jau][std::string][jau::cfmt]")
     }
     {
         std::string s;
-        jau::cfmt::Result r = jau::cfmt::formatR(s,"%23.12" PRIi64, (int64_t)1);
+        jau::cfmt::Result r = jau::cfmt::formatR(s,"%23.12i", (int64_t)1);
         std::cerr << "FormatResult " << r << "\n";
         REQUIRE( true == r.success());
         REQUIRE( 1 == r.argumentCount());
@@ -326,7 +347,7 @@ TEST_CASE("parse: width precision from format", "[jau][std::string][jau::cfmt]")
         REQUIRE( true == r.opts().precision_set);
         REQUIRE( 12 == r.opts().precision);
         REQUIRE( jau::cfmt::cspec_t::signed_int == r.opts().conversion);
-        REQUIRE( jau::cfmt::plength_t::l == r.opts().length_mod);
+        REQUIRE( jau::cfmt::plength_t::none == r.opts().length_mod);
     }
     {
         std::string s;
@@ -351,7 +372,7 @@ TEST_CASE("parse: width precision from arg", "[jau][std::string][jau::cfmt]") {
         jau_format_check("%*" PRIi64, 21, (int64_t)1);
         jau_format_checkLine("%*" PRIi64, 21, (int64_t)1);
         std::string s;
-        jau::cfmt::Result r = jau::cfmt::formatR(s,"%*" PRIi64, 21, (int64_t)1);
+        jau::cfmt::Result r = jau::cfmt::formatR(s,"%*i", 21, (int64_t)1);
         std::cerr << "FormatResult " << r << "\n";
         REQUIRE( true == r.success());
         REQUIRE( 2 == r.argumentCount());
@@ -361,7 +382,7 @@ TEST_CASE("parse: width precision from arg", "[jau][std::string][jau::cfmt]") {
         REQUIRE( false == r.opts().precision_set);
         REQUIRE( 0 == r.opts().precision);
         REQUIRE( jau::cfmt::cspec_t::signed_int == r.opts().conversion);
-        REQUIRE( jau::cfmt::plength_t::l == r.opts().length_mod);
+        REQUIRE( jau::cfmt::plength_t::none == r.opts().length_mod);
     }
     {
         std::string s;
@@ -408,7 +429,7 @@ TEST_CASE("parse: width precision from arg", "[jau][std::string][jau::cfmt]") {
     }
     {
         std::string s;
-        jau::cfmt::Result r = jau::cfmt::formatR(s,"%+.*" PRIi64, 12, (int64_t)1);
+        jau::cfmt::Result r = jau::cfmt::formatR(s,"%+.*d", 12, (int64_t)1);
         std::cerr << "FormatResult " << r << "\n";
         REQUIRE( true == r.success());
         REQUIRE( 2 == r.argumentCount());
@@ -418,7 +439,7 @@ TEST_CASE("parse: width precision from arg", "[jau][std::string][jau::cfmt]") {
         REQUIRE( true == r.opts().precision_set);
         REQUIRE( 12 == r.opts().precision);
         REQUIRE( jau::cfmt::cspec_t::signed_int == r.opts().conversion);
-        REQUIRE( jau::cfmt::plength_t::l == r.opts().length_mod);
+        REQUIRE( jau::cfmt::plength_t::none == r.opts().length_mod);
     }
 }
 
@@ -430,7 +451,7 @@ static void checkFormat(int line, const char *fmt, const Args &...args) {
     std::string exp = jau::unsafe::format_string(fmt, args...);
     PRAGMA_DISABLE_WARNING_POP
 
-    // std::string has = jau::format_string(fmt, args...);
+    // std::string has = jau::cfmt::format(fmt, args...);
     std::string has;
     jau::cfmt::Result r = jau::cfmt::formatR(has, fmt, args...);
     std::cerr << "FormatResult @ " << line << ": " << r << "\n";
@@ -442,6 +463,8 @@ static void checkFormat(int line, const char *fmt, const Args &...args) {
 
 TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
     // type conversion
+    bool b0 = false;
+    bool b1 = true;
     int32_t  i32 = -1234;
     int32_t  i32_u = 1234;
     uint32_t u32 =  1234;
@@ -498,17 +521,17 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
         // impossible for vsnprintf (via jau::unsafe::format_string)
         jau_format_checkLine("%s", s2);
         CHECK( 1 == jau::cfmt::check("%s", s2));
-        CHECK( "World" == jau::format_string("%s", s2));
+        CHECK( "World" == jau::cfmt::format("%s", s2));
         jau_format_checkLine("%?", s2);
         CHECK( 1 == jau::cfmt::check("%?", s2));
-        CHECK( "World" == jau::format_string("%?", s2));
+        CHECK( "World" == jau::cfmt::format("%?", s2));
 
         jau_format_checkLine("%s", s2sv);
         CHECK( 1 == jau::cfmt::check("%s", s2sv));
-        CHECK( "World" == jau::format_string("%s", s2sv));
+        CHECK( "World" == jau::cfmt::format("%s", s2sv));
         jau_format_checkLine("%?", s2sv);
         CHECK( 1 == jau::cfmt::check("%?", s2sv));
-        CHECK( "World" == jau::format_string("%?", s2sv));
+        CHECK( "World" == jau::cfmt::format("%?", s2sv));
     }
     {
         // jau_format_checkLine("%s", (int)0);
@@ -518,29 +541,29 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
         const char *cstr0 = nullptr;
         const char *cstr1 = "Hello World";
         jau_format_checkLine("%s", cstr0);
-        CHECK( "(null)" == jau::format_string("%s", cstr0));
-        CHECK( "Hello World" == jau::format_string("%s", cstr1));
+        CHECK( "(null)" == jau::cfmt::format("%s", cstr0));
+        CHECK( "Hello World" == jau::cfmt::format("%s", cstr1));
         jau_format_checkLine("%?", cstr0);
-        CHECK( "(null)" == jau::format_string("%?", cstr0));
-        CHECK( "Hello World" == jau::format_string("%?", cstr1));
+        CHECK( "(null)" == jau::cfmt::format("%?", cstr0));
+        CHECK( "Hello World" == jau::cfmt::format("%?", cstr1));
     }
     {
         const void *handle = (void *)0x12345678;
         const void *nil = nullptr;
         jau_format_checkLine("%p", handle);
-        CHECK( "0x12345678" == jau::format_string("%p", handle));
-        CHECK( "(nil)" == jau::format_string("%p", nil));
+        CHECK( "0x12345678" == jau::cfmt::format("%p", handle));
+        CHECK( "(nil)" == jau::cfmt::format("%p", nil));
         jau_format_checkLine("%?", handle);
-        CHECK( "0x12345678" == jau::format_string("%?", handle));
-        CHECK( "(nil)" == jau::format_string("%?", nil));
+        CHECK( "0x12345678" == jau::cfmt::format("%?", handle));
+        CHECK( "(nil)" == jau::cfmt::format("%?", nil));
         jau_format_checkLine("%#p", handle);
-        CHECK( "0x12345678" == jau::format_string("%#p", handle));
-        CHECK( "(nil)" == jau::format_string("%#p", nil));
+        CHECK( "0x12345678" == jau::cfmt::format("%#p", handle));
+        CHECK( "(nil)" == jau::cfmt::format("%#p", nil));
 
         // only `char*` for string allowed
         CHECK( -1 == jau::cfmt::check("%s", handle));
-        CHECK( true == jau::format_string("%s", handle).starts_with("<E#1"));
-        CHECK( true == jau::format_string("%s", nil).starts_with("<E#1"));
+        CHECK( true == jau::cfmt::format("%s", handle).starts_with("<E#1"));
+        CHECK( true == jau::cfmt::format("%s", nil).starts_with("<E#1"));
     }
     checkFormat(__LINE__, "%p", &i32);
     checkFormat(__LINE__, "p1a %p %0p", p1a, p1a);
@@ -555,6 +578,10 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
     checkFormat(__LINE__, "%p", (void *)nullptr);
     checkFormat(__LINE__, "%s", (char *)nullptr);
 
+    checkFormat(__LINE__, "%d", b0);
+    checkFormat(__LINE__, "%d", b1);
+    checkFormat(__LINE__, "%u", b0);
+    checkFormat(__LINE__, "%u", b1);
     checkFormat(__LINE__, "%d", i32);
 
     checkFormat(__LINE__, "%o", u32);
@@ -613,22 +640,22 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
     }
     // bool
     {
-        jau_format_check("%?", (bool)true);
-        jau_format_checkLine("%?", (bool)true);
-        jau_format_check("%d", (bool)true);
-        jau_format_checkLine("%d", (bool)true);
-        jau_format_check("%u", (bool)true);
-        jau_format_checkLine("%u", (bool)true);
-        jau_format_check("%s", (bool)true);
-        jau_format_checkLine("%s", (bool)true);
-        CHECK("1" == jau::format_string("%d", (bool)true));
-        CHECK("0" == jau::format_string("%d", (bool)false));
-        CHECK("1" == jau::format_string("%u", (bool)true));
-        CHECK("0" == jau::format_string("%u", (bool)false));
-        CHECK("true" == jau::format_string("%s", (bool)true));
-        CHECK("false" == jau::format_string("%s", (bool)false));
-        CHECK("true" == jau::format_string("%?", (bool)true));
-        CHECK("false" == jau::format_string("%?", (bool)false));
+        jau_format_check("%?", b0);
+        jau_format_checkLine("%?", b0);
+        jau_format_check("%d", b0);
+        jau_format_checkLine("%d", b0);
+        jau_format_check("%u", b0);
+        jau_format_checkLine("%u", b0);
+        jau_format_check("%s", b0);
+        jau_format_checkLine("%s", b0);
+        CHECK("0" == jau::cfmt::format("%d", b0));
+        CHECK("1" == jau::cfmt::format("%d", b1));
+        CHECK("0" == jau::cfmt::format("%u", b0));
+        CHECK("1" == jau::cfmt::format("%u", b1));
+        CHECK("false" == jau::cfmt::format("%s", b0));
+        CHECK("true" == jau::cfmt::format("%s", b1));
+        CHECK("false" == jau::cfmt::format("%?", b0));
+        CHECK("true" == jau::cfmt::format("%?", b1));
     }
 
     // enums: integral value
@@ -664,23 +691,36 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
         static_assert(true == std::is_unsigned_v<std::underlying_type_t<decltype(e4_u)>>);
         static_assert(jau::cfmt::cspec_t::unsigned_int == jau::cfmt::to_cspec<decltype(e4_u)>());
 
-        jau_format_string("Enum %u, %d, %d, %u\n", e1_u, e2_s, e3_s, e4_u);
-        jau_format_checkLine("%u, %d, %d, %u\n", e1_u, e2_s, e3_s, e4_u);
-        jau_format_string("Enum %?, %?, %?, %?\n", e1_u, e2_s, e3_s, e4_u);
-        jau_format_checkLine("%?, %?, %?, %?\n", e1_u, e2_s, e3_s, e4_u);
+        static_assert(4 == jau::cfmt::check("%u, %d, %d, %u", e1_u, e2_s, e3_s, e4_u));
+        static_assert(0 == jau::cfmt::checkLine("%u, %u, %d, %u", e1_u, e2_s, e3_s, e4_u));
+        static_assert(4 == jau::cfmt::check("%?, %?, %?, %?", e1_u, e2_s, e3_s, e4_u));
+        static_assert(0 == jau::cfmt::checkLine("%?, %?, %?, %?", e1_u, e2_s, e3_s, e4_u));
 
-        static_assert(4 == jau::cfmt::check("%u, %d, %d, %u\n", e1_u, e2_s, e3_s, e4_u));
-        static_assert(0 == jau::cfmt::checkLine("%u, %u, %d, %u\n", e1_u, e2_s, e3_s, e4_u));
-        static_assert(4 == jau::cfmt::check("%?, %?, %?, %?\n", e1_u, e2_s, e3_s, e4_u));
-        static_assert(0 == jau::cfmt::checkLine("%?, %?, %?, %?\n", e1_u, e2_s, e3_s, e4_u));
-
-        static_assert(0 == jau::cfmt::checkLine("%u\n", e1_u)); // unsigned -> unsigned OK
+        static_assert(0 == jau::cfmt::checkLine("%u", e1_u)); // unsigned -> unsigned OK
         // !JAU_CFMT_IGNORE_LENGTH_MODIFIER
-        // static_assert(0 < jau::cfmt::checkLine("%d\n", e1_u));  // unsigned -> signed ERROR
-        static_assert(0 == jau::cfmt::checkLine("%u\n", e2_s)); // signed -> unsigned OK
+        // static_assert(0 < jau::cfmt::checkLine("%d", e1_u));  // unsigned -> signed ERROR
+        static_assert(0 == jau::cfmt::checkLine("%u", e2_s)); // signed -> unsigned OK
 
-        CHECK("jau::to_string<T> n/a for type" == jau::to_string(plainenum_t::lala).substr(0, 30)); // no to_string available
-        CHECK( -1 == jau::cfmt::check("%s", plainenum_t::lala));    // no to_string available
+        jau_format_checkLine("%u, %d, %d, %u\n", e1_u, e2_s, e3_s, e4_u);
+        CHECK("Enum 0, -1, -1, 0" == jau::cfmt::format("Enum %u, %d, %d, %u", e1_u, e2_s, e3_s, e4_u));
+        jau_format_checkLine("%?, %?, %?, %?\n", e1_u, e2_s, e3_s, e4_u);
+        CHECK("Enum 0, -1, -1, 0" == jau::cfmt::format("Enum %?, %?, %?, %?", e1_u, e2_s, e3_s, e4_u));
+
+        jau_format_checkLine("%u, %d, %d, %u\n",
+            plain_scoped_unsigned_enum_t::none,
+            plain_scoped_signed_enum_t::minus_one, plain_scoped_signed_enum_t::one,
+            plain_scoped_unsigned_enum_t::one);
+        CHECK("Enum 0, -1, 1, 2" == jau::cfmt::format("Enum %u, %d, %d, %u",
+            plain_scoped_unsigned_enum_t::none,
+            plain_scoped_signed_enum_t::minus_one, plain_scoped_signed_enum_t::one,
+            plain_scoped_unsigned_enum_t::two));
+        CHECK("Enum 0, -1, 1, 2" == jau::cfmt::format("Enum %?, %?, %?, %?",
+            plain_scoped_unsigned_enum_t::none,
+            plain_scoped_signed_enum_t::minus_one, plain_scoped_signed_enum_t::one,
+            plain_scoped_unsigned_enum_t::two));
+
+        CHECK("jau::to_string<T> n/a for type" == jau::to_string(plain_scoped_unsigned_enum_t::one).substr(0, 30)); // no to_string available
+        CHECK( -1 == jau::cfmt::check("%s", plain_scoped_unsigned_enum_t::one));    // no to_string available
     }
     // enums: string value
     {
@@ -690,52 +730,52 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
         CHECK("pacman" == jau::to_string(game_t::pacman));
         jau_format_checkLine("%s", game_t::chess);
         jau_format_checkLine("%?", game_t::chess);
-        CHECK( "chess" == jau::format_string("%s", game_t::chess));
-        CHECK( "pacman" == jau::format_string("%s", game_t::pacman));
-        CHECK( "chess" == jau::format_string("%?", game_t::chess));
-        CHECK( "pacman" == jau::format_string("%?", game_t::pacman));
+        CHECK( "chess" == jau::cfmt::format("%s", game_t::chess));
+        CHECK( "pacman" == jau::cfmt::format("%s", game_t::pacman));
+        CHECK( "chess" == jau::cfmt::format("%?", game_t::chess));
+        CHECK( "pacman" == jau::cfmt::format("%?", game_t::pacman));
 
         CHECK("little" == jau::to_string(jau::lb_endian_t::little));
         jau_format_checkLine("%s", jau::lb_endian_t::little);
-        CHECK( "little" == jau::format_string("%s", jau::lb_endian_t::little));
+        CHECK( "little" == jau::cfmt::format("%s", jau::lb_endian_t::little));
         jau_format_checkLine("%?", jau::lb_endian_t::little);
-        CHECK( "little" == jau::format_string("%?", jau::lb_endian_t::little));
+        CHECK( "little" == jau::cfmt::format("%?", jau::lb_endian_t::little));
     }
     // class w/ toString to_string and free to_string (SomeClass3)
     {
         CHECK("SomeClass1 toString" == jau::to_string(SomeClass1()));
         jau_format_checkLine("%s", SomeClass1());
-        CHECK( "SomeClass1 toString" == jau::format_string("%s", SomeClass1()));
+        CHECK( "SomeClass1 toString" == jau::cfmt::format("%s", SomeClass1()));
 
         CHECK("SomeClass2 toString" == SomeClass2().to_string());
         jau_format_checkLine("%s", SomeClass2());
-        CHECK("SomeClass2 toString" == jau::format_string("%s", SomeClass2()));
+        CHECK("SomeClass2 toString" == jau::cfmt::format("%s", SomeClass2()));
 
         CHECK("SomeClass3 toString" == to_string(SomeClass3()));
         jau_format_checkLine("%s", SomeClass3());
-        CHECK("SomeClass3 toString" == jau::format_string("%s", SomeClass3()));
+        CHECK("SomeClass3 toString" == jau::cfmt::format("%s", SomeClass3()));
 
         SomeClass1 sc1;
         CHECK("SomeClass1 toString" == jau::to_string(sc1));
-        CHECK("SomeClass1 toString" == jau::format_string("%s", sc1));
-        CHECK("SomeClass1 toString" != jau::format_string("%p", &sc1));
+        CHECK("SomeClass1 toString" == jau::cfmt::format("%s", sc1));
+        CHECK("SomeClass1 toString" != jau::cfmt::format("%p", &sc1));
 
         SomeClass2 sc2;
         CHECK("SomeClass2 toString" == jau::to_string(sc2));
-        CHECK("SomeClass2 toString" == jau::format_string("%s", sc2));
-        CHECK("SomeClass2 toString" != jau::format_string("%p", &sc2));
+        CHECK("SomeClass2 toString" == jau::cfmt::format("%s", sc2));
+        CHECK("SomeClass2 toString" != jau::cfmt::format("%p", &sc2));
 
         SomeClass3 sc3;
         CHECK("SomeClass3 toString" == jau::to_string(sc3));
-        CHECK("SomeClass3 toString" == jau::format_string("%s", sc3));
-        CHECK("SomeClass3 toString" != jau::format_string("%p", &sc3));
+        CHECK("SomeClass3 toString" == jau::cfmt::format("%s", sc3));
+        CHECK("SomeClass3 toString" != jau::cfmt::format("%p", &sc3));
     }
     // jau::fraction_i64 has both, member toString and free to_string
     {
         jau::fraction_i64 timeout(10, 1);
         jau_format_check("Timeout %ld ms, %s", timeout.to_ms(), timeout);
         CHECK("10/1" == jau::to_string(timeout));
-        CHECK("Timeout 10000 ms, 10/1" == jau::format_string("Timeout %ld ms, %s", timeout.to_ms(), timeout));
+        CHECK("Timeout 10000 ms, 10/1" == jau::cfmt::format("Timeout %ld ms, %s", timeout.to_ms(), timeout));
     }
     // atomic wrapper
     {
@@ -747,18 +787,18 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
         CHECK("SomeClass3 toString" == jau::to_string(sc_clz3));
         CHECK("12" == jau::to_string(sc_u16));
         CHECK("T" == jau::to_string(sc_bool));
-        CHECK("SomeClass1 toString" == jau::format_string("%s", sc_clz1));
-        CHECK("SomeClass1 toString, 12, true, SomeClass3 toString" == jau::format_string("%s, %u, %s, %s", sc_clz1, sc_u16, sc_bool, sc_clz3));
+        CHECK("SomeClass1 toString" == jau::cfmt::format("%s", sc_clz1));
+        CHECK("SomeClass1 toString, 12, true, SomeClass3 toString" == jau::cfmt::format("%s, %u, %s, %s", sc_clz1, sc_u16, sc_bool, sc_clz3));
     }
     {
         jau::ordered_atomic<SomeClass3, std::memory_order_relaxed> sc_clz3;
         CHECK("SomeClass3 toString" == jau::to_string(sc_clz3));
-        CHECK("SomeClass3 toString" == jau::format_string("%s", sc_clz3));
+        CHECK("SomeClass3 toString" == jau::cfmt::format("%s", sc_clz3));
     }
     {
         jau::relaxed_atomic_int sc_int = 11;
         CHECK("11" == jau::to_string(sc_int));
-        CHECK("11" == jau::format_string("%d", sc_int));
+        CHECK("11" == jau::cfmt::format("%d", sc_int));
     }
 }
 
@@ -787,17 +827,17 @@ TEST_CASE("integral_conversion", "[jau][std::string][jau::cfmt]") {
     static_assert(jau::cfmt::cspec_t::unsigned_int == jau::cfmt::to_cspec<decltype(i2)>());
 
     jau_format_check("format_check: %?", i1);
-    CHECK("format_check: A" == jau::format_string("format_check: %?", i1b));
+    CHECK("format_check: A" == jau::cfmt::format("format_check: %?", i1b));
 
     jau_format_check("format_check: %hhd, %hhu, %hd, %hu, %d, %u, %ld, %lu, %zd, %zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
-    CHECK(format_check_exp1a == jau::format_string("format_check: %hhd, %hhu, %hd, %hu, %d, %u, %ld, %lu, %zd, %zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10));
+    CHECK(format_check_exp1a == jau::cfmt::format("format_check: %hhd, %hhu, %hd, %hu, %d, %u, %ld, %lu, %zd, %zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10));
     jau_format_check("format_check: %?, %?, %?, %?, %?, %?, %?, %?, %?, %?", i1b, i2, i3, i4, i5, i6, i7, i8, i9, i10);
-    CHECK(format_check_exp1b == jau::format_string("format_check: %?, %?, %?, %?, %?, %?, %?, %?, %?, %?", i1b, i2, i3, i4, i5, i6, i7, i8, i9, i10));
+    CHECK(format_check_exp1b == jau::cfmt::format("format_check: %?, %?, %?, %?, %?, %?, %?, %?, %?, %?", i1b, i2, i3, i4, i5, i6, i7, i8, i9, i10));
 
     jau_format_check("format_check: %01hhd, %02hhu, %03hd, %04hu, %05d, %06u, %07ld, %08lu, %09zd, %010zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
-    CHECK(format_check_exp2a == jau::format_string("format_check: %01hhd, %02hhu, %03hd, %04hu, %05d, %06u, %07ld, %08lu, %09zd, %010zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10));
+    CHECK(format_check_exp2a == jau::cfmt::format("format_check: %01hhd, %02hhu, %03hd, %04hu, %05d, %06u, %07ld, %08lu, %09zd, %010zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10));
     jau_format_check("format_check: %01?, %02?, %03?, %04?, %05?, %06?, %07?, %08?, %09?, %010?", i1b, i2, i3, i4, i5, i6, i7, i8, i9, i10);
-    CHECK(format_check_exp2b == jau::format_string("format_check: %01?, %02?, %03?, %04?, %05?, %06?, %07?, %08?, %09?, %010?", i1b, i2, i3, i4, i5, i6, i7, i8, i9, i10));
+    CHECK(format_check_exp2b == jau::cfmt::format("format_check: %01?, %02?, %03?, %04?, %05?, %06?, %07?, %08?, %09?, %010?", i1b, i2, i3, i4, i5, i6, i7, i8, i9, i10));
 }
 
 TEST_CASE("thousands_flag", "[jau][std::string][jau::cfmt][flags]" ) {
@@ -807,212 +847,212 @@ TEST_CASE("thousands_flag", "[jau][std::string][jau::cfmt][flags]" ) {
     jau_format_checkLine("%'d", 1);
     jau_format_checkLine("%,d", 1);
 
-    CHECK("1" == jau::format_string("%'d", 1));
-    CHECK("10" == jau::format_string("%#'d", 10));
-    CHECK("100" == jau::format_string("%,d", 100));
-    CHECK("1'000" == jau::format_string("%#'d", 1000));
-    CHECK("1'000'000" == jau::format_string("%,d", 1000000));
-    CHECK("+1'000'000" == jau::format_string("%'+d", 1000000));
-    CHECK("+1'000'000" == jau::format_string("%#'+d", 1000000));
-    CHECK("-1'000'000" == jau::format_string("%,d", -1000000));
-    CHECK("-1'000'000" == jau::format_string("%#'d", -1000000));
+    CHECK("1" == jau::cfmt::format("%'d", 1));
+    CHECK("10" == jau::cfmt::format("%#'d", 10));
+    CHECK("100" == jau::cfmt::format("%,d", 100));
+    CHECK("1'000" == jau::cfmt::format("%#'d", 1000));
+    CHECK("1'000'000" == jau::cfmt::format("%,d", 1000000));
+    CHECK("+1'000'000" == jau::cfmt::format("%'+d", 1000000));
+    CHECK("+1'000'000" == jau::cfmt::format("%#'+d", 1000000));
+    CHECK("-1'000'000" == jau::cfmt::format("%,d", -1000000));
+    CHECK("-1'000'000" == jau::cfmt::format("%#'d", -1000000));
 
-    CHECK("1" == jau::format_string("%'?", 1));
-    CHECK("10" == jau::format_string("%#'?", 10));
-    CHECK("100" == jau::format_string("%,?", 100));
-    CHECK("1'000" == jau::format_string("%#'?", 1000));
-    CHECK("1'000'000" == jau::format_string("%,?", 1000000));
-    CHECK("+1'000'000" == jau::format_string("%'+?", 1000000));
-    CHECK("+1'000'000" == jau::format_string("%#'+?", 1000000));
-    CHECK("-1'000'000" == jau::format_string("%,?", -1000000));
-    CHECK("-1'000'000" == jau::format_string("%#'?", -1000000));
+    CHECK("1" == jau::cfmt::format("%'?", 1));
+    CHECK("10" == jau::cfmt::format("%#'?", 10));
+    CHECK("100" == jau::cfmt::format("%,?", 100));
+    CHECK("1'000" == jau::cfmt::format("%#'?", 1000));
+    CHECK("1'000'000" == jau::cfmt::format("%,?", 1000000));
+    CHECK("+1'000'000" == jau::cfmt::format("%'+?", 1000000));
+    CHECK("+1'000'000" == jau::cfmt::format("%#'+?", 1000000));
+    CHECK("-1'000'000" == jau::cfmt::format("%,?", -1000000));
+    CHECK("-1'000'000" == jau::cfmt::format("%#'?", -1000000));
 
-    CHECK("ff" == jau::format_string("%'x", 0xff_u32));
-    CHECK("0xff" == jau::format_string("%#'x", 0xff_u32));
-    CHECK("ffff" == jau::format_string("%,x", 0xffff_u32));
-    CHECK("0x1'ffff" == jau::format_string("%#'x", 0x1ffff_u32));
-    CHECK("1'ffff'ffff" == jau::format_string("%,lx", 0x1ffffffff_i64));
-    CHECK("0x1'ffff'ffff" == jau::format_string("%#'lx", 0x1ffffffff_u64));
+    CHECK("ff" == jau::cfmt::format("%'x", 0xff_u32));
+    CHECK("0xff" == jau::cfmt::format("%#'x", 0xff_u32));
+    CHECK("ffff" == jau::cfmt::format("%,x", 0xffff_u32));
+    CHECK("0x1'ffff" == jau::cfmt::format("%#'x", 0x1ffff_u32));
+    CHECK("1'ffff'ffff" == jau::cfmt::format("%,lx", 0x1ffffffff_i64));
+    CHECK("0x1'ffff'ffff" == jau::cfmt::format("%#'lx", 0x1ffffffff_u64));
     // negative types not allowed for hex-conversion
-    CHECK("255" == jau::format_string("%'?", 0xff_u32));
-    CHECK("255" == jau::format_string("%#'?", 0xff_u32));
-    CHECK("65'535" == jau::format_string("%,?", 0xffff_u32));
+    CHECK("255" == jau::cfmt::format("%'?", 0xff_u32));
+    CHECK("255" == jau::cfmt::format("%#'?", 0xff_u32));
+    CHECK("65'535" == jau::cfmt::format("%,?", 0xffff_u32));
     // negative types not allowed for hex-conversion
 
     // separator, space-padding
-    CHECK(" 876'543" == jau::format_string("%,8d", 876543));
-    CHECK("9'876'543" == jau::format_string("%,8d", 9876543));
-    CHECK("9'876'543" == jau::format_string("%,9d", 9876543));
-    CHECK(" 9'876'543" == jau::format_string("%,10d", 9876543));
-    CHECK("    9'876'543" == jau::format_string("%,13d", 9876543));
+    CHECK(" 876'543" == jau::cfmt::format("%,8d", 876543));
+    CHECK("9'876'543" == jau::cfmt::format("%,8d", 9876543));
+    CHECK("9'876'543" == jau::cfmt::format("%,9d", 9876543));
+    CHECK(" 9'876'543" == jau::cfmt::format("%,10d", 9876543));
+    CHECK("    9'876'543" == jau::cfmt::format("%,13d", 9876543));
 
-    CHECK("0xaffe" == jau::format_string("%#'x", 0xaffe_u32));
-    CHECK("0xaffe" == jau::format_string("%#'6x", 0xaffe_u32));
-    CHECK(" 0xaffe" == jau::format_string("%#'7x", 0xaffe_u32));
-    CHECK("  0xaffe" == jau::format_string("%#'8x", 0xaffe_u32));
-    CHECK("0x1'affe" == jau::format_string("%#'7x", 0x1affe_u32));
-    CHECK("    0x1'affe" == jau::format_string("%#'12x", 0x1affe_u32));
+    CHECK("0xaffe" == jau::cfmt::format("%#'x", 0xaffe_u32));
+    CHECK("0xaffe" == jau::cfmt::format("%#'6x", 0xaffe_u32));
+    CHECK(" 0xaffe" == jau::cfmt::format("%#'7x", 0xaffe_u32));
+    CHECK("  0xaffe" == jau::cfmt::format("%#'8x", 0xaffe_u32));
+    CHECK("0x1'affe" == jau::cfmt::format("%#'7x", 0x1affe_u32));
+    CHECK("    0x1'affe" == jau::cfmt::format("%#'12x", 0x1affe_u32));
 
     // separator, zero-padding
-    CHECK("'876'543" == jau::format_string("%,08d", 876543));
-    CHECK("9'876'543" == jau::format_string("%,08d", 9876543));
-    CHECK("9'876'543" == jau::format_string("%,09d", 9876543));
-    CHECK("09'876'543" == jau::format_string("%,010d", 9876543));
-    CHECK("0'009'876'543" == jau::format_string("%,013d", 9876543));
+    CHECK("'876'543" == jau::cfmt::format("%,08d", 876543));
+    CHECK("9'876'543" == jau::cfmt::format("%,08d", 9876543));
+    CHECK("9'876'543" == jau::cfmt::format("%,09d", 9876543));
+    CHECK("09'876'543" == jau::cfmt::format("%,010d", 9876543));
+    CHECK("0'009'876'543" == jau::cfmt::format("%,013d", 9876543));
 
-    CHECK("0xaffe" == jau::format_string("%#'x", 0xaffe_u32));
-    CHECK("0xaffe" == jau::format_string("%#'06x", 0xaffe_u32));
-    CHECK("0x'affe" == jau::format_string("%#'07x", 0xaffe_u32));
-    CHECK("0x0'affe" == jau::format_string("%#'08x", 0xaffe_u32));
-    CHECK("0x1'affe" == jau::format_string("%#'07x", 0x1affe_u32));
-    CHECK("0x'0001'affe" == jau::format_string("%#'012x", 0x1affe_u32));
+    CHECK("0xaffe" == jau::cfmt::format("%#'x", 0xaffe_u32));
+    CHECK("0xaffe" == jau::cfmt::format("%#'06x", 0xaffe_u32));
+    CHECK("0x'affe" == jau::cfmt::format("%#'07x", 0xaffe_u32));
+    CHECK("0x0'affe" == jau::cfmt::format("%#'08x", 0xaffe_u32));
+    CHECK("0x1'affe" == jau::cfmt::format("%#'07x", 0x1affe_u32));
+    CHECK("0x'0001'affe" == jau::cfmt::format("%#'012x", 0x1affe_u32));
 }
 
 TEST_CASE("binary", "[jau][std::string][jau::cfmt][flags]" ) {
     jau_format_checkLine("%b", 1_u32);
 
-    CHECK("0b1" == jau::format_string("%#b", 1_u32));
-    CHECK("0b1010111111111110" == jau::format_string("%#b", 0xaffe_u32));
-    CHECK("1011111011101111" == jau::format_string("%b", 0xbeef_u32));
+    CHECK("0b1" == jau::cfmt::format("%#b", 1_u32));
+    CHECK("0b1010111111111110" == jau::cfmt::format("%#b", 0xaffe_u32));
+    CHECK("1011111011101111" == jau::cfmt::format("%b", 0xbeef_u32));
 }
 
 TEST_CASE("space_flag", "[jau][std::string][jau::cfmt][flags]" ) {
   std::string buffer;
 
-  buffer = jau::format_string("% d", 42);
+  buffer = jau::cfmt::format("% d", 42);
   CHECK(buffer == " 42");
 
-  buffer = jau::format_string("% d", -42);
+  buffer = jau::cfmt::format("% d", -42);
   CHECK(buffer == "-42");
 
-  buffer = jau::format_string("% 5d", 42);
+  buffer = jau::cfmt::format("% 5d", 42);
   CHECK(buffer == "   42");
 
-  buffer = jau::format_string("% 5d", -42);
+  buffer = jau::cfmt::format("% 5d", -42);
   CHECK(buffer == "  -42"); //   "-  42" == "  -42"
 
-  buffer = jau::format_string("% 15d", 42);
+  buffer = jau::cfmt::format("% 15d", 42);
   CHECK(buffer == "             42");
 
-  buffer = jau::format_string("% 15d", -42);
+  buffer = jau::cfmt::format("% 15d", -42);
   CHECK(buffer == "            -42");
 
-  buffer = jau::format_string("% 15d", -42);
+  buffer = jau::cfmt::format("% 15d", -42);
   CHECK(buffer == "            -42");
 
-  buffer = jau::format_string("% 15.3f", -42.987);
+  buffer = jau::cfmt::format("% 15.3f", -42.987);
   CHECK(buffer == "        -42.987");
 
-  buffer = jau::format_string("% 15.3f", 42.987);
+  buffer = jau::cfmt::format("% 15.3f", 42.987);
   CHECK(buffer == "         42.987");
 
-  buffer = jau::format_string("% s", "Hello testing");
+  buffer = jau::cfmt::format("% s", "Hello testing");
   CHECK(buffer == "Hello testing");
 
-  buffer = jau::format_string("% d", 1024);
+  buffer = jau::cfmt::format("% d", 1024);
   CHECK(buffer == " 1024");
 
-  buffer = jau::format_string("% d", -1024);
+  buffer = jau::cfmt::format("% d", -1024);
   CHECK(buffer == "-1024");
 
-  buffer = jau::format_string("% i", 1024);
+  buffer = jau::cfmt::format("% i", 1024);
   CHECK(buffer == " 1024");
 
-  buffer = jau::format_string("% i", -1024);
+  buffer = jau::cfmt::format("% i", -1024);
   CHECK(buffer == "-1024");
 
-  buffer = jau::format_string("% u", 1024);
+  buffer = jau::cfmt::format("% u", 1024);
   CHECK(buffer == "1024");
 
-  buffer = jau::format_string("% u", 4294966272U);
+  buffer = jau::cfmt::format("% u", 4294966272U);
   CHECK(buffer == "4294966272");
 
-  buffer = jau::format_string("% o", 511);
+  buffer = jau::cfmt::format("% o", 511);
   CHECK(buffer == "777");
 
-  buffer = jau::format_string("% o", 4294966785U);
+  buffer = jau::cfmt::format("% o", 4294966785U);
   CHECK(buffer == "37777777001");
 
-  buffer = jau::format_string("% x", 305441741);
+  buffer = jau::cfmt::format("% x", 305441741);
   CHECK(buffer == "1234abcd");
 
-  buffer = jau::format_string("% x", 3989525555U);
+  buffer = jau::cfmt::format("% x", 3989525555U);
   CHECK(buffer == "edcb5433");
 
-  buffer = jau::format_string("% X", 305441741);
+  buffer = jau::cfmt::format("% X", 305441741);
   CHECK(buffer == "1234ABCD");
 
-  buffer = jau::format_string("% X", 3989525555U);
+  buffer = jau::cfmt::format("% X", 3989525555U);
   CHECK(buffer == "EDCB5433");
 
-  buffer = jau::format_string("% c", 'x');
+  buffer = jau::cfmt::format("% c", 'x');
   CHECK(buffer == "x");
 }
 
 TEST_CASE("plus_flag", "[jau][std::string][jau::cfmt][flags]" ) {
   std::string buffer;
 
-  buffer = jau::format_string("%+d", 42);
+  buffer = jau::cfmt::format("%+d", 42);
   CHECK(buffer == "+42");
 
-  buffer = jau::format_string("%+d", -42);
+  buffer = jau::cfmt::format("%+d", -42);
   CHECK(buffer == "-42");
 
-  buffer = jau::format_string("%+5d", 42);
+  buffer = jau::cfmt::format("%+5d", 42);
   CHECK(buffer == "  +42");
 
-  buffer = jau::format_string("%+5d", -42);
+  buffer = jau::cfmt::format("%+5d", -42);
   CHECK(buffer == "  -42");
 
-  buffer = jau::format_string("%+15d", 42);
+  buffer = jau::cfmt::format("%+15d", 42);
   CHECK(buffer == "            +42");
 
-  buffer = jau::format_string("%+15d", -42);
+  buffer = jau::cfmt::format("%+15d", -42);
   CHECK(buffer == "            -42");
 
-  buffer = jau::format_string("%+s", "Hello testing");
+  buffer = jau::cfmt::format("%+s", "Hello testing");
   CHECK(buffer == "Hello testing");
 
-  buffer = jau::format_string("%+d", 1024);
+  buffer = jau::cfmt::format("%+d", 1024);
   CHECK(buffer == "+1024");
 
-  buffer = jau::format_string("%+d", -1024);
+  buffer = jau::cfmt::format("%+d", -1024);
   CHECK(buffer == "-1024");
 
-  buffer = jau::format_string("%+i", 1024);
+  buffer = jau::cfmt::format("%+i", 1024);
   CHECK(buffer == "+1024");
 
-  buffer = jau::format_string("%+i", -1024);
+  buffer = jau::cfmt::format("%+i", -1024);
   CHECK(buffer == "-1024");
 
-  buffer = jau::format_string("%+u", 1024);
+  buffer = jau::cfmt::format("%+u", 1024);
   CHECK(buffer == "1024");
 
-  buffer = jau::format_string("%+u", 4294966272U);
+  buffer = jau::cfmt::format("%+u", 4294966272U);
   CHECK(buffer == "4294966272");
 
-  buffer = jau::format_string("%+o", 511);
+  buffer = jau::cfmt::format("%+o", 511);
   CHECK(buffer == "777");
 
-  buffer = jau::format_string("%+o", 4294966785U);
+  buffer = jau::cfmt::format("%+o", 4294966785U);
   CHECK(buffer == "37777777001");
 
-  buffer = jau::format_string("%+x", 305441741);
+  buffer = jau::cfmt::format("%+x", 305441741);
   CHECK(buffer == "1234abcd");
 
-  buffer = jau::format_string("%+x", 3989525555U);
+  buffer = jau::cfmt::format("%+x", 3989525555U);
   CHECK(buffer == "edcb5433");
 
-  buffer = jau::format_string("%+X", 305441741);
+  buffer = jau::cfmt::format("%+X", 305441741);
   CHECK(buffer == "1234ABCD");
 
-  buffer = jau::format_string("%+X", 3989525555U);
+  buffer = jau::cfmt::format("%+X", 3989525555U);
   CHECK(buffer == "EDCB5433");
 
-  buffer = jau::format_string("%+c", 'x');
+  buffer = jau::cfmt::format("%+c", 'x');
   CHECK(buffer == "x");
 
-  buffer = jau::format_string("%+.0d", 0);
+  buffer = jau::cfmt::format("%+.0d", 0);
   CHECK(buffer == "+");
 }
 
@@ -1020,34 +1060,34 @@ TEST_CASE("plus_flag", "[jau][std::string][jau::cfmt][flags]" ) {
 TEST_CASE("zero_flag", "[jau][std::string][jau::cfmt][flags]" ) {
   std::string buffer;
 
-  buffer = jau::format_string("%0d", 42);
+  buffer = jau::cfmt::format("%0d", 42);
   CHECK(buffer == "42");
 
-  buffer = jau::format_string("%0ld", 42L);
+  buffer = jau::cfmt::format("%0ld", 42L);
   CHECK(buffer == "42");
 
-  buffer = jau::format_string("%0d", -42);
+  buffer = jau::cfmt::format("%0d", -42);
   CHECK(buffer == "-42");
 
-  buffer = jau::format_string("%05d", 42);
+  buffer = jau::cfmt::format("%05d", 42);
   CHECK(buffer == "00042");
 
-  buffer = jau::format_string("%05d", -42);
+  buffer = jau::cfmt::format("%05d", -42);
   CHECK(buffer == "-0042");
 
-  buffer = jau::format_string("%015d", 42);
+  buffer = jau::cfmt::format("%015d", 42);
   CHECK(buffer == "000000000000042");
 
-  buffer = jau::format_string("%015d", -42);
+  buffer = jau::cfmt::format("%015d", -42);
   CHECK(buffer == "-00000000000042");
 
-  buffer = jau::format_string("%015.2f", 42.1234);
+  buffer = jau::cfmt::format("%015.2f", 42.1234);
   CHECK(buffer == "000000000042.12");
 
-  buffer = jau::format_string("%015.3f", 42.9876);
+  buffer = jau::cfmt::format("%015.3f", 42.9876);
   CHECK(buffer == "00000000042.988");
 
-  buffer = jau::format_string("%015.5f", -42.9876);
+  buffer = jau::cfmt::format("%015.5f", -42.9876);
   CHECK(buffer == "-00000042.98760");
 }
 
@@ -1055,64 +1095,64 @@ TEST_CASE("zero_flag", "[jau][std::string][jau::cfmt][flags]" ) {
 TEST_CASE("left_flag", "[jau][std::string][jau::cfmt][flags]" ) {
   std::string buffer;
 
-  buffer = jau::format_string("%-d", 42);
+  buffer = jau::cfmt::format("%-d", 42);
   CHECK(buffer == "42");
 
-  buffer = jau::format_string("%-d", -42);
+  buffer = jau::cfmt::format("%-d", -42);
   CHECK(buffer == "-42");
 
-  buffer = jau::format_string("%-5d", 42);
+  buffer = jau::cfmt::format("%-5d", 42);
   CHECK(buffer == "42   ");
 
-  buffer = jau::format_string("%-5d", -42);
+  buffer = jau::cfmt::format("%-5d", -42);
   CHECK(buffer == "-42  ");
 
-  buffer = jau::format_string("%-15d", 42);
+  buffer = jau::cfmt::format("%-15d", 42);
   CHECK(buffer == "42             ");
 
-  buffer = jau::format_string("%-15d", -42);
+  buffer = jau::cfmt::format("%-15d", -42);
   CHECK(buffer == "-42            ");
 
-  buffer = jau::format_string("%-0d", 42);
+  buffer = jau::cfmt::format("%-0d", 42);
   CHECK(buffer == "42");
 
-  buffer = jau::format_string("%-0d", -42);
+  buffer = jau::cfmt::format("%-0d", -42);
   CHECK(buffer == "-42");
 
-  buffer = jau::format_string("%-05d", 42);
+  buffer = jau::cfmt::format("%-05d", 42);
   CHECK(buffer == "42   ");
 
-  buffer = jau::format_string("%-05d", -42);
+  buffer = jau::cfmt::format("%-05d", -42);
   CHECK(buffer == "-42  ");
 
-  buffer = jau::format_string("%-015d", 42);
+  buffer = jau::cfmt::format("%-015d", 42);
   CHECK(buffer == "42             ");
 
-  buffer = jau::format_string("%-015d", -42);
+  buffer = jau::cfmt::format("%-015d", -42);
   CHECK(buffer == "-42            ");
 
-  buffer = jau::format_string("%0-d", 42);
+  buffer = jau::cfmt::format("%0-d", 42);
   CHECK(buffer == "42");
 
-  buffer = jau::format_string("%0-d", -42);
+  buffer = jau::cfmt::format("%0-d", -42);
   CHECK(buffer == "-42");
 
-  buffer = jau::format_string("%0-5d", 42);
+  buffer = jau::cfmt::format("%0-5d", 42);
   CHECK(buffer == "42   ");
 
-  buffer = jau::format_string("%0-5d", -42);
+  buffer = jau::cfmt::format("%0-5d", -42);
   CHECK(buffer == "-42  ");
 
-  buffer = jau::format_string("%0-15d", 42);
+  buffer = jau::cfmt::format("%0-15d", 42);
   CHECK(buffer == "42             ");
 
-  buffer = jau::format_string("%0-15d", -42);
+  buffer = jau::cfmt::format("%0-15d", -42);
   CHECK(buffer == "-42            ");
 
-  buffer = jau::format_string("%0-15.3e", -42.);
+  buffer = jau::cfmt::format("%0-15.3e", -42.);
   CHECK(buffer == "-4.200e+01     ");
 
-  buffer = jau::format_string("%0-15.3g", -42.);
+  buffer = jau::cfmt::format("%0-15.3g", -42.);
   CHECK(buffer == "-42.0          ");
 }
 
@@ -1120,15 +1160,15 @@ TEST_CASE("left_flag", "[jau][std::string][jau::cfmt][flags]" ) {
 TEST_CASE("hash_flag", "[jau][std::string][jau::cfmt][flags]" ) {
   std::string buffer;
 
-  buffer = jau::format_string("%#.0x", 0);
+  buffer = jau::cfmt::format("%#.0x", 0);
   CHECK(buffer == "");
-  buffer = jau::format_string("%#.1x", 0);
+  buffer = jau::cfmt::format("%#.1x", 0);
   CHECK(buffer == "0");
-  buffer = jau::format_string("%#.0llx", (long long)0);
+  buffer = jau::cfmt::format("%#.0llx", (long long)0);
   CHECK(buffer == "");
-  buffer = jau::format_string("%#.8x", 0x614e);
+  buffer = jau::cfmt::format("%#.8x", 0x614e);
   CHECK(buffer == "0x0000614e");
-  buffer = jau::format_string("%#b", 6);
+  buffer = jau::cfmt::format("%#b", 6);
   CHECK(buffer == "0b110");
 }
 
@@ -1136,49 +1176,49 @@ TEST_CASE("hash_flag", "[jau][std::string][jau::cfmt][flags]" ) {
 TEST_CASE("specifier", "[jau][std::string][jau::cfmt][specifier]" ) {
   std::string buffer;
 
-  buffer = jau::format_string("Hello testing");
+  buffer = jau::cfmt::format("Hello testing");
   CHECK(buffer == "Hello testing");
 
-  buffer = jau::format_string("%s", "Hello testing");
+  buffer = jau::cfmt::format("%s", "Hello testing");
   CHECK(buffer == "Hello testing");
 
-  buffer = jau::format_string("%d", 1024);
+  buffer = jau::cfmt::format("%d", 1024);
   CHECK(buffer == "1024");
 
-  buffer = jau::format_string("%d", -1024);
+  buffer = jau::cfmt::format("%d", -1024);
   CHECK(buffer == "-1024");
 
-  buffer = jau::format_string("%i", 1024);
+  buffer = jau::cfmt::format("%i", 1024);
   CHECK(buffer == "1024");
 
-  buffer = jau::format_string("%i", -1024);
+  buffer = jau::cfmt::format("%i", -1024);
   CHECK(buffer == "-1024");
 
-  buffer = jau::format_string("%u", 1024);
+  buffer = jau::cfmt::format("%u", 1024);
   CHECK(buffer == "1024");
 
-  buffer = jau::format_string("%u", 4294966272U);
+  buffer = jau::cfmt::format("%u", 4294966272U);
   CHECK(buffer == "4294966272");
 
-  buffer = jau::format_string("%o", 511);
+  buffer = jau::cfmt::format("%o", 511);
   CHECK(buffer == "777");
 
-  buffer = jau::format_string("%o", 4294966785U);
+  buffer = jau::cfmt::format("%o", 4294966785U);
   CHECK(buffer == "37777777001");
 
-  buffer = jau::format_string("%x", 305441741);
+  buffer = jau::cfmt::format("%x", 305441741);
   CHECK(buffer == "1234abcd");
 
-  buffer = jau::format_string("%x", 3989525555U);
+  buffer = jau::cfmt::format("%x", 3989525555U);
   CHECK(buffer == "edcb5433");
 
-  buffer = jau::format_string("%X", 305441741);
+  buffer = jau::cfmt::format("%X", 305441741);
   CHECK(buffer == "1234ABCD");
 
-  buffer = jau::format_string("%X", 3989525555U);
+  buffer = jau::cfmt::format("%X", 3989525555U);
   CHECK(buffer == "EDCB5433");
 
-  buffer = jau::format_string("%%");
+  buffer = jau::cfmt::format("%%");
   CHECK(buffer == "%");
 }
 
@@ -1186,46 +1226,46 @@ TEST_CASE("specifier", "[jau][std::string][jau::cfmt][specifier]" ) {
 TEST_CASE("width", "[jau][std::string][jau::cfmt][width]" ) {
   std::string buffer;
 
-  buffer = jau::format_string("%1s", "Hello testing");
+  buffer = jau::cfmt::format("%1s", "Hello testing");
   CHECK(buffer == "Hello testing");
 
-  buffer = jau::format_string("%1d", 1024);
+  buffer = jau::cfmt::format("%1d", 1024);
   CHECK(buffer == "1024");
 
-  buffer = jau::format_string("%1d", -1024);
+  buffer = jau::cfmt::format("%1d", -1024);
   CHECK(buffer == "-1024");
 
-  buffer = jau::format_string("%1i", 1024);
+  buffer = jau::cfmt::format("%1i", 1024);
   CHECK(buffer == "1024");
 
-  buffer = jau::format_string("%1i", -1024);
+  buffer = jau::cfmt::format("%1i", -1024);
   CHECK(buffer == "-1024");
 
-  buffer = jau::format_string("%1u", 1024);
+  buffer = jau::cfmt::format("%1u", 1024);
   CHECK(buffer == "1024");
 
-  buffer = jau::format_string("%1u", 4294966272U);
+  buffer = jau::cfmt::format("%1u", 4294966272U);
   CHECK(buffer == "4294966272");
 
-  buffer = jau::format_string("%1o", 511);
+  buffer = jau::cfmt::format("%1o", 511);
   CHECK(buffer == "777");
 
-  buffer = jau::format_string("%1o", 4294966785U);
+  buffer = jau::cfmt::format("%1o", 4294966785U);
   CHECK(buffer == "37777777001");
 
-  buffer = jau::format_string("%1x", 305441741);
+  buffer = jau::cfmt::format("%1x", 305441741);
   CHECK(buffer == "1234abcd");
 
-  buffer = jau::format_string("%1x", 3989525555U);
+  buffer = jau::cfmt::format("%1x", 3989525555U);
   CHECK(buffer == "edcb5433");
 
-  buffer = jau::format_string("%1X", 305441741);
+  buffer = jau::cfmt::format("%1X", 305441741);
   CHECK(buffer == "1234ABCD");
 
-  buffer = jau::format_string("%1X", 3989525555U);
+  buffer = jau::cfmt::format("%1X", 3989525555U);
   CHECK(buffer == "EDCB5433");
 
-  buffer = jau::format_string("%1c", 'x');
+  buffer = jau::cfmt::format("%1c", 'x');
   CHECK(buffer == "x");
 }
 
@@ -1233,46 +1273,46 @@ TEST_CASE("width", "[jau][std::string][jau::cfmt][width]" ) {
 TEST_CASE("width_20", "[jau][std::string][jau::cfmt][width]" ) {
   std::string buffer;
 
-  buffer = jau::format_string("%20s", "Hello");
+  buffer = jau::cfmt::format("%20s", "Hello");
   CHECK(buffer == "               Hello");
 
-  buffer = jau::format_string("%20d", 1024);
+  buffer = jau::cfmt::format("%20d", 1024);
   CHECK(buffer == "                1024");
 
-  buffer = jau::format_string("%20d", -1024);
+  buffer = jau::cfmt::format("%20d", -1024);
   CHECK(buffer == "               -1024");
 
-  buffer = jau::format_string("%20i", 1024);
+  buffer = jau::cfmt::format("%20i", 1024);
   CHECK(buffer == "                1024");
 
-  buffer = jau::format_string("%20i", -1024);
+  buffer = jau::cfmt::format("%20i", -1024);
   CHECK(buffer == "               -1024");
 
-  buffer = jau::format_string("%20u", 1024);
+  buffer = jau::cfmt::format("%20u", 1024);
   CHECK(buffer == "                1024");
 
-  buffer = jau::format_string("%20u", 4294966272U);
+  buffer = jau::cfmt::format("%20u", 4294966272U);
   CHECK(buffer == "          4294966272");
 
-  buffer = jau::format_string("%20o", 511);
+  buffer = jau::cfmt::format("%20o", 511);
   CHECK(buffer == "                 777");
 
-  buffer = jau::format_string("%20o", 4294966785U);
+  buffer = jau::cfmt::format("%20o", 4294966785U);
   CHECK(buffer == "         37777777001");
 
-  buffer = jau::format_string("%20x", 305441741);
+  buffer = jau::cfmt::format("%20x", 305441741);
   CHECK(buffer == "            1234abcd");
 
-  buffer = jau::format_string("%20x", 3989525555U);
+  buffer = jau::cfmt::format("%20x", 3989525555U);
   CHECK(buffer == "            edcb5433");
 
-  buffer = jau::format_string("%20X", 305441741);
+  buffer = jau::cfmt::format("%20X", 305441741);
   CHECK(buffer == "            1234ABCD");
 
-  buffer = jau::format_string("%20X", 3989525555U);
+  buffer = jau::cfmt::format("%20X", 3989525555U);
   CHECK(buffer == "            EDCB5433");
 
-  buffer = jau::format_string("%20c", 'x');
+  buffer = jau::cfmt::format("%20c", 'x');
   CHECK(buffer == "                   x");
 }
 
@@ -1280,46 +1320,46 @@ TEST_CASE("width_20", "[jau][std::string][jau::cfmt][width]" ) {
 TEST_CASE("width_star_20", "[jau][std::string][jau::cfmt][width]" ) {
   std::string buffer;
 
-  buffer = jau::format_string("%*s", 20, "Hello");
+  buffer = jau::cfmt::format("%*s", 20, "Hello");
   CHECK(buffer == "               Hello");
 
-  buffer = jau::format_string("%*d", 20, 1024);
+  buffer = jau::cfmt::format("%*d", 20, 1024);
   CHECK(buffer == "                1024");
 
-  buffer = jau::format_string("%*d", 20, -1024);
+  buffer = jau::cfmt::format("%*d", 20, -1024);
   CHECK(buffer == "               -1024");
 
-  buffer = jau::format_string("%*i", 20, 1024);
+  buffer = jau::cfmt::format("%*i", 20, 1024);
   CHECK(buffer == "                1024");
 
-  buffer = jau::format_string("%*i", 20, -1024);
+  buffer = jau::cfmt::format("%*i", 20, -1024);
   CHECK(buffer == "               -1024");
 
-  buffer = jau::format_string("%*u", 20, 1024);
+  buffer = jau::cfmt::format("%*u", 20, 1024);
   CHECK(buffer == "                1024");
 
-  buffer = jau::format_string("%*u", 20, 4294966272U);
+  buffer = jau::cfmt::format("%*u", 20, 4294966272U);
   CHECK(buffer == "          4294966272");
 
-  buffer = jau::format_string("%*o", 20, 511);
+  buffer = jau::cfmt::format("%*o", 20, 511);
   CHECK(buffer == "                 777");
 
-  buffer = jau::format_string("%*o", 20, 4294966785U);
+  buffer = jau::cfmt::format("%*o", 20, 4294966785U);
   CHECK(buffer == "         37777777001");
 
-  buffer = jau::format_string("%*x", 20, 305441741);
+  buffer = jau::cfmt::format("%*x", 20, 305441741);
   CHECK(buffer == "            1234abcd");
 
-  buffer = jau::format_string("%*x", 20, 3989525555U);
+  buffer = jau::cfmt::format("%*x", 20, 3989525555U);
   CHECK(buffer == "            edcb5433");
 
-  buffer = jau::format_string("%*X", 20, 305441741);
+  buffer = jau::cfmt::format("%*X", 20, 305441741);
   CHECK(buffer == "            1234ABCD");
 
-  buffer = jau::format_string("%*X", 20, 3989525555U);
+  buffer = jau::cfmt::format("%*X", 20, 3989525555U);
   CHECK(buffer == "            EDCB5433");
 
-  buffer = jau::format_string("%*c", 20,'x');
+  buffer = jau::cfmt::format("%*c", 20,'x');
   CHECK(buffer == "                   x");
 }
 
@@ -1327,61 +1367,61 @@ TEST_CASE("width_star_20", "[jau][std::string][jau::cfmt][width]" ) {
 TEST_CASE("width_left_20", "[jau][std::string][jau::cfmt][width]" ) {
   std::string buffer;
 
-  buffer = jau::format_string("%-20s", "Hello");
+  buffer = jau::cfmt::format("%-20s", "Hello");
   CHECK(buffer == "Hello               ");
 
-  buffer = jau::format_string("%-20d", 1024);
+  buffer = jau::cfmt::format("%-20d", 1024);
   CHECK(buffer == "1024                ");
 
-  buffer = jau::format_string("%-20d", -1024);
+  buffer = jau::cfmt::format("%-20d", -1024);
   CHECK(buffer == "-1024               ");
 
-  buffer = jau::format_string("%-20i", 1024);
+  buffer = jau::cfmt::format("%-20i", 1024);
   CHECK(buffer == "1024                ");
 
-  buffer = jau::format_string("%-20i", -1024);
+  buffer = jau::cfmt::format("%-20i", -1024);
   CHECK(buffer == "-1024               ");
 
-  buffer = jau::format_string("%-20u", 1024);
+  buffer = jau::cfmt::format("%-20u", 1024);
   CHECK(buffer == "1024                ");
 
-  buffer = jau::format_string("%-20.4f", 1024.1234);
+  buffer = jau::cfmt::format("%-20.4f", 1024.1234);
   CHECK(buffer == "1024.1234           ");
 
-  buffer = jau::format_string("%-20u", 4294966272U);
+  buffer = jau::cfmt::format("%-20u", 4294966272U);
   CHECK(buffer == "4294966272          ");
 
-  buffer = jau::format_string("%-20o", 511);
+  buffer = jau::cfmt::format("%-20o", 511);
   CHECK(buffer == "777                 ");
 
-  buffer = jau::format_string("%-20o", 4294966785U);
+  buffer = jau::cfmt::format("%-20o", 4294966785U);
   CHECK(buffer == "37777777001         ");
 
-  buffer = jau::format_string("%-20x", 305441741);
+  buffer = jau::cfmt::format("%-20x", 305441741);
   CHECK(buffer == "1234abcd            ");
 
-  buffer = jau::format_string("%-20x", 3989525555U);
+  buffer = jau::cfmt::format("%-20x", 3989525555U);
   CHECK(buffer == "edcb5433            ");
 
-  buffer = jau::format_string("%-20X", 305441741);
+  buffer = jau::cfmt::format("%-20X", 305441741);
   CHECK(buffer == "1234ABCD            ");
 
-  buffer = jau::format_string("%-20X", 3989525555U);
+  buffer = jau::cfmt::format("%-20X", 3989525555U);
   CHECK(buffer == "EDCB5433            ");
 
-  buffer = jau::format_string("%-20c", 'x');
+  buffer = jau::cfmt::format("%-20c", 'x');
   CHECK(buffer == "x                   ");
 
-  buffer = jau::format_string("|%5d| |%-2d| |%5d|", 9, 9, 9);
+  buffer = jau::cfmt::format("|%5d| |%-2d| |%5d|", 9, 9, 9);
   CHECK(buffer == "|    9| |9 | |    9|");
 
-  buffer = jau::format_string("|%5d| |%-2d| |%5d|", 10, 10, 10);
+  buffer = jau::cfmt::format("|%5d| |%-2d| |%5d|", 10, 10, 10);
   CHECK(buffer == "|   10| |10| |   10|");
 
-  buffer = jau::format_string("|%5d| |%-12d| |%5d|", 9, 9, 9);
+  buffer = jau::cfmt::format("|%5d| |%-12d| |%5d|", 9, 9, 9);
   CHECK(buffer == "|    9| |9           | |    9|");
 
-  buffer = jau::format_string("|%5d| |%-12d| |%5d|", 10, 10, 10);
+  buffer = jau::cfmt::format("|%5d| |%-12d| |%5d|", 10, 10, 10);
   CHECK(buffer == "|   10| |10          | |   10|");
 }
 
@@ -1389,46 +1429,46 @@ TEST_CASE("width_left_20", "[jau][std::string][jau::cfmt][width]" ) {
 TEST_CASE("zero_width_left_20", "[jau][std::string][jau::cfmt][width]" ) {
   std::string buffer;
 
-  buffer = jau::format_string("%0-20s", "Hello");
+  buffer = jau::cfmt::format("%0-20s", "Hello");
   CHECK(buffer == "Hello               ");
 
-  buffer = jau::format_string("%0-20d", 1024);
+  buffer = jau::cfmt::format("%0-20d", 1024);
   CHECK(buffer == "1024                ");
 
-  buffer = jau::format_string("%0-20d", -1024);
+  buffer = jau::cfmt::format("%0-20d", -1024);
   CHECK(buffer == "-1024               ");
 
-  buffer = jau::format_string("%0-20i", 1024);
+  buffer = jau::cfmt::format("%0-20i", 1024);
   CHECK(buffer == "1024                ");
 
-  buffer = jau::format_string("%0-20i", -1024);
+  buffer = jau::cfmt::format("%0-20i", -1024);
   CHECK(buffer == "-1024               ");
 
-  buffer = jau::format_string("%0-20u", 1024);
+  buffer = jau::cfmt::format("%0-20u", 1024);
   CHECK(buffer == "1024                ");
 
-  buffer = jau::format_string("%0-20u", 4294966272U);
+  buffer = jau::cfmt::format("%0-20u", 4294966272U);
   CHECK(buffer == "4294966272          ");
 
-  buffer = jau::format_string("%0-20o", 511);
+  buffer = jau::cfmt::format("%0-20o", 511);
   CHECK(buffer == "777                 ");
 
-  buffer = jau::format_string("%0-20o", 4294966785U);
+  buffer = jau::cfmt::format("%0-20o", 4294966785U);
   CHECK(buffer == "37777777001         ");
 
-  buffer = jau::format_string("%0-20x", 305441741);
+  buffer = jau::cfmt::format("%0-20x", 305441741);
   CHECK(buffer == "1234abcd            ");
 
-  buffer = jau::format_string("%0-20x", 3989525555U);
+  buffer = jau::cfmt::format("%0-20x", 3989525555U);
   CHECK(buffer == "edcb5433            ");
 
-  buffer = jau::format_string("%0-20X", 305441741);
+  buffer = jau::cfmt::format("%0-20X", 305441741);
   CHECK(buffer == "1234ABCD            ");
 
-  buffer = jau::format_string("%0-20X", 3989525555U);
+  buffer = jau::cfmt::format("%0-20X", 3989525555U);
   CHECK(buffer == "EDCB5433            ");
 
-  buffer = jau::format_string("%0-20c", 'x');
+  buffer = jau::cfmt::format("%0-20c", 'x');
   CHECK(buffer == "x                   ");
 }
 
@@ -1436,40 +1476,40 @@ TEST_CASE("zero_width_left_20", "[jau][std::string][jau::cfmt][width]" ) {
 TEST_CASE("width_20", "[jau][std::string][jau::cfmt][padding]" ) {
   std::string buffer;
 
-  buffer = jau::format_string("%020d", 1024);
+  buffer = jau::cfmt::format("%020d", 1024);
   CHECK(buffer == "00000000000000001024");
 
-  buffer = jau::format_string("%020d", -1024);
+  buffer = jau::cfmt::format("%020d", -1024);
   CHECK(buffer == "-0000000000000001024");
 
-  buffer = jau::format_string("%020i", 1024);
+  buffer = jau::cfmt::format("%020i", 1024);
   CHECK(buffer == "00000000000000001024");
 
-  buffer = jau::format_string("%020i", -1024);
+  buffer = jau::cfmt::format("%020i", -1024);
   CHECK(buffer == "-0000000000000001024");
 
-  buffer = jau::format_string("%020u", 1024);
+  buffer = jau::cfmt::format("%020u", 1024);
   CHECK(buffer == "00000000000000001024");
 
-  buffer = jau::format_string("%020u", 4294966272U);
+  buffer = jau::cfmt::format("%020u", 4294966272U);
   CHECK(buffer == "00000000004294966272");
 
-  buffer = jau::format_string("%020o", 511);
+  buffer = jau::cfmt::format("%020o", 511);
   CHECK(buffer == "00000000000000000777");
 
-  buffer = jau::format_string("%020o", 4294966785U);
+  buffer = jau::cfmt::format("%020o", 4294966785U);
   CHECK(buffer == "00000000037777777001");
 
-  buffer = jau::format_string("%020x", 305441741);
+  buffer = jau::cfmt::format("%020x", 305441741);
   CHECK(buffer == "0000000000001234abcd");
 
-  buffer = jau::format_string("%020x", 3989525555U);
+  buffer = jau::cfmt::format("%020x", 3989525555U);
   CHECK(buffer == "000000000000edcb5433");
 
-  buffer = jau::format_string("%020X", 305441741);
+  buffer = jau::cfmt::format("%020X", 305441741);
   CHECK(buffer == "0000000000001234ABCD");
 
-  buffer = jau::format_string("%020X", 3989525555U);
+  buffer = jau::cfmt::format("%020X", 3989525555U);
   CHECK(buffer == "000000000000EDCB5433");
 }
 
@@ -1477,40 +1517,40 @@ TEST_CASE("width_20", "[jau][std::string][jau::cfmt][padding]" ) {
 TEST_CASE("precision_20", "[jau][std::string][jau::cfmt][padding]" ) {
   std::string buffer;
 
-  buffer = jau::format_string("%.20d", 1024);
+  buffer = jau::cfmt::format("%.20d", 1024);
   CHECK(buffer == "00000000000000001024");
 
-  buffer = jau::format_string("%.20d", -1024);
+  buffer = jau::cfmt::format("%.20d", -1024);
   CHECK(buffer == "-00000000000000001024");
 
-  buffer = jau::format_string("%.20i", 1024);
+  buffer = jau::cfmt::format("%.20i", 1024);
   CHECK(buffer == "00000000000000001024");
 
-  buffer = jau::format_string("%.20i", -1024);
+  buffer = jau::cfmt::format("%.20i", -1024);
   CHECK(buffer == "-00000000000000001024");
 
-  buffer = jau::format_string("%.20u", 1024);
+  buffer = jau::cfmt::format("%.20u", 1024);
   CHECK(buffer == "00000000000000001024");
 
-  buffer = jau::format_string("%.20u", 4294966272U);
+  buffer = jau::cfmt::format("%.20u", 4294966272U);
   CHECK(buffer == "00000000004294966272");
 
-  buffer = jau::format_string("%.20o", 511);
+  buffer = jau::cfmt::format("%.20o", 511);
   CHECK(buffer == "00000000000000000777");
 
-  buffer = jau::format_string("%.20o", 4294966785U);
+  buffer = jau::cfmt::format("%.20o", 4294966785U);
   CHECK(buffer == "00000000037777777001");
 
-  buffer = jau::format_string("%.20x", 305441741);
+  buffer = jau::cfmt::format("%.20x", 305441741);
   CHECK(buffer == "0000000000001234abcd");
 
-  buffer = jau::format_string("%.20x", 3989525555U);
+  buffer = jau::cfmt::format("%.20x", 3989525555U);
   CHECK(buffer == "000000000000edcb5433");
 
-  buffer = jau::format_string("%.20X", 305441741);
+  buffer = jau::cfmt::format("%.20X", 305441741);
   CHECK(buffer == "0000000000001234ABCD");
 
-  buffer = jau::format_string("%.20X", 3989525555U);
+  buffer = jau::cfmt::format("%.20X", 3989525555U);
   CHECK(buffer == "000000000000EDCB5433");
 }
 
@@ -1518,40 +1558,40 @@ TEST_CASE("precision_20", "[jau][std::string][jau::cfmt][padding]" ) {
 TEST_CASE("hash_zero_width_20", "[jau][std::string][jau::cfmt][padding]" ) {
   std::string buffer;
 
-  buffer = jau::format_string("%#020d", 1024);
+  buffer = jau::cfmt::format("%#020d", 1024);
   CHECK(buffer == "00000000000000001024");
 
-  buffer = jau::format_string("%#020d", -1024);
+  buffer = jau::cfmt::format("%#020d", -1024);
   CHECK(buffer == "-0000000000000001024");
 
-  buffer = jau::format_string("%#020i", 1024);
+  buffer = jau::cfmt::format("%#020i", 1024);
   CHECK(buffer == "00000000000000001024");
 
-  buffer = jau::format_string("%#020i", -1024);
+  buffer = jau::cfmt::format("%#020i", -1024);
   CHECK(buffer == "-0000000000000001024");
 
-  buffer = jau::format_string("%#020u", 1024);
+  buffer = jau::cfmt::format("%#020u", 1024);
   CHECK(buffer == "00000000000000001024");
 
-  buffer = jau::format_string("%#020u", 4294966272U);
+  buffer = jau::cfmt::format("%#020u", 4294966272U);
   CHECK(buffer == "00000000004294966272");
 
-  buffer = jau::format_string("%#020o", 511);
+  buffer = jau::cfmt::format("%#020o", 511);
   CHECK(buffer == "00000000000000000777");
 
-  buffer = jau::format_string("%#020o", 4294966785U);
+  buffer = jau::cfmt::format("%#020o", 4294966785U);
   CHECK(buffer == "00000000037777777001");
 
-  buffer = jau::format_string("%#020x", 305441741);
+  buffer = jau::cfmt::format("%#020x", 305441741);
   CHECK(buffer == "0x00000000001234abcd");
 
-  buffer = jau::format_string("%#020x", 3989525555U);
+  buffer = jau::cfmt::format("%#020x", 3989525555U);
   CHECK(buffer == "0x0000000000edcb5433");
 
-  buffer = jau::format_string("%#020X", 305441741);
+  buffer = jau::cfmt::format("%#020X", 305441741);
   CHECK(buffer == "0X00000000001234ABCD");
 
-  buffer = jau::format_string("%#020X", 3989525555U);
+  buffer = jau::cfmt::format("%#020X", 3989525555U);
   CHECK(buffer == "0X0000000000EDCB5433");
 }
 
@@ -1559,40 +1599,40 @@ TEST_CASE("hash_zero_width_20", "[jau][std::string][jau::cfmt][padding]" ) {
 TEST_CASE("hash_width_20", "[jau][std::string][jau::cfmt][padding]" ) {
   std::string buffer;
 
-  buffer = jau::format_string("%#20d", 1024);
+  buffer = jau::cfmt::format("%#20d", 1024);
   CHECK(buffer == "                1024");
 
-  buffer = jau::format_string("%#20d", -1024);
+  buffer = jau::cfmt::format("%#20d", -1024);
   CHECK(buffer == "               -1024");
 
-  buffer = jau::format_string("%#20i", 1024);
+  buffer = jau::cfmt::format("%#20i", 1024);
   CHECK(buffer == "                1024");
 
-  buffer = jau::format_string("%#20i", -1024);
+  buffer = jau::cfmt::format("%#20i", -1024);
   CHECK(buffer == "               -1024");
 
-  buffer = jau::format_string("%#20u", 1024);
+  buffer = jau::cfmt::format("%#20u", 1024);
   CHECK(buffer == "                1024");
 
-  buffer = jau::format_string("%#20u", 4294966272U);
+  buffer = jau::cfmt::format("%#20u", 4294966272U);
   CHECK(buffer == "          4294966272");
 
-  buffer = jau::format_string("%#20o", 511);
+  buffer = jau::cfmt::format("%#20o", 511);
   CHECK(buffer == "                0777");
 
-  buffer = jau::format_string("%#20o", 4294966785U);
+  buffer = jau::cfmt::format("%#20o", 4294966785U);
   CHECK(buffer == "        037777777001");
 
-  buffer = jau::format_string("%#20x", 305441741);
+  buffer = jau::cfmt::format("%#20x", 305441741);
   CHECK(buffer == "          0x1234abcd");
 
-  buffer = jau::format_string("%#20x", 3989525555U);
+  buffer = jau::cfmt::format("%#20x", 3989525555U);
   CHECK(buffer == "          0xedcb5433");
 
-  buffer = jau::format_string("%#20X", 305441741);
+  buffer = jau::cfmt::format("%#20X", 305441741);
   CHECK(buffer == "          0X1234ABCD");
 
-  buffer = jau::format_string("%#20X", 3989525555U);
+  buffer = jau::cfmt::format("%#20X", 3989525555U);
   CHECK(buffer == "          0XEDCB5433");
 }
 
@@ -1600,40 +1640,40 @@ TEST_CASE("hash_width_20", "[jau][std::string][jau::cfmt][padding]" ) {
 TEST_CASE("width_20_precision_5", "[jau][std::string][jau::cfmt][padding]" ) {
   std::string buffer;
 
-  buffer = jau::format_string("%20.5d", 1024);
+  buffer = jau::cfmt::format("%20.5d", 1024);
   CHECK(buffer == "               01024");
 
-  buffer = jau::format_string("%20.5d", -1024);
+  buffer = jau::cfmt::format("%20.5d", -1024);
   CHECK(buffer == "              -01024");
 
-  buffer = jau::format_string("%20.5i", 1024);
+  buffer = jau::cfmt::format("%20.5i", 1024);
   CHECK(buffer == "               01024");
 
-  buffer = jau::format_string("%20.5i", -1024);
+  buffer = jau::cfmt::format("%20.5i", -1024);
   CHECK(buffer == "              -01024");
 
-  buffer = jau::format_string("%20.5u", 1024);
+  buffer = jau::cfmt::format("%20.5u", 1024);
   CHECK(buffer == "               01024");
 
-  buffer = jau::format_string("%20.5u", 4294966272U);
+  buffer = jau::cfmt::format("%20.5u", 4294966272U);
   CHECK(buffer == "          4294966272");
 
-  buffer = jau::format_string("%20.5o", 511);
+  buffer = jau::cfmt::format("%20.5o", 511);
   CHECK(buffer == "               00777");
 
-  buffer = jau::format_string("%20.5o", 4294966785U);
+  buffer = jau::cfmt::format("%20.5o", 4294966785U);
   CHECK(buffer == "         37777777001");
 
-  buffer = jau::format_string("%20.5x", 305441741);
+  buffer = jau::cfmt::format("%20.5x", 305441741);
   CHECK(buffer == "            1234abcd");
 
-  buffer = jau::format_string("%20.10x", 3989525555U);
+  buffer = jau::cfmt::format("%20.10x", 3989525555U);
   CHECK(buffer == "          00edcb5433");
 
-  buffer = jau::format_string("%20.5X", 305441741);
+  buffer = jau::cfmt::format("%20.5X", 305441741);
   CHECK(buffer == "            1234ABCD");
 
-  buffer = jau::format_string("%20.10X", 3989525555U);
+  buffer = jau::cfmt::format("%20.10X", 3989525555U);
   CHECK(buffer == "          00EDCB5433");
 }
 
@@ -1642,29 +1682,29 @@ TEST_CASE("padding neg_numbers", "[jau][std::string][jau::cfmt][padding]" ) {
   std::string buffer;
 
   // space padding
-  buffer = jau::format_string("% 1d", -5);
+  buffer = jau::cfmt::format("% 1d", -5);
   CHECK(buffer == "-5");
 
-  buffer = jau::format_string("% 2d", -5);
+  buffer = jau::cfmt::format("% 2d", -5);
   CHECK(buffer == "-5");
 
-  buffer = jau::format_string("% 3d", -5);
+  buffer = jau::cfmt::format("% 3d", -5);
   CHECK(buffer == " -5");
 
-  buffer = jau::format_string("% 4d", -5);
+  buffer = jau::cfmt::format("% 4d", -5);
   CHECK(buffer == "  -5");
 
   // zero padding
-  buffer = jau::format_string("%01d", -5);
+  buffer = jau::cfmt::format("%01d", -5);
   CHECK(buffer == "-5");
 
-  buffer = jau::format_string("%02d", -5);
+  buffer = jau::cfmt::format("%02d", -5);
   CHECK(buffer == "-5");
 
-  buffer = jau::format_string("%03d", -5);
+  buffer = jau::cfmt::format("%03d", -5);
   CHECK(buffer == "-05");
 
-  buffer = jau::format_string("%04d", -5);
+  buffer = jau::cfmt::format("%04d", -5);
   CHECK(buffer == "-005");
 }
 
@@ -1673,133 +1713,133 @@ TEST_CASE("float padding_neg_numbers", "[jau][std::string][jau::cfmt][float]" ) 
   std::string buffer;
 
   // space padding
-  buffer = jau::format_string("% 3.1f", -5.);
+  buffer = jau::cfmt::format("% 3.1f", -5.);
   CHECK(buffer == "-5.0");
 
-  buffer = jau::format_string("% 4.1f", -5.);
+  buffer = jau::cfmt::format("% 4.1f", -5.);
   CHECK(buffer == "-5.0");
 
-  buffer = jau::format_string("% 5.1f", -5.);
+  buffer = jau::cfmt::format("% 5.1f", -5.);
   CHECK(buffer == " -5.0");
 
-  buffer = jau::format_string("% 6.1g", -5.);
+  buffer = jau::cfmt::format("% 6.1g", -5.);
   CHECK(buffer == "    -5");
 
-  buffer = jau::format_string("% 6.1e", -5.);
+  buffer = jau::cfmt::format("% 6.1e", -5.);
   CHECK(buffer == "-5.0e+00");
 
-  buffer = jau::format_string("% 10.1e", -5.);
+  buffer = jau::cfmt::format("% 10.1e", -5.);
   CHECK(buffer == "  -5.0e+00");
 
   // zero padding
-  buffer = jau::format_string("%03.1f", -5.);
+  buffer = jau::cfmt::format("%03.1f", -5.);
   CHECK(buffer == "-5.0");
 
-  buffer = jau::format_string("%04.1f", -5.);
+  buffer = jau::cfmt::format("%04.1f", -5.);
   CHECK(buffer == "-5.0");
 
-  buffer = jau::format_string("%05.1f", -5.);
+  buffer = jau::cfmt::format("%05.1f", -5.);
   CHECK(buffer == "-05.0");
 
   // zero padding no decimal point
-  buffer = jau::format_string("%01.0f", -5.);
+  buffer = jau::cfmt::format("%01.0f", -5.);
   CHECK(buffer == "-5");
 
-  buffer = jau::format_string("%02.0f", -5.);
+  buffer = jau::cfmt::format("%02.0f", -5.);
   CHECK(buffer == "-5");
 
-  buffer = jau::format_string("%03.0f", -5.);
+  buffer = jau::cfmt::format("%03.0f", -5.);
   CHECK(buffer == "-05");
 
-  buffer = jau::format_string("%010.1e", -5.);
+  buffer = jau::cfmt::format("%010.1e", -5.);
   CHECK(buffer == "-005.0e+00");
 
-  buffer = jau::format_string("%07.0E", -5.);
+  buffer = jau::cfmt::format("%07.0E", -5.);
   CHECK(buffer == "-05E+00");
 
-  buffer = jau::format_string("%03.0g", -5.);
+  buffer = jau::cfmt::format("%03.0g", -5.);
   CHECK(buffer == "-05");
 }
 
 TEST_CASE("length", "[jau][std::string][jau::cfmt][length]" ) {
   std::string buffer;
 
-  buffer = jau::format_string("%.0s", "Hello testing");
+  buffer = jau::cfmt::format("%.0s", "Hello testing");
   CHECK(buffer == "");
 
-  buffer = jau::format_string("%20.0s", "Hello testing");
+  buffer = jau::cfmt::format("%20.0s", "Hello testing");
   CHECK(buffer == "                    ");
 
-  buffer = jau::format_string("%.s", "Hello testing");
+  buffer = jau::cfmt::format("%.s", "Hello testing");
   CHECK(buffer == "");
 
-  buffer = jau::format_string("%20.s", "Hello testing");
+  buffer = jau::cfmt::format("%20.s", "Hello testing");
   CHECK(buffer == "                    ");
 
-  buffer = jau::format_string("%20.0d", 1024);
+  buffer = jau::cfmt::format("%20.0d", 1024);
   CHECK(buffer == "                1024");
 
-  buffer = jau::format_string("%20.0d", -1024);
+  buffer = jau::cfmt::format("%20.0d", -1024);
   CHECK(buffer == "               -1024");
 
-  buffer = jau::format_string("%20.d", 0);
+  buffer = jau::cfmt::format("%20.d", 0);
   CHECK(buffer == "                    ");
 
-  buffer = jau::format_string("%20.0i", 1024);
+  buffer = jau::cfmt::format("%20.0i", 1024);
   CHECK(buffer == "                1024");
 
-  buffer = jau::format_string("%20.i", -1024);
+  buffer = jau::cfmt::format("%20.i", -1024);
   CHECK(buffer == "               -1024");
 
-  buffer = jau::format_string("%20.i", 0);
+  buffer = jau::cfmt::format("%20.i", 0);
   CHECK(buffer == "                    ");
 
-  buffer = jau::format_string("%20.u", 1024);
+  buffer = jau::cfmt::format("%20.u", 1024);
   CHECK(buffer == "                1024");
 
-  buffer = jau::format_string("%20.0u", 4294966272U);
+  buffer = jau::cfmt::format("%20.0u", 4294966272U);
   CHECK(buffer == "          4294966272");
 
-  buffer = jau::format_string("%20.u", 0U);
+  buffer = jau::cfmt::format("%20.u", 0U);
   CHECK(buffer == "                    ");
 
-  buffer = jau::format_string("%20.o", 511);
+  buffer = jau::cfmt::format("%20.o", 511);
   CHECK(buffer == "                 777");
 
-  buffer = jau::format_string("%20.0o", 4294966785U);
+  buffer = jau::cfmt::format("%20.0o", 4294966785U);
   CHECK(buffer == "         37777777001");
 
-  buffer = jau::format_string("%20.o", 0U);
+  buffer = jau::cfmt::format("%20.o", 0U);
   CHECK(buffer == "                    ");
 
-  buffer = jau::format_string("%20.x", 305441741);
+  buffer = jau::cfmt::format("%20.x", 305441741);
   CHECK(buffer == "            1234abcd");
 
-  buffer = jau::format_string("%50.x", 305441741);
+  buffer = jau::cfmt::format("%50.x", 305441741);
   CHECK(buffer == "                                          1234abcd");
 
-  buffer = jau::format_string("%50.x%10.u", 305441741, 12345);
+  buffer = jau::cfmt::format("%50.x%10.u", 305441741, 12345);
   CHECK(buffer == "                                          1234abcd     12345");
 
-  buffer = jau::format_string("%20.0x", 3989525555U);
+  buffer = jau::cfmt::format("%20.0x", 3989525555U);
   CHECK(buffer == "            edcb5433");
 
-  buffer = jau::format_string("%20.x", 0U);
+  buffer = jau::cfmt::format("%20.x", 0U);
   CHECK(buffer == "                    ");
 
-  buffer = jau::format_string("%20.X", 305441741);
+  buffer = jau::cfmt::format("%20.X", 305441741);
   CHECK(buffer == "            1234ABCD");
 
-  buffer = jau::format_string("%20.0X", 3989525555U);
+  buffer = jau::cfmt::format("%20.0X", 3989525555U);
   CHECK(buffer == "            EDCB5433");
 
-  buffer = jau::format_string("%20.X", 0U);
+  buffer = jau::cfmt::format("%20.X", 0U);
   CHECK(buffer == "                    ");
 
-  buffer = jau::format_string("%02.0u", 0U);
+  buffer = jau::cfmt::format("%02.0u", 0U);
   CHECK(buffer == "  ");
 
-  buffer = jau::format_string("%02.0d", 0);
+  buffer = jau::cfmt::format("%02.0d", 0);
   CHECK(buffer == "  ");
 }
 
@@ -1808,148 +1848,148 @@ TEST_CASE("float", "[jau][std::string][jau::cfmt][float]" ) {
   std::string buffer;
 
   // test special-case floats using math.h macros
-  buffer = jau::format_string("%8f", NAN);
+  buffer = jau::cfmt::format("%8f", NAN);
   CHECK(buffer == "     nan");
 
-  buffer = jau::format_string("%8f", INFINITY);
+  buffer = jau::cfmt::format("%8f", INFINITY);
   CHECK(buffer == "     inf");
 
-  buffer = jau::format_string("%-8f", -INFINITY);
+  buffer = jau::cfmt::format("%-8f", -INFINITY);
   CHECK(buffer == "-inf    ");
 
-  buffer = jau::format_string("%+8e", INFINITY);
+  buffer = jau::cfmt::format("%+8e", INFINITY);
   CHECK(buffer == "    +inf");
 
-  buffer = jau::format_string("%.4f", 3.1415354); // NOLINT
+  buffer = jau::cfmt::format("%.4f", 3.1415354); // NOLINT
   CHECK(buffer == "3.1415");
 
-  buffer = jau::format_string("%.3f", 30343.1415354);
+  buffer = jau::cfmt::format("%.3f", 30343.1415354);
   CHECK(buffer == "30343.142");
 
-  buffer = jau::format_string("%.0f", 34.1415354);
+  buffer = jau::cfmt::format("%.0f", 34.1415354);
   CHECK(buffer == "34");
 
-  buffer = jau::format_string("%.0f", 1.3);
+  buffer = jau::cfmt::format("%.0f", 1.3);
   CHECK(buffer == "1");
 
-  buffer = jau::format_string("%.0f", 1.55);
+  buffer = jau::cfmt::format("%.0f", 1.55);
   CHECK(buffer == "2");
 
-  buffer = jau::format_string("%.1f", 1.64);
+  buffer = jau::cfmt::format("%.1f", 1.64);
   CHECK(buffer == "1.6");
 
-  buffer = jau::format_string("%.2f", 42.8952);
+  buffer = jau::cfmt::format("%.2f", 42.8952);
   CHECK(buffer == "42.90");
 
-  buffer = jau::format_string("%.9f", 42.8952);
+  buffer = jau::cfmt::format("%.9f", 42.8952);
   CHECK(buffer == "42.895200000");
 
-  buffer = jau::format_string("%.10f", 42.895223);
+  buffer = jau::cfmt::format("%.10f", 42.895223);
   CHECK(buffer == "42.8952230000");
 
   // assuming not being truncated to 9 digits. (19)
-  buffer = jau::format_string("%.12f", 42.987654321098);
+  buffer = jau::cfmt::format("%.12f", 42.987654321098);
   CHECK(buffer == "42.987654321098");
 
   // assuming not being truncated to 9 digits, but rounded
-  buffer = jau::format_string("%.12f", 42.98765432109899);
+  buffer = jau::cfmt::format("%.12f", 42.98765432109899);
   CHECK(buffer == "42.987654321099");
 
   // 14
-  buffer = jau::format_string("%.14f", 42.98765432109876);
+  buffer = jau::cfmt::format("%.14f", 42.98765432109876);
   CHECK(buffer == "42.98765432109876");
   // 14 rounded
-  buffer = jau::format_string("%.14f", 42.9876543210987699);
+  buffer = jau::cfmt::format("%.14f", 42.9876543210987699);
   CHECK(buffer == "42.98765432109877");
 
   // 16 truncated to 14 (max precision)
-  buffer = jau::format_string("%.16f", 42.9876543210987612);
+  buffer = jau::cfmt::format("%.16f", 42.9876543210987612);
   CHECK(buffer == "42.9876543210987600");
 
   // 16 truncated to 14 (max precision) and rounded
-  buffer = jau::format_string("%.16f", 42.9876543210987654);
+  buffer = jau::cfmt::format("%.16f", 42.9876543210987654);
   CHECK(buffer == "42.9876543210987700");
 
-  buffer = jau::format_string("%6.2f", 42.8952);
+  buffer = jau::cfmt::format("%6.2f", 42.8952);
   CHECK(buffer == " 42.90");
 
-  buffer = jau::format_string("%+6.2f", 42.8952);
+  buffer = jau::cfmt::format("%+6.2f", 42.8952);
   CHECK(buffer == "+42.90");
 
-  buffer = jau::format_string("%+5.1f", 42.9252);
+  buffer = jau::cfmt::format("%+5.1f", 42.9252);
   CHECK(buffer == "+42.9");
 
-  buffer = jau::format_string("%f", 42.5);
+  buffer = jau::cfmt::format("%f", 42.5);
   CHECK(buffer == "42.500000");
 
-  buffer = jau::format_string("%.1f", 42.5);
+  buffer = jau::cfmt::format("%.1f", 42.5);
   CHECK(buffer == "42.5");
 
-  buffer = jau::format_string("%f", 42167.0);
+  buffer = jau::cfmt::format("%f", 42167.0);
   CHECK(buffer == "42167.000000");
 
-  buffer = jau::format_string("%.9f", -12345.987654321);
+  buffer = jau::cfmt::format("%.9f", -12345.987654321);
   CHECK(buffer == "-12345.987654321");
 
-  buffer = jau::format_string("%.1f", 3.999);
+  buffer = jau::cfmt::format("%.1f", 3.999);
   CHECK(buffer == "4.0");
 
-  buffer = jau::format_string("%.0f", 3.5);
+  buffer = jau::cfmt::format("%.0f", 3.5);
   CHECK(buffer == "4");
 
-  buffer = jau::format_string("%.0f", 4.5);
+  buffer = jau::cfmt::format("%.0f", 4.5);
   CHECK(buffer == "4");
 
-  buffer = jau::format_string("%.0f", 3.49);
+  buffer = jau::cfmt::format("%.0f", 3.49);
   CHECK(buffer == "3");
 
-  buffer = jau::format_string("%.1f", 3.49);
+  buffer = jau::cfmt::format("%.1f", 3.49);
   CHECK(buffer == "3.5");
 
-  buffer = jau::format_string("a%-5.1f", 0.5);
+  buffer = jau::cfmt::format("a%-5.1f", 0.5);
   CHECK(buffer == "a0.5  ");
 
-  buffer = jau::format_string("a%-5.1fend", 0.5);
+  buffer = jau::cfmt::format("a%-5.1fend", 0.5);
   CHECK(buffer == "a0.5  end");
 
-  buffer = jau::format_string("%G", 12345.678);
+  buffer = jau::cfmt::format("%G", 12345.678);
   CHECK(buffer == "12345.7");
 
-  buffer = jau::format_string("%.7G", 12345.678);
+  buffer = jau::cfmt::format("%.7G", 12345.678);
   CHECK(buffer == "12345.68");
 
-  buffer = jau::format_string("%.5G", 123456789.);
+  buffer = jau::cfmt::format("%.5G", 123456789.);
   CHECK(buffer == "1.2346E+08");
 
-  buffer = jau::format_string("%.6G", 12345.);
+  buffer = jau::cfmt::format("%.6G", 12345.);
   CHECK(buffer == "12345.0");
 
-  buffer = jau::format_string("%+12.4g", 123456789.);
+  buffer = jau::cfmt::format("%+12.4g", 123456789.);
   CHECK(buffer == "  +1.235e+08");
 
-  buffer = jau::format_string("%.2G", 0.001234);
+  buffer = jau::cfmt::format("%.2G", 0.001234);
   CHECK(buffer == "0.0012");
 
-  buffer = jau::format_string("%+10.4G", 0.001234);
+  buffer = jau::cfmt::format("%+10.4G", 0.001234);
   CHECK(buffer == " +0.001234");
 
-  buffer = jau::format_string("%+012.4g", 0.00001234);
+  buffer = jau::cfmt::format("%+012.4g", 0.00001234);
   CHECK(buffer == "+001.234e-05");
 
-  buffer = jau::format_string("%.3g", -1.2345e-308);
+  buffer = jau::cfmt::format("%.3g", -1.2345e-308);
   CHECK(buffer == "-1.23e-308");
 
-  buffer = jau::format_string("%+.3E", 1.23e+308);
+  buffer = jau::cfmt::format("%+.3E", 1.23e+308);
   CHECK(buffer == "+1.230E+308");
 
   // out of range for float: should switch to exp notation if supported, else empty
-  buffer = jau::format_string("%.1f", 1E20);
+  buffer = jau::cfmt::format("%.1f", 1E20);
   CHECK(buffer == "1.0e+20");
 
-  buffer = jau::format_string("%.5f", -1.12345);
+  buffer = jau::cfmt::format("%.5f", -1.12345);
   CHECK(buffer == "-1.12345");
 
-  buffer = jau::format_string("%.5f", -1.00000e20);
+  buffer = jau::cfmt::format("%.5f", -1.00000e20);
   CHECK(buffer == "-1.00000e+20");
 
   // brute force float
@@ -1957,7 +1997,7 @@ TEST_CASE("float", "[jau][std::string][jau::cfmt][float]" ) {
   std::stringstream str;
   str.precision(5);
   for (float i = -100000; i < 100000; i += 1) { // NOLINT
-    buffer = jau::format_string("%.5f", i / 10000);
+    buffer = jau::cfmt::format("%.5f", i / 10000);
     str.str("");
     str << std::fixed << i / 10000;
     fail = fail || buffer != str.str();
@@ -1968,7 +2008,7 @@ TEST_CASE("float", "[jau][std::string][jau::cfmt][float]" ) {
   fail = false;
   str.setf(std::ios::scientific, std::ios::floatfield);
   for (float i = -1e20; i < 1e20; i += 1e15) { // NOLINT
-    buffer = jau::format_string("%.5f", i);
+    buffer = jau::cfmt::format("%.5f", i);
     buffer.shrink_to_fit();
     str.str("");
     str << i;
@@ -1982,135 +2022,135 @@ TEST_CASE("float", "[jau][std::string][jau::cfmt][float]" ) {
 TEST_CASE("types", "[jau][std::string][jau::cfmt][types]" ) {
   std::string buffer;
 
-  buffer = jau::format_string("%i", 0);
+  buffer = jau::cfmt::format("%i", 0);
   CHECK(buffer == "0");
 
-  buffer = jau::format_string("%i", 1234);
+  buffer = jau::cfmt::format("%i", 1234);
   CHECK(buffer == "1234");
 
-  buffer = jau::format_string("%i", 32767);
+  buffer = jau::cfmt::format("%i", 32767);
   CHECK(buffer == "32767");
 
-  buffer = jau::format_string("%i", -32767);
+  buffer = jau::cfmt::format("%i", -32767);
   CHECK(buffer == "-32767");
 
-  buffer = jau::format_string("%li", 30L);
+  buffer = jau::cfmt::format("%li", 30L);
   CHECK(buffer == "30");
 
-  buffer = jau::format_string("%li", -2147483647L);
+  buffer = jau::cfmt::format("%li", -2147483647L);
   CHECK(buffer == "-2147483647");
 
-  buffer = jau::format_string("%li", 2147483647L);
+  buffer = jau::cfmt::format("%li", 2147483647L);
   CHECK(buffer == "2147483647");
 
-  buffer = jau::format_string("%lli", 30LL);
+  buffer = jau::cfmt::format("%lli", 30LL);
   CHECK(buffer == "30");
 
-  buffer = jau::format_string("%lli", -9223372036854775807LL);
+  buffer = jau::cfmt::format("%lli", -9223372036854775807LL);
   CHECK(buffer == "-9223372036854775807");
 
-  buffer = jau::format_string("%lli", 9223372036854775807LL);
+  buffer = jau::cfmt::format("%lli", 9223372036854775807LL);
   CHECK(buffer == "9223372036854775807");
 
-  buffer = jau::format_string("%lu", 100000L);
+  buffer = jau::cfmt::format("%lu", 100000L);
   CHECK(buffer == "100000");
 
-  buffer = jau::format_string("%lu", 0xFFFFFFFFL);
+  buffer = jau::cfmt::format("%lu", 0xFFFFFFFFL);
   CHECK(buffer == "4294967295");
 
-  buffer = jau::format_string("%llu", 281474976710656LLU);
+  buffer = jau::cfmt::format("%llu", 281474976710656LLU);
   CHECK(buffer == "281474976710656");
 
-  buffer = jau::format_string("%llu", 18446744073709551615LLU);
+  buffer = jau::cfmt::format("%llu", 18446744073709551615LLU);
   CHECK(buffer == "18446744073709551615");
 
-  buffer = jau::format_string("%zu", 2147483647UL);
+  buffer = jau::cfmt::format("%zu", 2147483647UL);
   CHECK(buffer == "2147483647");
 
-  buffer = jau::format_string("%zd", 2147483647L);
+  buffer = jau::cfmt::format("%zd", 2147483647L);
   CHECK(buffer == "2147483647");
 
   // failed intentionally unsigned -> signed 64-bit
   static_assert(0 < jau::cfmt::checkLine("%zd", 2147483647UL));
-  // buffer = jau::format_string("%zd", 2147483647UL);
+  // buffer = jau::cfmt::format("%zd", 2147483647UL);
   // CHECK(buffer == "2147483647");
 
   if (sizeof(size_t) == sizeof(long)) {
-    buffer = jau::format_string("%zi", -2147483647L);
+    buffer = jau::cfmt::format("%zi", -2147483647L);
     CHECK(buffer == "-2147483647");
   }
   else {
-    buffer = jau::format_string("%zi", -2147483647LL);
+    buffer = jau::cfmt::format("%zi", -2147483647LL);
     CHECK(buffer == "-2147483647");
   }
 
-  buffer = jau::format_string("%b", 60000);
+  buffer = jau::cfmt::format("%b", 60000);
   CHECK(buffer == "1110101001100000");
 
-  buffer = jau::format_string("%lb", 12345678L);
+  buffer = jau::cfmt::format("%lb", 12345678L);
   CHECK(buffer == "101111000110000101001110");
 
-  buffer = jau::format_string("%o", 60000);
+  buffer = jau::cfmt::format("%o", 60000);
   CHECK(buffer == "165140");
 
-  buffer = jau::format_string("%lo", 12345678L);
+  buffer = jau::cfmt::format("%lo", 12345678L);
   CHECK(buffer == "57060516");
 
-  buffer = jau::format_string("%lx", 0x12345678L);
+  buffer = jau::cfmt::format("%lx", 0x12345678L);
   CHECK(buffer == "12345678");
 
-  buffer = jau::format_string("%llx", 0x1234567891234567LLU);
+  buffer = jau::cfmt::format("%llx", 0x1234567891234567LLU);
   CHECK(buffer == "1234567891234567");
 
-  buffer = jau::format_string("%lx", 0xabcdefabL);
+  buffer = jau::cfmt::format("%lx", 0xabcdefabL);
   CHECK(buffer == "abcdefab");
 
-  buffer = jau::format_string("%lX", 0xabcdefabL);
+  buffer = jau::cfmt::format("%lX", 0xabcdefabL);
   CHECK(buffer == "ABCDEFAB");
 
-  buffer = jau::format_string("%c", 'v');
+  buffer = jau::cfmt::format("%c", 'v');
   CHECK(buffer == "v");
 
-  buffer = jau::format_string("%cv", 'w');
+  buffer = jau::cfmt::format("%cv", 'w');
   CHECK(buffer == "wv");
 
-  buffer = jau::format_string("%s", "A Test");
+  buffer = jau::cfmt::format("%s", "A Test");
   CHECK(buffer == "A Test");
 
   // !JAU_CFMT_IGNORE_LENGTH_MODIFIER
   // static_assert(0  < jau::cfmt::checkLine("%hhu", 0xFFU)); // size unsigned int > unsigned char (intentional failure)
   static_assert(0 == jau::cfmt::checkLine("%hhu", 0xFF_u8));
-  buffer = jau::format_string("%hhu", 0xFF_u8);
+  buffer = jau::cfmt::format("%hhu", 0xFF_u8);
   CHECK(buffer == "255");
 
   // intentionally fails: given arg size > hh char
   // !JAU_CFMT_IGNORE_LENGTH_MODIFIER
   // static_assert(0 < jau::cfmt::checkLine("%hhu", 0xFFFFUL)); // size unsigned long > unsigned char (intentional failure)
-  // buffer = jau::format_string("%hhu", 0xFFFFUL);
+  // buffer = jau::cfmt::format("%hhu", 0xFFFFUL);
   // CHECK(buffer == "255");
 
   // !JAU_CFMT_IGNORE_LENGTH_MODIFIER
   // static_assert(0  < jau::cfmt::checkLine("%hu", 0x123456UL)); // size unsigned long > unsigned short (intentional failure)
   static_assert(0 == jau::cfmt::checkLine("%hu", 0x1234_u16));
-  buffer = jau::format_string("%hu", 0x1234_u16); // size unsigned long > unsigned short
+  buffer = jau::cfmt::format("%hu", 0x1234_u16); // size unsigned long > unsigned short
   CHECK(buffer == "4660");
 
   // !JAU_CFMT_IGNORE_LENGTH_MODIFIER
   // static_assert(0  < jau::cfmt::checkLine("%s%hhi %hu", "Test", 10000, 0xFFFFFFFF));
   static_assert(0 == jau::cfmt::checkLine("%s%hhi %hu", "Test", 16_i8, 0xFFFF_u16));
-  buffer = jau::format_string("%s%hhi %hu", "Test", (char)16, (unsigned short)0xFFFF);
+  buffer = jau::cfmt::format("%s%hhi %hu", "Test", (char)16, (unsigned short)0xFFFF);
   CHECK(buffer == "Test16 65535");
 
-  buffer = jau::format_string("%tx", &buffer[10] - &buffer[0]);
+  buffer = jau::cfmt::format("%tx", &buffer[10] - &buffer[0]);
   CHECK(buffer == "a");
 
 // TBD
   if (sizeof(intmax_t) == sizeof(long)) {
-    buffer = jau::format_string("%ji", -2147483647L);
+    buffer = jau::cfmt::format("%ji", -2147483647L);
     CHECK(buffer == "-2147483647");
   }
   else {
-    buffer = jau::format_string("%ji", -2147483647LL);
+    buffer = jau::cfmt::format("%ji", -2147483647LL);
     CHECK(buffer == "-2147483647");
   }
 }
@@ -2120,7 +2160,7 @@ TEST_CASE("pointer", "[jau][std::string][jau::cfmt][pointer]" ) {
   std::string buffer;
 
 #if 0
-  buffer = jau::format_string("%p", (void*)0x1234U);
+  buffer = jau::cfmt::format("%p", (void*)0x1234U);
   if (sizeof(void*) == 4U) {
     CHECK(buffer == "00001234");
   }
@@ -2128,7 +2168,7 @@ TEST_CASE("pointer", "[jau][std::string][jau::cfmt][pointer]" ) {
     CHECK(buffer == "0000000000001234");
   }
 
-  buffer = jau::format_string("%p", (void*)0x12345678U);
+  buffer = jau::cfmt::format("%p", (void*)0x12345678U);
   if (sizeof(void*) == 4U) {
     CHECK(buffer == "12345678");
   }
@@ -2136,7 +2176,7 @@ TEST_CASE("pointer", "[jau][std::string][jau::cfmt][pointer]" ) {
     CHECK(buffer == "0000000012345678");
   }
 
-  buffer = jau::format_string("%p-%p", (void*)0x12345678U, (void*)0x7EDCBA98U);
+  buffer = jau::cfmt::format("%p-%p", (void*)0x12345678U, (void*)0x7EDCBA98U);
   if (sizeof(void*) == 4U) {
     CHECK(buffer == "12345678-7EDCBA98");
   }
@@ -2145,25 +2185,25 @@ TEST_CASE("pointer", "[jau][std::string][jau::cfmt][pointer]" ) {
   }
 
   if (sizeof(uintptr_t) == sizeof(uint64_t)) {
-    buffer = jau::format_string("%p", (void*)(uintptr_t)0xFFFFFFFFU); // NOLINT
+    buffer = jau::cfmt::format("%p", (void*)(uintptr_t)0xFFFFFFFFU); // NOLINT
     CHECK(buffer == "00000000FFFFFFFF");
   }
   else {
-    buffer = jau::format_string("%p", (void*)(uintptr_t)0xFFFFFFFFU); // NOLINT
+    buffer = jau::cfmt::format("%p", (void*)(uintptr_t)0xFFFFFFFFU); // NOLINT
     CHECK(buffer == "FFFFFFFF");
   }
 #else
   // %#x or %#lx
-  buffer = jau::format_string("%p", (void*)0x1234U);
+  buffer = jau::cfmt::format("%p", (void*)0x1234U);
   CHECK(buffer == "0x1234");
 
-  buffer = jau::format_string("%p", (void*)0x12345678U);
+  buffer = jau::cfmt::format("%p", (void*)0x12345678U);
   CHECK(buffer == "0x12345678");
 
-  buffer = jau::format_string("%p-%p", (void*)0x12345678U, (void*)0x7EDCBA98U);
+  buffer = jau::cfmt::format("%p-%p", (void*)0x12345678U, (void*)0x7EDCBA98U);
   CHECK(buffer == "0x12345678-0x7edcba98");
 
-  buffer = jau::format_string("%p", (void*)(uintptr_t)0xFFFFFFFFU); // NOLINT
+  buffer = jau::cfmt::format("%p", (void*)(uintptr_t)0xFFFFFFFFU); // NOLINT
   CHECK(buffer == "0xffffffff");
 #endif
 }
@@ -2173,7 +2213,9 @@ TEST_CASE("unknown flag", "[jau][std::string][jau::cfmt][error]" ) {
   std::string buffer;
 
   // we inject an error message
-  buffer = jau::format_string("%kmarco", 42, 37); // orig "kmarco"
+  CHECK(0 > jau::cfmt::check("%kmarco", 42, 37)); // orig "kmarco"
+  buffer = jau::cfmt::format("%kmarco", 42, 37); // orig "kmarco"
+  std::cerr << "buffer @ " << __LINE__ << ": '" << buffer << "'\n";
   const size_t q = buffer.find("<E#", 0);
   CHECK( q != std::string::npos );
 }
@@ -2182,57 +2224,57 @@ TEST_CASE("unknown flag", "[jau][std::string][jau::cfmt][error]" ) {
 TEST_CASE("string length", "[jau][std::string][jau::cfmt][stringlen]" ) {
   std::string buffer;
 
-  buffer = jau::format_string("%.4s", "This is a test");
+  buffer = jau::cfmt::format("%.4s", "This is a test");
   CHECK(buffer == "This");
 
-  buffer = jau::format_string("%.4s", "test");
+  buffer = jau::cfmt::format("%.4s", "test");
   CHECK(buffer == "test");
 
-  buffer = jau::format_string("%.7s", "123");
+  buffer = jau::cfmt::format("%.7s", "123");
   CHECK(buffer == "123");
 
-  buffer = jau::format_string("%.7s", "");
+  buffer = jau::cfmt::format("%.7s", "");
   CHECK(buffer == "");
 
-  buffer = jau::format_string("%.4s%.2s", "123456", "abcdef");
+  buffer = jau::cfmt::format("%.4s%.2s", "123456", "abcdef");
   CHECK(buffer == "1234ab");
 
   // we inject an error message
-  buffer = jau::format_string("%.4.2s", "123456"); // orig ".2s"
+  buffer = jau::cfmt::format("%.4.2s", "123456"); // orig ".2s"
   const size_t q = buffer.find("<E#", 0);
   CHECK( q != std::string::npos );
 
-  buffer = jau::format_string("%.*s", 3, "123456");
+  buffer = jau::cfmt::format("%.*s", 3, "123456");
   CHECK(buffer == "123");
 }
 
 TEST_CASE("misc", "[jau][std::string][jau::cfmt][misc]" ) {
   std::string buffer;
 
-  buffer = jau::format_string("%u%u%ctest%d %s", 5, 3000, 'a', -20, "bit");
+  buffer = jau::cfmt::format("%u%u%ctest%d %s", 5, 3000, 'a', -20, "bit");
   CHECK(buffer == "53000atest-20 bit");
 
-  buffer = jau::format_string("%.*f", 2, 0.33333333);
+  buffer = jau::cfmt::format("%.*f", 2, 0.33333333);
   CHECK(buffer == "0.33");
 
-  buffer = jau::format_string("%.*d", -1, 1);
+  buffer = jau::cfmt::format("%.*d", -1, 1);
   CHECK(buffer == "1");
 
-  buffer = jau::format_string("%.3s", "foobar");
+  buffer = jau::cfmt::format("%.3s", "foobar");
   CHECK(buffer == "foo");
 
-  buffer = jau::format_string("% .0d", 0);
+  buffer = jau::cfmt::format("% .0d", 0);
   CHECK(buffer == " ");
 
-  buffer = jau::format_string("%10.5d", 4);
+  buffer = jau::cfmt::format("%10.5d", 4);
   CHECK(buffer == "     00004");
 
-  buffer = jau::format_string("%*sx", -3, "hi");
+  buffer = jau::cfmt::format("%*sx", -3, "hi");
   CHECK(buffer == "hi x");
 
-  buffer = jau::format_string("%.*g", 2, 0.33333333);
+  buffer = jau::cfmt::format("%.*g", 2, 0.33333333);
   CHECK(buffer == "0.33");
 
-  buffer = jau::format_string("%.*e", 2, 0.33333333);
+  buffer = jau::cfmt::format("%.*e", 2, 0.33333333);
   CHECK(buffer == "3.33e-01");
 }

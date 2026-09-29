@@ -44,233 +44,247 @@
 #include <jau/cpp_pragma.hpp>
 #include <jau/enum_util.hpp>
 
-/**
- * @anchor jau_cfmt_header
- * ## jau::cfmt, a snprintf compliant runtime string format and compile-time validator
- *
- * ### Features
- * - Compile type validation of arguments against the format string
- *   - Possible via `consteval` capable `constexpr` implementation
- *   - Live response via `static_assert` expressions within your IDE
- *   - Example using `jau_string_check(fmt, ...)` macro utilizing `jau::cfmt::check2`
- *     The macro resolves the passed arguments types via `decltype` to be utilized for `jau::cfmt::check2`
- *   ```
- *     auto &thing = ...; // assume template- or polymorphic-type
- *     jau_string_check("Hello %s %u, thing %?", "World", 2.0, thing); // shows static_assert() argument error for argument 2 (float, not unsigned integral)
- *     jau_string_checkLine("Hello %s %u, thing  %?", "World", 2.0, thing); // shows static_assert() source-line error for argument 2 (float, not unsigned integral)
- *   ```
- * - Runtime safe string formatting via `jau::format_string`
- *   ```
- *     auto &thing = ...; // assume template- or polymorphic-type
- *     std::string s0 = "World";
- *     std::string s1 = jau::format_string("Hello %s, %d + %d = %'d; thing %?", s0, 1, 1, 2000, thing);
- *     std::string s3 = jau::format_string_h(100, "Hello %s, %d + %d = %'d; thing %?", s0, 1, 1, 2000, thing); // using a string w/ reserved size of 100
- *
- *     // string concatenation, each `formatR` appends to the given referenced string
- *     std::string concat;
- *     concat.reserve(1000);
- *     jau::cfmt::formatR(concat, "Hello %s, %d + %d = %'d, thing %?", s0, 1, 1, 2000, thing);
- *     ...
- *     jau::cfmt::formatR(concat, "%#b", 2U);
- *   ```
- * - Both, compile time check and runtime formatting via `jau_format_string` macro (the actual goal)
- *   ```
- *     std::string s1 = jau_format_string("Hello %s, %d + %d = %'d, thing %?", s0, 1, 1, 2000, thing);
- *     std::string s2 = jau_format_string_h(100, "Hello %s, %d + %d = %'d, thing %?", s0, 1, 1, 2000, thing); // using a string w/ reserved size of 100
- *   ```
- * - Compatible with [fprintf](https://en.cppreference.com/w/cpp/io/c/fprintf), [snprintf](https://www.man7.org/linux/man-pages/man3/snprintf.3p.html), etc
- *
- * ### Type Conversion
- * Implementation follows type conversion rules as described
- * in [Variadic Default Conversion](https://en.cppreference.com/w/cpp/language/variadic_arguments#Default_conversions)
- * - The *length modifier* is parsed, but *ignored* for argument type validation (see below).
- * - float to double promotion, see jau::cfmt::floating_point_promotion
- * - `bool`, `char`, `short`, `int` and unscoped enumerations are promoted for integral conversion to
- *   - signed: `int64_t`, see jau::cfmt::signed_integral_promotion
- *   - unsigned: `uint64_t`, see jau::cfmt::unsigned_integral_promotion
- *   See also [va_arg](https://en.cppreference.com/w/cpp/utility/variadic/va_arg)
- * - void pointer tolerance
- * - Exception signedness conversion
- *   - Allows positive signed to unsigned type conversion
- *     - Positive check at runtime only
- *   - Allows unsigned to signed type conversion if sizeof(unsigned type) < sizeof(signed type)
- *     - Compile time check
- *   - Otherwise fails intentionally
- *
- * ### Safety
- * - [Thread-safety](https://www.man7.org/linux/man-pages/man7/attributes.7.html): MT-Safe
- * - [Signal-safety](https://www.man7.org/linux/man-pages/man7/signal-safety.7.html)
- *   - `jau::cfmt::append_cap`: AS-Safe
- *   - `jau::cfmt::append` if passing `std::string` w/ `maxLen = capacity - 1`: AS-Safe
- *
- * ### Implementation Details
- * #### General
- * - Validates argument types against format string at compile time (consteval)
- * - Formats resulting string using argument values against format string at runtime
- * - Written in C++20 using template argument pack w/ save argument type checks
- * - Type erasure to wider common denominator, i.e. `uint64`, `const char* const`, `std::string_view`,
- *   reducing code footprint
- *
- * #### Behavior
- * - `nullptr` conversion value similar to `glibc`
- *   - string produces `(null)`
- *   - pointer produces `(nil)`
- * - Safe Signedness Conversion
- *   - Not accepting `unsigned` -> `signed` conversion if sizeof(unsigned type) >= sizeof(signed type)
- *     to avoid overflow (compile time check), otherwise OK
- *   - Not accepting negative integral value for `unsigned` (runtime check)
- * - Accepts jau::req::wrapper type arguments, for which the underlying type and value is being used.
- * - Accept `enum` types for integer conversion.
- *   - Only if underlying type is `unsigned`, it can't be used for signed integer conversion (see above)
- * - Accept direct std::string and std::string_view for `%s` string arguments
- * - Arithmetic integral + floating point types are limited to 64-bit (promotion type)
- * - `bool` standard conversion is to integral (number `0` or `1`)
- * - Argument types for string conversion see *Extended Argument-Types for Conversion Specifier* below
- * - Runtime Errors
- *   - Failed runtime checks will inject an error market,
- *     e.g. `<E#1@1234:Cnv>` where the 1st argument caused a conversion error (`Cnv`)
- *     as detected in `string_cfmt.hpp` like 1234.
- *   - Argument 0 indicated an error in the format string.
- *   - `Len` tags a length modifier error
- *   - `Cnv` tags a conversion error
- *
- * ### Supported Format String
- *
- * `%[flags][width][.precision][length modifier]conversion`
- *
- * #### Flags
- * The following flags are supported
- * - `#`: hash, C99. Adds leading prefix for `radix != 10`.
- * - `0`: zeropad, C99
- * - `-`: left, C99
- * - <code>&nbsp;</code>: space, C99
- * - `+`: plus, C99
- * - ``'``: thousands, POSIX (quotation mark)
- * - `,`: thousands, OpenJDK (comma, alias for Java users)
- *
- * #### Width and Precision
- * Width and precision also supports `*` to use the next argument for its value.
- *
- * However, `*m$` (decimal integer `m`) for the `m`-th argument is not yet supported.
- *
- * #### Length Modifiers
- * The following length modifiers are supported
- * - `hh` [unsigned] char, ignored for floating point
- * - `h` [unsigned] short, ignored for floating point
- * - `l` [unsigned] long, ignored for floating point
- * - `ll` [unsigned] long long
- * - `q` deprecated synonym for `ll`
- * - `L` long double
- * - `j` uintmax_t or intmax_t
- * - `z` size_t or ssize_t
- * - `Z` deprecated synonym for `z`
- * - `t` ptrdiff_t
- *
- * The *length modifier* is parsed, but *ignored* for argument type validation, due to
- * - Not required for correctness as this implementation tracks argument types via template-paramter-packs
- * - Ignored with auto-conversion, see below
- * - Considerably increased performance of the implementation
- *
- * Hence you are allowed to not pass the length modifier in your format.
- *
- * #### Conversion Specifiers
- * The following standard conversion specifiers are supported:
- *
- *  Spec | Alias | std | Argument Type (jau::req)           | cspec_t            | Notes                             |
- *  :----| :-----| :---| :----------------------------------| :------------------| :---------------------------------|
- *  `c`  |       | S   | `character`                        | `character`        |                                   |
- *  `s`  |       | S   | `stringifiable`                    | `string`           | incl. `boolean` and `enumeration` |
- *  `p`  |       | S   | `pointer`                          | `pointer`          | incl. `char_pointer`              |
- *  `d`  | `i`   | S   | `signed_integer`, `enumeration`    | `signed_integer`   | decimal, `enumeration` must be signed |
- *  `u`  |       | S   | `unsigned_integer`, `enumeration`  | `unsigned_integer` | decimal representation            |
- *  `o`  |       | S   | `unsigned_integer`, `enumeration`  | `unsigned_integer` | octal representation              |
- *  `x`  |       | S   | `unsigned_integer`, `enumeration`  | `unsigned_integer` | hexadecimal representation        |
- *  `b`  |       | X   | `unsigned_integer`, `enumeration`  | `unsigned_integer` | binary representation w/ prefix `0b` (`#`) |
- *  `f`  | `F`   | S   | `floating-point`                   | `floating_point`   | double floatint-point             |
- *  `e`  | `E`   | S   | `floating-point`                   | `floating_point`   | double, exponential low- and capital `E` |
- *  `g`  | `G`   | S   | `floating-point`                   | `floating_point`   | double, alternate exponential low- and capital `E` |
- *  `a`  | `A`   | S   | `floating-point`                   | `floating_point`   | double, hexadecimal low- and capital chars |
- *  `?`  |       | X   | auto-conversion                    | `any`              | see auto-conversion below         |
- *
- * `std` values: **S** for C99 or POSIX standard and **X** for our own extension.
- *
- * #### Auto-Conversion
- * The auto conversion specifier `?` can be used to pass template- and polymorphic-types.
- * The argument-type defines the used conversion (see table below).
- *
- * This is a convenient way to pass template- and polymorphic-types w/o knowing them exactly,
- * similar to the C++ streamout API.
- *
- * Auto conversion supports jau::req::wrapper type arguments like regular defined arguments.
- *
- * The length modifier is set to plength_t::any, i.e. no value length restriction applies.
- *
- *  Argument Type (jau::req)           | Spec | cspec_t            | Notes                             |
- *  :----------------------------------| :----| :------------------| :---------------------------------|
- *  `character`                        | `c`  | `character`        |                                   |
- *  `signed_integer`                   | `d`  | `signed_integer`   | !`boolean`, !`character`          |
- *  `unsigned_integer`                 | `u`  | `unsigned_integer` | !`boolean`, !`character`          |
- *  `enumeration` / `signed_integer`   | `d`  | `signed_integer`   | !`stringifiable`                  |
- *  `enumeration` / `unsigned_integer` | `u`  | `unsigned_integer` | !`stringifiable`                  |
- *  `floating-point`                   | `f`  | `floating_point`   |                                   |
- *  `pointer`                          | `p`  | `pointer`          | !`char_pointer`                   |
- *  `boolean`                          | `s`  | `string`           | `true` or `false`                 |
- *  `enumeration`                      | `s`  | `string`           | if `stringifiable`                |
- *  `stringifiable`                    | `s`  | `string`           | incl. `boolean` and `enumeration` |
- *
- * #### Extended Argument-Types for Conversion Specifier
- *   - `s` string
- *     - `char *`
- *       - `nullptr` produces `(null)`
- *     - `std::string`, `std::string_view`
- *     - `bool`
- *     - any type w/ a free function 'to_string', producing either `std::string` or `std::string_view`
- *       - including enum types, instrumented via `JAU_MAKE_ENUM_STRING` or `JAU_MAKE_BITFIELD_ENUM_STRING`
- *     - any class exposing toString() or to_string() method _and_ a well formed default ctor
- *       - for compile time checks, the default ctor must be constexpr
- * - Integral
- *   - `enum` types
- *     - only supported if not `stringifiable`, i.e. if no free `to_string` method is provided
- *     - If underlying type is `unsigned`, it can't be used for signed integer conversion
- *   - `bool` as integral (number `0` or `1`)
- *
- * ### Build Specific Notes
- * #### JAU_CFMT_TRACK_FORMAT_OPTS_FMT
- * You may define compile-time macro `JAU_CFMT_TRACK_FORMAT_OPTS_FMT` to enable FormatOpts::fmt
- * to track the original conversion specifier to debug.
- * Disabled by default to save memory footprint and runtime costs.
- *
- * Example
- * ```
- * #define JAU_CFMT_TRACK_FORMAT_OPTS_FMT 1
- * ```
- *
- * ### Special Thanks
- * To the project [A printf / sprintf Implementation for Embedded Systems](https://github.com/mpaland/printf)
- * worked on by Marco Paland and many others. I have used their `test_suite.cpp` code within our unit test
- * `test_stringfmt_format.cpp` and also utilized their floating point parsing within
- * `append_float` and `append_efloat`.
- *
- * ### Further Documentation
- * - [C++ fprintf Reference](https://en.cppreference.com/w/cpp/io/c/fprintf)
- * - [Linux snprintf(3) man page](https://www.man7.org/linux/man-pages/man3/snprintf.3p.html)
- * - [FreeBSD snprintf(3) man page](https://man.freebsd.org/cgi/man.cgi?snprintf(3))
- * - [C++20 idioms for parameter packs](https://www.scs.stanford.edu/~dm/blog/param-pack.html)
- * - [A printf / sprintf Implementation for Embedded Systems](https://github.com/mpaland/printf)
- */
 namespace jau::cfmt {
     using namespace jau::enums;
 
-    /** \addtogroup StringUtils
+    /** @defgroup StringCFormat jau::cfmt, a snprintf compliant string formatter
+     *  jau::cfmt, a snprintf compliant runtime string format and compile-time validator
+     *
+     * @anchor jau_cfmt_header
+     * ## jau::cfmt, a snprintf compliant runtime string format and compile-time validator
+     *
+     * jau::cfmt complements \ref StringUtils.
+     *
+     * ### Features
+     * - Compatible with [fprintf](https://en.cppreference.com/w/cpp/io/c/fprintf)- and [snprintf](https://www.man7.org/linux/man-pages/man3/snprintf.3p.html)-formatting
+     * - Compile type validation of arguments against the format string
+     *   - Possible via `consteval` capable `constexpr` implementation
+     *   - Live response via `static_assert` expressions within your IDE
+     *   - Example using `jau_string_check(fmt, ...)` macro utilizing `jau::cfmt::check2`
+     *     The macro resolves the passed arguments types via `decltype` to be utilized for `jau::cfmt::check2`
+     *   ```
+     *     auto &thing = ...; // assume template- or polymorphic-type
+     *     jau_string_check("Hello %s %u, thing %?", "World", 2.0, thing); // shows static_assert() argument error for argument 2 (float, not unsigned integral)
+     *     jau_string_checkLine("Hello %s %u, thing  %?", "World", 2.0, thing); // shows static_assert() source-line error for argument 2 (float, not unsigned integral)
+     *   ```
+     * - Runtime safe string formatting via `jau::cfmt::format`
+     *   ```
+     *     auto &thing = ...; // assume template- or polymorphic-type
+     *     std::string s0 = "World";
+     *     std::string s1 = jau::cfmt::format("Hello %s, %d + %d = %'d; thing %?", s0, 1, 1, 2000, thing);
+     *     std::string s3 = jau::cfmt::format_h(100, "Hello %s, %d + %d = %'d; thing %?", s0, 1, 1, 2000, thing); // using a string w/ reserved size of 100
+     *
+     *     // string concatenation, each `formatR` appends to the given referenced string
+     *     std::string concat;
+     *     concat.reserve(1000);
+     *     jau::cfmt::formatR(concat, "Hello %s, %d + %d = %'d, thing %?", s0, 1, 1, 2000, thing);
+     *     ...
+     *     jau::cfmt::formatR(concat, "%#b", 2U);
+     *   ```
+     * - Both, compile time check and runtime formatting via `jau_format_string` macro (the actual goal)
+     *   ```
+     *     std::string s1 = jau_format_string("Hello %s, %d + %d = %'d, thing %?", s0, 1, 1, 2000, thing);
+     *     std::string s2 = jau_format_string_h(100, "Hello %s, %d + %d = %'d, thing %?", s0, 1, 1, 2000, thing); // using a string w/ reserved size of 100
+     *   ```
+     * - Offers certain [safety guarantees](#jau_cfmt_safety).
+     *
+     * @anchor jau_cfmt_type_conv
+     * ### Type Conversion
+     * Implementation follows type conversion rules compatible with
+     * [variadic default conversion](https://en.cppreference.com/w/cpp/language/variadic_arguments#Default_conversions).
+     *
+     * Conversion behavior (see [conversion specifiers](#jau_cfmt_conv_spec) below):
+     * - The [length modifier](#jau_cfmt_len_mods) is parsed, but *ignored* for argument type validation - (*Extension*)
+     * - [Automatic type conversion](#jau_cfmt_auto_conv) is supported, i.e. having the argument type determine the conversion using specifier `?`- (*C++ Extension*)
+     * - Wrapper type acceptance for integrals and enumerations using the underlying type, see `jau::req::wrapper` - (*C++ Extension*)
+     * - Floating point promotion of float to double, see jau::cfmt::floating_point_promotion
+     * - Promotion for integral conversion of integrals, unscoped-enumerations and non-*stringifiable* scoped-enumerations
+     *   - signed: `int64_t`, see jau::cfmt::signed_integral_promotion
+     *   - unsigned: `uint64_t`, see jau::cfmt::unsigned_integral_promotion
+     *   - boolean: `bool` (kept for potential string), reduced to values `0` and `1`
+     *   - enumeration types - (*C++ Extension*)
+     *     - signed underlying type and not-*stringifiable*: jau::cfmt::signed_integral_promotion
+     *     - unsigned underlying type and not-*stringifiable*: jau::cfmt::unsigned_integral_promotion
+     *   See also [va_arg](https://en.cppreference.com/w/cpp/utility/variadic/va_arg)
+     * - Void pointer tolerance
+     * - `nullptr` pointer tolerance similar to `glibc`
+     *   - `%s` string conversion produces `(null)`
+     *   - `%p` pointer conversion produces `(nil)`
+     * - [String conversion types](#jau_cfmt_ext_arg_type_conv) - (*C++ Extension*)
+     *   - `char*`, `std::string`, `std::string_view`, `bool`
+     *   - Any *stringifiable* type producing `std::string_view` or `std::string`
+     *     via member `toString` or free `to_string` or `to_string_view`
+     * - Signedness conversion
+     *   - Allows positive signed to unsigned type conversion
+     *     - Value check at runtime only
+     *   - Allows unsigned to signed type conversion if sizeof(unsigned type) < sizeof(signed_integral_promotion)
+     *     - Compile time check
+     *   - Otherwise fails intentionally
+     *
+     * #### Behavior
+     * - No exceptions are thrown (see [safety](#jau_cfmt_safety) below)
+     * - Neither static nor thread-local heap is used, only stack-space and user given objects
+     * - Runtime Errors
+     *   - Failed runtime checks will inject an error market,
+     *     e.g. `<E#1@1234:Cnv>` where the 1st argument caused a conversion error (`Cnv`)
+     *     as detected in `string_cfmt.hpp` line 1234.
+     *   - Argument 0 indicated an error in the format string.
+     *   - `Len` tags a length modifier error
+     *   - `Prec` tags a missing precision number or `*` in format error
+     *   - `CnvSpec` tags a conversion specifier error
+     *   - `CnvArg` tags a conversion specifier argument mismatch error
+     *
+     * @anchor jau_cfmt_safety
+     * ### Safety
+     * - [Thread-safety](https://www.man7.org/linux/man-pages/man7/attributes.7.html): MT-Safe
+     * - [Signal-safety](https://www.man7.org/linux/man-pages/man7/signal-safety.7.html)
+     *   - `jau::cfmt::append_cap`: AS-Safe
+     *   - `jau::cfmt::append` if passing `std::string` w/ `maxLen = capacity - 1`: AS-Safe
+     * - All functions are `noexcept` safe
+     *
+     * #### Implementation Details
+     * - Validates argument types against format string at compile time (consteval)
+     * - Formats resulting string using argument values against format string at runtime
+     * - Written in C++20 using template argument pack w/ save argument type checks
+     * - Type erasure to wider common denominator, i.e. `uint64`, `const char* const`, `std::string_view`,
+     *   reducing code footprint
+     *
+     * ### Supported Format String
+     *
+     * `%[flags][width][.precision][length modifier]conversion`
+     *
+     * #### Flags
+     * The following flags are supported
+     * - `#`: hash, C99. Adds leading prefix for `radix != 10`.
+     * - `0`: zeropad, C99
+     * - `-`: left, C99
+     * - <code>&nbsp;</code>: space, C99
+     * - `+`: plus, C99
+     * - ``'``: thousands, POSIX (quotation mark)
+     * - `,`: thousands, OpenJDK (comma, alias for Java users)
+     *
+     * #### Width and Precision
+     * Width and precision also supports `*` to use the next argument for its value.
+     *
+     * However, `*m$` (decimal integer `m`) for the `m`-th argument is not yet supported.
+     *
+     * @anchor jau_cfmt_len_mods
+     * #### Length Modifiers
+     * The following length modifiers are supported
+     * - `hh` [unsigned] char, ignored for floating point
+     * - `h` [unsigned] short, ignored for floating point
+     * - `l` [unsigned] long, ignored for floating point
+     * - `ll` [unsigned] long long
+     * - `q` deprecated synonym for `ll`
+     * - `L` long double
+     * - `j` uintmax_t or intmax_t
+     * - `z` size_t or ssize_t
+     * - `Z` deprecated synonym for `z`
+     * - `t` ptrdiff_t
+     *
+     * The *length modifier* is parsed, but *ignored* for argument type validation, due to
+     * - Not required for correctness as this implementation tracks argument types via template-paramter-packs
+     * - Ignored with auto-conversion, see below
+     * - Considerably increased performance of the implementation
+     *
+     * Hence you are allowed to not pass the length modifier in your format.
+     *
+     * @anchor jau_cfmt_conv_spec
+     * #### Conversion Specifiers
+     * The following standard conversion specifiers are supported (see [type conversion](#jau_cfmt_type_conv) above).
+     *
+     *  Spec | Alias | std | Argument Type (jau::req)               | cspec_t            | Notes                             |
+     *  :----| :-----| :---| :--------------------------------------| :------------------| :---------------------------------|
+     *  `c`  |       | S   | `character`                            | `character`        |                                   |
+     *  `s`  |       | S/X | `stringifiable`                        | `string`           | incl. `boolean` and `enumeration` |
+     *  `p`  |       | S   | `pointer`                              | `pointer`          | incl. `char_pointer`              |
+     *  `d`  | `i`   | S   | `signed_integer`, `enumeration`        | `signed_integer`   | decimal, `enumeration` must be signed |
+     *  `u`  |       | S   | `unsigned_integer`, `enumeration`      | `unsigned_integer` | decimal representation            |
+     *  `o`  |       | S   | `unsigned_integer`, `enumeration`      | `unsigned_integer` | octal representation              |
+     *  `x`  |       | S   | `unsigned_integer`, `enumeration`      | `unsigned_integer` | hexadecimal representation        |
+     *  `b`  |       | X   | `unsigned_integer`, `enumeration`      | `unsigned_integer` | binary representation w/ prefix `0b` (`#`) |
+     *  `f`  | `F`   | S   | `floating-point`                       | `floating_point`   | double floatint-point             |
+     *  `e`  | `E`   | S   | `floating-point`                       | `floating_point`   | double, exponential low- and capital `E` |
+     *  `g`  | `G`   | S   | `floating-point`                       | `floating_point`   | double, alternate exponential low- and capital `E` |
+     *  `a`  | `A`   | S   | `floating-point`                       | `floating_point`   | double, hexadecimal low- and capital chars |
+     *  `?`  |       | X   | [auto-conversion](#jau_cfmt_auto_conv) | `any`              | see auto-conversion below         |
+     *
+     * `std` values: **S** for C99 or POSIX standard and **X** for our own extension.
+     *
+     * @anchor jau_cfmt_auto_conv
+     * #### Auto-Conversion
+     * The auto conversion specifier `?` can be used to pass template- and polymorphic-types.
+     * The argument-type defines the used conversion (see table below).
+     *
+     * This is a convenient way to pass template- and polymorphic-types w/o knowing them exactly,
+     * similar to the C++ streamout API.
+     *
+     * Auto conversion supports jau::req::wrapper type arguments like regular defined arguments.
+     *
+     * The length modifier is set to plength_t::any, i.e. no value length restriction applies.
+     *
+     *  Argument Type (jau::req)           | Spec | cspec_t            | Notes                             |
+     *  :----------------------------------| :----| :------------------| :---------------------------------|
+     *  `character`                        | `c`  | `character`        |                                   |
+     *  `signed_integer`                   | `d`  | `signed_integer`   | !`boolean`, !`character`          |
+     *  `unsigned_integer`                 | `u`  | `unsigned_integer` | !`boolean`, !`character`          |
+     *  `enumeration` / `signed_integer`   | `d`  | `signed_integer`   | !`stringifiable`                  |
+     *  `enumeration` / `unsigned_integer` | `u`  | `unsigned_integer` | !`stringifiable`                  |
+     *  `floating-point`                   | `f`  | `floating_point`   |                                   |
+     *  `pointer`                          | `p`  | `pointer`          | !`char_pointer`                   |
+     *  `boolean`                          | `s`  | `string`           | `true` or `false`                 |
+     *  `enumeration`                      | `s`  | `string`           | if `stringifiable`                |
+     *  `stringifiable`                    | `s`  | `string`           | incl. `boolean` and `enumeration` |
+     *
+     * @anchor jau_cfmt_ext_arg_type_conv
+     * #### Extended Argument-Types for Conversion Specifier
+     *   - `s` string
+     *     - `char *`
+     *       - `nullptr` produces `(null)`
+     *     - `std::string`, `std::string_view`
+     *     - `bool`
+     *     - any type w/ a free function 'to_string', producing either `std::string` or `std::string_view`
+     *       - including enum types, instrumented via `JAU_MAKE_ENUM_STRING` or `JAU_MAKE_BITFIELD_ENUM_STRING`
+     *     - any class exposing toString() or to_string() method _and_ a well formed default ctor
+     *       - for compile time checks, the default ctor must be constexpr
+     * - Integral
+     *   - `enum` types
+     *     - only supported if not `stringifiable`, i.e. if no free `to_string` method is provided
+     *     - If underlying type is `unsigned`, it can't be used for signed integer conversion
+     *   - `bool` as integral (number `0` or `1`)
+     *
+     * ### Build Specific Notes
+     * #### JAU_CFMT_TRACK_FORMAT_OPTS_FMT
+     * You may define compile-time macro `JAU_CFMT_TRACK_FORMAT_OPTS_FMT` to enable FormatOpts::fmt
+     * to track the original conversion specifier to debug.
+     * Disabled by default to save memory footprint and runtime costs.
+     *
+     * Example
+     * ```
+     * #define JAU_CFMT_TRACK_FORMAT_OPTS_FMT 1
+     * ```
+     *
+     * ### Special Thanks
+     * To the project [A printf / sprintf Implementation for Embedded Systems](https://github.com/mpaland/printf)
+     * worked on by Marco Paland and many others. I have used their `test_suite.cpp` code within our unit test
+     * `test_stringfmt_format.cpp` and also utilized their floating point parsing within
+     * `append_float` and `append_efloat`.
+     *
+     * ### Further Documentation
+     * - [C++ fprintf Reference](https://en.cppreference.com/w/cpp/io/c/fprintf)
+     * - [Linux snprintf(3) man page](https://www.man7.org/linux/man-pages/man3/snprintf.3p.html)
+     * - [FreeBSD snprintf(3) man page](https://man.freebsd.org/cgi/man.cgi?snprintf(3))
+     * - [C++20 idioms for parameter packs](https://www.scs.stanford.edu/~dm/blog/param-pack.html)
+     * - [A printf / sprintf Implementation for Embedded Systems](https://github.com/mpaland/printf)
      *
      *  @{
      */
 
-    // `int64_t` signed integral promotion type
+    /// `int64_t` signed integral promotion type
     using signed_integral_promotion = int64_t;
-    // `uint64_t` unsigned integral promotion type
+    /// `uint64_t` unsigned integral promotion type
     using unsigned_integral_promotion = uint64_t;
-    // `double` floating-point promotion type
+    /// `double` floating-point promotion type
     using floating_point_promotion = double;
 
     /// Maximum net integral number decimal digits, up to uint64_t max() or int64_t min()
@@ -1339,6 +1353,7 @@ namespace jau::cfmt {
                         if( c == '.' ) {
                             if( !pc.nextSymbol(c) ) [[unlikely]] {
                                 pc.setError(__LINE__); // missing number + spec
+                                pc.appendError("Prec");
                                 return; // error
                             }
                             if( c != '*' ) [[likely]] {
@@ -1369,10 +1384,11 @@ namespace jau::cfmt {
                         }
                         if( !pc.opts.setConversion(c) ) [[unlikely]] {
                             pc.setError(__LINE__);
+                            pc.appendError("CnvSpec");
                             return; // error
                         }
                         if( !parseFmtSpec<T>(pc, val) ) [[unlikely]] {
-                            pc.appendError("Cnv");
+                            pc.appendError("CnvArg");
                             return;  // error
                         }
                     } else {
@@ -1756,6 +1772,9 @@ namespace jau::cfmt {
     /**
      * Strict format with type validation of arguments against the format string.
      *
+     * Resulting string uses an initial capacity of `strLenHint` and
+     * variable number of arguments following the `fmt` argument.
+     *
      * Resulting string is truncated to `min(maxLen, formatLen)`,
      * with `formatLen` being the given formatted string length of output w/o limitation
      * and its capacity is left unchanged.
@@ -1773,7 +1792,7 @@ namespace jau::cfmt {
      * @param args arguments matching the format string
      */
     template <typename... Targs>
-    std::string format(const size_t strLenHint, size_t maxLen, std::string_view fmt, const Targs &...args) noexcept {
+    std::string format_hn(const size_t strLenHint, size_t maxLen, std::string_view fmt, const Targs &...args) noexcept {
         std::string s;
         maxLen = jau::min(maxLen, s.max_size()-1);
         impl::StringResult ctx(impl::StringOutput(maxLen, s), fmt);
@@ -1786,6 +1805,56 @@ namespace jau::cfmt {
         }
         impl::FormatParser::parseOne<impl::no_type_t>(ctx, impl::no_type_t());
         return s;
+    }
+
+    /**
+     * Strict format with type validation of arguments against the format string.
+     *
+     * Resulting string uses an initial capacity of jau::cfmt::default_string_capacity and
+     * variable number of arguments following the `fmt` argument.
+     *
+     * Resulting string is truncated to `min(maxLen, formatLen)`,
+     * with `formatLen` being the given formatted string length of output w/o limitation.
+     *
+     * Use `std::string::shrink_to_fit()` on the returned string,
+     * if you desire efficiency for longer lifecycles.
+     *
+     * See @ref jau_cfmt_header for details
+     *
+     * @param maxLen maximum resulting string length w/o EOS
+     * @param fmt the snprintf compliant format string
+     * @param args arguments matching the format string
+     * @see jau::cfmt::append to append a formatted string
+     */
+    template<typename... Args>
+    CXX_ALWAYS_INLINE
+    std::string format_n(const size_t maxLen, std::string_view fmt, const Args &...args) noexcept {
+        return format_hn(jau::cfmt::default_string_capacity, maxLen, fmt, args...);
+    }
+
+    /**
+     * Strict format with type validation of arguments against the format string.
+     *
+     * Resulting string (non-truncated) uses an initial capacity of `strLenHint` and
+     * variable number of arguments following the `fmt` argument.
+     *
+     * Resulting string size matches formated output w/o limitation
+     * and its capacity is left unchanged.
+     *
+     * Use `std::string::shrink_to_fit()` on the returned string,
+     * if you desire efficiency for longer lifecycles.
+     *
+     * See @ref jau_cfmt_header for details
+     *
+     * @param strLenHint initially string capacity w/o EOS or zero for none
+     * @param fmt the snprintf compliant format string
+     * @param args arguments matching the format string
+     * @see jau::cfmt::append to append a formatted string
+     */
+    template <typename... Args>
+    CXX_ALWAYS_INLINE
+    std::string format_h(const size_t strLenHint, std::string_view fmt, const Args &...args) noexcept {
+        return format_hn(strLenHint, std::numeric_limits<size_t>::max(), fmt, args...);
     }
 
     /**
@@ -1808,7 +1877,7 @@ namespace jau::cfmt {
     template <typename... Args>
     CXX_ALWAYS_INLINE
     std::string format(std::string_view fmt, const Args &...args) noexcept {
-        return format(jau::cfmt::default_string_capacity, std::numeric_limits<size_t>::max(), fmt, args...);
+        return format_hn(jau::cfmt::default_string_capacity, std::numeric_limits<size_t>::max(), fmt, args...);
     }
 
     /**
@@ -2140,114 +2209,7 @@ namespace jau::cfmt {
 
 }  // namespace jau::cfmt
 
-namespace jau {
-    /**
-     * Safely returns a (potentially truncated) string according to `snprintf()` formatting rules
-     * and variable number of arguments following the `fmt` argument.
-     *
-     * jau::cfmt::format() is utilize to validate `format` against given arguments at *runtime*.
-     *
-     * Resulting string is truncated to `min(maxLen, formatLen)`,
-     * with `formatLen` being the given formatted string length of output w/o limitation.
-     *
-     * Use `std::string::shrink_to_fit()` on the returned string,
-     * if you desire efficiency for longer lifecycles.
-     *
-     * See @ref jau_cfmt_header for details
-     *
-     * @param maxLen maximum resulting string length w/o EOS
-     * @param fmt the snprintf compliant format string
-     * @param args arguments matching the format string
-     * @see jau::cfmt::append to append a formatted string
-     */
-    template<typename... Args>
-    CXX_ALWAYS_INLINE
-    std::string format_string_n(const size_t maxLen, std::string_view fmt, const Args &...args) noexcept {
-        return jau::cfmt::format(jau::cfmt::default_string_capacity, maxLen, fmt, args...);
-    }
-
-    /**
-     * Safely returns a (non-truncated) string according to `snprintf()` formatting rules
-     * and variable number of arguments following the `fmt` argument.
-     *
-     * jau::cfmt::format() is utilize to validate `format` against given arguments at *runtime*.
-     *
-     * Resulting string size matches formated output w/o limitation
-     * and its capacity is left unchanged.
-     *
-     * Use `std::string::shrink_to_fit()` on the returned string,
-     * if you desire efficiency for longer lifecycles.
-     *
-     * See @ref jau_cfmt_header for details
-     *
-     * @param strLenHint initially string capacity w/o EOS or zero for none
-     * @param fmt the snprintf compliant format string
-     * @param args arguments matching the format string
-     * @see jau::cfmt::append to append a formatted string
-     */
-    template <typename... Args>
-    CXX_ALWAYS_INLINE
-    std::string format_string_h(const size_t strLenHint, std::string_view fmt, const Args &...args) noexcept {
-        return jau::cfmt::format(strLenHint, std::numeric_limits<size_t>::max(), fmt, args...);
-    }
-
-    /**
-     * Safely returns a (potentially truncated) string according to `snprintf()` formatting rules
-     * and variable number of arguments following the `fmt` argument.
-     *
-     * jau::cfmt::format() is utilize to validate `format` against given arguments at *runtime*.
-     *
-     * Resulting string is truncated to `min(maxLen, formatLen)`,
-     * with `formatLen` being the given formatted string length of output w/o limitation
-     * and its capacity is left unchanged.
-     *
-     * Use `std::string::shrink_to_fit()` on the returned string,
-     * if you desire efficiency for longer lifecycles (assuming `maxLen` hasn't been reached).
-     *
-     * See @ref jau_cfmt_header for details
-     *
-     * @param strLenHint initially string capacity w/o EOS or zero for none
-     * @param maxLen maximum resulting string length w/o EOS
-     * @param fmt the snprintf compliant format string
-     * @param args arguments matching the format string
-     * @see jau::cfmt::append to append a formatted string
-     */
-    template <typename... Args>
-    CXX_ALWAYS_INLINE
-    std::string format_string_hn(const size_t strLenHint, const size_t maxLen, std::string_view fmt, const Args &...args) noexcept {
-        return jau::cfmt::format(strLenHint, maxLen, fmt, args...);
-    }
-
-    /**
-     * Safely returns a (non-truncated) string according to `snprintf()` formatting rules
-     * using an initial capacity of jau::cfmt::default_string_capacity and
-     * variable number of arguments following the `fmt` argument.
-     *
-     * jau::cfmt::format() is utilize to validate `format` against given arguments at *runtime*.
-     *
-     * Resulting string size matches formated output w/o limitation
-     * and its capacity is left unchanged.
-     *
-     * Use `std::string::shrink_to_fit()` on the returned string,
-     * if you desire efficiency for longer lifecycles.
-     *
-     * See @ref jau_cfmt_header for details
-     *
-     * @param fmt the snprintf compliant format string
-     * @param args arguments matching the format string
-     * @see jau::cfmt::append to append a formatted string
-     */
-    template <typename... Args>
-    CXX_ALWAYS_INLINE
-    std::string format_string(std::string_view fmt, const Args &...args) noexcept {
-        return jau::cfmt::format(jau::cfmt::default_string_capacity, std::numeric_limits<size_t>::max(), fmt, args...);
-    }
-
-    /**@}*/
-
-} // namespace jau
-
-/** \addtogroup StringUtils
+/** \addtogroup StringCFormat
  *
  *  @{
  */
@@ -2300,7 +2262,7 @@ extern template class jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>;
  * @param args arguments matching the format string
  */
 #define jau_format_string(fmt, ...) \
-    jau::format_string((fmt) __VA_OPT__(,) __VA_ARGS__);  \
+    jau::cfmt::format((fmt) __VA_OPT__(,) __VA_ARGS__);  \
     static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_NOREF_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
 
 /**
@@ -2325,7 +2287,7 @@ extern template class jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>;
  * @param args arguments matching the format string
  */
 #define jau_format_string_h(strLenHint, fmt, ...) \
-    jau::format_string_h((strLenHint), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
+    jau::cfmt::format_h((strLenHint), (fmt) __VA_OPT__(,) __VA_ARGS__);  \
     static_assert(0 <= jau::cfmt::check2< JAU_FOR_EACH1_LIST(JAU_NOREF_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
 
 /**
@@ -2350,7 +2312,7 @@ extern template class jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>;
  * @param args arguments matching the format string
  */
 #define jau_format_string2(fmt, ...) \
-    jau::format_string((fmt) __VA_OPT__(,) __VA_ARGS__);  \
+    jau::cfmt::format((fmt) __VA_OPT__(,) __VA_ARGS__);  \
     static_assert(0 == jau::cfmt::check2Line< JAU_FOR_EACH1_LIST(JAU_NOREF_DECLTYPE_VALUE, __VA_ARGS__) >(fmt)); // compile time validation!
 
 /**

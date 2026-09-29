@@ -228,7 +228,7 @@ std::string ByteStream_SecMemory::toString() const noexcept {
         off64_t abs_pos = __posix_lseek64(m_fd, static_cast<off64_t>(newPos), SEEK_SET);
         if( 0 > abs_pos ) {
             addstate_impl( iostate_t::failbit );
-            jau_ERR_PRINT("Failed to seek to position %" PRIu64 " of existing file %s", newPos, toString());
+            jau_ERR_PRINT("Failed to seek to position %u of existing file %s", newPos, toString());
             return ByteStream::npos;
         }
         m_offset = abs_pos;
@@ -313,7 +313,7 @@ size_t ByteStream_File::peek(void* out, size_t length, size_type peek_offset) no
         abs_pos = __posix_lseek64(m_fd, static_cast<off64_t>(peek_offset), SEEK_CUR);
         if( 0 > abs_pos ) {
             addstate_impl( iostate_t::failbit );
-            jau_DBG_PRINT("ByteInStream_File::peek: Error occurred (offset1 %" PRIu64 ") in %s, errno %d %s",
+            jau_DBG_PRINT("ByteInStream_File::peek: Error occurred (offset1 %u) in %s, errno %d %s",
                     peek_offset, toString(), errno, strerror(errno));
             return 0;
         }
@@ -335,7 +335,7 @@ size_t ByteStream_File::peek(void* out, size_t length, size_type peek_offset) no
     if( __posix_lseek64(m_fd, static_cast<off64_t>(m_offset), SEEK_SET) < 0 ) {
         // even though we were able to fetch the desired data above, let's fail if position reset fails
         addstate_impl( iostate_t::failbit );
-        jau_DBG_PRINT("ByteInStream_File::peek: Error occurred (offset2 %" PRIu64 ") in %s, errno %d %s",
+        jau_DBG_PRINT("ByteInStream_File::peek: Error occurred (offset2 %u) in %s, errno %d %s",
                 peek_offset, toString(), errno, strerror(errno));
         return 0;
     }
@@ -396,7 +396,7 @@ static bool _jau_file_size(const int fd, const jau::io::fs::file_stats& stats, c
     }
     const off64_t cur_pos2 = __posix_lseek64(fd, cur_pos, SEEK_SET);
     if( cur_pos2 != cur_pos ) {
-        jau_DBG_PRINT("ByteInStream_File::file_size: Error rewinding to current position failed, orig-pos %" PRIi64 " -> %" PRIi64 ", errno %d %s.",
+        jau_DBG_PRINT("ByteInStream_File::file_size: Error rewinding to current position failed, orig-pos %i -> %i, errno %d %s.",
                   cur_pos, cur_pos2, errno, strerror(errno));
         return false;
     }
@@ -620,7 +620,7 @@ bool ByteInStream_URL::hasContentSize() const noexcept {
         discardRead(newPos - m_offset);
         return m_offset;
     } else {
-        jau_DBG_PRINT("ByteInStream_URL::seek newPos %" PRIu64 "< position %" PRIu64 " not implemented", newPos, m_offset);
+        jau_DBG_PRINT("ByteInStream_URL::seek newPos %u< position %u not implemented", newPos, m_offset);
         return ByteStream::npos;
     }
 }
@@ -774,7 +774,7 @@ bool ByteInStream_Feed::isOpen() const noexcept {
         discardRead(newPos - m_offset);
         return m_offset;
     } else {
-        jau_DBG_PRINT("ByteInStream_Feed::seek newPos %" PRIu64 "< position %" PRIu64 " not implemented", newPos, m_offset);
+        jau_DBG_PRINT("ByteInStream_Feed::seek newPos %u< position %u not implemented", newPos, m_offset);
         return ByteStream::npos;
     }
 }

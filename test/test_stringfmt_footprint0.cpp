@@ -48,7 +48,7 @@ template <typename... Args>
 CXX_ALWAYS_INLINE
 static void printFormat(int line, const char *fmt, const Args &...args) {
     // std::string exp = jau::unsafe::format_string(fmt, args...);
-    // std::string has = jau::format_string(fmt, args...);
+    // std::string has = jau::cfmt::format(fmt, args...);
     PRAGMA_DISABLE_WARNING_PUSH
     PRAGMA_DISABLE_WARNING_FORMAT_NONLITERAL
     PRAGMA_DISABLE_WARNING_FORMAT_SECURITY

@@ -173,10 +173,10 @@ std::string jau::os::get_platform_info(std::string& sb) noexcept {
     bool rti_ok = jau::os::get_rt_os_info(rti);
     const jau::cpu::CpuInfo& cpu = jau::cpu::CpuInfo::get();
 
-    sb.append( jau::format_string("Platform: %s %s, %s (",
+    sb.append( jau::cfmt::format("Platform: %s %s, %s (",
             os, ( rti_ok ? rti.release : ""), cpu.family ) );
     cpu.toString(sb, true);
-    sb.append( jau::format_string("), abi %s, ", abi) );
+    sb.append( jau::cfmt::format("), abi %s, ", abi) );
     sb.append( jau::os::get_os_and_arch(os, cpu.family, abi, cpu.byte_order) );
     if( rti_ok ) {
         sb.append(", runtime: ").append(rti.to_string()).append("\n");

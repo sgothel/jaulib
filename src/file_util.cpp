@@ -1586,17 +1586,17 @@ bool jau::io::fs::compare(const file_stats& source1, const file_stats& source2, 
         }
         if ( 0 > rc1 || 0 > rc2 ) {
             if ( 0 > rc1 ) {
-                jau_ERR_PRINT("Failed to read source1 bytes @ %'" PRIu64 " / %'" PRIu64 ", %s",
+                jau_ERR_PRINT("Failed to read source1 bytes @ %'u / %'u, %s",
                         offset, source1.size(), source1.toString());
             } else if ( 0 > rc2 ) {
-                jau_ERR_PRINT("Failed to read source2 bytes @ %'" PRIu64 " / %'" PRIu64 ", %s",
+                jau_ERR_PRINT("Failed to read source2 bytes @ %'u / %'u, %s",
                         offset, source2.size(), source2.toString());
             }
             goto errout;
         }
         if( 0 != ::memcmp(buffer1, buffer2, rc1) ) {
             if( verbose ) {
-                jau_fprintf_td(stderr, "compare: Difference within %'zd bytes @ %'" PRIu64 " / %'" PRIu64 ", %s != %s\n",
+                jau_fprintf_td(stderr, "compare: Difference within %'zd bytes @ %'u / %'u, %s != %s\n",
                         rc1, (offset-rc1), source1.size(),
                         source1.toString(), source2.toString());
             }
@@ -1607,7 +1607,7 @@ bool jau::io::fs::compare(const file_stats& source1, const file_stats& source2, 
         }
     }
     if( offset < source1.size() ) {
-        jau_ERR_PRINT("Incomplete transfer %'" PRIu64 " / %'" PRIu64 ", %s != %s\n",
+        jau_ERR_PRINT("Incomplete transfer %'u / %'u, %s != %s\n",
                 offset, source1.size(), source1.toString(), source2.toString());
         goto errout;
     }
@@ -1761,15 +1761,15 @@ static bool copy_file(const int src_dirfd, const file_stats& src_stats,
 #endif/* _USE_SENDFILE_ */
         if ( 0 > rc1 || 0 > rc2 ) {
 #ifdef _USE_SENDFILE_
-            jau_ERR_PRINT("Failed to copy bytes @ %'" PRIu64 " / %'" PRIu64 ", %s -> '%s'",
+            jau_ERR_PRINT("Failed to copy bytes @ %'u / %'u, %s -> '%s'",
                 offset, src_stats.size(), src_stats.toString(), dst_basename);
 #else /* _USE_SENDFILE_ */
             if ( 0 > rc1 ) {
-                jau_ERR_PRINT("Failed to read bytes @ %'" PRIu64 " / %'" PRIu64 ", %s",
+                jau_ERR_PRINT("Failed to read bytes @ %'u / %'u, %s",
                         offset, src_stats.size(),
                         src_stats.toString());
             } else if ( 0 > rc2 ) {
-                jau_ERR_PRINT("Failed to write bytes @ %'" PRIu64 " / %'" PRIu64 ", %s",
+                jau_ERR_PRINT("Failed to write bytes @ %'u / %'u, %s",
                         offset, src_stats.size(), dst_basename);
             }
 #endif/* _USE_SENDFILE_ */
@@ -1780,7 +1780,7 @@ static bool copy_file(const int src_dirfd, const file_stats& src_stats,
         }
     }
     if( offset < src_stats.size() ) {
-        jau_ERR_PRINT("Incomplete transfer %'" PRIu64 " / %'" PRIu64 ", %s -> '%s'",
+        jau_ERR_PRINT("Incomplete transfer %'u / %'u, %s -> '%s'",
                 offset, src_stats.size(), src_stats.toString(), dst_basename);
         goto errout;
     }
@@ -1805,13 +1805,13 @@ static bool copy_file(const int src_dirfd, const file_stats& src_stats,
         ::uid_t source_uid = 0 == caller_uid ? target_stats->uid() : -1;
         if( 0 != ::fchown(dst, source_uid, target_stats->gid()) ) {
             if( errno != EPERM && errno != EINVAL ) {
-                jau_ERR_PRINT("Couldn't preserve ownership of file, uid(caller %" PRIu32 ", chown %" PRIu32 "), source %s, dest '%s'",
+                jau_ERR_PRINT("Couldn't preserve ownership of file, uid(caller %u, chown %u), source %s, dest '%s'",
                         caller_uid, source_uid, src_stats.toString(), dst_basename);
                 res = false;
             } else {
                 // OK to fail due to permissions
                 if( is_set(copts, copy_options::verbose) ) {
-                    jau_fprintf_td(stderr, "copy: Ignored: Preserve ownership of file failed, uid(caller %" PRIu32 ", chown %" PRIu32 "), source %s, dest '%s', errno %d (%s)\n",
+                    jau_fprintf_td(stderr, "copy: Ignored: Preserve ownership of file failed, uid(caller %u, chown %u), source %s, dest '%s', errno %d (%s)\n",
                             caller_uid, source_uid, src_stats.toString(), dst_stats.toString(), (int)errno, ::strerror(errno));
                 }
             }
@@ -1938,13 +1938,13 @@ static bool copy_dir_preserve(const file_stats& src_stats, const int dst_dirfd, 
         const ::uid_t source_uid = 0 == caller_uid ? target_stats->uid() : -1;
         if( 0 != ::fchown(dst_dirfd, source_uid, target_stats->gid()) ) {
             if( errno != EPERM && errno != EINVAL ) {
-                jau_ERR_PRINT("dir_preserve ownership of file failed, uid(caller %" PRIu32 ", chown %" PRIu32 "), source %s, dest '%s'",
+                jau_ERR_PRINT("dir_preserve ownership of file failed, uid(caller %u, chown %u), source %s, dest '%s'",
                         caller_uid, source_uid, src_stats.toString(), dst_basename);
                 return false;
             }
             // OK to fail due to permissions
             if( is_set(copts, copy_options::verbose) ) {
-                jau_fprintf_td(stderr, "copy: Ignored: dir_preserve ownership of file failed, uid(caller %" PRIu32 ", chown %" PRIu32 "), source %s, dest '%s', errno %d (%s)\n",
+                jau_fprintf_td(stderr, "copy: Ignored: dir_preserve ownership of file failed, uid(caller %u, chown %u), source %s, dest '%s', errno %d (%s)\n",
                         caller_uid, source_uid, src_stats.toString(), dst_basename, (int)errno, ::strerror(errno));
             }
         }
@@ -2180,7 +2180,7 @@ void jau::io::fs::sync() noexcept {
 
 static bool set_effective_uid(::uid_t user_id) {
     if( 0 != ::seteuid(user_id) ) {
-        jau_ERR_PRINT("seteuid(%" PRIu32 ") failed", user_id);
+        jau_ERR_PRINT("seteuid(%u) failed", user_id);
         return false;
     }
     return true;
@@ -2361,7 +2361,7 @@ mount_ctx jau::io::fs::mount(const std::string& source, const std::string& targe
         const int mount_res = -1;
 #endif
         if( 0 != mount_res ) {
-            jau_ERR_PRINT("source_path %s, target_path %s, fs_type %s, flags %" PRIu64 ", res %d",
+            jau_ERR_PRINT("source_path %s, target_path %s, fs_type %s, flags %u, res %d",
                     source_stats.path(), target_path, fs_type, flags, mount_res);
             ::_exit( EXIT_FAILURE );
         } else {

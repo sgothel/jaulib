@@ -290,21 +290,21 @@ std::string jau::cpu::CpuInfo::toString(std::string& sb, bool details_only) cons
     if( !details_only ) {
         sb.append(to_string(family)).append(" (");
     }
-    sb.append( jau::format_string("%s endian, %zu bits, %zu cores, page-sz %zu",
+    sb.append( jau::cfmt::format("%s endian, %zu bits, %zu cores, page-sz %zu",
         byte_order, pointer_bits, online_core_count(), page_size) );
     if( has_l1_minmax ) {
-        sb.append( jau::format_string(", l1[shared-max %zu, apart-min %zu]", l1_share_max, l1_apart_min) );
+        sb.append( jau::cfmt::format(", l1[shared-max %zu, apart-min %zu]", l1_share_max, l1_apart_min) );
     }
     if( has_arm32_hwcap ) {
         if( arm32_hwcap1_t::none != arm32_hwcap1 ) {
-            sb.append( jau::format_string(", hwcap1 0x%" PRIx64 ": '%s'", number(arm32_hwcap1), arm32_hwcap1) );
+            sb.append( jau::cfmt::format(", hwcap1 0x%x: '%s'", number(arm32_hwcap1), arm32_hwcap1) );
         }
         if( arm32_hwcap2_t::none != arm32_hwcap2 ) {
-            sb.append( jau::format_string(", hwcap2 0x%" PRIx64 ": '%s'", number(arm32_hwcap2), arm32_hwcap2) );
+            sb.append( jau::cfmt::format(", hwcap2 0x%x: '%s'", number(arm32_hwcap2), arm32_hwcap2) );
         }
     } else if( has_arm64_hwcap ) {
         if( arm64_hwcap_t::none != arm64_hwcap ) {
-            sb.append( jau::format_string(", hwcap 0x%" PRIx64 ": '%s'", number(arm64_hwcap), arm64_hwcap) );
+            sb.append( jau::cfmt::format(", hwcap 0x%x: '%s'", number(arm64_hwcap), arm64_hwcap) );
         }
     }
     if( !details_only ) {
