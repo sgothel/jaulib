@@ -439,8 +439,8 @@ namespace jau::cfmt {
         flags_t flags;
         plength_t length_mod;
         cspec_t conversion;
-        bool width_set:1;
-        bool precision_set:1;
+        bool width_set;
+        bool precision_set;
 
         constexpr FormatOpts() noexcept
         :
