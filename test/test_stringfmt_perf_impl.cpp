@@ -121,7 +121,6 @@ TEST_CASE("jau_cfmt_benchmark_append_integral00", "[benchmark][jau][std::string]
     const uint64_t i1 = std::numeric_limits<uint64_t>::max(); // Value = 18446744073709551615 (0xffffffffffffffff)
     static constexpr const char *format_check_exp = "18446744073709551615";
     jau::cfmt::FormatOpts o1;
-    o1.length_mod = jau::cfmt::plength_t::z;
     // opts.addFlag('0');
     o1.setConversion('u');
     std::cout << "flags: " << o1 << "\n";
@@ -190,7 +189,6 @@ TEST_CASE("jau_cfmt_benchmark_append_integral01", "[benchmark][jau][std::string]
     static constexpr const char *format_check_exp1 = "    018446744073709551615";
     static constexpr const char *format_check_exp0 = "    018446744073709551615";
     jau::cfmt::FormatOpts o1;
-    o1.length_mod = jau::cfmt::plength_t::z;
     o1.setWidth(25);
     o1.setPrecision(21);
     o1.setConversion('u');
@@ -244,7 +242,6 @@ TEST_CASE("jau_cfmt_benchmark_append_integral02", "[benchmark][jau][std::string]
     static constexpr const char *format_check_exp1 = "    018'446'744'073'709'551'615";
     static constexpr const char *format_check_exp0 = "    018446744073709551615";
     jau::cfmt::FormatOpts o1;
-    o1.length_mod = jau::cfmt::plength_t::z;
     o1.addFlag('\'');
     o1.setWidth(31);
     o1.setPrecision(27);

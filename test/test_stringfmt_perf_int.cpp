@@ -229,6 +229,16 @@ TEST_CASE("jau_cfmt_benchmark_int_all", "[benchmark][jau][std::string][format_in
         }
         return res;
     };
+    BENCHMARK("fmt1.130 append +len  rsrved bench") {
+        volatile size_t res = 0;
+        for( size_t i = 0; i < loops; ++i ) {
+            reserved.clear();
+            jau::cfmt::append(reserved, "format_check: %hhd, %hhu, %hd, %hu, %d, %u, %ld, %lu, %zd, %zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
+            REQUIRE(format_check_exp1 == reserved);
+            res = res + reserved.size();
+        }
+        return res;
+    };
     BENCHMARK("fmt1.130 append auto  rsrved bench") {
         volatile size_t res = 0;
         for( size_t i = 0; i < loops; ++i ) {
@@ -298,11 +308,11 @@ TEST_CASE("jau_cfmt_benchmark_int_all", "[benchmark][jau][std::string][format_in
         }
         return res;
     };
-    BENCHMARK("fmt1.230 append-ckd   rsrved bench") {
+    BENCHMARK("fmt1.230 append +len  rsrved bench") {
         volatile size_t res = 0;
         for( size_t i = 0; i < loops; ++i ) {
             reserved.clear();
-            jau_append_string(reserved, "format_check: %01d, %02u, %03d, %04u, %05d, %06u, %07d, %08u, %09d, %010u", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
+            jau::cfmt::append(reserved, "format_check: %01hhd, %02hhu, %03hd, %04hu, %05d, %06u, %07ld, %08lu, %09zd, %010zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
             REQUIRE(format_check_exp2 == reserved);
             res = res + reserved.size();
         }

@@ -255,13 +255,23 @@ namespace jau::cfmt {
      *
      * ### Build Specific Notes
      * #### JAU_CFMT_TRACK_FORMAT_OPTS_FMT
-     * You may define compile-time macro `JAU_CFMT_TRACK_FORMAT_OPTS_FMT` to enable FormatOpts::fmt
-     * to track the original conversion specifier to debug.
+     * You may define compile-time macro `JAU_CFMT_TRACK_FORMAT_OPTS_FMT` to enable `std::string_view FormatOpts::fmt`
+     * to track the original conversion specifier for debugging.
      * Disabled by default to save memory footprint and runtime costs.
      *
      * Example
      * ```
      * #define JAU_CFMT_TRACK_FORMAT_OPTS_FMT 1
+     * ```
+     *
+     * #### JAU_CFMT_TRACK_FORMAT_OPTS_LEN
+     * You may define compile-time macro `JAU_CFMT_TRACK_FORMAT_OPTS_LEN` to enable `plength_t FormatOpts::length_mod`
+     * to track the passed plength_t modifier for debugging.
+     * Disabled by default to save memory footprint and runtime costs.
+     *
+     * Example
+     * ```
+     * #define JAU_CFMT_TRACK_FORMAT_OPTS_LEN 1
      * ```
      *
      * ### Special Thanks
@@ -437,7 +447,9 @@ namespace jau::cfmt {
         uint32_t precision;
         uint32_t radix;
         flags_t flags;
+#ifdef JAU_CFMT_TRACK_FORMAT_OPTS_LEN
         plength_t length_mod;
+#endif
         cspec_t conversion;
         bool width_set;
         bool precision_set;
@@ -449,7 +461,9 @@ namespace jau::cfmt {
 #endif
           width(0), precision(0), radix(10),
           flags(flags_t::none),
+#ifdef JAU_CFMT_TRACK_FORMAT_OPTS_LEN
           length_mod(plength_t::none),
+#endif
           conversion(cspec_t::none),
           width_set(false), precision_set(false)
           { }
@@ -586,7 +600,9 @@ namespace jau::cfmt {
             precision = 0;
             radix = 10;
             flags = flags_t::none;
+#ifdef JAU_CFMT_TRACK_FORMAT_OPTS_LEN
             length_mod = plength_t::none;
+#endif
             conversion = cspec_t::none;
             width_set = false;
             precision_set = false;
@@ -1380,7 +1396,9 @@ namespace jau::cfmt {
                         loop_next = false;
                         if (c == auto_conversion_spec) {
                             c = to_fmt_spec(pc.m_arg_aconvert);
+#ifdef JAU_CFMT_TRACK_FORMAT_OPTS_LEN
                             pc.opts.length_mod = plength_t::any;
+#endif
                         }
                         if( !pc.opts.setConversion(c) ) [[unlikely]] {
                             pc.setError(__LINE__);
@@ -1526,13 +1544,14 @@ namespace jau::cfmt {
                 return true;  // continue with current argument
             }
 
+#ifdef JAU_CFMT_TRACK_FORMAT_OPTS_LEN
             /* parse length modifier, returns true if parsing can continue or false on error. */
             static constexpr bool parseLengthMods(Result &pc, char &c) noexcept {
                 switch(c) {
                     case 'h':
-                        if( !pc.nextSymbol(c) ) { return false; }
-                        if( 'h' == c ) {
-                            if( !pc.nextSymbol(c) ) { return false; }
+                        if( !pc.nextSymbol(c) ) [[unlikely]] { return false; }
+                        if( 'h' == c ) [[unlikely]] {
+                            if( !pc.nextSymbol(c) ) [[unlikely]] { return false; }
                             pc.opts.length_mod = plength_t::hh;
                         } else {
                             pc.opts.length_mod = plength_t::h;
@@ -1540,34 +1559,34 @@ namespace jau::cfmt {
                         break;
 
                     case 'l':
-                        if( !pc.nextSymbol(c) ) { return false; }
+                        if( !pc.nextSymbol(c) ) [[unlikely]] { return false; }
                         if( 'l' == c ) {
-                            if( !pc.nextSymbol(c) ) { return false; }
+                            if( !pc.nextSymbol(c) ) [[unlikely]] { return false; }
                             pc.opts.length_mod = plength_t::ll;
                         } else {
                             pc.opts.length_mod = plength_t::l;
                         }
                         break;
                     case 'q':
-                        if( !pc.nextSymbol(c) ) { return false; }
+                        if( !pc.nextSymbol(c) ) [[unlikely]] { return false; }
                         pc.opts.length_mod = plength_t::ll;
                         break;
                     case 'L':
-                        if( !pc.nextSymbol(c) ) { return false; }
+                        if( !pc.nextSymbol(c) ) [[unlikely]] { return false; }
                         pc.opts.length_mod = plength_t::L;
                         break;
                     case 'j':
-                        if( !pc.nextSymbol(c) ) { return false; }
+                        if( !pc.nextSymbol(c) ) [[unlikely]] { return false; }
                         pc.opts.length_mod = plength_t::j;
                         break;
                     case 'z':
                         [[fallthrough]];
                     case 'Z':
-                        if( !pc.nextSymbol(c) ) { return false; }
+                        if( !pc.nextSymbol(c) ) [[unlikely]] { return false; }
                         pc.opts.length_mod = plength_t::z;
                         break;
                     case 't':
-                        if( !pc.nextSymbol(c) ) { return false; }
+                        if( !pc.nextSymbol(c) ) [[unlikely]] { return false; }
                         pc.opts.length_mod = plength_t::t;
                         break;
                     default:
@@ -1577,6 +1596,37 @@ namespace jau::cfmt {
                 }
                 return true;
             }
+#else
+            /* parse length modifier, returns true if parsing can continue or false on error. */
+            static constexpr bool parseLengthMods(Result &pc, char &c) noexcept {
+                const char pre = c;
+                switch(pre) {
+                    case 'h':
+                        [[fallthrough]];
+                    case 'l':
+                        if( !pc.nextSymbol(c) ) [[unlikely]] { return false; }
+                        if( pre == c && !pc.nextSymbol(c) ) [[unlikely]] { return false; }
+                        break;
+                    case 'q':
+                        [[fallthrough]];
+                    case 'L':
+                        [[fallthrough]];
+                    case 'j':
+                        [[fallthrough]];
+                    case 'z':
+                        [[fallthrough]];
+                    case 'Z':
+                        [[fallthrough]];
+                    case 't':
+                        if( !pc.nextSymbol(c) ) [[unlikely]] { return false; }
+                        break;
+                    default:
+                        break;
+
+                }
+                return true;
+            }
+#endif
 
             template <typename T>
             requires std::is_same_v<no_type_t, T>
@@ -1664,7 +1714,9 @@ namespace jau::cfmt {
             requires jau::req::pointer<T> // <const void* const> or <const char* const>
             CXX_ALWAYS_INLINE
             static constexpr bool parseAPointerFmtSpec(Result &pc, const T &val) {
+#ifdef JAU_CFMT_TRACK_FORMAT_OPTS_LEN
                 pc.opts.length_mod = plength_t::none;
+#endif
                 ++pc.arg_count;
                 pc.appendFormatted((void *)const_cast<std::remove_const_t<T>>(val)); // force pointer type
                 return true;

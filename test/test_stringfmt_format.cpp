@@ -113,25 +113,27 @@ TEST_CASE("jau::cfmt::cspec_t from type", "[jau][jau::cfmt]") {
 TEST_CASE("jau::cfmt::FormatOpts with auto", "[jau][jau::cfmt]") {
     {
         jau::cfmt::FormatOpts opts;
-        opts.length_mod = jau::cfmt::plength_t::z;
         opts.addFlag('\'');
         opts.setWidth(31);
         opts.setPrecision(27);
         opts.setConversion('u');
         std::cout << "opts-1: " << opts << "\n";
         REQUIRE( opts.conversion == jau::cfmt::cspec_t::unsigned_int);
+#ifdef JAU_CFMT_TRACK_FORMAT_OPTS_LEN
         REQUIRE( opts.length_mod == jau::cfmt::plength_t::z);
+#endif
     }
     {
         jau::cfmt::FormatOpts opts;
-        opts.length_mod = jau::cfmt::plength_t::z;
         opts.addFlag('\'');
         opts.setWidth(31);
         opts.setPrecision(27);
         opts.setConversion('?');
         std::cout << "opts-2.1: " << opts << "\n";
         REQUIRE( opts.conversion == jau::cfmt::cspec_t::any);
+#ifdef JAU_CFMT_TRACK_FORMAT_OPTS_LEN
         REQUIRE( opts.length_mod == jau::cfmt::plength_t::z);
+#endif
     }
     //
     // formatR
@@ -150,7 +152,9 @@ TEST_CASE("jau::cfmt::FormatOpts with auto", "[jau][jau::cfmt]") {
         REQUIRE( false == r.opts().precision_set);
         REQUIRE( 0 == r.opts().precision);
         REQUIRE( jau::cfmt::cspec_t::signed_int == r.opts().conversion);
+#ifdef JAU_CFMT_TRACK_FORMAT_OPTS_LEN
         REQUIRE( jau::cfmt::plength_t::l        <= r.opts().length_mod);
+#endif
         REQUIRE( "1" == s);
     }
     {
@@ -167,7 +171,9 @@ TEST_CASE("jau::cfmt::FormatOpts with auto", "[jau][jau::cfmt]") {
         REQUIRE( false == r.opts().precision_set);
         REQUIRE( 0 == r.opts().precision);
         REQUIRE( jau::cfmt::cspec_t::signed_int == r.opts().conversion);
+#ifdef JAU_CFMT_TRACK_FORMAT_OPTS_LEN
         REQUIRE( jau::cfmt::plength_t::any        == r.opts().length_mod);
+#endif
         REQUIRE( "1" == s);
     }
     {
@@ -187,7 +193,9 @@ TEST_CASE("jau::cfmt::FormatOpts with auto", "[jau][jau::cfmt]") {
         REQUIRE( false == r.opts().precision_set);
         REQUIRE( 0 == r.opts().precision);
         REQUIRE( jau::cfmt::cspec_t::character == r.opts().conversion);
+#ifdef JAU_CFMT_TRACK_FORMAT_OPTS_LEN
         REQUIRE( jau::cfmt::plength_t::none == r.opts().length_mod);
+#endif
         REQUIRE( "A" == s);
     }
     {
@@ -207,7 +215,9 @@ TEST_CASE("jau::cfmt::FormatOpts with auto", "[jau][jau::cfmt]") {
         REQUIRE( false == r.opts().precision_set);
         REQUIRE( 0 == r.opts().precision);
         REQUIRE( jau::cfmt::cspec_t::character == r.opts().conversion);
+#ifdef JAU_CFMT_TRACK_FORMAT_OPTS_LEN
         REQUIRE( jau::cfmt::plength_t::any == r.opts().length_mod);
+#endif
         REQUIRE( "A" == s);
     }
     {
@@ -227,7 +237,9 @@ TEST_CASE("jau::cfmt::FormatOpts with auto", "[jau][jau::cfmt]") {
         REQUIRE( false == r.opts().precision_set);
         REQUIRE( 0 == r.opts().precision);
         REQUIRE( jau::cfmt::cspec_t::unsigned_int == r.opts().conversion);
+#ifdef JAU_CFMT_TRACK_FORMAT_OPTS_LEN
         REQUIRE( jau::cfmt::plength_t::any == r.opts().length_mod);
+#endif
         REQUIRE( "1" == s);
     }
     {
@@ -247,7 +259,9 @@ TEST_CASE("jau::cfmt::FormatOpts with auto", "[jau][jau::cfmt]") {
         REQUIRE( true == r.opts().precision_set);
         REQUIRE( 3 == r.opts().precision);
         REQUIRE( jau::cfmt::cspec_t::signed_int == r.opts().conversion);
+#ifdef JAU_CFMT_TRACK_FORMAT_OPTS_LEN
         REQUIRE( jau::cfmt::plength_t::none == r.opts().length_mod);
+#endif
         REQUIRE( "065" == s);
     }
     {
@@ -267,7 +281,9 @@ TEST_CASE("jau::cfmt::FormatOpts with auto", "[jau][jau::cfmt]") {
         REQUIRE( true == r.opts().precision_set);
         REQUIRE( 3 == r.opts().precision);
         REQUIRE( jau::cfmt::cspec_t::floating_point == r.opts().conversion);
+#ifdef JAU_CFMT_TRACK_FORMAT_OPTS_LEN
         REQUIRE( jau::cfmt::plength_t::none == r.opts().length_mod);
+#endif
         REQUIRE( "12.340" == s);
     }
 #if 0
@@ -305,7 +321,9 @@ TEST_CASE("parse: width precision from format", "[jau][std::string][jau::cfmt]")
         REQUIRE( false == r.opts().precision_set);
         REQUIRE( 0 == r.opts().precision);
         REQUIRE( jau::cfmt::cspec_t::signed_int == r.opts().conversion);
+#ifdef JAU_CFMT_TRACK_FORMAT_OPTS_LEN
         REQUIRE( jau::cfmt::plength_t::l == r.opts().length_mod);
+#endif
     }
     {
         std::string s;
@@ -319,7 +337,9 @@ TEST_CASE("parse: width precision from format", "[jau][std::string][jau::cfmt]")
         REQUIRE( false == r.opts().precision_set);
         REQUIRE( 0 == r.opts().precision);
         REQUIRE( jau::cfmt::cspec_t::signed_int == r.opts().conversion);
+#ifdef JAU_CFMT_TRACK_FORMAT_OPTS_LEN
         REQUIRE( jau::cfmt::plength_t::none == r.opts().length_mod);
+#endif
     }
     {
         std::string s;
@@ -333,7 +353,9 @@ TEST_CASE("parse: width precision from format", "[jau][std::string][jau::cfmt]")
         REQUIRE( true == r.opts().precision_set);
         REQUIRE( 12 == r.opts().precision);
         REQUIRE( jau::cfmt::cspec_t::signed_int == r.opts().conversion);
+#ifdef JAU_CFMT_TRACK_FORMAT_OPTS_LEN
         REQUIRE( jau::cfmt::plength_t::l == r.opts().length_mod);
+#endif
     }
     {
         std::string s;
@@ -347,7 +369,9 @@ TEST_CASE("parse: width precision from format", "[jau][std::string][jau::cfmt]")
         REQUIRE( true == r.opts().precision_set);
         REQUIRE( 12 == r.opts().precision);
         REQUIRE( jau::cfmt::cspec_t::signed_int == r.opts().conversion);
+#ifdef JAU_CFMT_TRACK_FORMAT_OPTS_LEN
         REQUIRE( jau::cfmt::plength_t::none == r.opts().length_mod);
+#endif
     }
     {
         std::string s;
@@ -361,7 +385,9 @@ TEST_CASE("parse: width precision from format", "[jau][std::string][jau::cfmt]")
         REQUIRE( true == r.opts().precision_set);
         REQUIRE( 12 == r.opts().precision);
         REQUIRE( jau::cfmt::cspec_t::signed_int == r.opts().conversion);
+#ifdef JAU_CFMT_TRACK_FORMAT_OPTS_LEN
         REQUIRE( jau::cfmt::plength_t::l == r.opts().length_mod);
+#endif
     }
 }
 
@@ -382,7 +408,9 @@ TEST_CASE("parse: width precision from arg", "[jau][std::string][jau::cfmt]") {
         REQUIRE( false == r.opts().precision_set);
         REQUIRE( 0 == r.opts().precision);
         REQUIRE( jau::cfmt::cspec_t::signed_int == r.opts().conversion);
+#ifdef JAU_CFMT_TRACK_FORMAT_OPTS_LEN
         REQUIRE( jau::cfmt::plength_t::none == r.opts().length_mod);
+#endif
     }
     {
         std::string s;
@@ -396,7 +424,9 @@ TEST_CASE("parse: width precision from arg", "[jau][std::string][jau::cfmt]") {
         REQUIRE( true == r.opts().precision_set);
         REQUIRE( 12 == r.opts().precision);
         REQUIRE( jau::cfmt::cspec_t::signed_int == r.opts().conversion);
+#ifdef JAU_CFMT_TRACK_FORMAT_OPTS_LEN
         REQUIRE( jau::cfmt::plength_t::l == r.opts().length_mod);
+#endif
     }
     {
         std::string s;
@@ -410,7 +440,9 @@ TEST_CASE("parse: width precision from arg", "[jau][std::string][jau::cfmt]") {
         REQUIRE( true == r.opts().precision_set);
         REQUIRE( 12 == r.opts().precision);
         REQUIRE( jau::cfmt::cspec_t::signed_int == r.opts().conversion);
+#ifdef JAU_CFMT_TRACK_FORMAT_OPTS_LEN
         REQUIRE( jau::cfmt::plength_t::l == r.opts().length_mod);
+#endif
     }
 
     {
@@ -425,7 +457,9 @@ TEST_CASE("parse: width precision from arg", "[jau][std::string][jau::cfmt]") {
         REQUIRE( true == r.opts().precision_set);
         REQUIRE( 12 == r.opts().precision);
         REQUIRE( jau::cfmt::cspec_t::signed_int == r.opts().conversion);
+#ifdef JAU_CFMT_TRACK_FORMAT_OPTS_LEN
         REQUIRE( jau::cfmt::plength_t::l == r.opts().length_mod);
+#endif
     }
     {
         std::string s;
@@ -439,7 +473,9 @@ TEST_CASE("parse: width precision from arg", "[jau][std::string][jau::cfmt]") {
         REQUIRE( true == r.opts().precision_set);
         REQUIRE( 12 == r.opts().precision);
         REQUIRE( jau::cfmt::cspec_t::signed_int == r.opts().conversion);
+#ifdef JAU_CFMT_TRACK_FORMAT_OPTS_LEN
         REQUIRE( jau::cfmt::plength_t::none == r.opts().length_mod);
+#endif
     }
 }
 

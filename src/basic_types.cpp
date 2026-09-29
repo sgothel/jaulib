@@ -1353,9 +1353,11 @@ std::string jau::cfmt::FormatOpts::toFormat() const {
     if( precision_set) {
         s.append(".").append(std::to_string(precision));
     }
+#ifdef JAU_CFMT_TRACK_FORMAT_OPTS_LEN
     if( plength_t::none != length_mod && plength_t::any!= length_mod ) {
         s.append(to_string(length_mod));
     }
+#endif
     if (conversion == cspec_t::unsigned_int) {
         if( 16 == radix ) {
             s.append( is_set(flags, flags_t::uppercase) ? "X" : "x" );
@@ -1392,9 +1394,11 @@ std::string jau::cfmt::FormatOpts::toString() const {
     } else {
         s.append("no");
     }
+#ifdef JAU_CFMT_TRACK_FORMAT_OPTS_LEN
     s.append(", length `")
-     .append(to_string(length_mod))
-     .append("`, cspec ").append(to_string(conversion))
+     .append(to_string(length_mod));
+#endif
+    s.append("`, cspec ").append(to_string(conversion))
      .append(", radix ").append(std::to_string(radix));
     return s;
 }

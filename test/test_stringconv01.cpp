@@ -86,9 +86,6 @@ static void testTo(int line, value_type v, std::string_view exp_s,
         if( min_width > 0 ) {
             opts.setWidth(min_width);
         }
-        if( sizeof(v) >= sizeof(uint64_t)) {
-            opts.length_mod = jau::cfmt::plength_t::l;
-        }
         if ( jau::is_positive(v)) {
             switch (radix) {
                 case 16: use_cfm=true; opts.setConversion(capitalization==jau::LoUpCase::lower ? 'x' : 'X'); break;

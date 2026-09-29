@@ -59,7 +59,6 @@ TEST_CASE("jau_cfmt_append_integral01", "[benchmark][jau][std::string][format_st
         const uint64_t value = 0;
         const bool negative = true;
         jau::cfmt::FormatOpts opts;
-        opts.length_mod = jau::cfmt::plength_t::z;
         opts.setConversion('b');
         std::cout << "FormatOpts: " << opts << "\n";
         REQUIRE(2 == opts.radix);
