@@ -160,9 +160,18 @@ class alignas(Value_type) Matrix4 {
      * Creates a new matrix based on given value_type[4*4] column major order.
      * @param m 4x4 matrix in column-major order
      */
-    constexpr Matrix4(const_iterator m) noexcept {
-        set(m, m+components);
-    }
+    constexpr Matrix4(const_iterator m) noexcept
+    : m00(*m),     m10(*(++m)), m20(*(++m)), m30(*(++m)), // column 0
+      m01(*(++m)), m11(*(++m)), m21(*(++m)), m31(*(++m)), // column 1
+      m02(*(++m)), m12(*(++m)), m22(*(++m)), m32(*(++m)), // column 2
+      m03(*(++m)), m13(*(++m)), m23(*(++m)), m33(*(++m))  // column 3
+    {}
+
+    constexpr Matrix4(const Matrix4&) noexcept = default;
+    constexpr Matrix4& operator=(const Matrix4&) noexcept = default;
+
+    constexpr Matrix4(Matrix4&&) noexcept = default;
+    constexpr Matrix4& operator=(Matrix4&&) noexcept = default;
 
     /**
      * Creates a new matrix based on given value_type initializer list in column major order.
@@ -183,18 +192,6 @@ class alignas(Value_type) Matrix4 {
     template<typename container_type>
         requires jau::req::contiguous_container<container_type>
     constexpr Matrix4(const container_type &m) noexcept { set(m.cbegin(), m.cend()); }
-
-    /**
-     * Creates a new matrix copying the values of the given {@code src} matrix.
-     */
-    constexpr Matrix4(const Matrix4& o) noexcept
-    : Matrix4( o.cbegin() )
-    { }
-
-    /**
-     * Copy assignment using the the values of the given {@code src} matrix.
-     */
-    constexpr Matrix4& operator=(const Matrix4& o) noexcept { return load(o); }
 
     constexpr bool equals(const Matrix4& o, const value_type epsilon=std::numeric_limits<value_type>::epsilon()) const noexcept {
         if( this == &o ) {

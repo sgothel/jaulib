@@ -57,7 +57,7 @@ TEST_CASE( "Test 05 Perf01", "[mat4f][linear_algebra][math]" ) {
     jau::fraction_i64 tI5b = fractions_i64::zero;
 
     // avoid optimizing out unused computation results by simply adding up determinat
-    double dr = 1;
+    volatile double dr = 1;
 
     //
     // Mat4f
@@ -141,7 +141,7 @@ TEST_CASE( "Test 05 Perf01", "[mat4f][linear_algebra][math]" ) {
         REQUIRE( dr > 0 );
     }
 
-    jau_printf("Checkmark %f\n", dr);
+    jau_printf("Checkmark %f\n", (double)dr);
     jau_printf("Summary loops %6zu: I4a %'6" PRIi64 " ms total (%'" PRIi64 " us), %f ns/mul, I4a / I4b %f%%\n", loops,
                tI4a.to_ms(), tI4a.to_us(),
                (double)tI4a.to_ns()/2.0/(double)loops, tI4a.to_double()/tI4b.to_double()*100.0);
