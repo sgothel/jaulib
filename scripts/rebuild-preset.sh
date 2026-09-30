@@ -39,14 +39,14 @@ buildit() {
     echo CPU_COUNT $CPU_COUNT
 
     dist_dir="dist/${preset_name}-${tripleid}"
-    build_dir="build/preset_name}"
+    build_dir="build/${preset_name}"
     echo dist_dir $dist_dir
     echo build_dir $build_dir
 
     if [ -x /usr/bin/time ] ; then
         time_cmd="time"
         echo "time command available: ${time_cmd}"
-    else 
+    else
         time_cmd=""
         echo "time command not available"
     fi
