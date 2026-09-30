@@ -19,6 +19,7 @@
 #include <iostream>
 #include <limits>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include <jau/debug.hpp>
@@ -184,13 +185,14 @@ class alignas(Value_type) Matrix4 {
     }
 
     /**
-     * Creates a new matrix based on given contiguous container in column major order.
+     * Creates a new matrix based on given contiguous container of same value_type in column major order.
      *
      * Fills with zero if given data is insufficient
      * @param m source contiguous container to be copied into this new instance
      */
-    template<typename container_type>
-        requires jau::req::contiguous_container<container_type>
+    template<jau::req::contiguous_container container_type>
+        requires (!std::is_same_v<Matrix4, container_type>) &&
+                 std::is_same_v<value_type, typename container_type::value_type>
     constexpr Matrix4(const container_type &m) noexcept { set(m.cbegin(), m.cend()); }
 
     constexpr bool equals(const Matrix4& o, const value_type epsilon=std::numeric_limits<value_type>::epsilon()) const noexcept {
@@ -240,8 +242,9 @@ class alignas(Value_type) Matrix4 {
         return set(v.begin(), v.end());
     }
     /// Sets this matrix by values of `c` in column major order, fills with zero if insufficient and returns this.
-    template<typename container_type>
-    requires jau::req::contiguous_container<container_type>
+    template<jau::req::contiguous_container container_type>
+        requires (!std::is_same_v<Matrix4, container_type>) &&
+                 std::is_same_v<value_type, typename container_type::value_type>
     constexpr Matrix4& set(const container_type &c) noexcept { return set(c.cbegin(), c.cend()); }
 
     /// Sets this matrix by values [begin .. end) in column major order, fills with zero if insufficient and returns this.
