@@ -12,6 +12,7 @@
 #
 # JaulibSetup Cached variables are
 # - DEBUG
+# - PROFILING
 # - CMAKE_INSTALL_PREFIX
 # - CMAKE_CXX_STANDARD
 # - USE_LIBCURL
@@ -193,6 +194,11 @@ if(DEBUG_TMP)
 else()
     set(DEBUG OFF CACHE BOOL "" FORCE)
 endif()
+if(PROFILING)
+    set(PROFILING ON CACHE BOOL "" FORCE)
+else()
+    set(PROFILING OFF CACHE BOOL "" FORCE)
+endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     set(TOOLSET "clang")
@@ -232,6 +238,7 @@ message(STATUS "JaulibSetup: OS_ARCH ${OS_ARCH} (${CMAKE_SYSTEM_PROCESSOR})")
 message(STATUS "JaulibSetup: OS_AND_ARCH ${OS_AND_ARCH}")
 message(STATUS "JaulibSetup: CC_INSTRUMENTATION = All ${CC_INSTRUMENTATION}, Undef ${CC_INSTRUMENTATION_UNDEFINED}, Thread ${CC_INSTRUMENTATION_THREAD}")
 message(STATUS "JaulibSetup: DEBUG = ${DEBUG}")
+message(STATUS "JaulibSetup: PROFILING = ${PROFILING}")
 message(STATUS "JaulibSetup: Compiler = ${CMAKE_CXX_COMPILER_ID}")
 message(STATUS "JaulibSetup: TOOLSET ${TOOLSET}")
 message(STATUS "JaulibSetup: BUILD_TESTING = ${BUILD_TESTING}")
@@ -331,28 +338,29 @@ if(DEBUG)
     endif()
     set(${PROJECT_NAME}_CXX_FLAGS ${${PROJECT_NAME}_CXX_FLAGS} ${${PROJECT_NAME}_FLAGS_SANITIZE})
     set(${PROJECT_NAME}_EXE_LINKER_FLAGS ${${PROJECT_NAME}_CXX_FLAGS} ${${PROJECT_NAME}_FLAGS_SANITIZE})
+elseif (PROFILING)
+    # -g for source (debug)
+    # -ggdb for gdb dwarf source (debug) - NOT WORKING WITH gprof!
+    # -pg for gprof
+    # -p for perf profile
+    # Possible optimization
+    #   -O
+    #   -Og
+    set(${PROJECT_NAME}_CXX_FLAGS ${${PROJECT_NAME}_CXX_FLAGS} "-p" "-pg" "-g" "-DNDEBUG")
+    set(${PROJECT_NAME}_EXE_LINKER_FLAGS  ${${PROJECT_NAME}_EXE_LINKER_FLAGS} "-p" "-pg" "-g")
+    set(${PROJECT_NAME}_SHARED_LINKER_FLAGS ${${PROJECT_NAME}_SHARED_LINKER_FLAGS} "-p" "-pg" "-g")
+    #set(${PROJECT_NAME}_CXX_FLAGS ${${PROJECT_NAME}_CXX_FLAGS} "-p" "-pg" "-g" "-ggdb" "-DNDEBUG")
+    #set(${PROJECT_NAME}_EXE_LINKER_FLAGS  ${${PROJECT_NAME}_EXE_LINKER_FLAGS} "-p" "-pg" "-g" "-ggdb")
+    #set(${PROJECT_NAME}_SHARED_LINKER_FLAGS ${${PROJECT_NAME}_SHARED_LINKER_FLAGS} "-p" "-pg" "-g" "-ggdb")
 else()
-    set(${PROJECT_NAME}_CXX_FLAGS ${${PROJECT_NAME}_CXX_FLAGS} "-DNDEBUG")
-    if(GPROF)
-        set(${PROJECT_NAME}_CXX_FLAGS ${${PROJECT_NAME}_CXX_FLAGS} "-g" "-pg")
-        set(${PROJECT_NAME}_EXE_LINKER_FLAGS  ${${PROJECT_NAME}_EXE_LINKER_FLAGS} "-g" "-pg")
-        #set(${PROJECT_NAME}_CXX_FLAGS ${${PROJECT_NAME}_CXX_FLAGS} "-g" "-ggdb" "-pg")
-    elseif(PERF_ANALYSIS)
-        # -g -ggdb required?
-        #set(${PROJECT_NAME}_CXX_FLAGS ${${PROJECT_NAME}_CXX_FLAGS} "-p" "-g" "-ggdb" "-O1")
-        #set(${PROJECT_NAME}_EXE_LINKER_FLAGS  ${${PROJECT_NAME}_EXE_LINKER_FLAGS} "-p" "-g" "-ggdb" "-O1")
-        set(${PROJECT_NAME}_CXX_FLAGS ${${PROJECT_NAME}_CXX_FLAGS} "-p" "-g" "-ggdb")
-        set(${PROJECT_NAME}_EXE_LINKER_FLAGS  ${${PROJECT_NAME}_EXE_LINKER_FLAGS} "-p" "-g" "-ggdb")
-    else()
-        set(${PROJECT_NAME}_CXX_FLAGS ${${PROJECT_NAME}_CXX_FLAGS} "-O3")
-        find_program(STRIP strip)
-        if (STRIP STREQUAL "STRIP-NOTFOUND")
-            set(USE_STRIP OFF)
-            message(STATUS "JaulibSetup: USE_STRIP:=false, strip not found")
-        elseif(NOT DEFINED USE_STRIP)
-            set(USE_STRIP ON)
-            message(STATUS "JaulibSetup: USE_STRIP:=true, !DEBUG and not set")
-        endif()
+    set(${PROJECT_NAME}_CXX_FLAGS ${${PROJECT_NAME}_CXX_FLAGS} "-O3" "-DNDEBUG")
+    find_program(STRIP strip)
+    if (STRIP STREQUAL "STRIP-NOTFOUND")
+        set(USE_STRIP OFF)
+        message(STATUS "JaulibSetup: USE_STRIP:=false, strip not found")
+    elseif(NOT DEFINED USE_STRIP)
+        set(USE_STRIP ON)
+        message(STATUS "JaulibSetup: USE_STRIP:=true, !DEBUG and not set")
     endif()
 endif(DEBUG)
 

@@ -66,14 +66,14 @@
       "displayName": "Profiling (gcc, C++20, java)",
       "binaryDir": "${sourceDir}/build/perf-gcc",
       "cacheVariables": {
-        "GPROF": "OFF",
-        "PERF_ANALYSIS": "ON",
-        "USE_LTO_FOR_ALL_TARGETS": "ON",
+        "PROFILING": "ON",
+        "USE_LTO_FOR_ALL_TARGETS": "OFF",
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/dist/perf-gcc",
         "CMAKE_C_COMPILER": "gcc",
         "CMAKE_CXX_COMPILER": "g++",
-        "USE_STRIP": "OFF"
+        "USE_STRIP": "OFF",
+        "BUILDJAVA": "OFF"
       }
     },
     {
@@ -87,7 +87,8 @@
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/dist/perf-clang",
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++",
-        "USE_STRIP": "OFF"
+        "USE_STRIP": "OFF",
+        "BUILDJAVA": "OFF"
       }
     },
     {

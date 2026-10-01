@@ -16,7 +16,5 @@ mkdir -p profiling
 $sdir/rebuild-preset.sh perf-gcc && \
 echo "Profiling ${testexe} ${testargs} in sub-dir profiling" && \
 cd profiling && \
-sudo perf record -P --freq=max --call-graph fp,64 ${testexe} ${testargs}
-sudo chown ${username}:${username} perf.data
-echo "Do: perf report"
-echo "Do: perf report --no-children"
+/usr/bin/gp-collect-app -o ./${testname}.1.er -a on -p high -S on ${testexe} ${testargs}
+echo "Do: GDK_SCALE=2 gprofng display gui"
