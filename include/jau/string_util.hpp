@@ -192,43 +192,41 @@ namespace jau {
         return true;
     }
 
-    /** Simple std::string reserve and append wrapper w/ noexcept, returning true on success (no exception). */
-    constexpr bool reserve_append_string(std::string &s, size_t new_capacity, size_t append_count, char append_char=' ') noexcept { // NOLINT(bugprone-exception-escape): rethrow handled
-        if (new_capacity <= s.capacity()) [[likely]] {
-            s.append(append_count, append_char); // NOLINT(bugprone-exception-escape): Handled via capacity
-        } else {
-            try {
-                s.reserve(new_capacity);
-                s.append(append_count, append_char);
-            } catch (...) {
-                jau::fput_exception(stderr, std::current_exception(), E_FILE_LINE);
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /** Simple std::string reserve and resize wrapper w/ noexcept, returning true on success (no exception). */
-    constexpr bool reserve_resize_string(std::string &s, size_t new_capacity, size_t new_size, char fill_char=' ') noexcept { // NOLINT(bugprone-exception-escape): rethrow handled
-        if (new_capacity <= s.capacity()) [[likely]] {
-            s.resize(new_size, fill_char); // NOLINT(bugprone-exception-escape): Handled via capacity
-        } else {
-            try {
-                s.reserve(new_capacity);
-                s.resize(new_size, fill_char);
-            } catch (...) {
-                jau::fput_exception(stderr, std::current_exception(), E_FILE_LINE);
-                return false;
-            }
-        }
-        return true;
-    }
-
     /**
-     * Simple std::string append given string wrapper w/ noexcept, returning passed std::string `s`.
-     * @param s   The string to append to
-     * @param add A string_view to be appended from.
+     * Reserves `new_capacity` and appends `append_count` `append_char`
+     *
+     * @tparam T a C++23 std::string
+     * @param s the string to be resized
+     * @param new_capacity the new capacity to reserve. Must be at least new_size+1 to explicitly cover EOS.
+     * @param append_count the number of `append_char` to add
+     * @param append_char the char to add, defaults to ` `
+     * @return true if no exception has been caught, otherwise false
      */
+    constexpr bool reserve_append_string(std::string &s, size_t new_capacity, size_t append_count, char append_char=' ') noexcept { // NOLINT(bugprone-exception-escape): rethrow handled
+        try {
+            s.reserve(new_capacity);
+            s.append(append_count, append_char);
+        } catch (...) {
+            jau::fput_exception(stderr, std::current_exception(), E_FILE_LINE);
+            return false;
+        }
+        return true;
+    }
+    /**
+     * Reserves `s.size()+append_count+1` and appends `append_count` `append_char`
+     *
+     * 1 byte is added for EOS in capacity.
+     *
+     * @param s the string to be resized
+     * @param append_count the number of `append_char` to add.
+     * @param append_char the char to add, defaults to ` `
+     * @return true if no exception has been caught, otherwise false
+     */
+    CXX_ALWAYS_INLINE
+    constexpr bool reserve_append_string2(std::string &s, size_t append_count, char append_char=' ') noexcept { // NOLINT(bugprone-exception-escape): rethrow handled
+        return reserve_append_string(s, s.size()+append_count+1, append_count, append_char);
+    }
+
     constexpr std::string& append_string(std::string &s, std::string_view add) noexcept {
         try {
             s.append(add);
@@ -824,7 +822,7 @@ namespace jau {
         const uint32_t added_len = std::max(min_width, space_left + sign_len + prefix_len + (val_digits + sep_count));
         // fprintf(stderr, "XXX: space_left %u, sign_len %u, prefix_len %u digits %u, sep_count %u; min_width %u; added_len %u\n",
         //         space_left, sign_len, prefix_len, val_digits, sep_count, min_width, added_len);
-        if (!jau::reserve_resize_string(dest, dest_start_len + added_len + 1, dest_start_len + added_len)) [[unlikely]] { // w/ EOS in capacity
+        if (!jau::reserve_append_string2(dest, added_len)) [[unlikely]] { // w/ EOS in capacity
             return dest;
         }
         const char * const d_start = dest.data() + dest_start_len;
@@ -923,7 +921,7 @@ namespace jau {
         const uint32_t space_left = added_len - num_chars;
         // fprintf(stderr, "XXX: space_left %u, sign_len %u, digits %u, sep_count %u; min_width %u; added_len %u\n",
         //         space_left, sign_len, val_digits, sep_count, min_width, added_len);
-        if (!jau::reserve_resize_string(dest, dest_start_len + added_len + 1, dest_start_len + added_len)) [[unlikely]] { // w/ EOS in capacity
+        if (!jau::reserve_append_string2(dest, added_len)) [[unlikely]] { // w/ EOS in capacity
             return dest;
         }
         const char * const d_start = dest.data() + dest_start_len;
