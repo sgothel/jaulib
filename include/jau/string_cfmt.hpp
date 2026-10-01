@@ -734,6 +734,7 @@ namespace jau::cfmt {
           public:
             constexpr NullOutput() noexcept = default;
 
+            constexpr bool error() const noexcept { return false; }
             constexpr size_t maxLen() const noexcept { return 0; }
             constexpr bool fits(size_t) const noexcept { return false; }
 
@@ -762,14 +763,32 @@ namespace jau::cfmt {
             /** maximum resulting string length w/o EOS */
             size_t m_maxLen;
             std::string &m_s;
+            bool m_error;
 
           public:
             /**
+             * @param initCap initial string capacity w/o EOS for appended content or zero for none
              * @param maxLen maximum resulting string length w/o EOS
              * @param s destination string to append the formatted string
              */
-            constexpr StringOutput(size_t maxLen, std::string &s) noexcept
-            : m_maxLen(maxLen), m_s(s) {}
+            constexpr StringOutput(size_t initCap, size_t maxLen, std::string &s) noexcept // NOLINT(bugprone-exception-escape): rethrow handled
+            : m_maxLen(maxLen), m_s(s), m_error(false) {
+                if (maxLen <= s.length()) [[unlikely]] {
+                    m_error = true; // full already, explicit -EOS
+                } else if (initCap) {
+                    const size_t newCap = jau::min(s.size() + initCap, maxLen)+1; // +EOS
+                    if (newCap > s.capacity()) {
+                        try {
+                            s.reserve(newCap);
+                        } catch (...) {
+                            jau::fput_exception(stderr, std::current_exception(), E_FILE_LINE);
+                            m_error = true;
+                        }
+                    }
+                }
+            }
+
+            constexpr bool error() const noexcept { return m_error; }
 
             constexpr size_t maxLen() const noexcept { return m_maxLen; }
 
@@ -892,7 +911,11 @@ namespace jau::cfmt {
               m_arg_aconvert(cspec_t::none),
               m_argtype_signed(false),
               m_argval_negative(false)
-              { }
+            {
+                if(m_out.error()) {
+                    setError(__LINE__); // maxLen reached or string-reserve failure (out of memory)
+                }
+            }
 
             constexpr FResult(const FResult &pre) noexcept = default;
             constexpr FResult &operator=(const FResult &x) noexcept = default;
@@ -1845,11 +1868,8 @@ namespace jau::cfmt {
     std::string format_hn(const size_t strLenHint, size_t maxLen, std::string_view fmt, const Targs &...args) noexcept {
         std::string s;
         maxLen = jau::min(maxLen, s.max_size()-1);
-        impl::StringResult ctx(impl::StringOutput(maxLen, s), fmt);
+        impl::StringResult ctx(impl::StringOutput(strLenHint, maxLen, s), fmt);
 
-        if (!jau::reserve_string(s, jau::min(strLenHint, maxLen)+1)) { // +EOS
-            return s;
-        }
         if constexpr( 0 < sizeof...(Targs) ) {
             (impl::FormatParser::parseOne<Targs>(ctx, args), ...);
         }
@@ -1938,6 +1958,42 @@ namespace jau::cfmt {
      * with `formatLen` being the given formatted string length of output w/o limitation
      * and its capacity is left unchanged.
      *
+     * Use `std::string::shrink_to_fit()` on the returned string,
+     * if you desire efficiency for longer lifecycles (assuming `maxLen` hasn't been reached)
+     * or pass zero for `strLenHint`.
+     *
+     * See @ref jau_cfmt_header for details
+     *
+     * @tparam Targs the argument template type pack for the given arguments `args`
+     * @param strLenHint initial string capacity w/o EOS for appended content or zero for none
+     * @param s destination string to append the formatted string
+     * @param maxLen maximum resulting string length w/o EOS
+     * @param fmt the snprintf compliant format string
+     * @param args passed arguments, used for template type deduction only
+     * @return the given destination string for concatenation
+     * @see @ref jau_cfmt_header
+     */
+    template <typename... Targs>
+    std::string& append(const size_t strLenHint, std::string &s, size_t maxLen, std::string_view fmt, const Targs &...args) noexcept {
+        maxLen = jau::min(maxLen, s.max_size()-1);
+        impl::StringResult ctx(impl::StringOutput(strLenHint, maxLen, s), fmt);
+
+        if constexpr( 0 < sizeof...(Targs) ) {
+            (impl::FormatParser::parseOne<Targs>(ctx, args), ...);
+            // (unused(ctx, args), ...);
+        }
+        impl::FormatParser::parseOne<impl::no_type_t>(ctx, impl::no_type_t());
+        return s;
+    }
+
+    /**
+     * Strict format with type validation of arguments against the format string,
+     * appending to the given destination.
+     *
+     * Resulting string is truncated to `min(maxLen, formatLen)`,
+     * with `formatLen` being the given formatted string length of output w/o limitation
+     * and its capacity is left unchanged.
+     *
      * This method *may be* [AS-Safe](https://www.man7.org/linux/man-pages/man7/signal-safety.7.html)
      * if passed string `s` has `maxLen = s.capacity() - 1`.
      *
@@ -1952,15 +2008,9 @@ namespace jau::cfmt {
      * @see @ref jau_cfmt_header
      */
     template <typename... Targs>
+    CXX_ALWAYS_INLINE
     std::string& append(std::string &s, size_t maxLen, std::string_view fmt, const Targs &...args) noexcept {
-        maxLen = jau::min(maxLen, s.max_size()-1);
-        impl::StringResult ctx(impl::StringOutput(maxLen, s), fmt);
-
-        if constexpr( 0 < sizeof...(Targs) ) {
-            (impl::FormatParser::parseOne<Targs>(ctx, args), ...);
-        }
-        impl::FormatParser::parseOne<impl::no_type_t>(ctx, impl::no_type_t());
-        return s;
+        return append(0, s, maxLen, fmt, args...);
     }
 
     /**
@@ -2010,56 +2060,9 @@ namespace jau::cfmt {
      * @see @ref jau_cfmt_header
      */
     template <typename... Targs>
+    CXX_ALWAYS_INLINE
     std::string& append_cap(std::string &s, std::string_view fmt, const Targs &...args) noexcept {
-        if (s.capacity() - 1 <= s.length()) {
-            return s; // full already, explicit -EOS
-        }
-        impl::StringResult ctx(impl::StringOutput(s.capacity()-1, s), fmt); // explicit -EOS
-
-        if constexpr( 0 < sizeof...(Targs) ) {
-            (impl::FormatParser::parseOne<Targs>(ctx, args), ...);
-        }
-        impl::FormatParser::parseOne<impl::no_type_t>(ctx, impl::no_type_t());
-        return s;
-    }
-
-    /**
-     * Strict format with type validation of arguments against the format string,
-     * appending to the given destination.
-     *
-     * Resulting string is truncated to `min(maxLen, formatLen)`,
-     * with `formatLen` being the given formatted string length of output w/o limitation
-     * and its capacity is left unchanged.
-     *
-     * Use `std::string::shrink_to_fit()` on the returned string,
-     * if you desire efficiency for longer lifecycles (assuming `maxLen` hasn't been reached)
-     * or pass zero for `strLenHint`.
-     *
-     * See @ref jau_cfmt_header for details
-     *
-     * @tparam Targs the argument template type pack for the given arguments `args`
-     * @param strLenHint initial string capacity w/o EOS for appended content or zero for none
-     * @param s destination string to append the formatted string
-     * @param maxLen maximum resulting string length w/o EOS
-     * @param fmt the snprintf compliant format string
-     * @param args passed arguments, used for template type deduction only
-     * @return the given destination string for concatenation
-     * @see @ref jau_cfmt_header
-     */
-    template <typename... Targs>
-    std::string& append(const size_t strLenHint, std::string &s, size_t maxLen, std::string_view fmt, const Targs &...args) noexcept {
-        maxLen = jau::min(maxLen, s.max_size()-1);
-        impl::StringResult ctx(impl::StringOutput(maxLen, s), fmt);
-
-        if (!jau::reserve_string(s, jau::min(s.length() + strLenHint, maxLen) + 1)) {  // +EOS
-            return s;
-        }
-        if constexpr( 0 < sizeof...(Targs) ) {
-            (impl::FormatParser::parseOne<Targs>(ctx, args), ...);
-            // (unused(ctx, args), ...);
-        }
-        impl::FormatParser::parseOne<impl::no_type_t>(ctx, impl::no_type_t());
-        return s;
+        return append(0, s, s.capacity() - 1, fmt, args...);
     }
 
     /**
@@ -2085,11 +2088,8 @@ namespace jau::cfmt {
     template <typename... Targs>
     Result formatR(const size_t strLenHint, std::string &s, size_t maxLen, std::string_view fmt, const Targs &...args) noexcept {
         maxLen = jau::min(maxLen, s.max_size()-1);
-        impl::StringResult ctx(impl::StringOutput(maxLen, s), fmt);
+        impl::StringResult ctx(impl::StringOutput(strLenHint, maxLen, s), fmt);
 
-        if (!jau::reserve_string(s, jau::min(s.length()+strLenHint, maxLen)+1)) { // +EOS
-            return ctx;
-        }
         if constexpr( 0 < sizeof...(Targs) ) {
             (impl::FormatParser::parseOne<Targs>(ctx, args), ...);
         }
