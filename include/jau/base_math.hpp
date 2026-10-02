@@ -205,11 +205,11 @@ namespace jau {
     /**
      * Returns the minimum of two integrals (w/ branching) in O(1)
      *
-     * @tparam T an arithmetic number type
+     * @tparam T an arithmetic or pointer number type
      * @param x one number
      * @param x the other number
      */
-    template <jau::req::arithmetic T>
+    template <jau::req::arithmetic_or_pointer T>
     constexpr T min(const T x, const T y) noexcept
     {
         return x < y ? x : y;
@@ -218,11 +218,11 @@ namespace jau {
     /**
      * Returns the maximum of two integrals (w/ branching) in O(1)
      *
-     * @tparam T an arithmetic number type
+     * @tparam T an arithmetic or pointer number type
      * @param x one number
      * @param x the other number
      */
-    template <jau::req::arithmetic T>
+    template <jau::req::arithmetic_or_pointer T>
     constexpr T max(const T x, const T y) noexcept
     {
         return x > y ? x : y;
@@ -233,12 +233,12 @@ namespace jau {
      *
      * Implementation returns `min(max(x, min_val), max_val)`, analog to GLSL's clamp()
      *
-     * @tparam T an arithmetic number type
+     * @tparam T an arithmetic or pointer number type
      * @param x one number
      * @param min_val the minimum limes, inclusive
      * @param max_val the maximum limes, inclusive
      */
-    template <jau::req::arithmetic T>
+    template <jau::req::arithmetic_or_pointer T>
     constexpr T clamp(const T x, const T min_val, const T max_val) noexcept
     {
         return jau::min<T>(jau::max<T>(x, min_val), max_val);

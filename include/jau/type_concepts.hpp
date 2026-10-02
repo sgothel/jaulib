@@ -223,6 +223,10 @@ namespace jau::req {
     template<typename T>
     concept any_signed_arithmetic  = signed_arithmetic<T> || wrapped_signed_arithmetic<T>;
 
+    /** Concept of arithmetic || pointer */
+    template<typename T>
+    concept arithmetic_or_pointer = arithmetic<T> || pointer<T>;
+
     /** Concept of type-trait std::is_floating_point */
     template<typename T>
     concept floating_point = std::is_floating_point_v<T>;
