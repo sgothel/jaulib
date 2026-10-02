@@ -138,24 +138,6 @@ TEST_CASE("jau_cfmt_benchmark_all", "[benchmark][jau][std::string][format_string
 
     static constexpr const char *format_check_exp = "format_check: 1.10, 2.20, 1, 2, 003,   Hi World";
 
-    BENCHMARK("fmt1.01 check               bench") {
-        volatile size_t res = 0;
-        for( size_t i = 0; i < loops; ++i ) {
-            ssize_t r = jau::cfmt::check("format_check: %.2f, %2.2f, %u, %" PRIu64 ", %03d, %10s", fa, fb, sz1, sz2, i1, str1);
-            REQUIRE(6 == r);
-            res = res + r;
-        }
-        return res;
-    };
-    BENCHMARK("fmt1.02 checkR              bench") {
-        volatile size_t res = 0;
-        for( size_t i = 0; i < loops; ++i ) {
-            jau::cfmt::Result pc = jau::cfmt::checkR("format_check: %.2f, %2.2f, %zu, %" PRIu64 ", %03d, %10s", fa, fb, sz1, sz2, i1, str1);
-            REQUIRE(6 == pc.argumentCount());
-            res = res + pc.argumentCount();
-        }
-        return res;
-    };
     BENCHMARK("fmt1.32 format              bench") {
         volatile size_t res = 0;
         for( size_t i = 0; i < loops; ++i ) {
@@ -176,11 +158,11 @@ TEST_CASE("jau_cfmt_benchmark_all", "[benchmark][jau][std::string][format_string
         }
         return res;
     };
-    BENCHMARK("fmt1.32 append-ckd   rsrved bench") {
+    BENCHMARK("fmt1.32 append +len  rsrved bench") {
         volatile size_t res = 0;
         for( size_t i = 0; i < loops; ++i ) {
             reserved.clear();
-            jau_append_string(reserved, "format_check: %.2f, %2.2f, %u, %" PRIu64 ", %03d, %10s", fa, fb, sz1, sz2, i1, str1);
+            jau::cfmt::append(reserved, "format_check: %.2f, %2.2f, %zu, %" PRIu64 ", %03d, %10s", fa, fb, sz1, sz2, i1, str1);
             REQUIRE(format_check_exp == reserved);
             res = res + reserved.size();
         }
@@ -201,16 +183,6 @@ TEST_CASE("jau_cfmt_benchmark_all", "[benchmark][jau][std::string][format_string
         for( size_t i = 0; i < loops; ++i ) {
             reserved.clear();
             jau::cfmt::append(reserved, "format_check: %.2?, %2.2?, %?, %?, %03?, %10?", fa, fb, sz1, sz2, i1, str1);
-            REQUIRE(format_check_exp == reserved);
-            res = res + reserved.size();
-        }
-        return res;
-    };
-    BENCHMARK("fmt1.32 append-trunc rsrved bench") {
-        volatile size_t res = 0;
-        for( size_t i = 0; i < loops; ++i ) {
-            reserved.clear();
-            jau::cfmt::append(reserved, reserved.capacity(), "format_check: %.2f, %2.2f, %u, %" PRIu64 ", %03d, %10s", fa, fb, sz1, sz2, i1, str1);
             REQUIRE(format_check_exp == reserved);
             res = res + reserved.size();
         }
