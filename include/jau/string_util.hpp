@@ -257,17 +257,39 @@ namespace jau {
     /**
      * Reserves `new_capacity` and appends `append_count` `append_char`
      *
-     * @tparam T a C++23 std::string
+     * @tparam T a string_resize_and_overwrite_any std::string
      * @param s the string to be resized
      * @param new_capacity the new capacity to reserve. Must be at least new_size+1 to explicitly cover EOS.
-     * @param append_count the number of `append_char` to add
+     * @param append_count the number of `append_char` to add, clipped to new_capacity-s.size().
      * @param append_char the char to add, defaults to ` `
      * @return true if no exception has been caught, otherwise false
      */
-    constexpr bool reserve_append_string(std::string &s, size_t new_capacity, size_t append_count, char append_char=' ') noexcept { // NOLINT(bugprone-exception-escape): rethrow handled
+    template<string_resize_and_overwrite_any T>
+    constexpr bool reserve_append_string(T &s, size_t new_capacity, size_t append_count, char append_char=' ') noexcept { // NOLINT(bugprone-exception-escape): rethrow handled
+        const size_t osz = s.size();
+        return string_resize_and_overwrite(s, new_capacity, [osz, n=min(append_count, new_capacity-osz), append_char](char *m, size_t) noexcept -> size_t {
+            ::memset(m+osz, append_char, n);
+            return osz+n;
+        });
+    }
+    /**
+     * Reserves `new_capacity` and appends `append_count` `append_char`
+     *
+     * This is the fallback method in case neither C++23 nor GCC's extension is available.
+     *
+     * @tparam T a non string_resize_and_overwrite_any std::string
+     * @param s the string to be resized
+     * @param new_capacity the new capacity to reserve. Must be at least new_size+1 to cover EOS.
+     * @param append_count the number of `append_char` to add, clipped to new_capacity-s.size().
+     * @param append_char the char to add, defaults to ` `
+     * @return true if no exception has been caught, otherwise false
+     */
+    template<jau::req::string_type T>
+    requires (!(string_resize_and_overwrite_any<T>))
+    constexpr bool reserve_append_string(T &s, size_t new_capacity, size_t append_count, char append_char=' ') noexcept { // NOLINT(bugprone-exception-escape): rethrow handled
         try {
             s.reserve(new_capacity);
-            s.append(append_count, append_char);
+            s.append(min(append_count, new_capacity-s.size()), append_char);
         } catch (...) {
             jau::fput_exception(stderr, std::current_exception(), E_FILE_LINE);
             return false;
@@ -289,21 +311,124 @@ namespace jau {
         return reserve_append_string(s, s.size()+append_count+1, append_count, append_char);
     }
 
+    /**
+     * Reserves `new_capacity` and sets string size to `new_size` *without* initialization using any `resize_and_overwrite_any`
+     *
+     * @tparam T a string_resize_and_overwrite_any std::string
+     * @param s the string to be resized
+     * @param new_capacity the new capacity to reserve.  Must be at least new_size+1 to explicitly cover EOS.
+     * @param new_size the new size to be set, clipped to new_capacity.
+     * @return true if no exception has been caught, otherwise false
+     */
+    template<string_resize_and_overwrite_any T>
+    constexpr bool reserve_setsize_string(T &s, size_t new_capacity, size_t new_size) noexcept { // NOLINT(bugprone-exception-escape): rethrow handled
+        return string_resize_and_overwrite(s, new_capacity, [sz=min(new_size, new_capacity)](char *, size_t) noexcept -> size_t { return sz; });
+    }
+    /**
+     * Reserves `new_capacity` and sets string size to `new_size` *with* zero initialization of the added bytes.
+     *
+     * This is the fallback method in case neither C++23 nor GCC's extension is available.
+     *
+     * @tparam T a non string_resize_and_overwrite_any std::string
+     * @param s the string to be resized
+     * @param new_capacity the new capacity to reserve. Must be at least new_size+1 to explicitly cover EOS.
+     * @param new_size the new size to be set, clipped to new_capacity.
+     * @return true if no exception has been caught, otherwise false
+     */
+    template<jau::req::string_type T>
+    requires (!(string_resize_and_overwrite_any<T>))
+    constexpr bool reserve_setsize_string(T &s, size_t new_capacity, size_t new_size) noexcept { // NOLINT(bugprone-exception-escape): rethrow handled
+        try {
+            s.reserve(new_capacity);
+            s.resize(min(new_size, new_capacity), 0);
+        } catch (...) {
+            jau::fput_exception(stderr, std::current_exception(), E_FILE_LINE);
+            return false;
+        }
+        return true;
+    }
+    /**
+     * Reserves `new_size+1` and sets string size to `new_size`.
+     *
+     * 1 byte is added for EOS in capacity.
+     *
+     * If available, a `resize_and_overwrite` implementation is being used *without* initialization of the added bytes.
+     * Otherwise initialization *with * zero is utilized.
+     *
+     * @param s the string to be resized
+     * @param new_size the new size to be set
+     * @return true if no exception has been caught, otherwise false
+     */
+    CXX_ALWAYS_INLINE
+    constexpr bool reserve_setsize_string(std::string &s, size_t new_size) noexcept { // NOLINT(bugprone-exception-escape): rethrow handled
+        return reserve_setsize_string(s, new_size+1, new_size);
+    }
+
+    /**
+     * Simple std::string append wrapper for given string-range w/ noexcept and `max_len` clipping
+     * @param s   The string to append to
+     * @param max_len maximum total length allowed for `s`
+     * @param vbegin ptr to first char of string segment to append
+     * @param vend ptr 1 char after string segment to append
+     * @return true if no exception has been caught, otherwise false
+     */
+    constexpr bool append_string(std::string &s, size_t max_len, const char *vbegin, const char *vend) noexcept {
+        try {
+            const size_t osz = s.size();
+            s.append(vbegin, jau::min(max_len > osz ? max_len - osz : 0, size_t(vend-vbegin)));
+        } catch (...) {
+            jau::fput_exception(stderr, std::current_exception(), E_FILE_LINE);
+            return false;
+        }
+        return true;
+    }
+    /**
+     * Simple std::string append wrapper for given string-range w/ noexcept
+     * @param s   The string to append to
+     * @param vbegin ptr to first char of string segment to append
+     * @param vend ptr 1 char after string segment to append
+     * @return true if no exception has been caught, otherwise false
+     */
+    CXX_ALWAYS_INLINE
+    constexpr bool append_string(std::string &s, const char *vbegin, const char *vend) noexcept {
+        return append_string(s, s.max_size(), vbegin, vend);
+    }
+    /**
+     * Simple std::string append wrapper for given string_view w/ noexcept and `max_len` clipping
+     * @param s   The string to append to
+     * @param max_len maximum total length allowed for `s`
+     * @param add A string_view to be appended from.
+     * @return true if no exception has been caught, otherwise false
+     */
+    constexpr bool append_string(std::string &s, size_t max_len, std::string_view add) noexcept {
+        try {
+            const size_t osz = s.size();
+            s.append(add.data(), jau::min(max_len > osz ? max_len - osz : 0, add.size())); // NOLINT(bugprone-suspicious-stringview-data-usage): handled
+        } catch (...) {
+            jau::fput_exception(stderr, std::current_exception(), E_FILE_LINE);
+            return false;
+        }
+        return true;
+    }
+    /**
+     * Simple std::string append given string wrapper w/ noexcept, returning passed std::string `s`.
+     * @param s   The string to append to
+     * @param add A string_view to be appended from.
+     */
     constexpr std::string& append_string(std::string &s, std::string_view add) noexcept {
         try {
-            s.append(add);
+            s.append(add.data(), add.size());
         } catch (...) {
             jau::fput_exception(stderr, std::current_exception(), E_FILE_LINE);
         }
         return s;
     }
-
     /**
      * Simple std::string append given string wrapper w/ noexcept, returning passed std::string `s`.
-     * @param s   The string to append to
-     * @param add A string_view to be appended from.
-     * @param pos The position in the string_view `s` to append from.
-     * @param n   The number of characters to append from the string_view `s`.
+     * @param s   The string destination to append to
+     * @param add string_view source to be appended.
+     * @param pos The start-position of `add` to append.
+     * @param n   The number of characters of `add` from `pos` to append.
      */
     constexpr std::string& append_string(std::string &s, std::string_view add, size_t pos, size_t n) noexcept {
         try {
