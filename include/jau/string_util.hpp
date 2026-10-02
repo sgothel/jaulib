@@ -28,6 +28,7 @@
 #include <algorithm>
 #include <concepts>
 #include <cstdarg>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <exception>
@@ -185,6 +186,67 @@ namespace jau {
         }
         try {
             s.reserve(new_capacity);
+        } catch (...) {
+            jau::fput_exception(stderr, std::current_exception(), E_FILE_LINE);
+            return false;
+        }
+        return true;
+    }
+
+    /** Has GCC libstdc++ std::string w/ `__resize_and_overwrite` */
+    template<typename T>
+    concept string_set_size_gcc = jau::req::string_type<T> && requires(T t) {
+        { t.__resize_and_overwrite(1, [](char *, size_t sz) noexcept -> size_t { return sz; }) } ->  std::same_as<void>;
+    };
+    /** A C++23 std::string w/ `resize_and_overwrite` */
+    template<typename T>
+    concept string_cpp23 = jau::req::string_type<T> && requires(T t) {
+        { t.resize_and_overwrite(1, [](char *, size_t sz) noexcept -> size_t { return sz; }) } ->  std::same_as<void>;
+    };
+
+    /** A C++23 std::string w/ `resize_and_overwrite` or one w/ GCC libstc++ `__resize_and_overwrite` */
+    template<typename T>
+    concept string_resize_and_overwrite_any = string_cpp23<T> || string_set_size_gcc<T>;
+
+    inline consteval bool string_has_resize_and_overwrite() noexcept { return string_resize_and_overwrite_any<std::string>; }
+
+    // static_assert(true == string_has_resize_and_overwrite());
+    // static_assert(true == string_set_size_gcc<std::string>);
+    // static_assert(true == string_cpp23<std::string>);
+
+    /**
+     * std::string `resize_and_overwrite` wrapper for non C++23 GCC's `__reserve_setsize_string` variant.
+     *
+     * @tparam T a string_set_size_gcc
+     * @param s the string to be modified
+     * @param count maximal possible new size of the string
+     * @param op function object used to set new contents of the string up to `count`
+     * @return true if no exception has been caught, otherwise false
+     */
+    template<string_set_size_gcc T, typename Operation>
+    requires (!string_cpp23<T>)
+    constexpr bool string_resize_and_overwrite(T &s, size_t count, Operation op) noexcept {
+        try {
+            s.__resize_and_overwrite(count, op);
+        } catch (...) {
+            jau::fput_exception(stderr, std::current_exception(), E_FILE_LINE);
+            return false;
+        }
+        return true;
+    }
+    /**
+     * std::string `resize_and_overwrite` wrapper for C++23 `reserve_setsize_string` variant.
+     *
+     * @tparam T a string_cpp23
+     * @param s the string to be modified
+     * @param count maximal possible new size of the string
+     * @param op function object used to set new contents of the string up to `count`
+     * @return true if no exception has been caught, otherwise false
+     */
+    template<string_cpp23 T, typename Operation>
+    constexpr bool string_resize_and_overwrite(T &s, size_t count, Operation op) noexcept {
+        try {
+            s.resize_and_overwrite(count, op);
         } catch (...) {
             jau::fput_exception(stderr, std::current_exception(), E_FILE_LINE);
             return false;
