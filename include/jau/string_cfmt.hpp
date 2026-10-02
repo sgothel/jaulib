@@ -661,13 +661,10 @@ namespace jau::cfmt {
 
         /// append w/ layout using opts.precision_set and opts.width_set and opts flags {left, zeropad}
         void append_rev(std::string &dest, const size_t dest_maxlen, std::string_view src, bool prec_cut, bool reverse, const FormatOpts &opts) noexcept;
-        inline void append_string(std::string &dest, const size_t dest_maxlen, std::string_view src, const FormatOpts &opts) noexcept {
+        CXX_ALWAYS_INLINE
+        void append_string(std::string &dest, const size_t dest_maxlen, std::string_view src, const FormatOpts &opts) noexcept {
             if (!opts.width_set && !opts.precision_set) {
-                try {
-                    dest.append(src.data(), jau::min(dest_maxlen - dest.size(), src.length())); // NOLINT(bugprone-suspicious-stringview-data-usage): No EOS required
-                } catch (...) {
-                    jau::fput_exception(stderr, std::current_exception(), E_FILE_LINE);
-                }
+                jau::append_string(dest, dest_maxlen, src);
             } else {
                 append_rev(dest, dest_maxlen, src, true /*prec*/, false /*rev**/, opts);
             }
@@ -869,12 +866,9 @@ namespace jau::cfmt {
                     }
                 }
             }
+            CXX_ALWAYS_INLINE
             constexpr void appendText(const char *vbegin, const char *vend) noexcept {
-                try {
-                    m_s.append(vbegin, jau::min(m_maxLen - m_s.size(), size_t(vend-vbegin)));
-                } catch (...) {
-                    jau::fput_exception(stderr, std::current_exception(), E_FILE_LINE);
-                }
+                jau::append_string(m_s, m_maxLen, vbegin, vend);
             }
             void appendError(size_t argIdx, int line, const std::string_view tag) noexcept;
         };

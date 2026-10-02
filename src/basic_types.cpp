@@ -1438,7 +1438,7 @@ void jau::cfmt::impl::append_rev(std::string &dest, const size_t dest_maxlen, st
     if (prec_cut && opts.precision_set) {
         src_len = jau::min<size_t>(src_len, opts.precision);
     }
-    size_t space_left = 0, space_right = 0;
+    size_t space_left = 0, space_right = 0, added_len;
     {
         // string optional re-capacity and resize
         const size_t added_maxlen = dest_maxlen - dest_start_len;
@@ -1457,27 +1457,38 @@ void jau::cfmt::impl::append_rev(std::string &dest, const size_t dest_maxlen, st
                 len += space_left;
             }
         }
-        if (!jau::reserve_append_string(dest, dest_start_len + len + 1, len)) [[unlikely]] { // cap +EOS, not shrinking!
+        if (!jau::reserve_setsize_string(dest, dest_start_len + len)) [[unlikely]] { // cap +EOS, not shrinking!
             return;
         }
+        added_len = len;
     }
-    char *d_left = dest.data() + dest_start_len + space_left;
-    // char *d_end = dest.data() + dest.size() - space_right;
-    char *d_end = dest.data() + dest.size();
-    *d_end = 0; // EOS (is reserved)
-    d_end -= space_right;
-    assert(d_left <= d_end);
+    char *const d_start = dest.data() + dest_start_len;
+    char *const d_left = d_start + space_left;
+    char *d = dest.data() + dest_start_len + added_len;
+    *d = 0; // EOS (is reserved)
+
+    d -= space_right;
+    if constexpr ( string_has_resize_and_overwrite() ) {
+        ::memset(d, ' ', space_right);
+    }
+    assert(d_left <= d);
 
     // string
     if (!reverse) [[likely]] {
-        std::memcpy(d_left, p, d_end-d_left);
-        // std::copy(p, p+(d_end-d_left), d_left);
+        const size_t len = d-d_left;
+        std::memcpy(d_left, p, len);
+        // std::copy(p, p+len, d_left);
+        d -= len;
     } else {
-        while (d_left<d_end) {
-            *(--d_end) = *(p++);
+        while (d_left<d) {
+            *(--d) = *(p++);
         }
     }
-    assert(d_left <= d_end);
+    assert(d_left <= d);
+
+    if constexpr ( string_has_resize_and_overwrite() ) {
+        ::memset(d - space_left, ' ', space_left);
+    }
 }
 
 void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxlen, uint64_t v, const bool negative, const jau::cfmt::FormatOpts &opts, const bool inject_dot) noexcept {
@@ -1548,6 +1559,7 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
     uint32_t width = opts.width_set ? jau::min(added_maxlen, opts.width) : 0;
     uint32_t space_left = 0, space_right = 0;
     uint32_t xtra_left = 0;  ///< contains hash, sign, single space
+    size_t added_len;
     {
         const uint32_t num_len0 = num_len; ///< initial num_len digits + sep_count
 
@@ -1604,8 +1616,8 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
         }
         space_left = jau::min(added_maxlen-num_len-xtra_left, space_left);
         space_right = jau::min(added_maxlen-num_len-xtra_left-space_left, space_right);
-        const size_t added_len = jau::min<size_t>(added_maxlen, space_left + xtra_left + num_len + space_right);
-        if (!jau::reserve_append_string(dest, dest_start_len + added_len + 1, added_len)) [[unlikely]] { // cap +EOS, not shrinking!
+        added_len = jau::min<size_t>(added_maxlen, space_left + xtra_left + num_len + space_right);
+        if (!jau::reserve_setsize_string(dest, dest_start_len + added_len)) {
             return;
         }
 #if !defined(NDEBUG) && 0
@@ -1616,12 +1628,16 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
         fprintf(stderr, "XXX.80: total len[old %zu, added %zu, len %zu], number_start %u\n", dest_start_len, added_len, dest.size(), xtra_left + space_left);
 #endif
     }
-    const size_t dest_len = dest.size();
+    const size_t dest_len = dest_start_len + added_len;
     const char *const d_start = dest.data() + dest_start_len;
     const char *const d_start_num = d_start + space_left + xtra_left;
     char *d = dest.data() + dest_len;
     *d = 0; // EOS (is reserved)
+
     d -= space_right;
+    if constexpr ( string_has_resize_and_overwrite() ) {
+        ::memset(d, ' ', space_right);
+    }
     const char *const d_end_num = d;
     assert(d_end_num >= d_start_num);
     assert(d_end_num - d_start_num == num_len);
@@ -1691,7 +1707,11 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
         assert(d > d_start);
         *(--d) = ' ';
     }
-    assert(d == d_start + space_left);  // string space fully written
+    assert(d == d_start + space_left);
+
+    if constexpr ( string_has_resize_and_overwrite() ) {
+        ::memset(d - space_left, ' ', space_left);
+    }
 }
 
 void jau::cfmt::impl::append_integral_simple(std::string &dest, const size_t dest_maxlen, uint64_t v, const bool negative, const jau::cfmt::FormatOpts &opts) noexcept {
@@ -1711,6 +1731,7 @@ void jau::cfmt::impl::append_integral_simple(std::string &dest, const size_t des
     char buf_[buf_len];
     const char * const buf_end = buf_ + jau::min<size_t>(added_maxlen, buf_len);
     const char * buf_start;
+    size_t added_len;
     {
         char *d = const_cast<char *>(buf_end);
         if (10 == radix) [[likely]] {
@@ -1815,8 +1836,8 @@ void jau::cfmt::impl::append_integral_simple(std::string &dest, const size_t des
         }
         xtra_left = jau::min(added_maxlen-val_digits, xtra_left);
 
-        const size_t added_len = jau::min<size_t>(added_maxlen, xtra_left + val_digits );
-        if (!jau::reserve_append_string(dest, dest_start_len + added_len + 1, added_len)) [[unlikely]] { // cap +EOS, not shrinking!
+        added_len = jau::min<size_t>(added_maxlen, xtra_left + val_digits );
+        if (!jau::reserve_setsize_string(dest, dest_start_len + added_len)) {
             return;
         }
 
@@ -1830,7 +1851,7 @@ void jau::cfmt::impl::append_integral_simple(std::string &dest, const size_t des
         fprintf(stderr, "XXX.81: total len[old %zu, added %zu, len %zu], number_start %u\n", dest_start_len, added_len, dest.size(), xtra_left);
 #endif
     }
-    const size_t dest_len = dest.size();
+    const size_t dest_len = dest_start_len + added_len;
     const char *const d_start = dest.data() + dest_start_len;
     [[maybe_unused]] const char *const d_start_num = d_start + xtra_left;
     char *d = dest.data() + dest_len;
