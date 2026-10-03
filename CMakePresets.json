@@ -8,10 +8,10 @@
   "configurePresets": [
     {
       "name": "debug",
-      "displayName": "Debug (cc, C++20, java)",
+      "displayName": "Debug (cc, C++23, java)",
       "binaryDir": "${sourceDir}/build/debug",
       "cacheVariables": {
-        "CMAKE_CXX_STANDARD": "20",
+        "CMAKE_CXX_STANDARD": "23",
         "DONT_USE_RTTI": "ON",
         "USE_LTO_FOR_ALL_TARGETS": "OFF",
         "CMAKE_BUILD_TYPE": "Debug",
@@ -28,7 +28,7 @@
     {
       "name": "debug-clang",
       "inherits": "debug",
-      "displayName": "Debug (clang, clang-tidy, C++20, java)",
+      "displayName": "Debug (clang, clang-tidy, C++23, java)",
       "binaryDir": "${sourceDir}/build/debug-clang",
       "cacheVariables": {
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/dist/debug-clang",
@@ -40,7 +40,7 @@
     {
       "name": "debug-gcc",
       "inherits": "debug",
-      "displayName": "Debug (gcc, C++20, java)",
+      "displayName": "Debug (gcc, C++23, java)",
       "binaryDir": "${sourceDir}/build/debug-gcc",
       "cacheVariables": {
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/dist/debug-gcc",
@@ -51,7 +51,7 @@
     {
       "name": "debug2-gcc",
       "inherits": "debug",
-      "displayName": "Debug (gcc, C++20, java)",
+      "displayName": "Debug (gcc, C++23, java)",
       "binaryDir": "${sourceDir}/build/debug2-gcc",
       "cacheVariables": {
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/dist/debug2-gcc",
@@ -63,7 +63,7 @@
     {
       "name": "perf-gcc",
       "inherits": "debug",
-      "displayName": "Profiling (gcc, C++20, java)",
+      "displayName": "Profiling (gcc, C++23, java)",
       "binaryDir": "${sourceDir}/build/perf-gcc",
       "cacheVariables": {
         "PROFILING": "ON",
@@ -79,7 +79,7 @@
     {
       "name": "perf-clang",
       "inherits": "debug",
-      "displayName": "Profiling (clang, C++20, java)",
+      "displayName": "Profiling (clang, C++23, java)",
       "binaryDir": "${sourceDir}/build/perf-clang",
       "cacheVariables": {
         "USE_LTO_FOR_ALL_TARGETS": "ON",
@@ -94,7 +94,7 @@
     {
       "name": "release",
       "inherits": "debug",
-      "displayName": "Release (cc, C++20, java)",
+      "displayName": "Release (cc, C++23, java)",
       "binaryDir": "${sourceDir}/build/release",
       "cacheVariables": {
         "USE_LTO_FOR_ALL_TARGETS": "ON",
@@ -107,7 +107,7 @@
     {
       "name": "release-clang",
       "inherits": "release",
-      "displayName": "Release (clang, clang-tidy, C++20, java)",
+      "displayName": "Release (clang, clang-tidy, C++23, java)",
       "binaryDir": "${sourceDir}/build/release-clang",
       "cacheVariables": {
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/dist/release-clang",
@@ -119,7 +119,7 @@
     {
       "name": "footprint-clang",
       "inherits": "release",
-      "displayName": "Footprint (clang, clang-tidy, C++20, java)",
+      "displayName": "Footprint (clang, clang-tidy, C++23, java)",
       "binaryDir": "${sourceDir}/build/footprint-clang",
       "cacheVariables": {
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/dist/footprint-clang",
@@ -131,7 +131,7 @@
     {
       "name": "release-gcc",
       "inherits": "release",
-      "displayName": "Release (gcc, C++20, java)",
+      "displayName": "Release (gcc, C++23, java)",
       "binaryDir": "${sourceDir}/build/release-gcc",
       "cacheVariables": {
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/dist/release-gcc",
@@ -142,7 +142,7 @@
     {
       "name": "footprint-gcc",
       "inherits": "release",
-      "displayName": "Footprint (gcc, C++20, java)",
+      "displayName": "Footprint (gcc, C++23, java)",
       "binaryDir": "${sourceDir}/build/footprint-gcc",
       "cacheVariables": {
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/dist/footprint-gcc",

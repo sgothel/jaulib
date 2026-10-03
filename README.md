@@ -16,7 +16,7 @@ It also provides a basic mechanisms to create a thin Java JNI binding
 as well as some Java JNI bindings for a subset of `jaulib`.
 
 ### Status
-Build and clang-tidy (23.1.0) clean on C++20, passing all unit tests.
+Build and clang-tidy (23.1.0) clean on C++20 and C++23, passing all unit tests.
 
 See [C++ Requirements](#cpp_req) and [Supported Platforms](#sup_platforms) for details.
 
@@ -62,15 +62,26 @@ See *Direct-BT* [C++ API Doc](https://jausoft.com/projects/direct_bt/build/docum
 ## C++ Requirements
 C++20 is the minimum requirement for releases > 1.2.0.
 
+C++23 is the default for relases > 1.8.2, while C++20 is still supported.
+
 Release 1.2.0 is the last version supporting C++17, see [Changes](CHANGES.md).
 
-Support for C++23 and C++26 will be added step by step.
+Support for C++26 will be added step by step.
 
 Optional WebAssembly (Wasm) builds via [emscripten](https://emscripten.org/).
 
 See details in [C++ Support](doc/Cpp-Support.md).
 
 ### C++ Compiler Support
+- C++23, see [C++23 compiler support](https://en.cppreference.com/w/cpp/compiler_support#cpp23)
+  - gcc >= 14, recommended >= 14.2.0
+  - clang >= 19, recommended >= 23.1.0
+  - Satisfied by
+    - FreeBSD 14.3 and above
+    - Debian 13 'Trixie' and above
+    - Ubuntu 24.04 LTS `Noble Numbat` and above
+
+
 - C++20, see [C++20 compiler support](https://en.cppreference.com/w/cpp/compiler_support#cpp20)
   - gcc >= 11, recommended >= 14.2.0
   - clang >= 13, recommended >= 23.1.0
@@ -89,6 +100,16 @@ See details in [C++ Support](doc/Cpp-Support.md).
   - Hence moving step by step to C++20 concepts helps with maintainability
 - Lack of C++17 `constexpr` completeness in the `STL` (e.g. `std::string`)
 - Used compiler `gcc` and `clang` have matured enough for C++20 in 2024
+
+### Rational for C++23 Support and Default
+- New [C++23 Features](https://en.cppreference.com/cpp/23)
+- Potential positive performance impact
+  - [Simplified implicit move or copy-elision](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p2266r3.html)
+  - Widened `constexpr` function *constraints*
+- Readability/Usability
+  - [Multidimensional subscript operator](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2021/p2128r6.pdf)
+- It has been almost 3 years and compiler caught up in 2026
+- Preparation for the bigger C++26 update
 
 <a name="sup_platforms"></a>
 
@@ -250,7 +271,7 @@ Following debug presets are defined in `CMakePresets.json`
 - **`debug`**
   - default generator
   - default compiler
-  - C++20
+  - C++23
   - LTO for all targets disabled
   - debug enabled
   - disabled `clang-tidy`

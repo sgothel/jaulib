@@ -56,14 +56,14 @@ macro(JaulibPreset)
             message(STATUS "JaulibPreset: Parallel build: Consider setting environment variable CMAKE_BUILD_PARALLEL_LEVEL.")
         endif()
         #
-        # Defaulting presets: clang, clang-tidy, C++20, CMAKE_BUILD_TYPE, -testing
+        # Defaulting presets: clang, clang-tidy, C++23, CMAKE_BUILD_TYPE, -testing
         #
         if( (NOT DEFINED CMAKE_INSTALL_PREFIX) )
             set(JAU_CMAKE_OVERRIDE_INSTALL_PREFIX ON)
             message(STATUS "JaulibPreset: Setting CMAKE_INSTALL_PREFIX earmarked")
         endif()
         if(NOT DEFINED CMAKE_CXX_STANDARD)
-            set(CMAKE_CXX_STANDARD 20 CACHE STRING "" FORCE)
+            set(CMAKE_CXX_STANDARD 23 CACHE STRING "" FORCE)
             message(STATUS "JaulibPreset: Setting CMAKE_CXX_STANDARD ${CMAKE_CXX_STANDARD}")
         endif()
         if(NOT DEFINED CMAKE_BUILD_TYPE)
