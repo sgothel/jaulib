@@ -41,7 +41,7 @@ namespace jau {
      *  @{
      */
 
-    #if __cplusplus > 202002L
+    #if __cplusplus > 202002L && !defined(__clang__)
         /** https://en.cppreference.com/w/cpp/types/floating-point */
         typedef std::float32_t float32_t;
         typedef std::float64_t float64_t;
