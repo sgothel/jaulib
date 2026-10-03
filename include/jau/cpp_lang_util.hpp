@@ -27,7 +27,7 @@
 #endif
 #if __cplusplus > 202002L
     // C++23
-    #include <stdbit>
+    #include <stdbit.h>
 #endif
 
 #include <jau/packed_attribute.hpp>
