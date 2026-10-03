@@ -76,24 +76,28 @@ enum class plain_scoped_signed_enum_t : signed { // NOLINT(misc-use-internal-lin
 };
 
 TEST_CASE("jau::cfmt::cspec_t from type", "[jau][jau::cfmt]") {
-    static_assert(jau::cfmt::cspec_t::unsigned_int  == jau::cfmt::to_cspec<unsigned char>());
-    static_assert(jau::cfmt::cspec_t::character     == jau::cfmt::to_cspec<char>());
-    static_assert(jau::cfmt::cspec_t::string        == jau::cfmt::to_cspec<bool>());
-    static_assert(jau::cfmt::cspec_t::unsigned_int  == jau::cfmt::to_cspec<unsigned short>());
-    static_assert(jau::cfmt::cspec_t::signed_int    == jau::cfmt::to_cspec<short>());
-    static_assert(jau::cfmt::cspec_t::unsigned_int  == jau::cfmt::to_cspec<unsigned int>());
-    static_assert(jau::cfmt::cspec_t::signed_int    == jau::cfmt::to_cspec<int>());
-    static_assert(jau::cfmt::cspec_t::unsigned_int  == jau::cfmt::to_cspec<unsigned long>());
-    static_assert(jau::cfmt::cspec_t::signed_int    == jau::cfmt::to_cspec<long>());
+    static_assert(jau::cfmt::cspec_t::unsigned_int      == jau::cfmt::to_cspec<unsigned char>());
+    static_assert(jau::cfmt::cspec_t::character         == jau::cfmt::to_cspec<char>());
+    static_assert(jau::cfmt::cspec_t::string            == jau::cfmt::to_cspec<bool>());
+    static_assert(jau::cfmt::cspec_t::unsigned_int      == jau::cfmt::to_cspec<unsigned short>());
+    static_assert(jau::cfmt::cspec_t::signed_int        == jau::cfmt::to_cspec<short>());
+    static_assert(jau::cfmt::cspec_t::unsigned_int      == jau::cfmt::to_cspec<unsigned int>());
+    static_assert(jau::cfmt::cspec_t::signed_int        == jau::cfmt::to_cspec<int>());
+    static_assert(jau::cfmt::cspec_t::unsigned_int      == jau::cfmt::to_cspec<unsigned long>());
+    static_assert(jau::cfmt::cspec_t::signed_int        == jau::cfmt::to_cspec<long>());
+    static_assert(jau::cfmt::cspec_t::floating_point    == jau::cfmt::to_cspec<float>());
+    static_assert(jau::cfmt::cspec_t::floating_point    == jau::cfmt::to_cspec<double>());
+    static_assert(jau::cfmt::cspec_t::floating_point    == jau::cfmt::to_cspec<jau::float32_t>());
+    static_assert(jau::cfmt::cspec_t::floating_point    == jau::cfmt::to_cspec<jau::float64_t>());
 
-    static_assert(jau::cfmt::cspec_t::string        == jau::cfmt::to_cspec<decltype("Hello")>());
-    static_assert(jau::cfmt::cspec_t::string        == jau::cfmt::to_cspec<std::string>());
-    static_assert(jau::cfmt::cspec_t::string        == jau::cfmt::to_cspec<std::string_view>());
+    static_assert(jau::cfmt::cspec_t::string            == jau::cfmt::to_cspec<decltype("Hello")>());
+    static_assert(jau::cfmt::cspec_t::string            == jau::cfmt::to_cspec<std::string>());
+    static_assert(jau::cfmt::cspec_t::string            == jau::cfmt::to_cspec<std::string_view>());
 
-    static_assert(jau::cfmt::cspec_t::string        == jau::cfmt::to_cspec<SomeClass1>());
-    static_assert(jau::cfmt::cspec_t::string        == jau::cfmt::to_cspec<game_t>());
-    static_assert(jau::cfmt::cspec_t::unsigned_int  == jau::cfmt::to_cspec<plain_scoped_unsigned_enum_t>());
-    static_assert(jau::cfmt::cspec_t::signed_int    == jau::cfmt::to_cspec<plain_scoped_signed_enum_t>());
+    static_assert(jau::cfmt::cspec_t::string            == jau::cfmt::to_cspec<SomeClass1>());
+    static_assert(jau::cfmt::cspec_t::string            == jau::cfmt::to_cspec<game_t>());
+    static_assert(jau::cfmt::cspec_t::unsigned_int      == jau::cfmt::to_cspec<plain_scoped_unsigned_enum_t>());
+    static_assert(jau::cfmt::cspec_t::signed_int        == jau::cfmt::to_cspec<plain_scoped_signed_enum_t>());
 
     enum plain_unscoped_unsigned_enum_t : unsigned { // NOLINT(misc-use-internal-linkage): intend
         aa_none,
@@ -497,6 +501,24 @@ static void checkFormat(int line, const char *fmt, const Args &...args) {
     CHECK(exp == has);
 }
 
+template <typename ArgStdPrint, typename ArgJauPrint>
+static void checkFormat2(int line, const char *fmt, const ArgStdPrint &argStd, const ArgJauPrint &argJau) {
+    PRAGMA_DISABLE_WARNING_PUSH
+    PRAGMA_DISABLE_WARNING_FORMAT_NONLITERAL
+    PRAGMA_DISABLE_WARNING_FORMAT_SECURITY
+    std::string exp = jau::unsafe::format_string(fmt, argStd);
+    PRAGMA_DISABLE_WARNING_POP
+
+    // std::string has = jau::cfmt::format(fmt, args...);
+    std::string has;
+    jau::cfmt::Result r = jau::cfmt::formatR(has, fmt, argJau);
+    std::cerr << "FormatResult @ " << line << ": " << r << "\n";
+    std::cerr << "FormatResult @ " << line << ": exp `" << exp << "`, has `" << has << "`\n\n";
+    CHECK( true == r.success());
+    CHECK( 1 == r.argumentCount());
+    CHECK(exp == has);
+}
+
 TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
     // type conversion
     bool b0 = false;
@@ -506,6 +528,8 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
     uint32_t u32 =  1234;
     float    f32 = 123.45f; // 42.14f;
     double   f64 = 123.45; // 42.1456;
+    jau::float32_t f32_2 = 123.45f; // 42.14f;
+    jau::float64_t f64_2 = 123.45; // 42.1456;
     void *p1a = (void *)0xaabbccdd_u64; // NOLINT
     void *p1b = (void *)0x11223344aabbccdd_u64; // NOLINT
     void *p2a = (void *)0x112233aabbccdd_u64; // NOLINT
@@ -636,6 +660,13 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
     checkFormat(__LINE__, "%A", f64);
     // checkFormat(__LINE__, "%g", f64);
     // checkFormat(__LINE__, "%G", f64);
+    checkFormat2(__LINE__, "%f", f64, f64_2);
+    checkFormat2(__LINE__, "%e", f64, f64_2);
+    checkFormat2(__LINE__, "%E", f64, f64_2);
+    checkFormat2(__LINE__, "%a", f64, f64_2);
+    checkFormat2(__LINE__, "%A", f64, f64_2);
+    // checkFormat2(__LINE__, "%g", f64, f64_2);
+    // checkFormat2(__LINE__, "%G", f64, f64_2);
 
     checkFormat(__LINE__, "%f", f32);
     checkFormat(__LINE__, "%e", f32);
@@ -644,6 +675,13 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
     checkFormat(__LINE__, "%A", f32);
     // checkFormat(__LINE__, "%g", f32);
     // checkFormat(__LINE__, "%G", f32);
+    checkFormat2(__LINE__, "%f", f32, f32_2);
+    checkFormat2(__LINE__, "%e", f32, f32_2);
+    checkFormat2(__LINE__, "%E", f32, f32_2);
+    checkFormat2(__LINE__, "%a", f32, f32_2);
+    checkFormat2(__LINE__, "%A", f32, f32_2);
+    // checkFormat2(__LINE__, "%g", f32, f32_2);
+    // checkFormat2(__LINE__, "%G", f32, f32_2);
 
     checkFormat(__LINE__, "%dZZZ", i32);
     checkFormat(__LINE__, "%dZZ", i32);
@@ -1955,21 +1993,33 @@ TEST_CASE("float", "[jau][std::string][jau::cfmt][float]" ) {
   buffer = jau::cfmt::format("%+5.1f", 42.9252);
   CHECK(buffer == "+42.9");
 
+  buffer = jau::cfmt::format("%f", 42.5_f64);
+  CHECK(buffer == "42.500000");
   buffer = jau::cfmt::format("%f", 42.5);
   CHECK(buffer == "42.500000");
 
+  buffer = jau::cfmt::format("%.1f", 42.5_f64);
+  CHECK(buffer == "42.5");
   buffer = jau::cfmt::format("%.1f", 42.5);
   CHECK(buffer == "42.5");
 
+  buffer = jau::cfmt::format("%f", 42167.0_f64);
+  CHECK(buffer == "42167.000000");
   buffer = jau::cfmt::format("%f", 42167.0);
   CHECK(buffer == "42167.000000");
 
+  buffer = jau::cfmt::format("%.9f", -12345.987654321_f64);
+  CHECK(buffer == "-12345.987654321");
   buffer = jau::cfmt::format("%.9f", -12345.987654321);
   CHECK(buffer == "-12345.987654321");
 
+  buffer = jau::cfmt::format("%.1f", 3.999_f64);
+  CHECK(buffer == "4.0");
   buffer = jau::cfmt::format("%.1f", 3.999);
   CHECK(buffer == "4.0");
 
+  buffer = jau::cfmt::format("%.0f", 3.5_f64);
+  CHECK(buffer == "4");
   buffer = jau::cfmt::format("%.0f", 3.5);
   CHECK(buffer == "4");
 
@@ -2025,6 +2075,8 @@ TEST_CASE("float", "[jau][std::string][jau::cfmt][float]" ) {
   buffer = jau::cfmt::format("%.5f", -1.12345);
   CHECK(buffer == "-1.12345");
 
+  buffer = jau::cfmt::format("%.5f", -1.00000e20_f64);
+  CHECK(buffer == "-1.00000e+20");
   buffer = jau::cfmt::format("%.5f", -1.00000e20);
   CHECK(buffer == "-1.00000e+20");
 

@@ -55,7 +55,7 @@ static std::string format_snprintf_ffszu64d(float fa, float fb, size_t sz1, uint
 
         nchars = std::snprintf(&str[0], bsz,
                                "format_000a: %f, %f, %zu, %" PRIu64 ", %" PRIu64 ", %" PRIx64 ", %06" PRIu64 ", %06" PRIx64 ", %d\n",
-                               fa + 1.0_f32, fb + 1.0_f32, sz1 + 1,
+                               double(fa + 1.0_f32), double(fb + 1.0_f32), sz1 + 1,
                                a_u64 + 1_u64, a_u64 + 1_u64, a_u64 + 1_u64, a_u64 + 1_u64, a_u64 + 1_u64,
                                i + 1);
 
@@ -111,7 +111,7 @@ static std::string format_000b_vsnprintf(float fa, float fb, size_t sz1, uint64_
 
         nchars = std::snprintf(&str[0], bsz,
                                "format_000b: %.2f, %2.2f, %zu, %" PRIu64 ", %" PRIu64 ", %" PRIx64 ", %06" PRIu64 ", %06" PRIx64 ", %03d\n",
-                               fa + 1.0_f32, fb + 1.0_f32, sz1 + 1,
+                               double(fa + 1.0_f32), double(fb + 1.0_f32), sz1 + 1,
                                a_u64 + 1_u64, a_u64 + 1_u64, a_u64 + 1_u64, a_u64 + 1_u64, a_u64 + 1_u64,
                                i + 1);
 
