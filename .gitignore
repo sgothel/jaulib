@@ -34,4 +34,5 @@ documentation.tar.xz
 /bin/
 old_jaulibs/
 perf/
+profiling/
 symbols/
