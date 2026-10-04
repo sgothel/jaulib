@@ -18,7 +18,7 @@ as well as some Java JNI bindings for a subset of `jaulib`.
 ### Status
 Build and clang-tidy (23.1.0) clean on C++20, passing all unit tests.
 
-See [C++ Minimum Requirements](#cpp_min_req) and [Supported Platforms](#sup_platforms) for details.
+See [C++ Requirements](#cpp_req) and [Supported Platforms](#sup_platforms) for details.
 
 ## API Documentation
 Up to date API documentation can be found:
@@ -57,9 +57,9 @@ See *Direct-BT* [C++ API Doc](https://jausoft.com/projects/direct_bt/build/docum
 * [Cipherpack](https://jausoft.com/cgit/cipherpack.git/about/)
 * [Gamp](https://jausoft.com/cgit/gamp.git/about/)
 
-<a name="cpp_min_req"></a>
+<a name="cpp_req"></a>
 
-## C++ Minimum Requirements
+## C++ Requirements
 C++20 is the minimum requirement for releases > 1.2.0.
 
 Release 1.2.0 is the last version supporting C++17, see [Changes](CHANGES.md).
@@ -68,16 +68,23 @@ Support for C++23 and C++26 will be added step by step.
 
 Optional WebAssembly (Wasm) builds via [emscripten](https://emscripten.org/).
 
+See details in [C++ Support](doc/Cpp-Support.md).
+
 ### C++ Compiler Support
 - C++20, see [C++20 compiler support](https://en.cppreference.com/w/cpp/compiler_support#cpp20)
   - gcc >= 11, recommended >= 14.2.0
   - clang >= 13, recommended >= 23.1.0
+  - Satisfied by
+    - FreeBSD 14.3 and above
+    - Debian 12 'Bookworm' and above
+    - Ubuntu 22.04 LTS `Jammy Jellyfish` and above
 
 ### Rational for C++20 Minimum
+- New [C++20 Features](https://en.cppreference.com/cpp/20)
 - Moving metaprogramming to C++20 concepts and constrains
   - `SFINAE` and its utilization in `type_traits` for C++ metaprogramming are great
   - C++20 constrains add an easier to read and code alternative using the same idea
-  - C++20 concepts declare a set of C++20 constrains and can be reused, guarantees of same concept
+  - C++20 concepts declare a set of C++20 constrains and can be reused
   - `C++ Named Requirements` are defined as concepts next to `type traits` counterpart
   - Hence moving step by step to C++20 concepts helps with maintainability
 - Lack of C++17 `constexpr` completeness in the `STL` (e.g. `std::string`)
@@ -87,7 +94,7 @@ Optional WebAssembly (Wasm) builds via [emscripten](https://emscripten.org/).
 
 ## Supported Platforms
 Language requirements
-- C++20 or better, see [C++ Minimum Requirements](#cpp_min_req)
+- C++20 or better, see [C++ Requirements](#cpp_req)
 - Standard C Libraries
   - [FreeBSD libc](https://www.freebsd.org/)
   - [GNU glibc](https://www.gnu.org/software/libc/)

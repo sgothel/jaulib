@@ -10,8 +10,8 @@ This summary has been updated on: 2025-10-04.
 - clang-19 (complete)
 - Satisfied by
   - FreeBSD 14.3 and above
-  - Debian 13 'Trixie' and above
-  - Ubuntu `24.04 LTS (Noble Numbat)` and above
+  - Debian 12 'Bookworm' and above
+  - Ubuntu 22.04 LTS `Jammy Jellyfish` and above
 
 See
 - [cppreference's C++20](https://en.cppreference.com/w/cpp/compiler_support/20.html)
@@ -24,7 +24,7 @@ See
 - Satisfied by
   - FreeBSD 14.3 and above
   - Debian 13 'Trixie' and above
-  - Ubuntu `24.04 LTS (Noble Numbat)` and above
+  - Ubuntu 24.04 LTS `Noble Numbat` and above
 
 See
 - [cppreference's C++23](https://en.cppreference.com/w/cpp/compiler_support/23.html)
@@ -32,7 +32,8 @@ See
 - [clang C++23](https://clang.llvm.org/cxx_status.html#cxx23)
 
 ### C++26
-- gcc-16 ???
+- gcc-16 (mostly)
+  - Debian 14 (sid currently)
 - clang-22 ???
 - Satisfied by
   - None yet
