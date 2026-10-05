@@ -29,6 +29,7 @@
 #include <list>
 #include <forward_list>
 #include <deque>
+#include "jau/debug.hpp"
 
 #include <jau/int_math.hpp>
 #include <jau/int_types.hpp>
@@ -110,7 +111,39 @@ TEST_CASE( "01 Type Concept Queries: Build-In") {
 
     static_assert(true  == jau::req::signed_integer<int> );
     static_assert(true  == jau::req::signed_integer<short> );
+
+    /**                                   amd64/gcc, arm64/gcc  arm32/gcc
+        std::is_integral_v<char>:         true       true       true
+        jau::req::integer<char>:          true       true       true
+        jau::req::boolean<char>:          false      false      false
+        std::is_unsigned_v<char>:         false      true       true
+        jau::req::signed_integer<char>    true       false      false
+        jau::req::unsigned_integer<char>  false      true       true
+        sizeof(float)                      4          4         4
+        sizeof(double)                     8          8         8
+        sizeof(long double)               16         16         8
+    */
+    jau::fprintf_td(stderr, "std::is_integral_v<char>: %s\n", std::is_integral_v<char> );
+    jau::fprintf_td(stderr, "jau::req::integer<char>: %s\n", jau::req::integer<char> );
+    jau::fprintf_td(stderr, "jau::req::boolean<char>: %s\n", jau::req::boolean<char> );
+    jau::fprintf_td(stderr, "std::is_unsigned_v<char>: %s\n", std::is_unsigned_v<char> );
+    jau::fprintf_td(stderr, "jau::req::signed_integer<char>: %s\n", jau::req::signed_integer<char> );
+    jau::fprintf_td(stderr, "jau::req::unsigned_integer<char>: %s\n", jau::req::unsigned_integer<char> );
+    jau::fprintf_td(stderr, "sizeof(float): %u\n", sizeof(float) );
+    jau::fprintf_td(stderr, "sizeof(double): %u\n", sizeof(double) );
+    jau::fprintf_td(stderr, "sizeof(long double): %u\n", sizeof(long double) );
+    jau::fprintf_td(stderr, "sizeof(jau::float32_t): %u\n", sizeof(jau::float32_t) );
+    jau::fprintf_td(stderr, "sizeof(jau::float64_t): %u\n", sizeof(jau::float64_t) );
+
+#if 0
+    // amd64/gcc
+    static_assert(true  == std::is_integral_v<char> );
+    static_assert(true  == jau::req::integer<char> );
+    static_assert(false == jau::req::boolean<char> );
+    static_assert(false == std::is_unsigned_v<char> );
     static_assert(true  == jau::req::signed_integer<char> );
+    static_assert(false  == jau::req::unsigned_integer<char> );
+#endif
     static_assert(true  == jau::req::signed_integer<decltype(1_i32)> );
     static_assert(true  == jau::req::signed_integer<decltype(1)> );
     static_assert(false == jau::req::signed_integer<unsigned> );
@@ -125,14 +158,18 @@ TEST_CASE( "01 Type Concept Queries: Build-In") {
     static_assert(true  == jau::req::unsigned_integer<decltype(1_u32)> );
     static_assert(false == jau::req::unsigned_integer<int> );
     static_assert(false == jau::req::unsigned_integer<short> );
-    static_assert(false == jau::req::unsigned_integer<char> );
     static_assert(false == jau::req::unsigned_integer<decltype(1_i32)> );
     static_assert(false == jau::req::unsigned_integer<decltype(1)> );
     static_assert(false == jau::req::unsigned_integer<bool> );
     static_assert(false == jau::req::unsigned_integer<float> );
     static_assert(false == jau::req::unsigned_integer<game_t> );
 
-    static_assert(false == std::is_unsigned_v<char> );
+    static_assert(false == jau::req::floating_point<int> );
+    static_assert(true == jau::req::floating_point<float> );
+    static_assert(true == jau::req::floating_point<double> );
+    static_assert(true == jau::req::floating_point<long double> );
+    static_assert(true == jau::req::floating_point<jau::float32_t> );
+    static_assert(true == jau::req::floating_point<jau::float64_t> );
 
     static_assert(false == jau::req::pointer<int> );
     static_assert(true  == jau::req::pointer<int*> );
