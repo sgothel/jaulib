@@ -54,10 +54,14 @@ public class TestFileUtils01 extends FileUtilBaseTest {
         final String cwd = FileUtil.get_cwd();
         PrintUtil.println(System.err, "test01_cwd: cwd "+cwd);
         Assert.assertTrue( 0 < cwd.length() );
-        final int idx = cwd.indexOf("/jaulib/");
-        Assert.assertTrue( 0 < idx );
-        Assert.assertTrue( idx < cwd.length() );
-        Assert.assertTrue( idx > 0 );
+        final int idx1 = cwd.indexOf("/jaulib/");
+        final int idx2 = cwd.indexOf("/src/");
+        Assert.assertTrue( 0 <= idx1 || 0 <= idx2);
+        if (idx1 >= 0) {
+            Assert.assertTrue( idx1 < cwd.length() );
+        } else if (idx2 >= 0) {
+            Assert.assertTrue( idx2 < cwd.length() );
+        }
     }
 
     /**

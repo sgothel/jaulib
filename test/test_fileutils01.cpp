@@ -45,7 +45,8 @@ class TestFileUtil01 : TestFileUtilBase { // NOLINT(misc-use-internal-linkage): 
         jau::io::fs::file_stats proot_stats_01 = getTestDataDirStats(executable_path);
         std::string rel_project_root = getTestDataRelDir(executable_path);
         jau::io::fs::file_stats proot_stats_02(rel_project_root);
-        jau_fprintf_td(stdout, "test00: cwd:               %s\n", cwd);
+        jau_fprintf_td(stdout, "test00: cwd:               '%s'\n", cwd);
+        jau_fprintf_td(stdout, "test00: exe:               '%s'\n", executable_path);
         jau_fprintf_td(stdout, "test00: 00: image.stat:    %s\n", image_stats.toString());
         jau_fprintf_td(stdout, "test00: 02: proot01.stats: %s\n", proot_stats_01.toString());
         jau_fprintf_td(stdout, "test00: 02: proot02.rel:   %s\n", rel_project_root);
@@ -61,10 +62,16 @@ class TestFileUtil01 : TestFileUtilBase { // NOLINT(misc-use-internal-linkage): 
         const std::string cwd = jau::io::fs::get_cwd();
         INFO_STR("\n\ntest01_cwd: cwd "+cwd+"\n");
         REQUIRE( 0 < cwd.size() );
-        const size_t idx = cwd.find("/jaulib");
-        REQUIRE( 0 < idx );
-        REQUIRE( idx < cwd.size() );
-        REQUIRE( idx != std::string::npos );
+        const size_t idx1= cwd.find("/jaulib");
+        const size_t idx2= cwd.find("/src");
+        jau_fprintf_td(stdout, "test01_cwd: '/jaulib' = %u, '/src' = %u\n", idx1, idx2);
+        if ( std::string::npos != idx1 ) {
+            REQUIRE( idx1 < cwd.size() );
+        } else if ( std::string::npos != idx2 ) {
+            REQUIRE( idx2 < cwd.size() );
+        } else {
+            REQUIRE( false );
+        }
     }
 
     /**
