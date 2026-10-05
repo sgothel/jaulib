@@ -83,9 +83,9 @@ namespace jau::os {
             const std::vector<id_t>& groups() const noexcept { return m_gid_list; }
 
             std::string toString() const noexcept {
-                std::string s = "UserInfo['";
+                std::string s = "UserInfo[";
                 if( m_valid ) {
-                    s.append(username()).append("', uid ").append(std::to_string(uid())).append(", gid ").append(std::to_string(gid()))
+                    s.append("'").append(username()).append("', uid ").append(std::to_string(uid())).append(", gid ").append(std::to_string(gid()))
                      .append(", home '").append(homedir()).append("', shell '").append(shell())
                      .append("', groups [").append(jau::to_string(groups())).append("]]");
                 } else {

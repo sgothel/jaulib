@@ -141,7 +141,12 @@
         struct passwd pwd;
         char buffer[1024];
 
-        if ( !is_root || UserInfo_get_env_uid(n_res_uid, is_root) ) {
+        const bool has_env_uid = UserInfo_get_env_uid(n_res_uid, is_root);
+        std::string env_username;
+        const bool has_env_username = get_env_username(env_username, is_root);
+        jau_DBG_PRINT("UserInfo::get_creds: m_uid %u, root %s, has_env_uid %s, has_env_username %s", n_res_uid, is_root, has_env_uid, has_env_username);
+
+        if ( !is_root || has_env_uid || !has_env_username) {
             struct passwd *pwd_res = nullptr;
             if ( 0 != ::getpwuid_r(n_res_uid, &pwd, buffer, sizeof(buffer), &pwd_res) || nullptr == pwd_res ) {
                 jau_DBG_PRINT("getpwuid(%u) failed", n_res_uid);
@@ -154,22 +159,19 @@
             homedir = std::string(pwd_res->pw_dir);
             shell = std::string(pwd_res->pw_shell);
             return true;
-        } else {
-            std::string tmp_username;
-            if ( get_env_username(tmp_username, is_root) ) {
-                struct passwd *pwd_res = nullptr;
-                if ( 0 != ::getpwnam_r(tmp_username.c_str(), &pwd, buffer, sizeof(buffer), &pwd_res) || nullptr == pwd_res ) {
-                    jau_DBG_PRINT("getpwnam(%s) failed\n", tmp_username);
-                    return false;
-                }
-                jau_DBG_PRINT("getpwnam(%s): name '%s', uid %u, gid %u\n", tmp_username, pwd_res->pw_name, pwd_res->pw_uid, pwd_res->pw_gid);
-                res_uid = (id_t)n_res_uid;
-                res_gid = (id_t)(::gid_t)pwd_res->pw_gid;
-                username = std::string(pwd_res->pw_name);
-                homedir = std::string(pwd_res->pw_dir);
-                shell = std::string(pwd_res->pw_shell);
-                return true;
+        } else { // has_env_username
+            struct passwd *pwd_res = nullptr;
+            if ( 0 != ::getpwnam_r(env_username.c_str(), &pwd, buffer, sizeof(buffer), &pwd_res) || nullptr == pwd_res ) {
+                jau_DBG_PRINT("getpwnam(%s) failed\n", env_username);
+                return false;
             }
+            jau_DBG_PRINT("getpwnam(%s): name '%s', uid %u, gid %u\n", env_username, pwd_res->pw_name, pwd_res->pw_uid, pwd_res->pw_gid);
+            res_uid = (id_t)n_res_uid;
+            res_gid = (id_t)(::gid_t)pwd_res->pw_gid;
+            username = std::string(pwd_res->pw_name);
+            homedir = std::string(pwd_res->pw_dir);
+            shell = std::string(pwd_res->pw_shell);
+            return true;
         }
         return false;
     }
