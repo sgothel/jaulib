@@ -2331,7 +2331,7 @@ void jau::cfmt::impl::StringOutput::appendError(size_t argIdx, int line, const s
 // Explicit instantiation definition of template function
 template class jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>;
 template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOneImpl<bool>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, bool const&);
-template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOneImpl<jau::cfmt::unsigned_integral_promotion>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, unsigned long const&);
+template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOneImpl<jau::cfmt::unsigned_integral_promotion>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, jau::cfmt::unsigned_integral_promotion const&);
 template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOneImpl<double>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, double const&);
 template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOneImpl<const void * const>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, void const* const&);
 template void jau::cfmt::impl::Parser<jau::cfmt::impl::StringOutput>::parseOneImpl<const char * const>(jau::cfmt::impl::FResult<jau::cfmt::impl::StringOutput>&, char const* const&);
