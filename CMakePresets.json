@@ -11,6 +11,7 @@
       "displayName": "Debug (cc, C++23, java)",
       "binaryDir": "${sourceDir}/build/debug",
       "cacheVariables": {
+        "JAU_CMAKE_NO_PRESETS": "ON",
         "CMAKE_CXX_STANDARD": "23",
         "DONT_USE_RTTI": "ON",
         "USE_LTO_FOR_ALL_TARGETS": "OFF",
@@ -153,12 +154,11 @@
     },
     {
       "name": "default",
-      "inherits": "debug-clang",
-      "displayName": "Default (debug-clang)",
+      "inherits": "debug-gcc",
+      "displayName": "Default (debug-gcc)",
       "binaryDir": "${sourceDir}/build/default",
       "cacheVariables": {
-        "CMAKE_INSTALL_PREFIX": "${sourceDir}/dist/default",
-        "CMAKE_CXX_CLANG_TIDY": "clang-tidy;-p;${sourceDir}/build/default"
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/dist/default"
       }
     }
   ],

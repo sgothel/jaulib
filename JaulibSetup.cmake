@@ -1,6 +1,10 @@
 #
 # jaulib cmake build settings, modularized to be optionally included by parent projects
 #
+# JaulibPreset can be
+# - enforced by setting `JAU_CMAKE_ENFORCE_PRESETS=ON`
+# - disabled by setting `JAU_CMAKE_NO_PRESETS=ON`
+#
 # JaulibPreset Cached variables are
 # - CMAKE_BUILD_TYPE
 # - BUILD_TESTING
@@ -34,20 +38,30 @@ include_guard(GLOBAL)
 macro(JaulibPreset)
     # Poor man's IDE integration, hard-coded presets for undefined variables
     message(STATUS "JaulibPreset: Start")
-
     cmake_policy(SET CMP0177 NEW)
+
+    if(DEFINED JAU_CMAKE_ENFORCE_PRESETS)
+        message(STATUS "JaulibPreset: JAU_CMAKE_ENFORCE_PRESETS: '${JAU_CMAKE_ENFORCE_PRESETS}'")
+    else()
+        message(STATUS "JaulibPreset: JAU_CMAKE_ENFORCE_PRESETS: undefined")
+    endif()
+    if(DEFINED JAU_CMAKE_NO_PRESETS)
+        message(STATUS "JaulibPreset: JAU_CMAKE_NO_PRESETS: '${JAU_CMAKE_NO_PRESETS}'")
+    else()
+        message(STATUS "JaulibPreset: JAU_CMAKE_NO_PRESETS: undefined")
+    endif()
 
     if( (NOT DEFINED JAU_CMAKE_ENFORCE_PRESETS) AND (DEFINED ENV{JAU_CMAKE_ENFORCE_PRESETS}) )
         set (JAU_CMAKE_ENFORCE_PRESETS $ENV{JAU_CMAKE_ENFORCE_PRESETS})
         message(STATUS "JaulibPreset: JAU_CMAKE_ENFORCE_PRESETS -> ${JAU_CMAKE_ENFORCE_PRESETS} (env)")
     endif()
     if( JAU_CMAKE_ENFORCE_PRESETS OR
-        ( (NOT DEFINED CMAKE_INSTALL_PREFIX) AND (NOT DEFINED CMAKE_CXX_CLANG_TIDY) ) )
+        ( (NOT JAU_CMAKE_NO_PRESETS) AND (NOT DEFINED CMAKE_INSTALL_PREFIX) AND (NOT DEFINED CMAKE_CXX_CLANG_TIDY) ) )
         message(STATUS "JaulibPreset: Enforcing hardcoded CMake Presets!")
         if(JAU_CMAKE_ENFORCE_PRESETS)
             message(STATUS "JaulibPreset: ... triggered by CMake variable JAU_CMAKE_ENFORCE_PRESETS ${JAU_CMAKE_ENFORCE_PRESETS}.")
-        elseif( (NOT DEFINED CMAKE_INSTALL_PREFIX) AND (NOT DEFINED CMAKE_CXX_CLANG_TIDY) )
-            message(STATUS "JaulibPreset: ... triggered by undefined CMAKE_INSTALL_PREFIX && CMAKE_CXX_CLANG_TIDY.")
+        else()
+            message(STATUS "JaulibPreset: ... triggered by !JAU_CMAKE_NO_PRESETS && undefined(CMAKE_INSTALL_PREFIX && CMAKE_CXX_CLANG_TIDY).")
         endif()
         set (JAU_CMAKE_HARD_PRESETS ON CACHE BOOL "" FORCE)
         if (DEFINED ENV{CMAKE_BUILD_PARALLEL_LEVEL})
@@ -256,7 +270,7 @@ set (CMAKE_CXX_STANDARD_REQUIRED ON)
 if(DEFINED CMAKE_CXX_STANDARD)
     message(STATUS "JaulibSetup: CMAKE_CXX_STANDARD (preset): ${CMAKE_CXX_STANDARD}, CMAKE_CXX_STANDARD_REQUIRED: ${CMAKE_CXX_STANDARD_REQUIRED}")
 else()
-    set(CMAKE_CXX_STANDARD 20 CACHE STRING "" FORCE)
+    set(CMAKE_CXX_STANDARD 23 CACHE STRING "" FORCE)
     message(STATUS "JaulibSetup: CMAKE_CXX_STANDARD (default): ${CMAKE_CXX_STANDARD}, CMAKE_CXX_STANDARD_REQUIRED: ${CMAKE_CXX_STANDARD_REQUIRED}")
 endif()
 

@@ -287,14 +287,14 @@ Following debug presets are defined in `CMakePresets.json`
     - enabled `clang-tidy`
     - binary-dir `build/debug-clang`
     - install-dir `dist/debug-clang`
-    - **`default`**
-      - binary-dir `build/default`
-      - install-dir `dist/default`
   - **`debug-gcc`**
     - compiler: `gcc`
     - disabled `clang-tidy`
     - binary-dir `build/debug-gcc`
     - install-dir `dist/debug-gcc`
+    - **`default`**
+      - binary-dir `build/default`
+      - install-dir `dist/default`
   - **`release`**
     - LTO for all targets enabled
     - debug disabled (strip libraries)
