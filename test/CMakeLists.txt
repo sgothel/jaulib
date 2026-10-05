@@ -70,12 +70,13 @@ foreach( name ${TARGETS_IDIOMATIC_TEST} )
     target_link_libraries(${name} jaulib catch2)
     add_dependencies(${name} jaulib catch2)
     add_test (NAME ${name} COMMAND ${name})
+    # set_property(TEST ${name} PROPERTY ENVIRONMENT "jau_debug=true;jau_verbose=true")
     if(DEFINED CMAKE_CXX_CLANG_TIDY)
         set_target_properties(${name} PROPERTIES CXX_CLANG_TIDY "${CMAKE_CXX_CLANG_TIDY};--checks;-bugprone-chained-comparison,-bugprone-macro-parentheses")
     endif()
 endforeach()
 
-IF( ( TEST_WITH_SUDO ) AND ( "${OS_NAME}" STREQUAL "linux" ) ) 
+IF( ( TEST_WITH_SUDO ) AND ( "${OS_NAME}" STREQUAL "linux" ) )
     set(test_data_sqfs_file ${CMAKE_CURRENT_BINARY_DIR}/test_data.sqfs CACHE FILEPATH "test_data sqfs image file" FORCE)
 
     add_custom_command (OUTPUT ${test_data_sqfs_file}
