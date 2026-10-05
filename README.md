@@ -326,6 +326,20 @@ Following debug presets are defined in `CMakePresets.json`
     - disabled `clang-tidy`
     - binary-dir `build/perf-gcc`
     - install-dir `dist/perf-gcc`
+- **`docker`**
+  - default generator
+  - compiler: `gcc`
+  - disabled `clang-tidy`
+  - C++23
+  - LTO for all targets enabled
+  - debug disabled
+  - java enabled
+  - libunwind (if available)
+  - libcurl (if available)
+  - testing on
+  - testing with sudo off
+  - binary-dir `build/docker`
+  - install-dir `dist/docker`
 
 Kick-off the workflow by e.g. using preset `release-gcc` to configure, build, test, install and building documentation.
 You may skip `install` and `doc_jau` by dropping it from `--target`.
@@ -509,12 +523,13 @@ supported via e.g. `scripts/build-preset.sh`.
 - `scripts/setup-emscripten.sh` .. emscripten setup
 - `scripts/build-preset.sh` .. initial build incl. install and unit testing using [presets](README.md#cmake_presets_optional)
 - `scripts/rebuild-preset.sh` .. rebuild using [presets](README.md#cmake_presets_optional)
-- `scripts/build-preset-cross.sh` .. [cross-build](#cross-build) using [presets](README.md#cmake_presets_optional)
-- `scripts/rebuild-preset-cross.sh` .. [cross-build](#cross-build) using [presets](README.md#cmake_presets_optional)
+- `scripts/build-preset-cross.sh` .. [cross-build](#manual-cross) using [presets](README.md#cmake_presets_optional)
+- `scripts/rebuild-preset-cross.sh` .. [cross-build](#manual-cross) using [presets](README.md#cmake_presets_optional)
+- `scripts/build-docker-fatjar-multiarch.sh` .. [docker-cross-build](#docker-cross)
 - `scripts/test_java.sh` .. invoke a java unit test
 - `scripts/test_exe_template.sh` .. invoke the symlink'ed files to invoke native unit tests
 
-### Cross Build
+### Cross-Build w/ own System-Image
 Also provided is a [cross-build script](scripts/build-preset-cross.sh)
 using chroot into a target system using [QEMU User space emulation](https://qemu-project.gitlab.io/qemu/user/main.html)
 and [Linux kernel binfmt_misc](https://wiki.debian.org/QemuUserEmulation)
@@ -524,6 +539,47 @@ See [Build Procedure](#build-procedure) for general overview.
 
 You may use [our pi-gen branch](https://jausoft.com/cgit/pi-gen.git/about/) to produce
 a Raspi-arm64, Raspi-armhf or PC-amd64 target image.
+
+<a name="docker-cross"></a>
+
+### Cross-Build w/ Docker
+
+Docker allows cross-platform builds via qemu `binfmt`
+w/o the hassle to maintain system images ourselves as [described above](#manual-cross).
+
+Find instructions to setup [a rootless Docker on Debian13](https://www.cybernatives.net/2026/02/27/2026-02-27_install-docker-debian-13-rootless-guide/),
+i.e. secure w/o `sudo` root access.
+
+To test the build configuration upfront, the cmake-preset `docker` can be used in a host build,
+using same cmake settings.
+
+Launch docker script:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+scripts/build-docker-fatjar-multiarch.sh [--rebuild] [--notesting] [--platforms "linux/amd64,linux/arm64/v8,linux/arm/v7"] [--out DIR]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Pass `--rebuild` to keep previous build artifacts, used in development
+- Pass `--notesting` to skip building and performing unit tests
+- Optionally pass one or a comma-separated set of platforms via `--platforms`
+
+The following steps kick-off a fresh Docker build
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}
+# one-time: register qemu binfmt for foreign-arch containers
+docker run --privileged --rm tonistiigi/binfmt --install arm64,arm
+
+scripts/build-docker-fatjar-multiarch.sh
+java -jar build-docker/fatjar/jaulib-fat.jar
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+It builds each architecture in a Debian container under that platform (docker + qemu) and merges the
+per-arch natives into a single fat jar at `build-docker/fatjar/jaulib-fat.jar`. This replaces the
+mounted-rootfs cross build in `scripts/build-preset-cross.sh`, which needs private disk images. Default
+architectures are `linux/amd64` + `linux/arm64/v8` + `linux/arm/v7`.
+
+Finally it performs a quick bring-up test w/ Java on the host platform,
+which should succeed if the host architecture was included in the `--platforms` list.
 
 ## IDE Integration
 

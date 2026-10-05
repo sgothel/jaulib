@@ -160,6 +160,24 @@
       "cacheVariables": {
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/dist/default"
       }
+    },
+    {
+      "name": "docker",
+      "displayName": "Docker (release-g++)",
+      "binaryDir": "${sourceDir}/build/docker",
+      "cacheVariables": {
+        "JAU_CMAKE_NO_PRESETS": "ON",
+        "CMAKE_BUILD_TYPE": "Release",
+        "DONT_USE_RTTI": "ON",
+        "USE_LTO_FOR_ALL_TARGETS": "ON",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "BUILDJAVA": "ON",
+        "BUILD_TESTING": "ON",
+        "TEST_WITH_SUDO": "OFF",
+        "JAU_CMAKE_FIX_INSTALL_PREFIX": "ON",
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/dist/docker"
+      }
     }
   ],
   "buildPresets": [
@@ -210,6 +228,10 @@
     {
       "name": "default",
       "configurePreset": "default"
+    },
+    {
+      "name": "docker",
+      "configurePreset": "docker"
     }
   ],
   "testPresets": [
@@ -270,6 +292,12 @@
     {
       "name": "default",
       "configurePreset": "default",
+      "output": {"outputOnFailure": true},
+      "execution": {"noTestsAction": "error", "stopOnFailure": true}
+    },
+    {
+      "name": "docker",
+      "configurePreset": "docker",
       "output": {"outputOnFailure": true},
       "execution": {"noTestsAction": "error", "stopOnFailure": true}
     }
