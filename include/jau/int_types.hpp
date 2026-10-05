@@ -71,7 +71,8 @@ namespace jau {
     template <int bytesize> struct float_bytes;
     template <> struct float_bytes<sizeof(float)>{ using type = float; };
     template <> struct float_bytes<sizeof(double)>{ using type = double; };
-    template <> struct float_bytes<sizeof(long double)>{ using type = long double; };
+    // template <> struct float_bytes<sizeof(long double)>{ using type = long double; };
+
     /// Alias template for float_bytes
     template <int bytesize>
       using float_bytes_t = float_bytes<bytesize>::type;
