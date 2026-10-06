@@ -142,7 +142,10 @@ TEST_CASE( "Test 11 LookAtPosY", "[mat4f][linear_algebra][math]" ) {
 }
 
 TEST_CASE( "Test 20 Float16Stack", "[stack][mat4f][math]" ) {
-    jau::math::util::Stack16f s1;
+    PRAGMA_DISABLE_WARNING_PUSH
+    PRAGMA_DISABLE_WARNING_UNUSED_VALUE
+
+    jau::math::util::Stack16f s1; // gcc 14.2 arm32 : -Wunused-value, https://gcc.gnu.org/bugzilla/show_bug.cgi?id=114970
     Mat4f m10( {  1.0f,  2.0f,  3.0f,  4.0f,  // column 0
                   5.0f,  6.0f,  7.0f,  8.0f,  // column 1
                   9.0f, 10.0f, 11.0f, 12.0f,  // column 2
@@ -158,10 +161,14 @@ TEST_CASE( "Test 20 Float16Stack", "[stack][mat4f][math]" ) {
     s1.pop(m12.begin());
     REQUIRE( m22 == m20 );
     REQUIRE( m12 == m10 );
+    PRAGMA_DISABLE_WARNING_POP
 }
 
 TEST_CASE( "Test 21 Mat4fStack", "[stack][mat4f][math]" ) {
-    jau::math::util::Mat4fStack s1;
+    PRAGMA_DISABLE_WARNING_PUSH
+    PRAGMA_DISABLE_WARNING_UNUSED_VALUE
+
+    jau::math::util::Mat4fStack s1; // gcc 14.2 arm32 : -Wunused-value, https://gcc.gnu.org/bugzilla/show_bug.cgi?id=114970
     Mat4f m10( {  1.0f,  2.0f,  3.0f,  4.0f,  // column 0
                   5.0f,  6.0f,  7.0f,  8.0f,  // column 1
                   9.0f, 10.0f, 11.0f, 12.0f,  // column 2
@@ -177,4 +184,5 @@ TEST_CASE( "Test 21 Mat4fStack", "[stack][mat4f][math]" ) {
     s1.pop(m12);
     REQUIRE( m22 == m20 );
     REQUIRE( m12 == m10 );
+    PRAGMA_DISABLE_WARNING_POP
 }

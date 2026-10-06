@@ -52,6 +52,7 @@ namespace jau {
     #define PRAGMA_DISABLE_WARNING_PEDANTIC
     #define PRAGMA_DISABLE_WARNING_ZERO_LENGTH_ARRAY
     #define PRAGMA_DISABLE_WARNING_TYPE_RANGE_LIMIT
+    #define PRAGMA_DISABLE_WARNING_UNUSED_VALUE
     #define PRAGMA_WARNING_MESSAGE(M)                               DO_PRAGMA(message "MSC: "#M)
 
 #elif defined(__GNUC__) || defined(__clang__)
@@ -90,6 +91,7 @@ namespace jau {
                                                                     PRAGMA_DISABLE_WARNING(-Wtautological-type-limit-compare)
         #define PRAGMA_WARNING_MESSAGE(M)                           DO_PRAGMA(message "GCC|CLANG: "#M)
     #endif
+    #define PRAGMA_DISABLE_WARNING_UNUSED_VALUE                     PRAGMA_DISABLE_WARNING(-Wunused-value)
 
 #else
     #define PRAGMA_DISABLE_WARNING_PUSH
@@ -110,7 +112,8 @@ namespace jau {
     #define PRAGMA_DISABLE_WARNING_PEDANTIC
     #define PRAGMA_DISABLE_WARNING_ZERO_LENGTH_ARRAY
     #define PRAGMA_DISABLE_WARNING_TYPE_RANGE_LIMIT
-    #define PRAGMA_WARNING_MESSAGE(M)                              DO_PRAGMA(message "Any-CC: "#M)
+    #define PRAGMA_DISABLE_WARNING_UNUSED_VALUE
+    #define PRAGMA_WARNING_MESSAGE(M)                               DO_PRAGMA(message "Any-CC: "#M)
 
 #endif
 

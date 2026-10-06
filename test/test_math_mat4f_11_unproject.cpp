@@ -40,7 +40,9 @@ TEST_CASE( "Test 01 Unproject NaN", "[unproject][mat4f][linear_algebra][math]" )
     const Recti viewport(0,0,800,600);
     const float pick[] = { 400, 300, 0 };
 
-    Vec3f objPos(NaN, NaN, NaN);
+    PRAGMA_DISABLE_WARNING_PUSH
+    PRAGMA_DISABLE_WARNING_UNUSED_VALUE
+    Vec3f objPos(NaN, NaN, NaN); // gcc 14.2 arm32 : -Wunused-value, https://gcc.gnu.org/bugzilla/show_bug.cgi?id=114970
 
     // gluUnProject
     bool res = Mat4f::mapWinToObj(pick[0], pick[1], pick[2],
@@ -52,6 +54,7 @@ TEST_CASE( "Test 01 Unproject NaN", "[unproject][mat4f][linear_algebra][math]" )
     REQUIRE( false == std::isnan(objPos.z) );
 
     REQUIRE( true == res );
+    PRAGMA_DISABLE_WARNING_POP
 }
 
 TEST_CASE( "Test 10 Unproject Pick 1", "[unproject][mat4f][linear_algebra][math]" ) {
