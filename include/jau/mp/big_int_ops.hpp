@@ -47,7 +47,7 @@ namespace jau::mp {
         constexpr size_t mp_word_bits = impl::best_word_byte_size() * CHAR_BIT;
         typedef jau::uint_bytes<impl::best_word_byte_size()>::type mp_word_t;
         typedef jau::uint_bytes<impl::best_word_byte_size()*2>::type mp_dword_t;
-        constexpr bool has_mp_dword = is_builtin_int128_available();
+        constexpr bool has_mp_dword = 64 == mp_word_bits ? is_builtin_int128_available() : true;
     #elif 1
         constexpr size_t mp_word_bits = 32;
         typedef uint32_t mp_word_t;
@@ -149,11 +149,12 @@ namespace jau::mp::ops {
 
     /** 64x64->128 bit multiplication */
     inline void mul64x64_128(const uint64_t a, const uint64_t b, uint64_t& lo, uint64_t& hi) noexcept {
-        if constexpr ( is_builtin_int128_available() ) {
+        #if defined(__SIZEOF_INT128__)
+        // -> is_builtin_int128_available()
             const uint128_t r = static_cast<uint128_t>(a) * b;
             hi = (r >> 64) & 0xFFFFFFFFFFFFFFFFUL;
             lo =  r        & 0xFFFFFFFFFFFFFFFFUL;
-        } else {
+        #else
             /*
              * Do a 64x64->128 multiply using four 32x32->64 multiplies plus
              * some adds and shifts. Last resort for CPUs like UltraSPARC (with
@@ -183,7 +184,7 @@ namespace jau::mp::ops {
 
             hi = x0 + (x2 >> HWORD_BITS);
             lo  = ((x2 & HWORD_MASK) << HWORD_BITS) + (x3 & HWORD_MASK);
-        }
+        #endif
     }
 
     /** Word Multiply/Add */
