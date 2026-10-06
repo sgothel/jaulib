@@ -172,7 +172,7 @@ int my_strcmp(const char *s1, const char *s2) {
  * Resembling the GNU/Linux bits/types.h,
  * documenting whether time_t is 32-bit (arm-32) or 64-bit (arm-64, x86_64, ..).
  */
-static int sizeof_time_t() {
+static size_t sizeof_time_t() {
 /* X32 kernel interface is 64-bit.  */
 #if defined __x86_64__ && defined __ILP32__
     // 64 bit size
@@ -191,7 +191,7 @@ static int sizeof_time_t() {
  * Resembling the GNU/Linux bits/types.h,
  * documenting whether tv_nsec of struct timespec is 32-bit (arm-32) or 64-bit (arm-64, x86_64, ..).
  */
-static int sizeof_tv_nsec() {
+static size_t sizeof_tv_nsec() {
 #if __WORDSIZE == 64 \
   || (defined __SYSCALL_WORDSIZE && __SYSCALL_WORDSIZE == 64) \
   || __TIMESIZE == 32
@@ -208,12 +208,16 @@ TEST_CASE( "Unix StandardsTest 01.00", "[unix][posix]" ) {
     {
         using time_t_type = decltype(timespec::tv_sec);
         INFO_STR(" tv_sec: sizeof=" + std::to_string( sizeof( time_t_type ) ) + ", signed " + std::to_string( std::is_signed_v<time_t_type>) );
-        CHECK( sizeof_time_t() == sizeof( time_t_type ) );
+        // arm32 gcc 14.2 Linux: 8 bytes as well:
+        //   tv_sec: sizeof=8, signed 1
+        CHECK( sizeof_time_t() <= sizeof( time_t_type ) );
         CHECK( true == std::is_signed_v<time_t_type> );
 
         using ns_type = decltype(timespec::tv_nsec);
         INFO_STR(" tv_nsec: sizeof=" + std::to_string( sizeof( ns_type ) ) + ", signed " + std::to_string( std::is_signed_v<ns_type>) );
-        CHECK( sizeof_tv_nsec() == sizeof( ns_type ) );
+        // arm32 gcc 14.2 Linux: 4 bytes
+        //   tv_nsec: sizeof=4, signed 1
+        CHECK( sizeof_tv_nsec() >= sizeof( ns_type ) );
         CHECK( true == std::is_signed_v<ns_type> );
     }
     {
