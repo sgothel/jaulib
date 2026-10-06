@@ -40,18 +40,21 @@ namespace jau {
      *
      * Bit-position and bit-order are in least-significant-bits (lsb) first.
      *
-     * Implementations utilizes a dynamic heap `std::vector<jau::nsize_t>` StorageType.
+     * Implementations utilizes a dynamic heap `std::vector<StorageUnitType>` for storage.
      *
      * Similar to std::bitset, but utilizing dynamic runtime heapsize and  providing custom methods.
      *
+     * @tparam StorageUnitType unsigned integral type of underlying storage unit w/ size < size_t, usually jau::nsize_t
      * @see jau::bitview
      * @see jau::bitfield
      * @see jau::nsize_t
      */
-    class bitheap : public jau::bitview<jau::nsize_t> {
+    template<jau::req::unsigned_integral StorageUnitType>
+        requires requires (StorageUnitType) { sizeof(StorageUnitType) <= sizeof(size_t); }
+    class bitheap : public jau::bitview<StorageUnitType> {
       public:
-        typedef jau::nsize_t unit_type;                                               ///< Unit data type
-        typedef jau::bitview<unit_type> bitview_t;                                    ///< Storage bitview
+        typedef jau::bitview<StorageUnitType>::unit_type unit_type; ///< Unit data type
+        typedef jau::bitview<unit_type> bitview_t;                  ///< Storage bitview
         using typename bitview_t::size_type;
 
         static constexpr size_type unitSize(size_type bitSize) noexcept { return (bitSize + bitview_t::unit_bit_size - 1) >> bitview_t::unit_shift; }
@@ -101,7 +104,7 @@ namespace jau {
         const bitview_t& view() const noexcept { return *this; }
 
         void resize(size_t new_bit_size) {
-            if (size() != new_bit_size) {
+            if (bitview_t::size() != new_bit_size) {
                 m_storage.resize(unitSize(new_bit_size), 0);
                 bitview_t::reset(m_storage, new_bit_size);
             }
@@ -110,7 +113,7 @@ namespace jau {
         std::pair<bitheap, bool> subbits(size_type bitpos, size_type length) const noexcept {
             if ( 0 == length ) {
                 return { bitheap(0), true };
-            } else if ( !in_range(bitpos, length) ) {
+            } else if ( !bitview_t::in_range(bitpos, length) ) {
                 return { bitheap(0), false };
             }
             std::pair<bitheap, bool> r{ bitheap(length), true };
@@ -123,7 +126,9 @@ namespace jau {
         }
     };
 
-    inline std::ostream &operator<<(std::ostream &out, const bitheap &v) {
+    template<jau::req::unsigned_integral StorageUnitType>
+        requires requires (StorageUnitType) { sizeof(StorageUnitType) <= sizeof(size_t); }
+    inline std::ostream &operator<<(std::ostream &out, const bitheap<StorageUnitType> &v) {
         return out << v.toString();
     }
 

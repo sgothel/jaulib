@@ -41,19 +41,20 @@ namespace jau {
      *
      * Bit-position and bit-order are in least-significant-bits (lsb) first.
      *
-     * Implementations utilizes a memory proxy `std::span<StorageType>`
-     * with unsigned integral StorageType of sizeof(StorageType) <= sizeof(size_t).
+     * Implementations utilizes a memory proxy `std::span<StorageUnitType>`
+     * with unsigned integral StorageUnitType of sizeof(StorageUnitType) <= sizeof(size_t).
      *
      * Similar to std::bitset, but using a storage proxy std::span and providing custom methods.
      *
+     * @tparam StorageUnitType unsigned integral type of underlying storage w/ size < size_t
      * @see jau::bitheap
      * @see jau::bitaccess_t
      */
-    template<jau::req::unsigned_integral StorageType>
-        requires requires (StorageType) { sizeof(StorageType) <= sizeof(size_t); }
+    template<jau::req::unsigned_integral StorageUnitType>
+        requires requires (StorageUnitType) { sizeof(StorageUnitType) <= sizeof(size_t); }
     class bitview {
       public:
-        typedef StorageType unit_type;                                                ///< Unit data type
+        typedef StorageUnitType unit_type;                                            ///< Unit data type
         typedef size_t   size_type;                                                   ///< size_t data type, bit position and count
         typedef std::span<unit_type> storage_t;                                       ///< storage view
         static constexpr size_type unit_byte_size = sizeof(unit_type);                ///< One unit size in bytes
@@ -564,9 +565,9 @@ namespace jau {
         }
     };
 
-    template<jau::req::unsigned_integral StorageType>
-        requires requires (StorageType) { sizeof(StorageType) <= sizeof(size_t); }
-    inline std::ostream &operator<<(std::ostream &out, const bitview<StorageType> &v) {
+    template<jau::req::unsigned_integral StorageUnitType>
+        requires requires (StorageUnitType) { sizeof(StorageUnitType) <= sizeof(size_t); }
+    inline std::ostream &operator<<(std::ostream &out, const bitview<StorageUnitType> &v) {
         return out << v.toString();
     }
 

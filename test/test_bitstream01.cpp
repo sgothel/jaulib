@@ -43,8 +43,8 @@ TEST_CASE( "Bitstream Test 00", "[bitstream]" ) {
     REQUIRE( true == true );
 }
 
-static jau::bitheap getBitfield(const jau::nsize_t bitCount, const jau::bit_order_t bitOrder) {
-    jau::bitheap source(bitCount);
+static jau::bitheap<jau::nsize_t> getBitfield(const jau::nsize_t bitCount, const jau::bit_order_t bitOrder) {
+    jau::bitheap<jau::nsize_t> source(bitCount);
     std::string_view in = BitDemoData::testStringMSB64_be;
 
     // msb 1111101011011110101011111111111011011110101011111100101011111110
@@ -99,7 +99,7 @@ static std::string getTestStreamResultAsString(const jau::bit_order_t dataBitOrd
     REQUIRE(true == preOK);
     REQUIRE(true == postOK);
 
-    jau::bitheap r(preBits+postBits);
+    jau::bitheap<jau::nsize_t> r(preBits+postBits);
     REQUIRE(true == r.put(0, pre));
     REQUIRE(true == r.put(preBits, post));
     std::cerr << "ResultExp: <" << pre << "> + <" << post << "> = <" << r << ">\n";

@@ -49,7 +49,7 @@ TEST_CASE( "Bitview Test 00a", "[bitview]" ) {
             jau::type_cue<mybitview>::fprint(stdout, "jau::bitfield_t<jau::nsize_t, 64 bits, 8 bytes>", jau::TypeTraitGroup::ALL);
         }
         {
-            typedef jau::bitheap mybitview; // 56 bytes
+            typedef jau::bitheap<jau::nsize_t> mybitview; // 56 bytes
             mybitview b1(bits);
             std::cout << "Info " << __LINE__ << ": jau::bitheap " << jau::type_cue<mybitview>::to_string() << ", sizeof(b1) = " << sizeof(b1) << "\n";
             jau::type_cue<mybitview>::fprint(stdout, "jau::bitheap", jau::TypeTraitGroup::ALL);
@@ -254,10 +254,10 @@ TEST_CASE( "Bitview Test 00b", "[bitview]" ) {
         mybitview b1(offset, storage, bits);
 
         size_t s_count1, s_count2;
-        storage[0] = 0b1010101010101010101010101010101010101010101010101010101010101010; // 32 total, 30 used
-        storage[1] = 0b1111111111111110000000000000001111111111111110000000000000000111; // 33
-        storage[2] = 0b1111111111111110000000000000001111111111111110000000000000000111; // 33
-        storage[3] = 0b0000000000000000111111111111111100000000000000001111111111111111; // 32 = 130 (total), 9 = 105 (used)
+        storage[0] = 0b1010101010101010101010101010101010101010101010101010101010101010_u64; // 32 total, 30 used
+        storage[1] = 0b1111111111111110000000000000001111111111111110000000000000000111_u64; // 33
+        storage[2] = 0b1111111111111110000000000000001111111111111110000000000000000111_u64; // 33
+        storage[3] = 0b0000000000000000111111111111111100000000000000001111111111111111_u64; // 32 = 130 (total), 9 = 105 (used)
         REQUIRE(32 == jau::bit_count(storage[0]));
         REQUIRE(30 == jau::bit_count(storage[0] & ~0b11111_u64));
         REQUIRE(33 == jau::bit_count(storage[1]));
@@ -316,7 +316,7 @@ TEST_CASE( "Bitview Test 00b", "[bitview]" ) {
         }
         {
             const std::string p = "11110101010101010101010101010101010101010101010101010101010101"; // 62
-            jau::bitheap b2(p);
+            jau::bitheap<storagetype> b2(p);
             std::cout << "XXX.0 " << __LINE__ << ", " << b2.infoString() << "\n";
             mybitview b3 = b1.subview(0, 62).first;
             std::cout << "XXX.1 " << __LINE__ << ", " << b3.infoString() << "\n";
@@ -326,7 +326,7 @@ TEST_CASE( "Bitview Test 00b", "[bitview]" ) {
             // 111111111000000000000000011110101010101010101010101010101010101010101010101010101010101
             // 11111111100000000000000001111010101010101010101010 o=37, l=50
             const std::string p = "11111111100000000000000001111010101010101010101010"; // 50
-            jau::bitheap b2(p);
+            jau::bitheap<storagetype> b2(p);
             std::cout << "XXX.0 " << __LINE__ << ", " << b2.infoString() << "\n";
             mybitview b3 = b1.subview(37, 50).first;
             std::cout << "XXX.1 " << __LINE__ << ", " << b3.infoString() << "\n";
@@ -447,7 +447,7 @@ TEST_CASE( "Bitfield Test 01 BitCount32_One", "[bitfield]" ) {
     }
 }
 
-static jau::bitheap getBitheap(const jau::bit_order_t dataBitOrder,
+static jau::bitheap<jau::nsize_t> getBitheap(const jau::bit_order_t dataBitOrder,
                                const jau::nsize_t preBits, const jau::nsize_t skipBits, const jau::nsize_t postBits) {
     const jau::nsize_t totalBits = preBits+postBits;
     jau_fprintf(stderr,"XXX getBitheap: bitOrder %s, preBits %zu, skipBits %zu, postBits %zu, totalBits %zu\n",
@@ -456,7 +456,7 @@ static jau::bitheap getBitheap(const jau::bit_order_t dataBitOrder,
     // msb 11111010 11011110 10101111 11111110 11011110 10101111 11001010 11111110
     // lsb 01111111 01010011 11110101 01111011 01111111 11110101 01111011 01011111
     std::string_view in = BitDemoData::testStringMSB64_be;
-    jau::bitheap source(in);
+    jau::bitheap<jau::nsize_t> source(in);
     if( jau::bit_order_t::msb != dataBitOrder ) {
         source.reverse();
         REQUIRE(BitDemoData::testStringLSB64_le == source.toString());
@@ -467,7 +467,7 @@ static jau::bitheap getBitheap(const jau::bit_order_t dataBitOrder,
     REQUIRE(true == preOK);
     REQUIRE(true == postOK);
 
-    jau::bitheap r(preBits+postBits);
+    jau::bitheap<jau::nsize_t> r(preBits+postBits);
     REQUIRE(true == r.put(0, pre));
     REQUIRE(true == r.put(preBits, post));
     std::cerr << "ResultExp: <" << pre << "> + <" << post << "> = <" << r << ">\n";
@@ -479,14 +479,14 @@ static jau::bitheap getBitheap(const jau::bit_order_t dataBitOrder,
 
 TEST_CASE("Bitfield Test 01 subbits", "[bitfield][subbits]") {
     // msb 11111010 11011110 10101111 11111110 11011110 10101111 11001010 11111110
-    REQUIRE(jau::bitheap("11111110") == getBitheap(jau::bit_order_t::msb, 0, 0, 8));
-    REQUIRE(jau::bitheap("010") == getBitheap(jau::bit_order_t::msb, 0, 8, 3));
-    REQUIRE(jau::bitheap("01011111110") == getBitheap(jau::bit_order_t::msb, 8, 0, 3));
+    REQUIRE(jau::bitheap<jau::nsize_t>("11111110") == getBitheap(jau::bit_order_t::msb, 0, 0, 8));
+    REQUIRE(jau::bitheap<jau::nsize_t>("010") == getBitheap(jau::bit_order_t::msb, 0, 8, 3));
+    REQUIRE(jau::bitheap<jau::nsize_t>("01011111110") == getBitheap(jau::bit_order_t::msb, 8, 0, 3));
     // msb 11111010 11011110 10101111 11111110 11011110 10101111 11001010 11111110
     // lsb 01111111 01010011 11110101 01111011 01111111 11110101 01111011 01011111
-    REQUIRE(jau::bitheap("01011111") == getBitheap(jau::bit_order_t::lsb, 0, 0, 8));
-    REQUIRE(jau::bitheap("011") == getBitheap(jau::bit_order_t::lsb, 0, 8, 3));
-    REQUIRE(jau::bitheap("01101011111") == getBitheap(jau::bit_order_t::lsb, 8, 0, 3));
+    REQUIRE(jau::bitheap<jau::nsize_t>("01011111") == getBitheap(jau::bit_order_t::lsb, 0, 0, 8));
+    REQUIRE(jau::bitheap<jau::nsize_t>("011") == getBitheap(jau::bit_order_t::lsb, 0, 8, 3));
+    REQUIRE(jau::bitheap<jau::nsize_t>("01101011111") == getBitheap(jau::bit_order_t::lsb, 8, 0, 3));
 }
 
 /**
@@ -992,9 +992,9 @@ TEST_CASE("Bitfield Test 30 Aligned Reverse", "[bitfield][bitreverse]") {
         REQUIRE(BitDemoData::testStringLSB64_le == has.toString());
     }
     {
-        jau::bitheap source(BitDemoData::testStringMSB64_be);
+        jau::bitheap<jau::nsize_t> source(BitDemoData::testStringMSB64_be);
         source.reverse();
-        REQUIRE(jau::bitheap(BitDemoData::testStringLSB64_le) == source);
+        REQUIRE(jau::bitheap<jau::nsize_t>(BitDemoData::testStringLSB64_le) == source);
         REQUIRE(BitDemoData::testStringLSB64_le == source.toString());
     }
 
