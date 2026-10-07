@@ -77,6 +77,7 @@ enum class plain_scoped_signed_enum_t : signed { // NOLINT(misc-use-internal-lin
 
 TEST_CASE("jau::cfmt::cspec_t from type", "[jau][jau::cfmt]") {
     static_assert(jau::cfmt::cspec_t::unsigned_int      == jau::cfmt::to_cspec<unsigned char>());
+    static_assert(jau::cfmt::cspec_t::signed_int        == jau::cfmt::to_cspec<signed char>());
     static_assert(jau::cfmt::cspec_t::character         == jau::cfmt::to_cspec<char>());
     static_assert(jau::cfmt::cspec_t::string            == jau::cfmt::to_cspec<bool>());
     static_assert(jau::cfmt::cspec_t::unsigned_int      == jau::cfmt::to_cspec<unsigned short>());
@@ -226,7 +227,29 @@ TEST_CASE("jau::cfmt::FormatOpts with auto", "[jau][jau::cfmt]") {
     }
     {
         using namespace jau::cfmt;
-        unsigned char v=1;
+        signed char v=65;
+        static_assert(jau::cfmt::cspec_t::signed_int == jau::cfmt::to_cspec<decltype(v)>());
+
+        std::string s;
+        jau::cfmt::Result r = jau::cfmt::formatR(s,"%?", v);
+        std::cerr << "FormatResult " << r << "\n";
+        std::cerr << "FormatString '" << s << "'\n";
+        REQUIRE( true == r.success());
+        REQUIRE( 1 == r.argumentCount());
+        REQUIRE( flags_t::none == r.opts().flags);
+        REQUIRE( false == r.opts().width_set);
+        REQUIRE( 0 == r.opts().width);
+        REQUIRE( false == r.opts().precision_set);
+        REQUIRE( 0 == r.opts().precision);
+        REQUIRE( jau::cfmt::cspec_t::signed_int == r.opts().conversion);
+#ifdef JAU_CFMT_TRACK_FORMAT_OPTS_LEN
+        REQUIRE( jau::cfmt::plength_t::any == r.opts().length_mod);
+#endif
+        REQUIRE( "65" == s);
+    }
+    {
+        using namespace jau::cfmt;
+        unsigned char v=65;
         static_assert(jau::cfmt::cspec_t::unsigned_int == jau::cfmt::to_cspec<decltype(v)>());
 
         std::string s;
@@ -244,7 +267,7 @@ TEST_CASE("jau::cfmt::FormatOpts with auto", "[jau][jau::cfmt]") {
 #ifdef JAU_CFMT_TRACK_FORMAT_OPTS_LEN
         REQUIRE( jau::cfmt::plength_t::any == r.opts().length_mod);
 #endif
-        REQUIRE( "1" == s);
+        REQUIRE( "65" == s);
     }
     {
         using namespace jau::cfmt;
@@ -692,9 +715,6 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
     checkFormat(__LINE__, "%#020x", 305441741);
     checkFormat(__LINE__, "%zd", 2147483647L);
 
-    #if !JAU_CFMT_IGNORE_LENGTH_MODIFIER
-        static_assert(0 < jau::cfmt::checkLine("%zd", 2147483647UL)); // failed intentionally unsigned -> signed
-    #endif
     checkFormat(__LINE__, "%zu", 2147483647UL);
 
     static_assert(0 == jau::cfmt::checkLine("%s", (const char*)"Test"));
@@ -883,7 +903,8 @@ TEST_CASE("integral_conversion", "[jau][std::string][jau::cfmt]") {
     static constexpr const char *format_check_exp2b = "format_check: A, 02, -03, 0004, -0005, 000006, -000007, 00000008, -00000009, 0000000010";
     char i1=-1;
     char i1b=65;
-    unsigned char i2=2;
+    unsigned char i1u=2;
+    signed char i1s=-2;
 
     short i3=-3;
     unsigned short i4=4;
@@ -898,20 +919,21 @@ TEST_CASE("integral_conversion", "[jau][std::string][jau::cfmt]") {
     size_t i10 = 10;
 
     static_assert(jau::cfmt::cspec_t::character == jau::cfmt::to_cspec<decltype(i1)>());
-    static_assert(jau::cfmt::cspec_t::unsigned_int == jau::cfmt::to_cspec<decltype(i2)>());
+    static_assert(jau::cfmt::cspec_t::unsigned_int == jau::cfmt::to_cspec<decltype(i1u)>());
+    static_assert(jau::cfmt::cspec_t::signed_int == jau::cfmt::to_cspec<decltype(i1s)>());
 
     jau_format_check("format_check: %?", i1);
     CHECK("format_check: A" == jau::cfmt::format("format_check: %?", i1b));
 
-    jau_format_check("format_check: %hhd, %hhu, %hd, %hu, %d, %u, %ld, %lu, %zd, %zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
-    CHECK(format_check_exp1a == jau::cfmt::format("format_check: %hhd, %hhu, %hd, %hu, %d, %u, %ld, %lu, %zd, %zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10));
-    jau_format_check("format_check: %?, %?, %?, %?, %?, %?, %?, %?, %?, %?", i1b, i2, i3, i4, i5, i6, i7, i8, i9, i10);
-    CHECK(format_check_exp1b == jau::cfmt::format("format_check: %?, %?, %?, %?, %?, %?, %?, %?, %?, %?", i1b, i2, i3, i4, i5, i6, i7, i8, i9, i10));
+    jau_format_check("format_check: %hhd, %hhu, %hd, %hu, %d, %u, %ld, %lu, %zd, %zu", i1, i1u, i3, i4, i5, i6, i7, i8, i9, i10);
+    CHECK(format_check_exp1a == jau::cfmt::format("format_check: %hhd, %hhu, %hd, %hu, %d, %u, %ld, %lu, %zd, %zu", i1, i1u, i3, i4, i5, i6, i7, i8, i9, i10));
+    jau_format_check("format_check: %?, %?, %?, %?, %?, %?, %?, %?, %?, %?", i1b, i1u, i3, i4, i5, i6, i7, i8, i9, i10);
+    CHECK(format_check_exp1b == jau::cfmt::format("format_check: %?, %?, %?, %?, %?, %?, %?, %?, %?, %?", i1b, i1u, i3, i4, i5, i6, i7, i8, i9, i10));
 
-    jau_format_check("format_check: %01hhd, %02hhu, %03hd, %04hu, %05d, %06u, %07ld, %08lu, %09zd, %010zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
-    CHECK(format_check_exp2a == jau::cfmt::format("format_check: %01hhd, %02hhu, %03hd, %04hu, %05d, %06u, %07ld, %08lu, %09zd, %010zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10));
-    jau_format_check("format_check: %01?, %02?, %03?, %04?, %05?, %06?, %07?, %08?, %09?, %010?", i1b, i2, i3, i4, i5, i6, i7, i8, i9, i10);
-    CHECK(format_check_exp2b == jau::cfmt::format("format_check: %01?, %02?, %03?, %04?, %05?, %06?, %07?, %08?, %09?, %010?", i1b, i2, i3, i4, i5, i6, i7, i8, i9, i10));
+    jau_format_check("format_check: %01hhd, %02hhu, %03hd, %04hu, %05d, %06u, %07ld, %08lu, %09zd, %010zu", i1, i1u, i3, i4, i5, i6, i7, i8, i9, i10);
+    CHECK(format_check_exp2a == jau::cfmt::format("format_check: %01hhd, %02hhu, %03hd, %04hu, %05d, %06u, %07ld, %08lu, %09zd, %010zu", i1, i1u, i3, i4, i5, i6, i7, i8, i9, i10));
+    jau_format_check("format_check: %01?, %02?, %03?, %04?, %05?, %06?, %07?, %08?, %09?, %010?", i1b, i1u, i3, i4, i5, i6, i7, i8, i9, i10);
+    CHECK(format_check_exp2b == jau::cfmt::format("format_check: %01?, %02?, %03?, %04?, %05?, %06?, %07?, %08?, %09?, %010?", i1b, i1u, i3, i4, i5, i6, i7, i8, i9, i10));
 }
 
 TEST_CASE("thousands_flag", "[jau][std::string][jau::cfmt][flags]" ) {
@@ -2158,16 +2180,18 @@ TEST_CASE("types", "[jau][std::string][jau::cfmt][types]" ) {
   buffer = jau::cfmt::format("%zd", 2147483647L);
   CHECK(buffer == "2147483647");
 
+  using namespace jau::int_literals;
+
+  static_assert(0 == jau::cfmt::checkLine("%zu", 2147483647_u64));
   // failed intentionally unsigned -> signed 64-bit
-  static_assert(0 < jau::cfmt::checkLine("%zd", 2147483647UL));
+  static_assert(0 < jau::cfmt::checkLine("%zd", 2147483647_u64));
   // buffer = jau::cfmt::format("%zd", 2147483647UL);
   // CHECK(buffer == "2147483647");
 
   if (sizeof(size_t) == sizeof(long)) {
     buffer = jau::cfmt::format("%zi", -2147483647L);
     CHECK(buffer == "-2147483647");
-  }
-  else {
+  } else {
     buffer = jau::cfmt::format("%zi", -2147483647LL);
     CHECK(buffer == "-2147483647");
   }

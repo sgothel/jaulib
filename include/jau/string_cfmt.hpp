@@ -120,6 +120,7 @@ namespace jau::cfmt {
      *   - Allows unsigned to signed type conversion if sizeof(unsigned type) < sizeof(signed_integral_promotion)
      *     - Compile time check
      *   - Otherwise fails intentionally
+     *   - Unified `char` formatting as `signed char` across all platforms
      *
      * #### Behavior
      * - No exceptions are thrown (see [safety](#jau_cfmt_safety) below)
@@ -225,9 +226,9 @@ namespace jau::cfmt {
      *
      *  Argument Type (jau::req)           | Spec | cspec_t            | Notes                             |
      *  :----------------------------------| :----| :------------------| :---------------------------------|
-     *  `character`                        | `c`  | `character`        |                                   |
-     *  `signed_integer`                   | `d`  | `signed_integer`   | !`boolean`, !`character`          |
-     *  `unsigned_integer`                 | `u`  | `unsigned_integer` | !`boolean`, !`character`          |
+     *  `plain_character`                  | `c`  | `character`        |                                   |
+     *  `signed_integer`                   | `d`  | `signed_integer`   | !`boolean`, !`plain_character`    |
+     *  `unsigned_integer`                 | `u`  | `unsigned_integer` | !`boolean`, !`plain_character`    |
      *  `enumeration` / `signed_integer`   | `d`  | `signed_integer`   | !`stringifiable`                  |
      *  `enumeration` / `unsigned_integer` | `u`  | `unsigned_integer` | !`stringifiable`                  |
      *  `floating-point`                   | `f`  | `floating_point`   |                                   |
@@ -397,17 +398,17 @@ namespace jau::cfmt {
     }
 
     template <typename T>
-    requires jau::req::character<T>
+    requires jau::req::plain_character<T>
     consteval cspec_t to_cspec() noexcept {
         return cspec_t::character;
     }
     template <typename T>
-    requires jau::req::unsigned_integer<T> && (!jau::req::character<T>)
+    requires jau::req::unsigned_integer<T> && (!jau::req::plain_character<T>)
     consteval cspec_t to_cspec() noexcept {
         return cspec_t::unsigned_int;
     }
     template <typename T>
-    requires jau::req::signed_integer<T> && (!jau::req::character<T>)
+    requires jau::req::signed_integer<T> && (!jau::req::plain_character<T>)
     consteval cspec_t to_cspec() noexcept {
         return cspec_t::signed_int;
     }
@@ -1119,7 +1120,18 @@ namespace jau::cfmt {
             }
 
             template <typename T>
-            requires jau::req::any_integer<T>
+            requires jau::req::plain_character<T>
+            CXX_NO_INLINE
+            static constexpr void parseOne(Result &pc, const T &val) noexcept {
+                using namespace jau::req;
+                const signed char sc = static_cast<signed char>( val );
+                pc.template set_arg<signed char>(sc); // Unified `signed char` for same `char` formatting across platforms
+                pc.m_arg_aconvert = cspec_t::character;
+                parseOneImpl<unsigned_integral_promotion>(pc, unsigned_int(sc));
+            }
+
+            template <typename T>
+            requires jau::req::any_integer<T> && (!jau::req::plain_character<T>)
             CXX_NO_INLINE
             static constexpr void parseOne(Result &pc, const T &val) noexcept {
                 using namespace jau::req;
