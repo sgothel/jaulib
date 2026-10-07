@@ -123,17 +123,41 @@ TEST_CASE( "01 Type Concept Queries: Build-In") {
         sizeof(double)                     8          8         8
         sizeof(long double)               16         16         8
     */
-    jau::fprintf_td(stderr, "std::is_integral_v<char>: %s\n", std::is_integral_v<char> );
-    jau::fprintf_td(stderr, "jau::req::integer<char>: %s\n", jau::req::integer<char> );
-    jau::fprintf_td(stderr, "jau::req::boolean<char>: %s\n", jau::req::boolean<char> );
-    jau::fprintf_td(stderr, "std::is_unsigned_v<char>: %s\n", std::is_unsigned_v<char> );
-    jau::fprintf_td(stderr, "jau::req::signed_integer<char>: %s\n", jau::req::signed_integer<char> );
-    jau::fprintf_td(stderr, "jau::req::unsigned_integer<char>: %s\n", jau::req::unsigned_integer<char> );
-    jau::fprintf_td(stderr, "sizeof(float): %u\n", sizeof(float) );
-    jau::fprintf_td(stderr, "sizeof(double): %u\n", sizeof(double) );
-    jau::fprintf_td(stderr, "sizeof(long double): %u\n", sizeof(long double) );
-    jau::fprintf_td(stderr, "sizeof(jau::float32_t): %u\n", sizeof(jau::float32_t) );
-    jau::fprintf_td(stderr, "sizeof(jau::float64_t): %u\n", sizeof(jau::float64_t) );
+    jau::fprintf_td(stderr, "std::is_same_v<char, signed char>: %s\n", std::is_same_v<char, signed char> );
+    jau::fprintf_td(stderr, "std::is_same_v<char, unsigned char>: %s\n\n", std::is_same_v<char, unsigned char> );
+
+    jau::fprintf_td(stderr, "jau::req::plain_character<char>:           %s\n", jau::req::plain_character<char> );
+    jau::fprintf_td(stderr, "jau::req::character<char>:                 %s\n", jau::req::character<char> );
+    jau::fprintf_td(stderr, "std::is_integral_v<char>:                  %s\n", std::is_integral_v<char> );
+    jau::fprintf_td(stderr, "jau::req::integer<char>:                   %s\n", jau::req::integer<char> );
+    jau::fprintf_td(stderr, "jau::req::boolean<char>:                   %s\n", jau::req::boolean<char> );
+    jau::fprintf_td(stderr, "std::is_unsigned_v<char>:                  %s\n", std::is_unsigned_v<char> );
+    jau::fprintf_td(stderr, "jau::req::signed_integer<char>:            %s\n", jau::req::signed_integer<char> );
+    jau::fprintf_td(stderr, "jau::req::unsigned_integer<char>:          %s\n\n", jau::req::unsigned_integer<char> );
+
+    jau::fprintf_td(stderr, "jau::req::plain_character<signed char>:    %s\n", jau::req::plain_character<signed char> );
+    jau::fprintf_td(stderr, "jau::req::character<signed char>:          %s\n", jau::req::character<signed char> );
+    jau::fprintf_td(stderr, "std::is_integral_v<signed char>:           %s\n", std::is_integral_v<signed char> );
+    jau::fprintf_td(stderr, "jau::req::integer<signed char>:            %s\n", jau::req::integer<signed char> );
+    jau::fprintf_td(stderr, "jau::req::boolean<signed char>:            %s\n", jau::req::boolean<signed char> );
+    jau::fprintf_td(stderr, "std::is_unsigned_v<signed char>:           %s\n", std::is_unsigned_v<signed char> );
+    jau::fprintf_td(stderr, "jau::req::signed_integer<signed char>:     %s\n", jau::req::signed_integer<signed char> );
+    jau::fprintf_td(stderr, "jau::req::unsigned_integer<signed char>:   %s\n\n", jau::req::unsigned_integer<signed char> );
+
+    jau::fprintf_td(stderr, "jau::req::plain_character<unsigned char>:  %s\n", jau::req::plain_character<unsigned char> );
+    jau::fprintf_td(stderr, "jau::req::character<unsigned char>:        %s\n", jau::req::character<unsigned char> );
+    jau::fprintf_td(stderr, "std::is_integral_v<unsigned char>:         %s\n", std::is_integral_v<unsigned char> );
+    jau::fprintf_td(stderr, "jau::req::integer<unsigned char>:          %s\n", jau::req::integer<unsigned char> );
+    jau::fprintf_td(stderr, "jau::req::boolean<unsigned char>:          %s\n", jau::req::boolean<unsigned char> );
+    jau::fprintf_td(stderr, "std::is_unsigned_v<unsigned char>:         %s\n", std::is_unsigned_v<unsigned char> );
+    jau::fprintf_td(stderr, "jau::req::signed_integer<unsigned char>:   %s\n", jau::req::signed_integer<unsigned char> );
+    jau::fprintf_td(stderr, "jau::req::unsigned_integer<unsigned char>: %s\n\n", jau::req::unsigned_integer<unsigned char> );
+
+    jau::fprintf_td(stderr, "sizeof(float):                             %u\n", sizeof(float) );
+    jau::fprintf_td(stderr, "sizeof(double):                            %u\n", sizeof(double) );
+    jau::fprintf_td(stderr, "sizeof(long double):                       %u\n", sizeof(long double) );
+    jau::fprintf_td(stderr, "sizeof(jau::float32_t):                    %u\n", sizeof(jau::float32_t) );
+    jau::fprintf_td(stderr, "sizeof(jau::float64_t):                    %u\n", sizeof(jau::float64_t) );
 
 #if 0
     // amd64/gcc

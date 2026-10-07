@@ -183,9 +183,23 @@ namespace jau::req {
     template<typename T>
     concept any_boolean  = boolean<T> || wrapped_boolean<T>;
 
-    /** Concept of type-trait for `char` type */
+    /** Concept of type-trait for a plain `char`, not `signed char` nor `unsigned char`. */
     template<typename T>
-    concept character = std::is_same_v<char, std::remove_cv_t<T>>;
+    concept plain_character = std::is_same_v<char, std::remove_cv_t<T>>;
+
+    /** Concept of type-trait for `char`, `signed char` or `unsigned char` type, similar to `integer`. */
+    template<typename T>
+    concept character = std::is_same_v<char, std::remove_cv_t<T>> ||
+                        std::is_same_v<signed char, std::remove_cv_t<T>> ||
+                        std::is_same_v<unsigned char, std::remove_cv_t<T>>;
+
+    /** Concept of type wrapper holding an character type. */
+    template<typename T>
+    concept wrapped_character  = wrapper<T> && character<typename T::value_type>;
+
+    /** Concept of any character, either a direct character or wrapped_character. */
+    template<typename T>
+    concept any_character  = character<T> || wrapped_character<T>;
 
     /** Concept of type-trait std::is_arithmetic */
     template<typename T>
