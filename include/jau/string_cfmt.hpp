@@ -1012,22 +1012,21 @@ namespace jau::cfmt {
                 } else if (pos < end) {
                     // seek next conversion specifier
                     std::string_view::const_iterator q=pos+1;  ///< position of next fmt character to be read
-                    while(*q != '%' && q < end) {
+                    while(q < end) {
+                        if (*q == '%') {
+                            // new conversion specifier found
+                            appendText(pos, q);
+                            state = pstate_t::start;
+                            pos = q + 1;
+                            reset();
+                            return true;
+                        }
                         ++q;
                     }
-                    if (q == end) {
-                        // no conversion specifier found, end of format
-                        appendText(pos, end);
-                        pos = end;
-                        return false;
-                    } else {
-                        // new conversion specifier found
-                        appendText(pos, q);
-                        state = pstate_t::start;
-                        pos = q + 1;
-                        reset();
-                        return true;
-                    }
+                    // no conversion specifier found, end of format
+                    appendText(pos, end);
+                    pos = end;
+                    return false;
                 } else {
                     // end of format
                     return false;
