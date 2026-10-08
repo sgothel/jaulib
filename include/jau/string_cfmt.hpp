@@ -1492,40 +1492,31 @@ namespace jau::cfmt {
                 }
                 return -1;
             }
-            static constexpr bool fromIntString(uint32_t &result_, std::string_view str) noexcept {
+            static constexpr int32_t fromIntString(std::string_view str) noexcept {
                 using namespace jau::int_literals;
-                typedef uint32_t value_type;
-                result_ = 0;
 
-                const std::string_view::const_iterator str_end = str.cend();
+                // no tailing garbage: `str` is trimmed
+                std::string_view::const_iterator iter = str.cend();
                 std::string_view::const_iterator begin = str.cbegin(); // begin of digits
 
                 // no leading whitespace: `str` is trimmed
                 // no sign
                 // no prefix for radix 10
-                if (begin == str_end || !is_digit(*begin)) {
-                    return false; // no number (empty or no digit)
+                if (begin == iter || !is_digit(*begin)) {
+                    return -1; // no number (empty or no digit)
                 }
 
-                // no tailing garbage: `str` is trimmed
-                std::string_view::const_iterator iter = str_end;
-
-                value_type multiplier = 1;
-                value_type result = 0;
-                while( iter > begin ) {
+                int32_t multiplier = 1;
+                int32_t result = 0;
+                while( iter > begin && result >= 0) {
                     const int32_t d = digit(*(--iter));
                     if ( 0 > d ) {
-                        return false; // not a number
+                        return -1; // not a number
                     }
-                    const value_type sum = value_type(d) * multiplier;
-                    if( result > std::numeric_limits<value_type>::max() - sum ) {
-                        return false; // overflow
-                    }
-                    result += sum;
+                    result += d * multiplier; // result < 0: overflow
                     multiplier *= 10;
                 }
-                result_ = result;
-                return true;
+                return result;
             }
 
             /// Parse format field width or precision, returns true if field is consumed or parsing can continue
@@ -1552,10 +1543,8 @@ namespace jau::cfmt {
                     }
                     return true; // no digits, may continue
                 }
-                std::string_view sv(p_begin, p_i - p_begin);
-                uint32_t num = 0;
-
-                if( !fromIntString(num, sv) ) {
+                const int32_t num = fromIntString(std::string_view(p_begin, p_i - p_begin));
+                if( num < 0 ) {
                     // number syntax or overflow
                     pc.setError(__LINE__);
                     return false;
