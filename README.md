@@ -549,6 +549,8 @@ w/o the hassle to maintain system images ourselves as [described above](#manual-
 
 Find instructions to setup [a rootless Docker on Debian13](https://www.cybernatives.net/2026/02/27/2026-02-27_install-docker-debian-13-rootless-guide/),
 i.e. secure w/o `sudo` root access.
+For best security separation, consider using a dedicated `docker-dev` user to perform all docker related procedures
+within the `rootless docker` environment.
 
 To test the build configuration upfront, the cmake-preset `docker` can be used in a host build,
 using same cmake settings.
