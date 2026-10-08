@@ -1496,9 +1496,8 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
         jau::min<size_t>(dest_maxlen - dest_start_len, std::numeric_limits<uint32_t>::max());
 
     const uint32_t radix = opts.radix;
-    const uint32_t sep_gap = 10 == radix ? 3 : 4;
-    const char separator = is_set(opts.flags, flags_t::thousands) ? Config::default_thousand_separator : (char)0;
 
+    uint32_t sep_gap;
     uint32_t val_digits; // includes inject_dot, excludes separator
     char buf_[number_max_strlen];
     const char * const buf_end = buf_ + jau::min(added_maxlen, number_max_strlen);
@@ -1506,6 +1505,7 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
     if( opts.precision_set && opts.precision == 0 && jau::is_zero(v) ) [[unlikely]] {
         val_digits = 0;
         buf_start = buf_end;
+        sep_gap = 10 == radix ? 3 : 4;
     } else {
         char *d = const_cast<char *>(buf_end);
         if (10 == radix) [[likely]] {
@@ -1513,6 +1513,7 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
                 *(--d) = char('0' + (v % 10_u64));
                 v /= 10;
             } while (v && d > buf_);
+            sep_gap = 3;
         } else {
             const char *hex_array = is_set(opts.flags, flags_t::uppercase) ? HexadecimalArrayBig : HexadecimalArrayLow;
             if (16 == radix) [[likely]] {
@@ -1537,6 +1538,7 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
                     v >>= shift;
                 } while (v && d > buf_);
             }
+            sep_gap = 4;
         }
         if (inject_dot && d > buf_ + 1) [[unlikely]] {
             *(d-1) = *d;
@@ -1547,9 +1549,15 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
         val_digits = buf_end - buf_start;
         assert(val_digits <= added_maxlen);
     }
-    uint32_t num_len = separator ? ///< contains zero-padding, val_digits and separator
-        jau::min(added_maxlen, val_digits + ( (val_digits - 1) / sep_gap )) :
-        val_digits;
+    char separator;
+    uint32_t num_len; ///< contains zero-padding, val_digits and separator
+    if (is_set(opts.flags, flags_t::thousands)) [[unlikely]] {
+        separator = Config::default_thousand_separator;
+        num_len = jau::min(added_maxlen, val_digits + ( (val_digits - 1) / sep_gap ));
+    } else {
+        separator = (char)0;
+        num_len = val_digits;
+    }
 
     const uint32_t prec = opts.precision_set ? opts.precision : 0;
     uint32_t width = opts.width_set ? jau::min(added_maxlen, opts.width) : 0;
@@ -1564,22 +1572,22 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
             if (is_set(opts.flags, flags_t::zeropad) && width && (negative || has_any(opts.flags, flags_t::plus | flags_t::space))) [[unlikely]] {
                 --width;
             }
-            if (num_len < prec) {
+            if (num_len < prec) [[unlikely]] {
                 num_len += prec - num_len;
             }
-            if (num_len < width && is_set(opts.flags, flags_t::zeropad)) [[unlikely]] {
+            if (is_set(opts.flags, flags_t::zeropad) && num_len < width) [[unlikely]] {
                 num_len += width - num_len;
             }
         }
         // p1: handle hash
-        if (is_set(opts.flags, flags_t::hash)) {
+        if (is_set(opts.flags, flags_t::hash)) [[unlikely]] {
             if (!opts.precision_set && num_len>num_len0 && ((num_len == prec) || (num_len == width))) {
                 --num_len;
-                if (num_len>num_len0 && (radix == 16 || radix == 2)) {
+                if (num_len>num_len0 && radix != 8) [[likely]] { // 2 || 16, b/c only 2, 8, 16 is possible here. 10 has hash-flag cleared
                     --num_len;
                 }
             }
-            if (radix == 16 || radix == 2) {
+            if (radix != 8) [[likely]] { // 2 || 16, b/c only 2, 8, 16 is possible here. 10 has hash-flag cleared
                 ++xtra_left;
             }
             ++xtra_left; // hash zero
@@ -1613,7 +1621,7 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
         space_left = jau::min(added_maxlen-num_len-xtra_left, space_left);
         space_right = jau::min(added_maxlen-num_len-xtra_left-space_left, space_right);
         added_len = jau::min<size_t>(added_maxlen, space_left + xtra_left + num_len + space_right);
-        if (!jau::reserve_setsize_string(dest, dest_start_len + added_len)) {
+        if (!jau::reserve_setsize_string(dest, dest_start_len + added_len)) [[unlikely]] {
             return;
         }
 #if !defined(NDEBUG) && 0
@@ -1629,9 +1637,9 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
     const char *const d_start_num = d_start + space_left + xtra_left;
     char *d = dest.data() + dest_len;
     *d = 0; // EOS (is reserved)
-
     d -= space_right;
     ::memset(d, ' ', space_right);
+
     const char *const d_end_num = d;
     assert(d_end_num >= d_start_num);
     assert(d_end_num - d_start_num == num_len);
@@ -1639,6 +1647,7 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
         if( !separator ) [[likely]] {
             d -= val_digits;
             ::memcpy(d, buf_start, val_digits);
+
             // zero-padding
             const size_t zlen = d - d_start_num;
             d = const_cast<char *>(d_start_num);
@@ -1669,18 +1678,18 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
     assert(d >= d_start);
 
     // p1: handle hash
-    if (d > d_start && is_set(opts.flags, flags_t::hash)) {
+    if (is_set(opts.flags, flags_t::hash) && d > d_start) [[unlikely]] {
         size_t len = d_end_num - d;  // total length so far
         if (!opts.precision_set && len && ((len == prec) || (len == width))) {
             ++d;
             --len;
-            if (len && (radix == 16 || radix == 2)) {
+            if (len && radix != 8) [[likely]] { // 2 || 16, b/c only 2, 8, 16 is possible here. 10 has hash-flag cleared
                 ++d;
                 // --len;
             }
         }
         assert(d > d_start);
-        if (radix == 16) {
+        if (radix == 16) [[likely]] {
             *(--d) = is_set(opts.flags, flags_t::uppercase) ? 'X' : 'x';
         } else if (radix == 2) {
             *(--d) = 'b';
@@ -1808,8 +1817,8 @@ void jau::cfmt::impl::append_integral_simple(std::string &dest, const size_t des
     uint32_t xtra_left = 0;  ///< contains hash, sign and single space
     {
         // p1: handle hash
-        if (is_set(opts.flags, flags_t::hash)) {
-            if (radix == 16 || radix == 2) {
+        if (is_set(opts.flags, flags_t::hash)) [[unlikely]] {
+            if (radix != 8) [[likely]] { // 2 || 16, b/c only 2, 8, 16 is possible here. 10 has hash-flag cleared
                 ++xtra_left;
             }
             ++xtra_left; // hash zero
@@ -1818,7 +1827,7 @@ void jau::cfmt::impl::append_integral_simple(std::string &dest, const size_t des
         // p1: sign
         if (negative) [[unlikely]] {
             ++xtra_left; // '-';
-        } else if (is_set(opts.flags, flags_t::plus)) {
+        } else if (is_set(opts.flags, flags_t::plus)) [[unlikely]] {
             ++xtra_left; // '+';  // ignore the space if the '+' exists
         }
 
@@ -1829,7 +1838,7 @@ void jau::cfmt::impl::append_integral_simple(std::string &dest, const size_t des
         xtra_left = jau::min(added_maxlen-val_digits, xtra_left);
 
         added_len = jau::min<size_t>(added_maxlen, xtra_left + val_digits );
-        if (!jau::reserve_setsize_string(dest, dest_start_len + added_len)) {
+        if (!jau::reserve_setsize_string(dest, dest_start_len + added_len)) [[unlikely]] {
             return;
         }
 
@@ -1860,9 +1869,9 @@ void jau::cfmt::impl::append_integral_simple(std::string &dest, const size_t des
     assert(d >= d_start);
 
     // p1: handle hash
-    if (d > d_start && is_set(opts.flags, flags_t::hash)) {
+    if (is_set(opts.flags, flags_t::hash) && d > d_start) [[unlikely]] {
         assert(d > d_start);
-        if (radix == 16) {
+        if (radix == 16) [[likely]] {
             *(--d) = is_set(opts.flags, flags_t::uppercase) ? 'X' : 'x';
         } else if (radix == 2) {
             *(--d) = 'b';
