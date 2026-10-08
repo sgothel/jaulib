@@ -1468,9 +1468,7 @@ void jau::cfmt::impl::append_rev(std::string &dest, const size_t dest_maxlen, st
     *d = 0; // EOS (is reserved)
 
     d -= space_right;
-    if constexpr ( string_has_resize_and_overwrite() ) {
-        ::memset(d, ' ', space_right);
-    }
+    ::memset(d, ' ', space_right);
     assert(d_left <= d);
 
     // string
@@ -1486,9 +1484,7 @@ void jau::cfmt::impl::append_rev(std::string &dest, const size_t dest_maxlen, st
     }
     assert(d_left <= d);
 
-    if constexpr ( string_has_resize_and_overwrite() ) {
-        ::memset(d - space_left, ' ', space_left);
-    }
+    ::memset(d - space_left, ' ', space_left);
 }
 
 void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxlen, uint64_t v, const bool negative, const jau::cfmt::FormatOpts &opts, const bool inject_dot) noexcept {
@@ -1635,9 +1631,7 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
     *d = 0; // EOS (is reserved)
 
     d -= space_right;
-    if constexpr ( string_has_resize_and_overwrite() ) {
-        ::memset(d, ' ', space_right);
-    }
+    ::memset(d, ' ', space_right);
     const char *const d_end_num = d;
     assert(d_end_num >= d_start_num);
     assert(d_end_num - d_start_num == num_len);
@@ -1709,9 +1703,7 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
     }
     assert(d == d_start + space_left);
 
-    if constexpr ( string_has_resize_and_overwrite() ) {
-        ::memset(d - space_left, ' ', space_left);
-    }
+    ::memset(d - space_left, ' ', space_left);
 }
 
 void jau::cfmt::impl::append_integral_simple(std::string &dest, const size_t dest_maxlen, uint64_t v, const bool negative, const jau::cfmt::FormatOpts &opts) noexcept {
