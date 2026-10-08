@@ -167,6 +167,7 @@
       "binaryDir": "${sourceDir}/build/docker",
       "cacheVariables": {
         "JAU_CMAKE_NO_PRESETS": "ON",
+        "CMAKE_CXX_STANDARD": "23",
         "CMAKE_BUILD_TYPE": "Release",
         "DONT_USE_RTTI": "ON",
         "USE_LTO_FOR_ALL_TARGETS": "ON",
