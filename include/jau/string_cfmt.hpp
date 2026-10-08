@@ -671,9 +671,21 @@ namespace jau::cfmt {
             }
         }
 
-        void append_integral(std::string &dest, const size_t dest_maxlen, uint64_t v, const bool negative, const FormatOpts &opts, const bool inject_dot=false) noexcept;
+        void append_integral10(std::string &dest, const size_t dest_maxlen, uint64_t v, const bool negative, const FormatOpts &opts) noexcept;
+        void append_integralXX(std::string &dest, const size_t dest_maxlen, uint64_t v, const bool negative, const FormatOpts &opts, const bool inject_dot=false) noexcept;
         // no width, nor precision, nor inject_dot
         void append_integral_simple(std::string &dest, const size_t dest_maxlen, uint64_t v, const bool negative, const FormatOpts &opts) noexcept;
+
+        CXX_ALWAYS_INLINE
+        void append_integral(std::string &dest, const size_t dest_maxlen, uint64_t v, const bool negative, const FormatOpts &opts) noexcept {
+            if (!opts.width_set && !opts.precision_set) {
+                impl::append_integral_simple(dest, dest_maxlen, v, negative, opts);
+            } else if (opts.radix == 10 ) {
+                append_integral10(dest, dest_maxlen, v, negative, opts);
+            } else {
+                append_integralXX(dest, dest_maxlen, v, negative, opts);
+            }
+        }
 
         // check for NaN and special values
         bool is_float_validF64(std::string &dest, const size_t dest_maxlen, const double value, const FormatOpts &opts) noexcept;
@@ -828,11 +840,7 @@ namespace jau::cfmt {
             void appendFormatted(const FormatOpts& opts, const T& v) noexcept {
                 if( nullptr != v ) {
                     const uintptr_t v_le = jau::cpu_to_le(reinterpret_cast<uintptr_t>(v));
-                    if (!opts.width_set && !opts.precision_set) {
-                        impl::append_integral_simple(m_s, m_maxLen, v_le, false, opts);
-                    } else {
-                        impl::append_integral(m_s, m_maxLen, v_le, false, opts);
-                    }
+                    impl::append_integral(m_s, m_maxLen, v_le, false, opts);
                 } else {
                     impl::append_string(m_s, m_maxLen, "(nil)", opts);
                 }
@@ -840,11 +848,7 @@ namespace jau::cfmt {
             template<typename T>
             requires jau::req::unsigned_integral<T>
             void appendFormattedInt(const FormatOpts& opts, const T& v, bool negative) noexcept {
-                if (!opts.width_set && !opts.precision_set) {
-                    impl::append_integral_simple(m_s, m_maxLen, uint64_t(v), negative, opts);
-                } else {
-                    impl::append_integral(m_s, m_maxLen, uint64_t(v), negative, opts);
-                }
+                impl::append_integral(m_s, m_maxLen, uint64_t(v), negative, opts);
             }
             template<typename T>
             requires std::is_floating_point_v<T>

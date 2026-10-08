@@ -1487,7 +1487,160 @@ void jau::cfmt::impl::append_rev(std::string &dest, const size_t dest_maxlen, st
     ::memset(d - space_left, ' ', space_left);
 }
 
-void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxlen, uint64_t v, const bool negative, const jau::cfmt::FormatOpts &opts, const bool inject_dot) noexcept {
+void jau::cfmt::impl::append_integral10(std::string &dest, const size_t dest_maxlen, uint64_t v, const bool negative, const jau::cfmt::FormatOpts &opts) noexcept {
+    if (!dest_maxlen) [[unlikely]] {
+        return;
+    }
+    const size_t dest_start_len = dest.size();
+    const uint32_t added_maxlen = (uint32_t)
+        jau::min<size_t>(dest_maxlen - dest_start_len, std::numeric_limits<uint32_t>::max());
+
+    const uint32_t sep_gap = 3;
+    uint32_t val_digits; // includes inject_dot, excludes separator
+    char buf_[number_max_strlen];
+    const char * const buf_end = buf_ + jau::min(added_maxlen, number_max_strlen);
+    const char * buf_start;
+    if( opts.precision_set && opts.precision == 0 && jau::is_zero(v) ) [[unlikely]] {
+        val_digits = 0;
+        buf_start = buf_end;
+    } else {
+        char *d = const_cast<char *>(buf_end);
+        do {
+            *(--d) = char('0' + (v % 10_u64));
+            v /= 10;
+        } while (v && d > buf_);
+        buf_start = d;
+        val_digits = buf_end - buf_start;
+        assert(val_digits <= added_maxlen);
+    }
+    char separator;
+    uint32_t num_len; ///< contains zero-padding, val_digits and separator
+    if (is_set(opts.flags, flags_t::thousands)) [[unlikely]] {
+        separator = Config::default_thousand_separator;
+        num_len = jau::min(added_maxlen, val_digits + ( (val_digits - 1) / sep_gap ));
+    } else {
+        separator = (char)0;
+        num_len = val_digits;
+    }
+
+    const uint32_t prec = opts.precision_set ? opts.precision : 0;
+    uint32_t width = opts.width_set ? jau::min(added_maxlen, opts.width) : 0;
+    uint32_t space_left = 0, space_right = 0;
+    uint32_t xtra_left = 0;  ///< contains hash, sign, single space
+    size_t added_len;
+    {
+        // p1: pad leading zeros
+        if (!is_set(opts.flags, flags_t::left)) [[likely]] {
+            if (is_set(opts.flags, flags_t::zeropad) && width && (negative || has_any(opts.flags, flags_t::plus | flags_t::space))) [[unlikely]] {
+                --width;
+            }
+            if (num_len < prec) [[unlikely]] {
+                num_len += prec - num_len;
+            }
+            if (is_set(opts.flags, flags_t::zeropad) && num_len < width) [[unlikely]] {
+                num_len += width - num_len;
+            }
+        }
+        num_len = jau::min(added_maxlen, num_len);
+
+        // p1: sign
+        if (negative) [[unlikely]] {
+            ++xtra_left; // '-';
+        } else if (is_set(opts.flags, flags_t::plus)) [[unlikely]] {
+            ++xtra_left; // '+';  // ignore the space if the '+' exists
+        }
+
+        // p1: space
+        if (!negative && is_set(opts.flags, flags_t::space)) [[unlikely]] {
+            ++xtra_left; // ' ';
+        }
+        xtra_left = jau::min(added_maxlen-num_len, xtra_left);
+
+        // p2: append pad spaces left/right up to given width
+        {
+            const uint32_t len = xtra_left + num_len;
+            if (len < width) {
+                if (is_set(opts.flags, flags_t::left)) [[unlikely]] {
+                    space_right = width - len;
+                } else if (!is_set(opts.flags, flags_t::zeropad)) [[likely]] {
+                    space_left = width - len;
+                }
+            }
+        }
+        space_left = jau::min(added_maxlen-num_len-xtra_left, space_left);
+        space_right = jau::min(added_maxlen-num_len-xtra_left-space_left, space_right);
+        added_len = jau::min<size_t>(added_maxlen, space_left + xtra_left + num_len + space_right);
+        if (!jau::reserve_setsize_string(dest, dest_start_len + added_len)) [[unlikely]] {
+            return;
+        }
+#if !defined(NDEBUG) && 0
+        fprintf(stderr, "XXX.80: separator '%c', opts %s\n", separator, opts.toString().c_str());
+        fprintf(stderr, "XXX.80: negative %d, val %u\n", (int)negative, v);
+        fprintf(stderr, "XXX.80: num_len %u (digits %u + sep %u + .. ), xleft %u, space[l %u, r %u] -> len %u\n",
+                num_len, val_digits, sep_count, xtra_left, space_left, space_right, (space_left + xtra_left + num_len + space_right));
+        fprintf(stderr, "XXX.80: total len[old %zu, added %zu, len %zu], number_start %u\n", dest_start_len, added_len, dest.size(), xtra_left + space_left);
+#endif
+    }
+    const size_t dest_len = dest_start_len + added_len;
+    const char *const d_start = dest.data() + dest_start_len;
+    const char *const d_start_num = d_start + space_left + xtra_left;
+    char *d = dest.data() + dest_len;
+    *d = 0; // EOS (is reserved)
+    d -= space_right;
+    ::memset(d, ' ', space_right);
+
+    // d_end_num == d
+    assert(d >= d_start_num);
+    assert(d - d_start_num == num_len);
+    {
+        if( !separator ) [[likely]] {
+            d -= val_digits;
+            ::memcpy(d, buf_start, val_digits);
+
+            // zero-padding
+            const size_t zlen = d - d_start_num;
+            d = const_cast<char *>(d_start_num);
+            ::memset(d, '0', zlen);
+        } else {
+            const char * p = buf_end;
+            uint32_t sep_count = (num_len - 1) / sep_gap; // final separator count
+            uint32_t digit_cnt = 0;
+            while (d > d_start_num) [[likely]] {
+                if (sep_count && digit_cnt && 0 == digit_cnt % sep_gap) [[unlikely]] {
+                    *(--d) = separator;
+                    --sep_count;
+                    if (d == d_start_num) [[unlikely]] {
+                        break; // done
+                    }
+                }
+                if (digit_cnt >= val_digits) [[unlikely]] {
+                    *(--d) = '0'; // zero-padding
+                } else {
+                    *(--d) = *(--p);
+                }
+                ++digit_cnt;
+            }
+            assert(p == buf_start);
+        }
+    }
+    assert(d == d_start_num);
+    assert(d >= d_start);
+
+    if (negative) [[unlikely]] {
+        assert(d > d_start);
+        *(--d) = '-';
+    } else if (is_set(opts.flags, flags_t::plus)) [[unlikely]] {
+        assert(d > d_start);
+        *(--d) = '+';  // ignore the space if the '+' exists
+    } else if (is_set(opts.flags, flags_t::space)) [[unlikely]] {
+        assert(d > d_start);
+        *(--d) = ' ';
+    }
+    assert(d == d_start + space_left);
+
+    ::memset(d - space_left, ' ', space_left);
+}
+void jau::cfmt::impl::append_integralXX(std::string &dest, const size_t dest_maxlen, uint64_t v, const bool negative, const jau::cfmt::FormatOpts &opts, const bool inject_dot) noexcept {
     if (!dest_maxlen) [[unlikely]] {
         return;
     }
@@ -1496,8 +1649,7 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
         jau::min<size_t>(dest_maxlen - dest_start_len, std::numeric_limits<uint32_t>::max());
 
     const uint32_t radix = opts.radix;
-
-    uint32_t sep_gap;
+    const uint32_t sep_gap = 4;
     uint32_t val_digits; // includes inject_dot, excludes separator
     char buf_[number_max_strlen];
     const char * const buf_end = buf_ + jau::min(added_maxlen, number_max_strlen);
@@ -1505,40 +1657,30 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
     if( opts.precision_set && opts.precision == 0 && jau::is_zero(v) ) [[unlikely]] {
         val_digits = 0;
         buf_start = buf_end;
-        sep_gap = 10 == radix ? 3 : 4;
     } else {
         char *d = const_cast<char *>(buf_end);
-        if (10 == radix) [[likely]] {
+        const char *hex_array = is_set(opts.flags, flags_t::uppercase) ? HexadecimalArrayBig : HexadecimalArrayLow;
+        if (16 == radix) [[likely]] {
+            constexpr uint64_t mask = 0x0fu;
+            constexpr uint32_t shift = 4;
             do {
-                *(--d) = char('0' + (v % 10_u64));
-                v /= 10;
+                *(--d) = hex_array[v & mask];
+                v >>= shift;
             } while (v && d > buf_);
-            sep_gap = 3;
         } else {
-            const char *hex_array = is_set(opts.flags, flags_t::uppercase) ? HexadecimalArrayBig : HexadecimalArrayLow;
-            if (16 == radix) [[likely]] {
-                constexpr uint64_t mask = 0x0fu;
-                constexpr uint32_t shift = 4;
-                do {
-                    *(--d) = hex_array[v & mask];
-                    v >>= shift;
-                } while (v && d > buf_);
-            } else {
-                const uint64_t mask = radix - 1;
-                uint32_t shift;
-                switch (radix) {
-                    // case 16: shift = 4; break;
-                    // case 10: shift = 0; break;
-                    case 8:  shift = 3; break;
-                    case 2:  shift = 1; break;
-                    default: return;
-                }
-                do {
-                    *(--d) = hex_array[v & mask];
-                    v >>= shift;
-                } while (v && d > buf_);
+            const uint64_t mask = radix - 1;
+            uint32_t shift;
+            switch (radix) {
+                // case 16: shift = 4; break;
+                // case 10: shift = 0; break;
+                case 8:  shift = 3; break;
+                case 2:  shift = 1; break;
+                default: return;
             }
-            sep_gap = 4;
+            do {
+                *(--d) = hex_array[v & mask];
+                v >>= shift;
+            } while (v && d > buf_);
         }
         if (inject_dot && d > buf_ + 1) [[unlikely]] {
             *(d-1) = *d;
@@ -1580,7 +1722,7 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
             }
         }
         // p1: handle hash
-        if (is_set(opts.flags, flags_t::hash)) [[unlikely]] {
+        if (is_set(opts.flags, flags_t::hash)) {
             if (!opts.precision_set && num_len>num_len0 && ((num_len == prec) || (num_len == width))) {
                 --num_len;
                 if (num_len>num_len0 && radix != 8) [[likely]] { // 2 || 16, b/c only 2, 8, 16 is possible here. 10 has hash-flag cleared
@@ -1678,7 +1820,7 @@ void jau::cfmt::impl::append_integral(std::string &dest, const size_t dest_maxle
     assert(d >= d_start);
 
     // p1: handle hash
-    if (is_set(opts.flags, flags_t::hash) && d > d_start) [[unlikely]] {
+    if (is_set(opts.flags, flags_t::hash) && d > d_start) {
         size_t len = d_end_num - d;  // total length so far
         if (!opts.precision_set && len && ((len == prec) || (len == width))) {
             ++d;
@@ -1857,10 +1999,10 @@ void jau::cfmt::impl::append_integral_simple(std::string &dest, const size_t des
     [[maybe_unused]] const char *const d_start_num = d_start + xtra_left;
     char *d = dest.data() + dest_len;
     *d = 0; // EOS (is reserved)
-    [[maybe_unused]] const char *const d_end_num = d;
-    assert(d_end_num >= d_start_num);
-    assert(d_end_num - d_start_num == val_digits);
 
+    // d_end_num == d
+    assert(d >= d_start_num);
+    assert(d - d_start_num == val_digits);
     {
         d -= val_digits;
         ::memcpy(d, buf_start, val_digits);
@@ -2180,7 +2322,7 @@ void jau::cfmt::impl::append_efloatF64(std::string &dest, const size_t dest_maxl
         fprintf(stderr, "EEE.31: v %f (exp %d), dest '%s' (len %zu), fopts %s\n",
                 value, expval, dest.c_str(), dest.size(), fopts.toString().c_str());
 #endif
-        append_integral(dest, dest_maxlen, uint64_t(jau::abs(expval)), expval < 0, fopts);
+        append_integral10(dest, dest_maxlen, uint64_t(jau::abs(expval)), expval < 0, fopts);
 
         // might need to right-pad spaces
         if (is_set(iopts.flags, flags_t::left)) {
@@ -2269,7 +2411,7 @@ void jau::cfmt::impl::append_afloatF64(std::string &dest, const size_t dest_maxl
         fprintf(stderr, "AAA.31: v %f, frac %x, expval %d, dest '%s' (len %zu), fopts %s\n",
                 ivalue, significand, expval, dest.c_str(), dest.size(), fopts.toString().c_str());
 #endif
-        append_integral(dest, dest_maxlen, significand, false, fopts, true);
+        append_integralXX(dest, dest_maxlen, significand, false, fopts, true);
     }
 
     // output the exponent part
@@ -2297,7 +2439,7 @@ void jau::cfmt::impl::append_afloatF64(std::string &dest, const size_t dest_maxl
         fprintf(stderr, "AAA.32: v %f, frac %x, expval %d, dest '%s' (len %zu), fopts %s\n",
                 ivalue, significand, expval, dest.c_str(), dest.size(), fopts.toString().c_str());
 #endif
-        append_integral(dest, dest_maxlen, uint64_t(jau::abs(expval)), expval < 0, fopts);
+        append_integral10(dest, dest_maxlen, uint64_t(jau::abs(expval)), expval < 0, fopts);
 
         // might need to right-pad spaces
         if (is_set(iopts.flags, flags_t::left)) {
