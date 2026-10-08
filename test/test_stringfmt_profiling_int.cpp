@@ -41,7 +41,7 @@ using namespace jau::float_literals;
 using namespace jau::int_literals;
 
 /**
- * append: 42 (regular), 43 (auto-conversion)
+ * append: 42 (regular), 43 (auto-conversion), 88 (all jau::cfmt)
  * - no width/prec
  *   - 3 regular (42)
  *   - 4 auto-conversion (43)
@@ -100,7 +100,7 @@ int main(int argc, char *argv[]) {
         }
         jau_fprintf_td(stderr, "Test End\n");
     }
-    if (!tstnum || 3==tstnum || 42==tstnum) {
+    if (!tstnum || 3==tstnum || 42==tstnum || 88==tstnum) {
         jau_fprintf_td(stderr, "fmt1.130 append       rsrved bench\n");
         for( size_t i = 0; i < loops; ++i ) {
             reserved.clear();
@@ -109,7 +109,7 @@ int main(int argc, char *argv[]) {
         }
         jau_fprintf_td(stderr, "Test End\n");
     }
-    if (!tstnum || 4==tstnum || 43==tstnum) {
+    if (!tstnum || 4==tstnum || 43==tstnum || 88==tstnum) {
         jau_fprintf_td(stderr, "fmt1.130 append auto  rsrved bench\n");
         for( size_t i = 0; i < loops; ++i ) {
             reserved.clear();
@@ -182,7 +182,7 @@ int main(int argc, char *argv[]) {
         }
         jau_fprintf_td(stderr, "Test End\n");
     }
-    if (!tstnum || 13==tstnum || 42==tstnum) {
+    if (!tstnum || 13==tstnum || 42==tstnum || 88==tstnum) {
         jau_fprintf_td(stderr, "fmt1.230 append       rsrved bench\n");
         for( size_t i = 0; i < loops; ++i ) {
             reserved.clear();
@@ -191,7 +191,7 @@ int main(int argc, char *argv[]) {
         }
         jau_fprintf_td(stderr, "Test End\n");
     }
-    if (!tstnum || 14==tstnum || 43==tstnum) {
+    if (!tstnum || 14==tstnum || 43==tstnum || 88==tstnum) {
         jau_fprintf_td(stderr, "fmt1.232 append auto  rsrved bench\n");
         for( size_t i = 0; i < loops; ++i ) {
             reserved.clear();
