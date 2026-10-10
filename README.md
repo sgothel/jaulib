@@ -121,7 +121,7 @@ Language requirements
   - [GNU glibc](https://www.gnu.org/software/libc/)
   - [musl](https://musl.libc.org/)
 - [emscripten >= 3.1.59](https://emscripten.org/) **optional** for WebAssembly (Wasm)
-- Java 11, 17+ (optional)
+- Java 11, 21
 
 See [supported platforms](PLATFORMS.md) for details.
 
@@ -172,8 +172,8 @@ ln -s /usr/local/bin/bash /bin/bash
 Install optional Java dependencies:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}
-pkg install openjdk17
-pkg install openjdk17-jre
+pkg install openjdk21
+pkg install openjdk21-jre
 pkg install junit
 rehash
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -195,7 +195,7 @@ This also requires installation of the following packets:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}
 pkg install curl
-apt install mini-httpd
+pkg install mini-httpd
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Note: `mini-httpd` is being used for unit testing URL streaming only.
 
@@ -222,7 +222,7 @@ For Debian you can use this [clang alternatives setup script](scripts/setup_clan
 Install optional Java dependencies:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}
-apt install openjdk-17-jdk openjdk-17-jre junit4
+apt install openjdk-21-jdk openjdk-21-jre junit4
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To test `jau::fs::mount_image()` and `jau::fs::umount()` under `Linux`
