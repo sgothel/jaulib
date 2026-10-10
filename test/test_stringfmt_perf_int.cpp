@@ -178,22 +178,30 @@ TEST_CASE("jau_cfmt_benchmark_int_all", "[benchmark][jau][std::string][format_in
     WARN("Benchmark with " + std::to_string(loops) + " loops");
     CHECK(true);
 
-    static constexpr const std::string_view format_check_exp1 = "format_check: -1, 2, -3, 4, -5, 6, -7, 8, -9, 10";
-    static constexpr const std::string_view format_check_exp2 = "format_check: -1, 02, -03, 0004, -0005, 000006, -000007, 00000008, -00000009, 0000000010";
-    char i1=-1;
-    unsigned char i2=2;
+    static constexpr const std::string_view format_check_exp1 = "format_check: -127, 127, -32000, 32000, -1073741823, 2147483647, -1073741823, 2147483647, -1073741823, 2147483647";
+    static constexpr const std::string_view format_check_exp2 = "format_check: -0127, 00127, -000032000, 0000032000, -00001073741823, 000002147483647, -00001073741823, 000002147483647, -00001073741823, 000002147483647";
 
-    short i3=-3;
-    unsigned short i4=4;
+    static constexpr const std::string_view format_check_expB1 = "format_check: 2147483647, 2147483647, 2147483647, 2147483647, 2147483647, 2147483647, 2147483647, 2147483647, 2147483647, 2147483647";
+    static constexpr const std::string_view format_check_expB2 = "format_check: 0x7fffffff, 0x7fffffff, 0x7fffffff, 0x7fffffff, 0x7fffffff, 0x7fffffff, 0x7fffffff, 0x7fffffff, 0x7fffffff, 0x7fffffff";
+    static constexpr const std::string_view format_check_expC1 = "format_check: 000002147483647, 000002147483647, 000002147483647, 000002147483647, 000002147483647, 000002147483647, 000002147483647, 000002147483647, 000002147483647, 000002147483647";
+    static constexpr const std::string_view format_check_expC2 = "format_check: 0x000007fffffff, 0x000007fffffff, 0x000007fffffff, 0x000007fffffff, 0x000007fffffff, 0x000007fffffff, 0x000007fffffff, 0x000007fffffff, 0x000007fffffff, 0x000007fffffff";
+    char i1=-127;
+    unsigned char i2=127;
 
-    int i5=-5;
-    unsigned int i6=6;
+    short i3=-32000;
+    unsigned short i4=32000;
 
-    long i7=-7;
-    unsigned long i8=8;
+    int i5=-std::numeric_limits<int32_t>::max()/2;
+    unsigned int i6=std::numeric_limits<uint32_t>::max()/2;
 
-    ssize_t i9 = -9;
-    size_t i10 = 10;
+    long i7=-std::numeric_limits<int32_t>::max()/2;
+    unsigned long i8=std::numeric_limits<uint32_t>::max()/2;
+
+    ssize_t i9 = -std::numeric_limits<int32_t>::max()/2;
+    size_t i10 = std::numeric_limits<uint32_t>::max()/2;
+
+    uint32_t u32 = std::numeric_limits<uint32_t>::max()/2; // 2147483647
+    uint64_t u64 = std::numeric_limits<uint32_t>::max()/2;
 
     const size_t bsz = jau::cfmt::default_string_capacity + 1; // including EOS
     std::string reserved;
@@ -239,6 +247,46 @@ TEST_CASE("jau_cfmt_benchmark_int_all", "[benchmark][jau][std::string][format_in
         }
         return res;
     };
+    BENCHMARK("fmt1.130 append 32    rsrved bench") {
+        volatile size_t res = 0;
+        for( size_t i = 0; i < loops; ++i ) {
+            reserved.clear();
+            jau::cfmt::append(reserved, "format_check: %u, %u, %u, %u, %u, %u, %u, %u, %u, %u", u32, u32, u32, u32, u32, u32, u32, u32, u32, u32);
+            res = res + reserved.size();
+            REQUIRE(format_check_expB1 == reserved);
+        }
+        return res;
+    };
+    BENCHMARK("fmt1.130 append 64    rsrved bench") {
+        volatile size_t res = 0;
+        for( size_t i = 0; i < loops; ++i ) {
+            reserved.clear();
+            jau::cfmt::append(reserved, "format_check: %u, %u, %u, %u, %u, %u, %u, %u, %u, %u", u64, u64, u64, u64, u64, u64, u64, u64, u64, u64);
+            res = res + reserved.size();
+            REQUIRE(format_check_expB1 == reserved);
+        }
+        return res;
+    };
+    BENCHMARK("fmt1.131 append 32    rsrved bench") {
+        volatile size_t res = 0;
+        for( size_t i = 0; i < loops; ++i ) {
+            reserved.clear();
+            jau::cfmt::append(reserved, "format_check: %#x, %#x, %#x, %#x, %#x, %#x, %#x, %#x, %#x, %#x", u32, u32, u32, u32, u32, u32, u32, u32, u32, u32);
+            REQUIRE(format_check_expB2 == reserved);
+            res = res + reserved.size();
+        }
+        return res;
+    };
+    BENCHMARK("fmt1.131 append 64    rsrved bench") {
+        volatile size_t res = 0;
+        for( size_t i = 0; i < loops; ++i ) {
+            reserved.clear();
+            jau::cfmt::append(reserved, "format_check: %#x, %#x, %#x, %#x, %#x, %#x, %#x, %#x, %#x, %#x", u64, u64, u64, u64, u64, u64, u64, u64, u64, u64);
+            REQUIRE(format_check_expB2 == reserved);
+            res = res + reserved.size();
+        }
+        return res;
+    };
     BENCHMARK("fmt1.130 append auto  rsrved bench") {
         volatile size_t res = 0;
         for( size_t i = 0; i < loops; ++i ) {
@@ -278,7 +326,7 @@ TEST_CASE("jau_cfmt_benchmark_int_all", "[benchmark][jau][std::string][format_in
         for( size_t i = 0; i < loops; ++i ) {
             std::ostringstream ss1;
             ss1 << "format_check: "
-                << -1 << ", "
+                << -127 << ", "
                 << unsigned(i2) << ", "
                 << i3 << ", "
                 << i4 << ", "
@@ -301,7 +349,7 @@ TEST_CASE("jau_cfmt_benchmark_int_all", "[benchmark][jau][std::string][format_in
     BENCHMARK("fmt1.230 format              bench") {
         volatile size_t res = 0;
         for( size_t i = 0; i < loops; ++i ) {
-            std::string s = jau::cfmt::format("format_check: %01d, %02u, %03d, %04u, %05d, %06u, %07d, %08u, %09d, %010u", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
+            std::string s = jau::cfmt::format("format_check: %05hhd, %05hhu, %010hd, %010hu, %015d, %015u, %015ld, %015lu, %015zd, %015zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
             REQUIRE(format_check_exp2 == s);
             res = res + s.size();
         }
@@ -312,7 +360,7 @@ TEST_CASE("jau_cfmt_benchmark_int_all", "[benchmark][jau][std::string][format_in
         for( size_t i = 0; i < loops; ++i ) {
             reserved.clear();
 
-            jau::cfmt::formatR(reserved, "format_check: %01d, %02u, %03d, %04u, %05d, %06u, %07d, %08u, %09d, %010u", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
+            jau::cfmt::formatR(reserved, "format_check: %05hhd, %05hhu, %010hd, %010hu, %015d, %015u, %015ld, %015lu, %015zd, %015zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
             REQUIRE(format_check_exp2 == reserved);
             res = res + reserved.size();
         }
@@ -322,7 +370,7 @@ TEST_CASE("jau_cfmt_benchmark_int_all", "[benchmark][jau][std::string][format_in
         volatile size_t res = 0;
         for( size_t i = 0; i < loops; ++i ) {
             reserved.clear();
-            jau::cfmt::append(reserved, "format_check: %01hhd, %02hhu, %03hd, %04hu, %05d, %06u, %07ld, %08lu, %09zd, %010zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
+            jau::cfmt::append(reserved, "format_check: %05hhd, %05hhu, %010hd, %010hu, %015d, %015u, %015ld, %015lu, %015zd, %015zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
             REQUIRE(format_check_exp2 == reserved);
             res = res + reserved.size();
         }
@@ -332,8 +380,48 @@ TEST_CASE("jau_cfmt_benchmark_int_all", "[benchmark][jau][std::string][format_in
         volatile size_t res = 0;
         for( size_t i = 0; i < loops; ++i ) {
             reserved.clear();
-            jau::cfmt::append(reserved, "format_check: %01d, %02u, %03d, %04u, %05d, %06u, %07d, %08u, %09d, %010u", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
+            jau::cfmt::append(reserved, "format_check: %05hhd, %05hhu, %010hd, %010hu, %015d, %015u, %015ld, %015lu, %015zd, %015zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
             REQUIRE(format_check_exp2 == reserved);
+            res = res + reserved.size();
+        }
+        return res;
+    };
+    BENCHMARK("fmt1.230 append 32    rsrved bench") {
+        volatile size_t res = 0;
+        for( size_t i = 0; i < loops; ++i ) {
+            reserved.clear();
+            jau::cfmt::append(reserved, "format_check: %015u, %015u, %015u, %015u, %015u, %015u, %015u, %015u, %015u, %015u", u32, u32, u32, u32, u32, u32, u32, u32, u32, u32);
+            REQUIRE(format_check_expC1 == reserved);
+            res = res + reserved.size();
+        }
+        return res;
+    };
+    BENCHMARK("fmt1.230 append 64    rsrved bench") {
+        volatile size_t res = 0;
+        for( size_t i = 0; i < loops; ++i ) {
+            reserved.clear();
+            jau::cfmt::append(reserved, "format_check: %015u, %015u, %015u, %015u, %015u, %015u, %015u, %015u, %015u, %015u", u64, u64, u64, u64, u64, u64, u64, u64, u64, u64);
+            REQUIRE(format_check_expC1 == reserved);
+            res = res + reserved.size();
+        }
+        return res;
+    };
+    BENCHMARK("fmt1.231 append 32    rsrved bench") {
+        volatile size_t res = 0;
+        for( size_t i = 0; i < loops; ++i ) {
+            reserved.clear();
+            jau::cfmt::append(reserved, "format_check: %#015x, %#015x, %#015x, %#015x, %#015x, %#015x, %#015x, %#015x, %#015x, %#015x", u32, u32, u32, u32, u32, u32, u32, u32, u32, u32);
+            REQUIRE(format_check_expC2 == reserved);
+            res = res + reserved.size();
+        }
+        return res;
+    };
+    BENCHMARK("fmt1.231 append 64    rsrved bench") {
+        volatile size_t res = 0;
+        for( size_t i = 0; i < loops; ++i ) {
+            reserved.clear();
+            jau::cfmt::append(reserved, "format_check: %#015x, %#015x, %#015x, %#015x, %#015x, %#015x, %#015x, %#015x, %#015x, %#015x", u64, u64, u64, u64, u64, u64, u64, u64, u64, u64);
+            REQUIRE(format_check_expC2 == reserved);
             res = res + reserved.size();
         }
         return res;
@@ -342,7 +430,7 @@ TEST_CASE("jau_cfmt_benchmark_int_all", "[benchmark][jau][std::string][format_in
         volatile size_t res = 0;
         for( size_t i = 0; i < loops; ++i ) {
             reserved.clear();
-            jau::cfmt::append(reserved, "format_check: %01d, %02?, %03?, %04?, %05?, %06?, %07?, %08?, %09?, %010?", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
+            jau::cfmt::append(reserved, "format_check: %05d, %05?, %010?, %010?, %015?, %015?, %015?, %015?, %015?, %015?", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
             REQUIRE(format_check_exp2 == reserved);
             res = res + reserved.size();
         }
@@ -352,7 +440,7 @@ TEST_CASE("jau_cfmt_benchmark_int_all", "[benchmark][jau][std::string][format_in
         volatile size_t res = 0;
         for( size_t i = 0; i < loops; ++i ) {
             reserved.clear();
-            jau::cfmt::append_cap(reserved, "format_check: %01d, %02u, %03d, %04u, %05d, %06u, %07d, %08u, %09d, %010u", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
+            jau::cfmt::append_cap(reserved, "format_check: %05d, %05u, %010d, %010u, %015d, %015u, %015d, %015u, %015d, %015u", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
             REQUIRE(format_check_exp2 == reserved);
             res = res + reserved.size();
         }
@@ -363,7 +451,7 @@ TEST_CASE("jau_cfmt_benchmark_int_all", "[benchmark][jau][std::string][format_in
         for( size_t i = 0; i < loops; ++i ) {
             reserved.clear();
             reserved.resize(bsz - 1);      // excl. EOS
-            size_t nchars = std::snprintf(&reserved[0], bsz, "format_check: %01hhd, %02hhu, %03hd, %04hu, %05d, %06u, %07ld, %08lu, %09zd, %010zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
+            size_t nchars = std::snprintf(&reserved[0], bsz, "format_check: %05hhd, %05hhu, %010hd, %010hu, %015d, %015u, %015ld, %015lu, %015zd, %015zu", i1, i2, i3, i4, i5, i6, i7, i8, i9, i10);
             if( nchars < bsz ) {
                 reserved.resize(nchars);
             }
@@ -378,16 +466,16 @@ TEST_CASE("jau_cfmt_benchmark_int_all", "[benchmark][jau][std::string][format_in
             std::ostringstream ss1;
             ss1 << "format_check: "
                 << std::setfill('0') // undefined with negative numbers, duh!
-                << std::setw(0) << -1 << ", "
-                << std::setw(2) << unsigned(i2) << ", "
-                << "-" << std::setw(3-1) << jau::abs(i3) << ", "
-                << std::setw(4) << i4 << ", "
-                << "-" << std::setw(5-1) << jau::abs(i5) << ", "
-                << std::setw(6) << i6 << ", "
-                << "-" << std::setw(7-1) << jau::abs(i7) << ", "
-                << std::setw(8) << i8 << ", "
-                << "-" << std::setw(9-1) << jau::abs(i9) << ", "
-                << std::setw(10) << i10;
+                << "-" << std::setw(5-1) << 127 << ", "
+                << std::setw(5) << unsigned(i2) << ", "
+                << "-" << std::setw(10-1) << jau::abs(i3) << ", "
+                << std::setw(10) << i4 << ", "
+                << "-" << std::setw(15-1) << jau::abs(i5) << ", "
+                << std::setw(15) << i6 << ", "
+                << "-" << std::setw(15-1) << jau::abs(i7) << ", "
+                << std::setw(15) << i8 << ", "
+                << "-" << std::setw(15-1) << jau::abs(i9) << ", "
+                << std::setw(15) << i10;
             std::string s = ss1.str();
             REQUIRE(format_check_exp2 == s);
             res = res + s.size();

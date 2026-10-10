@@ -22,6 +22,7 @@ set (jaulib_LIB_SRCS
   os_support.cpp
   service_runner.cpp
   simple_timer.cpp
+  string_cfmt.cpp
   uuid.cpp
   unix/unix_dyn_linker.cpp
   unix/user_info.cpp

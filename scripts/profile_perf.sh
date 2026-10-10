@@ -7,7 +7,10 @@ bname=`basename $0 .sh`
 username=$USER
 
 testname=test_stringfmt_profiling_int
-testargs="--test 13 --loops 10000000"
+#testargs="--test 13 --loops 10000000"
+testargs="--test 64 --loops 10000000"
+#testargs="--test 88 --loops 5000000"
+#testargs="--test 0 --loops 4000000"
 
 testexe=`readlink -f build/perf-gcc/test/${testname}`
 

@@ -153,6 +153,13 @@ TEST_CASE( "01 Type Concept Queries: Build-In") {
     jau::fprintf_td(stderr, "jau::req::signed_integer<unsigned char>:   %s\n", jau::req::signed_integer<unsigned char> );
     jau::fprintf_td(stderr, "jau::req::unsigned_integer<unsigned char>: %s\n\n", jau::req::unsigned_integer<unsigned char> );
 
+    jau::fprintf_td(stderr, "sizeof(uint32_t):                          %u\n", sizeof(uint32_t) );
+    jau::fprintf_td(stderr, "sizeof(uint64_t):                          %u\n", sizeof(uint64_t) );
+    jau::fprintf_td(stderr, "sizeof(int):                               %u\n", sizeof(int) );
+    jau::fprintf_td(stderr, "sizeof(long):                              %u\n", sizeof(long) );
+    jau::fprintf_td(stderr, "sizeof(uintptr_t):                         %u\n", sizeof(uintptr_t) );
+    jau::fprintf_td(stderr, "sizeof(size_t):                            %u\n", sizeof(size_t) );
+    jau::fprintf_td(stderr, "sizeof(void*):                             %u\n", sizeof(void*) );
     jau::fprintf_td(stderr, "sizeof(float):                             %u\n", sizeof(float) );
     jau::fprintf_td(stderr, "sizeof(double):                            %u\n", sizeof(double) );
     jau::fprintf_td(stderr, "sizeof(long double):                       %u\n", sizeof(long double) );
