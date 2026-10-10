@@ -21,8 +21,7 @@ Checks:  'clang-diagnostic-*, clang-analyzer-*,
           -misc-misplaced-const, -misc-no-recursion, -misc-confusable-identifiers,
           -misc-explicit-constructor, -misc-multiple-inheritance,
           -readability-redundant-declaration, -readability-redundant-inline-specifier, -readability-redundant-member-init,
-          -readability-redundant-access-specifiers,
-          -readability-redundant-lambda-parameter-list, -readability-redundant-nested-if'
+          -readability-redundant-access-specifiers, -readability-redundant-lambda-parameter-list, -readability-redundant-nested-if'
 
 CheckOptions:
   - key:             bugprone-exception-escape.TreatFunctionsWithoutSpecificationAsThrowing
