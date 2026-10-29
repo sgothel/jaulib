@@ -68,7 +68,7 @@ namespace jau::math::geom::plane {
 
             AffineTransformType m_type;
 
-            constexpr static char* determinantIsZero = "Zero Determinante";
+            constexpr static const char* determinantIsZero = "Zero Determinante";
 
       public:
 
