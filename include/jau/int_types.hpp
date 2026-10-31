@@ -214,24 +214,23 @@ namespace jau {
         constexpr jau::nsize_t operator""_unz(unsigned long long int __v) noexcept { return (jau::nsize_t)__v; }
     }  // namespace int_literals
 
-    class int_ctti {
-      public:
+    namespace int_ctti {
         /// uint8_t
-        static const jau::type_info& u8() noexcept { return jau::static_ctti<uint8_t>(); }
+        consteval jau::type_info u8() noexcept { return jau::make_ctti<uint8_t>(); }
         /// int32_t
-        static const jau::type_info& i8() noexcept { return jau::static_ctti<int8_t>(); }
+        consteval jau::type_info i8() noexcept { return jau::make_ctti<int8_t>(); }
         /// uint16_t
-        static const jau::type_info& u16() noexcept { return jau::static_ctti<uint16_t>(); }
+        consteval jau::type_info u16() noexcept { return jau::make_ctti<uint16_t>(); }
         /// int16_t
-        static const jau::type_info& i16() noexcept { return jau::static_ctti<int16_t>(); }
+        consteval jau::type_info i16() noexcept { return jau::make_ctti<int16_t>(); }
         /// uint32_t
-        static const jau::type_info& u32() noexcept { return jau::static_ctti<uint32_t>(); }
+        consteval jau::type_info u32() noexcept { return jau::make_ctti<uint32_t>(); }
         /// int32_t
-        static const jau::type_info& i32() noexcept { return jau::static_ctti<int32_t>(); }
+        consteval jau::type_info i32() noexcept { return jau::make_ctti<int32_t>(); }
         /// uint64_t
-        static const jau::type_info& u64() noexcept { return jau::static_ctti<uint64_t>(); }
+        consteval jau::type_info u64() noexcept { return jau::make_ctti<uint64_t>(); }
         /// int64_t
-        static const jau::type_info& i64() noexcept { return jau::static_ctti<int64_t>(); }
+        consteval jau::type_info i64() noexcept { return jau::make_ctti<int64_t>(); }
     };
 
     /**@}*/

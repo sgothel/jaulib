@@ -276,12 +276,15 @@ namespace jau {
         constexpr float64_t operator ""_f64(unsigned long long int __v) noexcept { return (float64_t)__v; }
     } // float_literals
 
-    class float_ctti {
-      public:
+    namespace float_ctti {
+        /// just float
+        consteval jau::type_info f() { return jau::make_ctti<float>(); }
+        /// just double
+        consteval jau::type_info d() { return jau::make_ctti<double>(); }
         /// jau::float_32_t or just float
-        static const jau::type_info& f32() { return jau::static_ctti<float32_t>(); }
-        /// jau::float_64_t or just float64_t
-        static const jau::type_info& f64() { return jau::static_ctti<float64_t>(); }
+        consteval jau::type_info f32() { return jau::make_ctti<float32_t>(); }
+        /// jau::float_64_t or just double
+        consteval jau::type_info f64() { return jau::make_ctti<float64_t>(); }
     };
 
     /**@}*/

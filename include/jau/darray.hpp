@@ -203,14 +203,10 @@ namespace jau {
 
         public:
             /** Returns type signature of implementing class's stored value type. */
-            const jau::type_info& valueSignature() const noexcept {
-                return jau::static_ctti<Value_type>();
-            }
+            static constexpr jau::type_info valueSignature() noexcept { return jau::make_ctti<Value_type>(); }
 
             /** Returns type signature of implementing class. */
-            const jau::type_info& classSignature() const noexcept {
-                return jau::static_ctti<self_t>();
-            }
+            static constexpr jau::type_info classSignature() noexcept { return jau::make_ctti<self_t>(); }
 
             /** Returns growth factor, see setGrowthFactor() for semantics. */
             constexpr float growthFactor() const noexcept { return m_growth_factor; }

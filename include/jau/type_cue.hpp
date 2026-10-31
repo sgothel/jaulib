@@ -92,7 +92,7 @@ namespace jau {
     template <typename T>
     struct type_cue
     {
-        static const jau::type_info& ctti() noexcept { return jau::static_ctti<T>(); }
+        static consteval jau::type_info ctti() noexcept { return jau::make_ctti<T>(); }
 
         static std::string to_string(const bool withSize=true) {
             if( withSize ) {

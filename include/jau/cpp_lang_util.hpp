@@ -232,6 +232,11 @@ namespace jau {
         #define __restrict_cxx__
     #endif
 
+    /**
+     * JAU_PRETTY_FUNCTION, generalized  __PRETTY_FUNCTION__ or __FUNCSIG__
+     *
+     * TODO: Evaluate C++20 [source_location's function_name](https://en.cppreference.com/cpp/utility/source_location/function_name) across compiler
+     */
     #if defined(__clang__)
         /** Consider using [jau::ctti_name<R, L, A...>()](@ref ctti_name_lambda). */
         #define JAU_PRETTY_FUNCTION __PRETTY_FUNCTION__
@@ -262,7 +267,7 @@ namespace jau {
      *
      * @param mangled_name mangled name
      */
-    std::string demangle_name(const char* mangled_name) noexcept;
+    std::string demangle_name(std::string_view mangled_name) noexcept;
 
     #if defined(__clang__)
         /** Optional generic usage of final keyword w/o negative performance impact. (Disabled) */

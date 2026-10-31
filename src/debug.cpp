@@ -56,18 +56,17 @@ static constexpr std::string_view ctti_name_prefix_clang1 = "const char *jau::ct
 
 static constexpr std::string_view ctti_name_prefixes[] = { ctti_name_prefix_gcc1, ctti_name_prefix_clang1 };
 
-std::string jau::demangle_name(const char* mangled_name) noexcept {
-    const size_t len = ::strlen(mangled_name);
-    if( nullptr == mangled_name || 0 == len ) {
+std::string jau::demangle_name(std::string_view mangled_name) noexcept {
+    if( nullptr == mangled_name.data() || 0 == mangled_name.size() ) {
         return std::string();
     }
     for(const std::string_view ctti_name_prefix : ctti_name_prefixes) {
-        if( len > ctti_name_prefix.length()+2 &&
-            mangled_name == ::strstr(mangled_name, ctti_name_prefix.data()) ) // NOLINT(bugprone-suspicious-stringview-data-usage): it is a c_str (above)
+        if( mangled_name.size() > ctti_name_prefix.length()+2 &&
+            mangled_name.starts_with(ctti_name_prefix) ) // NOLINT(bugprone-suspicious-stringview-data-usage): it is a c_str (above)
         {
-            std::string r( mangled_name + ctti_name_prefix.length() );
-            r.resize(r.length() - 1);
-            return r;
+            const size_t ml = mangled_name.length();
+            const size_t pl = ctti_name_prefix.length();
+            return std::string ( mangled_name.substr(pl, ml-pl-1) );
         }
     }
 
@@ -78,7 +77,7 @@ std::string jau::demangle_name(const char* mangled_name) noexcept {
      *  -2: @a mangled_name is not a valid name under the C++ ABI mangling rules.
      *  -3: One of the arguments is invalid.
      */
-    char* real_name = abi::__cxa_demangle(mangled_name, nullptr, nullptr, &status);
+    char* real_name = abi::__cxa_demangle(mangled_name.data(), nullptr, nullptr, &status); // NOLINT(bugprone-suspicious-stringview-data-usage): OK
     if ( nullptr == real_name ) {
         return std::string(mangled_name); // didn't work, use mangled_name
     } else {

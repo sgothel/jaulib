@@ -201,7 +201,7 @@ class PMVMatrix4 {
     }
 
     /** Returns the component's value_type signature */
-    const jau::type_info& compSignature() const noexcept { return jau::static_ctti<value_type>(); }
+    static const jau::type_info& compSignature() noexcept { return jau::static_ctti<value_type>(); }
 
     /** Return the number of Mat4 referenced by matrices() */
     static size_t matrixCount(PMVData derivedMatrices) noexcept {

@@ -1239,10 +1239,7 @@ std::string_view jau::math::to_string(const jau::math::math_error_t v) noexcept 
 }
 
 std::string jau::type_info::toString() const noexcept {
-    using namespace jau::enums;
-
-    return jau_format_string("TypeInfo[addr %p, hash %#zx, '%s', ident%s]]",
-        this, hash_code(), name(), m_idflags);
+    return jau_format_string("TypeInfo[hash %#zx, '%s']", hash_code(), name());
 }
 
 //

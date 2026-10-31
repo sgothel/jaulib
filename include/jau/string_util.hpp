@@ -1331,9 +1331,8 @@ namespace jau {
              (!jau::req::has_member_of_pointer<value_type>) &&
              (!jau::req::has_free_to_stringview<value_type>) &&
              (!jau::req::has_free_to_string_any<value_type>)
-    inline std::string to_string(const value_type &ref) {
-        (void)ref;
-        return "jau::to_string<T> n/a for type " + jau::static_ctti<value_type>().toString();
+    constexpr std::string to_string(const value_type &) {
+        return "jau::to_string<T> n/a for type " + jau::make_ctti<value_type>().toString();
     }
 
     template<jau::req::wrapper T>
