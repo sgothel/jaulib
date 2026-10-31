@@ -26,10 +26,10 @@ namespace jau {
      */
 
     /**
-     * Crude implementation of 64-bit FNV-1a hash algorithm,
-     * see http://www.isthe.com/chongo/tech/comp/fnv/,
-     * and http://www.isthe.com/chongo/tech/comp/fnv/#FNV-1a
-     * and https://www.rfc-editor.org/info/rfc9923/ for details.
+     * Crude implementation of 64-bit FNV-1a hash algorithm, for details see
+     * - [fnv](http://www.isthe.com/chongo/tech/comp/fnv/)
+     * - [fnv FNV-1a](http://www.isthe.com/chongo/tech/comp/fnv/#FNV-1a)
+     * - [rfc9923](https://www.rfc-editor.org/info/rfc9923/)
      */
     namespace fnv1a_64 {
         constexpr uint64_t FNV_OFFSET = 14695981039346656037UL;
@@ -109,10 +109,10 @@ namespace jau {
     } // namespace fnv1a_64
 
     /**
-     * Crude implementation of 32-bit FNV-1a hash algorithm,
-     * see http://www.isthe.com/chongo/tech/comp/fnv/,
-     * and http://www.isthe.com/chongo/tech/comp/fnv/#FNV-1a
-     * and https://www.rfc-editor.org/info/rfc9923/ for details.
+     * Crude implementation of 32-bit FNV-1a hash algorithm, for details see
+     * - [fnv](http://www.isthe.com/chongo/tech/comp/fnv/)
+     * - [fnv FNV-1a](http://www.isthe.com/chongo/tech/comp/fnv/#FNV-1a)
+     * - [rfc9923](https://www.rfc-editor.org/info/rfc9923/)
      */
     namespace fnv1a_32 {
         constexpr uint32_t FNV_OFFSET = 2166136261U;
@@ -192,10 +192,10 @@ namespace jau {
     } // namespace fnv1a_32
 
     /**
-     * Crude implementation of sizeof(size_t) FNV-1a hash algorithm,
-     * see http://www.isthe.com/chongo/tech/comp/fnv/,
-     * and http://www.isthe.com/chongo/tech/comp/fnv/#FNV-1a
-     * and https://www.rfc-editor.org/info/rfc9923/ for details.
+     * Crude implementation of sizeof(size_t) FNV-1a hash algorithm, for details see
+     * - [fnv](http://www.isthe.com/chongo/tech/comp/fnv/)
+     * - [fnv FNV-1a](http://www.isthe.com/chongo/tech/comp/fnv/#FNV-1a)
+     * - [rfc9923](https://www.rfc-editor.org/info/rfc9923/)
      */
     namespace fnv1a_size_t {
         /**

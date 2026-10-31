@@ -118,7 +118,7 @@ namespace jau {
      * - [__PRETTY_FUNCTION__](https://gcc.gnu.org/onlinedocs/gcc-14.2.0/gcc/Function-Names.html)
      *   - `clang` produces a unique tag using filename and line number, compatible.
      *   - `gcc` produces a non-unique tag using the parent function of the lambda location and its too brief signature, not fully compatible.
-     * - `__FUNCSIG__`
+     * - [__FUNCSIG__](https://learn.microsoft.com/en-us/cpp/preprocessor/predefined-macros?view=msvc-170)
      *   - `msvc++` not yet tested, but should work according to their spec
      * - Any other compiler is not supported yet
      *
@@ -133,6 +133,7 @@ namespace jau {
      * @tparam L main function type, e.g. a lambda type.
      * @tparam A function argument types
      * @return instance of jau::type_info
+     * @see @ref make_ctti_type "jau::make_ctti<T>"
      * @see @ref make_ctti_lambda "jau::make_ctti<R, L, A...>"
      * @see @ref ctti_name_type
      * @see jau::type_info::limited_lambda_id
@@ -152,6 +153,9 @@ namespace jau {
      * and is CopyConstructible and CopyAssignable - but at compile-time.
      *
      * jau::type_info is compatible with std::type_index operations.
+     *
+     * Instances may be created via [jau::make_ctti<T>](@ref make_ctti_type) or [jau::make_ctti<R, L, A...>](@ref make_ctti_lambda)
+     * `consteval` factories.
      *
      * ### CTTI - Compile-time Info Nature
      *
@@ -175,7 +179,7 @@ namespace jau {
      * - compare the static name storage references (pointer) and return `true` if equal (fast path)
      * - due to (1.2), see above, the static name storage strings must be compared
      *   - compare the names' hash value and return `false` if not matching (fast path)
-     *   - compare the static names' string and return the result (slow `strcmp()` equality)
+     *   - compare the static names' string and return the result (slow `std::string_view` equality)
      *     - this avoids a potential hash collision.
      *
      * @anchor type_info_limitations
@@ -190,6 +194,7 @@ namespace jau {
      * jau::type_info::limited_lambda_id exposes the potential limitation.
      *
      * @see @ref type_info_identity "Identity"
+     * @see @ref make_ctti_type "jau::make_ctti<T>"
      * @see @ref make_ctti_lambda "jau::make_ctti<R, L, A...>"
      */
     class type_info {
