@@ -187,7 +187,7 @@ TEST_CASE( "Int Math Bench 04a", "[intersect][benchmark][arithmetic][math]" ) {
     std::cout << "isect_count " << isect_count << "/" << va.size() << ", " << 100.0f*( (float)isect_count / (float)va.size() ) << "%" << std::endl;
 
     BENCHMARK("Intersect1a Benchmark") {
-        size_t r = 0;
+        volatile size_t r = 0;
         for(size_t i = 0; i < va.size(); ++i) {
             AABBox a = va[i];
             AABBox b = vb[i];
@@ -196,7 +196,7 @@ TEST_CASE( "Int Math Bench 04a", "[intersect][benchmark][arithmetic][math]" ) {
         return r;
     };
     BENCHMARK("Intersect1b Benchmark") {
-        size_t r = 0;
+        volatile size_t r = 0;
         for(size_t i = 0; i < va.size(); ++i) {
             AABBox a = va[i];
             AABBox b = vb[i];
@@ -205,7 +205,7 @@ TEST_CASE( "Int Math Bench 04a", "[intersect][benchmark][arithmetic][math]" ) {
         return r;
     };
     BENCHMARK("Intersect1c Benchmark") {
-        size_t r = 0;
+        volatile size_t r = 0;
         for(size_t i = 0; i < va.size(); ++i) {
             AABBox a = va[i];
             AABBox b = vb[i];
@@ -214,7 +214,7 @@ TEST_CASE( "Int Math Bench 04a", "[intersect][benchmark][arithmetic][math]" ) {
         return r;
     };
     BENCHMARK("Intersect2a Benchmark") {
-        size_t r = 0;
+        volatile size_t r = 0;
         for(size_t i = 0; i < va.size(); ++i) {
             AABBox a = va[i];
             AABBox b = vb[i];
@@ -223,7 +223,7 @@ TEST_CASE( "Int Math Bench 04a", "[intersect][benchmark][arithmetic][math]" ) {
         return r;
     };
     BENCHMARK("Intersect2b Benchmark") {
-        size_t r = 0;
+        volatile size_t r = 0;
         for(size_t i = 0; i < va.size(); ++i) {
             AABBox a = va[i];
             AABBox b = vb[i];
@@ -232,7 +232,7 @@ TEST_CASE( "Int Math Bench 04a", "[intersect][benchmark][arithmetic][math]" ) {
         return r;
     };
     BENCHMARK("Intersect2c Benchmark") {
-        size_t r = 0;
+        volatile size_t r = 0;
         for(size_t i = 0; i < va.size(); ++i) {
             AABBox a = va[i];
             AABBox b = vb[i];
