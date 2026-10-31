@@ -86,6 +86,8 @@ class MyWrap { // NOLINT(misc-use-internal-linkage): intend
 
 TEST_CASE( "01 Type Concept Queries: Build-In") {
     static_assert(true  == std::is_integral_v<char> );
+    static_assert(true  == std::is_integral_v<unsigned char> );
+    static_assert(true  == std::is_integral_v<signed char> );
     static_assert(true  == std::is_integral_v<unsigned> );
     static_assert(true  == std::is_integral_v<unsigned short> );
     static_assert(true  == std::is_integral_v<int> );

@@ -1042,8 +1042,8 @@ void jau::cfmt::impl::append_floatF64(std::string &dest, const size_t dest_maxle
     float_type diff = 0;
 
     // powers of 10
-    static constexpr const float_type pow10[] = { 1e0_f64, 1e1_f64, 1e2_f64, 1e3_f64, 1e4_f64, 1e5_f64, 1e6_f64, 1e7_f64, 1e8_f64, 1e9_f64,
-                                                  1e10_f64, 1e11_f64, 1e12_f64, 1e13_f64, 1e14_f64 };
+    static constexpr const float_type pow10[] = { 1e0_d, 1e1_d, 1e2_d, 1e3_d, 1e4_d, 1e5_d, 1e6_d, 1e7_d, 1e8_d, 1e9_d,
+                                                  1e10_d, 1e11_d, 1e12_d, 1e13_d, 1e14_d };
     static constexpr const size_t prec_max = sizeof(pow10) / sizeof(float_type) - 1;  // 14
 
     // test for negative

@@ -165,6 +165,10 @@ TEST_CASE( "Type Type Test 00", "[wordsize]" ) {
     print_typeinfo<uintptr_t>(__LINE__, "uintptr_t");
     print_typeinfo<size_t>(__LINE__, "size_t");
 
+    print_typeinfo<float>(__LINE__, "float");
+    print_typeinfo<jau::float32_t>(__LINE__, "float32_t");
+    print_typeinfo<double>(__LINE__, "double");
+    print_typeinfo<jau::float64_t>(__LINE__, "float64_t");
 }
 
 TEST_CASE( "Type Overload Test 01", "[wordsize]" ) {

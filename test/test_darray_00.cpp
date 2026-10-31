@@ -45,13 +45,22 @@ typedef jau::darray<int, jau::nsize_t, jau::callocator<int>, std::is_trivially_c
 TEST_CASE( "JAU DArray Test 00 - ctti", "[ctti][datatype][jau][darray]" ) {
     typedef jau::darray<uint8_t> ByteBuffer;
     typedef jau::darray<int32_t> IntBuffer;
-    typedef jau::darray<jau::float32_t> FloatBuffer;
+    typedef jau::darray<float> FloatBuffer;
+    typedef jau::darray<double> DoubleBuffer;
+    typedef jau::darray<jau::float32_t> Float32Buffer;
+    typedef jau::darray<jau::float64_t> Float64Buffer;
     ByteBuffer b0(10);
     ByteBuffer b1(11);
     IntBuffer i0(10);
     IntBuffer i1(11);
-    FloatBuffer f0(10);
-    FloatBuffer f1(11);
+    FloatBuffer f_0(10);
+    FloatBuffer f_1(11);
+    DoubleBuffer d_0(10);
+    DoubleBuffer d_1(11);
+    Float32Buffer f32_0(10);
+    Float32Buffer f32_1(11);
+    Float64Buffer f64_0(10);
+    Float64Buffer f64_1(11);
 
     std::cout << "RTTI: " << jau::is_rtti_available() << std::endl;
     std::cout << std::endl;
@@ -59,12 +68,21 @@ TEST_CASE( "JAU DArray Test 00 - ctti", "[ctti][datatype][jau][darray]" ) {
     std::cout << "b1: " << b1 << std::endl;
     std::cout << "i0: " << i0 << std::endl;
     std::cout << "i1: " << i1 << std::endl;
-    std::cout << "f0: " << f0 << std::endl;
-    std::cout << "f1: " << f1 << std::endl;
+    std::cout << "f_0: " << f_0 << std::endl;
+    std::cout << "f_1: " << f_1 << std::endl;
+    std::cout << "f32_0: " << f32_0 << std::endl;
+    std::cout << "f32_1: " << f32_1 << std::endl;
+    std::cout << "d_0: " << d_0 << std::endl;
+    std::cout << "d_1: " << d_1 << std::endl;
+    std::cout << "f64_0: " << f64_0 << std::endl;
+    std::cout << "f64_1: " << f64_1 << std::endl;
     std::cout << std::endl;
     std::cout << "byte:     " << jau::int_ctti::u8() << std::endl;
     std::cout << "int:      " << jau::int_ctti::i32() << std::endl;
-    std::cout << "float:    " << jau::float_ctti::f32() << std::endl;
+    std::cout << "float:    " << jau::float_ctti::f() << std::endl;
+    std::cout << "float32_t " << jau::float_ctti::f32() << std::endl;
+    std::cout << "double:   " << jau::float_ctti::d() << std::endl;
+    std::cout << "float64_t " << jau::float_ctti::f64() << std::endl;
     std::cout << std::endl;
     std::cout << "b0 value: " << b0.valueSignature() << std::endl;
     std::cout << "b1 value: " << b1.valueSignature() << std::endl;
@@ -81,20 +99,27 @@ TEST_CASE( "JAU DArray Test 00 - ctti", "[ctti][datatype][jau][darray]" ) {
 
     REQUIRE( b0.valueSignature() == b1.valueSignature() );
     REQUIRE( i0.valueSignature() == i1.valueSignature() );
-    REQUIRE( f0.valueSignature() == f1.valueSignature() );
+    REQUIRE( f32_0.valueSignature() == f32_1.valueSignature() );
     REQUIRE( b0.valueSignature() != i1.valueSignature() );
-    REQUIRE( b0.valueSignature() != f1.valueSignature() );
+    REQUIRE( b0.valueSignature() != f32_1.valueSignature() );
 
     REQUIRE( b0.valueSignature() == jau::int_ctti::u8() );
     REQUIRE( b1.valueSignature() == jau::int_ctti::u8() );
     REQUIRE( i0.valueSignature() == jau::int_ctti::i32() );
     REQUIRE( i1.valueSignature() == jau::int_ctti::i32() );
-    REQUIRE( f0.valueSignature() == jau::float_ctti::f32() );
-    REQUIRE( f1.valueSignature() == jau::float_ctti::f32() );
+    REQUIRE( f_0.valueSignature() == jau::float_ctti::f() );
+    REQUIRE( f_1.valueSignature() == jau::float_ctti::f() );
+    REQUIRE( f32_0.valueSignature() == jau::float_ctti::f32() );
+    REQUIRE( f32_1.valueSignature() == jau::float_ctti::f32() );
+    REQUIRE( d_0.valueSignature() == jau::float_ctti::d() );
+    REQUIRE( d_1.valueSignature() == jau::float_ctti::d() );
+    REQUIRE( f64_0.valueSignature() == jau::float_ctti::f64() );
+    REQUIRE( f64_1.valueSignature() == jau::float_ctti::f64() );
     REQUIRE( b0.valueSignature() != jau::int_ctti::i32() );
     REQUIRE( i0.valueSignature() != jau::int_ctti::u8() );
-    REQUIRE( f0.valueSignature() != jau::float_ctti::f64() );
-    REQUIRE( f0.valueSignature() != jau::int_ctti::u8() );
+    REQUIRE( f32_0.valueSignature() != jau::int_ctti::u8() );
+    REQUIRE( f32_0.valueSignature() != jau::float_ctti::d() );
+    REQUIRE( f32_0.valueSignature() != jau::float_ctti::f64() );
 }
 
 template<class T>

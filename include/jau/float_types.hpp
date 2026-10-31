@@ -40,8 +40,7 @@ namespace jau {
      *
      *  @{
      */
-
-    #if __cplusplus > 202002L && !defined(__clang__)
+    #if __cplusplus > 202002L && __STDCPP_FLOAT32_T__ && __STDCPP_FLOAT64_T__
         /** https://en.cppreference.com/w/cpp/types/floating-point */
         typedef std::float32_t float32_t;
         typedef std::float64_t float64_t;
@@ -270,6 +269,10 @@ namespace jau {
     }
 
     namespace float_literals {
+        constexpr float     operator ""_f(long double __v)              noexcept { return (float)__v; }
+        constexpr float     operator ""_f(unsigned long long int __v)   noexcept { return (float)__v; }
+        constexpr double    operator ""_d(long double __v)              noexcept { return (double)__v; }
+        constexpr double    operator ""_d(unsigned long long int __v)   noexcept { return (double)__v; }
         constexpr float32_t operator ""_f32(long double __v)            noexcept { return (float32_t)__v; }
         constexpr float32_t operator ""_f32(unsigned long long int __v) noexcept { return (float32_t)__v; }
         constexpr float64_t operator ""_f64(long double __v)            noexcept { return (float64_t)__v; }
