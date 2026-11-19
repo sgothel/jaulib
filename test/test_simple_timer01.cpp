@@ -137,6 +137,7 @@ class TestSimpleTimer01 {
 
 } // anon-ns
 
+// NOLINTBEGIN(bugprone-throwing-static-initialization)
 METHOD_AS_TEST_CASE( TestSimpleTimer01::test01_dog1, "Test TestSimpleTimer01 - test01_dog1");
 METHOD_AS_TEST_CASE( TestSimpleTimer01::test01_dog2, "Test TestSimpleTimer01 - test01_dog2");
-
+// NOLINTEND(bugprone-throwing-static-initialization)

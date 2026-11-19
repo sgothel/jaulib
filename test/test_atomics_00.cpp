@@ -287,8 +287,12 @@ static void test_atomics_spin_lock() {
     }
 #endif
 
+// NOLINTBEGIN(bugprone-throwing-static-initialization)
+
 METHOD_AS_TEST_CASE( test_atomics_spin_lock, "Test TestAtomics 00 - spin_lock");
 
 #if __cplusplus > 201703L // C++20
     METHOD_AS_TEST_CASE( test_atomics_atomic_wait, "Test TestAtomics 00 - atomic_wait");
 #endif
+
+// NOLINTEND(bugprone-throwing-static-initialization)

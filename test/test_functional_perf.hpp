@@ -560,5 +560,7 @@ class TestFunction01 {
 
 };
 
+// NOLINTBEGIN(bugprone-throwing-static-initialization)
 METHOD_AS_TEST_CASE( TestFunction01::test00_usage, "00_usage");
 METHOD_AS_TEST_CASE( TestFunction01::test10_perf,  "10_perf");
+// NOLINTEND(bugprone-throwing-static-initialization)

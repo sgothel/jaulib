@@ -19,6 +19,7 @@
 #include <cstring>
 #include <limits>
 #include <string_view>
+#include <span>
 
 #include <jau/basic_types.hpp>
 #include <jau/byte_util.hpp>

@@ -1161,6 +1161,7 @@ std::vector<std::string> TestByteStream01::fname_payload_lst;
 std::vector<std::string> TestByteStream01::fname_payload_copy_lst;
 std::vector<uint64_t> TestByteStream01::fname_payload_size_lst;
 
+// NOLINTBEGIN(bugprone-throwing-static-initialization)
 METHOD_AS_TEST_CASE( TestByteStream01::test00a_protocols_error,           "test00a_protocols_error");
 METHOD_AS_TEST_CASE( TestByteStream01::test00b_protocols_ok,              "test00b_protocols_ok");
 
@@ -1183,3 +1184,4 @@ METHOD_AS_TEST_CASE( TestByteStream01::test41_seek_rw_file,               "test4
 METHOD_AS_TEST_CASE( TestByteStream01::test42_seek_rw_url,                "test42_seek_rw_url");
 METHOD_AS_TEST_CASE( TestByteStream01::test4a_rewind_rw_file,             "test4a_rewind_rw_file");
 METHOD_AS_TEST_CASE( TestByteStream01::test4b_rewind_rw_url,              "test4b_rewind_rw_url");
+// NOLINTEND(bugprone-throwing-static-initialization)

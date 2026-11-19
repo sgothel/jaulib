@@ -1064,7 +1064,7 @@ namespace jau::cfmt {
                     while(q < end) {
                         if (*q == '%') {
                             // new conversion specifier found
-                            appendText(pos, q);
+                            appendText(&*pos, &*q);
                             state = pstate_t::start;
                             pos = q + 1;
                             reset();
@@ -1073,7 +1073,7 @@ namespace jau::cfmt {
                         ++q;
                     }
                     // no conversion specifier found, end of format
-                    appendText(pos, end);
+                    appendText(&*pos, &*end);
                     pos = end;
                     return false;
                 } else {
@@ -1636,7 +1636,7 @@ namespace jau::cfmt {
                     }
                     return true; // no digits, may continue
                 }
-                const int32_t num = fromIntString(std::string_view(p_begin, p_i - p_begin));
+                const int32_t num = fromIntString(std::string_view(&*p_begin, p_i - p_begin));
                 if( num < 0 ) {
                     // number syntax or overflow
                     pc.setError(__LINE__);

@@ -45,6 +45,7 @@ extern "C" {
     #include <unistd.h>
     #include <dirent.h>
     #include <fcntl.h>
+    #include <errno.h>
     #include <sys/stat.h>
     #include <sys/types.h>
     #include <sys/wait.h>
@@ -84,6 +85,24 @@ using namespace jau::io::fs;
     #define __posix_fstatat64 ::fstatat64
     #define __posix_openat64  ::openat64
 #endif
+
+#if !defined(__EMSCRIPTEN__)
+
+static int wrap_unlinkat(int dirfd, const char *pathname, int flags) {
+    return ::unlinkat(dirfd, pathname, flags);
+}
+
+#else
+
+static int wrap_unlinkat(int dirfd, const char *pathname, int flags) {
+    (void)dirfd;
+    (void)pathname;
+    (void)flags;
+    errno=EACCES;
+    return -1;
+}
+
+#endif // __EMSCRIPTEN__
 
 std::string jau::io::fs::get_cwd() noexcept {
     const size_t bsz = PATH_MAX; // including EOS
@@ -1498,7 +1517,7 @@ bool jau::io::fs::remove(const std::string& path, traverse_options topts) noexce
                         // NOP
                     } else if( is_set(tevt, traverse_event::dir_exit) ) {
                         const int dirfd2 = *( ctx_ptr->dirfds.end() - 2 );
-                        const int res = ::unlinkat( dirfd2, basename_.c_str(), AT_REMOVEDIR );
+                        const int res = wrap_unlinkat( dirfd2, basename_.c_str(), AT_REMOVEDIR );
                         if( 0 != res ) {
                             jau_ERR_PRINT("remove failed: %s, res %d", element_stats.toString(), res); // NOLINT(bugprone-lambda-function-name)
                             return false;
@@ -1507,7 +1526,7 @@ bool jau::io::fs::remove(const std::string& path, traverse_options topts) noexce
                             jau_fprintf_td(stderr, "remove: %s removed\n", element_stats.toString());
                         }
                     } else if( is_set(tevt, traverse_event::file) || is_set(tevt, traverse_event::symlink) || is_set(tevt, traverse_event::dir_symlink) ) {
-                        const int res = ::unlinkat( dirfd, basename_.c_str(), 0 );
+                        const int res = wrap_unlinkat( dirfd, basename_.c_str(), 0 );
                         if( 0 != res ) {
                             jau_ERR_PRINT("remove failed: %s, res %d", element_stats.toString(), res); // NOLINT(bugprone-lambda-function-name)
                             return false;
@@ -1644,7 +1663,7 @@ static bool copy_file(const int src_dirfd, const file_stats& src_stats,
             }
             return false;
         }
-        const int res = ::unlinkat(dst_dirfd, dst_basename.c_str(), 0);
+        const int res = wrap_unlinkat(dst_dirfd, dst_basename.c_str(), 0);
         if( 0 != res ) {
             jau_ERR_PRINT("remove existing dest_path for symbolic-link failed: source %s, dest '%s'",
                     src_stats.toString(), dst_stats.toString());
@@ -1883,14 +1902,14 @@ static bool copy_push_mkdir(const file_stats& dst_stats, copy_context_t& ctx) no
             jau_ERR_PRINT("Couldn't open new dir %s", dst_stats.toString());
         }
         if( new_dir ) {
-            ::unlinkat(dest_dirfd, basename_.c_str(), AT_REMOVEDIR);
+            wrap_unlinkat(dest_dirfd, basename_.c_str(), AT_REMOVEDIR);
         }
         return false;
     }
     // drop read permissions to render destination directory transaction safe until copy is done
     if( 0 != ::fchmod(new_dirfd, jau::io::fs::posix_protection_bits(fmode_t::write_usr | fmode_t::exec_usr)) ) {
         if( new_dir ) {
-            ::unlinkat(dest_dirfd, basename_.c_str(), AT_REMOVEDIR);
+            wrap_unlinkat(dest_dirfd, basename_.c_str(), AT_REMOVEDIR);
             jau_ERR_PRINT("zero permissions on dest %s, temp '%s'", dst_stats.toString(), basename_);
         } else {
             jau_ERR_PRINT("zero permissions on dest %s", dst_stats.toString());
@@ -1907,7 +1926,7 @@ static bool copy_push_mkdir(const file_stats& dst_stats, copy_context_t& ctx) no
 #endif /* defined(__linux__) && defined(__GLIBC__) */
         if( 0 != rename_res ) {
             jau_ERR_PRINT("rename temp to dest, temp '%s', dest %s", basename_, dst_stats.toString());
-            ::unlinkat(dest_dirfd, basename_.c_str(), AT_REMOVEDIR);
+            wrap_unlinkat(dest_dirfd, basename_.c_str(), AT_REMOVEDIR);
             ::close(new_dirfd);
             return false;
         }

@@ -202,8 +202,8 @@ namespace jau {
      * @param n value
      */
     template<jau::req::unsigned_integral T>
-    constexpr size_t bit_count(T n) noexcept {
-        return (size_t)std::popcount(n);
+    constexpr unsigned int bit_count(T n) noexcept {
+        return (unsigned int)std::popcount(n);
     }
 
     /**

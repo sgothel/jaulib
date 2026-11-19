@@ -313,6 +313,7 @@ class TestRingbuffer11 { // NOLINT(misc-use-internal-linkage): intend
     }
 };
 
+// NOLINTBEGIN(bugprone-throwing-static-initialization)
 METHOD_AS_TEST_CASE( TestRingbuffer11::test_sequential, "Test TestRingbuffer 11- test_sequential");
 METHOD_AS_TEST_CASE( TestRingbuffer11::test_range,      "Test TestRingbuffer 11- test_range");
-
+// NOLINTEND(bugprone-throwing-static-initialization)

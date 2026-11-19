@@ -27,7 +27,7 @@
 
 #include <cmath>
 #include <jau/int_types.hpp>
-#if __cplusplus > 202002L
+#if __cplusplus > 202002L && __STDCPP_FLOAT32_T__ && __STDCPP_FLOAT64_T__
     #include <stdfloat>
 #endif
 

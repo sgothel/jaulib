@@ -120,7 +120,8 @@ Language requirements
   - [FreeBSD libc](https://www.freebsd.org/)
   - [GNU glibc](https://www.gnu.org/software/libc/)
   - [musl](https://musl.libc.org/)
-- [emscripten >= 3.1.59](https://emscripten.org/) **optional** for WebAssembly (Wasm)
+- [emscripten >= 7.0.0](https://emscripten.org/) **optional** for WebAssembly (Wasm)
+  - [wasmtime](https://github.com/bytecodealliance/wasmtime) for unit tests
 - Java 11, 21
 
 See [supported platforms](PLATFORMS.md) for details.
@@ -245,11 +246,34 @@ apt install mini-httpd
 Note: `mini-httpd` is being used for unit testing URL streaming only.
 
 #### WebAssembly (via emscripten)
-At time of writing (Debian 12), it is recommended to install
-[emscripten >= 3.1.59](https://emscripten.org/) for WebAssembly (Wasm)
+At time of writing (Debian 13), it is recommended to install
+[emscripten >= 7.0.0](https://emscripten.org/) for WebAssembly (Wasm)
 from [its upstream source](https://emscripten.org/docs/getting_started/downloads.html).
 
-At a later time (more recent Debian > 12 deployment) the Debian default may be functional:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}
+# Start from home directory
+cd $HOME
+
+# Get the emsdk repo
+git clone https://github.com/emscripten-core/emsdk.git
+
+# Enter that directory
+cd emsdk
+
+# Fetch the latest version of the emsdk (not needed the first time you clone)
+git pull
+
+# Download and install the latest SDK tools.
+./emsdk install latest
+
+# Make the "latest" SDK "active" for the current user. (writes .emscripten file)
+./emsdk activate latest
+
+# Activate PATH and other environment variables in the current terminal
+source ./emsdk_env.sh
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+At a later time (more recent Debian > 13 deployment) the Debian default may be functional:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.sh}
 apt install emscripten

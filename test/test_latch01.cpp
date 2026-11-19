@@ -198,7 +198,9 @@ class TestLatch01 {
 
 } // anon-ns
 
+// NOLINTBEGIN(bugprone-throwing-static-initialization)
 METHOD_AS_TEST_CASE( TestLatch01::test01_down_wait,      "test01_down_wait");
 METHOD_AS_TEST_CASE( TestLatch01::test02_down_wait_for,  "test02_down_wait_for");
 METHOD_AS_TEST_CASE( TestLatch01::test03_down_wait_for,  "test03_down_wait_for");
 METHOD_AS_TEST_CASE( TestLatch01::test04_up_wait_for,    "test04_up_wait_for");
+// NOLINTEND(bugprone-throwing-static-initialization)

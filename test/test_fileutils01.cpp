@@ -2087,6 +2087,7 @@ class TestFileUtil01 : TestFileUtilBase { // NOLINT(misc-use-internal-linkage): 
     }
 };
 
+// NOLINTBEGIN(bugprone-throwing-static-initialization)
 METHOD_AS_TEST_CASE( TestFileUtil01::test00_testfiles,          "Test TestFileUtil01 - test00_testfiles");
 METHOD_AS_TEST_CASE( TestFileUtil01::test01_cwd,                "Test TestFileUtil01 - test01_cwd");
 METHOD_AS_TEST_CASE( TestFileUtil01::test02_dirname,            "Test TestFileUtil01 - test02_dirname");
@@ -2116,3 +2117,4 @@ METHOD_AS_TEST_CASE( TestFileUtil01::test43_copy_ext_r_p_over,  "Test TestFileUt
 METHOD_AS_TEST_CASE( TestFileUtil01::test49_copy_ext_r_p_vfat,  "Test TestFileUtil01 - test49_copy_ext_r_p_vfat");
 
 METHOD_AS_TEST_CASE( TestFileUtil01::test50_copy_ext_r_p_fsl,   "Test TestFileUtil01 - test50_copy_ext_r_p_fsl");
+// NOLINTEND(bugprone-throwing-static-initialization)

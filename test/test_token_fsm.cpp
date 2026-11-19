@@ -195,5 +195,7 @@ static void test10_cpp_token() {
     }
 }
 
+// NOLINTBEGIN(bugprone-throwing-static-initialization)
 METHOD_AS_TEST_CASE( test00_hello, "00_hello");
 METHOD_AS_TEST_CASE( test10_cpp_token, "10_cpp_token");
+// NOLINTEND(bugprone-throwing-static-initialization)

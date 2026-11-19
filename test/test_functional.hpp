@@ -25,6 +25,8 @@
 #include <cstring>
 #include <memory>
 #include <string>
+#include <typeindex>
+
 #include "jau/debug.hpp"
 
 #ifndef FUNCTIONAL_PROVIDED
@@ -2038,6 +2040,7 @@ class TestFunction01 {
 };
 
 
+// NOLINTBEGIN(bugprone-throwing-static-initialization)
 METHOD_AS_TEST_CASE( TestFunction01::test00_usage,               "00_usage");
 
 METHOD_AS_TEST_CASE( TestFunction01::test01_memberfunc_this,     "01_memberfunc");
@@ -2061,3 +2064,4 @@ METHOD_AS_TEST_CASE( TestFunction01::test15_ylambda,             "15_ylambda");
 METHOD_AS_TEST_CASE( TestFunction01::test20_misc,                "20_misc");
 METHOD_AS_TEST_CASE( TestFunction01::test30_objargs01,           "30_objargs01");
 METHOD_AS_TEST_CASE( TestFunction01::test31_objargs02,           "31_objargs02");
+// NOLINTEND(bugprone-throwing-static-initialization)

@@ -233,4 +233,6 @@ class TestMemModelSCDRF00 { // NOLINT(misc-use-internal-linkage): intend
     }
 };
 
+// NOLINTBEGIN(bugprone-throwing-static-initialization)
 METHOD_AS_TEST_CASE( TestMemModelSCDRF00::test_list, "Test TestMemModelSCDRF 00- test_list");
+// NOLINTEND(bugprone-throwing-static-initialization)

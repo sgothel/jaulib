@@ -91,7 +91,6 @@ static void print_iterator_info(const std::string& typedefname,
 ) {
     jau::type_cue<Iter>::print(typedefname);
     jau::type_cue<typename Iter::iterator_category>::print(typedefname+"::iterator_category");
-    jau::type_cue<typename Iter::iterator_type>::print(typedefname+"::iterator_type");
     jau::type_cue<typename Iter::value_type>::print(typedefname+"::value_type");
     jau::type_cue<typename Iter::reference>::print(typedefname+"::reference");
     jau::type_cue<typename Iter::pointer>::print(typedefname+"::pointer");

@@ -169,6 +169,7 @@ class TestHttpStream01 {
 
 } // anon-namespace
 
+// NOLINTBEGIN(bugprone-throwing-static-initialization)
 METHOD_AS_TEST_CASE( TestHttpStream01::test01_post_sync_ok, "TestIOStream01 - test01_post_sync_ok");
 METHOD_AS_TEST_CASE( TestHttpStream01::test11_post_async_ok, "TestIOStream01 - test11_post_async_ok");
-
+// NOLINTEND(bugprone-throwing-static-initialization)

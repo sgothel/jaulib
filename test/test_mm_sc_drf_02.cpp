@@ -250,4 +250,6 @@ class TestMemModelSCDRF02 {
 
 } // anon-ns
 
+// NOLINTBEGIN(bugprone-throwing-static-initialization)
 METHOD_AS_TEST_CASE( TestMemModelSCDRF02::test_list, "Test TestMemModelSCDRF 02- test_list");
+// NOLINTEND(bugprone-throwing-static-initialization)

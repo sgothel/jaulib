@@ -26,6 +26,7 @@
 #include <string>
 #include <cstdlib>
 #include <thread>
+#include <new>
 
 #include <jau/cpuid.hpp>
 #include <jau/byte_util.hpp>

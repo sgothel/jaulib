@@ -209,4 +209,6 @@ static void test_sharedptr01() {
     }
 }
 
+// NOLINTBEGIN(bugprone-throwing-static-initialization)
 METHOD_AS_TEST_CASE( test_sharedptr01, "Test TestSharedPtr 00");
+// NOLINTEND(bugprone-throwing-static-initialization)

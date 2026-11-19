@@ -322,4 +322,6 @@ class TestFileUtil02 : TestFileUtilBase { // NOLINT(misc-use-internal-linkage)
     }
 };
 
+// NOLINTBEGIN(bugprone-throwing-static-initialization)
 METHOD_AS_TEST_CASE( TestFileUtil02::test50_mount_copy_r_p,     "Test TestFileUtil02 - test50_mount_copy_r_p");
+// NOLINTEND(bugprone-throwing-static-initialization)

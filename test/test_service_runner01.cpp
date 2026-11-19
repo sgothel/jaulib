@@ -180,7 +180,8 @@ class TestServiceRunner01 {
 
 } // anon-ns
 
+// NOLINTBEGIN(bugprone-throwing-static-initialization)
 METHOD_AS_TEST_CASE( TestServiceRunner01::test01_service01_fast_stop, "test01_service01_fast_stop");
 METHOD_AS_TEST_CASE( TestServiceRunner01::test02_service01_fast_stop, "test02_service01_fast_stop");
 METHOD_AS_TEST_CASE( TestServiceRunner01::test10_service01_self_stop, "test10_service01_self_stop");
-
+// NOLINTEND(bugprone-throwing-static-initialization)

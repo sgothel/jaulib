@@ -47,7 +47,7 @@ buildit() {
     # emcmake cmake --trace-expand $CLANG_ARGS -DCMAKE_INSTALL_PREFIX=$rootdir/$dist_dir -DBUILD_TESTING=ON ../..
     # emcmake cmake $CLANG_ARGS -DCMAKE_INSTALL_PREFIX=$rootdir/$dist_dir ../..
     # emcmake cmake $CLANG_ARGS -DCMAKE_INSTALL_PREFIX=$rootdir/$dist_dir -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON ../..
-    emcmake cmake $CLANG_ARGS -DCMAKE_INSTALL_PREFIX=$rootdir/$dist_dir -DBUILD_TESTING=ON ../..
+    emcmake cmake $CLANG_ARGS -DCMAKE_INSTALL_PREFIX=$rootdir/$dist_dir -DUSE_LTO_FOR_ALL_TARGETS=ON -DBUILD_TESTING=ON ../..
     # emcmake cmake $CLANG_ARGS -DCMAKE_INSTALL_PREFIX=$rootdir/$dist_dir -DDEBUG=ON ../..
 
     # emcmake cmake $CLANG_ARGS -DCMAKE_INSTALL_PREFIX=$rootdir/$dist_dir -DUSE_STRIP=OFF ../..
