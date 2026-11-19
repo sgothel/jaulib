@@ -99,7 +99,7 @@ inline void REQUIRE_EQUAL(T t, U u)
             catchAssertionHandler.handleExpr( Catch::Decomposer() <= __VA_ARGS__ ); \
             CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION \
         } INTERNAL_CATCH_CATCH( catchAssertionHandler ) \
-        INTERNAL_CATCH_REACT( catchAssertionHandler ) \
+        catchAssertionHandler.complete(); \
     } while( (void)0, (false) && static_cast<bool>( !!(__VA_ARGS__) ) )
 
     #define REQUIRE_MSG(MSG, ... ) INTERNAL_CATCH_TEST_M( MSG, "REQUIRE: ", Catch::ResultDisposition::Normal, __VA_ARGS__  )
@@ -112,9 +112,9 @@ inline void REQUIRE_EQUAL(T t, U u)
         s1.append(": "); \
         Catch::AssertionHandler catchAssertionHandler( s1, CATCH_INTERNAL_LINEINFO, CATCH_INTERNAL_STRINGIFY(arg) ", " CATCH_INTERNAL_STRINGIFY(matcher), resultDisposition ); \
         INTERNAL_CATCH_TRY { \
-            catchAssertionHandler.handleExpr( Catch::makeMatchExpr( arg, matcher, #matcher##_catch_sr ) ); \
+            catchAssertionHandler.handleExpr( Catch::makeMatchExpr( arg, matcher ) ); \
         } INTERNAL_CATCH_CATCH( catchAssertionHandler ) \
-        INTERNAL_CATCH_REACT( catchAssertionHandler ) \
+        catchAssertionHandler.complete(); \
     } while( false )
 
     #define REQUIRE_THAT_MSG(MSG, arg, matcher ) INTERNAL_CHECK_THAT_M( MSG, "REQUIRE_THAT", matcher, Catch::ResultDisposition::Normal, arg )
