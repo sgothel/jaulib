@@ -788,9 +788,7 @@ namespace jau::cfmt {
             requires jau::req::stringifiable<T>
             constexpr void appendFormatted(const FormatOpts&, const T&) noexcept { }
 
-            template<typename T>
-            requires jau::req::pointer<T> && (!jau::req::string_alike<T>)
-            constexpr void appendFormattedAPointer(const FormatOpts&, const T) noexcept { }
+            constexpr void appendFormattedAPointer(const FormatOpts&, void*) noexcept { }
 
             constexpr void appendFormattedInt32(const FormatOpts&, const unsigned_integral_promotion32, bool) noexcept { }
             constexpr void appendFormattedInt64(const FormatOpts&, const unsigned_integral_promotion64, bool) noexcept { }
@@ -872,9 +870,7 @@ namespace jau::cfmt {
                     impl::append_string(m_s, m_maxLen, "(null)", opts);
                 }
             }
-            template<typename T>
-            requires jau::req::pointer<T> && (!jau::req::string_alike<T>)
-            void appendFormattedAPointer(const FormatOpts& opts, const T v) noexcept {
+            void appendFormattedAPointer(const FormatOpts& opts, void *v) noexcept {
                 if( nullptr != v ) {
                     const uintptr_t v_le = jau::cpu_to_le(reinterpret_cast<uintptr_t>(v));
                     if constexpr (sizeof(uintptr_t) > sizeof(uint32_t)) {
@@ -1107,9 +1103,8 @@ namespace jau::cfmt {
                 m_out.appendFormatted(opts, v);
             }
 
-            template<typename T>
-                requires jau::req::pointer<T>
-            constexpr void appendFormattedAPointer(const T v) noexcept {
+            CXX_ALWAYS_INLINE
+            constexpr void appendFormattedAPointer(void *v) noexcept {
                 m_out.appendFormattedAPointer(opts, v);
             }
 
