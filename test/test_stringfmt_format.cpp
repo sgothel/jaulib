@@ -523,9 +523,20 @@ static void checkFormat(int line, const char *fmt, const Args &...args) {
     CHECK( sizeof...(args) == r.argumentCount());
     CHECK(exp == has);
 }
+template <typename... Args>
+static void checkFormat2(int line, const char *exp, const char *fmt, const Args &...args) {
+    // std::string has = jau::cfmt::format(fmt, args...);
+    std::string has;
+    jau::cfmt::Result r = jau::cfmt::formatR(has, fmt, args...);
+    std::cerr << "FormatResult @ " << line << ": " << r << "\n";
+    std::cerr << "FormatResult @ " << line << ": exp `" << exp << "`, has `" << has << "`\n\n";
+    CHECK( true == r.success());
+    CHECK( sizeof...(args) == r.argumentCount());
+    CHECK(exp == has);
+}
 
 template <typename ArgStdPrint, typename ArgJauPrint>
-static void checkFormat2(int line, const char *fmt, const ArgStdPrint &argStd, const ArgJauPrint &argJau) {
+static void checkFormat3(int line, const char *fmt, const ArgStdPrint &argStd, const ArgJauPrint &argJau) {
     PRAGMA_DISABLE_WARNING_PUSH
     PRAGMA_DISABLE_WARNING_FORMAT_NONLITERAL
     PRAGMA_DISABLE_WARNING_FORMAT_SECURITY
@@ -658,7 +669,7 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
     checkFormat(__LINE__, "p3b %p %0p", &i32_u, &i32_u);
     checkFormat(__LINE__, "p3b %p %0p", &sl1, &sl1);
     checkFormat(__LINE__, "p3b %p %0p", s2p, s2p);
-    checkFormat(__LINE__, "%p", (void *)nullptr);
+    checkFormat2(__LINE__, "(nil)", "%p", (void *)nullptr); // wasm/wasi snprintf: "0"
     checkFormat(__LINE__, "%s", (char *)nullptr);
 
     checkFormat(__LINE__, "%d", b0);
@@ -683,11 +694,11 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
     checkFormat(__LINE__, "%A", f64);
     // checkFormat(__LINE__, "%g", f64);
     // checkFormat(__LINE__, "%G", f64);
-    checkFormat2(__LINE__, "%f", f64, f64_2);
-    checkFormat2(__LINE__, "%e", f64, f64_2);
-    checkFormat2(__LINE__, "%E", f64, f64_2);
-    checkFormat2(__LINE__, "%a", f64, f64_2);
-    checkFormat2(__LINE__, "%A", f64, f64_2);
+    checkFormat3(__LINE__, "%f", f64, f64_2);
+    checkFormat3(__LINE__, "%e", f64, f64_2);
+    checkFormat3(__LINE__, "%E", f64, f64_2);
+    checkFormat3(__LINE__, "%a", f64, f64_2);
+    checkFormat3(__LINE__, "%A", f64, f64_2);
     // checkFormat2(__LINE__, "%g", f64, f64_2);
     // checkFormat2(__LINE__, "%G", f64, f64_2);
 
@@ -698,11 +709,11 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
     checkFormat(__LINE__, "%A", f32);
     // checkFormat(__LINE__, "%g", f32);
     // checkFormat(__LINE__, "%G", f32);
-    checkFormat2(__LINE__, "%f", f32, f32_2);
-    checkFormat2(__LINE__, "%e", f32, f32_2);
-    checkFormat2(__LINE__, "%E", f32, f32_2);
-    checkFormat2(__LINE__, "%a", f32, f32_2);
-    checkFormat2(__LINE__, "%A", f32, f32_2);
+    checkFormat3(__LINE__, "%f", f32, f32_2);
+    checkFormat3(__LINE__, "%e", f32, f32_2);
+    checkFormat3(__LINE__, "%E", f32, f32_2);
+    checkFormat3(__LINE__, "%a", f32, f32_2);
+    checkFormat3(__LINE__, "%A", f32, f32_2);
     // checkFormat2(__LINE__, "%g", f32, f32_2);
     // checkFormat2(__LINE__, "%G", f32, f32_2);
 

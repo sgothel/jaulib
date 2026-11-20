@@ -78,6 +78,16 @@ extern "C" {
 
         return ret;
     }
+    #if defined(__STANDALONE_WASM__)
+        int __syscall_unlinkat(int /*dirfd*/, const char */*pathname*/, int /*flags*/) {
+            errno=EACCES;
+            return -1;
+        }
+        int __syscall_rmdir(const char * /*pathname*/) {
+            errno=EACCES;
+            return -1;
+        }
+    #endif // __STANDALONE_WASM__
 }
 #endif // __EMSCRIPTEN__
 

@@ -8,8 +8,9 @@ set (catch2_LIB_SRCS
 )
 
 add_library (catch2 STATIC ${catch2_LIB_SRCS})
-target_compile_options(catch2 PRIVATE -DCATCH_AMALGAMATED_CUSTOM_MAIN=1 -Wno-error=unused-but-set-variable -Wno-unused-but-set-variable)
+target_compile_options(catch2 PRIVATE "${jaulib_CXX_FLAGS}" "-DCATCH_AMALGAMATED_CUSTOM_MAIN=1 -Wno-error=unused-but-set-variable -Wno-unused-but-set-variable")
 set_target_properties(catch2 PROPERTIES CXX_CLANG_TIDY "")
+
 # install(TARGETS catch2 LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 #

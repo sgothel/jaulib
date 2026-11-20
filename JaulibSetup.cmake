@@ -437,11 +437,14 @@ else()
         message(STATUS "JaulibSetup: ${PROJECT_NAME} EMSCRIPTEN (wasm)")
         # See https://emscripten.org/docs/tools_reference/settings_reference.html
         #
+        # Standalone WASI build options for unit-tests w/ e.g. `wasmtime`
         set(${PROJECT_NAME}_EMS_FLAGS "-Wno-unused-command-line-argument")
-        set(${PROJECT_NAME}_EMS_FLAGS ${${PROJECT_NAME}_EMS_FLAGS} "SHELL:-s STANDALONE_WASM")
-        set(${PROJECT_NAME}_EMS_FLAGS ${${PROJECT_NAME}_EMS_FLAGS} "SHELL:-s WASM=1" "SHELL:-s LZ4=1" "SHELL:-s EXPORTED_RUNTIME_METHODS=cwrap")
-        set(${PROJECT_NAME}_EMS_FLAGS ${${PROJECT_NAME}_EMS_FLAGS} "SHELL:-s ALLOW_MEMORY_GROWTH=1")
-        # set(${PROJECT_NAME}_EMS_FLAGS ${${PROJECT_NAME}_EMS_FLAGS} "-pthread") # fights w/ ALLOW_MEMORY_GROWTH
+        set(${PROJECT_NAME}_EMS_FLAGS ${${PROJECT_NAME}_EMS_FLAGS} "SHELL:-s STANDALONE_WASM" "-D__STANDALONE_WASM__" "SHELL:-s PURE_WASI")
+        set(${PROJECT_NAME}_EMS_FLAGS ${${PROJECT_NAME}_EMS_FLAGS} "SHELL:-s WASM=1" "SHELL:-s LZ4=1")
+        set(${PROJECT_NAME}_EMS_FLAGS ${${PROJECT_NAME}_EMS_FLAGS} "SHELL:-s ALLOW_MEMORY_GROWTH=1" "SHELL:-s GROWABLE_ARRAYBUFFERS=2")
+        # set(${PROJECT_NAME}_EMS_FLAGS ${${PROJECT_NAME}_EMS_FLAGS} "-pthread" "SHELL:-s GROWABLE_ARRAYBUFFERS=2" "SHELL:-s SHARED_MEMORY=1")
+        # set(${PROJECT_NAME}_EMS_FLAGS ${${PROJECT_NAME}_EMS_FLAGS} "-pthread" "SHELL:-s GROWABLE_ARRAYBUFFERS=2")
+        # set(${PROJECT_NAME}_EMS_FLAGS ${${PROJECT_NAME}_EMS_FLAGS} "SHELL:-s EXPORTED_RUNTIME_METHODS=cwrap")
         # set(${PROJECT_NAME}_EMS_FLAGS ${${PROJECT_NAME}_EMS_FLAGS} "SHELL:-s MEMORY64=1") # wasm64 end-to-end: wasm32 object file can't be linked in wasm64 mode
         # set(${PROJECT_NAME}_EMS_FLAGS ${${PROJECT_NAME}_EMS_FLAGS} "SHELL:-s ASSERTIONS=1")
         set(${PROJECT_NAME}_EMS_FLAGS ${${PROJECT_NAME}_EMS_FLAGS} "SHELL:-s STACK_OVERFLOW_CHECK=1") # cheap cockie magic, enables CHECK_NULL_WRITES

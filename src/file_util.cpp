@@ -92,12 +92,18 @@ static int wrap_unlinkat(int dirfd, const char *pathname, int flags) {
     return ::unlinkat(dirfd, pathname, flags);
 }
 
+static int wrap_unlink(const char *pathname) {
+    return ::unlink(pathname);
+}
+
 #else
 
-static int wrap_unlinkat(int dirfd, const char *pathname, int flags) {
-    (void)dirfd;
-    (void)pathname;
-    (void)flags;
+static int wrap_unlinkat(int /*dirfd*/, const char */*pathname*/, int /*flags*/) {
+    errno=EACCES;
+    return -1;
+}
+
+static int wrap_unlink(const char */*pathname*/) {
     errno=EACCES;
     return -1;
 }
@@ -1139,7 +1145,7 @@ ScopedFD jau::io::fs::create_pid_lock_file(const std::string &fname, size_t pid,
     ScopedFD fdh = ScopedFD(std::move(fd), // NOLINT(performance-move-const-arg)
         [fname](int &fd_) -> void {
             if (fd_ >= 0) {
-                if (::unlink(fname.c_str())) {
+                if (wrap_unlink(fname.c_str())) {
                     jau_ERR_PRINT("Failed to unlink pid lock-file `%s`", fname);
                 }
                 ctrl::unlock(fd_);
@@ -1470,7 +1476,7 @@ bool jau::io::fs::remove(const std::string& path, traverse_options topts) noexce
         ( path_stats.is_dir() && path_stats.is_link() && !is_set(topts, traverse_options::follow_symlinks) )
       )
     {
-        int res = ::unlink( path_stats.path().c_str() );
+        int res = wrap_unlink( path_stats.path().c_str() );
         if( 0 != res ) {
             jau_ERR_PRINT("remove failed: %s, res %d", path_stats.toString(), res);
             return false;

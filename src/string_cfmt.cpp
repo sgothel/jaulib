@@ -30,7 +30,7 @@
 #include <exception>
 #include <limits>
 #include <string>
-#include "jau/type_concepts.hpp"
+#include <utility>
 
 #include <jau/base_math.hpp>
 #include <jau/basic_types.hpp>
@@ -39,6 +39,7 @@
 #include <jau/int_math.hpp>
 #include <jau/int_types.hpp>
 #include <jau/string_cfmt.hpp>
+#include "jau/type_concepts.hpp"
 
 using namespace jau;
 
@@ -535,7 +536,7 @@ static void append_integralXXRadix10(std::string &dest, const size_t dest_maxlen
 
     // d_end_num == d
     assert(d >= d_start_num);
-    assert(d - d_start_num == num_len);
+    assert(std::cmp_equal(d - d_start_num, num_len));
     {
         if( !separator ) [[likely]] {
             d -= val_digits;
@@ -730,7 +731,7 @@ static void append_integralXXRadixXX(std::string &dest, const size_t dest_maxlen
 
     const char *const d_end_num = d;
     assert(d_end_num >= d_start_num);
-    assert(d_end_num - d_start_num == num_len);
+    assert(std::cmp_equal(d_end_num - d_start_num, num_len));
     {
         if( !separator ) [[likely]] {
             d -= val_digits;
@@ -949,7 +950,7 @@ static void append_integralXXSimple(std::string &dest, const size_t dest_maxlen,
 
     // d_end_num == d
     assert(d >= d_start_num);
-    assert(d - d_start_num == val_digits);
+    assert(std::cmp_equal(d - d_start_num, val_digits));
     {
         d -= val_digits;
         ::memcpy(d, buf_start, val_digits);
