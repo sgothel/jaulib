@@ -53,6 +53,11 @@ class TestByteStream01 { // NOLINT(misc-use-internal-linkage): intend
         static std::vector<uint64_t> fname_payload_size_lst;
         const std::string url_input_root = "http://localhost:8080/";
 
+        constexpr static const char* test40_src_name = "test40_seek.src.in";
+        constexpr static const char* test40_cmp1_name = "test40_seek.cmp1.in";
+        constexpr static const char* test40_cmp2_name = "test40_seek.cmp2.in";
+        constexpr static const char* test40_cmp3_name = "test40_seek.cmp3.in";
+
         class data {
             private:
                 static bool add_test_file(const std::string& name, const size_t size_limit) {
@@ -83,6 +88,7 @@ class TestByteStream01 { // NOLINT(misc-use-internal-linkage): intend
                     fname_payload_lst.push_back(name);
                     fname_payload_copy_lst.push_back(name+".copy");
                     fname_payload_size_lst.push_back( size );
+                    jau_PLAIN_PRINT(true, "- test_file (norm): %s, size %zu/%zu", name, size, size_limit);
                     return true;
                 }
                 static bool add_test_skipfile(const std::string& name_in, const std::string& name_out, const size_t take, const size_t skip) {
@@ -110,15 +116,41 @@ class TestByteStream01 { // NOLINT(misc-use-internal-linkage): intend
                         // std::cout << "XXX: " << in << ": l0 " << l0 << ", p0 " << p0 << "\n";
                         REQUIRE(p0 == in.seek(p0) );
                     }
-
                     fname_payload_lst.push_back(name_out);
+                    jau_PLAIN_PRINT(true, "- test_file (skip): %s", name_out);
                     return true;
                 }
+                static void prep_test40_skip_files() {
+                    jau::io::fs::remove(test40_src_name);
+                    jau::io::fs::remove(test40_cmp1_name);
+                    jau::io::fs::remove(test40_cmp2_name);
+                    jau::fprintf_td(stderr, "\n"); jau::fprintf_td(stderr, "%s\n", __func__);
+                    // 4*40
+                    jau::io::ByteStream_SecMemory in("0123456789abcdefghjklmnopqrstuvwxyz_()#$0123456789abcdefghjklmnopqrstuvwxyz_()#$0123456789abcdefghjklmnopqrstuvwxyz_()#$0123456789abcdefghjklmnopqrstuvwxyz_()#$");
+                    REQUIRE( true == transfer(in, test40_src_name, 1024) );
+                    jau_PLAIN_PRINT(true, "- test40_skip_file: %s", test40_src_name);
+                    // s(41) + 40 + s(40) + 39
+                    jau::io::ByteStream_SecMemory cmp1("123456789abcdefghjklmnopqrstuvwxyz_()#$0123456789abcdefghjklmnopqrstuvwxyz_()#$");
+                    REQUIRE( true == transfer(cmp1, test40_cmp1_name, 1024) );
+                    jau_PLAIN_PRINT(true, "- test40_skip_file: %s", test40_cmp1_name);
+                    // s(28) + 31 + s(41) + 60
+                    jau::io::ByteStream_SecMemory cmp2("tuvwxyz_()#$0123456789abcdefghjlmnopqrstuvwxyz_()#$0123456789abcdefghjklmnopqrstuvwxyz_()#$");
+                    REQUIRE( true == transfer(cmp2, test40_cmp2_name, 1024) );
+                    jau_PLAIN_PRINT(true, "- test40_skip_file: %s", test40_cmp2_name);
+
+                    jau::io::ByteStream_SecMemory cmp3("0123456789abcde||0123456789abcde||#$||#$||#$||abcdefghjklmnopqrstuvwxy||abcdefghjklmnopqrstuvwxy||abcdefghjklmnopqrstuvwxyz||abcdefghjklmnopqrstuvwxyz||abcdefghjklmnopqrstuvwxyz||");
+                    REQUIRE( true == transfer(cmp3, test40_cmp3_name, 1024) );
+                    jau_PLAIN_PRINT(true, "- test40_skip_file: %s", test40_cmp3_name);
+                }
+
                 data() {
+                    jau_PLAIN_PRINT(true, "data.ctor.0");
                     REQUIRE( true == add_test_file("testfile_blob_01_11kiB.bin", (size_t)(1024*11)) );
                     REQUIRE( true == add_test_file("testfile_blob_02_65MiB.bin", (size_t)(1024*1024*65)) );
                     REQUIRE( true == add_test_skipfile("testfile_blob_01_11kiB.bin", "testfile_blob_03_skip1.bin", 10,  9) );
                     REQUIRE( true == add_test_skipfile("testfile_blob_01_11kiB.bin", "testfile_blob_04_skip2.bin",  9, 10) );
+                    prep_test40_skip_files();
+                    jau_PLAIN_PRINT(true, "data.ctor.X");
                 }
             public:
                 static const data& get() {
@@ -841,31 +873,6 @@ class TestByteStream01 { // NOLINT(misc-use-internal-linkage): intend
             test_stream_seek(data_stream);
         }
 
-        constexpr static const char* test40_src_name = "test40_seek.src.in";
-        constexpr static const char* test40_cmp1_name = "test40_seek.cmp1.in";
-        constexpr static const char* test40_cmp2_name = "test40_seek.cmp2.in";
-        constexpr static const char* test40_cmp3_name = "test40_seek.cmp3.in";
-
-        void test40_seek_prep() {
-
-            jau::io::fs::remove(test40_src_name);
-            jau::io::fs::remove(test40_cmp1_name);
-            jau::io::fs::remove(test40_cmp2_name);
-            jau::fprintf_td(stderr, "\n"); jau::fprintf_td(stderr, "%s\n", __func__);
-            // 4*40
-            jau::io::ByteStream_SecMemory in("0123456789abcdefghjklmnopqrstuvwxyz_()#$0123456789abcdefghjklmnopqrstuvwxyz_()#$0123456789abcdefghjklmnopqrstuvwxyz_()#$0123456789abcdefghjklmnopqrstuvwxyz_()#$");
-            REQUIRE( true == transfer(in, test40_src_name, 1024) );
-            // s(41) + 40 + s(40) + 39
-            jau::io::ByteStream_SecMemory cmp1("123456789abcdefghjklmnopqrstuvwxyz_()#$0123456789abcdefghjklmnopqrstuvwxyz_()#$");
-            REQUIRE( true == transfer(cmp1, test40_cmp1_name, 1024) );
-            // s(28) + 31 + s(41) + 60
-            jau::io::ByteStream_SecMemory cmp2("tuvwxyz_()#$0123456789abcdefghjlmnopqrstuvwxyz_()#$0123456789abcdefghjklmnopqrstuvwxyz_()#$");
-            REQUIRE( true == transfer(cmp2, test40_cmp2_name, 1024) );
-
-            jau::io::ByteStream_SecMemory cmp3("0123456789abcde||0123456789abcde||#$||#$||#$||abcdefghjklmnopqrstuvwxy||abcdefghjklmnopqrstuvwxy||abcdefghjklmnopqrstuvwxyz||abcdefghjklmnopqrstuvwxyz||abcdefghjklmnopqrstuvwxyz||");
-            REQUIRE( true == transfer(cmp3, test40_cmp3_name, 1024) );
-        }
-
         void test_stream_seek(jau::io::ByteStream& in, const std::string& out_name, const std::string& cmp_name,
                               size_t skip1, size_t take1, size_t skip2, size_t take2) {
             REQUIRE( true == in.isOpen() );
@@ -1125,7 +1132,7 @@ class TestByteStream01 { // NOLINT(misc-use-internal-linkage): intend
             REQUIRE( true == jau::io::fs::compare(out_name, cmp_name, true /* verbose */) );
         }
 
-        void test4a_rewind_rw_file() {
+        void test43_rewind_rw_file() {
             const std::string outfile_name01 = "test4a_rewind.01.out";
             jau::fprintf_td(stderr, "\n"); jau::fprintf_td(stderr, "%s\n", __func__);
 
@@ -1136,7 +1143,7 @@ class TestByteStream01 { // NOLINT(misc-use-internal-linkage): intend
             test_stream_rewind(in, outfile_name01, test40_cmp3_name);
         }
 
-        void test4b_rewind_rw_url() {
+        void test44_rewind_rw_url() {
             const std::string uri_original = url_input_root + test40_src_name;
             const std::string outfile_name01 = "test4b_rewind.01.out";
 
@@ -1179,9 +1186,9 @@ METHOD_AS_TEST_CASE( TestByteStream01::test23_copy_fed_irq,               "test2
 
 METHOD_AS_TEST_CASE( TestByteStream01::test30_mem_seek,                   "test30_mem_seek");
 METHOD_AS_TEST_CASE( TestByteStream01::test31_file_seek,                  "test31_file_seek");
-METHOD_AS_TEST_CASE( TestByteStream01::test40_seek_prep,                  "test40_seek_prep");
+
 METHOD_AS_TEST_CASE( TestByteStream01::test41_seek_rw_file,               "test41_seek_rw_file");
 METHOD_AS_TEST_CASE( TestByteStream01::test42_seek_rw_url,                "test42_seek_rw_url");
-METHOD_AS_TEST_CASE( TestByteStream01::test4a_rewind_rw_file,             "test4a_rewind_rw_file");
-METHOD_AS_TEST_CASE( TestByteStream01::test4b_rewind_rw_url,              "test4b_rewind_rw_url");
+METHOD_AS_TEST_CASE( TestByteStream01::test43_rewind_rw_file,             "test43_rewind_rw_file");
+METHOD_AS_TEST_CASE( TestByteStream01::test44_rewind_rw_url,              "test44_rewind_rw_url");
 // NOLINTEND(bugprone-throwing-static-initialization)
