@@ -103,7 +103,7 @@ bool catch_auto_run; // NOLINT(misc-use-internal-linkage)
 /** Run w/ command-line arg '--perf_analysis'. */
 bool catch_perf_analysis; // NOLINT(misc-use-internal-linkage)
 
-static char * extra_args[] = { (char*)"--colour-mode", (char*)"none" };
+static char * extra_args[] = { (char*)"--colour-mode", (char*)"none", (char*)"--order", (char*)"decl" };
 static int extra_args_c = sizeof(extra_args) / sizeof(const char *);
 
 int main( int argc, char* argv[] )
