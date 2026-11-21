@@ -517,6 +517,9 @@ ByteStream_File::ByteStream_File(const std::string& path, iomode_t mode, const j
 
 void ByteStream_File::close() noexcept {
     if( 0 <= m_fd ) {
+        if (canWrite()) {
+            ::fdatasync(m_fd);  // flush
+        }
         ::close(m_fd);
         m_fd = -1;
         addstate_impl( iostate_t::eofbit );
