@@ -86,29 +86,25 @@ using namespace jau::io::fs;
     #define __posix_openat64  ::openat64
 #endif
 
-#if !defined(__EMSCRIPTEN__)
+#if defined(__EMSCRIPTEN__) && defined(__STANDALONE_WASM__)
+    static int wrap_unlinkat(int /*dirfd*/, const char */*pathname*/, int /*flags*/) {
+        errno=EACCES;
+        return -1;
+    }
 
-static int wrap_unlinkat(int dirfd, const char *pathname, int flags) {
-    return ::unlinkat(dirfd, pathname, flags);
-}
-
-static int wrap_unlink(const char *pathname) {
-    return ::unlink(pathname);
-}
-
+    static int wrap_unlink(const char */*pathname*/) {
+        errno=EACCES;
+        return -1;
+    }
 #else
+    static int wrap_unlinkat(int dirfd, const char *pathname, int flags) {
+        return ::unlinkat(dirfd, pathname, flags);
+    }
 
-static int wrap_unlinkat(int /*dirfd*/, const char */*pathname*/, int /*flags*/) {
-    errno=EACCES;
-    return -1;
-}
-
-static int wrap_unlink(const char */*pathname*/) {
-    errno=EACCES;
-    return -1;
-}
-
-#endif // __EMSCRIPTEN__
+    static int wrap_unlink(const char *pathname) {
+        return ::unlink(pathname);
+    }
+#endif
 
 std::string jau::io::fs::get_cwd() noexcept {
     const size_t bsz = PATH_MAX; // including EOS

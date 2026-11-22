@@ -445,7 +445,7 @@ else()
         # set(${PROJECT_NAME}_EMS_FLAGS ${${PROJECT_NAME}_EMS_FLAGS} "-pthread" "SHELL:-s GROWABLE_ARRAYBUFFERS=2" "SHELL:-s SHARED_MEMORY=1")
         # set(${PROJECT_NAME}_EMS_FLAGS ${${PROJECT_NAME}_EMS_FLAGS} "-pthread" "SHELL:-s GROWABLE_ARRAYBUFFERS=2")
         # set(${PROJECT_NAME}_EMS_FLAGS ${${PROJECT_NAME}_EMS_FLAGS} "SHELL:-s EXPORTED_RUNTIME_METHODS=cwrap")
-        # set(${PROJECT_NAME}_EMS_FLAGS ${${PROJECT_NAME}_EMS_FLAGS} "SHELL:-s MEMORY64=1") # wasm64 end-to-end: wasm32 object file can't be linked in wasm64 mode
+        # set(${PROJECT_NAME}_EMS_FLAGS ${${PROJECT_NAME}_EMS_FLAGS} "SHELL:-s MEMORY64=1") # use: -m64 or –target=wasm64, (wasm32 file can't be linked w/ wasm64)
         # set(${PROJECT_NAME}_EMS_FLAGS ${${PROJECT_NAME}_EMS_FLAGS} "SHELL:-s ASSERTIONS=1")
         set(${PROJECT_NAME}_EMS_FLAGS ${${PROJECT_NAME}_EMS_FLAGS} "SHELL:-s STACK_OVERFLOW_CHECK=1") # cheap cockie magic, enables CHECK_NULL_WRITES
         #
