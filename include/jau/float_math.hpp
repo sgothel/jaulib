@@ -110,9 +110,17 @@ namespace jau {
      * Returns true if the given value is zero,
      * disregarding `epsilon` but considering `NaN`, `-Inf` and `+Inf`.
      */
-    template<std::floating_point T>
+    template<jau::req::float32_point T>
     constexpr bool is_zero_raw(const T& a) noexcept {
-        return ( bit_value(a) & ~float_iec559_sign_bit ) == 0;
+        return ( jau::iec559::bit_value(a) & ~jau::iec559::binary32_sign_bit ) == 0;
+    }
+    /**
+     * Returns true if the given value is zero,
+     * disregarding `epsilon` but considering `NaN`, `-Inf` and `+Inf`.
+     */
+    template<jau::req::float64_point T>
+    constexpr bool is_zero_raw(const T& a) noexcept {
+        return ( jau::iec559::bit_value(a) & ~jau::iec559::binary64_sign_bit ) == 0;
     }
 
     /**
@@ -141,8 +149,8 @@ namespace jau {
         // a == b: we compare the _signed_ int value
         typedef jau::uint_bytes_t<sizeof(T)> T_uint;
         typedef std::make_signed_t<T_uint> T_int;
-        const T_int a_bits = static_cast<T_int>( bit_value(a) );
-        const T_int b_bits = static_cast<T_int>( bit_value(b) );
+        const T_int a_bits = static_cast<T_int>( jau::iec559::bit_value(a) );
+        const T_int b_bits = static_cast<T_int>( jau::iec559::bit_value(b) );
         if( a_bits == b_bits ) {
             return 0;  // Values are equal (Inf, Nan .. )
         } else if( a_bits < b_bits ) {
@@ -195,7 +203,7 @@ namespace jau {
     template<std::floating_point T>
     constexpr bool equals_raw(const T& a, const T& b) noexcept {
         // Values are equal (Inf, Nan .. )
-        return bit_value(a) == bit_value(b);
+        return jau::iec559::bit_value(a) == jau::iec559::bit_value(b);
     }
 
     /**
@@ -220,7 +228,7 @@ namespace jau {
             return true;
         } else {
             // Values are equal (Inf, Nan .. )
-            return bit_value(a) == bit_value(b);
+            return jau::iec559::bit_value(a) == jau::iec559::bit_value(b);
         }
     }
 
@@ -286,7 +294,7 @@ namespace jau {
             return true;
         } else {
             // Values are equal (Inf, Nan .. )
-            return bit_value(a) == bit_value(b);
+            return jau::iec559::bit_value(a) == jau::iec559::bit_value(b);
         }
     }
 

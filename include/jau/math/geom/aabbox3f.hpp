@@ -13,6 +13,7 @@
 
 #include <jau/basic_types.hpp>
 #include <jau/debug.hpp>
+#include <jau/float_types.hpp>
 #include <jau/functional.hpp>
 #include <jau/math/vec3f.hpp>
 #include <jau/math/mat4f.hpp>
@@ -591,7 +592,7 @@ namespace jau::math::geom {
                         inside    = false;
 
                         // Calculate T distances to candidate planes
-                        if( 0 != jau::bit_value_raw(dir.x) ) {
+                        if( 0 != jau::iec559::bit_value_raw(dir.x) ) {
                             maxT[0] = (m_lo.x - origin.x) / dir.x;
                         }
                     } else if(origin.x > m_hi.x) {
@@ -599,7 +600,7 @@ namespace jau::math::geom {
                         inside    = false;
 
                         // Calculate T distances to candidate planes
-                        if( 0 != jau::bit_value_raw(dir.x) ) {
+                        if( 0 != jau::iec559::bit_value_raw(dir.x) ) {
                             maxT[0] = (m_hi.x - origin.x) / dir.x;
                         }
                     }
@@ -610,7 +611,7 @@ namespace jau::math::geom {
                         inside    = false;
 
                         // Calculate T distances to candidate planes
-                        if( 0 != jau::bit_value_raw(dir.y) ) {
+                        if( 0 != jau::iec559::bit_value_raw(dir.y) ) {
                             maxT[1] = (m_lo.y - origin.y) / dir.y;
                         }
                     } else if(origin.y > m_hi.y) {
@@ -618,7 +619,7 @@ namespace jau::math::geom {
                         inside    = false;
 
                         // Calculate T distances to candidate planes
-                        if( 0 != jau::bit_value_raw(dir.y) ) {
+                        if( 0 != jau::iec559::bit_value_raw(dir.y) ) {
                             maxT[1] = (m_hi.y - origin.y) / dir.y;
                         }
                     }
@@ -629,7 +630,7 @@ namespace jau::math::geom {
                         inside    = false;
 
                         // Calculate T distances to candidate planes
-                        if( 0 != jau::bit_value_raw(dir.z) ) {
+                        if( 0 != jau::iec559::bit_value_raw(dir.z) ) {
                             maxT[2] = (m_lo.z - origin.z) / dir.z;
                         }
                     } else if(origin.z > m_hi.z) {
@@ -637,7 +638,7 @@ namespace jau::math::geom {
                         inside    = false;
 
                         // Calculate T distances to candidate planes
-                        if( 0 != jau::bit_value_raw(dir.z) ) {
+                        if( 0 != jau::iec559::bit_value_raw(dir.z) ) {
                             maxT[2] = (m_hi.z - origin.z) / dir.z;
                         }
                     }
@@ -654,22 +655,22 @@ namespace jau::math::geom {
                 // - a bit faster on my Celeron, duno how it behaves on something like a P4
                 // (Updated October 2001)
                 int whichPlane;
-                if( jau::bit_value_raw(maxT[0]) & jau::float_iec559_sign_bit ) {
+                if( jau::iec559::bit_value_raw(maxT[0]) & jau::iec559::binary32_sign_bit ) {
                     // T[0]<0
-                    if( jau::bit_value_raw(maxT[1]) & jau::float_iec559_sign_bit ) {
+                    if( jau::iec559::bit_value_raw(maxT[1]) & jau::iec559::binary32_sign_bit ) {
                         // T[0]<0  T[1]<0
-                        if( jau::bit_value_raw(maxT[2]) & jau::float_iec559_sign_bit ) {
+                        if( jau::iec559::bit_value_raw(maxT[2]) & jau::iec559::binary32_sign_bit ) {
                             // T[0]<0  T[1]<0  T[2]<0
                             return false;
                         } else {
                             whichPlane = 2;
                         }
-                    } else if( jau::bit_value_raw(maxT[2]) & jau::float_iec559_sign_bit ) {
+                    } else if( jau::iec559::bit_value_raw(maxT[2]) & jau::iec559::binary32_sign_bit ) {
                         // T[0]<0  T[1]>0  T[2]<0
                         whichPlane = 1;
                     } else {
                         // T[0]<0  T[1]>0  T[2]>0
-                        if( jau::bit_value_raw(maxT[2]) > jau::bit_value_raw(maxT[1]) ) {
+                        if( jau::iec559::bit_value_raw(maxT[2]) > jau::iec559::bit_value_raw(maxT[1]) ) {
                             whichPlane = 2;
                         } else {
                             whichPlane = 1;
@@ -677,22 +678,22 @@ namespace jau::math::geom {
                     }
                 } else {
                     // T[0]>0
-                    if( jau::bit_value_raw(maxT[1]) & jau::float_iec559_sign_bit ) {
+                    if( jau::iec559::bit_value_raw(maxT[1]) & jau::iec559::binary32_sign_bit ) {
                         // T[0]>0  T[1]<0
-                        if( jau::bit_value_raw(maxT[2]) & jau::float_iec559_sign_bit ) {
+                        if( jau::iec559::bit_value_raw(maxT[2]) & jau::iec559::binary32_sign_bit ) {
                             // T[0]>0  T[1]<0 T[2]<0
                             whichPlane = 0;
                         } else {
                             // T[0]>0  T[1]<0 T[2]>0
-                            if( jau::bit_value_raw(maxT[2]) > jau::bit_value_raw(maxT[0]) ) {
+                            if( jau::iec559::bit_value_raw(maxT[2]) > jau::iec559::bit_value_raw(maxT[0]) ) {
                                 whichPlane = 2;
                             } else {
                                 whichPlane = 0;
                             }
                         }
-                    } else if( jau::bit_value_raw(maxT[2]) & jau::float_iec559_sign_bit ) {
+                    } else if( jau::iec559::bit_value_raw(maxT[2]) & jau::iec559::binary32_sign_bit ) {
                         // T[0]>0  T[1]>0 T[2]<0
-                        if( jau::bit_value_raw(maxT[1]) > jau::bit_value_raw(maxT[0]) ) {
+                        if( jau::iec559::bit_value_raw(maxT[1]) > jau::iec559::bit_value_raw(maxT[0]) ) {
                             whichPlane = 1;
                         } else {
                             whichPlane = 0;
@@ -700,8 +701,8 @@ namespace jau::math::geom {
                     } else {
                         // T[0]>0  T[1]>0 T[2]>0
                         whichPlane = 0;
-                        if( jau::bit_value_raw(maxT[1]) > jau::bit_value_raw(maxT[whichPlane]) ) whichPlane = 1;
-                        if( jau::bit_value_raw(maxT[2]) > jau::bit_value_raw(maxT[whichPlane]) ) whichPlane = 2;
+                        if( jau::iec559::bit_value_raw(maxT[1]) > jau::iec559::bit_value_raw(maxT[whichPlane]) ) whichPlane = 1;
+                        if( jau::iec559::bit_value_raw(maxT[2]) > jau::iec559::bit_value_raw(maxT[whichPlane]) ) whichPlane = 2;
                     }
                 }
 
@@ -713,7 +714,7 @@ namespace jau::math::geom {
                     if(maxT[2] > maxT[whichPlane]) { whichPlane = 2; }
 
                     // Check final candidate actually inside box
-                    if(jau::bit_value_raw(maxT[WhichPlane])&jau::float_iec559_sign_bit) return false;
+                    if(jau::iec559::bit_value_raw(maxT[WhichPlane])&jau::iec559::binary32_sign_bit) return false;
                 */
 
                 if( !assumeIntersection ) {

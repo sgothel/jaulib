@@ -39,6 +39,7 @@
 #include <jau/int_math.hpp>
 #include <jau/int_types.hpp>
 #include <jau/string_cfmt.hpp>
+#include "jau/float_types.hpp"
 #include "jau/type_concepts.hpp"
 
 using namespace jau;
@@ -1006,15 +1007,15 @@ void jau::cfmt::impl::append_integral64RadixXX(std::string &dest, const size_t d
 }
 
 bool jau::cfmt::impl::is_float_validF64(std::string &dest, const size_t dest_maxlen, const double value, const FormatOpts &opts) noexcept {
-    const uint64_t r = jau::bit_value_raw( value );
+    const uint64_t r = jau::iec559::bit_value_raw( value );
     const bool up = is_set(opts.flags, flags_t::uppercase);
-    if (r == jau::double_iec559_nan_bitval) {
+    if (r == jau::iec559::binary64_nan_bitval) {
         append_string(dest, dest_maxlen, up ? "NAN" : "nan", opts);
         return false;
-    } else if (r == jau::double_iec559_negative_inf_bitval) {
+    } else if (r == jau::iec559::binary64_negative_inf_bitval) {
         append_string(dest, dest_maxlen, up ? "-INF" : "-inf", opts);
         return false;;
-    } else if (r == jau::double_iec559_positive_inf_bitval) {
+    } else if (r == jau::iec559::binary64_positive_inf_bitval) {
         const bool plus = is_set(opts.flags, flags_t::plus);
         append_string(dest, dest_maxlen, plus ? ( up ? "+INF" : "+inf" ) : ( up ? "INF" : "inf" ), opts);
         return false;
@@ -1329,14 +1330,14 @@ void jau::cfmt::impl::append_afloatF64(std::string &dest, const size_t dest_maxl
     float_type value = float_type(negative ? -ivalue : ivalue);
 
     // default precision
-    size_t prec = iopts.precision_set ? iopts.precision : default_float_precision;
+    const size_t prec = iopts.precision_set ? iopts.precision : default_float_precision;
 
-    uint64_t significand = jau::significand_raw(value) >> significand_shift;
-    const int32_t expval = jau::exponent_unbiased(value);
+    // adding leading 1 on the left of 52 significand bits (13 hex-nibbles)
+    const uint64_t significand = (1_u64 << 52 | jau::iec559::significand_raw(value)) >> significand_shift;
+    const int32_t expval = jau::iec559::exponent(value);
 
     // the exponent format is "%+03d" and largest value is "307", so set aside 4-5 characters
-    unsigned int minwidth = ((expval < 100) && (expval > -100)) ? 4U : 5U;
-    FormatOpts fopts;
+    const unsigned int minwidth = ((expval < 100) && (expval > -100)) ? 4U : 5U;
 
     // will everything fit?
     const size_t width = iopts.width_set ? iopts.width : 0;
@@ -1360,6 +1361,7 @@ void jau::cfmt::impl::append_afloatF64(std::string &dest, const size_t dest_maxl
 
     const size_t start_idx = dest.size();
     // output the floating part
+    FormatOpts fopts;
     {
         fopts.conversion = cspec_t::signed_int;
         fopts.radix = 16;

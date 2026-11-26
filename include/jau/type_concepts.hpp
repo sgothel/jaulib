@@ -245,6 +245,14 @@ namespace jau::req {
     template<typename T>
     concept floating_point = std::is_floating_point_v<T>;
 
+    /** Concept of 32bit type-trait std::is_floating_point */
+    template<typename T>
+    concept float32_point = std::is_floating_point_v<T> && 4 == sizeof(T);
+
+    /** Concept of 64bit type-trait std::is_floating_point */
+    template<typename T>
+    concept float64_point = std::is_floating_point_v<T> && 8 == sizeof(T);
+
     /** Concept of type wrapper holding an floating_point type. */
     template<typename T>
     concept wrapped_floating_point  = wrapper<T> && floating_point<typename T::value_type>;

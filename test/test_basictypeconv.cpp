@@ -1345,4 +1345,3 @@ TEST_CASE("Integer Type Test Test 50", "[integer][type]") {
     REQUIRE(3_inz == (jau::snsize_t)3);
     REQUIRE(3_unz == (jau::nsize_t)3);
 }
-

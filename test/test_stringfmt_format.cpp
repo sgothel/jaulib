@@ -579,20 +579,20 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
         double value = 123.45;
         const int expval = std::ilogb(value);
         const double frac = value / std::scalbn(1.0, expval);
-        const uint64_t significand = jau::significand_raw(value);
+        const uint64_t significand = jau::iec559::significand_raw(value);
         fprintf(stderr, "JAU:10 v %f = %f * 2^%d -> 0x%0" PRIx64 "p%d\n", value, frac, expval, significand, expval);
 
-        const int32_t expval2 = jau::exponent_unbiased(value);
+        const int32_t expval2 = jau::iec559::exponent(value);
         fprintf(stderr, "JAU:11 v %f = %f * 2^%d -> 0x%0" PRIx64 "p%d\n", value, frac, expval2, significand, expval2);
     }
     {
         float value = 123.45f;
         const int expval = std::ilogb(value);
         const double frac = value / std::scalbn(1.0, expval);
-        const uint32_t significand = jau::significand_raw(value);
+        const uint32_t significand = jau::iec559::significand_raw(value);
         fprintf(stderr, "JAU:20 v %f = %f * 2^%d -> 0x%0" PRIx32 "p%d\n", value, frac, expval, significand, expval);
 
-        const int32_t expval2 = jau::exponent_unbiased(value);
+        const int32_t expval2 = jau::iec559::exponent(value);
         fprintf(stderr, "JAU:21 v %f = %f * 2^%d -> 0x%0" PRIx32 "p%d\n", value, frac, expval2, significand, expval2);
     }
     {
@@ -600,10 +600,10 @@ TEST_CASE("single_conversion", "[jau][std::string][jau::cfmt]") {
         double value = ivalue;
         const int expval = std::ilogb(value);
         const double frac = value / std::scalbn(1.0, expval);
-        const uint64_t significand = jau::significand_raw(value) >> (32-4);
+        const uint64_t significand = jau::iec559::significand_raw(value) >> (32-4);
         fprintf(stderr, "JAU:30 v %f = %f * 2^%d -> 0x%0" PRIx64 "p%d\n", value, frac, expval, significand, expval);
 
-        const int32_t expval2 = jau::exponent_unbiased(value);
+        const int32_t expval2 = jau::iec559::exponent(value);
         fprintf(stderr, "JAU:31 v %f = %f * 2^%d -> 0x%0" PRIx64 "p%d\n", value, frac, expval2, significand, expval2);
     }
     checkFormat(__LINE__, "%%");
